@@ -9604,6 +9604,7 @@ void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
         macroMap[MACROLIST_FIELD_MACRONAME] = it.key();
         macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
         macroMap[MACROLIST_FIELD_MACROCATEGORY] = it.value().Category;
+        macroMap[MACROLIST_FIELD_MACRONOTE] = it.value().Note;
         macroList.append(macroMap);
     }
 
@@ -9655,10 +9656,11 @@ void QKeyMapper::loadMacroListFromINI(const QString &setting_groupname)
         QString macroName = macroMap.value(MACROLIST_FIELD_MACRONAME).toString();
         QString macroContent = macroMap.value(MACROLIST_FIELD_MACROCONTENT).toString();
         QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
+        QString note = macroMap.value(MACROLIST_FIELD_MACRONOTE).toString();
 
         // Add to map if macro name is not empty
         if (!macroName.isEmpty()) {
-            s_MappingMacroList[macroName] = MappingMacroData{ macroContent, category };
+            s_MappingMacroList[macroName] = MappingMacroData{ macroContent, category, note };
         }
     }
 
@@ -9681,6 +9683,7 @@ void QKeyMapper::saveUniversalMacroListToINI()
         macroMap[MACROLIST_FIELD_MACRONAME] = it.key();
         macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
         macroMap[MACROLIST_FIELD_MACROCATEGORY] = it.value().Category;
+        macroMap[MACROLIST_FIELD_MACRONOTE] = it.value().Note;
         macroList.append(macroMap);
     }
 
@@ -9725,10 +9728,11 @@ void QKeyMapper::loadUniversalMacroListFromINI()
         QString macroName = macroMap.value(MACROLIST_FIELD_MACRONAME).toString();
         QString macroContent = macroMap.value(MACROLIST_FIELD_MACROCONTENT).toString();
         QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
+        QString note = macroMap.value(MACROLIST_FIELD_MACRONOTE).toString();
 
         // Add to map if macro name is not empty
         if (!macroName.isEmpty()) {
-            s_UniversalMappingMacroList[macroName] = MappingMacroData{ macroContent, category };
+            s_UniversalMappingMacroList[macroName] = MappingMacroData{ macroContent, category, note };
         }
     }
 
@@ -22395,8 +22399,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 else if (currentMapKeyText == MACRO_STR
                     || currentMapKeyText == UNIVERSAL_MACRO_STR) {
                     QString macro_content = ui->sendTextPlainTextEdit->toPlainText();
-                    macro_content = macro_content.trimmed();
                     macro_content.replace(simplified_regex, " ");
+                    macro_content = macro_content.trimmed();
                     if (macro_content.isEmpty()) {
                         QString message = tr("Please input the mapping macro!");
                         showFailurePopup(message);

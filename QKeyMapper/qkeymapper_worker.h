@@ -284,6 +284,7 @@ struct MappingMacroData
 {
     QString MappingMacro;
     QString Category;
+    QString Note;
 };
 
 typedef struct V_KEYCODE

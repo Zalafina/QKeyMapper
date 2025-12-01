@@ -34,13 +34,17 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     ui->macroNameLabel->setFont(customFont);
     ui->catetoryLabel->setFont(customFont);
     ui->macroContentLabel->setFont(customFont);
+    ui->macroNoteLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
     ui->categoryFilterLabel->setFont(customFont);
     ui->MacroList_MappingKeyListComboBox->setFont(customFont);
     ui->categoryFilterComboBox->setFont(customFont);
     ui->macroNameLineEdit->setFont(customFont);
     ui->macroContentLineEdit->setFont(customFont);
+    ui->macroNoteLineEdit->setFont(customFont);
     ui->categoryLineEdit->setFont(customFont);
+    ui->clearButton->setFont(customFont);
+    ui->macroBackupButton->setFont(customFont);
 
     int scale = QKeyMapper::getInstance()->m_UI_Scale;
     if (UI_SCALE_4K_PERCENT_150 == scale) {
@@ -68,6 +72,7 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     QObject::connect(ui->macroNameLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
     QObject::connect(ui->macroContentLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
     QObject::connect(ui->categoryLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
+    QObject::connect(ui->macroNoteLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
 
     if (QItemSetupDialog::getInstance() != Q_NULLPTR) {
         QItemSetupDialog::getInstance()->syncConnectMappingKeySelectButtons();
@@ -87,10 +92,12 @@ void QMacroListDialog::setUILanguage(int languageindex)
     ui->macroNameLabel->setText(tr("Name"));
     ui->catetoryLabel->setText(tr("Category"));
     ui->macroContentLabel->setText(tr("Macro"));
+    ui->macroNoteLabel->setText(tr("Note"));
     ui->clearButton->setText(tr("Clear"));
     ui->addMacroButton->setText(tr("Add Macro"));
     ui->mapkeyLabel->setText(tr("MapKeys"));
     ui->categoryFilterLabel->setText(tr("Filter"));
+    ui->macroBackupButton->setText(tr("MacroList Backup"));
 
     QTabWidget *tabWidget = ui->macroListTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->macrolist),            tr("Macro")          );
@@ -98,10 +105,12 @@ void QMacroListDialog::setUILanguage(int languageindex)
 
     ui->macrolistTable->setHorizontalHeaderLabels(QStringList()             << tr("Name")
                                                                             << tr("Macro")
-                                                                            << tr("Category"));
+                                                                            << tr("Category")
+                                                                            << tr("Note"));
     ui->universalmacrolistTable->setHorizontalHeaderLabels(QStringList()    << tr("Name")
                                                                             << tr("Macro")
-                                                                            << tr("Category"));
+                                                                            << tr("Category")
+                                                                            << tr("Note"));
 
     resizeMacroListTabWidgetColumnWidth();
 }
@@ -143,10 +152,17 @@ void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macro
             category_TableItem->setFlags(category_TableItem->flags() | Qt::ItemIsEditable);
             macroDataTable->setItem(rowindex, MACRO_CATEGORY_COLUMN, category_TableItem);
 
+            /* MACRO_NOTE_COLUMN */
+            QTableWidgetItem *note_TableItem = new QTableWidgetItem(macroData.Note);
+            note_TableItem->setToolTip(macroData.Note);
+            // Note column is always editable
+            note_TableItem->setFlags(note_TableItem->flags() | Qt::ItemIsEditable);
+            macroDataTable->setItem(rowindex, MACRO_NOTE_COLUMN, note_TableItem);
+
             rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[refreshMacroListTabWidget] " << macroName << " -> " << macroData.MappingMacro << ", Category -> " << macroData.Category;
+            qDebug().nospace() << "[refreshMacroListTabWidget] " << macroName << " -> " << macroData.MappingMacro << ", Category -> " << macroData.Category << ", Note -> " << macroData.Note;
 #endif
         }
 
@@ -375,9 +391,10 @@ void QMacroListDialog::on_clearButton_clicked()
     QString macroName = ui->macroNameLineEdit->text();
     QString macroContent = ui->macroContentLineEdit->text();
     QString category = ui->categoryLineEdit->text();
+    QString macroNote = ui->macroNoteLineEdit->text();
 
     // Check if any field has content
-    if (!macroName.isEmpty() || !macroContent.isEmpty() || !category.isEmpty()) {
+    if (!macroName.isEmpty() || !macroContent.isEmpty() || !category.isEmpty() || !macroNote.isEmpty()) {
         QString message = tr("Are you sure you want to clear the macro information fields?");
         QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
                                                                   QMessageBox::Yes | QMessageBox::No,
@@ -390,6 +407,7 @@ void QMacroListDialog::on_clearButton_clicked()
         // Clear all input fields
         ui->macroNameLineEdit->clear();
         ui->macroContentLineEdit->clear();
+        ui->macroNoteLineEdit->clear();
         ui->categoryLineEdit->clear();
     }
 }
@@ -412,16 +430,20 @@ void QMacroListDialog::addMacroToList()
     static QRegularExpression simplified_regex(R"([\r\n]+)");
 
     QString macroname_str = ui->macroNameLineEdit->text();
-    macroname_str = macroname_str.trimmed();
     macroname_str.replace(simplified_regex, " ");
+    macroname_str = macroname_str.trimmed();
 
     QString macro_str = ui->macroContentLineEdit->text();
-    macro_str = macro_str.trimmed();
     macro_str.replace(simplified_regex, " ");
+    macro_str = macro_str.trimmed();
 
     QString category_str = ui->categoryLineEdit->text();
-    category_str = category_str.trimmed();
     category_str.replace(simplified_regex, " ");
+    category_str = category_str.trimmed();
+
+    QString macronote_str = ui->macroNoteLineEdit->text();
+    macronote_str.replace(simplified_regex, " ");
+    macronote_str = macronote_str.trimmed();
 
     if (macro_str.isEmpty()) {
         return;
@@ -476,7 +498,7 @@ void QMacroListDialog::addMacroToList()
     }
 
     // Insert or update macro in the list
-    CurrentMacroList[macroname_str] = MappingMacroData{ macro_str, category_str };
+    CurrentMacroList[macroname_str] = MappingMacroData{ macro_str, category_str, macronote_str};
 
     // Show success message
     popupMessageColor = SUCCESS_COLOR;
@@ -538,7 +560,8 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
 
     macroDataTable->setHorizontalHeaderLabels(QStringList() << tr("Name")
                                                             << tr("Macro")
-                                                            << tr("Category"));
+                                                            << tr("Category")
+                                                            << tr("Note"));
 
     QFont customFont(FONTNAME_ENGLISH, 9);
     macroDataTable->setFont(customFont);
@@ -590,6 +613,8 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     int macro_name_width = macroDataTable->columnWidth(MACRO_NAME_COLUMN);
 
     macroDataTable->horizontalHeader()->setStretchLastSection(false);
+
+    // Calculate Category column width
     int macro_category_width_min = referenceWidth / 20;
     int macro_category_width_max = referenceWidth / 5;
     macroDataTable->resizeColumnToContents(MACRO_CATEGORY_COLUMN);
@@ -600,6 +625,19 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     if (macro_category_width > macro_category_width_max) {
         macro_category_width = macro_category_width_max;
     }
+
+    // Calculate Note column width
+    int macro_note_width_min = referenceWidth / 20;
+    int macro_note_width_max = referenceWidth / 5;
+    macroDataTable->resizeColumnToContents(MACRO_NOTE_COLUMN);
+    int macro_note_width = macroDataTable->columnWidth(MACRO_NOTE_COLUMN);
+    if (macro_note_width < macro_note_width_min) {
+        macro_note_width = macro_note_width_min;
+    }
+    if (macro_note_width > macro_note_width_max) {
+        macro_note_width = macro_note_width_max;
+    }
+
     macroDataTable->horizontalHeader()->setStretchLastSection(true);
 
     if (macro_name_width < macro_name_width_min) {
@@ -610,7 +648,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     }
 
     int macro_content_width_min = referenceWidth/5 - 15;
-    int macro_content_width = referenceWidth - macro_name_width - macro_category_width - 16;
+    int macro_content_width = referenceWidth - macro_name_width - macro_category_width - macro_note_width - 16;
     if (macro_content_width < macro_content_width_min) {
         macro_content_width = macro_content_width_min;
     }
@@ -618,9 +656,10 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     macroDataTable->setColumnWidth(MACRO_NAME_COLUMN, macro_name_width);
     macroDataTable->setColumnWidth(MACRO_CONTENT_COLUMN, macro_content_width);
     macroDataTable->setColumnWidth(MACRO_CATEGORY_COLUMN, macro_category_width);
+    macroDataTable->setColumnWidth(MACRO_NOTE_COLUMN, macro_note_width);
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeMacroListTableColumnWidth]" << "macroDataTable->rowCount" << macroDataTable->rowCount();
-    qDebug() << "[resizeMacroListTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width;
+    qDebug() << "[resizeMacroListTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width << ", macro_note_width =" << macro_note_width;
 #endif
 }
 
@@ -837,12 +876,12 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
         return;
     }
 
-    // Check if the double-clicked item is in the Category column
-    if (columnindex == MACRO_CATEGORY_COLUMN) {
-        // If it's the category column, allow inline editing
+    // Check if the double-clicked item is in the Category or Note column
+    if (columnindex == MACRO_CATEGORY_COLUMN || columnindex == MACRO_NOTE_COLUMN) {
+        // If it's the category or note column, allow inline editing
         macroDataTable->editItem(item);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[macroTableItemDoubleClicked]" << "Category column double-clicked, entering edit mode";
+        qDebug() << "[macroTableItemDoubleClicked]" << "Category/Note column double-clicked, entering edit mode";
 #endif
     }
     else {
@@ -850,6 +889,7 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
         QTableWidgetItem *nameItem = macroDataTable->item(rowindex, MACRO_NAME_COLUMN);
         QTableWidgetItem *contentItem = macroDataTable->item(rowindex, MACRO_CONTENT_COLUMN);
         QTableWidgetItem *categoryItem = macroDataTable->item(rowindex, MACRO_CATEGORY_COLUMN);
+        QTableWidgetItem *noteItem = macroDataTable->item(rowindex, MACRO_NOTE_COLUMN);
 
         if (nameItem) {
             ui->macroNameLineEdit->setText(nameItem->text());
@@ -859,6 +899,9 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
         }
         if (categoryItem) {
             ui->categoryLineEdit->setText(categoryItem->text());
+        }
+        if (noteItem) {
+            ui->macroNoteLineEdit->setText(noteItem->text());
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[macroTableItemDoubleClicked]" << "Loaded macro data to LineEdit controls";
@@ -874,8 +917,8 @@ void QMacroListDialog::macroListTabWidgetCurrentChanged(int index)
 
 void QMacroListDialog::macroTableCellChanged(int row, int column)
 {
-    // Only handle category column changes
-    if (column != MACRO_CATEGORY_COLUMN) {
+    // Only handle category or note column changes
+    if (column != MACRO_CATEGORY_COLUMN && column != MACRO_NOTE_COLUMN) {
         return;
     }
 
@@ -887,23 +930,61 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
     }
 
     QTableWidgetItem *nameItem = macroDataTable->item(row, MACRO_NAME_COLUMN);
-    QTableWidgetItem *categoryItem = macroDataTable->item(row, MACRO_CATEGORY_COLUMN);
 
-    if (!nameItem || !categoryItem) {
+    if (!nameItem) {
         return;
     }
 
     QString macroName = nameItem->text();
-    QString newCategory = categoryItem->text().trimmed();
 
-    // Update the category in the data list
-    if (macroDataList->contains(macroName)) {
+    if (!macroDataList->contains(macroName)) {
+        return;
+    }
+
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
+    if (column == MACRO_CATEGORY_COLUMN) {
+        QTableWidgetItem *categoryItem = macroDataTable->item(row, MACRO_CATEGORY_COLUMN);
+        if (!categoryItem) {
+            return;
+        }
+        QString newCategory = categoryItem->text();
+        newCategory.replace(simplified_regex, " ");
+        newCategory = newCategory.trimmed();
+
+        // Update the category in the data list
         (*macroDataList)[macroName].Category = newCategory;
+
+        // Update the table cell to show the cleaned text
+        if (categoryItem->text() != newCategory) {
+            categoryItem->setText(newCategory);
+            categoryItem->setToolTip(newCategory);
+        }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[macroTableCellChanged]" << "Updated category for macro:" << macroName << "to:" << newCategory;
 #endif
         // Update the category filter ComboBox
         updateMacroCategoryFilterComboBox();
+    }
+    else if (column == MACRO_NOTE_COLUMN) {
+        QTableWidgetItem *noteItem = macroDataTable->item(row, MACRO_NOTE_COLUMN);
+        if (!noteItem) {
+            return;
+        }
+        QString newNote = noteItem->text();
+        newNote.replace(simplified_regex, " ");
+        newNote = newNote.trimmed();
+
+        // Update the note in the data list
+        (*macroDataList)[macroName].Note = newNote;
+
+        // Update the table cell to show the cleaned text
+        if (noteItem->text() != newNote) {
+            noteItem->setText(newNote);
+            noteItem->setToolTip(newNote);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[macroTableCellChanged]" << "Updated note for macro:" << macroName << "to:" << newNote;
+#endif
     }
 }
 

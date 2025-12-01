@@ -557,7 +557,7 @@ void QKeyMapper_Worker::pasteWithShiftIns()
     insertDown.ki.dwExtraInfo = VIRTUAL_KEY_SEND_MODIFIERS;
     SendInput(1, &insertDown, sizeof(INPUT));
 
-    // Step 3: Hold V key for configured time to ensure detection
+    // Step 3: Hold Insert key for configured time to ensure detection
     QThread::msleep(PASTE_KEY_HOLD_TIME_MS);
 
     // Step 4: Release Insert key
