@@ -123,9 +123,9 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>410</x>
+     <x>405</x>
      <y>240</y>
-     <width>91</width>
+     <width>121</width>
      <height>21</height>
     </rect>
    </property>
@@ -139,7 +139,7 @@
   <widget class="QSpinBox" name="burstreleaseSpinBox">
    <property name="geometry">
     <rect>
-     <x>505</x>
+     <x>530</x>
      <y>240</y>
      <width>85</width>
      <height>21</height>
@@ -231,7 +231,7 @@
     <rect>
      <x>270</x>
      <y>320</y>
-     <width>141</width>
+     <width>161</width>
      <height>21</height>
     </rect>
    </property>
@@ -717,7 +717,7 @@
   <widget class="QSpinBox" name="fixedVKeyCodeSpinBox">
    <property name="geometry">
     <rect>
-     <x>530</x>
+     <x>555</x>
      <y>280</y>
      <width>60</width>
      <height>21</height>
@@ -730,7 +730,7 @@
   <widget class="QLabel" name="fixedVKeyCodeLabel">
    <property name="geometry">
     <rect>
-     <x>415</x>
+     <x>440</x>
      <y>280</y>
      <width>111</width>
      <height>21</height>
@@ -846,6 +846,51 @@ Update</string>
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QComboBox" name="pasteTextModeComboBox">
+   <property name="geometry">
+    <rect>
+     <x>555</x>
+     <y>320</y>
+     <width>131</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="currentText">
+    <string>Shift+Insert</string>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <item>
+    <property name="text">
+     <string>Shift+Insert</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Ctrl+V</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QLabel" name="pasteTextModeLabel">
+   <property name="geometry">
+    <rect>
+     <x>440</x>
+     <y>320</y>
+     <width>111</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>PasteTextMode</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
   <zorder>burstCheckBox</zorder>
   <zorder>lockCheckBox</zorder>
   <zorder>passThroughCheckBox</zorder>
@@ -889,6 +934,8 @@ Update</string>
   <zorder>updateMappingInfoButton</zorder>
   <zorder>disableOriginalKeyUnlockCheckBox</zorder>
   <zorder>disableFnKeySwitchCheckBox</zorder>
+  <zorder>pasteTextModeComboBox</zorder>
+  <zorder>pasteTextModeLabel</zorder>
  </widget>
  <resources/>
  <connections/>

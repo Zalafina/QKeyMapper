@@ -71,6 +71,7 @@ typedef struct MAP_KEYDATA
     bool Unbreakable;
     bool PassThrough;
     int SendTiming;
+    int PasteTextMode;
     bool KeySeqHoldDown;
     int RepeatMode;
     int RepeatTimes;

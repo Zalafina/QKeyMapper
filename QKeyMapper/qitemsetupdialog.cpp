@@ -160,6 +160,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
     ui->fixedVKeyCodeLabel->setText(tr("FixedVKeyCode"));
+    ui->pasteTextModeLabel->setText(tr("PasteTextMode"));
 
     if (m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_MANUALEDIT) {
         ui->keyRecordEditModeButton->setText(tr("Capture"));
@@ -243,7 +244,9 @@ void QItemSetupDialog::resetFontSize()
     ui->crosshairSetupButton->setFont(customFont);
     // ui->itemNoteUpdateButton->setFont(customFont);
     ui->sendTimingLabel->setFont(customFont);
-    ui->sendTimingComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
+    ui->sendTimingComboBox->setFont(customFont);
+    ui->pasteTextModeLabel->setFont(customFont);
+    ui->pasteTextModeComboBox->setFont(customFont);
 
     if (m_KeyRecordDialog != Q_NULLPTR) {
         m_KeyRecordDialog->resetFontSize();
@@ -3384,4 +3387,20 @@ void QItemSetupDialog::updateMappingInfo_MappingKey_KeyUpFirst()
 void QItemSetupDialog::on_updateMappingInfoButton_clicked()
 {
     updateMappingInfoByOrder();
+}
+
+void QItemSetupDialog::on_pasteTextModeComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int pastetextmode_index = ui->pasteTextModeComboBox->currentIndex();
+    if (pastetextmode_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PasteTextMode) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PasteTextMode = pastetextmode_index;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PasteTextMode -> " << pastetextmode_index;
+#endif
+    }
 }

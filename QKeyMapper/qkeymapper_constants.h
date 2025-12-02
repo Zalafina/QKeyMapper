@@ -477,6 +477,9 @@ namespace QKeyMapperConstants {
     inline constexpr int SENDTIMING_KEYDOWN_AND_KEYUP  = 3;
     inline constexpr int SENDTIMING_NORMAL_AND_KEYUP   = 4;
 
+    inline constexpr int PASTETEXT_MODE_SHIFTINSERT     = 0;
+    inline constexpr int PASTETEXT_MODE_CTRLV           = 1;
+
     inline constexpr uint LOCK_STATE_LOCKOFF       = 0;
     inline constexpr uint LOCK_STATE_LOCKON        = 1;
     inline constexpr uint LOCK_STATE_LOCKON_PLUS   = 2;

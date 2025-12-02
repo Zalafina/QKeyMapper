@@ -141,6 +141,7 @@ private slots:
     void updateMappingInfo_MappingKey_KeyUpFirst();
     void updateMappingInfoByOrder(int update_order = QKeyMapperConstants::MAPPING_UPDATE_ORDER_DEFAULT);
     void on_updateMappingInfoButton_clicked();
+    void on_pasteTextModeComboBox_currentIndexChanged(int index);
 };
 
 class KeyStringLineEdit : public QLineEdit
