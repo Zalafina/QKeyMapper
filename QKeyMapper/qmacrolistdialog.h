@@ -106,8 +106,8 @@ protected:
 private slots:
     void on_addMacroButton_clicked();
     void on_clearButton_clicked();
+    void on_deleteMacroButton_clicked();
     void on_macroListBackupButton_clicked();
-    // void on_deleteMacroButton_clicked();
 
     // Slot for handling macro table item double click
     void macroTableItemDoubleClicked(QTableWidgetItem *item);

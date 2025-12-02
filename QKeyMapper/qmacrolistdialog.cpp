@@ -44,6 +44,7 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     ui->macroNoteLineEdit->setFont(customFont);
     ui->categoryLineEdit->setFont(customFont);
     ui->clearButton->setFont(customFont);
+    ui->deleteMacroButton->setFont(customFont);
     ui->macroListBackupButton->setFont(customFont);
 
     int scale = QKeyMapper::getInstance()->m_UI_Scale;
@@ -96,6 +97,7 @@ void QMacroListDialog::setUILanguage(int languageindex)
     ui->macroContentLabel->setText(tr("Macro"));
     ui->macroNoteLabel->setText(tr("Note"));
     ui->clearButton->setText(tr("Clear"));
+    ui->deleteMacroButton->setText(tr("Delete"));
     ui->addMacroButton->setText(tr("Add Macro"));
     ui->mapkeyLabel->setText(tr("MapKeys"));
     ui->categoryFilterLabel->setText(tr("Filter"));
@@ -422,6 +424,11 @@ void QMacroListDialog::on_clearButton_clicked()
     }
 }
 
+void QMacroListDialog::on_deleteMacroButton_clicked()
+{
+    deleteMacroSelectedItems();
+}
+
 void QMacroListDialog::on_macroListBackupButton_clicked()
 {
     // Calculate the starting position (to the right of the backup button)
@@ -743,13 +750,6 @@ void QMacroListDialog::importMacroListFromFile()
     qDebug().nospace() << "[importMacroListFromFile] Imported " << importedCount << " macros, selection range: " << importStartRow << " - " << importEndRow;
 #endif
 }
-
-#if 0
-void QMacroListDialog::on_deleteMacroButton_clicked()
-{
-    deleteMacroSelectedItems();
-}
-#endif
 
 void QMacroListDialog::addMacroToList()
 {

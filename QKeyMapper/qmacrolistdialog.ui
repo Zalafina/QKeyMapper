@@ -581,9 +581,9 @@
           <widget class="QComboBox" name="categoryFilterComboBox">
            <property name="geometry">
             <rect>
-             <x>300</x>
-             <y>40</y>
-             <width>141</width>
+             <x>76</x>
+             <y>80</y>
+             <width>151</width>
              <height>22</height>
             </rect>
            </property>
@@ -600,8 +600,8 @@
           <widget class="QLabel" name="categoryFilterLabel">
            <property name="geometry">
             <rect>
-             <x>234</x>
-             <y>40</y>
+             <x>10</x>
+             <y>80</y>
              <width>61</width>
              <height>22</height>
             </rect>
@@ -616,9 +616,9 @@
           <widget class="QPushButton" name="clearButton">
            <property name="geometry">
             <rect>
-             <x>300</x>
+             <x>290</x>
              <y>10</y>
-             <width>141</width>
+             <width>151</width>
              <height>22</height>
             </rect>
            </property>
@@ -635,7 +635,7 @@
           <widget class="QPushButton" name="macroListBackupButton">
            <property name="geometry">
             <rect>
-             <x>76</x>
+             <x>290</x>
              <y>80</y>
              <width>151</width>
              <height>22</height>
@@ -651,6 +651,36 @@
             <bool>false</bool>
            </property>
           </widget>
+          <widget class="QPushButton" name="deleteMacroButton">
+           <property name="geometry">
+            <rect>
+             <x>290</x>
+             <y>40</y>
+             <width>151</width>
+             <height>22</height>
+            </rect>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::FocusPolicy::NoFocus</enum>
+           </property>
+           <property name="text">
+            <string>Delete</string>
+           </property>
+           <property name="autoDefault">
+            <bool>false</bool>
+           </property>
+          </widget>
+          <zorder>mapList_SelectKeyboardButton</zorder>
+          <zorder>mapList_SelectFunctionButton</zorder>
+          <zorder>mapList_SelectGamepadButton</zorder>
+          <zorder>mapList_SelectMouseButton</zorder>
+          <zorder>MacroList_MappingKeyListComboBox</zorder>
+          <zorder>categoryFilterComboBox</zorder>
+          <zorder>categoryFilterLabel</zorder>
+          <zorder>clearButton</zorder>
+          <zorder>macroListBackupButton</zorder>
+          <zorder>mapkeyLabel</zorder>
+          <zorder>deleteMacroButton</zorder>
          </widget>
         </item>
         <item>
