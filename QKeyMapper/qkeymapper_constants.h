@@ -823,6 +823,12 @@ namespace QKeyMapperConstants {
     inline constexpr const char IGNOREWINDOWINFO_RULES[] = "IgnoreWindowInfo_Rules";
     inline constexpr const char MACROLIST_UNIVERSAL[] = "MacroList_Universal";
 
+    // MacroList for Export and Import
+    inline constexpr const char MACROLIST_EXPORT[] = "MacroList_Export";
+    inline constexpr const char MACROLIST_EXPORT_DEFAULT_FILENAME[] = "macrolist_export.ini";
+    inline constexpr const char MACROLIST_BACKUP_ACTION_EXPORT[] = "MacroListBackupActionExport";
+    inline constexpr const char MACROLIST_BACKUP_ACTION_IMPORT[] = "MacroListBackupActionImport";
+
     // MacroList data field names for INI storage
     inline constexpr const char MACROLIST_FIELD_MACRONAME[] = "macroName";
     inline constexpr const char MACROLIST_FIELD_MACROCONTENT[] = "macroContent";

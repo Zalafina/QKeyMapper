@@ -7,6 +7,8 @@
 
 #include "qkeymapper_worker.h"
 
+class ActionPopup;
+
 namespace Ui {
 class QMacroListDialog;
 }
@@ -120,10 +122,14 @@ private slots:
 private slots:
     void addMacroToList(void);
 
+    // Slots for MacroList backup popup actions
+    void macroListBackupActionTriggered(const QString &actionName);
+
 private:
     void initMacroListTabWidget(void);
     void initMacroListTable(MacroListDataTableWidget *macroDataTable);
     void initKeyListComboBoxes(void);
+    void initMacroListBackupActionPopup(void);
     void resizeMacroListTabWidgetColumnWidth(void);
     void resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable);
     void updateMacroDataTableConnection(MacroListDataTableWidget *macroDataTable);
@@ -132,9 +138,14 @@ private:
     MacroListDataTableWidget* getCurrentMacroDataTable(void);
     OrderedMap<QString, MappingMacroData>* getCurrentMacroDataList(void);
 
+    // MacroList export and import methods
+    void exportMacroListToFile(void);
+    void importMacroListFromFile(void);
+
 private:
     static QMacroListDialog *m_instance;
     Ui::QMacroListDialog *ui;
+    ActionPopup *m_MacroListBackupActionPopup = Q_NULLPTR;
 };
 
 #endif // QMACROLISTDIALOG_H

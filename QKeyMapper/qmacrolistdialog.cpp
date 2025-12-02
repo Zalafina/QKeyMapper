@@ -74,6 +74,8 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     QObject::connect(ui->categoryLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
     QObject::connect(ui->macroNoteLineEdit, &QLineEdit::returnPressed, this, &QMacroListDialog::addMacroToList);
 
+    initMacroListBackupActionPopup();
+
     if (QItemSetupDialog::getInstance() != Q_NULLPTR) {
         QItemSetupDialog::getInstance()->syncConnectMappingKeySelectButtons();
     }
@@ -111,6 +113,14 @@ void QMacroListDialog::setUILanguage(int languageindex)
                                                                             << tr("Macro")
                                                                             << tr("Category")
                                                                             << tr("Note"));
+
+    // Update MacroList backup action popup button texts
+    if (m_MacroListBackupActionPopup != Q_NULLPTR) {
+        QStringList macroListBackupButtonTextList;
+        macroListBackupButtonTextList.append(tr("MacroList Export"));
+        macroListBackupButtonTextList.append(tr("MacroList Import"));
+        m_MacroListBackupActionPopup->setButtonTexts(macroListBackupButtonTextList);
+    }
 
     resizeMacroListTabWidgetColumnWidth();
 }
@@ -414,7 +424,315 @@ void QMacroListDialog::on_clearButton_clicked()
 
 void QMacroListDialog::on_macroListBackupButton_clicked()
 {
+    // Calculate the starting position (to the right of the backup button)
+    QPoint globalPos = ui->macroListBackupButton->mapToGlobal(QPoint(ui->macroListBackupButton->width(), 0));
+    int popupWidth = 140;
+    int popupHeight = 80;
 
+    // Use opacity animation to show the popup
+    QRect finalRect(globalPos.x(), globalPos.y(), popupWidth, popupHeight);
+    m_MacroListBackupActionPopup->setGeometry(finalRect);
+    m_MacroListBackupActionPopup->setWindowOpacity(0.0); // Start transparent
+    m_MacroListBackupActionPopup->show();
+
+    // Fade-in animation
+    QPropertyAnimation *opacityAnim = new QPropertyAnimation(m_MacroListBackupActionPopup, "windowOpacity");
+    opacityAnim->setDuration(500);
+    opacityAnim->setStartValue(0.0);
+    opacityAnim->setEndValue(1.0);
+    opacityAnim->setEasingCurve(QEasingCurve::OutQuart);
+    opacityAnim->start(QAbstractAnimation::DeleteWhenStopped);
+}
+
+void QMacroListDialog::initMacroListBackupActionPopup()
+{
+    QStringList macroListBackupActionList;
+    macroListBackupActionList.append(MACROLIST_BACKUP_ACTION_EXPORT);
+    macroListBackupActionList.append(MACROLIST_BACKUP_ACTION_IMPORT);
+
+    m_MacroListBackupActionPopup = new ActionPopup(macroListBackupActionList, this);
+
+    QStringList macroListBackupButtonTextList;
+    macroListBackupButtonTextList.append(tr("MacroList Export"));
+    macroListBackupButtonTextList.append(tr("MacroList Import"));
+    m_MacroListBackupActionPopup->setButtonTexts(macroListBackupButtonTextList);
+
+    QObject::connect(m_MacroListBackupActionPopup, &ActionPopup::actionTriggered,
+                     this, &QMacroListDialog::macroListBackupActionTriggered);
+}
+
+void QMacroListDialog::macroListBackupActionTriggered(const QString &actionName)
+{
+    if (actionName == MACROLIST_BACKUP_ACTION_EXPORT) {
+        exportMacroListToFile();
+    }
+    else if (actionName == MACROLIST_BACKUP_ACTION_IMPORT) {
+        importMacroListFromFile();
+    }
+}
+
+void QMacroListDialog::exportMacroListToFile()
+{
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+
+    if (!macroDataTable || !macroDataList) {
+        return;
+    }
+
+    // Check if any rows are selected
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+        // No selection, show warning message
+        QString popupMessage = tr("Please select the macro items to export first.");
+        QString popupMessageColor = FAILURE_COLOR;
+        int popupMessageDisplayTime = 3000;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
+    // Get the selection range (ContiguousSelection mode ensures only one range)
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+    int selectedCount = bottomRow - topRow + 1;
+
+    // Collect selected macro data
+    OrderedMap<QString, MappingMacroData> exportMacroList;
+    for (int row = topRow; row <= bottomRow; ++row) {
+        QTableWidgetItem *nameItem = macroDataTable->item(row, MACRO_NAME_COLUMN);
+        if (nameItem) {
+            QString macroName = nameItem->text();
+            if (macroDataList->contains(macroName)) {
+                exportMacroList[macroName] = macroDataList->value(macroName);
+            }
+        }
+    }
+
+    if (exportMacroList.isEmpty()) {
+        return;
+    }
+
+    // Get current tab name for dialog title
+    QString tabName;
+    if (ui->macroListTabWidget->currentWidget() == ui->macrolist) {
+        tabName = tr("Macro");
+    }
+    else {
+        tabName = tr("Universal Macro");
+    }
+
+    QString default_filename = MACROLIST_EXPORT_DEFAULT_FILENAME;
+    QString filter = "INI files (*.ini)";
+    QString caption_string = tr("Export macro list : ") + tabName;
+
+    QString export_filename = QFileDialog::getSaveFileName(this,
+                                                           caption_string,
+                                                           default_filename,
+                                                           filter);
+    if (export_filename.isEmpty()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[exportMacroListToFile] export_filename: " << export_filename << ", count: " << selectedCount;
+#endif
+
+    // Save to INI file
+    QSettings exportFile(export_filename, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    exportFile.setIniCodec("UTF-8");
+#endif
+
+    // Convert OrderedMap to QVariantList for INI storage
+    QVariantList macroList;
+    for (auto it = exportMacroList.begin(); it != exportMacroList.end(); ++it) {
+        QVariantMap macroMap;
+        macroMap[MACROLIST_FIELD_MACRONAME] = it.key();
+        macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
+        macroMap[MACROLIST_FIELD_MACROCATEGORY] = it.value().Category;
+        macroMap[MACROLIST_FIELD_MACRONOTE] = it.value().Note;
+        macroList.append(macroMap);
+    }
+
+    exportFile.setValue(MACROLIST_EXPORT, macroList);
+    exportFile.sync();
+
+    // Show success popup message
+    QString popupMessage = tr("Successfully exported %1 macro(s).").arg(selectedCount);
+    QString popupMessageColor = SUCCESS_COLOR;
+    int popupMessageDisplayTime = 3000;
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+}
+
+void QMacroListDialog::importMacroListFromFile()
+{
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+
+    if (!macroDataTable || !macroDataList) {
+        return;
+    }
+
+    // Get current tab name for dialog title
+    QString tabName;
+    if (ui->macroListTabWidget->currentWidget() == ui->macrolist) {
+        tabName = tr("Macro");
+    }
+    else {
+        tabName = tr("Universal Macro");
+    }
+
+    QString filter = "INI files (*.ini)";
+    QString caption_string = tr("Import macro list : ") + tabName;
+
+    QString import_filename = QFileDialog::getOpenFileName(this,
+                                                           caption_string,
+                                                           QString(),
+                                                           filter);
+    if (import_filename.isEmpty()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[importMacroListFromFile] import_filename: " << import_filename;
+#endif
+
+    // Load from INI file
+    QSettings importFile(import_filename, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    importFile.setIniCodec("UTF-8");
+#endif
+
+    if (!importFile.contains(MACROLIST_EXPORT)) {
+        // No MacroList_Export key found in file
+        QString popupMessage = tr("No macro data found in the selected file.");
+        QString popupMessageColor = FAILURE_COLOR;
+        int popupMessageDisplayTime = 3000;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
+    // Load macro list from INI file
+    QVariant macroListVar = importFile.value(MACROLIST_EXPORT);
+    if (!macroListVar.isValid() || !macroListVar.canConvert<QVariantList>()) {
+        QString popupMessage = tr("Invalid macro data format in the selected file.");
+        QString popupMessageColor = FAILURE_COLOR;
+        int popupMessageDisplayTime = 3000;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
+    // Parse imported macro data
+    OrderedMap<QString, MappingMacroData> importMacroList;
+    QVariantList macroList = macroListVar.toList();
+    for (const QVariant &macroVar : std::as_const(macroList)) {
+        if (!macroVar.canConvert<QVariantMap>()) {
+            continue;
+        }
+
+        QVariantMap macroMap = macroVar.toMap();
+
+        QString macroName = macroMap.value(MACROLIST_FIELD_MACRONAME).toString();
+        QString macroContent = macroMap.value(MACROLIST_FIELD_MACROCONTENT).toString();
+        QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
+        QString note = macroMap.value(MACROLIST_FIELD_MACRONOTE).toString();
+
+        if (!macroName.isEmpty()) {
+            importMacroList[macroName] = MappingMacroData{ macroContent, category, note };
+        }
+    }
+
+    if (importMacroList.isEmpty()) {
+        QString popupMessage = tr("No valid macro data found in the selected file.");
+        QString popupMessageColor = FAILURE_COLOR;
+        int popupMessageDisplayTime = 3000;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
+    // Check for duplicate macro names
+    QStringList duplicateNames;
+    for (auto it = importMacroList.begin(); it != importMacroList.end(); ++it) {
+        if (macroDataList->contains(it.key())) {
+            duplicateNames.append(it.key());
+        }
+    }
+
+    bool overwriteDuplicates = false;
+    if (!duplicateNames.isEmpty()) {
+        // Ask user whether to overwrite duplicates
+        QString message = tr("The following macro name(s) already exist:\n%1\n\nDo you want to overwrite them?")
+                          .arg(duplicateNames.join(", "));
+        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+                                                                  QMessageBox::Yes | QMessageBox::No,
+                                                                  QMessageBox::No);
+        overwriteDuplicates = (reply == QMessageBox::Yes);
+    }
+
+    // Record the starting row for new items (for selection after import)
+    // int originalRowCount = macroDataList->size();
+    int importedCount = 0;
+
+    // Import macro data
+    for (auto it = importMacroList.begin(); it != importMacroList.end(); ++it) {
+        const QString &macroName = it.key();
+        const MappingMacroData &macroData = it.value();
+
+        if (macroDataList->contains(macroName)) {
+            if (overwriteDuplicates) {
+                // Use insert() to move existing key to end and update value
+                macroDataList->insert(macroName, macroData);
+                ++importedCount;
+            }
+            // If not overwriting, skip this macro
+        }
+        else {
+            // New macro, insert at end
+            macroDataList->insert(macroName, macroData);
+            ++importedCount;
+        }
+    }
+
+    if (importedCount == 0) {
+        QString popupMessage = tr("No new macro data was imported.");
+        QString popupMessageColor = FAILURE_COLOR;
+        int popupMessageDisplayTime = 3000;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
+    }
+
+    // Refresh the table display
+    if (ui->macroListTabWidget->currentWidget() == ui->macrolist) {
+        refreshMacroListTabWidget(ui->macrolistTable, QKeyMapper::s_MappingMacroList);
+    }
+    else {
+        refreshMacroListTabWidget(ui->universalmacrolistTable, QKeyMapper::s_UniversalMappingMacroList);
+    }
+
+    // Calculate the new row range for imported items
+    int newRowCount = macroDataList->size();
+    int importStartRow = newRowCount - importedCount;
+    int importEndRow = newRowCount - 1;
+
+    // Select the imported rows to highlight them
+    if (importStartRow >= 0 && importStartRow < macroDataTable->rowCount()) {
+        macroDataTable->clearSelection();
+        QTableWidgetSelectionRange newSelection(importStartRow, 0, importEndRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+        macroDataTable->setRangeSelected(newSelection, true);
+        // Scroll to make the imported items visible
+        macroDataTable->scrollToItem(macroDataTable->item(importStartRow, 0));
+    }
+
+    // Show success popup message
+    QString popupMessage = tr("Successfully imported %1 macro(s).").arg(importedCount);
+    QString popupMessageColor = SUCCESS_COLOR;
+    int popupMessageDisplayTime = 3000;
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[importMacroListFromFile] Imported " << importedCount << " macros, selection range: " << importStartRow << " - " << importEndRow;
+#endif
 }
 
 #if 0

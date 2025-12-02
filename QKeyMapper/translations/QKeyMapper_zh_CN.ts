@@ -234,18 +234,18 @@
 <context>
     <name>MacroListDataTableWidget</name>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="728"/>
+        <location filename="../qmacrolistdialog.cpp" line="1060"/>
         <source>All</source>
         <translation>(全选)</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="740"/>
-        <location filename="../qmacrolistdialog.cpp" line="814"/>
+        <location filename="../qmacrolistdialog.cpp" line="1072"/>
+        <location filename="../qmacrolistdialog.cpp" line="1146"/>
         <source>Blank</source>
         <translation>(空白)</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="782"/>
+        <location filename="../qmacrolistdialog.cpp" line="1114"/>
         <source>Cannot move items while the macro table is filtered!</source>
         <translation>宏列表处于筛选显示状态时，无法移动项目！</translation>
     </message>
@@ -2843,152 +2843,221 @@ Do you confirm to continue installing Interception driver?</source>
     <name>QMacroListDialog</name>
     <message>
         <location filename="../qmacrolistdialog.ui" line="20"/>
-        <location filename="../qmacrolistdialog.cpp" line="88"/>
+        <location filename="../qmacrolistdialog.cpp" line="92"/>
         <source>Mapping Macro List</source>
         <translation>映射宏列表</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="48"/>
         <location filename="../qmacrolistdialog.ui" line="267"/>
-        <location filename="../qmacrolistdialog.cpp" line="92"/>
-        <location filename="../qmacrolistdialog.cpp" line="101"/>
+        <location filename="../qmacrolistdialog.cpp" line="96"/>
         <location filename="../qmacrolistdialog.cpp" line="105"/>
         <location filename="../qmacrolistdialog.cpp" line="109"/>
-        <location filename="../qmacrolistdialog.cpp" line="474"/>
-        <location filename="../qmacrolistdialog.cpp" line="560"/>
+        <location filename="../qmacrolistdialog.cpp" line="113"/>
+        <location filename="../qmacrolistdialog.cpp" line="519"/>
+        <location filename="../qmacrolistdialog.cpp" line="580"/>
+        <location filename="../qmacrolistdialog.cpp" line="806"/>
+        <location filename="../qmacrolistdialog.cpp" line="892"/>
         <source>Macro</source>
         <translation>宏</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="73"/>
-        <location filename="../qmacrolistdialog.cpp" line="102"/>
+        <location filename="../qmacrolistdialog.cpp" line="106"/>
+        <location filename="../qmacrolistdialog.cpp" line="522"/>
+        <location filename="../qmacrolistdialog.cpp" line="583"/>
         <source>Universal Macro</source>
         <translation>通用宏</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="160"/>
-        <location filename="../qmacrolistdialog.cpp" line="90"/>
-        <location filename="../qmacrolistdialog.cpp" line="104"/>
+        <location filename="../qmacrolistdialog.cpp" line="94"/>
         <location filename="../qmacrolistdialog.cpp" line="108"/>
-        <location filename="../qmacrolistdialog.cpp" line="559"/>
+        <location filename="../qmacrolistdialog.cpp" line="112"/>
+        <location filename="../qmacrolistdialog.cpp" line="891"/>
         <source>Name</source>
         <translation>宏名</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="321"/>
-        <location filename="../qmacrolistdialog.cpp" line="93"/>
-        <location filename="../qmacrolistdialog.cpp" line="107"/>
+        <location filename="../qmacrolistdialog.cpp" line="97"/>
         <location filename="../qmacrolistdialog.cpp" line="111"/>
-        <location filename="../qmacrolistdialog.cpp" line="562"/>
+        <location filename="../qmacrolistdialog.cpp" line="115"/>
+        <location filename="../qmacrolistdialog.cpp" line="894"/>
         <source>Note</source>
         <translation>备注</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="550"/>
-        <location filename="../qmacrolistdialog.cpp" line="96"/>
+        <location filename="../qmacrolistdialog.cpp" line="100"/>
         <source>MapKeys</source>
         <translation>映射按键</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="610"/>
-        <location filename="../qmacrolistdialog.cpp" line="97"/>
+        <location filename="../qmacrolistdialog.cpp" line="101"/>
         <source>Filter</source>
         <translation>分类显示</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="629"/>
-        <location filename="../qmacrolistdialog.cpp" line="94"/>
+        <location filename="../qmacrolistdialog.cpp" line="98"/>
         <source>Clear</source>
         <translation>清空</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="648"/>
-        <location filename="../qmacrolistdialog.cpp" line="98"/>
+        <location filename="../qmacrolistdialog.cpp" line="102"/>
         <source>MacroList Backup</source>
         <translation>宏列表备份</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="720"/>
-        <location filename="../qmacrolistdialog.cpp" line="95"/>
+        <location filename="../qmacrolistdialog.cpp" line="99"/>
         <source>Add Macro</source>
         <translation>添加宏</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="213"/>
-        <location filename="../qmacrolistdialog.cpp" line="91"/>
-        <location filename="../qmacrolistdialog.cpp" line="106"/>
+        <location filename="../qmacrolistdialog.cpp" line="95"/>
         <location filename="../qmacrolistdialog.cpp" line="110"/>
-        <location filename="../qmacrolistdialog.cpp" line="561"/>
+        <location filename="../qmacrolistdialog.cpp" line="114"/>
+        <location filename="../qmacrolistdialog.cpp" line="893"/>
         <source>Category</source>
         <translation>分类</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="294"/>
+        <location filename="../qmacrolistdialog.cpp" line="120"/>
+        <location filename="../qmacrolistdialog.cpp" line="456"/>
+        <source>MacroList Export</source>
+        <translation>宏列表导出</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="121"/>
+        <location filename="../qmacrolistdialog.cpp" line="457"/>
+        <source>MacroList Import</source>
+        <translation>宏列表导入</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="306"/>
         <source>All</source>
         <translation>(全选)</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="303"/>
-        <location filename="../qmacrolistdialog.cpp" line="316"/>
-        <location filename="../qmacrolistdialog.cpp" line="329"/>
+        <location filename="../qmacrolistdialog.cpp" line="315"/>
+        <location filename="../qmacrolistdialog.cpp" line="328"/>
+        <location filename="../qmacrolistdialog.cpp" line="341"/>
         <source>Blank</source>
         <translation>(空白)</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="396"/>
+        <location filename="../qmacrolistdialog.cpp" line="408"/>
         <source>Are you sure you want to clear the macro information fields?</source>
         <translation>请确认是否要清空宏信息编辑字段？</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="456"/>
+        <location filename="../qmacrolistdialog.cpp" line="487"/>
+        <source>Please select the macro items to export first.</source>
+        <translation>请先选择要导出的宏。</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="527"/>
+        <source>Export macro list : </source>
+        <translation>导出宏列表 : </translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="562"/>
+        <source>Successfully exported %1 macro(s).</source>
+        <translation>成功导出了 %1 个宏。</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="587"/>
+        <source>Import macro list : </source>
+        <translation>导入宏列表 : </translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="609"/>
+        <source>No macro data found in the selected file.</source>
+        <translation>所选文件中未找到宏数据。</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="619"/>
+        <source>Invalid macro data format in the selected file.</source>
+        <translation>所选文件中的宏数据格式无效。</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="647"/>
+        <source>No valid macro data found in the selected file.</source>
+        <translation>所选文件中未找到有效的宏数据。</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="665"/>
+        <source>The following macro name(s) already exist:
+%1
+
+Do you want to overwrite them?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="698"/>
+        <source>No new macro data was imported.</source>
+        <translation>未导入新的宏数据。</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="728"/>
+        <source>Successfully imported %1 macro(s).</source>
+        <translation>成功导入了 %1 个宏。</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="788"/>
         <source>Macro name cannot be empty.</source>
         <translation>宏名不能为空。</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="465"/>
+        <location filename="../qmacrolistdialog.cpp" line="797"/>
         <source>Macro name cannot contain &apos;)&apos; character.</source>
         <translation>宏名不能包含 “)” 字符。</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="482"/>
-        <location filename="../qmacrolistdialog.cpp" line="504"/>
+        <location filename="../qmacrolistdialog.cpp" line="814"/>
+        <location filename="../qmacrolistdialog.cpp" line="836"/>
         <source>Macro List</source>
         <translation>宏列表</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="482"/>
-        <location filename="../qmacrolistdialog.cpp" line="507"/>
+        <location filename="../qmacrolistdialog.cpp" line="814"/>
+        <location filename="../qmacrolistdialog.cpp" line="839"/>
         <source>Universal Macro List</source>
         <translation>通用宏列表</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="483"/>
+        <location filename="../qmacrolistdialog.cpp" line="815"/>
         <source>Macro name already exists. Replace existing macro?</source>
         <translation>宏名已存在。是否替换现有宏？</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="510"/>
+        <location filename="../qmacrolistdialog.cpp" line="842"/>
         <source>Macro &quot;%1&quot; updated successfully</source>
         <translation>宏 &quot;%1&quot; 更新成功</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="513"/>
+        <location filename="../qmacrolistdialog.cpp" line="845"/>
         <source>Macro &quot;%1&quot; added successfully</source>
         <translation>宏 &quot;%1&quot; 添加成功</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="1070"/>
-        <location filename="../qmacrolistdialog.cpp" line="1176"/>
+        <location filename="../qmacrolistdialog.cpp" line="1402"/>
+        <location filename="../qmacrolistdialog.cpp" line="1508"/>
         <source>Cannot move items while the macro table is filtered!</source>
         <translation>宏列表处于筛选显示状态时，无法移动项目！</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="1331"/>
+        <location filename="../qmacrolistdialog.cpp" line="1658"/>
         <source>Macro &quot;%1&quot; deleted successfully</source>
         <translation>宏 &quot;%1&quot; 已成功删除</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="1333"/>
+        <location filename="../qmacrolistdialog.cpp" line="1660"/>
         <source>%1 macros deleted successfully</source>
         <translation>已成功删除 %1 个宏</translation>
     </message>
