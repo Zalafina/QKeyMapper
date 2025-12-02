@@ -234,18 +234,18 @@
 <context>
     <name>MacroListDataTableWidget</name>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="1060"/>
+        <location filename="../qmacrolistdialog.cpp" line="1069"/>
         <source>All</source>
         <translation>(Select All)</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="1072"/>
-        <location filename="../qmacrolistdialog.cpp" line="1146"/>
+        <location filename="../qmacrolistdialog.cpp" line="1081"/>
+        <location filename="../qmacrolistdialog.cpp" line="1155"/>
         <source>Blank</source>
         <translation>(Blanks)</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="1114"/>
+        <location filename="../qmacrolistdialog.cpp" line="1123"/>
         <source>Cannot move items while the macro table is filtered!</source>
         <translation>Cannot move items while the macro list is filtered!</translation>
     </message>
@@ -2857,8 +2857,8 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <location filename="../qmacrolistdialog.cpp" line="113"/>
         <location filename="../qmacrolistdialog.cpp" line="519"/>
         <location filename="../qmacrolistdialog.cpp" line="580"/>
-        <location filename="../qmacrolistdialog.cpp" line="806"/>
-        <location filename="../qmacrolistdialog.cpp" line="892"/>
+        <location filename="../qmacrolistdialog.cpp" line="815"/>
+        <location filename="../qmacrolistdialog.cpp" line="901"/>
         <source>Macro</source>
         <translation>Macro</translation>
     </message>
@@ -2875,7 +2875,7 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <location filename="../qmacrolistdialog.cpp" line="94"/>
         <location filename="../qmacrolistdialog.cpp" line="108"/>
         <location filename="../qmacrolistdialog.cpp" line="112"/>
-        <location filename="../qmacrolistdialog.cpp" line="891"/>
+        <location filename="../qmacrolistdialog.cpp" line="900"/>
         <source>Name</source>
         <translation>Name</translation>
     </message>
@@ -2884,7 +2884,7 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <location filename="../qmacrolistdialog.cpp" line="97"/>
         <location filename="../qmacrolistdialog.cpp" line="111"/>
         <location filename="../qmacrolistdialog.cpp" line="115"/>
-        <location filename="../qmacrolistdialog.cpp" line="894"/>
+        <location filename="../qmacrolistdialog.cpp" line="903"/>
         <source>Note</source>
         <translation>Note</translation>
     </message>
@@ -2923,7 +2923,7 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <location filename="../qmacrolistdialog.cpp" line="95"/>
         <location filename="../qmacrolistdialog.cpp" line="110"/>
         <location filename="../qmacrolistdialog.cpp" line="114"/>
-        <location filename="../qmacrolistdialog.cpp" line="893"/>
+        <location filename="../qmacrolistdialog.cpp" line="902"/>
         <source>Category</source>
         <translation>Category</translation>
     </message>
@@ -2992,73 +2992,79 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <translation>No valid macro data found in the selected file.</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="665"/>
-        <source>The following macro name(s) already exist:
-%1
+        <location filename="../qmacrolistdialog.cpp" line="668"/>
+        <source>Macro name &quot;%1&quot; already exists.
 
-Do you want to overwrite them?</source>
-        <translation type="unfinished"></translation>
+Do you want to overwrite it?</source>
+        <translation></translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="698"/>
+        <location filename="../qmacrolistdialog.cpp" line="672"/>
+        <source>Macro name &quot;%1&quot; and %2 other(s) already exist.
+
+Do you want to overwrite them?</source>
+        <translation></translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="707"/>
         <source>No new macro data was imported.</source>
         <translation>No new macro data was imported.</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="728"/>
+        <location filename="../qmacrolistdialog.cpp" line="737"/>
         <source>Successfully imported %1 macro(s).</source>
         <translation>Successfully imported %1 macro(s).</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="788"/>
+        <location filename="../qmacrolistdialog.cpp" line="797"/>
         <source>Macro name cannot be empty.</source>
         <translation>Macro name cannot be empty.</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="797"/>
+        <location filename="../qmacrolistdialog.cpp" line="806"/>
         <source>Macro name cannot contain &apos;)&apos; character.</source>
         <translation>Macro name cannot contain &apos;)&apos; character.</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="814"/>
-        <location filename="../qmacrolistdialog.cpp" line="836"/>
+        <location filename="../qmacrolistdialog.cpp" line="823"/>
+        <location filename="../qmacrolistdialog.cpp" line="845"/>
         <source>Macro List</source>
         <translation>Macro List</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="814"/>
-        <location filename="../qmacrolistdialog.cpp" line="839"/>
+        <location filename="../qmacrolistdialog.cpp" line="823"/>
+        <location filename="../qmacrolistdialog.cpp" line="848"/>
         <source>Universal Macro List</source>
         <translation>Universal Macro List</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="815"/>
+        <location filename="../qmacrolistdialog.cpp" line="824"/>
         <source>Macro name already exists. Replace existing macro?</source>
         <translation>Macro name already exists. Replace existing macro?</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="842"/>
+        <location filename="../qmacrolistdialog.cpp" line="851"/>
         <source>Macro &quot;%1&quot; updated successfully</source>
         <translation>Macro &quot;%1&quot; updated successfully</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="845"/>
+        <location filename="../qmacrolistdialog.cpp" line="854"/>
         <source>Macro &quot;%1&quot; added successfully</source>
         <translation>Macro &quot;%1&quot; added successfully</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="1402"/>
-        <location filename="../qmacrolistdialog.cpp" line="1508"/>
+        <location filename="../qmacrolistdialog.cpp" line="1411"/>
+        <location filename="../qmacrolistdialog.cpp" line="1517"/>
         <source>Cannot move items while the macro table is filtered!</source>
         <translation>Cannot move items while the macro list is filtered!</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="1658"/>
+        <location filename="../qmacrolistdialog.cpp" line="1667"/>
         <source>Macro &quot;%1&quot; deleted successfully</source>
         <translation>Macro &quot;%1&quot; deleted successfully</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="1660"/>
+        <location filename="../qmacrolistdialog.cpp" line="1669"/>
         <source>%1 macros deleted successfully</source>
         <translation>%1 macros deleted successfully</translation>
     </message>

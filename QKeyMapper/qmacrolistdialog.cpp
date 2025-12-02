@@ -662,8 +662,17 @@ void QMacroListDialog::importMacroListFromFile()
     bool overwriteDuplicates = false;
     if (!duplicateNames.isEmpty()) {
         // Ask user whether to overwrite duplicates
-        QString message = tr("The following macro name(s) already exist:\n%1\n\nDo you want to overwrite them?")
-                          .arg(duplicateNames.join(", "));
+        // Show only the first duplicate name and total count to keep the message concise
+        QString message;
+        if (duplicateNames.size() == 1) {
+            message = tr("Macro name \"%1\" already exists.\n\nDo you want to overwrite it?")
+                      .arg(duplicateNames.first());
+        }
+        else {
+            message = tr("Macro name \"%1\" and %2 other(s) already exist.\n\nDo you want to overwrite them?")
+                      .arg(duplicateNames.first())
+                      .arg(duplicateNames.size() - 1);
+        }
         QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
                                                                   QMessageBox::Yes | QMessageBox::No,
                                                                   QMessageBox::No);
