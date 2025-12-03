@@ -2920,8 +2920,12 @@ Interceptionドライバのインストールを続行してもよろしいで�
     <message>
         <location filename="../qmacrolistdialog.ui" line="629"/>
         <location filename="../qmacrolistdialog.cpp" line="99"/>
+        <source>Clear Editing</source>
+        <translation>編集エリアをクリア</translation>
+    </message>
+    <message>
         <source>Clear</source>
-        <translation>クリア</translation>
+        <translation type="vanished">クリア</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="648"/>

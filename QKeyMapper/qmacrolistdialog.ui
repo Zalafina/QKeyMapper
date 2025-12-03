@@ -626,7 +626,7 @@
             <enum>Qt::FocusPolicy::NoFocus</enum>
            </property>
            <property name="text">
-            <string>Clear</string>
+            <string>Clear Editing</string>
            </property>
            <property name="autoDefault">
             <bool>false</bool>

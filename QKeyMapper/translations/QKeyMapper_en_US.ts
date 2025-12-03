@@ -2920,8 +2920,12 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
     <message>
         <location filename="../qmacrolistdialog.ui" line="629"/>
         <location filename="../qmacrolistdialog.cpp" line="99"/>
+        <source>Clear Editing</source>
+        <translation>Clear Editing</translation>
+    </message>
+    <message>
         <source>Clear</source>
-        <translation>Clear</translation>
+        <translation type="vanished">Clear</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="648"/>

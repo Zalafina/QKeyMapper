@@ -2919,8 +2919,12 @@ Do you confirm to continue installing Interception driver?</source>
     <message>
         <location filename="../qmacrolistdialog.ui" line="629"/>
         <location filename="../qmacrolistdialog.cpp" line="99"/>
+        <source>Clear Editing</source>
+        <translation>清空编辑区域</translation>
+    </message>
+    <message>
         <source>Clear</source>
-        <translation>清空</translation>
+        <translation type="vanished">清空</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.ui" line="648"/>

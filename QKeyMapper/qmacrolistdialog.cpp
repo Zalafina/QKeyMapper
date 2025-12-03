@@ -96,7 +96,7 @@ void QMacroListDialog::setUILanguage(int languageindex)
     ui->catetoryLabel->setText(tr("Category"));
     ui->macroContentLabel->setText(tr("Macro"));
     ui->macroNoteLabel->setText(tr("Note"));
-    ui->clearButton->setText(tr("Clear"));
+    ui->clearButton->setText(tr("Clear Editing"));
     ui->deleteMacroButton->setText(tr("Delete"));
     ui->addMacroButton->setText(tr("Add Macro"));
     ui->mapkeyLabel->setText(tr("MapKeys"));
