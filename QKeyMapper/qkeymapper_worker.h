@@ -113,6 +113,7 @@ typedef struct MAP_KEYDATA
     , Unbreakable(false)
     , PassThrough(false)
     , SendTiming(QKeyMapperConstants::SENDTIMING_NORMAL)
+    , PasteTextMode(QKeyMapperConstants::PASTETEXT_MODE_SHIFTINSERT)
     , KeySeqHoldDown(false)
     , RepeatMode(QKeyMapperConstants::REPEAT_MODE_NONE)
     , RepeatTimes(QKeyMapperConstants::REPEAT_TIMES_DEFAULT)
@@ -137,7 +138,7 @@ typedef struct MAP_KEYDATA
                 bool lock, bool mappingkeys_unlock, bool disable_originalkeyunlock, bool disable_fnkeyswitch,
                 bool postmappingkey, int fixedvkeycode,
                 bool checkcombkeyorder, bool unbreakable, bool passthrough,
-                int sendtiming, bool keyseqholddown,
+                int sendtiming, int pastetextmode, bool keyseqholddown,
                 int repeat_mode, int repeat_times,
                 QColor crosshair_centercolor, int crosshair_centersize, int crosshair_centeropacity,
                 QColor crosshair_crosshaircolor, int crosshair_crosshairwidth, int crosshair_crosshairlength, int crosshair_crosshairopacity,
@@ -175,6 +176,7 @@ typedef struct MAP_KEYDATA
         Unbreakable = unbreakable;
         PassThrough = passthrough;
         SendTiming = sendtiming;
+        PasteTextMode = pastetextmode;
         KeySeqHoldDown = keyseqholddown;
         RepeatMode = repeat_mode;
         RepeatTimes = repeat_times;
@@ -214,6 +216,7 @@ typedef struct MAP_KEYDATA
                 && (Unbreakable == other.Unbreakable)
                 && (PassThrough == other.PassThrough)
                 && (SendTiming == other.SendTiming)
+                && (PasteTextMode == other.PasteTextMode)
                 && (KeySeqHoldDown == other.KeySeqHoldDown)
                 && (RepeatMode == other.RepeatMode)
                 && (RepeatTimes == other.RepeatTimes)
@@ -258,6 +261,7 @@ typedef struct MAP_KEYDATA
                         << ", Unbreakable:" << data.Unbreakable
                         << ", PassThrough:" << data.PassThrough
                         << ", SendTiming:" << data.SendTiming
+                        << ", PasteTextMode:" << data.PasteTextMode
                         << ", KeySeqHoldDown:" << data.KeySeqHoldDown
                         << ", RepeatMode:" << data.RepeatMode
                         << ", RepeatTimes:" << data.RepeatTimes
@@ -761,7 +765,7 @@ public:
     void postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown);
     void sendUnicodeChar(wchar_t aChar);
     void sendText(HWND window_hwnd, const QString& text);
-    void pasteText(HWND window_hwnd, const QString& text);
+    void pasteText(HWND window_hwnd, const QString& text, int mode = QKeyMapperConstants::PASTETEXT_MODE_SHIFTINSERT);
     void sendWindowMousePointClick(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));
     void sendWindowMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint = QPoint(-1, -1));
     void postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint = QPoint(-1, -1));

@@ -1323,6 +1323,14 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->postMappingKeyCheckBox->setEnabled(true);
         }
 
+        /* Load PasteTextMode State */
+        if (PASTETEXT_MODE_CTRLV == keymapdata.PasteTextMode) {
+            ui->pasteTextModeComboBox->setCurrentIndex(PASTETEXT_MODE_CTRLV);
+        }
+        else {
+            ui->pasteTextModeComboBox->setCurrentIndex(PASTETEXT_MODE_SHIFTINSERT);
+        }
+
         /* Load SendTiming State */
         if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
@@ -1786,6 +1794,14 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->postMappingKeyCheckBox->setEnabled(true);
         }
 
+        /* Load PasteTextMode State */
+        if (PASTETEXT_MODE_CTRLV == keymapdata.PasteTextMode) {
+            ui->pasteTextModeComboBox->setCurrentIndex(PASTETEXT_MODE_CTRLV);
+        }
+        else {
+            ui->pasteTextModeComboBox->setCurrentIndex(PASTETEXT_MODE_SHIFTINSERT);
+        }
+
         /* Load SendTiming State */
         if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
@@ -2131,6 +2147,14 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->postMappingKeyCheckBox->setEnabled(true);
         }
 
+        /* Load PasteTextMode State */
+        if (PASTETEXT_MODE_CTRLV == keymapdata.PasteTextMode) {
+            ui->pasteTextModeComboBox->setCurrentIndex(PASTETEXT_MODE_CTRLV);
+        }
+        else {
+            ui->pasteTextModeComboBox->setCurrentIndex(PASTETEXT_MODE_SHIFTINSERT);
+        }
+
         /* Load SendTiming State */
         if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
             ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_KEYDOWN);
@@ -2436,6 +2460,14 @@ void QItemSetupDialog::refreshAllRelatedUI()
     }
     else {
         ui->postMappingKeyCheckBox->setEnabled(true);
+    }
+
+    /* Load PasteTextMode State */
+    if (PASTETEXT_MODE_CTRLV == keymapdata.PasteTextMode) {
+        ui->pasteTextModeComboBox->setCurrentIndex(PASTETEXT_MODE_CTRLV);
+    }
+    else {
+        ui->pasteTextModeComboBox->setCurrentIndex(PASTETEXT_MODE_SHIFTINSERT);
     }
 
     /* Load SendTiming State */
@@ -2929,6 +2961,22 @@ void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)
     refreshMappingKeyRelatedUI();
 }
 
+void QItemSetupDialog::on_pasteTextModeComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int pastetextmode_index = ui->pasteTextModeComboBox->currentIndex();
+    if (pastetextmode_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PasteTextMode) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PasteTextMode = pastetextmode_index;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PasteTextMode -> " << pastetextmode_index;
+#endif
+    }
+}
+
 void QItemSetupDialog::on_checkCombKeyOrderCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
@@ -3387,20 +3435,4 @@ void QItemSetupDialog::updateMappingInfo_MappingKey_KeyUpFirst()
 void QItemSetupDialog::on_updateMappingInfoButton_clicked()
 {
     updateMappingInfoByOrder();
-}
-
-void QItemSetupDialog::on_pasteTextModeComboBox_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    int pastetextmode_index = ui->pasteTextModeComboBox->currentIndex();
-    if (pastetextmode_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PasteTextMode) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PasteTextMode = pastetextmode_index;
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PasteTextMode -> " << pastetextmode_index;
-#endif
-    }
 }

@@ -894,6 +894,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_UNBREAKABLE[] = "KeyMapData_Unbreakable";
     inline constexpr const char KEYMAPDATA_PASSTHROUGH[] = "KeyMapData_PassThrough";
     inline constexpr const char KEYMAPDATA_SENDTIMING[] = "KeyMapData_SendTiming";
+    inline constexpr const char KEYMAPDATA_PASTETEXTMODE[] = "KeyMapData_PasteTextMode";
     inline constexpr const char KEYMAPDATA_KEYSEQHOLDDOWN[] = "KeyMapData_KeySeqHoldDown";
     inline constexpr const char KEYMAPDATA_BURSTPRESS_TIME[] = "KeyMapData_BurstPressTime";
     inline constexpr const char KEYMAPDATA_BURSTRELEASE_TIME[] = "KeyMapData_BurstReleaseTime";
@@ -1221,6 +1222,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char SENDTIMING_STR_KEYUP[]                = "KEYUP";
     inline constexpr const char SENDTIMING_STR_KEYDOWN_AND_KEYUP[]    = "KEYDOWN_AND_KEYUP";
     inline constexpr const char SENDTIMING_STR_NORMAL_AND_KEYUP[]     = "NORMAL_AND_KEYUP";
+
+    inline constexpr const char PASTETEXT_MODE_STR_SHIFTINSERT[]    = "SHIFT_INSERT";
+    inline constexpr const char PASTETEXT_MODE_STR_CTRLV[]          = "CTRL_V";
 
     inline constexpr const char FUNCTION_KEY_NONE[]  = "None";
     inline constexpr int FUNCTION_KEY_NONE_INDEX = 0;

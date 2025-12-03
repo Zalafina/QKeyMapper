@@ -115,6 +115,7 @@ private slots:
     void on_burstCheckBox_stateChanged(int state);
     void on_lockCheckBox_stateChanged(int state);
     void on_sendTimingComboBox_currentIndexChanged(int index);
+    void on_pasteTextModeComboBox_currentIndexChanged(int index);
     void on_checkCombKeyOrderCheckBox_stateChanged(int state);
     void on_passThroughCheckBox_stateChanged(int state);
     void on_keySeqHoldDownCheckBox_stateChanged(int state);
@@ -141,7 +142,6 @@ private slots:
     void updateMappingInfo_MappingKey_KeyUpFirst();
     void updateMappingInfoByOrder(int update_order = QKeyMapperConstants::MAPPING_UPDATE_ORDER_DEFAULT);
     void on_updateMappingInfoButton_clicked();
-    void on_pasteTextModeComboBox_currentIndexChanged(int index);
 };
 
 class KeyStringLineEdit : public QLineEdit

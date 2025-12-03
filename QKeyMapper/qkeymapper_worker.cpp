@@ -754,7 +754,7 @@ void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
     }
 }
 
-void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
+void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mode)
 {
     if (text.isEmpty()) {
         return;
@@ -908,7 +908,12 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
             const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier;
             releaseKeyboardModifiersDirect(modifiers_arg);
 
-            pasteWithShiftIns();
+            if (mode == PASTETEXT_MODE_CTRLV) {
+                pasteWithCtrlV();
+            }
+            else {
+                pasteWithShiftIns();
+            }
         }
     }
     else {
@@ -920,7 +925,12 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text)
         const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier;
         releaseKeyboardModifiersDirect(modifiers_arg);
 
-        pasteWithShiftIns();
+        if (mode == PASTETEXT_MODE_CTRLV) {
+            pasteWithCtrlV();
+        }
+        else {
+            pasteWithShiftIns();
+        }
     }
 
     // Brief wait to ensure target application has time to read clipboard
@@ -1875,6 +1885,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
     bool postmappingkey = false;
     int fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
+    int pastetextmode = PASTETEXT_MODE_SHIFTINSERT;
 
     // Use saved mapping table pointer to avoid array bounds issues during tab switching
     if (rowindex >= 0 && rowindex < keyMappingDataList->size()) {
@@ -1882,6 +1893,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         fixedvkeycode = keyMappingDataList->at(rowindex).FixedVKeyCode;
         if (fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
             fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
+        }
+        if (keyMappingDataList->at(rowindex).PasteTextMode == PASTETEXT_MODE_CTRLV) {
+            pastetextmode = PASTETEXT_MODE_CTRLV;
         }
     }
 
@@ -2617,7 +2631,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                     // Use different method based on function name
                     if (functionName == "PasteText") {
-                        pasteText(QKeyMapper::s_CurrentMappingHWND, text);
+                        pasteText(QKeyMapper::s_CurrentMappingHWND, text, pastetextmode);
                     }
                     else {
                         const Qt::KeyboardModifiers modifiers_arg = Qt::ControlModifier;
