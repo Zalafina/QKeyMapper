@@ -936,7 +936,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
     // Brief wait to ensure target application has time to read clipboard
     // Some applications handle paste asynchronously
     // 50ms is sufficient for most cases and much faster than original 100ms
-    QThread::msleep(100);
+    QThread::msleep(PASTETEXT_RESTORE_WAIT_TIME_MS);
 
     // Restore original clipboard content with verification and retry mechanism
     if (hasOriginalData && hOriginalDataCopy != NULL) {

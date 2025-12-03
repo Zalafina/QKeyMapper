@@ -1124,6 +1124,8 @@ namespace QKeyMapperConstants {
     inline constexpr int PASTE_MODIFIER_KEY_HOLD_TIME_MS = 100;
     inline constexpr int PASTE_KEY_HOLD_TIME_MS = 50;
 
+    inline constexpr int PASTETEXT_RESTORE_WAIT_TIME_MS = 100;
+
     // Repeat function limits
     inline constexpr int REPEAT_COUNT_MIN = 1;
     inline constexpr int REPEAT_COUNT_MAX = 99999;
@@ -1222,9 +1224,6 @@ namespace QKeyMapperConstants {
     inline constexpr const char SENDTIMING_STR_KEYUP[]                = "KEYUP";
     inline constexpr const char SENDTIMING_STR_KEYDOWN_AND_KEYUP[]    = "KEYDOWN_AND_KEYUP";
     inline constexpr const char SENDTIMING_STR_NORMAL_AND_KEYUP[]     = "NORMAL_AND_KEYUP";
-
-    inline constexpr const char PASTETEXT_MODE_STR_SHIFTINSERT[]    = "SHIFT_INSERT";
-    inline constexpr const char PASTETEXT_MODE_STR_CTRLV[]          = "CTRL_V";
 
     inline constexpr const char FUNCTION_KEY_NONE[]  = "None";
     inline constexpr int FUNCTION_KEY_NONE_INDEX = 0;
