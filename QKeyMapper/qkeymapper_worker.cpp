@@ -766,56 +766,117 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
 #endif
 
 #ifdef PASTETEXT_RESTORE_CLIPBOARD
-    // Save current clipboard content using Windows API (more reliable than QClipboard in worker thread)
-    HGLOBAL hOriginalDataCopy = NULL;
-    bool hasOriginalData = false;
+    // Static variables to handle concurrent pasteText calls
+    // Strategy: Only restore clipboard if NO concurrent calls occurred during this session
+    // This ensures safety when multiple different PasteText mappings are triggered simultaneously
+    static QMutex s_pasteTextMutex;
+    static HGLOBAL s_hOriginalDataCopy = NULL;
+    static bool s_hasOriginalData = false;
+    static int s_pasteTextRefCount = 0;
+    static bool s_hadConcurrentCalls = false;  // Track if concurrency occurred
+    static bool s_backupSucceeded = false;     // Track if backup operation succeeded (even if clipboard was empty)
+    static bool s_isRestoring = false;         // Track if clipboard restore is in progress
 
-    if (OpenClipboard(NULL)) {
-        HANDLE hOriginalData = GetClipboardData(CF_UNICODETEXT);
-        if (hOriginalData != NULL) {
-            SIZE_T dataSize = GlobalSize(hOriginalData);
-            if (dataSize > 0) {
-                // Make a copy of the original data before we modify clipboard
-                hOriginalDataCopy = GlobalAlloc(GMEM_MOVEABLE, dataSize);
-                if (hOriginalDataCopy != NULL) {
-                    void* pOriginal = GlobalLock(hOriginalData);
-                    void* pCopy = GlobalLock(hOriginalDataCopy);
-                    if (pOriginal != NULL && pCopy != NULL) {
-                        memcpy(pCopy, pOriginal, dataSize);
-                        hasOriginalData = true;
-#ifdef DEBUG_LOGOUT_ON
-                        wchar_t* pText = static_cast<wchar_t*>(pCopy);
-                        QString originalText = QString::fromWCharArray(pText);
-                        qDebug().noquote() << "[pasteText] Backed up original clipboard:" << originalText.left(50)
-                                           << (originalText.length() > 50 ? "..." : "");
-#endif
-                    }
-                    if (pOriginal != NULL) GlobalUnlock(hOriginalData);
-                    if (pCopy != NULL) GlobalUnlock(hOriginalDataCopy);
+    // Lock to safely update reference count and backup clipboard
+    s_pasteTextMutex.lock();
 
-                    if (!hasOriginalData) {
-                        // Failed to copy, free the allocated memory
-                        GlobalFree(hOriginalDataCopy);
-                        hOriginalDataCopy = NULL;
+    // Wait if a restore operation is in progress from a previous session
+    // This prevents new calls from interfering with ongoing clipboard restore
+    while (s_isRestoring) {
+        s_pasteTextMutex.unlock();
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug() << "[pasteText] Failed to backup original clipboard data";
+        qDebug() << "[pasteText] Waiting for previous restore to complete...";
 #endif
-                    }
-                }
-            }
-        }
+        QThread::msleep(10);  // Brief wait before checking again
+        s_pasteTextMutex.lock();
+    }
+
+    s_pasteTextRefCount++;
+    bool isFirstCall = (s_pasteTextRefCount == 1);
+
+    // If this is not the first call, mark that we had concurrent calls
+    // Once marked, we won't restore clipboard for this session (safety measure)
+    if (!isFirstCall) {
+        s_hadConcurrentCalls = true;
 #ifdef DEBUG_LOGOUT_ON
-        else {
-            qDebug() << "[pasteText] No text data in clipboard to backup";
-        }
+        qDebug().nospace() << "[pasteText] Concurrent call detected! RefCount: " << s_pasteTextRefCount << ", clipboard restore disabled for this session";
 #endif
-        CloseClipboard();
     }
 #ifdef DEBUG_LOGOUT_ON
     else {
-        qDebug() << "[pasteText] Failed to open clipboard for backup";
+        qDebug().nospace() << "[pasteText] First call, RefCount: " << s_pasteTextRefCount;
     }
 #endif
+
+    // Only the first call should backup the original clipboard content
+    if (isFirstCall) {
+        // Reset flags for new session
+        s_hadConcurrentCalls = false;
+        s_backupSucceeded = false;
+
+        // Clean up any stale data from previous sessions
+        if (s_hOriginalDataCopy != NULL) {
+            GlobalFree(s_hOriginalDataCopy);
+            s_hOriginalDataCopy = NULL;
+        }
+        s_hasOriginalData = false;
+
+        if (OpenClipboard(NULL)) {
+            // OpenClipboard succeeded - we can determine the clipboard state
+            s_backupSucceeded = true;
+
+            HANDLE hOriginalData = GetClipboardData(CF_UNICODETEXT);
+            if (hOriginalData != NULL) {
+                SIZE_T dataSize = GlobalSize(hOriginalData);
+                if (dataSize > 0) {
+                    // Make a copy of the original data before we modify clipboard
+                    s_hOriginalDataCopy = GlobalAlloc(GMEM_MOVEABLE, dataSize);
+                    if (s_hOriginalDataCopy != NULL) {
+                        void* pOriginal = GlobalLock(hOriginalData);
+                        void* pCopy = GlobalLock(s_hOriginalDataCopy);
+                        if (pOriginal != NULL && pCopy != NULL) {
+                            memcpy(pCopy, pOriginal, dataSize);
+                            s_hasOriginalData = true;
+#ifdef DEBUG_LOGOUT_ON
+                            wchar_t* pText = static_cast<wchar_t*>(pCopy);
+                            QString originalText = QString::fromWCharArray(pText);
+                            qDebug().noquote() << "[pasteText] Backed up original clipboard:" << originalText.left(50)
+                                               << (originalText.length() > 50 ? "..." : "");
+#endif
+                        }
+                        if (pOriginal != NULL) GlobalUnlock(hOriginalData);
+                        if (pCopy != NULL) GlobalUnlock(s_hOriginalDataCopy);
+
+                        if (!s_hasOriginalData) {
+                            // Failed to copy, free the allocated memory
+                            GlobalFree(s_hOriginalDataCopy);
+                            s_hOriginalDataCopy = NULL;
+                            s_backupSucceeded = false;  // Copy failed, don't try to restore
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug() << "[pasteText] Failed to backup original clipboard data";
+#endif
+                        }
+                    }
+                    else {
+                        s_backupSucceeded = false;  // GlobalAlloc failed
+                    }
+                }
+            }
+#ifdef DEBUG_LOGOUT_ON
+            else {
+                qDebug() << "[pasteText] No text data in clipboard to backup (clipboard was empty)";
+            }
+#endif
+            CloseClipboard();
+        }
+#ifdef DEBUG_LOGOUT_ON
+        else {
+            // OpenClipboard failed - we don't know the clipboard state, don't try to restore
+            qDebug() << "[pasteText] Failed to open clipboard for backup, restore will be skipped";
+        }
+#endif
+    }
+    s_pasteTextMutex.unlock();
 #endif // PASTETEXT_RESTORE_CLIPBOARD
 
     // Set new text to clipboard with verification and retry mechanism
@@ -826,16 +887,115 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
         qDebug() << "[pasteText] Failed to set clipboard with verification, aborting";
 #endif
 #ifdef PASTETEXT_RESTORE_CLIPBOARD
-        // Free the original data copy before returning
-        if (hOriginalDataCopy != NULL) {
-            GlobalFree(hOriginalDataCopy);
-            hOriginalDataCopy = NULL;
-        }
+        // SetClipboard failed - try to restore original clipboard content to avoid leaving it in a bad state
+        s_pasteTextMutex.lock();
+        s_pasteTextRefCount--;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[pasteText] SetClipboard failed, RefCount decremented to " << s_pasteTextRefCount;
 #endif
+        if (s_pasteTextRefCount == 0) {
+            // Last call - try to restore clipboard before cleaning up
+            if (s_backupSucceeded && s_hasOriginalData && s_hOriginalDataCopy != NULL) {
+                s_pasteTextMutex.unlock();
+                bool restoreSuccess = restoreClipboardWithVerification(s_hOriginalDataCopy, 3);
+                s_pasteTextMutex.lock();
+#ifdef DEBUG_LOGOUT_ON
+                if (restoreSuccess) {
+                    qDebug() << "[pasteText] Restored clipboard after setClipboard failure";
+                }
+                else {
+                    qDebug() << "[pasteText] Failed to restore clipboard after setClipboard failure";
+                }
+#endif
+            }
+#ifdef DEBUG_LOGOUT_ON
+            else if (s_backupSucceeded && !s_hasOriginalData) {
+                // Original was empty - no need to clear clipboard
+                qDebug() << "[pasteText] Original clipboard was empty, no restore needed after setClipboard failure";
+            }
+#endif
+
+            // Clean up static data
+            if (s_hOriginalDataCopy != NULL) {
+                GlobalFree(s_hOriginalDataCopy);
+                s_hOriginalDataCopy = NULL;
+            }
+            s_hasOriginalData = false;
+            s_hadConcurrentCalls = false;
+            s_backupSucceeded = false;
+        }
+        s_pasteTextMutex.unlock();
+#endif // PASTETEXT_RESTORE_CLIPBOARD
         return;
     }
 
     // No additional wait needed - verification already includes wait time
+
+    // Lambda to handle clipboard restore logic (used in multiple exit points)
+#ifdef PASTETEXT_RESTORE_CLIPBOARD
+    auto handleClipboardRestore = [&]() {
+        s_pasteTextMutex.lock();
+        s_pasteTextRefCount--;
+        bool isLastCall = (s_pasteTextRefCount == 0);
+        // Only restore if: last call, no concurrent calls, AND backup operation succeeded
+        bool shouldRestore = isLastCall && !s_hadConcurrentCalls && s_backupSucceeded;
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[pasteText] RefCount decremented to " << s_pasteTextRefCount
+                           << ", isLastCall: " << isLastCall
+                           << ", hadConcurrentCalls: " << s_hadConcurrentCalls
+                           << ", backupSucceeded: " << s_backupSucceeded;
+#endif
+
+        if (isLastCall) {
+            if (shouldRestore && s_hasOriginalData && s_hOriginalDataCopy != NULL) {
+                // Safe to restore - no concurrent calls occurred and we have backup data
+                // Set restoring flag to prevent new calls from starting during restore
+                s_isRestoring = true;
+                s_pasteTextMutex.unlock();
+
+                // Wait for target application to read clipboard before restoring
+                QThread::msleep(PASTETEXT_RESTORE_WAIT_TIME_MS);
+
+                bool restoreSuccess = restoreClipboardWithVerification(s_hOriginalDataCopy, 3);
+                s_pasteTextMutex.lock();
+                s_isRestoring = false;
+
+#ifdef DEBUG_LOGOUT_ON
+                if (restoreSuccess) {
+                    qDebug() << "[pasteText] Successfully restored original clipboard content";
+                }
+                else {
+                    qDebug() << "[pasteText] Failed to restore original clipboard content after all retries";
+                }
+#endif
+            }
+#ifdef DEBUG_LOGOUT_ON
+            else if (shouldRestore && !s_hasOriginalData) {
+                // Original clipboard was empty - no need to clear it, just leave the PasteText content
+                // Clearing clipboard when it was "empty" can cause issues if the detection was wrong
+                qDebug() << "[pasteText] Original clipboard was empty, no restore needed (keeping current content)";
+            }
+            else if (s_hadConcurrentCalls) {
+                qDebug() << "[pasteText] Skipping clipboard restore due to concurrent calls (safety measure)";
+            }
+            else if (!s_backupSucceeded) {
+                qDebug() << "[pasteText] Skipping clipboard restore because backup failed (clipboard state unknown)";
+            }
+#endif
+
+            // Clean up static data
+            if (s_hOriginalDataCopy != NULL) {
+                GlobalFree(s_hOriginalDataCopy);
+                s_hOriginalDataCopy = NULL;
+            }
+            s_hasOriginalData = false;
+            s_hadConcurrentCalls = false;
+            s_backupSucceeded = false;
+        }
+        s_pasteTextMutex.unlock();
+    };
+#endif // PASTETEXT_RESTORE_CLIPBOARD
 
     if (window_hwnd != NULL) {
         // Try to find edit control in the target window
@@ -914,19 +1074,8 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
                                             << "), skipping Ctrl+V simulation";
 #endif
 #ifdef PASTETEXT_RESTORE_CLIPBOARD
-                // Restore clipboard with verification and return
-                if (hasOriginalData && hOriginalDataCopy != NULL) {
-                    restoreClipboardWithVerification(hOriginalDataCopy, 3);
-                    GlobalFree(hOriginalDataCopy);
-                    hOriginalDataCopy = NULL;
-                }
-                else if (!hasOriginalData) {
-                    if (OpenClipboard(NULL)) {
-                        EmptyClipboard();
-                        CloseClipboard();
-                    }
-                }
-#endif
+                handleClipboardRestore();
+#endif // PASTETEXT_RESTORE_CLIPBOARD
                 return;
             }
 
@@ -959,40 +1108,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
     }
 
 #ifdef PASTETEXT_RESTORE_CLIPBOARD
-    // Brief wait to ensure target application has time to read clipboard
-    // Some applications handle paste asynchronously
-    // 50ms is sufficient for most cases and much faster than original 100ms
-    QThread::msleep(PASTETEXT_RESTORE_WAIT_TIME_MS);
-
-    // Restore original clipboard content with verification and retry mechanism
-    if (hasOriginalData && hOriginalDataCopy != NULL) {
-        bool restoreSuccess = restoreClipboardWithVerification(hOriginalDataCopy, 3);
-
-#ifdef DEBUG_LOGOUT_ON
-        if (restoreSuccess) {
-            qDebug() << "[pasteText] Successfully restored original clipboard content";
-        }
-        else {
-            qDebug() << "[pasteText] Failed to restore original clipboard content after all retries";
-        }
-#endif
-
-        // Free the original data copy (verification function handles clipboard ownership)
-        if (hOriginalDataCopy != NULL) {
-            GlobalFree(hOriginalDataCopy);
-            hOriginalDataCopy = NULL;
-        }
-    }
-    else if (!hasOriginalData) {
-        // Clear clipboard if it was originally empty
-        if (OpenClipboard(NULL)) {
-            EmptyClipboard();
-            CloseClipboard();
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[pasteText] Clipboard cleared (was originally empty)";
-#endif
-        }
-    }
+    handleClipboardRestore();
 #endif // PASTETEXT_RESTORE_CLIPBOARD
 }
 
