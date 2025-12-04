@@ -933,6 +933,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
                 s_pasteTextMutex.unlock();
                 bool restoreSuccess = restoreClipboardWithVerification(s_hOriginalDataCopy, 3);
                 s_pasteTextMutex.lock();
+                Q_UNUSED(restoreSuccess);
 #ifdef DEBUG_LOGOUT_ON
                 if (restoreSuccess) {
                     qDebug() << "[pasteText] Restored clipboard after setClipboard failure";
@@ -994,6 +995,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
                 bool restoreSuccess = restoreClipboardWithVerification(s_hOriginalDataCopy, 3);
                 s_pasteTextMutex.lock();
                 s_isRestoring = false;
+                Q_UNUSED(restoreSuccess);
 
 #ifdef DEBUG_LOGOUT_ON
                 if (restoreSuccess) {
