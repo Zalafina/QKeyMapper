@@ -765,6 +765,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
                                   << ", TargetWnd: 0x" << Qt::hex << reinterpret_cast<quintptr>(window_hwnd);
 #endif
 
+#ifdef PASTETEXT_RESTORE_CLIPBOARD
     // Save current clipboard content using Windows API (more reliable than QClipboard in worker thread)
     HGLOBAL hOriginalDataCopy = NULL;
     bool hasOriginalData = false;
@@ -782,6 +783,12 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
                     if (pOriginal != NULL && pCopy != NULL) {
                         memcpy(pCopy, pOriginal, dataSize);
                         hasOriginalData = true;
+#ifdef DEBUG_LOGOUT_ON
+                        wchar_t* pText = static_cast<wchar_t*>(pCopy);
+                        QString originalText = QString::fromWCharArray(pText);
+                        qDebug().noquote() << "[pasteText] Backed up original clipboard:" << originalText.left(50)
+                                           << (originalText.length() > 50 ? "..." : "");
+#endif
                     }
                     if (pOriginal != NULL) GlobalUnlock(hOriginalData);
                     if (pCopy != NULL) GlobalUnlock(hOriginalDataCopy);
@@ -790,12 +797,26 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
                         // Failed to copy, free the allocated memory
                         GlobalFree(hOriginalDataCopy);
                         hOriginalDataCopy = NULL;
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[pasteText] Failed to backup original clipboard data";
+#endif
                     }
                 }
             }
         }
+#ifdef DEBUG_LOGOUT_ON
+        else {
+            qDebug() << "[pasteText] No text data in clipboard to backup";
+        }
+#endif
         CloseClipboard();
     }
+#ifdef DEBUG_LOGOUT_ON
+    else {
+        qDebug() << "[pasteText] Failed to open clipboard for backup";
+    }
+#endif
+#endif // PASTETEXT_RESTORE_CLIPBOARD
 
     // Set new text to clipboard with verification and retry mechanism
     bool clipboardSetSuccess = setClipboardTextWithVerification(text, 3);
@@ -804,11 +825,13 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[pasteText] Failed to set clipboard with verification, aborting";
 #endif
+#ifdef PASTETEXT_RESTORE_CLIPBOARD
         // Free the original data copy before returning
         if (hOriginalDataCopy != NULL) {
             GlobalFree(hOriginalDataCopy);
             hOriginalDataCopy = NULL;
         }
+#endif
         return;
     }
 
@@ -890,6 +913,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
                                             << " is not foreground (foreground is 0x" << reinterpret_cast<quintptr>(foregroundWnd)
                                             << "), skipping Ctrl+V simulation";
 #endif
+#ifdef PASTETEXT_RESTORE_CLIPBOARD
                 // Restore clipboard with verification and return
                 if (hasOriginalData && hOriginalDataCopy != NULL) {
                     restoreClipboardWithVerification(hOriginalDataCopy, 3);
@@ -902,6 +926,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
                         CloseClipboard();
                     }
                 }
+#endif
                 return;
             }
 
@@ -933,6 +958,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
         }
     }
 
+#ifdef PASTETEXT_RESTORE_CLIPBOARD
     // Brief wait to ensure target application has time to read clipboard
     // Some applications handle paste asynchronously
     // 50ms is sufficient for most cases and much faster than original 100ms
@@ -942,11 +968,14 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
     if (hasOriginalData && hOriginalDataCopy != NULL) {
         bool restoreSuccess = restoreClipboardWithVerification(hOriginalDataCopy, 3);
 
-        if (!restoreSuccess) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[pasteText] Failed to restore original clipboard content after all retries";
-#endif
+        if (restoreSuccess) {
+            qDebug() << "[pasteText] Successfully restored original clipboard content";
         }
+        else {
+            qDebug() << "[pasteText] Failed to restore original clipboard content after all retries";
+        }
+#endif
 
         // Free the original data copy (verification function handles clipboard ownership)
         if (hOriginalDataCopy != NULL) {
@@ -964,6 +993,7 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
 #endif
         }
     }
+#endif // PASTETEXT_RESTORE_CLIPBOARD
 }
 
 void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
