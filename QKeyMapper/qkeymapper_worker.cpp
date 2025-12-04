@@ -821,7 +821,36 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
         }
         s_hasOriginalData = false;
 
-        if (OpenClipboard(NULL)) {
+        // Try to open clipboard with retry mechanism
+        // This handles cases where clipboard is temporarily locked by another application
+        const int maxBackupAttempts = 3;
+        const int backupRetryDelayMs = 10;
+        bool clipboardOpened = false;
+
+        for (int attempt = 1; attempt <= maxBackupAttempts; ++attempt) {
+            if (OpenClipboard(NULL)) {
+                clipboardOpened = true;
+#ifdef DEBUG_LOGOUT_ON
+                if (attempt > 1) {
+                    qDebug().nospace() << "[pasteText] OpenClipboard for backup succeeded on attempt " << attempt;
+                }
+#endif
+                break;
+            }
+            else if (attempt < maxBackupAttempts) {
+#ifdef DEBUG_LOGOUT_ON
+                DWORD error = GetLastError();
+                qDebug().nospace() << "[pasteText] OpenClipboard for backup failed (attempt " << attempt
+                                   << "/" << maxBackupAttempts << "), error: " << error << ", retrying...";
+#endif
+                // Brief delay before retry - only on failure, doesn't affect normal performance
+                s_pasteTextMutex.unlock();
+                QThread::msleep(backupRetryDelayMs);
+                s_pasteTextMutex.lock();
+            }
+        }
+
+        if (clipboardOpened) {
             // OpenClipboard succeeded - we can determine the clipboard state
             s_backupSucceeded = true;
 
@@ -859,6 +888,9 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
                     }
                     else {
                         s_backupSucceeded = false;  // GlobalAlloc failed
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[pasteText] GlobalAlloc failed for clipboard backup";
+#endif
                     }
                 }
             }
@@ -871,8 +903,10 @@ void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mod
         }
 #ifdef DEBUG_LOGOUT_ON
         else {
-            // OpenClipboard failed - we don't know the clipboard state, don't try to restore
-            qDebug() << "[pasteText] Failed to open clipboard for backup, restore will be skipped";
+            // OpenClipboard failed after all retries
+            DWORD error = GetLastError();
+            qDebug().nospace() << "[pasteText] Failed to open clipboard for backup after " << maxBackupAttempts
+                               << " attempts, error: " << error << ", restore will be skipped";
         }
 #endif
     }
