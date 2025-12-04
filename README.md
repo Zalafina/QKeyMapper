@@ -92,7 +92,7 @@
 
 ### https://gitee.com/asukavov/QKeyMapper/releases/latest
 
-### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。
+#### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。Win10及Win11系统推荐使用 Qt6_x64 版本release包，只有无法使用Qt6版本的Win7系统需要使用Qt5版本release包。
 
 ---
 ## ⭐ Star 趋势图
