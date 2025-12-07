@@ -56,3 +56,64 @@ Run(utils\ahk utils\script\winmove.ahk wintitle="记事本" w=800 h=600)
 Run(utils\ahk utils\script\winmove.ahk wintitle="记事本" x=100 y=200)
 Run(utils\ahk utils\script\winmove.ahk wintitle="记事本" x=100 y=200 w=800 h=600)
 Run(utils\ahk utils\script\winmove.ahk wintitle="记事本" center)
+
+6. IME切换工具
+ahk.exe switch_ime.ahk ime=输入法编码 [其他参数...]
+可用参数->
+ime=0xXXXXXXXX : 输入法编码(HKL值，必需，十六进制格式)
+mode=模式 : 设置输入法模式 (可选)
+  通用模式:
+    mode=off / english : 关闭输入法(英文模式)
+    mode=on / native : 开启输入法(本地语言模式)
+  中文输入法:
+    mode=chinese : 中文模式(可输入汉字)
+  日文输入法:
+    mode=hiragana : 平假名模式(ひらがな)
+    mode=katakana : 全角片假名模式(カタカナ)
+    mode=katakana_half : 半角片假名模式(ｶﾀｶﾅ)
+    mode=alphanumeric : 全角英数模式(ＡＢＣ)
+target=activewin : 切换当前活动窗口的输入法 (默认)
+target=allwin : 切换所有窗口的输入法
+debug=true : 启用调试信息输出 (可选)
+
+工具命令示例->
+ahk.exe switch_ime.ahk ime=0x04090409                          (切换到英文键盘)
+ahk.exe switch_ime.ahk ime=0x08040804                          (切换到中文拼音-保持之前中英文模式)
+ahk.exe switch_ime.ahk ime=0x08040804 mode=chinese             (中文拼音-中文模式)
+ahk.exe switch_ime.ahk ime=0x08040804 mode=english             (中文拼音-英文模式)
+ahk.exe switch_ime.ahk ime=0x04110411                          (切换到日文输入法-保持之前输入模式)
+ahk.exe switch_ime.ahk ime=0x04110411 mode=hiragana            (日文输入法-平假名)
+ahk.exe switch_ime.ahk ime=0x04110411 mode=english             (日文输入法-英文模式)
+ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana            (日文输入法-全角片假名)
+ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana_half       (日文输入法-半角片假名)
+ahk.exe switch_ime.ahk ime=0x08040804 target=allwin            (切换所有窗口)
+
+映射按键用法示例：
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x08040804)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x08040804 mode=chinese)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x08040804 mode=english)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=hiragana)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=katakana)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=katakana_half)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=english)
+
+常见输入法编码(HKL值)参考：
+┌─────────────────────────────────┬──────────────┬────────────────────────────┐
+│ 语言/输入法                     │ 编码值(Hex)  │ 说明                       │
+├─────────────────────────────────┼──────────────┼────────────────────────────┤
+│ 英文 (美式键盘)                │ 0x04090409   │ English (United States)    │
+│ 英文 (英国键盘)                │ 0x08090409   │ English (United Kingdom)   │
+│ 中文 (简体 - 微软拼音)         │ 0x08040804   │ Microsoft Pinyin IME       │
+│ 中文 (简体 - 新加坡拼音)       │ 0x10040804   │ Singapore Chinese IME      │
+│ 中文 (繁体 - 注音)             │ 0x04090404   │ Traditional Chinese Zhuyin │
+│ 中文 (繁体 - 仓颉)             │ 0x0C090404   │ Traditional Chinese Cangjie│
+│ 日文 IME                        │ 0x04110411   │ Microsoft Japanese IME     │
+│ 韩文 IME                        │ 0x04120412   │ Microsoft Korean IME       │
+│ 德文 (德国键盘)                │ 0x04070407   │ German (Germany)           │
+│ 法文 (法国键盘)                │ 0x040C040C   │ French (France)            │
+│ 西班牙文 (西班牙键盘)          │ 0x040A040A   │ Spanish (Spain)            │
+└─────────────────────────────────┴──────────────┴────────────────────────────┘
+注意：
+- HKL编码可能因系统版本和安装的语言包不同而有所差异
+- 切换的输入法必须已在系统中安装，否则切换无效
+- Windows 10/11 系统可在 设置 -> 时间和语言 -> 语言 中添加输入法

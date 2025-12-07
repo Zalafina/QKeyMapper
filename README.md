@@ -141,6 +141,36 @@
 
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
+* v1.3.8(Build 20251212)
+    * utils目录下工具追加，详细使用方法参考 utils 目录下 readme.txt 文件：
+      ##### IME输入法切换工具
+          可用参数->
+          ime=0xXXXXXXXX : 输入法编码(HKL值，必需，十六进制格式)
+          mode=模式 : 设置输入法模式 (可选)
+          通用模式:
+            mode=off / english : 关闭输入法(英文模式)
+            mode=on / native : 开启输入法(本地语言模式)
+          中文输入法:
+            mode=chinese : 中文模式(可输入汉字)
+          日文输入法:
+            mode=hiragana : 平假名模式(ひらがな)
+            mode=katakana : 全角片假名模式(カタカナ)
+            mode=katakana_half : 半角片假名模式(ｶﾀｶﾅ)
+            mode=alphanumeric : 全角英数模式(ＡＢＣ)
+          工具命令示例->
+            ahk.exe switch_ime.ahk ime=0x04090409                          (切换到英文键盘)
+            ahk.exe switch_ime.ahk ime=0x08040804                          (切换到中文拼音-保持之前中英文模式)
+            ahk.exe switch_ime.ahk ime=0x08040804 mode=chinese             (中文拼音-中文模式)
+            ahk.exe switch_ime.ahk ime=0x08040804 mode=english             (中文拼音-英文模式)
+            ahk.exe switch_ime.ahk ime=0x04110411                          (切换到日文输入法-保持之前输入模式)
+            ahk.exe switch_ime.ahk ime=0x04110411 mode=hiragana            (日文输入法-平假名)
+            ahk.exe switch_ime.ahk ime=0x04110411 mode=english             (日文输入法-英文模式)
+            ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana            (日文输入法-全角片假名)
+            ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana_half       (日文输入法-半角片假名)
+        注意：
+        - HKL编码可能因系统版本和安装的语言包不同而有所差异
+        - 切换的输入法必须已在系统中安装，否则切换无效
+        - Windows 10/11 系统可在 设置 -> 时间和语言 -> 语言 中添加输入法
 * v1.3.8(Build 20251206)
     * 映射宏列表添加备份功能，可以将当前显示的宏列表中高亮选择的宏导出到INI文件中(列表支持多行连续选择)。
       **※选择宏列表导入时，导入项目追加在列表末尾。如果有重复的宏名会提示用户是否覆盖，选择"是"会删除当前列表中同名宏，将从文件导入的宏列表全部追加在末尾。选择"否"保留当前列表中同名宏，仅从文件中导入不同名的宏。**
