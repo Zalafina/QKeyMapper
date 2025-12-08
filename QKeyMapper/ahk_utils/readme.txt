@@ -65,6 +65,8 @@ mode=模式 : 设置输入法模式 (可选)
   通用模式:
     mode=off / english : 关闭输入法(英文模式)
     mode=on / native : 开启输入法(本地语言模式)
+    mode=cycle : 循环切换支持的模式(正向)
+    mode=reverse_cycle : 循环切换支持的模式(逆向)
   中文输入法:
     mode=chinese : 中文模式(可输入汉字)
   日文输入法:
@@ -72,6 +74,9 @@ mode=模式 : 设置输入法模式 (可选)
     mode=katakana : 全角片假名模式(カタカナ)
     mode=katakana_half : 半角片假名模式(ｶﾀｶﾅ)
     mode=alphanumeric : 全角英数模式(ＡＢＣ)
+  日文循环顺序:
+    正向cycle: 平假名->全角片假名->全角字母数字->半角片假名->直接输入
+    逆向reverse_cycle: 直接输入->半角片假名->全角字母数字->全角片假名->平假名
 target=activewin : 切换当前活动窗口的输入法 (默认)
 target=allwin : 切换所有窗口的输入法
 debug=true : 启用调试信息输出 (可选)
@@ -87,6 +92,9 @@ ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana            (日文输入法-
 ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana_half       (日文输入法-半角片假名)
 ahk.exe switch_ime.ahk ime=0x04110411 mode=alphanumeric        (日文输入法-全角字母数字)
 ahk.exe switch_ime.ahk ime=0x04110411 mode=english             (日文输入法-直接输入/半角字母数字)
+ahk.exe switch_ime.ahk ime=0x08040804 mode=cycle               (中文输入法-循环切换中英文)
+ahk.exe switch_ime.ahk ime=0x04110411 mode=cycle               (日文输入法-正向循环切换所有模式)
+ahk.exe switch_ime.ahk ime=0x04110411 mode=reverse_cycle       (日文输入法-逆向循环切换所有模式)
 ahk.exe switch_ime.ahk ime=0x08040804 target=allwin            (切换所有窗口)
 
 映射按键用法示例：
@@ -98,6 +106,9 @@ Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=katakana)
 Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=katakana_half)
 Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=alphanumeric)
 Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=english)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x08040804 mode=cycle)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=cycle)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=reverse_cycle)
 
 常见输入法编码(HKL值)参考：
 ┌─────────────────────────────────┬──────────────┬────────────────────────────┐

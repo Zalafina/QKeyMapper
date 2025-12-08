@@ -17,6 +17,12 @@
 ;   通用模式：
 ;   switch_ime.ahk ime=0x08040804 mode=on            ; 开启输入法（本地语言）
 ;   switch_ime.ahk ime=0x08040804 mode=off           ; 关闭输入法（英文）
+;   switch_ime.ahk ime=0x08040804 mode=cycle         ; 循环切换支持的模式（正向）
+;   switch_ime.ahk ime=0x08040804 mode=reverse_cycle ; 循环切换支持的模式（逆向）
+;
+;   日文输入法循环顺序：
+;   正向: 平假名 -> 全角片假名 -> 全角字母数字 -> 半角片假名 -> 直接输入
+;   逆向: 直接输入 -> 半角片假名 -> 全角字母数字 -> 全角片假名 -> 平假名
 ;
 ;   其他参数：
 ;   switch_ime.ahk ime=0x08040804 target=activewin   ; 切换当前活动窗口（默认）
@@ -128,6 +134,7 @@ GetInputMode(hwnd) {
 ; 模式参数：
 ;   "off" / "english" / "0" - 关闭输入法（英文模式）
 ;   "on" / "native" / "1" - 开启输入法（本地语言模式）
+;   "cycle" - 循环切换支持的模式（根据输入法类型自动识别）
 ;   对于中文输入法：
 ;     "chinese" / "1025" - 中文模式（简体拼音）
 ;   对于日文输入法（标准转换模式）：
@@ -143,6 +150,79 @@ SetInputMode(hwnd, modeStr, hkl := 0, showDebug := false) {
     switch modeStr {
         case "off", "english", "0":
             openStatus := 0
+
+        case "cycle", "reverse_cycle":
+            ; 循环切换模式 (正向或逆向)
+            isReverse := (modeStr = "reverse_cycle")
+            currentOpenStatus := GetIMEOpenStatus(hwnd)
+            currentConvMode := GetIMEConversionMode(hwnd)
+
+            if (showDebug) {
+                DebugLog("当前状态 - OpenStatus: " currentOpenStatus " ConversionMode: " currentConvMode)
+                DebugLog("循环方向: " (isReverse ? "逆向" : "正向"))
+            }
+
+            ; 根据输入法类型定义循环序列
+            if (hkl = 0x08040804) {
+                ; 中文输入法: english(0) <-> chinese(1025) (两者间切换,无需区分方向)
+                if (currentOpenStatus = 0 || currentConvMode != 1025) {
+                    openStatus := 1
+                    conversionMode := 1025  ; 中文模式
+                } else {
+                    openStatus := 0  ; 英文模式
+                }
+            } else if (hkl = 0x04110411) {
+                ; 日文输入法
+                ; 正向: hiragana(9) -> katakana(11) -> alphanumeric(8) -> katakana_half(3) -> english(0)
+                ; 逆向: english(0) -> katakana_half(3) -> alphanumeric(8) -> katakana(11) -> hiragana(9)
+                if (isReverse) {
+                    ; 逆向循环
+                    if (currentOpenStatus = 0) {
+                        openStatus := 1
+                        conversionMode := 3  ; 半角片假名
+                    } else if (currentConvMode = 3) {
+                        openStatus := 1
+                        conversionMode := 8  ; 全角字母数字
+                    } else if (currentConvMode = 8) {
+                        openStatus := 1
+                        conversionMode := 11  ; 全角片假名
+                    } else if (currentConvMode = 11) {
+                        openStatus := 1
+                        conversionMode := 9  ; 平假名
+                    } else {
+                        openStatus := 0  ; 直接输入/半角字母数字
+                    }
+                } else {
+                    ; 正向循环
+                    if (currentOpenStatus = 0) {
+                        openStatus := 1
+                        conversionMode := 9  ; 平假名
+                    } else if (currentConvMode = 9) {
+                        openStatus := 1
+                        conversionMode := 11  ; 全角片假名
+                    } else if (currentConvMode = 11) {
+                        openStatus := 1
+                        conversionMode := 8  ; 全角字母数字
+                    } else if (currentConvMode = 8) {
+                        openStatus := 1
+                        conversionMode := 3  ; 半角片假名
+                    } else {
+                        openStatus := 0  ; 直接输入/半角字母数字
+                    }
+                }
+            } else {
+                ; 其他输入法: 简单的开/关切换 (两者间切换,无需区分方向)
+                if (currentOpenStatus = 0) {
+                    openStatus := 1
+                    conversionMode := 1
+                } else {
+                    openStatus := 0
+                }
+            }
+
+            if (showDebug) {
+                DebugLog("循环切换到 - OpenStatus: " openStatus " ConversionMode: " conversionMode)
+            }
 
         case "on", "native", "1":
             openStatus := 1
@@ -185,11 +265,31 @@ SetInputMode(hwnd, modeStr, hkl := 0, showDebug := false) {
 
     ; 应用设置
     if (openStatus != -1) {
-        SetIMEOpenStatus(hwnd, openStatus)
-        Sleep(30)
+        ; 对于 cycle 模式从关闭到开启的情况，先设置 ConversionMode 再开启 OpenStatus
+        ; 这样可以减少视觉闪烁（虽然理论上应该先开启再设置模式，但实测这样更流畅）
+        if ((modeStr = "cycle" || modeStr = "reverse_cycle") && openStatus = 1 && conversionMode != -1) {
+            currentOpenStatus := GetIMEOpenStatus(hwnd)
+            if (currentOpenStatus = 0) {
+                ; 关闭状态 -> 开启状态：先设置目标模式，再开启
+                SetIMEConversionMode(hwnd, conversionMode)
+                Sleep(10)
+                SetIMEOpenStatus(hwnd, openStatus)
+                Sleep(20)
+            } else {
+                ; 开启状态 -> 其他模式：正常顺序
+                SetIMEOpenStatus(hwnd, openStatus)
+                Sleep(10)
+                SetIMEConversionMode(hwnd, conversionMode)
+                Sleep(20)
+            }
+        } else {
+            ; 非 cycle 模式：使用标准流程
+            SetIMEOpenStatus(hwnd, openStatus)
+            Sleep(30)
 
-        if (conversionMode != -1 && openStatus = 1) {
-            SetIMEConversionMode(hwnd, conversionMode)
+            if (conversionMode != -1 && openStatus = 1) {
+                SetIMEConversionMode(hwnd, conversionMode)
+            }
         }
 
         if (showDebug) {
@@ -210,21 +310,63 @@ SwitchWindowIME(hwnd, hkl, imeMode := "", showDebug := false) {
                 DebugLog("切换窗口输入法: HWND=" hwnd " Title=" title " IME=" Format("0x{:08X}", hkl))
             }
 
-            ; 发送输入法切换消息
-            PostMessage(0x50, 0, hkl, , "ahk_id " hwnd)
-            Sleep(50)
+            ; 对于 cycle/reverse_cycle 模式，优化切换流程避免闪烁
+            if (imeMode = "cycle" || imeMode = "reverse_cycle") {
+                ; 检查当前 IME 是否已经是目标输入法
+                currentHKL := DllCall("GetKeyboardLayout", "UInt", DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "Ptr", 0, "UInt"), "Ptr")
+                needSwitch := (currentHKL != hkl)
 
-            ; 如果指定了输入模式,设置输入模式
-            if (imeMode != "") {
-                Sleep(50)  ; 等待输入法切换完成
+                if (showDebug) {
+                    DebugLog("当前键盘布局: " Format("0x{:08X}", currentHKL) " 目标: " Format("0x{:08X}", hkl) " 需要切换: " (needSwitch ? "是" : "否"))
+                }
 
-                ; 调用统一的输入模式设置函数,支持所有模式(中文/日文/英文等)
+                ; 如果需要切换输入法且当前 IME 是关闭状态，直接切换后设置模式即可
+                ; 如果需要切换输入法且当前 IME 是开启状态，需要特殊处理避免闪烁
+                if (needSwitch) {
+                    currentOpenStatus := GetIMEOpenStatus(hwnd)
+
+                    if (currentOpenStatus = 0) {
+                        ; IME 关闭状态：直接切换输入法，然后设置模式
+                        PostMessage(0x50, 0, hkl, , "ahk_id " hwnd)
+                        Sleep(50)
+                    } else {
+                        ; IME 开启状态：先关闭，切换输入法，然后让 cycle 逻辑处理
+                        SetIMEOpenStatus(hwnd, 0)
+                        Sleep(20)
+                        PostMessage(0x50, 0, hkl, , "ahk_id " hwnd)
+                        Sleep(50)
+                        if (showDebug) {
+                            DebugLog("先关闭 IME 再切换输入法以避免默认模式")
+                        }
+                    }
+                }
+
+                ; 设置目标模式（SetInputMode 内部会读取当前状态并计算目标）
                 SetInputMode(hwnd, imeMode, hkl, showDebug)
 
                 if (showDebug) {
                     openStatus := GetIMEOpenStatus(hwnd)
                     convMode := GetIMEConversionMode(hwnd)
-                    DebugLog("当前 IME 状态: OpenStatus=" openStatus " ConversionMode=" convMode)
+                    DebugLog("最终 IME 状态: OpenStatus=" openStatus " ConversionMode=" convMode)
+                }
+            } else {
+                ; 非循环模式：正常流程
+                ; 发送输入法切换消息
+                PostMessage(0x50, 0, hkl, , "ahk_id " hwnd)
+                Sleep(50)
+
+                ; 如果指定了输入模式,设置输入模式
+                if (imeMode != "") {
+                    Sleep(50)  ; 等待输入法切换完成
+
+                    ; 调用统一的输入模式设置函数,支持所有模式(中文/日文/英文等)
+                    SetInputMode(hwnd, imeMode, hkl, showDebug)
+
+                    if (showDebug) {
+                        openStatus := GetIMEOpenStatus(hwnd)
+                        convMode := GetIMEConversionMode(hwnd)
+                        DebugLog("当前 IME 状态: OpenStatus=" openStatus " ConversionMode=" convMode)
+                    }
                 }
             }
 
@@ -315,12 +457,14 @@ try {
 }
 
 ; 验证 mode 参数（支持多种模式）
-validModes := ["off", "on", "english", "native", "chinese", "hiragana", "katakana", "katakana_half", "alphanumeric", "0", "1"]
+validModes := ["off", "on", "english", "native", "chinese", "hiragana", "katakana", "katakana_half", "alphanumeric", "cycle", "reverse_cycle", "0", "1"]
 if (imeMode != "" && !HasValue(validModes, imeMode) && !IsInteger(imeMode)) {
     helpText := "错误：无效的 mode 参数 '" imeMode "'`n`n"
     helpText .= "通用模式：`n"
     helpText .= "  mode=off / english - 关闭输入法（英文）`n"
-    helpText .= "  mode=on / native - 开启输入法（本地语言）`n`n"
+    helpText .= "  mode=on / native - 开启输入法（本地语言）`n"
+    helpText .= "  mode=cycle - 循环切换支持的模式（正向）`n"
+    helpText .= "  mode=reverse_cycle - 循环切换支持的模式（逆向）`n`n"
     helpText .= "中文输入法：`n"
     helpText .= "  mode=chinese - 中文模式`n`n"
     helpText .= "日文输入法：`n"
