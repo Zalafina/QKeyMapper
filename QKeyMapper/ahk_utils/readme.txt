@@ -83,9 +83,10 @@ ahk.exe switch_ime.ahk ime=0x08040804 mode=chinese             (中文拼音-中
 ahk.exe switch_ime.ahk ime=0x08040804 mode=english             (中文拼音-英文模式)
 ahk.exe switch_ime.ahk ime=0x04110411                          (切换到日文输入法-保持之前输入模式)
 ahk.exe switch_ime.ahk ime=0x04110411 mode=hiragana            (日文输入法-平假名)
-ahk.exe switch_ime.ahk ime=0x04110411 mode=english             (日文输入法-英文模式)
 ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana            (日文输入法-全角片假名)
 ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana_half       (日文输入法-半角片假名)
+ahk.exe switch_ime.ahk ime=0x04110411 mode=alphanumeric        (日文输入法-全角字母数字)
+ahk.exe switch_ime.ahk ime=0x04110411 mode=english             (日文输入法-直接输入/半角字母数字)
 ahk.exe switch_ime.ahk ime=0x08040804 target=allwin            (切换所有窗口)
 
 映射按键用法示例：
@@ -95,11 +96,12 @@ Run(utils\ahk utils\script\switch_ime.ahk ime=0x08040804 mode=english)
 Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=hiragana)
 Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=katakana)
 Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=katakana_half)
+Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=alphanumeric)
 Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=english)
 
 常见输入法编码(HKL值)参考：
 ┌─────────────────────────────────┬──────────────┬────────────────────────────┐
-│ 语言/输入法                     │ 编码值(Hex)  │ 说明                       │
+│ 语言/输入法                      │ 编码值(Hex)  │ 说明                       │
 ├─────────────────────────────────┼──────────────┼────────────────────────────┤
 │ 英文 (美式键盘)                │ 0x04090409   │ English (United States)    │
 │ 英文 (英国键盘)                │ 0x08090409   │ English (United Kingdom)   │

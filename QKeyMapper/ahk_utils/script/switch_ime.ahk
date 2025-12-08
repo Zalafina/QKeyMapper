@@ -3,21 +3,21 @@
 ;   switch_ime.ahk ime=0x08040804                    ; 切换到中文拼音
 ;   switch_ime.ahk ime=0x04090409                    ; 切换到英文键盘
 ;   switch_ime.ahk ime=0x04110411                    ; 切换到日文输入法
-;   
+;
 ;   中文输入法模式：
 ;   switch_ime.ahk ime=0x08040804 mode=chinese       ; 中文模式（可输入汉字）
 ;   switch_ime.ahk ime=0x08040804 mode=english       ; 英文模式（输入字母）
-;   
+;
 ;   日文输入法模式：
 ;   switch_ime.ahk ime=0x04110411 mode=hiragana      ; 平假名模式
 ;   switch_ime.ahk ime=0x04110411 mode=katakana      ; 全角片假名模式
 ;   switch_ime.ahk ime=0x04110411 mode=katakana_half ; 半角片假名模式
 ;   switch_ime.ahk ime=0x04110411 mode=english       ; 英文模式
-;   
+;
 ;   通用模式：
 ;   switch_ime.ahk ime=0x08040804 mode=on            ; 开启输入法（本地语言）
 ;   switch_ime.ahk ime=0x08040804 mode=off           ; 关闭输入法（英文）
-;   
+;
 ;   其他参数：
 ;   switch_ime.ahk ime=0x08040804 target=activewin   ; 切换当前活动窗口（默认）
 ;   switch_ime.ahk ime=0x08040804 target=allwin      ; 切换所有窗口
@@ -29,8 +29,30 @@
 #NoTrayIcon
 
 ; -------------------------------
+; 全局变量
+; -------------------------------
+gDebugMode := false
+gLogFile := A_ScriptDir "\switch_ime_debug.log"
+
+; -------------------------------
 ; 工具函数
 ; -------------------------------
+; 调试输出函数（支持文件日志）
+DebugLog(msg) {
+    if (gDebugMode) {
+        timestamp := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
+        logMsg := "[" timestamp "] " msg "`n"
+
+        ; 输出到 OutputDebug
+        OutputDebug(msg)
+
+        ; 同时输出到文件
+        try {
+            FileAppend(logMsg, gLogFile, "UTF-8")
+        }
+    }
+}
+
 TrimQuotes(str) {
     if (StrLen(str) >= 2) && (SubStr(str, 1, 1) = '"') && (SubStr(str, -1) = '"') {
         return SubStr(str, 2, StrLen(str) - 2)
@@ -108,20 +130,20 @@ GetInputMode(hwnd) {
 ;   "on" / "native" / "1" - 开启输入法（本地语言模式）
 ;   对于中文输入法：
 ;     "chinese" / "1025" - 中文模式（简体拼音）
-;   对于日文输入法：
-;     "hiragana" / "9" - 平假名模式
-;     "katakana" / "11" - 全角片假名模式
-;     "katakana_half" / "10" - 半角片假名模式
-;     "alphanumeric" / "8" - 全角英数模式
+;   对于日文输入法（标准转换模式）：
+;     "hiragana" / "9" - 平假名模式 (IME_CMODE_NATIVE | IME_CMODE_FULLSHAPE)
+;     "katakana" / "11" - 全角片假名模式 (IME_CMODE_NATIVE | IME_CMODE_KATAKANA | IME_CMODE_FULLSHAPE)
+;     "katakana_half" / "3" - 半角片假名模式 (IME_CMODE_NATIVE | IME_CMODE_KATAKANA)
+;     "alphanumeric" / "8" - 全角英数模式 (IME_CMODE_FULLSHAPE)
 SetInputMode(hwnd, modeStr, hkl := 0, showDebug := false) {
     conversionMode := -1
     openStatus := -1
-    
+
     ; 解析模式字符串
     switch modeStr {
         case "off", "english", "0":
             openStatus := 0
-            
+
         case "on", "native", "1":
             openStatus := 1
             ; 根据输入法设置默认转换模式
@@ -132,27 +154,27 @@ SetInputMode(hwnd, modeStr, hkl := 0, showDebug := false) {
             } else {
                 conversionMode := 1     ; 其他输入法
             }
-            
+
         case "chinese", "1025":
             openStatus := 1
             conversionMode := 1025  ; 中文模式
-            
+
         case "hiragana", "9":
             openStatus := 1
-            conversionMode := 9     ; 平假名
-            
+            conversionMode := 9     ; 平假名 (NATIVE=1 | FULLSHAPE=8)
+
         case "katakana", "11":
             openStatus := 1
-            conversionMode := 11    ; 全角片假名
-            
-        case "katakana_half", "10":
+            conversionMode := 11    ; 全角片假名 (NATIVE=1 | KATAKANA=2 | FULLSHAPE=8)
+
+        case "katakana_half", "3":
             openStatus := 1
-            conversionMode := 10    ; 半角片假名
-            
+            conversionMode := 3     ; 半角片假名 (NATIVE=1 | KATAKANA=2)
+
         case "alphanumeric", "8":
             openStatus := 1
-            conversionMode := 8     ; 全角英数
-            
+            conversionMode := 8     ; 全角英数 (FULLSHAPE=8)
+
         default:
             ; 尝试作为数字解析
             if IsInteger(modeStr) {
@@ -160,22 +182,22 @@ SetInputMode(hwnd, modeStr, hkl := 0, showDebug := false) {
                 openStatus := (conversionMode > 0) ? 1 : 0
             }
     }
-    
+
     ; 应用设置
     if (openStatus != -1) {
         SetIMEOpenStatus(hwnd, openStatus)
         Sleep(30)
-        
+
         if (conversionMode != -1 && openStatus = 1) {
             SetIMEConversionMode(hwnd, conversionMode)
         }
-        
+
         if (showDebug) {
-            OutputDebug("设置输入模式: " modeStr " OpenStatus=" openStatus " ConversionMode=" conversionMode)
+            DebugLog("设置输入模式: " modeStr " OpenStatus=" openStatus " ConversionMode=" conversionMode)
         }
         return true
     }
-    
+
     return false
 }
 
@@ -185,35 +207,33 @@ SwitchWindowIME(hwnd, hkl, imeMode := "", showDebug := false) {
         if (hwnd && WinExist("ahk_id " hwnd)) {
             if (showDebug) {
                 title := WinGetTitle("ahk_id " hwnd)
-                OutputDebug("切换窗口输入法: HWND=" hwnd " Title=" title " IME=" Format("0x{:08X}", hkl))
+                DebugLog("切换窗口输入法: HWND=" hwnd " Title=" title " IME=" Format("0x{:08X}", hkl))
             }
-            
+
             ; 发送输入法切换消息
             PostMessage(0x50, 0, hkl, , "ahk_id " hwnd)
             Sleep(50)
-            
-            ; 如果指定了输入模式，设置中英文状态
+
+            ; 如果指定了输入模式,设置输入模式
             if (imeMode != "") {
                 Sleep(50)  ; 等待输入法切换完成
-                
-                if (imeMode = "chinese") {
-                    SetInputMode(hwnd, true, hkl, showDebug)
-                } else if (imeMode = "english") {
-                    SetInputMode(hwnd, false, hkl, showDebug)
-                }
-                
+
+                ; 调用统一的输入模式设置函数,支持所有模式(中文/日文/英文等)
+                SetInputMode(hwnd, imeMode, hkl, showDebug)
+
                 if (showDebug) {
-                    currentMode := GetInputMode(hwnd)
-                    OutputDebug("当前输入模式: " (currentMode ? "中文" : "英文"))
+                    openStatus := GetIMEOpenStatus(hwnd)
+                    convMode := GetIMEConversionMode(hwnd)
+                    DebugLog("当前 IME 状态: OpenStatus=" openStatus " ConversionMode=" convMode)
                 }
             }
-            
+
             return true
         }
         return false
     } catch as err {
         if (showDebug) {
-            OutputDebug("切换输入法错误: " err.Message)
+            DebugLog("切换输入法错误: " err.Message)
         }
         return false
     }
@@ -235,21 +255,21 @@ SwitchActiveWindowIME(hkl, imeMode := "", showDebug := false) {
 SwitchAllWindowsIME(hkl, imeMode := "", showDebug := false) {
     count := 0
     hwndList := WinGetList()
-    
+
     for hwnd in hwndList {
         if (SwitchWindowIME(hwnd, hkl, imeMode, false)) {
             count++
         }
     }
-    
+
     ; 最后切换全局布局
     Sleep(50)
     ActivateKeyboardLayout(hkl)
-    
+
     if (showDebug) {
-        OutputDebug("已切换 " count " 个窗口的输入法")
+        DebugLog("已切换 " count " 个窗口的输入法")
     }
-    
+
     return count
 }
 
@@ -270,6 +290,7 @@ for arg in A_Args {
         imeMode := TrimQuotes(SubStr(arg, 6))
     } else if (arg = "debug=true") {
         showDebug := true
+        gDebugMode := true
     }
 }
 
@@ -325,8 +346,14 @@ HasValue(arr, val) {
 ; 执行切换
 ; -------------------------------
 if (showDebug) {
+    ; 清空之前的日志文件
+    try {
+        FileDelete(gLogFile)
+    }
+
     modeText := imeMode != "" ? " 模式: " imeMode : ""
-    OutputDebug("开始切换输入法: " Format("0x{:08X}", hkl) " 目标: " target modeText)
+    DebugLog("======================================")
+    DebugLog("开始切换输入法: " Format("0x{:08X}", hkl) " 目标: " target modeText)
 }
 
 success := false
@@ -334,14 +361,14 @@ success := false
 switch target {
     case "activewin":
         success := SwitchActiveWindowIME(hkl, imeMode, showDebug)
-        
+
     case "allwin":
         count := SwitchAllWindowsIME(hkl, imeMode, showDebug)
         success := (count > 0)
-        
+
     default:
         if (showDebug) {
-            OutputDebug("错误：未知的目标类型 '" target "'")
+            DebugLog("错误：未知的目标类型 '" target "'")
         }
         ExitApp(1)
 }
@@ -351,10 +378,15 @@ switch target {
 ; -------------------------------
 if (showDebug) {
     if (success) {
-        OutputDebug("输入法切换成功")
+        DebugLog("输入法切换成功")
     } else {
-        OutputDebug("输入法切换失败")
+        DebugLog("输入法切换失败")
     }
+    DebugLog("======================================")
+
+    ; 显示日志文件位置
+    MsgBox("调试信息已保存到:`n" gLogFile "`n`n点击确定后将打开日志文件", "调试信息", "Icon!")
+    Run("notepad.exe " gLogFile)
 }
 
 ExitApp(success ? 0 : 1)

@@ -3317,7 +3317,7 @@ void KeyStringLineEdit::focusInEvent(QFocusEvent *event)
 #endif
         QItemSetupDialog::setEditingMappingKeyLineEdit(ITEMSETUP_EDITING_KEYUPMAPPINGKEY);
     }
-    else {
+    else if (objectName() == SETUPDIALOG_MAPKEY_LINEEDIT_NAME) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[KeyStringLineEdit::focusInEvent]" << "MappingKey LineEdit focus in, set editing boarder to it.";
 #endif
