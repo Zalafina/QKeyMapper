@@ -2090,7 +2090,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     if (rowindex >= 0 && rowindex < keyMappingDataList->size()) {
         postmappingkey = keyMappingDataList->at(rowindex).PostMappingKey;
         // sendmappingkeymethod = keyMappingDataList->at(rowindex).SendMappingKeyMethod;
-        sendmappingkeymethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
+        sendmappingkeymethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
         fixedvkeycode = keyMappingDataList->at(rowindex).FixedVKeyCode;
         if (fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
             fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
