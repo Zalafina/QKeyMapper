@@ -845,8 +845,15 @@ public:
     static BYTE VirtualKeyCodeToHIDUsageCode(quint8 vkeycode);
     static BYTE VirtualKeyCodeToHIDModifierFlag(quint8 vkeycode);
     static void updateFakerInputStatus(void);
+
+    // FakerInput mouse functions
+    static bool FakerInputClient_sendMouseButton(const QString &mouseButton, int keyupdown);
+    static bool FakerInputClient_sendMouseWheel(const QString &wheelDirection);
+    static bool FakerInputClient_sendMouseMove(int delta_x, int delta_y);
+    static BYTE MouseButtonStringToHIDButton(const QString &mouseButton, int keyupdown);
 private:
     static void initVK2HIDCodeMap(void);
+    static void resetFakerInputMouseReport(void);
 #endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -1193,6 +1200,8 @@ public:
     static BYTE s_FakerInputKeyboardReport_KeyCodes[KBD_KEY_CODES];
     static QHash<quint8, BYTE> s_VK2HIDCodeMap;
     static QHash<quint8, BYTE> s_VK2HIDModifierMap;
+    // FakerInput mouse report state
+    static BYTE s_FakerInputMouseReport_Buttons;
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
     static PVIGEM_CLIENT s_ViGEmClient;

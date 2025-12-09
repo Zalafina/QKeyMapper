@@ -124,6 +124,8 @@ BYTE QKeyMapper_Worker::s_FakerInputKeyboardReport_ShiftFlags = 0;
 BYTE QKeyMapper_Worker::s_FakerInputKeyboardReport_KeyCodes[KBD_KEY_CODES] = {0};
 QHash<quint8, BYTE> QKeyMapper_Worker::s_VK2HIDCodeMap;
 QHash<quint8, BYTE> QKeyMapper_Worker::s_VK2HIDModifierMap;
+// FakerInput mouse report state
+BYTE QKeyMapper_Worker::s_FakerInputMouseReport_Buttons = 0;
 #endif
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
 bool QKeyMapper_Worker::s_GameControllerSensor_EnableState = false;
@@ -2342,6 +2344,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (true == VirtualMouseButtonMap.contains(key)) {
                 if (sendtype != SENDTYPE_EXCLUSION
                     && sendmode != SENDMODE_FORCE_STOP
+                    && sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDINPUT
                     && postmappingkey != true
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && false == pressedVirtualKeysList.contains(key)) {
@@ -2381,7 +2384,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else {
                     input.mi.dwFlags = vmousecode.MouseUpCode;
                 }
-                if (postmappingkey) {
+                if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+                    FakerInputClient_sendMouseButton(key, send_keyupdown);
+#endif
+                }
+                else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                     if (QKeyMapper::s_CurrentMappingHWND != NULL) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace().noquote() << "[sendInputKeys] PostMappingKey(true), postMouseButton(" << key << ") " << ((send_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
@@ -2406,6 +2414,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
                     && sendmode != SENDMODE_FORCE_STOP
                     && fixedvkeycode == FIXED_VIRTUAL_KEY_CODE_NONE
+                    && sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDINPUT
                     && postmappingkey != true
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && sendtype != SENDTYPE_EXCLUSION
@@ -2481,7 +2490,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
                 if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
 #ifdef FAKERINPUT_SUPPORT
-                    quint8 vk = (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) ? fixedvkeycode : vkeycode.KeyCode;
+                    quint8 vk = vkeycode.KeyCode;
                     FakerInputClient_sendKeyboardInput(vk, vkeycode.ExtenedFlag, send_keyupdown);
 #endif
                 }
@@ -2996,7 +3005,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         input.mi.mouseData = WHEEL_DELTA;
                     }
 
-                    if (postmappingkey) {
+                    if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+                        FakerInputClient_sendMouseWheel(key);
+#endif
+                    }
+                    else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), postMouseWheel(" << key << ") -> " << QKeyMapper::s_CurrentMappingHWND;
@@ -3057,7 +3071,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else {
                         input.mi.dwFlags = vmousecode.MouseUpCode;
                     }
-                    if (postmappingkey) {
+                    if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+                        FakerInputClient_sendMouseButton(key, send_keyupdown);
+#endif
+                    }
+                    else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), postMouseButton(" << key << ") " << ((send_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
@@ -3088,7 +3107,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                         send_keyupdown = KEY_UP;
                         input.mi.dwFlags = vmousecode.MouseUpCode;
-                        if (postmappingkey) {
+                        if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+                            FakerInputClient_sendMouseButton(key, send_keyupdown);
+#endif
+                        }
+                        else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                             if (QKeyMapper::s_CurrentMappingHWND != NULL) {
 #ifdef DEBUG_LOGOUT_ON
                                 qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), SENDTYPE_BOTH postMouseButton(" << key << ") " << ((send_keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
@@ -3185,7 +3209,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                     if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
 #ifdef FAKERINPUT_SUPPORT
-                        quint8 vk = (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) ? fixedvkeycode : vkeycode.KeyCode;
+                        quint8 vk = vkeycode.KeyCode;
                         FakerInputClient_sendKeyboardInput(vk, vkeycode.ExtenedFlag, send_keyupdown);
 #endif
                     }
@@ -3228,7 +3252,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
                         if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
 #ifdef FAKERINPUT_SUPPORT
-                            quint8 vk = (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) ? fixedvkeycode : vkeycode.KeyCode;
+                            quint8 vk = vkeycode.KeyCode;
                             FakerInputClient_sendKeyboardInput(vk, vkeycode.ExtenedFlag, send_keyupdown);
 #endif
                         }
@@ -4008,6 +4032,9 @@ int QKeyMapper_Worker::FakerInputClient_Alloc()
     s_FakerInputKeyboardReport_ShiftFlags = 0;
     memset(s_FakerInputKeyboardReport_KeyCodes, 0, sizeof(s_FakerInputKeyboardReport_KeyCodes));
 
+    // Initialize the mouse report state
+    s_FakerInputMouseReport_Buttons = 0;
+
     // Initialize VK to HID code mapping table
     initVK2HIDCodeMap();
 
@@ -4299,6 +4326,146 @@ bool QKeyMapper_Worker::FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool
     qDebug("[FakerInputClient_sendKeyboardInput] VK:0x%02X, %s, ShiftFlags:0x%02X, KeyCodes:[%s], Result:%d",
            vkeycode, (keyupdown == KEY_DOWN) ? "DOWN" : "UP",
            s_FakerInputKeyboardReport_ShiftFlags, keycodesStr.toLatin1().constData(), result);
+#endif
+
+    return result;
+}
+
+// FakerInput HID Mouse Button Bit Definitions
+// According to HID Usage Tables for Generic Desktop Page (Mouse)
+#define FAKERINPUT_MOUSE_BUTTON_LEFT    0x01    // Button 1 (Left)
+#define FAKERINPUT_MOUSE_BUTTON_RIGHT   0x02    // Button 2 (Right)
+#define FAKERINPUT_MOUSE_BUTTON_MIDDLE  0x04    // Button 3 (Middle)
+#define FAKERINPUT_MOUSE_BUTTON_X1      0x08    // Button 4 (X1/Back)
+#define FAKERINPUT_MOUSE_BUTTON_X2      0x10    // Button 5 (X2/Forward)
+
+BYTE QKeyMapper_Worker::MouseButtonStringToHIDButton(const QString &mouseButton, int keyupdown)
+{
+    Q_UNUSED(keyupdown);
+
+    // Map mouse button string to HID button bit
+    if (mouseButton == "Mouse-L") {
+        return FAKERINPUT_MOUSE_BUTTON_LEFT;
+    } else if (mouseButton == "Mouse-R") {
+        return FAKERINPUT_MOUSE_BUTTON_RIGHT;
+    } else if (mouseButton == "Mouse-M") {
+        return FAKERINPUT_MOUSE_BUTTON_MIDDLE;
+    } else if (mouseButton == "Mouse-X1") {
+        return FAKERINPUT_MOUSE_BUTTON_X1;
+    } else if (mouseButton == "Mouse-X2") {
+        return FAKERINPUT_MOUSE_BUTTON_X2;
+    }
+    return 0;   // Unknown button
+}
+
+void QKeyMapper_Worker::resetFakerInputMouseReport(void)
+{
+    s_FakerInputMouseReport_Buttons = 0;
+}
+
+bool QKeyMapper_Worker::FakerInputClient_sendMouseButton(const QString &mouseButton, int keyupdown)
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient == Q_NULLPTR || s_FakerInputClient_ConnectState != FAKERINPUT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_sendMouseButton] FakerInput not connected!";
+#endif
+        return false;
+    }
+
+    BYTE buttonBit = MouseButtonStringToHIDButton(mouseButton, keyupdown);
+    if (buttonBit == 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_sendMouseButton] Unknown mouse button:" << mouseButton;
+#endif
+        return false;
+    }
+
+    // Update button state
+    if (keyupdown == KEY_DOWN) {
+        s_FakerInputMouseReport_Buttons |= buttonBit;
+    } else {
+        s_FakerInputMouseReport_Buttons &= ~buttonBit;
+    }
+
+    // Send relative mouse report with current button state, zero movement, zero wheel
+    bool result = fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, 0, 0);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[FakerInputClient_sendMouseButton] Button:%s, %s, ButtonState:0x%02X, Result:%d",
+           mouseButton.toLatin1().constData(), (keyupdown == KEY_DOWN) ? "DOWN" : "UP",
+           s_FakerInputMouseReport_Buttons, result);
+#endif
+
+    return result;
+}
+
+bool QKeyMapper_Worker::FakerInputClient_sendMouseWheel(const QString &wheelDirection)
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient == Q_NULLPTR || s_FakerInputClient_ConnectState != FAKERINPUT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_sendMouseWheel] FakerInput not connected!";
+#endif
+        return false;
+    }
+
+    // HID wheel values: positive = up/right, negative = down/left
+    // Typical wheel delta is 1 for single notch
+    BYTE wheelPosition = 0;
+    BYTE hWheelPosition = 0;
+
+    if (wheelDirection == MOUSE_WHEEL_UP_STR) {
+        wheelPosition = 1;      // Scroll up
+    } else if (wheelDirection == MOUSE_WHEEL_DOWN_STR) {
+        wheelPosition = (BYTE)(-1);  // Scroll down (0xFF as signed -1)
+    } else if (wheelDirection == MOUSE_WHEEL_LEFT_STR) {
+        hWheelPosition = (BYTE)(-1); // Scroll left (0xFF as signed -1)
+    } else if (wheelDirection == MOUSE_WHEEL_RIGHT_STR) {
+        hWheelPosition = 1;     // Scroll right
+    } else {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_sendMouseWheel] Unknown wheel direction:" << wheelDirection;
+#endif
+        return false;
+    }
+
+    // Send relative mouse report with current button state, zero movement, wheel values
+    bool result = fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, wheelPosition, hWheelPosition);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[FakerInputClient_sendMouseWheel] Direction:%s, Wheel:%d, HWheel:%d, Result:%d",
+           wheelDirection.toLatin1().constData(), (int8_t)wheelPosition, (int8_t)hWheelPosition, result);
+#endif
+
+    return result;
+}
+
+bool QKeyMapper_Worker::FakerInputClient_sendMouseMove(int delta_x, int delta_y)
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient == Q_NULLPTR || s_FakerInputClient_ConnectState != FAKERINPUT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_sendMouseMove] FakerInput not connected!";
+#endif
+        return false;
+    }
+
+    // Clamp delta values to valid range for FakerInput relative mouse
+    const int MOUSE_MIN = RELATIVE_MOUSE_MIN_COORDINATE;
+    const int MOUSE_MAX = RELATIVE_MOUSE_MAX_COORDINATE;
+
+    SHORT x = (SHORT)(delta_x < MOUSE_MIN ? MOUSE_MIN : (delta_x > MOUSE_MAX ? MOUSE_MAX : delta_x));
+    SHORT y = (SHORT)(delta_y < MOUSE_MIN ? MOUSE_MIN : (delta_y > MOUSE_MAX ? MOUSE_MAX : delta_y));
+
+    // Send relative mouse report with current button state, movement, zero wheel
+    bool result = fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, x, y, 0, 0);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[FakerInputClient_sendMouseMove] DeltaX:%d, DeltaY:%d, Result:%d", x, y, result);
 #endif
 
     return result;
