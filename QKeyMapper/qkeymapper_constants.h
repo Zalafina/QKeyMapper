@@ -1,6 +1,7 @@
 #pragma once
 
 #include <windows.h>
+#include <devpropdef.h>
 #include <QPoint>
 #include <QSize>
 #include <QColor>
@@ -479,6 +480,10 @@ namespace QKeyMapperConstants {
 
     inline constexpr int PASTETEXT_MODE_SHIFTINSERT     = 0;
     inline constexpr int PASTETEXT_MODE_CTRLV           = 1;
+
+    inline constexpr int SENDMAPPINGKEY_METHOD_SENDINPUT    = 0;
+    inline constexpr int SENDMAPPINGKEY_METHOD_SENDMESSAGE  = 1;
+    inline constexpr int SENDMAPPINGKEY_METHOD_FAKERINPUT   = 2;
 
     inline constexpr uint LOCK_STATE_LOCKOFF       = 0;
     inline constexpr uint LOCK_STATE_LOCKON        = 1;
@@ -994,6 +999,10 @@ namespace QKeyMapperConstants {
     inline constexpr const char SHOW_SCREEN_POINT_KEY[] = "ShowScreenPointKey";
     inline constexpr const char MAPPINGSTART_KEY[] = "MappingStartKey";
     inline constexpr const char MAPPINGSTOP_KEY[] = "MappingStopKey";
+
+    inline constexpr const DEVPROPKEY DEVPKEY_Device_HardwareIds = {
+        {0xa45c254e, 0xdf1c, 0x4efd, {0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0}}, 3
+    };
 
 #ifdef USE_SAOFONT
     inline constexpr const char SAO_FONTFILENAME[] = ":/sao_ui.otf";

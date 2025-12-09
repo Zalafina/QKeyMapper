@@ -116,6 +116,15 @@ QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
 QHash<int, QKeyMapper_Worker::Mouse2vJoyData> QKeyMapper_Worker::s_Mouse2vJoy_EnableStateMap;
 // QMutex QKeyMapper_Worker::s_MouseMove_delta_List_Mutex;
 #endif
+#ifdef FAKERINPUT_SUPPORT
+pfakerinput_client QKeyMapper_Worker::s_FakerInputClient = Q_NULLPTR;
+QKeyMapper_Worker::FakerInputClient_ConnectState QKeyMapper_Worker::s_FakerInputClient_ConnectState = FAKERINPUT_DISCONNECTED;
+QMutex QKeyMapper_Worker::s_FakerInputClient_Mutex;
+BYTE QKeyMapper_Worker::s_FakerInputKeyboardReport_ShiftFlags = 0;
+BYTE QKeyMapper_Worker::s_FakerInputKeyboardReport_KeyCodes[KBD_KEY_CODES] = {0};
+QHash<quint8, BYTE> QKeyMapper_Worker::s_VK2HIDCodeMap;
+QHash<quint8, BYTE> QKeyMapper_Worker::s_VK2HIDModifierMap;
+#endif
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
 bool QKeyMapper_Worker::s_GameControllerSensor_EnableState = false;
 // QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
@@ -261,6 +270,11 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
 
     setWorkerKeyUnHook();
     clearGlobalSendInputTaskController();
+
+#ifdef FAKERINPUT_SUPPORT
+    FakerInputClient_Disconnect();
+    FakerInputClient_Free();
+#endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // ViGEmClient_Remove();
@@ -2066,12 +2080,15 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     int sendtype = SENDTYPE_NORMAL;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
     bool postmappingkey = false;
+    int sendmappingkeymethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     int fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
     int pastetextmode = PASTETEXT_MODE_SHIFTINSERT;
 
     // Use saved mapping table pointer to avoid array bounds issues during tab switching
     if (rowindex >= 0 && rowindex < keyMappingDataList->size()) {
         postmappingkey = keyMappingDataList->at(rowindex).PostMappingKey;
+        // sendmappingkeymethod = keyMappingDataList->at(rowindex).SendMappingKeyMethod;
+        sendmappingkeymethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
         fixedvkeycode = keyMappingDataList->at(rowindex).FixedVKeyCode;
         if (fixedvkeycode < FIXED_VIRTUAL_KEY_CODE_MIN || fixedvkeycode > FIXED_VIRTUAL_KEY_CODE_MAX) {
             fixedvkeycode = FIXED_VIRTUAL_KEY_CODE_NONE;
@@ -2462,7 +2479,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     input.ki.wVk = fixedvkeycode;
                     input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                 }
-                if (postmappingkey) {
+                if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+                    quint8 vk = (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) ? fixedvkeycode : vkeycode.KeyCode;
+                    FakerInputClient_sendKeyboardInput(vk, vkeycode.ExtenedFlag, send_keyupdown);
+#endif
+                }
+                else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                     if (QKeyMapper::s_CurrentMappingHWND != NULL) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), postVirtualKeyCode(" << key << ") KeyUp -> " << QKeyMapper::s_CurrentMappingHWND;
@@ -3160,7 +3183,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         input.ki.wVk = fixedvkeycode;
                         input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                     }
-                    if (postmappingkey) {
+                    if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+                        quint8 vk = (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) ? fixedvkeycode : vkeycode.KeyCode;
+                        FakerInputClient_sendKeyboardInput(vk, vkeycode.ExtenedFlag, send_keyupdown);
+#endif
+                    }
+                    else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
 #ifdef DEBUG_LOGOUT_ON
                             qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_CurrentMappingHWND;
@@ -3197,7 +3226,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                         send_keyupdown = KEY_UP;
                         input.ki.dwFlags = extenedkeyflag | KEYEVENTF_KEYUP;
-                        if (postmappingkey) {
+                        if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+                            quint8 vk = (normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE) ? fixedvkeycode : vkeycode.KeyCode;
+                            FakerInputClient_sendKeyboardInput(vk, vkeycode.ExtenedFlag, send_keyupdown);
+#endif
+                        }
+                        else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                             if (QKeyMapper::s_CurrentMappingHWND != NULL) {
 #ifdef DEBUG_LOGOUT_ON
                                 qDebug().nospace().noquote() << "[sendInputKeys] postmappingkey(true), SENDTYPE_BOTH postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_CurrentMappingHWND;
@@ -3946,6 +3981,329 @@ void QKeyMapper_Worker::sendSpecialVirtualKeyUp(const QString &virtualKey)
         sendKeyboardInput(map_vkeycode, KEY_UP);
     }
 }
+
+#ifdef FAKERINPUT_SUPPORT
+int QKeyMapper_Worker::FakerInputClient_Alloc()
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient != Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning("[FakerInputClient_Alloc] FakerInputClient is already Alloced!!! -> [0x%08X]", s_FakerInputClient);
+#endif
+        return 0;
+    }
+
+    s_FakerInputClient = fakerinput_alloc();
+
+    if (s_FakerInputClient == nullptr)
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_Alloc]" << "Failed to alloc FakerInputClient, not enough memory to do that?!!!";
+#endif
+        return -1;
+    }
+
+    // Initialize the keyboard report state
+    s_FakerInputKeyboardReport_ShiftFlags = 0;
+    memset(s_FakerInputKeyboardReport_KeyCodes, 0, sizeof(s_FakerInputKeyboardReport_KeyCodes));
+
+    // Initialize VK to HID code mapping table
+    initVK2HIDCodeMap();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[FakerInputClient_Alloc] FakerInputClient Alloc() Success. -> [0x%08X]", s_FakerInputClient);
+#endif
+
+    return 0;
+}
+
+int QKeyMapper_Worker::FakerInputClient_Connect()
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient == Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_Connect]" << "FakerInputClient is not Alloced!!!";
+#endif
+        s_FakerInputClient_ConnectState = FAKERINPUT_DISCONNECTED;
+        updateFakerInputStatus();
+        return -1;
+    }
+
+    bool connected = fakerinput_connect(s_FakerInputClient);
+    if (!connected)
+    {
+        s_FakerInputClient_ConnectState = FAKERINPUT_CONNECT_FAILED;
+        updateFakerInputStatus();
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_Connect]" << "FakerInput connection failed!!!";
+#endif
+        return -1;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[FakerInputClient_Connect] FakerInputClient Connect() Success. -> [0x%08X]", s_FakerInputClient);
+#endif
+
+    s_FakerInputClient_ConnectState = FAKERINPUT_CONNECT_SUCCESS;
+    updateFakerInputStatus();
+
+    return 0;
+}
+
+void QKeyMapper_Worker::FakerInputClient_Disconnect()
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient != Q_NULLPTR) {
+        fakerinput_disconnect(s_FakerInputClient);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[FakerInputClient_Disconnect]" << "FakerInputClient Disconnect() Success.";
+#endif
+    }
+    s_FakerInputClient_ConnectState = FAKERINPUT_DISCONNECTED;
+    updateFakerInputStatus();
+}
+
+void QKeyMapper_Worker::FakerInputClient_Free()
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient != Q_NULLPTR) {
+        fakerinput_free(s_FakerInputClient);
+        s_FakerInputClient = Q_NULLPTR;
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[FakerInputClient_Free]" << "FakerInputClient Free() Success.";
+#endif
+    }
+    s_FakerInputClient_ConnectState = FAKERINPUT_DISCONNECTED;
+    updateFakerInputStatus();
+}
+
+QKeyMapper_Worker::FakerInputClient_ConnectState QKeyMapper_Worker::FakerInputClient_getConnectState()
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    return s_FakerInputClient_ConnectState;
+}
+
+void QKeyMapper_Worker::FakerInputClient_setConnectState(FakerInputClient_ConnectState connectstate)
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    s_FakerInputClient_ConnectState = connectstate;
+}
+
+void QKeyMapper_Worker::updateFakerInputStatus()
+{
+    if (s_isWorkerDestructing) {
+        return;
+    }
+    // Can emit signal to update UI status if needed
+}
+
+void QKeyMapper_Worker::initVK2HIDCodeMap()
+{
+    // Initialize VK to HID Usage Code mapping
+    // Based on USB HID Usage Tables (https://www.usb.org/sites/default/files/hut1_22.pdf)
+
+    s_VK2HIDCodeMap.clear();
+    s_VK2HIDModifierMap.clear();
+
+    // Modifier keys -> HID Modifier flags
+    s_VK2HIDModifierMap.insert(VK_LCONTROL, KBD_LCONTROL_BIT);   // 0xA2 -> Left Control
+    s_VK2HIDModifierMap.insert(VK_RCONTROL, KBD_RCONTROL_BIT);   // 0xA3 -> Right Control
+    s_VK2HIDModifierMap.insert(VK_LSHIFT,   KBD_LSHIFT_BIT);     // 0xA0 -> Left Shift
+    s_VK2HIDModifierMap.insert(VK_RSHIFT,   KBD_RSHIFT_BIT);     // 0xA1 -> Right Shift
+    s_VK2HIDModifierMap.insert(VK_LMENU,    KBD_LALT_BIT);       // 0xA4 -> Left Alt
+    s_VK2HIDModifierMap.insert(VK_RMENU,    KBD_RALT_BIT);       // 0xA5 -> Right Alt
+    s_VK2HIDModifierMap.insert(VK_LWIN,     KBD_LGUI_BIT);       // 0x5B -> Left GUI (Win)
+    s_VK2HIDModifierMap.insert(VK_RWIN,     KBD_RGUI_BIT);       // 0x5C -> Right GUI (Win)
+
+    // Letter keys A-Z -> HID 0x04 - 0x1D
+    for (int i = 0; i < 26; i++) {
+        s_VK2HIDCodeMap.insert(VK_A + i, 0x04 + i);
+    }
+
+    // Number keys 1-9 -> HID 0x1E - 0x26
+    for (int i = 0; i < 9; i++) {
+        s_VK2HIDCodeMap.insert(VK_1 + i, 0x1E + i);
+    }
+    // Number 0 -> HID 0x27
+    s_VK2HIDCodeMap.insert(VK_0, 0x27);
+
+    // Function keys F1-F12 -> HID 0x3A - 0x45
+    for (int i = 0; i < 12; i++) {
+        s_VK2HIDCodeMap.insert(VK_F1 + i, 0x3A + i);
+    }
+    // Function keys F13-F24 -> HID 0x68 - 0x73
+    for (int i = 0; i < 12; i++) {
+        s_VK2HIDCodeMap.insert(VK_F13 + i, 0x68 + i);
+    }
+
+    // Special keys
+    s_VK2HIDCodeMap.insert(VK_ESCAPE,   0x29);   // Escape
+    s_VK2HIDCodeMap.insert(VK_BACK,     0x2A);   // Backspace
+    s_VK2HIDCodeMap.insert(VK_TAB,      0x2B);   // Tab
+    s_VK2HIDCodeMap.insert(VK_SPACE,    0x2C);   // Space
+    s_VK2HIDCodeMap.insert(VK_RETURN,   0x28);   // Enter
+    s_VK2HIDCodeMap.insert(VK_CAPITAL,  0x39);   // CapsLock
+    s_VK2HIDCodeMap.insert(VK_SNAPSHOT, 0x46);   // PrintScreen
+    s_VK2HIDCodeMap.insert(VK_SCROLL,   0x47);   // ScrollLock
+    s_VK2HIDCodeMap.insert(VK_PAUSE,    0x48);   // Pause
+
+    // Navigation keys
+    s_VK2HIDCodeMap.insert(VK_INSERT,   0x49);   // Insert
+    s_VK2HIDCodeMap.insert(VK_HOME,     0x4A);   // Home
+    s_VK2HIDCodeMap.insert(VK_PRIOR,    0x4B);   // PageUp
+    s_VK2HIDCodeMap.insert(VK_DELETE,   0x4C);   // Delete
+    s_VK2HIDCodeMap.insert(VK_END,      0x4D);   // End
+    s_VK2HIDCodeMap.insert(VK_NEXT,     0x4E);   // PageDown
+
+    // Arrow keys
+    s_VK2HIDCodeMap.insert(VK_RIGHT,    0x4F);   // Right
+    s_VK2HIDCodeMap.insert(VK_LEFT,     0x50);   // Left
+    s_VK2HIDCodeMap.insert(VK_DOWN,     0x51);   // Down
+    s_VK2HIDCodeMap.insert(VK_UP,       0x52);   // Up
+
+    // Numpad keys
+    s_VK2HIDCodeMap.insert(VK_NUMLOCK,  0x53);   // NumLock
+    s_VK2HIDCodeMap.insert(VK_DIVIDE,   0x54);   // Numpad /
+    s_VK2HIDCodeMap.insert(VK_MULTIPLY, 0x55);   // Numpad *
+    s_VK2HIDCodeMap.insert(VK_SUBTRACT, 0x56);   // Numpad -
+    s_VK2HIDCodeMap.insert(VK_ADD,      0x57);   // Numpad +
+    // Note: NumpadEnter is handled separately if needed (0x58)
+    s_VK2HIDCodeMap.insert(VK_NUMPAD1,  0x59);   // Numpad 1
+    s_VK2HIDCodeMap.insert(VK_NUMPAD2,  0x5A);   // Numpad 2
+    s_VK2HIDCodeMap.insert(VK_NUMPAD3,  0x5B);   // Numpad 3
+    s_VK2HIDCodeMap.insert(VK_NUMPAD4,  0x5C);   // Numpad 4
+    s_VK2HIDCodeMap.insert(VK_NUMPAD5,  0x5D);   // Numpad 5
+    s_VK2HIDCodeMap.insert(VK_NUMPAD6,  0x5E);   // Numpad 6
+    s_VK2HIDCodeMap.insert(VK_NUMPAD7,  0x5F);   // Numpad 7
+    s_VK2HIDCodeMap.insert(VK_NUMPAD8,  0x60);   // Numpad 8
+    s_VK2HIDCodeMap.insert(VK_NUMPAD9,  0x61);   // Numpad 9
+    s_VK2HIDCodeMap.insert(VK_NUMPAD0,  0x62);   // Numpad 0
+    s_VK2HIDCodeMap.insert(VK_DECIMAL,  0x63);   // Numpad .
+
+    // OEM keys (US keyboard layout)
+    s_VK2HIDCodeMap.insert(VK_OEM_MINUS,    0x2D);   // - _
+    s_VK2HIDCodeMap.insert(VK_OEM_PLUS,     0x2E);   // = +
+    s_VK2HIDCodeMap.insert(VK_OEM_4,        0x2F);   // [ {
+    s_VK2HIDCodeMap.insert(VK_OEM_6,        0x30);   // ] }
+    s_VK2HIDCodeMap.insert(VK_OEM_5,        0x31);   // \ |
+    s_VK2HIDCodeMap.insert(VK_OEM_1,        0x33);   // ; :
+    s_VK2HIDCodeMap.insert(VK_OEM_7,        0x34);   // ' "
+    s_VK2HIDCodeMap.insert(VK_OEM_3,        0x35);   // ` ~
+    s_VK2HIDCodeMap.insert(VK_OEM_COMMA,    0x36);   // , <
+    s_VK2HIDCodeMap.insert(VK_OEM_PERIOD,   0x37);   // . >
+    s_VK2HIDCodeMap.insert(VK_OEM_2,        0x38);   // / ?
+
+    // Application key
+    s_VK2HIDCodeMap.insert(VK_APPS,     0x65);   // Application (Menu)
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[initVK2HIDCodeMap] Initialized VK2HID mapping:" << s_VK2HIDCodeMap.size() << "key codes," << s_VK2HIDModifierMap.size() << "modifiers";
+#endif
+}
+
+BYTE QKeyMapper_Worker::VirtualKeyCodeToHIDUsageCode(quint8 vkeycode)
+{
+    if (s_VK2HIDCodeMap.contains(vkeycode)) {
+        return s_VK2HIDCodeMap.value(vkeycode);
+    }
+    return 0;   // No mapping found
+}
+
+BYTE QKeyMapper_Worker::VirtualKeyCodeToHIDModifierFlag(quint8 vkeycode)
+{
+    if (s_VK2HIDModifierMap.contains(vkeycode)) {
+        return s_VK2HIDModifierMap.value(vkeycode);
+    }
+    return 0;   // Not a modifier key
+}
+
+bool QKeyMapper_Worker::FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool extendedFlag, int keyupdown)
+{
+    Q_UNUSED(extendedFlag);
+
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient == Q_NULLPTR || s_FakerInputClient_ConnectState != FAKERINPUT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_sendKeyboardInput] FakerInput not connected!";
+#endif
+        return false;
+    }
+
+    // Check if this is a modifier key
+    BYTE modifierFlag = VirtualKeyCodeToHIDModifierFlag(vkeycode);
+    if (modifierFlag != 0) {
+        // Handle modifier key
+        if (keyupdown == KEY_DOWN) {
+            s_FakerInputKeyboardReport_ShiftFlags |= modifierFlag;
+        } else {
+            s_FakerInputKeyboardReport_ShiftFlags &= ~modifierFlag;
+        }
+    } else {
+        // Handle normal key
+        BYTE hidCode = VirtualKeyCodeToHIDUsageCode(vkeycode);
+        if (hidCode == 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("[FakerInputClient_sendKeyboardInput] No HID mapping for VK: 0x%02X", vkeycode);
+#endif
+            return false;
+        }
+
+        if (keyupdown == KEY_DOWN) {
+            // Add key to the report (find empty slot)
+            bool added = false;
+            for (int i = 0; i < KBD_KEY_CODES; i++) {
+                if (s_FakerInputKeyboardReport_KeyCodes[i] == 0) {
+                    s_FakerInputKeyboardReport_KeyCodes[i] = hidCode;
+                    added = true;
+                    break;
+                } else if (s_FakerInputKeyboardReport_KeyCodes[i] == hidCode) {
+                    // Key already in report
+                    added = true;
+                    break;
+                }
+            }
+            if (!added) {
+#ifdef DEBUG_LOGOUT_ON
+                qWarning("[FakerInputClient_sendKeyboardInput] Keyboard report full, cannot add HID: 0x%02X", hidCode);
+#endif
+            }
+        } else {
+            // Remove key from the report
+            for (int i = 0; i < KBD_KEY_CODES; i++) {
+                if (s_FakerInputKeyboardReport_KeyCodes[i] == hidCode) {
+                    s_FakerInputKeyboardReport_KeyCodes[i] = 0;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Send the keyboard report
+    bool result = fakerinput_update_keyboard(s_FakerInputClient, s_FakerInputKeyboardReport_ShiftFlags, s_FakerInputKeyboardReport_KeyCodes);
+
+#ifdef DEBUG_LOGOUT_ON
+    QString keycodesStr;
+    for (int i = 0; i < KBD_KEY_CODES; i++) {
+        if (i > 0) keycodesStr += ",";
+        keycodesStr += QString("0x%1").arg(s_FakerInputKeyboardReport_KeyCodes[i], 2, 16, QChar('0'));
+    }
+    qDebug("[FakerInputClient_sendKeyboardInput] VK:0x%02X, %s, ShiftFlags:0x%02X, KeyCodes:[%s], Result:%d",
+           vkeycode, (keyupdown == KEY_DOWN) ? "DOWN" : "UP",
+           s_FakerInputKeyboardReport_ShiftFlags, keycodesStr.toLatin1().constData(), result);
+#endif
+
+    return result;
+}
+#endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
 int QKeyMapper_Worker::ViGEmClient_Alloc()
@@ -15141,7 +15499,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        s_LowLevelKeyboardHook_Enable = false;
+        // s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");

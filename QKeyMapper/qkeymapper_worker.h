@@ -28,6 +28,9 @@
 #ifdef DINPUT_TEST
 #include <dinput.h>
 #endif
+#ifdef FAKERINPUT_SUPPORT
+#include <fakerinputclient.h>
+#endif
 
 #include <QAtomicInteger>
 using QAtomicBool = QAtomicInteger<bool>;
@@ -65,6 +68,7 @@ typedef struct MAP_KEYDATA
     bool DisableOriginalKeyUnlock;
     bool DisableFnKeySwitch;
     bool PostMappingKey;
+    int SendMappingKeyMethod;
     int FixedVKeyCode;
     uint LockState;
     bool CheckCombKeyOrder;
@@ -107,6 +111,7 @@ typedef struct MAP_KEYDATA
     , DisableOriginalKeyUnlock(false)
     , DisableFnKeySwitch(false)
     , PostMappingKey(false)
+    , SendMappingKeyMethod(QKeyMapperConstants::SENDMAPPINGKEY_METHOD_FAKERINPUT)
     , FixedVKeyCode(QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_NONE)
     , LockState(QKeyMapperConstants::LOCK_STATE_LOCKOFF)
     , CheckCombKeyOrder(true)
@@ -644,6 +649,17 @@ public:
     };
     Q_ENUM(JoystickRStickCode)
 
+#ifdef FAKERINPUT_SUPPORT
+    enum FakerInputClient_ConnectState
+    {
+        FAKERINPUT_DISCONNECTED = 0,
+        FAKERINPUT_CONNECT_FAILED,
+        FAKERINPUT_CONNECTING,
+        FAKERINPUT_CONNECT_SUCCESS,
+    };
+    Q_ENUM(FakerInputClient_ConnectState)
+#endif
+
 #ifdef VIGEM_CLIENT_SUPPORT
     enum ViGEmClient_ConnectState
     {
@@ -816,6 +832,22 @@ public:
 
     void initGamepadMotion(void);
     void setGamepadMotionAutoCalibration(bool enabled, float gyroThreshold, float accelThreshold);
+
+#ifdef FAKERINPUT_SUPPORT
+public:
+    static int FakerInputClient_Alloc(void);
+    static int FakerInputClient_Connect(void);
+    static void FakerInputClient_Disconnect(void);
+    static void FakerInputClient_Free(void);
+    static FakerInputClient_ConnectState FakerInputClient_getConnectState(void);
+    static void FakerInputClient_setConnectState(FakerInputClient_ConnectState connectstate);
+    static bool FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool extendedFlag, int keyupdown);
+    static BYTE VirtualKeyCodeToHIDUsageCode(quint8 vkeycode);
+    static BYTE VirtualKeyCodeToHIDModifierFlag(quint8 vkeycode);
+    static void updateFakerInputStatus(void);
+private:
+    static void initVK2HIDCodeMap(void);
+#endif
 
 #ifdef VIGEM_CLIENT_SUPPORT
 public:
@@ -1152,6 +1184,15 @@ public:
     static GetDeviceStateT FuncPtrGetDeviceState;
     static GetDeviceDataT FuncPtrGetDeviceData;
     static int dinput_timerid;
+#endif
+#ifdef FAKERINPUT_SUPPORT
+    static pfakerinput_client s_FakerInputClient;
+    static FakerInputClient_ConnectState s_FakerInputClient_ConnectState;
+    static QMutex s_FakerInputClient_Mutex;
+    static BYTE s_FakerInputKeyboardReport_ShiftFlags;
+    static BYTE s_FakerInputKeyboardReport_KeyCodes[KBD_KEY_CODES];
+    static QHash<quint8, BYTE> s_VK2HIDCodeMap;
+    static QHash<quint8, BYTE> s_VK2HIDModifierMap;
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
     static PVIGEM_CLIENT s_ViGEmClient;

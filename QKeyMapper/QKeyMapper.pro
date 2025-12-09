@@ -35,6 +35,7 @@ DEFINES += USE_QTRANSLATOR
 # DEFINES += SETTINGSFILE_CONVERT
 # DEFINES += SEPARATOR_CONVERT
 DEFINES += VIGEM_CLIENT_SUPPORT
+DEFINES += FAKERINPUT_SUPPORT
 DEFINES += HOOKSTART_ONSTARTUP
 DEFINES += CYCLECHECKTIMER_ENABLED
 DEFINES += AUTO_REFRESH_PROCESSINFOLIST
@@ -148,16 +149,20 @@ contains(DEFINES, WIN64) {
 # Interception x64 dll library
 LIBS        += -L$$PWD/Interception/lib/x64
 LIBS        += -L$$PWD/libusb/lib/x64
+LIBS        += -L$$PWD/FakerInput/lib/x64
 } else {
 # Interception x86 dll library
 LIBS        += -L$$PWD/Interception/lib/x86
 LIBS        += -L$$PWD/libusb/lib/x86
+LIBS        += -L$$PWD/FakerInput/lib/x86
 }
 LIBS        += interception.lib
 LIBS        += libusb-1.0.lib
+LIBS        += FakerInputDll.lib
 
 INCLUDEPATH += $$PWD/Interception/include
 INCLUDEPATH += $$PWD/libusb/include
+INCLUDEPATH += $$PWD/FakerInput/include
 INCLUDEPATH += $$PWD/QSimpleUpdater/include
 INCLUDEPATH += $$PWD/orderedmap
 INCLUDEPATH += $$PWD/GamepadMotion
@@ -167,6 +172,7 @@ HEADERS     += \
     Interception/include/interception.h \
     colorpickerwidget.h \
     libusb/include/libusb.h \
+    FakerInput/include/fakerinputclient.h \
     orderedmap/orderedmap.h \
     qcrosshairsetupdialog.h \
     qfloatingwindowsetupdialog.h \

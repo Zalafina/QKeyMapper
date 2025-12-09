@@ -404,6 +404,35 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->virtualGamepadNumberSpinBox->setEnabled(false);
     ui->virtualGamepadListComboBox->setEnabled(false);
 
+#ifdef FAKERINPUT_SUPPORT
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper()]" << "isFakerInputInstalled() ->" << isFakerInputInstalled();
+#endif
+    // Initialize FakerInput client if the driver is installed
+    if (isFakerInputInstalled()) {
+        int fakerinput_retval_alloc = QKeyMapper_Worker::FakerInputClient_Alloc();
+        int fakerinput_retval_connect = QKeyMapper_Worker::FakerInputClient_Connect();
+        Q_UNUSED(fakerinput_retval_alloc);
+        Q_UNUSED(fakerinput_retval_connect);
+
+        if (QKeyMapper_Worker::FAKERINPUT_CONNECT_SUCCESS != QKeyMapper_Worker::FakerInputClient_getConnectState()) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("FakerInputClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", fakerinput_retval_alloc, fakerinput_retval_connect);
+#endif
+        }
+#ifdef DEBUG_LOGOUT_ON
+        else {
+            qDebug() << "[QKeyMapper] FakerInputClient initialized successfully.";
+        }
+#endif
+    }
+#ifdef DEBUG_LOGOUT_ON
+    else {
+        qDebug() << "[QKeyMapper] FakerInput driver is not installed, skip initialization.";
+    }
+#endif
+#endif
+
     int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
     int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
     Q_UNUSED(retval_alloc);
@@ -2066,6 +2095,52 @@ bool QKeyMapper::isWindowInIgnoreList(QString &processname, QString &windowtitle
         }
     }
     return false;
+}
+
+bool QKeyMapper::isFakerInputInstalled()
+{
+    const wchar_t* fakerInputDevicePath = L"root\\FakerInput";
+    return checkForSysDevice(fakerInputDevicePath);
+}
+
+bool QKeyMapper::checkForSysDevice(const wchar_t *searchHardwareId)
+{
+    bool result = false;
+    GUID sysGuid = {0x4d36e97d, 0xe325, 0x11ce, {0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18}};
+
+    SP_DEVINFO_DATA deviceInfoData;
+    deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+
+    BYTE dataBuffer[4096];
+    DEVPROPTYPE propertyType = 0;
+    DWORD requiredSize = 0;
+
+    HDEVINFO deviceInfoSet = SetupDiGetClassDevsW(&sysGuid, nullptr, 0, 0);
+
+    if (deviceInfoSet == INVALID_HANDLE_VALUE)
+        return false;
+
+    for (int i = 0; !result && SetupDiEnumDeviceInfo(deviceInfoSet, i, &deviceInfoData); i++)
+    {
+        if (SetupDiGetDevicePropertyW(deviceInfoSet, &deviceInfoData,
+            &DEVPKEY_Device_HardwareIds, &propertyType,
+            dataBuffer, sizeof(dataBuffer), &requiredSize, 0))
+        {
+            // Convert to wide string
+            wchar_t* hardwareId = reinterpret_cast<wchar_t*>(dataBuffer);
+            if (wcscmp(hardwareId, searchHardwareId) == 0)
+            {
+                result = true;
+            }
+        }
+    }
+
+    if (deviceInfoSet != INVALID_HANDLE_VALUE)
+    {
+        SetupDiDestroyDeviceInfoList(deviceInfoSet);
+    }
+
+    return result;
 }
 
 void QKeyMapper::setDisplayScaleValue(double scale)
