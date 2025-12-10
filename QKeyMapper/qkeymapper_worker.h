@@ -30,6 +30,7 @@
 #endif
 #ifdef FAKERINPUT_SUPPORT
 #include <fakerinputclient.h>
+#include <QQueue>
 #endif
 
 #include <QAtomicInteger>
@@ -37,6 +38,50 @@ using QAtomicBool = QAtomicInteger<bool>;
 
 #include "volumecontroller.h"
 #include "qkeymapper_constants.h"
+
+#ifdef FAKERINPUT_SUPPORT
+// FakerInput ExtraInfo tracking structure for keyboard events
+// Used to track extraInfo values for FakerInput-sent keyboard events
+// so hook functions can properly identify and handle these events
+typedef struct FakerInputKeyboardExtraInfo
+{
+    quint8 vkeycode;        // Virtual key code
+    int keyupdown;          // KEY_DOWN or KEY_UP
+    ULONG_PTR extraInfo;    // The extraInfo value to apply
+
+    FakerInputKeyboardExtraInfo()
+        : vkeycode(0)
+        , keyupdown(0)
+        , extraInfo(0)
+    {}
+
+    FakerInputKeyboardExtraInfo(quint8 vk, int updown, ULONG_PTR info)
+        : vkeycode(vk)
+        , keyupdown(updown)
+        , extraInfo(info)
+    {}
+} FakerInputKeyboardExtraInfo;
+
+// FakerInput ExtraInfo tracking structure for mouse button events
+typedef struct FakerInputMouseButtonExtraInfo
+{
+    WPARAM wParam;          // Mouse message type (WM_LBUTTONDOWN, etc.)
+    WORD xbutton;           // XBUTTON1/XBUTTON2 for X button events, 0 otherwise
+    ULONG_PTR extraInfo;    // The extraInfo value to apply
+
+    FakerInputMouseButtonExtraInfo()
+        : wParam(0)
+        , xbutton(0)
+        , extraInfo(0)
+    {}
+
+    FakerInputMouseButtonExtraInfo(WPARAM wp, WORD xb, ULONG_PTR info)
+        : wParam(wp)
+        , xbutton(xb)
+        , extraInfo(info)
+    {}
+} FakerInputMouseButtonExtraInfo;
+#endif
 
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
 QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys = false);
@@ -841,16 +886,21 @@ public:
     static void FakerInputClient_Free(void);
     static FakerInputClient_ConnectState FakerInputClient_getConnectState(void);
     static void FakerInputClient_setConnectState(FakerInputClient_ConnectState connectstate);
-    static bool FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool extendedFlag, int keyupdown);
+    static bool FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool extendedFlag, int keyupdown, ULONG_PTR extraInfo = 0);
     static BYTE VirtualKeyCodeToHIDUsageCode(quint8 vkeycode);
     static BYTE VirtualKeyCodeToHIDModifierFlag(quint8 vkeycode);
     static void updateFakerInputStatus(void);
 
     // FakerInput mouse functions
-    static bool FakerInputClient_sendMouseButton(const QString &mouseButton, int keyupdown);
-    static bool FakerInputClient_sendMouseWheel(const QString &wheelDirection);
-    static bool FakerInputClient_sendMouseMove(int delta_x, int delta_y);
+    static bool FakerInputClient_sendMouseButton(const QString &mouseButton, int keyupdown, ULONG_PTR extraInfo = 0);
+    static bool FakerInputClient_sendMouseWheel(const QString &wheelDirection, ULONG_PTR extraInfo = 0);
+    static bool FakerInputClient_sendMouseMove(int delta_x, int delta_y, ULONG_PTR extraInfo = 0);
     static BYTE MouseButtonStringToHIDButton(const QString &mouseButton, int keyupdown);
+
+    // FakerInput ExtraInfo queue management functions
+    static void clearFakerInputExtraInfoQueues(void);
+    static bool matchFakerInputKeyboardExtraInfo(quint8 vkeycode, int keyupdown, ULONG_PTR &outExtraInfo);
+    static bool matchFakerInputMouseButtonExtraInfo(WPARAM wParam, WORD xbutton, ULONG_PTR &outExtraInfo);
 private:
     static void initVK2HIDCodeMap(void);
     static void resetFakerInputMouseReport(void);
@@ -1202,6 +1252,12 @@ public:
     static QHash<quint8, BYTE> s_VK2HIDModifierMap;
     // FakerInput mouse report state
     static BYTE s_FakerInputMouseReport_Buttons;
+    // FakerInput ExtraInfo tracking FIFO queues for cross-thread communication
+    // These queues track sent keys so hook functions can match and apply correct extraInfo
+    static QQueue<FakerInputKeyboardExtraInfo> s_FakerInputKeyboardExtraInfoQueue;
+    static QMutex s_FakerInputKeyboardExtraInfoQueue_Mutex;
+    static QQueue<FakerInputMouseButtonExtraInfo> s_FakerInputMouseButtonExtraInfoQueue;
+    static QMutex s_FakerInputMouseButtonExtraInfoQueue_Mutex;
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
     static PVIGEM_CLIENT s_ViGEmClient;
