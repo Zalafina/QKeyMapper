@@ -856,10 +856,10 @@ public slots:
 public:
     void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
     // void send_WINplusD(void);
-    void sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey);
-    void sendMouseMoveToPoint(QString &mousepoint_str, bool postmappingkey);
+    void sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
+    void sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
     void saveMousePosition(void);
-    void restoreMousePosition(void);
+    void restoreMousePosition(int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
     void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = QKeyMapperConstants::SENDVIRTUALKEY_STATE_NORMAL, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
 
 public:
@@ -896,6 +896,8 @@ public:
     static bool FakerInputClient_sendMouseButton(const QString &mouseButton, int keyupdown, ULONG_PTR extraInfo = 0);
     static bool FakerInputClient_sendMouseWheel(const QString &wheelDirection, ULONG_PTR extraInfo = 0);
     static bool FakerInputClient_sendMouseMove(int delta_x, int delta_y, ULONG_PTR extraInfo = 0);
+    static bool FakerInputClient_sendAbsoluteMouseButton(const QString &mouseButton, int x, int y, int keyupdown, ULONG_PTR extraInfo = 0);
+    static bool FakerInputClient_sendAbsoluteMouseMove(int x, int y, ULONG_PTR extraInfo = 0);
     static BYTE MouseButtonStringToHIDButton(const QString &mouseButton, int keyupdown);
 
     // FakerInput ExtraInfo queue management functions

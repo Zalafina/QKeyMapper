@@ -2351,7 +2351,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (true == VirtualMouseButtonMap.contains(key)) {
                 if (sendtype != SENDTYPE_EXCLUSION
                     && sendmode != SENDMODE_FORCE_STOP
-                    && postmappingkey != true
+                    && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
@@ -2420,7 +2420,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
                     && sendmode != SENDMODE_FORCE_STOP
                     && fixedvkeycode == FIXED_VIRTUAL_KEY_CODE_NONE
-                    && postmappingkey != true
+                    && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && sendtype != SENDTYPE_EXCLUSION
                     && false == pressedVirtualKeysList.contains(key)) {
@@ -2550,7 +2550,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 /* Mouse-Move KeyUp do nothing. */
             }
             else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
-                sendMousePointClick(key, KEY_UP, postmappingkey);
+                sendMousePointClick(key, KEY_UP, sendmappingkeymethod);
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -3321,7 +3321,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         saveMousePosition();
                     }
                     else if (key == MOUSE_POS_RESTORE_STR) {
-                        restoreMousePosition();
+                        restoreMousePosition(sendmappingkeymethod);
                     }
                 }
                 else if (key.startsWith(FUNC_PREFIX)) {
@@ -3329,14 +3329,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(key);
                 }
                 else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
-                    sendMouseMoveToPoint(key, postmappingkey);
+                    sendMouseMoveToPoint(key, sendmappingkeymethod);
                 }
                 else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                     int send_keyupdown = KEY_DOWN;
                     if (sendtype == SENDTYPE_UP) {
                         send_keyupdown = KEY_UP;
                     }
-                    sendMousePointClick(key, send_keyupdown, postmappingkey);
+                    sendMousePointClick(key, send_keyupdown, sendmappingkeymethod);
 
                     if (sendtype == SENDTYPE_BOTH) {
 #ifdef DEBUG_LOGOUT_ON
@@ -3347,7 +3347,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait end ->" << key;
 #endif
                         send_keyupdown = KEY_UP;
-                        sendMousePointClick(key, send_keyupdown, postmappingkey);
+                        sendMousePointClick(key, send_keyupdown, sendmappingkeymethod);
                     }
                 }
                 else {
@@ -3430,7 +3430,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     }
 }
 
-void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown, bool postmappingkey)
+void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod)
 {
     static QRegularExpression regex(R"((Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?(:BG)?\((-?\d+),(-?\d+)\))");
     QRegularExpressionMatch match = regex.match(mousepoint_str);
@@ -3456,11 +3456,22 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
             QPoint mousepoint(x, y);
 
             if (QKeyMapper::s_CurrentMappingHWND != NULL) {
-                if (postmappingkey || isPostBG) {
+                if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE || isPostBG) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendMousePointClick] postmappingkey=true, postMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
 #endif
                     postMouseButton(QKeyMapper::s_CurrentMappingHWND, mousebutton, keyupdown, mousepoint);
+                }
+                else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+                    // Convert window coordinates to screen coordinates for FakerInput absolute mouse
+                    POINT screenPoint = { mousepoint.x(), mousepoint.y() };
+                    ClientToScreen(QKeyMapper::s_CurrentMappingHWND, &screenPoint);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendMousePointClick] FakerInput Window : FakerInputClient_sendAbsoluteMouseButton(" << mousebutton << ", " << screenPoint.x << ", " << screenPoint.y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                    FakerInputClient_sendAbsoluteMouseButton(mousebutton, screenPoint.x, screenPoint.y, keyupdown, VIRTUAL_MOUSE_POINTCLICK);
+#endif
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
@@ -3508,9 +3519,17 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
                 mouse_input.mi.dwFlags = vmousecode.MouseUpCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
             }
 
-            if (postmappingkey || isPostBG) {
+            if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE || isPostBG) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendMousePointClick] postmappingkey=true, skip Screen : sendMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp");
+#endif
+            }
+            else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendMousePointClick] FakerInput Screen : FakerInputClient_sendAbsoluteMouseButton(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp");
+#endif
+                FakerInputClient_sendAbsoluteMouseButton(mousebutton, x, y, keyupdown, VIRTUAL_MOUSE_POINTCLICK);
 #endif
             }
             else {
@@ -3538,7 +3557,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
     }
 }
 
-void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, bool postmappingkey)
+void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod)
 {
     static QRegularExpression regex(R"(Mouse-Move(:W)?(:BG)?\((-?\d+),(-?\d+)\))");
     QRegularExpressionMatch match = regex.match(mousepoint_str);
@@ -3558,9 +3577,20 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, bool postm
         QPoint mousepoint(x, y);
         if (isWindowPoint) {
             if (QKeyMapper::s_CurrentMappingHWND != NULL) {
-                if (postmappingkey || isPostBG) {
+                if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE || isPostBG) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendMouseMoveToPoint] postmappingkey=true, skip sendWindowMouseMoveToPoint(" << x << ", " << y << ") -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                }
+                else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+                    // Convert window coordinates to screen coordinates for FakerInput absolute mouse
+                    POINT screenPoint = { mousepoint.x(), mousepoint.y() };
+                    ClientToScreen(QKeyMapper::s_CurrentMappingHWND, &screenPoint);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendMouseMoveToPoint] FakerInput Window : FakerInputClient_sendAbsoluteMouseMove(" << screenPoint.x << ", " << screenPoint.y << ") -> " << QKeyMapper::s_CurrentMappingHWND;
+#endif
+                    FakerInputClient_sendAbsoluteMouseMove(screenPoint.x, screenPoint.y, 0);
 #endif
                 }
                 else {
@@ -3581,9 +3611,17 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, bool postm
             }
         }
         else {
-            if (postmappingkey || isPostBG) {
+            if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE || isPostBG) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendMouseMoveToPoint] postmappingkey=true, skip Screen : setMouseToPoint(" << x << ", " << y << ")";
+#endif
+            }
+            else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[sendMouseMoveToPoint] FakerInput Screen : FakerInputClient_sendAbsoluteMouseMove(" << x << ", " << y << ")";
+#endif
+                FakerInputClient_sendAbsoluteMouseMove(x, y, 0);
 #endif
             }
             else {
@@ -3617,11 +3655,21 @@ void QKeyMapper_Worker::saveMousePosition()
     }
 }
 
-void QKeyMapper_Worker::restoreMousePosition()
+void QKeyMapper_Worker::restoreMousePosition(int sendmappingkeymethod)
 {
     if (s_SavedMousePosition != MOUSE_POS_INVALID) {
         POINT saved_position = {s_SavedMousePosition.x(), s_SavedMousePosition.y()};
-        setMouseToPoint(saved_position);
+        if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[restoreMousePosition] FakerInput : FakerInputClient_sendAbsoluteMouseMove(" << saved_position.x << ", " << saved_position.y << ")";
+#endif
+            FakerInputClient_sendAbsoluteMouseMove(saved_position.x, saved_position.y, 0);
+#endif
+        }
+        else {
+            setMouseToPoint(saved_position);
+        }
     }
 }
 
@@ -4541,6 +4589,108 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseMove(int delta_x, int delta_y,
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[FakerInputClient_sendMouseMove] DeltaX:%d, DeltaY:%d, Result:%d", x, y, result);
+#endif
+
+    return result;
+}
+
+bool QKeyMapper_Worker::FakerInputClient_sendAbsoluteMouseButton(const QString &mouseButton, int x, int y, int keyupdown, ULONG_PTR extraInfo)
+{
+    Q_UNUSED(extraInfo);  // Absolute mouse button events are not tracked in hook for now
+
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient == Q_NULLPTR || s_FakerInputClient_ConnectState != FAKERINPUT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_sendAbsoluteMouseButton] FakerInput not connected!";
+#endif
+        return false;
+    }
+
+    BYTE buttonBit = MouseButtonStringToHIDButton(mouseButton, keyupdown);
+    if (buttonBit == 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_sendAbsoluteMouseButton] Unknown mouse button:" << mouseButton;
+#endif
+        return false;
+    }
+
+    // Update button state
+    if (keyupdown == KEY_DOWN) {
+        s_FakerInputMouseReport_Buttons |= buttonBit;
+    } else {
+        s_FakerInputMouseReport_Buttons &= ~buttonBit;
+    }
+
+    // Get the virtual desktop boundaries to support extended screens
+    int virtualLeft   = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int virtualTop    = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    int virtualWidth  = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+    // FakerInput absolute mouse uses 0-32767 range (ABSOLUTE_MOUSE_COOR_MAX = 32767)
+    const double ABSOLUTE_MOUSE_COOR_MAX = 32767.0;
+
+    double fx = ((x - virtualLeft) * ABSOLUTE_MOUSE_COOR_MAX) / (virtualWidth - 1);
+    double fy = ((y - virtualTop) * ABSOLUTE_MOUSE_COOR_MAX) / (virtualHeight - 1);
+
+    // Clamp to valid range
+    fx = (fx < 0) ? 0 : ((fx > ABSOLUTE_MOUSE_COOR_MAX) ? ABSOLUTE_MOUSE_COOR_MAX : fx);
+    fy = (fy < 0) ? 0 : ((fy > ABSOLUTE_MOUSE_COOR_MAX) ? ABSOLUTE_MOUSE_COOR_MAX : fy);
+
+    USHORT absX = static_cast<USHORT>(fx);
+    USHORT absY = static_cast<USHORT>(fy);
+
+    // Send absolute mouse report with current button state, position, zero wheel
+    bool result = fakerinput_update_absolute_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, absX, absY, 0, 0);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[FakerInputClient_sendAbsoluteMouseButton] Button:%s, %s, Pos(%d,%d)->Abs(%u,%u), ButtonState:0x%02X, Result:%d",
+           mouseButton.toLatin1().constData(), (keyupdown == KEY_DOWN) ? "DOWN" : "UP",
+           x, y, absX, absY, s_FakerInputMouseReport_Buttons, result);
+#endif
+
+    return result;
+}
+
+bool QKeyMapper_Worker::FakerInputClient_sendAbsoluteMouseMove(int x, int y, ULONG_PTR extraInfo)
+{
+    Q_UNUSED(extraInfo);  // Absolute mouse move events are not tracked in hook for now
+
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient == Q_NULLPTR || s_FakerInputClient_ConnectState != FAKERINPUT_CONNECT_SUCCESS) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[FakerInputClient_sendAbsoluteMouseMove] FakerInput not connected!";
+#endif
+        return false;
+    }
+
+    // Get the virtual desktop boundaries to support extended screens
+    int virtualLeft   = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int virtualTop    = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    int virtualWidth  = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+    // FakerInput absolute mouse uses 0-32767 range (ABSOLUTE_MOUSE_COOR_MAX = 32767)
+    const double ABSOLUTE_MOUSE_COOR_MAX = 32767.0;
+
+    double fx = ((x - virtualLeft) * ABSOLUTE_MOUSE_COOR_MAX) / (virtualWidth - 1);
+    double fy = ((y - virtualTop) * ABSOLUTE_MOUSE_COOR_MAX) / (virtualHeight - 1);
+
+    // Clamp to valid range
+    fx = (fx < 0) ? 0 : ((fx > ABSOLUTE_MOUSE_COOR_MAX) ? ABSOLUTE_MOUSE_COOR_MAX : fx);
+    fy = (fy < 0) ? 0 : ((fy > ABSOLUTE_MOUSE_COOR_MAX) ? ABSOLUTE_MOUSE_COOR_MAX : fy);
+
+    USHORT absX = static_cast<USHORT>(fx);
+    USHORT absY = static_cast<USHORT>(fy);
+
+    // Send absolute mouse report with current button state, position, zero wheel
+    bool result = fakerinput_update_absolute_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, absX, absY, 0, 0);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[FakerInputClient_sendAbsoluteMouseMove] Pos(%d,%d)->Abs(%u,%u), Result:%d",
+           x, y, absX, absY, result);
 #endif
 
     return result;
