@@ -4086,7 +4086,14 @@ void QKeyMapper_Worker::FakerInputClient_Disconnect()
     QMutexLocker locker(&s_FakerInputClient_Mutex);
 
     if (s_FakerInputClient != Q_NULLPTR && s_FakerInputClient_ConnectState == FAKERINPUT_CONNECT_SUCCESS) {
-        FakerInputClient_ReleaseAll();
+        // Reset keyboard report before disconnect to release all keys
+        s_FakerInputKeyboardReport_ShiftFlags = 0;
+        memset(s_FakerInputKeyboardReport_KeyCodes, 0, sizeof(s_FakerInputKeyboardReport_KeyCodes));
+        fakerinput_update_keyboard(s_FakerInputClient, s_FakerInputKeyboardReport_ShiftFlags, s_FakerInputKeyboardReport_KeyCodes);
+
+        // Reset mouse report before disconnect to release all buttons
+        s_FakerInputMouseReport_Buttons = 0;
+        fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, 0, 0);
 
         // Small delay before disconnect to ensure reports are processed
         QThread::msleep(50);
@@ -4118,24 +4125,6 @@ void QKeyMapper_Worker::FakerInputClient_Free()
     }
     s_FakerInputClient_ConnectState = FAKERINPUT_DISCONNECTED;
     updateFakerInputStatus();
-}
-
-void QKeyMapper_Worker::FakerInputClient_ReleaseAll()
-{
-    if (s_FakerInputClient != Q_NULLPTR && s_FakerInputClient_ConnectState == FAKERINPUT_CONNECT_SUCCESS) {
-        // Reset keyboard report to release all keys
-        s_FakerInputKeyboardReport_ShiftFlags = 0;
-        memset(s_FakerInputKeyboardReport_KeyCodes, 0, sizeof(s_FakerInputKeyboardReport_KeyCodes));
-        fakerinput_update_keyboard(s_FakerInputClient, s_FakerInputKeyboardReport_ShiftFlags, s_FakerInputKeyboardReport_KeyCodes);
-
-        // Reset mouse report to release all buttons
-        s_FakerInputMouseReport_Buttons = 0;
-        fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, 0, 0);
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[FakerInputClient_ReleaseAll]" << "FakerInputClient release all keyboard & mouse buttons.";
-#endif
-    }
 }
 
 QKeyMapper_Worker::FakerInputClient_ConnectState QKeyMapper_Worker::FakerInputClient_getConnectState()
@@ -6294,13 +6283,6 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
 
-    {
-        QMutexLocker locker(&s_FakerInputClient_Mutex);
-        if (s_FakerInputClient != Q_NULLPTR && s_FakerInputClient_ConnectState == FAKERINPUT_CONNECT_SUCCESS) {
-            FakerInputClient_ReleaseAll();
-        }
-    }
-
     releasePressedRealKeysOfOriginalKeys();
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -6561,13 +6543,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
         clearCustomKeyFlags();
     }
 
-    {
-        QMutexLocker locker(&s_FakerInputClient_Mutex);
-        if (s_FakerInputClient != Q_NULLPTR && s_FakerInputClient_ConnectState == FAKERINPUT_CONNECT_SUCCESS) {
-            FakerInputClient_ReleaseAll();
-        }
-    }
-
     s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -6725,13 +6700,6 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     SendInputTask::clearSendInputTaskControllerMap();
     resetGlobalSendInputTaskController();
     clearCustomKeyFlags(true);
-
-    {
-        QMutexLocker locker(&s_FakerInputClient_Mutex);
-        if (s_FakerInputClient != Q_NULLPTR && s_FakerInputClient_ConnectState == FAKERINPUT_CONNECT_SUCCESS) {
-            FakerInputClient_ReleaseAll();
-        }
-    }
 
 
     /* Restart Starting process */
