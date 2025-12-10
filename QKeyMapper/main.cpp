@@ -386,12 +386,6 @@ int main(int argc, char *argv[])
     delete logfile_mutex;
 #endif
 
-#ifdef FAKERINPUT_SUPPORT
-    // Explicitly release FakerInput before thread cleanup to avoid DLL unload issues
-    QKeyMapper_Worker::FakerInputClient_Disconnect();
-    QKeyMapper_Worker::FakerInputClient_Free();
-#endif
-
     Interception_Worker::interceptionLoopBreak();
     interceptionThread->quit();
     interceptionThread->wait();
