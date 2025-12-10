@@ -274,6 +274,8 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
     clearGlobalSendInputTaskController();
 
 #ifdef FAKERINPUT_SUPPORT
+    // FakerInput may already be released in main() before thread cleanup
+    // These functions have null pointer checks and will safely skip if already freed
     FakerInputClient_Disconnect();
     FakerInputClient_Free();
 #endif
@@ -4083,7 +4085,19 @@ void QKeyMapper_Worker::FakerInputClient_Disconnect()
 {
     QMutexLocker locker(&s_FakerInputClient_Mutex);
 
-    if (s_FakerInputClient != Q_NULLPTR) {
+    if (s_FakerInputClient != Q_NULLPTR && s_FakerInputClient_ConnectState == FAKERINPUT_CONNECT_SUCCESS) {
+        // Reset keyboard report before disconnect to release all keys
+        s_FakerInputKeyboardReport_ShiftFlags = 0;
+        memset(s_FakerInputKeyboardReport_KeyCodes, 0, sizeof(s_FakerInputKeyboardReport_KeyCodes));
+        fakerinput_update_keyboard(s_FakerInputClient, s_FakerInputKeyboardReport_ShiftFlags, s_FakerInputKeyboardReport_KeyCodes);
+
+        // Reset mouse report before disconnect to release all buttons
+        s_FakerInputMouseReport_Buttons = 0;
+        fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, 0, 0);
+
+        // Small delay before disconnect to ensure reports are processed
+        QThread::msleep(50);
+
         fakerinput_disconnect(s_FakerInputClient);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -4099,6 +4113,9 @@ void QKeyMapper_Worker::FakerInputClient_Free()
     QMutexLocker locker(&s_FakerInputClient_Mutex);
 
     if (s_FakerInputClient != Q_NULLPTR) {
+        // Small delay before free to ensure disconnect is completed
+        QThread::msleep(50);
+
         fakerinput_free(s_FakerInputClient);
         s_FakerInputClient = Q_NULLPTR;
 
