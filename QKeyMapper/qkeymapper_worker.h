@@ -839,6 +839,7 @@ public:
     static int FakerInputClient_Connect(void);
     static void FakerInputClient_Disconnect(void);
     static void FakerInputClient_Free(void);
+    static void FakerInputClient_ReleaseAll(void);
     static FakerInputClient_ConnectState FakerInputClient_getConnectState(void);
     static void FakerInputClient_setConnectState(FakerInputClient_ConnectState connectstate);
     static bool FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool extendedFlag, int keyupdown);
