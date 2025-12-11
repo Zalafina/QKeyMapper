@@ -81,6 +81,26 @@ typedef struct FakerInputMouseButtonExtraInfo
         , extraInfo(info)
     {}
 } FakerInputMouseButtonExtraInfo;
+
+// FakerInput ExtraInfo tracking structure for mouse wheel events
+typedef struct FakerInputMouseWheelExtraInfo
+{
+    WPARAM wParam;          // Mouse message type (WM_MOUSEWHEEL or WM_MOUSEHWHEEL)
+    short wheelDelta;       // Wheel delta (positive for up/right, negative for down/left)
+    ULONG_PTR extraInfo;    // The extraInfo value to apply
+
+    FakerInputMouseWheelExtraInfo()
+        : wParam(0)
+        , wheelDelta(0)
+        , extraInfo(0)
+    {}
+
+    FakerInputMouseWheelExtraInfo(WPARAM wp, short delta, ULONG_PTR info)
+        : wParam(wp)
+        , wheelDelta(delta)
+        , extraInfo(info)
+    {}
+} FakerInputMouseWheelExtraInfo;
 #endif
 
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
@@ -904,6 +924,7 @@ public:
     static void clearFakerInputExtraInfoQueues(void);
     static bool matchFakerInputKeyboardExtraInfo(quint8 vkeycode, int keyupdown, ULONG_PTR &outExtraInfo);
     static bool matchFakerInputMouseButtonExtraInfo(WPARAM wParam, WORD xbutton, ULONG_PTR &outExtraInfo);
+    static bool matchFakerInputMouseWheelExtraInfo(WPARAM wParam, short wheelDelta, ULONG_PTR &outExtraInfo);
 private:
     static void initVK2HIDCodeMap(void);
     static void resetFakerInputMouseReport(void);
@@ -1261,6 +1282,8 @@ public:
     static QMutex s_FakerInputKeyboardExtraInfoQueue_Mutex;
     static QQueue<FakerInputMouseButtonExtraInfo> s_FakerInputMouseButtonExtraInfoQueue;
     static QMutex s_FakerInputMouseButtonExtraInfoQueue_Mutex;
+    static QQueue<FakerInputMouseWheelExtraInfo> s_FakerInputMouseWheelExtraInfoQueue;
+    static QMutex s_FakerInputMouseWheelExtraInfoQueue_Mutex;
 #endif
 #ifdef VIGEM_CLIENT_SUPPORT
     static PVIGEM_CLIENT s_ViGEmClient;
