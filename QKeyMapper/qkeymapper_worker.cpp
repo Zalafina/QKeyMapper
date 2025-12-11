@@ -4405,17 +4405,31 @@ bool QKeyMapper_Worker::FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool
         }
     }
 
-    // Send the keyboard report
-    bool result = fakerinput_update_keyboard(s_FakerInputClient, s_FakerInputKeyboardReport_ShiftFlags, s_FakerInputKeyboardReport_KeyCodes);
-
-    // If send succeeded and extraInfo is specified, enqueue for hook function matching
-    if (result && extraInfo != 0) {
+    // Pre-enqueue extraInfo BEFORE calling fakerinput_update_keyboard to avoid race condition
+    // where the hook receives the event before we have a chance to enqueue
+    bool enqueued = false;
+    if (extraInfo != 0) {
         QMutexLocker queueLocker(&s_FakerInputKeyboardExtraInfoQueue_Mutex);
-        s_FakerInputKeyboardExtraInfoQueue.enqueue(FakerInputKeyboardExtraInfo(vkeycode, keyupdown, extraInfo));
+        s_FakerInputKeyboardExtraInfoQueue.enqueue(FakerInputKeyboardExtraInfo(vkeycode, keyupdown, extraInfo, QDateTime::currentMSecsSinceEpoch()));
+        enqueued = true;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("[FakerInputClient_sendKeyboardInput] Enqueued ExtraInfo: VK:0x%02X, %s, ExtraInfo:0x%08X, QueueSize:%d",
                vkeycode, (keyupdown == KEY_DOWN) ? "DOWN" : "UP", (unsigned int)extraInfo, s_FakerInputKeyboardExtraInfoQueue.size());
 #endif
+    }
+
+    // Send the keyboard report
+    bool result = fakerinput_update_keyboard(s_FakerInputClient, s_FakerInputKeyboardReport_ShiftFlags, s_FakerInputKeyboardReport_KeyCodes);
+
+    // If send failed and we enqueued, remove the entry from queue
+    if (!result && enqueued) {
+        QMutexLocker queueLocker(&s_FakerInputKeyboardExtraInfoQueue_Mutex);
+        if (!s_FakerInputKeyboardExtraInfoQueue.isEmpty()) {
+            s_FakerInputKeyboardExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[FakerInputClient_sendKeyboardInput] Send failed, removed enqueued ExtraInfo");
+#endif
+        }
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -4490,11 +4504,10 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseButton(const QString &mouseBut
         s_FakerInputMouseReport_Buttons &= ~buttonBit;
     }
 
-    // Send relative mouse report with current button state, zero movement, zero wheel
-    bool result = fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, 0, 0);
-
-    // If send succeeded and extraInfo is specified, enqueue for hook function matching
-    if (result && extraInfo != 0) {
+    // Pre-enqueue extraInfo BEFORE calling fakerinput_update_relative_mouse to avoid race condition
+    // where the hook receives the event before we have a chance to enqueue
+    bool enqueued = false;
+    if (extraInfo != 0) {
         // Determine the corresponding Windows message type
         WPARAM wParam = 0;
         WORD xbutton = 0;
@@ -4514,11 +4527,26 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseButton(const QString &mouseBut
 
         if (wParam != 0) {
             QMutexLocker queueLocker(&s_FakerInputMouseButtonExtraInfoQueue_Mutex);
-            s_FakerInputMouseButtonExtraInfoQueue.enqueue(FakerInputMouseButtonExtraInfo(wParam, xbutton, extraInfo));
+            s_FakerInputMouseButtonExtraInfoQueue.enqueue(FakerInputMouseButtonExtraInfo(wParam, xbutton, extraInfo, QDateTime::currentMSecsSinceEpoch()));
+            enqueued = true;
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[FakerInputClient_sendMouseButton] Enqueued ExtraInfo: Button:%s, wParam:0x%04X, XButton:%d, ExtraInfo:0x%08X, QueueSize:%d",
                    mouseButton.toLatin1().constData(), (unsigned int)wParam, xbutton, (unsigned int)extraInfo,
                    s_FakerInputMouseButtonExtraInfoQueue.size());
+#endif
+        }
+    }
+
+    // Send relative mouse report with current button state, zero movement, zero wheel
+    bool result = fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, 0, 0);
+
+    // If send failed and we enqueued, remove the entry from queue
+    if (!result && enqueued) {
+        QMutexLocker queueLocker(&s_FakerInputMouseButtonExtraInfoQueue_Mutex);
+        if (!s_FakerInputMouseButtonExtraInfoQueue.isEmpty()) {
+            s_FakerInputMouseButtonExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[FakerInputClient_sendMouseButton] Send failed, removed enqueued ExtraInfo");
 #endif
         }
     }
@@ -4573,18 +4601,32 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseWheel(const QString &wheelDire
         return false;
     }
 
-    // Send relative mouse report with current button state, zero movement, wheel values
-    bool result = fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, wheelPosition, hWheelPosition);
-
-    // If send succeeded and extraInfo is specified, enqueue for hook function matching
-    if (result && extraInfo != 0) {
+    // Pre-enqueue extraInfo BEFORE calling fakerinput_update_relative_mouse to avoid race condition
+    // where the hook receives the event before we have a chance to enqueue
+    bool enqueued = false;
+    if (extraInfo != 0) {
         QMutexLocker queueLocker(&s_FakerInputMouseWheelExtraInfoQueue_Mutex);
-        s_FakerInputMouseWheelExtraInfoQueue.enqueue(FakerInputMouseWheelExtraInfo(wParam, wheelDelta, extraInfo));
+        s_FakerInputMouseWheelExtraInfoQueue.enqueue(FakerInputMouseWheelExtraInfo(wParam, wheelDelta, extraInfo, QDateTime::currentMSecsSinceEpoch()));
+        enqueued = true;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("[FakerInputClient_sendMouseWheel] Enqueued ExtraInfo: Direction:%s, wParam:0x%04X, WheelDelta:%d, ExtraInfo:0x%08X, QueueSize:%d",
                wheelDirection.toLatin1().constData(), (unsigned int)wParam, wheelDelta, (unsigned int)extraInfo,
                s_FakerInputMouseWheelExtraInfoQueue.size());
 #endif
+    }
+
+    // Send relative mouse report with current button state, zero movement, wheel values
+    bool result = fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, wheelPosition, hWheelPosition);
+
+    // If send failed and we enqueued, remove the entry from queue
+    if (!result && enqueued) {
+        QMutexLocker queueLocker(&s_FakerInputMouseWheelExtraInfoQueue_Mutex);
+        if (!s_FakerInputMouseWheelExtraInfoQueue.isEmpty()) {
+            s_FakerInputMouseWheelExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[FakerInputClient_sendMouseWheel] Send failed, removed enqueued ExtraInfo");
+#endif
+        }
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -4670,14 +4712,13 @@ bool QKeyMapper_Worker::FakerInputClient_sendAbsoluteMouseButton(const QString &
     USHORT absX = static_cast<USHORT>(fx);
     USHORT absY = static_cast<USHORT>(fy);
 
-    // Send absolute mouse report with current button state, position, zero wheel
-    bool result = fakerinput_update_absolute_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, absX, absY, 0, 0);
-
-    // If send succeeded and extraInfo is specified, enqueue for hook function matching
-    if (result && extraInfo != 0) {
+    // Pre-enqueue extraInfo BEFORE calling fakerinput_update_absolute_mouse to avoid race condition
+    // where the hook receives the event before we have a chance to enqueue
+    bool enqueued = false;
+    WPARAM wParam = 0;
+    WORD xbutton = 0;
+    if (extraInfo != 0) {
         // Determine the corresponding Windows message type
-        WPARAM wParam = 0;
-        WORD xbutton = 0;
         if (mouseButton == "Mouse-L") {
             wParam = (keyupdown == KEY_DOWN) ? WM_LBUTTONDOWN : WM_LBUTTONUP;
         } else if (mouseButton == "Mouse-R") {
@@ -4694,11 +4735,26 @@ bool QKeyMapper_Worker::FakerInputClient_sendAbsoluteMouseButton(const QString &
 
         if (wParam != 0) {
             QMutexLocker queueLocker(&s_FakerInputMouseButtonExtraInfoQueue_Mutex);
-            s_FakerInputMouseButtonExtraInfoQueue.enqueue(FakerInputMouseButtonExtraInfo(wParam, xbutton, extraInfo));
+            s_FakerInputMouseButtonExtraInfoQueue.enqueue(FakerInputMouseButtonExtraInfo(wParam, xbutton, extraInfo, QDateTime::currentMSecsSinceEpoch()));
+            enqueued = true;
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[FakerInputClient_sendAbsoluteMouseButton] Enqueued ExtraInfo: Button:%s, wParam:0x%04X, XButton:%d, ExtraInfo:0x%08X, QueueSize:%d",
                    mouseButton.toLatin1().constData(), (unsigned int)wParam, xbutton, (unsigned int)extraInfo,
                    s_FakerInputMouseButtonExtraInfoQueue.size());
+#endif
+        }
+    }
+
+    // Send absolute mouse report with current button state, position, zero wheel
+    bool result = fakerinput_update_absolute_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, absX, absY, 0, 0);
+
+    // If send failed and we enqueued, remove the entry from queue
+    if (!result && enqueued) {
+        QMutexLocker queueLocker(&s_FakerInputMouseButtonExtraInfoQueue_Mutex);
+        if (!s_FakerInputMouseButtonExtraInfoQueue.isEmpty()) {
+            s_FakerInputMouseButtonExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[FakerInputClient_sendAbsoluteMouseButton] Send failed, removed enqueued ExtraInfo");
 #endif
         }
     }
@@ -4808,8 +4864,23 @@ bool QKeyMapper_Worker::matchFakerInputKeyboardExtraInfo(quint8 vkeycode, int ke
         return false;
     }
 
+    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+
     // Check if the front of the queue matches the current key event
     const FakerInputKeyboardExtraInfo &front = s_FakerInputKeyboardExtraInfoQueue.head();
+
+    // Check time window first - if event is too old, it's likely a stale entry
+    qint64 timeDiff = currentTime - front.timestamp;
+    if (timeDiff > FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS) {
+        // Event is too old, remove stale entry and don't match
+        s_FakerInputKeyboardExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[matchFakerInputKeyboardExtraInfo] Discarded stale entry: VK:0x%02X, Age:%lldms > %lldms",
+               front.vkeycode, timeDiff, FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS);
+#endif
+        return false;
+    }
+
     if (front.vkeycode == vkeycode && front.keyupdown == keyupdown) {
         outExtraInfo = front.extraInfo;
         s_FakerInputKeyboardExtraInfoQueue.dequeue();
@@ -4832,8 +4903,23 @@ bool QKeyMapper_Worker::matchFakerInputMouseButtonExtraInfo(WPARAM wParam, WORD 
         return false;
     }
 
+    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+
     // Check if the front of the queue matches the current mouse event
     const FakerInputMouseButtonExtraInfo &front = s_FakerInputMouseButtonExtraInfoQueue.head();
+
+    // Check time window first - if event is too old, it's likely a stale entry
+    qint64 timeDiff = currentTime - front.timestamp;
+    if (timeDiff > FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS) {
+        // Event is too old, remove stale entry and don't match
+        s_FakerInputMouseButtonExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[matchFakerInputMouseButtonExtraInfo] Discarded stale entry: wParam:0x%04X, Age:%lldms > %lldms",
+               (unsigned int)front.wParam, timeDiff, FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS);
+#endif
+        return false;
+    }
+
     if (front.wParam == wParam && front.xbutton == xbutton) {
         outExtraInfo = front.extraInfo;
         s_FakerInputMouseButtonExtraInfoQueue.dequeue();
@@ -4856,9 +4942,24 @@ bool QKeyMapper_Worker::matchFakerInputMouseWheelExtraInfo(WPARAM wParam, short 
         return false;
     }
 
+    qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
+
     // Check if the front of the queue matches the current wheel event
     // Match by message type and delta sign (positive/negative for direction)
     const FakerInputMouseWheelExtraInfo &front = s_FakerInputMouseWheelExtraInfoQueue.head();
+
+    // Check time window first - if event is too old, it's likely a stale entry
+    qint64 timeDiff = currentTime - front.timestamp;
+    if (timeDiff > FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS) {
+        // Event is too old, remove stale entry and don't match
+        s_FakerInputMouseWheelExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("[matchFakerInputMouseWheelExtraInfo] Discarded stale entry: wParam:0x%04X, Age:%lldms > %lldms",
+               (unsigned int)front.wParam, timeDiff, FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS);
+#endif
+        return false;
+    }
+
     bool deltaSignMatch = ((front.wheelDelta > 0) == (wheelDelta > 0)) || ((front.wheelDelta < 0) == (wheelDelta < 0));
     if (front.wParam == wParam && deltaSignMatch) {
         outExtraInfo = front.extraInfo;

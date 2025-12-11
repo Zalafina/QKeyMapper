@@ -48,17 +48,20 @@ typedef struct FakerInputKeyboardExtraInfo
     quint8 vkeycode;        // Virtual key code
     int keyupdown;          // KEY_DOWN or KEY_UP
     ULONG_PTR extraInfo;    // The extraInfo value to apply
+    qint64 timestamp;       // Timestamp when enqueued (ms since epoch)
 
     FakerInputKeyboardExtraInfo()
         : vkeycode(0)
         , keyupdown(0)
         , extraInfo(0)
+        , timestamp(0)
     {}
 
-    FakerInputKeyboardExtraInfo(quint8 vk, int updown, ULONG_PTR info)
+    FakerInputKeyboardExtraInfo(quint8 vk, int updown, ULONG_PTR info, qint64 ts)
         : vkeycode(vk)
         , keyupdown(updown)
         , extraInfo(info)
+        , timestamp(ts)
     {}
 } FakerInputKeyboardExtraInfo;
 
@@ -68,17 +71,20 @@ typedef struct FakerInputMouseButtonExtraInfo
     WPARAM wParam;          // Mouse message type (WM_LBUTTONDOWN, etc.)
     WORD xbutton;           // XBUTTON1/XBUTTON2 for X button events, 0 otherwise
     ULONG_PTR extraInfo;    // The extraInfo value to apply
+    qint64 timestamp;       // Timestamp when enqueued (ms since epoch)
 
     FakerInputMouseButtonExtraInfo()
         : wParam(0)
         , xbutton(0)
         , extraInfo(0)
+        , timestamp(0)
     {}
 
-    FakerInputMouseButtonExtraInfo(WPARAM wp, WORD xb, ULONG_PTR info)
+    FakerInputMouseButtonExtraInfo(WPARAM wp, WORD xb, ULONG_PTR info, qint64 ts)
         : wParam(wp)
         , xbutton(xb)
         , extraInfo(info)
+        , timestamp(ts)
     {}
 } FakerInputMouseButtonExtraInfo;
 
@@ -88,17 +94,20 @@ typedef struct FakerInputMouseWheelExtraInfo
     WPARAM wParam;          // Mouse message type (WM_MOUSEWHEEL or WM_MOUSEHWHEEL)
     short wheelDelta;       // Wheel delta (positive for up/right, negative for down/left)
     ULONG_PTR extraInfo;    // The extraInfo value to apply
+    qint64 timestamp;       // Timestamp when enqueued (ms since epoch)
 
     FakerInputMouseWheelExtraInfo()
         : wParam(0)
         , wheelDelta(0)
         , extraInfo(0)
+        , timestamp(0)
     {}
 
-    FakerInputMouseWheelExtraInfo(WPARAM wp, short delta, ULONG_PTR info)
+    FakerInputMouseWheelExtraInfo(WPARAM wp, short delta, ULONG_PTR info, qint64 ts)
         : wParam(wp)
         , wheelDelta(delta)
         , extraInfo(info)
+        , timestamp(ts)
     {}
 } FakerInputMouseWheelExtraInfo;
 #endif
