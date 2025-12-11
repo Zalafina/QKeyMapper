@@ -896,7 +896,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_MAPPINGKEYUNLOCK[] = "KeyMapData_MappingKeyUnlock";
     inline constexpr const char KEYMAPDATA_DISABLEORIGINALKEYUNLOCK[] = "KeyMapData_DisableOriginalKeyUnlock";
     inline constexpr const char KEYMAPDATA_DISABLEFNKEYSWITCH[] = "KeyMapData_DisableFnKeySwitch";
-    inline constexpr const char KEYMAPDATA_POSTMAPPINGKEY[] = "KeyMapData_PostMappingKey";
+    // inline constexpr const char KEYMAPDATA_POSTMAPPINGKEY[] = "KeyMapData_PostMappingKey";
+    inline constexpr const char KEYMAPDATA_SENDMAPPINGKEYMETHOD[] = "KeyMapData_SendMappingKeyMethod";
     inline constexpr const char KEYMAPDATA_FIXEDVKEYCODE[] = "KeyMapData_FixedVirtualKeyCode";
     inline constexpr const char KEYMAPDATA_CHECKCOMBKEYORDER[] = "KeyMapData_CheckCombKeyOrder";
     inline constexpr const char KEYMAPDATA_UNBREAKABLE[] = "KeyMapData_Unbreakable";
@@ -1342,7 +1343,6 @@ namespace QKeyMapperConstants {
     inline constexpr const char BURSTCHECKBOX_STR[] = "Burst";
     inline constexpr const char LOCKCHECKBOX_STR[] = "Lock";
     inline constexpr const char MAPPINGKEYUNLOCKCHECKBOX_STR[] = "MappingKeyUnlock";
-    inline constexpr const char POSTMAPPINGKEYCHECKBOX_STR[] = "PostMappingKey";
     inline constexpr const char CHECKCOMBKEYORDERCHECKBOX_STR[] = "CheckCombKeyOrder";
     inline constexpr const char UNBREAKABLECHECKBOX_STR[] = "Unbreakable";
     inline constexpr const char PASSTHROUGHCHECKBOX_STR[] = "PassThrough";

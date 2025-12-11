@@ -141,7 +141,6 @@ typedef struct MAP_KEYDATA
     bool MappingKeyUnlock;
     bool DisableOriginalKeyUnlock;
     bool DisableFnKeySwitch;
-    bool PostMappingKey;
     int SendMappingKeyMethod;
     int FixedVKeyCode;
     uint LockState;
@@ -184,8 +183,7 @@ typedef struct MAP_KEYDATA
     , MappingKeyUnlock(false)
     , DisableOriginalKeyUnlock(false)
     , DisableFnKeySwitch(false)
-    , PostMappingKey(false)
-    , SendMappingKeyMethod(QKeyMapperConstants::SENDMAPPINGKEY_METHOD_FAKERINPUT)
+    , SendMappingKeyMethod(QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT)
     , FixedVKeyCode(QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_NONE)
     , LockState(QKeyMapperConstants::LOCK_STATE_LOCKOFF)
     , CheckCombKeyOrder(true)
@@ -215,7 +213,7 @@ typedef struct MAP_KEYDATA
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool mappingkeys_unlock, bool disable_originalkeyunlock, bool disable_fnkeyswitch,
-                bool postmappingkey, int fixedvkeycode,
+                int sendmappingkeymethod, int fixedvkeycode,
                 bool checkcombkeyorder, bool unbreakable, bool passthrough,
                 int sendtiming, int pastetextmode, bool keyseqholddown,
                 int repeat_mode, int repeat_times,
@@ -248,7 +246,7 @@ typedef struct MAP_KEYDATA
         MappingKeyUnlock = mappingkeys_unlock;
         DisableOriginalKeyUnlock = disable_originalkeyunlock;
         DisableFnKeySwitch = disable_fnkeyswitch;
-        PostMappingKey = postmappingkey;
+        SendMappingKeyMethod = sendmappingkeymethod;
         FixedVKeyCode = fixedvkeycode;
         LockState = QKeyMapperConstants::LOCK_STATE_LOCKOFF;
         CheckCombKeyOrder = checkcombkeyorder;
@@ -289,7 +287,7 @@ typedef struct MAP_KEYDATA
                 && (MappingKeyUnlock == other.MappingKeyUnlock)
                 && (DisableOriginalKeyUnlock == other.DisableOriginalKeyUnlock)
                 && (DisableFnKeySwitch == other.DisableFnKeySwitch)
-                && (PostMappingKey == other.PostMappingKey)
+                && (SendMappingKeyMethod == other.SendMappingKeyMethod)
                 && (FixedVKeyCode == other.FixedVKeyCode)
                 && (CheckCombKeyOrder == other.CheckCombKeyOrder)
                 && (Unbreakable == other.Unbreakable)
@@ -333,7 +331,7 @@ typedef struct MAP_KEYDATA
                         << ", MappingKeyUnlock:" << data.MappingKeyUnlock
                         << ", DisableOriginalKeyUnlock:" << data.DisableOriginalKeyUnlock
                         << ", DisableFnKeySwitch:" << data.DisableFnKeySwitch
-                        << ", PostMappingKey:" << data.PostMappingKey
+                        << ", SendMappingKeyMethod:" << data.SendMappingKeyMethod
                         << ", FixedVKeyCode:" << fixedvkeycodeStr
                         << ", LockState:" << data.LockState
                         << ", CheckCombKeyOrder:" << data.CheckCombKeyOrder

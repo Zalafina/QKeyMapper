@@ -127,7 +127,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->mappingKeyUnlockCheckBox->setText(tr(MAPPINGKEYUNLOCKCHECKBOX_STR));
     ui->disableOriginalKeyUnlockCheckBox->setText(tr("DisableOriKeyUnlock"));
     ui->disableFnKeySwitchCheckBox->setText(tr("DisableFnKeySwitch"));
-    ui->postMappingKeyCheckBox->setText(tr(POSTMAPPINGKEYCHECKBOX_STR));
+    ui->sendMappingKeyMethodLabel->setText(tr("SendMethod"));
     ui->checkCombKeyOrderCheckBox->setText(tr(CHECKCOMBKEYORDERCHECKBOX_STR));
     ui->unbreakableCheckBox->setText(tr(UNBREAKABLECHECKBOX_STR));
     ui->passThroughCheckBox->setText(tr(PASSTHROUGHCHECKBOX_STR));
@@ -221,7 +221,7 @@ void QItemSetupDialog::resetFontSize()
     ui->mappingKeyUnlockCheckBox->setFont(customFont);
     ui->disableOriginalKeyUnlockCheckBox->setFont(customFont);
     ui->disableFnKeySwitchCheckBox->setFont(customFont);
-    ui->postMappingKeyCheckBox->setFont(customFont);
+    ui->sendMappingKeyMethodComboBox->setFont(customFont);
     ui->checkCombKeyOrderCheckBox->setFont(customFont);
     ui->unbreakableCheckBox->setFont(customFont);
     ui->passThroughCheckBox->setFont(customFont);
@@ -1298,12 +1298,15 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->disableFnKeySwitchCheckBox->setChecked(false);
         }
 
-        /* Load PostMappingKey */
-        if (true == keymapdata.PostMappingKey) {
-            ui->postMappingKeyCheckBox->setChecked(true);
+        /* Load SendMappingKeyMethod State */
+        if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod) {
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDMESSAGE);
+        }
+        else if (SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_FAKERINPUT);
         }
         else {
-            ui->postMappingKeyCheckBox->setChecked(false);
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDINPUT);
         }
 
         /* Load FixedVKeyCode */
@@ -1312,15 +1315,6 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         }
         else {
             ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_NONE);
-        }
-
-        QString mappingkey = keymapdata.Mapping_Keys.constFirst();
-        if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mappingkey)) {
-            ui->postMappingKeyCheckBox->setChecked(false);
-            ui->postMappingKeyCheckBox->setEnabled(false);
-        }
-        else {
-            ui->postMappingKeyCheckBox->setEnabled(true);
         }
 
         /* Load PasteTextMode State */
@@ -1769,12 +1763,15 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->disableFnKeySwitchCheckBox->setChecked(false);
         }
 
-        /* Load PostMappingKey */
-        if (true == keymapdata.PostMappingKey) {
-            ui->postMappingKeyCheckBox->setChecked(true);
+        /* Load SendMappingKeyMethod State */
+        if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod) {
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDMESSAGE);
+        }
+        else if (SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_FAKERINPUT);
         }
         else {
-            ui->postMappingKeyCheckBox->setChecked(false);
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDINPUT);
         }
 
         /* Load FixedVKeyCode */
@@ -1783,15 +1780,6 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         }
         else {
             ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_NONE);
-        }
-
-        QString mappingkey = keymapdata.Mapping_Keys.constFirst();
-        if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mappingkey)) {
-            ui->postMappingKeyCheckBox->setChecked(false);
-            ui->postMappingKeyCheckBox->setEnabled(false);
-        }
-        else {
-            ui->postMappingKeyCheckBox->setEnabled(true);
         }
 
         /* Load PasteTextMode State */
@@ -2122,12 +2110,15 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->disableFnKeySwitchCheckBox->setChecked(false);
         }
 
-        /* Load PostMappingKey */
-        if (true == keymapdata.PostMappingKey) {
-            ui->postMappingKeyCheckBox->setChecked(true);
+        /* Load SendMappingKeyMethod State */
+        if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod) {
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDMESSAGE);
+        }
+        else if (SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_FAKERINPUT);
         }
         else {
-            ui->postMappingKeyCheckBox->setChecked(false);
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDINPUT);
         }
 
         /* Load FixedVKeyCode */
@@ -2136,15 +2127,6 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
         else {
             ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_NONE);
-        }
-
-        QString mappingkey = keymapdata.Mapping_Keys.constFirst();
-        if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mappingkey)) {
-            ui->postMappingKeyCheckBox->setChecked(false);
-            ui->postMappingKeyCheckBox->setEnabled(false);
-        }
-        else {
-            ui->postMappingKeyCheckBox->setEnabled(true);
         }
 
         /* Load PasteTextMode State */
@@ -2437,12 +2419,15 @@ void QItemSetupDialog::refreshAllRelatedUI()
         ui->disableFnKeySwitchCheckBox->setChecked(false);
     }
 
-    /* Load PostMappingKey */
-    if (true == keymapdata.PostMappingKey) {
-        ui->postMappingKeyCheckBox->setChecked(true);
+    /* Load SendMappingKeyMethod State */
+    if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod) {
+        ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDMESSAGE);
+    }
+    else if (SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+        ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_FAKERINPUT);
     }
     else {
-        ui->postMappingKeyCheckBox->setChecked(false);
+        ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDINPUT);
     }
 
     /* Load FixedVKeyCode */
@@ -2451,15 +2436,6 @@ void QItemSetupDialog::refreshAllRelatedUI()
     }
     else {
         ui->fixedVKeyCodeSpinBox->setValue(FIXED_VIRTUAL_KEY_CODE_NONE);
-    }
-
-    QString mappingkey = keymapdata.Mapping_Keys.constFirst();
-    if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mappingkey)) {
-        ui->postMappingKeyCheckBox->setChecked(false);
-        ui->postMappingKeyCheckBox->setEnabled(false);
-    }
-    else {
-        ui->postMappingKeyCheckBox->setEnabled(true);
     }
 
     /* Load PasteTextMode State */
@@ -2977,6 +2953,22 @@ void QItemSetupDialog::on_pasteTextModeComboBox_currentIndexChanged(int index)
     }
 }
 
+void QItemSetupDialog::on_sendMappingKeyMethodComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    int sendmappingkeymethod_index = ui->sendMappingKeyMethodComboBox->currentIndex();
+    if (sendmappingkeymethod_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).SendMappingKeyMethod) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendMappingKeyMethod = sendmappingkeymethod_index;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] SendMappingKeyMethod -> " << sendmappingkeymethod_index;
+#endif
+    }
+}
+
 void QItemSetupDialog::on_checkCombKeyOrderCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
@@ -3256,6 +3248,7 @@ void QItemSetupDialog::on_disableFnKeySwitchCheckBox_stateChanged(int state)
     }
 }
 
+#if 0
 void QItemSetupDialog::on_postMappingKeyCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
@@ -3271,6 +3264,7 @@ void QItemSetupDialog::on_postMappingKeyCheckBox_stateChanged(int state)
 #endif
     }
 }
+#endif
 
 void QItemSetupDialog::on_unbreakableCheckBox_stateChanged(int state)
 {

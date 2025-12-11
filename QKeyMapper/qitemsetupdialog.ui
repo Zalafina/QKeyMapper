@@ -382,9 +382,9 @@
   <widget class="QLabel" name="sendTimingLabel">
    <property name="geometry">
     <rect>
-     <x>80</x>
+     <x>70</x>
      <y>280</y>
-     <width>71</width>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -447,25 +447,6 @@
    </property>
    <property name="text">
     <string>Unbreakable</string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="postMappingKeyCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>270</x>
-     <y>280</y>
-     <width>141</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>PostMappingKey</string>
    </property>
    <property name="checked">
     <bool>false</bool>
@@ -891,51 +872,56 @@ Update</string>
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <zorder>burstCheckBox</zorder>
-  <zorder>lockCheckBox</zorder>
-  <zorder>passThroughCheckBox</zorder>
-  <zorder>burstpressSpinBox</zorder>
-  <zorder>burstpressLabel</zorder>
-  <zorder>burstreleaseLabel</zorder>
-  <zorder>burstreleaseSpinBox</zorder>
-  <zorder>originalKeyLineEdit</zorder>
-  <zorder>originalKeyLabel</zorder>
-  <zorder>mappingKeyLabel</zorder>
-  <zorder>orikeyListLabel</zorder>
-  <zorder>mapkeyListLabel</zorder>
-  <zorder>keySeqHoldDownCheckBox</zorder>
-  <zorder>repeatByKeyCheckBox</zorder>
-  <zorder>repeatByTimesCheckBox</zorder>
-  <zorder>repeatTimesSpinBox</zorder>
-  <zorder>itemNoteLabel</zorder>
-  <zorder>itemNoteLineEdit</zorder>
-  <zorder>mappingKeyUnlockCheckBox</zorder>
-  <zorder>mappingKey_KeyUpLabel</zorder>
-  <zorder>sendTimingComboBox</zorder>
-  <zorder>sendTimingLabel</zorder>
-  <zorder>recordKeysButton</zorder>
-  <zorder>checkCombKeyOrderCheckBox</zorder>
-  <zorder>unbreakableCheckBox</zorder>
-  <zorder>crosshairSetupButton</zorder>
-  <zorder>oriList_SelectGamepadButton</zorder>
-  <zorder>oriList_SelectKeyboardButton</zorder>
-  <zorder>oriList_SelectMouseButton</zorder>
-  <zorder>oriList_SelectFunctionButton</zorder>
-  <zorder>mapList_SelectFunctionButton</zorder>
-  <zorder>mapList_SelectMouseButton</zorder>
-  <zorder>mapList_SelectGamepadButton</zorder>
-  <zorder>mapList_SelectKeyboardButton</zorder>
-  <zorder>fixedVKeyCodeSpinBox</zorder>
-  <zorder>fixedVKeyCodeLabel</zorder>
-  <zorder>postMappingKeyCheckBox</zorder>
-  <zorder>keyRecordEditModeButton</zorder>
-  <zorder>keyRecordLineEdit</zorder>
-  <zorder>keyRecordLabel</zorder>
-  <zorder>updateMappingInfoButton</zorder>
-  <zorder>disableOriginalKeyUnlockCheckBox</zorder>
-  <zorder>disableFnKeySwitchCheckBox</zorder>
-  <zorder>pasteTextModeComboBox</zorder>
-  <zorder>pasteTextModeLabel</zorder>
+  <widget class="QLabel" name="sendMappingKeyMethodLabel">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>280</y>
+     <width>81</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>SendMethod</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="sendMappingKeyMethodComboBox">
+   <property name="geometry">
+    <rect>
+     <x>325</x>
+     <y>280</y>
+     <width>111</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="currentText">
+    <string>SendInput</string>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <item>
+    <property name="text">
+     <string>SendInput</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>SendMessage</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>FakerInput</string>
+    </property>
+   </item>
+  </widget>
  </widget>
  <resources/>
  <connections/>

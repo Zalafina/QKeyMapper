@@ -116,6 +116,7 @@ private slots:
     void on_lockCheckBox_stateChanged(int state);
     void on_sendTimingComboBox_currentIndexChanged(int index);
     void on_pasteTextModeComboBox_currentIndexChanged(int index);
+    void on_sendMappingKeyMethodComboBox_currentIndexChanged(int index);
     void on_checkCombKeyOrderCheckBox_stateChanged(int state);
     void on_passThroughCheckBox_stateChanged(int state);
     void on_keySeqHoldDownCheckBox_stateChanged(int state);
@@ -130,7 +131,7 @@ private slots:
     void on_mappingKeyUnlockCheckBox_stateChanged(int state);
     void on_disableOriginalKeyUnlockCheckBox_stateChanged(int state);
     void on_disableFnKeySwitchCheckBox_stateChanged(int state);
-    void on_postMappingKeyCheckBox_stateChanged(int state);
+    // void on_postMappingKeyCheckBox_stateChanged(int state);
     void on_unbreakableCheckBox_stateChanged(int state);
     void on_crosshairSetupButton_clicked();
     void on_fixedVKeyCodeSpinBox_valueChanged(int value);

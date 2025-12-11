@@ -5951,7 +5951,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList mappingkeyunlockList;
     QStringList disableoriginalkeyunlockList;
     QStringList disablefnkeyswitchList;
-    QStringList postmappingkeyList;
+    QStringList sendmappingkeymethodList;
     QStringList fixedvkeycodeList;
     QStringList checkcombkeyorderList;
     QStringList unbreakableList;
@@ -6032,11 +6032,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             disablefnkeyswitchList.append("OFF");
         }
-        if (true == keymapdata.PostMappingKey) {
-            postmappingkeyList.append("ON");
+        if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod
+            || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+            sendmappingkeymethodList.append(QString::number(keymapdata.SendMappingKeyMethod));
         }
         else {
-            postmappingkeyList.append("OFF");
+            sendmappingkeymethodList.append(QString::number(SENDMAPPINGKEY_METHOD_SENDINPUT));
         }
         if (FIXED_VIRTUAL_KEY_CODE_MIN <= keymapdata.FixedVKeyCode && keymapdata.FixedVKeyCode <= FIXED_VIRTUAL_KEY_CODE_MAX) {
             fixedvkeycodeList.append(QString::number(keymapdata.FixedVKeyCode, 16));
@@ -6202,7 +6203,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYUNLOCK, mappingkeyunlockList);
     keyMappingDataFile.setValue(KEYMAPDATA_DISABLEORIGINALKEYUNLOCK, disableoriginalkeyunlockList);
     keyMappingDataFile.setValue(KEYMAPDATA_DISABLEFNKEYSWITCH, disablefnkeyswitchList);
-    keyMappingDataFile.setValue(KEYMAPDATA_POSTMAPPINGKEY, postmappingkeyList);
+    keyMappingDataFile.setValue(KEYMAPDATA_SENDMAPPINGKEYMETHOD, sendmappingkeymethodList);
     keyMappingDataFile.setValue(KEYMAPDATA_FIXEDVKEYCODE, fixedvkeycodeList);
     keyMappingDataFile.setValue(KEYMAPDATA_CHECKCOMBKEYORDER, checkcombkeyorderList);
     keyMappingDataFile.setValue(KEYMAPDATA_UNBREAKABLE, unbreakableList);
@@ -6258,7 +6259,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList mappingkeyunlockStringList;
     QStringList disableoriginalkeyunlockStringList;
     QStringList disablefnkeyswitchStringList;
-    QStringList postmappingkeyStringList;
+    QStringList sendmappingkeymethodStringList;
     QStringList fixedvkeycodeStringList;
     QStringList checkcombkeyorderStringList;
     QStringList unbreakableStringList;
@@ -6291,7 +6292,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<bool> mappingkeyunlockList;
     QList<bool> disableoriginalkeyunlockList;
     QList<bool> disablefnkeyswitchList;
-    QList<bool> postmappingkeyList;
+    QList<int> sendmappingkeymethodList;
     QList<int> fixedvkeycodeList;
     QList<bool> checkcombkeyorderList;
     QList<bool> unbreakableList;
@@ -6367,13 +6368,13 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         mappingkeyunlockStringList = stringListAllOFF;
         disableoriginalkeyunlockStringList = stringListAllOFF;
         disablefnkeyswitchStringList = stringListAllOFF;
-        postmappingkeyStringList = stringListAllOFF;
+        sendmappingkeymethodStringList = stringListAllZERO;
         fixedvkeycodeStringList = fixedvkeycodeStringListDefault;
         checkcombkeyorderStringList = stringListAllON;
         unbreakableStringList = stringListAllOFF;
-        passthroughStringList   = stringListAllOFF;
-        sendtimingStringList   = stringListAllNORMAL;
-        pastetextmodeStringList   = stringListAllZERO;
+        passthroughStringList = stringListAllOFF;
+        sendtimingStringList = stringListAllNORMAL;
+        pastetextmodeStringList = stringListAllZERO;
         keyseqholddownStringList = stringListAllOFF;
         repeatmodeStringList = stringListAllZERO;
         repeattimesStringList = repeattimesStringListDefault;
@@ -6419,8 +6420,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         if (true == keyMappingDataFile.contains(KEYMAPDATA_DISABLEFNKEYSWITCH)) {
             disablefnkeyswitchStringList = keyMappingDataFile.value(KEYMAPDATA_DISABLEFNKEYSWITCH).toStringList();
         }
-        if (true == keyMappingDataFile.contains(KEYMAPDATA_POSTMAPPINGKEY)) {
-            postmappingkeyStringList = keyMappingDataFile.value(KEYMAPDATA_POSTMAPPINGKEY).toStringList();
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_SENDMAPPINGKEYMETHOD)) {
+            sendmappingkeymethodStringList = keyMappingDataFile.value(KEYMAPDATA_SENDMAPPINGKEYMETHOD).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FIXEDVKEYCODE)) {
             fixedvkeycodeStringList = keyMappingDataFile.value(KEYMAPDATA_FIXEDVKEYCODE).toStringList();
@@ -6574,12 +6575,13 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
-                const QString &postmappingkey = (i < postmappingkeyStringList.size()) ? postmappingkeyStringList.at(i) : "OFF";
-                if (postmappingkey == "ON") {
-                    postmappingkeyList.append(true);
-                } else {
-                    postmappingkeyList.append(false);
+                const QString &sendmappingkeymethodStr = (i < sendmappingkeymethodStringList.size()) ? sendmappingkeymethodStringList.at(i) : QString::number(SENDMAPPINGKEY_METHOD_SENDINPUT);
+                bool ok;
+                int sendmappingkeymethod = sendmappingkeymethodStr.toInt(&ok);
+                if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT)) {
+                    sendmappingkeymethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
                 }
+                sendmappingkeymethodList.append(sendmappingkeymethod);
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
@@ -6849,7 +6851,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       mappingkeyunlockList.at(loadindex),
                                                       disableoriginalkeyunlockList.at(loadindex),
                                                       disablefnkeyswitchList.at(loadindex),
-                                                      postmappingkeyList.at(loadindex),
+                                                      sendmappingkeymethodList.at(loadindex),
                                                       fixedvkeycodeList.at(loadindex),
                                                       checkcombkeyorderList.at(loadindex),
                                                       unbreakableList.at(loadindex),
@@ -10449,7 +10451,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString mappingkeyunlockList_forsave;
     QString disableoriginalkeyunlockList_forsave;
     QString disablefnkeyswitchList_forsave;
-    QString postmappingkeyList_forsave;
+    QString sendmappingkeymethodList_forsave;
     QString fixedvkeycodeList_forsave;
     QString checkcombkeyorderList_forsave;
     QString unbreakableList_forsave;
@@ -10543,7 +10545,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             mappingkeyunlockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             disableoriginalkeyunlockList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             disablefnkeyswitchList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
-            postmappingkeyList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            sendmappingkeymethodList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             fixedvkeycodeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             checkcombkeyorderList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             unbreakableList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -10581,7 +10583,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList mappingkeyunlockList;
         QStringList disableoriginalkeyunlockList;
         QStringList disablefnkeyswitchList;
-        QStringList postmappingkeyList;
+        QStringList sendmappingkeymethodList;
         QStringList fixedvkeycodeList;
         QStringList checkcombkeyorderList;
         QStringList unbreakableList;
@@ -10674,11 +10676,12 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     disablefnkeyswitchList.append("OFF");
                 }
-                if (true == keymapdata.PostMappingKey) {
-                    postmappingkeyList.append("ON");
+                if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod
+                    || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+                    sendmappingkeymethodList.append(QString::number(keymapdata.SendMappingKeyMethod));
                 }
                 else {
-                    postmappingkeyList.append("OFF");
+                    sendmappingkeymethodList.append(QString::number(SENDMAPPINGKEY_METHOD_SENDINPUT));
                 }
                 if (FIXED_VIRTUAL_KEY_CODE_MIN <= keymapdata.FixedVKeyCode && keymapdata.FixedVKeyCode <= FIXED_VIRTUAL_KEY_CODE_MAX) {
                     fixedvkeycodeList.append(QString::number(keymapdata.FixedVKeyCode, 16));
@@ -10843,7 +10846,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString mappingkeyunlockList_str = mappingkeyunlockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString disableoriginalkeyunlockList_str = disableoriginalkeyunlockList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString disablefnkeyswitchList_str = disablefnkeyswitchList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
-        QString postmappingkeyList_str = postmappingkeyList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString sendmappingkeymethodList_str = sendmappingkeymethodList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString fixedvkeycodeList_str = fixedvkeycodeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString checkcombkeyorderList_str = checkcombkeyorderList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString unbreakableList_str = unbreakableList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -10881,7 +10884,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         mappingkeyunlockList_forsave.append(mappingkeyunlockList_str);
         disableoriginalkeyunlockList_forsave.append(disableoriginalkeyunlockList_str);
         disablefnkeyswitchList_forsave.append(disablefnkeyswitchList_str);
-        postmappingkeyList_forsave.append(postmappingkeyList_str);
+        sendmappingkeymethodList_forsave.append(sendmappingkeymethodList_str);
         fixedvkeycodeList_forsave.append(fixedvkeycodeList_str);
         checkcombkeyorderList_forsave.append(checkcombkeyorderList_str);
         unbreakableList_forsave.append(unbreakableList_str);
@@ -10939,7 +10942,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK , mappingkeyunlockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DISABLEORIGINALKEYUNLOCK , disableoriginalkeyunlockList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DISABLEFNKEYSWITCH, disablefnkeyswitchList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_POSTMAPPINGKEY , postmappingkeyList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_SENDMAPPINGKEYMETHOD, sendmappingkeymethodList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FIXEDVKEYCODE , fixedvkeycodeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CHECKCOMBKEYORDER , checkcombkeyorderList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_UNBREAKABLE , unbreakableList_forsave);
@@ -12238,7 +12241,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         QString mappingkeyunlockData_loaded;
         QString disableoriginalkeyunlockData_loaded;
         QString disablefnkeyswitchData_loaded;
-        QString postmappingkeyData_loaded;
+        QString sendmappingkeymethodData_loaded;
         QString fixedvkeycodeData_loaded;
         QString checkcombkeyorderData_loaded;
         QString unbreakableData_loaded;
@@ -12278,7 +12281,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         QStringList disableoriginalkeyunlockData_split;
         QStringList disablefnkeyswitchData_split;
         QStringList fixedvkeycodeData_split;
-        QStringList postmappingkeyData_split;
+        QStringList sendmappingkeymethodData_split;
         QStringList checkcombkeyorderData_split;
         QStringList unbreakableData_split;
         QStringList passthroughData_split;
@@ -12511,9 +12514,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                 disablefnkeyswitchData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_DISABLEFNKEYSWITCH).toString();
                 disablefnkeyswitchData_split = disablefnkeyswitchData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
-            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_POSTMAPPINGKEY)) {
-                postmappingkeyData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_POSTMAPPINGKEY).toString();
-                postmappingkeyData_split = postmappingkeyData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_SENDMAPPINGKEYMETHOD)) {
+                sendmappingkeymethodData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_SENDMAPPINGKEYMETHOD).toString();
+                sendmappingkeymethodData_split = sendmappingkeymethodData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FIXEDVKEYCODE)) {
                 fixedvkeycodeData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FIXEDVKEYCODE).toString();
@@ -12640,7 +12643,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     QStringList mappingkeyunlockStringList;
                     QStringList disableoriginalkeyunlockStringList;
                     QStringList disablefnkeyswitchStringList;
-                    QStringList postmappingkeyStringList;
+                    QStringList sendmappingkeymethodStringList;
                     QStringList fixedvkeycodeStringList;
                     QStringList checkcombkeyorderStringList;
                     QStringList unbreakableStringList;
@@ -12674,7 +12677,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     QList<bool> mappingkeyunlockList;
                     QList<bool> disableoriginalkeyunlockList;
                     QList<bool> disablefnkeyswitchList;
-                    QList<bool> postmappingkeyList;
+                    QList<int> sendmappingkeymethodList;
                     QList<int> fixedvkeycodeList;
                     QList<bool> checkcombkeyorderList;
                     QList<bool> unbreakableList;
@@ -12748,7 +12751,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     mappingkeyunlockStringList = stringListAllOFF;
                     disableoriginalkeyunlockStringList = stringListAllOFF;
                     disablefnkeyswitchStringList = stringListAllOFF;
-                    postmappingkeyStringList = stringListAllOFF;
+                    sendmappingkeymethodStringList = stringListAllZERO;
                     fixedvkeycodeStringList = fixedvkeycodeStringListDefault;
                     checkcombkeyorderStringList = stringListAllON;
                     unbreakableStringList   = stringListAllOFF;
@@ -12808,8 +12811,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     if (disablefnkeyswitchData_split.size() == table_count) {
                         disablefnkeyswitchStringList = disablefnkeyswitchData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
-                    if (postmappingkeyData_split.size() == table_count) {
-                        postmappingkeyStringList = postmappingkeyData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    if (sendmappingkeymethodData_split.size() == table_count) {
+                        sendmappingkeymethodStringList = sendmappingkeymethodData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (fixedvkeycodeData_split.size() == table_count) {
                         fixedvkeycodeStringList = fixedvkeycodeData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -12967,12 +12970,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
-                            const QString &postmappingkey = (i < postmappingkeyStringList.size()) ? postmappingkeyStringList.at(i) : "OFF";
-                            if (postmappingkey == "ON") {
-                                postmappingkeyList.append(true);
-                            } else {
-                                postmappingkeyList.append(false);
+                            const QString &sendmappingkeymethodStr = (i < sendmappingkeymethodStringList.size()) ? sendmappingkeymethodStringList.at(i) : QString::number(SENDMAPPINGKEY_METHOD_SENDINPUT);
+                            bool ok;
+                            int sendmappingkeymethod = sendmappingkeymethodStr.toInt(&ok);
+                            if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT)) {
+                                sendmappingkeymethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
                             }
+                            sendmappingkeymethodList.append(sendmappingkeymethod);
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
@@ -13256,7 +13260,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                                                                   mappingkeyunlockList.at(loadindex),
                                                                   disableoriginalkeyunlockList.at(loadindex),
                                                                   disablefnkeyswitchList.at(loadindex),
-                                                                  postmappingkeyList.at(loadindex),
+                                                                  sendmappingkeymethodList.at(loadindex),
                                                                   fixedvkeycodeList.at(loadindex),
                                                                   checkcombkeyorderList.at(loadindex),
                                                                   unbreakableList.at(loadindex),
@@ -22368,7 +22372,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                                keymapdata.MappingKeyUnlock,
                                                                keymapdata.DisableOriginalKeyUnlock,
                                                                keymapdata.DisableFnKeySwitch,
-                                                               keymapdata.PostMappingKey,
+                                                               keymapdata.SendMappingKeyMethod,
                                                                keymapdata.FixedVKeyCode,
                                                                keymapdata.CheckCombKeyOrder,
                                                                keymapdata.Unbreakable,
@@ -22604,7 +22608,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    false,                                   /* mappingkeys_unlock bool */
                                                    false,                                   /* disable_originalkeyunlock bool */
                                                    false,                                   /* disable_fnkeyswitch bool */
-                                                   false,                                   /* postmappingkey bool */
+                                                   SENDMAPPINGKEY_METHOD_SENDINPUT,         /* sendmappingkeymethod int */
                                                    FIXED_VIRTUAL_KEY_CODE_NONE,             /* fixedvkeycode int */
                                                    true,                                    /* checkcombkeyorder bool */
                                                    false,                                   /* unbreakable bool */
