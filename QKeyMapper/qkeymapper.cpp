@@ -549,6 +549,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     updateSystemTrayDisplay();
     m_SysTrayIcon->show();
 
+    updateFakerInputStatus();
     updateMultiInputStatus();
 #ifdef VIGEM_CLIENT_SUPPORT
     updateViGEmBusStatus();
@@ -601,6 +602,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::showCarOrdinal_Signal, this, &QKeyMapper::showCarOrdinal, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showCrosshairStart_Signal, this, &QKeyMapper::showCrosshairStart, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showCrosshairStop_Signal, this, &QKeyMapper::showCrosshairStop, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::updateFakerInputStatus_Signal, this, &QKeyMapper::updateFakerInputStatus, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateVirtualGamepadListDisplay_Signal, this, &QKeyMapper::updateVirtualGamepadListDisplay);
     QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
@@ -7701,6 +7703,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
     }
     else{
         changeControlEnableStatus(true);
+        emit updateFakerInputStatus_Signal();
 #ifdef VIGEM_CLIENT_SUPPORT
         emit updateViGEmBusStatus_Signal();
 #endif
@@ -10080,6 +10083,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     updateSystemTrayDisplay();
     m_SysTrayIcon->show();
 
+    updateFakerInputStatus();
     updateMultiInputStatus();
     updateViGEmBusStatus();
     updateVirtualGamepadListDisplay();
@@ -15436,6 +15440,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
+    ui->installFakerInputButton->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
     // ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
@@ -15578,6 +15583,7 @@ void QKeyMapper::setControlFontChinese()
     ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
+    ui->installFakerInputButton->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
     // ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
@@ -15720,6 +15726,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
+    ui->installFakerInputButton->setFont(customFont);
     ui->installViGEmBusButton->setFont(customFont);
     // ui->uninstallViGEmBusButton->setFont(customFont);
     ui->enableVirtualJoystickCheckBox->setFont(customFont);
@@ -15914,6 +15921,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->CategoryFilterComboBox->setEnabled(status);
 
     ui->settingTabWidget->setEnabled(status);
+
+    ui->installFakerInputButton->setEnabled(status);
 
 #ifdef VIGEM_CLIENT_SUPPORT
     if (false == status) {
@@ -16655,6 +16664,157 @@ int QKeyMapper::uninstallInterceptionDriver()
     return 0;
 }
 
+int QKeyMapper::installFakerInputDriver()
+{
+    QString operate_str = QString("runas");
+    QString create_devnode_argument_str = QString("--create-device-node --hardware-id root\\FakerInput --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
+    QString executable_str;
+    QString install_argument_str;
+
+    if (QSysInfo::currentCpuArchitecture() == "x86_64")
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Running on a 64-bit operating system ->" << " Use FakerInputDriver x64 Driver Files.";
+#endif
+        executable_str = QString("FakerInputDriver\\x64\\nefconw.exe");
+        install_argument_str = QString("--install-driver --inf-path \"FakerInputDriver\\x64\\FakerInput.inf\"");
+    }
+    else if (QSysInfo::currentCpuArchitecture() == "i386")
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Running on a 32-bit operating system ->" << " Use FakerInputDriver x86 Driver Files.";
+#endif
+        executable_str = QString("FakerInputDriver\\x86\\nefconw.exe");
+        install_argument_str = QString("--install-driver --inf-path \"FakerInputDriver\\x86\\FakerInput.inf\"");
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Unknown operating system architecture!";
+#endif
+        return -1;
+    }
+
+    std::wstring operate;
+    std::wstring executable;
+    std::wstring argument;
+    HINSTANCE ret_instance;
+    INT64 ret;
+
+    /* FakerInput Create Device Node */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = create_devnode_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Create FakerInput Device Node Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Create FakerInput Device Node Failed!!! ->" << ret;
+#endif
+    }
+
+
+    /* FakerInput Install Inf Driver */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = install_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Install FakerInput INF Driver Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Install FakerInput INF Driver Failed!!! ->" << ret;
+#endif
+    }
+
+    return 0;
+}
+
+int QKeyMapper::uninstallFakerInputDriver()
+{
+    QString operate_str = QString("runas");
+    QString remove_devnode_argument_str = QString("--remove-device-node --hardware-id root\\FakerInput --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
+    QString executable_str;
+    QString uninstall_argument_str;
+
+    if (QSysInfo::currentCpuArchitecture() == "x86_64")
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallFakerInputDriver] Running on a 64-bit operating system ->" << " Use FakerInputDriver x64 Driver Files.";
+#endif
+        executable_str = QString("FakerInputDriver\\x64\\nefconw.exe");
+        uninstall_argument_str = QString("--uninstall-driver --inf-path \"FakerInputDriver\\x64\\FakerInput.inf\"");
+    }
+    else if (QSysInfo::currentCpuArchitecture() == "i386")
+    {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallFakerInputDriver] Running on a 32-bit operating system ->" << " Use FakerInputDriver x86 Driver Files.";
+#endif
+        executable_str = QString("FakerInputDriver\\x86\\nefconw.exe");
+        uninstall_argument_str = QString("--uninstall-driver --inf-path \"FakerInputDriver\\x86\\FakerInput.inf\"");
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[uninstallFakerInputDriver] Unknown operating system architecture!";
+#endif
+        return -1;
+    }
+
+    std::wstring operate;
+    std::wstring executable;
+    std::wstring argument;
+    HINSTANCE ret_instance;
+    INT64 ret;
+
+    /* FakerInput Uninstall Inf Driver */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = uninstall_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Uninstall FakerInput INF Driver Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Uninstall FakerInput INF Driver Failed!!! ->" << ret;
+#endif
+    }
+
+    /* FakerInput Remove Device Node */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = remove_devnode_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Remove FakerInput Device Node Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installFakerInputDriver] Remove FakerInput Device Node Failed!!! ->" << ret;
+#endif
+    }
+
+    return 0;
+}
+
 #ifdef VIGEM_CLIENT_SUPPORT
 int QKeyMapper::installViGEmBusDriver()
 {
@@ -16806,24 +16966,6 @@ int QKeyMapper::uninstallViGEmBusDriver()
     HINSTANCE ret_instance;
     INT64 ret;
 
-    /* ViGEmBus Remove Device Node */
-    operate = operate_str.toStdWString();
-    executable = executable_str.toStdWString();
-    argument = remove_devnode_argument_str.toStdWString();
-
-    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
-    ret = (INT64)ret_instance;
-    if(ret > 32) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[installViGEmBusDriver] Remove ViGEmBus Device Node Success. ->" << ret;
-#endif
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[installViGEmBusDriver] Remove ViGEmBus Device Node Failed!!! ->" << ret;
-#endif
-    }
-
     /* ViGEmBus Uninstall Inf Driver */
     operate = operate_str.toStdWString();
     executable = executable_str.toStdWString();
@@ -16839,6 +16981,24 @@ int QKeyMapper::uninstallViGEmBusDriver()
     else {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[installViGEmBusDriver] Uninstall ViGEmBus INF Driver Failed!!! ->" << ret;
+#endif
+    }
+
+    /* ViGEmBus Remove Device Node */
+    operate = operate_str.toStdWString();
+    executable = executable_str.toStdWString();
+    argument = remove_devnode_argument_str.toStdWString();
+
+    ret_instance = ShellExecute(Q_NULLPTR, operate.c_str(), executable.c_str(), argument.c_str(), Q_NULLPTR, SW_HIDE);
+    ret = (INT64)ret_instance;
+    if(ret > 32) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Remove ViGEmBus Device Node Success. ->" << ret;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[installViGEmBusDriver] Remove ViGEmBus Device Node Failed!!! ->" << ret;
 #endif
     }
 
@@ -16932,6 +17092,65 @@ void QKeyMapper::reconnectViGEmClient()
     }
 }
 #endif
+
+void QKeyMapper::updateFakerInputStatus()
+{
+    QKeyMapper_Worker::FakerInputClient_ConnectState connectstate = QKeyMapper_Worker::FakerInputClient_getConnectState();
+
+#ifdef DEBUG_LOGOUT_ON
+    static QKeyMapper_Worker::FakerInputClient_ConnectState lastConnectState = QKeyMapper_Worker::FAKERINPUT_CONNECTING;
+    if (lastConnectState != connectstate) {
+        lastConnectState = connectstate;
+        qDebug() << "[updateFakerInputStatus]" << "FakerInputClient Connect State ->" << lastConnectState;
+    }
+#endif
+
+    if (QKeyMapper_Worker::FAKERINPUT_CONNECT_SUCCESS == connectstate) {
+        ui->installFakerInputButton->setText(tr("Uninstall FakerInput"));
+
+        ui->FakerInputStatusLabel->setStyleSheet("color:green;");
+        ui->FakerInputStatusLabel->setText(tr("FakerInput Available"));
+    }
+    else {
+        ui->installFakerInputButton->setText(tr("Install FakerInput"));
+
+        ui->FakerInputStatusLabel->setStyleSheet("color:red;");
+        ui->FakerInputStatusLabel->setText(tr("FakerInput Unavailable"));
+    }
+}
+
+void QKeyMapper::reconnectFakerInputClient()
+{
+    // Reconnect FakerInput client if the driver is installed
+    if (isFakerInputInstalled()) {
+        int fakerinput_retval_alloc = QKeyMapper_Worker::FakerInputClient_Alloc();
+        int fakerinput_retval_connect = QKeyMapper_Worker::FakerInputClient_Connect();
+        Q_UNUSED(fakerinput_retval_alloc);
+        Q_UNUSED(fakerinput_retval_connect);
+
+        if (QKeyMapper_Worker::FAKERINPUT_CONNECT_SUCCESS != QKeyMapper_Worker::FakerInputClient_getConnectState()) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("[reconnecFakerInputClient] FakerInputClient reconnect failed!!! -> retval_alloc(%d), retval_connect(%d)", fakerinput_retval_alloc, fakerinput_retval_connect);
+#endif
+        }
+#ifdef DEBUG_LOGOUT_ON
+        else {
+            qDebug() << "[reconnecFakerInputClient] FakerInputClient reconnected successfully.";
+        }
+#endif
+    }
+#ifdef DEBUG_LOGOUT_ON
+    else {
+        qDebug() << "[reconnecFakerInputClient] FakerInput driver is not installed, skip reconnection.";
+    }
+#endif
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[reconnecFakerInputClient]" << "FakerInputClient Connect State ->" << QKeyMapper_Worker::FakerInputClient_getConnectState();
+#endif
+
+    emit updateFakerInputStatus_Signal();
+}
 
 void QKeyMapper::updateMultiInputStatus()
 {
@@ -20063,6 +20282,7 @@ void QKeyMapper::reloadUILanguage()
     //     ui->virtualGamepadTypeComboBox->setGeometry(curGeometry);
     // }
 
+    emit updateFakerInputStatus_Signal();
 #ifdef VIGEM_CLIENT_SUPPORT
     emit updateViGEmBusStatus_Signal();
 #endif
@@ -20262,6 +20482,12 @@ void QKeyMapper::setUILanguage(int languageindex)
     }
     // ui->uninstallViGEmBusButton->setText(UNINSTALLVIGEMBUSBUTTON_CHINESE);
 #endif
+    if (QKeyMapper_Worker::FAKERINPUT_CONNECT_SUCCESS == QKeyMapper_Worker::FakerInputClient_getConnectState()) {
+        ui->installFakerInputButton->setText(tr("Uninstall FakerInput"));
+    }
+    else {
+        ui->installFakerInputButton->setText(tr("Install FakerInput"));
+    }
     ui->keyboardSelectLabel->setText(tr("Keyboard"));
     ui->mouseSelectLabel->setText(tr("Mouse"));
     ui->gamepadSelectLabel->setText(tr("Gamepad"));
@@ -24810,7 +25036,6 @@ void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
 #endif
 }
 
-
 void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
@@ -24926,7 +25151,7 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
         QKeyMapper_Worker::ViGEmClient_Disconnect();
         QKeyMapper_Worker::ViGEmClient_Free();
 
-        emit updateViGEmBusStatus_Signal();
+        // emit updateViGEmBusStatus_Signal();
         ui->enableVirtualJoystickCheckBox->setCheckState(Qt::Unchecked);
         ui->enableVirtualJoystickCheckBox->setEnabled(false);
 
@@ -24962,6 +25187,50 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
         QTimer::singleShot(RECONNECT_VIGEMCLIENT_WAIT_TIME, this, SLOT(reconnectViGEmClient()));
     }
 #endif
+}
+
+void QKeyMapper::on_installFakerInputButton_clicked()
+{
+    QKeyMapper_Worker::FakerInputClient_ConnectState connectstate = QKeyMapper_Worker::FakerInputClient_getConnectState();
+
+    if (QKeyMapper_Worker::FAKERINPUT_CONNECT_SUCCESS == connectstate) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Uninstall FakerInput Driver.";
+#endif
+
+        QKeyMapper_Worker::FakerInputClient_Disconnect();
+        QKeyMapper_Worker::FakerInputClient_Free();
+
+        (void)uninstallFakerInputDriver();
+    }
+    else {
+        if (QKeyMapper_Worker::FAKERINPUT_CONNECTING == connectstate
+            || QKeyMapper_Worker::FAKERINPUT_CONNECT_SUCCESS == connectstate) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_installFakerInputButton_clicked]" <<"Skip Install FakerInput Driver on ConnectState ->" << connectstate;
+#endif
+            return;
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Install FakerInput Driver.";
+#endif
+        QKeyMapper_Worker::FakerInputClient_setConnectState(QKeyMapper_Worker::FAKERINPUT_CONNECTING);
+        emit updateFakerInputStatus_Signal();
+
+        (void)installFakerInputDriver();
+
+        QThread::msleep(100);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[on_installFakerInputButton_clicked()]" << "isFakerInputInstalled() ->" << isFakerInputInstalled();
+#endif
+
+        // Reconnect FakerInput client if the driver is installed
+        if (isFakerInputInstalled()) {
+            QTimer::singleShot(RECONNECT_FAKERINPUTCLIENT_WAIT_TIME, this, SLOT(reconnectFakerInputClient()));
+        }
+    }
 }
 
 #if 0

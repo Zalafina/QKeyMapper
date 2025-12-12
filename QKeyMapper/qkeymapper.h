@@ -1008,6 +1008,7 @@ signals:
     void showCrosshairStart_Signal(int rowindex, const QString &crosshair_keystr);
     void showCrosshairStop_Signal(int rowindex, const QString &crosshair_keystr);
     void switchFloatingWindowMousePassThrough_Signal(void);
+    void updateFakerInputStatus_Signal(void);
 #ifdef VIGEM_CLIENT_SUPPORT
     void updateViGEmBusStatus_Signal(void);
     void updateVirtualGamepadListDisplay_Signal(void);
@@ -1175,6 +1176,8 @@ private slots:
     void on_enableVirtualJoystickCheckBox_stateChanged(int state);
 
     void on_installViGEmBusButton_clicked();
+
+    void on_installFakerInputButton_clicked();
 
     // void on_uninstallViGEmBusButton_clicked();
 
@@ -1454,6 +1457,9 @@ private:
     int installInterceptionDriver(void);
     int uninstallInterceptionDriver(void);
 
+    int installFakerInputDriver(void);
+    int uninstallFakerInputDriver(void);
+
 #ifdef VIGEM_CLIENT_SUPPORT
     int installViGEmBusDriver(void);
     int uninstallViGEmBusDriver(void);
@@ -1464,6 +1470,8 @@ public slots:
 #endif
 
 public slots:
+    void updateFakerInputStatus(void);
+    Q_INVOKABLE void reconnectFakerInputClient(void);
     void updateMultiInputStatus(void);
     void updateInputDeviceSelectComboBoxes(void);
     void updateGamepadSelectComboBox(int instance_id);

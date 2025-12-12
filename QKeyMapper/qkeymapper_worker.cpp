@@ -4227,7 +4227,7 @@ void QKeyMapper_Worker::updateFakerInputStatus()
     if (s_isWorkerDestructing) {
         return;
     }
-    // Can emit signal to update UI status if needed
+    emit QKeyMapper::getInstance()->updateFakerInputStatus_Signal();
 }
 
 void QKeyMapper_Worker::initVK2HIDCodeMap()
@@ -16287,7 +16287,7 @@ QKeyMapper_Hook_Proc::QKeyMapper_Hook_Proc(QObject *parent)
 
 #ifdef QT_DEBUG
     if (IsDebuggerPresent()) {
-        // s_LowLevelKeyboardHook_Enable = false;
+        s_LowLevelKeyboardHook_Enable = false;
         s_LowLevelMouseHook_Enable = false;
 #ifdef DEBUG_LOGOUT_ON
         qDebug("QKeyMapper_Hook_Proc() Win_Dbg = TRUE, set QKeyMapper_Hook_Proc::s_LowLevelMouseHook_Enable to FALSE");

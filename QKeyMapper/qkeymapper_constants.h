@@ -430,6 +430,8 @@ namespace QKeyMapperConstants {
 
     inline constexpr int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
 
+    inline constexpr int RECONNECT_FAKERINPUTCLIENT_WAIT_TIME = 1000;
+
     inline constexpr int INSTALL_INTERCEPTION_LOOP_WAIT_TIME = 10;
     inline constexpr int INSTALL_INTERCEPTION_LOOP_WAIT_TIME_MAX = 2000/INSTALL_INTERCEPTION_LOOP_WAIT_TIME;
 
