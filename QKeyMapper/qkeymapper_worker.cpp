@@ -140,6 +140,9 @@ bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
 bool QKeyMapper_Worker::s_GameControllerSensor_EnableState = false;
 // QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
 QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::s_Joy2Mouse_EnableStateMap;
+int QKeyMapper_Worker::s_Key2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+int QKeyMapper_Worker::s_Joy2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+int QKeyMapper_Worker::s_Gyro2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
 // Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
 QHash<int, Joystick_AxisState> QKeyMapper_Worker::s_JoyAxisStateMap;
 int QKeyMapper_Worker::s_LastJoyAxisPlayerIndex = INITIAL_PLAYER_INDEX;
@@ -1953,11 +1956,11 @@ void QKeyMapper_Worker::onKey2MouseCycleTimeout()
         }
 
         if (joy2mouse_update) {
-            joystick2MouseMoveProc(player_index);
+            joystick2MouseMoveProc(player_index, s_Joy2Mouse_SendMethod);
         }
     }
     else if (s_Key2Mouse_EnableState) {
-        key2MouseMoveProc();
+        key2MouseMoveProc(s_Key2Mouse_SendMethod);
     }
 }
 
@@ -6852,10 +6855,10 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     s_Mouse2vJoy_EnableStateMap = ViGEmClient_checkMouse2JoystickEnableStateMap();
 #endif
 
-    s_Key2Mouse_EnableState = checkKey2MouseEnableState();
+    s_Key2Mouse_EnableState = checkKey2MouseEnableState(s_Key2Mouse_SendMethod);
     // s_Joy2Mouse_EnableState = checkJoystick2MouseEnableState();
-    s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
-    s_GameControllerSensor_EnableState = checkGyro2MouseEnableState();
+    s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap(s_Joy2Mouse_SendMethod);
+    s_GameControllerSensor_EnableState = checkGyro2MouseEnableState(s_Gyro2Mouse_SendMethod);
     s_Gyro2Mouse_MoveActive = checkGyro2MouseMoveActiveState();
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -6994,6 +6997,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
     s_Joy2Mouse_EnableStateMap.clear();
     s_GameControllerSensor_EnableState = false;
+    s_Key2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+    s_Joy2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+    s_Gyro2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     setWorkerJoystickCaptureStop();
 
     if (m_Key2MouseCycleTimer.isActive()) {
@@ -7193,6 +7199,9 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_Key2Mouse_EnableState = false;
     s_Joy2Mouse_EnableStateMap.clear();
     s_GameControllerSensor_EnableState = false;
+    s_Key2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+    s_Joy2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+    s_Gyro2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
 
     if (m_Key2MouseCycleTimer.isActive()) {
 #ifdef DEBUG_LOGOUT_ON
@@ -7282,9 +7291,9 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_GripDetect_EnableState = checkGripDetectEnableState();
     s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
     s_Mouse2vJoy_EnableStateMap = ViGEmClient_checkMouse2JoystickEnableStateMap();
-    s_Key2Mouse_EnableState = checkKey2MouseEnableState();
-    s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap();
-    s_GameControllerSensor_EnableState = checkGyro2MouseEnableState();
+    s_Key2Mouse_EnableState = checkKey2MouseEnableState(s_Key2Mouse_SendMethod);
+    s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap(s_Joy2Mouse_SendMethod);
+    s_GameControllerSensor_EnableState = checkGyro2MouseEnableState(s_Gyro2Mouse_SendMethod);
     s_Gyro2Mouse_MoveActive = checkGyro2MouseMoveActiveState();
 
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && QKeyMapper::getvJoyLockCursorStatus()) {
@@ -8573,7 +8582,7 @@ void QKeyMapper_Worker::checkJoystickSensor(const QJoystickSensorEvent &e)
     sensor_data.accelZ = e.accelZ;
     sensor_data.timestamp = e.timestamp;
 
-    gyro2MouseMoveProc(sensor_data);
+    gyro2MouseMoveProc(sensor_data, s_Gyro2Mouse_SendMethod);
 }
 
 void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param)
@@ -8640,10 +8649,11 @@ QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::checkJoystick2MouseEnableS
 }
 #endif
 
-QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::checkJoy2MouseEnableStateMap()
+QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::checkJoy2MouseEnableStateMap(int &sendMappingKeyMethod)
 {
     QHash<int, Joy2MouseStates> Joy2Mouse_EnableStateMap;
 
+    sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     static QRegularExpression joy2mouse_regex(R"(^(Joy-(LS|RS)2Mouse)(?:@([0-9]))?$)");
     for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
         QRegularExpressionMatch joy2mouse_match = joy2mouse_regex.match(keymapdata.Original_Key);
@@ -8663,6 +8673,11 @@ QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::checkJoy2Mouse
                 joy2mouse_enablestate |= JOY2MOUSE_RIGHT;
             }
 
+            if (keymapdata.SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_FAKERINPUT
+                && sendMappingKeyMethod != SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+                sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
+            }
+
             QString mappingkey = keymapdata.Mapping_Keys.constFirst();
             Q_UNUSED(originalkey_withoutindex);
 #ifdef DEBUG_LOGOUT_ON
@@ -8680,33 +8695,54 @@ QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::checkJoy2Mouse
     return Joy2Mouse_EnableStateMap;
 }
 
-bool QKeyMapper_Worker::checkKey2MouseEnableState()
+bool QKeyMapper_Worker::checkKey2MouseEnableState(int &sendMappingKeyMethod)
 {
     bool key2mouse_enablestate = false;
     bool key2mouse_up = false;
     bool key2mouse_down = false;
     bool key2mouse_left = false;
     bool key2mouse_right = false;
+    sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
 
     int findKey2Mouse_index = -1;
     findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_UP_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_up = true;
+        int SendMappingKeyMethod = QKeyMapper::KeyMappingDataList->at(findKey2Mouse_index).SendMappingKeyMethod;
+        if (SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_FAKERINPUT
+            && sendMappingKeyMethod != SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+            sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
+        }
     }
 
     findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_DOWN_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_down = true;
+        int SendMappingKeyMethod = QKeyMapper::KeyMappingDataList->at(findKey2Mouse_index).SendMappingKeyMethod;
+        if (SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_FAKERINPUT
+            && sendMappingKeyMethod != SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+            sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
+        }
     }
 
     findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_LEFT_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_left = true;
+        int SendMappingKeyMethod = QKeyMapper::KeyMappingDataList->at(findKey2Mouse_index).SendMappingKeyMethod;
+        if (SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_FAKERINPUT
+            && sendMappingKeyMethod != SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+            sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
+        }
     }
 
     findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_RIGHT_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_right = true;
+        int SendMappingKeyMethod = QKeyMapper::KeyMappingDataList->at(findKey2Mouse_index).SendMappingKeyMethod;
+        if (SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_FAKERINPUT
+            && sendMappingKeyMethod != SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+            sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
+        }
     }
 
     if (key2mouse_up || key2mouse_down || key2mouse_left || key2mouse_right) {
@@ -8716,13 +8752,18 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState()
     return key2mouse_enablestate;
 }
 
-bool QKeyMapper_Worker::checkGyro2MouseEnableState()
+bool QKeyMapper_Worker::checkGyro2MouseEnableState(int &sendMappingKeyMethod)
 {
     bool gyro2mouse_enablestate = false;
+    sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
 
     for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
         if (keymapdata.Original_Key.contains(JOY_GYRO2MOUSE_STR)) {
             gyro2mouse_enablestate = true;
+            if (keymapdata.SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_FAKERINPUT
+                && sendMappingKeyMethod != SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+                sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
+            }
             break;
         }
     }
@@ -9485,7 +9526,7 @@ int QKeyMapper_Worker::joystickCalculateDelta(qreal axis_value, int Speed_Factor
     return delta;
 }
 
-void QKeyMapper_Worker::joystick2MouseMoveProc(int player_index)
+void QKeyMapper_Worker::joystick2MouseMoveProc(int player_index, int sendmappingkeymethod)
 {
     Joystick_AxisState axis_state = s_JoyAxisStateMap.value(player_index);
     if (axis_state.isvirtual) {
@@ -9519,7 +9560,12 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(int player_index)
         qDebug().nospace().noquote() << "[joystick2MouseMoveProc]" << "JoyAxis -> Left-X = " << axis_state.left_x << ", Left-Y = " << axis_state.left_y << ", Right-X = " << axis_state.right_x << ", Right-Y = " << axis_state.right_y \
                                      << ", delta_x = " << delta_x << ", delta_y = " << delta_y;
 #endif
-        sendMouseMove(delta_x, delta_y);
+        if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+            (void)FakerInputClient_sendMouseMove(delta_x, delta_y);
+        }
+        else {
+            sendMouseMove(delta_x, delta_y);
+        }
 
         if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
             for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
@@ -9532,7 +9578,7 @@ void QKeyMapper_Worker::joystick2MouseMoveProc(int player_index)
     }
 }
 
-void QKeyMapper_Worker::key2MouseMoveProc()
+void QKeyMapper_Worker::key2MouseMoveProc(int sendmappingkeymethod)
 {
     int delta_x = 0;
     int delta_y = 0;
@@ -9574,7 +9620,12 @@ void QKeyMapper_Worker::key2MouseMoveProc()
                                                                 << ", final_x = " << final_x << ", final_y = " << final_y \
                                                                 << "-> delta_x = " << delta_x << ", delta_y = " << delta_y;
 #endif
-        sendMouseMove(delta_x, delta_y);
+        if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+            (void)FakerInputClient_sendMouseMove(delta_x, delta_y);
+        }
+        else {
+            sendMouseMove(delta_x, delta_y);
+        }
 
         if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
             for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
@@ -9587,7 +9638,7 @@ void QKeyMapper_Worker::key2MouseMoveProc()
     }
 }
 
-void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &sensor_data)
+void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &sensor_data, int sendmappingkeymethod)
 {
     static uint64_t lastTimestamp = 0;
     uint64_t currentTimestamp = sensor_data.timestamp;
@@ -9689,7 +9740,12 @@ void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &senso
                             << "Delta X ->" << delta_x << ", "
                             << "Delta Y ->" << delta_y;
 #endif
-        sendMouseMove(delta_x, delta_y);
+        if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+            (void)FakerInputClient_sendMouseMove(delta_x, delta_y);
+        }
+        else {
+            sendMouseMove(delta_x, delta_y);
+        }
 
         if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
             for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {

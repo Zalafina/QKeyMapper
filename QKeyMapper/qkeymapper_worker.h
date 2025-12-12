@@ -1054,9 +1054,9 @@ public slots:
     void startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param);
     void stopMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param);
     // Joy2MouseStates checkJoystick2MouseEnableState(void);
-    QHash<int, QKeyMapper_Worker::Joy2MouseStates> checkJoy2MouseEnableStateMap(void);
-    bool checkKey2MouseEnableState(void);
-    bool checkGyro2MouseEnableState(void);
+    QHash<int, QKeyMapper_Worker::Joy2MouseStates> checkJoy2MouseEnableStateMap(int &sendMappingKeyMethod);
+    bool checkKey2MouseEnableState(int &sendMappingKeyMethod);
+    bool checkGyro2MouseEnableState(int &sendMappingKeyMethod);
     bool checkGyro2MouseMoveActiveState(void);
     void doFunctionMappingProc(const QString &func_keystring);
 
@@ -1072,9 +1072,9 @@ private:
     void joystickRSHorizontalProc(const QJoystickAxisEvent &e);
     void joystickRSVerticalProc(const QJoystickAxisEvent &e);
     int  joystickCalculateDelta(qreal axis_value, int Speed_Factor, bool checkJoystick);
-    void joystick2MouseMoveProc(int player_index);
-    void key2MouseMoveProc(void);
-    void gyro2MouseMoveProc(const GameControllerSensorData &sensor_data);
+    void joystick2MouseMoveProc(int player_index, int sendmappingkeymethod);
+    void key2MouseMoveProc(int sendmappingkeymethod);
+    void gyro2MouseMoveProc(const GameControllerSensorData &sensor_data, int sendmappingkeymethod);
 
 public:
     static ULONG_PTR generateUniqueRandomValue(QSet<ULONG_PTR>& existingValues);
@@ -1327,6 +1327,9 @@ public:
     static bool s_GameControllerSensor_EnableState;
     // static Joy2MouseStates s_Joy2Mouse_EnableState;
     static QHash<int, Joy2MouseStates> s_Joy2Mouse_EnableStateMap;
+    static int s_Key2Mouse_SendMethod;
+    static int s_Joy2Mouse_SendMethod;
+    static int s_Gyro2Mouse_SendMethod;
     // static Joystick_AxisState s_JoyAxisState;
     static QHash<int, Joystick_AxisState> s_JoyAxisStateMap;
     static int s_LastJoyAxisPlayerIndex;
