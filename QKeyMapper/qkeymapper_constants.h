@@ -501,8 +501,10 @@ namespace QKeyMapperConstants {
 
     inline constexpr int SENDMESSAGE_TIMEOUT = 200;
 
+#ifdef FAKERINPUT_EXTRAINFO
     // Time window for matching (500ms) - events older than this are considered stale
     inline constexpr qint64 FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS = 500;
+#endif // FAKERINPUT_EXTRAINFO
 
     // FakerInput HID Mouse Button Bit Definitions
     // According to HID Usage Tables for Generic Desktop Page (Mouse)

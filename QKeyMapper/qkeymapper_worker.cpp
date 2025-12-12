@@ -126,6 +126,7 @@ QHash<quint8, BYTE> QKeyMapper_Worker::s_VK2HIDCodeMap;
 QHash<quint8, BYTE> QKeyMapper_Worker::s_VK2HIDModifierMap;
 // FakerInput mouse report state
 BYTE QKeyMapper_Worker::s_FakerInputMouseReport_Buttons = 0;
+#ifdef FAKERINPUT_EXTRAINFO
 // FakerInput ExtraInfo tracking FIFO queues
 QQueue<FakerInputKeyboardExtraInfo> QKeyMapper_Worker::s_FakerInputKeyboardExtraInfoQueue;
 QMutex QKeyMapper_Worker::s_FakerInputKeyboardExtraInfoQueue_Mutex;
@@ -133,7 +134,8 @@ QQueue<FakerInputMouseButtonExtraInfo> QKeyMapper_Worker::s_FakerInputMouseButto
 QMutex QKeyMapper_Worker::s_FakerInputMouseButtonExtraInfoQueue_Mutex;
 QQueue<FakerInputMouseWheelExtraInfo> QKeyMapper_Worker::s_FakerInputMouseWheelExtraInfoQueue;
 QMutex QKeyMapper_Worker::s_FakerInputMouseWheelExtraInfoQueue_Mutex;
-#endif
+#endif // FAKERINPUT_EXTRAINFO
+#endif // FAKERINPUT_SUPPORT
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
 bool QKeyMapper_Worker::s_GameControllerSensor_EnableState = false;
 // QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
@@ -2350,7 +2352,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (true == VirtualMouseButtonMap.contains(key)) {
                 if (sendtype != SENDTYPE_EXCLUSION
                     && sendmode != SENDMODE_FORCE_STOP
+#ifdef FAKERINPUT_EXTRAINFO
                     && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE
+#else
+                    && sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDINPUT
+#endif // FAKERINPUT_EXTRAINFO
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && false == pressedVirtualKeysList.contains(key)) {
 #ifdef DEBUG_LOGOUT_ON
@@ -2419,7 +2425,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 if (controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_MODIFIERS
                     && sendmode != SENDMODE_FORCE_STOP
                     && fixedvkeycode == FIXED_VIRTUAL_KEY_CODE_NONE
+#ifdef FAKERINPUT_EXTRAINFO
                     && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE
+#else
+                    && sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDINPUT
+#endif // FAKERINPUT_EXTRAINFO
                     && controller.sendvirtualkey_state != SENDVIRTUALKEY_STATE_BURST_STOP
                     && sendtype != SENDTYPE_EXCLUSION
                     && false == pressedVirtualKeysList.contains(key)) {
@@ -4402,6 +4412,7 @@ bool QKeyMapper_Worker::FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool
         }
     }
 
+#ifdef FAKERINPUT_EXTRAINFO
     // Pre-enqueue extraInfo BEFORE calling fakerinput_update_keyboard to avoid race condition
     // where the hook receives the event before we have a chance to enqueue
     bool enqueued = false;
@@ -4414,10 +4425,14 @@ bool QKeyMapper_Worker::FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool
                vkeycode, (keyupdown == KEY_DOWN) ? "DOWN" : "UP", (unsigned int)extraInfo, s_FakerInputKeyboardExtraInfoQueue.size());
 #endif
     }
+#else
+    Q_UNUSED(extraInfo);
+#endif // FAKERINPUT_EXTRAINFO
 
     // Send the keyboard report
     bool result = fakerinput_update_keyboard(s_FakerInputClient, s_FakerInputKeyboardReport_ShiftFlags, s_FakerInputKeyboardReport_KeyCodes);
 
+#ifdef FAKERINPUT_EXTRAINFO
     // If send failed and we enqueued, remove the entry from queue
     if (!result && enqueued) {
         QMutexLocker queueLocker(&s_FakerInputKeyboardExtraInfoQueue_Mutex);
@@ -4428,6 +4443,7 @@ bool QKeyMapper_Worker::FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool
 #endif
         }
     }
+#endif // FAKERINPUT_EXTRAINFO
 
 #ifdef DEBUG_LOGOUT_ON
     QString keycodesStr;
@@ -4493,6 +4509,7 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseButton(const QString &mouseBut
         s_FakerInputMouseReport_Buttons &= ~buttonBit;
     }
 
+#ifdef FAKERINPUT_EXTRAINFO
     // Pre-enqueue extraInfo BEFORE calling fakerinput_update_relative_mouse to avoid race condition
     // where the hook receives the event before we have a chance to enqueue
     bool enqueued = false;
@@ -4525,10 +4542,14 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseButton(const QString &mouseBut
 #endif
         }
     }
+#else
+    Q_UNUSED(extraInfo);
+#endif // FAKERINPUT_EXTRAINFO
 
     // Send relative mouse report with current button state, zero movement, zero wheel
     bool result = fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, 0, 0);
 
+#ifdef FAKERINPUT_EXTRAINFO
     // If send failed and we enqueued, remove the entry from queue
     if (!result && enqueued) {
         QMutexLocker queueLocker(&s_FakerInputMouseButtonExtraInfoQueue_Mutex);
@@ -4539,6 +4560,7 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseButton(const QString &mouseBut
 #endif
         }
     }
+#endif // FAKERINPUT_EXTRAINFO
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[FakerInputClient_sendMouseButton] Button:%s, %s, ButtonState:0x%02X, Result:%d",
@@ -4564,25 +4586,35 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseWheel(const QString &wheelDire
     // Typical wheel delta is 1 for single notch
     BYTE wheelPosition = 0;
     BYTE hWheelPosition = 0;
+#ifdef FAKERINPUT_EXTRAINFO
     WPARAM wParam = 0;
     short wheelDelta = 0;
+#endif // FAKERINPUT_EXTRAINFO
 
     if (wheelDirection == MOUSE_WHEEL_UP_STR) {
         wheelPosition = 1;      // Scroll up
+#ifdef FAKERINPUT_EXTRAINFO
         wParam = WM_MOUSEWHEEL;
         wheelDelta = WHEEL_DELTA;
+#endif
     } else if (wheelDirection == MOUSE_WHEEL_DOWN_STR) {
         wheelPosition = (BYTE)(-1);  // Scroll down (0xFF as signed -1)
+#ifdef FAKERINPUT_EXTRAINFO
         wParam = WM_MOUSEWHEEL;
         wheelDelta = -WHEEL_DELTA;
+#endif
     } else if (wheelDirection == MOUSE_WHEEL_LEFT_STR) {
         hWheelPosition = (BYTE)(-1); // Scroll left (0xFF as signed -1)
+#ifdef FAKERINPUT_EXTRAINFO
         wParam = WM_MOUSEHWHEEL;
         wheelDelta = -WHEEL_DELTA;
+#endif
     } else if (wheelDirection == MOUSE_WHEEL_RIGHT_STR) {
         hWheelPosition = 1;     // Scroll right
+#ifdef FAKERINPUT_EXTRAINFO
         wParam = WM_MOUSEHWHEEL;
         wheelDelta = WHEEL_DELTA;
+#endif
     } else {
 #ifdef DEBUG_LOGOUT_ON
         qWarning() << "[FakerInputClient_sendMouseWheel] Unknown wheel direction:" << wheelDirection;
@@ -4590,6 +4622,7 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseWheel(const QString &wheelDire
         return false;
     }
 
+#ifdef FAKERINPUT_EXTRAINFO
     // Pre-enqueue extraInfo BEFORE calling fakerinput_update_relative_mouse to avoid race condition
     // where the hook receives the event before we have a chance to enqueue
     bool enqueued = false;
@@ -4603,10 +4636,14 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseWheel(const QString &wheelDire
                s_FakerInputMouseWheelExtraInfoQueue.size());
 #endif
     }
+#else
+    Q_UNUSED(extraInfo);
+#endif // FAKERINPUT_EXTRAINFO
 
     // Send relative mouse report with current button state, zero movement, wheel values
     bool result = fakerinput_update_relative_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, 0, 0, wheelPosition, hWheelPosition);
 
+#ifdef FAKERINPUT_EXTRAINFO
     // If send failed and we enqueued, remove the entry from queue
     if (!result && enqueued) {
         QMutexLocker queueLocker(&s_FakerInputMouseWheelExtraInfoQueue_Mutex);
@@ -4617,6 +4654,7 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseWheel(const QString &wheelDire
 #endif
         }
     }
+#endif // FAKERINPUT_EXTRAINFO
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[FakerInputClient_sendMouseWheel] Direction:%s, Wheel:%d, HWheel:%d, Result:%d",
@@ -4701,6 +4739,7 @@ bool QKeyMapper_Worker::FakerInputClient_sendAbsoluteMouseButton(const QString &
     USHORT absX = static_cast<USHORT>(fx);
     USHORT absY = static_cast<USHORT>(fy);
 
+#ifdef FAKERINPUT_EXTRAINFO
     // Pre-enqueue extraInfo BEFORE calling fakerinput_update_absolute_mouse to avoid race condition
     // where the hook receives the event before we have a chance to enqueue
     bool enqueued = false;
@@ -4733,10 +4772,14 @@ bool QKeyMapper_Worker::FakerInputClient_sendAbsoluteMouseButton(const QString &
 #endif
         }
     }
+#else
+    Q_UNUSED(extraInfo);
+#endif // FAKERINPUT_EXTRAINFO
 
     // Send absolute mouse report with current button state, position, zero wheel
     bool result = fakerinput_update_absolute_mouse(s_FakerInputClient, s_FakerInputMouseReport_Buttons, absX, absY, 0, 0);
 
+#ifdef FAKERINPUT_EXTRAINFO
     // If send failed and we enqueued, remove the entry from queue
     if (!result && enqueued) {
         QMutexLocker queueLocker(&s_FakerInputMouseButtonExtraInfoQueue_Mutex);
@@ -4747,6 +4790,7 @@ bool QKeyMapper_Worker::FakerInputClient_sendAbsoluteMouseButton(const QString &
 #endif
         }
     }
+#endif // FAKERINPUT_EXTRAINFO
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[FakerInputClient_sendAbsoluteMouseButton] Button:%s, %s, Pos(%d,%d)->Abs(%u,%u), ButtonState:0x%02X, Result:%d",
@@ -4800,6 +4844,7 @@ bool QKeyMapper_Worker::FakerInputClient_sendAbsoluteMouseMove(int x, int y, ULO
     return result;
 }
 
+#ifdef FAKERINPUT_EXTRAINFO
 void QKeyMapper_Worker::clearFakerInputExtraInfoQueues(void)
 {
     // Clear keyboard extraInfo queue
@@ -4963,7 +5008,8 @@ bool QKeyMapper_Worker::matchFakerInputMouseWheelExtraInfo(WPARAM wParam, short 
 
     return false;
 }
-#endif
+#endif // FAKERINPUT_EXTRAINFO
+#endif // FAKERINPUT_SUPPORT
 
 #ifdef VIGEM_CLIENT_SUPPORT
 int QKeyMapper_Worker::ViGEmClient_Alloc()
@@ -6768,10 +6814,10 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
     releasePressedRealKeysOfOriginalKeys();
 
-#ifdef FAKERINPUT_SUPPORT
+#if defined(FAKERINPUT_SUPPORT) && defined(FAKERINPUT_EXTRAINFO)
     // Clear FakerInput ExtraInfo tracking queues on mapping start
     clearFakerInputExtraInfoQueues();
-#endif
+#endif // FAKERINPUT_SUPPORT && FAKERINPUT_EXTRAINFO
 
 #ifdef VIGEM_CLIENT_SUPPORT
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
@@ -6926,10 +6972,10 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearGlobalSendInputTaskControllerThreadPool();
     SendInputTask::clearSendInputTaskControllerThreadPool();
 
-#ifdef FAKERINPUT_SUPPORT
+#if defined(FAKERINPUT_SUPPORT) && defined(FAKERINPUT_EXTRAINFO)
     // Clear FakerInput ExtraInfo tracking queues on mapping stop
     clearFakerInputExtraInfoQueues();
-#endif
+#endif // FAKERINPUT_SUPPORT && FAKERINPUT_EXTRAINFO
 
 //    if (m_MouseHook != Q_NULLPTR) {
 //        UnhookWindowsHookEx(m_MouseHook);
@@ -10655,7 +10701,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             keyupdown = KEY_UP;
         }
 
-#ifdef FAKERINPUT_SUPPORT
+#if defined(FAKERINPUT_SUPPORT) && defined(FAKERINPUT_EXTRAINFO)
         // FakerInput sends keys with extraInfo=0, try to match from queue and apply recorded extraInfo
         if (extraInfo == 0) {
             ULONG_PTR matchedExtraInfo = 0;
@@ -10670,7 +10716,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #endif
             }
         }
-#endif
+#endif // FAKERINPUT_SUPPORT && FAKERINPUT_EXTRAINFO
 
         if (extraInfo != VIRTUAL_KEY_SEND
             && extraInfo != VIRTUAL_KEY_OVERLAY
@@ -11236,7 +11282,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             wParam_X = MAKELONG(wParam, XBUTTON_NONE);
         }
 
-#ifdef FAKERINPUT_SUPPORT
+#if defined(FAKERINPUT_SUPPORT) && defined(FAKERINPUT_EXTRAINFO)
         // FakerInput sends mouse buttons with extraInfo=0, try to match from queue and apply recorded extraInfo
         if (extraInfo == 0) {
             ULONG_PTR matchedExtraInfo = 0;
@@ -11250,7 +11296,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #endif
             }
         }
-#endif
+#endif // FAKERINPUT_SUPPORT && FAKERINPUT_EXTRAINFO
 
         if (true == MouseButtonNameMap.contains(wParam_X)) {
             QString keycodeString = MouseButtonNameMap.value(wParam_X);
@@ -11622,7 +11668,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     else if (wParam == WM_MOUSEWHEEL || wParam == WM_MOUSEHWHEEL) {
         short zDelta = GET_WHEEL_DELTA_WPARAM(mousedata);
 
-#ifdef FAKERINPUT_SUPPORT
+#if defined(FAKERINPUT_SUPPORT) && defined(FAKERINPUT_EXTRAINFO)
         // FakerInput sends mouse wheel with extraInfo=0, try to match from queue and apply recorded extraInfo
         if (extraInfo == 0) {
             ULONG_PTR matchedExtraInfo = 0;
@@ -11636,7 +11682,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #endif
             }
         }
-#endif
+#endif // FAKERINPUT_SUPPORT && FAKERINPUT_EXTRAINFO
 
         if (VIRTUAL_MOUSE_WHEEL == extraInfo) {
             if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {

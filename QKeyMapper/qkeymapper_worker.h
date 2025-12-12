@@ -40,6 +40,7 @@ using QAtomicBool = QAtomicInteger<bool>;
 #include "qkeymapper_constants.h"
 
 #ifdef FAKERINPUT_SUPPORT
+#ifdef FAKERINPUT_EXTRAINFO
 // FakerInput ExtraInfo tracking structure for keyboard events
 // Used to track extraInfo values for FakerInput-sent keyboard events
 // so hook functions can properly identify and handle these events
@@ -110,7 +111,8 @@ typedef struct FakerInputMouseWheelExtraInfo
         , timestamp(ts)
     {}
 } FakerInputMouseWheelExtraInfo;
-#endif
+#endif // FAKERINPUT_EXTRAINFO
+#endif // FAKERINPUT_SUPPORT
 
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
 QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys = false);
@@ -927,11 +929,13 @@ public:
     static bool FakerInputClient_sendAbsoluteMouseMove(int x, int y, ULONG_PTR extraInfo = 0);
     static BYTE MouseButtonStringToHIDButton(const QString &mouseButton, int keyupdown);
 
+#ifdef FAKERINPUT_EXTRAINFO
     // FakerInput ExtraInfo queue management functions
     static void clearFakerInputExtraInfoQueues(void);
     static bool matchFakerInputKeyboardExtraInfo(quint8 vkeycode, int keyupdown, ULONG_PTR &outExtraInfo);
     static bool matchFakerInputMouseButtonExtraInfo(WPARAM wParam, WORD xbutton, ULONG_PTR &outExtraInfo);
     static bool matchFakerInputMouseWheelExtraInfo(WPARAM wParam, short wheelDelta, ULONG_PTR &outExtraInfo);
+#endif // FAKERINPUT_EXTRAINFO
 private:
     static void initVK2HIDCodeMap(void);
     static void resetFakerInputMouseReport(void);
@@ -1283,6 +1287,7 @@ public:
     static QHash<quint8, BYTE> s_VK2HIDModifierMap;
     // FakerInput mouse report state
     static BYTE s_FakerInputMouseReport_Buttons;
+#ifdef FAKERINPUT_EXTRAINFO
     // FakerInput ExtraInfo tracking FIFO queues for cross-thread communication
     // These queues track sent keys so hook functions can match and apply correct extraInfo
     static QQueue<FakerInputKeyboardExtraInfo> s_FakerInputKeyboardExtraInfoQueue;
@@ -1291,7 +1296,8 @@ public:
     static QMutex s_FakerInputMouseButtonExtraInfoQueue_Mutex;
     static QQueue<FakerInputMouseWheelExtraInfo> s_FakerInputMouseWheelExtraInfoQueue;
     static QMutex s_FakerInputMouseWheelExtraInfoQueue_Mutex;
-#endif
+#endif // FAKERINPUT_EXTRAINFO
+#endif // FAKERINPUT_SUPPORT
 #ifdef VIGEM_CLIENT_SUPPORT
     static PVIGEM_CLIENT s_ViGEmClient;
     // static PVIGEM_TARGET s_ViGEmTarget;
