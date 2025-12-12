@@ -17121,6 +17121,10 @@ void QKeyMapper::updateFakerInputStatus()
 
 void QKeyMapper::reconnectFakerInputClient()
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[reconnectFakerInputClient()]" << "isFakerInputInstalled() ->" << isFakerInputInstalled();
+#endif
+
     // Reconnect FakerInput client if the driver is installed
     if (isFakerInputInstalled()) {
         int fakerinput_retval_alloc = QKeyMapper_Worker::FakerInputClient_Alloc();
@@ -25220,16 +25224,8 @@ void QKeyMapper::on_installFakerInputButton_clicked()
 
         (void)installFakerInputDriver();
 
-        QThread::msleep(100);
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_installFakerInputButton_clicked()]" << "isFakerInputInstalled() ->" << isFakerInputInstalled();
-#endif
-
-        // Reconnect FakerInput client if the driver is installed
-        if (isFakerInputInstalled()) {
-            QTimer::singleShot(RECONNECT_FAKERINPUTCLIENT_WAIT_TIME, this, SLOT(reconnectFakerInputClient()));
-        }
+        // Reconnect FakerInput client after the driver is installed
+        QTimer::singleShot(RECONNECT_FAKERINPUTCLIENT_WAIT_TIME, this, SLOT(reconnectFakerInputClient()));
     }
 }
 
