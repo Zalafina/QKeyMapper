@@ -4443,14 +4443,6 @@ bool QKeyMapper_Worker::FakerInputClient_sendKeyboardInput(quint8 vkeycode, bool
     return result;
 }
 
-// FakerInput HID Mouse Button Bit Definitions
-// According to HID Usage Tables for Generic Desktop Page (Mouse)
-#define FAKERINPUT_MOUSE_BUTTON_LEFT    0x01    // Button 1 (Left)
-#define FAKERINPUT_MOUSE_BUTTON_RIGHT   0x02    // Button 2 (Right)
-#define FAKERINPUT_MOUSE_BUTTON_MIDDLE  0x04    // Button 3 (Middle)
-#define FAKERINPUT_MOUSE_BUTTON_X1      0x08    // Button 4 (X1/Back)
-#define FAKERINPUT_MOUSE_BUTTON_X2      0x10    // Button 5 (X2/Forward)
-
 BYTE QKeyMapper_Worker::MouseButtonStringToHIDButton(const QString &mouseButton, int keyupdown)
 {
     Q_UNUSED(keyupdown);

@@ -501,8 +501,16 @@ namespace QKeyMapperConstants {
 
     inline constexpr int SENDMESSAGE_TIMEOUT = 200;
 
-    // Time window for matching (10ms) - events older than this are considered stale
-    inline constexpr qint64 FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS = 10;
+    // Time window for matching (500ms) - events older than this are considered stale
+    inline constexpr qint64 FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS = 500;
+
+    // FakerInput HID Mouse Button Bit Definitions
+    // According to HID Usage Tables for Generic Desktop Page (Mouse)
+    inline constexpr BYTE FAKERINPUT_MOUSE_BUTTON_LEFT      = 0x01; // Button 1 (Left)
+    inline constexpr BYTE FAKERINPUT_MOUSE_BUTTON_RIGHT     = 0x02; // Button 2 (Right)
+    inline constexpr BYTE FAKERINPUT_MOUSE_BUTTON_MIDDLE    = 0x04; // Button 3 (Middle)
+    inline constexpr BYTE FAKERINPUT_MOUSE_BUTTON_X1        = 0x08; // Button 4 (X1/Back)
+    inline constexpr BYTE FAKERINPUT_MOUSE_BUTTON_X2        = 0x10; // Button 5 (X2/Forward)
 
     inline constexpr int SENDVIRTUALKEY_STATE_NORMAL           = 0;
     inline constexpr int SENDVIRTUALKEY_STATE_FORCE            = 1;
