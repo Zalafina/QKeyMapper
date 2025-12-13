@@ -144,6 +144,7 @@
 * v1.3.8(Build 20251212)
     * 映射项设定窗口添加"发送方式"下拉列表框，可以选择"SendInput"、"SendMessage"、"FakerInput"三种发送方式。默认使用"SendInput"发送方式，没有特殊需求大部分场景全都建议选择此方式，兼容性和稳定性最好。
     * "FakerInput"发送方式通过FakerInput虚拟键鼠驱动来发送HID键鼠消息，比Windows SendInput API更接近物理键鼠消息，由于使用上有功能限制，没有特殊需要不必选择此发送方式。
+    * 使用"FakerInput"发送方式需要先在"映射设定"标签页点击"安装FakerInput驱动"按钮安装驱动程序，上方状态显示绿字"FakerInput可用"，表示驱动安装成功。
     * 映射项设定窗口移除"SendMessage发送"勾选框，可以使用"发送方式"功能替代。
     * utils目录下工具追加，详细使用方法参考 utils 目录下 readme.txt 文件：
       ##### IME输入法切换工具
