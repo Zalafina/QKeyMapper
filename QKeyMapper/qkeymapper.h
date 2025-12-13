@@ -852,6 +852,7 @@ public:
     static void setWindowsFilterKeysEnabled(bool enable);
     static bool isWindowsDarkMode(void);
     static bool isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname);
+    static bool isViGEmBusInstalled(void);
     static bool isFakerInputInstalled(void);
     static bool checkForSysDevice(const wchar_t* searchHardwareId);
 

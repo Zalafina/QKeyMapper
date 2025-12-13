@@ -433,16 +433,30 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
 #endif
 
-    int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
-    int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
-    Q_UNUSED(retval_alloc);
-    Q_UNUSED(retval_connect);
-
-    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
 #ifdef DEBUG_LOGOUT_ON
-        qWarning("ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
+    qDebug() << "[QKeyMapper]" << "isViGEmBusInstalled() ->" << isViGEmBusInstalled();
+#endif
+    // Initialize ViGEmBus client if the driver is installed
+    if (isViGEmBusInstalled()) {
+        int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
+        int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
+        Q_UNUSED(retval_alloc);
+        Q_UNUSED(retval_connect);
+
+#ifdef DEBUG_LOGOUT_ON
+        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+            qWarning("[QKeyMapper] ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
+        }
+        else {
+            qDebug() << "[QKeyMapper] ViGEmClient initialized successfully.";
+        }
 #endif
     }
+#ifdef DEBUG_LOGOUT_ON
+    else {
+        qDebug() << "[QKeyMapper] ViGEmBus driver is not installed, skip initialization.";
+    }
+#endif
 
     if (!isWin10Above) {
         ui->installViGEmBusButton->setEnabled(false);
@@ -2099,10 +2113,16 @@ bool QKeyMapper::isWindowInIgnoreList(QString &processname, QString &windowtitle
     return false;
 }
 
+bool QKeyMapper::isViGEmBusInstalled()
+{
+    const wchar_t* ViGEmBusDevicePath = L"Nefarius\\ViGEmBus\\Gen1";
+    return checkForSysDevice(ViGEmBusDevicePath);
+}
+
 bool QKeyMapper::isFakerInputInstalled()
 {
-    const wchar_t* fakerInputDevicePath = L"root\\FakerInput";
-    return checkForSysDevice(fakerInputDevicePath);
+    const wchar_t* FakerInputDevicePath = L"root\\FakerInput";
+    return checkForSysDevice(FakerInputDevicePath);
 }
 
 bool QKeyMapper::checkForSysDevice(const wchar_t *searchHardwareId)
@@ -17074,11 +17094,19 @@ void QKeyMapper::updateVirtualGamepadListDisplay()
 
 void QKeyMapper::reconnectViGEmClient()
 {
+    int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
     int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
+    Q_UNUSED(retval_alloc);
     Q_UNUSED(retval_connect);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[reconnectViGEmClient]" << "ViGEmClient Connect State ->" << QKeyMapper_Worker::ViGEmClient_getConnectState();
+    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+        qWarning("[reconnectViGEmClient] ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
+    }
+    else {
+        qDebug() << "[reconnectViGEmClient] ViGEmClient initialized successfully.";
+    }
 #endif
 
     emit updateViGEmBusStatus_Signal();
@@ -25177,18 +25205,31 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
         QKeyMapper_Worker::ViGEmClient_setConnectState(QKeyMapper_Worker::VIGEMCLIENT_CONNECTING);
         emit updateViGEmBusStatus_Signal();
 
-        if (QKeyMapper_Worker::s_ViGEmClient == Q_NULLPTR) {
-            int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
-            if (retval_alloc != 0) {
+        (void)installViGEmBusDriver();
+
+        int loop = 0;
+        for (loop = 0; loop < VIGEMBUS_INSTALL_WAIT_TIMEOUT; loop++) {
+            // Check if ViGEmBus driver is installed
+            if (isViGEmBusInstalled()) {
 #ifdef DEBUG_LOGOUT_ON
-                qWarning("[on_installViGEmBusButton_clicked] ViGEmClient Alloc Failed!!! -> retval_alloc(%d)", retval_alloc);
+                qDebug() << "[on_installViGEmBusButton_clicked] ViGEmBus driver detected as installed after" << loop * VIGEMBUS_INSTALL_WAIT_INTERVAL << "ms";
 #endif
+                // Reconnect ViGEm client after the driver is installed
+                QTimer::singleShot(RECONNECT_VIGEMCLIENT_WAIT_TIME, this, SLOT(reconnectViGEmClient()));
+                break;
+            }
+            else {
+                QThread::msleep(VIGEMBUS_INSTALL_WAIT_INTERVAL);
             }
         }
 
-        (void)installViGEmBusDriver();
-
-        QTimer::singleShot(RECONNECT_VIGEMCLIENT_WAIT_TIME, this, SLOT(reconnectViGEmClient()));
+        if (!isViGEmBusInstalled()) {
+            // Show error message to user
+            QString popupMessage = tr("ViGEmBus driver installation failed!");
+            QString popupMessageColor = FAILURE_COLOR;
+            int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+            showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        }
     }
 #endif
 }
@@ -25224,8 +25265,29 @@ void QKeyMapper::on_installFakerInputButton_clicked()
 
         (void)installFakerInputDriver();
 
-        // Reconnect FakerInput client after the driver is installed
-        QTimer::singleShot(RECONNECT_FAKERINPUTCLIENT_WAIT_TIME, this, SLOT(reconnectFakerInputClient()));
+        int loop = 0;
+        for (loop = 0; loop < FAKERINPUT_INSTALL_WAIT_TIMEOUT; loop++) {
+            // Check if FakerInput driver is installed
+            if (isFakerInputInstalled()) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[on_installFakerInputButton_clicked] FakerInput driver detected as installed after" << loop * FAKERINPUT_INSTALL_WAIT_INTERVAL << "ms";
+#endif
+                // Reconnect FakerInput client after the driver is installed
+                QTimer::singleShot(RECONNECT_FAKERINPUTCLIENT_WAIT_TIME, this, SLOT(reconnectFakerInputClient()));
+                break;
+            }
+            else {
+                QThread::msleep(FAKERINPUT_INSTALL_WAIT_INTERVAL);
+            }
+        }
+
+        if (!isFakerInputInstalled()) {
+            // Show error message to user
+            QString popupMessage = tr("FakerInput driver installation failed!");
+            QString popupMessageColor = FAILURE_COLOR;
+            int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+            showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        }
     }
 }
 

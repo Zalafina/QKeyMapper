@@ -430,10 +430,18 @@ namespace QKeyMapperConstants {
 
     inline constexpr int RECONNECT_VIGEMCLIENT_WAIT_TIME = 2000;
 
-    inline constexpr int RECONNECT_FAKERINPUTCLIENT_WAIT_TIME = 1000;
+    inline constexpr int RECONNECT_FAKERINPUTCLIENT_WAIT_TIME = 2000;
 
-    inline constexpr int INSTALL_INTERCEPTION_LOOP_WAIT_TIME = 10;
-    inline constexpr int INSTALL_INTERCEPTION_LOOP_WAIT_TIME_MAX = 2000/INSTALL_INTERCEPTION_LOOP_WAIT_TIME;
+    // ViGEmBus driver installation detection constants
+    inline constexpr int VIGEMBUS_INSTALL_WAIT_INTERVAL = 50;                                       // Check every 50ms
+    inline constexpr int VIGEMBUS_INSTALL_WAIT_TIMEOUT = 8000/VIGEMBUS_INSTALL_WAIT_INTERVAL;       // Total timeout 8 seconds
+
+    // FakerInput driver installation detection constants
+    inline constexpr int FAKERINPUT_INSTALL_WAIT_INTERVAL = 50;                                     // Check every 50ms
+    inline constexpr int FAKERINPUT_INSTALL_WAIT_TIMEOUT = 8000/FAKERINPUT_INSTALL_WAIT_INTERVAL;   // Total timeout 8 seconds
+
+    inline constexpr int INSTALL_INTERCEPTION_LOOP_WAIT_TIME = 50;
+    inline constexpr int INSTALL_INTERCEPTION_LOOP_WAIT_TIME_MAX = 5000/INSTALL_INTERCEPTION_LOOP_WAIT_TIME;
 
     /* constant values for QKeyMapper_Worker */
     inline constexpr int KEY_INIT = -1;
