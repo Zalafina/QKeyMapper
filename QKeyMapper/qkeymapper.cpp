@@ -25205,7 +25205,9 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
         QKeyMapper_Worker::ViGEmClient_setConnectState(QKeyMapper_Worker::VIGEMCLIENT_CONNECTING);
         emit updateViGEmBusStatus_Signal();
 
-        (void)installViGEmBusDriver();
+        if (!isViGEmBusInstalled()) {
+            (void)installViGEmBusDriver();
+        }
 
         int loop = 0;
         for (loop = 0; loop < VIGEMBUS_INSTALL_WAIT_TIMEOUT; loop++) {
@@ -25263,7 +25265,9 @@ void QKeyMapper::on_installFakerInputButton_clicked()
         QKeyMapper_Worker::FakerInputClient_setConnectState(QKeyMapper_Worker::FAKERINPUT_CONNECTING);
         emit updateFakerInputStatus_Signal();
 
-        (void)installFakerInputDriver();
+        if (!isFakerInputInstalled()) {
+            (void)installFakerInputDriver();
+        }
 
         int loop = 0;
         for (loop = 0; loop < FAKERINPUT_INSTALL_WAIT_TIMEOUT; loop++) {
