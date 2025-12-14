@@ -17094,19 +17094,42 @@ void QKeyMapper::updateVirtualGamepadListDisplay()
 
 void QKeyMapper::reconnectViGEmClient()
 {
-    int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
-    int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
-    Q_UNUSED(retval_alloc);
-    Q_UNUSED(retval_connect);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[reconnectViGEmClient()]" << "isViGEmBusInstalled() ->" << isViGEmBusInstalled();
+#endif
+
+    // Reconnect ViGEm client if the driver is installed
+    if (isViGEmBusInstalled()) {
+        int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
+        int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
+        Q_UNUSED(retval_alloc);
+        Q_UNUSED(retval_connect);
+
+        if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning("[reconnectViGEmClient] ViGEmClient reconnect failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
+#endif
+
+            QString message = tr("%1 client failed to connect. Please reinstall or restart QKeyMapper.").arg("ViGEm");
+            showFailurePopup(message);
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[reconnectViGEmClient] ViGEmClient reconnected successfully.";
+#endif
+
+            QString message = tr("%1 client has connected successfully.").arg("ViGEm");
+            showInformationPopup(message);
+        }
+    }
+#ifdef DEBUG_LOGOUT_ON
+    else {
+        qDebug() << "[reconnectViGEmClient] ViGEmBus driver is not installed, skip reconnection.";
+    }
+#endif
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[reconnectViGEmClient]" << "ViGEmClient Connect State ->" << QKeyMapper_Worker::ViGEmClient_getConnectState();
-    if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS != QKeyMapper_Worker::ViGEmClient_getConnectState()) {
-        qWarning("[reconnectViGEmClient] ViGEmClient initialize failed!!! -> retval_alloc(%d), retval_connect(%d)", retval_alloc, retval_connect);
-    }
-    else {
-        qDebug() << "[reconnectViGEmClient] ViGEmClient initialized successfully.";
-    }
 #endif
 
     emit updateViGEmBusStatus_Signal();
@@ -17164,12 +17187,18 @@ void QKeyMapper::reconnectFakerInputClient()
 #ifdef DEBUG_LOGOUT_ON
             qWarning("[reconnecFakerInputClient] FakerInputClient reconnect failed!!! -> retval_alloc(%d), retval_connect(%d)", fakerinput_retval_alloc, fakerinput_retval_connect);
 #endif
+
+            QString message = tr("%1 client failed to connect. Please reinstall or restart QKeyMapper.").arg("FakerInput");
+            showFailurePopup(message);
         }
-#ifdef DEBUG_LOGOUT_ON
         else {
+#ifdef DEBUG_LOGOUT_ON
             qDebug() << "[reconnecFakerInputClient] FakerInputClient reconnected successfully.";
-        }
 #endif
+
+            QString message = tr("%1 client has connected successfully.").arg("FakerInput");
+            showInformationPopup(message);
+        }
     }
 #ifdef DEBUG_LOGOUT_ON
     else {
@@ -25226,11 +25255,8 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
         }
 
         if (!isViGEmBusInstalled()) {
-            // Show error message to user
-            QString popupMessage = tr("ViGEmBus driver installation failed!");
-            QString popupMessageColor = FAILURE_COLOR;
-            int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
-            showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
+            QString message = tr("%1 driver installation failed!").arg("ViGEmBus");
+            showFailurePopup(message);
         }
     }
 #endif
@@ -25286,11 +25312,8 @@ void QKeyMapper::on_installFakerInputButton_clicked()
         }
 
         if (!isFakerInputInstalled()) {
-            // Show error message to user
-            QString popupMessage = tr("FakerInput driver installation failed!");
-            QString popupMessageColor = FAILURE_COLOR;
-            int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
-            showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
+            QString message = tr("%1 driver installation failed!").arg("FakerInput");
+            showFailurePopup(message);
         }
     }
 }
