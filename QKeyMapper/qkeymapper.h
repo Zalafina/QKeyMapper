@@ -119,6 +119,7 @@ struct MAP_PROCESSINFO
     QString WindowTitle;
     QString ClassName;
     QString FilePath;
+    QString CustomIconPath;
     QIcon   WindowIcon;
 };
 
@@ -990,6 +991,7 @@ public:
 
     static QIcon setTabCustomImage(int tabindex, QString &imagepath);
     static void clearTabCustomImage(int tabindex);
+    QIcon loadSettingCustomIcon(QString &iconpath);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
@@ -1264,6 +1266,8 @@ private slots:
 
     void on_ignoreRulesListButton_clicked();
 
+    void on_selectSettingCustomIconButton_clicked();
+
     void on_mappingMacroListButton_clicked();
 
 private:
@@ -1295,6 +1299,7 @@ private:
     void initPushLevelSlider(void);
     void initWindowInfoMatchComboBoxes(void);
     void initSettingBackupActionPopup(void);
+    void initSelectSettingCustomIconFileDialog(void);
     void updateSysTrayIconMenuText(void);
     void refreshProcessInfoTable(bool resize = true);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
@@ -1584,6 +1589,7 @@ private:
     bool m_isWindowsDarkMode = false;
     int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_INITIAL;
     ActionPopup *m_SettingBackupActionPopup = Q_NULLPTR;
+    QFileDialog *m_SelectSettingCustomIconFileDialog = Q_NULLPTR;
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;

@@ -186,6 +186,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initAddKeyComboBoxes();
     initWindowInfoMatchComboBoxes();
     initSettingBackupActionPopup();
+    initSelectSettingCustomIconFileDialog();
     initWindowSwitchKeyLineEdit();
     initMappingSwitchKeyLineEdit();
     // initOriginalKeySeqEdit();
@@ -1787,6 +1788,7 @@ void QKeyMapper::setMapProcessInfo(const QString &filename, const QString &windo
 {
     m_MapProcessInfo.PID = pid;
     m_MapProcessInfo.FilePath = filepath;
+    m_MapProcessInfo.CustomIconPath.clear();
     m_MapProcessInfo.WindowTitle = windowtitle;
     m_MapProcessInfo.ClassName = classname;
 
@@ -7153,7 +7155,7 @@ QIcon QKeyMapper::setTabCustomImage(int tabindex, QString &imagepath)
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QTableSetupDialog::setTabCustomImage]" << "Set Custom Image Path =" << imagepath;
+    qDebug() << "[QKeyMapper::setTabCustomImage]" << "Set Custom Image Path =" << imagepath;
 #endif
 
     // First, try to load the image using the original path
@@ -7200,6 +7202,51 @@ void QKeyMapper::clearTabCustomImage(int tabindex)
 #endif
 
     s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path.clear();
+}
+
+QIcon QKeyMapper::loadSettingCustomIcon(QString &iconpath)
+{
+    if (!QFileInfo::exists(iconpath)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[QKeyMapper::loadSettingCustomIcon]" << " QFileInfo::exists(" << iconpath << ") = false";
+#endif
+        return QIcon();
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::loadSettingCustomIcon]" << "Set Custom Icon Path =" << iconpath;
+#endif
+
+    // First, try to load the image using the original path
+    QString appDir = QCoreApplication::applicationDirPath();
+    QFileInfo imgInfo(iconpath);
+    QString imgAbsPath = imgInfo.absoluteFilePath();
+
+    QString pathToLoad;
+
+    // Check if the image is in the application directory or its subdirectory, and prepare the relative path
+    if (imgAbsPath.startsWith(appDir, Qt::CaseInsensitive)) {
+        QString relPath = QDir(appDir).relativeFilePath(imgAbsPath);
+        pathToLoad = relPath;
+    } else {
+        pathToLoad = imgAbsPath;
+    }
+
+    // Try to load the image using the converted path
+    QIcon icon_loaded(pathToLoad);
+    if (!icon_loaded.isNull()) {
+        iconpath = pathToLoad;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::loadSettingCustomIcon] Store path:" << pathToLoad;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::loadSettingCustomIcon] Failed to load icon from path:" << pathToLoad;
+#endif
+    }
+
+    return icon_loaded;
 }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -11044,6 +11091,14 @@ void QKeyMapper::saveKeyMapSetting(void)
             }
         }
 
+        if (m_MapProcessInfo.CustomIconPath.isEmpty()) {
+            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CUSTOMICONPATH, m_MapProcessInfo.CustomIconPath);
+        }
+        else if ((false == m_MapProcessInfo.CustomIconPath.isEmpty())
+            && (true == QFileInfo::exists(m_MapProcessInfo.CustomIconPath))){
+            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CUSTOMICONPATH, m_MapProcessInfo.CustomIconPath);
+        }
+
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, ui->processLineEdit->text());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->windowTitleLineEdit->text());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CLASSNAME, ui->classNameLineEdit->text());
@@ -13653,6 +13708,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         // ui->settingNameLineEdit->setEnabled(false);
         ui->processLineEdit->setEnabled(false);
         ui->restoreProcessPathButton->setEnabled(false);
+        ui->selectSettingCustomIconButton->setEnabled(false);
         ui->windowTitleLineEdit->setEnabled(false);
         ui->classNameLineEdit->setEnabled(false);
         // ui->processCheckBox->setEnabled(false);
@@ -13669,6 +13725,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         m_MappingAdvancedDialog->setProcessIconAsTrayIconEnabled(false);
 
         ui->iconLabel->clear();
+        ui->iconLabel->setToolTip("");
         m_MapProcessInfo = MAP_PROCESSINFO();
     }
     else {
@@ -13679,6 +13736,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
         ui->restoreProcessPathButton->setEnabled(true);
+        ui->selectSettingCustomIconButton->setEnabled(true);
         ui->windowTitleLineEdit->setEnabled(true);
         ui->classNameLineEdit->setEnabled(true);
         // ui->processCheckBox->setEnabled(true);
@@ -13692,6 +13750,27 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
         m_MappingAdvancedDialog->setProcessIconAsTrayIconEnabled(true);
+
+        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILEPATH)){
+            m_MapProcessInfo.FilePath = settingFile.value(settingSelectStr+PROCESSINFO_FILEPATH).toString();
+        }
+        else {
+            m_MapProcessInfo = MAP_PROCESSINFO();
+        }
+
+        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_CUSTOMICONPATH)){
+            QString customiconpath = settingFile.value(settingSelectStr+PROCESSINFO_CUSTOMICONPATH).toString();
+            if ((false == customiconpath.isEmpty())
+                && (true == QFileInfo::exists(customiconpath))){
+                m_MapProcessInfo.CustomIconPath = customiconpath;
+            }
+            else {
+                m_MapProcessInfo.CustomIconPath.clear();
+            }
+        }
+        else {
+            m_MapProcessInfo.CustomIconPath.clear();
+        }
 
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILENAME)){
             m_MapProcessInfo.FileName = settingFile.value(settingSelectStr+PROCESSINFO_FILENAME).toString();
@@ -13717,13 +13796,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
             ui->classNameLineEdit->setText(QString());
         }
 
-        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILEPATH)){
-            m_MapProcessInfo.FilePath = settingFile.value(settingSelectStr+PROCESSINFO_FILEPATH).toString();
-        }
-        else {
-            m_MapProcessInfo = MAP_PROCESSINFO();
-        }
         ui->iconLabel->clear();
+        ui->iconLabel->setToolTip("");
 
         ui->descriptionLineEdit->setReadOnly(false);
         ui->descriptionLineEdit->setEnabled(true);
@@ -14550,6 +14624,7 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->classNameLineEdit->setText(QString());
     ui->descriptionLineEdit->setText(QString());
     ui->iconLabel->clear();
+    ui->iconLabel->setToolTip("");
     ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
@@ -15420,6 +15495,8 @@ void QKeyMapper::setControlFontEnglish()
     ui->windowTitleLabel->setFont(customFont);
     ui->classNameLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
+    ui->selectSettingCustomIconButton->setFont(customFont);
+    ui->ignoreRulesListButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->backupSettingButton->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -15563,6 +15640,8 @@ void QKeyMapper::setControlFontChinese()
     ui->windowTitleLabel->setFont(customFont);
     ui->classNameLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
+    ui->selectSettingCustomIconButton->setFont(customFont);
+    ui->ignoreRulesListButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->backupSettingButton->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -15706,6 +15785,8 @@ void QKeyMapper::setControlFontJapanese()
     ui->windowTitleLabel->setFont(customFont);
     ui->classNameLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
+    ui->selectSettingCustomIconButton->setFont(customFont);
+    ui->ignoreRulesListButton->setFont(customFont);
     ui->settingNameLabel->setFont(customFont);
     ui->backupSettingButton->setFont(customFont);
     ui->descriptionLabel->setFont(customFont);
@@ -17917,6 +17998,12 @@ void QKeyMapper::initSettingBackupActionPopup()
     QObject::connect(m_SettingBackupActionPopup, &ActionPopup::actionTriggered, this, &QKeyMapper::settingBackupActionTriggered);
 }
 
+void QKeyMapper::initSelectSettingCustomIconFileDialog()
+{
+    m_SelectSettingCustomIconFileDialog = new QFileDialog(this);
+    m_SelectSettingCustomIconFileDialog->setFileMode(QFileDialog::ExistingFile);
+}
+
 void QKeyMapper::updateSysTrayIconMenuText()
 {
     QString showActionText;
@@ -18078,10 +18165,31 @@ void QKeyMapper::updateProcessInfoDisplay()
     ui->processLineEdit->setToolTip(m_MapProcessInfo.FileName);
     ui->windowTitleLineEdit->setToolTip(m_MapProcessInfo.WindowTitle);
     ui->classNameLineEdit->setToolTip(m_MapProcessInfo.ClassName);
+
     if ((false == m_MapProcessInfo.FilePath.isEmpty())
         && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
         ui->processLineEdit->setToolTip(m_MapProcessInfo.FilePath);
+    }
 
+    if ((false == m_MapProcessInfo.CustomIconPath.isEmpty())
+        && (true == QFileInfo::exists(m_MapProcessInfo.CustomIconPath))){
+        QString customiconpath = m_MapProcessInfo.CustomIconPath;
+        QIcon icon_loaded = loadSettingCustomIcon(customiconpath);
+        if (!icon_loaded.isNull()) {
+            m_MapProcessInfo.WindowIcon = icon_loaded;
+
+            QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT));
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[updateProcessInfoDisplay]" << "Setting Custom Icon Scaled(" << QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT) << ") pixmap size: " << scaled_pixmap.size();
+#endif
+            ui->iconLabel->setPixmap(scaled_pixmap);
+            ui->iconLabel->setToolTip(customiconpath);
+            return;
+        }
+    }
+
+    if ((false == m_MapProcessInfo.FilePath.isEmpty())
+        && (true == QFileInfo::exists(m_MapProcessInfo.FilePath))){
         // Use the new icon extraction method, prefer extracting icon with specified size
         QIcon fileicon;
         fileicon = extractBestIconFromExecutable(m_MapProcessInfo.FilePath);
@@ -18111,16 +18219,19 @@ void QKeyMapper::updateProcessInfoDisplay()
 #endif
 
             ui->iconLabel->setPixmap(scaled_pixmap);
+            ui->iconLabel->setToolTip(m_MapProcessInfo.FilePath);
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[UpdateProcessInfo]" << "Load & retrive file icon failure!!!";
 #endif
             ui->iconLabel->clear();
+            ui->iconLabel->setToolTip("");
         }
     }
     else{
         ui->iconLabel->clear();
+        ui->iconLabel->setToolTip("");
     }
 }
 
@@ -20390,6 +20501,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->windowTitleLabel->setText(tr("WindowTitle"));
     ui->classNameLabel->setText(tr("WindowClass"));
     ui->restoreProcessPathButton->setText(tr("Restore"));
+    ui->selectSettingCustomIconButton->setText(tr("Select Custom Icon"));
     ui->settingNameLabel->setText(tr("Setting"));
     ui->descriptionLabel->setText(tr("Description"));
     if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
@@ -22203,12 +22315,14 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 #endif
 
             ui->iconLabel->setPixmap(scaled_pixmap);
+            ui->iconLabel->setToolTip(m_MapProcessInfo.FilePath);
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[on_processinfoTable_doubleClicked]" << "Load & retrive file icon failure!!!";
 #endif
             ui->iconLabel->clear();
+            ui->iconLabel->setToolTip("");
         }
 
 #if 0
@@ -26401,6 +26515,66 @@ void QKeyMapper::on_backupSettingButton_clicked()
 void QKeyMapper::on_ignoreRulesListButton_clicked()
 {
     showIgnoreRulesListDialog();
+}
+
+void QKeyMapper::on_selectSettingCustomIconButton_clicked()
+{
+    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+        m_MapProcessInfo.CustomIconPath.clear();
+        updateProcessInfoDisplay();
+        return;
+    }
+
+    QString currentCustomIconPath = m_MapProcessInfo.CustomIconPath;
+    QString filter = tr("Image files") + "(*.ico;*.png;*.svg)";
+    QString caption_string;
+    caption_string = tr("Select Custom Icon");
+
+    m_SelectSettingCustomIconFileDialog->setNameFilter(filter);
+    m_SelectSettingCustomIconFileDialog->setWindowTitle(caption_string);
+    // Set the initial directory and selected file based on the current custom icon path
+    if (currentCustomIconPath.isEmpty()) {
+        m_SelectSettingCustomIconFileDialog->setDirectory(QDir());
+        m_SelectSettingCustomIconFileDialog->selectFile("");
+    }
+    else {
+        m_SelectSettingCustomIconFileDialog->setDirectory(QFileInfo(currentCustomIconPath).absoluteDir());
+        m_SelectSettingCustomIconFileDialog->selectFile(QFileInfo(currentCustomIconPath).absoluteFilePath());
+    }
+
+    QString customiconpath;
+    if (m_SelectSettingCustomIconFileDialog->exec() == QDialog::Accepted) {
+        QStringList selected_files = m_SelectSettingCustomIconFileDialog->selectedFiles();
+        if (!selected_files.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[on_selectSettingCustomIconButton_clicked]" << "selected_files from QFileDialog -> " << selected_files;
+#endif
+            customiconpath = selected_files.first();
+        }
+
+    }
+
+    if (customiconpath.isEmpty()) {
+        return;
+    }
+
+    QIcon icon_loaded = loadSettingCustomIcon(customiconpath);
+
+    if (!icon_loaded.isNull()) {
+        m_MapProcessInfo.CustomIconPath = customiconpath;
+        m_MapProcessInfo.WindowIcon = icon_loaded;
+
+        QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT));
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[on_selectSettingCustomIconButton_clicked]" << " Scaled(" << QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT) << ") pixmap size: " << scaled_pixmap.size();
+#endif
+        ui->iconLabel->setPixmap(scaled_pixmap);
+        ui->iconLabel->setToolTip(customiconpath);
+    }
+    else {
+        QString message = tr("Unable to load the image!");
+        showFailurePopup(message);
+    }
 }
 
 void QKeyMapper::on_mappingMacroListButton_clicked()

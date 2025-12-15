@@ -91,7 +91,7 @@
   <widget class="QSpinBox" name="burstpressSpinBox">
    <property name="geometry">
     <rect>
-     <x>315</x>
+     <x>325</x>
      <y>240</y>
      <width>85</width>
      <height>21</height>
@@ -107,7 +107,7 @@
   <widget class="QLabel" name="burstpressLabel">
    <property name="geometry">
     <rect>
-     <x>230</x>
+     <x>240</x>
      <y>240</y>
      <width>81</width>
      <height>21</height>
@@ -123,7 +123,7 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>405</x>
+     <x>430</x>
      <y>240</y>
      <width>121</width>
      <height>21</height>
@@ -139,7 +139,7 @@
   <widget class="QSpinBox" name="burstreleaseSpinBox">
    <property name="geometry">
     <rect>
-     <x>530</x>
+     <x>555</x>
      <y>240</y>
      <width>85</width>
      <height>21</height>

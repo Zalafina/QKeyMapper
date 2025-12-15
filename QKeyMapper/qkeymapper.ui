@@ -433,7 +433,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="windowinfo">
     <attribute name="title">
@@ -650,7 +650,7 @@
     <widget class="QPushButton" name="ignoreRulesListButton">
      <property name="geometry">
       <rect>
-       <x>153</x>
+       <x>283</x>
        <y>130</y>
        <width>151</width>
        <height>22</height>
@@ -661,6 +661,25 @@
      </property>
      <property name="text">
       <string>Ignore Rules List</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="selectSettingCustomIconButton">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>130</y>
+       <width>131</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Select Custom Icon</string>
      </property>
      <property name="autoDefault">
       <bool>false</bool>
