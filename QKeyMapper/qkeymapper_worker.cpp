@@ -14620,6 +14620,9 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
         if (intercept == KEY_INTERCEPT_BLOCK) {
             return true;
         }
+        else if (intercept == KEY_INTERCEPT_LONGPRESS_HANDLED) {
+            return false;
+        }
     }
 
     int combinationkey_detected = detectCombinationKeys(keycodeString, keyupdown);
