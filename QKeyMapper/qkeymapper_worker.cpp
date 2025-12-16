@@ -13751,7 +13751,8 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                     bool pressedMappingKeysContains = false;
                     {
                     QMutexLocker locker(&s_PressedMappingKeysMapMutex);
-                    if (pressedMappingKeysMap.contains(keycodeString)) {
+                    if (pressedMappingKeysMap.contains(keycodeString)
+                        || pressedMappingKeysMap.contains(keycodeString_RemoveMultiInput)) {
                         pressedMappingKeysContains = true;
                     }
                     }
