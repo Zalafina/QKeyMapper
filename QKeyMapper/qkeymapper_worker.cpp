@@ -10020,7 +10020,7 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
             if (intercept == KEY_INTERCEPT_BLOCK) {
                 return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
-            else if (intercept == KEY_INTERCEPT_LONGPRESS_PASSTHROUGH) {
+            else if (intercept == KEY_INTERCEPT_LONGPRESS_HANDLED) {
                 return INTERCEPTION_RETURN_NORMALSEND;
             }
         }
@@ -10302,7 +10302,7 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
             if (intercept == KEY_INTERCEPT_BLOCK) {
                 return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
-            else if (intercept == KEY_INTERCEPT_LONGPRESS_PASSTHROUGH) {
+            else if (intercept == KEY_INTERCEPT_LONGPRESS_HANDLED) {
                 return INTERCEPTION_RETURN_NORMALSEND;
             }
         }
@@ -10918,7 +10918,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 if (intercept == KEY_INTERCEPT_BLOCK) {
                     return (LRESULT)TRUE;
                 }
-                else if (intercept == KEY_INTERCEPT_LONGPRESS_PASSTHROUGH) {
+                else if (intercept == KEY_INTERCEPT_LONGPRESS_HANDLED) {
                     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                 }
             }
@@ -11568,7 +11568,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     if (intercept == KEY_INTERCEPT_BLOCK) {
                         return (LRESULT)TRUE;
                     }
-                    else if (intercept == KEY_INTERCEPT_LONGPRESS_PASSTHROUGH) {
+                    else if (intercept == KEY_INTERCEPT_LONGPRESS_HANDLED) {
                         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                     }
                 }
@@ -13682,11 +13682,10 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                 releaseKeys.append(key);
 
                 if (findindex >=0){
-                    QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                     if (keyproc != KEY_PROC_LOCK && keyproc != KEY_PROC_LOCK_PASSTHROUGH) {
                         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
                         QStringList mappingKey_KeyUpList = QKeyMapper::KeyMappingDataList->at(findindex).MappingKeys_KeyUp;
-                        // QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+                        QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
                         int mappingkeylist_size = mappingKeyList.size();
                         int SendTiming = QKeyMapper::KeyMappingDataList->at(findindex).SendTiming;
                         bool KeySeqHoldDown = QKeyMapper::KeyMappingDataList->at(findindex).KeySeqHoldDown;
@@ -13749,20 +13748,24 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
                     }
 
                     bool PassThrough = QKeyMapper::KeyMappingDataList->at(findindex).PassThrough;
-                    QStringList pure_mappingkeys = QKeyMapper::KeyMappingDataList->at(findindex).Pure_MappingKeys;
-                    QString pure_originalkeyStr = QKeyMapper::getOriginalKeyStringWithoutSuffix(original_key);
-                    bool mappingContainsOriginalKey = pure_mappingkeys.contains(pure_originalkeyStr);
+                    bool pressedMappingKeysContains = false;
+                    {
+                    QMutexLocker locker(&s_PressedMappingKeysMapMutex);
+                    if (pressedMappingKeysMap.contains(keycodeString)) {
+                        pressedMappingKeysContains = true;
+                    }
+                    }
 
                     if (PassThrough
                         || keyproc == KEY_PROC_LOCK_PASSTHROUGH
                         || keyproc == KEY_PROC_PASSTHROUGH) {
                         intercept = KEY_INTERCEPT_PASSTHROUGH;
                     }
-                    else if (!mappingContainsOriginalKey) {
-                        intercept = KEY_INTERCEPT_LONGPRESS_PASSTHROUGH;
+                    else if (pressedMappingKeysContains) {
+                        intercept = KEY_INTERCEPT_NONE;
                     }
                     else {
-                        intercept = KEY_INTERCEPT_BLOCK;
+                        intercept = KEY_INTERCEPT_LONGPRESS_HANDLED;
                     }
                 }
             }

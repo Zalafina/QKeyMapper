@@ -475,7 +475,7 @@ namespace QKeyMapperConstants {
     inline constexpr int KEY_INTERCEPT_PASSTHROUGH                     = 2;
     inline constexpr int KEY_INTERCEPT_BLOCK_COMBINATIONKEYUP          = 3;
     inline constexpr int KEY_INTERCEPT_BLOCK_KEY_RECORD                = 4;
-    inline constexpr int KEY_INTERCEPT_LONGPRESS_PASSTHROUGH           = 5;
+    inline constexpr int KEY_INTERCEPT_LONGPRESS_HANDLED               = 5;
 
     inline constexpr int KEY_PROC_NONE             = 0;
     inline constexpr int KEY_PROC_BURST            = 1;
