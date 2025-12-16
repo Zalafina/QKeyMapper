@@ -11995,23 +11995,39 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
             filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
         }
-        if (!filepathString.isEmpty()
-            && QFileInfo::exists(filepathString)){
-            QIcon fileicon;
-            if (s_DisplayScale == 1.0) {
-                fileicon = extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
+        QString customiconpath;
+        bool useCustomIcon = false;
+        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH)){
+            customiconpath = settingFile.value(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH).toString();
+            if ((false == customiconpath.isEmpty())
+                && (true == QFileInfo::exists(customiconpath))){
+                QIcon icon_loaded = loadSettingCustomIcon(customiconpath);
+                if (!icon_loaded.isNull()) {
+                    settingIcon = icon_loaded;
+                    useCustomIcon = true;
+                }
             }
-            else {
-                fileicon = extractIconFromExecutable(filepathString);
-            }
+        }
 
-            if (fileicon.isNull()) {
-                QFileIconProvider icon_provider;
-                fileicon = icon_provider.icon(QFileInfo(filepathString));
-            }
+        if (!useCustomIcon) {
+            if (!filepathString.isEmpty()
+                && QFileInfo::exists(filepathString)){
+                QIcon fileicon;
+                if (s_DisplayScale == 1.0) {
+                    fileicon = extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
+                }
+                else {
+                    fileicon = extractIconFromExecutable(filepathString);
+                }
 
-            if (!fileicon.isNull()) {
-                settingIcon = fileicon;
+                if (fileicon.isNull()) {
+                    QFileIconProvider icon_provider;
+                    fileicon = icon_provider.icon(QFileInfo(filepathString));
+                }
+
+                if (!fileicon.isNull()) {
+                    settingIcon = fileicon;
+                }
             }
         }
 
@@ -13751,11 +13767,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
         m_MappingAdvancedDialog->setProcessIconAsTrayIconEnabled(true);
 
+        m_MapProcessInfo = MAP_PROCESSINFO();
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FILEPATH)){
             m_MapProcessInfo.FilePath = settingFile.value(settingSelectStr+PROCESSINFO_FILEPATH).toString();
-        }
-        else {
-            m_MapProcessInfo = MAP_PROCESSINFO();
         }
 
         if (true == settingFile.contains(settingSelectStr+PROCESSINFO_CUSTOMICONPATH)){
@@ -15350,23 +15364,39 @@ void QKeyMapper::loadGeneralSetting()
         if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
             filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
         }
-        if (!filepathString.isEmpty()
-            && QFileInfo::exists(filepathString)){
-            QIcon fileicon;
-            if (QKeyMapper::s_DisplayScale == 1.0) {
-                fileicon = extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
+        QString customiconpath;
+        bool useCustomIcon = false;
+        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH)){
+            customiconpath = settingFile.value(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH).toString();
+            if ((false == customiconpath.isEmpty())
+                && (true == QFileInfo::exists(customiconpath))){
+                QIcon icon_loaded = loadSettingCustomIcon(customiconpath);
+                if (!icon_loaded.isNull()) {
+                    settingIcon = icon_loaded;
+                    useCustomIcon = true;
+                }
             }
-            else {
-                fileicon = extractIconFromExecutable(filepathString);
-            }
+        }
 
-            if (fileicon.isNull()) {
-                QFileIconProvider icon_provider;
-                fileicon = icon_provider.icon(QFileInfo(filepathString));
-            }
+        if (!useCustomIcon) {
+            if (!filepathString.isEmpty()
+                && QFileInfo::exists(filepathString)){
+                QIcon fileicon;
+                if (QKeyMapper::s_DisplayScale == 1.0) {
+                    fileicon = extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
+                }
+                else {
+                    fileicon = extractIconFromExecutable(filepathString);
+                }
 
-            if (!fileicon.isNull()) {
-                settingIcon = fileicon;
+                if (fileicon.isNull()) {
+                    QFileIconProvider icon_provider;
+                    fileicon = icon_provider.icon(QFileInfo(filepathString));
+                }
+
+                if (!fileicon.isNull()) {
+                    settingIcon = fileicon;
+                }
             }
         }
 
