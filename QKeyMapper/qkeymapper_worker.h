@@ -136,6 +136,7 @@ typedef struct MAP_KEYDATA
     QStringList Pure_MappingKeys_KeyUp;
     QString Note;
     QString Category;
+    bool Disabled;
     bool Burst;
     int BurstPressTime;
     int BurstReleaseTime;
@@ -178,6 +179,7 @@ typedef struct MAP_KEYDATA
     , Pure_MappingKeys_KeyUp()
     , Note()
     , Category()
+    , Disabled(false)
     , Burst(false)
     , BurstPressTime(QKeyMapperConstants::BURST_PRESS_TIME_DEFAULT)
     , BurstReleaseTime(QKeyMapperConstants::BURST_RELEASE_TIME_DEFAULT)
@@ -241,6 +243,7 @@ typedef struct MAP_KEYDATA
         }
         Note = note;
         Category = category;
+        Disabled = false;
         Burst = burst;
         BurstPressTime = burstpresstime;
         BurstReleaseTime = burstreleasetime;

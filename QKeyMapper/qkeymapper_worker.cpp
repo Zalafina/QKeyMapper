@@ -6765,6 +6765,13 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
     s_AtomicHookProcState = HOOKPROC_STATE_STARTING;
 
+    // Initialize lastKeyMappingDataList to nullptr at mapping start
+    QKeyMapper::lastKeyMappingDataList = Q_NULLPTR;
+    QKeyMapper::s_LastActiveKeyMappingDataList.clear();
+    // Build active key mapping data list (filtering out disabled items)
+    // and point KeyMappingDataList to it
+    QKeyMapper::buildActiveKeyMappingDataList();
+
     // Handle FilterKeys state on mapping start
     handleFilterKeysOnMappingStart();
 
@@ -7095,6 +7102,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
         }
     }
 
+    // Restore KeyMappingDataList pointer to original tab's KeyMappingData
+    QKeyMapper::restoreKeyMappingDataListPointer();
+
     s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 
 #ifdef DEBUG_LOGOUT_ON
@@ -7163,17 +7173,20 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 #endif
 
     /* Restart Stopping process */
-    QList<MAP_KEYDATA> *backup_KeyMappingDataList = QKeyMapper::KeyMappingDataList;
-    if (QKeyMapper::lastKeyMappingDataList != Q_NULLPTR) {
-        QKeyMapper::KeyMappingDataList = QKeyMapper::lastKeyMappingDataList;
-    }
+    // Backup current s_ActiveKeyMappingDataList to s_LastActiveKeyMappingDataList for tab switch
+    QKeyMapper::s_LastActiveKeyMappingDataList = QKeyMapper::s_ActiveKeyMappingDataList;
+    // Set lastKeyMappingDataList to point to the backup list for resendRealKeyCodeOnStop
+    QKeyMapper::lastKeyMappingDataList = &QKeyMapper::s_LastActiveKeyMappingDataList;
+    QKeyMapper::buildActiveKeyMappingDataList();
 
+    QList<MAP_KEYDATA> backup_KeyMappingDataList = QKeyMapper::s_ActiveKeyMappingDataList;
+    QKeyMapper::KeyMappingDataList = &QKeyMapper::s_LastActiveKeyMappingDataList;
     s_AtomicHookProcState = HOOKPROC_STATE_RESTART_STOPPING;
 
     /* Stop Key Mapping Process */
     clearAllBurstKeyTimersAndLockKeys();
     breakAllRunningKeySequence();
-    clearAllNormalPressedMappingKeys(true, backup_KeyMappingDataList);
+    clearAllNormalPressedMappingKeys(true, &backup_KeyMappingDataList);
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
@@ -7265,7 +7278,11 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 
 
     /* Restart Starting process */
-    QKeyMapper::KeyMappingDataList = backup_KeyMappingDataList;
+    QKeyMapper::s_ActiveKeyMappingDataList = backup_KeyMappingDataList;
+    QKeyMapper::KeyMappingDataList = &QKeyMapper::s_ActiveKeyMappingDataList;
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[setKeyMappingRestart] Built new active mapping list with" << QKeyMapper::s_ActiveKeyMappingDataList.size() << "items";
+#endif
 
     s_AtomicHookProcState = HOOKPROC_STATE_RESTART_STARTING;
 

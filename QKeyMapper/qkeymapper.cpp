@@ -28,6 +28,8 @@ int QKeyMapper::s_KeyMappingTabWidgetLastIndex = 0;
 // QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>();
 QList<MAP_KEYDATA> *QKeyMapper::KeyMappingDataList = Q_NULLPTR;
 QList<MAP_KEYDATA> *QKeyMapper::lastKeyMappingDataList = Q_NULLPTR;
+QList<MAP_KEYDATA> QKeyMapper::s_ActiveKeyMappingDataList;
+QList<MAP_KEYDATA> QKeyMapper::s_LastActiveKeyMappingDataList;
 // QList<MAP_KEYDATA> QKeyMapper::KeyMappingDataListGlobal = QList<MAP_KEYDATA>();
 QList<MousePoint_Info> QKeyMapper::ScreenMousePointsList = QList<MousePoint_Info>();
 QList<MousePoint_Info> QKeyMapper::WindowMousePointsList = QList<MousePoint_Info>();
@@ -8044,11 +8046,56 @@ void QKeyMapper::switchKeyMappingTabIndex(int index)
 {
     if (0 <= index && index < s_KeyMappingTabInfoList.size()) {
         m_KeyMappingDataTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(index));
-        lastKeyMappingDataList = KeyMappingDataList;
+        // Note: lastKeyMappingDataList is now managed by buildActiveKeyMappingDataList/setKeyMappingRestart
+        // during mapping process, no need to update it here for tab switch in stopped state
         KeyMappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
         s_KeyMappingTabWidgetLastIndex = s_KeyMappingTabWidgetCurrentIndex;
         s_KeyMappingTabWidgetCurrentIndex = index;
     }
+}
+
+void QKeyMapper::buildActiveKeyMappingDataList()
+{
+    // Clear previous active mapping data list when building new one
+    s_ActiveKeyMappingDataList.clear();
+
+    // Validate current tab index
+    if (s_KeyMappingTabWidgetCurrentIndex < 0 || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    // Get the current tab's KeyMappingData pointer
+    QList<MAP_KEYDATA> *currentTabKeyMappingData = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
+    if (currentTabKeyMappingData == Q_NULLPTR) {
+        return;
+    }
+
+    // Filter out disabled items and copy enabled items to active list
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*currentTabKeyMappingData)) {
+        if (!keymapdata.Disabled) {
+            s_ActiveKeyMappingDataList.append(keymapdata);
+        }
+    }
+
+    // Point KeyMappingDataList to the active list during mapping
+    KeyMappingDataList = &s_ActiveKeyMappingDataList;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[buildActiveKeyMappingDataList] Built active mapping list with" << s_ActiveKeyMappingDataList.size()
+             << "items from total" << currentTabKeyMappingData->size() << "items";
+#endif
+}
+
+void QKeyMapper::restoreKeyMappingDataListPointer()
+{
+    // Restore KeyMappingDataList to point to the original tab's KeyMappingData
+    if (0 <= s_KeyMappingTabWidgetCurrentIndex && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
+        KeyMappingDataList = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[restoreKeyMappingDataListPointer] Restored KeyMappingDataList pointer to tab" << s_KeyMappingTabWidgetCurrentIndex;
+#endif
 }
 
 bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)

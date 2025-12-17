@@ -1107,6 +1107,8 @@ public slots:
     void HotKeyMappingTableSwitchTab(const QString &hotkey_string);
     void MappingTableSwitchByTabName(const QString &tabName, bool remember_tabname = false);
     void switchKeyMappingTabIndex(int index);
+    static void buildActiveKeyMappingDataList(void);
+    static void restoreKeyMappingDataListPointer(void);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
     bool copyCurrentTabToKeyMappingTabWidget(void);
     int removeTabFromKeyMappingTabWidget(int tabindex);
@@ -1508,6 +1510,8 @@ public:
     // static QList<MAP_KEYDATA> KeyMappingDataList;
     static QList<MAP_KEYDATA> *KeyMappingDataList;
     static QList<MAP_KEYDATA> *lastKeyMappingDataList;
+    static QList<MAP_KEYDATA> s_ActiveKeyMappingDataList;      // Active mapping list (Disabled items filtered out)
+    static QList<MAP_KEYDATA> s_LastActiveKeyMappingDataList;  // Previous active mapping list for tab switch
     // static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
     static QList<MousePoint_Info> ScreenMousePointsList;
     static QList<MousePoint_Info> WindowMousePointsList;
