@@ -30,7 +30,7 @@ namespace QKeyMapperConstants {
     inline constexpr int VIRTUALGAMEPADTYPECOMBOBOX_X = 610;
 
     inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 4;
-    inline constexpr int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 5;
+    inline constexpr int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 6;
     inline constexpr int MACROLISTDATA_TABLE_COLUMN_COUNT = 4;
 
     inline constexpr int INITIAL_WINDOW_POSITION = -10000;
@@ -45,9 +45,10 @@ namespace QKeyMapperConstants {
 
     inline constexpr int ORIGINAL_KEY_COLUMN = 0;
     inline constexpr int MAPPING_KEY_COLUMN = 1;
-    inline constexpr int BURST_MODE_COLUMN = 2;
-    inline constexpr int LOCK_COLUMN = 3;
-    inline constexpr int CATEGORY_COLUMN = 4;
+    inline constexpr int DISABLED_COLUMN = 2;
+    inline constexpr int BURST_MODE_COLUMN = 3;
+    inline constexpr int LOCK_COLUMN = 4;
+    inline constexpr int CATEGORY_COLUMN = 5;
 
     inline constexpr int MACRO_NAME_COLUMN = 0;
     inline constexpr int MACRO_CONTENT_COLUMN = 1;
@@ -912,6 +913,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_MAPPINGKEYS_KEYUP[] = "KeyMapData_MappingKeys_KeyUp";
     inline constexpr const char KEYMAPDATA_NOTE[] = "KeyMapData_Note";
     inline constexpr const char KEYMAPDATA_CATEGORY[] = "KeyMapData_Category";
+    inline constexpr const char KEYMAPDATA_DISABLED[] = "KeyMapData_Disabled";
     inline constexpr const char KEYMAPDATA_BURST[] = "KeyMapData_Burst";
     inline constexpr const char KEYMAPDATA_LOCK[] = "KeyMapData_Lock";
     inline constexpr const char KEYMAPDATA_MAPPINGKEYUNLOCK[] = "KeyMapData_MappingKeyUnlock";

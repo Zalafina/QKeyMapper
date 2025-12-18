@@ -8165,6 +8165,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 
     KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << tr("OriginalKey")
                                                                     << tr("MappingKey")
+                                                                    << tr("Disable")
                                                                     << tr("Burst")
                                                                     << tr("Lock")
                                                                     << tr("Category"));
@@ -8279,6 +8280,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
     KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << tr("OriginalKey")
                                                                     << tr("MappingKey")
+                                                                    << tr("Disable")
                                                                     << tr("Burst")
                                                                     << tr("Lock")
                                                                     << tr("Category"));
@@ -9004,6 +9006,24 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) lock changed to (%s)", __func__, row, lock == true?"ON":"OFF");
+#endif
+        }
+    }
+    else if (col == DISABLED_COLUMN) {
+        bool disabled = false;
+        if (m_KeyMappingDataTable->item(row, col)->checkState() == Qt::Checked) {
+            disabled = true;
+        }
+        else {
+            disabled = false;
+        }
+
+        if (disabled != KeyMappingDataList->at(row).Disabled) {
+            (*KeyMappingDataList)[row].Disabled = disabled;
+            emit keyMappingTableItemCheckStateChanged_Signal(row, col, disabled);
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[%s]: row(%d) disabled changed to (%s)", __func__, row, disabled == true?"ON":"OFF");
 #endif
         }
     }
@@ -19109,10 +19129,16 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     int original_key_width_max = mappingDataTable->width() / 2;
     int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
 
+    mappingDataTable->resizeColumnToContents(DISABLED_COLUMN);
+    int disabled_width = mappingDataTable->columnWidth(DISABLED_COLUMN);
+    disabled_width += 8;
     mappingDataTable->resizeColumnToContents(BURST_MODE_COLUMN);
     int burst_mode_width = mappingDataTable->columnWidth(BURST_MODE_COLUMN);
-    int lock_width = burst_mode_width;
     burst_mode_width += 8;
+    mappingDataTable->horizontalHeader()->setStretchLastSection(false);
+    mappingDataTable->resizeColumnToContents(LOCK_COLUMN);
+    int lock_width = mappingDataTable->columnWidth(LOCK_COLUMN);
+    mappingDataTable->horizontalHeader()->setStretchLastSection(true);
 
     int category_width = 0;
     if (mappingDataTable->isCategoryColumnVisible()) {
@@ -19138,13 +19164,14 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 
     int mapping_key_width_min = mappingDataTable->width()/5 - 15;
-    int mapping_key_width = mappingDataTable->width() - original_key_width - burst_mode_width - lock_width - category_width - 16;
+    int mapping_key_width = mappingDataTable->width() - original_key_width - disabled_width - burst_mode_width - lock_width - category_width - 16;
     if (mapping_key_width < mapping_key_width_min) {
         mapping_key_width = mapping_key_width_min;
     }
 
     mappingDataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
     mappingDataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
+    mappingDataTable->setColumnWidth(DISABLED_COLUMN, disabled_width);
     mappingDataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
     mappingDataTable->setColumnWidth(LOCK_COLUMN, lock_width);
     if (mappingDataTable->isCategoryColumnVisible()) {
@@ -19152,7 +19179,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width;
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width;
 #endif
 }
 
@@ -20121,6 +20148,16 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
             mappingDataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , mapping_TableItem);
 
+            /* DISABLED_COLUMN */
+            QTableWidgetItem *disabledCheckBox = new QTableWidgetItem();
+            if (keymapdata.Disabled == true) {
+                disabledCheckBox->setCheckState(Qt::Checked);
+            }
+            else {
+                disabledCheckBox->setCheckState(Qt::Unchecked);
+            }
+            mappingDataTable->setItem(rowindex, DISABLED_COLUMN    , disabledCheckBox);
+
             /* BURST_MODE_COLUMN */
             QTableWidgetItem *burstCheckBox = new QTableWidgetItem();
             if (keymapdata.Burst == true) {
@@ -20324,6 +20361,17 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
             mapping_TableItem->setToolTip(mappingkeys_str);
             mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
             mappingDataTable->setItem(row, MAPPING_KEY_COLUMN, mapping_TableItem);
+            break;
+        }
+        case DISABLED_COLUMN: {
+            QTableWidgetItem *disabledCheckBox = new QTableWidgetItem();
+            if (keymapdata.Disabled == true) {
+                disabledCheckBox->setCheckState(Qt::Checked);
+            }
+            else {
+                disabledCheckBox->setCheckState(Qt::Unchecked);
+            }
+            mappingDataTable->setItem(row, DISABLED_COLUMN, disabledCheckBox);
             break;
         }
         case BURST_MODE_COLUMN: {
@@ -20757,6 +20805,7 @@ void QKeyMapper::setUILanguage(int languageindex)
         KeyMappingDataTableWidget *mappingTable = qobject_cast<KeyMappingDataTableWidget*>(m_KeyMappingTabWidget->widget(tabindex));
         mappingTable->setHorizontalHeaderLabels(QStringList()       << tr("OriginalKey")
                                                                     << tr("MappingKey")
+                                                                    << tr("Disable")
                                                                     << tr("Burst")
                                                                     << tr("Lock")
                                                                     << tr("Category"));
