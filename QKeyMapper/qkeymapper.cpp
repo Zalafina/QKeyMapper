@@ -9022,6 +9022,18 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             (*KeyMappingDataList)[row].Disabled = disabled;
             emit keyMappingTableItemCheckStateChanged_Signal(row, col, disabled);
 
+            QTableWidgetItem *ori_TableItem = m_KeyMappingDataTable->item(row, ORIGINAL_KEY_COLUMN);
+            if (ori_TableItem) {
+                QFont font = ori_TableItem->font();
+                if (disabled) {
+                    font.setItalic(true);
+                }
+                else {
+                    font.setItalic(false);
+                }
+                ori_TableItem->setFont(font);
+            }
+
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) disabled changed to (%s)", __func__, row, disabled == true?"ON":"OFF");
 #endif
@@ -20152,6 +20164,18 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             QTableWidgetItem *disabledCheckBox = new QTableWidgetItem();
             if (keymapdata.Disabled == true) {
                 disabledCheckBox->setCheckState(Qt::Checked);
+
+                QTableWidgetItem *ori_TableItem = mappingDataTable->item(rowindex, ORIGINAL_KEY_COLUMN);
+                if (ori_TableItem) {
+                    QFont font = ori_TableItem->font();
+                    if (keymapdata.Disabled) {
+                        font.setItalic(true);
+                    }
+                    else {
+                        font.setItalic(false);
+                    }
+                    ori_TableItem->setFont(font);
+                }
             }
             else {
                 disabledCheckBox->setCheckState(Qt::Unchecked);
@@ -20401,6 +20425,17 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 disabledCheckBox = new QTableWidgetItem();
                 disabledCheckBox->setCheckState(checkState);
                 mappingDataTable->setItem(row, DISABLED_COLUMN, disabledCheckBox);
+            }
+            QTableWidgetItem *ori_TableItem = mappingDataTable->item(row, ORIGINAL_KEY_COLUMN);
+            if (ori_TableItem) {
+                QFont font = ori_TableItem->font();
+                if (keymapdata.Disabled) {
+                    font.setItalic(true);
+                }
+                else {
+                    font.setItalic(false);
+                }
+                ori_TableItem->setFont(font);
             }
             break;
         }
