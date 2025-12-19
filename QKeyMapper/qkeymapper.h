@@ -991,7 +991,7 @@ public:
 
     static QIcon setTabCustomImage(int tabindex, QString &imagepath);
     static void clearTabCustomImage(int tabindex);
-    QIcon loadSettingCustomIcon(QString &iconpath);
+    static QIcon loadSettingCustomIcon(QString &iconpath);
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);

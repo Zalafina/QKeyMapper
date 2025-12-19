@@ -26964,23 +26964,40 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
                 if (true == settingFile->contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
                     filepathString = settingFile->value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
                 }
-                if (!filepathString.isEmpty()
-                    && QFileInfo::exists(filepathString)){
-                    QIcon fileicon;
-                    if (QKeyMapper::s_DisplayScale == 1.0) {
-                        fileicon = QKeyMapper::extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
-                    }
-                    else {
-                        fileicon = QKeyMapper::extractIconFromExecutable(filepathString);
-                    }
 
-                    if (fileicon.isNull()) {
-                        QFileIconProvider icon_provider;
-                        fileicon = icon_provider.icon(QFileInfo(filepathString));
+                QString customiconpath;
+                bool useCustomIcon = false;
+                if (true == settingFile->contains(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH)){
+                    customiconpath = settingFile->value(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH).toString();
+                    if ((false == customiconpath.isEmpty())
+                        && (true == QFileInfo::exists(customiconpath))){
+                        QIcon icon_loaded = QKeyMapper::loadSettingCustomIcon(customiconpath);
+                        if (!icon_loaded.isNull()) {
+                            settingIcon = icon_loaded;
+                            useCustomIcon = true;
+                        }
                     }
+                }
 
-                    if (!fileicon.isNull()) {
-                        settingIcon = fileicon;
+                if (!useCustomIcon) {
+                    if (!filepathString.isEmpty()
+                        && QFileInfo::exists(filepathString)){
+                        QIcon fileicon;
+                        if (QKeyMapper::s_DisplayScale == 1.0) {
+                            fileicon = QKeyMapper::extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
+                        }
+                        else {
+                            fileicon = QKeyMapper::extractIconFromExecutable(filepathString);
+                        }
+
+                        if (fileicon.isNull()) {
+                            QFileIconProvider icon_provider;
+                            fileicon = icon_provider.icon(QFileInfo(filepathString));
+                        }
+
+                        if (!fileicon.isNull()) {
+                            settingIcon = fileicon;
+                        }
                     }
                 }
 
