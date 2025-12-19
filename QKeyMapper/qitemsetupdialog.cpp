@@ -122,6 +122,7 @@ QItemSetupDialog::~QItemSetupDialog()
 void QItemSetupDialog::setUILanguage(int languageindex)
 {
     setWindowTitle(tr(ITEMSETUPDIALOG_WINDOWTITLE_STR));
+    ui->disabledCheckBox->setText(tr("Disabled"));
     ui->burstCheckBox->setText(tr(BURSTCHECKBOX_STR));
     ui->lockCheckBox->setText(tr(LOCKCHECKBOX_STR));
     ui->mappingKeyUnlockCheckBox->setText(tr(MAPPINGKEYUNLOCKCHECKBOX_STR));
@@ -216,6 +217,7 @@ void QItemSetupDialog::resetFontSize()
         // }
     }
 
+    ui->disabledCheckBox->setFont(customFont);
     ui->burstCheckBox->setFont(customFont);
     ui->lockCheckBox->setFont(customFont);
     ui->mappingKeyUnlockCheckBox->setFont(customFont);
@@ -1238,6 +1240,14 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         /* Load Note String */
         ui->itemNoteLineEdit->setText(keymapdata.Note);
 
+        /* Load Disabled */
+        if (true == keymapdata.Disabled) {
+            ui->disabledCheckBox->setChecked(true);
+        }
+        else {
+            ui->disabledCheckBox->setChecked(false);
+        }
+
         /* Load Burst */
         if (true == keymapdata.Burst) {
             ui->burstCheckBox->setChecked(true);
@@ -1703,6 +1713,14 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         QString originalkey_str = keymapdata.Original_Key;
         ui->originalKeyLineEdit->setText(originalkey_str);
 
+        /* Load Disabled */
+        if (true == keymapdata.Disabled) {
+            ui->disabledCheckBox->setChecked(true);
+        }
+        else {
+            ui->disabledCheckBox->setChecked(false);
+        }
+
         /* Load Burst */
         if (true == keymapdata.Burst) {
             ui->burstCheckBox->setChecked(true);
@@ -2050,6 +2068,14 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         }
 #endif
 
+        /* Load Disabled */
+        if (true == keymapdata.Disabled) {
+            ui->disabledCheckBox->setChecked(true);
+        }
+        else {
+            ui->disabledCheckBox->setChecked(false);
+        }
+
         /* Load Burst */
         if (true == keymapdata.Burst) {
             ui->burstCheckBox->setChecked(true);
@@ -2358,6 +2384,14 @@ void QItemSetupDialog::refreshAllRelatedUI()
     }
 
     keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+
+    /* Load Disabled */
+    if (true == keymapdata.Disabled) {
+        ui->disabledCheckBox->setChecked(true);
+    }
+    else {
+        ui->disabledCheckBox->setChecked(false);
+    }
 
     /* Load Burst */
     if (true == keymapdata.Burst) {
@@ -2837,6 +2871,16 @@ void QItemSetupDialog::keyMappingTableItemCheckStateChanged(int row, int col, bo
 #endif
         }
     }
+    else if (col == DISABLED_COLUMN) {
+        bool disabled = ui->disabledCheckBox->isChecked();
+        if (disabled != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled) {
+            ui->disabledCheckBox->setChecked(QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled);
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Sync Disabled checkstate -> " << QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled;
+#endif
+        }
+    }
 }
 
 void QItemSetupDialog::on_burstpressSpinBox_valueChanged(int value)
@@ -2917,6 +2961,23 @@ void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
     }
 
     refreshMappingKeyRelatedUI();
+}
+
+void QItemSetupDialog::on_disabledCheckBox_stateChanged(int state)
+{
+    Q_UNUSED(state);
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    bool disabled = ui->disabledCheckBox->isChecked();
+    if (disabled != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled) {
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Disabled = disabled;
+        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, DISABLED_COLUMN);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Disabled -> " << disabled;
+#endif
+    }
 }
 
 void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)

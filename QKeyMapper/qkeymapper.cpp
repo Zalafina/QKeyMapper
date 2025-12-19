@@ -20346,74 +20346,137 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
             // if (keymapdata.Original_Key.contains(SEPARATOR_PLUS)) {
             //     orikey_withnote = QString(PREFIX_SHORTCUT) + orikey_withnote;
             // }
-            QTableWidgetItem *ori_TableItem = new QTableWidgetItem(orikey_withnote);
-            ori_TableItem->setToolTip(orikey_withnote);
-            ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
-            if (keymapdata.PassThrough) {
-                ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
+            QTableWidgetItem *ori_TableItem = mappingDataTable->item(row, ORIGINAL_KEY_COLUMN);
+            if (ori_TableItem) {
+                // Reuse existing item
+                ori_TableItem->setText(orikey_withnote);
+                ori_TableItem->setToolTip(orikey_withnote);
+                ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+                if (keymapdata.PassThrough) {
+                    ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
+                }
+                else {
+                    ori_TableItem->setForeground(QBrush(QApplication::palette().color(QPalette::Text)));
+                }
             }
-            mappingDataTable->setItem(row, ORIGINAL_KEY_COLUMN, ori_TableItem);
+            else {
+                // Create new item
+                ori_TableItem = new QTableWidgetItem(orikey_withnote);
+                ori_TableItem->setToolTip(orikey_withnote);
+                ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+                if (keymapdata.PassThrough) {
+                    ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
+                }
+                mappingDataTable->setItem(row, ORIGINAL_KEY_COLUMN, ori_TableItem);
+            }
             break;
         }
         case MAPPING_KEY_COLUMN: {
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-            QTableWidgetItem *mapping_TableItem = new QTableWidgetItem(mappingkeys_str);
-            mapping_TableItem->setToolTip(mappingkeys_str);
-            mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
-            mappingDataTable->setItem(row, MAPPING_KEY_COLUMN, mapping_TableItem);
+            QTableWidgetItem *mapping_TableItem = mappingDataTable->item(row, MAPPING_KEY_COLUMN);
+            if (mapping_TableItem) {
+                // Reuse existing item
+                mapping_TableItem->setText(mappingkeys_str);
+                mapping_TableItem->setToolTip(mappingkeys_str);
+                mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+            }
+            else {
+                // Create new item
+                mapping_TableItem = new QTableWidgetItem(mappingkeys_str);
+                mapping_TableItem->setToolTip(mappingkeys_str);
+                mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+                mappingDataTable->setItem(row, MAPPING_KEY_COLUMN, mapping_TableItem);
+            }
             break;
         }
         case DISABLED_COLUMN: {
-            QTableWidgetItem *disabledCheckBox = new QTableWidgetItem();
-            if (keymapdata.Disabled == true) {
-                disabledCheckBox->setCheckState(Qt::Checked);
+            QTableWidgetItem *disabledCheckBox = mappingDataTable->item(row, DISABLED_COLUMN);
+            Qt::CheckState checkState = keymapdata.Disabled ? Qt::Checked : Qt::Unchecked;
+            if (disabledCheckBox) {
+                // Reuse existing item
+                disabledCheckBox->setCheckState(checkState);
             }
             else {
-                disabledCheckBox->setCheckState(Qt::Unchecked);
+                // Create new item
+                disabledCheckBox = new QTableWidgetItem();
+                disabledCheckBox->setCheckState(checkState);
+                mappingDataTable->setItem(row, DISABLED_COLUMN, disabledCheckBox);
             }
-            mappingDataTable->setItem(row, DISABLED_COLUMN, disabledCheckBox);
             break;
         }
         case BURST_MODE_COLUMN: {
-            QTableWidgetItem *burstCheckBox = new QTableWidgetItem();
-            if (keymapdata.Burst == true) {
-                burstCheckBox->setCheckState(Qt::Checked);
+            QTableWidgetItem *burstCheckBox = mappingDataTable->item(row, BURST_MODE_COLUMN);
+            Qt::CheckState checkState = keymapdata.Burst ? Qt::Checked : Qt::Unchecked;
+            if (burstCheckBox) {
+                // Reuse existing item
+                burstCheckBox->setCheckState(checkState);
+                if (disable_burst) {
+                    burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
+                }
+                else {
+                    burstCheckBox->setFlags(burstCheckBox->flags() | Qt::ItemIsEnabled);
+                }
             }
             else {
-                burstCheckBox->setCheckState(Qt::Unchecked);
+                // Create new item
+                burstCheckBox = new QTableWidgetItem();
+                burstCheckBox->setCheckState(checkState);
+                if (disable_burst) {
+                    burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
+                }
+                mappingDataTable->setItem(row, BURST_MODE_COLUMN, burstCheckBox);
             }
-
-            if (disable_burst) {
-                burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
-            }
-            mappingDataTable->setItem(row, BURST_MODE_COLUMN, burstCheckBox);
             break;
         }
         case LOCK_COLUMN: {
-            QTableWidgetItem *lockCheckBox = new QTableWidgetItem();
-            if (keymapdata.Lock == true) {
-                lockCheckBox->setCheckState(Qt::Checked);
+            QTableWidgetItem *lockCheckBox = mappingDataTable->item(row, LOCK_COLUMN);
+            Qt::CheckState checkState = keymapdata.Lock ? Qt::Checked : Qt::Unchecked;
+            if (lockCheckBox) {
+                // Reuse existing item
+                lockCheckBox->setCheckState(checkState);
+                if (disable_lock) {
+                    lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
+                }
+                else {
+                    lockCheckBox->setFlags(lockCheckBox->flags() | Qt::ItemIsEnabled);
+                }
             }
             else {
-                lockCheckBox->setCheckState(Qt::Unchecked);
+                // Create new item
+                lockCheckBox = new QTableWidgetItem();
+                lockCheckBox->setCheckState(checkState);
+                if (disable_lock) {
+                    lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
+                }
+                mappingDataTable->setItem(row, LOCK_COLUMN, lockCheckBox);
             }
-
-            if (disable_lock) {
-                lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
-            }
-            mappingDataTable->setItem(row, LOCK_COLUMN, lockCheckBox);
             break;
         }
         case CATEGORY_COLUMN: {
-            QTableWidgetItem *categoryItem = new QTableWidgetItem(keymapdata.Category);
-            categoryItem->setToolTip(keymapdata.Category);
-            // Category column should be editable when visible
-            if (mappingDataTable->isCategoryColumnVisible()) {
-                categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
-            } else {
-                categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
+            QTableWidgetItem *categoryItem = mappingDataTable->item(row, CATEGORY_COLUMN);
+            if (categoryItem) {
+                // Reuse existing item
+                categoryItem->setText(keymapdata.Category);
+                categoryItem->setToolTip(keymapdata.Category);
+                // Category column should be editable when visible
+                if (mappingDataTable->isCategoryColumnVisible()) {
+                    categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
+                } else {
+                    categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
+                }
             }
-            mappingDataTable->setItem(row, CATEGORY_COLUMN, categoryItem);
+            else {
+                // Create new item
+                categoryItem = new QTableWidgetItem(keymapdata.Category);
+                categoryItem->setToolTip(keymapdata.Category);
+                // Category column should be editable when visible
+                if (mappingDataTable->isCategoryColumnVisible()) {
+                    categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
+                } else {
+                    categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
+                }
+                mappingDataTable->setItem(row, CATEGORY_COLUMN, categoryItem);
+            }
             break;
         }
         default:

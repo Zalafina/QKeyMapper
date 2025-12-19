@@ -114,6 +114,7 @@ private slots:
     void on_burstreleaseSpinBox_valueChanged(int value);
     void on_burstCheckBox_stateChanged(int state);
     void on_lockCheckBox_stateChanged(int state);
+    void on_disabledCheckBox_stateChanged(int state);
     void on_sendTimingComboBox_currentIndexChanged(int index);
     void on_pasteTextModeComboBox_currentIndexChanged(int index);
     void on_sendMappingKeyMethodComboBox_currentIndexChanged(int index);
