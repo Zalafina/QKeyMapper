@@ -5970,6 +5970,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList mappingkeys_keyupList;
     QStringList notesList;
     QStringList categorysList;
+    QStringList disabledList;
     QStringList burstList;
     QStringList burstpresstimeList;
     QStringList burstreleasetimeList;
@@ -6016,6 +6017,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         }
         notesList << keymapdata.Note;
         categorysList << keymapdata.Category;
+        if (true == keymapdata.Disabled) {
+            disabledList.append("ON");
+        }
+        else {
+            disabledList.append("OFF");
+        }
         if (true == keymapdata.Burst) {
             burstList.append("ON");
         }
@@ -6222,6 +6229,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS_KEYUP, mappingkeys_keyupList);
     keyMappingDataFile.setValue(KEYMAPDATA_NOTE, notesList);
     keyMappingDataFile.setValue(KEYMAPDATA_CATEGORY, categorysList);
+    keyMappingDataFile.setValue(KEYMAPDATA_DISABLED, disabledList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURST, burstList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURSTPRESS_TIME, burstpresstimeList);
     keyMappingDataFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList);
@@ -6278,6 +6286,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList original_keys;
     QStringList mapping_keys;
     QStringList mappingkeys_keyup;
+    QStringList disabledStringList;
     QStringList burstStringList;
     QStringList burstpressStringList;
     QStringList burstreleaseStringList;
@@ -6311,6 +6320,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList crosshair_showrightStringList;
     QStringList crosshair_x_offsetStringList;
     QStringList crosshair_y_offsetStringList;
+    QList<bool> disabledList;
     QList<bool> burstList;
     QList<int> burstpresstimeList;
     QList<int> burstreleasetimeList;
@@ -6387,6 +6397,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             crosshair_crosshairlengthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT));
             crosshair_crosshairopacityStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT));
         }
+        disabledStringList      = stringListAllOFF;
         burstStringList         = stringListAllOFF;
         burstpressStringList    = burstpressStringListDefault;
         burstreleaseStringList  = burstreleaseStringListDefault;
@@ -6424,6 +6435,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_CATEGORY)) {
             categorysList = keyMappingDataFile.value(KEYMAPDATA_CATEGORY).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_DISABLED)) {
+            disabledStringList = keyMappingDataFile.value(KEYMAPDATA_DISABLED).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_BURST)) {
             burstStringList = keyMappingDataFile.value(KEYMAPDATA_BURST).toStringList();
@@ -6532,6 +6546,15 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 int diff = original_keys.size() - categorysList.size();
                 for (int i = 0; i < diff; ++i) {
                     categorysList.append(QString());
+                }
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &disabled = (i < disabledStringList.size()) ? disabledStringList.at(i) : "OFF";
+                if (disabled == "ON") {
+                    disabledList.append(true);
+                } else {
+                    disabledList.append(false);
                 }
             }
 
@@ -6870,6 +6893,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                                                       mappingkeys_keyup.at(loadindex),
                                                       notesList.at(loadindex),
                                                       categorysList.at(loadindex),
+                                                      disabledList.at(loadindex),
                                                       burstList.at(loadindex),
                                                       burstpresstimeList.at(loadindex),
                                                       burstreleasetimeList.at(loadindex),
@@ -9027,9 +9051,12 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 QFont font = ori_TableItem->font();
                 if (disabled) {
                     font.setItalic(true);
+                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
                 }
                 else {
                     font.setItalic(false);
+                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::Base)));
+
                 }
                 ori_TableItem->setFont(font);
             }
@@ -10594,6 +10621,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString mappingkeys_keyupList_forsave;
     QVariantList notesList_forsave;
     QVariantList categorysList_forsave;
+    QString disabledList_forsave;
     QString burstList_forsave;
     QString burstpresstimeList_forsave;
     QString burstreleasetimeList_forsave;
@@ -10688,6 +10716,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             original_keys_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mapping_keysList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             mappingkeys_keyupList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            disabledList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstpresstimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             burstreleasetimeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -10726,6 +10755,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList mappingkeys_keyupList;
         QStringList notesList;
         QStringList categorysList;
+        QStringList disabledList;
         QStringList burstList;
         QStringList burstpresstimeList;
         QStringList burstreleasetimeList;
@@ -10784,6 +10814,12 @@ void QKeyMapper::saveKeyMapSetting(void)
                 }
                 notesList << keymapdata.Note;
                 categorysList << keymapdata.Category;
+                if (true == keymapdata.Disabled) {
+                    disabledList.append("ON");
+                }
+                else {
+                    disabledList.append("OFF");
+                }
                 if (true == keymapdata.Burst) {
                     burstList.append("ON");
                 }
@@ -10989,6 +11025,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString original_keys_str = original_keys.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mapping_keysList_str = mapping_keysList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString mappingkeys_keyupList_str = mappingkeys_keyupList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString disabledList_str = disabledList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstList_str = burstList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstpresstimeList_str = burstpresstimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString burstreleasetimeList_str = burstreleasetimeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -11027,6 +11064,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         mappingkeys_keyupList_forsave.append(mappingkeys_keyupList_str);
         notesList_forsave.append(notesList);
         categorysList_forsave.append(categorysList);
+        disabledList_forsave.append(disabledList_str);
         burstList_forsave.append(burstList_str);
         burstpresstimeList_forsave.append(burstpresstimeList_str);
         burstreleasetimeList_forsave.append(burstreleasetimeList_str);
@@ -11085,6 +11123,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS_KEYUP , mappingkeys_keyupList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_NOTE , notesList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CATEGORY, categorysList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DISABLED, disabledList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpresstimeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList_forsave);
@@ -12408,6 +12447,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         QString notes_loaded_string;
         QVariantList notes_loaded;
         QVariantList categorys_loaded;
+        QString disabledData_loaded;
         QString burstData_loaded;
         QString burstpressData_loaded;
         QString burstreleaseData_loaded;
@@ -12447,6 +12487,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         QStringList notes_split_string;
         QList<QStringList> notes_split;
         QList<QStringList> categorys_split;
+        QStringList disabledData_split;
         QStringList burstData_split;
         QStringList burstpressData_split;
         QStringList burstreleaseData_split;
@@ -12660,6 +12701,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     categorys_split.append(variant.toStringList());
                 }
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_DISABLED)) {
+                disabledData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_DISABLED).toString();
+                disabledData_split = disabledData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_BURST)) {
                 burstData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_BURST).toString();
                 burstData_split = burstData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -12810,6 +12855,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     QStringList original_keys;
                     QStringList mapping_keys;
                     QStringList mappingkeys_keyup;
+                    QStringList disabledStringList;
                     QStringList burstStringList;
                     QStringList burstpressStringList;
                     QStringList burstreleaseStringList;
@@ -12844,6 +12890,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     QStringList crosshair_showrightStringList;
                     QStringList crosshair_x_offsetStringList;
                     QStringList crosshair_y_offsetStringList;
+                    QList<bool> disabledList;
                     QList<bool> burstList;
                     QList<int> burstpresstimeList;
                     QList<int> burstreleasetimeList;
@@ -12918,6 +12965,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                         crosshair_crosshairlengthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT));
                         crosshair_crosshairopacityStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT));
                     }
+                    disabledStringList      = stringListAllOFF;
                     burstStringList         = stringListAllOFF;
                     burstpressStringList    = burstpressStringListDefault;
                     burstreleaseStringList  = burstreleaseStringListDefault;
@@ -12963,6 +13011,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                     }
                     if (categorys_split.size() == table_count) {
                         categorysList = categorys_split.at(index);
+                    }
+                    if (disabledData_split.size() == table_count) {
+                        disabledStringList = disabledData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (burstData_split.size() == table_count) {
                         burstStringList = burstData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -13075,6 +13126,15 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                             int diff = original_keys.size() - categorysList.size();
                             for (int i = 0; i < diff; ++i) {
                                 categorysList.append(QString());
+                            }
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &disabled = (i < disabledStringList.size()) ? disabledStringList.at(i) : "OFF";
+                            if (disabled == "ON") {
+                                disabledList.append(true);
+                            } else {
+                                disabledList.append(false);
                             }
                         }
 
@@ -13427,6 +13487,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                                                                   unescaped_mappingkeys_keyup,
                                                                   notesList.at(loadindex),
                                                                   categorysList.at(loadindex),
+                                                                  disabledList.at(loadindex),
                                                                   burstList.at(loadindex),
                                                                   burstpresstimeList.at(loadindex),
                                                                   burstreleasetimeList.at(loadindex),
@@ -20170,9 +20231,11 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                     QFont font = ori_TableItem->font();
                     if (keymapdata.Disabled) {
                         font.setItalic(true);
+                        ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
                     }
                     else {
                         font.setItalic(false);
+                        ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::Base)));
                     }
                     ori_TableItem->setFont(font);
                 }
@@ -20431,9 +20494,11 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 QFont font = ori_TableItem->font();
                 if (keymapdata.Disabled) {
                     font.setItalic(true);
+                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
                 }
                 else {
                     font.setItalic(false);
+                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::Base)));
                 }
                 ori_TableItem->setFont(font);
             }
@@ -21566,7 +21631,7 @@ void QKeyMapper::setUITheme(int themeindex)
         // Main background colors - lighter dark gray for better comfort
         darkPalette.setColor(QPalette::Window, QColor(55, 55, 55));
         darkPalette.setColor(QPalette::Base, QColor(60, 60, 60));
-        darkPalette.setColor(QPalette::AlternateBase, QColor(70, 70, 70));
+        darkPalette.setColor(QPalette::AlternateBase, QColor(90, 90, 90));
 
         // Text colors - light but not too bright
         darkPalette.setColor(QPalette::WindowText, dark_theme_text_color);
@@ -22181,7 +22246,9 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
         qDebug() << "[keyMappingTableItemDoubleClicked]" << "Category column double-clicked, entering edit mode";
 #endif
     }
-    else if (columnindex == BURST_MODE_COLUMN || columnindex == LOCK_COLUMN) {
+    else if (columnindex == BURST_MODE_COLUMN
+             || columnindex == LOCK_COLUMN
+             || columnindex == DISABLED_COLUMN) {
         /* skip */
     }
     else {
@@ -22990,6 +23057,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                                mappingkeys_keyup_str,
                                                                keymapdata.Note,
                                                                keymapdata.Category,
+                                                               keymapdata.Disabled,
                                                                keymapdata.Burst,
                                                                keymapdata.BurstPressTime,
                                                                keymapdata.BurstReleaseTime,
@@ -23226,6 +23294,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                                                    currentMapKeyText,                       /* mappingkeys_keyup QString */
                                                    QString(),                               /* note QString */
                                                    QString(),                               /* category QString */
+                                                   false,                                   /* disabled bool */
                                                    false,                                   /* burst bool */
                                                    BURST_PRESS_TIME_DEFAULT,                /* burstpresstime int */
                                                    BURST_RELEASE_TIME_DEFAULT,              /* burstreleasetime int */
@@ -26633,6 +26702,7 @@ void QKeyMapper::on_themeComboBox_currentIndexChanged(int index)
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         updateKeyMappingTabWidgetTabDisplay(index);
     }
+    refreshAllKeyMappingTabWidget();
 }
 
 void QKeyMapper::on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state)

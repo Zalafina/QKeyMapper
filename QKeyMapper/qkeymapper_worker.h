@@ -215,6 +215,7 @@ typedef struct MAP_KEYDATA
     {}
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
+                bool disabled,
                 bool burst, int burstpresstime, int burstreleasetime,
                 bool lock, bool mappingkeys_unlock, bool disable_originalkeyunlock, bool disable_fnkeyswitch,
                 int sendmappingkeymethod, int fixedvkeycode,
@@ -243,7 +244,7 @@ typedef struct MAP_KEYDATA
         }
         Note = note;
         Category = category;
-        Disabled = false;
+        Disabled = disabled;
         Burst = burst;
         BurstPressTime = burstpresstime;
         BurstReleaseTime = burstreleasetime;
@@ -285,6 +286,7 @@ typedef struct MAP_KEYDATA
                 && (MappingKeys_KeyUp == other.MappingKeys_KeyUp)
                 && (Note == other.Note)
                 && (Category == other.Category) // Compare new category field
+                && (Disabled == other.Disabled)
                 && (Burst == other.Burst)
                 && (BurstPressTime == other.BurstPressTime)
                 && (BurstReleaseTime == other.BurstReleaseTime)
@@ -329,6 +331,7 @@ typedef struct MAP_KEYDATA
                         << ", MappingKeys_KeyUp:" << data.MappingKeys_KeyUp
                         << ", Note:" << data.Note
                         << ", Category:" << data.Category
+                        << ", Disabled:" << data.Disabled
                         << ", Burst:" << data.Burst
                         << ", BurstPressTime:" << data.BurstPressTime
                         << ", BurstReleaseTime:" << data.BurstReleaseTime
