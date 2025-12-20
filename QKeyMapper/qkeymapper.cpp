@@ -9129,7 +9129,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, row, ORIGINAL_KEY_COLUMN);
 
 #ifdef DEBUG_LOGOUT_ON
-                if (!note_new.isEmpty() && update_withnote) {
+                if (note_new != mapdata_note && update_withnote) {
                     QString debugmessage = QString("[%1] row(%2) OriginalKey column changed, OriginalKey: \"%3\", Note: \"%4\"").arg(__func__).arg(row).arg(originalkey_new, note_new);
                     qDebug().noquote().nospace() << debugmessage;
                 }
@@ -22326,15 +22326,19 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
 #endif
     }
     // Check if the double-clicked item is in the Category column
-    else if ((columnindex == ORIGINAL_KEY_COLUMN || columnindex == MAPPING_KEY_COLUMN)
-        && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0
-        && m_KeyMappingDataTable) {
-        // If it's the originalkey or mappingkey column and L-Ctrl key is pressed, allow inline editing
-        m_KeyMappingDataTable->editItem(item);
+    else if ((columnindex == ORIGINAL_KEY_COLUMN || columnindex == MAPPING_KEY_COLUMN) && m_KeyMappingDataTable) {
+        if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
+            // If it's the originalkey or mappingkey column double-clicked with L-Ctrl key is pressed, open item setup dialog
+            showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
+        }
+        else {
+            // If it's the originalkey or mappingkey column double-clicked, allow inline editing
+            m_KeyMappingDataTable->editItem(item);
 #ifdef DEBUG_LOGOUT_ON
-        QString debugmessage = QString("[keyMappingTableItemDoubleClicked] %1 column double-clicked with L-Ctrl pressed, entering edit mode").arg(columnindex == ORIGINAL_KEY_COLUMN ? "OriginalKey" : "MappingKey");
-        qDebug().noquote().nospace() << debugmessage;
+            QString debugmessage = QString("[keyMappingTableItemDoubleClicked] %1 column double-clicked, entering edit mode").arg(columnindex == ORIGINAL_KEY_COLUMN ? "OriginalKey" : "MappingKey");
+            qDebug().noquote().nospace() << debugmessage;
 #endif
+        }
     }
     else if (columnindex == BURST_MODE_COLUMN
              || columnindex == LOCK_COLUMN
@@ -23526,7 +23530,7 @@ void QKeyMapper::selectedItemsMoveUp()
 #endif
 
     bool move_to_top = false;
-    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+    if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0) {
         move_to_top = true;
         // Move the selected rows to the top (preserve order)
         QList<MAP_KEYDATA> tempItems;
@@ -23619,7 +23623,7 @@ void QKeyMapper::selectedItemsMoveDown()
 #endif
 
     bool move_to_bottom = false;
-    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+    if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0) {
         move_to_bottom = true;
         // Move the selected rows to the bottom (preserve order)
         QList<MAP_KEYDATA> tempItems;
@@ -26078,11 +26082,21 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
 
     if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
         if (event->key() == Qt::Key_Up) {
-            QKeyMapper::getInstance()->selectedItemsMoveUp();
+            if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                QKeyMapper::getInstance()->selectedItemsMoveUp();
+            }
+            else {
+
+            }
             return;
         }
         else if (event->key() == Qt::Key_Down) {
-            QKeyMapper::getInstance()->selectedItemsMoveDown();
+            if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                QKeyMapper::getInstance()->selectedItemsMoveDown();
+            }
+            else {
+
+            }
             return;
         }
         else if (event->key() == Qt::Key_Delete) {
