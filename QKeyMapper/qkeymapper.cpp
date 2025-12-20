@@ -3782,6 +3782,12 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     ValidationResult result;
     result.isValid = true;
 
+    if (originalkeystr.isEmpty()) {
+        result.isValid = false;
+        result.errorMessage = tr("OriginalKey cannot be empty.");
+        return result;
+    }
+
     // Regular expression to match the entire key with optional time suffix
     static QRegularExpression full_key_regex(R"(^(.+?)(?:⏲(\d+)|✖(\d+))?$)");
     static QRegularExpression removeindex_regex("@\\d$");
@@ -4086,9 +4092,9 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
     ValidationResult result;
     result.isValid = true;
 
-    if (mappingkeyseqlist.isEmpty()) {
+    if (mappingkeystr.isEmpty() || mappingkeyseqlist.isEmpty()) {
         result.isValid = false;
-        result.errorMessage = tr("MappingKeys is empty.");
+        result.errorMessage = tr("MappingKeys cannot be empty.");
         return result;
     }
     else if (mappingkeyseqlist.size() >= KEY_SEQUENCE_MAX) {
@@ -9084,6 +9090,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
     else if (col == ORIGINAL_KEY_COLUMN) {
         QString originalkey_new = m_KeyMappingDataTable->item(row, col)->text();
         QString originalkey = KeyMappingDataList->at(row).Original_Key;
+        QString mappingkeys_str = KeyMappingDataList->at(row).Mapping_Keys.join(SEPARATOR_NEXTARROW);
         QString mapdata_note = KeyMappingDataList->at(row).Note;
         QString originalkey_withnote;
         if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {
@@ -9092,14 +9099,54 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         else {
             originalkey_withnote = originalkey;
         }
-        if (originalkey_new != originalkey_withnote) {
-#ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("[%1] row(%2) originalkey changed to \"%3\"").arg(__func__).arg(row).arg(originalkey_new);
-            qDebug().noquote().nospace() << debugmessage;
-#endif
 
-            m_KeyMappingDataTable->item(row, col)->setText(originalkey_withnote);
-            // (*KeyMappingDataList)[row].Original_Key = originalkey;
+        if (originalkey_new != originalkey_withnote) {
+            bool update_withnote = false;
+            QString note_new;
+            if (ui->showNotesButton->isChecked()) {
+                update_withnote = true;
+            }
+
+            static QRegularExpression simplified_regex(R"([\r\n]+)");
+            originalkey_new.replace(simplified_regex, " ");
+            originalkey_new = originalkey_new.trimmed();
+            if (update_withnote) {
+                static QRegularExpression originalkeyPattern(REGEX_PATTERN_ORIGINALKEY_WITHNOTE);
+                QRegularExpressionMatch originalkeyMatch = originalkeyPattern.match(originalkey_new);
+                if (originalkeyMatch.hasMatch()) {
+                    originalkey_new = originalkeyMatch.captured(1);
+                    originalkey_new = originalkey_new.trimmed();
+                    note_new = originalkeyMatch.captured(2);
+                }
+            }
+
+            bool isValid = QItemSetupDialog::updateOriginalKey(originalkey_new, mappingkeys_str, row);
+            if (isValid) {
+                (*KeyMappingDataList)[row].Original_Key = originalkey_new;
+                if (note_new != mapdata_note && update_withnote) {
+                    (*KeyMappingDataList)[row].Note = note_new;
+                }
+                updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, row, ORIGINAL_KEY_COLUMN);
+
+#ifdef DEBUG_LOGOUT_ON
+                if (!note_new.isEmpty() && update_withnote) {
+                    QString debugmessage = QString("[%1] row(%2) OriginalKey column changed, OriginalKey: \"%3\", Note: \"%4\"").arg(__func__).arg(row).arg(originalkey_new, note_new);
+                    qDebug().noquote().nospace() << debugmessage;
+                }
+                else {
+                    QString debugmessage = QString("[%1] row(%2) OriginalKey column changed, OriginalKey: \"%3\"").arg(__func__).arg(row).arg(originalkey_new);
+                    qDebug().noquote().nospace() << debugmessage;
+                }
+#endif
+            }
+            else {
+                m_KeyMappingDataTable->item(row, col)->setText(originalkey_withnote);
+
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[%1] row(%2) Invalid OriginalKey: \"%3\"").arg(__func__).arg(row).arg(originalkey_new);
+                qDebug().noquote().nospace() << debugmessage;
+#endif
+            }
         }
     }
     else if (col == MAPPING_KEY_COLUMN) {
@@ -20137,6 +20184,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[refreshKeyMappingDataTable]" << "mappingDataList Start >>>";
 #endif
+        QSignalBlocker blocker(mappingDataTable);
         int rowindex = 0;
         mappingDataTable->setRowCount(mappingDataList->size());
         for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
@@ -20456,6 +20504,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
     // Update the specific column
     switch (column) {
         case ORIGINAL_KEY_COLUMN: {
+            QSignalBlocker blocker(mappingDataTable);
             QString mapdata_note = keymapdata.Note;
             QString orikey_withnote;
             if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {

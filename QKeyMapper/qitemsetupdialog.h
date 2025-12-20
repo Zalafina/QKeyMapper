@@ -80,9 +80,11 @@ private:
     void refreshAllRelatedUI(void);
 
     // Unified update system helper methods
-    bool updateOriginalKey(QString &originalKey,const QString &mappingKey);
-    bool updateMappingKey(QString &mappingKey, const QString &originalKey);
-    bool updateMappingKeyKeyUp(QString &mappingKey, const QString &originalKey);
+public:
+    static bool updateOriginalKey(QString &originalKey,const QString &mappingKey, int rowindex);
+    static bool updateMappingKey(QString &mappingKey, const QString &originalKey, int rowindex);
+    static bool updateMappingKeyKeyUp(QString &mappingKey, const QString &originalKey, int rowindex);
+private:
     void updateAllMappingInfoFinally(const QString &originalKey, const QString &mappingKey, const QString &mappingKey_KeyUp);
 
 private:

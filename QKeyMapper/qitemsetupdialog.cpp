@@ -2646,15 +2646,15 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
         switch (priority) {
             case MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST:
                 // Validate original key without updating UI
-                success = updateOriginalKey(originalKeytoUpdate, mappingKeytoUpdate);
+                success = updateOriginalKey(originalKeytoUpdate, mappingKeytoUpdate, m_ItemRow);
                 break;
             case MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST:
                 // Validate mapping key without updating UI
-                success = updateMappingKey(mappingKeytoUpdate, originalKeytoUpdate);
+                success = updateMappingKey(mappingKeytoUpdate, originalKeytoUpdate, m_ItemRow);
                 break;
             case MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST:
                 // Validate mapping key key-up without updating UI
-                success = updateMappingKeyKeyUp(mappingKey_KeyUptoUpdate, originalKeytoUpdate);
+                success = updateMappingKeyKeyUp(mappingKey_KeyUptoUpdate, originalKeytoUpdate, m_ItemRow);
                 break;
             default:
                 continue; // Skip unknown priorities
@@ -2683,7 +2683,7 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
     }
 }
 
-bool QItemSetupDialog::updateOriginalKey(QString &originalKey, const QString &mappingKey)
+bool QItemSetupDialog::updateOriginalKey(QString &originalKey, const QString &mappingKey, int rowindex)
 {
     static QRegularExpression whitespace_reg(R"(\s+)");
     originalKey.remove(whitespace_reg);
@@ -2692,7 +2692,7 @@ bool QItemSetupDialog::updateOriginalKey(QString &originalKey, const QString &ma
     qDebug().nospace().noquote() << "[" << __func__ << "] OriginalKeyText remove whitespace -> " << originalKey;
 #endif
 
-    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalKey, m_ItemRow, mappingKey);
+    ValidationResult result = QKeyMapper::validateOriginalKeyString(originalKey, rowindex, mappingKey);
 
     QString popupMessage;
     QString popupMessageColor;
@@ -2708,7 +2708,7 @@ bool QItemSetupDialog::updateOriginalKey(QString &originalKey, const QString &ma
     }
 }
 
-bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &originalKey)
+bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &originalKey, int rowindex)
 {
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
@@ -2739,7 +2739,7 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
 #endif
 
     QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
-    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow, originalKey);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, rowindex, originalKey);
 
     QString popupMessage;
     QString popupMessageColor;
@@ -2755,7 +2755,7 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
     }
 }
 
-bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString &originalKey)
+bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString &originalKey, int rowindex)
 {
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
@@ -2791,7 +2791,7 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
     }
     else {
         QStringList mappingKeySeqList = splitMappingKeyString(mappingKey, SPLIT_WITH_NEXT);
-        result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, m_ItemRow, originalKey);
+        result = QKeyMapper::validateMappingKeyString(mappingKey, mappingKeySeqList, rowindex, originalKey);
     }
 
     QString popupMessage;

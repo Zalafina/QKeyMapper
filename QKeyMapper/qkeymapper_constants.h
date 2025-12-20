@@ -1145,6 +1145,10 @@ namespace QKeyMapperConstants {
     // Uses non-greedy matching for macro name to handle multiple occurrences
     inline constexpr const char REGEX_PATTERN_MACRO_FIND[] = R"((Universal)?Macro\([^)]+\)(?:x\d+)?)";
 
+    // Pattern for matching OriginalKey with note
+    inline constexpr const char REGEX_PATTERN_ORIGINALKEY_WITHNOTE[] = R"(^(.*?)(?:【(.*?)】)?$)";
+
+
     // Common edit control class names for searching
     inline constexpr const wchar_t* EDIT_CONTROL_CLASSNAMES[] = {
         L"Edit",            // Standard edit control
