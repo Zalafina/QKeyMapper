@@ -22319,15 +22319,22 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
 
     // Check if the double-clicked item is in the Category column
     if (columnindex == CATEGORY_COLUMN && m_KeyMappingDataTable) {
-        // If it's the category column and it's visible, allow inline editing
-        m_KeyMappingDataTable->editItem(item);
+        if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0
+            || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
+            showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
+        }
+        else {
+            // If it's the category column double-clicked, allow inline editing
+            m_KeyMappingDataTable->editItem(item);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[keyMappingTableItemDoubleClicked]" << "Category column double-clicked, entering edit mode";
+            qDebug() << "[keyMappingTableItemDoubleClicked]" << "Category column double-clicked, entering edit mode";
 #endif
+        }
     }
-    // Check if the double-clicked item is in the Category column
+    // Check if the double-clicked item is in the OriginalKey column or MappingKey column
     else if ((columnindex == ORIGINAL_KEY_COLUMN || columnindex == MAPPING_KEY_COLUMN) && m_KeyMappingDataTable) {
-        if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0) {
+        if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0
+            || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
             // If it's the originalkey or mappingkey column double-clicked with L-Ctrl key is pressed, open item setup dialog
             showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
         }
@@ -23680,6 +23687,136 @@ void QKeyMapper::selectedItemsMoveDown()
         qDebug("MoveDown:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
+}
+
+void QKeyMapper::highlightSelectUp()
+{
+    // Check if table is filtered
+    if (isMappingDataTableFiltered()) {
+        return;
+    }
+
+    // Get current selection ranges
+    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectUp] No selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+
+    // Check boundary - already at the top
+    if (topRow <= 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectUp] Already at the top, cannot select up";
+#endif
+        return;
+    }
+
+    // Clear current selection
+    m_KeyMappingDataTable->clearSelection();
+
+    // Select the row above
+    int newSelectedRow = topRow - 1;
+    QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+    m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected row visible
+    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelectedRow, 0);
+    if (itemToScrollTo) {
+        m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectUp] Selected row" << newSelectedRow;
+#endif
+}
+
+void QKeyMapper::highlightSelectDown()
+{
+    // Check if table is filtered
+    if (isMappingDataTableFiltered()) {
+        return;
+    }
+
+    // Get current selection ranges
+    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectDown] No selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int bottomRow = range.bottomRow();
+
+    // Check boundary - already at the bottom
+    if (bottomRow >= m_KeyMappingDataTable->rowCount() - 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectDown] Already at the bottom, cannot select down";
+#endif
+        return;
+    }
+
+    // Clear current selection
+    m_KeyMappingDataTable->clearSelection();
+
+    // Select the row below
+    int newSelectedRow = bottomRow + 1;
+    QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+    m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected row visible
+    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelectedRow, 0);
+    if (itemToScrollTo) {
+        m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectDown] Selected row" << newSelectedRow;
+#endif
+}
+
+void QKeyMapper::highlightSelectOpenItemSetup()
+{
+    // Get current selection ranges
+    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+
+    // Check if no selection or multiple selections
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectOpenItemSetup] No selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+
+    // Check if exactly one row is selected
+    if (topRow != bottomRow) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectOpenItemSetup] Multiple rows selected, topRow:" << topRow << ", bottomRow:" << bottomRow;
+#endif
+        return;
+    }
+
+    // Open item setup dialog for the selected row
+    int rowIndex = topRow;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectOpenItemSetup] Opening item setup dialog for row:" << rowIndex;
+#endif
+
+    showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowIndex);
 }
 
 void QKeyMapper::on_addTabButton_clicked()
@@ -26086,7 +26223,8 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
                 QKeyMapper::getInstance()->selectedItemsMoveUp();
             }
             else {
-
+                // TableWidget highlight select up
+                QKeyMapper::getInstance()->highlightSelectUp();
             }
             return;
         }
@@ -26095,8 +26233,14 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
                 QKeyMapper::getInstance()->selectedItemsMoveDown();
             }
             else {
-
+                // TableWidget highlight select down
+                QKeyMapper::getInstance()->highlightSelectDown();
             }
+            return;
+        }
+        else if (event->key() == Qt::Key_Return
+            || event->key() == Qt::Key_Enter) {
+            QKeyMapper::getInstance()->highlightSelectOpenItemSetup();
             return;
         }
         else if (event->key() == Qt::Key_Delete) {

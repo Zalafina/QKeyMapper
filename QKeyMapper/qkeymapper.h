@@ -1159,6 +1159,12 @@ public slots:
 
     void selectedItemsMoveDown();
 
+    void highlightSelectUp();
+
+    void highlightSelectDown();
+
+    void highlightSelectOpenItemSetup();
+
     void on_addTabButton_clicked();
 
     void on_deleteSelectedButton_clicked();
