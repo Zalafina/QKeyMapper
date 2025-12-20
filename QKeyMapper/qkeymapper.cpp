@@ -8989,6 +8989,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
     }
 #endif
 
+    QSignalBlocker blocker(m_KeyMappingDataTable);
     int row_count = QKeyMapper::KeyMappingDataList->size();
     if (row >= row_count || row < 0) {
 #ifdef DEBUG_LOGOUT_ON
@@ -9071,12 +9072,47 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         if (category != KeyMappingDataList->at(row).Category) {
             (*KeyMappingDataList)[row].Category = category;
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("[%s]: row(%d) category changed to (%s)", __func__, row, category.toLocal8Bit().constData());
+            QString debugmessage = QString("[%1] row(%2) category changed to \"%3\"").arg(__func__).arg(row).arg(category);
+            qDebug().noquote().nospace() << debugmessage;
 #endif
             // Update category filter ComboBox
             if (m_KeyMappingDataTable->isCategoryColumnVisible()) {
                 updateCategoryFilterComboBox();
             }
+        }
+    }
+    else if (col == ORIGINAL_KEY_COLUMN) {
+        QString originalkey_new = m_KeyMappingDataTable->item(row, col)->text();
+        QString originalkey = KeyMappingDataList->at(row).Original_Key;
+        QString mapdata_note = KeyMappingDataList->at(row).Note;
+        QString originalkey_withnote;
+        if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {
+            originalkey_withnote = QString(ORIKEY_WITHNOTE_FORMAT).arg(originalkey, mapdata_note);
+        }
+        else {
+            originalkey_withnote = originalkey;
+        }
+        if (originalkey_new != originalkey_withnote) {
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[%1] row(%2) originalkey changed to \"%3\"").arg(__func__).arg(row).arg(originalkey_new);
+            qDebug().noquote().nospace() << debugmessage;
+#endif
+
+            m_KeyMappingDataTable->item(row, col)->setText(originalkey_withnote);
+            // (*KeyMappingDataList)[row].Original_Key = originalkey;
+        }
+    }
+    else if (col == MAPPING_KEY_COLUMN) {
+        QString mappingkeys_str_new = m_KeyMappingDataTable->item(row, col)->text();
+        QString mappingkeys_str = KeyMappingDataList->at(row).Mapping_Keys.join(SEPARATOR_NEXTARROW);
+        if (mappingkeys_str_new != mappingkeys_str) {
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[%1] row(%2) mappingkey changed to \"%3\"").arg(__func__).arg(row).arg(mappingkeys_str_new);
+            qDebug().noquote().nospace() << debugmessage;
+#endif
+
+            m_KeyMappingDataTable->item(row, col)->setText(mappingkeys_str);
+            // (*KeyMappingDataList)[row].Mapping_Keys = mappingkey;
         }
     }
 }
@@ -20208,7 +20244,8 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             // }
             QTableWidgetItem *ori_TableItem = new QTableWidgetItem(orikey_withnote);
             ori_TableItem->setToolTip(orikey_withnote);
-            ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+            // OriginalKey column should be editable
+            ori_TableItem->setFlags(ori_TableItem->flags() | Qt::ItemIsEditable);
             if (keymapdata.PassThrough) {
                 ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
             }
@@ -20218,7 +20255,8 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
             QTableWidgetItem *mapping_TableItem = new QTableWidgetItem(mappingkeys_str);
             mapping_TableItem->setToolTip(mappingkeys_str);
-            mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+            // MappingKey column should be editable
+            mapping_TableItem->setFlags(mapping_TableItem->flags() | Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , mapping_TableItem);
 
             /* DISABLED_COLUMN */
@@ -20280,12 +20318,8 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             /* CATEGORY_COLUMN */
             QTableWidgetItem *categoryItem = new QTableWidgetItem(keymapdata.Category);
             categoryItem->setToolTip(keymapdata.Category);
-            // Category column should be editable when visible
-            if (mappingDataTable->isCategoryColumnVisible()) {
-                categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
-            } else {
-                categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
-            }
+            // Category column should be editable
+            categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, CATEGORY_COLUMN, categoryItem);
 
             rowindex += 1;
@@ -20438,7 +20472,8 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 // Reuse existing item
                 ori_TableItem->setText(orikey_withnote);
                 ori_TableItem->setToolTip(orikey_withnote);
-                ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+                // OriginalKey column should be editable
+                ori_TableItem->setFlags(ori_TableItem->flags() | Qt::ItemIsEditable);
                 if (keymapdata.PassThrough) {
                     ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
                 }
@@ -20450,7 +20485,8 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 // Create new item
                 ori_TableItem = new QTableWidgetItem(orikey_withnote);
                 ori_TableItem->setToolTip(orikey_withnote);
-                ori_TableItem->setFlags(ori_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+                // OriginalKey column should be editable
+                ori_TableItem->setFlags(ori_TableItem->flags() | Qt::ItemIsEditable);
                 if (keymapdata.PassThrough) {
                     ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
                 }
@@ -20465,13 +20501,15 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 // Reuse existing item
                 mapping_TableItem->setText(mappingkeys_str);
                 mapping_TableItem->setToolTip(mappingkeys_str);
-                mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+                // MappingKey column should be editable
+                mapping_TableItem->setFlags(mapping_TableItem->flags() | Qt::ItemIsEditable);
             }
             else {
                 // Create new item
                 mapping_TableItem = new QTableWidgetItem(mappingkeys_str);
                 mapping_TableItem->setToolTip(mappingkeys_str);
-                mapping_TableItem->setFlags(mapping_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
+                // MappingKey column should be editable
+                mapping_TableItem->setFlags(mapping_TableItem->flags() | Qt::ItemIsEditable);
                 mappingDataTable->setItem(row, MAPPING_KEY_COLUMN, mapping_TableItem);
             }
             break;
@@ -20558,23 +20596,15 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 // Reuse existing item
                 categoryItem->setText(keymapdata.Category);
                 categoryItem->setToolTip(keymapdata.Category);
-                // Category column should be editable when visible
-                if (mappingDataTable->isCategoryColumnVisible()) {
-                    categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
-                } else {
-                    categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
-                }
+                // Category column should be editable
+                categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
             }
             else {
                 // Create new item
                 categoryItem = new QTableWidgetItem(keymapdata.Category);
                 categoryItem->setToolTip(keymapdata.Category);
-                // Category column should be editable when visible
-                if (mappingDataTable->isCategoryColumnVisible()) {
-                    categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
-                } else {
-                    categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
-                }
+                // Category column should be editable
+                categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
                 mappingDataTable->setItem(row, CATEGORY_COLUMN, categoryItem);
             }
             break;
@@ -22239,11 +22269,22 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
 #endif
 
     // Check if the double-clicked item is in the Category column
-    if (columnindex == CATEGORY_COLUMN && m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()) {
+    if (columnindex == CATEGORY_COLUMN && m_KeyMappingDataTable) {
         // If it's the category column and it's visible, allow inline editing
         m_KeyMappingDataTable->editItem(item);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyMappingTableItemDoubleClicked]" << "Category column double-clicked, entering edit mode";
+#endif
+    }
+    // Check if the double-clicked item is in the Category column
+    else if ((columnindex == ORIGINAL_KEY_COLUMN || columnindex == MAPPING_KEY_COLUMN)
+        && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0
+        && m_KeyMappingDataTable) {
+        // If it's the originalkey or mappingkey column and L-Ctrl key is pressed, allow inline editing
+        m_KeyMappingDataTable->editItem(item);
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[keyMappingTableItemDoubleClicked] %1 column double-clicked with L-Ctrl pressed, entering edit mode").arg(columnindex == ORIGINAL_KEY_COLUMN ? "OriginalKey" : "MappingKey");
+        qDebug().noquote().nospace() << debugmessage;
 #endif
     }
     else if (columnindex == BURST_MODE_COLUMN
@@ -26173,7 +26214,7 @@ void KeyMappingDataTableWidget::setCategoryColumnVisible(bool visible)
         for (int row = 0; row < rowCount(); ++row) {
             QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
             if (categoryItem) {
-                categoryItem->setFlags(categoryItem->flags() & ~Qt::ItemIsEditable);
+                categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
             }
         }
     }
