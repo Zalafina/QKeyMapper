@@ -1655,6 +1655,20 @@ void QItemSetupDialog::initKeyListComboBoxes()
     }
     s_valiedMappingKeyList.append(QKeyMapper_Worker::SpecialOriginalKeysList);
 
+    s_valiedMappingKeyList.removeOne(SENDTEXT_STR);
+    s_valiedMappingKeyList.removeOne(PASTETEXT_STR);
+    s_valiedMappingKeyList.removeOne(RUN_STR);
+    s_valiedMappingKeyList.removeOne(SWITCHTAB_STR);
+    s_valiedMappingKeyList.removeOne(SWITCHTAB_SAVE_STR);
+    s_valiedMappingKeyList.removeOne(MACRO_STR);
+    s_valiedMappingKeyList.removeOne(UNIVERSAL_MACRO_STR);
+    s_valiedMappingKeyList.removeOne(REPEAT_STR);
+    s_valiedMappingKeyList.removeOne(UNLOCK_STR);
+    s_valiedMappingKeyList.removeOne(SETVOLUME_STR);
+    s_valiedMappingKeyList.removeOne(SETVOLUME_NOTIFY_STR);
+    s_valiedMappingKeyList.removeOne(SETMICVOLUME_STR);
+    s_valiedMappingKeyList.removeOne(SETMICVOLUME_NOTIFY_STR);
+
     s_valiedMappingKeyList.removeOne(MOUSE_L_WINDOWPOINT_STR);
     s_valiedMappingKeyList.removeOne(MOUSE_R_WINDOWPOINT_STR);
     s_valiedMappingKeyList.removeOne(MOUSE_M_WINDOWPOINT_STR);
