@@ -1333,6 +1333,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char JOY_GYRO2MOUSE_STR[] = "Joy-Gyro2Mouse";
 
     inline constexpr const char SENDON_MAPPINGSTART_STR[] = "SendOnMappingStart";
+    inline constexpr const char SENDON_MAPPINGSTOP_STR[] = "SendOnMappingStop";
     inline constexpr const char SENDON_SWITCHTAB_STR[]    = "SendOnSwitchTab";
 
     inline constexpr const char GYRO2MOUSE_PREFIX[] = "Gyro2Mouse-";

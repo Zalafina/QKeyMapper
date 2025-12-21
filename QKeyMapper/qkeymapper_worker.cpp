@@ -7107,6 +7107,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 
+    emitSendOnMappingStopKeys();
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc End.\033[0m");
 #endif
@@ -15643,6 +15645,7 @@ void QKeyMapper_Worker::initSpecialOriginalKeysList()
 
     SendOnOriginalKeysList = QStringList() \
             << SENDON_MAPPINGSTART_STR
+            << SENDON_MAPPINGSTOP_STR
             << SENDON_SWITCHTAB_STR
             ;
 }
@@ -16176,6 +16179,18 @@ void QKeyMapper_Worker::releasePressedRealKeysOfOriginalKeys(void)
 void QKeyMapper_Worker::emitSendOnMappingStartKeys()
 {
     int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(SENDON_MAPPINGSTART_STR);
+
+    if (findindex >= 0) {
+        QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
+        QString original_key = QKeyMapper::KeyMappingDataList->at(findindex).Original_Key;
+        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+    }
+}
+
+void QKeyMapper_Worker::emitSendOnMappingStopKeys()
+{
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(SENDON_MAPPINGSTOP_STR);
 
     if (findindex >= 0) {
         QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;

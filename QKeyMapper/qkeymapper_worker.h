@@ -1190,6 +1190,7 @@ private:
     void clearGlobalSendInputTaskControllerThreadPool(void);
     void releasePressedRealKeysOfOriginalKeys(void);
     void emitSendOnMappingStartKeys(void);
+    void emitSendOnMappingStopKeys(void);
     void emitSendOnSwitchTabKeys(void);
 
 public:

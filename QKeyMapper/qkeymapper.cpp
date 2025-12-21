@@ -7009,6 +7009,7 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
         || keymapdata.Original_Key == JOY_RS2MOUSE_STR
         || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
         || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
+        || keymapdata.Original_Key == SENDON_MAPPINGSTOP_STR
         || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
         disable_sendtiming = true;
     }
@@ -19414,6 +19415,7 @@ void QKeyMapper::initKeysCategoryMap()
     /* Original Common Keys */
     original_common_keylist = QStringList() \
         << SENDON_MAPPINGSTART_STR
+        << SENDON_MAPPINGSTOP_STR
         << SENDON_SWITCHTAB_STR
         ;
 
@@ -20205,6 +20207,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 || keymapdata.Original_Key == JOY_RS2MOUSE_STR
                 || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
                 || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
+                || keymapdata.Original_Key == SENDON_MAPPINGSTOP_STR
                 || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
                 disable_burst = true;
                 disable_lock = true;
@@ -20428,6 +20431,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         || keymapdata.Original_Key == JOY_RS2MOUSE_STR
         || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
         || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
+        || keymapdata.Original_Key == SENDON_MAPPINGSTOP_STR
         || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
         disable_burst = true;
         disable_lock = true;
