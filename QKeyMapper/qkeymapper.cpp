@@ -22317,32 +22317,37 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
     qDebug() << "[keyMappingTableItemDoubleClicked]" << "Row" << rowindex << "Column" << columnindex << "DoubleClicked";
 #endif
 
-    // Check if the double-clicked item is in the Category column
-    if (columnindex == CATEGORY_COLUMN && m_KeyMappingDataTable) {
-        if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0
-            || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
+    // Check if the double-clicked item is in the OriginalKey column or MappingKey column or Category column
+    if ((columnindex == ORIGINAL_KEY_COLUMN || columnindex == MAPPING_KEY_COLUMN || columnindex == CATEGORY_COLUMN)
+            && m_KeyMappingDataTable) {
+        if ((GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0 && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) == 0) {
+            // If it's the originalkey or mappingkey column or category column double-clicked by right button, open item setup dialog
             showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
-        }
-        else {
-            // If it's the category column double-clicked, allow inline editing
-            m_KeyMappingDataTable->editItem(item);
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[keyMappingTableItemDoubleClicked]" << "Category column double-clicked, entering edit mode";
+            QString debugmessage = QString("[keyMappingTableItemDoubleClicked] %1 column right-button double-clicked, opening setup dialog").arg(columnindex == ORIGINAL_KEY_COLUMN ? "OriginalKey"
+                                                                                                                                : columnindex == MAPPING_KEY_COLUMN ? "MappingKey"
+                                                                                                                                : "Category");
+            qDebug().noquote().nospace() << debugmessage;
 #endif
         }
-    }
-    // Check if the double-clicked item is in the OriginalKey column or MappingKey column
-    else if ((columnindex == ORIGINAL_KEY_COLUMN || columnindex == MAPPING_KEY_COLUMN) && m_KeyMappingDataTable) {
-        if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0
+        else if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0
             || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
-            // If it's the originalkey or mappingkey column double-clicked with L-Ctrl key is pressed, open item setup dialog
+            // If it's the originalkey or mappingkey column or category column double-clicked with Alt key pressed, open item setup dialog
             showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
+#ifdef DEBUG_LOGOUT_ON
+            QString debugmessage = QString("[keyMappingTableItemDoubleClicked] %1 column double-clicked with Alt pressed, opening setup dialog").arg(columnindex == ORIGINAL_KEY_COLUMN ? "OriginalKey"
+                                                                                                                                : columnindex == MAPPING_KEY_COLUMN ? "MappingKey"
+                                                                                                                                : "Category");
+            qDebug().noquote().nospace() << debugmessage;
+#endif
         }
         else {
-            // If it's the originalkey or mappingkey column double-clicked, allow inline editing
+            // If it's the originalkey or mappingkey column or category column double-clicked, allow inline editing
             m_KeyMappingDataTable->editItem(item);
 #ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("[keyMappingTableItemDoubleClicked] %1 column double-clicked, entering edit mode").arg(columnindex == ORIGINAL_KEY_COLUMN ? "OriginalKey" : "MappingKey");
+            QString debugmessage = QString("[keyMappingTableItemDoubleClicked] %1 column double-clicked, entering edit mode").arg(columnindex == ORIGINAL_KEY_COLUMN ? "OriginalKey"
+                                                                                                                                : columnindex == MAPPING_KEY_COLUMN ? "MappingKey"
+                                                                                                                                : "Category");
             qDebug().noquote().nospace() << debugmessage;
 #endif
         }
