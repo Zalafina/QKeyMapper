@@ -9087,13 +9087,11 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
             static QRegularExpression simplified_regex(R"([\r\n]+)");
             originalkey_new.replace(simplified_regex, " ");
-            originalkey_new = originalkey_new.trimmed();
             if (update_withnote) {
                 static QRegularExpression originalkeyPattern(REGEX_PATTERN_ORIGINALKEY_WITHNOTE);
                 QRegularExpressionMatch originalkeyMatch = originalkeyPattern.match(originalkey_new);
                 if (originalkeyMatch.hasMatch()) {
                     originalkey_new = originalkeyMatch.captured(1);
-                    originalkey_new = originalkey_new.trimmed();
                     note_new = originalkeyMatch.captured(2);
                 }
             }
@@ -9133,7 +9131,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         QString mappingkeys_str_new = m_KeyMappingDataTable->item(row, col)->text();
         QString mappingkeys_str = KeyMappingDataList->at(row).Mapping_Keys.join(SEPARATOR_NEXTARROW);
         if (mappingkeys_str_new != mappingkeys_str) {
-            bool isValid = QItemSetupDialog::updateOriginalKey(mappingkeys_str_new, originalkey, row);
+            bool isValid = QItemSetupDialog::updateMappingKey(mappingkeys_str_new, originalkey, row);
 
             if (isValid) {
                 QKeyMapper::updateKeyMappingDataListMappingKeys(row, mappingkeys_str_new);
