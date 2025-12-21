@@ -8972,29 +8972,6 @@ void QKeyMapper::onTrayIconMenuQuitAction()
 
 void QKeyMapper::cellChanged_slot(int row, int col)
 {
-#if 0
-    if ((col == BURST_MODE_COLUMN || col == LOCK_COLUMN)
-            && m_KeyMappingDataTable->item(row, col)->checkState() == Qt::Checked) {
-        if (KeyMappingDataList[row].Mapping_Keys.size() > 1) {
-            KeyMappingDataList[row].Burst = false;
-            KeyMappingDataList[row].Lock = false;
-            QTableWidgetItem *burstCheckBox = new QTableWidgetItem();
-            burstCheckBox->setCheckState(Qt::Unchecked);
-            m_KeyMappingDataTable->setItem(row, BURST_MODE_COLUMN    , burstCheckBox);
-            QTableWidgetItem *lockCheckBox = new QTableWidgetItem();
-            lockCheckBox->setCheckState(Qt::Unchecked);
-            m_KeyMappingDataTable->setItem(row, LOCK_COLUMN    , lockCheckBox);
-
-            QString message = "Key sequence with \"»\" do not support Burst or Lock mode!";
-            QMessageBox::warning(this, PROGRAM_NAME, tr(message.toStdString().c_str()));
-#ifdef DEBUG_LOGOUT_ON
-            qDebug("[%s]: row(%d) could not set burst or lock for key sequence(%d)", __func__, row, KeyMappingDataList[row].Mapping_Keys.size());
-#endif
-            return;
-        }
-    }
-#endif
-
     QSignalBlocker blocker(m_KeyMappingDataTable);
     int row_count = QKeyMapper::KeyMappingDataList->size();
     if (row >= row_count || row < 0) {
@@ -9127,6 +9104,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                     (*KeyMappingDataList)[row].Note = note_new;
                 }
                 updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, row, ORIGINAL_KEY_COLUMN);
+                closeItemSetupDialog();
 
 #ifdef DEBUG_LOGOUT_ON
                 if (note_new != mapdata_note && update_withnote) {
@@ -9150,17 +9128,32 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         }
     }
     else if (col == MAPPING_KEY_COLUMN) {
+        QString originalkey = KeyMappingDataList->at(row).Original_Key;
         QString mappingkeys_str_new = m_KeyMappingDataTable->item(row, col)->text();
         QString mappingkeys_str = KeyMappingDataList->at(row).Mapping_Keys.join(SEPARATOR_NEXTARROW);
         if (mappingkeys_str_new != mappingkeys_str) {
-#ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("[%1] row(%2) mappingkey changed to \"%3\"").arg(__func__).arg(row).arg(mappingkeys_str_new);
-            qDebug().noquote().nospace() << debugmessage;
-#endif
+            bool isValid = QItemSetupDialog::updateOriginalKey(mappingkeys_str_new, originalkey, row);
 
-            m_KeyMappingDataTable->item(row, col)->setText(mappingkeys_str);
-            // (*KeyMappingDataList)[row].Mapping_Keys = mappingkey;
+            if (isValid) {
+                QKeyMapper::updateKeyMappingDataListMappingKeys(row, mappingkeys_str_new);
+                updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, row, MAPPING_KEY_COLUMN);
+                closeItemSetupDialog();
+
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[%1] row(%2) MappingKey changed : \"%3\"").arg(__func__).arg(row).arg(mappingkeys_str_new);
+                qDebug().noquote().nospace() << debugmessage;
+#endif
+            }
+            else {
+                m_KeyMappingDataTable->item(row, col)->setText(mappingkeys_str);
+
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[%1] row(%2) Invalid MappingKey: \"%3\"").arg(__func__).arg(row).arg(mappingkeys_str_new);
+                qDebug().noquote().nospace() << debugmessage;
+#endif
+            }
         }
+
     }
 }
 
