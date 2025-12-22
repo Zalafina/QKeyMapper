@@ -4837,6 +4837,50 @@ void QKeyMapper::switchBurstAndLockState(int rowindex)
     }
 }
 
+void QKeyMapper::buildActiveKeyMappingDataList()
+{
+    // Clear previous active mapping data list when building new one
+    s_ActiveKeyMappingDataList.clear();
+
+    // Validate current tab index
+    if (s_KeyMappingTabWidgetCurrentIndex < 0 || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    // Get the current tab's KeyMappingData pointer
+    QList<MAP_KEYDATA> *currentTabKeyMappingData = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
+    if (currentTabKeyMappingData == Q_NULLPTR) {
+        return;
+    }
+
+    // Filter out disabled items and copy enabled items to active list
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*currentTabKeyMappingData)) {
+        if (!keymapdata.Disabled) {
+            s_ActiveKeyMappingDataList.append(keymapdata);
+        }
+    }
+
+    // Point KeyMappingDataList to the active list during mapping
+    KeyMappingDataList = &s_ActiveKeyMappingDataList;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[buildActiveKeyMappingDataList] Built active mapping list with" << s_ActiveKeyMappingDataList.size()
+             << "items from total" << currentTabKeyMappingData->size() << "items";
+#endif
+}
+
+void QKeyMapper::restoreKeyMappingDataListPointer()
+{
+    // Restore KeyMappingDataList to point to the original tab's KeyMappingData
+    if (0 <= s_KeyMappingTabWidgetCurrentIndex && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
+        KeyMappingDataList = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[restoreKeyMappingDataListPointer] Restored KeyMappingDataList pointer to tab" << s_KeyMappingTabWidgetCurrentIndex;
+#endif
+}
+
 #if 0
 void QKeyMapper::EnumProcessFunction(void)
 {
@@ -8083,50 +8127,6 @@ void QKeyMapper::switchKeyMappingTabIndex(int index)
         s_KeyMappingTabWidgetLastIndex = s_KeyMappingTabWidgetCurrentIndex;
         s_KeyMappingTabWidgetCurrentIndex = index;
     }
-}
-
-void QKeyMapper::buildActiveKeyMappingDataList()
-{
-    // Clear previous active mapping data list when building new one
-    s_ActiveKeyMappingDataList.clear();
-
-    // Validate current tab index
-    if (s_KeyMappingTabWidgetCurrentIndex < 0 || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()) {
-        return;
-    }
-
-    // Get the current tab's KeyMappingData pointer
-    QList<MAP_KEYDATA> *currentTabKeyMappingData = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
-    if (currentTabKeyMappingData == Q_NULLPTR) {
-        return;
-    }
-
-    // Filter out disabled items and copy enabled items to active list
-    for (const MAP_KEYDATA &keymapdata : std::as_const(*currentTabKeyMappingData)) {
-        if (!keymapdata.Disabled) {
-            s_ActiveKeyMappingDataList.append(keymapdata);
-        }
-    }
-
-    // Point KeyMappingDataList to the active list during mapping
-    KeyMappingDataList = &s_ActiveKeyMappingDataList;
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[buildActiveKeyMappingDataList] Built active mapping list with" << s_ActiveKeyMappingDataList.size()
-             << "items from total" << currentTabKeyMappingData->size() << "items";
-#endif
-}
-
-void QKeyMapper::restoreKeyMappingDataListPointer()
-{
-    // Restore KeyMappingDataList to point to the original tab's KeyMappingData
-    if (0 <= s_KeyMappingTabWidgetCurrentIndex && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
-        KeyMappingDataList = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[restoreKeyMappingDataListPointer] Restored KeyMappingDataList pointer to tab" << s_KeyMappingTabWidgetCurrentIndex;
-#endif
 }
 
 bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
@@ -18984,7 +18984,7 @@ bool QKeyMapper::showMessageBoxWithCheckbox(QWidget *parent, QString message, QS
     if (msgBox.exec() == QDialog::Accepted) {
         if (msgBox.isCheckBoxChecked()) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[showMessageBoxWithCheckbox]" << "Checkbox is checked ：" << message;
+            qDebug() << "[showMessageBoxWithCheckbox]" << "Checkbox is checked :" << message;
 #endif
             ischecked = true;
         }
@@ -19147,6 +19147,35 @@ bool QKeyMapper::isParamTextPlainTextEditHasFocus()
 void QKeyMapper::appendParamTextPlainTextEditText(const QString &text)
 {
     ui->sendTextPlainTextEdit->appendPlainText(text);
+}
+
+QString QKeyMapper::makeMappingKeyToolTip(const MAP_KEYDATA &keymapdata)
+{
+    QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+    QString mappingkeys_keyup_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
+    QString sendtiming_str;
+    if (SENDTIMING_KEYDOWN == keymapdata.SendTiming) {
+        sendtiming_str = tr("KeyDown");
+    }
+    else if (SENDTIMING_KEYUP == keymapdata.SendTiming) {
+        sendtiming_str = tr("KeyUp");
+    }
+    else if (SENDTIMING_KEYDOWN_AND_KEYUP == keymapdata.SendTiming) {
+        sendtiming_str = tr("KeyDown+KeyUp");
+    }
+    else if (SENDTIMING_NORMAL_AND_KEYUP == keymapdata.SendTiming) {
+        sendtiming_str = tr("Normal+KeyUp");
+    }
+    else {
+        sendtiming_str = tr("Normal");
+    }
+
+    // Combine with newline
+    QString mappingkey_tooltip = QString("%1 : %2\n%3 : %4\n%5 : %6").arg(tr("SendTiming"), sendtiming_str,
+                                                                          tr("MappingKey"), mappingkeys_str,
+                                                                          tr("KeyUpMapping"), mappingkeys_keyup_str);
+
+    return mappingkey_tooltip;
 }
 
 void QKeyMapper::initKeyMappingTabWidget(void)
@@ -20296,7 +20325,8 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             /* MAPPING_KEY_COLUMN */
             QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
             QTableWidgetItem *mapping_TableItem = new QTableWidgetItem(mappingkeys_str);
-            mapping_TableItem->setToolTip(mappingkeys_str);
+            QString mappingkey_tooltip = makeMappingKeyToolTip(keymapdata);
+            mapping_TableItem->setToolTip(mappingkey_tooltip);
             // MappingKey column should be editable
             mapping_TableItem->setFlags(mapping_TableItem->flags() | Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, MAPPING_KEY_COLUMN   , mapping_TableItem);
@@ -20404,6 +20434,8 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         return;
     }
 
+    QSignalBlocker blocker(mappingDataTable);
+
     const MAP_KEYDATA &keymapdata = mappingDataList->at(row);
 
     // Determine disable flags based on the same logic as refreshKeyMappingDataTable
@@ -20499,7 +20531,6 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
     // Update the specific column
     switch (column) {
         case ORIGINAL_KEY_COLUMN: {
-            QSignalBlocker blocker(mappingDataTable);
             QString mapdata_note = keymapdata.Note;
             QString orikey_withnote;
             if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {
@@ -20544,14 +20575,16 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
             if (mapping_TableItem) {
                 // Reuse existing item
                 mapping_TableItem->setText(mappingkeys_str);
-                mapping_TableItem->setToolTip(mappingkeys_str);
+                QString mappingkey_tooltip = makeMappingKeyToolTip(keymapdata);
+                mapping_TableItem->setToolTip(mappingkey_tooltip);
                 // MappingKey column should be editable
                 mapping_TableItem->setFlags(mapping_TableItem->flags() | Qt::ItemIsEditable);
             }
             else {
                 // Create new item
                 mapping_TableItem = new QTableWidgetItem(mappingkeys_str);
-                mapping_TableItem->setToolTip(mappingkeys_str);
+                QString mappingkey_tooltip = makeMappingKeyToolTip(keymapdata);
+                mapping_TableItem->setToolTip(mappingkey_tooltip);
                 // MappingKey column should be editable
                 mapping_TableItem->setFlags(mapping_TableItem->flags() | Qt::ItemIsEditable);
                 mappingDataTable->setItem(row, MAPPING_KEY_COLUMN, mapping_TableItem);
