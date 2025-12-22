@@ -9058,6 +9058,9 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         QString category = m_KeyMappingDataTable->item(row, col)->text();
         if (category != KeyMappingDataList->at(row).Category) {
             (*KeyMappingDataList)[row].Category = category;
+
+            updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, CATEGORY_COLUMN);
+
 #ifdef DEBUG_LOGOUT_ON
             QString debugmessage = QString("[%1] row(%2) category changed to \"%3\"").arg(__func__).arg(row).arg(category);
             qDebug().noquote().nospace() << debugmessage;
@@ -9105,7 +9108,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 if (note_new != mapdata_note && update_withnote) {
                     (*KeyMappingDataList)[row].Note = note_new;
                 }
-                updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, row, ORIGINAL_KEY_COLUMN);
+                updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, ORIGINAL_KEY_COLUMN);
                 closeItemSetupDialog();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -9138,7 +9141,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
             if (isValid) {
                 QKeyMapper::updateKeyMappingDataListMappingKeys(row, mappingkeys_str_new);
-                updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, row, MAPPING_KEY_COLUMN);
+                updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, MAPPING_KEY_COLUMN);
                 closeItemSetupDialog();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -20693,6 +20696,8 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
             // Invalid column, do nothing
             break;
     }
+
+    resizeKeyMappingDataTableColumnWidth(mappingDataTable);
 }
 
 void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
