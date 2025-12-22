@@ -1307,6 +1307,7 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
 
     int rowindex = item->row();
     int columnindex = item->column();
+    Q_UNUSED(columnindex);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[macroTableItemDoubleClicked]" << "Row" << rowindex << "Column" << columnindex << "DoubleClicked";
