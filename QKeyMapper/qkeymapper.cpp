@@ -24136,6 +24136,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     }
                     else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
                         if (currentMapKeyListText == SEPARATOR_WAITTIME
+                            || currentMapKeyListText == SEPARATOR_NEXTARROW
                             || currentMapKeyListText == PREFIX_SEND_DOWN
                             || currentMapKeyListText == PREFIX_SEND_UP
                             || currentMapKeyListText == PREFIX_SEND_BOTH
@@ -24149,6 +24150,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     else {
                         if (isCursorAtEnd) {
                             if (currentMapKeyListText == SEPARATOR_WAITTIME
+                                || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
                                 || currentMapKeyListText == PREFIX_SEND_BOTH
@@ -24161,6 +24163,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                         }
                         else {
                             if (currentMapKeyListText == SEPARATOR_WAITTIME
+                                || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
                                 || currentMapKeyListText == PREFIX_SEND_BOTH
@@ -24225,6 +24228,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     }
                     else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
                         if (currentMapKeyListText == SEPARATOR_WAITTIME
+                            || currentMapKeyListText == SEPARATOR_NEXTARROW
                             || currentMapKeyListText == PREFIX_SEND_DOWN
                             || currentMapKeyListText == PREFIX_SEND_UP
                             || currentMapKeyListText == PREFIX_SEND_BOTH
@@ -24238,6 +24242,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     else {
                         if (isCursorAtEnd) {
                             if (currentMapKeyListText == SEPARATOR_WAITTIME
+                                || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
                                 || currentMapKeyListText == PREFIX_SEND_BOTH
@@ -24250,6 +24255,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                         }
                         else {
                             if (currentMapKeyListText == SEPARATOR_WAITTIME
+                                || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
                                 || currentMapKeyListText == PREFIX_SEND_BOTH

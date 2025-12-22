@@ -299,6 +299,7 @@ void QItemSetupDialog::updateMappingKeyListComboBox()
     const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
     m_MappingKeyListComboBox->addItem(QString());
     m_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_WAITTIME);
+    m_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_NEXTARROW);
     m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_DOWN);
     m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_UP);
     m_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_BOTH);
