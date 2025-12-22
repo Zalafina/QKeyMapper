@@ -76,6 +76,10 @@ public:
 
     int remove(const Key &key);
 
+    bool replaceKey(const Key &oldKey, const Key &newKey);
+
+    bool replaceKeyAt(int index, const Key &newKey);
+
     int size() const;
 
     Value take(const Key &key);
@@ -444,6 +448,89 @@ int OrderedMap<Key, Value>::remove(const Key &key)
     insertOrder.erase(pair.second);
     data.erase(it);
     return 1;
+}
+
+/**
+ * @brief Replaces an existing key with a new key while preserving the value and order.
+ *
+ * This method efficiently replaces a key in the OrderedMap without rebuilding
+ * the entire container. The value associated with the old key is transferred
+ * to the new key, and the position in the insertion order is preserved.
+ *
+ * Time complexity: O(1) average case (hash operations)
+ *
+ * @param oldKey The existing key to be replaced
+ * @param newKey The new key to replace the old key with
+ * @return true if the replacement was successful, false if oldKey doesn't exist
+ *         or newKey already exists (and is different from oldKey)
+ */
+template<typename Key, typename Value>
+bool OrderedMap<Key, Value>::replaceKey(const Key &oldKey, const Key &newKey)
+{
+    // If keys are equal, nothing to do
+    if (oMHashEqualToKey(oldKey, newKey)) {
+        return true;
+    }
+
+    // Check if old key exists
+    OMHashIterator oldIt = data.find(oldKey);
+    if (oldIt == data.end()) {
+        return false;
+    }
+
+    // Check if new key already exists (would cause duplicate)
+    if (data.contains(newKey)) {
+        return false;
+    }
+
+    // Get the value and iterator from the old entry
+    OMHashValue pair = oldIt.value();
+    Value value = pair.first;
+    QllIterator listIt = pair.second;
+
+    // Update the key in insertOrder list (in-place modification)
+    *listIt = newKey;
+
+    // Remove old key from hash and insert new key with same value and iterator
+    data.erase(oldIt);
+    data.insert(newKey, OMHashValue(value, listIt));
+
+    return true;
+}
+
+/**
+ * @brief Replaces the key at a specific index with a new key while preserving the value.
+ *
+ * This method efficiently replaces a key at the given index position in the
+ * OrderedMap without rebuilding the entire container. The value is preserved
+ * and the position remains unchanged.
+ *
+ * Time complexity: O(n) for index lookup + O(1) for replacement
+ * Note: std::list does not support random access, so reaching the index requires
+ *       linear traversal. For frequent index-based operations, consider if 
+ *       replaceKey() with the actual key would be more efficient.
+ *
+ * @param index The zero-based index position of the key to replace
+ * @param newKey The new key to replace the old key with
+ * @return true if the replacement was successful, false if index is out of range
+ *         or newKey already exists
+ */
+template<typename Key, typename Value>
+bool OrderedMap<Key, Value>::replaceKeyAt(int index, const Key &newKey)
+{
+    // Validate index
+    if (index < 0 || index >= static_cast<int>(insertOrder.size())) {
+        return false;
+    }
+
+    // Get iterator to the position (O(n) traversal for std::list)
+    QllIterator listIt = insertOrder.begin();
+    std::advance(listIt, index);
+
+    Key oldKey = *listIt;
+
+    // Delegate to replaceKey for the actual replacement logic
+    return replaceKey(oldKey, newKey);
 }
 
 template<typename Key, typename Value>

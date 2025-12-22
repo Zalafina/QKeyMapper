@@ -1426,27 +1426,18 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
                     return;
                 }
                 else {
-                    // Change macroname(key) in the data list at the same index of OrderedMap
-                    // Get all keys in order
-                    QList<QString> keysList = macroDataList->keys();
+                    // Replace the key in OrderedMap while preserving value and order
+                    // Using the efficient replaceKey method (O(1) average complexity)
+                    bool success = macroDataList->replaceKey(macroName, newMacroName);
 
-                    // Get the value for the old key
-                    MappingMacroData macroData = macroDataList->value(macroName);
-
-                    // Update the key at the same index position
-                    keysList[row] = newMacroName;
-
-                    // Rebuild the OrderedMap with updated key
-                    OrderedMap<QString, MappingMacroData> newMacroList;
-                    for (const QString &key : std::as_const(keysList)) {
-                        if (key == newMacroName) {
-                            newMacroList[key] = macroData;
-                        }
-                        else {
-                            newMacroList[key] = macroDataList->value(key);
-                        }
+                    if (!success) {
+                        // This should not happen if validation above is correct
+                        macroDataTable->item(row, column)->setText(macroName);
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug() << "[macroTableCellChanged]" << "replaceKey failed for:" << macroName << "->" << newMacroName;
+#endif
+                        return;
                     }
-                    *macroDataList = newMacroList;
 
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[macroTableCellChanged]" << "Updated macro name from:" << macroName << "to:" << newMacroName << "at row:" << row;
