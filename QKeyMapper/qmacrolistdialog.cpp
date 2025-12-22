@@ -193,6 +193,12 @@ void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macro
     updateMacroCategoryFilterComboBox();
 }
 
+void QMacroListDialog::refreshAllMacroListTabWidget()
+{
+    refreshMacroListTabWidget(ui->macrolistTable, QKeyMapper::s_MappingMacroList);
+    refreshMacroListTabWidget(ui->universalmacrolistTable, QKeyMapper::s_UniversalMappingMacroList);
+}
+
 void QMacroListDialog::updateMappingKeyListComboBox()
 {
     KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->m_mapkeyComboBox;
@@ -391,6 +397,15 @@ void QMacroListDialog::mousePressEvent(QMouseEvent *event)
     }
 
     QDialog::mousePressEvent(event);
+}
+
+void QMacroListDialog::resizeEvent(QResizeEvent *event)
+{
+    // Call base class implementation first
+    QDialog::resizeEvent(event);
+
+    // Adjust table column widths to fit new window size
+    resizeMacroListTabWidgetColumnWidth();
 }
 
 void QMacroListDialog::on_addMacroButton_clicked()

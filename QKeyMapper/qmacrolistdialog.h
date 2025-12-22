@@ -73,6 +73,7 @@ public:
 
     void setUILanguage(int languageindex);
     void refreshMacroListTabWidget(MacroListDataTableWidget *macroDataTable, const OrderedMap<QString, MappingMacroData>& mappingMacroDataList);
+    void refreshAllMacroListTabWidget(void);
     void updateMappingKeyListComboBox(void);
 
     QPushButton* getMapListSelectKeyboardButton(void) const;
@@ -102,6 +103,8 @@ signals:
 protected:
     void showEvent(QShowEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+    // Override resizeEvent to adjust table column widths when window is resized
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
     void on_addMacroButton_clicked();

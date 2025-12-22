@@ -2223,7 +2223,7 @@ Update</source>
     <message>
         <location filename="../qkeymapper.cpp" line="8253"/>
         <source>_copy</source>
-        <translation>_复制</translation>
+        <translation>_副本</translation>
     </message>
     <message>
         <source>Invalid input format for WindowSwitchKey!</source>
