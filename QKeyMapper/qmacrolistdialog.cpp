@@ -1469,7 +1469,7 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
         }
     }
     else if (column == MACRO_CONTENT_COLUMN) {
-        QTableWidgetItem *macroContentItem = macroDataTable->item(row, MACRO_CATEGORY_COLUMN);
+        QTableWidgetItem *macroContentItem = macroDataTable->item(row, MACRO_CONTENT_COLUMN);
         if (!macroContentItem) {
             return;
         }
