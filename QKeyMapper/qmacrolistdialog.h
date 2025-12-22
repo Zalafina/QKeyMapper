@@ -136,6 +136,7 @@ private:
     void resizeMacroListTabWidgetColumnWidth(void);
     void resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable);
     void updateMacroDataTableConnection(MacroListDataTableWidget *macroDataTable);
+    void updateMacroListTableItem(MacroListDataTableWidget *macroDataTable, OrderedMap<QString, MappingMacroData> *macroDataList, int row, int column);
 
     // Helper methods to get current macro table and data list
     MacroListDataTableWidget* getCurrentMacroDataTable(void);

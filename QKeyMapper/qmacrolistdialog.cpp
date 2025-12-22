@@ -148,27 +148,21 @@ void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macro
             /* MACRO_NAME_COLUMN */
             QTableWidgetItem *name_TableItem = new QTableWidgetItem(macroName);
             name_TableItem->setToolTip(macroName);
-            name_TableItem->setFlags(name_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
             macroDataTable->setItem(rowindex, MACRO_NAME_COLUMN, name_TableItem);
 
             /* MACRO_CONTENT_COLUMN */
             QTableWidgetItem *content_TableItem = new QTableWidgetItem(macroData.MappingMacro);
             content_TableItem->setToolTip(macroData.MappingMacro);
-            content_TableItem->setFlags(content_TableItem->flags() & ~Qt::ItemIsEditable); // Make read-only
             macroDataTable->setItem(rowindex, MACRO_CONTENT_COLUMN, content_TableItem);
 
             /* MACRO_CATEGORY_COLUMN */
             QTableWidgetItem *category_TableItem = new QTableWidgetItem(macroData.Category);
             category_TableItem->setToolTip(macroData.Category);
-            // Category column is always editable (always visible)
-            category_TableItem->setFlags(category_TableItem->flags() | Qt::ItemIsEditable);
             macroDataTable->setItem(rowindex, MACRO_CATEGORY_COLUMN, category_TableItem);
 
             /* MACRO_NOTE_COLUMN */
             QTableWidgetItem *note_TableItem = new QTableWidgetItem(macroData.Note);
             note_TableItem->setToolTip(macroData.Note);
-            // Note column is always editable
-            note_TableItem->setFlags(note_TableItem->flags() | Qt::ItemIsEditable);
             macroDataTable->setItem(rowindex, MACRO_NOTE_COLUMN, note_TableItem);
 
             rowindex += 1;
@@ -1017,6 +1011,96 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
 #endif
 }
 
+void QMacroListDialog::updateMacroListTableItem(MacroListDataTableWidget *macroDataTable, OrderedMap<QString, MappingMacroData> *macroDataList, int row, int column)
+{
+    // Validate input parameters
+    if (!macroDataTable || !macroDataList) {
+        return;
+    }
+
+    if (row < 0 || row >= macroDataList->size() || row >= macroDataTable->rowCount()) {
+        return;
+    }
+
+    if (column < MACRO_NAME_COLUMN || column > MACRO_NOTE_COLUMN) {
+        return;
+    }
+
+    // Block signals to prevent triggering cellChanged during update
+    QSignalBlocker blocker(macroDataTable);
+
+    // Get the macro name and data at the specified row
+    QList<QString> macroNameList = macroDataList->keys();
+    QString macroName = macroNameList.at(row);
+    const MappingMacroData &macroData = macroDataList->value(macroName);
+
+    // Update the specific column
+    switch (column) {
+        case MACRO_NAME_COLUMN: {
+            QTableWidgetItem *nameItem = macroDataTable->item(row, MACRO_NAME_COLUMN);
+            if (nameItem) {
+                // Reuse existing item
+                nameItem->setText(macroName);
+                nameItem->setToolTip(macroName);
+            }
+            else {
+                // Create new item (should not happen in normal operation)
+                nameItem = new QTableWidgetItem(macroName);
+                nameItem->setToolTip(macroName);
+                macroDataTable->setItem(row, MACRO_NAME_COLUMN, nameItem);
+            }
+            break;
+        }
+        case MACRO_CONTENT_COLUMN: {
+            QTableWidgetItem *contentItem = macroDataTable->item(row, MACRO_CONTENT_COLUMN);
+            if (contentItem) {
+                // Reuse existing item
+                contentItem->setText(macroData.MappingMacro);
+                contentItem->setToolTip(macroData.MappingMacro);
+            }
+            else {
+                // Create new item (should not happen in normal operation)
+                contentItem = new QTableWidgetItem(macroData.MappingMacro);
+                contentItem->setToolTip(macroData.MappingMacro);
+                macroDataTable->setItem(row, MACRO_CONTENT_COLUMN, contentItem);
+            }
+            break;
+        }
+        case MACRO_CATEGORY_COLUMN: {
+            QTableWidgetItem *categoryItem = macroDataTable->item(row, MACRO_CATEGORY_COLUMN);
+            if (categoryItem) {
+                // Reuse existing item
+                categoryItem->setText(macroData.Category);
+                categoryItem->setToolTip(macroData.Category);
+            }
+            else {
+                // Create new item (should not happen in normal operation)
+                categoryItem = new QTableWidgetItem(macroData.Category);
+                categoryItem->setToolTip(macroData.Category);
+                macroDataTable->setItem(row, MACRO_CATEGORY_COLUMN, categoryItem);
+            }
+            break;
+        }
+        case MACRO_NOTE_COLUMN: {
+            QTableWidgetItem *noteItem = macroDataTable->item(row, MACRO_NOTE_COLUMN);
+            if (noteItem) {
+                // Reuse existing item
+                noteItem->setText(macroData.Note);
+                noteItem->setToolTip(macroData.Note);
+            }
+            else {
+                // Create new item (should not happen in normal operation)
+                noteItem = new QTableWidgetItem(macroData.Note);
+                noteItem->setToolTip(macroData.Note);
+                macroDataTable->setItem(row, MACRO_NOTE_COLUMN, noteItem);
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -1230,15 +1314,15 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
         return;
     }
 
-    // Check if the double-clicked item is in the Category or Note column
-    if (columnindex == MACRO_CATEGORY_COLUMN || columnindex == MACRO_NOTE_COLUMN) {
-        // If it's the category or note column, allow inline editing
-        macroDataTable->editItem(item);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[macroTableItemDoubleClicked]" << "Category/Note column double-clicked, entering edit mode";
-#endif
+    bool load_data = false;
+    if ((GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0 && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) == 0) {
+        load_data = true;
     }
-    else {
+    else if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
+        load_data = true;
+    }
+
+    if (load_data) {
         // For Name and Macro columns, load data to LineEdit controls
         QTableWidgetItem *nameItem = macroDataTable->item(rowindex, MACRO_NAME_COLUMN);
         QTableWidgetItem *contentItem = macroDataTable->item(rowindex, MACRO_CONTENT_COLUMN);
@@ -1261,6 +1345,12 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
         qDebug() << "[macroTableItemDoubleClicked]" << "Loaded macro data to LineEdit controls";
 #endif
     }
+    else {
+        macroDataTable->editItem(item);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[macroTableItemDoubleClicked]" << "Left button double-clicked, entering edit mode";
+#endif
+    }
 }
 
 void QMacroListDialog::macroListTabWidgetCurrentChanged(int index)
@@ -1271,8 +1361,8 @@ void QMacroListDialog::macroListTabWidgetCurrentChanged(int index)
 
 void QMacroListDialog::macroTableCellChanged(int row, int column)
 {
-    // Only handle category or note column changes
-    if (column != MACRO_CATEGORY_COLUMN && column != MACRO_NOTE_COLUMN) {
+    // Only handle valid column changes
+    if (column < MACRO_NAME_COLUMN || column > MACRO_NOTE_COLUMN) {
         return;
     }
 
@@ -1283,20 +1373,105 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
         return;
     }
 
-    QTableWidgetItem *nameItem = macroDataTable->item(row, MACRO_NAME_COLUMN);
+    int row_count = macroDataList->size();
 
+    if (row >= row_count || row < 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("\033[1;31m[%s]: row(%d) out of range, row_count(%d), col(%d)\033[0m", __func__, row, row_count, column);
+#endif
+        return;
+    }
+
+    QTableWidgetItem *nameItem = macroDataTable->item(row, MACRO_NAME_COLUMN);
     if (!nameItem) {
         return;
     }
 
-    QString macroName = nameItem->text();
-
-    if (!macroDataList->contains(macroName)) {
-        return;
-    }
+    QList<QString> macroNameList = macroDataList->keys();
+    QString macroName = macroNameList.at(row);
 
     static QRegularExpression simplified_regex(R"([\r\n]+)");
-    if (column == MACRO_CATEGORY_COLUMN) {
+    if (column == MACRO_NAME_COLUMN) {
+        QString newMacroName = nameItem->text();
+        if (newMacroName != macroName) {
+            newMacroName.replace(simplified_regex, " ");
+            newMacroName = newMacroName.trimmed();
+            if (newMacroName != macroName) {
+                QString popupMessage;
+                QString popupMessageColor;
+                int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+
+                if (newMacroName.isEmpty()) {
+                    macroDataTable->item(row, column)->setText(macroName);
+
+                    popupMessageColor = FAILURE_COLOR;
+                    popupMessage = tr("Macro name cannot be empty.");
+                    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+                    return;
+                }
+                else if (newMacroName.contains(')')) {
+                    macroDataTable->item(row, column)->setText(macroName);
+
+                    popupMessageColor = FAILURE_COLOR;
+                    popupMessage = tr("Macro name cannot contain ')' character.");
+                    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+                    return;
+                }
+                else if (macroNameList.contains(newMacroName)) {
+                    macroDataTable->item(row, column)->setText(macroName);
+
+                    popupMessageColor = FAILURE_COLOR;
+                    popupMessage = tr("Macro name \"%1\" already exists.").arg(newMacroName);
+                    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+                    return;
+                }
+                else {
+                    // Change macroname(key) in the data list at the same index of OrderedMap
+                    // Get all keys in order
+                    QList<QString> keysList = macroDataList->keys();
+
+                    // Get the value for the old key
+                    MappingMacroData macroData = macroDataList->value(macroName);
+
+                    // Update the key at the same index position
+                    keysList[row] = newMacroName;
+
+                    // Rebuild the OrderedMap with updated key
+                    OrderedMap<QString, MappingMacroData> newMacroList;
+                    for (const QString &key : std::as_const(keysList)) {
+                        if (key == newMacroName) {
+                            newMacroList[key] = macroData;
+                        }
+                        else {
+                            newMacroList[key] = macroDataList->value(key);
+                        }
+                    }
+                    *macroDataList = newMacroList;
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[macroTableCellChanged]" << "Updated macro name from:" << macroName << "to:" << newMacroName << "at row:" << row;
+#endif
+
+                    // Update MacroList Table display for the name column
+                    updateMacroListTableItem(macroDataTable, macroDataList, row, MACRO_NAME_COLUMN);
+
+                    // Show success message
+                    popupMessageColor = SUCCESS_COLOR;
+                    popupMessage = tr("Macro name updated from \"%1\" to \"%2\"").arg(macroName, newMacroName);
+                    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+                }
+            }
+            else {
+                macroDataTable->item(row, column)->setText(macroName);
+
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[QMacroListDialog::%1] row(%2) MacroName unchanged: \"%3\"").arg(__func__).arg(row).arg(newMacroName);
+                qDebug().noquote().nospace() << debugmessage;
+#endif
+            }
+        }
+    }
+    else if (column == MACRO_CATEGORY_COLUMN) {
         QTableWidgetItem *categoryItem = macroDataTable->item(row, MACRO_CATEGORY_COLUMN);
         if (!categoryItem) {
             return;
