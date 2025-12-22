@@ -1331,6 +1331,9 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
     }
 
     if (load_data) {
+        // Temporarily disable edit triggers
+        macroDataTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
         // For Name and Macro columns, load data to LineEdit controls
         QTableWidgetItem *nameItem = macroDataTable->item(rowindex, MACRO_NAME_COLUMN);
         QTableWidgetItem *contentItem = macroDataTable->item(rowindex, MACRO_CONTENT_COLUMN);
@@ -1350,14 +1353,9 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
             ui->macroNoteLineEdit->setText(noteItem->text());
         }
 
+        // Restore edit triggers after event processing
         QTimer::singleShot(0, this, [=]() {
-            QWidget *focused = QApplication::focusWidget();
-            if (focused && focused != this) {
-                focused->clearFocus();
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[QMacroListDialog::macroTableItemDoubleClicked]" << "Clear double-click Focus.";
-#endif
-            }
+            macroDataTable->setEditTriggers(QAbstractItemView::DoubleClicked);
         });
 
 #ifdef DEBUG_LOGOUT_ON
