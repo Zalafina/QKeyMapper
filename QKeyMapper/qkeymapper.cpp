@@ -22356,7 +22356,10 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
     // Check if the double-clicked item is in the OriginalKey column or MappingKey column or Category column
     if ((columnindex == ORIGINAL_KEY_COLUMN || columnindex == MAPPING_KEY_COLUMN || columnindex == CATEGORY_COLUMN)
             && m_KeyMappingDataTable) {
-        if ((GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0 && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) == 0) {
+        Qt::MouseButtons buttons = QApplication::mouseButtons();
+
+        // Check if right button is pressed (and left button is not)
+        if (buttons & Qt::RightButton && !(buttons & Qt::LeftButton)) {
             // If it's the originalkey or mappingkey column or category column double-clicked by right button, open item setup dialog
             showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
 #ifdef DEBUG_LOGOUT_ON
@@ -22366,8 +22369,8 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
             qDebug().noquote().nospace() << debugmessage;
 #endif
         }
-        else if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0
-            || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
+        // Check if Alt key is pressed
+        else if (QApplication::keyboardModifiers() & Qt::AltModifier) {
             // If it's the originalkey or mappingkey column or category column double-clicked with Alt key pressed, open item setup dialog
             showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
 #ifdef DEBUG_LOGOUT_ON

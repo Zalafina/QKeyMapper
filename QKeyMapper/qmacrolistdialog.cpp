@@ -1317,11 +1317,16 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
         return;
     }
 
+    Qt::MouseButtons buttons = QApplication::mouseButtons();
+    Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
+
     bool load_data = false;
-    if ((GetAsyncKeyState(VK_RBUTTON) & 0x8000) != 0 && (GetAsyncKeyState(VK_LBUTTON) & 0x8000) == 0) {
+    // Check if right button is pressed (and left button is not)
+    if (buttons & Qt::RightButton && !(buttons & Qt::LeftButton)) {
         load_data = true;
     }
-    else if ((GetAsyncKeyState(VK_LMENU) & 0x8000) != 0 || (GetAsyncKeyState(VK_RMENU) & 0x8000) != 0) {
+    // Check if Alt key is pressed
+    else if (modifiers & Qt::AltModifier) {
         load_data = true;
     }
 
@@ -1344,6 +1349,17 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
         if (noteItem) {
             ui->macroNoteLineEdit->setText(noteItem->text());
         }
+
+        QTimer::singleShot(0, this, [=]() {
+            QWidget *focused = QApplication::focusWidget();
+            if (focused && focused != this) {
+                focused->clearFocus();
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[QMacroListDialog::macroTableItemDoubleClicked]" << "Clear double-click Focus.";
+#endif
+            }
+        });
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[macroTableItemDoubleClicked]" << "Loaded macro data to LineEdit controls";
 #endif
