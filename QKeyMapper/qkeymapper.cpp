@@ -4564,6 +4564,7 @@ ValidationResult QKeyMapper::validateUnlockOriginalKeyString(const QString &orig
 
 ValidationResult QKeyMapper::validateMappingMacroString(QString &mappingMacro)
 {
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
@@ -4577,6 +4578,7 @@ ValidationResult QKeyMapper::validateMappingMacroString(QString &mappingMacro)
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
+    tempMappingKey.replace(simplified_regex, " ");
     // Remove whitespace from the temporary string (excluding Run and SendText content)
     tempMappingKey.remove(whitespace_reg);
 
@@ -8973,7 +8975,6 @@ void QKeyMapper::onTrayIconMenuQuitAction()
 
 void QKeyMapper::cellChanged_slot(int row, int col)
 {
-    QSignalBlocker blocker(m_KeyMappingDataTable);
     int row_count = QKeyMapper::KeyMappingDataList->size();
     if (row >= row_count || row < 0) {
 #ifdef DEBUG_LOGOUT_ON
@@ -8981,6 +8982,8 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 #endif
         return;
     }
+
+    QSignalBlocker blocker(m_KeyMappingDataTable);
 
     if (col == BURST_MODE_COLUMN) {
         bool burst = false;

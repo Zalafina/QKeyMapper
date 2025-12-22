@@ -136,6 +136,7 @@ void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macro
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[refreshMacroListTabWidget]" << "mappingMacroDataList Start >>>";
 #endif
+        QSignalBlocker blocker(macroDataTable);
         int rowindex = 0;
         macroDataTable->setRowCount(mappingMacroDataList.size());
 
@@ -1099,6 +1100,8 @@ void QMacroListDialog::updateMacroListTableItem(MacroListDataTableWidget *macroD
         default:
             break;
     }
+
+    resizeMacroListTableColumnWidth(macroDataTable);
 }
 
 void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
@@ -1387,6 +1390,9 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
         return;
     }
 
+    // Block signals to prevent triggering cellChanged during update
+    QSignalBlocker blocker(macroDataTable);
+
     QList<QString> macroNameList = macroDataList->keys();
     QString macroName = macroNameList.at(row);
 
@@ -1443,7 +1449,7 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
                     qDebug() << "[macroTableCellChanged]" << "Updated macro name from:" << macroName << "to:" << newMacroName << "at row:" << row;
 #endif
 
-                    // Update MacroList Table display for the name column
+                    // Update MacroList Table display for the macro name column
                     updateMacroListTableItem(macroDataTable, macroDataList, row, MACRO_NAME_COLUMN);
 
                     // Show success message
@@ -1462,6 +1468,42 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
             }
         }
     }
+    else if (column == MACRO_CONTENT_COLUMN) {
+        QTableWidgetItem *macroContentItem = macroDataTable->item(row, MACRO_CATEGORY_COLUMN);
+        if (!macroContentItem) {
+            return;
+        }
+        QString newMacroContent = macroContentItem->text();
+        QString macroContent = macroDataList->value(macroName).MappingMacro;
+        if (newMacroContent != macroContent) {
+            ValidationResult result = QKeyMapper::validateMappingMacroString(newMacroContent);
+            if (!result.isValid) {
+                QString popupMessage;
+                QString popupMessageColor;
+                int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+
+                macroDataTable->item(row, column)->setText(macroContent);
+
+                popupMessageColor = FAILURE_COLOR;
+                popupMessage = tr("Macro") + " -> " + result.errorMessage;
+                emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+                return;
+            }
+            else {
+                // Update the category in the data list
+                (*macroDataList)[macroName].MappingMacro = newMacroContent;
+
+                // Update MacroList Table display for the macro content column
+                updateMacroListTableItem(macroDataTable, macroDataList, row, MACRO_CONTENT_COLUMN);
+
+#ifdef DEBUG_LOGOUT_ON
+                QString debugmessage = QString("[QMacroListDialog::%1] row(%2) MacroContent changed : \"%3\"").arg(__func__).arg(row).arg(newMacroContent);
+                qDebug().noquote().nospace() << debugmessage;
+#endif
+            }
+
+        }
+    }
     else if (column == MACRO_CATEGORY_COLUMN) {
         QTableWidgetItem *categoryItem = macroDataTable->item(row, MACRO_CATEGORY_COLUMN);
         if (!categoryItem) {
@@ -1474,11 +1516,9 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
         // Update the category in the data list
         (*macroDataList)[macroName].Category = newCategory;
 
-        // Update the table cell to show the cleaned text
-        if (categoryItem->text() != newCategory) {
-            categoryItem->setText(newCategory);
-            categoryItem->setToolTip(newCategory);
-        }
+        // Update MacroList Table display for the macro category column
+        updateMacroListTableItem(macroDataTable, macroDataList, row, MACRO_CATEGORY_COLUMN);
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[macroTableCellChanged]" << "Updated category for macro:" << macroName << "to:" << newCategory;
 #endif
@@ -1497,11 +1537,9 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
         // Update the note in the data list
         (*macroDataList)[macroName].Note = newNote;
 
-        // Update the table cell to show the cleaned text
-        if (noteItem->text() != newNote) {
-            noteItem->setText(newNote);
-            noteItem->setToolTip(newNote);
-        }
+        // Update MacroList Table display for the macro note column
+        updateMacroListTableItem(macroDataTable, macroDataList, row, MACRO_NOTE_COLUMN);
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[macroTableCellChanged]" << "Updated note for macro:" << macroName << "to:" << newNote;
 #endif

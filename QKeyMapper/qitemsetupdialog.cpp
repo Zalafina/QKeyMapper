@@ -2700,7 +2700,9 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
 
 bool QItemSetupDialog::updateOriginalKey(QString &originalKey, const QString &mappingKey, int rowindex)
 {
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
     static QRegularExpression whitespace_reg(R"(\s+)");
+    originalKey.replace(simplified_regex, " ");
     originalKey.remove(whitespace_reg);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -2725,6 +2727,7 @@ bool QItemSetupDialog::updateOriginalKey(QString &originalKey, const QString &ma
 
 bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &originalKey, int rowindex)
 {
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
@@ -2738,6 +2741,7 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
+    tempMappingKey.replace(simplified_regex, " ");
     // Remove whitespace from the temporary string (excluding Run and SendText content)
     tempMappingKey.remove(whitespace_reg);
 
@@ -2772,6 +2776,7 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
 
 bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString &originalKey, int rowindex)
 {
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
@@ -2785,6 +2790,7 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 
+    tempMappingKey.replace(simplified_regex, " ");
     // Remove whitespace from the temporary string (excluding Run and SendText content)
     tempMappingKey.remove(whitespace_reg);
 
