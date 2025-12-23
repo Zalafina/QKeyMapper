@@ -22408,6 +22408,70 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
     qDebug() << "[keyMappingTableItemDoubleClicked]" << "Row" << rowindex << "Column" << columnindex << "DoubleClicked";
 #endif
 
+    if (!m_KeyMappingDataTable) {
+        return;
+    }
+
+    if (columnindex == BURST_MODE_COLUMN
+        || columnindex == LOCK_COLUMN
+        || columnindex == DISABLED_COLUMN) {
+        /* skip */
+        return;
+    }
+
+    int editmode = getEditModeIndex();
+    bool showitemsetup = true;
+    if (columnindex == ORIGINAL_KEY_COLUMN
+        || columnindex == MAPPING_KEY_COLUMN
+        || columnindex == CATEGORY_COLUMN) {
+        Qt::MouseButtons buttons = QApplication::mouseButtons();
+        Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
+
+        if (editmode == EDITMODE_LEFT_DOUBLECLICK) {
+            if (buttons & Qt::LeftButton && !(buttons & Qt::RightButton)) {
+                if (modifiers & Qt::AltModifier) {
+                    showitemsetup = true;
+                }
+                else {
+                    showitemsetup = false;
+                }
+            }
+        }
+        else {
+            if (buttons & Qt::RightButton && !(buttons & Qt::LeftButton)) {
+                showitemsetup = false;
+            }
+            else if (modifiers & Qt::AltModifier) {
+                showitemsetup = false;
+            }
+        }
+    }
+
+    if (showitemsetup) {
+        // Temporarily disable edit triggers
+        KeyMappingDataTableWidget *mappingDataTable = m_KeyMappingDataTable;
+        mappingDataTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+        showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
+
+        // Restore edit triggers after event processing
+        QTimer::singleShot(0, this, [=]() {
+            mappingDataTable->setEditTriggers(QAbstractItemView::DoubleClicked);
+        });
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[keyMappingTableItemDoubleClicked]" << "showItemSetupDialog";
+#endif
+    }
+    else {
+        m_KeyMappingDataTable->editItem(item);
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[keyMappingTableItemDoubleClicked]" << "Entering edit mode";
+#endif
+    }
+
+#if 0
     // Check if the double-clicked item is in the OriginalKey column or MappingKey column or Category column
     if ((columnindex == ORIGINAL_KEY_COLUMN || columnindex == MAPPING_KEY_COLUMN || columnindex == CATEGORY_COLUMN)
             && m_KeyMappingDataTable) {
@@ -22455,6 +22519,7 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
         // For all other columns, show the item setup dialog as before
         showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowindex);
     }
+#endif
 }
 
 void QKeyMapper::setupDialogClosed()

@@ -1321,14 +1321,25 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
     Qt::MouseButtons buttons = QApplication::mouseButtons();
     Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
 
-    bool load_data = false;
-    // Check if right button is pressed (and left button is not)
-    if (buttons & Qt::RightButton && !(buttons & Qt::LeftButton)) {
-        load_data = true;
+    int editmode = getEditModeIndex();
+    bool load_data = true;
+    if (editmode == EDITMODE_LEFT_DOUBLECLICK) {
+        if (buttons & Qt::LeftButton && !(buttons & Qt::RightButton)) {
+            if (modifiers & Qt::AltModifier) {
+                load_data = true;
+            }
+            else {
+                load_data = false;
+            }
+        }
     }
-    // Check if Alt key is pressed
-    else if (modifiers & Qt::AltModifier) {
-        load_data = true;
+    else {
+        if (buttons & Qt::RightButton && !(buttons & Qt::LeftButton)) {
+            load_data = false;
+        }
+        else if (modifiers & Qt::AltModifier) {
+            load_data = false;
+        }
     }
 
     if (load_data) {
@@ -1365,8 +1376,9 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
     }
     else {
         macroDataTable->editItem(item);
+
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[macroTableItemDoubleClicked]" << "Left button double-clicked, entering edit mode";
+        qDebug() << "[macroTableItemDoubleClicked]" << "Entering edit mode";
 #endif
     }
 }
