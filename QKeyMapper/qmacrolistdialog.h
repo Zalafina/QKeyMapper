@@ -96,6 +96,11 @@ public:
     void selectedMacroItemsMoveDown(void);
     void deleteMacroSelectedItems(void);
 
+    // Macro list highlight selection operations
+    void highlightSelectUp(void);
+    void highlightSelectDown(void);
+    void highlightSelectLoadData(void);
+
 signals:
     // Signal for drag and drop move operation
     void macroListTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);

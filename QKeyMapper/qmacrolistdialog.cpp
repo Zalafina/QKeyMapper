@@ -1113,18 +1113,36 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
     QMacroListDialog *macroListDialog = QMacroListDialog::getInstance();
     if (macroListDialog && QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
         if (event->key() == Qt::Key_Up) {
-            // Move selected items up
-            macroListDialog->selectedMacroItemsMoveUp();
+            if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                // Move selected items up when L-Ctrl is pressed
+                macroListDialog->selectedMacroItemsMoveUp();
+            }
+            else {
+                // TableWidget highlight select up
+                macroListDialog->highlightSelectUp();
+            }
             return;
         }
         else if (event->key() == Qt::Key_Down) {
-            // Move selected items down
-            macroListDialog->selectedMacroItemsMoveDown();
+            if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                // Move selected items down when L-Ctrl is pressed
+                macroListDialog->selectedMacroItemsMoveDown();
+            }
+            else {
+                // TableWidget highlight select down
+                macroListDialog->highlightSelectDown();
+            }
             return;
         }
         else if (event->key() == Qt::Key_Delete) {
             // Delete selected items
             macroListDialog->deleteMacroSelectedItems();
+            return;
+        }
+        else if (event->key() == Qt::Key_Return
+            || event->key() == Qt::Key_Enter) {
+            // Load selected macro data to editing fields when Enter/Return is pressed
+            macroListDialog->highlightSelectLoadData();
             return;
         }
     }
@@ -1650,6 +1668,172 @@ void QMacroListDialog::macroListTableDragDropMove(int top_row, int bottom_row, i
     }
 }
 
+void QMacroListDialog::highlightSelectUp()
+{
+    // Check if table is filtered
+    if (isMacroDataTableFiltered()) {
+        return;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+        return;
+    }
+
+    // Get current selection ranges
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectUp] No selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+
+    // Check boundary - already at the top
+    if (topRow <= 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectUp] Already at the top, cannot select up";
+#endif
+        return;
+    }
+
+    // Clear current selection
+    macroDataTable->clearSelection();
+
+    // Select the row above
+    int newSelectedRow = topRow - 1;
+    QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    macroDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected row visible
+    QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelectedRow, 0);
+    if (itemToScrollTo) {
+        macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectUp] Selected row" << newSelectedRow;
+#endif
+}
+
+void QMacroListDialog::highlightSelectDown()
+{
+    // Check if table is filtered
+    if (isMacroDataTableFiltered()) {
+        return;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+        return;
+    }
+
+    // Get current selection ranges
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectDown] No selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int bottomRow = range.bottomRow();
+
+    // Check boundary - already at the bottom
+    if (bottomRow >= macroDataTable->rowCount() - 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectDown] Already at the bottom, cannot select down";
+#endif
+        return;
+    }
+
+    // Clear current selection
+    macroDataTable->clearSelection();
+
+    // Select the row below
+    int newSelectedRow = bottomRow + 1;
+    QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    macroDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected row visible
+    QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelectedRow, 0);
+    if (itemToScrollTo) {
+        macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectDown] Selected row" << newSelectedRow;
+#endif
+}
+
+void QMacroListDialog::highlightSelectLoadData()
+{
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+        return;
+    }
+
+    // Get current selection ranges
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+
+    // Check if no selection
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectLoadData] No selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+
+    // Check if exactly one row is selected
+    if (topRow != bottomRow) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectLoadData] Multiple rows selected, topRow:" << topRow << ", bottomRow:" << bottomRow;
+#endif
+        return;
+    }
+
+    // Load macro data from the selected row to LineEdit controls
+    int rowindex = topRow;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectLoadData] Loading macro data from row:" << rowindex;
+#endif
+
+    // Get macro data from the selected row
+    QTableWidgetItem *nameItem = macroDataTable->item(rowindex, MACRO_NAME_COLUMN);
+    QTableWidgetItem *contentItem = macroDataTable->item(rowindex, MACRO_CONTENT_COLUMN);
+    QTableWidgetItem *categoryItem = macroDataTable->item(rowindex, MACRO_CATEGORY_COLUMN);
+    QTableWidgetItem *noteItem = macroDataTable->item(rowindex, MACRO_NOTE_COLUMN);
+
+    if (nameItem) {
+        ui->macroNameLineEdit->setText(nameItem->text());
+    }
+    if (contentItem) {
+        ui->macroContentLineEdit->setText(contentItem->text());
+    }
+    if (categoryItem) {
+        ui->categoryLineEdit->setText(categoryItem->text());
+    }
+    if (noteItem) {
+        ui->macroNoteLineEdit->setText(noteItem->text());
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectLoadData] Loaded macro data to LineEdit controls";
+#endif
+}
+
 void QMacroListDialog::selectedMacroItemsMoveUp()
 {
     if (isMacroDataTableFiltered()) {
@@ -1690,7 +1874,7 @@ void QMacroListDialog::selectedMacroItemsMoveUp()
     QList<QString> keysList = macroDataList->keys();
 
     bool move_to_top = false;
-    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+    if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0) {
         move_to_top = true;
         // Move the selected rows to the top (preserve order)
         QList<QString> movedKeys;
@@ -1796,7 +1980,7 @@ void QMacroListDialog::selectedMacroItemsMoveDown()
     QList<QString> keysList = macroDataList->keys();
 
     bool move_to_bottom = false;
-    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+    if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0) {
         move_to_bottom = true;
         // Move the selected rows to the bottom (preserve order)
         QList<QString> movedKeys;
