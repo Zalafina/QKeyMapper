@@ -1321,7 +1321,7 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
     Qt::MouseButtons buttons = QApplication::mouseButtons();
     Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
 
-    int editmode = getEditModeIndex();
+    int editmode = QKeyMapper::getEditModeIndex();
     bool load_data = true;
     if (editmode == EDITMODE_LEFT_DOUBLECLICK) {
         if (buttons & Qt::LeftButton && !(buttons & Qt::RightButton)) {
