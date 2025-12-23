@@ -5,6 +5,7 @@
 using namespace QKeyMapperConstants;
 
 QMacroListDialog *QMacroListDialog::m_instance = Q_NULLPTR;
+OrderedMap<QString, MappingMacroData> QMacroListDialog::s_CopiedMacroData;
 
 QMacroListDialog::QMacroListDialog(QWidget *parent)
     : QDialog(parent)
@@ -1145,6 +1146,29 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
             macroListDialog->highlightSelectLoadData();
             return;
         }
+        else if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {
+            // Copy selected macro data to clipboard
+            int copied_count = macroListDialog->copySelectedMacroDataToCopiedList();
+            if (copied_count > 0) {
+                QString message = tr("%1 selected macro(s) copied.").arg(copied_count);
+                QKeyMapper::getInstance()->showInformationPopup(message);
+                return;
+            }
+        }
+        else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
+            // Paste macro data from clipboard
+            int inserted_count = macroListDialog->insertMacroDataFromCopiedList();
+            int copied_count = QMacroListDialog::s_CopiedMacroData.size();
+            if (inserted_count == 0 && copied_count > 0) {
+                QString message = tr("%1 copied macro(s) could not be inserted!").arg(copied_count);
+                QKeyMapper::getInstance()->showFailurePopup(message);
+            }
+            else if (inserted_count > 0) {
+                QString message = tr("Inserted %1 macro(s) into current macro list.").arg(inserted_count);
+                QKeyMapper::getInstance()->showInformationPopup(message);
+            }
+            return;
+        }
     }
 
     QTabWidget::keyPressEvent(event);
@@ -1832,6 +1856,163 @@ void QMacroListDialog::highlightSelectLoadData()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[highlightSelectLoadData] Loaded macro data to LineEdit controls";
 #endif
+}
+
+int QMacroListDialog::copySelectedMacroDataToCopiedList()
+{
+    int copied_count = -1;
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+
+    if (!macroDataTable || !macroDataList) {
+        return copied_count;
+    }
+
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[copySelectedMacroDataToCopiedList] There is no selected item";
+#endif
+        return copied_count;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int top_row = range.topRow();
+    int bottom_row = range.bottomRow();
+
+    // Clear and populate the copied macro data
+    s_CopiedMacroData.clear();
+    QList<QString> macroNameList = macroDataList->keys();
+    for (int row = top_row; row <= bottom_row; ++row) {
+        if (row < macroNameList.size()) {
+            QString macroName = macroNameList.at(row);
+            s_CopiedMacroData[macroName] = macroDataList->value(macroName);
+        }
+    }
+    copied_count = s_CopiedMacroData.size();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[copySelectedMacroDataToCopiedList] Ctrl+C pressed, copy(" << copied_count << ") selected macro data to s_CopiedMacroData";
+#endif
+
+    return copied_count;
+}
+
+int QMacroListDialog::insertMacroDataFromCopiedList()
+{
+    int inserted_count = 0;
+
+    if (s_CopiedMacroData.isEmpty()) {
+        return inserted_count;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+
+    if (!macroDataTable || !macroDataList) {
+        return inserted_count;
+    }
+
+    // Build list of macro data to insert, handling duplicate names
+    OrderedMap<QString, MappingMacroData> insertMacroDataList;
+    for (auto it = s_CopiedMacroData.begin(); it != s_CopiedMacroData.end(); ++it) {
+        QString macroName = it.key();
+        MappingMacroData macroData = it.value();
+
+        // Check if macro name already exists
+        if (macroDataList->contains(macroName)) {
+            // Generate a unique name using "_copy" suffix
+            QString baseName = macroName + tr("_copy");
+            QString newName = baseName;
+
+            // If the base name with "_copy" also exists, try adding numbers
+            if (macroDataList->contains(newName) || insertMacroDataList.contains(newName)) {
+                bool uniqueNameFound = false;
+                for (int i = 1; i <= 999; ++i) {
+                    QString tempName = QString("%1%2").arg(baseName).arg(i, 3, 10, QChar('0'));
+                    if (!macroDataList->contains(tempName) && !insertMacroDataList.contains(tempName)) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace() << "[insertMacroDataFromCopiedList] MacroName:" << macroName << " already exists, generated unique name: " << tempName;
+#endif
+                        newName = tempName;
+                        uniqueNameFound = true;
+                        break;
+                    }
+                }
+                // If no unique name found after 999 attempts, skip this macro
+                if (!uniqueNameFound) {
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace() << "[insertMacroDataFromCopiedList] Cannot find unique name for MacroName:" << macroName << ", skipping";
+#endif
+                    continue;
+                }
+            }
+#ifdef DEBUG_LOGOUT_ON
+            else {
+                qDebug().nospace() << "[insertMacroDataFromCopiedList] MacroName:" << macroName << " already exists, using new name: " << newName;
+            }
+#endif
+            macroName = newName;
+        }
+
+        // Also check if the new name already exists in our insert list
+        if (insertMacroDataList.contains(macroName)) {
+            QString baseName = macroName + tr("_copy");
+            QString newName = baseName;
+            if (insertMacroDataList.contains(newName)) {
+                bool uniqueNameFound = false;
+                for (int i = 1; i <= 999; ++i) {
+                    QString tempName = QString("%1(%2)").arg(baseName).arg(i, 3, 10, QChar('0'));
+                    if (!macroDataList->contains(tempName) && !insertMacroDataList.contains(tempName)) {
+                        newName = tempName;
+                        uniqueNameFound = true;
+                        break;
+                    }
+                }
+                if (!uniqueNameFound) {
+                    continue;
+                }
+            }
+            macroName = newName;
+        }
+
+        insertMacroDataList[macroName] = macroData;
+    }
+
+    inserted_count = insertMacroDataList.size();
+    if (insertMacroDataList.isEmpty()) {
+        return inserted_count;
+    }
+
+    // Insert all macro data to the end of the current list
+    for (auto it = insertMacroDataList.begin(); it != insertMacroDataList.end(); ++it) {
+        (*macroDataList)[it.key()] = it.value();
+    }
+
+    // Refresh table display
+    refreshMacroListTabWidget(macroDataTable, *macroDataList);
+
+    // Reselect inserted rows at the end
+    if (inserted_count > 0) {
+        int startRow = macroDataTable->rowCount() - inserted_count;
+        int endRow = macroDataTable->rowCount() - 1;
+        QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(startRow, 0, endRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+        macroDataTable->clearSelection();
+        macroDataTable->setRangeSelected(newSelection, true);
+        // Scroll to make the inserted items visible
+        QTableWidgetItem *itemToScrollTo = macroDataTable->item(startRow, 0);
+        if (itemToScrollTo) {
+            macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[insertMacroDataFromCopiedList] Ctrl+V pressed, inserted (" << inserted_count << ") macros to the end of current macro list";
+#endif
+
+    return inserted_count;
 }
 
 void QMacroListDialog::selectedMacroItemsMoveUp()

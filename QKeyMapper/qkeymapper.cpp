@@ -8265,7 +8265,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     if (isTabTextDuplicate(tabName)) {
         bool uniqueNameFound = false;
         for (int i = 1; i <= 999; ++i) {
-            QString tempName = QString("%1(%2)").arg(tabName).arg(i, 3, 10, QChar('0'));
+            QString tempName = QString("%1%2").arg(tabName).arg(i, 3, 10, QChar('0'));
             if (!isTabTextDuplicate(tempName)) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace() << "[addTabToKeyMappingTabWidget] TabName:" << tabName << " is already exists, set a unique tabname:" << tempName;

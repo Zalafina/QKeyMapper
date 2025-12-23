@@ -101,6 +101,13 @@ public:
     void highlightSelectDown(void);
     void highlightSelectLoadData(void);
 
+    // Macro list copy/paste operations
+    int copySelectedMacroDataToCopiedList(void);
+    int insertMacroDataFromCopiedList(void);
+
+public:
+    static OrderedMap<QString, MappingMacroData> s_CopiedMacroData;
+
 signals:
     // Signal for drag and drop move operation
     void macroListTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
