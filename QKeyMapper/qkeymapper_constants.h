@@ -115,6 +115,9 @@ namespace QKeyMapperConstants {
     inline constexpr int LANGUAGE_ENGLISH = 1;
     inline constexpr int LANGUAGE_JAPANESE = 2;
 
+    inline constexpr int EDITMODE_RIGHT_DOUBLECLICK = 0;
+    inline constexpr int EDITMODE_LEFT_DOUBLECLICK = 1;
+
     inline constexpr int UI_THEME_SYSTEMDEFAULT = 0;
     inline constexpr int UI_THEME_LIGHT         = 1;
     inline constexpr int UI_THEME_DARK          = 2;
@@ -841,6 +844,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char PROGRAM_VERSION[] = "ProgramVersion";
     inline constexpr const char PROGRAM_PLATFORM[] = "ProgramPlatform";
     inline constexpr const char LANGUAGE_INDEX[] = "LanguageIndex";
+    inline constexpr const char EDITMODE_TRIGGER[] = "EditModeTrigger";
     inline constexpr const char SHOW_PROCESSLIST[] = "ShowProcessList";
     inline constexpr const char SHOW_NOTES[] = "ShowNotes";
     inline constexpr const char SHOW_CATEGORYS[] = "ShowCategorys";
@@ -1309,7 +1313,6 @@ namespace QKeyMapperConstants {
     inline constexpr const char VJOY_MOUSE2RS_STR[] = "vJoy-Mouse2RS";
     inline constexpr const char MOUSE2VJOY_PREFIX[] = "Mouse2vJoy-";
     inline constexpr const char MOUSE2VJOY_HOLD_KEY_STR[] = "Mouse2vJoy-Hold";
-    inline constexpr const char MOUSE2VJOY_DIRECT_KEY_STR_DEPRECATED[] = "Mouse2vJoy-Direct";
 
     inline constexpr const char VJOY_LT_BRAKE_STR[] = "vJoy-Key11(LT)_BRAKE";
     inline constexpr const char VJOY_RT_BRAKE_STR[] = "vJoy-Key12(RT)_BRAKE";

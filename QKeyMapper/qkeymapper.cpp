@@ -520,6 +520,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->themeComboBox->setCurrentIndex(UI_THEME_SYSTEMDEFAULT);
     ui->themeComboBox->blockSignals(false);
 
+    QStringList editmode_list = QStringList() \
+            << tr("R-DoubleClick")
+            << tr("L-DoubleClick")
+            ;
+    ui->editModeComboBox->addItems(editmode_list);
+    ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+
     // m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEY_DEFAULT);
     // m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEY_DEFAULT);
     // m_originalKeySeqEdit->setDefaultKeySequence(ORIGINAL_KEYSEQ_DEFAULT);
@@ -4324,13 +4331,8 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             qDebug().nospace() << "[validateSingleMappingKey]" << "Prefix(" << prefix << "), Time(" << waittime << ") -> " << mapkey;
         }
 #endif
-        bool deprecated_compatible = false;
-        if (QKeyMapper::getInstance()->loadSetting_flag && mapping_key == MOUSE2VJOY_DIRECT_KEY_STR_DEPRECATED) {
-            deprecated_compatible = true;
-        }
 
-        if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)
-            && !deprecated_compatible) {
+        if (!QItemSetupDialog::s_valiedMappingKeyList.contains(mapping_key)) {
             static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
             static QRegularExpression joy2vjoy_mapkey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-3]))?$)");
             static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2|Move)(:W)?(:BG)?\((-?\d+),(-?\d+)\)$)");
@@ -5599,6 +5601,11 @@ bool QKeyMapper::getStartupMinimizedStatus()
 int QKeyMapper::getLanguageIndex()
 {
     return getInstance()->ui->languageComboBox->currentIndex();
+}
+
+int QKeyMapper::getEditModeIndex()
+{
+    return getInstance()->ui->editModeComboBox->currentIndex();
 }
 
 int QKeyMapper::getCurrentSettingSelectIndex()
@@ -10414,6 +10421,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     settingFile.setValue(DISPLAY_SCALE , ui->scaleComboBox->currentIndex());
     settingFile.setValue(THEME_COLOR , ui->themeComboBox->currentIndex());
+    settingFile.setValue(EDITMODE_TRIGGER, ui->editModeComboBox->currentIndex());
 
     QColor notification_fontcolor;
     QString notification_fontcolor_name;
@@ -11721,6 +11729,22 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         ui->themeComboBox->blockSignals(false);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Theme Color ->" << ui->themeComboBox->currentText();
+#endif
+
+        if (true == settingFile.contains(EDITMODE_TRIGGER)){
+            int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
+            if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
+                ui->editModeComboBox->setCurrentIndex(editmode_trigger);
+            }
+            else {
+                ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+            }
+        }
+        else {
+            ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "EditMode Trigger ->" << ui->editModeComboBox->currentText();
 #endif
 
 #if 0
@@ -14943,7 +14967,7 @@ void QKeyMapper::loadGeneralSetting()
         m_StartupPositionDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Startup Position ->" << m_StartupPositionDialog->getStartupPosition();
+    qDebug() << "[loadGeneralSetting]" << "Startup Position ->" << m_StartupPositionDialog->getStartupPosition();
 #endif
     if (true == settingFile.contains(STARTUP_POSITION_SPECIFYPOINT)){
         QPoint startup_specify_position = settingFile.value(STARTUP_POSITION_SPECIFYPOINT).toPoint();
@@ -14961,7 +14985,7 @@ void QKeyMapper::loadGeneralSetting()
         m_StartupPositionDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Startup Position SpecifyPoint ->" << m_StartupPositionDialog->getSpecifyStartupPosition();
+    qDebug() << "[loadGeneralSetting]" << "Startup Position SpecifyPoint ->" << m_StartupPositionDialog->getSpecifyStartupPosition();
 #endif
 
     // if (settingtext.isEmpty()) {
@@ -15003,13 +15027,13 @@ void QKeyMapper::loadGeneralSetting()
             ui->processListButton->setChecked(true);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Show ProcessList Button ->" << showProcessList;
+        qDebug() << "[loadGeneralSetting]" << "Show ProcessList Button ->" << showProcessList;
 #endif
     }
     else {
         ui->processListButton->setChecked(true);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowProcessList, Show ProcessList Button set to Checked.";
+        qDebug() << "[loadGeneralSetting]" << "Do not contains ShowProcessList, Show ProcessList Button set to Checked.";
 #endif
     }
 
@@ -15022,13 +15046,13 @@ void QKeyMapper::loadGeneralSetting()
             ui->showNotesButton->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Show Notes Button ->" << showNotes;
+        qDebug() << "[loadGeneralSetting]" << "Show Notes Button ->" << showNotes;
 #endif
     }
     else {
         ui->showNotesButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
+        qDebug() << "[loadGeneralSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
 #endif
     }
 
@@ -15041,13 +15065,13 @@ void QKeyMapper::loadGeneralSetting()
             ui->showCategoryButton->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Show Categorys Button ->" << showCategorys;
+        qDebug() << "[loadGeneralSetting]" << "Show Categorys Button ->" << showCategorys;
 #endif
     }
     else {
         ui->showCategoryButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowCategorys, Show Categorys Button set to Unchecked.";
+        qDebug() << "[loadGeneralSetting]" << "Do not contains ShowCategorys, Show Categorys Button set to Unchecked.";
 #endif
     }
 
@@ -15095,7 +15119,7 @@ void QKeyMapper::loadGeneralSetting()
     updateWindowSwitchKeyString(loadedwindowswitchKeySeqStr);
     ui->windowswitchkeyLineEdit->setText(s_WindowSwitchKeyString);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Load & Set Window Switch Key ->" << s_WindowSwitchKeyString;
+    qDebug() << "[loadGeneralSetting]" << "Load & Set Window Switch Key ->" << s_WindowSwitchKeyString;
 #endif
 
     if (true == settingFile.contains(PLAY_SOUNDEFFECT)){
@@ -15107,13 +15131,13 @@ void QKeyMapper::loadGeneralSetting()
             ui->soundEffectCheckBox->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Sound Effect Checkbox ->" << soundeffectChecked;
+        qDebug() << "[loadGeneralSetting]" << "Sound Effect Checkbox ->" << soundeffectChecked;
 #endif
     }
     else {
         ui->soundEffectCheckBox->setChecked(true);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains PlaySoundEffect, PlaySoundEffect set to Checked.";
+        qDebug() << "[loadGeneralSetting]" << "Do not contains PlaySoundEffect, PlaySoundEffect set to Checked.";
 #endif
     }
 
@@ -15130,7 +15154,7 @@ void QKeyMapper::loadGeneralSetting()
         ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Position ->" << ui->notificationComboBox->currentText();
+    qDebug() << "[loadGeneralSetting]" << "Notification Position ->" << ui->notificationComboBox->currentText();
 #endif
 
     if (true == settingFile.contains(DISPLAY_SCALE)){
@@ -15146,7 +15170,7 @@ void QKeyMapper::loadGeneralSetting()
         ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Display Scale ->" << ui->scaleComboBox->currentText();
+    qDebug() << "[loadGeneralSetting]" << "Display Scale ->" << ui->scaleComboBox->currentText();
 #endif
 
     ui->themeComboBox->blockSignals(true);
@@ -15164,7 +15188,23 @@ void QKeyMapper::loadGeneralSetting()
     }
     ui->themeComboBox->blockSignals(false);
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Theme Color ->" << ui->themeComboBox->currentText();
+    qDebug() << "[loadGeneralSetting]" << "Theme Color ->" << ui->themeComboBox->currentText();
+#endif
+
+    if (true == settingFile.contains(EDITMODE_TRIGGER)){
+        int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
+        if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
+            ui->editModeComboBox->setCurrentIndex(editmode_trigger);
+        }
+        else {
+            ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+        }
+    }
+    else {
+        ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadGeneralSetting]" << "EditMode Trigger ->" << ui->editModeComboBox->currentText();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_FONTCOLOR)){
@@ -15181,7 +15221,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_FontColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Font Color ->" << m_NotificationSetupDialog->getNotification_FontColor().name();
+    qDebug() << "[loadGeneralSetting]" << "Notification Font Color ->" << m_NotificationSetupDialog->getNotification_FontColor().name();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_BACKGROUNDCOLOR)){
@@ -15199,7 +15239,7 @@ void QKeyMapper::loadGeneralSetting()
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote()
-        << "[loadKeyMapSetting] Notification Background Color -> " << m_NotificationSetupDialog->getNotification_BackgroundColor().name(QColor::HexArgb)
+        << "[loadGeneralSetting] Notification Background Color -> " << m_NotificationSetupDialog->getNotification_BackgroundColor().name(QColor::HexArgb)
         << ", Alpha: " << m_NotificationSetupDialog->getNotification_BackgroundColor().alpha();
 #endif
 
@@ -15216,7 +15256,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_FontSize(NOTIFICATION_FONT_SIZE_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Font Size ->" << m_NotificationSetupDialog->getNotification_FontSize();
+    qDebug() << "[loadGeneralSetting]" << "Notification Font Size ->" << m_NotificationSetupDialog->getNotification_FontSize();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_FONTWEIGHT)){
@@ -15232,7 +15272,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_FontWeight(NOTIFICATION_FONT_WEIGHT_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Font Weight ->" << m_NotificationSetupDialog->getNotification_FontWeight();
+    qDebug() << "[loadGeneralSetting]" << "Notification Font Weight ->" << m_NotificationSetupDialog->getNotification_FontWeight();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_FONTITALIC)){
@@ -15243,7 +15283,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_FontIsItalic(NOTIFICATION_FONT_ITALIC_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Font Italic Checkbox ->" << m_NotificationSetupDialog->getNotification_FontIsItalic();
+    qDebug() << "[loadGeneralSetting]" << "Notification Font Italic Checkbox ->" << m_NotificationSetupDialog->getNotification_FontIsItalic();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_DISPLAYDURATION)){
@@ -15259,7 +15299,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_DisplayDuration(NOTIFICATION_DISPLAY_DURATION_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Display Duration ->" << m_NotificationSetupDialog->getNotification_DisplayDuration();
+    qDebug() << "[loadGeneralSetting]" << "Notification Display Duration ->" << m_NotificationSetupDialog->getNotification_DisplayDuration();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_FADEINDURATION)){
@@ -15275,7 +15315,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_FadeInDuration(NOTIFICATION_FADEIN_DURATION_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification FadeIn Duration ->" << m_NotificationSetupDialog->getNotification_FadeInDuration();
+    qDebug() << "[loadGeneralSetting]" << "Notification FadeIn Duration ->" << m_NotificationSetupDialog->getNotification_FadeInDuration();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_FADEOUTDURATION)){
@@ -15291,7 +15331,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_FadeOutDuration(NOTIFICATION_FADEOUT_DURATION_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification FadeOut Duration ->" << m_NotificationSetupDialog->getNotification_FadeOutDuration();
+    qDebug() << "[loadGeneralSetting]" << "Notification FadeOut Duration ->" << m_NotificationSetupDialog->getNotification_FadeOutDuration();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_BORDERRADIUS)){
@@ -15307,7 +15347,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_BorderRadius(NOTIFICATION_BORDER_RADIUS_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Border Radius ->" << m_NotificationSetupDialog->getNotification_BorderRadius();
+    qDebug() << "[loadGeneralSetting]" << "Notification Border Radius ->" << m_NotificationSetupDialog->getNotification_BorderRadius();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_PADDING)){
@@ -15323,7 +15363,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_Padding(NOTIFICATION_PADDING_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Padding ->" << m_NotificationSetupDialog->getNotification_Padding();
+    qDebug() << "[loadGeneralSetting]" << "Notification Padding ->" << m_NotificationSetupDialog->getNotification_Padding();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_OPACITY)){
@@ -15339,7 +15379,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_Opacity(NOTIFICATION_OPACITY_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Opacity ->" << m_NotificationSetupDialog->getNotification_Opacity();
+    qDebug() << "[loadGeneralSetting]" << "Notification Opacity ->" << m_NotificationSetupDialog->getNotification_Opacity();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_X_OFFSET)){
@@ -15355,7 +15395,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_X_Offset(NOTIFICATION_X_OFFSET_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification X Offset ->" << m_NotificationSetupDialog->getNotification_X_Offset();
+    qDebug() << "[loadGeneralSetting]" << "Notification X Offset ->" << m_NotificationSetupDialog->getNotification_X_Offset();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_Y_OFFSET)){
@@ -15371,7 +15411,7 @@ void QKeyMapper::loadGeneralSetting()
         m_NotificationSetupDialog->setNotification_Y_Offset(NOTIFICATION_Y_OFFSET_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Notification Y Offset ->" << m_NotificationSetupDialog->getNotification_Y_Offset();
+    qDebug() << "[loadGeneralSetting]" << "Notification Y Offset ->" << m_NotificationSetupDialog->getNotification_Y_Offset();
 #endif
 
     if (true == settingFile.contains(TRAYICON_IDLE)){
@@ -15387,7 +15427,7 @@ void QKeyMapper::loadGeneralSetting()
         m_TrayIconSelectDialog->setTrayIcon_IdleStateIcon(TRAYICON_IDLE_DEFAULT_FILE);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "TrayIcon Idle ->" << m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon();
+    qDebug() << "[loadGeneralSetting]" << "TrayIcon Idle ->" << m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon();
 #endif
 
     if (true == settingFile.contains(TRAYICON_MONITORING)){
@@ -15403,7 +15443,7 @@ void QKeyMapper::loadGeneralSetting()
         m_TrayIconSelectDialog->setTrayIcon_MonitoringStateIcon(TRAYICON_MONITORING_DEFAULT_FILE);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "TrayIcon Monitoring ->" << m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon();
+    qDebug() << "[loadGeneralSetting]" << "TrayIcon Monitoring ->" << m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon();
 #endif
 
     if (true == settingFile.contains(TRAYICON_GLOBAL)){
@@ -15419,7 +15459,7 @@ void QKeyMapper::loadGeneralSetting()
         m_TrayIconSelectDialog->setTrayIcon_GlobalStateIcon(TRAYICON_GLOBAL_DEFAULT_FILE);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "TrayIcon Global ->" << m_TrayIconSelectDialog->getTrayIcon_GlobalStateIcon();
+    qDebug() << "[loadGeneralSetting]" << "TrayIcon Global ->" << m_TrayIconSelectDialog->getTrayIcon_GlobalStateIcon();
 #endif
 
     if (true == settingFile.contains(TRAYICON_MATCHED)){
@@ -15435,7 +15475,7 @@ void QKeyMapper::loadGeneralSetting()
         m_TrayIconSelectDialog->setTrayIcon_MatchedStateIcon(TRAYICON_MATCHED_DEFAULT_FILE);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "TrayIcon Matched ->" << m_TrayIconSelectDialog->getTrayIcon_MatchedStateIcon();
+    qDebug() << "[loadGeneralSetting]" << "TrayIcon Matched ->" << m_TrayIconSelectDialog->getTrayIcon_MatchedStateIcon();
 #endif
 
     if (true == settingFile.contains(UPDATE_SITE)){
@@ -15451,7 +15491,7 @@ void QKeyMapper::loadGeneralSetting()
         ui->updateSiteComboBox->setCurrentIndex(UPDATE_SITE_GITHUB);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "Update Site ->" << (ui->updateSiteComboBox->currentIndex() == UPDATE_SITE_GITEE ? "Gitee" : "GitHub");
+    qDebug() << "[loadGeneralSetting]" << "Update Site ->" << (ui->updateSiteComboBox->currentIndex() == UPDATE_SITE_GITEE ? "Gitee" : "GitHub");
 #endif
 
     if (true == settingFile.contains(AUTO_STARTUP)){
@@ -15463,13 +15503,13 @@ void QKeyMapper::loadGeneralSetting()
             ui->autoStartupCheckBox->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Auto Startup Checkbox ->" << autostartupChecked;
+        qDebug() << "[loadGeneralSetting]" << "Auto Startup Checkbox ->" << autostartupChecked;
 #endif
     }
     else {
         ui->autoStartupCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains AutoStartup, AutoStartup set to Unchecked.";
+        qDebug() << "[loadGeneralSetting]" << "Do not contains AutoStartup, AutoStartup set to Unchecked.";
 #endif
     }
 
@@ -15482,13 +15522,13 @@ void QKeyMapper::loadGeneralSetting()
             ui->startupMinimizedCheckBox->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Startup Minimized Checkbox ->" << startupminimizedChecked;
+        qDebug() << "[loadGeneralSetting]" << "Startup Minimized Checkbox ->" << startupminimizedChecked;
 #endif
     }
     else {
         ui->startupMinimizedCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains StartupMinimized, StartupMinimized set to Unchecked.";
+        qDebug() << "[loadGeneralSetting]" << "Do not contains StartupMinimized, StartupMinimized set to Unchecked.";
 #endif
     }
 
@@ -15501,13 +15541,13 @@ void QKeyMapper::loadGeneralSetting()
             ui->startupAutoMonitoringCheckBox->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Startup AutoMonitoring Checkbox ->" << startupautomonitoringChecked;
+        qDebug() << "[loadGeneralSetting]" << "Startup AutoMonitoring Checkbox ->" << startupautomonitoringChecked;
 #endif
     }
     else {
         ui->startupAutoMonitoringCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains StartupAutoMonitoring, StartupAutoMonitoring set to Unchecked.";
+        qDebug() << "[loadGeneralSetting]" << "Do not contains StartupAutoMonitoring, StartupAutoMonitoring set to Unchecked.";
 #endif
     }
 
@@ -15521,13 +15561,13 @@ void QKeyMapper::loadGeneralSetting()
             ui->enableVirtualJoystickCheckBox->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Virtual Joystick Enable Checkbox ->" << virtualjoystickenableChecked;
+        qDebug() << "[loadGeneralSetting]" << "Virtual Joystick Enable Checkbox ->" << virtualjoystickenableChecked;
 #endif
     }
     else {
         ui->enableVirtualJoystickCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains VirtualGamepadEnable, VirtualGamepadEnable set to Unchecked.";
+        qDebug() << "[loadGeneralSetting]" << "Do not contains VirtualGamepadEnable, VirtualGamepadEnable set to Unchecked.";
 #endif
     }
 #endif
@@ -15541,13 +15581,13 @@ void QKeyMapper::loadGeneralSetting()
             ui->multiInputEnableCheckBox->setChecked(false);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "MultiInput Enable Checkbox ->" << multiInputEnableChecked;
+        qDebug() << "[loadGeneralSetting]" << "MultiInput Enable Checkbox ->" << multiInputEnableChecked;
 #endif
     }
     else {
         ui->multiInputEnableCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Do not contains MultiInputEnable, MultiInputEnable set to Unchecked.";
+        qDebug() << "[loadGeneralSetting]" << "Do not contains MultiInputEnable, MultiInputEnable set to Unchecked.";
 #endif
     }
 
@@ -15822,6 +15862,9 @@ void QKeyMapper::setControlFontEnglish()
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
+    ui->scaleLabel->setFont(customFont);
+    ui->themeLabel->setFont(customFont);
+    ui->editModeLabel->setFont(customFont);
     ui->selectTrayIconButton->setFont(customFont);
     // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
@@ -15967,6 +16010,9 @@ void QKeyMapper::setControlFontChinese()
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
+    ui->scaleLabel->setFont(customFont);
+    ui->themeLabel->setFont(customFont);
+    ui->editModeLabel->setFont(customFont);
     ui->selectTrayIconButton->setFont(customFont);
     // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
@@ -16112,6 +16158,9 @@ void QKeyMapper::setControlFontJapanese()
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
+    ui->scaleLabel->setFont(customFont);
+    ui->themeLabel->setFont(customFont);
+    ui->editModeLabel->setFont(customFont);
     ui->selectTrayIconButton->setFont(customFont);
     // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
@@ -16182,17 +16231,17 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->settingNameLineEdit->setEnabled(status);
     ui->backupSettingButton->setEnabled(status);
     // ui->acceptVirtualGamepadInputCheckBox->setEnabled(status);
-    ui->autoStartupCheckBox->setEnabled(status);
-    ui->startupMinimizedCheckBox->setEnabled(status);
-    ui->startupAutoMonitoringCheckBox->setEnabled(status);
-    ui->soundEffectCheckBox->setEnabled(status);
-    ui->notificationLabel->setEnabled(status);
-    ui->notificationComboBox->setEnabled(status);
-    ui->languageLabel->setEnabled(status);
-    ui->languageComboBox->setEnabled(status);
-    ui->updateSiteLabel->setEnabled(status);
-    ui->updateSiteComboBox->setEnabled(status);
-    ui->virtualGamepadTypeComboBox->setEnabled(status);
+    // ui->autoStartupCheckBox->setEnabled(status);
+    // ui->startupMinimizedCheckBox->setEnabled(status);
+    // ui->startupAutoMonitoringCheckBox->setEnabled(status);
+    // ui->soundEffectCheckBox->setEnabled(status);
+    // ui->notificationLabel->setEnabled(status);
+    // ui->notificationComboBox->setEnabled(status);
+    // ui->languageLabel->setEnabled(status);
+    // ui->languageComboBox->setEnabled(status);
+    // ui->updateSiteLabel->setEnabled(status);
+    // ui->updateSiteComboBox->setEnabled(status);
+    // ui->virtualGamepadTypeComboBox->setEnabled(status);
     ui->keyPressTypeComboBox->setEnabled(status);
     // ui->burstpressSpinBox->setEnabled(status);
     // ui->burstreleaseSpinBox->setEnabled(status);
@@ -16216,12 +16265,12 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // ui->mouseXSpeedSpinBox->setEnabled(status);
     // ui->mouseYSpeedSpinBox->setEnabled(status);
 
-    ui->dataPortLabel->setEnabled(status);
-    ui->dataPortSpinBox->setEnabled(status);
-    ui->brakeThresholdLabel->setEnabled(status);
-    ui->brakeThresholdDoubleSpinBox->setEnabled(status);
-    ui->accelThresholdLabel->setEnabled(status);
-    ui->accelThresholdDoubleSpinBox->setEnabled(status);
+    // ui->dataPortLabel->setEnabled(status);
+    // ui->dataPortSpinBox->setEnabled(status);
+    // ui->brakeThresholdLabel->setEnabled(status);
+    // ui->brakeThresholdDoubleSpinBox->setEnabled(status);
+    // ui->accelThresholdLabel->setEnabled(status);
+    // ui->accelThresholdDoubleSpinBox->setEnabled(status);
 
     ui->oriList_SelectKeyboardButton->setEnabled(status);
     ui->oriList_SelectMouseButton->setEnabled(status);
@@ -16274,9 +16323,9 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->settingTabWidget->setEnabled(status);
 
-    ui->installFakerInputButton->setEnabled(status);
+    // ui->installFakerInputButton->setEnabled(status);
 
-#ifdef VIGEM_CLIENT_SUPPORT
+#if 0
     if (false == status) {
         ui->enableVirtualJoystickCheckBox->setEnabled(status);
     }
@@ -16300,6 +16349,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     }
 #endif
 
+#if 0
     ui->installInterceptionButton->setEnabled(status);
     // ui->multiInputGroupBox->setEnabled(status);
     if (false == status || Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
@@ -16318,6 +16368,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
             ui->filterKeysCheckBox->setEnabled(false);
         }
     }
+#endif
 
     ui->gamepadSelectLabel->setEnabled(status);
     ui->gamepadSelectComboBox->setEnabled(status);
@@ -21001,6 +21052,10 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->themeComboBox->setItemText(UI_THEME_SYSTEMDEFAULT,  tr("System Default"));
     ui->themeComboBox->setItemText(UI_THEME_LIGHT,          tr("Light"));
     ui->themeComboBox->setItemText(UI_THEME_DARK,           tr("Dark"));
+
+    ui->editModeLabel->setText(tr("EditMode"));
+    ui->editModeComboBox->setItemText(EDITMODE_RIGHT_DOUBLECLICK,   tr("R-DoubleClick"));
+    ui->editModeComboBox->setItemText(EDITMODE_LEFT_DOUBLECLICK,    tr("L-DoubleClick"));
 
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,        tr("Ignore"));
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,        tr("Equals"));

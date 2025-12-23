@@ -926,6 +926,7 @@ public:
     static bool getStartupMinimizedStatus(void);
     // static bool getDisableWinKeyStatus(void);
     static int getLanguageIndex(void);
+    static int getEditModeIndex(void);
     static int getCurrentSettingSelectIndex(void);
     static bool getKeyMappingDataTableItemBurstStatus(int rowindex);
     static bool getKeyMappingDataTableItemLockStatus(int rowindex);

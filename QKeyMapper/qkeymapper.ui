@@ -1050,7 +1050,7 @@
       <bool>false</bool>
      </property>
     </widget>
-    <widget class="QLabel" name="editingModeLabel">
+    <widget class="QLabel" name="editModeLabel">
      <property name="geometry">
       <rect>
        <x>185</x>
@@ -1060,13 +1060,13 @@
       </rect>
      </property>
      <property name="text">
-      <string>EditingMode</string>
+      <string>EditMode</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QComboBox" name="editingModeComboBox">
+    <widget class="QComboBox" name="editModeComboBox">
      <property name="geometry">
       <rect>
        <x>260</x>
@@ -1099,8 +1099,8 @@
     <zorder>themeComboBox</zorder>
     <zorder>themeLabel</zorder>
     <zorder>startupPositonSettingButton</zorder>
-    <zorder>editingModeLabel</zorder>
-    <zorder>editingModeComboBox</zorder>
+    <zorder>editModeLabel</zorder>
+    <zorder>editModeComboBox</zorder>
    </widget>
    <widget class="QWidget" name="mapping">
     <attribute name="title">
