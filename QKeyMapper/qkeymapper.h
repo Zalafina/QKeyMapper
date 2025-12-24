@@ -1160,6 +1160,10 @@ public slots:
 
     void selectedItemsMoveDown();
 
+    void selectedItemsMoveToTop();
+
+    void selectedItemsMoveToBottom();
+
     void highlightSelectUp();
 
     void highlightSelectDown();

@@ -94,6 +94,8 @@ public:
     // Macro list item operations
     void selectedMacroItemsMoveUp(void);
     void selectedMacroItemsMoveDown(void);
+    void selectedMacroItemsMoveToTop(void);
+    void selectedMacroItemsMoveToBottom(void);
     void deleteMacroSelectedItems(void);
 
     // Macro list highlight selection operations

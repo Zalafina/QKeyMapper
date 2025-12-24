@@ -23700,34 +23700,13 @@ void QKeyMapper::selectedItemsMoveUp()
     closeSetupDialog_OnDataChanged();
 #endif
 
-    bool move_to_top = false;
-    if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0) {
-        move_to_top = true;
-        // Move the selected rows to the top (preserve order)
-        QList<MAP_KEYDATA> tempItems;
-        // Save selected items in order
-        for (int row = topRow; row <= bottomRow; ++row) {
-            tempItems.append(KeyMappingDataList->at(row));
-        }
-        // Remove selected items from bottom to top
-        for (int row = bottomRow; row >= topRow; --row) {
-            KeyMappingDataList->removeAt(row);
-        }
-        // Insert items at the top in reverse order to maintain original sequence
-        for (int i = tempItems.size() - 1; i >= 0; --i) {
-            KeyMappingDataList->insert(0, tempItems.at(i));
-        }
-    }
-    else {
-        // Move the selected rows up
-        for (int row = topRow; row <= bottomRow; ++row) {
-            KeyMappingDataList->move(row, row - 1);
-        }
+    // Move the selected rows up by one
+    for (int row = topRow; row <= bottomRow; ++row) {
+        KeyMappingDataList->move(row, row - 1);
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    QString debugmessage = QString("[selectedItemsMoveUp] %1: topRow(%2), bottomRow(%3)").arg(move_to_top?"MoveTop":"MoveUp").arg(topRow).arg(bottomRow);
-    qDebug().nospace().noquote() << debugmessage;
+    qDebug().nospace().noquote() << "[selectedItemsMoveUp] MoveUp: topRow(" << topRow << "), bottomRow(" << bottomRow << ")";
 #endif
 
 #ifdef DEBUG_LOGOUT_ON
@@ -23735,15 +23714,8 @@ void QKeyMapper::selectedItemsMoveUp()
 #endif
     refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
 
-    QTableWidgetSelectionRange newSelection;
-    if (move_to_top) {
-        // Reselect the moved rows at the top
-        newSelection = QTableWidgetSelectionRange(0, 0, bottomRow - topRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-    }
-    else {
-        // Reselect the moved rows
-        newSelection = QTableWidgetSelectionRange(topRow - 1, 0, bottomRow - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-    }
+    // Reselect the moved rows
+    QTableWidgetSelectionRange newSelection(topRow - 1, 0, bottomRow - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->clearSelection();
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
@@ -23756,6 +23728,81 @@ void QKeyMapper::selectedItemsMoveUp()
 #ifdef DEBUG_LOGOUT_ON
     if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
         qDebug("MoveUp:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
+    }
+#endif
+}
+
+void QKeyMapper::selectedItemsMoveToTop()
+{
+    if (isMappingDataTableFiltered()) {
+        QString message;
+        message = tr("Cannot move items while the mapping table is filtered!");
+        showWarningPopup(message);
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveToTop] There is no selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+
+    if (topRow <= 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveToTop] Already at the top";
+#endif
+        return;
+    }
+
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
+
+    // Move the selected rows to the top (preserve order)
+    QList<MAP_KEYDATA> tempItems;
+    // Save selected items in order
+    for (int row = topRow; row <= bottomRow; ++row) {
+        tempItems.append(KeyMappingDataList->at(row));
+    }
+    // Remove selected items from bottom to top
+    for (int row = bottomRow; row >= topRow; --row) {
+        KeyMappingDataList->removeAt(row);
+    }
+    // Insert items at the top in reverse order to maintain original sequence
+    for (int i = tempItems.size() - 1; i >= 0; --i) {
+        KeyMappingDataList->insert(0, tempItems.at(i));
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[selectedItemsMoveToTop] MoveTop: topRow(" << topRow << "), bottomRow(" << bottomRow << ")";
+#endif
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << __func__ << ": refreshKeyMappingDataTable()";
+#endif
+    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+
+    // Reselect the moved rows at the top
+    QTableWidgetSelectionRange newSelection(0, 0, bottomRow - topRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+    m_KeyMappingDataTable->clearSelection();
+    m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected items visible
+    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.topRow(), 0);
+    if (itemToScrollTo) {
+        m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
+        qDebug("MoveToTop:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
 }
@@ -23793,34 +23840,13 @@ void QKeyMapper::selectedItemsMoveDown()
     closeSetupDialog_OnDataChanged();
 #endif
 
-    bool move_to_bottom = false;
-    if ((GetAsyncKeyState(VK_LSHIFT) & 0x8000) != 0) {
-        move_to_bottom = true;
-        // Move the selected rows to the bottom (preserve order)
-        QList<MAP_KEYDATA> tempItems;
-        // Save selected items in order
-        for (int row = topRow; row <= bottomRow; ++row) {
-            tempItems.append(KeyMappingDataList->at(row));
-        }
-        // Remove selected items from bottom to top
-        for (int row = bottomRow; row >= topRow; --row) {
-            KeyMappingDataList->removeAt(row);
-        }
-        // Append items to the bottom in original order
-        for (int i = 0; i < tempItems.size(); ++i) {
-            KeyMappingDataList->append(tempItems.at(i));
-        }
-    }
-    else {
-        // Move the selected rows down
-        for (int row = bottomRow; row >= topRow; --row) {
-            KeyMappingDataList->move(row, row + 1);
-        }
+    // Move the selected rows down by one
+    for (int row = bottomRow; row >= topRow; --row) {
+        KeyMappingDataList->move(row, row + 1);
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    QString debugmessage = QString("[selectedItemsMoveDown] %1: topRow(%2), bottomRow(%3)").arg(move_to_bottom?"MoveBottom":"MoveDown").arg(topRow).arg(bottomRow);
-    qDebug().nospace().noquote() << debugmessage;
+    qDebug().nospace().noquote() << "[selectedItemsMoveDown] MoveDown: topRow(" << topRow << "), bottomRow(" << bottomRow << ")";
 #endif
 
 #ifdef DEBUG_LOGOUT_ON
@@ -23828,15 +23854,8 @@ void QKeyMapper::selectedItemsMoveDown()
 #endif
     refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
 
-    QTableWidgetSelectionRange newSelection;
-    if (move_to_bottom) {
-        // Reselect the moved rows at the bottom
-        newSelection = QTableWidgetSelectionRange(m_KeyMappingDataTable->rowCount() - (bottomRow - topRow + 1), 0, m_KeyMappingDataTable->rowCount() - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-    }
-    else {
-        // Reselect the moved rows
-        newSelection = QTableWidgetSelectionRange(topRow + 1, 0, bottomRow + 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-    }
+    // Reselect the moved rows
+    QTableWidgetSelectionRange newSelection(topRow + 1, 0, bottomRow + 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->clearSelection();
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
@@ -23849,6 +23868,81 @@ void QKeyMapper::selectedItemsMoveDown()
 #ifdef DEBUG_LOGOUT_ON
     if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
         qDebug("MoveDown:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
+    }
+#endif
+}
+
+void QKeyMapper::selectedItemsMoveToBottom()
+{
+    if (isMappingDataTableFiltered()) {
+        QString message;
+        message = tr("Cannot move items while the mapping table is filtered!");
+        showWarningPopup(message);
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveToBottom] There is no selected item";
+#endif
+        return;
+    }
+
+    // Get the first selected range
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+
+    if (bottomRow >= m_KeyMappingDataTable->rowCount() - 1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[MoveToBottom] Already at the bottom";
+#endif
+        return;
+    }
+
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+    closeSetupDialog_OnDataChanged();
+#endif
+
+    // Move the selected rows to the bottom (preserve order)
+    QList<MAP_KEYDATA> tempItems;
+    // Save selected items in order
+    for (int row = topRow; row <= bottomRow; ++row) {
+        tempItems.append(KeyMappingDataList->at(row));
+    }
+    // Remove selected items from bottom to top
+    for (int row = bottomRow; row >= topRow; --row) {
+        KeyMappingDataList->removeAt(row);
+    }
+    // Append items to the bottom in original order
+    for (int i = 0; i < tempItems.size(); ++i) {
+        KeyMappingDataList->append(tempItems.at(i));
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[selectedItemsMoveToBottom] MoveBottom: topRow(" << topRow << "), bottomRow(" << bottomRow << ")";
+#endif
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << __func__ << ": refreshKeyMappingDataTable()";
+#endif
+    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+
+    // Reselect the moved rows at the bottom
+    QTableWidgetSelectionRange newSelection(m_KeyMappingDataTable->rowCount() - (bottomRow - topRow + 1), 0, m_KeyMappingDataTable->rowCount() - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+    m_KeyMappingDataTable->clearSelection();
+    m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected items visible
+    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.bottomRow(), 0);
+    if (itemToScrollTo) {
+        m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
+        qDebug("MoveToBottom:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
 }
@@ -26474,7 +26568,12 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
 
     if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
         if (event->key() == Qt::Key_Up) {
-            if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+            if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
+                // Move selected items to top when Ctrl+Shift is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveToTop();
+            }
+            else if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items up when Ctrl is pressed
                 QKeyMapper::getInstance()->selectedItemsMoveUp();
             }
             else {
@@ -26484,7 +26583,12 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
             return;
         }
         else if (event->key() == Qt::Key_Down) {
-            if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+            if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
+                // Move selected items to bottom when Ctrl+Shift is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveToBottom();
+            }
+            else if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items down when Ctrl is pressed
                 QKeyMapper::getInstance()->selectedItemsMoveDown();
             }
             else {
@@ -26503,13 +26607,25 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
             return;
         }
         else if (event->key() == Qt::Key_Home) {
-            // Select the first row
-            QKeyMapper::getInstance()->highlightSelectFirst();
+            if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items to top when Ctrl+Home is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveToTop();
+            }
+            else {
+                // Select the first row
+                QKeyMapper::getInstance()->highlightSelectFirst();
+            }
             return;
         }
         else if (event->key() == Qt::Key_End) {
-            // Select the last row
-            QKeyMapper::getInstance()->highlightSelectLast();
+            if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items to bottom when Ctrl+End is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveToBottom();
+            }
+            else {
+                // Select the last row
+                QKeyMapper::getInstance()->highlightSelectLast();
+            }
             return;
         }
         else if (event->key() == Qt::Key_Backspace) {
