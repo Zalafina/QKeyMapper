@@ -139,6 +139,8 @@ private slots:
     // Slot for handling macro table cell changed (category editing)
     void macroTableCellChanged(int row, int column);
 
+    void macroTableItemSelectionChanged();
+
 #ifdef DEBUG_LOGOUT_ON
     void macroTableCurrentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn);
 #endif

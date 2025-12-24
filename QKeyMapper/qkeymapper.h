@@ -1139,6 +1139,8 @@ private slots:
 
     void cellChanged_slot(int row, int col);
 
+    void keyMappingTableItemSelectionChanged();
+
 #ifdef DEBUG_LOGOUT_ON
     void currentCellChanged_slot(int currentRow, int currentColumn, int previousRow, int previousColumn);
 #endif

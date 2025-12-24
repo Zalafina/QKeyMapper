@@ -8601,6 +8601,9 @@ int QKeyMapper::insertKeyMappingDataFromCopiedList()
         QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(startRow, 0, endRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
         m_KeyMappingDataTable->clearSelection();
         m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+        // Update current cell to the start of inserted rows for Ctrl/Shift+Click consistency
+        m_KeyMappingDataTable->setCurrentCell(startRow, 0, QItemSelectionModel::NoUpdate);
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -9166,6 +9169,29 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             }
         }
 
+    }
+}
+
+void QKeyMapper::keyMappingTableItemSelectionChanged()
+{
+    if (!m_KeyMappingDataTable) {
+        return;
+    }
+
+    // Check if selection is empty
+    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+        // Get current cell
+        int currentRow = m_KeyMappingDataTable->currentRow();
+        int currentColumn = m_KeyMappingDataTable->currentColumn();
+
+        // If current cell is valid (not -1, -1), clear it to avoid unexpected Ctrl/Shift+Click selection behavior
+        if (currentRow != -1 || currentColumn != -1) {
+            m_KeyMappingDataTable->setCurrentCell(-1, -1);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[keyMappingTableItemSelectionChanged] Selection is empty, cleared CurrentCell from (" << currentRow << "," << currentColumn << ") to (-1, -1)";
+#endif
+        }
     }
 }
 
@@ -19338,7 +19364,7 @@ void QKeyMapper::disconnectKeyMappingDataTableConnection()
 {
     if (m_KeyMappingDataTable != Q_NULLPTR) {
         QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
-        // QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTabl_ItemSelectionChanged);
+        QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTableItemSelectionChanged);
         QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked);
 #ifdef DEBUG_LOGOUT_ON
         QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::currentCellChanged, this, &QKeyMapper::currentCellChanged_slot);
@@ -19355,7 +19381,7 @@ void QKeyMapper::updateKeyMappingDataTableConnection()
 {
     if (m_KeyMappingDataTable != Q_NULLPTR) {
         QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot, Qt::UniqueConnection);
-        // QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTabl_ItemSelectionChanged, Qt::UniqueConnection);
+        QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTableItemSelectionChanged, Qt::UniqueConnection);
         QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked, Qt::UniqueConnection);
 #ifdef DEBUG_LOGOUT_ON
         QObject::connect(m_KeyMappingDataTable, &QTableWidget::currentCellChanged, this, &QKeyMapper::currentCellChanged_slot, Qt::UniqueConnection);
@@ -22400,6 +22426,14 @@ void QKeyMapper::keyMappingTableDragDropMove(int top_row, int bottom_row, int dr
         m_KeyMappingDataTable->clearSelection();
         m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
+        // Update current cell based on drag direction for Ctrl/Shift+Click consistency
+        if (isDraggedToBottom) {
+            m_KeyMappingDataTable->setCurrentCell(newSelection.bottomRow(), 0, QItemSelectionModel::NoUpdate);
+        }
+        else {
+            m_KeyMappingDataTable->setCurrentCell(newSelection.topRow(), 0, QItemSelectionModel::NoUpdate);
+        }
+
 #ifdef DEBUG_LOGOUT_ON
         if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
             qDebug("keyMappingTableDragDropMove : KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
@@ -24157,6 +24191,9 @@ void QKeyMapper::clearHighlightSelection()
     }
 
     m_KeyMappingDataTable->clearSelection();
+
+    // Clear current cell to avoid unexpected Ctrl/Shift+Click selection behavior
+    m_KeyMappingDataTable->setCurrentCell(-1, -1);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[clearHighlightSelection] Cleared selection";

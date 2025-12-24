@@ -747,6 +747,10 @@ void QMacroListDialog::importMacroListFromFile()
         macroDataTable->clearSelection();
         QTableWidgetSelectionRange newSelection(importStartRow, 0, importEndRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
         macroDataTable->setRangeSelected(newSelection, true);
+
+        // Update current cell to the start of imported rows for Ctrl/Shift+Click consistency
+        macroDataTable->setCurrentCell(importStartRow, 0, QItemSelectionModel::NoUpdate);
+
         // Scroll to make the imported items visible
         macroDataTable->scrollToItem(macroDataTable->item(importStartRow, 0));
     }
@@ -929,6 +933,8 @@ void QMacroListDialog::updateMacroDataTableConnection(MacroListDataTableWidget *
     if (macroDataTable != Q_NULLPTR) {
         QObject::connect(macroDataTable, &QTableWidget::cellChanged,
                          this, &QMacroListDialog::macroTableCellChanged, Qt::UniqueConnection);
+        QObject::connect(macroDataTable, &QTableWidget::itemSelectionChanged,
+                         this, &QMacroListDialog::macroTableItemSelectionChanged, Qt::UniqueConnection);
         QObject::connect(macroDataTable, &QTableWidget::itemDoubleClicked,
                          this, &QMacroListDialog::macroTableItemDoubleClicked, Qt::UniqueConnection);
 #ifdef DEBUG_LOGOUT_ON
@@ -1654,6 +1660,30 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
     }
 }
 
+void QMacroListDialog::macroTableItemSelectionChanged()
+{
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+        return;
+    }
+
+    // Check if selection is empty
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+        // Get current cell
+        int currentRow = macroDataTable->currentRow();
+        int currentColumn = macroDataTable->currentColumn();
+
+        // If current cell is valid (not -1, -1), clear it to avoid unexpected Ctrl/Shift+Click selection behavior
+        if (currentRow != -1 || currentColumn != -1) {
+            macroDataTable->setCurrentCell(-1, -1);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[macroTableItemSelectionChanged] Selection is empty, cleared CurrentCell from (" << currentRow << "," << currentColumn << ") to (-1, -1)";
+#endif
+        }
+    }
+}
+
 #ifdef DEBUG_LOGOUT_ON
 void QMacroListDialog::macroTableCurrentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn)
 {
@@ -1729,6 +1759,13 @@ void QMacroListDialog::macroListTableDragDropMove(int top_row, int bottom_row, i
         }
         macroDataTable->clearSelection();
         macroDataTable->setRangeSelected(newSelection, true);
+
+        // Update current cell based on drag direction for Ctrl/Shift+Click consistency
+        if (isDraggedToBottom) {
+            macroDataTable->setCurrentCell(newSelection.bottomRow(), 0, QItemSelectionModel::NoUpdate);
+        } else {
+            macroDataTable->setCurrentCell(newSelection.topRow(), 0, QItemSelectionModel::NoUpdate);
+        }
 
 #ifdef DEBUG_LOGOUT_ON
         if (macroDataTable->rowCount() != macroDataList->size()) {
@@ -1928,6 +1965,9 @@ void QMacroListDialog::clearHighlightSelection()
     }
 
     macroDataTable->clearSelection();
+
+    // Clear current cell to avoid unexpected Ctrl/Shift+Click selection behavior
+    macroDataTable->setCurrentCell(-1, -1);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[clearHighlightSelection] Cleared selection";
@@ -2139,6 +2179,10 @@ int QMacroListDialog::insertMacroDataFromCopiedList()
         QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(startRow, 0, endRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
         macroDataTable->clearSelection();
         macroDataTable->setRangeSelected(newSelection, true);
+
+        // Update current cell to the start of inserted rows for Ctrl/Shift+Click consistency
+        macroDataTable->setCurrentCell(startRow, 0, QItemSelectionModel::NoUpdate);
+
         // Scroll to make the inserted items visible
         QTableWidgetItem *itemToScrollTo = macroDataTable->item(startRow, 0);
         if (itemToScrollTo) {
