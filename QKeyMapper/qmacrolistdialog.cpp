@@ -1781,6 +1781,9 @@ void QMacroListDialog::highlightSelectUp()
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
     macroDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+    macroDataTable->setCurrentCell(newSelectedRow, 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected row visible
     QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelectedRow, 0);
     if (itemToScrollTo) {
@@ -1835,6 +1838,9 @@ void QMacroListDialog::highlightSelectDown()
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
     macroDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+    macroDataTable->setCurrentCell(newSelectedRow, 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected row visible
     QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelectedRow, 0);
     if (itemToScrollTo) {
@@ -1866,6 +1872,9 @@ void QMacroListDialog::highlightSelectFirst()
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
     macroDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+    macroDataTable->setCurrentCell(newSelectedRow, 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected row visible
     QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelectedRow, 0);
     if (itemToScrollTo) {
@@ -1896,6 +1905,9 @@ void QMacroListDialog::highlightSelectLast()
     int newSelectedRow = macroDataTable->rowCount() - 1;
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
     macroDataTable->setRangeSelected(newSelection, true);
+
+    // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+    macroDataTable->setCurrentCell(newSelectedRow, 0, QItemSelectionModel::NoUpdate);
 
     // Scroll to make the selected row visible
     QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelectedRow, 0);
@@ -2206,6 +2218,9 @@ void QMacroListDialog::selectedMacroItemsMoveUp()
     macroDataTable->clearSelection();
     macroDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to the top of the new selection for Ctrl/Shift+Click consistency
+    macroDataTable->setCurrentCell(newSelection.topRow(), 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected items visible
     QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelection.topRow(), 0);
     if (itemToScrollTo) {
@@ -2294,6 +2309,9 @@ void QMacroListDialog::selectedMacroItemsMoveToTop()
     macroDataTable->clearSelection();
     macroDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to the top of the new selection for Ctrl/Shift+Click consistency
+    macroDataTable->setCurrentCell(newSelection.topRow(), 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected items visible
     QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelection.topRow(), 0);
     if (itemToScrollTo) {
@@ -2371,6 +2389,9 @@ void QMacroListDialog::selectedMacroItemsMoveDown()
     QTableWidgetSelectionRange newSelection(topRow + 1, 0, bottomRow + 1, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
     macroDataTable->clearSelection();
     macroDataTable->setRangeSelected(newSelection, true);
+
+    // Update current cell to the bottom of the new selection for Ctrl/Shift+Click consistency
+    macroDataTable->setCurrentCell(newSelection.bottomRow(), 0, QItemSelectionModel::NoUpdate);
 
     // Scroll to make the selected items visible
     QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelection.bottomRow(), 0);
@@ -2460,6 +2481,9 @@ void QMacroListDialog::selectedMacroItemsMoveToBottom()
     macroDataTable->clearSelection();
     macroDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to the bottom of the new selection for Ctrl/Shift+Click consistency
+    macroDataTable->setCurrentCell(newSelection.bottomRow(), 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected items visible
     QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelection.bottomRow(), 0);
     if (itemToScrollTo) {
@@ -2522,6 +2546,9 @@ void QMacroListDialog::deleteMacroSelectedItems()
         QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(newRow, 0, newRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
         macroDataTable->clearSelection();
         macroDataTable->setRangeSelected(newSelection, true);
+
+        // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+        macroDataTable->setCurrentCell(newRow, 0, QItemSelectionModel::NoUpdate);
     }
 
     QString popupMessage;

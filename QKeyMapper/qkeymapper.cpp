@@ -23732,6 +23732,9 @@ void QKeyMapper::selectedItemsMoveUp()
     m_KeyMappingDataTable->clearSelection();
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to the top of the new selection for Ctrl/Shift+Click consistency
+    m_KeyMappingDataTable->setCurrentCell(newSelection.topRow(), 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected items visible
     QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.topRow(), 0);
     if (itemToScrollTo) {
@@ -23807,6 +23810,9 @@ void QKeyMapper::selectedItemsMoveToTop()
     m_KeyMappingDataTable->clearSelection();
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to the top of the new selection for Ctrl/Shift+Click consistency
+    m_KeyMappingDataTable->setCurrentCell(newSelection.topRow(), 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected items visible
     QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.topRow(), 0);
     if (itemToScrollTo) {
@@ -23871,6 +23877,9 @@ void QKeyMapper::selectedItemsMoveDown()
     QTableWidgetSelectionRange newSelection(topRow + 1, 0, bottomRow + 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->clearSelection();
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+    // Update current cell to the bottom of the new selection for Ctrl/Shift+Click consistency
+    m_KeyMappingDataTable->setCurrentCell(newSelection.bottomRow(), 0, QItemSelectionModel::NoUpdate);
 
     // Scroll to make the selected items visible
     QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.bottomRow(), 0);
@@ -23947,6 +23956,9 @@ void QKeyMapper::selectedItemsMoveToBottom()
     m_KeyMappingDataTable->clearSelection();
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to the bottom of the new selection for Ctrl/Shift+Click consistency
+    m_KeyMappingDataTable->setCurrentCell(newSelection.bottomRow(), 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected items visible
     QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.bottomRow(), 0);
     if (itemToScrollTo) {
@@ -24002,6 +24014,9 @@ void QKeyMapper::highlightSelectUp()
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+    m_KeyMappingDataTable->setCurrentCell(newSelectedRow, 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected row visible
     QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelectedRow, 0);
     if (itemToScrollTo) {
@@ -24055,6 +24070,9 @@ void QKeyMapper::highlightSelectDown()
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+    m_KeyMappingDataTable->setCurrentCell(newSelectedRow, 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected row visible
     QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelectedRow, 0);
     if (itemToScrollTo) {
@@ -24085,6 +24103,9 @@ void QKeyMapper::highlightSelectFirst()
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
+    // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+    m_KeyMappingDataTable->setCurrentCell(newSelectedRow, 0, QItemSelectionModel::NoUpdate);
+
     // Scroll to make the selected row visible
     QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelectedRow, 0);
     if (itemToScrollTo) {
@@ -24114,6 +24135,9 @@ void QKeyMapper::highlightSelectLast()
     int newSelectedRow = m_KeyMappingDataTable->rowCount() - 1;
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+    // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+    m_KeyMappingDataTable->setCurrentCell(newSelectedRow, 0, QItemSelectionModel::NoUpdate);
 
     // Scroll to make the selected row visible
     QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelectedRow, 0);
@@ -24251,6 +24275,9 @@ void QKeyMapper::on_deleteSelectedButton_clicked()
         QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(newRow, 0, newRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
         m_KeyMappingDataTable->clearSelection();
         m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+        // Update current cell to match the new selection for Ctrl/Shift+Click consistency
+        m_KeyMappingDataTable->setCurrentCell(newRow, 0, QItemSelectionModel::NoUpdate);
     }
 
 #ifdef DEBUG_LOGOUT_ON
