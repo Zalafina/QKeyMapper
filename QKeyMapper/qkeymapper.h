@@ -1164,6 +1164,12 @@ public slots:
 
     void highlightSelectDown();
 
+    void highlightSelectFirst();
+
+    void highlightSelectLast();
+
+    void clearHighlightSelection();
+
     void highlightSelectOpenItemSetup();
 
     void on_addTabButton_clicked();

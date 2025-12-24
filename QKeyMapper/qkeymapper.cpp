@@ -23868,8 +23868,10 @@ void QKeyMapper::highlightSelectUp()
     QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[highlightSelectUp] No selected item";
+        qDebug() << "[highlightSelectUp] No selected item, selecting last row";
 #endif
+        // Select the last row when no selection exists
+        highlightSelectLast();
         return;
     }
 
@@ -23919,8 +23921,10 @@ void QKeyMapper::highlightSelectDown()
     QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[highlightSelectDown] No selected item";
+        qDebug() << "[highlightSelectDown] No selected item, selecting first row";
 #endif
+        // Select the first row when no selection exists
+        highlightSelectFirst();
         return;
     }
 
@@ -23952,6 +23956,79 @@ void QKeyMapper::highlightSelectDown()
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[highlightSelectDown] Selected row" << newSelectedRow;
+#endif
+}
+
+void QKeyMapper::highlightSelectFirst()
+{
+    // Check if table is filtered
+    if (isMappingDataTableFiltered()) {
+        return;
+    }
+
+    if (!m_KeyMappingDataTable || m_KeyMappingDataTable->rowCount() <= 0) {
+        return;
+    }
+
+    // Clear current selection
+    m_KeyMappingDataTable->clearSelection();
+
+    // Select the first row
+    int newSelectedRow = 0;
+    QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+    m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected row visible
+    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelectedRow, 0);
+    if (itemToScrollTo) {
+        m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectFirst] Selected first row" << newSelectedRow;
+#endif
+}
+
+void QKeyMapper::highlightSelectLast()
+{
+    // Check if table is filtered
+    if (isMappingDataTableFiltered()) {
+        return;
+    }
+
+    if (!m_KeyMappingDataTable || m_KeyMappingDataTable->rowCount() <= 0) {
+        return;
+    }
+
+    // Clear current selection
+    m_KeyMappingDataTable->clearSelection();
+
+    // Select the last row
+    int newSelectedRow = m_KeyMappingDataTable->rowCount() - 1;
+    QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+    m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected row visible
+    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelectedRow, 0);
+    if (itemToScrollTo) {
+        m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectLast] Selected last row" << newSelectedRow;
+#endif
+}
+
+void QKeyMapper::clearHighlightSelection()
+{
+    if (!m_KeyMappingDataTable) {
+        return;
+    }
+
+    m_KeyMappingDataTable->clearSelection();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[clearHighlightSelection] Cleared selection";
 #endif
 }
 
@@ -26423,6 +26500,21 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
         }
         else if (event->key() == Qt::Key_Delete) {
             QKeyMapper::getInstance()->on_deleteSelectedButton_clicked();
+            return;
+        }
+        else if (event->key() == Qt::Key_Home) {
+            // Select the first row
+            QKeyMapper::getInstance()->highlightSelectFirst();
+            return;
+        }
+        else if (event->key() == Qt::Key_End) {
+            // Select the last row
+            QKeyMapper::getInstance()->highlightSelectLast();
+            return;
+        }
+        else if (event->key() == Qt::Key_Backspace) {
+            // Clear current selection
+            QKeyMapper::getInstance()->clearHighlightSelection();
             return;
         }
         else if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {

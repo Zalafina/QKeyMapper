@@ -99,6 +99,9 @@ public:
     // Macro list highlight selection operations
     void highlightSelectUp(void);
     void highlightSelectDown(void);
+    void highlightSelectFirst(void);
+    void highlightSelectLast(void);
+    void clearHighlightSelection(void);
     void highlightSelectLoadData(void);
 
     // Macro list copy/paste operations

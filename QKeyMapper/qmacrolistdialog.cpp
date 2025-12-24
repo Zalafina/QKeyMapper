@@ -1140,6 +1140,21 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
             macroListDialog->deleteMacroSelectedItems();
             return;
         }
+        else if (event->key() == Qt::Key_Home) {
+            // Select the first row
+            macroListDialog->highlightSelectFirst();
+            return;
+        }
+        else if (event->key() == Qt::Key_End) {
+            // Select the last row
+            macroListDialog->highlightSelectLast();
+            return;
+        }
+        else if (event->key() == Qt::Key_Backspace) {
+            // Clear current selection
+            macroListDialog->clearHighlightSelection();
+            return;
+        }
         else if (event->key() == Qt::Key_Return
             || event->key() == Qt::Key_Enter) {
             // Load selected macro data to editing fields when Enter/Return is pressed
@@ -1708,8 +1723,10 @@ void QMacroListDialog::highlightSelectUp()
     QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[highlightSelectUp] No selected item";
+        qDebug() << "[highlightSelectUp] No selected item, selecting last row";
 #endif
+        // Select the last row when no selection exists
+        highlightSelectLast();
         return;
     }
 
@@ -1760,8 +1777,10 @@ void QMacroListDialog::highlightSelectDown()
     QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[highlightSelectDown] No selected item";
+        qDebug() << "[highlightSelectDown] No selected item, selecting first row";
 #endif
+        // Select the first row when no selection exists
+        highlightSelectFirst();
         return;
     }
 
@@ -1793,6 +1812,82 @@ void QMacroListDialog::highlightSelectDown()
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[highlightSelectDown] Selected row" << newSelectedRow;
+#endif
+}
+
+void QMacroListDialog::highlightSelectFirst()
+{
+    // Check if table is filtered
+    if (isMacroDataTableFiltered()) {
+        return;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable || macroDataTable->rowCount() <= 0) {
+        return;
+    }
+
+    // Clear current selection
+    macroDataTable->clearSelection();
+
+    // Select the first row
+    int newSelectedRow = 0;
+    QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    macroDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected row visible
+    QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelectedRow, 0);
+    if (itemToScrollTo) {
+        macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectFirst] Selected first row" << newSelectedRow;
+#endif
+}
+
+void QMacroListDialog::highlightSelectLast()
+{
+    // Check if table is filtered
+    if (isMacroDataTableFiltered()) {
+        return;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable || macroDataTable->rowCount() <= 0) {
+        return;
+    }
+
+    // Clear current selection
+    macroDataTable->clearSelection();
+
+    // Select the last row
+    int newSelectedRow = macroDataTable->rowCount() - 1;
+    QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    macroDataTable->setRangeSelected(newSelection, true);
+
+    // Scroll to make the selected row visible
+    QTableWidgetItem *itemToScrollTo = macroDataTable->item(newSelectedRow, 0);
+    if (itemToScrollTo) {
+        macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectLast] Selected last row" << newSelectedRow;
+#endif
+}
+
+void QMacroListDialog::clearHighlightSelection()
+{
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+        return;
+    }
+
+    macroDataTable->clearSelection();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[clearHighlightSelection] Cleared selection";
 #endif
 }
 
