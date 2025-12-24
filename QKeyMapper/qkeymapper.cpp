@@ -23860,6 +23860,10 @@ void QKeyMapper::highlightSelectUp()
         return;
     }
 
+    if (!m_KeyMappingDataTable || m_KeyMappingDataTable->rowCount() <= 0) {
+        return;
+    }
+
     // Get current selection ranges
     QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
@@ -23904,6 +23908,10 @@ void QKeyMapper::highlightSelectDown()
 {
     // Check if table is filtered
     if (isMappingDataTableFiltered()) {
+        return;
+    }
+
+    if (!m_KeyMappingDataTable || m_KeyMappingDataTable->rowCount() <= 0) {
         return;
     }
 

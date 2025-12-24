@@ -1700,7 +1700,7 @@ void QMacroListDialog::highlightSelectUp()
     }
 
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
-    if (!macroDataTable) {
+    if (!macroDataTable || macroDataTable->rowCount() <= 0) {
         return;
     }
 
@@ -1752,7 +1752,7 @@ void QMacroListDialog::highlightSelectDown()
     }
 
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
-    if (!macroDataTable) {
+    if (!macroDataTable || macroDataTable->rowCount() <= 0) {
         return;
     }
 
@@ -2269,6 +2269,14 @@ void QMacroListDialog::deleteMacroSelectedItems()
 
     // Refresh the display
     refreshMacroListTabWidget(macroDataTable, *macroDataList);
+
+    // Reselect the row at the top of the deleted range, or the last row if the table is empty
+    if (macroDataTable->rowCount() > 0) {
+        int newRow = qMin(topRow, macroDataTable->rowCount() - 1);
+        QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(newRow, 0, newRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+        macroDataTable->clearSelection();
+        macroDataTable->setRangeSelected(newSelection, true);
+    }
 
     QString popupMessage;
     QString popupMessageColor = SUCCESS_COLOR;
