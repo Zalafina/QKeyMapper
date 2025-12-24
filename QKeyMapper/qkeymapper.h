@@ -1139,6 +1139,10 @@ private slots:
 
     void cellChanged_slot(int row, int col);
 
+#ifdef DEBUG_LOGOUT_ON
+    void currentCellChanged_slot(int currentRow, int currentColumn, int previousRow, int previousColumn);
+#endif
+
     void OrikeyComboBox_currentTextChangedSlot(const QString &text);
 
     void MapkeyComboBox_currentTextChangedSlot(const QString &text);

@@ -8197,7 +8197,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)
-    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::DoubleClicked);
 
     /* Suuport Drag&Drop for KeyMappingData Table */
     KeyMappingTableWidget->setDragEnabled(true);
@@ -8312,7 +8312,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)
-    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    KeyMappingTableWidget->setEditTriggers(QAbstractItemView::DoubleClicked);
 
     /* Suuport Drag&Drop for KeyMappingData Table */
     KeyMappingTableWidget->setDragEnabled(true);
@@ -9168,6 +9168,13 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
     }
 }
+
+#ifdef DEBUG_LOGOUT_ON
+void QKeyMapper::currentCellChanged_slot(int currentRow, int currentColumn, int previousRow, int previousColumn)
+{
+    qDebug() << "[QKeyMapper::currentCellChanged_slot]" << "Current Cell: (" << currentRow << "," << currentColumn << "), Previous Cell: (" << previousRow << "," << previousColumn << ")";
+}
+#endif
 
 void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
 {
@@ -19333,6 +19340,9 @@ void QKeyMapper::disconnectKeyMappingDataTableConnection()
         QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot);
         // QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTabl_ItemSelectionChanged);
         QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked);
+#ifdef DEBUG_LOGOUT_ON
+        QObject::disconnect(m_KeyMappingDataTable, &QTableWidget::currentCellChanged, this, &QKeyMapper::currentCellChanged_slot);
+#endif
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
@@ -19347,6 +19357,9 @@ void QKeyMapper::updateKeyMappingDataTableConnection()
         QObject::connect(m_KeyMappingDataTable, &QTableWidget::cellChanged, this, &QKeyMapper::cellChanged_slot, Qt::UniqueConnection);
         // QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemSelectionChanged, this, &QKeyMapper::keyMappingTabl_ItemSelectionChanged, Qt::UniqueConnection);
         QObject::connect(m_KeyMappingDataTable, &QTableWidget::itemDoubleClicked, this, &QKeyMapper::keyMappingTableItemDoubleClicked, Qt::UniqueConnection);
+#ifdef DEBUG_LOGOUT_ON
+        QObject::connect(m_KeyMappingDataTable, &QTableWidget::currentCellChanged, this, &QKeyMapper::currentCellChanged_slot, Qt::UniqueConnection);
+#endif
     }
     else {
 #ifdef DEBUG_LOGOUT_ON

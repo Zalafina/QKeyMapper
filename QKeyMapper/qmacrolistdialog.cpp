@@ -931,6 +931,10 @@ void QMacroListDialog::updateMacroDataTableConnection(MacroListDataTableWidget *
                          this, &QMacroListDialog::macroTableCellChanged, Qt::UniqueConnection);
         QObject::connect(macroDataTable, &QTableWidget::itemDoubleClicked,
                          this, &QMacroListDialog::macroTableItemDoubleClicked, Qt::UniqueConnection);
+#ifdef DEBUG_LOGOUT_ON
+        QObject::connect(macroDataTable, &QTableWidget::currentCellChanged,
+                         this, &QMacroListDialog::macroTableCurrentCellChanged, Qt::UniqueConnection);
+#endif
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
@@ -1649,6 +1653,13 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
 #endif
     }
 }
+
+#ifdef DEBUG_LOGOUT_ON
+void QMacroListDialog::macroTableCurrentCellChanged(int currentRow, int currentColumn, int previousRow, int previousColumn)
+{
+    qDebug() << "[QMacroListDialog::macroTableCurrentCellChanged]" << "Current Cell: (" << currentRow << "," << currentColumn << "), Previous Cell: (" << previousRow << "," << previousColumn << ")";
+}
+#endif
 
 void QMacroListDialog::macroListTableDragDropMove(int top_row, int bottom_row, int dragged_to)
 {
