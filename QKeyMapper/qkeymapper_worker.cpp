@@ -7102,7 +7102,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
         }
     }
 
-    emitSendOnMappingStopKeys();
+    if (!s_isWorkerDestructing) {
+        emitSendOnMappingStopKeys();
+    }
 
     // Restore KeyMappingDataList pointer to original tab's KeyMappingData
     QKeyMapper::restoreKeyMappingDataListPointer();
