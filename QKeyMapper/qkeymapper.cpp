@@ -547,11 +547,21 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(QString());
+    int languageIndex = ui->languageComboBox->currentIndex();
+    if (LANGUAGE_ENGLISH == languageIndex) {
+        changeLanguage(LANGUAGECODE_ENGLISH);
+    }
+    else if (LANGUAGE_JAPANESE == languageIndex) {
+        changeLanguage(LANGUAGECODE_JAPANESE);
+    }
+    else {
+        changeLanguage(LANGUAGECODE_CHINESE);
+    }
     QString displaySettingName = loadresult;
     if (displaySettingName == GROUPNAME_GLOBALSETTING) {
         displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
     }
-    ui->settingNameLineEdit->setText(displaySettingName);
+    ui->settingNameLineEdit->setText(loadresult);
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
     if (ui->startupAutoMonitoringCheckBox->isChecked()) {
