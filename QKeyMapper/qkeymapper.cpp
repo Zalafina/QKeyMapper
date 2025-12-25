@@ -547,7 +547,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(QString());
-    ui->settingNameLineEdit->setText(loadresult);
+    QString displaySettingName = loadresult;
+    if (displaySettingName == GROUPNAME_GLOBALSETTING) {
+        displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
+    }
+    ui->settingNameLineEdit->setText(displaySettingName);
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
 
@@ -14899,6 +14903,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         if (ui->startupAutoMonitoringCheckBox->isChecked() && settingtext.isEmpty()) {
             MappingSwitch(MAPPINGSTART_LOADSETTING);
         }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load setting success : " << "\"" << settingSelectStr << "\"";
+#endif
+
         return loadedSettingString;
     }
 }
