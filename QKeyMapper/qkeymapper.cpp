@@ -26268,7 +26268,7 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
 #ifdef VIGEM_CLIENT_SUPPORT
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "Uninstall ViGEm Bus.";
+        qDebug() << "Uninstall ViGEmBus Driver.";
 #endif
 
         // QKeyMapper_Worker::ViGEmClient_Remove();
@@ -26287,13 +26287,35 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
         if (QKeyMapper_Worker::VIGEMCLIENT_CONNECTING == connectstate
             || QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == connectstate) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[on_installViGEmBusButton_clicked]" <<"Skip Install ViGEm Bus on ConnectState ->" << connectstate;
+            qDebug() << "[on_installViGEmBusButton_clicked]" <<"Skip Install ViGEmBus Driver on ConnectState ->" << connectstate;
 #endif
             return;
         }
 
+        if (isViGEmBusInstalled()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "Install ViGEm Bus.";
+            qDebug() << "ViGEmBus Driver detected, uninstall it first.";
+#endif
+
+            (void)uninstallViGEmBusDriver();
+
+            int loop = 0;
+            for (loop = 0; loop < VIGEMBUS_UNINSTALL_WAIT_TIMEOUT; loop++) {
+                // Check if FakerInput driver is installed
+                if (!isViGEmBusInstalled()) {
+    #ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[on_installViGEmBusButton_clicked] ViGEmBus Driver detected as uninstalled after" << loop * VIGEMBUS_UNINSTALL_WAIT_INTERVAL << "ms";
+    #endif
+                    break;
+                }
+                else {
+                    QThread::msleep(VIGEMBUS_UNINSTALL_WAIT_INTERVAL);
+                }
+            }
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "Install ViGEmBus Driver.";
 #endif
         QKeyMapper_Worker::ViGEmClient_setConnectState(QKeyMapper_Worker::VIGEMCLIENT_CONNECTING);
         emit updateViGEmBusStatus_Signal();
@@ -26307,7 +26329,7 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
             // Check if ViGEmBus driver is installed
             if (isViGEmBusInstalled()) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[on_installViGEmBusButton_clicked] ViGEmBus driver detected as installed after" << loop * VIGEMBUS_INSTALL_WAIT_INTERVAL << "ms";
+                qDebug() << "[on_installViGEmBusButton_clicked] ViGEmBus Driver detected as installed after" << loop * VIGEMBUS_INSTALL_WAIT_INTERVAL << "ms";
 #endif
                 // Reconnect ViGEm client after the driver is installed
                 QTimer::singleShot(RECONNECT_VIGEMCLIENT_WAIT_TIME, this, SLOT(reconnectViGEmClient()));
@@ -26319,7 +26341,7 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
         }
 
         if (!isViGEmBusInstalled()) {
-            QString message = tr("%1 driver installation failed!").arg("ViGEmBus");
+            QString message = tr("%1 Driver installation failed!").arg("ViGEmBus");
             showFailurePopup(message);
         }
     }
@@ -26349,6 +26371,28 @@ void QKeyMapper::on_installFakerInputButton_clicked()
             return;
         }
 
+        if (isFakerInputInstalled()) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "FakerInput Driver detected, uninstall it first.";
+#endif
+
+            (void)uninstallFakerInputDriver();
+
+            int loop = 0;
+            for (loop = 0; loop < FAKERINPUT_UNINSTALL_WAIT_TIMEOUT; loop++) {
+                // Check if FakerInput driver is installed
+                if (!isFakerInputInstalled()) {
+    #ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[on_installFakerInputButton_clicked] FakerInput Driver detected as uninstalled after" << loop * FAKERINPUT_UNINSTALL_WAIT_INTERVAL << "ms";
+    #endif
+                    break;
+                }
+                else {
+                    QThread::msleep(FAKERINPUT_UNINSTALL_WAIT_INTERVAL);
+                }
+            }
+        }
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "Install FakerInput Driver.";
 #endif
@@ -26364,7 +26408,7 @@ void QKeyMapper::on_installFakerInputButton_clicked()
             // Check if FakerInput driver is installed
             if (isFakerInputInstalled()) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[on_installFakerInputButton_clicked] FakerInput driver detected as installed after" << loop * FAKERINPUT_INSTALL_WAIT_INTERVAL << "ms";
+                qDebug() << "[on_installFakerInputButton_clicked] FakerInput Driver detected as installed after" << loop * FAKERINPUT_INSTALL_WAIT_INTERVAL << "ms";
 #endif
                 // Reconnect FakerInput client after the driver is installed
                 QTimer::singleShot(RECONNECT_FAKERINPUTCLIENT_WAIT_TIME, this, SLOT(reconnectFakerInputClient()));
@@ -26376,7 +26420,7 @@ void QKeyMapper::on_installFakerInputButton_clicked()
         }
 
         if (!isFakerInputInstalled()) {
-            QString message = tr("%1 driver installation failed!").arg("FakerInput");
+            QString message = tr("%1 Driver installation failed!").arg("FakerInput");
             showFailurePopup(message);
         }
     }

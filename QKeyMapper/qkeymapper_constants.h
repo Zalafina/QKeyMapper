@@ -437,12 +437,20 @@ namespace QKeyMapperConstants {
     inline constexpr int RECONNECT_FAKERINPUTCLIENT_WAIT_TIME = 2000;
 
     // ViGEmBus driver installation detection constants
-    inline constexpr int VIGEMBUS_INSTALL_WAIT_INTERVAL = 50;                                       // Check every 50ms
-    inline constexpr int VIGEMBUS_INSTALL_WAIT_TIMEOUT = 8000/VIGEMBUS_INSTALL_WAIT_INTERVAL;       // Total timeout 8 seconds
+    inline constexpr int VIGEMBUS_INSTALL_WAIT_INTERVAL = 50;                                           // Check every 50ms
+    inline constexpr int VIGEMBUS_INSTALL_WAIT_TIMEOUT = 8000/VIGEMBUS_INSTALL_WAIT_INTERVAL;           // Total timeout 8 seconds
+
+    // ViGEmBus driver installation detection constants
+    inline constexpr int VIGEMBUS_UNINSTALL_WAIT_INTERVAL = 50;                                         // Check every 50ms
+    inline constexpr int VIGEMBUS_UNINSTALL_WAIT_TIMEOUT = 8000/VIGEMBUS_UNINSTALL_WAIT_INTERVAL;       // Total timeout 8 seconds
 
     // FakerInput driver installation detection constants
-    inline constexpr int FAKERINPUT_INSTALL_WAIT_INTERVAL = 50;                                     // Check every 50ms
-    inline constexpr int FAKERINPUT_INSTALL_WAIT_TIMEOUT = 8000/FAKERINPUT_INSTALL_WAIT_INTERVAL;   // Total timeout 8 seconds
+    inline constexpr int FAKERINPUT_INSTALL_WAIT_INTERVAL = 50;                                         // Check every 50ms
+    inline constexpr int FAKERINPUT_INSTALL_WAIT_TIMEOUT = 8000/FAKERINPUT_INSTALL_WAIT_INTERVAL;       // Total timeout 8 seconds
+
+    // FakerInput driver uninstallation detection constants
+    inline constexpr int FAKERINPUT_UNINSTALL_WAIT_INTERVAL = 50;                                       // Check every 50ms
+    inline constexpr int FAKERINPUT_UNINSTALL_WAIT_TIMEOUT = 8000/FAKERINPUT_UNINSTALL_WAIT_INTERVAL;   // Total timeout 8 seconds
 
     inline constexpr int INSTALL_INTERCEPTION_LOOP_WAIT_TIME = 50;
     inline constexpr int INSTALL_INTERCEPTION_LOOP_WAIT_TIME_MAX = 5000/INSTALL_INTERCEPTION_LOOP_WAIT_TIME;
