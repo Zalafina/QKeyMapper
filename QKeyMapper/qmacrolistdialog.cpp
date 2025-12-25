@@ -1132,6 +1132,10 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
                 // Move selected items up when Ctrl is pressed
                 macroListDialog->selectedMacroItemsMoveUp();
             }
+            else if (event->modifiers() & Qt::ShiftModifier) {
+                // Extend or shrink selection upward when Shift is pressed
+                macroListDialog->highlightSelectExtendUp();
+            }
             else {
                 // TableWidget highlight select up
                 macroListDialog->highlightSelectUp();
@@ -1146,6 +1150,10 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
             else if (event->modifiers() & Qt::ControlModifier) {
                 // Move selected items down when Ctrl is pressed
                 macroListDialog->selectedMacroItemsMoveDown();
+            }
+            else if (event->modifiers() & Qt::ShiftModifier) {
+                // Extend or shrink selection downward when Shift is pressed
+                macroListDialog->highlightSelectExtendDown();
             }
             else {
                 // TableWidget highlight select down
@@ -1886,6 +1894,171 @@ void QMacroListDialog::highlightSelectDown()
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[highlightSelectDown] Selected row" << newSelectedRow;
+#endif
+}
+
+void QMacroListDialog::highlightSelectExtendUp()
+{
+    // Check if table is filtered
+    if (isMacroDataTableFiltered()) {
+        return;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable || macroDataTable->rowCount() <= 0) {
+        return;
+    }
+
+    // Get current selection ranges
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectExtendUp] No selection, delegate to highlightSelectUp";
+#endif
+        // No selection exists, behave like normal Up key
+        highlightSelectUp();
+        return;
+    }
+
+    // Get selection boundaries
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+    int currentRow = macroDataTable->currentRow();
+
+    // Determine the anchor point (the row that stays fixed during Shift selection)
+    // In Windows standard behavior:
+    // - If currentRow is at or near the top of selection, we shrink from bottom
+    // - If currentRow is at or near the bottom of selection, we extend from top
+    bool currentAtTop = (currentRow <= topRow);
+    bool currentAtBottom = (currentRow >= bottomRow);
+
+    int newTopRow = topRow;
+    int newBottomRow = bottomRow;
+    int newCurrentRow = currentRow;
+
+    if (currentAtTop || (!currentAtTop && !currentAtBottom)) {
+        // Current is at top or in middle - extend selection upward
+        if (topRow <= 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[highlightSelectExtendUp] Already at top boundary, cannot extend up";
+#endif
+            return;
+        }
+        newTopRow = topRow - 1;
+        newCurrentRow = newTopRow;
+    }
+    else if (currentAtBottom) {
+        // Current is at bottom - shrink selection from bottom
+        if (topRow >= bottomRow) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[highlightSelectExtendUp] Selection is single row, cannot shrink";
+#endif
+            return;
+        }
+        newBottomRow = bottomRow - 1;
+        newCurrentRow = newBottomRow;
+    }
+
+    // Apply new selection
+    macroDataTable->clearSelection();
+    QTableWidgetSelectionRange newSelection(newTopRow, 0, newBottomRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    macroDataTable->setRangeSelected(newSelection, true);
+
+    // Update current cell to the edge that moved
+    macroDataTable->setCurrentCell(newCurrentRow, 0, QItemSelectionModel::NoUpdate);
+
+    // Scroll to make the current row visible
+    QTableWidgetItem *itemToScrollTo = macroDataTable->item(newCurrentRow, 0);
+    if (itemToScrollTo) {
+        macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectExtendUp] Selection range:" << newTopRow << "-" << newBottomRow << ", currentRow:" << newCurrentRow;
+#endif
+}
+
+void QMacroListDialog::highlightSelectExtendDown()
+{
+    // Check if table is filtered
+    if (isMacroDataTableFiltered()) {
+        return;
+    }
+
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable || macroDataTable->rowCount() <= 0) {
+        return;
+    }
+
+    // Get current selection ranges
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectExtendDown] No selection, delegate to highlightSelectDown";
+#endif
+        // No selection exists, behave like normal Down key
+        highlightSelectDown();
+        return;
+    }
+
+    // Get selection boundaries
+    QTableWidgetSelectionRange range = selectedRanges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+    int currentRow = macroDataTable->currentRow();
+    int rowCount = macroDataTable->rowCount();
+
+    // Determine the anchor point (the row that stays fixed during Shift selection)
+    // In Windows standard behavior:
+    // - If currentRow is at or near the bottom of selection, we extend downward
+    // - If currentRow is at or near the top of selection, we shrink from top
+    bool currentAtTop = (currentRow <= topRow);
+    bool currentAtBottom = (currentRow >= bottomRow);
+
+    int newTopRow = topRow;
+    int newBottomRow = bottomRow;
+    int newCurrentRow = currentRow;
+
+    if (currentAtBottom || (!currentAtTop && !currentAtBottom)) {
+        // Current is at bottom or in middle - extend selection downward
+        if (bottomRow >= rowCount - 1) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[highlightSelectExtendDown] Already at bottom boundary, cannot extend down";
+#endif
+            return;
+        }
+        newBottomRow = bottomRow + 1;
+        newCurrentRow = newBottomRow;
+    }
+    else if (currentAtTop) {
+        // Current is at top - shrink selection from top
+        if (topRow >= bottomRow) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[highlightSelectExtendDown] Selection is single row, cannot shrink";
+#endif
+            return;
+        }
+        newTopRow = topRow + 1;
+        newCurrentRow = newTopRow;
+    }
+
+    // Apply new selection
+    macroDataTable->clearSelection();
+    QTableWidgetSelectionRange newSelection(newTopRow, 0, newBottomRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+    macroDataTable->setRangeSelected(newSelection, true);
+
+    // Update current cell to the edge that moved
+    macroDataTable->setCurrentCell(newCurrentRow, 0, QItemSelectionModel::NoUpdate);
+
+    // Scroll to make the current row visible
+    QTableWidgetItem *itemToScrollTo = macroDataTable->item(newCurrentRow, 0);
+    if (itemToScrollTo) {
+        macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[highlightSelectExtendDown] Selection range:" << newTopRow << "-" << newBottomRow << ", currentRow:" << newCurrentRow;
 #endif
 }
 

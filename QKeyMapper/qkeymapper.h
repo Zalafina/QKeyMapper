@@ -1174,6 +1174,10 @@ public slots:
 
     void highlightSelectDown();
 
+    void highlightSelectExtendUp();
+
+    void highlightSelectExtendDown();
+
     void highlightSelectFirst();
 
     void highlightSelectLast();
