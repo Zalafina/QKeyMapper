@@ -554,6 +554,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingNameLineEdit->setText(displaySettingName);
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
+    if (ui->startupAutoMonitoringCheckBox->isChecked()) {
+        MappingSwitch(MAPPINGSTART_LOADSETTING);
+    }
 
     initGyro2MouseSpinBoxes();
     m_MappingAdvancedDialog->initGamepadThresholdSpinBoxes();
@@ -14898,10 +14901,6 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
             // ui->settingselectComboBox->setCurrentText(settingSelectStr);
             loadedSettingString = settingSelectStr;
             ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
-        }
-
-        if (ui->startupAutoMonitoringCheckBox->isChecked() && settingtext.isEmpty()) {
-            MappingSwitch(MAPPINGSTART_LOADSETTING);
         }
 
 #ifdef DEBUG_LOGOUT_ON
