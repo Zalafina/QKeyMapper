@@ -1785,35 +1785,55 @@ void QMacroListDialog::macroListTableDragDropMove(int top_row, int bottom_row, i
 
 void QMacroListDialog::highlightSelectUp()
 {
-    // Check if table is filtered
-    if (isMacroDataTableFiltered()) {
-        return;
-    }
-
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
     if (!macroDataTable || macroDataTable->rowCount() <= 0) {
         return;
     }
 
+    bool isFiltered = isMacroDataTableFiltered();
+
     // Get current selection ranges
     QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[highlightSelectUp] No selected item, selecting last row";
+        qDebug() << "[highlightSelectUp] No selected item, selecting last visible row";
 #endif
-        // Select the last row when no selection exists
+        // Select the last visible row when no selection exists
         highlightSelectLast();
         return;
     }
 
-    // Get the first selected range
-    QTableWidgetSelectionRange range = selectedRanges.first();
-    int topRow = range.topRow();
+    // Find the topmost visible selected row
+    int topVisibleSelectedRow = -1;
+    for (const QTableWidgetSelectionRange &range : selectedRanges) {
+        for (int row = range.topRow(); row <= range.bottomRow(); ++row) {
+            if (!macroDataTable->isRowHidden(row)) {
+                if (topVisibleSelectedRow == -1 || row < topVisibleSelectedRow) {
+                    topVisibleSelectedRow = row;
+                }
+                break;
+            }
+        }
+    }
 
-    // Check boundary - already at the top
-    if (topRow <= 0) {
+    if (topVisibleSelectedRow == -1) {
+        // No visible selected row found
+        highlightSelectLast();
+        return;
+    }
+
+    // Find the previous visible row
+    int newSelectedRow = -1;
+    for (int row = topVisibleSelectedRow - 1; row >= 0; --row) {
+        if (!macroDataTable->isRowHidden(row)) {
+            newSelectedRow = row;
+            break;
+        }
+    }
+
+    if (newSelectedRow == -1) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[highlightSelectUp] Already at the top, cannot select up";
+        qDebug() << "[highlightSelectUp] Already at the top visible row, cannot select up";
 #endif
         return;
     }
@@ -1822,7 +1842,6 @@ void QMacroListDialog::highlightSelectUp()
     macroDataTable->clearSelection();
 
     // Select the row above
-    int newSelectedRow = topRow - 1;
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
     macroDataTable->setRangeSelected(newSelection, true);
 
@@ -1836,41 +1855,63 @@ void QMacroListDialog::highlightSelectUp()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[highlightSelectUp] Selected row" << newSelectedRow;
+    qDebug() << "[highlightSelectUp] Selected row" << newSelectedRow << "(filtered:" << isFiltered << ")";
 #endif
+    Q_UNUSED(isFiltered);
 }
 
 void QMacroListDialog::highlightSelectDown()
 {
-    // Check if table is filtered
-    if (isMacroDataTableFiltered()) {
-        return;
-    }
-
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
     if (!macroDataTable || macroDataTable->rowCount() <= 0) {
         return;
     }
 
+    bool isFiltered = isMacroDataTableFiltered();
+
     // Get current selection ranges
     QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[highlightSelectDown] No selected item, selecting first row";
+        qDebug() << "[highlightSelectDown] No selected item, selecting first visible row";
 #endif
-        // Select the first row when no selection exists
+        // Select the first visible row when no selection exists
         highlightSelectFirst();
         return;
     }
 
-    // Get the first selected range
-    QTableWidgetSelectionRange range = selectedRanges.first();
-    int bottomRow = range.bottomRow();
+    // Find the bottommost visible selected row
+    int bottomVisibleSelectedRow = -1;
+    for (const QTableWidgetSelectionRange &range : selectedRanges) {
+        for (int row = range.bottomRow(); row >= range.topRow(); --row) {
+            if (!macroDataTable->isRowHidden(row)) {
+                if (bottomVisibleSelectedRow == -1 || row > bottomVisibleSelectedRow) {
+                    bottomVisibleSelectedRow = row;
+                }
+                break;
+            }
+        }
+    }
 
-    // Check boundary - already at the bottom
-    if (bottomRow >= macroDataTable->rowCount() - 1) {
+    if (bottomVisibleSelectedRow == -1) {
+        // No visible selected row found
+        highlightSelectFirst();
+        return;
+    }
+
+    // Find the next visible row
+    int newSelectedRow = -1;
+    int rowCount = macroDataTable->rowCount();
+    for (int row = bottomVisibleSelectedRow + 1; row < rowCount; ++row) {
+        if (!macroDataTable->isRowHidden(row)) {
+            newSelectedRow = row;
+            break;
+        }
+    }
+
+    if (newSelectedRow == -1) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[highlightSelectDown] Already at the bottom, cannot select down";
+        qDebug() << "[highlightSelectDown] Already at the bottom visible row, cannot select down";
 #endif
         return;
     }
@@ -1879,7 +1920,6 @@ void QMacroListDialog::highlightSelectDown()
     macroDataTable->clearSelection();
 
     // Select the row below
-    int newSelectedRow = bottomRow + 1;
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
     macroDataTable->setRangeSelected(newSelection, true);
 
@@ -1893,21 +1933,19 @@ void QMacroListDialog::highlightSelectDown()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[highlightSelectDown] Selected row" << newSelectedRow;
+    qDebug() << "[highlightSelectDown] Selected row" << newSelectedRow << "(filtered:" << isFiltered << ")";
 #endif
+    Q_UNUSED(isFiltered);
 }
 
 void QMacroListDialog::highlightSelectExtendUp()
 {
-    // Check if table is filtered
-    if (isMacroDataTableFiltered()) {
-        return;
-    }
-
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
     if (!macroDataTable || macroDataTable->rowCount() <= 0) {
         return;
     }
+
+    bool isFiltered = isMacroDataTableFiltered();
 
     // Get current selection ranges
     QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
@@ -1926,38 +1964,76 @@ void QMacroListDialog::highlightSelectExtendUp()
     int bottomRow = range.bottomRow();
     int currentRow = macroDataTable->currentRow();
 
+    // Find the topmost and bottommost visible rows in current selection
+    int topVisibleRow = -1;
+    int bottomVisibleRow = -1;
+    for (int row = topRow; row <= bottomRow; ++row) {
+        if (!macroDataTable->isRowHidden(row)) {
+            if (topVisibleRow == -1) {
+                topVisibleRow = row;
+            }
+            bottomVisibleRow = row;
+        }
+    }
+
+    // If no visible row in selection, delegate to highlightSelectUp
+    if (topVisibleRow == -1) {
+        highlightSelectUp();
+        return;
+    }
+
     // Determine the anchor point (the row that stays fixed during Shift selection)
     // In Windows standard behavior:
-    // - If currentRow is at or near the top of selection, we shrink from bottom
-    // - If currentRow is at or near the bottom of selection, we extend from top
-    bool currentAtTop = (currentRow <= topRow);
-    bool currentAtBottom = (currentRow >= bottomRow);
+    // - If currentRow is at or near the top of selection, we extend upward from top
+    // - If currentRow is at or near the bottom of selection, we shrink from bottom
+    bool currentAtTop = (currentRow <= topVisibleRow);
+    bool currentAtBottom = (currentRow >= bottomVisibleRow);
 
     int newTopRow = topRow;
     int newBottomRow = bottomRow;
     int newCurrentRow = currentRow;
 
     if (currentAtTop || (!currentAtTop && !currentAtBottom)) {
-        // Current is at top or in middle - extend selection upward
-        if (topRow <= 0) {
+        // Current is at top or in middle - extend selection upward to next visible row
+        int nextVisibleRowUp = -1;
+        for (int row = topRow - 1; row >= 0; --row) {
+            if (!macroDataTable->isRowHidden(row)) {
+                nextVisibleRowUp = row;
+                break;
+            }
+        }
+
+        if (nextVisibleRowUp == -1) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[highlightSelectExtendUp] Already at top boundary, cannot extend up";
+            qDebug() << "[highlightSelectExtendUp] Already at top visible boundary, cannot extend up";
 #endif
             return;
         }
-        newTopRow = topRow - 1;
-        newCurrentRow = newTopRow;
+        // Extend selection to include all rows up to (and including) the next visible row
+        newTopRow = nextVisibleRowUp;
+        newCurrentRow = nextVisibleRowUp;
     }
     else if (currentAtBottom) {
-        // Current is at bottom - shrink selection from bottom
-        if (topRow >= bottomRow) {
+        // Current is at bottom - shrink selection from bottom to previous visible row
+        if (topVisibleRow >= bottomVisibleRow) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[highlightSelectExtendUp] Selection is single row, cannot shrink";
+            qDebug() << "[highlightSelectExtendUp] Selection has only one visible row, cannot shrink";
 #endif
             return;
         }
-        newBottomRow = bottomRow - 1;
-        newCurrentRow = newBottomRow;
+        // Find the second-to-last visible row
+        int prevVisibleRow = -1;
+        for (int row = bottomRow - 1; row >= topRow; --row) {
+            if (!macroDataTable->isRowHidden(row)) {
+                prevVisibleRow = row;
+                break;
+            }
+        }
+        if (prevVisibleRow == -1 || prevVisibleRow < topRow) {
+            return;
+        }
+        newBottomRow = prevVisibleRow;
+        newCurrentRow = prevVisibleRow;
     }
 
     // Apply new selection
@@ -1975,21 +2051,20 @@ void QMacroListDialog::highlightSelectExtendUp()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[highlightSelectExtendUp] Selection range:" << newTopRow << "-" << newBottomRow << ", currentRow:" << newCurrentRow;
+    qDebug() << "[highlightSelectExtendUp] Selection range:" << newTopRow << "-" << newBottomRow << ", currentRow:" << newCurrentRow << "(filtered:" << isFiltered << ")";
 #endif
+    Q_UNUSED(isFiltered);
 }
 
 void QMacroListDialog::highlightSelectExtendDown()
 {
-    // Check if table is filtered
-    if (isMacroDataTableFiltered()) {
-        return;
-    }
-
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
     if (!macroDataTable || macroDataTable->rowCount() <= 0) {
         return;
     }
+
+    bool isFiltered = isMacroDataTableFiltered();
+    int rowCount = macroDataTable->rowCount();
 
     // Get current selection ranges
     QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
@@ -2007,40 +2082,77 @@ void QMacroListDialog::highlightSelectExtendDown()
     int topRow = range.topRow();
     int bottomRow = range.bottomRow();
     int currentRow = macroDataTable->currentRow();
-    int rowCount = macroDataTable->rowCount();
+
+    // Find the topmost and bottommost visible rows in current selection
+    int topVisibleRow = -1;
+    int bottomVisibleRow = -1;
+    for (int row = topRow; row <= bottomRow; ++row) {
+        if (!macroDataTable->isRowHidden(row)) {
+            if (topVisibleRow == -1) {
+                topVisibleRow = row;
+            }
+            bottomVisibleRow = row;
+        }
+    }
+
+    // If no visible row in selection, delegate to highlightSelectDown
+    if (bottomVisibleRow == -1) {
+        highlightSelectDown();
+        return;
+    }
 
     // Determine the anchor point (the row that stays fixed during Shift selection)
     // In Windows standard behavior:
     // - If currentRow is at or near the bottom of selection, we extend downward
     // - If currentRow is at or near the top of selection, we shrink from top
-    bool currentAtTop = (currentRow <= topRow);
-    bool currentAtBottom = (currentRow >= bottomRow);
+    bool currentAtTop = (currentRow <= topVisibleRow);
+    bool currentAtBottom = (currentRow >= bottomVisibleRow);
 
     int newTopRow = topRow;
     int newBottomRow = bottomRow;
     int newCurrentRow = currentRow;
 
     if (currentAtBottom || (!currentAtTop && !currentAtBottom)) {
-        // Current is at bottom or in middle - extend selection downward
-        if (bottomRow >= rowCount - 1) {
+        // Current is at bottom or in middle - extend selection downward to next visible row
+        int nextVisibleRowDown = -1;
+        for (int row = bottomRow + 1; row < rowCount; ++row) {
+            if (!macroDataTable->isRowHidden(row)) {
+                nextVisibleRowDown = row;
+                break;
+            }
+        }
+
+        if (nextVisibleRowDown == -1) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[highlightSelectExtendDown] Already at bottom boundary, cannot extend down";
+            qDebug() << "[highlightSelectExtendDown] Already at bottom visible boundary, cannot extend down";
 #endif
             return;
         }
-        newBottomRow = bottomRow + 1;
-        newCurrentRow = newBottomRow;
+        // Extend selection to include all rows down to (and including) the next visible row
+        newBottomRow = nextVisibleRowDown;
+        newCurrentRow = nextVisibleRowDown;
     }
     else if (currentAtTop) {
-        // Current is at top - shrink selection from top
-        if (topRow >= bottomRow) {
+        // Current is at top - shrink selection from top to next visible row
+        if (topVisibleRow >= bottomVisibleRow) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[highlightSelectExtendDown] Selection is single row, cannot shrink";
+            qDebug() << "[highlightSelectExtendDown] Selection has only one visible row, cannot shrink";
 #endif
             return;
         }
-        newTopRow = topRow + 1;
-        newCurrentRow = newTopRow;
+        // Find the second visible row from top
+        int nextVisibleRow = -1;
+        for (int row = topRow + 1; row <= bottomRow; ++row) {
+            if (!macroDataTable->isRowHidden(row)) {
+                nextVisibleRow = row;
+                break;
+            }
+        }
+        if (nextVisibleRow == -1 || nextVisibleRow > bottomRow) {
+            return;
+        }
+        newTopRow = nextVisibleRow;
+        newCurrentRow = nextVisibleRow;
     }
 
     // Apply new selection
@@ -2058,27 +2170,41 @@ void QMacroListDialog::highlightSelectExtendDown()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[highlightSelectExtendDown] Selection range:" << newTopRow << "-" << newBottomRow << ", currentRow:" << newCurrentRow;
+    qDebug() << "[highlightSelectExtendDown] Selection range:" << newTopRow << "-" << newBottomRow << ", currentRow:" << newCurrentRow << "(filtered:" << isFiltered << ")";
 #endif
+    Q_UNUSED(isFiltered);
 }
 
 void QMacroListDialog::highlightSelectFirst()
 {
-    // Check if table is filtered
-    if (isMacroDataTableFiltered()) {
-        return;
-    }
-
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
     if (!macroDataTable || macroDataTable->rowCount() <= 0) {
         return;
     }
 
+    bool isFiltered = isMacroDataTableFiltered();
+
     // Clear current selection
     macroDataTable->clearSelection();
 
-    // Select the first row
-    int newSelectedRow = 0;
+    // Find the first visible row
+    int newSelectedRow = -1;
+    int rowCount = macroDataTable->rowCount();
+    for (int row = 0; row < rowCount; ++row) {
+        if (!macroDataTable->isRowHidden(row)) {
+            newSelectedRow = row;
+            break;
+        }
+    }
+
+    if (newSelectedRow == -1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectFirst] No visible row found";
+#endif
+        return;
+    }
+
+    // Select the first visible row
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
     macroDataTable->setRangeSelected(newSelection, true);
 
@@ -2092,27 +2218,40 @@ void QMacroListDialog::highlightSelectFirst()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[highlightSelectFirst] Selected first row" << newSelectedRow;
+    qDebug() << "[highlightSelectFirst] Selected first visible row" << newSelectedRow << "(filtered:" << isFiltered << ")";
 #endif
+    Q_UNUSED(isFiltered);
 }
 
 void QMacroListDialog::highlightSelectLast()
 {
-    // Check if table is filtered
-    if (isMacroDataTableFiltered()) {
-        return;
-    }
-
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
     if (!macroDataTable || macroDataTable->rowCount() <= 0) {
         return;
     }
 
+    bool isFiltered = isMacroDataTableFiltered();
+
     // Clear current selection
     macroDataTable->clearSelection();
 
-    // Select the last row
-    int newSelectedRow = macroDataTable->rowCount() - 1;
+    // Find the last visible row
+    int newSelectedRow = -1;
+    for (int row = macroDataTable->rowCount() - 1; row >= 0; --row) {
+        if (!macroDataTable->isRowHidden(row)) {
+            newSelectedRow = row;
+            break;
+        }
+    }
+
+    if (newSelectedRow == -1) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectLast] No visible row found";
+#endif
+        return;
+    }
+
+    // Select the last visible row
     QTableWidgetSelectionRange newSelection(newSelectedRow, 0, newSelectedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
     macroDataTable->setRangeSelected(newSelection, true);
 
@@ -2126,8 +2265,9 @@ void QMacroListDialog::highlightSelectLast()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[highlightSelectLast] Selected last row" << newSelectedRow;
+    qDebug() << "[highlightSelectLast] Selected last visible row" << newSelectedRow << "(filtered:" << isFiltered << ")";
 #endif
+    Q_UNUSED(isFiltered);
 }
 
 void QMacroListDialog::clearHighlightSelection()
@@ -2233,10 +2373,14 @@ int QMacroListDialog::copySelectedMacroDataToCopiedList()
     int top_row = range.topRow();
     int bottom_row = range.bottomRow();
 
-    // Clear and populate the copied macro data
+    // Clear and populate the copied macro data (only visible rows)
     s_CopiedMacroData.clear();
     QList<QString> macroNameList = macroDataList->keys();
     for (int row = top_row; row <= bottom_row; ++row) {
+        // Skip hidden rows (filtered out rows)
+        if (macroDataTable->isRowHidden(row)) {
+            continue;
+        }
         if (row < macroNameList.size()) {
             QString macroName = macroNameList.at(row);
             s_CopiedMacroData[macroName] = macroDataList->value(macroName);
@@ -2245,7 +2389,7 @@ int QMacroListDialog::copySelectedMacroDataToCopiedList()
     copied_count = s_CopiedMacroData.size();
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[copySelectedMacroDataToCopiedList] Ctrl+C pressed, copy(" << copied_count << ") selected macro data to s_CopiedMacroData";
+    qDebug().nospace() << "[copySelectedMacroDataToCopiedList] Ctrl+C pressed, copy(" << copied_count << ") visible selected macro data to s_CopiedMacroData";
 #endif
 
     return copied_count;
