@@ -2496,18 +2496,71 @@ int QMacroListDialog::insertMacroDataFromCopiedList()
         return inserted_count;
     }
 
-    // Insert all macro data to the end of the current list
-    for (auto it = insertMacroDataList.begin(); it != insertMacroDataList.end(); ++it) {
-        (*macroDataList)[it.key()] = it.value();
+    bool insertToEnd = false;
+    int insertRow = -1;
+
+    // If there is a highlighted selection, insert at the selected row index (Excel-like).
+    // If there is no selection, keep the existing behavior and append to the end.
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[insertMacroDataFromCopiedList] There is no selected item, insert to the end.";
+#endif
+        insertToEnd = true;
+    }
+    else {
+        QTableWidgetSelectionRange range = selectedRanges.first();
+        insertRow = range.topRow();
+    }
+
+    if (insertToEnd) {
+        // Append to the end of the current list (existing behavior)
+        for (auto it = insertMacroDataList.begin(); it != insertMacroDataList.end(); ++it) {
+            (*macroDataList)[it.key()] = it.value();
+        }
+    }
+    else {
+        // Rebuild OrderedMap to insert items at a specific index while preserving order
+        QList<QString> existingKeys = macroDataList->keys();
+        if (insertRow < 0) {
+            insertRow = 0;
+        }
+        if (insertRow > existingKeys.size()) {
+            insertRow = existingKeys.size();
+        }
+
+        OrderedMap<QString, MappingMacroData> rebuilt;
+        bool inserted = false;
+
+        for (int i = 0; i < existingKeys.size(); ++i) {
+            if (!inserted && i == insertRow) {
+                for (auto it = insertMacroDataList.begin(); it != insertMacroDataList.end(); ++it) {
+                    rebuilt[it.key()] = it.value();
+                }
+                inserted = true;
+            }
+
+            const QString &key = existingKeys.at(i);
+            rebuilt[key] = macroDataList->value(key);
+        }
+
+        // Insert at end (when insertRow == existingKeys.size())
+        if (!inserted) {
+            for (auto it = insertMacroDataList.begin(); it != insertMacroDataList.end(); ++it) {
+                rebuilt[it.key()] = it.value();
+            }
+        }
+
+        *macroDataList = rebuilt;
     }
 
     // Refresh table display
     refreshMacroListTabWidget(macroDataTable, *macroDataList);
 
-    // Reselect inserted rows at the end
+    // Reselect inserted rows
     if (inserted_count > 0) {
-        int startRow = macroDataTable->rowCount() - inserted_count;
-        int endRow = macroDataTable->rowCount() - 1;
+        int startRow = insertToEnd ? (macroDataTable->rowCount() - inserted_count) : insertRow;
+        int endRow = startRow + inserted_count - 1;
         QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(startRow, 0, endRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
         macroDataTable->clearSelection();
         macroDataTable->setRangeSelected(newSelection, true);
@@ -2523,7 +2576,12 @@ int QMacroListDialog::insertMacroDataFromCopiedList()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[insertMacroDataFromCopiedList] Ctrl+V pressed, inserted (" << inserted_count << ") macros to the end of current macro list";
+    if (insertToEnd) {
+        qDebug().nospace() << "[insertMacroDataFromCopiedList] Ctrl+V pressed, appended (" << inserted_count << ") macros to the end of current macro list";
+    }
+    else {
+        qDebug().nospace() << "[insertMacroDataFromCopiedList] Ctrl+V pressed, inserted (" << inserted_count << ") macros at row(" << insertRow << ") of current macro list";
+    }
 #endif
 
     return inserted_count;

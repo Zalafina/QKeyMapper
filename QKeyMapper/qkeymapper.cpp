@@ -1785,7 +1785,7 @@ void QKeyMapper::startWinEventHook()
         );
 #ifdef DEBUG_LOGOUT_ON
         if (s_WinEventHook != Q_NULLPTR) {
-            qDebug("[SetHookProc] QKeyMapper::setKeyHook() SetWinEventHook Success. -> 0x%08X", (void*)s_WinEventHook);
+            qDebug("[SetHookProc] QKeyMapper::startWinEventHook() SetWinEventHook Success. -> 0x%08X", (void*)s_WinEventHook);
         }
 #endif
     }
