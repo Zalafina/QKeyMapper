@@ -70,6 +70,27 @@ public:
 
     iterator insert(const Key &key, const Value &value);
 
+    /**
+     * @brief Inserts or moves a key/value at a specific index while preserving order.
+     *
+     * If the key does not exist, it is inserted at the specified index.
+     * If the key already exists, its value is updated and the key is moved to the specified index.
+     *
+     * Time complexity: O(n) for index traversal + O(1) average case (hash operations)
+     */
+    iterator insertAt(int index, const Key &key, const Value &value);
+
+    /**
+     * @brief Inserts (or moves) all items from another OrderedMap at a specific index.
+     *
+     * Items are inserted in the order provided by @p other.
+     * Existing keys are updated and moved into the inserted block (no duplicate keys).
+     *
+     * Time complexity: O(n) for initial index traversal + O(m) list operations + O(m) average hash ops,
+     * where m is other.size().
+     */
+    int insertAt(int index, const OrderedMap<Key, Value> &other);
+
     bool isEmpty() const;
 
     QList<Key> keys() const;
@@ -419,6 +440,121 @@ typename OrderedMap<Key, Value>::iterator OrderedMap<Key, Value>::insert(const K
     pair.second = ioIter;
     data.insert(key, pair);
     return iterator(ioIter, &data);
+}
+
+template <typename Key, typename Value>
+typename OrderedMap<Key, Value>::iterator OrderedMap<Key, Value>::insertAt(int index, const Key &key, const Value &value)
+{
+    int currentSize = size();
+    if (index < 0) {
+        index = 0;
+    }
+    if (index > currentSize) {
+        index = currentSize;
+    }
+
+    OMHashIterator hit = data.find(key);
+    bool existed = (hit != data.end());
+
+    // If key exists, remove the old reference first and adjust index so that
+    // the final position matches the requested index as closely as possible.
+    if (existed) {
+        QllIterator oldIt = hit.value().second;
+
+        // Compute old index to adjust insertion index after removal.
+        int oldIndex = 0;
+        for (QllIterator it = insertOrder.begin(); it != oldIt; ++it) {
+            ++oldIndex;
+        }
+
+        insertOrder.erase(oldIt);
+
+        // After removing an element before the target index, the target index shifts left by 1.
+        if (oldIndex < index) {
+            --index;
+        }
+
+        // Clamp again after adjustment
+        currentSize = size();
+        if (index < 0) {
+            index = 0;
+        }
+        if (index > currentSize) {
+            index = currentSize;
+        }
+    }
+
+    QllIterator insertPos = insertOrder.begin();
+    std::advance(insertPos, index);
+
+    QllIterator newIt = insertOrder.insert(insertPos, key);
+
+    if (!existed) {
+        data.insert(key, OMHashValue(value, newIt));
+    }
+    else {
+        // Refresh iterator after potential hash detaches/operations
+        hit = data.find(key);
+        OMHashValue &pair = hit.value();
+        pair.first = value;
+        pair.second = newIt;
+    }
+
+    return iterator(newIt, &data);
+}
+
+template <typename Key, typename Value>
+int OrderedMap<Key, Value>::insertAt(int index, const OrderedMap<Key, Value> &other)
+{
+    if (other.isEmpty()) {
+        return 0;
+    }
+
+    int currentSize = size();
+    if (index < 0) {
+        index = 0;
+    }
+    if (index > currentSize) {
+        index = currentSize;
+    }
+
+    QllIterator insertPos = insertOrder.begin();
+    std::advance(insertPos, index);
+
+    // Insert sequentially while keeping a stable insertion cursor.
+    for (auto it = other.begin(); it != other.end(); ++it) {
+        const Key &k = it.key();
+        const Value &v = it.value();
+
+        OMHashIterator hit = data.find(k);
+        if (hit != data.end()) {
+            // Remove old list reference first (avoid duplicates). Keep insertPos valid.
+            QllIterator oldListIt = hit.value().second;
+            if (oldListIt == insertPos) {
+                insertPos = insertOrder.erase(oldListIt);
+            }
+            else {
+                insertOrder.erase(oldListIt);
+            }
+
+            QllIterator newIt = insertOrder.insert(insertPos, k);
+            OMHashValue &pair = hit.value();
+            pair.first = v;
+            pair.second = newIt;
+
+            insertPos = newIt;
+            ++insertPos;
+        }
+        else {
+            QllIterator newIt = insertOrder.insert(insertPos, k);
+            data.insert(k, OMHashValue(v, newIt));
+
+            insertPos = newIt;
+            ++insertPos;
+        }
+    }
+
+    return other.size();
 }
 
 template <typename Key, typename Value>

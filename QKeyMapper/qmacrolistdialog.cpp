@@ -2520,38 +2520,9 @@ int QMacroListDialog::insertMacroDataFromCopiedList()
         }
     }
     else {
-        // Rebuild OrderedMap to insert items at a specific index while preserving order
-        QList<QString> existingKeys = macroDataList->keys();
-        if (insertRow < 0) {
-            insertRow = 0;
-        }
-        if (insertRow > existingKeys.size()) {
-            insertRow = existingKeys.size();
-        }
-
-        OrderedMap<QString, MappingMacroData> rebuilt;
-        bool inserted = false;
-
-        for (int i = 0; i < existingKeys.size(); ++i) {
-            if (!inserted && i == insertRow) {
-                for (auto it = insertMacroDataList.begin(); it != insertMacroDataList.end(); ++it) {
-                    rebuilt[it.key()] = it.value();
-                }
-                inserted = true;
-            }
-
-            const QString &key = existingKeys.at(i);
-            rebuilt[key] = macroDataList->value(key);
-        }
-
-        // Insert at end (when insertRow == existingKeys.size())
-        if (!inserted) {
-            for (auto it = insertMacroDataList.begin(); it != insertMacroDataList.end(); ++it) {
-                rebuilt[it.key()] = it.value();
-            }
-        }
-
-        *macroDataList = rebuilt;
+        // Insert at the selected row index (Excel-like) while preserving order.
+        // This uses OrderedMap::insertAt to avoid rebuilding the container.
+        macroDataList->insertAt(insertRow, insertMacroDataList);
     }
 
     // Refresh table display
