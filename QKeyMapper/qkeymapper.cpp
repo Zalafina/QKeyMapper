@@ -24050,7 +24050,7 @@ void QKeyMapper::highlightSelectUp()
 
     // Get the first selected range - find the topmost visible selected row
     int topVisibleSelectedRow = -1;
-    for (const QTableWidgetSelectionRange &range : selectedRanges) {
+    for (const QTableWidgetSelectionRange &range : std::as_const(selectedRanges)) {
         for (int row = range.topRow(); row <= range.bottomRow(); ++row) {
             if (!m_KeyMappingDataTable->isRowHidden(row)) {
                 if (topVisibleSelectedRow == -1 || row < topVisibleSelectedRow) {
@@ -24126,7 +24126,7 @@ void QKeyMapper::highlightSelectDown()
 
     // Find the bottommost visible selected row
     int bottomVisibleSelectedRow = -1;
-    for (const QTableWidgetSelectionRange &range : selectedRanges) {
+    for (const QTableWidgetSelectionRange &range : std::as_const(selectedRanges)) {
         for (int row = range.bottomRow(); row >= range.topRow(); --row) {
             if (!m_KeyMappingDataTable->isRowHidden(row)) {
                 if (bottomVisibleSelectedRow == -1 || row > bottomVisibleSelectedRow) {

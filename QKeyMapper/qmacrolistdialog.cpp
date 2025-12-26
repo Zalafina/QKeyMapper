@@ -1805,7 +1805,7 @@ void QMacroListDialog::highlightSelectUp()
 
     // Find the topmost visible selected row
     int topVisibleSelectedRow = -1;
-    for (const QTableWidgetSelectionRange &range : selectedRanges) {
+    for (const QTableWidgetSelectionRange &range : std::as_const(selectedRanges)) {
         for (int row = range.topRow(); row <= range.bottomRow(); ++row) {
             if (!macroDataTable->isRowHidden(row)) {
                 if (topVisibleSelectedRow == -1 || row < topVisibleSelectedRow) {
@@ -1882,7 +1882,7 @@ void QMacroListDialog::highlightSelectDown()
 
     // Find the bottommost visible selected row
     int bottomVisibleSelectedRow = -1;
-    for (const QTableWidgetSelectionRange &range : selectedRanges) {
+    for (const QTableWidgetSelectionRange &range : std::as_const(selectedRanges)) {
         for (int row = range.bottomRow(); row >= range.topRow(); --row) {
             if (!macroDataTable->isRowHidden(row)) {
                 if (bottomVisibleSelectedRow == -1 || row > bottomVisibleSelectedRow) {
