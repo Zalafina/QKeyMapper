@@ -8209,7 +8209,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
 
-    KeyMappingTableWidget->verticalHeader()->setVisible(false);
+    // KeyMappingTableWidget->verticalHeader()->setVisible(false);
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
@@ -8324,7 +8324,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
 
-    KeyMappingTableWidget->verticalHeader()->setVisible(false);
+    // KeyMappingTableWidget->verticalHeader()->setVisible(false);
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
@@ -19419,10 +19419,26 @@ void QKeyMapper::updateKeyMappingDataTableConnection()
 
 void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable)
 {
+    int totalReferenceWidth = mappingDataTable->width() - 18;
+
+    // When verticalHeader is visible (row numbers), it consumes horizontal space
+    // from the table viewport. Subtract it from our column width budget to keep
+    // the same no-horizontal-scroll behavior as when verticalHeader was hidden.
+    int verticalHeaderWidth = 0;
+    if (mappingDataTable->verticalHeader() && mappingDataTable->verticalHeader()->isVisible()) {
+        verticalHeaderWidth = qMax(mappingDataTable->verticalHeader()->width(),
+                                  mappingDataTable->verticalHeader()->sizeHint().width());
+    }
+
+    int referenceWidth = totalReferenceWidth - verticalHeaderWidth;
+    if (referenceWidth < 0) {
+        referenceWidth = 0;
+    }
+
     mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
 
-    int original_key_width_min = mappingDataTable->width()/5 - 15;
-    int original_key_width_max = mappingDataTable->width() / 2;
+    int original_key_width_min = referenceWidth/5 - 15;
+    int original_key_width_max = referenceWidth / 2;
     int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
 
     mappingDataTable->resizeColumnToContents(DISABLED_COLUMN);
@@ -19440,7 +19456,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     if (mappingDataTable->isCategoryColumnVisible()) {
         lock_width += 8; // Add padding for lock column
         mappingDataTable->horizontalHeader()->setStretchLastSection(false);
-        int category_width_max = mappingDataTable->width() / 5;
+        int category_width_max = referenceWidth / 5;
         mappingDataTable->resizeColumnToContents(CATEGORY_COLUMN);
         category_width = mappingDataTable->columnWidth(CATEGORY_COLUMN);
         if (category_width < burst_mode_width) {
@@ -19459,8 +19475,8 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
         original_key_width = original_key_width_max;
     }
 
-    int mapping_key_width_min = mappingDataTable->width()/5 - 15;
-    int mapping_key_width = mappingDataTable->width() - original_key_width - disabled_width - burst_mode_width - lock_width - category_width - 16;
+    int mapping_key_width_min = referenceWidth/5 - 15;
+    int mapping_key_width = referenceWidth - original_key_width - disabled_width - burst_mode_width - lock_width - category_width - 16;
     if (mapping_key_width < mapping_key_width_min) {
         mapping_key_width = mapping_key_width_min;
     }
@@ -19475,6 +19491,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "totalReferenceWidth =" << totalReferenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", referenceWidth =" << referenceWidth;
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width;
 #endif
 }

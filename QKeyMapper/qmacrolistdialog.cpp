@@ -901,7 +901,7 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
     macroDataTable->horizontalHeader()->setStretchLastSection(true);
     macroDataTable->horizontalHeader()->setHighlightSections(false);
 
-    macroDataTable->verticalHeader()->setVisible(false);
+    // macroDataTable->verticalHeader()->setVisible(false);
     macroDataTable->verticalHeader()->setDefaultSectionSize(25);
     macroDataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     macroDataTable->setSelectionMode(QAbstractItemView::ContiguousSelection);
@@ -964,7 +964,21 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
 {
     // Use TabWidget width instead of table width to ensure consistent column widths
     // when the table's tab is not currently visible (hidden tabs have small width)
-    int referenceWidth = ui->macroListTabWidget->width() - 8;
+    int totalReferenceWidth = ui->macroListTabWidget->width() - 8;
+
+    // When verticalHeader is visible (row numbers), it consumes horizontal space
+    // from the table viewport. Subtract it from our column width budget to keep
+    // the same no-horizontal-scroll behavior as when verticalHeader was hidden.
+    int verticalHeaderWidth = 0;
+    if (macroDataTable->verticalHeader() && macroDataTable->verticalHeader()->isVisible()) {
+        verticalHeaderWidth = qMax(macroDataTable->verticalHeader()->width(),
+                                  macroDataTable->verticalHeader()->sizeHint().width());
+    }
+
+    int referenceWidth = totalReferenceWidth - verticalHeaderWidth;
+    if (referenceWidth < 0) {
+        referenceWidth = 0;
+    }
 
     macroDataTable->resizeColumnToContents(MACRO_NAME_COLUMN);
 
@@ -1019,7 +1033,8 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     macroDataTable->setColumnWidth(MACRO_NOTE_COLUMN, macro_note_width);
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeMacroListTableColumnWidth]" << "macroDataTable->rowCount" << macroDataTable->rowCount();
-    qDebug() << "[resizeMacroListTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width << ", macro_note_width =" << macro_note_width;
+    qDebug() << "[resizeMacroListTableColumnWidth]" << "totalReferenceWidth =" << totalReferenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", referenceWidth =" << referenceWidth;
+    qDebug() << "[resizeMacroListTableColumnWidth]" << "macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width << ", macro_note_width =" << macro_note_width;
 #endif
 }
 
