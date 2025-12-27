@@ -7,6 +7,17 @@
 #include <QColor>
 #include <QListWidgetItem>
 
+// Qt5/Qt6 atomic relaxed compatibility helpers.
+// Qt6: QAtomicInteger has loadRelaxed/storeRelaxed.
+// Qt5.12: use load/store with QAtomic::MemoryOrderRelaxed.
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#define QKEYMAPPER_ATOMIC_STORE_RELAXED(atomic, value) (atomic).storeRelaxed((value))
+#define QKEYMAPPER_ATOMIC_LOAD_RELAXED(atomic) (atomic).loadRelaxed()
+#else
+#define QKEYMAPPER_ATOMIC_STORE_RELAXED(atomic, value) (atomic).store((value), QAtomic::MemoryOrderRelaxed)
+#define QKEYMAPPER_ATOMIC_LOAD_RELAXED(atomic) (atomic).load(QAtomic::MemoryOrderRelaxed)
+#endif
+
 namespace QKeyMapperConstants {
 
     /* constant values for QKeyMapper */
