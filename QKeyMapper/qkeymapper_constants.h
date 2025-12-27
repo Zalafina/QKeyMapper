@@ -14,8 +14,8 @@
 #define QKEYMAPPER_ATOMIC_STORE_RELAXED(atomic, value) (atomic).storeRelaxed((value))
 #define QKEYMAPPER_ATOMIC_LOAD_RELAXED(atomic) (atomic).loadRelaxed()
 #else
-#define QKEYMAPPER_ATOMIC_STORE_RELAXED(atomic, value) (atomic).store((value), QAtomic::MemoryOrderRelaxed)
-#define QKEYMAPPER_ATOMIC_LOAD_RELAXED(atomic) (atomic).load(QAtomic::MemoryOrderRelaxed)
+#define QKEYMAPPER_ATOMIC_STORE_RELAXED(atomic, value) (atomic).store(value)
+#define QKEYMAPPER_ATOMIC_LOAD_RELAXED(atomic) (atomic).load()
 #endif
 
 namespace QKeyMapperConstants {
