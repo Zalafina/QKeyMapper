@@ -110,6 +110,7 @@ QKeyMapper_Worker::ViGEmClient_ConnectState QKeyMapper_Worker::s_ViGEmClient_Con
 QMutex QKeyMapper_Worker::s_ViGEmClient_Mutex;
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta = QPoint();
 QPoint QKeyMapper_Worker::s_Mouse2vJoy_prev = QPoint();
+QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_prevValid = QAtomicBool(false);
 // QList<QPoint> QKeyMapper_Worker::s_Mouse2vJoy_delta_List;
 // QPoint QKeyMapper_Worker::s_Mouse2vJoy_delta_interception = QPoint();
 // QKeyMapper_Worker::Mouse2vJoyStates QKeyMapper_Worker::s_Mouse2vJoy_EnableState = QKeyMapper_Worker::MOUSE2VJOY_NONE;
@@ -6839,6 +6840,8 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
+    s_Mouse2vJoy_prevValid.storeRelaxed(false);
+    s_Mouse2vJoy_prevValid.storeRelaxed(false);
     // s_Mouse2vJoy_delta_interception = QPoint();
     // {
     //     QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
@@ -6903,6 +6906,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
         if (GetCursorPos(&pt)) {
             s_Mouse2vJoy_prev.rx() = pt.x;
             s_Mouse2vJoy_prev.ry() = pt.y;
+            s_Mouse2vJoy_prevValid.storeRelaxed(true);
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[setWorkerKeyHook] Current BottomRight Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
 #endif
@@ -7045,6 +7049,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Joy2vJoy_EnableStateMap.clear();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
+    s_Mouse2vJoy_prevValid.storeRelaxed(false);
+    s_Mouse2vJoy_prevValid.storeRelaxed(false);
     // s_Mouse2vJoy_delta_interception = QPoint();
     // {
     //     QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
@@ -7350,6 +7356,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
         if (GetCursorPos(&pt)) {
             s_Mouse2vJoy_prev.rx() = pt.x;
             s_Mouse2vJoy_prev.ry() = pt.y;
+            s_Mouse2vJoy_prevValid.storeRelaxed(true);
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[setKeyMappingRestart] Current BottomRight Mouse Cursor Positoin -> X = %lu, Y = %lu", pt.x, pt.y);
 #endif
@@ -12061,24 +12068,36 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                 }
 
+                const bool lockCursor = QKeyMapper::getvJoyLockCursorStatus();
+                // When we swallow WM_MOUSEMOVE (LockCursor or BlockMouse), Windows does not update the system cursor position.
+                // In that case, we must keep a stable baseline (s_Mouse2vJoy_prev) to compute correct relative delta.
+                const bool swallowMouseMove = (lockCursor || s_BlockMouse.loadRelaxed());
+
                 if (s_Mouse2vJoy_Hold) {
-                    if (QKeyMapper::getvJoyLockCursorStatus()) {
+                    // Keep original behavior: in hold mode we do not update joystick.
+                    // Ensure Block-Mouse still blocks cursor movement even if hold wants passthrough.
+                    if (swallowMouseMove) {
                         return (LRESULT)TRUE;
                     }
-                    else {
-                        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
-                    }
+                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                }
+
+                if (swallowMouseMove && !s_Mouse2vJoy_prevValid.loadRelaxed()) {
+                    s_Mouse2vJoy_prev = QPoint(pMouse->pt.x, pMouse->pt.y);
+                    s_Mouse2vJoy_prevValid.storeRelaxed(true);
                 }
 
                 s_Mouse2vJoy_delta.rx() = pMouse->pt.x - s_Mouse2vJoy_prev.x();
                 s_Mouse2vJoy_delta.ry() = pMouse->pt.y - s_Mouse2vJoy_prev.y();
 
-                if (QKeyMapper::getvJoyLockCursorStatus()) {
+                if (swallowMouseMove) {
                     returnFlag = true;
+                    // Keep s_Mouse2vJoy_prev unchanged as a stable baseline.
                 }
                 else {
                     s_Mouse2vJoy_prev.rx() = pMouse->pt.x;
                     s_Mouse2vJoy_prev.ry() = pMouse->pt.y;
+                    s_Mouse2vJoy_prevValid.storeRelaxed(true);
                 }
 // #ifdef MOUSE_VERBOSE_LOG
 //                 qDebug() << "[LowLevelMouseHookProc]" << "Mouse Move -> Delta X =" << s_Mouse2vJoy_delta.x() << ", Delta Y = " << s_Mouse2vJoy_delta.y();

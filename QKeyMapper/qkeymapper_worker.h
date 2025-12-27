@@ -1273,6 +1273,7 @@ public:
     static QList<OrderedMap<QString, BYTE>> pressedvJoyLStickKeysList;
     static QList<OrderedMap<QString, BYTE>> pressedvJoyRStickKeysList;
     static QList<QStringList> pressedvJoyButtonsList;
+    static QAtomicBool s_Mouse2vJoy_prevValid;
 #endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
     static QMutex s_PressedMappingKeysMapMutex;
