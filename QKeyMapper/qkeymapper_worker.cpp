@@ -6841,7 +6841,6 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
     s_Mouse2vJoy_prevValid.storeRelaxed(false);
-    s_Mouse2vJoy_prevValid.storeRelaxed(false);
     // s_Mouse2vJoy_delta_interception = QPoint();
     // {
     //     QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
@@ -7050,7 +7049,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
     s_Mouse2vJoy_prevValid.storeRelaxed(false);
-    s_Mouse2vJoy_prevValid.storeRelaxed(false);
     // s_Mouse2vJoy_delta_interception = QPoint();
     // {
     //     QMutexLocker locker(&s_MouseMove_delta_List_Mutex);
@@ -7249,6 +7247,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_Joy2vJoy_EnableStateMap.clear();
     s_Mouse2vJoy_delta = QPoint();
     s_Mouse2vJoy_prev = QPoint();
+    s_Mouse2vJoy_prevValid.storeRelaxed(false);
     pressedvJoyLStickKeysList.clear();
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
@@ -10711,16 +10710,18 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
 #endif
 
         if (!s_Mouse2vJoy_EnableStateMap.isEmpty()) {
+            const bool lockCursor = QKeyMapper::getvJoyLockCursorStatus();
+            // Keep consistent behavior with LowLevelMouseHookProc:
+            // - LockCursor or Block-Mouse should swallow mouse move (cursor does not move).
+            // - Hold mode should not update joystick, but still respects swallow when enabled.
+            const bool swallowMouseMove = (lockCursor || s_BlockMouse.loadRelaxed());
+
             if (s_Mouse2vJoy_Hold) {
-                if (QKeyMapper::getvJoyLockCursorStatus()) {
-                    return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
-                }
-                else {
-                    return INTERCEPTION_RETURN_NORMALSEND;
-                }
+                return swallowMouseMove ? INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION
+                                        : INTERCEPTION_RETURN_NORMALSEND;
             }
 
-            if (QKeyMapper::getvJoyLockCursorStatus()) {
+            if (swallowMouseMove) {
                 returnFlag = INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
             emit QKeyMapper_Worker::getInstance()->onMouseMove_Signal(delta_x, delta_y, mouse_index);
@@ -12082,7 +12083,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                 }
 
-                if (swallowMouseMove && !s_Mouse2vJoy_prevValid.loadRelaxed()) {
+                // Initialize baseline on first mouse move to avoid a huge delta spike
+                // when Mouse2vJoy is enabled without LockCursor.
+                if (!s_Mouse2vJoy_prevValid.loadRelaxed()) {
                     s_Mouse2vJoy_prev = QPoint(pMouse->pt.x, pMouse->pt.y);
                     s_Mouse2vJoy_prevValid.storeRelaxed(true);
                 }
