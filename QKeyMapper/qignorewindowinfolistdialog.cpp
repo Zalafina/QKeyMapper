@@ -34,7 +34,7 @@ QIgnoreWindowInfoListDialog::QIgnoreWindowInfoListDialog(QWidget *parent)
     ui->ruleListWidget->setUniformItemSizes(true);
 
     // Alternate row colors for better readability
-    ui->ruleListWidget->setAlternatingRowColors(true);
+    // ui->ruleListWidget->setAlternatingRowColors(true);
 
     // Disable word wrapping to keep layout predictable
     ui->ruleListWidget->setWordWrap(false);
@@ -97,6 +97,7 @@ void QIgnoreWindowInfoListDialog::updateRulesListWidget()
             item->setFont(font);
             item->setForeground(Qt::gray);
         }
+        item->setSizeHint(QSize(0, IGNOREWINDOWINFOLIST_ITEM_HEIGHT));
 
         ui->ruleListWidget->addItem(item);
     }

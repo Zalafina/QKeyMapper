@@ -1193,7 +1193,7 @@ namespace QKeyMapperConstants {
     inline const QListWidgetItem::ItemType SETTING_BACKUP_LIST_TYPE_TOPLEVEL = static_cast<QListWidgetItem::ItemType>(QListWidgetItem::UserType + 2);
     inline const QListWidgetItem::ItemType SETTING_BACKUP_LIST_TYPE_GLOBALSETTING = static_cast<QListWidgetItem::ItemType>(QListWidgetItem::UserType + 3);
 
-    inline constexpr const int GROUPSELECTWIDGET_ITEM_HEIGHT = 21;
+    inline constexpr const int GROUPSELECTWIDGET_ITEM_HEIGHT = 25;
     inline constexpr const int GROUPSELECTWIDGET_HEIGHT_ITEM_COUNT_MIN = 20;
 
     inline constexpr const char GROUPSELECTWIDGET_SELECT_ALL_PREFIX[] = "☑️ ";
@@ -1210,6 +1210,8 @@ namespace QKeyMapperConstants {
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR = QColor(214, 149, 69);
 #endif
+
+    inline constexpr const int IGNOREWINDOWINFOLIST_ITEM_HEIGHT = 21;
 
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";

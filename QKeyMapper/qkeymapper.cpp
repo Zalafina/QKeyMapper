@@ -8211,6 +8211,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 
     // KeyMappingTableWidget->verticalHeader()->setVisible(false);
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
+    KeyMappingTableWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; }");
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)
@@ -8326,6 +8327,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
     // KeyMappingTableWidget->verticalHeader()->setVisible(false);
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
+    KeyMappingTableWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; }");
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)
@@ -28000,7 +28002,7 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     m_listWidget->setUniformItemSizes(true);
 
     // Alternate row colors for better readability
-    m_listWidget->setAlternatingRowColors(true);
+    // m_listWidget->setAlternatingRowColors(true);
 
     // Disable word wrapping to keep layout predictable
     m_listWidget->setWordWrap(false);
@@ -28037,6 +28039,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
         auto *selectAllItem = new QListWidgetItem((GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")), m_listWidget, SETTING_BACKUP_LIST_TYPE_SELECT_ALL);
         selectAllItem->setFlags(selectAllItem->flags() | Qt::ItemIsUserCheckable);
         selectAllItem->setCheckState(Qt::Unchecked);
+        selectAllItem->setSizeHint(QSize(0, GROUPSELECTWIDGET_ITEM_HEIGHT));
     }
 
     // Create QSettings object once before the loop if configfile is provided
@@ -28123,6 +28126,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
         // Only user-checkable; do not set tri-state on children
         item->setFlags((item->flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsAutoTristate);
         item->setCheckState(Qt::Unchecked);
+        item->setSizeHint(QSize(0, GROUPSELECTWIDGET_ITEM_HEIGHT));
     }
 
     // Connect itemChanged signal (once)
