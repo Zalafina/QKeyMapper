@@ -19421,8 +19421,6 @@ void QKeyMapper::updateKeyMappingDataTableConnection()
 
 void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable)
 {
-    int totalReferenceWidth = mappingDataTable->width() - 18;
-
     // When verticalHeader is visible (row numbers), it consumes horizontal space
     // from the table viewport. Subtract it from our column width budget to keep
     // the same no-horizontal-scroll behavior as when verticalHeader was hidden.
@@ -19431,6 +19429,8 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
         verticalHeaderWidth = qMax(mappingDataTable->verticalHeader()->width(),
                                   mappingDataTable->verticalHeader()->sizeHint().width());
     }
+
+    int totalReferenceWidth = mappingDataTable->width() - verticalHeaderWidth - 5;
 
     int referenceWidth = totalReferenceWidth - verticalHeaderWidth;
     if (referenceWidth < 0) {

@@ -963,10 +963,6 @@ void QMacroListDialog::resizeMacroListTabWidgetColumnWidth()
 
 void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable)
 {
-    // Use TabWidget width instead of table width to ensure consistent column widths
-    // when the table's tab is not currently visible (hidden tabs have small width)
-    int totalReferenceWidth = ui->macroListTabWidget->width() - 8;
-
     // When verticalHeader is visible (row numbers), it consumes horizontal space
     // from the table viewport. Subtract it from our column width budget to keep
     // the same no-horizontal-scroll behavior as when verticalHeader was hidden.
@@ -975,6 +971,10 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
         verticalHeaderWidth = qMax(macroDataTable->verticalHeader()->width(),
                                   macroDataTable->verticalHeader()->sizeHint().width());
     }
+
+    // Use TabWidget width instead of table width to ensure consistent column widths
+    // when the table's tab is not currently visible (hidden tabs have small width)
+    int totalReferenceWidth = ui->macroListTabWidget->width() - verticalHeaderWidth;
 
     int referenceWidth = totalReferenceWidth - verticalHeaderWidth;
     if (referenceWidth < 0) {
@@ -990,7 +990,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     macroDataTable->horizontalHeader()->setStretchLastSection(false);
 
     // Calculate Category column width
-    int macro_category_width_min = referenceWidth / 20;
+    int macro_category_width_min = referenceWidth / 20 + 5;
     int macro_category_width_max = referenceWidth / 5;
     macroDataTable->resizeColumnToContents(MACRO_CATEGORY_COLUMN);
     int macro_category_width = macroDataTable->columnWidth(MACRO_CATEGORY_COLUMN);
@@ -1002,7 +1002,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     }
 
     // Calculate Note column width
-    int macro_note_width_min = referenceWidth / 20;
+    int macro_note_width_min = referenceWidth / 20 + 5;
     int macro_note_width_max = referenceWidth / 5;
     macroDataTable->resizeColumnToContents(MACRO_NOTE_COLUMN);
     int macro_note_width = macroDataTable->columnWidth(MACRO_NOTE_COLUMN);
