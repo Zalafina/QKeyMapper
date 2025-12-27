@@ -8211,7 +8211,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 
     // KeyMappingTableWidget->verticalHeader()->setVisible(false);
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
-    KeyMappingTableWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; }");
+    KeyMappingTableWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)
@@ -8327,7 +8327,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
     // KeyMappingTableWidget->verticalHeader()->setVisible(false);
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
-    KeyMappingTableWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; }");
+    KeyMappingTableWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)

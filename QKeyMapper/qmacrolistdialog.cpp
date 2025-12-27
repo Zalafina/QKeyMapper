@@ -903,6 +903,7 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
 
     // macroDataTable->verticalHeader()->setVisible(false);
     macroDataTable->verticalHeader()->setDefaultSectionSize(25);
+    macroDataTable->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
     macroDataTable->setSelectionBehavior(QAbstractItemView::SelectRows);
     macroDataTable->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Enable double-click editing for category column
