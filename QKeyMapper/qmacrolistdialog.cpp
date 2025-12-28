@@ -972,14 +972,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
                                   macroDataTable->verticalHeader()->sizeHint().width());
     }
 
-    // Use TabWidget width instead of table width to ensure consistent column widths
-    // when the table's tab is not currently visible (hidden tabs have small width)
-    int totalReferenceWidth = ui->macroListTabWidget->width() - verticalHeaderWidth;
-
-    int referenceWidth = totalReferenceWidth - verticalHeaderWidth;
-    if (referenceWidth < 0) {
-        referenceWidth = 0;
-    }
+    int referenceWidth = ui->macroListTabWidget->width();
 
     macroDataTable->resizeColumnToContents(MACRO_NAME_COLUMN);
 
@@ -1023,7 +1016,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     }
 
     int macro_content_width_min = referenceWidth/5 - 15;
-    int macro_content_width = referenceWidth - macro_name_width - macro_category_width - macro_note_width - 16;
+    int macro_content_width = referenceWidth - verticalHeaderWidth - macro_name_width - macro_category_width - macro_note_width - 24;
     if (macro_content_width < macro_content_width_min) {
         macro_content_width = macro_content_width_min;
     }
@@ -1034,8 +1027,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     macroDataTable->setColumnWidth(MACRO_NOTE_COLUMN, macro_note_width);
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeMacroListTableColumnWidth]" << "macroDataTable->rowCount" << macroDataTable->rowCount();
-    qDebug() << "[resizeMacroListTableColumnWidth]" << "totalReferenceWidth =" << totalReferenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", referenceWidth =" << referenceWidth;
-    qDebug() << "[resizeMacroListTableColumnWidth]" << "macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width << ", macro_note_width =" << macro_note_width;
+    qDebug() << "[resizeMacroListTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width << ", macro_note_width =" << macro_note_width;
 #endif
 }
 

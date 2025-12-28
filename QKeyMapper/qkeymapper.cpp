@@ -681,6 +681,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 //    }
 
     // initHotKeySequence();
+
+    QTimer::singleShot(0, this, [=]() {
+        if (m_KeyMappingDataTable) {
+            resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+        }
+    });
 }
 
 QKeyMapper::~QKeyMapper()
@@ -14000,7 +14006,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
     forceSwitchKeyMappingTabWidgetIndex(last_tabindex);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadKeyMapSetting]" << "refreshKeyMappingDataTable()";
+    qDebug() << "[loadKeyMapSetting]" << "refreshAllKeyMappingTabWidget()";
 #endif
     refreshAllKeyMappingTabWidget();
 
@@ -19430,17 +19436,12 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
                                   mappingDataTable->verticalHeader()->sizeHint().width());
     }
 
-    int totalReferenceWidth = mappingDataTable->width() - verticalHeaderWidth - 5;
-
-    int referenceWidth = totalReferenceWidth - verticalHeaderWidth;
-    if (referenceWidth < 0) {
-        referenceWidth = 0;
-    }
+    int referenceWidth = mappingDataTable->width();
 
     mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
 
     int original_key_width_min = referenceWidth/5 - 15;
-    int original_key_width_max = referenceWidth / 2;
+    int original_key_width_max = referenceWidth / 2 - 32;
     int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
 
     mappingDataTable->resizeColumnToContents(DISABLED_COLUMN);
@@ -19478,7 +19479,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 
     int mapping_key_width_min = referenceWidth/5 - 15;
-    int mapping_key_width = referenceWidth - original_key_width - disabled_width - burst_mode_width - lock_width - category_width - 16;
+    int mapping_key_width = referenceWidth - verticalHeaderWidth - original_key_width - disabled_width - burst_mode_width - lock_width - category_width - 16;
     if (mapping_key_width < mapping_key_width_min) {
         mapping_key_width = mapping_key_width_min;
     }
@@ -19493,8 +19494,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "totalReferenceWidth =" << totalReferenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", referenceWidth =" << referenceWidth;
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width;
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width;
 #endif
 }
 
