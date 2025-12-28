@@ -7540,6 +7540,10 @@ void QKeyMapper::changeEvent(QEvent *event)
 
 void QKeyMapper::keyPressEvent(QKeyEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug("[QKeyMapper::keyPressEvent] event->key() -> 0x%08X", event->key());
+#endif
+
     /* Check L-Ctrl+S to Save settings */
     if (m_KeyMapStatus == KEYMAP_IDLE
         && event->key() == Qt::Key_S
@@ -7558,7 +7562,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
     }
     else if (m_KeyMapStatus == KEYMAP_IDLE && event->key() == KEY_REFRESH) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[keyPressEvent]" << "F5 Key Pressed -> refreshProcessInfoTable()";
+        qDebug() << "[QKeyMapper::keyPressEvent]" << "F5 Key Pressed -> refreshProcessInfoTable()";
 #endif
 // #ifdef QT_NO_DEBUG
 //         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
@@ -7572,6 +7576,22 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         // m_deviceListWindow->updateDeviceListInfo();
         initInputDeviceSelectComboBoxes();
         return;
+    }
+    else if (event->key() == Qt::Key_Menu) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::keyPressEvent]" << "Key_Menu Pressed";
+
+        if (m_KeyMappingDataTable) {
+            int original_key_width  = m_KeyMappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
+            int mapping_key_width   = m_KeyMappingDataTable->columnWidth(MAPPING_KEY_COLUMN);
+            int disabled_width      = m_KeyMappingDataTable->columnWidth(DISABLED_COLUMN);
+            int burst_mode_width    = m_KeyMappingDataTable->columnWidth(BURST_MODE_COLUMN);
+            int lock_width          = m_KeyMappingDataTable->columnWidth(LOCK_COLUMN);
+            int category_width      = m_KeyMappingDataTable->columnWidth(CATEGORY_COLUMN);
+
+            qDebug().nospace() << "\033[1;34m[QKeyMapper::keyPressEvent]" << "Show debug info : " << "original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width << "\033[0m";
+        }
+#endif
     }
 #if 0
     else if (event->key() == KEY_PASSTHROUGH) {
@@ -19454,10 +19474,11 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     mappingDataTable->resizeColumnToContents(LOCK_COLUMN);
     int lock_width = mappingDataTable->columnWidth(LOCK_COLUMN);
     mappingDataTable->horizontalHeader()->setStretchLastSection(true);
+    lock_width += 4;
 
     int category_width = 0;
     if (mappingDataTable->isCategoryColumnVisible()) {
-        lock_width += 8; // Add padding for lock column
+        lock_width += 4; // Add padding for lock column
         mappingDataTable->horizontalHeader()->setStretchLastSection(false);
         int category_width_max = referenceWidth / 5;
         mappingDataTable->resizeColumnToContents(CATEGORY_COLUMN);
