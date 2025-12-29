@@ -3937,32 +3937,8 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
         }
     }
 
-    // Check for duplicate based on key type (normal, double-press, long-press)
-    if (result.isValid && update_rowindex >= 0) {
-        if (isDoublePress) {
-            // For double-press keys, check if another double-press key with same base key exists
-            QString doublepress_prefix = key_without_suffix + SEPARATOR_DOUBLEPRESS;
-            QHash<QString, int> existingDoublePressKeys = QKeyMapper_Worker::currentDoublePressOriginalKeysMap();
-
-            if (existingDoublePressKeys.contains(doublepress_prefix)) {
-                int existing_index = existingDoublePressKeys.value(doublepress_prefix);
-                if (existing_index != update_rowindex) {
-                    result.isValid = false;
-                    result.errorMessage = tr("Duplicate original key \"%1\"").arg(doublepress_prefix);
-                    return result;
-                }
-            }
-        }
-        else {
-            // For normal keys and long-press keys, check exact match
-            int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(originalkeystr);
-            if (findindex != -1 && findindex != update_rowindex) {
-                result.isValid = false;
-                result.errorMessage = tr("Duplicate original key \"%1\"").arg(originalkeystr);
-                return result;
-            }
-        }
-    }
+    // NOTE: Duplicate OriginalKey is allowed in edit mode.
+    // Mutual exclusion is enforced when enabling items, and active list building does runtime dedupe.
 
     if (0 <= update_rowindex && update_rowindex < QKeyMapper::KeyMappingDataList->size()) {
         QStringList mappingkeys;
@@ -3992,6 +3968,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
 
 ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, int update_rowindex)
 {
+    Q_UNUSED(update_rowindex);
     ValidationResult result;
     result.isValid = true;
 
@@ -4044,13 +4021,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
             }
         }
 
-        if (result.isValid && update_rowindex >= 0) {
-            int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
-            if (findindex != -1 && findindex != update_rowindex) {
-                result.isValid = false;
-                result.errorMessage = tr("Duplicate original key \"%1\"").arg(orikey);
-            }
-        }
+        // Duplicate OriginalKey is allowed in edit mode.
     }
 
     return result;
@@ -4058,6 +4029,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
 
 ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QString &orikey, int update_rowindex)
 {
+    Q_UNUSED(update_rowindex);
     ValidationResult result;
     result.isValid = true;
 
@@ -4103,15 +4075,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
         }
     }
 
-    if (validKey) {
-        if (result.isValid && update_rowindex >= 0) {
-            int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(orikey);
-            if (findindex != -1 && findindex != update_rowindex) {
-                result.isValid = false;
-                result.errorMessage = tr("Duplicate original key \"%1\"").arg(orikey);
-            }
-        }
-    }
+    // Duplicate OriginalKey is allowed in edit mode.
 
     return result;
 }
@@ -4719,6 +4683,73 @@ QString QKeyMapper::getOriginalKeyStringWithoutSuffix(const QString &originalkey
     return orikey_without_suffix;
 }
 
+namespace {
+
+QString normalizeOriginalKeyForExclusiveGroup(const QString &originalKey)
+{
+    QString normalizedKey = originalKey;
+
+    // Remove multi-input postfix first (e.g. multi keyboard/mouse input support)
+    normalizedKey = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(normalizedKey);
+
+    // Grouping rules (keep behavior aligned with worker):
+    // - Long-press (⏲<ms>): keep the time suffix so Q⏲200 and Q⏲500 can both be enabled.
+    // - Double-press (✖<ms>): ignore the time suffix so Q✖300 and Q✖500 are mutually exclusive.
+    static QRegularExpression longPressRegex(R"(^(.+?)⏲(\d+)$)");
+    static QRegularExpression doublePressRegex(R"(^(.+?)✖(\d+)$)");
+
+    QRegularExpressionMatch longPressMatch = longPressRegex.match(normalizedKey);
+    if (longPressMatch.hasMatch()) {
+        return normalizedKey;
+    }
+
+    QRegularExpressionMatch doublePressMatch = doublePressRegex.match(normalizedKey);
+    if (doublePressMatch.hasMatch()) {
+        return doublePressMatch.captured(1) + QStringLiteral("✖");
+    }
+
+    // Be tolerant with malformed values that end with the marker but have no digits.
+    if (normalizedKey.endsWith(QStringLiteral("✖"))) {
+        return normalizedKey;
+    }
+    if (normalizedKey.endsWith(QStringLiteral("⏲"))) {
+        return normalizedKey;
+    }
+
+    return normalizedKey;
+}
+
+QSet<QString> collectEnabledExclusiveGroups(const QList<MAP_KEYDATA> &mappingData)
+{
+    QSet<QString> enabledGroups;
+    for (const MAP_KEYDATA &keymapdata : mappingData) {
+        if (keymapdata.Disabled) {
+            continue;
+        }
+        enabledGroups.insert(normalizeOriginalKeyForExclusiveGroup(keymapdata.Original_Key));
+    }
+    return enabledGroups;
+}
+
+bool hasEnabledExclusiveGroupConflict(const QList<MAP_KEYDATA> &mappingData, const QString &groupKey, int excludeRow)
+{
+    for (int i = 0; i < mappingData.size(); ++i) {
+        if (i == excludeRow) {
+            continue;
+        }
+        const MAP_KEYDATA &data = mappingData.at(i);
+        if (data.Disabled) {
+            continue;
+        }
+        if (normalizeOriginalKeyForExclusiveGroup(data.Original_Key) == groupKey) {
+            return true;
+        }
+    }
+    return false;
+}
+
+}
+
 void QKeyMapper::copyStringToClipboard(const QString &string)
 {
     QClipboard *clipboard = QGuiApplication::clipboard();
@@ -4880,11 +4911,20 @@ void QKeyMapper::buildActiveKeyMappingDataList()
         return;
     }
 
-    // Filter out disabled items and copy enabled items to active list
+    // Filter out disabled items and copy enabled items to active list.
+    // Dedupe enabled items by normalized OriginalKey group (first-enabled wins).
+    // NOTE: UI logic should already enforce mutual exclusion on enable, but this is a runtime safety net.
+    QSet<QString> enabledGroups;
     for (const MAP_KEYDATA &keymapdata : std::as_const(*currentTabKeyMappingData)) {
-        if (!keymapdata.Disabled) {
-            s_ActiveKeyMappingDataList.append(keymapdata);
+        if (keymapdata.Disabled) {
+            continue;
         }
+        const QString groupKey = normalizeOriginalKeyForExclusiveGroup(keymapdata.Original_Key);
+        if (enabledGroups.contains(groupKey)) {
+            continue;
+        }
+        enabledGroups.insert(groupKey);
+        s_ActiveKeyMappingDataList.append(keymapdata);
     }
 
     // Point KeyMappingDataList to the active list during mapping
@@ -6348,8 +6388,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     return true;
 }
 
-bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filename)
+bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filename, int *autoDisabledCount)
 {
+    if (autoDisabledCount) {
+        *autoDisabledCount = 0;
+    }
+
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
         return false;
     }
@@ -7021,16 +7065,33 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
 
     bool import_result = false;
     QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+    if (mappingDataList == Q_NULLPTR) {
+        return false;
+    }
+
+    // Seed enabled group set from existing table so newly imported items won't override enabled state.
+    QSet<QString> enabledGroups = collectEnabledExclusiveGroups(*mappingDataList);
+    int auto_disabled = 0;
+
     for (const MAP_KEYDATA &keymapdata : std::as_const(loadkeymapdata)) {
-        int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(keymapdata.Original_Key);
-        if (findindex != -1) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[importKeyMappingDataFromFile]" << "Duplicate original key found -> index : " << findindex << ", originalkey : " << keymapdata.Original_Key;
-#endif
-            continue;
+        MAP_KEYDATA toInsert = keymapdata;
+        if (!toInsert.Disabled) {
+            const QString groupKey = normalizeOriginalKeyForExclusiveGroup(toInsert.Original_Key);
+            if (enabledGroups.contains(groupKey)) {
+                toInsert.Disabled = true;
+                auto_disabled += 1;
+            }
+            else {
+                enabledGroups.insert(groupKey);
+            }
         }
-        mappingDataList->append(keymapdata);
+
+        mappingDataList->append(toInsert);
         import_result = true;
+    }
+
+    if (autoDisabledCount) {
+        *autoDisabledCount = auto_disabled;
     }
 
     return import_result;
@@ -8586,32 +8647,49 @@ int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
     return copied_count;
 }
 
-int QKeyMapper::insertKeyMappingDataFromCopiedList()
+int QKeyMapper::insertKeyMappingDataFromCopiedList(int *autoDisabledCount)
 {
     int inserted_count = -1;
     if (s_CopiedMappingData.isEmpty()) {
         return inserted_count;
     }
 
+    if (autoDisabledCount) {
+        *autoDisabledCount = 0;
+    }
+
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
     closeSetupDialog_OnDataChanged();
 #endif
 
+    // Prepare insert list (duplicates allowed). If an inserted item is enabled while
+    // another item in the same normalized OriginalKey group is already enabled,
+    // auto-disable the inserted one.
     QList<MAP_KEYDATA> insertMappingDataList;
+    QSet<QString> enabledGroups = collectEnabledExclusiveGroups(*KeyMappingDataList);
+    int auto_disabled = 0;
     for (const MAP_KEYDATA &keymapdata : std::as_const(s_CopiedMappingData)) {
-        int findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(keymapdata.Original_Key);
-        if (findindex != -1) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[insertKeyMappingDataFromCopiedList]" << "Duplicate original key found -> index : " << findindex << ", originalkey : " << keymapdata.Original_Key;
-#endif
-            continue;
+        MAP_KEYDATA toInsert = keymapdata;
+        if (!toInsert.Disabled) {
+            const QString groupKey = normalizeOriginalKeyForExclusiveGroup(toInsert.Original_Key);
+            if (enabledGroups.contains(groupKey)) {
+                toInsert.Disabled = true;
+                auto_disabled += 1;
+            }
+            else {
+                enabledGroups.insert(groupKey);
+            }
         }
-        insertMappingDataList.append(keymapdata);
+        insertMappingDataList.append(toInsert);
     }
 
     inserted_count = insertMappingDataList.size();
     if (insertMappingDataList.isEmpty()) {
         return inserted_count;
+    }
+
+    if (autoDisabledCount) {
+        *autoDisabledCount = auto_disabled;
     }
 
     bool insertToEnd = false;
@@ -9107,6 +9185,49 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
                 }
                 ori_TableItem->setFont(font);
+            }
+
+            // Enforce mutual exclusion: within the same normalized OriginalKey group,
+            // only one item can be enabled at a time.
+            if (!disabled) {
+                const QString groupKey = normalizeOriginalKeyForExclusiveGroup(KeyMappingDataList->at(row).Original_Key);
+                int auto_disabled = 0;
+
+                for (int i = 0; i < KeyMappingDataList->size(); ++i) {
+                    if (i == row) {
+                        continue;
+                    }
+                    if (KeyMappingDataList->at(i).Disabled) {
+                        continue;
+                    }
+                    if (normalizeOriginalKeyForExclusiveGroup(KeyMappingDataList->at(i).Original_Key) != groupKey) {
+                        continue;
+                    }
+
+                    (*KeyMappingDataList)[i].Disabled = true;
+                    emit keyMappingTableItemCheckStateChanged_Signal(i, col, true);
+                    auto_disabled += 1;
+
+                    QTableWidgetItem *disabledItem = m_KeyMappingDataTable->item(i, DISABLED_COLUMN);
+                    if (disabledItem) {
+                        disabledItem->setCheckState(Qt::Checked);
+                    }
+
+                    QTableWidgetItem *oriItem = m_KeyMappingDataTable->item(i, ORIGINAL_KEY_COLUMN);
+                    if (oriItem) {
+                        QFont font = oriItem->font();
+                        font.setItalic(true);
+                        oriItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
+                        oriItem->setFont(font);
+                    }
+                }
+
+                if (auto_disabled > 0) {
+                    QString message = tr("Enabled mapping for \"%1\". %2 other item(s) in the same OriginalKey group were disabled.")
+                                          .arg(KeyMappingDataList->at(row).Original_Key)
+                                          .arg(auto_disabled);
+                    showInformationPopup(message);
+                }
             }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -23065,7 +23186,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
     //     multiInputSupport = true;
     // }
     QString currentOriKeyText;
-    QString currentOriKeyTextWithoutPostfix;
     QString currentMapKeyText = m_mapkeyComboBox->currentText();
     QString currentMapKeyComboBoxText = currentMapKeyText;
     QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
@@ -23137,7 +23257,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
         return;
     }
 
-    currentOriKeyTextWithoutPostfix = currentOriKeyText;
     int pressTime = ui->pressTimeSpinBox->value();
     if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime > 0 && isSpecialOriginalKey == false && isSendOnOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR) {
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_LONGPRESS) + QString::number(pressTime);
@@ -23146,575 +23265,257 @@ void QKeyMapper::on_addmapdataButton_clicked()
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_DOUBLEPRESS) + QString::number(pressTime);
         isDoublePress = true;
     }
+    Q_UNUSED(isDoublePress);
 
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))$)");
-    bool already_exist = false;
-    int findindex = -1;
-    // findindex = findOriKeyInKeyMappingDataList(currentOriKeyText);
-    if (isDoublePress) {
-        findindex = findOriKeyInKeyMappingDataList_ForDoublePress(currentOriKeyTextWithoutPostfix);
+
+    // Add button behavior: always create a new row (do not merge/append to existing OriginalKey).
+    // Duplicate OriginalKey is allowed; mutual exclusion is handled by enabled-state logic.
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
+
+    if (isSpecialOriginalKey) {
+        currentMapKeyText = baseKeyForSpecialCheck;
+
+        int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
+        if (virtualgamepad_index > 0) {
+            currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+        }
     }
     else {
-        findindex = findOriKeyInKeyMappingDataList_ForAddMappingData(currentOriKeyText);
-    }
-    if (findindex != -1){
-        if (isSpecialOriginalKey) {
-            already_exist = true;
-        }
-        else if (KeyMappingDataList->at(findindex).Mapping_Keys.size() == 1
-                && false == ui->nextarrowCheckBox->isChecked()
-                && KeyMappingDataList->at(findindex).Mapping_Keys.contains(currentMapKeyText) == true){
-                already_exist = true;
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "KeyMap already exist at KeyMappingDataList index : " << findindex;
-#endif
-        }
-    }
-
-    if (false == already_exist) {
-        if (findindex != -1){
-            if (currentMapKeyText == KEY_BLOCKED_STR
-                || currentMapKeyText == KEYSEQUENCEBREAK_STR
-                || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
-                || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
-                || currentMapKeyText == VJOY_LS_RADIUS_STR
-                || currentMapKeyText == VJOY_RS_RADIUS_STR
-                || currentMapKeyText == VJOY_LT_BRAKE_STR
-                || currentMapKeyText == VJOY_RT_BRAKE_STR
-                || currentMapKeyText == VJOY_LT_ACCEL_STR
-                || currentMapKeyText == VJOY_RT_ACCEL_STR) {
-                already_exist = true;
-            }
-            else {
-                MAP_KEYDATA keymapdata = KeyMappingDataList->at(findindex);
-                if (keymapdata.Mapping_Keys.contains(KEY_BLOCKED_STR)
-                    || keymapdata.Mapping_Keys.contains(KEYSEQUENCEBREAK_STR)
-                    || keymapdata.Mapping_Keys.contains(MOUSE2VJOY_HOLD_KEY_STR)
-                    || keymapdata.Mapping_Keys.contains(GYRO2MOUSE_PREFIX)
-                    || keymapdata.Mapping_Keys.contains(VJOY_LS_RADIUS_STR)
-                    || keymapdata.Mapping_Keys.contains(VJOY_RS_RADIUS_STR)
-                    || keymapdata.Mapping_Keys.contains(VJOY_LT_BRAKE_STR)
-                    || keymapdata.Mapping_Keys.contains(VJOY_RT_BRAKE_STR)
-                    || keymapdata.Mapping_Keys.contains(VJOY_LT_ACCEL_STR)
-                    || keymapdata.Mapping_Keys.contains(VJOY_RT_ACCEL_STR)){
-                    already_exist = true;
+        QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(currentMapKeyText);
+        int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
+        if (vjoy_pushlevel_keys_match.hasMatch()) {
+            int pushlevel = ui->pushLevelSpinBox->value();
+            if (virtualgamepad_index > 0) {
+                if (pushlevel != VJOY_PUSHLEVEL_MAX) {
+                    /* Add [pushlevel] value postfix */
+                    currentMapKeyText = QString("%1[%2]@%3").arg(currentMapKeyText, QString::number(pushlevel), QString::number(virtualgamepad_index - 1));
                 }
-            }
-        }
-        else {
-            if (ui->nextarrowCheckBox->isChecked()) {
-                if (currentMapKeyText == KEY_BLOCKED_STR
-                    || currentMapKeyText == KEYSEQUENCEBREAK_STR
-                    || currentMapKeyText.startsWith(GYRO2MOUSE_PREFIX)
-                    || currentMapKeyText == MOUSE2VJOY_HOLD_KEY_STR
-                    || currentMapKeyText == VJOY_LS_RADIUS_STR
-                    || currentMapKeyText == VJOY_RS_RADIUS_STR
-                    || currentMapKeyText == VJOY_LT_BRAKE_STR
-                    || currentMapKeyText == VJOY_RT_BRAKE_STR
-                    || currentMapKeyText == VJOY_LT_ACCEL_STR
-                    || currentMapKeyText == VJOY_RT_ACCEL_STR) {
-                    already_exist = true;
-                }
-            }
-        }
-    }
-
-    if (false == already_exist) {
-        static QRegularExpression simplified_regex(R"([\r\n]+)");
-        if (findindex != -1) {
-            MAP_KEYDATA keymapdata = KeyMappingDataList->at(findindex);
-            if (keymapdata.Mapping_Keys.size() >= KEY_SEQUENCE_MAX) {
-                QString message = tr("Key sequence mapping to \"%1\" exceeds the maximum length!").arg(currentOriKeyText);
-                showFailurePopup(message);
-                return;
-            }
-
-            QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(currentMapKeyText);
-            int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
-            if (vjoy_pushlevel_keys_match.hasMatch()) {
-                int pushlevel = ui->pushLevelSpinBox->value();
-                if (virtualgamepad_index > 0) {
-                    if (pushlevel != VJOY_PUSHLEVEL_MAX) {
-                        /* Add [pushlevel] value postfix */
-                        currentMapKeyText = QString("%1[%2]@%3").arg(currentMapKeyText, QString::number(pushlevel), QString::number(virtualgamepad_index - 1));
-                    }
-                    else { /* pushlevel == VJOY_PUSHLEVEL_MAX */
-                        /* Do not add [pushlevel] value postfix */
-                        currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
-                    }
-                }
-                else {
-                    if (pushlevel != VJOY_PUSHLEVEL_MAX) {
-                        /* Add [pushlevel] value postfix */
-                        currentMapKeyText = QString("%1[%2]").arg(currentMapKeyText, QString::number(pushlevel));
-                    }
-                }
-            }
-            else if (virtualgamepad_index > 0
-                && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
-                currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
-            }
-            else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
-                QString mousepointstr = ui->pointDisplayLabel->text();
-                if (mousepointstr.isEmpty()) {
-                    QString message = tr("Need to set a screen mouse point with \"%1\" click!").arg(tr("L-Ctrl+Mouse-Left Click"));
-                    showFailurePopup(message);
-                    return;
-                }
-                else {
-                    QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
-                    int x = mousepoint.x();
-                    int y = mousepoint.y();
-
-                    currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
-
-                    if (keymapdata.Mapping_Keys.size() == 1
-                        && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
-                        && !ui->nextarrowCheckBox->isChecked()) {
-                        QString message = tr("Already set a same screen mouse point!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                }
-            }
-            else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
-                QString mousepointstr = ui->pointDisplayLabel->text();
-                if (mousepointstr.isEmpty()) {
-                    QString message = tr("Need to set a window mouse point with \"%1\" click!").arg(tr("L-Alt+Mouse-Left Click"));
-                    showFailurePopup(message);
-                    return;
-                }
-                else {
-                    QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
-                    int x = mousepoint.x();
-                    int y = mousepoint.y();
-
-                    currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
-
-                    if (keymapdata.Mapping_Keys.size() == 1
-                        && keymapdata.Mapping_Keys.constFirst().contains(currentMapKeyText)
-                        && !ui->nextarrowCheckBox->isChecked()) {
-                        QString message = tr("Already set a same window mouse point!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                }
-            }
-            else if (currentMapKeyText == UNLOCK_STR) {
-                QString unlock_key = ui->sendTextPlainTextEdit->toPlainText().simplified();
-                unlock_key.remove(whitespace_reg);
-                if (unlock_key.isEmpty()) {
-                    QString message = tr("Please input the key to unlock!");
-                    showFailurePopup(message);
-                    return;
-                }
-                else {
-                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, unlock_key);
-                }
-            }
-            else if (currentMapKeyText == SETVOLUME_STR
-                || currentMapKeyText == SETVOLUME_NOTIFY_STR
-                || currentMapKeyText == SETMICVOLUME_STR
-                || currentMapKeyText == SETMICVOLUME_NOTIFY_STR) {
-                QString setvolume_value = ui->sendTextPlainTextEdit->toPlainText().simplified();
-                setvolume_value.remove(whitespace_reg);
-                if (setvolume_value.isEmpty()) {
-                    QString message = tr("Please input the volume value to set!");
-                    showFailurePopup(message);
-                    return;
-                }
-                else {
-                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, setvolume_value);
-                }
-            }
-            else if (currentMapKeyText == SENDTEXT_STR) {
-                QString sendtext = ui->sendTextPlainTextEdit->toPlainText();
-                if (sendtext.isEmpty()) {
-                    QString message = tr("Please input the text to send!");
-                    showFailurePopup(message);
-                    return;
-                }
-                else {
-                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, sendtext);
-                }
-            }
-            else if (currentMapKeyText == PASTETEXT_STR) {
-                QString pastetext = ui->sendTextPlainTextEdit->toPlainText();
-                if (pastetext.isEmpty()) {
-                    QString message = tr("Please input the text to paste!");
-                    showFailurePopup(message);
-                    return;
-                }
-                else {
-                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, pastetext);
-                }
-            }
-            else if (currentMapKeyText == RUN_STR) {
-                QString run_cmd = ui->sendTextPlainTextEdit->toPlainText();
-                run_cmd.replace(simplified_regex, " ");
-                run_cmd = run_cmd.trimmed();
-                if (run_cmd.isEmpty()) {
-                    QString message = tr("Please input the command to run!");
-                    showFailurePopup(message);
-                    return;
-                }
-                else {
-                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, run_cmd);
-                }
-            }
-            else if (currentMapKeyText == SWITCHTAB_STR
-                || currentMapKeyText == SWITCHTAB_SAVE_STR) {
-                QString switchtab_name = ui->sendTextPlainTextEdit->toPlainText();
-                switchtab_name.replace(simplified_regex, " ");
-                if (switchtab_name.isEmpty()) {
-                    QString message = tr("Please input the tabname to switch!");
-                    showFailurePopup(message);
-                    return;
-                }
-                else {
-                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, switchtab_name);
-                }
-            }
-            else if (currentMapKeyText == MACRO_STR
-                || currentMapKeyText == UNIVERSAL_MACRO_STR) {
-                QString macro_content = ui->sendTextPlainTextEdit->toPlainText();
-                macro_content.replace(simplified_regex, " ");
-                if (macro_content.isEmpty()) {
-                    QString message = tr("Please input the mapping macro!");
-                    showFailurePopup(message);
-                    return;
-                }
-                else {
-                    currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, macro_content);
-                }
-            }
-            else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
-                QString message = tr("KeySequenceBreak key can not be set duplicated!");
-                showFailurePopup(message);
-                return;
-            }
-            QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "mappingkeys_str before add:" << mappingkeys_str;
-#endif
-            int waitTime = ui->waitTimeSpinBox->value();
-            if (waitTime > 0) {
-                currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
-            }
-            if (ui->nextarrowCheckBox->isChecked()) {
-                mappingkeys_str = mappingkeys_str + SEPARATOR_NEXTARROW + currentMapKeyText;
-            }
-            else {
-                mappingkeys_str = mappingkeys_str + SEPARATOR_PLUS + currentMapKeyText;
-            }
-
-            QStringList mappingKeySeqList = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_NEXT);
-            ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeys_str, mappingKeySeqList, INITIAL_ROW_INDEX);
-            if (!result.isValid) {
-                showFailurePopup(result.errorMessage);
-                return;
-            }
-
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "mappingkeys_str after add:" << mappingkeys_str;
-#endif
-
-            QString mappingkeys_keyup_str;
-            if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
-                mappingkeys_keyup_str = mappingkeys_str;
-            }
-            else {
-                mappingkeys_keyup_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
-            }
-            KeyMappingDataList->replace(findindex, MAP_KEYDATA(currentOriKeyText,
-                                                               mappingkeys_str,
-                                                               mappingkeys_keyup_str,
-                                                               keymapdata.Note,
-                                                               keymapdata.Category,
-                                                               keymapdata.Disabled,
-                                                               keymapdata.Burst,
-                                                               keymapdata.BurstPressTime,
-                                                               keymapdata.BurstReleaseTime,
-                                                               keymapdata.Lock,
-                                                               keymapdata.MappingKeyUnlock,
-                                                               keymapdata.DisableOriginalKeyUnlock,
-                                                               keymapdata.DisableFnKeySwitch,
-                                                               keymapdata.SendMappingKeyMethod,
-                                                               keymapdata.FixedVKeyCode,
-                                                               keymapdata.CheckCombKeyOrder,
-                                                               keymapdata.Unbreakable,
-                                                               keymapdata.PassThrough,
-                                                               keymapdata.SendTiming,
-                                                               keymapdata.PasteTextMode,
-                                                               keymapdata.KeySeqHoldDown,
-                                                               keymapdata.RepeatMode,
-                                                               keymapdata.RepeatTimes,
-                                                               keymapdata.Crosshair_CenterColor,
-                                                               keymapdata.Crosshair_CenterSize,
-                                                               keymapdata.Crosshair_CenterOpacity,
-                                                               keymapdata.Crosshair_CrosshairColor,
-                                                               keymapdata.Crosshair_CrosshairWidth,
-                                                               keymapdata.Crosshair_CrosshairLength,
-                                                               keymapdata.Crosshair_CrosshairOpacity,
-                                                               keymapdata.Crosshair_ShowCenter,
-                                                               keymapdata.Crosshair_ShowTop,
-                                                               keymapdata.Crosshair_ShowBottom,
-                                                               keymapdata.Crosshair_ShowLeft,
-                                                               keymapdata.Crosshair_ShowRight,
-                                                               keymapdata.Crosshair_X_Offset,
-                                                               keymapdata.Crosshair_Y_Offset
-                                                               ));
-        }
-        else {
-            if (isSpecialOriginalKey) {
-                currentMapKeyText = baseKeyForSpecialCheck;
-
-                int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
-                if (virtualgamepad_index > 0) {
+                else { /* pushlevel == VJOY_PUSHLEVEL_MAX */
+                    /* Do not add [pushlevel] value postfix */
                     currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
                 }
             }
             else {
-                QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(currentMapKeyText);
-                int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
-                if (vjoy_pushlevel_keys_match.hasMatch()) {
-                    int pushlevel = ui->pushLevelSpinBox->value();
-                    if (virtualgamepad_index > 0) {
-                        if (pushlevel != VJOY_PUSHLEVEL_MAX) {
-                            /* Add [pushlevel] value postfix */
-                            currentMapKeyText = QString("%1[%2]@%3").arg(currentMapKeyText, QString::number(pushlevel), QString::number(virtualgamepad_index - 1));
-                        }
-                        else { /* pushlevel == VJOY_PUSHLEVEL_MAX */
-                            /* Do not add [pushlevel] value postfix */
-                            currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
-                        }
-                    }
-                    else {
-                        if (pushlevel != VJOY_PUSHLEVEL_MAX) {
-                            /* Add [pushlevel] value postfix */
-                            currentMapKeyText = QString("%1[%2]").arg(currentMapKeyText, QString::number(pushlevel));
-                        }
-                    }
-                }
-                else if (virtualgamepad_index > 0
-                    && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
-                    currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
-                }
-                else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
-                    QString mousepointstr = ui->pointDisplayLabel->text();
-                    if (mousepointstr.isEmpty()) {
-                        QString message = tr("Need to set a screen mouse point with \"%1\" click!").arg(tr("L-Ctrl+Mouse-Left Click"));
-                        showFailurePopup(message);
-                        return;
-                    }
-                    else {
-                        QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
-                        int x = mousepoint.x();
-                        int y = mousepoint.y();
-
-                        currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
-                    }
-                }
-                else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
-                    QString mousepointstr = ui->pointDisplayLabel->text();
-                    if (mousepointstr.isEmpty()) {
-                        QString message = tr("Need to set a window mouse point with \"%1\" click!").arg(tr("L-Alt+Mouse-Left Click"));
-                        showFailurePopup(message);
-                        return;
-                    }
-                    else {
-                        QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
-                        int x = mousepoint.x();
-                        int y = mousepoint.y();
-
-                        currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
-                    }
-                }
-                else if (currentMapKeyText == UNLOCK_STR) {
-                    QString unlock_key = ui->sendTextPlainTextEdit->toPlainText().simplified();
-                    unlock_key.remove(whitespace_reg);
-                    if (unlock_key.isEmpty()) {
-                        QString message = tr("Please input the key to unlock!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                    else {
-                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, unlock_key);
-                    }
-                }
-                else if (currentMapKeyText == SETVOLUME_STR
-                    || currentMapKeyText == SETVOLUME_NOTIFY_STR
-                    || currentMapKeyText == SETMICVOLUME_STR
-                    || currentMapKeyText == SETMICVOLUME_NOTIFY_STR) {
-                    QString setvolume_value = ui->sendTextPlainTextEdit->toPlainText().simplified();
-                    setvolume_value.remove(whitespace_reg);
-                    if (setvolume_value.isEmpty()) {
-                        QString message = tr("Please input the volume value to set!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                    else {
-                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, setvolume_value);
-                    }
-                }
-                else if (currentMapKeyText == SENDTEXT_STR) {
-                    QString sendtext = ui->sendTextPlainTextEdit->toPlainText();
-                    if (sendtext.isEmpty()) {
-                        QString message = tr("Please input the text to send!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                    else {
-                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, sendtext);
-                    }
-                }
-                else if (currentMapKeyText == PASTETEXT_STR) {
-                    QString pastetext = ui->sendTextPlainTextEdit->toPlainText();
-                    if (pastetext.isEmpty()) {
-                        QString message = tr("Please input the text to paste!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                    else {
-                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, pastetext);
-                    }
-                }
-                else if (currentMapKeyText == RUN_STR) {
-                    QString run_cmd = ui->sendTextPlainTextEdit->toPlainText();
-                    run_cmd.replace(simplified_regex, " ");
-                    run_cmd = run_cmd.trimmed();
-                    if (run_cmd.isEmpty()) {
-                        QString message = tr("Please input the command to run!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                    else {
-                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, run_cmd);
-                    }
-                }
-                else if (currentMapKeyText == SWITCHTAB_STR
-                    || currentMapKeyText == SWITCHTAB_SAVE_STR) {
-                    QString switchtab_name = ui->sendTextPlainTextEdit->toPlainText();
-                    switchtab_name.replace(simplified_regex, " ");
-                    if (switchtab_name.isEmpty()) {
-                        QString message = tr("Please input the tabname to switch!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                    else {
-                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, switchtab_name);
-                    }
-                }
-                else if (currentMapKeyText == MACRO_STR
-                    || currentMapKeyText == UNIVERSAL_MACRO_STR) {
-                    QString macro_content = ui->sendTextPlainTextEdit->toPlainText();
-                    macro_content.replace(simplified_regex, " ");
-                    macro_content = macro_content.trimmed();
-                    if (macro_content.isEmpty()) {
-                        QString message = tr("Please input the mapping macro!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                    else {
-                        currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, macro_content);
-                    }
-                }
-                else if (currentMapKeyText == KEY_BLOCKED_STR) {
-                    if (currentOriKeyText.contains(JOY_KEY_PREFIX)) {
-                        QString message = tr("Game controller keys could not be blocked!");
-                        showFailurePopup(message);
-                        return;
-                    }
-                }
-                else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
-                    // QString break_keysStr = ui->originalKeyRecordLineEdit->text();
-                    // if (break_keysStr.isEmpty()) {
-                    //     currentMapKeyText = KEYSEQUENCEBREAK_STR;
-                    // }
-                    // else {
-                    //     // check break_keysStr as on_originalKeyUpdateButton_clicked use validateOriginalKeyString
-                    // }
-
-                    // currentMapKeyText = KEYSEQUENCEBREAK_STR;
-                }
-
-                int waitTime = ui->waitTimeSpinBox->value();
-                if (waitTime > 0
-                    && currentMapKeyComboBoxText != KEY_BLOCKED_STR
-                    && currentMapKeyComboBoxText != KEYSEQUENCEBREAK_STR
-                    && currentMapKeyComboBoxText.startsWith(CROSSHAIR_PREFIX) == false
-                    && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
-                    && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false
-                    && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
-                    && currentMapKeyComboBoxText != VJOY_LS_RADIUS_STR
-                    && currentMapKeyComboBoxText != VJOY_RS_RADIUS_STR
-                    && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
-                    && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR
-                    && currentMapKeyComboBoxText != VJOY_LT_ACCEL_STR
-                    && currentMapKeyComboBoxText != VJOY_RT_ACCEL_STR) {
-                    currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
+                if (pushlevel != VJOY_PUSHLEVEL_MAX) {
+                    /* Add [pushlevel] value postfix */
+                    currentMapKeyText = QString("%1[%2]").arg(currentMapKeyText, QString::number(pushlevel));
                 }
             }
-
-            QStringList mappingKeySeqList = splitMappingKeyString(currentMapKeyText, SPLIT_WITH_NEXT);
-            ValidationResult result = QKeyMapper::validateMappingKeyString(currentMapKeyText, mappingKeySeqList, INITIAL_ROW_INDEX);
-            if (!result.isValid) {
-                showFailurePopup(result.errorMessage);
+        }
+        else if (virtualgamepad_index > 0
+            && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
+            currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
+        }
+        else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
+            QString mousepointstr = ui->pointDisplayLabel->text();
+            if (mousepointstr.isEmpty()) {
+                QString message = tr("Need to set a screen mouse point with \"%1\" click!").arg(tr("L-Ctrl+Mouse-Left Click"));
+                showFailurePopup(message);
                 return;
             }
+            else {
+                QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
+                int x = mousepoint.x();
+                int y = mousepoint.y();
 
-            KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText,                       /* originalkey QString */
-                                                   currentMapKeyText,                       /* mappingkeys QString */
-                                                   currentMapKeyText,                       /* mappingkeys_keyup QString */
-                                                   QString(),                               /* note QString */
-                                                   QString(),                               /* category QString */
-                                                   false,                                   /* disabled bool */
-                                                   false,                                   /* burst bool */
-                                                   BURST_PRESS_TIME_DEFAULT,                /* burstpresstime int */
-                                                   BURST_RELEASE_TIME_DEFAULT,              /* burstreleasetime int */
-                                                   false,                                   /* lock bool */
-                                                   false,                                   /* mappingkeys_unlock bool */
-                                                   false,                                   /* disable_originalkeyunlock bool */
-                                                   false,                                   /* disable_fnkeyswitch bool */
-                                                   SENDMAPPINGKEY_METHOD_SENDINPUT,         /* sendmappingkeymethod int */
-                                                   FIXED_VIRTUAL_KEY_CODE_NONE,             /* fixedvkeycode int */
-                                                   true,                                    /* checkcombkeyorder bool */
-                                                   false,                                   /* unbreakable bool */
-                                                   false,                                   /* passthrough bool */
-                                                   SENDTIMING_NORMAL,                       /* sendtiming int */
-                                                   PASTETEXT_MODE_SHIFTINSERT,              /* pastetextmode int */
-                                                   false,                                   /* keyseqholddown bool */
-                                                   REPEAT_MODE_NONE,                        /* repeat_mode int */
-                                                   REPEAT_TIMES_DEFAULT,                    /* repeat_times int */
-                                                   CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR,    /* crosshair_centercolor QColor */
-                                                   CROSSHAIR_CENTERSIZE_DEFAULT,            /* crosshair_centersize int */
-                                                   CROSSHAIR_CENTEROPACITY_DEFAULT,         /* crosshair_centeropacity int */
-                                                   CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR, /* crosshair_crosshaircolor QColor */
-                                                   CROSSHAIR_CROSSHAIRWIDTH_DEFAULT,        /* crosshair_crosshairwidth int */
-                                                   CROSSHAIR_CROSSHAIRLENGTH_DEFAULT,       /* crosshair_crosshairlength int */
-                                                   CROSSHAIR_CROSSHAIROPACITY_DEFAULT,      /* crosshair_crosshairopacity int */
-                                                   true,                                    /* crosshair_showcenter bool */
-                                                   true,                                    /* crosshair_showtop bool */
-                                                   true,                                    /* crosshair_showbottom bool */
-                                                   true,                                    /* crosshair_showleft bool */
-                                                   true,                                    /* crosshair_showright bool */
-                                                   CROSSHAIR_X_OFFSET_DEFAULT,              /* crosshair_x_offset int */
-                                                   CROSSHAIR_Y_OFFSET_DEFAULT               /* crosshair_y_offset int */
-                                                   ));
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
-#endif
+                currentMapKeyText = currentMapKeyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(%1,%2)").arg(x).arg(y);
+            }
+        }
+        else if (currentMapKeyText.startsWith(MOUSE_BUTTON_PREFIX) && currentMapKeyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
+            QString mousepointstr = ui->pointDisplayLabel->text();
+            if (mousepointstr.isEmpty()) {
+                QString message = tr("Need to set a window mouse point with \"%1\" click!").arg(tr("L-Alt+Mouse-Left Click"));
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                QPoint mousepoint = getMousePointFromLabelString(mousepointstr);
+                int x = mousepoint.x();
+                int y = mousepoint.y();
+
+                currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
+            }
+        }
+        else if (currentMapKeyText == UNLOCK_STR) {
+            QString unlock_key = ui->sendTextPlainTextEdit->toPlainText().simplified();
+            unlock_key.remove(whitespace_reg);
+            if (unlock_key.isEmpty()) {
+                QString message = tr("Please input the key to unlock!");
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, unlock_key);
+            }
+        }
+        else if (currentMapKeyText == SETVOLUME_STR
+            || currentMapKeyText == SETVOLUME_NOTIFY_STR
+            || currentMapKeyText == SETMICVOLUME_STR
+            || currentMapKeyText == SETMICVOLUME_NOTIFY_STR) {
+            QString setvolume_value = ui->sendTextPlainTextEdit->toPlainText().simplified();
+            setvolume_value.remove(whitespace_reg);
+            if (setvolume_value.isEmpty()) {
+                QString message = tr("Please input the volume value to set!");
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, setvolume_value);
+            }
+        }
+        else if (currentMapKeyText == SENDTEXT_STR) {
+            QString sendtext = ui->sendTextPlainTextEdit->toPlainText();
+            if (sendtext.isEmpty()) {
+                QString message = tr("Please input the text to send!");
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, sendtext);
+            }
+        }
+        else if (currentMapKeyText == PASTETEXT_STR) {
+            QString pastetext = ui->sendTextPlainTextEdit->toPlainText();
+            if (pastetext.isEmpty()) {
+                QString message = tr("Please input the text to paste!");
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, pastetext);
+            }
+        }
+        else if (currentMapKeyText == RUN_STR) {
+            QString run_cmd = ui->sendTextPlainTextEdit->toPlainText();
+            run_cmd.replace(simplified_regex, " ");
+            run_cmd = run_cmd.trimmed();
+            if (run_cmd.isEmpty()) {
+                QString message = tr("Please input the command to run!");
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, run_cmd);
+            }
+        }
+        else if (currentMapKeyText == SWITCHTAB_STR
+            || currentMapKeyText == SWITCHTAB_SAVE_STR) {
+            QString switchtab_name = ui->sendTextPlainTextEdit->toPlainText();
+            switchtab_name.replace(simplified_regex, " ");
+            if (switchtab_name.isEmpty()) {
+                QString message = tr("Please input the tabname to switch!");
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, switchtab_name);
+            }
+        }
+        else if (currentMapKeyText == MACRO_STR
+            || currentMapKeyText == UNIVERSAL_MACRO_STR) {
+            QString macro_content = ui->sendTextPlainTextEdit->toPlainText();
+            macro_content.replace(simplified_regex, " ");
+            macro_content = macro_content.trimmed();
+            if (macro_content.isEmpty()) {
+                QString message = tr("Please input the mapping macro!");
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, macro_content);
+            }
+        }
+        else if (currentMapKeyText == KEY_BLOCKED_STR) {
+            if (currentOriKeyText.contains(JOY_KEY_PREFIX)) {
+                QString message = tr("Game controller keys could not be blocked!");
+                showFailurePopup(message);
+                return;
+            }
+        }
+        else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
+            // Keep existing behavior: do not force-modify KeySequenceBreak here.
         }
 
+        int waitTime = ui->waitTimeSpinBox->value();
+        if (waitTime > 0
+            && currentMapKeyComboBoxText != KEY_BLOCKED_STR
+            && currentMapKeyComboBoxText != KEYSEQUENCEBREAK_STR
+            && currentMapKeyComboBoxText.startsWith(CROSSHAIR_PREFIX) == false
+            && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
+            && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false
+            && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
+            && currentMapKeyComboBoxText != VJOY_LS_RADIUS_STR
+            && currentMapKeyComboBoxText != VJOY_RS_RADIUS_STR
+            && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
+            && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR
+            && currentMapKeyComboBoxText != VJOY_LT_ACCEL_STR
+            && currentMapKeyComboBoxText != VJOY_RT_ACCEL_STR) {
+            currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
+        }
+    }
+
+    QStringList mappingKeySeqList = splitMappingKeyString(currentMapKeyText, SPLIT_WITH_NEXT);
+    ValidationResult add_result = QKeyMapper::validateMappingKeyString(currentMapKeyText, mappingKeySeqList, INITIAL_ROW_INDEX);
+    if (!add_result.isValid) {
+        showFailurePopup(add_result.errorMessage);
+        return;
+    }
+
+    const QString groupKey = normalizeOriginalKeyForExclusiveGroup(currentOriKeyText);
+    bool autoDisableNewItem = hasEnabledExclusiveGroupConflict(*KeyMappingDataList, groupKey, -1);
+    if (autoDisableNewItem) {
+        // If there is already an enabled item in this group, the new item must be disabled.
+        showWarningPopup(tr("A mapping for the same OriginalKey is already enabled. The newly added one was set to Disabled."));
+    }
+
+    KeyMappingDataList->append(MAP_KEYDATA(currentOriKeyText,                       /* originalkey QString */
+                                           currentMapKeyText,                       /* mappingkeys QString */
+                                           currentMapKeyText,                       /* mappingkeys_keyup QString */
+                                           QString(),                               /* note QString */
+                                           QString(),                               /* category QString */
+                                           autoDisableNewItem,                      /* disabled bool */
+                                           false,                                   /* burst bool */
+                                           BURST_PRESS_TIME_DEFAULT,                /* burstpresstime int */
+                                           BURST_RELEASE_TIME_DEFAULT,              /* burstreleasetime int */
+                                           false,                                   /* lock bool */
+                                           false,                                   /* mappingkeys_unlock bool */
+                                           false,                                   /* disable_originalkeyunlock bool */
+                                           false,                                   /* disable_fnkeyswitch bool */
+                                           SENDMAPPINGKEY_METHOD_SENDINPUT,         /* sendmappingkeymethod int */
+                                           FIXED_VIRTUAL_KEY_CODE_NONE,             /* fixedvkeycode int */
+                                           true,                                    /* checkcombkeyorder bool */
+                                           false,                                   /* unbreakable bool */
+                                           false,                                   /* passthrough bool */
+                                           SENDTIMING_NORMAL,                       /* sendtiming int */
+                                           PASTETEXT_MODE_SHIFTINSERT,              /* pastetextmode int */
+                                           false,                                   /* keyseqholddown bool */
+                                           REPEAT_MODE_NONE,                        /* repeat_mode int */
+                                           REPEAT_TIMES_DEFAULT,                    /* repeat_times int */
+                                           CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR,    /* crosshair_centercolor QColor */
+                                           CROSSHAIR_CENTERSIZE_DEFAULT,            /* crosshair_centersize int */
+                                           CROSSHAIR_CENTEROPACITY_DEFAULT,         /* crosshair_centeropacity int */
+                                           CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR, /* crosshair_crosshaircolor QColor */
+                                           CROSSHAIR_CROSSHAIRWIDTH_DEFAULT,        /* crosshair_crosshairwidth int */
+                                           CROSSHAIR_CROSSHAIRLENGTH_DEFAULT,       /* crosshair_crosshairlength int */
+                                           CROSSHAIR_CROSSHAIROPACITY_DEFAULT,      /* crosshair_crosshairopacity int */
+                                           true,                                    /* crosshair_showcenter bool */
+                                           true,                                    /* crosshair_showtop bool */
+                                           true,                                    /* crosshair_showbottom bool */
+                                           true,                                    /* crosshair_showleft bool */
+                                           true,                                    /* crosshair_showright bool */
+                                           CROSSHAIR_X_OFFSET_DEFAULT,              /* crosshair_x_offset int */
+                                           CROSSHAIR_Y_OFFSET_DEFAULT               /* crosshair_y_offset int */
+                                           ));
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << __func__ << ": refreshKeyMappingDataTable()";
+    qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
 #endif
-        refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
-    }
-    else {
-        showFailurePopup(tr("Conflict with exist Keys!"));
-    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << __func__ << ": refreshKeyMappingDataTable()";
+#endif
+    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
 }
 
 void QKeyMapper::confirmProcessLineEdit()
@@ -25166,7 +24967,6 @@ QPopupNotification::QPopupNotification(QWidget *parent)
         m_IconLabel->clear();
         m_TextLabel->clear();
     });
-
     QObject::connect(&m_Timer, &QTimer::timeout, this, &QPopupNotification::hideNotification);
     m_Timer.setSingleShot(true);
 }
@@ -27137,20 +26937,22 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
             }
         }
         else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
-            int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList();
+            int auto_disabled = 0;
+            int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(&auto_disabled);
             int copied_count = QKeyMapper::s_CopiedMappingData.size();
             if (inserted_count == 0) {
-                QString message = tr("%1 copied mapping data are completely duplicated and could not be inserted!").arg(copied_count);
+                QString message = tr("%1 copied mapping data could not be inserted!").arg(copied_count);
                 QKeyMapper::getInstance()->showFailurePopup(message);
             }
             else if (inserted_count > 0) {
                 QString message;
-                if (inserted_count != copied_count) {
-                    message = tr("Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.")
+                if (auto_disabled > 0) {
+                    message = tr("Inserted %1 copied mapping data into current mapping table. %2 item(s) were set to Disabled because another item in the same OriginalKey group is already enabled.")
                                   .arg(inserted_count)
-                                  .arg(copied_count - inserted_count);
+                                  .arg(auto_disabled);
                     QKeyMapper::getInstance()->showWarningPopup(message);
-                } else {
+                }
+                else {
                     message = tr("Inserted %1 copied mapping data into current mapping table.")
                                   .arg(inserted_count);
                     QKeyMapper::getInstance()->showInformationPopup(message);

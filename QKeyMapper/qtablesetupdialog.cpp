@@ -704,7 +704,8 @@ void QTableSetupDialog::on_importTableButton_clicked()
     qDebug().nospace() << "[on_importTableButton_clicked]" << "import_filename from QFileDialog -> TabIndex[" << tabindex << "] : " << import_filename;
 #endif
 
-    bool import_result = QKeyMapper::importKeyMappingDataFromFile(tabindex, import_filename);
+    int auto_disabled = 0;
+    bool import_result = QKeyMapper::importKeyMappingDataFromFile(tabindex, import_filename, &auto_disabled);
 
     if (import_result) {
         QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
@@ -713,8 +714,16 @@ void QTableSetupDialog::on_importTableButton_clicked()
         QString popupMessage;
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
-        popupMessageColor = SUCCESS_COLOR;
-        popupMessage = tr("Import mapping data to table \"%1\" successfully").arg(TabName);
+        if (auto_disabled > 0) {
+            popupMessageColor = WARNING_COLOR;
+            popupMessage = tr("Import mapping data to table \"%1\" successfully. %2 item(s) were set to Disabled because another mapping for the same OriginalKey is already enabled.")
+                              .arg(TabName)
+                              .arg(auto_disabled);
+        }
+        else {
+            popupMessageColor = SUCCESS_COLOR;
+            popupMessage = tr("Import mapping data to table \"%1\" successfully").arg(TabName);
+        }
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }

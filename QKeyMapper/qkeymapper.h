@@ -985,7 +985,7 @@ public:
     static int tabIndexToSwitchByTabHotkey(const QString &hotkey_string, bool *isSame = nullptr);
     static int tabIndexToSwitchByTabName(const QString &tabName);
     static bool exportKeyMappingDataToFile(int tabindex, const QString &filename);
-    static bool importKeyMappingDataFromFile(int tabindex, const QString &filename);
+    static bool importKeyMappingDataFromFile(int tabindex, const QString &filename, int *autoDisabledCount = Q_NULLPTR);
     static void updateKeyMappingDataListMappingKeys(int rowindex, const QString &mappingkeystr);
     static void updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QString &mappingkeystr);
     static bool validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata);
@@ -1115,7 +1115,7 @@ public slots:
     int removeTabFromKeyMappingTabWidget(int tabindex);
     void moveTabInKeyMappingTabWidget(int from, int to);
     int copySelectedKeyMappingDataToCopiedList(void);
-    int insertKeyMappingDataFromCopiedList(void);
+    int insertKeyMappingDataFromCopiedList(int *autoDisabledCount = Q_NULLPTR);
     void updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring);
     void updateKeyLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown);
     void systemThemeChanged(void);
