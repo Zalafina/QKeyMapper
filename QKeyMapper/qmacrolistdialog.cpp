@@ -967,7 +967,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     // from the table viewport. Subtract it from our column width budget to keep
     // the same no-horizontal-scroll behavior as when verticalHeader was hidden.
     int verticalHeaderWidth = 0;
-    if (macroDataTable->verticalHeader() && macroDataTable->verticalHeader()->isVisible()) {
+    if (macroDataTable->verticalHeader()) {
         verticalHeaderWidth = qMax(macroDataTable->verticalHeader()->width(),
                                   macroDataTable->verticalHeader()->sizeHint().width());
     }

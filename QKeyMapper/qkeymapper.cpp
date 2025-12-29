@@ -19451,7 +19451,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     // from the table viewport. Subtract it from our column width budget to keep
     // the same no-horizontal-scroll behavior as when verticalHeader was hidden.
     int verticalHeaderWidth = 0;
-    if (mappingDataTable->verticalHeader() && mappingDataTable->verticalHeader()->isVisible()) {
+    if (mappingDataTable->verticalHeader()) {
         verticalHeaderWidth = qMax(mappingDataTable->verticalHeader()->width(),
                                   mappingDataTable->verticalHeader()->sizeHint().width());
     }
@@ -27282,6 +27282,7 @@ QStringList KeyMappingDataTableWidget::getAvailableCategories() const
 
 void KeyMappingDataTableWidget::setCategoryColumnVisible(bool visible)
 {
+    QSignalBlocker blocker(this);
     m_CategoryColumnVisible = visible;
 
     if (visible) {
