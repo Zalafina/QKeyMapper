@@ -716,7 +716,7 @@ void QTableSetupDialog::on_importTableButton_clicked()
         int popupMessageDisplayTime = 3000;
         if (auto_disabled > 0) {
             popupMessageColor = WARNING_COLOR;
-            popupMessage = tr("Import mapping data to table \"%1\" successfully. %2 item(s) were set to Disabled because another mapping for the same OriginalKey is already enabled.")
+            popupMessage = tr("Import mapping data to table \"%1\" successfully. %2 mapping(s) were disabled due to a conflict.")
                               .arg(TabName)
                               .arg(auto_disabled);
         }

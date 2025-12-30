@@ -1560,6 +1560,10 @@ public:
     static int s_TransParentWindowInitialHeight;
     KeyMapStatus m_KeyMapStatus;
 
+public:
+    int applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow, bool showPopup = true);
+    bool autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup = true, bool updateTableWidget = true);
+
 private:
     static QKeyMapper *m_instance;
     static QString DEFAULT_TITLE;

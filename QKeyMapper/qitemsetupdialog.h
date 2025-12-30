@@ -85,7 +85,7 @@ public:
     static bool updateMappingKey(QString &mappingKey, const QString &originalKey, int rowindex);
     static bool updateMappingKeyKeyUp(QString &mappingKey, const QString &originalKey, int rowindex);
 private:
-    void updateAllMappingInfoFinally(const QString &originalKey, const QString &mappingKey, const QString &mappingKey_KeyUp);
+    bool updateAllMappingInfoFinally(const QString &originalKey, const QString &mappingKey, const QString &mappingKey_KeyUp);
 
 private:
     static QItemSetupDialog *m_instance;

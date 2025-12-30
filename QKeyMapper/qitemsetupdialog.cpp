@@ -2685,15 +2685,21 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
     // Apply UI updates only if all validations passed
     if (allUpdatesSuccessful && !updatePriorities.isEmpty()) {
         // Update LineEdit controls with validated and potentially modified content
-        updateAllMappingInfoFinally(originalKeytoUpdate, mappingKeytoUpdate, mappingKey_KeyUptoUpdate);
+        bool showOriginalKeyDisabledPopup = updateAllMappingInfoFinally(originalKeytoUpdate, mappingKeytoUpdate, mappingKey_KeyUptoUpdate);
 
         // Show success message
         QString popupMessage;
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
 
-        popupMessageColor = SUCCESS_COLOR;
-        popupMessage = tr("Key mapping updated successfully");
+        if (showOriginalKeyDisabledPopup) {
+            popupMessageColor = WARNING_COLOR;
+            popupMessage = tr("Key mapping updated successfully") + tr(". But the mapping was disabled due to a conflict.");
+        }
+        else {
+            popupMessageColor = SUCCESS_COLOR;
+            popupMessage = tr("Key mapping updated successfully");
+        }
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 }
@@ -2829,19 +2835,27 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
     }
 }
 
-void QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, const QString &mappingKey, const QString &mappingKey_KeyUp)
+bool QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, const QString &mappingKey, const QString &mappingKey_KeyUp)
 {
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return;
+        return false;
     }
 
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
+        return false;
     }
 
+    bool showOriginalKeyDisabledPopup = false;
     /* OriginalKey Update */
     if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != originalKey) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = originalKey;
+
+        // If this item is enabled and the new OriginalKey conflicts with an already enabled item
+        // in the same normalized group, allow the update but auto-disable this row.
+        bool result = QKeyMapper::getInstance()->autoDisableRowIfExclusiveGroupConflict(m_TabIndex, m_ItemRow, false, false);
+        if (result) {
+            showOriginalKeyDisabledPopup = true;
+        }
     }
 
     /* MappingKey Update */
@@ -2859,6 +2873,8 @@ void QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, c
     QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(m_TabIndex);
 
     refreshAllRelatedUI();
+
+    return showOriginalKeyDisabledPopup;
 }
 
 void QItemSetupDialog::keyMappingTableItemCheckStateChanged(int row, int col, bool checked)
@@ -2995,6 +3011,12 @@ void QItemSetupDialog::on_disabledCheckBox_stateChanged(int state)
     if (disabled != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Disabled = disabled;
         QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, DISABLED_COLUMN);
+
+        // Keep behavior consistent with the table: enabling an item will auto-disable
+        // other enabled items in the same normalized OriginalKey group.
+        if (!disabled) {
+            QKeyMapper::getInstance()->applyExclusiveEnableMutualExclusion(m_TabIndex, m_ItemRow, true);
+        }
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Disabled -> " << disabled;
 #endif
