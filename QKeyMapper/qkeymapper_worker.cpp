@@ -12182,6 +12182,14 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                         keyproc = KEY_PROC_BURST;
                     }
                 }
+
+                // Call releaseKeyboardModifiers on BurstKey Down startBurstKeyTimer for CombinationKey mapping.
+                if (keyproc == KEY_PROC_BURST
+                    && keycodeString.contains(SEPARATOR_PLUS)) {
+                    QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(findindex).Mapping_Keys;
+                    const Qt::KeyboardModifiers modifiers_arg = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+                    (void)releaseKeyboardModifiers(modifiers_arg, keycodeString, mappingKeyList);
+                }
             }
         }
 
