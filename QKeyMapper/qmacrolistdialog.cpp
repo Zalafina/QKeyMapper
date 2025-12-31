@@ -626,7 +626,7 @@ void QMacroListDialog::rebuildMacroCategoryFilterMenu(void)
         itemsHeight += listMargins.top() + listMargins.bottom();
 
         const int allHeight = m_CategoryFilterAllCheckBox->sizeHint().height();
-        const int otherHeight = panelMargins.top() + panelMargins.bottom() + allHeight + panelSpacing;
+        const int otherHeight = panelMargins.top() + panelMargins.bottom() + allHeight + panelSpacing + 16;
 
         const int maxHeight = CATEGORY_FILTER_MAX_HEIGHT_MACROLIST;
         const int desiredHeightUncapped = otherHeight + itemsHeight;
