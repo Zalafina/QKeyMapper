@@ -19469,6 +19469,9 @@ void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
         QCheckBox *cb = new QCheckBox(isBlank ? tr("Blank") : categoryValue, m_CategoryFilterListContainer);
         cb->setTristate(false);
         cb->setProperty("categoryValue", categoryValue);
+        QString cb_text = cb->text();
+        cb_text.replace("&", "&&");
+        cb->setText(cb_text);
         m_CategoryFilterListLayout->addWidget(cb);
         m_CategoryFilterCheckBoxes.insert(categoryValue, cb);
 
@@ -19717,9 +19720,9 @@ void QKeyMapper::updateCategoryFilterToolButtonSummaryForCurrentTab(void)
                 selectedInOrder.append(v.isEmpty() ? tr("Blank") : v);
             }
         }
-        tooltip = selectedInOrder.join(", ");
+        tooltip = selectedInOrder.join("\n");
         if (selectedInOrder.size() <= 2) {
-            buttonText = tooltip;
+            buttonText = selectedInOrder.join(", ");
         }
         else {
             buttonText = tr("%1, %2 (+%3)")
@@ -19728,6 +19731,9 @@ void QKeyMapper::updateCategoryFilterToolButtonSummaryForCurrentTab(void)
         }
         if (buttonText.isEmpty()) {
             buttonText = tr("None");
+        }
+        else {
+            buttonText.replace("&", "&&");
         }
     }
 
