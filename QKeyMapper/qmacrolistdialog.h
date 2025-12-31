@@ -4,6 +4,10 @@
 #include <QDialog>
 #include <QTabWidget>
 #include <QTableWidget>
+#include <QWidgetAction>
+#include <QScrollArea>
+#include <QCheckBox>
+#include <QVBoxLayout>
 
 #include "qkeymapper_worker.h"
 
@@ -37,7 +41,9 @@ public:
 
     // Category filtering methods
     void setCategoryFilter(const QString &category);
+    void setCategoryFilters(const QSet<QString> &categories);
     void clearCategoryFilter();
+    void clearCategoryFilters();
     QStringList getAvailableCategories() const;
 
 protected:
@@ -54,7 +60,10 @@ private:
     int m_DraggedTopRow;                  // Top row index when dragging multi-selection
     int m_DraggedBottomRow;               // Bottom row index when dragging multi-selection
 public:
-    QString m_CategoryFilter = QString();  // Current category filter
+    // Current category filters:
+    // - Empty set means "All" (no filtering)
+    // - Empty-string element (""), when present, represents the built-in "Blank" option
+    QSet<QString> m_CategoryFilters;
 };
 
 // QMacroListDialog: Main dialog class for displaying and managing macro lists
@@ -158,6 +167,13 @@ private:
     void initMacroListTable(MacroListDataTableWidget *macroDataTable);
     void initKeyListComboBoxes(void);
     void initMacroListBackupActionPopup(void);
+
+    // Category filter toolbutton (QToolButton + QMenu + QWidgetAction) helpers
+    void initMacroCategoryFilterToolButton(void);
+    void rebuildMacroCategoryFilterMenu(void);
+    void updateMacroCategoryFilterToolButtonSummary(void);
+    void applyMacroCategoryFilterFromUI(void);
+    void updateMacroAllCheckStateFromItems(void);
     void resizeMacroListTabWidgetColumnWidth(void);
     void resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable);
     void updateMacroDataTableConnection(MacroListDataTableWidget *macroDataTable);
@@ -175,6 +191,18 @@ private:
     static QMacroListDialog *m_instance;
     Ui::QMacroListDialog *ui;
     ActionPopup *m_MacroListBackupActionPopup = Q_NULLPTR;
+
+    // Category filter menu UI (built in C++ only)
+    QMenu *m_CategoryFilterMenu = Q_NULLPTR;
+    QWidgetAction *m_CategoryFilterWidgetAction = Q_NULLPTR;
+    QWidget *m_CategoryFilterPanel = Q_NULLPTR;
+    QCheckBox *m_CategoryFilterAllCheckBox = Q_NULLPTR;
+    QScrollArea *m_CategoryFilterScrollArea = Q_NULLPTR;
+    QWidget *m_CategoryFilterListContainer = Q_NULLPTR;
+    QVBoxLayout *m_CategoryFilterListLayout = Q_NULLPTR;
+    QHash<QString, QCheckBox*> m_CategoryFilterCheckBoxes;
+    QStringList m_CategoryFilterDisplayOrder;
+    bool m_CategoryFilterGuard = false;
 };
 
 #endif // QMACROLISTDIALOG_H

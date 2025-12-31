@@ -17,6 +17,9 @@
 #include <QListWidget>
 #include <QFileIconProvider>
 #include <QHash>
+#include <QWidgetAction>
+#include <QScrollArea>
+
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtWin>
 #endif
@@ -258,7 +261,9 @@ public:
 
     // Category filtering methods
     void setCategoryFilter(const QString &category);
+    void setCategoryFilters(const QSet<QString> &categories);
     void clearCategoryFilter();
+    void clearCategoryFilters();
     QStringList getAvailableCategories() const;
     void setCategoryColumnVisible(bool visible);
     bool isCategoryColumnVisible() const;
@@ -277,7 +282,10 @@ private:
     int m_DraggedBottomRow;
     bool m_CategoryColumnVisible = false;  // Category column visibility
 public:
-    QString m_CategoryFilter = QString();  // Current category filter
+    // Current category filters:
+    // - Empty set means "All" (no filtering)
+    // - Empty-string element (""), when present, represents the built-in "Blank" option
+    QSet<QString> m_CategoryFilters;
 };
 
 struct KeyMappingTab_Info
@@ -1306,9 +1314,9 @@ private:
     void startLastAutoMatchedSettingTimer();
     void clearLastAutoMatchedSetting();
     bool switchBackToLastMatchedSetting();
-    QString getCurrentCategoryFilter() const;
+    QStringList getCurrentCategoryFilters() const;
     bool isCategoryFilterVisible() const;
-    void restoreCategoryFilterState(const QString& filter, bool showState);
+    void restoreCategoryFilterState(const QStringList& filters, bool showState);
 
     // CategoryFilterStateGuard helper class for RAII-style filter state management
     class CategoryFilterStateGuard {
@@ -1317,7 +1325,7 @@ private:
         ~CategoryFilterStateGuard();
     private:
         QKeyMapper* m_parent;
-        QString m_savedFilter;
+        QStringList m_savedFilters;
         bool m_savedShowState;
     };
 
@@ -1383,6 +1391,12 @@ private:
     void initCategoryFilterControls(void);
     void initKeyboardSelectComboBox(void);
     void initMouseSelectComboBox(void);
+
+    // Category filter toolbutton (QToolButton + QMenu + QWidgetAction) helpers
+    void rebuildCategoryFilterMenuForCurrentTab(void);
+    void updateCategoryFilterToolButtonSummaryForCurrentTab(void);
+    void applyCategoryFilterFromMenuStateForCurrentTab(void);
+    void updateCategoryFilterAllCheckStateFromItems(void);
     void initWindowSwitchKeyLineEdit(void);
     void initMappingSwitchKeyLineEdit(void);
     void initGyro2MouseSpinBoxes(void);
@@ -1559,6 +1573,20 @@ public:
     static int s_TransParentWindowInitialWidth;
     static int s_TransParentWindowInitialHeight;
     KeyMapStatus m_KeyMapStatus;
+
+private:
+    // Category filter menu UI (built in C++ only)
+    QMenu *m_CategoryFilterMenu = Q_NULLPTR;
+    QWidgetAction *m_CategoryFilterWidgetAction = Q_NULLPTR;
+    QWidget *m_CategoryFilterPanel = Q_NULLPTR;
+    QCheckBox *m_CategoryFilterAllCheckBox = Q_NULLPTR;
+    QScrollArea *m_CategoryFilterScrollArea = Q_NULLPTR;
+    QWidget *m_CategoryFilterListContainer = Q_NULLPTR;
+    QVBoxLayout *m_CategoryFilterListLayout = Q_NULLPTR;
+    QHash<QString, QCheckBox*> m_CategoryFilterCheckBoxes;
+    QStringList m_CategoryFilterDisplayOrder;
+    bool m_CategoryFilterGuard = false;
+    int m_CategoryFilterMenuTabIndex = -1;
 
 public:
     int applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow, bool showPopup = true);

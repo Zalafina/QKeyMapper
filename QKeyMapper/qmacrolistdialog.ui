@@ -578,25 +578,6 @@
             <enum>Qt::FocusPolicy::ClickFocus</enum>
            </property>
           </widget>
-          <widget class="QComboBox" name="categoryFilterComboBox">
-           <property name="geometry">
-            <rect>
-             <x>76</x>
-             <y>80</y>
-             <width>151</width>
-             <height>22</height>
-            </rect>
-           </property>
-           <property name="minimumSize">
-            <size>
-             <width>141</width>
-             <height>0</height>
-            </size>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::FocusPolicy::ClickFocus</enum>
-           </property>
-          </widget>
           <widget class="QLabel" name="categoryFilterLabel">
            <property name="geometry">
             <rect>
@@ -670,17 +651,30 @@
             <bool>false</bool>
            </property>
           </widget>
+          <widget class="QToolButton" name="categoryFilterToolButton">
+           <property name="geometry">
+            <rect>
+             <x>76</x>
+             <y>80</y>
+             <width>151</width>
+             <height>22</height>
+            </rect>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::FocusPolicy::NoFocus</enum>
+           </property>
+          </widget>
           <zorder>mapList_SelectKeyboardButton</zorder>
           <zorder>mapList_SelectFunctionButton</zorder>
           <zorder>mapList_SelectGamepadButton</zorder>
           <zorder>mapList_SelectMouseButton</zorder>
           <zorder>MacroList_MappingKeyListComboBox</zorder>
-          <zorder>categoryFilterComboBox</zorder>
           <zorder>categoryFilterLabel</zorder>
           <zorder>clearButton</zorder>
           <zorder>macroListBackupButton</zorder>
           <zorder>mapkeyLabel</zorder>
           <zorder>deleteMacroButton</zorder>
+          <zorder>categoryFilterToolButton</zorder>
          </widget>
         </item>
         <item>

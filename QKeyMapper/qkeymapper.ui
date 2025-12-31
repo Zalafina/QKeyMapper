@@ -2422,25 +2422,6 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QComboBox" name="CategoryFilterComboBox">
-   <property name="geometry">
-    <rect>
-     <x>990</x>
-     <y>170</y>
-     <width>71</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="currentText">
-    <string/>
-   </property>
-   <property name="currentIndex">
-    <number>-1</number>
-   </property>
-  </widget>
   <widget class="QPushButton" name="addTabButton">
    <property name="geometry">
     <rect>
@@ -2532,6 +2513,19 @@
    </property>
    <property name="autoDefault">
     <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QToolButton" name="categoryFilterToolButton">
+   <property name="geometry">
+    <rect>
+     <x>990</x>
+     <y>170</y>
+     <width>71</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
   </widget>
  </widget>

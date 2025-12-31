@@ -39,7 +39,6 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     ui->mapkeyLabel->setFont(customFont);
     ui->categoryFilterLabel->setFont(customFont);
     ui->MacroList_MappingKeyListComboBox->setFont(customFont);
-    ui->categoryFilterComboBox->setFont(customFont);
     ui->macroNameLineEdit->setFont(customFont);
     ui->macroContentLineEdit->setFont(customFont);
     ui->macroNoteLineEdit->setFont(customFont);
@@ -63,9 +62,7 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
 
     QObject::connect(ui->macroListTabWidget, &QTabWidget::currentChanged, this, &QMacroListDialog::macroListTabWidgetCurrentChanged);
 
-    // Connect category filter ComboBox signal
-    QObject::connect(ui->categoryFilterComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                     this, &QMacroListDialog::onMacroCategoryFilterChanged);
+    initMacroCategoryFilterToolButton();
 
     // Connect drag and drop move signal
     QObject::connect(this, &QMacroListDialog::macroListTableDragDropMove_Signal,
@@ -258,121 +255,348 @@ QString QMacroListDialog::getCurrentMapKeyListText()
 
 bool QMacroListDialog::isMacroDataTableFiltered()
 {
-    if (ui->categoryFilterComboBox->currentIndex() != CATEGORY_FILTER_ALL_INDEX) {
-        return true;
-    }
-    else {
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
         return false;
     }
+    return !macroDataTable->m_CategoryFilters.isEmpty();
 }
 
 void QMacroListDialog::onMacroCategoryFilterChanged(int index)
 {
-    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
-    if (!macroDataTable) {
-        return;
-    }
-
-    if (index == CATEGORY_FILTER_ALL_INDEX) {
-        // Index 0 is always "All" - clear filter to show all items
-        macroDataTable->clearCategoryFilter();
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onMacroCategoryFilterChanged]" << "Selected 'All' - clearing category filter";
-#endif
-    } else {
-        // Index > 0 is a user category - apply the filter
-        QString selectedCategory = ui->categoryFilterComboBox->itemText(index);
-        macroDataTable->setCategoryFilter(selectedCategory);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[onMacroCategoryFilterChanged]" << "Selected category:" << selectedCategory << "at index:" << index;
-#endif
-    }
+    Q_UNUSED(index);
+    // Deprecated: old ComboBox-based filter.
 }
 
 void QMacroListDialog::updateMacroCategoryFilterComboBox()
 {
-    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
-    if (!macroDataTable) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[updateMacroCategoryFilterComboBox]" << "macroDataTable is null, skipping update";
-#endif
+    // Repurposed: refresh toolbutton summary.
+    updateMacroCategoryFilterToolButtonSummary();
+}
+
+void QMacroListDialog::initMacroCategoryFilterToolButton(void)
+{
+    if (!ui->categoryFilterToolButton) {
         return;
     }
 
-    // Store the current filter value before updating ComboBox
-    QString currentFilter = macroDataTable->m_CategoryFilter;
+    ui->categoryFilterToolButton->setPopupMode(QToolButton::InstantPopup);
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[updateMacroCategoryFilterComboBox]" << "Category filter:" << currentFilter;
+    if (!m_CategoryFilterMenu) {
+        m_CategoryFilterMenu = new QMenu(ui->categoryFilterToolButton);
+
+        m_CategoryFilterWidgetAction = new QWidgetAction(m_CategoryFilterMenu);
+        m_CategoryFilterPanel = new QWidget(m_CategoryFilterMenu);
+        QVBoxLayout *panelLayout = new QVBoxLayout(m_CategoryFilterPanel);
+        panelLayout->setContentsMargins(8, 8, 8, 8);
+        panelLayout->setSpacing(6);
+
+        m_CategoryFilterAllCheckBox = new QCheckBox(tr("All"), m_CategoryFilterPanel);
+        m_CategoryFilterAllCheckBox->setTristate(true);
+        panelLayout->addWidget(m_CategoryFilterAllCheckBox);
+
+        m_CategoryFilterScrollArea = new QScrollArea(m_CategoryFilterPanel);
+        m_CategoryFilterScrollArea->setWidgetResizable(true);
+        m_CategoryFilterScrollArea->setFrameShape(QFrame::NoFrame);
+        panelLayout->addWidget(m_CategoryFilterScrollArea);
+
+        m_CategoryFilterListContainer = new QWidget(m_CategoryFilterScrollArea);
+        m_CategoryFilterListLayout = new QVBoxLayout(m_CategoryFilterListContainer);
+        m_CategoryFilterListLayout->setContentsMargins(0, 0, 0, 0);
+        m_CategoryFilterListLayout->setSpacing(2);
+        m_CategoryFilterScrollArea->setWidget(m_CategoryFilterListContainer);
+
+        m_CategoryFilterPanel->setMinimumWidth(CATEGORY_FILTER_MIN_WIDTH_MACROLIST);
+        m_CategoryFilterPanel->setMaximumHeight(CATEGORY_FILTER_MAX_HEIGHT_MACROLIST);
+
+        m_CategoryFilterWidgetAction->setDefaultWidget(m_CategoryFilterPanel);
+        m_CategoryFilterMenu->addAction(m_CategoryFilterWidgetAction);
+
+        QObject::connect(m_CategoryFilterMenu, &QMenu::aboutToShow, this, [this]() {
+            rebuildMacroCategoryFilterMenu();
+        });
+
+        // Popup menu to the right side of the toolbutton (same Y)
+        QObject::connect(ui->categoryFilterToolButton, &QToolButton::clicked, this, [this]() {
+            if (!m_CategoryFilterMenu || !ui->categoryFilterToolButton) {
+                return;
+            }
+            const QPoint popupPos = ui->categoryFilterToolButton->mapToGlobal(QPoint(ui->categoryFilterToolButton->width(), 0));
+            m_CategoryFilterMenu->popup(popupPos);
+        });
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+        QObject::connect(m_CategoryFilterAllCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
+            if (m_CategoryFilterGuard) {
+                return;
+            }
+
+            Qt::CheckState newState = state;
+            if (newState == Qt::PartiallyChecked) {
+                m_CategoryFilterGuard = true;
+                m_CategoryFilterAllCheckBox->setCheckState(Qt::Checked);
+                m_CategoryFilterGuard = false;
+                newState = Qt::Checked;
+            }
+
+            m_CategoryFilterGuard = true;
+            const bool checkAll = (newState == Qt::Checked);
+            for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
+                cb->setChecked(checkAll);
+            }
+            m_CategoryFilterGuard = false;
+            applyMacroCategoryFilterFromUI();
+        });
+#else
+        QObject::connect(m_CategoryFilterAllCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+            if (m_CategoryFilterGuard) {
+                return;
+            }
+
+            Qt::CheckState newState = static_cast<Qt::CheckState>(state);
+            if (newState == Qt::PartiallyChecked) {
+                m_CategoryFilterGuard = true;
+                m_CategoryFilterAllCheckBox->setCheckState(Qt::Checked);
+                m_CategoryFilterGuard = false;
+                newState = Qt::Checked;
+            }
+
+            m_CategoryFilterGuard = true;
+            const bool checkAll = (newState == Qt::Checked);
+            for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
+                cb->setChecked(checkAll);
+            }
+            m_CategoryFilterGuard = false;
+            applyMacroCategoryFilterFromUI();
+        });
 #endif
+    }
 
-    ui->categoryFilterComboBox->clear();
-    ui->categoryFilterComboBox->addItem(tr("All"));
+    ui->categoryFilterToolButton->setText(tr("All"));
+    ui->categoryFilterToolButton->setToolTip(tr("All"));
+}
+
+void QMacroListDialog::rebuildMacroCategoryFilterMenu(void)
+{
+    static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable || !m_CategoryFilterListLayout || !m_CategoryFilterAllCheckBox) {
+        return;
+    }
 
     QStringList categories = macroDataTable->getAvailableCategories();
-
-    // Separate regular categories from the special "Blank" option
     QStringList regularCategories;
     bool hasBlankOption = false;
-
     for (const QString &category : std::as_const(categories)) {
         if (category == tr("Blank")) {
             hasBlankOption = true;
-        } else {
+        }
+        else {
             regularCategories.append(category);
         }
     }
-
-    // Sort regular categories and add them
     regularCategories.sort();
-    ui->categoryFilterComboBox->addItems(regularCategories);
-
-    // Add "Blank" option at the end if it exists
+    m_CategoryFilterDisplayOrder = regularCategories;
     if (hasBlankOption) {
-        ui->categoryFilterComboBox->addItem(tr("Blank"));
+        m_CategoryFilterDisplayOrder.append(QString());
     }
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[updateMacroCategoryFilterComboBox]" << "Available categories:" << categories;
-#endif
+    while (QLayoutItem *child = m_CategoryFilterListLayout->takeAt(0)) {
+        if (QWidget *w = child->widget()) {
+            w->deleteLater();
+        }
+        delete child;
+    }
+    m_CategoryFilterCheckBoxes.clear();
 
-    int index = -1;
+    for (const QString &categoryValue : std::as_const(m_CategoryFilterDisplayOrder)) {
+        const bool isBlank = categoryValue.isEmpty();
+        QCheckBox *cb = new QCheckBox(isBlank ? tr("Blank") : categoryValue, m_CategoryFilterListContainer);
+        cb->setTristate(false);
+        cb->setProperty("categoryValue", categoryValue);
+        m_CategoryFilterListLayout->addWidget(cb);
+        m_CategoryFilterCheckBoxes.insert(categoryValue, cb);
 
-    // Check if we're looking for the "clear filter" state (empty filter)
-    if (currentFilter.isEmpty()) {
-        // Empty filter means "show all", so select index 0
-        index = CATEGORY_FILTER_ALL_INDEX;
-    } else if (currentFilter == tr("Blank")) {
-        // Looking for blank entries
+        QObject::connect(cb, &QCheckBox::toggled, this, [this](bool) {
+            if (m_CategoryFilterGuard) {
+                return;
+            }
+            applyMacroCategoryFilterFromUI();
+        });
+    }
+    m_CategoryFilterListLayout->addStretch(1);
+
+    QSet<QString> filters = macroDataTable->m_CategoryFilters;
+    if (!filters.contains(kNoneToken)) {
+        QSet<QString> allowed;
+        for (const QString &v : std::as_const(m_CategoryFilterDisplayOrder)) {
+            allowed.insert(v);
+        }
+        filters = filters.intersect(allowed);
+    }
+
+    m_CategoryFilterGuard = true;
+    if (filters.isEmpty()) {
+        for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
+            cb->setChecked(true);
+        }
+    }
+    else if (filters.contains(kNoneToken)) {
+        for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
+            cb->setChecked(false);
+        }
+    }
+    else {
+        for (auto it = m_CategoryFilterCheckBoxes.constBegin(); it != m_CategoryFilterCheckBoxes.constEnd(); ++it) {
+            it.value()->setChecked(filters.contains(it.key()));
+        }
+    }
+    m_CategoryFilterGuard = false;
+
+    if (filters != macroDataTable->m_CategoryFilters) {
+        macroDataTable->setCategoryFilters(filters);
+    }
+
+    updateMacroAllCheckStateFromItems();
+    updateMacroCategoryFilterToolButtonSummary();
+}
+
+void QMacroListDialog::applyMacroCategoryFilterFromUI(void)
+{
+    static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+        return;
+    }
+
+    int total = 0;
+    int checkedCount = 0;
+    QSet<QString> selected;
+    for (auto it = m_CategoryFilterCheckBoxes.constBegin(); it != m_CategoryFilterCheckBoxes.constEnd(); ++it) {
+        total += 1;
+        if (it.value()->isChecked()) {
+            checkedCount += 1;
+            selected.insert(it.key());
+        }
+    }
+
+    if (total > 0 && checkedCount == 0) {
+        selected.clear();
+        selected.insert(kNoneToken);
+    }
+    else if (total > 0 && checkedCount == total) {
+        selected.clear();
+    }
+
+    macroDataTable->setCategoryFilters(selected);
+    updateMacroAllCheckStateFromItems();
+    updateMacroCategoryFilterToolButtonSummary();
+}
+
+void QMacroListDialog::updateMacroAllCheckStateFromItems(void)
+{
+    if (!m_CategoryFilterAllCheckBox) {
+        return;
+    }
+
+    int total = 0;
+    int checkedCount = 0;
+    for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
+        total += 1;
+        if (cb->isChecked()) {
+            checkedCount += 1;
+        }
+    }
+
+    m_CategoryFilterGuard = true;
+    if (total == 0) {
+        m_CategoryFilterAllCheckBox->setEnabled(false);
+        m_CategoryFilterAllCheckBox->setCheckState(Qt::Unchecked);
+    }
+    else {
+        m_CategoryFilterAllCheckBox->setEnabled(true);
+        if (checkedCount == 0) {
+            m_CategoryFilterAllCheckBox->setCheckState(Qt::Unchecked);
+        }
+        else if (checkedCount == total) {
+            m_CategoryFilterAllCheckBox->setCheckState(Qt::Checked);
+        }
+        else {
+            m_CategoryFilterAllCheckBox->setCheckState(Qt::PartiallyChecked);
+        }
+    }
+    m_CategoryFilterGuard = false;
+}
+
+void QMacroListDialog::updateMacroCategoryFilterToolButtonSummary(void)
+{
+    static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
+    if (!ui->categoryFilterToolButton) {
+        return;
+    }
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    if (!macroDataTable) {
+        return;
+    }
+
+    if (m_CategoryFilterAllCheckBox) {
+        m_CategoryFilterAllCheckBox->setText(tr("All"));
+    }
+
+    if (m_CategoryFilterDisplayOrder.isEmpty()) {
+        QStringList categories = macroDataTable->getAvailableCategories();
+        QStringList regularCategories;
+        bool hasBlankOption = false;
+        for (const QString &category : std::as_const(categories)) {
+            if (category == tr("Blank")) {
+                hasBlankOption = true;
+            }
+            else {
+                regularCategories.append(category);
+            }
+        }
+        regularCategories.sort();
+        m_CategoryFilterDisplayOrder = regularCategories;
         if (hasBlankOption) {
-            index = ui->categoryFilterComboBox->count() - 1; // "Blank" is always last
-        }
-    } else {
-        // We're looking for a specific category
-        // Start searching from sorted regular categories to avoid the built-in "All" at index 0
-        index = regularCategories.indexOf(currentFilter);
-        if (index != -1) {
-            index += 1; // Adjust index to account for "All" at index 0
+            m_CategoryFilterDisplayOrder.append(QString());
         }
     }
 
-    if (index != -1) {
-        ui->categoryFilterComboBox->setCurrentIndex(index);
-#ifdef DEBUG_LOGOUT_ON
-        if (index == CATEGORY_FILTER_ALL_INDEX) {
-            qDebug() << "[updateMacroCategoryFilterComboBox]" << "Restored filter to 'All' (show all items)";
-        } else {
-            qDebug() << "[updateMacroCategoryFilterComboBox]" << "Restored filter to category:" << currentFilter << "at index:" << index;
-        }
-#endif
-    } else {
-        // Category not found, clear filter and default to "All"
-        macroDataTable->m_CategoryFilter.clear();
-        ui->categoryFilterComboBox->setCurrentIndex(CATEGORY_FILTER_ALL_INDEX);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[updateMacroCategoryFilterComboBox]" << "Previous filter not found, defaulting to 'All'";
-#endif
+    const QSet<QString> filters = macroDataTable->m_CategoryFilters;
+    QString buttonText;
+    QString tooltip;
+
+    if (filters.contains(kNoneToken)) {
+        buttonText = tr("None");
+        tooltip = buttonText;
     }
+    else if (filters.isEmpty()) {
+        buttonText = tr("All");
+        tooltip = buttonText;
+    }
+    else {
+        QStringList selectedInOrder;
+        for (const QString &v : std::as_const(m_CategoryFilterDisplayOrder)) {
+            if (filters.contains(v)) {
+                selectedInOrder.append(v.isEmpty() ? tr("Blank") : v);
+            }
+        }
+        tooltip = selectedInOrder.join(", ");
+        if (selectedInOrder.size() <= 2) {
+            buttonText = tooltip;
+        }
+        else {
+            buttonText = tr("%1, %2 (+%3)")
+                             .arg(selectedInOrder.at(0), selectedInOrder.at(1))
+                             .arg(selectedInOrder.size() - 2);
+        }
+        if (buttonText.isEmpty()) {
+            buttonText = tr("None");
+        }
+    }
+
+    ui->categoryFilterToolButton->setText(buttonText);
+    ui->categoryFilterToolButton->setToolTip(tooltip);
 }
 
 void QMacroListDialog::showEvent(QShowEvent *event)
@@ -1237,14 +1461,33 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
 
 void MacroListDataTableWidget::setCategoryFilter(const QString &category)
 {
-    m_CategoryFilter = category;
+    m_CategoryFilters.clear();
+    if (!category.isEmpty()) {
+        if (category == tr("Blank")) {
+            m_CategoryFilters.insert(QString());
+        }
+        else {
+            m_CategoryFilters.insert(category);
+        }
+    }
+    updateRowVisibility();
+}
+
+void MacroListDataTableWidget::setCategoryFilters(const QSet<QString> &categories)
+{
+    m_CategoryFilters = categories;
     updateRowVisibility();
 }
 
 void MacroListDataTableWidget::clearCategoryFilter()
 {
-    m_CategoryFilter.clear();
+    m_CategoryFilters.clear();
     updateRowVisibility();
+}
+
+void MacroListDataTableWidget::clearCategoryFilters()
+{
+    clearCategoryFilter();
 }
 
 QStringList MacroListDataTableWidget::getAvailableCategories() const
@@ -1344,7 +1587,7 @@ void MacroListDataTableWidget::dragMoveEvent(QDragMoveEvent *event)
 
 void MacroListDataTableWidget::updateRowVisibility()
 {
-    if (m_CategoryFilter.isEmpty()) {
+    if (m_CategoryFilters.isEmpty()) {
         // Show all rows when no filter is active
         for (int row = 0; row < rowCount(); ++row) {
             setRowHidden(row, false);
@@ -1355,24 +1598,17 @@ void MacroListDataTableWidget::updateRowVisibility()
     // Filter rows based on category
     for (int row = 0; row < rowCount(); ++row) {
         QTableWidgetItem *categoryItem = item(row, MACRO_CATEGORY_COLUMN);
-        bool shouldShow = false;
-
-        if (m_CategoryFilter == tr("Blank")) {
-            // Show rows with empty/blank categories
-            if (categoryItem) {
-                QString itemCategory = categoryItem->text().trimmed();
-                shouldShow = itemCategory.isEmpty();
-            } else {
-                // No item means it's also considered blank
-                shouldShow = true;
-            }
-        } else {
-            // Show rows matching the specific category
-            if (categoryItem) {
-                QString itemCategory = categoryItem->text().trimmed();
-                shouldShow = (itemCategory == m_CategoryFilter);
-            }
+        QString itemCategory;
+        if (categoryItem) {
+            itemCategory = categoryItem->text().trimmed();
         }
+        if (itemCategory.isEmpty()) {
+            const bool shouldShow = m_CategoryFilters.contains(QString());
+            setRowHidden(row, !shouldShow);
+            continue;
+        }
+
+        const bool shouldShow = m_CategoryFilters.contains(itemCategory);
 
         setRowHidden(row, !shouldShow);
     }

@@ -68,6 +68,12 @@ namespace QKeyMapperConstants {
 
     inline constexpr int CATEGORY_FILTER_ALL_INDEX = 0;
 
+    inline constexpr int CATEGORY_FILTER_MIN_WIDTH_MAPPINGTABLE     = 100;
+    inline constexpr int CATEGORY_FILTER_MAX_HEIGHT_MAPPINGTABLE    = 600;
+
+    inline constexpr int CATEGORY_FILTER_MIN_WIDTH_MACROLIST        = 100;
+    inline constexpr int CATEGORY_FILTER_MAX_HEIGHT_MACROLIST       = 600;
+
     inline constexpr int MAPPING_UPDATE_ORDER_DEFAULT                   = 0;
     inline constexpr int MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST        = 1;
     inline constexpr int MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST         = 2;
