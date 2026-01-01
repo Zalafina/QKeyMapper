@@ -35,14 +35,17 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     initKeyStringLineEdit();
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
-    ui->oriList_SelectKeyboardButton->setStyle(windowsStyle);
-    ui->oriList_SelectMouseButton->setStyle(windowsStyle);
-    ui->oriList_SelectGamepadButton->setStyle(windowsStyle);
-    ui->oriList_SelectFunctionButton->setStyle(windowsStyle);
-    ui->mapList_SelectKeyboardButton->setStyle(windowsStyle);
-    ui->mapList_SelectMouseButton->setStyle(windowsStyle);
-    ui->mapList_SelectGamepadButton->setStyle(windowsStyle);
-    ui->mapList_SelectFunctionButton->setStyle(windowsStyle);
+    if (windowsStyle) {
+        windowsStyle->setParent(qApp);
+        ui->oriList_SelectKeyboardButton->setStyle(windowsStyle);
+        ui->oriList_SelectMouseButton->setStyle(windowsStyle);
+        ui->oriList_SelectGamepadButton->setStyle(windowsStyle);
+        ui->oriList_SelectFunctionButton->setStyle(windowsStyle);
+        ui->mapList_SelectKeyboardButton->setStyle(windowsStyle);
+        ui->mapList_SelectMouseButton->setStyle(windowsStyle);
+        ui->mapList_SelectGamepadButton->setStyle(windowsStyle);
+        ui->mapList_SelectFunctionButton->setStyle(windowsStyle);
+    }
     ui->oriList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.svg"));
     ui->oriList_SelectMouseButton->setIcon(QIcon(":/mouse.svg"));
     ui->oriList_SelectGamepadButton->setIcon(QIcon(":/gamepad.svg"));

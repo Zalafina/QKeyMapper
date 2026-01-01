@@ -61,7 +61,8 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
     if (windowsStyle) {
-        windowsStyle->setParent(this);
+        // Parent to qApp so the style outlives all widgets using it.
+        windowsStyle->setParent(qApp);
         ui->mapList_SelectKeyboardButton->setStyle(windowsStyle);
         ui->mapList_SelectMouseButton->setStyle(windowsStyle);
         ui->mapList_SelectGamepadButton->setStyle(windowsStyle);

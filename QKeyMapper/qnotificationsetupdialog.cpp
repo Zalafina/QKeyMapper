@@ -16,10 +16,13 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     ui->setupUi(this);
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
-    ui->fontGroupBox->setStyle(windowsStyle);
-    ui->durationGroupBox->setStyle(windowsStyle);
-    ui->borderGroupBox->setStyle(windowsStyle);
-    ui->offsetGroupBox->setStyle(windowsStyle);
+    if (windowsStyle) {
+        windowsStyle->setParent(qApp);
+        ui->fontGroupBox->setStyle(windowsStyle);
+        ui->durationGroupBox->setStyle(windowsStyle);
+        ui->borderGroupBox->setStyle(windowsStyle);
+        ui->offsetGroupBox->setStyle(windowsStyle);
+    }
 
     int x_offset = 4;
     int y_offset = 15;

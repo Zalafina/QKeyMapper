@@ -15,8 +15,11 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     ui->setupUi(this);
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
-    ui->mouseGroupBox->setStyle(windowsStyle);
-    ui->gamepadGroupBox->setStyle(windowsStyle);
+    if (windowsStyle) {
+        windowsStyle->setParent(qApp);
+        ui->mouseGroupBox->setStyle(windowsStyle);
+        ui->gamepadGroupBox->setStyle(windowsStyle);
+    }
 
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
     ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);

@@ -22,8 +22,11 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     initSelectImageFileDialog();
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
-    ui->tabCustomImageGroupBox->setStyle(windowsStyle);
-    ui->customImageLabel->setStyle(windowsStyle);
+    if (windowsStyle) {
+        windowsStyle->setParent(qApp);
+        ui->tabCustomImageGroupBox->setStyle(windowsStyle);
+        ui->customImageLabel->setStyle(windowsStyle);
+    }
 
     ui->hideNotificationCheckBox->setTristate(true);
 

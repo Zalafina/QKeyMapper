@@ -17,9 +17,12 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
     ui->setupUi(this);
 
     QStyle* windowsStyle = QStyleFactory::create("windows");
-    ui->centerGroupBox->setStyle(windowsStyle);
-    ui->crosshairGroupBox->setStyle(windowsStyle);
-    ui->offsetGroupBox->setStyle(windowsStyle);
+    if (windowsStyle) {
+        windowsStyle->setParent(qApp);
+        ui->centerGroupBox->setStyle(windowsStyle);
+        ui->crosshairGroupBox->setStyle(windowsStyle);
+        ui->offsetGroupBox->setStyle(windowsStyle);
+    }
 
     int x_offset = 15;
     int y_offset = 10;

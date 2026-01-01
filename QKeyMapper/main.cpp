@@ -323,7 +323,8 @@ int main(int argc, char *argv[])
     qInstallMessageHandler(outputMessage);
 #endif
 
-    QApplication::setStyle(QStyleFactory::create("Fusion"));
+    // Prefer the QString overload to avoid manual QStyle ownership/lifetime issues.
+    QApplication::setStyle(QStringLiteral("Fusion"));
     QApplication::setFont(QFont(FONTNAME_ENGLISH, 9));
 
     QThread::currentThread()->setObjectName("QKeyMapper");
