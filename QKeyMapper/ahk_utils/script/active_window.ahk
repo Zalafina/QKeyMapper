@@ -27,12 +27,14 @@ ActivateWindow(hwnd) {
 ; 参数解析
 ; -------------------------------
 title        := ""
+titleProvided := false
 processInput := ""
 processName  := ""
 launch       := false
 
 for arg in A_Args {
     if InStr(arg, "title=") = 1 {
+        titleProvided := true
         title := TrimQuotes(SubStr(arg, 7))
     } else if InStr(arg, "process=") = 1 {
         processInput := TrimQuotes(SubStr(arg, 9))
@@ -57,7 +59,19 @@ found := false
 
 ; 构建搜索条件
 criteria := ""
-if (title != "" && processName != "") {
+if (titleProvided) {
+    ; 关键点：允许 title=""（空字符串）作为“显式条件”。
+    ; AHK 的 WinTitle 参数无法直接表达“仅匹配空标题”，因此采用：先按 process 取列表，再按 WinGetTitle() 精确过滤。
+    if (title != "" && processName != "") {
+        criteria := title " ahk_exe " processName
+    } else if (title != "") {
+        criteria := title
+    } else if (processName != "") {
+        criteria := "ahk_exe " processName
+    } else {
+        criteria := ""  ; 仅 title=""，则先枚举所有窗口再过滤空标题
+    }
+} else if (title != "" && processName != "") {
     criteria := title " ahk_exe " processName
 } else if (title != "") {
     criteria := title
@@ -65,13 +79,18 @@ if (title != "" && processName != "") {
     criteria := "ahk_exe " processName
 }
 
-; 如果有搜索条件，进行智能窗口切换
-if (criteria != "") {
+; 如果有搜索条件（或显式传入了 title=），进行智能窗口切换
+if (criteria != "" || titleProvided) {
     ; 获取所有匹配的窗口列表
     matchingWindows := []
     hwndList := WinGetList(criteria)
 
     for hwnd in hwndList {
+        ; 如果显式指定 title=""，则只保留标题为空的窗口
+        if (titleProvided && title = "") {
+            if (WinGetTitle("ahk_id " hwnd) != "")
+                continue
+        }
         ; 过滤掉不可见或最小化的窗口（可选）
         ; if WinGetMinMax("ahk_id " hwnd) = -1  ; 跳过最小化窗口
         ;     continue

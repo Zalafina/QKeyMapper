@@ -24,8 +24,8 @@ Run(utils\ahk utils\script\config_window.ahk alwaysontop)
 Run(utils\ahk utils\script\config_window.ahk passthrough)
 
 4. 窗口位置跟随鼠标移动工具
-move_window.exe start  (启动窗口位置拖动，启动后当前鼠标指针指向的窗口跟随鼠标指针移动进行位置移动)
-move_window.exe stop   (停止窗口位置拖动，停止之后窗口不再跟随鼠标指针位置移动)
+ahk.exe move_window.ahk start  (启动窗口位置拖动，启动后当前鼠标指针指向的窗口跟随鼠标指针移动进行位置移动)
+ahk.exe move_window.ahk stop   (停止窗口位置拖动，停止之后窗口不再跟随鼠标指针位置移动)
 启动窗口位置拖动过程中，按下 Esc 键会回到开始拖动之前的窗口位置。
 映射按键用法示例：
 原始按键： L-Ctrl+Mouse-L
@@ -34,7 +34,7 @@ move_window.exe stop   (停止窗口位置拖动，停止之后窗口不再跟�
 发送时机： 正常+抬起
 
 5. 窗口大小和位置调整工具
-winmove.exe wintitle="窗口标题" [其他参数...]
+ahk.exe winmove.ahk wintitle="窗口标题" [其他参数...]
 可用参数->
 wintitle="..." : 窗口标题 (必需)
 wintext="..." : 窗口文本 (可选,用于进一步匹配窗口)
@@ -57,7 +57,29 @@ Run(utils\ahk utils\script\winmove.ahk wintitle="记事本" x=100 y=200)
 Run(utils\ahk utils\script\winmove.ahk wintitle="记事本" x=100 y=200 w=800 h=600)
 Run(utils\ahk utils\script\winmove.ahk wintitle="记事本" center)
 
-6. IME切换工具
+6. 窗口大小和位置调整工具EX
+ahk.exe winmove_ex.ahk process="xxx.exe" title="窗口标题" [其他参数...]
+说明：
+process= 可传入可执行文件名或者路径，带空格路径注意外面加双引号；如果是路径会自动提取exe文件名用于匹配。
+title= 可传入希望匹配窗口的完整标题或部分标题（与 wintitle= 同义，二者同时传入时按最后出现覆盖），带空格标题注意外面加双引号。
+wintitle= 与 title= 同义，用于兼容 winmove.ahk 的参数名。
+active=true 可选参数，移动/缩放完成后激活窗口；默认不激活（尽量不打扰用户焦点）。
+其余参数与 winmove.ahk 一致：wintext=、x=、y=、w=、h=、extitle=、extext=、center、center:N。
+center : 将窗口居中到窗口所在屏幕的工作区 (独立参数)
+center:N : 将窗口居中到第N个屏幕的工作区 (独立参数)
+工具命令示例->
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600				(窗口大小调整为 800 x 600)
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200				(窗口左上角坐标位置移动到x=100, y=200)
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200 w=800 h=600	(移动到x=100,y=200并调整大小为 800 x 600)
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center			(按新尺寸居中显示)
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center active=true	(居中并激活窗口)
+映射按键用法示例：
+Run(utils\ahk utils\script\winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600)
+Run(utils\ahk utils\script\winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200)
+Run(utils\ahk utils\script\winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200 w=800 h=600)
+Run(utils\ahk utils\script\winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center)
+
+7. IME切换工具
 ahk.exe switch_ime.ahk ime=输入法编码 [其他参数...]
 可用参数->
 ime=0xXXXXXXXX : 输入法编码(HKL值，必需，十六进制格式)
