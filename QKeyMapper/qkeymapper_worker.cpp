@@ -71,12 +71,33 @@ QStringList QKeyMapper_Worker::s_runningKeySequenceOrikeyList;
 QStringList QKeyMapper_Worker::combinationOriginalKeysList;
 QStringList QKeyMapper_Worker::blockedKeysList;
 QHash<QString, QList<int>> QKeyMapper_Worker::longPressOriginalKeysMap;
-QHash<QString, QTimer*> QKeyMapper_Worker::s_longPressTimerMap;
 QHash<QString, int> QKeyMapper_Worker::doublePressOriginalKeysMap;
-QHash<QString, QTimer*> QKeyMapper_Worker::s_doublePressTimerMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyTimerMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyPressTimerMap;
 QHash<QString, int> QKeyMapper_Worker::s_KeySequenceRepeatCount;
+
+namespace {
+
+struct PressTimerState {
+    quint32 token = 0;
+    qint64 expiresAtMs = 0;
+};
+
+QMutex g_longPressStateMutex;
+QHash<QString, PressTimerState> g_longPressStateMap; // key: "<key>⏲<ms>"
+QAtomicInteger<quint32> g_longPressTokenSerial = 0;
+
+QMutex g_doublePressStateMutex;
+QHash<QString, PressTimerState> g_doublePressStateMap; // key: "<key>✖"
+QAtomicInteger<quint32> g_doublePressTokenSerial = 0;
+
+qint64 monotonicNowMs()
+{
+    using namespace std::chrono;
+    return static_cast<qint64>(duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count());
+}
+
+} // namespace
 #ifdef VIGEM_CLIENT_SUPPORT
 QList<OrderedMap<QString, BYTE>> QKeyMapper_Worker::pressedvJoyLStickKeysList;
 QList<OrderedMap<QString, BYTE>> QKeyMapper_Worker::pressedvJoyRStickKeysList;
@@ -6791,8 +6812,8 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     // pressedShortcutKeysList.clear();
     s_SavedMousePosition = MOUSE_POS_INVALID;
 
-    // clearAllLongPressTimers();
-    // clearAllDoublePressTimers();
+    clearAllLongPressTimers();
+    clearAllDoublePressTimers();
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     collectLongPressOriginalKeysMap();
@@ -6966,8 +6987,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
     // pressedShortcutKeysList.clear();
-    // clearAllLongPressTimers();
-    // clearAllDoublePressTimers();
+    clearAllLongPressTimers();
+    clearAllDoublePressTimers();
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     doublePressOriginalKeysMap.clear();
@@ -7201,6 +7222,8 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     // pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
+    clearAllLongPressTimers();
+    clearAllDoublePressTimers();
     combinationOriginalKeysList.clear();
     longPressOriginalKeysMap.clear();
     doublePressOriginalKeysMap.clear();
@@ -13523,101 +13546,99 @@ void QKeyMapper_Worker::sendLongPressTimers(const QString &keycodeString)
 
         for (int timeout : std::as_const(timeoutValueList)) {
             QString keycodeStringWithPressTime = keycodeString + QString(SEPARATOR_LONGPRESS) + QString::number(timeout);
-            if (s_longPressTimerMap.contains(keycodeStringWithPressTime)) {
-                s_longPressTimerMap[keycodeStringWithPressTime]->start(timeout);
+            const quint32 token = static_cast<quint32>(g_longPressTokenSerial.fetchAndAddRelaxed(1) + 1);
+            const qint64 expiresAtMs = monotonicNowMs() + timeout;
+            {
+                QMutexLocker locker(&g_longPressStateMutex);
+                g_longPressStateMap.insert(keycodeStringWithPressTime, PressTimerState{token, expiresAtMs});
             }
-            else {
-                QKeyMapper_Worker *instance = QKeyMapper_Worker::getInstance();
-                QTimer* timer = new QTimer();
-                timer->setTimerType(Qt::PreciseTimer);
-                timer->setSingleShot(true);
-                QObject::connect(timer, &QTimer::timeout, instance, [keycodeStringWithPressTime]() {
-                    onLongPressTimeOut(keycodeStringWithPressTime);
-                });
-                timer->start(timeout);
-                s_longPressTimerMap.insert(keycodeStringWithPressTime, timer);
-            }
+            QTimer::singleShot(timeout, Qt::PreciseTimer, QKeyMapper_Worker::getInstance(), [keycodeStringWithPressTime, token]() {
+                bool shouldFire = false;
+                {
+                    QMutexLocker locker(&g_longPressStateMutex);
+                    auto it = g_longPressStateMap.find(keycodeStringWithPressTime);
+                    if (it != g_longPressStateMap.end() && it->token == token) {
+                        g_longPressStateMap.erase(it);
+                        shouldFire = true;
+                    }
+                }
+                if (shouldFire) {
+                    (void)QKeyMapper_Worker::longPressKeyProc(keycodeStringWithPressTime, KEY_DOWN);
+                }
+            });
         }
+
+#ifdef DEBUG_LOGOUT_ON
+        QString threadIdStr = QString("0x%1").arg(QString::number((qulonglong)QThread::currentThreadId(), 16).toUpper(), 8, '0');
+        qDebug().nospace().noquote() << "[QKeyMapper_Worker::sendLongPressTimers] SendLongPressTimers -> ThreadName:" << QThread::currentThread()->objectName() << ", ThreadID:" << threadIdStr;
+#endif
     }
     else if (longPressOriginalKeysMap.contains(keycodeString_RemoveMultiInput)) {
         QList<int> timeoutValueList = longPressOriginalKeysMap.value(keycodeString_RemoveMultiInput);
 
         for (int timeout : std::as_const(timeoutValueList)) {
             QString keycodeStringWithPressTime = keycodeString_RemoveMultiInput + QString(SEPARATOR_LONGPRESS) + QString::number(timeout);
-            if (s_longPressTimerMap.contains(keycodeStringWithPressTime)) {
-                s_longPressTimerMap[keycodeStringWithPressTime]->start(timeout);
+            const quint32 token = static_cast<quint32>(g_longPressTokenSerial.fetchAndAddRelaxed(1) + 1);
+            const qint64 expiresAtMs = monotonicNowMs() + timeout;
+            {
+                QMutexLocker locker(&g_longPressStateMutex);
+                g_longPressStateMap.insert(keycodeStringWithPressTime, PressTimerState{token, expiresAtMs});
             }
-            else {
-                QKeyMapper_Worker *instance = QKeyMapper_Worker::getInstance();
-                QTimer* timer = new QTimer();
-                timer->setTimerType(Qt::PreciseTimer);
-                timer->setSingleShot(true);
-                QObject::connect(timer, &QTimer::timeout, instance, [keycodeStringWithPressTime]() {
-                    onLongPressTimeOut(keycodeStringWithPressTime);
-                });
-                timer->start(timeout);
-                s_longPressTimerMap.insert(keycodeStringWithPressTime, timer);
-            }
+            QTimer::singleShot(timeout, Qt::PreciseTimer, QKeyMapper_Worker::getInstance(), [keycodeStringWithPressTime, token]() {
+                bool shouldFire = false;
+                {
+                    QMutexLocker locker(&g_longPressStateMutex);
+                    auto it = g_longPressStateMap.find(keycodeStringWithPressTime);
+                    if (it != g_longPressStateMap.end() && it->token == token) {
+                        g_longPressStateMap.erase(it);
+                        shouldFire = true;
+                    }
+                }
+                if (shouldFire) {
+                    (void)QKeyMapper_Worker::longPressKeyProc(keycodeStringWithPressTime, KEY_DOWN);
+                }
+            });
         }
+
+#ifdef DEBUG_LOGOUT_ON
+        QString threadIdStr = QString("0x%1").arg(QString::number((qulonglong)QThread::currentThreadId(), 16).toUpper(), 8, '0');
+        qDebug().nospace().noquote() << "[QKeyMapper_Worker::sendLongPressTimers] SendLongPressTimers -> ThreadName:" << QThread::currentThread()->objectName() << ", ThreadID:" << threadIdStr;
+#endif
     }
 }
 
 void QKeyMapper_Worker::clearLongPressTimer(const QString &keycodeString)
 {
-    if (s_longPressTimerMap.isEmpty()) {
+    QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
+    QMutexLocker locker(&g_longPressStateMutex);
+    if (g_longPressStateMap.isEmpty()) {
         return;
     }
 
-    QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
-    QStringList removeKeys;
-    QStringList longpressKeys = s_longPressTimerMap.keys();
-    for (const QString &key : std::as_const(longpressKeys)) {
-        QString keyWithoutTime = key.split(SEPARATOR_LONGPRESS).first();
-        if (keyWithoutTime == keycodeString
-            || keyWithoutTime == keycodeString_RemoveMultiInput) {
-            QTimer *timer = s_longPressTimerMap.value(key);
-            timer->stop();
-            delete timer;
-            removeKeys.append(key);
+    const QStringList keys = g_longPressStateMap.keys();
+    for (const QString &key : keys) {
+        const QString keyWithoutTime = key.split(SEPARATOR_LONGPRESS).first();
+        if (keyWithoutTime == keycodeString || keyWithoutTime == keycodeString_RemoveMultiInput) {
+            g_longPressStateMap.remove(key);
         }
-    }
-
-    for (const QString &key : removeKeys) {
-        s_longPressTimerMap.remove(key);
     }
 }
 
 void QKeyMapper_Worker::removeLongPressTimerOnTimeout(const QString &keycodeStringWithPressTime)
 {
-    if (s_longPressTimerMap.contains(keycodeStringWithPressTime)) {
-        QTimer *timer = s_longPressTimerMap.value(keycodeStringWithPressTime);
-        timer->stop();
-        delete timer;
-        s_longPressTimerMap.remove(keycodeStringWithPressTime);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[removeLongPressTimerOnTimeout]" << "Remove [" << keycodeStringWithPressTime << "]";
-        qDebug() << "[removeLongPressTimerOnTimeout]" << "Current s_longPressTimerMap ->" << s_longPressTimerMap;
-#endif
-    }
+    QMutexLocker locker(&g_longPressStateMutex);
+    g_longPressStateMap.remove(keycodeStringWithPressTime);
 }
 
 void QKeyMapper_Worker::clearAllLongPressTimers(void)
 {
-    if (s_longPressTimerMap.isEmpty()) {
-        return;
-    }
-
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(QString::number((qulonglong)QThread::currentThreadId(), 16).toUpper(), 8, '0');
     qDebug().nospace().noquote() << "[clearAllLongPressTimers] LongPressTimer ClearAll -> ThreadName:" << QThread::currentThread()->objectName() << ", ThreadID:" << threadIdStr;
 #endif
 
-    QList<QTimer*> longpressTimers = s_longPressTimerMap.values();
-    for (QTimer *timer : std::as_const(longpressTimers)) {
-        timer->stop();
-        delete timer;
-    }
-    s_longPressTimerMap.clear();
+    QMutexLocker locker(&g_longPressStateMutex);
+    g_longPressStateMap.clear();
 }
 
 int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupdown)
@@ -13929,21 +13950,36 @@ int QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
             return KEY_INTERCEPT_NONE;
         }
 
-        if (s_doublePressTimerMap.contains(keycodeString_doublepress)) {
-            clearDoublePressTimer(keycodeString_doublepress);
+        bool isSecondPress = false;
+        {
+            QMutexLocker locker(&g_doublePressStateMutex);
+            auto it = g_doublePressStateMap.find(keycodeString_doublepress);
+            if (it != g_doublePressStateMap.end()) {
+                isSecondPress = true;
+                g_doublePressStateMap.erase(it);
+            }
+            else {
+                const quint32 token = static_cast<quint32>(g_doublePressTokenSerial.fetchAndAddRelaxed(1) + 1);
+                const qint64 expiresAtMs = monotonicNowMs() + timeout;
+                g_doublePressStateMap.insert(keycodeString_doublepress, PressTimerState{token, expiresAtMs});
+                QTimer::singleShot(timeout, Qt::PreciseTimer, QKeyMapper_Worker::getInstance(), [keycodeString_doublepress, token]() {
+                    QMutexLocker locker(&g_doublePressStateMutex);
+                    auto it2 = g_doublePressStateMap.find(keycodeString_doublepress);
+                    if (it2 != g_doublePressStateMap.end() && it2->token == token) {
+                        g_doublePressStateMap.erase(it2);
+                    }
+                });
+            }
+        }
+
+        if (isSecondPress) {
             intercept = doublePressKeyProc(keycodeString_doublepress, KEY_DOWN);
         }
-        else {
-            QKeyMapper_Worker *instance = QKeyMapper_Worker::getInstance();
-            QTimer* timer = new QTimer();
-            timer->setTimerType(Qt::PreciseTimer);
-            timer->setSingleShot(true);
-            QObject::connect(timer, &QTimer::timeout, instance, [keycodeString_doublepress]() {
-                onDoublePressTimeOut(keycodeString_doublepress);
-            });
-            timer->start(timeout);
-            s_doublePressTimerMap.insert(keycodeString_doublepress, timer);
-        }
+
+#ifdef DEBUG_LOGOUT_ON
+        QString threadIdStr = QString("0x%1").arg(QString::number((qulonglong)QThread::currentThreadId(), 16).toUpper(), 8, '0');
+        qDebug().nospace().noquote() << "[QKeyMapper_Worker::sendDoublePressTimers] SendDoublePressTimers -> ThreadName:" << QThread::currentThread()->objectName() << ", ThreadID:" << threadIdStr;
+#endif
     }
     else if (doublePressOriginalKeysMap.contains(keycodeString_RemoveMultiInput_doublepress)) {
         int findindex = doublePressOriginalKeysMap.value(keycodeString_RemoveMultiInput_doublepress, -1);
@@ -13971,21 +14007,36 @@ int QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
             return KEY_INTERCEPT_NONE;
         }
 
-        if (s_doublePressTimerMap.contains(keycodeString_RemoveMultiInput_doublepress)) {
-            clearDoublePressTimer(keycodeString_RemoveMultiInput_doublepress);
+        bool isSecondPress = false;
+        {
+            QMutexLocker locker(&g_doublePressStateMutex);
+            auto it = g_doublePressStateMap.find(keycodeString_RemoveMultiInput_doublepress);
+            if (it != g_doublePressStateMap.end()) {
+                isSecondPress = true;
+                g_doublePressStateMap.erase(it);
+            }
+            else {
+                const quint32 token = static_cast<quint32>(g_doublePressTokenSerial.fetchAndAddRelaxed(1) + 1);
+                const qint64 expiresAtMs = monotonicNowMs() + timeout;
+                g_doublePressStateMap.insert(keycodeString_RemoveMultiInput_doublepress, PressTimerState{token, expiresAtMs});
+                QTimer::singleShot(timeout, Qt::PreciseTimer, QKeyMapper_Worker::getInstance(), [keycodeString_RemoveMultiInput_doublepress, token]() {
+                    QMutexLocker locker(&g_doublePressStateMutex);
+                    auto it2 = g_doublePressStateMap.find(keycodeString_RemoveMultiInput_doublepress);
+                    if (it2 != g_doublePressStateMap.end() && it2->token == token) {
+                        g_doublePressStateMap.erase(it2);
+                    }
+                });
+            }
+        }
+
+        if (isSecondPress) {
             intercept = doublePressKeyProc(keycodeString_RemoveMultiInput_doublepress, KEY_DOWN);
         }
-        else {
-            QKeyMapper_Worker *instance = QKeyMapper_Worker::getInstance();
-            QTimer* timer = new QTimer();
-            timer->setTimerType(Qt::PreciseTimer);
-            timer->setSingleShot(true);
-            QObject::connect(timer, &QTimer::timeout, instance, [keycodeString_RemoveMultiInput_doublepress]() {
-                onDoublePressTimeOut(keycodeString_RemoveMultiInput_doublepress);
-            });
-            timer->start(timeout);
-            s_doublePressTimerMap.insert(keycodeString_RemoveMultiInput_doublepress, timer);
-        }
+
+#ifdef DEBUG_LOGOUT_ON
+        QString threadIdStr = QString("0x%1").arg(QString::number((qulonglong)QThread::currentThreadId(), 16).toUpper(), 8, '0');
+        qDebug().nospace().noquote() << "[QKeyMapper_Worker::sendDoublePressTimers] SendDoublePressTimers -> ThreadName:" << QThread::currentThread()->objectName() << ", ThreadID:" << threadIdStr;
+#endif
     }
 
     return intercept;
@@ -13993,57 +14044,34 @@ int QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
 
 void QKeyMapper_Worker::clearDoublePressTimer(const QString &keycodeString)
 {
-    if (s_doublePressTimerMap.isEmpty()) {
+    QMutexLocker locker(&g_doublePressStateMutex);
+    if (g_doublePressStateMap.isEmpty()) {
         return;
     }
 
-    QStringList removeKeys;
-    QStringList doublepressKeys = s_doublePressTimerMap.keys();
-    for (const QString &key : std::as_const(doublepressKeys)) {
+    const QStringList keys = g_doublePressStateMap.keys();
+    for (const QString &key : keys) {
         if (key.contains(keycodeString)) {
-            QTimer *timer = s_doublePressTimerMap.value(key);
-            timer->stop();
-            delete timer;
-            removeKeys.append(key);
+            g_doublePressStateMap.remove(key);
         }
-    }
-
-    for (const QString &key : removeKeys) {
-        s_doublePressTimerMap.remove(key);
     }
 }
 
 void QKeyMapper_Worker::removeDoublePressTimerOnTimeout(const QString &keycodeString)
 {
-    if (s_doublePressTimerMap.contains(keycodeString)) {
-        QTimer *timer = s_doublePressTimerMap.value(keycodeString);
-        timer->stop();
-        delete timer;
-        s_doublePressTimerMap.remove(keycodeString);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[removeDoublePressTimerOnTimeout]" << "Remove [" << keycodeString << "]";
-        qDebug() << "[removeDoublePressTimerOnTimeout]" << "Current s_doublePressTimerMap ->" << s_doublePressTimerMap;
-#endif
-    }
+    QMutexLocker locker(&g_doublePressStateMutex);
+    g_doublePressStateMap.remove(keycodeString);
 }
 
 void QKeyMapper_Worker::clearAllDoublePressTimers()
 {
-    if (s_doublePressTimerMap.isEmpty()) {
-        return;
-    }
-
 #ifdef DEBUG_LOGOUT_ON
     QString threadIdStr = QString("0x%1").arg(QString::number((qulonglong)QThread::currentThreadId(), 16).toUpper(), 8, '0');
     qDebug().nospace().noquote() << "[clearAllDoublePressTimers] DoublePressTimer ClearAll -> ThreadName:" << QThread::currentThread()->objectName() << ", ThreadID:" << threadIdStr;
 #endif
 
-    QList<QTimer*> doublepressTimers = s_doublePressTimerMap.values();
-    for (QTimer *timer : std::as_const(doublepressTimers)) {
-        timer->stop();
-        delete timer;
-    }
-    s_doublePressTimerMap.clear();
+    QMutexLocker locker(&g_doublePressStateMutex);
+    g_doublePressStateMap.clear();
 }
 
 int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyupdown)
@@ -14548,10 +14576,8 @@ void QKeyMapper_Worker::onLongPressTimeOut(const QString keycodeStringWithPressT
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onLongPressTimeOut] keycodeStringWithPressTime ->" << keycodeStringWithPressTime;
 #endif
-
-    (void)longPressKeyProc(keycodeStringWithPressTime, KEY_DOWN);
-
-    removeLongPressTimerOnTimeout(keycodeStringWithPressTime);
+    // Best-effort fallback: token-based callbacks are preferred; this is kept for compatibility.
+    Q_UNUSED(keycodeStringWithPressTime);
 }
 
 void QKeyMapper_Worker::onDoublePressTimeOut(const QString keycodeString)
@@ -14559,8 +14585,8 @@ void QKeyMapper_Worker::onDoublePressTimeOut(const QString keycodeString)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onDoublePressTimeOut] keycodeString ->" << keycodeString;
 #endif
-
-    removeDoublePressTimerOnTimeout(keycodeString);
+    // Best-effort fallback: token-based callbacks are preferred; this is kept for compatibility.
+    Q_UNUSED(keycodeString);
 }
 
 void QKeyMapper_Worker::onBurstKeyPressTimeOut(const QString burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList)
@@ -16537,9 +16563,6 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyHook()
     qDebug("[onSetHookProcKeyHook] HookProcThread Hookproc Start.");
 #endif
 
-    QKeyMapper_Worker::clearAllLongPressTimers();
-    QKeyMapper_Worker::clearAllDoublePressTimers();
-
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[onSetHookProcKeyHook] HookProcThread Hookproc End.");
 #endif
@@ -16551,9 +16574,6 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook()
     qDebug("[onSetHookProcKeyUnHook] HookProcThread Unhookproc Start.");
 #endif
 
-    QKeyMapper_Worker::clearAllLongPressTimers();
-    QKeyMapper_Worker::clearAllDoublePressTimers();
-
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[onSetHookProcKeyUnHook] HookProcThread Unhookproc End.");
 #endif
@@ -16564,9 +16584,6 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyMappingRestart()
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[onSetHookProcKeyHook] HookProcThread MappingRestart Start.");
 #endif
-
-    QKeyMapper_Worker::clearAllLongPressTimers();
-    QKeyMapper_Worker::clearAllDoublePressTimers();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[onSetHookProcKeyHook] HookProcThread MappingRestart End.");

@@ -1263,9 +1263,8 @@ public:
     static QStringList combinationOriginalKeysList;
     static QStringList blockedKeysList;
     static QHash<QString, QList<int>> longPressOriginalKeysMap;
-    static QHash<QString, QTimer*> s_longPressTimerMap;
+    // LongPress/DoublePress timers are managed via token-based state (no QTimer* stored)
     static QHash<QString, int> doublePressOriginalKeysMap;
-    static QHash<QString, QTimer*> s_doublePressTimerMap;
     static QHash<QString, QTimer*> s_BurstKeyTimerMap;
     static QHash<QString, QTimer*> s_BurstKeyPressTimerMap;
     static QHash<QString, int> s_KeySequenceRepeatCount;
