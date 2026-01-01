@@ -171,10 +171,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug() << "[QKeyMapper()]" << "Mainwindow HWND ID ->" << reinterpret_cast<HWND>(winId());
 #endif
 
-    QStyle* windowsStyle = QStyleFactory::create("windows");
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper()]" << "AvailableStyles ->" << QStyleFactory::keys();
+#endif
+
+    QStyle *windowsStyle = QKeyMapperStyle::windowsStyle();
     if (windowsStyle) {
-        // Parent to qApp so it outlives all widgets using it.
-        windowsStyle->setParent(qApp);
         ui->settingTabWidget->setStyle(windowsStyle);
         ui->pushLevelSlider->setStyle(windowsStyle);
     }
@@ -183,10 +185,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->waitTimeSpinBox->setStyle(getCustomSpinBoxStyle());
 #endif
 
-    QStyle* fusionStyle = QStyleFactory::create("Fusion");
-    if (fusionStyle) {
-        // Parent to qApp so it outlives all widgets using it.
-        fusionStyle->setParent(qApp);
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
         // Iterate through all child widgets of settingTabWidget and set their style to Fusion.
         for (int tabindex = 0; tabindex < ui->settingTabWidget->count(); ++tabindex) {
             QWidget *tabPage = ui->settingTabWidget->widget(tabindex);
@@ -8376,13 +8375,8 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     // qDebug() << "verticalHeader-DefaultSectionSize" << KeyMappingTableWidget->verticalHeader()->defaultSectionSize();
 #endif
 
-    {
-        QStyle *fusionStyleForTable = QStyleFactory::create("Fusion");
-        if (fusionStyleForTable) {
-            // Parent to the table itself so it is destroyed after the table's destructor body.
-            fusionStyleForTable->setParent(KeyMappingTableWidget);
-            KeyMappingTableWidget->setStyle(fusionStyleForTable);
-        }
+    if (QStyle *fusionStyleForTable = QKeyMapperStyle::fusionStyle()) {
+        KeyMappingTableWidget->setStyle(fusionStyleForTable);
     }
 
     // Add the new tab at the end with the generated tabName
@@ -8499,13 +8493,8 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     // qDebug() << "verticalHeader-DefaultSectionSize" << KeyMappingTableWidget->verticalHeader()->defaultSectionSize();
 #endif
 
-    {
-        QStyle *fusionStyleForTable = QStyleFactory::create("Fusion");
-        if (fusionStyleForTable) {
-            // Parent to the table itself so it is destroyed after the table's destructor body.
-            fusionStyleForTable->setParent(KeyMappingTableWidget);
-            KeyMappingTableWidget->setStyle(fusionStyleForTable);
-        }
+    if (QStyle *fusionStyleForTable = QKeyMapperStyle::fusionStyle()) {
+        KeyMappingTableWidget->setStyle(fusionStyleForTable);
     }
 
     // Add the new tab at the end with the generated tabName
@@ -19846,9 +19835,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     //     m_KeyMappingTabWidget->setGeometry(QRect(left, 7, width, 346));
     // }
     m_KeyMappingTabWidget->setGeometry(QRect(left, 11, width, 346));
-    QStyle* windowsStyle = QStyleFactory::create("windows");
-    if (windowsStyle) {
-        windowsStyle->setParent(qApp);
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         m_KeyMappingTabWidget->setStyle(windowsStyle);
         ui->addTabButton->setStyle(windowsStyle);
     }

@@ -172,6 +172,7 @@ HEADERS     += \
     GamepadMotion/GamepadMotion.hpp \
     Interception/include/interception.h \
     colorpickerwidget.h \
+    qstyle_singletons.h \
     libusb/include/libusb.h \
     FakerInput/include/fakerinputclient.h \
     orderedmap/orderedmap.h \
@@ -198,6 +199,7 @@ SOURCES     += \
     colorpickerwidget.cpp \
     interception_worker.cpp \
     main.cpp \
+    qstyle_singletons.cpp \
     qcrosshairsetupdialog.cpp \
     qfloatingwindowsetupdialog.cpp \
     qgyro2mouseoptiondialog.cpp \

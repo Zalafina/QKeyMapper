@@ -21,9 +21,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
 
     initSelectImageFileDialog();
 
-    QStyle* windowsStyle = QStyleFactory::create("windows");
-    if (windowsStyle) {
-        windowsStyle->setParent(qApp);
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->tabCustomImageGroupBox->setStyle(windowsStyle);
         ui->customImageLabel->setStyle(windowsStyle);
     }

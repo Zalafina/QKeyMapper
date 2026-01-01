@@ -15,9 +15,7 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
-    QStyle* windowsStyle = QStyleFactory::create("windows");
-    if (windowsStyle) {
-        windowsStyle->setParent(qApp);
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->fontGroupBox->setStyle(windowsStyle);
         ui->durationGroupBox->setStyle(windowsStyle);
         ui->borderGroupBox->setStyle(windowsStyle);

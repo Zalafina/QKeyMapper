@@ -2,6 +2,7 @@
 #include "qmappingadvanceddialog.h"
 #include "ui_qmappingadvanceddialog.h"
 #include "qkeymapper_constants.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 
@@ -14,9 +15,7 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
-    QStyle* windowsStyle = QStyleFactory::create("windows");
-    if (windowsStyle) {
-        windowsStyle->setParent(qApp);
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->mouseGroupBox->setStyle(windowsStyle);
         ui->gamepadGroupBox->setStyle(windowsStyle);
     }

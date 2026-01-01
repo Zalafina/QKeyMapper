@@ -59,10 +59,7 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
 
     initKeyListComboBoxes();
 
-    QStyle* windowsStyle = QStyleFactory::create("windows");
-    if (windowsStyle) {
-        // Parent to qApp so the style outlives all widgets using it.
-        windowsStyle->setParent(qApp);
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->mapList_SelectKeyboardButton->setStyle(windowsStyle);
         ui->mapList_SelectMouseButton->setStyle(windowsStyle);
         ui->mapList_SelectGamepadButton->setStyle(windowsStyle);
@@ -1304,9 +1301,7 @@ void QMacroListDialog::addMacroToList()
 void QMacroListDialog::initMacroListTabWidget()
 {
     QTabWidget *tabWidget = ui->macroListTabWidget;
-    QStyle* windowsStyle = QStyleFactory::create("windows");
-    if (windowsStyle) {
-        windowsStyle->setParent(tabWidget);
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         tabWidget->setStyle(windowsStyle);
     }
     tabWidget->setFocusPolicy(Qt::StrongFocus);
@@ -1351,9 +1346,7 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
     QFont customFont(FONTNAME_ENGLISH, 9);
     macroDataTable->setFont(customFont);
     macroDataTable->horizontalHeader()->setFont(customFont);
-    QStyle *fusionStyle = QStyleFactory::create("Fusion");
-    if (fusionStyle) {
-        fusionStyle->setParent(macroDataTable);
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
         macroDataTable->setStyle(fusionStyle);
     }
 

@@ -16,9 +16,7 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
-    QStyle* windowsStyle = QStyleFactory::create("windows");
-    if (windowsStyle) {
-        windowsStyle->setParent(qApp);
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->centerGroupBox->setStyle(windowsStyle);
         ui->crosshairGroupBox->setStyle(windowsStyle);
         ui->offsetGroupBox->setStyle(windowsStyle);

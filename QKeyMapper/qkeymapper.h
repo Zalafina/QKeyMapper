@@ -74,6 +74,7 @@
 //#include <QProcess>
 //#include <QTextCodec>
 
+#include "qstyle_singletons.h"
 #include "qkeymapper_worker.h"
 #include "qinputdevicelistwindow.h"
 #include "qgyro2mouseoptiondialog.h"

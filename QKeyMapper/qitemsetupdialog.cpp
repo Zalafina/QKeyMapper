@@ -34,9 +34,7 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     initKeyListComboBoxes();
     initKeyStringLineEdit();
 
-    QStyle* windowsStyle = QStyleFactory::create("windows");
-    if (windowsStyle) {
-        windowsStyle->setParent(qApp);
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->oriList_SelectKeyboardButton->setStyle(windowsStyle);
         ui->oriList_SelectMouseButton->setStyle(windowsStyle);
         ui->oriList_SelectGamepadButton->setStyle(windowsStyle);
