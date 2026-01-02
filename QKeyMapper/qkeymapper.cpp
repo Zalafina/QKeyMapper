@@ -20565,7 +20565,14 @@ void QKeyMapper::initCategoryFilterControls()
             const QPoint anchor = ui->categoryFilterToolButton->mapToGlobal(QPoint(ui->categoryFilterToolButton->width(), 0));
             QScreen *screen = QGuiApplication::screenAt(anchor);
             if (!screen) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
                 screen = ui->categoryFilterToolButton->screen();
+#else
+                QWidget *topLevel = ui->categoryFilterToolButton->window();
+                screen = (topLevel && topLevel->windowHandle())
+                    ? topLevel->windowHandle()->screen()
+                    : QGuiApplication::primaryScreen();
+#endif
             }
             const QRect avail = screen ? screen->availableGeometry() : QRect();
 
