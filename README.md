@@ -148,12 +148,12 @@
       - 启用映射时如果当前映射表中存在重复的已启用映射，之前启用的重复映射会被禁用。
       - 添加、复制、导入的映射如果当前映射表已经存在重复映射，添加、复制、导入的重复映射会被自动设置为禁用。
     * utils目录下工具脚本追加，详细使用方法参考 utils 目录下 readme.txt 文件:
-        ##### 窗口大小和位置调整工具EX
-        ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600                      (窗口大小调整为 800 x 600)
-        ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200                      (窗口左上角坐标位置移动到x=100, y=200)
-        ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200 w=800 h=600          (移动到x=100,y=200并调整大小为 800 x 600)
-        ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center               (按新尺寸居中显示)
-        ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center active=true   (居中并激活窗口)
+      ##### 窗口大小和位置调整工具EX
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600                      (窗口大小调整为 800 x 600)
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200                      (窗口左上角坐标位置移动到x=100, y=200)
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200 w=800 h=600          (移动到x=100,y=200并调整大小为 800 x 600)
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center               (按新尺寸居中显示)
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center active=true   (居中并激活窗口)
     * 添加 active_window.ahk 和 winmove_ex.ahk 的标题参数可以支持空标题窗口，process="xxx.exe" title=""
 * v1.3.8(Build 20251228)
     * "通用设定"标签页中添加"编辑模式"下拉选择框，可以选择"右键双击"或"左键双击"方式进入映射表单元格编辑状态，默认是"右键双击"。
