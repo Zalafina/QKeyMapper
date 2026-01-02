@@ -47,10 +47,10 @@ extext="..." : 排除文本
 center : 将窗口居中到当前屏幕 (独立参数)
 center:N : 将窗口居中到第N个屏幕 (独立参数)
 工具命令示例->
-ahk.exe winmove.ahk wintitle="记事本" w=800 h=600				(窗口大小调整为 800 x 600)
-ahk.exe winmove.ahk wintitle="记事本" x=100 y=200				(窗口左上角坐标位置移动到x=100, y=200)
-ahk.exe winmove.ahk wintitle="记事本" x=100 y=200 w=800 h=600	(窗口左上角坐标位置移动到x=100, y=200的同时窗口大小调整为 宽度=800, 高度=600)
-ahk.exe winmove.ahk wintitle="记事本" center						(窗口在当前屏幕居中显示)
+ahk.exe winmove.ahk wintitle="记事本" w=800 h=600             (窗口大小调整为 800 x 600)
+ahk.exe winmove.ahk wintitle="记事本" x=100 y=200             (窗口左上角坐标位置移动到x=100, y=200)
+ahk.exe winmove.ahk wintitle="记事本" x=100 y=200 w=800 h=600 (窗口左上角坐标位置移动到x=100, y=200的同时窗口大小调整为 宽度=800, 高度=600)
+ahk.exe winmove.ahk wintitle="记事本" center                  (窗口在当前屏幕居中显示)
 映射按键用法示例：
 Run(utils\ahk utils\script\winmove.ahk wintitle="记事本" w=800 h=600)
 Run(utils\ahk utils\script\winmove.ahk wintitle="记事本" x=100 y=200)
@@ -68,11 +68,11 @@ active=true 可选参数，移动/缩放完成后激活窗口；默认不激活�
 center : 将窗口居中到窗口所在屏幕的工作区 (独立参数)
 center:N : 将窗口居中到第N个屏幕的工作区 (独立参数)
 工具命令示例->
-ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600				(窗口大小调整为 800 x 600)
-ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200				(窗口左上角坐标位置移动到x=100, y=200)
-ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200 w=800 h=600	(移动到x=100,y=200并调整大小为 800 x 600)
-ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center			(按新尺寸居中显示)
-ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center active=true	(居中并激活窗口)
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600                     (窗口大小调整为 800 x 600)
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200                     (窗口左上角坐标位置移动到x=100, y=200)
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200 w=800 h=600         (移动到x=100,y=200并调整大小为 800 x 600)
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center              (按新尺寸居中显示)
+ahk.exe winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600 center active=true  (居中并激活窗口)
 映射按键用法示例：
 Run(utils\ahk utils\script\winmove_ex.ahk process="notepad.exe" title="记事本" w=800 h=600)
 Run(utils\ahk utils\script\winmove_ex.ahk process="notepad.exe" title="记事本" x=100 y=200)
