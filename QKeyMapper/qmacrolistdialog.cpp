@@ -245,6 +245,7 @@ void QMacroListDialog::updateMappingKeyListComboBox()
     const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
     ui->MacroList_MappingKeyListComboBox->addItem(QString());
     ui->MacroList_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_WAITTIME);
+    ui->MacroList_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_NEXTARROW);
     ui->MacroList_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_DOWN);
     ui->MacroList_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_UP);
     ui->MacroList_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_BOTH);
