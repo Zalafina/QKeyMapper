@@ -19,7 +19,9 @@ TrimQuotes(str) {
 
 ActivateWindow(hwnd) {
     WinShow("ahk_id " hwnd)
-    WinRestore("ahk_id " hwnd)
+    if (WinGetMinMax("ahk_id " hwnd) = -1) {  ; 仅最小化才恢复
+        WinRestore("ahk_id " hwnd)
+    }
     WinActivate("ahk_id " hwnd)
 }
 
@@ -99,7 +101,12 @@ if (criteria != "" || titleProvided) {
 
     ; 如果找到匹配的窗口
     if (matchingWindows.Length > 0) {
-        currentHwnd := WinGetID("A")  ; 获取当前活动窗口的 HWND
+        currentHwnd := 0
+        try {
+            currentHwnd := WinGetID("A")  ; 获取当前活动窗口的 HWND
+        } catch {
+            currentHwnd := 0  ; 没有活动窗口时，按“不在列表中”处理
+        }
         targetHwnd := 0
 
         if (matchingWindows.Length = 1) {
