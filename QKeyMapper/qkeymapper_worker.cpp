@@ -271,17 +271,17 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(instance, &QJoysticks::joystickRemoved, this, &QKeyMapper_Worker::onJoystickRemoved, Qt::QueuedConnection);
 
 #ifdef JOYSTICK_EVENTS_TO_HOOKPROC
-    QObject::connect(instance, &QJoysticks::POVEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickPOVEvent, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::axisEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickAxisEvent, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::buttonEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickButtonEvent, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::sensorEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickSensorEvent, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::batteryEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickBatteryEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::POVEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickPOVEvent);
+    QObject::connect(instance, &QJoysticks::axisEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickAxisEvent);
+    QObject::connect(instance, &QJoysticks::buttonEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickButtonEvent);
+    QObject::connect(instance, &QJoysticks::sensorEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickSensorEvent);
+    QObject::connect(instance, &QJoysticks::batteryEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickBatteryEvent);
 #else
-    QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::sensorEvent, this, &QKeyMapper_Worker::onJoystickSensorEvent, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::batteryEvent, this, &QKeyMapper_Worker::onJoystickBatteryEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
+    QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
+    QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
+    QObject::connect(instance, &QJoysticks::sensorEvent, this, &QKeyMapper_Worker::onJoystickSensorEvent);
+    QObject::connect(instance, &QJoysticks::batteryEvent, this, &QKeyMapper_Worker::onJoystickBatteryEvent);
 #endif
 
     initGlobalSendInputTaskController();
