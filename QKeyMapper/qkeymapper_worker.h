@@ -1402,6 +1402,14 @@ public slots:
     void onSetHookProcKeyUnHook(void);
     void onSetHookProcKeyMappingRestart(void);
 
+#ifdef JOYSTICK_EVENTS_TO_HOOKPROC
+    void onJoystickPOVEvent(const QJoystickPOVEvent &e);
+    void onJoystickAxisEvent(const QJoystickAxisEvent &e);
+    void onJoystickButtonEvent(const QJoystickButtonEvent &e);
+    void onJoystickSensorEvent(const QJoystickSensorEvent &e);
+    void onJoystickBatteryEvent(const QJoystickBatteryEvent &e);
+#endif
+
 public:
     static bool s_LowLevelKeyboardHook_Enable;
     static bool s_LowLevelMouseHook_Enable;

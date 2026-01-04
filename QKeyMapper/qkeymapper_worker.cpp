@@ -269,11 +269,20 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     // QObject::connect(instance, &QJoysticks::countChanged, this, &QKeyMapper_Worker::onJoystickcountChanged, Qt::QueuedConnection);
     QObject::connect(instance, &QJoysticks::joystickAdded, this, &QKeyMapper_Worker::onJoystickAdded, Qt::QueuedConnection);
     QObject::connect(instance, &QJoysticks::joystickRemoved, this, &QKeyMapper_Worker::onJoystickRemoved, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
-    QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
-    QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
-    QObject::connect(instance, &QJoysticks::sensorEvent, this, &QKeyMapper_Worker::onJoystickSensorEvent);
-    QObject::connect(instance, &QJoysticks::batteryEvent, this, &QKeyMapper_Worker::onJoystickBatteryEvent);
+
+#ifdef JOYSTICK_EVENTS_TO_HOOKPROC
+    QObject::connect(instance, &QJoysticks::POVEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickPOVEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::axisEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickAxisEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::buttonEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickButtonEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::sensorEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickSensorEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::batteryEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickBatteryEvent, Qt::QueuedConnection);
+#else
+    QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::sensorEvent, this, &QKeyMapper_Worker::onJoystickSensorEvent, Qt::QueuedConnection);
+    QObject::connect(instance, &QJoysticks::batteryEvent, this, &QKeyMapper_Worker::onJoystickBatteryEvent, Qt::QueuedConnection);
+#endif
 
     initGlobalSendInputTaskController();
 
@@ -14654,6 +14663,8 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
     Q_UNUSED(joystick);
 
 #ifdef DEBUG_LOGOUT_ON
+    qDebug("[JoyStickKeysProc] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
+
     if (KEY_DOWN == keyupdown){
         qDebug("[JoyStickKeysProc] RealKey: \"%s\" KeyDown -> [P%d][%s]", keycodeString.toStdString().c_str(), joystick->playerindex, joystick->name.toStdString().c_str());
     }
@@ -16589,6 +16600,33 @@ void QKeyMapper_Hook_Proc::onSetHookProcKeyMappingRestart()
     qDebug("[onSetHookProcKeyHook] HookProcThread MappingRestart End.");
 #endif
 }
+
+#ifdef JOYSTICK_EVENTS_TO_HOOKPROC
+void QKeyMapper_Hook_Proc::onJoystickPOVEvent(const QJoystickPOVEvent &e)
+{
+    QKeyMapper_Worker::getInstance()->onJoystickPOVEvent(e);
+}
+
+void QKeyMapper_Hook_Proc::onJoystickAxisEvent(const QJoystickAxisEvent &e)
+{
+    QKeyMapper_Worker::getInstance()->onJoystickAxisEvent(e);
+}
+
+void QKeyMapper_Hook_Proc::onJoystickButtonEvent(const QJoystickButtonEvent &e)
+{
+    QKeyMapper_Worker::getInstance()->onJoystickButtonEvent(e);
+}
+
+void QKeyMapper_Hook_Proc::onJoystickSensorEvent(const QJoystickSensorEvent &e)
+{
+    QKeyMapper_Worker::getInstance()->onJoystickSensorEvent(e);
+}
+
+void QKeyMapper_Hook_Proc::onJoystickBatteryEvent(const QJoystickBatteryEvent &e)
+{
+    QKeyMapper_Worker::getInstance()->onJoystickBatteryEvent(e);
+}
+#endif
 
 bool EnablePrivilege(LPCWSTR privilege)
 {
