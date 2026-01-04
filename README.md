@@ -129,6 +129,10 @@
     设置 -> 辅助功能 -> 键盘 -> 筛选键
     <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win11_FilterKey.png" width="1182" height="auto"/></div>
 
+---
+## 📣 已知问题
+#### ※使用物理游戏手柄原始按键映射为鼠标左键的情况下，请避免使用此方式点击QKeyMapper窗口标题栏右上角的关闭、最小化、最大化按钮区域，会发生界面卡住的现象。如果进行上面操作发生界面卡住问题可以通过按下键盘Win键或者Win+D组合键等通过键盘切换前台窗口的方式解除卡住状态。
+
 ---------------
 ## 📚 按键映射工具使用技巧等参考Wiki页面：
 * [QKeyMapper使用技巧等Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
