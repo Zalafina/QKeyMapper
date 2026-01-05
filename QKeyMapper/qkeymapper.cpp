@@ -25316,6 +25316,9 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     else if (currentMapKeyListText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
                         currentMapKeyListText = currentMapKeyListText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
                     }
+                    else if (currentMapKeyListText.endsWith(MOUSE_MOVE_RELATIVE_POSTFIX)) {
+                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_MOVE_RELATIVE_POSTFIX) + QString(":R(,)");
+                    }
                 }
 
                 QString newMapKeyText;
@@ -25407,6 +25410,9 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     }
                     else if (currentMapKeyListText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
                         currentMapKeyListText = currentMapKeyListText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
+                    }
+                    else if (currentMapKeyListText.endsWith(MOUSE_MOVE_RELATIVE_POSTFIX)) {
+                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_MOVE_RELATIVE_POSTFIX) + QString(":R(,)");
                     }
                 }
 
