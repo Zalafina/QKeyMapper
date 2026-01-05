@@ -98,8 +98,6 @@ public:
     QCrosshairSetupDialog *m_CrosshairSetupDialog;
     KeyListComboBox *m_OriginalKeyListComboBox;
     KeyListComboBox *m_MappingKeyListComboBox;
-    KeyStringLineEdit *m_MappingKeyLineEdit;
-    KeyStringLineEdit *m_MappingKey_KeyUpLineEdit;
     int m_ItemSetupKeyRecordEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
     bool m_isItemSetupKeyRecordLineEdit_CapturingKey = false;
 

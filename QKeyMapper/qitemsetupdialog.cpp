@@ -18,8 +18,6 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     , m_CrosshairSetupDialog(Q_NULLPTR)
     , m_OriginalKeyListComboBox(new KeyListComboBox(this))
     , m_MappingKeyListComboBox(new KeyListComboBox(this))
-    , m_MappingKeyLineEdit(new KeyStringLineEdit(this))
-    , m_MappingKey_KeyUpLineEdit(new KeyStringLineEdit(this))
 {
     m_instance = this;
     ui->setupUi(this);
@@ -62,13 +60,13 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->mapList_SelectFunctionButton->setChecked(true);
 
     ui->originalKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
-    m_MappingKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
-    m_MappingKey_KeyUpLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->SetupDialog_MappingKeyLineEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->SetupDialog_MappingKey_KeyUpLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->itemNoteLineEdit->setFocusPolicy(Qt::ClickFocus);
 
     ui->originalKeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
-    m_MappingKeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
-    m_MappingKey_KeyUpLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
+    ui->SetupDialog_MappingKeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
+    ui->SetupDialog_MappingKey_KeyUpLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->itemNoteLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->burstpressSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->burstreleaseSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
@@ -96,7 +94,7 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->sendTimingComboBox->setCurrentIndex(SENDTIMING_NORMAL);
 
     // ui->originalKeyLineEdit->setReadOnly(true);
-    // ui->mappingKeyLineEdit->setReadOnly(true);
+    // ui->SetupDialog_MappingKeyLineEdit->setReadOnly(true);
     // ui->originalKeyUpdateButton->setVisible(false);
     // ui->mappingKeyUpdateButton->setVisible(false);
 
@@ -105,8 +103,8 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->keyRecordEditModeButton->setText(tr("Edit"));
 
     QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_OriginalKeyFirst);
-    QObject::connect(m_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKeyFirst);
-    QObject::connect(m_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKey_KeyUpFirst);
+    QObject::connect(ui->SetupDialog_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKeyFirst);
+    QObject::connect(ui->SetupDialog_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKey_KeyUpFirst);
     // QObject::connect(ui->itemNoteLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::on_itemNoteUpdateButton_clicked);
 
     // Synchronize button states between main window and sub window:
@@ -505,30 +503,30 @@ void QItemSetupDialog::setOriginalKeyText(const QString &new_keytext)
 QString QItemSetupDialog::getMappingKeyText()
 {
     if (ITEMSETUP_EDITING_KEYUPMAPPINGKEY == s_editingMappingKeyLineEdit) {
-        return getInstance()->m_MappingKey_KeyUpLineEdit->text();
+        return getInstance()->ui->SetupDialog_MappingKey_KeyUpLineEdit->text();
     }
     else {
-        return getInstance()->m_MappingKeyLineEdit->text();
+        return getInstance()->ui->SetupDialog_MappingKeyLineEdit->text();
     }
 }
 
 int QItemSetupDialog::getMappingKeyCursorPosition()
 {
     if (ITEMSETUP_EDITING_KEYUPMAPPINGKEY == s_editingMappingKeyLineEdit) {
-        return getInstance()->m_MappingKey_KeyUpLineEdit->cursorPosition();
+        return getInstance()->ui->SetupDialog_MappingKey_KeyUpLineEdit->cursorPosition();
     }
     else {
-        return getInstance()->m_MappingKeyLineEdit->cursorPosition();
+        return getInstance()->ui->SetupDialog_MappingKeyLineEdit->cursorPosition();
     }
 }
 
 void QItemSetupDialog::setMappingKeyText(const QString &new_keytext)
 {
     if (ITEMSETUP_EDITING_KEYUPMAPPINGKEY == s_editingMappingKeyLineEdit) {
-        return getInstance()->m_MappingKey_KeyUpLineEdit->setText(new_keytext);
+        return getInstance()->ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(new_keytext);
     }
     else {
-        return getInstance()->m_MappingKeyLineEdit->setText(new_keytext);
+        return getInstance()->ui->SetupDialog_MappingKeyLineEdit->setText(new_keytext);
     }
 }
 
@@ -547,14 +545,14 @@ void QItemSetupDialog::setEditingMappingKeyLineEdit(int editing_lineedit)
     if (ITEMSETUP_EDITING_KEYUPMAPPINGKEY == editing_lineedit) {
         s_editingMappingKeyLineEdit = ITEMSETUP_EDITING_KEYUPMAPPINGKEY;
 
-        getInstance()->m_MappingKey_KeyUpLineEdit->setStyleSheet("QLineEdit { border: 2px solid #546de5; }");
-        getInstance()->m_MappingKeyLineEdit->setStyleSheet("");
+        getInstance()->ui->SetupDialog_MappingKey_KeyUpLineEdit->setStyleSheet("QLineEdit { border: 2px solid #546de5; }");
+        getInstance()->ui->SetupDialog_MappingKeyLineEdit->setStyleSheet("");
     }
     else {
         s_editingMappingKeyLineEdit = ITEMSETUP_EDITING_MAPPINGKEY;
 
-        getInstance()->m_MappingKeyLineEdit->setStyleSheet("QLineEdit { border: 2px solid #546de5; }");
-        getInstance()->m_MappingKey_KeyUpLineEdit->setStyleSheet("");
+        getInstance()->ui->SetupDialog_MappingKeyLineEdit->setStyleSheet("QLineEdit { border: 2px solid #546de5; }");
+        getInstance()->ui->SetupDialog_MappingKey_KeyUpLineEdit->setStyleSheet("");
     }
 }
 
@@ -1227,16 +1225,16 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
 
         /* Load Mapping Keys String */
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-        m_MappingKeyLineEdit->setText(mappingkeys_str);
+        ui->SetupDialog_MappingKeyLineEdit->setText(mappingkeys_str);
 
         /* Load KeyUp MappingKeys String */
         if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
             keymapdata.MappingKeys_KeyUp = keymapdata.Mapping_Keys;
-            m_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
+            ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
         }
         else {
             QString keyup_mappingkeys_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
-            m_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
+            ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
         }
 
         /* Load Note String */
@@ -1550,7 +1548,7 @@ void QItemSetupDialog::mousePressEvent(QMouseEvent *event)
             if (!currentKeyRecordText.isEmpty()) {
                 if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
                     if (s_editingMappingKeyLineEdit == ITEMSETUP_EDITING_KEYUPMAPPINGKEY) {
-                        QString currentMappingKey_KeyUpText = m_MappingKey_KeyUpLineEdit->text();
+                        QString currentMappingKey_KeyUpText = ui->SetupDialog_MappingKey_KeyUpLineEdit->text();
                         QString newKeyText;
                         if (currentMappingKey_KeyUpText.isEmpty()) {
                             newKeyText = currentKeyRecordText;
@@ -1558,14 +1556,14 @@ void QItemSetupDialog::mousePressEvent(QMouseEvent *event)
                         else {
                             newKeyText = currentMappingKey_KeyUpText + QString(SEPARATOR_PLUS) + currentKeyRecordText;
                         }
-                        m_MappingKey_KeyUpLineEdit->setText(newKeyText);
+                        ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(newKeyText);
 
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[QItemSetupDialog::mousePressEvent]" << "Set new MappingKey_KeyUp Text ->" << newKeyText;
 #endif
                     }
                     else {
-                        QString currentMappingKeyText = m_MappingKeyLineEdit->text();
+                        QString currentMappingKeyText = ui->SetupDialog_MappingKeyLineEdit->text();
                         QString newKeyText;
                         if (currentMappingKeyText.isEmpty()) {
                             newKeyText = currentKeyRecordText;
@@ -1573,7 +1571,7 @@ void QItemSetupDialog::mousePressEvent(QMouseEvent *event)
                         else {
                             newKeyText = currentMappingKeyText + QString(SEPARATOR_PLUS) + currentKeyRecordText;
                         }
-                        m_MappingKeyLineEdit->setText(newKeyText);
+                        ui->SetupDialog_MappingKeyLineEdit->setText(newKeyText);
 
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[QItemSetupDialog::mousePressEvent]" << "Set new MappingKey Text ->" << newKeyText;
@@ -1700,21 +1698,13 @@ void QItemSetupDialog::initKeyListComboBoxes()
 
 void QItemSetupDialog::initKeyStringLineEdit()
 {
-    int width = ui->originalKeyLineEdit->width();
-    int height = ui->originalKeyLineEdit->height();
+    // SetupDialog_MappingKeyLineEdit/SetupDialog_MappingKey_KeyUpLineEdit are created and positioned in Qt Designer.
+    // Keep objectName consistent with legacy logic (KeyStringLineEdit::focusInEvent relies on it).
+    // ui->SetupDialog_MappingKeyLineEdit->setObjectName(SETUPDIALOG_MAPKEY_LINEEDIT_NAME);
+    // ui->SetupDialog_MappingKey_KeyUpLineEdit->setObjectName(SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME);
 
-    int left = ui->mappingKeyLabel->x() + ui->mappingKeyLabel->width() + 4;
-    int top = ui->mappingKeyLabel->y();
-    m_MappingKeyLineEdit->setObjectName(SETUPDIALOG_MAPKEY_LINEEDIT_NAME);
-    m_MappingKeyLineEdit->setGeometry(QRect(left, top, width, height));
-
-    left = ui->mappingKey_KeyUpLabel->x() + ui->mappingKey_KeyUpLabel->width() + 4;
-    top = ui->mappingKey_KeyUpLabel->y();
-    m_MappingKey_KeyUpLineEdit->setObjectName(SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME);
-    m_MappingKey_KeyUpLineEdit->setGeometry(QRect(left, top, width, height));
-
-    m_MappingKeyLineEdit->setMaxLength(MAPPINGKEY_LINE_EDIT_MAX_LENGTH);
-    m_MappingKey_KeyUpLineEdit->setMaxLength(MAPPINGKEY_LINE_EDIT_MAX_LENGTH);
+    ui->SetupDialog_MappingKeyLineEdit->setMaxLength(MAPPINGKEY_LINE_EDIT_MAX_LENGTH);
+    ui->SetupDialog_MappingKey_KeyUpLineEdit->setMaxLength(MAPPINGKEY_LINE_EDIT_MAX_LENGTH);
 
     setEditingMappingKeyLineEdit(ITEMSETUP_EDITING_MAPPINGKEY);
 }
@@ -2072,16 +2062,16 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
 #if 0
         /* Load Mapping Keys String */
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-        m_MappingKeyLineEdit->setText(mappingkeys_str);
+        ui->SetupDialog_MappingKeyLineEdit->setText(mappingkeys_str);
 
         /* Load KeyUp MappingKeys String */
         if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
             keymapdata.MappingKeys_KeyUp = keymapdata.Mapping_Keys;
-            m_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
+            ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
         }
         else {
             QString keyup_mappingkeys_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
-            m_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
+            ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
         }
 #endif
 
@@ -2318,16 +2308,16 @@ void QItemSetupDialog::refreshAllRelatedUI()
 
     /* Load Mapping Keys String */
     QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
-    m_MappingKeyLineEdit->setText(mappingkeys_str);
+    ui->SetupDialog_MappingKeyLineEdit->setText(mappingkeys_str);
 
     /* Load KeyUp MappingKeys String */
     if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
         keymapdata.MappingKeys_KeyUp = keymapdata.Mapping_Keys;
-        m_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
+        ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(mappingkeys_str);
     }
     else {
         QString keyup_mappingkeys_str = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
-        m_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
+        ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(keyup_mappingkeys_str);
     }
 
     bool burstEnabled = QKeyMapper::getKeyMappingDataTableItemBurstStatus(m_ItemRow);
@@ -2633,10 +2623,10 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
             if (focusWidget == ui->originalKeyLineEdit) {
                 updatePriorities << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST;
             }
-            else if (focusWidget == m_MappingKeyLineEdit) {
+            else if (focusWidget == ui->SetupDialog_MappingKeyLineEdit) {
                 updatePriorities << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST;
             }
-            else if (focusWidget == m_MappingKey_KeyUpLineEdit) {
+            else if (focusWidget == ui->SetupDialog_MappingKey_KeyUpLineEdit) {
                 updatePriorities << MAPPING_UPDATE_ORDER_MAPPING_KEY_KEYUP_FIRST << MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST << MAPPING_UPDATE_ORDER_MAPPING_KEY_FIRST;
             }
             else {
@@ -2652,8 +2642,8 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
 
     // Store the original UI content for validation
     QString originalKeytoUpdate = ui->originalKeyLineEdit->text();
-    QString mappingKeytoUpdate = m_MappingKeyLineEdit->text();
-    QString mappingKey_KeyUptoUpdate = m_MappingKey_KeyUpLineEdit->text();
+    QString mappingKeytoUpdate = ui->SetupDialog_MappingKeyLineEdit->text();
+    QString mappingKey_KeyUptoUpdate = ui->SetupDialog_MappingKey_KeyUpLineEdit->text();
 
     // Execute validation in priority order, stopping on first validation error
     bool allUpdatesSuccessful = true;

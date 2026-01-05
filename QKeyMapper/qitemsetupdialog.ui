@@ -941,7 +941,34 @@ Update</string>
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="KeyStringLineEdit" name="SetupDialog_MappingKeyLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>45</y>
+     <width>611</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="KeyStringLineEdit" name="SetupDialog_MappingKey_KeyUpLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>80</y>
+     <width>611</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>KeyStringLineEdit</class>
+   <extends>QLineEdit</extends>
+   <header>qitemsetupdialog.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
