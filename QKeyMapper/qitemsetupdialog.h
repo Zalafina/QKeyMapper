@@ -139,6 +139,8 @@ private slots:
     void on_keyRecordEditModeButton_clicked();
     void on_keyRecordLineEdit_textChanged(const QString &text);
     void on_itemNoteLineEdit_textChanged(const QString &text);
+    void on_mappingKey_SequenceEditButton_clicked();
+    void on_mappingKey_KeyUpSequenceEditButton_clicked();
     void updateMappingInfo_OriginalKeyFirst();
     void updateMappingInfo_MappingKeyFirst();
     void updateMappingInfo_MappingKey_KeyUpFirst();

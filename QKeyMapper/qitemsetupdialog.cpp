@@ -3511,6 +3511,17 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
     }
 }
 
+void QItemSetupDialog::on_mappingKey_SequenceEditButton_clicked()
+{
+
+}
+
+
+void QItemSetupDialog::on_mappingKey_KeyUpSequenceEditButton_clicked()
+{
+
+}
+
 void QItemSetupDialog::updateMappingInfo_OriginalKeyFirst()
 {
     updateMappingInfoByOrder(MAPPING_UPDATE_ORDER_ORIGINAL_KEY_FIRST);

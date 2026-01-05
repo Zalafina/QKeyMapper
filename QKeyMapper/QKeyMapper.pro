@@ -173,6 +173,7 @@ HEADERS     += \
     GamepadMotion/GamepadMotion.hpp \
     Interception/include/interception.h \
     colorpickerwidget.h \
+    qmappingsequenceedit.h \
     qstyle_singletons.h \
     libusb/include/libusb.h \
     FakerInput/include/fakerinputclient.h \
@@ -200,6 +201,7 @@ SOURCES     += \
     colorpickerwidget.cpp \
     interception_worker.cpp \
     main.cpp \
+    qmappingsequenceedit.cpp \
     qstyle_singletons.cpp \
     qcrosshairsetupdialog.cpp \
     qfloatingwindowsetupdialog.cpp \
@@ -246,6 +248,7 @@ FORMS       += \
     qkeyrecord.ui \
     qmacrolistdialog.ui \
     qmappingadvanceddialog.ui \
+    qmappingsequenceedit.ui \
     qnotificationsetupdialog.ui \
     qstartuppositiondialog.ui \
     qtablesetupdialog.ui \
