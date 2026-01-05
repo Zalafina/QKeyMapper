@@ -156,6 +156,8 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     // ui->mappingKey_KeyUpUpdateButton->setText(tr(UPDATEBUTTON_STR));
     // ui->itemNoteUpdateButton->setText(tr(UPDATEBUTTON_STR));
     ui->updateMappingInfoButton->setText(tr("Mapping\nUpdate"));
+    ui->mappingKey_SequenceEditButton->setText(tr("SeqEdit"));
+    ui->mappingKey_KeyUpSequenceEditButton->setText(tr("SeqEdit"));
     ui->recordKeysButton->setText(tr(RECORDKEYSBUTTON_STR));
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
@@ -241,6 +243,8 @@ void QItemSetupDialog::resetFontSize()
     // ui->mappingKeyUpdateButton->setFont(customFont);
     // ui->mappingKey_KeyUpUpdateButton->setFont(customFont);
     ui->updateMappingInfoButton->setFont(customFont);
+    ui->mappingKey_SequenceEditButton->setFont(customFont);
+    ui->mappingKey_KeyUpSequenceEditButton->setFont(customFont);
     ui->recordKeysButton->setFont(customFont);
     ui->crosshairSetupButton->setFont(customFont);
     // ui->itemNoteUpdateButton->setFont(customFont);

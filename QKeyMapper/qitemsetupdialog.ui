@@ -157,7 +157,7 @@
     <rect>
      <x>100</x>
      <y>10</y>
-     <width>611</width>
+     <width>521</width>
      <height>22</height>
     </rect>
    </property>
@@ -773,9 +773,9 @@
    <property name="geometry">
     <rect>
      <x>720</x>
-     <y>35</y>
+     <y>30</y>
      <width>91</width>
-     <height>41</height>
+     <height>51</height>
     </rect>
    </property>
    <property name="focusPolicy">
@@ -946,7 +946,7 @@ Update</string>
     <rect>
      <x>100</x>
      <y>45</y>
-     <width>611</width>
+     <width>521</width>
      <height>22</height>
     </rect>
    </property>
@@ -956,9 +956,47 @@ Update</string>
     <rect>
      <x>100</x>
      <y>80</y>
-     <width>611</width>
+     <width>521</width>
      <height>22</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="mappingKey_SequenceEditButton">
+   <property name="geometry">
+    <rect>
+     <x>630</x>
+     <y>45</y>
+     <width>76</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>SeqEdit</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="mappingKey_KeyUpSequenceEditButton">
+   <property name="geometry">
+    <rect>
+     <x>630</x>
+     <y>80</y>
+     <width>76</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>SeqEdit</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
  </widget>
