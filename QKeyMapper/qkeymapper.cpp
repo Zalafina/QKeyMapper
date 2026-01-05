@@ -4372,6 +4372,8 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
             static QRegularExpression joy2vjoy_mapkey_regex(R"(^(Joy-(LS|RS|Key11\(LT\)|Key12\(RT\))_2vJoy(LS|RS|LT|RT))(?:@([0-3]))?$)");
             static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2|Move)(:W)?(:BG)?\((-?\d+),(-?\d+)\)$)");
+            // Relative mouse move: "Mouse-Move:R(delta_x,delta_y)" (no :W / :BG support by design)
+            static QRegularExpression mousemove_relative_regex(R"(^Mouse-Move:R\((-?\d+),(-?\d+)\)$)");
             // Use non-greedy matching and multiline support for SendText
             static QRegularExpression sendtext_regex(
                 REGEX_PATTERN_SENDTEXT,
@@ -4384,6 +4386,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
             QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
+            QRegularExpressionMatch mousemove_relative_match = mousemove_relative_regex.match(mapping_key);
             QRegularExpressionMatch sendtext_match = sendtext_regex.match(mapping_key);
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(mapping_key);
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(mapping_key);
@@ -4419,6 +4422,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 result.isValid = true;
             }
             else if (mousepoint_match.hasMatch()
+                || mousemove_relative_match.hasMatch()
                 || sendtext_match.hasMatch()
                 || runcmd_match.hasMatch()
                 || switchtab_match.hasMatch()) {
@@ -20291,6 +20295,7 @@ void QKeyMapper::initKeysCategoryMap()
         << MOUSE_X1_SCREENPOINT_STR
         << MOUSE_X2_SCREENPOINT_STR
         << MOUSE_MOVE_SCREENPOINT_STR
+        << MOUSE_MOVE_RELATIVE_STR
         << MOUSE_POS_SAVE_STR
         << MOUSE_POS_RESTORE_STR
         ;
@@ -21636,6 +21641,7 @@ void QKeyMapper::updateMousePointsList()
         return;
     }
 
+    // Note: "Mouse-Move:R(dx,dy)" is a relative movement and intentionally excluded from point drawing.
     static QRegularExpression mousepoint_regex(R"(Mouse-(L|R|M|X1|X2|Move)(:W)?(:BG)?\((-?\d+),(-?\d+)\))");
     QRegularExpressionMatch mousepoint_match;
     ScreenMousePointsList.clear();
@@ -23925,6 +23931,33 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 int y = mousepoint.y();
 
                 currentMapKeyText = currentMapKeyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(%1,%2)").arg(x).arg(y);
+            }
+        }
+        else if (currentMapKeyText.startsWith(MOUSE_MOVE_PREFIX) && currentMapKeyText.endsWith(MOUSE_MOVE_RELATIVE_POSTFIX)) {
+            QString mousemove_relative = ui->sendTextPlainTextEdit->toPlainText().simplified();
+            mousemove_relative.remove(whitespace_reg);
+            // Try to match parameter with "delta_x,delta_y" pattern
+            static QRegularExpression regex(REGEX_PATTERN_MOUSE_MOVE_RELATIVE_PARAM);
+            QRegularExpressionMatch match = regex.match(mousemove_relative);
+            if (!match.hasMatch() || match.capturedLength(0) != mousemove_relative.length()) {
+                QString message = tr("Please input the relative mouse move parameters in the format \"delta_x,delta_y\".");
+                showFailurePopup(message);
+                return;
+            }
+            else {
+
+                bool dx_ok = false;
+                bool dy_ok = false;
+                int delta_x = match.captured(1).toInt(&dx_ok);
+                int delta_y = match.captured(2).toInt(&dy_ok);
+                if (!dx_ok || !dy_ok) {
+                    QString message = tr("Please input the relative mouse move parameters in the format \"delta_x,delta_y\".");
+                    showFailurePopup(message);
+                    return;
+                }
+
+                // Build final mapping string: "Mouse-Move:R(delta_x,delta_y)"
+                currentMapKeyText = currentMapKeyText.remove(MOUSE_MOVE_RELATIVE_POSTFIX) + QString(":R(%1,%2)").arg(delta_x).arg(delta_y);
             }
         }
         else if (currentMapKeyText == UNLOCK_STR) {

@@ -1103,6 +1103,14 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char REGEX_STRING_EMPTYSTRING[] = "^$";
 
+    inline constexpr const char REGEX_PATTERN_MOUSE_MOVE[] = R"(Mouse-Move(:W)?(:BG)?\((-?\d+),(-?\d+)\))";
+
+    // Relative mouse move mapping key pattern: "Mouse-Move:R(delta_x,delta_y)"
+    // Capture groups: 1=delta_x, 2=delta_y
+    inline constexpr const char REGEX_PATTERN_MOUSE_MOVE_RELATIVE[] = R"(Mouse-Move:R\((-?\d+),(-?\d+)\))";
+
+    inline constexpr const char REGEX_PATTERN_MOUSE_MOVE_RELATIVE_PARAM[] = R"((-?\d+),(-?\d+))";
+
     inline constexpr const char REGEX_PATTERN_NORMALHOTKEY[] = R"(^(\$)?(.+)$)";
 
     inline constexpr const char REGEX_PATTERN_TABHOTKEY[] = R"(^(\$)?(💾)?(.+)$)";
@@ -1261,6 +1269,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MOUSE_BUTTON_PREFIX[]  = "Mouse-";
     inline constexpr const char MOUSE_WINDOWPOINT_POSTFIX[]  = "_WindowPoint";
     inline constexpr const char MOUSE_SCREENPOINT_POSTFIX[]  = "_ScreenPoint";
+    inline constexpr const char MOUSE_MOVE_RELATIVE_POSTFIX[]  = "_Relative";
     inline constexpr const char MOUSE_L_STR[]  = "Mouse-L";
     inline constexpr const char MOUSE_R_STR[]  = "Mouse-R";
     inline constexpr const char MOUSE_M_STR[]  = "Mouse-M";
@@ -1278,6 +1287,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MOUSE_X2_SCREENPOINT_STR[] = "Mouse-X2_ScreenPoint";
     inline constexpr const char MOUSE_MOVE_WINDOWPOINT_STR[]  = "Mouse-Move_WindowPoint";
     inline constexpr const char MOUSE_MOVE_SCREENPOINT_STR[]  = "Mouse-Move_ScreenPoint";
+    inline constexpr const char MOUSE_MOVE_RELATIVE_STR[]     = "Mouse-Move_Relative";
     inline constexpr const char MOUSE_POS_PREFIX[]  = "Mouse-Pos";
     inline constexpr const char MOUSE_POS_SAVE_STR[] = "Mouse-PosSave";
     inline constexpr const char MOUSE_POS_RESTORE_STR[] = "Mouse-PosRestore";

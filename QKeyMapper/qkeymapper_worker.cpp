@@ -3612,7 +3612,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
 
 void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod)
 {
-    static QRegularExpression regex(R"(Mouse-Move(:W)?(:BG)?\((-?\d+),(-?\d+)\))");
+    static QRegularExpression regex(REGEX_PATTERN_MOUSE_MOVE);
     QRegularExpressionMatch match = regex.match(mousepoint_str);
 
     if (match.hasMatch()) {
@@ -3692,6 +3692,47 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendma
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendMousePointClick] Screen : postMouseMoveToPoint(" << x << ", " << y << ") -> " << QKeyMapper::s_last_HWNDList;
 #endif
+            }
+        }
+    }
+    else {
+        // Relative mouse move: "Mouse-Move:R(delta_x,delta_y)"
+        static QRegularExpression relative_regex(QString("^%1$").arg(QString::fromLatin1(REGEX_PATTERN_MOUSE_MOVE_RELATIVE)));
+        QRegularExpressionMatch relative_match = relative_regex.match(mousepoint_str);
+        if (!relative_match.hasMatch()) {
+            return;
+        }
+
+        bool dx_ok = false;
+        bool dy_ok = false;
+        int delta_x = relative_match.captured(1).toInt(&dx_ok);
+        int delta_y = relative_match.captured(2).toInt(&dy_ok);
+        if (!dx_ok || !dy_ok) {
+            return;
+        }
+
+        // Allow "0,0" (and "-0") in config, but skip execution because no movement is required.
+        if (delta_x == 0 && delta_y == 0) {
+            return;
+        }
+
+        if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
+            if (QKeyMapper::s_CurrentMappingHWND != NULL) {
+                postMouseMove(QKeyMapper::s_CurrentMappingHWND, delta_x, delta_y);
+            }
+        }
+        else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+#ifdef FAKERINPUT_SUPPORT
+            (void)FakerInputClient_sendMouseMove(delta_x, delta_y);
+#endif
+        }
+        else {
+            sendMouseMove(delta_x, delta_y);
+        }
+
+        if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+            for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
+                postMouseMove(hwnd, delta_x, delta_y);
             }
         }
     }
