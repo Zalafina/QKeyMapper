@@ -912,7 +912,7 @@
         <location filename="../qitemsetupdialog.cpp" line="159"/>
         <location filename="../qitemsetupdialog.cpp" line="160"/>
         <source>SeqEdit</source>
-        <translation>シーケンス編集</translation>
+        <translation>シーケ編集</translation>
     </message>
     <message>
         <source>Update</source>
@@ -995,7 +995,7 @@
         <location filename="../qitemsetupdialog.ui" line="766"/>
         <location filename="../qitemsetupdialog.cpp" line="145"/>
         <source>KeyRecord</source>
-        <translation>キー記録欄</translation>
+        <translation>キー記録</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="785"/>

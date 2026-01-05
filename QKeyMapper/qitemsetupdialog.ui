@@ -213,9 +213,9 @@
   <widget class="QLabel" name="mapkeyListLabel">
    <property name="geometry">
     <rect>
-     <x>250</x>
+     <x>260</x>
      <y>140</y>
-     <width>121</width>
+     <width>141</width>
      <height>22</height>
     </rect>
    </property>
@@ -382,9 +382,9 @@
   <widget class="QLabel" name="sendTimingLabel">
    <property name="geometry">
     <rect>
-     <x>70</x>
+     <x>40</x>
      <y>280</y>
-     <width>81</width>
+     <width>111</width>
      <height>21</height>
     </rect>
    </property>
@@ -586,7 +586,7 @@
   <widget class="QPushButton" name="mapList_SelectFunctionButton">
    <property name="geometry">
     <rect>
-     <x>480</x>
+     <x>510</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -614,7 +614,7 @@
   <widget class="QPushButton" name="mapList_SelectMouseButton">
    <property name="geometry">
     <rect>
-     <x>420</x>
+     <x>450</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -642,7 +642,7 @@
   <widget class="QPushButton" name="mapList_SelectGamepadButton">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>480</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -670,7 +670,7 @@
   <widget class="QPushButton" name="mapList_SelectKeyboardButton">
    <property name="geometry">
     <rect>
-     <x>390</x>
+     <x>420</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
