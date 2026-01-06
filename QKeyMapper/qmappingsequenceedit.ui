@@ -36,22 +36,22 @@
        <property name="minimumSize">
         <size>
          <width>130</width>
-         <height>80</height>
+         <height>90</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>130</width>
-         <height>80</height>
+         <width>100</width>
+         <height>90</height>
         </size>
        </property>
        <widget class="QPushButton" name="cancelButton">
         <property name="geometry">
          <rect>
           <x>10</x>
-          <y>50</y>
+          <y>60</y>
           <width>111</width>
-          <height>23</height>
+          <height>31</height>
          </rect>
         </property>
         <property name="focusPolicy">
@@ -70,7 +70,7 @@
           <x>10</x>
           <y>10</y>
           <width>111</width>
-          <height>23</height>
+          <height>31</height>
          </rect>
         </property>
         <property name="focusPolicy">
@@ -172,13 +172,13 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>420</width>
+         <width>470</width>
          <height>53</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>420</width>
+         <width>470</width>
          <height>53</height>
         </size>
        </property>
@@ -369,7 +369,7 @@
          <rect>
           <x>96</x>
           <y>30</y>
-          <width>151</width>
+          <width>181</width>
           <height>22</height>
          </rect>
         </property>
@@ -392,7 +392,7 @@
        <widget class="QCheckBox" name="validateCellCheckBox">
         <property name="geometry">
          <rect>
-          <x>280</x>
+          <x>330</x>
           <y>30</y>
           <width>141</width>
           <height>21</height>

@@ -55,6 +55,7 @@ QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     initMappingSequenceEditTable(ui->mappingSequenceEditTable);
 
     QObject::connect(ui->MappingSequenceEdit_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QMappingSequenceEdit::insertMappingKeyToTable);
+    QObject::connect(ui->MappingSequenceEdit_MappingKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QMappingSequenceEdit::MapkeyComboBox_currentTextChangedSlot);
 
     if (QItemSetupDialog::getInstance() != Q_NULLPTR) {
         QItemSetupDialog::getInstance()->syncConnectMappingKeySelectButtons();
@@ -184,6 +185,13 @@ void QMappingSequenceEdit::mousePressEvent(QMouseEvent *event)
     }
 
     QDialog::mousePressEvent(event);
+}
+
+void QMappingSequenceEdit::MapkeyComboBox_currentTextChangedSlot(const QString &text)
+{
+    if (!text.isEmpty()) {
+        ui->MappingSequenceEdit_MappingKeyListComboBox->setToolTip(text);
+    }
 }
 
 void QMappingSequenceEdit::insertMappingKeyToTable()

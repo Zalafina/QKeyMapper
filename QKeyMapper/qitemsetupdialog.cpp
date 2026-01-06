@@ -102,6 +102,8 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->keyRecordLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->keyRecordEditModeButton->setText(tr("Edit"));
 
+    QObject::connect(m_OriginalKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QItemSetupDialog::OrikeyComboBox_currentTextChangedSlot);
+    QObject::connect(m_MappingKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QItemSetupDialog::MapkeyComboBox_currentTextChangedSlot);
     QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_OriginalKeyFirst);
     QObject::connect(ui->SetupDialog_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKeyFirst);
     QObject::connect(ui->SetupDialog_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKey_KeyUpFirst);
@@ -3508,6 +3510,20 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
 #endif
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note = note_str;
         QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
+    }
+}
+
+void QItemSetupDialog::OrikeyComboBox_currentTextChangedSlot(const QString &text)
+{
+    if (!text.isEmpty()) {
+        m_OriginalKeyListComboBox->setToolTip(text);
+    }
+}
+
+void QItemSetupDialog::MapkeyComboBox_currentTextChangedSlot(const QString &text)
+{
+    if (!text.isEmpty()) {
+        m_MappingKeyListComboBox->setToolTip(text);
     }
 }
 

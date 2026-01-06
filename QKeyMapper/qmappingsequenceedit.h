@@ -55,6 +55,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
 
 private slots:
+    void MapkeyComboBox_currentTextChangedSlot(const QString &text);
     void insertMappingKeyToTable(void);
 
     // Slot for handling mapping sequence table item double click
