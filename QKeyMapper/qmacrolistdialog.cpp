@@ -1670,6 +1670,7 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
     QTabWidget::keyPressEvent(event);
 }
 
+#if 0
 void MacroListDataTableWidget::setCategoryFilter(const QString &category)
 {
     m_CategoryFilters.clear();
@@ -1683,6 +1684,7 @@ void MacroListDataTableWidget::setCategoryFilter(const QString &category)
     }
     updateRowVisibility();
 }
+#endif
 
 void MacroListDataTableWidget::setCategoryFilters(const QSet<QString> &categories)
 {

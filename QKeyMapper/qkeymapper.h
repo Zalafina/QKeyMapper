@@ -86,6 +86,7 @@
 #include "qmappingadvanceddialog.h"
 #include "qignorewindowinfolistdialog.h"
 #include "qmacrolistdialog.h"
+#include "qmappingsequenceedit.h"
 
 struct InputDeviceInfo
 {
@@ -261,7 +262,7 @@ public:
         : QTableWidget(parent), m_DraggedTopRow(-1), m_DraggedBottomRow(-1) {}
 
     // Category filtering methods
-    void setCategoryFilter(const QString &category);
+    // void setCategoryFilter(const QString &category);
     void setCategoryFilters(const QSet<QString> &categories);
     void clearCategoryFilter();
     void clearCategoryFilters();
@@ -903,6 +904,7 @@ public:
     static bool checkMappingkeyStr(QString &mappingkeystr);
     static void collectMappingTableTabHotkeys(void);
     static QString getOriginalKeyStringWithoutSuffix(const QString &originalkeystr);
+    static QString getTrimmedMappingKeyString(const QString &mappingkeystr);
     static void copyStringToClipboard(const QString &string);
     static bool backupFile(const QString &sourceFile, const QString &backupFile);
     static QString escapeSendTextForSaving(const QString &text);
@@ -1495,6 +1497,8 @@ private:
 public:
     void showMacroListDialog(void);
     void closeMacroListDialog(void);
+    void showMappingSequenceEdit(void);
+    void closeMappingSequenceEdit(void);
 private:
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
@@ -1663,6 +1667,9 @@ private:
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QMacroListDialog *m_MacroListDialog = Q_NULLPTR;
+public:
+    QMappingSequenceEdit *m_MappingSequenceEdit = Q_NULLPTR;
+private:
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
     SettingTransferDialog *m_SettingTransferDialog = Q_NULLPTR;

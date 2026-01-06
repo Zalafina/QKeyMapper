@@ -5,15 +5,60 @@
 
 using namespace QKeyMapperConstants;
 
+QMappingSequenceEdit *QMappingSequenceEdit::m_instance = Q_NULLPTR;
+
 QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QMappingSequenceEdit)
+    , m_MappingSequenceList()
+    , m_MappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS)
 {
+    m_instance = this;
     ui->setupUi(this);
 
-    // Connect drag and drop move signal
-    QObject::connect(this, &QMappingSequenceEdit::mappingSequenceTableDragDropMove_Signal,
-                     this, &QMappingSequenceEdit::mappingSequenceTableDragDropMove);
+    initKeyListComboBoxes();
+    ui->MappingSequenceEdit_MappingKeyLineEdit->setMaxLength(MAPPINGKEY_LINE_EDIT_MAX_LENGTH);
+
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        ui->mapList_SelectKeyboardButton->setStyle(windowsStyle);
+        ui->mapList_SelectMouseButton->setStyle(windowsStyle);
+        ui->mapList_SelectGamepadButton->setStyle(windowsStyle);
+        ui->mapList_SelectFunctionButton->setStyle(windowsStyle);
+    }
+    ui->mapList_SelectKeyboardButton->setIcon(QIcon(":/keyboard.svg"));
+    ui->mapList_SelectMouseButton->setIcon(QIcon(":/mouse.svg"));
+    ui->mapList_SelectGamepadButton->setIcon(QIcon(":/gamepad.svg"));
+    ui->mapList_SelectFunctionButton->setIcon(QIcon(":/function.svg"));
+    ui->mapList_SelectKeyboardButton->setChecked(true);
+    ui->mapList_SelectMouseButton->setChecked(true);
+    ui->mapList_SelectGamepadButton->setChecked(true);
+    ui->mapList_SelectFunctionButton->setChecked(true);
+
+    QFont customFont(FONTNAME_ENGLISH, 9);
+    ui->mapkeyLabel->setFont(customFont);
+    ui->MappingSequenceEdit_MappingKeyLineEdit->setFont(customFont);
+    ui->MappingSequenceEdit_MappingKeyListComboBox->setFont(customFont);
+    ui->validateCellCheckBox->setFont(customFont);
+    ui->confirmButton->setFont(customFont);
+    ui->cancelButton->setFont(customFont);
+    ui->mappingSequenceEditTable->setFont(customFont);
+
+    int scale = QKeyMapper::getInstance()->m_UI_Scale;
+    if (UI_SCALE_4K_PERCENT_150 == scale) {
+        customFont.setPointSize(14);
+    }
+    else {
+        customFont.setPointSize(12);
+    }
+    ui->insertMappingKeyButton->setFont(customFont);
+
+    initMappingSequenceEditTable(ui->mappingSequenceEditTable);
+
+    QObject::connect(ui->MappingSequenceEdit_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QMappingSequenceEdit::insertMappingKeyToTable);
+
+    if (QItemSetupDialog::getInstance() != Q_NULLPTR) {
+        QItemSetupDialog::getInstance()->syncConnectMappingKeySelectButtons();
+    }
 }
 
 QMappingSequenceEdit::~QMappingSequenceEdit()
@@ -21,8 +66,111 @@ QMappingSequenceEdit::~QMappingSequenceEdit()
     delete ui;
 }
 
+void QMappingSequenceEdit::setUILanguage(int languageindex)
+{
+    Q_UNUSED(languageindex);
+}
+
+void QMappingSequenceEdit::setTitle(const QString &title)
+{
+    setWindowTitle(title);
+}
+
+void QMappingSequenceEdit::setMappingSequence(const QString &mappingsequence)
+{
+    QString trimmed_mappingsequence = QKeyMapper::getTrimmedMappingKeyString(mappingsequence);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText after trimmed -> " << trimmed_mappingsequence;
+#endif
+
+    QStringList mappingKeySeqList = splitMappingKeyString(trimmed_mappingsequence, SPLIT_WITH_NEXT);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QMappingSequenceEdit::setMappingSequence]" << "Split Mapping Sequence List ->" << mappingKeySeqList;
+#endif
+
+    if (trimmed_mappingsequence.isEmpty() || mappingKeySeqList.isEmpty()) {
+        return;
+    }
+
+    m_MappingSequenceList = mappingKeySeqList;
+}
+
+void QMappingSequenceEdit::setMappingSequenceEditType(int edit_type)
+{
+    if (edit_type == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS
+        || edit_type == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP) {
+        m_MappingSequenceEditType = edit_type;
+    }
+}
+
+void QMappingSequenceEdit::refreshMappingSequenceEditTableWidget(MappingSequenceEditTableWidget *mappingSequenceEditTable, const QStringList &mappingSequenceList)
+{
+
+}
+
+void QMappingSequenceEdit::updateMappingKeyListComboBox()
+{
+    KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->m_mapkeyComboBox;
+
+    ui->MappingSequenceEdit_MappingKeyListComboBox->clear();
+
+    const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
+    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(QString());
+    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_WAITTIME);
+    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_NEXTARROW);
+    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_DOWN);
+    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_UP);
+    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_BOTH);
+    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_EXCLUSION);
+    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, REPEAT_STR);
+    for(int i = 1; i < mapkeyComboBox->count(); i++) {
+        QIcon icon = mapkeyComboBox->itemIcon(i);
+        QString text = mapkeyComboBox->itemText(i);
+        ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(icon, text);
+    }
+}
+
+QString QMappingSequenceEdit::joinCurentMappingSequenceTable()
+{
+    MappingSequenceEditTableWidget *mappingSequenceTable = ui->mappingSequenceEditTable;
+
+    QString merged_mappingsequence;
+    /* If MappingSequenceEditTable is not empty, join MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN item strings into one with "SEPARATOR_NEXTARROW" */
+
+    return merged_mappingsequence;
+}
+
+QPushButton *QMappingSequenceEdit::getMapListSelectKeyboardButton() const
+{
+    return ui->mapList_SelectKeyboardButton;
+}
+
+QPushButton *QMappingSequenceEdit::getMapListSelectMouseButton() const
+{
+    return ui->mapList_SelectMouseButton;
+}
+
+QPushButton *QMappingSequenceEdit::getMapListSelectGamepadButton() const
+{
+    return ui->mapList_SelectGamepadButton;
+}
+
+int QMappingSequenceEdit::getMappingSequenceEditType()
+{
+    return m_MappingSequenceEditType;
+}
+
+QPushButton *QMappingSequenceEdit::getMapListSelectFunctionButton() const
+{
+    return ui->mapList_SelectFunctionButton;
+}
+
 void QMappingSequenceEdit::showEvent(QShowEvent *event)
 {
+    refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
+
     QDialog::showEvent(event);
 }
 
@@ -38,6 +186,16 @@ void QMappingSequenceEdit::mousePressEvent(QMouseEvent *event)
     QDialog::mousePressEvent(event);
 }
 
+void QMappingSequenceEdit::insertMappingKeyToTable()
+{
+    QString mappingkeystr = ui->MappingSequenceEdit_MappingKeyLineEdit->text();
+    mappingkeystr = QKeyMapper::getTrimmedMappingKeyString(mappingkeystr);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText after trimmed -> " << mappingkeystr;
+#endif
+}
+
 void QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked(QTableWidgetItem *item)
 {
     if (item == Q_NULLPTR) {
@@ -49,8 +207,12 @@ void QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked(QTableWidgetIte
     Q_UNUSED(columnindex);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[macroTableItemDoubleClicked]" << "Row" << rowindex << "Column" << columnindex << "DoubleClicked";
+    qDebug() << "[mappingSequenceTableItemDoubleClicked]" << "Row" << rowindex << "Column" << columnindex << "DoubleClicked";
 #endif
+
+    if (columnindex != MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN) {
+        return;
+    }
 
     MappingSequenceEditTableWidget *mappingSequenceTable = ui->mappingSequenceEditTable;
 
@@ -83,10 +245,10 @@ void QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked(QTableWidgetIte
         mappingSequenceTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
         // load mappingkey data to LineEdit controls
-        QTableWidgetItem *mappingkeyItem = mappingSequenceTable->item(rowindex, MACRO_NAME_COLUMN);
+        QTableWidgetItem *mappingkeyItem = mappingSequenceTable->item(rowindex, MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN);
 
         if (mappingkeyItem) {
-            // ui->macroNameLineEdit->setText(nameItem->text());
+            ui->MappingSequenceEdit_MappingKeyLineEdit->setText(mappingkeyItem->text());
         }
 
         // Restore edit triggers after event processing
@@ -107,82 +269,62 @@ void QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked(QTableWidgetIte
     }
 }
 
-void QMappingSequenceEdit::mappingSequenceTableDragDropMove(int top_row, int bottom_row, int dragged_to)
+void QMappingSequenceEdit::initMappingSequenceEditTable(MappingSequenceEditTableWidget *mappingSequenceEditTable)
 {
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[mappingSequenceTableDragDropMove] DragDrop : Rows" << top_row << ":" << bottom_row << "->" << dragged_to;
-#endif
+    mappingSequenceEditTable->setFocusPolicy(Qt::NoFocus);
+    mappingSequenceEditTable->setColumnCount(MAPPINGSEQUENCEEDIT_TABLE_COLUMN_COUNT);
 
+    mappingSequenceEditTable->horizontalHeader()->setStretchLastSection(true);
+    mappingSequenceEditTable->horizontalHeader()->setHighlightSections(false);
+
+    // macroDataTable->verticalHeader()->setVisible(false);
+    mappingSequenceEditTable->verticalHeader()->setDefaultSectionSize(25);
+    mappingSequenceEditTable->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
+    mappingSequenceEditTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    mappingSequenceEditTable->setSelectionMode(QAbstractItemView::ContiguousSelection);
+    // Enable double-click editing for category column
+    mappingSequenceEditTable->setEditTriggers(QAbstractItemView::DoubleClicked);
+
+    /* Support Drag&Drop for macroDataTable Table */
+    mappingSequenceEditTable->setDragEnabled(true);
+    mappingSequenceEditTable->setDragDropMode(QAbstractItemView::InternalMove);
+
+    mappingSequenceEditTable->setHorizontalHeaderLabels(QStringList() << tr("Split Mapping Sequence"));
+
+    QFont customFont(FONTNAME_ENGLISH, 9);
+    mappingSequenceEditTable->setFont(customFont);
+    mappingSequenceEditTable->horizontalHeader()->setFont(customFont);
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        mappingSequenceEditTable->setStyle(fusionStyle);
+    }
+
+    // Connect signals for this table
+    updateMappingSequenceEditTableConnection(mappingSequenceEditTable);
+}
+
+void QMappingSequenceEdit::initKeyListComboBoxes()
+{
+    updateMappingKeyListComboBox();
+}
+
+void QMappingSequenceEdit::updateMappingSequenceEditTableConnection(MappingSequenceEditTableWidget *mappingSequenceEditTable)
+{
 #if 0
-    MappingSequenceEditTableWidget *mappingSequenceTable = ui->mappingSequenceEditTable;
-
-    int mappingdata_size = macroDataList->size();
-    if (top_row >= 0 && bottom_row < mappingdata_size && dragged_to >= 0 && dragged_to < mappingdata_size
-        && (dragged_to > bottom_row || dragged_to < top_row)) {
-
-        int draged_row_count = bottom_row - top_row + 1;
-        bool isDraggedToBottom = (dragged_to > bottom_row);
-
-        // Get all keys in order
-        QList<QString> keysList = macroDataList->keys();
-
-        // Extract keys to be moved
-        QList<QString> movedKeys;
-        for (int i = top_row; i <= bottom_row; ++i) {
-            movedKeys.append(keysList.at(i));
-        }
-
-        // Remove moved keys from list
-        for (int i = bottom_row; i >= top_row; --i) {
-            keysList.removeAt(i);
-        }
-
-        // Calculate insert position
-        int insertPos;
-        if (isDraggedToBottom) {
-            insertPos = dragged_to - draged_row_count + 1;
-        } else {
-            insertPos = dragged_to;
-        }
-
-        // Insert moved keys at new position
-        for (int i = 0; i < movedKeys.size(); ++i) {
-            keysList.insert(insertPos + i, movedKeys.at(i));
-        }
-
-        // Rebuild the OrderedMap with new order
-        OrderedMap<QString, MappingMacroData> newMacroList;
-        for (const QString &key : std::as_const(keysList)) {
-            newMacroList[key] = macroDataList->value(key);
-        }
-        *macroDataList = newMacroList;
-
+    if (mappingSequenceEditTable != Q_NULLPTR) {
+        QObject::connect(macroDataTable, &QTableWidget::cellChanged,
+                         this, &QMacroListDialog::macroTableCellChanged, Qt::UniqueConnection);
+        QObject::connect(macroDataTable, &QTableWidget::itemSelectionChanged,
+                         this, &QMacroListDialog::macroTableItemSelectionChanged, Qt::UniqueConnection);
+        QObject::connect(macroDataTable, &QTableWidget::itemDoubleClicked,
+                         this, &QMacroListDialog::macroTableItemDoubleClicked, Qt::UniqueConnection);
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[macroListTableDragDropMove] : refreshMacroListTabWidget()";
+        QObject::connect(macroDataTable, &QTableWidget::currentCellChanged,
+                         this, &QMacroListDialog::macroTableCurrentCellChanged, Qt::UniqueConnection);
 #endif
-        refreshMacroListTabWidget(macroDataTable, *macroDataList);
-
-        // Reselect the moved rows
-        QTableWidgetSelectionRange newSelection;
-        if (isDraggedToBottom) {
-            newSelection = QTableWidgetSelectionRange(dragged_to - draged_row_count + 1, 0, dragged_to, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
-        } else {
-            newSelection = QTableWidgetSelectionRange(dragged_to, 0, dragged_to + draged_row_count - 1, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
-        }
-        macroDataTable->clearSelection();
-        macroDataTable->setRangeSelected(newSelection, true);
-
-        // Update current cell based on drag direction for Ctrl/Shift+Click consistency
-        if (isDraggedToBottom) {
-            macroDataTable->setCurrentCell(newSelection.bottomRow(), 0, QItemSelectionModel::NoUpdate);
-        } else {
-            macroDataTable->setCurrentCell(newSelection.topRow(), 0, QItemSelectionModel::NoUpdate);
-        }
-
+    }
+    else {
 #ifdef DEBUG_LOGOUT_ON
-        if (macroDataTable->rowCount() != macroDataList->size()) {
-            qDebug("macroListTableDragDropMove : MacroData sync error!!! DataTableSize(%d), DataListSize(%d)", macroDataTable->rowCount(), macroDataList->size());
-        }
+        qWarning() << "[updateMappingSequenceEditTableConnection]" << "Invalid mappingSequenceEditTable pointer!";
 #endif
     }
 #endif
@@ -191,36 +333,4 @@ void QMappingSequenceEdit::mappingSequenceTableDragDropMove(int top_row, int bot
 void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
 {
     QTableWidget::keyPressEvent(event);
-}
-
-void MappingSequenceEditTableWidget::startDrag(Qt::DropActions supportedActions)
-{
-    QList<QTableWidgetSelectionRange> selectedRanges = this->selectedRanges();
-    if (!selectedRanges.isEmpty()) {
-        QTableWidgetSelectionRange range = selectedRanges.first();
-        m_DraggedTopRow = range.topRow();
-        m_DraggedBottomRow = range.bottomRow();
-    }
-    QTableWidget::startDrag(supportedActions);
-}
-
-void MappingSequenceEditTableWidget::dropEvent(QDropEvent *event)
-{
-    if (event->dropAction() == Qt::MoveAction) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        int droppedRow = rowAt(event->position().toPoint().y());
-#else
-        int droppedRow = rowAt(event->pos().y());
-#endif
-
-        if (droppedRow < 0) {
-            droppedRow = rowCount() - 1;
-        }
-
-        // Emit signal to handle macro list reordering
-        emit qobject_cast<QMappingSequenceEdit*>(this->parentWidget())->mappingSequenceTableDragDropMove_Signal(m_DraggedTopRow, m_DraggedBottomRow, droppedRow);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[MappingSequenceEditTableWidget::dropEvent]" << "Drag from" << m_DraggedTopRow << "to" << m_DraggedBottomRow << "dropped at" << droppedRow;
-#endif
-    }
 }

@@ -3513,13 +3513,49 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
 
 void QItemSetupDialog::on_mappingKey_SequenceEditButton_clicked()
 {
+    QMappingSequenceEdit *mappingSequenceEdit = QKeyMapper::getInstance()->m_MappingSequenceEdit;
 
+    if (mappingSequenceEdit) {
+        /* Maybe need a member function to do confirm and writeback */
+#if 0
+        if (mappingSequenceEdit->isVisible()) {
+            /* Show MessageBox confirm whether join current editing mappingsequence back to lineedit */
+            QString joined_mappingsequence = mappingSequenceEdit->joinCurentMappingSequenceTable();
+            if (MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP == getMappingSequenceEditType()) {
+                ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(joined_mappingsequence);
+            }
+            else {
+                ui->SetupDialog_MappingKeyLineEdit->setText(joined_mappingsequence);
+            }
+            QKeyMapper::getInstance()->closeMappingSequenceEdit();
+        }
+#endif
+
+        QString title = tr("MappingKey") + " : " + tr("Mapping Sequence Edit");
+        mappingSequenceEdit->setTitle(title);
+        mappingSequenceEdit->setMappingSequence(ui->SetupDialog_MappingKeyLineEdit->text());
+        mappingSequenceEdit->setMappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS);
+
+        QKeyMapper::getInstance()->showMappingSequenceEdit();
+    }
 }
 
 
 void QItemSetupDialog::on_mappingKey_KeyUpSequenceEditButton_clicked()
 {
+    QMappingSequenceEdit *mappingSequenceEdit = QKeyMapper::getInstance()->m_MappingSequenceEdit;
 
+    if (mappingSequenceEdit) {
+        /* confirmToWritebackEditingMappingSequence */
+        /* Same as on_mappingKey_SequenceEditButton_clicked */
+
+        QString title = tr("KeyUpMapping") + " : " + tr("Mapping Sequence Edit");
+        mappingSequenceEdit->setTitle(title);
+        mappingSequenceEdit->setMappingSequence(ui->SetupDialog_MappingKey_KeyUpLineEdit->text());
+        mappingSequenceEdit->setMappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP);
+
+        QKeyMapper::getInstance()->showMappingSequenceEdit();
+    }
 }
 
 void QItemSetupDialog::updateMappingInfo_OriginalKeyFirst()

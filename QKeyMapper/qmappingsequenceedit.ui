@@ -104,7 +104,7 @@
     </layout>
    </item>
    <item row="1" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout_content">
+    <layout class="QHBoxLayout" name="horizontalLayout_mappingkey">
      <property name="spacing">
       <number>4</number>
      </property>
@@ -137,7 +137,7 @@
       </widget>
      </item>
      <item>
-      <widget class="KeyStringLineEdit" name="macroContentLineEdit">
+      <widget class="KeyStringLineEdit" name="MappingSequenceEdit_MappingKeyLineEdit">
        <property name="minimumSize">
         <size>
          <width>0</width>
@@ -158,12 +158,12 @@
     </layout>
    </item>
    <item row="2" column="0">
-    <layout class="QHBoxLayout" name="horizontalLayout_addMacro">
+    <layout class="QHBoxLayout" name="horizontalLayout_insertMappingKey">
      <property name="spacing">
       <number>4</number>
      </property>
      <item>
-      <widget class="QWidget" name="othersFrameWidget_2" native="true">
+      <widget class="QWidget" name="othersFrameWidget" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -172,17 +172,17 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>250</width>
+         <width>420</width>
          <height>53</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>460</width>
+         <width>420</width>
          <height>53</height>
         </size>
        </property>
-       <widget class="QPushButton" name="mapList_SelectKeyboardButton_4">
+       <widget class="QPushButton" name="mapList_SelectKeyboardButton">
         <property name="geometry">
          <rect>
           <x>95</x>
@@ -228,7 +228,7 @@
          <bool>false</bool>
         </property>
        </widget>
-       <widget class="QPushButton" name="mapList_SelectFunctionButton_4">
+       <widget class="QPushButton" name="mapList_SelectFunctionButton">
         <property name="geometry">
          <rect>
           <x>185</x>
@@ -268,7 +268,7 @@
          <bool>false</bool>
         </property>
        </widget>
-       <widget class="QPushButton" name="mapList_SelectGamepadButton_4">
+       <widget class="QPushButton" name="mapList_SelectGamepadButton">
         <property name="geometry">
          <rect>
           <x>155</x>
@@ -308,7 +308,7 @@
          <bool>false</bool>
         </property>
        </widget>
-       <widget class="QPushButton" name="mapList_SelectMouseButton_4">
+       <widget class="QPushButton" name="mapList_SelectMouseButton">
         <property name="geometry">
          <rect>
           <x>125</x>
@@ -348,7 +348,7 @@
          <bool>false</bool>
         </property>
        </widget>
-       <widget class="QLabel" name="mapkeyLabel_4">
+       <widget class="QLabel" name="mapkeyLabel">
         <property name="geometry">
          <rect>
           <x>0</x>
@@ -364,7 +364,7 @@
          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
         </property>
        </widget>
-       <widget class="KeyListComboBox" name="MacroList_MappingKeyListComboBox_4">
+       <widget class="KeyListComboBox" name="MappingSequenceEdit_MappingKeyListComboBox">
         <property name="geometry">
          <rect>
           <x>96</x>
@@ -389,10 +389,29 @@
          <enum>Qt::FocusPolicy::ClickFocus</enum>
         </property>
        </widget>
+       <widget class="QCheckBox" name="validateCellCheckBox">
+        <property name="geometry">
+         <rect>
+          <x>280</x>
+          <y>30</y>
+          <width>141</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Validate Cell</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
       </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacer_addMacro">
+      <spacer name="horizontalSpacer_addMappingKey">
        <property name="orientation">
         <enum>Qt::Orientation::Horizontal</enum>
        </property>
@@ -405,7 +424,7 @@
       </spacer>
      </item>
      <item>
-      <widget class="QWidget" name="addMacroFramewidget" native="true">
+      <widget class="QWidget" name="insertMappingKeyFramewidget" native="true">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -424,13 +443,13 @@
          <height>53</height>
         </size>
        </property>
-       <widget class="QPushButton" name="addMacroButton_2">
+       <widget class="QPushButton" name="insertMappingKeyButton">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>10</y>
           <width>120</width>
-          <height>40</height>
+          <height>35</height>
          </rect>
         </property>
         <property name="sizePolicy">
@@ -442,20 +461,20 @@
         <property name="minimumSize">
          <size>
           <width>120</width>
-          <height>40</height>
+          <height>35</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>120</width>
-          <height>40</height>
+          <height>35</height>
          </size>
         </property>
         <property name="focusPolicy">
          <enum>Qt::FocusPolicy::NoFocus</enum>
         </property>
         <property name="text">
-         <string>Add</string>
+         <string>Insert</string>
         </property>
         <property name="autoDefault">
          <bool>false</bool>

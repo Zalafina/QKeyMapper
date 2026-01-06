@@ -43,6 +43,7 @@ namespace QKeyMapperConstants {
     inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 4;
     inline constexpr int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 6;
     inline constexpr int MACROLISTDATA_TABLE_COLUMN_COUNT = 4;
+    inline constexpr int MAPPINGSEQUENCEEDIT_TABLE_COLUMN_COUNT = 1;
 
     inline constexpr int INITIAL_WINDOW_POSITION = -10000;
 
@@ -65,6 +66,11 @@ namespace QKeyMapperConstants {
     inline constexpr int MACRO_CONTENT_COLUMN = 1;
     inline constexpr int MACRO_CATEGORY_COLUMN = 2;
     inline constexpr int MACRO_NOTE_COLUMN = 3;
+
+    inline constexpr int MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN = 0;
+
+    inline constexpr int MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS         = 0;
+    inline constexpr int MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP   = 1;
 
     inline constexpr int CATEGORY_FILTER_ALL_INDEX = 0;
 
@@ -1248,6 +1254,8 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char SETUPDIALOG_MAPKEY_LINEEDIT_NAME[]        = "SetupDialog_MappingKeyLineEdit";
     inline constexpr const char SETUPDIALOG_MAPKEY_KEYUP_LINEEDIT_NAME[]  = "SetupDialog_MappingKey_KeyUpLineEdit";
+
+    inline constexpr const char MAPPINGSEQUENCEEDIT_MAPKEY_LINEEDIT_NAME[] = "MappingSequenceEdit_MappingKeyLineEdit";
 
     inline constexpr const char WINDOWSWITCHKEY_LINEEDIT_NAME[] = "windowswitchkeyLineEdit";
     inline constexpr const char MAPPINGSTARTKEY_LINEEDIT_NAME[] = "mappingStartKeyLineEdit";

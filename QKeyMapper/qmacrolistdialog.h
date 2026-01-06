@@ -40,7 +40,7 @@ public:
         : QTableWidget(parent), m_DraggedTopRow(-1), m_DraggedBottomRow(-1) {}
 
     // Category filtering methods
-    void setCategoryFilter(const QString &category);
+    // void setCategoryFilter(const QString &category);
     void setCategoryFilters(const QSet<QString> &categories);
     void clearCategoryFilter();
     void clearCategoryFilters();

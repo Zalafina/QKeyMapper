@@ -2026,6 +2026,10 @@ void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int
 
 void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList)
 {
+    if (inputKeys.isEmpty()) {
+        return;
+    }
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[sendInputKeys] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
@@ -3769,6 +3773,10 @@ void QKeyMapper_Worker::restoreMousePosition(int sendmappingkeymethod)
 
 void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList)
 {
+    if (inputKeys.isEmpty()) {
+        return;
+    }
+
     bool skip_emitsignal = false;
     SendInputTaskController *controller = Q_NULLPTR;
     QString original_key = original_key_unchanged;
@@ -16825,6 +16833,10 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
         if (currentPos > tempMappingKey.length()) {
             break;
         }
+    }
+
+    if (splitted_mappingkeys.size() == 1 && splitted_mappingkeys.constFirst().isEmpty()) {
+        return QStringList();
     }
 
     return splitted_mappingkeys;

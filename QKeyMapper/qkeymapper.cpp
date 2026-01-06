@@ -593,6 +593,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
     m_MacroListDialog = new QMacroListDialog(this);
+    m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(QString());
@@ -4734,6 +4735,43 @@ QString QKeyMapper::getOriginalKeyStringWithoutSuffix(const QString &originalkey
     }
 
     return orikey_without_suffix;
+}
+
+QString QKeyMapper::getTrimmedMappingKeyString(const QString &mappingkeystr)
+{
+    if (mappingkeystr.isEmpty()) {
+        return QString();
+    }
+
+    static QRegularExpression simplified_regex(R"([\r\n]+)");
+    static QRegularExpression whitespace_reg(R"(\s+)");
+    static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
+    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
+    static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
+    static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
+    static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
+    static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
+
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex, macro_regex);
+    QString tempMappingKey = extractResult.first;
+    QStringList preservedParts = extractResult.second;
+
+    tempMappingKey.replace(simplified_regex, " ");
+    // Remove whitespace from the temporary string (excluding Run and SendText content)
+    tempMappingKey.remove(whitespace_reg);
+
+    // Restore all preserved parts
+    for (int i = 0; i < preservedParts.size(); ++i) {
+        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
+        tempMappingKey.replace(placeholder, preservedParts[i]);
+    }
+
+    if (tempMappingKey.isEmpty()) {
+        return QString();
+    }
+
+    return tempMappingKey;
 }
 
 namespace {
@@ -17237,6 +17275,28 @@ void QKeyMapper::closeMacroListDialog()
     }
 }
 
+void QKeyMapper::showMappingSequenceEdit()
+{
+    if (Q_NULLPTR == m_MappingSequenceEdit) {
+        return;
+    }
+
+    if (!m_MappingSequenceEdit->isVisible()) {
+        m_MappingSequenceEdit->show();
+    }
+}
+
+void QKeyMapper::closeMappingSequenceEdit()
+{
+    if (Q_NULLPTR == m_MappingSequenceEdit) {
+        return;
+    }
+
+    if (m_MappingSequenceEdit->isVisible()) {
+        m_MappingSequenceEdit->close();
+    }
+}
+
 void QKeyMapper::showItemSetupDialog(int tabindex, int row)
 {
     if (Q_NULLPTR == m_ItemSetupDialog) {
@@ -21037,6 +21097,10 @@ void QKeyMapper::updateMappingKeyListComboBox()
     if (m_MacroListDialog != Q_NULLPTR) {
         m_MacroListDialog->updateMappingKeyListComboBox();
     }
+
+    if (m_MappingSequenceEdit != Q_NULLPTR) {
+        m_MappingSequenceEdit->updateMappingKeyListComboBox();
+    }
 }
 
 void QKeyMapper::setKeyMappingTabWidgetCurrentIndex(int index)
@@ -21997,6 +22061,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_MacroListDialog != Q_NULLPTR) {
         m_MacroListDialog->setUILanguage(languageindex);
+    }
+
+    if (m_MappingSequenceEdit != Q_NULLPTR) {
+        m_MappingSequenceEdit->setUILanguage(languageindex);
     }
 
     if (m_TableSetupDialog != Q_NULLPTR) {
@@ -27652,6 +27720,7 @@ void KeyMappingDataTableWidget::dragMoveEvent(QDragMoveEvent *event)
     }
 }
 
+#if 0
 // Category filtering methods implementation
 void KeyMappingDataTableWidget::setCategoryFilter(const QString &category)
 {
@@ -27666,6 +27735,7 @@ void KeyMappingDataTableWidget::setCategoryFilter(const QString &category)
     }
     updateRowVisibility();
 }
+#endif
 
 void KeyMappingDataTableWidget::setCategoryFilters(const QSet<QString> &categories)
 {
