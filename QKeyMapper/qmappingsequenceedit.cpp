@@ -336,6 +336,11 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
     QTableWidget::keyPressEvent(event);
 }
 
+void QMappingSequenceEdit::on_insertMappingKeyButton_clicked()
+{
+    insertMappingKeyToTable();
+}
+
 void QMappingSequenceEdit::on_confirmButton_clicked()
 {
     QString joined_mappingsequence = joinCurentMappingSequenceTable();

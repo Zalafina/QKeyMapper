@@ -1255,7 +1255,7 @@ void QMacroListDialog::addMacroToList()
         return;
     }
 
-    ValidationResult result = QKeyMapper::validateMappingMacroString(macro_str);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(macro_str);
 
     if (!result.isValid) {
         popupMessageColor = FAILURE_COLOR;
@@ -2055,7 +2055,7 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
         QString newMacroContent = macroContentItem->text();
         QString macroContent = macroDataList->value(macroName).MappingMacro;
         if (newMacroContent != macroContent) {
-            ValidationResult result = QKeyMapper::validateMappingMacroString(newMacroContent);
+            ValidationResult result = QKeyMapper::validateMappingKeyString(newMacroContent);
             if (!result.isValid) {
                 QString popupMessage;
                 QString popupMessageColor;

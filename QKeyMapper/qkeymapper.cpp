@@ -4605,40 +4605,16 @@ ValidationResult QKeyMapper::validateUnlockOriginalKeyString(const QString &orig
     return result;
 }
 
-ValidationResult QKeyMapper::validateMappingMacroString(QString &mappingMacro)
+ValidationResult QKeyMapper::validateMappingKeyString(QString &mappingkeystr)
 {
-    static QRegularExpression simplified_regex(R"([\r\n]+)");
-    static QRegularExpression whitespace_reg(R"(\s+)");
-    static QRegularExpression sendtext_regex(REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
-    static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
-    static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
-    static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
-    static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
-    static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
-
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
-    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingMacro, sendtext_regex, run_regex, switchtab_regex, unlock_regex, QRegularExpression(), repeat_regex, macro_regex);
-    QString tempMappingKey = extractResult.first;
-    QStringList preservedParts = extractResult.second;
-
-    tempMappingKey.replace(simplified_regex, " ");
-    // Remove whitespace from the temporary string (excluding Run and SendText content)
-    tempMappingKey.remove(whitespace_reg);
-
-    // Restore all preserved parts
-    for (int i = 0; i < preservedParts.size(); ++i) {
-        QString placeholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(i);
-        tempMappingKey.replace(placeholder, preservedParts[i]);
-    }
-
-    mappingMacro = tempMappingKey;
+    mappingkeystr = QKeyMapper::getTrimmedMappingKeyString(mappingkeystr);
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText after preserving Run(...) and SendText(...) and removing whitespace -> " << mappingMacro;
+    qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText after trimmed -> " << mappingkeystr;
 #endif
 
-    QStringList mappingKeySeqList = splitMappingKeyString(mappingMacro, SPLIT_WITH_NEXT);
-    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingMacro, mappingKeySeqList, INITIAL_ROW_INDEX);
+    QStringList mappingKeySeqList = splitMappingKeyString(mappingkeystr, SPLIT_WITH_NEXT);
+    ValidationResult result = QKeyMapper::validateMappingKeyString(mappingkeystr, mappingKeySeqList, INITIAL_ROW_INDEX);
     return result;
 }
 

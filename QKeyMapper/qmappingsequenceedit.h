@@ -15,11 +15,18 @@ class MappingSequenceEditTableWidget : public QTableWidget
 
 public:
     explicit MappingSequenceEditTableWidget(QWidget *parent = nullptr)
-        : QTableWidget(parent) {}
+        : QTableWidget(parent), m_DraggedTopRow(-1), m_DraggedBottomRow(-1) {}
 
 protected:
     // Override keyPressEvent to handle Esc key press for closing dialog
     void keyPressEvent(QKeyEvent *event) override;
+    // Drag and drop support for row reordering
+    // void startDrag(Qt::DropActions supportedActions) override;
+    // void dropEvent(QDropEvent *event) override;
+
+private:
+    int m_DraggedTopRow;                  // Top row index when dragging multi-selection
+    int m_DraggedBottomRow;               // Bottom row index when dragging multi-selection
 };
 
 class QMappingSequenceEdit : public QDialog
@@ -60,6 +67,8 @@ private slots:
 
     // Slot for handling mapping sequence table item double click
     void mappingSequenceTableItemDoubleClicked(QTableWidgetItem *item);
+
+    void on_insertMappingKeyButton_clicked();
 
     void on_confirmButton_clicked();
 

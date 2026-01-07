@@ -899,7 +899,7 @@ public:
     static ValidationResult validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex, const QString &originalkeystr_matched = QString(), int nesting_level = 0);
     static ValidationResult validateSingleMappingKey(const QString &mapkey, int nesting_level = 0);
     static ValidationResult validateUnlockOriginalKeyString(const QString &originalkeystr);
-    static ValidationResult validateMappingMacroString(QString &mappingMacro);
+    static ValidationResult validateMappingKeyString(QString &mappingkeystr);
     static bool checkOriginalkeyStr(const QString &originalkeystr);
     static bool checkMappingkeyStr(QString &mappingkeystr);
     static void collectMappingTableTabHotkeys(void);
