@@ -35,10 +35,10 @@ QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     ui->mapList_SelectFunctionButton->setChecked(true);
 
     QFont customFont(FONTNAME_ENGLISH, 9);
-    ui->mapkeyLabel->setFont(customFont);
+    ui->mappingKeyLabel->setFont(customFont);
+    ui->mapkeyListLabel->setFont(customFont);
     ui->MappingSequenceEdit_MappingKeyLineEdit->setFont(customFont);
     ui->MappingSequenceEdit_MappingKeyListComboBox->setFont(customFont);
-    ui->validateCellCheckBox->setFont(customFont);
     ui->confirmButton->setFont(customFont);
     ui->cancelButton->setFont(customFont);
     ui->mappingSequenceEditTable->setFont(customFont);
@@ -70,6 +70,19 @@ QMappingSequenceEdit::~QMappingSequenceEdit()
 void QMappingSequenceEdit::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
+
+    ui->mappingSequenceEditTable->setHorizontalHeaderLabels(QStringList() << tr("Split Mapping Sequence"));
+    ui->confirmButton->setText(tr(CONFIRMBUTTON_STR));
+    ui->cancelButton->setText(tr(CANCELBUTTON_STR));
+
+    ui->mappingKeyLabel->setText(tr("MappingKey"));
+    ui->mapkeyListLabel->setText(tr("MappingKeyList"));
+    ui->insertMappingKeyButton->setText(tr("Insert"));
+
+    ui->mapList_SelectKeyboardButton->setToolTip(tr("Keyboard Keys"));
+    ui->mapList_SelectMouseButton->setToolTip(tr("Mouse Keys"));
+    ui->mapList_SelectGamepadButton->setToolTip(tr("Gamepad Keys"));
+    ui->mapList_SelectFunctionButton->setToolTip(tr("Function Keys"));
 }
 
 void QMappingSequenceEdit::setTitle(const QString &title)
@@ -108,7 +121,46 @@ void QMappingSequenceEdit::setMappingSequenceEditType(int edit_type)
 
 void QMappingSequenceEdit::refreshMappingSequenceEditTableWidget(MappingSequenceEditTableWidget *mappingSequenceEditTable, const QStringList &mappingSequenceList)
 {
+    if (!mappingSequenceEditTable) {
+        return;
+    }
 
+    QSignalBlocker blocker(mappingSequenceEditTable);
+    mappingSequenceEditTable->clearContents();
+    mappingSequenceEditTable->setRowCount(0);
+
+    if (mappingSequenceList.isEmpty()){
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[refreshMappingSequenceEditTableWidget]" << "Empty mappingSequenceList";
+#endif
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    QString debugmessage = QString("[refreshMappingSequenceEditTableWidget] mappingSequenceList(%1) Start >>>").arg(mappingSequenceList.size());
+    qDebug().nospace().noquote() << debugmessage;
+#endif
+
+    int rowindex = 0;
+    mappingSequenceEditTable->setRowCount(mappingSequenceList.size());
+
+    for (const QString &mappingkeystr : mappingSequenceList) {
+        /* MACRO_CONTENT_COLUMN */
+        QTableWidgetItem *mappingkey_TableItem = new QTableWidgetItem(mappingkeystr);
+        mappingSequenceEditTable->setItem(rowindex, MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN, mappingkey_TableItem);
+
+        rowindex += 1;
+
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[refreshMappingSequenceEditTableWidget] row(%1) -> \"%2\"").arg(rowindex).arg(mappingkeystr);
+        qDebug().nospace().noquote() << debugmessage;
+#endif
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    debugmessage = QString("[refreshMappingSequenceEditTableWidget] mappingSequenceList(%1) End <<<").arg(mappingSequenceList.size());
+    qDebug().nospace().noquote() << debugmessage;
+#endif
 }
 
 void QMappingSequenceEdit::updateMappingKeyListComboBox()
@@ -135,12 +187,14 @@ void QMappingSequenceEdit::updateMappingKeyListComboBox()
 
 QString QMappingSequenceEdit::joinCurentMappingSequenceTable()
 {
-    MappingSequenceEditTableWidget *mappingSequenceTable = ui->mappingSequenceEditTable;
+    QStringList currentMappingSequenceList = m_MappingSequenceList;
+    currentMappingSequenceList.removeAll("");
 
-    QString merged_mappingsequence;
-    /* If MappingSequenceEditTable is not empty, join MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN item strings into one with "SEPARATOR_NEXTARROW" */
+    QString joined_mappingsequence = currentMappingSequenceList.join(SEPARATOR_NEXTARROW);
 
-    return merged_mappingsequence;
+    joined_mappingsequence = QKeyMapper::getTrimmedMappingKeyString(joined_mappingsequence);
+
+    return joined_mappingsequence;
 }
 
 QPushButton *QMappingSequenceEdit::getMapListSelectKeyboardButton() const
@@ -277,6 +331,30 @@ void QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked(QTableWidgetIte
     }
 }
 
+void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
+{
+    QTableWidget::keyPressEvent(event);
+}
+
+void QMappingSequenceEdit::on_confirmButton_clicked()
+{
+    QString joined_mappingsequence = joinCurentMappingSequenceTable();
+
+    if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS) {
+        QItemSetupDialog::getInstance()->updateMappingKeyLineEdit(joined_mappingsequence);
+    }
+    else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP) {
+        QItemSetupDialog::getInstance()->updateMappingKey_KeyUpLineEdit(joined_mappingsequence);
+    }
+
+    close();
+}
+
+void QMappingSequenceEdit::on_cancelButton_clicked()
+{
+    close();
+}
+
 void QMappingSequenceEdit::initMappingSequenceEditTable(MappingSequenceEditTableWidget *mappingSequenceEditTable)
 {
     mappingSequenceEditTable->setFocusPolicy(Qt::NoFocus);
@@ -285,10 +363,9 @@ void QMappingSequenceEdit::initMappingSequenceEditTable(MappingSequenceEditTable
     mappingSequenceEditTable->horizontalHeader()->setStretchLastSection(true);
     mappingSequenceEditTable->horizontalHeader()->setHighlightSections(false);
 
-    // macroDataTable->verticalHeader()->setVisible(false);
     mappingSequenceEditTable->verticalHeader()->setDefaultSectionSize(25);
     mappingSequenceEditTable->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
-    mappingSequenceEditTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    mappingSequenceEditTable->setSelectionBehavior(QAbstractItemView::SelectRows);;
     mappingSequenceEditTable->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Enable double-click editing for category column
     mappingSequenceEditTable->setEditTriggers(QAbstractItemView::DoubleClicked);
@@ -336,9 +413,4 @@ void QMappingSequenceEdit::updateMappingSequenceEditTableConnection(MappingSeque
 #endif
     }
 #endif
-}
-
-void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
-{
-    QTableWidget::keyPressEvent(event);
 }

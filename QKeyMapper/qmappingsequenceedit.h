@@ -61,6 +61,10 @@ private slots:
     // Slot for handling mapping sequence table item double click
     void mappingSequenceTableItemDoubleClicked(QTableWidgetItem *item);
 
+    void on_confirmButton_clicked();
+
+    void on_cancelButton_clicked();
+
 private:
     void initMappingSequenceEditTable(MappingSequenceEditTableWidget *mappingSequenceEditTable);
     void initKeyListComboBoxes(void);

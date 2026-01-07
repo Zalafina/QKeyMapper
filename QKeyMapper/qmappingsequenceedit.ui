@@ -118,13 +118,13 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>91</width>
+         <width>115</width>
          <height>22</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>91</width>
+         <width>115</width>
          <height>22</height>
         </size>
        </property>
@@ -172,20 +172,20 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>470</width>
+         <width>310</width>
          <height>53</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>470</width>
+         <width>310</width>
          <height>53</height>
         </size>
        </property>
        <widget class="QPushButton" name="mapList_SelectKeyboardButton">
         <property name="geometry">
          <rect>
-          <x>95</x>
+          <x>120</x>
           <y>0</y>
           <width>22</width>
           <height>22</height>
@@ -231,7 +231,7 @@
        <widget class="QPushButton" name="mapList_SelectFunctionButton">
         <property name="geometry">
          <rect>
-          <x>185</x>
+          <x>210</x>
           <y>0</y>
           <width>22</width>
           <height>22</height>
@@ -271,7 +271,7 @@
        <widget class="QPushButton" name="mapList_SelectGamepadButton">
         <property name="geometry">
          <rect>
-          <x>155</x>
+          <x>180</x>
           <y>0</y>
           <width>22</width>
           <height>22</height>
@@ -311,7 +311,7 @@
        <widget class="QPushButton" name="mapList_SelectMouseButton">
         <property name="geometry">
          <rect>
-          <x>125</x>
+          <x>150</x>
           <y>0</y>
           <width>22</width>
           <height>22</height>
@@ -348,17 +348,17 @@
          <bool>false</bool>
         </property>
        </widget>
-       <widget class="QLabel" name="mapkeyLabel">
+       <widget class="QLabel" name="mapkeyListLabel">
         <property name="geometry">
          <rect>
-          <x>0</x>
+          <x>-5</x>
           <y>30</y>
-          <width>91</width>
+          <width>121</width>
           <height>22</height>
          </rect>
         </property>
         <property name="text">
-         <string>MapKeys</string>
+         <string>MappingKeyList</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
@@ -367,7 +367,7 @@
        <widget class="KeyListComboBox" name="MappingSequenceEdit_MappingKeyListComboBox">
         <property name="geometry">
          <rect>
-          <x>96</x>
+          <x>120</x>
           <y>30</y>
           <width>181</width>
           <height>22</height>
@@ -387,25 +387,6 @@
         </property>
         <property name="focusPolicy">
          <enum>Qt::FocusPolicy::ClickFocus</enum>
-        </property>
-       </widget>
-       <widget class="QCheckBox" name="validateCellCheckBox">
-        <property name="geometry">
-         <rect>
-          <x>330</x>
-          <y>30</y>
-          <width>141</width>
-          <height>21</height>
-         </rect>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::FocusPolicy::NoFocus</enum>
-        </property>
-        <property name="text">
-         <string>Validate Cell</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
         </property>
        </widget>
       </widget>

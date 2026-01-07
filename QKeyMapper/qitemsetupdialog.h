@@ -35,6 +35,8 @@ public:
     void updateMappingKeyListComboBox(void);
     bool isCrosshairSetupDialogVisible(void);
     void updateKeyRecordLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown);
+    void updateMappingKeyLineEdit(const QString &new_mappingkeystr);
+    void updateMappingKey_KeyUpLineEdit(const QString &new_mappingkeystr);
     void syncConnectOriginalKeySelectButtons(void);
     void syncConnectMappingKeySelectButtons(void);
 
@@ -78,6 +80,7 @@ private:
     void refreshOriginalKeyRelatedUI(void);
     bool refreshMappingKeyRelatedUI(void);
     void refreshAllRelatedUI(void);
+    void reopenMappingSequenceEditConfirm(void);
 
     // Unified update system helper methods
 public:
