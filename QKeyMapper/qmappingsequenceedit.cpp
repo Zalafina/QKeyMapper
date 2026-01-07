@@ -363,10 +363,27 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
         return;
     }
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[MappingSequenceEditTableWidget::keyPressEvent]" << "Key:" << (Qt::Key)event->key() << "Modifiers:" << event->modifiers();
+#endif
+
     switch (event->key()) {
-    case Qt::Key_Escape:
-        dlg->close();
-        return;
+    case Qt::Key_F2: {
+        // Enter edit mode for current item when there is an active highlight selection.
+        // This matches common Windows table behavior.
+        const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+        QTableWidgetItem *cur = currentItem();
+        if (!ranges.isEmpty() && cur) {
+            const int r = cur->row();
+            const int c = cur->column();
+            if (r >= 0 && r < rowCount() && c >= 0 && c < columnCount()) {
+                dlg->reselectionRangeAndScroll(r, r);
+                editItem(cur);
+                return;
+            }
+        }
+        break;
+    }
     case Qt::Key_Up:
         if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
             dlg->selectedMappingKeyItemsMoveToTop();

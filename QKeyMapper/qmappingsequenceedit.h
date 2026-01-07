@@ -116,7 +116,9 @@ private:
     void updateMappingSequenceEditTableConnection(MappingSequenceEditTableWidget *mappingSequenceEditTable);
 
     int getInsertRowFromSelectionOrAppend(void) const;
+public:
     void reselectionRangeAndScroll(int top_row, int bottom_row);
+private:
     bool validateOrAllowEmptyMappingKey(QString *trimmedMappingKey, QString *popupMessage) const;
     void emitValidationFailurePopup(const QString &popupMessage) const;
 
