@@ -364,8 +364,13 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[MappingSequenceEditTableWidget::keyPressEvent]" << "Key:" << (Qt::Key)event->key() << "Modifiers:" << event->modifiers();
+    qDebug() << "[MappingSequenceEditTableWidget::keyPressEvent]" << "Key:" << (Qt::Key)event->key() << ", Modifiers:" << event->modifiers() << ", State:" << this->state();
 #endif
+
+    if (this->state() == QAbstractItemView::EditingState) {
+        QTableWidget::keyPressEvent(event);
+        return;
+    }
 
     switch (event->key()) {
     case Qt::Key_F2: {
@@ -385,31 +390,29 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
         break;
     }
     case Qt::Key_Up:
-        if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
-            dlg->selectedMappingKeyItemsMoveToTop();
-        }
-        else if (event->modifiers() & Qt::ControlModifier) {
-            dlg->selectedMappingKeyItemsMoveUp();
-        }
-        else if (event->modifiers() & Qt::ShiftModifier) {
-            dlg->highlightSelectExtendUp();
+        if (event->modifiers() & Qt::ControlModifier) {
+            if ((event->modifiers() & Qt::ShiftModifier)) {
+                dlg->selectedMappingKeyItemsMoveToTop();
+            }
+            else {
+                dlg->selectedMappingKeyItemsMoveUp();
+            }
         }
         else {
-            dlg->highlightSelectUp();
+            QTableWidget::keyPressEvent(event);
         }
         return;
     case Qt::Key_Down:
-        if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
-            dlg->selectedMappingKeyItemsMoveToBottom();
-        }
-        else if (event->modifiers() & Qt::ControlModifier) {
-            dlg->selectedMappingKeyItemsMoveDown();
-        }
-        else if (event->modifiers() & Qt::ShiftModifier) {
-            dlg->highlightSelectExtendDown();
+        if (event->modifiers() & Qt::ControlModifier) {
+            if ((event->modifiers() & Qt::ShiftModifier)) {
+                dlg->selectedMappingKeyItemsMoveToBottom();
+            }
+            else {
+                dlg->selectedMappingKeyItemsMoveDown();
+            }
         }
         else {
-            dlg->highlightSelectDown();
+            QTableWidget::keyPressEvent(event);
         }
         return;
     case Qt::Key_Delete:
