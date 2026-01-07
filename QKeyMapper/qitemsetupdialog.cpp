@@ -430,6 +430,13 @@ void QItemSetupDialog::syncConnectMappingKeySelectButtons()
     QPushButton* macroMapSelectGamepadButton    = QMacroListDialog::getInstance()->getMapListSelectGamepadButton();
     QPushButton* macroMapSelectFunctionButton   = QMacroListDialog::getInstance()->getMapListSelectFunctionButton();
 
+    /* MappingKeys List Category Buttons - QMappingSequenceEdit Window (optional) */
+    QMappingSequenceEdit *mappingSequenceEdit = QMappingSequenceEdit::getInstance();
+    QPushButton* seqMapSelectKeyboardButton = mappingSequenceEdit ? mappingSequenceEdit->getMapListSelectKeyboardButton() : Q_NULLPTR;
+    QPushButton* seqMapSelectMouseButton    = mappingSequenceEdit ? mappingSequenceEdit->getMapListSelectMouseButton() : Q_NULLPTR;
+    QPushButton* seqMapSelectGamepadButton  = mappingSequenceEdit ? mappingSequenceEdit->getMapListSelectGamepadButton() : Q_NULLPTR;
+    QPushButton* seqMapSelectFunctionButton = mappingSequenceEdit ? mappingSequenceEdit->getMapListSelectFunctionButton() : Q_NULLPTR;
+
     /* Sync QKeyMapper Main Window <-> QItemSetupDialog Window */
     QObject::connect(mapSelectKeyboardButton,           &QPushButton::toggled, ui->mapList_SelectKeyboardButton,    &QPushButton::setChecked);
     QObject::connect(ui->mapList_SelectKeyboardButton,  &QPushButton::toggled, mapSelectKeyboardButton,             &QPushButton::setChecked);
@@ -459,6 +466,39 @@ void QItemSetupDialog::syncConnectMappingKeySelectButtons()
     QObject::connect(macroMapSelectGamepadButton,           &QPushButton::toggled, ui->mapList_SelectGamepadButton, &QPushButton::setChecked);
     QObject::connect(ui->mapList_SelectFunctionButton,      &QPushButton::toggled, macroMapSelectFunctionButton,    &QPushButton::setChecked);
     QObject::connect(macroMapSelectFunctionButton,          &QPushButton::toggled, ui->mapList_SelectFunctionButton,&QPushButton::setChecked);
+
+    // Sync with QMappingSequenceEdit if it exists. Use UniqueConnection because this function can be called multiple times.
+    if (seqMapSelectKeyboardButton && seqMapSelectMouseButton && seqMapSelectGamepadButton && seqMapSelectFunctionButton) {
+        /* Sync QKeyMapper Main Window <-> QMappingSequenceEdit Window */
+        QObject::connect(mapSelectKeyboardButton,        &QPushButton::toggled, seqMapSelectKeyboardButton, &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectKeyboardButton,     &QPushButton::toggled, mapSelectKeyboardButton,    &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(mapSelectMouseButton,           &QPushButton::toggled, seqMapSelectMouseButton,    &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectMouseButton,        &QPushButton::toggled, mapSelectMouseButton,       &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(mapSelectGamepadButton,         &QPushButton::toggled, seqMapSelectGamepadButton,  &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectGamepadButton,      &QPushButton::toggled, mapSelectGamepadButton,     &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(mapSelectFunctionButton,        &QPushButton::toggled, seqMapSelectFunctionButton, &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectFunctionButton,     &QPushButton::toggled, mapSelectFunctionButton,    &QPushButton::setChecked, Qt::UniqueConnection);
+
+        /* Sync QItemSetupDialog Window <-> QMappingSequenceEdit Window */
+        QObject::connect(ui->mapList_SelectKeyboardButton,   &QPushButton::toggled, seqMapSelectKeyboardButton, &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectKeyboardButton,         &QPushButton::toggled, ui->mapList_SelectKeyboardButton, &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(ui->mapList_SelectMouseButton,      &QPushButton::toggled, seqMapSelectMouseButton,    &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectMouseButton,            &QPushButton::toggled, ui->mapList_SelectMouseButton,   &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(ui->mapList_SelectGamepadButton,    &QPushButton::toggled, seqMapSelectGamepadButton,  &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectGamepadButton,          &QPushButton::toggled, ui->mapList_SelectGamepadButton, &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(ui->mapList_SelectFunctionButton,   &QPushButton::toggled, seqMapSelectFunctionButton, &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectFunctionButton,         &QPushButton::toggled, ui->mapList_SelectFunctionButton,&QPushButton::setChecked, Qt::UniqueConnection);
+
+        /* Sync QMacroListDialog Window <-> QMappingSequenceEdit Window */
+        QObject::connect(macroMapSelectKeyboardButton,   &QPushButton::toggled, seqMapSelectKeyboardButton, &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectKeyboardButton,     &QPushButton::toggled, macroMapSelectKeyboardButton, &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(macroMapSelectMouseButton,      &QPushButton::toggled, seqMapSelectMouseButton,    &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectMouseButton,        &QPushButton::toggled, macroMapSelectMouseButton,  &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(macroMapSelectGamepadButton,    &QPushButton::toggled, seqMapSelectGamepadButton,  &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectGamepadButton,      &QPushButton::toggled, macroMapSelectGamepadButton,&QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(macroMapSelectFunctionButton,   &QPushButton::toggled, seqMapSelectFunctionButton, &QPushButton::setChecked, Qt::UniqueConnection);
+        QObject::connect(seqMapSelectFunctionButton,     &QPushButton::toggled, macroMapSelectFunctionButton,&QPushButton::setChecked, Qt::UniqueConnection);
+    }
 }
 
 QPushButton *QItemSetupDialog::getOriListSelectKeyboardButton() const

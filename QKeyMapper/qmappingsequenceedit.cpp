@@ -6,6 +6,7 @@
 using namespace QKeyMapperConstants;
 
 QMappingSequenceEdit *QMappingSequenceEdit::m_instance = Q_NULLPTR;
+QStringList QMappingSequenceEdit::s_CopiedMappingSequenceList;
 
 QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     : QDialog(parent)
@@ -57,6 +58,10 @@ QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     QObject::connect(ui->MappingSequenceEdit_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QMappingSequenceEdit::insertMappingKeyToTable);
     QObject::connect(ui->MappingSequenceEdit_MappingKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QMappingSequenceEdit::MapkeyComboBox_currentTextChangedSlot);
 
+    // Connect drag and drop move signal
+    QObject::connect(this, &QMappingSequenceEdit::mappingSequenceTableDragDropMove_Signal,
+                     this, &QMappingSequenceEdit::mappingSequenceTableDragDropMove);
+
     if (QItemSetupDialog::getInstance() != Q_NULLPTR) {
         QItemSetupDialog::getInstance()->syncConnectMappingKeySelectButtons();
     }
@@ -104,10 +109,7 @@ void QMappingSequenceEdit::setMappingSequence(const QString &mappingsequence)
     qDebug() << "[QMappingSequenceEdit::setMappingSequence]" << "Split Mapping Sequence List ->" << mappingKeySeqList;
 #endif
 
-    if (trimmed_mappingsequence.isEmpty() || mappingKeySeqList.isEmpty()) {
-        return;
-    }
-
+    // Always update internal list. Empty input means clearing previous state.
     m_MappingSequenceList = mappingKeySeqList;
 }
 
@@ -225,6 +227,7 @@ QPushButton *QMappingSequenceEdit::getMapListSelectFunctionButton() const
 void QMappingSequenceEdit::showEvent(QShowEvent *event)
 {
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
+    ui->mappingSequenceEditTable->setCurrentCell(-1, -1);
 
     QDialog::showEvent(event);
 }
@@ -256,6 +259,27 @@ void QMappingSequenceEdit::insertMappingKeyToTable()
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[" << __func__ << "] MappingKeyText after trimmed -> " << mappingkeystr;
 #endif
+
+    QString popupMessage;
+    QString trimmed = mappingkeystr;
+    if (!validateOrAllowEmptyMappingKey(&trimmed, &popupMessage)) {
+        emitValidationFailurePopup(popupMessage);
+        return;
+    }
+
+    const int insertRow = getInsertRowFromSelectionOrAppend();
+    if (insertRow < 0) {
+        return;
+    }
+
+    if (insertRow >= m_MappingSequenceList.size()) {
+        m_MappingSequenceList.append(trimmed);
+    } else {
+        m_MappingSequenceList.insert(insertRow, trimmed);
+    }
+
+    refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
+    reselectionRangeAndScroll(insertRow, insertRow);
 }
 
 void QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked(QTableWidgetItem *item)
@@ -333,6 +357,83 @@ void QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked(QTableWidgetIte
 
 void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
 {
+    QMappingSequenceEdit *dlg = QMappingSequenceEdit::getInstance();
+    if (!dlg || QKeyMapper::KEYMAP_IDLE != QKeyMapper::getInstance()->m_KeyMapStatus) {
+        QTableWidget::keyPressEvent(event);
+        return;
+    }
+
+    switch (event->key()) {
+    case Qt::Key_Escape:
+        dlg->close();
+        return;
+    case Qt::Key_Up:
+        if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
+            dlg->selectedMappingKeyItemsMoveToTop();
+        }
+        else if (event->modifiers() & Qt::ControlModifier) {
+            dlg->selectedMappingKeyItemsMoveUp();
+        }
+        else if (event->modifiers() & Qt::ShiftModifier) {
+            dlg->highlightSelectExtendUp();
+        }
+        else {
+            dlg->highlightSelectUp();
+        }
+        return;
+    case Qt::Key_Down:
+        if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
+            dlg->selectedMappingKeyItemsMoveToBottom();
+        }
+        else if (event->modifiers() & Qt::ControlModifier) {
+            dlg->selectedMappingKeyItemsMoveDown();
+        }
+        else if (event->modifiers() & Qt::ShiftModifier) {
+            dlg->highlightSelectExtendDown();
+        }
+        else {
+            dlg->highlightSelectDown();
+        }
+        return;
+    case Qt::Key_Delete:
+        dlg->deleteMappingKeySelectedItems();
+        return;
+    case Qt::Key_Home:
+        if (event->modifiers() & Qt::ControlModifier) {
+            dlg->selectedMappingKeyItemsMoveToTop();
+        }
+        else {
+            dlg->highlightSelectFirst();
+        }
+        return;
+    case Qt::Key_End:
+        if (event->modifiers() & Qt::ControlModifier) {
+            dlg->selectedMappingKeyItemsMoveToBottom();
+        }
+        else {
+            dlg->highlightSelectLast();
+        }
+        return;
+    case Qt::Key_Backspace:
+        dlg->clearHighlightSelection();
+        return;
+    case Qt::Key_Return:
+    case Qt::Key_Enter:
+        dlg->highlightSelectLoadData();
+        return;
+    default:
+        break;
+    }
+
+    if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {
+        dlg->copySelectedMappingKeyToCopiedList();
+        return;
+    }
+    if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
+        dlg->insertMappingKeyFromCopiedList();
+        return;
+    }
+
     QTableWidget::keyPressEvent(event);
 }
 
@@ -362,7 +463,7 @@ void QMappingSequenceEdit::on_cancelButton_clicked()
 
 void QMappingSequenceEdit::initMappingSequenceEditTable(MappingSequenceEditTableWidget *mappingSequenceEditTable)
 {
-    mappingSequenceEditTable->setFocusPolicy(Qt::NoFocus);
+    mappingSequenceEditTable->setFocusPolicy(Qt::ClickFocus);
     mappingSequenceEditTable->setColumnCount(MAPPINGSEQUENCEEDIT_TABLE_COLUMN_COUNT);
 
     mappingSequenceEditTable->horizontalHeader()->setStretchLastSection(true);
@@ -378,6 +479,7 @@ void QMappingSequenceEdit::initMappingSequenceEditTable(MappingSequenceEditTable
     /* Support Drag&Drop for macroDataTable Table */
     mappingSequenceEditTable->setDragEnabled(true);
     mappingSequenceEditTable->setDragDropMode(QAbstractItemView::InternalMove);
+    mappingSequenceEditTable->setDefaultDropAction(Qt::MoveAction);
 
     mappingSequenceEditTable->setHorizontalHeaderLabels(QStringList() << tr("Split Mapping Sequence"));
 
@@ -399,23 +501,708 @@ void QMappingSequenceEdit::initKeyListComboBoxes()
 
 void QMappingSequenceEdit::updateMappingSequenceEditTableConnection(MappingSequenceEditTableWidget *mappingSequenceEditTable)
 {
-#if 0
-    if (mappingSequenceEditTable != Q_NULLPTR) {
-        QObject::connect(macroDataTable, &QTableWidget::cellChanged,
-                         this, &QMacroListDialog::macroTableCellChanged, Qt::UniqueConnection);
-        QObject::connect(macroDataTable, &QTableWidget::itemSelectionChanged,
-                         this, &QMacroListDialog::macroTableItemSelectionChanged, Qt::UniqueConnection);
-        QObject::connect(macroDataTable, &QTableWidget::itemDoubleClicked,
-                         this, &QMacroListDialog::macroTableItemDoubleClicked, Qt::UniqueConnection);
-#ifdef DEBUG_LOGOUT_ON
-        QObject::connect(macroDataTable, &QTableWidget::currentCellChanged,
-                         this, &QMacroListDialog::macroTableCurrentCellChanged, Qt::UniqueConnection);
-#endif
+    if (!mappingSequenceEditTable) {
+        return;
     }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qWarning() << "[updateMappingSequenceEditTableConnection]" << "Invalid mappingSequenceEditTable pointer!";
-#endif
+
+    QObject::connect(mappingSequenceEditTable, &QTableWidget::cellChanged,
+                     this, &QMappingSequenceEdit::mappingSequenceTableCellChanged, Qt::UniqueConnection);
+    QObject::connect(mappingSequenceEditTable, &QTableWidget::itemSelectionChanged,
+                     this, &QMappingSequenceEdit::mappingSequenceTableItemSelectionChanged, Qt::UniqueConnection);
+    QObject::connect(mappingSequenceEditTable, &QTableWidget::itemDoubleClicked,
+                     this, &QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked, Qt::UniqueConnection);
+}
+
+int QMappingSequenceEdit::getInsertRowFromSelectionOrAppend() const
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return -1;
     }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        return m_MappingSequenceList.size();
+    }
+
+    const QTableWidgetSelectionRange range = ranges.first();
+    const int topRow = range.topRow();
+    return qBound(0, topRow, m_MappingSequenceList.size());
+}
+
+void QMappingSequenceEdit::reselectionRangeAndScroll(int top_row, int bottom_row)
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table || table->rowCount() <= 0) {
+        return;
+    }
+
+    top_row = qBound(0, top_row, table->rowCount() - 1);
+    bottom_row = qBound(0, bottom_row, table->rowCount() - 1);
+
+    table->clearSelection();
+    QTableWidgetSelectionRange sel(top_row, 0, bottom_row, MAPPINGSEQUENCEEDIT_TABLE_COLUMN_COUNT - 1);
+    table->setRangeSelected(sel, true);
+
+    // Keep current cell aligned to the selection for Ctrl/Shift+Click consistency.
+    table->setCurrentCell(top_row, 0, QItemSelectionModel::NoUpdate);
+
+    if (QTableWidgetItem *item = table->item(top_row, 0)) {
+        table->scrollToItem(item, QAbstractItemView::EnsureVisible);
+    }
+}
+
+bool QMappingSequenceEdit::validateOrAllowEmptyMappingKey(QString *trimmedMappingKey, QString *popupMessage) const
+{
+    if (!trimmedMappingKey) {
+        return false;
+    }
+
+    *trimmedMappingKey = QKeyMapper::getTrimmedMappingKeyString(*trimmedMappingKey);
+    if (trimmedMappingKey->isEmpty()) {
+        // Empty mapping key is allowed in this editor.
+        return true;
+    }
+
+    ValidationResult result = QKeyMapper::validateMappingKeyString(*trimmedMappingKey);
+    if (!result.isValid) {
+        if (popupMessage) {
+            *popupMessage = tr("MappingKey") + " -> " + result.errorMessage;
+        }
+        return false;
+    }
+
+    return true;
+}
+
+void QMappingSequenceEdit::emitValidationFailurePopup(const QString &popupMessage) const
+{
+    if (popupMessage.isEmpty()) {
+        return;
+    }
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, FAILURE_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+}
+
+void MappingSequenceEditTableWidget::startDrag(Qt::DropActions supportedActions)
+{
+    QList<QTableWidgetSelectionRange> ranges = this->selectedRanges();
+    if (!ranges.isEmpty()) {
+        const QTableWidgetSelectionRange range = ranges.first();
+        m_DraggedTopRow = range.topRow();
+        m_DraggedBottomRow = range.bottomRow();
+    }
+    QTableWidget::startDrag(supportedActions);
+}
+
+void MappingSequenceEditTableWidget::dropEvent(QDropEvent *event)
+{
+    if (event->dropAction() == Qt::MoveAction) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        int droppedRow = rowAt(event->position().toPoint().y());
+#else
+        int droppedRow = rowAt(event->pos().y());
 #endif
+
+        if (droppedRow < 0) {
+            droppedRow = rowCount() - 1;
+        }
+
+        if (QMappingSequenceEdit::getInstance()) {
+            emit QMappingSequenceEdit::getInstance()->mappingSequenceTableDragDropMove_Signal(m_DraggedTopRow, m_DraggedBottomRow, droppedRow);
+        }
+    }
+}
+
+void QMappingSequenceEdit::mappingSequenceTableDragDropMove(int top_row, int bottom_row, int dragged_to)
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+
+    const int rowCount = m_MappingSequenceList.size();
+    if (rowCount <= 0) {
+        return;
+    }
+
+    top_row = qBound(0, top_row, rowCount - 1);
+    bottom_row = qBound(0, bottom_row, rowCount - 1);
+    if (top_row > bottom_row) {
+        qSwap(top_row, bottom_row);
+    }
+
+    dragged_to = qBound(0, dragged_to, rowCount - 1);
+
+    const int draggedCount = bottom_row - top_row + 1;
+    if (draggedCount <= 0) {
+        return;
+    }
+
+    // If dropping inside the dragged range, no-op.
+    if (dragged_to >= top_row && dragged_to <= bottom_row) {
+        return;
+    }
+
+    const bool isDraggedToBottom = (dragged_to > bottom_row);
+
+    QStringList moved;
+    moved.reserve(draggedCount);
+    for (int i = top_row; i <= bottom_row; ++i) {
+        moved.append(m_MappingSequenceList.at(i));
+    }
+
+    // Remove original block
+    for (int i = 0; i < draggedCount; ++i) {
+        m_MappingSequenceList.removeAt(top_row);
+    }
+
+    int insertPos = dragged_to;
+    if (isDraggedToBottom) {
+        // List shrinks above the drop target.
+        insertPos = dragged_to - draggedCount + 1;
+    }
+    insertPos = qBound(0, insertPos, m_MappingSequenceList.size());
+
+    for (int i = 0; i < moved.size(); ++i) {
+        m_MappingSequenceList.insert(insertPos + i, moved.at(i));
+    }
+
+    refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
+
+    const int newTop = insertPos;
+    const int newBottom = insertPos + draggedCount - 1;
+    reselectionRangeAndScroll(newTop, newBottom);
+    table->setCurrentCell(isDraggedToBottom ? newBottom : newTop, 0, QItemSelectionModel::NoUpdate);
+}
+
+void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
+{
+    if (column != MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN) {
+        return;
+    }
+
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+
+    if (row < 0 || row >= table->rowCount()) {
+        return;
+    }
+
+    QTableWidgetItem *item = table->item(row, column);
+    if (!item) {
+        return;
+    }
+
+    QString newText = item->text();
+    QString trimmed = newText;
+
+    QString popupMessage;
+    if (!validateOrAllowEmptyMappingKey(&trimmed, &popupMessage)) {
+        // Roll back UI from the source-of-truth list.
+        const QString oldText = (row >= 0 && row < m_MappingSequenceList.size()) ? m_MappingSequenceList.at(row) : QString();
+        QSignalBlocker blocker(table);
+        item->setText(oldText);
+        item->setToolTip(oldText);
+        emitValidationFailurePopup(popupMessage);
+        return;
+    }
+
+    // Commit into the source-of-truth list (only after validation).
+    if (row >= m_MappingSequenceList.size()) {
+        m_MappingSequenceList.resize(row + 1);
+    }
+    m_MappingSequenceList[row] = trimmed;
+
+    // Normalize UI text (e.g., remove spaces) without re-triggering cellChanged.
+    if (newText != trimmed) {
+        QSignalBlocker blocker(table);
+        item->setText(trimmed);
+        item->setToolTip(trimmed);
+    }
+}
+
+void QMappingSequenceEdit::mappingSequenceTableItemSelectionChanged()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+
+    // Clear current cell to avoid unexpected Ctrl/Shift+Click selection behavior.
+    if (table->selectedRanges().isEmpty()) {
+        if (table->currentRow() != -1 || table->currentColumn() != -1) {
+            table->setCurrentCell(-1, -1);
+        }
+    }
+}
+
+void QMappingSequenceEdit::selectedMappingKeyItemsMoveUp()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        return;
+    }
+    QTableWidgetSelectionRange range = ranges.first();
+    int top = range.topRow();
+    int bottom = range.bottomRow();
+    if (top <= 0 || top >= m_MappingSequenceList.size()) {
+        return;
+    }
+    bottom = qBound(top, bottom, m_MappingSequenceList.size() - 1);
+
+    const int count = bottom - top + 1;
+    QStringList moved;
+    for (int i = 0; i < count; ++i) {
+        moved.append(m_MappingSequenceList.at(top + i));
+    }
+    for (int i = 0; i < count; ++i) {
+        m_MappingSequenceList.removeAt(top);
+    }
+    const int insertPos = top - 1;
+    for (int i = 0; i < moved.size(); ++i) {
+        m_MappingSequenceList.insert(insertPos + i, moved.at(i));
+    }
+
+    refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
+    reselectionRangeAndScroll(insertPos, insertPos + count - 1);
+    table->setCurrentCell(insertPos, 0, QItemSelectionModel::NoUpdate);
+}
+
+void QMappingSequenceEdit::selectedMappingKeyItemsMoveDown()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        return;
+    }
+    QTableWidgetSelectionRange range = ranges.first();
+    int top = range.topRow();
+    int bottom = range.bottomRow();
+    const int last = m_MappingSequenceList.size() - 1;
+    if (last < 0) {
+        return;
+    }
+    top = qBound(0, top, last);
+    bottom = qBound(top, bottom, last);
+    if (bottom >= last) {
+        return;
+    }
+
+    const int count = bottom - top + 1;
+    QStringList moved;
+    for (int i = 0; i < count; ++i) {
+        moved.append(m_MappingSequenceList.at(top + i));
+    }
+    for (int i = 0; i < count; ++i) {
+        m_MappingSequenceList.removeAt(top);
+    }
+    const int insertPos = top + 1;
+    for (int i = 0; i < moved.size(); ++i) {
+        m_MappingSequenceList.insert(insertPos + i, moved.at(i));
+    }
+
+    refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
+    reselectionRangeAndScroll(insertPos, insertPos + count - 1);
+    table->setCurrentCell(insertPos + count - 1, 0, QItemSelectionModel::NoUpdate);
+}
+
+void QMappingSequenceEdit::selectedMappingKeyItemsMoveToTop()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        return;
+    }
+    QTableWidgetSelectionRange range = ranges.first();
+    int top = range.topRow();
+    int bottom = range.bottomRow();
+    const int last = m_MappingSequenceList.size() - 1;
+    if (last < 0) {
+        return;
+    }
+    top = qBound(0, top, last);
+    bottom = qBound(top, bottom, last);
+    if (top == 0) {
+        return;
+    }
+
+    const int count = bottom - top + 1;
+    QStringList moved;
+    for (int i = 0; i < count; ++i) {
+        moved.append(m_MappingSequenceList.at(top + i));
+    }
+    for (int i = 0; i < count; ++i) {
+        m_MappingSequenceList.removeAt(top);
+    }
+    for (int i = 0; i < moved.size(); ++i) {
+        m_MappingSequenceList.insert(i, moved.at(i));
+    }
+
+    refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
+    reselectionRangeAndScroll(0, count - 1);
+    table->setCurrentCell(0, 0, QItemSelectionModel::NoUpdate);
+}
+
+void QMappingSequenceEdit::selectedMappingKeyItemsMoveToBottom()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        return;
+    }
+    QTableWidgetSelectionRange range = ranges.first();
+    int top = range.topRow();
+    int bottom = range.bottomRow();
+    const int last = m_MappingSequenceList.size() - 1;
+    if (last < 0) {
+        return;
+    }
+    top = qBound(0, top, last);
+    bottom = qBound(top, bottom, last);
+    if (bottom == last) {
+        return;
+    }
+
+    const int count = bottom - top + 1;
+    QStringList moved;
+    for (int i = 0; i < count; ++i) {
+        moved.append(m_MappingSequenceList.at(top + i));
+    }
+    for (int i = 0; i < count; ++i) {
+        m_MappingSequenceList.removeAt(top);
+    }
+
+    const int insertPos = m_MappingSequenceList.size();
+    for (const QString &s : std::as_const(moved)) {
+        m_MappingSequenceList.append(s);
+    }
+
+    refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
+    reselectionRangeAndScroll(insertPos, insertPos + count - 1);
+    table->setCurrentCell(insertPos + count - 1, 0, QItemSelectionModel::NoUpdate);
+}
+
+void QMappingSequenceEdit::deleteMappingKeySelectedItems()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        return;
+    }
+
+    QTableWidgetSelectionRange range = ranges.first();
+    int top = range.topRow();
+    int bottom = range.bottomRow();
+    const int last = m_MappingSequenceList.size() - 1;
+    if (last < 0) {
+        return;
+    }
+    top = qBound(0, top, last);
+    bottom = qBound(top, bottom, last);
+
+    const int count = bottom - top + 1;
+    for (int i = 0; i < count; ++i) {
+        m_MappingSequenceList.removeAt(top);
+    }
+
+    refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
+
+    if (m_MappingSequenceList.isEmpty()) {
+        clearHighlightSelection();
+        return;
+    }
+
+    const int newRow = qMin(top, m_MappingSequenceList.size() - 1);
+    reselectionRangeAndScroll(newRow, newRow);
+}
+
+void QMappingSequenceEdit::highlightSelectUp()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table || table->rowCount() <= 0) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        highlightSelectLast();
+        return;
+    }
+    const QTableWidgetSelectionRange range = ranges.first();
+    const int top = range.topRow();
+    if (top <= 0) {
+        return;
+    }
+    const int newRow = top - 1;
+    reselectionRangeAndScroll(newRow, newRow);
+}
+
+void QMappingSequenceEdit::highlightSelectDown()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table || table->rowCount() <= 0) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        highlightSelectFirst();
+        return;
+    }
+    const QTableWidgetSelectionRange range = ranges.first();
+    const int bottom = range.bottomRow();
+    if (bottom >= table->rowCount() - 1) {
+        return;
+    }
+    const int newRow = bottom + 1;
+    reselectionRangeAndScroll(newRow, newRow);
+}
+
+void QMappingSequenceEdit::highlightSelectExtendUp()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table || table->rowCount() <= 0) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        highlightSelectUp();
+        return;
+    }
+
+    QTableWidgetSelectionRange range = ranges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+    int currentRow = table->currentRow();
+    if (currentRow < 0) {
+        currentRow = topRow;
+    }
+
+    const bool currentAtTop = (currentRow <= topRow);
+    const bool currentAtBottom = (currentRow >= bottomRow);
+
+    int newTop = topRow;
+    int newBottom = bottomRow;
+    int newCurrent = currentRow;
+
+    if (currentAtTop || (!currentAtTop && !currentAtBottom)) {
+        if (topRow <= 0) {
+            return;
+        }
+        newTop = topRow - 1;
+        newCurrent = newTop;
+    }
+    else if (currentAtBottom) {
+        if (topRow >= bottomRow) {
+            return;
+        }
+        newBottom = bottomRow - 1;
+        newCurrent = newBottom;
+    }
+
+    table->clearSelection();
+    QTableWidgetSelectionRange sel(newTop, 0, newBottom, MAPPINGSEQUENCEEDIT_TABLE_COLUMN_COUNT - 1);
+    table->setRangeSelected(sel, true);
+    table->setCurrentCell(newCurrent, 0, QItemSelectionModel::NoUpdate);
+    if (QTableWidgetItem *item = table->item(newCurrent, 0)) {
+        table->scrollToItem(item, QAbstractItemView::EnsureVisible);
+    }
+}
+
+void QMappingSequenceEdit::highlightSelectExtendDown()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table || table->rowCount() <= 0) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        highlightSelectDown();
+        return;
+    }
+
+    QTableWidgetSelectionRange range = ranges.first();
+    int topRow = range.topRow();
+    int bottomRow = range.bottomRow();
+    int currentRow = table->currentRow();
+    if (currentRow < 0) {
+        currentRow = bottomRow;
+    }
+
+    const bool currentAtTop = (currentRow <= topRow);
+    const bool currentAtBottom = (currentRow >= bottomRow);
+
+    int newTop = topRow;
+    int newBottom = bottomRow;
+    int newCurrent = currentRow;
+
+    if (currentAtBottom || (!currentAtTop && !currentAtBottom)) {
+        if (bottomRow >= table->rowCount() - 1) {
+            return;
+        }
+        newBottom = bottomRow + 1;
+        newCurrent = newBottom;
+    }
+    else if (currentAtTop) {
+        if (topRow >= bottomRow) {
+            return;
+        }
+        newTop = topRow + 1;
+        newCurrent = newTop;
+    }
+
+    table->clearSelection();
+    QTableWidgetSelectionRange sel(newTop, 0, newBottom, MAPPINGSEQUENCEEDIT_TABLE_COLUMN_COUNT - 1);
+    table->setRangeSelected(sel, true);
+    table->setCurrentCell(newCurrent, 0, QItemSelectionModel::NoUpdate);
+    if (QTableWidgetItem *item = table->item(newCurrent, 0)) {
+        table->scrollToItem(item, QAbstractItemView::EnsureVisible);
+    }
+}
+
+void QMappingSequenceEdit::highlightSelectFirst()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table || table->rowCount() <= 0) {
+        return;
+    }
+    reselectionRangeAndScroll(0, 0);
+}
+
+void QMappingSequenceEdit::highlightSelectLast()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table || table->rowCount() <= 0) {
+        return;
+    }
+    const int last = table->rowCount() - 1;
+    reselectionRangeAndScroll(last, last);
+}
+
+void QMappingSequenceEdit::clearHighlightSelection()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+    table->clearSelection();
+    table->setCurrentCell(-1, -1);
+}
+
+void QMappingSequenceEdit::highlightSelectLoadData()
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        return;
+    }
+
+    QTableWidgetSelectionRange range = ranges.first();
+    if (range.topRow() != range.bottomRow()) {
+        return;
+    }
+
+    const int row = range.topRow();
+    if (row < 0 || row >= table->rowCount()) {
+        return;
+    }
+
+    if (QTableWidgetItem *item = table->item(row, MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN)) {
+        ui->MappingSequenceEdit_MappingKeyLineEdit->setText(item->text());
+    }
+}
+
+int QMappingSequenceEdit::copySelectedMappingKeyToCopiedList()
+{
+    int copiedCount = -1;
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return copiedCount;
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        return copiedCount;
+    }
+
+    QTableWidgetSelectionRange range = ranges.first();
+    int top = range.topRow();
+    int bottom = range.bottomRow();
+    const int last = m_MappingSequenceList.size() - 1;
+    if (last < 0) {
+        return copiedCount;
+    }
+    top = qBound(0, top, last);
+    bottom = qBound(top, bottom, last);
+
+    s_CopiedMappingSequenceList.clear();
+    for (int row = top; row <= bottom; ++row) {
+        s_CopiedMappingSequenceList.append(m_MappingSequenceList.at(row));
+    }
+
+    copiedCount = s_CopiedMappingSequenceList.size();
+    return copiedCount;
+}
+
+int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
+{
+    int insertedCount = 0;
+    if (s_CopiedMappingSequenceList.isEmpty()) {
+        return insertedCount;
+    }
+
+    const int insertRow = getInsertRowFromSelectionOrAppend();
+    if (insertRow < 0) {
+        return insertedCount;
+    }
+
+    if (insertRow >= m_MappingSequenceList.size()) {
+        for (const QString &s : std::as_const(s_CopiedMappingSequenceList)) {
+            m_MappingSequenceList.append(s);
+            insertedCount++;
+        }
+    } else {
+        int pos = insertRow;
+        for (const QString &s : std::as_const(s_CopiedMappingSequenceList)) {
+            m_MappingSequenceList.insert(pos, s);
+            pos++;
+            insertedCount++;
+        }
+    }
+
+    refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
+    if (insertedCount > 0) {
+        reselectionRangeAndScroll(insertRow, insertRow + insertedCount - 1);
+    }
+
+    return insertedCount;
 }

@@ -18,11 +18,11 @@ public:
         : QTableWidget(parent), m_DraggedTopRow(-1), m_DraggedBottomRow(-1) {}
 
 protected:
-    // Override keyPressEvent to handle Esc key press for closing dialog
+    // Override keyPressEvent to handle keyboard shortcuts for the editor.
     void keyPressEvent(QKeyEvent *event) override;
     // Drag and drop support for row reordering
-    // void startDrag(Qt::DropActions supportedActions) override;
-    // void dropEvent(QDropEvent *event) override;
+    void startDrag(Qt::DropActions supportedActions) override;
+    void dropEvent(QDropEvent *event) override;
 
 private:
     int m_DraggedTopRow;                  // Top row index when dragging multi-selection
@@ -57,6 +57,34 @@ public:
 
     int getMappingSequenceEditType(void);
 
+    // Mapping sequence item operations (selected range)
+    void selectedMappingKeyItemsMoveUp(void);
+    void selectedMappingKeyItemsMoveDown(void);
+    void selectedMappingKeyItemsMoveToTop(void);
+    void selectedMappingKeyItemsMoveToBottom(void);
+    void deleteMappingKeySelectedItems(void);
+
+    // Mapping sequence highlight selection operations
+    void highlightSelectUp(void);
+    void highlightSelectDown(void);
+    void highlightSelectExtendUp(void);
+    void highlightSelectExtendDown(void);
+    void highlightSelectFirst(void);
+    void highlightSelectLast(void);
+    void clearHighlightSelection(void);
+    void highlightSelectLoadData(void);
+
+    // Mapping sequence copy/paste operations
+    int copySelectedMappingKeyToCopiedList(void);
+    int insertMappingKeyFromCopiedList(void);
+
+public:
+    static QStringList s_CopiedMappingSequenceList;
+
+signals:
+    // Signal for drag and drop move operation
+    void mappingSequenceTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
+
 protected:
     void showEvent(QShowEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -68,6 +96,14 @@ private slots:
     // Slot for handling mapping sequence table item double click
     void mappingSequenceTableItemDoubleClicked(QTableWidgetItem *item);
 
+    // Slot for handling drag and drop move
+    void mappingSequenceTableDragDropMove(int top_row, int bottom_row, int dragged_to);
+
+    // Slot for handling mapping sequence table cell changed
+    void mappingSequenceTableCellChanged(int row, int column);
+
+    void mappingSequenceTableItemSelectionChanged();
+
     void on_insertMappingKeyButton_clicked();
 
     void on_confirmButton_clicked();
@@ -78,6 +114,11 @@ private:
     void initMappingSequenceEditTable(MappingSequenceEditTableWidget *mappingSequenceEditTable);
     void initKeyListComboBoxes(void);
     void updateMappingSequenceEditTableConnection(MappingSequenceEditTableWidget *mappingSequenceEditTable);
+
+    int getInsertRowFromSelectionOrAppend(void) const;
+    void reselectionRangeAndScroll(int top_row, int bottom_row);
+    bool validateOrAllowEmptyMappingKey(QString *trimmedMappingKey, QString *popupMessage) const;
+    void emitValidationFailurePopup(const QString &popupMessage) const;
 
 private:
     static QMappingSequenceEdit *m_instance;
