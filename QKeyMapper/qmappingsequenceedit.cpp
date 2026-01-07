@@ -450,6 +450,10 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
         dlg->insertMappingKeyFromCopiedList();
         return;
     }
+    if (event->key() == Qt::Key_F && (event->modifiers() & Qt::ControlModifier)) {
+        dlg->pasteMappingKeyFromCopiedList();
+        return;
+    }
 
     QTableWidget::keyPressEvent(event);
 }
@@ -721,7 +725,7 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
         const QString oldText = (row >= 0 && row < m_MappingSequenceList.size()) ? m_MappingSequenceList.at(row) : QString();
         QSignalBlocker blocker(table);
         item->setText(oldText);
-        item->setToolTip(oldText);
+        // item->setToolTip(oldText);
         emitValidationFailurePopup(popupMessage);
         return;
     }
@@ -732,11 +736,16 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
     }
     m_MappingSequenceList[row] = trimmed;
 
+    // Keep tooltip in sync for better UX.
+    // if (item->toolTip() != trimmed) {
+    //     item->setToolTip(trimmed);
+    // }
+
     // Normalize UI text (e.g., remove spaces) without re-triggering cellChanged.
     if (newText != trimmed) {
         QSignalBlocker blocker(table);
         item->setText(trimmed);
-        item->setToolTip(trimmed);
+        // item->setToolTip(trimmed);
     }
 }
 
@@ -1222,4 +1231,60 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
     }
 
     return insertedCount;
+}
+
+int QMappingSequenceEdit::pasteMappingKeyFromCopiedList()
+{
+    int pastedCount = 0;
+
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return pastedCount;
+    }
+
+    if (s_CopiedMappingSequenceList.size() != 1) {
+        // Fallback to Ctrl+V behavior when copied content is not a single row.
+        return insertMappingKeyFromCopiedList();
+    }
+
+    QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (ranges.isEmpty()) {
+        return pastedCount;
+    }
+
+    const QTableWidgetSelectionRange range = ranges.first();
+    const int topRow = range.topRow();
+    const int bottomRow = range.bottomRow();
+    if (topRow != bottomRow) {
+        // Fallback to Ctrl+V behavior when selection is not a single row.
+        return insertMappingKeyFromCopiedList();
+    }
+
+    if (topRow < 0 || topRow >= table->rowCount()) {
+        return pastedCount;
+    }
+
+    QTableWidgetItem *item = table->item(topRow, MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN);
+    if (!item) {
+        item = new QTableWidgetItem();
+        table->setItem(topRow, MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN, item);
+    }
+
+    const QString oldText = (topRow >= 0 && topRow < m_MappingSequenceList.size())
+        ? m_MappingSequenceList.at(topRow)
+        : QString();
+    const QString expected = QKeyMapper::getTrimmedMappingKeyString(s_CopiedMappingSequenceList.first());
+
+    // Trigger validation through the existing cellChanged mechanism.
+    // On failure: cellChanged will roll back from m_MappingSequenceList and show the popup.
+    reselectionRangeAndScroll(topRow, topRow);
+    item->setText(s_CopiedMappingSequenceList.first());
+
+    const QString committed = (topRow >= 0 && topRow < m_MappingSequenceList.size())
+        ? m_MappingSequenceList.at(topRow)
+        : QString();
+    if (committed != oldText && committed == expected) {
+        pastedCount = 1;
+    }
+    return pastedCount;
 }

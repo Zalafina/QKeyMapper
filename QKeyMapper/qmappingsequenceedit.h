@@ -77,6 +77,7 @@ public:
     // Mapping sequence copy/paste operations
     int copySelectedMappingKeyToCopiedList(void);
     int insertMappingKeyFromCopiedList(void);
+    int pasteMappingKeyFromCopiedList(void);
 
 public:
     static QStringList s_CopiedMappingSequenceList;
