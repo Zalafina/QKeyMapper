@@ -470,11 +470,11 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
         return;
     }
     if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
-        dlg->insertMappingKeyFromCopiedList();
+        dlg->pasteMappingKeyFromCopiedList();
         return;
     }
     if (event->key() == Qt::Key_F && (event->modifiers() & Qt::ControlModifier)) {
-        dlg->pasteMappingKeyFromCopiedList();
+        dlg->insertMappingKeyFromCopiedList();
         return;
     }
 
