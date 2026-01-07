@@ -1345,6 +1345,7 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
     /* Support Drag&Drop for macroDataTable Table */
     macroDataTable->setDragEnabled(true);
     macroDataTable->setDragDropMode(QAbstractItemView::InternalMove);
+    macroDataTable->setDefaultDropAction(Qt::MoveAction);
 
     macroDataTable->setHorizontalHeaderLabels(QStringList() << tr("Name")
                                                             << tr("Macro")

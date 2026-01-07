@@ -8374,6 +8374,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     /* Suuport Drag&Drop for KeyMappingData Table */
     KeyMappingTableWidget->setDragEnabled(true);
     KeyMappingTableWidget->setDragDropMode(QAbstractItemView::InternalMove);
+    KeyMappingTableWidget->setDefaultDropAction(Qt::MoveAction);
 
     KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << tr("OriginalKey")
                                                                     << tr("MappingKey")
@@ -8492,6 +8493,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     /* Suuport Drag&Drop for KeyMappingData Table */
     KeyMappingTableWidget->setDragEnabled(true);
     KeyMappingTableWidget->setDragDropMode(QAbstractItemView::InternalMove);
+    KeyMappingTableWidget->setDefaultDropAction(Qt::MoveAction);
 
     KeyMappingTableWidget->setHorizontalHeaderLabels(QStringList()  << tr("OriginalKey")
                                                                     << tr("MappingKey")
