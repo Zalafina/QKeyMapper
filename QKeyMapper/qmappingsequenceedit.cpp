@@ -224,6 +224,26 @@ QPushButton *QMappingSequenceEdit::getMapListSelectFunctionButton() const
     return ui->mapList_SelectFunctionButton;
 }
 
+QString QMappingSequenceEdit::getEditingMappingKeyText()
+{
+    return getInstance()->ui->MappingSequenceEdit_MappingKeyLineEdit->text();
+}
+
+int QMappingSequenceEdit::getEditingMappingKeyCursorPosition()
+{
+    return getInstance()->ui->MappingSequenceEdit_MappingKeyLineEdit->cursorPosition();
+}
+
+void QMappingSequenceEdit::setEditingMappingKeyText(const QString &new_mappingkeytext)
+{
+    return getInstance()->ui->MappingSequenceEdit_MappingKeyLineEdit->setText(new_mappingkeytext);
+}
+
+QString QMappingSequenceEdit::getCurrentMapKeyListText()
+{
+    return getInstance()->ui->MappingSequenceEdit_MappingKeyListComboBox->currentText();
+}
+
 void QMappingSequenceEdit::showEvent(QShowEvent *event)
 {
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);

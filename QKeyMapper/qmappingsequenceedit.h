@@ -57,6 +57,12 @@ public:
 
     int getMappingSequenceEditType(void);
 
+public:
+    static QString getEditingMappingKeyText(void);
+    static int getEditingMappingKeyCursorPosition(void);
+    static void setEditingMappingKeyText(const QString &new_mappingkeytext);
+    static QString getCurrentMapKeyListText(void);
+
     // Mapping sequence item operations (selected range)
     void selectedMappingKeyItemsMoveUp(void);
     void selectedMappingKeyItemsMoveDown(void);
