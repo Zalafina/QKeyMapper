@@ -3613,7 +3613,7 @@ void QItemSetupDialog::on_mappingKey_SequenceEditButton_clicked()
     if (mappingSequenceEdit) {
         reopenMappingSequenceEditConfirm();
 
-        QString title = tr("MappingKey") + " : " + tr("Mapping Sequence Edit");
+        QString title =  tr("Mapping Sequence Edit") + " : " + tr("MappingKey");
         mappingSequenceEdit->setTitle(title);
         mappingSequenceEdit->setMappingSequence(ui->SetupDialog_MappingKeyLineEdit->text());
         mappingSequenceEdit->setMappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS);
@@ -3630,7 +3630,7 @@ void QItemSetupDialog::on_mappingKey_KeyUpSequenceEditButton_clicked()
     if (mappingSequenceEdit) {
         reopenMappingSequenceEditConfirm();
 
-        QString title = tr("KeyUpMapping") + " : " + tr("Mapping Sequence Edit");
+        QString title = tr("Mapping Sequence Edit") + " : " + tr("KeyUpMapping");
         mappingSequenceEdit->setTitle(title);
         mappingSequenceEdit->setMappingSequence(ui->SetupDialog_MappingKey_KeyUpLineEdit->text());
         mappingSequenceEdit->setMappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP);
