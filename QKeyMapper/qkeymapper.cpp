@@ -23862,7 +23862,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
         QString gamepadselect_string = ui->gamepadSelectComboBox->currentText();
         if (currentOriKeyText.startsWith("Joy-")
             && false == gamepadselect_string.isEmpty()) {
-            static QRegularExpression gamepadinfo_regex(R"(^\[(\d+)\] (.*?) \[VID=0x([0-9A-F]+)\]\[PID=0x([0-9A-F]+)\](?:\[ViGEM\])?$)");
+            // Be tolerant to additional info segments (e.g. power level / connection type) inserted by updateGamepadSelectComboBox.
+            // We only need the leading PlayIndex (captured group 1) and require VID/PID to reduce false matches.
+            static QRegularExpression gamepadinfo_regex(R"(^\[(\d+)\].*?\[VID=0x([0-9A-Fa-f]+)\]\[PID=0x([0-9A-Fa-f]+)\].*$)");
             QRegularExpressionMatch gamepadinfo_match = gamepadinfo_regex.match(gamepadselect_string);
             if (gamepadinfo_match.hasMatch()) {
                 QString player_index_string = gamepadinfo_match.captured(1);

@@ -1541,14 +1541,10 @@ int QMappingSequenceEdit::pasteMappingKeyFromCopiedList()
         return pastedCount;
     }
 
-    if (s_CopiedMappingSequenceList.size() != 1) {
-        // Fallback to Ctrl+V behavior when copied content is not a single row.
-        return insertMappingKeyFromCopiedList();
-    }
-
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
-    if (ranges.isEmpty()) {
-        return pastedCount;
+    if (s_CopiedMappingSequenceList.size() != 1 || ranges.isEmpty()) {
+        // Fallback to Ctrl+V behavior when copied content is not a single row or selection is empty.
+        return insertMappingKeyFromCopiedList();
     }
 
     const QTableWidgetSelectionRange range = ranges.first();
