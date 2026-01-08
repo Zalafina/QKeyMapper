@@ -473,6 +473,9 @@ void QMappingSequenceEdit::MapkeyComboBox_currentTextChangedSlot(const QString &
 
 void QMappingSequenceEdit::insertMappingKeyToTable()
 {
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    const bool hadSelectionBeforeInsert = (table && !table->selectedRanges().isEmpty());
+
     QString mappingkeystr = ui->MappingSequenceEdit_MappingKeyLineEdit->text();
     mappingkeystr = QKeyMapper::getTrimmedMappingKeyString(mappingkeystr);
 
@@ -501,7 +504,13 @@ void QMappingSequenceEdit::insertMappingKeyToTable()
     }
 
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
-    reselectionRangeAndScroll(insertRow, insertRow);
+
+    if (hadSelectionBeforeInsert) {
+        reselectionRangeAndScroll(insertRow, insertRow);
+    }
+    else {
+        keepSelectionEmptyAndScrollToRow(insertRow);
+    }
 
     commitHistorySnapshotIfNeeded();
 }
@@ -829,6 +838,23 @@ void QMappingSequenceEdit::reselectionRangeAndScroll(int top_row, int bottom_row
     table->setCurrentCell(top_row, 0, QItemSelectionModel::NoUpdate);
 
     if (QTableWidgetItem *item = table->item(top_row, 0)) {
+        table->scrollToItem(item, QAbstractItemView::EnsureVisible);
+    }
+}
+
+void QMappingSequenceEdit::keepSelectionEmptyAndScrollToRow(int row)
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table || table->rowCount() <= 0) {
+        return;
+    }
+
+    row = qBound(0, row, table->rowCount() - 1);
+
+    // Keep selection empty if it was empty before insert.
+    table->clearSelection();
+    table->setCurrentCell(row, 0, QItemSelectionModel::NoUpdate);
+    if (QTableWidgetItem *item = table->item(row, 0)) {
         table->scrollToItem(item, QAbstractItemView::EnsureVisible);
     }
 }
@@ -1502,6 +1528,9 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
         return insertedCount;
     }
 
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    const bool hadSelectionBeforeInsert = (table && !table->selectedRanges().isEmpty());
+
     const int insertRow = getInsertRowFromSelectionOrAppend();
     if (insertRow < 0) {
         return insertedCount;
@@ -1525,7 +1554,12 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
 
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
     if (insertedCount > 0) {
-        reselectionRangeAndScroll(insertRow, insertRow + insertedCount - 1);
+        if (hadSelectionBeforeInsert) {
+            reselectionRangeAndScroll(insertRow, insertRow + insertedCount - 1);
+        }
+        else {
+            keepSelectionEmptyAndScrollToRow(insertRow);
+        }
         commitHistorySnapshotIfNeeded();
     }
 
