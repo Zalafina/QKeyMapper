@@ -47,7 +47,7 @@ namespace QKeyMapperConstants {
 
     // MappingSequenceEdit undo/redo maximum undo steps (Excel-like).
     // Snapshot-based history stores (maxUndoSteps + 1) states including the base state.
-    inline constexpr int MAPPINGSEQUENCEEDIT_HISTORY_MAX = 10;
+    inline constexpr int MAPPINGSEQUENCEEDIT_HISTORY_MAX = 20;
 
     inline constexpr int INITIAL_WINDOW_POSITION = -10000;
 

@@ -145,6 +145,7 @@ private:
     };
 
     void clearHistory(void);
+    void ensureBaseSnapshotBeforeListChange(void);
     MappingSequenceHistorySnapshot captureHistorySnapshot(void) const;
     void restoreHistorySnapshot(const MappingSequenceHistorySnapshot &snapshot);
     void commitHistorySnapshotIfNeeded(void);

@@ -257,9 +257,6 @@ void QMappingSequenceEdit::showEvent(QShowEvent *event)
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
     ui->mappingSequenceEditTable->setCurrentCell(-1, -1);
 
-    // Establish the base snapshot after UI is refreshed.
-    commitHistorySnapshotIfNeeded();
-
     QDialog::showEvent(event);
 }
 
@@ -274,6 +271,23 @@ void QMappingSequenceEdit::clearHistory()
 {
     m_HistorySnapshots.clear();
     m_HistoryIndex = -1;
+}
+
+void QMappingSequenceEdit::ensureBaseSnapshotBeforeListChange()
+{
+    if (m_IsRestoringHistory) {
+        return;
+    }
+
+    // Only create a base snapshot when the first list change happens.
+    // This keeps Ctrl+Z ineffective right after opening the dialog.
+    if (!m_HistorySnapshots.isEmpty()) {
+        return;
+    }
+
+    const MappingSequenceHistorySnapshot base = captureHistorySnapshot();
+    m_HistorySnapshots.append(base);
+    m_HistoryIndex = 0;
 }
 
 QMappingSequenceEdit::MappingSequenceHistorySnapshot QMappingSequenceEdit::captureHistorySnapshot() const
@@ -438,6 +452,8 @@ void QMappingSequenceEdit::insertMappingKeyToTable()
     if (insertRow < 0) {
         return;
     }
+
+    ensureBaseSnapshotBeforeListChange();
 
     if (insertRow >= m_MappingSequenceList.size()) {
         m_MappingSequenceList.append(trimmed);
@@ -849,6 +865,8 @@ void QMappingSequenceEdit::mappingSequenceTableDragDropMove(int top_row, int bot
         return;
     }
 
+    ensureBaseSnapshotBeforeListChange();
+
     const bool isDraggedToBottom = (dragged_to > bottom_row);
 
     QStringList moved;
@@ -920,6 +938,11 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
     // Commit into the source-of-truth list (only after validation).
     const QString oldCommitted = (row >= 0 && row < m_MappingSequenceList.size()) ? m_MappingSequenceList.at(row) : QString();
     const bool listWillChange = (row >= m_MappingSequenceList.size()) || (oldCommitted != trimmed);
+
+    if (listWillChange) {
+        ensureBaseSnapshotBeforeListChange();
+    }
+
     if (row >= m_MappingSequenceList.size()) {
         m_MappingSequenceList.resize(row + 1);
     }
@@ -974,6 +997,8 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveUp()
     if (top <= 0 || top >= m_MappingSequenceList.size()) {
         return;
     }
+
+    ensureBaseSnapshotBeforeListChange();
     bottom = qBound(top, bottom, m_MappingSequenceList.size() - 1);
 
     const int count = bottom - top + 1;
@@ -1020,6 +1045,8 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveDown()
         return;
     }
 
+    ensureBaseSnapshotBeforeListChange();
+
     const int count = bottom - top + 1;
     QStringList moved;
     for (int i = 0; i < count; ++i) {
@@ -1064,6 +1091,8 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveToTop()
         return;
     }
 
+    ensureBaseSnapshotBeforeListChange();
+
     const int count = bottom - top + 1;
     QStringList moved;
     for (int i = 0; i < count; ++i) {
@@ -1107,6 +1136,8 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveToBottom()
         return;
     }
 
+    ensureBaseSnapshotBeforeListChange();
+
     const int count = bottom - top + 1;
     QStringList moved;
     for (int i = 0; i < count; ++i) {
@@ -1149,6 +1180,8 @@ void QMappingSequenceEdit::deleteMappingKeySelectedItems()
     }
     top = qBound(0, top, last);
     bottom = qBound(top, bottom, last);
+
+    ensureBaseSnapshotBeforeListChange();
 
     const int count = bottom - top + 1;
     for (int i = 0; i < count; ++i) {
@@ -1414,6 +1447,8 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
     if (insertRow < 0) {
         return insertedCount;
     }
+
+    ensureBaseSnapshotBeforeListChange();
 
     if (insertRow >= m_MappingSequenceList.size()) {
         for (const QString &s : std::as_const(s_CopiedMappingSequenceList)) {
