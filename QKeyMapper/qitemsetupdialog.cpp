@@ -1262,6 +1262,8 @@ void QItemSetupDialog::closeEvent(QCloseEvent *event)
 #endif
     }
 
+    QKeyMapper::getInstance()->closeMappingSequenceEdit();
+
     emit QKeyMapper::getInstance()->setupDialogClosed_Signal();
 
     QDialog::closeEvent(event);
