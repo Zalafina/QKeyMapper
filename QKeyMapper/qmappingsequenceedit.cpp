@@ -47,6 +47,9 @@ QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     ui->MappingSequenceEdit_MappingKeyListComboBox->setFont(customFont);
     ui->confirmButton->setFont(customFont);
     ui->cancelButton->setFont(customFont);
+    ui->deleteButton->setFont(customFont);
+    ui->undoButton->setFont(customFont);
+    ui->redoButton->setFont(customFont);
     ui->mappingSequenceEditTable->setFont(customFont);
 
     int scale = QKeyMapper::getInstance()->m_UI_Scale;
@@ -70,6 +73,8 @@ QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     if (QItemSetupDialog::getInstance() != Q_NULLPTR) {
         QItemSetupDialog::getInstance()->syncConnectMappingKeySelectButtons();
     }
+
+    updateUndoRedoButtonsEnabled();
 }
 
 QMappingSequenceEdit::~QMappingSequenceEdit()
@@ -84,6 +89,9 @@ void QMappingSequenceEdit::setUILanguage(int languageindex)
     ui->mappingSequenceEditTable->setHorizontalHeaderLabels(QStringList() << tr("Split Mapping Sequence"));
     ui->confirmButton->setText(tr(CONFIRMBUTTON_STR));
     ui->cancelButton->setText(tr(CANCELBUTTON_STR));
+    ui->deleteButton->setText(tr("Delete"));
+    ui->undoButton->setText(tr("Undo"));
+    ui->redoButton->setText(tr("Redo"));
 
     ui->mappingKeyLabel->setText(tr("MappingKey"));
     ui->mapkeyListLabel->setText(tr("MappingKeyList"));
@@ -104,6 +112,7 @@ void QMappingSequenceEdit::setMappingSequence(const QString &mappingsequence)
 {
     // New content is being loaded. Reset undo/redo history (Excel-like).
     clearHistory();
+    updateUndoRedoButtonsEnabled();
 
     QString trimmed_mappingsequence = QKeyMapper::getTrimmedMappingKeyString(mappingsequence);
 
@@ -257,6 +266,8 @@ void QMappingSequenceEdit::showEvent(QShowEvent *event)
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
     ui->mappingSequenceEditTable->setCurrentCell(-1, -1);
 
+    updateUndoRedoButtonsEnabled();
+
     QDialog::showEvent(event);
 }
 
@@ -264,6 +275,7 @@ void QMappingSequenceEdit::closeEvent(QCloseEvent *event)
 {
     // Dialog instance is reused. Clear history to avoid cross-session undo/redo.
     clearHistory();
+    updateUndoRedoButtonsEnabled();
     QDialog::closeEvent(event);
 }
 
@@ -271,6 +283,23 @@ void QMappingSequenceEdit::clearHistory()
 {
     m_HistorySnapshots.clear();
     m_HistoryIndex = -1;
+}
+
+void QMappingSequenceEdit::updateUndoRedoButtonsEnabled()
+{
+    if (!ui) {
+        return;
+    }
+
+    const bool canUndo = (!m_HistorySnapshots.isEmpty() && m_HistoryIndex > 0);
+    const bool canRedo = (!m_HistorySnapshots.isEmpty() && m_HistoryIndex >= 0 && m_HistoryIndex < (m_HistorySnapshots.size() - 1));
+
+    if (ui->undoButton) {
+        ui->undoButton->setEnabled(canUndo);
+    }
+    if (ui->redoButton) {
+        ui->redoButton->setEnabled(canRedo);
+    }
 }
 
 void QMappingSequenceEdit::ensureBaseSnapshotBeforeListChange()
@@ -288,6 +317,8 @@ void QMappingSequenceEdit::ensureBaseSnapshotBeforeListChange()
     const MappingSequenceHistorySnapshot base = captureHistorySnapshot();
     m_HistorySnapshots.append(base);
     m_HistoryIndex = 0;
+
+    updateUndoRedoButtonsEnabled();
 }
 
 QMappingSequenceEdit::MappingSequenceHistorySnapshot QMappingSequenceEdit::captureHistorySnapshot() const
@@ -354,6 +385,8 @@ void QMappingSequenceEdit::restoreHistorySnapshot(const MappingSequenceHistorySn
     }
 
     m_IsRestoringHistory = false;
+
+    updateUndoRedoButtonsEnabled();
 }
 
 void QMappingSequenceEdit::commitHistorySnapshotIfNeeded()
@@ -384,6 +417,8 @@ void QMappingSequenceEdit::commitHistorySnapshotIfNeeded()
         m_HistorySnapshots.remove(0);
         m_HistoryIndex = qMax(0, m_HistoryIndex - 1);
     }
+
+    updateUndoRedoButtonsEnabled();
 }
 
 void QMappingSequenceEdit::undo()
@@ -396,6 +431,8 @@ void QMappingSequenceEdit::undo()
     }
     m_HistoryIndex--;
     restoreHistorySnapshot(m_HistorySnapshots.at(m_HistoryIndex));
+
+    updateUndoRedoButtonsEnabled();
 }
 
 void QMappingSequenceEdit::redo()
@@ -411,6 +448,8 @@ void QMappingSequenceEdit::redo()
     }
     m_HistoryIndex++;
     restoreHistorySnapshot(m_HistorySnapshots.at(m_HistoryIndex));
+
+    updateUndoRedoButtonsEnabled();
 }
 
 void QMappingSequenceEdit::mousePressEvent(QMouseEvent *event)
@@ -681,6 +720,26 @@ void QMappingSequenceEdit::on_confirmButton_clicked()
 void QMappingSequenceEdit::on_cancelButton_clicked()
 {
     close();
+}
+
+void QMappingSequenceEdit::on_deleteButton_clicked()
+{
+    deleteMappingKeySelectedItems();
+    updateUndoRedoButtonsEnabled();
+}
+
+
+void QMappingSequenceEdit::on_undoButton_clicked()
+{
+    undo();
+    updateUndoRedoButtonsEnabled();
+}
+
+
+void QMappingSequenceEdit::on_redoButton_clicked()
+{
+    redo();
+    updateUndoRedoButtonsEnabled();
 }
 
 void QMappingSequenceEdit::initMappingSequenceEditTable(MappingSequenceEditTableWidget *mappingSequenceEditTable)

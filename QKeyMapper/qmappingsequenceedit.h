@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QTableWidget>
+#include <QVector>
 
 namespace Ui {
 class QMappingSequenceEdit;
@@ -122,10 +123,18 @@ private slots:
 
     void on_cancelButton_clicked();
 
+    void on_deleteButton_clicked();
+
+    void on_undoButton_clicked();
+
+    void on_redoButton_clicked();
+
 private:
     void initMappingSequenceEditTable(MappingSequenceEditTableWidget *mappingSequenceEditTable);
     void initKeyListComboBoxes(void);
     void updateMappingSequenceEditTableConnection(MappingSequenceEditTableWidget *mappingSequenceEditTable);
+
+    void updateUndoRedoButtonsEnabled(void);
 
     int getInsertRowFromSelectionOrAppend(void) const;
 public:
