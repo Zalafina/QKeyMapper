@@ -3,6 +3,8 @@
 #include "qkeymapper.h"
 #include "qkeymapper_constants.h"
 
+#include <QScrollBar>
+
 using namespace QKeyMapperConstants;
 
 QMappingSequenceEdit *QMappingSequenceEdit::m_instance = Q_NULLPTR;
@@ -13,6 +15,9 @@ QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     , ui(new Ui::QMappingSequenceEdit)
     , m_MappingSequenceList()
     , m_MappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS)
+    , m_HistorySnapshots()
+    , m_HistoryIndex(-1)
+    , m_IsRestoringHistory(false)
 {
     m_instance = this;
     ui->setupUi(this);
@@ -97,6 +102,9 @@ void QMappingSequenceEdit::setTitle(const QString &title)
 
 void QMappingSequenceEdit::setMappingSequence(const QString &mappingsequence)
 {
+    // New content is being loaded. Reset undo/redo history (Excel-like).
+    clearHistory();
+
     QString trimmed_mappingsequence = QKeyMapper::getTrimmedMappingKeyString(mappingsequence);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -249,7 +257,146 @@ void QMappingSequenceEdit::showEvent(QShowEvent *event)
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
     ui->mappingSequenceEditTable->setCurrentCell(-1, -1);
 
+    // Establish the base snapshot after UI is refreshed.
+    commitHistorySnapshotIfNeeded();
+
     QDialog::showEvent(event);
+}
+
+void QMappingSequenceEdit::closeEvent(QCloseEvent *event)
+{
+    // Dialog instance is reused. Clear history to avoid cross-session undo/redo.
+    clearHistory();
+    QDialog::closeEvent(event);
+}
+
+void QMappingSequenceEdit::clearHistory()
+{
+    m_HistorySnapshots.clear();
+    m_HistoryIndex = -1;
+}
+
+QMappingSequenceEdit::MappingSequenceHistorySnapshot QMappingSequenceEdit::captureHistorySnapshot() const
+{
+    MappingSequenceHistorySnapshot snapshot;
+    snapshot.mappingSequenceList = m_MappingSequenceList;
+
+    const MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        return snapshot;
+    }
+
+    const QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
+    if (!ranges.isEmpty()) {
+        const QTableWidgetSelectionRange range = ranges.first();
+        snapshot.selectionTopRow = range.topRow();
+        snapshot.selectionBottomRow = range.bottomRow();
+    }
+
+    snapshot.currentRow = table->currentRow();
+    snapshot.currentColumn = table->currentColumn();
+    if (QScrollBar *sb = table->verticalScrollBar()) {
+        snapshot.verticalScrollValue = sb->value();
+    }
+    return snapshot;
+}
+
+void QMappingSequenceEdit::restoreHistorySnapshot(const MappingSequenceHistorySnapshot &snapshot)
+{
+    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
+    if (!table) {
+        m_MappingSequenceList = snapshot.mappingSequenceList;
+        return;
+    }
+
+    m_IsRestoringHistory = true;
+    QSignalBlocker blocker(table);
+
+    m_MappingSequenceList = snapshot.mappingSequenceList;
+    refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
+
+    table->clearSelection();
+
+    const int lastRow = table->rowCount() - 1;
+    if (lastRow >= 0 && snapshot.selectionTopRow >= 0 && snapshot.selectionBottomRow >= 0) {
+        const int top = qBound(0, snapshot.selectionTopRow, lastRow);
+        const int bottom = qBound(top, snapshot.selectionBottomRow, lastRow);
+        QTableWidgetSelectionRange range(top, 0, bottom, 0);
+        table->setRangeSelected(range, true);
+    }
+
+    if (lastRow >= 0 && snapshot.currentRow >= 0) {
+        const int r = qBound(0, snapshot.currentRow, lastRow);
+        const int c = qBound(0, snapshot.currentColumn, table->columnCount() - 1);
+        table->setCurrentCell(r, c, QItemSelectionModel::NoUpdate);
+    }
+    else {
+        table->setCurrentCell(-1, -1);
+    }
+
+    // Restore scroll after selection/current to avoid scrollToItem overriding it.
+    if (QScrollBar *sb = table->verticalScrollBar()) {
+        sb->setValue(snapshot.verticalScrollValue);
+    }
+
+    m_IsRestoringHistory = false;
+}
+
+void QMappingSequenceEdit::commitHistorySnapshotIfNeeded()
+{
+    if (m_IsRestoringHistory) {
+        return;
+    }
+
+    const MappingSequenceHistorySnapshot snapshot = captureHistorySnapshot();
+
+    // Skip empty steps: only record when the list content actually changes.
+    if (m_HistoryIndex >= 0 && m_HistoryIndex < m_HistorySnapshots.size()) {
+        if (m_HistorySnapshots.at(m_HistoryIndex).mappingSequenceList == snapshot.mappingSequenceList) {
+            return;
+        }
+    }
+
+    // If we have undone some steps, discard redo branch when a new change is committed.
+    if (m_HistoryIndex >= 0 && m_HistoryIndex < m_HistorySnapshots.size() - 1) {
+        m_HistorySnapshots.resize(m_HistoryIndex + 1);
+    }
+
+    m_HistorySnapshots.append(snapshot);
+    m_HistoryIndex = m_HistorySnapshots.size() - 1;
+
+    const int maxSnapshots = qMax(2, MAPPINGSEQUENCEEDIT_HISTORY_MAX + 1);
+    while (m_HistorySnapshots.size() > maxSnapshots) {
+        m_HistorySnapshots.remove(0);
+        m_HistoryIndex = qMax(0, m_HistoryIndex - 1);
+    }
+}
+
+void QMappingSequenceEdit::undo()
+{
+    if (m_IsRestoringHistory) {
+        return;
+    }
+    if (m_HistoryIndex <= 0 || m_HistorySnapshots.isEmpty()) {
+        return;
+    }
+    m_HistoryIndex--;
+    restoreHistorySnapshot(m_HistorySnapshots.at(m_HistoryIndex));
+}
+
+void QMappingSequenceEdit::redo()
+{
+    if (m_IsRestoringHistory) {
+        return;
+    }
+    if (m_HistoryIndex < 0 || m_HistorySnapshots.isEmpty()) {
+        return;
+    }
+    if (m_HistoryIndex >= m_HistorySnapshots.size() - 1) {
+        return;
+    }
+    m_HistoryIndex++;
+    restoreHistorySnapshot(m_HistorySnapshots.at(m_HistoryIndex));
 }
 
 void QMappingSequenceEdit::mousePressEvent(QMouseEvent *event)
@@ -300,6 +447,8 @@ void QMappingSequenceEdit::insertMappingKeyToTable()
 
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
     reselectionRangeAndScroll(insertRow, insertRow);
+
+    commitHistorySnapshotIfNeeded();
 }
 
 void QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked(QTableWidgetItem *item)
@@ -390,6 +539,19 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
     if (this->state() == QAbstractItemView::EditingState) {
         QTableWidget::keyPressEvent(event);
         return;
+    }
+
+    // Excel-like undo/redo (table-level only). When editing a cell, Ctrl+Z/Ctrl+Y is handled by the editor.
+    const Qt::KeyboardModifiers mods = event->modifiers();
+    if ((mods & Qt::ControlModifier) && !(mods & (Qt::AltModifier | Qt::MetaModifier))) {
+        if (event->key() == Qt::Key_Z && !(mods & Qt::ShiftModifier)) {
+            dlg->undo();
+            return;
+        }
+        if (event->key() == Qt::Key_Y) {
+            dlg->redo();
+            return;
+        }
     }
 
     switch (event->key()) {
@@ -717,6 +879,8 @@ void QMappingSequenceEdit::mappingSequenceTableDragDropMove(int top_row, int bot
     const int newBottom = insertPos + draggedCount - 1;
     reselectionRangeAndScroll(newTop, newBottom);
     table->setCurrentCell(isDraggedToBottom ? newBottom : newTop, 0, QItemSelectionModel::NoUpdate);
+
+    commitHistorySnapshotIfNeeded();
 }
 
 void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
@@ -754,6 +918,8 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
     }
 
     // Commit into the source-of-truth list (only after validation).
+    const QString oldCommitted = (row >= 0 && row < m_MappingSequenceList.size()) ? m_MappingSequenceList.at(row) : QString();
+    const bool listWillChange = (row >= m_MappingSequenceList.size()) || (oldCommitted != trimmed);
     if (row >= m_MappingSequenceList.size()) {
         m_MappingSequenceList.resize(row + 1);
     }
@@ -769,6 +935,10 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
         QSignalBlocker blocker(table);
         item->setText(trimmed);
         // item->setToolTip(trimmed);
+    }
+
+    if (listWillChange) {
+        commitHistorySnapshotIfNeeded();
     }
 }
 
@@ -822,6 +992,8 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveUp()
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
     reselectionRangeAndScroll(insertPos, insertPos + count - 1);
     table->setCurrentCell(insertPos, 0, QItemSelectionModel::NoUpdate);
+
+    commitHistorySnapshotIfNeeded();
 }
 
 void QMappingSequenceEdit::selectedMappingKeyItemsMoveDown()
@@ -864,6 +1036,8 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveDown()
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
     reselectionRangeAndScroll(insertPos, insertPos + count - 1);
     table->setCurrentCell(insertPos + count - 1, 0, QItemSelectionModel::NoUpdate);
+
+    commitHistorySnapshotIfNeeded();
 }
 
 void QMappingSequenceEdit::selectedMappingKeyItemsMoveToTop()
@@ -905,6 +1079,8 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveToTop()
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
     reselectionRangeAndScroll(0, count - 1);
     table->setCurrentCell(0, 0, QItemSelectionModel::NoUpdate);
+
+    commitHistorySnapshotIfNeeded();
 }
 
 void QMappingSequenceEdit::selectedMappingKeyItemsMoveToBottom()
@@ -948,6 +1124,8 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveToBottom()
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
     reselectionRangeAndScroll(insertPos, insertPos + count - 1);
     table->setCurrentCell(insertPos + count - 1, 0, QItemSelectionModel::NoUpdate);
+
+    commitHistorySnapshotIfNeeded();
 }
 
 void QMappingSequenceEdit::deleteMappingKeySelectedItems()
@@ -981,11 +1159,14 @@ void QMappingSequenceEdit::deleteMappingKeySelectedItems()
 
     if (m_MappingSequenceList.isEmpty()) {
         clearHighlightSelection();
+        commitHistorySnapshotIfNeeded();
         return;
     }
 
     const int newRow = qMin(top, m_MappingSequenceList.size() - 1);
     reselectionRangeAndScroll(newRow, newRow);
+
+    commitHistorySnapshotIfNeeded();
 }
 
 void QMappingSequenceEdit::highlightSelectUp()
@@ -1251,6 +1432,7 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
     if (insertedCount > 0) {
         reselectionRangeAndScroll(insertRow, insertRow + insertedCount - 1);
+        commitHistorySnapshotIfNeeded();
     }
 
     return insertedCount;

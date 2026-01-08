@@ -85,6 +85,10 @@ public:
     int insertMappingKeyFromCopiedList(void);
     int pasteMappingKeyFromCopiedList(void);
 
+    // Mapping sequence undo/redo operations
+    void undo(void);
+    void redo(void);
+
 public:
     static QStringList s_CopiedMappingSequenceList;
 
@@ -94,6 +98,7 @@ signals:
 
 protected:
     void showEvent(QShowEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
 private slots:
@@ -130,10 +135,28 @@ private:
     void emitValidationFailurePopup(const QString &popupMessage) const;
 
 private:
+    struct MappingSequenceHistorySnapshot {
+        QStringList mappingSequenceList;
+        int selectionTopRow = -1;
+        int selectionBottomRow = -1;
+        int currentRow = -1;
+        int currentColumn = -1;
+        int verticalScrollValue = 0;
+    };
+
+    void clearHistory(void);
+    MappingSequenceHistorySnapshot captureHistorySnapshot(void) const;
+    void restoreHistorySnapshot(const MappingSequenceHistorySnapshot &snapshot);
+    void commitHistorySnapshotIfNeeded(void);
+
     static QMappingSequenceEdit *m_instance;
     Ui::QMappingSequenceEdit *ui;
     QStringList m_MappingSequenceList;
     int m_MappingSequenceEditType;
+
+    QVector<MappingSequenceHistorySnapshot> m_HistorySnapshots;
+    int m_HistoryIndex;
+    bool m_IsRestoringHistory;
 };
 
 #endif // QMAPPINGSEQUENCEEDIT_H
