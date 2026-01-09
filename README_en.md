@@ -53,6 +53,30 @@ QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, 
 | Physical Gamepad | ✅           |               | ✅               |                      | ✅ (10)                 |
 | Virtual Gamepad  |              | ✅            | ✅               |                      | ✅ (4)                  |
 
+---------------
+## 💡 Common Terminology List
+| Term | Description |
+|------|-------------|
+| OriginalKey | Keys pressed directly on physical input devices such as keyboard, mouse, or gamepad |
+| MappingKey | Virtual keys you want the game/software to receive |
+| KeyUpMapping | Similar to MappingKey; with SendTiming, allows sending different virtual keys when the OriginalKey is released |
+| Macro | In the "Macro List" window, added under the "Macro" tab. The format is the same as MappingKey content. Each Setting has its own independent macro list. Insert into MappingKey content as `Macro(macro_name)` |
+| Universal Macro | In the "Macro List" window, added under the "Universal Macro" tab. The format is the same as MappingKey content. All Settings share one universal macro list. Insert into MappingKey content as `UniversalMacro(universal_macro_name)` |
+| SendTiming | Specifies when MappingKey is sent (e.g., when OriginalKey is pressed, released, or both). Used with KeyUpMapping |
+| Delay | When sending MappingKey, specifies how long the virtual key stays pressed (milliseconds) |
+| Combination Key | Represents multiple keys pressed simultaneously in OriginalKey or MappingKey, connected with "+" (e.g. A+B) |
+| Mapping Sequence | Represents pressing and releasing keys in order in MappingKey, connected with "»" (e.g. A+B⏱50»NONE⏱200»C⏱50) |
+| Burst | Continuously sends MappingKey while OriginalKey is held; the interval is configurable |
+| Lock | Press OriginalKey once to keep MappingKey pressed; press OriginalKey again to unlock and release. Can be used with Burst |
+| LongPress | Triggers sending MappingKey after holding OriginalKey for a specified duration |
+| DoubleClick | Triggers sending MappingKey when OriginalKey is double-clicked within the specified time interval |
+| GlobalKeyMapping | After mapping starts, a mapping configuration that takes effect globally as long as the system is unlocked |
+| Setting | A complete mapping configuration with a setting name. A Setting can include multiple mapping table tabs and related options |
+| Mapping Item Setup | Per-row settings in a tab mapping table, such as Burst/Lock/SendTiming and other mapping item options |
+| Auto Match Foreground | After mapping starts, monitors the foreground window and automatically switches to the best-matching Setting. For GlobalKeyMapping, if no Setting matches within 2 seconds, it switches back to GlobalKeyMapping |
+| WindowInfo | The configured window process/title/class and the corresponding match methods used by Auto Match Foreground |
+| RegexMatch | An advanced match method using regular expressions for Process/Title/Class in WindowInfo. See "QKeyMapper Regular Expression Matching Rules.pdf" in the software directory for basic rule examples |
+
 
 ---
 ### Download the latest Release version zip package:
@@ -100,6 +124,209 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 
 ---
 ### 🎯 New features list (sorted in descending order of update time)
+* v1.3.8 (Build 20260110)
+    * Added a **Sequence Edit** button after the "Mapped Keys" and "Key Release Mapping" single-line edit boxes in the "Mapping Item Settings" window. You can split the current key sequence into multiple lines for editing. After editing, click "OK" to merge the multi-line content back into a sorted single-line sequence and update the corresponding edit box.
+      ##### Mapping Sequence Editor Instructions
+          Arrow Up / Arrow Down         -> Move the current selection up/down in the table. Use with Shift for multi-select.
+          Home / End                    -> Move the current selection to the top/bottom of the table.
+          Backspace                     -> Clear the current selection.
+          F2                            -> If the current cell exists, enter edit mode for that cell.
+          Ctrl + Arrow Up / Arrow Down  -> Move the selected row(s) up/down within the table.
+          Ctrl + Home / End             -> Move the selected row(s) to the top/bottom of the table. (Same as **Ctrl + Shift + Arrow Up / Arrow Down**)
+          Delete                        -> Delete the selected row(s). (Same as the **Delete** button on the right)
+          Enter                         -> If exactly one row is selected, load that row's content into the "Mapped Keys" single-line edit box below.
+          Insert button below           -> If the "Mapped Keys" content is valid, insert it at the selected position; if nothing is selected, append to the end. (Empty rows are allowed)
+          Ctrl + C                      -> Copy the selected row(s).
+          Ctrl + V                      -> If one row is copied and exactly one row is selected, replace the selected row with the copied content.
+                                       -> If multiple rows are selected, insert the copied single row at the selection.
+                                       -> If nothing is selected, append the copied row to the end.
+                                       -> If multiple rows are copied, insert them at the selection; if nothing is selected, append to the end.
+          Ctrl + F                      -> Similar to Ctrl + V, but always inserts at the selection position; it does not support single-row replace.
+          Ctrl + Z                      -> Undo the last table change. Keeps the latest 20 undo steps; history is cleared when closing the editor. (Same as the **Undo** button on the right)
+          Ctrl + Y                      -> Redo the last undone change. (Same as the **Redo** button on the right)
+    * Added **Mouse-Move_Relative** mapping key to the mapping key list. When adding this mapping key, enter parameters in the form "delta_x,delta_y" in the parameter input box. You can also manually edit a relative mouse movement mapping in the form "Mouse-Move:R(delta_x,delta_y)".
+      ##### Examples of relative mouse movement
+          Mouse-Move:R(6,10)   -> Based on the current cursor position, increase x by 6 and y by 10.
+          Mouse-Move:R(-6,-10) -> Based on the current cursor position, decrease x by 6 and y by 10.
+          Mouse-Move:R(0,8)    -> Based on the current cursor position, keep x unchanged and increase y by 8.
+          Mouse-Move:R(-2,0)   -> Based on the current cursor position, decrease x by 2 and keep y unchanged.
+
+* v1.3.8 (Build 20260102)
+    * Category filter now supports multi-select.
+    * Fixed a crash in specific scenarios when switching mapping table tabs.
+    * Duplicate original keys are allowed in the mapping table, but at any given time only one mapping with the same original key can be enabled.
+      - When enabling a mapping, if another enabled mapping with the same original key exists, the previously enabled duplicate mapping will be disabled.
+      - When adding/copying/importing mappings, if a duplicate mapping already exists in the current table, the newly added/copied/imported duplicate mapping will be automatically set to disabled.
+    * Added utility scripts under the utils directory. For details, see utils/readme.txt:
+      ##### Window size and position adjustment tool (EX)
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="Notepad" w=800 h=600                      (Resize window to 800 x 600)
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="Notepad" x=100 y=200                      (Move top-left corner to x=100, y=200)
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="Notepad" x=100 y=200 w=800 h=600          (Move to x=100,y=200 and resize to 800 x 600)
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="Notepad" w=800 h=600 center               (Center the window using the new size)
+          ahk.exe winmove_ex.ahk process="notepad.exe" title="Notepad" w=800 h=600 center active=true   (Center and activate the window)
+    * In active_window.ahk and winmove_ex.ahk, the title parameter now supports empty-title windows: process="xxx.exe" title=""
+
+* v1.3.8 (Build 20251228)
+    * Added an "Edit Mode" dropdown list in the "General Settings" tab. You can choose to enter mapping table cell edit mode via "Right Double Click" or "Left Double Click". Default is "Right Double Click".
+      - When "Right Double Click" is selected, right-double-click (or Alt + left-double-click) a mapping table cell to enter edit mode. In this mode, left-double-clicking a mapping item opens the "Mapping Item Settings" window.
+      - When "Left Double Click" is selected, left-double-click a mapping table cell to enter edit mode. In this mode, right-double-clicking (or Alt + left-double-click) a mapping item opens the "Mapping Item Settings" window.
+    * In the "Macro List", press **Ctrl+C** to copy the selected macro(s), then press **Ctrl+V** to insert the copied content into the current macro list. If a macro with the same name exists, it will attempt to insert using the name "<macro_name>_copy".
+    * Added row number display on the left side of the mapping table and the macro list.
+    * Added "Send Timing" and "Key Release Mapping" display to the tooltip of the mapping table's **Mapped Keys** column.
+    * Added the **»** symbol (for key sequences) to the **Mapped Keys List** in the "Mapping Item Settings" window.
+    * Fixed an issue where settings display could be incorrect when "Auto Start Mapping" is enabled at startup.
+
+* v1.3.8 (Build 20251222)
+    * In the mapping table, left-double-clicking cells in the "Original Key" and "Mapped Keys" columns now enters edit mode.
+    * Opening the "Mapping Item Settings" window has been changed from left-double-click to the following ways:
+      - Right-double-click a mapping table row to open "Mapping Item Settings".
+      - Hold Alt and left-double-click a mapping table row to open "Mapping Item Settings".
+      - After selecting a row, press Enter to open "Mapping Item Settings".
+    * Added a "Disabled" column to the mapping table. When checked, that mapping will not take effect during mapping.
+    * Added **SendOnMappingStop** to the original key list. When mapping stops for this mapping table, it will execute the mapped key content.
+      **※ You may try using it for mappings that do not send keys, but it is NOT recommended to use `SendOnMappingStop` to send keys, as it can easily cause abnormal issues such as keys not being released.**
+    * Icons shown in the settings export list now support displaying custom icons.
+
+* v1.3.8 (Build 20251216)
+    * Added a "Select Custom Icon" button in the "Window Info" tab, allowing you to set a custom icon for the current setting name. Supports **.ico/.png/.svg**.
+      - After selecting an icon file, if the file exists, it will be loaded with higher priority.
+      - Hold L-Ctrl and click "Select Custom Icon" to clear the custom icon. The program will then try to load the icon from the process executable (set by double-clicking the process list or by manually setting the process path).
+      - After setting a custom icon, click "Save Settings" to persist it; otherwise switching settings will clear the unsaved custom icon path.
+    * Added a "Send Method" dropdown list in the "Mapping Item Settings" window. You can choose among "SendInput", "SendMessage", and "FakerInput". Default is "SendInput"; for most scenarios it is recommended due to best compatibility and stability.
+    * The "FakerInput" send method uses the FakerInput virtual keyboard/mouse driver to send HID keyboard/mouse messages. It is closer to physical keyboard/mouse input than the Windows SendInput API. Due to functional limitations, you generally do not need to use it unless required.
+    * To use "FakerInput", first click "Install FakerInput Driver" in the "Mapping" tab. When the status shows green text "FakerInput Available", the driver installation is successful.
+    * Added a prompt message after successful driver installation.
+    * Removed the "SendMessage Sending" checkbox from the "Mapping Item Settings" window; use the "Send Method" option instead.
+    * Fixed an overlap issue between "Send Timing = On Release" and the long-press mapping trigger.
+    * Added utility scripts under the utils directory. For details, see utils/readme.txt:
+      ##### IME switch tool
+          Available parameters ->
+          ime=0xXXXXXXXX : IME code (HKL value, required, hex format)
+          mode=MODE : Set IME mode (optional)
+          Common modes:
+            mode=off / english : Turn off IME (English mode)
+            mode=on / native : Turn on IME (native language mode)
+          Chinese IME:
+            mode=chinese : Chinese mode (can input Chinese characters)
+          Japanese IME:
+            mode=hiragana : Hiragana mode (ひらがな)
+            mode=katakana : Full-width Katakana mode (カタカナ)
+            mode=katakana_half : Half-width Katakana mode (ｶﾀｶﾅ)
+            mode=alphanumeric : Full-width alphanumeric mode (ＡＢＣ)
+          Example commands ->
+            ahk.exe switch_ime.ahk ime=0x04090409                          (Switch to English keyboard)
+            ahk.exe switch_ime.ahk ime=0x08040804                          (Switch to Chinese Pinyin - keep previous CN/EN mode)
+            ahk.exe switch_ime.ahk ime=0x08040804 mode=chinese             (Chinese Pinyin - Chinese mode)
+            ahk.exe switch_ime.ahk ime=0x08040804 mode=english             (Chinese Pinyin - English mode)
+            ahk.exe switch_ime.ahk ime=0x04110411                          (Switch to Japanese IME - keep previous input mode)
+            ahk.exe switch_ime.ahk ime=0x04110411 mode=hiragana            (Japanese IME - Hiragana)
+            ahk.exe switch_ime.ahk ime=0x04110411 mode=english             (Japanese IME - English mode)
+            ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana            (Japanese IME - full-width Katakana)
+            ahk.exe switch_ime.ahk ime=0x04110411 mode=katakana_half       (Japanese IME - half-width Katakana)
+        Notes:
+        - HKL codes may differ by Windows version and installed language packs
+        - The target IME must be installed; otherwise switching will not work
+        - On Windows 10/11, you can add IMEs via Settings -> Time & language -> Language
+
+* v1.3.8 (Build 20251206)
+    * Added a backup feature to the macro list. You can export the selected macros (multi-row contiguous selection supported) from the current macro list to an INI file.
+      **※ When importing into the macro list, imported items are appended to the end of the list. If duplicate macro names exist, the program will ask whether to overwrite: choosing "Yes" will delete the existing macro(s) with the same name and append all imported macros; choosing "No" will keep existing macros and only import macros with new names.**
+    * Added "Notes" support to the macro list.
+    * Added a "Delete" button to the macro list.
+    * Added a "PasteText Mode" option in the "Mapping Item Settings" window, with two modes: "Shift+Insert" and "Ctrl+V". Default is "Shift+Insert"; in most cases you can keep the default.
+    * Increased the maximum character limit of the mapped keys editor from 32767 to 1,000,000.
+
+* v1.3.8 (Build 20251130)
+    * Added a "Macro List" button in the "Mapping" tab. Open the "Macro List" window to add macros for the current setting, or universal macros usable by all settings.
+      The macro format is the same as mapped key content. Macros added in the "Macro List" can be inserted into mapped keys as `Macro(macro_name)xrepeat_times` and `UniversalMacro(universal_macro_name)xrepeat_times`. If no repeat_times is specified, the macro sends once.
+      The "Macro" tab macros are per-setting; the "Universal Macro" tab macros are shared across all settings.
+      ##### Macro usage examples
+          Macro(MacroA)
+          UniversalMacro(UniversalMacroB)x3
+          A⏱300»Macro(MacroC)x2
+    * Added **PasteText** mapping key to the mapping key list. After selecting PasteText, enter text in the "Parameters" box; when pressing the original key, the program will send the string inside **PasteText(...)** by pasting via clipboard.
+      **※ Clipboard paste can be faster for large text, but some programs may not support clipboard paste, or their paste shortcut is not Ctrl+V, so it may not work.**
+    * Changed "Block-Keyboard" and "Block-Mouse" so they no longer block virtual mapped keys sent by the software.
+    * Fixed that mouse mappings with coordinate points did not support negative coordinates on extended displays.
+    * Fixed an issue where importing would fail when exporting only "General Settings" in setting backup.
+
+* v1.3.8 (Build 20251108)
+    * Added "Block-Keyboard" and "Block-Mouse" mapping keys. When pressed, they disable keyboard or mouse input.
+      **※ If you use Block-Mouse, please remember the mapping stop hotkey (default L-Ctrl+F6) in advance to avoid being unable to stop mapping after the mouse is disabled.**
+      ##### Keyboard/mouse input blocking
+          Block-Keyboard      - Disable all keyboard input except the mapping table and hotkeys
+          Block-Keyboard⌨    - Same as Block-Keyboard, but shows notification prompts when disabling/enabling the keyboard
+          Block-Mouse         - Disable all mouse input except the mapping table and hotkeys
+          Block-Mouse🖱       - Same as Block-Mouse, but shows notification prompts when disabling/enabling the mouse
+    * Added trigger and release threshold settings for gamepad triggers and sticks in "Advanced Mapping Settings" under the "Mapping" tab.
+      **※ Default values (press 50%, release 15%) should work in most cases. Changing them may cause detection failures; do not change unless needed.**
+
+* v1.3.8 (Build 20251102)
+    * Fixed "Vertical Mouse Speed" not taking effect in advanced mapping settings.
+    * Fixed compatibility issues for Ctrl/Alt/Shift/Win combination key mappings.
+
+* v1.3.8 (Build 20251024)
+    * Added utility scripts under the utils directory. For details, see utils/readme.txt (**utils tools are now provided directly as AutoHotkey .ahk scripts**):
+      ##### Window size and position adjustment tool
+          ahk.exe winmove.ahk wintitle="Notepad" w=800 h=600                (Resize window to 800 x 600)
+          ahk.exe winmove.ahk wintitle="Notepad" x=100 y=200                (Move top-left corner to x=100, y=200)
+          ahk.exe winmove.ahk wintitle="Notepad" x=100 y=200 w=800 h=600    (Move to x=100,y=200 and resize to 800 x 600)
+          ahk.exe winmove.ahk wintitle="Notepad" center                     (Center the window on the current screen)
+    * Enhanced SetVolume features
+      ##### 🔊 Playback device volume control
+          SetVolume(35.5)          - Set playback device volume to 35.5%
+          SetVolume(+10)           - Increase by 10%
+          SetVolume(-5.5)          - Decrease by 5.5%
+          SetVolume(Mute)          - Toggle playback device mute
+          SetVolume(MuteOn)        - Mute (no action if already muted)
+          SetVolume(MuteOff)       - Unmute (no action if not muted)
+          SetVolume🔊(...)         - Same as above, with notification prompts
+      ##### 🎤 Recording device volume control
+          SetMicVolume(50.5)       - Set microphone volume to 50.5%
+          SetMicVolume(+10)        - Increase by 10%
+          SetMicVolume(-5.5)       - Decrease by 5.5%
+          SetMicVolume(Mute)       - Toggle microphone mute
+          SetMicVolume(MuteOn)     - Mute microphone
+          SetMicVolume(MuteOff)    - Unmute microphone
+          SetMicVolume🎤(...)      - Same as above, with notification prompts
+    * Added **Invert X-axis** and **Invert Y-axis** checkboxes in the virtual gamepad settings tab for mouse-controlled virtual analog sticks.
+    * When all match conditions are satisfied, the active mouse-click target window is now updated when the foreground window changes.
+
+* v1.3.8 (Build 20251018)
+    * In the "Mapping Item Settings" window, mapped keys editing now supports the syntax `Repeat{mapping_content}xrepeat_times`, where repeat_times ranges from 1 to 99999.
+      ##### Repeat examples
+          Repeat{A⏱50}x5
+          Repeat{B+C}x3
+          A⏱50»Repeat{C+D»E⏱50}x2»F
+    * Mouse mappings that include coordinate points now support extended displays, including: Mouse-Move, Mouse-L/R/M/X1/X2, Mouse-PosSave, Mouse-PosRestore, etc.
+    * Added "vJoy-Touchpad" virtual controller mapping key for the PS4/PS5 touchpad button.
+    * Added utility tools under the utils directory. For details, see utils/readme.txt:
+      ##### 1. Window state configuration tool
+          config_window.exe opacity=XXX     (Change opacity of the window under the mouse cursor or the current foreground window; range 20~255)
+          config_window.exe alwaysontop     (Toggle always-on-top for the window under the mouse cursor or the current foreground window)
+          config_window.exe passthrough     (Toggle mouse-through for the window under the mouse cursor or the current foreground window)
+          Note: If toggling always-on-top or mouse-through does not work, try clicking the taskbar to bring that window to the foreground and then toggle again.
+      ##### 2. Window move tool
+          move_window.exe start  (Start window dragging; the window under the mouse cursor follows the cursor)
+          move_window.exe stop   (Stop window dragging)
+          During dragging, pressing Esc restores the window position before dragging started.
+
+* v1.3.8 (Build 20251012)
+    * Added an "Ignore Rules List" for window monitoring in the "Window Info" tab. You can specify match rules based on process, title, class name, etc. Ignored windows will not appear in the process list, and switching to them will not change the current mapping state.
+    * In "Advanced Mapping Settings" under the "Mapping" tab, added customizable hotkeys for "Show WindowPoint" and "Show ScreenPoint". Default hotkeys are "F8" and "F9".
+    * Added mappings to save and restore the current mouse cursor position: "Mouse-PosSave" and "Mouse-PosRestore".
+      Example: `Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore`
+    * Added random range support for key hold duration, e.g. `A⏱(50~70)` means the hold duration of key A will be a random value between 50ms and 70ms.
+    * Fixed an issue where SetVolume would still change the previous output device volume after switching the current output device.
+    * Added AutoHotkey-based utils tools under the release ZIP package. For details, see utils/readme.txt:
+      - Window activation tool: Run command format: active_window.exe process="notepad.exe" title="New Text Document" launch=true
+      - Mouse cursor position save/restore tool: mouse_position.exe save=XXX, mouse_position.exe restore=XXX (save stores the current cursor position under name XXX; restore restores the saved position for XXX)
+
+* v1.3.8 (Build 20251006)
+    * Added window class name matching in the "Window Info" tab. The default for "Window Class" is ignored; select the match rule from the dropdown when you want to match it.
+    * Improved compatibility for empty window titles and protected processes whose paths cannot be read.
+    * Fixed that holding L-Ctrl while clicking "Add Tab" to duplicate the current tab did not copy the floating window mouse-through toggle hotkey.
+
 * v1.3.8 (Build 20250926)
     * Added "**Regex Match**" as a process and window title matching method. When using this method, the process and window title will be matched based on the regular expression entered in the single-line edit boxes for process and title. After entering a "**Regex Match**" pattern, you can press Enter to validate the regular expression. If invalid, a prompt will display: "Invalid regular expression : ...".
     * Added "**SetVolume🔊**" mapping key to the mapping key list. This mapping key sets the volume of the system’s current playback device and also displays the new volume value via a notification message.
@@ -657,7 +884,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 26. v1.3.6(Build 20231223) -> The "AutoMappingMinimize" button has been changed to a tri-state checkbox. When set to the middle state, the software only minimizes to the tray on startup and does not automatically start key mapping.
 
 ---------------
-## Standard Keyboard and Mouse Key Mapping Table
+## 📜 Standard Keyboard and Mouse Key Mapping Table
 | QKeyMapper Key Name | Original Key | Mapped Key | Description                        |
 |---------------------|--------------|------------|------------------------------------|
 | Mouse-L             |   ✔          |   ✔        | Mouse Left Button                  |
@@ -742,15 +969,29 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 ##### The above covers almost all standard keyboard and mouse keys, but most common keyboards and mice only include a subset.
 
 ---------------
-## Special Mapping Key Table
+## 📜 Special Original Key Table
+| QKeyMapper Original Key Name | Description                                                        |
+|-----------------------------|--------------------------------------------------------------------|
+| SendOnMappingStart          | Execute the mapped key content when mapping starts for this table  |
+| SendOnMappingStop           | Execute the mapped key content when mapping stops for this table   |
+| SendOnSwitchTab             | Execute the mapped key content when switching to this mapping table |
+
+---------------
+## 📜 Special Mapping Key Table
 | QKeyMapper Mapping Key Name | Description                                                        |
 |----------------------------|--------------------------------------------------------------------|
 | ⏱                         | Key delay suffix, add a number to indicate hold duration (ms)      |
 | ↓                          | Key down prefix (must be paired with up mapping, or key won't release) |
 | ↑                          | Key up prefix                                                      |
+| ！                         | Override (post-cover) prefix for mapped keys                        |
+| Repeat                     | Repeat the mapping content inside {} for a specified number of times |
 | BLOCKED                    | Block original key (no response on press)                          |
 | NONE                       | Empty key (used as delay placeholder, etc.)                        |
+| Unlock                     | Unlock the locked state of a specified original key                |
 | SendText                   | Send text string directly                                          |
+| Run                        | Run a specified command (with optional arguments)                  |
+| SwitchTab                  | Switch to a mapping table tab by name                              |
+| SwitchTab💾                | Switch to a mapping table tab by name (and save it)                |
 | KeySequenceBreak           | Interrupt all currently executing key sequences                    |
 | Key2Mouse-Up               | Move mouse pointer up while key is held                            |
 | Key2Mouse-Down             | Move mouse pointer down while key is held                          |
@@ -767,6 +1008,13 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | Mouse-M_ScreenPoint        | Middle click at specified screen coordinate                        |
 | Mouse-X1_ScreenPoint       | Side button 1 click at specified screen coordinate                 |
 | Mouse-X2_ScreenPoint       | Side button 2 click at specified screen coordinate                 |
+| Mouse-Move_ScreenPoint     | Move mouse pointer to specified screen coordinate                  |
+| Mouse-PosSave              | Save current mouse cursor position                                 |
+| Mouse-PosRestore           | Restore mouse cursor position to a previously saved position       |
+| SetVolume                  | Set the current playback device volume                             |
+| SetVolume🔊                | Set the current playback device volume (with notification prompt)  |
+| SetMicVolume               | Set the current microphone device volume                           |
+| SetMicVolume🎤             | Set the current microphone device volume (with notification prompt) |
 | Crosshair-Normal           | Show normal crosshair on screen while key is held                  |
 | Crosshair-TypeA            | Show Type A crosshair on screen while key is held                  |
 | Func-Refresh               | Trigger Windows refresh                                            |
@@ -779,9 +1027,10 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 ##### Keys starting with "Key2Mouse-" control mouse pointer movement in four directions. You can further adjust X and Y axis speed in the mapping settings; higher values move faster.
 ##### WindowPoint mapping keys require using "Left Alt + Mouse Left Button" to pick a coordinate in the selected window.
 ##### ScreenPoint mapping keys require using "Left Ctrl + Mouse Left Button" to pick a coordinate on the screen.
+##### The "！" prefix is a special full-width exclamation mark (not the keyboard '!'). It is used for the "post-cover" behavior: for example, mapping D -> ！A will release A when D is pressed, and when D is released, A will be pressed again automatically if the physical A key is still held.
 
 ---------------
-## Xbox Controller Button Table
+## 🎮 Xbox Controller Button Table
 | Xbox Controller Button | QKeyMapper Original Key Name |
 |-----------------------|------------------------------|
 | Left Stick Up         | Joy-LS-Up                    |
@@ -810,7 +1059,16 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | Start Button          | Joy-Key8(Start)              |
 | Guide Button          | Joy-Key13(Guide)             |
 
-## Special Physical Controller Keys
+## 🎮 Special Physical Controller Buttons
+| Gamepad Physical Button | QKeyMapper Original Key Name |
+|------------------------|------------------------------|
+| PS microphone button / Switch Pro Capture button, etc. | Joy-Misc1 |
+| Back Paddle 1 | Joy-Paddle1 |
+| Back Paddle 2 | Joy-Paddle2 |
+| Back Paddle 3 | Joy-Paddle3 |
+| Back Paddle 4 | Joy-Paddle4 |
+
+## 🎮 Special Physical Controller Keys
 | QKeyMapper Original Key Name | Function                                                                                  |
 |-----------------------------|-------------------------------------------------------------------------------------------|
 | Joy-LS2Mouse                | Move mouse pointer with left stick (light push = slow, hard push = fast)                  |
@@ -825,8 +1083,13 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | Gyro2Mouse-Hold            | Suppress gyro mouse pointer movement while held, allow movement when released              |
 | Gyro2Mouse-Move            | Allow gyro mouse pointer movement while held, suppress movement when released              |
 
+## 🎮 Extended Controller Keys
+| QKeyMapper Original Key Name | Function |
+|-----------------------------|----------|
+| Joy-Key14~30 | Reserved for extended gamepad button detection. Usually not used, but some special controllers may support more buttons |
+
 ---------------
-## PS4-Dualshock Controller Button Table
+## 🎮 PS4-Dualshock Controller Button Table
 | PS4 Controller Button | QKeyMapper Original Key Name |
 |----------------------|-----------------------------|
 | Left Stick Up        | Joy-LS-Up                   |
@@ -857,7 +1120,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | PS Button            | Joy-Key6(RB)                |
 
 ---------------
-## Xbox360 Virtual Controller Button Table
+## 🎮 Xbox360 Virtual Controller Button Table
 Refer to the Xbox Controller Button Table above, but add a lowercase **v** prefix to the original key name for the corresponding Xbox360 virtual controller key.
 Example:
 
@@ -868,7 +1131,7 @@ Example:
 | A Button                      | vJoy-Key1(A/×)              |
 | Right Trigger                 | vJoy-Key12(RT)              |
 
-## Special Virtual Controller Keys
+## 🎮 Special Virtual Controller Keys
 | QKeyMapper Original Key Name | Function                                                        |
 |-----------------------------|-----------------------------------------------------------------|
 | vJoy-Mouse2LS               | Control virtual left stick with mouse                           |
