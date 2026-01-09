@@ -2,6 +2,7 @@
 #include "ui_qmappingsequenceedit.h"
 #include "qkeymapper.h"
 #include "qkeymapper_constants.h"
+#include "qkeymapper_qt_compat.h"
 
 #include <QScrollBar>
 
@@ -1013,7 +1014,7 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
     }
 
     if (row >= m_MappingSequenceList.size()) {
-        m_MappingSequenceList.resize(row + 1);
+        QKeyMapperQtCompat::resizeQList(m_MappingSequenceList, row + 1);
     }
     m_MappingSequenceList[row] = trimmed;
 

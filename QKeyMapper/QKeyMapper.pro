@@ -225,7 +225,8 @@ HEADERS     += \
     qinputdevicelistwindow.h \
     qkeymapper.h \
     qkeymapper_worker.h \
-    qkeymapper_constants.h
+    qkeymapper_constants.h \
+    qkeymapper_qt_compat.h
 
 contains( DEFINES, SINGLE_APPLICATION ) {
     message("SINGLE_APPLICATION Defined!")
