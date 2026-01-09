@@ -326,10 +326,7 @@ QMappingSequenceEdit::MappingSequenceHistorySnapshot QMappingSequenceEdit::captu
     MappingSequenceHistorySnapshot snapshot;
     snapshot.mappingSequenceList = m_MappingSequenceList;
 
-    const MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return snapshot;
-    }
+    const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     const QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (!ranges.isEmpty()) {
@@ -348,11 +345,7 @@ QMappingSequenceEdit::MappingSequenceHistorySnapshot QMappingSequenceEdit::captu
 
 void QMappingSequenceEdit::restoreHistorySnapshot(const MappingSequenceHistorySnapshot &snapshot)
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        m_MappingSequenceList = snapshot.mappingSequenceList;
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     m_IsRestoringHistory = true;
     QSignalBlocker blocker(table);
@@ -473,8 +466,8 @@ void QMappingSequenceEdit::MapkeyComboBox_currentTextChangedSlot(const QString &
 
 void QMappingSequenceEdit::insertMappingKeyToTable()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    const bool hadSelectionBeforeInsert = (table && !table->selectedRanges().isEmpty());
+    const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    const bool hadSelectionBeforeInsert = !table->selectedRanges().isEmpty();
 
     QString mappingkeystr = ui->MappingSequenceEdit_MappingKeyLineEdit->text();
     mappingkeystr = QKeyMapper::getTrimmedMappingKeyString(mappingkeystr);
@@ -805,10 +798,7 @@ void QMappingSequenceEdit::updateMappingSequenceEditTableConnection(MappingSeque
 
 int QMappingSequenceEdit::getInsertRowFromSelectionOrAppend() const
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return -1;
-    }
+    const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (ranges.isEmpty()) {
@@ -822,8 +812,8 @@ int QMappingSequenceEdit::getInsertRowFromSelectionOrAppend() const
 
 void QMappingSequenceEdit::reselectionRangeAndScroll(int top_row, int bottom_row)
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table || table->rowCount() <= 0) {
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    if (table->rowCount() <= 0) {
         return;
     }
 
@@ -844,8 +834,8 @@ void QMappingSequenceEdit::reselectionRangeAndScroll(int top_row, int bottom_row
 
 void QMappingSequenceEdit::keepSelectionEmptyAndScrollToRow(int row)
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table || table->rowCount() <= 0) {
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    if (table->rowCount() <= 0) {
         return;
     }
 
@@ -922,10 +912,7 @@ void MappingSequenceEditTableWidget::dropEvent(QDropEvent *event)
 
 void QMappingSequenceEdit::mappingSequenceTableDragDropMove(int top_row, int bottom_row, int dragged_to)
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     const int rowCount = m_MappingSequenceList.size();
     if (rowCount <= 0) {
@@ -992,10 +979,7 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
         return;
     }
 
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     if (row < 0 || row >= table->rowCount()) {
         return;
@@ -1052,10 +1036,7 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
 
 void QMappingSequenceEdit::mappingSequenceTableItemSelectionChanged()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     // Clear current cell to avoid unexpected Ctrl/Shift+Click selection behavior.
     if (table->selectedRanges().isEmpty()) {
@@ -1067,10 +1048,7 @@ void QMappingSequenceEdit::mappingSequenceTableItemSelectionChanged()
 
 void QMappingSequenceEdit::selectedMappingKeyItemsMoveUp()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (ranges.isEmpty()) {
@@ -1108,10 +1086,7 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveUp()
 
 void QMappingSequenceEdit::selectedMappingKeyItemsMoveDown()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (ranges.isEmpty()) {
@@ -1154,10 +1129,7 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveDown()
 
 void QMappingSequenceEdit::selectedMappingKeyItemsMoveToTop()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (ranges.isEmpty()) {
@@ -1199,10 +1171,7 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveToTop()
 
 void QMappingSequenceEdit::selectedMappingKeyItemsMoveToBottom()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (ranges.isEmpty()) {
@@ -1246,10 +1215,7 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveToBottom()
 
 void QMappingSequenceEdit::deleteMappingKeySelectedItems()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (ranges.isEmpty()) {
@@ -1289,8 +1255,8 @@ void QMappingSequenceEdit::deleteMappingKeySelectedItems()
 
 void QMappingSequenceEdit::highlightSelectUp()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table || table->rowCount() <= 0) {
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    if (table->rowCount() <= 0) {
         return;
     }
 
@@ -1310,8 +1276,8 @@ void QMappingSequenceEdit::highlightSelectUp()
 
 void QMappingSequenceEdit::highlightSelectDown()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table || table->rowCount() <= 0) {
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    if (table->rowCount() <= 0) {
         return;
     }
 
@@ -1331,8 +1297,8 @@ void QMappingSequenceEdit::highlightSelectDown()
 
 void QMappingSequenceEdit::highlightSelectExtendUp()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table || table->rowCount() <= 0) {
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    if (table->rowCount() <= 0) {
         return;
     }
 
@@ -1383,8 +1349,8 @@ void QMappingSequenceEdit::highlightSelectExtendUp()
 
 void QMappingSequenceEdit::highlightSelectExtendDown()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table || table->rowCount() <= 0) {
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    if (table->rowCount() <= 0) {
         return;
     }
 
@@ -1435,8 +1401,8 @@ void QMappingSequenceEdit::highlightSelectExtendDown()
 
 void QMappingSequenceEdit::highlightSelectFirst()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table || table->rowCount() <= 0) {
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    if (table->rowCount() <= 0) {
         return;
     }
     reselectionRangeAndScroll(0, 0);
@@ -1444,8 +1410,8 @@ void QMappingSequenceEdit::highlightSelectFirst()
 
 void QMappingSequenceEdit::highlightSelectLast()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table || table->rowCount() <= 0) {
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    if (table->rowCount() <= 0) {
         return;
     }
     const int last = table->rowCount() - 1;
@@ -1454,20 +1420,14 @@ void QMappingSequenceEdit::highlightSelectLast()
 
 void QMappingSequenceEdit::clearHighlightSelection()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
     table->clearSelection();
     table->setCurrentCell(-1, -1);
 }
 
 void QMappingSequenceEdit::highlightSelectLoadData()
 {
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return;
-    }
+    const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (ranges.isEmpty()) {
@@ -1492,10 +1452,7 @@ void QMappingSequenceEdit::highlightSelectLoadData()
 int QMappingSequenceEdit::copySelectedMappingKeyToCopiedList()
 {
     int copiedCount = -1;
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return copiedCount;
-    }
+    const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (ranges.isEmpty()) {
@@ -1528,8 +1485,8 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
         return insertedCount;
     }
 
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    const bool hadSelectionBeforeInsert = (table && !table->selectedRanges().isEmpty());
+    const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    const bool hadSelectionBeforeInsert = !table->selectedRanges().isEmpty();
 
     const int insertRow = getInsertRowFromSelectionOrAppend();
     if (insertRow < 0) {
@@ -1570,10 +1527,7 @@ int QMappingSequenceEdit::pasteMappingKeyFromCopiedList()
 {
     int pastedCount = 0;
 
-    MappingSequenceEditTableWidget *table = ui ? ui->mappingSequenceEditTable : Q_NULLPTR;
-    if (!table) {
-        return pastedCount;
-    }
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (s_CopiedMappingSequenceList.size() != 1 || ranges.isEmpty()) {

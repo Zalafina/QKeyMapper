@@ -3,7 +3,6 @@
 
 #include <QDialog>
 #include <QTableWidget>
-#include <QVector>
 
 namespace Ui {
 class QMappingSequenceEdit;
