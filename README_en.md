@@ -150,7 +150,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
           Mouse-Move:R(-6,-10) -> Based on the current cursor position, decrease x by 6 and y by 10.
           Mouse-Move:R(0,8)    -> Based on the current cursor position, keep x unchanged and increase y by 8.
           Mouse-Move:R(-2,0)   -> Based on the current cursor position, decrease x by 2 and keep y unchanged.
-    * Extension: **"KeySequenceBreak(OriginalKeyName)"** breaks only the running key sequence associated with the specified original key; the no-parameter form still breaks all running key sequences.
+    * Extension: **"KeySequenceBreak(OriginalKey)"** breaks only the running key sequence associated with the specified original key; the no-parameter form still breaks all running key sequences.
     * The **active_window.ahk** script adds a **loopSwitch** parameter. By default, **loopSwitch=true**, meaning that when multiple windows match the activation criteria, the script will cycle through them. If you prefer to always activate only the first matched window, add `loopSwitch=false` to the parameters.
 
 * v1.3.8 (Build 20260102)
@@ -995,7 +995,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | SwitchTab                  | Switch to a mapping table tab by name                              |
 | SwitchTab💾                | Switch to a mapping table tab by name (and save it)                |
 | KeySequenceBreak           | Interrupt all currently executing key sequences                    |
-| KeySequenceBreak(OriginalKeyName) | Interrupt the running key sequence for a specific original key |
+| KeySequenceBreak(OriginalKey) | Interrupt the running key sequence for a specific original key |
 | Key2Mouse-Up               | Move mouse pointer up while key is held                            |
 | Key2Mouse-Down             | Move mouse pointer down while key is held                          |
 | Key2Mouse-Left             | Move mouse pointer left while key is held                          |
