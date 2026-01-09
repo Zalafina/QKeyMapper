@@ -1160,14 +1160,16 @@ namespace QKeyMapperConstants {
     inline constexpr const char REGEX_PATTERN_UNLOCK_FIND[] = R"(Unlock\((([^✖⏲)]+?)(✖|⏲(\d+))?)\))";
 
     // Pattern for matching KeySequenceBreak(...) mapping keys
-    // Matches: KeySequenceBreak(L-Ctrl+1), KeySequenceBreak(F3), KeySequenceBreak(R✖), KeySequenceBreak(Y+B⏲500)
+    // Matches: KeySequenceBreak(L-Ctrl+1), KeySequenceBreak(F3), KeySequenceBreak(R✖500), KeySequenceBreak(Y+B⏲500)
+    // Does not match: KeySequenceBreak(R✖), KeySequenceBreak(Y+B⏲)
     // Note: Bracket form supports the same normalized key rules as Unlock(...).
-    // Capture groups: (1) = full key string, (2) = base key without suffix, (3) = suffix (✖|⏲number), (4) = number for ⏲
-    inline constexpr const char REGEX_PATTERN_KEYSEQUENCEBREAK[] = R"(^KeySequenceBreak\((([^✖⏲)]+)(✖|⏲(\d+))?)\)$)";
+    //       Suffix markers (✖/⏲) must include a numeric time postfix; numeric range validation is done by application logic.
+    // Capture groups: (1) = full key string, (2) = base key without suffix, (3) = suffix marker (✖|⏲), (4) = suffix time digits
+    inline constexpr const char REGEX_PATTERN_KEYSEQUENCEBREAK[] = R"(^KeySequenceBreak\(([^✖⏲)]+)(?:(✖|⏲)(\d+))?\)$)";
 
     // Pattern for finding KeySequenceBreak( and the first ) parts in a composite string (non-greedy matching)
     // Only the bracket form is protected; bare "KeySequenceBreak" remains unaffected.
-    inline constexpr const char REGEX_PATTERN_KEYSEQUENCEBREAK_FIND[] = R"(KeySequenceBreak\((([^✖⏲)]+?)(✖|⏲(\d+))?)\))";
+    inline constexpr const char REGEX_PATTERN_KEYSEQUENCEBREAK_FIND[] = R"(KeySequenceBreak\(([^✖⏲)]+?)(?:(✖|⏲)(\d+))?\))";
 
     // Pattern for matching SetVolume(...) and SetMicVolume(...) mapping keys
     // Valid matches: SetVolume(50), SetVolume🔊(50), SetMicVolume(50), SetMicVolume🎤(50)

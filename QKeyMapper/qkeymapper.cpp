@@ -4433,10 +4433,10 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             }
             else if (keysequencebreak_match.hasMatch()) {
                 // Validate KeySequenceBreak(...) mapping key
-                QString fullKey = keysequencebreak_match.captured(1);        // Full key string (e.g., "L-Ctrl+1", "R✖", "Y+B⏲500")
+                QString fullKey = keysequencebreak_match.captured(1);        // Full key string (e.g., "L-Ctrl+1", "R✖500", "Y+B⏲500")
                 QString baseKey = keysequencebreak_match.captured(2);        // Base key without suffix
-                QString suffix = keysequencebreak_match.captured(3);         // Suffix (✖ or ⏲number)
-                QString timeString = keysequencebreak_match.captured(4);     // Number for ⏲ suffix
+                QString suffix = keysequencebreak_match.captured(3);         // Suffix marker (✖ or ⏲)
+                QString timeString = keysequencebreak_match.captured(4);     // Suffix time digits (for ✖/⏲)
                 Q_UNUSED(fullKey);
                 Q_UNUSED(suffix);
 
