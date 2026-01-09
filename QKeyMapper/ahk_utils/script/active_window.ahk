@@ -1,6 +1,7 @@
 ; AutoHotkey v2 脚本
 ; 用法示例：
-;   active_window.ahk process="D:\Tools\NPP\npp.8.6.7\notepad++.exe" title="新文件" launch=true
+;   active_window.ahk process="D:\Tools\NPP\npp.8.6.7\notepad++.exe" title="新文件" launch=true loopSwitch=true
+;   active_window.ahk process="D:\Tools\NPP\npp.8.6.7\notepad++.exe" title="新文件" launch=true loopSwitch=false
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #NoTrayIcon
@@ -33,6 +34,7 @@ titleProvided := false
 processInput := ""
 processName  := ""
 launch       := false
+loopSwitch   := true  ; 默认启用循环切换
 
 for arg in A_Args {
     if InStr(arg, "title=") = 1 {
@@ -42,6 +44,10 @@ for arg in A_Args {
         processInput := TrimQuotes(SubStr(arg, 9))
     } else if (arg = "launch=true") {
         launch := true
+    } else if (arg = "loopSwitch=true") {
+        loopSwitch := true
+    } else if (arg = "loopSwitch=false") {
+        loopSwitch := false
     }
 }
 
@@ -113,25 +119,30 @@ if (criteria != "" || titleProvided) {
             ; 只有一个匹配窗口，直接激活
             targetHwnd := matchingWindows[1]
         } else {
-            ; 多个匹配窗口，实现循环切换
-            currentIndex := 0
-
-            ; 查找当前窗口在列表中的位置
-            for index, hwnd in matchingWindows {
-                if (hwnd = currentHwnd) {
-                    currentIndex := index
-                    break
-                }
-            }
-
-            ; 如果当前窗口在匹配列表中，切换到下一个
-            if (currentIndex > 0) {
-                ; 循环到下一个窗口
-                nextIndex := Mod(currentIndex, matchingWindows.Length) + 1
-                targetHwnd := matchingWindows[nextIndex]
-            } else {
-                ; 当前窗口不在匹配列表中，激活第一个匹配窗口
+            if (!loopSwitch) {
+                ; 禁用循环切换时，始终激活第一个窗口
                 targetHwnd := matchingWindows[1]
+            } else {
+                ; 多个匹配窗口，实现循环切换
+                currentIndex := 0
+
+                ; 查找当前窗口在列表中的位置
+                for index, hwnd in matchingWindows {
+                    if (hwnd = currentHwnd) {
+                        currentIndex := index
+                        break
+                    }
+                }
+
+                ; 如果当前窗口在匹配列表中，切换到下一个
+                if (currentIndex > 0) {
+                    ; 循环到下一个窗口
+                    nextIndex := Mod(currentIndex, matchingWindows.Length) + 1
+                    targetHwnd := matchingWindows[nextIndex]
+                } else {
+                    ; 当前窗口不在匹配列表中，激活第一个匹配窗口
+                    targetHwnd := matchingWindows[1]
+                }
             }
         }
 

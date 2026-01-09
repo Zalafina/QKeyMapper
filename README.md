@@ -169,6 +169,7 @@
           Mouse-Move:R(-6,-10) -> 基于当前指针位置，x减小6，y减小10。
           Mouse-Move:R(0,8)    -> 基于当前指针位置，x不变，y增大8。
           Mouse-Move:R(-2,0)   -> 基于当前指针位置，x减小2，y不变。
+    * active_window.ahk 脚本添加 **loopSwitch** 参数，默认 **loopSwitch=true** 存在多个符合激活匹配条件的窗口时，循环进行切换激活。如果希望固定激活第一个匹配窗口则在参数中追加 loopSwitch=false
 * v1.3.8(Build 20260102)
     * 分类筛选功能支持多选。
     * 修复特定场景下映射表Tab进行切换时程序崩溃退出问题。
