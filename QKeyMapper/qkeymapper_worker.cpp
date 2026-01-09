@@ -2124,6 +2124,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     );
     static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
+    static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
     static QRegularExpression setvolume_regex(REGEX_PATTERN_SETVOLUME);
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
@@ -2357,6 +2358,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             QRegularExpressionMatch sendtext_match = sendtext_regex.match(key);
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
+            QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(key);
             QRegularExpressionMatch unlock_match = unlock_regex.match(key);
             QRegularExpressionMatch setvolume_match = setvolume_regex.match(key);
             if (sendtext_match.hasMatch()) {
@@ -2367,6 +2369,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             }
             else if (switchtab_match.hasMatch()) {
                 /* SwitchTab KeyUp do nothing. */
+            }
+            else if (key == KEYSEQUENCEBREAK_STR || keysequencebreak_match.hasMatch()) {
+                /* KeySequenceBreak KeyUp do nothing. */
             }
             else if (unlock_match.hasMatch()) {
                 /* Unlock KeyUp do nothing. */
@@ -2888,12 +2893,28 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QRegularExpressionMatch sendtext_match = sendtext_regex.match(key);
                 QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
                 QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
+                QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(key);
                 QRegularExpressionMatch unlock_match = unlock_regex.match(key);
                 QRegularExpressionMatch setvolume_match = setvolume_regex.match(key);
                 if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
 #endif
+                }
+                else if (key == KEYSEQUENCEBREAK_STR) {
+                    // KeySequenceBreak: break all running key sequences.
+                    // Note: The actual cleanup (remove from running list, resend real key, etc.) is done
+                    // by the normal KeySequence stop-flag handling in sendInputKeys.
+                    breakAllRunningKeySequence();
+                }
+                else if (keysequencebreak_match.hasMatch()) {
+                    // KeySequenceBreak(OriginalKeyName): break a specific original key's running key sequence.
+                    // Normalization is aligned with Unlock(...): simplified + remove whitespace.
+                    static QRegularExpression whitespace_reg(R"(\s+)");
+                    QString break_key = keysequencebreak_match.captured(1);
+                    break_key = break_key.simplified();
+                    break_key.remove(whitespace_reg);
+                    breakRunningKeySequence(break_key);
                 }
                 else if (sendtext_match.hasMatch()) {
                     QString functionName = sendtext_match.captured(1);  // "SendText" or "PasteText"
@@ -3784,9 +3805,23 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
     int key_sequence_count = inputKeys.size();
     if (key_sequence_count == 1) {
         const QString mappingkeys_str = inputKeys.constFirst();
-        if (mappingkeys_str.startsWith(KEYSEQUENCEBREAK_STR)) {
+        if (mappingkeys_str == KEYSEQUENCEBREAK_STR) {
             if (keyupdown == KEY_DOWN) {
                 breakAllRunningKeySequence();
+            }
+            return;
+        }
+
+        static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK);
+        QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(mappingkeys_str);
+        if (keysequencebreak_match.hasMatch()) {
+            if (keyupdown == KEY_DOWN) {
+                // Normalization is aligned with Unlock(...): simplified + remove whitespace.
+                static QRegularExpression whitespace_reg(R"(\s+)");
+                QString break_key = keysequencebreak_match.captured(1);
+                break_key = break_key.simplified();
+                break_key.remove(whitespace_reg);
+                breakRunningKeySequence(break_key);
             }
             return;
         }
@@ -4644,7 +4679,6 @@ bool QKeyMapper_Worker::FakerInputClient_sendMouseButton(const QString &mouseBut
         }
     }
 #endif // FAKERINPUT_EXTRAINFO
-
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[FakerInputClient_sendMouseButton] Button:%s, %s, ButtonState:0x%02X, Result:%d",
            mouseButton.toLatin1().constData(), (keyupdown == KEY_DOWN) ? "DOWN" : "UP",
@@ -14400,6 +14434,36 @@ void QKeyMapper_Worker::breakAllRunningKeySequence()
     }
 }
 
+void QKeyMapper_Worker::breakRunningKeySequence(const QString &originalKey)
+{
+    if (originalKey.isEmpty()) {
+        return;
+    }
+
+    if (!s_runningKeySequenceOrikeyList.contains(originalKey)) {
+        // Silent no-op if target key sequence is not running.
+        return;
+    }
+
+    SendInputTaskController *keyseq_break_controller = Q_NULLPTR;
+    if (SendInputTask::s_SendInputTaskControllerMap.contains(originalKey)) {
+        keyseq_break_controller = &SendInputTask::s_SendInputTaskControllerMap[originalKey];
+    }
+
+    if (keyseq_break_controller == Q_NULLPTR) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    QString debugmessage = QString("\033[1;34m[breakRunningKeySequence] OriginalKey(%1) Running KeySequence breaked, task_stop_flag = INPUTSTOP_KEYSEQ\033[0m").arg(originalKey);
+    qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+#endif
+
+    keyseq_break_controller->task_threadpool->clear();
+    *keyseq_break_controller->task_stop_flag = INPUTSTOP_KEYSEQ;
+    keyseq_break_controller->task_stop_condition->wakeAll();
+}
+
 #ifdef DEBUG_LOGOUT_ON
 static QString showCmdToString(int showCmd)
 {
@@ -15777,7 +15841,6 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
 {
     SpecialMappingKeysList = QStringList() \
             << KEY_BLOCKED_STR
-            << KEYSEQUENCEBREAK_STR
             << MOUSE2VJOY_HOLD_KEY_STR
             << GYRO2MOUSE_HOLD_KEY_STR
             << GYRO2MOUSE_MOVE_KEY_STR
@@ -16732,6 +16795,7 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression sendtext_regex(QKeyMapperConstants::REGEX_PATTERN_SENDTEXT_FIND, QRegularExpression::MultilineOption);
     static QRegularExpression run_regex(QKeyMapperConstants::REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
+    static QRegularExpression keysequencebreak_regex(QKeyMapperConstants::REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
     static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression setvolume_regex(QKeyMapperConstants::REGEX_PATTERN_SETVOLUME_FIND);
     static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT_FIND);
@@ -16742,7 +16806,17 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
 
     // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) to preserve them during splitting
     // Note: Repeat{...}x... and Macro(...)x... need to be preserved as whole patterns to avoid splitting by internal separators (»)
-    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(mappingkeystr, sendtext_regex, run_regex, switchtab_regex, unlock_regex, setvolume_regex, repeat_regex, macro_regex);
+    QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(
+        mappingkeystr,
+        sendtext_regex,
+        run_regex,
+        switchtab_regex,
+        keysequencebreak_regex,
+        unlock_regex,
+        setvolume_regex,
+        repeat_regex,
+        macro_regex
+    );
     QString tempMappingKey = extractResult.first;
     QStringList preservedParts = extractResult.second;
 

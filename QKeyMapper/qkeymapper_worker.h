@@ -1132,6 +1132,7 @@ public:
     static QString getWindowsKeyName(uint virtualKeyCode);
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
     static void breakAllRunningKeySequence(void);
+    static void breakRunningKeySequence(const QString &originalKey);
 
     static ParsedRunCommand parseRunCommandUserInput(const QString &input);
     // Run an external command with optional wait, working directory, window show mode, and verb.

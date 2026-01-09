@@ -169,7 +169,8 @@
           Mouse-Move:R(-6,-10) -> 基于当前指针位置，x减小6，y减小10。
           Mouse-Move:R(0,8)    -> 基于当前指针位置，x不变，y增大8。
           Mouse-Move:R(-2,0)   -> 基于当前指针位置，x减小2，y不变。
-    * active_window.ahk 脚本添加 **loopSwitch** 参数，默认 **loopSwitch=true** 存在多个符合激活匹配条件的窗口时，循环进行切换激活。如果希望固定激活第一个匹配窗口则在参数中追加 loopSwitch=false
+    * KeySequenceBreak 功能扩展：支持 "KeySequenceBreak(原始按键名称)" 形式，用于仅打断指定原始按键对应的运行中按键序列；不带括号时仍然打断所有当前运行中的按键序列。
+    * **active_window.ahk** 脚本添加 **loopSwitch** 参数，默认 **loopSwitch=true** 存在多个符合激活匹配条件的窗口时，循环进行切换激活。如果希望固定激活第一个匹配窗口则在参数中追加 loopSwitch=false
 * v1.3.8(Build 20260102)
     * 分类筛选功能支持多选。
     * 修复特定场景下映射表Tab进行切换时程序崩溃退出问题。
@@ -921,6 +922,7 @@
 | SwitchTab                |  切换指定名称的映射表                     |
 | SwitchTab💾              |  切换指定名称的映射表(并进行保存)          |
 | KeySequenceBreak         |  打断所有当前正在执行的按键序列发送         |
+| KeySequenceBreak(原始按键名称) |  打断指定原始按键对应的运行中按键序列发送 |
 | Key2Mouse-Up             |  原始按键按下后鼠标指针持续向上移动         |
 | Key2Mouse-Down           |  原始按键按下后鼠标指针持续向下移动         |
 | Key2Mouse-Left           |  原始按键按下后鼠标指针持续向左移动         |
