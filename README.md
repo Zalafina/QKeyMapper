@@ -939,6 +939,7 @@
 | Mouse-X1_ScreenPoint     |  鼠标1号侧键点击屏幕范围内指定坐标点        |
 | Mouse-X2_ScreenPoint     |  鼠标2号侧键点击屏幕范围内指定坐标点        |
 | Mouse-Move_ScreenPoint   |  鼠标指针移动到屏幕内指定坐标点            |
+| Mouse-Move_Relative      |  鼠标指针基于当前位置进行相对位移          |
 | Mouse-PosSave            |  保存当前鼠标指针位置                    |
 | Mouse-PosRestore         |  鼠标指针位置恢复到之前保存的鼠标指针位置    |
 | SetVolume                |  设置当前播放设备音量                     |

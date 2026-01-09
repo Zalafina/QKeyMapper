@@ -132,6 +132,7 @@
 | SwitchTab                |  切换指定名称的映射表                     |
 | SwitchTab💾              |  切换指定名称的映射表(并进行保存)          |
 | KeySequenceBreak         |  打断所有当前正在执行的按键序列发送         |
+| KeySequenceBreak(原始按键) |  打断指定原始按键对应的运行中按键序列发送   |
 | Key2Mouse-Up             |  原始按键按下后鼠标指针持续向上移动         |
 | Key2Mouse-Down           |  原始按键按下后鼠标指针持续向下移动         |
 | Key2Mouse-Left           |  原始按键按下后鼠标指针持续向左移动         |
@@ -148,6 +149,7 @@
 | Mouse-X1_ScreenPoint     |  鼠标1号侧键点击屏幕范围内指定坐标点        |
 | Mouse-X2_ScreenPoint     |  鼠标2号侧键点击屏幕范围内指定坐标点        |
 | Mouse-Move_ScreenPoint   |  鼠标指针移动到屏幕内指定坐标点            |
+| Mouse-Move_Relative      |  鼠标指针基于当前位置进行相对位移          |
 | Mouse-PosSave            |  保存当前鼠标指针位置                    |
 | Mouse-PosRestore         |  鼠标指针位置恢复到之前保存的鼠标指针位置    |
 | SetVolume                |  设置当前播放设备音量                     |
