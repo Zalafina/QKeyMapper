@@ -1,8 +1,9 @@
 1. 窗口切换工具：
-ahk.exe active_window.ahk process="notepad.exe" title="新建文本文档" launch=true
-process= 可传入可执行文件名或者路径，带空格路径注意外面加双引号。
-title= 可传入希望切换窗口的完整标题或部分标题，带空格标题注意外面加双引号。
-launch=true 配合process= 的可选参数，如果窗口不存在，则尝试通过Run命令启动process=传入的可执行文件名或文件路径。
+ahk.exe active_window.ahk process="notepad.exe" title="新建文本文档" launch=true loopSwitch=true
+process=          可传入可执行文件名或者路径，带空格路径注意外面加双引号。
+title=            可传入希望切换窗口的完整标题或部分标题，带空格标题注意外面加双引号。
+launch=true       配合process= 的可选参数，如果窗口不存在，则尝试通过Run命令启动process=传入的可执行文件名或文件路径。
+loopSwitch        当设置 loopSwitch=true(不写此参数时true是默认值)，如果存在多个符合激活匹配条件的窗口时，循环进行切换激活。如果希望固定激活第一个匹配窗口则参数设置 loopSwitch=false
 映射按键用法示例：Run(utils\ahk utils\script\active_window.ahk title=ABC)
 
 2. 鼠标指针位置保存恢复工具：
