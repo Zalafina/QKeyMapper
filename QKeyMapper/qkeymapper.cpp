@@ -9404,7 +9404,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 // If the item is currently enabled and the new OriginalKey conflicts with an already enabled
                 // item in the same normalized group, allow the update but auto-disable this row.
                 autoDisableRowIfExclusiveGroupConflict(s_KeyMappingTabWidgetCurrentIndex, row, true, true);
-                closeItemSetupDialog();
+                closeItemSetupDialog(row);
 
 #ifdef DEBUG_LOGOUT_ON
                 if (note_new != mapdata_note && update_withnote) {
@@ -9437,7 +9437,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             if (isValid) {
                 QKeyMapper::updateKeyMappingDataListMappingKeys(row, mappingkeys_str_new);
                 updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, MAPPING_KEY_COLUMN);
-                closeItemSetupDialog();
+                closeItemSetupDialog(row);
 
 #ifdef DEBUG_LOGOUT_ON
                 QString debugmessage = QString("[%1] row(%2) MappingKey changed : \"%3\"").arg(__func__).arg(row).arg(mappingkeys_str_new);
@@ -17359,6 +17359,33 @@ void QKeyMapper::closeItemSetupDialog()
         m_ItemSetupDialog->close();
     }
 }
+
+void QKeyMapper::closeItemSetupDialog(int row)
+{
+    if (Q_NULLPTR == m_ItemSetupDialog) {
+        return;
+    }
+
+    if (m_ItemSetupDialog->isVisible() &&
+        m_ItemSetupDialog->getItemRow() == row) {
+#ifdef DEBUG_LOGOUT_ON
+        QString debugmessage = QString("[QKeyMapper::closeItemSetupDialog] row(%1) == getItemRow(%2) & DialogVisible(true), ItemSetupDialog close").arg(row).arg(m_ItemSetupDialog->getItemRow());
+        qDebug().nospace().noquote() << debugmessage;
+#endif
+        m_ItemSetupDialog->close();
+    }
+#ifdef DEBUG_LOGOUT_ON
+    else {
+        QString debugmessage = QString("[QKeyMapper::closeItemSetupDialog] row(%1) & getItemRow(%2) & DialogVisible(%3), ItemSetupDialog NOT closed")
+            .arg(row)
+            .arg(m_ItemSetupDialog->getItemRow())
+            .arg(m_ItemSetupDialog->isVisible() ? "true" : "false");
+        qDebug().nospace().noquote() << debugmessage;
+    }
+#endif
+
+}
+
 
 void QKeyMapper::closeSettingTransferDialog()
 {

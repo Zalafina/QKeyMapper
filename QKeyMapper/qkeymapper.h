@@ -1502,6 +1502,7 @@ public:
 private:
     void showItemSetupDialog(int tabindex, int row);
     void closeItemSetupDialog(void);
+    void closeItemSetupDialog(int row);
     void closeCrosshairSetupDialog(void);
     void closeFloatingWindowSetupDialog(void);
     void closeSettingTransferDialog(void);

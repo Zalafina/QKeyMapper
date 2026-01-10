@@ -31,6 +31,7 @@ public:
     void resetFontSize(void);
     void setTabIndex(int tabindex);
     void setItemRow(int row);
+    int getItemRow(void);
     void updateOriginalKeyListComboBox(void);
     void updateMappingKeyListComboBox(void);
     bool isCrosshairSetupDialogVisible(void);

@@ -278,6 +278,11 @@ void QItemSetupDialog::setItemRow(int row)
     m_ItemRow = row;
 }
 
+int QItemSetupDialog::getItemRow()
+{
+    return m_ItemRow;
+}
+
 void QItemSetupDialog::updateOriginalKeyListComboBox()
 {
     KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->m_orikeyComboBox;
