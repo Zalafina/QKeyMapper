@@ -100,6 +100,8 @@ protected:
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+    // Override keyPressEvent to handle keyboard shortcuts for the editor.
+    void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
     void MapkeyComboBox_currentTextChangedSlot(const QString &text);

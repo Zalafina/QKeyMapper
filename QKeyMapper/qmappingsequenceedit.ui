@@ -36,13 +36,13 @@
        <property name="minimumSize">
         <size>
          <width>130</width>
-         <height>90</height>
+         <height>100</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>100</width>
-         <height>90</height>
+         <height>100</height>
         </size>
        </property>
        <widget class="QPushButton" name="cancelButton">
@@ -115,13 +115,13 @@
        <property name="minimumSize">
         <size>
          <width>130</width>
-         <height>150</height>
+         <height>160</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
          <width>100</width>
-         <height>150</height>
+         <height>160</height>
         </size>
        </property>
        <widget class="QPushButton" name="deleteButton">
@@ -270,13 +270,13 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>332</width>
+         <width>340</width>
          <height>53</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>332</width>
+         <width>340</width>
          <height>53</height>
         </size>
        </property>

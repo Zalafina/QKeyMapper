@@ -452,11 +452,36 @@ void QMappingSequenceEdit::mousePressEvent(QMouseEvent *event)
         QWidget *focused = focusWidget();
         if (focused && focused != this) {
             focused->clearFocus();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[" << __func__ << "] Clear focus by mouse left click";
+#endif
         }
     }
 
     QDialog::mousePressEvent(event);
 }
+
+void QMappingSequenceEdit::keyPressEvent(QKeyEvent *event)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QMappingSequenceEdit::keyPressEvent]" << "Key:" << (Qt::Key)event->key() << ", Modifiers:" << event->modifiers();
+#endif
+
+    switch (event->key()) {
+    case Qt::Key_Backspace:
+    case Qt::Key_Space:
+        if (event->modifiers() == Qt::NoModifier) {
+            clearHighlightSelection();
+            return;
+        }
+        break;
+    default:
+        break;
+    }
+
+    QDialog::keyPressEvent(event);
+}
+
 
 void QMappingSequenceEdit::MapkeyComboBox_currentTextChangedSlot(const QString &text)
 {
@@ -675,8 +700,12 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
         }
         return;
     case Qt::Key_Backspace:
-        dlg->clearHighlightSelection();
-        return;
+    case Qt::Key_Space:
+        if (event->modifiers() == Qt::NoModifier) {
+            dlg->clearHighlightSelection();
+            return;
+        }
+        break;
     case Qt::Key_Return:
     case Qt::Key_Enter:
         dlg->highlightSelectLoadData();
