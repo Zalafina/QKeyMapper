@@ -1328,7 +1328,7 @@ void QMacroListDialog::initMacroListTabWidget()
 
 void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTable)
 {
-    macroDataTable->setFocusPolicy(Qt::NoFocus);
+    macroDataTable->setFocusPolicy(Qt::ClickFocus);
     macroDataTable->setColumnCount(MACROLISTDATA_TABLE_COLUMN_COUNT);
 
     macroDataTable->horizontalHeader()->setStretchLastSection(true);
@@ -1745,6 +1745,119 @@ QStringList MacroListDataTableWidget::getAvailableCategories() const
     }
 
     return categories;
+}
+
+void MacroListDataTableWidget::keyPressEvent(QKeyEvent *event)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[MacroListDataTableWidget::keyPressEvent]" << "Key:" << (Qt::Key)event->key() << "Modifiers:" << event->modifiers();
+#endif
+
+    QMacroListDialog *macroListDialog = QMacroListDialog::getInstance();
+    if (macroListDialog && QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
+        if (event->key() == Qt::Key_Up) {
+            if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
+                // Move selected items to top when Ctrl+Shift is pressed
+                macroListDialog->selectedMacroItemsMoveToTop();
+            }
+            else if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items up when Ctrl is pressed
+                macroListDialog->selectedMacroItemsMoveUp();
+            }
+            else if (event->modifiers() & Qt::ShiftModifier) {
+                // Extend or shrink selection upward when Shift is pressed
+                macroListDialog->highlightSelectExtendUp();
+            }
+            else {
+                // TableWidget highlight select up
+                macroListDialog->highlightSelectUp();
+            }
+            return;
+        }
+        else if (event->key() == Qt::Key_Down) {
+            if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
+                // Move selected items to bottom when Ctrl+Shift is pressed
+                macroListDialog->selectedMacroItemsMoveToBottom();
+            }
+            else if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items down when Ctrl is pressed
+                macroListDialog->selectedMacroItemsMoveDown();
+            }
+            else if (event->modifiers() & Qt::ShiftModifier) {
+                // Extend or shrink selection downward when Shift is pressed
+                macroListDialog->highlightSelectExtendDown();
+            }
+            else {
+                // TableWidget highlight select down
+                macroListDialog->highlightSelectDown();
+            }
+            return;
+        }
+        else if (event->key() == Qt::Key_Delete) {
+            // Delete selected items
+            macroListDialog->deleteMacroSelectedItems();
+            return;
+        }
+        else if (event->key() == Qt::Key_Home) {
+            if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items to top when Ctrl+Home is pressed
+                macroListDialog->selectedMacroItemsMoveToTop();
+            }
+            else {
+                // Select the first row
+                macroListDialog->highlightSelectFirst();
+            }
+            return;
+        }
+        else if (event->key() == Qt::Key_End) {
+            if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items to bottom when Ctrl+End is pressed
+                macroListDialog->selectedMacroItemsMoveToBottom();
+            }
+            else {
+                // Select the last row
+                macroListDialog->highlightSelectLast();
+            }
+            return;
+        }
+        else if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Space)
+                 && (event->modifiers() == Qt::NoModifier)) {
+            // Clear current selection
+            macroListDialog->clearHighlightSelection();
+            return;
+        }
+        else if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+                 && (event->modifiers() == Qt::NoModifier)) {
+            // Load selected macro data to editing fields when Enter/Return is pressed
+            macroListDialog->highlightSelectLoadData();
+            return;
+        }
+        else if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {
+            // Copy selected macro data to clipboard
+            int copied_count = macroListDialog->copySelectedMacroDataToCopiedList();
+            if (copied_count > 0) {
+                QString message = tr("%1 selected macro(s) copied.").arg(copied_count);
+                QKeyMapper::getInstance()->showInformationPopup(message);
+                return;
+            }
+        }
+        else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
+            // Paste macro data from clipboard
+            int inserted_count = macroListDialog->insertMacroDataFromCopiedList();
+            int copied_count = QMacroListDialog::s_CopiedMacroData.size();
+            if (inserted_count == 0 && copied_count > 0) {
+                QString message = tr("%1 copied macro(s) could not be inserted!").arg(copied_count);
+                QKeyMapper::getInstance()->showFailurePopup(message);
+            }
+            else if (inserted_count > 0) {
+                QString message = tr("Inserted %1 macro(s) into current macro list.").arg(inserted_count);
+                QKeyMapper::getInstance()->showInformationPopup(message);
+            }
+            return;
+        }
+    }
+
+    QTableWidget::keyPressEvent(event);
 }
 
 void MacroListDataTableWidget::startDrag(Qt::DropActions supportedActions)

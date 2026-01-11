@@ -271,6 +271,9 @@ public:
     bool isCategoryColumnVisible() const;
 
 protected:
+    // Override keyPressEvent to handle key press events for the table.
+    void keyPressEvent(QKeyEvent *event) override;
+    // Drag and drop support for row reordering
     void startDrag(Qt::DropActions supportedActions) override;
     void dropEvent(QDropEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;

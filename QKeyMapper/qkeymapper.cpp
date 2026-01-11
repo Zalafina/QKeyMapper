@@ -8390,7 +8390,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     }
     KeyMappingTableWidget->setGeometry(QRect(left, top, width, height));
 
-    KeyMappingTableWidget->setFocusPolicy(Qt::NoFocus);
+    KeyMappingTableWidget->setFocusPolicy(Qt::ClickFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
 
     // Initialize category column visibility based on current button state
@@ -8509,7 +8509,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     }
     KeyMappingTableWidget->setGeometry(QRect(left, top, width, height));
 
-    KeyMappingTableWidget->setFocusPolicy(Qt::NoFocus);
+    KeyMappingTableWidget->setFocusPolicy(Qt::ClickFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
 
     // Initialize category column visibility based on current button state
@@ -27983,6 +27983,125 @@ void KeyMappingDataTableWidget::setCategoryColumnVisible(bool visible)
 bool KeyMappingDataTableWidget::isCategoryColumnVisible() const
 {
     return m_CategoryColumnVisible;
+}
+
+void KeyMappingDataTableWidget::keyPressEvent(QKeyEvent *event)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyMappingDataTableWidget::keyPressEvent]" << "Key:" << (Qt::Key)event->key() << "Modifiers:" << event->modifiers();
+#endif
+
+    if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus) {
+        if (event->key() == Qt::Key_Up) {
+            if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
+                // Move selected items to top when Ctrl+Shift is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveToTop();
+            }
+            else if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items up when Ctrl is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveUp();
+            }
+            else if (event->modifiers() & Qt::ShiftModifier) {
+                // Extend or shrink selection upward when Shift is pressed
+                QKeyMapper::getInstance()->highlightSelectExtendUp();
+            }
+            else {
+                // TableWidget highlight select up
+                QKeyMapper::getInstance()->highlightSelectUp();
+            }
+            return;
+        }
+        else if (event->key() == Qt::Key_Down) {
+            if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
+                // Move selected items to bottom when Ctrl+Shift is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveToBottom();
+            }
+            else if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items down when Ctrl is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveDown();
+            }
+            else if (event->modifiers() & Qt::ShiftModifier) {
+                // Extend or shrink selection downward when Shift is pressed
+                QKeyMapper::getInstance()->highlightSelectExtendDown();
+            }
+            else {
+                // TableWidget highlight select down
+                QKeyMapper::getInstance()->highlightSelectDown();
+            }
+            return;
+        }
+        else if (event->key() == Qt::Key_Return
+            || event->key() == Qt::Key_Enter) {
+            QKeyMapper::getInstance()->highlightSelectOpenItemSetup();
+            return;
+        }
+        else if (event->key() == Qt::Key_Delete) {
+            QKeyMapper::getInstance()->on_deleteSelectedButton_clicked();
+            return;
+        }
+        else if (event->key() == Qt::Key_Home) {
+            if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items to top when Ctrl+Home is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveToTop();
+            }
+            else {
+                // Select the first row
+                QKeyMapper::getInstance()->highlightSelectFirst();
+            }
+            return;
+        }
+        else if (event->key() == Qt::Key_End) {
+            if (event->modifiers() & Qt::ControlModifier) {
+                // Move selected items to bottom when Ctrl+End is pressed
+                QKeyMapper::getInstance()->selectedItemsMoveToBottom();
+            }
+            else {
+                // Select the last row
+                QKeyMapper::getInstance()->highlightSelectLast();
+            }
+            return;
+        }
+        else if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Space)
+            && (event->modifiers() == Qt::NoModifier)) {
+            // Clear current selection
+            QKeyMapper::getInstance()->clearHighlightSelection();
+            return;
+        }
+        else if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {
+            int copied_count = QKeyMapper::getInstance()->copySelectedKeyMappingDataToCopiedList();
+            if (copied_count > 0) {
+                QString message = tr("%1 selected mapping data copied.").arg(copied_count);
+                QKeyMapper::getInstance()->showInformationPopup(message);
+                return;
+            }
+        }
+        else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
+            int auto_disabled = 0;
+            int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(&auto_disabled);
+            int copied_count = QKeyMapper::s_CopiedMappingData.size();
+            if (inserted_count == 0) {
+                QString message = tr("%1 copied mapping data failed to insert!").arg(copied_count);
+                QKeyMapper::getInstance()->showFailurePopup(message);
+            }
+            else if (inserted_count > 0) {
+                QString message;
+                if (auto_disabled > 0) {
+                    message = tr("Inserted %1 copied mapping data into current mapping table. %2 mapping(s) were disabled due to a conflict.")
+                                  .arg(inserted_count)
+                                  .arg(auto_disabled);
+                    QKeyMapper::getInstance()->showWarningPopup(message);
+                }
+                else {
+                    message = tr("Inserted %1 copied mapping data into current mapping table.")
+                                  .arg(inserted_count);
+                    QKeyMapper::getInstance()->showInformationPopup(message);
+                }
+            }
+            return;
+        }
+    }
+
+    QTableWidget::keyPressEvent(event);
 }
 
 void KeyMappingDataTableWidget::updateRowVisibility()
