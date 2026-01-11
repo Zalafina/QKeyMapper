@@ -27770,7 +27770,8 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
             }
             return;
         }
-        else if (event->key() == Qt::Key_Backspace) {
+        else if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Space)
+            && (event->modifiers() == Qt::NoModifier)) {
             // Clear current selection
             QKeyMapper::getInstance()->clearHighlightSelection();
             return;

@@ -1632,13 +1632,14 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
             }
             return;
         }
-        else if (event->key() == Qt::Key_Backspace) {
+        else if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Space)
+            && (event->modifiers() == Qt::NoModifier)) {
             // Clear current selection
             macroListDialog->clearHighlightSelection();
             return;
         }
-        else if (event->key() == Qt::Key_Return
-            || event->key() == Qt::Key_Enter) {
+        else if ((event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter)
+            && (event->modifiers() == Qt::NoModifier)) {
             // Load selected macro data to editing fields when Enter/Return is pressed
             macroListDialog->highlightSelectLoadData();
             return;
