@@ -28804,11 +28804,23 @@ void QKeyMapper::on_mappingMacroListButton_clicked()
 
 GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     : QWidget(parent),
-      m_listWidget(new QListWidget(this))
+      m_listWidget(new QTableWidget(this))
 {
     m_listWidget->setFrameShape(QFrame::WinPanel);
 
     m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    m_listWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_listWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_listWidget->setColumnCount(1);
+    m_listWidget->setRowCount(0);
+    // m_listWidget->setShowGrid(true);
+    m_listWidget->horizontalHeader()->setVisible(false);
+    m_listWidget->verticalHeader()->setVisible(true);
+    m_listWidget->verticalHeader()->setDefaultSectionSize(GROUPSELECTWIDGET_ITEM_HEIGHT);
+    m_listWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
+    m_listWidget->verticalHeader()->setHighlightSections(false);
+    m_listWidget->horizontalHeader()->setHighlightSections(false);
+    m_listWidget->horizontalHeader()->setStretchLastSection(true);
 
     // Allow this widget to receive mouse click focus for space key handling
     setFocusPolicy(Qt::ClickFocus);
@@ -28816,17 +28828,8 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     // Let the list widget handle mouse selection but forward key events to parent
     m_listWidget->setFocusPolicy(Qt::NoFocus);
 
-    // Keep uniform item height for consistent DPI scaling
-    m_listWidget->setUniformItemSizes(true);
-
-    // Alternate row colors for better readability
-    // m_listWidget->setAlternatingRowColors(true);
-
     // Disable word wrapping to keep layout predictable
     m_listWidget->setWordWrap(false);
-
-    // Set spacing between items for better visual comfort
-    // m_listWidget->setSpacing(2);
 
     m_listWidget->setIconSize(QSize(16, 16));
 #ifdef DEBUG_LOGOUT_ON
@@ -28840,7 +28843,7 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     setLayout(layout);
 
     // Emit selectionChanged whenever a checkbox state changes
-    connect(m_listWidget, &QListWidget::itemChanged, this, [this](QListWidgetItem *){
+    connect(m_listWidget, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *){
         emit selectionChanged(selectedGroups());
     });
 }
@@ -28849,15 +28852,18 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
 void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &configfile)
 {
     QSignalBlocker blocker(m_listWidget);
-    m_listWidget->clear();
+    m_listWidget->setRowCount(0);
 
     // Only create "Select All" item if there are groups to select
     bool hasGroups = !groups.isEmpty();
     if (hasGroups) {
-        auto *selectAllItem = new QListWidgetItem((GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")), m_listWidget, SETTING_BACKUP_LIST_TYPE_SELECT_ALL);
+        m_listWidget->setRowCount(1);
+        auto *selectAllItem = new QTableWidgetItem((GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+        selectAllItem->setData(Qt::UserRole + 1, static_cast<int>(SETTING_BACKUP_LIST_TYPE_SELECT_ALL));
         selectAllItem->setFlags(selectAllItem->flags() | Qt::ItemIsUserCheckable);
         selectAllItem->setCheckState(Qt::Unchecked);
-        selectAllItem->setSizeHint(QSize(0, GROUPSELECTWIDGET_ITEM_HEIGHT));
+        m_listWidget->setItem(0, 0, selectAllItem);
+        m_listWidget->setRowHeight(0, GROUPSELECTWIDGET_ITEM_HEIGHT);
     }
 
     // Create QSettings object once before the loop if configfile is provided
@@ -28872,7 +28878,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
     // Create group items in the exact order provided by caller
     for (const QString &group : groups) {
         QString displayText = group;
-        QListWidgetItem::ItemType itemType = QListWidgetItem::Type;
+        int itemType = QTableWidgetItem::Type;
 
         QIcon settingIcon = QKeyMapper::s_Icon_Blank;
         // Set display text and type for special groups
@@ -28938,32 +28944,56 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
             }
         }
 
-        auto *item = new QListWidgetItem(settingIcon, displayText, m_listWidget, itemType);
+        int row = m_listWidget->rowCount();
+        m_listWidget->insertRow(row);
+        auto *item = new QTableWidgetItem(settingIcon, displayText, itemType);
         // Store the original group name in UserRole for later retrieval
         item->setData(Qt::UserRole, group);
+        // Also store itemType for potential future use
+        item->setData(Qt::UserRole + 1, itemType);
         // Only user-checkable; do not set tri-state on children
         item->setFlags((item->flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsAutoTristate);
         item->setCheckState(Qt::Unchecked);
-        item->setSizeHint(QSize(0, GROUPSELECTWIDGET_ITEM_HEIGHT));
+        m_listWidget->setItem(row, 0, item);
+        m_listWidget->setRowHeight(row, GROUPSELECTWIDGET_ITEM_HEIGHT);
+    }
+
+    // Vertical header row numbers: keep "Select All" row blank and start numbering from 1 on the first group row.
+    {
+        QStringList labels;
+        if (hasGroups) {
+            labels << QString();
+            for (int r = 1; r < m_listWidget->rowCount(); ++r) {
+                labels << QString::number(r);
+            }
+        } else {
+            for (int r = 0; r < m_listWidget->rowCount(); ++r) {
+                labels << QString::number(r + 1);
+            }
+        }
+        m_listWidget->setVerticalHeaderLabels(labels);
     }
 
     // Connect itemChanged signal (once)
     if (!m_setupConnectionsDone) {
         m_setupConnectionsDone = true;
-        connect(m_listWidget, &QListWidget::itemChanged, this, [this](QListWidgetItem *item){
+        connect(m_listWidget, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *item){
         // Check if "Select All" item exists (only when groups are not empty)
-        bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                                m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+        bool hasSelectAllItem = (m_listWidget->rowCount() > 0 &&
+                                m_listWidget->item(0, 0) &&
+                                m_listWidget->item(0, 0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
 
-        if (hasSelectAllItem && item == m_listWidget->item(0)) {
+        if (hasSelectAllItem && item == m_listWidget->item(0, 0)) {
             // "Select All" item changed
             Qt::CheckState state = item->checkState();
             // Only allow Checked/Unchecked for Select All
             if (state == Qt::PartiallyChecked) state = Qt::Checked;
             QSignalBlocker blocker2(m_listWidget);
-            for (int i = 1; i < m_listWidget->count(); ++i) {
+            for (int i = 1; i < m_listWidget->rowCount(); ++i) {
                 // Children should not be PartiallyChecked
-                m_listWidget->item(i)->setCheckState(state == Qt::Checked ? Qt::Checked : Qt::Unchecked);
+                if (auto *child = m_listWidget->item(i, 0)) {
+                    child->setCheckState(state == Qt::Checked ? Qt::Checked : Qt::Unchecked);
+                }
             }
         } else if (hasSelectAllItem) {
             // Update "Select All" state based on child items
@@ -28977,12 +29007,14 @@ QStringList GroupSelectionWidget::selectedGroups() const
 {
     QStringList selected;
     // Skip index 0 if it's the "Select All" item, otherwise start from index 0
-    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+    bool hasSelectAllItem = (m_listWidget->rowCount() > 0 &&
+                            m_listWidget->item(0, 0) &&
+                            m_listWidget->item(0, 0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
     int startIndex = hasSelectAllItem ? 1 : 0;
 
-    for (int i = startIndex; i < m_listWidget->count(); ++i) {
-        auto *item = m_listWidget->item(i);
+    for (int i = startIndex; i < m_listWidget->rowCount(); ++i) {
+        auto *item = m_listWidget->item(i, 0);
+        if (!item) continue;
         if (item->checkState() == Qt::Checked) {
             // Use stored original group name instead of display text
             QString originalName = item->data(Qt::UserRole).toString();
@@ -29002,12 +29034,14 @@ void GroupSelectionWidget::setSelectedGroups(const QStringList &groups)
     QSignalBlocker blocker(m_listWidget);
 
     // Check if "Select All" item exists
-    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+    bool hasSelectAllItem = (m_listWidget->rowCount() > 0 &&
+                            m_listWidget->item(0, 0) &&
+                            m_listWidget->item(0, 0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
     int startIndex = hasSelectAllItem ? 1 : 0;
 
-    for (int i = startIndex; i < m_listWidget->count(); ++i) {
-        auto *item = m_listWidget->item(i);
+    for (int i = startIndex; i < m_listWidget->rowCount(); ++i) {
+        auto *item = m_listWidget->item(i, 0);
+        if (!item) continue;
         // Use stored original group name for matching
         QString originalName = item->data(Qt::UserRole).toString();
         if (!originalName.isEmpty()) {
@@ -29021,18 +29055,19 @@ void GroupSelectionWidget::setSelectedGroups(const QStringList &groups)
     // Update Select All tri-state only if it exists
     if (hasSelectAllItem) {
         int checkedCount = 0;
-        int total = m_listWidget->count() - 1;
-        for (int i = 1; i < m_listWidget->count(); ++i) {
-            if (m_listWidget->item(i)->checkState() == Qt::Checked)
+        int total = m_listWidget->rowCount() - 1;
+        for (int i = 1; i < m_listWidget->rowCount(); ++i) {
+            auto *child = m_listWidget->item(i, 0);
+            if (child && child->checkState() == Qt::Checked)
                 ++checkedCount;
         }
         if (total <= 0) return;
         if (checkedCount == 0)
-            m_listWidget->item(0)->setCheckState(Qt::Unchecked);
+            m_listWidget->item(0, 0)->setCheckState(Qt::Unchecked);
         else if (checkedCount == total)
-            m_listWidget->item(0)->setCheckState(Qt::Checked);
+            m_listWidget->item(0, 0)->setCheckState(Qt::Checked);
         else
-            m_listWidget->item(0)->setCheckState(Qt::PartiallyChecked);
+            m_listWidget->item(0, 0)->setCheckState(Qt::PartiallyChecked);
     }
 }
 
@@ -29040,12 +29075,14 @@ QStringList GroupSelectionWidget::allGroups() const
 {
     QStringList all;
     // Skip index 0 if it's the "Select All" item, otherwise start from index 0
-    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+    bool hasSelectAllItem = (m_listWidget->rowCount() > 0 &&
+                            m_listWidget->item(0, 0) &&
+                            m_listWidget->item(0, 0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
     int startIndex = hasSelectAllItem ? 1 : 0;
 
-    for (int i = startIndex; i < m_listWidget->count(); ++i) {
-        auto *item = m_listWidget->item(i);
+    for (int i = startIndex; i < m_listWidget->rowCount(); ++i) {
+        auto *item = m_listWidget->item(i, 0);
+        if (!item) continue;
         // Use stored original group name instead of display text
         QString originalName = item->data(Qt::UserRole).toString();
         if (!originalName.isEmpty()) {
@@ -29062,12 +29099,14 @@ void GroupSelectionWidget::highlightDuplicates(const QSet<QString> &duplicates, 
 {
     QSignalBlocker blocker(m_listWidget);
     // Skip index 0 if it's the "Select All" item, otherwise start from index 0
-    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+    bool hasSelectAllItem = (m_listWidget->rowCount() > 0 &&
+                            m_listWidget->item(0, 0) &&
+                            m_listWidget->item(0, 0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
     int startIndex = hasSelectAllItem ? 1 : 0;
 
-    for (int i = startIndex; i < m_listWidget->count(); ++i) {
-        auto *item = m_listWidget->item(i);
+    for (int i = startIndex; i < m_listWidget->rowCount(); ++i) {
+        auto *item = m_listWidget->item(i, 0);
+        if (!item) continue;
         // Use stored original group name for duplicate checking
         QString originalName = item->data(Qt::UserRole).toString();
         QString nameToCheck = originalName.isEmpty() ? item->text() : originalName;
@@ -29085,7 +29124,7 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
     // Handle Space key for batch checkbox toggle on selected items
     if (event->key() == Qt::Key_Space) {
         // Get currently selected items (highlighted, not checked)
-        QList<QListWidgetItem*> selectedItems = m_listWidget->selectedItems();
+        QList<QTableWidgetItem*> selectedItems = m_listWidget->selectedItems();
 
         if (selectedItems.isEmpty()) {
             QWidget::keyPressEvent(event);
@@ -29093,14 +29132,15 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
         }
 
         // Check if "Select All" item exists
-        bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                                m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+        bool hasSelectAllItem = (m_listWidget->rowCount() > 0 &&
+                    m_listWidget->item(0, 0) &&
+                    m_listWidget->item(0, 0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
 
         // Special case: If only "Select All" item is selected, handle it like mouse click
         if (hasSelectAllItem && selectedItems.size() == 1 &&
-            selectedItems.first() == m_listWidget->item(0)) {
+            selectedItems.first() == m_listWidget->item(0, 0)) {
 
-            QListWidgetItem* selectAllItem = selectedItems.first();
+            QTableWidgetItem* selectAllItem = selectedItems.first();
             Qt::CheckState currentState = selectAllItem->checkState();
             Qt::CheckState newState;
 
@@ -29123,8 +29163,10 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
             selectAllItem->setCheckState(newState);
 
             // Update all child items (excluding Select All at index 0)
-            for (int i = 1; i < m_listWidget->count(); ++i) {
-                m_listWidget->item(i)->setCheckState(newState == Qt::Checked ? Qt::Checked : Qt::Unchecked);
+            for (int i = 1; i < m_listWidget->rowCount(); ++i) {
+                if (auto *child = m_listWidget->item(i, 0)) {
+                    child->setCheckState(newState == Qt::Checked ? Qt::Checked : Qt::Unchecked);
+                }
             }
 
             // Emit selection changed signal manually
@@ -29136,8 +29178,8 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
         }
 
         // Filter out "Select All" item if present - it shouldn't be toggled by space
-        QList<QListWidgetItem*> toggleableItems;
-        for (QListWidgetItem* item : std::as_const(selectedItems)) {
+        QList<QTableWidgetItem*> toggleableItems;
+        for (QTableWidgetItem* item : std::as_const(selectedItems)) {
             // Skip "Select All" item (it has a special prefix)
             if (!item->text().startsWith(GROUPSELECTWIDGET_SELECT_ALL_PREFIX)) {
                 toggleableItems.append(item);
@@ -29153,7 +29195,7 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
         int checkedCount = 0;
         int uncheckedCount = 0;
 
-        for (QListWidgetItem* item : toggleableItems) {
+        for (QTableWidgetItem* item : toggleableItems) {
             if (item->checkState() == Qt::Checked) {
                 checkedCount++;
             } else if (item->checkState() == Qt::Unchecked) {
@@ -29177,7 +29219,7 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
 
         // Apply the target state to all toggleable selected items
         QSignalBlocker blocker(m_listWidget);
-        for (QListWidgetItem* item : toggleableItems) {
+        for (QTableWidgetItem* item : toggleableItems) {
             item->setCheckState(targetState);
         }
         blocker.unblock(); // Unblock signals before updating Select All state
@@ -29200,8 +29242,9 @@ void GroupSelectionWidget::keyPressEvent(QKeyEvent *event)
 void GroupSelectionWidget::updateSelectAllState()
 {
     // Check if "Select All" item exists
-    bool hasSelectAllItem = (m_listWidget->count() > 0 &&
-                            m_listWidget->item(0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
+    bool hasSelectAllItem = (m_listWidget->rowCount() > 0 &&
+                            m_listWidget->item(0, 0) &&
+                            m_listWidget->item(0, 0)->text() == (GROUPSELECTWIDGET_SELECT_ALL_PREFIX + tr("Select All")));
 
     if (!hasSelectAllItem) {
         return; // No "Select All" item to update
@@ -29209,10 +29252,11 @@ void GroupSelectionWidget::updateSelectAllState()
 
     // Count checked child items (excluding "Select All" item at index 0)
     int checkedCount = 0;
-    int total = m_listWidget->count() - 1; // Exclude "Select All" item
+    int total = m_listWidget->rowCount() - 1; // Exclude "Select All" item
 
-    for (int i = 1; i < m_listWidget->count(); ++i) {
-        if (m_listWidget->item(i)->checkState() == Qt::Checked) {
+    for (int i = 1; i < m_listWidget->rowCount(); ++i) {
+        auto *child = m_listWidget->item(i, 0);
+        if (child && child->checkState() == Qt::Checked) {
             ++checkedCount;
         }
     }
@@ -29220,11 +29264,11 @@ void GroupSelectionWidget::updateSelectAllState()
     // Update "Select All" state based on child items
     QSignalBlocker blocker(m_listWidget);
     if (checkedCount == 0) {
-        m_listWidget->item(0)->setCheckState(Qt::Unchecked);
+        m_listWidget->item(0, 0)->setCheckState(Qt::Unchecked);
     } else if (checkedCount == total) {
-        m_listWidget->item(0)->setCheckState(Qt::Checked);
+        m_listWidget->item(0, 0)->setCheckState(Qt::Checked);
     } else {
-        m_listWidget->item(0)->setCheckState(Qt::PartiallyChecked);
+        m_listWidget->item(0, 0)->setCheckState(Qt::PartiallyChecked);
     }
 }
 

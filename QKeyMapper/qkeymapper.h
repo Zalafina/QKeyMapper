@@ -706,7 +706,7 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    QListWidget *m_listWidget;
+    QTableWidget *m_listWidget;
     bool m_setupConnectionsDone { false }; // Ensure we only connect signals once
 
     // Update "Select All" item state based on child items
