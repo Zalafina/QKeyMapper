@@ -28806,7 +28806,7 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     : QWidget(parent),
       m_listWidget(new QTableWidget(this))
 {
-    m_listWidget->setFrameShape(QFrame::WinPanel);
+    // m_listWidget->setFrameShape(QFrame::WinPanel);
 
     m_listWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
     m_listWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
