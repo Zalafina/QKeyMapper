@@ -19941,7 +19941,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     // else {
     //     m_KeyMappingTabWidget->setGeometry(QRect(left, 7, width, 346));
     // }
-    m_KeyMappingTabWidget->setGeometry(QRect(left, 11, width, 346));
+    m_KeyMappingTabWidget->setGeometry(QRect(left, KEYMAPPINGTABWIDGET_TOP, width, KEYMAPPINGTABWIDGET_HEIGHT));
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         m_KeyMappingTabWidget->setStyle(windowsStyle);
         ui->addTabButton->setStyle(windowsStyle);
