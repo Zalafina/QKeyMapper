@@ -28813,7 +28813,6 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     m_listWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_listWidget->setColumnCount(1);
     m_listWidget->setRowCount(0);
-    // m_listWidget->setShowGrid(true);
     m_listWidget->horizontalHeader()->setVisible(false);
     m_listWidget->verticalHeader()->setVisible(true);
     m_listWidget->verticalHeader()->setDefaultSectionSize(GROUPSELECTWIDGET_ITEM_HEIGHT);
