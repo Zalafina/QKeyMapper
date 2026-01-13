@@ -18806,7 +18806,6 @@ void QKeyMapper::refreshProcessInfoTable(bool resize)
 #endif
     }
 
-    ui->processinfoTable->clearContents();
     ui->processinfoTable->setRowCount(0);
 
     static_ProcessInfoList.clear();
@@ -21170,7 +21169,6 @@ void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
 
 void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList)
 {
-    mappingDataTable->clearContents();
     mappingDataTable->setRowCount(0);
 
     if (false == mappingDataList->isEmpty()){
@@ -25235,7 +25233,6 @@ void QKeyMapper::on_clearallButton_clicked()
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
         closeSetupDialog_OnDataChanged();
 #endif
-        m_KeyMappingDataTable->clearContents();
         m_KeyMappingDataTable->setRowCount(0);
         KeyMappingDataList->clear();
         ScreenMousePointsList.clear();

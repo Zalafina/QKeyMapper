@@ -139,7 +139,6 @@ void QInputDeviceListWindow::updateDeviceListInfo()
 
 void QInputDeviceListWindow::updateKeyboardDeviceListInfo()
 {
-    ui->keyboardDeviceTable->clearContents();
     ui->keyboardDeviceTable->setRowCount(0);
 
     QList<InputDevice> keyboardlist = Interception_Worker::getKeyboardDeviceList();
@@ -216,7 +215,6 @@ void QInputDeviceListWindow::updateKeyboardDeviceListInfo()
 
 void QInputDeviceListWindow::updateMouseDeviceListInfo()
 {
-    ui->mouseDeviceTable->clearContents();
     ui->mouseDeviceTable->setRowCount(0);
 
     QList<InputDevice> mouselist = Interception_Worker::getMouseDeviceList();

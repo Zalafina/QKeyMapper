@@ -171,7 +171,6 @@ void QMacroListDialog::setUILanguage(int languageindex)
 
 void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macroDataTable, const OrderedMap<QString, MappingMacroData> &mappingMacroDataList)
 {
-    macroDataTable->clearContents();
     macroDataTable->setRowCount(0);
 
     if (false == mappingMacroDataList.isEmpty()){

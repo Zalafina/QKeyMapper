@@ -146,7 +146,6 @@ void QMappingSequenceEdit::refreshMappingSequenceEditTableWidget(MappingSequence
     }
 
     QSignalBlocker blocker(mappingSequenceEditTable);
-    mappingSequenceEditTable->clearContents();
     mappingSequenceEditTable->setRowCount(0);
 
     if (mappingSequenceList.isEmpty()){
