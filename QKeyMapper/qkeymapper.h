@@ -1575,6 +1575,7 @@ public:
     static QList<MAP_KEYDATA> s_CopiedMappingData;
     static QHash<int, QStringList> s_OriginalKeysCategoryMap;
     static QHash<int, QStringList> s_MappingKeysCategoryMap;
+    static QStringList s_SpecialMappingKeyPrePostFixList;
     static QIcon s_Icon_Blank;
     static int m_UI_Scale;
     static int s_TransParentWindowInitialX;

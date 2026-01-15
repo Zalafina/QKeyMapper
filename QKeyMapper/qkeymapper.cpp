@@ -85,6 +85,7 @@ qreal QKeyMapper::s_UI_scale_value = 1.0;
 QList<MAP_KEYDATA> QKeyMapper::s_CopiedMappingData;
 QHash<int, QStringList> QKeyMapper::s_OriginalKeysCategoryMap;
 QHash<int, QStringList> QKeyMapper::s_MappingKeysCategoryMap;
+QStringList QKeyMapper::s_SpecialMappingKeyPrePostFixList;
 QIcon QKeyMapper::s_Icon_Blank;
 int QKeyMapper::m_UI_Scale = UI_SCALE_NORMAL;
 int QKeyMapper::s_TransParentWindowInitialX = 0;
@@ -16193,7 +16194,6 @@ void QKeyMapper::setControlFontEnglish()
     // ui->burstrelease_msLabel->setFont(customFont);
     // ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
-    ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
     ui->pushLevelLabel->setFont(customFont);
     ui->sendTextLabel->setFont(customFont);
@@ -16341,7 +16341,6 @@ void QKeyMapper::setControlFontChinese()
     // ui->burstrelease_msLabel->setFont(customFont);
     // ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
-    ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
     ui->pushLevelLabel->setFont(customFont);
     ui->sendTextLabel->setFont(customFont);
@@ -16489,7 +16488,6 @@ void QKeyMapper::setControlFontJapanese()
     // ui->burstrelease_msLabel->setFont(customFont);
     // ui->settingselectLabel->setFont(customFont);
     ui->removeSettingButton->setFont(customFont);
-    ui->nextarrowCheckBox->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
     ui->pushLevelLabel->setFont(customFont);
     ui->sendTextLabel->setFont(customFont);
@@ -16770,7 +16768,6 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     // ui->moveupButton->setEnabled(status);
     // ui->movedownButton->setEnabled(status);
-    ui->nextarrowCheckBox->setEnabled(status);
 
     // ui->windowswitchkeyLabel->setEnabled(status);
     // ui->checkUpdateButton->setEnabled(status);
@@ -20201,6 +20198,16 @@ void QKeyMapper::initKeysCategoryMap()
         << SENDON_SWITCHTAB_STR
         ;
 
+    s_SpecialMappingKeyPrePostFixList = QStringList() \
+        << SEPARATOR_WAITTIME
+        << SEPARATOR_NEXTARROW
+        << PREFIX_SEND_DOWN
+        << PREFIX_SEND_UP
+        << PREFIX_SEND_BOTH
+        << PREFIX_SEND_EXCLUSION
+        << REPEAT_STR
+        ;
+
     /* Mapping Common Keys */
     mapping_common_keylist = QStringList() \
         << KEY_BLOCKED_STR
@@ -21084,6 +21091,12 @@ void QKeyMapper::updateMappingKeyListComboBox()
 
     m_mapkeyComboBox->clear();
     m_mapkeyComboBox->addItem(QString());
+
+    const QIcon &specialprepostfix_icon = QKeyMapper::s_Icon_Blank;
+    const QStringList specialprepostfix_keyList = QKeyMapper::s_SpecialMappingKeyPrePostFixList;
+    for (const QString &key : specialprepostfix_keyList) {
+        m_mapkeyComboBox->addItem(specialprepostfix_icon, key);
+    }
 
     const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
     const QStringList common_keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_COMMON);
@@ -22409,8 +22422,6 @@ void QKeyMapper::setUILanguage_English()
 
 void QKeyMapper::resetFontSize()
 {
-    ui->nextarrowCheckBox->setFont(QFont("Arial", 16));
-
 #if 0
     QFont customFont(FONTNAME_ENGLISH, 9);
     if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
@@ -23948,8 +23959,13 @@ void QKeyMapper::on_addmapdataButton_clicked()
     if (currentOriKeyText.isEmpty()
         || (m_mapkeyComboBox->isEnabled()
             && currentMapKeyText.isEmpty()
-            && ui->nextarrowCheckBox->isChecked() == false
             && !isSpecialOriginalKey)) {
+        return;
+    }
+
+    if (s_SpecialMappingKeyPrePostFixList.contains(currentMapKeyComboBoxText)) {
+        QString message = tr("\"%1\" cannot be added as a mapping directly.\nRight click the MappingKeyList to copy it to the clipboard.").arg(currentMapKeyComboBoxText);
+        showFailurePopup(message);
         return;
     }
 
@@ -25297,6 +25313,7 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
     else if (VK_CONTROL == vkeycode.KeyCode){
         if (QT_KEY_L_CTRL == (keyevent->nativeModifiers() & QT_KEY_L_CTRL)){
             if (objectName() != SETUPDIALOG_MAPKEY_COMBOBOX_NAME
+                && objectName() != MAPKEY_COMBOBOX_NAME
                 && objectName() != MACROLIST_MAPKEY_COMBOBOX_NAME
                 && objectName() != MAPPINGSEQUENCEEDIT_MAPKEY_COMBOBOX_NAME) {
                 keycodeString = QString("L-Ctrl");
@@ -25348,24 +25365,88 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 void KeyListComboBox::mousePressEvent(QMouseEvent *event)
 {
     if (objectName() == ORIKEY_COMBOBOX_NAME) {
-        if (event->button() == Qt::RightButton
-            && QKeyMapper::getOriginalKeyEditMode() == KEYRECORD_EDITMODE_MANUALEDIT) {
-            QString currentOriKeyText = QKeyMapper::getCurrentOriKeyText();
-            QString currentOriKeyRecordText = QKeyMapper::getCurrentOriKeyRecordText();
-            if (currentOriKeyText.isEmpty() == false
-                && QKeyMapper_Worker::CombinationKeysList.contains(currentOriKeyText)) {
-                QString newCombinationKeyText;
-                if (currentOriKeyRecordText.isEmpty()) {
-                    newCombinationKeyText = currentOriKeyText;
-                }
-                else {
-                    newCombinationKeyText = currentOriKeyRecordText + QString(SEPARATOR_PLUS) + currentOriKeyText;
-                }
-                QKeyMapper::getInstance()->setCurrentOriKeyRecordText(newCombinationKeyText);
+        if (event->button() == Qt::RightButton) {
+            if (QKeyMapper::getOriginalKeyEditMode() == KEYRECORD_EDITMODE_MANUALEDIT) {
+                QString currentOriKeyText = QKeyMapper::getCurrentOriKeyText();
+                QString currentOriKeyRecordText = QKeyMapper::getCurrentOriKeyRecordText();
+                if (currentOriKeyText.isEmpty() == false
+                    && QKeyMapper_Worker::CombinationKeysList.contains(currentOriKeyText)) {
+                    QString newCombinationKeyText;
+                    if (currentOriKeyRecordText.isEmpty()) {
+                        newCombinationKeyText = currentOriKeyText;
+                    }
+                    else {
+                        newCombinationKeyText = currentOriKeyRecordText + QString(SEPARATOR_PLUS) + currentOriKeyText;
+                    }
+                    QKeyMapper::getInstance()->setCurrentOriKeyRecordText(newCombinationKeyText);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[KeyListComboBox_MousePress]" << "Set new CombinationKeyText ->" << newCombinationKeyText;
+                    qDebug() << "[KeyListComboBox_MousePress]" << "Mouse Right Click orikeyComboBox on manualedit mode, Set new CombinationKeyText ->" << newCombinationKeyText;
 #endif
+                }
             }
+            else {
+                QString currentOriKeyText = QKeyMapper::getCurrentOriKeyText();
+                if (!currentOriKeyText.isEmpty()) {
+                    QKeyMapper::copyStringToClipboard(currentOriKeyText);
+
+                    QString popupMessage;
+                    QString popupMessageColor = SUCCESS_COLOR;
+                    int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+                    popupMessage = tr("\"%1\" has been copied to the clipboard.").arg(currentOriKeyText);
+                    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+                }
+            }
+        }
+    }
+    else if (objectName() == MAPKEY_COMBOBOX_NAME) {
+        if (event->button() == Qt::RightButton) {
+            QString currentMapKeyText = QKeyMapper::getCurrentMapKeyText();
+            if (currentMapKeyText.trimmed().isEmpty()) {
+                return;
+            }
+
+            // Copy the mapping key list item to clipboard.
+            // Note: Some items are templates/placeholders and should be converted before copying.
+            QString copyText = currentMapKeyText;
+            const bool isSpecialPrePostFixKey = QKeyMapper::s_SpecialMappingKeyPrePostFixList.contains(currentMapKeyText);
+
+            if (copyText.startsWith(MOUSE_BUTTON_PREFIX)) {
+                // Convert Mouse point helper items to the editable placeholder format.
+                if (copyText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
+                    copyText = copyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(,)");
+                }
+                else if (copyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
+                    copyText = copyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
+                }
+                else if (copyText.endsWith(MOUSE_MOVE_RELATIVE_POSTFIX)) {
+                    copyText = copyText.remove(MOUSE_MOVE_RELATIVE_POSTFIX) + QString(":R(,)");
+                }
+            }
+
+            if (copyText == REPEAT_STR) {
+                // Repeat is a helper keyword; users usually need the template for editing.
+                copyText = REPEAT_TEMPLATE_STR;
+            }
+
+            // When holding L-Ctrl + RightClick, prefix SEPARATOR_NEXTARROW ("»") to make a sequence step.
+            // Do not prefix for special pre/post-fix keys (the arrow itself is already in the special list).
+            if (!isSpecialPrePostFixKey
+                && !QKeyMapper::s_SpecialMappingKeyPrePostFixList.contains(copyText)
+                && (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
+                copyText = QString(SEPARATOR_NEXTARROW) + copyText;
+            }
+
+            if (copyText.trimmed().isEmpty()) {
+                return;
+            }
+
+            QKeyMapper::copyStringToClipboard(copyText);
+
+            QString popupMessage;
+            QString popupMessageColor = SUCCESS_COLOR;
+            int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+            popupMessage = tr("\"%1\" has been copied to the clipboard.").arg(copyText);
+            emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
     }
     else if (objectName() == SETUPDIALOG_ORIKEY_COMBOBOX_NAME) {

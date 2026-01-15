@@ -80,7 +80,7 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
 
             QString popupMessage;
             QString popupMessageColor = SUCCESS_COLOR;
-            int popupMessageDisplayTime = 2000;
+            int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
             popupMessage = tr("Recorded keys have been copied to the clipboard");
             emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }

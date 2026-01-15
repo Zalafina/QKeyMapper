@@ -206,25 +206,6 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QCheckBox" name="nextarrowCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>1020</x>
-     <y>370</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string> » </string>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
-   </property>
-  </widget>
   <widget class="QSpinBox" name="waitTimeSpinBox">
    <property name="geometry">
     <rect>

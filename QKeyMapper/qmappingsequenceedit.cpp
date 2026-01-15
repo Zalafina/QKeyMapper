@@ -188,15 +188,7 @@ void QMappingSequenceEdit::updateMappingKeyListComboBox()
 
     ui->MappingSequenceEdit_MappingKeyListComboBox->clear();
 
-    const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
     ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(QString());
-    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_WAITTIME);
-    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, SEPARATOR_NEXTARROW);
-    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_DOWN);
-    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_UP);
-    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_BOTH);
-    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, PREFIX_SEND_EXCLUSION);
-    ui->MappingSequenceEdit_MappingKeyListComboBox->addItem(common_icon, REPEAT_STR);
     for(int i = 1; i < mapkeyComboBox->count(); i++) {
         QIcon icon = mapkeyComboBox->itemIcon(i);
         QString text = mapkeyComboBox->itemText(i);
