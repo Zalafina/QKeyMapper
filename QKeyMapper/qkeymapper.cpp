@@ -4147,7 +4147,21 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
 
     for (const QString& mappingkeys : mappingkeyseqlist) {
         result.isValid = true;
+
+        // Empty segment (e.g. trailing/duplicate key-sequence separators like "A" + SEPARATOR_NEXTARROW
+        // or consecutive SEPARATOR_NEXTARROW) should be treated as an invalid empty key and reuse
+        // validateSingleMappingKey("") error handling.
+        if (mappingkeys.isEmpty()) {
+            return validateSingleMappingKey(QString(), nesting_level);
+        }
+
         QStringList Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUS);
+
+        // splitMappingKeyString("") may return an empty QStringList (by design). Guard against that here
+        // and reuse the existing invalid-format path for empty key.
+        if (Mapping_Keys.isEmpty()) {
+            return validateSingleMappingKey(QString(), nesting_level);
+        }
 
         int duplicatesRemoved = Mapping_Keys.removeDuplicates();
         if (duplicatesRemoved > 0) {
