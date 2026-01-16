@@ -2261,7 +2261,7 @@ Update</source>
         <location filename="../qkeymapper.cpp" line="24029"/>
         <source>&quot;%1&quot; cannot be added as a mapping directly.
 Right click the MappingKeyList to copy it to the clipboard.</source>
-        <translation>无法使用 &quot;%1&quot; 直接添加映射，请右键点击映射按键列表以复制到剪贴板。</translation>
+        <translation>&quot;%1&quot; 不能用于直接添加映射，请右键点击映射按键列表以复制到剪贴板。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="24122"/>
