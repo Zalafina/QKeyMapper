@@ -1374,6 +1374,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MACRO_STR[]             = "Macro";
     inline constexpr const char UNIVERSAL_MACRO_STR[]   = "UniversalMacro";
     inline constexpr const char REPEAT_STR[]            = "Repeat";
+    inline constexpr const char ONLYONCE_STR[]          = "OnlyOnce";
     inline constexpr const char UNLOCK_STR[]            = "Unlock";
     inline constexpr const char SETVOLUME_STR[]             = "SetVolume";
     inline constexpr const char SETVOLUME_NOTIFY_STR[]      = "SetVolume🔊";
@@ -1382,6 +1383,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYSEQUENCEBREAK_STR[]  = "KeySequenceBreak";
 
     inline constexpr const char REPEAT_TEMPLATE_STR[]   = "Repeat{}x5";
+    inline constexpr const char ONLYONCE_TEMPLATE_STR[]   = "OnlyOnce{}";
 
     inline constexpr const wchar_t SYSTEM_VERB_PROPERTIES[] = L"properties";
 

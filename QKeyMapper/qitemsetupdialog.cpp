@@ -1835,6 +1835,7 @@ void QItemSetupDialog::initKeyListComboBoxes()
     s_valiedMappingKeyList.removeOne(MACRO_STR);
     s_valiedMappingKeyList.removeOne(UNIVERSAL_MACRO_STR);
     s_valiedMappingKeyList.removeOne(REPEAT_STR);
+    s_valiedMappingKeyList.removeOne(ONLYONCE_STR);
     s_valiedMappingKeyList.removeOne(UNLOCK_STR);
     s_valiedMappingKeyList.removeOne(SETVOLUME_STR);
     s_valiedMappingKeyList.removeOne(SETVOLUME_NOTIFY_STR);

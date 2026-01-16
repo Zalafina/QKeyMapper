@@ -20268,6 +20268,7 @@ void QKeyMapper::initKeysCategoryMap()
         << PREFIX_SEND_BOTH
         << PREFIX_SEND_EXCLUSION
         << REPEAT_STR
+        << ONLYONCE_STR
         ;
 
     /* Mapping Common Keys */
@@ -25489,6 +25490,10 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                 // Repeat is a helper keyword; users usually need the template for editing.
                 copyText = REPEAT_TEMPLATE_STR;
             }
+            else if (copyText == ONLYONCE_STR) {
+                // OnlyOnce is a helper keyword; users usually need the template for editing.
+                copyText = ONLYONCE_TEMPLATE_STR;
+            }
 
             // When holding L-Ctrl + RightClick, prefix SEPARATOR_NEXTARROW ("»") to make a sequence step.
             // Do not prefix for special pre/post-fix keys (the arrow itself is already in the special list).
@@ -25580,6 +25585,9 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     if (currentMapKeyListText == REPEAT_STR) {
                         newMapKeyText = REPEAT_TEMPLATE_STR;
                     }
+                    else if (currentMapKeyListText == ONLYONCE_STR) {
+                        newMapKeyText = ONLYONCE_TEMPLATE_STR;
+                    }
                     else {
                         newMapKeyText = currentMapKeyListText;
                     }
@@ -25598,6 +25606,17 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                         }
                         else {
                             newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                        }
+                    }
+                    else if (currentMapKeyListText == ONLYONCE_STR) {
+                        if (isCursorAtBegin) {
+                            newMapKeyText = ONLYONCE_TEMPLATE_STR + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+                        }
+                        else if (isCursorAtEnd) {
+                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + ONLYONCE_TEMPLATE_STR;
+                        }
+                        else {
+                            newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + ONLYONCE_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                         }
                     }
                     else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
@@ -25678,6 +25697,9 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     if (currentMapKeyListText == REPEAT_STR) {
                         newMapKeyText = REPEAT_TEMPLATE_STR;
                     }
+                    else if (currentMapKeyListText == ONLYONCE_STR) {
+                        newMapKeyText = ONLYONCE_TEMPLATE_STR;
+                    }
                     else {
                         newMapKeyText = currentMapKeyListText;
                     }
@@ -25696,6 +25718,17 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                         }
                         else {
                             newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                        }
+                    }
+                    else if (currentMapKeyListText == ONLYONCE_STR) {
+                        if (isCursorAtBegin) {
+                            newMapKeyText = ONLYONCE_TEMPLATE_STR + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+                        }
+                        else if (isCursorAtEnd) {
+                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + ONLYONCE_TEMPLATE_STR;
+                        }
+                        else {
+                            newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + ONLYONCE_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                         }
                     }
                     else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
@@ -25776,6 +25809,9 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     if (currentMapKeyListText == REPEAT_STR) {
                         newMapKeyText = REPEAT_TEMPLATE_STR;
                     }
+                    else if (currentMapKeyListText == ONLYONCE_STR) {
+                        newMapKeyText = ONLYONCE_TEMPLATE_STR;
+                    }
                     else {
                         newMapKeyText = currentMapKeyListText;
                     }
@@ -25794,6 +25830,17 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                         }
                         else {
                             newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                        }
+                    }
+                    else if (currentMapKeyListText == ONLYONCE_STR) {
+                        if (isCursorAtBegin) {
+                            newMapKeyText = ONLYONCE_TEMPLATE_STR + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+                        }
+                        else if (isCursorAtEnd) {
+                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + ONLYONCE_TEMPLATE_STR;
+                        }
+                        else {
+                            newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + ONLYONCE_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                         }
                     }
                     else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
