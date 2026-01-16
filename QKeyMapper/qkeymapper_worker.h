@@ -1269,6 +1269,7 @@ public:
     static QHash<QString, QTimer*> s_BurstKeyTimerMap;
     static QHash<QString, QTimer*> s_BurstKeyPressTimerMap;
     static QHash<QString, int> s_KeySequenceRepeatCount;
+    static QHash<QString, QStringList> s_OnlyOnceFilteredCache;
 #ifdef VIGEM_CLIENT_SUPPORT
     static QList<OrderedMap<QString, BYTE>> pressedvJoyLStickKeysList;
     static QList<OrderedMap<QString, BYTE>> pressedvJoyRStickKeysList;

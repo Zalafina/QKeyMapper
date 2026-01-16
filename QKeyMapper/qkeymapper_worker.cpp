@@ -75,6 +75,7 @@ QHash<QString, int> QKeyMapper_Worker::doublePressOriginalKeysMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyTimerMap;
 QHash<QString, QTimer*> QKeyMapper_Worker::s_BurstKeyPressTimerMap;
 QHash<QString, int> QKeyMapper_Worker::s_KeySequenceRepeatCount;
+QHash<QString, QStringList> QKeyMapper_Worker::s_OnlyOnceFilteredCache;
 
 namespace {
 
@@ -2728,12 +2729,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QStringList repeat_mappingKeyList_filtered = repeat_mappingKeyList;
 
                 if (repeat_mappingkeylist_size > 1) {
-                    static QHash<QString, QStringList> s_OnlyOnceFilteredCache;
                     static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE);
 
-                    const QString cacheKey = repeat_original_key + QStringLiteral("|") + repeat_mappingKeyList.join(SEPARATOR_NEXTARROW);
-                    if (s_OnlyOnceFilteredCache.contains(cacheKey)) {
-                        repeat_mappingKeyList_filtered = s_OnlyOnceFilteredCache.value(cacheKey, repeat_mappingKeyList);
+                    const QString cacheKey = repeat_original_key;
+                    if (QKeyMapper_Worker::s_OnlyOnceFilteredCache.contains(cacheKey)) {
+                        repeat_mappingKeyList_filtered = QKeyMapper_Worker::s_OnlyOnceFilteredCache.value(cacheKey, repeat_mappingKeyList);
                     }
                     else {
                         QStringList filtered;
@@ -2742,7 +2742,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                                 filtered.append(mapkey);
                             }
                         }
-                        s_OnlyOnceFilteredCache.insert(cacheKey, filtered);
+                        QKeyMapper_Worker::s_OnlyOnceFilteredCache.insert(cacheKey, filtered);
                         repeat_mappingKeyList_filtered = filtered;
                     }
                 }
@@ -7040,6 +7040,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
+    s_OnlyOnceFilteredCache.clear();
     // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
     // pressedCombinationRealKeysList.clear();
@@ -7218,6 +7219,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
+    s_OnlyOnceFilteredCache.clear();
     // pressedRealKeysList.clear();
     // pressedVirtualKeysList.clear();
     // pressedCombinationRealKeysList.clear();
@@ -7456,6 +7458,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     // clearAllPressedVirtualKeys();
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
+    s_OnlyOnceFilteredCache.clear();
     // pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
