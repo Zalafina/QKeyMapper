@@ -4180,8 +4180,10 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
 
         if (Mapping_Keys.size() > 1) {
             static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT);
+            static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE);
             static QRegularExpression macro_regex(REGEX_PATTERN_MACRO);
             bool foundRepeatMappingKey = false;
+            bool foundOnlyOnceMappingKey = false;
             bool foundMacroMappingKey = false;
             QString foundSpecialOriginalKey;
             QString foundSpecialMappingKey;
@@ -4192,6 +4194,11 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                 QRegularExpressionMatch repeat_match = repeat_regex.match(mapkey);
                 if (repeat_match.hasMatch()) {
                     foundRepeatMappingKey = true;
+                    break;
+                }
+                QRegularExpressionMatch onlyonce_match = onlyonce_regex.match(mapkey);
+                if (onlyonce_match.hasMatch()) {
+                    foundOnlyOnceMappingKey = true;
                     break;
                 }
                 QRegularExpressionMatch macro_match = macro_regex.match(mapkey);
@@ -4211,6 +4218,11 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
             if (foundRepeatMappingKey) {
                 result.isValid = false;
                 result.errorMessage = tr("MappingCombinationKeys contains Repeat{...}");
+                return result;
+            }
+            if (foundOnlyOnceMappingKey) {
+                result.isValid = false;
+                result.errorMessage = tr("MappingCombinationKeys contains OnlyOnce{...}");
                 return result;
             }
             if (foundMacroMappingKey) {
@@ -4329,6 +4341,39 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
         // Recursively validate the content inside Repeat{...}
         QStringList innerKeySeqList = splitMappingKeyString(repeat_content, SPLIT_WITH_NEXT);
         result = validateMappingKeyString(repeat_content, innerKeySeqList, INITIAL_ROW_INDEX, QString(), nesting_level + 1);
+
+        return result;
+    }
+
+    // Check if this is an OnlyOnce{...}x... pattern
+    static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE);
+    QRegularExpressionMatch onlyonce_match = onlyonce_regex.match(mapkey);
+
+    if (onlyonce_match.hasMatch()) {
+        // Check nesting level limit
+        if (nesting_level >= QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX) {
+            result.isValid = false;
+            result.errorMessage = tr("OnlyOnce{...} nesting level is too deep, please do not exceed %1 levels").arg(QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX);
+            return result;
+        }
+
+        // Extract OnlyOnce content and optional count
+        QString onlyonce_content = onlyonce_match.captured(1);
+        QString onlyonce_count_str = onlyonce_match.captured(2);
+        bool ok = true;
+        // Validate count if provided
+        if (!onlyonce_count_str.isEmpty()) {
+            int onlyonce_count = onlyonce_count_str.toInt(&ok);
+            if (!ok || onlyonce_count_str.startsWith('0') || onlyonce_count < QKeyMapperConstants::REPEAT_COUNT_MIN || onlyonce_count > QKeyMapperConstants::REPEAT_COUNT_MAX) {
+                result.isValid = false;
+                result.errorMessage = tr("Invalid repeat count \"%1\", valid range is %2~%3").arg(onlyonce_count_str).arg(QKeyMapperConstants::REPEAT_COUNT_MIN).arg(QKeyMapperConstants::REPEAT_COUNT_MAX);
+                return result;
+            }
+        }
+
+        // Recursively validate the content inside OnlyOnce{...}
+        QStringList innerKeySeqList = splitMappingKeyString(onlyonce_content, SPLIT_WITH_NEXT);
+        result = validateMappingKeyString(onlyonce_content, innerKeySeqList, INITIAL_ROW_INDEX, QString(), nesting_level + 1);
 
         return result;
     }
@@ -4759,6 +4804,7 @@ QString QKeyMapper::getTrimmedMappingKeyString(const QString &mappingkeystr)
     static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
+    static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE_FIND);
     static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
     // Extract SendText(...), Run(...), SwitchTab(...), KeySequenceBreak(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
@@ -4771,6 +4817,7 @@ QString QKeyMapper::getTrimmedMappingKeyString(const QString &mappingkeystr)
         unlock_regex,
         QRegularExpression(),
         repeat_regex,
+        onlyonce_regex,
         macro_regex
     );
     QString tempMappingKey = extractResult.first;

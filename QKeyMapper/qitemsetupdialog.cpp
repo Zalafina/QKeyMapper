@@ -687,7 +687,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
 }
 #endif
 
-QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &keysequencebreak_regex, const QRegularExpression &unlock_regex, const QRegularExpression &setvolume_regex, const QRegularExpression &repeat_regex, const QRegularExpression &macro_regex)
+QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &keysequencebreak_regex, const QRegularExpression &unlock_regex, const QRegularExpression &setvolume_regex, const QRegularExpression &repeat_regex, const QRegularExpression &onlyonce_regex, const QRegularExpression &macro_regex)
 {
     QStringList preservedParts;
     QString tempMappingKey = mappingKey;
@@ -697,7 +697,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         int start;
         int end;
         QString content;
-        QString type; // "sendtext", "run", "switchtab", "switchtab_save", "keysequencebreak", "unlock", "setvolume", "repeat", "macro", or "universalmacro"
+        QString type; // "sendtext", "run", "switchtab", "switchtab_save", "keysequencebreak", "unlock", "setvolume", "repeat", "onlyonce", "macro", or "universalmacro"
     };
 
     QList<MatchInfo> allMatches;
@@ -1040,6 +1040,52 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         }
     }
 
+    // Find all OnlyOnce{...}x... matches with brace balancing
+    // Note: Unlike SendText/Run, we don't modify the content, just preserve the whole pattern during splitting
+    currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        if (onlyonce_regex.pattern().isEmpty()) {
+            break;
+        }
+
+        // Find "OnlyOnce{" pattern start
+        int onlyonceStart = mappingKey.indexOf("OnlyOnce{", currentPos);
+        if (onlyonceStart == -1) {
+            break;
+        }
+
+        // Find the matching closing brace with balance checking
+        int bracePos = onlyonceStart + 9; // Position after "OnlyOnce{"
+        int depth = 1;
+        while (bracePos < mappingKey.length() && depth > 0) {
+            if (mappingKey[bracePos] == '{') depth++;
+            else if (mappingKey[bracePos] == '}') depth--;
+            bracePos++;
+        }
+
+        if (depth == 0) {
+            // Found balanced braces, now look for the optional "x<count>" part
+            QRegularExpression countPattern(R"(x(\d+))");
+            QRegularExpressionMatch countMatch = countPattern.match(mappingKey, bracePos);
+
+            MatchInfo info;
+            info.start = onlyonceStart;
+            if (countMatch.hasMatch()) {
+                info.end = countMatch.capturedEnd();
+            }
+            else {
+                info.end = bracePos;
+            }
+            info.content = mappingKey.mid(onlyonceStart, info.end - onlyonceStart);
+            info.type = "onlyonce";
+            allMatches.append(info);
+            currentPos = info.end;
+        } else {
+            // Unbalanced braces, move past this OnlyOnce{
+            currentPos = onlyonceStart + 9;
+        }
+    }
+
     // Find all Macro(...) and UniversalMacro(...) matches
     // Pattern: Macro(name) or Macro(name)x<count> or UniversalMacro(name) or UniversalMacro(name)x<count>
     currentPos = 0;
@@ -1188,7 +1234,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
 
                 // Recursively process inner content to handle nested Repeat and remove whitespace
                 QPair<QString, QStringList> innerResult = extractSpecialPatternsWithBracketBalancing(
-                    innerContent, sendtext_regex, run_regex, switchtab_regex, keysequencebreak_regex, unlock_regex, setvolume_regex, repeat_regex, macro_regex
+                    innerContent, sendtext_regex, run_regex, switchtab_regex, keysequencebreak_regex, unlock_regex, setvolume_regex, repeat_regex, onlyonce_regex, macro_regex
                 );
                 QString processedInner = innerResult.first;
                 QStringList innerPreservedParts = innerResult.second;
@@ -1205,6 +1251,43 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
 
                 // Reconstruct the Repeat pattern with processed inner content
                 content = QString("Repeat{%1}x%2").arg(processedInner, repeatCount);
+            }
+            // If pattern doesn't match, keep original content unchanged
+        }
+        else if (allMatches[i].type == "onlyonce") {
+            // OnlyOnce{...}x... needs recursive processing to remove whitespace from inner mapping keys
+            // Extract the pattern: OnlyOnce{inner_content}x<count>
+            static QRegularExpression onlyoncePattern(REGEX_PATTERN_ONLYONCE);
+            QRegularExpressionMatch onlyonceMatch = onlyoncePattern.match(content);
+
+            if (onlyonceMatch.hasMatch()) {
+                QString innerContent = onlyonceMatch.captured(1);  // Extract {...} content
+                QString repeatCount = onlyonceMatch.captured(2);   // Optional x<count>
+
+                // Recursively process inner content to handle nested Repeat/OnlyOnce and remove whitespace
+                QPair<QString, QStringList> innerResult = extractSpecialPatternsWithBracketBalancing(
+                    innerContent, sendtext_regex, run_regex, switchtab_regex, keysequencebreak_regex, unlock_regex, setvolume_regex, repeat_regex, onlyonce_regex, macro_regex
+                );
+                QString processedInner = innerResult.first;
+                QStringList innerPreservedParts = innerResult.second;
+
+                // Remove whitespace from the processed inner content
+                static QRegularExpression whitespace_reg(R"(\s+)");
+                processedInner.remove(whitespace_reg);
+
+                // Restore preserved parts in inner content
+                for (int j = 0; j < innerPreservedParts.size(); ++j) {
+                    QString innerPlaceholder = QString("__PRESERVED_PLACEHOLDER_%1__").arg(j);
+                    processedInner.replace(innerPlaceholder, innerPreservedParts[j]);
+                }
+
+                // Reconstruct the OnlyOnce pattern with processed inner content
+                if (repeatCount.isEmpty()) {
+                    content = QString("OnlyOnce{%1}").arg(processedInner);
+                }
+                else {
+                    content = QString("OnlyOnce{%1}x%2").arg(processedInner, repeatCount);
+                }
             }
             // If pattern doesn't match, keep original content unchanged
         }
@@ -2849,6 +2932,7 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
     static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
+    static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE_FIND);
     static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
     // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
@@ -2861,6 +2945,7 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
         unlock_regex,
         QRegularExpression(),
         repeat_regex,
+        onlyonce_regex,
         macro_regex
     );
     QString tempMappingKey = extractResult.first;
@@ -2909,6 +2994,7 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
     static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
+    static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE_FIND);
     static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
     // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
@@ -2921,6 +3007,7 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
         unlock_regex,
         QRegularExpression(),
         repeat_regex,
+        onlyonce_regex,
         macro_regex
     );
     QString tempMappingKey = extractResult.first;

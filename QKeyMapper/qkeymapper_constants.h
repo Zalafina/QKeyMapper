@@ -1196,9 +1196,18 @@ namespace QKeyMapperConstants {
     // Capture groups: (1) = content inside {}, (2) = repeat count
     inline constexpr const char REGEX_PATTERN_REPEAT[] = R"(^Repeat\{(.+)\}x(\d+)$)";
 
+    // Pattern for matching OnlyOnce{...}x... mapping keys
+    // Matches: OnlyOnce{A}, OnlyOnce{B+C»D}x10, OnlyOnce{SendText(Hello)}x5
+    // Capture groups: (1) = content inside {}, (2) = optional repeat count
+    inline constexpr const char REGEX_PATTERN_ONLYONCE[] = R"(^OnlyOnce\{(.+)\}(?:x(\d+))?$)";
+
     // Pattern for finding Repeat{...}x... parts in a composite string
     // Uses non-greedy matching for brace content to handle nested structures
     inline constexpr const char REGEX_PATTERN_REPEAT_FIND[] = R"(Repeat\{[^}]+\}x\d+)";
+
+    // Pattern for finding OnlyOnce{...}x... parts in a composite string
+    // Uses non-greedy matching for brace content to handle nested structures
+    inline constexpr const char REGEX_PATTERN_ONLYONCE_FIND[] = R"(OnlyOnce\{[^}]+\}(?:x\d+)?)";
 
     // Pattern for matching Macro(...) and UniversalMacro(...) mapping keys
     // Matches: Macro(TestMacro), Macro(MyMacro)x3, UniversalMacro(GlobalMacro), UniversalMacro(GlobalMacro)x5

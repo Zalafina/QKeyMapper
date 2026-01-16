@@ -2725,6 +2725,27 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QStringList repeat_mappingKeyList = keyMappingDataList->at(findindex).Mapping_Keys;
                 QString repeat_original_key = keyMappingDataList->at(findindex).Original_Key;
                 int repeat_mappingkeylist_size = repeat_mappingKeyList.size();
+                QStringList repeat_mappingKeyList_filtered = repeat_mappingKeyList;
+
+                if (repeat_mappingkeylist_size > 1) {
+                    static QHash<QString, QStringList> s_OnlyOnceFilteredCache;
+                    static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE);
+
+                    const QString cacheKey = repeat_original_key + QStringLiteral("|") + repeat_mappingKeyList.join(SEPARATOR_NEXTARROW);
+                    if (s_OnlyOnceFilteredCache.contains(cacheKey)) {
+                        repeat_mappingKeyList_filtered = s_OnlyOnceFilteredCache.value(cacheKey, repeat_mappingKeyList);
+                    }
+                    else {
+                        QStringList filtered;
+                        for (const QString &mapkey : std::as_const(repeat_mappingKeyList)) {
+                            if (!onlyonce_regex.match(mapkey).hasMatch()) {
+                                filtered.append(mapkey);
+                            }
+                        }
+                        s_OnlyOnceFilteredCache.insert(cacheKey, filtered);
+                        repeat_mappingKeyList_filtered = filtered;
+                    }
+                }
 
                 if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYKEY == repeat_mode) {
                     bool isKeyPressed = false;
@@ -2749,30 +2770,49 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                     if (isKeyPressed) {
 #ifdef DEBUG_LOGOUT_ON
+                        if (repeat_mappingKeyList_filtered.isEmpty()) {
+                            qDebug().nospace().noquote() << "[sendInputKeys] Repeat KeySequence by key skipped (OnlyOnce filtered all keys) -> OriginalKey:" << orikey_str;
+                        }
+#endif
+                        if (repeat_mappingKeyList_filtered.isEmpty()) {
+                            // Nothing left to repeat after filtering OnlyOnce
+                        }
+                        else {
+#ifdef DEBUG_LOGOUT_ON
                         qDebug().nospace().noquote() << "[sendInputKeys] Repeat KeySequence by key -> OriginalKey:" << orikey_str << ", Index:" << findindex;
 #endif
-                        real_finished = false;
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
-                        QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                            real_finished = false;
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                        }
                     }
                 }
                 else if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
                     int repeat_times = keyMappingDataList->at(findindex).RepeatTimes;
                     if (s_KeySequenceRepeatCount.contains(repeat_original_key)) {
-                        ++s_KeySequenceRepeatCount[repeat_original_key];
+                        if (repeat_mappingKeyList_filtered.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times count++ -> OriginalKey:" << repeat_original_key << ", RepeatCount:" << s_KeySequenceRepeatCount.value(repeat_original_key) << "\033[0m";
+                            qDebug().nospace().noquote() << "[sendInputKeys] Repeat KeySequence by times skipped (OnlyOnce filtered all keys) -> OriginalKey:" << repeat_original_key;
 #endif
-                        if (s_KeySequenceRepeatCount.value(repeat_original_key) >= repeat_times) {
                             s_KeySequenceRepeatCount.remove(repeat_original_key);
-#ifdef DEBUG_LOGOUT_ON
-                            qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times count reached -> OriginalKey:" << repeat_original_key << ", RepeatTimes:" << repeat_times << "\033[0m";
-#endif
+                            // Nothing left to repeat after filtering OnlyOnce
                         }
                         else {
-                            real_finished = false;
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                            ++s_KeySequenceRepeatCount[repeat_original_key];
+#ifdef DEBUG_LOGOUT_ON
+                            qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times count++ -> OriginalKey:" << repeat_original_key << ", RepeatCount:" << s_KeySequenceRepeatCount.value(repeat_original_key) << "\033[0m";
+#endif
+                            if (s_KeySequenceRepeatCount.value(repeat_original_key) >= repeat_times) {
+                                s_KeySequenceRepeatCount.remove(repeat_original_key);
+#ifdef DEBUG_LOGOUT_ON
+                                qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times count reached -> OriginalKey:" << repeat_original_key << ", RepeatTimes:" << repeat_times << "\033[0m";
+#endif
+                            }
+                            else {
+                                real_finished = false;
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                            }
                         }
                     }
                 }
@@ -16904,13 +16944,14 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression setvolume_regex(QKeyMapperConstants::REGEX_PATTERN_SETVOLUME_FIND);
     static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT_FIND);
+    static QRegularExpression onlyonce_regex(QKeyMapperConstants::REGEX_PATTERN_ONLYONCE_FIND);
     static QRegularExpression macro_regex(QKeyMapperConstants::REGEX_PATTERN_MACRO_FIND);
     // Support both fixed wait time and random range with bracket notation
     // Capture groups: 1=prefix, 2=keyname, 3=bracket_value, 4=range_min, 5=range_max, 6=fixed_time
     static QRegularExpression mapkey_regex(QKeyMapperConstants::REGEX_PATTERN_MAPKEY_WITH_PUSHLEVEL);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) to preserve them during splitting
-    // Note: Repeat{...}x... and Macro(...)x... need to be preserved as whole patterns to avoid splitting by internal separators (»)
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., OnlyOnce{...}x..., and Macro(...) to preserve them during splitting
+    // Note: Repeat/OnlyOnce and Macro patterns need to be preserved as whole patterns to avoid splitting by internal separators (»)
     QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(
         mappingkeystr,
         sendtext_regex,
@@ -16920,6 +16961,7 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
         unlock_regex,
         setvolume_regex,
         repeat_regex,
+        onlyonce_regex,
         macro_regex
     );
     QString tempMappingKey = extractResult.first;
@@ -16975,12 +17017,23 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
         // Handle pure_keys mode (SPLIT_WITH_PLUSANDNEXT)
         if (pure_keys && !keystr.isEmpty()) {
             // Check if this is a Repeat{...}x... pattern
-            QRegularExpressionMatch repeat_match = repeat_regex.match(keystr);
-            if (repeat_match.hasMatch()) {
+            static QRegularExpression repeat_full_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT);
+            static QRegularExpression onlyonce_full_regex(QKeyMapperConstants::REGEX_PATTERN_ONLYONCE);
+            if (repeat_full_regex.match(keystr).hasMatch()) {
                 // For Repeat pattern, extract the inner content and recursively split it
-                QString repeat_content = repeat_match.captured(1);
+                QRegularExpressionMatch repeat_full_match = repeat_full_regex.match(keystr);
+                QString repeat_content = repeat_full_match.captured(1);
                 // Recursively split the inner content to get pure keys
                 QStringList innerPureKeys = splitMappingKeyString(repeat_content, SPLIT_WITH_PLUSANDNEXT, true);
+                // Add all inner pure keys to the result
+                splitted_mappingkeys.append(innerPureKeys);
+            }
+            else if (onlyonce_full_regex.match(keystr).hasMatch()) {
+                // For OnlyOnce pattern, extract the inner content and recursively split it
+                QRegularExpressionMatch onlyonce_match = onlyonce_full_regex.match(keystr);
+                QString onlyonce_content = onlyonce_match.captured(1);
+                // Recursively split the inner content to get pure keys
+                QStringList innerPureKeys = splitMappingKeyString(onlyonce_content, SPLIT_WITH_PLUSANDNEXT, true);
                 // Add all inner pure keys to the result
                 splitted_mappingkeys.append(innerPureKeys);
             }
@@ -17055,10 +17108,12 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
     }
 
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT);
+    static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE);
     QStringList result;
 
     for (const QString &key : inputKeys) {
         QRegularExpressionMatch repeat_match = repeat_regex.match(key);
+        QRegularExpressionMatch onlyonce_match = onlyonce_regex.match(key);
 
         if (repeat_match.hasMatch()) {
             // This is a Repeat{...}x... instruction
@@ -17091,6 +17146,40 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace().noquote() << "[expandRepeatKeys] Expanded Repeat{" << repeat_content << "}x" << repeat_count
                                          << " to " << expandedInnerKeys.size() * repeat_count << " keys (nesting level: " << nesting_level << ")";
+#endif
+        }
+        else if (onlyonce_match.hasMatch()) {
+            // This is an OnlyOnce{...}x... instruction
+            QString onlyonce_content = onlyonce_match.captured(1);
+            QString onlyonce_count_str = onlyonce_match.captured(2);
+            bool ok = true;
+            int onlyonce_count = 1;
+
+            if (!onlyonce_count_str.isEmpty()) {
+                onlyonce_count = onlyonce_count_str.toInt(&ok);
+                if (!ok || onlyonce_count_str.startsWith('0') || onlyonce_count < REPEAT_COUNT_MIN || onlyonce_count > REPEAT_COUNT_MAX) {
+#ifdef DEBUG_LOGOUT_ON
+                    qWarning("[expandRepeatKeys] Invalid onlyonce count: %s, skipping expansion.", qPrintable(onlyonce_count_str));
+#endif
+                    result.append(key);
+                    continue;
+                }
+            }
+
+            // Split the inner content by SEPARATOR_NEXTARROW to get the key sequence
+            QStringList innerKeys = splitMappingKeyString(onlyonce_content, SPLIT_WITH_NEXT);
+
+            // Recursively expand any nested Repeat/OnlyOnce in the inner content
+            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1);
+
+            // Append the expanded inner keys only for the first cycle
+            for (int i = 0; i < onlyonce_count; ++i) {
+                result.append(expandedInnerKeys);
+            }
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[expandRepeatKeys] Expanded OnlyOnce{" << onlyonce_content << "}x" << onlyonce_count
+                                         << " to " << onlyonce_count << " entries (nesting level: " << nesting_level << ")";
 #endif
         }
         else {

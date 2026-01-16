@@ -70,6 +70,7 @@ public:
         const QRegularExpression &unlock_regex,
         const QRegularExpression &setvolume_regex = QRegularExpression(),
         const QRegularExpression &repeat_regex = QRegularExpression(),
+        const QRegularExpression &onlyonce_regex = QRegularExpression(),
         const QRegularExpression &macro_regex = QRegularExpression()
     );
 
