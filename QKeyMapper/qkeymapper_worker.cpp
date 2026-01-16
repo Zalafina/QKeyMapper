@@ -2117,7 +2117,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
     // Support both fixed wait time (A⏱50) and random range (A⏱(50~70))
     // Capture groups: 1=prefix, 2=keyname, 3=range_min, 4=range_max, 5=fixed_time
-    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)");
+    static QRegularExpression mapkey_regex(QKeyMapperConstants::REGEX_PATTERN_MAPKEY);
     static QRegularExpression sendtext_regex(
         REGEX_PATTERN_SENDTEXT,
         QRegularExpression::MultilineOption
@@ -2128,6 +2128,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
     static QRegularExpression setvolume_regex(REGEX_PATTERN_SETVOLUME);
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
+    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))(?:\[(\d{1,3})\])?$)");
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
@@ -2296,6 +2297,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else if (prefix == PREFIX_SEND_UP) {
                     sendtype = SENDTYPE_UP;
                 }
+                else if (prefix == PREFIX_SEND_TOGGLE) {
+                    sendtype = SENDTYPE_TOGGLE;
+                }
                 else if (prefix == PREFIX_SEND_BOTH) {
                     sendtype = SENDTYPE_BOTH;
                 }
@@ -2311,10 +2315,40 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
             }
 
+            if (sendtype == SENDTYPE_TOGGLE) {
+                bool toggle_supported = false;
+                if (!s_ViGEmTargetList.isEmpty() && vjoy_match.hasMatch()) {
+                    QString joystickButton = vjoy_match.captured(1);
+                    if (joystickButton != VJOY_LT_BRAKE_STR
+                        && joystickButton != VJOY_RT_BRAKE_STR
+                        && joystickButton != VJOY_LT_ACCEL_STR
+                        && joystickButton != VJOY_RT_ACCEL_STR) {
+                        toggle_supported = true;
+                    }
+                }
+                else if (VirtualMouseButtonMap.contains(key)) {
+                    toggle_supported = true;
+                }
+                else if (QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
+                    if (!(key.startsWith(KEY2MOUSE_PREFIX)
+                          || key.startsWith(CROSSHAIR_PREFIX)
+                          || key.startsWith(FUNC_PREFIX)
+                          || key.startsWith(GYRO2MOUSE_PREFIX)
+                          || key == MOUSE2VJOY_HOLD_KEY_STR)) {
+                        toggle_supported = true;
+                    }
+                }
+
+                if (!toggle_supported) {
+                    sendtype = SENDTYPE_NORMAL;
+                }
+            }
+
             if (key.isEmpty()
                 || key == KEY_NONE_STR
                 || sendtype == SENDTYPE_DOWN
                 || sendtype == SENDTYPE_UP
+                || sendtype == SENDTYPE_TOGGLE
                 || sendtype == SENDTYPE_BOTH) {
                 continue;
             }
@@ -2875,6 +2909,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else if (prefix == PREFIX_SEND_UP) {
                         sendtype = SENDTYPE_UP;
                     }
+                    else if (prefix == PREFIX_SEND_TOGGLE) {
+                        sendtype = SENDTYPE_TOGGLE;
+                    }
                     else if (prefix == PREFIX_SEND_BOTH) {
                         sendtype = SENDTYPE_BOTH;
                     }
@@ -3022,8 +3059,48 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     QString joystickButton = vjoy_match.captured(1);
                     QString gamepadIndexString = vjoy_match.captured(2);
                     int send_keyupdown = KEY_DOWN;
+                    bool vjoy_toggle_supported = (sendtype == SENDTYPE_TOGGLE);
+                    if (vjoy_toggle_supported
+                        && (joystickButton == VJOY_LT_BRAKE_STR
+                            || joystickButton == VJOY_RT_BRAKE_STR
+                            || joystickButton == VJOY_LT_ACCEL_STR
+                            || joystickButton == VJOY_RT_ACCEL_STR)) {
+                        vjoy_toggle_supported = false;
+                    }
+                    int gamepad_index = 0;
+                    if (!gamepadIndexString.isEmpty()) {
+                        gamepad_index = gamepadIndexString.toInt();
+                    }
                     if (sendtype == SENDTYPE_UP) {
                         send_keyupdown = KEY_UP;
+                    }
+                    else if (sendtype == SENDTYPE_TOGGLE && vjoy_toggle_supported) {
+                        bool is_pressed = false;
+                        if (0 <= gamepad_index && gamepad_index < pressedvJoyButtonsList.size()) {
+                            QRegularExpressionMatch vjoy_pushlevel_match = vjoy_pushlevel_keys_regex.match(joystickButton);
+                            if (vjoy_pushlevel_match.hasMatch()) {
+                                QString pushlevelKeyStr = vjoy_pushlevel_match.captured(1);
+                                if (pushlevelKeyStr.startsWith("LS-") && gamepad_index < pressedvJoyLStickKeysList.size()) {
+                                    is_pressed = pressedvJoyLStickKeysList[gamepad_index].contains(pushlevelKeyStr);
+                                }
+                                else if (pushlevelKeyStr.startsWith("RS-") && gamepad_index < pressedvJoyRStickKeysList.size()) {
+                                    is_pressed = pressedvJoyRStickKeysList[gamepad_index].contains(pushlevelKeyStr);
+                                }
+                                else {
+                                    is_pressed = pressedvJoyButtonsList[gamepad_index].contains(joystickButton);
+                                }
+                            }
+                            else {
+                                is_pressed = pressedvJoyButtonsList[gamepad_index].contains(joystickButton);
+                            }
+                        }
+                        send_keyupdown = is_pressed ? KEY_UP : KEY_DOWN;
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "[sendInputKeys] vJoy Toggle -> "
+                                                     << joystickButton << "@" << gamepad_index
+                                                     << ", pressed=" << is_pressed
+                                                     << ", send=" << (send_keyupdown == KEY_DOWN ? "DOWN" : "UP");
+#endif
                     }
 
                     if (gamepadIndexString.isEmpty()) {
@@ -3035,7 +3112,6 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                     }
                     else {
-                        int gamepad_index = gamepadIndexString.toInt();
                         if (send_keyupdown == KEY_DOWN) {
                             ViGEmClient_PressButton(joystickButton, AUTO_ADJUST_NONE, gamepad_index, INITIAL_PLAYER_INDEX);
                         }
@@ -3119,6 +3195,15 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     int send_keyupdown = KEY_DOWN;
                     if (sendtype == SENDTYPE_UP) {
                         send_keyupdown = KEY_UP;
+                    }
+                    else if (sendtype == SENDTYPE_TOGGLE) {
+                        bool is_pressed = pressedVirtualKeysList.contains(key);
+                        send_keyupdown = is_pressed ? KEY_UP : KEY_DOWN;
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "[sendInputKeys] Mouse Toggle -> " << key
+                                                     << ", pressed=" << is_pressed
+                                                     << ", send=" << (send_keyupdown == KEY_DOWN ? "DOWN" : "UP");
+#endif
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
                         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
@@ -3222,8 +3307,26 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
 
                     int send_keyupdown = KEY_DOWN;
+                    bool toggle_supported = (sendtype == SENDTYPE_TOGGLE);
+                    if (toggle_supported
+                        && (key.startsWith(KEY2MOUSE_PREFIX)
+                            || key.startsWith(CROSSHAIR_PREFIX)
+                            || key.startsWith(FUNC_PREFIX)
+                            || key.startsWith(GYRO2MOUSE_PREFIX)
+                            || key == MOUSE2VJOY_HOLD_KEY_STR)) {
+                        toggle_supported = false;
+                    }
                     if (sendtype == SENDTYPE_UP) {
                         send_keyupdown = KEY_UP;
+                    }
+                    else if (sendtype == SENDTYPE_TOGGLE && toggle_supported) {
+                        bool is_pressed = pressedVirtualKeysList.contains(key);
+                        send_keyupdown = is_pressed ? KEY_UP : KEY_DOWN;
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().nospace().noquote() << "[sendInputKeys] Key Toggle -> " << key
+                                                     << ", pressed=" << is_pressed
+                                                     << ", send=" << (send_keyupdown == KEY_DOWN ? "DOWN" : "UP");
+#endif
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
                         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
@@ -3371,7 +3474,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                     }
                     else if (sendtype == SENDTYPE_NORMAL
-                        || sendtype == SENDTYPE_DOWN) {
+                        || sendtype == SENDTYPE_DOWN
+                        || sendtype == SENDTYPE_TOGGLE) {
                         s_BlockKeyboard = true;
                         if (key == BLOCK_KEYBOARD_NOTIFY_STR) {
                             emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_KEYBOARD, true);
@@ -3387,7 +3491,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                     }
                     else if (sendtype == SENDTYPE_NORMAL
-                        || sendtype == SENDTYPE_DOWN) {
+                        || sendtype == SENDTYPE_DOWN
+                        || sendtype == SENDTYPE_TOGGLE) {
                         s_BlockMouse = true;
                         if (key == BLOCK_MOUSE_NOTIFY_STR) {
                             emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_MOUSE, true);
@@ -16802,7 +16907,7 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression macro_regex(QKeyMapperConstants::REGEX_PATTERN_MACRO_FIND);
     // Support both fixed wait time and random range with bracket notation
     // Capture groups: 1=prefix, 2=keyname, 3=bracket_value, 4=range_min, 5=range_max, 6=fixed_time
-    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)");
+    static QRegularExpression mapkey_regex(QKeyMapperConstants::REGEX_PATTERN_MAPKEY_WITH_PUSHLEVEL);
 
     // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) to preserve them during splitting
     // Note: Repeat{...}x... and Macro(...)x... need to be preserved as whole patterns to avoid splitting by internal separators (»)

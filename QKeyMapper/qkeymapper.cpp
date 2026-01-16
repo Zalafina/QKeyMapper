@@ -4335,7 +4335,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
 
     // Support both fixed wait time (A⏱50) and random range (A⏱(50~70))
     // Capture groups: 1=prefix, 2=keyname, 3=range_min, 4=range_max, 5=fixed_time
-    static QRegularExpression mapkey_regex(R"(^([↓↑⇵！]?)([^⏱]+)(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)");
+    static QRegularExpression mapkey_regex(QKeyMapperConstants::REGEX_PATTERN_MAPKEY);
 
     QRegularExpressionMatch mapkey_match = mapkey_regex.match(mapkey);
     if (mapkey_match.hasMatch()) {
@@ -20217,6 +20217,7 @@ void QKeyMapper::initKeysCategoryMap()
         << SEPARATOR_NEXTARROW
         << PREFIX_SEND_DOWN
         << PREFIX_SEND_UP
+        << PREFIX_SEND_TOGGLE
         << PREFIX_SEND_BOTH
         << PREFIX_SEND_EXCLUSION
         << REPEAT_STR
@@ -25557,6 +25558,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             || currentMapKeyListText == SEPARATOR_NEXTARROW
                             || currentMapKeyListText == PREFIX_SEND_DOWN
                             || currentMapKeyListText == PREFIX_SEND_UP
+                            || currentMapKeyListText == PREFIX_SEND_TOGGLE
                             || currentMapKeyListText == PREFIX_SEND_BOTH
                             || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                             newMapKeyText = currentMapKeyText + currentMapKeyListText;
@@ -25571,6 +25573,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                                 || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
                                 || currentMapKeyListText == PREFIX_SEND_BOTH
                                 || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                                 newMapKeyText = currentMapKeyText + currentMapKeyListText;
@@ -25584,6 +25587,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                                 || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
                                 || currentMapKeyListText == PREFIX_SEND_BOTH
                                 || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
@@ -25652,6 +25656,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             || currentMapKeyListText == SEPARATOR_NEXTARROW
                             || currentMapKeyListText == PREFIX_SEND_DOWN
                             || currentMapKeyListText == PREFIX_SEND_UP
+                            || currentMapKeyListText == PREFIX_SEND_TOGGLE
                             || currentMapKeyListText == PREFIX_SEND_BOTH
                             || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                             newMapKeyText = currentMapKeyText + currentMapKeyListText;
@@ -25666,6 +25671,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                                 || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
                                 || currentMapKeyListText == PREFIX_SEND_BOTH
                                 || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                                 newMapKeyText = currentMapKeyText + currentMapKeyListText;
@@ -25679,6 +25685,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                                 || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
                                 || currentMapKeyListText == PREFIX_SEND_BOTH
                                 || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
@@ -25747,6 +25754,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             || currentMapKeyListText == SEPARATOR_NEXTARROW
                             || currentMapKeyListText == PREFIX_SEND_DOWN
                             || currentMapKeyListText == PREFIX_SEND_UP
+                            || currentMapKeyListText == PREFIX_SEND_TOGGLE
                             || currentMapKeyListText == PREFIX_SEND_BOTH
                             || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                             newMapKeyText = currentMapKeyText + currentMapKeyListText;
@@ -25761,6 +25769,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                                 || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
                                 || currentMapKeyListText == PREFIX_SEND_BOTH
                                 || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                                 newMapKeyText = currentMapKeyText + currentMapKeyListText;
@@ -25774,6 +25783,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                                 || currentMapKeyListText == SEPARATOR_NEXTARROW
                                 || currentMapKeyListText == PREFIX_SEND_DOWN
                                 || currentMapKeyListText == PREFIX_SEND_UP
+                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
                                 || currentMapKeyListText == PREFIX_SEND_BOTH
                                 || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);

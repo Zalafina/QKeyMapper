@@ -592,6 +592,7 @@ namespace QKeyMapperConstants {
     inline constexpr int SENDTYPE_UP       = 2;
     inline constexpr int SENDTYPE_BOTH     = 3;
     inline constexpr int SENDTYPE_EXCLUSION = 4;
+    inline constexpr int SENDTYPE_TOGGLE   = 5;
 
     inline constexpr int SENDTYPE_BOTH_WAITTIME = 20;
 
@@ -850,6 +851,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char PREFIX_PASSTHROUGH[] = "$";
     inline constexpr const char PREFIX_SEND_DOWN[]    = "↓";
     inline constexpr const char PREFIX_SEND_UP[]      = "↑";
+    inline constexpr const char PREFIX_SEND_TOGGLE[]  = "↕";
     inline constexpr const char PREFIX_SEND_BOTH[]    = "⇵";
     inline constexpr const char PREFIX_SEND_EXCLUSION[] = "！";
 
@@ -1210,6 +1212,8 @@ namespace QKeyMapperConstants {
 
     // Pattern for matching OriginalKey with note
     inline constexpr const char REGEX_PATTERN_ORIGINALKEY_WITHNOTE[] = R"(^(.*?)(?:【(.*?)】)?$)";
+    inline constexpr const char REGEX_PATTERN_MAPKEY[] = R"(^([↓↑⇵↕！]?)([^⏱]+)(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)";
+    inline constexpr const char REGEX_PATTERN_MAPKEY_WITH_PUSHLEVEL[] = R"(^([↓↑⇵↕！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)";
 
 
     // Common edit control class names for searching
