@@ -25627,10 +25627,26 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             || currentMapKeyListText == PREFIX_SEND_TOGGLE
                             || currentMapKeyListText == PREFIX_SEND_BOTH
                             || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
-                            newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                            if (isCursorAtBegin) {
+                                newMapKeyText = currentMapKeyListText + currentMapKeyText;
+                            }
+                            else if (isCursorAtEnd) {
+                                newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
                         }
                         else {
-                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                            if (isCursorAtBegin) {
+                                newMapKeyText = currentMapKeyListText + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+                            }
+                            else if (isCursorAtEnd) {
+                                newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
                         }
                     }
                     else {
@@ -25739,10 +25755,26 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             || currentMapKeyListText == PREFIX_SEND_TOGGLE
                             || currentMapKeyListText == PREFIX_SEND_BOTH
                             || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
-                            newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                            if (isCursorAtBegin) {
+                                newMapKeyText = currentMapKeyListText + currentMapKeyText;
+                            }
+                            else if (isCursorAtEnd) {
+                                newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
                         }
                         else {
-                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                            if (isCursorAtBegin) {
+                                newMapKeyText = currentMapKeyListText + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+                            }
+                            else if (isCursorAtEnd) {
+                                newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
                         }
                     }
                     else {
@@ -25851,10 +25883,26 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             || currentMapKeyListText == PREFIX_SEND_TOGGLE
                             || currentMapKeyListText == PREFIX_SEND_BOTH
                             || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
-                            newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                            if (isCursorAtBegin) {
+                                newMapKeyText = currentMapKeyListText + currentMapKeyText;
+                            }
+                            else if (isCursorAtEnd) {
+                                newMapKeyText = currentMapKeyText + currentMapKeyListText;
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
                         }
                         else {
-                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                            if (isCursorAtBegin) {
+                                newMapKeyText = currentMapKeyListText + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+                            }
+                            else if (isCursorAtEnd) {
+                                newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
+                            }
+                            else {
+                                newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                            }
                         }
                     }
                     else {
