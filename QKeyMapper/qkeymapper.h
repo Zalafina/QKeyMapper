@@ -947,6 +947,7 @@ public:
     static QString getCurrentOriKeyText(void);
     static QString getCurrentMapKeyText(void);
     static QString getCurrentOriKeyRecordText(void);
+    static int getCurrentOriKeyRecordCursorPosition(void);
     static int getOriginalKeyEditMode(void);
     static QString getSendTextString(void);
     static void setCurrentOriKeyRecordText(const QString &newcombinationkeytext);

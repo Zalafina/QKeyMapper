@@ -5864,6 +5864,11 @@ QString QKeyMapper::getCurrentOriKeyRecordText()
     return getInstance()->ui->originalKeyRecordLineEdit->text();
 }
 
+int QKeyMapper::getCurrentOriKeyRecordCursorPosition()
+{
+    return getInstance()->ui->originalKeyRecordLineEdit->cursorPosition();
+}
+
 int QKeyMapper::getOriginalKeyEditMode()
 {
     return getInstance()->m_OriginalKeyEditMode;
@@ -25439,7 +25444,19 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                         newCombinationKeyText = currentOriKeyText;
                     }
                     else {
-                        newCombinationKeyText = currentOriKeyRecordText + QString(SEPARATOR_PLUS) + currentOriKeyText;
+                        int cursorPos = QKeyMapper::getCurrentOriKeyRecordCursorPosition();
+                        int recordTextLength = currentOriKeyRecordText.length();
+                        bool isCursorAtBegin = (cursorPos == 0);
+
+                        if (isCursorAtBegin) {
+                            newCombinationKeyText = currentOriKeyText + QString(SEPARATOR_PLUS) + currentOriKeyRecordText;
+                        }
+                        else {
+                            newCombinationKeyText = currentOriKeyRecordText.left(cursorPos)
+                                + QString(SEPARATOR_PLUS)
+                                + currentOriKeyText
+                                + currentOriKeyRecordText.right(recordTextLength - cursorPos);
+                        }
                     }
                     QKeyMapper::getInstance()->setCurrentOriKeyRecordText(newCombinationKeyText);
 #ifdef DEBUG_LOGOUT_ON
@@ -25531,6 +25548,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                 }
                 else {
                     int cursorPos = QItemSetupDialog::getOriginalKeyCursorPosition();
+                    bool isCursorAtBegin = (cursorPos == 0);
                     bool isCursorAtEnd = (cursorPos == currentOriKeyText.length());
 
                     if (isCursorAtEnd) {
@@ -25548,7 +25566,12 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             newOriKeyText = currentOriKeyText.left(cursorPos) + currentOriKeyListText + currentOriKeyText.right(currentOriKeyText.length() - cursorPos);
                         }
                         else {
-                            newOriKeyText = currentOriKeyText.left(cursorPos) + currentOriKeyListText + QString(SEPARATOR_PLUS) + currentOriKeyText.right(currentOriKeyText.length() - cursorPos);
+                            if (isCursorAtBegin) {
+                                newOriKeyText = currentOriKeyListText + QString(SEPARATOR_PLUS) + currentOriKeyText;
+                            }
+                            else {
+                                newOriKeyText = currentOriKeyText.left(cursorPos) + QString(SEPARATOR_PLUS) + currentOriKeyListText + currentOriKeyText.right(currentOriKeyText.length() - cursorPos);
+                            }
                         }
                     }
                 }
@@ -25675,7 +25698,12 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                             }
                             else {
-                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                                if (isCursorAtBegin) {
+                                    newMapKeyText = currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText;
+                                }
+                                else {
+                                    newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_PLUS) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                                }
                             }
                         }
                     }
@@ -25803,7 +25831,12 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                             }
                             else {
-                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                                if (isCursorAtBegin) {
+                                    newMapKeyText = currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText;
+                                }
+                                else {
+                                    newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_PLUS) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                                }
                             }
                         }
                     }
@@ -25931,7 +25964,12 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                             }
                             else {
-                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                                if (isCursorAtBegin) {
+                                    newMapKeyText = currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText;
+                                }
+                                else {
+                                    newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_PLUS) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
+                                }
                             }
                         }
                     }
