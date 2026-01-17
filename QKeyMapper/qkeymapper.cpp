@@ -16808,16 +16808,16 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     }
 #endif
 
-#if 0
-    ui->installInterceptionButton->setEnabled(status);
+    // ui->installInterceptionButton->setEnabled(status);
     // ui->multiInputGroupBox->setEnabled(status);
     if (false == status || Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
-        ui->multiInputEnableCheckBox->setEnabled(status);
-        ui->multiInputDeviceListButton->setEnabled(status);
         ui->keyboardSelectLabel->setEnabled(status);
         ui->mouseSelectLabel->setEnabled(status);
         ui->keyboardSelectComboBox->setEnabled(status);
         ui->mouseSelectComboBox->setEnabled(status);
+#if 0
+        ui->multiInputEnableCheckBox->setEnabled(status);
+        ui->multiInputDeviceListButton->setEnabled(status);
         if (status
             && Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()
             && ui->multiInputEnableCheckBox->isChecked()) {
@@ -16826,8 +16826,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
         else {
             ui->filterKeysCheckBox->setEnabled(false);
         }
-    }
 #endif
+    }
 
     ui->gamepadSelectLabel->setEnabled(status);
     ui->gamepadSelectComboBox->setEnabled(status);
