@@ -4846,10 +4846,8 @@ QString normalizeOriginalKeyForExclusiveGroup(const QString &originalKey)
 {
     QString normalizedKey = originalKey;
 
-    // Remove multi-input postfix first (e.g. multi keyboard/mouse input support)
-    normalizedKey = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(normalizedKey);
-
     // Grouping rules (keep behavior aligned with worker):
+    // - Keep multi-input postfix (@n) so W, W@1, W@2 are treated as different groups.
     // - Long-press (⏲<ms>): keep the time suffix so Q⏲200 and Q⏲500 can both be enabled.
     // - Double-press (✖<ms>): ignore the time suffix so Q✖300 and Q✖500 are mutually exclusive.
     static QRegularExpression longPressRegex(R"(^(.+?)⏲(\d+)$)");
