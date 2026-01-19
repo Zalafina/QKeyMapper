@@ -4121,6 +4121,15 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
     return result;
 }
 
+static bool isSequenceWrapperMappingKey(const QString &mappingkeys)
+{
+    static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT);
+    static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE);
+
+    return repeat_regex.match(mappingkeys).hasMatch()
+        || onlyonce_regex.match(mappingkeys).hasMatch();
+}
+
 ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeystr, const QStringList &mappingkeyseqlist, int update_rowindex, const QString &originalkeystr_matched, int nesting_level)
 {
     Q_UNUSED(mappingkeystr);
@@ -4153,6 +4162,14 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
         // validateSingleMappingKey("") error handling.
         if (mappingkeys.isEmpty()) {
             return validateSingleMappingKey(QString(), nesting_level);
+        }
+
+        if (isSequenceWrapperMappingKey(mappingkeys)) {
+            result = validateSingleMappingKey(mappingkeys, nesting_level);
+            if (result.isValid == false) {
+                return result;
+            }
+            continue;
         }
 
         QStringList Mapping_Keys = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUS);
@@ -4319,9 +4336,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
 
     if (repeat_match.hasMatch()) {
         // Check nesting level limit
-        if (nesting_level >= QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX) {
+        if (nesting_level >= QKeyMapperConstants::WRAPPER_NESTING_LEVEL_MAX) {
             result.isValid = false;
-            result.errorMessage = tr("Repeat{...} nesting level is too deep, please do not exceed %1 levels").arg(QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX);
+            result.errorMessage = tr("Repeat{...} nesting level is too deep, please do not exceed %1 levels").arg(QKeyMapperConstants::WRAPPER_NESTING_LEVEL_MAX);
             return result;
         }
 
@@ -4351,9 +4368,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
 
     if (onlyonce_match.hasMatch()) {
         // Check nesting level limit
-        if (nesting_level >= QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX) {
+        if (nesting_level >= QKeyMapperConstants::WRAPPER_NESTING_LEVEL_MAX) {
             result.isValid = false;
-            result.errorMessage = tr("OnlyOnce{...} nesting level is too deep, please do not exceed %1 levels").arg(QKeyMapperConstants::REPEAT_NESTING_LEVEL_MAX);
+            result.errorMessage = tr("OnlyOnce{...} nesting level is too deep, please do not exceed %1 levels").arg(QKeyMapperConstants::WRAPPER_NESTING_LEVEL_MAX);
             return result;
         }
 

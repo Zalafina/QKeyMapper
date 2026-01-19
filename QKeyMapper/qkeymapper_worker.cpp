@@ -17105,8 +17105,8 @@ QString getRealOriginalKey(const QString &original_key)
 QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
 {
     // Check nesting level limit
-    if (nesting_level > REPEAT_NESTING_LEVEL_MAX) {
-        qWarning("[expandRepeatKeys] Repeat nesting level exceeds maximum (%d), returning original keys.", REPEAT_NESTING_LEVEL_MAX);
+    if (nesting_level > WRAPPER_NESTING_LEVEL_MAX) {
+        qWarning("[expandRepeatKeys] Repeat nesting level exceeds maximum (%d), returning original keys.", WRAPPER_NESTING_LEVEL_MAX);
         return inputKeys;
     }
 
@@ -17197,8 +17197,8 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
 QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level, QSet<QString> *expandingMacros)
 {
     // Check nesting level limit to prevent deeply nested recursion
-    if (nesting_level > REPEAT_NESTING_LEVEL_MAX) {
-        qWarning("[expandMacroKeys] Macro nesting level exceeds maximum (%d), returning original keys.", REPEAT_NESTING_LEVEL_MAX);
+    if (nesting_level > WRAPPER_NESTING_LEVEL_MAX) {
+        qWarning("[expandMacroKeys] Macro nesting level exceeds maximum (%d), returning original keys.", WRAPPER_NESTING_LEVEL_MAX);
         return inputKeys;
     }
 
