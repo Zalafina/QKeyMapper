@@ -8404,18 +8404,38 @@ void QKeyMapper::switchKeyMappingTabIndex(int index)
 
 bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 {
-    int tab_count = m_KeyMappingTabWidget->count();
-    int insert_index = tab_count;  // Insert at the end instead of before the "+" tab
+    const int tab_count = m_KeyMappingTabWidget->count();
+    QSet<QString> existingTabNames;
+    existingTabNames.reserve(tab_count);
+    for (int i = 0; i < tab_count; ++i) {
+        existingTabNames.insert(m_KeyMappingTabWidget->tabText(i));
+    }
 
-    // Determine tab name based on custom name or default naming scheme
-    QString tabName = customTabName.isEmpty() ? QString("%1%2").arg(MAPPINGTABLE_TAB_TEXT).arg(insert_index + 1) : customTabName;
+    QString tabName = customTabName;
+    if (tabName.isEmpty()) {
+        bool uniqueNameFound = false;
+        for (int i = 1; i <= 999; ++i) {
+            const QString tempName = QString("%1%2").arg(MAPPINGTABLE_TAB_TEXT).arg(i);
+            if (!existingTabNames.contains(tempName)) {
+                tabName = tempName;
+                uniqueNameFound = true;
+                break;
+            }
+        }
 
-    // Check if tabName already exists. If a duplicate is found, generate a unique name in the format "tabName(001~999)"
-    if (isTabTextDuplicate(tabName)) {
+        if (!uniqueNameFound) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[addTabToKeyMappingTabWidget] Tab1~999 are all exists, return false";
+#endif
+            showFailurePopup(tr("All tab names (Tab1～Tab999) are already in use. No additional tabs can be added."));
+            return false;
+        }
+    }
+    else if (existingTabNames.contains(tabName)) {
         bool uniqueNameFound = false;
         for (int i = 1; i <= 999; ++i) {
             QString tempName = QString("%1(%2)").arg(tabName).arg(i, 3, 10, QChar('0'));
-            if (!isTabTextDuplicate(tempName)) {
+            if (!existingTabNames.contains(tempName)) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace() << "[addTabToKeyMappingTabWidget] TabName:" << tabName << " is already exists, set a unique tabname:" << tempName;
 #endif
@@ -8424,7 +8444,6 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
                 break;
             }
         }
-        // If no unique name is found after checking all possible values (001~999), return false
         if (!uniqueNameFound) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug().nospace() << "[addTabToKeyMappingTabWidget] Can not found unique name for TabName:" << tabName << ", return false";
@@ -8536,7 +8555,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
             QString tempName = QString("%1%2").arg(tabName).arg(i, 3, 10, QChar('0'));
             if (!isTabTextDuplicate(tempName)) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[addTabToKeyMappingTabWidget] TabName:" << tabName << " is already exists, set a unique tabname:" << tempName;
+                qDebug().nospace() << "[copyCurrentTabToKeyMappingTabWidget] TabName:" << tabName << " is already exists, set a unique tabname:" << tempName;
 #endif
                 tabName = tempName;
                 uniqueNameFound = true;
@@ -8546,7 +8565,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
         // If no unique name is found after checking all possible values (001~999), return false
         if (!uniqueNameFound) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[addTabToKeyMappingTabWidget] Can not found unique name for TabName:" << tabName << ", return false";
+            qDebug().nospace() << "[copyCurrentTabToKeyMappingTabWidget] Can not found unique name for TabName:" << tabName << ", return false";
 #endif
             return false;
         }
@@ -19399,17 +19418,17 @@ void QKeyMapper::updateSystemTrayDisplay()
 
 void QKeyMapper::showInformationPopup(const QString &message)
 {
-    showPopupMessage(message, SUCCESS_COLOR, 3000);
+    showPopupMessage(message, SUCCESS_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
 }
 
 void QKeyMapper::showWarningPopup(const QString &message)
 {
-    showPopupMessage(message, WARNING_COLOR, 3000);
+    showPopupMessage(message, WARNING_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
 }
 
 void QKeyMapper::showFailurePopup(const QString &message)
 {
-    showPopupMessage(message, FAILURE_COLOR, 3000);
+    showPopupMessage(message, FAILURE_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
 }
 
 void QKeyMapper::showNotificationPopup(const QString &message, const PopupNotificationOptions &options)
