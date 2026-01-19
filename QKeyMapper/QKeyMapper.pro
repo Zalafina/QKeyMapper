@@ -79,6 +79,10 @@ CONFIG(debug, debug|release){
 }
 
 CONFIG(release, debug|release){
+    DEFINES += QT_NO_DEBUG_OUTPUT
+    DEFINES += QT_NO_INFO_OUTPUT
+    DEFINES += QT_NO_WARNING_OUTPUT
+    DEFINES += QT_NO_CRITICAL_OUTPUT
     contains(DEFINES, WIN64) {
         message("WIN64 Release Build")
     } else {
