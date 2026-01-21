@@ -175,13 +175,13 @@
           <property name="minimumSize">
            <size>
             <width>210</width>
-            <height>21</height>
+            <height>22</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>21</height>
+            <height>22</height>
            </size>
           </property>
           <property name="focusPolicy">
@@ -222,13 +222,13 @@
           <property name="minimumSize">
            <size>
             <width>120</width>
-            <height>21</height>
+            <height>22</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>300</width>
-            <height>21</height>
+            <height>22</height>
            </size>
           </property>
           <property name="focusPolicy">
@@ -276,17 +276,42 @@
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>21</height>
+            <height>22</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>21</height>
+            <height>22</height>
            </size>
           </property>
           <property name="focusPolicy">
            <enum>Qt::FocusPolicy::ClickFocus</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="macroContent_SequenceEditButton">
+          <property name="minimumSize">
+           <size>
+            <width>76</width>
+            <height>22</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>76</width>
+            <height>22</height>
+           </size>
+          </property>
+          <property name="focusPolicy">
+           <enum>Qt::FocusPolicy::NoFocus</enum>
+          </property>
+          <property name="text">
+           <string>SeqEdit</string>
+          </property>
+          <property name="autoDefault">
+           <bool>false</bool>
           </property>
          </widget>
         </item>
@@ -327,22 +352,44 @@
         </item>
         <item>
          <widget class="QLineEdit" name="macroNoteLineEdit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="minimumSize">
            <size>
             <width>0</width>
-            <height>21</height>
+            <height>22</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>21</height>
+            <height>22</height>
            </size>
           </property>
           <property name="focusPolicy">
            <enum>Qt::FocusPolicy::ClickFocus</enum>
           </property>
          </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer">
+          <property name="orientation">
+           <enum>Qt::Orientation::Horizontal</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Policy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>81</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </item>
