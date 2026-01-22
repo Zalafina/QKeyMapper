@@ -134,7 +134,8 @@ void QMappingSequenceEdit::setMappingSequence(const QString &mappingsequence)
 void QMappingSequenceEdit::setMappingSequenceEditType(int edit_type)
 {
     if (edit_type == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS
-        || edit_type == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP) {
+        || edit_type == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP
+        || edit_type == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT) {
         m_MappingSequenceEditType = edit_type;
     }
 }
@@ -206,6 +207,36 @@ QString QMappingSequenceEdit::joinCurentMappingSequenceTable()
     joined_mappingsequence = QKeyMapper::getTrimmedMappingKeyString(joined_mappingsequence);
 
     return joined_mappingsequence;
+}
+
+void QMappingSequenceEdit::reopenMappingSequenceEditConfirm()
+{
+    QMappingSequenceEdit *mappingSequenceEdit = QKeyMapper::getInstance()->m_MappingSequenceEdit;
+
+    if (mappingSequenceEdit->isVisible()) {
+
+        /* Show MessageBox confirm whether join current editing mappingsequence back to lineedit */
+        QString message = tr("Do you want to update the current mapping sequence to the lineedit before reopening the mapping sequence editor?");
+        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+                                                                  QMessageBox::Yes | QMessageBox::No,
+                                                                  QMessageBox::No);
+        if (reply != QMessageBox::Yes) {
+            // User cancelled, don't update
+            return;
+        }
+
+        QString joined_mappingsequence = mappingSequenceEdit->joinCurentMappingSequenceTable();
+        if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT) {
+            QMacroListDialog::setEditingMacroText(joined_mappingsequence);
+        }
+        else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS) {
+            QItemSetupDialog::getInstance()->updateMappingKeyLineEdit(joined_mappingsequence);
+        }
+        else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP) {
+            QItemSetupDialog::getInstance()->updateMappingKey_KeyUpLineEdit(joined_mappingsequence);
+        }
+        QKeyMapper::getInstance()->closeMappingSequenceEdit();
+    }
 }
 
 QPushButton *QMappingSequenceEdit::getMapListSelectKeyboardButton() const
@@ -730,7 +761,10 @@ void QMappingSequenceEdit::on_confirmButton_clicked()
 {
     QString joined_mappingsequence = joinCurentMappingSequenceTable();
 
-    if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS) {
+    if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT) {
+        QMacroListDialog::setEditingMacroText(joined_mappingsequence);
+    }
+    else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS) {
         QItemSetupDialog::getInstance()->updateMappingKeyLineEdit(joined_mappingsequence);
     }
     else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP) {

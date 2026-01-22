@@ -87,6 +87,7 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     ui->macroContentLineEdit->setFont(customFont);
     ui->macroNoteLineEdit->setFont(customFont);
     ui->categoryLineEdit->setFont(customFont);
+    ui->macroContent_SequenceEditButton->setFont(customFont);
     ui->clearButton->setFont(customFont);
     ui->deleteMacroButton->setFont(customFont);
     ui->macroListBackupButton->setFont(customFont);
@@ -138,6 +139,7 @@ void QMacroListDialog::setUILanguage(int languageindex)
     ui->catetoryLabel->setText(tr("Category"));
     ui->macroContentLabel->setText(tr("Macro"));
     ui->macroNoteLabel->setText(tr("Note"));
+    ui->macroContent_SequenceEditButton->setText(tr("SeqEdit"));
     ui->clearButton->setText(tr("Clear Editing"));
     ui->deleteMacroButton->setText(tr("Delete"));
     ui->addMacroButton->setText(tr("Add Macro"));
@@ -909,6 +911,22 @@ void QMacroListDialog::macroListBackupActionTriggered(const QString &actionName)
     }
     else if (actionName == MACROLIST_BACKUP_ACTION_IMPORT) {
         importMacroListFromFile();
+    }
+}
+
+void QMacroListDialog::on_macroContent_SequenceEditButton_clicked()
+{
+    QMappingSequenceEdit *mappingSequenceEdit = QKeyMapper::getInstance()->m_MappingSequenceEdit;
+
+    if (mappingSequenceEdit) {
+        mappingSequenceEdit->reopenMappingSequenceEditConfirm();
+
+        QString title =  tr("Mapping Sequence Edit") + " : " + tr("Macro");
+        mappingSequenceEdit->setTitle(title);
+        mappingSequenceEdit->setMappingSequence(ui->macroContentLineEdit->text());
+        mappingSequenceEdit->setMappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT);
+
+        QKeyMapper::getInstance()->showMappingSequenceEdit();
     }
 }
 
@@ -3115,6 +3133,16 @@ int QMacroListDialog::insertMacroDataFromCopiedList()
 #endif
 
     return inserted_count;
+}
+
+void QMacroListDialog::closeEvent(QCloseEvent *event)
+{
+    int mappingsequence_edittype = QMappingSequenceEdit::getInstance()->getMappingSequenceEditType();
+    if (mappingsequence_edittype == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT) {
+        QKeyMapper::getInstance()->closeMappingSequenceEdit();
+    }
+
+    QDialog::closeEvent(event);
 }
 
 void QMacroListDialog::selectedMacroItemsMoveUp()

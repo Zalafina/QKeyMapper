@@ -57,6 +57,8 @@ public:
     static QString getMappingKeyText(void);
     static int getMappingKeyCursorPosition(void);
     static void setMappingKeyText(const QString &new_keytext);
+    static void setMappingKeyLineEditText(const QString &keytext);
+    static void setMappingKey_KeyUpLineEditText(const QString &keytext);
     static QString getCurrentOriKeyListText(void);
     static QString getCurrentMapKeyListText(void);
     static void setEditingMappingKeyLineEdit(int editing_lineedit);
@@ -92,7 +94,6 @@ private:
     void refreshOriginalKeyRelatedUI(void);
     bool refreshMappingKeyRelatedUI(void);
     void refreshAllRelatedUI(void);
-    void reopenMappingSequenceEditConfirm(void);
 
     // Unified update system helper methods
 public:

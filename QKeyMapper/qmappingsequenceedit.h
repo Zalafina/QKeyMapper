@@ -49,6 +49,7 @@ public:
     void refreshMappingSequenceEditTableWidget(MappingSequenceEditTableWidget *mappingSequenceEditTable, const QStringList& mappingSequenceList);
     void updateMappingKeyListComboBox(void);
     QString joinCurentMappingSequenceTable(void);
+    void reopenMappingSequenceEditConfirm(void);
 
     QPushButton* getMapListSelectKeyboardButton(void) const;
     QPushButton* getMapListSelectMouseButton(void) const;

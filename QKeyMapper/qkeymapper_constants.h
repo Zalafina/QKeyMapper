@@ -75,6 +75,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr int MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS         = 0;
     inline constexpr int MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP   = 1;
+    inline constexpr int MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT        = 2;
 
     inline constexpr int CATEGORY_FILTER_ALL_INDEX = 0;
 

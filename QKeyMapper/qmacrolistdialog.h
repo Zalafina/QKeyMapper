@@ -131,6 +131,7 @@ signals:
     void macroListTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
 
 protected:
+    void closeEvent(QCloseEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     // Override resizeEvent to adjust table column widths when window is resized
@@ -163,6 +164,8 @@ private slots:
 
     // Slots for MacroList backup popup actions
     void macroListBackupActionTriggered(const QString &actionName);
+
+    void on_macroContent_SequenceEditButton_clicked();
 
 private:
     void initMacroListTabWidget(void);

@@ -583,6 +583,16 @@ void QItemSetupDialog::setMappingKeyText(const QString &new_keytext)
     }
 }
 
+void QItemSetupDialog::setMappingKeyLineEditText(const QString &keytext)
+{
+    return getInstance()->ui->SetupDialog_MappingKeyLineEdit->setText(keytext);
+}
+
+void QItemSetupDialog::setMappingKey_KeyUpLineEditText(const QString &keytext)
+{
+    return getInstance()->ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(keytext);
+}
+
 QString QItemSetupDialog::getCurrentOriKeyListText()
 {
     return getInstance()->m_OriginalKeyListComboBox->currentText();
@@ -1376,7 +1386,11 @@ void QItemSetupDialog::closeEvent(QCloseEvent *event)
 #endif
     }
 
-    QKeyMapper::getInstance()->closeMappingSequenceEdit();
+    int mappingsequence_edittype = QMappingSequenceEdit::getInstance()->getMappingSequenceEditType();
+    if (mappingsequence_edittype == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS
+        || mappingsequence_edittype == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP) {
+        QKeyMapper::getInstance()->closeMappingSequenceEdit();
+    }
 
     emit QKeyMapper::getInstance()->setupDialogClosed_Signal();
 
@@ -2766,33 +2780,6 @@ void QItemSetupDialog::refreshAllRelatedUI()
     }
 }
 
-void QItemSetupDialog::reopenMappingSequenceEditConfirm()
-{
-    QMappingSequenceEdit *mappingSequenceEdit = QKeyMapper::getInstance()->m_MappingSequenceEdit;
-
-    if (mappingSequenceEdit->isVisible()) {
-
-        /* Show MessageBox confirm whether join current editing mappingsequence back to lineedit */
-        QString message = tr("Do you want to update the current mapping sequence to the lineedit before reopening the mapping sequence editor?");
-        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
-                                                                  QMessageBox::Yes | QMessageBox::No,
-                                                                  QMessageBox::No);
-        if (reply != QMessageBox::Yes) {
-            // User cancelled, don't update
-            return;
-        }
-
-        QString joined_mappingsequence = mappingSequenceEdit->joinCurentMappingSequenceTable();
-        if (MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP == QMappingSequenceEdit::getInstance()->getMappingSequenceEditType()) {
-            ui->SetupDialog_MappingKey_KeyUpLineEdit->setText(joined_mappingsequence);
-        }
-        else {
-            ui->SetupDialog_MappingKeyLineEdit->setText(joined_mappingsequence);
-        }
-        QKeyMapper::getInstance()->closeMappingSequenceEdit();
-    }
-}
-
 void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
 {
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
@@ -3752,7 +3739,7 @@ void QItemSetupDialog::on_mappingKey_SequenceEditButton_clicked()
     QMappingSequenceEdit *mappingSequenceEdit = QKeyMapper::getInstance()->m_MappingSequenceEdit;
 
     if (mappingSequenceEdit) {
-        reopenMappingSequenceEditConfirm();
+        mappingSequenceEdit->reopenMappingSequenceEditConfirm();
 
         QString title =  tr("Mapping Sequence Edit") + " : " + tr("MappingKey");
         mappingSequenceEdit->setTitle(title);
@@ -3769,7 +3756,7 @@ void QItemSetupDialog::on_mappingKey_KeyUpSequenceEditButton_clicked()
     QMappingSequenceEdit *mappingSequenceEdit = QKeyMapper::getInstance()->m_MappingSequenceEdit;
 
     if (mappingSequenceEdit) {
-        reopenMappingSequenceEditConfirm();
+        mappingSequenceEdit->reopenMappingSequenceEditConfirm();
 
         QString title = tr("Mapping Sequence Edit") + " : " + tr("KeyUpMapping");
         mappingSequenceEdit->setTitle(title);
