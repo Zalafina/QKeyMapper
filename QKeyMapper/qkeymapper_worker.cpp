@@ -6087,30 +6087,56 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
     qDebug().nospace() << "[ViGEmClient_CheckJoysticksReportData](" << gamepad_index << ") vJoyRSPressedKeys ->" << pressedvJoyRStickKeys_ref;
 #endif
 
-    // Reset thumb values
-    ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_RELEASE;
-    ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_RELEASE;
-    ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_RELEASE;
-    ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_RELEASE;
+    QStringList pressedLStickKeysList = pressedvJoyLStickKeys_ref.keys();
+    QStringList pressedRStickKeysList = pressedvJoyRStickKeys_ref.keys();
+
+    const int keyboardSource = static_cast<int>(VJoyStickInputSource::Keyboard);
+    const int mouseSource = static_cast<int>(VJoyStickInputSource::Mouse);
+    const bool hasLKeys = !pressedLStickKeysList.isEmpty();
+    const bool hasRKeys = !pressedRStickKeysList.isEmpty();
+
+    if (hasLKeys) {
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.ls_input_source, keyboardSource);
+    }
+    if (hasRKeys) {
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.rs_input_source, keyboardSource);
+    }
+
+    const bool keepLeftFromMouse = !hasLKeys && (QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.ls_input_source) == mouseSource);
+    const bool keepRightFromMouse = !hasRKeys && (QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.rs_input_source) == mouseSource);
+
+    // Reset thumb values only when not controlled by mouse
+    if (!keepLeftFromMouse) {
+        ViGEmTarget_Report.sThumbLX = XINPUT_THUMB_RELEASE;
+        ViGEmTarget_Report.sThumbLY = XINPUT_THUMB_RELEASE;
+    }
+    if (!keepRightFromMouse) {
+        ViGEmTarget_Report.sThumbRX = XINPUT_THUMB_RELEASE;
+        ViGEmTarget_Report.sThumbRY = XINPUT_THUMB_RELEASE;
+    }
 
     // Update thumb values based on pressed keys
     int custom_radius_ls = VJOY_STICK_RADIUS_MAX;
     if (VJOY_STICK_RADIUS_MIN < reportData.custom_radius_ls && reportData.custom_radius_ls < VJOY_STICK_RADIUS_MAX) {
         custom_radius_ls = reportData.custom_radius_ls;
     }
-    QStringList pressedLStickKeysList = pressedvJoyLStickKeys_ref.keys();
+    bool leftUpdatedByKeyboard = false;
     for (const QString &key : std::as_const(pressedLStickKeysList)) {
         int pushlevel = pressedvJoyLStickKeys_ref.value(key);
         // Convert BYTE pushlevel (0~255) to SHORT (-32768~32767)
         SHORT scaledValue = static_cast<SHORT>(pushlevel * XINPUT_THUMB_MAX / VJOY_PUSHLEVEL_MAX);
 
         if (key == "LS-Up") {
+            leftUpdatedByKeyboard = true;
             ViGEmTarget_Report.sThumbLY = scaledValue;
         } else if (key == "LS-Down") {
+            leftUpdatedByKeyboard = true;
             ViGEmTarget_Report.sThumbLY = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : -scaledValue;
         } else if (key == "LS-Left") {
+            leftUpdatedByKeyboard = true;
             ViGEmTarget_Report.sThumbLX = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : -scaledValue;
         } else if (key == "LS-Right") {
+            leftUpdatedByKeyboard = true;
             ViGEmTarget_Report.sThumbLX = scaledValue;
         }
     }
@@ -6119,30 +6145,36 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
     if (VJOY_STICK_RADIUS_MIN < reportData.custom_radius_rs && reportData.custom_radius_rs < VJOY_STICK_RADIUS_MAX) {
         custom_radius_rs = reportData.custom_radius_rs;
     }
-    QStringList pressedRStickKeysList = pressedvJoyRStickKeys_ref.keys();
+    bool rightUpdatedByKeyboard = false;
     for (const QString &key : std::as_const(pressedRStickKeysList)) {
         int pushlevel = pressedvJoyRStickKeys_ref.value(key);
         // Convert BYTE pushlevel (0~255) to SHORT (-32768~32767)
         SHORT scaledValue = static_cast<SHORT>(pushlevel * XINPUT_THUMB_MAX / VJOY_PUSHLEVEL_MAX);
 
         if (key == "RS-Up") {
+            rightUpdatedByKeyboard = true;
             ViGEmTarget_Report.sThumbRY = scaledValue;
         } else if (key == "RS-Down") {
+            rightUpdatedByKeyboard = true;
             ViGEmTarget_Report.sThumbRY = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : -scaledValue;
         } else if (key == "RS-Left") {
+            rightUpdatedByKeyboard = true;
             ViGEmTarget_Report.sThumbRX = (pushlevel == VJOY_PUSHLEVEL_MAX) ? XINPUT_THUMB_MIN : -scaledValue;
         } else if (key == "RS-Right") {
+            rightUpdatedByKeyboard = true;
             ViGEmTarget_Report.sThumbRX = scaledValue;
         }
     }
 
-    if (ViGEmTarget_Report.sThumbLX != XINPUT_THUMB_RELEASE
-        || ViGEmTarget_Report.sThumbLY != XINPUT_THUMB_RELEASE) {
+    if (leftUpdatedByKeyboard
+        && (ViGEmTarget_Report.sThumbLX != XINPUT_THUMB_RELEASE
+            || ViGEmTarget_Report.sThumbLY != XINPUT_THUMB_RELEASE)) {
         ViGEmClient_CalculateThumbValue(&ViGEmTarget_Report.sThumbLX, &ViGEmTarget_Report.sThumbLY, custom_radius_ls);
     }
 
-    if (ViGEmTarget_Report.sThumbRX != XINPUT_THUMB_RELEASE
-        || ViGEmTarget_Report.sThumbRY != XINPUT_THUMB_RELEASE) {
+    if (rightUpdatedByKeyboard
+        && (ViGEmTarget_Report.sThumbRX != XINPUT_THUMB_RELEASE
+            || ViGEmTarget_Report.sThumbRY != XINPUT_THUMB_RELEASE)) {
         ViGEmClient_CalculateThumbValue(&ViGEmTarget_Report.sThumbRX, &ViGEmTarget_Report.sThumbRY, custom_radius_rs);
     }
 
@@ -6508,6 +6540,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
 
             ViGEmTarget_Report.sThumbLX = leftX;
             ViGEmTarget_Report.sThumbLY = leftY;
+            QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.ls_input_source, static_cast<int>(VJoyStickInputSource::Mouse));
         }
         if (rightJoystickUpdate) {
             int custom_radius_rs = VJOY_STICK_RADIUS_MAX;
@@ -6519,6 +6552,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
 
             ViGEmTarget_Report.sThumbRX = rightX;
             ViGEmTarget_Report.sThumbRY = rightY;
+            QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.rs_input_source, static_cast<int>(VJoyStickInputSource::Mouse));
         }
 
         VIGEM_ERROR error;
@@ -6786,6 +6820,8 @@ void QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(int gamepad_index)
     XUSB_REPORT_INIT(&ViGEmTarget_Report);
     reportData.custom_radius_ls = VJOY_STICK_RADIUS_MAX;
     reportData.custom_radius_rs = VJOY_STICK_RADIUS_MAX;
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.ls_input_source, static_cast<int>(VJoyStickInputSource::Keyboard));
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.rs_input_source, static_cast<int>(VJoyStickInputSource::Keyboard));
     VIGEM_ERROR error;
     if (DualShock4Wired == vigem_target_get_type(ViGEmTarget)) {
         DS4_REPORT ds4_report;
@@ -6850,16 +6886,20 @@ void QKeyMapper_Worker::ViGEmClient_JoysticksReset(int mouse_index, int gamepad_
     if (MOUSE2VJOY_LEFT == Mouse2vJoy_EnableState) {
         ViGEmTarget_Report.sThumbLX = 0;
         ViGEmTarget_Report.sThumbLY = 0;
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.ls_input_source, static_cast<int>(VJoyStickInputSource::Mouse));
     }
     else if (MOUSE2VJOY_RIGHT == Mouse2vJoy_EnableState) {
         ViGEmTarget_Report.sThumbRX = 0;
         ViGEmTarget_Report.sThumbRY = 0;
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.rs_input_source, static_cast<int>(VJoyStickInputSource::Mouse));
     }
     else {
         ViGEmTarget_Report.sThumbLX = 0;
         ViGEmTarget_Report.sThumbLY = 0;
         ViGEmTarget_Report.sThumbRX = 0;
         ViGEmTarget_Report.sThumbRY = 0;
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.ls_input_source, static_cast<int>(VJoyStickInputSource::Mouse));
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.rs_input_source, static_cast<int>(VJoyStickInputSource::Mouse));
     }
 
     ViGEmClient_CheckJoysticksReportData(gamepad_index);

@@ -483,11 +483,15 @@ struct ViGEm_ReportData
     XUSB_REPORT xusb_report;
     QAtomicInteger<uint> custom_radius_ls;
     QAtomicInteger<uint> custom_radius_rs;
+    QAtomicInteger<int> ls_input_source;
+    QAtomicInteger<int> rs_input_source;
 
     ViGEm_ReportData()
         : xusb_report()
         , custom_radius_ls(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
         , custom_radius_rs(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , ls_input_source(static_cast<int>(QKeyMapperConstants::VJOY_STICK_INPUT_SOURCE_DEFAULT))
+        , rs_input_source(static_cast<int>(QKeyMapperConstants::VJOY_STICK_INPUT_SOURCE_DEFAULT))
     {}
 };
 

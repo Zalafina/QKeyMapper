@@ -723,6 +723,13 @@ namespace QKeyMapperConstants {
     inline constexpr SHORT XINPUT_THUMB_RELEASE = 0;
     inline constexpr SHORT XINPUT_THUMB_MAX     = 32767;
 
+    enum class VJoyStickInputSource : int {
+        Keyboard = 0,
+        Mouse = 1,
+    };
+
+    inline constexpr VJoyStickInputSource VJOY_STICK_INPUT_SOURCE_DEFAULT = VJoyStickInputSource::Keyboard;
+
     inline constexpr uint VJOY_STICK_RADIUS_MIN  = 0;
     inline constexpr uint VJOY_STICK_RADIUS_MAX  = 255;
 
