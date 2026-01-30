@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>600</width>
-    <height>140</height>
+    <height>160</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -19,66 +19,158 @@
   <property name="minimumSize">
    <size>
     <width>600</width>
-    <height>140</height>
+    <height>160</height>
    </size>
   </property>
-  <property name="maximumSize">
-   <size>
-    <width>600</width>
-    <height>140</height>
-   </size>
-  </property>
-  <widget class="QLabel" name="keyRecordLabel">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>10</y>
-     <width>541</width>
-     <height>30</height>
-    </rect>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="leftMargin">
+    <number>19</number>
    </property>
-   <property name="text">
-    <string>Wait to start key recording, press &quot;F11&quot; to start key recording</string>
+   <property name="rightMargin">
+    <number>19</number>
    </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignCenter</set>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="keyRecordLineEdit">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>50</y>
-     <width>541</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignCenter</set>
-   </property>
-   <property name="readOnly">
-    <bool>true</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="recordStartStopButton">
-   <property name="geometry">
-    <rect>
-     <x>230</x>
-     <y>90</y>
-     <width>121</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Start Record</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
+   <item>
+    <widget class="QLabel" name="keyRecordLabel">
+     <property name="text">
+      <string>Wait to start key recording, press &quot;F11&quot; to start key recording</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="keyRecordLineEdit">
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QWidget" name="widget" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>181</width>
+         <height>71</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>181</width>
+         <height>71</height>
+        </size>
+       </property>
+       <widget class="QCheckBox" name="ignoreWaitTimeCheckBox">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>40</y>
+          <width>181</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Ignore waittime</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+       <widget class="QCheckBox" name="mergeKeyActionsCheckBox">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>10</y>
+          <width>181</width>
+          <height>21</height>
+         </rect>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Merge key actions</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="recordStartStopButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>121</width>
+         <height>31</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>122</width>
+         <height>31</height>
+        </size>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::FocusPolicy::NoFocus</enum>
+       </property>
+       <property name="text">
+        <string>Start Record</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections/>
