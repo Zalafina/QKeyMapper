@@ -4,6 +4,120 @@
 
 using namespace QKeyMapperConstants;
 
+namespace {
+
+struct ParsedMapKey
+{
+    QString prefix;
+    QString key;
+    QString wait;
+    bool hasMatch = false;
+};
+
+ParsedMapKey parseMapKeyToken(const QString &token)
+{
+    static const QRegularExpression re(QString::fromUtf8(REGEX_PATTERN_MAPKEY));
+    ParsedMapKey parsed;
+    const QRegularExpressionMatch match = re.match(token);
+    if (!match.hasMatch()) {
+        return parsed;
+    }
+
+    parsed.hasMatch = true;
+    parsed.prefix = match.captured(1);
+    parsed.key = match.captured(2);
+
+    const QString waitMin = match.captured(3);
+    const QString waitMax = match.captured(4);
+    const QString waitSingle = match.captured(5);
+    if (!waitMin.isEmpty() && !waitMax.isEmpty()) {
+        parsed.wait = QString("(%1~%2)").arg(waitMin, waitMax);
+    }
+    else if (!waitSingle.isEmpty()) {
+        parsed.wait = waitSingle;
+    }
+
+    return parsed;
+}
+
+QString buildMapKeyToken(const QString &prefix, const QString &key, const QString &wait, bool keepWait)
+{
+    QString result = prefix + key;
+    if (keepWait && !wait.isEmpty()) {
+        result += QString::fromUtf8(SEPARATOR_WAITTIME) + wait;
+    }
+    return result;
+}
+
+QString removeWaitTimeFromTokenFallback(const QString &token)
+{
+    QString result = token;
+    const QString waitPrefix = QString::fromUtf8(SEPARATOR_WAITTIME);
+    const QRegularExpression waitRe(waitPrefix + QStringLiteral("(?:\\(\\d+~\\d+\\)|\\d+)"));
+    result.remove(waitRe);
+    return result;
+}
+
+QString postProcessRecordMappingKeys(const QString &recordString, bool mergeKeyActions, bool ignoreWaitTime)
+{
+    if (recordString.isEmpty()) {
+        return recordString;
+    }
+
+    const QStringList tokens = recordString.split(QString::fromUtf8(SEPARATOR_NEXTARROW), Qt::SkipEmptyParts);
+    if (tokens.isEmpty()) {
+        return recordString;
+    }
+
+    const QString prefixDown = QString::fromUtf8(PREFIX_SEND_DOWN);
+    const QString prefixUp = QString::fromUtf8(PREFIX_SEND_UP);
+    const QString noneKey = QString::fromUtf8(KEY_NONE_STR);
+
+    QStringList output;
+    output.reserve(tokens.size());
+
+    for (int i = 0; i < tokens.size(); ++i) {
+        const QString currentToken = tokens.at(i);
+        ParsedMapKey current = parseMapKeyToken(currentToken);
+
+        if (mergeKeyActions && current.hasMatch && i + 1 < tokens.size()) {
+            const QString nextToken = tokens.at(i + 1);
+            ParsedMapKey next = parseMapKeyToken(nextToken);
+
+            if (next.hasMatch
+                && current.prefix == prefixDown
+                && next.prefix == prefixUp
+                && current.key == next.key) {
+                if (ignoreWaitTime) {
+                    output.append(current.key);
+                }
+                else {
+                    output.append(buildMapKeyToken(QString(), current.key, current.wait, true));
+                    if (!next.wait.isEmpty()) {
+                        output.append(buildMapKeyToken(QString(), noneKey, next.wait, true));
+                    }
+                }
+                ++i;
+                continue;
+            }
+        }
+
+        if (current.hasMatch) {
+            output.append(buildMapKeyToken(current.prefix, current.key, current.wait, !ignoreWaitTime));
+        }
+        else if (ignoreWaitTime) {
+            output.append(removeWaitTimeFromTokenFallback(currentToken));
+        }
+        else {
+            output.append(currentToken);
+        }
+    }
+
+    return output.join(QString::fromUtf8(SEPARATOR_NEXTARROW));
+}
+
+} // namespace
+
 QAtomicBool QKeyRecord::s_KeyRecordDiagShow;
 QKeyRecord *QKeyRecord::m_instance = Q_NULLPTR;
 
@@ -32,6 +146,8 @@ void QKeyRecord::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
     ui->recordStartStopButton->setText(tr("Start Record"));
+    ui->mergeKeyActionsCheckBox->setText(tr("Merge key actions"));
+    ui->ignoreWaitTimeCheckBox->setText(tr("Ignore waittime"));
 }
 
 void QKeyRecord::resetFontSize()
@@ -63,6 +179,8 @@ void QKeyRecord::resetFontSize()
 
     ui->keyRecordLabel->setFont(customFont);
     ui->recordStartStopButton->setFont(customFont);
+    ui->mergeKeyActionsCheckBox->setFont(customFont);
+    ui->ignoreWaitTimeCheckBox->setFont(customFont);
 }
 
 void QKeyRecord::updateKeyRecordLineEdit(bool finished)
@@ -72,10 +190,20 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
 #endif
     if (!QKeyMapper_Worker::recordMappingKeysList.isEmpty()) {
         QString recordMappingKeysString = QKeyMapper_Worker::recordMappingKeysList.join(SEPARATOR_NEXTARROW);
-        ui->keyRecordLineEdit->setText(recordMappingKeysString);
+        QString displayRecordMappingKeysString = recordMappingKeysString;
 
         if (finished) {
-            QString convertRecordMappingKeysString = recordMappingKeysString.replace(JOY_KEY_PREFIX, VJOY_KEY_PREFIX);
+            const bool mergeKeyActions = ui->mergeKeyActionsCheckBox->isChecked();
+            const bool ignoreWaitTime = ui->ignoreWaitTimeCheckBox->isChecked();
+            if (mergeKeyActions || ignoreWaitTime) {
+                displayRecordMappingKeysString = postProcessRecordMappingKeys(displayRecordMappingKeysString, mergeKeyActions, ignoreWaitTime);
+            }
+        }
+
+        ui->keyRecordLineEdit->setText(displayRecordMappingKeysString);
+
+        if (finished) {
+            QString convertRecordMappingKeysString = displayRecordMappingKeysString.replace(JOY_KEY_PREFIX, VJOY_KEY_PREFIX);
             QKeyMapper::copyStringToClipboard(convertRecordMappingKeysString);
 
             QString popupMessage;
@@ -98,6 +226,8 @@ void QKeyRecord::procKeyRecordStart(bool clicked)
         QString debugmessage = QString("[QKeyRecord::procKeyRecordStart] \"%1\" Key pressed on key record STOP state, Start Key Record.").arg(KEY_RECORD_START_STR);
         qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
+        ui->mergeKeyActionsCheckBox->setEnabled(false);
+        ui->ignoreWaitTimeCheckBox->setEnabled(false);
         setKeyRecordLabel(KEYRECORD_STATE_START);
         QKeyMapper_Worker::keyRecordStart();
         ui->keyRecordLineEdit->clear();
@@ -116,6 +246,8 @@ void QKeyRecord::procKeyRecordStop(bool clicked)
             qDebug().nospace().noquote() << "[QKeyRecord::procKeyRecordStop] Stop key record by click.";
 #endif
         }
+        ui->mergeKeyActionsCheckBox->setEnabled(true);
+        ui->ignoreWaitTimeCheckBox->setEnabled(true);
         QKeyMapper_Worker::keyRecordStop();
         setKeyRecordLabel(KEYRECORD_STATE_STOP);
         QKeyMapper_Worker::collectRecordKeysList(clicked);
@@ -132,12 +264,13 @@ void QKeyRecord::showEvent(QShowEvent *event)
 
     s_KeyRecordDiagShow = true;
 
+    ui->mergeKeyActionsCheckBox->setEnabled(true);
+    ui->ignoreWaitTimeCheckBox->setEnabled(true);
     QKeyMapper_Worker::keyRecordStop();
     setKeyRecordLabel(KEYRECORD_STATE_STOP);
     QKeyMapper_Worker::recordKeyList.clear();
     QKeyMapper_Worker::recordMappingKeysList.clear();
     ui->keyRecordLineEdit->clear();
-
     QDialog::showEvent(event);
 }
 
@@ -155,6 +288,8 @@ void QKeyRecord::closeEvent(QCloseEvent *event)
         QString debugmessage = QString("[QKeyRecord::closeEvent] Key Record Dialog closed on key record START state.");
         qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
+        ui->mergeKeyActionsCheckBox->setEnabled(true);
+        ui->ignoreWaitTimeCheckBox->setEnabled(true);
         QKeyMapper_Worker::keyRecordStop();
         setKeyRecordLabel(KEYRECORD_STATE_STOP);
         QKeyMapper_Worker::recordKeyList.clear();
