@@ -3135,7 +3135,7 @@ Do you confirm to continue installing Interception driver?</source>
         <location filename="../qkeyrecord.ui" line="106"/>
         <location filename="../qkeyrecord.cpp" line="149"/>
         <source>Merge key actions</source>
-        <translation>合并按键操作</translation>
+        <translation>合并按键动作</translation>
     </message>
     <message>
         <location filename="../qkeyrecord.ui" line="151"/>

@@ -3137,7 +3137,7 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <location filename="../qkeyrecord.ui" line="106"/>
         <location filename="../qkeyrecord.cpp" line="149"/>
         <source>Merge key actions</source>
-        <translation>キー操作を統合する</translation>
+        <translation>キー動作をまとめる</translation>
     </message>
     <message>
         <location filename="../qkeyrecord.ui" line="151"/>
