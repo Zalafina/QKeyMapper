@@ -19281,6 +19281,9 @@ void QKeyMapper::setKeyMappingTabWidgetWideMode()
         KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
         mappingDataTable->setGeometry(QRect(table_left, table_top, table_width, table_height));
     }
+    if (m_KeyMappingDataTable) {
+        resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+    }
 }
 
 void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
@@ -19288,13 +19291,6 @@ void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
     if (!ui->processListButton->isChecked()) {
         return;
     }
-
-    QRect widgetGeometry = ui->keyMappingTabWidget->geometry();
-    int widget_left = KEYMAPPINGTABWIDGET_NARROW_LEFT;
-    int widget_width = KEYMAPPINGTABWIDGET_NARROW_WIDTH;
-    int widget_top = widgetGeometry.top();
-    int widget_height = widgetGeometry.height();
-    ui->keyMappingTabWidget->setGeometry(QRect(widget_left, widget_top, widget_width, widget_height));
 
     int table_left = KEYMAPPINGDATATABLE_NARROW_LEFT;
     int table_width = KEYMAPPINGDATATABLE_NARROW_WIDTH;
@@ -19305,6 +19301,16 @@ void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
         KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
         mappingDataTable->setGeometry(QRect(table_left, table_top, table_width, table_height));
     }
+    if (m_KeyMappingDataTable) {
+        resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+    }
+
+    QRect widgetGeometry = ui->keyMappingTabWidget->geometry();
+    int widget_left = KEYMAPPINGTABWIDGET_NARROW_LEFT;
+    int widget_width = KEYMAPPINGTABWIDGET_NARROW_WIDTH;
+    int widget_top = widgetGeometry.top();
+    int widget_height = widgetGeometry.height();
+    ui->keyMappingTabWidget->setGeometry(QRect(widget_left, widget_top, widget_width, widget_height));
 }
 
 bool QKeyMapper::isCloseToSystemtray(bool force_showdialog)
