@@ -1264,7 +1264,7 @@ Update</translation>
         <location filename="../qkeymapper.ui" line="248"/>
         <location filename="../qkeymapper.cpp" line="22012"/>
         <source>OriKeyRecord</source>
-        <translation>OriKeyRecord</translation>
+        <translation>KeyRecord</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="274"/>
