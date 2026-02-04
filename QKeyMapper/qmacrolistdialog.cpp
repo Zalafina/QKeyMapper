@@ -239,7 +239,7 @@ void QMacroListDialog::refreshAllMacroListTabWidget()
 
 void QMacroListDialog::updateMappingKeyListComboBox()
 {
-    KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->m_mapkeyComboBox;
+    const KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->getMapKeyComboBox();
 
     ui->MacroList_MappingKeyListComboBox->clear();
 

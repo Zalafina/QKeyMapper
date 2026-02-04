@@ -185,7 +185,7 @@ void QMappingSequenceEdit::refreshMappingSequenceEditTableWidget(MappingSequence
 
 void QMappingSequenceEdit::updateMappingKeyListComboBox()
 {
-    KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->m_mapkeyComboBox;
+    const KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->getMapKeyComboBox();
 
     ui->MappingSequenceEdit_MappingKeyListComboBox->clear();
 

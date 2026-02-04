@@ -121,8 +121,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_KeyMappingDataTable(Q_NULLPTR),
     m_ProcessInfoTableDelegate(Q_NULLPTR),
     // m_KeyMappingDataTableDelegate(Q_NULLPTR),
-    m_orikeyComboBox(new KeyListComboBox(this)),
-    m_mapkeyComboBox(new KeyListComboBox(this)),
     m_SelectColorDialog(Q_NULLPTR),
     m_GamepadInfoMap(),
     m_SettingSelectListWithoutDescription(),
@@ -697,8 +695,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateFakerInputStatus_Signal, this, &QKeyMapper::updateFakerInputStatus, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateVirtualGamepadListDisplay_Signal, this, &QKeyMapper::updateVirtualGamepadListDisplay);
-    QObject::connect(m_orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
-    QObject::connect(m_mapkeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::MapkeyComboBox_currentTextChangedSlot);
+    QObject::connect(ui->orikeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::OrikeyComboBox_currentTextChangedSlot);
+    QObject::connect(ui->mapkeyComboBox, &KeyListComboBox::currentTextChanged, this, &QKeyMapper::MapkeyComboBox_currentTextChangedSlot);
     QObject::connect(this, &QKeyMapper::updateMultiInputStatus_Signal, this, &QKeyMapper::updateMultiInputStatus);
     QObject::connect(this, &QKeyMapper::updateInputDeviceSelectComboBoxes_Signal, this, &QKeyMapper::updateInputDeviceSelectComboBoxes);
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
@@ -5843,6 +5841,16 @@ int QKeyMapper::getEditModeIndex()
     return getInstance()->ui->editModeComboBox->currentIndex();
 }
 
+const KeyListComboBox *QKeyMapper::getOriKeyComboBox() const
+{
+    return ui->orikeyComboBox;
+}
+
+const KeyListComboBox *QKeyMapper::getMapKeyComboBox() const
+{
+    return ui->mapkeyComboBox;
+}
+
 int QKeyMapper::getCurrentSettingSelectIndex()
 {
     return getInstance()->ui->settingselectComboBox->currentIndex();
@@ -5866,12 +5874,12 @@ bool QKeyMapper::getKeyMappingDataTableItemLockStatus(int rowindex)
 
 QString QKeyMapper::getCurrentOriKeyText()
 {
-    return getInstance()->m_orikeyComboBox->currentText();
+    return getInstance()->ui->orikeyComboBox->currentText();
 }
 
 QString QKeyMapper::getCurrentMapKeyText()
 {
-    return getInstance()->m_mapkeyComboBox->currentText();
+    return getInstance()->ui->mapkeyComboBox->currentText();
 }
 
 QString QKeyMapper::getCurrentOriKeyRecordText()
@@ -8956,11 +8964,11 @@ void QKeyMapper::updateKeyComboBoxWithJoystickKey(const QString &joystick_keystr
     qDebug() << "[QKeyMapper::updateKeyComboBoxWithJoystickKey] Joystick Key Pressed ->" << joystick_keystring;
 #endif
 
-    if (m_orikeyComboBox->hasFocus()) {
-        m_orikeyComboBox->setCurrentText(joystick_keystring);
+    if (ui->orikeyComboBox->hasFocus()) {
+        ui->orikeyComboBox->setCurrentText(joystick_keystring);
 
 #ifdef DEBUG_LOGOUT_ON
-        if (m_orikeyComboBox->currentText() == joystick_keystring) {
+        if (ui->orikeyComboBox->currentText() == joystick_keystring) {
             qDebug() << "[QKeyMapper::updateKeyComboBoxWithJoystickKey] QKeyMapper OriginalKey ComboBox setCurrentText ->" << joystick_keystring;
         }
         else {
@@ -9678,22 +9686,22 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[OriKeyListComboBox_currentTextChanged]" << "Text ->" << text;
 #endif
-        m_mapkeyComboBox->setCurrentText(QString());
-        m_mapkeyComboBox->setEnabled(false);
+        ui->mapkeyComboBox->setCurrentText(QString());
+        ui->mapkeyComboBox->setEnabled(false);
     }
     else {
-        m_mapkeyComboBox->setEnabled(true);
+        ui->mapkeyComboBox->setEnabled(true);
     }
 
     if (!text.isEmpty()) {
-        m_orikeyComboBox->setToolTip(text);
+        ui->orikeyComboBox->setToolTip(text);
     }
 }
 
 void QKeyMapper::MapkeyComboBox_currentTextChangedSlot(const QString &text)
 {
     if (!text.isEmpty()) {
-        m_mapkeyComboBox->setToolTip(text);
+        ui->mapkeyComboBox->setToolTip(text);
     }
 }
 
@@ -16778,29 +16786,29 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->originalKeyEditModeButton->setEnabled(status);
     ui->sendTextPlainTextEdit->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
-    m_orikeyComboBox->setEnabled(status);
+    ui->orikeyComboBox->setEnabled(status);
 
 #ifdef VIGEM_CLIENT_SUPPORT
     if (true == status
-        && (m_orikeyComboBox->currentText() == VJOY_MOUSE2LS_STR
-            || m_orikeyComboBox->currentText() == VJOY_MOUSE2RS_STR
-            || m_orikeyComboBox->currentText() == JOY_LS2MOUSE_STR
-            || m_orikeyComboBox->currentText() == JOY_RS2MOUSE_STR
-            || m_orikeyComboBox->currentText() == JOY_GYRO2MOUSE_STR
-            || m_orikeyComboBox->currentText() == JOY_LS2VJOYLS_STR
-            || m_orikeyComboBox->currentText() == JOY_RS2VJOYRS_STR
-            || m_orikeyComboBox->currentText() == JOY_LS2VJOYRS_STR
-            || m_orikeyComboBox->currentText() == JOY_RS2VJOYLS_STR
-            || m_orikeyComboBox->currentText() == JOY_LT2VJOYLT_STR
-            || m_orikeyComboBox->currentText() == JOY_RT2VJOYRT_STR)) {
-        m_mapkeyComboBox->setCurrentText(QString());
-        m_mapkeyComboBox->setEnabled(false);
+        && (ui->orikeyComboBox->currentText() == VJOY_MOUSE2LS_STR
+            || ui->orikeyComboBox->currentText() == VJOY_MOUSE2RS_STR
+            || ui->orikeyComboBox->currentText() == JOY_LS2MOUSE_STR
+            || ui->orikeyComboBox->currentText() == JOY_RS2MOUSE_STR
+            || ui->orikeyComboBox->currentText() == JOY_GYRO2MOUSE_STR
+            || ui->orikeyComboBox->currentText() == JOY_LS2VJOYLS_STR
+            || ui->orikeyComboBox->currentText() == JOY_RS2VJOYRS_STR
+            || ui->orikeyComboBox->currentText() == JOY_LS2VJOYRS_STR
+            || ui->orikeyComboBox->currentText() == JOY_RS2VJOYLS_STR
+            || ui->orikeyComboBox->currentText() == JOY_LT2VJOYLT_STR
+            || ui->orikeyComboBox->currentText() == JOY_RT2VJOYRT_STR)) {
+        ui->mapkeyComboBox->setCurrentText(QString());
+        ui->mapkeyComboBox->setEnabled(false);
     }
     else {
-        m_mapkeyComboBox->setEnabled(status);
+        ui->mapkeyComboBox->setEnabled(status);
     }
 #else
-    m_mapkeyComboBox->setEnabled(status);
+    ui->mapkeyComboBox->setEnabled(status);
 #endif
 
     ui->addmapdataButton->setEnabled(status);
@@ -20663,19 +20671,6 @@ void QKeyMapper::initKeysCategoryMap()
 
 void QKeyMapper::initAddKeyComboBoxes(void)
 {
-    int left = ui->orikeyLabel->x() + ui->orikeyLabel->width() + 5;
-    int top = ui->orikeyLabel->y();
-    m_orikeyComboBox->setObjectName(ORIKEY_COMBOBOX_NAME);
-    m_orikeyComboBox->setGeometry(QRect(left, top, 161, 22));
-    m_orikeyComboBox->setFocusPolicy(Qt::ClickFocus);
-    // m_orikeyComboBox->setEditable(true);
-    left = ui->mapkeyLabel->x() + ui->mapkeyLabel->width() + 5;
-    top = ui->mapkeyLabel->y();
-    m_mapkeyComboBox->setObjectName(MAPKEY_COMBOBOX_NAME);
-    m_mapkeyComboBox->setGeometry(QRect(left, top, 151, 22));
-    m_mapkeyComboBox->setFocusPolicy(Qt::ClickFocus);
-    // m_mapkeyComboBox->setEditable(true);
-
     updateOriginalKeyListComboBox();
     updateMappingKeyListComboBox();
 }
@@ -21107,10 +21102,10 @@ void QKeyMapper::updateMappingStopKeyString(const QString &keystring)
 void QKeyMapper::initOriginalKeySeqEdit()
 {
     m_originalKeySeqEdit->setObjectName(QStringLiteral("originalKeySeqEdit"));
-    // int left = m_orikeyComboBox->x();
+    // int left = ui->orikeyComboBox->x();
     // int top = ui->waitTimeSpinBox->y();
-    int width = m_orikeyComboBox->width();
-    int height = m_orikeyComboBox->height();
+    int width = ui->orikeyComboBox->width();
+    int height = ui->orikeyComboBox->height();
     m_originalKeySeqEdit->setGeometry(QRect(378, 490, width, height));
     m_originalKeySeqEdit->setFocusPolicy(Qt::ClickFocus);
 }
@@ -21118,10 +21113,10 @@ void QKeyMapper::initOriginalKeySeqEdit()
 
 void QKeyMapper::initCombinationKeyLineEdit()
 {
-    // int left = m_orikeyComboBox->x();
+    // int left = ui->orikeyComboBox->x();
     // int top = ui->orikeyRecordLabel->y();
-    // int width = m_orikeyComboBox->width();
-    // int height = m_orikeyComboBox->height();
+    // int width = ui->orikeyComboBox->width();
+    // int height = ui->orikeyComboBox->height();
     // ui->originalKeyRecordLineEdit->setGeometry(QRect(left, top, width, height));
     ui->originalKeyRecordLineEdit->setReadOnly(true);
     ui->originalKeyRecordLineEdit->setFocusPolicy(Qt::ClickFocus);
@@ -21139,13 +21134,13 @@ void QKeyMapper::updateOriginalKeyListComboBox()
     bool isGamepadKeys_Selected = ui->oriList_SelectGamepadButton->isChecked();
     bool isFunctionKeys_Selected = ui->oriList_SelectFunctionButton->isChecked();
 
-    m_orikeyComboBox->clear();
-    m_orikeyComboBox->addItem(QString());
+    ui->orikeyComboBox->clear();
+    ui->orikeyComboBox->addItem(QString());
 
     const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
     const QStringList common_keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_COMMON);
     for (const QString &key : common_keyList) {
-        m_orikeyComboBox->addItem(common_icon, key);
+        ui->orikeyComboBox->addItem(common_icon, key);
     }
 
     if (isKeyboardKeys_Selected || isMouseKeys_Selected || isGamepadKeys_Selected || isFunctionKeys_Selected) {
@@ -21153,28 +21148,28 @@ void QKeyMapper::updateOriginalKeyListComboBox()
             QIcon icon = QIcon(":/mouse.svg");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_MOUSE);
             for (const QString &key : keyList) {
-                m_orikeyComboBox->addItem(icon, key);
+                ui->orikeyComboBox->addItem(icon, key);
             }
         }
         if (isKeyboardKeys_Selected) {
             QIcon icon = QIcon(":/keyboard.svg");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_KEYBOARD);
             for (const QString &key : keyList) {
-                m_orikeyComboBox->addItem(icon, key);
+                ui->orikeyComboBox->addItem(icon, key);
             }
         }
         if (isGamepadKeys_Selected) {
             QIcon icon = QIcon(":/gamepad.svg");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_GAMEPAD);
             for (const QString &key : keyList) {
-                m_orikeyComboBox->addItem(icon, key);
+                ui->orikeyComboBox->addItem(icon, key);
             }
         }
         if (isFunctionKeys_Selected) {
             QIcon icon = QIcon(":/function.svg");
             const QStringList keyList = QKeyMapper::s_OriginalKeysCategoryMap.value(KEY_TYPE_FUNCTION);
             for (const QString &key : keyList) {
-                m_orikeyComboBox->addItem(icon, key);
+                ui->orikeyComboBox->addItem(icon, key);
             }
         }
     }
@@ -21191,19 +21186,19 @@ void QKeyMapper::updateMappingKeyListComboBox()
     bool isGamepadKeys_Selected = ui->mapList_SelectGamepadButton->isChecked();
     bool isFunctionKeys_Selected = ui->mapList_SelectFunctionButton->isChecked();
 
-    m_mapkeyComboBox->clear();
-    m_mapkeyComboBox->addItem(QString());
+    ui->mapkeyComboBox->clear();
+    ui->mapkeyComboBox->addItem(QString());
 
     const QIcon &specialprepostfix_icon = QKeyMapper::s_Icon_Blank;
     const QStringList specialprepostfix_keyList = QKeyMapper::s_SpecialMappingKeyPrePostFixList;
     for (const QString &key : specialprepostfix_keyList) {
-        m_mapkeyComboBox->addItem(specialprepostfix_icon, key);
+        ui->mapkeyComboBox->addItem(specialprepostfix_icon, key);
     }
 
     const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
     const QStringList common_keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_COMMON);
     for (const QString &key : common_keyList) {
-        m_mapkeyComboBox->addItem(common_icon, key);
+        ui->mapkeyComboBox->addItem(common_icon, key);
     }
 
     if (isKeyboardKeys_Selected || isMouseKeys_Selected || isGamepadKeys_Selected || isFunctionKeys_Selected) {
@@ -21211,28 +21206,28 @@ void QKeyMapper::updateMappingKeyListComboBox()
             QIcon icon = QIcon(":/mouse.svg");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_MOUSE);
             for (const QString &key : keyList) {
-                m_mapkeyComboBox->addItem(icon, key);
+                ui->mapkeyComboBox->addItem(icon, key);
             }
         }
         if (isKeyboardKeys_Selected) {
             QIcon icon = QIcon(":/keyboard.svg");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_KEYBOARD);
             for (const QString &key : keyList) {
-                m_mapkeyComboBox->addItem(icon, key);
+                ui->mapkeyComboBox->addItem(icon, key);
             }
         }
         if (isGamepadKeys_Selected) {
             QIcon icon = QIcon(":/gamepad.svg");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_GAMEPAD);
             for (const QString &key : keyList) {
-                m_mapkeyComboBox->addItem(icon, key);
+                ui->mapkeyComboBox->addItem(icon, key);
             }
         }
         if (isFunctionKeys_Selected) {
             QIcon icon = QIcon(":/function.svg");
             const QStringList keyList = QKeyMapper::s_MappingKeysCategoryMap.value(KEY_TYPE_FUNCTION);
             for (const QString &key : keyList) {
-                m_mapkeyComboBox->addItem(icon, key);
+                ui->mapkeyComboBox->addItem(icon, key);
             }
         }
     }
@@ -22543,8 +22538,8 @@ void QKeyMapper::resetFontSize()
         ui->notificationComboBox->setFont(customFont);
         ui->updateSiteComboBox->setFont(customFont);
         ui->virtualGamepadTypeComboBox->setFont(customFont);
-        m_orikeyComboBox->setFont(customFont);
-        m_mapkeyComboBox->setFont(customFont);
+        ui->orikeyComboBox->setFont(customFont);
+        ui->mapkeyComboBox->setFont(customFont);
         ui->keyboardSelectComboBox->setFont(customFont);
         ui->mouseSelectComboBox->setFont(customFont);
         ui->gamepadSelectComboBox->setFont(customFont);
@@ -22594,8 +22589,8 @@ void QKeyMapper::resetFontSize()
         ui->notificationComboBox->setFont(customFont);
         ui->updateSiteComboBox->setFont(customFont);
         ui->virtualGamepadTypeComboBox->setFont(customFont);
-        m_orikeyComboBox->setFont(customFont);
-        m_mapkeyComboBox->setFont(customFont);
+        ui->orikeyComboBox->setFont(customFont);
+        ui->mapkeyComboBox->setFont(customFont);
         ui->keyboardSelectComboBox->setFont(customFont);
         ui->mouseSelectComboBox->setFont(customFont);
         ui->gamepadSelectComboBox->setFont(customFont);
@@ -23993,9 +23988,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
     //     multiInputSupport = true;
     // }
     QString currentOriKeyText;
-    QString currentMapKeyText = m_mapkeyComboBox->currentText();
+    QString currentMapKeyText = ui->mapkeyComboBox->currentText();
     QString currentMapKeyComboBoxText = currentMapKeyText;
-    QString currentOriKeyComboBoxText = m_orikeyComboBox->currentText();
+    QString currentOriKeyComboBoxText = ui->orikeyComboBox->currentText();
     QString currentOriKeyRecordLineEditText = ui->originalKeyRecordLineEdit->text();
     // QString currentOriKeyShortcutText = m_originalKeySeqEdit->keySequence().toString();
     if (false == currentOriKeyRecordLineEditText.isEmpty()) {
@@ -24059,7 +24054,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     bool isSendOnOriginalKey = QKeyMapper_Worker::SendOnOriginalKeysList.contains(baseKeyForSpecialCheck);
 
     if (currentOriKeyText.isEmpty()
-        || (m_mapkeyComboBox->isEnabled()
+        || (ui->mapkeyComboBox->isEnabled()
             && currentMapKeyText.isEmpty()
             && !isSpecialOriginalKey)) {
         return;

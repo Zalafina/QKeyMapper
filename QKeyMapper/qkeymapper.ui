@@ -2509,8 +2509,65 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
   </widget>
+  <widget class="KeyListComboBox" name="mapkeyComboBox">
+   <property name="geometry">
+    <rect>
+     <x>810</x>
+     <y>400</y>
+     <width>151</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>151</width>
+     <height>0</height>
+    </size>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+  </widget>
+  <widget class="KeyListComboBox" name="orikeyComboBox">
+   <property name="geometry">
+    <rect>
+     <x>586</x>
+     <y>400</y>
+     <width>161</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>151</width>
+     <height>0</height>
+    </size>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>KeyListComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qkeymapper.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

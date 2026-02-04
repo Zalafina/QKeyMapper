@@ -285,7 +285,7 @@ int QItemSetupDialog::getItemRow()
 
 void QItemSetupDialog::updateOriginalKeyListComboBox()
 {
-    KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->m_orikeyComboBox;
+    const KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->getOriKeyComboBox();
 
     m_OriginalKeyListComboBox->clear();
 
@@ -302,7 +302,7 @@ void QItemSetupDialog::updateOriginalKeyListComboBox()
 
 void QItemSetupDialog::updateMappingKeyListComboBox()
 {
-    KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->m_mapkeyComboBox;
+    const KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->getMapKeyComboBox();
 
     m_MappingKeyListComboBox->clear();
 
@@ -1827,8 +1827,8 @@ void QItemSetupDialog::initKeyListComboBoxes()
     updateOriginalKeyListComboBox();
     updateMappingKeyListComboBox();
 
-    KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->m_orikeyComboBox;
-    KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->m_mapkeyComboBox;
+    const KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->getOriKeyComboBox();
+    const KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->getMapKeyComboBox();
 
     for(int i = 1; i < orikeyComboBox->count(); i++) {
         QString text = orikeyComboBox->itemText(i);

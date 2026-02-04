@@ -1379,6 +1379,8 @@ public:
     bool isParamTextPlainTextEditHasFocus(void);
     void appendParamTextPlainTextEditText(const QString &text);
     QString makeMappingKeyToolTip(const MAP_KEYDATA &keymapdata);
+    const KeyListComboBox *getOriKeyComboBox() const;
+    const KeyListComboBox *getMapKeyComboBox() const;
 
 private:
     void initKeyMappingTabWidget(void);
@@ -1633,8 +1635,6 @@ private:
     StyledDelegate *m_ProcessInfoTableDelegate;
     // StyledDelegate *m_KeyMappingDataTableDelegate;
 public:
-    KeyListComboBox *m_orikeyComboBox;
-    KeyListComboBox *m_mapkeyComboBox;
     QColorDialog *m_SelectColorDialog;
     QMap<int, Gamepad_Info> m_GamepadInfoMap;
     QStringList m_SettingSelectListWithoutDescription;
