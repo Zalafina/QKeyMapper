@@ -44,6 +44,7 @@ public:
     void procKeyRecordStop(bool clicked);
 
 protected:
+    bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;

@@ -145,6 +145,7 @@ QKeyRecord::~QKeyRecord()
 void QKeyRecord::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
+    setWindowTitle(tr("Record Keys"));
     ui->recordStartStopButton->setText(tr("Start Record"));
     ui->mergeKeyActionsCheckBox->setText(tr("Merge key actions"));
     ui->ignoreWaitTimeCheckBox->setText(tr("Ignore waittime"));
@@ -254,6 +255,16 @@ void QKeyRecord::procKeyRecordStop(bool clicked)
         emit updateKeyRecordLineEdit_Signal(true);
         // close();
     }
+}
+
+bool QKeyRecord::event(QEvent *event)
+{
+    if (event->type() == QEvent::ActivationChange) {
+        if (!isActiveWindow()) {
+            close();
+        }
+    }
+    return QDialog::event(event);
 }
 
 void QKeyRecord::showEvent(QShowEvent *event)

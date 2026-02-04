@@ -25,8 +25,6 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->keyRecordLineEdit->installEventFilter(this);
 
     m_KeyRecordDialog = new QKeyRecord(this);
-    m_KeyRecordDialog->setWindowFlags(Qt::Popup);
-
     m_CrosshairSetupDialog = new QCrosshairSetupDialog(this);
 
     initKeyListComboBoxes();

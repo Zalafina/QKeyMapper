@@ -22,6 +22,12 @@
     <height>160</height>
    </size>
   </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>320</height>
+   </size>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="leftMargin">
     <number>19</number>
