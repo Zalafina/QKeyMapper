@@ -4474,9 +4474,10 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                         bool ok = true;
                         int pushlevel = 0;
                         pushlevel = pushlevelString.toInt(&ok);
-                        if (!ok || pushlevelString == "0" || pushlevelString.startsWith('0') || pushlevel <= VJOY_PUSHLEVEL_MIN || pushlevel >= VJOY_PUSHLEVEL_MAX) {
+                        bool hasLeadingZero = pushlevelString.size() > 1 && pushlevelString.startsWith('0');
+                        if (!ok || hasLeadingZero || pushlevel < VJOY_PUSHLEVEL_MIN || pushlevel > VJOY_PUSHLEVEL_MAX) {
                             result.isValid = false;
-                            result.errorMessage = tr("Invalid pushlevel[%1] of vJoy-Key \"%2\", valid range 1~254").arg(pushlevelString, mapping_key);
+                            result.errorMessage = tr("Invalid pushlevel[%1] of vJoy-Key \"%2\", valid range 0~255").arg(pushlevelString, mapping_key);
                         }
                     }
                 }
@@ -18804,8 +18805,8 @@ void QKeyMapper::initPopupMessage()
 
 void QKeyMapper::initPushLevelSlider()
 {
-    ui->pushLevelSlider->setRange(VJOY_PUSHLEVEL_MIN + 1, VJOY_PUSHLEVEL_MAX);
-    ui->pushLevelSpinBox->setRange(VJOY_PUSHLEVEL_MIN + 1, VJOY_PUSHLEVEL_MAX);
+    ui->pushLevelSlider->setRange(VJOY_PUSHLEVEL_MIN, VJOY_PUSHLEVEL_MAX);
+    ui->pushLevelSpinBox->setRange(VJOY_PUSHLEVEL_MIN, VJOY_PUSHLEVEL_MAX);
 
     ui->pushLevelSlider->setValue(VJOY_PUSHLEVEL_MAX);
     ui->pushLevelSpinBox->setValue(VJOY_PUSHLEVEL_MAX);

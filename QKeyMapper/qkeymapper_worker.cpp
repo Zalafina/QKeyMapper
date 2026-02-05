@@ -5814,7 +5814,8 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
             if (!pushlevelString.isEmpty()) {
                 bool ok = true;
                 pushlevel = pushlevelString.toInt(&ok);
-                if (!ok || pushlevelString == "0" || pushlevelString.startsWith('0') || pushlevel <= VJOY_PUSHLEVEL_MIN || pushlevel >= VJOY_PUSHLEVEL_MAX) {
+                bool hasLeadingZero = pushlevelString.size() > 1 && pushlevelString.startsWith('0');
+                if (!ok || hasLeadingZero || pushlevel < VJOY_PUSHLEVEL_MIN || pushlevel > VJOY_PUSHLEVEL_MAX) {
                     pushlevel = VJOY_PUSHLEVEL_MAX;
                 }
             }
