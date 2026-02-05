@@ -4462,13 +4462,112 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
 
             if (vjoy_match.hasMatch()) {
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
-                // static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|LS-(Up|Down|Left|Right)|RS-(Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)");
-                static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))(?:\[(\d{1,3})\])?$)");
+                static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
+                static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
                 QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
                 QString vjoy_key = vjoy_match.captured(1);
                 QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(vjoy_key);
+                QRegularExpressionMatch vjoy_radius_keys_match = vjoy_radius_keys_regex.match(vjoy_key);
 
-                if (vjoy_pushlevel_keys_match.hasMatch()) {
+                auto parseRadiusValue = [](const QString &valueText, int &value) -> bool {
+                    if (valueText.isEmpty()) {
+                        return false;
+                    }
+                    if (valueText.size() > 1 && valueText.startsWith('0')) {
+                        return false;
+                    }
+                    bool ok = true;
+                    value = valueText.toInt(&ok);
+                    if (!ok || value < VJOY_STICK_RADIUS_MIN || value > VJOY_STICK_RADIUS_MAX) {
+                        return false;
+                    }
+                    return true;
+                };
+
+                auto validateRadiusSpec = [&](const QString &spec) -> bool {
+                    QString trimmed = spec.trimmed();
+                    if (trimmed.isEmpty()) {
+                        return false;
+                    }
+                    QStringList tokens = trimmed.split(',', Qt::SkipEmptyParts);
+                    bool hasBase = false;
+                    bool hasUp = false;
+                    bool hasDown = false;
+                    bool hasLeft = false;
+                    bool hasRight = false;
+
+                    for (const QString &tokenRaw : tokens) {
+                        QString token = tokenRaw.trimmed();
+                        if (token.isEmpty()) {
+                            continue;
+                        }
+                        int eqPos = token.indexOf('=');
+                        if (eqPos >= 0) {
+                            if (token.indexOf('=', eqPos + 1) >= 0) {
+                                return false;
+                            }
+                            QString dirText = token.left(eqPos).trimmed().toUpper();
+                            QString valueText = token.mid(eqPos + 1).trimmed();
+                            int value = 0;
+                            if (!parseRadiusValue(valueText, value)) {
+                                return false;
+                            }
+                            if (dirText == "U") {
+                                if (hasUp) {
+                                    return false;
+                                }
+                                hasUp = true;
+                            }
+                            else if (dirText == "D") {
+                                if (hasDown) {
+                                    return false;
+                                }
+                                hasDown = true;
+                            }
+                            else if (dirText == "L") {
+                                if (hasLeft) {
+                                    return false;
+                                }
+                                hasLeft = true;
+                            }
+                            else if (dirText == "R") {
+                                if (hasRight) {
+                                    return false;
+                                }
+                                hasRight = true;
+                            }
+                            else {
+                                return false;
+                            }
+                        }
+                        else {
+                            if (hasBase) {
+                                return false;
+                            }
+                            int value = 0;
+                            if (!parseRadiusValue(token, value)) {
+                                return false;
+                            }
+                            hasBase = true;
+                        }
+                    }
+
+                    if (!hasBase && !(hasUp || hasDown || hasLeft || hasRight)) {
+                        return false;
+                    }
+                    return true;
+                };
+
+                if (vjoy_radius_keys_match.hasMatch()) {
+                    QString radiusSpec = vjoy_radius_keys_match.captured(2);
+                    if (!radiusSpec.isEmpty()) {
+                        if (!validateRadiusSpec(radiusSpec)) {
+                            result.isValid = false;
+                            result.errorMessage = tr("Invalid vJoy-Radius spec \"%1\", valid range 0~255 and format like [150] or [U=200,D=0,L=150,R=150]").arg(mapping_key);
+                        }
+                    }
+                }
+                else if (vjoy_pushlevel_keys_match.hasMatch()) {
                     QString pushlevelString = vjoy_pushlevel_keys_match.captured(2);
                     if (!pushlevelString.isEmpty()) {
                         bool ok = true;
@@ -24081,7 +24180,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     Q_UNUSED(isDoublePress);
 
     static QRegularExpression whitespace_reg(R"(\s+)");
-    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))$)");
+    static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_KEYS_NO_PUSHLEVEL);
 
     // Add button behavior: always create a new row (do not merge/append to existing OriginalKey).
     // Duplicate OriginalKey is allowed; mutual exclusion is handled by enabled-state logic.

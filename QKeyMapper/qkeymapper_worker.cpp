@@ -2129,7 +2129,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
     static QRegularExpression setvolume_regex(REGEX_PATTERN_SETVOLUME);
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
-    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))(?:\[(\d{1,3})\])?$)");
+    static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
+    static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
@@ -3118,6 +3119,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         bool is_pressed = false;
                         if (0 <= gamepad_index && gamepad_index < pressedvJoyButtonsList.size()) {
                             QRegularExpressionMatch vjoy_pushlevel_match = vjoy_pushlevel_keys_regex.match(joystickButton);
+                            QRegularExpressionMatch vjoy_radius_match = vjoy_radius_keys_regex.match(joystickButton);
                             if (vjoy_pushlevel_match.hasMatch()) {
                                 QString pushlevelKeyStr = vjoy_pushlevel_match.captured(1);
                                 if (pushlevelKeyStr.startsWith("LS-") && gamepad_index < pressedvJoyLStickKeysList.size()) {
@@ -3125,6 +3127,19 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                                 }
                                 else if (pushlevelKeyStr.startsWith("RS-") && gamepad_index < pressedvJoyRStickKeysList.size()) {
                                     is_pressed = pressedvJoyRStickKeysList[gamepad_index].contains(pushlevelKeyStr);
+                                }
+                                else {
+                                    is_pressed = pressedvJoyButtonsList[gamepad_index].contains(joystickButton);
+                                }
+                            }
+                            else if (vjoy_radius_match.hasMatch()) {
+                                QString stickStr = vjoy_radius_match.captured(1);
+                                QString radiusKeyStr = stickStr + "-Radius";
+                                if (stickStr == "LS" && gamepad_index < pressedvJoyLStickKeysList.size()) {
+                                    is_pressed = pressedvJoyLStickKeysList[gamepad_index].contains(radiusKeyStr);
+                                }
+                                else if (stickStr == "RS" && gamepad_index < pressedvJoyRStickKeysList.size()) {
+                                    is_pressed = pressedvJoyRStickKeysList[gamepad_index].contains(radiusKeyStr);
                                 }
                                 else {
                                     is_pressed = pressedvJoyButtonsList[gamepad_index].contains(joystickButton);
@@ -5700,6 +5715,194 @@ void QKeyMapper_Worker::ViGEmClient_setConnectState(ViGEmClient_ConnectState con
     s_ViGEmClient_ConnectState = connectstate;
 }
 
+namespace {
+
+struct VJoyRadiusDirectionLimits
+{
+    uint up = VJOY_STICK_RADIUS_MAX;
+    uint down = VJOY_STICK_RADIUS_MAX;
+    uint left = VJOY_STICK_RADIUS_MAX;
+    uint right = VJOY_STICK_RADIUS_MAX;
+};
+
+struct VJoyRadiusParseResult
+{
+    bool hasBase = false;
+    int baseValue = VJOY_STICK_RADIUS_MAX;
+    VJoyRadiusDirectionLimits limits;
+};
+
+static bool parseVJoyRadiusValue(const QString &valueText, int &value)
+{
+    if (valueText.isEmpty()) {
+        return false;
+    }
+    if (valueText.size() > 1 && valueText.startsWith('0')) {
+        return false;
+    }
+    bool ok = true;
+    value = valueText.toInt(&ok);
+    if (!ok || value < VJOY_STICK_RADIUS_MIN || value > VJOY_STICK_RADIUS_MAX) {
+        return false;
+    }
+    return true;
+}
+
+static bool parseVJoyRadiusSpec(const QString &spec, VJoyRadiusParseResult &result)
+{
+    QString trimmed = spec.trimmed();
+    if (trimmed.isEmpty()) {
+        return false;
+    }
+
+    QStringList tokens = trimmed.split(',', Qt::SkipEmptyParts);
+    bool hasBase = false;
+    int baseValue = VJOY_STICK_RADIUS_MAX;
+    bool hasUp = false;
+    bool hasDown = false;
+    bool hasLeft = false;
+    bool hasRight = false;
+    int upValue = VJOY_STICK_RADIUS_MAX;
+    int downValue = VJOY_STICK_RADIUS_MAX;
+    int leftValue = VJOY_STICK_RADIUS_MAX;
+    int rightValue = VJOY_STICK_RADIUS_MAX;
+
+    for (const QString &tokenRaw : tokens) {
+        QString token = tokenRaw.trimmed();
+        if (token.isEmpty()) {
+            continue;
+        }
+        int eqPos = token.indexOf('=');
+        if (eqPos >= 0) {
+            if (token.indexOf('=', eqPos + 1) >= 0) {
+                return false;
+            }
+            QString dirText = token.left(eqPos).trimmed().toUpper();
+            QString valueText = token.mid(eqPos + 1).trimmed();
+            int value = 0;
+            if (!parseVJoyRadiusValue(valueText, value)) {
+                return false;
+            }
+            if (dirText == "U") {
+                if (hasUp) {
+                    return false;
+                }
+                hasUp = true;
+                upValue = value;
+            }
+            else if (dirText == "D") {
+                if (hasDown) {
+                    return false;
+                }
+                hasDown = true;
+                downValue = value;
+            }
+            else if (dirText == "L") {
+                if (hasLeft) {
+                    return false;
+                }
+                hasLeft = true;
+                leftValue = value;
+            }
+            else if (dirText == "R") {
+                if (hasRight) {
+                    return false;
+                }
+                hasRight = true;
+                rightValue = value;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            if (hasBase) {
+                return false;
+            }
+            int value = 0;
+            if (!parseVJoyRadiusValue(token, value)) {
+                return false;
+            }
+            hasBase = true;
+            baseValue = value;
+        }
+    }
+
+    if (!hasBase && !(hasUp || hasDown || hasLeft || hasRight)) {
+        return false;
+    }
+
+    int defaultValue = hasBase ? baseValue : VJOY_STICK_RADIUS_MAX;
+    result.hasBase = hasBase;
+    result.baseValue = baseValue;
+    result.limits.up = hasUp ? static_cast<uint>(upValue) : static_cast<uint>(defaultValue);
+    result.limits.down = hasDown ? static_cast<uint>(downValue) : static_cast<uint>(defaultValue);
+    result.limits.left = hasLeft ? static_cast<uint>(leftValue) : static_cast<uint>(defaultValue);
+    result.limits.right = hasRight ? static_cast<uint>(rightValue) : static_cast<uint>(defaultValue);
+    return true;
+}
+
+static uint sanitizeRadiusValue(uint value)
+{
+    return (value > VJOY_STICK_RADIUS_MAX) ? VJOY_STICK_RADIUS_MAX : value;
+}
+
+static void getVJoyRadiusLimits(const ViGEm_ReportData &reportData, bool isLeftStick,
+                                uint &up, uint &down, uint &left, uint &right)
+{
+    if (isLeftStick) {
+        up = sanitizeRadiusValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_radius_ls_up));
+        down = sanitizeRadiusValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_radius_ls_down));
+        left = sanitizeRadiusValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_radius_ls_left));
+        right = sanitizeRadiusValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_radius_ls_right));
+    }
+    else {
+        up = sanitizeRadiusValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_radius_rs_up));
+        down = sanitizeRadiusValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_radius_rs_down));
+        left = sanitizeRadiusValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_radius_rs_left));
+        right = sanitizeRadiusValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_radius_rs_right));
+    }
+}
+
+static void setVJoyRadiusLimits(ViGEm_ReportData &reportData, bool isLeftStick, const VJoyRadiusParseResult &result)
+{
+    uint baseValue = result.hasBase ? static_cast<uint>(result.baseValue) : VJOY_STICK_RADIUS_MAX;
+    if (isLeftStick) {
+        reportData.custom_radius_ls = baseValue;
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_up, result.limits.up);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_down, result.limits.down);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_left, result.limits.left);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_right, result.limits.right);
+    }
+    else {
+        reportData.custom_radius_rs = baseValue;
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_up, result.limits.up);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_down, result.limits.down);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_left, result.limits.left);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_right, result.limits.right);
+    }
+}
+
+static void resetVJoyRadiusLimits(ViGEm_ReportData &reportData, bool isLeftStick)
+{
+    if (isLeftStick) {
+        reportData.custom_radius_ls = VJOY_STICK_RADIUS_MAX;
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_up, VJOY_STICK_RADIUS_MAX);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_down, VJOY_STICK_RADIUS_MAX);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_left, VJOY_STICK_RADIUS_MAX);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_right, VJOY_STICK_RADIUS_MAX);
+    }
+    else {
+        reportData.custom_radius_rs = VJOY_STICK_RADIUS_MAX;
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_up, VJOY_STICK_RADIUS_MAX);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_down, VJOY_STICK_RADIUS_MAX);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_left, VJOY_STICK_RADIUS_MAX);
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_right, VJOY_STICK_RADIUS_MAX);
+    }
+}
+
+}
+
 void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index, QJoystickEventType event_type)
 {
     int gamepad_count = s_ViGEmTargetList.size();
@@ -5712,8 +5915,10 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         return;
     }
 
-    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))(?:\[(\d{1,3})\])?$)");
+    static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
+    static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
     QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
+    QRegularExpressionMatch vjoy_radius_keys_match = vjoy_radius_keys_regex.match(joystickButton);
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
     ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
     XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
@@ -5807,6 +6012,29 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
                 }
             }
         }
+        else if (vjoy_radius_keys_match.hasMatch()) {
+            QString stickStr = vjoy_radius_keys_match.captured(1);
+            QString radiusSpec = vjoy_radius_keys_match.captured(2);
+            VJoyRadiusParseResult parseResult;
+            bool validSpec = true;
+            if (!radiusSpec.isEmpty()) {
+                validSpec = parseVJoyRadiusSpec(radiusSpec, parseResult);
+            }
+            if (!validSpec) {
+                parseResult = VJoyRadiusParseResult();
+            }
+
+            bool isLeftStick = (stickStr == "LS");
+            setVJoyRadiusLimits(reportData, isLeftStick, parseResult);
+            if (isLeftStick) {
+                pressedvJoyLStickKeys_ref.insert("LS-Radius", VJOY_PUSHLEVEL_MAX);
+            }
+            else {
+                pressedvJoyRStickKeys_ref.insert("RS-Radius", VJOY_PUSHLEVEL_MAX);
+            }
+            ViGEmClient_CheckJoysticksReportData(gamepad_index);
+            updateFlag = VJOY_UPDATE_JOYSTICKS;
+        }
         else if (vjoy_pushlevel_keys_match.hasMatch()) {
             QString pushlevelKeyStr = vjoy_pushlevel_keys_match.captured(1);
             QString pushlevelString = vjoy_pushlevel_keys_match.captured(2);
@@ -5822,17 +6050,11 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
 
             BYTE pushlevel_byte = static_cast<BYTE>(pushlevel);
             if (pushlevelKeyStr.startsWith("LS-")) {
-                if (pushlevelKeyStr.startsWith("LS-Radius")) {
-                    reportData.custom_radius_ls = pushlevel;
-                }
                 pressedvJoyLStickKeys_ref.insert(pushlevelKeyStr, pushlevel_byte);
                 ViGEmClient_CheckJoysticksReportData(gamepad_index);
                 updateFlag = VJOY_UPDATE_JOYSTICKS;
             }
             else if (pushlevelKeyStr.startsWith("RS-")) {
-                if (pushlevelKeyStr.startsWith("RS-Radius")) {
-                    reportData.custom_radius_rs = pushlevel;
-                }
                 pressedvJoyRStickKeys_ref.insert(pushlevelKeyStr, pushlevel_byte);
                 ViGEmClient_CheckJoysticksReportData(gamepad_index);
                 updateFlag = VJOY_UPDATE_JOYSTICKS;
@@ -5941,8 +6163,10 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
         return;
     }
 
-    static QRegularExpression vjoy_pushlevel_keys_regex(R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))(?:\[(\d{1,3})\])?$)");
+    static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
+    static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
     QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
+    QRegularExpressionMatch vjoy_radius_keys_match = vjoy_radius_keys_regex.match(joystickButton);
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
     ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
     XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
@@ -5972,20 +6196,27 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
         }
 
         int updateFlag = VJOY_UPDATE_NONE;
-        if (vjoy_pushlevel_keys_match.hasMatch()) {
+        if (vjoy_radius_keys_match.hasMatch()) {
+            QString stickStr = vjoy_radius_keys_match.captured(1);
+            bool isLeftStick = (stickStr == "LS");
+            resetVJoyRadiusLimits(reportData, isLeftStick);
+            if (isLeftStick) {
+                pressedvJoyLStickKeys_ref.remove("LS-Radius");
+            }
+            else {
+                pressedvJoyRStickKeys_ref.remove("RS-Radius");
+            }
+            ViGEmClient_CheckJoysticksReportData(gamepad_index);
+            updateFlag = VJOY_UPDATE_JOYSTICKS;
+        }
+        else if (vjoy_pushlevel_keys_match.hasMatch()) {
             QString pushlevelKeyStr = vjoy_pushlevel_keys_match.captured(1);
             if (pushlevelKeyStr.startsWith("LS-")) {
-                if (pushlevelKeyStr.startsWith("LS-Radius")) {
-                    reportData.custom_radius_ls = VJOY_STICK_RADIUS_MAX;
-                }
                 pressedvJoyLStickKeys_ref.remove(pushlevelKeyStr);
                 ViGEmClient_CheckJoysticksReportData(gamepad_index);
                 updateFlag = VJOY_UPDATE_JOYSTICKS;
             }
             else if (pushlevelKeyStr.startsWith("RS-")) {
-                if (pushlevelKeyStr.startsWith("RS-Radius")) {
-                    reportData.custom_radius_rs = VJOY_STICK_RADIUS_MAX;
-                }
                 pressedvJoyRStickKeys_ref.remove(pushlevelKeyStr);
                 ViGEmClient_CheckJoysticksReportData(gamepad_index);
                 updateFlag = VJOY_UPDATE_JOYSTICKS;
@@ -6117,10 +6348,11 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
     }
 
     // Update thumb values based on pressed keys
-    int custom_radius_ls = VJOY_STICK_RADIUS_MAX;
-    if (VJOY_STICK_RADIUS_MIN < reportData.custom_radius_ls && reportData.custom_radius_ls < VJOY_STICK_RADIUS_MAX) {
-        custom_radius_ls = reportData.custom_radius_ls;
-    }
+    uint ls_radius_up = VJOY_STICK_RADIUS_MAX;
+    uint ls_radius_down = VJOY_STICK_RADIUS_MAX;
+    uint ls_radius_left = VJOY_STICK_RADIUS_MAX;
+    uint ls_radius_right = VJOY_STICK_RADIUS_MAX;
+    getVJoyRadiusLimits(reportData, true, ls_radius_up, ls_radius_down, ls_radius_left, ls_radius_right);
     bool leftUpdatedByKeyboard = false;
     for (const QString &key : std::as_const(pressedLStickKeysList)) {
         int pushlevel = pressedvJoyLStickKeys_ref.value(key);
@@ -6142,10 +6374,11 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
         }
     }
 
-    int custom_radius_rs = VJOY_STICK_RADIUS_MAX;
-    if (VJOY_STICK_RADIUS_MIN < reportData.custom_radius_rs && reportData.custom_radius_rs < VJOY_STICK_RADIUS_MAX) {
-        custom_radius_rs = reportData.custom_radius_rs;
-    }
+    uint rs_radius_up = VJOY_STICK_RADIUS_MAX;
+    uint rs_radius_down = VJOY_STICK_RADIUS_MAX;
+    uint rs_radius_left = VJOY_STICK_RADIUS_MAX;
+    uint rs_radius_right = VJOY_STICK_RADIUS_MAX;
+    getVJoyRadiusLimits(reportData, false, rs_radius_up, rs_radius_down, rs_radius_left, rs_radius_right);
     bool rightUpdatedByKeyboard = false;
     for (const QString &key : std::as_const(pressedRStickKeysList)) {
         int pushlevel = pressedvJoyRStickKeys_ref.value(key);
@@ -6170,18 +6403,22 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
     if (leftUpdatedByKeyboard
         && (ViGEmTarget_Report.sThumbLX != XINPUT_THUMB_RELEASE
             || ViGEmTarget_Report.sThumbLY != XINPUT_THUMB_RELEASE)) {
-        ViGEmClient_CalculateThumbValue(&ViGEmTarget_Report.sThumbLX, &ViGEmTarget_Report.sThumbLY, custom_radius_ls);
+        ViGEmClient_CalculateThumbValue(&ViGEmTarget_Report.sThumbLX, &ViGEmTarget_Report.sThumbLY,
+                        ls_radius_up, ls_radius_down, ls_radius_left, ls_radius_right);
     }
 
     if (rightUpdatedByKeyboard
         && (ViGEmTarget_Report.sThumbRX != XINPUT_THUMB_RELEASE
             || ViGEmTarget_Report.sThumbRY != XINPUT_THUMB_RELEASE)) {
-        ViGEmClient_CalculateThumbValue(&ViGEmTarget_Report.sThumbRX, &ViGEmTarget_Report.sThumbRY, custom_radius_rs);
+        ViGEmClient_CalculateThumbValue(&ViGEmTarget_Report.sThumbRX, &ViGEmTarget_Report.sThumbRY,
+                        rs_radius_up, rs_radius_down, rs_radius_left, rs_radius_right);
     }
 
 }
 
-void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT *ori_ThumbY, uint custom_radius)
+void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT *ori_ThumbY,
+                                                        uint radius_up, uint radius_down,
+                                                        uint radius_left, uint radius_right)
 {
     SHORT ThumbX = *ori_ThumbX;
     SHORT ThumbY = *ori_ThumbY;
@@ -6211,19 +6448,32 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 #endif
     }
 
-    // Apply custom radius limit when custom_radius is valid
-    // Only clamp the distance if it exceeds the custom radius, do NOT scale smaller values
-    if (VJOY_STICK_RADIUS_MIN < custom_radius && custom_radius < VJOY_STICK_RADIUS_MAX) {
-        qreal ratio = static_cast<qreal>(custom_radius) / VJOY_STICK_RADIUS_MAX;
-        qreal max_radius = THUMB_DISTANCE_MAX * ratio;
+    // Apply direction-aware radius limit
+    // Only clamp the distance if it exceeds the limit, do NOT scale smaller values
+    if (!(radius_up == VJOY_STICK_RADIUS_MAX && radius_down == VJOY_STICK_RADIUS_MAX
+        && radius_left == VJOY_STICK_RADIUS_MAX && radius_right == VJOY_STICK_RADIUS_MAX)) {
+        uint limitX = (ThumbX >= 0) ? radius_right : radius_left;
+        uint limitY = (ThumbY >= 0) ? radius_up : radius_down;
 
-        // Only limit the distance if it exceeds the custom radius threshold
-        // Do NOT scale values that are already within the limit
+        qreal maxX = THUMB_DISTANCE_MAX * (static_cast<qreal>(limitX) / VJOY_STICK_RADIUS_MAX);
+        qreal maxY = THUMB_DISTANCE_MAX * (static_cast<qreal>(limitY) / VJOY_STICK_RADIUS_MAX);
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        qreal absCos = qAbs(qCos(direction));
+        qreal absSin = qAbs(qSin(direction));
+#else
+        qreal absCos = std::abs(std::cos(direction));
+        qreal absSin = std::abs(std::sin(direction));
+#endif
+        const qreal eps = 1e-6;
+        qreal maxRadiusX = (absCos > eps) ? (maxX / absCos) : THUMB_DISTANCE_MAX;
+        qreal maxRadiusY = (absSin > eps) ? (maxY / absSin) : THUMB_DISTANCE_MAX;
+        qreal max_radius = qMin(maxRadiusX, maxRadiusY);
+
+        // Only limit the distance if it exceeds the direction-aware radius threshold
         if (distance > max_radius) {
             distance = max_radius;
         }
-        // Note: Small movements (distance <= max_radius) are NOT scaled down
-        // This ensures smooth gradual movement in direct mode
     }
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -6235,7 +6485,8 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 #endif
 
 #ifdef JOYSTICK_VERBOSE_LOG
-    qDebug("[ViGEmClient_CalculateThumbValue] ori_ThumbX[%d], ori_ThumbY[%d], custom_radius[%d] -> Calculated ThumbX[%d], ThumbY[%d]", *ori_ThumbX, *ori_ThumbY, custom_radius, newThumbX, newThumbY);
+    qDebug("[ViGEmClient_CalculateThumbValue] ori_ThumbX[%d], ori_ThumbY[%d], radius(U/D/L/R)=[%u/%u/%u/%u] -> Calculated ThumbX[%d], ThumbY[%d]",
+           *ori_ThumbX, *ori_ThumbY, radius_up, radius_down, radius_left, radius_right, newThumbX, newThumbY);
 #endif
 
     *ori_ThumbX = newThumbX;
@@ -6532,24 +6783,28 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
         }
 
         if (leftJoystickUpdate) {
-            int custom_radius_ls = VJOY_STICK_RADIUS_MAX;
-            if (VJOY_STICK_RADIUS_MIN < reportData.custom_radius_ls && reportData.custom_radius_ls < VJOY_STICK_RADIUS_MAX) {
-                custom_radius_ls = reportData.custom_radius_ls;
-            }
+            uint ls_radius_up = VJOY_STICK_RADIUS_MAX;
+            uint ls_radius_down = VJOY_STICK_RADIUS_MAX;
+            uint ls_radius_left = VJOY_STICK_RADIUS_MAX;
+            uint ls_radius_right = VJOY_STICK_RADIUS_MAX;
+            getVJoyRadiusLimits(reportData, true, ls_radius_up, ls_radius_down, ls_radius_left, ls_radius_right);
 
-            ViGEmClient_CalculateThumbValue(&leftX, &leftY, custom_radius_ls);
+            ViGEmClient_CalculateThumbValue(&leftX, &leftY,
+                                            ls_radius_up, ls_radius_down, ls_radius_left, ls_radius_right);
 
             ViGEmTarget_Report.sThumbLX = leftX;
             ViGEmTarget_Report.sThumbLY = leftY;
             QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.ls_input_source, static_cast<int>(VJoyStickInputSource::Mouse));
         }
         if (rightJoystickUpdate) {
-            int custom_radius_rs = VJOY_STICK_RADIUS_MAX;
-            if (VJOY_STICK_RADIUS_MIN < reportData.custom_radius_rs && reportData.custom_radius_rs < VJOY_STICK_RADIUS_MAX) {
-                custom_radius_rs = reportData.custom_radius_rs;
-            }
+            uint rs_radius_up = VJOY_STICK_RADIUS_MAX;
+            uint rs_radius_down = VJOY_STICK_RADIUS_MAX;
+            uint rs_radius_left = VJOY_STICK_RADIUS_MAX;
+            uint rs_radius_right = VJOY_STICK_RADIUS_MAX;
+            getVJoyRadiusLimits(reportData, false, rs_radius_up, rs_radius_down, rs_radius_left, rs_radius_right);
 
-            ViGEmClient_CalculateThumbValue(&rightX, &rightY, custom_radius_rs);
+            ViGEmClient_CalculateThumbValue(&rightX, &rightY,
+                                            rs_radius_up, rs_radius_down, rs_radius_left, rs_radius_right);
 
             ViGEmTarget_Report.sThumbRX = rightX;
             ViGEmTarget_Report.sThumbRY = rightY;
@@ -6821,6 +7076,14 @@ void QKeyMapper_Worker::ViGEmClient_GamepadReset_byIndex(int gamepad_index)
     XUSB_REPORT_INIT(&ViGEmTarget_Report);
     reportData.custom_radius_ls = VJOY_STICK_RADIUS_MAX;
     reportData.custom_radius_rs = VJOY_STICK_RADIUS_MAX;
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_up, VJOY_STICK_RADIUS_MAX);
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_down, VJOY_STICK_RADIUS_MAX);
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_left, VJOY_STICK_RADIUS_MAX);
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_ls_right, VJOY_STICK_RADIUS_MAX);
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_up, VJOY_STICK_RADIUS_MAX);
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_down, VJOY_STICK_RADIUS_MAX);
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_left, VJOY_STICK_RADIUS_MAX);
+    QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_radius_rs_right, VJOY_STICK_RADIUS_MAX);
     QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.ls_input_source, static_cast<int>(VJoyStickInputSource::Keyboard));
     QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.rs_input_source, static_cast<int>(VJoyStickInputSource::Keyboard));
     VIGEM_ERROR error;

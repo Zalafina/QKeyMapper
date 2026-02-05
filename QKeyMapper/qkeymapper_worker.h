@@ -483,6 +483,14 @@ struct ViGEm_ReportData
     XUSB_REPORT xusb_report;
     QAtomicInteger<uint> custom_radius_ls;
     QAtomicInteger<uint> custom_radius_rs;
+    QAtomicInteger<uint> custom_radius_ls_up;
+    QAtomicInteger<uint> custom_radius_ls_down;
+    QAtomicInteger<uint> custom_radius_ls_left;
+    QAtomicInteger<uint> custom_radius_ls_right;
+    QAtomicInteger<uint> custom_radius_rs_up;
+    QAtomicInteger<uint> custom_radius_rs_down;
+    QAtomicInteger<uint> custom_radius_rs_left;
+    QAtomicInteger<uint> custom_radius_rs_right;
     QAtomicInteger<int> ls_input_source;
     QAtomicInteger<int> rs_input_source;
 
@@ -490,6 +498,14 @@ struct ViGEm_ReportData
         : xusb_report()
         , custom_radius_ls(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
         , custom_radius_rs(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_radius_ls_up(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_radius_ls_down(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_radius_ls_left(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_radius_ls_right(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_radius_rs_up(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_radius_rs_down(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_radius_rs_left(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_radius_rs_right(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
         , ls_input_source(static_cast<int>(QKeyMapperConstants::VJOY_STICK_INPUT_SOURCE_DEFAULT))
         , rs_input_source(static_cast<int>(QKeyMapperConstants::VJOY_STICK_INPUT_SOURCE_DEFAULT))
     {}
@@ -975,7 +991,11 @@ public:
     static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index, QJoystickEventType event_type = GameControllerEvent);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index);
     static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
-    static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY, uint custom_radius = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX);
+    static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY,
+                                               uint radius_up = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX,
+                                               uint radius_down = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX,
+                                               uint radius_left = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX,
+                                               uint radius_right = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX);
 
     // static Mouse2vJoyStates ViGEmClient_checkMouse2JoystickEnableState(void);
     static QHash<int, Mouse2vJoyData> ViGEmClient_checkMouse2JoystickEnableStateMap(void);

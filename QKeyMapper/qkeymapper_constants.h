@@ -1231,6 +1231,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char REGEX_PATTERN_ORIGINALKEY_WITHNOTE[] = R"(^(.*?)(?:【(.*?)】)?$)";
     inline constexpr const char REGEX_PATTERN_MAPKEY[] = R"(^([↓↑⇵↕！]?)([^⏱]+)(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)";
     inline constexpr const char REGEX_PATTERN_MAPKEY_WITH_PUSHLEVEL[] = R"(^([↓↑⇵↕！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)";
+    inline constexpr const char REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS[] = R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)";
+    inline constexpr const char REGEX_PATTERN_VJOY_RADIUS_KEYS[] = R"(^vJoy-(LS|RS)-Radius(?:\[(.+)\])?$)";
+    inline constexpr const char REGEX_PATTERN_VJOY_KEYS_NO_PUSHLEVEL[] = R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))$)";
 
 
     // Common edit control class names for searching
