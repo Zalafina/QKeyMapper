@@ -5755,7 +5755,7 @@ static bool parseVJoyRadiusSpec(const QString &spec, VJoyRadiusParseResult &resu
         return false;
     }
 
-    QStringList tokens = trimmed.split(',', Qt::SkipEmptyParts);
+    QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
     bool hasBase = false;
     int baseValue = VJOY_STICK_RADIUS_MAX;
     bool hasUp = false;
@@ -5770,7 +5770,7 @@ static bool parseVJoyRadiusSpec(const QString &spec, VJoyRadiusParseResult &resu
     for (const QString &tokenRaw : tokens) {
         QString token = tokenRaw.trimmed();
         if (token.isEmpty()) {
-            continue;
+            return false;
         }
         int eqPos = token.indexOf('=');
         if (eqPos >= 0) {
@@ -6448,8 +6448,8 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 #endif
     }
 
-    // Apply direction-aware radius limit
-    // Only clamp the distance if it exceeds the limit, do NOT scale smaller values
+    // Apply direction-aware radius limit with quadrant circular slice + component clamp.
+    // Component clamp enforces the smaller axis limit; the quadrant arc uses the larger axis limit.
     if (!(radius_up == VJOY_STICK_RADIUS_MAX && radius_down == VJOY_STICK_RADIUS_MAX
         && radius_left == VJOY_STICK_RADIUS_MAX && radius_right == VJOY_STICK_RADIUS_MAX)) {
         uint limitX = (ThumbX >= 0) ? radius_right : radius_left;
@@ -6458,21 +6458,35 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
         qreal maxX = THUMB_DISTANCE_MAX * (static_cast<qreal>(limitX) / VJOY_STICK_RADIUS_MAX);
         qreal maxY = THUMB_DISTANCE_MAX * (static_cast<qreal>(limitY) / VJOY_STICK_RADIUS_MAX);
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        qreal absCos = qAbs(qCos(direction));
-        qreal absSin = qAbs(qSin(direction));
-#else
-        qreal absCos = std::abs(std::cos(direction));
-        qreal absSin = std::abs(std::sin(direction));
-#endif
-        const qreal eps = 1e-6;
-        qreal maxRadiusX = (absCos > eps) ? (maxX / absCos) : THUMB_DISTANCE_MAX;
-        qreal maxRadiusY = (absSin > eps) ? (maxY / absSin) : THUMB_DISTANCE_MAX;
-        qreal max_radius = qMin(maxRadiusX, maxRadiusY);
+        if (ThumbX > maxX) {
+            ThumbX = static_cast<SHORT>(maxX);
+        }
+        else if (ThumbX < -maxX) {
+            ThumbX = static_cast<SHORT>(-maxX);
+        }
 
-        // Only limit the distance if it exceeds the direction-aware radius threshold
-        if (distance > max_radius) {
-            distance = max_radius;
+        if (ThumbY > maxY) {
+            ThumbY = static_cast<SHORT>(maxY);
+        }
+        else if (ThumbY < -maxY) {
+            ThumbY = static_cast<SHORT>(-maxY);
+        }
+
+        qint64 sliceSum = static_cast<qint64>(ThumbX) * static_cast<qint64>(ThumbX)
+            + static_cast<qint64>(ThumbY) * static_cast<qint64>(ThumbY);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        distance = qSqrt(static_cast<qreal>(sliceSum));
+        direction = qAtan2(ThumbY, ThumbX);
+#else
+        distance = std::sqrt(static_cast<qreal>(sliceSum));
+        direction = std::atan2(ThumbY, ThumbX);
+#endif
+
+        if (limitX > 0 && limitY > 0) {
+            qreal max_radius = qMax(maxX, maxY);
+            if (distance > max_radius) {
+                distance = max_radius;
+            }
         }
     }
 

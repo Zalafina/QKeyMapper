@@ -4489,7 +4489,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     if (trimmed.isEmpty()) {
                         return false;
                     }
-                    QStringList tokens = trimmed.split(',', Qt::SkipEmptyParts);
+                    QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
                     bool hasBase = false;
                     bool hasUp = false;
                     bool hasDown = false;
@@ -4499,7 +4499,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     for (const QString &tokenRaw : tokens) {
                         QString token = tokenRaw.trimmed();
                         if (token.isEmpty()) {
-                            continue;
+                            return false;
                         }
                         int eqPos = token.indexOf('=');
                         if (eqPos >= 0) {
@@ -4563,7 +4563,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     if (!radiusSpec.isEmpty()) {
                         if (!validateRadiusSpec(radiusSpec)) {
                             result.isValid = false;
-                            result.errorMessage = tr("Invalid vJoy-Radius spec \"%1\", valid range 0~255 and format like [150] or [U=200,D=0,L=150,R=150]").arg(mapping_key);
+                            result.errorMessage = tr("Invalid vJoy-Radius spec \"%1\".\nValid range is 0~255, and format like [150] or [U=200,D=0,L=150,R=150].").arg(mapping_key);
                         }
                     }
                 }
