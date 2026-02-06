@@ -1,4 +1,5 @@
 #include <QRandomGenerator>
+#include <cmath>
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
 
@@ -2131,6 +2132,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
     static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
+    static QRegularExpression vjoy_move_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_MOVE_KEYS);
     int keycount = 0;
     int sendtype = SENDTYPE_NORMAL;
     // INPUT inputs[SEND_INPUTS_MAX] = { 0 };
@@ -2332,11 +2334,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     toggle_supported = true;
                 }
                 else if (QKeyMapper_Worker::VirtualKeyCodeMap.contains(key)) {
-                    if (!(key.startsWith(KEY2MOUSE_PREFIX)
-                          || key.startsWith(CROSSHAIR_PREFIX)
-                          || key.startsWith(FUNC_PREFIX)
-                          || key.startsWith(GYRO2MOUSE_PREFIX)
-                          || key == MOUSE2VJOY_HOLD_KEY_STR)) {
+                    if (!(key.startsWith(FUNC_PREFIX))) {
                         toggle_supported = true;
                     }
                 }
@@ -3101,6 +3099,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     QString gamepadIndexString = vjoy_match.captured(2);
                     int send_keyupdown = KEY_DOWN;
                     bool vjoy_toggle_supported = (sendtype == SENDTYPE_TOGGLE);
+                    QRegularExpressionMatch vjoy_move_match = vjoy_move_keys_regex.match(joystickButton);
+                    if (vjoy_move_match.hasMatch()) {
+                        vjoy_toggle_supported = false;
+                    }
                     if (vjoy_toggle_supported
                         && (joystickButton == VJOY_LT_BRAKE_STR
                             || joystickButton == VJOY_RT_BRAKE_STR
@@ -3158,24 +3160,35 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                     }
 
-                    if (gamepadIndexString.isEmpty()) {
+                    bool vjoy_move_handled = false;
+                    if (vjoy_move_match.hasMatch()) {
                         if (send_keyupdown == KEY_DOWN) {
-                            ViGEmClient_PressButton(key, AUTO_ADJUST_NONE, 0, INITIAL_PLAYER_INDEX);
+                            int target_gamepad_index = gamepadIndexString.isEmpty() ? 0 : gamepad_index;
+                            ViGEmClient_MoveStick(joystickButton, target_gamepad_index);
                         }
-                        else {
-                            ViGEmClient_ReleaseButton(key, 0);
-                        }
+                        vjoy_move_handled = true;
                     }
-                    else {
-                        if (send_keyupdown == KEY_DOWN) {
-                            ViGEmClient_PressButton(joystickButton, AUTO_ADJUST_NONE, gamepad_index, INITIAL_PLAYER_INDEX);
+
+                    if (!vjoy_move_handled) {
+                        if (gamepadIndexString.isEmpty()) {
+                            if (send_keyupdown == KEY_DOWN) {
+                                ViGEmClient_PressButton(key, AUTO_ADJUST_NONE, 0, INITIAL_PLAYER_INDEX);
+                            }
+                            else {
+                                ViGEmClient_ReleaseButton(key, 0);
+                            }
                         }
                         else {
-                            ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
+                            if (send_keyupdown == KEY_DOWN) {
+                                ViGEmClient_PressButton(joystickButton, AUTO_ADJUST_NONE, gamepad_index, INITIAL_PLAYER_INDEX);
+                            }
+                            else {
+                                ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
+                            }
                         }
                     }
 
-                    if (sendtype == SENDTYPE_BOTH) {
+                    if (sendtype == SENDTYPE_BOTH && !vjoy_move_handled) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH vJoy KeyUp wait start ->" << key;
 #endif
@@ -3364,11 +3377,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     int send_keyupdown = KEY_DOWN;
                     bool toggle_supported = (sendtype == SENDTYPE_TOGGLE);
                     if (toggle_supported
-                        && (key.startsWith(KEY2MOUSE_PREFIX)
-                            || key.startsWith(CROSSHAIR_PREFIX)
-                            || key.startsWith(FUNC_PREFIX)
-                            || key.startsWith(GYRO2MOUSE_PREFIX)
-                            || key == MOUSE2VJOY_HOLD_KEY_STR)) {
+                        && (key.startsWith(FUNC_PREFIX))) {
                         toggle_supported = false;
                     }
                     if (sendtype == SENDTYPE_UP) {
@@ -5732,6 +5741,18 @@ struct VJoyRadiusParseResult
     VJoyRadiusDirectionLimits limits;
 };
 
+struct VJoyMoveSpec
+{
+    bool hasAbsX = false;
+    bool hasAbsY = false;
+    bool hasRelX = false;
+    bool hasRelY = false;
+    int absX = 0;
+    int absY = 0;
+    int relX = 0;
+    int relY = 0;
+};
+
 static bool parseVJoyRadiusValue(const QString &valueText, int &value)
 {
     if (valueText.isEmpty()) {
@@ -5767,7 +5788,7 @@ static bool parseVJoyRadiusSpec(const QString &spec, VJoyRadiusParseResult &resu
     int leftValue = VJOY_STICK_RADIUS_MAX;
     int rightValue = VJOY_STICK_RADIUS_MAX;
 
-    for (const QString &tokenRaw : tokens) {
+    for (const QString &tokenRaw : std::as_const(tokens)) {
         QString token = tokenRaw.trimmed();
         if (token.isEmpty()) {
             return false;
@@ -5840,6 +5861,124 @@ static bool parseVJoyRadiusSpec(const QString &spec, VJoyRadiusParseResult &resu
     result.limits.left = hasLeft ? static_cast<uint>(leftValue) : static_cast<uint>(defaultValue);
     result.limits.right = hasRight ? static_cast<uint>(rightValue) : static_cast<uint>(defaultValue);
     return true;
+}
+
+static bool parseVJoyMoveValue(const QString &valueText, int &value)
+{
+    if (valueText.isEmpty()) {
+        return false;
+    }
+    bool ok = true;
+    value = valueText.toInt(&ok);
+    int limit = static_cast<int>(VJOY_STICK_RADIUS_MAX);
+    if (!ok || value < -limit || value > limit) {
+        return false;
+    }
+    return true;
+}
+
+static bool parseVJoyMoveSpec(const QString &spec, VJoyMoveSpec &result)
+{
+    QString trimmed = spec.trimmed();
+    if (trimmed.isEmpty()) {
+        return false;
+    }
+
+    QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
+    for (const QString &tokenRaw : std::as_const(tokens)) {
+        QString token = tokenRaw.trimmed();
+        if (token.isEmpty()) {
+            return false;
+        }
+        int eqPos = token.indexOf('=');
+        if (eqPos <= 0 || token.indexOf('=', eqPos + 1) >= 0) {
+            return false;
+        }
+        QString keyText = token.left(eqPos).trimmed().toUpper();
+        QString valueText = token.mid(eqPos + 1).trimmed();
+        int value = 0;
+        if (!parseVJoyMoveValue(valueText, value)) {
+            return false;
+        }
+
+        if (keyText == "X") {
+            if (result.hasAbsX) {
+                return false;
+            }
+            result.hasAbsX = true;
+            result.absX = value;
+        }
+        else if (keyText == "Y") {
+            if (result.hasAbsY) {
+                return false;
+            }
+            result.hasAbsY = true;
+            result.absY = value;
+        }
+        else if (keyText == "RX") {
+            if (result.hasRelX) {
+                return false;
+            }
+            result.hasRelX = true;
+            result.relX = value;
+        }
+        else if (keyText == "RY") {
+            if (result.hasRelY) {
+                return false;
+            }
+            result.hasRelY = true;
+            result.relY = value;
+        }
+        else {
+            return false;
+        }
+    }
+    if ((result.hasAbsX && result.hasRelX) || (result.hasAbsY && result.hasRelY)) {
+        return false;
+    }
+
+    return result.hasAbsX || result.hasAbsY || result.hasRelX || result.hasRelY;
+}
+
+static int clampMoveValue(int value)
+{
+    int limit = static_cast<int>(VJOY_STICK_RADIUS_MAX);
+    if (value < -limit) {
+        return -limit;
+    }
+    if (value > limit) {
+        return limit;
+    }
+    return value;
+}
+
+static int thumbToMoveValue(SHORT thumb)
+{
+    int limit = static_cast<int>(VJOY_STICK_RADIUS_MAX);
+    if (thumb <= XINPUT_THUMB_MIN) {
+        return -limit;
+    }
+    if (thumb >= XINPUT_THUMB_MAX) {
+        return limit;
+    }
+    double scaled = static_cast<double>(thumb) * static_cast<double>(limit)
+        / static_cast<double>(XINPUT_THUMB_MAX);
+    int value = static_cast<int>(std::round(scaled));
+    return clampMoveValue(value);
+}
+
+static SHORT moveValueToThumb(int value)
+{
+    int limit = static_cast<int>(VJOY_STICK_RADIUS_MAX);
+    int clamped = clampMoveValue(value);
+    if (clamped <= -limit) {
+        return XINPUT_THUMB_MIN;
+    }
+    if (clamped >= limit) {
+        return XINPUT_THUMB_MAX;
+    }
+    int scaled = static_cast<int>(clamped * XINPUT_THUMB_MAX / limit);
+    return static_cast<SHORT>(scaled);
 }
 
 static uint sanitizeRadiusValue(uint value)
@@ -6149,6 +6288,111 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         }
     }
     }
+}
+
+void QKeyMapper_Worker::ViGEmClient_MoveStick(const QString &moveKey, int gamepad_index)
+{
+    int gamepad_count = s_ViGEmTargetList.size();
+    int gamepad_report_count = s_ViGEmTarget_ReportList.size();
+
+    if (gamepad_index >= gamepad_count || gamepad_index >= gamepad_report_count) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[ViGEmClient_MoveStick]" << "VirtualGamepad Index Error! ->" << gamepad_index;
+#endif
+        return;
+    }
+
+    static QRegularExpression vjoy_move_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_MOVE_KEYS);
+    QRegularExpressionMatch vjoy_move_match = vjoy_move_keys_regex.match(moveKey);
+    if (!vjoy_move_match.hasMatch()) {
+        return;
+    }
+
+    QString stickStr = vjoy_move_match.captured(1);
+    QString moveSpec = vjoy_move_match.captured(2);
+    VJoyMoveSpec moveParams;
+    if (!parseVJoyMoveSpec(moveSpec, moveParams)) {
+        return;
+    }
+
+    PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
+    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
+
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+    if (s_ViGEmClient == Q_NULLPTR || ViGEmTarget == Q_NULLPTR) {
+        return;
+    }
+    if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+        return;
+    }
+    if (vigem_target_is_attached(ViGEmTarget) != TRUE) {
+        return;
+    }
+
+    bool isLeftStick = (stickStr == "LS");
+    SHORT &thumbX = isLeftStick ? ViGEmTarget_Report.sThumbLX : ViGEmTarget_Report.sThumbRX;
+    SHORT &thumbY = isLeftStick ? ViGEmTarget_Report.sThumbLY : ViGEmTarget_Report.sThumbRY;
+
+    int currentX = thumbToMoveValue(thumbX);
+    int currentY = thumbToMoveValue(thumbY);
+    int targetX = currentX;
+    int targetY = currentY;
+
+    if (moveParams.hasAbsX) {
+        targetX = moveParams.absX;
+    }
+    else if (moveParams.hasRelX) {
+        targetX = currentX + moveParams.relX;
+    }
+
+    if (moveParams.hasAbsY) {
+        targetY = -moveParams.absY;
+    }
+    else if (moveParams.hasRelY) {
+        targetY = currentY - moveParams.relY;
+    }
+
+    if (moveParams.hasAbsX || moveParams.hasAbsY) {
+        if (!moveParams.hasAbsX && !moveParams.hasRelX) {
+            targetX = 0;
+        }
+        if (!moveParams.hasAbsY && !moveParams.hasRelY) {
+            targetY = 0;
+        }
+    }
+
+    targetX = clampMoveValue(targetX);
+    targetY = clampMoveValue(targetY);
+
+    thumbX = moveValueToThumb(targetX);
+    thumbY = moveValueToThumb(targetY);
+
+    uint radius_up = VJOY_STICK_RADIUS_MAX;
+    uint radius_down = VJOY_STICK_RADIUS_MAX;
+    uint radius_left = VJOY_STICK_RADIUS_MAX;
+    uint radius_right = VJOY_STICK_RADIUS_MAX;
+    getVJoyRadiusLimits(reportData, isLeftStick, radius_up, radius_down, radius_left, radius_right);
+    ViGEmClient_CalculateThumbValue(&thumbX, &thumbY, radius_up, radius_down, radius_left, radius_right);
+
+    if (isLeftStick) {
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.ls_input_source, static_cast<int>(VJoyStickInputSource::Keyboard));
+    }
+    else {
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.rs_input_source, static_cast<int>(VJoyStickInputSource::Keyboard));
+    }
+
+    VIGEM_ERROR error;
+    if (DualShock4Wired == vigem_target_get_type(ViGEmTarget)) {
+        DS4_REPORT ds4_report;
+        DS4_REPORT_INIT(&ds4_report);
+        XUSB_TO_DS4_REPORT(&ViGEmTarget_Report, &ds4_report);
+        error = vigem_target_ds4_update(s_ViGEmClient, ViGEmTarget, ds4_report);
+    }
+    else {
+        error = vigem_target_x360_update(s_ViGEmClient, ViGEmTarget, ViGEmTarget_Report);
+    }
+    Q_UNUSED(error);
 }
 
 void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index)
@@ -16271,9 +16515,6 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
 {
     SpecialMappingKeysList = QStringList() \
             << KEY_BLOCKED_STR
-            << MOUSE2VJOY_HOLD_KEY_STR
-            << GYRO2MOUSE_HOLD_KEY_STR
-            << GYRO2MOUSE_MOVE_KEY_STR
             << VJOY_LT_BRAKE_STR
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR

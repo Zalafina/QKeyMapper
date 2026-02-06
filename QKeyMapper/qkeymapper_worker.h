@@ -990,6 +990,7 @@ public:
 
     static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index, QJoystickEventType event_type = GameControllerEvent);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index);
+    static void ViGEmClient_MoveStick(const QString &moveKey, int gamepad_index);
     static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY,
                                                uint radius_up = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX,

@@ -47,7 +47,6 @@
 #include <QTranslator>
 #include <QLibraryInfo>
 #include <QPainter>
-#include <cmath>
 #include <windows.h>
 #ifndef max
 #define max(a,b) (((a) > (b)) ? (a) : (b))

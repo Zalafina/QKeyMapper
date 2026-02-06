@@ -4464,10 +4464,12 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 static QRegularExpression vjoy_keys_regex("^vJoy-.+$");
                 static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
                 static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
+                static QRegularExpression vjoy_move_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_MOVE_KEYS);
                 QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
                 QString vjoy_key = vjoy_match.captured(1);
                 QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(vjoy_key);
                 QRegularExpressionMatch vjoy_radius_keys_match = vjoy_radius_keys_regex.match(vjoy_key);
+                QRegularExpressionMatch vjoy_move_keys_match = vjoy_move_keys_regex.match(vjoy_key);
 
                 auto parseRadiusValue = [](const QString &valueText, int &value) -> bool {
                     if (valueText.isEmpty()) {
@@ -4496,7 +4498,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     bool hasLeft = false;
                     bool hasRight = false;
 
-                    for (const QString &tokenRaw : tokens) {
+                    for (const QString &tokenRaw : std::as_const(tokens)) {
                         QString token = tokenRaw.trimmed();
                         if (token.isEmpty()) {
                             return false;
@@ -4558,7 +4560,86 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     return true;
                 };
 
-                if (vjoy_radius_keys_match.hasMatch()) {
+                auto parseMoveValue = [](const QString &valueText, int &value) -> bool {
+                    if (valueText.isEmpty()) {
+                        return false;
+                    }
+                    bool ok = true;
+                    value = valueText.toInt(&ok);
+                    int limit = static_cast<int>(VJOY_STICK_RADIUS_MAX);
+                    if (!ok || value < -limit || value > limit) {
+                        return false;
+                    }
+                    return true;
+                };
+
+                auto validateMoveSpec = [&](const QString &spec) -> bool {
+                    QString trimmed = spec.trimmed();
+                    if (trimmed.isEmpty()) {
+                        return false;
+                    }
+                    QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
+                    bool hasX = false;
+                    bool hasY = false;
+                    bool hasRX = false;
+                    bool hasRY = false;
+                    for (const QString &tokenRaw : std::as_const(tokens)) {
+                        QString token = tokenRaw.trimmed();
+                        if (token.isEmpty()) {
+                            return false;
+                        }
+                        int eqPos = token.indexOf('=');
+                        if (eqPos <= 0 || token.indexOf('=', eqPos + 1) >= 0) {
+                            return false;
+                        }
+                        QString keyText = token.left(eqPos).trimmed().toUpper();
+                        QString valueText = token.mid(eqPos + 1).trimmed();
+                        int value = 0;
+                        if (!parseMoveValue(valueText, value)) {
+                            return false;
+                        }
+                        if (keyText == "X") {
+                            if (hasX) {
+                                return false;
+                            }
+                            hasX = true;
+                        }
+                        else if (keyText == "Y") {
+                            if (hasY) {
+                                return false;
+                            }
+                            hasY = true;
+                        }
+                        else if (keyText == "RX") {
+                            if (hasRX) {
+                                return false;
+                            }
+                            hasRX = true;
+                        }
+                        else if (keyText == "RY") {
+                            if (hasRY) {
+                                return false;
+                            }
+                            hasRY = true;
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                    if ((hasX && hasRX) || (hasY && hasRY)) {
+                        return false;
+                    }
+                    return hasX || hasY || hasRX || hasRY;
+                };
+
+                if (vjoy_move_keys_match.hasMatch()) {
+                    QString moveSpec = vjoy_move_keys_match.captured(2);
+                    if (!validateMoveSpec(moveSpec)) {
+                        result.isValid = false;
+                        result.errorMessage = tr("Invalid vJoy-Move spec \"%1\".\nValid range is -255~255, and format like [X=-60,Y=100] or [RX=6,RY=10].").arg(mapping_key);
+                    }
+                }
+                else if (vjoy_radius_keys_match.hasMatch()) {
                     QString radiusSpec = vjoy_radius_keys_match.captured(2);
                     if (!radiusSpec.isEmpty()) {
                         if (!validateRadiusSpec(radiusSpec)) {
@@ -4583,6 +4664,10 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 else if (!vJoyKeyList.contains(vjoy_key)) {
                     result.isValid = false;
                     result.errorMessage = tr("Invalid vJoy-Key \"%1\"").arg(mapping_key);
+                }
+                else if (vjoy_key == VJOY_LS_MOVE_STR || vjoy_key == VJOY_RS_MOVE_STR) {
+                    result.isValid = false;
+                    result.errorMessage = tr("Invalid vJoy-Move spec \"%1\".\nValid range is -255~255, and format like [X=-60,Y=100] or [RX=6,RY=10].").arg(mapping_key);
                 }
             }
             else if (joy2vjoy_mapkey_match.hasMatch()) {
@@ -20682,6 +20767,8 @@ void QKeyMapper::initKeysCategoryMap()
         << MOUSE2VJOY_HOLD_KEY_STR
         << VJOY_LS_RADIUS_STR
         << VJOY_RS_RADIUS_STR
+        << VJOY_LS_MOVE_STR
+        << VJOY_RS_MOVE_STR
         << "vJoy-LS-Up"
         << "vJoy-LS-Down"
         << "vJoy-LS-Left"
@@ -24216,6 +24303,100 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
         }
+        else if (currentMapKeyText == VJOY_LS_MOVE_STR || currentMapKeyText == VJOY_RS_MOVE_STR) {
+            QString moveSpec = ui->sendTextPlainTextEdit->toPlainText().simplified();
+            moveSpec.remove(whitespace_reg);
+            if (moveSpec.isEmpty()) {
+                QString message = tr("Please input the vJoy Move parameters in the format \"X=-60,Y=100\" or \"RX=6,RY=10\".");
+                showFailurePopup(message);
+                return;
+            }
+
+            auto parseMoveValue = [](const QString &valueText, int &value) -> bool {
+                if (valueText.isEmpty()) {
+                    return false;
+                }
+                bool ok = true;
+                value = valueText.toInt(&ok);
+                int limit = static_cast<int>(VJOY_STICK_RADIUS_MAX);
+                if (!ok || value < -limit || value > limit) {
+                    return false;
+                }
+                return true;
+            };
+
+            auto validateMoveSpec = [&](const QString &spec) -> bool {
+                QString trimmed = spec.trimmed();
+                if (trimmed.isEmpty()) {
+                    return false;
+                }
+                QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
+                bool hasX = false;
+                bool hasY = false;
+                bool hasRX = false;
+                bool hasRY = false;
+                for (const QString &tokenRaw : std::as_const(tokens)) {
+                    QString token = tokenRaw.trimmed();
+                    if (token.isEmpty()) {
+                        return false;
+                    }
+                    int eqPos = token.indexOf('=');
+                    if (eqPos <= 0 || token.indexOf('=', eqPos + 1) >= 0) {
+                        return false;
+                    }
+                    QString keyText = token.left(eqPos).trimmed().toUpper();
+                    QString valueText = token.mid(eqPos + 1).trimmed();
+                    int value = 0;
+                    if (!parseMoveValue(valueText, value)) {
+                        return false;
+                    }
+                    if (keyText == "X") {
+                        if (hasX) {
+                            return false;
+                        }
+                        hasX = true;
+                    }
+                    else if (keyText == "Y") {
+                        if (hasY) {
+                            return false;
+                        }
+                        hasY = true;
+                    }
+                    else if (keyText == "RX") {
+                        if (hasRX) {
+                            return false;
+                        }
+                        hasRX = true;
+                    }
+                    else if (keyText == "RY") {
+                        if (hasRY) {
+                            return false;
+                        }
+                        hasRY = true;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                if ((hasX && hasRX) || (hasY && hasRY)) {
+                    return false;
+                }
+                return hasX || hasY || hasRX || hasRY;
+            };
+
+            if (!validateMoveSpec(moveSpec)) {
+                QString message = tr("Please input the vJoy Move parameters in the format \"X=-60,Y=100\" or \"RX=6,RY=10\", range -255~255. Do not mix X with RX or Y with RY.");
+                showFailurePopup(message);
+                return;
+            }
+
+            if (virtualgamepad_index > 0) {
+                currentMapKeyText = QString("%1[%2]@%3").arg(currentMapKeyText, moveSpec, QString::number(virtualgamepad_index - 1));
+            }
+            else {
+                currentMapKeyText = QString("%1[%2]").arg(currentMapKeyText, moveSpec);
+            }
+        }
         else if (virtualgamepad_index > 0
             && QKeyMapper_Worker::MultiVirtualGamepadInputList.contains(currentMapKeyText)) {
             currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
@@ -24393,7 +24574,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
             && currentMapKeyComboBoxText.startsWith(CROSSHAIR_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false
-            && currentMapKeyComboBoxText != MOUSE2VJOY_HOLD_KEY_STR
             && currentMapKeyComboBoxText != VJOY_LS_RADIUS_STR
             && currentMapKeyComboBoxText != VJOY_RS_RADIUS_STR
             && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
