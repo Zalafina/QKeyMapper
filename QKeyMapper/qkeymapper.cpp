@@ -24307,7 +24307,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             QString moveSpec = ui->sendTextPlainTextEdit->toPlainText().simplified();
             moveSpec.remove(whitespace_reg);
             if (moveSpec.isEmpty()) {
-                QString message = tr("Please input the vJoy Move parameters in the format \"X=-60,Y=100\" or \"RX=6,RY=10\".");
+                QString message = tr("Please input the vJoy-Move parameters in the format \"X=-60,Y=100\" or \"RX=6,RY=10\", value range -255~255.");
                 showFailurePopup(message);
                 return;
             }
@@ -24385,7 +24385,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             };
 
             if (!validateMoveSpec(moveSpec)) {
-                QString message = tr("Please input the vJoy Move parameters in the format \"X=-60,Y=100\" or \"RX=6,RY=10\", range -255~255. Do not mix X with RX or Y with RY.");
+                QString message = tr("Please input the vJoy-Move parameters in the format \"X=-60,Y=100\" or \"RX=6,RY=10\", value range -255~255.");
                 showFailurePopup(message);
                 return;
             }
