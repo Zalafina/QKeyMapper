@@ -4491,7 +4491,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     if (trimmed.isEmpty()) {
                         return false;
                     }
-                    QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
+                    QStringList tokens = trimmed.split(',', QKeyMapperQtCompat::KeepEmptyParts);
                     bool hasBase = false;
                     bool hasUp = false;
                     bool hasDown = false;
@@ -4578,7 +4578,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     if (trimmed.isEmpty()) {
                         return false;
                     }
-                    QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
+                    QStringList tokens = trimmed.split(',', QKeyMapperQtCompat::KeepEmptyParts);
                     bool hasX = false;
                     bool hasY = false;
                     bool hasRX = false;
@@ -24330,7 +24330,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 if (trimmed.isEmpty()) {
                     return false;
                 }
-                QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
+                QStringList tokens = trimmed.split(',', QKeyMapperQtCompat::KeepEmptyParts);
                 bool hasX = false;
                 bool hasY = false;
                 bool hasRX = false;

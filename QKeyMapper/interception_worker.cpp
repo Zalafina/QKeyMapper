@@ -513,11 +513,7 @@ QHash<QString, USBDeviceInfo> Interception_Worker::parseUSBIDs(const QString &fi
 
         if (line.startsWith('\t')) {
             // Product line
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            QStringList fields = line.trimmed().split("  ", Qt::SkipEmptyParts);
-#else
-            QStringList fields = line.trimmed().split("  ", QString::SkipEmptyParts);
-#endif
+            QStringList fields = line.trimmed().split("  ", QKeyMapperQtCompat::SkipEmptyParts);
             if (fields.size() < 2)
                 continue;
 
@@ -529,11 +525,7 @@ QHash<QString, USBDeviceInfo> Interception_Worker::parseUSBIDs(const QString &fi
             usbIDs[currentVendorId + productId] = deviceInfo;
         } else {
             // Vendor line
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-            QStringList fields = line.trimmed().split("  ", Qt::SkipEmptyParts);
-#else
-            QStringList fields = line.trimmed().split("  ", QString::SkipEmptyParts);
-#endif
+            QStringList fields = line.trimmed().split("  ", QKeyMapperQtCompat::SkipEmptyParts);
             if (fields.size() < 2)
                 continue;
 

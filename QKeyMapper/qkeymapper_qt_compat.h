@@ -3,8 +3,19 @@
 
 #include <QtGlobal>
 #include <QList>
+#include <QString>
 
 namespace QKeyMapperQtCompat {
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+using SplitBehavior = Qt::SplitBehavior;
+constexpr SplitBehavior KeepEmptyParts = Qt::KeepEmptyParts;
+constexpr SplitBehavior SkipEmptyParts = Qt::SkipEmptyParts;
+#else
+using SplitBehavior = QString::SplitBehavior;
+constexpr SplitBehavior KeepEmptyParts = QString::KeepEmptyParts;
+constexpr SplitBehavior SkipEmptyParts = QString::SkipEmptyParts;
+#endif
 
 template <typename T>
 inline void resizeQList(QList<T> &list, int newSize, const T &fillValue)

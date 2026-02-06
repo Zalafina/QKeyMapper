@@ -73,6 +73,7 @@
 //#include <QProcess>
 //#include <QTextCodec>
 
+#include "qkeymapper_qt_compat.h"
 #include "qstyle_singletons.h"
 #include "qkeymapper_worker.h"
 #include "qinputdevicelistwindow.h"

@@ -2,7 +2,6 @@
 #include "ui_qmappingsequenceedit.h"
 #include "qkeymapper.h"
 #include "qkeymapper_constants.h"
-#include "qkeymapper_qt_compat.h"
 
 #include <QScrollBar>
 

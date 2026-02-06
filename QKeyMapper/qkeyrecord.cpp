@@ -64,7 +64,7 @@ QString postProcessRecordMappingKeys(const QString &recordString, bool mergeKeyA
         return recordString;
     }
 
-    const QStringList tokens = recordString.split(QString::fromUtf8(SEPARATOR_NEXTARROW), Qt::SkipEmptyParts);
+    const QStringList tokens = recordString.split(QString::fromUtf8(SEPARATOR_NEXTARROW), QKeyMapperQtCompat::SkipEmptyParts);
     if (tokens.isEmpty()) {
         return recordString;
     }

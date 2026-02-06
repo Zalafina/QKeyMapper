@@ -5776,7 +5776,7 @@ static bool parseVJoyRadiusSpec(const QString &spec, VJoyRadiusParseResult &resu
         return false;
     }
 
-    QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
+    QStringList tokens = trimmed.split(',', QKeyMapperQtCompat::KeepEmptyParts);
     bool hasBase = false;
     int baseValue = VJOY_STICK_RADIUS_MAX;
     bool hasUp = false;
@@ -5884,7 +5884,7 @@ static bool parseVJoyMoveSpec(const QString &spec, VJoyMoveSpec &result)
         return false;
     }
 
-    QStringList tokens = trimmed.split(',', Qt::KeepEmptyParts);
+    QStringList tokens = trimmed.split(',', QKeyMapperQtCompat::KeepEmptyParts);
     for (const QString &tokenRaw : std::as_const(tokens)) {
         QString token = tokenRaw.trimmed();
         if (token.isEmpty()) {
