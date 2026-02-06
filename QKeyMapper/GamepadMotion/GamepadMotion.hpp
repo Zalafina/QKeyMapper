@@ -1,10 +1,6 @@
 #ifndef GAMEPADMOTION_HPP
 #define GAMEPADMOTION_HPP
 
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#define _USE_MATH_DEFINES
-#endif
-#include <math.h>
 #include <algorithm> // std::min, std::max and std::clamp
 
 #ifndef M_PI

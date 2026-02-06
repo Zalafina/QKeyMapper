@@ -20,10 +20,6 @@
  * THE SOFTWARE.
  */
 
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#define _USE_MATH_DEFINES
-#endif
-#include <math.h>
 #include <QJoysticks/VirtualJoystick.h>
 
 VirtualJoystick::VirtualJoystick(QObject *parent)
@@ -105,7 +101,7 @@ void VirtualJoystick::setJoystickID(int id)
  */
 void VirtualJoystick::setAxisRange(qreal range)
 {
-   range = fabs(range);
+   range = std::fabs(range);
 
    if (range > 1)
       range = 1;

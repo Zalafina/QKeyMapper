@@ -32,11 +32,6 @@
 #include <QRegularExpressionMatch>
 #include <QAuthenticator>
 
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#define _USE_MATH_DEFINES
-#endif
-#include <math.h>
-
 #include "AuthenticateDialog.h"
 #include "Downloader.h"
 #include "qkeymapper.h"
@@ -489,7 +484,7 @@ void Downloader::updateProgress(qint64 received, qint64 total)
       m_ui->progressBar->setMaximum(0);
       m_ui->progressBar->setValue(-1);
       m_ui->downloadLabel->setText(tr("Downloading Updates") + "...");
-      m_ui->timeLabel->setText(QString("%1: %2").arg(tr("Time Remaining")).arg(tr("Unknown")));
+      m_ui->timeLabel->setText(QString("%1: %2").arg(tr("Time Remaining"), tr("Unknown")));
    }
 }
 
