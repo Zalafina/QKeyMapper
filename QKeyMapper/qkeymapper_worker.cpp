@@ -6422,17 +6422,9 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 {
     SHORT ThumbX = *ori_ThumbX;
     SHORT ThumbY = *ori_ThumbY;
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    qreal direction = qAtan2(ThumbY, ThumbX);
-#else
     qreal direction = std::atan2(ThumbY, ThumbX);
-#endif
     qint64 sumOfSquares = static_cast<qint64>(ThumbX) * static_cast<qint64>(ThumbX) + static_cast<qint64>(ThumbY) * static_cast<qint64>(ThumbY);
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    qreal distance = qSqrt(static_cast<qreal>(sumOfSquares));
-#else
     qreal distance = std::sqrt(static_cast<qreal>(sumOfSquares));
-#endif
 
     if (distance > THUMB_DISTANCE_MAX) {
         qreal scale = THUMB_DISTANCE_MAX / distance;
@@ -6441,11 +6433,7 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
         distance = THUMB_DISTANCE_MAX;
 
         // Recalculate direction after scaling ThumbX and ThumbY
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        direction = qAtan2(ThumbY, ThumbX);
-#else
         direction = std::atan2(ThumbY, ThumbX);
-#endif
     }
 
     // Apply direction-aware radius limit with quadrant circular slice + component clamp.
@@ -6474,13 +6462,8 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
 
         qint64 sliceSum = static_cast<qint64>(ThumbX) * static_cast<qint64>(ThumbX)
             + static_cast<qint64>(ThumbY) * static_cast<qint64>(ThumbY);
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        distance = qSqrt(static_cast<qreal>(sliceSum));
-        direction = qAtan2(ThumbY, ThumbX);
-#else
         distance = std::sqrt(static_cast<qreal>(sliceSum));
         direction = std::atan2(ThumbY, ThumbX);
-#endif
 
         if (limitX > 0 && limitY > 0) {
             qreal max_radius = qMax(maxX, maxY);
@@ -6490,13 +6473,8 @@ void QKeyMapper_Worker::ViGEmClient_CalculateThumbValue(SHORT *ori_ThumbX, SHORT
         }
     }
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    SHORT newThumbX = static_cast<SHORT>(qRound(distance * qCos(direction)));
-    SHORT newThumbY = static_cast<SHORT>(qRound(distance * qSin(direction)));
-#else
     SHORT newThumbX = static_cast<SHORT>(std::round(distance * std::cos(direction)));
     SHORT newThumbY = static_cast<SHORT>(std::round(distance * std::sin(direction)));
-#endif
 
 #ifdef JOYSTICK_VERBOSE_LOG
     qDebug("[ViGEmClient_CalculateThumbValue] ori_ThumbX[%d], ori_ThumbY[%d], radius(U/D/L/R)=[%u/%u/%u/%u] -> Calculated ThumbX[%d], ThumbY[%d]",
@@ -6726,11 +6704,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
             // Calculate X movement only if X sensitivity is not zero
             if (vJoy_X_Sensitivity > 0) {
                 int adjustedXSensitivity = VIRTUAL_JOYSTICK_SENSITIVITY_MAX / vJoy_X_Sensitivity;
-                #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                x = -qExp((-1.0 / adjustedXSensitivity) * qAbs(delta_x)) + 1.0;
-                #else
                 x = -std::exp((-1.0 / adjustedXSensitivity) * std::abs(delta_x)) + 1.0;
-                #endif
                 // take the sign into account, expanding the range to (-1, 1)
                 x *= sign(delta_x);
             }
@@ -6738,11 +6712,7 @@ void QKeyMapper_Worker::ViGEmClient_Mouse2JoystickUpdate(int delta_x, int delta_
             // Calculate Y movement only if Y sensitivity is not zero
             if (vJoy_Y_Sensitivity > 0) {
                 int adjustedYSensitivity = VIRTUAL_JOYSTICK_SENSITIVITY_MAX / vJoy_Y_Sensitivity;
-                #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                y = -qExp((-1.0 / adjustedYSensitivity) * qAbs(delta_y)) + 1.0;
-                #else
                 y = -std::exp((-1.0 / adjustedYSensitivity) * std::abs(delta_y)) + 1.0;
-                #endif
                 // take the sign into account, expanding the range to (-1, 1)
                 y *= -sign(delta_y);
             }
@@ -8889,15 +8859,9 @@ void QKeyMapper_Worker::onJoystickAxisEvent(const QJoystickAxisEvent &e)
     }
 
     QJoystickAxisEvent axisEvent = e;
-    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-    if (qFabs(axisEvent.value) < JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD) {
-        axisEvent.value = 0;
-    }
-    #else
     if (std::fabs(axisEvent.value) < JOYSTICK_AXIS_NEAR_ZERO_THRESHOLD) {
         axisEvent.value = 0;
     }
-    #endif
     checkJoystickAxis(axisEvent);
 }
 
