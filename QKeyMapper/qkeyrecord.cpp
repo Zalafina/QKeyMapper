@@ -58,6 +58,311 @@ QString removeWaitTimeFromTokenFallback(const QString &token)
     return result;
 }
 
+bool tryMergeComboSequence(const QStringList &tokens, QString *mergedOutput)
+{
+    if (!mergedOutput) {
+        return false;
+    }
+
+    if (tokens.size() < 2 || (tokens.size() % 2) != 0) {
+        return false;
+    }
+
+    const QString prefixDown = QString::fromUtf8(PREFIX_SEND_DOWN);
+    const QString prefixUp = QString::fromUtf8(PREFIX_SEND_UP);
+    const QString waitPrefix = QString::fromUtf8(SEPARATOR_WAITTIME);
+    const int half = tokens.size() / 2;
+
+    QStringList downKeys;
+    downKeys.reserve(half);
+
+    bool hasWaitTimeToken = false;
+    for (const QString &token : tokens) {
+        if (token.contains(waitPrefix)) {
+            hasWaitTimeToken = true;
+            break;
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (hasWaitTimeToken) {
+        qDebug().nospace().noquote()
+            << "[QKeyRecord::postProcessRecordMappingKeys] "
+            << "IgnoreWaitTime enabled but wait time tokens remain in record string.";
+    }
+#endif
+
+    for (int i = 0; i < tokens.size(); ++i) {
+        ParsedMapKey parsed = parseMapKeyToken(tokens.at(i));
+        if (!parsed.hasMatch) {
+            return false;
+        }
+
+        if (i < half) {
+            if (parsed.prefix != prefixDown) {
+                return false;
+            }
+            downKeys.append(parsed.key);
+        }
+        else {
+            if (parsed.prefix != prefixUp) {
+                return false;
+            }
+            const int downIndex = tokens.size() - 1 - i;
+            if (downIndex < 0 || downIndex >= downKeys.size()) {
+                return false;
+            }
+            if (parsed.key != downKeys.at(downIndex)) {
+                return false;
+            }
+        }
+    }
+
+    *mergedOutput = downKeys.join(QString::fromUtf8(SEPARATOR_PLUS));
+    return true;
+}
+
+QStringList collapseAdjacentDownUp(const QStringList &tokens)
+{
+    QStringList output;
+    output.reserve(tokens.size());
+
+    const QString prefixDown = QString::fromUtf8(PREFIX_SEND_DOWN);
+    const QString prefixUp = QString::fromUtf8(PREFIX_SEND_UP);
+
+    for (int i = 0; i < tokens.size(); ++i) {
+        const QString currentToken = tokens.at(i);
+        ParsedMapKey current = parseMapKeyToken(currentToken);
+
+        if (current.hasMatch && i + 1 < tokens.size()) {
+            const QString nextToken = tokens.at(i + 1);
+            ParsedMapKey next = parseMapKeyToken(nextToken);
+
+            if (next.hasMatch
+                && current.prefix == prefixDown
+                && next.prefix == prefixUp
+                && current.key == next.key) {
+                output.append(current.key);
+                ++i;
+                continue;
+            }
+        }
+
+        if (current.hasMatch) {
+            output.append(current.prefix + current.key);
+        }
+        else {
+            output.append(removeWaitTimeFromTokenFallback(currentToken));
+        }
+    }
+
+    return output;
+}
+
+bool tryMergeComboSequenceAllowMergedInner(const QStringList &tokens, QString *mergedOutput)
+{
+    if (!mergedOutput) {
+        return false;
+    }
+
+    if (tokens.size() < 2) {
+        return false;
+    }
+
+    const QString prefixDown = QString::fromUtf8(PREFIX_SEND_DOWN);
+    const QString prefixUp = QString::fromUtf8(PREFIX_SEND_UP);
+
+    enum Stage {
+        StageDown,
+        StageInner,
+        StageUp
+    } stage = StageDown;
+
+    QStringList downKeys;
+    QStringList innerKeys;
+    QStringList upKeys;
+
+    for (const QString &token : tokens) {
+        ParsedMapKey parsed = parseMapKeyToken(token);
+        if (!parsed.hasMatch) {
+            return false;
+        }
+
+        if (parsed.prefix == prefixDown) {
+            if (stage != StageDown) {
+                return false;
+            }
+            downKeys.append(parsed.key);
+            continue;
+        }
+
+        if (parsed.prefix == prefixUp) {
+            if (downKeys.isEmpty()) {
+                return false;
+            }
+            stage = StageUp;
+            upKeys.append(parsed.key);
+            continue;
+        }
+
+        if (parsed.prefix.isEmpty()) {
+            if (downKeys.isEmpty() || stage == StageUp) {
+                return false;
+            }
+            stage = StageInner;
+            innerKeys.append(parsed.key);
+            continue;
+        }
+
+        return false;
+    }
+
+    if (downKeys.isEmpty() || upKeys.isEmpty()) {
+        return false;
+    }
+
+    if (upKeys.size() != downKeys.size()) {
+        return false;
+    }
+
+    for (int i = 0; i < upKeys.size(); ++i) {
+        const int downIndex = downKeys.size() - 1 - i;
+        if (upKeys.at(i) != downKeys.at(downIndex)) {
+            return false;
+        }
+    }
+
+    QStringList mergedKeys = downKeys;
+    mergedKeys.append(innerKeys);
+    *mergedOutput = mergedKeys.join(QString::fromUtf8(SEPARATOR_PLUS));
+    return true;
+}
+
+bool tryMergeComboSequenceAtTail(const QStringList &tokens, QString *mergedOutput, int *startIndex)
+{
+    if (!mergedOutput || !startIndex) {
+        return false;
+    }
+
+    for (int i = 0; i < tokens.size(); ++i) {
+        QString merged;
+        const QStringList tailTokens = tokens.mid(i);
+        if (tryMergeComboSequenceAllowMergedInner(tailTokens, &merged)) {
+            *mergedOutput = merged;
+            *startIndex = i;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool tryConsumeComboSequence(const QStringList &tokens, int startIndex, int *endIndex, QString *mergedOutput)
+{
+    if (!endIndex || !mergedOutput) {
+        return false;
+    }
+
+    if (startIndex < 0 || startIndex >= tokens.size()) {
+        return false;
+    }
+
+    const QString prefixDown = QString::fromUtf8(PREFIX_SEND_DOWN);
+    const QString prefixUp = QString::fromUtf8(PREFIX_SEND_UP);
+
+    enum Stage {
+        StageDown,
+        StageInner,
+        StageUp
+    } stage = StageDown;
+
+    QStringList downKeys;
+    QStringList innerKeys;
+    QStringList upKeys;
+
+    for (int i = startIndex; i < tokens.size(); ++i) {
+        ParsedMapKey parsed = parseMapKeyToken(tokens.at(i));
+        if (!parsed.hasMatch) {
+            return false;
+        }
+
+        if (parsed.prefix == prefixDown) {
+            if (stage != StageDown) {
+                return false;
+            }
+            downKeys.append(parsed.key);
+            continue;
+        }
+
+        if (parsed.prefix.isEmpty()) {
+            if (downKeys.isEmpty() || stage == StageUp) {
+                return false;
+            }
+            stage = StageInner;
+            innerKeys.append(parsed.key);
+            continue;
+        }
+
+        if (parsed.prefix == prefixUp) {
+            if (downKeys.isEmpty()) {
+                return false;
+            }
+            stage = StageUp;
+            upKeys.append(parsed.key);
+            if (upKeys.size() > downKeys.size()) {
+                return false;
+            }
+            if (upKeys.size() == downKeys.size()) {
+                for (int j = 0; j < upKeys.size(); ++j) {
+                    const int downIndex = downKeys.size() - 1 - j;
+                    if (upKeys.at(j) != downKeys.at(downIndex)) {
+                        return false;
+                    }
+                }
+
+                QStringList mergedKeys = downKeys;
+                mergedKeys.append(innerKeys);
+                *mergedOutput = mergedKeys.join(QString::fromUtf8(SEPARATOR_PLUS));
+                *endIndex = i + 1;
+                return true;
+            }
+            continue;
+        }
+
+        return false;
+    }
+
+    return false;
+}
+
+bool mergeComboSequencesInTokens(const QStringList &tokens, QStringList *mergedTokens)
+{
+    if (!mergedTokens) {
+        return false;
+    }
+
+    mergedTokens->clear();
+    mergedTokens->reserve(tokens.size());
+
+    bool changed = false;
+    int i = 0;
+    while (i < tokens.size()) {
+        int endIndex = -1;
+        QString mergedCombo;
+        if (tryConsumeComboSequence(tokens, i, &endIndex, &mergedCombo)) {
+            mergedTokens->append(mergedCombo);
+            i = endIndex;
+            changed = true;
+            continue;
+        }
+
+        mergedTokens->append(tokens.at(i));
+        ++i;
+    }
+
+    return changed;
+}
+
 QString postProcessRecordMappingKeys(const QString &recordString, bool mergeKeyActions, bool ignoreWaitTime)
 {
     if (recordString.isEmpty()) {
@@ -72,6 +377,23 @@ QString postProcessRecordMappingKeys(const QString &recordString, bool mergeKeyA
     const QString prefixDown = QString::fromUtf8(PREFIX_SEND_DOWN);
     const QString prefixUp = QString::fromUtf8(PREFIX_SEND_UP);
     const QString noneKey = QString::fromUtf8(KEY_NONE_STR);
+
+    if (mergeKeyActions && ignoreWaitTime) {
+        QString mergedCombo;
+        if (tryMergeComboSequence(tokens, &mergedCombo)) {
+            return mergedCombo;
+        }
+
+        const QStringList collapsedTokens = collapseAdjacentDownUp(tokens);
+        if (tryMergeComboSequenceAllowMergedInner(collapsedTokens, &mergedCombo)) {
+            return mergedCombo;
+        }
+
+        QStringList mergedTokens;
+        if (mergeComboSequencesInTokens(collapsedTokens, &mergedTokens)) {
+            return mergedTokens.join(QString::fromUtf8(SEPARATOR_NEXTARROW));
+        }
+    }
 
     QStringList output;
     output.reserve(tokens.size());
