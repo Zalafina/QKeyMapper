@@ -491,6 +491,8 @@ struct ViGEm_ReportData
     QAtomicInteger<uint> custom_radius_rs_down;
     QAtomicInteger<uint> custom_radius_rs_left;
     QAtomicInteger<uint> custom_radius_rs_right;
+    QAtomicInteger<uint> custom_trigger_lt_max;
+    QAtomicInteger<uint> custom_trigger_rt_max;
     QAtomicInteger<int> ls_input_source;
     QAtomicInteger<int> rs_input_source;
 
@@ -506,6 +508,8 @@ struct ViGEm_ReportData
         , custom_radius_rs_down(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
         , custom_radius_rs_left(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
         , custom_radius_rs_right(QKeyMapperConstants::VJOY_STICK_RADIUS_MAX)
+        , custom_trigger_lt_max(QKeyMapperConstants::VJOY_PUSHLEVEL_MAX)
+        , custom_trigger_rt_max(QKeyMapperConstants::VJOY_PUSHLEVEL_MAX)
         , ls_input_source(static_cast<int>(QKeyMapperConstants::VJOY_STICK_INPUT_SOURCE_DEFAULT))
         , rs_input_source(static_cast<int>(QKeyMapperConstants::VJOY_STICK_INPUT_SOURCE_DEFAULT))
     {}

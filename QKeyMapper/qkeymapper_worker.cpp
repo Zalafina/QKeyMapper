@@ -5986,6 +5986,35 @@ static uint sanitizeRadiusValue(uint value)
     return (value > VJOY_STICK_RADIUS_MAX) ? VJOY_STICK_RADIUS_MAX : value;
 }
 
+static uint sanitizeTriggerMaxValue(uint value)
+{
+    return (value > VJOY_PUSHLEVEL_MAX) ? VJOY_PUSHLEVEL_MAX : value;
+}
+
+static BYTE clampTriggerValue(const ViGEm_ReportData &reportData, bool isLeft, BYTE value)
+{
+    uint maxValue = isLeft
+        ? sanitizeTriggerMaxValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_trigger_lt_max))
+        : sanitizeTriggerMaxValue(QKEYMAPPER_ATOMIC_LOAD_RELAXED(reportData.custom_trigger_rt_max));
+    return (value > maxValue) ? static_cast<BYTE>(maxValue) : value;
+}
+
+static void setVJoyTriggerMax(ViGEm_ReportData &reportData, bool isLeft, uint value)
+{
+    uint maxValue = sanitizeTriggerMaxValue(value);
+    if (isLeft) {
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_trigger_lt_max, maxValue);
+    }
+    else {
+        QKEYMAPPER_ATOMIC_STORE_RELAXED(reportData.custom_trigger_rt_max, maxValue);
+    }
+}
+
+static void resetVJoyTriggerMax(ViGEm_ReportData &reportData, bool isLeft)
+{
+    setVJoyTriggerMax(reportData, isLeft, VJOY_PUSHLEVEL_MAX);
+}
+
 static void getVJoyRadiusLimits(const ViGEm_ReportData &reportData, bool isLeftStick,
                                 uint &up, uint &down, uint &left, uint &right)
 {
@@ -6099,11 +6128,13 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
                 Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
                 if (event_type == GameControllerEvent) {
                     // Map 0.0~1.0 to 0~255 for BYTE representation (GameController trigger range)
-                    ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>(JoyAxisState.left_trigger * 255.0 + 0.5);
+                    BYTE leftTrigger = static_cast<BYTE>(JoyAxisState.left_trigger * 255.0 + 0.5);
+                    ViGEmTarget_Report.bLeftTrigger = clampTriggerValue(reportData, true, leftTrigger);
                 }
                 else {
                     // Map -1.0~1.0 to 0~255 for BYTE representation (Joystick trigger range)
-                    ViGEmTarget_Report.bLeftTrigger = static_cast<BYTE>((JoyAxisState.left_trigger + 1.0) * 127.5 + 0.5);
+                    BYTE leftTrigger = static_cast<BYTE>((JoyAxisState.left_trigger + 1.0) * 127.5 + 0.5);
+                    ViGEmTarget_Report.bLeftTrigger = clampTriggerValue(reportData, true, leftTrigger);
                 }
                 updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
@@ -6111,11 +6142,13 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
                 Joystick_AxisState JoyAxisState = s_JoyAxisStateMap.value(player_index);
                 if (event_type == GameControllerEvent) {
                     // Map 0.0~1.0 to 0~255 for BYTE representation (GameController trigger range)
-                    ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>(JoyAxisState.right_trigger * 255.0 + 0.5);
+                    BYTE rightTrigger = static_cast<BYTE>(JoyAxisState.right_trigger * 255.0 + 0.5);
+                    ViGEmTarget_Report.bRightTrigger = clampTriggerValue(reportData, false, rightTrigger);
                 }
                 else {
                     // Map -1.0~1.0 to 0~255 for BYTE representation (Joystick trigger range)
-                    ViGEmTarget_Report.bRightTrigger = static_cast<BYTE>((JoyAxisState.right_trigger + 1.0) * 127.5 + 0.5);
+                    BYTE rightTrigger = static_cast<BYTE>((JoyAxisState.right_trigger + 1.0) * 127.5 + 0.5);
+                    ViGEmTarget_Report.bRightTrigger = clampTriggerValue(reportData, false, rightTrigger);
                 }
                 updateFlag = VJOY_UPDATE_AUTO_BUTTONS;
             }
@@ -6188,7 +6221,31 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
             }
 
             BYTE pushlevel_byte = static_cast<BYTE>(pushlevel);
-            if (pushlevelKeyStr.startsWith("LS-")) {
+            if (pushlevelKeyStr == "LT-Max") {
+                setVJoyTriggerMax(reportData, true, static_cast<uint>(pushlevel));
+                bool brakeAccelActive = pressedvJoyButtons_ref.contains(VJOY_LT_BRAKE_STR)
+                    || pressedvJoyButtons_ref.contains(VJOY_LT_ACCEL_STR);
+                if (!brakeAccelActive) {
+                    BYTE clamped = clampTriggerValue(reportData, true, ViGEmTarget_Report.bLeftTrigger);
+                    if (clamped != ViGEmTarget_Report.bLeftTrigger) {
+                        ViGEmTarget_Report.bLeftTrigger = clamped;
+                        updateFlag = VJOY_UPDATE_BUTTONS;
+                    }
+                }
+            }
+            else if (pushlevelKeyStr == "RT-Max") {
+                setVJoyTriggerMax(reportData, false, static_cast<uint>(pushlevel));
+                bool brakeAccelActive = pressedvJoyButtons_ref.contains(VJOY_RT_BRAKE_STR)
+                    || pressedvJoyButtons_ref.contains(VJOY_RT_ACCEL_STR);
+                if (!brakeAccelActive) {
+                    BYTE clamped = clampTriggerValue(reportData, false, ViGEmTarget_Report.bRightTrigger);
+                    if (clamped != ViGEmTarget_Report.bRightTrigger) {
+                        ViGEmTarget_Report.bRightTrigger = clamped;
+                        updateFlag = VJOY_UPDATE_BUTTONS;
+                    }
+                }
+            }
+            else if (pushlevelKeyStr.startsWith("LS-")) {
                 pressedvJoyLStickKeys_ref.insert(pushlevelKeyStr, pushlevel_byte);
                 ViGEmClient_CheckJoysticksReportData(gamepad_index);
                 updateFlag = VJOY_UPDATE_JOYSTICKS;
@@ -6199,11 +6256,11 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
                 updateFlag = VJOY_UPDATE_JOYSTICKS;
             }
             else if (pushlevelKeyStr.endsWith("(LT)")) {
-                ViGEmTarget_Report.bLeftTrigger = pushlevel_byte;
+                ViGEmTarget_Report.bLeftTrigger = clampTriggerValue(reportData, true, pushlevel_byte);
                 updateFlag = VJOY_UPDATE_BUTTONS;
             }
             else if (pushlevelKeyStr.endsWith("(RT)")) {
-                ViGEmTarget_Report.bRightTrigger = pushlevel_byte;
+                ViGEmTarget_Report.bRightTrigger = clampTriggerValue(reportData, false, pushlevel_byte);
                 updateFlag = VJOY_UPDATE_BUTTONS;
             }
             else {
@@ -6455,7 +6512,13 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
         }
         else if (vjoy_pushlevel_keys_match.hasMatch()) {
             QString pushlevelKeyStr = vjoy_pushlevel_keys_match.captured(1);
-            if (pushlevelKeyStr.startsWith("LS-")) {
+            if (pushlevelKeyStr == "LT-Max") {
+                resetVJoyTriggerMax(reportData, true);
+            }
+            else if (pushlevelKeyStr == "RT-Max") {
+                resetVJoyTriggerMax(reportData, false);
+            }
+            else if (pushlevelKeyStr.startsWith("LS-")) {
                 pressedvJoyLStickKeys_ref.remove(pushlevelKeyStr);
                 ViGEmClient_CheckJoysticksReportData(gamepad_index);
                 updateFlag = VJOY_UPDATE_JOYSTICKS;

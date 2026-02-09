@@ -20769,6 +20769,8 @@ void QKeyMapper::initKeysCategoryMap()
         << VJOY_RS_RADIUS_STR
         << VJOY_LS_MOVE_STR
         << VJOY_RS_MOVE_STR
+        << VJOY_LT_MAX_STR
+        << VJOY_RT_MAX_STR
         << "vJoy-LS-Up"
         << "vJoy-LS-Down"
         << "vJoy-LS-Left"
@@ -21543,7 +21545,9 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 // disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_LS_RADIUS_STR)
-                || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_RS_RADIUS_STR)) {
+                || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_RS_RADIUS_STR)
+                || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_LT_MAX_STR)
+                || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_RT_MAX_STR)) {
                 disable_burst = true;
                 // disable_lock = true;
             }
@@ -21770,7 +21774,9 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         // disable_lock = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_LS_RADIUS_STR)
-        || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_RS_RADIUS_STR)) {
+        || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_RS_RADIUS_STR)
+        || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_LT_MAX_STR)
+        || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_RT_MAX_STR)) {
         disable_burst = true;
         // disable_lock = true;
     }
@@ -24286,8 +24292,12 @@ void QKeyMapper::on_addmapdataButton_clicked()
         int virtualgamepad_index = ui->virtualGamepadListComboBox->currentIndex();
         if (vjoy_pushlevel_keys_match.hasMatch()) {
             int pushlevel = ui->pushLevelSpinBox->value();
+            bool is_vjoy_trigger_max = (currentMapKeyText == VJOY_LT_MAX_STR || currentMapKeyText == VJOY_RT_MAX_STR);
             if (virtualgamepad_index > 0) {
-                if (pushlevel != VJOY_PUSHLEVEL_MAX) {
+                if (is_vjoy_trigger_max) {
+                    currentMapKeyText = QString("%1[%2]@%3").arg(currentMapKeyText, QString::number(pushlevel), QString::number(virtualgamepad_index - 1));
+                }
+                else if (pushlevel != VJOY_PUSHLEVEL_MAX) {
                     /* Add [pushlevel] value postfix */
                     currentMapKeyText = QString("%1[%2]@%3").arg(currentMapKeyText, QString::number(pushlevel), QString::number(virtualgamepad_index - 1));
                 }
@@ -24297,7 +24307,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 }
             }
             else {
-                if (pushlevel != VJOY_PUSHLEVEL_MAX) {
+                if (is_vjoy_trigger_max) {
+                    currentMapKeyText = QString("%1[%2]").arg(currentMapKeyText, QString::number(pushlevel));
+                }
+                else if (pushlevel != VJOY_PUSHLEVEL_MAX) {
                     /* Add [pushlevel] value postfix */
                     currentMapKeyText = QString("%1[%2]").arg(currentMapKeyText, QString::number(pushlevel));
                 }
@@ -24574,8 +24587,6 @@ void QKeyMapper::on_addmapdataButton_clicked()
             && currentMapKeyComboBoxText.startsWith(CROSSHAIR_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false
-            && currentMapKeyComboBoxText != VJOY_LS_RADIUS_STR
-            && currentMapKeyComboBoxText != VJOY_RS_RADIUS_STR
             && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
             && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR
             && currentMapKeyComboBoxText != VJOY_LT_ACCEL_STR

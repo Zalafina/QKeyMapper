@@ -1231,10 +1231,10 @@ namespace QKeyMapperConstants {
     inline constexpr const char REGEX_PATTERN_ORIGINALKEY_WITHNOTE[] = R"(^(.*?)(?:【(.*?)】)?$)";
     inline constexpr const char REGEX_PATTERN_MAPKEY[] = R"(^([↓↑⇵↕！]?)([^⏱]+)(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)";
     inline constexpr const char REGEX_PATTERN_MAPKEY_WITH_PUSHLEVEL[] = R"(^([↓↑⇵↕！]?)([^\[⏱]+)(?:\[(\d{1,3})\])?(?:⏱(?:\((\d+)~(\d+)\)|(\d+)))?$)";
-    inline constexpr const char REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS[] = R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)";
+    inline constexpr const char REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS[] = R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|LT-Max|RT-Max|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)";
     inline constexpr const char REGEX_PATTERN_VJOY_RADIUS_KEYS[] = R"(^vJoy-(LS|RS)-Radius(?:\[(.+)\])?$)";
     inline constexpr const char REGEX_PATTERN_VJOY_MOVE_KEYS[] = R"(^vJoy-(LS|RS)-Move\[(.+)\]$)";
-    inline constexpr const char REGEX_PATTERN_VJOY_KEYS_NO_PUSHLEVEL[] = R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))$)";
+    inline constexpr const char REGEX_PATTERN_VJOY_KEYS_NO_PUSHLEVEL[] = R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|LT-Max|RT-Max|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))$)";
 
 
     // Common edit control class names for searching
@@ -1417,6 +1417,9 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char VJOY_LS_MOVE_STR[] = "vJoy-LS-Move";
     inline constexpr const char VJOY_RS_MOVE_STR[] = "vJoy-RS-Move";
+
+    inline constexpr const char VJOY_LT_MAX_STR[] = "vJoy-LT-Max";
+    inline constexpr const char VJOY_RT_MAX_STR[] = "vJoy-RT-Max";
 
     inline constexpr const char JOY_LS2VJOYLS_STR[] = "Joy-LS_2vJoyLS";
     inline constexpr const char JOY_RS2VJOYRS_STR[] = "Joy-RS_2vJoyRS";
