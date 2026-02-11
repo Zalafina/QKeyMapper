@@ -242,6 +242,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initCombinationKeyLineEdit();
     initInputDeviceSelectComboBoxes();
     initCategoryFilterControls();
+    initTableEditSettingPopup();
     initPopupMessage();
     initPushLevelSlider();
 
@@ -566,13 +567,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->themeComboBox->addItems(theme_list);
     ui->themeComboBox->setCurrentIndex(UI_THEME_SYSTEMDEFAULT);
     ui->themeComboBox->blockSignals(false);
-
-    QStringList editmode_list = QStringList() \
-            << tr("R-DoubleClick")
-            << tr("L-DoubleClick")
-            ;
-    ui->editModeComboBox->addItems(editmode_list);
-    ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
 
     // m_windowswitchKeySeqEdit->setDefaultKeySequence(DISPLAYSWITCH_KEY_DEFAULT);
     // m_mappingswitchKeySeqEdit->setDefaultKeySequence(MAPPINGSWITCH_KEY_DEFAULT);
@@ -6020,9 +6014,22 @@ int QKeyMapper::getLanguageIndex()
     return getInstance()->ui->languageComboBox->currentIndex();
 }
 
-int QKeyMapper::getEditModeIndex()
+int QKeyMapper::getTableEditModeTriggerIndex()
 {
-    return getInstance()->ui->editModeComboBox->currentIndex();
+    QKeyMapper *instance = getInstance();
+    if (!instance || !instance->m_TableEditModeTriggerComboBox) {
+        return EDITMODE_RIGHT_DOUBLECLICK;
+    }
+    return instance->m_TableEditModeTriggerComboBox->currentIndex();
+}
+
+int QKeyMapper::getTableInsertModeIndex()
+{
+    QKeyMapper *instance = getInstance();
+    if (!instance || !instance->m_TableInsertModeComboBox) {
+        return TABLE_INSERT_MODE_DEFAULT;
+    }
+    return instance->m_TableInsertModeComboBox->currentIndex();
 }
 
 const KeyListComboBox *QKeyMapper::getOriKeyComboBox() const
@@ -9041,7 +9048,7 @@ int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
     return copied_count;
 }
 
-int QKeyMapper::insertKeyMappingDataFromCopiedList(int *autoDisabledCount)
+int QKeyMapper::insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisabledCount)
 {
     int inserted_count = -1;
     if (s_CopiedMappingData.isEmpty()) {
@@ -9096,9 +9103,12 @@ int QKeyMapper::insertKeyMappingDataFromCopiedList(int *autoDisabledCount)
         insertToEnd = true;
     }
     else {
-        // Get the selected top row
+        // Get the selected row based on insert mode
         QTableWidgetSelectionRange range = selectedRanges.first();
-        insertRow = range.topRow();
+        const int preferredRow = (insertMode == TABLE_INSERT_MODE_BELOW)
+            ? (range.bottomRow() + 1)
+            : range.topRow();
+        insertRow = qBound(0, preferredRow, KeyMappingDataList->size());
     }
 
     if (insertToEnd) {
@@ -11106,7 +11116,12 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     settingFile.setValue(DISPLAY_SCALE , ui->scaleComboBox->currentIndex());
     settingFile.setValue(THEME_COLOR , ui->themeComboBox->currentIndex());
-    settingFile.setValue(EDITMODE_TRIGGER, ui->editModeComboBox->currentIndex());
+    if (m_TableEditModeTriggerComboBox) {
+        settingFile.setValue(EDITMODE_TRIGGER, m_TableEditModeTriggerComboBox->currentIndex());
+    }
+    if (m_TableInsertModeComboBox) {
+        settingFile.setValue(TABLEINSERTMODE, m_TableInsertModeComboBox->currentIndex());
+    }
 
     QColor notification_fontcolor;
     QString notification_fontcolor_name;
@@ -12416,20 +12431,44 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         qDebug() << "[loadKeyMapSetting]" << "Theme Color ->" << ui->themeComboBox->currentText();
 #endif
 
-        if (true == settingFile.contains(EDITMODE_TRIGGER)){
-            int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
-            if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
-                ui->editModeComboBox->setCurrentIndex(editmode_trigger);
+        if (m_TableEditModeTriggerComboBox) {
+            if (true == settingFile.contains(EDITMODE_TRIGGER)){
+                int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
+                if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
+                    m_TableEditModeTriggerComboBox->setCurrentIndex(editmode_trigger);
+                }
+                else {
+                    m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+                }
             }
             else {
-                ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+                m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
             }
         }
-        else {
-            ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+#ifdef DEBUG_LOGOUT_ON
+        if (m_TableEditModeTriggerComboBox) {
+            qDebug() << "[loadKeyMapSetting]" << "Table EditMode Trigger ->" << m_TableEditModeTriggerComboBox->currentText();
+        }
+#endif
+
+        if (m_TableInsertModeComboBox) {
+            if (true == settingFile.contains(TABLEINSERTMODE)){
+                int insert_mode = settingFile.value(TABLEINSERTMODE).toInt();
+                if (TABLE_INSERT_MODE_ABOVE <= insert_mode && insert_mode <= TABLE_INSERT_MODE_BELOW) {
+                    m_TableInsertModeComboBox->setCurrentIndex(insert_mode);
+                }
+                else {
+                    m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
+                }
+            }
+            else {
+                m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
+            }
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "EditMode Trigger ->" << ui->editModeComboBox->currentText();
+        if (m_TableInsertModeComboBox) {
+            qDebug() << "[loadKeyMapSetting]" << "Table Insert Mode ->" << m_TableInsertModeComboBox->currentText();
+        }
 #endif
 
 #if 0
@@ -15877,20 +15916,44 @@ void QKeyMapper::loadGeneralSetting()
     qDebug() << "[loadGeneralSetting]" << "Theme Color ->" << ui->themeComboBox->currentText();
 #endif
 
-    if (true == settingFile.contains(EDITMODE_TRIGGER)){
-        int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
-        if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
-            ui->editModeComboBox->setCurrentIndex(editmode_trigger);
+    if (m_TableEditModeTriggerComboBox) {
+        if (true == settingFile.contains(EDITMODE_TRIGGER)){
+            int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
+            if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
+                m_TableEditModeTriggerComboBox->setCurrentIndex(editmode_trigger);
+            }
+            else {
+                m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+            }
         }
         else {
-            ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+            m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
         }
     }
-    else {
-        ui->editModeComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+#ifdef DEBUG_LOGOUT_ON
+    if (m_TableEditModeTriggerComboBox) {
+        qDebug() << "[loadGeneralSetting]" << "Table EditMode Trigger ->" << m_TableEditModeTriggerComboBox->currentText();
+    }
+#endif
+
+    if (m_TableInsertModeComboBox) {
+        if (true == settingFile.contains(TABLEINSERTMODE)){
+            int insert_mode = settingFile.value(TABLEINSERTMODE).toInt();
+            if (TABLE_INSERT_MODE_ABOVE <= insert_mode && insert_mode <= TABLE_INSERT_MODE_BELOW) {
+                m_TableInsertModeComboBox->setCurrentIndex(insert_mode);
+            }
+            else {
+                m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
+            }
+        }
+        else {
+            m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
+        }
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadGeneralSetting]" << "EditMode Trigger ->" << ui->editModeComboBox->currentText();
+    if (m_TableInsertModeComboBox) {
+        qDebug() << "[loadGeneralSetting]" << "Table Insert Mode ->" << m_TableInsertModeComboBox->currentText();
+    }
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_FONTCOLOR)){
@@ -16510,6 +16573,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
     ui->startupPositonSettingButton->setFont(customFont);
+    ui->tableEditSettingButton->setFont(customFont);
     ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
@@ -16549,7 +16613,18 @@ void QKeyMapper::setControlFontEnglish()
     ui->updateSiteLabel->setFont(customFont);
     ui->scaleLabel->setFont(customFont);
     ui->themeLabel->setFont(customFont);
-    ui->editModeLabel->setFont(customFont);
+    if (m_TableEditModeTriggerLabel) {
+        m_TableEditModeTriggerLabel->setFont(customFont);
+    }
+    if (m_TableEditModeTriggerComboBox) {
+        m_TableEditModeTriggerComboBox->setFont(customFont);
+    }
+    if (m_TableInsertModeLabel) {
+        m_TableInsertModeLabel->setFont(customFont);
+    }
+    if (m_TableInsertModeComboBox) {
+        m_TableInsertModeComboBox->setFont(customFont);
+    }
     ui->selectTrayIconButton->setFont(customFont);
     // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
@@ -16657,6 +16732,7 @@ void QKeyMapper::setControlFontChinese()
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
     ui->startupPositonSettingButton->setFont(customFont);
+    ui->tableEditSettingButton->setFont(customFont);
     ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
@@ -16696,7 +16772,18 @@ void QKeyMapper::setControlFontChinese()
     ui->updateSiteLabel->setFont(customFont);
     ui->scaleLabel->setFont(customFont);
     ui->themeLabel->setFont(customFont);
-    ui->editModeLabel->setFont(customFont);
+    if (m_TableEditModeTriggerLabel) {
+        m_TableEditModeTriggerLabel->setFont(customFont);
+    }
+    if (m_TableEditModeTriggerComboBox) {
+        m_TableEditModeTriggerComboBox->setFont(customFont);
+    }
+    if (m_TableInsertModeLabel) {
+        m_TableInsertModeLabel->setFont(customFont);
+    }
+    if (m_TableInsertModeComboBox) {
+        m_TableInsertModeComboBox->setFont(customFont);
+    }
     ui->selectTrayIconButton->setFont(customFont);
     // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
@@ -16804,6 +16891,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
     ui->startupPositonSettingButton->setFont(customFont);
+    ui->tableEditSettingButton->setFont(customFont);
     ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
@@ -16843,7 +16931,18 @@ void QKeyMapper::setControlFontJapanese()
     ui->updateSiteLabel->setFont(customFont);
     ui->scaleLabel->setFont(customFont);
     ui->themeLabel->setFont(customFont);
-    ui->editModeLabel->setFont(customFont);
+    if (m_TableEditModeTriggerLabel) {
+        m_TableEditModeTriggerLabel->setFont(customFont);
+    }
+    if (m_TableEditModeTriggerComboBox) {
+        m_TableEditModeTriggerComboBox->setFont(customFont);
+    }
+    if (m_TableInsertModeLabel) {
+        m_TableInsertModeLabel->setFont(customFont);
+    }
+    if (m_TableInsertModeComboBox) {
+        m_TableInsertModeComboBox->setFont(customFont);
+    }
     ui->selectTrayIconButton->setFont(customFont);
     // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
@@ -21091,6 +21190,70 @@ void QKeyMapper::initCategoryFilterControls()
     ui->categoryFilterToolButton->setToolTip(tr("All"));
 }
 
+void QKeyMapper::initTableEditSettingPopup()
+{
+    if (!ui->tableEditSettingButton || m_TableEditSettingPopup) {
+        return;
+    }
+
+    m_TableEditSettingPopup = new QFrame(this, Qt::Popup);
+    m_TableEditSettingPopup->setObjectName("tableEditSettingPopup");
+    m_TableEditSettingPopup->setFrameShape(QFrame::Box);
+    m_TableEditSettingPopup->setFrameShadow(QFrame::Raised);
+
+    const int marginH = 10;
+    const int marginV = 10;
+    const int rowSpacing = 9;
+    const int columnSpacing = 6;
+    const int labelMinWidth = 70;
+    const int comboMinWidth = 130;
+    const int comboHeight = 21;
+
+    QGridLayout *layout = new QGridLayout(m_TableEditSettingPopup);
+    layout->setContentsMargins(marginH, marginV, marginH, marginV);
+    layout->setHorizontalSpacing(columnSpacing);
+    layout->setVerticalSpacing(rowSpacing);
+
+    m_TableEditModeTriggerLabel = new QLabel(m_TableEditSettingPopup);
+    m_TableEditModeTriggerComboBox = new QComboBox(m_TableEditSettingPopup);
+    m_TableInsertModeLabel = new QLabel(m_TableEditSettingPopup);
+    m_TableInsertModeComboBox = new QComboBox(m_TableEditSettingPopup);
+
+    m_TableEditModeTriggerLabel->setText(tr("EditMode"));
+    m_TableInsertModeLabel->setText(tr("InsertMode"));
+
+    m_TableEditModeTriggerLabel->setMinimumWidth(labelMinWidth);
+    m_TableInsertModeLabel->setMinimumWidth(labelMinWidth);
+    m_TableEditModeTriggerComboBox->setMinimumWidth(comboMinWidth);
+    m_TableInsertModeComboBox->setMinimumWidth(comboMinWidth);
+
+    m_TableEditModeTriggerLabel->setAlignment(Qt::AlignRight);
+    m_TableInsertModeLabel->setAlignment(Qt::AlignRight);
+
+    m_TableEditModeTriggerComboBox->setFixedHeight(comboHeight);
+    m_TableInsertModeComboBox->setFixedHeight(comboHeight);
+
+    QStringList editmodeList = QStringList()
+            << tr("R-DoubleClick")
+            << tr("L-DoubleClick");
+    m_TableEditModeTriggerComboBox->addItems(editmodeList);
+    m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+
+    QStringList insertModeList = QStringList()
+            << tr("AboveCurrentRow")
+            << tr("BelowCurrentRow");
+    m_TableInsertModeComboBox->addItems(insertModeList);
+    m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
+
+    layout->addWidget(m_TableEditModeTriggerLabel, 0, 0, Qt::AlignVCenter | Qt::AlignLeft);
+    layout->addWidget(m_TableEditModeTriggerComboBox, 0, 1);
+    layout->addWidget(m_TableInsertModeLabel, 1, 0, Qt::AlignVCenter | Qt::AlignLeft);
+    layout->addWidget(m_TableInsertModeComboBox, 1, 1);
+
+    m_TableEditSettingPopup->setLayout(layout);
+    m_TableEditSettingPopup->hide();
+}
+
 void QKeyMapper::initKeyboardSelectComboBox()
 {
     if (!ui->keyboardSelectComboBox->isEnabled()) {
@@ -22236,6 +22399,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->languageLabel->setText(tr("Language"));
     ui->updateSiteLabel->setText(tr("UpdateSite"));
     ui->startupPositonSettingButton->setText(tr("Startup Position"));
+    ui->tableEditSettingButton->setText(tr("Table Edit"));
     ui->ignoreRulesListButton->setText(tr("Ignore Rules List"));
     ui->mappingAdvancedSettingButton->setText(tr("Mapping Advanced"));
     ui->mappingMacroListButton->setText(tr("Mapping MacroList"));
@@ -22272,9 +22436,20 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->themeComboBox->setItemText(UI_THEME_LIGHT,          tr("Light"));
     ui->themeComboBox->setItemText(UI_THEME_DARK,           tr("Dark"));
 
-    ui->editModeLabel->setText(tr("EditMode"));
-    ui->editModeComboBox->setItemText(EDITMODE_RIGHT_DOUBLECLICK,   tr("R-DoubleClick"));
-    ui->editModeComboBox->setItemText(EDITMODE_LEFT_DOUBLECLICK,    tr("L-DoubleClick"));
+    if (m_TableEditModeTriggerLabel) {
+        m_TableEditModeTriggerLabel->setText(tr("EditMode"));
+    }
+    if (m_TableEditModeTriggerComboBox) {
+        m_TableEditModeTriggerComboBox->setItemText(EDITMODE_RIGHT_DOUBLECLICK,   tr("R-DoubleClick"));
+        m_TableEditModeTriggerComboBox->setItemText(EDITMODE_LEFT_DOUBLECLICK,    tr("L-DoubleClick"));
+    }
+    if (m_TableInsertModeLabel) {
+        m_TableInsertModeLabel->setText(tr("InsertMode"));
+    }
+    if (m_TableInsertModeComboBox) {
+        m_TableInsertModeComboBox->setItemText(TABLE_INSERT_MODE_ABOVE, tr("AboveCurrentRow"));
+        m_TableInsertModeComboBox->setItemText(TABLE_INSERT_MODE_BELOW, tr("BelowCurrentRow"));
+    }
 
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,        tr("Ignore"));
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,        tr("Equals"));
@@ -23648,7 +23823,7 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
         return;
     }
 
-    int editmode = getEditModeIndex();
+    int editmode = getTableEditModeTriggerIndex();
     bool showitemsetup = true;
     if (columnindex == ORIGINAL_KEY_COLUMN
         || columnindex == MAPPING_KEY_COLUMN
@@ -28385,7 +28560,11 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
     }
     else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
         int auto_disabled = 0;
-        int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(&auto_disabled);
+        const int currentMode = QKeyMapper::getTableInsertModeIndex();
+        const int insertMode = (event->modifiers() & Qt::ShiftModifier)
+            ? getOppositeTableInsertMode(currentMode)
+            : currentMode;
+        int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(insertMode, &auto_disabled);
         int copied_count = QKeyMapper::s_CopiedMappingData.size();
         if (inserted_count == 0) {
             QString message = tr("%1 copied mapping data failed to insert!").arg(copied_count);
@@ -28684,7 +28863,11 @@ void KeyMappingDataTableWidget::keyPressEvent(QKeyEvent *event)
     }
     else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
         int auto_disabled = 0;
-        int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(&auto_disabled);
+        const int currentMode = QKeyMapper::getTableInsertModeIndex();
+        const int insertMode = (event->modifiers() & Qt::ShiftModifier)
+            ? getOppositeTableInsertMode(currentMode)
+            : currentMode;
+        int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(insertMode, &auto_disabled);
         int copied_count = QKeyMapper::s_CopiedMappingData.size();
         if (inserted_count == 0) {
             QString message = tr("%1 copied mapping data failed to insert!").arg(copied_count);
@@ -29406,6 +29589,66 @@ void QKeyMapper::on_selectSettingCustomIconButton_clicked()
 void QKeyMapper::on_mappingMacroListButton_clicked()
 {
     showMacroListDialog();
+}
+
+void QKeyMapper::on_tableEditSettingButton_clicked()
+{
+    if (!ui->tableEditSettingButton) {
+        return;
+    }
+
+    if (!m_TableEditSettingPopup) {
+        initTableEditSettingPopup();
+    }
+    if (!m_TableEditSettingPopup) {
+        return;
+    }
+
+    if (m_TableEditSettingPopup->isVisible()) {
+        m_TableEditSettingPopup->hide();
+        return;
+    }
+
+    m_TableEditSettingPopup->adjustSize();
+    const QSize popupSize = m_TableEditSettingPopup->sizeHint();
+
+    const QPoint anchor = ui->tableEditSettingButton->mapToGlobal(QPoint(ui->tableEditSettingButton->width(), 0));
+    QScreen *screen = QGuiApplication::screenAt(anchor);
+    if (!screen) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        screen = ui->tableEditSettingButton->screen();
+#else
+        QWidget *topLevel = ui->tableEditSettingButton->window();
+        screen = (topLevel && topLevel->windowHandle())
+            ? topLevel->windowHandle()->screen()
+            : QGuiApplication::primaryScreen();
+#endif
+    }
+
+    const QRect avail = screen ? screen->availableGeometry() : QRect();
+    QPoint pos = anchor;
+
+    if (screen && !avail.isEmpty()) {
+        const int kMargin = 8;
+        QRect availInner = avail.adjusted(kMargin, kMargin, -kMargin, -kMargin);
+        if (availInner.isEmpty()) {
+            availInner = avail;
+        }
+
+        const int rightCandidate = anchor.x();
+        const int leftCandidate = ui->tableEditSettingButton->mapToGlobal(QPoint(0, 0)).x() - popupSize.width();
+
+        if (rightCandidate + popupSize.width() > availInner.right() + 1) {
+            pos.setX(leftCandidate);
+        }
+
+        pos.setX(qBound(availInner.left(), pos.x(), availInner.right() - popupSize.width() + 1));
+        pos.setY(qBound(availInner.top(), pos.y(), availInner.bottom() - popupSize.height() + 1));
+    }
+
+    m_TableEditSettingPopup->move(pos);
+    m_TableEditSettingPopup->show();
+    m_TableEditSettingPopup->raise();
 }
 
 GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)

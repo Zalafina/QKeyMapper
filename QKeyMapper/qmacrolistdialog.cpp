@@ -1668,7 +1668,11 @@ void MacroListTabWidget::keyPressEvent(QKeyEvent *event)
     }
     else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
         // Paste macro data from clipboard
-        int inserted_count = macroListDialog->insertMacroDataFromCopiedList();
+        const int currentMode = QKeyMapper::getTableInsertModeIndex();
+        const int insertMode = (event->modifiers() & Qt::ShiftModifier)
+            ? getOppositeTableInsertMode(currentMode)
+            : currentMode;
+        int inserted_count = macroListDialog->insertMacroDataFromCopiedList(insertMode);
         int copied_count = QMacroListDialog::s_CopiedMacroData.size();
         if (inserted_count == 0 && copied_count > 0) {
             QString message = tr("%1 copied macro(s) could not be inserted!").arg(copied_count);
@@ -1864,7 +1868,11 @@ void MacroListDataTableWidget::keyPressEvent(QKeyEvent *event)
     }
     else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
         // Paste macro data from clipboard
-        int inserted_count = macroListDialog->insertMacroDataFromCopiedList();
+        const int currentMode = QKeyMapper::getTableInsertModeIndex();
+        const int insertMode = (event->modifiers() & Qt::ShiftModifier)
+            ? getOppositeTableInsertMode(currentMode)
+            : currentMode;
+        int inserted_count = macroListDialog->insertMacroDataFromCopiedList(insertMode);
         int copied_count = QMacroListDialog::s_CopiedMacroData.size();
         if (inserted_count == 0 && copied_count > 0) {
             QString message = tr("%1 copied macro(s) could not be inserted!").arg(copied_count);
@@ -2008,7 +2016,7 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
     Qt::MouseButtons buttons = QApplication::mouseButtons();
     Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
 
-    int editmode = QKeyMapper::getEditModeIndex();
+    int editmode = QKeyMapper::getTableEditModeTriggerIndex();
     bool load_data = true;
     if (editmode == EDITMODE_LEFT_DOUBLECLICK) {
         if (buttons & Qt::LeftButton && !(buttons & Qt::RightButton)) {
@@ -2987,7 +2995,7 @@ int QMacroListDialog::copySelectedMacroDataToCopiedList()
     return copied_count;
 }
 
-int QMacroListDialog::insertMacroDataFromCopiedList()
+int QMacroListDialog::insertMacroDataFromCopiedList(int insertMode)
 {
     int inserted_count = 0;
 
@@ -3087,7 +3095,10 @@ int QMacroListDialog::insertMacroDataFromCopiedList()
     }
     else {
         QTableWidgetSelectionRange range = selectedRanges.first();
-        insertRow = range.topRow();
+        const int preferredRow = (insertMode == TABLE_INSERT_MODE_BELOW)
+            ? (range.bottomRow() + 1)
+            : range.topRow();
+        insertRow = qBound(0, preferredRow, macroDataList->size());
     }
 
     if (insertToEnd) {

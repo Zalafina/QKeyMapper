@@ -121,7 +121,7 @@ public:
 
     // Macro list copy/paste operations
     int copySelectedMacroDataToCopiedList(void);
-    int insertMacroDataFromCopiedList(void);
+    int insertMacroDataFromCopiedList(int insertMode);
 
 public:
     static OrderedMap<QString, MappingMacroData> s_CopiedMacroData;

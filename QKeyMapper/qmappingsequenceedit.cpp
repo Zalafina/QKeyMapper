@@ -63,7 +63,9 @@ QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
 
     initMappingSequenceEditTable(ui->mappingSequenceEditTable);
 
-    QObject::connect(ui->MappingSequenceEdit_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QMappingSequenceEdit::insertMappingKeyToTable);
+    QObject::connect(ui->MappingSequenceEdit_MappingKeyLineEdit, &QLineEdit::returnPressed, this, [this]() {
+        insertMappingKeyToTable(QKeyMapper::getTableInsertModeIndex());
+    });
     QObject::connect(ui->MappingSequenceEdit_MappingKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QMappingSequenceEdit::MapkeyComboBox_currentTextChangedSlot);
 
     // Connect drag and drop move signal
@@ -511,7 +513,7 @@ void QMappingSequenceEdit::MapkeyComboBox_currentTextChangedSlot(const QString &
     }
 }
 
-void QMappingSequenceEdit::insertMappingKeyToTable()
+void QMappingSequenceEdit::insertMappingKeyToTable(int insertMode)
 {
     const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
     const bool hadSelectionBeforeInsert = !table->selectedRanges().isEmpty();
@@ -530,7 +532,7 @@ void QMappingSequenceEdit::insertMappingKeyToTable()
         return;
     }
 
-    const int insertRow = getInsertRowFromSelectionOrAppend();
+    const int insertRow = getInsertRowFromSelectionOrAppend(insertMode);
     if (insertRow < 0) {
         return;
     }
@@ -578,7 +580,7 @@ void QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked(QTableWidgetIte
     Qt::MouseButtons buttons = QApplication::mouseButtons();
     Qt::KeyboardModifiers modifiers = QApplication::keyboardModifiers();
 
-    int editmode = QKeyMapper::getEditModeIndex();
+    int editmode = QKeyMapper::getTableEditModeTriggerIndex();
     bool load_data = true;
     if (editmode == EDITMODE_LEFT_DOUBLECLICK) {
         if (buttons & Qt::LeftButton && !(buttons & Qt::RightButton)) {
@@ -740,11 +742,19 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
         return;
     }
     if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
-        dlg->pasteMappingKeyFromCopiedList();
+        const int currentMode = QKeyMapper::getTableInsertModeIndex();
+        const int insertMode = (event->modifiers() & Qt::ShiftModifier)
+            ? getOppositeTableInsertMode(currentMode)
+            : currentMode;
+        dlg->pasteMappingKeyFromCopiedList(insertMode);
         return;
     }
     if (event->key() == Qt::Key_F && (event->modifiers() & Qt::ControlModifier)) {
-        dlg->insertMappingKeyFromCopiedList();
+        const int currentMode = QKeyMapper::getTableInsertModeIndex();
+        const int insertMode = (event->modifiers() & Qt::ShiftModifier)
+            ? getOppositeTableInsertMode(currentMode)
+            : currentMode;
+        dlg->insertMappingKeyFromCopiedList(insertMode);
         return;
     }
 
@@ -753,7 +763,7 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
 
 void QMappingSequenceEdit::on_insertMappingKeyButton_clicked()
 {
-    insertMappingKeyToTable();
+    insertMappingKeyToTable(QKeyMapper::getTableInsertModeIndex());
 }
 
 void QMappingSequenceEdit::on_confirmButton_clicked()
@@ -850,7 +860,7 @@ void QMappingSequenceEdit::updateMappingSequenceEditTableConnection(MappingSeque
                      this, &QMappingSequenceEdit::mappingSequenceTableItemDoubleClicked, Qt::UniqueConnection);
 }
 
-int QMappingSequenceEdit::getInsertRowFromSelectionOrAppend() const
+int QMappingSequenceEdit::getInsertRowFromSelectionOrAppend(int insertMode) const
 {
     const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
@@ -861,7 +871,13 @@ int QMappingSequenceEdit::getInsertRowFromSelectionOrAppend() const
 
     const QTableWidgetSelectionRange range = ranges.first();
     const int topRow = range.topRow();
-    return qBound(0, topRow, m_MappingSequenceList.size());
+    const int bottomRow = range.bottomRow();
+
+    const int preferredRow = (insertMode == TABLE_INSERT_MODE_BELOW)
+        ? (bottomRow + 1)
+        : topRow;
+
+    return qBound(0, preferredRow, m_MappingSequenceList.size());
 }
 
 void QMappingSequenceEdit::reselectionRangeAndScroll(int top_row, int bottom_row)
@@ -1532,7 +1548,7 @@ int QMappingSequenceEdit::copySelectedMappingKeyToCopiedList()
     return copiedCount;
 }
 
-int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
+int QMappingSequenceEdit::insertMappingKeyFromCopiedList(int insertMode)
 {
     int insertedCount = 0;
     if (s_CopiedMappingSequenceList.isEmpty()) {
@@ -1542,7 +1558,7 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
     const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
     const bool hadSelectionBeforeInsert = !table->selectedRanges().isEmpty();
 
-    const int insertRow = getInsertRowFromSelectionOrAppend();
+    const int insertRow = getInsertRowFromSelectionOrAppend(insertMode);
     if (insertRow < 0) {
         return insertedCount;
     }
@@ -1577,7 +1593,7 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedList()
     return insertedCount;
 }
 
-int QMappingSequenceEdit::pasteMappingKeyFromCopiedList()
+int QMappingSequenceEdit::pasteMappingKeyFromCopiedList(int insertMode)
 {
     int pastedCount = 0;
 
@@ -1586,7 +1602,7 @@ int QMappingSequenceEdit::pasteMappingKeyFromCopiedList()
     QList<QTableWidgetSelectionRange> ranges = table->selectedRanges();
     if (s_CopiedMappingSequenceList.size() != 1 || ranges.isEmpty()) {
         // Fallback to Ctrl+V behavior when copied content is not a single row or selection is empty.
-        return insertMappingKeyFromCopiedList();
+        return insertMappingKeyFromCopiedList(insertMode);
     }
 
     const QTableWidgetSelectionRange range = ranges.first();
@@ -1594,7 +1610,7 @@ int QMappingSequenceEdit::pasteMappingKeyFromCopiedList()
     const int bottomRow = range.bottomRow();
     if (topRow != bottomRow) {
         // Fallback to Ctrl+V behavior when selection is not a single row.
-        return insertMappingKeyFromCopiedList();
+        return insertMappingKeyFromCopiedList(insertMode);
     }
 
     if (topRow < 0 || topRow >= table->rowCount()) {

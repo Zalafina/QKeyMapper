@@ -150,6 +150,15 @@ namespace QKeyMapperConstants {
     inline constexpr int EDITMODE_RIGHT_DOUBLECLICK = 0;
     inline constexpr int EDITMODE_LEFT_DOUBLECLICK = 1;
 
+    inline constexpr int TABLE_INSERT_MODE_ABOVE = 0;
+    inline constexpr int TABLE_INSERT_MODE_BELOW = 1;
+    inline constexpr int TABLE_INSERT_MODE_DEFAULT = TABLE_INSERT_MODE_ABOVE;
+
+    inline int getOppositeTableInsertMode(int mode)
+    {
+        return (mode == TABLE_INSERT_MODE_BELOW) ? TABLE_INSERT_MODE_ABOVE : TABLE_INSERT_MODE_BELOW;
+    }
+
     inline constexpr int UI_THEME_SYSTEMDEFAULT = 0;
     inline constexpr int UI_THEME_LIGHT         = 1;
     inline constexpr int UI_THEME_DARK          = 2;
@@ -894,6 +903,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char PROGRAM_PLATFORM[] = "ProgramPlatform";
     inline constexpr const char LANGUAGE_INDEX[] = "LanguageIndex";
     inline constexpr const char EDITMODE_TRIGGER[] = "EditModeTrigger";
+    inline constexpr const char TABLEINSERTMODE[] = "TableInsertMode";
     inline constexpr const char SHOW_PROCESSLIST[] = "ShowProcessList";
     inline constexpr const char SHOW_NOTES[] = "ShowNotes";
     inline constexpr const char SHOW_CATEGORYS[] = "ShowCategorys";

@@ -117,6 +117,9 @@ namespace Ui {
 class QKeyMapper;
 }
 
+// class QFrame;
+// class QLabel;
+
 struct MAP_PROCESSINFO
 {
     QString FileName;
@@ -940,7 +943,8 @@ public:
     static bool getStartupMinimizedStatus(void);
     // static bool getDisableWinKeyStatus(void);
     static int getLanguageIndex(void);
-    static int getEditModeIndex(void);
+    static int getTableEditModeTriggerIndex(void);
+    static int getTableInsertModeIndex(void);
     static int getCurrentSettingSelectIndex(void);
     static bool getKeyMappingDataTableItemBurstStatus(int rowindex);
     static bool getKeyMappingDataTableItemLockStatus(int rowindex);
@@ -1130,7 +1134,7 @@ public slots:
     int removeTabFromKeyMappingTabWidget(int tabindex);
     void moveTabInKeyMappingTabWidget(int from, int to);
     int copySelectedKeyMappingDataToCopiedList(void);
-    int insertKeyMappingDataFromCopiedList(int *autoDisabledCount = Q_NULLPTR);
+    int insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisabledCount = Q_NULLPTR);
     void updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring);
     void updateKeyLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown);
     void systemThemeChanged(void);
@@ -1314,6 +1318,8 @@ private slots:
 
     void on_mappingMacroListButton_clicked();
 
+    void on_tableEditSettingButton_clicked();
+
 private:
     // Helper methods for saving/restoring category filter state
     // Helper methods for last auto matched setting management
@@ -1398,6 +1404,7 @@ private:
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
     void initCategoryFilterControls(void);
+    void initTableEditSettingPopup(void);
     void initKeyboardSelectComboBox(void);
     void initMouseSelectComboBox(void);
 
@@ -1600,6 +1607,13 @@ private:
     QStringList m_CategoryFilterDisplayOrder;
     bool m_CategoryFilterGuard = false;
     int m_CategoryFilterMenuTabIndex = -1;
+
+    // Table edit setting popup UI
+    QFrame *m_TableEditSettingPopup = Q_NULLPTR;
+    QLabel *m_TableEditModeTriggerLabel = Q_NULLPTR;
+    QComboBox *m_TableEditModeTriggerComboBox = Q_NULLPTR;
+    QLabel *m_TableInsertModeLabel = Q_NULLPTR;
+    QComboBox *m_TableInsertModeComboBox = Q_NULLPTR;
 
 public:
     int applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow, bool showPopup = true);

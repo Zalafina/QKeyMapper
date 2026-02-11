@@ -83,8 +83,8 @@ public:
 
     // Mapping sequence copy/paste operations
     int copySelectedMappingKeyToCopiedList(void);
-    int insertMappingKeyFromCopiedList(void);
-    int pasteMappingKeyFromCopiedList(void);
+    int insertMappingKeyFromCopiedList(int insertMode);
+    int pasteMappingKeyFromCopiedList(int insertMode);
 
     // Mapping sequence undo/redo operations
     void undo(void);
@@ -106,7 +106,7 @@ protected:
 
 private slots:
     void MapkeyComboBox_currentTextChangedSlot(const QString &text);
-    void insertMappingKeyToTable(void);
+    void insertMappingKeyToTable(int insertMode);
 
     // Slot for handling mapping sequence table item double click
     void mappingSequenceTableItemDoubleClicked(QTableWidgetItem *item);
@@ -138,7 +138,7 @@ private:
 
     void updateUndoRedoButtonsEnabled(void);
 
-    int getInsertRowFromSelectionOrAppend(void) const;
+    int getInsertRowFromSelectionOrAppend(int insertMode) const;
 public:
     void reselectionRangeAndScroll(int top_row, int bottom_row);
     void keepSelectionEmptyAndScrollToRow(int row);
