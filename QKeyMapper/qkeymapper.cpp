@@ -11120,7 +11120,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(EDITMODE_TRIGGER, m_TableEditModeTriggerComboBox->currentIndex());
     }
     if (m_TableInsertModeComboBox) {
-        settingFile.setValue(TABLEINSERTMODE, m_TableInsertModeComboBox->currentIndex());
+        settingFile.setValue(TABLE_INSERTMODE, m_TableInsertModeComboBox->currentIndex());
     }
 
     QColor notification_fontcolor;
@@ -12452,8 +12452,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
 #endif
 
         if (m_TableInsertModeComboBox) {
-            if (true == settingFile.contains(TABLEINSERTMODE)){
-                int insert_mode = settingFile.value(TABLEINSERTMODE).toInt();
+            if (true == settingFile.contains(TABLE_INSERTMODE)){
+                int insert_mode = settingFile.value(TABLE_INSERTMODE).toInt();
                 if (TABLE_INSERT_MODE_ABOVE <= insert_mode && insert_mode <= TABLE_INSERT_MODE_BELOW) {
                     m_TableInsertModeComboBox->setCurrentIndex(insert_mode);
                 }
@@ -15937,8 +15937,8 @@ void QKeyMapper::loadGeneralSetting()
 #endif
 
     if (m_TableInsertModeComboBox) {
-        if (true == settingFile.contains(TABLEINSERTMODE)){
-            int insert_mode = settingFile.value(TABLEINSERTMODE).toInt();
+        if (true == settingFile.contains(TABLE_INSERTMODE)){
+            int insert_mode = settingFile.value(TABLE_INSERTMODE).toInt();
             if (TABLE_INSERT_MODE_ABOVE <= insert_mode && insert_mode <= TABLE_INSERT_MODE_BELOW) {
                 m_TableInsertModeComboBox->setCurrentIndex(insert_mode);
             }

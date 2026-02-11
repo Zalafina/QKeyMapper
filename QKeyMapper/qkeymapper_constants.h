@@ -903,7 +903,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char PROGRAM_PLATFORM[] = "ProgramPlatform";
     inline constexpr const char LANGUAGE_INDEX[] = "LanguageIndex";
     inline constexpr const char EDITMODE_TRIGGER[] = "EditModeTrigger";
-    inline constexpr const char TABLEINSERTMODE[] = "TableInsertMode";
+    inline constexpr const char TABLE_INSERTMODE[] = "TableInsertMode";
     inline constexpr const char SHOW_PROCESSLIST[] = "ShowProcessList";
     inline constexpr const char SHOW_NOTES[] = "ShowNotes";
     inline constexpr const char SHOW_CATEGORYS[] = "ShowCategorys";
