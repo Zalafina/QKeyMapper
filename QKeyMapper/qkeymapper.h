@@ -1327,6 +1327,7 @@ private:
     void startLastAutoMatchedSettingTimer();
     void clearLastAutoMatchedSetting();
     bool switchBackToLastMatchedSetting();
+    bool removeSettingByIndex(int targetSettingIndex);
     QStringList getCurrentCategoryFilters() const;
     bool isCategoryFilterVisible() const;
     void restoreCategoryFilterState(const QStringList& filters, bool showState);

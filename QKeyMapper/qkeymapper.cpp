@@ -206,6 +206,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // qApp->installEventFilter(this);
     ui->originalKeyRecordLineEdit->installEventFilter(this);
     ui->gamepadSelectComboBox->view()->installEventFilter(this);
+    ui->settingselectComboBox->view()->installEventFilter(this);
 
 #ifdef QT_DEBUG
     ui->pointDisplayLabel->setText("X:1100, Y:1200");
@@ -8210,6 +8211,20 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
     if (m_KeyMapStatus == KEYMAP_IDLE) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            if (object == ui->settingselectComboBox->view()
+                && keyEvent->key() == Qt::Key_Delete) {
+                QAbstractItemView *view = ui->settingselectComboBox->view();
+                if (view->isVisible()) {
+                    QModelIndex highlightedIndex = view->currentIndex();
+                    if (highlightedIndex.isValid()) {
+                        int highlightedRow = highlightedIndex.row();
+                        // Delete the highlighted setting directly without changing currentIndex first.
+                        removeSettingByIndex(highlightedRow);
+                    }
+                    return true;
+                }
+            }
+
             if (keyEvent->key() == Qt::Key_F2) {
                 int highlightedRow = -1;
                 QAbstractItemView *view = ui->gamepadSelectComboBox->view();
@@ -27817,21 +27832,26 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
     }
 }
 
-void QKeyMapper::on_removeSettingButton_clicked()
+bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
 {
-    int currentSettingIndex = ui->settingselectComboBox->currentIndex();
-    if (currentSettingIndex == 0 || currentSettingIndex == GLOBALSETTING_INDEX) {
-        return;
+    if (targetSettingIndex == 0 || targetSettingIndex == GLOBALSETTING_INDEX) {
+        return false;
     }
 
     QString settingSelectStr;
-    if (0 < currentSettingIndex && currentSettingIndex < m_SettingSelectListWithoutDescription.size()) {
-        settingSelectStr = m_SettingSelectListWithoutDescription.at(currentSettingIndex);
+    if (0 < targetSettingIndex && targetSettingIndex < m_SettingSelectListWithoutDescription.size()) {
+        settingSelectStr = m_SettingSelectListWithoutDescription.at(targetSettingIndex);
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().noquote().nospace() << "[on_removeSettingButton_clicked]" << "Current setting select index is invalid("<< currentSettingIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+        qDebug().noquote().nospace() << "[removeSettingByIndex]" << "Target setting select index is invalid("<< targetSettingIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
 #endif
+        return false;
+    }
+
+    // Do not remove when mapped setting name is empty.
+    if (settingSelectStr.isEmpty()) {
+        return false;
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
@@ -27847,7 +27867,7 @@ void QKeyMapper::on_removeSettingButton_clicked()
                                                                    QMessageBox::No);
         if (reply != QMessageBox::Yes) {
             // User cancelled, don't remove
-            return;
+            return false;
         }
 
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
@@ -27855,8 +27875,8 @@ void QKeyMapper::on_removeSettingButton_clicked()
 #endif
 
         settingFile.remove(settingSelectStr);
-        ui->settingselectComboBox->removeItem(currentSettingIndex);
-        m_SettingSelectListWithoutDescription.removeAt(currentSettingIndex);
+        ui->settingselectComboBox->removeItem(targetSettingIndex);
+        m_SettingSelectListWithoutDescription.removeAt(targetSettingIndex);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[removeSetting] Remove setting select ->" << settingSelectStr;
 #endif
@@ -27885,7 +27905,15 @@ void QKeyMapper::on_removeSettingButton_clicked()
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
         }
+        return true;
     }
+
+    return false;
+}
+
+void QKeyMapper::on_removeSettingButton_clicked()
+{
+    removeSettingByIndex(ui->settingselectComboBox->currentIndex());
 }
 
 
