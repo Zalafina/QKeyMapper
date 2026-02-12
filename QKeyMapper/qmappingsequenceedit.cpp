@@ -763,7 +763,11 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
 
 void QMappingSequenceEdit::on_insertMappingKeyButton_clicked()
 {
-    insertMappingKeyToTable(QKeyMapper::getTableInsertModeIndex());
+    const int currentMode = QKeyMapper::getTableInsertModeIndex();
+    const int insertMode = (QApplication::keyboardModifiers() & Qt::ShiftModifier)
+                               ? getOppositeTableInsertMode(currentMode)
+                               : currentMode;
+    insertMappingKeyToTable(insertMode);
 }
 
 void QMappingSequenceEdit::on_confirmButton_clicked()

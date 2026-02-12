@@ -168,6 +168,7 @@ private slots:
     void on_macroContent_SequenceEditButton_clicked();
 
 private:
+    void addMacroToListInternal(bool allowInsertBySelection);
     void initMacroListTabWidget(void);
     void initMacroListTable(MacroListDataTableWidget *macroDataTable);
     void initKeyListComboBoxes(void);

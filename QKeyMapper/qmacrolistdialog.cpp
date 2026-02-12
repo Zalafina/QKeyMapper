@@ -831,7 +831,8 @@ void QMacroListDialog::resizeEvent(QResizeEvent *event)
 
 void QMacroListDialog::on_addMacroButton_clicked()
 {
-    addMacroToList();
+    const bool allowInsertBySelection = (QApplication::keyboardModifiers() & Qt::ShiftModifier);
+    addMacroToListInternal(allowInsertBySelection);
 }
 
 void QMacroListDialog::on_clearButton_clicked()
@@ -1209,6 +1210,12 @@ void QMacroListDialog::importMacroListFromFile()
 
 void QMacroListDialog::addMacroToList()
 {
+    const bool allowInsertBySelection = (QApplication::keyboardModifiers() & Qt::ShiftModifier);
+    addMacroToListInternal(allowInsertBySelection);
+}
+
+void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
+{
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
 
     if (macroDataTable == Q_NULLPTR) {
@@ -1292,8 +1299,32 @@ void QMacroListDialog::addMacroToList()
         isUpdate = true;
     }
 
+    bool insertBySelection = false;
+    int insertRow = -1;
+    if (!isUpdate && allowInsertBySelection) {
+        // When Shift is held, insert relative to the highlighted row based on insert mode.
+        QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+        if (!selectedRanges.isEmpty()) {
+            const int currentMode = QKeyMapper::getTableInsertModeIndex();
+            const QTableWidgetSelectionRange range = selectedRanges.first();
+            const int preferredRow = (currentMode == TABLE_INSERT_MODE_BELOW)
+                ? (range.bottomRow() + 1)
+                : range.topRow();
+            insertRow = qBound(0, preferredRow, CurrentMacroList.size());
+            insertBySelection = true;
+        }
+    }
+
     // Insert or update macro in the list
-    CurrentMacroList[macroname_str] = MappingMacroData{ macro_str, category_str, macronote_str};
+    if (isUpdate) {
+        CurrentMacroList[macroname_str] = MappingMacroData{ macro_str, category_str, macronote_str};
+    }
+    else if (insertBySelection) {
+        CurrentMacroList.insertAt(insertRow, macroname_str, MappingMacroData{ macro_str, category_str, macronote_str});
+    }
+    else {
+        CurrentMacroList[macroname_str] = MappingMacroData{ macro_str, category_str, macronote_str};
+    }
 
     // Show success message
     popupMessageColor = SUCCESS_COLOR;
@@ -1313,6 +1344,33 @@ void QMacroListDialog::addMacroToList()
 
     // Refresh the macro list display
     refreshMacroListTabWidget(macroDataTable, CurrentMacroList);
+
+    // Highlight the inserted or updated row so users can see where it landed.
+    if (macroDataTable->rowCount() > 0) {
+        int startRow = -1;
+        if (isUpdate) {
+            startRow = CurrentMacroList.keys().indexOf(macroname_str);
+        }
+        else if (insertBySelection) {
+            startRow = insertRow;
+        }
+        else {
+            startRow = macroDataTable->rowCount() - 1;
+        }
+
+        if (startRow >= 0) {
+            const int boundedRow = qBound(0, startRow, macroDataTable->rowCount() - 1);
+            QTableWidgetSelectionRange newSelection(boundedRow, 0, boundedRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+            macroDataTable->clearSelection();
+            macroDataTable->setRangeSelected(newSelection, true);
+            macroDataTable->setCurrentCell(boundedRow, 0, QItemSelectionModel::NoUpdate);
+
+            QTableWidgetItem *itemToScrollTo = macroDataTable->item(boundedRow, 0);
+            if (itemToScrollTo) {
+                macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+            }
+        }
+    }
 }
 
 void QMacroListDialog::initMacroListTabWidget()
