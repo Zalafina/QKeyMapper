@@ -21874,6 +21874,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 
     resizeKeyMappingDataTableColumnWidth(mappingDataTable);
 
+    // Re-apply current category filters after table rows are rebuilt.
+    // This keeps row visibility consistent for all refresh paths.
+    mappingDataTable->setCategoryFilters(mappingDataTable->m_CategoryFilters);
+
     // Update category filter ComboBox if category column is visible
     if (mappingDataTable->isCategoryColumnVisible()) {
         updateCategoryFilterComboBox();
@@ -23978,6 +23982,9 @@ void QKeyMapper::setupDialogClosed()
     if (reselectrow >= 0) {
         QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
         m_KeyMappingDataTable->setRangeSelected(selection, true);
+
+        // Update current cell to the top of the new selection for Ctrl/Shift+Click consistency
+        m_KeyMappingDataTable->setCurrentCell(selection.topRow(), 0, QItemSelectionModel::NoUpdate);
     }
 }
 
@@ -29310,18 +29317,6 @@ void QKeyMapper::on_mapList_SelectFunctionButton_toggled(bool checked)
 #endif
     Q_UNUSED(checked);
     updateMappingKeyListComboBox();
-}
-
-void QKeyMapper::on_CategoryFilterComboBox_currentIndexChanged(int index)
-{
-    Q_UNUSED(index);
-    // Old ComboBox is no longer used.
-}
-
-void QKeyMapper::on_CategoryFilterComboBox_currentTextChanged(const QString &text)
-{
-    Q_UNUSED(text);
-    // Old ComboBox is no longer used.
 }
 
 void QKeyMapper::on_restoreProcessPathButton_clicked()

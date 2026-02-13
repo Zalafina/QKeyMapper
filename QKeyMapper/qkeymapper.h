@@ -1282,10 +1282,6 @@ private slots:
 
     void on_mapList_SelectFunctionButton_toggled(bool checked);
 
-    void on_CategoryFilterComboBox_currentIndexChanged(int index);
-
-    void on_CategoryFilterComboBox_currentTextChanged(const QString &text);
-
     void on_restoreProcessPathButton_clicked();
 
     void on_processinfoTable_clicked(const QModelIndex &index);
