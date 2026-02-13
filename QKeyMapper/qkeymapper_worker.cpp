@@ -2484,12 +2484,25 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
-                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
-                    bool send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
+                    bool send_exclusion = true;
+                    if (0 <= row_index && row_index < keyMappingDataList->size()) {
+                        send_exclusion = keyMappingDataList->at(row_index).PassThrough;
+                    }
+                    else {
+                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
+                        send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
+                    }
 
-                    if (send_exclusion
-                        && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
-                        send_keyupdown = KEY_DOWN;
+                    if (send_exclusion) {
+                        if (sendmode == SENDMODE_FORCE_STOP) {
+                            send_keyupdown = KEY_UP;
+                        }
+                        else if (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key)) {
+                            send_keyupdown = KEY_DOWN;
+                        }
+                        else {
+                            continue;
+                        }
                     }
                     else {
                         continue;
@@ -2558,12 +2571,25 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
-                    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
-                    bool send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
+                    bool send_exclusion = true;
+                    if (0 <= row_index && row_index < keyMappingDataList->size()) {
+                        send_exclusion = keyMappingDataList->at(row_index).PassThrough;
+                    }
+                    else {
+                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
+                        send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
+                    }
 
-                    if (send_exclusion
-                        && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
-                        send_keyupdown = KEY_DOWN;
+                    if (send_exclusion) {
+                        if (sendmode == SENDMODE_FORCE_STOP) {
+                            send_keyupdown = KEY_UP;
+                        }
+                        else if (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key)) {
+                            send_keyupdown = KEY_DOWN;
+                        }
+                        else {
+                            continue;
+                        }
                     }
                     else {
                         continue;
@@ -3324,8 +3350,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
-                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
-                        bool send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
+                        bool send_exclusion = true;
+                        if (0 <= row_index && row_index < keyMappingDataList->size()) {
+                            send_exclusion = keyMappingDataList->at(row_index).PassThrough;
+                        }
+                        else {
+                            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
+                            send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
+                        }
 
                         if (send_exclusion
                             && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
@@ -3443,8 +3475,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
-                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
-                        bool send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
+                        bool send_exclusion = true;
+                        if (0 <= row_index && row_index < keyMappingDataList->size()) {
+                            send_exclusion = keyMappingDataList->at(row_index).PassThrough;
+                        }
+                        else {
+                            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(key, keyMappingDataList);
+                            send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
+                        }
 
                         if (send_exclusion
                             && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
