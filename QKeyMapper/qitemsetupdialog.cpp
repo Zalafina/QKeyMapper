@@ -1839,6 +1839,14 @@ void QItemSetupDialog::initKeyListComboBoxes()
     }
     s_valiedMappingKeyList.append(QKeyMapper_Worker::SpecialOriginalKeysList);
 
+    s_valiedMappingKeyList.removeOne(SEPARATOR_WAITTIME);
+    s_valiedMappingKeyList.removeOne(SEPARATOR_NEXTARROW);
+    s_valiedMappingKeyList.removeOne(PREFIX_SEND_DOWN);
+    s_valiedMappingKeyList.removeOne(PREFIX_SEND_UP);
+    s_valiedMappingKeyList.removeOne(PREFIX_SEND_TOGGLE);
+    s_valiedMappingKeyList.removeOne(PREFIX_SEND_BOTH);
+    s_valiedMappingKeyList.removeOne(PREFIX_SEND_EXCLUSION);
+
     s_valiedMappingKeyList.removeOne(SENDTEXT_STR);
     s_valiedMappingKeyList.removeOne(PASTETEXT_STR);
     s_valiedMappingKeyList.removeOne(RUN_STR);
