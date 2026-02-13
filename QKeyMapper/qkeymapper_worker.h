@@ -114,6 +114,7 @@ typedef struct FakerInputMouseWheelExtraInfo
 #endif // FAKERINPUT_EXTRAINFO
 #endif // FAKERINPUT_SUPPORT
 
+bool isKeySequence(const QStringList &mappingkeyslist);
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
 QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys = false);
 QString getRealOriginalKey(const QString &original_key);

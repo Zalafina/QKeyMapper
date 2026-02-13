@@ -9745,6 +9745,8 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             if (isValid) {
                 QKeyMapper::updateKeyMappingDataListMappingKeys(row, mappingkeys_str_new);
                 updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, MAPPING_KEY_COLUMN);
+                updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, BURST_MODE_COLUMN);
+                updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, LOCK_COLUMN);
                 closeItemSetupDialog(row);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -21706,7 +21708,15 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(REPEAT_STR)) {
+                disable_burst = true;
+                disable_lock = true;
+            }
             else if (keymapdata.Mapping_Keys.constFirst().contains(MACRO_STR)) {
+                disable_burst = true;
+                disable_lock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().contains(ONLYONCE_STR)) {
                 disable_burst = true;
                 disable_lock = true;
             }
@@ -21935,7 +21945,15 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         disable_burst = true;
         disable_lock = true;
     }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(REPEAT_STR)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
     else if (keymapdata.Mapping_Keys.constFirst().contains(MACRO_STR)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().contains(ONLYONCE_STR)) {
         disable_burst = true;
         disable_lock = true;
     }

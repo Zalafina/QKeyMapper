@@ -4033,16 +4033,14 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
     }
 
     if (keyupdown == KEY_DOWN || unbreakable) {
-        bool isKeySequence = false;
+        bool iskeysequence = isKeySequence(inputKeys);
         bool isKeySequenceRunning = false;
-        if (key_sequence_count > 1) {
-            isKeySequence = true;
+
+        if (iskeysequence) {
             if (s_runningKeySequenceOrikeyList.contains(original_key)) {
                 isKeySequenceRunning = true;
             }
-        }
 
-        if (isKeySequence) {
             if (findindex >= 0) {
                 int repeat_mode = keyMappingDataList->at(findindex).RepeatMode;
                 int repeat_times = keyMappingDataList->at(findindex).RepeatTimes;
@@ -4130,17 +4128,16 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
 
             if (sendmode == SENDMODE_NORMAL
                 && repeat_mode == REPEAT_MODE_BYKEY) {
-                bool isKeySequence = false;
+                bool iskeysequence = isKeySequence(inputKeys);
                 bool isKeySequenceRunning = false;
-                if (key_sequence_count > 1) {
-                    isKeySequence = true;
+                if (iskeysequence) {
                     if (s_runningKeySequenceOrikeyList.contains(original_key)) {
                         isKeySequenceRunning = true;
                     }
                 }
 
                 if (sendmode == SENDMODE_NORMAL) {
-                    if (isKeySequence && isKeySequenceRunning && controller != Q_NULLPTR) {
+                    if (iskeysequence && isKeySequenceRunning && controller != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
                         qDebug().noquote().nospace() << "\033[1;34m[emit_sendInputKeysSignal_Wrapper] Original KeyUp break repeat by key sequence, task_stop_flag = INPUTSTOP_KEYSEQ, Runing KeySequence contains OriginalKey:" << original_key << ", s_runningKeySequenceOrikeyList -> " << s_runningKeySequenceOrikeyList << "\033[0m";
 #endif
@@ -17522,6 +17519,25 @@ bool DisablePrivilege(LPCWSTR privilege)
     }
 
     return FALSE;
+}
+
+bool isKeySequence(const QStringList &mappingkeyslist)
+{
+    bool isKeySequence = false;
+    qsizetype mappingkeyslist_size = mappingkeyslist.size();
+
+    if (mappingkeyslist_size > 1) {
+        isKeySequence = true;
+    }
+    else if (mappingkeyslist_size == 1) {
+        if (mappingkeyslist.constFirst().contains(REPEAT_STR)
+            || mappingkeyslist.constFirst().contains(MACRO_STR)
+            || mappingkeyslist.constFirst().contains(ONLYONCE_STR)) {
+            isKeySequence = true;
+        }
+    }
+
+    return isKeySequence;
 }
 
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys)

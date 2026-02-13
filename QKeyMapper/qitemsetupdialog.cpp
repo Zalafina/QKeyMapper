@@ -1549,7 +1549,7 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
 
         /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
         if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
-            if (keymapdata.Mapping_Keys.size() > 1) {
+            if (isKeySequence(keymapdata.Mapping_Keys)) {
                 ui->keySeqHoldDownCheckBox->setEnabled(true);
             }
             else {
@@ -1667,7 +1667,7 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
         }
 
-        if (keymapdata.Mapping_Keys.size() > 1) {
+        if (isKeySequence(keymapdata.Mapping_Keys)) {
             ui->repeatByKeyCheckBox->setEnabled(true);
             ui->repeatByTimesCheckBox->setEnabled(true);
             ui->repeatTimesSpinBox->setEnabled(true);
@@ -2030,7 +2030,7 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
 
         /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
         if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
-            if (keymapdata.Mapping_Keys.size() > 1) {
+            if (isKeySequence(keymapdata.Mapping_Keys)) {
                 ui->keySeqHoldDownCheckBox->setEnabled(true);
             }
             else {
@@ -2141,7 +2141,7 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
         }
 
-        if (keymapdata.Mapping_Keys.size() > 1) {
+        if (isKeySequence(keymapdata.Mapping_Keys)) {
             ui->repeatByKeyCheckBox->setEnabled(true);
             ui->repeatByTimesCheckBox->setEnabled(true);
             ui->repeatTimesSpinBox->setEnabled(true);
@@ -2208,7 +2208,7 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
         }
 
-        if (keymapdata.Mapping_Keys.size() > 1) {
+        if (isKeySequence(keymapdata.Mapping_Keys)) {
             ui->keySeqHoldDownCheckBox->setEnabled(true);
             ui->repeatByKeyCheckBox->setEnabled(true);
             ui->repeatByTimesCheckBox->setEnabled(true);
@@ -2385,7 +2385,7 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
 
         /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
         if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
-            if (keymapdata.Mapping_Keys.size() > 1) {
+            if (isKeySequence(keymapdata.Mapping_Keys)) {
                 ui->keySeqHoldDownCheckBox->setEnabled(true);
             }
             else {
@@ -2544,7 +2544,7 @@ void QItemSetupDialog::refreshAllRelatedUI()
         ui->disableOriginalKeyUnlockCheckBox->setEnabled(false);
     }
 
-    if (keymapdata.Mapping_Keys.size() > 1) {
+    if (isKeySequence(keymapdata.Mapping_Keys)) {
         ui->keySeqHoldDownCheckBox->setEnabled(true);
         ui->repeatByKeyCheckBox->setEnabled(true);
         ui->repeatByTimesCheckBox->setEnabled(true);
@@ -2702,7 +2702,7 @@ void QItemSetupDialog::refreshAllRelatedUI()
 
     /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
     if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
-        if (keymapdata.Mapping_Keys.size() > 1) {
+        if (isKeySequence(keymapdata.Mapping_Keys)) {
             ui->keySeqHoldDownCheckBox->setEnabled(true);
         }
         else {
