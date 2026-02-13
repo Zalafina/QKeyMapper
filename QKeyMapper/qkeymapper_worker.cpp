@@ -99,11 +99,37 @@ qint64 monotonicNowMs()
     return static_cast<qint64>(duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count());
 }
 
+#ifdef VIGEM_CLIENT_SUPPORT
+QString normalizeVJoyButtonKey(const QString &joystickButton)
+{
+    if (joystickButton.startsWith("vJoy-")) {
+        return joystickButton;
+    }
+
+    return QStringLiteral("vJoy-") + joystickButton;
+}
+
+bool isSupportedStickDirection(const QString &stickDirection)
+{
+    return (stickDirection == "LS-Up"
+            || stickDirection == "LS-Down"
+            || stickDirection == "LS-Left"
+            || stickDirection == "LS-Right"
+            || stickDirection == "RS-Up"
+            || stickDirection == "RS-Down"
+            || stickDirection == "RS-Left"
+            || stickDirection == "RS-Right");
+}
+#endif
+
 } // namespace
 #ifdef VIGEM_CLIENT_SUPPORT
 QList<OrderedMap<QString, BYTE>> QKeyMapper_Worker::pressedvJoyLStickKeysList;
 QList<OrderedMap<QString, BYTE>> QKeyMapper_Worker::pressedvJoyRStickKeysList;
 QList<QStringList> QKeyMapper_Worker::pressedvJoyButtonsList;
+QList<QStringList> QKeyMapper_Worker::s_vJoyExcludedButtonsList;
+QList<QStringList> QKeyMapper_Worker::s_vJoyExcludedLStickDirectionsList;
+QList<QStringList> QKeyMapper_Worker::s_vJoyExcludedRStickDirectionsList;
 #endif
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap;
 QMutex QKeyMapper_Worker::s_PressedMappingKeysMapMutex;
@@ -224,6 +250,9 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
         pressedvJoyLStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyRStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
+        s_vJoyExcludedButtonsList.append(QStringList());
+        s_vJoyExcludedLStickDirectionsList.append(QStringList());
+        s_vJoyExcludedRStickDirectionsList.append(QStringList());
     }
     // for (int i = 0; i < INTERCEPTION_MAX_MOUSE; ++i) {
     //     s_Mouse2vJoy_delta_List.append(QPoint());
@@ -2417,11 +2446,21 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 if (original_key != CLEAR_VIRTUALKEYS) {
                     QString joystickButton = vjoy_match.captured(1);
                     QString gamepadIndexString = vjoy_match.captured(2);
+                    int gamepad_index = gamepadIndexString.isEmpty() ? 0 : gamepadIndexString.toInt();
+                    const QString exclusionKey = gamepadIndexString.isEmpty() ? key : joystickButton;
+                    bool exclusion_supported = (sendtype == SENDTYPE_EXCLUSION)
+                        && isVJoyExclusionKeySupported(exclusionKey);
+
+                    if (exclusion_supported) {
+                        setVJoyExclusionMaskState(gamepad_index, exclusionKey, false);
+                        ViGEmClient_RefreshMaskedState(gamepad_index);
+                        continue;
+                    }
+
                     if (gamepadIndexString.isEmpty()) {
                         ViGEmClient_ReleaseButton(key, 0);
                     }
                     else {
-                        int gamepad_index = gamepadIndexString.toInt();
                         ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
                     }
                 }
@@ -3097,6 +3136,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else if (!s_ViGEmTargetList.isEmpty() && vjoy_match.hasMatch()) {
                     QString joystickButton = vjoy_match.captured(1);
                     QString gamepadIndexString = vjoy_match.captured(2);
+                    const QString exclusionKey = gamepadIndexString.isEmpty() ? key : joystickButton;
                     int send_keyupdown = KEY_DOWN;
                     bool vjoy_toggle_supported = (sendtype == SENDTYPE_TOGGLE);
                     QRegularExpressionMatch vjoy_move_match = vjoy_move_keys_regex.match(joystickButton);
@@ -3114,6 +3154,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     if (!gamepadIndexString.isEmpty()) {
                         gamepad_index = gamepadIndexString.toInt();
                     }
+
+                    bool exclusion_supported = (sendtype == SENDTYPE_EXCLUSION)
+                        && isVJoyExclusionKeySupported(exclusionKey);
+
                     if (sendtype == SENDTYPE_UP) {
                         send_keyupdown = KEY_UP;
                     }
@@ -3161,6 +3205,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
 
                     bool vjoy_move_handled = false;
+                    if (exclusion_supported) {
+                        setVJoyExclusionMaskState(gamepad_index, exclusionKey, true);
+                        ViGEmClient_RefreshMaskedState(gamepad_index);
+                        vjoy_move_handled = true;
+                    }
+
                     if (vjoy_move_match.hasMatch()) {
                         if (send_keyupdown == KEY_DOWN) {
                             int target_gamepad_index = gamepadIndexString.isEmpty() ? 0 : gamepad_index;
@@ -6068,6 +6118,170 @@ static void resetVJoyRadiusLimits(ViGEm_ReportData &reportData, bool isLeftStick
 
 }
 
+bool QKeyMapper_Worker::isVJoyExclusionKeySupported(const QString &joystickButton, QString *outStickDirection)
+{
+    static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
+
+    if (outStickDirection != Q_NULLPTR) {
+        outStickDirection->clear();
+    }
+
+    QRegularExpressionMatch pushlevel_match = vjoy_pushlevel_keys_regex.match(joystickButton);
+    if (pushlevel_match.hasMatch()) {
+        const QString directionKey = pushlevel_match.captured(1);
+        if (isSupportedStickDirection(directionKey)) {
+            if (outStickDirection != Q_NULLPTR) {
+                *outStickDirection = directionKey;
+            }
+            return true;
+        }
+    }
+
+    const QString normalizedKey = normalizeVJoyButtonKey(joystickButton);
+    return ViGEmButtonMap.contains(joystickButton) || ViGEmButtonMap.contains(normalizedKey);
+}
+
+bool QKeyMapper_Worker::isVJoyButtonExcluded(int gamepad_index, const QString &joystickButton)
+{
+    if (gamepad_index < 0 || gamepad_index >= s_vJoyExcludedButtonsList.size()) {
+        return false;
+    }
+
+    const QString normalizedKey = normalizeVJoyButtonKey(joystickButton);
+    const QStringList &excludedButtons = s_vJoyExcludedButtonsList.at(gamepad_index);
+    return excludedButtons.contains(joystickButton) || excludedButtons.contains(normalizedKey);
+}
+
+bool QKeyMapper_Worker::isVJoyStickDirectionExcluded(int gamepad_index, const QString &stickDirection)
+{
+    if (gamepad_index < 0) {
+        return false;
+    }
+
+    if (stickDirection.startsWith("LS-")) {
+        if (gamepad_index >= s_vJoyExcludedLStickDirectionsList.size()) {
+            return false;
+        }
+        return s_vJoyExcludedLStickDirectionsList.at(gamepad_index).contains(stickDirection);
+    }
+
+    if (stickDirection.startsWith("RS-")) {
+        if (gamepad_index >= s_vJoyExcludedRStickDirectionsList.size()) {
+            return false;
+        }
+        return s_vJoyExcludedRStickDirectionsList.at(gamepad_index).contains(stickDirection);
+    }
+
+    return false;
+}
+
+void QKeyMapper_Worker::setVJoyExclusionMaskState(int gamepad_index, const QString &joystickButton, bool excluded)
+{
+    if (gamepad_index < 0
+        || gamepad_index >= s_vJoyExcludedButtonsList.size()
+        || gamepad_index >= s_vJoyExcludedLStickDirectionsList.size()
+        || gamepad_index >= s_vJoyExcludedRStickDirectionsList.size()) {
+        return;
+    }
+
+    QString stickDirection;
+    if (!isVJoyExclusionKeySupported(joystickButton, &stickDirection)) {
+        return;
+    }
+
+    if (!stickDirection.isEmpty()) {
+        QStringList &excludedDirections = stickDirection.startsWith("LS-")
+            ? s_vJoyExcludedLStickDirectionsList[gamepad_index]
+            : s_vJoyExcludedRStickDirectionsList[gamepad_index];
+        if (excluded) {
+            if (!excludedDirections.contains(stickDirection)) {
+                excludedDirections.append(stickDirection);
+            }
+        }
+        else {
+            excludedDirections.removeAll(stickDirection);
+        }
+        return;
+    }
+
+    QStringList &excludedButtons = s_vJoyExcludedButtonsList[gamepad_index];
+    const QString normalizedKey = normalizeVJoyButtonKey(joystickButton);
+    if (excluded) {
+        if (!excludedButtons.contains(joystickButton)) {
+            excludedButtons.append(joystickButton);
+        }
+        if (normalizedKey != joystickButton && !excludedButtons.contains(normalizedKey)) {
+            excludedButtons.append(normalizedKey);
+        }
+    }
+    else {
+        excludedButtons.removeAll(joystickButton);
+        excludedButtons.removeAll(normalizedKey);
+    }
+}
+
+void QKeyMapper_Worker::ViGEmClient_RefreshMaskedState(int gamepad_index)
+{
+    int gamepad_count = s_ViGEmTargetList.size();
+    int gamepad_report_count = s_ViGEmTarget_ReportList.size();
+
+    if (gamepad_index < 0
+        || gamepad_index >= gamepad_count
+        || gamepad_index >= gamepad_report_count
+        || gamepad_index >= pressedvJoyButtonsList.size()) {
+        return;
+    }
+
+    PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
+    ViGEm_ReportData &reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT &ViGEmTarget_Report = reportData.xusb_report;
+    const QStringList &pressedvJoyButtons_ref = pressedvJoyButtonsList.at(gamepad_index);
+
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
+    if (s_ViGEmClient == Q_NULLPTR || ViGEmTarget == Q_NULLPTR) {
+        return;
+    }
+    if (s_ViGEmClient_ConnectState != VIGEMCLIENT_CONNECT_SUCCESS) {
+        return;
+    }
+    if (vigem_target_is_attached(ViGEmTarget) != TRUE) {
+        return;
+    }
+
+    XUSB_BUTTON allMappedButtonsMask = static_cast<XUSB_BUTTON>(0);
+    for (auto it = ViGEmButtonMap.constBegin(); it != ViGEmButtonMap.constEnd(); ++it) {
+        allMappedButtonsMask = static_cast<XUSB_BUTTON>(allMappedButtonsMask | it.value());
+    }
+
+    ViGEmTarget_Report.wButtons = static_cast<USHORT>(ViGEmTarget_Report.wButtons & ~allMappedButtonsMask);
+    for (const QString &pressedButton : std::as_const(pressedvJoyButtons_ref)) {
+        QString resolvedButton = pressedButton;
+        if (!ViGEmButtonMap.contains(resolvedButton)) {
+            resolvedButton = normalizeVJoyButtonKey(pressedButton);
+        }
+
+        if (!ViGEmButtonMap.contains(resolvedButton) || isVJoyButtonExcluded(gamepad_index, resolvedButton)) {
+            continue;
+        }
+
+        ViGEmTarget_Report.wButtons = static_cast<USHORT>(ViGEmTarget_Report.wButtons | ViGEmButtonMap.value(resolvedButton));
+    }
+
+    ViGEmClient_CheckJoysticksReportData(gamepad_index);
+
+    VIGEM_ERROR error;
+    if (DualShock4Wired == vigem_target_get_type(ViGEmTarget)) {
+        DS4_REPORT ds4_report;
+        DS4_REPORT_INIT(&ds4_report);
+        XUSB_TO_DS4_REPORT(&ViGEmTarget_Report, &ds4_report);
+        error = vigem_target_ds4_update(s_ViGEmClient, ViGEmTarget, ds4_report);
+    }
+    else {
+        error = vigem_target_x360_update(s_ViGEmClient, ViGEmTarget, ViGEmTarget_Report);
+    }
+    Q_UNUSED(error);
+}
+
 void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index, QJoystickEventType event_type)
 {
     int gamepad_count = s_ViGEmTargetList.size();
@@ -6269,7 +6483,9 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
         else if (ViGEmButtonMap.contains(joystickButton)) {
             XUSB_BUTTON button = ViGEmButtonMap.value(joystickButton);
 
-            ViGEmTarget_Report.wButtons = ViGEmTarget_Report.wButtons | button;
+            if (!isVJoyButtonExcluded(gamepad_index, joystickButton)) {
+                ViGEmTarget_Report.wButtons = ViGEmTarget_Report.wButtons | button;
+            }
             updateFlag = VJOY_UPDATE_BUTTONS;
         }
         else if (joystickButton == VJOY_LT_BRAKE_STR) {
@@ -6659,6 +6875,10 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
     getVJoyRadiusLimits(reportData, true, ls_radius_up, ls_radius_down, ls_radius_left, ls_radius_right);
     bool leftUpdatedByKeyboard = false;
     for (const QString &key : std::as_const(pressedLStickKeysList)) {
+        if (isVJoyStickDirectionExcluded(gamepad_index, key)) {
+            continue;
+        }
+
         int pushlevel = pressedvJoyLStickKeys_ref.value(key);
         // Convert BYTE pushlevel (0~255) to SHORT (-32768~32767)
         SHORT scaledValue = static_cast<SHORT>(pushlevel * XINPUT_THUMB_MAX / VJOY_PUSHLEVEL_MAX);
@@ -6685,6 +6905,10 @@ void QKeyMapper_Worker::ViGEmClient_CheckJoysticksReportData(int gamepad_index)
     getVJoyRadiusLimits(reportData, false, rs_radius_up, rs_radius_down, rs_radius_left, rs_radius_right);
     bool rightUpdatedByKeyboard = false;
     for (const QString &key : std::as_const(pressedRStickKeysList)) {
+        if (isVJoyStickDirectionExcluded(gamepad_index, key)) {
+            continue;
+        }
+
         int pushlevel = pressedvJoyRStickKeys_ref.value(key);
         // Convert BYTE pushlevel (0~255) to SHORT (-32768~32767)
         SHORT scaledValue = static_cast<SHORT>(pushlevel * XINPUT_THUMB_MAX / VJOY_PUSHLEVEL_MAX);
@@ -7703,10 +7927,16 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     pressedvJoyLStickKeysList.clear();
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
+    s_vJoyExcludedButtonsList.clear();
+    s_vJoyExcludedLStickDirectionsList.clear();
+    s_vJoyExcludedRStickDirectionsList.clear();
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
         pressedvJoyLStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyRStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
+        s_vJoyExcludedButtonsList.append(QStringList());
+        s_vJoyExcludedLStickDirectionsList.append(QStringList());
+        s_vJoyExcludedRStickDirectionsList.append(QStringList());
     }
     stopMouse2vJoyResetTimerMap();
     // ViGEmClient_GamepadReset();
@@ -7912,10 +8142,16 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     pressedvJoyLStickKeysList.clear();
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
+    s_vJoyExcludedButtonsList.clear();
+    s_vJoyExcludedLStickDirectionsList.clear();
+    s_vJoyExcludedRStickDirectionsList.clear();
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
         pressedvJoyLStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyRStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
+        s_vJoyExcludedButtonsList.append(QStringList());
+        s_vJoyExcludedLStickDirectionsList.append(QStringList());
+        s_vJoyExcludedRStickDirectionsList.append(QStringList());
     }
     stopMouse2vJoyResetTimerMap();
     // ViGEmClient_GamepadReset();
@@ -8106,10 +8342,16 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     pressedvJoyLStickKeysList.clear();
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
+    s_vJoyExcludedButtonsList.clear();
+    s_vJoyExcludedLStickDirectionsList.clear();
+    s_vJoyExcludedRStickDirectionsList.clear();
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
         pressedvJoyLStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyRStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyButtonsList.append(QStringList());
+        s_vJoyExcludedButtonsList.append(QStringList());
+        s_vJoyExcludedLStickDirectionsList.append(QStringList());
+        s_vJoyExcludedRStickDirectionsList.append(QStringList());
     }
     stopMouse2vJoyResetTimerMap();
     ViGEmClient_AllGamepadReset();

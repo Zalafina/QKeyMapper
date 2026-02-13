@@ -997,6 +997,11 @@ public:
     static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index);
     static void ViGEmClient_MoveStick(const QString &moveKey, int gamepad_index);
     static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
+    static void ViGEmClient_RefreshMaskedState(int gamepad_index);
+    static bool isVJoyExclusionKeySupported(const QString &joystickButton, QString *outStickDirection = Q_NULLPTR);
+    static bool isVJoyButtonExcluded(int gamepad_index, const QString &joystickButton);
+    static bool isVJoyStickDirectionExcluded(int gamepad_index, const QString &stickDirection);
+    static void setVJoyExclusionMaskState(int gamepad_index, const QString &joystickButton, bool excluded);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY,
                                                uint radius_up = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX,
                                                uint radius_down = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX,
@@ -1304,6 +1309,9 @@ public:
     static QList<OrderedMap<QString, BYTE>> pressedvJoyLStickKeysList;
     static QList<OrderedMap<QString, BYTE>> pressedvJoyRStickKeysList;
     static QList<QStringList> pressedvJoyButtonsList;
+    static QList<QStringList> s_vJoyExcludedButtonsList;
+    static QList<QStringList> s_vJoyExcludedLStickDirectionsList;
+    static QList<QStringList> s_vJoyExcludedRStickDirectionsList;
     static QAtomicBool s_Mouse2vJoy_prevValid;
 #endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
