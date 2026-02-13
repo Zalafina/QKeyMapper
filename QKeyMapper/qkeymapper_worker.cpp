@@ -2485,6 +2485,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
                     bool send_exclusion = true;
+                    // Resolve PassThrough from the currently executing mapping row first.
+                    // If row_index is invalid in this path, fall back to legacy lookup by key
+                    // to preserve compatibility with older call paths.
                     if (0 <= row_index && row_index < keyMappingDataList->size()) {
                         send_exclusion = keyMappingDataList->at(row_index).PassThrough;
                     }
@@ -2494,6 +2497,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
 
                     if (send_exclusion) {
+                        // ForceStop must only release keys/buttons.
+                        // Sending KEY_DOWN here can recreate a pressed state while stopping.
                         if (sendmode == SENDMODE_FORCE_STOP) {
                             send_keyupdown = KEY_UP;
                         }
@@ -2572,6 +2577,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 int send_keyupdown = KEY_UP;
                 if (sendtype == SENDTYPE_EXCLUSION) {
                     bool send_exclusion = true;
+                    // Resolve PassThrough from the currently executing mapping row first.
+                    // If row_index is invalid in this path, fall back to legacy lookup by key
+                    // to preserve compatibility with older call paths.
                     if (0 <= row_index && row_index < keyMappingDataList->size()) {
                         send_exclusion = keyMappingDataList->at(row_index).PassThrough;
                     }
@@ -2581,6 +2589,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
 
                     if (send_exclusion) {
+                        // ForceStop must only release keys/buttons.
+                        // Sending KEY_DOWN here can recreate a pressed state while stopping.
                         if (sendmode == SENDMODE_FORCE_STOP) {
                             send_keyupdown = KEY_UP;
                         }
@@ -3351,6 +3361,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
                         bool send_exclusion = true;
+                        // Resolve PassThrough from the currently executing mapping row first.
+                        // If row_index is invalid in this path, fall back to legacy lookup by key
+                        // to preserve compatibility with older call paths.
                         if (0 <= row_index && row_index < keyMappingDataList->size()) {
                             send_exclusion = keyMappingDataList->at(row_index).PassThrough;
                         }
@@ -3359,6 +3372,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                             send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
                         }
 
+                        // In KEY_DOWN EXCLUSION flow, only emit KEY_UP when this key is
+                        // currently pressed; otherwise skip to avoid creating synthetic state.
                         if (send_exclusion
                             && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
                             send_keyupdown = KEY_UP;
@@ -3476,6 +3491,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                     else if (sendtype == SENDTYPE_EXCLUSION) {
                         bool send_exclusion = true;
+                        // Resolve PassThrough from the currently executing mapping row first.
+                        // If row_index is invalid in this path, fall back to legacy lookup by key
+                        // to preserve compatibility with older call paths.
                         if (0 <= row_index && row_index < keyMappingDataList->size()) {
                             send_exclusion = keyMappingDataList->at(row_index).PassThrough;
                         }
@@ -3484,6 +3502,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                             send_exclusion = (findindex < 0 || keyMappingDataList->at(findindex).PassThrough);
                         }
 
+                        // In KEY_DOWN EXCLUSION flow, only emit KEY_UP when this key is
+                        // currently pressed; otherwise skip to avoid creating synthetic state.
                         if (send_exclusion
                             && (pressedRealKeysListRemoveMultiInput.contains(key) || pressedVirtualKeysList.contains(key))) {
                             send_keyupdown = KEY_UP;
