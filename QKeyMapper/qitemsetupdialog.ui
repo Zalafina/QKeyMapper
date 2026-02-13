@@ -438,7 +438,7 @@
     <rect>
      <x>270</x>
      <y>300</y>
-     <width>131</width>
+     <width>161</width>
      <height>21</height>
     </rect>
    </property>
@@ -925,7 +925,7 @@ Update</string>
   <widget class="QCheckBox" name="disabledCheckBox">
    <property name="geometry">
     <rect>
-     <x>700</x>
+     <x>720</x>
      <y>340</y>
      <width>101</width>
      <height>21</height>

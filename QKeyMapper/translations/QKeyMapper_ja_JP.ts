@@ -1012,7 +1012,7 @@
     <message>
         <location filename="../qitemsetupdialog.ui" line="449"/>
         <source>Unbreakable</source>
-        <translation>中断不可</translation>
+        <translation>キーシーケンス中断不可</translation>
     </message>
     <message>
         <source>PostMappingKey</source>
@@ -4255,4 +4255,3 @@ Do you want to overwrite them?</source>
     </message>
 </context>
 </TS>
-S>
