@@ -2453,6 +2453,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
                     if (exclusion_supported) {
                         setVJoyExclusionMaskState(gamepad_index, exclusionKey, false);
+                        restoreVJoyExcludedKeyOnKeyUp(gamepad_index, exclusionKey, keyMappingDataList);
                         ViGEmClient_RefreshMaskedState(gamepad_index);
                         continue;
                     }
@@ -6276,6 +6277,176 @@ void QKeyMapper_Worker::setVJoyExclusionMaskState(int gamepad_index, const QStri
         excludedButtons.removeAll(joystickButton);
         excludedButtons.removeAll(normalizedKey);
     }
+}
+
+void QKeyMapper_Worker::restoreVJoyExcludedKeyOnKeyUp(int gamepad_index, const QString &exclusionKey, QList<MAP_KEYDATA> *keyMappingDataList)
+{
+    if (gamepad_index < 0) {
+        return;
+    }
+
+    QString targetDirection;
+    if (!isVJoyExclusionKeySupported(exclusionKey, &targetDirection)) {
+        return;
+    }
+
+    const bool isStickTarget = !targetDirection.isEmpty() && isSupportedStickDirection(targetDirection);
+    const QString normalizedTargetButton = normalizeVJoyButtonKey(exclusionKey);
+    const bool isButtonTarget = !isStickTarget && ViGEmButtonMap.contains(normalizedTargetButton);
+
+    if (!isStickTarget && !isButtonTarget) {
+        return;
+    }
+
+    // Skip replay when the target is already active in the pressed state containers.
+    if (isStickTarget) {
+        bool leftStickDirection = targetDirection.startsWith("LS-");
+        if (leftStickDirection) {
+            if (gamepad_index >= pressedvJoyLStickKeysList.size()) {
+                return;
+            }
+            if (pressedvJoyLStickKeysList.at(gamepad_index).contains(targetDirection)) {
+                return;
+            }
+        }
+        else {
+            if (gamepad_index >= pressedvJoyRStickKeysList.size()) {
+                return;
+            }
+            if (pressedvJoyRStickKeysList.at(gamepad_index).contains(targetDirection)) {
+                return;
+            }
+        }
+    }
+    else {
+        if (gamepad_index >= pressedvJoyButtonsList.size()) {
+            return;
+        }
+        const QStringList &pressedButtons = pressedvJoyButtonsList.at(gamepad_index);
+        if (pressedButtons.contains(exclusionKey) || pressedButtons.contains(normalizedTargetButton)) {
+            return;
+        }
+    }
+
+    QList<MAP_KEYDATA> *mappingDataList = keyMappingDataList;
+    if (mappingDataList == Q_NULLPTR) {
+        mappingDataList = QKeyMapper::KeyMappingDataList;
+    }
+    if (mappingDataList == Q_NULLPTR) {
+        return;
+    }
+
+    static QRegularExpression mapkey_regex(QKeyMapperConstants::REGEX_PATTERN_MAPKEY_WITH_PUSHLEVEL);
+    static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
+
+    QString recoveredJoystickButton;
+
+    for (const MAP_KEYDATA &keyMapData : std::as_const(*mappingDataList)) {
+        if (keyMapData.Disabled || keyMapData.Pure_OriginalKeys.isEmpty()) {
+            continue;
+        }
+
+        bool allOriginalKeysPressed = true;
+        for (const QString &originalKey : std::as_const(keyMapData.Pure_OriginalKeys)) {
+            if (!pressedRealKeysListRemoveMultiInput.contains(originalKey)) {
+                allOriginalKeysPressed = false;
+                break;
+            }
+        }
+        if (!allOriginalKeysPressed) {
+            continue;
+        }
+
+        for (const QString &mappingKeyRaw : std::as_const(keyMapData.Mapping_Keys)) {
+            QString mappingKey = mappingKeyRaw;
+            int sendtype = SENDTYPE_NORMAL;
+
+            QRegularExpressionMatch mapkey_match = mapkey_regex.match(mappingKey);
+            if (mapkey_match.hasMatch()) {
+                QString prefix = mapkey_match.captured(1);
+                mappingKey = mapkey_match.captured(2);
+
+                if (prefix == PREFIX_SEND_DOWN) {
+                    sendtype = SENDTYPE_DOWN;
+                }
+                else if (prefix == PREFIX_SEND_UP) {
+                    sendtype = SENDTYPE_UP;
+                }
+                else if (prefix == PREFIX_SEND_TOGGLE) {
+                    sendtype = SENDTYPE_TOGGLE;
+                }
+                else if (prefix == PREFIX_SEND_BOTH) {
+                    sendtype = SENDTYPE_BOTH;
+                }
+                else if (prefix == PREFIX_SEND_EXCLUSION) {
+                    sendtype = SENDTYPE_EXCLUSION;
+                }
+            }
+
+            if (mappingKey.isEmpty()
+                || mappingKey == KEY_NONE_STR
+                || sendtype == SENDTYPE_UP
+                || sendtype == SENDTYPE_TOGGLE
+                || sendtype == SENDTYPE_BOTH
+                || sendtype == SENDTYPE_EXCLUSION) {
+                continue;
+            }
+
+            QRegularExpressionMatch vjoy_match = vjoy_regex.match(mappingKey);
+            if (!vjoy_match.hasMatch()) {
+                continue;
+            }
+
+            QString joystickButton = vjoy_match.captured(1);
+            QString gamepadIndexString = vjoy_match.captured(2);
+            int targetGamepadIndex = gamepadIndexString.isEmpty() ? 0 : gamepadIndexString.toInt();
+            if (targetGamepadIndex != gamepad_index) {
+                continue;
+            }
+
+            QString stickDirection;
+            if (!isVJoyExclusionKeySupported(joystickButton, &stickDirection)) {
+                continue;
+            }
+
+            if (isStickTarget) {
+                if (stickDirection == targetDirection) {
+                    recoveredJoystickButton = joystickButton;
+                    break;
+                }
+            }
+            else {
+                if (stickDirection.isEmpty()) {
+                    const QString normalizedJoystickButton = normalizeVJoyButtonKey(joystickButton);
+                    if (normalizedJoystickButton == normalizedTargetButton) {
+                        recoveredJoystickButton = joystickButton;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!recoveredJoystickButton.isEmpty()) {
+            break;
+        }
+    }
+
+    if (recoveredJoystickButton.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[vJoyExclusion] Restore skipped for "
+                                     << (isStickTarget ? targetDirection : normalizedTargetButton) << "@" << gamepad_index
+                                     << " because no active source mapping is currently pressed";
+#endif
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[vJoyExclusion] Restore "
+                                 << (isStickTarget ? targetDirection : normalizedTargetButton) << "@" << gamepad_index
+                                 << " by replaying active mapping key [" << recoveredJoystickButton << "]"
+                                 << ", pressedRealKeysListRemoveMultiInput -> " << pressedRealKeysListRemoveMultiInput;
+#endif
+    ViGEmClient_PressButton(recoveredJoystickButton, AUTO_ADJUST_NONE, gamepad_index, INITIAL_PLAYER_INDEX);
 }
 
 void QKeyMapper_Worker::ViGEmClient_RefreshMaskedState(int gamepad_index)

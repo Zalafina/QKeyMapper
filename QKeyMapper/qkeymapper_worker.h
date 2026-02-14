@@ -1002,6 +1002,7 @@ public:
     static bool isVJoyButtonExcluded(int gamepad_index, const QString &joystickButton);
     static bool isVJoyStickDirectionExcluded(int gamepad_index, const QString &stickDirection);
     static void setVJoyExclusionMaskState(int gamepad_index, const QString &joystickButton, bool excluded);
+    static void restoreVJoyExcludedKeyOnKeyUp(int gamepad_index, const QString &exclusionKey, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
     static void ViGEmClient_CalculateThumbValue(SHORT* ori_ThumbX, SHORT* ori_ThumbY,
                                                uint radius_up = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX,
                                                uint radius_down = QKeyMapperConstants::VJOY_STICK_RADIUS_MAX,
