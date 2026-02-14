@@ -92,6 +92,7 @@ CONFIG(release, debug|release){
 
 contains(DEFINES, LOGOUT_TOFILE) {
     DEFINES += DEBUG_LOGOUT_ON
+    message("Log output to file")
 }
 
 # The following define makes your compiler emit warnings if you use

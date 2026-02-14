@@ -29319,6 +29319,18 @@ void QKeyMapper::on_mapList_SelectFunctionButton_toggled(bool checked)
     updateMappingKeyListComboBox();
 }
 
+void QKeyMapper::on_CategoryFilterComboBox_currentIndexChanged(int index)
+{
+    Q_UNUSED(index);
+    // Old ComboBox is no longer used.
+}
+
+void QKeyMapper::on_CategoryFilterComboBox_currentTextChanged(const QString &text)
+{
+    Q_UNUSED(text);
+    // Old ComboBox is no longer used.
+}
+
 void QKeyMapper::on_restoreProcessPathButton_clicked()
 {
     if (!m_MapProcessInfo.FilePath.isEmpty()
