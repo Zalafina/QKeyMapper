@@ -3280,8 +3280,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
 
                     if (iskeyseq && sendtype == SENDTYPE_NORMAL && !vjoy_move_handled) {
-                        if (waitTime == 0 && MultiVirtualGamepadInputList.contains(joystickButton)) {
-                            waitTime = VJOY_KEYUP_WAITTIME;
+                        if (waitTime == 0) {
+                            QRegularExpressionMatch vjoy_pushlevel_match = vjoy_pushlevel_keys_regex.match(joystickButton);
+                            if (MultiVirtualGamepadInputList.contains(joystickButton)
+                                || vjoy_pushlevel_match.hasMatch()) {
+                                waitTime = VJOY_KEYUP_WAITTIME;
+                            }
 
 #ifdef DEBUG_LOGOUT_ON
                             QString debugmessage = QString("[sendInputKeys] OriginalKey(%1) KeySequence vJoyKey(%2) waitTime=0, set default waitTime=%3").arg(original_key, joystickButton).arg(VJOY_KEYUP_WAITTIME);
