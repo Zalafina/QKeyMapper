@@ -2091,12 +2091,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     int waitTime = 0;
     bool keyseq_start = false;
     bool keyseq_finished = false;
+    bool iskeyseq = false;
     int sendvirtualkey_state = controller.sendvirtualkey_state;
     int row_index = controller.task_rowindex;
 
     QString keySequenceStr = ":" + QString(KEYSEQUENCE_STR);
 
     if (original_key.contains(keySequenceStr)) {
+        iskeyseq = true;
         QString firstKeySeqPostStr = QString("%1%2").arg(keySequenceStr).arg(1);
         QString finalKeySeqPostStr = QString(":%1").arg(KEYSEQUENCE_FINAL_STR);
         if (original_key.endsWith(firstKeySeqPostStr)) {
@@ -2117,6 +2119,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
             }
         }
+#if 0
         else if (keyupdown == KEY_UP && keyseq.contains("vJoy-")) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[sendInputKeys] vJoy Key Up wait start ->" << keyseq;
@@ -2126,6 +2129,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             qDebug() << "[sendInputKeys] vJoy Key Up wait end ->" << keyseq;
 #endif
         }
+#endif
     }
     else if (original_key.contains(MOUSE_WHEEL_STR)) {
         if (KEY_UP == keyupdown) {
@@ -2751,14 +2755,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
         if (*controller.task_stop_flag == INPUTSTOP_SINGLE) {
 #ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("\033[1;34m[sendInputKeys] OriginalKey(%1) Single Mappingkeys KEY_UP finished, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE\033[0m").arg(original_key);
+            QString debugmessage = QString("[sendInputKeys] OriginalKey(%1) Single Mappingkeys KEY_UP finished, task_stop_flag set back INPUTSTOP_SINGLE -> INPUTSTOP_NONE").arg(original_key);
             qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
             *controller.task_stop_flag = INPUTSTOP_NONE;
         }
         else if (*controller.task_stop_flag == INPUTSTOP_KEYSEQ) {
 #ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("\033[1;34m[sendInputKeys] OriginalKey(%1) KeySequence KEY_UP breaked, task_stop_flag set INPUTSTOP_KEYSEQ -> INPUTSTOP_NONE\033[0m").arg(original_key);
+            QString debugmessage = QString("[sendInputKeys] OriginalKey(%1) KeySequence KEY_UP breaked, task_stop_flag set INPUTSTOP_KEYSEQ -> INPUTSTOP_NONE").arg(original_key);
             qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
             *controller.task_stop_flag = INPUTSTOP_NONE;
@@ -3272,6 +3276,17 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                             else {
                                 ViGEmClient_ReleaseButton(joystickButton, gamepad_index);
                             }
+                        }
+                    }
+
+                    if (iskeyseq && sendtype == SENDTYPE_NORMAL && !vjoy_move_handled) {
+                        if (waitTime == 0 && MultiVirtualGamepadInputList.contains(joystickButton)) {
+                            waitTime = VJOY_KEYUP_WAITTIME;
+
+#ifdef DEBUG_LOGOUT_ON
+                            QString debugmessage = QString("[sendInputKeys] OriginalKey(%1) KeySequence vJoyKey(%2) waitTime=0, set default waitTime=%3").arg(original_key, joystickButton).arg(VJOY_KEYUP_WAITTIME);
+                            qDebug().nospace().noquote() << debugmessage;
+#endif
                         }
                     }
 
@@ -16638,6 +16653,7 @@ void QKeyMapper_Worker::initMultiVirtualGamepadInputList()
             << "vJoy-DPad-Down"
             << "vJoy-DPad-Left"
             << "vJoy-DPad-Right"
+            << "vJoy-Touchpad"
             << "vJoy-Key1(A/×)"
             << "vJoy-Key2(B/○)"
             << "vJoy-Key3(X/□)"
