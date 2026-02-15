@@ -3282,15 +3282,18 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     if (iskeyseq && sendtype == SENDTYPE_NORMAL && !vjoy_move_handled) {
                         if (waitTime == 0) {
                             QRegularExpressionMatch vjoy_pushlevel_match = vjoy_pushlevel_keys_regex.match(joystickButton);
-                            if (MultiVirtualGamepadInputList.contains(joystickButton)
-                                || vjoy_pushlevel_match.hasMatch()) {
+                            const bool is_vjoy_normal_key = MultiVirtualGamepadInputList.contains(joystickButton);
+                            const bool is_vjoy_pushlevel_key = vjoy_pushlevel_match.hasMatch();
+
+                            // Apply default hold time only when sequence key has no explicit hold-time suffix.
+                            if (is_vjoy_normal_key || is_vjoy_pushlevel_key) {
                                 waitTime = VJOY_KEYUP_WAITTIME;
-                            }
 
 #ifdef DEBUG_LOGOUT_ON
-                            QString debugmessage = QString("[sendInputKeys] OriginalKey(%1) KeySequence vJoyKey(%2) waitTime=0, set default waitTime=%3").arg(original_key, joystickButton).arg(VJOY_KEYUP_WAITTIME);
-                            qDebug().nospace().noquote() << debugmessage;
+                                QString debugmessage = QString("[sendInputKeys] OriginalKey(%1) KeySequence vJoyKey(%2) waitTime=0, set default waitTime=%3").arg(original_key, joystickButton).arg(VJOY_KEYUP_WAITTIME);
+                                qDebug().nospace().noquote() << debugmessage;
 #endif
+                            }
                         }
                     }
 
