@@ -6499,9 +6499,9 @@ void QKeyMapper_Worker::ViGEmClient_RefreshMaskedState(int gamepad_index)
         return;
     }
 
-    XUSB_BUTTON allMappedButtonsMask = static_cast<XUSB_BUTTON>(0);
+    USHORT allMappedButtonsMask = 0;
     for (auto it = ViGEmButtonMap.constBegin(); it != ViGEmButtonMap.constEnd(); ++it) {
-        allMappedButtonsMask = static_cast<XUSB_BUTTON>(allMappedButtonsMask | it.value());
+        allMappedButtonsMask = static_cast<USHORT>(allMappedButtonsMask | static_cast<USHORT>(it.value()));
     }
 
     ViGEmTarget_Report.wButtons = static_cast<USHORT>(ViGEmTarget_Report.wButtons & ~allMappedButtonsMask);
