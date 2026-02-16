@@ -272,6 +272,10 @@ public:
     QStringList getAvailableCategories() const;
     void setCategoryColumnVisible(bool visible);
     bool isCategoryColumnVisible() const;
+    void setHideDisabledFilter(bool enabled);
+    bool isHideDisabledFilterEnabled() const;
+    bool hasHiddenRows() const;
+    void reapplyRowVisibility();
 
 protected:
     // Override keyPressEvent to handle key press events for the table.
@@ -289,6 +293,8 @@ private:
     int m_DraggedTopRow;
     int m_DraggedBottomRow;
     bool m_CategoryColumnVisible = false;  // Category column visibility
+    bool m_HideDisabledFilterEnabled = false;
+    bool m_HasHiddenRows = false;
 public:
     // Current category filters:
     // - Empty set means "All" (no filtering)
@@ -1256,6 +1262,8 @@ private slots:
 
     void on_showNotesButton_toggled(bool checked);
 
+    void on_hideDisabledButton_toggled(bool checked);
+
     void on_showCategoryButton_toggled(bool checked);
 
     void on_checkUpdateButton_clicked();
@@ -1376,7 +1384,6 @@ public:
     void setParentForSelectColorDialog(QWidget *parent);
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
     bool isMappingDataTableFiltered(void);
-    void onCategoryFilterChanged(int index);
     void updateCategoryFilterComboBox(void);
     void updateCategoryFilterByShowCategoryState(void);
     bool isParamTextPlainTextEditHasFocus(void);

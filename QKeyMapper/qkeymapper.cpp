@@ -9648,6 +9648,8 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 }
             }
 
+            m_KeyMappingDataTable->reapplyRowVisibility();
+
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) disabled changed to (%s)", __func__, row, disabled == true?"ON":"OFF");
 #endif
@@ -11129,6 +11131,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
     settingFile.setValue(SHOW_PROCESSLIST, ui->processListButton->isChecked());
     settingFile.setValue(SHOW_NOTES, ui->showNotesButton->isChecked());
+    settingFile.setValue(HIDE_DISABLED, ui->hideDisabledButton->isChecked());
     settingFile.setValue(SHOW_CATEGORYS, ui->showCategoryButton->isChecked());
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     settingFile.setValue(DISPLAY_SCALE , ui->scaleComboBox->currentIndex());
@@ -12294,6 +12297,25 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
             ui->showNotesButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
+#endif
+        }
+
+        if (true == settingFile.contains(HIDE_DISABLED)){
+            bool hideDisabled = settingFile.value(HIDE_DISABLED).toBool();
+            if (hideDisabled) {
+                ui->hideDisabledButton->setChecked(true);
+            }
+            else {
+                ui->hideDisabledButton->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Hide Disabled Button ->" << hideDisabled;
+#endif
+        }
+        else {
+            ui->hideDisabledButton->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains HideDisabled, Hide Disabled Button set to Unchecked.";
 #endif
         }
 
@@ -15798,6 +15820,25 @@ void QKeyMapper::loadGeneralSetting()
 #endif
     }
 
+    if (true == settingFile.contains(HIDE_DISABLED)){
+        bool hideDisabled = settingFile.value(HIDE_DISABLED).toBool();
+        if (hideDisabled) {
+            ui->hideDisabledButton->setChecked(true);
+        }
+        else {
+            ui->hideDisabledButton->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadGeneralSetting]" << "Hide Disabled Button ->" << hideDisabled;
+#endif
+    }
+    else {
+        ui->hideDisabledButton->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadGeneralSetting]" << "Do not contains HideDisabled, Hide Disabled Button set to Unchecked.";
+#endif
+    }
+
     if (true == settingFile.contains(SHOW_CATEGORYS)){
         bool showCategorys = settingFile.value(SHOW_CATEGORYS).toBool();
         if (showCategorys) {
@@ -16545,6 +16586,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
+    ui->hideDisabledButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
@@ -16704,6 +16746,7 @@ void QKeyMapper::setControlFontChinese()
     ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
+    ui->hideDisabledButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
@@ -16863,6 +16906,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
+    ui->hideDisabledButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
@@ -17117,6 +17161,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->clearallButton->setEnabled(status);
     ui->processListButton->setEnabled(status);
     ui->showNotesButton->setEnabled(status);
+    ui->hideDisabledButton->setEnabled(status);
     ui->showCategoryButton->setEnabled(status);
     if (ui->categoryFilterToolButton) {
         ui->categoryFilterToolButton->setEnabled(status);
@@ -19906,19 +19951,10 @@ bool QKeyMapper::showMessageBoxWithCheckbox(QWidget *parent, QString message, QS
 
 bool QKeyMapper::isMappingDataTableFiltered()
 {
-    if (!ui->showCategoryButton || !ui->showCategoryButton->isChecked()) {
-        return false;
-    }
     if (!m_KeyMappingDataTable) {
         return false;
     }
-    return !m_KeyMappingDataTable->m_CategoryFilters.isEmpty();
-}
-
-void QKeyMapper::onCategoryFilterChanged(int index)
-{
-    Q_UNUSED(index);
-    // Deprecated: old ComboBox-based filter. Kept only because the old widget still exists in the .ui.
+    return m_KeyMappingDataTable->hasHiddenRows();
 }
 
 void QKeyMapper::updateCategoryFilterComboBox(void)
@@ -21874,6 +21910,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 
     resizeKeyMappingDataTableColumnWidth(mappingDataTable);
 
+    if (ui->hideDisabledButton) {
+        mappingDataTable->setHideDisabledFilter(ui->hideDisabledButton->isChecked());
+    }
+
     // Re-apply current category filters after table rows are rebuilt.
     // This keeps row visibility consistent for all refresh paths.
     mappingDataTable->setCategoryFilters(mappingDataTable->m_CategoryFilters);
@@ -22167,6 +22207,10 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
     }
 
     resizeKeyMappingDataTableColumnWidth(mappingDataTable);
+
+    if (column == DISABLED_COLUMN || column == CATEGORY_COLUMN) {
+        mappingDataTable->reapplyRowVisibility();
+    }
 }
 
 void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
@@ -22351,6 +22395,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->clearallButton->setText(tr("Clear"));
     ui->processListButton->setText(tr("ProcessList"));
     ui->showNotesButton->setText(tr("ShowNotes"));
+    ui->hideDisabledButton->setText(tr("HideDisabled"));
     ui->showCategoryButton->setText(tr("ShowCategory"));
 
     // Update category filter controls text
@@ -23757,6 +23802,9 @@ void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
         disconnectKeyMappingDataTableConnection();
         switchKeyMappingTabIndex(index);
         updateCategoryFilterByShowCategoryState();
+        if (m_KeyMappingDataTable && ui->hideDisabledButton) {
+            m_KeyMappingDataTable->setHideDisabledFilter(ui->hideDisabledButton->isChecked());
+        }
         updateKeyMappingDataTableConnection();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -28765,6 +28813,27 @@ void KeyMappingDataTableWidget::setCategoryFilters(const QSet<QString> &categori
     updateRowVisibility();
 }
 
+void KeyMappingDataTableWidget::setHideDisabledFilter(bool enabled)
+{
+    m_HideDisabledFilterEnabled = enabled;
+    updateRowVisibility();
+}
+
+bool KeyMappingDataTableWidget::isHideDisabledFilterEnabled() const
+{
+    return m_HideDisabledFilterEnabled;
+}
+
+bool KeyMappingDataTableWidget::hasHiddenRows() const
+{
+    return m_HasHiddenRows;
+}
+
+void KeyMappingDataTableWidget::reapplyRowVisibility()
+{
+    updateRowVisibility();
+}
+
 void KeyMappingDataTableWidget::clearCategoryFilter()
 {
     m_CategoryFilters.clear();
@@ -28988,34 +29057,45 @@ void KeyMappingDataTableWidget::keyPressEvent(QKeyEvent *event)
 
 void KeyMappingDataTableWidget::updateRowVisibility()
 {
-    if (!isCategoryColumnVisible() || m_CategoryFilters.isEmpty()) {
-        // Show all rows when no filter is active
-        for (int row = 0; row < rowCount(); ++row) {
-            setRowHidden(row, false);
-        }
-        return;
-    }
+    const bool hasCategoryFilter = isCategoryColumnVisible() && !m_CategoryFilters.isEmpty();
+    const bool hideDisabledEnabled = m_HideDisabledFilterEnabled;
+    bool hasHiddenRows = false;
 
-    // Filter rows based on category
     for (int row = 0; row < rowCount(); ++row) {
-        QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
-        QString itemCategory;
-        if (categoryItem) {
-            itemCategory = categoryItem->text().trimmed();
-        }
-        // Built-in "Blank" option is represented by empty-string token in the filter set.
-        // This also treats missing category items as blank.
-        if (itemCategory.isEmpty()) {
-            const bool isBlankRow = (categoryItem == Q_NULLPTR) || itemCategory.isEmpty();
-            const bool shouldShow = isBlankRow ? m_CategoryFilters.contains(QString()) : false;
-            setRowHidden(row, !shouldShow);
-            continue;
+        bool categoryVisible = true;
+        if (hasCategoryFilter) {
+            QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
+            QString itemCategory;
+            if (categoryItem) {
+                itemCategory = categoryItem->text().trimmed();
+            }
+
+            // Built-in "Blank" option is represented by empty-string token in the filter set.
+            // This also treats missing category items as blank.
+            if (itemCategory.isEmpty()) {
+                const bool isBlankRow = (categoryItem == Q_NULLPTR) || itemCategory.isEmpty();
+                categoryVisible = isBlankRow ? m_CategoryFilters.contains(QString()) : false;
+            }
+            else {
+                categoryVisible = m_CategoryFilters.contains(itemCategory);
+            }
         }
 
-        const bool shouldShow = m_CategoryFilters.contains(itemCategory);
+        bool disabledVisible = true;
+        if (hideDisabledEnabled) {
+            QTableWidgetItem *disabledItem = item(row, DISABLED_COLUMN);
+            const bool isDisabled = (disabledItem != Q_NULLPTR) && (disabledItem->checkState() == Qt::Checked);
+            disabledVisible = !isDisabled;
+        }
 
+        const bool shouldShow = categoryVisible && disabledVisible;
         setRowHidden(row, !shouldShow);
+        if (!shouldShow) {
+            hasHiddenRows = true;
+        }
     }
+
+    m_HasHiddenRows = hasHiddenRows;
 }
 
 #if 0
@@ -29071,6 +29151,15 @@ void QKeyMapper::on_showNotesButton_toggled(bool checked)
 {
     Q_UNUSED(checked);
     refreshAllKeyMappingTabWidget();
+}
+
+void QKeyMapper::on_hideDisabledButton_toggled(bool checked)
+{
+    for (const KeyMappingTab_Info &tabInfo : std::as_const(s_KeyMappingTabInfoList)) {
+        if (tabInfo.KeyMappingDataTable) {
+            tabInfo.KeyMappingDataTable->setHideDisabledFilter(checked);
+        }
+    }
 }
 
 void QKeyMapper::on_showCategoryButton_toggled(bool checked)

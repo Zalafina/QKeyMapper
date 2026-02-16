@@ -300,12 +300,6 @@ bool QMacroListDialog::isMacroDataTableFiltered()
     return !macroDataTable->m_CategoryFilters.isEmpty();
 }
 
-void QMacroListDialog::onMacroCategoryFilterChanged(int index)
-{
-    Q_UNUSED(index);
-    // Deprecated: old ComboBox-based filter.
-}
-
 void QMacroListDialog::updateMacroCategoryFilterComboBox()
 {
     // Repurposed: refresh toolbutton summary.

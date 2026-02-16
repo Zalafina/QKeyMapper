@@ -137,7 +137,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>250</y>
+     <y>270</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -156,7 +156,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>310</y>
+     <y>330</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -2374,7 +2374,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>130</y>
+     <y>170</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -2489,7 +2489,7 @@
    <property name="geometry">
     <rect>
      <x>990</x>
-     <y>170</y>
+     <y>210</y>
      <width>71</width>
      <height>25</height>
     </rect>
@@ -2556,6 +2556,28 @@
      <width>458</width>
      <height>347</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="hideDisabledButton">
+   <property name="geometry">
+    <rect>
+     <x>990</x>
+     <y>130</y>
+     <width>71</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>HideDisabled</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
  </widget>

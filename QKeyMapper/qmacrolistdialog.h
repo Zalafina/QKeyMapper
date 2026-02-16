@@ -99,7 +99,6 @@ public:
     static QString getCurrentMapKeyListText(void);
 
     bool isMacroDataTableFiltered(void);
-    void onMacroCategoryFilterChanged(int index);
     void updateMacroCategoryFilterComboBox(void);
 
     // Macro list item operations

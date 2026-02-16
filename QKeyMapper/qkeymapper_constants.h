@@ -906,6 +906,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char TABLE_INSERTMODE[] = "TableInsertMode";
     inline constexpr const char SHOW_PROCESSLIST[] = "ShowProcessList";
     inline constexpr const char SHOW_NOTES[] = "ShowNotes";
+    inline constexpr const char HIDE_DISABLED[] = "HideDisabled";
     inline constexpr const char SHOW_CATEGORYS[] = "ShowCategorys";
     inline constexpr const char NOTSHOW_VERSION_UNMATCHED[] = "NotShow_VersionUnmatched";
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
