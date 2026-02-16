@@ -363,7 +363,15 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mapList_SelectGamepadButton->setChecked(true);
     ui->mapList_SelectFunctionButton->setChecked(true);
 
-    // Initialize category button state (default: unchecked/hidden)
+    ui->processListButton->setStyle(windowsStyle);
+    ui->showNotesButton->setStyle(windowsStyle);
+    ui->hideDisabledButton->setStyle(windowsStyle);
+    ui->showCategoryButton->setStyle(windowsStyle);
+
+    // Initialize checkable button state
+    ui->processListButton->setChecked(true);
+    ui->showNotesButton->setChecked(false);
+    ui->hideDisabledButton->setChecked(false);
     ui->showCategoryButton->setChecked(false);
 
     initProcessInfoTable();
@@ -23305,7 +23313,7 @@ void QKeyMapper::setUITheme(int themeindex)
         // Border and shadow effects - use light shadows to enhance 3D effect
         darkPalette.setColor(QPalette::Shadow, QColor(85, 85, 85));
         darkPalette.setColor(QPalette::Mid, QColor(75, 75, 75));
-        darkPalette.setColor(QPalette::Light, QColor(95, 95, 95));
+        darkPalette.setColor(QPalette::Light, QColor(100, 100, 116));
         darkPalette.setColor(QPalette::Dark, QColor(40, 40, 40));
         darkPalette.setColor(QPalette::Midlight, QColor(80, 80, 80));
 
