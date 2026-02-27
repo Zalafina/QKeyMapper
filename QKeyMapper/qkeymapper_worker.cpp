@@ -9610,8 +9610,8 @@ void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed
 {
     Q_UNUSED(joystick_removed);
 #ifdef DEBUG_LOGOUT_ON
-    QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_removed.vendorid, 16).toUpper(), 4, '0');
-    QString productIdStr = QString("0x%1").arg(QString::number(joystick_removed.productid, 16).toUpper(), 4, '0');
+    QString vendorIdStr = QStringLiteral("0x") + QString("%1").arg(joystick_removed.vendorid, 4, 16, QChar('0')).toUpper();
+    QString productIdStr = QStringLiteral("0x") + QString("%1").arg(joystick_removed.productid, 4, 16, QChar('0')).toUpper();
 
     // Build message with strictly ordered single-arg replacements
     QString debugmessage =
