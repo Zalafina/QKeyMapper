@@ -6170,6 +6170,11 @@ int QKeyMapper::getGamepadLeftTriggerPressThreshold()
     return getInstance()->m_MappingAdvancedDialog->getLeftTriggerPressThreshold();
 }
 
+int QKeyMapper::getGamepadLeftTriggerLightPressThreshold()
+{
+    return getInstance()->m_MappingAdvancedDialog->getLeftTriggerLightPressThreshold();
+}
+
 int QKeyMapper::getGamepadLeftTriggerReleaseThreshold()
 {
     return getInstance()->m_MappingAdvancedDialog->getLeftTriggerReleaseThreshold();
@@ -6178,6 +6183,11 @@ int QKeyMapper::getGamepadLeftTriggerReleaseThreshold()
 int QKeyMapper::getGamepadRightTriggerPressThreshold()
 {
     return getInstance()->m_MappingAdvancedDialog->getRightTriggerPressThreshold();
+}
+
+int QKeyMapper::getGamepadRightTriggerLightPressThreshold()
+{
+    return getInstance()->m_MappingAdvancedDialog->getRightTriggerLightPressThreshold();
 }
 
 int QKeyMapper::getGamepadRightTriggerReleaseThreshold()
@@ -6190,6 +6200,11 @@ int QKeyMapper::getGamepadLeftStickPushThreshold()
     return getInstance()->m_MappingAdvancedDialog->getLeftStickPushThreshold();
 }
 
+int QKeyMapper::getGamepadLeftStickLightPushThreshold()
+{
+    return getInstance()->m_MappingAdvancedDialog->getLeftStickLightPushThreshold();
+}
+
 int QKeyMapper::getGamepadLeftStickReleaseThreshold()
 {
     return getInstance()->m_MappingAdvancedDialog->getLeftStickReleaseThreshold();
@@ -6198,6 +6213,11 @@ int QKeyMapper::getGamepadLeftStickReleaseThreshold()
 int QKeyMapper::getGamepadRightStickPushThreshold()
 {
     return getInstance()->m_MappingAdvancedDialog->getRightStickPushThreshold();
+}
+
+int QKeyMapper::getGamepadRightStickLightPushThreshold()
+{
+    return getInstance()->m_MappingAdvancedDialog->getRightStickLightPushThreshold();
 }
 
 int QKeyMapper::getGamepadRightStickReleaseThreshold()
@@ -11977,14 +11997,18 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED,            m_MappingAdvancedDialog->getMouseYSpeed());
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_POLLING_INTERVAL,   m_MappingAdvancedDialog->getMousePollingInterval());
 
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LT_THRESHOLD_PRESS,   m_MappingAdvancedDialog->getLeftTriggerPressThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LT_THRESHOLD_RELEASE, m_MappingAdvancedDialog->getLeftTriggerReleaseThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RT_THRESHOLD_PRESS,   m_MappingAdvancedDialog->getRightTriggerPressThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RT_THRESHOLD_RELEASE, m_MappingAdvancedDialog->getRightTriggerReleaseThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LS_THRESHOLD_PUSH,    m_MappingAdvancedDialog->getLeftStickPushThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LS_THRESHOLD_RELEASE, m_MappingAdvancedDialog->getLeftStickReleaseThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_PUSH,    m_MappingAdvancedDialog->getRightStickPushThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_RELEASE, m_MappingAdvancedDialog->getRightStickReleaseThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LT_THRESHOLD_PRESS,       m_MappingAdvancedDialog->getLeftTriggerPressThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LT_THRESHOLD_LIGHTPRESS,  m_MappingAdvancedDialog->getLeftTriggerLightPressThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LT_THRESHOLD_RELEASE,     m_MappingAdvancedDialog->getLeftTriggerReleaseThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RT_THRESHOLD_PRESS,       m_MappingAdvancedDialog->getRightTriggerPressThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RT_THRESHOLD_LIGHTPRESS,  m_MappingAdvancedDialog->getRightTriggerLightPressThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RT_THRESHOLD_RELEASE,     m_MappingAdvancedDialog->getRightTriggerReleaseThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LS_THRESHOLD_PUSH,        m_MappingAdvancedDialog->getLeftStickPushThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LS_THRESHOLD_LIGHTPUSH,   m_MappingAdvancedDialog->getLeftStickLightPushThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LS_THRESHOLD_RELEASE,     m_MappingAdvancedDialog->getLeftStickReleaseThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_PUSH,        m_MappingAdvancedDialog->getRightStickPushThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_LIGHTPUSH,   m_MappingAdvancedDialog->getRightStickLightPushThreshold());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_RELEASE,     m_MappingAdvancedDialog->getRightStickReleaseThreshold());
 
     settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_X_SPEED, ui->Gyro2MouseXSpeedSpinBox->value());
     settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_Y_SPEED, ui->Gyro2MouseYSpeedSpinBox->value());
@@ -15154,6 +15178,70 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
     }
     else {
         m_MappingAdvancedDialog->setRightStickReleaseThreshold(GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GAMEPAD_LT_THRESHOLD_LIGHTPRESS)){
+        int gamdpad_LT_ThresholdLightPress = settingFile.value(settingSelectStr+GAMEPAD_LT_THRESHOLD_LIGHTPRESS).toInt();
+        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_LT_ThresholdLightPress && gamdpad_LT_ThresholdLightPress <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
+            m_MappingAdvancedDialog->setLeftTriggerLightPressThreshold(gamdpad_LT_ThresholdLightPress);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Gamepad LeftTrigger LightPress Threshold =" << gamdpad_LT_ThresholdLightPress;
+#endif
+        }
+        else {
+            m_MappingAdvancedDialog->setLeftTriggerLightPressThreshold(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
+        }
+    }
+    else {
+        m_MappingAdvancedDialog->setLeftTriggerLightPressThreshold(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GAMEPAD_RT_THRESHOLD_LIGHTPRESS)){
+        int gamdpad_RT_ThresholdLightPress = settingFile.value(settingSelectStr+GAMEPAD_RT_THRESHOLD_LIGHTPRESS).toInt();
+        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_RT_ThresholdLightPress && gamdpad_RT_ThresholdLightPress <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
+            m_MappingAdvancedDialog->setRightTriggerLightPressThreshold(gamdpad_RT_ThresholdLightPress);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Gamepad RightTrigger LightPress Threshold =" << gamdpad_RT_ThresholdLightPress;
+#endif
+        }
+        else {
+            m_MappingAdvancedDialog->setRightTriggerLightPressThreshold(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
+        }
+    }
+    else {
+        m_MappingAdvancedDialog->setRightTriggerLightPressThreshold(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GAMEPAD_LS_THRESHOLD_LIGHTPUSH)){
+        int gamdpad_LS_ThresholdLightPush = settingFile.value(settingSelectStr+GAMEPAD_LS_THRESHOLD_LIGHTPUSH).toInt();
+        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_LS_ThresholdLightPush && gamdpad_LS_ThresholdLightPush <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
+            m_MappingAdvancedDialog->setLeftStickLightPushThreshold(gamdpad_LS_ThresholdLightPush);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Gamepad LeftStick LightPush Threshold =" << gamdpad_LS_ThresholdLightPush;
+#endif
+        }
+        else {
+            m_MappingAdvancedDialog->setLeftStickLightPushThreshold(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
+        }
+    }
+    else {
+        m_MappingAdvancedDialog->setLeftStickLightPushThreshold(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GAMEPAD_RS_THRESHOLD_LIGHTPUSH)){
+        int gamdpad_RS_ThresholdLightPush = settingFile.value(settingSelectStr+GAMEPAD_RS_THRESHOLD_LIGHTPUSH).toInt();
+        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_RS_ThresholdLightPush && gamdpad_RS_ThresholdLightPush <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
+            m_MappingAdvancedDialog->setRightStickLightPushThreshold(gamdpad_RS_ThresholdLightPush);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Gamepad RightStick LightPush Threshold =" << gamdpad_RS_ThresholdLightPush;
+#endif
+        }
+        else {
+            m_MappingAdvancedDialog->setRightStickLightPushThreshold(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
+        }
+    }
+    else {
+        m_MappingAdvancedDialog->setRightStickLightPushThreshold(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
     }
 
     if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_X_SPEED)){
@@ -20872,6 +20960,14 @@ void QKeyMapper::initKeysCategoryMap()
         << "Joy-RS-Down"
         << "Joy-RS-Left"
         << "Joy-RS-Right"
+        << "Joy-LS-Up_Light"
+        << "Joy-LS-Down_Light"
+        << "Joy-LS-Left_Light"
+        << "Joy-LS-Right_Light"
+        << "Joy-RS-Up_Light"
+        << "Joy-RS-Down_Light"
+        << "Joy-RS-Left_Light"
+        << "Joy-RS-Right_Light"
         << "Joy-DPad-Up"
         << "Joy-DPad-Down"
         << "Joy-DPad-Left"
@@ -20894,6 +20990,8 @@ void QKeyMapper::initKeysCategoryMap()
         << "Joy-Key10(RS-Click)"
         << "Joy-Key11(LT)"
         << "Joy-Key12(RT)"
+        << "Joy-Key11(LT)_Light"
+        << "Joy-Key12(RT)_Light"
         << "Joy-Key13(Guide)"
         << "Joy-Key14"
         << "Joy-Key15"

@@ -10315,545 +10315,745 @@ void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
     }
 }
 
+/* Helper: Calculate circular distance from joystick center, capped at 1.0.
+ * x and y are in the -1~1 range. Returns a value in [0.0, 1.0]. */
+static inline qreal joystickCircularDistance(qreal x, qreal y)
+{
+    return qMin(1.0, qSqrt(x * x + y * y));
+}
+
 void QKeyMapper_Worker::joystickLTRTButtonProc(const QJoystickAxisEvent &e)
 {
-    int keyupdown = KEY_INIT;
-    QString keycodeString_withoutIndex;
-    QString keycodeString;
-    /* LT Button & RT Button */
+    int player_index = e.joystick->playerindex;
+    QString lightKey_withoutIndex;
+    QString heavyKey_withoutIndex;
+
+    /* Determine which trigger and build base key strings */
     if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
-        keycodeString_withoutIndex = "Joy-Key11(LT)";
-        int player_index = e.joystick->playerindex;
-        if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-            keycodeString = QString("%1@%2").arg(keycodeString_withoutIndex).arg(player_index);
-        }
-        else {
-            keycodeString = keycodeString_withoutIndex;
-        }
-        if (pressedRealKeysList.contains(keycodeString)) {
-            /* LT Button is already Pressed */
-            int releaseThreshold = QKeyMapper::getGamepadLeftTriggerReleaseThreshold();
-            qreal releaseThresholdValue;
-            if (e.event_type == GameControllerEvent) {
-                // GameController: 0~1 range, release threshold = releaseThreshold / 100.0
-                releaseThresholdValue = releaseThreshold / 100.0;
-                if (e.value <= releaseThresholdValue) {
-                    keyupdown = KEY_UP;
-                }
-            }
-            else { /* e.event_type == JoystickEvent */
-                // Joystick: -1~1 range, release threshold = (releaseThreshold / 100.0) * 2 - 1
-                releaseThresholdValue = (releaseThreshold / 100.0) * 2.0 - 1.0;
-                if (e.value <= releaseThresholdValue) {
-                    keyupdown = KEY_UP;
-                }
-            }
-        }
-        else {
-            /* LT Button has been Released */
-            int pressThreshold = QKeyMapper::getGamepadLeftTriggerPressThreshold();
-            qreal pressThresholdValue;
-            if (e.event_type == GameControllerEvent) {
-                // GameController: 0~1 range, press threshold = pressThreshold / 100.0
-                pressThresholdValue = pressThreshold / 100.0;
-                if (e.value >= pressThresholdValue) {
-                    keyupdown = KEY_DOWN;
-                }
-            }
-            else { /* e.event_type == JoystickEvent */
-                // Joystick: -1~1 range, press threshold = (pressThreshold / 100.0) * 2 - 1
-                pressThresholdValue = (pressThreshold / 100.0) * 2.0 - 1.0;
-                if (e.value >= pressThresholdValue) {
-                    keyupdown = KEY_DOWN;
-                }
-            }
-        }
+        lightKey_withoutIndex = "Joy-Key11(LT)_Light";
+        heavyKey_withoutIndex = "Joy-Key11(LT)";
     }
-    else { /* JOYSTICK_AXIS_RT_BUTTON == e.axis */
-        keycodeString_withoutIndex = "Joy-Key12(RT)";
-        int player_index = e.joystick->playerindex;
-        if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-            keycodeString = QString("Joy-Key12(RT)@%1").arg(player_index);
-        }
-        else {
-            keycodeString = keycodeString_withoutIndex;
-        }
-        if (pressedRealKeysList.contains(keycodeString)) {
-            /* RT Button is already Pressed */
-            int releaseThreshold = QKeyMapper::getGamepadRightTriggerReleaseThreshold();
-            qreal releaseThresholdValue;
-            if (e.event_type == GameControllerEvent) {
-                // GameController: 0~1 range, release threshold = releaseThreshold / 100.0
-                releaseThresholdValue = releaseThreshold / 100.0;
-                if (e.value <= releaseThresholdValue) {
-                    keyupdown = KEY_UP;
-                }
-            }
-            else { /* e.event_type == JoystickEvent */
-                // Joystick: -1~1 range, release threshold = (releaseThreshold / 100.0) * 2 - 1
-                releaseThresholdValue = (releaseThreshold / 100.0) * 2.0 - 1.0;
-                if (e.value <= releaseThresholdValue) {
-                    keyupdown = KEY_UP;
-                }
-            }
-        }
-        else {
-            /* RT Button has been Released */
-            int pressThreshold = QKeyMapper::getGamepadRightTriggerPressThreshold();
-            qreal pressThresholdValue;
-            if (e.event_type == GameControllerEvent) {
-                // GameController: 0~1 range, press threshold = pressThreshold / 100.0
-                pressThresholdValue = pressThreshold / 100.0;
-                if (e.value >= pressThresholdValue) {
-                    keyupdown = KEY_DOWN;
-                }
-            }
-            else { /* e.event_type == JoystickEvent */
-                // Joystick: -1~1 range, press threshold = (pressThreshold / 100.0) * 2 - 1
-                pressThresholdValue = (pressThreshold / 100.0) * 2.0 - 1.0;
-                if (e.value >= pressThresholdValue) {
-                    keyupdown = KEY_DOWN;
-                }
-            }
-        }
+    else { /* JOYSTICK_AXIS_RT_BUTTON */
+        lightKey_withoutIndex = "Joy-Key12(RT)_Light";
+        heavyKey_withoutIndex = "Joy-Key12(RT)";
     }
 
-    if (KEY_UP == keyupdown || KEY_DOWN == keyupdown) {
-        bool returnFlag;
-        returnFlag = JoyStickKeysProc(keycodeString_withoutIndex, keyupdown, e.joystick);
-        Q_UNUSED(returnFlag);
+    /* Append player index suffix if valid */
+    QString lightKey, heavyKey;
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        lightKey = QString("%1@%2").arg(lightKey_withoutIndex).arg(player_index);
+        heavyKey = QString("%1@%2").arg(heavyKey_withoutIndex).arg(player_index);
+    }
+    else {
+        lightKey = lightKey_withoutIndex;
+        heavyKey = heavyKey_withoutIndex;
+    }
+
+    /* Get threshold percent values for the corresponding trigger */
+    int releaseThresholdPct, lightPressThresholdPct, pressThresholdPct;
+    if (JOYSTICK_AXIS_LT_BUTTON == e.axis) {
+        releaseThresholdPct    = QKeyMapper::getGamepadLeftTriggerReleaseThreshold();
+        lightPressThresholdPct = QKeyMapper::getGamepadLeftTriggerLightPressThreshold();
+        pressThresholdPct      = QKeyMapper::getGamepadLeftTriggerPressThreshold();
+    }
+    else {
+        releaseThresholdPct    = QKeyMapper::getGamepadRightTriggerReleaseThreshold();
+        lightPressThresholdPct = QKeyMapper::getGamepadRightTriggerLightPressThreshold();
+        pressThresholdPct      = QKeyMapper::getGamepadRightTriggerPressThreshold();
+    }
+
+    /* Convert percent thresholds to axis range values */
+    qreal releaseThresholdValue, lightPressThresholdValue, pressThresholdValue;
+    if (e.event_type == GameControllerEvent) {
+        // GameController: 0~1 range
+        releaseThresholdValue    = releaseThresholdPct    / 100.0;
+        lightPressThresholdValue = lightPressThresholdPct / 100.0;
+        pressThresholdValue      = pressThresholdPct      / 100.0;
+    }
+    else { /* JoystickEvent: -1~1 range */
+        releaseThresholdValue    = (releaseThresholdPct    / 100.0) * 2.0 - 1.0;
+        lightPressThresholdValue = (lightPressThresholdPct / 100.0) * 2.0 - 1.0;
+        pressThresholdValue      = (pressThresholdPct      / 100.0) * 2.0 - 1.0;
+    }
+
+    /* Determine current state from pressedRealKeysList */
+    bool heavyPressed = pressedRealKeysList.contains(heavyKey);
+    bool lightPressed = pressedRealKeysList.contains(lightKey);
+
+    bool returnFlag;
+    if (heavyPressed) {
+        /* State: HEAVY — check if we need to transition down */
+        if (e.value < releaseThresholdValue) {
+            // HEAVY → RELEASED: axis dropped below release threshold
+            returnFlag = JoyStickKeysProc(heavyKey_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (e.value < pressThresholdValue) {
+            // HEAVY → LIGHT: axis dropped below press threshold but still above release
+            returnFlag = JoyStickKeysProc(heavyKey_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(lightKey_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        /* else: value >= pressThresholdValue → stay HEAVY, no change */
+    }
+    else if (lightPressed) {
+        /* State: LIGHT — check if we need to transition */
+        if (e.value < releaseThresholdValue) {
+            // LIGHT → RELEASED
+            returnFlag = JoyStickKeysProc(lightKey_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (e.value >= pressThresholdValue) {
+            // LIGHT → HEAVY
+            returnFlag = JoyStickKeysProc(lightKey_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(heavyKey_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        /* else: releaseThreshold <= value < pressThreshold → stay LIGHT */
+    }
+    else {
+        /* State: RELEASED — check if a key should be pressed */
+        if (e.value >= pressThresholdValue) {
+            // RELEASED → HEAVY (skip light when pressing hard directly)
+            returnFlag = JoyStickKeysProc(heavyKey_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (e.value >= lightPressThresholdValue) {
+            // RELEASED → LIGHT
+            returnFlag = JoyStickKeysProc(lightKey_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        /* else: value < lightPressThresholdValue → stay RELEASED */
     }
 }
 
 void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
 {
-    // Get Left-Stick Horizontal thresholds dynamically
-    int releaseThreshold = QKeyMapper::getGamepadLeftStickReleaseThreshold();
-    int pressThreshold = QKeyMapper::getGamepadLeftStickPushThreshold();
+    // Get Left-Stick thresholds dynamically
+    int releaseThresholdInt   = QKeyMapper::getGamepadLeftStickReleaseThreshold();
+    int lightPushThresholdInt = QKeyMapper::getGamepadLeftStickLightPushThreshold();
+    int pushThresholdInt      = QKeyMapper::getGamepadLeftStickPushThreshold();
 
-    // Calculate threshold values for Joystick event (-1~1 range)
-    // releaseMin = -(releaseThreshold / 100.0), releaseMax = +(releaseThreshold / 100.0)
-    // leftThreshold = -(pressThreshold / 100.0), rightThreshold = +(pressThreshold / 100.0)
-    qreal releaseMinThreshold = -(releaseThreshold / 100.0);
-    qreal releaseMaxThreshold = releaseThreshold / 100.0;
-    qreal leftThreshold = -(pressThreshold / 100.0);
-    qreal rightThreshold = pressThreshold / 100.0;
+    // Convert percent thresholds to 0~1 range
+    qreal releaseThreshold   = releaseThresholdInt   / 100.0;
+    qreal lightPushThreshold = lightPushThresholdInt / 100.0;
+    qreal pushThreshold      = pushThresholdInt      / 100.0;
 
-    if (e.value <= leftThreshold
-        || e.value >= rightThreshold
-        || (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold)) {
-        /* range to process */
+    // Get current axis values from state map
+    int player_index = e.joystick->playerindex;
+    int axis_index = (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX)
+                     ? player_index : INITIAL_PLAYER_INDEX;
+    qreal curr_x = e.value;
+    qreal curr_y = s_JoyAxisStateMap[axis_index].left_y;  // use stored Y for circular distance
+
+    // Calculate circular distance from joystick center (capped at 1.0)
+    qreal dist = joystickCircularDistance(curr_x, curr_y);
+
+    // Determine direction indicators based on axis sign
+    bool dir_Left  = (curr_x < 0.0);
+    bool dir_Right = (curr_x > 0.0);
+
+    // Build key strings for Left/Right (heavy) and LightLeft/LightRight
+    QString keycodeString_LS_Left_withoutIndex       = m_JoystickLStickMap.value(JOYSTICK_LS_LEFT);
+    QString keycodeString_LS_Right_withoutIndex      = m_JoystickLStickMap.value(JOYSTICK_LS_RIGHT);
+    QString keycodeString_LS_Left_Light_withoutIndex = m_JoystickLStickMap.value(JOYSTICK_LS_LEFT_LIGHT);
+    QString keycodeString_LS_Right_Light_withoutIndex= m_JoystickLStickMap.value(JOYSTICK_LS_RIGHT_LIGHT);
+
+    QString keycodeString_LS_Left, keycodeString_LS_Right;
+    QString keycodeString_LS_Left_Light, keycodeString_LS_Right_Light;
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        keycodeString_LS_Left        = QString("%1@%2").arg(keycodeString_LS_Left_withoutIndex).arg(player_index);
+        keycodeString_LS_Right       = QString("%1@%2").arg(keycodeString_LS_Right_withoutIndex).arg(player_index);
+        keycodeString_LS_Left_Light  = QString("%1@%2").arg(keycodeString_LS_Left_Light_withoutIndex).arg(player_index);
+        keycodeString_LS_Right_Light = QString("%1@%2").arg(keycodeString_LS_Right_Light_withoutIndex).arg(player_index);
     }
     else {
+        keycodeString_LS_Left        = keycodeString_LS_Left_withoutIndex;
+        keycodeString_LS_Right       = keycodeString_LS_Right_withoutIndex;
+        keycodeString_LS_Left_Light  = keycodeString_LS_Left_Light_withoutIndex;
+        keycodeString_LS_Right_Light = keycodeString_LS_Right_Light_withoutIndex;
+    }
+
+    // Query current pressed states
+    bool ls_Left_Heavy_Pressed  = pressedRealKeysList.contains(keycodeString_LS_Left);
+    bool ls_Left_Light_Pressed  = pressedRealKeysList.contains(keycodeString_LS_Left_Light);
+    bool ls_Right_Heavy_Pressed = pressedRealKeysList.contains(keycodeString_LS_Right);
+    bool ls_Right_Light_Pressed = pressedRealKeysList.contains(keycodeString_LS_Right_Light);
+
+    // Early return: no active key and dist is below light threshold, nothing to process
+    bool anyActive = ls_Left_Heavy_Pressed || ls_Left_Light_Pressed
+                     || ls_Right_Heavy_Pressed || ls_Right_Light_Pressed;
+    if (!anyActive && dist < lightPushThreshold) {
         return;
     }
 
-    /* Left-Stick Horizontal Process */
-    int keyupdown = KEY_INIT;
-    QString keycodeString;
-    QString keycodeString_LS_Left;
-    QString keycodeString_LS_Right;
-    int player_index = e.joystick->playerindex;
-    QString keycodeString_LS_Left_withoutIndex = m_JoystickLStickMap.value(JOYSTICK_LS_LEFT);
-    QString keycodeString_LS_Right_withoutIndex = m_JoystickLStickMap.value(JOYSTICK_LS_RIGHT);
-
-    // Use player_index to merge with keycodeString_LS_Left & keycodeString_LS_Right
-    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-        keycodeString_LS_Left = QString("%1@%2").arg(keycodeString_LS_Left_withoutIndex).arg(player_index);
-        keycodeString_LS_Right = QString("%1@%2").arg(keycodeString_LS_Right_withoutIndex).arg(player_index);
-    }
-    else {
-        keycodeString_LS_Left = keycodeString_LS_Left_withoutIndex;
-        keycodeString_LS_Right = keycodeString_LS_Right_withoutIndex;
-    }
-
-    bool ls_Left_Pressed = false;
-    bool ls_Right_Pressed = false;
     bool returnFlag;
-    if (pressedRealKeysList.contains(keycodeString_LS_Left)) {
-        ls_Left_Pressed = true;
-    }
-    if (pressedRealKeysList.contains(keycodeString_LS_Right)) {
-        ls_Right_Pressed = true;
-    }
 
-    if (ls_Left_Pressed || ls_Right_Pressed) {
-        /* Left-Stick Horizontal Left or Right changed to Release */
-        if (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold) {
-            keyupdown = KEY_UP;
-        }
-        /* Left-Stick Horizontal Left changed to Right */
-        else if (ls_Left_Pressed && e.value >= rightThreshold) {
-            /* Need to send Left-Stick Horizontal Left Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_UP, e.joystick);
-            Q_UNUSED(returnFlag);
-            /* Need to send Left-Stick Horizontal Left Release first <<< */
-            keycodeString = keycodeString_LS_Right_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-        /* Left-Stick Horizontal Right changed to Left */
-        else if (ls_Right_Pressed && e.value <= leftThreshold) {
-            /* Need to send Left-Stick Horizontal Right Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_UP, e.joystick);
-            Q_UNUSED(returnFlag);
-            /* Need to send Left-Stick Horizontal Right Release first <<< */
-            keycodeString = keycodeString_LS_Left_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-    }
-    else {
-        /* Left-Stick Horizontal Release change to Right  */
-        if (e.value >= rightThreshold) {
-            keycodeString = keycodeString_LS_Right_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-        /* Left-Stick Horizontal Release change to Left  */
-        else if (e.value <= leftThreshold) {
-            keycodeString = keycodeString_LS_Left_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-    }
-
-    if (KEY_DOWN == keyupdown) {
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
-        Q_UNUSED(returnFlag);
-    }
-    else if (KEY_UP == keyupdown){
-        if (ls_Left_Pressed) {
+    /* --- Process LEFT direction (curr_x < 0) --- */
+    if (ls_Left_Heavy_Pressed) {
+        // State: LEFT HEAVY
+        if (!dir_Left || dist < releaseThreshold) {
+            // LEFT HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        if (ls_Right_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_UP, e.joystick);
+        else if (dist < pushThreshold) {
+            // LEFT HEAVY → LEFT LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: dir_Left && dist >= pushThreshold → stay LEFT HEAVY
+    }
+    else if (ls_Left_Light_Pressed) {
+        // State: LEFT LIGHT
+        if (!dir_Left || dist < releaseThreshold) {
+            // LEFT LIGHT → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist >= pushThreshold) {
+            // LEFT LIGHT → LEFT HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: dir_Left && releaseThreshold <= dist < pushThreshold → stay LEFT LIGHT
+    }
+    else {
+        // State: LEFT RELEASED
+        if (dir_Left && dist >= pushThreshold) {
+            // LEFT RELEASED → LEFT HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dir_Left && dist >= lightPushThreshold) {
+            // LEFT RELEASED → LEFT LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Left_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
+
+    /* --- Process RIGHT direction (curr_x > 0) --- */
+    if (ls_Right_Heavy_Pressed) {
+        // State: RIGHT HEAVY
+        if (!dir_Right || dist < releaseThreshold) {
+            // RIGHT HEAVY → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist < pushThreshold) {
+            // RIGHT HEAVY → RIGHT LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay RIGHT HEAVY
+    }
+    else if (ls_Right_Light_Pressed) {
+        // State: RIGHT LIGHT
+        if (!dir_Right || dist < releaseThreshold) {
+            // RIGHT LIGHT → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist >= pushThreshold) {
+            // RIGHT LIGHT → RIGHT HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay RIGHT LIGHT
+    }
     else {
-        /* Stick State not changed */
+        // State: RIGHT RELEASED
+        if (dir_Right && dist >= pushThreshold) {
+            // RIGHT RELEASED → RIGHT HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dir_Right && dist >= lightPushThreshold) {
+            // RIGHT RELEASED → RIGHT LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Right_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
     }
 }
 
 void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
 {
-    // Get Left-Stick Vertical thresholds dynamically
-    int releaseThreshold = QKeyMapper::getGamepadLeftStickReleaseThreshold();
-    int pressThreshold = QKeyMapper::getGamepadLeftStickPushThreshold();
+    // Get Left-Stick thresholds dynamically
+    int releaseThresholdInt   = QKeyMapper::getGamepadLeftStickReleaseThreshold();
+    int lightPushThresholdInt = QKeyMapper::getGamepadLeftStickLightPushThreshold();
+    int pushThresholdInt      = QKeyMapper::getGamepadLeftStickPushThreshold();
 
-    // Calculate threshold values for Joystick event (-1~1 range)
-    // releaseMin = -(releaseThreshold / 100.0), releaseMax = +(releaseThreshold / 100.0)
-    // upThreshold = -(pressThreshold / 100.0), downThreshold = +(pressThreshold / 100.0)
-    qreal releaseMinThreshold = -(releaseThreshold / 100.0);
-    qreal releaseMaxThreshold = releaseThreshold / 100.0;
-    qreal upThreshold = -(pressThreshold / 100.0);
-    qreal downThreshold = pressThreshold / 100.0;
+    // Convert percent thresholds to 0~1 range
+    qreal releaseThreshold   = releaseThresholdInt   / 100.0;
+    qreal lightPushThreshold = lightPushThresholdInt / 100.0;
+    qreal pushThreshold      = pushThresholdInt      / 100.0;
 
-    if (e.value <= upThreshold
-        || e.value >= downThreshold
-        || (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold)) {
-        /* range to process */
+    // Get current axis values from state map
+    int player_index = e.joystick->playerindex;
+    int axis_index = (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX)
+                     ? player_index : INITIAL_PLAYER_INDEX;
+    qreal curr_x = s_JoyAxisStateMap[axis_index].left_x;  // use stored X for circular distance
+    qreal curr_y = e.value;
+
+    // Calculate circular distance from joystick center (capped at 1.0)
+    qreal dist = joystickCircularDistance(curr_x, curr_y);
+
+    // Determine direction indicators: Up = negative Y, Down = positive Y
+    bool dir_Up   = (curr_y < 0.0);
+    bool dir_Down = (curr_y > 0.0);
+
+    // Build key strings for Up/Down (heavy) and LightUp/LightDown
+    QString keycodeString_LS_Up_withoutIndex        = m_JoystickLStickMap.value(JOYSTICK_LS_UP);
+    QString keycodeString_LS_Down_withoutIndex      = m_JoystickLStickMap.value(JOYSTICK_LS_DOWN);
+    QString keycodeString_LS_Up_Light_withoutIndex  = m_JoystickLStickMap.value(JOYSTICK_LS_UP_LIGHT);
+    QString keycodeString_LS_Down_Light_withoutIndex= m_JoystickLStickMap.value(JOYSTICK_LS_DOWN_LIGHT);
+
+    QString keycodeString_LS_Up, keycodeString_LS_Down;
+    QString keycodeString_LS_Up_Light, keycodeString_LS_Down_Light;
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        keycodeString_LS_Up        = QString("%1@%2").arg(keycodeString_LS_Up_withoutIndex).arg(player_index);
+        keycodeString_LS_Down      = QString("%1@%2").arg(keycodeString_LS_Down_withoutIndex).arg(player_index);
+        keycodeString_LS_Up_Light  = QString("%1@%2").arg(keycodeString_LS_Up_Light_withoutIndex).arg(player_index);
+        keycodeString_LS_Down_Light= QString("%1@%2").arg(keycodeString_LS_Down_Light_withoutIndex).arg(player_index);
     }
     else {
+        keycodeString_LS_Up        = keycodeString_LS_Up_withoutIndex;
+        keycodeString_LS_Down      = keycodeString_LS_Down_withoutIndex;
+        keycodeString_LS_Up_Light  = keycodeString_LS_Up_Light_withoutIndex;
+        keycodeString_LS_Down_Light= keycodeString_LS_Down_Light_withoutIndex;
+    }
+
+    // Query current pressed states
+    bool ls_Up_Heavy_Pressed   = pressedRealKeysList.contains(keycodeString_LS_Up);
+    bool ls_Up_Light_Pressed   = pressedRealKeysList.contains(keycodeString_LS_Up_Light);
+    bool ls_Down_Heavy_Pressed = pressedRealKeysList.contains(keycodeString_LS_Down);
+    bool ls_Down_Light_Pressed = pressedRealKeysList.contains(keycodeString_LS_Down_Light);
+
+    // Early return: no active key and dist is below light threshold, nothing to process
+    bool anyActive = ls_Up_Heavy_Pressed || ls_Up_Light_Pressed
+                     || ls_Down_Heavy_Pressed || ls_Down_Light_Pressed;
+    if (!anyActive && dist < lightPushThreshold) {
         return;
     }
 
-    /* Left-Stick Vertical Process */
-    int keyupdown = KEY_INIT;
-    QString keycodeString;
-    QString keycodeString_LS_Up;
-    QString keycodeString_LS_Down;
-    int player_index = e.joystick->playerindex;
-    QString keycodeString_LS_Up_withoutIndex = m_JoystickLStickMap.value(JOYSTICK_LS_UP);
-    QString keycodeString_LS_Down_withoutIndex = m_JoystickLStickMap.value(JOYSTICK_LS_DOWN);
-
-    // Use player_index to merge with keycodeString_LS_Up & keycodeString_LS_Down
-    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-        keycodeString_LS_Up = QString("%1@%2").arg(keycodeString_LS_Up_withoutIndex).arg(player_index);
-        keycodeString_LS_Down = QString("%1@%2").arg(keycodeString_LS_Down_withoutIndex).arg(player_index);
-    }
-    else {
-        keycodeString_LS_Up = keycodeString_LS_Up_withoutIndex;
-        keycodeString_LS_Down = keycodeString_LS_Down_withoutIndex;
-    }
-
-    bool ls_Up_Pressed = false;
-    bool ls_Down_Pressed = false;
     bool returnFlag;
-    if (pressedRealKeysList.contains(keycodeString_LS_Up)) {
-        ls_Up_Pressed = true;
-    }
-    if (pressedRealKeysList.contains(keycodeString_LS_Down)) {
-        ls_Down_Pressed = true;
-    }
 
-    if (ls_Up_Pressed || ls_Down_Pressed) {
-        /* Left-Stick Vertical Up or Down changed to Release */
-        if (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold) {
-            keyupdown = KEY_UP;
-        }
-        /* Left-Stick Vertical Up changed to Down */
-        else if (ls_Up_Pressed && e.value >= downThreshold) {
-            /* Need to send Left-Stick Vertical Up Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_UP, e.joystick);
-            Q_UNUSED(returnFlag);
-            /* Need to send Left-Stick Vertical Up Release first <<< */
-            keycodeString = keycodeString_LS_Down_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-        /* Left-Stick Vertical Down changed to Up */
-        else if (ls_Down_Pressed && e.value <= upThreshold) {
-            /* Need to send Left-Stick Vertical Down Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_UP, e.joystick);
-            Q_UNUSED(returnFlag);
-            /* Need to send Left-Stick Vertical Down Release first <<< */
-            keycodeString = keycodeString_LS_Up_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-    }
-    else {
-        /* Left-Stick Vertical Release change to Down  */
-        if (e.value >= downThreshold) {
-            keycodeString = keycodeString_LS_Down_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-        /* Left-Stick Vertical Release change to Up  */
-        else if (e.value <= upThreshold) {
-            keycodeString = keycodeString_LS_Up_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-    }
-
-    if (KEY_DOWN == keyupdown) {
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
-        Q_UNUSED(returnFlag);
-    }
-    else if (KEY_UP == keyupdown){
-        if (ls_Up_Pressed) {
+    /* --- Process UP direction (curr_y < 0) --- */
+    if (ls_Up_Heavy_Pressed) {
+        // State: UP HEAVY
+        if (!dir_Up || dist < releaseThreshold) {
+            // UP HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        if (ls_Down_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_UP, e.joystick);
+        else if (dist < pushThreshold) {
+            // UP HEAVY → UP LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay UP HEAVY
+    }
+    else if (ls_Up_Light_Pressed) {
+        // State: UP LIGHT
+        if (!dir_Up || dist < releaseThreshold) {
+            // UP LIGHT → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist >= pushThreshold) {
+            // UP LIGHT → UP HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay UP LIGHT
+    }
+    else {
+        // State: UP RELEASED
+        if (dir_Up && dist >= pushThreshold) {
+            // UP RELEASED → UP HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dir_Up && dist >= lightPushThreshold) {
+            // UP RELEASED → UP LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Up_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
+
+    /* --- Process DOWN direction (curr_y > 0) --- */
+    if (ls_Down_Heavy_Pressed) {
+        // State: DOWN HEAVY
+        if (!dir_Down || dist < releaseThreshold) {
+            // DOWN HEAVY → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist < pushThreshold) {
+            // DOWN HEAVY → DOWN LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay DOWN HEAVY
+    }
+    else if (ls_Down_Light_Pressed) {
+        // State: DOWN LIGHT
+        if (!dir_Down || dist < releaseThreshold) {
+            // DOWN LIGHT → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist >= pushThreshold) {
+            // DOWN LIGHT → DOWN HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay DOWN LIGHT
+    }
     else {
-        /* Stick State not changed */
+        // State: DOWN RELEASED
+        if (dir_Down && dist >= pushThreshold) {
+            // DOWN RELEASED → DOWN HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dir_Down && dist >= lightPushThreshold) {
+            // DOWN RELEASED → DOWN LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_LS_Down_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
     }
 }
 
 void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
 {
-    // Get Right-Stick Horizontal thresholds dynamically
-    int releaseThreshold = QKeyMapper::getGamepadRightStickReleaseThreshold();
-    int pressThreshold = QKeyMapper::getGamepadRightStickPushThreshold();
+    // Get Right-Stick thresholds dynamically
+    int releaseThresholdInt   = QKeyMapper::getGamepadRightStickReleaseThreshold();
+    int lightPushThresholdInt = QKeyMapper::getGamepadRightStickLightPushThreshold();
+    int pushThresholdInt      = QKeyMapper::getGamepadRightStickPushThreshold();
 
-    // Calculate threshold values for Joystick event (-1~1 range)
-    // releaseMin = -(releaseThreshold / 100.0), releaseMax = +(releaseThreshold / 100.0)
-    // leftThreshold = -(pressThreshold / 100.0), rightThreshold = +(pressThreshold / 100.0)
-    qreal releaseMinThreshold = -(releaseThreshold / 100.0);
-    qreal releaseMaxThreshold = releaseThreshold / 100.0;
-    qreal leftThreshold = -(pressThreshold / 100.0);
-    qreal rightThreshold = pressThreshold / 100.0;
+    // Convert percent thresholds to 0~1 range
+    qreal releaseThreshold   = releaseThresholdInt   / 100.0;
+    qreal lightPushThreshold = lightPushThresholdInt / 100.0;
+    qreal pushThreshold      = pushThresholdInt      / 100.0;
 
-    if (e.value <= leftThreshold
-        || e.value >= rightThreshold
-        || (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold)) {
-        /* range to process */
+    // Get current axis values from state map
+    int player_index = e.joystick->playerindex;
+    int axis_index = (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX)
+                     ? player_index : INITIAL_PLAYER_INDEX;
+    qreal curr_x = e.value;
+    qreal curr_y = s_JoyAxisStateMap[axis_index].right_y;  // use stored Y for circular distance
+
+    // Calculate circular distance from joystick center (capped at 1.0)
+    qreal dist = joystickCircularDistance(curr_x, curr_y);
+
+    // Determine direction indicators based on axis sign
+    bool dir_Left  = (curr_x < 0.0);
+    bool dir_Right = (curr_x > 0.0);
+
+    // Build key strings for Left/Right (heavy) and LightLeft/LightRight
+    QString keycodeString_RS_Left_withoutIndex       = m_JoystickRStickMap.value(JOYSTICK_RS_LEFT);
+    QString keycodeString_RS_Right_withoutIndex      = m_JoystickRStickMap.value(JOYSTICK_RS_RIGHT);
+    QString keycodeString_RS_Left_Light_withoutIndex = m_JoystickRStickMap.value(JOYSTICK_RS_LEFT_LIGHT);
+    QString keycodeString_RS_Right_Light_withoutIndex= m_JoystickRStickMap.value(JOYSTICK_RS_RIGHT_LIGHT);
+
+    QString keycodeString_RS_Left, keycodeString_RS_Right;
+    QString keycodeString_RS_Left_Light, keycodeString_RS_Right_Light;
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        keycodeString_RS_Left        = QString("%1@%2").arg(keycodeString_RS_Left_withoutIndex).arg(player_index);
+        keycodeString_RS_Right       = QString("%1@%2").arg(keycodeString_RS_Right_withoutIndex).arg(player_index);
+        keycodeString_RS_Left_Light  = QString("%1@%2").arg(keycodeString_RS_Left_Light_withoutIndex).arg(player_index);
+        keycodeString_RS_Right_Light = QString("%1@%2").arg(keycodeString_RS_Right_Light_withoutIndex).arg(player_index);
     }
     else {
+        keycodeString_RS_Left        = keycodeString_RS_Left_withoutIndex;
+        keycodeString_RS_Right       = keycodeString_RS_Right_withoutIndex;
+        keycodeString_RS_Left_Light  = keycodeString_RS_Left_Light_withoutIndex;
+        keycodeString_RS_Right_Light = keycodeString_RS_Right_Light_withoutIndex;
+    }
+
+    // Query current pressed states
+    bool rs_Left_Heavy_Pressed  = pressedRealKeysList.contains(keycodeString_RS_Left);
+    bool rs_Left_Light_Pressed  = pressedRealKeysList.contains(keycodeString_RS_Left_Light);
+    bool rs_Right_Heavy_Pressed = pressedRealKeysList.contains(keycodeString_RS_Right);
+    bool rs_Right_Light_Pressed = pressedRealKeysList.contains(keycodeString_RS_Right_Light);
+
+    // Early return: no active key and dist is below light threshold, nothing to process
+    bool anyActive = rs_Left_Heavy_Pressed || rs_Left_Light_Pressed
+                     || rs_Right_Heavy_Pressed || rs_Right_Light_Pressed;
+    if (!anyActive && dist < lightPushThreshold) {
         return;
     }
 
-    /* Right-Stick Horizontal Process */
-    int keyupdown = KEY_INIT;
-    QString keycodeString;
-    QString keycodeString_RS_Left;
-    QString keycodeString_RS_Right;
-    int player_index = e.joystick->playerindex;
-    QString keycodeString_RS_Left_withoutIndex = m_JoystickRStickMap.value(JOYSTICK_RS_LEFT);
-    QString keycodeString_RS_Right_withoutIndex = m_JoystickRStickMap.value(JOYSTICK_RS_RIGHT);
-
-    // Use player_index to merge with keycodeString_RS_Left & keycodeString_RS_Right
-    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-        keycodeString_RS_Left = QString("%1@%2").arg(keycodeString_RS_Left_withoutIndex).arg(player_index);
-        keycodeString_RS_Right = QString("%1@%2").arg(keycodeString_RS_Right_withoutIndex).arg(player_index);
-    }
-    else {
-        keycodeString_RS_Left = keycodeString_RS_Left_withoutIndex;
-        keycodeString_RS_Right = keycodeString_RS_Right_withoutIndex;
-    }
-
-    bool rs_Left_Pressed = false;
-    bool rs_Right_Pressed = false;
     bool returnFlag;
-    if (pressedRealKeysList.contains(keycodeString_RS_Left)) {
-        rs_Left_Pressed = true;
-    }
-    if (pressedRealKeysList.contains(keycodeString_RS_Right)) {
-        rs_Right_Pressed = true;
-    }
 
-    if (rs_Left_Pressed || rs_Right_Pressed) {
-        /* Right-Stick Horizontal Left or Right changed to Release */
-        if (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold) {
-            keyupdown = KEY_UP;
-        }
-        /* Right-Stick Horizontal Left changed to Right */
-        else if (rs_Left_Pressed && e.value >= rightThreshold) {
-            /* Need to send Right-Stick Horizontal Left Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_UP, e.joystick);
-            Q_UNUSED(returnFlag);
-            /* Need to send Right-Stick Horizontal Left Release first <<< */
-            keycodeString = keycodeString_RS_Right_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-        /* Right-Stick Horizontal Right changed to Left */
-        else if (rs_Right_Pressed && e.value <= leftThreshold) {
-            /* Need to send Right-Stick Horizontal Right Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_UP, e.joystick);
-            Q_UNUSED(returnFlag);
-            /* Need to send Right-Stick Horizontal Right Release first <<< */
-            keycodeString = keycodeString_RS_Left_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-    }
-    else {
-        /* Right-Stick Horizontal Release change to Right  */
-        if (e.value >= rightThreshold) {
-            keycodeString = keycodeString_RS_Right_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-        /* Right-Stick Horizontal Release change to Left  */
-        else if (e.value <= leftThreshold) {
-            keycodeString = keycodeString_RS_Left_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-    }
-
-    if (KEY_DOWN == keyupdown) {
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
-        Q_UNUSED(returnFlag);
-    }
-    else if (KEY_UP == keyupdown){
-        if (rs_Left_Pressed) {
+    /* --- Process LEFT direction (curr_x < 0) --- */
+    if (rs_Left_Heavy_Pressed) {
+        // State: LEFT HEAVY
+        if (!dir_Left || dist < releaseThreshold) {
+            // LEFT HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        if (rs_Right_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_UP, e.joystick);
+        else if (dist < pushThreshold) {
+            // LEFT HEAVY → LEFT LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay LEFT HEAVY
+    }
+    else if (rs_Left_Light_Pressed) {
+        // State: LEFT LIGHT
+        if (!dir_Left || dist < releaseThreshold) {
+            // LEFT LIGHT → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist >= pushThreshold) {
+            // LEFT LIGHT → LEFT HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay LEFT LIGHT
+    }
+    else {
+        // State: LEFT RELEASED
+        if (dir_Left && dist >= pushThreshold) {
+            // LEFT RELEASED → LEFT HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dir_Left && dist >= lightPushThreshold) {
+            // LEFT RELEASED → LEFT LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Left_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
+
+    /* --- Process RIGHT direction (curr_x > 0) --- */
+    if (rs_Right_Heavy_Pressed) {
+        // State: RIGHT HEAVY
+        if (!dir_Right || dist < releaseThreshold) {
+            // RIGHT HEAVY → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist < pushThreshold) {
+            // RIGHT HEAVY → RIGHT LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay RIGHT HEAVY
+    }
+    else if (rs_Right_Light_Pressed) {
+        // State: RIGHT LIGHT
+        if (!dir_Right || dist < releaseThreshold) {
+            // RIGHT LIGHT → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist >= pushThreshold) {
+            // RIGHT LIGHT → RIGHT HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay RIGHT LIGHT
+    }
     else {
-        /* Stick State not changed */
+        // State: RIGHT RELEASED
+        if (dir_Right && dist >= pushThreshold) {
+            // RIGHT RELEASED → RIGHT HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dir_Right && dist >= lightPushThreshold) {
+            // RIGHT RELEASED → RIGHT LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Right_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
     }
 }
 
 void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
 {
-    // Get Right-Stick Vertical thresholds dynamically
-    int releaseThreshold = QKeyMapper::getGamepadRightStickReleaseThreshold();
-    int pressThreshold = QKeyMapper::getGamepadRightStickPushThreshold();
+    // Get Right-Stick thresholds dynamically
+    int releaseThresholdInt   = QKeyMapper::getGamepadRightStickReleaseThreshold();
+    int lightPushThresholdInt = QKeyMapper::getGamepadRightStickLightPushThreshold();
+    int pushThresholdInt      = QKeyMapper::getGamepadRightStickPushThreshold();
 
-    // Calculate threshold values for Joystick event (-1~1 range)
-    // releaseMin = -(releaseThreshold / 100.0), releaseMax = +(releaseThreshold / 100.0)
-    // upThreshold = -(pressThreshold / 100.0), downThreshold = +(pressThreshold / 100.0)
-    qreal releaseMinThreshold = -(releaseThreshold / 100.0);
-    qreal releaseMaxThreshold = releaseThreshold / 100.0;
-    qreal upThreshold = -(pressThreshold / 100.0);
-    qreal downThreshold = pressThreshold / 100.0;
+    // Convert percent thresholds to 0~1 range
+    qreal releaseThreshold   = releaseThresholdInt   / 100.0;
+    qreal lightPushThreshold = lightPushThresholdInt / 100.0;
+    qreal pushThreshold      = pushThresholdInt      / 100.0;
 
-    if (e.value <= upThreshold
-        || e.value >= downThreshold
-        || (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold)) {
-        /* range to process */
+    // Get current axis values from state map
+    int player_index = e.joystick->playerindex;
+    int axis_index = (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX)
+                     ? player_index : INITIAL_PLAYER_INDEX;
+    qreal curr_x = s_JoyAxisStateMap[axis_index].right_x;  // use stored X for circular distance
+    qreal curr_y = e.value;
+
+    // Calculate circular distance from joystick center (capped at 1.0)
+    qreal dist = joystickCircularDistance(curr_x, curr_y);
+
+    // Determine direction indicators: Up = negative Y, Down = positive Y
+    bool dir_Up   = (curr_y < 0.0);
+    bool dir_Down = (curr_y > 0.0);
+
+    // Build key strings for Up/Down (heavy) and LightUp/LightDown
+    QString keycodeString_RS_Up_withoutIndex        = m_JoystickRStickMap.value(JOYSTICK_RS_UP);
+    QString keycodeString_RS_Down_withoutIndex      = m_JoystickRStickMap.value(JOYSTICK_RS_DOWN);
+    QString keycodeString_RS_Up_Light_withoutIndex  = m_JoystickRStickMap.value(JOYSTICK_RS_UP_LIGHT);
+    QString keycodeString_RS_Down_Light_withoutIndex= m_JoystickRStickMap.value(JOYSTICK_RS_DOWN_LIGHT);
+
+    QString keycodeString_RS_Up, keycodeString_RS_Down;
+    QString keycodeString_RS_Up_Light, keycodeString_RS_Down_Light;
+    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
+        keycodeString_RS_Up        = QString("%1@%2").arg(keycodeString_RS_Up_withoutIndex).arg(player_index);
+        keycodeString_RS_Down      = QString("%1@%2").arg(keycodeString_RS_Down_withoutIndex).arg(player_index);
+        keycodeString_RS_Up_Light  = QString("%1@%2").arg(keycodeString_RS_Up_Light_withoutIndex).arg(player_index);
+        keycodeString_RS_Down_Light= QString("%1@%2").arg(keycodeString_RS_Down_Light_withoutIndex).arg(player_index);
     }
     else {
+        keycodeString_RS_Up        = keycodeString_RS_Up_withoutIndex;
+        keycodeString_RS_Down      = keycodeString_RS_Down_withoutIndex;
+        keycodeString_RS_Up_Light  = keycodeString_RS_Up_Light_withoutIndex;
+        keycodeString_RS_Down_Light= keycodeString_RS_Down_Light_withoutIndex;
+    }
+
+    // Query current pressed states
+    bool rs_Up_Heavy_Pressed   = pressedRealKeysList.contains(keycodeString_RS_Up);
+    bool rs_Up_Light_Pressed   = pressedRealKeysList.contains(keycodeString_RS_Up_Light);
+    bool rs_Down_Heavy_Pressed = pressedRealKeysList.contains(keycodeString_RS_Down);
+    bool rs_Down_Light_Pressed = pressedRealKeysList.contains(keycodeString_RS_Down_Light);
+
+    // Early return: no active key and dist is below light threshold, nothing to process
+    bool anyActive = rs_Up_Heavy_Pressed || rs_Up_Light_Pressed
+                     || rs_Down_Heavy_Pressed || rs_Down_Light_Pressed;
+    if (!anyActive && dist < lightPushThreshold) {
         return;
     }
 
-    /* Right-Stick Vertical Process */
-    int keyupdown = KEY_INIT;
-    QString keycodeString;
-    QString keycodeString_RS_Up;
-    QString keycodeString_RS_Down;
-    int player_index = e.joystick->playerindex;
-    QString keycodeString_RS_Up_withoutIndex = m_JoystickRStickMap.value(JOYSTICK_RS_UP);
-    QString keycodeString_RS_Down_withoutIndex = m_JoystickRStickMap.value(JOYSTICK_RS_DOWN);
-
-    // Use player_index to merge with keycodeString_RS_Up & keycodeString_RS_Down
-    if (JOYSTICK_PLAYER_INDEX_MIN <= player_index && player_index <= JOYSTICK_PLAYER_INDEX_MAX) {
-        keycodeString_RS_Up = QString("%1@%2").arg(keycodeString_RS_Up_withoutIndex).arg(player_index);
-        keycodeString_RS_Down = QString("%1@%2").arg(keycodeString_RS_Down_withoutIndex).arg(player_index);
-    }
-    else {
-        keycodeString_RS_Up = keycodeString_RS_Up_withoutIndex;
-        keycodeString_RS_Down = keycodeString_RS_Down_withoutIndex;
-    }
-
-    bool rs_Up_Pressed = false;
-    bool rs_Down_Pressed = false;
     bool returnFlag;
-    if (pressedRealKeysList.contains(keycodeString_RS_Up)) {
-        rs_Up_Pressed = true;
-    }
-    if (pressedRealKeysList.contains(keycodeString_RS_Down)) {
-        rs_Down_Pressed = true;
-    }
 
-    if (rs_Up_Pressed || rs_Down_Pressed) {
-        /* Right-Stick Vertical Up or Down changed to Release */
-        if (releaseMinThreshold <= e.value && e.value <= releaseMaxThreshold) {
-            keyupdown = KEY_UP;
-        }
-        /* Right-Stick Vertical Up changed to Down */
-        else if (rs_Up_Pressed && e.value >= downThreshold) {
-            /* Need to send Right-Stick Vertical Up Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_UP, e.joystick);
-            Q_UNUSED(returnFlag);
-            /* Need to send Right-Stick Vertical Up Release first <<< */
-            keycodeString = keycodeString_RS_Down_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-        /* Right-Stick Vertical Down changed to Up */
-        else if (rs_Down_Pressed && e.value <= upThreshold) {
-            /* Need to send Right-Stick Vertical Down Release first >>> */
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_UP, e.joystick);
-            Q_UNUSED(returnFlag);
-            /* Need to send Right-Stick Vertical Down Release first <<< */
-            keycodeString = keycodeString_RS_Up_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-    }
-    else {
-        /* Right-Stick Vertical Release change to Down  */
-        if (e.value >= downThreshold) {
-            keycodeString = keycodeString_RS_Down_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-        /* Right-Stick Vertical Release change to Up  */
-        else if (e.value <= upThreshold) {
-            keycodeString = keycodeString_RS_Up_withoutIndex;
-            keyupdown = KEY_DOWN;
-        }
-    }
-
-    if (KEY_DOWN == keyupdown) {
-        returnFlag = JoyStickKeysProc(keycodeString, keyupdown, e.joystick);
-        Q_UNUSED(returnFlag);
-    }
-    else if (KEY_UP == keyupdown){
-        if (rs_Up_Pressed) {
+    /* --- Process UP direction (curr_y < 0) --- */
+    if (rs_Up_Heavy_Pressed) {
+        // State: UP HEAVY
+        if (!dir_Up || dist < releaseThreshold) {
+            // UP HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        if (rs_Down_Pressed) {
-            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_UP, e.joystick);
+        else if (dist < pushThreshold) {
+            // UP HEAVY → UP LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay UP HEAVY
+    }
+    else if (rs_Up_Light_Pressed) {
+        // State: UP LIGHT
+        if (!dir_Up || dist < releaseThreshold) {
+            // UP LIGHT → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist >= pushThreshold) {
+            // UP LIGHT → UP HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay UP LIGHT
+    }
+    else {
+        // State: UP RELEASED
+        if (dir_Up && dist >= pushThreshold) {
+            // UP RELEASED → UP HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dir_Up && dist >= lightPushThreshold) {
+            // UP RELEASED → UP LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Up_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
     }
+
+    /* --- Process DOWN direction (curr_y > 0) --- */
+    if (rs_Down_Heavy_Pressed) {
+        // State: DOWN HEAVY
+        if (!dir_Down || dist < releaseThreshold) {
+            // DOWN HEAVY → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist < pushThreshold) {
+            // DOWN HEAVY → DOWN LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay DOWN HEAVY
+    }
+    else if (rs_Down_Light_Pressed) {
+        // State: DOWN LIGHT
+        if (!dir_Down || dist < releaseThreshold) {
+            // DOWN LIGHT → RELEASED
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dist >= pushThreshold) {
+            // DOWN LIGHT → DOWN HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_Light_withoutIndex, KEY_UP, e.joystick);
+            Q_UNUSED(returnFlag);
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        // else: stay DOWN LIGHT
+    }
     else {
-        /* Stick State not changed */
+        // State: DOWN RELEASED
+        if (dir_Down && dist >= pushThreshold) {
+            // DOWN RELEASED → DOWN HEAVY
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
+        else if (dir_Down && dist >= lightPushThreshold) {
+            // DOWN RELEASED → DOWN LIGHT
+            returnFlag = JoyStickKeysProc(keycodeString_RS_Down_Light_withoutIndex, KEY_DOWN, e.joystick);
+            Q_UNUSED(returnFlag);
+        }
     }
 }
 
@@ -17019,16 +17219,24 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     m_JoystickDPadMap.insert(JOYSTICK_DPAD_R_DOWN,      "Joy-DPad-Right,Joy-DPad-Down"  );
 
     /* Joystick Left-Stick Direction Map */
-    m_JoystickLStickMap.insert(JOYSTICK_LS_UP,          "Joy-LS-Up"                     );
-    m_JoystickLStickMap.insert(JOYSTICK_LS_DOWN,        "Joy-LS-Down"                   );
-    m_JoystickLStickMap.insert(JOYSTICK_LS_LEFT,        "Joy-LS-Left"                   );
-    m_JoystickLStickMap.insert(JOYSTICK_LS_RIGHT,       "Joy-LS-Right"                  );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_UP,           "Joy-LS-Up"         );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_DOWN,         "Joy-LS-Down"       );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_LEFT,         "Joy-LS-Left"       );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_RIGHT,        "Joy-LS-Right"      );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_UP_LIGHT,     "Joy-LS-Up_Light"   );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_DOWN_LIGHT,   "Joy-LS-Down_Light" );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_LEFT_LIGHT,   "Joy-LS-Left_Light" );
+    m_JoystickLStickMap.insert(JOYSTICK_LS_RIGHT_LIGHT,  "Joy-LS-Right_Light");
 
     /* Joystick Right-Stick Direction Map */
-    m_JoystickRStickMap.insert(JOYSTICK_RS_UP,          "Joy-RS-Up"                     );
-    m_JoystickRStickMap.insert(JOYSTICK_RS_DOWN,        "Joy-RS-Down"                   );
-    m_JoystickRStickMap.insert(JOYSTICK_RS_LEFT,        "Joy-RS-Left"                   );
-    m_JoystickRStickMap.insert(JOYSTICK_RS_RIGHT,       "Joy-RS-Right"                  );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_UP,           "Joy-RS-Up"         );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_DOWN,         "Joy-RS-Down"       );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_LEFT,         "Joy-RS-Left"       );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_RIGHT,        "Joy-RS-Right"      );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_UP_LIGHT,     "Joy-RS-Up_Light"   );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_DOWN_LIGHT,   "Joy-RS-Down_Light" );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_LEFT_LIGHT,   "Joy-RS-Left_Light" );
+    m_JoystickRStickMap.insert(JOYSTICK_RS_RIGHT_LIGHT,  "Joy-RS-Right_Light");
 
     /* Joystick POV Angle Map */
     m_JoystickPOVMap.insert(JOYSTICK_POV_ANGLE_RELEASE, JOYSTICK_DPAD_RELEASE           );

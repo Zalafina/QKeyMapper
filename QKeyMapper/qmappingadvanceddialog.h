@@ -34,12 +34,16 @@ public:
     QString getShowWindowPointKey(void);
     QString getShowScreenPointKey(void);
     int getLeftTriggerPressThreshold(void);
+    int getLeftTriggerLightPressThreshold(void);
     int getLeftTriggerReleaseThreshold(void);
     int getRightTriggerPressThreshold(void);
+    int getRightTriggerLightPressThreshold(void);
     int getRightTriggerReleaseThreshold(void);
     int getLeftStickPushThreshold(void);
+    int getLeftStickLightPushThreshold(void);
     int getLeftStickReleaseThreshold(void);
     int getRightStickPushThreshold(void);
+    int getRightStickLightPushThreshold(void);
     int getRightStickReleaseThreshold(void);
 
     void setMouseXSpeed(int speed);
@@ -50,12 +54,16 @@ public:
     void setShowWindowPointKey(const QString &keyname);
     void setShowScreenPointKey(const QString &keyname);
     void setLeftTriggerPressThreshold(int threshold);
+    void setLeftTriggerLightPressThreshold(int threshold);
     void setLeftTriggerReleaseThreshold(int threshold);
     void setRightTriggerPressThreshold(int threshold);
+    void setRightTriggerLightPressThreshold(int threshold);
     void setRightTriggerReleaseThreshold(int threshold);
     void setLeftStickPushThreshold(int threshold);
+    void setLeftStickLightPushThreshold(int threshold);
     void setLeftStickReleaseThreshold(int threshold);
     void setRightStickPushThreshold(int threshold);
+    void setRightStickLightPushThreshold(int threshold);
     void setRightStickReleaseThreshold(int threshold);
 
     void setProcessIconAsTrayIconEnabled(bool enabled);

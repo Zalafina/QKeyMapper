@@ -38,28 +38,40 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
 
     ui->LT_Threshold_PressSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
     ui->RT_Threshold_PressSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->LT_Threshold_LightPressSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->RT_Threshold_LightPressSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
     ui->LT_Threshold_ReleaseSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
     ui->RT_Threshold_ReleaseSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
     ui->LS_Threshold_PushSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
     ui->RS_Threshold_PushSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->LS_Threshold_LightPushSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+    ui->RS_Threshold_LightPushSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
     ui->LS_Threshold_ReleaseSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
     ui->RS_Threshold_ReleaseSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
 
     ui->LT_Threshold_PressSpinBox->setValue(GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT);
     ui->RT_Threshold_PressSpinBox->setValue(GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT);
+    ui->LT_Threshold_LightPressSpinBox->setValue(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
+    ui->RT_Threshold_LightPressSpinBox->setValue(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
     ui->LT_Threshold_ReleaseSpinBox->setValue(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
     ui->RT_Threshold_ReleaseSpinBox->setValue(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
     ui->LS_Threshold_PushSpinBox->setValue(GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
     ui->RS_Threshold_PushSpinBox->setValue(GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
+    ui->LS_Threshold_LightPushSpinBox->setValue(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
+    ui->RS_Threshold_LightPushSpinBox->setValue(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
     ui->LS_Threshold_ReleaseSpinBox->setValue(GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
     ui->RS_Threshold_ReleaseSpinBox->setValue(GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
 
     ui->LT_Threshold_PressSpinBox->setSuffix("%");
     ui->RT_Threshold_PressSpinBox->setSuffix("%");
+    ui->LT_Threshold_LightPressSpinBox->setSuffix("%");
+    ui->RT_Threshold_LightPressSpinBox->setSuffix("%");
     ui->LT_Threshold_ReleaseSpinBox->setSuffix("%");
     ui->RT_Threshold_ReleaseSpinBox->setSuffix("%");
     ui->LS_Threshold_PushSpinBox->setSuffix("%");
     ui->RS_Threshold_PushSpinBox->setSuffix("%");
+    ui->LS_Threshold_LightPushSpinBox->setSuffix("%");
+    ui->RS_Threshold_LightPushSpinBox->setSuffix("%");
     ui->LS_Threshold_ReleaseSpinBox->setSuffix("%");
     ui->RS_Threshold_ReleaseSpinBox->setSuffix("%");
 }
@@ -91,10 +103,14 @@ void QMappingAdvancedDialog::setUILanguage(int languageindex)
     ui->RT_ThresholdLabel->setText(tr("RT Threshold"));
     ui->LS_ThresholdLabel->setText(tr("LS Threshold"));
     ui->RS_ThresholdLabel->setText(tr("RS Threshold"));
-    ui->LT_Threshold_PressLabel->setText(tr("Press"));
-    ui->RT_Threshold_PressLabel->setText(tr("Press"));
-    ui->LS_Threshold_PushLabel->setText(tr("Push"));
-    ui->RS_Threshold_PushLabel->setText(tr("Push"));
+    ui->LT_Threshold_PressLabel->setText(tr("HPress"));
+    ui->RT_Threshold_PressLabel->setText(tr("HPress"));
+    ui->LS_Threshold_PushLabel->setText(tr("HPush"));
+    ui->RS_Threshold_PushLabel->setText(tr("HPush"));
+    ui->LT_Threshold_LightPressLabel->setText(tr("LPress"));
+    ui->RT_Threshold_LightPressLabel->setText(tr("LPress"));
+    ui->LS_Threshold_LightPushLabel->setText(tr("LPush"));
+    ui->RS_Threshold_LightPushLabel->setText(tr("LPush"));
     ui->LT_Threshold_ReleaseLabel->setText(tr("Release"));
     ui->RT_Threshold_ReleaseLabel->setText(tr("Release"));
     ui->LS_Threshold_ReleaseLabel->setText(tr("Recenter"));
@@ -103,52 +119,76 @@ void QMappingAdvancedDialog::setUILanguage(int languageindex)
 
 void QMappingAdvancedDialog::initGamepadThresholdSpinBoxes()
 {
-    // Set LT Press & Release SpinBox range with current value
-    ui->LT_Threshold_PressSpinBox->setMinimum(ui->LT_Threshold_ReleaseSpinBox->value());
-    ui->LT_Threshold_ReleaseSpinBox->setMaximum(ui->LT_Threshold_PressSpinBox->value());
+    // Set LT Press / LightPress / Release SpinBox ranges (Release <= LightPress <= Press)
+    ui->LT_Threshold_PressSpinBox->setMinimum(ui->LT_Threshold_LightPressSpinBox->value());
+    ui->LT_Threshold_LightPressSpinBox->setMinimum(ui->LT_Threshold_ReleaseSpinBox->value());
+    ui->LT_Threshold_LightPressSpinBox->setMaximum(ui->LT_Threshold_PressSpinBox->value());
+    ui->LT_Threshold_ReleaseSpinBox->setMaximum(ui->LT_Threshold_LightPressSpinBox->value());
 
-    // Set RT Press & Release SpinBox range with current value
-    ui->RT_Threshold_PressSpinBox->setMinimum(ui->RT_Threshold_ReleaseSpinBox->value());
-    ui->RT_Threshold_ReleaseSpinBox->setMaximum(ui->RT_Threshold_PressSpinBox->value());
+    // Set RT Press / LightPress / Release SpinBox ranges (Release <= LightPress <= Press)
+    ui->RT_Threshold_PressSpinBox->setMinimum(ui->RT_Threshold_LightPressSpinBox->value());
+    ui->RT_Threshold_LightPressSpinBox->setMinimum(ui->RT_Threshold_ReleaseSpinBox->value());
+    ui->RT_Threshold_LightPressSpinBox->setMaximum(ui->RT_Threshold_PressSpinBox->value());
+    ui->RT_Threshold_ReleaseSpinBox->setMaximum(ui->RT_Threshold_LightPressSpinBox->value());
 
-    // Set LS Push & Release SpinBox range with current value
-    ui->LS_Threshold_PushSpinBox->setMinimum(ui->LS_Threshold_ReleaseSpinBox->value());
-    ui->LS_Threshold_ReleaseSpinBox->setMaximum(ui->LS_Threshold_PushSpinBox->value());
+    // Set LS Push / LightPush / Release SpinBox ranges (Release <= LightPush <= Push)
+    ui->LS_Threshold_PushSpinBox->setMinimum(ui->LS_Threshold_LightPushSpinBox->value());
+    ui->LS_Threshold_LightPushSpinBox->setMinimum(ui->LS_Threshold_ReleaseSpinBox->value());
+    ui->LS_Threshold_LightPushSpinBox->setMaximum(ui->LS_Threshold_PushSpinBox->value());
+    ui->LS_Threshold_ReleaseSpinBox->setMaximum(ui->LS_Threshold_LightPushSpinBox->value());
 
-    // Set RS Push & Release SpinBox range with current value
-    ui->RS_Threshold_PushSpinBox->setMinimum(ui->RS_Threshold_ReleaseSpinBox->value());
-    ui->RS_Threshold_ReleaseSpinBox->setMaximum(ui->RS_Threshold_PushSpinBox->value());
+    // Set RS Push / LightPush / Release SpinBox ranges (Release <= LightPush <= Push)
+    ui->RS_Threshold_PushSpinBox->setMinimum(ui->RS_Threshold_LightPushSpinBox->value());
+    ui->RS_Threshold_LightPushSpinBox->setMinimum(ui->RS_Threshold_ReleaseSpinBox->value());
+    ui->RS_Threshold_LightPushSpinBox->setMaximum(ui->RS_Threshold_PushSpinBox->value());
+    ui->RS_Threshold_ReleaseSpinBox->setMaximum(ui->RS_Threshold_LightPushSpinBox->value());
 
-    // Connect LT Press & Release SpinBox
+    // Connect LT Press / LightPress / Release SpinBox (three-way chain)
     QObject::connect(ui->LT_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
-        ui->LT_Threshold_PressSpinBox->setMinimum(releaseValue);
+        ui->LT_Threshold_LightPressSpinBox->setMinimum(releaseValue);
+    });
+    QObject::connect(ui->LT_Threshold_LightPressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int lightPressValue){
+        ui->LT_Threshold_ReleaseSpinBox->setMaximum(lightPressValue);
+        ui->LT_Threshold_PressSpinBox->setMinimum(lightPressValue);
     });
     QObject::connect(ui->LT_Threshold_PressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pressValue){
-        ui->LT_Threshold_ReleaseSpinBox->setMaximum(pressValue);
+        ui->LT_Threshold_LightPressSpinBox->setMaximum(pressValue);
     });
 
-    // Connect RT Press & Release SpinBox
+    // Connect RT Press / LightPress / Release SpinBox (three-way chain)
     QObject::connect(ui->RT_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
-        ui->RT_Threshold_PressSpinBox->setMinimum(releaseValue);
+        ui->RT_Threshold_LightPressSpinBox->setMinimum(releaseValue);
+    });
+    QObject::connect(ui->RT_Threshold_LightPressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int lightPressValue){
+        ui->RT_Threshold_ReleaseSpinBox->setMaximum(lightPressValue);
+        ui->RT_Threshold_PressSpinBox->setMinimum(lightPressValue);
     });
     QObject::connect(ui->RT_Threshold_PressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pressValue){
-        ui->RT_Threshold_ReleaseSpinBox->setMaximum(pressValue);
+        ui->RT_Threshold_LightPressSpinBox->setMaximum(pressValue);
     });
 
-    // Connect LS Push & Release SpinBox
+    // Connect LS Push / LightPush / Release SpinBox (three-way chain)
     QObject::connect(ui->LS_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
-        ui->LS_Threshold_PushSpinBox->setMinimum(releaseValue);
+        ui->LS_Threshold_LightPushSpinBox->setMinimum(releaseValue);
+    });
+    QObject::connect(ui->LS_Threshold_LightPushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int lightPushValue){
+        ui->LS_Threshold_ReleaseSpinBox->setMaximum(lightPushValue);
+        ui->LS_Threshold_PushSpinBox->setMinimum(lightPushValue);
     });
     QObject::connect(ui->LS_Threshold_PushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pushValue){
-        ui->LS_Threshold_ReleaseSpinBox->setMaximum(pushValue);
+        ui->LS_Threshold_LightPushSpinBox->setMaximum(pushValue);
     });
 
-    // Connect RS Push & Release SpinBox
+    // Connect RS Push / LightPush / Release SpinBox (three-way chain)
     QObject::connect(ui->RS_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
-        ui->RS_Threshold_PushSpinBox->setMinimum(releaseValue);
+        ui->RS_Threshold_LightPushSpinBox->setMinimum(releaseValue);
+    });
+    QObject::connect(ui->RS_Threshold_LightPushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int lightPushValue){
+        ui->RS_Threshold_ReleaseSpinBox->setMaximum(lightPushValue);
+        ui->RS_Threshold_PushSpinBox->setMinimum(lightPushValue);
     });
     QObject::connect(ui->RS_Threshold_PushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pushValue){
-        ui->RS_Threshold_ReleaseSpinBox->setMaximum(pushValue);
+        ui->RS_Threshold_LightPushSpinBox->setMaximum(pushValue);
     });
 }
 
@@ -192,6 +232,11 @@ int QMappingAdvancedDialog::getLeftTriggerPressThreshold()
     return ui->LT_Threshold_PressSpinBox->value();
 }
 
+int QMappingAdvancedDialog::getLeftTriggerLightPressThreshold()
+{
+    return ui->LT_Threshold_LightPressSpinBox->value();
+}
+
 int QMappingAdvancedDialog::getLeftTriggerReleaseThreshold()
 {
     return ui->LT_Threshold_ReleaseSpinBox->value();
@@ -200,6 +245,11 @@ int QMappingAdvancedDialog::getLeftTriggerReleaseThreshold()
 int QMappingAdvancedDialog::getRightTriggerPressThreshold()
 {
     return ui->RT_Threshold_PressSpinBox->value();
+}
+
+int QMappingAdvancedDialog::getRightTriggerLightPressThreshold()
+{
+    return ui->RT_Threshold_LightPressSpinBox->value();
 }
 
 int QMappingAdvancedDialog::getRightTriggerReleaseThreshold()
@@ -212,6 +262,11 @@ int QMappingAdvancedDialog::getLeftStickPushThreshold()
     return ui->LS_Threshold_PushSpinBox->value();
 }
 
+int QMappingAdvancedDialog::getLeftStickLightPushThreshold()
+{
+    return ui->LS_Threshold_LightPushSpinBox->value();
+}
+
 int QMappingAdvancedDialog::getLeftStickReleaseThreshold()
 {
     return ui->LS_Threshold_ReleaseSpinBox->value();
@@ -220,6 +275,11 @@ int QMappingAdvancedDialog::getLeftStickReleaseThreshold()
 int QMappingAdvancedDialog::getRightStickPushThreshold()
 {
     return ui->RS_Threshold_PushSpinBox->value();
+}
+
+int QMappingAdvancedDialog::getRightStickLightPushThreshold()
+{
+    return ui->RS_Threshold_LightPushSpinBox->value();
 }
 
 int QMappingAdvancedDialog::getRightStickReleaseThreshold()
@@ -283,6 +343,11 @@ void QMappingAdvancedDialog::setLeftTriggerPressThreshold(int threshold)
     ui->LT_Threshold_PressSpinBox->setValue(threshold);
 }
 
+void QMappingAdvancedDialog::setLeftTriggerLightPressThreshold(int threshold)
+{
+    ui->LT_Threshold_LightPressSpinBox->setValue(threshold);
+}
+
 void QMappingAdvancedDialog::setLeftTriggerReleaseThreshold(int threshold)
 {
     ui->LT_Threshold_ReleaseSpinBox->setValue(threshold);
@@ -291,6 +356,11 @@ void QMappingAdvancedDialog::setLeftTriggerReleaseThreshold(int threshold)
 void QMappingAdvancedDialog::setRightTriggerPressThreshold(int threshold)
 {
     ui->RT_Threshold_PressSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setRightTriggerLightPressThreshold(int threshold)
+{
+    ui->RT_Threshold_LightPressSpinBox->setValue(threshold);
 }
 
 void QMappingAdvancedDialog::setRightTriggerReleaseThreshold(int threshold)
@@ -303,6 +373,11 @@ void QMappingAdvancedDialog::setLeftStickPushThreshold(int threshold)
     ui->LS_Threshold_PushSpinBox->setValue(threshold);
 }
 
+void QMappingAdvancedDialog::setLeftStickLightPushThreshold(int threshold)
+{
+    ui->LS_Threshold_LightPushSpinBox->setValue(threshold);
+}
+
 void QMappingAdvancedDialog::setLeftStickReleaseThreshold(int threshold)
 {
     ui->LS_Threshold_ReleaseSpinBox->setValue(threshold);
@@ -311,6 +386,11 @@ void QMappingAdvancedDialog::setLeftStickReleaseThreshold(int threshold)
 void QMappingAdvancedDialog::setRightStickPushThreshold(int threshold)
 {
     ui->RS_Threshold_PushSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setRightStickLightPushThreshold(int threshold)
+{
+    ui->RS_Threshold_LightPushSpinBox->setValue(threshold);
 }
 
 void QMappingAdvancedDialog::setRightStickReleaseThreshold(int threshold)
