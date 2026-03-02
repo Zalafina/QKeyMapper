@@ -21862,10 +21862,6 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
-            else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
-                disable_burst = true;
-                // disable_lock = true;
-            }
             else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
                 disable_burst = true;
                 // disable_lock = true;
@@ -21889,6 +21885,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_lock = true;
             }
 #if 0
+            else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
+                disable_burst = true;
+                // disable_lock = true;
+            }
             else if (keymapdata.Mapping_Keys.constFirst().contains(SENDTEXT_STR)) {
                 // disable_burst = true;
                 disable_lock = true;
@@ -22107,10 +22107,6 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         disable_burst = true;
         disable_lock = true;
     }
-    else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
-        disable_burst = true;
-        // disable_lock = true;
-    }
     else if (keymapdata.Mapping_Keys.constFirst().contains(MOUSE2VJOY_HOLD_KEY_STR)) {
         disable_burst = true;
         // disable_lock = true;
@@ -22134,6 +22130,10 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         disable_lock = true;
     }
 #if 0
+    else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
+        disable_burst = true;
+        // disable_lock = true;
+    }
     else if (keymapdata.Mapping_Keys.constFirst().contains(SENDTEXT_STR)) {
         // disable_burst = true;
         disable_lock = true;
