@@ -594,6 +594,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
     m_MacroListDialog = new QMacroListDialog(this);
+    m_VButtonPanel = new QVButtonPanel(Q_NULLPTR);
+    m_VButtonPanelSetupDialog = new QVButtonPanelSetupDialog(this);
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
@@ -710,6 +712,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::systemThemeChanged_Signal, this, &QKeyMapper::systemThemeChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::systemFilterKeysSettingChanged_Signal, this, &QKeyMapper::systemFilterKeysSettingChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::keyMappingTableItemCheckStateChanged_Signal, m_ItemSetupDialog, &QItemSetupDialog::keyMappingTableItemCheckStateChanged);
+
+    // VButton panel connections (cross-thread: worker → panel, panel → worker)
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showVButtonPanel_Signal,
+                     m_VButtonPanel, &QVButtonPanel::setVisible, Qt::QueuedConnection);
+    QObject::connect(m_VButtonPanel, &QVButtonPanel::triggerVButtonKey_Signal,
+                     QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::triggerVButtonKey, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::openVButtonPanelSetup_Signal,
+                     this, &QKeyMapper::on_vButtonPanelSetupButton_clicked, Qt::QueuedConnection);
 
     QObject::connect(ui->processLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmProcessLineEdit);
     QObject::connect(ui->windowTitleLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmWindowTitleLineEdit);
@@ -1669,6 +1679,12 @@ void QKeyMapper::matchForegroundWindow()
     if (m_FloatingIconWindow
         && KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
         m_FloatingIconWindow->updatePositionForCurrentWindow();
+    }
+
+    // Update VButton panel position if using window-based reference point
+    if (m_VButtonPanel
+        && KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
+        m_VButtonPanel->updatePositionIfWindowRef();
     }
 }
 
@@ -3884,6 +3900,31 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     QString longPressTimeString = full_key_match.captured(2);
     QString doublePressTimeString = full_key_match.captured(3);
 
+    // VButton{...} does not support time suffixes (⏲/✖), device index (@N), or combination keys (+)
+    static QRegularExpression vbutton_regex(QKeyMapperConstants::VBUTTON_REGEX_PATTERN);
+    if (vbutton_regex.match(key_without_suffix).hasMatch()) {
+        if (!longPressTimeString.isEmpty()) {
+            result.isValid = false;
+            result.errorMessage = tr("VButton original key does not support long-press suffix \"⏲\"");
+            return result;
+        }
+        if (!doublePressTimeString.isEmpty()) {
+            result.isValid = false;
+            result.errorMessage = tr("VButton original key does not support double-press suffix \"✖\"");
+            return result;
+        }
+        if (key_without_suffix.contains('@')) {
+            result.isValid = false;
+            result.errorMessage = tr("VButton original key does not support device index suffix \"@\"");
+            return result;
+        }
+        if (key_without_suffix.contains(SEPARATOR_PLUS)) {
+            result.isValid = false;
+            result.errorMessage = tr("VButton original key cannot be used in a combination key");
+            return result;
+        }
+    }
+
     QStringList orikeylist = key_without_suffix.split(SEPARATOR_PLUS);
     if (orikeylist.isEmpty()) {
         result.isValid = false;
@@ -3900,10 +3941,11 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
     }
 
     if (orikeylist.size() > 1) {
-        // Check if any key is a special key
+        // Check if any key is a special key or a VButton (VButton cannot be part of a combination)
         for (const QString &orikey : std::as_const(orikeylist)) {
             if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(orikey)
-                || QKeyMapper_Worker::SendOnOriginalKeysList.contains(orikey)) {
+                || QKeyMapper_Worker::SendOnOriginalKeysList.contains(orikey)
+                || vbutton_regex.match(orikey).hasMatch()) {
                 result.isValid = false;
                 result.errorMessage = tr("Oricombinationkey contains specialkey \"%1\"").arg(orikey);
                 return result;
@@ -4089,6 +4131,12 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
     QString indexString = key_match.captured(2);
 
     bool validKey = QItemSetupDialog::s_valiedOriginalKeyList.contains(original_key);
+
+    // VButton{...} keys are always structurally valid if they match the VButton pattern
+    static QRegularExpression vbutton_singlekey_regex(QKeyMapperConstants::VBUTTON_REGEX_PATTERN);
+    if (!validKey && vbutton_singlekey_regex.match(original_key).hasMatch()) {
+        validKey = true;
+    }
 
     if (!validKey) {
         // Separate index and time suffixes
@@ -12130,6 +12178,30 @@ void QKeyMapper::saveKeyMapSetting(void)
 
     const QString savedSettingName = saveSettingSelectStr.remove("/");
 
+    // Save VButton panel settings to INI
+    Q_ASSERT(!savedSettingName.isEmpty());
+    {
+        const QString vbtnPrefix = QString("%1/").arg(savedSettingName);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_COLUMNS,           m_VButtonPanelSettings.columns);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_MAXROWS,           m_VButtonPanelSettings.maxRows);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_BTNWIDTH,          m_VButtonPanelSettings.btnWidth);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_BTNHEIGHT,         m_VButtonPanelSettings.btnHeight);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OPACITY,           m_VButtonPanelSettings.opacity);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_ALWAYSONTOP,       m_VButtonPanelSettings.alwaysOnTop);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_DEFAULTSHOW,       m_VButtonPanelSettings.defaultShow);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_MARGIN,            m_VButtonPanelSettings.margin);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_RADIUS,            m_VButtonPanelSettings.radius);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_DRAGENABLED,       m_VButtonPanelSettings.dragEnabled);
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_REFERENCEPOINT,    m_VButtonPanelSettings.referencePoint);
+        if (m_VButtonPanel) {
+            settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETX, m_VButtonPanel->panelOffsets().x());
+            settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETY, m_VButtonPanel->panelOffsets().y());
+        } else {
+            settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETX, m_VButtonPanelSettings.offsetX);
+            settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETY, m_VButtonPanelSettings.offsetY);
+        }
+    }
+
     // Save MacroList to INI file
     saveMacroListToINI(savedSettingName);
 
@@ -15693,6 +15765,38 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
     }
     else {
         loadMacroListFromINI(QString());
+    }
+
+    // Load VButton panel settings
+    {
+        m_VButtonPanelSettings.columns        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_COLUMNS,       QKeyMapperConstants::VBTNPANEL_DEFAULT_COLUMNS).toInt();
+        m_VButtonPanelSettings.maxRows        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_MAXROWS,        QKeyMapperConstants::VBTNPANEL_DEFAULT_MAXROWS).toInt();
+        m_VButtonPanelSettings.btnWidth       = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_BTNWIDTH,       QKeyMapperConstants::VBTNPANEL_DEFAULT_BTNWIDTH).toInt();
+        m_VButtonPanelSettings.btnHeight      = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_BTNHEIGHT,      QKeyMapperConstants::VBTNPANEL_DEFAULT_BTNHEIGHT).toInt();
+        m_VButtonPanelSettings.opacity        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_OPACITY,        QKeyMapperConstants::VBTNPANEL_DEFAULT_OPACITY).toDouble();
+        m_VButtonPanelSettings.alwaysOnTop    = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_ALWAYSONTOP,   QKeyMapperConstants::VBTNPANEL_DEFAULT_ALWAYSONTOP).toBool();
+        m_VButtonPanelSettings.defaultShow    = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_DEFAULTSHOW,   QKeyMapperConstants::VBTNPANEL_DEFAULT_DEFAULTSHOW).toBool();
+        m_VButtonPanelSettings.margin         = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_MARGIN,         QKeyMapperConstants::VBTNPANEL_DEFAULT_MARGIN).toInt();
+        m_VButtonPanelSettings.radius         = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_RADIUS,         QKeyMapperConstants::VBTNPANEL_DEFAULT_RADIUS).toInt();
+        m_VButtonPanelSettings.dragEnabled    = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_DRAGENABLED,   QKeyMapperConstants::VBTNPANEL_DEFAULT_DRAGENABLED).toBool();
+        m_VButtonPanelSettings.referencePoint = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_REFERENCEPOINT, QKeyMapperConstants::VBTNPANEL_DEFAULT_REFERENCEPOINT).toInt();
+        m_VButtonPanelSettings.offsetX        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_OFFSETX,        QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETX).toInt();
+        m_VButtonPanelSettings.offsetY        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_OFFSETY,        QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETY).toInt();
+        if (m_VButtonPanel) {
+            m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
+                                          m_VButtonPanelSettings.maxRows,
+                                          m_VButtonPanelSettings.btnWidth,
+                                          m_VButtonPanelSettings.btnHeight,
+                                          m_VButtonPanelSettings.opacity,
+                                          m_VButtonPanelSettings.alwaysOnTop,
+                                          m_VButtonPanelSettings.margin,
+                                          m_VButtonPanelSettings.radius,
+                                          m_VButtonPanelSettings.dragEnabled);
+            m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
+                                          m_VButtonPanelSettings.offsetX,
+                                          m_VButtonPanelSettings.offsetY);
+        }
+        QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
     }
 
     QString loadedSettingString;
@@ -20740,6 +20844,7 @@ void QKeyMapper::initKeysCategoryMap()
         << SENDON_MAPPINGSTART_STR
         << SENDON_MAPPINGSTOP_STR
         << SENDON_SWITCHTAB_STR
+        << VBUTTON_ORIKEY_STR
         ;
 
     s_SpecialMappingKeyPrePostFixList = QStringList() \
@@ -21116,6 +21221,8 @@ void QKeyMapper::initKeysCategoryMap()
         << FUNC_LOGOFF
         << FUNC_SLEEP
         << FUNC_HIBERNATE
+        << QKeyMapperConstants::SHOWVBUTTONPANEL_STR
+        << QKeyMapperConstants::HIDEVBUTTONPANEL_STR
         ;
 }
 
@@ -22382,6 +22489,11 @@ void QKeyMapper::refreshAllKeyMappingTabWidget()
 
     updateMousePointsList();
     updateCategoryFilterByShowCategoryState();
+
+    // Rebuild VButton panel to reflect the current mapping data
+    if (m_VButtonPanel && KeyMappingDataList) {
+        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+    }
 }
 
 void QKeyMapper::updateMousePointsList()
@@ -22591,6 +22703,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->ignoreRulesListButton->setText(tr("Ignore Rules List"));
     ui->mappingAdvancedSettingButton->setText(tr("Mapping Advanced"));
     ui->mappingMacroListButton->setText(tr("Mapping MacroList"));
+    ui->vButtonPanelSetupButton->setText(tr("VButton Panel"));
     ui->windowswitchkeyLabel->setText(tr("ShowHideKey"));
     ui->checkUpdateButton->setText(tr("Check Updates"));
     ui->mappingStartKeyLabel->setText(tr("MappingStart"));
@@ -22761,6 +22874,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_MacroListDialog != Q_NULLPTR) {
         m_MacroListDialog->setUILanguage(languageindex);
+    }
+
+    if (m_VButtonPanelSetupDialog != Q_NULLPTR) {
+        m_VButtonPanelSetupDialog->setUILanguage(languageindex);
     }
 
     if (m_MappingSequenceEdit != Q_NULLPTR) {
@@ -24601,6 +24718,29 @@ void QKeyMapper::on_addmapdataButton_clicked()
         }
     }
 
+    // Auto-expand generic "VButton" selector to next available VButton{ButtonN} name
+    if (currentOriKeyText == VBUTTON_ORIKEY_STR) {
+        QString autoName = QString("%1{Button1}").arg(VBUTTON_ORIKEY_STR);  // fallback: Button1
+        if (KeyMappingDataList) {
+            QSet<QString> existingVButtonKeys;
+            for (const MAP_KEYDATA &data : *KeyMappingDataList) {
+                if (data.Original_Key.startsWith(VBUTTON_ORIKEY_STR)) {
+                    existingVButtonKeys.insert(data.Original_Key);
+                }
+            }
+            for (int i = 1; i <= VBUTTON_MAX_COUNT; ++i) {
+                const QString candidate = QString("%1{Button%2}").arg(VBUTTON_ORIKEY_STR).arg(i);
+                if (!existingVButtonKeys.contains(candidate)) {
+                    autoName = candidate;
+                    break;
+                }
+            }
+            // If all Button1~Button999 are taken, autoName stays as "VButton{Button1}";
+            // the existing duplicate-OriginalKey disable logic below will handle it.
+        }
+        currentOriKeyText = autoName;
+    }
+
     // Determine the base key for special key checking
     QString baseKeyForSpecialCheck;
     if (false == currentOriKeyRecordLineEditText.isEmpty()) {
@@ -26198,6 +26338,10 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
             }
             else {
                 QString currentOriKeyText = QKeyMapper::getCurrentOriKeyText();
+                // Generic "VButton" selector: always copy as "VButton{Button1}"
+                if (currentOriKeyText == VBUTTON_ORIKEY_STR) {
+                    currentOriKeyText = QString("%1{Button1}").arg(VBUTTON_ORIKEY_STR);
+                }
                 if (!currentOriKeyText.isEmpty()) {
                     QKeyMapper::copyStringToClipboard(currentOriKeyText);
 
@@ -28453,6 +28597,39 @@ void QKeyMapper::on_installFakerInputButton_clicked()
             QString message = tr("%1 Driver installation failed!").arg("FakerInput");
             showFailurePopup(message);
         }
+    }
+}
+
+void QKeyMapper::on_vButtonPanelSetupButton_clicked()
+{
+    if (Q_NULLPTR == m_VButtonPanelSetupDialog || Q_NULLPTR == m_VButtonPanel) {
+        return;
+    }
+    // Sync drag-updated offsets back into settings before showing dialog
+    m_VButtonPanelSettings.offsetX = m_VButtonPanel->panelOffsets().x();
+    m_VButtonPanelSettings.offsetY = m_VButtonPanel->panelOffsets().y();
+    m_VButtonPanelSetupDialog->loadSettings(m_VButtonPanelSettings);
+    if (m_VButtonPanelSetupDialog->exec() == QDialog::Accepted) {
+        m_VButtonPanelSettings = m_VButtonPanelSetupDialog->getSettings();
+        // Apply to panel
+        m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
+                                      m_VButtonPanelSettings.maxRows,
+                                      m_VButtonPanelSettings.btnWidth,
+                                      m_VButtonPanelSettings.btnHeight,
+                                      m_VButtonPanelSettings.opacity,
+                                      m_VButtonPanelSettings.alwaysOnTop,
+                                      m_VButtonPanelSettings.margin,
+                                      m_VButtonPanelSettings.radius,
+                                      m_VButtonPanelSettings.dragEnabled);
+        m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
+                                      m_VButtonPanelSettings.offsetX,
+                                      m_VButtonPanelSettings.offsetY);
+        // Rebuild button grid with new column count
+        if (KeyMappingDataList) {
+            m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+            QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
+        }
+        QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
     }
 }
 

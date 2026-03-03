@@ -50,6 +50,10 @@ QStringList QKeyMapper_Worker::CombinationKeysList = QStringList();
 QStringList QKeyMapper_Worker::SpecialOriginalKeysList;
 QStringList QKeyMapper_Worker::SendOnOriginalKeysList;
 QStringList QKeyMapper_Worker::SpecialMappingKeysList;
+QStringList QKeyMapper_Worker::VButtonOriginalKeysList;
+QAtomicBool QKeyMapper_Worker::s_vbutton_click_suppress(false);
+bool QKeyMapper_Worker::s_vbutton_panel_defaultshow = false;
+HWND QKeyMapper_Worker::s_vbutton_panel_hwnd = Q_NULLPTR;
 QList<quint8> QKeyMapper_Worker::SpecialVirtualKeyCodeList;
 // QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
 // QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
@@ -2446,6 +2450,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (setvolume_match.hasMatch()) {
                 /* SetVolume KeyUp do nothing. */
             }
+            else if (key == SHOWVBUTTONPANEL_STR) {
+                // ShowVButtonPanel: KEY_UP hides the panel
+                emit showVButtonPanel_Signal(false);
+            }
+            else if (key == HIDEVBUTTONPANEL_STR) {
+                // HideVButtonPanel: KEY_UP shows the panel
+                emit showVButtonPanel_Signal(true);
+            }
             else if (!s_ViGEmTargetList.isEmpty() && vjoy_match.hasMatch()) {
                 if (original_key != CLEAR_VIRTUALKEYS) {
                     QString joystickButton = vjoy_match.captured(1);
@@ -3173,6 +3185,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else if (setvolume_match.hasMatch()) {
                     // Process SetVolume(...) mapping key
                     processSetVolumeMapping(key);
+                }
+                else if (key == SHOWVBUTTONPANEL_STR) {
+                    // ShowVButtonPanel: KEY_DOWN shows the panel
+                    emit showVButtonPanel_Signal(true);
+                }
+                else if (key == HIDEVBUTTONPANEL_STR) {
+                    // HideVButtonPanel: KEY_DOWN hides the panel
+                    emit showVButtonPanel_Signal(false);
                 }
                 else if (!s_ViGEmTargetList.isEmpty() && vjoy_match.hasMatch()) {
                     QString joystickButton = vjoy_match.captured(1);
@@ -4456,6 +4476,21 @@ void QKeyMapper_Worker::setGamepadMotionAutoCalibration(bool enabled, float gyro
     }
     else {
         m_GamdpadMotion.SetCalibrationMode(GamepadMotionHelpers::CalibrationMode::Manual);
+    }
+}
+
+// Build the list of VButton original key names from the current mapping data list.
+// Called whenever the mapping table is loaded or saved.
+void QKeyMapper_Worker::buildVButtonOriginalKeysList(const QList<MAP_KEYDATA> &dataList)
+{
+    VButtonOriginalKeysList.clear();
+    static QRegularExpression vbutton_regex(QKeyMapperConstants::VBUTTON_REGEX_PATTERN);
+    for (const MAP_KEYDATA &entry : dataList) {
+        if (!entry.Disabled && vbutton_regex.match(entry.Original_Key).hasMatch()) {
+            if (!VButtonOriginalKeysList.contains(entry.Original_Key)) {
+                VButtonOriginalKeysList.append(entry.Original_Key);
+            }
+        }
     }
 }
 
@@ -8270,6 +8305,16 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
     emitSendOnMappingStartKeys();
 
+    // Rebuild VButton list from the current mapping data
+    if (QKeyMapper::KeyMappingDataList) {
+        buildVButtonOriginalKeysList(*QKeyMapper::KeyMappingDataList);
+    }
+
+    // Auto-show VButton panel if setting is enabled and there are active VButton entries
+    if (s_vbutton_panel_defaultshow && !VButtonOriginalKeysList.isEmpty()) {
+        emit showVButtonPanel_Signal(true);
+    }
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[QKeyMapper_Worker::setWorkerKeyHook] WorkerThread Hookproc End.");
 #endif
@@ -8448,6 +8493,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     if (!s_isWorkerDestructing) {
         emitSendOnMappingStopKeys();
     }
+
+    // Auto-hide VButton panel when mapping stops
+    emit showVButtonPanel_Signal(false);
 
     // Restore KeyMappingDataList pointer to original tab's KeyMappingData
     QKeyMapper::restoreKeyMappingDataListPointer();
@@ -13071,6 +13119,20 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("[LowLevelMouseHookProc] Real \"%s\" %s, extraInfo(0x%08X)", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
 #endif
+                /* VButton Panel Defense Line 1: HWND-based bypass — if click is on the VButton panel
+                   or any of its child widgets (buttons), pass through without mapping */
+                if (s_vbutton_panel_hwnd != Q_NULLPTR && (wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)) {
+                    POINT pt = pMouse->pt;
+                    HWND hwndAtPoint = WindowFromPoint(pt);
+                    if (hwndAtPoint == s_vbutton_panel_hwnd || IsChild(s_vbutton_panel_hwnd, hwndAtPoint)) {
+                        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                    }
+                }
+                /* VButton Panel Defense Line 2: atomic flag suppress — VButton panel sets this before triggering a VButton key */
+                if (wParam == WM_LBUTTONDOWN && s_vbutton_click_suppress.loadAcquire()) {
+                    s_vbutton_click_suppress.storeRelease(false);
+                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                }
                 if ((GetAsyncKeyState(PICK_SCREEN_POINT_KEY) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
                     POINT pt;
                     if (GetCursorPos(&pt)) {
@@ -16198,6 +16260,35 @@ void QKeyMapper_Worker::onBurstKeyTimeOut(const QString burstKey, int mappingInd
     }
 }
 
+// Trigger a VButton entry by key name: sends KEY_DOWN + KEY_UP (or manages Lock state) for the matching row.
+// This is called from the VButton panel via a Qt::QueuedConnection signal invocation.
+void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown)
+{
+    if (!QKeyMapper::KeyMappingDataList) {
+        return;
+    }
+
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keyName);
+    if (findindex < 0) {
+        return;
+    }
+
+    const MAP_KEYDATA &entry = QKeyMapper::KeyMappingDataList->at(findindex);
+    if (entry.Disabled) {
+        return;
+    }
+
+    QStringList mappingKeyList = entry.Mapping_Keys;
+    QString original_key = entry.Original_Key;
+    int keyState = isKeyDown ? KEY_DOWN : KEY_UP;
+
+    // Send only the requested key state.
+    // Lock mode: onVButtonPressed manages toggle; pressed sends KEY_DOWN (enter) or KEY_UP (exit).
+    // Burst mode: pressed->KEY_DOWN starts burst, released->KEY_UP stops burst.
+    // Normal mode: pressed->KEY_DOWN, released->KEY_UP.
+    emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, keyState, original_key, SENDMODE_NORMAL);
+}
+
 bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, const QJoystickDevice *joystick)
 {
     Q_UNUSED(joystick);
@@ -17281,6 +17372,8 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR
             << VJOY_RT_ACCEL_STR
+            << SHOWVBUTTONPANEL_STR
+            << HIDEVBUTTONPANEL_STR
             ;
 }
 

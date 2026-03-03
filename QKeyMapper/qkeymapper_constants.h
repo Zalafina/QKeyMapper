@@ -1073,6 +1073,39 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHSWITCHKEYLIST[] = "MappingTable_FloatingWindow_MousePassThroughSwitchKeyList";
     inline constexpr const char CLEARALL[] = "KeyMapData_ClearAll";
 
+    // VButton panel INI key name constants (stored per setting-name group)
+    inline constexpr const char VBTNPANEL_COLUMNS[]         = "VButtonPanel_Columns";
+    inline constexpr const char VBTNPANEL_MAXROWS[]         = "VButtonPanel_MaxRows";
+    inline constexpr const char VBTNPANEL_BTNWIDTH[]        = "VButtonPanel_ButtonWidth";
+    inline constexpr const char VBTNPANEL_BTNHEIGHT[]       = "VButtonPanel_ButtonHeight";
+    inline constexpr const char VBTNPANEL_OPACITY[]         = "VButtonPanel_Opacity";
+    inline constexpr const char VBTNPANEL_ALWAYSONTOP[]     = "VButtonPanel_AlwaysOnTop";
+    inline constexpr const char VBTNPANEL_DEFAULTSHOW[]     = "VButtonPanel_DefaultShow";
+    inline constexpr const char VBTNPANEL_MARGIN[]          = "VButtonPanel_Margin";
+    inline constexpr const char VBTNPANEL_RADIUS[]          = "VButtonPanel_Radius";
+    inline constexpr const char VBTNPANEL_DRAGENABLED[]     = "VButtonPanel_DragEnabled";
+    inline constexpr const char VBTNPANEL_REFERENCEPOINT[]  = "VButtonPanel_ReferencePoint";
+    inline constexpr const char VBTNPANEL_OFFSETX[]         = "VButtonPanel_OffsetX";
+    inline constexpr const char VBTNPANEL_OFFSETY[]         = "VButtonPanel_OffsetY";
+    // Kept for backward compatibility (absolute screen position when referencePoint is Screen type)
+    inline constexpr const char VBTNPANEL_POSX[]            = "VButtonPanel_PosX";
+    inline constexpr const char VBTNPANEL_POSY[]            = "VButtonPanel_PosY";
+
+    // VButton panel default values
+    inline constexpr int    VBTNPANEL_DEFAULT_COLUMNS        = 3;
+    inline constexpr int    VBTNPANEL_DEFAULT_MAXROWS        = 4;
+    inline constexpr int    VBTNPANEL_DEFAULT_BTNWIDTH       = 80;
+    inline constexpr int    VBTNPANEL_DEFAULT_BTNHEIGHT      = 30;
+    inline constexpr double VBTNPANEL_DEFAULT_OPACITY        = 1.0;
+    inline constexpr bool   VBTNPANEL_DEFAULT_ALWAYSONTOP    = true;
+    inline constexpr bool   VBTNPANEL_DEFAULT_DEFAULTSHOW    = false;
+    inline constexpr int    VBTNPANEL_DEFAULT_MARGIN         = 2;
+    inline constexpr int    VBTNPANEL_DEFAULT_RADIUS         = 0;
+    inline constexpr bool   VBTNPANEL_DEFAULT_DRAGENABLED    = true;
+    inline constexpr int    VBTNPANEL_DEFAULT_REFERENCEPOINT = 0;  // FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT
+    inline constexpr int    VBTNPANEL_DEFAULT_OFFSETX        = 50;
+    inline constexpr int    VBTNPANEL_DEFAULT_OFFSETY        = 50;
+
     inline constexpr const char PROCESSINFO_FILENAME[] = "ProcessInfo_FileName";
     inline constexpr const char PROCESSINFO_WINDOWTITLE[] = "ProcessInfo_WindowTitle";
     inline constexpr const char PROCESSINFO_CLASSNAME[] = "ProcessInfo_ClassName";
@@ -1410,6 +1443,14 @@ namespace QKeyMapperConstants {
     inline constexpr const char SETMICVOLUME_STR[]          = "SetMicVolume";
     inline constexpr const char SETMICVOLUME_NOTIFY_STR[]   = "SetMicVolume🎤";
     inline constexpr const char KEYSEQUENCEBREAK_STR[]  = "KeySequenceBreak";
+
+    // VButton feature string constants
+    inline constexpr const char VBUTTON_ORIKEY_STR[]       = "VButton";
+    inline constexpr const char VBUTTON_REGEX_PATTERN[]    = R"(^VButton\{(.+)\}$)";
+    inline constexpr const char SHOWVBUTTONPANEL_STR[]     = "ShowVButtonPanel";
+    inline constexpr const char HIDEVBUTTONPANEL_STR[]     = "HideVButtonPanel";
+    // Maximum number of VButton entries allowed (Button1 ~ Button999)
+    inline constexpr int VBUTTON_MAX_COUNT = 999;
 
     inline constexpr const char REPEAT_TEMPLATE_STR[]   = "Repeat{}x5";
     inline constexpr const char ONLYONCE_TEMPLATE_STR[]   = "OnlyOnce{}";

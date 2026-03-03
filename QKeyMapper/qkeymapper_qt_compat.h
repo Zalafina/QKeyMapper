@@ -4,6 +4,8 @@
 #include <QtGlobal>
 #include <QList>
 #include <QString>
+#include <QMouseEvent>
+#include <QPoint>
 
 namespace QKeyMapperQtCompat {
 
@@ -40,6 +42,16 @@ template <typename T>
 inline void resizeQList(QList<T> &list, int newSize)
 {
     resizeQList(list, newSize, T());
+}
+
+// QMouseEvent::globalPos() is deprecated in Qt6; use globalPosition().toPoint() instead.
+inline QPoint mouseEventGlobalPos(const QMouseEvent *event)
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    return event->globalPosition().toPoint();
+#else
+    return event->globalPos();
+#endif
 }
 
 } // namespace QKeyMapperQtCompat

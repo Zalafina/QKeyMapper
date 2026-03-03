@@ -86,6 +86,8 @@
 #include "qmappingadvanceddialog.h"
 #include "qignorewindowinfolistdialog.h"
 #include "qmacrolistdialog.h"
+#include "qvbuttonpanel.h"
+#include "qvbuttonpanelsetupdialog.h"
 #include "qmappingsequenceedit.h"
 
 struct InputDeviceInfo
@@ -1062,6 +1064,7 @@ signals:
     void systemThemeChanged_Signal(void);
     void systemFilterKeysSettingChanged_Signal(void);
     void keyMappingTableItemCheckStateChanged_Signal(int row, int col, bool checked);
+    void openVButtonPanelSetup_Signal(void);   // Emitted from VButton panel context-menu → open setup dialog
 
 protected:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -1239,6 +1242,8 @@ private slots:
     void on_installViGEmBusButton_clicked();
 
     void on_installFakerInputButton_clicked();
+
+    void on_vButtonPanelSetupButton_clicked();
 
     // void on_uninstallViGEmBusButton_clicked();
 
@@ -1694,6 +1699,9 @@ private:
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QMacroListDialog *m_MacroListDialog = Q_NULLPTR;
+    QVButtonPanel *m_VButtonPanel = Q_NULLPTR;
+    QVButtonPanelSetupDialog *m_VButtonPanelSetupDialog = Q_NULLPTR;
+    VButtonPanelSettings m_VButtonPanelSettings;
 public:
     QMappingSequenceEdit *m_MappingSequenceEdit = Q_NULLPTR;
 private:

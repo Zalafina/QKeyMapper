@@ -945,6 +945,7 @@ public:
 
     void initGamepadMotion(void);
     void setGamepadMotionAutoCalibration(bool enabled, float gyroThreshold, float accelThreshold);
+    void buildVButtonOriginalKeysList(const QList<MAP_KEYDATA> &dataList);
 
 #ifdef FAKERINPUT_SUPPORT
 public:
@@ -1058,6 +1059,12 @@ signals:
     void doFunctionMappingProc_Signal(const QString &func_keystring);
 
     void gameControllerGyroEnabledSwitch_Signal(int gamepadinfo_index);
+
+    // Signal emitted to show or hide the VButton panel on the main thread (Qt::QueuedConnection)
+    void showVButtonPanel_Signal(bool visible);
+
+    // Signal emitted to suppress a single LButton Down+Up from triggering its mapping
+    void suppressLButtonOnce_Signal();
 
 // protected:
 //     void timerEvent(QTimerEvent *event) override;
@@ -1197,6 +1204,9 @@ public slots:
     static void onDoublePressTimeOut(const QString keycodeString);
     static void onBurstKeyPressTimeOut(const QString burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
     static void onBurstKeyTimeOut(const QString burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
+    // Trigger a VButton mapping entry by key name (called from the VButton panel via QueuedConnection)
+    // isKeyDown=true -> send KEY_DOWN only; isKeyDown=false -> send KEY_UP only
+    void triggerVButtonKey(const QString &keyName, bool isKeyDown);
 
 private:
     bool JoyStickKeysProc(QString keycodeString, int keyupdown, const QJoystickDevice *joystick);
@@ -1286,6 +1296,10 @@ public:
     static QStringList SpecialOriginalKeysList;
     static QStringList SendOnOriginalKeysList;
     static QStringList SpecialMappingKeysList;
+    static QStringList VButtonOriginalKeysList;  // Populated from the active mapping table
+    static QAtomicBool s_vbutton_click_suppress;  // Suppress one LButton Down+Up cycle after VButton click
+    static bool s_vbutton_panel_defaultshow;       // Whether to auto-show VButton panel when mapping starts
+    static HWND s_vbutton_panel_hwnd;              // HWND of the VButton panel for Hook-side bypass
     static QList<quint8> SpecialVirtualKeyCodeList;
     // static QStringList skipReleaseModifiersKeysList;
     // static QHash<QString, int> JoyStickKeyMap;
