@@ -1244,6 +1244,7 @@ private slots:
     void on_installFakerInputButton_clicked();
 
     void on_vButtonPanelSetupButton_clicked();
+    void onVButtonPanelSettingsAccepted();
 
     // void on_uninstallViGEmBusButton_clicked();
 
@@ -1520,6 +1521,8 @@ private:
     void closeIgnoreRulesListDialog(void);
     void showMappingAdvancedDialog(void);
     void closeMappingAdvancedDialog(void);
+    void showVButtonPanelSetupDialog(void);
+    void closeVButtonPanelSetupDialog(void);
 public:
     void showMacroListDialog(void);
     void closeMacroListDialog(void);

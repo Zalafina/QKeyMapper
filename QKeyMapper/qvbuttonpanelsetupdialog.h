@@ -2,6 +2,8 @@
 #define QVBUTTONPANELSETUPDIALOG_H
 
 #include <QDialog>
+#include <QColor>
+#include "colorpickerwidget.h"
 
 namespace Ui {
 class QVButtonPanelSetupDialog;
@@ -21,6 +23,9 @@ struct VButtonPanelSettings {
     int    referencePoint = 0;   // FLOATINGWINDOW_REFERENCEPOINT_* value (0=ScreenTopLeft)
     int    offsetX        = 50;
     int    offsetY        = 50;
+    QColor bgColor        = QColor(30, 30, 30, 220);
+    QColor btnColor       = QColor(60, 60, 60, 255);
+    QColor textColor      = QColor(255, 255, 255, 255);
 };
 
 class QVButtonPanelSetupDialog : public QDialog
@@ -41,9 +46,15 @@ public:
     // Retrieve settings from the UI controls after dialog is accepted
     VButtonPanelSettings getSettings() const;
 
+protected:
+    bool event(QEvent *event) override;
+
 private:
     static QVButtonPanelSetupDialog *m_instance;
     Ui::QVButtonPanelSetupDialog    *ui;
+    ColorPickerWidget               *m_BGColorPicker;
+    ColorPickerWidget               *m_BtnColorPicker;
+    ColorPickerWidget               *m_TextColorPicker;
 };
 
 #endif // QVBUTTONPANELSETUPDIALOG_H

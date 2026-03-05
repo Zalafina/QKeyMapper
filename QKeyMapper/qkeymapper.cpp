@@ -596,6 +596,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_MacroListDialog = new QMacroListDialog(this);
     m_VButtonPanel = new QVButtonPanel(Q_NULLPTR);
     m_VButtonPanelSetupDialog = new QVButtonPanelSetupDialog(this);
+    connect(m_VButtonPanelSetupDialog, &QVButtonPanelSetupDialog::accepted,
+            this, &QKeyMapper::onVButtonPanelSettingsAccepted);
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
@@ -8038,6 +8040,8 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeMacroListDialog();
             closeItemSetupDialog();
             closeIgnoreRulesListDialog();
+            closeMappingAdvancedDialog();
+            closeVButtonPanelSetupDialog();
             closeCrosshairSetupDialog();
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
@@ -8425,6 +8429,8 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         closeMacroListDialog();
         closeItemSetupDialog();
         closeIgnoreRulesListDialog();
+        closeMappingAdvancedDialog();
+        closeVButtonPanelSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
@@ -12216,6 +12222,9 @@ void QKeyMapper::saveKeyMapSetting(void)
             settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETX, m_VButtonPanelSettings.offsetX);
             settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETY, m_VButtonPanelSettings.offsetY);
         }
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_BGCOLOR,   m_VButtonPanelSettings.bgColor.name(QColor::HexArgb));
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_BTNCOLOR,  m_VButtonPanelSettings.btnColor.name(QColor::HexArgb));
+        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_TEXTCOLOR, m_VButtonPanelSettings.textColor.name(QColor::HexArgb));
     }
 
     // Save MacroList to INI file
@@ -15798,6 +15807,17 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         m_VButtonPanelSettings.referencePoint = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_REFERENCEPOINT, QKeyMapperConstants::VBTNPANEL_DEFAULT_REFERENCEPOINT).toInt();
         m_VButtonPanelSettings.offsetX        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_OFFSETX,        QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETX).toInt();
         m_VButtonPanelSettings.offsetY        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_OFFSETY,        QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETY).toInt();
+        {
+            QString bgColorStr = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_BGCOLOR).toString();
+            QColor  bgColor    = bgColorStr.isEmpty() ? QKeyMapperConstants::VBTNPANEL_BACKGROUND_COLOR_DEFAULT : QColor(bgColorStr);
+            m_VButtonPanelSettings.bgColor = bgColor.isValid() ? bgColor : QKeyMapperConstants::VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
+            QString btnColorStr = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_BTNCOLOR).toString();
+            QColor  btnColor    = btnColorStr.isEmpty() ? QKeyMapperConstants::VBTNPANEL_BUTTON_COLOR_DEFAULT : QColor(btnColorStr);
+            m_VButtonPanelSettings.btnColor = btnColor.isValid() ? btnColor : QKeyMapperConstants::VBTNPANEL_BUTTON_COLOR_DEFAULT;
+            QString txtColorStr = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_TEXTCOLOR).toString();
+            QColor  txtColor    = txtColorStr.isEmpty() ? QKeyMapperConstants::VBTNPANEL_TEXT_COLOR_DEFAULT : QColor(txtColorStr);
+            m_VButtonPanelSettings.textColor = txtColor.isValid() ? txtColor : QKeyMapperConstants::VBTNPANEL_TEXT_COLOR_DEFAULT;
+        }
         if (m_VButtonPanel) {
             m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
                                           m_VButtonPanelSettings.maxRows,
@@ -15811,6 +15831,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
             m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
                                           m_VButtonPanelSettings.offsetX,
                                           m_VButtonPanelSettings.offsetY);
+            m_VButtonPanel->applyColors(m_VButtonPanelSettings.bgColor,
+                                        m_VButtonPanelSettings.btnColor,
+                                        m_VButtonPanelSettings.textColor);
         }
         QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
     }
@@ -17925,6 +17948,37 @@ void QKeyMapper::closeMappingAdvancedDialog()
     }
 }
 
+void QKeyMapper::showVButtonPanelSetupDialog()
+{
+    if (Q_NULLPTR == m_VButtonPanelSetupDialog) {
+        return;
+    }
+
+    if (m_VButtonPanelSetupDialog->isVisible()) {
+        // Dialog already open: sync latest drag offsets and bring to front
+        if (m_VButtonPanel != Q_NULLPTR) {
+            m_VButtonPanelSettings.offsetX = m_VButtonPanel->panelOffsets().x();
+            m_VButtonPanelSettings.offsetY = m_VButtonPanel->panelOffsets().y();
+            m_VButtonPanelSetupDialog->loadSettings(m_VButtonPanelSettings);
+        }
+        m_VButtonPanelSetupDialog->raise();
+        m_VButtonPanelSetupDialog->activateWindow();
+    } else {
+        m_VButtonPanelSetupDialog->show();
+    }
+}
+
+void QKeyMapper::closeVButtonPanelSetupDialog()
+{
+    if (Q_NULLPTR == m_VButtonPanelSetupDialog) {
+        return;
+    }
+
+    if (m_VButtonPanelSetupDialog->isVisible()) {
+        m_VButtonPanelSetupDialog->close();
+    }
+}
+
 void QKeyMapper::showMacroListDialog()
 {
     if (Q_NULLPTR == m_MacroListDialog) {
@@ -19739,6 +19793,8 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             closeTrayIconSelectDialog();
             closeNotificationSetupDialog();
             closeIgnoreRulesListDialog();
+            closeMappingAdvancedDialog();
+            closeVButtonPanelSetupDialog();
             closeMacroListDialog();
             closeTableSetupDialog();
             closeItemSetupDialog();
@@ -19791,6 +19847,8 @@ void QKeyMapper::forceHide()
         closeMacroListDialog();
         closeItemSetupDialog();
         closeIgnoreRulesListDialog();
+        closeMappingAdvancedDialog();
+        closeVButtonPanelSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
@@ -28625,28 +28683,37 @@ void QKeyMapper::on_vButtonPanelSetupButton_clicked()
     m_VButtonPanelSettings.offsetX = m_VButtonPanel->panelOffsets().x();
     m_VButtonPanelSettings.offsetY = m_VButtonPanel->panelOffsets().y();
     m_VButtonPanelSetupDialog->loadSettings(m_VButtonPanelSettings);
-    if (m_VButtonPanelSetupDialog->exec() == QDialog::Accepted) {
-        m_VButtonPanelSettings = m_VButtonPanelSetupDialog->getSettings();
-        // Apply to panel
-        m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
-                                      m_VButtonPanelSettings.maxRows,
-                                      m_VButtonPanelSettings.btnWidth,
-                                      m_VButtonPanelSettings.btnHeight,
-                                      m_VButtonPanelSettings.opacity,
-                                      m_VButtonPanelSettings.alwaysOnTop,
-                                      m_VButtonPanelSettings.margin,
-                                      m_VButtonPanelSettings.radius,
-                                      m_VButtonPanelSettings.dragEnabled);
-        m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
-                                      m_VButtonPanelSettings.offsetX,
-                                      m_VButtonPanelSettings.offsetY);
-        // Rebuild button grid with new column count
-        if (KeyMappingDataList) {
-            m_VButtonPanel->refreshPanel(*KeyMappingDataList);
-            QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
-        }
-        QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
+    showVButtonPanelSetupDialog();
+}
+
+void QKeyMapper::onVButtonPanelSettingsAccepted()
+{
+    if (Q_NULLPTR == m_VButtonPanelSetupDialog || Q_NULLPTR == m_VButtonPanel) {
+        return;
     }
+    m_VButtonPanelSettings = m_VButtonPanelSetupDialog->getSettings();
+    // Apply layout and appearance settings to the panel
+    m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
+                                  m_VButtonPanelSettings.maxRows,
+                                  m_VButtonPanelSettings.btnWidth,
+                                  m_VButtonPanelSettings.btnHeight,
+                                  m_VButtonPanelSettings.opacity,
+                                  m_VButtonPanelSettings.alwaysOnTop,
+                                  m_VButtonPanelSettings.margin,
+                                  m_VButtonPanelSettings.radius,
+                                  m_VButtonPanelSettings.dragEnabled);
+    m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
+                                  m_VButtonPanelSettings.offsetX,
+                                  m_VButtonPanelSettings.offsetY);
+    m_VButtonPanel->applyColors(m_VButtonPanelSettings.bgColor,
+                                m_VButtonPanelSettings.btnColor,
+                                m_VButtonPanelSettings.textColor);
+    // Rebuild button grid with new column count
+    if (KeyMappingDataList) {
+        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+        QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
+    }
+    QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
 }
 
 #if 0

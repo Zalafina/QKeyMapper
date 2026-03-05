@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QHBoxLayout>
 #include <QApplication>
+#include <QMenu>
 
 class ColorPickerWidget : public QWidget
 {
@@ -29,6 +30,7 @@ signals:
 
 private slots:
     void onPickColor();  // Slot to handle color pick button click
+    void onColorButtonContextMenu(const QPoint &pos);  // Right-click context menu for default color restore
 
 private:
     QColor m_color = QColor();              // Variable to store the selected color

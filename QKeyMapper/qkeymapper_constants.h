@@ -233,6 +233,9 @@ namespace QKeyMapperConstants {
     inline constexpr int COLORPICKER_BUTTON_WIDTH_NOTIFICATION_FONTCOLOR = 61;
     inline constexpr int COLORPICKER_BUTTON_WIDTH_NOTIFICATION_BGCOLOR = 51;
     inline constexpr int COLORPICKER_BUTTON_WIDTH_FLOATINGWINDOW_BGCOLOR = 51;
+    inline constexpr int COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BGCOLOR   = 71;
+    inline constexpr int COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR  = 91;
+    inline constexpr int COLORPICKER_BUTTON_WIDTH_VBTNPANEL_TEXTCOLOR = 91;
 
     inline constexpr const char NOTIFICATION_COLOR_GLOBAL_DEFAULT_STR[] = "#26de81";
     inline constexpr const char NOTIFICATION_COLOR_NORMAL_DEFAULT_STR[] = "#d6a2e8";
@@ -320,6 +323,16 @@ namespace QKeyMapperConstants {
 #else
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT = QColor(0,0,0,120);
+#endif
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    inline constexpr QColor VBTNPANEL_BACKGROUND_COLOR_DEFAULT = QColor(55, 55, 55, 220);
+    inline constexpr QColor VBTNPANEL_BUTTON_COLOR_DEFAULT     = QColor(62, 62, 62);
+    inline constexpr QColor VBTNPANEL_TEXT_COLOR_DEFAULT       = QColor(208, 210, 212);
+#else
+    inline const QColor VBTNPANEL_BACKGROUND_COLOR_DEFAULT = QColor(55, 55, 55, 220);
+    inline const QColor VBTNPANEL_BUTTON_COLOR_DEFAULT     = QColor(62, 62, 62);
+    inline const QColor VBTNPANEL_TEXT_COLOR_DEFAULT       = QColor(208, 210, 212);
 #endif
 
     inline constexpr int FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT        = 0;
@@ -1087,6 +1100,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char VBTNPANEL_REFERENCEPOINT[]  = "VButtonPanel_ReferencePoint";
     inline constexpr const char VBTNPANEL_OFFSETX[]         = "VButtonPanel_OffsetX";
     inline constexpr const char VBTNPANEL_OFFSETY[]         = "VButtonPanel_OffsetY";
+    inline constexpr const char VBTNPANEL_BGCOLOR[]           = "VButtonPanel_BGColor";
+    inline constexpr const char VBTNPANEL_BTNCOLOR[]          = "VButtonPanel_BtnColor";
+    inline constexpr const char VBTNPANEL_TEXTCOLOR[]         = "VButtonPanel_TextColor";
     // Kept for backward compatibility (absolute screen position when referencePoint is Screen type)
     inline constexpr const char VBTNPANEL_POSX[]            = "VButtonPanel_PosX";
     inline constexpr const char VBTNPANEL_POSY[]            = "VButtonPanel_PosY";

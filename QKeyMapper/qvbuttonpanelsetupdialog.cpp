@@ -1,6 +1,9 @@
+#include "qkeymapper.h"
 #include "qvbuttonpanelsetupdialog.h"
 #include "ui_qvbuttonpanelsetupdialog.h"
 #include "qkeymapper_constants.h"
+#include "colorpickerwidget.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 
@@ -9,11 +12,35 @@ QVButtonPanelSetupDialog *QVButtonPanelSetupDialog::m_instance = nullptr;
 QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QVButtonPanelSetupDialog)
+    , m_BGColorPicker(new ColorPickerWidget(this, "VBtn_BGColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BGCOLOR))
+    , m_BtnColorPicker(new ColorPickerWidget(this, "VBtn_BtnColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
+    , m_TextColorPicker(new ColorPickerWidget(this, "VBtn_TextColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_TEXTCOLOR))
 {
     ui->setupUi(this);
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     m_instance = this;
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        ui->colorGroupBox->setStyle(windowsStyle);
+    }
+
+    // Position color pickers inside the color group box.
+    // raise() is required because the pickers are created in the member initializer list
+    // (before setupUi), so colorGroupBox has a higher z-order and would otherwise eat
+    // all mouse events over that area.
+    m_BGColorPicker->setShowAlphaChannel(true);
+    m_BGColorPicker->move(40, 30);
+    m_BGColorPicker->setColor(VBTNPANEL_BACKGROUND_COLOR_DEFAULT);
+    m_BGColorPicker->raise();
+
+    m_BtnColorPicker->move(185, 30);
+    m_BtnColorPicker->setColor(VBTNPANEL_BUTTON_COLOR_DEFAULT);
+    m_BtnColorPicker->raise();
+
+    // Text color picker — same x as BtnColor, row below (35px gap matching other controls)
+    m_TextColorPicker->move(185, 65);
+    m_TextColorPicker->setColor(VBTNPANEL_TEXT_COLOR_DEFAULT);
+    m_TextColorPicker->raise();
     // Populate reference point combo box — index must match FLOATINGWINDOW_REFERENCEPOINT_* values exactly
     QStringList referencePointList;
     referencePointList.append(tr("ScreenTopLeft"));      // 0  FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT
@@ -42,6 +69,7 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     Q_UNUSED(languageindex);
     setWindowTitle(tr("VButton Panel Setup"));
 
+    ui->colorGroupBox->setTitle(tr("Color"));
     ui->columnsLabel->setText(tr("Columns"));
     ui->maxRowsLabel->setText(tr("Max Rows"));
     ui->btnWidthLabel->setText(tr("Btn Width"));
@@ -72,6 +100,13 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
 
     ui->okButton->setText(tr("OK"));
     ui->cancelButton->setText(tr("Cancel"));
+
+    m_BGColorPicker->setButtonText(tr("BGColor"));
+    m_BGColorPicker->setWindowTitle(tr("VButton Panel BG Color"));
+    m_BtnColorPicker->setButtonText(tr("BtnColor"));
+    m_BtnColorPicker->setWindowTitle(tr("VButton Panel Button Color"));
+    m_TextColorPicker->setButtonText(tr("TextColor"));
+    m_TextColorPicker->setWindowTitle(tr("VButton Panel Text Color"));
 }
 
 void QVButtonPanelSetupDialog::loadSettings(const VButtonPanelSettings &settings)
@@ -92,6 +127,9 @@ void QVButtonPanelSetupDialog::loadSettings(const VButtonPanelSettings &settings
     ui->referencePointComboBox->setCurrentIndex(idx);
     ui->offsetXSpinBox->setValue(settings.offsetX);
     ui->offsetYSpinBox->setValue(settings.offsetY);
+    m_BGColorPicker->setColor(settings.bgColor);
+    m_BtnColorPicker->setColor(settings.btnColor);
+    m_TextColorPicker->setColor(settings.textColor);
 }
 
 VButtonPanelSettings QVButtonPanelSetupDialog::getSettings() const
@@ -110,5 +148,22 @@ VButtonPanelSettings QVButtonPanelSetupDialog::getSettings() const
     s.referencePoint = ui->referencePointComboBox->currentIndex();
     s.offsetX        = ui->offsetXSpinBox->value();
     s.offsetY        = ui->offsetYSpinBox->value();
+    s.bgColor        = m_BGColorPicker->getColor();
+    s.btnColor       = m_BtnColorPicker->getColor();
+    s.textColor      = m_TextColorPicker->getColor();
     return s;
+}
+
+bool QVButtonPanelSetupDialog::event(QEvent *event)
+{
+    if (event->type() == QEvent::ActivationChange) {
+        if (!isActiveWindow()) {
+            if (QKeyMapper::isSelectColorDialogVisible()) {
+            }
+            else {
+                close();
+            }
+        }
+    }
+    return QDialog::event(event);
 }

@@ -13,6 +13,10 @@ QVButtonPanel::QVButtonPanel(QWidget *parent)
     setAttribute(Qt::WA_ShowWithoutActivating);
     setAttribute(Qt::WA_TranslucentBackground, true);  // Required for paintEvent rounded corners
 
+    m_bgColor  = VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
+    m_btnColor = VBTNPANEL_BUTTON_COLOR_DEFAULT;
+    m_txtColor = VBTNPANEL_TEXT_COLOR_DEFAULT;
+
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(m_margin, m_margin, m_margin, m_margin);
     m_mainLayout->setSpacing(m_margin);
@@ -22,12 +26,18 @@ QVButtonPanel::QVButtonPanel(QWidget *parent)
     m_scrollArea->setWidgetResizable(true);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    // Use stylesheet-based transparency so Qt style engine doesn't paint a solid background
+    m_scrollArea->setStyleSheet("background: transparent;");
+    m_scrollArea->viewport()->setStyleSheet("background: transparent;");
 
     m_gridContainer = new QWidget(m_scrollArea);
+    m_gridContainer->setObjectName("vbtnGridContainer");
     m_gridLayout    = new QGridLayout(m_gridContainer);
     m_gridLayout->setContentsMargins(0, 0, 0, 0);
     m_gridLayout->setSpacing(m_margin);
     m_gridContainer->setLayout(m_gridLayout);
+    // Use named selector to avoid cascading to child QToolButtons
+    m_gridContainer->setStyleSheet("QWidget#vbtnGridContainer { background: transparent; }");
 
     m_scrollArea->setWidget(m_gridContainer);
     m_mainLayout->addWidget(m_scrollArea);
@@ -65,8 +75,7 @@ void QVButtonPanel::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
     // Draw the background with optional rounded corners
-    QColor bgColor = palette().color(QPalette::Window);
-    painter.setBrush(bgColor);
+    painter.setBrush(m_bgColor);
     painter.setPen(Qt::NoPen);
     if (m_radius > 0) {
         painter.drawRoundedRect(rect(), m_radius, m_radius);
@@ -144,6 +153,10 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
         if (m_lockedKeyNames.contains(m_keyNames.at(i))) {
             m_buttons.at(i)->setStyleSheet(
                 "QToolButton { background-color: #3b5587; color: white; }");
+        } else {
+            m_buttons.at(i)->setStyleSheet(
+                QString("QToolButton { background-color: %1; color: %2; }")
+                    .arg(m_btnColor.name(QColor::HexArgb), m_txtColor.name(QColor::HexArgb)));
         }
     }
 }
@@ -170,6 +183,23 @@ void QVButtonPanel::applySettings(int columns, int maxRows, int btnWidth, int bt
     if (alwaysOnTop) flags |=  Qt::WindowStaysOnTopHint;
     else             flags &= ~Qt::WindowStaysOnTopHint;
     setWindowFlags(flags);
+}
+
+void QVButtonPanel::applyColors(const QColor &bgColor, const QColor &btnColor, const QColor &txtColor)
+{
+    if (bgColor.isValid())  m_bgColor  = bgColor;
+    if (btnColor.isValid()) m_btnColor = btnColor;
+    if (txtColor.isValid()) m_txtColor = txtColor;
+
+    update();  // trigger paintEvent to redraw background
+
+    for (int i = 0; i < m_buttons.size(); ++i) {
+        if (!m_lockedKeyNames.contains(m_keyNames.at(i))) {
+            m_buttons.at(i)->setStyleSheet(
+                QString("QToolButton { background-color: %1; color: %2; }")
+                    .arg(m_btnColor.name(QColor::HexArgb), m_txtColor.name(QColor::HexArgb)));
+        }
+    }
 }
 
 void QVButtonPanel::applyPosition(int referencePoint, int offsetX, int offsetY)
@@ -226,15 +256,21 @@ void QVButtonPanel::onVButtonLockStateChanged(const QString &keyName, bool isLoc
         m_buttons.at(idx)->setStyleSheet(
             "QToolButton { background-color: #3b5587; color: white; }");
     } else {
-        m_buttons.at(idx)->setStyleSheet(QString());
+        m_buttons.at(idx)->setStyleSheet(
+            QString("QToolButton { background-color: %1; color: %2; }")
+                .arg(m_btnColor.name(QColor::HexArgb), m_txtColor.name(QColor::HexArgb)));
     }
 }
 
 void QVButtonPanel::onVButtonClearAllLockStates()
 {
     m_lockedKeyNames.clear();
-    for (QToolButton *btn : std::as_const(m_buttons)) {
-        btn->setStyleSheet(QString());
+    for (int i = 0; i < m_buttons.size(); ++i) {
+        if (!m_lockedKeyNames.contains(m_keyNames.at(i))) {
+            m_buttons.at(i)->setStyleSheet(
+                QString("QToolButton { background-color: %1; color: %2; }")
+                    .arg(m_btnColor.name(QColor::HexArgb), m_txtColor.name(QColor::HexArgb)));
+        }
     }
 }
 

@@ -28,6 +28,9 @@ public:
     void applySettings(int columns, int maxRows, int btnWidth, int btnHeight,
                        double opacity, bool alwaysOnTop, int margin, int radius, bool dragEnabled);
 
+    // Apply background, button, and text colors to the panel.
+    void applyColors(const QColor &bgColor, const QColor &btnColor, const QColor &txtColor);
+
     // Compute and move to referencePoint + (offsetX, offsetY).
     void applyPosition(int referencePoint, int offsetX, int offsetY);
 
@@ -90,6 +93,9 @@ private:
     int    m_margin      = 2;
     int    m_radius      = 0;
     bool   m_dragEnabled = true;
+    QColor m_bgColor;
+    QColor m_btnColor;
+    QColor m_txtColor;
 
     // Position tracking
     int    m_referencePoint  = 0;
