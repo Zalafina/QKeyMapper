@@ -1070,7 +1070,9 @@ signals:
     void vbuttonClearAllLockStates_Signal();
 
     // Signal emitted to suppress a single LButton Down+Up from triggering its mapping
+#ifdef VBUTTON_PANEL_DEFENSE
     void suppressLButtonOnce_Signal();
+#endif
 
 // protected:
 //     void timerEvent(QTimerEvent *event) override;
@@ -1303,9 +1305,11 @@ public:
     static QStringList SendOnOriginalKeysList;
     static QStringList SpecialMappingKeysList;
     static QStringList VButtonOriginalKeysList;  // Populated from the active mapping table
-    static QAtomicBool s_vbutton_click_suppress;  // Suppress one LButton Down+Up cycle after VButton click
     static bool s_vbutton_panel_defaultshow;       // Whether to auto-show VButton panel when mapping starts
-    static HWND s_vbutton_panel_hwnd;              // HWND of the VButton panel for Hook-side bypass
+#ifdef VBUTTON_PANEL_DEFENSE
+    static QAtomicBool s_vbutton_click_suppress;    // Suppress one LButton Down+Up cycle after VButton click
+    static HWND s_vbutton_panel_hwnd;               // HWND of the VButton panel for Hook-side bypass
+#endif
     static QList<quint8> SpecialVirtualKeyCodeList;
     // static QStringList skipReleaseModifiersKeysList;
     // static QHash<QString, int> JoyStickKeyMap;

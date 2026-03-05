@@ -51,9 +51,11 @@ QStringList QKeyMapper_Worker::SpecialOriginalKeysList;
 QStringList QKeyMapper_Worker::SendOnOriginalKeysList;
 QStringList QKeyMapper_Worker::SpecialMappingKeysList;
 QStringList QKeyMapper_Worker::VButtonOriginalKeysList;
-QAtomicBool QKeyMapper_Worker::s_vbutton_click_suppress(false);
 bool QKeyMapper_Worker::s_vbutton_panel_defaultshow = false;
+#ifdef VBUTTON_PANEL_DEFENSE
+QAtomicBool QKeyMapper_Worker::s_vbutton_click_suppress(false);
 HWND QKeyMapper_Worker::s_vbutton_panel_hwnd = Q_NULLPTR;
+#endif
 QList<quint8> QKeyMapper_Worker::SpecialVirtualKeyCodeList;
 // QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
 // QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
@@ -13127,6 +13129,8 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #ifdef DEBUG_LOGOUT_ON
                 qDebug("[LowLevelMouseHookProc] Real \"%s\" %s, extraInfo(0x%08X)", MouseButtonNameMap.value(wParam_X).toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
 #endif
+
+#ifdef VBUTTON_PANEL_DEFENSE
                 /* VButton Panel Defense Line 1: HWND-based bypass — if click is on the VButton panel
                    or any of its child widgets (buttons), pass through without mapping */
                 if (s_vbutton_panel_hwnd != Q_NULLPTR && (wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)) {
@@ -13136,11 +13140,13 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                     }
                 }
+
                 /* VButton Panel Defense Line 2: atomic flag suppress — VButton panel sets this before triggering a VButton key */
                 if (wParam == WM_LBUTTONDOWN && s_vbutton_click_suppress.loadAcquire()) {
                     s_vbutton_click_suppress.storeRelease(false);
                     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                 }
+#endif
                 if ((GetAsyncKeyState(PICK_SCREEN_POINT_KEY) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
                     POINT pt;
                     if (GetCursorPos(&pt)) {

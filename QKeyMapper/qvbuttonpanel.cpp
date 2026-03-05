@@ -53,7 +53,9 @@ void QVButtonPanel::showEvent(QShowEvent *event)
         // Remove WS_EX_APPWINDOW explicitly: that flag forces taskbar presence
         exStyle = (exStyle | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW;
         SetWindowLongPtr(hwnd, GWL_EXSTYLE, exStyle);
+#ifdef VBUTTON_PANEL_DEFENSE
         QKeyMapper_Worker::s_vbutton_panel_hwnd = hwnd;
+#endif
     }
 }
 
