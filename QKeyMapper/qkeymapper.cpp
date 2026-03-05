@@ -20951,6 +20951,8 @@ void QKeyMapper::initKeysCategoryMap()
         << BLOCK_MOUSE_STR
         << BLOCK_MOUSE_NOTIFY_STR
         << KEYSEQUENCEBREAK_STR
+        << SHOWVBUTTONPANEL_STR
+        << HIDEVBUTTONPANEL_STR
         ;
 
     /* Original Keyboard Keys */
@@ -21295,8 +21297,6 @@ void QKeyMapper::initKeysCategoryMap()
         << FUNC_LOGOFF
         << FUNC_SLEEP
         << FUNC_HIBERNATE
-        << QKeyMapperConstants::SHOWVBUTTONPANEL_STR
-        << QKeyMapperConstants::HIDEVBUTTONPANEL_STR
         ;
 }
 
