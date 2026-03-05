@@ -84,7 +84,8 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
     }
     m_buttons.clear();
     m_keyNames.clear();
-    m_lockedRows.clear();
+    // Note: m_lockedKeyNames is intentionally NOT cleared here.
+    // Lock state persists across panel rebuilds and highlights are reapplied below.
 
     static QRegularExpression vbutton_regex(VBUTTON_REGEX_PATTERN);
 
@@ -135,6 +136,14 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
     }
 
     buildGrid();
+
+    // Reapply lock highlights for any keys that were locked before the rebuild
+    for (int i = 0; i < m_keyNames.size(); ++i) {
+        if (m_lockedKeyNames.contains(m_keyNames.at(i))) {
+            m_buttons.at(i)->setStyleSheet(
+                "QToolButton { background-color: #3b5587; color: white; }");
+        }
+    }
 }
 
 void QVButtonPanel::applySettings(int columns, int maxRows, int btnWidth, int btnHeight,
@@ -184,30 +193,8 @@ void QVButtonPanel::onVButtonPressed(int index)
     if (index < 0 || index >= m_keyNames.size()) return;
     const QString &keyName = m_keyNames.at(index);
 
-    // Check Lock mode: toggle visual highlight and determine key direction
-    bool isKeyDown = true;
-    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keyName);
-    if (findindex >= 0 && QKeyMapper::KeyMappingDataList) {
-        const MAP_KEYDATA &entry = QKeyMapper::KeyMappingDataList->at(findindex);
-        if (entry.Lock) {
-            if (m_lockedRows.contains(index)) {
-                // Second press: exit lock → KEY_UP
-                m_lockedRows.remove(index);
-                m_buttons.at(index)->setStyleSheet(QString());
-                isKeyDown = false;
-            } else {
-                // First press: enter lock → KEY_DOWN
-                m_lockedRows.insert(index);
-                m_buttons.at(index)->setStyleSheet(
-                    "QToolButton { background-color: #3a7bdb; color: white; }");
-                isKeyDown = true;
-            }
-            emit triggerVButtonKey_Signal(keyName, isKeyDown);
-            return;  // Lock: only send on press, nothing on release
-        }
-    }
-
-    // Normal / Burst: send KEY_DOWN on press
+    // Worker-side triggerVButtonKey handles all Lock/Burst/Normal logic.
+    // Visual lock highlight is updated via onVButtonLockStateChanged (signal from worker).
     emit triggerVButtonKey_Signal(keyName, true);
 }
 
@@ -216,14 +203,37 @@ void QVButtonPanel::onVButtonReleased(int index)
     if (index < 0 || index >= m_keyNames.size()) return;
     const QString &keyName = m_keyNames.at(index);
 
-    // Lock mode: nothing to do on release (handled entirely in onVButtonPressed)
-    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keyName);
-    if (findindex >= 0 && QKeyMapper::KeyMappingDataList) {
-        if (QKeyMapper::KeyMappingDataList->at(findindex).Lock) return;
+    // Lock mode: worker suppresses the KEY_UP while locked; panel just always emits.
+    emit triggerVButtonKey_Signal(keyName, false);
+}
+
+void QVButtonPanel::onVButtonLockStateChanged(const QString &keyName, bool isLocked)
+{
+    int idx = m_keyNames.indexOf(keyName);
+
+    // Maintain the tracking set regardless of whether the button is currently visible
+    if (isLocked) {
+        m_lockedKeyNames.insert(keyName);
+    } else {
+        m_lockedKeyNames.remove(keyName);
     }
 
-    // Normal / Burst: send KEY_UP on release
-    emit triggerVButtonKey_Signal(keyName, false);
+    if (idx < 0 || idx >= m_buttons.size()) return;
+
+    if (isLocked) {
+        m_buttons.at(idx)->setStyleSheet(
+            "QToolButton { background-color: #3b5587; color: white; }");
+    } else {
+        m_buttons.at(idx)->setStyleSheet(QString());
+    }
+}
+
+void QVButtonPanel::onVButtonClearAllLockStates()
+{
+    m_lockedKeyNames.clear();
+    for (QToolButton *btn : std::as_const(m_buttons)) {
+        btn->setStyleSheet(QString());
+    }
 }
 
 void QVButtonPanel::updatePositionIfWindowRef()

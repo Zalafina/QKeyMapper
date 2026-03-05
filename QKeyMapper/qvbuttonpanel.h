@@ -58,6 +58,15 @@ private slots:
     void onVButtonPressed(int index);
     void onVButtonReleased(int index);
 
+public slots:
+    // Slot connected to QKeyMapper_Worker::vbuttonLockStateChanged_Signal.
+    // Updates button visual highlight to reflect Worker-side lock state.
+    void onVButtonLockStateChanged(const QString &keyName, bool isLocked);
+
+    // Slot connected to QKeyMapper_Worker::vbuttonClearAllLockStates_Signal.
+    // Clears all lock highlights when the mapping engine resets.
+    void onVButtonClearAllLockStates();
+
 private:
     void    buildGrid();
     QString extractButtonLabel(const QString &vbuttonKey) const;
@@ -71,7 +80,7 @@ private:
 
     QList<QToolButton *> m_buttons;
     QStringList          m_keyNames;
-    QSet<int>            m_lockedRows;  // indices in Lock-held state
+    QSet<QString>        m_lockedKeyNames;  // key names currently locked (synced via vbuttonLockStateChanged_Signal)
 
     // Layout/appearance
     int    m_columns     = 3;

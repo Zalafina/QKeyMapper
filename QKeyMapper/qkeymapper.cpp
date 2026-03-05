@@ -718,6 +718,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
                      m_VButtonPanel, &QVButtonPanel::setVisible, Qt::QueuedConnection);
     QObject::connect(m_VButtonPanel, &QVButtonPanel::triggerVButtonKey_Signal,
                      QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::triggerVButtonKey, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonLockStateChanged_Signal,
+                     m_VButtonPanel, &QVButtonPanel::onVButtonLockStateChanged, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonClearAllLockStates_Signal,
+                     m_VButtonPanel, &QVButtonPanel::onVButtonClearAllLockStates, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::openVButtonPanelSetup_Signal,
                      this, &QKeyMapper::on_vButtonPanelSetupButton_clicked, Qt::QueuedConnection);
 
@@ -4893,6 +4897,18 @@ ValidationResult QKeyMapper::validateUnlockOriginalKeyString(const QString &orig
 {
     ValidationResult result;
     result.isValid = true;
+
+    // VButton keys have the form VButton{<label>} where <label> is non-empty.
+    // They are never in CombinationKeysList, so validate by format only.
+    static QRegularExpression vbutton_unlock_regex(VBUTTON_REGEX_PATTERN);
+    if (vbutton_unlock_regex.match(originalkeystr).hasMatch()) {
+        QString label = vbutton_unlock_regex.match(originalkeystr).captured(1);
+        if (label.isEmpty()) {
+            result.isValid = false;
+            result.errorMessage = tr("VButton label must not be empty.");
+        }
+        return result;
+    }
 
     QStringList orikeylist = originalkeystr.split(SEPARATOR_PLUS);
     if (orikeylist.isEmpty())

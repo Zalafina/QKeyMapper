@@ -1063,6 +1063,12 @@ signals:
     // Signal emitted to show or hide the VButton panel on the main thread (Qt::QueuedConnection)
     void showVButtonPanel_Signal(bool visible);
 
+    // Signal emitted when a VButton key's lock state changes (worker → panel visual sync)
+    void vbuttonLockStateChanged_Signal(const QString &keyName, bool isLocked);
+
+    // Signal emitted when all lock states are cleared (mapping restart / hook removed)
+    void vbuttonClearAllLockStates_Signal();
+
     // Signal emitted to suppress a single LButton Down+Up from triggering its mapping
     void suppressLButtonOnce_Signal();
 

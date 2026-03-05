@@ -3172,6 +3172,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                                 emit_sendInputKeysSignal_Wrapper(locked_rowindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                             }
 
+                            // Notify VButton panel if the unlocked key is a VButton key
+                            if (lockMapKey.startsWith(VBUTTON_ORIKEY_STR)) {
+                                emit vbuttonLockStateChanged_Signal(lockMapKey, false);
+                            }
+
                             // updateLockStatus();
                         }
                     }
@@ -8173,6 +8178,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     }
     SendInputTask::clearSendInputTaskControllerMap();
     resetGlobalSendInputTaskController();
+    emit QKeyMapper_Worker::getInstance()->vbuttonClearAllLockStates_Signal();
     pressedLockKeysMap.clear();
     collectExchangeKeysList();
     SendInputTask::initSendInputTaskControllerMap();
@@ -8353,6 +8359,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // QMutexLocker locker(&s_PressedMappingKeysMapMutex);
     // pressedMappingKeysMap.clear();
     // }
+    emit QKeyMapper_Worker::getInstance()->vbuttonClearAllLockStates_Signal();
     pressedLockKeysMap.clear();
     exchangeKeysList.clear();
     // SendInputTask::clearSendInputTaskControllerMap();
@@ -8598,6 +8605,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     // QMutexLocker locker(&s_PressedMappingKeysMapMutex);
     // pressedMappingKeysMap.clear();
     // }
+    emit QKeyMapper_Worker::getInstance()->vbuttonClearAllLockStates_Signal();
     pressedLockKeysMap.clear();
     exchangeKeysList.clear();
     // SendInputTask::clearSendInputTaskControllerMap();
@@ -13873,6 +13881,11 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                                 QString original_key = QKeyMapper::KeyMappingDataList->at(rowindex).Original_Key;
                                 QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(rowindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
                             }
+
+                            // Notify VButton panel if the unlocked key is a VButton key
+                            if (locked_orikey.startsWith(VBUTTON_ORIKEY_STR)) {
+                                emit QKeyMapper_Worker::getInstance()->vbuttonLockStateChanged_Signal(locked_orikey, false);
+                            }
                         }
                     }
                 }
@@ -16280,12 +16293,55 @@ void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown
 
     QStringList mappingKeyList = entry.Mapping_Keys;
     QString original_key = entry.Original_Key;
-    int keyState = isKeyDown ? KEY_DOWN : KEY_UP;
 
-    // Send only the requested key state.
-    // Lock mode: onVButtonPressed manages toggle; pressed sends KEY_DOWN (enter) or KEY_UP (exit).
-    // Burst mode: pressed->KEY_DOWN starts burst, released->KEY_UP stops burst.
-    // Normal mode: pressed->KEY_DOWN, released->KEY_UP.
+    // ── Lock mode ─────────────────────────────────────────────────────────────
+    // VButton Lock is managed via pressedLockKeysMap (same as real keys), so that
+    // MappingKeyUnlock, Unlock(...) mappings, and DisableOriginalKeyUnlock all work.
+    if (entry.Lock) {
+        if (isKeyDown) {
+            if (pressedLockKeysMap.contains(keyName)) {
+                // Already locked → check DisableOriginalKeyUnlock
+                bool disable_orikeyunlock = entry.DisableOriginalKeyUnlock;
+                if (!disable_orikeyunlock) {
+                    // Second press: unlock
+                    (*QKeyMapper::KeyMappingDataList)[findindex].LockState = LOCK_STATE_LOCKOFF;
+                    pressedLockKeysMap.remove(keyName);
+                    emit vbuttonLockStateChanged_Signal(keyName, false);
+                    // Release the held key
+                    emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                }
+                // If DisableOriginalKeyUnlock: do nothing (VButton press is ignored)
+            }
+            else {
+                // First press: lock
+                QStringList pure_mappingkeys = entry.Pure_MappingKeys;
+                QString pure_originalkeyStr = QKeyMapper::getOriginalKeyStringWithoutSuffix(original_key);
+                if (pure_mappingkeys.contains(pure_originalkeyStr)) {
+                    (*QKeyMapper::KeyMappingDataList)[findindex].LockState = LOCK_STATE_LOCKON_PLUS;
+                }
+                else {
+                    (*QKeyMapper::KeyMappingDataList)[findindex].LockState = LOCK_STATE_LOCKON;
+                }
+                pressedLockKeysMap.insert(keyName, findindex);
+                emit vbuttonLockStateChanged_Signal(keyName, true);
+                // Press the key down
+                emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            }
+            return;  // Lock: all handling done in KEY_DOWN; nothing to do on KEY_UP
+        }
+        else {
+            // KEY_UP from panel releaseevent: if still locked suppress the KEY_UP
+            if (pressedLockKeysMap.contains(keyName)) {
+                return;
+            }
+            // Not in map (was unlocked externally): fall through and send KEY_UP
+        }
+    }
+
+    // ── Normal / Burst mode ──────────────────────────────────────────────────
+    // Normal: pressed→KEY_DOWN, released→KEY_UP.
+    // Burst:  pressed→KEY_DOWN, released→KEY_UP (Burst timer phase handled separately in Phase 2).
+    int keyState = isKeyDown ? KEY_DOWN : KEY_UP;
     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, keyState, original_key, SENDMODE_NORMAL);
 }
 
