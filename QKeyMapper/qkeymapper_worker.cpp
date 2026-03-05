@@ -16303,17 +16303,23 @@ void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown
                 // Already locked → check DisableOriginalKeyUnlock
                 bool disable_orikeyunlock = entry.DisableOriginalKeyUnlock;
                 if (!disable_orikeyunlock) {
-                    // Second press: unlock
+                    // Second press: exit lock
                     (*QKeyMapper::KeyMappingDataList)[findindex].LockState = LOCK_STATE_LOCKOFF;
                     pressedLockKeysMap.remove(keyName);
                     emit vbuttonLockStateChanged_Signal(keyName, false);
-                    // Release the held key
-                    emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    if (entry.Burst) {
+                        // Stop burst timer; the timer handles the final key release internally
+                        emit stopBurstKeyTimer_Signal(keyName, findindex, QKeyMapper::KeyMappingDataList);
+                    }
+                    else {
+                        // Release the held key
+                        emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                    }
                 }
                 // If DisableOriginalKeyUnlock: do nothing (VButton press is ignored)
             }
             else {
-                // First press: lock
+                // First press: enter lock
                 QStringList pure_mappingkeys = entry.Pure_MappingKeys;
                 QString pure_originalkeyStr = QKeyMapper::getOriginalKeyStringWithoutSuffix(original_key);
                 if (pure_mappingkeys.contains(pure_originalkeyStr)) {
@@ -16324,23 +16330,45 @@ void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown
                 }
                 pressedLockKeysMap.insert(keyName, findindex);
                 emit vbuttonLockStateChanged_Signal(keyName, true);
-                // Press the key down
-                emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                if (entry.Burst) {
+                    // Start burst timer; handles repetitive key presses while locked
+                    emit startBurstKeyTimer_Signal(keyName, findindex, QKeyMapper::KeyMappingDataList);
+                }
+                else {
+                    // Press the key down
+                    emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+                }
             }
-            return;  // Lock: all handling done in KEY_DOWN; nothing to do on KEY_UP
+            return;  // Lock: all handling done in KEY_DOWN; nothing needed on KEY_UP
         }
         else {
-            // KEY_UP from panel releaseevent: if still locked suppress the KEY_UP
+            // KEY_UP from panel release event
             if (pressedLockKeysMap.contains(keyName)) {
-                return;
+                return;  // Still locked: suppress the KEY_UP
             }
-            // Not in map (was unlocked externally): fall through and send KEY_UP
+            if (entry.Burst) {
+                return;  // Lock+Burst: burst timer already stopped (by second press or external unlock)
+            }
+            // Lock-only, not in map (externally unlocked): fall through and send KEY_UP
         }
     }
 
-    // ── Normal / Burst mode ──────────────────────────────────────────────────
-    // Normal: pressed→KEY_DOWN, released→KEY_UP.
-    // Burst:  pressed→KEY_DOWN, released→KEY_UP (Burst timer phase handled separately in Phase 2).
+    // ── Burst mode (no Lock) ──────────────────────────────────────────────────
+    // KEY_DOWN: start burst timer; KEY_UP: stop burst timer.
+    // hookBurstAndLockProc is not used here because VButton keys are never in
+    // pressedRealKeysList, which would prevent the Burst stop path from executing.
+    if (entry.Burst) {
+        if (isKeyDown) {
+            emit startBurstKeyTimer_Signal(keyName, findindex, QKeyMapper::KeyMappingDataList);
+        }
+        else {
+            emit stopBurstKeyTimer_Signal(keyName, findindex, QKeyMapper::KeyMappingDataList);
+        }
+        return;
+    }
+
+    // ── Normal mode ───────────────────────────────────────────────────────────
+    // pressed→KEY_DOWN, released→KEY_UP.
     int keyState = isKeyDown ? KEY_DOWN : KEY_UP;
     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, keyState, original_key, SENDMODE_NORMAL);
 }
