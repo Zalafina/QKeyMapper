@@ -1,5 +1,6 @@
 #include <QRandomGenerator>
 #include <cmath>
+#include <QtMath>
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
 

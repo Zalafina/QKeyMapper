@@ -3,7 +3,7 @@
 
 #include <QGridLayout>
 #include <QScrollArea>
-// #include <QToolButton>
+#include <QToolButton>
 
 #include "qkeymapper_worker.h"
 
