@@ -9700,8 +9700,9 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 }
                 else {
                     font.setItalic(false);
-                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::Base)));
-
+                    // Clear explicit background so the item inherits the disabled palette
+                    // color correctly in both light and dark themes during mapping mode.
+                    ori_TableItem->setBackground(QBrush());
                 }
                 ori_TableItem->setFont(font);
             }
@@ -22125,14 +22126,8 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 QTableWidgetItem *ori_TableItem = mappingDataTable->item(rowindex, ORIGINAL_KEY_COLUMN);
                 if (ori_TableItem) {
                     QFont font = ori_TableItem->font();
-                    if (keymapdata.Disabled) {
-                        font.setItalic(true);
-                        ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
-                    }
-                    else {
-                        font.setItalic(false);
-                        ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::Base)));
-                    }
+                    font.setItalic(true);
+                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
                     ori_TableItem->setFont(font);
                 }
             }
@@ -22357,7 +22352,9 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                     ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
                 }
                 else {
-                    ori_TableItem->setForeground(QBrush(QApplication::palette().color(QPalette::Text)));
+                    // Clear explicit foreground so the item inherits the disabled palette
+                    // color when the parent widget is disabled during mapping mode.
+                    ori_TableItem->setForeground(QBrush());
                 }
             }
             else {
@@ -22370,6 +22367,22 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                     ori_TableItem->setForeground(QBrush(PASS_THROUGH_COLOR));
                 }
                 mappingDataTable->setItem(row, ORIGINAL_KEY_COLUMN, ori_TableItem);
+            }
+            // Sync Disabled state styling (italic font + background) to keep visual
+            // consistency with refreshKeyMappingDataTable and the DISABLED_COLUMN case.
+            {
+                QFont font = ori_TableItem->font();
+                if (keymapdata.Disabled) {
+                    font.setItalic(true);
+                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
+                }
+                else {
+                    font.setItalic(false);
+                    // Clear explicit background so the item inherits the disabled palette
+                    // color correctly in both light and dark themes during mapping mode.
+                    ori_TableItem->setBackground(QBrush());
+                }
+                ori_TableItem->setFont(font);
             }
             break;
         }
@@ -22417,7 +22430,9 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 }
                 else {
                     font.setItalic(false);
-                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::Base)));
+                    // Clear explicit background so the item inherits the disabled palette
+                    // color correctly in both light and dark themes during mapping mode.
+                    ori_TableItem->setBackground(QBrush());
                 }
                 ori_TableItem->setFont(font);
             }
