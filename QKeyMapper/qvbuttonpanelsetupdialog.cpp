@@ -98,7 +98,7 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMRIGHT,   tr("WindowBottomRight"));
     ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER,  tr("WindowBottomCenter"));
 
-    ui->okButton->setText(tr("OK"));
+    ui->okButton->setText(tr("Apply"));
     ui->cancelButton->setText(tr("Cancel"));
 
     m_BGColorPicker->setButtonText(tr("BGColor"));
@@ -152,6 +152,13 @@ VButtonPanelSettings QVButtonPanelSetupDialog::getSettings() const
     s.btnColor       = m_BtnColorPicker->getColor();
     s.textColor      = m_TextColorPicker->getColor();
     return s;
+}
+
+void QVButtonPanelSetupDialog::on_okButton_clicked()
+{
+    // Emit signal to apply current settings without closing the dialog,
+    // allowing the user to continue adjusting while the panel updates live.
+    emit settingsApplied();
 }
 
 bool QVButtonPanelSetupDialog::event(QEvent *event)

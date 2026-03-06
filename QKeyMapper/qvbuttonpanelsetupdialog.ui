@@ -482,10 +482,13 @@
     </rect>
    </property>
    <property name="text">
-    <string>OK</string>
+    <string>Apply</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
    <property name="default">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="cancelButton">
@@ -500,26 +503,13 @@
    <property name="text">
     <string>Cancel</string>
    </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
   </widget>
  </widget>
  <resources/>
  <connections>
-  <connection>
-   <sender>okButton</sender>
-   <signal>clicked()</signal>
-   <receiver>QVButtonPanelSetupDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>252</x>
-     <y>269</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>200</x>
-     <y>150</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>cancelButton</sender>
    <signal>clicked()</signal>

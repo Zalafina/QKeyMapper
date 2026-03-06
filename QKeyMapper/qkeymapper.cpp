@@ -596,7 +596,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_MacroListDialog = new QMacroListDialog(this);
     m_VButtonPanel = new QVButtonPanel(Q_NULLPTR);
     m_VButtonPanelSetupDialog = new QVButtonPanelSetupDialog(this);
-    connect(m_VButtonPanelSetupDialog, &QVButtonPanelSetupDialog::accepted,
+    connect(m_VButtonPanelSetupDialog, &QVButtonPanelSetupDialog::settingsApplied,
             this, &QKeyMapper::onVButtonPanelSettingsAccepted);
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);

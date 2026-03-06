@@ -46,8 +46,15 @@ public:
     // Retrieve settings from the UI controls after dialog is accepted
     VButtonPanelSettings getSettings() const;
 
+signals:
+    // Emitted when the Apply button is clicked; does not close the dialog
+    void settingsApplied();
+
 protected:
     bool event(QEvent *event) override;
+
+private slots:
+    void on_okButton_clicked();
 
 private:
     static QVButtonPanelSetupDialog *m_instance;
