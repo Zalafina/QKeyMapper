@@ -1114,7 +1114,7 @@ namespace QKeyMapperConstants {
     inline constexpr int    VBTNPANEL_DEFAULT_BTNHEIGHT      = 30;
     inline constexpr double VBTNPANEL_DEFAULT_OPACITY        = 1.0;
     inline constexpr bool   VBTNPANEL_DEFAULT_ALWAYSONTOP    = true;
-    inline constexpr bool   VBTNPANEL_DEFAULT_DEFAULTSHOW    = false;
+    inline constexpr bool   VBTNPANEL_DEFAULT_DEFAULTSHOW    = true;
     inline constexpr int    VBTNPANEL_DEFAULT_MARGIN         = 2;
     inline constexpr int    VBTNPANEL_DEFAULT_RADIUS         = 0;
     inline constexpr bool   VBTNPANEL_DEFAULT_DRAGENABLED    = true;

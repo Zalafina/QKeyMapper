@@ -718,6 +718,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // VButton panel connections (cross-thread: worker → panel, panel → worker)
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showVButtonPanel_Signal,
                      m_VButtonPanel, &QVButtonPanel::setVisible, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::refreshVButtonPanel_Signal,
+                     this, &QKeyMapper::onRefreshVButtonPanel, Qt::QueuedConnection);
     QObject::connect(m_VButtonPanel, &QVButtonPanel::triggerVButtonKey_Signal,
                      QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::triggerVButtonKey, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonLockStateChanged_Signal,
@@ -12204,27 +12206,27 @@ void QKeyMapper::saveKeyMapSetting(void)
     Q_ASSERT(!savedSettingName.isEmpty());
     {
         const QString vbtnPrefix = QString("%1/").arg(savedSettingName);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_COLUMNS,           m_VButtonPanelSettings.columns);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_MAXROWS,           m_VButtonPanelSettings.maxRows);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_BTNWIDTH,          m_VButtonPanelSettings.btnWidth);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_BTNHEIGHT,         m_VButtonPanelSettings.btnHeight);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OPACITY,           m_VButtonPanelSettings.opacity);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_ALWAYSONTOP,       m_VButtonPanelSettings.alwaysOnTop);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_DEFAULTSHOW,       m_VButtonPanelSettings.defaultShow);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_MARGIN,            m_VButtonPanelSettings.margin);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_RADIUS,            m_VButtonPanelSettings.radius);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_DRAGENABLED,       m_VButtonPanelSettings.dragEnabled);
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_REFERENCEPOINT,    m_VButtonPanelSettings.referencePoint);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_COLUMNS,           m_VButtonPanelSettings.columns);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_MAXROWS,           m_VButtonPanelSettings.maxRows);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNWIDTH,          m_VButtonPanelSettings.btnWidth);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNHEIGHT,         m_VButtonPanelSettings.btnHeight);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_OPACITY,           m_VButtonPanelSettings.opacity);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_ALWAYSONTOP,       m_VButtonPanelSettings.alwaysOnTop);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_DEFAULTSHOW,       m_VButtonPanelSettings.defaultShow);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_MARGIN,            m_VButtonPanelSettings.margin);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_RADIUS,            m_VButtonPanelSettings.radius);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_DRAGENABLED,       m_VButtonPanelSettings.dragEnabled);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_REFERENCEPOINT,    m_VButtonPanelSettings.referencePoint);
         if (m_VButtonPanel) {
-            settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETX, m_VButtonPanel->panelOffsets().x());
-            settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETY, m_VButtonPanel->panelOffsets().y());
+            settingFile.setValue(vbtnPrefix + VBTNPANEL_OFFSETX, m_VButtonPanel->panelOffsets().x());
+            settingFile.setValue(vbtnPrefix + VBTNPANEL_OFFSETY, m_VButtonPanel->panelOffsets().y());
         } else {
-            settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETX, m_VButtonPanelSettings.offsetX);
-            settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_OFFSETY, m_VButtonPanelSettings.offsetY);
+            settingFile.setValue(vbtnPrefix + VBTNPANEL_OFFSETX, m_VButtonPanelSettings.offsetX);
+            settingFile.setValue(vbtnPrefix + VBTNPANEL_OFFSETY, m_VButtonPanelSettings.offsetY);
         }
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_BGCOLOR,   m_VButtonPanelSettings.bgColor.name(QColor::HexArgb));
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_BTNCOLOR,  m_VButtonPanelSettings.btnColor.name(QColor::HexArgb));
-        settingFile.setValue(vbtnPrefix + QKeyMapperConstants::VBTNPANEL_TEXTCOLOR, m_VButtonPanelSettings.textColor.name(QColor::HexArgb));
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_BGCOLOR,   m_VButtonPanelSettings.bgColor.name(QColor::HexArgb));
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNCOLOR,  m_VButtonPanelSettings.btnColor.name(QColor::HexArgb));
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_TEXTCOLOR, m_VButtonPanelSettings.textColor.name(QColor::HexArgb));
     }
 
     // Save MacroList to INI file
@@ -15794,29 +15796,29 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
 
     // Load VButton panel settings
     {
-        m_VButtonPanelSettings.columns        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_COLUMNS,       QKeyMapperConstants::VBTNPANEL_DEFAULT_COLUMNS).toInt();
-        m_VButtonPanelSettings.maxRows        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_MAXROWS,        QKeyMapperConstants::VBTNPANEL_DEFAULT_MAXROWS).toInt();
-        m_VButtonPanelSettings.btnWidth       = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_BTNWIDTH,       QKeyMapperConstants::VBTNPANEL_DEFAULT_BTNWIDTH).toInt();
-        m_VButtonPanelSettings.btnHeight      = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_BTNHEIGHT,      QKeyMapperConstants::VBTNPANEL_DEFAULT_BTNHEIGHT).toInt();
-        m_VButtonPanelSettings.opacity        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_OPACITY,        QKeyMapperConstants::VBTNPANEL_DEFAULT_OPACITY).toDouble();
-        m_VButtonPanelSettings.alwaysOnTop    = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_ALWAYSONTOP,   QKeyMapperConstants::VBTNPANEL_DEFAULT_ALWAYSONTOP).toBool();
-        m_VButtonPanelSettings.defaultShow    = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_DEFAULTSHOW,   QKeyMapperConstants::VBTNPANEL_DEFAULT_DEFAULTSHOW).toBool();
-        m_VButtonPanelSettings.margin         = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_MARGIN,         QKeyMapperConstants::VBTNPANEL_DEFAULT_MARGIN).toInt();
-        m_VButtonPanelSettings.radius         = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_RADIUS,         QKeyMapperConstants::VBTNPANEL_DEFAULT_RADIUS).toInt();
-        m_VButtonPanelSettings.dragEnabled    = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_DRAGENABLED,   QKeyMapperConstants::VBTNPANEL_DEFAULT_DRAGENABLED).toBool();
-        m_VButtonPanelSettings.referencePoint = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_REFERENCEPOINT, QKeyMapperConstants::VBTNPANEL_DEFAULT_REFERENCEPOINT).toInt();
-        m_VButtonPanelSettings.offsetX        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_OFFSETX,        QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETX).toInt();
-        m_VButtonPanelSettings.offsetY        = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_OFFSETY,        QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETY).toInt();
+        m_VButtonPanelSettings.columns        = settingFile.value(settingSelectStr + VBTNPANEL_COLUMNS,         VBTNPANEL_DEFAULT_COLUMNS).toInt();
+        m_VButtonPanelSettings.maxRows        = settingFile.value(settingSelectStr + VBTNPANEL_MAXROWS,         VBTNPANEL_DEFAULT_MAXROWS).toInt();
+        m_VButtonPanelSettings.btnWidth       = settingFile.value(settingSelectStr + VBTNPANEL_BTNWIDTH,        VBTNPANEL_DEFAULT_BTNWIDTH).toInt();
+        m_VButtonPanelSettings.btnHeight      = settingFile.value(settingSelectStr + VBTNPANEL_BTNHEIGHT,       VBTNPANEL_DEFAULT_BTNHEIGHT).toInt();
+        m_VButtonPanelSettings.opacity        = settingFile.value(settingSelectStr + VBTNPANEL_OPACITY,         VBTNPANEL_DEFAULT_OPACITY).toDouble();
+        m_VButtonPanelSettings.alwaysOnTop    = settingFile.value(settingSelectStr + VBTNPANEL_ALWAYSONTOP,     VBTNPANEL_DEFAULT_ALWAYSONTOP).toBool();
+        m_VButtonPanelSettings.defaultShow    = settingFile.value(settingSelectStr + VBTNPANEL_DEFAULTSHOW,     VBTNPANEL_DEFAULT_DEFAULTSHOW).toBool();
+        m_VButtonPanelSettings.margin         = settingFile.value(settingSelectStr + VBTNPANEL_MARGIN,          VBTNPANEL_DEFAULT_MARGIN).toInt();
+        m_VButtonPanelSettings.radius         = settingFile.value(settingSelectStr + VBTNPANEL_RADIUS,          VBTNPANEL_DEFAULT_RADIUS).toInt();
+        m_VButtonPanelSettings.dragEnabled    = settingFile.value(settingSelectStr + VBTNPANEL_DRAGENABLED,     VBTNPANEL_DEFAULT_DRAGENABLED).toBool();
+        m_VButtonPanelSettings.referencePoint = settingFile.value(settingSelectStr + VBTNPANEL_REFERENCEPOINT,  VBTNPANEL_DEFAULT_REFERENCEPOINT).toInt();
+        m_VButtonPanelSettings.offsetX        = settingFile.value(settingSelectStr + VBTNPANEL_OFFSETX,         VBTNPANEL_DEFAULT_OFFSETX).toInt();
+        m_VButtonPanelSettings.offsetY        = settingFile.value(settingSelectStr + VBTNPANEL_OFFSETY,         VBTNPANEL_DEFAULT_OFFSETY).toInt();
         {
-            QString bgColorStr = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_BGCOLOR).toString();
-            QColor  bgColor    = bgColorStr.isEmpty() ? QKeyMapperConstants::VBTNPANEL_BACKGROUND_COLOR_DEFAULT : QColor(bgColorStr);
-            m_VButtonPanelSettings.bgColor = bgColor.isValid() ? bgColor : QKeyMapperConstants::VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
-            QString btnColorStr = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_BTNCOLOR).toString();
-            QColor  btnColor    = btnColorStr.isEmpty() ? QKeyMapperConstants::VBTNPANEL_BUTTON_COLOR_DEFAULT : QColor(btnColorStr);
-            m_VButtonPanelSettings.btnColor = btnColor.isValid() ? btnColor : QKeyMapperConstants::VBTNPANEL_BUTTON_COLOR_DEFAULT;
-            QString txtColorStr = settingFile.value(settingSelectStr + QKeyMapperConstants::VBTNPANEL_TEXTCOLOR).toString();
-            QColor  txtColor    = txtColorStr.isEmpty() ? QKeyMapperConstants::VBTNPANEL_TEXT_COLOR_DEFAULT : QColor(txtColorStr);
-            m_VButtonPanelSettings.textColor = txtColor.isValid() ? txtColor : QKeyMapperConstants::VBTNPANEL_TEXT_COLOR_DEFAULT;
+            QString bgColorStr = settingFile.value(settingSelectStr + VBTNPANEL_BGCOLOR).toString();
+            QColor  bgColor    = bgColorStr.isEmpty() ? VBTNPANEL_BACKGROUND_COLOR_DEFAULT : QColor(bgColorStr);
+            m_VButtonPanelSettings.bgColor = bgColor.isValid() ? bgColor : VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
+            QString btnColorStr = settingFile.value(settingSelectStr + VBTNPANEL_BTNCOLOR).toString();
+            QColor  btnColor    = btnColorStr.isEmpty() ? VBTNPANEL_BUTTON_COLOR_DEFAULT : QColor(btnColorStr);
+            m_VButtonPanelSettings.btnColor = btnColor.isValid() ? btnColor : VBTNPANEL_BUTTON_COLOR_DEFAULT;
+            QString txtColorStr = settingFile.value(settingSelectStr + VBTNPANEL_TEXTCOLOR).toString();
+            QColor  txtColor    = txtColorStr.isEmpty() ? VBTNPANEL_TEXT_COLOR_DEFAULT : QColor(txtColorStr);
+            m_VButtonPanelSettings.textColor = txtColor.isValid() ? txtColor : VBTNPANEL_TEXT_COLOR_DEFAULT;
         }
         if (m_VButtonPanel) {
             m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
@@ -28714,6 +28716,16 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
         QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
     }
     QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
+}
+
+void QKeyMapper::onRefreshVButtonPanel()
+{
+    if (Q_NULLPTR == m_VButtonPanel || Q_NULLPTR == KeyMappingDataList) {
+        return;
+    }
+    // Rebuild the VButton panel button layout to reflect the current active mapping list.
+    // Called via Qt::QueuedConnection from the worker thread after buildVButtonOriginalKeysList.
+    m_VButtonPanel->refreshPanel(*KeyMappingDataList);
 }
 
 #if 0
