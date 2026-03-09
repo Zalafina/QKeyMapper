@@ -723,12 +723,14 @@ public:
     };
     Q_ENUM(JoystickDPadCode)
 
-    enum JoystickTrigger
-    {
-        JOYSTICK_LEFT_TRIGGER = 0,
-        JOYSTICK_RIGHT_TRIGGER
-    };
-    Q_ENUM(JoystickTrigger)
+    // enum JoystickTrigger
+    // {
+    //     JOYSTICK_LEFT_TRIGGER = 0,
+    //     JOYSTICK_RIGHT_TRIGGER,
+    //     JOYSTICK_LEFT_TRIGGER_LIGHT,
+    //     JOYSTICK_RIGHT_TRIGGER_LIGHT
+    // };
+    // Q_ENUM(JoystickTrigger)
 
     enum JoystickLStickCode
     {

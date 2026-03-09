@@ -10510,6 +10510,7 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
                      ? player_index : INITIAL_PLAYER_INDEX;
     qreal curr_x = e.value;
     qreal curr_y = s_JoyAxisStateMap[axis_index].left_y;  // use stored Y for circular distance
+    qreal axisMagnitude = qMin<qreal>(1.0, qAbs(curr_x));
 
     // Calculate circular distance from joystick center (capped at 1.0)
     qreal dist = joystickCircularDistance(curr_x, curr_y);
@@ -10557,12 +10558,12 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     /* --- Process LEFT direction (curr_x < 0) --- */
     if (ls_Left_Heavy_Pressed) {
         // State: LEFT HEAVY
-        if (!dir_Left || dist < releaseThreshold) {
+        if (!dir_Left || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // LEFT HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist < pushThreshold) {
+        else if (dist < pushThreshold || axisMagnitude < pushThreshold) {
             // LEFT HEAVY → LEFT LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10573,12 +10574,12 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else if (ls_Left_Light_Pressed) {
         // State: LEFT LIGHT
-        if (!dir_Left || dist < releaseThreshold) {
+        if (!dir_Left || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // LEFT LIGHT → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Left_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist >= pushThreshold) {
+        else if (dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // LEFT LIGHT → LEFT HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_LS_Left_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10589,12 +10590,12 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else {
         // State: LEFT RELEASED
-        if (dir_Left && dist >= pushThreshold) {
+        if (dir_Left && dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // LEFT RELEASED → LEFT HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_LS_Left_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dir_Left && dist >= lightPushThreshold) {
+        else if (dir_Left && dist >= lightPushThreshold && axisMagnitude >= lightPushThreshold) {
             // LEFT RELEASED → LEFT LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_LS_Left_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10604,12 +10605,12 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     /* --- Process RIGHT direction (curr_x > 0) --- */
     if (ls_Right_Heavy_Pressed) {
         // State: RIGHT HEAVY
-        if (!dir_Right || dist < releaseThreshold) {
+        if (!dir_Right || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // RIGHT HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist < pushThreshold) {
+        else if (dist < pushThreshold || axisMagnitude < pushThreshold) {
             // RIGHT HEAVY → RIGHT LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10620,12 +10621,12 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else if (ls_Right_Light_Pressed) {
         // State: RIGHT LIGHT
-        if (!dir_Right || dist < releaseThreshold) {
+        if (!dir_Right || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // RIGHT LIGHT → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Right_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist >= pushThreshold) {
+        else if (dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // RIGHT LIGHT → RIGHT HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_LS_Right_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10636,12 +10637,12 @@ void QKeyMapper_Worker::joystickLSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else {
         // State: RIGHT RELEASED
-        if (dir_Right && dist >= pushThreshold) {
+        if (dir_Right && dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // RIGHT RELEASED → RIGHT HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_LS_Right_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dir_Right && dist >= lightPushThreshold) {
+        else if (dir_Right && dist >= lightPushThreshold && axisMagnitude >= lightPushThreshold) {
             // RIGHT RELEASED → RIGHT LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_LS_Right_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10667,6 +10668,7 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
                      ? player_index : INITIAL_PLAYER_INDEX;
     qreal curr_x = s_JoyAxisStateMap[axis_index].left_x;  // use stored X for circular distance
     qreal curr_y = e.value;
+    qreal axisMagnitude = qMin<qreal>(1.0, qAbs(curr_y));
 
     // Calculate circular distance from joystick center (capped at 1.0)
     qreal dist = joystickCircularDistance(curr_x, curr_y);
@@ -10714,12 +10716,12 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     /* --- Process UP direction (curr_y < 0) --- */
     if (ls_Up_Heavy_Pressed) {
         // State: UP HEAVY
-        if (!dir_Up || dist < releaseThreshold) {
+        if (!dir_Up || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // UP HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist < pushThreshold) {
+        else if (dist < pushThreshold || axisMagnitude < pushThreshold) {
             // UP HEAVY → UP LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10730,12 +10732,12 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     }
     else if (ls_Up_Light_Pressed) {
         // State: UP LIGHT
-        if (!dir_Up || dist < releaseThreshold) {
+        if (!dir_Up || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // UP LIGHT → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Up_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist >= pushThreshold) {
+        else if (dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // UP LIGHT → UP HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_LS_Up_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10746,12 +10748,12 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     }
     else {
         // State: UP RELEASED
-        if (dir_Up && dist >= pushThreshold) {
+        if (dir_Up && dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // UP RELEASED → UP HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_LS_Up_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dir_Up && dist >= lightPushThreshold) {
+        else if (dir_Up && dist >= lightPushThreshold && axisMagnitude >= lightPushThreshold) {
             // UP RELEASED → UP LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_LS_Up_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10761,12 +10763,12 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     /* --- Process DOWN direction (curr_y > 0) --- */
     if (ls_Down_Heavy_Pressed) {
         // State: DOWN HEAVY
-        if (!dir_Down || dist < releaseThreshold) {
+        if (!dir_Down || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // DOWN HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist < pushThreshold) {
+        else if (dist < pushThreshold || axisMagnitude < pushThreshold) {
             // DOWN HEAVY → DOWN LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10777,12 +10779,12 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     }
     else if (ls_Down_Light_Pressed) {
         // State: DOWN LIGHT
-        if (!dir_Down || dist < releaseThreshold) {
+        if (!dir_Down || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // DOWN LIGHT → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_LS_Down_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist >= pushThreshold) {
+        else if (dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // DOWN LIGHT → DOWN HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_LS_Down_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10793,12 +10795,12 @@ void QKeyMapper_Worker::joystickLSVerticalProc(const QJoystickAxisEvent &e)
     }
     else {
         // State: DOWN RELEASED
-        if (dir_Down && dist >= pushThreshold) {
+        if (dir_Down && dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // DOWN RELEASED → DOWN HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_LS_Down_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dir_Down && dist >= lightPushThreshold) {
+        else if (dir_Down && dist >= lightPushThreshold && axisMagnitude >= lightPushThreshold) {
             // DOWN RELEASED → DOWN LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_LS_Down_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10824,6 +10826,7 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
                      ? player_index : INITIAL_PLAYER_INDEX;
     qreal curr_x = e.value;
     qreal curr_y = s_JoyAxisStateMap[axis_index].right_y;  // use stored Y for circular distance
+    qreal axisMagnitude = qMin<qreal>(1.0, qAbs(curr_x));
 
     // Calculate circular distance from joystick center (capped at 1.0)
     qreal dist = joystickCircularDistance(curr_x, curr_y);
@@ -10871,12 +10874,12 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     /* --- Process LEFT direction (curr_x < 0) --- */
     if (rs_Left_Heavy_Pressed) {
         // State: LEFT HEAVY
-        if (!dir_Left || dist < releaseThreshold) {
+        if (!dir_Left || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // LEFT HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist < pushThreshold) {
+        else if (dist < pushThreshold || axisMagnitude < pushThreshold) {
             // LEFT HEAVY → LEFT LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10887,12 +10890,12 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else if (rs_Left_Light_Pressed) {
         // State: LEFT LIGHT
-        if (!dir_Left || dist < releaseThreshold) {
+        if (!dir_Left || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // LEFT LIGHT → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Left_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist >= pushThreshold) {
+        else if (dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // LEFT LIGHT → LEFT HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_RS_Left_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10903,12 +10906,12 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else {
         // State: LEFT RELEASED
-        if (dir_Left && dist >= pushThreshold) {
+        if (dir_Left && dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // LEFT RELEASED → LEFT HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_RS_Left_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dir_Left && dist >= lightPushThreshold) {
+        else if (dir_Left && dist >= lightPushThreshold && axisMagnitude >= lightPushThreshold) {
             // LEFT RELEASED → LEFT LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_RS_Left_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10918,12 +10921,12 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     /* --- Process RIGHT direction (curr_x > 0) --- */
     if (rs_Right_Heavy_Pressed) {
         // State: RIGHT HEAVY
-        if (!dir_Right || dist < releaseThreshold) {
+        if (!dir_Right || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // RIGHT HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist < pushThreshold) {
+        else if (dist < pushThreshold || axisMagnitude < pushThreshold) {
             // RIGHT HEAVY → RIGHT LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10934,12 +10937,12 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else if (rs_Right_Light_Pressed) {
         // State: RIGHT LIGHT
-        if (!dir_Right || dist < releaseThreshold) {
+        if (!dir_Right || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // RIGHT LIGHT → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Right_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist >= pushThreshold) {
+        else if (dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // RIGHT LIGHT → RIGHT HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_RS_Right_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10950,12 +10953,12 @@ void QKeyMapper_Worker::joystickRSHorizontalProc(const QJoystickAxisEvent &e)
     }
     else {
         // State: RIGHT RELEASED
-        if (dir_Right && dist >= pushThreshold) {
+        if (dir_Right && dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // RIGHT RELEASED → RIGHT HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_RS_Right_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dir_Right && dist >= lightPushThreshold) {
+        else if (dir_Right && dist >= lightPushThreshold && axisMagnitude >= lightPushThreshold) {
             // RIGHT RELEASED → RIGHT LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_RS_Right_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
@@ -10981,6 +10984,7 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
                      ? player_index : INITIAL_PLAYER_INDEX;
     qreal curr_x = s_JoyAxisStateMap[axis_index].right_x;  // use stored X for circular distance
     qreal curr_y = e.value;
+    qreal axisMagnitude = qMin<qreal>(1.0, qAbs(curr_y));
 
     // Calculate circular distance from joystick center (capped at 1.0)
     qreal dist = joystickCircularDistance(curr_x, curr_y);
@@ -11028,12 +11032,12 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     /* --- Process UP direction (curr_y < 0) --- */
     if (rs_Up_Heavy_Pressed) {
         // State: UP HEAVY
-        if (!dir_Up || dist < releaseThreshold) {
+        if (!dir_Up || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // UP HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist < pushThreshold) {
+        else if (dist < pushThreshold || axisMagnitude < pushThreshold) {
             // UP HEAVY → UP LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -11044,12 +11048,12 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
     else if (rs_Up_Light_Pressed) {
         // State: UP LIGHT
-        if (!dir_Up || dist < releaseThreshold) {
+        if (!dir_Up || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // UP LIGHT → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Up_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist >= pushThreshold) {
+        else if (dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // UP LIGHT → UP HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_RS_Up_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -11060,12 +11064,12 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
     else {
         // State: UP RELEASED
-        if (dir_Up && dist >= pushThreshold) {
+        if (dir_Up && dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // UP RELEASED → UP HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_RS_Up_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dir_Up && dist >= lightPushThreshold) {
+        else if (dir_Up && dist >= lightPushThreshold && axisMagnitude >= lightPushThreshold) {
             // UP RELEASED → UP LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_RS_Up_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
@@ -11075,12 +11079,12 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     /* --- Process DOWN direction (curr_y > 0) --- */
     if (rs_Down_Heavy_Pressed) {
         // State: DOWN HEAVY
-        if (!dir_Down || dist < releaseThreshold) {
+        if (!dir_Down || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // DOWN HEAVY → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist < pushThreshold) {
+        else if (dist < pushThreshold || axisMagnitude < pushThreshold) {
             // DOWN HEAVY → DOWN LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -11091,12 +11095,12 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
     else if (rs_Down_Light_Pressed) {
         // State: DOWN LIGHT
-        if (!dir_Down || dist < releaseThreshold) {
+        if (!dir_Down || dist < releaseThreshold || axisMagnitude < releaseThreshold) {
             // DOWN LIGHT → RELEASED
             returnFlag = JoyStickKeysProc(keycodeString_RS_Down_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dist >= pushThreshold) {
+        else if (dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // DOWN LIGHT → DOWN HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_RS_Down_Light_withoutIndex, KEY_UP, e.joystick);
             Q_UNUSED(returnFlag);
@@ -11107,12 +11111,12 @@ void QKeyMapper_Worker::joystickRSVerticalProc(const QJoystickAxisEvent &e)
     }
     else {
         // State: DOWN RELEASED
-        if (dir_Down && dist >= pushThreshold) {
+        if (dir_Down && dist >= pushThreshold && axisMagnitude >= pushThreshold) {
             // DOWN RELEASED → DOWN HEAVY
             returnFlag = JoyStickKeysProc(keycodeString_RS_Down_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
         }
-        else if (dir_Down && dist >= lightPushThreshold) {
+        else if (dir_Down && dist >= lightPushThreshold && axisMagnitude >= lightPushThreshold) {
             // DOWN RELEASED → DOWN LIGHT
             returnFlag = JoyStickKeysProc(keycodeString_RS_Down_Light_withoutIndex, KEY_DOWN, e.joystick);
             Q_UNUSED(returnFlag);
@@ -17296,6 +17300,8 @@ void QKeyMapper_Worker::initJoystickKeyMap()
     JoyStickKeyMap.insert("Joy-Key13(Guide)"            ,   (int)JOYSTICK_BUTTON_10         );
     JoyStickKeyMap.insert("Joy-Key11(LT)"               ,   (int)JOYSTICK_LEFT_TRIGGER      );
     JoyStickKeyMap.insert("Joy-Key12(RT)"               ,   (int)JOYSTICK_RIGHT_TRIGGER     );
+    JoyStickKeyMap.insert("Joy-Key11(LT)_Light"         ,   (int)JOYSTICK_LEFT_TRIGGER_LIGHT);
+    JoyStickKeyMap.insert("Joy-Key12(RT)_Light"         ,   (int)JOYSTICK_RIGHT_TRIGGER_LIGHT);
     JoyStickKeyMap.insert(JOY_LT2VJOYLT_STR             ,   (int)JOYSTICK_LEFT_TRIGGER      );
     JoyStickKeyMap.insert(JOY_RT2VJOYRT_STR             ,   (int)JOYSTICK_RIGHT_TRIGGER     );
     /* Joystick 2vJoy L/R Stick */
