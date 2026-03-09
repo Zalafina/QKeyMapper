@@ -174,3 +174,12 @@ bool QVButtonPanelSetupDialog::event(QEvent *event)
     }
     return QDialog::event(event);
 }
+
+void QVButtonPanelSetupDialog::closeEvent(QCloseEvent *event)
+{
+    QDialog::closeEvent(event);
+
+    if (event->isAccepted()) {
+        emit setupDialogClosed();
+    }
+}

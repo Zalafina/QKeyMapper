@@ -51,8 +51,12 @@ signals:
     // Emitted when the Apply button is clicked; does not close the dialog
     void settingsApplied();
 
+    // Emitted when the setup dialog actually closes.
+    void setupDialogClosed();
+
 protected:
     bool event(QEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void on_okButton_clicked();

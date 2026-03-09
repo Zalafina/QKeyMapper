@@ -598,6 +598,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_VButtonPanelSetupDialog = new QVButtonPanelSetupDialog(this);
     connect(m_VButtonPanelSetupDialog, &QVButtonPanelSetupDialog::settingsApplied,
             this, &QKeyMapper::onVButtonPanelSettingsAccepted);
+    connect(m_VButtonPanelSetupDialog, &QVButtonPanelSetupDialog::setupDialogClosed,
+            this, &QKeyMapper::onVButtonPanelSetupDialogClosed);
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
@@ -10597,6 +10599,15 @@ void QKeyMapper::initIgnoreWindowInfoList()
     IgnoreWindowInfo info;
 
     // Add default system ignore rules using ruleName as key
+    info.ruleName = "QKeyMapper vbutton panel setup window";
+    info.processNameMatchType = WindowInfoMatchType::Contains;
+    info.windowTitleMatchType = WindowInfoMatchType::RegexMatch;
+    info.classNameMatchType = WindowInfoMatchType::Ignore;
+    info.processName = "QKeyMapper.exe";
+    info.windowTitle = "虚拟按钮面板设定|VButton Panel Setup|仮想ボタンパネル設定";
+    info.className.clear();
+    s_IgnoreWindowInfoMap[info.ruleName] = info;
+
     info.ruleName = "Qt tooltip window";
     info.processNameMatchType = WindowInfoMatchType::Ignore;
     info.windowTitleMatchType = WindowInfoMatchType::Ignore;
@@ -18011,6 +18022,66 @@ void QKeyMapper::closeVButtonPanelSetupDialog()
     if (m_VButtonPanelSetupDialog->isVisible()) {
         m_VButtonPanelSetupDialog->close();
     }
+}
+
+void QKeyMapper::bringExternalWindowToTop(HWND hwnd)
+{
+    if (hwnd == NULL || !IsWindow(hwnd)) {
+        return;
+    }
+
+    HWND qkeymapperHwnd = reinterpret_cast<HWND>(winId());
+    HWND setupDialogHwnd = (m_VButtonPanelSetupDialog != Q_NULLPTR) ? reinterpret_cast<HWND>(m_VButtonPanelSetupDialog->winId()) : NULL;
+    HWND vbuttonPanelHwnd = (m_VButtonPanel != Q_NULLPTR) ? reinterpret_cast<HWND>(m_VButtonPanel->winId()) : NULL;
+    if (hwnd == qkeymapperHwnd || hwnd == setupDialogHwnd || hwnd == vbuttonPanelHwnd) {
+        return;
+    }
+
+    if (IsIconic(hwnd)) {
+        ShowWindow(hwnd, SW_RESTORE);
+    }
+    else {
+        ShowWindow(hwnd, SW_SHOW);
+    }
+
+    HWND foregroundWindow = GetForegroundWindow();
+    DWORD foregroundThreadId = GetWindowThreadProcessId(foregroundWindow, NULL);
+    DWORD currentThreadId = GetCurrentThreadId();
+
+    SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+
+    if (foregroundWindow != hwnd && foregroundThreadId != currentThreadId) {
+        if (AttachThreadInput(foregroundThreadId, currentThreadId, TRUE)) {
+            SetForegroundWindow(hwnd);
+            BringWindowToTop(hwnd);
+            AttachThreadInput(foregroundThreadId, currentThreadId, FALSE);
+        }
+        else {
+            SetForegroundWindow(hwnd);
+            BringWindowToTop(hwnd);
+        }
+    }
+    else {
+        SetForegroundWindow(hwnd);
+        BringWindowToTop(hwnd);
+    }
+}
+
+void QKeyMapper::openVButtonPanelSetupDialogFromPanelContextMenu()
+{
+    if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
+        && s_CurrentMappingHWND != NULL
+        && IsWindow(s_CurrentMappingHWND)) {
+        m_restoreMappedWindowOnVButtonSetupClose = true;
+        m_pendingRestoreMappedWindowHwnd = s_CurrentMappingHWND;
+    }
+    else {
+        m_restoreMappedWindowOnVButtonSetupClose = false;
+        m_pendingRestoreMappedWindowHwnd = NULL;
+    }
+
+    on_vButtonPanelSetupButton_clicked();
 }
 
 void QKeyMapper::showMacroListDialog()
@@ -28798,6 +28869,25 @@ void QKeyMapper::onSyncVButtonPanel(bool showPanel)
         m_VButtonPanel->refreshPanel(*KeyMappingDataList);
         m_VButtonPanel->show();
     }
+}
+
+void QKeyMapper::onVButtonPanelSetupDialogClosed()
+{
+    HWND restoreHwnd = m_pendingRestoreMappedWindowHwnd;
+    bool shouldRestore = m_restoreMappedWindowOnVButtonSetupClose;
+
+    m_restoreMappedWindowOnVButtonSetupClose = false;
+    m_pendingRestoreMappedWindowHwnd = NULL;
+
+    if (!shouldRestore) {
+        return;
+    }
+
+    if (m_KeyMapStatus != KEYMAP_MAPPING_MATCHED || restoreHwnd == NULL || !IsWindow(restoreHwnd)) {
+        return;
+    }
+
+    bringExternalWindowToTop(restoreHwnd);
 }
 
 #if 0

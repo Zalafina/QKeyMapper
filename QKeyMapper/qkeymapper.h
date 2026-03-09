@@ -1246,6 +1246,7 @@ private slots:
     void on_vButtonPanelSetupButton_clicked();
     void onVButtonPanelSettingsAccepted();
     void onSyncVButtonPanel(bool showPanel);
+    void onVButtonPanelSetupDialogClosed();
 
     // void on_uninstallViGEmBusButton_clicked();
 
@@ -1525,6 +1526,7 @@ private:
     void showVButtonPanelSetupDialog(void);
     void closeVButtonPanelSetupDialog(void);
 public:
+    void openVButtonPanelSetupDialogFromPanelContextMenu(void);
     void showMacroListDialog(void);
     void closeMacroListDialog(void);
     void showMappingSequenceEdit(void);
@@ -1539,6 +1541,7 @@ private:
 
     void showTableSetupDialog(int tabindex);
     void closeTableSetupDialog(void);
+    void bringExternalWindowToTop(HWND hwnd);
 
     int installInterceptionDriver(void);
     int uninstallInterceptionDriver(void);
@@ -1706,6 +1709,8 @@ private:
     QVButtonPanel *m_VButtonPanel = Q_NULLPTR;
     QVButtonPanelSetupDialog *m_VButtonPanelSetupDialog = Q_NULLPTR;
     VButtonPanelSettings m_VButtonPanelSettings;
+    bool m_restoreMappedWindowOnVButtonSetupClose = false;
+    HWND m_pendingRestoreMappedWindowHwnd = NULL;
 public:
     QMappingSequenceEdit *m_MappingSequenceEdit = Q_NULLPTR;
 private:

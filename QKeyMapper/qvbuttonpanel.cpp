@@ -425,7 +425,9 @@ void QVButtonPanel::contextMenuEvent(QContextMenuEvent *event)
     QAction *saveAction  = menu.addAction(QObject::tr("Save Setting"));
     QAction *selected    = menu.exec(event->globalPos());
     if (selected == setupAction) {
-        emit QKeyMapper::getInstance()->openVButtonPanelSetup_Signal();
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->openVButtonPanelSetupDialogFromPanelContextMenu();
+        }
     } else if (selected == saveAction) {
         QKeyMapper::getInstance()->saveKeyMapSetting();
     }
