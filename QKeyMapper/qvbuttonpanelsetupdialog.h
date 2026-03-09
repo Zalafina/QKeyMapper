@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QColor>
+#include "qkeymapper_constants.h"
 #include "colorpickerwidget.h"
 
 namespace Ui {
@@ -10,22 +11,22 @@ class QVButtonPanelSetupDialog;
 }
 
 struct VButtonPanelSettings {
-    int    columns        = 3;
-    int    maxRows        = 4;
-    int    btnWidth       = 80;
-    int    btnHeight      = 30;
-    double opacity        = 1.0;
-    bool   alwaysOnTop    = true;
-    bool   defaultShow    = false;
-    int    margin         = 2;
-    int    radius         = 0;
-    bool   dragEnabled    = true;
-    int    referencePoint = 0;   // FLOATINGWINDOW_REFERENCEPOINT_* value (0=ScreenTopLeft)
-    int    offsetX        = 50;
-    int    offsetY        = 50;
-    QColor bgColor        = QColor(30, 30, 30, 220);
-    QColor btnColor       = QColor(60, 60, 60, 255);
-    QColor textColor      = QColor(255, 255, 255, 255);
+    int    columns        = QKeyMapperConstants::VBTNPANEL_DEFAULT_COLUMNS;
+    int    maxRows        = QKeyMapperConstants::VBTNPANEL_DEFAULT_MAXROWS;
+    int    btnWidth       = QKeyMapperConstants::VBTNPANEL_DEFAULT_BTNWIDTH;
+    int    btnHeight      = QKeyMapperConstants::VBTNPANEL_DEFAULT_BTNHEIGHT;
+    double opacity        = QKeyMapperConstants::VBTNPANEL_DEFAULT_OPACITY;
+    bool   alwaysOnTop    = QKeyMapperConstants::VBTNPANEL_DEFAULT_ALWAYSONTOP;
+    bool   defaultShow    = QKeyMapperConstants::VBTNPANEL_DEFAULT_DEFAULTSHOW;
+    int    margin         = QKeyMapperConstants::VBTNPANEL_DEFAULT_MARGIN;
+    int    radius         = QKeyMapperConstants::VBTNPANEL_DEFAULT_RADIUS;
+    bool   dragEnabled    = QKeyMapperConstants::VBTNPANEL_DEFAULT_DRAGENABLED;
+    int    referencePoint = QKeyMapperConstants::VBTNPANEL_DEFAULT_REFERENCEPOINT;
+    int    offsetX        = QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETX;
+    int    offsetY        = QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETY;
+    QColor bgColor        = QKeyMapperConstants::VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
+    QColor btnColor       = QKeyMapperConstants::VBTNPANEL_BUTTON_COLOR_DEFAULT;
+    QColor textColor      = QKeyMapperConstants::VBTNPANEL_TEXT_COLOR_DEFAULT;
 };
 
 class QVButtonPanelSetupDialog : public QDialog

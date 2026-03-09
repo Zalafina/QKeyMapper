@@ -1245,7 +1245,7 @@ private slots:
 
     void on_vButtonPanelSetupButton_clicked();
     void onVButtonPanelSettingsAccepted();
-    void onRefreshVButtonPanel();
+    void onSyncVButtonPanel(bool showPanel);
 
     // void on_uninstallViGEmBusButton_clicked();
 

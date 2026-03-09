@@ -52,7 +52,7 @@ QStringList QKeyMapper_Worker::SpecialOriginalKeysList;
 QStringList QKeyMapper_Worker::SendOnOriginalKeysList;
 QStringList QKeyMapper_Worker::SpecialMappingKeysList;
 QStringList QKeyMapper_Worker::VButtonOriginalKeysList;
-bool QKeyMapper_Worker::s_vbutton_panel_defaultshow = false;
+bool QKeyMapper_Worker::s_vbutton_panel_defaultshow = VBTNPANEL_DEFAULT_DEFAULTSHOW;
 #ifdef VBUTTON_PANEL_DEFENSE
 QAtomicBool QKeyMapper_Worker::s_vbutton_click_suppress(false);
 HWND QKeyMapper_Worker::s_vbutton_panel_hwnd = Q_NULLPTR;
@@ -8319,13 +8319,8 @@ void QKeyMapper_Worker::setWorkerKeyHook()
         buildVButtonOriginalKeysList(*QKeyMapper::KeyMappingDataList);
     }
 
-    // Rebuild panel layout on the main thread to reflect filtered (Disabled) entries
-    emit refreshVButtonPanel_Signal();
-
-    // Auto-show VButton panel if setting is enabled and there are active VButton entries
-    if (s_vbutton_panel_defaultshow && !VButtonOriginalKeysList.isEmpty()) {
-        emit showVButtonPanel_Signal(true);
-    }
+    // Synchronize the VButton panel on the main thread after the filtered list is ready.
+    emit syncVButtonPanel_Signal(s_vbutton_panel_defaultshow);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[QKeyMapper_Worker::setWorkerKeyHook] WorkerThread Hookproc End.");
@@ -8794,13 +8789,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     if (QKeyMapper::KeyMappingDataList) {
         buildVButtonOriginalKeysList(*QKeyMapper::KeyMappingDataList);
     }
-    emit refreshVButtonPanel_Signal();
-    // Show or hide the panel according to the new tab's VButton content and defaultShow setting
-    if (VButtonOriginalKeysList.isEmpty()) {
-        emit showVButtonPanel_Signal(false);
-    } else {
-        emit showVButtonPanel_Signal(s_vbutton_panel_defaultshow);
-    }
+    emit syncVButtonPanel_Signal(s_vbutton_panel_defaultshow);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart End.<<<\033[0m");

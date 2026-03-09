@@ -718,8 +718,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // VButton panel connections (cross-thread: worker → panel, panel → worker)
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showVButtonPanel_Signal,
                      m_VButtonPanel, &QVButtonPanel::setVisible, Qt::QueuedConnection);
-    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::refreshVButtonPanel_Signal,
-                     this, &QKeyMapper::onRefreshVButtonPanel, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::syncVButtonPanel_Signal,
+                     this, &QKeyMapper::onSyncVButtonPanel, Qt::QueuedConnection);
     QObject::connect(m_VButtonPanel, &QVButtonPanel::triggerVButtonKey_Signal,
                      QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::triggerVButtonKey, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonLockStateChanged_Signal,
@@ -15839,6 +15839,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
                                         m_VButtonPanelSettings.textColor);
         }
         QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
+        if (m_VButtonPanel && KeyMappingDataList) {
+            QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
+            onSyncVButtonPanel(false);
+        }
     }
 
     QString loadedSettingString;
@@ -15939,6 +15943,33 @@ void QKeyMapper::loadEmptyMapSetting()
     loadedmappingStopKeyStr = MAPPINGSWITCH_KEY_DEFAULT;
     updateMappingStopKeyString(loadedmappingStopKeyStr);
     ui->mappingStopKeyLineEdit->setText(s_MappingStopKeyString);
+
+    m_VButtonPanelSettings = VButtonPanelSettings();
+    QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
+
+    if (Q_NULLPTR != m_VButtonPanel) {
+        m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
+                                      m_VButtonPanelSettings.maxRows,
+                                      m_VButtonPanelSettings.btnWidth,
+                                      m_VButtonPanelSettings.btnHeight,
+                                      m_VButtonPanelSettings.opacity,
+                                      m_VButtonPanelSettings.alwaysOnTop,
+                                      m_VButtonPanelSettings.margin,
+                                      m_VButtonPanelSettings.radius,
+                                      m_VButtonPanelSettings.dragEnabled);
+        m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
+                                      m_VButtonPanelSettings.offsetX,
+                                      m_VButtonPanelSettings.offsetY);
+        m_VButtonPanel->applyColors(m_VButtonPanelSettings.bgColor,
+                                    m_VButtonPanelSettings.btnColor,
+                                    m_VButtonPanelSettings.textColor);
+        QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
+        onSyncVButtonPanel(false);
+    }
+
+    if (Q_NULLPTR != m_VButtonPanelSetupDialog) {
+        m_VButtonPanelSetupDialog->loadSettings(m_VButtonPanelSettings);
+    }
 
     refreshAllKeyMappingTabWidget();
 }
@@ -22583,7 +22614,8 @@ void QKeyMapper::refreshAllKeyMappingTabWidget()
 
     // Rebuild VButton panel to reflect the current mapping data
     if (m_VButtonPanel && KeyMappingDataList) {
-        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+        QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
+        onSyncVButtonPanel(m_VButtonPanel->isVisible());
     }
 }
 
@@ -28725,22 +28757,47 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
     m_VButtonPanel->applyColors(m_VButtonPanelSettings.bgColor,
                                 m_VButtonPanelSettings.btnColor,
                                 m_VButtonPanelSettings.textColor);
-    // Rebuild button grid with new column count
     if (KeyMappingDataList) {
-        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
         QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
+        onSyncVButtonPanel(m_VButtonPanel->isVisible());
     }
     QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
 }
 
-void QKeyMapper::onRefreshVButtonPanel()
+void QKeyMapper::onSyncVButtonPanel(bool showPanel)
 {
     if (Q_NULLPTR == m_VButtonPanel || Q_NULLPTR == KeyMappingDataList) {
         return;
     }
-    // Rebuild the VButton panel button layout to reflect the current active mapping list.
-    // Called via Qt::QueuedConnection from the worker thread after buildVButtonOriginalKeysList.
-    m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+
+    static QRegularExpression vbuttonRegex(VBUTTON_REGEX_PATTERN);
+
+    bool hasActiveVButtons = false;
+    for (const MAP_KEYDATA &entry : std::as_const(*KeyMappingDataList)) {
+        if (!entry.Disabled && vbuttonRegex.match(entry.Original_Key).hasMatch()) {
+            hasActiveVButtons = true;
+            break;
+        }
+    }
+
+    // Hide first when the final state should be hidden, so an empty layout never flashes on screen.
+    if (!hasActiveVButtons || !showPanel) {
+        m_VButtonPanel->hide();
+        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+        return;
+    }
+
+    if (m_VButtonPanel->isVisible()) {
+        // Keep the current panel visible while suppressing intermediate repaints during rebuild.
+        m_VButtonPanel->setUpdatesEnabled(false);
+        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+        m_VButtonPanel->setUpdatesEnabled(true);
+        m_VButtonPanel->update();
+    } else {
+        // Prepare the final layout while hidden, then show it only after the panel is ready.
+        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+        m_VButtonPanel->show();
+    }
 }
 
 #if 0
