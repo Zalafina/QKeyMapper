@@ -8312,15 +8312,15 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
     s_AtomicHookProcState = HOOKPROC_STATE_STARTED;
 
-    emitSendOnMappingStartKeys();
-
     // Rebuild VButton list from the current mapping data
     if (QKeyMapper::KeyMappingDataList) {
         buildVButtonOriginalKeysList(*QKeyMapper::KeyMappingDataList);
     }
 
-    // Synchronize the VButton panel on the main thread after the filtered list is ready.
+    // Apply the startup/default visibility before any runtime show/hide mappings are emitted.
     emit syncVButtonPanel_Signal(s_vbutton_panel_defaultshow);
+
+    emitSendOnMappingStartKeys();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[QKeyMapper_Worker::setWorkerKeyHook] WorkerThread Hookproc End.");

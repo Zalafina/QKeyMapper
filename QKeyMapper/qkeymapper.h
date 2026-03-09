@@ -1486,7 +1486,7 @@ public:
     static void saveUniversalMacroListToINI(void);
     static void loadUniversalMacroListFromINI(void);
 private:
-    QString loadKeyMapSetting(const QString &settingtext, bool load_all = false);
+    QString loadKeyMapSetting(const QString &settingtext, bool load_all = false, bool preserveVButtonPanelVisibility = false);
     void loadEmptyMapSetting(void);
     void loadGeneralSetting(void);
 

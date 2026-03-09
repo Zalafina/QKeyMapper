@@ -12247,8 +12247,10 @@ void QKeyMapper::saveKeyMapSetting(void)
     // Save UniversalMacroList to INI file
     saveUniversalMacroListToINI();
 
+    const bool preserveVButtonPanelVisibility = (m_VButtonPanel != Q_NULLPTR && m_VButtonPanel->isVisible());
+
     loadSetting_flag = true;
-    QString loadresult = loadKeyMapSetting(savedSettingName);
+    QString loadresult = loadKeyMapSetting(savedSettingName, false, preserveVButtonPanelVisibility);
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
 
@@ -12311,7 +12313,7 @@ void QKeyMapper::saveCurrentSettingLastTabName(const QString &tabName)
 #endif
 }
 
-QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
+QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all, bool preserveVButtonPanelVisibility)
 {
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
     closeSetupDialog_OnDataChanged();
@@ -15852,7 +15854,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all)
         QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
         if (m_VButtonPanel && KeyMappingDataList) {
             QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
-            onSyncVButtonPanel(false);
+            onSyncVButtonPanel(preserveVButtonPanelVisibility);
         }
     }
 
