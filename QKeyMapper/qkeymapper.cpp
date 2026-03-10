@@ -596,10 +596,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_MacroListDialog = new QMacroListDialog(this);
     m_VButtonPanel = new QVButtonPanel(Q_NULLPTR);
     m_VButtonPanelSetupDialog = new QVButtonPanelSetupDialog(this);
-    connect(m_VButtonPanelSetupDialog, &QVButtonPanelSetupDialog::settingsApplied,
+    QObject::connect(m_VButtonPanelSetupDialog, &QVButtonPanelSetupDialog::settingsApplied,
             this, &QKeyMapper::onVButtonPanelSettingsAccepted);
-    connect(m_VButtonPanelSetupDialog, &QVButtonPanelSetupDialog::setupDialogClosed,
+    QObject::connect(m_VButtonPanelSetupDialog, &QVButtonPanelSetupDialog::setupDialogClosed,
             this, &QKeyMapper::onVButtonPanelSetupDialogClosed);
+    QObject::connect(this, &QKeyMapper::openVButtonPanelSetup_Signal,
+            this, &QKeyMapper::on_vButtonPanelSetupButton_clicked, Qt::QueuedConnection);
+
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     loadSetting_flag = true;
@@ -621,6 +624,19 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingNameLineEdit->setText(loadresult);
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
+
+    // VButton panel connections (cross-thread: worker → panel, panel → worker)
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showVButtonPanel_Signal,
+                     m_VButtonPanel, &QVButtonPanel::setVisible, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::syncVButtonPanel_Signal,
+                     this, &QKeyMapper::onSyncVButtonPanel, Qt::QueuedConnection);
+    QObject::connect(m_VButtonPanel, &QVButtonPanel::triggerVButtonKey_Signal,
+                     QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::triggerVButtonKey, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonLockStateChanged_Signal,
+                     m_VButtonPanel, &QVButtonPanel::onVButtonLockStateChanged, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonClearAllLockStates_Signal,
+                     m_VButtonPanel, &QVButtonPanel::onVButtonClearAllLockStates, Qt::QueuedConnection);
+
     if (ui->startupAutoMonitoringCheckBox->isChecked()) {
         MappingSwitch(MAPPINGSTART_LOADSETTING);
     }
@@ -716,20 +732,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::systemThemeChanged_Signal, this, &QKeyMapper::systemThemeChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::systemFilterKeysSettingChanged_Signal, this, &QKeyMapper::systemFilterKeysSettingChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::keyMappingTableItemCheckStateChanged_Signal, m_ItemSetupDialog, &QItemSetupDialog::keyMappingTableItemCheckStateChanged);
-
-    // VButton panel connections (cross-thread: worker → panel, panel → worker)
-    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showVButtonPanel_Signal,
-                     m_VButtonPanel, &QVButtonPanel::setVisible, Qt::QueuedConnection);
-    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::syncVButtonPanel_Signal,
-                     this, &QKeyMapper::onSyncVButtonPanel, Qt::QueuedConnection);
-    QObject::connect(m_VButtonPanel, &QVButtonPanel::triggerVButtonKey_Signal,
-                     QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::triggerVButtonKey, Qt::QueuedConnection);
-    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonLockStateChanged_Signal,
-                     m_VButtonPanel, &QVButtonPanel::onVButtonLockStateChanged, Qt::QueuedConnection);
-    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonClearAllLockStates_Signal,
-                     m_VButtonPanel, &QVButtonPanel::onVButtonClearAllLockStates, Qt::QueuedConnection);
-    QObject::connect(this, &QKeyMapper::openVButtonPanelSetup_Signal,
-                     this, &QKeyMapper::on_vButtonPanelSetupButton_clicked, Qt::QueuedConnection);
 
     QObject::connect(ui->processLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmProcessLineEdit);
     QObject::connect(ui->windowTitleLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmWindowTitleLineEdit);
