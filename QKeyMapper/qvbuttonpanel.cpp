@@ -7,6 +7,22 @@
 
 using namespace QKeyMapperConstants;
 
+namespace {
+QString makeVButtonStyleSheet(const QColor &buttonColor, const QColor &textColor, bool locked)
+{
+    // Keep tooltip colors synced with the active theme palette.
+    static const QString tooltipRule =
+        QStringLiteral("QToolTip { background-color: palette(ToolTipBase); color: palette(ToolTipText); }");
+
+    if (locked) {
+        return QStringLiteral("QToolButton { background-color: #3b5587; color: white; }") + tooltipRule;
+    }
+
+    return QStringLiteral("QToolButton { background-color: %1; color: %2; }")
+               .arg(buttonColor.name(QColor::HexArgb), textColor.name(QColor::HexArgb)) + tooltipRule;
+}
+} // namespace
+
 QVButtonPanel::QVButtonPanel(QWidget *parent)
     : QWidget(parent, Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
 {
@@ -151,12 +167,9 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
     // Reapply lock highlights for any keys that were locked before the rebuild
     for (int i = 0; i < m_keyNames.size(); ++i) {
         if (m_lockedKeyNames.contains(m_keyNames.at(i))) {
-            m_buttons.at(i)->setStyleSheet(
-                "QToolButton { background-color: #3b5587; color: white; }");
+            m_buttons.at(i)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, true));
         } else {
-            m_buttons.at(i)->setStyleSheet(
-                QString("QToolButton { background-color: %1; color: %2; }")
-                    .arg(m_btnColor.name(QColor::HexArgb), m_txtColor.name(QColor::HexArgb)));
+            m_buttons.at(i)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, false));
         }
     }
 }
@@ -195,9 +208,7 @@ void QVButtonPanel::applyColors(const QColor &bgColor, const QColor &btnColor, c
 
     for (int i = 0; i < m_buttons.size(); ++i) {
         if (!m_lockedKeyNames.contains(m_keyNames.at(i))) {
-            m_buttons.at(i)->setStyleSheet(
-                QString("QToolButton { background-color: %1; color: %2; }")
-                    .arg(m_btnColor.name(QColor::HexArgb), m_txtColor.name(QColor::HexArgb)));
+            m_buttons.at(i)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, false));
         }
     }
 }
@@ -253,12 +264,9 @@ void QVButtonPanel::onVButtonLockStateChanged(const QString &keyName, bool isLoc
     if (idx < 0 || idx >= m_buttons.size()) return;
 
     if (isLocked) {
-        m_buttons.at(idx)->setStyleSheet(
-            "QToolButton { background-color: #3b5587; color: white; }");
+        m_buttons.at(idx)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, true));
     } else {
-        m_buttons.at(idx)->setStyleSheet(
-            QString("QToolButton { background-color: %1; color: %2; }")
-                .arg(m_btnColor.name(QColor::HexArgb), m_txtColor.name(QColor::HexArgb)));
+        m_buttons.at(idx)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, false));
     }
 }
 
@@ -267,9 +275,7 @@ void QVButtonPanel::onVButtonClearAllLockStates()
     m_lockedKeyNames.clear();
     for (int i = 0; i < m_buttons.size(); ++i) {
         if (!m_lockedKeyNames.contains(m_keyNames.at(i))) {
-            m_buttons.at(i)->setStyleSheet(
-                QString("QToolButton { background-color: %1; color: %2; }")
-                    .arg(m_btnColor.name(QColor::HexArgb), m_txtColor.name(QColor::HexArgb)));
+            m_buttons.at(i)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, false));
         }
     }
 }
