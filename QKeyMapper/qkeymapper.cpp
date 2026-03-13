@@ -28815,6 +28815,9 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
     if (Q_NULLPTR == m_VButtonPanelSetupDialog || Q_NULLPTR == m_VButtonPanel) {
         return;
     }
+    // Preserve visibility before applySettings because setWindowFlags may temporarily hide the window.
+    const bool panelWasVisible = m_VButtonPanel->isVisible();
+
     m_VButtonPanelSettings = m_VButtonPanelSetupDialog->getSettings();
     // Apply layout and appearance settings to the panel
     m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
@@ -28834,7 +28837,7 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
                                 m_VButtonPanelSettings.textColor);
     if (KeyMappingDataList) {
         QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
-        onSyncVButtonPanel(m_VButtonPanel->isVisible());
+        onSyncVButtonPanel(panelWasVisible);
     }
     QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
 }
