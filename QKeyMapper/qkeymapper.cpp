@@ -23904,6 +23904,11 @@ void QKeyMapper::setUITheme(int themeindex)
 
         m_Current_UIPalette = UI_PALETTE_SYSTEMDEFAULT;
     }
+
+    if (m_VButtonPanel) {
+        // Reapply panel scroll-area transparency after palette/theme has been set.
+        m_VButtonPanel->applyScrollAreaTransparencyStyle();
+    }
 }
 
 void QKeyMapper::checkOSVersionMatched()

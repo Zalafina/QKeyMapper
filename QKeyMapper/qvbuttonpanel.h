@@ -22,6 +22,9 @@ public:
     explicit QVButtonPanel(QWidget *parent = nullptr);
     ~QVButtonPanel() override;
 
+    // Reapply scroll area transparency rules after theme updates when needed.
+    void applyScrollAreaTransparencyStyle();
+
     void refreshPanel(const QList<MAP_KEYDATA> &dataList);
 
     // Apply layout/appearance settings (does NOT reposition the panel).

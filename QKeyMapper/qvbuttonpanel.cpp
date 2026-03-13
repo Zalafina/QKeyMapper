@@ -40,11 +40,9 @@ QVButtonPanel::QVButtonPanel(QWidget *parent)
     m_scrollArea = new QScrollArea(this);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
     m_scrollArea->setWidgetResizable(true);
-    m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     m_scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    // Use stylesheet-based transparency so Qt style engine doesn't paint a solid background
-    m_scrollArea->setStyleSheet("background: transparent;");
-    m_scrollArea->viewport()->setStyleSheet("background: transparent;");
+    applyScrollAreaTransparencyStyle();
 
     m_gridContainer = new QWidget(m_scrollArea);
     m_gridContainer->setObjectName("vbtnGridContainer");
@@ -64,6 +62,20 @@ QVButtonPanel::QVButtonPanel(QWidget *parent)
 
 QVButtonPanel::~QVButtonPanel()
 {
+}
+
+void QVButtonPanel::applyScrollAreaTransparencyStyle()
+{
+    if (!m_scrollArea || !m_scrollArea->viewport()) {
+        return;
+    }
+
+    m_scrollArea->setObjectName("vbtnScrollArea");
+    m_scrollArea->viewport()->setObjectName("vbtnScrollViewport");
+    // Limit transparency rules to the scroll area and viewport only.
+    m_scrollArea->setStyleSheet(
+        "QScrollArea#vbtnScrollArea { background: transparent; }"
+        "QWidget#vbtnScrollViewport { background: transparent; }");
 }
 
 // ── Event overrides ─────────────────────────────────────────────────────────
@@ -317,11 +329,26 @@ void QVButtonPanel::buildGrid()
     for (QToolButton *btn : std::as_const(m_buttons))
         btn->setFixedSize(m_btnWidth, m_btnHeight);
 
-    int numBtns   = m_buttons.size();
-    int numRows   = (numBtns == 0) ? 1 : ((numBtns + m_columns - 1) / m_columns);
-    int visRows   = qMin(numRows, qMax(2, m_maxRows));
-    int panelW    = m_columns * (m_btnWidth + m_margin) + m_margin * 2 + 2;
-    int panelH    = visRows  * (m_btnHeight + m_margin) + m_margin * 2 + 2;
+    const int numBtns = m_buttons.size();
+    const int numRows = (numBtns == 0) ? 1 : ((numBtns + m_columns - 1) / m_columns);
+    const int visRows = qMin(numRows, qMax(2, m_maxRows));
+
+    const int contentWidth = m_columns * (m_btnWidth + m_margin);
+    const int contentHeight = numRows * (m_btnHeight + m_margin);
+    if (m_gridContainer) {
+        // Keep the full button grid width/height available for scrolling when needed.
+        m_gridContainer->setMinimumSize(contentWidth, contentHeight);
+    }
+
+    int panelW = contentWidth + m_margin * 2 + 2;
+    int panelH = visRows * (m_btnHeight + m_margin) + m_margin * 2 + 2;
+
+    // Reserve vertical scrollbar space so it does not overlap the button columns.
+    if (numRows > visRows && m_scrollArea) {
+        const int sbExtent = m_scrollArea->style()->pixelMetric(QStyle::PM_ScrollBarExtent, nullptr, m_scrollArea);
+        panelW += sbExtent;
+    }
+
     setFixedSize(panelW, panelH);
 
     // Force repaint to apply new radius mask
