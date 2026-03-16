@@ -29,7 +29,8 @@ public:
 
     // Apply layout/appearance settings (does NOT reposition the panel).
     void applySettings(int columns, int maxRows, int btnWidth, int btnHeight,
-                       double opacity, bool alwaysOnTop, int margin, int radius, bool dragEnabled);
+                       double opacity, bool alwaysOnTop, int margin, int radius, bool dragEnabled,
+                       int btnFontSize, int btnFontWeight);
 
     // Apply background, button, and text colors to the panel.
     void applyColors(const QColor &bgColor, const QColor &btnColor, const QColor &txtColor);
@@ -75,6 +76,7 @@ public slots:
 
 private:
     void    buildGrid();
+    void    applyButtonFont(QToolButton *button);
     QString extractButtonLabel(const QString &vbuttonKey) const;
     QPoint  calculateReferenceOrigin(int referencePoint) const;
     void    recalcOffsets();  // update m_offsetX/Y from current pos() after drag
@@ -96,6 +98,8 @@ private:
     int    m_margin      = 2;
     int    m_radius      = 0;
     bool   m_dragEnabled = true;
+    int    m_btnFontSize = QKeyMapperConstants::VBTNPANEL_DEFAULT_BTNFONTSIZE;
+    int    m_btnFontWeight = QKeyMapperConstants::VBTNPANEL_DEFAULT_FONT_WEIGHT;
     QColor m_bgColor;
     QColor m_btnColor;
     QColor m_txtColor;

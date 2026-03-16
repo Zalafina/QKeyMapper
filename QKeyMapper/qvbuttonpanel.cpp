@@ -8,6 +8,17 @@
 using namespace QKeyMapperConstants;
 
 namespace {
+QFont::Weight toVButtonQtFontWeight(int fontWeight)
+{
+    if (fontWeight == VBTNPANEL_FONT_WEIGHT_LIGHT) {
+        return QFont::Light;
+    }
+    if (fontWeight == VBTNPANEL_FONT_WEIGHT_BOLD) {
+        return QFont::Bold;
+    }
+    return QFont::Normal;
+}
+
 QString makeVButtonStyleSheet(const QColor &buttonColor, const QColor &textColor, bool locked)
 {
     // Keep tooltip colors synced with the active theme palette.
@@ -149,6 +160,7 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
         btn->setAutoRaise(false);
         btn->setText(extractButtonLabel(keyName));
         btn->setFixedSize(m_btnWidth, m_btnHeight);
+        applyButtonFont(btn);
 
         // Tooltip: No. + SendTiming + MappingKey + KeyUpMapping
         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keyName);
@@ -187,7 +199,8 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
 }
 
 void QVButtonPanel::applySettings(int columns, int maxRows, int btnWidth, int btnHeight,
-                                   double opacity, bool alwaysOnTop, int margin, int radius, bool dragEnabled)
+                                   double opacity, bool alwaysOnTop, int margin, int radius, bool dragEnabled,
+                                   int btnFontSize, int btnFontWeight)
 {
     m_columns     = qMax(1, columns);
     m_maxRows     = qMax(2, maxRows);
@@ -196,6 +209,8 @@ void QVButtonPanel::applySettings(int columns, int maxRows, int btnWidth, int bt
     m_margin      = qBound(0, margin, 50);
     m_radius      = qBound(0, radius, 100);
     m_dragEnabled = dragEnabled;
+    m_btnFontSize = qBound(VBTNPANEL_BTNFONTSIZE_MIN, btnFontSize, VBTNPANEL_BTNFONTSIZE_MAX);
+    m_btnFontWeight = qBound(VBTNPANEL_FONT_WEIGHT_MIN, btnFontWeight, VBTNPANEL_FONT_WEIGHT_MAX);
 
     // Update layout spacing/margins
     m_mainLayout->setContentsMargins(m_margin, m_margin, m_margin, m_margin);
@@ -208,6 +223,10 @@ void QVButtonPanel::applySettings(int columns, int maxRows, int btnWidth, int bt
     if (alwaysOnTop) flags |=  Qt::WindowStaysOnTopHint;
     else             flags &= ~Qt::WindowStaysOnTopHint;
     setWindowFlags(flags);
+
+    for (QToolButton *btn : std::as_const(m_buttons)) {
+        applyButtonFont(btn);
+    }
 }
 
 void QVButtonPanel::applyColors(const QColor &bgColor, const QColor &btnColor, const QColor &txtColor)
@@ -353,6 +372,18 @@ void QVButtonPanel::buildGrid()
 
     // Force repaint to apply new radius mask
     update();
+}
+
+void QVButtonPanel::applyButtonFont(QToolButton *button)
+{
+    if (!button) {
+        return;
+    }
+
+    QFont font = button->font();
+    font.setPointSize(m_btnFontSize);
+    font.setWeight(toVButtonQtFontWeight(m_btnFontWeight));
+    button->setFont(font);
 }
 
 QString QVButtonPanel::extractButtonLabel(const QString &vbuttonKey) const

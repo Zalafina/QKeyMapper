@@ -56,6 +56,15 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
     referencePointList.append(tr("WindowBottomRight"));  // 10 FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMRIGHT
     referencePointList.append(tr("WindowBottomCenter")); // 11 FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER
     ui->referencePointComboBox->addItems(referencePointList);
+
+    QStringList fontWeightList;
+    fontWeightList.append(tr("Light"));
+    fontWeightList.append(tr("Normal"));
+    fontWeightList.append(tr("Bold"));
+    ui->btnFontWeightComboBox->addItems(fontWeightList);
+    ui->btnFontWeightComboBox->setCurrentIndex(VBTNPANEL_DEFAULT_FONT_WEIGHT);
+    ui->btnFontSizeSpinBox->setRange(VBTNPANEL_BTNFONTSIZE_MIN, VBTNPANEL_BTNFONTSIZE_MAX);
+    ui->btnFontSizeSpinBox->setValue(VBTNPANEL_DEFAULT_BTNFONTSIZE);
 }
 
 QVButtonPanelSetupDialog::~QVButtonPanelSetupDialog()
@@ -80,6 +89,8 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     ui->offsetXLabel->setText(tr("Offset X"));
     ui->offsetYLabel->setText(tr("Offset Y"));
     ui->referencePointLabel->setText(tr("Ref Point"));
+    ui->btnFontSizeLabel->setText(tr("Font Size"));
+    ui->btnFontWeightLabel->setText(tr("Font Weight"));
 
     ui->alwaysOnTopCheckBox->setText(tr("Always On Top"));
     ui->dragEnabledCheckBox->setText(tr("Drag Move"));
@@ -97,6 +108,9 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMLEFT,    tr("WindowBottomLeft"));
     ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMRIGHT,   tr("WindowBottomRight"));
     ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER,  tr("WindowBottomCenter"));
+    ui->btnFontWeightComboBox->setItemText(VBTNPANEL_FONT_WEIGHT_LIGHT, tr("Light"));
+    ui->btnFontWeightComboBox->setItemText(VBTNPANEL_FONT_WEIGHT_NORMAL, tr("Normal"));
+    ui->btnFontWeightComboBox->setItemText(VBTNPANEL_FONT_WEIGHT_BOLD, tr("Bold"));
 
     ui->okButton->setText(tr("Apply"));
     ui->cancelButton->setText(tr("Cancel"));
@@ -127,6 +141,8 @@ void QVButtonPanelSetupDialog::loadSettings(const VButtonPanelSettings &settings
     ui->referencePointComboBox->setCurrentIndex(idx);
     ui->offsetXSpinBox->setValue(settings.offsetX);
     ui->offsetYSpinBox->setValue(settings.offsetY);
+    ui->btnFontSizeSpinBox->setValue(qBound(VBTNPANEL_BTNFONTSIZE_MIN, settings.btnFontSize, VBTNPANEL_BTNFONTSIZE_MAX));
+    ui->btnFontWeightComboBox->setCurrentIndex(qBound(VBTNPANEL_FONT_WEIGHT_MIN, settings.btnFontWeight, VBTNPANEL_FONT_WEIGHT_MAX));
     m_BGColorPicker->setColor(settings.bgColor);
     m_BtnColorPicker->setColor(settings.btnColor);
     m_TextColorPicker->setColor(settings.textColor);
@@ -148,6 +164,8 @@ VButtonPanelSettings QVButtonPanelSetupDialog::getSettings() const
     s.referencePoint = ui->referencePointComboBox->currentIndex();
     s.offsetX        = ui->offsetXSpinBox->value();
     s.offsetY        = ui->offsetYSpinBox->value();
+    s.btnFontSize    = ui->btnFontSizeSpinBox->value();
+    s.btnFontWeight  = ui->btnFontWeightComboBox->currentIndex();
     s.bgColor        = m_BGColorPicker->getColor();
     s.btnColor       = m_BtnColorPicker->getColor();
     s.textColor      = m_TextColorPicker->getColor();

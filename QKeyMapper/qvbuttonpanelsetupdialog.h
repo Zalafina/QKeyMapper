@@ -24,6 +24,8 @@ struct VButtonPanelSettings {
     int    referencePoint = QKeyMapperConstants::VBTNPANEL_DEFAULT_REFERENCEPOINT;
     int    offsetX        = QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETX;
     int    offsetY        = QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETY;
+    int    btnFontSize    = QKeyMapperConstants::VBTNPANEL_DEFAULT_BTNFONTSIZE;
+    int    btnFontWeight  = QKeyMapperConstants::VBTNPANEL_DEFAULT_FONT_WEIGHT;
     QColor bgColor        = QKeyMapperConstants::VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
     QColor btnColor       = QKeyMapperConstants::VBTNPANEL_BUTTON_COLOR_DEFAULT;
     QColor textColor      = QKeyMapperConstants::VBTNPANEL_TEXT_COLOR_DEFAULT;

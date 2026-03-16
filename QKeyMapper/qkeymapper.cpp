@@ -12241,6 +12241,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(vbtnPrefix + VBTNPANEL_BGCOLOR,   m_VButtonPanelSettings.bgColor.name(QColor::HexArgb));
         settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNCOLOR,  m_VButtonPanelSettings.btnColor.name(QColor::HexArgb));
         settingFile.setValue(vbtnPrefix + VBTNPANEL_TEXTCOLOR, m_VButtonPanelSettings.textColor.name(QColor::HexArgb));
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTSIZE, m_VButtonPanelSettings.btnFontSize);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTWEIGHT, m_VButtonPanelSettings.btnFontWeight);
     }
 
     // Save MacroList to INI file
@@ -15835,6 +15837,16 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             QString txtColorStr = settingFile.value(settingSelectStr + VBTNPANEL_TEXTCOLOR).toString();
             QColor  txtColor    = txtColorStr.isEmpty() ? VBTNPANEL_TEXT_COLOR_DEFAULT : QColor(txtColorStr);
             m_VButtonPanelSettings.textColor = txtColor.isValid() ? txtColor : VBTNPANEL_TEXT_COLOR_DEFAULT;
+            m_VButtonPanelSettings.btnFontSize = settingFile.value(settingSelectStr + VBTNPANEL_BTNFONTSIZE,
+                                                                   VBTNPANEL_DEFAULT_BTNFONTSIZE).toInt();
+            m_VButtonPanelSettings.btnFontWeight = settingFile.value(settingSelectStr + VBTNPANEL_BTNFONTWEIGHT,
+                                                                      VBTNPANEL_DEFAULT_FONT_WEIGHT).toInt();
+            m_VButtonPanelSettings.btnFontSize = qBound(VBTNPANEL_BTNFONTSIZE_MIN,
+                                                        m_VButtonPanelSettings.btnFontSize,
+                                                        VBTNPANEL_BTNFONTSIZE_MAX);
+            m_VButtonPanelSettings.btnFontWeight = qBound(VBTNPANEL_FONT_WEIGHT_MIN,
+                                                          m_VButtonPanelSettings.btnFontWeight,
+                                                          VBTNPANEL_FONT_WEIGHT_MAX);
         }
         if (m_VButtonPanel) {
             m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
@@ -15845,7 +15857,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                           m_VButtonPanelSettings.alwaysOnTop,
                                           m_VButtonPanelSettings.margin,
                                           m_VButtonPanelSettings.radius,
-                                          m_VButtonPanelSettings.dragEnabled);
+                                          m_VButtonPanelSettings.dragEnabled,
+                                          m_VButtonPanelSettings.btnFontSize,
+                                          m_VButtonPanelSettings.btnFontWeight);
             m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
                                           m_VButtonPanelSettings.offsetX,
                                           m_VButtonPanelSettings.offsetY);
@@ -15971,7 +15985,9 @@ void QKeyMapper::loadEmptyMapSetting()
                                       m_VButtonPanelSettings.alwaysOnTop,
                                       m_VButtonPanelSettings.margin,
                                       m_VButtonPanelSettings.radius,
-                                      m_VButtonPanelSettings.dragEnabled);
+                                      m_VButtonPanelSettings.dragEnabled,
+                                      m_VButtonPanelSettings.btnFontSize,
+                                      m_VButtonPanelSettings.btnFontWeight);
         m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
                                       m_VButtonPanelSettings.offsetX,
                                       m_VButtonPanelSettings.offsetY);
@@ -28833,7 +28849,9 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
                                   m_VButtonPanelSettings.alwaysOnTop,
                                   m_VButtonPanelSettings.margin,
                                   m_VButtonPanelSettings.radius,
-                                  m_VButtonPanelSettings.dragEnabled);
+                                  m_VButtonPanelSettings.dragEnabled,
+                                  m_VButtonPanelSettings.btnFontSize,
+                                  m_VButtonPanelSettings.btnFontWeight);
     m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
                                   m_VButtonPanelSettings.offsetX,
                                   m_VButtonPanelSettings.offsetY);

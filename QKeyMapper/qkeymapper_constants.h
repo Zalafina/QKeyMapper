@@ -1103,6 +1103,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char VBTNPANEL_BGCOLOR[]           = "VButtonPanel_BGColor";
     inline constexpr const char VBTNPANEL_BTNCOLOR[]          = "VButtonPanel_BtnColor";
     inline constexpr const char VBTNPANEL_TEXTCOLOR[]         = "VButtonPanel_TextColor";
+    inline constexpr const char VBTNPANEL_BTNFONTSIZE[]       = "VButtonPanel_BtnFontSize";
+    inline constexpr const char VBTNPANEL_BTNFONTWEIGHT[]     = "VButtonPanel_BtnFontWeight";
     // Kept for backward compatibility (absolute screen position when referencePoint is Screen type)
     inline constexpr const char VBTNPANEL_POSX[]            = "VButtonPanel_PosX";
     inline constexpr const char VBTNPANEL_POSY[]            = "VButtonPanel_PosY";
@@ -1121,6 +1123,15 @@ namespace QKeyMapperConstants {
     inline constexpr int    VBTNPANEL_DEFAULT_REFERENCEPOINT = 0;  // FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT
     inline constexpr int    VBTNPANEL_DEFAULT_OFFSETX        = 50;
     inline constexpr int    VBTNPANEL_DEFAULT_OFFSETY        = 50;
+    inline constexpr int    VBTNPANEL_BTNFONTSIZE_MIN        = 1;
+    inline constexpr int    VBTNPANEL_BTNFONTSIZE_MAX        = 72;
+    inline constexpr int    VBTNPANEL_DEFAULT_BTNFONTSIZE    = 10;
+    inline constexpr int    VBTNPANEL_FONT_WEIGHT_LIGHT      = 0;
+    inline constexpr int    VBTNPANEL_FONT_WEIGHT_NORMAL     = 1;
+    inline constexpr int    VBTNPANEL_FONT_WEIGHT_BOLD       = 2;
+    inline constexpr int    VBTNPANEL_FONT_WEIGHT_MIN        = VBTNPANEL_FONT_WEIGHT_LIGHT;
+    inline constexpr int    VBTNPANEL_FONT_WEIGHT_MAX        = VBTNPANEL_FONT_WEIGHT_BOLD;
+    inline constexpr int    VBTNPANEL_DEFAULT_FONT_WEIGHT    = VBTNPANEL_FONT_WEIGHT_NORMAL;
 
     inline constexpr const char PROCESSINFO_FILENAME[] = "ProcessInfo_FileName";
     inline constexpr const char PROCESSINFO_WINDOWTITLE[] = "ProcessInfo_WindowTitle";
