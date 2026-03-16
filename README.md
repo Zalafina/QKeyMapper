@@ -1008,7 +1008,9 @@
 | SwitchTab                |  切换指定名称的映射表                     |
 | SwitchTab💾              |  切换指定名称的映射表(并进行保存)          |
 | KeySequenceBreak         |  打断所有当前正在执行的按键序列发送         |
-| KeySequenceBreak(原始按键) |  打断指定原始按键对应的运行中按键序列发送 |
+| KeySequenceBreak(原始按键) |  打断指定原始按键对应的运行中按键序列发送   |
+| ShowVButtonPanel         |  原始按键按下后显示虚拟按钮面板            |
+| HideVButtonPanel         |  原始按键按下后隐藏虚拟按钮面板            |
 | Key2Mouse-Up             |  原始按键按下后鼠标指针持续向上移动         |
 | Key2Mouse-Down           |  原始按键按下后鼠标指针持续向下移动         |
 | Key2Mouse-Left           |  原始按键按下后鼠标指针持续向左移动         |
