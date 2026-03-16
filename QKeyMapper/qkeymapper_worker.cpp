@@ -66,6 +66,7 @@ QHash<QString, XUSB_BUTTON> QKeyMapper_Worker::ViGEmButtonMap = QHash<QString, X
 #endif
 QStringList QKeyMapper_Worker::pressedRealKeysList = QStringList();
 QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
+QStringList QKeyMapper_Worker::pressedVButtonKeysList;
 QList<RecordKeyData> QKeyMapper_Worker::recordKeyList;
 QStringList QKeyMapper_Worker::recordMappingKeysList;
 QElapsedTimer QKeyMapper_Worker::recordElapsedTimer;
@@ -140,6 +141,7 @@ QList<QStringList> QKeyMapper_Worker::s_vJoyExcludedRStickDirectionsList;
 #endif
 QHash<QString, QStringList> QKeyMapper_Worker::pressedMappingKeysMap;
 QMutex QKeyMapper_Worker::s_PressedMappingKeysMapMutex;
+QMutex QKeyMapper_Worker::s_PressedVButtonKeysListMutex;
 QHash<QString, int> QKeyMapper_Worker::pressedLockKeysMap;
 QStringList QKeyMapper_Worker::exchangeKeysList = QStringList();
 QMutex QKeyMapper_Worker::s_BurstKeyTimerMutex;
@@ -2246,6 +2248,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 bool longpress      = original_key_holddown.contains(SEPARATOR_LONGPRESS);
                 bool doublepress    = original_key_holddown.contains(SEPARATOR_DOUBLEPRESS);
                 bool multi_input    = original_key_holddown.contains('@');
+                bool vbutton_input  = false;
                 bool keyseqholddown_skip = false;
 
                 if (longpress && pressedLongPressKeysList.contains(original_key_holddown)) {
@@ -2268,6 +2271,16 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     keyseqholddown_skip = true;
                 }
 
+                // VButton keys are not tracked by pressedRealKeysList, so hold-down
+                // skip needs to consult dedicated VButton pressed-state as well.
+                if (!keyseqholddown_skip) {
+                    QMutexLocker locker(&s_PressedVButtonKeysListMutex);
+                    if (pressedVButtonKeysList.contains(original_key_holddown)) {
+                        vbutton_input = true;
+                        keyseqholddown_skip = true;
+                    }
+                }
+
                 if (keyseqholddown_skip) {
 #ifdef DEBUG_LOGOUT_ON
                     /* \033[1;34m (Blue Bold Text) \033[0m */
@@ -2283,6 +2296,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                     else if (multi_input) {
                         qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] MultiInput KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedRealKeysList -> " << pressedRealKeysList << "\033[0m";
+                    }
+                    else if (vbutton_input) {
+                        qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] VButton KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedVButtonKeysList -> " << pressedVButtonKeysList << "\033[0m";
                     }
                     else {
                         qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] KeySeqHoldDown skip KeyUp -> original_key_holddown[" << original_key_holddown << "], " << "mappingKeys[" << inputKeys << "]" << " : pressedRealKeysListRemoveMultiInput -> " << pressedRealKeysListRemoveMultiInput << "\033[0m";
@@ -2860,6 +2876,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                     else if (pressedRealKeysList.contains(orikey_str)) {
                         isKeyPressed = true;
+                    }
+
+                    if (!isKeyPressed) {
+                        QMutexLocker locker(&s_PressedVButtonKeysListMutex);
+                        if (pressedVButtonKeysList.contains(orikey_str)) {
+                            isKeyPressed = true;
+                        }
                     }
 
                     if (isKeyPressed) {
@@ -8151,6 +8174,10 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
     s_OnlyOnceFilteredCache.clear();
+    {
+    QMutexLocker locker(&s_PressedVButtonKeysListMutex);
+    pressedVButtonKeysList.clear();
+    }
     // pressedRealKeysList.clear();
     pressedVirtualKeysList.clear();
     // pressedCombinationRealKeysList.clear();
@@ -8345,6 +8372,10 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
     s_OnlyOnceFilteredCache.clear();
+    {
+    QMutexLocker locker(&s_PressedVButtonKeysListMutex);
+    pressedVButtonKeysList.clear();
+    }
     // pressedRealKeysList.clear();
     // pressedVirtualKeysList.clear();
     // pressedCombinationRealKeysList.clear();
@@ -8594,6 +8625,10 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     clearAllPressedRealCombinationKeys();
     s_KeySequenceRepeatCount.clear();
     s_OnlyOnceFilteredCache.clear();
+    {
+    QMutexLocker locker(&s_PressedVButtonKeysListMutex);
+    pressedVButtonKeysList.clear();
+    }
     // pressedCombinationRealKeysList.clear();
     pressedLongPressKeysList.clear();
     pressedDoublePressKeysList.clear();
@@ -8835,6 +8870,10 @@ void QKeyMapper_Worker::sessionLockStateChanged(bool locked)
 
     pressedRealKeysList.clear();
     pressedRealKeysListRemoveMultiInput.clear();
+    {
+    QMutexLocker locker(&s_PressedVButtonKeysListMutex);
+    pressedVButtonKeysList.clear();
+    }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QKeyMapper_Worker::sessionLockStateChanged]" << "State:" << locked << ", pressedRealKeysList Cleared.";
 #endif
@@ -16307,7 +16346,18 @@ void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown
     }
 
     QStringList mappingKeyList = entry.Mapping_Keys;
+    QStringList mappingKey_KeyUpList = entry.MappingKeys_KeyUp;
     QString original_key = entry.Original_Key;
+    int mappingkeylist_size = mappingKeyList.size();
+
+    auto removePressedVButtonKey = [this, &original_key]() {
+        QMutexLocker locker(&s_PressedVButtonKeysListMutex);
+        pressedVButtonKeysList.removeAll(original_key);
+    };
+
+    if (!isKeyDown) {
+        removePressedVButtonKey();
+    }
 
     // ── Lock mode ─────────────────────────────────────────────────────────────
     // VButton Lock is managed via pressedLockKeysMap (same as real keys), so that
@@ -16383,9 +16433,67 @@ void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown
     }
 
     // ── Normal mode ───────────────────────────────────────────────────────────
-    // pressed→KEY_DOWN, released→KEY_UP.
-    int keyState = isKeyDown ? KEY_DOWN : KEY_UP;
-    emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, keyState, original_key, SENDMODE_NORMAL);
+    if (isKeyDown) {
+        QMutexLocker locker(&s_PressedVButtonKeysListMutex);
+        if (!pressedVButtonKeysList.contains(original_key)) {
+            pressedVButtonKeysList.append(original_key);
+        }
+    }
+
+    int SendTiming = entry.SendTiming;
+    bool KeySeqHoldDown = entry.KeySeqHoldDown;
+
+    if (isKeyDown) {
+        if (SENDTIMING_KEYDOWN == SendTiming) {
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+        }
+        else if (SENDTIMING_KEYUP == SendTiming) {
+            /* KEY_DOWN & SENDTIMING_KEYUP == SendTiming -> do nothing */
+        }
+        else if (SENDTIMING_KEYDOWN_AND_KEYUP == SendTiming) {
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+        }
+        else if (SENDTIMING_NORMAL_AND_KEYUP == SendTiming) {
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+        }
+        else { /* SENDTIMING_NORMAL == SendTiming */
+            if (mappingkeylist_size > 1 && KeySeqHoldDown) {
+                emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+            }
+            else {
+                emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            }
+        }
+    }
+    else {
+        if (SENDTIMING_KEYDOWN == SendTiming) {
+            /* KEY_UP & SENDTIMING_KEYDOWN == SendTiming -> do nothing */
+        }
+        else if (SENDTIMING_KEYUP == SendTiming) {
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_UP, original_key, SENDMODE_NORMAL);
+        }
+        else if (SENDTIMING_KEYDOWN_AND_KEYUP == SendTiming) {
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_UP, original_key, SENDMODE_NORMAL);
+        }
+        else if (SENDTIMING_NORMAL_AND_KEYUP == SendTiming) {
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_DOWN, original_key, SENDMODE_NORMAL);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKey_KeyUpList, KEY_UP, original_key, SENDMODE_NORMAL);
+        }
+        else { /* SENDTIMING_NORMAL == SendTiming */
+            if (mappingkeylist_size > 1 && KeySeqHoldDown) {
+                emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_KEYSEQ_HOLDDOWN);
+            }
+            else {
+                emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+            }
+        }
+    }
 }
 
 bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, const QJoystickDevice *joystick)

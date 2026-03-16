@@ -1324,6 +1324,7 @@ public:
 #endif
     static QStringList pressedRealKeysList;
     static QStringList pressedRealKeysListRemoveMultiInput;
+    static QStringList pressedVButtonKeysList;
     static QList<RecordKeyData> recordKeyList;
     static QStringList recordMappingKeysList;
     static QElapsedTimer recordElapsedTimer;
@@ -1354,6 +1355,7 @@ public:
 #endif
     static QHash<QString, QStringList> pressedMappingKeysMap;
     static QMutex s_PressedMappingKeysMapMutex;
+    static QMutex s_PressedVButtonKeysListMutex;
     static QHash<QString, int> pressedLockKeysMap;
     static QStringList exchangeKeysList;
     static QMutex s_BurstKeyTimerMutex;
