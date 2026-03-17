@@ -4,6 +4,7 @@
 #include "qkeymapper.h"
 
 #include <QPainter>
+#include <QScrollBar>
 
 using namespace QKeyMapperConstants;
 
@@ -106,6 +107,10 @@ void QVButtonPanel::showEvent(QShowEvent *event)
         QKeyMapper_Worker::s_vbutton_panel_hwnd = hwnd;
 #endif
     }
+
+    // Recalculate once after the panel becomes visible, so scrollbar-based correction
+    // uses stable viewport geometry instead of hidden-state transient values.
+    buildGrid();
 }
 
 void QVButtonPanel::paintEvent(QPaintEvent *event)
@@ -351,24 +356,91 @@ void QVButtonPanel::buildGrid()
     const int numBtns = m_buttons.size();
     const int numRows = (numBtns == 0) ? 1 : ((numBtns + m_columns - 1) / m_columns);
     const int visRows = qMin(numRows, qMax(2, m_maxRows));
+    const int gridSpacing = qMax(0, m_gridLayout ? m_gridLayout->spacing() : m_margin);
 
-    const int contentWidth = m_columns * (m_btnWidth + m_margin);
-    const int contentHeight = numRows * (m_btnHeight + m_margin);
-    if (m_gridContainer) {
-        // Keep the full button grid width/height available for scrolling when needed.
-        m_gridContainer->setMinimumSize(contentWidth, contentHeight);
+    // Grid content size should not include trailing spacing after the last column/row.
+    int contentWidth = (m_columns * m_btnWidth) + (qMax(0, m_columns - 1) * gridSpacing);
+    int contentHeight = (numRows * m_btnHeight) + (qMax(0, numRows - 1) * gridSpacing);
+
+    if (m_gridLayout) {
+        // Ensure sizeHint reflects the latest rebuilt button set before final geometry is decided.
+        m_gridLayout->invalidate();
+        m_gridLayout->activate();
+        const QSize layoutHint = m_gridLayout->sizeHint();
+        contentWidth = qMax(contentWidth, layoutHint.width());
+        contentHeight = qMax(contentHeight, layoutHint.height());
     }
 
-    int panelW = contentWidth + m_margin * 2 + 2;
-    int panelH = visRows * (m_btnHeight + m_margin) + m_margin * 2 + 2;
+    if (m_gridContainer) {
+        // Keep the grid size deterministic so spacing does not drift during dynamic setting switches.
+        m_gridContainer->setFixedSize(contentWidth, contentHeight);
+        m_gridContainer->updateGeometry();
+    }
+
+    const int basePanelW = contentWidth + m_margin * 2 + 2;
+    const int basePanelH = (visRows * m_btnHeight) + (qMax(0, visRows - 1) * gridSpacing) + m_margin * 2 + 2;
+    int panelW = basePanelW;
+    int panelH = basePanelH;
+    bool reservedVSpace = false;
+    bool reservedHSpace = false;
 
     // Reserve vertical scrollbar space so it does not overlap the button columns.
     if (numRows > visRows && m_scrollArea) {
         const int sbExtent = m_scrollArea->style()->pixelMetric(QStyle::PM_ScrollBarExtent, nullptr, m_scrollArea);
         panelW += sbExtent;
+        reservedVSpace = true;
     }
 
     setFixedSize(panelW, panelH);
+
+    if (m_scrollArea && isVisible()) {
+        const int sbExtent = m_scrollArea->style()->pixelMetric(QStyle::PM_ScrollBarExtent, nullptr, m_scrollArea);
+
+        // Run corrective passes only when visible; hidden-state geometry can be transient at startup.
+        for (int pass = 0; pass < 2; ++pass) {
+            m_scrollArea->updateGeometry();
+            if (m_gridLayout) {
+                m_gridLayout->activate();
+            }
+
+            const QScrollBar *vbar = m_scrollArea->verticalScrollBar();
+            const QScrollBar *hbar = m_scrollArea->horizontalScrollBar();
+            const bool needVSpace = vbar && (vbar->maximum() > vbar->minimum());
+            const bool needHSpace = hbar && (hbar->maximum() > hbar->minimum());
+
+            const int desiredW = basePanelW + (needVSpace ? sbExtent : 0);
+            const int desiredH = basePanelH + (needHSpace ? sbExtent : 0);
+
+            reservedVSpace = needVSpace;
+            reservedHSpace = needHSpace;
+
+            if (desiredW == panelW && desiredH == panelH) {
+                break;
+            }
+
+            panelW = desiredW;
+            panelH = desiredH;
+            setFixedSize(panelW, panelH);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[QVButtonPanel::buildGrid]"
+                       << " btns=" << numBtns
+                       << ", columns=" << m_columns
+                       << ", rows=" << numRows
+                       << ", visRows=" << visRows
+                       << ", btnSize=" << m_btnWidth << "x" << m_btnHeight
+                       << ", margin=" << m_margin
+                       << ", gridSpacing=" << gridSpacing
+                       << ", content=" << contentWidth << "x" << contentHeight
+                       << ", panel=" << panelW << "x" << panelH
+                       << ", reservedV=" << reservedVSpace
+                       << ", reservedH=" << reservedHSpace
+                       << ", panelVisible=" << isVisible()
+                       << ", gridContainerSize=" << (m_gridContainer ? m_gridContainer->size() : QSize())
+                       << ", viewportSize=" << (m_scrollArea && m_scrollArea->viewport() ? m_scrollArea->viewport()->size() : QSize());
+#endif
 
     // Force repaint to apply new radius mask
     update();
