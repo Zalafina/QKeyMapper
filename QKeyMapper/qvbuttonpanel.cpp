@@ -377,8 +377,10 @@ void QVButtonPanel::buildGrid()
         m_gridContainer->updateGeometry();
     }
 
-    const int basePanelW = contentWidth + m_margin * 2 + 2;
-    const int basePanelH = (visRows * m_btnHeight) + (qMax(0, visRows - 1) * gridSpacing) + m_margin * 2 + 2;
+    const int visibleContentHeight = (visRows * m_btnHeight) + (qMax(0, visRows - 1) * gridSpacing);
+    // Keep no-scrollbar geometry strictly symmetric: content + left/right and top/bottom margins.
+    const int basePanelW = contentWidth + m_margin * 2;
+    const int basePanelH = visibleContentHeight + m_margin * 2;
     int panelW = basePanelW;
     int panelH = basePanelH;
     bool reservedVSpace = false;
@@ -425,6 +427,25 @@ void QVButtonPanel::buildGrid()
     }
 
 #ifdef DEBUG_LOGOUT_ON
+    const QMargins mainMargins = m_mainLayout ? m_mainLayout->contentsMargins() : QMargins();
+    const QSize scrollAreaSize = m_scrollArea ? m_scrollArea->size() : QSize();
+    const QRect scrollAreaGeometry = m_scrollArea ? m_scrollArea->geometry() : QRect();
+    const QSize viewportSize = (m_scrollArea && m_scrollArea->viewport()) ? m_scrollArea->viewport()->size() : QSize();
+    const QRect viewportGeometry = (m_scrollArea && m_scrollArea->viewport()) ? m_scrollArea->viewport()->geometry() : QRect();
+    const QSize gridContainerSize = m_gridContainer ? m_gridContainer->size() : QSize();
+    const QRect gridContainerGeometry = m_gridContainer ? m_gridContainer->geometry() : QRect();
+    const QScrollBar *vbar = m_scrollArea ? m_scrollArea->verticalScrollBar() : nullptr;
+    const QScrollBar *hbar = m_scrollArea ? m_scrollArea->horizontalScrollBar() : nullptr;
+    const int frameWidth = m_scrollArea ? m_scrollArea->frameWidth() : 0;
+    const int viewportExtraW = viewportSize.width() - gridContainerSize.width();
+    const int viewportExtraH = viewportSize.height() - gridContainerSize.height();
+    const int outerLeft = scrollAreaGeometry.left();
+    const int outerTop = scrollAreaGeometry.top();
+    const int outerRight = panelW - (scrollAreaGeometry.x() + scrollAreaGeometry.width());
+    const int outerBottom = panelH - (scrollAreaGeometry.y() + scrollAreaGeometry.height());
+    const int expectedNoScrollW = contentWidth + mainMargins.left() + mainMargins.right();
+    const int expectedNoScrollH = visibleContentHeight + mainMargins.top() + mainMargins.bottom();
+
     qDebug().nospace() << "[QVButtonPanel::buildGrid]"
                        << " btns=" << numBtns
                        << ", columns=" << m_columns
@@ -438,8 +459,22 @@ void QVButtonPanel::buildGrid()
                        << ", reservedV=" << reservedVSpace
                        << ", reservedH=" << reservedHSpace
                        << ", panelVisible=" << isVisible()
-                       << ", gridContainerSize=" << (m_gridContainer ? m_gridContainer->size() : QSize())
-                       << ", viewportSize=" << (m_scrollArea && m_scrollArea->viewport() ? m_scrollArea->viewport()->size() : QSize());
+                       << ", mainMargins=" << mainMargins
+                       << ", scrollAreaSize=" << scrollAreaSize
+                       << ", scrollAreaGeometry=" << scrollAreaGeometry
+                       << ", viewportSize=" << viewportSize
+                       << ", viewportGeometry=" << viewportGeometry
+                       << ", gridContainerSize=" << gridContainerSize
+                       << ", gridContainerGeometry=" << gridContainerGeometry
+                       << ", viewportExtraW=" << viewportExtraW
+                       << ", viewportExtraH=" << viewportExtraH
+                       << ", vbarVisible=" << (vbar ? vbar->isVisible() : false)
+                       << ", hbarVisible=" << (hbar ? hbar->isVisible() : false)
+                       << ", vbarRange=" << (vbar ? vbar->minimum() : 0) << ".." << (vbar ? vbar->maximum() : 0)
+                       << ", hbarRange=" << (hbar ? hbar->minimum() : 0) << ".." << (hbar ? hbar->maximum() : 0)
+                       << ", frameWidth=" << frameWidth
+                       << ", outerMargins=" << outerLeft << "/" << outerTop << "/" << outerRight << "/" << outerBottom
+                       << ", expectedNoScrollPanel=" << expectedNoScrollW << "x" << expectedNoScrollH;
 #endif
 
     // Force repaint to apply new radius mask
