@@ -9169,8 +9169,30 @@ int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
 
 int QKeyMapper::insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisabledCount)
 {
+    int insertRow = -1;
+    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[insertKeyMappingDataFromCopiedList] There is no selected item, insert to the end.";
+#endif
+        insertRow = KeyMappingDataList ? KeyMappingDataList->size() : 0;
+    }
+    else {
+        // Get the selected row based on insert mode.
+        QTableWidgetSelectionRange range = selectedRanges.first();
+        const int preferredRow = (insertMode == TABLE_INSERT_MODE_BELOW)
+            ? (range.bottomRow() + 1)
+            : range.topRow();
+        insertRow = preferredRow;
+    }
+
+    return insertCopiedKeyMappingDataAtAbsoluteRow(insertRow, autoDisabledCount);
+}
+
+int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *autoDisabledCount)
+{
     int inserted_count = -1;
-    if (s_CopiedMappingData.isEmpty()) {
+    if (!KeyMappingDataList || !m_KeyMappingDataTable || s_CopiedMappingData.isEmpty()) {
         return inserted_count;
     }
 
@@ -9212,60 +9234,32 @@ int QKeyMapper::insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisa
         *autoDisabledCount = auto_disabled;
     }
 
-    bool insertToEnd = false;
-    int insertRow = -1;
-    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
-    if (selectedRanges.isEmpty()) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[insertKeyMappingDataFromCopiedList] There is no selected item, insert to the end.";
-#endif
-        insertToEnd = true;
-    }
-    else {
-        // Get the selected row based on insert mode
-        QTableWidgetSelectionRange range = selectedRanges.first();
-        const int preferredRow = (insertMode == TABLE_INSERT_MODE_BELOW)
-            ? (range.bottomRow() + 1)
-            : range.topRow();
-        insertRow = qBound(0, preferredRow, KeyMappingDataList->size());
+    const int boundedInsertRow = qBound(0, insertRow, KeyMappingDataList->size());
+
+    // Insert rows at explicit target position in reverse order to preserve sequence.
+    for (int i = insertMappingDataList.size() - 1; i >= 0; --i) {
+        KeyMappingDataList->insert(boundedInsertRow, insertMappingDataList.at(i));
     }
 
-    if (insertToEnd) {
-        KeyMappingDataList->append(insertMappingDataList);
-    }
-    else {
-        // Insert the rows at the new position on reverse order
-        for (int i = insertMappingDataList.size() - 1; i >= 0; --i) {
-            KeyMappingDataList->insert(insertRow, insertMappingDataList.at(i));
-        }
-    }
-
-    // refresh table display
+    // Refresh table display.
     refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
-    // Update the mouse points list
     updateMousePointsList();
 
-    // Reselect inserted rows
     if (inserted_count > 0) {
-        int startRow = insertToEnd ? m_KeyMappingDataTable->rowCount() - inserted_count : insertRow;
-        int endRow = startRow + inserted_count - 1;
-        QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(startRow, 0, endRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+        int startRow = qBound(0, boundedInsertRow, m_KeyMappingDataTable->rowCount() - 1);
+        int endRow = qBound(startRow, startRow + inserted_count - 1, m_KeyMappingDataTable->rowCount() - 1);
+        QTableWidgetSelectionRange newSelection(startRow, 0, endRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
         m_KeyMappingDataTable->clearSelection();
         m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
-        // Update current cell to the start of inserted rows for Ctrl/Shift+Click consistency
+        // Keep current cell aligned with inserted range for Ctrl/Shift+Click consistency.
         m_KeyMappingDataTable->setCurrentCell(startRow, 0, QItemSelectionModel::NoUpdate);
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    QString debugmessage;
-    if (insertToEnd) {
-        debugmessage = QString("[copySelectedKeyMappingDataToCopiedList] Ctrl+V pressed, append (%1) items to the end of current mapping table -> ").arg(inserted_count);
-    }
-    else {
-        debugmessage = QString("[copySelectedKeyMappingDataToCopiedList] Ctrl+V pressed, insert (%1) items to row(%2) of current mapping table -> ").arg(inserted_count).arg(insertRow);
-    }
-    qDebug().nospace().noquote() << debugmessage << insertMappingDataList;
+    qDebug().nospace().noquote()
+        << "[insertCopiedKeyMappingDataAtAbsoluteRow] Insert (" << inserted_count
+        << ") copied items at row(" << boundedInsertRow << ") -> " << insertMappingDataList;
 #endif
 
     return inserted_count;
@@ -18146,6 +18140,53 @@ void QKeyMapper::closeMappingSequenceEdit()
     if (m_MappingSequenceEdit->isVisible()) {
         m_MappingSequenceEdit->close();
     }
+}
+
+void QKeyMapper::openCurrentMappingTableSetupDialog()
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return;
+    }
+
+    const int currentTabIndex = s_KeyMappingTabWidgetCurrentIndex;
+    if (currentTabIndex < 0
+        || currentTabIndex >= ui->keyMappingTabWidget->count()
+        || currentTabIndex >= s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    showTableSetupDialog(currentTabIndex);
+}
+
+void QKeyMapper::openCurrentMappingItemSetupDialog()
+{
+    if (!m_KeyMappingDataTable) {
+        return;
+    }
+
+    const QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
+    if (selectedRanges.isEmpty()) {
+        return;
+    }
+
+    const int currentRow = m_KeyMappingDataTable->currentRow();
+    if (currentRow < 0) {
+        return;
+    }
+
+    bool inSelectedRange = false;
+    for (const QTableWidgetSelectionRange &range : selectedRanges) {
+        if (currentRow >= range.topRow() && currentRow <= range.bottomRow()) {
+            inSelectedRange = true;
+            break;
+        }
+    }
+
+    if (!inSelectedRange) {
+        return;
+    }
+
+    showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, currentRow);
 }
 
 void QKeyMapper::showItemSetupDialog(int tabindex, int row)
@@ -29623,6 +29664,178 @@ void KeyMappingDataTableWidget::keyPressEvent(QKeyEvent *event)
     }
 
     QTableWidget::keyPressEvent(event);
+}
+
+void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    QKeyMapper *keymapper = QKeyMapper::getInstance();
+    if (!keymapper || QKeyMapper::KEYMAP_IDLE != keymapper->m_KeyMapStatus) {
+        QTableWidget::contextMenuEvent(event);
+        return;
+    }
+
+    if (state() == QAbstractItemView::EditingState) {
+        QTableWidget::contextMenuEvent(event);
+        return;
+    }
+
+    const QList<QTableWidgetSelectionRange> selectionRanges = this->selectedRanges();
+    const bool hasSelection = !selectionRanges.isEmpty();
+    const bool hasCopiedItems = !QKeyMapper::s_CopiedMappingData.isEmpty();
+
+    const int currentRow = this->currentRow();
+    bool hasValidCurrentSelectedRow = false;
+    if (currentRow >= 0 && hasSelection) {
+        for (const QTableWidgetSelectionRange &range : selectionRanges) {
+            if (currentRow >= range.topRow() && currentRow <= range.bottomRow()) {
+                hasValidCurrentSelectedRow = true;
+                break;
+            }
+        }
+    }
+
+    QMenu contextMenu(this);
+
+    auto handleInsertResult = [keymapper](int inserted_count, int auto_disabled) {
+        const int copied_count = QKeyMapper::s_CopiedMappingData.size();
+        if (inserted_count == 0) {
+            QString message = tr("%1 copied mapping data failed to insert!").arg(copied_count);
+            keymapper->showFailurePopup(message);
+        }
+        else if (inserted_count > 0) {
+            QString message;
+            if (auto_disabled > 0) {
+                message = tr("Inserted %1 copied mapping data into current mapping table. %2 mapping(s) were disabled due to a conflict.")
+                              .arg(inserted_count)
+                              .arg(auto_disabled);
+                keymapper->showWarningPopup(message);
+            }
+            else {
+                message = tr("Inserted %1 copied mapping data into current mapping table.")
+                              .arg(inserted_count);
+                keymapper->showInformationPopup(message);
+            }
+        }
+    };
+
+    bool hasPreviousGroup = false;
+
+    // Group 1: Window dialogs
+    QAction *mappingTableSetupAction = contextMenu.addAction(tr("Mapping Table Setup"));
+    connect(mappingTableSetupAction, &QAction::triggered, this, [keymapper]() {
+        keymapper->openCurrentMappingTableSetupDialog();
+    });
+
+    if (hasValidCurrentSelectedRow) {
+        QAction *mappingItemSetupAction = contextMenu.addAction(tr("Mapping Item Setup"));
+        connect(mappingItemSetupAction, &QAction::triggered, this, [keymapper]() {
+            keymapper->openCurrentMappingItemSetupDialog();
+        });
+    }
+    hasPreviousGroup = true;
+
+    // Group 2: Move selected rows
+    if (hasSelection) {
+        if (hasPreviousGroup) {
+            contextMenu.addSeparator();
+        }
+
+        QAction *moveUpAction = contextMenu.addAction(QObject::tr("Move Up"));
+        connect(moveUpAction, &QAction::triggered, this, [keymapper]() {
+            keymapper->selectedItemsMoveUp();
+        });
+
+        QAction *moveDownAction = contextMenu.addAction(QObject::tr("Move Down"));
+        connect(moveDownAction, &QAction::triggered, this, [keymapper]() {
+            keymapper->selectedItemsMoveDown();
+        });
+
+        QAction *moveTopAction = contextMenu.addAction(QObject::tr("Move to Top"));
+        connect(moveTopAction, &QAction::triggered, this, [keymapper]() {
+            keymapper->selectedItemsMoveToTop();
+        });
+
+        QAction *moveBottomAction = contextMenu.addAction(QObject::tr("Move to Bottom"));
+        connect(moveBottomAction, &QAction::triggered, this, [keymapper]() {
+            keymapper->selectedItemsMoveToBottom();
+        });
+
+        hasPreviousGroup = true;
+    }
+
+    // Group 3: Copy and paste related actions
+    if (hasSelection || hasCopiedItems) {
+        if (hasPreviousGroup) {
+            contextMenu.addSeparator();
+        }
+
+        if (hasSelection) {
+            QAction *copyAction = contextMenu.addAction(QObject::tr("Copy"));
+            connect(copyAction, &QAction::triggered, this, [keymapper]() {
+                int copied_count = keymapper->copySelectedKeyMappingDataToCopiedList();
+                if (copied_count > 0) {
+                    QString message = tr("%1 selected mapping data copied.").arg(copied_count);
+                    keymapper->showInformationPopup(message);
+                }
+            });
+        }
+
+        if (hasCopiedItems) {
+            QAction *insertHeaderAction = contextMenu.addAction(QObject::tr("Insert Copied Items at Top"));
+            connect(insertHeaderAction, &QAction::triggered, this, [keymapper, handleInsertResult]() {
+                int auto_disabled = 0;
+                const int inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(0, &auto_disabled);
+                handleInsertResult(inserted_count, auto_disabled);
+            });
+
+            QAction *insertTailAction = contextMenu.addAction(QObject::tr("Insert Copied Items at Bottom"));
+            connect(insertTailAction, &QAction::triggered, this, [keymapper, this, handleInsertResult]() {
+                int auto_disabled = 0;
+                const int inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(this->rowCount(), &auto_disabled);
+                handleInsertResult(inserted_count, auto_disabled);
+            });
+
+            if (hasSelection) {
+                const QTableWidgetSelectionRange firstRange = selectionRanges.first();
+                const int insertAboveRow = firstRange.topRow();
+                const int insertBelowRow = firstRange.bottomRow() + 1;
+
+                QAction *insertAboveAction = contextMenu.addAction(QObject::tr("Insert Copied Items Above"));
+                connect(insertAboveAction, &QAction::triggered, this, [keymapper, insertAboveRow, handleInsertResult]() {
+                    int auto_disabled = 0;
+                    const int inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(insertAboveRow, &auto_disabled);
+                    handleInsertResult(inserted_count, auto_disabled);
+                });
+
+                QAction *insertBelowAction = contextMenu.addAction(QObject::tr("Insert Copied Items Below"));
+                connect(insertBelowAction, &QAction::triggered, this, [keymapper, insertBelowRow, handleInsertResult]() {
+                    int auto_disabled = 0;
+                    const int inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(insertBelowRow, &auto_disabled);
+                    handleInsertResult(inserted_count, auto_disabled);
+                });
+            }
+        }
+    }
+
+    // Group 4: Delete selected rows
+    if (hasSelection) {
+        if (hasPreviousGroup) {
+            contextMenu.addSeparator();
+        }
+
+        QAction *deleteAction = contextMenu.addAction(QObject::tr("Delete"));
+        connect(deleteAction, &QAction::triggered, this, [keymapper]() {
+            keymapper->on_deleteSelectedButton_clicked();
+        });
+    }
+
+    if (!contextMenu.actions().isEmpty()) {
+        contextMenu.exec(event->globalPos());
+        event->accept();
+        return;
+    }
+
+    QTableWidget::contextMenuEvent(event);
 }
 
 void KeyMappingDataTableWidget::updateRowVisibility()

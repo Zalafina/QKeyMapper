@@ -282,6 +282,8 @@ public:
 protected:
     // Override keyPressEvent to handle key press events for the table.
     void keyPressEvent(QKeyEvent *event) override;
+    // Show context menu for mapping table operations.
+    void contextMenuEvent(QContextMenuEvent *event) override;
     // Drag and drop support for row reordering
     void startDrag(Qt::DropActions supportedActions) override;
     void dropEvent(QDropEvent *event) override;
@@ -1148,6 +1150,9 @@ public slots:
     void moveTabInKeyMappingTabWidget(int from, int to);
     int copySelectedKeyMappingDataToCopiedList(void);
     int insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisabledCount = Q_NULLPTR);
+    int insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *autoDisabledCount = Q_NULLPTR);
+    void openCurrentMappingTableSetupDialog(void);
+    void openCurrentMappingItemSetupDialog(void);
     void updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring);
     void updateKeyLineEditWithRealKeyListChanged(const QString &keycodeString, int keyupdown);
     void systemThemeChanged(void);
