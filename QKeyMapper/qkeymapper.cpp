@@ -29721,17 +29721,17 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     bool hasPreviousGroup = false;
 
     // Group 1: Window dialogs
-    QAction *mappingTableSetupAction = contextMenu.addAction(tr("Mapping Table Setup"));
-    connect(mappingTableSetupAction, &QAction::triggered, this, [keymapper]() {
-        keymapper->openCurrentMappingTableSetupDialog();
-    });
-
     if (hasValidCurrentSelectedRow) {
         QAction *mappingItemSetupAction = contextMenu.addAction(tr("Mapping Item Setup"));
         connect(mappingItemSetupAction, &QAction::triggered, this, [keymapper]() {
             keymapper->openCurrentMappingItemSetupDialog();
         });
     }
+
+    QAction *mappingTableSetupAction = contextMenu.addAction(tr("Mapping Table Setup"));
+    connect(mappingTableSetupAction, &QAction::triggered, this, [keymapper]() {
+        keymapper->openCurrentMappingTableSetupDialog();
+    });
     hasPreviousGroup = true;
 
     // Group 2: Move selected rows
