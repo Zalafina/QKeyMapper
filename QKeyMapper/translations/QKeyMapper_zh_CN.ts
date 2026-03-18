@@ -3932,12 +3932,12 @@ Do you want to overwrite them?</source>
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../qvbuttonpanel.cpp" line="488"/>
+        <location filename="../qvbuttonpanel.cpp" line="595"/>
         <source>VButton Panel Setup</source>
         <translation>虚拟按钮面板设定</translation>
     </message>
     <message>
-        <location filename="../qvbuttonpanel.cpp" line="489"/>
+        <location filename="../qvbuttonpanel.cpp" line="596"/>
         <source>Save Setting</source>
         <translation>保存设定</translation>
     </message>
@@ -4245,12 +4245,12 @@ Do you want to overwrite them?</source>
 <context>
     <name>QVButtonPanel</name>
     <message>
-        <location filename="../qvbuttonpanel.cpp" line="169"/>
+        <location filename="../qvbuttonpanel.cpp" line="174"/>
         <source>No.</source>
         <translation>序号</translation>
     </message>
     <message>
-        <location filename="../qvbuttonpanel.cpp" line="172"/>
+        <location filename="../qvbuttonpanel.cpp" line="177"/>
         <source>Note</source>
         <translation>备注</translation>
     </message>
@@ -4488,7 +4488,7 @@ Do you want to overwrite them?</source>
     <message>
         <location filename="../qvbuttonpanelsetupdialog.cpp" line="122"/>
         <source>TextColor</source>
-        <translation>文本颜色</translation>
+        <translation>字体颜色</translation>
     </message>
     <message>
         <location filename="../qvbuttonpanelsetupdialog.cpp" line="123"/>
