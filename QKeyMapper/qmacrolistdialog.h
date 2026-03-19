@@ -49,6 +49,8 @@ public:
 protected:
     // Override keyPressEvent to handle key press events for the table.
     void keyPressEvent(QKeyEvent *event) override;
+    // Show context menu for macro table operations.
+    void contextMenuEvent(QContextMenuEvent *event) override;
     // Drag and drop support for row reordering
     void startDrag(Qt::DropActions supportedActions) override;
     void dropEvent(QDropEvent *event) override;
@@ -121,6 +123,7 @@ public:
     // Macro list copy/paste operations
     int copySelectedMacroDataToCopiedList(void);
     int insertMacroDataFromCopiedList(int insertMode);
+    int insertMacroDataFromCopiedListAtAbsoluteRow(int insertRow);
 
 public:
     static OrderedMap<QString, MappingMacroData> s_CopiedMacroData;
@@ -139,7 +142,6 @@ protected:
 private slots:
     void on_addMacroButton_clicked();
     void on_clearButton_clicked();
-    void on_deleteMacroButton_clicked();
     void on_macroListBackupButton_clicked();
 
     // Slot for handling macro table item double click

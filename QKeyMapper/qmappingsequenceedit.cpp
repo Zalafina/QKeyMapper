@@ -761,6 +761,214 @@ void MappingSequenceEditTableWidget::keyPressEvent(QKeyEvent *event)
     QTableWidget::keyPressEvent(event);
 }
 
+void MappingSequenceEditTableWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMappingSequenceEdit *dlg = QMappingSequenceEdit::getInstance();
+    if (!dlg || QKeyMapper::KEYMAP_IDLE != QKeyMapper::getInstance()->m_KeyMapStatus) {
+        QTableWidget::contextMenuEvent(event);
+        return;
+    }
+
+    if (state() == QAbstractItemView::EditingState) {
+        QTableWidget::contextMenuEvent(event);
+        return;
+    }
+
+    const QList<QTableWidgetSelectionRange> selectionRanges = selectedRanges();
+    const bool hasSelection = !selectionRanges.isEmpty();
+    const bool hasCopiedItems = !QMappingSequenceEdit::s_CopiedMappingSequenceList.isEmpty();
+    const bool hasSingleCopiedItem = (QMappingSequenceEdit::s_CopiedMappingSequenceList.size() == 1);
+    QTableWidgetItem *current = currentItem();
+
+    bool hasSingleSelectedRow = false;
+    if (selectionRanges.size() == 1) {
+        const QTableWidgetSelectionRange range = selectionRanges.first();
+        hasSingleSelectedRow = (range.topRow() == range.bottomRow()
+                                && range.topRow() >= 0
+                                && range.topRow() < rowCount());
+    }
+
+    const auto canEditCurrentItem = [this, &selectionRanges, current]() -> bool {
+        if (selectionRanges.isEmpty() || !current) {
+            return false;
+        }
+
+        const int r = current->row();
+        const int c = current->column();
+        if (r < 0 || r >= rowCount() || c < 0 || c >= columnCount()) {
+            return false;
+        }
+
+        return current->flags() & Qt::ItemIsEditable;
+    };
+
+    const auto canLoadCurrentItem = [this, &selectionRanges, current]() -> bool {
+        if (selectionRanges.isEmpty() || !current) {
+            return false;
+        }
+
+        const int r = current->row();
+        const int c = current->column();
+        return (r >= 0 && r < rowCount() && c >= 0 && c < columnCount());
+    };
+
+    QMenu contextMenu(this);
+
+    // Group 0: Edit current item
+    bool hasGroup0Action = false;
+    if (canEditCurrentItem()) {
+        QAction *editAction = contextMenu.addAction(QObject::tr("Edit"));
+        connect(editAction, &QAction::triggered, this, [this, dlg]() {
+            // Re-check editable state at trigger time to avoid stale action state.
+            const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+            QTableWidgetItem *cur = currentItem();
+            if (ranges.isEmpty() || !cur) {
+                return;
+            }
+
+            const int r = cur->row();
+            const int c = cur->column();
+            const bool inBounds = (r >= 0 && r < rowCount() && c >= 0 && c < columnCount());
+            const bool editable = (cur->flags() & Qt::ItemIsEditable);
+            if (!inBounds || !editable) {
+                return;
+            }
+
+            dlg->reselectionRangeAndScroll(r, r);
+            editItem(cur);
+        });
+        hasGroup0Action = true;
+    }
+
+    if (canLoadCurrentItem()) {
+        QAction *loadAction = contextMenu.addAction(QObject::tr("Load"));
+        connect(loadAction, &QAction::triggered, this, [this, dlg]() {
+            // Re-select current row to make row loading deterministic for context-menu action.
+            const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+            QTableWidgetItem *cur = currentItem();
+            if (ranges.isEmpty() || !cur) {
+                return;
+            }
+
+            const int r = cur->row();
+            const int c = cur->column();
+            if (r < 0 || r >= rowCount() || c < 0 || c >= columnCount()) {
+                return;
+            }
+
+            dlg->reselectionRangeAndScroll(r, r);
+            setCurrentCell(r, c, QItemSelectionModel::NoUpdate);
+            dlg->highlightSelectLoadData();
+        });
+        hasGroup0Action = true;
+    }
+
+    if (hasGroup0Action) {
+        contextMenu.addSeparator();
+    }
+
+    bool hasPreviousGroup = false;
+
+    // Group 1: Move selected rows
+    if (hasSelection) {
+        QAction *moveUpAction = contextMenu.addAction(QObject::tr("Move Up"));
+        connect(moveUpAction, &QAction::triggered, this, [dlg]() {
+            dlg->selectedMappingKeyItemsMoveUp();
+        });
+
+        QAction *moveDownAction = contextMenu.addAction(QObject::tr("Move Down"));
+        connect(moveDownAction, &QAction::triggered, this, [dlg]() {
+            dlg->selectedMappingKeyItemsMoveDown();
+        });
+
+        QAction *moveTopAction = contextMenu.addAction(QObject::tr("Move to Top"));
+        connect(moveTopAction, &QAction::triggered, this, [dlg]() {
+            dlg->selectedMappingKeyItemsMoveToTop();
+        });
+
+        QAction *moveBottomAction = contextMenu.addAction(QObject::tr("Move to Bottom"));
+        connect(moveBottomAction, &QAction::triggered, this, [dlg]() {
+            dlg->selectedMappingKeyItemsMoveToBottom();
+        });
+
+        hasPreviousGroup = true;
+    }
+
+    // Group 2: Copy and paste related actions
+    if (hasSelection || hasCopiedItems) {
+        if (hasPreviousGroup) {
+            contextMenu.addSeparator();
+        }
+
+        if (hasSelection) {
+            QAction *copyAction = contextMenu.addAction(QObject::tr("Copy"));
+            connect(copyAction, &QAction::triggered, this, [dlg]() {
+                dlg->copySelectedMappingKeyToCopiedList();
+            });
+
+            if (hasSingleCopiedItem && hasSingleSelectedRow) {
+                QAction *replaceAction = contextMenu.addAction(QObject::tr("Replace"));
+                connect(replaceAction, &QAction::triggered, this, [dlg]() {
+                    // Reuse Ctrl+V paste path. With single copied row and single highlighted row,
+                    // pasteMappingKeyFromCopiedList performs in-place replace.
+                    const int insertMode = QKeyMapper::getTableInsertModeIndex();
+                    dlg->pasteMappingKeyFromCopiedList(insertMode);
+                });
+            }
+        }
+
+        if (hasCopiedItems) {
+            QAction *insertHeaderAction = contextMenu.addAction(QObject::tr("Insert Copied Items at Top"));
+            connect(insertHeaderAction, &QAction::triggered, this, [dlg]() {
+                dlg->insertMappingKeyFromCopiedListAtAbsoluteRow(0);
+            });
+
+            QAction *insertTailAction = contextMenu.addAction(QObject::tr("Insert Copied Items at Bottom"));
+            connect(insertTailAction, &QAction::triggered, this, [dlg, this]() {
+                dlg->insertMappingKeyFromCopiedListAtAbsoluteRow(rowCount());
+            });
+
+            if (hasSelection) {
+                const QTableWidgetSelectionRange firstRange = selectionRanges.first();
+                const int insertAboveRow = firstRange.topRow();
+                const int insertBelowRow = firstRange.bottomRow() + 1;
+
+                QAction *insertAboveAction = contextMenu.addAction(QObject::tr("Insert Copied Items Above"));
+                connect(insertAboveAction, &QAction::triggered, this, [dlg, insertAboveRow]() {
+                    dlg->insertMappingKeyFromCopiedListAtAbsoluteRow(insertAboveRow);
+                });
+
+                QAction *insertBelowAction = contextMenu.addAction(QObject::tr("Insert Copied Items Below"));
+                connect(insertBelowAction, &QAction::triggered, this, [dlg, insertBelowRow]() {
+                    dlg->insertMappingKeyFromCopiedListAtAbsoluteRow(insertBelowRow);
+                });
+            }
+        }
+
+        hasPreviousGroup = true;
+    }
+
+    // Group 3: Delete selected rows
+    if (hasSelection) {
+        if (hasPreviousGroup) {
+            contextMenu.addSeparator();
+        }
+
+        QAction *deleteAction = contextMenu.addAction(QObject::tr("Delete"));
+        connect(deleteAction, &QAction::triggered, this, [dlg]() {
+            dlg->deleteMappingKeySelectedItems();
+        });
+    }
+
+    if (!contextMenu.actions().isEmpty()) {
+        contextMenu.exec(event->globalPos());
+        event->accept();
+        return;
+    }
+
+    QTableWidget::contextMenuEvent(event);
+}
+
 void QMappingSequenceEdit::on_insertMappingKeyButton_clicked()
 {
     const int currentMode = QKeyMapper::getTableInsertModeIndex();
@@ -1554,28 +1762,31 @@ int QMappingSequenceEdit::copySelectedMappingKeyToCopiedList()
 
 int QMappingSequenceEdit::insertMappingKeyFromCopiedList(int insertMode)
 {
+    const int insertRow = getInsertRowFromSelectionOrAppend(insertMode);
+    return insertMappingKeyFromCopiedListAtAbsoluteRow(insertRow);
+}
+
+int QMappingSequenceEdit::insertMappingKeyFromCopiedListAtAbsoluteRow(int insertRow)
+{
     int insertedCount = 0;
-    if (s_CopiedMappingSequenceList.isEmpty()) {
+    if (s_CopiedMappingSequenceList.isEmpty() || insertRow < 0) {
         return insertedCount;
     }
 
     const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
     const bool hadSelectionBeforeInsert = !table->selectedRanges().isEmpty();
-
-    const int insertRow = getInsertRowFromSelectionOrAppend(insertMode);
-    if (insertRow < 0) {
-        return insertedCount;
-    }
+    const int boundedInsertRow = qBound(0, insertRow, m_MappingSequenceList.size());
 
     ensureBaseSnapshotBeforeListChange();
 
-    if (insertRow >= m_MappingSequenceList.size()) {
+    if (boundedInsertRow >= m_MappingSequenceList.size()) {
         for (const QString &s : std::as_const(s_CopiedMappingSequenceList)) {
             m_MappingSequenceList.append(s);
             insertedCount++;
         }
-    } else {
-        int pos = insertRow;
+    }
+    else {
+        int pos = boundedInsertRow;
         for (const QString &s : std::as_const(s_CopiedMappingSequenceList)) {
             m_MappingSequenceList.insert(pos, s);
             pos++;
@@ -1586,10 +1797,10 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedList(int insertMode)
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
     if (insertedCount > 0) {
         if (hadSelectionBeforeInsert) {
-            reselectionRangeAndScroll(insertRow, insertRow + insertedCount - 1);
+            reselectionRangeAndScroll(boundedInsertRow, boundedInsertRow + insertedCount - 1);
         }
         else {
-            keepSelectionEmptyAndScrollToRow(insertRow);
+            keepSelectionEmptyAndScrollToRow(boundedInsertRow);
         }
         commitHistorySnapshotIfNeeded();
     }

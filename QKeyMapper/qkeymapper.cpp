@@ -22297,6 +22297,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             else {
                 disabledCheckBox->setCheckState(Qt::Unchecked);
             }
+            disabledCheckBox->setFlags(disabledCheckBox->flags() & ~Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, DISABLED_COLUMN    , disabledCheckBox);
 
             /* BURST_MODE_COLUMN */
@@ -22308,11 +22309,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 burstCheckBox->setCheckState(Qt::Unchecked);
             }
 
-#ifdef VIGEM_CLIENT_SUPPORT
             if (disable_burst) {
                 burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
             }
-#endif
+            burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, BURST_MODE_COLUMN    , burstCheckBox);
 
             /* LOCK_COLUMN */
@@ -22324,11 +22324,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 lockCheckBox->setCheckState(Qt::Unchecked);
             }
 
-#ifdef VIGEM_CLIENT_SUPPORT
             if (disable_lock) {
                 lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
             }
-#endif
+            lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, LOCK_COLUMN    , lockCheckBox);
 
             /* CATEGORY_COLUMN */
@@ -22582,6 +22581,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 // Create new item
                 disabledCheckBox = new QTableWidgetItem();
                 disabledCheckBox->setCheckState(checkState);
+                disabledCheckBox->setFlags(disabledCheckBox->flags() & ~Qt::ItemIsEditable);
                 mappingDataTable->setItem(row, DISABLED_COLUMN, disabledCheckBox);
             }
             QTableWidgetItem *ori_TableItem = mappingDataTable->item(row, ORIGINAL_KEY_COLUMN);
@@ -22621,6 +22621,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 if (disable_burst) {
                     burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEnabled);
                 }
+                burstCheckBox->setFlags(burstCheckBox->flags() & ~Qt::ItemIsEditable);
                 mappingDataTable->setItem(row, BURST_MODE_COLUMN, burstCheckBox);
             }
             break;
@@ -22645,6 +22646,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 if (disable_lock) {
                     lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEnabled);
                 }
+                lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEditable);
                 mappingDataTable->setItem(row, LOCK_COLUMN, lockCheckBox);
             }
             break;
@@ -29551,6 +29553,23 @@ void KeyMappingDataTableWidget::keyPressEvent(QKeyEvent *event)
         return;
     }
 
+    if (event->key() == Qt::Key_F2) {
+        // Enter edit mode only when selection/current item is valid and editable.
+        const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+        QTableWidgetItem *cur = currentItem();
+        if (!ranges.isEmpty() && cur) {
+            const int r = cur->row();
+            const int c = cur->column();
+            const bool inBounds = (r >= 0 && r < rowCount() && c >= 0 && c < columnCount());
+            const bool editable = (cur->flags() & Qt::ItemIsEditable);
+            if (inBounds && editable) {
+                setCurrentCell(r, c, QItemSelectionModel::NoUpdate);
+                editItem(cur);
+                return;
+            }
+        }
+    }
+
     if (event->key() == Qt::Key_Up) {
         if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
             // Move selected items to top when Ctrl+Shift is pressed
@@ -29682,6 +29701,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     const QList<QTableWidgetSelectionRange> selectionRanges = this->selectedRanges();
     const bool hasSelection = !selectionRanges.isEmpty();
     const bool hasCopiedItems = !QKeyMapper::s_CopiedMappingData.isEmpty();
+    QTableWidgetItem *current = currentItem();
 
     const int currentRow = this->currentRow();
     bool hasValidCurrentSelectedRow = false;
@@ -29693,6 +29713,20 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             }
         }
     }
+
+    const auto canEditCurrentItem = [this, &selectionRanges, current]() -> bool {
+        if (selectionRanges.isEmpty() || !current) {
+            return false;
+        }
+
+        const int r = current->row();
+        const int c = current->column();
+        if (r < 0 || r >= rowCount() || c < 0 || c >= columnCount()) {
+            return false;
+        }
+
+        return current->flags() & Qt::ItemIsEditable;
+    };
 
     QMenu contextMenu(this);
 
@@ -29719,6 +29753,31 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     };
 
     bool hasPreviousGroup = false;
+
+    // Group 0: Edit current item
+    if (canEditCurrentItem()) {
+        QAction *editAction = contextMenu.addAction(QObject::tr("Edit"));
+        connect(editAction, &QAction::triggered, this, [this]() {
+            // Re-check editable state at trigger time to avoid stale action state.
+            const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+            QTableWidgetItem *cur = currentItem();
+            if (ranges.isEmpty() || !cur) {
+                return;
+            }
+
+            const int r = cur->row();
+            const int c = cur->column();
+            const bool inBounds = (r >= 0 && r < rowCount() && c >= 0 && c < columnCount());
+            const bool editable = (cur->flags() & Qt::ItemIsEditable);
+            if (!inBounds || !editable) {
+                return;
+            }
+
+            setCurrentCell(r, c, QItemSelectionModel::NoUpdate);
+            editItem(cur);
+        });
+        contextMenu.addSeparator();
+    }
 
     // Group 1: Window dialogs
     if (hasValidCurrentSelectedRow) {

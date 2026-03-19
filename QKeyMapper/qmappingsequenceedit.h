@@ -20,6 +20,8 @@ public:
 protected:
     // Override keyPressEvent to handle keyboard shortcuts for the editor.
     void keyPressEvent(QKeyEvent *event) override;
+    // Show context menu for mapping sequence table operations.
+    void contextMenuEvent(QContextMenuEvent *event) override;
     // Drag and drop support for row reordering
     void startDrag(Qt::DropActions supportedActions) override;
     void dropEvent(QDropEvent *event) override;
@@ -84,6 +86,7 @@ public:
     // Mapping sequence copy/paste operations
     int copySelectedMappingKeyToCopiedList(void);
     int insertMappingKeyFromCopiedList(int insertMode);
+    int insertMappingKeyFromCopiedListAtAbsoluteRow(int insertRow);
     int pasteMappingKeyFromCopiedList(int insertMode);
 
     // Mapping sequence undo/redo operations

@@ -89,7 +89,6 @@ QMacroListDialog::QMacroListDialog(QWidget *parent)
     ui->categoryLineEdit->setFont(customFont);
     ui->macroContent_SequenceEditButton->setFont(customFont);
     ui->clearButton->setFont(customFont);
-    ui->deleteMacroButton->setFont(customFont);
     ui->macroListBackupButton->setFont(customFont);
 
     int scale = QKeyMapper::getInstance()->m_UI_Scale;
@@ -141,7 +140,6 @@ void QMacroListDialog::setUILanguage(int languageindex)
     ui->macroNoteLabel->setText(tr("Note"));
     ui->macroContent_SequenceEditButton->setText(tr("SeqEdit"));
     ui->clearButton->setText(tr("Clear Editing"));
-    ui->deleteMacroButton->setText(tr("Delete"));
     ui->addMacroButton->setText(tr("Add Macro"));
     ui->mapkeyLabel->setText(tr("MapKeys"));
     ui->categoryFilterLabel->setText(tr("Filter"));
@@ -853,11 +851,6 @@ void QMacroListDialog::on_clearButton_clicked()
         ui->macroNoteLineEdit->clear();
         ui->categoryLineEdit->clear();
     }
-}
-
-void QMacroListDialog::on_deleteMacroButton_clicked()
-{
-    deleteMacroSelectedItems();
 }
 
 void QMacroListDialog::on_macroListBackupButton_clicked()
@@ -1832,6 +1825,23 @@ void MacroListDataTableWidget::keyPressEvent(QKeyEvent *event)
         return;
     }
 
+    if (event->key() == Qt::Key_F2) {
+        // Enter edit mode only when selection/current item is valid and editable.
+        const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+        QTableWidgetItem *cur = currentItem();
+        if (!ranges.isEmpty() && cur) {
+            const int r = cur->row();
+            const int c = cur->column();
+            const bool inBounds = (r >= 0 && r < rowCount() && c >= 0 && c < columnCount());
+            const bool editable = (cur->flags() & Qt::ItemIsEditable);
+            if (inBounds && editable) {
+                setCurrentCell(r, c, QItemSelectionModel::NoUpdate);
+                editItem(cur);
+                return;
+            }
+        }
+    }
+
     if (event->key() == Qt::Key_Up) {
         if ((event->modifiers() & Qt::ControlModifier) && (event->modifiers() & Qt::ShiftModifier)) {
             // Move selected items to top when Ctrl+Shift is pressed
@@ -1938,6 +1948,223 @@ void MacroListDataTableWidget::keyPressEvent(QKeyEvent *event)
     }
 
     QTableWidget::keyPressEvent(event);
+}
+
+void MacroListDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMacroListDialog *macroListDialog = QMacroListDialog::getInstance();
+    if (!macroListDialog || QKeyMapper::KEYMAP_IDLE != QKeyMapper::getInstance()->m_KeyMapStatus) {
+        QTableWidget::contextMenuEvent(event);
+        return;
+    }
+
+    if (state() == QAbstractItemView::EditingState) {
+        QTableWidget::contextMenuEvent(event);
+        return;
+    }
+
+    const QList<QTableWidgetSelectionRange> selectionRanges = selectedRanges();
+    const bool hasSelection = !selectionRanges.isEmpty();
+    const bool hasCopiedItems = !QMacroListDialog::s_CopiedMacroData.isEmpty();
+    QTableWidgetItem *current = currentItem();
+
+    const auto canEditCurrentItem = [this, &selectionRanges, current]() -> bool {
+        if (selectionRanges.isEmpty() || !current) {
+            return false;
+        }
+
+        const int r = current->row();
+        const int c = current->column();
+        if (r < 0 || r >= rowCount() || c < 0 || c >= columnCount()) {
+            return false;
+        }
+
+        return current->flags() & Qt::ItemIsEditable;
+    };
+
+    const auto canLoadCurrentItem = [this, &selectionRanges, current]() -> bool {
+        if (selectionRanges.isEmpty() || !current) {
+            return false;
+        }
+
+        const int r = current->row();
+        const int c = current->column();
+        return (r >= 0 && r < rowCount() && c >= 0 && c < columnCount());
+    };
+
+    QMenu contextMenu(this);
+
+    // Group 0: Edit current item
+    bool hasGroup0Action = false;
+    if (canEditCurrentItem()) {
+        QAction *editAction = contextMenu.addAction(QObject::tr("Edit"));
+        connect(editAction, &QAction::triggered, this, [this]() {
+            // Re-check editable state at trigger time to avoid stale action state.
+            const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+            QTableWidgetItem *cur = currentItem();
+            if (ranges.isEmpty() || !cur) {
+                return;
+            }
+
+            const int r = cur->row();
+            const int c = cur->column();
+            const bool inBounds = (r >= 0 && r < rowCount() && c >= 0 && c < columnCount());
+            const bool editable = (cur->flags() & Qt::ItemIsEditable);
+            if (!inBounds || !editable) {
+                return;
+            }
+
+            setCurrentCell(r, c, QItemSelectionModel::NoUpdate);
+            editItem(cur);
+        });
+        hasGroup0Action = true;
+    }
+
+    if (canLoadCurrentItem()) {
+        QAction *loadAction = contextMenu.addAction(QObject::tr("Load"));
+        connect(loadAction, &QAction::triggered, this, [this, macroListDialog]() {
+            // Re-select only current row to match Enter-key load behavior deterministically.
+            const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+            QTableWidgetItem *cur = currentItem();
+            if (ranges.isEmpty() || !cur) {
+                return;
+            }
+
+            const int r = cur->row();
+            const int c = cur->column();
+            if (r < 0 || r >= rowCount() || c < 0 || c >= columnCount()) {
+                return;
+            }
+
+            QTableWidgetSelectionRange newSelection(r, 0, r, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+            clearSelection();
+            setRangeSelected(newSelection, true);
+            setCurrentCell(r, c, QItemSelectionModel::NoUpdate);
+
+            QTableWidgetItem *itemToScrollTo = item(r, 0);
+            if (itemToScrollTo) {
+                scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+            }
+
+            macroListDialog->highlightSelectLoadData();
+        });
+        hasGroup0Action = true;
+    }
+
+    if (hasGroup0Action) {
+        contextMenu.addSeparator();
+    }
+
+    bool hasPreviousGroup = false;
+
+    // Group 1: Move selected rows
+    if (hasSelection) {
+        QAction *moveUpAction = contextMenu.addAction(QObject::tr("Move Up"));
+        connect(moveUpAction, &QAction::triggered, this, [macroListDialog]() {
+            macroListDialog->selectedMacroItemsMoveUp();
+        });
+
+        QAction *moveDownAction = contextMenu.addAction(QObject::tr("Move Down"));
+        connect(moveDownAction, &QAction::triggered, this, [macroListDialog]() {
+            macroListDialog->selectedMacroItemsMoveDown();
+        });
+
+        QAction *moveTopAction = contextMenu.addAction(QObject::tr("Move to Top"));
+        connect(moveTopAction, &QAction::triggered, this, [macroListDialog]() {
+            macroListDialog->selectedMacroItemsMoveToTop();
+        });
+
+        QAction *moveBottomAction = contextMenu.addAction(QObject::tr("Move to Bottom"));
+        connect(moveBottomAction, &QAction::triggered, this, [macroListDialog]() {
+            macroListDialog->selectedMacroItemsMoveToBottom();
+        });
+
+        hasPreviousGroup = true;
+    }
+
+    // Group 2: Copy and paste related actions
+    if (hasSelection || hasCopiedItems) {
+        if (hasPreviousGroup) {
+            contextMenu.addSeparator();
+        }
+
+        if (hasSelection) {
+            QAction *copyAction = contextMenu.addAction(QObject::tr("Copy"));
+            connect(copyAction, &QAction::triggered, this, [macroListDialog]() {
+                int copied_count = macroListDialog->copySelectedMacroDataToCopiedList();
+                if (copied_count > 0) {
+                    QString message = tr("%1 selected macro(s) copied.").arg(copied_count);
+                    QKeyMapper::getInstance()->showInformationPopup(message);
+                }
+            });
+        }
+
+        if (hasCopiedItems) {
+            auto showInsertResult = [macroListDialog](int inserted_count) {
+                int copied_count = QMacroListDialog::s_CopiedMacroData.size();
+                if (inserted_count == 0 && copied_count > 0) {
+                    QString message = tr("%1 copied macro(s) could not be inserted!").arg(copied_count);
+                    QKeyMapper::getInstance()->showFailurePopup(message);
+                }
+                else if (inserted_count > 0) {
+                    QString message = tr("Inserted %1 macro(s) into current macro list.").arg(inserted_count);
+                    QKeyMapper::getInstance()->showInformationPopup(message);
+                }
+            };
+
+            QAction *insertHeaderAction = contextMenu.addAction(QObject::tr("Insert Copied Items at Top"));
+            connect(insertHeaderAction, &QAction::triggered, this, [macroListDialog, showInsertResult]() {
+                const int inserted_count = macroListDialog->insertMacroDataFromCopiedListAtAbsoluteRow(0);
+                showInsertResult(inserted_count);
+            });
+
+            QAction *insertTailAction = contextMenu.addAction(QObject::tr("Insert Copied Items at Bottom"));
+            connect(insertTailAction, &QAction::triggered, this, [macroListDialog, this, showInsertResult]() {
+                const int inserted_count = macroListDialog->insertMacroDataFromCopiedListAtAbsoluteRow(rowCount());
+                showInsertResult(inserted_count);
+            });
+
+            if (hasSelection) {
+                const QTableWidgetSelectionRange firstRange = selectionRanges.first();
+                const int insertAboveRow = firstRange.topRow();
+                const int insertBelowRow = firstRange.bottomRow() + 1;
+
+                QAction *insertAboveAction = contextMenu.addAction(QObject::tr("Insert Copied Items Above"));
+                connect(insertAboveAction, &QAction::triggered, this, [macroListDialog, insertAboveRow, showInsertResult]() {
+                    const int inserted_count = macroListDialog->insertMacroDataFromCopiedListAtAbsoluteRow(insertAboveRow);
+                    showInsertResult(inserted_count);
+                });
+
+                QAction *insertBelowAction = contextMenu.addAction(QObject::tr("Insert Copied Items Below"));
+                connect(insertBelowAction, &QAction::triggered, this, [macroListDialog, insertBelowRow, showInsertResult]() {
+                    const int inserted_count = macroListDialog->insertMacroDataFromCopiedListAtAbsoluteRow(insertBelowRow);
+                    showInsertResult(inserted_count);
+                });
+            }
+        }
+
+        hasPreviousGroup = true;
+    }
+
+    // Group 3: Delete selected rows
+    if (hasSelection) {
+        if (hasPreviousGroup) {
+            contextMenu.addSeparator();
+        }
+
+        QAction *deleteAction = contextMenu.addAction(QObject::tr("Delete"));
+        connect(deleteAction, &QAction::triggered, this, [macroListDialog]() {
+            macroListDialog->deleteMacroSelectedItems();
+        });
+    }
+
+    if (!contextMenu.actions().isEmpty()) {
+        contextMenu.exec(event->globalPos());
+        event->accept();
+        return;
+    }
+
+    QTableWidget::contextMenuEvent(event);
 }
 
 void MacroListDataTableWidget::startDrag(Qt::DropActions supportedActions)
@@ -3049,6 +3276,27 @@ int QMacroListDialog::copySelectedMacroDataToCopiedList()
 
 int QMacroListDialog::insertMacroDataFromCopiedList(int insertMode)
 {
+    MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
+    OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+    if (!macroDataTable || !macroDataList) {
+        return 0;
+    }
+
+    int insertRow = macroDataList->size();
+    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
+    if (!selectedRanges.isEmpty()) {
+        const QTableWidgetSelectionRange range = selectedRanges.first();
+        const int preferredRow = (insertMode == TABLE_INSERT_MODE_BELOW)
+            ? (range.bottomRow() + 1)
+            : range.topRow();
+        insertRow = preferredRow;
+    }
+
+    return insertMacroDataFromCopiedListAtAbsoluteRow(insertRow);
+}
+
+int QMacroListDialog::insertMacroDataFromCopiedListAtAbsoluteRow(int insertRow)
+{
     int inserted_count = 0;
 
     if (s_CopiedMacroData.isEmpty()) {
@@ -3062,49 +3310,36 @@ int QMacroListDialog::insertMacroDataFromCopiedList(int insertMode)
         return inserted_count;
     }
 
-    // Build list of macro data to insert, handling duplicate names
+    // Build list of macro data to insert, handling duplicate names.
     OrderedMap<QString, MappingMacroData> insertMacroDataList;
     for (auto it = s_CopiedMacroData.begin(); it != s_CopiedMacroData.end(); ++it) {
         QString macroName = it.key();
         MappingMacroData macroData = it.value();
 
-        // Check if macro name already exists
+        // Check if macro name already exists.
         if (macroDataList->contains(macroName)) {
-            // Generate a unique name using "_copy" suffix
             QString baseName = macroName + tr("_copy");
             QString newName = baseName;
 
-            // If the base name with "_copy" also exists, try adding numbers
             if (macroDataList->contains(newName) || insertMacroDataList.contains(newName)) {
                 bool uniqueNameFound = false;
                 for (int i = 1; i <= 999; ++i) {
                     QString tempName = QString("%1%2").arg(baseName).arg(i, 3, 10, QChar('0'));
                     if (!macroDataList->contains(tempName) && !insertMacroDataList.contains(tempName)) {
-#ifdef DEBUG_LOGOUT_ON
-                        qDebug().nospace() << "[insertMacroDataFromCopiedList] MacroName:" << macroName << " already exists, generated unique name: " << tempName;
-#endif
                         newName = tempName;
                         uniqueNameFound = true;
                         break;
                     }
                 }
-                // If no unique name found after 999 attempts, skip this macro
                 if (!uniqueNameFound) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace() << "[insertMacroDataFromCopiedList] Cannot find unique name for MacroName:" << macroName << ", skipping";
-#endif
                     continue;
                 }
             }
-#ifdef DEBUG_LOGOUT_ON
-            else {
-                qDebug().nospace() << "[insertMacroDataFromCopiedList] MacroName:" << macroName << " already exists, using new name: " << newName;
-            }
-#endif
+
             macroName = newName;
         }
 
-        // Also check if the new name already exists in our insert list
+        // Also check if the new name already exists in our insert list.
         if (insertMacroDataList.contains(macroName)) {
             QString baseName = macroName + tr("_copy");
             QString newName = baseName;
@@ -3133,67 +3368,33 @@ int QMacroListDialog::insertMacroDataFromCopiedList(int insertMode)
         return inserted_count;
     }
 
-    bool insertToEnd = false;
-    int insertRow = -1;
+    const int boundedInsertRow = qBound(0, insertRow, macroDataList->size());
 
-    // If there is a highlighted selection, insert at the selected row index (Excel-like).
-    // If there is no selection, keep the existing behavior and append to the end.
-    QList<QTableWidgetSelectionRange> selectedRanges = macroDataTable->selectedRanges();
-    if (selectedRanges.isEmpty()) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[insertMacroDataFromCopiedList] There is no selected item, insert to the end.";
-#endif
-        insertToEnd = true;
-    }
-    else {
-        QTableWidgetSelectionRange range = selectedRanges.first();
-        const int preferredRow = (insertMode == TABLE_INSERT_MODE_BELOW)
-            ? (range.bottomRow() + 1)
-            : range.topRow();
-        insertRow = qBound(0, preferredRow, macroDataList->size());
-    }
-
-    if (insertToEnd) {
-        // Append to the end of the current list (existing behavior)
+    if (boundedInsertRow >= macroDataList->size()) {
         for (auto it = insertMacroDataList.begin(); it != insertMacroDataList.end(); ++it) {
             (*macroDataList)[it.key()] = it.value();
         }
     }
     else {
-        // Insert at the selected row index (Excel-like) while preserving order.
-        // This uses OrderedMap::insertAt to avoid rebuilding the container.
-        macroDataList->insertAt(insertRow, insertMacroDataList);
+        macroDataList->insertAt(boundedInsertRow, insertMacroDataList);
     }
 
-    // Refresh table display
+    // Refresh table display.
     refreshMacroListTabWidget(macroDataTable, *macroDataList);
 
-    // Reselect inserted rows
     if (inserted_count > 0) {
-        int startRow = insertToEnd ? (macroDataTable->rowCount() - inserted_count) : insertRow;
-        int endRow = startRow + inserted_count - 1;
-        QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(startRow, 0, endRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
+        const int startRow = qBound(0, boundedInsertRow, macroDataTable->rowCount() - 1);
+        const int endRow = qBound(startRow, startRow + inserted_count - 1, macroDataTable->rowCount() - 1);
+        QTableWidgetSelectionRange newSelection(startRow, 0, endRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
         macroDataTable->clearSelection();
         macroDataTable->setRangeSelected(newSelection, true);
-
-        // Update current cell to the start of inserted rows for Ctrl/Shift+Click consistency
         macroDataTable->setCurrentCell(startRow, 0, QItemSelectionModel::NoUpdate);
 
-        // Scroll to make the inserted items visible
         QTableWidgetItem *itemToScrollTo = macroDataTable->item(startRow, 0);
         if (itemToScrollTo) {
             macroDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
         }
     }
-
-#ifdef DEBUG_LOGOUT_ON
-    if (insertToEnd) {
-        qDebug().nospace() << "[insertMacroDataFromCopiedList] Ctrl+V pressed, appended (" << inserted_count << ") macros to the end of current macro list";
-    }
-    else {
-        qDebug().nospace() << "[insertMacroDataFromCopiedList] Ctrl+V pressed, inserted (" << inserted_count << ") macros at row(" << insertRow << ") of current macro list";
-    }
-#endif
 
     return inserted_count;
 }

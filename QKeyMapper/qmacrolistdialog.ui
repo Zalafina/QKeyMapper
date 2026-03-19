@@ -645,7 +645,7 @@
            <property name="geometry">
             <rect>
              <x>290</x>
-             <y>10</y>
+             <y>40</y>
              <width>151</width>
              <height>22</height>
             </rect>
@@ -679,25 +679,6 @@
             <bool>false</bool>
            </property>
           </widget>
-          <widget class="QPushButton" name="deleteMacroButton">
-           <property name="geometry">
-            <rect>
-             <x>290</x>
-             <y>40</y>
-             <width>151</width>
-             <height>22</height>
-            </rect>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::FocusPolicy::NoFocus</enum>
-           </property>
-           <property name="text">
-            <string>Delete</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
           <widget class="QToolButton" name="categoryFilterToolButton">
            <property name="geometry">
             <rect>
@@ -720,7 +701,6 @@
           <zorder>clearButton</zorder>
           <zorder>macroListBackupButton</zorder>
           <zorder>mapkeyLabel</zorder>
-          <zorder>deleteMacroButton</zorder>
           <zorder>categoryFilterToolButton</zorder>
          </widget>
         </item>
@@ -761,7 +741,7 @@
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>10</y>
+             <y>40</y>
              <width>120</width>
              <height>53</height>
             </rect>
