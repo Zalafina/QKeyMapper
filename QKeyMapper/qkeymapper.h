@@ -1046,6 +1046,8 @@ signals:
     void showCarOrdinal_Signal(qint32 car_ordinal);
     void showCrosshairStart_Signal(int rowindex, const QString &crosshair_keystr);
     void showCrosshairStop_Signal(int rowindex, const QString &crosshair_keystr);
+    void showFloatingButtonStart_Signal(int rowindex, const QString &floatingbutton_keystr);
+    void showFloatingButtonStop_Signal(int rowindex, const QString &floatingbutton_keystr);
     void switchFloatingWindowMousePassThrough_Signal(void);
     void updateFakerInputStatus_Signal(void);
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -1108,6 +1110,10 @@ public slots:
     void showCrosshairStart(int rowindex, const QString &crosshair_keystr);
 
     void showCrosshairStop(int rowindex, const QString &crosshair_keystr);
+
+    void showFloatingButtonStart(int rowindex, const QString &floatingbutton_keystr);
+
+    void showFloatingButtonStop(int rowindex, const QString &floatingbutton_keystr);
 
     void onKeyMappingTabWidgetTabBarDoubleClicked(int index);
 
@@ -1251,7 +1257,9 @@ private slots:
     void on_vButtonPanelSetupButton_clicked();
     void onVButtonPanelSettingsAccepted();
     void onSyncVButtonPanel(bool showPanel);
+    void onShowAllFloatingButtons(bool visible);
     void onVButtonPanelSetupDialogClosed();
+    void onFloatingButtonSettingsApplied();
 
     // void on_uninstallViGEmBusButton_clicked();
 
@@ -1724,6 +1732,12 @@ private:
     SettingTransferDialog *m_SettingTransferDialog = Q_NULLPTR;
     QPopupNotification *m_PopupNotification;
     QFloatingIconWindow *m_FloatingIconWindow;
+    QHash<int, QPushButton*> m_FloatingButtonMap;
+    QHash<int, bool> m_FloatingButtonManualHiddenMap;
+    bool m_FloatingButtonDragging = false;
+    int m_FloatingButtonDraggingRow = -1;
+    QPoint m_FloatingButtonDragStartGlobalPos;
+    QPoint m_FloatingButtonDragStartWidgetPos;
 #ifdef USE_CUSTOMSTYLE
     CustomSpinBoxStyle *m_CustomSpinBoxStyle = Q_NULLPTR;
 #endif

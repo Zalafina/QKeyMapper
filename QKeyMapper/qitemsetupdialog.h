@@ -6,6 +6,7 @@
 
 #include "qkeyrecord.h"
 #include "qcrosshairsetupdialog.h"
+#include "qfloatingbuttonsetupdialog.h"
 
 namespace Ui {
 class QItemSetupDialog;
@@ -112,6 +113,7 @@ private:
 
 public:
     QCrosshairSetupDialog *m_CrosshairSetupDialog;
+    QFloatingButtonSetupDialog *m_FloatingButtonSetupDialog;
     KeyListComboBox *m_OriginalKeyListComboBox;
     KeyListComboBox *m_MappingKeyListComboBox;
     int m_ItemSetupKeyRecordEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
@@ -151,6 +153,7 @@ private slots:
     // void on_postMappingKeyCheckBox_stateChanged(int state);
     void on_unbreakableCheckBox_stateChanged(int state);
     void on_crosshairSetupButton_clicked();
+    void on_floatingButtonSetupButton_clicked();
     void on_fixedVKeyCodeSpinBox_valueChanged(int value);
     void on_keyRecordEditModeButton_clicked();
     void on_keyRecordLineEdit_textChanged(const QString &text);

@@ -16,6 +16,7 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     , m_ItemRow(-1)
     , m_KeyRecordDialog(Q_NULLPTR)
     , m_CrosshairSetupDialog(Q_NULLPTR)
+    , m_FloatingButtonSetupDialog(Q_NULLPTR)
     , m_OriginalKeyListComboBox(new KeyListComboBox(this))
     , m_MappingKeyListComboBox(new KeyListComboBox(this))
 {
@@ -26,6 +27,7 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
 
     m_KeyRecordDialog = new QKeyRecord(this);
     m_CrosshairSetupDialog = new QCrosshairSetupDialog(this);
+    m_FloatingButtonSetupDialog = new QFloatingButtonSetupDialog(this);
 
     initKeyListComboBoxes();
     initKeyStringLineEdit();
@@ -160,6 +162,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->mappingKey_KeyUpSequenceEditButton->setText(tr("SeqEdit"));
     ui->recordKeysButton->setText(tr(RECORDKEYSBUTTON_STR));
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
+    ui->floatingButtonSetupButton->setText(tr("FloatingBtn"));
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
     ui->fixedVKeyCodeLabel->setText(tr("FixedVKeyCode"));
     ui->pasteTextModeLabel->setText(tr("PasteTextMode"));
@@ -188,6 +191,9 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     }
     if (m_CrosshairSetupDialog != Q_NULLPTR) {
         m_CrosshairSetupDialog->setUILanguage(languageindex);
+    }
+    if (m_FloatingButtonSetupDialog != Q_NULLPTR) {
+        m_FloatingButtonSetupDialog->setUILanguage(languageindex);
     }
 }
 
@@ -247,6 +253,7 @@ void QItemSetupDialog::resetFontSize()
     ui->mappingKey_KeyUpSequenceEditButton->setFont(customFont);
     ui->recordKeysButton->setFont(customFont);
     ui->crosshairSetupButton->setFont(customFont);
+    ui->floatingButtonSetupButton->setFont(customFont);
     // ui->itemNoteUpdateButton->setFont(customFont);
     ui->sendTimingLabel->setFont(customFont);
     ui->sendTimingComboBox->setFont(customFont);
@@ -255,6 +262,10 @@ void QItemSetupDialog::resetFontSize()
 
     if (m_KeyRecordDialog != Q_NULLPTR) {
         m_KeyRecordDialog->resetFontSize();
+    }
+
+    if (m_FloatingButtonSetupDialog != Q_NULLPTR) {
+        m_FloatingButtonSetupDialog->setFont(customFont);
     }
 }
 
@@ -3613,6 +3624,25 @@ void QItemSetupDialog::on_crosshairSetupButton_clicked()
     if (!m_CrosshairSetupDialog->isVisible()) {
         m_CrosshairSetupDialog->setItemRow(m_ItemRow);
         m_CrosshairSetupDialog->show();
+    }
+}
+
+void QItemSetupDialog::on_floatingButtonSetupButton_clicked()
+{
+    if (Q_NULLPTR == m_FloatingButtonSetupDialog) {
+        return;
+    }
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[on_floatingButtonSetupButton_clicked]" << "Show Floating Button Setup Dialog Window";
+#endif
+
+    if (!m_FloatingButtonSetupDialog->isVisible()) {
+        m_FloatingButtonSetupDialog->setItemRow(m_ItemRow);
+        m_FloatingButtonSetupDialog->show();
     }
 }
 

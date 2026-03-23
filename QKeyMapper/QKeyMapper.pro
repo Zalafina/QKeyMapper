@@ -214,6 +214,7 @@ SOURCES     += \
     qmappingsequenceedit.cpp \
     qstyle_singletons.cpp \
     qcrosshairsetupdialog.cpp \
+    qfloatingbuttonsetupdialog.cpp \
     qfloatingwindowsetupdialog.cpp \
     qgyro2mouseoptiondialog.cpp \
     qignorewindowinfolistdialog.cpp \
@@ -238,7 +239,8 @@ HEADERS     += \
     qkeymapper.h \
     qkeymapper_worker.h \
     qkeymapper_constants.h \
-    qkeymapper_qt_compat.h
+    qkeymapper_qt_compat.h \
+    qfloatingbuttonsetupdialog.h
 
 contains( DEFINES, SINGLE_APPLICATION ) {
     message("SINGLE_APPLICATION Defined!")

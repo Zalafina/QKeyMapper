@@ -148,6 +148,9 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
     QStringList seen;
     for (const MAP_KEYDATA &entry : dataList) {
         if (!entry.Disabled && vbutton_regex.match(entry.Original_Key).hasMatch()) {
+            if (entry.FloatingButton_Enable) {
+                continue;
+            }
             if (!seen.contains(entry.Original_Key)) {
                 seen.append(entry.Original_Key);
             }

@@ -391,10 +391,16 @@ namespace QKeyMapperConstants {
     // QColor supports constexpr in Qt6
     inline constexpr QColor CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
     inline constexpr QColor CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
+    inline constexpr QColor FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR = QColor(62, 62, 62);
+    inline constexpr QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(20, 20, 20);
+    inline constexpr QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(235, 235, 235);
 #else
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
     inline const QColor CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
+    inline const QColor FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR = QColor(62, 62, 62);
+    inline const QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(20, 20, 20);
+    inline const QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(235, 235, 235);
 #endif
 
     inline constexpr int CROSSHAIR_OPACITY_MIN = 0;
@@ -416,6 +422,36 @@ namespace QKeyMapperConstants {
     inline constexpr int CROSSHAIR_Y_OFFSET_MIN = -5000;
     inline constexpr int CROSSHAIR_Y_OFFSET_MAX = 5000;
     inline constexpr int CROSSHAIR_Y_OFFSET_DEFAULT = 0;
+
+    inline constexpr const char FLOATINGBUTTON_BUTTON_COLOR_DEFAULT[] = "3e3e3e";
+    inline constexpr const char FLOATINGBUTTON_PRESSED_COLOR_DEFAULT[] = "141414";
+    inline constexpr const char FLOATINGBUTTON_TEXT_COLOR_DEFAULT[] = "ebebeb";
+    inline constexpr bool FLOATINGBUTTON_ENABLE_DEFAULT = false;
+    inline constexpr bool FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT = true;
+    inline constexpr bool FLOATINGBUTTON_ALWAYSONTOP_DEFAULT = true;
+    inline constexpr bool FLOATINGBUTTON_DRAGSYNCOFFSET_DEFAULT = true;
+    inline constexpr int FLOATINGBUTTON_WIDTH_MIN = 24;
+    inline constexpr int FLOATINGBUTTON_WIDTH_MAX = 640;
+    inline constexpr int FLOATINGBUTTON_WIDTH_DEFAULT = 80;
+    inline constexpr int FLOATINGBUTTON_HEIGHT_MIN = 16;
+    inline constexpr int FLOATINGBUTTON_HEIGHT_MAX = 640;
+    inline constexpr int FLOATINGBUTTON_HEIGHT_DEFAULT = 32;
+    inline constexpr int FLOATINGBUTTON_FONT_SIZE_MIN = 6;
+    inline constexpr int FLOATINGBUTTON_FONT_SIZE_MAX = 72;
+    inline constexpr int FLOATINGBUTTON_FONT_SIZE_DEFAULT = 11;
+    inline constexpr int FLOATINGBUTTON_RADIUS_MIN = 0;
+    inline constexpr int FLOATINGBUTTON_RADIUS_MAX = 120;
+    inline constexpr int FLOATINGBUTTON_RADIUS_DEFAULT = 6;
+    inline constexpr int FLOATINGBUTTON_OFFSET_MIN = -50000;
+    inline constexpr int FLOATINGBUTTON_OFFSET_MAX = 50000;
+    inline constexpr int FLOATINGBUTTON_X_OFFSET_DEFAULT = 50;
+    inline constexpr int FLOATINGBUTTON_Y_OFFSET_DEFAULT = 50;
+
+    inline constexpr int FLOATINGBUTTON_OPACITY_DECIMALS = 2;
+    inline constexpr double FLOATINGBUTTON_OPACITY_SINGLESTEP = 0.01;
+    inline constexpr double FLOATINGBUTTON_OPACITY_MIN = 0.1;
+    inline constexpr double FLOATINGBUTTON_OPACITY_MAX = 1.0;
+    inline constexpr double FLOATINGBUTTON_OPACITY_DEFAULT = 1.0;
 
     inline constexpr int DATA_PORT_MIN = 1;
     inline constexpr int DATA_PORT_MAX = 65535;
@@ -1025,6 +1061,22 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_CROSSHAIR_SHOWRIGHT[] = "KeyMapData_Crosshair_ShowRight";
     inline constexpr const char KEYMAPDATA_CROSSHAIR_X_OFFSET[] = "KeyMapData_Crosshair_X_Offset";
     inline constexpr const char KEYMAPDATA_CROSSHAIR_Y_OFFSET[] = "KeyMapData_Crosshair_Y_Offset";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_ENABLE[] = "KeyMapData_FloatingButton_Enable";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_LABEL[] = "KeyMapData_FloatingButton_Label";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR[] = "KeyMapData_FloatingButton_ButtonColor";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR[] = "KeyMapData_FloatingButton_PressedColor";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR[] = "KeyMapData_FloatingButton_TextColor";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_WIDTH[] = "KeyMapData_FloatingButton_Width";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HEIGHT[] = "KeyMapData_FloatingButton_Height";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_FONTSIZE[] = "KeyMapData_FloatingButton_FontSize";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_RADIUS[] = "KeyMapData_FloatingButton_Radius";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_OPACITY[] = "KeyMapData_FloatingButton_Opacity";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART[] = "KeyMapData_FloatingButton_ShowOnMappingStart";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP[] = "KeyMapData_FloatingButton_AlwaysOnTop";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT[] = "KeyMapData_FloatingButton_ReferencePoint";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_X_OFFSET[] = "KeyMapData_FloatingButton_X_Offset";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET[] = "KeyMapData_FloatingButton_Y_Offset";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_DRAGSYNCOFFSET[] = "KeyMapData_FloatingButton_DragSyncOffset";
     inline constexpr const char KEY2MOUSE_X_SPEED[] = "Key2Mouse_XSpeed";
     inline constexpr const char KEY2MOUSE_Y_SPEED[] = "Key2Mouse_YSpeed";
     inline constexpr const char KEY2MOUSE_POLLING_INTERVAL[] = "Key2Mouse_PollingInterval";
@@ -1476,6 +1528,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char VBUTTON_REGEX_PATTERN[]    = R"(^VButton\{(.+)\}$)";
     inline constexpr const char SHOWVBUTTONPANEL_STR[]     = "ShowVButtonPanel";
     inline constexpr const char HIDEVBUTTONPANEL_STR[]     = "HideVButtonPanel";
+    inline constexpr const char SHOWALLFBUTTONS_STR[]      = "ShowAllFButtons";
+    inline constexpr const char HIDEALLFBUTTONS_STR[]      = "HideAllFButtons";
     // Maximum number of VButton entries allowed (Button1 ~ Button999)
     inline constexpr int VBUTTON_MAX_COUNT = 999;
 

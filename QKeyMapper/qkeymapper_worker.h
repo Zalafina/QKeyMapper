@@ -170,6 +170,22 @@ typedef struct MAP_KEYDATA
     bool Crosshair_ShowRight;
     int Crosshair_X_Offset;
     int Crosshair_Y_Offset;
+    bool FloatingButton_Enable;
+    QString FloatingButton_Label;
+    QColor FloatingButton_ButtonColor;
+    QColor FloatingButton_PressedColor;
+    QColor FloatingButton_TextColor;
+    int FloatingButton_Width;
+    int FloatingButton_Height;
+    int FloatingButton_FontSize;
+    int FloatingButton_Radius;
+    double FloatingButton_Opacity;
+    bool FloatingButton_ShowOnMappingStart;
+    bool FloatingButton_AlwaysOnTop;
+    int FloatingButton_ReferencePoint;
+    int FloatingButton_X_Offset;
+    int FloatingButton_Y_Offset;
+    bool FloatingButton_DragSyncOffset;
 
     MAP_KEYDATA() :
       Original_Key()
@@ -213,6 +229,22 @@ typedef struct MAP_KEYDATA
     , Crosshair_ShowRight(true)
     , Crosshair_X_Offset(QKeyMapperConstants::CROSSHAIR_X_OFFSET_DEFAULT)
     , Crosshair_Y_Offset(QKeyMapperConstants::CROSSHAIR_Y_OFFSET_DEFAULT)
+    , FloatingButton_Enable(QKeyMapperConstants::FLOATINGBUTTON_ENABLE_DEFAULT)
+    , FloatingButton_Label()
+    , FloatingButton_ButtonColor(QKeyMapperConstants::FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_PressedColor(QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_TextColor(QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_Width(QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT)
+    , FloatingButton_Height(QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT)
+    , FloatingButton_FontSize(QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT)
+    , FloatingButton_Radius(QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT)
+    , FloatingButton_Opacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
+    , FloatingButton_ShowOnMappingStart(QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT)
+    , FloatingButton_AlwaysOnTop(QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT)
+    , FloatingButton_ReferencePoint(QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT)
+    , FloatingButton_X_Offset(QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT)
+    , FloatingButton_Y_Offset(QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT)
+    , FloatingButton_DragSyncOffset(QKeyMapperConstants::FLOATINGBUTTON_DRAGSYNCOFFSET_DEFAULT)
     {}
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
@@ -278,6 +310,22 @@ typedef struct MAP_KEYDATA
         Crosshair_ShowRight = crosshair_showright;
         Crosshair_X_Offset = crosshair_x_offset;
         Crosshair_Y_Offset = crosshair_y_offset;
+        FloatingButton_Enable = QKeyMapperConstants::FLOATINGBUTTON_ENABLE_DEFAULT;
+        FloatingButton_Label.clear();
+        FloatingButton_ButtonColor = QKeyMapperConstants::FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
+        FloatingButton_PressedColor = QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
+        FloatingButton_TextColor = QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
+        FloatingButton_Width = QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT;
+        FloatingButton_Height = QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT;
+        FloatingButton_FontSize = QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT;
+        FloatingButton_Radius = QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT;
+        FloatingButton_Opacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
+        FloatingButton_ShowOnMappingStart = QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT;
+        FloatingButton_AlwaysOnTop = QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT;
+        FloatingButton_ReferencePoint = QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
+        FloatingButton_X_Offset = QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT;
+        FloatingButton_Y_Offset = QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT;
+        FloatingButton_DragSyncOffset = QKeyMapperConstants::FLOATINGBUTTON_DRAGSYNCOFFSET_DEFAULT;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
@@ -318,7 +366,23 @@ typedef struct MAP_KEYDATA
                 && (Crosshair_ShowLeft == other.Crosshair_ShowLeft)
                 && (Crosshair_ShowRight == other.Crosshair_ShowRight)
                 && (Crosshair_X_Offset == other.Crosshair_X_Offset)
-                && (Crosshair_Y_Offset == other.Crosshair_Y_Offset));
+                && (Crosshair_Y_Offset == other.Crosshair_Y_Offset)
+                && (FloatingButton_Enable == other.FloatingButton_Enable)
+                && (FloatingButton_Label == other.FloatingButton_Label)
+                && (FloatingButton_ButtonColor == other.FloatingButton_ButtonColor)
+                && (FloatingButton_PressedColor == other.FloatingButton_PressedColor)
+                && (FloatingButton_TextColor == other.FloatingButton_TextColor)
+                && (FloatingButton_Width == other.FloatingButton_Width)
+                && (FloatingButton_Height == other.FloatingButton_Height)
+                && (FloatingButton_FontSize == other.FloatingButton_FontSize)
+                && (FloatingButton_Radius == other.FloatingButton_Radius)
+                && (FloatingButton_Opacity == other.FloatingButton_Opacity)
+                && (FloatingButton_ShowOnMappingStart == other.FloatingButton_ShowOnMappingStart)
+                && (FloatingButton_AlwaysOnTop == other.FloatingButton_AlwaysOnTop)
+                && (FloatingButton_ReferencePoint == other.FloatingButton_ReferencePoint)
+                && (FloatingButton_X_Offset == other.FloatingButton_X_Offset)
+                && (FloatingButton_Y_Offset == other.FloatingButton_Y_Offset)
+                && (FloatingButton_DragSyncOffset == other.FloatingButton_DragSyncOffset));
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -365,6 +429,22 @@ typedef struct MAP_KEYDATA
                         << ", Crosshair_ShowRight:" << data.Crosshair_ShowRight
                         << ", Crosshair_X_Offset:" << data.Crosshair_X_Offset
                         << ", Crosshair_Y_Offset:" << data.Crosshair_Y_Offset
+                        << ", FloatingButton_Enable:" << data.FloatingButton_Enable
+                        << ", FloatingButton_Label:" << data.FloatingButton_Label
+                        << ", FloatingButton_ButtonColor:" << data.FloatingButton_ButtonColor
+                        << ", FloatingButton_PressedColor:" << data.FloatingButton_PressedColor
+                        << ", FloatingButton_TextColor:" << data.FloatingButton_TextColor
+                        << ", FloatingButton_Width:" << data.FloatingButton_Width
+                        << ", FloatingButton_Height:" << data.FloatingButton_Height
+                        << ", FloatingButton_FontSize:" << data.FloatingButton_FontSize
+                        << ", FloatingButton_Radius:" << data.FloatingButton_Radius
+                        << ", FloatingButton_Opacity:" << data.FloatingButton_Opacity
+                        << ", FloatingButton_ShowOnMappingStart:" << data.FloatingButton_ShowOnMappingStart
+                        << ", FloatingButton_AlwaysOnTop:" << data.FloatingButton_AlwaysOnTop
+                        << ", FloatingButton_ReferencePoint:" << data.FloatingButton_ReferencePoint
+                        << ", FloatingButton_X_Offset:" << data.FloatingButton_X_Offset
+                        << ", FloatingButton_Y_Offset:" << data.FloatingButton_Y_Offset
+                        << ", FloatingButton_DragSyncOffset:" << data.FloatingButton_DragSyncOffset
                         << "]";
         return debug;
     }
@@ -1064,6 +1144,9 @@ signals:
 
     // Signal emitted to show or hide the VButton panel on the main thread (Qt::QueuedConnection)
     void showVButtonPanel_Signal(bool visible);
+
+    // Signal emitted to show or hide all floating buttons on the main thread
+    void showAllFloatingButtons_Signal(bool visible);
 
     // Signal emitted to fully synchronize the VButton panel layout and visibility on the main thread
     void syncVButtonPanel_Signal(bool showPanel);

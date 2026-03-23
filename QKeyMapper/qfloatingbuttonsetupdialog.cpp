@@ -1,0 +1,276 @@
+#include "qfloatingbuttonsetupdialog.h"
+
+#include <QFormLayout>
+#include <QGroupBox>
+
+#include "qkeymapper.h"
+#include "qkeymapper_constants.h"
+
+using namespace QKeyMapperConstants;
+
+QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
+    : QDialog(parent)
+    , m_ItemRow(-1)
+    , m_isLoading(false)
+    , m_EnableCheckBox(new QCheckBox(this))
+    , m_LabelLineEdit(new QLineEdit(this))
+    , m_ShowOnStartCheckBox(new QCheckBox(this))
+    , m_AlwaysOnTopCheckBox(new QCheckBox(this))
+    , m_DragSyncOffsetCheckBox(new QCheckBox(this))
+    , m_WidthSpinBox(new QSpinBox(this))
+    , m_HeightSpinBox(new QSpinBox(this))
+    , m_FontSizeSpinBox(new QSpinBox(this))
+    , m_RadiusSpinBox(new QSpinBox(this))
+    , m_OpacitySpinBox(new QDoubleSpinBox(this))
+    , m_ReferencePointComboBox(new QComboBox(this))
+    , m_OffsetXSpinBox(new QSpinBox(this))
+    , m_OffsetYSpinBox(new QSpinBox(this))
+    , m_ButtonColorPicker(new ColorPickerWidget(this, "FloatBtn_BtnColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
+    , m_PressedColorPicker(new ColorPickerWidget(this, "FloatBtn_PressedColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
+    , m_TextColorPicker(new ColorPickerWidget(this, "FloatBtn_TextColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_TEXTCOLOR))
+{
+    setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
+
+    m_WidthSpinBox->setRange(FLOATINGBUTTON_WIDTH_MIN, FLOATINGBUTTON_WIDTH_MAX);
+    m_HeightSpinBox->setRange(FLOATINGBUTTON_HEIGHT_MIN, FLOATINGBUTTON_HEIGHT_MAX);
+    m_FontSizeSpinBox->setRange(FLOATINGBUTTON_FONT_SIZE_MIN, FLOATINGBUTTON_FONT_SIZE_MAX);
+    m_RadiusSpinBox->setRange(FLOATINGBUTTON_RADIUS_MIN, FLOATINGBUTTON_RADIUS_MAX);
+    m_OpacitySpinBox->setDecimals(FLOATINGBUTTON_OPACITY_DECIMALS);
+    m_OpacitySpinBox->setSingleStep(FLOATINGBUTTON_OPACITY_SINGLESTEP);
+    m_OpacitySpinBox->setRange(FLOATINGBUTTON_OPACITY_MIN, FLOATINGBUTTON_OPACITY_MAX);
+    m_OffsetXSpinBox->setRange(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX);
+    m_OffsetYSpinBox->setRange(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX);
+
+    setupReferencePointComboBox();
+
+    QGroupBox *basicGroup = new QGroupBox(this);
+    QFormLayout *basicForm = new QFormLayout(basicGroup);
+    basicForm->addRow(m_EnableCheckBox);
+    basicForm->addRow(tr("Label"), m_LabelLineEdit);
+    basicForm->addRow(m_ShowOnStartCheckBox);
+    basicForm->addRow(m_AlwaysOnTopCheckBox);
+    basicForm->addRow(m_DragSyncOffsetCheckBox);
+
+    QGroupBox *styleGroup = new QGroupBox(this);
+    QGridLayout *styleGrid = new QGridLayout(styleGroup);
+    styleGrid->addWidget(new QLabel(tr("Width"), this), 0, 0);
+    styleGrid->addWidget(m_WidthSpinBox, 0, 1);
+    styleGrid->addWidget(new QLabel(tr("Height"), this), 0, 2);
+    styleGrid->addWidget(m_HeightSpinBox, 0, 3);
+
+    styleGrid->addWidget(new QLabel(tr("Font Size"), this), 1, 0);
+    styleGrid->addWidget(m_FontSizeSpinBox, 1, 1);
+    styleGrid->addWidget(new QLabel(tr("Radius"), this), 1, 2);
+    styleGrid->addWidget(m_RadiusSpinBox, 1, 3);
+
+    styleGrid->addWidget(new QLabel(tr("Opacity"), this), 2, 0);
+    styleGrid->addWidget(m_OpacitySpinBox, 2, 1);
+
+    QHBoxLayout *colorLayout = new QHBoxLayout();
+    colorLayout->addWidget(m_ButtonColorPicker);
+    colorLayout->addWidget(m_PressedColorPicker);
+    colorLayout->addWidget(m_TextColorPicker);
+    styleGrid->addLayout(colorLayout, 3, 0, 1, 4);
+
+    QGroupBox *positionGroup = new QGroupBox(this);
+    QGridLayout *positionGrid = new QGridLayout(positionGroup);
+    positionGrid->addWidget(new QLabel(tr("Ref Point"), this), 0, 0);
+    positionGrid->addWidget(m_ReferencePointComboBox, 0, 1, 1, 3);
+    positionGrid->addWidget(new QLabel(tr("Offset X"), this), 1, 0);
+    positionGrid->addWidget(m_OffsetXSpinBox, 1, 1);
+    positionGrid->addWidget(new QLabel(tr("Offset Y"), this), 1, 2);
+    positionGrid->addWidget(m_OffsetYSpinBox, 1, 3);
+
+    QDialogButtonBox *buttonBox = new QDialogButtonBox(this);
+    QPushButton *applyButton = buttonBox->addButton(tr("Apply"), QDialogButtonBox::ApplyRole);
+    QPushButton *closeButton = buttonBox->addButton(tr("Close"), QDialogButtonBox::RejectRole);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->addWidget(basicGroup);
+    mainLayout->addWidget(styleGroup);
+    mainLayout->addWidget(positionGroup);
+    mainLayout->addWidget(buttonBox);
+
+    connect(applyButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onApplyButtonClicked);
+    connect(closeButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::close);
+
+    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    connect(m_EnableCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    #else
+    connect(m_EnableCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    #endif
+    connect(m_LabelLineEdit, &QLineEdit::textChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    connect(m_ShowOnStartCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_AlwaysOnTopCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_DragSyncOffsetCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    #else
+    connect(m_ShowOnStartCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_AlwaysOnTopCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_DragSyncOffsetCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    #endif
+    connect(m_WidthSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_HeightSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_FontSizeSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_RadiusSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_OpacitySpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_ReferencePointComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_OffsetXSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_OffsetYSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+
+    connect(m_ButtonColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_PressedColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_TextColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+
+    setUILanguage(QKeyMapper::getLanguageIndex());
+}
+
+QFloatingButtonSetupDialog::~QFloatingButtonSetupDialog() = default;
+
+void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
+{
+    Q_UNUSED(languageindex);
+
+    setWindowTitle(tr("Floating Button Setup"));
+    m_EnableCheckBox->setText(tr("Enable Floating Button"));
+    m_ShowOnStartCheckBox->setText(tr("Show on Mapping Start"));
+    m_AlwaysOnTopCheckBox->setText(tr("Always On Top"));
+    m_DragSyncOffsetCheckBox->setText(tr("Ctrl+Drag to Move and Sync Offset"));
+
+    m_LabelLineEdit->setPlaceholderText(tr("Empty = use original key name"));
+
+    m_ButtonColorPicker->setButtonText(tr("BtnColor"));
+    m_ButtonColorPicker->setWindowTitle(tr("Floating Button Color"));
+    m_PressedColorPicker->setButtonText(tr("PressedColor"));
+    m_PressedColorPicker->setWindowTitle(tr("Floating Button Pressed Color"));
+    m_TextColorPicker->setButtonText(tr("TextColor"));
+    m_TextColorPicker->setWindowTitle(tr("Floating Button Text Color"));
+
+    setupReferencePointComboBox();
+}
+
+void QFloatingButtonSetupDialog::setItemRow(int row)
+{
+    m_ItemRow = row;
+}
+
+int QFloatingButtonSetupDialog::getItemRow() const
+{
+    return m_ItemRow;
+}
+
+bool QFloatingButtonSetupDialog::event(QEvent *event)
+{
+    if (event->type() == QEvent::ActivationChange) {
+        if (!isActiveWindow() && !QKeyMapper::isSelectColorDialogVisible()) {
+            close();
+        }
+    }
+
+    return QDialog::event(event);
+}
+
+void QFloatingButtonSetupDialog::showEvent(QShowEvent *event)
+{
+    loadFromCurrentItem();
+    QDialog::showEvent(event);
+}
+
+void QFloatingButtonSetupDialog::onApplyButtonClicked()
+{
+    applyToCurrentItem();
+    emit settingsApplied();
+}
+
+void QFloatingButtonSetupDialog::onAnyControlChanged()
+{
+    if (m_isLoading) {
+        return;
+    }
+
+    applyToCurrentItem();
+    emit settingsApplied();
+}
+
+void QFloatingButtonSetupDialog::loadFromCurrentItem()
+{
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    m_isLoading = true;
+
+    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+
+    m_EnableCheckBox->setChecked(keymapdata.FloatingButton_Enable);
+    m_LabelLineEdit->setText(keymapdata.FloatingButton_Label);
+    m_ShowOnStartCheckBox->setChecked(keymapdata.FloatingButton_ShowOnMappingStart);
+    m_AlwaysOnTopCheckBox->setChecked(keymapdata.FloatingButton_AlwaysOnTop);
+    m_DragSyncOffsetCheckBox->setChecked(keymapdata.FloatingButton_DragSyncOffset);
+
+    m_WidthSpinBox->setValue(keymapdata.FloatingButton_Width);
+    m_HeightSpinBox->setValue(keymapdata.FloatingButton_Height);
+    m_FontSizeSpinBox->setValue(keymapdata.FloatingButton_FontSize);
+    m_RadiusSpinBox->setValue(keymapdata.FloatingButton_Radius);
+    m_OpacitySpinBox->setValue(keymapdata.FloatingButton_Opacity);
+
+    int referencePoint = keymapdata.FloatingButton_ReferencePoint;
+    if (referencePoint < FLOATINGWINDOW_REFERENCEPOINT_MIN || referencePoint > FLOATINGWINDOW_REFERENCEPOINT_MAX) {
+        referencePoint = FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
+    }
+    m_ReferencePointComboBox->setCurrentIndex(referencePoint);
+    m_OffsetXSpinBox->setValue(keymapdata.FloatingButton_X_Offset);
+    m_OffsetYSpinBox->setValue(keymapdata.FloatingButton_Y_Offset);
+
+    m_ButtonColorPicker->setColor(keymapdata.FloatingButton_ButtonColor);
+    m_PressedColorPicker->setColor(keymapdata.FloatingButton_PressedColor);
+    m_TextColorPicker->setColor(keymapdata.FloatingButton_TextColor);
+
+    m_isLoading = false;
+}
+
+void QFloatingButtonSetupDialog::applyToCurrentItem()
+{
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    MAP_KEYDATA &keymapdata = (*QKeyMapper::KeyMappingDataList)[m_ItemRow];
+
+    keymapdata.FloatingButton_Enable = m_EnableCheckBox->isChecked();
+    keymapdata.FloatingButton_Label = m_LabelLineEdit->text();
+    keymapdata.FloatingButton_ShowOnMappingStart = m_ShowOnStartCheckBox->isChecked();
+    keymapdata.FloatingButton_AlwaysOnTop = m_AlwaysOnTopCheckBox->isChecked();
+    keymapdata.FloatingButton_DragSyncOffset = m_DragSyncOffsetCheckBox->isChecked();
+
+    keymapdata.FloatingButton_Width = m_WidthSpinBox->value();
+    keymapdata.FloatingButton_Height = m_HeightSpinBox->value();
+    keymapdata.FloatingButton_FontSize = m_FontSizeSpinBox->value();
+    keymapdata.FloatingButton_Radius = m_RadiusSpinBox->value();
+    keymapdata.FloatingButton_Opacity = m_OpacitySpinBox->value();
+
+    keymapdata.FloatingButton_ReferencePoint = m_ReferencePointComboBox->currentIndex();
+    keymapdata.FloatingButton_X_Offset = m_OffsetXSpinBox->value();
+    keymapdata.FloatingButton_Y_Offset = m_OffsetYSpinBox->value();
+
+    keymapdata.FloatingButton_ButtonColor = m_ButtonColorPicker->getColor();
+    keymapdata.FloatingButton_PressedColor = m_PressedColorPicker->getColor();
+    keymapdata.FloatingButton_TextColor = m_TextColorPicker->getColor();
+}
+
+void QFloatingButtonSetupDialog::setupReferencePointComboBox()
+{
+    m_ReferencePointComboBox->clear();
+    m_ReferencePointComboBox->addItem(tr("ScreenTopLeft"));
+    m_ReferencePointComboBox->addItem(tr("ScreenTopRight"));
+    m_ReferencePointComboBox->addItem(tr("ScreenTopCenter"));
+    m_ReferencePointComboBox->addItem(tr("ScreenBottomLeft"));
+    m_ReferencePointComboBox->addItem(tr("ScreenBottomRight"));
+    m_ReferencePointComboBox->addItem(tr("ScreenBottomCenter"));
+    m_ReferencePointComboBox->addItem(tr("WindowTopLeft"));
+    m_ReferencePointComboBox->addItem(tr("WindowTopRight"));
+    m_ReferencePointComboBox->addItem(tr("WindowTopCenter"));
+    m_ReferencePointComboBox->addItem(tr("WindowBottomLeft"));
+    m_ReferencePointComboBox->addItem(tr("WindowBottomRight"));
+    m_ReferencePointComboBox->addItem(tr("WindowBottomCenter"));
+}

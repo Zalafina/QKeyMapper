@@ -2477,6 +2477,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 // HideVButtonPanel: KEY_UP shows the panel
                 emit showVButtonPanel_Signal(true);
             }
+            else if (key == SHOWALLFBUTTONS_STR) {
+                // ShowAllFButtons: KEY_UP hides all floating buttons
+                emit showAllFloatingButtons_Signal(false);
+            }
+            else if (key == HIDEALLFBUTTONS_STR) {
+                // HideAllFButtons: KEY_UP shows all floating buttons
+                emit showAllFloatingButtons_Signal(true);
+            }
             else if (!s_ViGEmTargetList.isEmpty() && vjoy_match.hasMatch()) {
                 if (original_key != CLEAR_VIRTUALKEYS) {
                     QString joystickButton = vjoy_match.captured(1);
@@ -3224,6 +3232,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else if (key == HIDEVBUTTONPANEL_STR) {
                     // HideVButtonPanel: KEY_DOWN hides the panel
                     emit showVButtonPanel_Signal(false);
+                }
+                else if (key == SHOWALLFBUTTONS_STR) {
+                    // ShowAllFButtons: KEY_DOWN shows all floating buttons
+                    emit showAllFloatingButtons_Signal(true);
+                }
+                else if (key == HIDEALLFBUTTONS_STR) {
+                    // HideAllFButtons: KEY_DOWN hides all floating buttons
+                    emit showAllFloatingButtons_Signal(false);
                 }
                 else if (!s_ViGEmTargetList.isEmpty() && vjoy_match.hasMatch()) {
                     QString joystickButton = vjoy_match.captured(1);
@@ -12896,6 +12912,18 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             qDebug() << "[LowLevelKeyboardHookProc]" << (keyupdown == KEY_DOWN?"KEY_DOWN":"KEY_UP") << " : pressedVirtualKeysList -> " << pressedVirtualKeysList;
 #endif
             if (extraInfo == VIRTUAL_CUSTOM_KEYS) {
+                if (row_index >= 0 && row_index < QKeyMapper::KeyMappingDataList->size()) {
+                    const MAP_KEYDATA &map_keydata = QKeyMapper::KeyMappingDataList->at(row_index);
+                    if (map_keydata.FloatingButton_Enable) {
+                        if (keyupdown == KEY_DOWN) {
+                            emit QKeyMapper::getInstance()->showFloatingButtonStart_Signal(row_index, keycodeString);
+                        }
+                        else {
+                            emit QKeyMapper::getInstance()->showFloatingButtonStop_Signal(row_index, keycodeString);
+                        }
+                    }
+                }
+
                 if (keycodeString.startsWith(CROSSHAIR_PREFIX)) {
                     if (keyupdown == KEY_DOWN) {
 #ifdef DEBUG_LOGOUT_ON
@@ -17583,6 +17611,8 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << VJOY_RT_ACCEL_STR
             << SHOWVBUTTONPANEL_STR
             << HIDEVBUTTONPANEL_STR
+            << SHOWALLFBUTTONS_STR
+            << HIDEALLFBUTTONS_STR
             ;
 }
 
