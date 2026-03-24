@@ -8362,6 +8362,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
     // Apply the startup/default visibility before any runtime show/hide mappings are emitted.
     emit syncVButtonPanel_Signal(s_vbutton_panel_defaultshow);
+    emit syncFloatingButtonsOnMappingStart_Signal();
 
     emitSendOnMappingStartKeys();
 
@@ -8841,6 +8842,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
         buildVButtonOriginalKeysList(*QKeyMapper::KeyMappingDataList);
     }
     emit syncVButtonPanel_Signal(s_vbutton_panel_defaultshow);
+    emit syncFloatingButtonsOnMappingStart_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart End.<<<\033[0m");

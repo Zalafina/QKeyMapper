@@ -12,14 +12,16 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     : QDialog(parent)
     , m_ItemRow(-1)
     , m_isLoading(false)
+    , m_hasBackup(false)
     , m_EnableCheckBox(new QCheckBox(this))
     , m_LabelLineEdit(new QLineEdit(this))
     , m_ShowOnStartCheckBox(new QCheckBox(this))
     , m_AlwaysOnTopCheckBox(new QCheckBox(this))
-    , m_DragSyncOffsetCheckBox(new QCheckBox(this))
+    , m_DragToMoveCheckBox(new QCheckBox(this))
     , m_WidthSpinBox(new QSpinBox(this))
     , m_HeightSpinBox(new QSpinBox(this))
     , m_FontSizeSpinBox(new QSpinBox(this))
+    , m_FontWeightComboBox(new QComboBox(this))
     , m_RadiusSpinBox(new QSpinBox(this))
     , m_OpacitySpinBox(new QDoubleSpinBox(this))
     , m_ReferencePointComboBox(new QComboBox(this))
@@ -49,7 +51,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     basicForm->addRow(tr("Label"), m_LabelLineEdit);
     basicForm->addRow(m_ShowOnStartCheckBox);
     basicForm->addRow(m_AlwaysOnTopCheckBox);
-    basicForm->addRow(m_DragSyncOffsetCheckBox);
+    basicForm->addRow(m_DragToMoveCheckBox);
 
     QGroupBox *styleGroup = new QGroupBox(this);
     QGridLayout *styleGrid = new QGridLayout(styleGroup);
@@ -60,11 +62,14 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
 
     styleGrid->addWidget(new QLabel(tr("Font Size"), this), 1, 0);
     styleGrid->addWidget(m_FontSizeSpinBox, 1, 1);
-    styleGrid->addWidget(new QLabel(tr("Radius"), this), 1, 2);
-    styleGrid->addWidget(m_RadiusSpinBox, 1, 3);
+    styleGrid->addWidget(new QLabel(tr("Font Weight"), this), 1, 2);
+    styleGrid->addWidget(m_FontWeightComboBox, 1, 3);
 
-    styleGrid->addWidget(new QLabel(tr("Opacity"), this), 2, 0);
-    styleGrid->addWidget(m_OpacitySpinBox, 2, 1);
+    styleGrid->addWidget(new QLabel(tr("Radius"), this), 2, 0);
+    styleGrid->addWidget(m_RadiusSpinBox, 2, 1);
+
+    styleGrid->addWidget(new QLabel(tr("Opacity"), this), 2, 2);
+    styleGrid->addWidget(m_OpacitySpinBox, 2, 3);
 
     QHBoxLayout *colorLayout = new QHBoxLayout();
     colorLayout->addWidget(m_ButtonColorPicker);
@@ -83,7 +88,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
 
     QDialogButtonBox *buttonBox = new QDialogButtonBox(this);
     QPushButton *applyButton = buttonBox->addButton(tr("Apply"), QDialogButtonBox::ApplyRole);
-    QPushButton *closeButton = buttonBox->addButton(tr("Close"), QDialogButtonBox::RejectRole);
+    QPushButton *revertButton = buttonBox->addButton(tr("Revert"), QDialogButtonBox::ResetRole);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(basicGroup);
@@ -92,7 +97,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     mainLayout->addWidget(buttonBox);
 
     connect(applyButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onApplyButtonClicked);
-    connect(closeButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::close);
+    connect(revertButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onRevertButtonClicked);
 
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     connect(m_EnableCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
@@ -103,15 +108,16 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     connect(m_ShowOnStartCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
-    connect(m_DragSyncOffsetCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_DragToMoveCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #else
     connect(m_ShowOnStartCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
-    connect(m_DragSyncOffsetCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_DragToMoveCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #endif
     connect(m_WidthSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_HeightSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_FontSizeSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_FontWeightComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_RadiusSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_OpacitySpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_ReferencePointComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
@@ -135,7 +141,19 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_EnableCheckBox->setText(tr("Enable Floating Button"));
     m_ShowOnStartCheckBox->setText(tr("Show on Mapping Start"));
     m_AlwaysOnTopCheckBox->setText(tr("Always On Top"));
-    m_DragSyncOffsetCheckBox->setText(tr("Ctrl+Drag to Move and Sync Offset"));
+    m_DragToMoveCheckBox->setText(tr("Ctrl+Drag to Move"));
+
+    if (m_FontWeightComboBox->count() != 3) {
+        m_FontWeightComboBox->clear();
+        m_FontWeightComboBox->addItem(tr("Light"));
+        m_FontWeightComboBox->addItem(tr("Normal"));
+        m_FontWeightComboBox->addItem(tr("Bold"));
+    }
+    else {
+        m_FontWeightComboBox->setItemText(0, tr("Light"));
+        m_FontWeightComboBox->setItemText(1, tr("Normal"));
+        m_FontWeightComboBox->setItemText(2, tr("Bold"));
+    }
 
     m_LabelLineEdit->setPlaceholderText(tr("Empty = use original key name"));
 
@@ -173,12 +191,48 @@ bool QFloatingButtonSetupDialog::event(QEvent *event)
 void QFloatingButtonSetupDialog::showEvent(QShowEvent *event)
 {
     loadFromCurrentItem();
+
+    if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+        m_BackupData = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+        m_hasBackup = true;
+    }
+    else {
+        m_hasBackup = false;
+    }
+
     QDialog::showEvent(event);
+}
+
+void QFloatingButtonSetupDialog::closeEvent(QCloseEvent *event)
+{
+    m_hasBackup = false;
+    QDialog::closeEvent(event);
 }
 
 void QFloatingButtonSetupDialog::onApplyButtonClicked()
 {
     applyToCurrentItem();
+
+    if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+        m_BackupData = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+        m_hasBackup = true;
+    }
+
+    emit settingsApplied();
+}
+
+void QFloatingButtonSetupDialog::onRevertButtonClicked()
+{
+    if (!m_hasBackup) {
+        return;
+    }
+
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    (*QKeyMapper::KeyMappingDataList)[m_ItemRow] = m_BackupData;
+    loadFromCurrentItem();
     emit settingsApplied();
 }
 
@@ -206,11 +260,12 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_LabelLineEdit->setText(keymapdata.FloatingButton_Label);
     m_ShowOnStartCheckBox->setChecked(keymapdata.FloatingButton_ShowOnMappingStart);
     m_AlwaysOnTopCheckBox->setChecked(keymapdata.FloatingButton_AlwaysOnTop);
-    m_DragSyncOffsetCheckBox->setChecked(keymapdata.FloatingButton_DragSyncOffset);
+    m_DragToMoveCheckBox->setChecked(keymapdata.FloatingButton_DragToMove);
 
     m_WidthSpinBox->setValue(keymapdata.FloatingButton_Width);
     m_HeightSpinBox->setValue(keymapdata.FloatingButton_Height);
     m_FontSizeSpinBox->setValue(keymapdata.FloatingButton_FontSize);
+    m_FontWeightComboBox->setCurrentIndex(qBound(FLOATINGBUTTON_FONT_WEIGHT_MIN, keymapdata.FloatingButton_FontWeight, FLOATINGBUTTON_FONT_WEIGHT_MAX));
     m_RadiusSpinBox->setValue(keymapdata.FloatingButton_Radius);
     m_OpacitySpinBox->setValue(keymapdata.FloatingButton_Opacity);
 
@@ -241,11 +296,12 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_Label = m_LabelLineEdit->text();
     keymapdata.FloatingButton_ShowOnMappingStart = m_ShowOnStartCheckBox->isChecked();
     keymapdata.FloatingButton_AlwaysOnTop = m_AlwaysOnTopCheckBox->isChecked();
-    keymapdata.FloatingButton_DragSyncOffset = m_DragSyncOffsetCheckBox->isChecked();
+    keymapdata.FloatingButton_DragToMove = m_DragToMoveCheckBox->isChecked();
 
     keymapdata.FloatingButton_Width = m_WidthSpinBox->value();
     keymapdata.FloatingButton_Height = m_HeightSpinBox->value();
     keymapdata.FloatingButton_FontSize = m_FontSizeSpinBox->value();
+    keymapdata.FloatingButton_FontWeight = qBound(FLOATINGBUTTON_FONT_WEIGHT_MIN, m_FontWeightComboBox->currentIndex(), FLOATINGBUTTON_FONT_WEIGHT_MAX);
     keymapdata.FloatingButton_Radius = m_RadiusSpinBox->value();
     keymapdata.FloatingButton_Opacity = m_OpacitySpinBox->value();
 
@@ -274,3 +330,4 @@ void QFloatingButtonSetupDialog::setupReferencePointComboBox()
     m_ReferencePointComboBox->addItem(tr("WindowBottomRight"));
     m_ReferencePointComboBox->addItem(tr("WindowBottomCenter"));
 }
+

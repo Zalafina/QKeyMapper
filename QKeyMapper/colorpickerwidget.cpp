@@ -173,7 +173,10 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
         && "CrosshairColor" != m_buttonText
         && "VBtn_BGColor"   != m_buttonText
         && "VBtn_BtnColor"  != m_buttonText
-        && "VBtn_TextColor" != m_buttonText) {
+        && "VBtn_TextColor" != m_buttonText
+        && "FloatBtn_BtnColor" != m_buttonText
+        && "FloatBtn_PressedColor" != m_buttonText
+        && "FloatBtn_TextColor" != m_buttonText) {
         return;
     }
 
@@ -224,6 +227,15 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
     }
     else if ("VBtn_TextColor" == m_buttonText) {
         color = VBTNPANEL_TEXT_COLOR_DEFAULT;
+    }
+    else if ("FloatBtn_BtnColor" == m_buttonText) {
+        color = FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
+    }
+    else if ("FloatBtn_PressedColor" == m_buttonText) {
+        color = FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
+    }
+    else if ("FloatBtn_TextColor" == m_buttonText) {
+        color = FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
     }
 
     // Update stored color and label

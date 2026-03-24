@@ -391,16 +391,16 @@ namespace QKeyMapperConstants {
     // QColor supports constexpr in Qt6
     inline constexpr QColor CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
     inline constexpr QColor CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
-    inline constexpr QColor FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR = QColor(62, 62, 62);
-    inline constexpr QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(20, 20, 20);
-    inline constexpr QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(235, 235, 235);
+    inline constexpr QColor FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR = QColor(80, 80, 80);
+    inline constexpr QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(100, 118, 198);
+    inline constexpr QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
 #else
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
     inline const QColor CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
-    inline const QColor FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR = QColor(62, 62, 62);
-    inline const QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(20, 20, 20);
-    inline const QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(235, 235, 235);
+    inline const QColor FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR = QColor(80, 80, 80);
+    inline const QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(100, 118, 198);
+    inline const QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
 #endif
 
     inline constexpr int CROSSHAIR_OPACITY_MIN = 0;
@@ -423,25 +423,31 @@ namespace QKeyMapperConstants {
     inline constexpr int CROSSHAIR_Y_OFFSET_MAX = 5000;
     inline constexpr int CROSSHAIR_Y_OFFSET_DEFAULT = 0;
 
-    inline constexpr const char FLOATINGBUTTON_BUTTON_COLOR_DEFAULT[] = "3e3e3e";
-    inline constexpr const char FLOATINGBUTTON_PRESSED_COLOR_DEFAULT[] = "141414";
-    inline constexpr const char FLOATINGBUTTON_TEXT_COLOR_DEFAULT[] = "ebebeb";
+    inline constexpr const char FLOATINGBUTTON_BUTTON_COLOR_DEFAULT[] = "505050";
+    inline constexpr const char FLOATINGBUTTON_PRESSED_COLOR_DEFAULT[] = "6476c6";
+    inline constexpr const char FLOATINGBUTTON_TEXT_COLOR_DEFAULT[] = "d0d2d4";
     inline constexpr bool FLOATINGBUTTON_ENABLE_DEFAULT = false;
     inline constexpr bool FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_ALWAYSONTOP_DEFAULT = true;
-    inline constexpr bool FLOATINGBUTTON_DRAGSYNCOFFSET_DEFAULT = true;
+    inline constexpr bool FLOATINGBUTTON_DRAGTOMOVE_DEFAULT = true;
     inline constexpr int FLOATINGBUTTON_WIDTH_MIN = 24;
     inline constexpr int FLOATINGBUTTON_WIDTH_MAX = 640;
     inline constexpr int FLOATINGBUTTON_WIDTH_DEFAULT = 80;
     inline constexpr int FLOATINGBUTTON_HEIGHT_MIN = 16;
     inline constexpr int FLOATINGBUTTON_HEIGHT_MAX = 640;
     inline constexpr int FLOATINGBUTTON_HEIGHT_DEFAULT = 32;
-    inline constexpr int FLOATINGBUTTON_FONT_SIZE_MIN = 6;
+    inline constexpr int FLOATINGBUTTON_FONT_SIZE_MIN = 1;
     inline constexpr int FLOATINGBUTTON_FONT_SIZE_MAX = 72;
     inline constexpr int FLOATINGBUTTON_FONT_SIZE_DEFAULT = 11;
+    inline constexpr int FLOATINGBUTTON_FONT_WEIGHT_LIGHT = 0;
+    inline constexpr int FLOATINGBUTTON_FONT_WEIGHT_NORMAL = 1;
+    inline constexpr int FLOATINGBUTTON_FONT_WEIGHT_BOLD = 2;
+    inline constexpr int FLOATINGBUTTON_FONT_WEIGHT_MIN = FLOATINGBUTTON_FONT_WEIGHT_LIGHT;
+    inline constexpr int FLOATINGBUTTON_FONT_WEIGHT_MAX = FLOATINGBUTTON_FONT_WEIGHT_BOLD;
+    inline constexpr int FLOATINGBUTTON_FONT_WEIGHT_DEFAULT = FLOATINGBUTTON_FONT_WEIGHT_NORMAL;
     inline constexpr int FLOATINGBUTTON_RADIUS_MIN = 0;
-    inline constexpr int FLOATINGBUTTON_RADIUS_MAX = 120;
-    inline constexpr int FLOATINGBUTTON_RADIUS_DEFAULT = 6;
+    inline constexpr int FLOATINGBUTTON_RADIUS_MAX = 1000;
+    inline constexpr int FLOATINGBUTTON_RADIUS_DEFAULT = 0;
     inline constexpr int FLOATINGBUTTON_OFFSET_MIN = -50000;
     inline constexpr int FLOATINGBUTTON_OFFSET_MAX = 50000;
     inline constexpr int FLOATINGBUTTON_X_OFFSET_DEFAULT = 50;
@@ -1069,6 +1075,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_WIDTH[] = "KeyMapData_FloatingButton_Width";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HEIGHT[] = "KeyMapData_FloatingButton_Height";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_FONTSIZE[] = "KeyMapData_FloatingButton_FontSize";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT[] = "KeyMapData_FloatingButton_FontWeight";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_RADIUS[] = "KeyMapData_FloatingButton_Radius";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_OPACITY[] = "KeyMapData_FloatingButton_Opacity";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART[] = "KeyMapData_FloatingButton_ShowOnMappingStart";
@@ -1076,7 +1083,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT[] = "KeyMapData_FloatingButton_ReferencePoint";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_X_OFFSET[] = "KeyMapData_FloatingButton_X_Offset";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET[] = "KeyMapData_FloatingButton_Y_Offset";
-    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_DRAGSYNCOFFSET[] = "KeyMapData_FloatingButton_DragSyncOffset";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE[] = "KeyMapData_FloatingButton_DragToMove";
     inline constexpr const char KEY2MOUSE_X_SPEED[] = "Key2Mouse_XSpeed";
     inline constexpr const char KEY2MOUSE_Y_SPEED[] = "Key2Mouse_YSpeed";
     inline constexpr const char KEY2MOUSE_POLLING_INTERVAL[] = "Key2Mouse_PollingInterval";
@@ -1294,7 +1301,7 @@ namespace QKeyMapperConstants {
     // Pattern for matching Unlock(...) mapping keys
     // Matches: Unlock(L-Ctrl+1), Unlock(F3), Unlock(R✖), Unlock(Y+B⏲500)
     // Does not match: Unlock(R✖300), Unlock(Y+B⏲)
-    // Capture groups: (1) = full key string, (2) = base key without suffix, (3) = suffix (✖|⏲number), (4) = number for ⏲
+    // Capture groups: (1) = full key string, (2) = base key without suffix, (3) = suffix (✖ or ⏲number), (4) = number for ⏲
     inline constexpr const char REGEX_PATTERN_UNLOCK[] = R"(^Unlock\((([^✖⏲)]+)(✖|⏲(\d+))?)\)$)";
 
     // Pattern for finding Unlock( and the first ) parts in a composite string (non-greedy matching)
@@ -1686,3 +1693,4 @@ namespace QKeyMapperConstants {
     inline constexpr const int VOLUME_DEVICE_TYPE_PLAYBACK   = 0;      // Playback device (speakers/headphones)
     inline constexpr const int VOLUME_DEVICE_TYPE_CAPTURE    = 1;      // Capture device (microphone)
 }
+

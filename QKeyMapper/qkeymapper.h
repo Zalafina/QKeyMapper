@@ -1257,7 +1257,9 @@ private slots:
     void on_vButtonPanelSetupButton_clicked();
     void onVButtonPanelSettingsAccepted();
     void onSyncVButtonPanel(bool showPanel);
+    void onSyncFloatingButtonsOnMappingStart();
     void onShowAllFloatingButtons(bool visible);
+    void onUpdateFloatingButtonPressedState(int rowindex, bool pressed);
     void onVButtonPanelSetupDialogClosed();
     void onFloatingButtonSettingsApplied();
 
@@ -1360,6 +1362,8 @@ private:
     QStringList getCurrentCategoryFilters() const;
     bool isCategoryFilterVisible() const;
     void restoreCategoryFilterState(const QStringList& filters, bool showState);
+    QPoint floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const;
+    void syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &runtimeData);
 
     // CategoryFilterStateGuard helper class for RAII-style filter state management
     class CategoryFilterStateGuard {

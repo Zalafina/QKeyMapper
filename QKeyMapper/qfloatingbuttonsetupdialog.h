@@ -4,6 +4,7 @@
 #include <QDialog>
 
 #include "colorpickerwidget.h"
+#include "qkeymapper_worker.h"
 
 class QCheckBox;
 class QComboBox;
@@ -33,9 +34,11 @@ signals:
 protected:
     bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void onApplyButtonClicked();
+    void onRevertButtonClicked();
     void onAnyControlChanged();
 
 private:
@@ -46,16 +49,19 @@ private:
 private:
     int m_ItemRow;
     bool m_isLoading;
+    bool m_hasBackup;
+    MAP_KEYDATA m_BackupData;
 
     QCheckBox *m_EnableCheckBox;
     QLineEdit *m_LabelLineEdit;
     QCheckBox *m_ShowOnStartCheckBox;
     QCheckBox *m_AlwaysOnTopCheckBox;
-    QCheckBox *m_DragSyncOffsetCheckBox;
+    QCheckBox *m_DragToMoveCheckBox;
 
     QSpinBox *m_WidthSpinBox;
     QSpinBox *m_HeightSpinBox;
     QSpinBox *m_FontSizeSpinBox;
+    QComboBox *m_FontWeightComboBox;
     QSpinBox *m_RadiusSpinBox;
     QDoubleSpinBox *m_OpacitySpinBox;
 
@@ -69,3 +75,4 @@ private:
 };
 
 #endif // QFLOATINGBUTTONSETUPDIALOG_H
+

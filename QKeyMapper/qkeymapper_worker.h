@@ -178,6 +178,7 @@ typedef struct MAP_KEYDATA
     int FloatingButton_Width;
     int FloatingButton_Height;
     int FloatingButton_FontSize;
+    int FloatingButton_FontWeight;
     int FloatingButton_Radius;
     double FloatingButton_Opacity;
     bool FloatingButton_ShowOnMappingStart;
@@ -185,7 +186,7 @@ typedef struct MAP_KEYDATA
     int FloatingButton_ReferencePoint;
     int FloatingButton_X_Offset;
     int FloatingButton_Y_Offset;
-    bool FloatingButton_DragSyncOffset;
+    bool FloatingButton_DragToMove;
 
     MAP_KEYDATA() :
       Original_Key()
@@ -237,6 +238,7 @@ typedef struct MAP_KEYDATA
     , FloatingButton_Width(QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT)
     , FloatingButton_Height(QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT)
     , FloatingButton_FontSize(QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT)
+    , FloatingButton_FontWeight(QKeyMapperConstants::FLOATINGBUTTON_FONT_WEIGHT_DEFAULT)
     , FloatingButton_Radius(QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT)
     , FloatingButton_Opacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
     , FloatingButton_ShowOnMappingStart(QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT)
@@ -244,7 +246,7 @@ typedef struct MAP_KEYDATA
     , FloatingButton_ReferencePoint(QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT)
     , FloatingButton_X_Offset(QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT)
     , FloatingButton_Y_Offset(QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT)
-    , FloatingButton_DragSyncOffset(QKeyMapperConstants::FLOATINGBUTTON_DRAGSYNCOFFSET_DEFAULT)
+    , FloatingButton_DragToMove(QKeyMapperConstants::FLOATINGBUTTON_DRAGTOMOVE_DEFAULT)
     {}
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
@@ -318,6 +320,7 @@ typedef struct MAP_KEYDATA
         FloatingButton_Width = QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT;
         FloatingButton_Height = QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT;
         FloatingButton_FontSize = QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT;
+        FloatingButton_FontWeight = QKeyMapperConstants::FLOATINGBUTTON_FONT_WEIGHT_DEFAULT;
         FloatingButton_Radius = QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT;
         FloatingButton_Opacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
         FloatingButton_ShowOnMappingStart = QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT;
@@ -325,7 +328,7 @@ typedef struct MAP_KEYDATA
         FloatingButton_ReferencePoint = QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
         FloatingButton_X_Offset = QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT;
         FloatingButton_Y_Offset = QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT;
-        FloatingButton_DragSyncOffset = QKeyMapperConstants::FLOATINGBUTTON_DRAGSYNCOFFSET_DEFAULT;
+        FloatingButton_DragToMove = QKeyMapperConstants::FLOATINGBUTTON_DRAGTOMOVE_DEFAULT;
     }
 
     bool operator==(const MAP_KEYDATA& other) const
@@ -375,6 +378,7 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_Width == other.FloatingButton_Width)
                 && (FloatingButton_Height == other.FloatingButton_Height)
                 && (FloatingButton_FontSize == other.FloatingButton_FontSize)
+                && (FloatingButton_FontWeight == other.FloatingButton_FontWeight)
                 && (FloatingButton_Radius == other.FloatingButton_Radius)
                 && (FloatingButton_Opacity == other.FloatingButton_Opacity)
                 && (FloatingButton_ShowOnMappingStart == other.FloatingButton_ShowOnMappingStart)
@@ -382,7 +386,7 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_ReferencePoint == other.FloatingButton_ReferencePoint)
                 && (FloatingButton_X_Offset == other.FloatingButton_X_Offset)
                 && (FloatingButton_Y_Offset == other.FloatingButton_Y_Offset)
-                && (FloatingButton_DragSyncOffset == other.FloatingButton_DragSyncOffset));
+                && (FloatingButton_DragToMove == other.FloatingButton_DragToMove));
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -437,6 +441,7 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_Width:" << data.FloatingButton_Width
                         << ", FloatingButton_Height:" << data.FloatingButton_Height
                         << ", FloatingButton_FontSize:" << data.FloatingButton_FontSize
+                        << ", FloatingButton_FontWeight:" << data.FloatingButton_FontWeight
                         << ", FloatingButton_Radius:" << data.FloatingButton_Radius
                         << ", FloatingButton_Opacity:" << data.FloatingButton_Opacity
                         << ", FloatingButton_ShowOnMappingStart:" << data.FloatingButton_ShowOnMappingStart
@@ -444,7 +449,7 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_ReferencePoint:" << data.FloatingButton_ReferencePoint
                         << ", FloatingButton_X_Offset:" << data.FloatingButton_X_Offset
                         << ", FloatingButton_Y_Offset:" << data.FloatingButton_Y_Offset
-                        << ", FloatingButton_DragSyncOffset:" << data.FloatingButton_DragSyncOffset
+                        << ", FloatingButton_DragToMove:" << data.FloatingButton_DragToMove
                         << "]";
         return debug;
     }
@@ -1148,10 +1153,16 @@ signals:
     // Signal emitted to show or hide all floating buttons on the main thread
     void showAllFloatingButtons_Signal(bool visible);
 
+    // Signal emitted to update pressed visual state of an existing visible floating button
+    void updateFloatingButtonPressedState_Signal(int rowindex, bool pressed);
+
     // Signal emitted to fully synchronize the VButton panel layout and visibility on the main thread
     void syncVButtonPanel_Signal(bool showPanel);
 
-    // Signal emitted when a VButton key's lock state changes (worker → panel visual sync)
+    // Signal emitted after worker hook/restart is ready, used to apply FloatingButton ShowOnMappingStart in UI thread
+    void syncFloatingButtonsOnMappingStart_Signal();
+
+    // Signal emitted when a VButton key's lock state changes (worker -> panel visual sync)
     void vbuttonLockStateChanged_Signal(const QString &keyName, bool isLocked);
 
     // Signal emitted when all lock states are cleared (mapping restart / hook removed)
@@ -1585,3 +1596,4 @@ bool EnablePrivilege(LPCWSTR privilege);
 bool DisablePrivilege(LPCWSTR privilege);
 
 #endif // QKEYMAPPER_WORKER_H
+

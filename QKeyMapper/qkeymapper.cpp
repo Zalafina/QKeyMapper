@@ -630,13 +630,17 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
 
-    // VButton panel connections (cross-thread: worker → panel, panel → worker)
+    // VButton panel connections (cross-thread: worker -> panel, panel -> worker)
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showVButtonPanel_Signal,
                      m_VButtonPanel, &QVButtonPanel::setVisible, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showAllFloatingButtons_Signal,
                      this, &QKeyMapper::onShowAllFloatingButtons, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::updateFloatingButtonPressedState_Signal,
+                     this, &QKeyMapper::onUpdateFloatingButtonPressedState, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::syncVButtonPanel_Signal,
                      this, &QKeyMapper::onSyncVButtonPanel, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::syncFloatingButtonsOnMappingStart_Signal,
+                     this, &QKeyMapper::onSyncFloatingButtonsOnMappingStart, Qt::QueuedConnection);
     QObject::connect(m_VButtonPanel, &QVButtonPanel::triggerVButtonKey_Signal,
                      QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::triggerVButtonKey, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonLockStateChanged_Signal,
@@ -1209,7 +1213,7 @@ void QKeyMapper::matchForegroundWindow()
     if (KEYMAP_IDLE != m_KeyMapStatus) {
         enum class MatchResult {
             NoMatch = 0,            // NoMatch,              same as checkresult = 0
-            ProcessMatched = 1,     // ProcessMatched，      same as checkresult = 1
+            ProcessMatched = 1,     // ProcessMatched,      same as checkresult = 1
             IgnoreAllChecks = 2,   // IgnoreAllChecks,     same as checkresult = 2
             SendToSameWindows = 3   // SendToSameWindows,    same as checkresult = 3
         };
@@ -6626,6 +6630,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList floatingbutton_widthList;
     QStringList floatingbutton_heightList;
     QStringList floatingbutton_fontsizeList;
+    QStringList floatingbutton_fontweightList;
     QStringList floatingbutton_radiusList;
     QStringList floatingbutton_opacityList;
     QStringList floatingbutton_showonmappingstartList;
@@ -6633,7 +6638,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList floatingbutton_referencepointList;
     QStringList floatingbutton_x_offsetList;
     QStringList floatingbutton_y_offsetList;
-    QStringList floatingbutton_dragsyncoffsetList;
+    QStringList floatingbutton_dragtomoveList;
 
     for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
     {
@@ -6900,6 +6905,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             floatingbutton_fontsizeList.append(QString::number(FLOATINGBUTTON_FONT_SIZE_DEFAULT));
         }
+        if (FLOATINGBUTTON_FONT_WEIGHT_MIN <= keymapdata.FloatingButton_FontWeight && keymapdata.FloatingButton_FontWeight <= FLOATINGBUTTON_FONT_WEIGHT_MAX) {
+            floatingbutton_fontweightList.append(QString::number(keymapdata.FloatingButton_FontWeight));
+        }
+        else {
+            floatingbutton_fontweightList.append(QString::number(FLOATINGBUTTON_FONT_WEIGHT_DEFAULT));
+        }
         if (FLOATINGBUTTON_RADIUS_MIN <= keymapdata.FloatingButton_Radius && keymapdata.FloatingButton_Radius <= FLOATINGBUTTON_RADIUS_MAX) {
             floatingbutton_radiusList.append(QString::number(keymapdata.FloatingButton_Radius));
         }
@@ -6947,11 +6958,11 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
             floatingbutton_y_offsetList.append(QString::number(FLOATINGBUTTON_Y_OFFSET_DEFAULT));
         }
 
-        if (true == keymapdata.FloatingButton_DragSyncOffset) {
-            floatingbutton_dragsyncoffsetList.append("ON");
+        if (true == keymapdata.FloatingButton_DragToMove) {
+            floatingbutton_dragtomoveList.append("ON");
         }
         else {
-            floatingbutton_dragsyncoffsetList.append("OFF");
+            floatingbutton_dragtomoveList.append("OFF");
         }
     }
 
@@ -7001,6 +7012,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_WIDTH, floatingbutton_widthList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HEIGHT, floatingbutton_heightList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE, floatingbutton_fontsizeList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT, floatingbutton_fontweightList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_RADIUS, floatingbutton_radiusList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_OPACITY, floatingbutton_opacityList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART, floatingbutton_showonmappingstartList);
@@ -7008,7 +7020,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, floatingbutton_referencepointList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, floatingbutton_y_offsetList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_DRAGSYNCOFFSET, floatingbutton_dragsyncoffsetList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE, floatingbutton_dragtomoveList);
 
     return true;
 }
@@ -7079,6 +7091,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList floatingbutton_widthStringList;
     QStringList floatingbutton_heightStringList;
     QStringList floatingbutton_fontsizeStringList;
+    QStringList floatingbutton_fontweightStringList;
     QStringList floatingbutton_radiusStringList;
     QStringList floatingbutton_opacityStringList;
     QStringList floatingbutton_showonmappingstartStringList;
@@ -7086,7 +7099,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList floatingbutton_referencepointStringList;
     QStringList floatingbutton_x_offsetStringList;
     QStringList floatingbutton_y_offsetStringList;
-    QStringList floatingbutton_dragsyncoffsetStringList;
+    QStringList floatingbutton_dragtomoveStringList;
     QList<bool> disabledList;
     QList<bool> burstList;
     QList<int> burstpresstimeList;
@@ -7127,6 +7140,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<int> floatingbutton_widthList;
     QList<int> floatingbutton_heightList;
     QList<int> floatingbutton_fontsizeList;
+    QList<int> floatingbutton_fontweightList;
     QList<int> floatingbutton_radiusList;
     QList<double> floatingbutton_opacityList;
     QList<bool> floatingbutton_showonmappingstartList;
@@ -7134,7 +7148,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<int> floatingbutton_referencepointList;
     QList<int> floatingbutton_x_offsetList;
     QList<int> floatingbutton_y_offsetList;
-    QList<bool> floatingbutton_dragsyncoffsetList;
+    QList<bool> floatingbutton_dragtomoveList;
     QList<MAP_KEYDATA> loadkeymapdata;
 
     if ((true == keyMappingDataFile.contains(KEYMAPDATA_ORIGINALKEYS))
@@ -7169,6 +7183,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         QStringList floatingbutton_widthStringListDefault;
         QStringList floatingbutton_heightStringListDefault;
         QStringList floatingbutton_fontsizeStringListDefault;
+        QStringList floatingbutton_fontweightStringListDefault;
         QStringList floatingbutton_radiusStringListDefault;
         QStringList floatingbutton_opacityStringListDefault;
         QStringList floatingbutton_referencepointStringListDefault;
@@ -7196,6 +7211,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             floatingbutton_widthStringListDefault.append(QString::number(FLOATINGBUTTON_WIDTH_DEFAULT));
             floatingbutton_heightStringListDefault.append(QString::number(FLOATINGBUTTON_HEIGHT_DEFAULT));
             floatingbutton_fontsizeStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_SIZE_DEFAULT));
+            floatingbutton_fontweightStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_WEIGHT_DEFAULT));
             floatingbutton_radiusStringListDefault.append(QString::number(FLOATINGBUTTON_RADIUS_DEFAULT));
             floatingbutton_opacityStringListDefault.append(QString::number(FLOATINGBUTTON_OPACITY_DEFAULT, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
             floatingbutton_referencepointStringListDefault.append(QString::number(FLOATINGWINDOW_REFERENCEPOINT_DEFAULT));
@@ -7242,6 +7258,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         floatingbutton_widthStringList = floatingbutton_widthStringListDefault;
         floatingbutton_heightStringList = floatingbutton_heightStringListDefault;
         floatingbutton_fontsizeStringList = floatingbutton_fontsizeStringListDefault;
+        floatingbutton_fontweightStringList = floatingbutton_fontweightStringListDefault;
         floatingbutton_radiusStringList = floatingbutton_radiusStringListDefault;
         floatingbutton_opacityStringList = floatingbutton_opacityStringListDefault;
         floatingbutton_showonmappingstartStringList = stringListAllON;
@@ -7249,7 +7266,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         floatingbutton_referencepointStringList = floatingbutton_referencepointStringListDefault;
         floatingbutton_x_offsetStringList = floatingbutton_x_offsetStringListDefault;
         floatingbutton_y_offsetStringList = floatingbutton_y_offsetStringListDefault;
-        floatingbutton_dragsyncoffsetStringList = stringListAllON;
+        floatingbutton_dragtomoveStringList = stringListAllON;
 
         if (true == keyMappingDataFile.contains(KEYMAPDATA_NOTE)) {
             notesList = keyMappingDataFile.value(KEYMAPDATA_NOTE).toStringList();
@@ -7377,6 +7394,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE)) {
             floatingbutton_fontsizeStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE).toStringList();
         }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT)) {
+            floatingbutton_fontweightStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT).toStringList();
+        }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_RADIUS)) {
             floatingbutton_radiusStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_RADIUS).toStringList();
         }
@@ -7398,8 +7418,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET)) {
             floatingbutton_y_offsetStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET).toStringList();
         }
-        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_DRAGSYNCOFFSET)) {
-            floatingbutton_dragsyncoffsetStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_DRAGSYNCOFFSET).toStringList();
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE)) {
+            floatingbutton_dragtomoveStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE).toStringList();
         }
 
         if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -7805,6 +7825,16 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
+                const QString &floatingbutton_fontweightStr = (i < floatingbutton_fontweightStringList.size()) ? floatingbutton_fontweightStringList.at(i) : QString::number(FLOATINGBUTTON_FONT_WEIGHT_DEFAULT);
+                bool ok;
+                int floatingbutton_fontweight = floatingbutton_fontweightStr.toInt(&ok);
+                if (!ok || floatingbutton_fontweight < FLOATINGBUTTON_FONT_WEIGHT_MIN || floatingbutton_fontweight > FLOATINGBUTTON_FONT_WEIGHT_MAX) {
+                    floatingbutton_fontweight = FLOATINGBUTTON_FONT_WEIGHT_DEFAULT;
+                }
+                floatingbutton_fontweightList.append(floatingbutton_fontweight);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
                 const QString &floatingbutton_radiusStr = (i < floatingbutton_radiusStringList.size()) ? floatingbutton_radiusStringList.at(i) : QString::number(FLOATINGBUTTON_RADIUS_DEFAULT);
                 bool ok;
                 int floatingbutton_radius = floatingbutton_radiusStr.toInt(&ok);
@@ -7865,8 +7895,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
-                const QString &floatingbutton_dragsyncoffset = (i < floatingbutton_dragsyncoffsetStringList.size()) ? floatingbutton_dragsyncoffsetStringList.at(i) : "ON";
-                floatingbutton_dragsyncoffsetList.append(floatingbutton_dragsyncoffset != "OFF");
+                const QString &floatingbutton_dragtomove = (i < floatingbutton_dragtomoveStringList.size()) ? floatingbutton_dragtomoveStringList.at(i) : "ON";
+                floatingbutton_dragtomoveList.append(floatingbutton_dragtomove != "OFF");
             }
 
             int loadindex = 0;
@@ -7937,6 +7967,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     loadedData.FloatingButton_Width = floatingbutton_widthList.at(loadindex);
                     loadedData.FloatingButton_Height = floatingbutton_heightList.at(loadindex);
                     loadedData.FloatingButton_FontSize = floatingbutton_fontsizeList.at(loadindex);
+                    loadedData.FloatingButton_FontWeight = floatingbutton_fontweightList.at(loadindex);
                     loadedData.FloatingButton_Radius = floatingbutton_radiusList.at(loadindex);
                     loadedData.FloatingButton_Opacity = floatingbutton_opacityList.at(loadindex);
                     loadedData.FloatingButton_ShowOnMappingStart = floatingbutton_showonmappingstartList.at(loadindex);
@@ -7944,7 +7975,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     loadedData.FloatingButton_ReferencePoint = floatingbutton_referencepointList.at(loadindex);
                     loadedData.FloatingButton_X_Offset = floatingbutton_x_offsetList.at(loadindex);
                     loadedData.FloatingButton_Y_Offset = floatingbutton_y_offsetList.at(loadindex);
-                    loadedData.FloatingButton_DragSyncOffset = floatingbutton_dragsyncoffsetList.at(loadindex);
+                    loadedData.FloatingButton_DragToMove = floatingbutton_dragtomoveList.at(loadindex);
                 }
 
                 loadindex += 1;
@@ -8710,13 +8741,15 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 
                     MAP_KEYDATA &keymapdata = (*QKeyMapper::KeyMappingDataList)[rowindex];
                     QMenu contextMenu;
-                    QAction *showAllAction = contextMenu.addAction(tr("Show All Floating Buttons"));
-                    QAction *hideAllAction = contextMenu.addAction(tr("Hide All Floating Buttons"));
-                    QAction *hideAction = contextMenu.addAction(tr("Hide This Floating Button"));
-                    QAction *resetOffsetAction = contextMenu.addAction(tr("Reset Offset"));
-                    QAction *toggleTopmostAction = contextMenu.addAction(keymapdata.FloatingButton_AlwaysOnTop ? tr("Disable Always On Top") : tr("Enable Always On Top"));
                     QAction *setupAction = contextMenu.addAction(tr("Floating Button Setup"));
                     QAction *saveSettingAction = contextMenu.addAction(tr("Save Setting"));
+                    contextMenu.addSeparator();
+                    QAction *toggleTopmostAction = contextMenu.addAction(keymapdata.FloatingButton_AlwaysOnTop ? tr("Disable Always On Top") : tr("Enable Always On Top"));
+                    QAction *resetOffsetAction = contextMenu.addAction(tr("Reset Offset"));
+                    contextMenu.addSeparator();
+                    QAction *hideAction = contextMenu.addAction(tr("Hide This Floating Button"));
+                    QAction *hideAllAction = contextMenu.addAction(tr("Hide All Floating Buttons"));
+                    QAction *showAllAction = contextMenu.addAction(tr("Show All Floating Buttons"));
 
                     QAction *selectedAction = contextMenu.exec(QCursor::pos());
                     if (selectedAction == showAllAction) {
@@ -8733,11 +8766,13 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     else if (selectedAction == resetOffsetAction) {
                         keymapdata.FloatingButton_X_Offset = FLOATINGBUTTON_X_OFFSET_DEFAULT;
                         keymapdata.FloatingButton_Y_Offset = FLOATINGBUTTON_Y_OFFSET_DEFAULT;
+                        syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
                         m_FloatingButtonManualHiddenMap.remove(rowindex);
                         showFloatingButtonStart(rowindex, QString());
                     }
                     else if (selectedAction == toggleTopmostAction) {
                         keymapdata.FloatingButton_AlwaysOnTop = !keymapdata.FloatingButton_AlwaysOnTop;
+                        syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
                         showFloatingButtonStart(rowindex, QString());
                     }
                     else if (selectedAction == setupAction) {
@@ -8766,7 +8801,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                 if (mouseEvent->button() == Qt::LeftButton
                     && rowindex >= 0 && rowindex < QKeyMapper::KeyMappingDataList->size()) {
                     const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
-                    if (keymapdata.FloatingButton_DragSyncOffset
+                    if (keymapdata.FloatingButton_DragToMove
                         && (mouseEvent->modifiers() & Qt::ControlModifier)) {
                         m_FloatingButtonDragging = true;
                         m_FloatingButtonDraggingRow = rowindex;
@@ -8801,14 +8836,15 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                 QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
                 if (mouseEvent->button() == Qt::LeftButton
                     && m_FloatingButtonDragging && m_FloatingButtonDraggingRow == rowindex) {
-                    const QPoint delta = QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent) - m_FloatingButtonDragStartGlobalPos;
-
                     if (rowindex >= 0 && rowindex < QKeyMapper::KeyMappingDataList->size()) {
                         MAP_KEYDATA &keymapdata = (*QKeyMapper::KeyMappingDataList)[rowindex];
-                        const int newXOffset = qMax(FLOATINGBUTTON_OFFSET_MIN, qMin(FLOATINGBUTTON_OFFSET_MAX, keymapdata.FloatingButton_X_Offset + delta.x()));
-                        const int newYOffset = qMax(FLOATINGBUTTON_OFFSET_MIN, qMin(FLOATINGBUTTON_OFFSET_MAX, keymapdata.FloatingButton_Y_Offset + delta.y()));
+                        const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
+                        const QPoint buttonPos = floatingButton->pos();
+                        const int newXOffset = qMax(FLOATINGBUTTON_OFFSET_MIN, qMin(FLOATINGBUTTON_OFFSET_MAX, buttonPos.x() - basePoint.x()));
+                        const int newYOffset = qMax(FLOATINGBUTTON_OFFSET_MIN, qMin(FLOATINGBUTTON_OFFSET_MAX, buttonPos.y() - basePoint.y()));
                         keymapdata.FloatingButton_X_Offset = newXOffset;
                         keymapdata.FloatingButton_Y_Offset = newYOffset;
+                        syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
                     }
 
                     m_FloatingButtonDragging = false;
@@ -9008,12 +9044,6 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
             }
         }
 
-        for (int row = 0; row < QKeyMapper::KeyMappingDataList->size(); ++row) {
-            const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(row);
-            if (keymapdata.FloatingButton_Enable && keymapdata.FloatingButton_ShowOnMappingStart) {
-                showFloatingButtonStart(row, QString());
-            }
-        }
     }
     else{
         m_FloatingButtonManualHiddenMap.clear();
@@ -12151,6 +12181,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString floatingbutton_widthList_forsave;
     QString floatingbutton_heightList_forsave;
     QString floatingbutton_fontsizeList_forsave;
+    QString floatingbutton_fontweightList_forsave;
     QString floatingbutton_radiusList_forsave;
     QString floatingbutton_opacityList_forsave;
     QString floatingbutton_showonmappingstartList_forsave;
@@ -12158,7 +12189,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString floatingbutton_referencepointList_forsave;
     QString floatingbutton_x_offsetList_forsave;
     QString floatingbutton_y_offsetList_forsave;
-    QString floatingbutton_dragsyncoffsetList_forsave;
+    QString floatingbutton_dragtomoveList_forsave;
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
@@ -12262,6 +12293,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             floatingbutton_widthList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_heightList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_fontsizeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_fontweightList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_radiusList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_opacityList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_showonmappingstartList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -12269,7 +12301,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             floatingbutton_referencepointList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_x_offsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_y_offsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
-            floatingbutton_dragsyncoffsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_dragtomoveList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
         }
 
         QStringList original_keys;
@@ -12317,6 +12349,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList floatingbutton_widthList;
         QStringList floatingbutton_heightList;
         QStringList floatingbutton_fontsizeList;
+        QStringList floatingbutton_fontweightList;
         QStringList floatingbutton_radiusList;
         QStringList floatingbutton_opacityList;
         QStringList floatingbutton_showonmappingstartList;
@@ -12324,7 +12357,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList floatingbutton_referencepointList;
         QStringList floatingbutton_x_offsetList;
         QStringList floatingbutton_y_offsetList;
-        QStringList floatingbutton_dragsyncoffsetList;
+        QStringList floatingbutton_dragtomoveList;
         if (mappingDataList->size() > 0) {
             for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
             {
@@ -12603,6 +12636,12 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     floatingbutton_fontsizeList.append(QString::number(FLOATINGBUTTON_FONT_SIZE_DEFAULT));
                 }
+                if (FLOATINGBUTTON_FONT_WEIGHT_MIN <= keymapdata.FloatingButton_FontWeight && keymapdata.FloatingButton_FontWeight <= FLOATINGBUTTON_FONT_WEIGHT_MAX) {
+                    floatingbutton_fontweightList.append(QString::number(keymapdata.FloatingButton_FontWeight));
+                }
+                else {
+                    floatingbutton_fontweightList.append(QString::number(FLOATINGBUTTON_FONT_WEIGHT_DEFAULT));
+                }
                 if (FLOATINGBUTTON_RADIUS_MIN <= keymapdata.FloatingButton_Radius && keymapdata.FloatingButton_Radius <= FLOATINGBUTTON_RADIUS_MAX) {
                     floatingbutton_radiusList.append(QString::number(keymapdata.FloatingButton_Radius));
                 }
@@ -12647,11 +12686,11 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     floatingbutton_y_offsetList.append(QString::number(FLOATINGBUTTON_Y_OFFSET_DEFAULT));
                 }
-                if (true == keymapdata.FloatingButton_DragSyncOffset) {
-                    floatingbutton_dragsyncoffsetList.append("ON");
+                if (true == keymapdata.FloatingButton_DragToMove) {
+                    floatingbutton_dragtomoveList.append("ON");
                 }
                 else {
-                    floatingbutton_dragsyncoffsetList.append("OFF");
+                    floatingbutton_dragtomoveList.append("OFF");
                 }
             }
         }
@@ -12699,6 +12738,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString floatingbutton_widthList_str = floatingbutton_widthList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_heightList_str = floatingbutton_heightList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_fontsizeList_str = floatingbutton_fontsizeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_fontweightList_str = floatingbutton_fontweightList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_radiusList_str = floatingbutton_radiusList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_opacityList_str = floatingbutton_opacityList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_showonmappingstartList_str = floatingbutton_showonmappingstartList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -12706,7 +12746,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString floatingbutton_referencepointList_str = floatingbutton_referencepointList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_x_offsetList_str = floatingbutton_x_offsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_y_offsetList_str = floatingbutton_y_offsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
-        QString floatingbutton_dragsyncoffsetList_str = floatingbutton_dragsyncoffsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_dragtomoveList_str = floatingbutton_dragtomoveList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
 
         // append joined QString variables to forsave variables
         original_keys_forsave.append(original_keys_str);
@@ -12754,6 +12794,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         floatingbutton_widthList_forsave.append(floatingbutton_widthList_str);
         floatingbutton_heightList_forsave.append(floatingbutton_heightList_str);
         floatingbutton_fontsizeList_forsave.append(floatingbutton_fontsizeList_str);
+        floatingbutton_fontweightList_forsave.append(floatingbutton_fontweightList_str);
         floatingbutton_radiusList_forsave.append(floatingbutton_radiusList_str);
         floatingbutton_opacityList_forsave.append(floatingbutton_opacityList_str);
         floatingbutton_showonmappingstartList_forsave.append(floatingbutton_showonmappingstartList_str);
@@ -12761,7 +12802,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         floatingbutton_referencepointList_forsave.append(floatingbutton_referencepointList_str);
         floatingbutton_x_offsetList_forsave.append(floatingbutton_x_offsetList_str);
         floatingbutton_y_offsetList_forsave.append(floatingbutton_y_offsetList_str);
-        floatingbutton_dragsyncoffsetList_forsave.append(floatingbutton_dragsyncoffsetList_str);
+        floatingbutton_dragtomoveList_forsave.append(floatingbutton_dragtomoveList_str);
     }
 
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
@@ -12829,6 +12870,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_WIDTH, floatingbutton_widthList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HEIGHT, floatingbutton_heightList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTSIZE, floatingbutton_fontsizeList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT, floatingbutton_fontweightList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_RADIUS, floatingbutton_radiusList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_OPACITY, floatingbutton_opacityList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART, floatingbutton_showonmappingstartList_forsave);
@@ -12836,7 +12878,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, floatingbutton_referencepointList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, floatingbutton_y_offsetList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_DRAGSYNCOFFSET, floatingbutton_dragsyncoffsetList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE, floatingbutton_dragtomoveList_forsave);
 
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED,            m_MappingAdvancedDialog->getMouseXSpeed());
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED,            m_MappingAdvancedDialog->getMouseYSpeed());
@@ -14264,6 +14306,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QString floatingbutton_widthData_loaded;
         QString floatingbutton_heightData_loaded;
         QString floatingbutton_fontsizeData_loaded;
+        QString floatingbutton_fontweightData_loaded;
         QString floatingbutton_radiusData_loaded;
         QString floatingbutton_opacityData_loaded;
         QString floatingbutton_showonmappingstartData_loaded;
@@ -14271,7 +14314,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QString floatingbutton_referencepointData_loaded;
         QString floatingbutton_x_offsetData_loaded;
         QString floatingbutton_y_offsetData_loaded;
-        QString floatingbutton_dragsyncoffsetData_loaded;
+        QString floatingbutton_dragtomoveData_loaded;
         int table_count = 0;
         QStringList original_keys_split;
         QStringList mapping_keys_split;
@@ -14320,6 +14363,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QStringList floatingbutton_widthData_split;
         QStringList floatingbutton_heightData_split;
         QStringList floatingbutton_fontsizeData_split;
+        QStringList floatingbutton_fontweightData_split;
         QStringList floatingbutton_radiusData_split;
         QStringList floatingbutton_opacityData_split;
         QStringList floatingbutton_showonmappingstartData_split;
@@ -14327,7 +14371,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QStringList floatingbutton_referencepointData_split;
         QStringList floatingbutton_x_offsetData_split;
         QStringList floatingbutton_y_offsetData_split;
-        QStringList floatingbutton_dragsyncoffsetData_split;
+        QStringList floatingbutton_dragtomoveData_split;
 
         original_keys_loaded    = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toString();
         mapping_keys_loaded     = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS).toString();
@@ -14673,6 +14717,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 floatingbutton_fontsizeData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTSIZE).toString();
                 floatingbutton_fontsizeData_split = floatingbutton_fontsizeData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT)) {
+                floatingbutton_fontweightData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT).toString();
+                floatingbutton_fontweightData_split = floatingbutton_fontweightData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_RADIUS)) {
                 floatingbutton_radiusData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_RADIUS).toString();
                 floatingbutton_radiusData_split = floatingbutton_radiusData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -14701,9 +14749,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 floatingbutton_y_offsetData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET).toString();
                 floatingbutton_y_offsetData_split = floatingbutton_y_offsetData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
-            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_DRAGSYNCOFFSET)) {
-                floatingbutton_dragsyncoffsetData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_DRAGSYNCOFFSET).toString();
-                floatingbutton_dragsyncoffsetData_split = floatingbutton_dragsyncoffsetData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE)) {
+                floatingbutton_dragtomoveData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE).toString();
+                floatingbutton_dragtomoveData_split = floatingbutton_dragtomoveData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
 
             for (int index = 0; index < table_count && datavalidflag != false; ++index) {
@@ -14770,6 +14818,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_widthStringList;
                     QStringList floatingbutton_heightStringList;
                     QStringList floatingbutton_fontsizeStringList;
+                    QStringList floatingbutton_fontweightStringList;
                     QStringList floatingbutton_radiusStringList;
                     QStringList floatingbutton_opacityStringList;
                     QStringList floatingbutton_showonmappingstartStringList;
@@ -14777,7 +14826,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_referencepointStringList;
                     QStringList floatingbutton_x_offsetStringList;
                     QStringList floatingbutton_y_offsetStringList;
-                    QStringList floatingbutton_dragsyncoffsetStringList;
+                    QStringList floatingbutton_dragtomoveStringList;
                     QList<bool> disabledList;
                     QList<bool> burstList;
                     QList<int> burstpresstimeList;
@@ -14819,6 +14868,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QList<int> floatingbutton_widthList;
                     QList<int> floatingbutton_heightList;
                     QList<int> floatingbutton_fontsizeList;
+                    QList<int> floatingbutton_fontweightList;
                     QList<int> floatingbutton_radiusList;
                     QList<double> floatingbutton_opacityList;
                     QList<bool> floatingbutton_showonmappingstartList;
@@ -14826,7 +14876,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QList<int> floatingbutton_referencepointList;
                     QList<int> floatingbutton_x_offsetList;
                     QList<int> floatingbutton_y_offsetList;
-                    QList<bool> floatingbutton_dragsyncoffsetList;
+                    QList<bool> floatingbutton_dragtomoveList;
 
                     original_keys = original_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     mapping_keys = mapping_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -14858,6 +14908,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_widthStringListDefault;
                     QStringList floatingbutton_heightStringListDefault;
                     QStringList floatingbutton_fontsizeStringListDefault;
+                    QStringList floatingbutton_fontweightStringListDefault;
                     QStringList floatingbutton_radiusStringListDefault;
                     QStringList floatingbutton_opacityStringListDefault;
                     QStringList floatingbutton_referencepointStringListDefault;
@@ -14885,6 +14936,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         floatingbutton_widthStringListDefault.append(QString::number(FLOATINGBUTTON_WIDTH_DEFAULT));
                         floatingbutton_heightStringListDefault.append(QString::number(FLOATINGBUTTON_HEIGHT_DEFAULT));
                         floatingbutton_fontsizeStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_SIZE_DEFAULT));
+                        floatingbutton_fontweightStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_WEIGHT_DEFAULT));
                         floatingbutton_radiusStringListDefault.append(QString::number(FLOATINGBUTTON_RADIUS_DEFAULT));
                         floatingbutton_opacityStringListDefault.append(QString::number(FLOATINGBUTTON_OPACITY_DEFAULT, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
                         floatingbutton_referencepointStringListDefault.append(QString::number(FLOATINGWINDOW_REFERENCEPOINT_DEFAULT));
@@ -14932,6 +14984,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     floatingbutton_widthStringList = floatingbutton_widthStringListDefault;
                     floatingbutton_heightStringList = floatingbutton_heightStringListDefault;
                     floatingbutton_fontsizeStringList = floatingbutton_fontsizeStringListDefault;
+                    floatingbutton_fontweightStringList = floatingbutton_fontweightStringListDefault;
                     floatingbutton_radiusStringList = floatingbutton_radiusStringListDefault;
                     floatingbutton_opacityStringList = floatingbutton_opacityStringListDefault;
                     floatingbutton_showonmappingstartStringList = stringListAllON;
@@ -14939,7 +14992,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     floatingbutton_referencepointStringList = floatingbutton_referencepointStringListDefault;
                     floatingbutton_x_offsetStringList = floatingbutton_x_offsetStringListDefault;
                     floatingbutton_y_offsetStringList = floatingbutton_y_offsetStringListDefault;
-                    floatingbutton_dragsyncoffsetStringList = stringListAllON;
+                    floatingbutton_dragtomoveStringList = stringListAllON;
 
                     if (notes_load_asString) {
                         if (notes_split_string.size() == table_count) {
@@ -15077,6 +15130,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     if (floatingbutton_fontsizeData_split.size() == table_count) {
                         floatingbutton_fontsizeStringList = floatingbutton_fontsizeData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
+                    if (floatingbutton_fontweightData_split.size() == table_count) {
+                        floatingbutton_fontweightStringList = floatingbutton_fontweightData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
                     if (floatingbutton_radiusData_split.size() == table_count) {
                         floatingbutton_radiusStringList = floatingbutton_radiusData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
@@ -15098,8 +15154,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     if (floatingbutton_y_offsetData_split.size() == table_count) {
                         floatingbutton_y_offsetStringList = floatingbutton_y_offsetData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
-                    if (floatingbutton_dragsyncoffsetData_split.size() == table_count) {
-                        floatingbutton_dragsyncoffsetStringList = floatingbutton_dragsyncoffsetData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    if (floatingbutton_dragtomoveData_split.size() == table_count) {
+                        floatingbutton_dragtomoveStringList = floatingbutton_dragtomoveData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
 
                     if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -15515,6 +15571,16 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_fontweightStr = (i < floatingbutton_fontweightStringList.size()) ? floatingbutton_fontweightStringList.at(i) : QString::number(FLOATINGBUTTON_FONT_WEIGHT_DEFAULT);
+                            bool ok;
+                            int floatingbutton_fontweight = floatingbutton_fontweightStr.toInt(&ok);
+                            if (!ok || floatingbutton_fontweight < FLOATINGBUTTON_FONT_WEIGHT_MIN || floatingbutton_fontweight > FLOATINGBUTTON_FONT_WEIGHT_MAX) {
+                                floatingbutton_fontweight = FLOATINGBUTTON_FONT_WEIGHT_DEFAULT;
+                            }
+                            floatingbutton_fontweightList.append(floatingbutton_fontweight);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
                             const QString &floatingbutton_radiusStr = (i < floatingbutton_radiusStringList.size()) ? floatingbutton_radiusStringList.at(i) : QString::number(FLOATINGBUTTON_RADIUS_DEFAULT);
                             bool ok;
                             int floatingbutton_radius = floatingbutton_radiusStr.toInt(&ok);
@@ -15575,8 +15641,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
-                            const QString &floatingbutton_dragsyncoffset = (i < floatingbutton_dragsyncoffsetStringList.size()) ? floatingbutton_dragsyncoffsetStringList.at(i) : "ON";
-                            floatingbutton_dragsyncoffsetList.append(floatingbutton_dragsyncoffset != "OFF");
+                            const QString &floatingbutton_dragtomove = (i < floatingbutton_dragtomoveStringList.size()) ? floatingbutton_dragtomoveStringList.at(i) : "ON";
+                            floatingbutton_dragtomoveList.append(floatingbutton_dragtomove != "OFF");
                         }
 
                         int loadindex = 0;
@@ -15652,6 +15718,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                 loadedData.FloatingButton_Width = floatingbutton_widthList.at(loadindex);
                                 loadedData.FloatingButton_Height = floatingbutton_heightList.at(loadindex);
                                 loadedData.FloatingButton_FontSize = floatingbutton_fontsizeList.at(loadindex);
+                                loadedData.FloatingButton_FontWeight = floatingbutton_fontweightList.at(loadindex);
                                 loadedData.FloatingButton_Radius = floatingbutton_radiusList.at(loadindex);
                                 loadedData.FloatingButton_Opacity = floatingbutton_opacityList.at(loadindex);
                                 loadedData.FloatingButton_ShowOnMappingStart = floatingbutton_showonmappingstartList.at(loadindex);
@@ -15659,7 +15726,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                 loadedData.FloatingButton_ReferencePoint = floatingbutton_referencepointList.at(loadindex);
                                 loadedData.FloatingButton_X_Offset = floatingbutton_x_offsetList.at(loadindex);
                                 loadedData.FloatingButton_Y_Offset = floatingbutton_y_offsetList.at(loadindex);
-                                loadedData.FloatingButton_DragSyncOffset = floatingbutton_dragsyncoffsetList.at(loadindex);
+                                loadedData.FloatingButton_DragToMove = floatingbutton_dragtomoveList.at(loadindex);
                             }
                             else{
                                 datavalidflag = false;
@@ -25395,73 +25462,12 @@ void QKeyMapper::showCrosshairStop(int rowindex, const QString &crosshair_keystr
     }
 }
 
-void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbutton_keystr)
+QPoint QKeyMapper::floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const
 {
-    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
-    if (!keymapdata.FloatingButton_Enable) {
-        showFloatingButtonStop(rowindex, floatingbutton_keystr);
-        return;
-    }
-
-    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
-    if (button == Q_NULLPTR) {
-        button = new QPushButton(Q_NULLPTR);
-        button->setFocusPolicy(Qt::NoFocus);
-        button->setAttribute(Qt::WA_ShowWithoutActivating, true);
-        button->setProperty("FloatingButtonRow", rowindex);
-        button->installEventFilter(this);
-        m_FloatingButtonMap.insert(rowindex, button);
-    }
-    else {
-        button->setProperty("FloatingButtonRow", rowindex);
-    }
-
-    Qt::WindowFlags flags = Qt::Tool | Qt::FramelessWindowHint;
-    if (keymapdata.FloatingButton_AlwaysOnTop) {
-        flags |= Qt::WindowStaysOnTopHint;
-    }
-    button->setWindowFlags(flags);
-
-    QString label = keymapdata.FloatingButton_Label;
-    if (label.isEmpty()) {
-        static QRegularExpression vbuttonRegex(VBUTTON_REGEX_PATTERN);
-        QRegularExpressionMatch match = vbuttonRegex.match(keymapdata.Original_Key);
-        if (match.hasMatch()) {
-            label = match.captured(1);
-        }
-        else {
-            label = keymapdata.Original_Key;
-        }
-    }
-    button->setText(label);
-    button->setFixedSize(keymapdata.FloatingButton_Width, keymapdata.FloatingButton_Height);
-    button->setWindowOpacity(keymapdata.FloatingButton_Opacity);
-
-    QFont buttonFont = button->font();
-    buttonFont.setPixelSize(keymapdata.FloatingButton_FontSize);
-    button->setFont(buttonFont);
-
-    auto toRgba = [](const QColor &c) {
-        return QString("rgba(%1,%2,%3,%4)")
-            .arg(c.red())
-            .arg(c.green())
-            .arg(c.blue())
-            .arg(c.alphaF(), 0, 'f', 3);
-    };
-    QColor normalColor = keymapdata.FloatingButton_ButtonColor.isValid() ? keymapdata.FloatingButton_ButtonColor : FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
-    QColor pressedColor = keymapdata.FloatingButton_PressedColor.isValid() ? keymapdata.FloatingButton_PressedColor : FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
-    QColor textColor = keymapdata.FloatingButton_TextColor.isValid() ? keymapdata.FloatingButton_TextColor : FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
-    button->setStyleSheet(QString("QPushButton { background-color: %1; color: %2; border: 1px solid rgba(0,0,0,0.35); border-radius: %3px; }"
-                                  "QPushButton:pressed { background-color: %4; }")
-                                  .arg(toRgba(normalColor), toRgba(textColor), QString::number(keymapdata.FloatingButton_Radius), toRgba(pressedColor)));
-
     int baseX = 0;
     int baseY = 0;
     const int refPoint = keymapdata.FloatingButton_ReferencePoint;
+
     if (refPoint <= FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMCENTER) {
         const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
         const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -25525,7 +25531,133 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
         }
     }
 
-    button->move(baseX + keymapdata.FloatingButton_X_Offset, baseY + keymapdata.FloatingButton_Y_Offset);
+    return QPoint(baseX, baseY);
+}
+
+void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &runtimeData)
+{
+    if (s_KeyMappingTabWidgetCurrentIndex < 0 || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    QList<MAP_KEYDATA> *currentTabData = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
+    if (currentTabData == Q_NULLPTR) {
+        return;
+    }
+
+    for (MAP_KEYDATA &tabData : *currentTabData) {
+        if (tabData.Original_Key != runtimeData.Original_Key) {
+            continue;
+        }
+
+        tabData.FloatingButton_Enable = runtimeData.FloatingButton_Enable;
+        tabData.FloatingButton_Label = runtimeData.FloatingButton_Label;
+        tabData.FloatingButton_ButtonColor = runtimeData.FloatingButton_ButtonColor;
+        tabData.FloatingButton_PressedColor = runtimeData.FloatingButton_PressedColor;
+        tabData.FloatingButton_TextColor = runtimeData.FloatingButton_TextColor;
+        tabData.FloatingButton_Width = runtimeData.FloatingButton_Width;
+        tabData.FloatingButton_Height = runtimeData.FloatingButton_Height;
+        tabData.FloatingButton_FontSize = runtimeData.FloatingButton_FontSize;
+        tabData.FloatingButton_FontWeight = runtimeData.FloatingButton_FontWeight;
+        tabData.FloatingButton_Radius = runtimeData.FloatingButton_Radius;
+        tabData.FloatingButton_Opacity = runtimeData.FloatingButton_Opacity;
+        tabData.FloatingButton_ShowOnMappingStart = runtimeData.FloatingButton_ShowOnMappingStart;
+        tabData.FloatingButton_AlwaysOnTop = runtimeData.FloatingButton_AlwaysOnTop;
+        tabData.FloatingButton_ReferencePoint = runtimeData.FloatingButton_ReferencePoint;
+        tabData.FloatingButton_X_Offset = runtimeData.FloatingButton_X_Offset;
+        tabData.FloatingButton_Y_Offset = runtimeData.FloatingButton_Y_Offset;
+        tabData.FloatingButton_DragToMove = runtimeData.FloatingButton_DragToMove;
+        return;
+    }
+}
+
+void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbutton_keystr)
+{
+    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    const bool allowShowInCurrentStatus = (m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL || m_KeyMapStatus == KEYMAP_MAPPING_MATCHED);
+    if (!allowShowInCurrentStatus) {
+        QPushButton *existingButton = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+        if (existingButton != Q_NULLPTR) {
+            existingButton->setDown(false);
+            existingButton->hide();
+        }
+        return;
+    }
+
+    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+    if (!keymapdata.FloatingButton_Enable) {
+        showFloatingButtonStop(rowindex, floatingbutton_keystr);
+        return;
+    }
+
+    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+    if (button == Q_NULLPTR) {
+        button = new QPushButton(Q_NULLPTR);
+        button->setFocusPolicy(Qt::NoFocus);
+        button->setAttribute(Qt::WA_ShowWithoutActivating, true);
+        button->setAttribute(Qt::WA_TranslucentBackground, true);
+        button->setAttribute(Qt::WA_NoSystemBackground, true);
+        button->setProperty("FloatingButtonRow", rowindex);
+        button->installEventFilter(this);
+        m_FloatingButtonMap.insert(rowindex, button);
+    }
+    else {
+        button->setProperty("FloatingButtonRow", rowindex);
+    }
+
+    Qt::WindowFlags flags = Qt::Tool | Qt::FramelessWindowHint;
+    if (keymapdata.FloatingButton_AlwaysOnTop) {
+        flags |= Qt::WindowStaysOnTopHint;
+    }
+    button->setWindowFlags(flags);
+
+    QString label = keymapdata.FloatingButton_Label;
+    if (label.isEmpty()) {
+        static QRegularExpression vbuttonRegex(VBUTTON_REGEX_PATTERN);
+        QRegularExpressionMatch match = vbuttonRegex.match(keymapdata.Original_Key);
+        if (match.hasMatch()) {
+            label = match.captured(1);
+        }
+        else {
+            label = keymapdata.Original_Key;
+        }
+    }
+    button->setText(label);
+    button->setFixedSize(keymapdata.FloatingButton_Width, keymapdata.FloatingButton_Height);
+    button->setWindowOpacity(keymapdata.FloatingButton_Opacity);
+
+    QFont buttonFont = button->font();
+    buttonFont.setPixelSize(keymapdata.FloatingButton_FontSize);
+    if (keymapdata.FloatingButton_FontWeight == FLOATINGBUTTON_FONT_WEIGHT_LIGHT) {
+        buttonFont.setWeight(QFont::Light);
+    }
+    else if (keymapdata.FloatingButton_FontWeight == FLOATINGBUTTON_FONT_WEIGHT_BOLD) {
+        buttonFont.setWeight(QFont::Bold);
+    }
+    else {
+        buttonFont.setWeight(QFont::Normal);
+    }
+    button->setFont(buttonFont);
+
+    auto toRgba = [](const QColor &c) {
+        return QString("rgba(%1,%2,%3,%4)")
+            .arg(c.red())
+            .arg(c.green())
+            .arg(c.blue())
+            .arg(c.alphaF(), 0, 'f', 3);
+    };
+    QColor normalColor = keymapdata.FloatingButton_ButtonColor.isValid() ? keymapdata.FloatingButton_ButtonColor : FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
+    QColor pressedColor = keymapdata.FloatingButton_PressedColor.isValid() ? keymapdata.FloatingButton_PressedColor : FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
+    QColor textColor = keymapdata.FloatingButton_TextColor.isValid() ? keymapdata.FloatingButton_TextColor : FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
+    button->setStyleSheet(QString("QPushButton { background-color: %1; color: %2; border: 1px solid rgba(0,0,0,0.35); border-radius: %3px; }"
+                                  "QPushButton:pressed { background-color: %4; }")
+                                  .arg(toRgba(normalColor), toRgba(textColor), QString::number(keymapdata.FloatingButton_Radius), toRgba(pressedColor)));
+
+    const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
+    button->move(basePoint.x() + keymapdata.FloatingButton_X_Offset, basePoint.y() + keymapdata.FloatingButton_Y_Offset);
 
     if (m_FloatingButtonManualHiddenMap.value(rowindex, false)) {
         button->setDown(false);
@@ -30282,6 +30414,50 @@ void QKeyMapper::onShowAllFloatingButtons(bool visible)
 #endif
 }
 
+void QKeyMapper::onSyncFloatingButtonsOnMappingStart()
+{
+    if (Q_NULLPTR == KeyMappingDataList) {
+        return;
+    }
+
+    if (m_KeyMapStatus != KEYMAP_MAPPING_GLOBAL && m_KeyMapStatus != KEYMAP_MAPPING_MATCHED) {
+        return;
+    }
+
+    for (int rowindex = 0; rowindex < KeyMappingDataList->size(); ++rowindex) {
+        const MAP_KEYDATA &keymapdata = KeyMappingDataList->at(rowindex);
+        if (!keymapdata.FloatingButton_Enable || !keymapdata.FloatingButton_ShowOnMappingStart) {
+            continue;
+        }
+
+        // Keep manual hidden state as the highest priority in the current mapping lifecycle.
+        if (m_FloatingButtonManualHiddenMap.value(rowindex, false)) {
+            continue;
+        }
+
+        showFloatingButtonStart(rowindex, QString());
+    }
+}
+
+void QKeyMapper::onUpdateFloatingButtonPressedState(int rowindex, bool pressed)
+{
+    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[onUpdateFloatingButtonPressedState]"
+                                 << " row=" << rowindex
+                                 << ", pressed=" << (pressed ? "true" : "false")
+                                 << ", buttonExists=" << (button != Q_NULLPTR ? "true" : "false")
+                                 << ", visible=" << ((button != Q_NULLPTR && button->isVisible()) ? "true" : "false");
+#endif
+
+    if (button == Q_NULLPTR || !button->isVisible()) {
+        return;
+    }
+
+    button->setDown(pressed);
+}
+
 void QKeyMapper::onFloatingButtonSettingsApplied()
 {
     if (m_ItemSetupDialog == Q_NULLPTR
@@ -30291,6 +30467,25 @@ void QKeyMapper::onFloatingButtonSettingsApplied()
 
     int rowindex = m_ItemSetupDialog->m_FloatingButtonSetupDialog->getItemRow();
     if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+    syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
+
+    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+    const bool isCurrentlyVisible = (button != Q_NULLPTR) && button->isVisible();
+    const bool allowShowInCurrentStatus = (m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL || m_KeyMapStatus == KEYMAP_MAPPING_MATCHED);
+
+    if (!keymapdata.FloatingButton_Enable || m_FloatingButtonManualHiddenMap.value(rowindex, false) || !allowShowInCurrentStatus) {
+        if (button != Q_NULLPTR) {
+            button->setDown(false);
+            button->hide();
+        }
+        return;
+    }
+
+    if (!isCurrentlyVisible) {
         return;
     }
 
@@ -32738,3 +32933,4 @@ void QKeyMapper::onLastAutoMatchedSettingTimerTimeout()
     qDebug() << "[onLastAutoMatchedSettingTimerTimeout]" << "Timer timeout, cleared last auto matched setting";
 #endif
 }
+
