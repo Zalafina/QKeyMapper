@@ -8553,6 +8553,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // Auto-hide VButton panel when mapping stops
     emit showVButtonPanel_Signal(false);
 
+    // Force-hide all floating buttons on mapping stop without changing manual-hidden state.
+    emit autoHideAllFloatingButtonsOnMappingStop_Signal();
+
     // Restore KeyMappingDataList pointer to original tab's KeyMappingData
     QKeyMapper::restoreKeyMappingDataListPointer();
 
@@ -8621,6 +8624,9 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart Start.>>>\033[0m");
+    qDebug().nospace().noquote() << "[QKeyMapper_Worker::setKeyMappingRestart] begin"
+                                 << " currentTab=" << QKeyMapper::s_KeyMappingTabWidgetCurrentIndex
+                                 << ", activeSize=" << QKeyMapper::s_ActiveKeyMappingDataList.size();
 #endif
 
     /* Restart Stopping process */
@@ -8841,10 +8847,20 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     if (QKeyMapper::KeyMappingDataList) {
         buildVButtonOriginalKeysList(*QKeyMapper::KeyMappingDataList);
     }
+
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+    qDebug().nospace().noquote() << "[QKeyMapper_Worker::setKeyMappingRestart] emit-sync-signals"
+                                 << " currentTab=" << QKeyMapper::s_KeyMappingTabWidgetCurrentIndex
+                                 << ", keymapRows=" << (QKeyMapper::KeyMappingDataList ? QKeyMapper::KeyMappingDataList->size() : -1);
+#endif
+
     emit syncVButtonPanel_Signal(s_vbutton_panel_defaultshow);
     emit syncFloatingButtonsOnMappingStart_Signal();
 
 #ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[QKeyMapper_Worker::setKeyMappingRestart] end"
+                                 << " currentTab=" << QKeyMapper::s_KeyMappingTabWidgetCurrentIndex
+                                 << ", activeSize=" << QKeyMapper::s_ActiveKeyMappingDataList.size();
     qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart End.<<<\033[0m");
 #endif
 }

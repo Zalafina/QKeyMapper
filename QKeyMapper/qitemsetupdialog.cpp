@@ -162,7 +162,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->mappingKey_KeyUpSequenceEditButton->setText(tr("SeqEdit"));
     ui->recordKeysButton->setText(tr(RECORDKEYSBUTTON_STR));
     ui->crosshairSetupButton->setText(tr(CROSSHAIRSETUPBUTTON_STR));
-    ui->floatingButtonSetupButton->setText(tr("FloatingBtn"));
+    ui->floatingButtonSetupButton->setText(tr("FloatingButton"));
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
     ui->fixedVKeyCodeLabel->setText(tr("FixedVKeyCode"));
     ui->pasteTextModeLabel->setText(tr("PasteTextMode"));

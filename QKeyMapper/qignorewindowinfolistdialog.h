@@ -37,6 +37,8 @@ private slots:
 
     void on_deleteRuleButton_clicked();
 
+    void on_restoreDefaultRulesButton_clicked();
+
     void on_ruleNameLineEdit_textChanged(const QString &text);
 
     void on_ruleListWidget_itemDoubleClicked(QListWidgetItem *item);

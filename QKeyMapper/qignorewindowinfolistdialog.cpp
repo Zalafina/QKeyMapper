@@ -60,6 +60,7 @@ void QIgnoreWindowInfoListDialog::setUILanguage(int languageindex)
     ui->clearRuleButton->setText(tr("Clear"));
     ui->ruleDisabledCheckBox->setText(tr("Disabled"));
     ui->deleteRuleButton->setText(tr("Delete"));
+    ui->restoreDefaultRulesButton->setText(tr("RestoreDefault"));
 
     ui->ruleProcessNameMatchTypeComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,        tr("Ignore"));
     ui->ruleProcessNameMatchTypeComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,        tr("Equals"));
@@ -255,6 +256,26 @@ void QIgnoreWindowInfoListDialog::on_deleteRuleButton_clicked()
     }
 }
 
+void QIgnoreWindowInfoListDialog::on_restoreDefaultRulesButton_clicked()
+{
+    // Confirm before replacing all existing rules with built-in defaults.
+    QString message = tr("Are you sure you want to restore all rules to default?");
+    QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message,
+                                                              QMessageBox::Yes | QMessageBox::No,
+                                                              QMessageBox::No);
+    if (reply != QMessageBox::Yes) {
+        return;
+    }
+
+    QKeyMapper::initIgnoreWindowInfoList();
+    updateRulesListWidget();
+    initRuleWindowInfoArea();
+
+    QString popupMessage = tr("Rules restored to default successfully");
+    QString popupMessageColor = SUCCESS_COLOR;
+    int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+    emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+}
 
 void QIgnoreWindowInfoListDialog::on_ruleNameLineEdit_textChanged(const QString &text)
 {

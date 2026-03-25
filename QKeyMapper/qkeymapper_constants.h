@@ -423,9 +423,9 @@ namespace QKeyMapperConstants {
     inline constexpr int CROSSHAIR_Y_OFFSET_MAX = 5000;
     inline constexpr int CROSSHAIR_Y_OFFSET_DEFAULT = 0;
 
-    inline constexpr const char FLOATINGBUTTON_BUTTON_COLOR_DEFAULT[] = "505050";
-    inline constexpr const char FLOATINGBUTTON_PRESSED_COLOR_DEFAULT[] = "6476c6";
-    inline constexpr const char FLOATINGBUTTON_TEXT_COLOR_DEFAULT[] = "d0d2d4";
+    // inline constexpr const char FLOATINGBUTTON_BUTTON_COLOR_DEFAULT[] = "505050";
+    // inline constexpr const char FLOATINGBUTTON_PRESSED_COLOR_DEFAULT[] = "6476c6";
+    // inline constexpr const char FLOATINGBUTTON_TEXT_COLOR_DEFAULT[] = "d0d2d4";
     inline constexpr bool FLOATINGBUTTON_ENABLE_DEFAULT = false;
     inline constexpr bool FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_ALWAYSONTOP_DEFAULT = true;
@@ -438,7 +438,7 @@ namespace QKeyMapperConstants {
     inline constexpr int FLOATINGBUTTON_HEIGHT_DEFAULT = 32;
     inline constexpr int FLOATINGBUTTON_FONT_SIZE_MIN = 1;
     inline constexpr int FLOATINGBUTTON_FONT_SIZE_MAX = 72;
-    inline constexpr int FLOATINGBUTTON_FONT_SIZE_DEFAULT = 11;
+    inline constexpr int FLOATINGBUTTON_FONT_SIZE_DEFAULT = 13;
     inline constexpr int FLOATINGBUTTON_FONT_WEIGHT_LIGHT = 0;
     inline constexpr int FLOATINGBUTTON_FONT_WEIGHT_NORMAL = 1;
     inline constexpr int FLOATINGBUTTON_FONT_WEIGHT_BOLD = 2;

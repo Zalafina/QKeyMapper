@@ -146,11 +146,11 @@ private:
     GamepadMotionSettings* Settings;
 };
 
-enum CalibrationMode
+enum CalibrationMode : int
 {
-    Manual = 0,
-    Stillness = 1,
-    SensorFusion = 2,
+    Manual        = 1 << 0,   // 1
+    Stillness     = 1 << 1,   // 2
+    SensorFusion  = 1 << 2,   // 4
 };
 
 // https://stackoverflow.com/a/1448478/1130520

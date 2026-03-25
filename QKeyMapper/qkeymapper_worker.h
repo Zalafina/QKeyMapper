@@ -1153,6 +1153,9 @@ signals:
     // Signal emitted to show or hide all floating buttons on the main thread
     void showAllFloatingButtons_Signal(bool visible);
 
+    // Signal emitted to force-hide all floating buttons when mapping leaves working states
+    void autoHideAllFloatingButtonsOnMappingStop_Signal();
+
     // Signal emitted to update pressed visual state of an existing visible floating button
     void updateFloatingButtonPressedState_Signal(int rowindex, bool pressed);
 

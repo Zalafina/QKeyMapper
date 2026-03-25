@@ -635,6 +635,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
                      m_VButtonPanel, &QVButtonPanel::setVisible, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showAllFloatingButtons_Signal,
                      this, &QKeyMapper::onShowAllFloatingButtons, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::autoHideAllFloatingButtonsOnMappingStop_Signal,
+                     this, &QKeyMapper::onAutoHideAllFloatingButtonsOnMappingStop, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::updateFloatingButtonPressedState_Signal,
                      this, &QKeyMapper::onUpdateFloatingButtonPressedState, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::syncVButtonPanel_Signal,
@@ -811,6 +813,12 @@ QKeyMapper::~QKeyMapper()
         m_FloatingIconWindow->hideFloatingWindow();
         delete m_FloatingIconWindow;
         m_FloatingIconWindow = Q_NULLPTR;
+    }
+
+    if (m_VButtonPanel != Q_NULLPTR) {
+        m_VButtonPanel->setVisible(false);
+        delete m_VButtonPanel;
+        m_VButtonPanel = Q_NULLPTR;
     }
 
     for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
@@ -6149,6 +6157,81 @@ int QKeyMapper::getCurrentSettingSelectIndex()
     return getInstance()->ui->settingselectComboBox->currentIndex();
 }
 
+int QKeyMapper::currentFloatingButtonManualHiddenSettingIndex() const
+{
+    if (ui == Q_NULLPTR || ui->settingselectComboBox == Q_NULLPTR) {
+        return -1;
+    }
+
+    const int settingIndex = ui->settingselectComboBox->currentIndex();
+    if (settingIndex <= EMPTYSETTING_INDEX || settingIndex >= m_SettingSelectListWithoutDescription.size()) {
+        return -1;
+    }
+
+    return settingIndex;
+}
+
+quint64 QKeyMapper::buildFloatingButtonManualHiddenKey(int tabindex, int rowindex) const
+{
+    const quint64 tabPart = static_cast<quint64>(static_cast<quint32>(tabindex));
+    const quint64 rowPart = static_cast<quint64>(static_cast<quint32>(rowindex));
+    return (tabPart << 32U) | rowPart;
+}
+
+bool QKeyMapper::isFloatingButtonManualHidden(int rowindex) const
+{
+    if (rowindex < 0) {
+        return false;
+    }
+
+    const int settingIndex = currentFloatingButtonManualHiddenSettingIndex();
+    if (settingIndex < 0) {
+        return false;
+    }
+
+    QHash<int, QSet<quint64>>::const_iterator settingIt = m_FloatingButtonManualHiddenMap.constFind(settingIndex);
+    if (settingIt == m_FloatingButtonManualHiddenMap.constEnd()) {
+        return false;
+    }
+
+    const quint64 hiddenKey = buildFloatingButtonManualHiddenKey(s_KeyMappingTabWidgetCurrentIndex, rowindex);
+    return settingIt.value().contains(hiddenKey);
+}
+
+void QKeyMapper::setFloatingButtonManualHidden(int rowindex, bool hidden)
+{
+    if (rowindex < 0) {
+        return;
+    }
+
+    const int settingIndex = currentFloatingButtonManualHiddenSettingIndex();
+    if (settingIndex < 0) {
+        return;
+    }
+
+    const quint64 hiddenKey = buildFloatingButtonManualHiddenKey(s_KeyMappingTabWidgetCurrentIndex, rowindex);
+
+    if (hidden) {
+        m_FloatingButtonManualHiddenMap[settingIndex].insert(hiddenKey);
+        return;
+    }
+
+    QHash<int, QSet<quint64>>::iterator settingIt = m_FloatingButtonManualHiddenMap.find(settingIndex);
+    if (settingIt == m_FloatingButtonManualHiddenMap.end()) {
+        return;
+    }
+
+    settingIt.value().remove(hiddenKey);
+    if (settingIt.value().isEmpty()) {
+        m_FloatingButtonManualHiddenMap.erase(settingIt);
+    }
+}
+
+void QKeyMapper::clearFloatingButtonManualHiddenForAllSettings(void)
+{
+    m_FloatingButtonManualHiddenMap.clear();
+}
+
 bool QKeyMapper::getKeyMappingDataTableItemBurstStatus(int rowindex)
 {
     QTableWidgetItem* burstItem = getInstance()->m_KeyMappingDataTable->item(rowindex, BURST_MODE_COLUMN);
@@ -8745,7 +8828,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     QAction *saveSettingAction = contextMenu.addAction(tr("Save Setting"));
                     contextMenu.addSeparator();
                     QAction *toggleTopmostAction = contextMenu.addAction(keymapdata.FloatingButton_AlwaysOnTop ? tr("Disable Always On Top") : tr("Enable Always On Top"));
-                    QAction *resetOffsetAction = contextMenu.addAction(tr("Reset Offset"));
+                    // QAction *resetOffsetAction = contextMenu.addAction(tr("Reset Offset"));
                     contextMenu.addSeparator();
                     QAction *hideAction = contextMenu.addAction(tr("Hide This Floating Button"));
                     QAction *hideAllAction = contextMenu.addAction(tr("Hide All Floating Buttons"));
@@ -8759,17 +8842,17 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         onShowAllFloatingButtons(false);
                     }
                     else if (selectedAction == hideAction) {
-                        m_FloatingButtonManualHiddenMap.insert(rowindex, true);
+                        setFloatingButtonManualHidden(rowindex, true);
                         floatingButton->setDown(false);
                         floatingButton->hide();
                     }
-                    else if (selectedAction == resetOffsetAction) {
-                        keymapdata.FloatingButton_X_Offset = FLOATINGBUTTON_X_OFFSET_DEFAULT;
-                        keymapdata.FloatingButton_Y_Offset = FLOATINGBUTTON_Y_OFFSET_DEFAULT;
-                        syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
-                        m_FloatingButtonManualHiddenMap.remove(rowindex);
-                        showFloatingButtonStart(rowindex, QString());
-                    }
+                    // else if (selectedAction == resetOffsetAction) {
+                    //     keymapdata.FloatingButton_X_Offset = FLOATINGBUTTON_X_OFFSET_DEFAULT;
+                    //     keymapdata.FloatingButton_Y_Offset = FLOATINGBUTTON_Y_OFFSET_DEFAULT;
+                    //     syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
+                    //     setFloatingButtonManualHidden(rowindex, false);
+                    //     showFloatingButtonStart(rowindex, QString());
+                    // }
                     else if (selectedAction == toggleTopmostAction) {
                         keymapdata.FloatingButton_AlwaysOnTop = !keymapdata.FloatingButton_AlwaysOnTop;
                         syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
@@ -8811,7 +8894,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         return true;
                     }
 
-                    m_FloatingButtonManualHiddenMap.remove(rowindex);
+                    setFloatingButtonManualHidden(rowindex, false);
                     QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),
                                               "triggerVButtonKey",
                                               Qt::QueuedConnection,
@@ -9046,7 +9129,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
 
     }
     else{
-        m_FloatingButtonManualHiddenMap.clear();
+        clearFloatingButtonManualHiddenForAllSettings();
         m_FloatingButtonDragging = false;
         m_FloatingButtonDraggingRow = -1;
 
@@ -11204,6 +11287,15 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.classNameMatchType = WindowInfoMatchType::Ignore;
     info.processName = "QKeyMapper.exe";
     info.windowTitle = "虚拟按钮面板设定|VButton Panel Setup|仮想ボタンパネル設定";
+    info.className.clear();
+    s_IgnoreWindowInfoMap[info.ruleName] = info;
+
+    info.ruleName = "QKeyMapper floating button panel setup window";
+    info.processNameMatchType = WindowInfoMatchType::Contains;
+    info.windowTitleMatchType = WindowInfoMatchType::RegexMatch;
+    info.classNameMatchType = WindowInfoMatchType::Ignore;
+    info.processName = "QKeyMapper.exe";
+    info.windowTitle = "悬浮按钮设定|Floating Button Setup|フローティングボタン設定";
     info.className.clear();
     s_IgnoreWindowInfoMap[info.ruleName] = info;
 
@@ -25574,6 +25666,12 @@ void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &ru
 void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbutton_keystr)
 {
     if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+        qDebug().nospace().noquote() << "[showFloatingButtonStart] skip-invalid-row"
+                                     << " setting=" << getCurrentSettingSelectIndex()
+                                     << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                     << ", row=" << rowindex;
+#endif
         return;
     }
 
@@ -25584,12 +25682,25 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
             existingButton->setDown(false);
             existingButton->hide();
         }
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+        qDebug().nospace().noquote() << "[showFloatingButtonStart] skip-status"
+                                     << " setting=" << getCurrentSettingSelectIndex()
+                                     << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                     << ", row=" << rowindex
+                                     << ", status=" << m_KeyMapStatus;
+#endif
         return;
     }
 
     const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
     if (!keymapdata.FloatingButton_Enable) {
         showFloatingButtonStop(rowindex, floatingbutton_keystr);
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+        qDebug().nospace().noquote() << "[showFloatingButtonStart] skip-disabled"
+                                     << " setting=" << getCurrentSettingSelectIndex()
+                                     << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                     << ", row=" << rowindex;
+#endif
         return;
     }
 
@@ -25659,14 +25770,28 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
     const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
     button->move(basePoint.x() + keymapdata.FloatingButton_X_Offset, basePoint.y() + keymapdata.FloatingButton_Y_Offset);
 
-    if (m_FloatingButtonManualHiddenMap.value(rowindex, false)) {
+    if (isFloatingButtonManualHidden(rowindex)) {
         button->setDown(false);
         button->hide();
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+        qDebug().nospace().noquote() << "[showFloatingButtonStart] skip-manual-hidden"
+                                     << " setting=" << getCurrentSettingSelectIndex()
+                                     << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                     << ", row=" << rowindex;
+#endif
         return;
     }
 
     button->setDown(!floatingbutton_keystr.isEmpty());
     button->show();
+
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+    qDebug().nospace().noquote() << "[showFloatingButtonStart] show"
+                                 << " setting=" << getCurrentSettingSelectIndex()
+                                 << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                 << ", row=" << rowindex
+                                 << ", fromKey=" << (!floatingbutton_keystr.isEmpty() ? "true" : "false");
+#endif
 }
 
 void QKeyMapper::showFloatingButtonStop(int rowindex, const QString &floatingbutton_keystr)
@@ -25684,7 +25809,7 @@ void QKeyMapper::showFloatingButtonStop(int rowindex, const QString &floatingbut
         keepVisible = (m_KeyMapStatus != KEYMAP_IDLE)
                       && keymapdata.FloatingButton_Enable
                       && keymapdata.FloatingButton_ShowOnMappingStart
-                      && !m_FloatingButtonManualHiddenMap.value(rowindex, false);
+                      && !isFloatingButtonManualHidden(rowindex);
     }
 
     button->setDown(false);
@@ -25694,6 +25819,14 @@ void QKeyMapper::showFloatingButtonStop(int rowindex, const QString &floatingbut
     else {
         button->hide();
     }
+
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+    qDebug().nospace().noquote() << "[showFloatingButtonStop]"
+                                 << " setting=" << getCurrentSettingSelectIndex()
+                                 << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                 << ", row=" << rowindex
+                                 << ", keepVisible=" << (keepVisible ? "true" : "false");
+#endif
 }
 
 void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
@@ -30394,14 +30527,14 @@ void QKeyMapper::onShowAllFloatingButtons(bool visible)
 
         if (visible) {
             if (!currentlyVisible) {
-                m_FloatingButtonManualHiddenMap.remove(rowindex);
+                setFloatingButtonManualHidden(rowindex, false);
                 showFloatingButtonStart(rowindex, QString());
                 changed = true;
             }
         }
         else {
             if (currentlyVisible) {
-                m_FloatingButtonManualHiddenMap.insert(rowindex, true);
+                setFloatingButtonManualHidden(rowindex, true);
                 button->setDown(false);
                 button->hide();
                 changed = true;
@@ -30414,29 +30547,107 @@ void QKeyMapper::onShowAllFloatingButtons(bool visible)
 #endif
 }
 
+void QKeyMapper::onAutoHideAllFloatingButtonsOnMappingStop()
+{
+    int hiddenCount = 0;
+    for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
+        QPushButton *button = it.value();
+        if (button != Q_NULLPTR && button->isVisible()) {
+            button->setDown(false);
+            button->hide();
+            ++hiddenCount;
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[onAutoHideAllFloatingButtonsOnMappingStop]"
+                                 << " hiddenCount=" << hiddenCount
+                                 << ", keyMapStatus=" << m_KeyMapStatus;
+#endif
+}
+
 void QKeyMapper::onSyncFloatingButtonsOnMappingStart()
 {
     if (Q_NULLPTR == KeyMappingDataList) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] skip-null-keymap-list";
+#endif
         return;
     }
 
     if (m_KeyMapStatus != KEYMAP_MAPPING_GLOBAL && m_KeyMapStatus != KEYMAP_MAPPING_MATCHED) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] skip-status"
+                                     << " setting=" << getCurrentSettingSelectIndex()
+                                     << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                     << ", status=" << m_KeyMapStatus;
+#endif
         return;
     }
 
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] begin"
+                                 << " setting=" << getCurrentSettingSelectIndex()
+                                 << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                 << ", rows=" << KeyMappingDataList->size()
+                                 << ", buttonCount=" << m_FloatingButtonMap.size();
+#endif
+
+    // Hide stale buttons first to prevent old-tab leftovers during mapping restart tab switching.
+    int hiddenCount = 0;
+    for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
+        QPushButton *button = it.value();
+        if (button != Q_NULLPTR && button->isVisible()) {
+            button->setDown(false);
+            button->hide();
+            ++hiddenCount;
+        }
+    }
+
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+    qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] converge-hide"
+                                 << " setting=" << getCurrentSettingSelectIndex()
+                                 << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                 << ", hiddenCount=" << hiddenCount;
+#endif
+
+    int shownCount = 0;
     for (int rowindex = 0; rowindex < KeyMappingDataList->size(); ++rowindex) {
         const MAP_KEYDATA &keymapdata = KeyMappingDataList->at(rowindex);
         if (!keymapdata.FloatingButton_Enable || !keymapdata.FloatingButton_ShowOnMappingStart) {
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+            qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] skip-row-config"
+                                         << " setting=" << getCurrentSettingSelectIndex()
+                                         << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                         << ", row=" << rowindex
+                                         << ", enable=" << (keymapdata.FloatingButton_Enable ? "true" : "false")
+                                         << ", showOnStart=" << (keymapdata.FloatingButton_ShowOnMappingStart ? "true" : "false");
+#endif
             continue;
         }
 
         // Keep manual hidden state as the highest priority in the current mapping lifecycle.
-        if (m_FloatingButtonManualHiddenMap.value(rowindex, false)) {
+        if (isFloatingButtonManualHidden(rowindex)) {
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+            qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] skip-row-manual-hidden"
+                                         << " setting=" << getCurrentSettingSelectIndex()
+                                         << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                         << ", row=" << rowindex;
+#endif
             continue;
         }
 
         showFloatingButtonStart(rowindex, QString());
+        ++shownCount;
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] end"
+                                 << " setting=" << getCurrentSettingSelectIndex()
+                                 << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                 << ", shownCount=" << shownCount
+                                 << ", hiddenCount=" << hiddenCount;
+#endif
 }
 
 void QKeyMapper::onUpdateFloatingButtonPressedState(int rowindex, bool pressed)
@@ -30477,7 +30688,7 @@ void QKeyMapper::onFloatingButtonSettingsApplied()
     const bool isCurrentlyVisible = (button != Q_NULLPTR) && button->isVisible();
     const bool allowShowInCurrentStatus = (m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL || m_KeyMapStatus == KEYMAP_MAPPING_MATCHED);
 
-    if (!keymapdata.FloatingButton_Enable || m_FloatingButtonManualHiddenMap.value(rowindex, false) || !allowShowInCurrentStatus) {
+    if (!keymapdata.FloatingButton_Enable || isFloatingButtonManualHidden(rowindex) || !allowShowInCurrentStatus) {
         if (button != Q_NULLPTR) {
             button->setDown(false);
             button->hide();

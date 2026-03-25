@@ -1259,6 +1259,7 @@ private slots:
     void onSyncVButtonPanel(bool showPanel);
     void onSyncFloatingButtonsOnMappingStart();
     void onShowAllFloatingButtons(bool visible);
+    void onAutoHideAllFloatingButtonsOnMappingStop();
     void onUpdateFloatingButtonPressedState(int rowindex, bool pressed);
     void onVButtonPanelSetupDialogClosed();
     void onFloatingButtonSettingsApplied();
@@ -1731,13 +1732,20 @@ private:
 public:
     QMappingSequenceEdit *m_MappingSequenceEdit = Q_NULLPTR;
 private:
+    int currentFloatingButtonManualHiddenSettingIndex() const;
+    quint64 buildFloatingButtonManualHiddenKey(int tabindex, int rowindex) const;
+    bool isFloatingButtonManualHidden(int rowindex) const;
+    void setFloatingButtonManualHidden(int rowindex, bool hidden);
+    void clearFloatingButtonManualHiddenForAllSettings(void);
+
+private:
     QItemSetupDialog *m_ItemSetupDialog;
     QTableSetupDialog *m_TableSetupDialog;
     SettingTransferDialog *m_SettingTransferDialog = Q_NULLPTR;
     QPopupNotification *m_PopupNotification;
     QFloatingIconWindow *m_FloatingIconWindow;
     QHash<int, QPushButton*> m_FloatingButtonMap;
-    QHash<int, bool> m_FloatingButtonManualHiddenMap;
+    QHash<int, QSet<quint64>> m_FloatingButtonManualHiddenMap;
     bool m_FloatingButtonDragging = false;
     int m_FloatingButtonDraggingRow = -1;
     QPoint m_FloatingButtonDragStartGlobalPos;

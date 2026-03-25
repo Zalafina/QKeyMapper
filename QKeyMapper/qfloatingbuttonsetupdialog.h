@@ -9,7 +9,9 @@
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
+class QLabel;
 class QLineEdit;
+class QPushButton;
 class QSpinBox;
 
 namespace Ui {
@@ -53,10 +55,18 @@ private:
     MAP_KEYDATA m_BackupData;
 
     QCheckBox *m_EnableCheckBox;
+    QLabel *m_LabelTextLabel;
     QLineEdit *m_LabelLineEdit;
     QCheckBox *m_ShowOnStartCheckBox;
     QCheckBox *m_AlwaysOnTopCheckBox;
     QCheckBox *m_DragToMoveCheckBox;
+
+    QLabel *m_WidthLabel;
+    QLabel *m_HeightLabel;
+    QLabel *m_FontSizeLabel;
+    QLabel *m_FontWeightLabel;
+    QLabel *m_RadiusLabel;
+    QLabel *m_OpacityLabel;
 
     QSpinBox *m_WidthSpinBox;
     QSpinBox *m_HeightSpinBox;
@@ -65,9 +75,16 @@ private:
     QSpinBox *m_RadiusSpinBox;
     QDoubleSpinBox *m_OpacitySpinBox;
 
+    QLabel *m_ReferencePointLabel;
+    QLabel *m_OffsetXLabel;
+    QLabel *m_OffsetYLabel;
+
     QComboBox *m_ReferencePointComboBox;
     QSpinBox *m_OffsetXSpinBox;
     QSpinBox *m_OffsetYSpinBox;
+
+    QPushButton *m_ApplyButton;
+    QPushButton *m_RevertButton;
 
     ColorPickerWidget *m_ButtonColorPicker;
     ColorPickerWidget *m_PressedColorPicker;
