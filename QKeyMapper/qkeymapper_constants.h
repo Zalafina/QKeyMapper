@@ -1286,6 +1286,11 @@ namespace QKeyMapperConstants {
     // Uses non-greedy matching to find individual text sending parts, may need special handling for nested brackets
     inline constexpr const char REGEX_PATTERN_SENDTEXT_FIND[] = R"((SendText|PasteText)\(([\s\S]*?)\))";
 
+    // Pattern for matching a dedicated special text argument.
+    // Capture groups: 1=resolver_name, 2=optional resolver_argument
+    // Example: {{CLIPBOARD_TEXT}}, {{ENV:PATH}}
+    inline constexpr const char REGEX_PATTERN_SPECIAL_TEXT_ARGUMENT[] = R"(^\{\{([A-Z][A-Z0-9_]*)(?::([\s\S]*))?\}\}$)";
+
     // Use pattern that matches everything between Run( and the last ) for complete content capture
     inline constexpr const char REGEX_PATTERN_RUN[] = R"(^Run\((.+)\)$)";
 
@@ -1516,6 +1521,9 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char SENDTEXT_STR[]      = "SendText";
     inline constexpr const char PASTETEXT_STR[]     = "PasteText";
+    inline constexpr const char SPECIAL_TEXT_ARGUMENT_PREFIX[] = "{{";
+    inline constexpr const char SPECIAL_TEXT_ARGUMENT_SUFFIX[] = "}}";
+    inline constexpr const char SPECIAL_TEXT_ARGUMENT_CLIPBOARD_TEXT[] = "CLIPBOARD_TEXT";
     inline constexpr const char RUN_STR[]           = "Run";
     inline constexpr const char SWITCHTAB_STR[]         = "SwitchTab";
     inline constexpr const char SWITCHTAB_SAVE_STR[]    = "SwitchTab💾";

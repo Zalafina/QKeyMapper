@@ -88,6 +88,12 @@ QHash<QString, QStringList> QKeyMapper_Worker::s_OnlyOnceFilteredCache;
 
 namespace {
 
+enum class SpecialTextArgumentResolveResult {
+    NotSpecial = 0,
+    Resolved,
+    Skip
+};
+
 struct PressTimerState {
     quint32 token = 0;
     qint64 expiresAtMs = 0;
@@ -105,6 +111,68 @@ qint64 monotonicNowMs()
 {
     using namespace std::chrono;
     return static_cast<qint64>(duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count());
+}
+
+bool tryReadClipboardUnicodeText(QString &clipboardText, int maxRetries = 3)
+{
+    clipboardText.clear();
+
+    for (int attempt = 0; attempt < maxRetries; ++attempt) {
+        if (OpenClipboard(NULL)) {
+            bool hasUnicodeText = false;
+            HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+
+            if (hData != NULL) {
+                const wchar_t *pData = static_cast<const wchar_t*>(GlobalLock(hData));
+                if (pData != NULL) {
+                    clipboardText = QString::fromWCharArray(pData);
+                    GlobalUnlock(hData);
+                    hasUnicodeText = true;
+                }
+            }
+
+            CloseClipboard();
+            return hasUnicodeText;
+        }
+
+        if (attempt < (maxRetries - 1)) {
+            QThread::msleep(5);
+        }
+    }
+
+    return false;
+}
+
+SpecialTextArgumentResolveResult resolveSpecialTextArgument(const QString &text, QString &resolvedText)
+{
+    static QRegularExpression specialTextArgumentRegex(REGEX_PATTERN_SPECIAL_TEXT_ARGUMENT, QRegularExpression::MultilineOption);
+
+    resolvedText = text;
+
+    QRegularExpressionMatch match = specialTextArgumentRegex.match(text);
+    if (!match.hasMatch()) {
+        return SpecialTextArgumentResolveResult::NotSpecial;
+    }
+
+    const QString resolverName = match.captured(1);
+    const QString resolverArgument = match.captured(2);
+
+    if (resolverName == SPECIAL_TEXT_ARGUMENT_CLIPBOARD_TEXT) {
+        Q_UNUSED(resolverArgument);
+
+        QString clipboardText;
+        if (!tryReadClipboardUnicodeText(clipboardText)) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[resolveSpecialTextArgument] Clipboard does not contain Unicode text, skip sending";
+#endif
+            return SpecialTextArgumentResolveResult::Skip;
+        }
+
+        resolvedText = clipboardText;
+        return SpecialTextArgumentResolveResult::Resolved;
+    }
+
+    return SpecialTextArgumentResolveResult::NotSpecial;
 }
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -3121,17 +3189,30 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else if (sendtext_match.hasMatch()) {
                     QString functionName = sendtext_match.captured(1);  // "SendText" or "PasteText"
                     QString text = sendtext_match.captured(2);          // Text content
+                    QString resolvedText;
+                    SpecialTextArgumentResolveResult resolveResult = resolveSpecialTextArgument(text, resolvedText);
 
-                    // Use different method based on function name
-                    if (functionName == "PasteText") {
-                        pasteText(QKeyMapper::s_CurrentMappingHWND, text, pastetextmode);
+                    if (resolveResult == SpecialTextArgumentResolveResult::Skip) {
+#ifdef DEBUG_LOGOUT_ON
+                        qDebug().noquote().nospace() << "[sendInputKeys] Skip " << functionName << " because special text argument is unavailable -> " << text;
+#endif
                     }
                     else {
-                        const Qt::KeyboardModifiers modifiers_arg = Qt::ControlModifier;
-                        releaseKeyboardModifiersDirect(modifiers_arg);
+                        if (resolveResult == SpecialTextArgumentResolveResult::Resolved) {
+                            text = resolvedText;
+                        }
 
-                        // Default to SendText for backward compatibility
-                        sendText(QKeyMapper::s_CurrentMappingHWND, text);
+                        // Use different method based on function name
+                        if (functionName == PASTETEXT_STR) {
+                            pasteText(QKeyMapper::s_CurrentMappingHWND, text, pastetextmode);
+                        }
+                        else {
+                            const Qt::KeyboardModifiers modifiers_arg = Qt::ControlModifier;
+                            releaseKeyboardModifiersDirect(modifiers_arg);
+
+                            // Default to SendText for backward compatibility
+                            sendText(QKeyMapper::s_CurrentMappingHWND, text);
+                        }
                     }
                 }
                 else if (runcmd_match.hasMatch()) {
