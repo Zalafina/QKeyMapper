@@ -31457,6 +31457,12 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         return;
     }
 
+    if (event->modifiers() & Qt::AltModifier) {
+        // Suppress the context menu so Alt + double-click can reach the existing trigger flow.
+        event->accept();
+        return;
+    }
+
     const QList<QTableWidgetSelectionRange> selectionRanges = this->selectedRanges();
     const bool hasSelection = !selectionRanges.isEmpty();
     const bool hasCopiedItems = !QKeyMapper::s_CopiedMappingData.isEmpty();

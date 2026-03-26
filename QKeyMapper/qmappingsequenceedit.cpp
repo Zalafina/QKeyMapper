@@ -774,6 +774,12 @@ void MappingSequenceEditTableWidget::contextMenuEvent(QContextMenuEvent *event)
         return;
     }
 
+    if (event->modifiers() & Qt::AltModifier) {
+        // Suppress the context menu so Alt + double-click can reach the existing trigger flow.
+        event->accept();
+        return;
+    }
+
     const QList<QTableWidgetSelectionRange> selectionRanges = selectedRanges();
     const bool hasSelection = !selectionRanges.isEmpty();
     const bool hasCopiedItems = !QMappingSequenceEdit::s_CopiedMappingSequenceList.isEmpty();
