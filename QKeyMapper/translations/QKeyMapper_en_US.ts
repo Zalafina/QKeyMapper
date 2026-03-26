@@ -2133,13 +2133,13 @@ Update</translation>
         <location filename="../qkeymapper.cpp" line="23033"/>
         <location filename="../qkeymapper.cpp" line="24291"/>
         <source>R-DoubleClick</source>
-        <translation>R-DoubleClick</translation>
+        <translation>Alt+DoubleClick</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="23034"/>
         <location filename="../qkeymapper.cpp" line="24292"/>
         <source>L-DoubleClick</source>
-        <translation>L-DoubleClick</translation>
+        <translation>LeftButtonDoubleClick</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="3936"/>

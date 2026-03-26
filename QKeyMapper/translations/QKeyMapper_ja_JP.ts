@@ -2111,13 +2111,13 @@ Update</source>
         <location filename="../qkeymapper.cpp" line="23033"/>
         <location filename="../qkeymapper.cpp" line="24291"/>
         <source>R-DoubleClick</source>
-        <translation>右ダブルクリック</translation>
+        <translation>Alt+ダブルクリック</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="23034"/>
         <location filename="../qkeymapper.cpp" line="24292"/>
         <source>L-DoubleClick</source>
-        <translation>左ダブルクリック</translation>
+        <translation>左ボタンのダブルクリック</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="3936"/>

@@ -23002,7 +23002,7 @@ void QKeyMapper::initTableEditSettingPopup()
     const int rowSpacing = 9;
     const int columnSpacing = 6;
     const int labelMinWidth = 70;
-    const int comboMinWidth = 130;
+    const int comboMinWidth = 170;
     const int comboHeight = 21;
 
     QGridLayout *layout = new QGridLayout(m_TableEditSettingPopup);

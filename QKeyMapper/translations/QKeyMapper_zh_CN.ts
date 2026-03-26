@@ -2132,7 +2132,7 @@ Update</source>
         <location filename="../qkeymapper.cpp" line="23033"/>
         <location filename="../qkeymapper.cpp" line="24291"/>
         <source>R-DoubleClick</source>
-        <translation>右键双击</translation>
+        <translation>Alt+双击</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="23034"/>
