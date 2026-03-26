@@ -111,6 +111,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_SysTrayIconMenu(Q_NULLPTR),
     m_TrayIconMenu_ShowHideAction(Q_NULLPTR),
     m_TrayIconMenu_QuitAction(Q_NULLPTR),
+    m_DisplaySwitchMode(DISPLAYSWITCHMODE_TRAY),
     m_PopupMessageLabel(Q_NULLPTR),
     m_PopupMessageAnimation(Q_NULLPTR),
 #ifdef USE_SAOFONT
@@ -8569,6 +8570,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
         }
 
         if (false == isHidden()) {
+            m_DisplaySwitchMode = DISPLAYSWITCHMODE_TRAY;
             // m_LastWindowPosition = pos(); // Save the current position before hiding
             closeSelectColorDialog();
             closeTableSetupDialog();
@@ -8596,17 +8598,21 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
     }
 }
 
-#if 0
 void QKeyMapper::changeEvent(QEvent *event)
 {
-    if (event->type() == QEvent::WindowStateChange)
-    {
-        QTimer::singleShot(0, this, SLOT(WindowStateChangedProc()));
+    if (event->type() == QEvent::WindowStateChange) {
+        QWindowStateChangeEvent *window_state_event = static_cast<QWindowStateChangeEvent *>(event);
+        const bool was_minimized = (window_state_event->oldState() & Qt::WindowMinimized) != 0;
+        const bool is_minimized = (windowState() & Qt::WindowMinimized) != 0;
+
+        // Entering minimized state switches Display Switch into taskbar mode.
+        if (!was_minimized && is_minimized) {
+            m_DisplaySwitchMode = DISPLAYSWITCHMODE_TASKBAR;
+        }
     }
 
     QDialog::changeEvent(event);
 }
-#endif
 
 void QKeyMapper::keyPressEvent(QKeyEvent *event)
 {
@@ -9249,7 +9255,13 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
     qDebug().nospace() << "[HotKeyDisplaySwitchActivated] DisplaySwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
-    switchShowHide(true);
+#ifdef DISPLAY_SWITCHKEY_MINIMIZED
+    const bool useTaskbarMode = !isHidden() && (isMinimized() || DISPLAYSWITCHMODE_TASKBAR == m_DisplaySwitchMode);
+    switchShowHide(useTaskbarMode);
+    return;
+#endif
+
+    switchShowHide();
 }
 
 void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
@@ -21236,8 +21248,10 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
     if (shouldHide) {
 #ifdef DISPLAY_SWITCHKEY_MINIMIZED
         if (hotkey_switch) {
+            m_DisplaySwitchMode = DISPLAYSWITCHMODE_TASKBAR;
             showMinimized();
         } else {
+            m_DisplaySwitchMode = DISPLAYSWITCHMODE_TRAY;
             // Common hide logic
             // m_LastWindowPosition = pos(); // Save the current position before hiding
             closeSelectColorDialog();
@@ -21256,6 +21270,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             hide();
         }
 #else
+        m_DisplaySwitchMode = DISPLAYSWITCHMODE_TRAY;
         // Common hide logic
         // m_LastWindowPosition = pos(); // Save the current position before hiding
         closeSelectColorDialog();
@@ -21293,6 +21308,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
 void QKeyMapper::forceHide()
 {
     if (false == isHidden()) {
+        m_DisplaySwitchMode = DISPLAYSWITCHMODE_TRAY;
         // m_LastWindowPosition = pos(); // Save the current position before hiding
         closeSelectColorDialog();
         closeInputDeviceListWindow();

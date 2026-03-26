@@ -1079,7 +1079,7 @@ protected:
     bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
-    // void changeEvent(QEvent *event) override;
+    void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void mousePressEvent(QMouseEvent *event) override;
     bool eventFilter(QObject *object, QEvent *event) override;
@@ -1676,6 +1676,11 @@ public:
     QAction *m_TrayIconMenu_ShowHideAction;
     QAction *m_TrayIconMenu_QuitAction;
 private:
+    enum DisplaySwitchMode {
+        DISPLAYSWITCHMODE_TRAY = 0U,
+        DISPLAYSWITCHMODE_TASKBAR
+    };
+    DisplaySwitchMode m_DisplaySwitchMode;
     QLabel* m_PopupMessageLabel;
     QPropertyAnimation* m_PopupMessageAnimation;
 #ifdef USE_SAOFONT
