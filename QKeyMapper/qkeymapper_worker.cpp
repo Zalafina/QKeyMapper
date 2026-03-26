@@ -143,6 +143,85 @@ bool tryReadClipboardUnicodeText(QString &clipboardText, int maxRetries = 3)
     return false;
 }
 
+bool decodeClipboardNarrowText(HANDLE hData, UINT codePage, QString &clipboardText)
+{
+    const char *pData = static_cast<const char*>(GlobalLock(hData));
+    if (pData == NULL) {
+        return false;
+    }
+
+    const int requiredWideChars = MultiByteToWideChar(codePage, 0, pData, -1, NULL, 0);
+    if (requiredWideChars <= 0) {
+        GlobalUnlock(hData);
+        return false;
+    }
+
+    std::wstring wideText(static_cast<size_t>(requiredWideChars), L'\0');
+    const int convertedWideChars = MultiByteToWideChar(codePage, 0, pData, -1, &wideText[0], requiredWideChars);
+    GlobalUnlock(hData);
+
+    if (convertedWideChars <= 0) {
+        return false;
+    }
+
+    // Exclude the terminating null added by MultiByteToWideChar.
+    clipboardText = QString::fromStdWString(std::wstring(wideText.c_str()));
+    return true;
+}
+
+bool tryReadClipboardTextWithFallback(QString &clipboardText, int maxRetries = 3)
+{
+    clipboardText.clear();
+
+    for (int attempt = 0; attempt < maxRetries; ++attempt) {
+        if (OpenClipboard(NULL)) {
+            bool hasText = false;
+            HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+
+            if (hData != NULL) {
+                const wchar_t *pData = static_cast<const wchar_t*>(GlobalLock(hData));
+                if (pData != NULL) {
+                    clipboardText = QString::fromWCharArray(pData);
+                    GlobalUnlock(hData);
+                    hasText = true;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[tryReadClipboardTextWithFallback] Read clipboard text using CF_UNICODETEXT";
+#endif
+                }
+            }
+
+            if (!hasText) {
+                hData = GetClipboardData(CF_TEXT);
+                if (hData != NULL && decodeClipboardNarrowText(hData, CP_ACP, clipboardText)) {
+                    hasText = true;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[tryReadClipboardTextWithFallback] Read clipboard text using CF_TEXT fallback";
+#endif
+                }
+            }
+
+            if (!hasText) {
+                hData = GetClipboardData(CF_OEMTEXT);
+                if (hData != NULL && decodeClipboardNarrowText(hData, CP_OEMCP, clipboardText)) {
+                    hasText = true;
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[tryReadClipboardTextWithFallback] Read clipboard text using CF_OEMTEXT fallback";
+#endif
+                }
+            }
+
+            CloseClipboard();
+            return hasText;
+        }
+
+        if (attempt < (maxRetries - 1)) {
+            QThread::msleep(5);
+        }
+    }
+
+    return false;
+}
+
 SpecialTextArgumentResolveResult resolveSpecialTextArgument(const QString &text, QString &resolvedText)
 {
     static QRegularExpression specialTextArgumentRegex(REGEX_PATTERN_SPECIAL_TEXT_ARGUMENT, QRegularExpression::MultilineOption);
@@ -161,9 +240,9 @@ SpecialTextArgumentResolveResult resolveSpecialTextArgument(const QString &text,
         Q_UNUSED(resolverArgument);
 
         QString clipboardText;
-        if (!tryReadClipboardUnicodeText(clipboardText)) {
+        if (!tryReadClipboardTextWithFallback(clipboardText)) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[resolveSpecialTextArgument] Clipboard does not contain Unicode text, skip sending";
+            qDebug() << "[resolveSpecialTextArgument] Clipboard does not contain supported text data, skip sending";
 #endif
             return SpecialTextArgumentResolveResult::Skip;
         }
