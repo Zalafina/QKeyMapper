@@ -756,7 +756,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     // VButton panel connections (cross-thread: worker -> panel, panel -> worker)
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showVButtonPanel_Signal,
-                     m_VButtonPanel, &QVButtonPanel::setVisible, Qt::QueuedConnection);
+                     this, &QKeyMapper::onShowVButtonPanelRequested, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showAllFloatingButtons_Signal,
                      this, &QKeyMapper::onShowAllFloatingButtons, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::autoHideAllFloatingButtonsOnMappingStop_Signal,
@@ -30695,38 +30695,56 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
 
 void QKeyMapper::onSyncVButtonPanel(bool showPanel)
 {
-    if (Q_NULLPTR == m_VButtonPanel || Q_NULLPTR == KeyMappingDataList) {
+    if (Q_NULLPTR == m_VButtonPanel) {
         return;
     }
 
-    static QRegularExpression vbuttonRegex(VBUTTON_REGEX_PATTERN);
-
-    bool hasActiveVButtons = false;
-    for (const MAP_KEYDATA &entry : std::as_const(*KeyMappingDataList)) {
-        if (!entry.Disabled && vbuttonRegex.match(entry.Original_Key).hasMatch()) {
-            hasActiveVButtons = true;
-            break;
-        }
-    }
-
-    // Hide first when the final state should be hidden, so an empty layout never flashes on screen.
-    if (!hasActiveVButtons || !showPanel) {
+    if (Q_NULLPTR == KeyMappingDataList) {
         m_VButtonPanel->hide();
-        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
         return;
     }
 
-    if (m_VButtonPanel->isVisible()) {
-        // Keep the current panel visible while suppressing intermediate repaints during rebuild.
+    const bool panelWasVisible = m_VButtonPanel->isVisible();
+    if (panelWasVisible) {
+        // Avoid intermediate empty repaints while the filtered button list is rebuilt.
         m_VButtonPanel->setUpdatesEnabled(false);
-        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+    }
+
+    m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+    const bool hasDisplayableButtons = (m_VButtonPanel->buttonCount() > 0);
+
+    if (panelWasVisible) {
         m_VButtonPanel->setUpdatesEnabled(true);
+    }
+
+    // Never show the panel when no actual VButtons remain after filtering.
+    if (!showPanel || !hasDisplayableButtons) {
+        m_VButtonPanel->hide();
+        return;
+    }
+
+    if (panelWasVisible) {
         m_VButtonPanel->update();
-    } else {
-        // Prepare the final layout while hidden, then show it only after the panel is ready.
-        m_VButtonPanel->refreshPanel(*KeyMappingDataList);
+    }
+    else {
+        // Show only after the final filtered layout is ready.
         m_VButtonPanel->show();
     }
+}
+
+void QKeyMapper::onShowVButtonPanelRequested(bool visible)
+{
+    if (Q_NULLPTR == m_VButtonPanel) {
+        return;
+    }
+
+    if (!visible || Q_NULLPTR == KeyMappingDataList) {
+        m_VButtonPanel->hide();
+        return;
+    }
+
+    // Route explicit show requests through the same filtered visibility gate.
+    onSyncVButtonPanel(true);
 }
 
 void QKeyMapper::onShowAllFloatingButtons(bool visible)

@@ -49,6 +49,9 @@ public:
     void   setPanelPosition(const QPoint &pt) { move(pt); }
     QPoint panelPosition()  const { return pos(); }
 
+    // Expose the filtered button count so the owner can avoid showing an empty panel.
+    int buttonCount() const { return m_buttons.size(); }
+
 signals:
     // isKeyDown=true -> KEY_DOWN; false -> KEY_UP
     void triggerVButtonKey_Signal(const QString &keyName, bool isKeyDown);

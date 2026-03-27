@@ -1256,6 +1256,7 @@ private slots:
 
     void on_vButtonPanelSetupButton_clicked();
     void onVButtonPanelSettingsAccepted();
+    void onShowVButtonPanelRequested(bool visible);
     void onSyncVButtonPanel(bool showPanel);
     void onSyncFloatingButtonsOnMappingStart();
     void onShowAllFloatingButtons(bool visible);
