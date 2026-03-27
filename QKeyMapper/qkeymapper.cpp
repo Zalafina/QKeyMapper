@@ -6841,6 +6841,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList floatingbutton_radiusList;
     QStringList floatingbutton_opacityList;
     QStringList floatingbutton_showonmappingstartList;
+    QStringList floatingbutton_showtooltipList;
     QStringList floatingbutton_alwaysontopList;
     QStringList floatingbutton_referencepointList;
     QStringList floatingbutton_x_offsetList;
@@ -7138,6 +7139,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             floatingbutton_showonmappingstartList.append("OFF");
         }
+        if (true == keymapdata.FloatingButton_ShowToolTip) {
+            floatingbutton_showtooltipList.append("ON");
+        }
+        else {
+            floatingbutton_showtooltipList.append("OFF");
+        }
         if (true == keymapdata.FloatingButton_AlwaysOnTop) {
             floatingbutton_alwaysontopList.append("ON");
         }
@@ -7223,6 +7230,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_RADIUS, floatingbutton_radiusList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_OPACITY, floatingbutton_opacityList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART, floatingbutton_showonmappingstartList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP, floatingbutton_showtooltipList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP, floatingbutton_alwaysontopList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, floatingbutton_referencepointList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList);
@@ -7302,6 +7310,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList floatingbutton_radiusStringList;
     QStringList floatingbutton_opacityStringList;
     QStringList floatingbutton_showonmappingstartStringList;
+    QStringList floatingbutton_showtooltipStringList;
     QStringList floatingbutton_alwaysontopStringList;
     QStringList floatingbutton_referencepointStringList;
     QStringList floatingbutton_x_offsetStringList;
@@ -7351,6 +7360,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<int> floatingbutton_radiusList;
     QList<double> floatingbutton_opacityList;
     QList<bool> floatingbutton_showonmappingstartList;
+    QList<bool> floatingbutton_showtooltipList;
     QList<bool> floatingbutton_alwaysontopList;
     QList<int> floatingbutton_referencepointList;
     QList<int> floatingbutton_x_offsetList;
@@ -7612,6 +7622,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART)) {
             floatingbutton_showonmappingstartStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP)) {
+            floatingbutton_showtooltipStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP)) {
             floatingbutton_alwaysontopStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP).toStringList();
@@ -8067,6 +8080,11 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
+                const QString &floatingbutton_showtooltip = (i < floatingbutton_showtooltipStringList.size()) ? floatingbutton_showtooltipStringList.at(i) : "OFF";
+                floatingbutton_showtooltipList.append(floatingbutton_showtooltip == "ON");
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
                 const QString &floatingbutton_alwaysontop = (i < floatingbutton_alwaysontopStringList.size()) ? floatingbutton_alwaysontopStringList.at(i) : "ON";
                 floatingbutton_alwaysontopList.append(floatingbutton_alwaysontop != "OFF");
             }
@@ -8178,6 +8196,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     loadedData.FloatingButton_Radius = floatingbutton_radiusList.at(loadindex);
                     loadedData.FloatingButton_Opacity = floatingbutton_opacityList.at(loadindex);
                     loadedData.FloatingButton_ShowOnMappingStart = floatingbutton_showonmappingstartList.at(loadindex);
+                    loadedData.FloatingButton_ShowToolTip = floatingbutton_showtooltipList.at(loadindex);
                     loadedData.FloatingButton_AlwaysOnTop = floatingbutton_alwaysontopList.at(loadindex);
                     loadedData.FloatingButton_ReferencePoint = floatingbutton_referencepointList.at(loadindex);
                     loadedData.FloatingButton_X_Offset = floatingbutton_x_offsetList.at(loadindex);
@@ -8962,6 +8981,8 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     QAction *hideAction = contextMenu.addAction(tr("Hide This Floating Button"));
                     QAction *hideAllAction = contextMenu.addAction(tr("Hide All Floating Buttons"));
                     QAction *showAllAction = contextMenu.addAction(tr("Show All Floating Buttons"));
+                    contextMenu.addSeparator();
+                    QAction *toggleTooltipAction = contextMenu.addAction(keymapdata.FloatingButton_ShowToolTip ? tr("Hide Tooltip") : tr("Show Tooltip"));
 
                     QAction *selectedAction = contextMenu.exec(QCursor::pos());
                     if (selectedAction == showAllAction) {
@@ -8984,6 +9005,11 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     // }
                     else if (selectedAction == toggleTopmostAction) {
                         keymapdata.FloatingButton_AlwaysOnTop = !keymapdata.FloatingButton_AlwaysOnTop;
+                        syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
+                        showFloatingButtonStart(rowindex, QString());
+                    }
+                    else if (selectedAction == toggleTooltipAction) {
+                        keymapdata.FloatingButton_ShowToolTip = !keymapdata.FloatingButton_ShowToolTip;
                         syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
                         showFloatingButtonStart(rowindex, QString());
                     }
@@ -12412,6 +12438,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString floatingbutton_radiusList_forsave;
     QString floatingbutton_opacityList_forsave;
     QString floatingbutton_showonmappingstartList_forsave;
+    QString floatingbutton_showtooltipList_forsave;
     QString floatingbutton_alwaysontopList_forsave;
     QString floatingbutton_referencepointList_forsave;
     QString floatingbutton_x_offsetList_forsave;
@@ -12524,6 +12551,7 @@ void QKeyMapper::saveKeyMapSetting(void)
             floatingbutton_radiusList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_opacityList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_showonmappingstartList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_showtooltipList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_alwaysontopList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_referencepointList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_x_offsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -12580,6 +12608,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList floatingbutton_radiusList;
         QStringList floatingbutton_opacityList;
         QStringList floatingbutton_showonmappingstartList;
+        QStringList floatingbutton_showtooltipList;
         QStringList floatingbutton_alwaysontopList;
         QStringList floatingbutton_referencepointList;
         QStringList floatingbutton_x_offsetList;
@@ -12888,6 +12917,12 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     floatingbutton_showonmappingstartList.append("OFF");
                 }
+                if (true == keymapdata.FloatingButton_ShowToolTip) {
+                    floatingbutton_showtooltipList.append("ON");
+                }
+                else {
+                    floatingbutton_showtooltipList.append("OFF");
+                }
                 if (true == keymapdata.FloatingButton_AlwaysOnTop) {
                     floatingbutton_alwaysontopList.append("ON");
                 }
@@ -12969,6 +13004,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QString floatingbutton_radiusList_str = floatingbutton_radiusList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_opacityList_str = floatingbutton_opacityList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_showonmappingstartList_str = floatingbutton_showonmappingstartList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_showtooltipList_str = floatingbutton_showtooltipList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_alwaysontopList_str = floatingbutton_alwaysontopList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_referencepointList_str = floatingbutton_referencepointList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_x_offsetList_str = floatingbutton_x_offsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -13025,6 +13061,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         floatingbutton_radiusList_forsave.append(floatingbutton_radiusList_str);
         floatingbutton_opacityList_forsave.append(floatingbutton_opacityList_str);
         floatingbutton_showonmappingstartList_forsave.append(floatingbutton_showonmappingstartList_str);
+        floatingbutton_showtooltipList_forsave.append(floatingbutton_showtooltipList_str);
         floatingbutton_alwaysontopList_forsave.append(floatingbutton_alwaysontopList_str);
         floatingbutton_referencepointList_forsave.append(floatingbutton_referencepointList_str);
         floatingbutton_x_offsetList_forsave.append(floatingbutton_x_offsetList_str);
@@ -13101,6 +13138,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_RADIUS, floatingbutton_radiusList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_OPACITY, floatingbutton_opacityList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART, floatingbutton_showonmappingstartList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP, floatingbutton_showtooltipList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP, floatingbutton_alwaysontopList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, floatingbutton_referencepointList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList_forsave);
@@ -14537,6 +14575,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QString floatingbutton_radiusData_loaded;
         QString floatingbutton_opacityData_loaded;
         QString floatingbutton_showonmappingstartData_loaded;
+        QString floatingbutton_showtooltipData_loaded;
         QString floatingbutton_alwaysontopData_loaded;
         QString floatingbutton_referencepointData_loaded;
         QString floatingbutton_x_offsetData_loaded;
@@ -14594,6 +14633,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QStringList floatingbutton_radiusData_split;
         QStringList floatingbutton_opacityData_split;
         QStringList floatingbutton_showonmappingstartData_split;
+        QStringList floatingbutton_showtooltipData_split;
         QStringList floatingbutton_alwaysontopData_split;
         QStringList floatingbutton_referencepointData_split;
         QStringList floatingbutton_x_offsetData_split;
@@ -14960,6 +15000,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 floatingbutton_showonmappingstartData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART).toString();
                 floatingbutton_showonmappingstartData_split = floatingbutton_showonmappingstartData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP)) {
+                floatingbutton_showtooltipData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP).toString();
+                floatingbutton_showtooltipData_split = floatingbutton_showtooltipData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP)) {
                 floatingbutton_alwaysontopData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP).toString();
                 floatingbutton_alwaysontopData_split = floatingbutton_alwaysontopData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -15049,6 +15093,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_radiusStringList;
                     QStringList floatingbutton_opacityStringList;
                     QStringList floatingbutton_showonmappingstartStringList;
+                    QStringList floatingbutton_showtooltipStringList;
                     QStringList floatingbutton_alwaysontopStringList;
                     QStringList floatingbutton_referencepointStringList;
                     QStringList floatingbutton_x_offsetStringList;
@@ -15099,6 +15144,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QList<int> floatingbutton_radiusList;
                     QList<double> floatingbutton_opacityList;
                     QList<bool> floatingbutton_showonmappingstartList;
+                    QList<bool> floatingbutton_showtooltipList;
                     QList<bool> floatingbutton_alwaysontopList;
                     QList<int> floatingbutton_referencepointList;
                     QList<int> floatingbutton_x_offsetList;
@@ -15215,6 +15261,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     floatingbutton_radiusStringList = floatingbutton_radiusStringListDefault;
                     floatingbutton_opacityStringList = floatingbutton_opacityStringListDefault;
                     floatingbutton_showonmappingstartStringList = stringListAllON;
+                    floatingbutton_showtooltipStringList = stringListAllOFF;
                     floatingbutton_alwaysontopStringList = stringListAllON;
                     floatingbutton_referencepointStringList = floatingbutton_referencepointStringListDefault;
                     floatingbutton_x_offsetStringList = floatingbutton_x_offsetStringListDefault;
@@ -15368,6 +15415,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     }
                     if (floatingbutton_showonmappingstartData_split.size() == table_count) {
                         floatingbutton_showonmappingstartStringList = floatingbutton_showonmappingstartData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_showtooltipData_split.size() == table_count) {
+                        floatingbutton_showtooltipStringList = floatingbutton_showtooltipData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (floatingbutton_alwaysontopData_split.size() == table_count) {
                         floatingbutton_alwaysontopStringList = floatingbutton_alwaysontopData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -15833,6 +15883,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_showtooltip = (i < floatingbutton_showtooltipStringList.size()) ? floatingbutton_showtooltipStringList.at(i) : "OFF";
+                            floatingbutton_showtooltipList.append(floatingbutton_showtooltip == "ON");
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
                             const QString &floatingbutton_alwaysontop = (i < floatingbutton_alwaysontopStringList.size()) ? floatingbutton_alwaysontopStringList.at(i) : "ON";
                             floatingbutton_alwaysontopList.append(floatingbutton_alwaysontop != "OFF");
                         }
@@ -15949,6 +16004,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                 loadedData.FloatingButton_Radius = floatingbutton_radiusList.at(loadindex);
                                 loadedData.FloatingButton_Opacity = floatingbutton_opacityList.at(loadindex);
                                 loadedData.FloatingButton_ShowOnMappingStart = floatingbutton_showonmappingstartList.at(loadindex);
+                                loadedData.FloatingButton_ShowToolTip = floatingbutton_showtooltipList.at(loadindex);
                                 loadedData.FloatingButton_AlwaysOnTop = floatingbutton_alwaysontopList.at(loadindex);
                                 loadedData.FloatingButton_ReferencePoint = floatingbutton_referencepointList.at(loadindex);
                                 loadedData.FloatingButton_X_Offset = floatingbutton_x_offsetList.at(loadindex);
@@ -25793,6 +25849,7 @@ void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &ru
         tabData.FloatingButton_Radius = runtimeData.FloatingButton_Radius;
         tabData.FloatingButton_Opacity = runtimeData.FloatingButton_Opacity;
         tabData.FloatingButton_ShowOnMappingStart = runtimeData.FloatingButton_ShowOnMappingStart;
+        tabData.FloatingButton_ShowToolTip = runtimeData.FloatingButton_ShowToolTip;
         tabData.FloatingButton_AlwaysOnTop = runtimeData.FloatingButton_AlwaysOnTop;
         tabData.FloatingButton_ReferencePoint = runtimeData.FloatingButton_ReferencePoint;
         tabData.FloatingButton_X_Offset = runtimeData.FloatingButton_X_Offset;
@@ -25875,7 +25932,6 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
             label = keymapdata.Original_Key;
         }
     }
-    button->setText(label);
     button->setFixedSize(keymapdata.FloatingButton_Width, keymapdata.FloatingButton_Height);
     button->setWindowOpacity(keymapdata.FloatingButton_Opacity);
 
@@ -25892,6 +25948,12 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
     }
     button->setFont(buttonFont);
 
+    const QString fullLabel = label;
+    const int textHorizontalPadding = 12;
+    const int availableTextWidth = qMax(0, button->width() - textHorizontalPadding);
+    const QString displayLabel = button->fontMetrics().elidedText(fullLabel, Qt::ElideMiddle, availableTextWidth);
+    button->setText(displayLabel);
+
     auto toRgba = [](const QColor &c) {
         return QString("rgba(%1,%2,%3,%4)")
             .arg(c.red())
@@ -25899,12 +25961,31 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
             .arg(c.blue())
             .arg(c.alphaF(), 0, 'f', 3);
     };
+    static const QString tooltipRule = QStringLiteral("QToolTip { background-color: palette(ToolTipBase); color: palette(ToolTipText); }");
     QColor normalColor = keymapdata.FloatingButton_ButtonColor.isValid() ? keymapdata.FloatingButton_ButtonColor : FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
     QColor pressedColor = keymapdata.FloatingButton_PressedColor.isValid() ? keymapdata.FloatingButton_PressedColor : FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
     QColor textColor = keymapdata.FloatingButton_TextColor.isValid() ? keymapdata.FloatingButton_TextColor : FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
     button->setStyleSheet(QString("QPushButton { background-color: %1; color: %2; border: 1px solid rgba(0,0,0,0.35); border-radius: %3px; }"
                                   "QPushButton:pressed { background-color: %4; }")
-                                  .arg(toRgba(normalColor), toRgba(textColor), QString::number(keymapdata.FloatingButton_Radius), toRgba(pressedColor)));
+                                  .arg(toRgba(normalColor), toRgba(textColor), QString::number(keymapdata.FloatingButton_Radius), toRgba(pressedColor))
+                              + tooltipRule);
+
+    if (keymapdata.FloatingButton_ShowToolTip) {
+        QString tip;
+        if (displayLabel != fullLabel) {
+            tip += QString("%1 : %2\n").arg(tr("Label"), fullLabel);
+        }
+        tip += QString("%1 : %2\n%3 : %4\n")
+                   .arg(tr("No."), QString::number(rowindex + 1), tr("OriginalKey"), keymapdata.Original_Key);
+        tip += makeMappingKeyToolTip(keymapdata);
+        if (!keymapdata.Note.isEmpty()) {
+            tip += QString("\n%1 : %2").arg(tr("Note"), keymapdata.Note);
+        }
+        button->setToolTip(tip);
+    }
+    else {
+        button->setToolTip(QString());
+    }
 
     const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
     button->move(basePoint.x() + keymapdata.FloatingButton_X_Offset, basePoint.y() + keymapdata.FloatingButton_Y_Offset);

@@ -428,6 +428,7 @@ namespace QKeyMapperConstants {
     // inline constexpr const char FLOATINGBUTTON_TEXT_COLOR_DEFAULT[] = "d0d2d4";
     inline constexpr bool FLOATINGBUTTON_ENABLE_DEFAULT = false;
     inline constexpr bool FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT = true;
+    inline constexpr bool FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT = false;
     inline constexpr bool FLOATINGBUTTON_ALWAYSONTOP_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_DRAGTOMOVE_DEFAULT = true;
     inline constexpr int FLOATINGBUTTON_WIDTH_MIN = 24;
@@ -1079,6 +1080,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_RADIUS[] = "KeyMapData_FloatingButton_Radius";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_OPACITY[] = "KeyMapData_FloatingButton_Opacity";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART[] = "KeyMapData_FloatingButton_ShowOnMappingStart";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP[] = "KeyMapData_FloatingButton_ShowToolTip";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP[] = "KeyMapData_FloatingButton_AlwaysOnTop";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT[] = "KeyMapData_FloatingButton_ReferencePoint";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_X_OFFSET[] = "KeyMapData_FloatingButton_X_Offset";

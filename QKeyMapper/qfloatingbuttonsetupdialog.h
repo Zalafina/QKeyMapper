@@ -58,6 +58,7 @@ private:
     QLabel *m_LabelTextLabel;
     QLineEdit *m_LabelLineEdit;
     QCheckBox *m_ShowOnStartCheckBox;
+    QCheckBox *m_ShowToolTipCheckBox;
     QCheckBox *m_AlwaysOnTopCheckBox;
     QCheckBox *m_DragToMoveCheckBox;
 

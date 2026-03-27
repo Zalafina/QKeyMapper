@@ -17,6 +17,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_LabelTextLabel(new QLabel(this))
     , m_LabelLineEdit(new QLineEdit(this))
     , m_ShowOnStartCheckBox(new QCheckBox(this))
+    , m_ShowToolTipCheckBox(new QCheckBox(this))
     , m_AlwaysOnTopCheckBox(new QCheckBox(this))
     , m_DragToMoveCheckBox(new QCheckBox(this))
     , m_WidthLabel(new QLabel(this))
@@ -62,6 +63,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     basicForm->addRow(m_EnableCheckBox);
     basicForm->addRow(m_LabelTextLabel, m_LabelLineEdit);
     basicForm->addRow(m_ShowOnStartCheckBox);
+    basicForm->addRow(m_ShowToolTipCheckBox);
     basicForm->addRow(m_AlwaysOnTopCheckBox);
     basicForm->addRow(m_DragToMoveCheckBox);
 
@@ -136,10 +138,12 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     connect(m_LabelLineEdit, &QLineEdit::textChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     connect(m_ShowOnStartCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_ShowToolTipCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_DragToMoveCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #else
     connect(m_ShowOnStartCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_ShowToolTipCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_DragToMoveCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #endif
@@ -170,6 +174,7 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_EnableCheckBox->setText(tr("Enable Floating Button"));
     m_LabelTextLabel->setText(tr("Label"));
     m_ShowOnStartCheckBox->setText(tr("Show on Mapping Start"));
+    m_ShowToolTipCheckBox->setText(tr("Show Tooltip"));
     m_AlwaysOnTopCheckBox->setText(tr("Always On Top"));
     m_DragToMoveCheckBox->setText(tr("Ctrl+Drag to Move"));
 
@@ -307,6 +312,7 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_EnableCheckBox->setChecked(keymapdata.FloatingButton_Enable);
     m_LabelLineEdit->setText(keymapdata.FloatingButton_Label);
     m_ShowOnStartCheckBox->setChecked(keymapdata.FloatingButton_ShowOnMappingStart);
+    m_ShowToolTipCheckBox->setChecked(keymapdata.FloatingButton_ShowToolTip);
     m_AlwaysOnTopCheckBox->setChecked(keymapdata.FloatingButton_AlwaysOnTop);
     m_DragToMoveCheckBox->setChecked(keymapdata.FloatingButton_DragToMove);
 
@@ -343,6 +349,7 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_Enable = m_EnableCheckBox->isChecked();
     keymapdata.FloatingButton_Label = m_LabelLineEdit->text();
     keymapdata.FloatingButton_ShowOnMappingStart = m_ShowOnStartCheckBox->isChecked();
+    keymapdata.FloatingButton_ShowToolTip = m_ShowToolTipCheckBox->isChecked();
     keymapdata.FloatingButton_AlwaysOnTop = m_AlwaysOnTopCheckBox->isChecked();
     keymapdata.FloatingButton_DragToMove = m_DragToMoveCheckBox->isChecked();
 

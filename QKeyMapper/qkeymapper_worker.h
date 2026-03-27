@@ -182,6 +182,7 @@ typedef struct MAP_KEYDATA
     int FloatingButton_Radius;
     double FloatingButton_Opacity;
     bool FloatingButton_ShowOnMappingStart;
+    bool FloatingButton_ShowToolTip;
     bool FloatingButton_AlwaysOnTop;
     int FloatingButton_ReferencePoint;
     int FloatingButton_X_Offset;
@@ -242,6 +243,7 @@ typedef struct MAP_KEYDATA
     , FloatingButton_Radius(QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT)
     , FloatingButton_Opacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
     , FloatingButton_ShowOnMappingStart(QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT)
+    , FloatingButton_ShowToolTip(QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT)
     , FloatingButton_AlwaysOnTop(QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT)
     , FloatingButton_ReferencePoint(QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT)
     , FloatingButton_X_Offset(QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT)
@@ -324,6 +326,7 @@ typedef struct MAP_KEYDATA
         FloatingButton_Radius = QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT;
         FloatingButton_Opacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
         FloatingButton_ShowOnMappingStart = QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT;
+        FloatingButton_ShowToolTip = QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT;
         FloatingButton_AlwaysOnTop = QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT;
         FloatingButton_ReferencePoint = QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
         FloatingButton_X_Offset = QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT;
@@ -382,6 +385,7 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_Radius == other.FloatingButton_Radius)
                 && (FloatingButton_Opacity == other.FloatingButton_Opacity)
                 && (FloatingButton_ShowOnMappingStart == other.FloatingButton_ShowOnMappingStart)
+                && (FloatingButton_ShowToolTip == other.FloatingButton_ShowToolTip)
                 && (FloatingButton_AlwaysOnTop == other.FloatingButton_AlwaysOnTop)
                 && (FloatingButton_ReferencePoint == other.FloatingButton_ReferencePoint)
                 && (FloatingButton_X_Offset == other.FloatingButton_X_Offset)
@@ -445,6 +449,7 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_Radius:" << data.FloatingButton_Radius
                         << ", FloatingButton_Opacity:" << data.FloatingButton_Opacity
                         << ", FloatingButton_ShowOnMappingStart:" << data.FloatingButton_ShowOnMappingStart
+                        << ", FloatingButton_ShowToolTip:" << data.FloatingButton_ShowToolTip
                         << ", FloatingButton_AlwaysOnTop:" << data.FloatingButton_AlwaysOnTop
                         << ", FloatingButton_ReferencePoint:" << data.FloatingButton_ReferencePoint
                         << ", FloatingButton_X_Offset:" << data.FloatingButton_X_Offset
