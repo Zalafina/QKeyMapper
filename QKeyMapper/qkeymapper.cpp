@@ -2,10 +2,14 @@
 #include "ui_qkeymapper.h"
 #include "qkeymapper_constants.h"
 
+#include <algorithm>
+
 using namespace QKeyMapperConstants;
 using namespace Gdiplus;
 
 namespace {
+
+QString normalizeOriginalKeyForExclusiveGroup(const QString &originalKey);
 
 class CategoryFilterPanelWidget final : public QWidget
 {
@@ -44,6 +48,125 @@ static void refreshMenuWidgetActionGeometry(QMenu *menu, QWidgetAction *action, 
     menu->updateGeometry();
     menu->ensurePolished();
     menu->adjustSize();
+}
+
+static QList<int> collectVisibleSelectedRows(const QTableWidget *table)
+{
+    QList<int> visibleRows;
+    if (!table) {
+        return visibleRows;
+    }
+
+    const QList<QTableWidgetSelectionRange> selectionRanges = table->selectedRanges();
+    for (const QTableWidgetSelectionRange &range : selectionRanges) {
+        for (int row = range.topRow(); row <= range.bottomRow(); ++row) {
+            if (table->isRowHidden(row)) {
+                continue;
+            }
+            if (!visibleRows.contains(row)) {
+                visibleRows.append(row);
+            }
+        }
+    }
+
+    std::sort(visibleRows.begin(), visibleRows.end());
+    return visibleRows;
+}
+
+static bool hasDuplicateExclusiveGroupInRows(const QList<MAP_KEYDATA> *mappingDataList, const QList<int> &rows)
+{
+    if (!mappingDataList) {
+        return false;
+    }
+
+    QStringList groupKeys;
+    for (int row : rows) {
+        if (row < 0 || row >= mappingDataList->size()) {
+            continue;
+        }
+
+        const QString groupKey = normalizeOriginalKeyForExclusiveGroup(mappingDataList->at(row).Original_Key);
+        if (groupKeys.contains(groupKey)) {
+            return true;
+        }
+
+        groupKeys.append(groupKey);
+    }
+
+    return false;
+}
+
+static QList<MAP_KEYDATA> *getCurrentKeyMappingDataList()
+{
+    const int tabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (tabIndex >= 0 && tabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+    }
+
+    return QKeyMapper::KeyMappingDataList;
+}
+
+static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTableWidget *mappingDataTable, const QList<int> &rows, int column, bool checked)
+{
+    if (!keymapper || !mappingDataTable || rows.isEmpty()) {
+        return 0;
+    }
+
+    const int tabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (!mappingDataList) {
+        return 0;
+    }
+
+    QSignalBlocker blocker(mappingDataTable);
+    int changedCount = 0;
+
+    if (column == BURST_MODE_COLUMN || column == LOCK_COLUMN) {
+        for (int row : rows) {
+            if (row < 0 || row >= mappingDataList->size()) {
+                continue;
+            }
+
+            bool *state = (column == BURST_MODE_COLUMN)
+                ? &(*mappingDataList)[row].Burst
+                : &(*mappingDataList)[row].Lock;
+            if (*state == checked) {
+                continue;
+            }
+
+            *state = checked;
+            emit keymapper->keyMappingTableItemCheckStateChanged_Signal(row, column, checked);
+            keymapper->updateTableWidgetItem(tabIndex, row, column);
+            changedCount += 1;
+        }
+
+        return changedCount;
+    }
+
+    if (column != DISABLED_COLUMN) {
+        return 0;
+    }
+
+    for (int row : rows) {
+        if (row < 0 || row >= mappingDataList->size()) {
+            continue;
+        }
+
+        if ((*mappingDataList)[row].Disabled != checked) {
+            (*mappingDataList)[row].Disabled = checked;
+            emit keymapper->keyMappingTableItemCheckStateChanged_Signal(row, DISABLED_COLUMN, checked);
+            changedCount += 1;
+        }
+
+        keymapper->updateTableWidgetItem(tabIndex, row, DISABLED_COLUMN);
+
+        if (!checked) {
+            keymapper->applyExclusiveEnableMutualExclusion(tabIndex, row, false);
+        }
+    }
+
+    mappingDataTable->reapplyRowVisibility();
+    return changedCount;
 }
 
 } // namespace
@@ -31483,6 +31606,69 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     const bool hasSelection = !selectionRanges.isEmpty();
     const bool hasCopiedItems = !QKeyMapper::s_CopiedMappingData.isEmpty();
     QTableWidgetItem *current = currentItem();
+    const int currentColumn = current ? current->column() : -1;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyMappingDataTableWidget::contextMenuEvent]" << "Current Column:" << currentColumn
+            << ", Has Selection:" << hasSelection
+            << ", Has Copied Items:" << hasCopiedItems;
+#endif
+
+    if (hasSelection && current
+        && (currentColumn == DISABLED_COLUMN || currentColumn == BURST_MODE_COLUMN || currentColumn == LOCK_COLUMN)) {
+
+        const QList<int> visibleSelectedRows = collectVisibleSelectedRows(this);
+        if (visibleSelectedRows.isEmpty()) {
+            event->accept();
+            return;
+        }
+
+        QMenu stateContextMenu(this);
+        if (currentColumn == DISABLED_COLUMN) {
+            QAction *disableAction = stateContextMenu.addAction(QObject::tr("Disable"));
+            connect(disableAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
+                applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, DISABLED_COLUMN, true);
+            });
+
+            QAction *enableAction = stateContextMenu.addAction(QObject::tr("Enable"));
+            connect(enableAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
+                if (hasDuplicateExclusiveGroupInRows(getCurrentKeyMappingDataList(), visibleSelectedRows)) {
+                    keymapper->showWarningPopup(tr("The current selection contains mappings with the same OriginalKey.\n"
+                                                   "Only the last mapping in each OriginalKey group will be enabled."));
+                }
+
+                applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, DISABLED_COLUMN, false);
+            });
+        }
+        else if (currentColumn == BURST_MODE_COLUMN) {
+            QAction *enableBurstAction = stateContextMenu.addAction(QObject::tr("Burst Enable"));
+            connect(enableBurstAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
+                applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, BURST_MODE_COLUMN, true);
+            });
+
+            QAction *disableBurstAction = stateContextMenu.addAction(QObject::tr("Burst Disable"));
+            connect(disableBurstAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
+                applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, BURST_MODE_COLUMN, false);
+            });
+        }
+        else if (currentColumn == LOCK_COLUMN) {
+            QAction *enableLockAction = stateContextMenu.addAction(QObject::tr("Lock Enable"));
+            connect(enableLockAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
+                applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, LOCK_COLUMN, true);
+            });
+
+            QAction *disableLockAction = stateContextMenu.addAction(QObject::tr("Lock Disable"));
+            connect(disableLockAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
+                applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, LOCK_COLUMN, false);
+            });
+        }
+
+        if (!stateContextMenu.actions().isEmpty()) {
+            stateContextMenu.exec(event->globalPos());
+            event->accept();
+            return;
+        }
+    }
 
     const int currentRow = this->currentRow();
     bool hasValidCurrentSelectedRow = false;
