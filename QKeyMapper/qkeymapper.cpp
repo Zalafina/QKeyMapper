@@ -11,6 +11,89 @@ namespace {
 
 QString normalizeOriginalKeyForExclusiveGroup(const QString &originalKey);
 
+class FloatingButtonWidget final : public QPushButton
+{
+public:
+    explicit FloatingButtonWidget(QWidget *parent = Q_NULLPTR)
+        : QPushButton(parent)
+    {
+        setFocusPolicy(Qt::NoFocus);
+        setAttribute(Qt::WA_ShowWithoutActivating, true);
+        setAttribute(Qt::WA_TranslucentBackground, true);
+        setAttribute(Qt::WA_NoSystemBackground, true);
+    }
+
+protected:
+    bool event(QEvent *event) override
+    {
+        const bool handled = QPushButton::event(event);
+
+        if (event->type() == QEvent::WinIdChange) {
+            applyNoActivateWindowStyle();
+        }
+
+        return handled;
+    }
+
+    void showEvent(QShowEvent *event) override
+    {
+        QPushButton::showEvent(event);
+        applyNoActivateWindowStyle();
+    }
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override
+#else
+    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override
+#endif
+    {
+        Q_UNUSED(eventType);
+
+        MSG *msg = static_cast<MSG*>(message);
+        if (msg != Q_NULLPTR && msg->message == WM_MOUSEACTIVATE) {
+            if (result != Q_NULLPTR) {
+                *result = MA_NOACTIVATE;
+            }
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+            qDebug().nospace().noquote() << "[FloatingButtonWidget] WM_MOUSEACTIVATE blocked hwnd="
+                                         << reinterpret_cast<quintptr>(msg->hwnd);
+#endif
+            return true;
+        }
+
+        return QPushButton::nativeEvent(eventType, message, result);
+    }
+
+private:
+    void applyNoActivateWindowStyle()
+    {
+        HWND hwnd = reinterpret_cast<HWND>(winId());
+        if (hwnd == Q_NULLPTR) {
+            return;
+        }
+
+        LONG_PTR exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+        const LONG_PTR newExStyle = (exStyle | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW;
+        if (newExStyle != exStyle) {
+            SetWindowLongPtr(hwnd, GWL_EXSTYLE, newExStyle);
+        }
+
+        SetWindowPos(hwnd,
+                     Q_NULLPTR,
+                     0,
+                     0,
+                     0,
+                     0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+        qDebug().nospace().noquote() << "[FloatingButtonWidget] applyNoActivateWindowStyle hwnd="
+                                     << reinterpret_cast<quintptr>(hwnd)
+                                     << " exStyle=0x" << QString::number(static_cast<qulonglong>(newExStyle), 16);
+#endif
+    }
+};
+
 class CategoryFilterPanelWidget final : public QWidget
 {
 public:
@@ -8962,7 +9045,8 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
     if (QPushButton *floatingButton = qobject_cast<QPushButton*>(object)) {
         const int rowindex = floatingButton->property("FloatingButtonRow").toInt();
         if (m_FloatingButtonMap.value(rowindex, Q_NULLPTR) == floatingButton) {
-            if (event->type() == QEvent::MouseButtonPress) {
+            if (event->type() == QEvent::MouseButtonPress
+                || event->type() == QEvent::MouseButtonDblClick) {
                 QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
 
                 if (mouseEvent->button() == Qt::RightButton) {
@@ -9057,6 +9141,11 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                                               Q_ARG(bool, true));
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[FloatingButtonClick]" << " KEY_DOWN Row[" << rowindex << "] OriKey[" << keymapdata.Original_Key << "]";
+#if defined(FBUTTON_VERBOSE_LOG)
+                    if (event->type() == QEvent::MouseButtonDblClick) {
+                        qDebug().nospace().noquote() << "[FloatingButtonClick]" << " MouseButtonDblClick treated as KEY_DOWN Row[" << rowindex << "] OriKey[" << keymapdata.Original_Key << "]";
+                    }
+#endif
 #endif
                     floatingButton->setDown(true);
                     return true;
@@ -25902,7 +25991,7 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
 
     QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
     if (button == Q_NULLPTR) {
-        button = new QPushButton(Q_NULLPTR);
+        button = new FloatingButtonWidget(Q_NULLPTR);
         button->setFocusPolicy(Qt::NoFocus);
         button->setAttribute(Qt::WA_ShowWithoutActivating, true);
         button->setAttribute(Qt::WA_TranslucentBackground, true);
@@ -25915,7 +26004,7 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
         button->setProperty("FloatingButtonRow", rowindex);
     }
 
-    Qt::WindowFlags flags = Qt::Tool | Qt::FramelessWindowHint;
+    Qt::WindowFlags flags = Qt::Tool | Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus;
     if (keymapdata.FloatingButton_AlwaysOnTop) {
         flags |= Qt::WindowStaysOnTopHint;
     }

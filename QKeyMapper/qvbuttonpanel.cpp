@@ -36,7 +36,7 @@ QString makeVButtonStyleSheet(const QColor &buttonColor, const QColor &textColor
 } // namespace
 
 QVButtonPanel::QVButtonPanel(QWidget *parent)
-    : QWidget(parent, Qt::Tool | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint)
+    : QWidget(parent, Qt::Tool | Qt::FramelessWindowHint | Qt::WindowDoesNotAcceptFocus | Qt::WindowStaysOnTopHint)
 {
     setAttribute(Qt::WA_ShowWithoutActivating);
     setAttribute(Qt::WA_TranslucentBackground, true);  // Required for paintEvent rounded corners
