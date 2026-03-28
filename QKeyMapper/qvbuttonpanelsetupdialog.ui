@@ -152,10 +152,10 @@
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
    <property name="minimum">
-    <number>30</number>
+    <number>4</number>
    </property>
    <property name="maximum">
-    <number>400</number>
+    <number>640</number>
    </property>
    <property name="value">
     <number>80</number>
@@ -234,10 +234,10 @@
     <enum>Qt::FocusPolicy::ClickFocus</enum>
    </property>
    <property name="minimum">
-    <number>16</number>
+    <number>4</number>
    </property>
    <property name="maximum">
-    <number>200</number>
+    <number>640</number>
    </property>
    <property name="value">
     <number>30</number>

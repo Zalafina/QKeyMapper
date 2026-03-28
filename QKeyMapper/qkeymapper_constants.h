@@ -431,12 +431,12 @@ namespace QKeyMapperConstants {
     inline constexpr bool FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT = false;
     inline constexpr bool FLOATINGBUTTON_ALWAYSONTOP_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_DRAGTOMOVE_DEFAULT = true;
-    inline constexpr int FLOATINGBUTTON_WIDTH_MIN = 24;
+    inline constexpr int FLOATINGBUTTON_WIDTH_MIN = 4;
     inline constexpr int FLOATINGBUTTON_WIDTH_MAX = 640;
     inline constexpr int FLOATINGBUTTON_WIDTH_DEFAULT = 80;
-    inline constexpr int FLOATINGBUTTON_HEIGHT_MIN = 16;
+    inline constexpr int FLOATINGBUTTON_HEIGHT_MIN = 4;
     inline constexpr int FLOATINGBUTTON_HEIGHT_MAX = 640;
-    inline constexpr int FLOATINGBUTTON_HEIGHT_DEFAULT = 32;
+    inline constexpr int FLOATINGBUTTON_HEIGHT_DEFAULT = 30;
     inline constexpr int FLOATINGBUTTON_FONT_SIZE_MIN = 1;
     inline constexpr int FLOATINGBUTTON_FONT_SIZE_MAX = 72;
     inline constexpr int FLOATINGBUTTON_FONT_SIZE_DEFAULT = 13;
