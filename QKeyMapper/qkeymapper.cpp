@@ -101,13 +101,26 @@ public:
 
     QSize sizeHint() const override
     {
+        QSize hint = QWidget::sizeHint();
+        if (layout()) {
+            hint = hint.expandedTo(layout()->sizeHint());
+        }
+
+        if (minimumWidth() > 0 || minimumHeight() > 0) {
+            hint = hint.expandedTo(QSize(minimumWidth(), minimumHeight()));
+        }
+
         const QSize s = size();
-        return (s.isValid() && s.width() > 0 && s.height() > 0) ? s : QWidget::sizeHint();
+        return (s.isValid() && s.width() > 0 && s.height() > 0) ? s.expandedTo(hint) : hint;
     }
 
     QSize minimumSizeHint() const override
     {
-        return sizeHint();
+        QSize hint = sizeHint();
+        if (layout()) {
+            hint = hint.expandedTo(layout()->minimumSize());
+        }
+        return hint;
     }
 };
 
@@ -131,6 +144,63 @@ static void refreshMenuWidgetActionGeometry(QMenu *menu, QWidgetAction *action, 
     menu->updateGeometry();
     menu->ensurePolished();
     menu->adjustSize();
+}
+
+static void refreshMenuWidgetPanelGeometry(QMenu *menu, QWidget *panel, int targetMenuWidth = 0)
+{
+    if (!menu || !panel) {
+        return;
+    }
+
+    // Keep runtime geometry updates lightweight so the embedded editor keeps focus.
+    if (QLayout *panelLayout = panel->layout()) {
+        panelLayout->activate();
+    }
+    panel->updateGeometry();
+    panel->adjustSize();
+
+    menu->updateGeometry();
+    menu->ensurePolished();
+    if (QLayout *menuLayout = menu->layout()) {
+        menuLayout->activate();
+    }
+
+    if (menu->isVisible()) {
+        const QSize menuSizeHint = menu->sizeHint();
+        const int desiredMenuWidth = targetMenuWidth > 0 ? targetMenuWidth : menuSizeHint.width();
+        const int desiredMenuHeight = qMax(menu->height(), menuSizeHint.height());
+        if (menu->size() != QSize(desiredMenuWidth, desiredMenuHeight)) {
+            menu->resize(desiredMenuWidth, desiredMenuHeight);
+        }
+        menu->update();
+    }
+    else {
+        if (targetMenuWidth > 0) {
+            menu->resize(targetMenuWidth, qMax(menu->height(), menu->sizeHint().height()));
+        }
+        menu->adjustSize();
+    }
+}
+
+static void activateTextInputWidget(QWidget *widget)
+{
+    if (!widget) {
+        return;
+    }
+
+    widget->setAttribute(Qt::WA_InputMethodEnabled, true);
+    widget->setFocusPolicy(Qt::StrongFocus);
+
+    if (QWidget *window = widget->window()) {
+        window->setAttribute(Qt::WA_InputMethodEnabled, true);
+        window->activateWindow();
+    }
+
+    QEvent closeInputPanelEvent(QEvent::CloseSoftwareInputPanel);
+    QApplication::sendEvent(widget, &closeInputPanelEvent);
+
+    QEvent requestInputPanelEvent(QEvent::RequestSoftwareInputPanel);
+    QApplication::sendEvent(widget, &requestInputPanelEvent);
 }
 
 static QList<int> collectVisibleSelectedRows(const QTableWidget *table)
@@ -276,6 +346,130 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
     }
 
     mappingDataTable->reapplyRowVisibility();
+    return changedCount;
+}
+
+static QStringList collectSortedCategoryValues(const KeyMappingDataTableWidget *mappingDataTable)
+{
+    QStringList categoryValues;
+    if (!mappingDataTable) {
+        return categoryValues;
+    }
+
+    for (int row = 0; row < mappingDataTable->rowCount(); ++row) {
+        QTableWidgetItem *categoryItem = mappingDataTable->item(row, CATEGORY_COLUMN);
+        const QString category = categoryItem ? categoryItem->text().trimmed() : QString();
+        if (category.isEmpty()) {
+            continue;
+        }
+        if (!categoryValues.contains(category)) {
+            categoryValues.append(category);
+        }
+    }
+
+    categoryValues.sort(Qt::CaseInsensitive);
+    categoryValues.append(QString());
+    return categoryValues;
+}
+
+static QSet<QString> collectAvailableCategoryFilterTokens(const KeyMappingDataTableWidget *mappingDataTable,
+                                                         bool *hasEmptyCategoriesOut = Q_NULLPTR,
+                                                         bool *hasNonEmptyCategoriesOut = Q_NULLPTR)
+{
+    QSet<QString> categoryTokens;
+    if (!mappingDataTable) {
+        if (hasEmptyCategoriesOut) {
+            *hasEmptyCategoriesOut = false;
+        }
+        if (hasNonEmptyCategoriesOut) {
+            *hasNonEmptyCategoriesOut = false;
+        }
+        return categoryTokens;
+    }
+
+    bool hasNonEmptyCategories = false;
+    bool hasEmptyCategories = false;
+
+    for (int row = 0; row < mappingDataTable->rowCount(); ++row) {
+        QTableWidgetItem *categoryItem = mappingDataTable->item(row, CATEGORY_COLUMN);
+        const QString category = categoryItem ? categoryItem->text().trimmed() : QString();
+
+        if (category.isEmpty()) {
+            hasEmptyCategories = true;
+        }
+        else {
+            hasNonEmptyCategories = true;
+            categoryTokens.insert(category);
+        }
+    }
+
+    if (hasEmptyCategories && hasNonEmptyCategories) {
+        categoryTokens.insert(QString());
+    }
+
+    if (hasEmptyCategoriesOut) {
+        *hasEmptyCategoriesOut = hasEmptyCategories;
+    }
+    if (hasNonEmptyCategoriesOut) {
+        *hasNonEmptyCategoriesOut = hasNonEmptyCategories;
+    }
+
+    return categoryTokens;
+}
+
+static void updateCategoryTableItemText(KeyMappingDataTableWidget *mappingDataTable, int row, const QString &category)
+{
+    if (!mappingDataTable) {
+        return;
+    }
+
+    QTableWidgetItem *categoryItem = mappingDataTable->item(row, CATEGORY_COLUMN);
+    if (categoryItem) {
+        categoryItem->setText(category);
+        categoryItem->setToolTip(category);
+        categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
+    }
+    else {
+        categoryItem = new QTableWidgetItem(category);
+        categoryItem->setToolTip(category);
+        categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
+        mappingDataTable->setItem(row, CATEGORY_COLUMN, categoryItem);
+    }
+}
+
+static int applyBatchCategoryChange(QKeyMapper *keymapper, KeyMappingDataTableWidget *mappingDataTable, const QList<int> &rows, const QString &category)
+{
+    if (!keymapper || !mappingDataTable || rows.isEmpty()) {
+        return 0;
+    }
+
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (!mappingDataList) {
+        return 0;
+    }
+
+    const QString normalizedCategory = category.trimmed();
+    QSignalBlocker blocker(mappingDataTable);
+    int changedCount = 0;
+
+    for (int row : rows) {
+        if (row < 0 || row >= mappingDataList->size()) {
+            continue;
+        }
+        if (mappingDataList->at(row).Category == normalizedCategory) {
+            continue;
+        }
+
+        (*mappingDataList)[row].Category = normalizedCategory;
+        updateCategoryTableItemText(mappingDataTable, row, normalizedCategory);
+        changedCount += 1;
+    }
+
+    if (changedCount > 0) {
+        keymapper->resizeKeyMappingDataTableColumnWidth(mappingDataTable);
+        keymapper->updateCategoryFilterComboBox();
+    }
+
     return changedCount;
 }
 
@@ -22072,7 +22266,38 @@ bool QKeyMapper::isMappingDataTableFiltered()
 
 void QKeyMapper::updateCategoryFilterComboBox(void)
 {
-    // Repurposed: mark category filter menu dirty and refresh toolbutton summary.
+    static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
+
+    // Mark category filter menu dirty, then re-apply current filters against the
+    // latest category set so row visibility and summary stay in sync after edits.
+    m_CategoryFilterDisplayOrder.clear();
+
+    if (m_KeyMappingDataTable) {
+        QSet<QString> filters = m_KeyMappingDataTable->m_CategoryFilters;
+        const QSet<QString> previousFilters = filters;
+        const bool hadExplicitFilters = !previousFilters.isEmpty() && !previousFilters.contains(kNoneToken);
+
+        if (hadExplicitFilters) {
+            bool hasEmptyCategories = false;
+            bool hasNonEmptyCategories = false;
+            filters.intersect(collectAvailableCategoryFilterTokens(m_KeyMappingDataTable,
+                                                                  &hasEmptyCategories,
+                                                                  &hasNonEmptyCategories));
+
+            // Keep the existing blank-only behavior aligned with All when every row
+            // is blank and the menu intentionally omits a separate Blank option.
+            if (filters.isEmpty() && previousFilters.contains(QString()) && hasEmptyCategories && !hasNonEmptyCategories) {
+                filters.clear();
+            }
+            else if (filters.isEmpty()) {
+                filters.clear();
+                filters.insert(kNoneToken);
+            }
+        }
+
+        m_KeyMappingDataTable->setCategoryFilters(filters);
+    }
+
     updateCategoryFilterToolButtonSummaryForCurrentTab();
 }
 
@@ -31966,6 +32191,20 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     QTableWidgetItem *current = currentItem();
     const int currentColumn = current ? current->column() : -1;
 
+    const auto canEditCurrentItem = [this, &selectionRanges, current]() -> bool {
+        if (selectionRanges.isEmpty() || !current) {
+            return false;
+        }
+
+        const int r = current->row();
+        const int c = current->column();
+        if (r < 0 || r >= rowCount() || c < 0 || c >= columnCount()) {
+            return false;
+        }
+
+        return current->flags() & Qt::ItemIsEditable;
+    };
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyMappingDataTableWidget::contextMenuEvent]" << "Current Column:" << currentColumn
             << ", Has Selection:" << hasSelection
@@ -31973,7 +32212,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
 #endif
 
     if (hasSelection && current
-        && (currentColumn == DISABLED_COLUMN || currentColumn == BURST_MODE_COLUMN || currentColumn == LOCK_COLUMN || currentColumn == FLOATING_COLUMN)) {
+        && (currentColumn == DISABLED_COLUMN || currentColumn == BURST_MODE_COLUMN || currentColumn == LOCK_COLUMN || currentColumn == FLOATING_COLUMN || currentColumn == CATEGORY_COLUMN)) {
 
         const QList<int> visibleSelectedRows = collectVisibleSelectedRows(this);
         if (visibleSelectedRows.isEmpty()) {
@@ -31982,7 +32221,199 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         }
 
         QMenu stateContextMenu(this);
-        if (currentColumn == DISABLED_COLUMN) {
+        if (currentColumn == CATEGORY_COLUMN) {
+            QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+            QString commonCategory;
+            bool hasCommonCategory = true;
+            bool hasAnySelectedCategory = false;
+            QSet<QString> selectedCategoryValues;
+            if (mappingDataList && !visibleSelectedRows.isEmpty()) {
+                for (int row : visibleSelectedRows) {
+                    if (row < 0 || row >= mappingDataList->size()) {
+                        continue;
+                    }
+
+                    const QString &rowCategory = mappingDataList->at(row).Category;
+                    selectedCategoryValues.insert(rowCategory);
+
+                    if (!hasAnySelectedCategory) {
+                        commonCategory = rowCategory;
+                        hasAnySelectedCategory = true;
+                    }
+                    else if (rowCategory != commonCategory) {
+                        hasCommonCategory = false;
+                    }
+                }
+            }
+
+            if (!hasAnySelectedCategory) {
+                hasCommonCategory = false;
+            }
+
+            QMenu *selectCategoryMenu = stateContextMenu.addMenu(QObject::tr("Select Category"));
+            const QStringList categoryValues = collectSortedCategoryValues(this);
+            for (const QString &categoryValue : categoryValues) {
+                const bool isBlankCategory = categoryValue.isEmpty();
+                QAction *categoryAction = selectCategoryMenu->addAction(isBlankCategory ? QObject::tr("Blank") : categoryValue);
+                categoryAction->setCheckable(true);
+                categoryAction->setChecked(selectedCategoryValues.contains(categoryValue));
+                connect(categoryAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows, categoryValue]() {
+                    applyBatchCategoryChange(keymapper, this, visibleSelectedRows, categoryValue);
+                });
+            }
+
+            QMenu *inputCategoryMenu = stateContextMenu.addMenu(QObject::tr("Input Category"));
+            QWidgetAction *inputCategoryAction = new QWidgetAction(inputCategoryMenu);
+            CategoryFilterPanelWidget *inputCategoryPanel = new CategoryFilterPanelWidget(inputCategoryMenu);
+            constexpr int kInputCategoryLineEditMinWidth = 150;
+            constexpr int kInputCategoryLineEditMaxWidth = 360;
+            constexpr int kInputCategoryControlHeight = 22;
+            constexpr int kInputCategoryButtonMinWidth = 64;
+            constexpr int kInputCategoryLayoutHorizontalMargin = 8;
+            constexpr int kInputCategoryLayoutVerticalMargin = 8;
+            constexpr int kInputCategoryControlSpacing = 6;
+
+            const int kInputCategoryPanelMinHeight = kInputCategoryControlHeight + (kInputCategoryLayoutVerticalMargin * 2);
+
+            inputCategoryPanel->setMinimumWidth(kInputCategoryLineEditMinWidth + kInputCategoryButtonMinWidth + (kInputCategoryLayoutHorizontalMargin * 2) + kInputCategoryControlSpacing);
+            inputCategoryPanel->setMaximumWidth(kInputCategoryLineEditMaxWidth + kInputCategoryButtonMinWidth + (kInputCategoryLayoutHorizontalMargin * 2) + kInputCategoryControlSpacing);
+            inputCategoryPanel->setMinimumHeight(kInputCategoryPanelMinHeight);
+            inputCategoryPanel->setAttribute(Qt::WA_InputMethodEnabled, true);
+            inputCategoryPanel->setFocusPolicy(Qt::StrongFocus);
+
+            QHBoxLayout *inputCategoryLayout = new QHBoxLayout(inputCategoryPanel);
+            inputCategoryLayout->setContentsMargins(kInputCategoryLayoutHorizontalMargin,
+                                                    kInputCategoryLayoutVerticalMargin,
+                                                    kInputCategoryLayoutHorizontalMargin,
+                                                    kInputCategoryLayoutVerticalMargin);
+            inputCategoryLayout->setSpacing(kInputCategoryControlSpacing);
+
+            QLineEdit *inputCategoryLineEdit = new QLineEdit(inputCategoryPanel);
+            inputCategoryLineEdit->setClearButtonEnabled(true);
+            inputCategoryLineEdit->setPlaceholderText(QObject::tr("Input category"));
+            inputCategoryLineEdit->setMinimumWidth(kInputCategoryLineEditMinWidth);
+            inputCategoryLineEdit->setMaximumWidth(kInputCategoryLineEditMaxWidth);
+            inputCategoryLineEdit->setFixedHeight(kInputCategoryControlHeight);
+            inputCategoryLineEdit->setAttribute(Qt::WA_InputMethodEnabled, true);
+            inputCategoryLineEdit->setFocusPolicy(Qt::StrongFocus);
+            if (hasCommonCategory && !commonCategory.trimmed().isEmpty()) {
+                inputCategoryLineEdit->setText(commonCategory);
+            }
+
+            QPushButton *applyCategoryButton = new QPushButton(QObject::tr("Apply"), inputCategoryPanel);
+            applyCategoryButton->setMinimumWidth(kInputCategoryButtonMinWidth);
+            applyCategoryButton->setFixedHeight(kInputCategoryControlHeight);
+            applyCategoryButton->setEnabled(!inputCategoryLineEdit->text().trimmed().isEmpty());
+
+            inputCategoryPanel->setFocusProxy(inputCategoryLineEdit);
+            inputCategoryMenu->setFocusProxy(inputCategoryLineEdit);
+            inputCategoryMenu->setAttribute(Qt::WA_InputMethodEnabled, true);
+
+            const auto updateInputCategoryPanelGeometry = [inputCategoryMenu, inputCategoryAction, inputCategoryPanel, inputCategoryLayout, inputCategoryLineEdit, applyCategoryButton,
+                                                           kInputCategoryLineEditMinWidth, kInputCategoryLineEditMaxWidth,
+                                                           kInputCategoryButtonMinWidth, kInputCategoryPanelMinHeight,
+                                                           kInputCategoryLayoutHorizontalMargin, kInputCategoryControlSpacing](bool rebuildActionGeometry) {
+                const QString widthText = inputCategoryLineEdit->text().isEmpty()
+                                          ? inputCategoryLineEdit->placeholderText()
+                                          : inputCategoryLineEdit->text();
+                const int clearButtonWidth = (inputCategoryLineEdit->isClearButtonEnabled() && !inputCategoryLineEdit->text().isEmpty())
+                                             ? (inputCategoryLineEdit->sizeHint().height() + 4)
+                                             : 0;
+                const int textWidth = inputCategoryLineEdit->fontMetrics().horizontalAdvance(widthText);
+                const int targetLineEditWidth = qBound(kInputCategoryLineEditMinWidth,
+                                                       textWidth + clearButtonWidth + 28,
+                                                       kInputCategoryLineEditMaxWidth);
+
+                const QMargins margins = inputCategoryLayout->contentsMargins();
+                const int buttonWidth = qMax(kInputCategoryButtonMinWidth, applyCategoryButton->sizeHint().width());
+                const int targetPanelMinWidth = kInputCategoryLineEditMinWidth + buttonWidth + (kInputCategoryLayoutHorizontalMargin * 2) + kInputCategoryControlSpacing;
+                const int targetPanelMaxWidth = kInputCategoryLineEditMaxWidth + buttonWidth + (kInputCategoryLayoutHorizontalMargin * 2) + kInputCategoryControlSpacing;
+                const int targetPanelWidth = qBound(targetPanelMinWidth,
+                                                    targetLineEditWidth + buttonWidth + margins.left() + margins.right() + kInputCategoryControlSpacing,
+                                                    targetPanelMaxWidth);
+                const int targetPanelHeight = qMax(kInputCategoryPanelMinHeight, inputCategoryLayout->sizeHint().height());
+                int targetMenuWidth = 0;
+                if (!rebuildActionGeometry && inputCategoryMenu->isVisible()) {
+                    const QRect actionRect = inputCategoryMenu->actionGeometry(inputCategoryAction);
+                    const int menuHorizontalPadding = (actionRect.width() > 0)
+                                                      ? qMax(0, inputCategoryMenu->width() - actionRect.width())
+                                                      : (inputCategoryMenu->contentsMargins().left() + inputCategoryMenu->contentsMargins().right());
+                    targetMenuWidth = targetPanelWidth + menuHorizontalPadding;
+                }
+
+                inputCategoryLineEdit->setFixedWidth(targetLineEditWidth);
+                applyCategoryButton->setFixedWidth(buttonWidth);
+                inputCategoryPanel->setFixedSize(targetPanelWidth, targetPanelHeight);
+
+                if (rebuildActionGeometry) {
+                    refreshMenuWidgetActionGeometry(inputCategoryMenu, inputCategoryAction, inputCategoryPanel);
+                }
+                else {
+                    refreshMenuWidgetPanelGeometry(inputCategoryMenu, inputCategoryPanel, targetMenuWidth);
+                }
+            };
+
+            inputCategoryLayout->addWidget(inputCategoryLineEdit, 1);
+            inputCategoryLayout->addWidget(applyCategoryButton, 0);
+
+            inputCategoryAction->setDefaultWidget(inputCategoryPanel);
+            inputCategoryMenu->addAction(inputCategoryAction);
+
+            updateInputCategoryPanelGeometry(false);
+
+            QObject::connect(inputCategoryMenu, &QMenu::aboutToShow, this, [inputCategoryLineEdit, updateInputCategoryPanelGeometry]() {
+                updateInputCategoryPanelGeometry(true);
+                QTimer::singleShot(0, inputCategoryLineEdit, [inputCategoryLineEdit]() {
+                    inputCategoryLineEdit->setFocus(Qt::OtherFocusReason);
+                    inputCategoryLineEdit->selectAll();
+                    activateTextInputWidget(inputCategoryLineEdit);
+                });
+            });
+
+            QObject::connect(inputCategoryLineEdit, &QLineEdit::textChanged, inputCategoryPanel, [applyCategoryButton, updateInputCategoryPanelGeometry](const QString &text) {
+                applyCategoryButton->setEnabled(!text.trimmed().isEmpty());
+                updateInputCategoryPanelGeometry(false);
+            });
+
+            const auto applyInputCategory = [keymapper, this, visibleSelectedRows, inputCategoryLineEdit, inputCategoryMenu, &stateContextMenu]() {
+                const QString inputCategory = inputCategoryLineEdit->text().trimmed();
+                if (inputCategory.isEmpty()) {
+                    return;
+                }
+
+                applyBatchCategoryChange(keymapper, this, visibleSelectedRows, inputCategory);
+
+                inputCategoryMenu->close();
+                stateContextMenu.close();
+            };
+
+            QObject::connect(applyCategoryButton, &QPushButton::clicked, this, applyInputCategory);
+            QObject::connect(inputCategoryLineEdit, &QLineEdit::returnPressed, this, applyInputCategory);
+
+            if (canEditCurrentItem()) {
+                stateContextMenu.addSeparator();
+                QAction *editAction = stateContextMenu.addAction(QObject::tr("Edit"));
+                connect(editAction, &QAction::triggered, this, [this]() {
+                    const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+                    QTableWidgetItem *cur = currentItem();
+                    if (ranges.isEmpty() || !cur) {
+                        return;
+                    }
+
+                    const int r = cur->row();
+                    const int c = cur->column();
+                    const bool inBounds = (r >= 0 && r < rowCount() && c >= 0 && c < columnCount());
+                    const bool editable = (cur->flags() & Qt::ItemIsEditable);
+                    if (!inBounds || !editable) {
+                        return;
+                    }
+
+                    setCurrentCell(r, c, QItemSelectionModel::NoUpdate);
+                    editItem(cur);
+                });
+            }
+        }
+        else if (currentColumn == DISABLED_COLUMN) {
             QAction *disableAction = stateContextMenu.addAction(QObject::tr("Disable"));
             connect(disableAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
                 applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, DISABLED_COLUMN, true);
@@ -32049,20 +32480,6 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             }
         }
     }
-
-    const auto canEditCurrentItem = [this, &selectionRanges, current]() -> bool {
-        if (selectionRanges.isEmpty() || !current) {
-            return false;
-        }
-
-        const int r = current->row();
-        const int c = current->column();
-        if (r < 0 || r >= rowCount() || c < 0 || c >= columnCount()) {
-            return false;
-        }
-
-        return current->flags() & Qt::ItemIsEditable;
-    };
 
     QMenu contextMenu(this);
 
