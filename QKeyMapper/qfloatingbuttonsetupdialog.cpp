@@ -230,6 +230,11 @@ int QFloatingButtonSetupDialog::getItemRow() const
     return m_ItemRow;
 }
 
+void QFloatingButtonSetupDialog::refreshFromCurrentItem()
+{
+    loadFromCurrentItem();
+}
+
 bool QFloatingButtonSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {

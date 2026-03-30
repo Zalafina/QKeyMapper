@@ -189,6 +189,23 @@ static QList<MAP_KEYDATA> *getCurrentKeyMappingDataList()
     return QKeyMapper::KeyMappingDataList;
 }
 
+static void applyFloatingButtonRuntimeState(QKeyMapper *keymapper, int row)
+{
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (!keymapper || !mappingDataList || row < 0 || row >= mappingDataList->size()) {
+        return;
+    }
+
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(row);
+
+    if (keymapdata.FloatingButton_Enable) {
+        keymapper->showFloatingButtonStart(row, QString());
+    }
+    else {
+        keymapper->showFloatingButtonStop(row, QString());
+    }
+}
+
 static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTableWidget *mappingDataTable, const QList<int> &rows, int column, bool checked)
 {
     if (!keymapper || !mappingDataTable || rows.isEmpty()) {
@@ -204,15 +221,22 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
     QSignalBlocker blocker(mappingDataTable);
     int changedCount = 0;
 
-    if (column == BURST_MODE_COLUMN || column == LOCK_COLUMN) {
+    if (column == BURST_MODE_COLUMN || column == LOCK_COLUMN || column == FLOATING_COLUMN) {
         for (int row : rows) {
             if (row < 0 || row >= mappingDataList->size()) {
                 continue;
             }
 
-            bool *state = (column == BURST_MODE_COLUMN)
-                ? &(*mappingDataList)[row].Burst
-                : &(*mappingDataList)[row].Lock;
+            bool *state = Q_NULLPTR;
+            if (column == BURST_MODE_COLUMN) {
+                state = &(*mappingDataList)[row].Burst;
+            }
+            else if (column == LOCK_COLUMN) {
+                state = &(*mappingDataList)[row].Lock;
+            }
+            else {
+                state = &(*mappingDataList)[row].FloatingButton_Enable;
+            }
             if (*state == checked) {
                 continue;
             }
@@ -220,6 +244,9 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
             *state = checked;
             emit keymapper->keyMappingTableItemCheckStateChanged_Signal(row, column, checked);
             keymapper->updateTableWidgetItem(tabIndex, row, column);
+            if (column == FLOATING_COLUMN) {
+                applyFloatingButtonRuntimeState(keymapper, row);
+            }
             changedCount += 1;
         }
 
@@ -573,12 +600,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->processListButton->setStyle(windowsStyle);
     ui->showNotesButton->setStyle(windowsStyle);
     ui->hideDisabledButton->setStyle(windowsStyle);
+    ui->showFloatingButton->setStyle(windowsStyle);
     ui->showCategoryButton->setStyle(windowsStyle);
 
     // Initialize checkable button state
     ui->processListButton->setChecked(true);
     ui->showNotesButton->setChecked(false);
     ui->hideDisabledButton->setChecked(false);
+    ui->showFloatingButton->setChecked(false);
     ui->showCategoryButton->setChecked(false);
 
     initProcessInfoTable();
@@ -9610,6 +9639,7 @@ void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
 
         clearLockStatusDisplay();
         forceSwitchKeyMappingTabWidgetIndex(tabindex_toswitch);
+        updateFloatingColumnByShowFloatingState();
         updateCategoryFilterByShowCategoryState();
 
         if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
@@ -9645,6 +9675,7 @@ void QKeyMapper::MappingTableSwitchByTabName(const QString &tabName, bool rememb
 
         clearLockStatusDisplay();
         forceSwitchKeyMappingTabWidgetIndex(tabindex_toswitch);
+        updateFloatingColumnByShowFloatingState();
         updateCategoryFilterByShowCategoryState();
 
         if (m_KeyMapStatus == KEYMAP_MAPPING_MATCHED
@@ -9738,6 +9769,9 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTableWidget->setFocusPolicy(Qt::ClickFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
 
+    // Initialize floating column visibility based on current button state
+    KeyMappingTableWidget->setFloatingColumnVisible(ui->showFloatingButton->isChecked());
+
     // Initialize category column visibility based on current button state
     KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
 
@@ -9764,6 +9798,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
                                                                     << tr("Disable")
                                                                     << tr("Burst")
                                                                     << tr("Lock")
+                                                                    << tr("Float")
                                                                     << tr("Category"));
     QFont customFont(FONTNAME_ENGLISH, 9);
     KeyMappingTableWidget->setFont(customFont);
@@ -9857,6 +9892,9 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     KeyMappingTableWidget->setFocusPolicy(Qt::ClickFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
 
+    // Initialize floating column visibility based on current button state
+    KeyMappingTableWidget->setFloatingColumnVisible(ui->showFloatingButton->isChecked());
+
     // Initialize category column visibility based on current button state
     KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
 
@@ -9883,6 +9921,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
                                                                     << tr("Disable")
                                                                     << tr("Burst")
                                                                     << tr("Lock")
+                                                                    << tr("Float")
                                                                     << tr("Category"));
     QFont customFont(FONTNAME_ENGLISH, 9);
     KeyMappingTableWidget->setFont(customFont);
@@ -10609,6 +10648,25 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) lock changed to (%s)", __func__, row, lock == true?"ON":"OFF");
+#endif
+        }
+    }
+    else if (col == FLOATING_COLUMN) {
+        bool floating = false;
+        if (m_KeyMappingDataTable->item(row, col)->checkState() == Qt::Checked) {
+            floating = true;
+        }
+        else {
+            floating = false;
+        }
+
+        if (floating != KeyMappingDataList->at(row).FloatingButton_Enable) {
+            (*KeyMappingDataList)[row].FloatingButton_Enable = floating;
+            emit keyMappingTableItemCheckStateChanged_Signal(row, col, floating);
+            applyFloatingButtonRuntimeState(this, row);
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[%s]: row(%d) floating button changed to (%s)", __func__, row, floating == true?"ON":"OFF");
 #endif
         }
     }
@@ -12185,6 +12243,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(SHOW_PROCESSLIST, ui->processListButton->isChecked());
     settingFile.setValue(SHOW_NOTES, ui->showNotesButton->isChecked());
     settingFile.setValue(HIDE_DISABLED, ui->hideDisabledButton->isChecked());
+    settingFile.setValue(SHOW_FLOATING, ui->showFloatingButton->isChecked());
     settingFile.setValue(SHOW_CATEGORYS, ui->showCategoryButton->isChecked());
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     settingFile.setValue(DISPLAY_SCALE , ui->scaleComboBox->currentIndex());
@@ -13620,6 +13679,25 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             ui->hideDisabledButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains HideDisabled, Hide Disabled Button set to Unchecked.";
+#endif
+        }
+
+        if (true == settingFile.contains(SHOW_FLOATING)){
+            bool showFloating = settingFile.value(SHOW_FLOATING).toBool();
+            if (showFloating) {
+                ui->showFloatingButton->setChecked(true);
+            }
+            else {
+                ui->showFloatingButton->setChecked(false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Show Floating Button ->" << showFloating;
+#endif
+        }
+        else {
+            ui->showFloatingButton->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowFloating, Show Floating Button set to Unchecked.";
 #endif
         }
 
@@ -17705,6 +17783,25 @@ void QKeyMapper::loadGeneralSetting()
 #endif
     }
 
+    if (true == settingFile.contains(SHOW_FLOATING)){
+        bool showFloating = settingFile.value(SHOW_FLOATING).toBool();
+        if (showFloating) {
+            ui->showFloatingButton->setChecked(true);
+        }
+        else {
+            ui->showFloatingButton->setChecked(false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadGeneralSetting]" << "Show Floating Button ->" << showFloating;
+#endif
+    }
+    else {
+        ui->showFloatingButton->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadGeneralSetting]" << "Do not contains ShowFloating, Show Floating Button set to Unchecked.";
+#endif
+    }
+
     if (true == settingFile.contains(SHOW_CATEGORYS)){
         bool showCategorys = settingFile.value(SHOW_CATEGORYS).toBool();
         if (showCategorys) {
@@ -18453,6 +18550,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->hideDisabledButton->setFont(customFont);
+    ui->showFloatingButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
@@ -18613,6 +18711,7 @@ void QKeyMapper::setControlFontChinese()
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->hideDisabledButton->setFont(customFont);
+    ui->showFloatingButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
@@ -18773,6 +18872,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->hideDisabledButton->setFont(customFont);
+    ui->showFloatingButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
@@ -19028,6 +19128,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->processListButton->setEnabled(status);
     ui->showNotesButton->setEnabled(status);
     ui->hideDisabledButton->setEnabled(status);
+    ui->showFloatingButton->setEnabled(status);
     ui->showCategoryButton->setEnabled(status);
     if (ui->categoryFilterToolButton) {
         ui->categoryFilterToolButton->setEnabled(status);
@@ -22334,6 +22435,22 @@ void QKeyMapper::updateCategoryFilterByShowCategoryState()
 #endif
 }
 
+void QKeyMapper::updateFloatingColumnByShowFloatingState()
+{
+    if (!m_KeyMappingDataTable) {
+        return;
+    }
+
+    const bool checked = ui->showFloatingButton && ui->showFloatingButton->isChecked();
+    m_KeyMappingDataTable->setFloatingColumnVisible(checked);
+    resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[updateFloatingColumnByShowFloatingState]" << "Floating button checked:" << checked;
+    qDebug() << "[updateFloatingColumnByShowFloatingState]" << "Floating column visible:" << m_KeyMappingDataTable->isFloatingColumnVisible();
+#endif
+}
+
 bool QKeyMapper::isParamTextPlainTextEditHasFocus()
 {
     return ui->sendTextPlainTextEdit->hasFocus();
@@ -22526,8 +22643,14 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     mappingDataTable->horizontalHeader()->setStretchLastSection(false);
     mappingDataTable->resizeColumnToContents(LOCK_COLUMN);
     int lock_width = mappingDataTable->columnWidth(LOCK_COLUMN);
-    mappingDataTable->horizontalHeader()->setStretchLastSection(true);
     lock_width += 4;
+
+    int floating_width = 0;
+    if (mappingDataTable->isFloatingColumnVisible()) {
+        mappingDataTable->resizeColumnToContents(FLOATING_COLUMN);
+        floating_width = mappingDataTable->columnWidth(FLOATING_COLUMN);
+        floating_width += 4;
+    }
 
     int category_width = 0;
     if (mappingDataTable->isCategoryColumnVisible()) {
@@ -22544,6 +22667,12 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
         }
         mappingDataTable->horizontalHeader()->setStretchLastSection(true);
     }
+    else if (!mappingDataTable->isFloatingColumnVisible()) {
+        mappingDataTable->horizontalHeader()->setStretchLastSection(true);
+    }
+    else {
+        mappingDataTable->horizontalHeader()->setStretchLastSection(false);
+    }
 
     if (original_key_width < original_key_width_min) {
         original_key_width = original_key_width_min;
@@ -22553,7 +22682,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 
     int mapping_key_width_min = referenceWidth/5 - 15;
-    int mapping_key_width = referenceWidth - verticalHeaderWidth - original_key_width - disabled_width - burst_mode_width - lock_width - category_width - 16;
+    int mapping_key_width = referenceWidth - verticalHeaderWidth - original_key_width - disabled_width - burst_mode_width - lock_width - floating_width - category_width - 16;
     if (mapping_key_width < mapping_key_width_min) {
         mapping_key_width = mapping_key_width_min;
     }
@@ -22563,12 +22692,15 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     mappingDataTable->setColumnWidth(DISABLED_COLUMN, disabled_width);
     mappingDataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
     mappingDataTable->setColumnWidth(LOCK_COLUMN, lock_width);
+    if (mappingDataTable->isFloatingColumnVisible()) {
+        mappingDataTable->setColumnWidth(FLOATING_COLUMN, floating_width);
+    }
     if (mappingDataTable->isCategoryColumnVisible()) {
         mappingDataTable->setColumnWidth(CATEGORY_COLUMN, category_width);
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", category_width =" << category_width;
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", floating_width =" << floating_width << ", category_width =" << category_width;
 #endif
 }
 
@@ -23904,6 +24036,17 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             lockCheckBox->setFlags(lockCheckBox->flags() & ~Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, LOCK_COLUMN    , lockCheckBox);
 
+            /* FLOATING_COLUMN */
+            QTableWidgetItem *floatingCheckBox = new QTableWidgetItem();
+            if (keymapdata.FloatingButton_Enable == true) {
+                floatingCheckBox->setCheckState(Qt::Checked);
+            }
+            else {
+                floatingCheckBox->setCheckState(Qt::Unchecked);
+            }
+            floatingCheckBox->setFlags(floatingCheckBox->flags() & ~Qt::ItemIsEditable);
+            mappingDataTable->setItem(rowindex, FLOATING_COLUMN, floatingCheckBox);
+
             /* CATEGORY_COLUMN */
             QTableWidgetItem *categoryItem = new QTableWidgetItem(keymapdata.Category);
             categoryItem->setToolTip(keymapdata.Category);
@@ -23926,6 +24069,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[refreshKeyMappingDataTable]" << "Empty mappingDataList";
 #endif
+    }
+
+    if (ui->showFloatingButton) {
+        mappingDataTable->setFloatingColumnVisible(ui->showFloatingButton->isChecked());
     }
 
     resizeKeyMappingDataTableColumnWidth(mappingDataTable);
@@ -24225,6 +24372,20 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
             }
             break;
         }
+        case FLOATING_COLUMN: {
+            QTableWidgetItem *floatingCheckBox = mappingDataTable->item(row, FLOATING_COLUMN);
+            Qt::CheckState checkState = keymapdata.FloatingButton_Enable ? Qt::Checked : Qt::Unchecked;
+            if (floatingCheckBox) {
+                floatingCheckBox->setCheckState(checkState);
+            }
+            else {
+                floatingCheckBox = new QTableWidgetItem();
+                floatingCheckBox->setCheckState(checkState);
+                floatingCheckBox->setFlags(floatingCheckBox->flags() & ~Qt::ItemIsEditable);
+                mappingDataTable->setItem(row, FLOATING_COLUMN, floatingCheckBox);
+            }
+            break;
+        }
         case CATEGORY_COLUMN: {
             QTableWidgetItem *categoryItem = mappingDataTable->item(row, CATEGORY_COLUMN);
             if (categoryItem) {
@@ -24318,6 +24479,7 @@ void QKeyMapper::refreshAllKeyMappingTabWidget()
     }
 
     updateMousePointsList();
+    updateFloatingColumnByShowFloatingState();
     updateCategoryFilterByShowCategoryState();
 
     // Rebuild VButton panel to reflect the current mapping data
@@ -24445,6 +24607,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->processListButton->setText(tr("ProcessList"));
     ui->showNotesButton->setText(tr("ShowNotes"));
     ui->hideDisabledButton->setText(tr("HideDisabled"));
+    ui->showFloatingButton->setText(tr("ShowFloating"));
     ui->showCategoryButton->setText(tr("ShowCategory"));
 
     // Update category filter controls text
@@ -24667,6 +24830,7 @@ void QKeyMapper::setUILanguage(int languageindex)
                                                                     << tr("Disable")
                                                                     << tr("Burst")
                                                                     << tr("Lock")
+                                                                    << tr("Float")
                                                                     << tr("Category"));
     }
 
@@ -24743,6 +24907,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
     ui->processListButton->setText(PROCESSLISTBUTTON_CHINESE);
     ui->showNotesButton->setText(SHOWNOTESBUTTON_CHINESE);
+    ui->showFloatingButton->setText(tr("ShowFloating"));
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_CHINESE);
     ui->processCheckBox->setText(NAMECHECKBOX_CHINESE);
     ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
@@ -24895,6 +25060,7 @@ void QKeyMapper::setUILanguage_English()
     ui->clearallButton->setText(CLEARALLBUTTON_ENGLISH);
     ui->processListButton->setText(PROCESSLISTBUTTON_ENGLISH);
     ui->showNotesButton->setText(SHOWNOTESBUTTON_ENGLISH);
+    ui->showFloatingButton->setText(tr("ShowFloating"));
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_ENGLISH);
     ui->processCheckBox->setText(NAMECHECKBOX_ENGLISH);
     ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
@@ -26160,6 +26326,7 @@ void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
     if (0 <= index && index < ui->keyMappingTabWidget->count()) {
         disconnectKeyMappingDataTableConnection();
         switchKeyMappingTabIndex(index);
+        updateFloatingColumnByShowFloatingState();
         updateCategoryFilterByShowCategoryState();
         if (m_KeyMappingDataTable && ui->hideDisabledButton) {
             m_KeyMappingDataTable->setHideDisabledFilter(ui->hideDisabledButton->isChecked());
@@ -26262,6 +26429,7 @@ void QKeyMapper::keyMappingTableItemDoubleClicked(QTableWidgetItem *item)
 
     if (columnindex == BURST_MODE_COLUMN
         || columnindex == LOCK_COLUMN
+        || columnindex == FLOATING_COLUMN
         || columnindex == DISABLED_COLUMN) {
         /* skip */
         return;
@@ -31010,24 +31178,8 @@ void QKeyMapper::onFloatingButtonSettingsApplied()
 
     const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
     syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
-
-    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
-    const bool isCurrentlyVisible = (button != Q_NULLPTR) && button->isVisible();
-    const bool allowShowInCurrentStatus = (m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL || m_KeyMapStatus == KEYMAP_MAPPING_MATCHED);
-
-    if (!keymapdata.FloatingButton_Enable || isFloatingButtonManualHidden(rowindex) || !allowShowInCurrentStatus) {
-        if (button != Q_NULLPTR) {
-            button->setDown(false);
-            button->hide();
-        }
-        return;
-    }
-
-    if (!isCurrentlyVisible) {
-        return;
-    }
-
-    showFloatingButtonStart(rowindex, QString());
+    updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, rowindex, FLOATING_COLUMN);
+    applyFloatingButtonRuntimeState(this, rowindex);
 }
 
 void QKeyMapper::onVButtonPanelSetupDialogClosed()
@@ -31589,6 +31741,24 @@ QStringList KeyMappingDataTableWidget::getAvailableCategories() const
     return categories;
 }
 
+void KeyMappingDataTableWidget::setFloatingColumnVisible(bool visible)
+{
+    QSignalBlocker blocker(this);
+    m_FloatingColumnVisible = visible;
+
+    if (visible) {
+        showColumn(FLOATING_COLUMN);
+    }
+    else {
+        hideColumn(FLOATING_COLUMN);
+    }
+}
+
+bool KeyMappingDataTableWidget::isFloatingColumnVisible() const
+{
+    return m_FloatingColumnVisible;
+}
+
 void KeyMappingDataTableWidget::setCategoryColumnVisible(bool visible)
 {
     QSignalBlocker blocker(this);
@@ -31803,7 +31973,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
 #endif
 
     if (hasSelection && current
-        && (currentColumn == DISABLED_COLUMN || currentColumn == BURST_MODE_COLUMN || currentColumn == LOCK_COLUMN)) {
+        && (currentColumn == DISABLED_COLUMN || currentColumn == BURST_MODE_COLUMN || currentColumn == LOCK_COLUMN || currentColumn == FLOATING_COLUMN)) {
 
         const QList<int> visibleSelectedRows = collectVisibleSelectedRows(this);
         if (visibleSelectedRows.isEmpty()) {
@@ -31848,6 +32018,17 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             QAction *disableLockAction = stateContextMenu.addAction(QObject::tr("Lock Disable"));
             connect(disableLockAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
                 applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, LOCK_COLUMN, false);
+            });
+        }
+        else if (currentColumn == FLOATING_COLUMN) {
+            QAction *enableFloatingAction = stateContextMenu.addAction(QObject::tr("FloatingButton Enable"));
+            connect(enableFloatingAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
+                applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, FLOATING_COLUMN, true);
+            });
+
+            QAction *disableFloatingAction = stateContextMenu.addAction(QObject::tr("FloatingButton Disable"));
+            connect(disableFloatingAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows]() {
+                applyBatchMappingStateChange(keymapper, this, visibleSelectedRows, FLOATING_COLUMN, false);
             });
         }
 
@@ -32157,6 +32338,12 @@ void QKeyMapper::on_hideDisabledButton_toggled(bool checked)
             tabInfo.KeyMappingDataTable->setHideDisabledFilter(checked);
         }
     }
+}
+
+void QKeyMapper::on_showFloatingButton_toggled(bool checked)
+{
+    Q_UNUSED(checked);
+    updateFloatingColumnByShowFloatingState();
 }
 
 void QKeyMapper::on_showCategoryButton_toggled(bool checked)
@@ -33540,4 +33727,3 @@ void QKeyMapper::onLastAutoMatchedSettingTimerTimeout()
     qDebug() << "[onLastAutoMatchedSettingTimerTimeout]" << "Timer timeout, cleared last auto matched setting";
 #endif
 }
-

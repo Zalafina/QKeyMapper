@@ -29,6 +29,7 @@ public:
     void setUILanguage(int languageindex);
     void setItemRow(int row);
     int getItemRow() const;
+    void refreshFromCurrentItem();
 
 signals:
     void settingsApplied();

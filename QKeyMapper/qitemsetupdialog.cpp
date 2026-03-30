@@ -3140,6 +3140,16 @@ void QItemSetupDialog::keyMappingTableItemCheckStateChanged(int row, int col, bo
 #endif
         }
     }
+    else if (col == FLOATING_COLUMN) {
+        if (m_FloatingButtonSetupDialog != Q_NULLPTR
+            && m_FloatingButtonSetupDialog->getItemRow() == m_ItemRow) {
+            m_FloatingButtonSetupDialog->refreshFromCurrentItem();
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Sync FloatingButton checkstate -> " << QKeyMapper::KeyMappingDataList->at(m_ItemRow).FloatingButton_Enable;
+#endif
+        }
+    }
 }
 
 void QItemSetupDialog::on_burstpressSpinBox_valueChanged(int value)

@@ -41,7 +41,7 @@ namespace QKeyMapperConstants {
     inline constexpr int VIRTUALGAMEPADTYPECOMBOBOX_X = 610;
 
     inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 4;
-    inline constexpr int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 6;
+    inline constexpr int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 7;
     inline constexpr int MACROLISTDATA_TABLE_COLUMN_COUNT = 4;
     inline constexpr int MAPPINGSEQUENCEEDIT_TABLE_COLUMN_COUNT = 1;
 
@@ -64,7 +64,8 @@ namespace QKeyMapperConstants {
     inline constexpr int DISABLED_COLUMN = 2;
     inline constexpr int BURST_MODE_COLUMN = 3;
     inline constexpr int LOCK_COLUMN = 4;
-    inline constexpr int CATEGORY_COLUMN = 5;
+    inline constexpr int FLOATING_COLUMN = 5;
+    inline constexpr int CATEGORY_COLUMN = 6;
 
     inline constexpr int MACRO_NAME_COLUMN = 0;
     inline constexpr int MACRO_CONTENT_COLUMN = 1;
@@ -965,6 +966,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char SHOW_PROCESSLIST[] = "ShowProcessList";
     inline constexpr const char SHOW_NOTES[] = "ShowNotes";
     inline constexpr const char HIDE_DISABLED[] = "HideDisabled";
+    inline constexpr const char SHOW_FLOATING[] = "ShowFloating";
     inline constexpr const char SHOW_CATEGORYS[] = "ShowCategorys";
     inline constexpr const char NOTSHOW_VERSION_UNMATCHED[] = "NotShow_VersionUnmatched";
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT

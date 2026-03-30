@@ -272,6 +272,8 @@ public:
     void clearCategoryFilter();
     void clearCategoryFilters();
     QStringList getAvailableCategories() const;
+    void setFloatingColumnVisible(bool visible);
+    bool isFloatingColumnVisible() const;
     void setCategoryColumnVisible(bool visible);
     bool isCategoryColumnVisible() const;
     void setHideDisabledFilter(bool enabled);
@@ -296,6 +298,7 @@ private:
 private:
     int m_DraggedTopRow;
     int m_DraggedBottomRow;
+    bool m_FloatingColumnVisible = false;
     bool m_CategoryColumnVisible = false;  // Category column visibility
     bool m_HideDisabledFilterEnabled = false;
     bool m_HasHiddenRows = false;
@@ -1293,6 +1296,8 @@ private slots:
 
     void on_hideDisabledButton_toggled(bool checked);
 
+    void on_showFloatingButton_toggled(bool checked);
+
     void on_showCategoryButton_toggled(bool checked);
 
     void on_checkUpdateButton_clicked();
@@ -1416,6 +1421,7 @@ public:
     bool showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype);
     bool isMappingDataTableFiltered(void);
     void updateCategoryFilterComboBox(void);
+    void updateFloatingColumnByShowFloatingState(void);
     void updateCategoryFilterByShowCategoryState(void);
     bool isParamTextPlainTextEditHasFocus(void);
     void appendParamTextPlainTextEditText(const QString &text);
