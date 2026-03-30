@@ -260,7 +260,7 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <location filename="../qkeymapper.cpp" line="31875"/>
         <location filename="../qkeymapper.cpp" line="31963"/>
         <source>Blank</source>
-        <translation>(Blanks)</translation>
+        <translation>(Blank)</translation>
     </message>
 </context>
 <context>
@@ -305,7 +305,7 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <location filename="../qmacrolistdialog.cpp" line="1741"/>
         <location filename="../qmacrolistdialog.cpp" line="1805"/>
         <source>Blank</source>
-        <translation>(Blanks)</translation>
+        <translation>(Blank)</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="1926"/>
@@ -3145,7 +3145,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
         <location filename="../qkeymapper.cpp" line="22581"/>
         <location filename="../qkeymapper.cpp" line="22611"/>
         <source>Blank</source>
-        <translation>(Blanks)</translation>
+        <translation>(Blank)</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="24679"/>
@@ -3721,7 +3721,7 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <location filename="../qmacrolistdialog.cpp" line="741"/>
         <location filename="../qmacrolistdialog.cpp" line="771"/>
         <source>Blank</source>
-        <translation>(Blanks)</translation>
+        <translation>(Blank)</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="760"/>
@@ -4321,7 +4321,7 @@ Do you want to overwrite them?</source>
     <message>
         <location filename="../qkeymapper.cpp" line="32257"/>
         <source>Blank</source>
-        <translation>(Blanks)</translation>
+        <translation>(Blank)</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="32265"/>
