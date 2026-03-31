@@ -32266,7 +32266,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             QWidgetAction *inputCategoryAction = new QWidgetAction(inputCategoryMenu);
             CategoryFilterPanelWidget *inputCategoryPanel = new CategoryFilterPanelWidget(inputCategoryMenu);
             constexpr int kInputCategoryLineEditMinWidth = 150;
-            constexpr int kInputCategoryLineEditMaxWidth = 360;
+            constexpr int kInputCategoryLineEditMaxWidth = 600;
             constexpr int kInputCategoryControlHeight = 22;
             constexpr int kInputCategoryButtonMinWidth = 64;
             constexpr int kInputCategoryLayoutHorizontalMargin = 8;
