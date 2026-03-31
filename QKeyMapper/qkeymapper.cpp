@@ -32279,7 +32279,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             inputCategoryPanel->setMaximumWidth(kInputCategoryLineEditMaxWidth + kInputCategoryButtonMinWidth + (kInputCategoryLayoutHorizontalMargin * 2) + kInputCategoryControlSpacing);
             inputCategoryPanel->setMinimumHeight(kInputCategoryPanelMinHeight);
             inputCategoryPanel->setAttribute(Qt::WA_InputMethodEnabled, true);
-            inputCategoryPanel->setFocusPolicy(Qt::StrongFocus);
+            inputCategoryPanel->setFocusPolicy(Qt::ClickFocus);
 
             QHBoxLayout *inputCategoryLayout = new QHBoxLayout(inputCategoryPanel);
             inputCategoryLayout->setContentsMargins(kInputCategoryLayoutHorizontalMargin,
@@ -32295,7 +32295,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             inputCategoryLineEdit->setMaximumWidth(kInputCategoryLineEditMaxWidth);
             inputCategoryLineEdit->setFixedHeight(kInputCategoryControlHeight);
             inputCategoryLineEdit->setAttribute(Qt::WA_InputMethodEnabled, true);
-            inputCategoryLineEdit->setFocusPolicy(Qt::StrongFocus);
+            inputCategoryLineEdit->setFocusPolicy(Qt::ClickFocus);
             if (hasCommonCategory && !commonCategory.trimmed().isEmpty()) {
                 inputCategoryLineEdit->setText(commonCategory);
             }
