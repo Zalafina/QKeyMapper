@@ -174,6 +174,7 @@ typedef struct MAP_KEYDATA
     QString FloatingButton_Label;
     QColor FloatingButton_ButtonColor;
     QColor FloatingButton_PressedColor;
+    QColor FloatingButton_LockedColor;
     QColor FloatingButton_TextColor;
     int FloatingButton_Width;
     int FloatingButton_Height;
@@ -183,6 +184,7 @@ typedef struct MAP_KEYDATA
     double FloatingButton_Opacity;
     bool FloatingButton_ShowOnMappingStart;
     bool FloatingButton_ShowToolTip;
+    bool FloatingButton_SyncPressedLockedState;
     bool FloatingButton_AlwaysOnTop;
     int FloatingButton_ReferencePoint;
     int FloatingButton_X_Offset;
@@ -235,6 +237,7 @@ typedef struct MAP_KEYDATA
     , FloatingButton_Label()
     , FloatingButton_ButtonColor(QKeyMapperConstants::FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR)
     , FloatingButton_PressedColor(QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_LockedColor(QKeyMapperConstants::FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR)
     , FloatingButton_TextColor(QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR)
     , FloatingButton_Width(QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT)
     , FloatingButton_Height(QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT)
@@ -244,6 +247,7 @@ typedef struct MAP_KEYDATA
     , FloatingButton_Opacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
     , FloatingButton_ShowOnMappingStart(QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT)
     , FloatingButton_ShowToolTip(QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT)
+    , FloatingButton_SyncPressedLockedState(QKeyMapperConstants::FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE_DEFAULT)
     , FloatingButton_AlwaysOnTop(QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT)
     , FloatingButton_ReferencePoint(QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT)
     , FloatingButton_X_Offset(QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT)
@@ -318,6 +322,7 @@ typedef struct MAP_KEYDATA
         FloatingButton_Label.clear();
         FloatingButton_ButtonColor = QKeyMapperConstants::FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
         FloatingButton_PressedColor = QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
+        FloatingButton_LockedColor = QKeyMapperConstants::FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR;
         FloatingButton_TextColor = QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
         FloatingButton_Width = QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT;
         FloatingButton_Height = QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT;
@@ -327,6 +332,7 @@ typedef struct MAP_KEYDATA
         FloatingButton_Opacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
         FloatingButton_ShowOnMappingStart = QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT;
         FloatingButton_ShowToolTip = QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT;
+        FloatingButton_SyncPressedLockedState = QKeyMapperConstants::FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE_DEFAULT;
         FloatingButton_AlwaysOnTop = QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT;
         FloatingButton_ReferencePoint = QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
         FloatingButton_X_Offset = QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT;
@@ -377,6 +383,7 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_Label == other.FloatingButton_Label)
                 && (FloatingButton_ButtonColor == other.FloatingButton_ButtonColor)
                 && (FloatingButton_PressedColor == other.FloatingButton_PressedColor)
+                && (FloatingButton_LockedColor == other.FloatingButton_LockedColor)
                 && (FloatingButton_TextColor == other.FloatingButton_TextColor)
                 && (FloatingButton_Width == other.FloatingButton_Width)
                 && (FloatingButton_Height == other.FloatingButton_Height)
@@ -386,6 +393,7 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_Opacity == other.FloatingButton_Opacity)
                 && (FloatingButton_ShowOnMappingStart == other.FloatingButton_ShowOnMappingStart)
                 && (FloatingButton_ShowToolTip == other.FloatingButton_ShowToolTip)
+                && (FloatingButton_SyncPressedLockedState == other.FloatingButton_SyncPressedLockedState)
                 && (FloatingButton_AlwaysOnTop == other.FloatingButton_AlwaysOnTop)
                 && (FloatingButton_ReferencePoint == other.FloatingButton_ReferencePoint)
                 && (FloatingButton_X_Offset == other.FloatingButton_X_Offset)
@@ -441,6 +449,7 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_Label:" << data.FloatingButton_Label
                         << ", FloatingButton_ButtonColor:" << data.FloatingButton_ButtonColor
                         << ", FloatingButton_PressedColor:" << data.FloatingButton_PressedColor
+                        << ", FloatingButton_LockedColor:" << data.FloatingButton_LockedColor
                         << ", FloatingButton_TextColor:" << data.FloatingButton_TextColor
                         << ", FloatingButton_Width:" << data.FloatingButton_Width
                         << ", FloatingButton_Height:" << data.FloatingButton_Height
@@ -450,6 +459,7 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_Opacity:" << data.FloatingButton_Opacity
                         << ", FloatingButton_ShowOnMappingStart:" << data.FloatingButton_ShowOnMappingStart
                         << ", FloatingButton_ShowToolTip:" << data.FloatingButton_ShowToolTip
+                        << ", FloatingButton_SyncPressedLockedState:" << data.FloatingButton_SyncPressedLockedState
                         << ", FloatingButton_AlwaysOnTop:" << data.FloatingButton_AlwaysOnTop
                         << ", FloatingButton_ReferencePoint:" << data.FloatingButton_ReferencePoint
                         << ", FloatingButton_X_Offset:" << data.FloatingButton_X_Offset
@@ -1163,6 +1173,9 @@ signals:
 
     // Signal emitted to update pressed visual state of an existing visible floating button
     void updateFloatingButtonPressedState_Signal(int rowindex, bool pressed);
+
+    // Signal emitted to update lock visual state of an existing floating button
+    void updateFloatingButtonLockState_Signal(int rowindex, bool locked);
 
     // Signal emitted to fully synchronize the VButton panel layout and visibility on the main thread
     void syncVButtonPanel_Signal(bool showPanel);

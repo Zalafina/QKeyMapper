@@ -1265,6 +1265,8 @@ private slots:
     void onShowAllFloatingButtons(bool visible);
     void onAutoHideAllFloatingButtonsOnMappingStop();
     void onUpdateFloatingButtonPressedState(int rowindex, bool pressed);
+    void onUpdateFloatingButtonLockState(int rowindex, bool locked);
+    void onClearFloatingButtonLockStates();
     void onVButtonPanelSetupDialogClosed();
     void onFloatingButtonSettingsApplied();
 

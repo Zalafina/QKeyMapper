@@ -60,6 +60,7 @@ private:
     QLineEdit *m_LabelLineEdit;
     QCheckBox *m_ShowOnStartCheckBox;
     QCheckBox *m_ShowToolTipCheckBox;
+    QCheckBox *m_SyncPressedLockedStateCheckBox;
     QCheckBox *m_AlwaysOnTopCheckBox;
     QCheckBox *m_DragToMoveCheckBox;
 
@@ -90,6 +91,7 @@ private:
 
     ColorPickerWidget *m_ButtonColorPicker;
     ColorPickerWidget *m_PressedColorPicker;
+    ColorPickerWidget *m_LockedColorPicker;
     ColorPickerWidget *m_TextColorPicker;
 };
 

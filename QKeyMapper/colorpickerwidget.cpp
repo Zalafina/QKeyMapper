@@ -177,6 +177,7 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
         && "VBtn_TextColor" != m_buttonText
         && "FloatBtn_BtnColor" != m_buttonText
         && "FloatBtn_PressedColor" != m_buttonText
+        && "FloatBtn_LockedColor" != m_buttonText
         && "FloatBtn_TextColor" != m_buttonText) {
         return;
     }
@@ -234,6 +235,9 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
     }
     else if ("FloatBtn_PressedColor" == m_buttonText) {
         color = FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
+    }
+    else if ("FloatBtn_LockedColor" == m_buttonText) {
+        color = FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR;
     }
     else if ("FloatBtn_TextColor" == m_buttonText) {
         color = FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;

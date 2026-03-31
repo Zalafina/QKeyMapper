@@ -18,6 +18,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_LabelLineEdit(new QLineEdit(this))
     , m_ShowOnStartCheckBox(new QCheckBox(this))
     , m_ShowToolTipCheckBox(new QCheckBox(this))
+    , m_SyncPressedLockedStateCheckBox(new QCheckBox(this))
     , m_AlwaysOnTopCheckBox(new QCheckBox(this))
     , m_DragToMoveCheckBox(new QCheckBox(this))
     , m_WidthLabel(new QLabel(this))
@@ -42,6 +43,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_RevertButton(Q_NULLPTR)
     , m_ButtonColorPicker(new ColorPickerWidget(this, "FloatBtn_BtnColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
     , m_PressedColorPicker(new ColorPickerWidget(this, "FloatBtn_PressedColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
+    , m_LockedColorPicker(new ColorPickerWidget(this, "FloatBtn_LockedColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
     , m_TextColorPicker(new ColorPickerWidget(this, "FloatBtn_TextColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_TEXTCOLOR))
 {
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
@@ -64,6 +66,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     basicForm->addRow(m_LabelTextLabel, m_LabelLineEdit);
     basicForm->addRow(m_ShowOnStartCheckBox);
     basicForm->addRow(m_ShowToolTipCheckBox);
+    basicForm->addRow(m_SyncPressedLockedStateCheckBox);
     basicForm->addRow(m_AlwaysOnTopCheckBox);
     basicForm->addRow(m_DragToMoveCheckBox);
 
@@ -85,10 +88,12 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     styleGrid->addWidget(m_OpacityLabel, 2, 2);
     styleGrid->addWidget(m_OpacitySpinBox, 2, 3);
 
-    QHBoxLayout *colorLayout = new QHBoxLayout();
-    colorLayout->addWidget(m_ButtonColorPicker);
-    colorLayout->addWidget(m_PressedColorPicker);
-    colorLayout->addWidget(m_TextColorPicker);
+    QGridLayout *colorLayout = new QGridLayout();
+    colorLayout->setContentsMargins(0, 0, 0, 0);
+    colorLayout->addWidget(m_ButtonColorPicker, 0, 0);
+    colorLayout->addWidget(m_TextColorPicker, 0, 1);
+    colorLayout->addWidget(m_PressedColorPicker, 1, 0);
+    colorLayout->addWidget(m_LockedColorPicker, 1, 1);
     styleGrid->addLayout(colorLayout, 3, 0, 1, 4);
 
     QGroupBox *positionGroup = new QGroupBox(this);
@@ -139,11 +144,13 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     connect(m_ShowOnStartCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_ShowToolTipCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_SyncPressedLockedStateCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_DragToMoveCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #else
     connect(m_ShowOnStartCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_ShowToolTipCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_SyncPressedLockedStateCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_DragToMoveCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #endif
@@ -159,6 +166,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
 
     connect(m_ButtonColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_PressedColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_LockedColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_TextColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
 
     setUILanguage(QKeyMapper::getLanguageIndex());
@@ -175,6 +183,7 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_LabelTextLabel->setText(tr("Label"));
     m_ShowOnStartCheckBox->setText(tr("Show on Mapping Start"));
     m_ShowToolTipCheckBox->setText(tr("Show Tooltip"));
+    m_SyncPressedLockedStateCheckBox->setText(tr("Sync Pressed&&Locked State"));
     m_AlwaysOnTopCheckBox->setText(tr("Always On Top"));
     m_DragToMoveCheckBox->setText(tr("Ctrl+Drag to Move"));
 
@@ -214,6 +223,8 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_ButtonColorPicker->setWindowTitle(tr("Floating Button Color"));
     m_PressedColorPicker->setButtonText(tr("PressedColor"));
     m_PressedColorPicker->setWindowTitle(tr("Floating Button Pressed Color"));
+    m_LockedColorPicker->setButtonText(tr("LockedColor"));
+    m_LockedColorPicker->setWindowTitle(tr("Floating Button Locked Color"));
     m_TextColorPicker->setButtonText(tr("TextColor"));
     m_TextColorPicker->setWindowTitle(tr("Floating Button Text Color"));
 
@@ -318,6 +329,7 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_LabelLineEdit->setText(keymapdata.FloatingButton_Label);
     m_ShowOnStartCheckBox->setChecked(keymapdata.FloatingButton_ShowOnMappingStart);
     m_ShowToolTipCheckBox->setChecked(keymapdata.FloatingButton_ShowToolTip);
+    m_SyncPressedLockedStateCheckBox->setChecked(keymapdata.FloatingButton_SyncPressedLockedState);
     m_AlwaysOnTopCheckBox->setChecked(keymapdata.FloatingButton_AlwaysOnTop);
     m_DragToMoveCheckBox->setChecked(keymapdata.FloatingButton_DragToMove);
 
@@ -338,6 +350,7 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
 
     m_ButtonColorPicker->setColor(keymapdata.FloatingButton_ButtonColor);
     m_PressedColorPicker->setColor(keymapdata.FloatingButton_PressedColor);
+    m_LockedColorPicker->setColor(keymapdata.FloatingButton_LockedColor);
     m_TextColorPicker->setColor(keymapdata.FloatingButton_TextColor);
 
     m_isLoading = false;
@@ -355,6 +368,7 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_Label = m_LabelLineEdit->text();
     keymapdata.FloatingButton_ShowOnMappingStart = m_ShowOnStartCheckBox->isChecked();
     keymapdata.FloatingButton_ShowToolTip = m_ShowToolTipCheckBox->isChecked();
+    keymapdata.FloatingButton_SyncPressedLockedState = m_SyncPressedLockedStateCheckBox->isChecked();
     keymapdata.FloatingButton_AlwaysOnTop = m_AlwaysOnTopCheckBox->isChecked();
     keymapdata.FloatingButton_DragToMove = m_DragToMoveCheckBox->isChecked();
 
@@ -371,6 +385,7 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
 
     keymapdata.FloatingButton_ButtonColor = m_ButtonColorPicker->getColor();
     keymapdata.FloatingButton_PressedColor = m_PressedColorPicker->getColor();
+    keymapdata.FloatingButton_LockedColor = m_LockedColorPicker->getColor();
     keymapdata.FloatingButton_TextColor = m_TextColorPicker->getColor();
 }
 

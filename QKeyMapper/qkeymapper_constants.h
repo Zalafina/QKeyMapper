@@ -394,6 +394,7 @@ namespace QKeyMapperConstants {
     inline constexpr QColor CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
     inline constexpr QColor FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR = QColor(80, 80, 80);
     inline constexpr QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(100, 118, 198);
+    inline constexpr QColor FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR = QColor(168, 127, 190);
     inline constexpr QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
 #else
     // Fallback for Qt5: QColor is not constexpr
@@ -401,6 +402,7 @@ namespace QKeyMapperConstants {
     inline const QColor CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
     inline const QColor FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR = QColor(80, 80, 80);
     inline const QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(100, 118, 198);
+    inline const QColor FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR = QColor(168, 127, 190);
     inline const QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
 #endif
 
@@ -430,6 +432,7 @@ namespace QKeyMapperConstants {
     inline constexpr bool FLOATINGBUTTON_ENABLE_DEFAULT = false;
     inline constexpr bool FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT = false;
+    inline constexpr bool FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_ALWAYSONTOP_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_DRAGTOMOVE_DEFAULT = true;
     inline constexpr int FLOATINGBUTTON_WIDTH_MIN = 4;
@@ -1074,6 +1077,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_LABEL[] = "KeyMapData_FloatingButton_Label";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR[] = "KeyMapData_FloatingButton_ButtonColor";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR[] = "KeyMapData_FloatingButton_PressedColor";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR[] = "KeyMapData_FloatingButton_LockedColor";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR[] = "KeyMapData_FloatingButton_TextColor";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_WIDTH[] = "KeyMapData_FloatingButton_Width";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HEIGHT[] = "KeyMapData_FloatingButton_Height";
@@ -1083,6 +1087,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_OPACITY[] = "KeyMapData_FloatingButton_Opacity";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART[] = "KeyMapData_FloatingButton_ShowOnMappingStart";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP[] = "KeyMapData_FloatingButton_ShowToolTip";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE[] = "KeyMapData_FloatingButton_SyncPressedLockedState";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP[] = "KeyMapData_FloatingButton_AlwaysOnTop";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT[] = "KeyMapData_FloatingButton_ReferencePoint";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_X_OFFSET[] = "KeyMapData_FloatingButton_X_Offset";

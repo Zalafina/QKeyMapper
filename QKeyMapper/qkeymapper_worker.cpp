@@ -2485,6 +2485,13 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         }
         }
 
+        if (pressedMappingKeysContains
+            && rowindex >= 0
+            && rowindex < keyMappingDataList->size()
+            && keyMappingDataList->at(rowindex).FloatingButton_Enable) {
+            emit updateFloatingButtonPressedState_Signal(rowindex, false);
+        }
+
         for(auto it = mappingKeys.crbegin(); it != mappingKeys.crend(); ++it) {
             QString key = (*it);
 
@@ -3171,6 +3178,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
             }
 
+            if (rowindex >= 0
+                && rowindex < keyMappingDataList->size()
+                && keyMappingDataList->at(rowindex).FloatingButton_Enable) {
+                emit updateFloatingButtonPressedState_Signal(rowindex, true);
+            }
+
             for (const QString &keyStr : std::as_const(mappingKeys)) {
                 if (*controller.task_stop_flag) {
                     continue;
@@ -3369,6 +3382,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                             // Notify VButton panel if the unlocked key is a VButton key
                             if (lockMapKey.startsWith(VBUTTON_ORIKEY_STR)) {
                                 emit vbuttonLockStateChanged_Signal(lockMapKey, false);
+                            }
+
+                            if (keyMappingDataList->at(locked_rowindex).FloatingButton_Enable) {
+                                emit updateFloatingButtonLockState_Signal(locked_rowindex, false);
                             }
 
                             // updateLockStatus();
@@ -4001,6 +4018,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #ifdef DEBUG_LOGOUT_ON
                 qDebug().nospace().noquote() << "[sendInputKeys] pressedMappingKeys KeySequence break -> original_key[" << original_key << "], " << "mappingKeys[" << mappingkeys_str << "]" << " : pressedMappingKeysMap -> " << pressedMappingKeysMap;
 #endif
+                }
+                if (rowindex >= 0
+                    && rowindex < keyMappingDataList->size()
+                    && keyMappingDataList->at(rowindex).FloatingButton_Enable) {
+                    emit updateFloatingButtonPressedState_Signal(rowindex, false);
                 }
                 clearPressedVirtualKeysOfMappingKeys(mappingkeys_str);
 
@@ -8422,6 +8444,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     //         s_Mouse2vJoy_delta_List.append(QPoint());
     //     }
     // }
+
     pressedvJoyLStickKeysList.clear();
     pressedvJoyRStickKeysList.clear();
     pressedvJoyButtonsList.clear();
@@ -14073,6 +14096,9 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                     (*QKeyMapper::KeyMappingDataList)[findindex].LockState = LOCK_STATE_LOCKOFF;
                     update_lockstatus = true;
                     pressedLockKeysMap.remove(keycodeString);
+                    if (QKeyMapper::KeyMappingDataList->at(findindex).FloatingButton_Enable) {
+                        emit QKeyMapper_Worker::getInstance()->updateFloatingButtonLockState_Signal(findindex, false);
+                    }
 
 #ifdef DEBUG_LOGOUT_ON
                     QString debugmessage = QString("[hookBurstAndLockProc] Key \"%1\" KeyDown LockState = OFF, DisableOriginalKeyUnlock = %2").arg(keycodeString, disable_orikeyunlock ? "true" : "false");
@@ -14099,6 +14125,9 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                 }
                 update_lockstatus = true;
                 pressedLockKeysMap.insert(keycodeString, findindex);
+                if (QKeyMapper::KeyMappingDataList->at(findindex).FloatingButton_Enable) {
+                    emit QKeyMapper_Worker::getInstance()->updateFloatingButtonLockState_Signal(findindex, true);
+                }
 #ifdef DEBUG_LOGOUT_ON
                 QString debugmessage = QString("[hookBurstAndLockProc] Key \"%1\" KeyDown LockState = ON").arg(keycodeString);
                 qDebug().nospace().noquote() << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap;
@@ -14145,6 +14174,10 @@ int QKeyMapper_Worker::hookBurstAndLockProc(const QString &keycodeString, int ke
                             // Notify VButton panel if the unlocked key is a VButton key
                             if (locked_orikey.startsWith(VBUTTON_ORIKEY_STR)) {
                                 emit QKeyMapper_Worker::getInstance()->vbuttonLockStateChanged_Signal(locked_orikey, false);
+                            }
+
+                            if (QKeyMapper::KeyMappingDataList->at(rowindex).FloatingButton_Enable) {
+                                emit QKeyMapper_Worker::getInstance()->updateFloatingButtonLockState_Signal(rowindex, false);
                             }
                         }
                     }
@@ -16578,6 +16611,9 @@ void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown
                     (*QKeyMapper::KeyMappingDataList)[findindex].LockState = LOCK_STATE_LOCKOFF;
                     pressedLockKeysMap.remove(keyName);
                     emit vbuttonLockStateChanged_Signal(keyName, false);
+                    if (entry.FloatingButton_Enable) {
+                        emit updateFloatingButtonLockState_Signal(findindex, false);
+                    }
                     if (entry.Burst) {
                         // Stop burst timer; the timer handles the final key release internally
                         emit stopBurstKeyTimer_Signal(keyName, findindex, QKeyMapper::KeyMappingDataList);
@@ -16601,6 +16637,9 @@ void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown
                 }
                 pressedLockKeysMap.insert(keyName, findindex);
                 emit vbuttonLockStateChanged_Signal(keyName, true);
+                if (entry.FloatingButton_Enable) {
+                    emit updateFloatingButtonLockState_Signal(findindex, true);
+                }
                 if (entry.Burst) {
                     // Start burst timer; handles repetitive key presses while locked
                     emit startBurstKeyTimer_Signal(keyName, findindex, QKeyMapper::KeyMappingDataList);
