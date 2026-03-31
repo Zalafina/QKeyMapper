@@ -356,6 +356,7 @@ static QStringList collectSortedCategoryValues(const KeyMappingDataTableWidget *
         return categoryValues;
     }
 
+    categoryValues.append(QString());
     for (int row = 0; row < mappingDataTable->rowCount(); ++row) {
         QTableWidgetItem *categoryItem = mappingDataTable->item(row, CATEGORY_COLUMN);
         const QString category = categoryItem ? categoryItem->text().trimmed() : QString();
@@ -368,7 +369,6 @@ static QStringList collectSortedCategoryValues(const KeyMappingDataTableWidget *
     }
 
     categoryValues.sort(Qt::CaseInsensitive);
-    categoryValues.append(QString());
     return categoryValues;
 }
 
