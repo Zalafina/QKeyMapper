@@ -2219,6 +2219,13 @@ void QKeyMapper::matchForegroundWindow()
         && KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
         m_VButtonPanel->updatePositionIfWindowRef();
     }
+
+    if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
+        updateFloatingButtonsPositionIfWindowRef();
+    }
+    else {
+        resetFloatingButtonWindowTrackingState();
+    }
 }
 
 #ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
@@ -26474,6 +26481,116 @@ QPoint QKeyMapper::floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdat
     }
 
     return QPoint(baseX, baseY);
+}
+
+static bool isFloatingButtonWindowReferencePoint(int referencePoint)
+{
+    return referencePoint >= FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT
+           && referencePoint <= FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER;
+}
+
+static bool getFloatingButtonTrackingClientRect(HWND hwnd, RECT &clientRect)
+{
+    if (hwnd == NULL) {
+        return false;
+    }
+
+    WINDOWINFO winInfo;
+    winInfo.cbSize = sizeof(WINDOWINFO);
+    if (!GetWindowInfo(hwnd, &winInfo)) {
+        return false;
+    }
+
+    clientRect = winInfo.rcClient;
+    return true;
+}
+
+static bool isSameFloatingButtonTrackingRect(const RECT &leftRect, const RECT &rightRect)
+{
+    return leftRect.left == rightRect.left
+           && leftRect.top == rightRect.top
+           && leftRect.right == rightRect.right
+           && leftRect.bottom == rightRect.bottom;
+}
+
+static QPoint floatingButtonReferenceBasePointFromClientRect(int referencePoint, const RECT &clientRect)
+{
+    switch (referencePoint) {
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT:
+        return QPoint(clientRect.left, clientRect.top);
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPRIGHT:
+        return QPoint(clientRect.right, clientRect.top);
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPCENTER:
+        return QPoint((clientRect.left + clientRect.right) / 2, clientRect.top);
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMLEFT:
+        return QPoint(clientRect.left, clientRect.bottom);
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMRIGHT:
+        return QPoint(clientRect.right, clientRect.bottom);
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER:
+        return QPoint((clientRect.left + clientRect.right) / 2, clientRect.bottom);
+    default:
+        return QPoint();
+    }
+}
+
+void QKeyMapper::resetFloatingButtonWindowTrackingState()
+{
+    m_FloatingButtonLastTrackHWND = NULL;
+    m_FloatingButtonLastTrackClientRect = {};
+}
+
+void QKeyMapper::updateFloatingButtonsPositionIfWindowRef()
+{
+    if (m_FloatingButtonMap.isEmpty()
+        || QKeyMapper::KeyMappingDataList == Q_NULLPTR
+        || s_CurrentMappingHWND == NULL) {
+        resetFloatingButtonWindowTrackingState();
+        return;
+    }
+
+    RECT currentClientRect = {};
+    if (!getFloatingButtonTrackingClientRect(s_CurrentMappingHWND, currentClientRect)) {
+        resetFloatingButtonWindowTrackingState();
+        return;
+    }
+
+    // Track the mapped window once per cycle and only reposition when its client rect changes.
+    if (s_CurrentMappingHWND == m_FloatingButtonLastTrackHWND
+        && isSameFloatingButtonTrackingRect(currentClientRect, m_FloatingButtonLastTrackClientRect)) {
+        return;
+    }
+
+    m_FloatingButtonLastTrackHWND = s_CurrentMappingHWND;
+    m_FloatingButtonLastTrackClientRect = currentClientRect;
+
+    for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
+        const int rowindex = it.key();
+        QPushButton *button = it.value();
+        if (button == Q_NULLPTR || !button->isVisible()) {
+            continue;
+        }
+
+        if (m_FloatingButtonDragging && m_FloatingButtonDraggingRow == rowindex) {
+            continue;
+        }
+
+        if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+            continue;
+        }
+
+        const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+        if (!keymapdata.FloatingButton_Enable
+            || !isFloatingButtonWindowReferencePoint(keymapdata.FloatingButton_ReferencePoint)) {
+            continue;
+        }
+
+        const QPoint basePoint = floatingButtonReferenceBasePointFromClientRect(keymapdata.FloatingButton_ReferencePoint, currentClientRect);
+        const QPoint newPos(basePoint.x() + keymapdata.FloatingButton_X_Offset,
+                            basePoint.y() + keymapdata.FloatingButton_Y_Offset);
+        if (newPos != button->pos()) {
+            button->move(newPos);
+        }
+    }
 }
 
 void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &runtimeData)

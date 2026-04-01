@@ -1372,6 +1372,8 @@ private:
     bool isCategoryFilterVisible() const;
     void restoreCategoryFilterState(const QStringList& filters, bool showState);
     QPoint floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const;
+    void updateFloatingButtonsPositionIfWindowRef();
+    void resetFloatingButtonWindowTrackingState();
     void syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &runtimeData);
 
     // CategoryFilterStateGuard helper class for RAII-style filter state management
@@ -1764,6 +1766,8 @@ private:
     int m_FloatingButtonDraggingRow = -1;
     QPoint m_FloatingButtonDragStartGlobalPos;
     QPoint m_FloatingButtonDragStartWidgetPos;
+    HWND m_FloatingButtonLastTrackHWND = NULL;
+    RECT m_FloatingButtonLastTrackClientRect = {};
 #ifdef USE_CUSTOMSTYLE
     CustomSpinBoxStyle *m_CustomSpinBoxStyle = Q_NULLPTR;
 #endif
