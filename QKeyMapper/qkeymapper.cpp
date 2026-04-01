@@ -301,11 +301,6 @@ static void applyFloatingButtonVisualState(QPushButton *button, const MAP_KEYDAT
         return;
     }
 
-    if (!keymapdata.FloatingButton_SyncPressedLockedState) {
-        pressed = false;
-        locked = false;
-    }
-
     static const QString tooltipRule = QStringLiteral("QToolTip { background-color: palette(ToolTipBase); color: palette(ToolTipText); }");
 
     const QColor normalColor = keymapdata.FloatingButton_ButtonColor.isValid()
@@ -9437,6 +9432,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     }
                     else if (selectedAction == hideAction) {
                         setFloatingButtonManualHidden(rowindex, true);
+                        setFloatingButtonLocalPressed(rowindex, false);
                         floatingButton->setDown(false);
                         floatingButton->hide();
                     }
@@ -9494,6 +9490,15 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     }
 
                     setFloatingButtonManualHidden(rowindex, false);
+                    setFloatingButtonLocalPressed(rowindex, true);
+                    bool pressed = false;
+                    bool locked = false;
+                    resolveFloatingButtonVisualState(rowindex, keymapdata,
+                                                     isFloatingButtonPressedRuntime(keymapdata.Original_Key),
+                                                     isFloatingButtonLockedRuntime(keymapdata),
+                                                     false,
+                                                     pressed, locked);
+                    refreshFloatingButtonWidget(floatingButton, rowindex, keymapdata, pressed, locked);
                     QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),
                                               "triggerVButtonKey",
                                               Qt::QueuedConnection,
@@ -9507,7 +9512,6 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     }
 #endif
 #endif
-                    floatingButton->setDown(true);
                     return true;
                 }
             }
@@ -9544,6 +9548,15 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                 if (mouseEvent->button() == Qt::LeftButton
                     && rowindex >= 0 && rowindex < QKeyMapper::KeyMappingDataList->size()) {
                     const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+                    setFloatingButtonLocalPressed(rowindex, false);
+                    bool pressed = false;
+                    bool locked = false;
+                    resolveFloatingButtonVisualState(rowindex, keymapdata,
+                                                     isFloatingButtonPressedRuntime(keymapdata.Original_Key),
+                                                     isFloatingButtonLockedRuntime(keymapdata),
+                                                     false,
+                                                     pressed, locked);
+                    refreshFloatingButtonWidget(floatingButton, rowindex, keymapdata, pressed, locked);
                     QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),
                                               "triggerVButtonKey",
                                               Qt::QueuedConnection,
@@ -9552,7 +9565,6 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[FloatingButtonClick]" << " KEY_UP Row[" << rowindex << "] OriKey[" << keymapdata.Original_Key << "]";
 #endif
-                    floatingButton->setDown(false);
                     return true;
                 }
             }
@@ -26654,6 +26666,42 @@ void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &ru
     }
 }
 
+bool QKeyMapper::isFloatingButtonLocalPressed(int rowindex) const
+{
+    return m_FloatingButtonLocalPressedRows.contains(rowindex);
+}
+
+void QKeyMapper::setFloatingButtonLocalPressed(int rowindex, bool pressed)
+{
+    if (rowindex < 0) {
+        return;
+    }
+
+    if (pressed) {
+        m_FloatingButtonLocalPressedRows.insert(rowindex);
+    }
+    else {
+        m_FloatingButtonLocalPressedRows.remove(rowindex);
+    }
+}
+
+void QKeyMapper::resolveFloatingButtonVisualState(int rowindex, const MAP_KEYDATA &keymapdata,
+                                                  bool runtimePressed, bool runtimeLocked,
+                                                  bool forcePressed,
+                                                  bool &pressed, bool &locked) const
+{
+    const bool localPressed = isFloatingButtonLocalPressed(rowindex);
+
+    // Keep direct mouse interaction feedback and current lock state visible
+    // even when runtime pressed-state synchronization is disabled.
+    pressed = localPressed;
+    locked = runtimeLocked;
+
+    if (keymapdata.FloatingButton_SyncPressedLockedState) {
+        pressed = pressed || forcePressed || runtimePressed;
+    }
+}
+
 void QKeyMapper::refreshFloatingButtonWidget(QPushButton *button, int rowindex, const MAP_KEYDATA &keymapdata, bool pressed, bool locked)
 {
     if (button == Q_NULLPTR) {
@@ -26725,8 +26773,13 @@ void QKeyMapper::syncFloatingButtonAfterBurstAndLockState(int rowindex)
     }
 
     const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
-    const bool pressed = isFloatingButtonPressedRuntime(keymapdata.Original_Key);
-    const bool locked = isFloatingButtonLockedRuntime(keymapdata);
+    bool pressed = false;
+    bool locked = false;
+    resolveFloatingButtonVisualState(rowindex, keymapdata,
+                                     isFloatingButtonPressedRuntime(keymapdata.Original_Key),
+                                     isFloatingButtonLockedRuntime(keymapdata),
+                                     false,
+                                     pressed, locked);
     refreshFloatingButtonWidget(button, rowindex, keymapdata, pressed, locked);
 }
 
@@ -26746,6 +26799,7 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
     if (!allowShowInCurrentStatus) {
         QPushButton *existingButton = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
         if (existingButton != Q_NULLPTR) {
+            setFloatingButtonLocalPressed(rowindex, false);
             existingButton->setDown(false);
             existingButton->hide();
         }
@@ -26794,11 +26848,17 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
         button->setWindowFlags(flags);
     }
 
-    const bool buttonPressed = !floatingbutton_keystr.isEmpty() || isFloatingButtonPressedRuntime(keymapdata.Original_Key);
-    const bool buttonLocked = isFloatingButtonLockedRuntime(keymapdata);
+    bool buttonPressed = false;
+    bool buttonLocked = false;
+    resolveFloatingButtonVisualState(rowindex, keymapdata,
+                                     isFloatingButtonPressedRuntime(keymapdata.Original_Key),
+                                     isFloatingButtonLockedRuntime(keymapdata),
+                                     !floatingbutton_keystr.isEmpty(),
+                                     buttonPressed, buttonLocked);
     refreshFloatingButtonWidget(button, rowindex, keymapdata, buttonPressed, buttonLocked);
 
     if (isFloatingButtonManualHidden(rowindex)) {
+        setFloatingButtonLocalPressed(rowindex, false);
         button->setDown(false);
         button->hide();
 #if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
@@ -26841,12 +26901,18 @@ void QKeyMapper::showFloatingButtonStop(int rowindex, const QString &floatingbut
     }
 
     if (keepVisible && keymapdata != Q_NULLPTR) {
-        const bool buttonPressed = isFloatingButtonPressedRuntime(keymapdata->Original_Key);
-        const bool buttonLocked = isFloatingButtonLockedRuntime(*keymapdata);
+        bool buttonPressed = false;
+        bool buttonLocked = false;
+        resolveFloatingButtonVisualState(rowindex, *keymapdata,
+                                         isFloatingButtonPressedRuntime(keymapdata->Original_Key),
+                                         isFloatingButtonLockedRuntime(*keymapdata),
+                                         false,
+                                         buttonPressed, buttonLocked);
         refreshFloatingButtonWidget(button, rowindex, *keymapdata, buttonPressed, buttonLocked);
         button->show();
     }
     else {
+        setFloatingButtonLocalPressed(rowindex, false);
         button->setDown(false);
         button->hide();
     }
@@ -31586,6 +31652,7 @@ void QKeyMapper::onShowAllFloatingButtons(bool visible)
         else {
             if (currentlyVisible) {
                 setFloatingButtonManualHidden(rowindex, true);
+                setFloatingButtonLocalPressed(rowindex, false);
                 button->setDown(false);
                 button->hide();
                 changed = true;
@@ -31600,6 +31667,7 @@ void QKeyMapper::onShowAllFloatingButtons(bool visible)
 
 void QKeyMapper::onAutoHideAllFloatingButtonsOnMappingStop()
 {
+    m_FloatingButtonLocalPressedRows.clear();
     int hiddenCount = 0;
     for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
         QPushButton *button = it.value();
@@ -31643,6 +31711,8 @@ void QKeyMapper::onSyncFloatingButtonsOnMappingStart()
                                  << ", rows=" << KeyMappingDataList->size()
                                  << ", buttonCount=" << m_FloatingButtonMap.size();
 #endif
+
+    m_FloatingButtonLocalPressedRows.clear();
 
     // Hide stale buttons first to prevent old-tab leftovers during mapping restart tab switching.
     int hiddenCount = 0;
@@ -31743,8 +31813,14 @@ void QKeyMapper::onUpdateFloatingButtonPressedState(int rowindex, bool pressed)
     }
 
     const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
-    const bool locked = isFloatingButtonLockedRuntime(keymapdata);
-    applyFloatingButtonVisualState(button, keymapdata, pressed, locked);
+    bool displayPressed = false;
+    bool displayLocked = false;
+    resolveFloatingButtonVisualState(rowindex, keymapdata,
+                                     pressed,
+                                     isFloatingButtonLockedRuntime(keymapdata),
+                                     false,
+                                     displayPressed, displayLocked);
+    applyFloatingButtonVisualState(button, keymapdata, displayPressed, displayLocked);
 }
 
 void QKeyMapper::onUpdateFloatingButtonLockState(int rowindex, bool locked)
@@ -31770,8 +31846,14 @@ void QKeyMapper::onUpdateFloatingButtonLockState(int rowindex, bool locked)
     }
 
     const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
-    const bool pressed = isFloatingButtonPressedRuntime(keymapdata.Original_Key);
-    applyFloatingButtonVisualState(button, keymapdata, pressed, locked);
+    bool displayPressed = false;
+    bool displayLocked = false;
+    resolveFloatingButtonVisualState(rowindex, keymapdata,
+                                     isFloatingButtonPressedRuntime(keymapdata.Original_Key),
+                                     locked,
+                                     false,
+                                     displayPressed, displayLocked);
+    applyFloatingButtonVisualState(button, keymapdata, displayPressed, displayLocked);
 }
 
 void QKeyMapper::onClearFloatingButtonLockStates()
@@ -31792,8 +31874,14 @@ void QKeyMapper::onClearFloatingButtonLockStates()
         }
 
         const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
-        const bool pressed = isFloatingButtonPressedRuntime(keymapdata.Original_Key);
-        applyFloatingButtonVisualState(button, keymapdata, pressed, false);
+        bool displayPressed = false;
+        bool displayLocked = false;
+        resolveFloatingButtonVisualState(rowindex, keymapdata,
+                                         isFloatingButtonPressedRuntime(keymapdata.Original_Key),
+                                         false,
+                                         false,
+                                         displayPressed, displayLocked);
+        applyFloatingButtonVisualState(button, keymapdata, displayPressed, displayLocked);
         ++updatedCount;
     }
 

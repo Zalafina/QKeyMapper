@@ -1374,6 +1374,12 @@ private:
     bool isCategoryFilterVisible() const;
     void restoreCategoryFilterState(const QStringList& filters, bool showState);
     QPoint floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const;
+    bool isFloatingButtonLocalPressed(int rowindex) const;
+    void setFloatingButtonLocalPressed(int rowindex, bool pressed);
+    void resolveFloatingButtonVisualState(int rowindex, const MAP_KEYDATA &keymapdata,
+                                          bool runtimePressed, bool runtimeLocked,
+                                          bool forcePressed,
+                                          bool &pressed, bool &locked) const;
     void refreshFloatingButtonWidget(QPushButton *button, int rowindex, const MAP_KEYDATA &keymapdata, bool pressed, bool locked);
     void syncFloatingButtonAfterBurstAndLockState(int rowindex);
     void updateFloatingButtonsPositionIfWindowRef();
@@ -1765,6 +1771,7 @@ private:
     QPopupNotification *m_PopupNotification;
     QFloatingIconWindow *m_FloatingIconWindow;
     QHash<int, QPushButton*> m_FloatingButtonMap;
+    QSet<int> m_FloatingButtonLocalPressedRows;
     QHash<int, QSet<quint64>> m_FloatingButtonManualHiddenMap;
     bool m_FloatingButtonDragging = false;
     int m_FloatingButtonDraggingRow = -1;
