@@ -5775,6 +5775,7 @@ void QKeyMapper::switchBurstAndLockState(int rowindex)
     QString original_key = QKeyMapper::KeyMappingDataList->at(rowindex).Original_Key;
     bool currentBurst = QKeyMapper::KeyMappingDataList->at(rowindex).Burst;
     bool currentLock = QKeyMapper::KeyMappingDataList->at(rowindex).Lock;
+    bool lockKeyActive = QKeyMapper_Worker::pressedLockKeysMap.contains(original_key);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[switchBurstAndLockState] "
@@ -5831,11 +5832,16 @@ void QKeyMapper::switchBurstAndLockState(int rowindex)
 
         // Reset lock state if lock is turned off
         if (currentLock && !newLock) {
-            if (true == QKeyMapper_Worker::pressedLockKeysMap.contains(original_key)){
+            if (true == lockKeyActive){
                 (*QKeyMapper::KeyMappingDataList)[rowindex].LockState = LOCK_STATE_LOCKOFF;
                 QKeyMapper_Worker::pressedLockKeysMap.remove(original_key);
                 emit QKeyMapper_Worker::getInstance()->updateFloatingButtonLockState_Signal(rowindex, false);
             }
+        }
+
+        // Stop active burst output immediately when Fn switches back to normal state.
+        if (currentBurst && !newBurst && lockKeyActive) {
+            emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(original_key, rowindex, QKeyMapper::KeyMappingDataList);
         }
 
 #ifdef DEBUG_LOGOUT_ON
