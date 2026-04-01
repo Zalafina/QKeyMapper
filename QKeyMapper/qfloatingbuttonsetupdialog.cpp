@@ -183,7 +183,7 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_LabelTextLabel->setText(tr("Label"));
     m_ShowOnStartCheckBox->setText(tr("Show on Mapping Start"));
     m_ShowToolTipCheckBox->setText(tr("Show Tooltip"));
-    m_SyncPressedLockedStateCheckBox->setText(tr("Sync Pressed&&Locked State"));
+    m_SyncPressedLockedStateCheckBox->setText(tr("Sync Pressed State"));
     m_AlwaysOnTopCheckBox->setText(tr("Always On Top"));
     m_DragToMoveCheckBox->setText(tr("Ctrl+Drag to Move"));
 
