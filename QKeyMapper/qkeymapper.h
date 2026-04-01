@@ -1063,6 +1063,7 @@ signals:
     void showSetVolumeNotification_Signal(float volume, bool muted, int volume_type);
     void showBlockInputDeviceNotification_Signal(int devicetype, bool blocked);
     void showSwitchBurstAndLockNotification_Signal(int rowindex);
+    void switchBurstAndLockStateApplied_Signal(int rowindex);
     void keyMappingTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
     void setupDialogClosed_Signal(void);
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayDuration);
@@ -1264,6 +1265,7 @@ private slots:
     void onSyncFloatingButtonsOnMappingStart();
     void onShowAllFloatingButtons(bool visible);
     void onAutoHideAllFloatingButtonsOnMappingStop();
+    void onSwitchBurstAndLockStateApplied(int rowindex);
     void onUpdateFloatingButtonPressedState(int rowindex, bool pressed);
     void onUpdateFloatingButtonLockState(int rowindex, bool locked);
     void onClearFloatingButtonLockStates();
@@ -1372,6 +1374,8 @@ private:
     bool isCategoryFilterVisible() const;
     void restoreCategoryFilterState(const QStringList& filters, bool showState);
     QPoint floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const;
+    void refreshFloatingButtonWidget(QPushButton *button, int rowindex, const MAP_KEYDATA &keymapdata, bool pressed, bool locked);
+    void syncFloatingButtonAfterBurstAndLockState(int rowindex);
     void updateFloatingButtonsPositionIfWindowRef();
     void resetFloatingButtonWindowTrackingState();
     void syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &runtimeData);

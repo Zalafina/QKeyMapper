@@ -279,6 +279,22 @@ static bool isFloatingButtonLockedRuntime(const MAP_KEYDATA &keymapdata)
     return keymapdata.LockState != LOCK_STATE_LOCKOFF;
 }
 
+static QString resolveFloatingButtonLabel(const MAP_KEYDATA &keymapdata)
+{
+    QString label = keymapdata.FloatingButton_Label;
+    if (!label.isEmpty()) {
+        return label;
+    }
+
+    static QRegularExpression vbuttonRegex(VBUTTON_REGEX_PATTERN);
+    QRegularExpressionMatch match = vbuttonRegex.match(keymapdata.Original_Key);
+    if (match.hasMatch()) {
+        return match.captured(1);
+    }
+
+    return keymapdata.Original_Key;
+}
+
 static void applyFloatingButtonVisualState(QPushButton *button, const MAP_KEYDATA &keymapdata, bool pressed, bool locked)
 {
     if (button == Q_NULLPTR) {
@@ -1234,6 +1250,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::showSetVolumeNotification_Signal, this, &QKeyMapper::showSetVolumeNotification, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showBlockInputDeviceNotification_Signal, this, &QKeyMapper::showBlockInputDeviceNotification, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showSwitchBurstAndLockNotification_Signal, this, &QKeyMapper::showSwitchBurstAndLockNotification, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::switchBurstAndLockStateApplied_Signal, this, &QKeyMapper::onSwitchBurstAndLockStateApplied, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::systemThemeChanged_Signal, this, &QKeyMapper::systemThemeChanged, Qt::QueuedConnection);
@@ -5850,9 +5867,7 @@ void QKeyMapper::switchBurstAndLockState(int rowindex)
                                     << ", New Lock:" << newLock;
 #endif
 
-        // Update UI table displaygg
-        QKeyMapper::getInstance()->updateKeyMappingDataTableItem(QKeyMapper::getInstance()->m_KeyMappingDataTable, QKeyMapper::KeyMappingDataList, rowindex, BURST_MODE_COLUMN);
-        QKeyMapper::getInstance()->updateKeyMappingDataTableItem(QKeyMapper::getInstance()->m_KeyMappingDataTable, QKeyMapper::KeyMappingDataList, rowindex, LOCK_COLUMN);
+        emit QKeyMapper::getInstance()->switchBurstAndLockStateApplied_Signal(rowindex);
 
         // Show notification
         emit QKeyMapper::getInstance()->showSwitchBurstAndLockNotification_Signal(rowindex);
@@ -26639,6 +26654,82 @@ void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &ru
     }
 }
 
+void QKeyMapper::refreshFloatingButtonWidget(QPushButton *button, int rowindex, const MAP_KEYDATA &keymapdata, bool pressed, bool locked)
+{
+    if (button == Q_NULLPTR) {
+        return;
+    }
+
+    // Reapply existing-widget geometry and styling without recreating the top-level window.
+    button->setProperty("FloatingButtonRow", rowindex);
+    button->setAttribute(Qt::WA_ShowWithoutActivating, true);
+    button->setAttribute(Qt::WA_TranslucentBackground, true);
+    button->setAttribute(Qt::WA_NoSystemBackground, true);
+
+    const QString fullLabel = resolveFloatingButtonLabel(keymapdata);
+    button->setFixedSize(keymapdata.FloatingButton_Width, keymapdata.FloatingButton_Height);
+    button->setWindowOpacity(keymapdata.FloatingButton_Opacity);
+
+    QFont buttonFont = button->font();
+    buttonFont.setPixelSize(keymapdata.FloatingButton_FontSize);
+    if (keymapdata.FloatingButton_FontWeight == FLOATINGBUTTON_FONT_WEIGHT_LIGHT) {
+        buttonFont.setWeight(QFont::Light);
+    }
+    else if (keymapdata.FloatingButton_FontWeight == FLOATINGBUTTON_FONT_WEIGHT_BOLD) {
+        buttonFont.setWeight(QFont::Bold);
+    }
+    else {
+        buttonFont.setWeight(QFont::Normal);
+    }
+    button->setFont(buttonFont);
+
+    const int textHorizontalPadding = 12;
+    const int availableTextWidth = qMax(0, button->width() - textHorizontalPadding);
+    const QString displayLabel = button->fontMetrics().elidedText(fullLabel, Qt::ElideMiddle, availableTextWidth);
+    button->setText(displayLabel);
+
+    if (keymapdata.FloatingButton_ShowToolTip) {
+        QString tip;
+        if (displayLabel != fullLabel) {
+            tip += QString("%1 : %2\n").arg(tr("Label"), fullLabel);
+        }
+        tip += QString("%1 : %2\n%3 : %4\n")
+                   .arg(tr("No."), QString::number(rowindex + 1), tr("OriginalKey"), keymapdata.Original_Key);
+        tip += makeMappingKeyToolTip(keymapdata);
+        if (!keymapdata.Note.isEmpty()) {
+            tip += QString("\n%1 : %2").arg(tr("Note"), keymapdata.Note);
+        }
+        button->setToolTip(tip);
+    }
+    else {
+        button->setToolTip(QString());
+    }
+
+    const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
+    button->move(basePoint.x() + keymapdata.FloatingButton_X_Offset, basePoint.y() + keymapdata.FloatingButton_Y_Offset);
+    applyFloatingButtonVisualState(button, keymapdata, pressed, locked);
+    button->update();
+}
+
+void QKeyMapper::syncFloatingButtonAfterBurstAndLockState(int rowindex)
+{
+    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+    if (button == Q_NULLPTR || !button->isVisible()) {
+        return;
+    }
+
+    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+    const bool pressed = isFloatingButtonPressedRuntime(keymapdata.Original_Key);
+    const bool locked = isFloatingButtonLockedRuntime(keymapdata);
+    refreshFloatingButtonWidget(button, rowindex, keymapdata, pressed, locked);
+}
+
 void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbutton_keystr)
 {
     if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
@@ -26699,64 +26790,13 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
     if (keymapdata.FloatingButton_AlwaysOnTop) {
         flags |= Qt::WindowStaysOnTopHint;
     }
-    button->setWindowFlags(flags);
-
-    QString label = keymapdata.FloatingButton_Label;
-    if (label.isEmpty()) {
-        static QRegularExpression vbuttonRegex(VBUTTON_REGEX_PATTERN);
-        QRegularExpressionMatch match = vbuttonRegex.match(keymapdata.Original_Key);
-        if (match.hasMatch()) {
-            label = match.captured(1);
-        }
-        else {
-            label = keymapdata.Original_Key;
-        }
+    if (button->windowFlags() != flags) {
+        button->setWindowFlags(flags);
     }
-    button->setFixedSize(keymapdata.FloatingButton_Width, keymapdata.FloatingButton_Height);
-    button->setWindowOpacity(keymapdata.FloatingButton_Opacity);
-
-    QFont buttonFont = button->font();
-    buttonFont.setPixelSize(keymapdata.FloatingButton_FontSize);
-    if (keymapdata.FloatingButton_FontWeight == FLOATINGBUTTON_FONT_WEIGHT_LIGHT) {
-        buttonFont.setWeight(QFont::Light);
-    }
-    else if (keymapdata.FloatingButton_FontWeight == FLOATINGBUTTON_FONT_WEIGHT_BOLD) {
-        buttonFont.setWeight(QFont::Bold);
-    }
-    else {
-        buttonFont.setWeight(QFont::Normal);
-    }
-    button->setFont(buttonFont);
-
-    const QString fullLabel = label;
-    const int textHorizontalPadding = 12;
-    const int availableTextWidth = qMax(0, button->width() - textHorizontalPadding);
-    const QString displayLabel = button->fontMetrics().elidedText(fullLabel, Qt::ElideMiddle, availableTextWidth);
-    button->setText(displayLabel);
-
-    if (keymapdata.FloatingButton_ShowToolTip) {
-        QString tip;
-        if (displayLabel != fullLabel) {
-            tip += QString("%1 : %2\n").arg(tr("Label"), fullLabel);
-        }
-        tip += QString("%1 : %2\n%3 : %4\n")
-                   .arg(tr("No."), QString::number(rowindex + 1), tr("OriginalKey"), keymapdata.Original_Key);
-        tip += makeMappingKeyToolTip(keymapdata);
-        if (!keymapdata.Note.isEmpty()) {
-            tip += QString("\n%1 : %2").arg(tr("Note"), keymapdata.Note);
-        }
-        button->setToolTip(tip);
-    }
-    else {
-        button->setToolTip(QString());
-    }
-
-    const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
-    button->move(basePoint.x() + keymapdata.FloatingButton_X_Offset, basePoint.y() + keymapdata.FloatingButton_Y_Offset);
 
     const bool buttonPressed = !floatingbutton_keystr.isEmpty() || isFloatingButtonPressedRuntime(keymapdata.Original_Key);
     const bool buttonLocked = isFloatingButtonLockedRuntime(keymapdata);
-    applyFloatingButtonVisualState(button, keymapdata, buttonPressed, buttonLocked);
+    refreshFloatingButtonWidget(button, rowindex, keymapdata, buttonPressed, buttonLocked);
 
     if (isFloatingButtonManualHidden(rowindex)) {
         button->setDown(false);
@@ -26803,7 +26843,7 @@ void QKeyMapper::showFloatingButtonStop(int rowindex, const QString &floatingbut
     if (keepVisible && keymapdata != Q_NULLPTR) {
         const bool buttonPressed = isFloatingButtonPressedRuntime(keymapdata->Original_Key);
         const bool buttonLocked = isFloatingButtonLockedRuntime(*keymapdata);
-        applyFloatingButtonVisualState(button, *keymapdata, buttonPressed, buttonLocked);
+        refreshFloatingButtonWidget(button, rowindex, *keymapdata, buttonPressed, buttonLocked);
         button->show();
     }
     else {
@@ -31659,6 +31699,25 @@ void QKeyMapper::onSyncFloatingButtonsOnMappingStart()
                                  << ", shownCount=" << shownCount
                                  << ", hiddenCount=" << hiddenCount;
 #endif
+}
+
+void QKeyMapper::onSwitchBurstAndLockStateApplied(int rowindex)
+{
+    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    if (m_KeyMappingDataTable != Q_NULLPTR) {
+        // Keep QWidget updates on the GUI thread to avoid cross-thread timer warnings.
+        updateKeyMappingDataTableItem(m_KeyMappingDataTable, QKeyMapper::KeyMappingDataList, rowindex, BURST_MODE_COLUMN);
+        updateKeyMappingDataTableItem(m_KeyMappingDataTable, QKeyMapper::KeyMappingDataList, rowindex, LOCK_COLUMN);
+    }
+
+    emit keyMappingTableItemCheckStateChanged_Signal(rowindex, BURST_MODE_COLUMN, QKeyMapper::KeyMappingDataList->at(rowindex).Burst);
+    emit keyMappingTableItemCheckStateChanged_Signal(rowindex, LOCK_COLUMN, QKeyMapper::KeyMappingDataList->at(rowindex).Lock);
+    syncFloatingButtonAfterBurstAndLockState(rowindex);
 }
 
 void QKeyMapper::onUpdateFloatingButtonPressedState(int rowindex, bool pressed)
