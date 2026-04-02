@@ -5771,6 +5771,37 @@ QString QKeyMapper::unescapeSendTextForLoading(const QString &text)
     return result;
 }
 
+QString QKeyMapper::encodeKeyMapDataColorToken(const QColor &color, const QColor &defaultColor)
+{
+    const QColor resolvedColor = color.isValid() ? color : defaultColor;
+    if (!resolvedColor.isValid()) {
+        return QString();
+    }
+
+    // KeyMapData level1 uses '#' as a separator, so color tokens must omit the leading '#'.
+    QString colorToken = resolvedColor.name(QColor::HexArgb);
+    if (colorToken.startsWith('#')) {
+        colorToken.remove(0, 1);
+    }
+
+    return colorToken;
+}
+
+QColor QKeyMapper::decodeKeyMapDataColorToken(const QString &colorToken, const QColor &defaultColor)
+{
+    QString normalizedToken = colorToken.trimmed();
+    if (normalizedToken.isEmpty()) {
+        return defaultColor;
+    }
+
+    if (!normalizedToken.startsWith('#')) {
+        normalizedToken.prepend('#');
+    }
+
+    const QColor decodedColor(normalizedToken);
+    return decodedColor.isValid() ? decodedColor : defaultColor;
+}
+
 void QKeyMapper::switchBurstAndLockState(int rowindex)
 {
     if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
@@ -7469,31 +7500,14 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
             floatingbutton_enableList.append("OFF");
         }
         floatingbutton_labelList.append(keymapdata.FloatingButton_Label);
-
-        if (keymapdata.FloatingButton_ButtonColor.isValid()) {
-            floatingbutton_buttoncolorList.append(keymapdata.FloatingButton_ButtonColor.name(QColor::HexArgb));
-        }
-        else {
-            floatingbutton_buttoncolorList.append(FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-        }
-        if (keymapdata.FloatingButton_PressedColor.isValid()) {
-            floatingbutton_pressedcolorList.append(keymapdata.FloatingButton_PressedColor.name(QColor::HexArgb));
-        }
-        else {
-            floatingbutton_pressedcolorList.append(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-        }
-        if (keymapdata.FloatingButton_LockedColor.isValid()) {
-            floatingbutton_lockedcolorList.append(keymapdata.FloatingButton_LockedColor.name(QColor::HexArgb));
-        }
-        else {
-            floatingbutton_lockedcolorList.append(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-        }
-        if (keymapdata.FloatingButton_TextColor.isValid()) {
-            floatingbutton_textcolorList.append(keymapdata.FloatingButton_TextColor.name(QColor::HexArgb));
-        }
-        else {
-            floatingbutton_textcolorList.append(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-        }
+        floatingbutton_buttoncolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_ButtonColor,
+                                                                                      FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR));
+        floatingbutton_pressedcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_PressedColor,
+                                                                                       FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR));
+        floatingbutton_lockedcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_LockedColor,
+                                                                                      FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
+        floatingbutton_textcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_TextColor,
+                                                                                    FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
 
         if (FLOATINGBUTTON_WIDTH_MIN <= keymapdata.FloatingButton_Width && keymapdata.FloatingButton_Width <= FLOATINGBUTTON_WIDTH_MAX) {
             floatingbutton_widthList.append(QString::number(keymapdata.FloatingButton_Width));
@@ -7835,10 +7849,10 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             crosshair_crosshairwidthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT));
             crosshair_crosshairlengthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT));
             crosshair_crosshairopacityStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT));
-            floatingbutton_buttoncolorStringListDefault.append(FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-            floatingbutton_pressedcolorStringListDefault.append(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-            floatingbutton_lockedcolorStringListDefault.append(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-            floatingbutton_textcolorStringListDefault.append(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
+            floatingbutton_buttoncolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR));
+            floatingbutton_pressedcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR));
+            floatingbutton_lockedcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
+            floatingbutton_textcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
             floatingbutton_widthStringListDefault.append(QString::number(FLOATINGBUTTON_WIDTH_DEFAULT));
             floatingbutton_heightStringListDefault.append(QString::number(FLOATINGBUTTON_HEIGHT_DEFAULT));
             floatingbutton_fontsizeStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_SIZE_DEFAULT));
@@ -8410,39 +8424,27 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
-                const QString &floatingbutton_buttoncolorStr = (i < floatingbutton_buttoncolorStringList.size()) ? floatingbutton_buttoncolorStringList.at(i) : FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb);
-                QColor floatingbutton_buttoncolor(floatingbutton_buttoncolorStr);
-                if (!floatingbutton_buttoncolor.isValid()) {
-                    floatingbutton_buttoncolor = FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
-                }
-                floatingbutton_buttoncolorList.append(floatingbutton_buttoncolor);
+                const QString &floatingbutton_buttoncolorStr = (i < floatingbutton_buttoncolorStringList.size()) ? floatingbutton_buttoncolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR);
+                floatingbutton_buttoncolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_buttoncolorStr,
+                                                                                              FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR));
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
-                const QString &floatingbutton_pressedcolorStr = (i < floatingbutton_pressedcolorStringList.size()) ? floatingbutton_pressedcolorStringList.at(i) : FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb);
-                QColor floatingbutton_pressedcolor(floatingbutton_pressedcolorStr);
-                if (!floatingbutton_pressedcolor.isValid()) {
-                    floatingbutton_pressedcolor = FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
-                }
-                floatingbutton_pressedcolorList.append(floatingbutton_pressedcolor);
+                const QString &floatingbutton_pressedcolorStr = (i < floatingbutton_pressedcolorStringList.size()) ? floatingbutton_pressedcolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR);
+                floatingbutton_pressedcolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_pressedcolorStr,
+                                                                                               FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR));
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
-                const QString &floatingbutton_lockedcolorStr = (i < floatingbutton_lockedcolorStringList.size()) ? floatingbutton_lockedcolorStringList.at(i) : FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb);
-                QColor floatingbutton_lockedcolor(floatingbutton_lockedcolorStr);
-                if (!floatingbutton_lockedcolor.isValid()) {
-                    floatingbutton_lockedcolor = FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR;
-                }
-                floatingbutton_lockedcolorList.append(floatingbutton_lockedcolor);
+                const QString &floatingbutton_lockedcolorStr = (i < floatingbutton_lockedcolorStringList.size()) ? floatingbutton_lockedcolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR);
+                floatingbutton_lockedcolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_lockedcolorStr,
+                                                                                              FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
-                const QString &floatingbutton_textcolorStr = (i < floatingbutton_textcolorStringList.size()) ? floatingbutton_textcolorStringList.at(i) : FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb);
-                QColor floatingbutton_textcolor(floatingbutton_textcolorStr);
-                if (!floatingbutton_textcolor.isValid()) {
-                    floatingbutton_textcolor = FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
-                }
-                floatingbutton_textcolorList.append(floatingbutton_textcolor);
+                const QString &floatingbutton_textcolorStr = (i < floatingbutton_textcolorStringList.size()) ? floatingbutton_textcolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR);
+                floatingbutton_textcolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_textcolorStr,
+                                                                                            FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
@@ -13351,31 +13353,14 @@ void QKeyMapper::saveKeyMapSetting(void)
                     floatingbutton_enableList.append("OFF");
                 }
                 floatingbutton_labelList.append(keymapdata.FloatingButton_Label);
-
-                if (keymapdata.FloatingButton_ButtonColor.isValid()) {
-                    floatingbutton_buttoncolorList.append(keymapdata.FloatingButton_ButtonColor.name(QColor::HexArgb));
-                }
-                else {
-                    floatingbutton_buttoncolorList.append(FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-                }
-                if (keymapdata.FloatingButton_PressedColor.isValid()) {
-                    floatingbutton_pressedcolorList.append(keymapdata.FloatingButton_PressedColor.name(QColor::HexArgb));
-                }
-                else {
-                    floatingbutton_pressedcolorList.append(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-                }
-                if (keymapdata.FloatingButton_LockedColor.isValid()) {
-                    floatingbutton_lockedcolorList.append(keymapdata.FloatingButton_LockedColor.name(QColor::HexArgb));
-                }
-                else {
-                    floatingbutton_lockedcolorList.append(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-                }
-                if (keymapdata.FloatingButton_TextColor.isValid()) {
-                    floatingbutton_textcolorList.append(keymapdata.FloatingButton_TextColor.name(QColor::HexArgb));
-                }
-                else {
-                    floatingbutton_textcolorList.append(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-                }
+                floatingbutton_buttoncolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_ButtonColor,
+                                                                                              FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR));
+                floatingbutton_pressedcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_PressedColor,
+                                                                                               FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR));
+                floatingbutton_lockedcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_LockedColor,
+                                                                                              FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
+                floatingbutton_textcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_TextColor,
+                                                                                            FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
 
                 if (FLOATINGBUTTON_WIDTH_MIN <= keymapdata.FloatingButton_Width && keymapdata.FloatingButton_Width <= FLOATINGBUTTON_WIDTH_MAX) {
                     floatingbutton_widthList.append(QString::number(keymapdata.FloatingButton_Width));
@@ -15756,10 +15741,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         crosshair_crosshairwidthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRWIDTH_DEFAULT));
                         crosshair_crosshairlengthStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIRLENGTH_DEFAULT));
                         crosshair_crosshairopacityStringListDefault.append(QString::number(CROSSHAIR_CROSSHAIROPACITY_DEFAULT));
-                        floatingbutton_buttoncolorStringListDefault.append(FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-                        floatingbutton_pressedcolorStringListDefault.append(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-                        floatingbutton_lockedcolorStringListDefault.append(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
-                        floatingbutton_textcolorStringListDefault.append(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb));
+                        floatingbutton_buttoncolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR));
+                        floatingbutton_pressedcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR));
+                        floatingbutton_lockedcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
+                        floatingbutton_textcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
                         floatingbutton_widthStringListDefault.append(QString::number(FLOATINGBUTTON_WIDTH_DEFAULT));
                         floatingbutton_heightStringListDefault.append(QString::number(FLOATINGBUTTON_HEIGHT_DEFAULT));
                         floatingbutton_fontsizeStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_SIZE_DEFAULT));
@@ -16353,39 +16338,27 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
-                            const QString &floatingbutton_buttoncolorStr = (i < floatingbutton_buttoncolorStringList.size()) ? floatingbutton_buttoncolorStringList.at(i) : FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb);
-                            QColor floatingbutton_buttoncolor(floatingbutton_buttoncolorStr);
-                            if (!floatingbutton_buttoncolor.isValid()) {
-                                floatingbutton_buttoncolor = FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
-                            }
-                            floatingbutton_buttoncolorList.append(floatingbutton_buttoncolor);
+                            const QString &floatingbutton_buttoncolorStr = (i < floatingbutton_buttoncolorStringList.size()) ? floatingbutton_buttoncolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR);
+                            floatingbutton_buttoncolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_buttoncolorStr,
+                                                                                                          FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR));
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
-                            const QString &floatingbutton_pressedcolorStr = (i < floatingbutton_pressedcolorStringList.size()) ? floatingbutton_pressedcolorStringList.at(i) : FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb);
-                            QColor floatingbutton_pressedcolor(floatingbutton_pressedcolorStr);
-                            if (!floatingbutton_pressedcolor.isValid()) {
-                                floatingbutton_pressedcolor = FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
-                            }
-                            floatingbutton_pressedcolorList.append(floatingbutton_pressedcolor);
+                            const QString &floatingbutton_pressedcolorStr = (i < floatingbutton_pressedcolorStringList.size()) ? floatingbutton_pressedcolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR);
+                            floatingbutton_pressedcolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_pressedcolorStr,
+                                                                                                           FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR));
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
-                            const QString &floatingbutton_lockedcolorStr = (i < floatingbutton_lockedcolorStringList.size()) ? floatingbutton_lockedcolorStringList.at(i) : FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb);
-                            QColor floatingbutton_lockedcolor(floatingbutton_lockedcolorStr);
-                            if (!floatingbutton_lockedcolor.isValid()) {
-                                floatingbutton_lockedcolor = FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR;
-                            }
-                            floatingbutton_lockedcolorList.append(floatingbutton_lockedcolor);
+                            const QString &floatingbutton_lockedcolorStr = (i < floatingbutton_lockedcolorStringList.size()) ? floatingbutton_lockedcolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR);
+                            floatingbutton_lockedcolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_lockedcolorStr,
+                                                                                                          FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
-                            const QString &floatingbutton_textcolorStr = (i < floatingbutton_textcolorStringList.size()) ? floatingbutton_textcolorStringList.at(i) : FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR.name(QColor::HexArgb);
-                            QColor floatingbutton_textcolor(floatingbutton_textcolorStr);
-                            if (!floatingbutton_textcolor.isValid()) {
-                                floatingbutton_textcolor = FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
-                            }
-                            floatingbutton_textcolorList.append(floatingbutton_textcolor);
+                            const QString &floatingbutton_textcolorStr = (i < floatingbutton_textcolorStringList.size()) ? floatingbutton_textcolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR);
+                            floatingbutton_textcolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_textcolorStr,
+                                                                                                        FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {

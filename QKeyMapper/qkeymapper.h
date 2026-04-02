@@ -928,6 +928,8 @@ public:
     static bool backupFile(const QString &sourceFile, const QString &backupFile);
     static QString escapeSendTextForSaving(const QString &text);
     static QString unescapeSendTextForLoading(const QString &text);
+    static QString encodeKeyMapDataColorToken(const QColor &color, const QColor &defaultColor = QColor());
+    static QColor decodeKeyMapDataColorToken(const QString &colorToken, const QColor &defaultColor = QColor());
     static void switchBurstAndLockState(int rowindex);
     static void buildActiveKeyMappingDataList(void);
     static void restoreKeyMappingDataListPointer(void);
