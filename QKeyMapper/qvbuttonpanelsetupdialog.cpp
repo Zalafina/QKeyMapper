@@ -74,6 +74,18 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
     ui->btnFontWeightComboBox->setCurrentIndex(VBTNPANEL_DEFAULT_FONT_WEIGHT);
     ui->btnFontSizeSpinBox->setRange(VBTNPANEL_BTNFONTSIZE_MIN, VBTNPANEL_BTNFONTSIZE_MAX);
     ui->btnFontSizeSpinBox->setValue(VBTNPANEL_DEFAULT_BTNFONTSIZE);
+
+    connect(ui->btnFontFamilyComboBox, &QFontComboBox::currentFontChanged, this,
+            [this](const QFont &font) {
+                m_btnFontFamily = font.family();
+                ui->btnFontFamilyDefaultButton->setEnabled(!m_btnFontFamily.isEmpty());
+            });
+    connect(ui->btnFontFamilyDefaultButton, &QPushButton::clicked, this,
+            [this]() {
+                m_btnFontFamily.clear();
+                syncFontFamilyControls();
+            });
+    syncFontFamilyControls();
 }
 
 QVButtonPanelSetupDialog::~QVButtonPanelSetupDialog()
@@ -100,6 +112,7 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     ui->referencePointLabel->setText(tr("Ref Point"));
     ui->btnFontSizeLabel->setText(tr("Font Size"));
     ui->btnFontWeightLabel->setText(tr("Font Weight"));
+    ui->btnFontFamilyLabel->setText(tr("Font Family"));
 
     ui->alwaysOnTopCheckBox->setText(tr("Always On Top"));
     ui->dragEnabledCheckBox->setText(tr("Drag Move"));
@@ -123,6 +136,8 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
 
     ui->okButton->setText(tr("Apply"));
     ui->cancelButton->setText(tr("Cancel"));
+    ui->btnFontFamilyDefaultButton->setText(tr("Default"));
+    ui->btnFontFamilyDefaultButton->setToolTip(tr("Use application default font"));
 
     m_BtnColorPicker->setButtonText(tr("BtnColor"));
     m_BtnColorPicker->setWindowTitle(tr("VButton Panel Button Color"));
@@ -156,6 +171,8 @@ void QVButtonPanelSetupDialog::loadSettings(const VButtonPanelSettings &settings
     ui->offsetYSpinBox->setValue(settings.offsetY);
     ui->btnFontSizeSpinBox->setValue(qBound(VBTNPANEL_BTNFONTSIZE_MIN, settings.btnFontSize, VBTNPANEL_BTNFONTSIZE_MAX));
     ui->btnFontWeightComboBox->setCurrentIndex(qBound(VBTNPANEL_FONT_WEIGHT_MIN, settings.btnFontWeight, VBTNPANEL_FONT_WEIGHT_MAX));
+    m_btnFontFamily = settings.btnFontFamily.trimmed();
+    syncFontFamilyControls();
     m_BGColorPicker->setColor(settings.bgColor);
     m_BtnColorPicker->setColor(settings.btnColor);
     m_PressedColorPicker->setColor(settings.pressedColor);
@@ -181,12 +198,27 @@ VButtonPanelSettings QVButtonPanelSetupDialog::getSettings() const
     s.offsetY        = ui->offsetYSpinBox->value();
     s.btnFontSize    = ui->btnFontSizeSpinBox->value();
     s.btnFontWeight  = ui->btnFontWeightComboBox->currentIndex();
+    s.btnFontFamily  = m_btnFontFamily;
     s.bgColor        = m_BGColorPicker->getColor();
     s.btnColor       = m_BtnColorPicker->getColor();
     s.pressedColor   = m_PressedColorPicker->getColor();
     s.lockedColor    = m_LockedColorPicker->getColor();
     s.textColor      = m_TextColorPicker->getColor();
     return s;
+}
+
+void QVButtonPanelSetupDialog::syncFontFamilyControls()
+{
+    const QString previewFamily = m_btnFontFamily.isEmpty()
+        ? QApplication::font(ui->btnFontFamilyComboBox).family()
+        : m_btnFontFamily;
+
+    const QSignalBlocker blocker(ui->btnFontFamilyComboBox);
+    if (!previewFamily.isEmpty()) {
+        ui->btnFontFamilyComboBox->setCurrentFont(QFont(previewFamily));
+    }
+
+    ui->btnFontFamilyDefaultButton->setEnabled(!m_btnFontFamily.isEmpty());
 }
 
 void QVButtonPanelSetupDialog::on_okButton_clicked()

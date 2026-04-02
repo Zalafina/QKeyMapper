@@ -1,6 +1,7 @@
 #include "qfloatingbuttonsetupdialog.h"
 
 #include <QFormLayout>
+#include <QFontComboBox>
 #include <QGroupBox>
 
 #include "qkeymapper.h"
@@ -13,6 +14,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_ItemRow(-1)
     , m_isLoading(false)
     , m_hasBackup(false)
+    , m_FontFamily()
     , m_EnableCheckBox(new QCheckBox(this))
     , m_LabelTextLabel(new QLabel(this))
     , m_LabelLineEdit(new QLineEdit(this))
@@ -25,12 +27,15 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_HeightLabel(new QLabel(this))
     , m_FontSizeLabel(new QLabel(this))
     , m_FontWeightLabel(new QLabel(this))
+    , m_FontFamilyLabel(new QLabel(this))
     , m_RadiusLabel(new QLabel(this))
     , m_OpacityLabel(new QLabel(this))
     , m_WidthSpinBox(new QSpinBox(this))
     , m_HeightSpinBox(new QSpinBox(this))
     , m_FontSizeSpinBox(new QSpinBox(this))
     , m_FontWeightComboBox(new QComboBox(this))
+    , m_FontFamilyComboBox(new QFontComboBox(this))
+    , m_FontFamilyDefaultButton(new QPushButton(this))
     , m_RadiusSpinBox(new QSpinBox(this))
     , m_OpacitySpinBox(new QDoubleSpinBox(this))
     , m_ReferencePointLabel(new QLabel(this))
@@ -77,16 +82,20 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     styleGrid->addWidget(m_HeightLabel, 0, 2);
     styleGrid->addWidget(m_HeightSpinBox, 0, 3);
 
-    styleGrid->addWidget(m_FontSizeLabel, 1, 0);
-    styleGrid->addWidget(m_FontSizeSpinBox, 1, 1);
-    styleGrid->addWidget(m_FontWeightLabel, 1, 2);
-    styleGrid->addWidget(m_FontWeightComboBox, 1, 3);
+    styleGrid->addWidget(m_RadiusLabel, 1, 0);
+    styleGrid->addWidget(m_RadiusSpinBox, 1, 1);
 
-    styleGrid->addWidget(m_RadiusLabel, 2, 0);
-    styleGrid->addWidget(m_RadiusSpinBox, 2, 1);
+    styleGrid->addWidget(m_OpacityLabel, 1, 2);
+    styleGrid->addWidget(m_OpacitySpinBox, 1, 3);
 
-    styleGrid->addWidget(m_OpacityLabel, 2, 2);
-    styleGrid->addWidget(m_OpacitySpinBox, 2, 3);
+    styleGrid->addWidget(m_FontSizeLabel, 2, 0);
+    styleGrid->addWidget(m_FontSizeSpinBox, 2, 1);
+    styleGrid->addWidget(m_FontWeightLabel, 2, 2);
+    styleGrid->addWidget(m_FontWeightComboBox, 2, 3);
+
+    styleGrid->addWidget(m_FontFamilyLabel, 3, 0);
+    styleGrid->addWidget(m_FontFamilyComboBox, 3, 1, 1, 2);
+    styleGrid->addWidget(m_FontFamilyDefaultButton, 3, 3);
 
     QGridLayout *colorLayout = new QGridLayout();
     colorLayout->setContentsMargins(0, 0, 0, 0);
@@ -94,7 +103,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     colorLayout->addWidget(m_TextColorPicker, 0, 1);
     colorLayout->addWidget(m_PressedColorPicker, 1, 0);
     colorLayout->addWidget(m_LockedColorPicker, 1, 1);
-    styleGrid->addLayout(colorLayout, 3, 0, 1, 4);
+    styleGrid->addLayout(colorLayout, 4, 0, 1, 4);
 
     QGroupBox *positionGroup = new QGroupBox(this);
     QGridLayout *positionGrid = new QGridLayout(positionGroup);
@@ -126,11 +135,15 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_HeightLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_FontSizeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_FontWeightLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_FontFamilyLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_RadiusLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OpacityLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_ReferencePointLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetXLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetYLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_FontFamilyDefaultButton->setFixedWidth(75);
+    m_FontFamilyDefaultButton->setAutoDefault(false);
+    m_FontFamilyDefaultButton->setDefault(false);
 
     connect(m_ApplyButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onApplyButtonClicked);
     connect(m_RevertButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onRevertButtonClicked);
@@ -158,6 +171,18 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     connect(m_HeightSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_FontSizeSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_FontWeightComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_FontFamilyComboBox, &QFontComboBox::currentFontChanged, this,
+            [this](const QFont &font) {
+                m_FontFamily = font.family().trimmed();
+                m_FontFamilyDefaultButton->setEnabled(!m_FontFamily.isEmpty());
+                onAnyControlChanged();
+            });
+    connect(m_FontFamilyDefaultButton, &QPushButton::clicked, this,
+            [this]() {
+                m_FontFamily.clear();
+                syncFontFamilyControls();
+                onAnyControlChanged();
+            });
     connect(m_RadiusSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_OpacitySpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_ReferencePointComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
@@ -168,6 +193,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     connect(m_PressedColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_LockedColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_TextColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+
+    syncFontFamilyControls();
 
     setUILanguage(QKeyMapper::getLanguageIndex());
 }
@@ -191,6 +218,7 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_HeightLabel->setText(tr("Height"));
     m_FontSizeLabel->setText(tr("Font Size"));
     m_FontWeightLabel->setText(tr("Font Weight"));
+    m_FontFamilyLabel->setText(tr("Font Family"));
     m_RadiusLabel->setText(tr("Radius"));
     m_OpacityLabel->setText(tr("Opacity"));
 
@@ -203,6 +231,10 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     }
     if (m_RevertButton != Q_NULLPTR) {
         m_RevertButton->setText(tr("Revert"));
+    }
+    if (m_FontFamilyDefaultButton != Q_NULLPTR) {
+        m_FontFamilyDefaultButton->setText(tr("Default"));
+        m_FontFamilyDefaultButton->setToolTip(tr("Use application default font"));
     }
 
     if (m_FontWeightComboBox->count() != 3) {
@@ -337,6 +369,8 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_HeightSpinBox->setValue(keymapdata.FloatingButton_Height);
     m_FontSizeSpinBox->setValue(keymapdata.FloatingButton_FontSize);
     m_FontWeightComboBox->setCurrentIndex(qBound(FLOATINGBUTTON_FONT_WEIGHT_MIN, keymapdata.FloatingButton_FontWeight, FLOATINGBUTTON_FONT_WEIGHT_MAX));
+    m_FontFamily = keymapdata.FloatingButton_FontFamily.trimmed();
+    syncFontFamilyControls();
     m_RadiusSpinBox->setValue(keymapdata.FloatingButton_Radius);
     m_OpacitySpinBox->setValue(keymapdata.FloatingButton_Opacity);
 
@@ -376,6 +410,7 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_Height = m_HeightSpinBox->value();
     keymapdata.FloatingButton_FontSize = m_FontSizeSpinBox->value();
     keymapdata.FloatingButton_FontWeight = qBound(FLOATINGBUTTON_FONT_WEIGHT_MIN, m_FontWeightComboBox->currentIndex(), FLOATINGBUTTON_FONT_WEIGHT_MAX);
+    keymapdata.FloatingButton_FontFamily = m_FontFamily;
     keymapdata.FloatingButton_Radius = m_RadiusSpinBox->value();
     keymapdata.FloatingButton_Opacity = m_OpacitySpinBox->value();
 
@@ -387,6 +422,20 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_PressedColor = m_PressedColorPicker->getColor();
     keymapdata.FloatingButton_LockedColor = m_LockedColorPicker->getColor();
     keymapdata.FloatingButton_TextColor = m_TextColorPicker->getColor();
+}
+
+void QFloatingButtonSetupDialog::syncFontFamilyControls()
+{
+    const QString previewFamily = m_FontFamily.isEmpty()
+        ? QApplication::font(m_FontFamilyComboBox).family()
+        : m_FontFamily;
+
+    const QSignalBlocker blocker(m_FontFamilyComboBox);
+    if (!previewFamily.isEmpty()) {
+        m_FontFamilyComboBox->setCurrentFont(QFont(previewFamily));
+    }
+
+    m_FontFamilyDefaultButton->setEnabled(!m_FontFamily.isEmpty());
 }
 
 void QFloatingButtonSetupDialog::setupReferencePointComboBox()

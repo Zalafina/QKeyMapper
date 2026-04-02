@@ -207,7 +207,7 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
 
 void QVButtonPanel::applySettings(int columns, int maxRows, int btnWidth, int btnHeight,
                                    double opacity, bool alwaysOnTop, int margin, int radius, bool dragEnabled,
-                                   int btnFontSize, int btnFontWeight)
+                                   int btnFontSize, int btnFontWeight, const QString &btnFontFamily)
 {
     m_columns     = qMax(1, columns);
     m_maxRows     = qMax(2, maxRows);
@@ -218,6 +218,7 @@ void QVButtonPanel::applySettings(int columns, int maxRows, int btnWidth, int bt
     m_dragEnabled = dragEnabled;
     m_btnFontSize = qBound(VBTNPANEL_BTNFONTSIZE_MIN, btnFontSize, VBTNPANEL_BTNFONTSIZE_MAX);
     m_btnFontWeight = qBound(VBTNPANEL_FONT_WEIGHT_MIN, btnFontWeight, VBTNPANEL_FONT_WEIGHT_MAX);
+    m_btnFontFamily = btnFontFamily.trimmed();
 
     // Update layout spacing/margins
     m_mainLayout->setContentsMargins(m_margin, m_margin, m_margin, m_margin);
@@ -484,10 +485,17 @@ void QVButtonPanel::applyButtonFont(QToolButton *button)
         return;
     }
 
-    QFont font = button->font();
+    QFont font = QApplication::font(button);
+    if (!m_btnFontFamily.isEmpty()) {
+        font.setFamily(m_btnFontFamily);
+    }
     font.setPointSize(m_btnFontSize);
     font.setWeight(toVButtonQtFontWeight(m_btnFontWeight));
     button->setFont(font);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QVButtonPanel::applyButtonFont] Button font ->" << font;
+#endif
 }
 
 void QVButtonPanel::applyButtonStyle(QToolButton *button, bool locked)

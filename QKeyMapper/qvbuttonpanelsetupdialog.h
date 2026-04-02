@@ -26,6 +26,7 @@ struct VButtonPanelSettings {
     int    offsetY        = QKeyMapperConstants::VBTNPANEL_DEFAULT_OFFSETY;
     int    btnFontSize    = QKeyMapperConstants::VBTNPANEL_DEFAULT_BTNFONTSIZE;
     int    btnFontWeight  = QKeyMapperConstants::VBTNPANEL_DEFAULT_FONT_WEIGHT;
+    QString btnFontFamily;
     QColor bgColor        = QKeyMapperConstants::VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
     QColor btnColor       = QKeyMapperConstants::VBTNPANEL_BUTTON_COLOR_DEFAULT;
     QColor pressedColor   = QKeyMapperConstants::VBTNPANEL_PRESSED_COLOR_DEFAULT;
@@ -66,8 +67,11 @@ private slots:
     void on_okButton_clicked();
 
 private:
+    void syncFontFamilyControls();
+
     static QVButtonPanelSetupDialog *m_instance;
     Ui::QVButtonPanelSetupDialog    *ui;
+    QString                         m_btnFontFamily;
     ColorPickerWidget               *m_BGColorPicker;
     ColorPickerWidget               *m_BtnColorPicker;
     ColorPickerWidget               *m_PressedColorPicker;

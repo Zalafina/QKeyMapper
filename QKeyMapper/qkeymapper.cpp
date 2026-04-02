@@ -7262,6 +7262,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList floatingbutton_heightList;
     QStringList floatingbutton_fontsizeList;
     QStringList floatingbutton_fontweightList;
+    QStringList floatingbutton_fontfamilyList;
     QStringList floatingbutton_radiusList;
     QStringList floatingbutton_opacityList;
     QStringList floatingbutton_showonmappingstartList;
@@ -7533,6 +7534,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             floatingbutton_fontweightList.append(QString::number(FLOATINGBUTTON_FONT_WEIGHT_DEFAULT));
         }
+        floatingbutton_fontfamilyList.append(keymapdata.FloatingButton_FontFamily.trimmed());
         if (FLOATINGBUTTON_RADIUS_MIN <= keymapdata.FloatingButton_Radius && keymapdata.FloatingButton_Radius <= FLOATINGBUTTON_RADIUS_MAX) {
             floatingbutton_radiusList.append(QString::number(keymapdata.FloatingButton_Radius));
         }
@@ -7648,6 +7650,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HEIGHT, floatingbutton_heightList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE, floatingbutton_fontsizeList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT, floatingbutton_fontweightList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY, floatingbutton_fontfamilyList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_RADIUS, floatingbutton_radiusList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_OPACITY, floatingbutton_opacityList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART, floatingbutton_showonmappingstartList);
@@ -7730,6 +7733,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList floatingbutton_heightStringList;
     QStringList floatingbutton_fontsizeStringList;
     QStringList floatingbutton_fontweightStringList;
+    QStringList floatingbutton_fontfamilyStringList;
     QStringList floatingbutton_radiusStringList;
     QStringList floatingbutton_opacityStringList;
     QStringList floatingbutton_showonmappingstartStringList;
@@ -7828,6 +7832,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         QStringList floatingbutton_heightStringListDefault;
         QStringList floatingbutton_fontsizeStringListDefault;
         QStringList floatingbutton_fontweightStringListDefault;
+        QStringList floatingbutton_fontfamilyStringListDefault;
         QStringList floatingbutton_radiusStringListDefault;
         QStringList floatingbutton_opacityStringListDefault;
         QStringList floatingbutton_referencepointStringListDefault;
@@ -7857,6 +7862,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             floatingbutton_heightStringListDefault.append(QString::number(FLOATINGBUTTON_HEIGHT_DEFAULT));
             floatingbutton_fontsizeStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_SIZE_DEFAULT));
             floatingbutton_fontweightStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_WEIGHT_DEFAULT));
+            floatingbutton_fontfamilyStringListDefault.append(QString());
             floatingbutton_radiusStringListDefault.append(QString::number(FLOATINGBUTTON_RADIUS_DEFAULT));
             floatingbutton_opacityStringListDefault.append(QString::number(FLOATINGBUTTON_OPACITY_DEFAULT, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
             floatingbutton_referencepointStringListDefault.append(QString::number(FLOATINGWINDOW_REFERENCEPOINT_DEFAULT));
@@ -7905,6 +7911,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         floatingbutton_heightStringList = floatingbutton_heightStringListDefault;
         floatingbutton_fontsizeStringList = floatingbutton_fontsizeStringListDefault;
         floatingbutton_fontweightStringList = floatingbutton_fontweightStringListDefault;
+        floatingbutton_fontfamilyStringList = floatingbutton_fontfamilyStringListDefault;
         floatingbutton_radiusStringList = floatingbutton_radiusStringListDefault;
         floatingbutton_opacityStringList = floatingbutton_opacityStringListDefault;
         floatingbutton_showonmappingstartStringList = stringListAllON;
@@ -8046,6 +8053,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT)) {
             floatingbutton_fontweightStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY)) {
+            floatingbutton_fontfamilyStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_RADIUS)) {
             floatingbutton_radiusStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_RADIUS).toStringList();
@@ -12929,6 +12939,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString floatingbutton_heightList_forsave;
     QString floatingbutton_fontsizeList_forsave;
     QString floatingbutton_fontweightList_forsave;
+    QVariantList floatingbutton_fontfamilyList_forsave;
     QString floatingbutton_radiusList_forsave;
     QString floatingbutton_opacityList_forsave;
     QString floatingbutton_showonmappingstartList_forsave;
@@ -13103,6 +13114,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         QStringList floatingbutton_heightList;
         QStringList floatingbutton_fontsizeList;
         QStringList floatingbutton_fontweightList;
+        QStringList floatingbutton_fontfamilyList;
         QStringList floatingbutton_radiusList;
         QStringList floatingbutton_opacityList;
         QStringList floatingbutton_showonmappingstartList;
@@ -13386,6 +13398,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                 else {
                     floatingbutton_fontweightList.append(QString::number(FLOATINGBUTTON_FONT_WEIGHT_DEFAULT));
                 }
+                floatingbutton_fontfamilyList.append(keymapdata.FloatingButton_FontFamily.trimmed());
                 if (FLOATINGBUTTON_RADIUS_MIN <= keymapdata.FloatingButton_Radius && keymapdata.FloatingButton_Radius <= FLOATINGBUTTON_RADIUS_MAX) {
                     floatingbutton_radiusList.append(QString::number(keymapdata.FloatingButton_Radius));
                 }
@@ -13555,6 +13568,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         floatingbutton_heightList_forsave.append(floatingbutton_heightList_str);
         floatingbutton_fontsizeList_forsave.append(floatingbutton_fontsizeList_str);
         floatingbutton_fontweightList_forsave.append(floatingbutton_fontweightList_str);
+        floatingbutton_fontfamilyList_forsave.append(floatingbutton_fontfamilyList);
         floatingbutton_radiusList_forsave.append(floatingbutton_radiusList_str);
         floatingbutton_opacityList_forsave.append(floatingbutton_opacityList_str);
         floatingbutton_showonmappingstartList_forsave.append(floatingbutton_showonmappingstartList_str);
@@ -13634,6 +13648,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HEIGHT, floatingbutton_heightList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTSIZE, floatingbutton_fontsizeList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT, floatingbutton_fontweightList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY, floatingbutton_fontfamilyList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_RADIUS, floatingbutton_radiusList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_OPACITY, floatingbutton_opacityList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART, floatingbutton_showonmappingstartList_forsave);
@@ -13811,6 +13826,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(vbtnPrefix + VBTNPANEL_TEXTCOLOR, m_VButtonPanelSettings.textColor.name(QColor::HexArgb));
         settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTSIZE, m_VButtonPanelSettings.btnFontSize);
         settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTWEIGHT, m_VButtonPanelSettings.btnFontWeight);
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTFAMILY, m_VButtonPanelSettings.btnFontFamily);
     }
 
     // Save MacroList to INI file
@@ -15051,6 +15067,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QString notes_loaded_string;
         QVariantList notes_loaded;
         QVariantList categorys_loaded;
+        bool floatingbutton_fontfamily_load_asString = false;
+        QString floatingbutton_fontfamilyData_loaded_string;
+        QVariantList floatingbutton_fontfamilyData_loaded;
         QString disabledData_loaded;
         QString burstData_loaded;
         QString burstpressData_loaded;
@@ -15111,6 +15130,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QStringList notes_split_string;
         QList<QStringList> notes_split;
         QList<QStringList> categorys_split;
+        QList<QStringList> floatingbutton_fontfamilyData_split;
         QStringList disabledData_split;
         QStringList burstData_split;
         QStringList burstpressData_split;
@@ -15517,6 +15537,31 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 floatingbutton_fontweightData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT).toString();
                 floatingbutton_fontweightData_split = floatingbutton_fontweightData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY)) {
+                QVariant floatingbutton_fontfamilyData_loaded_variant = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY);
+                floatingbutton_fontfamily_load_asString = floatingbutton_fontfamilyData_loaded_variant.canConvert<QString>();
+                if (floatingbutton_fontfamily_load_asString) {
+                    floatingbutton_fontfamilyData_loaded_string = floatingbutton_fontfamilyData_loaded_variant.toString();
+                    const QStringList floatingbutton_fontfamilyData_split_string = floatingbutton_fontfamilyData_loaded_string.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+                    for (const QString &tabFontFamilyData : std::as_const(floatingbutton_fontfamilyData_split_string)) {
+                        QStringList fontFamilyStringList = tabFontFamilyData.split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                        for (QString &fontFamily : fontFamilyStringList) {
+                            fontFamily = QKeyMapper::unescapeSendTextForLoading(fontFamily).trimmed();
+                        }
+                        floatingbutton_fontfamilyData_split.append(fontFamilyStringList);
+                    }
+                }
+                else {
+                    floatingbutton_fontfamilyData_loaded = floatingbutton_fontfamilyData_loaded_variant.toList();
+                    for (const QVariant &variant : std::as_const(floatingbutton_fontfamilyData_loaded)) {
+                        QStringList fontFamilyStringList = variant.toStringList();
+                        for (QString &fontFamily : fontFamilyStringList) {
+                            fontFamily = fontFamily.trimmed();
+                        }
+                        floatingbutton_fontfamilyData_split.append(fontFamilyStringList);
+                    }
+                }
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_RADIUS)) {
                 floatingbutton_radiusData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_RADIUS).toString();
                 floatingbutton_radiusData_split = floatingbutton_radiusData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -15624,6 +15669,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_heightStringList;
                     QStringList floatingbutton_fontsizeStringList;
                     QStringList floatingbutton_fontweightStringList;
+                    QStringList floatingbutton_fontfamilyStringList;
                     QStringList floatingbutton_radiusStringList;
                     QStringList floatingbutton_opacityStringList;
                     QStringList floatingbutton_showonmappingstartStringList;
@@ -15677,6 +15723,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QList<int> floatingbutton_heightList;
                     QList<int> floatingbutton_fontsizeList;
                     QList<int> floatingbutton_fontweightList;
+                    QList<QString> floatingbutton_fontfamilyList;
                     QList<int> floatingbutton_radiusList;
                     QList<double> floatingbutton_opacityList;
                     QList<bool> floatingbutton_showonmappingstartList;
@@ -15950,6 +15997,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     }
                     if (floatingbutton_fontweightData_split.size() == table_count) {
                         floatingbutton_fontweightStringList = floatingbutton_fontweightData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_fontfamilyData_split.size() == table_count) {
+                        floatingbutton_fontfamilyStringList = floatingbutton_fontfamilyData_split.at(index);
                     }
                     if (floatingbutton_radiusData_split.size() == table_count) {
                         floatingbutton_radiusStringList = floatingbutton_radiusData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -16402,6 +16452,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_fontfamily = (i < floatingbutton_fontfamilyStringList.size()) ? floatingbutton_fontfamilyStringList.at(i) : QString();
+                            floatingbutton_fontfamilyList.append(floatingbutton_fontfamily.trimmed());
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
                             const QString &floatingbutton_radiusStr = (i < floatingbutton_radiusStringList.size()) ? floatingbutton_radiusStringList.at(i) : QString::number(FLOATINGBUTTON_RADIUS_DEFAULT);
                             bool ok;
                             int floatingbutton_radius = floatingbutton_radiusStr.toInt(&ok);
@@ -16551,6 +16606,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                 loadedData.FloatingButton_Height = floatingbutton_heightList.at(loadindex);
                                 loadedData.FloatingButton_FontSize = floatingbutton_fontsizeList.at(loadindex);
                                 loadedData.FloatingButton_FontWeight = floatingbutton_fontweightList.at(loadindex);
+                                loadedData.FloatingButton_FontFamily = floatingbutton_fontfamilyList.at(loadindex);
                                 loadedData.FloatingButton_Radius = floatingbutton_radiusList.at(loadindex);
                                 loadedData.FloatingButton_Opacity = floatingbutton_opacityList.at(loadindex);
                                 loadedData.FloatingButton_ShowOnMappingStart = floatingbutton_showonmappingstartList.at(loadindex);
@@ -17871,6 +17927,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                                                    VBTNPANEL_DEFAULT_BTNFONTSIZE).toInt();
             m_VButtonPanelSettings.btnFontWeight = settingFile.value(settingSelectStr + VBTNPANEL_BTNFONTWEIGHT,
                                                                       VBTNPANEL_DEFAULT_FONT_WEIGHT).toInt();
+            m_VButtonPanelSettings.btnFontFamily = settingFile.value(settingSelectStr + VBTNPANEL_BTNFONTFAMILY).toString().trimmed();
             m_VButtonPanelSettings.btnFontSize = qBound(VBTNPANEL_BTNFONTSIZE_MIN,
                                                         m_VButtonPanelSettings.btnFontSize,
                                                         VBTNPANEL_BTNFONTSIZE_MAX);
@@ -17889,7 +17946,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                           m_VButtonPanelSettings.radius,
                                           m_VButtonPanelSettings.dragEnabled,
                                           m_VButtonPanelSettings.btnFontSize,
-                                          m_VButtonPanelSettings.btnFontWeight);
+                                          m_VButtonPanelSettings.btnFontWeight,
+                                          m_VButtonPanelSettings.btnFontFamily);
             m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
                                           m_VButtonPanelSettings.offsetX,
                                           m_VButtonPanelSettings.offsetY);
@@ -18019,7 +18077,8 @@ void QKeyMapper::loadEmptyMapSetting()
                                       m_VButtonPanelSettings.radius,
                                       m_VButtonPanelSettings.dragEnabled,
                                       m_VButtonPanelSettings.btnFontSize,
-                                      m_VButtonPanelSettings.btnFontWeight);
+                                      m_VButtonPanelSettings.btnFontWeight,
+                                      m_VButtonPanelSettings.btnFontFamily);
         m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
                                       m_VButtonPanelSettings.offsetX,
                                       m_VButtonPanelSettings.offsetY);
@@ -26637,6 +26696,7 @@ void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &ru
         tabData.FloatingButton_Height = runtimeData.FloatingButton_Height;
         tabData.FloatingButton_FontSize = runtimeData.FloatingButton_FontSize;
         tabData.FloatingButton_FontWeight = runtimeData.FloatingButton_FontWeight;
+        tabData.FloatingButton_FontFamily = runtimeData.FloatingButton_FontFamily;
         tabData.FloatingButton_Radius = runtimeData.FloatingButton_Radius;
         tabData.FloatingButton_Opacity = runtimeData.FloatingButton_Opacity;
         tabData.FloatingButton_ShowOnMappingStart = runtimeData.FloatingButton_ShowOnMappingStart;
@@ -26703,7 +26763,11 @@ void QKeyMapper::refreshFloatingButtonWidget(QPushButton *button, int rowindex, 
     button->setFixedSize(keymapdata.FloatingButton_Width, keymapdata.FloatingButton_Height);
     button->setWindowOpacity(keymapdata.FloatingButton_Opacity);
 
-    QFont buttonFont = button->font();
+    const QString floatingButtonFontFamily = keymapdata.FloatingButton_FontFamily.trimmed();
+    QFont buttonFont = QApplication::font(button);
+    if (!floatingButtonFontFamily.isEmpty()) {
+        buttonFont.setFamily(floatingButtonFontFamily);
+    }
     buttonFont.setPixelSize(keymapdata.FloatingButton_FontSize);
     if (keymapdata.FloatingButton_FontWeight == FLOATINGBUTTON_FONT_WEIGHT_LIGHT) {
         buttonFont.setWeight(QFont::Light);
@@ -31543,7 +31607,8 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
                                   m_VButtonPanelSettings.radius,
                                   m_VButtonPanelSettings.dragEnabled,
                                   m_VButtonPanelSettings.btnFontSize,
-                                  m_VButtonPanelSettings.btnFontWeight);
+                                  m_VButtonPanelSettings.btnFontWeight,
+                                  m_VButtonPanelSettings.btnFontFamily);
     m_VButtonPanel->applyPosition(m_VButtonPanelSettings.referencePoint,
                                   m_VButtonPanelSettings.offsetX,
                                   m_VButtonPanelSettings.offsetY);

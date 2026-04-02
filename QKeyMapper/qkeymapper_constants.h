@@ -1087,6 +1087,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HEIGHT[] = "KeyMapData_FloatingButton_Height";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_FONTSIZE[] = "KeyMapData_FloatingButton_FontSize";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT[] = "KeyMapData_FloatingButton_FontWeight";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY[] = "KeyMapData_FloatingButton_FontFamily";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_RADIUS[] = "KeyMapData_FloatingButton_Radius";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_OPACITY[] = "KeyMapData_FloatingButton_Opacity";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART[] = "KeyMapData_FloatingButton_ShowOnMappingStart";
@@ -1179,6 +1180,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char VBTNPANEL_TEXTCOLOR[]         = "VButtonPanel_TextColor";
     inline constexpr const char VBTNPANEL_BTNFONTSIZE[]       = "VButtonPanel_BtnFontSize";
     inline constexpr const char VBTNPANEL_BTNFONTWEIGHT[]     = "VButtonPanel_BtnFontWeight";
+    inline constexpr const char VBTNPANEL_BTNFONTFAMILY[]     = "VButtonPanel_BtnFontFamily";
     // Kept for backward compatibility (absolute screen position when referencePoint is Screen type)
     inline constexpr const char VBTNPANEL_POSX[]            = "VButtonPanel_PosX";
     inline constexpr const char VBTNPANEL_POSY[]            = "VButtonPanel_PosY";

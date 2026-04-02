@@ -180,6 +180,7 @@ typedef struct MAP_KEYDATA
     int FloatingButton_Height;
     int FloatingButton_FontSize;
     int FloatingButton_FontWeight;
+    QString FloatingButton_FontFamily;
     int FloatingButton_Radius;
     double FloatingButton_Opacity;
     bool FloatingButton_ShowOnMappingStart;
@@ -243,6 +244,7 @@ typedef struct MAP_KEYDATA
     , FloatingButton_Height(QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT)
     , FloatingButton_FontSize(QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT)
     , FloatingButton_FontWeight(QKeyMapperConstants::FLOATINGBUTTON_FONT_WEIGHT_DEFAULT)
+    , FloatingButton_FontFamily()
     , FloatingButton_Radius(QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT)
     , FloatingButton_Opacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
     , FloatingButton_ShowOnMappingStart(QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT)
@@ -328,6 +330,7 @@ typedef struct MAP_KEYDATA
         FloatingButton_Height = QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT;
         FloatingButton_FontSize = QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT;
         FloatingButton_FontWeight = QKeyMapperConstants::FLOATINGBUTTON_FONT_WEIGHT_DEFAULT;
+        FloatingButton_FontFamily.clear();
         FloatingButton_Radius = QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT;
         FloatingButton_Opacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
         FloatingButton_ShowOnMappingStart = QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT;
@@ -389,6 +392,7 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_Height == other.FloatingButton_Height)
                 && (FloatingButton_FontSize == other.FloatingButton_FontSize)
                 && (FloatingButton_FontWeight == other.FloatingButton_FontWeight)
+                && (FloatingButton_FontFamily == other.FloatingButton_FontFamily)
                 && (FloatingButton_Radius == other.FloatingButton_Radius)
                 && (FloatingButton_Opacity == other.FloatingButton_Opacity)
                 && (FloatingButton_ShowOnMappingStart == other.FloatingButton_ShowOnMappingStart)
@@ -455,6 +459,7 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_Height:" << data.FloatingButton_Height
                         << ", FloatingButton_FontSize:" << data.FloatingButton_FontSize
                         << ", FloatingButton_FontWeight:" << data.FloatingButton_FontWeight
+                        << ", FloatingButton_FontFamily:" << data.FloatingButton_FontFamily
                         << ", FloatingButton_Radius:" << data.FloatingButton_Radius
                         << ", FloatingButton_Opacity:" << data.FloatingButton_Opacity
                         << ", FloatingButton_ShowOnMappingStart:" << data.FloatingButton_ShowOnMappingStart

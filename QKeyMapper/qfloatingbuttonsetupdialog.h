@@ -9,6 +9,7 @@
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
+class QFontComboBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
@@ -48,12 +49,14 @@ private:
     void loadFromCurrentItem();
     void applyToCurrentItem();
     void setupReferencePointComboBox();
+    void syncFontFamilyControls();
 
 private:
     int m_ItemRow;
     bool m_isLoading;
     bool m_hasBackup;
     MAP_KEYDATA m_BackupData;
+    QString m_FontFamily;
 
     QCheckBox *m_EnableCheckBox;
     QLabel *m_LabelTextLabel;
@@ -68,6 +71,7 @@ private:
     QLabel *m_HeightLabel;
     QLabel *m_FontSizeLabel;
     QLabel *m_FontWeightLabel;
+    QLabel *m_FontFamilyLabel;
     QLabel *m_RadiusLabel;
     QLabel *m_OpacityLabel;
 
@@ -75,6 +79,8 @@ private:
     QSpinBox *m_HeightSpinBox;
     QSpinBox *m_FontSizeSpinBox;
     QComboBox *m_FontWeightComboBox;
+    QFontComboBox *m_FontFamilyComboBox;
+    QPushButton *m_FontFamilyDefaultButton;
     QSpinBox *m_RadiusSpinBox;
     QDoubleSpinBox *m_OpacitySpinBox;
 
