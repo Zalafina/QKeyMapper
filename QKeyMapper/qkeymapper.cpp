@@ -31646,6 +31646,7 @@ void QKeyMapper::onShowAllFloatingButtons(bool visible)
             }
         }
     }
+    Q_UNUSED(changed);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[onShowAllFloatingButtons]" << " visible=" << visible << ", changed=" << changed;
