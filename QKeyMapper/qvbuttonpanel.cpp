@@ -20,18 +20,19 @@ QFont::Weight toVButtonQtFontWeight(int fontWeight)
     return QFont::Normal;
 }
 
-QString makeVButtonStyleSheet(const QColor &buttonColor, const QColor &textColor, bool locked)
+QString makeVButtonStyleSheet(const QColor &buttonColor, const QColor &pressedColor,
+                              const QColor &lockedColor, const QColor &textColor, bool locked)
 {
     // Keep tooltip colors synced with the active theme palette.
     static const QString tooltipRule =
         QStringLiteral("QToolTip { background-color: palette(ToolTipBase); color: palette(ToolTipText); }");
 
-    if (locked) {
-        return QStringLiteral("QToolButton { background-color: #3b5587; color: white; }") + tooltipRule;
-    }
-
-    return QStringLiteral("QToolButton { background-color: %1; color: %2; }")
-               .arg(buttonColor.name(QColor::HexArgb), textColor.name(QColor::HexArgb)) + tooltipRule;
+    const QColor visibleColor = locked ? lockedColor : buttonColor;
+    return QStringLiteral("QToolButton { background-color: %1; color: %2; }"
+                          "QToolButton:pressed { background-color: %3; color: %2; }")
+               .arg(visibleColor.name(QColor::HexArgb),
+                    textColor.name(QColor::HexArgb),
+                    pressedColor.name(QColor::HexArgb)) + tooltipRule;
 }
 } // namespace
 
@@ -44,6 +45,8 @@ QVButtonPanel::QVButtonPanel(QWidget *parent)
     m_bgColor  = VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
     m_btnColor = VBTNPANEL_BUTTON_COLOR_DEFAULT;
     m_txtColor = VBTNPANEL_TEXT_COLOR_DEFAULT;
+    m_pressedColor = VBTNPANEL_PRESSED_COLOR_DEFAULT;
+    m_lockedColor = VBTNPANEL_LOCKED_COLOR_DEFAULT;
 
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(m_margin, m_margin, m_margin, m_margin);
@@ -198,11 +201,7 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
 
     // Reapply lock highlights for any keys that were locked before the rebuild
     for (int i = 0; i < m_keyNames.size(); ++i) {
-        if (m_lockedKeyNames.contains(m_keyNames.at(i))) {
-            m_buttons.at(i)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, true));
-        } else {
-            m_buttons.at(i)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, false));
-        }
+        applyButtonStyle(m_buttons.at(i), m_lockedKeyNames.contains(m_keyNames.at(i)));
     }
 }
 
@@ -237,18 +236,19 @@ void QVButtonPanel::applySettings(int columns, int maxRows, int btnWidth, int bt
     }
 }
 
-void QVButtonPanel::applyColors(const QColor &bgColor, const QColor &btnColor, const QColor &txtColor)
+void QVButtonPanel::applyColors(const QColor &bgColor, const QColor &btnColor, const QColor &txtColor,
+                                const QColor &pressedColor, const QColor &lockedColor)
 {
     if (bgColor.isValid())  m_bgColor  = bgColor;
     if (btnColor.isValid()) m_btnColor = btnColor;
     if (txtColor.isValid()) m_txtColor = txtColor;
+    if (pressedColor.isValid()) m_pressedColor = pressedColor;
+    if (lockedColor.isValid()) m_lockedColor = lockedColor;
 
     update();  // trigger paintEvent to redraw background
 
     for (int i = 0; i < m_buttons.size(); ++i) {
-        if (!m_lockedKeyNames.contains(m_keyNames.at(i))) {
-            m_buttons.at(i)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, false));
-        }
+        applyButtonStyle(m_buttons.at(i), m_lockedKeyNames.contains(m_keyNames.at(i)));
     }
 }
 
@@ -302,20 +302,14 @@ void QVButtonPanel::onVButtonLockStateChanged(const QString &keyName, bool isLoc
 
     if (idx < 0 || idx >= m_buttons.size()) return;
 
-    if (isLocked) {
-        m_buttons.at(idx)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, true));
-    } else {
-        m_buttons.at(idx)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, false));
-    }
+    applyButtonStyle(m_buttons.at(idx), isLocked);
 }
 
 void QVButtonPanel::onVButtonClearAllLockStates()
 {
     m_lockedKeyNames.clear();
     for (int i = 0; i < m_buttons.size(); ++i) {
-        if (!m_lockedKeyNames.contains(m_keyNames.at(i))) {
-            m_buttons.at(i)->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_txtColor, false));
-        }
+        applyButtonStyle(m_buttons.at(i), false);
     }
 }
 
@@ -494,6 +488,15 @@ void QVButtonPanel::applyButtonFont(QToolButton *button)
     font.setPointSize(m_btnFontSize);
     font.setWeight(toVButtonQtFontWeight(m_btnFontWeight));
     button->setFont(font);
+}
+
+void QVButtonPanel::applyButtonStyle(QToolButton *button, bool locked)
+{
+    if (!button) {
+        return;
+    }
+
+    button->setStyleSheet(makeVButtonStyleSheet(m_btnColor, m_pressedColor, m_lockedColor, m_txtColor, locked));
 }
 
 QString QVButtonPanel::extractButtonLabel(const QString &vbuttonKey) const

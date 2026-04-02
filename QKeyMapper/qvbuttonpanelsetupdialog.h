@@ -28,6 +28,8 @@ struct VButtonPanelSettings {
     int    btnFontWeight  = QKeyMapperConstants::VBTNPANEL_DEFAULT_FONT_WEIGHT;
     QColor bgColor        = QKeyMapperConstants::VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
     QColor btnColor       = QKeyMapperConstants::VBTNPANEL_BUTTON_COLOR_DEFAULT;
+    QColor pressedColor   = QKeyMapperConstants::VBTNPANEL_PRESSED_COLOR_DEFAULT;
+    QColor lockedColor    = QKeyMapperConstants::VBTNPANEL_LOCKED_COLOR_DEFAULT;
     QColor textColor      = QKeyMapperConstants::VBTNPANEL_TEXT_COLOR_DEFAULT;
 };
 
@@ -68,6 +70,8 @@ private:
     Ui::QVButtonPanelSetupDialog    *ui;
     ColorPickerWidget               *m_BGColorPicker;
     ColorPickerWidget               *m_BtnColorPicker;
+    ColorPickerWidget               *m_PressedColorPicker;
+    ColorPickerWidget               *m_LockedColorPicker;
     ColorPickerWidget               *m_TextColorPicker;
 };
 

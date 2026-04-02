@@ -33,7 +33,8 @@ public:
                        int btnFontSize, int btnFontWeight);
 
     // Apply background, button, and text colors to the panel.
-    void applyColors(const QColor &bgColor, const QColor &btnColor, const QColor &txtColor);
+    void applyColors(const QColor &bgColor, const QColor &btnColor, const QColor &txtColor,
+                     const QColor &pressedColor, const QColor &lockedColor);
 
     // Compute and move to referencePoint + (offsetX, offsetY).
     void applyPosition(int referencePoint, int offsetX, int offsetY);
@@ -80,6 +81,7 @@ public slots:
 private:
     void    buildGrid();
     void    applyButtonFont(QToolButton *button);
+    void    applyButtonStyle(QToolButton *button, bool locked);
     QString extractButtonLabel(const QString &vbuttonKey) const;
     QPoint  calculateReferenceOrigin(int referencePoint) const;
     void    recalcOffsets();  // update m_offsetX/Y from current pos() after drag
@@ -106,6 +108,8 @@ private:
     QColor m_bgColor;
     QColor m_btnColor;
     QColor m_txtColor;
+    QColor m_pressedColor;
+    QColor m_lockedColor;
 
     // Position tracking
     int    m_referencePoint  = 0;

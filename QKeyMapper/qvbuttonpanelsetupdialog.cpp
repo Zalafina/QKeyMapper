@@ -14,6 +14,8 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
     , ui(new Ui::QVButtonPanelSetupDialog)
     , m_BGColorPicker(new ColorPickerWidget(this, "VBtn_BGColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BGCOLOR))
     , m_BtnColorPicker(new ColorPickerWidget(this, "VBtn_BtnColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
+    , m_PressedColorPicker(new ColorPickerWidget(this, "VBtn_PressedColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
+    , m_LockedColorPicker(new ColorPickerWidget(this, "VBtn_LockedColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
     , m_TextColorPicker(new ColorPickerWidget(this, "VBtn_TextColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_TEXTCOLOR))
 {
     ui->setupUi(this);
@@ -28,17 +30,24 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
     // raise() is required because the pickers are created in the member initializer list
     // (before setupUi), so colorGroupBox has a higher z-order and would otherwise eat
     // all mouse events over that area.
-    m_BGColorPicker->setShowAlphaChannel(true);
-    m_BGColorPicker->move(40, 30);
-    m_BGColorPicker->setColor(VBTNPANEL_BACKGROUND_COLOR_DEFAULT);
-    m_BGColorPicker->raise();
-
-    m_BtnColorPicker->move(185, 30);
+    m_BtnColorPicker->move(40, 30);
     m_BtnColorPicker->setColor(VBTNPANEL_BUTTON_COLOR_DEFAULT);
     m_BtnColorPicker->raise();
 
-    // Text color picker — same x as BtnColor, row below (35px gap matching other controls)
-    m_TextColorPicker->move(185, 65);
+    m_BGColorPicker->setShowAlphaChannel(true);
+    m_BGColorPicker->move(185, 30);
+    m_BGColorPicker->setColor(VBTNPANEL_BACKGROUND_COLOR_DEFAULT);
+    m_BGColorPicker->raise();
+
+    m_PressedColorPicker->move(40, 65);
+    m_PressedColorPicker->setColor(VBTNPANEL_PRESSED_COLOR_DEFAULT);
+    m_PressedColorPicker->raise();
+
+    m_LockedColorPicker->move(185, 65);
+    m_LockedColorPicker->setColor(VBTNPANEL_LOCKED_COLOR_DEFAULT);
+    m_LockedColorPicker->raise();
+
+    m_TextColorPicker->move(40, 100);
     m_TextColorPicker->setColor(VBTNPANEL_TEXT_COLOR_DEFAULT);
     m_TextColorPicker->raise();
     // Populate reference point combo box — index must match FLOATINGWINDOW_REFERENCEPOINT_* values exactly
@@ -115,10 +124,14 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     ui->okButton->setText(tr("Apply"));
     ui->cancelButton->setText(tr("Cancel"));
 
-    m_BGColorPicker->setButtonText(tr("BGColor"));
-    m_BGColorPicker->setWindowTitle(tr("VButton Panel BG Color"));
     m_BtnColorPicker->setButtonText(tr("BtnColor"));
     m_BtnColorPicker->setWindowTitle(tr("VButton Panel Button Color"));
+    m_BGColorPicker->setButtonText(tr("BGColor"));
+    m_BGColorPicker->setWindowTitle(tr("VButton Panel BG Color"));
+    m_PressedColorPicker->setButtonText(tr("PressedColor"));
+    m_PressedColorPicker->setWindowTitle(tr("VButton Panel Pressed Color"));
+    m_LockedColorPicker->setButtonText(tr("LockedColor"));
+    m_LockedColorPicker->setWindowTitle(tr("VButton Panel Locked Color"));
     m_TextColorPicker->setButtonText(tr("TextColor"));
     m_TextColorPicker->setWindowTitle(tr("VButton Panel Text Color"));
 }
@@ -145,6 +158,8 @@ void QVButtonPanelSetupDialog::loadSettings(const VButtonPanelSettings &settings
     ui->btnFontWeightComboBox->setCurrentIndex(qBound(VBTNPANEL_FONT_WEIGHT_MIN, settings.btnFontWeight, VBTNPANEL_FONT_WEIGHT_MAX));
     m_BGColorPicker->setColor(settings.bgColor);
     m_BtnColorPicker->setColor(settings.btnColor);
+    m_PressedColorPicker->setColor(settings.pressedColor);
+    m_LockedColorPicker->setColor(settings.lockedColor);
     m_TextColorPicker->setColor(settings.textColor);
 }
 
@@ -168,6 +183,8 @@ VButtonPanelSettings QVButtonPanelSetupDialog::getSettings() const
     s.btnFontWeight  = ui->btnFontWeightComboBox->currentIndex();
     s.bgColor        = m_BGColorPicker->getColor();
     s.btnColor       = m_BtnColorPicker->getColor();
+    s.pressedColor   = m_PressedColorPicker->getColor();
+    s.lockedColor    = m_LockedColorPicker->getColor();
     s.textColor      = m_TextColorPicker->getColor();
     return s;
 }

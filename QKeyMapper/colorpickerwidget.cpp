@@ -174,6 +174,8 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
         && "CrosshairColor" != m_buttonText
         && "VBtn_BGColor"   != m_buttonText
         && "VBtn_BtnColor"  != m_buttonText
+        && "VBtn_PressedColor" != m_buttonText
+        && "VBtn_LockedColor" != m_buttonText
         && "VBtn_TextColor" != m_buttonText
         && "FloatBtn_BtnColor" != m_buttonText
         && "FloatBtn_PressedColor" != m_buttonText
@@ -226,6 +228,12 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
     }
     else if ("VBtn_BtnColor" == m_buttonText) {
         color = VBTNPANEL_BUTTON_COLOR_DEFAULT;
+    }
+    else if ("VBtn_PressedColor" == m_buttonText) {
+        color = VBTNPANEL_PRESSED_COLOR_DEFAULT;
+    }
+    else if ("VBtn_LockedColor" == m_buttonText) {
+        color = VBTNPANEL_LOCKED_COLOR_DEFAULT;
     }
     else if ("VBtn_TextColor" == m_buttonText) {
         color = VBTNPANEL_TEXT_COLOR_DEFAULT;

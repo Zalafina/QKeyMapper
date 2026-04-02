@@ -13821,6 +13821,8 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
         settingFile.setValue(vbtnPrefix + VBTNPANEL_BGCOLOR,   m_VButtonPanelSettings.bgColor.name(QColor::HexArgb));
         settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNCOLOR,  m_VButtonPanelSettings.btnColor.name(QColor::HexArgb));
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_PRESSEDCOLOR, m_VButtonPanelSettings.pressedColor.name(QColor::HexArgb));
+        settingFile.setValue(vbtnPrefix + VBTNPANEL_LOCKEDCOLOR,  m_VButtonPanelSettings.lockedColor.name(QColor::HexArgb));
         settingFile.setValue(vbtnPrefix + VBTNPANEL_TEXTCOLOR, m_VButtonPanelSettings.textColor.name(QColor::HexArgb));
         settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTSIZE, m_VButtonPanelSettings.btnFontSize);
         settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTWEIGHT, m_VButtonPanelSettings.btnFontWeight);
@@ -17883,6 +17885,12 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             QString btnColorStr = settingFile.value(settingSelectStr + VBTNPANEL_BTNCOLOR).toString();
             QColor  btnColor    = btnColorStr.isEmpty() ? VBTNPANEL_BUTTON_COLOR_DEFAULT : QColor(btnColorStr);
             m_VButtonPanelSettings.btnColor = btnColor.isValid() ? btnColor : VBTNPANEL_BUTTON_COLOR_DEFAULT;
+            QString pressedColorStr = settingFile.value(settingSelectStr + VBTNPANEL_PRESSEDCOLOR).toString();
+            QColor  pressedColor    = pressedColorStr.isEmpty() ? VBTNPANEL_PRESSED_COLOR_DEFAULT : QColor(pressedColorStr);
+            m_VButtonPanelSettings.pressedColor = pressedColor.isValid() ? pressedColor : VBTNPANEL_PRESSED_COLOR_DEFAULT;
+            QString lockedColorStr = settingFile.value(settingSelectStr + VBTNPANEL_LOCKEDCOLOR).toString();
+            QColor  lockedColor    = lockedColorStr.isEmpty() ? VBTNPANEL_LOCKED_COLOR_DEFAULT : QColor(lockedColorStr);
+            m_VButtonPanelSettings.lockedColor = lockedColor.isValid() ? lockedColor : VBTNPANEL_LOCKED_COLOR_DEFAULT;
             QString txtColorStr = settingFile.value(settingSelectStr + VBTNPANEL_TEXTCOLOR).toString();
             QColor  txtColor    = txtColorStr.isEmpty() ? VBTNPANEL_TEXT_COLOR_DEFAULT : QColor(txtColorStr);
             m_VButtonPanelSettings.textColor = txtColor.isValid() ? txtColor : VBTNPANEL_TEXT_COLOR_DEFAULT;
@@ -17914,7 +17922,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                           m_VButtonPanelSettings.offsetY);
             m_VButtonPanel->applyColors(m_VButtonPanelSettings.bgColor,
                                         m_VButtonPanelSettings.btnColor,
-                                        m_VButtonPanelSettings.textColor);
+                                        m_VButtonPanelSettings.textColor,
+                                        m_VButtonPanelSettings.pressedColor,
+                                        m_VButtonPanelSettings.lockedColor);
         }
         QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
         if (m_VButtonPanel && KeyMappingDataList) {
@@ -18042,7 +18052,9 @@ void QKeyMapper::loadEmptyMapSetting()
                                       m_VButtonPanelSettings.offsetY);
         m_VButtonPanel->applyColors(m_VButtonPanelSettings.bgColor,
                                     m_VButtonPanelSettings.btnColor,
-                                    m_VButtonPanelSettings.textColor);
+                                    m_VButtonPanelSettings.textColor,
+                                    m_VButtonPanelSettings.pressedColor,
+                                    m_VButtonPanelSettings.lockedColor);
         QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
         onSyncVButtonPanel(false);
     }
@@ -31564,7 +31576,9 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
                                   m_VButtonPanelSettings.offsetY);
     m_VButtonPanel->applyColors(m_VButtonPanelSettings.bgColor,
                                 m_VButtonPanelSettings.btnColor,
-                                m_VButtonPanelSettings.textColor);
+                                m_VButtonPanelSettings.textColor,
+                                m_VButtonPanelSettings.pressedColor,
+                                m_VButtonPanelSettings.lockedColor);
     if (KeyMappingDataList) {
         QKeyMapper_Worker::getInstance()->buildVButtonOriginalKeysList(*KeyMappingDataList);
         onSyncVButtonPanel(panelWasVisible);
