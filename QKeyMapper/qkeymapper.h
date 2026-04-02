@@ -1765,6 +1765,10 @@ private:
     bool isFloatingButtonManualHidden(int rowindex) const;
     void setFloatingButtonManualHidden(int rowindex, bool hidden);
     void clearFloatingButtonManualHiddenForAllSettings(void);
+    bool isFloatingButtonMoveArmed(int rowindex) const;
+    bool consumeFloatingButtonMoveArmedState(int rowindex);
+    void armFloatingButtonMoveState(int rowindex);
+    void clearFloatingButtonMoveState(int rowindex = -1);
 
 private:
     QItemSetupDialog *m_ItemSetupDialog;
@@ -1775,6 +1779,7 @@ private:
     QHash<int, QPushButton*> m_FloatingButtonMap;
     QSet<int> m_FloatingButtonLocalPressedRows;
     QHash<int, QSet<quint64>> m_FloatingButtonManualHiddenMap;
+    int m_FloatingButtonMoveArmedRow = -1;
     bool m_FloatingButtonDragging = false;
     int m_FloatingButtonDraggingRow = -1;
     QPoint m_FloatingButtonDragStartGlobalPos;
