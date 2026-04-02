@@ -329,14 +329,14 @@ namespace QKeyMapperConstants {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     inline constexpr QColor VBTNPANEL_BACKGROUND_COLOR_DEFAULT = QColor(55, 55, 55, 220);
     inline constexpr QColor VBTNPANEL_BUTTON_COLOR_DEFAULT     = QColor(62, 62, 62);
-    inline constexpr QColor VBTNPANEL_PRESSED_COLOR_DEFAULT    = QColor(100, 118, 198);
-    inline constexpr QColor VBTNPANEL_LOCKED_COLOR_DEFAULT     = QColor(168, 127, 190);
+    inline constexpr QColor VBTNPANEL_PRESSED_COLOR_DEFAULT    = QColor(64, 78, 130);
+    inline constexpr QColor VBTNPANEL_LOCKED_COLOR_DEFAULT     = QColor(116, 90, 132);
     inline constexpr QColor VBTNPANEL_TEXT_COLOR_DEFAULT       = QColor(208, 210, 212);
 #else
     inline const QColor VBTNPANEL_BACKGROUND_COLOR_DEFAULT = QColor(55, 55, 55, 220);
     inline const QColor VBTNPANEL_BUTTON_COLOR_DEFAULT     = QColor(62, 62, 62);
-    inline const QColor VBTNPANEL_PRESSED_COLOR_DEFAULT    = QColor(100, 118, 198);
-    inline const QColor VBTNPANEL_LOCKED_COLOR_DEFAULT     = QColor(168, 127, 190);
+    inline const QColor VBTNPANEL_PRESSED_COLOR_DEFAULT    = QColor(64, 78, 130);
+    inline const QColor VBTNPANEL_LOCKED_COLOR_DEFAULT     = QColor(116, 90, 132);
     inline const QColor VBTNPANEL_TEXT_COLOR_DEFAULT       = QColor(208, 210, 212);
 #endif
 
