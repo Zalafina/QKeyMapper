@@ -57,6 +57,11 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
 {
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
+    m_ButtonColorPicker->setShowAlphaChannel(true);
+    m_PressedColorPicker->setShowAlphaChannel(true);
+    m_LockedColorPicker->setShowAlphaChannel(true);
+    m_TextColorPicker->setShowAlphaChannel(true);
+
     m_WidthSpinBox->setRange(FLOATINGBUTTON_WIDTH_MIN, FLOATINGBUTTON_WIDTH_MAX);
     m_HeightSpinBox->setRange(FLOATINGBUTTON_HEIGHT_MIN, FLOATINGBUTTON_HEIGHT_MAX);
     m_FontSizeSpinBox->setRange(FLOATINGBUTTON_FONT_SIZE_MIN, FLOATINGBUTTON_FONT_SIZE_MAX);
