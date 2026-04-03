@@ -2639,10 +2639,11 @@ void QKeyMapper::setWindowsFilterKeysEnabled(bool enable)
         return; // Failed to get settings
     }
 
-    // Only modify FKF_FILTERKEYSON bit if the system supports FilterKeys
+    // Only modify FilterKeys flags if the system supports FilterKeys
     if (filterKeys.dwFlags & FKF_AVAILABLE) {
         if (enable) {
             filterKeys.dwFlags |= FKF_FILTERKEYSON;
+            filterKeys.dwFlags &= ~FKF_CLICKON;
         } else {
             filterKeys.dwFlags &= ~FKF_FILTERKEYSON;
         }
