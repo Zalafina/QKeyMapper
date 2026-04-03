@@ -1567,6 +1567,8 @@ private:
     void showVButtonPanelSetupDialog(void);
     void closeVButtonPanelSetupDialog(void);
 public:
+    void showFloatingButtonSetupDialog(int row);
+    void closeFloatingButtonSetupDialog(void);
     void openVButtonPanelSetupDialogFromPanelContextMenu(void);
     void showMacroListDialog(void);
     void closeMacroListDialog(void);

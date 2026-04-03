@@ -3639,21 +3639,11 @@ void QItemSetupDialog::on_crosshairSetupButton_clicked()
 
 void QItemSetupDialog::on_floatingButtonSetupButton_clicked()
 {
-    if (Q_NULLPTR == m_FloatingButtonSetupDialog) {
-        return;
-    }
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[on_floatingButtonSetupButton_clicked]" << "Show Floating Button Setup Dialog Window";
 #endif
 
-    if (!m_FloatingButtonSetupDialog->isVisible()) {
-        m_FloatingButtonSetupDialog->setItemRow(m_ItemRow);
-        m_FloatingButtonSetupDialog->show();
-    }
+    QKeyMapper::getInstance()->showFloatingButtonSetupDialog(m_ItemRow);
 }
 
 void KeyStringLineEdit::focusInEvent(QFocusEvent *event)

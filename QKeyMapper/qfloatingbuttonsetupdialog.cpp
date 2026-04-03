@@ -145,6 +145,11 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_FontFamilyDefaultButton->setAutoDefault(false);
     m_FontFamilyDefaultButton->setDefault(false);
 
+    m_ButtonColorPicker->raise();
+    m_PressedColorPicker->raise();
+    m_LockedColorPicker->raise();
+    m_TextColorPicker->raise();
+
     connect(m_ApplyButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onApplyButtonClicked);
     connect(m_RevertButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onRevertButtonClicked);
 

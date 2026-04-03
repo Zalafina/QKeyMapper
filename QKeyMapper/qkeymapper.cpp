@@ -9281,6 +9281,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeIgnoreRulesListDialog();
             closeMappingAdvancedDialog();
             closeVButtonPanelSetupDialog();
+            closeFloatingButtonSetupDialog();
             closeCrosshairSetupDialog();
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
@@ -9585,20 +9586,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         showFloatingButtonStart(rowindex, QString());
                     }
                     else if (selectedAction == setupAction) {
-                        if (m_ItemSetupDialog != Q_NULLPTR
-                            && m_ItemSetupDialog->m_FloatingButtonSetupDialog != Q_NULLPTR) {
-                            m_ItemSetupDialog->setItemRow(rowindex);
-                            m_ItemSetupDialog->m_FloatingButtonSetupDialog->setItemRow(rowindex);
-                            if (!m_ItemSetupDialog->m_FloatingButtonSetupDialog->isVisible()) {
-                                m_ItemSetupDialog->m_FloatingButtonSetupDialog->show();
-                            }
-                            else {
-                                m_ItemSetupDialog->m_FloatingButtonSetupDialog->hide();
-                                m_ItemSetupDialog->m_FloatingButtonSetupDialog->show();
-                                m_ItemSetupDialog->m_FloatingButtonSetupDialog->raise();
-                                m_ItemSetupDialog->m_FloatingButtonSetupDialog->activateWindow();
-                            }
-                        }
+                        showFloatingButtonSetupDialog(rowindex);
                     }
                     else if (selectedAction == saveSettingAction) {
                         saveKeyMapSetting();
@@ -9874,6 +9862,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         closeIgnoreRulesListDialog();
         closeMappingAdvancedDialog();
         closeVButtonPanelSetupDialog();
+        closeFloatingButtonSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
@@ -20295,6 +20284,51 @@ void QKeyMapper::closeVButtonPanelSetupDialog()
     }
 }
 
+void QKeyMapper::showFloatingButtonSetupDialog(int row)
+{
+    QItemSetupDialog *itemSetupDialog = QItemSetupDialog::getInstance();
+    if (itemSetupDialog == Q_NULLPTR
+        || itemSetupDialog->m_FloatingButtonSetupDialog == Q_NULLPTR
+        || QKeyMapper::KeyMappingDataList == Q_NULLPTR) {
+        return;
+    }
+    if (row < 0 || row >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    QFloatingButtonSetupDialog *floatingButtonSetupDialog = itemSetupDialog->m_FloatingButtonSetupDialog;
+    const bool rowChanged = (floatingButtonSetupDialog->getItemRow() != row);
+
+    itemSetupDialog->setItemRow(row);
+    floatingButtonSetupDialog->setItemRow(row);
+
+    if (!floatingButtonSetupDialog->isVisible()) {
+        floatingButtonSetupDialog->show();
+        return;
+    }
+
+    if (rowChanged) {
+        floatingButtonSetupDialog->hide();
+        floatingButtonSetupDialog->show();
+    }
+
+    floatingButtonSetupDialog->raise();
+    floatingButtonSetupDialog->activateWindow();
+}
+
+void QKeyMapper::closeFloatingButtonSetupDialog()
+{
+    QItemSetupDialog *itemSetupDialog = QItemSetupDialog::getInstance();
+    if (itemSetupDialog == Q_NULLPTR
+        || itemSetupDialog->m_FloatingButtonSetupDialog == Q_NULLPTR) {
+        return;
+    }
+
+    if (itemSetupDialog->m_FloatingButtonSetupDialog->isVisible()) {
+        itemSetupDialog->m_FloatingButtonSetupDialog->close();
+    }
+}
+
 void QKeyMapper::bringExternalWindowToTop(HWND hwnd)
 {
     if (hwnd == NULL || !IsWindow(hwnd)) {
@@ -22220,6 +22254,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             closeIgnoreRulesListDialog();
             closeMappingAdvancedDialog();
             closeVButtonPanelSetupDialog();
+            closeFloatingButtonSetupDialog();
             closeMacroListDialog();
             closeTableSetupDialog();
             closeItemSetupDialog();
@@ -22237,6 +22272,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
         closeTableSetupDialog();
+        closeFloatingButtonSetupDialog();
         closeItemSetupDialog();
         closeSettingTransferDialog();
         hide();
@@ -22276,6 +22312,7 @@ void QKeyMapper::forceHide()
         closeIgnoreRulesListDialog();
         closeMappingAdvancedDialog();
         closeVButtonPanelSetupDialog();
+        closeFloatingButtonSetupDialog();
         closeCrosshairSetupDialog();
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
