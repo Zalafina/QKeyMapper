@@ -182,6 +182,9 @@ typedef struct MAP_KEYDATA
     int FloatingButton_FontWeight;
     QString FloatingButton_FontFamily;
     int FloatingButton_Radius;
+    double FloatingButton_NormalOpacity;
+    double FloatingButton_PressedOpacity;
+    double FloatingButton_LockedOpacity;
     double FloatingButton_Opacity;
     bool FloatingButton_ShowOnMappingStart;
     bool FloatingButton_ShowToolTip;
@@ -246,6 +249,9 @@ typedef struct MAP_KEYDATA
     , FloatingButton_FontWeight(QKeyMapperConstants::FLOATINGBUTTON_FONT_WEIGHT_DEFAULT)
     , FloatingButton_FontFamily()
     , FloatingButton_Radius(QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT)
+    , FloatingButton_NormalOpacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
+    , FloatingButton_PressedOpacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
+    , FloatingButton_LockedOpacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
     , FloatingButton_Opacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
     , FloatingButton_ShowOnMappingStart(QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT)
     , FloatingButton_ShowToolTip(QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT)
@@ -332,6 +338,9 @@ typedef struct MAP_KEYDATA
         FloatingButton_FontWeight = QKeyMapperConstants::FLOATINGBUTTON_FONT_WEIGHT_DEFAULT;
         FloatingButton_FontFamily.clear();
         FloatingButton_Radius = QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT;
+        FloatingButton_NormalOpacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
+        FloatingButton_PressedOpacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
+        FloatingButton_LockedOpacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
         FloatingButton_Opacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
         FloatingButton_ShowOnMappingStart = QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT;
         FloatingButton_ShowToolTip = QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT;
@@ -394,6 +403,9 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_FontWeight == other.FloatingButton_FontWeight)
                 && (FloatingButton_FontFamily == other.FloatingButton_FontFamily)
                 && (FloatingButton_Radius == other.FloatingButton_Radius)
+                && (FloatingButton_NormalOpacity == other.FloatingButton_NormalOpacity)
+                && (FloatingButton_PressedOpacity == other.FloatingButton_PressedOpacity)
+                && (FloatingButton_LockedOpacity == other.FloatingButton_LockedOpacity)
                 && (FloatingButton_Opacity == other.FloatingButton_Opacity)
                 && (FloatingButton_ShowOnMappingStart == other.FloatingButton_ShowOnMappingStart)
                 && (FloatingButton_ShowToolTip == other.FloatingButton_ShowToolTip)
@@ -461,6 +473,9 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_FontWeight:" << data.FloatingButton_FontWeight
                         << ", FloatingButton_FontFamily:" << data.FloatingButton_FontFamily
                         << ", FloatingButton_Radius:" << data.FloatingButton_Radius
+                        << ", FloatingButton_NormalOpacity:" << data.FloatingButton_NormalOpacity
+                        << ", FloatingButton_PressedOpacity:" << data.FloatingButton_PressedOpacity
+                        << ", FloatingButton_LockedOpacity:" << data.FloatingButton_LockedOpacity
                         << ", FloatingButton_Opacity:" << data.FloatingButton_Opacity
                         << ", FloatingButton_ShowOnMappingStart:" << data.FloatingButton_ShowOnMappingStart
                         << ", FloatingButton_ShowToolTip:" << data.FloatingButton_ShowToolTip

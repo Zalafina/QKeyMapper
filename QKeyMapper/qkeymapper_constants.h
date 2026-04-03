@@ -464,7 +464,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr int FLOATINGBUTTON_OPACITY_DECIMALS = 2;
     inline constexpr double FLOATINGBUTTON_OPACITY_SINGLESTEP = 0.01;
-    inline constexpr double FLOATINGBUTTON_OPACITY_MIN = 0.1;
+    inline constexpr double FLOATINGBUTTON_OPACITY_MIN = 0.01;
     inline constexpr double FLOATINGBUTTON_OPACITY_MAX = 1.0;
     inline constexpr double FLOATINGBUTTON_OPACITY_DEFAULT = 1.0;
 
@@ -1090,6 +1090,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY[] = "KeyMapData_FloatingButton_FontFamily";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_RADIUS[] = "KeyMapData_FloatingButton_Radius";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_OPACITY[] = "KeyMapData_FloatingButton_Opacity";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY[] = "KeyMapData_FloatingButton_NormalOpacity";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY[] = "KeyMapData_FloatingButton_PressedOpacity";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY[] = "KeyMapData_FloatingButton_LockedOpacity";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART[] = "KeyMapData_FloatingButton_ShowOnMappingStart";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP[] = "KeyMapData_FloatingButton_ShowToolTip";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE[] = "KeyMapData_FloatingButton_SyncPressedLockedState";

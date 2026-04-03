@@ -73,7 +73,9 @@ private:
     QLabel *m_FontWeightLabel;
     QLabel *m_FontFamilyLabel;
     QLabel *m_RadiusLabel;
-    QLabel *m_OpacityLabel;
+    QLabel *m_NormalOpacityLabel;
+    QLabel *m_PressedOpacityLabel;
+    QLabel *m_LockedOpacityLabel;
 
     QSpinBox *m_WidthSpinBox;
     QSpinBox *m_HeightSpinBox;
@@ -82,7 +84,9 @@ private:
     QFontComboBox *m_FontFamilyComboBox;
     QPushButton *m_FontFamilyDefaultButton;
     QSpinBox *m_RadiusSpinBox;
-    QDoubleSpinBox *m_OpacitySpinBox;
+    QDoubleSpinBox *m_NormalOpacitySpinBox;
+    QDoubleSpinBox *m_PressedOpacitySpinBox;
+    QDoubleSpinBox *m_LockedOpacitySpinBox;
 
     QLabel *m_ReferencePointLabel;
     QLabel *m_OffsetXLabel;
