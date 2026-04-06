@@ -9118,6 +9118,31 @@ bool QKeyMapper::isSelectColorDialogVisible()
     }
 }
 
+QString QKeyMapper::resolveConfiguredFontFamily(const QString &configuredFamily)
+{
+    const auto isAvailableFamily = [](const QString &family) {
+        return !family.isEmpty() && QFontDatabase::families().contains(family, Qt::CaseInsensitive);
+    };
+
+    const QString trimmedFamily = configuredFamily.trimmed();
+    if (isAvailableFamily(trimmedFamily)) {
+        return trimmedFamily;
+    }
+
+    const QString defaultFamily = QString::fromLatin1(FONTNAME_ENGLISH);
+    if (isAvailableFamily(defaultFamily)) {
+        return defaultFamily;
+    }
+
+    // Keep runtime font selection stable even when both the saved and default families are unavailable.
+    const QString applicationFamily = QApplication::font().family().trimmed();
+    if (!applicationFamily.isEmpty()) {
+        return applicationFamily;
+    }
+
+    return QFontDatabase::systemFont(QFontDatabase::GeneralFont).family().trimmed();
+}
+
 QIcon QKeyMapper::setTabCustomImage(int tabindex, QString &imagepath)
 {
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
@@ -27143,7 +27168,7 @@ void QKeyMapper::refreshFloatingButtonWidget(QPushButton *button, int rowindex, 
     const QString fullLabel = resolveFloatingButtonLabel(keymapdata);
     button->setFixedSize(keymapdata.FloatingButton_Width, keymapdata.FloatingButton_Height);
 
-    const QString floatingButtonFontFamily = keymapdata.FloatingButton_FontFamily.trimmed();
+    const QString floatingButtonFontFamily = resolveConfiguredFontFamily(keymapdata.FloatingButton_FontFamily);
     QFont buttonFont = QApplication::font(button);
     if (!floatingButtonFontFamily.isEmpty()) {
         buttonFont.setFamily(floatingButtonFontFamily);

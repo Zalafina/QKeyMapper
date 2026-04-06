@@ -465,9 +465,7 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
 
 void QFloatingButtonSetupDialog::syncFontFamilyControls()
 {
-    const QString previewFamily = m_FontFamily.isEmpty()
-        ? QApplication::font(m_FontFamilyComboBox).family()
-        : m_FontFamily;
+    const QString previewFamily = QKeyMapper::resolveConfiguredFontFamily(m_FontFamily);
 
     const QSignalBlocker blocker(m_FontFamilyComboBox);
     if (!previewFamily.isEmpty()) {

@@ -209,9 +209,7 @@ VButtonPanelSettings QVButtonPanelSetupDialog::getSettings() const
 
 void QVButtonPanelSetupDialog::syncFontFamilyControls()
 {
-    const QString previewFamily = m_btnFontFamily.isEmpty()
-        ? QApplication::font(ui->btnFontFamilyComboBox).family()
-        : m_btnFontFamily;
+    const QString previewFamily = QKeyMapper::resolveConfiguredFontFamily(m_btnFontFamily);
 
     const QSignalBlocker blocker(ui->btnFontFamilyComboBox);
     if (!previewFamily.isEmpty()) {

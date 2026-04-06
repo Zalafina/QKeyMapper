@@ -486,8 +486,9 @@ void QVButtonPanel::applyButtonFont(QToolButton *button)
     }
 
     QFont font = QApplication::font(button);
-    if (!m_btnFontFamily.isEmpty()) {
-        font.setFamily(m_btnFontFamily);
+    const QString resolvedFontFamily = QKeyMapper::resolveConfiguredFontFamily(m_btnFontFamily);
+    if (!resolvedFontFamily.isEmpty()) {
+        font.setFamily(resolvedFontFamily);
     }
     font.setPointSize(m_btnFontSize);
     font.setWeight(toVButtonQtFontWeight(m_btnFontWeight));

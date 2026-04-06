@@ -924,6 +924,7 @@ public:
     static void collectMappingTableTabHotkeys(void);
     static QString getOriginalKeyStringWithoutSuffix(const QString &originalkeystr);
     static QString getTrimmedMappingKeyString(const QString &mappingkeystr);
+    static QString resolveConfiguredFontFamily(const QString &configuredFamily);
     static void copyStringToClipboard(const QString &string);
     static bool backupFile(const QString &sourceFile, const QString &backupFile);
     static QString escapeSendTextForSaving(const QString &text);
