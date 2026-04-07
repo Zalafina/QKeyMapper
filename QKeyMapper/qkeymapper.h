@@ -842,9 +842,7 @@ public slots:
     // void WindowStateChangedProc(void);
     // void cycleCheckProcessProc(void);
     void matchForegroundWindow(void);
-#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     void checkGlobalSettingSwitchTimeout(void);
-#endif
     void cycleRefreshProcessInfoTableProc(void);
     void updateHWNDListProc(void);
 
@@ -1618,9 +1616,6 @@ public:
     static bool s_isDestructing;
     static HWINEVENTHOOK s_WinEventHook;
     static int s_GlobalSettingAutoStart;
-#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-    static uint s_CycleCheckLoopCount;
-#endif
     static HWND s_CurrentMappingHWND;
     static QList<MAP_PROCESSINFO> static_ProcessInfoList;
     static QList<HWND> s_hWndList;
@@ -1691,9 +1686,7 @@ private:
 #ifdef CYCLECHECKTIMER_ENABLED
     QTimer m_CycleCheckTimer;
 #endif
-#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     QTimer m_CheckGlobalSettingSwitchTimer;
-#endif
     QTimer m_ProcessInfoTableRefreshTimer;
 public:
     MAP_PROCESSINFO m_MapProcessInfo;

@@ -577,9 +577,6 @@ QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
 bool QKeyMapper::s_isDestructing = false;
 HWINEVENTHOOK QKeyMapper::s_WinEventHook = Q_NULLPTR;
 int QKeyMapper::s_GlobalSettingAutoStart = 0;
-#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-uint QKeyMapper::s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
-#endif
 HWND QKeyMapper::s_CurrentMappingHWND = NULL;
 QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINFO>();
 QList<HWND> QKeyMapper::s_hWndList;
@@ -625,9 +622,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #ifdef CYCLECHECKTIMER_ENABLED
     m_CycleCheckTimer(this),
 #endif
-#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     m_CheckGlobalSettingSwitchTimer(this),
-#endif
     m_ProcessInfoTableRefreshTimer(this),
     m_MapProcessInfo(),
     m_SysTrayIcon(Q_NULLPTR),
@@ -848,10 +843,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // Enable WTS session notifications
     WTSRegisterSessionNotification(reinterpret_cast<HWND>(winId()), NOTIFY_FOR_THIS_SESSION);
 
-#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     m_CheckGlobalSettingSwitchTimer.setInterval(CHECK_GLOBALSETTING_SWITCH_TIMEOUT);
     m_CheckGlobalSettingSwitchTimer.setSingleShot(true);
-#endif
 
     ui->iconLabel->setStyle(windowsStyle);
     ui->pointDisplayLabel->setStyle(windowsStyle);
@@ -1217,9 +1210,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #ifdef CYCLECHECKTIMER_ENABLED
     QObject::connect(&m_CycleCheckTimer, &QTimer::timeout, this, &QKeyMapper::matchForegroundWindow);
 #endif
-#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
     QObject::connect(&m_CheckGlobalSettingSwitchTimer, &QTimer::timeout, this, &QKeyMapper::checkGlobalSettingSwitchTimeout);
-#endif
     QObject::connect(&m_ProcessInfoTableRefreshTimer, &QTimer::timeout, this, &QKeyMapper::cycleRefreshProcessInfoTableProc);
 
     // Configure timer for last auto matched setting management
@@ -1608,11 +1599,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                         setKeyHook(NULL);
                         m_KeyMapStatus = KEYMAP_MAPPING_GLOBAL;
                         mappingStartNotification();
-#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-                        s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
-#else
                         m_CheckGlobalSettingSwitchTimer.stop();
-#endif
                         emit updateLockStatus_Signal();
                     }
                 }
@@ -1663,11 +1650,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                     }
                     m_KeyMapStatus = KEYMAP_MAPPING_MATCHED;
                     mappingStartNotification();
-#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-                    s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
-#else
                     m_CheckGlobalSettingSwitchTimer.stop();
-#endif
                     emit updateLockStatus_Signal();
                 }
             }
@@ -1715,11 +1698,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
                 mappingStopNotification();
-#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-                s_CycleCheckLoopCount = 0;
-#else
                 m_CheckGlobalSettingSwitchTimer.start();
-#endif
                 emit updateLockStatus_Signal();
             }
         }
@@ -1727,23 +1706,6 @@ void QKeyMapper::cycleCheckProcessProc(void)
     else{
         //EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsProc, 0);
     }
-
-#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-    if (m_KeyMapStatus == KEYMAP_CHECKING && GLOBAL_MAPPING_START_WAIT == s_CycleCheckLoopCount) {
-        if (checkGlobalSettingAutoStart()) {
-            loadSetting_flag = true;
-            QString loadresult = loadKeyMapSetting(GROUPNAME_GLOBALSETTING);
-            ui->settingNameLineEdit->setText(loadresult);
-            Q_UNUSED(loadresult);
-            loadSetting_flag = false;
-        }
-    }
-
-    s_CycleCheckLoopCount += 1;
-    if (s_CycleCheckLoopCount > CYCLE_CHECK_LOOPCOUNT_MAX) {
-        s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
-    }
-#endif
 }
 #endif
 
@@ -2267,7 +2229,6 @@ void QKeyMapper::matchForegroundWindow()
     }
 }
 
-#ifndef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
 void QKeyMapper::checkGlobalSettingSwitchTimeout()
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -2290,7 +2251,6 @@ void QKeyMapper::checkGlobalSettingSwitchTimeout()
         }
     }
 }
-#endif
 
 void QKeyMapper::cycleRefreshProcessInfoTableProc()
 {
@@ -9919,11 +9879,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         ui->keymapButton->setText(tr("MappingStop"));
         m_KeyMapStatus = KEYMAP_CHECKING;
         startWinEventHook();
-#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-        s_CycleCheckLoopCount = 0;
-#else
         m_CheckGlobalSettingSwitchTimer.start();
-#endif
         updateSystemTrayDisplay();
         emit updateLockStatus_Signal();
         startKeyMap = true;
@@ -9945,11 +9901,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
         mappingStopNotification();
-#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-        s_CycleCheckLoopCount = CYCLE_CHECK_LOOPCOUNT_RESET;
-#else
         m_CheckGlobalSettingSwitchTimer.stop();
-#endif
 
         // Check if we should switch back to last matched setting
         // This only applies when current setting is GlobalSetting and auto start is enabled

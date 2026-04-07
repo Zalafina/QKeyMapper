@@ -24,13 +24,7 @@ namespace QKeyMapperConstants {
 #ifdef CYCLECHECKTIMER_ENABLED
     inline constexpr const unsigned int CYCLE_CHECK_TIMEOUT = 300U;
 #endif
-#ifdef USE_CYCLECHECKTIMER_FOR_GLOBAL_SETTING
-    inline constexpr const unsigned int CYCLE_CHECK_LOOPCOUNT_MAX = 100000U;
-    inline constexpr const unsigned int CYCLE_CHECK_LOOPCOUNT_RESET = 500U;
-    inline constexpr const unsigned int GLOBAL_MAPPING_START_WAIT = 2100U / CYCLE_CHECK_TIMEOUT;
-#else
     inline constexpr unsigned int CHECK_GLOBALSETTING_SWITCH_TIMEOUT = 2000U;
-#endif
 
     inline constexpr unsigned int CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 3000U;
 
