@@ -25,6 +25,8 @@ namespace QKeyMapperConstants {
     inline constexpr const unsigned int CYCLE_CHECK_TIMEOUT = 300U;
 #endif
     inline constexpr unsigned int CHECK_GLOBALSETTING_SWITCH_TIMEOUT = 2000U;
+    inline constexpr int GLOBALSETTING_SWITCH_TIMEOUT_MIN = 0;
+    inline constexpr int GLOBALSETTING_SWITCH_TIMEOUT_MAX = 9999;
 
     inline constexpr unsigned int CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 3000U;
 
@@ -1009,6 +1011,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char STARTUP_POSITION_INDEX[] = "StartupPosition_Index";
     inline constexpr const char STARTUP_POSITION_SPECIFYPOINT[] = "StartupPosition_SpecifyPoint";
+    inline constexpr const char GLOBALSETTING_SWITCH_TIMEOUT[] = "GlobalSettingSwitchTimeout";
 
     inline constexpr const char TRAYICON_IDLE[] = "TrayIcon_Idle";
     inline constexpr const char TRAYICON_MONITORING[] = "TrayIcon_Monitoring";

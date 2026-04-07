@@ -687,25 +687,6 @@
       <string>Startup Minimized</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="soundEffectCheckBox">
-     <property name="geometry">
-      <rect>
-       <x>130</x>
-       <y>40</y>
-       <width>61</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="focusPolicy">
-      <enum>Qt::FocusPolicy::NoFocus</enum>
-     </property>
-     <property name="text">
-      <string>Sound</string>
-     </property>
-     <property name="checked">
-      <bool>true</bool>
-     </property>
-    </widget>
     <widget class="QCheckBox" name="autoStartupCheckBox">
      <property name="geometry">
       <rect>
@@ -1012,7 +993,7 @@
       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QPushButton" name="startupPositonSettingButton">
+    <widget class="QPushButton" name="generalAdvancedButton">
      <property name="geometry">
       <rect>
        <x>360</x>
@@ -1025,26 +1006,7 @@
       <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
-      <string>Startup Position</string>
-     </property>
-     <property name="autoDefault">
-      <bool>false</bool>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="tableEditSettingButton">
-     <property name="geometry">
-      <rect>
-       <x>360</x>
-       <y>130</y>
-       <width>111</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="focusPolicy">
-      <enum>Qt::FocusPolicy::NoFocus</enum>
-     </property>
-     <property name="text">
-      <string>Table Edit</string>
+        <string>General Advanced</string>
      </property>
      <property name="autoDefault">
       <bool>false</bool>
@@ -1063,14 +1025,12 @@
     <zorder>updateSiteComboBox</zorder>
     <zorder>selectTrayIconButton</zorder>
     <zorder>notificationAdvancedSettingButton</zorder>
-    <zorder>soundEffectCheckBox</zorder>
     <zorder>startupAutoMonitoringCheckBox</zorder>
     <zorder>scaleLabel</zorder>
     <zorder>scaleComboBox</zorder>
     <zorder>themeComboBox</zorder>
     <zorder>themeLabel</zorder>
-    <zorder>startupPositonSettingButton</zorder>
-    <zorder>tableEditSettingButton</zorder>
+    <zorder>generalAdvancedButton</zorder>
    </widget>
    <widget class="QWidget" name="mapping">
     <attribute name="title">

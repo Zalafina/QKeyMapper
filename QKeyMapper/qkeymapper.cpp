@@ -762,7 +762,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initCombinationKeyLineEdit();
     initInputDeviceSelectComboBoxes();
     initCategoryFilterControls();
-    initTableEditSettingPopup();
     initPopupMessage();
     initPushLevelSlider();
 
@@ -1114,7 +1113,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_Gyro2MouseOptionDialog = new QGyro2MouseOptionDialog(this);
     m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
-    m_StartupPositionDialog = new QStartupPositionDialog(this);
+    m_GeneralAdvancedDialog = new QGeneralAdvancedDialog(this);
     m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
     m_MacroListDialog = new QMacroListDialog(this);
@@ -1381,6 +1380,7 @@ void QKeyMapper::WindowStateChangedProc(void)
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+        closeGeneralAdvancedDialog();
         // hide();
     }
 }
@@ -1698,7 +1698,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
                 mappingStopNotification();
-                m_CheckGlobalSettingSwitchTimer.start();
+                scheduleGlobalSettingSwitchCheck();
                 emit updateLockStatus_Signal();
             }
         }
@@ -2203,7 +2203,7 @@ void QKeyMapper::matchForegroundWindow()
                 setKeyUnHook();
                 m_KeyMapStatus = KEYMAP_CHECKING;
                 mappingStopNotification();
-                m_CheckGlobalSettingSwitchTimer.start();
+                scheduleGlobalSettingSwitchCheck();
                 emit updateLockStatus_Signal();
             }
         }
@@ -2232,7 +2232,7 @@ void QKeyMapper::matchForegroundWindow()
 void QKeyMapper::checkGlobalSettingSwitchTimeout()
 {
 #ifdef DEBUG_LOGOUT_ON
-    QString debugmessage = QString("[checkGlobalSettingSwitchTimeout] %1ms Timer timeout, m_KeyMapStatus = %2").arg(CHECK_GLOBALSETTING_SWITCH_TIMEOUT).arg(QMetaEnum::fromType<QKeyMapper::KeyMapStatus>().valueToKey(m_KeyMapStatus));
+    QString debugmessage = QString("[checkGlobalSettingSwitchTimeout] %1ms Timer timeout, m_KeyMapStatus = %2").arg(getGeneralAdvancedSwitchTimeout()).arg(QMetaEnum::fromType<QKeyMapper::KeyMapStatus>().valueToKey(m_KeyMapStatus));
     qDebug().nospace().noquote() << debugmessage;
 #endif
     if (m_KeyMapStatus == KEYMAP_CHECKING) {
@@ -6662,19 +6662,19 @@ int QKeyMapper::getLanguageIndex()
 int QKeyMapper::getTableEditModeTriggerIndex()
 {
     QKeyMapper *instance = getInstance();
-    if (!instance || !instance->m_TableEditModeTriggerComboBox) {
+    if (!instance || !instance->m_GeneralAdvancedDialog) {
         return EDITMODE_RIGHT_DOUBLECLICK;
     }
-    return instance->m_TableEditModeTriggerComboBox->currentIndex();
+    return instance->m_GeneralAdvancedDialog->getTableEditModeTrigger();
 }
 
 int QKeyMapper::getTableInsertModeIndex()
 {
     QKeyMapper *instance = getInstance();
-    if (!instance || !instance->m_TableInsertModeComboBox) {
+    if (!instance || !instance->m_GeneralAdvancedDialog) {
         return TABLE_INSERT_MODE_DEFAULT;
     }
-    return instance->m_TableInsertModeComboBox->currentIndex();
+    return instance->m_GeneralAdvancedDialog->getTableInsertMode();
 }
 
 const KeyListComboBox *QKeyMapper::getOriKeyComboBox() const
@@ -9369,6 +9369,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
             closeNotificationSetupDialog();
+            closeGeneralAdvancedDialog();
             closeSettingTransferDialog();
             hide();
 #ifdef DEBUG_LOGOUT_ON
@@ -9879,7 +9880,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         ui->keymapButton->setText(tr("MappingStop"));
         m_KeyMapStatus = KEYMAP_CHECKING;
         startWinEventHook();
-        m_CheckGlobalSettingSwitchTimer.start();
+        scheduleGlobalSettingSwitchCheck();
         updateSystemTrayDisplay();
         emit updateLockStatus_Signal();
         startKeyMap = true;
@@ -9942,6 +9943,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+        closeGeneralAdvancedDialog();
         closeSettingTransferDialog();
         changeControlEnableStatus(false);
 
@@ -12791,7 +12793,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
     }
 
-    settingFile.setValue(PLAY_SOUNDEFFECT, ui->soundEffectCheckBox->isChecked());
+    settingFile.setValue(PLAY_SOUNDEFFECT, isSoundEffectEnabled());
     settingFile.setValue(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
     settingFile.setValue(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
     settingFile.setValue(SHOW_PROCESSLIST, ui->processListButton->isChecked());
@@ -12802,11 +12804,9 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     settingFile.setValue(DISPLAY_SCALE , ui->scaleComboBox->currentIndex());
     settingFile.setValue(THEME_COLOR , ui->themeComboBox->currentIndex());
-    if (m_TableEditModeTriggerComboBox) {
-        settingFile.setValue(EDITMODE_TRIGGER, m_TableEditModeTriggerComboBox->currentIndex());
-    }
-    if (m_TableInsertModeComboBox) {
-        settingFile.setValue(TABLE_INSERTMODE, m_TableInsertModeComboBox->currentIndex());
+    if (m_GeneralAdvancedDialog) {
+        settingFile.setValue(EDITMODE_TRIGGER, m_GeneralAdvancedDialog->getTableEditModeTrigger());
+        settingFile.setValue(TABLE_INSERTMODE, m_GeneralAdvancedDialog->getTableInsertMode());
     }
 
     QColor notification_fontcolor;
@@ -12837,8 +12837,11 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(NOTIFICATION_X_OFFSET,         m_NotificationSetupDialog->getNotification_X_Offset());
     settingFile.setValue(NOTIFICATION_Y_OFFSET,         m_NotificationSetupDialog->getNotification_Y_Offset());
 
-    settingFile.setValue(STARTUP_POSITION_INDEX,        m_StartupPositionDialog->getStartupPosition());
-    settingFile.setValue(STARTUP_POSITION_SPECIFYPOINT, m_StartupPositionDialog->getSpecifyStartupPosition());
+    if (m_GeneralAdvancedDialog) {
+        settingFile.setValue(STARTUP_POSITION_INDEX,        m_GeneralAdvancedDialog->getStartupPosition());
+        settingFile.setValue(STARTUP_POSITION_SPECIFYPOINT, m_GeneralAdvancedDialog->getSpecifyStartupPosition());
+        settingFile.setValue(GLOBALSETTING_SWITCH_TIMEOUT, static_cast<int>(m_GeneralAdvancedDialog->getGlobalSettingSwitchTimeout()));
+    }
 
     settingFile.setValue(TRAYICON_IDLE , m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon());
     settingFile.setValue(TRAYICON_MONITORING , m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon());
@@ -14146,17 +14149,17 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
             int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
             if (STARTUP_POSITION_MIN <= startup_position && startup_position <= STARTUP_POSITION_MAX) {
-                m_StartupPositionDialog->setStartupPosition(startup_position);
+                m_GeneralAdvancedDialog->setStartupPosition(startup_position);
             }
             else {
-                m_StartupPositionDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
+                m_GeneralAdvancedDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
             }
         }
         else {
-            m_StartupPositionDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
+            m_GeneralAdvancedDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Startup Position ->" << m_StartupPositionDialog->getStartupPosition();
+        qDebug() << "[loadKeyMapSetting]" << "Startup Position ->" << m_GeneralAdvancedDialog->getStartupPosition();
 #endif
         if (true == settingFile.contains(STARTUP_POSITION_SPECIFYPOINT)){
             QPoint startup_specify_position = settingFile.value(STARTUP_POSITION_SPECIFYPOINT).toPoint();
@@ -14164,22 +14167,33 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 || startup_specify_position.y() < STARTUP_SPECIFY_POSITION_MIN_Y
                 || startup_specify_position.x() > STARTUP_SPECIFY_POSITION_MAX_X
                 || startup_specify_position.y() > STARTUP_SPECIFY_POSITION_MAX_Y) {
-                m_StartupPositionDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
+                m_GeneralAdvancedDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
             }
             else {
-                m_StartupPositionDialog->setSpecifyStartupPosition(startup_specify_position);
+                m_GeneralAdvancedDialog->setSpecifyStartupPosition(startup_specify_position);
             }
         }
         else {
-            m_StartupPositionDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
+            m_GeneralAdvancedDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
         }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Startup Position SpecifyPoint ->" << m_StartupPositionDialog->getSpecifyStartupPosition();
+        qDebug() << "[loadKeyMapSetting]" << "Startup Position SpecifyPoint ->" << m_GeneralAdvancedDialog->getSpecifyStartupPosition();
 #endif
+
+        unsigned int generalSwitchTimeout = CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
+        if (true == settingFile.contains(GLOBALSETTING_SWITCH_TIMEOUT)) {
+            generalSwitchTimeout = settingFile.value(GLOBALSETTING_SWITCH_TIMEOUT).toUInt();
+        }
+        if (generalSwitchTimeout < static_cast<unsigned int>(GLOBALSETTING_SWITCH_TIMEOUT_MIN)
+            || generalSwitchTimeout > static_cast<unsigned int>(GLOBALSETTING_SWITCH_TIMEOUT_MAX)) {
+            generalSwitchTimeout = CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
+        }
+        m_GeneralAdvancedDialog->setGlobalSettingSwitchTimeout(generalSwitchTimeout);
+        m_CheckGlobalSettingSwitchTimer.setInterval(static_cast<int>(generalSwitchTimeout));
 
         if (settingtext.isEmpty()) {
             QPoint startup_point = pos();
-            int startup_position = m_StartupPositionDialog->getStartupPosition();
+            int startup_position = m_GeneralAdvancedDialog->getStartupPosition();
             if (startup_position == STARTUP_POSITION_LASTSAVED) {
                 if (true == settingFile.contains(LAST_WINDOWPOSITION)){
                     QPoint last_windowposition = settingFile.value(LAST_WINDOWPOSITION, QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)).toPoint();
@@ -14190,7 +14204,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 }
             }
             else if (startup_position == STARTUP_POSITION_SPECIFY) {
-                startup_point = m_StartupPositionDialog->getSpecifyStartupPosition();
+                startup_point = m_GeneralAdvancedDialog->getSpecifyStartupPosition();
             }
 
             move(startup_point);
@@ -14373,18 +14387,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
         if (true == settingFile.contains(PLAY_SOUNDEFFECT)){
             bool soundeffectChecked = settingFile.value(PLAY_SOUNDEFFECT).toBool();
-            if (true == soundeffectChecked) {
-                ui->soundEffectCheckBox->setChecked(true);
-            }
-            else {
-                ui->soundEffectCheckBox->setChecked(false);
-            }
+            m_GeneralAdvancedDialog->setPlaySoundEffect(soundeffectChecked);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Sound Effect Checkbox ->" << soundeffectChecked;
 #endif
         }
         else {
-            ui->soundEffectCheckBox->setChecked(true);
+            m_GeneralAdvancedDialog->setPlaySoundEffect(true);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains PlaySoundEffect, PlaySoundEffect set to Checked.";
 #endif
@@ -14440,44 +14449,36 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         qDebug() << "[loadKeyMapSetting]" << "Theme Color ->" << ui->themeComboBox->currentText();
 #endif
 
-        if (m_TableEditModeTriggerComboBox) {
-            if (true == settingFile.contains(EDITMODE_TRIGGER)){
-                int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
-                if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
-                    m_TableEditModeTriggerComboBox->setCurrentIndex(editmode_trigger);
-                }
-                else {
-                    m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
-                }
+        if (true == settingFile.contains(EDITMODE_TRIGGER)){
+            int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
+            if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
+                m_GeneralAdvancedDialog->setTableEditModeTrigger(editmode_trigger);
             }
             else {
-                m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+                m_GeneralAdvancedDialog->setTableEditModeTrigger(EDITMODE_RIGHT_DOUBLECLICK);
             }
         }
-#ifdef DEBUG_LOGOUT_ON
-        if (m_TableEditModeTriggerComboBox) {
-            qDebug() << "[loadKeyMapSetting]" << "Table EditMode Trigger ->" << m_TableEditModeTriggerComboBox->currentText();
+        else {
+            m_GeneralAdvancedDialog->setTableEditModeTrigger(EDITMODE_RIGHT_DOUBLECLICK);
         }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Table EditMode Trigger ->" << m_GeneralAdvancedDialog->getTableEditModeTrigger();
 #endif
 
-        if (m_TableInsertModeComboBox) {
-            if (true == settingFile.contains(TABLE_INSERTMODE)){
-                int insert_mode = settingFile.value(TABLE_INSERTMODE).toInt();
-                if (TABLE_INSERT_MODE_ABOVE <= insert_mode && insert_mode <= TABLE_INSERT_MODE_BELOW) {
-                    m_TableInsertModeComboBox->setCurrentIndex(insert_mode);
-                }
-                else {
-                    m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
-                }
+        if (true == settingFile.contains(TABLE_INSERTMODE)){
+            int insert_mode = settingFile.value(TABLE_INSERTMODE).toInt();
+            if (TABLE_INSERT_MODE_ABOVE <= insert_mode && insert_mode <= TABLE_INSERT_MODE_BELOW) {
+                m_GeneralAdvancedDialog->setTableInsertMode(insert_mode);
             }
             else {
-                m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
+                m_GeneralAdvancedDialog->setTableInsertMode(TABLE_INSERT_MODE_DEFAULT);
             }
         }
-#ifdef DEBUG_LOGOUT_ON
-        if (m_TableInsertModeComboBox) {
-            qDebug() << "[loadKeyMapSetting]" << "Table Insert Mode ->" << m_TableInsertModeComboBox->currentText();
+        else {
+            m_GeneralAdvancedDialog->setTableInsertMode(TABLE_INSERT_MODE_DEFAULT);
         }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Table Insert Mode ->" << m_GeneralAdvancedDialog->getTableInsertMode();
 #endif
 
 #if 0
@@ -18425,17 +18426,17 @@ void QKeyMapper::loadGeneralSetting()
     if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
         int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
         if (STARTUP_POSITION_MIN <= startup_position && startup_position <= STARTUP_POSITION_MAX) {
-            m_StartupPositionDialog->setStartupPosition(startup_position);
+            m_GeneralAdvancedDialog->setStartupPosition(startup_position);
         }
         else {
-            m_StartupPositionDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
+            m_GeneralAdvancedDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
         }
     }
     else {
-        m_StartupPositionDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
+        m_GeneralAdvancedDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadGeneralSetting]" << "Startup Position ->" << m_StartupPositionDialog->getStartupPosition();
+    qDebug() << "[loadGeneralSetting]" << "Startup Position ->" << m_GeneralAdvancedDialog->getStartupPosition();
 #endif
     if (true == settingFile.contains(STARTUP_POSITION_SPECIFYPOINT)){
         QPoint startup_specify_position = settingFile.value(STARTUP_POSITION_SPECIFYPOINT).toPoint();
@@ -18443,21 +18444,32 @@ void QKeyMapper::loadGeneralSetting()
             || startup_specify_position.y() < STARTUP_SPECIFY_POSITION_MIN_Y
             || startup_specify_position.x() > STARTUP_SPECIFY_POSITION_MAX_X
             || startup_specify_position.y() > STARTUP_SPECIFY_POSITION_MAX_Y) {
-            m_StartupPositionDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
+            m_GeneralAdvancedDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
         }
         else {
-            m_StartupPositionDialog->setSpecifyStartupPosition(startup_specify_position);
+            m_GeneralAdvancedDialog->setSpecifyStartupPosition(startup_specify_position);
         }
     }
     else {
-        m_StartupPositionDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
+        m_GeneralAdvancedDialog->setSpecifyStartupPosition(STARTUP_SPECIFY_POSITION_DEFAULT);
     }
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[loadGeneralSetting]" << "Startup Position SpecifyPoint ->" << m_StartupPositionDialog->getSpecifyStartupPosition();
+    qDebug() << "[loadGeneralSetting]" << "Startup Position SpecifyPoint ->" << m_GeneralAdvancedDialog->getSpecifyStartupPosition();
 #endif
 
+    unsigned int generalSwitchTimeout = CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
+    if (true == settingFile.contains(GLOBALSETTING_SWITCH_TIMEOUT)) {
+        generalSwitchTimeout = settingFile.value(GLOBALSETTING_SWITCH_TIMEOUT).toUInt();
+    }
+    if (generalSwitchTimeout < static_cast<unsigned int>(GLOBALSETTING_SWITCH_TIMEOUT_MIN)
+        || generalSwitchTimeout > static_cast<unsigned int>(GLOBALSETTING_SWITCH_TIMEOUT_MAX)) {
+        generalSwitchTimeout = CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
+    }
+    m_GeneralAdvancedDialog->setGlobalSettingSwitchTimeout(generalSwitchTimeout);
+    m_CheckGlobalSettingSwitchTimer.setInterval(static_cast<int>(generalSwitchTimeout));
+
     // if (settingtext.isEmpty()) {
-    //     int startup_position = m_StartupPositionDialog->getStartupPosition();
+    //     int startup_position = m_GeneralAdvancedDialog->getStartupPosition();
     //     if (startup_position == STARTUP_POSITION_LASTSAVED) {
     //         if (true == settingFile.contains(LAST_WINDOWPOSITION)){
     //             QPoint last_windowposition = settingFile.value(LAST_WINDOWPOSITION, QPoint(INITIAL_WINDOW_POSITION, INITIAL_WINDOW_POSITION)).toPoint();
@@ -18468,7 +18480,7 @@ void QKeyMapper::loadGeneralSetting()
     //         }
     //     }
     //     else if (startup_position == STARTUP_POSITION_SPECIFY) {
-    //         QPoint startup_specify_position = m_StartupPositionDialog->getSpecifyStartupPosition();
+    //         QPoint startup_specify_position = m_GeneralAdvancedDialog->getSpecifyStartupPosition();
     //         move(startup_specify_position);
     //     }
     // }
@@ -18630,18 +18642,13 @@ void QKeyMapper::loadGeneralSetting()
 
     if (true == settingFile.contains(PLAY_SOUNDEFFECT)){
         bool soundeffectChecked = settingFile.value(PLAY_SOUNDEFFECT).toBool();
-        if (true == soundeffectChecked) {
-            ui->soundEffectCheckBox->setChecked(true);
-        }
-        else {
-            ui->soundEffectCheckBox->setChecked(false);
-        }
+        m_GeneralAdvancedDialog->setPlaySoundEffect(soundeffectChecked);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Sound Effect Checkbox ->" << soundeffectChecked;
 #endif
     }
     else {
-        ui->soundEffectCheckBox->setChecked(true);
+        m_GeneralAdvancedDialog->setPlaySoundEffect(true);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains PlaySoundEffect, PlaySoundEffect set to Checked.";
 #endif
@@ -18697,44 +18704,36 @@ void QKeyMapper::loadGeneralSetting()
     qDebug() << "[loadGeneralSetting]" << "Theme Color ->" << ui->themeComboBox->currentText();
 #endif
 
-    if (m_TableEditModeTriggerComboBox) {
-        if (true == settingFile.contains(EDITMODE_TRIGGER)){
-            int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
-            if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
-                m_TableEditModeTriggerComboBox->setCurrentIndex(editmode_trigger);
-            }
-            else {
-                m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
-            }
+    if (true == settingFile.contains(EDITMODE_TRIGGER)){
+        int editmode_trigger = settingFile.value(EDITMODE_TRIGGER).toInt();
+        if (EDITMODE_RIGHT_DOUBLECLICK <= editmode_trigger && editmode_trigger <= EDITMODE_LEFT_DOUBLECLICK) {
+            m_GeneralAdvancedDialog->setTableEditModeTrigger(editmode_trigger);
         }
         else {
-            m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
+            m_GeneralAdvancedDialog->setTableEditModeTrigger(EDITMODE_RIGHT_DOUBLECLICK);
         }
     }
-#ifdef DEBUG_LOGOUT_ON
-    if (m_TableEditModeTriggerComboBox) {
-        qDebug() << "[loadGeneralSetting]" << "Table EditMode Trigger ->" << m_TableEditModeTriggerComboBox->currentText();
+    else {
+        m_GeneralAdvancedDialog->setTableEditModeTrigger(EDITMODE_RIGHT_DOUBLECLICK);
     }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadGeneralSetting]" << "Table EditMode Trigger ->" << m_GeneralAdvancedDialog->getTableEditModeTrigger();
 #endif
 
-    if (m_TableInsertModeComboBox) {
-        if (true == settingFile.contains(TABLE_INSERTMODE)){
-            int insert_mode = settingFile.value(TABLE_INSERTMODE).toInt();
-            if (TABLE_INSERT_MODE_ABOVE <= insert_mode && insert_mode <= TABLE_INSERT_MODE_BELOW) {
-                m_TableInsertModeComboBox->setCurrentIndex(insert_mode);
-            }
-            else {
-                m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
-            }
+    if (true == settingFile.contains(TABLE_INSERTMODE)){
+        int insert_mode = settingFile.value(TABLE_INSERTMODE).toInt();
+        if (TABLE_INSERT_MODE_ABOVE <= insert_mode && insert_mode <= TABLE_INSERT_MODE_BELOW) {
+            m_GeneralAdvancedDialog->setTableInsertMode(insert_mode);
         }
         else {
-            m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
+            m_GeneralAdvancedDialog->setTableInsertMode(TABLE_INSERT_MODE_DEFAULT);
         }
     }
-#ifdef DEBUG_LOGOUT_ON
-    if (m_TableInsertModeComboBox) {
-        qDebug() << "[loadGeneralSetting]" << "Table Insert Mode ->" << m_TableInsertModeComboBox->currentText();
+    else {
+        m_GeneralAdvancedDialog->setTableInsertMode(TABLE_INSERT_MODE_DEFAULT);
     }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadGeneralSetting]" << "Table Insert Mode ->" << m_GeneralAdvancedDialog->getTableInsertMode();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_FONTCOLOR)){
@@ -19355,8 +19354,7 @@ void QKeyMapper::setControlFontEnglish()
     // ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
-    ui->startupPositonSettingButton->setFont(customFont);
-    ui->tableEditSettingButton->setFont(customFont);
+    ui->generalAdvancedButton->setFont(customFont);
     ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
@@ -19390,7 +19388,6 @@ void QKeyMapper::setControlFontEnglish()
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->startupAutoMonitoringCheckBox->setFont(customFont);
-    ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
@@ -19516,8 +19513,7 @@ void QKeyMapper::setControlFontChinese()
     // ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
-    ui->startupPositonSettingButton->setFont(customFont);
-    ui->tableEditSettingButton->setFont(customFont);
+    ui->generalAdvancedButton->setFont(customFont);
     ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
@@ -19551,7 +19547,6 @@ void QKeyMapper::setControlFontChinese()
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->startupAutoMonitoringCheckBox->setFont(customFont);
-    ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
@@ -19677,8 +19672,7 @@ void QKeyMapper::setControlFontJapanese()
     // ui->settingTabWidget->tabBar()->setFont(customFont);
     ui->windowswitchkeyLabel->setFont(customFont);
     ui->checkUpdateButton->setFont(customFont);
-    ui->startupPositonSettingButton->setFont(customFont);
-    ui->tableEditSettingButton->setFont(customFont);
+    ui->generalAdvancedButton->setFont(customFont);
     ui->mappingAdvancedSettingButton->setFont(customFont);
     ui->mappingStartKeyLabel->setFont(customFont);
     ui->mappingStopKeyLabel->setFont(customFont);
@@ -19712,7 +19706,6 @@ void QKeyMapper::setControlFontJapanese()
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->startupAutoMonitoringCheckBox->setFont(customFont);
-    ui->soundEffectCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
@@ -19803,7 +19796,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // ui->autoStartupCheckBox->setEnabled(status);
     // ui->startupMinimizedCheckBox->setEnabled(status);
     // ui->startupAutoMonitoringCheckBox->setEnabled(status);
-    // ui->soundEffectCheckBox->setEnabled(status);
+    // General Advanced availability is guarded by dialog show/close logic in idle state.
     // ui->notificationLabel->setEnabled(status);
     // ui->notificationComboBox->setEnabled(status);
     // ui->languageLabel->setEnabled(status);
@@ -19951,7 +19944,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     // ui->windowswitchkeyLabel->setEnabled(status);
     // ui->checkUpdateButton->setEnabled(status);
-    // ui->startupPositonSettingButton->setEnabled(status);
+    // ui->generalAdvancedButton->setEnabled(status);
     // ui->mappingAdvancedSettingButton->setEnabled(status);
     // m_windowswitchKeySeqEdit->setEnabled(status);
     ui->windowswitchkeyLineEdit->setEnabled(status);
@@ -20016,7 +20009,7 @@ void QKeyMapper::extractSoundFiles()
 
 void QKeyMapper::playStartSound()
 {
-    if (!ui->soundEffectCheckBox->isChecked()) {
+    if (!isSoundEffectEnabled()) {
         return;
     }
 
@@ -20038,7 +20031,7 @@ void QKeyMapper::playStartSound()
 
 void QKeyMapper::playStopSound()
 {
-    if (!ui->soundEffectCheckBox->isChecked()) {
+    if (!isSoundEffectEnabled()) {
         return;
     }
 
@@ -20056,6 +20049,43 @@ void QKeyMapper::playStopSound()
         qWarning() << "[playStopSound]" << "Sound file do not exist ->" << SOUNDFILE_STOP;
 #endif
     }
+}
+
+bool QKeyMapper::isSoundEffectEnabled() const
+{
+    if (m_GeneralAdvancedDialog == Q_NULLPTR) {
+        return true;
+    }
+
+    return m_GeneralAdvancedDialog->getPlaySoundEffect();
+}
+
+unsigned int QKeyMapper::getGeneralAdvancedSwitchTimeout() const
+{
+    if (m_GeneralAdvancedDialog == Q_NULLPTR) {
+        return CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
+    }
+
+    return m_GeneralAdvancedDialog->getGlobalSettingSwitchTimeout();
+}
+
+void QKeyMapper::scheduleGlobalSettingSwitchCheck()
+{
+    m_CheckGlobalSettingSwitchTimer.stop();
+
+    const unsigned int timeout = getGeneralAdvancedSwitchTimeout();
+
+#ifdef DEBUG_LOGOUT_ON
+    QString debugmessage = QString("[QKeyMapper::scheduleGlobalSettingSwitchCheck] Schedule global setting switch check after %1 ms").arg(timeout);
+    qDebug().nospace().noquote() << debugmessage;
+#endif
+
+    if (timeout == 0U) {
+        QMetaObject::invokeMethod(this, &QKeyMapper::checkGlobalSettingSwitchTimeout, Qt::QueuedConnection);
+        return;
+    }
+
+    m_CheckGlobalSettingSwitchTimer.start(static_cast<int>(timeout));
 }
 
 void QKeyMapper::mappingStartNotification()
@@ -20370,25 +20400,30 @@ void QKeyMapper::closeNotificationSetupDialog()
     }
 }
 
-void QKeyMapper::showStartupPositonSettingDialog()
+void QKeyMapper::showGeneralAdvancedDialog()
 {
-    if (Q_NULLPTR == m_StartupPositionDialog) {
+    if (Q_NULLPTR == m_GeneralAdvancedDialog) {
         return;
     }
 
-    if (!m_StartupPositionDialog->isVisible()) {
-        m_StartupPositionDialog->show();
+    if (m_KeyMapStatus != KEYMAP_IDLE) {
+        closeGeneralAdvancedDialog();
+        return;
+    }
+
+    if (!m_GeneralAdvancedDialog->isVisible()) {
+        m_GeneralAdvancedDialog->show();
     }
 }
 
-void QKeyMapper::closeStartupPositonSettingDialog()
+void QKeyMapper::closeGeneralAdvancedDialog()
 {
-    if (Q_NULLPTR == m_StartupPositionDialog) {
+    if (Q_NULLPTR == m_GeneralAdvancedDialog) {
         return;
     }
 
-    if (m_StartupPositionDialog->isVisible()) {
-        m_StartupPositionDialog->close();
+    if (m_GeneralAdvancedDialog->isVisible()) {
+        m_GeneralAdvancedDialog->close();
     }
 }
 
@@ -22434,6 +22469,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
             closeNotificationSetupDialog();
+            closeGeneralAdvancedDialog();
             closeIgnoreRulesListDialog();
             closeMappingAdvancedDialog();
             closeVButtonPanelSetupDialog();
@@ -22454,6 +22490,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+        closeGeneralAdvancedDialog();
         closeTableSetupDialog();
         closeFloatingButtonSetupDialog();
         closeItemSetupDialog();
@@ -22500,6 +22537,7 @@ void QKeyMapper::forceHide()
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+        closeGeneralAdvancedDialog();
         closeSettingTransferDialog();
         hide();
 #ifdef DEBUG_LOGOUT_ON
@@ -24241,70 +24279,6 @@ void QKeyMapper::initCategoryFilterControls()
     ui->categoryFilterToolButton->setToolTip(tr("All"));
 }
 
-void QKeyMapper::initTableEditSettingPopup()
-{
-    if (!ui->tableEditSettingButton || m_TableEditSettingPopup) {
-        return;
-    }
-
-    m_TableEditSettingPopup = new QFrame(this, Qt::Popup);
-    m_TableEditSettingPopup->setObjectName("tableEditSettingPopup");
-    m_TableEditSettingPopup->setFrameShape(QFrame::Box);
-    m_TableEditSettingPopup->setFrameShadow(QFrame::Raised);
-
-    const int marginH = 10;
-    const int marginV = 10;
-    const int rowSpacing = 9;
-    const int columnSpacing = 6;
-    const int labelMinWidth = 70;
-    const int comboMinWidth = 170;
-    const int comboHeight = 21;
-
-    QGridLayout *layout = new QGridLayout(m_TableEditSettingPopup);
-    layout->setContentsMargins(marginH, marginV, marginH, marginV);
-    layout->setHorizontalSpacing(columnSpacing);
-    layout->setVerticalSpacing(rowSpacing);
-
-    m_TableEditModeTriggerLabel = new QLabel(m_TableEditSettingPopup);
-    m_TableEditModeTriggerComboBox = new QComboBox(m_TableEditSettingPopup);
-    m_TableInsertModeLabel = new QLabel(m_TableEditSettingPopup);
-    m_TableInsertModeComboBox = new QComboBox(m_TableEditSettingPopup);
-
-    m_TableEditModeTriggerLabel->setText(tr("EditMode"));
-    m_TableInsertModeLabel->setText(tr("InsertMode"));
-
-    m_TableEditModeTriggerLabel->setMinimumWidth(labelMinWidth);
-    m_TableInsertModeLabel->setMinimumWidth(labelMinWidth);
-    m_TableEditModeTriggerComboBox->setMinimumWidth(comboMinWidth);
-    m_TableInsertModeComboBox->setMinimumWidth(comboMinWidth);
-
-    m_TableEditModeTriggerLabel->setAlignment(Qt::AlignRight);
-    m_TableInsertModeLabel->setAlignment(Qt::AlignRight);
-
-    m_TableEditModeTriggerComboBox->setFixedHeight(comboHeight);
-    m_TableInsertModeComboBox->setFixedHeight(comboHeight);
-
-    QStringList editmodeList = QStringList()
-            << tr("R-DoubleClick")
-            << tr("L-DoubleClick");
-    m_TableEditModeTriggerComboBox->addItems(editmodeList);
-    m_TableEditModeTriggerComboBox->setCurrentIndex(EDITMODE_RIGHT_DOUBLECLICK);
-
-    QStringList insertModeList = QStringList()
-            << tr("AboveCurrentRow")
-            << tr("BelowCurrentRow");
-    m_TableInsertModeComboBox->addItems(insertModeList);
-    m_TableInsertModeComboBox->setCurrentIndex(TABLE_INSERT_MODE_DEFAULT);
-
-    layout->addWidget(m_TableEditModeTriggerLabel, 0, 0, Qt::AlignVCenter | Qt::AlignLeft);
-    layout->addWidget(m_TableEditModeTriggerComboBox, 0, 1);
-    layout->addWidget(m_TableInsertModeLabel, 1, 0, Qt::AlignVCenter | Qt::AlignLeft);
-    layout->addWidget(m_TableInsertModeComboBox, 1, 1);
-
-    m_TableEditSettingPopup->setLayout(layout);
-    m_TableEditSettingPopup->hide();
-}
-
 void QKeyMapper::initKeyboardSelectComboBox()
 {
     if (!ui->keyboardSelectComboBox->isEnabled()) {
@@ -25527,12 +25501,10 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->autoStartupCheckBox->setText(tr("Auto Startup"));
     ui->startupMinimizedCheckBox->setText(tr("Startup Minimized"));
     ui->startupAutoMonitoringCheckBox->setText(tr("Startup AutoMonitoring"));
-    ui->soundEffectCheckBox->setText(tr("Sound"));
     ui->notificationLabel->setText(tr("Notification"));
     ui->languageLabel->setText(tr("Language"));
     ui->updateSiteLabel->setText(tr("UpdateSite"));
-    ui->startupPositonSettingButton->setText(tr("Startup Position"));
-    ui->tableEditSettingButton->setText(tr("Table Edit"));
+    ui->generalAdvancedButton->setText(tr("General Advanced"));
     ui->ignoreRulesListButton->setText(tr("Ignore Rules List"));
     ui->mappingAdvancedSettingButton->setText(tr("Mapping Advanced"));
     ui->mappingMacroListButton->setText(tr("Mapping MacroList"));
@@ -25694,8 +25666,8 @@ void QKeyMapper::setUILanguage(int languageindex)
         m_NotificationSetupDialog->setUILanguage(languageindex);
     }
 
-    if (m_StartupPositionDialog != Q_NULLPTR) {
-        m_StartupPositionDialog->setUILanguage(languageindex);
+    if (m_GeneralAdvancedDialog != Q_NULLPTR) {
+        m_GeneralAdvancedDialog->setUILanguage(languageindex);
     }
 
     if (m_IgnoreRulesListDialog != Q_NULLPTR) {
@@ -25786,7 +25758,6 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->acceptVirtualGamepadInputCheckBox->setText(ACCEPTVIRTUALGAMEPADINPUTCHECKBOX_CHINESE);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_CHINESE);
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_CHINESE);
-    ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_CHINESE);
     ui->notificationLabel->setText(NOTIFICATIONLABEL_CHINESE);
     ui->languageLabel->setText(LANGUAGELABEL_CHINESE);
     ui->updateSiteLabel->setText(UPDATESITELABEL_CHINESE);
@@ -25939,7 +25910,6 @@ void QKeyMapper::setUILanguage_English()
     ui->acceptVirtualGamepadInputCheckBox->setText(ACCEPTVIRTUALGAMEPADINPUTCHECKBOX_ENGLISH);
     ui->autoStartupCheckBox->setText(AUTOSTARTUPCHECKBOX_ENGLISH);
     ui->startupMinimizedCheckBox->setText(STARTUPMINIMIZEDCHECKBOX_ENGLISH);
-    ui->soundEffectCheckBox->setText(SOUNDEFFECTCHECKBOX_ENGLISH);
     ui->notificationLabel->setText(NOTIFICATIONLABEL_ENGLISH);
     ui->languageLabel->setText(LANGUAGELABEL_ENGLISH);
     ui->updateSiteLabel->setText(UPDATESITELABEL_ENGLISH);
@@ -32378,24 +32348,6 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
 }
 #endif
 
-#if 0
-void QKeyMapper::on_soundEffectCheckBox_stateChanged(int state)
-{
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[SoundEffect] Play Sound Effect state changed ->" << (Qt::CheckState)state;
-#endif
-
-    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-
-    if (Qt::Checked == state) {
-        settingFile.setValue(PLAY_SOUNDEFFECT , true);
-    }
-    else {
-        settingFile.setValue(PLAY_SOUNDEFFECT , false);
-    }
-}
-#endif
-
 void QKeyMapper::on_installInterceptionButton_clicked()
 {
     Interception_Worker::Interception_State currentInterceptionState = Interception_Worker::getInterceptionState();
@@ -34173,9 +34125,9 @@ void QKeyMapper::on_sendTextPlainTextEdit_textChanged()
     ui->sendTextPlainTextEdit->setToolTip(tooltip);
 }
 
-void QKeyMapper::on_startupPositonSettingButton_clicked()
+void QKeyMapper::on_generalAdvancedButton_clicked()
 {
-    showStartupPositonSettingDialog();
+    showGeneralAdvancedDialog();
 }
 
 void QKeyMapper::on_mappingAdvancedSettingButton_clicked()
@@ -34290,66 +34242,6 @@ void QKeyMapper::on_selectSettingCustomIconButton_clicked()
 void QKeyMapper::on_mappingMacroListButton_clicked()
 {
     showMacroListDialog();
-}
-
-void QKeyMapper::on_tableEditSettingButton_clicked()
-{
-    if (!ui->tableEditSettingButton) {
-        return;
-    }
-
-    if (!m_TableEditSettingPopup) {
-        initTableEditSettingPopup();
-    }
-    if (!m_TableEditSettingPopup) {
-        return;
-    }
-
-    if (m_TableEditSettingPopup->isVisible()) {
-        m_TableEditSettingPopup->hide();
-        return;
-    }
-
-    m_TableEditSettingPopup->adjustSize();
-    const QSize popupSize = m_TableEditSettingPopup->sizeHint();
-
-    const QPoint anchor = ui->tableEditSettingButton->mapToGlobal(QPoint(ui->tableEditSettingButton->width(), 0));
-    QScreen *screen = QGuiApplication::screenAt(anchor);
-    if (!screen) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-        screen = ui->tableEditSettingButton->screen();
-#else
-        QWidget *topLevel = ui->tableEditSettingButton->window();
-        screen = (topLevel && topLevel->windowHandle())
-            ? topLevel->windowHandle()->screen()
-            : QGuiApplication::primaryScreen();
-#endif
-    }
-
-    const QRect avail = screen ? screen->availableGeometry() : QRect();
-    QPoint pos = anchor;
-
-    if (screen && !avail.isEmpty()) {
-        const int kMargin = 8;
-        QRect availInner = avail.adjusted(kMargin, kMargin, -kMargin, -kMargin);
-        if (availInner.isEmpty()) {
-            availInner = avail;
-        }
-
-        const int rightCandidate = anchor.x();
-        const int leftCandidate = ui->tableEditSettingButton->mapToGlobal(QPoint(0, 0)).x() - popupSize.width();
-
-        if (rightCandidate + popupSize.width() > availInner.right() + 1) {
-            pos.setX(leftCandidate);
-        }
-
-        pos.setX(qBound(availInner.left(), pos.x(), availInner.right() - popupSize.width() + 1));
-        pos.setY(qBound(availInner.top(), pos.y(), availInner.bottom() - popupSize.height() + 1));
-    }
-
-    m_TableEditSettingPopup->move(pos);
-    m_TableEditSettingPopup->show();
-    m_TableEditSettingPopup->raise();
 }
 
 GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)

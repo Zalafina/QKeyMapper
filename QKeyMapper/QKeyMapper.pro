@@ -195,7 +195,7 @@ HEADERS     += \
     qmacrolistdialog.h \
     qmappingadvanceddialog.h \
     qnotificationsetupdialog.h \
-    qstartuppositiondialog.h \
+    qgeneraladvanceddialog.h \
     qtablesetupdialog.h \
     qtrayiconselectdialog.h \
     qvbuttonpanel.h \
@@ -226,7 +226,7 @@ SOURCES     += \
     qmacrolistdialog.cpp \
     qmappingadvanceddialog.cpp \
     qnotificationsetupdialog.cpp \
-    qstartuppositiondialog.cpp \
+    qgeneraladvanceddialog.cpp \
     qtablesetupdialog.cpp \
     qtrayiconselectdialog.cpp \
     qvbuttonpanel.cpp \
@@ -265,7 +265,7 @@ FORMS       += \
     qmappingadvanceddialog.ui \
     qmappingsequenceedit.ui \
     qnotificationsetupdialog.ui \
-    qstartuppositiondialog.ui \
+    qgeneraladvanceddialog.ui \
     qtablesetupdialog.ui \
     qtrayiconselectdialog.ui \
     qvbuttonpanelsetupdialog.ui

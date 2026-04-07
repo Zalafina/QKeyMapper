@@ -82,7 +82,7 @@
 #include "qtablesetupdialog.h"
 #include "qtrayiconselectdialog.h"
 #include "qnotificationsetupdialog.h"
-#include "qstartuppositiondialog.h"
+#include "qgeneraladvanceddialog.h"
 #include "qmappingadvanceddialog.h"
 #include "qignorewindowinfolistdialog.h"
 #include "qmacrolistdialog.h"
@@ -1275,8 +1275,6 @@ private slots:
 
     // void on_uninstallViGEmBusButton_clicked();
 
-    // void on_soundEffectCheckBox_stateChanged(int state);
-
     void on_installInterceptionButton_clicked();
 
     void on_multiInputDeviceListButton_clicked();
@@ -1349,7 +1347,7 @@ private slots:
 
     void on_sendTextPlainTextEdit_textChanged();
 
-    void on_startupPositonSettingButton_clicked();
+    void on_generalAdvancedButton_clicked();
 
     void on_mappingAdvancedSettingButton_clicked();
 
@@ -1360,8 +1358,6 @@ private slots:
     void on_selectSettingCustomIconButton_clicked();
 
     void on_mappingMacroListButton_clicked();
-
-    void on_tableEditSettingButton_clicked();
 
 private:
     // Helper methods for saving/restoring category filter state
@@ -1460,7 +1456,6 @@ private:
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
     void initCategoryFilterControls(void);
-    void initTableEditSettingPopup(void);
     void initKeyboardSelectComboBox(void);
     void initMouseSelectComboBox(void);
 
@@ -1543,6 +1538,9 @@ private:
     void extractSoundFiles();
     void playStartSound();
     void playStopSound();
+    bool isSoundEffectEnabled(void) const;
+    unsigned int getGeneralAdvancedSwitchTimeout(void) const;
+    void scheduleGlobalSettingSwitchCheck(void);
     void mappingStartNotification();
     void mappingStopNotification();
     void mappingTabSwitchNotification(bool isSame);
@@ -1557,8 +1555,8 @@ private:
     void closeTrayIconSelectDialog(void);
     void showNotificationSetupDialog(void);
     void closeNotificationSetupDialog(void);
-    void showStartupPositonSettingDialog(void);
-    void closeStartupPositonSettingDialog(void);
+    void showGeneralAdvancedDialog(void);
+    void closeGeneralAdvancedDialog(void);
     void showIgnoreRulesListDialog(void);
     void closeIgnoreRulesListDialog(void);
     void showMappingAdvancedDialog(void);
@@ -1744,7 +1742,7 @@ private:
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;
     QNotificationSetupDialog *m_NotificationSetupDialog = Q_NULLPTR;
-    QStartupPositionDialog *m_StartupPositionDialog = Q_NULLPTR;
+    QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QMacroListDialog *m_MacroListDialog = Q_NULLPTR;
