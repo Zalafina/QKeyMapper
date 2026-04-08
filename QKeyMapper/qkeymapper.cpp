@@ -9929,6 +9929,8 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
 #endif
     }
 
+    updateSysTrayIconMenuText();
+
     if (m_KeyMapStatus != KEYMAP_IDLE){
         closeSelectColorDialog();
         closeTableSetupDialog();
@@ -11146,6 +11148,15 @@ void QKeyMapper::onTrayIconMenuShowHideAction()
 #endif
 
     switchShowHide();
+}
+
+void QKeyMapper::onTrayIconMenuMappingSwitchAction()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onTrayIconMenuMappingSwitchAction]" << "MappingSwitchAction Triggered.";
+#endif
+
+    MappingSwitch(MAPPINGSTART_BUTTONCLICK);
 }
 
 void QKeyMapper::onTrayIconMenuQuitAction()
@@ -22061,9 +22072,11 @@ void QKeyMapper::initSysTrayIcon()
     // m_SysTrayIcon->setToolTip("QKeyMapper(" + tr("Idle") + ")");
 
     m_SysTrayIconMenu = new SystrayMenu(this);
+    m_TrayIconMenu_MappingSwitchAction = new QAction(this);
     m_TrayIconMenu_ShowHideAction = new QAction(this);
     m_TrayIconMenu_QuitAction = new QAction(this);
 
+    connect(m_TrayIconMenu_MappingSwitchAction, &QAction::triggered, this, &QKeyMapper::onTrayIconMenuMappingSwitchAction);
     // When the Show/Hide menu item is clicked, toggle the visibility of the window
     connect(m_TrayIconMenu_ShowHideAction, &QAction::triggered, this, &QKeyMapper::onTrayIconMenuShowHideAction);
     // When the Quit menu item is clicked, close the application
@@ -22071,6 +22084,8 @@ void QKeyMapper::initSysTrayIcon()
 
     updateSysTrayIconMenuText();
 
+    m_SysTrayIconMenu->addAction(m_TrayIconMenu_MappingSwitchAction);
+    m_SysTrayIconMenu->addSeparator(); // Add a separator horizontal line
     m_SysTrayIconMenu->addAction(m_TrayIconMenu_ShowHideAction);
     m_SysTrayIconMenu->addSeparator(); // Add a separator horizontal line
     m_SysTrayIconMenu->addAction(m_TrayIconMenu_QuitAction);
@@ -22147,13 +22162,24 @@ void QKeyMapper::initSelectSettingCustomIconFileDialog()
 
 void QKeyMapper::updateSysTrayIconMenuText()
 {
+    QString mappingStartActionText;
+    QString mappingStopActionText;
     QString showActionText;
     QString hideActionText;
     QString quitActionText;
 
+    mappingStartActionText = tr("MappingStart");
+    mappingStopActionText = tr("MappingStop");
     showActionText = tr("Show");
     hideActionText = tr("Hide");
     quitActionText = tr("Quit");
+
+    if (KEYMAP_IDLE == m_KeyMapStatus) {
+        m_TrayIconMenu_MappingSwitchAction->setText(mappingStartActionText);
+    }
+    else {
+        m_TrayIconMenu_MappingSwitchAction->setText(mappingStopActionText);
+    }
 
     if (false == isHidden()) {
         m_TrayIconMenu_ShowHideAction->setText(hideActionText);
@@ -22175,8 +22201,10 @@ void QKeyMapper::updateSysTrayIconMenuText()
     // m_TrayIconMenu_QuitAction->setFont(customFont);
 
 #ifdef DEBUG_LOGOUT_ON
+    QFont MappingSwitchActionFont = m_TrayIconMenu_MappingSwitchAction->font();
     QFont ShowHideActionFont = m_TrayIconMenu_ShowHideAction->font();
     QFont QuitActionFont = m_TrayIconMenu_QuitAction->font();
+    qDebug() << "MappingSwitchActionFont ->" << MappingSwitchActionFont;
     qDebug() << "ShowHideActionFont ->" << ShowHideActionFont;
     qDebug() << "QuitActionFont ->" << QuitActionFont;
 #endif
@@ -33690,7 +33718,13 @@ void SystrayMenu::mousePressEvent(QMouseEvent *event)
         bool menu_visible = isVisible();
         if (menu_visible) {
             QAction *action = this->actionAt(event->pos());
-            if (action == QKeyMapper::getInstance()->m_TrayIconMenu_ShowHideAction) {
+            if (action == QKeyMapper::getInstance()->m_TrayIconMenu_MappingSwitchAction) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[SystrayMenu::mousePressEvent] Mouse Left-Button Pressed on action MappingSwitch";
+#endif
+                m_MenuItem_Pressed = SYSTRAY_MENU_ITEM_PRESSED_MAPPINGSWITCH;
+            }
+            else if (action == QKeyMapper::getInstance()->m_TrayIconMenu_ShowHideAction) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[SystrayMenu::mousePressEvent] Mouse Left-Button Pressed on action ShowHide";
 #endif
@@ -33723,7 +33757,15 @@ void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
         bool menu_visible = isVisible();
         if (menu_visible) {
             QAction *action = this->actionAt(event->pos());
-            if (action == QKeyMapper::getInstance()->m_TrayIconMenu_ShowHideAction) {
+            if (action == QKeyMapper::getInstance()->m_TrayIconMenu_MappingSwitchAction) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[SystrayMenu::mouseReleaseEvent] Mouse Left-Button Released on action MappingSwitch.";
+#endif
+                if (m_MenuItem_Pressed == SYSTRAY_MENU_ITEM_PRESSED_MAPPINGSWITCH) {
+                    click_matched = true;
+                }
+            }
+            else if (action == QKeyMapper::getInstance()->m_TrayIconMenu_ShowHideAction) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[SystrayMenu::mouseReleaseEvent] Mouse Left-Button Released on action ShowHide.";
 #endif

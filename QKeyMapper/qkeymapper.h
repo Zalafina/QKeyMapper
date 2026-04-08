@@ -1181,6 +1181,8 @@ private slots:
 
     void SystrayIconActivated(QSystemTrayIcon::ActivationReason reason);
 
+    void onTrayIconMenuMappingSwitchAction(void);
+
     void onTrayIconMenuShowHideAction(void);
 
     void onTrayIconMenuQuitAction(void);
@@ -1690,6 +1692,7 @@ public:
     MAP_PROCESSINFO m_MapProcessInfo;
     QSystemTrayIcon *m_SysTrayIcon;
     SystrayMenu *m_SysTrayIconMenu;
+    QAction *m_TrayIconMenu_MappingSwitchAction;
     QAction *m_TrayIconMenu_ShowHideAction;
     QAction *m_TrayIconMenu_QuitAction;
 private:
