@@ -26,7 +26,7 @@ namespace QKeyMapperConstants {
 #endif
     inline constexpr unsigned int CHECK_GLOBALSETTING_SWITCH_TIMEOUT = 2000U;
     inline constexpr int GLOBALSETTING_SWITCH_TIMEOUT_MIN = 0;
-    inline constexpr int GLOBALSETTING_SWITCH_TIMEOUT_MAX = 9999;
+    inline constexpr int GLOBALSETTING_SWITCH_TIMEOUT_MAX = 999999999;
 
     inline constexpr unsigned int CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT = 3000U;
 
