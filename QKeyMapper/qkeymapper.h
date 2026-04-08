@@ -177,6 +177,7 @@ struct PopupNotificationOptions {
     QString color = QKeyMapperConstants::NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;             // Text color
     int displayDuration = QKeyMapperConstants::NOTIFICATION_DISPLAY_DURATION_DEFAULT;       // Display duration (ms)
     int position = QKeyMapperConstants::NOTIFICATION_POSITION_DEFAULT;                      // Display position (Default: NOTIFICATION_POSITION_TOP_RIGHT)
+    QString fontFamily;                                                                     // Font family
     int size = QKeyMapperConstants::NOTIFICATION_FONT_SIZE_DEFAULT;                         // Font size
     QColor backgroundColor = QKeyMapperConstants::NOTIFICATION_BACKGROUND_COLOR_DEFAULT;    // Background color
     double windowOpacity = QKeyMapperConstants::NOTIFICATION_OPACITY_DEFAULT;               // Window opacity (0.0~1.0)
@@ -1313,6 +1314,10 @@ private slots:
 
     void on_notificationAdvancedSettingButton_clicked();
 
+    void onCustomNotificationSetupRequested();
+
+    void onCustomNotificationEnabledChanged(bool enabled);
+
     void on_oriList_SelectKeyboardButton_toggled(bool checked);
 
     void on_oriList_SelectMouseButton_toggled(bool checked);
@@ -1547,6 +1552,16 @@ private:
     void mappingStopNotification();
     void mappingTabSwitchNotification(bool isSame);
     void switchToWindowInfoTab(void);
+    PopupNotificationOptions buildPopupNotificationOptions(const NotificationStyleSettings &settings,
+                                                           int position,
+                                                           const QColor &fontColorOverride = QColor(),
+                                                           const QColor &backgroundColorOverride = QColor()) const;
+    NotificationStyleSettings getCurrentMappingNotificationStyleSettings(bool *useCustomNotification = Q_NULLPTR);
+    void updateCustomNotificationDialogTitle(void);
+    bool hasStoredCustomNotificationStyle(const QSettings &settingFile, const QString &settingSelectStr) const;
+    void loadCustomNotificationStyleSettings(const QSettings &settingFile, const QString &settingSelectStr);
+    void saveCustomNotificationStyleSettings(QSettings &settingFile, const QString &saveSettingSelectStr);
+    void ensureCustomNotificationStyleInitialized(void);
 
     void closeSelectColorDialog(void);
     void showInputDeviceListWindow(void);
@@ -1557,6 +1572,8 @@ private:
     void closeTrayIconSelectDialog(void);
     void showNotificationSetupDialog(void);
     void closeNotificationSetupDialog(void);
+    void showCustomNotificationSetupDialog(void);
+    void closeCustomNotificationSetupDialog(void);
     void showGeneralAdvancedDialog(void);
     void closeGeneralAdvancedDialog(void);
     void showIgnoreRulesListDialog(void);
@@ -1745,6 +1762,8 @@ private:
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;
     QNotificationSetupDialog *m_NotificationSetupDialog = Q_NULLPTR;
+    QNotificationSetupDialog *m_CustomNotificationSetupDialog = Q_NULLPTR;
+    bool m_CustomNotificationStyleInitialized = false;
     QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;

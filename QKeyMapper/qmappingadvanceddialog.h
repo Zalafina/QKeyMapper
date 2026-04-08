@@ -45,6 +45,8 @@ public:
     int getRightStickPushThreshold(void);
     int getRightStickLightPushThreshold(void);
     int getRightStickReleaseThreshold(void);
+    bool getCustomNotificationEnabled(void);
+    int getCustomNotificationPosition(void);
 
     void setMouseXSpeed(int speed);
     void setMouseYSpeed(int speed);
@@ -65,14 +67,22 @@ public:
     void setRightStickPushThreshold(int threshold);
     void setRightStickLightPushThreshold(int threshold);
     void setRightStickReleaseThreshold(int threshold);
+    void setCustomNotificationEnabled(bool enabled);
+    void setCustomNotificationPosition(int position);
 
     void setProcessIconAsTrayIconEnabled(bool enabled);
+
+signals:
+    void customNotificationSetupRequested(void);
+    void customNotificationEnabledChanged(bool enabled);
 
 protected:
     bool event(QEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
 private:
+    void updateCustomNotificationState(void);
+
     static QMappingAdvancedDialog *m_instance;
     Ui::QMappingAdvancedDialog *ui;
 };

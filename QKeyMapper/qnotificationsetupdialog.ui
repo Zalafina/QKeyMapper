@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>595</width>
+    <width>745</width>
     <height>165</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>595</width>
+    <width>745</width>
     <height>165</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>595</width>
+    <width>745</width>
     <height>165</height>
    </size>
   </property>
@@ -35,8 +35,8 @@
    <property name="geometry">
     <rect>
      <x>65</x>
-     <y>60</y>
-     <width>41</width>
+     <y>90</y>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -47,9 +47,9 @@
   <widget class="QLabel" name="fontSizeLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>60</y>
-     <width>41</width>
+     <x>10</x>
+     <y>90</y>
+     <width>51</width>
      <height>21</height>
     </rect>
    </property>
@@ -63,7 +63,7 @@
   <widget class="QSpinBox" name="displayDurationSpinBox">
    <property name="geometry">
     <rect>
-     <x>220</x>
+     <x>370</x>
      <y>30</y>
      <width>61</width>
      <height>22</height>
@@ -76,7 +76,7 @@
   <widget class="QLabel" name="durationLabel">
    <property name="geometry">
     <rect>
-     <x>155</x>
+     <x>305</x>
      <y>30</y>
      <width>61</width>
      <height>22</height>
@@ -92,7 +92,7 @@
   <widget class="QDoubleSpinBox" name="opacitySpinBox">
    <property name="geometry">
     <rect>
-     <x>360</x>
+     <x>510</x>
      <y>120</y>
      <width>55</width>
      <height>21</height>
@@ -105,7 +105,7 @@
   <widget class="QLabel" name="opacityLabel">
    <property name="geometry">
     <rect>
-     <x>305</x>
+     <x>455</x>
      <y>120</y>
      <width>51</width>
      <height>21</height>
@@ -121,9 +121,9 @@
   <widget class="QLabel" name="fontWeightLabel">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>90</y>
-     <width>41</width>
+     <x>10</x>
+     <y>120</y>
+     <width>51</width>
      <height>21</height>
     </rect>
    </property>
@@ -137,9 +137,9 @@
   <widget class="QCheckBox" name="fontItalicCheckBox">
    <property name="geometry">
     <rect>
-     <x>50</x>
+     <x>200</x>
      <y>120</y>
-     <width>61</width>
+     <width>71</width>
      <height>21</height>
     </rect>
    </property>
@@ -153,7 +153,7 @@
   <widget class="QSpinBox" name="borderRadiusSpinBox">
    <property name="geometry">
     <rect>
-     <x>360</x>
+     <x>510</x>
      <y>60</y>
      <width>55</width>
      <height>22</height>
@@ -166,7 +166,7 @@
   <widget class="QLabel" name="borderRadiusLabel">
    <property name="geometry">
     <rect>
-     <x>305</x>
+     <x>455</x>
      <y>60</y>
      <width>51</width>
      <height>22</height>
@@ -182,7 +182,7 @@
   <widget class="QLabel" name="paddingLabel">
    <property name="geometry">
     <rect>
-     <x>305</x>
+     <x>455</x>
      <y>90</y>
      <width>51</width>
      <height>22</height>
@@ -198,7 +198,7 @@
   <widget class="QSpinBox" name="paddingSpinBox">
    <property name="geometry">
     <rect>
-     <x>360</x>
+     <x>510</x>
      <y>90</y>
      <width>55</width>
      <height>22</height>
@@ -212,8 +212,8 @@
    <property name="geometry">
     <rect>
      <x>65</x>
-     <y>90</y>
-     <width>61</width>
+     <y>120</y>
+     <width>81</width>
      <height>21</height>
     </rect>
    </property>
@@ -230,9 +230,9 @@
   <widget class="QGroupBox" name="fontGroupBox">
    <property name="geometry">
     <rect>
-     <x>20</x>
+     <x>10</x>
      <y>10</y>
-     <width>121</width>
+     <width>281</width>
      <height>141</height>
     </rect>
    </property>
@@ -246,7 +246,7 @@
   <widget class="QSpinBox" name="y_offsetSpinBox">
    <property name="geometry">
     <rect>
-     <x>506</x>
+     <x>666</x>
      <y>60</y>
      <width>60</width>
      <height>21</height>
@@ -259,7 +259,7 @@
   <widget class="QSpinBox" name="x_offsetSpinBox">
    <property name="geometry">
     <rect>
-     <x>506</x>
+     <x>666</x>
      <y>30</y>
      <width>60</width>
      <height>21</height>
@@ -272,9 +272,9 @@
   <widget class="QLabel" name="x_offsetLabel">
    <property name="geometry">
     <rect>
-     <x>440</x>
+     <x>590</x>
      <y>30</y>
-     <width>61</width>
+     <width>71</width>
      <height>21</height>
     </rect>
    </property>
@@ -288,9 +288,9 @@
   <widget class="QGroupBox" name="offsetGroupBox">
    <property name="geometry">
     <rect>
-     <x>436</x>
+     <x>585</x>
      <y>10</y>
-     <width>141</width>
+     <width>151</width>
      <height>141</height>
     </rect>
    </property>
@@ -304,9 +304,9 @@
   <widget class="QLabel" name="y_offsetLabel">
    <property name="geometry">
     <rect>
-     <x>440</x>
+     <x>590</x>
      <y>60</y>
-     <width>61</width>
+     <width>71</width>
      <height>21</height>
     </rect>
    </property>
@@ -320,7 +320,7 @@
   <widget class="QLabel" name="fadeinDurationLabel">
    <property name="geometry">
     <rect>
-     <x>155</x>
+     <x>305</x>
      <y>60</y>
      <width>61</width>
      <height>22</height>
@@ -336,7 +336,7 @@
   <widget class="QSpinBox" name="fadeinDurationSpinBox">
    <property name="geometry">
     <rect>
-     <x>220</x>
+     <x>370</x>
      <y>60</y>
      <width>61</width>
      <height>22</height>
@@ -349,7 +349,7 @@
   <widget class="QLabel" name="fadeoutDurationLabel">
    <property name="geometry">
     <rect>
-     <x>155</x>
+     <x>305</x>
      <y>90</y>
      <width>61</width>
      <height>22</height>
@@ -365,7 +365,7 @@
   <widget class="QSpinBox" name="fadeoutDurationSpinBox">
    <property name="geometry">
     <rect>
-     <x>220</x>
+     <x>370</x>
      <y>90</y>
      <width>61</width>
      <height>22</height>
@@ -378,7 +378,7 @@
   <widget class="QGroupBox" name="durationGroupBox">
    <property name="geometry">
     <rect>
-     <x>150</x>
+     <x>300</x>
      <y>10</y>
      <width>141</width>
      <height>141</height>
@@ -394,7 +394,7 @@
   <widget class="QGroupBox" name="borderGroupBox">
    <property name="geometry">
     <rect>
-     <x>300</x>
+     <x>450</x>
      <y>10</y>
      <width>126</width>
      <height>141</height>
@@ -407,10 +407,58 @@
     <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QLabel" name="fontFamilyLabel">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>60</y>
+     <width>51</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Family</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QFontComboBox" name="fontFamilyComboBox">
+   <property name="geometry">
+    <rect>
+     <x>65</x>
+     <y>60</y>
+     <width>151</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="fontFamilyDefaultButton">
+   <property name="geometry">
+    <rect>
+     <x>225</x>
+     <y>60</y>
+     <width>56</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Default</string>
+   </property>
+  </widget>
   <zorder>borderGroupBox</zorder>
   <zorder>durationGroupBox</zorder>
   <zorder>offsetGroupBox</zorder>
   <zorder>fontGroupBox</zorder>
+  <zorder>fontFamilyLabel</zorder>
+  <zorder>fontFamilyComboBox</zorder>
+  <zorder>fontFamilyDefaultButton</zorder>
   <zorder>fontSizeSpinBox</zorder>
   <zorder>fontSizeLabel</zorder>
   <zorder>displayDurationSpinBox</zorder>

@@ -1000,6 +1000,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char NOTIFICATION_FONTSIZE[] = "Notification_FontSize";
     inline constexpr const char NOTIFICATION_FONTWEIGHT[] = "Notification_FontWeight";
     inline constexpr const char NOTIFICATION_FONTITALIC[] = "Notification_FontItalic";
+    inline constexpr const char NOTIFICATION_FONTFAMILY[] = "Notification_FontFamily";
     inline constexpr const char NOTIFICATION_DISPLAYDURATION[] = "Notification_DisplayDuration";
     inline constexpr const char NOTIFICATION_FADEINDURATION[] = "Notification_FadeInDuration";
     inline constexpr const char NOTIFICATION_FADEOUTDURATION[] = "Notification_FadeOutDuration";
@@ -1009,6 +1010,23 @@ namespace QKeyMapperConstants {
     inline constexpr const char NOTIFICATION_OPACITY[] = "Notification_Opacity";
     inline constexpr const char NOTIFICATION_X_OFFSET[] = "Notification_X_Offset";
     inline constexpr const char NOTIFICATION_Y_OFFSET[] = "Notification_Y_Offset";
+
+    inline constexpr const char CUSTOM_NOTIFICATION_ENABLED[] = "CustomNotification_Enabled";
+    inline constexpr const char CUSTOM_NOTIFICATION_POSITION[] = "CustomNotification_Position";
+    inline constexpr const char CUSTOM_NOTIFICATION_FONTCOLOR[] = "CustomNotification_FontColor";
+    inline constexpr const char CUSTOM_NOTIFICATION_FONTSIZE[] = "CustomNotification_FontSize";
+    inline constexpr const char CUSTOM_NOTIFICATION_FONTWEIGHT[] = "CustomNotification_FontWeight";
+    inline constexpr const char CUSTOM_NOTIFICATION_FONTITALIC[] = "CustomNotification_FontItalic";
+    inline constexpr const char CUSTOM_NOTIFICATION_FONTFAMILY[] = "CustomNotification_FontFamily";
+    inline constexpr const char CUSTOM_NOTIFICATION_DISPLAYDURATION[] = "CustomNotification_DisplayDuration";
+    inline constexpr const char CUSTOM_NOTIFICATION_FADEINDURATION[] = "CustomNotification_FadeInDuration";
+    inline constexpr const char CUSTOM_NOTIFICATION_FADEOUTDURATION[] = "CustomNotification_FadeOutDuration";
+    inline constexpr const char CUSTOM_NOTIFICATION_BACKGROUNDCOLOR[] = "CustomNotification_BackgroundColor";
+    inline constexpr const char CUSTOM_NOTIFICATION_BORDERRADIUS[] = "CustomNotification_BorderRadius";
+    inline constexpr const char CUSTOM_NOTIFICATION_PADDING[] = "CustomNotification_Padding";
+    inline constexpr const char CUSTOM_NOTIFICATION_OPACITY[] = "CustomNotification_Opacity";
+    inline constexpr const char CUSTOM_NOTIFICATION_X_OFFSET[] = "CustomNotification_X_Offset";
+    inline constexpr const char CUSTOM_NOTIFICATION_Y_OFFSET[] = "CustomNotification_Y_Offset";
 
     inline constexpr const char STARTUP_POSITION_INDEX[] = "StartupPosition_Index";
     inline constexpr const char STARTUP_POSITION_SPECIFYPOINT[] = "StartupPosition_SpecifyPoint";

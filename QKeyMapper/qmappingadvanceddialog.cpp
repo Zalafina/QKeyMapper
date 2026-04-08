@@ -18,6 +18,7 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->mouseGroupBox->setStyle(windowsStyle);
         ui->gamepadGroupBox->setStyle(windowsStyle);
+        ui->customNotificationGroupBox->setStyle(windowsStyle);
     }
 
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
@@ -35,6 +36,15 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     ui->showScreenPointKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
     ui->showScreenPointKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
     ui->showScreenPointKeyComboBox->setCurrentText(SHOW_POINTS_IN_SCREEN_KEY);
+
+    ui->customNotificationPositionComboBox->addItem(tr("None"));
+    ui->customNotificationPositionComboBox->addItem(tr("Top Left"));
+    ui->customNotificationPositionComboBox->addItem(tr("Top Center"));
+    ui->customNotificationPositionComboBox->addItem(tr("Top Right"));
+    ui->customNotificationPositionComboBox->addItem(tr("Bottom Left"));
+    ui->customNotificationPositionComboBox->addItem(tr("Bottom Center"));
+    ui->customNotificationPositionComboBox->addItem(tr("Bottom Right"));
+    ui->customNotificationPositionComboBox->setCurrentIndex(NOTIFICATION_POSITION_DEFAULT);
 
     ui->LT_Threshold_PressSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
     ui->RT_Threshold_PressSpinBox->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
@@ -74,6 +84,16 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     ui->RS_Threshold_LightPushSpinBox->setSuffix("%");
     ui->LS_Threshold_ReleaseSpinBox->setSuffix("%");
     ui->RS_Threshold_ReleaseSpinBox->setSuffix("%");
+
+    QObject::connect(ui->customNotificationEnableCheckBox, &QCheckBox::toggled, this,
+                     [this](bool checked) {
+                         updateCustomNotificationState();
+                         emit customNotificationEnabledChanged(checked);
+                     });
+    QObject::connect(ui->customNotificationSetupButton, &QPushButton::clicked,
+                     this, &QMappingAdvancedDialog::customNotificationSetupRequested);
+
+    updateCustomNotificationState();
 }
 
 QMappingAdvancedDialog::~QMappingAdvancedDialog()
@@ -94,6 +114,17 @@ void QMappingAdvancedDialog::setUILanguage(int languageindex)
 
     ui->ProcessIconAsTrayIconCheckBox->setText(tr("ProcessIcon as TrayIcon"));
     ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
+    ui->customNotificationGroupBox->setTitle(tr("Custom Notification"));
+    ui->customNotificationEnableCheckBox->setText(tr("Enable Custom Notification"));
+    ui->customNotificationPositionLabel->setText(tr("Position"));
+    ui->customNotificationSetupButton->setText(tr("Custom Notification Setup"));
+    ui->customNotificationPositionComboBox->setItemText(NOTIFICATION_POSITION_NONE, tr("None"));
+    ui->customNotificationPositionComboBox->setItemText(NOTIFICATION_POSITION_TOP_LEFT, tr("Top Left"));
+    ui->customNotificationPositionComboBox->setItemText(NOTIFICATION_POSITION_TOP_CENTER, tr("Top Center"));
+    ui->customNotificationPositionComboBox->setItemText(NOTIFICATION_POSITION_TOP_RIGHT, tr("Top Right"));
+    ui->customNotificationPositionComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_LEFT, tr("Bottom Left"));
+    ui->customNotificationPositionComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_CENTER, tr("Bottom Center"));
+    ui->customNotificationPositionComboBox->setItemText(NOTIFICATION_POSITION_BOTTOM_RIGHT, tr("Bottom Right"));
 
     ui->showWindowPointKeyLabel->setText(tr("ShowWindowPoint"));
     ui->showScreenPointKeyLabel->setText(tr("ShowScreenPoint"));
@@ -287,6 +318,16 @@ int QMappingAdvancedDialog::getRightStickReleaseThreshold()
     return ui->RS_Threshold_ReleaseSpinBox->value();
 }
 
+bool QMappingAdvancedDialog::getCustomNotificationEnabled()
+{
+    return ui->customNotificationEnableCheckBox->isChecked();
+}
+
+int QMappingAdvancedDialog::getCustomNotificationPosition()
+{
+    return ui->customNotificationPositionComboBox->currentIndex();
+}
+
 void QMappingAdvancedDialog::setMouseXSpeed(int speed)
 {
     ui->mouseXSpeedSpinBox->setValue(speed);
@@ -398,9 +439,33 @@ void QMappingAdvancedDialog::setRightStickReleaseThreshold(int threshold)
     ui->RS_Threshold_ReleaseSpinBox->setValue(threshold);
 }
 
+void QMappingAdvancedDialog::setCustomNotificationEnabled(bool enabled)
+{
+    ui->customNotificationEnableCheckBox->setChecked(enabled);
+    updateCustomNotificationState();
+}
+
+void QMappingAdvancedDialog::setCustomNotificationPosition(int position)
+{
+    if (NOTIFICATION_POSITION_NONE <= position && position <= NOTIFICATION_POSITION_BOTTOM_RIGHT) {
+        ui->customNotificationPositionComboBox->setCurrentIndex(position);
+    }
+    else {
+        ui->customNotificationPositionComboBox->setCurrentIndex(NOTIFICATION_POSITION_DEFAULT);
+    }
+}
+
 void QMappingAdvancedDialog::setProcessIconAsTrayIconEnabled(bool enabled)
 {
     ui->ProcessIconAsTrayIconCheckBox->setEnabled(enabled);
+}
+
+void QMappingAdvancedDialog::updateCustomNotificationState()
+{
+    const bool enabled = ui->customNotificationEnableCheckBox->isChecked();
+    ui->customNotificationPositionLabel->setEnabled(enabled);
+    ui->customNotificationPositionComboBox->setEnabled(enabled);
+    ui->customNotificationSetupButton->setEnabled(enabled);
 }
 
 bool QMappingAdvancedDialog::event(QEvent *event)

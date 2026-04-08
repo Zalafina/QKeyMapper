@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>510</width>
+    <width>770</width>
     <height>360</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>510</width>
+    <width>770</width>
     <height>360</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>510</width>
+    <width>770</width>
     <height>360</height>
    </size>
   </property>
@@ -142,7 +142,7 @@
     <rect>
      <x>20</x>
      <y>180</y>
-     <width>471</width>
+     <width>731</width>
      <height>161</height>
     </rect>
    </property>
@@ -151,6 +151,83 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="customNotificationGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>10</y>
+     <width>241</width>
+     <height>161</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Custom Notification</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="customNotificationEnableCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>40</y>
+     <width>201</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Enable Custom Notification</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="customNotificationPositionLabel">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>80</y>
+     <width>81</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Position</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="customNotificationPositionComboBox">
+   <property name="geometry">
+    <rect>
+     <x>605</x>
+     <y>80</y>
+     <width>126</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="customNotificationSetupButton">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>120</y>
+     <width>201</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Custom Notification Setup</string>
    </property>
   </widget>
   <widget class="QLabel" name="LS_Threshold_ReleaseLabel">
@@ -663,8 +740,13 @@
   </widget>
   <zorder>gamepadGroupBox</zorder>
   <zorder>mouseGroupBox</zorder>
+  <zorder>customNotificationGroupBox</zorder>
   <zorder>ProcessIconAsTrayIconCheckBox</zorder>
   <zorder>acceptVirtualGamepadInputCheckBox</zorder>
+  <zorder>customNotificationEnableCheckBox</zorder>
+  <zorder>customNotificationPositionLabel</zorder>
+  <zorder>customNotificationPositionComboBox</zorder>
+  <zorder>customNotificationSetupButton</zorder>
   <zorder>showWindowPointKeyLabel</zorder>
   <zorder>showWindowPointKeyComboBox</zorder>
   <zorder>showScreenPointKeyComboBox</zorder>

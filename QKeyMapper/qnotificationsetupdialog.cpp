@@ -2,6 +2,8 @@
 #include "qnotificationsetupdialog.h"
 #include "ui_qnotificationsetupdialog.h"
 
+#include <QSignalBlocker>
+
 using namespace QKeyMapperConstants;
 
 QNotificationSetupDialog *QNotificationSetupDialog::m_instance = Q_NULLPTR;
@@ -9,6 +11,7 @@ QNotificationSetupDialog *QNotificationSetupDialog::m_instance = Q_NULLPTR;
 QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QNotificationSetupDialog)
+    , m_FontFamily()
     , m_FontColorPicker(new ColorPickerWidget(this, "FontColor", COLORPICKER_BUTTON_WIDTH_NOTIFICATION_FONTCOLOR))
     , m_BackgroundColorPicker(new ColorPickerWidget(this, "BGColor", COLORPICKER_BUTTON_WIDTH_NOTIFICATION_BGCOLOR))
 {
@@ -22,7 +25,7 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
         ui->offsetGroupBox->setStyle(windowsStyle);
     }
 
-    int x_offset = 4;
+    int x_offset = 8;
     int y_offset = 15;
     QRect fontWidgetGeometry = ui->fontGroupBox->geometry();
     int font_color_x = fontWidgetGeometry.x();
@@ -82,6 +85,20 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
 
     QObject::connect(m_FontColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onFontColorChanged);
     QObject::connect(m_BackgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onBackgroundColorChanged);
+    QObject::connect(ui->fontFamilyComboBox, &QFontComboBox::currentFontChanged, this,
+                     [this](const QFont &font) {
+                         m_FontFamily = font.family().trimmed();
+                         ui->fontFamilyDefaultButton->setEnabled(!m_FontFamily.isEmpty());
+                     });
+    QObject::connect(ui->fontFamilyDefaultButton, &QPushButton::clicked, this,
+                     [this]() {
+                         m_FontFamily.clear();
+                         syncFontFamilyControls();
+                     });
+
+    ui->fontFamilyDefaultButton->setAutoDefault(false);
+    ui->fontFamilyDefaultButton->setDefault(false);
+    syncFontFamilyControls();
 }
 
 QNotificationSetupDialog::~QNotificationSetupDialog()
@@ -101,6 +118,9 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
     ui->fontSizeLabel->setText(tr("Size"));
     ui->fontWeightLabel->setText(tr("Weight"));
     ui->fontItalicCheckBox->setText(tr("Italic"));
+    ui->fontFamilyLabel->setText(tr("Family"));
+    ui->fontFamilyDefaultButton->setText(tr("Default"));
+    ui->fontFamilyDefaultButton->setToolTip(tr("Use application default font"));
     ui->fontWeightComboBox->setItemText(NOTIFICATION_FONT_WEIGHT_LIGHT,     tr("Light"));
     ui->fontWeightComboBox->setItemText(NOTIFICATION_FONT_WEIGHT_NORMAL,    tr("Normal"));
     ui->fontWeightComboBox->setItemText(NOTIFICATION_FONT_WEIGHT_BOLD,      tr("Bold"));
@@ -161,6 +181,11 @@ bool QNotificationSetupDialog::getNotification_FontIsItalic()
     return ui->fontItalicCheckBox->isChecked();
 }
 
+QString QNotificationSetupDialog::getNotification_FontFamily() const
+{
+    return m_FontFamily.trimmed();
+}
+
 int QNotificationSetupDialog::getNotification_DisplayDuration()
 {
     return ui->displayDurationSpinBox->value();
@@ -201,6 +226,26 @@ int QNotificationSetupDialog::getNotification_Y_Offset()
     return ui->y_offsetSpinBox->value();
 }
 
+NotificationStyleSettings QNotificationSetupDialog::getNotificationSettings()
+{
+    NotificationStyleSettings settings;
+    settings.fontColor = getNotification_FontColor();
+    settings.backgroundColor = getNotification_BackgroundColor();
+    settings.fontFamily = getNotification_FontFamily();
+    settings.fontSize = ui->fontSizeSpinBox->value();
+    settings.fontWeight = ui->fontWeightComboBox->currentIndex();
+    settings.fontItalic = ui->fontItalicCheckBox->isChecked();
+    settings.displayDuration = ui->displayDurationSpinBox->value();
+    settings.fadeInDuration = ui->fadeinDurationSpinBox->value();
+    settings.fadeOutDuration = ui->fadeoutDurationSpinBox->value();
+    settings.borderRadius = ui->borderRadiusSpinBox->value();
+    settings.padding = ui->paddingSpinBox->value();
+    settings.opacity = ui->opacitySpinBox->value();
+    settings.xOffset = ui->x_offsetSpinBox->value();
+    settings.yOffset = ui->y_offsetSpinBox->value();
+    return settings;
+}
+
 void QNotificationSetupDialog::setNotification_FontColor(const QColor &color)
 {
     if (color.isValid()) {
@@ -228,6 +273,12 @@ void QNotificationSetupDialog::setNotification_FontWeight(int weight)
 void QNotificationSetupDialog::setNotification_FontIsItalic(bool italic)
 {
     ui->fontItalicCheckBox->setChecked(italic);
+}
+
+void QNotificationSetupDialog::setNotification_FontFamily(const QString &family)
+{
+    m_FontFamily = family.trimmed();
+    syncFontFamilyControls();
 }
 
 void QNotificationSetupDialog::setNotification_DisplayDuration(int duration)
@@ -268,6 +319,36 @@ void QNotificationSetupDialog::setNotification_X_Offset(int offset)
 void QNotificationSetupDialog::setNotification_Y_Offset(int offset)
 {
     ui->y_offsetSpinBox->setValue(offset);
+}
+
+void QNotificationSetupDialog::loadNotificationSettings(const NotificationStyleSettings &settings)
+{
+    setNotification_FontColor(settings.fontColor);
+    setNotification_BackgroundColor(settings.backgroundColor);
+    setNotification_FontFamily(settings.fontFamily);
+    setNotification_FontSize(settings.fontSize);
+    setNotification_FontWeight(qBound(NOTIFICATION_FONT_WEIGHT_MIN, settings.fontWeight, NOTIFICATION_FONT_WEIGHT_MAX));
+    setNotification_FontIsItalic(settings.fontItalic);
+    setNotification_DisplayDuration(qBound(NOTIFICATION_DURATION_MIN, settings.displayDuration, NOTIFICATION_DURATION_MAX));
+    setNotification_FadeInDuration(qBound(NOTIFICATION_DURATION_MIN, settings.fadeInDuration, NOTIFICATION_DURATION_MAX));
+    setNotification_FadeOutDuration(qBound(NOTIFICATION_DURATION_MIN, settings.fadeOutDuration, NOTIFICATION_DURATION_MAX));
+    setNotification_BorderRadius(qBound(NOTIFICATION_BORDER_RADIUS_MIN, settings.borderRadius, NOTIFICATION_BORDER_RADIUS_MAX));
+    setNotification_Padding(qBound(NOTIFICATION_PADDING_MIN, settings.padding, NOTIFICATION_PADDING_MAX));
+    setNotification_Opacity(qBound(NOTIFICATION_OPACITY_MIN, settings.opacity, NOTIFICATION_OPACITY_MAX));
+    setNotification_X_Offset(qBound(NOTIFICATION_OFFSET_MIN, settings.xOffset, NOTIFICATION_OFFSET_MAX));
+    setNotification_Y_Offset(qBound(NOTIFICATION_OFFSET_MIN, settings.yOffset, NOTIFICATION_OFFSET_MAX));
+}
+
+void QNotificationSetupDialog::syncFontFamilyControls()
+{
+    const QString previewFamily = QKeyMapper::resolveConfiguredFontFamily(m_FontFamily);
+
+    const QSignalBlocker blocker(ui->fontFamilyComboBox);
+    if (!previewFamily.isEmpty()) {
+        ui->fontFamilyComboBox->setCurrentFont(QFont(previewFamily));
+    }
+
+    ui->fontFamilyDefaultButton->setEnabled(!m_FontFamily.isEmpty());
 }
 
 bool QNotificationSetupDialog::event(QEvent *event)

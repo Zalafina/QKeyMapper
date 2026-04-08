@@ -1113,6 +1113,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_Gyro2MouseOptionDialog = new QGyro2MouseOptionDialog(this);
     m_TrayIconSelectDialog = new QTrayIconSelectDialog(this);
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
+    m_CustomNotificationSetupDialog = new QNotificationSetupDialog(this);
     m_GeneralAdvancedDialog = new QGeneralAdvancedDialog(this);
     m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
@@ -1125,6 +1126,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             this, &QKeyMapper::onVButtonPanelSetupDialogClosed);
     QObject::connect(this, &QKeyMapper::openVButtonPanelSetup_Signal,
             this, &QKeyMapper::on_vButtonPanelSetupButton_clicked, Qt::QueuedConnection);
+    QObject::connect(m_MappingAdvancedDialog, &QMappingAdvancedDialog::customNotificationSetupRequested,
+                     this, &QKeyMapper::onCustomNotificationSetupRequested);
+    QObject::connect(m_MappingAdvancedDialog, &QMappingAdvancedDialog::customNotificationEnabledChanged,
+                     this, &QKeyMapper::onCustomNotificationEnabledChanged);
 
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
@@ -1380,6 +1385,7 @@ void QKeyMapper::WindowStateChangedProc(void)
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+        closeCustomNotificationSetupDialog();
         closeGeneralAdvancedDialog();
         // hide();
     }
@@ -9369,6 +9375,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
             closeNotificationSetupDialog();
+            closeCustomNotificationSetupDialog();
             closeGeneralAdvancedDialog();
             closeSettingTransferDialog();
             hide();
@@ -9945,6 +9952,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+        closeCustomNotificationSetupDialog();
         closeGeneralAdvancedDialog();
         closeSettingTransferDialog();
         changeControlEnableStatus(false);
@@ -12839,6 +12847,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(NOTIFICATION_FONTSIZE,         m_NotificationSetupDialog->getNotification_FontSize());
     settingFile.setValue(NOTIFICATION_FONTWEIGHT,       m_NotificationSetupDialog->getNotification_FontWeight());
     settingFile.setValue(NOTIFICATION_FONTITALIC,       m_NotificationSetupDialog->getNotification_FontIsItalic());
+    settingFile.setValue(NOTIFICATION_FONTFAMILY,       m_NotificationSetupDialog->getNotification_FontFamily());
     settingFile.setValue(NOTIFICATION_DISPLAYDURATION,  m_NotificationSetupDialog->getNotification_DisplayDuration());
     settingFile.setValue(NOTIFICATION_FADEINDURATION,   m_NotificationSetupDialog->getNotification_FadeInDuration());
     settingFile.setValue(NOTIFICATION_FADEOUTDURATION,  m_NotificationSetupDialog->getNotification_FadeOutDuration());
@@ -13974,6 +13983,9 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(saveSettingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED, m_MappingAdvancedDialog->getProcessIconAsTrayIcon());
     settingFile.setValue(saveSettingSelectStr+SHOW_WINDOW_POINT_KEY, m_MappingAdvancedDialog->getShowWindowPointKey());
     settingFile.setValue(saveSettingSelectStr+SHOW_SCREEN_POINT_KEY, m_MappingAdvancedDialog->getShowScreenPointKey());
+    settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_ENABLED, m_MappingAdvancedDialog->getCustomNotificationEnabled());
+    settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_POSITION, m_MappingAdvancedDialog->getCustomNotificationPosition());
+    saveCustomNotificationStyleSettings(settingFile, saveSettingSelectStr);
 #ifdef VIGEM_CLIENT_SUPPORT
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_DIRECTMODE, ui->directModeCheckBox->isChecked());
@@ -14605,6 +14617,17 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Notification Font Italic Checkbox ->" << m_NotificationSetupDialog->getNotification_FontIsItalic();
+#endif
+
+        if (true == settingFile.contains(NOTIFICATION_FONTFAMILY)){
+            QString notification_fontfamily = settingFile.value(NOTIFICATION_FONTFAMILY).toString();
+            m_NotificationSetupDialog->setNotification_FontFamily(notification_fontfamily);
+        }
+        else {
+            m_NotificationSetupDialog->setNotification_FontFamily(QString());
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Notification Font Family ->" << m_NotificationSetupDialog->getNotification_FontFamily();
 #endif
 
         if (true == settingFile.contains(NOTIFICATION_DISPLAYDURATION)){
@@ -18153,6 +18176,41 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         m_MappingAdvancedDialog->setShowScreenPointKey(SHOW_POINTS_IN_SCREEN_KEY);
     }
 
+    m_MappingAdvancedDialog->blockSignals(true);
+    if (true == settingFile.contains(settingSelectStr+CUSTOM_NOTIFICATION_POSITION)) {
+        int customNotificationPosition = settingFile.value(settingSelectStr+CUSTOM_NOTIFICATION_POSITION).toInt();
+        if (NOTIFICATION_POSITION_NONE <= customNotificationPosition && customNotificationPosition <= NOTIFICATION_POSITION_BOTTOM_RIGHT) {
+            m_MappingAdvancedDialog->setCustomNotificationPosition(customNotificationPosition);
+        }
+        else {
+            m_MappingAdvancedDialog->setCustomNotificationPosition(ui->notificationComboBox->currentIndex());
+        }
+    }
+    else {
+        m_MappingAdvancedDialog->setCustomNotificationPosition(ui->notificationComboBox->currentIndex());
+    }
+
+    if (true == settingFile.contains(settingSelectStr+CUSTOM_NOTIFICATION_ENABLED)) {
+        bool customNotificationEnabled = settingFile.value(settingSelectStr+CUSTOM_NOTIFICATION_ENABLED).toBool();
+        m_MappingAdvancedDialog->setCustomNotificationEnabled(customNotificationEnabled);
+    }
+    else {
+        m_MappingAdvancedDialog->setCustomNotificationEnabled(false);
+    }
+    m_MappingAdvancedDialog->blockSignals(false);
+
+    m_CustomNotificationStyleInitialized = false;
+    if (hasStoredCustomNotificationStyle(settingFile, settingSelectStr)) {
+        loadCustomNotificationStyleSettings(settingFile, settingSelectStr);
+    }
+    else if (m_CustomNotificationSetupDialog != Q_NULLPTR && m_NotificationSetupDialog != Q_NULLPTR) {
+        m_CustomNotificationSetupDialog->loadNotificationSettings(m_NotificationSetupDialog->getNotificationSettings());
+    }
+    updateCustomNotificationDialogTitle();
+    if (!m_MappingAdvancedDialog->getCustomNotificationEnabled()) {
+        closeCustomNotificationSetupDialog();
+    }
+
 //     QString loadedmappingswitchKeySeqStr;
 //     if (true == settingFile.contains(settingSelectStr+MAPPINGSTART_KEY)){
 //         loadedmappingswitchKeySeqStr = settingFile.value(settingSelectStr+MAPPINGSTART_KEY).toString();
@@ -18824,6 +18882,17 @@ void QKeyMapper::loadGeneralSetting()
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadGeneralSetting]" << "Notification Font Italic Checkbox ->" << m_NotificationSetupDialog->getNotification_FontIsItalic();
+#endif
+
+    if (true == settingFile.contains(NOTIFICATION_FONTFAMILY)){
+        QString notification_fontfamily = settingFile.value(NOTIFICATION_FONTFAMILY).toString();
+        m_NotificationSetupDialog->setNotification_FontFamily(notification_fontfamily);
+    }
+    else {
+        m_NotificationSetupDialog->setNotification_FontFamily(QString());
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[loadGeneralSetting]" << "Notification Font Family ->" << m_NotificationSetupDialog->getNotification_FontFamily();
 #endif
 
     if (true == settingFile.contains(NOTIFICATION_DISPLAYDURATION)){
@@ -20099,6 +20168,243 @@ void QKeyMapper::scheduleGlobalSettingSwitchCheck()
     m_CheckGlobalSettingSwitchTimer.start(static_cast<int>(timeout));
 }
 
+PopupNotificationOptions QKeyMapper::buildPopupNotificationOptions(const NotificationStyleSettings &settings,
+                                                                   int position,
+                                                                   const QColor &fontColorOverride,
+                                                                   const QColor &backgroundColorOverride) const
+{
+    PopupNotificationOptions opts;
+    const QColor effectiveFontColor = fontColorOverride.isValid() ? fontColorOverride : settings.fontColor;
+    const QColor effectiveBackgroundColor = backgroundColorOverride.isValid() ? backgroundColorOverride : settings.backgroundColor;
+
+    opts.color = effectiveFontColor.isValid() ? effectiveFontColor.name() : NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
+    opts.position = position;
+    opts.fontFamily = settings.fontFamily;
+    opts.size = settings.fontSize;
+    opts.displayDuration = settings.displayDuration;
+    opts.backgroundColor = effectiveBackgroundColor.isValid() ? effectiveBackgroundColor : NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
+    opts.windowOpacity = settings.opacity;
+    opts.padding = settings.padding;
+    opts.borderRadius = settings.borderRadius;
+
+    if (NOTIFICATION_FONT_WEIGHT_LIGHT == settings.fontWeight) {
+        opts.fontWeight = QFont::Light;
+    }
+    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == settings.fontWeight) {
+        opts.fontWeight = QFont::Normal;
+    }
+    else {
+        opts.fontWeight = QFont::Bold;
+    }
+
+    opts.fontItalic = settings.fontItalic;
+    opts.fadeInDuration = settings.fadeInDuration;
+    opts.fadeOutDuration = settings.fadeOutDuration;
+    opts.xOffset = settings.xOffset;
+    opts.yOffset = settings.yOffset;
+    return opts;
+}
+
+NotificationStyleSettings QKeyMapper::getCurrentMappingNotificationStyleSettings(bool *useCustomNotification)
+{
+    NotificationStyleSettings settings;
+    bool useCustom = false;
+
+    if (m_NotificationSetupDialog != Q_NULLPTR) {
+        settings = m_NotificationSetupDialog->getNotificationSettings();
+    }
+
+    if (m_MappingAdvancedDialog != Q_NULLPTR
+        && m_CustomNotificationSetupDialog != Q_NULLPTR
+        && m_MappingAdvancedDialog->getCustomNotificationEnabled()) {
+        ensureCustomNotificationStyleInitialized();
+        settings = m_CustomNotificationSetupDialog->getNotificationSettings();
+        useCustom = true;
+    }
+
+    if (useCustomNotification != Q_NULLPTR) {
+        *useCustomNotification = useCustom;
+    }
+
+    return settings;
+}
+
+void QKeyMapper::updateCustomNotificationDialogTitle(void)
+{
+    if (Q_NULLPTR == m_CustomNotificationSetupDialog) {
+        return;
+    }
+
+    QString displayName = ui->descriptionLineEdit->text().trimmed();
+    if (displayName.isEmpty()) {
+        displayName = ui->settingselectComboBox->currentText().trimmed();
+    }
+
+    QString title = tr("Custom Notification");
+    if (!displayName.isEmpty()) {
+        title += " - " + displayName;
+    }
+    m_CustomNotificationSetupDialog->setWindowTitle(title);
+}
+
+bool QKeyMapper::hasStoredCustomNotificationStyle(const QSettings &settingFile, const QString &settingSelectStr) const
+{
+    return settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTCOLOR)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_BACKGROUNDCOLOR)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTSIZE)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTWEIGHT)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTITALIC)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTFAMILY)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_DISPLAYDURATION)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FADEINDURATION)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FADEOUTDURATION)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_BORDERRADIUS)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_PADDING)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_OPACITY)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_X_OFFSET)
+           || settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_Y_OFFSET);
+}
+
+void QKeyMapper::loadCustomNotificationStyleSettings(const QSettings &settingFile, const QString &settingSelectStr)
+{
+    if (Q_NULLPTR == m_CustomNotificationSetupDialog) {
+        return;
+    }
+
+    NotificationStyleSettings settings;
+    if (m_NotificationSetupDialog != Q_NULLPTR) {
+        settings = m_NotificationSetupDialog->getNotificationSettings();
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTCOLOR)) {
+        const QColor fontColor(settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_FONTCOLOR).toString());
+        if (fontColor.isValid()) {
+            settings.fontColor = fontColor;
+        }
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_BACKGROUNDCOLOR)) {
+        const QColor backgroundColor(settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_BACKGROUNDCOLOR).toString());
+        if (backgroundColor.isValid()) {
+            settings.backgroundColor = backgroundColor;
+        }
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTFAMILY)) {
+        settings.fontFamily = settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_FONTFAMILY).toString().trimmed();
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTSIZE)) {
+        settings.fontSize = qBound(NOTIFICATION_FONT_SIZE_MIN,
+                                   settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_FONTSIZE).toInt(),
+                                   NOTIFICATION_FONT_SIZE_MAX);
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTWEIGHT)) {
+        settings.fontWeight = qBound(NOTIFICATION_FONT_WEIGHT_MIN,
+                                     settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_FONTWEIGHT).toInt(),
+                                     NOTIFICATION_FONT_WEIGHT_MAX);
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FONTITALIC)) {
+        settings.fontItalic = settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_FONTITALIC).toBool();
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_DISPLAYDURATION)) {
+        settings.displayDuration = qBound(NOTIFICATION_DURATION_MIN,
+                                          settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_DISPLAYDURATION).toInt(),
+                                          NOTIFICATION_DURATION_MAX);
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FADEINDURATION)) {
+        settings.fadeInDuration = qBound(NOTIFICATION_DURATION_MIN,
+                                         settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_FADEINDURATION).toInt(),
+                                         NOTIFICATION_DURATION_MAX);
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_FADEOUTDURATION)) {
+        settings.fadeOutDuration = qBound(NOTIFICATION_DURATION_MIN,
+                                          settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_FADEOUTDURATION).toInt(),
+                                          NOTIFICATION_DURATION_MAX);
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_BORDERRADIUS)) {
+        settings.borderRadius = qBound(NOTIFICATION_BORDER_RADIUS_MIN,
+                                       settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_BORDERRADIUS).toInt(),
+                                       NOTIFICATION_BORDER_RADIUS_MAX);
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_PADDING)) {
+        settings.padding = qBound(NOTIFICATION_PADDING_MIN,
+                                  settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_PADDING).toInt(),
+                                  NOTIFICATION_PADDING_MAX);
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_OPACITY)) {
+        settings.opacity = qBound(NOTIFICATION_OPACITY_MIN,
+                                  settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_OPACITY).toDouble(),
+                                  NOTIFICATION_OPACITY_MAX);
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_X_OFFSET)) {
+        settings.xOffset = qBound(NOTIFICATION_OFFSET_MIN,
+                                  settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_X_OFFSET).toInt(),
+                                  NOTIFICATION_OFFSET_MAX);
+    }
+
+    if (settingFile.contains(settingSelectStr + CUSTOM_NOTIFICATION_Y_OFFSET)) {
+        settings.yOffset = qBound(NOTIFICATION_OFFSET_MIN,
+                                  settingFile.value(settingSelectStr + CUSTOM_NOTIFICATION_Y_OFFSET).toInt(),
+                                  NOTIFICATION_OFFSET_MAX);
+    }
+
+    m_CustomNotificationSetupDialog->loadNotificationSettings(settings);
+    m_CustomNotificationStyleInitialized = true;
+}
+
+void QKeyMapper::saveCustomNotificationStyleSettings(QSettings &settingFile, const QString &saveSettingSelectStr)
+{
+    if (Q_NULLPTR == m_CustomNotificationSetupDialog || Q_NULLPTR == m_MappingAdvancedDialog) {
+        return;
+    }
+
+    if (!m_CustomNotificationStyleInitialized
+        && !m_MappingAdvancedDialog->getCustomNotificationEnabled()
+        && !hasStoredCustomNotificationStyle(settingFile, saveSettingSelectStr)) {
+        return;
+    }
+
+    const NotificationStyleSettings settings = m_CustomNotificationSetupDialog->getNotificationSettings();
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTCOLOR,
+                         settings.fontColor.isValid() ? settings.fontColor.name() : QString());
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_BACKGROUNDCOLOR,
+                         settings.backgroundColor.isValid() ? settings.backgroundColor.name(QColor::HexArgb) : QString());
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTFAMILY, settings.fontFamily);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTSIZE, settings.fontSize);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTWEIGHT, settings.fontWeight);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTITALIC, settings.fontItalic);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_DISPLAYDURATION, settings.displayDuration);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FADEINDURATION, settings.fadeInDuration);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FADEOUTDURATION, settings.fadeOutDuration);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_BORDERRADIUS, settings.borderRadius);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_PADDING, settings.padding);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_OPACITY, settings.opacity);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_X_OFFSET, settings.xOffset);
+    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_Y_OFFSET, settings.yOffset);
+}
+
+void QKeyMapper::ensureCustomNotificationStyleInitialized(void)
+{
+    if (m_CustomNotificationStyleInitialized
+        || Q_NULLPTR == m_CustomNotificationSetupDialog
+        || Q_NULLPTR == m_NotificationSetupDialog) {
+        return;
+    }
+
+    m_CustomNotificationSetupDialog->loadNotificationSettings(m_NotificationSetupDialog->getNotificationSettings());
+    m_CustomNotificationStyleInitialized = true;
+}
+
 void QKeyMapper::mappingStartNotification()
 {
     ScopedTrayUpdater trayUpdater(this);
@@ -20106,12 +20412,17 @@ void QKeyMapper::mappingStartNotification()
     showFloatingIconWindowFromSettings();
 
     QString popupNotification;
-    int position = ui->notificationComboBox->currentIndex();
-    if (NOTIFICATION_POSITION_NONE == position) {
-        return;
-    }
     Qt::CheckState tabHideNotification = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabHideNotification;
     if (tabHideNotification != Qt::Unchecked) {
+        return;
+    }
+
+    bool useCustomNotification = false;
+    const NotificationStyleSettings notificationSettings = getCurrentMappingNotificationStyleSettings(&useCustomNotification);
+    int position = useCustomNotification && m_MappingAdvancedDialog != Q_NULLPTR
+                   ? m_MappingAdvancedDialog->getCustomNotificationPosition()
+                   : ui->notificationComboBox->currentIndex();
+    if (NOTIFICATION_POSITION_NONE == position) {
         return;
     }
 
@@ -20130,56 +20441,15 @@ void QKeyMapper::mappingStartNotification()
     else {
         notificationSetting = description;
     }
-    QString color_str;
     popupNotification = tr("StartMapping [") + notificationSetting + "]" + " - " + tabName;
-    if (tabFontColor.isValid()) {
-        color_str = tabFontColor.name();
-    }
-    else {
-        if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-            color_str = NOTIFICATION_COLOR_GLOBAL_DEFAULT_STR;
-        }
-        else {
-            QColor notification_font_color = m_NotificationSetupDialog->getNotification_FontColor();
-            if (notification_font_color.isValid()) {
-                color_str = notification_font_color.name();
-            }
-            else {
-                color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
-            }
-        }
+    QColor effectiveFontColor = tabFontColor;
+    if (!effectiveFontColor.isValid()
+        && !useCustomNotification
+        && GLOBALSETTING_INDEX == currentSelectedIndex) {
+        effectiveFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT_STR);
     }
 
-    // Setup Notification Options
-    PopupNotificationOptions opts;
-    opts.color = color_str;
-    opts.position = position;
-    opts.size = m_NotificationSetupDialog->getNotification_FontSize();
-    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
-    if (tabBGColor.isValid()) {
-        opts.backgroundColor = tabBGColor;
-    }
-    else {
-        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
-    }
-    opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
-    opts.padding = m_NotificationSetupDialog->getNotification_Padding();
-    opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
-    int font_weight = m_NotificationSetupDialog->getNotification_FontWeight();
-    if (NOTIFICATION_FONT_WEIGHT_LIGHT == font_weight) {
-        opts.fontWeight = QFont::Light;
-    }
-    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == font_weight) {
-        opts.fontWeight = QFont::Normal;
-    }
-    else {
-        opts.fontWeight = QFont::Bold;
-    }
-    opts.fontItalic = m_NotificationSetupDialog->getNotification_FontIsItalic();
-    opts.fadeInDuration = m_NotificationSetupDialog->getNotification_FadeInDuration();
-    opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
-    opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
-    opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+    PopupNotificationOptions opts = buildPopupNotificationOptions(notificationSettings, position, effectiveFontColor, tabBGColor);
 
     if (tabCustomImage_ShowPosition != TAB_CUSTOMIMAGE_SHOW_NONE
         && !tabCustomImage_Path.isEmpty()) {
@@ -20223,12 +20493,17 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     showFloatingIconWindowFromSettings();
 
     QString popupNotification;
-    int position = ui->notificationComboBox->currentIndex();
-    if (NOTIFICATION_POSITION_NONE == position) {
-        return;
-    }
     Qt::CheckState tabHideNotification = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabHideNotification;
     if (tabHideNotification == Qt::Checked) {
+        return;
+    }
+
+    bool useCustomNotification = false;
+    const NotificationStyleSettings notificationSettings = getCurrentMappingNotificationStyleSettings(&useCustomNotification);
+    int position = useCustomNotification && m_MappingAdvancedDialog != Q_NULLPTR
+                   ? m_MappingAdvancedDialog->getCustomNotificationPosition()
+                   : ui->notificationComboBox->currentIndex();
+    if (NOTIFICATION_POSITION_NONE == position) {
         return;
     }
 
@@ -20239,7 +20514,6 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
     int tabCustomImage_ShowPosition = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_ShowPosition;
     QString tabCustomImage_Path = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Path;
-    QString color_str;
     // popupNotification = tr("MappingTabSwitch [") + currentSelectedSetting + "]" + " - " + tabName;
     if (isSame) {
         popupNotification = tr("TabisAlready") + " - " + tabName;
@@ -20247,54 +20521,14 @@ void QKeyMapper::mappingTabSwitchNotification(bool isSame)
     else {
         popupNotification = tr("MappingTabSwitch") + " - " + tabName;
     }
-    if (tabFontColor.isValid()) {
-        color_str = tabFontColor.name();
-    }
-    else {
-        if (GLOBALSETTING_INDEX == currentSelectedIndex) {
-            color_str = NOTIFICATION_COLOR_GLOBAL_DEFAULT_STR;
-        }
-        else {
-            QColor notification_font_color = m_NotificationSetupDialog->getNotification_FontColor();
-            if (notification_font_color.isValid()) {
-                color_str = notification_font_color.name();
-            }
-            else {
-                color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
-            }
-        }
+    QColor effectiveFontColor = tabFontColor;
+    if (!effectiveFontColor.isValid()
+        && !useCustomNotification
+        && GLOBALSETTING_INDEX == currentSelectedIndex) {
+        effectiveFontColor = QColor(NOTIFICATION_COLOR_GLOBAL_DEFAULT_STR);
     }
 
-    // Setup Notification Options
-    PopupNotificationOptions opts;
-    opts.color = color_str;
-    opts.position = position;
-    opts.size = m_NotificationSetupDialog->getNotification_FontSize();
-    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
-    if (tabBGColor.isValid()) {
-        opts.backgroundColor = tabBGColor;
-    }
-    else {
-        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
-    }
-    opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
-    opts.padding = m_NotificationSetupDialog->getNotification_Padding();
-    opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
-    int font_weight = m_NotificationSetupDialog->getNotification_FontWeight();
-    if (NOTIFICATION_FONT_WEIGHT_LIGHT == font_weight) {
-        opts.fontWeight = QFont::Light;
-    }
-    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == font_weight) {
-        opts.fontWeight = QFont::Normal;
-    }
-    else {
-        opts.fontWeight = QFont::Bold;
-    }
-    opts.fontItalic = m_NotificationSetupDialog->getNotification_FontIsItalic();
-    opts.fadeInDuration = m_NotificationSetupDialog->getNotification_FadeInDuration();
-    opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
-    opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
-    opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+    PopupNotificationOptions opts = buildPopupNotificationOptions(notificationSettings, position, effectiveFontColor, tabBGColor);
 
     if (tabCustomImage_ShowPosition != TAB_CUSTOMIMAGE_SHOW_NONE
         && !tabCustomImage_Path.isEmpty()) {
@@ -20411,6 +20645,37 @@ void QKeyMapper::closeNotificationSetupDialog()
     }
 }
 
+void QKeyMapper::showCustomNotificationSetupDialog()
+{
+    if (Q_NULLPTR == m_CustomNotificationSetupDialog
+        || Q_NULLPTR == m_MappingAdvancedDialog
+        || !m_MappingAdvancedDialog->getCustomNotificationEnabled()) {
+        return;
+    }
+
+    ensureCustomNotificationStyleInitialized();
+    updateCustomNotificationDialogTitle();
+
+    if (!m_CustomNotificationSetupDialog->isVisible()) {
+        m_CustomNotificationSetupDialog->show();
+    }
+    else {
+        m_CustomNotificationSetupDialog->raise();
+        m_CustomNotificationSetupDialog->activateWindow();
+    }
+}
+
+void QKeyMapper::closeCustomNotificationSetupDialog()
+{
+    if (Q_NULLPTR == m_CustomNotificationSetupDialog) {
+        return;
+    }
+
+    if (m_CustomNotificationSetupDialog->isVisible()) {
+        m_CustomNotificationSetupDialog->close();
+    }
+}
+
 void QKeyMapper::showGeneralAdvancedDialog()
 {
     if (Q_NULLPTR == m_GeneralAdvancedDialog) {
@@ -20476,6 +20741,8 @@ void QKeyMapper::closeMappingAdvancedDialog()
     if (Q_NULLPTR == m_MappingAdvancedDialog) {
         return;
     }
+
+    closeCustomNotificationSetupDialog();
 
     if (m_MappingAdvancedDialog->isVisible()) {
         m_MappingAdvancedDialog->close();
@@ -21721,36 +21988,10 @@ void QKeyMapper::showSetVolumeNotification(float volume, bool muted, int volume_
         popupNotification = QString("%1").arg(volumeStr, 3, ' ');
     }
 
-    // Setup Notification Options
-    PopupNotificationOptions opts;
-    opts.color = color_str;
-    opts.position = position;
-    opts.size = m_NotificationSetupDialog->getNotification_FontSize();
-    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
-    if (tabBGColor.isValid()) {
-        opts.backgroundColor = tabBGColor;
-    }
-    else {
-        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
-    }
-    opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
-    opts.padding = m_NotificationSetupDialog->getNotification_Padding();
-    opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
-    int font_weight = m_NotificationSetupDialog->getNotification_FontWeight();
-    if (NOTIFICATION_FONT_WEIGHT_LIGHT == font_weight) {
-        opts.fontWeight = QFont::Light;
-    }
-    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == font_weight) {
-        opts.fontWeight = QFont::Normal;
-    }
-    else {
-        opts.fontWeight = QFont::Bold;
-    }
-    opts.fontItalic = m_NotificationSetupDialog->getNotification_FontIsItalic();
-    opts.fadeInDuration = m_NotificationSetupDialog->getNotification_FadeInDuration();
-    opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
-    opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
-    opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+    PopupNotificationOptions opts = buildPopupNotificationOptions(m_NotificationSetupDialog->getNotificationSettings(),
+                                                                  position,
+                                                                  QColor(color_str),
+                                                                  tabBGColor);
 
     QString volumeIcon;
     if (volume_type == VOLUME_DEVICE_TYPE_CAPTURE) {
@@ -21810,36 +22051,10 @@ void QKeyMapper::showBlockInputDeviceNotification(int devicetype, bool blocked)
         }
     }
 
-    // Setup Notification Options
-    PopupNotificationOptions opts;
-    opts.color = color_str;
-    opts.position = position;
-    opts.size = m_NotificationSetupDialog->getNotification_FontSize();
-    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
-    if (tabBGColor.isValid()) {
-        opts.backgroundColor = tabBGColor;
-    }
-    else {
-        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
-    }
-    opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
-    opts.padding = m_NotificationSetupDialog->getNotification_Padding();
-    opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
-    int font_weight = m_NotificationSetupDialog->getNotification_FontWeight();
-    if (NOTIFICATION_FONT_WEIGHT_LIGHT == font_weight) {
-        opts.fontWeight = QFont::Light;
-    }
-    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == font_weight) {
-        opts.fontWeight = QFont::Normal;
-    }
-    else {
-        opts.fontWeight = QFont::Bold;
-    }
-    opts.fontItalic = m_NotificationSetupDialog->getNotification_FontIsItalic();
-    opts.fadeInDuration = m_NotificationSetupDialog->getNotification_FadeInDuration();
-    opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
-    opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
-    opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+    PopupNotificationOptions opts = buildPopupNotificationOptions(m_NotificationSetupDialog->getNotificationSettings(),
+                                                                  position,
+                                                                  QColor(color_str),
+                                                                  tabBGColor);
 
     // Select icon based on device type and blocked state
     QString popupNotification;
@@ -21933,41 +22148,11 @@ void QKeyMapper::showSwitchBurstAndLockNotification(int rowindex)
 
     popupNotification = QString("%1 : %2").arg(state_string, original_key);
 
-    // Setup Notification Options
-    PopupNotificationOptions opts;
-    opts.color = color_str;
-    opts.position = position;
-    opts.size = m_NotificationSetupDialog->getNotification_FontSize();
-    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
-
     QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
-    if (tabBGColor.isValid()) {
-        opts.backgroundColor = tabBGColor;
-    }
-    else {
-        opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
-    }
-
-    opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
-    opts.padding = m_NotificationSetupDialog->getNotification_Padding();
-    opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
-
-    int font_weight = m_NotificationSetupDialog->getNotification_FontWeight();
-    if (NOTIFICATION_FONT_WEIGHT_LIGHT == font_weight) {
-        opts.fontWeight = QFont::Light;
-    }
-    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == font_weight) {
-        opts.fontWeight = QFont::Normal;
-    }
-    else {
-        opts.fontWeight = QFont::Bold;
-    }
-
-    opts.fontItalic = m_NotificationSetupDialog->getNotification_FontIsItalic();
-    opts.fadeInDuration = m_NotificationSetupDialog->getNotification_FadeInDuration();
-    opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
-    opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
-    opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+    PopupNotificationOptions opts = buildPopupNotificationOptions(m_NotificationSetupDialog->getNotificationSettings(),
+                                                                  position,
+                                                                  QColor(color_str),
+                                                                  tabBGColor);
 
     QString stateIcon;
     if (mapping_type == MAPPING_TYPE_BURSTLOCK) {
@@ -22497,6 +22682,7 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             closeGyro2MouseAdvancedSettingDialog();
             closeTrayIconSelectDialog();
             closeNotificationSetupDialog();
+            closeCustomNotificationSetupDialog();
             closeGeneralAdvancedDialog();
             closeIgnoreRulesListDialog();
             closeMappingAdvancedDialog();
@@ -22565,6 +22751,7 @@ void QKeyMapper::forceHide()
         closeGyro2MouseAdvancedSettingDialog();
         closeTrayIconSelectDialog();
         closeNotificationSetupDialog();
+        closeCustomNotificationSetupDialog();
         closeGeneralAdvancedDialog();
         closeSettingTransferDialog();
         hide();
@@ -22808,39 +22995,8 @@ void QKeyMapper::showNotificationPopup(const QString &message)
         return;
     }
 
-    QString color_str;
-    QColor notification_font_color = m_NotificationSetupDialog->getNotification_FontColor();
-    if (notification_font_color.isValid()) {
-        color_str = notification_font_color.name();
-    }
-    else {
-        color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
-    }
-
-    PopupNotificationOptions opts;
-    opts.color = color_str;
-    opts.position = ui->notificationComboBox->currentIndex();
-    opts.size = m_NotificationSetupDialog->getNotification_FontSize();
-    opts.displayDuration = m_NotificationSetupDialog->getNotification_DisplayDuration();
-    opts.backgroundColor = m_NotificationSetupDialog->getNotification_BackgroundColor();
-    opts.windowOpacity = m_NotificationSetupDialog->getNotification_Opacity();
-    opts.padding = m_NotificationSetupDialog->getNotification_Padding();
-    opts.borderRadius = m_NotificationSetupDialog->getNotification_BorderRadius();
-    int font_weight = m_NotificationSetupDialog->getNotification_FontWeight();
-    if (NOTIFICATION_FONT_WEIGHT_LIGHT == font_weight) {
-        opts.fontWeight = QFont::Light;
-    }
-    else if (NOTIFICATION_FONT_WEIGHT_NORMAL == font_weight) {
-        opts.fontWeight = QFont::Normal;
-    }
-    else {
-        opts.fontWeight = QFont::Bold;
-    }
-    opts.fontItalic = m_NotificationSetupDialog->getNotification_FontIsItalic();
-    opts.fadeInDuration = m_NotificationSetupDialog->getNotification_FadeInDuration();
-    opts.fadeOutDuration = m_NotificationSetupDialog->getNotification_FadeOutDuration();
-    opts.xOffset = m_NotificationSetupDialog->getNotification_X_Offset();
-    opts.yOffset = m_NotificationSetupDialog->getNotification_Y_Offset();
+    PopupNotificationOptions opts = buildPopupNotificationOptions(m_NotificationSetupDialog->getNotificationSettings(),
+                                                                  ui->notificationComboBox->currentIndex());
 
     m_PopupNotification->showPopupNotification(message, opts);
 }
@@ -25692,6 +25848,11 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_NotificationSetupDialog != Q_NULLPTR) {
         m_NotificationSetupDialog->setUILanguage(languageindex);
+    }
+
+    if (m_CustomNotificationSetupDialog != Q_NULLPTR) {
+        m_CustomNotificationSetupDialog->setUILanguage(languageindex);
+        updateCustomNotificationDialogTitle();
     }
 
     if (m_GeneralAdvancedDialog != Q_NULLPTR) {
@@ -30362,7 +30523,8 @@ void QPopupNotification::showPopupNotification(const QString &message, const Pop
     m_BackgroundFrame->setStyleSheet(backgroundStyleSheet);
 
     // --- 3. Font and Text Setup ---
-    QFont customFont(FONTNAME_ENGLISH, options.size, options.fontWeight, options.fontItalic);
+    const QString popupFontFamily = QKeyMapper::resolveConfiguredFontFamily(options.fontFamily);
+    QFont customFont(popupFontFamily, options.size, options.fontWeight, options.fontItalic);
     m_TextLabel->setFont(customFont);
     m_TextLabel->setText(message);
     m_TextLabel->adjustSize(); // Adjust text label first to get its height
@@ -33852,6 +34014,26 @@ void QKeyMapper::on_selectTrayIconButton_clicked()
 void QKeyMapper::on_notificationAdvancedSettingButton_clicked()
 {
     showNotificationSetupDialog();
+}
+
+void QKeyMapper::onCustomNotificationSetupRequested()
+{
+    showCustomNotificationSetupDialog();
+}
+
+void QKeyMapper::onCustomNotificationEnabledChanged(bool enabled)
+{
+    if (!enabled) {
+        closeCustomNotificationSetupDialog();
+        return;
+    }
+
+    if (!m_CustomNotificationStyleInitialized && m_MappingAdvancedDialog != Q_NULLPTR) {
+        m_MappingAdvancedDialog->setCustomNotificationPosition(ui->notificationComboBox->currentIndex());
+    }
+
+    ensureCustomNotificationStyleInitialized();
+    updateCustomNotificationDialogTitle();
 }
 
 void QKeyMapper::on_oriList_SelectKeyboardButton_toggled(bool checked)
