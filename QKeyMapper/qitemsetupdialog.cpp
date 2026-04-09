@@ -706,7 +706,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractSendTextWithBracketBalancin
 }
 #endif
 
-QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &keysequencebreak_regex, const QRegularExpression &unlock_regex, const QRegularExpression &setvolume_regex, const QRegularExpression &repeat_regex, const QRegularExpression &onlyonce_regex, const QRegularExpression &macro_regex)
+QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex, const QRegularExpression &run_regex, const QRegularExpression &switchtab_regex, const QRegularExpression &keysequencebreak_regex, const QRegularExpression &unlock_regex, const QRegularExpression &showfbutton_regex, const QRegularExpression &hidefbutton_regex, const QRegularExpression &setvolume_regex, const QRegularExpression &repeat_regex, const QRegularExpression &onlyonce_regex, const QRegularExpression &macro_regex)
 {
     QStringList preservedParts;
     QString tempMappingKey = mappingKey;
@@ -967,6 +967,48 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         currentPos = match.capturedEnd();
     }
 
+    // Find all ShowFButton matches (simple pattern without bracket balancing issues)
+    currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        if (showfbutton_regex.pattern().isEmpty()) {
+            break;
+        }
+
+        QRegularExpressionMatch match = showfbutton_regex.match(mappingKey, currentPos);
+        if (!match.hasMatch()) {
+            break;
+        }
+
+        MatchInfo info;
+        info.start = match.capturedStart();
+        info.end = match.capturedEnd();
+        info.content = match.captured(0);
+        info.type = "showfbutton";
+        allMatches.append(info);
+        currentPos = match.capturedEnd();
+    }
+
+    // Find all HideFButton matches (simple pattern without bracket balancing issues)
+    currentPos = 0;
+    while (currentPos < mappingKey.length()) {
+        if (hidefbutton_regex.pattern().isEmpty()) {
+            break;
+        }
+
+        QRegularExpressionMatch match = hidefbutton_regex.match(mappingKey, currentPos);
+        if (!match.hasMatch()) {
+            break;
+        }
+
+        MatchInfo info;
+        info.start = match.capturedStart();
+        info.end = match.capturedEnd();
+        info.content = match.captured(0);
+        info.type = "hidefbutton";
+        allMatches.append(info);
+        currentPos = match.capturedEnd();
+    }
+
     // Find all KeySequenceBreak(...) matches (simple pattern without bracket balancing issues)
     // Note: only the bracket form is handled here; bare "KeySequenceBreak" is intentionally not preserved.
     currentPos = 0;
@@ -1218,6 +1260,28 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
                 content = QString("%1(%2)").arg(UNLOCK_STR, innerContent);
             }
         }
+        else if (allMatches[i].type == "showfbutton") {
+            // Extract the content inside ShowFButton(...) and apply Unlock-aligned normalization
+            int firstParen = content.indexOf('(');
+            int lastParen = content.lastIndexOf(')');
+            if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
+                QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
+                innerContent = innerContent.simplified();
+                innerContent.remove(whitespace_reg);
+                content = QString("%1(%2)").arg(SHOWFBUTTON_STR, innerContent);
+            }
+        }
+        else if (allMatches[i].type == "hidefbutton") {
+            // Extract the content inside HideFButton(...) and apply Unlock-aligned normalization
+            int firstParen = content.indexOf('(');
+            int lastParen = content.lastIndexOf(')');
+            if (firstParen != -1 && lastParen != -1 && firstParen < lastParen) {
+                QString innerContent = content.mid(firstParen + 1, lastParen - firstParen - 1);
+                innerContent = innerContent.simplified();
+                innerContent.remove(whitespace_reg);
+                content = QString("%1(%2)").arg(HIDEFBUTTON_STR, innerContent);
+            }
+        }
         else if (allMatches[i].type == "keysequencebreak") {
             // Extract the content inside KeySequenceBreak(...) and apply Unlock-aligned normalization
             // Format: KeySequenceBreak(content) -> simplified + remove whitespace
@@ -1253,7 +1317,8 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
 
                 // Recursively process inner content to handle nested Repeat and remove whitespace
                 QPair<QString, QStringList> innerResult = extractSpecialPatternsWithBracketBalancing(
-                    innerContent, sendtext_regex, run_regex, switchtab_regex, keysequencebreak_regex, unlock_regex, setvolume_regex, repeat_regex, onlyonce_regex, macro_regex
+                    innerContent, sendtext_regex, run_regex, switchtab_regex, keysequencebreak_regex, unlock_regex,
+                    showfbutton_regex, hidefbutton_regex, setvolume_regex, repeat_regex, onlyonce_regex, macro_regex
                 );
                 QString processedInner = innerResult.first;
                 QStringList innerPreservedParts = innerResult.second;
@@ -1285,7 +1350,8 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
 
                 // Recursively process inner content to handle nested Repeat/OnlyOnce and remove whitespace
                 QPair<QString, QStringList> innerResult = extractSpecialPatternsWithBracketBalancing(
-                    innerContent, sendtext_regex, run_regex, switchtab_regex, keysequencebreak_regex, unlock_regex, setvolume_regex, repeat_regex, onlyonce_regex, macro_regex
+                    innerContent, sendtext_regex, run_regex, switchtab_regex, keysequencebreak_regex, unlock_regex,
+                    showfbutton_regex, hidefbutton_regex, setvolume_regex, repeat_regex, onlyonce_regex, macro_regex
                 );
                 QString processedInner = innerResult.first;
                 QStringList innerPreservedParts = innerResult.second;
@@ -1868,6 +1934,8 @@ void QItemSetupDialog::initKeyListComboBoxes()
     s_valiedMappingKeyList.removeOne(REPEAT_STR);
     s_valiedMappingKeyList.removeOne(ONLYONCE_STR);
     s_valiedMappingKeyList.removeOne(UNLOCK_STR);
+    s_valiedMappingKeyList.removeOne(SHOWFBUTTON_STR);
+    s_valiedMappingKeyList.removeOne(HIDEFBUTTON_STR);
     s_valiedMappingKeyList.removeOne(SETVOLUME_STR);
     s_valiedMappingKeyList.removeOne(SETVOLUME_NOTIFY_STR);
     s_valiedMappingKeyList.removeOne(SETMICVOLUME_STR);
@@ -2936,11 +3004,13 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
+    static QRegularExpression showfbutton_regex(REGEX_PATTERN_SHOWFBUTTON_FIND);
+    static QRegularExpression hidefbutton_regex(REGEX_PATTERN_HIDEFBUTTON_FIND);
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
     static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE_FIND);
     static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), ShowFButton(...), HideFButton(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
     QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(
         mappingKey,
         sendtext_regex,
@@ -2948,6 +3018,8 @@ bool QItemSetupDialog::updateMappingKey(QString &mappingKey, const QString &orig
         switchtab_regex,
         keysequencebreak_regex,
         unlock_regex,
+        showfbutton_regex,
+        hidefbutton_regex,
         QRegularExpression(),
         repeat_regex,
         onlyonce_regex,
@@ -2998,11 +3070,13 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
+    static QRegularExpression showfbutton_regex(REGEX_PATTERN_SHOWFBUTTON_FIND);
+    static QRegularExpression hidefbutton_regex(REGEX_PATTERN_HIDEFBUTTON_FIND);
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
     static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE_FIND);
     static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), ShowFButton(...), HideFButton(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
     QPair<QString, QStringList> extractResult = extractSpecialPatternsWithBracketBalancing(
         mappingKey,
         sendtext_regex,
@@ -3010,6 +3084,8 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
         switchtab_regex,
         keysequencebreak_regex,
         unlock_regex,
+        showfbutton_regex,
+        hidefbutton_regex,
         QRegularExpression(),
         repeat_regex,
         onlyonce_regex,

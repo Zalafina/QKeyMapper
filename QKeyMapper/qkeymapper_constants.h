@@ -1348,6 +1348,24 @@ namespace QKeyMapperConstants {
     // Pattern for finding Unlock( and the first ) parts in a composite string (non-greedy matching)
     inline constexpr const char REGEX_PATTERN_UNLOCK_FIND[] = R"(Unlock\((([^✖⏲)]+?)(✖|⏲(\d+))?)\))";
 
+    // Pattern for matching ShowFButton(...) mapping keys
+    // Matches: ShowFButton(L-Ctrl+1), ShowFButton(F3), ShowFButton(R✖), ShowFButton(Y+B⏲500)
+    // Does not match: ShowFButton(R✖300), ShowFButton(Y+B⏲)
+    // Capture groups: (1) = full key string, (2) = base key without suffix, (3) = suffix (✖ or ⏲number), (4) = number for ⏲
+    inline constexpr const char REGEX_PATTERN_SHOWFBUTTON[] = R"(^ShowFButton\((([^✖⏲)]+)(✖|⏲(\d+))?)\)$)";
+
+    // Pattern for finding ShowFButton( and the first ) parts in a composite string (non-greedy matching)
+    inline constexpr const char REGEX_PATTERN_SHOWFBUTTON_FIND[] = R"(ShowFButton\((([^✖⏲)]+?)(✖|⏲(\d+))?)\))";
+
+    // Pattern for matching HideFButton(...) mapping keys
+    // Matches: HideFButton(L-Ctrl+1), HideFButton(F3), HideFButton(R✖), HideFButton(Y+B⏲500)
+    // Does not match: HideFButton(R✖300), HideFButton(Y+B⏲)
+    // Capture groups: (1) = full key string, (2) = base key without suffix, (3) = suffix (✖ or ⏲number), (4) = number for ⏲
+    inline constexpr const char REGEX_PATTERN_HIDEFBUTTON[] = R"(^HideFButton\((([^✖⏲)]+)(✖|⏲(\d+))?)\)$)";
+
+    // Pattern for finding HideFButton( and the first ) parts in a composite string (non-greedy matching)
+    inline constexpr const char REGEX_PATTERN_HIDEFBUTTON_FIND[] = R"(HideFButton\((([^✖⏲)]+?)(✖|⏲(\d+))?)\))";
+
     // Pattern for matching KeySequenceBreak(...) mapping keys
     // Matches: KeySequenceBreak(L-Ctrl+1), KeySequenceBreak(F3), KeySequenceBreak(R✖500), KeySequenceBreak(Y+B⏲500)
     // Does not match: KeySequenceBreak(R✖), KeySequenceBreak(Y+B⏲)
@@ -1573,14 +1591,16 @@ namespace QKeyMapperConstants {
     inline constexpr const char SETMICVOLUME_STR[]          = "SetMicVolume";
     inline constexpr const char SETMICVOLUME_NOTIFY_STR[]   = "SetMicVolume🎤";
     inline constexpr const char KEYSEQUENCEBREAK_STR[]  = "KeySequenceBreak";
+    inline constexpr const char SHOWALLFBUTTONS_STR[]      = "ShowAllFButtons";
+    inline constexpr const char HIDEALLFBUTTONS_STR[]      = "HideAllFButtons";
+    inline constexpr const char SHOWFBUTTON_STR[]       = "ShowFButton";
+    inline constexpr const char HIDEFBUTTON_STR[]       = "HideFButton";
 
     // VButton feature string constants
     inline constexpr const char VBUTTON_ORIKEY_STR[]       = "VButton";
     inline constexpr const char VBUTTON_REGEX_PATTERN[]    = R"(^VButton\{(.+)\}$)";
     inline constexpr const char SHOWVBUTTONPANEL_STR[]     = "ShowVButtonPanel";
     inline constexpr const char HIDEVBUTTONPANEL_STR[]     = "HideVButtonPanel";
-    inline constexpr const char SHOWALLFBUTTONS_STR[]      = "ShowAllFButtons";
-    inline constexpr const char HIDEALLFBUTTONS_STR[]      = "HideAllFButtons";
     // Maximum number of VButton entries allowed (Button1 ~ Button999)
     inline constexpr int VBUTTON_MAX_COUNT = 999;
 

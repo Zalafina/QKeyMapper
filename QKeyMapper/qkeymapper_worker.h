@@ -1188,6 +1188,9 @@ signals:
     // Signal emitted to show or hide all floating buttons on the main thread
     void showAllFloatingButtons_Signal(bool visible);
 
+    // Signal emitted to show or hide a specific floating button resolved by OriginalKey on the main thread
+    void showFloatingButtonByOriginalKey_Signal(const QString &originalKey, bool visible);
+
     // Signal emitted to force-hide all floating buttons when mapping leaves working states
     void autoHideAllFloatingButtonsOnMappingStop_Signal();
 

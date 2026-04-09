@@ -2317,6 +2317,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
     static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
+    static QRegularExpression showfbutton_regex(REGEX_PATTERN_SHOWFBUTTON);
+    static QRegularExpression hidefbutton_regex(REGEX_PATTERN_HIDEFBUTTON);
     static QRegularExpression setvolume_regex(REGEX_PATTERN_SETVOLUME);
     static QRegularExpression vjoy_regex("^(vJoy-[^@]+)(?:@([0-3]))?$");
     static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
@@ -2605,6 +2607,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
             QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(key);
             QRegularExpressionMatch unlock_match = unlock_regex.match(key);
+            QRegularExpressionMatch showfbutton_match = showfbutton_regex.match(key);
+            QRegularExpressionMatch hidefbutton_match = hidefbutton_regex.match(key);
             QRegularExpressionMatch setvolume_match = setvolume_regex.match(key);
             if (sendtext_match.hasMatch()) {
                 /* SendText KeyUp do nothing. */
@@ -2620,6 +2624,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             }
             else if (unlock_match.hasMatch()) {
                 /* Unlock KeyUp do nothing. */
+            }
+            else if (showfbutton_match.hasMatch()) {
+                QString targetOriginalKey = showfbutton_match.captured(1);
+                emit showFloatingButtonByOriginalKey_Signal(targetOriginalKey, false);
+            }
+            else if (hidefbutton_match.hasMatch()) {
+                QString targetOriginalKey = hidefbutton_match.captured(1);
+                emit showFloatingButtonByOriginalKey_Signal(targetOriginalKey, true);
             }
             else if (setvolume_match.hasMatch()) {
                 /* SetVolume KeyUp do nothing. */
@@ -3258,6 +3270,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
                 QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(key);
                 QRegularExpressionMatch unlock_match = unlock_regex.match(key);
+                QRegularExpressionMatch showfbutton_match = showfbutton_regex.match(key);
+                QRegularExpressionMatch hidefbutton_match = hidefbutton_regex.match(key);
                 QRegularExpressionMatch setvolume_match = setvolume_regex.match(key);
                 if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
@@ -3398,6 +3412,22 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         qDebug().nospace().noquote() << "\033[1;31m" << debugmessage << ", pressedLockKeysMap -> " << pressedLockKeysMap << "\033[0m";
 #endif
                     }
+                }
+                else if (showfbutton_match.hasMatch()) {
+                    QString targetOriginalKey = showfbutton_match.captured(1);
+                    emit showFloatingButtonByOriginalKey_Signal(targetOriginalKey, true);
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendInputKeys] ShowFButton target -> " << targetOriginalKey;
+#endif
+                }
+                else if (hidefbutton_match.hasMatch()) {
+                    QString targetOriginalKey = hidefbutton_match.captured(1);
+                    emit showFloatingButtonByOriginalKey_Signal(targetOriginalKey, false);
+
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug().nospace().noquote() << "[sendInputKeys] HideFButton target -> " << targetOriginalKey;
+#endif
                 }
                 else if (setvolume_match.hasMatch()) {
                     // Process SetVolume(...) mapping key
@@ -18799,6 +18829,8 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression keysequencebreak_regex(QKeyMapperConstants::REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
     static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK_FIND);
+    static QRegularExpression showfbutton_regex(QKeyMapperConstants::REGEX_PATTERN_SHOWFBUTTON_FIND);
+    static QRegularExpression hidefbutton_regex(QKeyMapperConstants::REGEX_PATTERN_HIDEFBUTTON_FIND);
     static QRegularExpression setvolume_regex(QKeyMapperConstants::REGEX_PATTERN_SETVOLUME_FIND);
     static QRegularExpression repeat_regex(QKeyMapperConstants::REGEX_PATTERN_REPEAT_FIND);
     static QRegularExpression onlyonce_regex(QKeyMapperConstants::REGEX_PATTERN_ONLYONCE_FIND);
@@ -18807,7 +18839,7 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     // Capture groups: 1=prefix, 2=keyname, 3=bracket_value, 4=range_min, 5=range_max, 6=fixed_time
     static QRegularExpression mapkey_regex(QKeyMapperConstants::REGEX_PATTERN_MAPKEY_WITH_PUSHLEVEL);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), SetVolume(...), Repeat{...}x..., OnlyOnce{...}x..., and Macro(...) to preserve them during splitting
+    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), ShowFButton(...), HideFButton(...), SetVolume(...), Repeat{...}x..., OnlyOnce{...}x..., and Macro(...) to preserve them during splitting
     // Note: Repeat/OnlyOnce and Macro patterns need to be preserved as whole patterns to avoid splitting by internal separators (»)
     QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(
         mappingkeystr,
@@ -18816,6 +18848,8 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
         switchtab_regex,
         keysequencebreak_regex,
         unlock_regex,
+        showfbutton_regex,
+        hidefbutton_regex,
         setvolume_regex,
         repeat_regex,
         onlyonce_regex,

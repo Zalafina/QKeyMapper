@@ -71,6 +71,8 @@ public:
         const QRegularExpression &switchtab_regex,
         const QRegularExpression &keysequencebreak_regex,
         const QRegularExpression &unlock_regex,
+        const QRegularExpression &showfbutton_regex = QRegularExpression(),
+        const QRegularExpression &hidefbutton_regex = QRegularExpression(),
         const QRegularExpression &setvolume_regex = QRegularExpression(),
         const QRegularExpression &repeat_regex = QRegularExpression(),
         const QRegularExpression &onlyonce_regex = QRegularExpression(),

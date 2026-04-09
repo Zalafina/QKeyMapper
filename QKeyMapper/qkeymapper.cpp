@@ -1158,6 +1158,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
                      this, &QKeyMapper::onShowVButtonPanelRequested, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showAllFloatingButtons_Signal,
                      this, &QKeyMapper::onShowAllFloatingButtons, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showFloatingButtonByOriginalKey_Signal,
+                     this, &QKeyMapper::onShowFloatingButtonByOriginalKey, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::autoHideAllFloatingButtonsOnMappingStop_Signal,
                      this, &QKeyMapper::onAutoHideAllFloatingButtonsOnMappingStop, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::updateFloatingButtonPressedState_Signal,
@@ -5045,6 +5047,8 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
             static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK);
             static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
+            static QRegularExpression showfbutton_regex(REGEX_PATTERN_SHOWFBUTTON);
+            static QRegularExpression hidefbutton_regex(REGEX_PATTERN_HIDEFBUTTON);
             static QRegularExpression setvolume_regex(REGEX_PATTERN_SETVOLUME);
             QRegularExpressionMatch vjoy_match = vjoy_regex.match(mapping_key);
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
@@ -5055,6 +5059,8 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(mapping_key);
             QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(mapping_key);
             QRegularExpressionMatch unlock_match = unlock_regex.match(mapping_key);
+            QRegularExpressionMatch showfbutton_match = showfbutton_regex.match(mapping_key);
+            QRegularExpressionMatch hidefbutton_match = hidefbutton_regex.match(mapping_key);
             QRegularExpressionMatch setvolume_match = setvolume_regex.match(mapping_key);
 
             if (vjoy_match.hasMatch()) {
@@ -5324,6 +5330,52 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
                         result.isValid = false;
                         result.errorMessage = tr("Invalid press time in Unlock(...): \"%1\"").arg(timeString);
+                    }
+                }
+            }
+            else if (showfbutton_match.hasMatch()) {
+                // Validate ShowFButton(...) mapping key
+                QString fullKey = showfbutton_match.captured(1);
+                QString baseKey = showfbutton_match.captured(2);
+                QString suffix = showfbutton_match.captured(3);
+                QString timeString = showfbutton_match.captured(4);
+                Q_UNUSED(fullKey);
+                Q_UNUSED(suffix);
+
+                ValidationResult baseKeyValidation = validateUnlockOriginalKeyString(baseKey);
+                if (!baseKeyValidation.isValid) {
+                    result.isValid = false;
+                    result.errorMessage = tr("Invalid key in ShowFButton(...): %1").arg(baseKeyValidation.errorMessage);
+                }
+                else if (!timeString.isEmpty()) {
+                    bool ok;
+                    int pressTime = timeString.toInt(&ok);
+                    if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
+                        result.isValid = false;
+                        result.errorMessage = tr("Invalid press time in ShowFButton(...): \"%1\"").arg(timeString);
+                    }
+                }
+            }
+            else if (hidefbutton_match.hasMatch()) {
+                // Validate HideFButton(...) mapping key
+                QString fullKey = hidefbutton_match.captured(1);
+                QString baseKey = hidefbutton_match.captured(2);
+                QString suffix = hidefbutton_match.captured(3);
+                QString timeString = hidefbutton_match.captured(4);
+                Q_UNUSED(fullKey);
+                Q_UNUSED(suffix);
+
+                ValidationResult baseKeyValidation = validateUnlockOriginalKeyString(baseKey);
+                if (!baseKeyValidation.isValid) {
+                    result.isValid = false;
+                    result.errorMessage = tr("Invalid key in HideFButton(...): %1").arg(baseKeyValidation.errorMessage);
+                }
+                else if (!timeString.isEmpty()) {
+                    bool ok;
+                    int pressTime = timeString.toInt(&ok);
+                    if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
+                        result.isValid = false;
+                        result.errorMessage = tr("Invalid press time in HideFButton(...): \"%1\"").arg(timeString);
                     }
                 }
             }
@@ -5611,11 +5663,13 @@ QString QKeyMapper::getTrimmedMappingKeyString(const QString &mappingkeystr)
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
+    static QRegularExpression showfbutton_regex(REGEX_PATTERN_SHOWFBUTTON_FIND);
+    static QRegularExpression hidefbutton_regex(REGEX_PATTERN_HIDEFBUTTON_FIND);
     static QRegularExpression repeat_regex(REGEX_PATTERN_REPEAT_FIND);
     static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE_FIND);
     static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), KeySequenceBreak(...), Unlock(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
+    // Extract SendText(...), Run(...), SwitchTab(...), KeySequenceBreak(...), Unlock(...), ShowFButton(...), HideFButton(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
     QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(
         mappingkeystr,
         sendtext_regex,
@@ -5623,6 +5677,8 @@ QString QKeyMapper::getTrimmedMappingKeyString(const QString &mappingkeystr)
         switchtab_regex,
         keysequencebreak_regex,
         unlock_regex,
+        showfbutton_regex,
+        hidefbutton_regex,
         QRegularExpression(),
         repeat_regex,
         onlyonce_regex,
@@ -6766,6 +6822,65 @@ void QKeyMapper::setFloatingButtonManualHidden(int rowindex, bool hidden)
     if (settingIt.value().isEmpty()) {
         m_FloatingButtonManualHiddenMap.erase(settingIt);
     }
+}
+
+int QKeyMapper::findFloatingButtonRowIndexByOriginalKey(const QString &originalKey) const
+{
+    if (originalKey.isEmpty() || Q_NULLPTR == KeyMappingDataList) {
+        return -1;
+    }
+
+    const QString normalizedTarget = normalizeOriginalKeyForExclusiveGroup(originalKey);
+    for (int rowindex = 0; rowindex < KeyMappingDataList->size(); ++rowindex) {
+        const MAP_KEYDATA &keymapdata = KeyMappingDataList->at(rowindex);
+        if (!keymapdata.FloatingButton_Enable) {
+            continue;
+        }
+
+        if (keymapdata.Original_Key == originalKey
+            || normalizeOriginalKeyForExclusiveGroup(keymapdata.Original_Key) == normalizedTarget) {
+            return rowindex;
+        }
+    }
+
+    return -1;
+}
+
+bool QKeyMapper::setFloatingButtonVisibility(int rowindex, bool visible)
+{
+    if (Q_NULLPTR == KeyMappingDataList
+        || rowindex < 0
+        || rowindex >= KeyMappingDataList->size()) {
+        return false;
+    }
+
+    const MAP_KEYDATA &keymapdata = KeyMappingDataList->at(rowindex);
+    if (!keymapdata.FloatingButton_Enable) {
+        return false;
+    }
+
+    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+    bool currentlyVisible = (button != Q_NULLPTR) && button->isVisible();
+
+    if (visible) {
+        if (!currentlyVisible) {
+            setFloatingButtonManualHidden(rowindex, false);
+            showFloatingButtonStart(rowindex, QString());
+            return true;
+        }
+        return false;
+    }
+
+    if (!currentlyVisible) {
+        return false;
+    }
+
+    clearFloatingButtonMoveState(rowindex);
+    setFloatingButtonManualHidden(rowindex, true);
+    setFloatingButtonLocalPressed(rowindex, false);
+    button->setDown(false);
+    button->hide();
+    return true;
 }
 
 void QKeyMapper::clearFloatingButtonManualHiddenForAllSettings(void)
@@ -23892,10 +24007,12 @@ void QKeyMapper::initKeysCategoryMap()
         << BLOCK_MOUSE_STR
         << BLOCK_MOUSE_NOTIFY_STR
         << KEYSEQUENCEBREAK_STR
-        << SHOWVBUTTONPANEL_STR
-        << HIDEVBUTTONPANEL_STR
         << SHOWALLFBUTTONS_STR
         << HIDEALLFBUTTONS_STR
+        << SHOWFBUTTON_STR
+        << HIDEFBUTTON_STR
+        << SHOWVBUTTONPANEL_STR
+        << HIDEVBUTTONPANEL_STR
         ;
 
     /* Original Keyboard Keys */
@@ -28607,6 +28724,18 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, break_key);
             }
         }
+        else if (currentMapKeyText == SHOWFBUTTON_STR || currentMapKeyText == HIDEFBUTTON_STR) {
+            QString floatingbutton_key = ui->sendTextPlainTextEdit->toPlainText().simplified();
+            floatingbutton_key.remove(whitespace_reg);
+            if (floatingbutton_key.isEmpty()) {
+                QString message = tr("Please input the OriginalKey of the floating button!");
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, floatingbutton_key);
+            }
+        }
 
         int waitTime = ui->waitTimeSpinBox->value();
         if (waitTime > 0
@@ -32236,31 +32365,42 @@ void QKeyMapper::onShowAllFloatingButtons(bool visible)
             continue;
         }
 
-        QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
-        bool currentlyVisible = (button != Q_NULLPTR) && button->isVisible();
-
-        if (visible) {
-            if (!currentlyVisible) {
-                setFloatingButtonManualHidden(rowindex, false);
-                showFloatingButtonStart(rowindex, QString());
-                changed = true;
-            }
-        }
-        else {
-            if (currentlyVisible) {
-                clearFloatingButtonMoveState(rowindex);
-                setFloatingButtonManualHidden(rowindex, true);
-                setFloatingButtonLocalPressed(rowindex, false);
-                button->setDown(false);
-                button->hide();
-                changed = true;
-            }
+        if (setFloatingButtonVisibility(rowindex, visible)) {
+            changed = true;
         }
     }
     Q_UNUSED(changed);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[onShowAllFloatingButtons]" << " visible=" << visible << ", changed=" << changed;
+#endif
+}
+
+void QKeyMapper::onShowFloatingButtonByOriginalKey(const QString &originalKey, bool visible)
+{
+    if (Q_NULLPTR == KeyMappingDataList) {
+        return;
+    }
+
+    int rowindex = findFloatingButtonRowIndexByOriginalKey(originalKey);
+    if (rowindex < 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[onShowFloatingButtonByOriginalKey] target-not-found"
+                                     << " visible=" << visible
+                                     << ", originalKey=" << originalKey;
+#endif
+        return;
+    }
+
+    bool changed = setFloatingButtonVisibility(rowindex, visible);
+    Q_UNUSED(changed);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[onShowFloatingButtonByOriginalKey]"
+                                 << " visible=" << visible
+                                 << ", originalKey=" << originalKey
+                                 << ", row=" << rowindex
+                                 << ", changed=" << changed;
 #endif
 }
 
