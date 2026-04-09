@@ -4,6 +4,7 @@
 #include <QtGlobal>
 #include <QList>
 #include <QString>
+#include <QFontDatabase>
 #include <QMouseEvent>
 #include <QPoint>
 
@@ -51,6 +52,20 @@ inline QPoint mouseEventGlobalPos(const QMouseEvent *event)
     return event->globalPosition().toPoint();
 #else
     return event->globalPos();
+#endif
+}
+
+inline bool isFontFamilyAvailable(const QString &family)
+{
+    if (family.isEmpty()) {
+        return false;
+    }
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    return QFontDatabase::families().contains(family, Qt::CaseInsensitive);
+#else
+    const QFontDatabase fontDatabase;
+    return fontDatabase.families().contains(family, Qt::CaseInsensitive);
 #endif
 }
 

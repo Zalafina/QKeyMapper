@@ -9202,7 +9202,7 @@ bool QKeyMapper::isSelectColorDialogVisible()
 QString QKeyMapper::resolveConfiguredFontFamily(const QString &configuredFamily)
 {
     const auto isAvailableFamily = [](const QString &family) {
-        return !family.isEmpty() && QFontDatabase::families().contains(family, Qt::CaseInsensitive);
+        return QKeyMapperQtCompat::isFontFamilyAvailable(family);
     };
 
     const QString trimmedFamily = configuredFamily.trimmed();
