@@ -22354,13 +22354,13 @@ void QKeyMapper::updateSysTrayIconMenuText()
     QString quitActionText;
 
     if (!s_MappingStartKeyString.isEmpty()) {
-        mappingStartActionText = QString("%1 (%2)").arg(tr("MappingStart"), s_MappingStartKeyString);
+        mappingStartActionText = QString("%1    %2").arg(tr("MappingStart"), s_MappingStartKeyString);
     }
     else {
         mappingStartActionText = tr("MappingStart");
     }
     if (!s_MappingStopKeyString.isEmpty()) {
-        mappingStopActionText = QString("%1 (%2)").arg(tr("MappingStop"), s_MappingStopKeyString);
+        mappingStopActionText = QString("%1    %2").arg(tr("MappingStop"), s_MappingStopKeyString);
     }
     else {
         mappingStopActionText = tr("MappingStop");

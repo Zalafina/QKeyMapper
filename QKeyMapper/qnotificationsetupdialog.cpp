@@ -2,8 +2,6 @@
 #include "qnotificationsetupdialog.h"
 #include "ui_qnotificationsetupdialog.h"
 
-#include <QSignalBlocker>
-
 using namespace QKeyMapperConstants;
 
 QNotificationSetupDialog *QNotificationSetupDialog::m_instance = Q_NULLPTR;

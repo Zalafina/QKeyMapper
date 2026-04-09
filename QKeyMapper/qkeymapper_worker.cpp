@@ -2427,6 +2427,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         keyseqholddown_skip = true;
                     }
                 }
+                Q_UNUSED(vbutton_input);
 
                 if (keyseqholddown_skip) {
 #ifdef DEBUG_LOGOUT_ON

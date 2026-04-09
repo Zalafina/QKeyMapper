@@ -2,7 +2,6 @@
 #define QNOTIFICATIONSETUPDIALOG_H
 
 #include <QDialog>
-#include <QString>
 #include <QStyleFactory>
 
 #include "qkeymapper_constants.h"
