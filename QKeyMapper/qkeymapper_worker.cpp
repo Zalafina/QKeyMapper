@@ -3094,7 +3094,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #ifdef DEBUG_LOGOUT_ON
                             qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times count++ -> OriginalKey:" << repeat_original_key << ", RepeatCount:" << s_KeySequenceRepeatCount.value(repeat_original_key) << "\033[0m";
 #endif
-                            if (s_KeySequenceRepeatCount.value(repeat_original_key) >= repeat_times) {
+                            // A value of 0 means unlimited repeats, so only positive values stop at a fixed count.
+                            if (repeat_times > 0
+                                && s_KeySequenceRepeatCount.value(repeat_original_key) >= repeat_times) {
                                 s_KeySequenceRepeatCount.remove(repeat_original_key);
 #ifdef DEBUG_LOGOUT_ON
                                 qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times count reached -> OriginalKey:" << repeat_original_key << ", RepeatTimes:" << repeat_times << "\033[0m";
@@ -4458,7 +4460,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
 
                 if (sendmode == SENDMODE_NORMAL
                     && repeat_mode == REPEAT_MODE_BYTIMES
-                    && repeat_times > 0) {
+                    && repeat_times >= REPEAT_TIMES_MIN) {
                     if (isKeySequenceRunning) {
                         skip_emitsignal = true;
                         s_KeySequenceRepeatCount[original_key] = -1;

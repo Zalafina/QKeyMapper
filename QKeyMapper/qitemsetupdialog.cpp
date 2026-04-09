@@ -77,6 +77,7 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->repeatTimesSpinBox->setRange(REPEAT_TIMES_MIN, REPEAT_TIMES_MAX);
+    ui->repeatTimesSpinBox->setSpecialValueText(tr("Unlimited"));
 
     ui->fixedVKeyCodeSpinBox->setRange(FIXED_VIRTUAL_KEY_CODE_MIN, FIXED_VIRTUAL_KEY_CODE_MAX);
     ui->fixedVKeyCodeSpinBox->setPrefix("0x");
@@ -166,6 +167,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->sendTimingLabel->setText(tr(SENDTIMINGLABEL_STR));
     ui->fixedVKeyCodeLabel->setText(tr("FixedVKeyCode"));
     ui->pasteTextModeLabel->setText(tr("PasteTextMode"));
+    ui->repeatTimesSpinBox->setSpecialValueText(tr("Unlimited"));
 
     if (m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_MANUALEDIT) {
         ui->keyRecordEditModeButton->setText(tr("Capture"));

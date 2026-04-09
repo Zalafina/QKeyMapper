@@ -123,7 +123,7 @@
   <widget class="QLabel" name="burstreleaseLabel">
    <property name="geometry">
     <rect>
-     <x>430</x>
+     <x>455</x>
      <y>240</y>
      <width>121</width>
      <height>21</height>
@@ -139,7 +139,7 @@
   <widget class="QSpinBox" name="burstreleaseSpinBox">
    <property name="geometry">
     <rect>
-     <x>555</x>
+     <x>580</x>
      <y>240</y>
      <width>85</width>
      <height>21</height>
@@ -231,7 +231,7 @@
     <rect>
      <x>270</x>
      <y>320</y>
-     <width>161</width>
+     <width>191</width>
      <height>21</height>
     </rect>
    </property>
@@ -288,7 +288,7 @@
     <rect>
      <x>350</x>
      <y>340</y>
-     <width>85</width>
+     <width>95</width>
      <height>22</height>
     </rect>
    </property>
@@ -698,9 +698,9 @@
   <widget class="QSpinBox" name="fixedVKeyCodeSpinBox">
    <property name="geometry">
     <rect>
-     <x>555</x>
+     <x>580</x>
      <y>280</y>
-     <width>60</width>
+     <width>85</width>
      <height>21</height>
     </rect>
    </property>
@@ -711,7 +711,7 @@
   <widget class="QLabel" name="fixedVKeyCodeLabel">
    <property name="geometry">
     <rect>
-     <x>440</x>
+     <x>465</x>
      <y>280</y>
      <width>111</width>
      <height>21</height>
@@ -830,7 +830,7 @@ Update</string>
   <widget class="QComboBox" name="pasteTextModeComboBox">
    <property name="geometry">
     <rect>
-     <x>555</x>
+     <x>580</x>
      <y>320</y>
      <width>131</width>
      <height>21</height>
@@ -859,7 +859,7 @@ Update</string>
   <widget class="QLabel" name="pasteTextModeLabel">
    <property name="geometry">
     <rect>
-     <x>440</x>
+     <x>465</x>
      <y>320</y>
      <width>111</width>
      <height>21</height>
@@ -893,7 +893,7 @@ Update</string>
     <rect>
      <x>325</x>
      <y>280</y>
-     <width>111</width>
+     <width>121</width>
      <height>21</height>
     </rect>
    </property>

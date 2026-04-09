@@ -222,7 +222,7 @@ namespace QKeyMapperConstants {
     inline constexpr int REPEAT_MODE_BYKEY     = 1;
     inline constexpr int REPEAT_MODE_BYTIMES   = 2;
 
-    inline constexpr int REPEAT_TIMES_MIN = 1;
+    inline constexpr int REPEAT_TIMES_MIN = 0;
     inline constexpr int REPEAT_TIMES_MAX = 99999999;
     inline constexpr int REPEAT_TIMES_DEFAULT = 1;
 

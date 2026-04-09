@@ -1329,7 +1329,7 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="191"/>
-        <location filename="../qitemsetupdialog.cpp" line="3856"/>
+        <location filename="../qitemsetupdialog.cpp" line="3857"/>
         <source>MappingKey</source>
         <translation>映射按键</translation>
     </message>
@@ -1345,7 +1345,7 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="885"/>
-        <location filename="../qitemsetupdialog.cpp" line="132"/>
+        <location filename="../qitemsetupdialog.cpp" line="133"/>
         <source>SendMethod</source>
         <translation>发送方式</translation>
     </message>
@@ -1367,21 +1367,21 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="938"/>
-        <location filename="../qitemsetupdialog.cpp" line="126"/>
+        <location filename="../qitemsetupdialog.cpp" line="127"/>
         <source>Disabled</source>
         <translation>禁用</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="977"/>
         <location filename="../qitemsetupdialog.ui" line="996"/>
-        <location filename="../qitemsetupdialog.cpp" line="161"/>
         <location filename="../qitemsetupdialog.cpp" line="162"/>
+        <location filename="../qitemsetupdialog.cpp" line="163"/>
         <source>SeqEdit</source>
         <translation>序列编辑</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="1015"/>
-        <location filename="../qitemsetupdialog.cpp" line="165"/>
+        <location filename="../qitemsetupdialog.cpp" line="166"/>
         <source>FloatingButton</source>
         <translation>悬浮按钮</translation>
     </message>
@@ -1392,12 +1392,12 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     <message>
         <location filename="../qitemsetupdialog.ui" line="242"/>
         <source>KeySeqHoldDown</source>
-        <translation>按键序列按下保持</translation>
+        <translation>按住时保持序列最后键</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="261"/>
         <source>RepeatByKey</source>
-        <translation>按键按下时循环</translation>
+        <translation>按键按住时循环</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="280"/>
@@ -1416,7 +1416,7 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="357"/>
-        <location filename="../qitemsetupdialog.cpp" line="3873"/>
+        <location filename="../qitemsetupdialog.cpp" line="3874"/>
         <source>KeyUpMapping</source>
         <translation>抬起映射</translation>
     </message>
@@ -1451,40 +1451,40 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="721"/>
-        <location filename="../qitemsetupdialog.cpp" line="167"/>
+        <location filename="../qitemsetupdialog.cpp" line="168"/>
         <source>FixedVKeyCode</source>
         <translation>固定虚拟键码</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="740"/>
-        <location filename="../qitemsetupdialog.cpp" line="103"/>
-        <location filename="../qitemsetupdialog.cpp" line="174"/>
-        <location filename="../qitemsetupdialog.cpp" line="3779"/>
+        <location filename="../qitemsetupdialog.cpp" line="104"/>
+        <location filename="../qitemsetupdialog.cpp" line="175"/>
+        <location filename="../qitemsetupdialog.cpp" line="3780"/>
         <source>Edit</source>
         <translation>按键编辑</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="766"/>
-        <location filename="../qitemsetupdialog.cpp" line="147"/>
+        <location filename="../qitemsetupdialog.cpp" line="148"/>
         <source>KeyRecord</source>
         <translation>按键记录区</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="785"/>
-        <location filename="../qitemsetupdialog.cpp" line="160"/>
+        <location filename="../qitemsetupdialog.cpp" line="161"/>
         <source>Mapping
 Update</source>
         <translation>映射更新</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="805"/>
-        <location filename="../qitemsetupdialog.cpp" line="130"/>
+        <location filename="../qitemsetupdialog.cpp" line="131"/>
         <source>DisableOriKeyUnlock</source>
         <translation>禁用原始按键解锁</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="824"/>
-        <location filename="../qitemsetupdialog.cpp" line="131"/>
+        <location filename="../qitemsetupdialog.cpp" line="132"/>
         <source>DisableFnKeySwitch</source>
         <translation>禁用Fn键切换</translation>
     </message>
@@ -1501,7 +1501,7 @@ Update</source>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="869"/>
-        <location filename="../qitemsetupdialog.cpp" line="168"/>
+        <location filename="../qitemsetupdialog.cpp" line="169"/>
         <source>PasteTextMode</source>
         <translation>PasteText模式</translation>
     </message>
@@ -1510,77 +1510,82 @@ Update</source>
         <translation type="vanished">映射宏列表</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="148"/>
-        <location filename="../qitemsetupdialog.cpp" line="152"/>
+        <location filename="../qitemsetupdialog.cpp" line="149"/>
+        <location filename="../qitemsetupdialog.cpp" line="153"/>
         <source>Keyboard Keys</source>
         <translation>键盘按键</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="149"/>
-        <location filename="../qitemsetupdialog.cpp" line="153"/>
+        <location filename="../qitemsetupdialog.cpp" line="150"/>
+        <location filename="../qitemsetupdialog.cpp" line="154"/>
         <source>Mouse Keys</source>
         <translation>鼠标按键</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="150"/>
-        <location filename="../qitemsetupdialog.cpp" line="154"/>
+        <location filename="../qitemsetupdialog.cpp" line="151"/>
+        <location filename="../qitemsetupdialog.cpp" line="155"/>
         <source>Gamepad Keys</source>
         <translation>手柄按键</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="151"/>
-        <location filename="../qitemsetupdialog.cpp" line="155"/>
+        <location filename="../qitemsetupdialog.cpp" line="152"/>
+        <location filename="../qitemsetupdialog.cpp" line="156"/>
         <source>Function Keys</source>
         <translation>功能按键</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="180"/>
         <location filename="../qitemsetupdialog.cpp" line="181"/>
+        <location filename="../qitemsetupdialog.cpp" line="182"/>
         <source> ms</source>
         <translation> 毫秒</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="87"/>
-        <location filename="../qitemsetupdialog.cpp" line="183"/>
+        <location filename="../qitemsetupdialog.cpp" line="88"/>
+        <location filename="../qitemsetupdialog.cpp" line="184"/>
         <source>Normal</source>
         <translation>正常</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="88"/>
-        <location filename="../qitemsetupdialog.cpp" line="184"/>
-        <source>KeyDown</source>
-        <translation>按下</translation>
+        <location filename="../qitemsetupdialog.cpp" line="80"/>
+        <source>Unlimited</source>
+        <translation>无上限</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="89"/>
         <location filename="../qitemsetupdialog.cpp" line="185"/>
-        <source>KeyUp</source>
-        <translation>抬起</translation>
+        <source>KeyDown</source>
+        <translation>按下</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="90"/>
         <location filename="../qitemsetupdialog.cpp" line="186"/>
-        <source>KeyDown+KeyUp</source>
-        <translation>按下+抬起</translation>
+        <source>KeyUp</source>
+        <translation>抬起</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="91"/>
         <location filename="../qitemsetupdialog.cpp" line="187"/>
+        <source>KeyDown+KeyUp</source>
+        <translation>按下+抬起</translation>
+    </message>
+    <message>
+        <location filename="../qitemsetupdialog.cpp" line="92"/>
+        <location filename="../qitemsetupdialog.cpp" line="188"/>
         <source>Normal+KeyUp</source>
         <translation>正常+抬起</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="171"/>
-        <location filename="../qitemsetupdialog.cpp" line="3787"/>
+        <location filename="../qitemsetupdialog.cpp" line="172"/>
+        <location filename="../qitemsetupdialog.cpp" line="3788"/>
         <source>Capture</source>
         <translation>按键捕获</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="177"/>
-        <location filename="../qitemsetupdialog.cpp" line="1871"/>
-        <location filename="../qitemsetupdialog.cpp" line="1883"/>
-        <location filename="../qitemsetupdialog.cpp" line="3775"/>
-        <location filename="../qitemsetupdialog.cpp" line="3804"/>
+        <location filename="../qitemsetupdialog.cpp" line="178"/>
+        <location filename="../qitemsetupdialog.cpp" line="1872"/>
+        <location filename="../qitemsetupdialog.cpp" line="1884"/>
+        <location filename="../qitemsetupdialog.cpp" line="3776"/>
+        <location filename="../qitemsetupdialog.cpp" line="3805"/>
         <source>Press any key to record...</source>
         <translation>请按下按键进行记录...</translation>
     </message>
@@ -1589,24 +1594,24 @@ Update</source>
         <translation type="vanished">重新打开映射序列编辑窗口前，是否将当前编辑中的映射序列更新到单行编辑框中？</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="2961"/>
-        <location filename="../qitemsetupdialog.cpp" line="2965"/>
+        <location filename="../qitemsetupdialog.cpp" line="2962"/>
+        <location filename="../qitemsetupdialog.cpp" line="2966"/>
         <source>Key mapping updated successfully</source>
         <translation>按键映射更新成功</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="2961"/>
+        <location filename="../qitemsetupdialog.cpp" line="2962"/>
         <source>. But the mapping was disabled due to a conflict.</source>
         <translation>。但映射由于冲突被禁用。</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="3466"/>
+        <location filename="../qitemsetupdialog.cpp" line="3467"/>
         <source>OriginalKey update success</source>
         <translation>原始按键更新成功</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="3856"/>
-        <location filename="../qitemsetupdialog.cpp" line="3873"/>
+        <location filename="../qitemsetupdialog.cpp" line="3857"/>
+        <location filename="../qitemsetupdialog.cpp" line="3874"/>
         <source>Mapping Sequence Edit</source>
         <translation>映射序列编辑</translation>
     </message>
@@ -1619,7 +1624,7 @@ Update</source>
         <translation type="vanished">抬起映射更新成功</translation>
     </message>
     <message>
-        <location filename="../qitemsetupdialog.cpp" line="3603"/>
+        <location filename="../qitemsetupdialog.cpp" line="3604"/>
         <source>Mapping item note update success</source>
         <translation>映射项备注更新成功</translation>
     </message>
