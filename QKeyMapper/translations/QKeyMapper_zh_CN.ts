@@ -1392,7 +1392,7 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     <message>
         <location filename="../qitemsetupdialog.ui" line="242"/>
         <source>KeySeqHoldDown</source>
-        <translation>按住时保持序列最后键</translation>
+        <translation>按住时保持序列最后按键</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="261"/>
@@ -4498,7 +4498,7 @@ Do you want to overwrite them?</source>
         <location filename="../qnotificationsetupdialog.ui" line="32"/>
         <location filename="../qnotificationsetupdialog.cpp" line="110"/>
         <source>Notification Advanced Setting</source>
-        <translation>提示信息高级设定 - 全局</translation>
+        <translation>提示信息高级设定 - 通用</translation>
     </message>
     <message>
         <location filename="../qnotificationsetupdialog.cpp" line="114"/>

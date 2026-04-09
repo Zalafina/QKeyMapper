@@ -23,7 +23,7 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
         ui->offsetGroupBox->setStyle(windowsStyle);
     }
 
-    int x_offset = 8;
+    int x_offset = 13;
     int y_offset = 15;
     QRect fontWidgetGeometry = ui->fontGroupBox->geometry();
     int font_color_x = fontWidgetGeometry.x();

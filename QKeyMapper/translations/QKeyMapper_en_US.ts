@@ -4496,7 +4496,7 @@ Do you want to overwrite them?</source>
         <location filename="../qnotificationsetupdialog.ui" line="32"/>
         <location filename="../qnotificationsetupdialog.cpp" line="110"/>
         <source>Notification Advanced Setting</source>
-        <translation>Notification Advanced Setting - Global</translation>
+        <translation>Notification Advanced Setting - General</translation>
     </message>
     <message>
         <location filename="../qnotificationsetupdialog.cpp" line="114"/>
