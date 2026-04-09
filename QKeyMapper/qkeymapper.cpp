@@ -14018,7 +14018,7 @@ void QKeyMapper::saveKeyMapSetting(void)
 //         }
 
     if (s_MappingStartKeyString.isEmpty()) {
-        s_MappingStartKeyString = MAPPINGSWITCH_KEY_DEFAULT;
+        updateMappingStartKeyString(MAPPINGSWITCH_KEY_DEFAULT);
     }
     ui->mappingStartKeyLineEdit->clearFocus();
     if (false == s_MappingStartKeyString.isEmpty()) {
@@ -14029,7 +14029,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 
     if (s_MappingStopKeyString.isEmpty()) {
-        s_MappingStopKeyString = MAPPINGSWITCH_KEY_DEFAULT;
+        updateMappingStopKeyString(MAPPINGSWITCH_KEY_DEFAULT);
     }
     ui->mappingStopKeyLineEdit->clearFocus();
     if (false == s_MappingStopKeyString.isEmpty()) {
@@ -22353,8 +22353,18 @@ void QKeyMapper::updateSysTrayIconMenuText()
     QString hideActionText;
     QString quitActionText;
 
-    mappingStartActionText = tr("MappingStart");
-    mappingStopActionText = tr("MappingStop");
+    if (!s_MappingStartKeyString.isEmpty()) {
+        mappingStartActionText = QString("%1 (%2)").arg(tr("MappingStart"), s_MappingStartKeyString);
+    }
+    else {
+        mappingStartActionText = tr("MappingStart");
+    }
+    if (!s_MappingStopKeyString.isEmpty()) {
+        mappingStopActionText = QString("%1 (%2)").arg(tr("MappingStop"), s_MappingStopKeyString);
+    }
+    else {
+        mappingStopActionText = tr("MappingStop");
+    }
     showActionText = tr("Show");
     hideActionText = tr("Hide");
     quitActionText = tr("Quit");
@@ -24646,6 +24656,7 @@ void QKeyMapper::updateMappingStartKeyString(const QString &keystring)
 {
     if (s_MappingStartKeyString != keystring) {
         s_MappingStartKeyString = keystring;
+        updateSysTrayIconMenuText();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[updateMappingStartKeyString]" << "s_MappingStartKeyString update ->" << keystring;
 #endif
@@ -24656,6 +24667,7 @@ void QKeyMapper::updateMappingStopKeyString(const QString &keystring)
 {
     if (s_MappingStopKeyString != keystring) {
         s_MappingStopKeyString = keystring;
+        updateSysTrayIconMenuText();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[updateMappingStopKeyString]" << "s_MappingStopKeyString update ->" << keystring;
 #endif
