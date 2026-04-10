@@ -1031,6 +1031,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char STARTUP_POSITION_INDEX[] = "StartupPosition_Index";
     inline constexpr const char STARTUP_POSITION_SPECIFYPOINT[] = "StartupPosition_SpecifyPoint";
     inline constexpr const char GLOBALSETTING_SWITCH_TIMEOUT[] = "GlobalSettingSwitchTimeout";
+    inline constexpr const char GLOBALMAPPING_DISABLE_IN_FULLSCREEN[] = "GlobalMappingDisableInFullscreen";
+    inline constexpr const char GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES[] = "GlobalMappingFullscreenAllowedProcesses";
+    inline constexpr bool GLOBALMAPPING_DISABLE_IN_FULLSCREEN_DEFAULT = false;
 
     inline constexpr const char TRAYICON_IDLE[] = "TrayIcon_Idle";
     inline constexpr const char TRAYICON_MONITORING[] = "TrayIcon_Monitoring";

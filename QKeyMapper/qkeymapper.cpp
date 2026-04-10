@@ -1590,9 +1590,19 @@ void QKeyMapper::cycleCheckProcessProc(void)
             /* Skip inVisibleWidow & ToolbarWindow <<< */
         }
 
+        const bool globalMappingCandidate = (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
+                                             && 2 == checkresult);
+        if (globalMappingCandidate) {
+            if (handleGlobalMappingBlockedByFullscreen(hwnd, filename)) {
+                return;
+            }
+        }
+        else {
+            resetGlobalMappingBlockedByFullscreenState();
+        }
+
         bool GlobalMappingFlag = false;
-        if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
-            && 2 == checkresult) {
+        if (globalMappingCandidate) {
             GlobalMappingFlag = true;
         }
 
@@ -1989,9 +1999,19 @@ void QKeyMapper::matchForegroundWindow()
             /* Skip inVisibleExToolWidow <<< */
         }
 
+        const bool globalMappingCandidate = (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
+                                             && matchResult == MatchResult::IgnoreAllChecks);
+        if (globalMappingCandidate) {
+            if (handleGlobalMappingBlockedByFullscreen(hwnd, filename)) {
+                return;
+            }
+        }
+        else {
+            resetGlobalMappingBlockedByFullscreenState();
+        }
+
         bool GlobalMappingFlag = false;
-        if (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()
-            && matchResult == MatchResult::IgnoreAllChecks) {
+        if (globalMappingCandidate) {
             GlobalMappingFlag = true;
         }
 
@@ -2245,6 +2265,15 @@ void QKeyMapper::checkGlobalSettingSwitchTimeout()
 #endif
     if (m_KeyMapStatus == KEYMAP_CHECKING) {
         if (checkGlobalSettingAutoStart()) {
+            HWND hwnd = GetForegroundWindow();
+            const QString filename = (hwnd != NULL) ? getWindowProcessFileName(hwnd) : QString();
+            if (handleGlobalMappingBlockedByFullscreen(hwnd, filename)) {
+                // Retry with a bounded delay so fullscreen blocking does not create a zero-time loop.
+                constexpr int fullscreenRetryTimeoutMs = 500;
+                m_CheckGlobalSettingSwitchTimer.start(fullscreenRetryTimeoutMs);
+                return;
+            }
+
             loadSetting_flag = true;
             QString loadresult = loadKeyMapSetting(GROUPNAME_GLOBALSETTING);
             ui->settingNameLineEdit->setText(tr(DISPLAYNAME_GLOBALSETTING));
@@ -6739,6 +6768,75 @@ int QKeyMapper::getTableInsertModeIndex()
     return instance->m_GeneralAdvancedDialog->getTableInsertMode();
 }
 
+bool QKeyMapper::isWindowFullscreen(HWND hwnd)
+{
+    if (hwnd == NULL || !IsWindow(hwnd) || !IsWindowVisible(hwnd) || IsIconic(hwnd)) {
+        return false;
+    }
+
+    HWND topLevelWindow = GetAncestor(hwnd, GA_ROOT);
+    if (topLevelWindow != NULL && IsWindow(topLevelWindow)) {
+        hwnd = topLevelWindow;
+    }
+
+    RECT windowRect = {};
+    if (!GetWindowRect(hwnd, &windowRect)) {
+        return false;
+    }
+
+    HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    if (monitor == NULL) {
+        return false;
+    }
+
+    MONITORINFO monitorInfo = {};
+    monitorInfo.cbSize = sizeof(MONITORINFO);
+    if (!GetMonitorInfo(monitor, &monitorInfo)) {
+        return false;
+    }
+
+    auto rectMatchesMonitor = [](const RECT &rect, const RECT &monitorRect, int tolerance) {
+        return rect.left >= (monitorRect.left - tolerance)
+               && rect.left <= (monitorRect.left + tolerance)
+               && rect.top >= (monitorRect.top - tolerance)
+               && rect.top <= (monitorRect.top + tolerance)
+               && rect.right >= (monitorRect.right - tolerance)
+               && rect.right <= (monitorRect.right + tolerance)
+               && rect.bottom >= (monitorRect.bottom - tolerance)
+               && rect.bottom <= (monitorRect.bottom + tolerance);
+    };
+
+    // First ensure the top-level window itself fills the monitor bounds.
+    constexpr int windowTolerance = 2;
+    if (!rectMatchesMonitor(windowRect, monitorInfo.rcMonitor, windowTolerance)) {
+        return false;
+    }
+
+    RECT clientRect = {};
+    if (!GetClientRect(hwnd, &clientRect)) {
+        return false;
+    }
+
+    POINT clientPoints[2] = {
+        { clientRect.left, clientRect.top },
+        { clientRect.right, clientRect.bottom }
+    };
+    if (!ClientToScreen(hwnd, &clientPoints[0]) || !ClientToScreen(hwnd, &clientPoints[1])) {
+        return false;
+    }
+
+    RECT clientScreenRect = {
+        clientPoints[0].x,
+        clientPoints[0].y,
+        clientPoints[1].x,
+        clientPoints[1].y
+    };
+
+    // Use the client area as a second pass so maximized framed windows are not treated as fullscreen.
+    constexpr int clientTolerance = 8;
+    return rectMatchesMonitor(clientScreenRect, monitorInfo.rcMonitor, clientTolerance);
+}
+
 const KeyListComboBox *QKeyMapper::getOriKeyComboBox() const
 {
     return ui->orikeyComboBox;
@@ -10001,6 +10099,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
 #endif
         ui->keymapButton->setText(tr("MappingStop"));
         m_KeyMapStatus = KEYMAP_CHECKING;
+        resetGlobalMappingBlockedByFullscreenState();
         startWinEventHook();
         scheduleGlobalSettingSwitchCheck();
         updateSystemTrayDisplay();
@@ -10023,6 +10122,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         stopWinEventHook();
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
+        resetGlobalMappingBlockedByFullscreenState();
         mappingStopNotification();
         m_CheckGlobalSettingSwitchTimer.stop();
 
@@ -12941,6 +13041,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     if (m_GeneralAdvancedDialog) {
         settingFile.setValue(EDITMODE_TRIGGER, m_GeneralAdvancedDialog->getTableEditModeTrigger());
         settingFile.setValue(TABLE_INSERTMODE, m_GeneralAdvancedDialog->getTableInsertMode());
+        settingFile.setValue(GLOBALMAPPING_DISABLE_IN_FULLSCREEN, m_GeneralAdvancedDialog->getDisableGlobalMappingInFullscreen());
+        settingFile.setValue(GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES, m_GeneralAdvancedDialog->getGlobalMappingFullscreenAllowedProcesses());
     }
 
     QColor notification_fontcolor;
@@ -14328,6 +14430,18 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         }
         m_GeneralAdvancedDialog->setGlobalSettingSwitchTimeout(generalSwitchTimeout);
         m_CheckGlobalSettingSwitchTimer.setInterval(static_cast<int>(generalSwitchTimeout));
+
+        bool disableGlobalMappingInFullscreen = GLOBALMAPPING_DISABLE_IN_FULLSCREEN_DEFAULT;
+        if (true == settingFile.contains(GLOBALMAPPING_DISABLE_IN_FULLSCREEN)) {
+            disableGlobalMappingInFullscreen = settingFile.value(GLOBALMAPPING_DISABLE_IN_FULLSCREEN).toBool();
+        }
+        m_GeneralAdvancedDialog->setDisableGlobalMappingInFullscreen(disableGlobalMappingInFullscreen);
+
+        QString fullscreenAllowedProcesses;
+        if (true == settingFile.contains(GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES)) {
+            fullscreenAllowedProcesses = settingFile.value(GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES).toString();
+        }
+        m_GeneralAdvancedDialog->setGlobalMappingFullscreenAllowedProcesses(fullscreenAllowedProcesses);
 
         if (settingtext.isEmpty()) {
             QPoint startup_point = pos();
@@ -18652,6 +18766,18 @@ void QKeyMapper::loadGeneralSetting()
     m_GeneralAdvancedDialog->setGlobalSettingSwitchTimeout(generalSwitchTimeout);
     m_CheckGlobalSettingSwitchTimer.setInterval(static_cast<int>(generalSwitchTimeout));
 
+    bool disableGlobalMappingInFullscreen = GLOBALMAPPING_DISABLE_IN_FULLSCREEN_DEFAULT;
+    if (true == settingFile.contains(GLOBALMAPPING_DISABLE_IN_FULLSCREEN)) {
+        disableGlobalMappingInFullscreen = settingFile.value(GLOBALMAPPING_DISABLE_IN_FULLSCREEN).toBool();
+    }
+    m_GeneralAdvancedDialog->setDisableGlobalMappingInFullscreen(disableGlobalMappingInFullscreen);
+
+    QString fullscreenAllowedProcesses;
+    if (true == settingFile.contains(GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES)) {
+        fullscreenAllowedProcesses = settingFile.value(GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES).toString();
+    }
+    m_GeneralAdvancedDialog->setGlobalMappingFullscreenAllowedProcesses(fullscreenAllowedProcesses);
+
     // if (settingtext.isEmpty()) {
     //     int startup_position = m_GeneralAdvancedDialog->getStartupPosition();
     //     if (startup_position == STARTUP_POSITION_LASTSAVED) {
@@ -20262,6 +20388,112 @@ unsigned int QKeyMapper::getGeneralAdvancedSwitchTimeout() const
     }
 
     return m_GeneralAdvancedDialog->getGlobalSettingSwitchTimeout();
+}
+
+bool QKeyMapper::isDisableGlobalMappingInFullscreenEnabled() const
+{
+    if (m_GeneralAdvancedDialog == Q_NULLPTR) {
+        return GLOBALMAPPING_DISABLE_IN_FULLSCREEN_DEFAULT;
+    }
+
+    return m_GeneralAdvancedDialog->getDisableGlobalMappingInFullscreen();
+}
+
+QString QKeyMapper::getGlobalMappingFullscreenAllowedProcesses() const
+{
+    if (m_GeneralAdvancedDialog == Q_NULLPTR) {
+        return QString();
+    }
+
+    return m_GeneralAdvancedDialog->getGlobalMappingFullscreenAllowedProcesses();
+}
+
+QString QKeyMapper::getWindowProcessFileName(HWND hwnd) const
+{
+    QString processPath;
+    getProcessInfoFromHWND(hwnd, processPath);
+    if (processPath.isEmpty()) {
+        return QString();
+    }
+
+    return QFileInfo(processPath).fileName();
+}
+
+bool QKeyMapper::isGlobalMappingFullscreenProcessAllowed(const QString &processName) const
+{
+    if (processName.isEmpty()) {
+        return false;
+    }
+
+    const QString allowedProcesses = getGlobalMappingFullscreenAllowedProcesses();
+    const QStringList allowedProcessList = allowedProcesses.split(';', Qt::SkipEmptyParts);
+    for (const QString &allowedProcess : allowedProcessList) {
+        const QString trimmedProcess = allowedProcess.trimmed();
+        if (!trimmedProcess.isEmpty() && processName.contains(trimmedProcess, Qt::CaseInsensitive)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool QKeyMapper::shouldBlockGlobalMappingForFullscreen(HWND hwnd, const QString &processName) const
+{
+    if (!isDisableGlobalMappingInFullscreenEnabled()) {
+        return false;
+    }
+
+    QString effectiveProcessName = processName;
+    if (effectiveProcessName.isEmpty()) {
+        effectiveProcessName = getWindowProcessFileName(hwnd);
+    }
+
+    if (isGlobalMappingFullscreenProcessAllowed(effectiveProcessName)) {
+        return false;
+    }
+
+    return QKeyMapper::isWindowFullscreen(hwnd);
+}
+
+bool QKeyMapper::handleGlobalMappingBlockedByFullscreen(HWND hwnd, const QString &processName)
+{
+    if (!shouldBlockGlobalMappingForFullscreen(hwnd, processName)) {
+        resetGlobalMappingBlockedByFullscreenState();
+        return false;
+    }
+
+    const bool showPopup = (m_GlobalMappingBlockedFullscreenHwnd != hwnd);
+    bool statusChanged = false;
+    m_GlobalMappingBlockedFullscreenHwnd = hwnd;
+
+    if (m_KeyMapStatus == KEYMAP_MAPPING_GLOBAL) {
+        playStopSound();
+        setKeyUnHook();
+        m_KeyMapStatus = KEYMAP_CHECKING;
+        emit updateLockStatus_Signal();
+        statusChanged = true;
+    }
+
+    if (showPopup || statusChanged) {
+        showGlobalMappingBlockedByFullscreenNotification(showPopup);
+    }
+
+    return true;
+}
+
+void QKeyMapper::showGlobalMappingBlockedByFullscreenNotification(bool showPopup)
+{
+    ScopedTrayUpdater trayUpdater(this);
+    hideFloatingIconWindow();
+
+    if (showPopup) {
+        showNotificationPopup(tr("Fullscreen disabled global key mapping"));
+    }
+}
+
+void QKeyMapper::resetGlobalMappingBlockedByFullscreenState(void)
+{
+    m_GlobalMappingBlockedFullscreenHwnd = NULL;
 }
 
 void QKeyMapper::scheduleGlobalSettingSwitchCheck()

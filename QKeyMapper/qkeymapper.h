@@ -1029,6 +1029,7 @@ public:
     static bool validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata);
     static ValidationResult updateWithZipUpdater(const QString &update_filepath);
     static bool isSelectColorDialogVisible(void);
+    static bool isWindowFullscreen(HWND hwnd);
 
     static QIcon setTabCustomImage(int tabindex, QString &imagepath);
     static void clearTabCustomImage(int tabindex);
@@ -1550,6 +1551,14 @@ private:
     void playStopSound();
     bool isSoundEffectEnabled(void) const;
     unsigned int getGeneralAdvancedSwitchTimeout(void) const;
+    bool isDisableGlobalMappingInFullscreenEnabled(void) const;
+    QString getGlobalMappingFullscreenAllowedProcesses(void) const;
+    QString getWindowProcessFileName(HWND hwnd) const;
+    bool isGlobalMappingFullscreenProcessAllowed(const QString &processName) const;
+    bool shouldBlockGlobalMappingForFullscreen(HWND hwnd, const QString &processName = QString()) const;
+    bool handleGlobalMappingBlockedByFullscreen(HWND hwnd, const QString &processName);
+    void showGlobalMappingBlockedByFullscreenNotification(bool showPopup);
+    void resetGlobalMappingBlockedByFullscreenState(void);
     void scheduleGlobalSettingSwitchCheck(void);
     void mappingStartNotification();
     void mappingStopNotification();
@@ -1776,6 +1785,7 @@ private:
     VButtonPanelSettings m_VButtonPanelSettings;
     bool m_restoreMappedWindowOnVButtonSetupClose = false;
     HWND m_pendingRestoreMappedWindowHwnd = NULL;
+    HWND m_GlobalMappingBlockedFullscreenHwnd = NULL;
 public:
     QMappingSequenceEdit *m_MappingSequenceEdit = Q_NULLPTR;
 private:

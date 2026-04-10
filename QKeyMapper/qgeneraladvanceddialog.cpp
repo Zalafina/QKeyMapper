@@ -19,6 +19,7 @@ QGeneralAdvancedDialog::QGeneralAdvancedDialog(QWidget *parent)
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->startupPositionGroupBox->setStyle(windowsStyle);
         ui->tableEditGroupBox->setStyle(windowsStyle);
+        ui->fullscreenGlobalMappingGroupBox->setStyle(windowsStyle);
         ui->globalMappingGroupBox->setStyle(windowsStyle);
     }
 
@@ -28,6 +29,8 @@ QGeneralAdvancedDialog::QGeneralAdvancedDialog(QWidget *parent)
         ui->startupSpecifyPositionYSpinBox->setStyle(fusionStyle);
         ui->tableEditModeTriggerComboBox->setStyle(fusionStyle);
         ui->tableInsertModeComboBox->setStyle(fusionStyle);
+        ui->disableGlobalMappingInFullscreenCheckBox->setStyle(fusionStyle);
+        ui->fullscreenGlobalMappingProcessLineEdit->setStyle(fusionStyle);
         ui->soundEffectCheckBox->setStyle(fusionStyle);
         ui->globalSettingSwitchTimerSpinBox->setStyle(fusionStyle);
     }
@@ -61,13 +64,18 @@ QGeneralAdvancedDialog::QGeneralAdvancedDialog(QWidget *parent)
     ui->globalSettingSwitchTimerSpinBox->setRange(GLOBALSETTING_SWITCH_TIMEOUT_MIN,
                                                   GLOBALSETTING_SWITCH_TIMEOUT_MAX);
     ui->globalSettingSwitchTimerSpinBox->setValue(static_cast<int>(CHECK_GLOBALSETTING_SWITCH_TIMEOUT));
+    ui->disableGlobalMappingInFullscreenCheckBox->setChecked(false);
+    ui->fullscreenGlobalMappingProcessLineEdit->clear();
     ui->soundEffectCheckBox->setChecked(true);
 
     QObject::connect(ui->startupPositionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, [this](int) { updateStartupSpecifyPositionState(); });
+    QObject::connect(ui->disableGlobalMappingInFullscreenCheckBox, &QCheckBox::toggled,
+                     this, [this](bool) { updateGlobalMappingFullscreenState(); });
 
     setUILanguage(0);
     updateStartupSpecifyPositionState();
+    updateGlobalMappingFullscreenState();
 }
 
 QGeneralAdvancedDialog::~QGeneralAdvancedDialog()
@@ -96,6 +104,12 @@ void QGeneralAdvancedDialog::setUILanguage(int languageindex)
     ui->tableEditModeTriggerComboBox->setItemText(EDITMODE_LEFT_DOUBLECLICK, tr("L-DoubleClick"));
     ui->tableInsertModeComboBox->setItemText(TABLE_INSERT_MODE_ABOVE, tr("AboveCurrentRow"));
     ui->tableInsertModeComboBox->setItemText(TABLE_INSERT_MODE_BELOW, tr("BelowCurrentRow"));
+
+    ui->fullscreenGlobalMappingGroupBox->setTitle(tr("Disable GlobalKeyMapping in Fullscreen"));
+    ui->disableGlobalMappingInFullscreenCheckBox->setText(tr("Disable GlobalKeyMapping in Fullscreen"));
+    ui->fullscreenGlobalMappingProcessLabel->setText(tr("Enable GlobalKeyMapping in Fullscreen for Following Processes"));
+    ui->fullscreenGlobalMappingProcessLabel->setToolTip(tr("Enter the processes that should still enable global key mapping in fullscreen below. Separate multiple processes with semicolons."));
+    ui->fullscreenGlobalMappingProcessLineEdit->setPlaceholderText(tr("Separate multiple processes with semicolons, for example: \"a.exe;b.exe;c.exe\""));
 
     ui->globalMappingGroupBox->setTitle(tr("Others"));
     ui->soundEffectCheckBox->setText(tr("Notification Sound"));
@@ -135,6 +149,16 @@ unsigned int QGeneralAdvancedDialog::getGlobalSettingSwitchTimeout()
     return static_cast<unsigned int>(ui->globalSettingSwitchTimerSpinBox->value());
 }
 
+bool QGeneralAdvancedDialog::getDisableGlobalMappingInFullscreen()
+{
+    return ui->disableGlobalMappingInFullscreenCheckBox->isChecked();
+}
+
+QString QGeneralAdvancedDialog::getGlobalMappingFullscreenAllowedProcesses()
+{
+    return ui->fullscreenGlobalMappingProcessLineEdit->text();
+}
+
 void QGeneralAdvancedDialog::setStartupPosition(int position)
 {
     ui->startupPositionComboBox->setCurrentIndex(position);
@@ -165,6 +189,17 @@ void QGeneralAdvancedDialog::setPlaySoundEffect(bool enabled)
 void QGeneralAdvancedDialog::setGlobalSettingSwitchTimeout(unsigned int timeout)
 {
     ui->globalSettingSwitchTimerSpinBox->setValue(static_cast<int>(timeout));
+}
+
+void QGeneralAdvancedDialog::setDisableGlobalMappingInFullscreen(bool enabled)
+{
+    ui->disableGlobalMappingInFullscreenCheckBox->setChecked(enabled);
+    updateGlobalMappingFullscreenState();
+}
+
+void QGeneralAdvancedDialog::setGlobalMappingFullscreenAllowedProcesses(const QString &processes)
+{
+    ui->fullscreenGlobalMappingProcessLineEdit->setText(processes);
 }
 
 bool QGeneralAdvancedDialog::event(QEvent *event)
@@ -200,4 +235,10 @@ void QGeneralAdvancedDialog::updateStartupSpecifyPositionState()
     ui->startupSpecifyPositionYLabel->setEnabled(enabled);
     ui->startupSpecifyPositionXSpinBox->setEnabled(enabled);
     ui->startupSpecifyPositionYSpinBox->setEnabled(enabled);
+}
+
+void QGeneralAdvancedDialog::updateGlobalMappingFullscreenState()
+{
+    const bool enabled = ui->disableGlobalMappingInFullscreenCheckBox->isChecked();
+    ui->fullscreenGlobalMappingProcessLineEdit->setEnabled(enabled);
 }

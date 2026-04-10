@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>430</width>
-    <height>340</height>
+    <height>440</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>400</width>
-    <height>320</height>
+    <height>420</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -250,6 +250,66 @@
     </widget>
    </item>
    <item>
+    <widget class="QGroupBox" name="fullscreenGlobalMappingGroupBox">
+     <property name="title">
+      <string>Disable GlobalKeyMapping in Fullscreen</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+     <layout class="QGridLayout" name="fullscreenGlobalMappingGridLayout">
+      <property name="horizontalSpacing">
+       <number>10</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>8</number>
+      </property>
+      <item row="1" column="0" colspan="2">
+       <widget class="QLabel" name="fullscreenGlobalMappingProcessLabel">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>22</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Enable GlobalKeyMapping in Fullscreen for Following Processes</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QLineEdit" name="fullscreenGlobalMappingProcessLineEdit">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>22</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::ClickFocus</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="2">
+       <widget class="QCheckBox" name="disableGlobalMappingInFullscreenCheckBox">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>22</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Disable GlobalKeyMapping in Fullscreen</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <widget class="QGroupBox" name="globalMappingGroupBox">
      <property name="title">
       <string>Others</string>
@@ -264,41 +324,6 @@
       <property name="verticalSpacing">
        <number>8</number>
       </property>
-      <item row="0" column="0">
-       <spacer name="soundEffectLeftSpacer">
-        <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Policy::Fixed</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>150</width>
-          <height>22</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="1">
-       <widget class="QCheckBox" name="soundEffectCheckBox">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>22</height>
-         </size>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::FocusPolicy::NoFocus</enum>
-        </property>
-        <property name="text">
-         <string>Notification Sound</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="globalSettingSwitchTimerLabel">
         <property name="minimumSize">
@@ -333,6 +358,41 @@
          <enum>Qt::FocusPolicy::ClickFocus</enum>
         </property>
        </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QCheckBox" name="soundEffectCheckBox">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>22</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Notification Sound</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <spacer name="soundEffectLeftSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Policy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>150</width>
+          <height>22</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>

@@ -29,6 +29,8 @@ public:
     int getTableInsertMode(void);
     bool getPlaySoundEffect(void);
     unsigned int getGlobalSettingSwitchTimeout(void);
+    bool getDisableGlobalMappingInFullscreen(void);
+    QString getGlobalMappingFullscreenAllowedProcesses(void);
 
     void setStartupPosition(int position);
     void setSpecifyStartupPosition(const QPoint &position);
@@ -36,6 +38,8 @@ public:
     void setTableInsertMode(int mode);
     void setPlaySoundEffect(bool enabled);
     void setGlobalSettingSwitchTimeout(unsigned int timeout);
+    void setDisableGlobalMappingInFullscreen(bool enabled);
+    void setGlobalMappingFullscreenAllowedProcesses(const QString &processes);
 
 protected:
     bool event(QEvent *event) override;
@@ -43,6 +47,7 @@ protected:
 
 private:
     void updateStartupSpecifyPositionState(void);
+    void updateGlobalMappingFullscreenState(void);
 
     static QGeneralAdvancedDialog *m_instance;
     Ui::QGeneralAdvancedDialog *ui;
