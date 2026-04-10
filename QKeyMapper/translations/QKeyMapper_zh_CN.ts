@@ -1397,12 +1397,12 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     <message>
         <location filename="../qitemsetupdialog.ui" line="261"/>
         <source>RepeatByKey</source>
-        <translation>按键按住时循环</translation>
+        <translation>按键按住时序列循环</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="280"/>
         <source>RepeatTimes</source>
-        <translation>循环次数</translation>
+        <translation>序列循环次数</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="312"/>

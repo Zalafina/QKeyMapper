@@ -1402,7 +1402,7 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     <message>
         <location filename="../qitemsetupdialog.ui" line="280"/>
         <source>RepeatTimes</source>
-        <translation>繰返回数</translation>
+        <translation>繰り返し回数</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="312"/>
