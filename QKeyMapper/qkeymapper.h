@@ -1704,13 +1704,6 @@ private:
     QCheckBox *m_EnableSystemFilterKeyPopupCheckBox = Q_NULLPTR;
     QCheckBox *m_DisableFilterKeyClickSoundPopupCheckBox = Q_NULLPTR;
 
-    // Table edit setting popup UI
-    QFrame *m_TableEditSettingPopup = Q_NULLPTR;
-    QLabel *m_TableEditModeTriggerLabel = Q_NULLPTR;
-    QComboBox *m_TableEditModeTriggerComboBox = Q_NULLPTR;
-    QLabel *m_TableInsertModeLabel = Q_NULLPTR;
-    QComboBox *m_TableInsertModeComboBox = Q_NULLPTR;
-
 public:
     int applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow, bool showPopup = true);
     bool autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup = true, bool updateTableWidget = true);

@@ -19735,18 +19735,6 @@ void QKeyMapper::setControlFontEnglish()
     ui->updateSiteLabel->setFont(customFont);
     ui->scaleLabel->setFont(customFont);
     ui->themeLabel->setFont(customFont);
-    if (m_TableEditModeTriggerLabel) {
-        m_TableEditModeTriggerLabel->setFont(customFont);
-    }
-    if (m_TableEditModeTriggerComboBox) {
-        m_TableEditModeTriggerComboBox->setFont(customFont);
-    }
-    if (m_TableInsertModeLabel) {
-        m_TableInsertModeLabel->setFont(customFont);
-    }
-    if (m_TableInsertModeComboBox) {
-        m_TableInsertModeComboBox->setFont(customFont);
-    }
     ui->selectTrayIconButton->setFont(customFont);
     // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
@@ -19894,18 +19882,6 @@ void QKeyMapper::setControlFontChinese()
     ui->updateSiteLabel->setFont(customFont);
     ui->scaleLabel->setFont(customFont);
     ui->themeLabel->setFont(customFont);
-    if (m_TableEditModeTriggerLabel) {
-        m_TableEditModeTriggerLabel->setFont(customFont);
-    }
-    if (m_TableEditModeTriggerComboBox) {
-        m_TableEditModeTriggerComboBox->setFont(customFont);
-    }
-    if (m_TableInsertModeLabel) {
-        m_TableInsertModeLabel->setFont(customFont);
-    }
-    if (m_TableInsertModeComboBox) {
-        m_TableInsertModeComboBox->setFont(customFont);
-    }
     ui->selectTrayIconButton->setFont(customFont);
     // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
@@ -20053,18 +20029,6 @@ void QKeyMapper::setControlFontJapanese()
     ui->updateSiteLabel->setFont(customFont);
     ui->scaleLabel->setFont(customFont);
     ui->themeLabel->setFont(customFont);
-    if (m_TableEditModeTriggerLabel) {
-        m_TableEditModeTriggerLabel->setFont(customFont);
-    }
-    if (m_TableEditModeTriggerComboBox) {
-        m_TableEditModeTriggerComboBox->setFont(customFont);
-    }
-    if (m_TableInsertModeLabel) {
-        m_TableInsertModeLabel->setFont(customFont);
-    }
-    if (m_TableInsertModeComboBox) {
-        m_TableInsertModeComboBox->setFont(customFont);
-    }
     ui->selectTrayIconButton->setFont(customFont);
     // ui->ProcessIconAsTrayIconCheckBox->setFont(customFont);
 
@@ -26277,21 +26241,6 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->themeComboBox->setItemText(UI_THEME_SYSTEMDEFAULT,  tr("System Default"));
     ui->themeComboBox->setItemText(UI_THEME_LIGHT,          tr("Light"));
     ui->themeComboBox->setItemText(UI_THEME_DARK,           tr("Dark"));
-
-    if (m_TableEditModeTriggerLabel) {
-        m_TableEditModeTriggerLabel->setText(tr("EditMode"));
-    }
-    if (m_TableEditModeTriggerComboBox) {
-        m_TableEditModeTriggerComboBox->setItemText(EDITMODE_RIGHT_DOUBLECLICK,   tr("R-DoubleClick"));
-        m_TableEditModeTriggerComboBox->setItemText(EDITMODE_LEFT_DOUBLECLICK,    tr("L-DoubleClick"));
-    }
-    if (m_TableInsertModeLabel) {
-        m_TableInsertModeLabel->setText(tr("InsertMode"));
-    }
-    if (m_TableInsertModeComboBox) {
-        m_TableInsertModeComboBox->setItemText(TABLE_INSERT_MODE_ABOVE, tr("AboveCurrentRow"));
-        m_TableInsertModeComboBox->setItemText(TABLE_INSERT_MODE_BELOW, tr("BelowCurrentRow"));
-    }
 
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_IGNORE,        tr("Ignore"));
     ui->checkProcessComboBox->setItemText(WINDOWINFO_MATCH_INDEX_EQUALS,        tr("Equals"));
