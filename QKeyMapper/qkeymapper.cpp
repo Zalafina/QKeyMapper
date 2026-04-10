@@ -24627,15 +24627,14 @@ void QKeyMapper::initInputDeviceSelectComboBoxes()
 
 void QKeyMapper::initSystemFilterKeyPopupControls()
 {
-    if (!ui->enableSystemFilterKeyButton || m_SystemFilterKeyMenu) {
+    if (!ui->enableSystemFilterKeyButton || m_SystemFilterKeyPopupFrame) {
         return;
     }
 
-    m_SystemFilterKeyMenu = new QMenu(ui->enableSystemFilterKeyButton);
-    m_SystemFilterKeyWidgetAction = new QWidgetAction(m_SystemFilterKeyMenu);
-    m_SystemFilterKeyPopupFrame = new QFrame(m_SystemFilterKeyMenu);
+    m_SystemFilterKeyPopupFrame = new QFrame(this);
+    m_SystemFilterKeyPopupFrame->setWindowFlags(Qt::Popup);
     m_SystemFilterKeyPopupFrame->setFrameShape(QFrame::Box);
-    m_SystemFilterKeyPopupFrame->setFrameShadow(QFrame::Plain);
+    m_SystemFilterKeyPopupFrame->setFrameShadow(QFrame::Raised);
 
     QVBoxLayout *layout = new QVBoxLayout(m_SystemFilterKeyPopupFrame);
     layout->setContentsMargins(8, 8, 8, 8);
@@ -24648,8 +24647,6 @@ void QKeyMapper::initSystemFilterKeyPopupControls()
     layout->addWidget(m_DisableFilterKeyClickSoundPopupCheckBox);
 
     m_SystemFilterKeyPopupFrame->setMinimumWidth(qMax(ui->enableSystemFilterKeyButton->width(), 220));
-    m_SystemFilterKeyWidgetAction->setDefaultWidget(m_SystemFilterKeyPopupFrame);
-    m_SystemFilterKeyMenu->addAction(m_SystemFilterKeyWidgetAction);
 
     setEnableSystemFilterKeyCheckedInternal(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
     setDisableFilterKeyClickSoundCheckedInternal(DISABLE_FILTERKEY_CLICKSOUND_ON_ENABLE_DEFAULT);
@@ -24667,18 +24664,16 @@ void QKeyMapper::initSystemFilterKeyPopupControls()
 
 void QKeyMapper::showSystemFilterKeyPopup()
 {
-    if (!ui->enableSystemFilterKeyButton || !m_SystemFilterKeyMenu || !m_SystemFilterKeyWidgetAction || !m_SystemFilterKeyPopupFrame) {
+    if (!ui->enableSystemFilterKeyButton || !m_SystemFilterKeyPopupFrame) {
         return;
     }
 
-    m_SystemFilterKeyPopupFrame->setMinimumWidth(qMax(ui->enableSystemFilterKeyButton->width(), 220));
-    m_SystemFilterKeyPopupFrame->updateGeometry();
+    const int popupMinimumWidth = qMax(ui->enableSystemFilterKeyButton->width(), 220);
+    m_SystemFilterKeyPopupFrame->setMinimumWidth(popupMinimumWidth);
+    m_SystemFilterKeyPopupFrame->ensurePolished();
+    m_SystemFilterKeyPopupFrame->adjustSize();
 
-    refreshMenuWidgetActionGeometry(m_SystemFilterKeyMenu, m_SystemFilterKeyWidgetAction, m_SystemFilterKeyPopupFrame);
-    m_SystemFilterKeyMenu->ensurePolished();
-    m_SystemFilterKeyMenu->adjustSize();
-
-    QSize popupSize = m_SystemFilterKeyMenu->sizeHint();
+    QSize popupSize = m_SystemFilterKeyPopupFrame->sizeHint().expandedTo(m_SystemFilterKeyPopupFrame->minimumSize());
     const QPoint buttonTopLeft = ui->enableSystemFilterKeyButton->mapToGlobal(QPoint(0, 0));
     const QPoint buttonTopRight = ui->enableSystemFilterKeyButton->mapToGlobal(QPoint(ui->enableSystemFilterKeyButton->width(), 0));
     const QPoint buttonBottomLeft = ui->enableSystemFilterKeyButton->mapToGlobal(QPoint(0, ui->enableSystemFilterKeyButton->height()));
@@ -24731,11 +24726,23 @@ void QKeyMapper::showSystemFilterKeyPopup()
             pos = QPoint(buttonTopLeft.x(), sameY);
         }
 
-        pos.setX(qBound(availInner.left(), pos.x(), availInner.right() - popupSize.width() + 1));
-        pos.setY(qBound(availInner.top(), pos.y(), availInner.bottom() - popupSize.height() + 1));
+        const int maxX = qMax(availInner.left(), availInner.right() - popupSize.width() + 1);
+        const int maxY = qMax(availInner.top(), availInner.bottom() - popupSize.height() + 1);
+        pos.setX(qBound(availInner.left(), pos.x(), maxX));
+        pos.setY(qBound(availInner.top(), pos.y(), maxY));
     }
 
-    m_SystemFilterKeyMenu->popup(pos);
+    const QRect finalRect(pos, popupSize);
+    m_SystemFilterKeyPopupFrame->setGeometry(finalRect);
+    m_SystemFilterKeyPopupFrame->setWindowOpacity(0.0);
+    m_SystemFilterKeyPopupFrame->show();
+
+    QPropertyAnimation *opacityAnim = new QPropertyAnimation(m_SystemFilterKeyPopupFrame, "windowOpacity");
+    opacityAnim->setDuration(500);
+    opacityAnim->setStartValue(0.0);
+    opacityAnim->setEndValue(1.0);
+    opacityAnim->setEasingCurve(QEasingCurve::OutQuart);
+    opacityAnim->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 void QKeyMapper::handleEnableSystemFilterKeyPopupCheckStateChanged(Qt::CheckState state)

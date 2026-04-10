@@ -1700,8 +1700,6 @@ private:
     bool m_CategoryFilterGuard = false;
     int m_CategoryFilterMenuTabIndex = -1;
 
-    QMenu *m_SystemFilterKeyMenu = Q_NULLPTR;
-    QWidgetAction *m_SystemFilterKeyWidgetAction = Q_NULLPTR;
     QFrame *m_SystemFilterKeyPopupFrame = Q_NULLPTR;
     QCheckBox *m_EnableSystemFilterKeyPopupCheckBox = Q_NULLPTR;
     QCheckBox *m_DisableFilterKeyClickSoundPopupCheckBox = Q_NULLPTR;
