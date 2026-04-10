@@ -1017,6 +1017,7 @@ public:
     static QString getShowWindowPointKey(void);
     static QString getShowScreenPointKey(void);
     static bool getEnableSystemFilterKeyChecked(void);
+    static bool getDisableFilterKeyClickSoundOnEnableChecked(void);
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     static ValidationResult validateCombinationKey(QString &input);
@@ -1352,8 +1353,6 @@ private slots:
 
     void on_themeComboBox_currentIndexChanged(int index);
 
-    void on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state);
-
     void on_sendTextPlainTextEdit_textChanged();
 
     void on_generalAdvancedButton_clicked();
@@ -1467,8 +1466,13 @@ private:
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
     void initCategoryFilterControls(void);
+    void initSystemFilterKeyPopupControls(void);
     void initKeyboardSelectComboBox(void);
     void initMouseSelectComboBox(void);
+    void showSystemFilterKeyPopup(void);
+    void handleEnableSystemFilterKeyPopupCheckStateChanged(Qt::CheckState state);
+    void setEnableSystemFilterKeyCheckedInternal(bool checked);
+    void setDisableFilterKeyClickSoundCheckedInternal(bool checked);
 
     // Category filter toolbutton (QToolButton + QMenu + QWidgetAction) helpers
     void rebuildCategoryFilterMenuForCurrentTab(void);
@@ -1695,6 +1699,12 @@ private:
     QStringList m_CategoryFilterDisplayOrder;
     bool m_CategoryFilterGuard = false;
     int m_CategoryFilterMenuTabIndex = -1;
+
+    QMenu *m_SystemFilterKeyMenu = Q_NULLPTR;
+    QWidgetAction *m_SystemFilterKeyWidgetAction = Q_NULLPTR;
+    QFrame *m_SystemFilterKeyPopupFrame = Q_NULLPTR;
+    QCheckBox *m_EnableSystemFilterKeyPopupCheckBox = Q_NULLPTR;
+    QCheckBox *m_DisableFilterKeyClickSoundPopupCheckBox = Q_NULLPTR;
 
     // Table edit setting popup UI
     QFrame *m_TableEditSettingPopup = Q_NULLPTR;

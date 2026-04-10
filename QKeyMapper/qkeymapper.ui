@@ -1120,7 +1120,7 @@
       </rect>
      </property>
     </widget>
-    <widget class="QCheckBox" name="enableSystemFilterKeyCheckBox">
+    <widget class="QPushButton" name="enableSystemFilterKeyButton">
      <property name="geometry">
       <rect>
        <x>290</x>
@@ -1134,6 +1134,9 @@
      </property>
      <property name="text">
       <string>SystemFilterKey</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
      </property>
     </widget>
     <widget class="QPushButton" name="mappingAdvancedSettingButton">

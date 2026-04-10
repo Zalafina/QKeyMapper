@@ -762,6 +762,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initCombinationKeyLineEdit();
     initInputDeviceSelectComboBoxes();
     initCategoryFilterControls();
+    initSystemFilterKeyPopupControls();
     initPopupMessage();
     initPushLevelSlider();
 
@@ -2660,7 +2661,9 @@ void QKeyMapper::setWindowsFilterKeysEnabled(bool enable)
     if (filterKeys.dwFlags & FKF_AVAILABLE) {
         if (enable) {
             filterKeys.dwFlags |= FKF_FILTERKEYSON;
-            filterKeys.dwFlags &= ~FKF_CLICKON;
+            if (getDisableFilterKeyClickSoundOnEnableChecked()) {
+                filterKeys.dwFlags &= ~FKF_CLICKON;
+            }
         } else {
             filterKeys.dwFlags &= ~FKF_FILTERKEYSON;
         }
@@ -7400,7 +7403,22 @@ QString QKeyMapper::getShowScreenPointKey()
 
 bool QKeyMapper::getEnableSystemFilterKeyChecked()
 {
-    return getInstance()->ui->enableSystemFilterKeyCheckBox->isChecked();
+    QKeyMapper *instance = getInstance();
+    if (!instance || !instance->m_EnableSystemFilterKeyPopupCheckBox) {
+        return ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT;
+    }
+
+    return instance->m_EnableSystemFilterKeyPopupCheckBox->isChecked();
+}
+
+bool QKeyMapper::getDisableFilterKeyClickSoundOnEnableChecked()
+{
+    QKeyMapper *instance = getInstance();
+    if (!instance || !instance->m_DisableFilterKeyClickSoundPopupCheckBox) {
+        return DISABLE_FILTERKEY_CLICKSOUND_ON_ENABLE_DEFAULT;
+    }
+
+    return instance->m_DisableFilterKeyClickSoundPopupCheckBox->isChecked();
 }
 
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
@@ -14194,7 +14212,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
 
     settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
-    settingFile.setValue(saveSettingSelectStr+ENABLESYSTEMFILTERKEY_CHECKED, ui->enableSystemFilterKeyCheckBox->isChecked());
+    settingFile.setValue(saveSettingSelectStr+ENABLESYSTEMFILTERKEY_CHECKED, getEnableSystemFilterKeyChecked());
+    settingFile.setValue(saveSettingSelectStr+DISABLEFILTERKEYCLICKSOUND_CHECKED, getDisableFilterKeyClickSoundOnEnableChecked());
     settingFile.setValue(saveSettingSelectStr+SENDTOSAMEWINDOWS_CHECKED, ui->sendToSameTitleWindowsCheckBox->isChecked());
     settingFile.setValue(saveSettingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED, m_MappingAdvancedDialog->getAcceptVirtualGamepadInput());
     settingFile.setValue(saveSettingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED, m_MappingAdvancedDialog->getProcessIconAsTrayIcon());
@@ -17643,9 +17662,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
-            ui->enableSystemFilterKeyCheckBox->blockSignals(true);
-            ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
-            ui->enableSystemFilterKeyCheckBox->blockSignals(false);
+            setEnableSystemFilterKeyCheckedInternal(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
+            setDisableFilterKeyClickSoundCheckedInternal(DISABLE_FILTERKEY_CLICKSOUND_ON_ENABLE_DEFAULT);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
             m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
             m_MapProcessInfo = MAP_PROCESSINFO();
@@ -18323,23 +18341,27 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         ui->autoStartMappingCheckBox->setCheckState(Qt::Checked);
     }
 
-    ui->enableSystemFilterKeyCheckBox->blockSignals(true);
     if (true == settingFile.contains(settingSelectStr+ENABLESYSTEMFILTERKEY_CHECKED)){
         bool enableSystemFilterKeyChecked = settingFile.value(settingSelectStr+ENABLESYSTEMFILTERKEY_CHECKED).toBool();
-        if (true == enableSystemFilterKeyChecked) {
-            ui->enableSystemFilterKeyCheckBox->setChecked(true);
-        }
-        else {
-            ui->enableSystemFilterKeyCheckBox->setChecked(false);
-        }
+        setEnableSystemFilterKeyCheckedInternal(enableSystemFilterKeyChecked);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "EnableSystemFilterKeyChecked =" << enableSystemFilterKeyChecked;
 #endif
     }
     else {
-        ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
+        setEnableSystemFilterKeyCheckedInternal(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
     }
-    ui->enableSystemFilterKeyCheckBox->blockSignals(false);
+
+    if (true == settingFile.contains(settingSelectStr+DISABLEFILTERKEYCLICKSOUND_CHECKED)) {
+        bool disableFilterKeyClickSoundChecked = settingFile.value(settingSelectStr+DISABLEFILTERKEYCLICKSOUND_CHECKED).toBool();
+        setDisableFilterKeyClickSoundCheckedInternal(disableFilterKeyClickSoundChecked);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "DisableFilterKeyClickSoundChecked =" << disableFilterKeyClickSoundChecked;
+#endif
+    }
+    else {
+        setDisableFilterKeyClickSoundCheckedInternal(DISABLE_FILTERKEY_CLICKSOUND_ON_ENABLE_DEFAULT);
+    }
 
     if (true == settingFile.contains(settingSelectStr+SENDTOSAMEWINDOWS_CHECKED)){
         bool sendToSameWindowsChecked = settingFile.value(settingSelectStr+SENDTOSAMEWINDOWS_CHECKED).toBool();
@@ -18653,9 +18675,8 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
 
     ui->autoStartMappingCheckBox->setCheckState(Qt::Checked);
-    ui->enableSystemFilterKeyCheckBox->blockSignals(true);
-    ui->enableSystemFilterKeyCheckBox->setChecked(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
-    ui->enableSystemFilterKeyCheckBox->blockSignals(false);
+    setEnableSystemFilterKeyCheckedInternal(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
+    setDisableFilterKeyClickSoundCheckedInternal(DISABLE_FILTERKEY_CLICKSOUND_ON_ENABLE_DEFAULT);
     ui->sendToSameTitleWindowsCheckBox->setChecked(false);
     m_MappingAdvancedDialog->setAcceptVirtualGamepadInput(false);
     m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
@@ -24604,6 +24625,163 @@ void QKeyMapper::initInputDeviceSelectComboBoxes()
     initMouseSelectComboBox();
 }
 
+void QKeyMapper::initSystemFilterKeyPopupControls()
+{
+    if (!ui->enableSystemFilterKeyButton || m_SystemFilterKeyMenu) {
+        return;
+    }
+
+    m_SystemFilterKeyMenu = new QMenu(ui->enableSystemFilterKeyButton);
+    m_SystemFilterKeyWidgetAction = new QWidgetAction(m_SystemFilterKeyMenu);
+    m_SystemFilterKeyPopupFrame = new QFrame(m_SystemFilterKeyMenu);
+    m_SystemFilterKeyPopupFrame->setFrameShape(QFrame::Box);
+    m_SystemFilterKeyPopupFrame->setFrameShadow(QFrame::Plain);
+
+    QVBoxLayout *layout = new QVBoxLayout(m_SystemFilterKeyPopupFrame);
+    layout->setContentsMargins(8, 8, 8, 8);
+    layout->setSpacing(6);
+
+    m_EnableSystemFilterKeyPopupCheckBox = new QCheckBox(tr("Enable System FilterKeys"), m_SystemFilterKeyPopupFrame);
+    m_DisableFilterKeyClickSoundPopupCheckBox = new QCheckBox(tr("Turn off key sounds when enabling FilterKeys"), m_SystemFilterKeyPopupFrame);
+
+    layout->addWidget(m_EnableSystemFilterKeyPopupCheckBox);
+    layout->addWidget(m_DisableFilterKeyClickSoundPopupCheckBox);
+
+    m_SystemFilterKeyPopupFrame->setMinimumWidth(qMax(ui->enableSystemFilterKeyButton->width(), 220));
+    m_SystemFilterKeyWidgetAction->setDefaultWidget(m_SystemFilterKeyPopupFrame);
+    m_SystemFilterKeyMenu->addAction(m_SystemFilterKeyWidgetAction);
+
+    setEnableSystemFilterKeyCheckedInternal(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
+    setDisableFilterKeyClickSoundCheckedInternal(DISABLE_FILTERKEY_CLICKSOUND_ON_ENABLE_DEFAULT);
+
+    QObject::connect(ui->enableSystemFilterKeyButton, &QPushButton::clicked, this, &QKeyMapper::showSystemFilterKeyPopup);
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    QObject::connect(m_EnableSystemFilterKeyPopupCheckBox, &QCheckBox::checkStateChanged, this, &QKeyMapper::handleEnableSystemFilterKeyPopupCheckStateChanged);
+#else
+    QObject::connect(m_EnableSystemFilterKeyPopupCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+        handleEnableSystemFilterKeyPopupCheckStateChanged(static_cast<Qt::CheckState>(state));
+    });
+#endif
+}
+
+void QKeyMapper::showSystemFilterKeyPopup()
+{
+    if (!ui->enableSystemFilterKeyButton || !m_SystemFilterKeyMenu || !m_SystemFilterKeyWidgetAction || !m_SystemFilterKeyPopupFrame) {
+        return;
+    }
+
+    m_SystemFilterKeyPopupFrame->setMinimumWidth(qMax(ui->enableSystemFilterKeyButton->width(), 220));
+    m_SystemFilterKeyPopupFrame->updateGeometry();
+
+    refreshMenuWidgetActionGeometry(m_SystemFilterKeyMenu, m_SystemFilterKeyWidgetAction, m_SystemFilterKeyPopupFrame);
+    m_SystemFilterKeyMenu->ensurePolished();
+    m_SystemFilterKeyMenu->adjustSize();
+
+    QSize popupSize = m_SystemFilterKeyMenu->sizeHint();
+    const QPoint buttonTopLeft = ui->enableSystemFilterKeyButton->mapToGlobal(QPoint(0, 0));
+    const QPoint buttonTopRight = ui->enableSystemFilterKeyButton->mapToGlobal(QPoint(ui->enableSystemFilterKeyButton->width(), 0));
+    const QPoint buttonBottomLeft = ui->enableSystemFilterKeyButton->mapToGlobal(QPoint(0, ui->enableSystemFilterKeyButton->height()));
+    QPoint pos = buttonTopRight;
+
+    QScreen *screen = QGuiApplication::screenAt(buttonTopLeft);
+    if (!screen) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        screen = ui->enableSystemFilterKeyButton->screen();
+#else
+        QWidget *topLevel = ui->enableSystemFilterKeyButton->window();
+        screen = (topLevel && topLevel->windowHandle())
+            ? topLevel->windowHandle()->screen()
+            : QGuiApplication::primaryScreen();
+#endif
+    }
+
+    const QRect avail = screen ? screen->availableGeometry() : QRect();
+    if (screen && !avail.isEmpty()) {
+        const int kMargin = 8;
+        QRect availInner = avail.adjusted(kMargin, kMargin, -kMargin, -kMargin);
+        if (availInner.isEmpty()) {
+            availInner = avail;
+        }
+
+        const int rightX = buttonTopRight.x();
+        const int leftX = buttonTopLeft.x() - popupSize.width();
+        const int sameY = buttonTopLeft.y();
+        const int belowY = buttonBottomLeft.y();
+        const int aboveY = buttonTopLeft.y() - popupSize.height();
+
+        const bool fitsRight = (rightX + popupSize.width()) <= (availInner.right() + 1);
+        const bool fitsLeft = leftX >= availInner.left();
+        const bool fitsBelow = (belowY + popupSize.height()) <= (availInner.bottom() + 1);
+        const bool fitsAbove = aboveY >= availInner.top();
+
+        if (fitsRight) {
+            pos = QPoint(rightX, sameY);
+        }
+        else if (fitsLeft) {
+            pos = QPoint(leftX, sameY);
+        }
+        else if (fitsBelow) {
+            pos = QPoint(buttonTopLeft.x(), belowY);
+        }
+        else if (fitsAbove) {
+            pos = QPoint(buttonTopLeft.x(), aboveY);
+        }
+        else {
+            pos = QPoint(buttonTopLeft.x(), sameY);
+        }
+
+        pos.setX(qBound(availInner.left(), pos.x(), availInner.right() - popupSize.width() + 1));
+        pos.setY(qBound(availInner.top(), pos.y(), availInner.bottom() - popupSize.height() + 1));
+    }
+
+    m_SystemFilterKeyMenu->popup(pos);
+}
+
+void QKeyMapper::handleEnableSystemFilterKeyPopupCheckStateChanged(Qt::CheckState state)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[SystemFilterKeyPopup] Check state changed to" << state;
+#endif
+
+    if (state != Qt::Unchecked || !m_EnableSystemFilterKeyPopupCheckBox) {
+        return;
+    }
+
+    QString message = tr("QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?");
+    QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+                                                               QMessageBox::Yes | QMessageBox::No,
+                                                               QMessageBox::No);
+    if (reply != QMessageBox::Yes) {
+        // Use QTimer::singleShot to defer the state change to avoid signal recursion.
+        QTimer::singleShot(0, this, [this]() {
+            setEnableSystemFilterKeyCheckedInternal(true);
+        });
+    }
+}
+
+void QKeyMapper::setEnableSystemFilterKeyCheckedInternal(bool checked)
+{
+    if (!m_EnableSystemFilterKeyPopupCheckBox) {
+        return;
+    }
+
+    m_EnableSystemFilterKeyPopupCheckBox->blockSignals(true);
+    m_EnableSystemFilterKeyPopupCheckBox->setChecked(checked);
+    m_EnableSystemFilterKeyPopupCheckBox->blockSignals(false);
+}
+
+void QKeyMapper::setDisableFilterKeyClickSoundCheckedInternal(bool checked)
+{
+    if (!m_DisableFilterKeyClickSoundPopupCheckBox) {
+        return;
+    }
+
+    m_DisableFilterKeyClickSoundPopupCheckBox->blockSignals(true);
+    m_DisableFilterKeyClickSoundPopupCheckBox->setChecked(checked);
+    m_DisableFilterKeyClickSoundPopupCheckBox->blockSignals(false);
+}
+
 void QKeyMapper::initCategoryFilterControls()
 {
     // New multi-select filter UI: QToolButton + QMenu + QWidgetAction + QCheckBox list
@@ -26040,7 +26218,13 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->brakeThresholdLabel->setText(tr("BrakeValue"));
     ui->accelThresholdLabel->setText(tr("AccelValue"));
     ui->autoStartMappingCheckBox->setText(tr("Auto Match Foreground"));
-    ui->enableSystemFilterKeyCheckBox->setText(tr("SystemFilterKey"));
+    ui->enableSystemFilterKeyButton->setText(tr("SystemFilterKey"));
+    if (m_EnableSystemFilterKeyPopupCheckBox) {
+        m_EnableSystemFilterKeyPopupCheckBox->setText(tr("Enable System FilterKeys"));
+    }
+    if (m_DisableFilterKeyClickSoundPopupCheckBox) {
+        m_DisableFilterKeyClickSoundPopupCheckBox->setText(tr("Turn off key sounds when enabling FilterKeys"));
+    }
     ui->sendToSameTitleWindowsCheckBox->setText(tr("Send To Same Windows"));
     // ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
     ui->autoStartupCheckBox->setText(tr("Auto Startup"));
@@ -34679,29 +34863,6 @@ void QKeyMapper::on_themeComboBox_currentIndexChanged(int index)
         updateKeyMappingTabWidgetTabDisplay(index);
     }
     refreshAllKeyMappingTabWidget();
-}
-
-void QKeyMapper::on_enableSystemFilterKeyCheckBox_checkStateChanged(const Qt::CheckState &state)
-{
-    Q_UNUSED(state)
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[enableSystemFilterKeyCheckBox] Check state changed to" << state;
-#endif
-
-    if (!ui->enableSystemFilterKeyCheckBox->isChecked()) {
-        QString message = tr("QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?");
-        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
-                                                                   QMessageBox::Yes | QMessageBox::No,
-                                                                   QMessageBox::No);
-        if (reply != QMessageBox::Yes) {
-            // Use QTimer::singleShot to defer the state change to avoid signal recursion
-            QTimer::singleShot(0, this, [this]() {
-                ui->enableSystemFilterKeyCheckBox->blockSignals(true);
-                ui->enableSystemFilterKeyCheckBox->setChecked(true);
-                ui->enableSystemFilterKeyCheckBox->blockSignals(false);
-            });
-        }
-    }
 }
 
 void QKeyMapper::on_sendTextPlainTextEdit_textChanged()

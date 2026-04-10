@@ -180,6 +180,7 @@ namespace QKeyMapperConstants {
 #else
     inline constexpr bool ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT  = false;
 #endif
+    inline constexpr bool DISABLE_FILTERKEY_CLICKSOUND_ON_ENABLE_DEFAULT = true;
 
     // Define match type enumeration
     enum class WindowInfoMatchType : int {
@@ -1248,6 +1249,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char GRIP_THRESHOLD_ACCEL[] = "GripThresholdAccel";
     inline constexpr const char AUTOSTARTMAPPING_CHECKED[] = "AutoStartMappingChecked";
     inline constexpr const char ENABLESYSTEMFILTERKEY_CHECKED[] = "EnableSystemFilterKeyChecked";
+    inline constexpr const char DISABLEFILTERKEYCLICKSOUND_CHECKED[] = "DisableFilterKeyClickSoundChecked";
     inline constexpr const char SENDTOSAMEWINDOWS_CHECKED[] = "SendToSameWindowsChecked";
     inline constexpr const char ACCEPTVIRTUALGAMEPADINPUT_CHECKED[] = "AcceptVirtualGamdpadInputChecked";
     inline constexpr const char PROCESSICON_AS_TRAYICON_CHECKED[] = "ProcessIconAsTrayIconChecked";
