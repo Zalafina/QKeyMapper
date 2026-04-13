@@ -25,6 +25,7 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int bu
     QHBoxLayout *layout = new QHBoxLayout(this);
     layout->addWidget(colorLabel);
     layout->addWidget(colorButton);
+    layout->addStretch();
 
     // Connect the button click signal to the slot
     connect(colorButton, &QPushButton::clicked, this, &ColorPickerWidget::onPickColor);
