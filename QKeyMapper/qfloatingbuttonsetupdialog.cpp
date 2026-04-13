@@ -9,11 +9,25 @@
 
 using namespace QKeyMapperConstants;
 
+namespace {
+
+QString sanitizeFloatingButtonMousePassThroughSwitchKey(const QString &switchKey)
+{
+    if (switchKey == FUNCTION_KEY_NONE || QKeyMapper_Worker::MultiKeyboardInputList.contains(switchKey)) {
+        return switchKey;
+    }
+
+    return FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT;
+}
+
+}
+
 QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     : QDialog(parent)
     , m_ItemRow(-1)
     , m_isLoading(false)
     , m_hasBackup(false)
+    , m_BackupMousePassThroughSwitchKey(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT)
     , m_FontFamily()
     , m_EnableCheckBox(new QCheckBox(this))
     , m_LabelTextLabel(new QLabel(this))
@@ -22,7 +36,10 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_ShowToolTipCheckBox(new QCheckBox(this))
     , m_SyncPressedLockedStateCheckBox(new QCheckBox(this))
     , m_AlwaysOnTopCheckBox(new QCheckBox(this))
+    , m_MousePassThroughCheckBox(new QCheckBox(this))
     , m_DragToMoveCheckBox(new QCheckBox(this))
+    , m_MousePassThroughSwitchKeyLabel(new QLabel(this))
+    , m_MousePassThroughSwitchKeyComboBox(new QComboBox(this))
     , m_WidthLabel(new QLabel(this))
     , m_HeightLabel(new QLabel(this))
     , m_FontSizeLabel(new QLabel(this))
@@ -73,8 +90,23 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     }
     m_OffsetXSpinBox->setRange(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX);
     m_OffsetYSpinBox->setRange(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX);
+    m_MousePassThroughSwitchKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
+    m_MousePassThroughSwitchKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
+    m_MousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
 
     setupReferencePointComboBox();
+
+    QWidget *mousePassThroughWidget = new QWidget(this);
+    QHBoxLayout *mousePassThroughLayout = new QHBoxLayout(mousePassThroughWidget);
+    mousePassThroughLayout->setContentsMargins(0, 0, 0, 0);
+    mousePassThroughLayout->setSpacing(8);
+    mousePassThroughLayout->addWidget(m_MousePassThroughCheckBox);
+    // mousePassThroughLayout->addStretch();
+    mousePassThroughLayout->addWidget(m_MousePassThroughSwitchKeyLabel);
+    mousePassThroughLayout->addWidget(m_MousePassThroughSwitchKeyComboBox);
+    m_MousePassThroughCheckBox->setFixedWidth(140);
+    m_MousePassThroughSwitchKeyComboBox->setMinimumWidth(130);
+    m_MousePassThroughSwitchKeyLabel->setFixedWidth(120);
 
     QGroupBox *basicGroup = new QGroupBox(this);
     QFormLayout *basicForm = new QFormLayout(basicGroup);
@@ -84,6 +116,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     basicForm->addRow(m_ShowToolTipCheckBox);
     basicForm->addRow(m_SyncPressedLockedStateCheckBox);
     basicForm->addRow(m_AlwaysOnTopCheckBox);
+    basicForm->addRow(mousePassThroughWidget);
     basicForm->addRow(m_DragToMoveCheckBox);
 
     QGroupBox *styleGroup = new QGroupBox(this);
@@ -159,6 +192,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_ReferencePointLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetXLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetYLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_MousePassThroughSwitchKeyLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_FontFamilyDefaultButton->setFixedWidth(75);
     m_FontFamilyDefaultButton->setAutoDefault(false);
     m_FontFamilyDefaultButton->setDefault(false);
@@ -182,14 +216,17 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     connect(m_ShowToolTipCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_SyncPressedLockedStateCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_MousePassThroughCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_DragToMoveCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #else
     connect(m_ShowOnStartCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_ShowToolTipCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_SyncPressedLockedStateCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_MousePassThroughCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_DragToMoveCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #endif
+    connect(m_MousePassThroughSwitchKeyComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_WidthSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_HeightSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_FontSizeSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
@@ -222,6 +259,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     syncFontFamilyControls();
 
     setUILanguage(QKeyMapper::getLanguageIndex());
+    adjustSize();
+    setMinimumWidth(qMax(minimumSizeHint().width(), sizeHint().width()));
 }
 
 QFloatingButtonSetupDialog::~QFloatingButtonSetupDialog() = default;
@@ -237,6 +276,11 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_ShowToolTipCheckBox->setText(tr("Show Tooltip"));
     m_SyncPressedLockedStateCheckBox->setText(tr("Sync Pressed State"));
     m_AlwaysOnTopCheckBox->setText(tr("Always On Top"));
+    m_MousePassThroughCheckBox->setText(tr("MousePassThrough"));
+    m_MousePassThroughSwitchKeyLabel->setText(tr("MouseSwitchKey"));
+    if (m_MousePassThroughSwitchKeyComboBox->count() > FUNCTION_KEY_NONE_INDEX) {
+        m_MousePassThroughSwitchKeyComboBox->setItemText(FUNCTION_KEY_NONE_INDEX, tr("None"));
+    }
     m_DragToMoveCheckBox->setText(tr("Enable Drag to Move"));
     m_DragToMoveCheckBox->setToolTip(tr("Supports Ctrl+drag and context menu Move."));
 
@@ -329,6 +373,15 @@ void QFloatingButtonSetupDialog::showEvent(QShowEvent *event)
         m_hasBackup = false;
     }
 
+    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        m_BackupMousePassThroughSwitchKey = sanitizeFloatingButtonMousePassThroughSwitchKey(
+            QKeyMapper::s_KeyMappingTabInfoList.at(currentTabIndex).FloatingWindow_MousePassThroughSwitchKey);
+    }
+    else {
+        m_BackupMousePassThroughSwitchKey = FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT;
+    }
+
     QDialog::showEvent(event);
 }
 
@@ -361,6 +414,12 @@ void QFloatingButtonSetupDialog::onRevertButtonClicked()
     }
 
     (*QKeyMapper::KeyMappingDataList)[m_ItemRow] = m_BackupData;
+
+    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        QKeyMapper::s_KeyMappingTabInfoList[currentTabIndex].FloatingWindow_MousePassThroughSwitchKey = m_BackupMousePassThroughSwitchKey;
+    }
+
     loadFromCurrentItem();
     emit settingsApplied();
 }
@@ -391,7 +450,22 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_ShowToolTipCheckBox->setChecked(keymapdata.FloatingButton_ShowToolTip);
     m_SyncPressedLockedStateCheckBox->setChecked(keymapdata.FloatingButton_SyncPressedLockedState);
     m_AlwaysOnTopCheckBox->setChecked(keymapdata.FloatingButton_AlwaysOnTop);
+    m_MousePassThroughCheckBox->setChecked(keymapdata.FloatingButton_MousePassThrough);
     m_DragToMoveCheckBox->setChecked(keymapdata.FloatingButton_DragToMove);
+
+    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    const QString switchKey = (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size())
+        ? sanitizeFloatingButtonMousePassThroughSwitchKey(QKeyMapper::s_KeyMappingTabInfoList.at(currentTabIndex).FloatingWindow_MousePassThroughSwitchKey)
+        : QString(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
+    if (switchKey == FUNCTION_KEY_NONE) {
+        m_MousePassThroughSwitchKeyComboBox->setCurrentIndex(FUNCTION_KEY_NONE_INDEX);
+    }
+    else if (QKeyMapper_Worker::MultiKeyboardInputList.contains(switchKey)) {
+        m_MousePassThroughSwitchKeyComboBox->setCurrentText(switchKey);
+    }
+    else {
+        m_MousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
+    }
 
     m_WidthSpinBox->setValue(keymapdata.FloatingButton_Width);
     m_HeightSpinBox->setValue(keymapdata.FloatingButton_Height);
@@ -440,7 +514,19 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_ShowToolTip = m_ShowToolTipCheckBox->isChecked();
     keymapdata.FloatingButton_SyncPressedLockedState = m_SyncPressedLockedStateCheckBox->isChecked();
     keymapdata.FloatingButton_AlwaysOnTop = m_AlwaysOnTopCheckBox->isChecked();
+    keymapdata.FloatingButton_MousePassThrough = m_MousePassThroughCheckBox->isChecked();
     keymapdata.FloatingButton_DragToMove = m_DragToMoveCheckBox->isChecked();
+
+    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        if (m_MousePassThroughSwitchKeyComboBox->currentIndex() == FUNCTION_KEY_NONE_INDEX) {
+            QKeyMapper::s_KeyMappingTabInfoList[currentTabIndex].FloatingWindow_MousePassThroughSwitchKey = FUNCTION_KEY_NONE;
+        }
+        else {
+            QKeyMapper::s_KeyMappingTabInfoList[currentTabIndex].FloatingWindow_MousePassThroughSwitchKey =
+                sanitizeFloatingButtonMousePassThroughSwitchKey(m_MousePassThroughSwitchKeyComboBox->currentText());
+        }
+    }
 
     keymapdata.FloatingButton_Width = m_WidthSpinBox->value();
     keymapdata.FloatingButton_Height = m_HeightSpinBox->value();

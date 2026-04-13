@@ -11862,7 +11862,7 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
             if ((QKeyMapper::KEYMAP_MAPPING_GLOBAL == QKeyMapper::getInstance()->m_KeyMapStatus
                 || QKeyMapper::KEYMAP_MAPPING_MATCHED == QKeyMapper::getInstance()->m_KeyMapStatus)
                 && (keycodeString == mousePassThroughSwitchKey)) {
-                emit QKeyMapper::getInstance()->switchFloatingWindowMousePassThrough_Signal();
+                emit QKeyMapper::getInstance()->switchMousePassThroughUnderCursor_Signal();
             }
             else if (keycodeString == QKeyMapper::getShowScreenPointKey()) {
                     if (!show_screenpoints) {
@@ -12756,7 +12756,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                 if ((QKeyMapper::KEYMAP_MAPPING_GLOBAL == QKeyMapper::getInstance()->m_KeyMapStatus
                     || QKeyMapper::KEYMAP_MAPPING_MATCHED == QKeyMapper::getInstance()->m_KeyMapStatus)
                     && (keycodeString == QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThroughSwitchKey)) {
-                    emit QKeyMapper::getInstance()->switchFloatingWindowMousePassThrough_Signal();
+                    emit QKeyMapper::getInstance()->switchMousePassThroughUnderCursor_Signal();
                 }
                 else if (keycodeString == QKeyMapper::getShowScreenPointKey()) {
                         if (!show_screenpoints) {

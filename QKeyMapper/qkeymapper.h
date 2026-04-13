@@ -1055,6 +1055,7 @@ signals:
     void showCrosshairStop_Signal(int rowindex, const QString &crosshair_keystr);
     void showFloatingButtonStart_Signal(int rowindex, const QString &floatingbutton_keystr);
     void showFloatingButtonStop_Signal(int rowindex, const QString &floatingbutton_keystr);
+    void switchMousePassThroughUnderCursor_Signal(void);
     void switchFloatingWindowMousePassThrough_Signal(void);
     void updateFakerInputStatus_Signal(void);
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -1122,6 +1123,8 @@ public slots:
     void showFloatingButtonStart(int rowindex, const QString &floatingbutton_keystr);
 
     void showFloatingButtonStop(int rowindex, const QString &floatingbutton_keystr);
+
+    void onSwitchMousePassThroughUnderCursor(void);
 
     void onKeyMappingTabWidgetTabBarDoubleClicked(int index);
 
@@ -1380,7 +1383,9 @@ private:
     void restoreCategoryFilterState(const QStringList& filters, bool showState);
     QPoint floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const;
     int findFloatingButtonRowIndexByOriginalKey(const QString &originalKey) const;
+    int findHoveredFloatingButtonRow(const QPoint &globalPos) const;
     bool setFloatingButtonVisibility(int rowindex, bool visible);
+    bool setFloatingButtonMousePassThrough(int rowindex, bool enabled);
     bool isFloatingButtonLocalPressed(int rowindex) const;
     void setFloatingButtonLocalPressed(int rowindex, bool pressed);
     void resolveFloatingButtonVisualState(int rowindex, const MAP_KEYDATA &keymapdata,

@@ -56,6 +56,7 @@ private:
     bool m_isLoading;
     bool m_hasBackup;
     MAP_KEYDATA m_BackupData;
+    QString m_BackupMousePassThroughSwitchKey;
     QString m_FontFamily;
 
     QCheckBox *m_EnableCheckBox;
@@ -65,7 +66,11 @@ private:
     QCheckBox *m_ShowToolTipCheckBox;
     QCheckBox *m_SyncPressedLockedStateCheckBox;
     QCheckBox *m_AlwaysOnTopCheckBox;
+    QCheckBox *m_MousePassThroughCheckBox;
     QCheckBox *m_DragToMoveCheckBox;
+
+    QLabel *m_MousePassThroughSwitchKeyLabel;
+    QComboBox *m_MousePassThroughSwitchKeyComboBox;
 
     QLabel *m_WidthLabel;
     QLabel *m_HeightLabel;

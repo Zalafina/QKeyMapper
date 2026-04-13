@@ -190,6 +190,7 @@ typedef struct MAP_KEYDATA
     bool FloatingButton_ShowToolTip;
     bool FloatingButton_SyncPressedLockedState;
     bool FloatingButton_AlwaysOnTop;
+    bool FloatingButton_MousePassThrough;
     int FloatingButton_ReferencePoint;
     int FloatingButton_X_Offset;
     int FloatingButton_Y_Offset;
@@ -257,6 +258,7 @@ typedef struct MAP_KEYDATA
     , FloatingButton_ShowToolTip(QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT)
     , FloatingButton_SyncPressedLockedState(QKeyMapperConstants::FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE_DEFAULT)
     , FloatingButton_AlwaysOnTop(QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT)
+    , FloatingButton_MousePassThrough(QKeyMapperConstants::FLOATINGBUTTON_MOUSE_PASSTHROUGH_DEFAULT)
     , FloatingButton_ReferencePoint(QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT)
     , FloatingButton_X_Offset(QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT)
     , FloatingButton_Y_Offset(QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT)
@@ -346,6 +348,7 @@ typedef struct MAP_KEYDATA
         FloatingButton_ShowToolTip = QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT;
         FloatingButton_SyncPressedLockedState = QKeyMapperConstants::FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE_DEFAULT;
         FloatingButton_AlwaysOnTop = QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT;
+        FloatingButton_MousePassThrough = QKeyMapperConstants::FLOATINGBUTTON_MOUSE_PASSTHROUGH_DEFAULT;
         FloatingButton_ReferencePoint = QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
         FloatingButton_X_Offset = QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT;
         FloatingButton_Y_Offset = QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT;
@@ -411,6 +414,7 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_ShowToolTip == other.FloatingButton_ShowToolTip)
                 && (FloatingButton_SyncPressedLockedState == other.FloatingButton_SyncPressedLockedState)
                 && (FloatingButton_AlwaysOnTop == other.FloatingButton_AlwaysOnTop)
+                && (FloatingButton_MousePassThrough == other.FloatingButton_MousePassThrough)
                 && (FloatingButton_ReferencePoint == other.FloatingButton_ReferencePoint)
                 && (FloatingButton_X_Offset == other.FloatingButton_X_Offset)
                 && (FloatingButton_Y_Offset == other.FloatingButton_Y_Offset)
@@ -481,6 +485,7 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_ShowToolTip:" << data.FloatingButton_ShowToolTip
                         << ", FloatingButton_SyncPressedLockedState:" << data.FloatingButton_SyncPressedLockedState
                         << ", FloatingButton_AlwaysOnTop:" << data.FloatingButton_AlwaysOnTop
+                        << ", FloatingButton_MousePassThrough:" << data.FloatingButton_MousePassThrough
                         << ", FloatingButton_ReferencePoint:" << data.FloatingButton_ReferencePoint
                         << ", FloatingButton_X_Offset:" << data.FloatingButton_X_Offset
                         << ", FloatingButton_Y_Offset:" << data.FloatingButton_Y_Offset

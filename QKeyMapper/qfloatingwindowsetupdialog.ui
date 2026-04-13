@@ -208,9 +208,9 @@
   <widget class="QLabel" name="mousePassThroughSwitchKeyLabel">
    <property name="geometry">
     <rect>
-     <x>155</x>
+     <x>135</x>
      <y>180</y>
-     <width>91</width>
+     <width>111</width>
      <height>21</height>
     </rect>
    </property>
