@@ -64,6 +64,7 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     void contextMenuEvent(QContextMenuEvent *event) override;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private slots:
     void onVButtonPressed(int index);
@@ -84,6 +85,12 @@ private:
     void    applyButtonStyle(QToolButton *button, bool locked);
     QString extractButtonLabel(const QString &vbuttonKey) const;
     QPoint  calculateReferenceOrigin(int referencePoint) const;
+    void    showPanelContextMenu(const QPoint &globalPos);
+    void    beginPanelDrag(const QPoint &globalPos, const QPoint &panelLocalPos);
+    void    finishPanelDrag();
+    bool    consumePanelMoveArmedState();
+    void    armPanelMoveState();
+    void    clearPanelMoveState();
     void    recalcOffsets();  // update m_offsetX/Y from current pos() after drag
 
     QWidget        *m_gridContainer = nullptr;
@@ -122,6 +129,7 @@ private:
     // Drag-to-move
     bool   m_dragging   = false;
     QPoint m_dragOffset;
+    bool   m_moveArmed  = false;
 };
 
 #endif // QVBUTTONPANEL_H

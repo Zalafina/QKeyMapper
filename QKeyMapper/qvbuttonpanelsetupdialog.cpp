@@ -115,7 +115,8 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     ui->btnFontFamilyLabel->setText(tr("Font Family"));
 
     ui->alwaysOnTopCheckBox->setText(tr("Always On Top"));
-    ui->dragEnabledCheckBox->setText(tr("Drag Move"));
+    ui->dragEnabledCheckBox->setText(tr("Enable Drag to Move"));
+    ui->dragEnabledCheckBox->setToolTip(tr("Supports Ctrl+drag. Context menu Move is always available."));
     ui->defaultShowCheckBox->setText(tr("Show on Mapping Start"));
 
     ui->referencePointComboBox->setItemText(FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT,       tr("ScreenTopLeft"));

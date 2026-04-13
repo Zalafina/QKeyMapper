@@ -7062,10 +7062,6 @@ void QKeyMapper::armFloatingButtonMoveState(int rowindex)
     }
 
     const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
-    if (!keymapdata.FloatingButton_DragToMove) {
-        return;
-    }
-
     QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
     if (isFloatingButtonMoveArmed(rowindex)) {
         if (button != Q_NULLPTR && button->isVisible()) {
@@ -9934,7 +9930,6 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     QAction *setupAction = contextMenu.addAction(tr("Floating Button Setup"));
                     QAction *saveSettingAction = contextMenu.addAction(tr("Save Setting"));
                     QAction *moveAction = contextMenu.addAction(tr("Move"));
-                    moveAction->setEnabled(keymapdata.FloatingButton_DragToMove);
                     contextMenu.addSeparator();
                     QAction *toggleMousePassThroughAction = contextMenu.addAction(keymapdata.FloatingButton_MousePassThrough ? tr("Disable Mouse Pass Through") : tr("Enable Mouse Pass Through"));
                     QAction *toggleTopmostAction = contextMenu.addAction(keymapdata.FloatingButton_AlwaysOnTop ? tr("Disable Always On Top") : tr("Enable Always On Top"));
@@ -9998,8 +9993,8 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     && rowindex >= 0 && rowindex < QKeyMapper::KeyMappingDataList->size()) {
                     const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
                     const bool dragFromMoveAction = isFloatingButtonMoveArmed(rowindex);
-                    if (keymapdata.FloatingButton_DragToMove
-                        && ((mouseEvent->modifiers() & Qt::ControlModifier) || dragFromMoveAction)) {
+                    if (dragFromMoveAction
+                        || (keymapdata.FloatingButton_DragToMove && (mouseEvent->modifiers() & Qt::ControlModifier))) {
                         if (dragFromMoveAction) {
                             (void)consumeFloatingButtonMoveArmedState(rowindex);
                         }
@@ -31700,7 +31695,7 @@ void QFloatingIconWindow::mouseDoubleClickEvent(QMouseEvent *event)
 void QFloatingIconWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        if (isInResizeHandle(event->pos())) {
+        if (isInResizeHandle(QKeyMapperQtCompat::mouseEventLocalPos(event))) {
             // Start resizing
             m_Resizing = true;
             m_ResizeStartSize = size();
@@ -31775,7 +31770,7 @@ void QFloatingIconWindow::mouseMoveEvent(QMouseEvent *event)
         setCursor(Qt::ClosedHandCursor);
     } else {
         // Update cursor based on position when not dragging or resizing
-        updateCursorForPosition(event->pos());
+        updateCursorForPosition(QKeyMapperQtCompat::mouseEventLocalPos(event));
     }
 
     QWidget::mouseMoveEvent(event);
@@ -31811,7 +31806,7 @@ void QFloatingIconWindow::mouseReleaseEvent(QMouseEvent *event)
         m_Resizing = false;
 
         // After releasing mouse button, update cursor based on current position
-        updateCursorForPosition(event->pos());
+        updateCursorForPosition(QKeyMapperQtCompat::mouseEventLocalPos(event));
     }
     QWidget::mouseReleaseEvent(event);
 }

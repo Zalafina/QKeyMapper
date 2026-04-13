@@ -5,6 +5,7 @@
 
 #include <QPainter>
 #include <QScrollBar>
+#include <QToolTip>
 
 using namespace QKeyMapperConstants;
 
@@ -33,6 +34,12 @@ QString makeVButtonStyleSheet(const QColor &buttonColor, const QColor &pressedCo
                .arg(visibleColor.name(QColor::HexArgb),
                     textColor.name(QColor::HexArgb),
                     pressedColor.name(QColor::HexArgb)) + tooltipRule;
+}
+
+QString vButtonPanelMoveHintText()
+{
+    return QCoreApplication::translate("QVButtonPanel",
+                                       "Ready to move this VButton panel.\nLeft-drag to move.\nRight-click to cancel.");
 }
 } // namespace
 
@@ -171,6 +178,7 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
         btn->setAutoRaise(false);
         btn->setText(extractButtonLabel(keyName));
         btn->setFixedSize(m_btnWidth, m_btnHeight);
+        btn->installEventFilter(this);
         applyButtonFont(btn);
 
         // Tooltip: No. + SendTiming + MappingKey + KeyUpMapping
@@ -575,46 +583,219 @@ void QVButtonPanel::recalcOffsets()
     m_offsetY = pos().y() - origin.y();
 }
 
+void QVButtonPanel::showPanelContextMenu(const QPoint &globalPos)
+{
+    clearPanelMoveState();
+
+    QMenu menu(this);
+    QAction *setupAction = menu.addAction(QObject::tr("VButton Panel Setup"));
+    QAction *saveAction  = menu.addAction(QObject::tr("Save Setting"));
+    QAction *moveAction  = menu.addAction(QObject::tr("Move"));
+    QAction *selected    = menu.exec(globalPos);
+
+    if (selected == setupAction) {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->openVButtonPanelSetupDialogFromPanelContextMenu();
+        }
+    }
+    else if (selected == saveAction) {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->saveKeyMapSetting();
+        }
+    }
+    else if (selected == moveAction) {
+        armPanelMoveState();
+    }
+}
+
+void QVButtonPanel::beginPanelDrag(const QPoint &globalPos, const QPoint &panelLocalPos)
+{
+    m_dragging = true;
+    m_dragOffset = panelLocalPos;
+    setCursor(Qt::ClosedHandCursor);
+
+    if (QWidget::mouseGrabber() != this) {
+        grabMouse();
+    }
+
+    move(globalPos - m_dragOffset);
+}
+
+void QVButtonPanel::finishPanelDrag()
+{
+    if (!m_dragging) {
+        return;
+    }
+
+    m_dragging = false;
+    if (QWidget::mouseGrabber() == this) {
+        releaseMouse();
+    }
+    unsetCursor();
+    recalcOffsets();
+}
+
+bool QVButtonPanel::consumePanelMoveArmedState()
+{
+    if (!m_moveArmed) {
+        return false;
+    }
+
+    m_moveArmed = false;
+    QToolTip::hideText();
+    return true;
+}
+
+void QVButtonPanel::armPanelMoveState()
+{
+    if (m_moveArmed) {
+        if (isVisible()) {
+            QToolTip::showText(mapToGlobal(rect().center()),
+                               vButtonPanelMoveHintText(),
+                               this,
+                               rect(),
+                               3000);
+        }
+        return;
+    }
+
+    clearPanelMoveState();
+    m_moveArmed = true;
+
+    if (isVisible()) {
+        QToolTip::showText(mapToGlobal(rect().center()),
+                           vButtonPanelMoveHintText(),
+                           this,
+                           rect(),
+                           3000);
+    }
+}
+
+void QVButtonPanel::clearPanelMoveState()
+{
+    if (!m_moveArmed) {
+        return;
+    }
+
+    m_moveArmed = false;
+    QToolTip::hideText();
+}
+
 // ── Mouse / context menu ──────────────────────────────────────────────────────
 
 void QVButtonPanel::mousePressEvent(QMouseEvent *event)
 {
-    if (m_dragEnabled && event->button() == Qt::LeftButton) {
-        m_dragging   = true;
-        m_dragOffset = event->pos();
+    if (event->button() == Qt::LeftButton) {
+        const bool dragFromMoveAction = m_moveArmed;
+        const bool ctrlDragEnabled = m_dragEnabled && (event->modifiers() & Qt::ControlModifier);
+        if (dragFromMoveAction || ctrlDragEnabled) {
+            if (dragFromMoveAction) {
+                (void)consumePanelMoveArmedState();
+            }
+            else {
+                clearPanelMoveState();
+            }
+
+            beginPanelDrag(QKeyMapperQtCompat::mouseEventGlobalPos(event), QKeyMapperQtCompat::mouseEventLocalPos(event));
+            event->accept();
+            return;
+        }
+
+        if (m_moveArmed) {
+            clearPanelMoveState();
+        }
     }
+
     QWidget::mousePressEvent(event);
 }
 
 void QVButtonPanel::mouseMoveEvent(QMouseEvent *event)
 {
-    if (m_dragEnabled && m_dragging && (event->buttons() & Qt::LeftButton)) {
+    if (m_dragging && (event->buttons() & Qt::LeftButton)) {
         move(QKeyMapperQtCompat::mouseEventGlobalPos(event) - m_dragOffset);
+        event->accept();
+        return;
     }
+
     QWidget::mouseMoveEvent(event);
 }
 
 void QVButtonPanel::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton && m_dragging) {
-        m_dragging = false;
-        // Update offsets so that the timer keeps the panel at the dragged position
-        recalcOffsets();
+        finishPanelDrag();
+        event->accept();
+        return;
     }
+
     QWidget::mouseReleaseEvent(event);
 }
 
 void QVButtonPanel::contextMenuEvent(QContextMenuEvent *event)
 {
-    QMenu menu(this);
-    QAction *setupAction = menu.addAction(QObject::tr("VButton Panel Setup"));
-    QAction *saveAction  = menu.addAction(QObject::tr("Save Setting"));
-    QAction *selected    = menu.exec(event->globalPos());
-    if (selected == setupAction) {
-        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
-            keyMapper->openVButtonPanelSetupDialogFromPanelContextMenu();
+    showPanelContextMenu(event->globalPos());
+    event->accept();
+}
+
+bool QVButtonPanel::eventFilter(QObject *watched, QEvent *event)
+{
+    QToolButton *button = qobject_cast<QToolButton *>(watched);
+    if (button != Q_NULLPTR && m_buttons.contains(button)) {
+        if (event->type() == QEvent::ContextMenu) {
+            QContextMenuEvent *contextMenuEvent = static_cast<QContextMenuEvent*>(event);
+            showPanelContextMenu(contextMenuEvent->globalPos());
+            event->accept();
+            return true;
         }
-    } else if (selected == saveAction) {
-        QKeyMapper::getInstance()->saveKeyMapSetting();
+
+        if (event->type() == QEvent::MouseButtonPress
+            || event->type() == QEvent::MouseButtonDblClick) {
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            if (mouseEvent->button() == Qt::RightButton) {
+                showPanelContextMenu(QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent));
+                event->accept();
+                return true;
+            }
+
+            if (mouseEvent->button() == Qt::LeftButton) {
+                const bool dragFromMoveAction = m_moveArmed;
+                const bool ctrlDragEnabled = m_dragEnabled && (mouseEvent->modifiers() & Qt::ControlModifier);
+                if (dragFromMoveAction || ctrlDragEnabled) {
+                    if (dragFromMoveAction) {
+                        (void)consumePanelMoveArmedState();
+                    }
+                    else {
+                        clearPanelMoveState();
+                    }
+
+                    beginPanelDrag(QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent),
+                                   button->mapTo(this, QKeyMapperQtCompat::mouseEventLocalPos(mouseEvent)));
+                    event->accept();
+                    return true;
+                }
+
+                if (m_moveArmed) {
+                    clearPanelMoveState();
+                }
+            }
+        }
+        else if (event->type() == QEvent::MouseMove) {
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            if (m_dragging && (mouseEvent->buttons() & Qt::LeftButton)) {
+                move(QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent) - m_dragOffset);
+                event->accept();
+                return true;
+            }
+        }
+        else if (event->type() == QEvent::MouseButtonRelease) {
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            if (mouseEvent->button() == Qt::LeftButton && m_dragging) {
+                finishPanelDrag();
+                event->accept();
+                return true;
+            }
+        }
     }
+
+    return QWidget::eventFilter(watched, event);
 }

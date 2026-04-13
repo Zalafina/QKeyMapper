@@ -376,7 +376,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr bool FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT = false;
 
-    inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT[]  = "F11";
+    inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT[]  = "F3";
     // inline constexpr const char FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE[]  = "None";
     // inline constexpr int FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_NONE_INDEX = 0;
 

@@ -55,6 +55,16 @@ inline QPoint mouseEventGlobalPos(const QMouseEvent *event)
 #endif
 }
 
+// QMouseEvent::pos() is deprecated in Qt6; use position().toPoint() instead.
+inline QPoint mouseEventLocalPos(const QMouseEvent *event)
+{
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    return event->position().toPoint();
+#else
+    return event->pos();
+#endif
+}
+
 inline bool isFontFamilyAvailable(const QString &family)
 {
     if (family.isEmpty()) {

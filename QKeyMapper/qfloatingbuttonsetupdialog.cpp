@@ -282,7 +282,7 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
         m_MousePassThroughSwitchKeyComboBox->setItemText(FUNCTION_KEY_NONE_INDEX, tr("None"));
     }
     m_DragToMoveCheckBox->setText(tr("Enable Drag to Move"));
-    m_DragToMoveCheckBox->setToolTip(tr("Supports Ctrl+drag and context menu Move."));
+    m_DragToMoveCheckBox->setToolTip(tr("Supports Ctrl+drag. Context menu Move is always available."));
 
     m_WidthLabel->setText(tr("Width"));
     m_HeightLabel->setText(tr("Height"));
