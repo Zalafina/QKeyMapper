@@ -10,6 +10,27 @@ using namespace Gdiplus;
 
 namespace {
 
+bool isDesktopOrShellWindow(HWND hwnd)
+{
+    if (hwnd == Q_NULLPTR || !IsWindow(hwnd)) {
+        return false;
+    }
+
+    if (hwnd == GetDesktopWindow() || hwnd == GetShellWindow()) {
+        return true;
+    }
+
+    wchar_t classNameBuffer[MAX_PATH] = {};
+    if (GetClassNameW(hwnd, classNameBuffer, MAX_PATH) <= 0) {
+        return false;
+    }
+
+    return wcscmp(classNameBuffer, L"Progman") == 0
+           || wcscmp(classNameBuffer, L"WorkerW") == 0
+           || wcscmp(classNameBuffer, L"Shell_TrayWnd") == 0
+           || wcscmp(classNameBuffer, L"Shell_SecondaryTrayWnd") == 0;
+}
+
 QString normalizeOriginalKeyForExclusiveGroup(const QString &originalKey);
 
 QString floatingButtonMoveHintText()
@@ -6798,6 +6819,15 @@ bool QKeyMapper::isWindowFullscreen(HWND hwnd)
     HWND topLevelWindow = GetAncestor(hwnd, GA_ROOT);
     if (topLevelWindow != NULL && IsWindow(topLevelWindow)) {
         hwnd = topLevelWindow;
+    }
+
+    // Desktop and shell surfaces can cover the monitor but must not be treated as fullscreen apps.
+    if (isDesktopOrShellWindow(hwnd)) {
+// #ifdef DEBUG_LOGOUT_ON
+//         qDebug() << "[QKeyMapper::isWindowFullscreen] Window is identified as Desktop or Shell window, skipping fullscreen check. hwnd="
+//                  << reinterpret_cast<quintptr>(hwnd);
+// #endif
+        return false;
     }
 
     RECT windowRect = {};
