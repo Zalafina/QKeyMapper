@@ -9889,6 +9889,10 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         if (m_FloatingButtonMoveArmedRow >= 0) {
             clearFloatingButtonMoveState();
         }
+
+        if (m_VButtonPanel != Q_NULLPTR) {
+            m_VButtonPanel->clearPanelMoveState();
+        }
         return;
     }
 

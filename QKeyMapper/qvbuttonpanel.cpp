@@ -211,6 +211,8 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
     for (int i = 0; i < m_keyNames.size(); ++i) {
         applyButtonStyle(m_buttons.at(i), m_lockedKeyNames.contains(m_keyNames.at(i)));
     }
+
+    syncMoveCursorState();
 }
 
 void QVButtonPanel::applySettings(int columns, int maxRows, int btnWidth, int btnHeight,
@@ -612,7 +614,7 @@ void QVButtonPanel::beginPanelDrag(const QPoint &globalPos, const QPoint &panelL
 {
     m_dragging = true;
     m_dragOffset = panelLocalPos;
-    setCursor(Qt::ClosedHandCursor);
+    syncMoveCursorState();
 
     if (QWidget::mouseGrabber() != this) {
         grabMouse();
@@ -631,7 +633,7 @@ void QVButtonPanel::finishPanelDrag()
     if (QWidget::mouseGrabber() == this) {
         releaseMouse();
     }
-    unsetCursor();
+    syncMoveCursorState();
     recalcOffsets();
 }
 
@@ -643,6 +645,7 @@ bool QVButtonPanel::consumePanelMoveArmedState()
 
     m_moveArmed = false;
     QToolTip::hideText();
+    syncMoveCursorState();
     return true;
 }
 
@@ -661,6 +664,7 @@ void QVButtonPanel::armPanelMoveState()
 
     clearPanelMoveState();
     m_moveArmed = true;
+    syncMoveCursorState();
 
     if (isVisible()) {
         QToolTip::showText(mapToGlobal(rect().center()),
@@ -679,6 +683,21 @@ void QVButtonPanel::clearPanelMoveState()
 
     m_moveArmed = false;
     QToolTip::hideText();
+    syncMoveCursorState();
+}
+
+void QVButtonPanel::syncMoveCursorState()
+{
+    const Qt::CursorShape cursorShape = m_dragging
+                                            ? Qt::ClosedHandCursor
+                                            : (m_moveArmed ? Qt::OpenHandCursor : Qt::ArrowCursor);
+
+    setCursor(cursorShape);
+    for (QToolButton *button : std::as_const(m_buttons)) {
+        if (button != Q_NULLPTR) {
+            button->setCursor(cursorShape);
+        }
+    }
 }
 
 // ── Mouse / context menu ──────────────────────────────────────────────────────

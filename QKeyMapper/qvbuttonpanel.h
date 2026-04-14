@@ -53,6 +53,9 @@ public:
     // Expose the filtered button count so the owner can avoid showing an empty panel.
     int buttonCount() const { return m_buttons.size(); }
 
+    // Clear the explicit Move-armed state triggered from the context menu.
+    void clearPanelMoveState();
+
 signals:
     // isKeyDown=true -> KEY_DOWN; false -> KEY_UP
     void triggerVButtonKey_Signal(const QString &keyName, bool isKeyDown);
@@ -90,7 +93,7 @@ private:
     void    finishPanelDrag();
     bool    consumePanelMoveArmedState();
     void    armPanelMoveState();
-    void    clearPanelMoveState();
+    void    syncMoveCursorState();
     void    recalcOffsets();  // update m_offsetX/Y from current pos() after drag
 
     QWidget        *m_gridContainer = nullptr;
