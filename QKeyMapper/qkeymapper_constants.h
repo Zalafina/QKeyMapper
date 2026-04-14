@@ -989,7 +989,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYLISTCOMBOBOX_RECENT_ORIGINAL_KEYS[] = "KeyListComboBox_RecentOriginalKeys";
     inline constexpr const char KEYLISTCOMBOBOX_FAVORITE_MAPPING_KEYS[] = "KeyListComboBox_FavoriteMappingKeys";
     inline constexpr const char KEYLISTCOMBOBOX_RECENT_MAPPING_KEYS[] = "KeyListComboBox_RecentMappingKeys";
-    inline constexpr int KEYLISTCOMBOBOX_RECENT_ITEMS_MAX_COUNT = 10;
+    inline constexpr int KEYLISTCOMBOBOX_RECENT_ITEMS_MAX_COUNT = 20;
 
     // MacroList for Export and Import
     inline constexpr const char MACROLIST_EXPORT[] = "MacroList_Export";
