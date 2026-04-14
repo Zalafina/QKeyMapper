@@ -5846,6 +5846,169 @@ void QKeyMapper::copyStringToClipboard(const QString &string)
     clipboard->setText(string);
 }
 
+QStringList *QKeyMapper::getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType)
+{
+    if (KEYLIST_COLLECTION_ORIGINAL == collectionType) {
+        return (KEYLIST_SHARED_FAVORITES == dataType) ? &m_FavoriteOriginalKeys : &m_RecentOriginalKeys;
+    }
+
+    return (KEYLIST_SHARED_FAVORITES == dataType) ? &m_FavoriteMappingKeys : &m_RecentMappingKeys;
+}
+
+const QStringList *QKeyMapper::getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType) const
+{
+    if (KEYLIST_COLLECTION_ORIGINAL == collectionType) {
+        return (KEYLIST_SHARED_FAVORITES == dataType) ? &m_FavoriteOriginalKeys : &m_RecentOriginalKeys;
+    }
+
+    return (KEYLIST_SHARED_FAVORITES == dataType) ? &m_FavoriteMappingKeys : &m_RecentMappingKeys;
+}
+
+QStringList QKeyMapper::getKeyListSharedItems(KeyListCollectionType collectionType, KeyListSharedDataType dataType) const
+{
+    const QStringList *items = getKeyListSharedItemsRef(collectionType, dataType);
+    return (items != Q_NULLPTR) ? *items : QStringList();
+}
+
+bool QKeyMapper::isKeyListFavoriteItem(KeyListCollectionType collectionType, const QString &itemText) const
+{
+    const QString normalizedText = itemText.trimmed();
+    if (normalizedText.isEmpty()) {
+        return false;
+    }
+
+    const QStringList *favorites = getKeyListSharedItemsRef(collectionType, KEYLIST_SHARED_FAVORITES);
+    return (favorites != Q_NULLPTR) && favorites->contains(normalizedText);
+}
+
+bool QKeyMapper::addKeyListFavoriteItem(KeyListCollectionType collectionType, const QString &itemText)
+{
+    const QString normalizedText = itemText.trimmed();
+    if (normalizedText.isEmpty()) {
+        return false;
+    }
+
+    QStringList *favorites = getKeyListSharedItemsRef(collectionType, KEYLIST_SHARED_FAVORITES);
+    if (favorites == Q_NULLPTR || favorites->contains(normalizedText)) {
+        return false;
+    }
+
+    favorites->append(normalizedText);
+    emit keyListSharedCollectionsChanged_Signal();
+    return true;
+}
+
+bool QKeyMapper::removeKeyListFavoriteItem(KeyListCollectionType collectionType, const QString &itemText)
+{
+    const QString normalizedText = itemText.trimmed();
+    if (normalizedText.isEmpty()) {
+        return false;
+    }
+
+    QStringList *favorites = getKeyListSharedItemsRef(collectionType, KEYLIST_SHARED_FAVORITES);
+    if (favorites == Q_NULLPTR) {
+        return false;
+    }
+
+    const int removedCount = favorites->removeAll(normalizedText);
+    if (removedCount <= 0) {
+        return false;
+    }
+
+    emit keyListSharedCollectionsChanged_Signal();
+    return true;
+}
+
+bool QKeyMapper::clearKeyListFavoriteItems(KeyListCollectionType collectionType)
+{
+    QStringList *favorites = getKeyListSharedItemsRef(collectionType, KEYLIST_SHARED_FAVORITES);
+    if (favorites == Q_NULLPTR || favorites->isEmpty()) {
+        return false;
+    }
+
+    favorites->clear();
+    emit keyListSharedCollectionsChanged_Signal();
+    return true;
+}
+
+bool QKeyMapper::pushKeyListRecentItem(KeyListCollectionType collectionType, const QString &itemText)
+{
+    const QString normalizedText = itemText.trimmed();
+    if (normalizedText.isEmpty()) {
+        return false;
+    }
+
+    QStringList *recentItems = getKeyListSharedItemsRef(collectionType, KEYLIST_SHARED_RECENTS);
+    if (recentItems == Q_NULLPTR) {
+        return false;
+    }
+
+    const QStringList oldItems = *recentItems;
+    recentItems->removeAll(normalizedText);
+    recentItems->prepend(normalizedText);
+    while (recentItems->size() > KEYLISTCOMBOBOX_RECENT_ITEMS_MAX_COUNT) {
+        recentItems->removeLast();
+    }
+
+    if (oldItems == *recentItems) {
+        return false;
+    }
+
+    emit keyListSharedCollectionsChanged_Signal();
+    return true;
+}
+
+bool QKeyMapper::clearKeyListRecentItems(KeyListCollectionType collectionType)
+{
+    QStringList *recentItems = getKeyListSharedItemsRef(collectionType, KEYLIST_SHARED_RECENTS);
+    if (recentItems == Q_NULLPTR || recentItems->isEmpty()) {
+        return false;
+    }
+
+    recentItems->clear();
+    emit keyListSharedCollectionsChanged_Signal();
+    return true;
+}
+
+void QKeyMapper::saveKeyListSharedCollectionsToINI(QSettings &settingFile) const
+{
+    settingFile.setValue(KEYLISTCOMBOBOX_FAVORITE_ORIGINAL_KEYS, m_FavoriteOriginalKeys);
+    settingFile.setValue(KEYLISTCOMBOBOX_RECENT_ORIGINAL_KEYS, m_RecentOriginalKeys);
+    settingFile.setValue(KEYLISTCOMBOBOX_FAVORITE_MAPPING_KEYS, m_FavoriteMappingKeys);
+    settingFile.setValue(KEYLISTCOMBOBOX_RECENT_MAPPING_KEYS, m_RecentMappingKeys);
+}
+
+void QKeyMapper::loadKeyListSharedCollectionsFromINI(QSettings &settingFile)
+{
+    const auto normalizeItems = [](QStringList &items, int maxCount = -1) {
+        QStringList normalizedItems;
+        for (const QString &item : items) {
+            const QString normalizedText = item.trimmed();
+            if (normalizedText.isEmpty() || normalizedItems.contains(normalizedText)) {
+                continue;
+            }
+
+            normalizedItems.append(normalizedText);
+            if (maxCount > 0 && normalizedItems.size() >= maxCount) {
+                break;
+            }
+        }
+        items = normalizedItems;
+    };
+
+    m_FavoriteOriginalKeys = settingFile.value(KEYLISTCOMBOBOX_FAVORITE_ORIGINAL_KEYS).toStringList();
+    m_RecentOriginalKeys = settingFile.value(KEYLISTCOMBOBOX_RECENT_ORIGINAL_KEYS).toStringList();
+    m_FavoriteMappingKeys = settingFile.value(KEYLISTCOMBOBOX_FAVORITE_MAPPING_KEYS).toStringList();
+    m_RecentMappingKeys = settingFile.value(KEYLISTCOMBOBOX_RECENT_MAPPING_KEYS).toStringList();
+
+    normalizeItems(m_FavoriteOriginalKeys);
+    normalizeItems(m_RecentOriginalKeys, KEYLISTCOMBOBOX_RECENT_ITEMS_MAX_COUNT);
+    normalizeItems(m_FavoriteMappingKeys);
+    normalizeItems(m_RecentMappingKeys, KEYLISTCOMBOBOX_RECENT_ITEMS_MAX_COUNT);
+
+    emit keyListSharedCollectionsChanged_Signal();
+}
+
 bool QKeyMapper::backupFile(const QString &sourceFile, const QString &backupFile)
 {
     QFile source(sourceFile);
@@ -13182,6 +13345,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     }
     settingFile.setValue(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
     settingFile.setValue(VIRTUAL_GAMEPADLIST, QKeyMapper_Worker::s_VirtualGamepadList);
+    saveKeyListSharedCollectionsToINI(settingFile);
 
 //         if (m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
 //             if (m_windowswitchKeySeqEdit->lastKeySequence().isEmpty()) {
@@ -14488,6 +14652,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
         // Load UniversalMacroList from INI file
         loadUniversalMacroListFromINI();
+
+        // Load shared key list collections from INI file
+        loadKeyListSharedCollectionsFromINI(settingFile);
 
         if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
             int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
@@ -18843,6 +19010,9 @@ void QKeyMapper::loadGeneralSetting()
 
     // Load UniversalMacroList from INI file
     loadUniversalMacroListFromINI();
+
+    // Load shared key list collections from INI file
+    loadKeyListSharedCollectionsFromINI(settingFile);
 
     if (true == settingFile.contains(STARTUP_POSITION_INDEX)){
         int startup_position = settingFile.value(STARTUP_POSITION_INDEX).toInt();
@@ -30393,6 +30563,887 @@ void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     }
 }
 
+namespace {
+
+enum KeyListPopupItemDataRole {
+    KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE = Qt::UserRole + 1,
+    KEYLIST_POPUP_ITEM_EMPTY_PLACEHOLDER_ROLE
+};
+
+QString normalizeKeyListSearchText(const QString &text)
+{
+    QString normalizedText = text.toLower().trimmed();
+    normalizedText.remove('-');
+    normalizedText.remove(' ');
+    normalizedText.remove('_');
+    normalizedText.remove('\t');
+    return normalizedText;
+}
+
+int firstEnabledListRow(const QListWidget *listWidget)
+{
+    if (listWidget == Q_NULLPTR) {
+        return -1;
+    }
+
+    for (int row = 0; row < listWidget->count(); ++row) {
+        QListWidgetItem *item = listWidget->item(row);
+        if (item != Q_NULLPTR && (item->flags() & Qt::ItemIsEnabled)) {
+            return row;
+        }
+    }
+
+    return -1;
+}
+
+void focusFirstEnabledListRow(QListWidget *listWidget)
+{
+    const int firstRow = firstEnabledListRow(listWidget);
+    if (firstRow >= 0) {
+        listWidget->setCurrentRow(firstRow);
+    }
+}
+
+QScreen *screenForWidget(QWidget *widget)
+{
+    if (widget == Q_NULLPTR) {
+        return QGuiApplication::primaryScreen();
+    }
+
+    QScreen *screen = QGuiApplication::screenAt(widget->mapToGlobal(widget->rect().center()));
+    return (screen != Q_NULLPTR) ? screen : QGuiApplication::primaryScreen();
+}
+
+}
+
+void KeyListPopupListWidget::mousePressEvent(QMouseEvent *event)
+{
+    const QPoint localPos = QKeyMapperQtCompat::mouseEventLocalPos(event);
+    QListWidgetItem *clickedItem = itemAt(localPos);
+    if (event->button() == Qt::RightButton) {
+        if (clickedItem != Q_NULLPTR && (clickedItem->flags() & Qt::ItemIsEnabled)) {
+            setCurrentItem(clickedItem);
+        }
+        emit contextMenuRequestedAt(localPos);
+        event->accept();
+        return;
+    }
+
+    QListWidget::mousePressEvent(event);
+
+    if (event->button() == Qt::LeftButton
+        && clickedItem != Q_NULLPTR
+        && (clickedItem->flags() & Qt::ItemIsEnabled)) {
+        emit leftClickedItem(clickedItem);
+    }
+}
+
+void KeyListPopupListWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    if (event->reason() != QContextMenuEvent::Mouse) {
+        emit contextMenuRequestedAt(event->pos());
+    }
+    event->accept();
+}
+
+bool KeyListPopupListWidget::viewportEvent(QEvent *event)
+{
+    if (event != Q_NULLPTR && event->type() == QEvent::ContextMenu) {
+        QContextMenuEvent *contextMenuEvent = static_cast<QContextMenuEvent*>(event);
+        if (contextMenuEvent->reason() != QContextMenuEvent::Mouse) {
+            emit contextMenuRequestedAt(contextMenuEvent->pos());
+        }
+        contextMenuEvent->accept();
+        return true;
+    }
+
+    return QListWidget::viewportEvent(event);
+}
+
+KeyListComboBoxPopup::KeyListComboBoxPopup(KeyListComboBox *comboBox)
+    : QFrame(comboBox)
+    , m_ComboBox(comboBox)
+    , m_SearchLineEdit(new QLineEdit(this))
+    , m_ToolRowWidget(new QWidget(this))
+    , m_FavoritesToolButton(new QToolButton(m_ToolRowWidget))
+    , m_RecentToolButton(new QToolButton(m_ToolRowWidget))
+    , m_ViewStackedWidget(new QStackedWidget(this))
+    , m_MainListWidget(new KeyListPopupListWidget(this))
+    , m_CollectionPageWidget(new QWidget(this))
+    , m_BackToolButton(new QToolButton(m_CollectionPageWidget))
+    , m_CollectionTitleLabel(new QLabel(m_CollectionPageWidget))
+    , m_CollectionListWidget(new KeyListPopupListWidget(m_CollectionPageWidget))
+{
+    setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
+    setFrameShape(QFrame::WinPanel);
+    setFrameShadow(QFrame::Sunken);
+    setAttribute(Qt::WA_DeleteOnClose, false);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(6, 6, 6, 6);
+    mainLayout->setSpacing(6);
+
+    m_SearchLineEdit->setClearButtonEnabled(true);
+    m_SearchLineEdit->setPlaceholderText(tr("Type to filter keys..."));
+    mainLayout->addWidget(m_SearchLineEdit);
+
+    QHBoxLayout *toolRowLayout = new QHBoxLayout(m_ToolRowWidget);
+    toolRowLayout->setContentsMargins(0, 0, 0, 0);
+    toolRowLayout->setSpacing(4);
+
+    QStyle *windowsStyle = QKeyMapperStyle::windowsStyle();
+    if (windowsStyle) {
+        m_FavoritesToolButton->setStyle(windowsStyle);
+        m_RecentToolButton->setStyle(windowsStyle);
+    }
+    m_FavoritesToolButton->setFocusPolicy(Qt::NoFocus);
+    m_RecentToolButton->setFocusPolicy(Qt::NoFocus);
+    m_BackToolButton->setFocusPolicy(Qt::NoFocus);
+    // m_ComboBox->setFocusPolicy(Qt::NoFocus);
+    // m_CollectionListWidget->setFocusPolicy(Qt::NoFocus);
+
+    m_FavoritesToolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_FavoritesToolButton->setAutoRaise(false);
+    m_FavoritesToolButton->setCheckable(true);
+    m_FavoritesToolButton->setText(tr("Favorites"));
+    m_FavoritesToolButton->setContextMenuPolicy(Qt::CustomContextMenu);
+    toolRowLayout->addWidget(m_FavoritesToolButton);
+
+    m_RecentToolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_RecentToolButton->setAutoRaise(false);
+    m_RecentToolButton->setCheckable(true);
+    m_RecentToolButton->setText(tr("Recent Items"));
+    m_RecentToolButton->setContextMenuPolicy(Qt::CustomContextMenu);
+    toolRowLayout->addWidget(m_RecentToolButton);
+    toolRowLayout->addStretch(1);
+
+    mainLayout->addWidget(m_ToolRowWidget);
+
+    m_MainListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_MainListWidget->setAlternatingRowColors(false);
+    m_ViewStackedWidget->addWidget(m_MainListWidget);
+
+    QVBoxLayout *collectionLayout = new QVBoxLayout(m_CollectionPageWidget);
+    collectionLayout->setContentsMargins(0, 0, 0, 0);
+    collectionLayout->setSpacing(4);
+
+    QWidget *collectionHeaderWidget = new QWidget(m_CollectionPageWidget);
+    QHBoxLayout *collectionHeaderLayout = new QHBoxLayout(collectionHeaderWidget);
+    collectionHeaderLayout->setContentsMargins(0, 0, 0, 0);
+    collectionHeaderLayout->setSpacing(4);
+
+    m_CollectionTitleLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    collectionHeaderLayout->addWidget(m_CollectionTitleLabel, 1, Qt::AlignLeft);
+
+    m_BackToolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_BackToolButton->setAutoRaise(false);
+    m_BackToolButton->setText(tr("Back"));
+    collectionHeaderLayout->addWidget(m_BackToolButton, Qt::AlignRight);
+
+    collectionLayout->addWidget(collectionHeaderWidget);
+
+    m_CollectionListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    collectionLayout->addWidget(m_CollectionListWidget);
+    m_ViewStackedWidget->addWidget(m_CollectionPageWidget);
+
+    mainLayout->addWidget(m_ViewStackedWidget, 1);
+
+    connect(m_SearchLineEdit, &QLineEdit::textChanged, this, &KeyListComboBoxPopup::onSearchTextChanged);
+    connect(m_FavoritesToolButton, &QToolButton::clicked, this, [this]() {
+        openCollectionPage(KEYLIST_SHARED_FAVORITES);
+    });
+    connect(m_RecentToolButton, &QToolButton::clicked, this, [this]() {
+        openCollectionPage(KEYLIST_SHARED_RECENTS);
+    });
+    connect(m_FavoritesToolButton, &QToolButton::customContextMenuRequested, this, &KeyListComboBoxPopup::showFavoritesHeaderMenu);
+    connect(m_RecentToolButton, &QToolButton::customContextMenuRequested, this, &KeyListComboBoxPopup::showRecentHeaderMenu);
+    connect(m_MainListWidget, &KeyListPopupListWidget::leftClickedItem, this, &KeyListComboBoxPopup::onMainListItemClicked);
+    connect(m_MainListWidget, &KeyListPopupListWidget::contextMenuRequestedAt, this, &KeyListComboBoxPopup::showMainListMenu);
+    connect(m_BackToolButton, &QToolButton::clicked, this, &KeyListComboBoxPopup::closeCollectionPage);
+    connect(m_CollectionListWidget, &KeyListPopupListWidget::leftClickedItem, this, &KeyListComboBoxPopup::onCollectionListItemClicked);
+    connect(m_CollectionListWidget, &KeyListPopupListWidget::contextMenuRequestedAt, this, &KeyListComboBoxPopup::showCollectionListMenu);
+
+    m_SearchLineEdit->installEventFilter(this);
+    m_FavoritesToolButton->installEventFilter(this);
+    m_RecentToolButton->installEventFilter(this);
+    m_BackToolButton->installEventFilter(this);
+    m_MainListWidget->installEventFilter(this);
+    m_CollectionListWidget->installEventFilter(this);
+
+    if (QKeyMapper::getInstance() != Q_NULLPTR) {
+        connect(QKeyMapper::getInstance(), &QKeyMapper::keyListSharedCollectionsChanged_Signal,
+                this, &KeyListComboBoxPopup::onSharedCollectionsChanged);
+    }
+}
+
+void KeyListComboBoxPopup::showForComboBox(void)
+{
+    if (m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    m_SearchLineEdit->setFont(m_ComboBox->font());
+    m_FavoritesToolButton->setFont(m_ComboBox->font());
+    m_RecentToolButton->setFont(m_ComboBox->font());
+    m_MainListWidget->setFont(m_ComboBox->font());
+    m_BackToolButton->setFont(m_ComboBox->font());
+    m_CollectionTitleLabel->setFont(m_ComboBox->font());
+    m_CollectionListWidget->setFont(m_ComboBox->font());
+    m_MainListWidget->setIconSize(m_ComboBox->iconSize());
+    m_CollectionListWidget->setIconSize(m_ComboBox->iconSize());
+
+    m_SearchLineEdit->clear();
+    closeCollectionPage();
+    refreshPopupContents();
+    updatePopupGeometry();
+    show();
+    raise();
+    m_SearchLineEdit->setFocus();
+}
+
+void KeyListComboBoxPopup::refreshPopupContents(void)
+{
+    refreshMainList();
+    refreshToolButtons();
+
+    if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
+        refreshCollectionList();
+    }
+
+    if (isVisible()) {
+        updatePopupGeometry();
+    }
+}
+
+bool KeyListComboBoxPopup::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() != QEvent::KeyPress) {
+        return QFrame::eventFilter(watched, event);
+    }
+
+    QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+    const bool isSearchWidget = (watched == m_SearchLineEdit);
+    const bool isMainListWidget = (watched == m_MainListWidget);
+    const bool isCollectionListWidget = (watched == m_CollectionListWidget);
+    const bool isToolButton = (watched == m_FavoritesToolButton
+                               || watched == m_RecentToolButton
+                               || watched == m_BackToolButton);
+
+    if (!(isSearchWidget || isMainListWidget || isCollectionListWidget || isToolButton)) {
+        return QFrame::eventFilter(watched, event);
+    }
+
+    if (keyEvent->key() == Qt::Key_Escape) {
+        if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
+            closeCollectionPage();
+        }
+        else if (!m_SearchLineEdit->text().isEmpty()) {
+            m_SearchLineEdit->clear();
+        }
+        else {
+            hide();
+        }
+        return true;
+    }
+
+    if (keyEvent->key() == Qt::Key_Down && (isSearchWidget || isToolButton)) {
+        if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
+            m_CollectionListWidget->setFocus();
+            focusFirstEnabledListRow(m_CollectionListWidget);
+        }
+        else {
+            m_MainListWidget->setFocus();
+            focusFirstEnabledListRow(m_MainListWidget);
+        }
+        return true;
+    }
+
+    if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+        if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget && isSearchWidget) {
+            QListWidgetItem *currentItem = m_CollectionListWidget->currentItem();
+            if (currentItem != Q_NULLPTR && (currentItem->flags() & Qt::ItemIsEnabled)) {
+                onCollectionListItemClicked(currentItem);
+            }
+            return true;
+        }
+
+        if (isSearchWidget) {
+            QListWidgetItem *currentItem = m_MainListWidget->currentItem();
+            if (currentItem != Q_NULLPTR && (currentItem->flags() & Qt::ItemIsEnabled)) {
+                onMainListItemClicked(currentItem);
+            }
+            return true;
+        }
+    }
+
+    if (isMainListWidget || isCollectionListWidget) {
+        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+            QListWidgetItem *currentItem = isCollectionListWidget ? m_CollectionListWidget->currentItem()
+                                                                  : m_MainListWidget->currentItem();
+            if (currentItem != Q_NULLPTR && (currentItem->flags() & Qt::ItemIsEnabled)) {
+                if (isCollectionListWidget) {
+                    onCollectionListItemClicked(currentItem);
+                }
+                else {
+                    onMainListItemClicked(currentItem);
+                }
+            }
+            return true;
+        }
+
+        const bool hasPrintableText = !keyEvent->text().isEmpty()
+            && !(keyEvent->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+            && keyEvent->text().at(0).isPrint();
+        if (keyEvent->key() == Qt::Key_Backspace || hasPrintableText) {
+            if (isCollectionListWidget) {
+                closeCollectionPage();
+            }
+
+            m_SearchLineEdit->setFocus();
+            if (keyEvent->key() == Qt::Key_Backspace) {
+                m_SearchLineEdit->backspace();
+            }
+            else {
+                m_SearchLineEdit->insert(keyEvent->text());
+            }
+            return true;
+        }
+    }
+
+    return QFrame::eventFilter(watched, event);
+}
+
+void KeyListComboBoxPopup::hideEvent(QHideEvent *event)
+{
+    m_SearchLineEdit->clear();
+    closeCollectionPage();
+    QFrame::hideEvent(event);
+}
+
+void KeyListComboBoxPopup::refreshToolButtons(void)
+{
+    const bool showToolRow = isToolRowVisible();
+    m_ToolRowWidget->setVisible(showToolRow);
+    m_FavoritesToolButton->setText(tr("Favorites"));
+    m_RecentToolButton->setText(tr("Recent Items"));
+
+    const bool isCollectionPageVisible = (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget);
+    m_FavoritesToolButton->setChecked(isCollectionPageVisible && KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType);
+    m_RecentToolButton->setChecked(isCollectionPageVisible && KEYLIST_SHARED_RECENTS == m_CurrentCollectionType);
+}
+
+void KeyListComboBoxPopup::refreshMainList(void)
+{
+    m_CurrentValidItemTexts.clear();
+    m_MainListWidget->clear();
+
+    if (m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    const QString searchText = m_SearchLineEdit->text().trimmed();
+    const QString normalizedSearchText = normalizeKeyListSearchText(searchText);
+    QListWidgetItem *currentItem = Q_NULLPTR;
+
+    for (int index = 0; index < m_ComboBox->count(); ++index) {
+        const QString actualText = m_ComboBox->itemText(index);
+        const QString displayText = actualText.isEmpty() ? tr("(Empty)") : actualText;
+
+        bool isMatched = normalizedSearchText.isEmpty();
+        if (!isMatched && !actualText.isEmpty()) {
+            isMatched = normalizeKeyListSearchText(actualText).contains(normalizedSearchText);
+        }
+        if (!isMatched) {
+            isMatched = normalizeKeyListSearchText(displayText).contains(normalizedSearchText);
+        }
+        if (!isMatched) {
+            continue;
+        }
+
+        QListWidgetItem *item = new QListWidgetItem(m_ComboBox->itemIcon(index), displayText, m_MainListWidget);
+        item->setData(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE, actualText);
+        item->setData(KEYLIST_POPUP_ITEM_EMPTY_PLACEHOLDER_ROLE, actualText.isEmpty());
+        if (actualText.isEmpty()) {
+            item->setToolTip(tr("Clear current selection"));
+        }
+        else {
+            m_CurrentValidItemTexts.append(actualText);
+        }
+
+        if (m_ComboBox->currentText() == actualText) {
+            currentItem = item;
+        }
+    }
+
+    if (m_MainListWidget->count() == 0) {
+        QListWidgetItem *placeholderItem = new QListWidgetItem(tr("No matching items"), m_MainListWidget);
+        placeholderItem->setFlags(Qt::NoItemFlags);
+    }
+    else if (currentItem != Q_NULLPTR) {
+        m_MainListWidget->setCurrentItem(currentItem);
+    }
+    else {
+        focusFirstEnabledListRow(m_MainListWidget);
+    }
+}
+
+void KeyListComboBoxPopup::refreshCollectionList(void)
+{
+    m_CollectionTitleLabel->setText(currentCollectionTitle());
+    m_CollectionListWidget->clear();
+
+    if (m_ComboBox == Q_NULLPTR || QKeyMapper::getInstance() == Q_NULLPTR) {
+        return;
+    }
+
+    const QStringList items = QKeyMapper::getInstance()->getKeyListSharedItems(m_ComboBox->getCollectionType(), m_CurrentCollectionType);
+    for (const QString &itemText : items) {
+        if (!isValidActualText(itemText)) {
+            continue;
+        }
+
+        const int comboIndex = m_ComboBox->findText(itemText, Qt::MatchExactly);
+        QListWidgetItem *item = new QListWidgetItem(comboIndex >= 0 ? m_ComboBox->itemIcon(comboIndex) : QIcon(),
+                                                    itemText,
+                                                    m_CollectionListWidget);
+        item->setData(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE, itemText);
+        item->setData(KEYLIST_POPUP_ITEM_EMPTY_PLACEHOLDER_ROLE, false);
+    }
+
+    if (m_CollectionListWidget->count() == 0) {
+        QListWidgetItem *placeholderItem = new QListWidgetItem(currentCollectionEmptyText(), m_CollectionListWidget);
+        placeholderItem->setFlags(Qt::NoItemFlags);
+    }
+    else {
+        focusFirstEnabledListRow(m_CollectionListWidget);
+    }
+}
+
+void KeyListComboBoxPopup::openCollectionPage(KeyListSharedDataType dataType)
+{
+    m_CurrentCollectionType = dataType;
+    refreshCollectionList();
+    m_ViewStackedWidget->setCurrentWidget(m_CollectionPageWidget);
+    refreshToolButtons();
+    updatePopupGeometry();
+    if (firstEnabledListRow(m_CollectionListWidget) >= 0) {
+        m_CollectionListWidget->setFocus();
+        focusFirstEnabledListRow(m_CollectionListWidget);
+    }
+    else {
+        m_BackToolButton->setFocus();
+    }
+}
+
+void KeyListComboBoxPopup::closeCollectionPage(void)
+{
+    m_ViewStackedWidget->setCurrentWidget(m_MainListWidget);
+    refreshToolButtons();
+    if (isVisible()) {
+        updatePopupGeometry();
+    }
+}
+
+void KeyListComboBoxPopup::updatePopupGeometry(void)
+{
+    if (m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    const int popupWidth = qMax(m_ComboBox->width(), 280);
+    const QRect comboRect = QRect(m_ComboBox->mapToGlobal(QPoint(0, 0)), m_ComboBox->size());
+    QPoint popupPos = comboRect.bottomLeft();
+
+    const QListWidget *activeListWidget = (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget)
+        ? static_cast<const QListWidget *>(m_CollectionListWidget)
+        : static_cast<const QListWidget *>(m_MainListWidget);
+
+    const int topBottomMargins = layout()->contentsMargins().top() + layout()->contentsMargins().bottom();
+    const int layoutSpacing = static_cast<QVBoxLayout *>(layout())->spacing();
+    int desiredHeight = topBottomMargins + m_SearchLineEdit->sizeHint().height();
+    if (m_ToolRowWidget->isVisible()) {
+        desiredHeight += layoutSpacing + m_ToolRowWidget->sizeHint().height();
+    }
+    desiredHeight += layoutSpacing;
+    if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
+        desiredHeight += m_BackToolButton->sizeHint().height() + 4;
+    }
+    desiredHeight += calculateListViewportHeight(activeListWidget);
+
+    QScreen *screen = screenForWidget(m_ComboBox);
+    int popupHeight = desiredHeight;
+    if (screen != Q_NULLPTR) {
+        const QRect availableGeometry = screen->availableGeometry();
+        if (popupPos.x() + popupWidth > availableGeometry.right()) {
+            popupPos.setX(qMax(availableGeometry.left(), availableGeometry.right() - popupWidth + 1));
+        }
+
+        popupPos.setY(comboRect.bottom());
+        const int availableBelow = qMax(1, availableGeometry.bottom() - popupPos.y() - 2);
+        popupHeight = qMin(desiredHeight, availableBelow);
+    }
+
+    setGeometry(QRect(popupPos, QSize(popupWidth, popupHeight)));
+}
+
+int KeyListComboBoxPopup::calculateListViewportHeight(const QListWidget *listWidget) const
+{
+    if (listWidget == Q_NULLPTR) {
+        return 120;
+    }
+
+    int rowHeight = 0;
+    const int firstRow = firstEnabledListRow(listWidget);
+    if (firstRow >= 0) {
+        rowHeight = listWidget->sizeHintForRow(firstRow);
+    }
+    if (rowHeight <= 0) {
+        rowHeight = listWidget->fontMetrics().height() + 10;
+    }
+
+    const int visibleRowCount = qMax(listWidget->count(), 1);
+    return rowHeight * visibleRowCount + listWidget->frameWidth() * 2 + 6;
+}
+
+void KeyListComboBoxPopup::copyItemTextToClipboard(const QString &itemText) const
+{
+    if (m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    m_ComboBox->copyPopupKeyText(itemText);
+}
+
+bool KeyListComboBoxPopup::confirmClearCollection(KeyListSharedDataType dataType)
+{
+    const QString message = (KEYLIST_SHARED_FAVORITES == dataType)
+        ? tr("Are you sure you want to clear all favorites?")
+        : tr("Are you sure you want to clear all recent items?");
+    QMessageBox::StandardButton reply = QMessageBox::question(this,
+                                                              PROGRAM_NAME,
+                                                              message,
+                                                              QMessageBox::Yes | QMessageBox::No,
+                                                              QMessageBox::No);
+    return (reply == QMessageBox::Yes);
+}
+
+bool KeyListComboBoxPopup::isToolRowVisible(void) const
+{
+    return m_SearchLineEdit->text().trimmed().isEmpty();
+}
+
+bool KeyListComboBoxPopup::isValidActualText(const QString &itemText) const
+{
+    const QString normalizedText = itemText.trimmed();
+    return !normalizedText.isEmpty() && m_CurrentValidItemTexts.contains(normalizedText);
+}
+
+QString KeyListComboBoxPopup::currentCollectionTitle(void) const
+{
+    return (KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType)
+        ? tr("Favorites")
+        : tr("Recent Items");
+}
+
+QString KeyListComboBoxPopup::currentCollectionEmptyText(void) const
+{
+    return (KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType)
+        ? tr("No favorites")
+        : tr("No recent items");
+}
+
+void KeyListComboBoxPopup::onSearchTextChanged(const QString &text)
+{
+    if (!text.trimmed().isEmpty() && m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
+        closeCollectionPage();
+    }
+
+    m_ToolRowWidget->setVisible(text.trimmed().isEmpty());
+    refreshMainList();
+    if (isVisible()) {
+        updatePopupGeometry();
+    }
+}
+
+void KeyListComboBoxPopup::onMainListItemClicked(QListWidgetItem *item)
+{
+    if (item == Q_NULLPTR || m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    const QString actualText = item->data(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE).toString();
+    m_ComboBox->applyPopupSelection(actualText);
+}
+
+void KeyListComboBoxPopup::onCollectionListItemClicked(QListWidgetItem *item)
+{
+    if (item == Q_NULLPTR || m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    const QString actualText = item->data(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE).toString();
+    if (!isValidActualText(actualText)) {
+        return;
+    }
+
+    m_ComboBox->applyPopupSelection(actualText);
+}
+
+void KeyListComboBoxPopup::showFavoritesHeaderMenu(const QPoint &pos)
+{
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    if (keyMapper == Q_NULLPTR || m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    QMenu menu(this);
+    QAction *manageAction = menu.addAction(tr("Manage Favorites..."));
+    menu.addSeparator();
+    QAction *clearAction = menu.addAction(tr("Clear Favorites..."));
+    clearAction->setEnabled(!keyMapper->getKeyListSharedItems(m_ComboBox->getCollectionType(), KEYLIST_SHARED_FAVORITES).isEmpty());
+
+    QAction *selectedAction = menu.exec(m_FavoritesToolButton->mapToGlobal(pos));
+    if (selectedAction == manageAction) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+        openCollectionPage(KEYLIST_SHARED_FAVORITES);
+    }
+    else if (selectedAction == clearAction && confirmClearCollection(KEYLIST_SHARED_FAVORITES)) {
+        keyMapper->clearKeyListFavoriteItems(m_ComboBox->getCollectionType());
+        if (!isVisible()) {
+            showForComboBox();
+        }
+    }
+}
+
+void KeyListComboBoxPopup::showRecentHeaderMenu(const QPoint &pos)
+{
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    if (keyMapper == Q_NULLPTR || m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    QMenu menu(this);
+    QAction *clearAction = menu.addAction(tr("Clear Recent Items..."));
+    clearAction->setEnabled(!keyMapper->getKeyListSharedItems(m_ComboBox->getCollectionType(), KEYLIST_SHARED_RECENTS).isEmpty());
+
+    QAction *selectedAction = menu.exec(m_RecentToolButton->mapToGlobal(pos));
+    if (selectedAction == clearAction && confirmClearCollection(KEYLIST_SHARED_RECENTS)) {
+        keyMapper->clearKeyListRecentItems(m_ComboBox->getCollectionType());
+        if (!isVisible()) {
+            showForComboBox();
+        }
+    }
+}
+
+void KeyListComboBoxPopup::showMainListMenu(const QPoint &pos)
+{
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    if (keyMapper == Q_NULLPTR || m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    QListWidgetItem *item = m_MainListWidget->itemAt(pos);
+    if (item == Q_NULLPTR) {
+        return;
+    }
+
+    const QString actualText = item->data(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE).toString().trimmed();
+    if (actualText.isEmpty()) {
+        return;
+    }
+
+    const bool isFavoriteItem = keyMapper->isKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
+    QMenu menu(this);
+    QAction *favoriteAction = menu.addAction(isFavoriteItem ? tr("Remove from Favorites") : tr("Add to Favorites"));
+    QAction *copyAction = menu.addAction(tr("Copy Key Name"));
+
+    QAction *selectedAction = menu.exec(m_MainListWidget->viewport()->mapToGlobal(pos));
+    if (selectedAction == favoriteAction) {
+        if (isFavoriteItem) {
+            keyMapper->removeKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
+        }
+        else {
+            keyMapper->addKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
+        }
+        if (!isVisible()) {
+            showForComboBox();
+        }
+    }
+    else if (selectedAction == copyAction) {
+        copyItemTextToClipboard(actualText);
+        if (!isVisible()) {
+            showForComboBox();
+        }
+    }
+}
+
+void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
+{
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    if (keyMapper == Q_NULLPTR || m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    QListWidgetItem *item = m_CollectionListWidget->itemAt(pos);
+    QMenu menu(this);
+    QAction *selectAction = Q_NULLPTR;
+    QAction *favoriteAction = Q_NULLPTR;
+    QAction *copyAction = Q_NULLPTR;
+    QAction *clearAction = Q_NULLPTR;
+
+    QString actualText;
+    const bool hasActualItem = (item != Q_NULLPTR);
+    if (hasActualItem) {
+        actualText = item->data(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE).toString().trimmed();
+    }
+
+    if (hasActualItem && isValidActualText(actualText)) {
+        selectAction = menu.addAction(tr("Select This Item"));
+        if (KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType) {
+            favoriteAction = menu.addAction(tr("Remove from Favorites"));
+        }
+        else {
+            const bool isFavoriteItem = keyMapper->isKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
+            favoriteAction = menu.addAction(isFavoriteItem ? tr("Remove from Favorites") : tr("Add to Favorites"));
+        }
+        copyAction = menu.addAction(tr("Copy Key Name"));
+        menu.addSeparator();
+    }
+
+    clearAction = menu.addAction(KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType
+                                     ? tr("Clear Favorites...")
+                                     : tr("Clear Recent Items..."));
+    clearAction->setEnabled(!keyMapper->getKeyListSharedItems(m_ComboBox->getCollectionType(), m_CurrentCollectionType).isEmpty());
+
+    QAction *selectedAction = menu.exec(m_CollectionListWidget->viewport()->mapToGlobal(pos));
+    if (selectedAction == selectAction) {
+        m_ComboBox->applyPopupSelection(actualText);
+    }
+    else if (selectedAction == favoriteAction) {
+        if (KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType) {
+            keyMapper->removeKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
+        }
+        else if (keyMapper->isKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText)) {
+            keyMapper->removeKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
+        }
+        else {
+            keyMapper->addKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
+        }
+        if (!isVisible()) {
+            showForComboBox();
+            openCollectionPage(m_CurrentCollectionType);
+        }
+    }
+    else if (selectedAction == copyAction) {
+        copyItemTextToClipboard(actualText);
+        if (!isVisible()) {
+            showForComboBox();
+            openCollectionPage(m_CurrentCollectionType);
+        }
+    }
+    else if (selectedAction == clearAction && confirmClearCollection(m_CurrentCollectionType)) {
+        if (KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType) {
+            keyMapper->clearKeyListFavoriteItems(m_ComboBox->getCollectionType());
+        }
+        else {
+            keyMapper->clearKeyListRecentItems(m_ComboBox->getCollectionType());
+        }
+
+        if (!isVisible()) {
+            showForComboBox();
+            openCollectionPage(m_CurrentCollectionType);
+        }
+    }
+}
+
+void KeyListComboBoxPopup::onSharedCollectionsChanged(void)
+{
+    if (!isVisible()) {
+        return;
+    }
+
+    refreshPopupContents();
+}
+
+KeyListCollectionType KeyListComboBox::getCollectionType() const
+{
+    if (objectName() == ORIKEY_COMBOBOX_NAME
+        || objectName() == SETUPDIALOG_ORIKEY_COMBOBOX_NAME) {
+        return KEYLIST_COLLECTION_ORIGINAL;
+    }
+
+    return KEYLIST_COLLECTION_MAPPING;
+}
+
+void KeyListComboBox::ensureCustomPopup(void)
+{
+    if (m_KeyListPopup == Q_NULLPTR) {
+        m_KeyListPopup = new KeyListComboBoxPopup(this);
+    }
+}
+
+void KeyListComboBox::applyPopupSelection(const QString &itemText, bool updateRecentItems)
+{
+    const QString normalizedText = itemText.trimmed();
+    const int comboIndex = findText(itemText, Qt::MatchExactly);
+    if (comboIndex >= 0) {
+        setCurrentIndex(comboIndex);
+    }
+    else {
+        setCurrentText(itemText);
+    }
+
+    if (updateRecentItems && !normalizedText.isEmpty() && QKeyMapper::getInstance() != Q_NULLPTR) {
+        QKeyMapper::getInstance()->pushKeyListRecentItem(getCollectionType(), normalizedText);
+    }
+
+    hidePopup();
+    setFocus(Qt::OtherFocusReason);
+}
+
+void KeyListComboBox::copyPopupKeyText(const QString &itemText) const
+{
+    const QString normalizedText = itemText.trimmed();
+    if (normalizedText.isEmpty()) {
+        return;
+    }
+
+    QKeyMapper::copyStringToClipboard(normalizedText);
+    if (QKeyMapper::getInstance() != Q_NULLPTR) {
+        QString popupMessage = tr("\"%1\" has been copied to the clipboard.").arg(normalizedText);
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage,
+                                                                SUCCESS_COLOR,
+                                                                POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+    }
+}
+
+void KeyListComboBox::showPopup(void)
+{
+    ensureCustomPopup();
+    if (m_KeyListPopup == Q_NULLPTR) {
+        QComboBox::showPopup();
+        return;
+    }
+
+    if (m_KeyListPopup->isVisible()) {
+        m_KeyListPopup->hide();
+        return;
+    }
+
+    m_KeyListPopup->showForComboBox();
+}
+
+void KeyListComboBox::hidePopup(void)
+{
+    if (m_KeyListPopup != Q_NULLPTR && m_KeyListPopup->isVisible()) {
+        m_KeyListPopup->hide();
+    }
+
+    QComboBox::hidePopup();
+}
+
 void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 {
     /* Check L-Ctrl+S to Save settings */
@@ -31049,18 +32100,6 @@ void KeyListComboBox::wheelEvent(QWheelEvent *event)
     }
 
     QComboBox::wheelEvent(event);
-}
-
-void KeyListComboBox::showPopup()
-{
-    QComboBox::showPopup();
-
-    QAbstractItemView *view = this->view();
-    if (view) {
-        QModelIndex idx = model()->index(currentIndex(), 0);
-        view->setCurrentIndex(idx);
-        // view->scrollTo(idx, QAbstractItemView::PositionAtCenter);
-    }
 }
 
 QPopupMessageLabel::QPopupMessageLabel(QWidget *parent)

@@ -3,10 +3,15 @@
 
 #include <QDialog>
 #include <QDebug>
+#include <QFrame>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
 #include <QMetaEnum>
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QScreen>
+#include <QStackedWidget>
 #include <QWindow>
 #include <QTimer>
 #include <QTimerEvent>
@@ -33,6 +38,7 @@
 #include <QToolButton>
 #include <QPropertyAnimation>
 #include <QComboBox>
+#include <QContextMenuEvent>
 #include <QCheckBox>
 #include <QSpinBox>
 #include <QKeyEvent>
@@ -384,6 +390,36 @@ public:
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
 };
 
+enum KeyListCollectionType {
+    KEYLIST_COLLECTION_ORIGINAL = 0,
+    KEYLIST_COLLECTION_MAPPING
+};
+
+enum KeyListSharedDataType {
+    KEYLIST_SHARED_FAVORITES = 0,
+    KEYLIST_SHARED_RECENTS
+};
+
+class KeyListPopupListWidget : public QListWidget
+{
+    Q_OBJECT
+
+public:
+    explicit KeyListPopupListWidget(QWidget *parent = Q_NULLPTR)
+        : QListWidget(parent) {}
+
+signals:
+    void leftClickedItem(QListWidgetItem *item);
+    void contextMenuRequestedAt(const QPoint &pos);
+
+protected:
+    void contextMenuEvent(QContextMenuEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    bool viewportEvent(QEvent *event) override;
+};
+
+class KeyListComboBoxPopup;
+
 class KeyListComboBox : public QComboBox
 {
     Q_OBJECT
@@ -401,9 +437,73 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
     void showPopup(void) override;
+    void hidePopup(void) override;
 
 private:
+    friend class KeyListComboBoxPopup;
+
+    KeyListCollectionType getCollectionType() const;
+    void ensureCustomPopup(void);
+    void applyPopupSelection(const QString &itemText, bool updateRecentItems = true);
+    void copyPopupKeyText(const QString &itemText) const;
+
     QWidget *m_KeyMapper_ptr;
+    KeyListComboBoxPopup *m_KeyListPopup = Q_NULLPTR;
+};
+
+class KeyListComboBoxPopup : public QFrame
+{
+    Q_OBJECT
+
+public:
+    explicit KeyListComboBoxPopup(KeyListComboBox *comboBox);
+
+    void showForComboBox(void);
+    void refreshPopupContents(void);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+    void hideEvent(QHideEvent *event) override;
+
+private:
+    void refreshToolButtons(void);
+    void refreshMainList(void);
+    void refreshCollectionList(void);
+    void openCollectionPage(KeyListSharedDataType dataType);
+    void closeCollectionPage(void);
+    void updatePopupGeometry(void);
+    int calculateListViewportHeight(const QListWidget *listWidget) const;
+    void copyItemTextToClipboard(const QString &itemText) const;
+    bool confirmClearCollection(KeyListSharedDataType dataType);
+    bool isToolRowVisible(void) const;
+    bool isValidActualText(const QString &itemText) const;
+    QString currentCollectionTitle(void) const;
+    QString currentCollectionEmptyText(void) const;
+
+private slots:
+    void onSearchTextChanged(const QString &text);
+    void onMainListItemClicked(QListWidgetItem *item);
+    void onCollectionListItemClicked(QListWidgetItem *item);
+    void showFavoritesHeaderMenu(const QPoint &pos);
+    void showRecentHeaderMenu(const QPoint &pos);
+    void showMainListMenu(const QPoint &pos);
+    void showCollectionListMenu(const QPoint &pos);
+    void onSharedCollectionsChanged(void);
+
+private:
+    KeyListComboBox *m_ComboBox;
+    QLineEdit *m_SearchLineEdit;
+    QWidget *m_ToolRowWidget;
+    QToolButton *m_FavoritesToolButton;
+    QToolButton *m_RecentToolButton;
+    QStackedWidget *m_ViewStackedWidget;
+    KeyListPopupListWidget *m_MainListWidget;
+    QWidget *m_CollectionPageWidget;
+    QToolButton *m_BackToolButton;
+    QLabel *m_CollectionTitleLabel;
+    KeyListPopupListWidget *m_CollectionListWidget;
+    KeyListSharedDataType m_CurrentCollectionType = KEYLIST_SHARED_FAVORITES;
+    QStringList m_CurrentValidItemTexts;
 };
 
 class QPopupMessageLabel : public QLabel
@@ -1072,6 +1172,7 @@ signals:
     void keyMappingTableDragDropMove_Signal(int top_row, int bottom_row, int dragged_to);
     void setupDialogClosed_Signal(void);
     void showPopupMessage_Signal(const QString &message, const QString &color, int displayDuration);
+    void keyListSharedCollectionsChanged_Signal(void);
     void updateKeyComboBoxWithJoystickKey_Signal(const QString &joystick_keystring);
     void updateKeyLineEditWithRealKeyListChanged_Signal(const QString &keycodeString, int keyupdown);
     void systemThemeChanged_Signal(void);
@@ -1532,6 +1633,13 @@ private:
 public:
     void saveKeyMapSetting(void);
     void saveCurrentSettingLastTabName(const QString &tabName);
+    QStringList getKeyListSharedItems(KeyListCollectionType collectionType, KeyListSharedDataType dataType) const;
+    bool isKeyListFavoriteItem(KeyListCollectionType collectionType, const QString &itemText) const;
+    bool addKeyListFavoriteItem(KeyListCollectionType collectionType, const QString &itemText);
+    bool removeKeyListFavoriteItem(KeyListCollectionType collectionType, const QString &itemText);
+    bool clearKeyListFavoriteItems(KeyListCollectionType collectionType);
+    bool pushKeyListRecentItem(KeyListCollectionType collectionType, const QString &itemText);
+    bool clearKeyListRecentItems(KeyListCollectionType collectionType);
     static void initIgnoreWindowInfoList(void);
     static void updateIgnoreWindowInfoListDescriptionTranslation(void);
     static void saveIgnoreRulesToINI(void);
@@ -1544,6 +1652,10 @@ private:
     QString loadKeyMapSetting(const QString &settingtext, bool load_all = false, bool preserveVButtonPanelVisibility = false);
     void loadEmptyMapSetting(void);
     void loadGeneralSetting(void);
+    void saveKeyListSharedCollectionsToINI(QSettings &settingFile) const;
+    void loadKeyListSharedCollectionsFromINI(QSettings &settingFile);
+    QStringList *getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType);
+    const QStringList *getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType) const;
 
     void loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname);
 #ifdef USE_SAOFONT
@@ -1776,6 +1888,10 @@ private:
     int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_INITIAL;
     ActionPopup *m_SettingBackupActionPopup = Q_NULLPTR;
     QFileDialog *m_SelectSettingCustomIconFileDialog = Q_NULLPTR;
+    QStringList m_FavoriteOriginalKeys;
+    QStringList m_RecentOriginalKeys;
+    QStringList m_FavoriteMappingKeys;
+    QStringList m_RecentMappingKeys;
     QInputDeviceListWindow *m_deviceListWindow;
     QGyro2MouseOptionDialog *m_Gyro2MouseOptionDialog;
     QTrayIconSelectDialog *m_TrayIconSelectDialog;

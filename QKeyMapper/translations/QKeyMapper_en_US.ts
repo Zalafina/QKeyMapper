@@ -54,7 +54,7 @@
         <translation type="vanished">Do not show this message again</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.h" line="623"/>
+        <location filename="../qkeymapper.h" line="723"/>
         <source>OK</source>
         <translation>OK</translation>
     </message>
@@ -172,24 +172,24 @@
 <context>
     <name>GroupSelectionWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="35183"/>
-        <location filename="../qkeymapper.cpp" line="35306"/>
-        <location filename="../qkeymapper.cpp" line="35334"/>
-        <location filename="../qkeymapper.cpp" line="35361"/>
-        <location filename="../qkeymapper.cpp" line="35402"/>
-        <location filename="../qkeymapper.cpp" line="35426"/>
-        <location filename="../qkeymapper.cpp" line="35459"/>
-        <location filename="../qkeymapper.cpp" line="35569"/>
+        <location filename="../qkeymapper.cpp" line="36226"/>
+        <location filename="../qkeymapper.cpp" line="36349"/>
+        <location filename="../qkeymapper.cpp" line="36377"/>
+        <location filename="../qkeymapper.cpp" line="36404"/>
+        <location filename="../qkeymapper.cpp" line="36445"/>
+        <location filename="../qkeymapper.cpp" line="36469"/>
+        <location filename="../qkeymapper.cpp" line="36502"/>
+        <location filename="../qkeymapper.cpp" line="36612"/>
         <source>Select All</source>
         <translation>Select All</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35208"/>
+        <location filename="../qkeymapper.cpp" line="36251"/>
         <source>TopLevelGroup</source>
         <translation>GeneralSetting</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35211"/>
+        <location filename="../qkeymapper.cpp" line="36254"/>
         <source>GlobalKeyMapping</source>
         <translation>GlobalKeyMapping</translation>
     </message>
@@ -197,68 +197,172 @@
 <context>
     <name>KeyListComboBox</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="30527"/>
-        <location filename="../qkeymapper.cpp" line="30584"/>
+        <location filename="../qkeymapper.cpp" line="31415"/>
+        <location filename="../qkeymapper.cpp" line="31582"/>
+        <location filename="../qkeymapper.cpp" line="31639"/>
         <source>&quot;%1&quot; has been copied to the clipboard.</source>
         <translation>&quot;%1&quot; has been copied to the clipboard.</translation>
     </message>
 </context>
 <context>
+    <name>KeyListComboBoxPopup</name>
+    <message>
+        <location filename="../qkeymapper.cpp" line="30687"/>
+        <source>Type to filter keys...</source>
+        <translation>Type to filter keys...</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="30708"/>
+        <location filename="../qkeymapper.cpp" line="30927"/>
+        <location filename="../qkeymapper.cpp" line="31144"/>
+        <source>Favorites</source>
+        <translation>Favorites</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="30715"/>
+        <location filename="../qkeymapper.cpp" line="30928"/>
+        <location filename="../qkeymapper.cpp" line="31145"/>
+        <source>Recent Items</source>
+        <translation>Recent Items</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="30740"/>
+        <source>Back</source>
+        <translation>Back</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="30950"/>
+        <source>(Empty)</source>
+        <translation>(Empty)</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="30967"/>
+        <source>Clear current selection</source>
+        <translation>Clear current selection</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="30979"/>
+        <source>No matching items</source>
+        <translation>No matching items</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31120"/>
+        <source>Are you sure you want to clear all favorites?</source>
+        <translation>Are you sure you want to clear all favorites?</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31121"/>
+        <source>Are you sure you want to clear all recent items?</source>
+        <translation>Are you sure you want to clear all recent items?</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31151"/>
+        <source>No favorites</source>
+        <translation>No favorites</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31152"/>
+        <source>No recent items</source>
+        <translation>No recent items</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31200"/>
+        <source>Manage Favorites...</source>
+        <translation>Manage Favorites...</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31202"/>
+        <location filename="../qkeymapper.cpp" line="31316"/>
+        <source>Clear Favorites...</source>
+        <translation>Clear Favorites...</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31228"/>
+        <location filename="../qkeymapper.cpp" line="31317"/>
+        <source>Clear Recent Items...</source>
+        <translation>Clear Recent Items...</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31259"/>
+        <location filename="../qkeymapper.cpp" line="31305"/>
+        <location filename="../qkeymapper.cpp" line="31309"/>
+        <source>Remove from Favorites</source>
+        <translation>Remove from Favorites</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31259"/>
+        <location filename="../qkeymapper.cpp" line="31309"/>
+        <source>Add to Favorites</source>
+        <translation>Add to Favorites</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31260"/>
+        <location filename="../qkeymapper.cpp" line="31311"/>
+        <source>Copy Key Name</source>
+        <translation>Copy Key Name</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="31303"/>
+        <source>Select This Item</source>
+        <translation>Select This Item</translation>
+    </message>
+</context>
+<context>
     <name>KeyMappingDataTableWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="33604"/>
+        <location filename="../qkeymapper.cpp" line="34647"/>
         <source>Cannot move items while the mapping table is filtered!</source>
         <translation>Cannot move items while the mapping table is filtered!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33703"/>
+        <location filename="../qkeymapper.cpp" line="34746"/>
         <source>All</source>
         <translation>(Select All)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33884"/>
-        <location filename="../qkeymapper.cpp" line="34341"/>
+        <location filename="../qkeymapper.cpp" line="34927"/>
+        <location filename="../qkeymapper.cpp" line="35384"/>
         <source>%1 selected mapping data copied.</source>
         <translation>%1 selected mapping data copied.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33898"/>
-        <location filename="../qkeymapper.cpp" line="34241"/>
+        <location filename="../qkeymapper.cpp" line="34941"/>
+        <location filename="../qkeymapper.cpp" line="35284"/>
         <source>%1 copied mapping data failed to insert!</source>
         <translation>%1 copied mapping data failed to insert!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33904"/>
-        <location filename="../qkeymapper.cpp" line="34247"/>
+        <location filename="../qkeymapper.cpp" line="34947"/>
+        <location filename="../qkeymapper.cpp" line="35290"/>
         <source>Inserted %1 copied mapping data into current mapping table. %2 mapping(s) were disabled due to a conflict.</source>
         <translation>Inserted %1 copied mapping data into current mapping table. %2 mapping(s) were disabled due to a conflict.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33910"/>
-        <location filename="../qkeymapper.cpp" line="34253"/>
+        <location filename="../qkeymapper.cpp" line="34953"/>
+        <location filename="../qkeymapper.cpp" line="35296"/>
         <source>Inserted %1 copied mapping data into current mapping table.</source>
         <translation>Inserted %1 copied mapping data into current mapping table.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34177"/>
+        <location filename="../qkeymapper.cpp" line="35220"/>
         <source>The current selection contains mappings with the same OriginalKey.
 Only the last mapping in each OriginalKey group will be enabled.</source>
         <translation>The current selection contains mappings with the same OriginalKey.
 Only the last mapping in each OriginalKey group will be enabled.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34295"/>
+        <location filename="../qkeymapper.cpp" line="35338"/>
         <source>Mapping Table Setup</source>
         <translation>Mapping Table Setup</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34289"/>
+        <location filename="../qkeymapper.cpp" line="35332"/>
         <source>Mapping Item Setup</source>
         <translation>Mapping Item Setup</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33627"/>
-        <location filename="../qkeymapper.cpp" line="33715"/>
+        <location filename="../qkeymapper.cpp" line="34670"/>
+        <location filename="../qkeymapper.cpp" line="34758"/>
         <source>Blank</source>
         <translation>(Blank)</translation>
     </message>
@@ -266,17 +370,17 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
 <context>
     <name>KeyMappingTabWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="33525"/>
+        <location filename="../qkeymapper.cpp" line="34568"/>
         <source>%1 selected mapping data copied.</source>
         <translation>%1 selected mapping data copied.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33539"/>
+        <location filename="../qkeymapper.cpp" line="34582"/>
         <source>%1 copied mapping data failed to insert!</source>
         <translation>%1 copied mapping data failed to insert!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33545"/>
+        <location filename="../qkeymapper.cpp" line="34588"/>
         <source>Inserted %1 copied mapping data into current mapping table. %2 mapping(s) were disabled due to a conflict.</source>
         <translation>Inserted %1 copied mapping data into current mapping table. %2 mapping(s) were disabled due to a conflict.</translation>
     </message>
@@ -289,7 +393,7 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <translation type="vanished">Inserted %1 copied mapping data into current mapping table. %2 duplicated ones were not inserted.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33551"/>
+        <location filename="../qkeymapper.cpp" line="34594"/>
         <source>Inserted %1 copied mapping data into current mapping table.</source>
         <translation>Inserted %1 copied mapping data into current mapping table.</translation>
     </message>
@@ -1683,128 +1787,128 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="69"/>
-        <location filename="../qkeymapper.cpp" line="26207"/>
+        <location filename="../qkeymapper.cpp" line="26381"/>
         <source>SaveSetting</source>
         <translation>SaveSetting</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="561"/>
-        <location filename="../qkeymapper.cpp" line="26433"/>
+        <location filename="../qkeymapper.cpp" line="26607"/>
         <source>Title</source>
         <translation>Title</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="98"/>
-        <location filename="../qkeymapper.cpp" line="26223"/>
+        <location filename="../qkeymapper.cpp" line="26397"/>
         <source>ADD</source>
         <translation>ADD</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="114"/>
-        <location filename="../qkeymapper.cpp" line="26264"/>
+        <location filename="../qkeymapper.cpp" line="26438"/>
         <source>OriKey</source>
         <translation>OriKey</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="130"/>
-        <location filename="../qkeymapper.cpp" line="26266"/>
+        <location filename="../qkeymapper.cpp" line="26440"/>
         <source>MapKey</source>
         <translation>MapKey</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="149"/>
-        <location filename="../qkeymapper.cpp" line="26210"/>
+        <location filename="../qkeymapper.cpp" line="26384"/>
         <source>Delete</source>
         <translation>Delete</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="168"/>
-        <location filename="../qkeymapper.cpp" line="26211"/>
+        <location filename="../qkeymapper.cpp" line="26385"/>
         <source>Clear</source>
         <translation>Clear</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="203"/>
-        <location filename="../qkeymapper.cpp" line="26284"/>
+        <location filename="../qkeymapper.cpp" line="26458"/>
         <source>Remove</source>
         <translation>Remove</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="232"/>
-        <location filename="../qkeymapper.cpp" line="26271"/>
+        <location filename="../qkeymapper.cpp" line="26445"/>
         <source>Delay</source>
         <translation>Delay</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="248"/>
-        <location filename="../qkeymapper.cpp" line="26265"/>
+        <location filename="../qkeymapper.cpp" line="26439"/>
         <source>OriKeyRecord</source>
         <translation>KeyRecord</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="274"/>
-        <location filename="../qkeymapper.cpp" line="26279"/>
+        <location filename="../qkeymapper.cpp" line="26453"/>
         <source>Point</source>
         <translation>Point</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="350"/>
-        <location filename="../qkeymapper.cpp" line="26405"/>
+        <location filename="../qkeymapper.cpp" line="26579"/>
         <source>Keyboard</source>
         <translation>Keyboard</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="366"/>
-        <location filename="../qkeymapper.cpp" line="26406"/>
+        <location filename="../qkeymapper.cpp" line="26580"/>
         <source>Mouse</source>
         <translation>Mouse</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="421"/>
-        <location filename="../qkeymapper.cpp" line="26363"/>
+        <location filename="../qkeymapper.cpp" line="26537"/>
         <source>WindowInfo</source>
         <translation>WindowInfo</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="580"/>
-        <location filename="../qkeymapper.cpp" line="26238"/>
+        <location filename="../qkeymapper.cpp" line="26412"/>
         <source>Restore</source>
         <translation>Restore</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="644"/>
-        <location filename="../qkeymapper.cpp" line="26306"/>
+        <location filename="../qkeymapper.cpp" line="26480"/>
         <source>Ignore Rules List</source>
         <translation>Ignore Rules List</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="663"/>
-        <location filename="../qkeymapper.cpp" line="26239"/>
-        <location filename="../qkeymapper.cpp" line="35074"/>
+        <location filename="../qkeymapper.cpp" line="26413"/>
+        <location filename="../qkeymapper.cpp" line="36117"/>
         <source>Select Custom Icon</source>
         <translation>Select Custom Icon</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="672"/>
-        <location filename="../qkeymapper.cpp" line="26364"/>
+        <location filename="../qkeymapper.cpp" line="26538"/>
         <source>General</source>
         <translation>General</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="687"/>
-        <location filename="../qkeymapper.cpp" line="26300"/>
+        <location filename="../qkeymapper.cpp" line="26474"/>
         <source>Startup Minimized</source>
         <translation>Startup Minimized</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="703"/>
-        <location filename="../qkeymapper.cpp" line="26299"/>
+        <location filename="../qkeymapper.cpp" line="26473"/>
         <source>Auto Startup</source>
         <translation>Auto Startup</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="719"/>
-        <location filename="../qkeymapper.cpp" line="26302"/>
+        <location filename="../qkeymapper.cpp" line="26476"/>
         <source>Notification</source>
         <translation>Notification</translation>
     </message>
@@ -1826,19 +1930,19 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="814"/>
-        <location filename="../qkeymapper.cpp" line="26303"/>
+        <location filename="../qkeymapper.cpp" line="26477"/>
         <source>Language</source>
         <translation>Language</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="833"/>
-        <location filename="../qkeymapper.cpp" line="26311"/>
+        <location filename="../qkeymapper.cpp" line="26485"/>
         <source>Check Updates</source>
         <translation>Check Updates</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="849"/>
-        <location filename="../qkeymapper.cpp" line="26304"/>
+        <location filename="../qkeymapper.cpp" line="26478"/>
         <source>UpdateSite</source>
         <translation>UpdateSite</translation>
     </message>
@@ -1855,31 +1959,31 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="897"/>
-        <location filename="../qkeymapper.cpp" line="26323"/>
+        <location filename="../qkeymapper.cpp" line="26497"/>
         <source>Select Tray Icon</source>
         <translation>Select Tray Icon</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="916"/>
-        <location filename="../qkeymapper.cpp" line="26324"/>
+        <location filename="../qkeymapper.cpp" line="26498"/>
         <source>Noti Advanced</source>
         <translation>Noti Advanced</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="935"/>
-        <location filename="../qkeymapper.cpp" line="26301"/>
+        <location filename="../qkeymapper.cpp" line="26475"/>
         <source>Startup AutoMonitoring</source>
         <translation>Startup AutoMapping</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="948"/>
-        <location filename="../qkeymapper.cpp" line="26335"/>
+        <location filename="../qkeymapper.cpp" line="26509"/>
         <source>Scale</source>
         <translation>Scale</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="990"/>
-        <location filename="../qkeymapper.cpp" line="26338"/>
+        <location filename="../qkeymapper.cpp" line="26512"/>
         <source>Theme</source>
         <translation>Theme</translation>
     </message>
@@ -1889,13 +1993,13 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1193"/>
-        <location filename="../qkeymapper.cpp" line="26309"/>
+        <location filename="../qkeymapper.cpp" line="26483"/>
         <source>VButton Panel</source>
         <translation>VButton Panel</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2556"/>
-        <location filename="../qkeymapper.cpp" line="26214"/>
+        <location filename="../qkeymapper.cpp" line="26388"/>
         <source>HideDisabled</source>
         <translation>HideDisabled</translation>
     </message>
@@ -1905,7 +2009,7 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1037"/>
-        <location filename="../qkeymapper.cpp" line="26365"/>
+        <location filename="../qkeymapper.cpp" line="26539"/>
         <source>Mapping</source>
         <translation>Mapping</translation>
     </message>
@@ -1915,97 +2019,97 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1136"/>
-        <location filename="../qkeymapper.cpp" line="26290"/>
+        <location filename="../qkeymapper.cpp" line="26464"/>
         <source>SystemFilterKey</source>
         <translation>SystemFilterKey</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1155"/>
-        <location filename="../qkeymapper.cpp" line="26307"/>
+        <location filename="../qkeymapper.cpp" line="26481"/>
         <source>Mapping Advanced</source>
         <translation>Mapping Advanced</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1174"/>
-        <location filename="../qkeymapper.cpp" line="26308"/>
+        <location filename="../qkeymapper.cpp" line="26482"/>
         <source>Mapping MacroList</source>
         <translation>Mapping MacroList</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1212"/>
-        <location filename="../qkeymapper.cpp" line="22096"/>
-        <location filename="../qkeymapper.cpp" line="26403"/>
+        <location filename="../qkeymapper.cpp" line="22270"/>
+        <location filename="../qkeymapper.cpp" line="26577"/>
         <source>Install FakerInput</source>
         <translation>Install FakerInput</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1599"/>
-        <location filename="../qkeymapper.cpp" line="26316"/>
+        <location filename="../qkeymapper.cpp" line="26490"/>
         <source>MinXSens</source>
         <translation>MinXSens</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1631"/>
-        <location filename="../qkeymapper.cpp" line="26317"/>
+        <location filename="../qkeymapper.cpp" line="26491"/>
         <source>MinYSens</source>
         <translation>MinYSens</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1727"/>
-        <location filename="../qkeymapper.cpp" line="26319"/>
+        <location filename="../qkeymapper.cpp" line="26493"/>
         <source>MaxYSens</source>
         <translation>MaxYSens</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1759"/>
-        <location filename="../qkeymapper.cpp" line="26318"/>
+        <location filename="../qkeymapper.cpp" line="26492"/>
         <source>MaxXSens</source>
         <translation>MaxXSens</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2001"/>
-        <location filename="../qkeymapper.cpp" line="26275"/>
+        <location filename="../qkeymapper.cpp" line="26449"/>
         <source>Param</source>
         <translation>Param</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2390"/>
-        <location filename="../qkeymapper.cpp" line="26209"/>
+        <location filename="../qkeymapper.cpp" line="26383"/>
         <source>AddTab</source>
         <translation>Add Tab</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2416"/>
-        <location filename="../qkeymapper.cpp" line="26240"/>
+        <location filename="../qkeymapper.cpp" line="26414"/>
         <source>Setting</source>
         <translation>Setting</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2464"/>
-        <location filename="../qkeymapper.cpp" line="26250"/>
+        <location filename="../qkeymapper.cpp" line="26424"/>
         <source>Backup</source>
         <translation>Backup</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26225"/>
-        <location filename="../qkeymapper.cpp" line="34944"/>
+        <location filename="../qkeymapper.cpp" line="26399"/>
+        <location filename="../qkeymapper.cpp" line="35987"/>
         <source>Capture</source>
         <translation>Capture</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="47"/>
         <location filename="../qkeymapper.ui" line="1059"/>
-        <location filename="../qkeymapper.cpp" line="10203"/>
-        <location filename="../qkeymapper.cpp" line="22787"/>
-        <location filename="../qkeymapper.cpp" line="22790"/>
-        <location filename="../qkeymapper.cpp" line="26203"/>
-        <location filename="../qkeymapper.cpp" line="26312"/>
+        <location filename="../qkeymapper.cpp" line="10370"/>
+        <location filename="../qkeymapper.cpp" line="22961"/>
+        <location filename="../qkeymapper.cpp" line="22964"/>
+        <location filename="../qkeymapper.cpp" line="26377"/>
+        <location filename="../qkeymapper.cpp" line="26486"/>
         <source>MappingStart</source>
         <translation>MappingStart</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="545"/>
-        <location filename="../qkeymapper.cpp" line="26431"/>
+        <location filename="../qkeymapper.cpp" line="26605"/>
         <source>Process</source>
         <translation>Process</translation>
     </message>
@@ -2015,7 +2119,7 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="764"/>
-        <location filename="../qkeymapper.cpp" line="26310"/>
+        <location filename="../qkeymapper.cpp" line="26484"/>
         <source>ShowHideKey</source>
         <translation>ShowHideKey</translation>
     </message>
@@ -2025,7 +2129,7 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1078"/>
-        <location filename="../qkeymapper.cpp" line="26289"/>
+        <location filename="../qkeymapper.cpp" line="26463"/>
         <source>Auto Match Foreground</source>
         <translation>Auto Match Foreground</translation>
     </message>
@@ -2041,17 +2145,17 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1094"/>
-        <location filename="../qkeymapper.cpp" line="26297"/>
+        <location filename="../qkeymapper.cpp" line="26471"/>
         <source>Send To Same Windows</source>
         <translation>Send To Same Windows</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1107"/>
-        <location filename="../qkeymapper.cpp" line="10186"/>
-        <location filename="../qkeymapper.cpp" line="22793"/>
-        <location filename="../qkeymapper.cpp" line="22796"/>
-        <location filename="../qkeymapper.cpp" line="26200"/>
-        <location filename="../qkeymapper.cpp" line="26313"/>
+        <location filename="../qkeymapper.cpp" line="10353"/>
+        <location filename="../qkeymapper.cpp" line="22967"/>
+        <location filename="../qkeymapper.cpp" line="22970"/>
+        <location filename="../qkeymapper.cpp" line="26374"/>
+        <location filename="../qkeymapper.cpp" line="26487"/>
         <source>MappingStop</source>
         <translation>MappingStop</translation>
     </message>
@@ -2061,15 +2165,15 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1271"/>
-        <location filename="../qkeymapper.cpp" line="26382"/>
+        <location filename="../qkeymapper.cpp" line="26556"/>
         <source>Lock Cursor</source>
         <translation>Lock Cursor</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1243"/>
         <location filename="../qkeymapper.ui" line="1290"/>
-        <location filename="../qkeymapper.cpp" line="26366"/>
-        <location filename="../qkeymapper.cpp" line="26381"/>
+        <location filename="../qkeymapper.cpp" line="26540"/>
+        <location filename="../qkeymapper.cpp" line="26555"/>
         <source>VirtualGamepad</source>
         <translation>VirtualGamepad</translation>
     </message>
@@ -2094,190 +2198,190 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1354"/>
-        <location filename="../qkeymapper.cpp" line="21983"/>
-        <location filename="../qkeymapper.cpp" line="26395"/>
+        <location filename="../qkeymapper.cpp" line="22157"/>
+        <location filename="../qkeymapper.cpp" line="26569"/>
         <source>InstallViGEm</source>
         <translation>InstallViGEm</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1418"/>
-        <location filename="../qkeymapper.cpp" line="26385"/>
+        <location filename="../qkeymapper.cpp" line="26559"/>
         <source>Y Sens</source>
         <translation>Y Sens</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1434"/>
-        <location filename="../qkeymapper.cpp" line="26384"/>
+        <location filename="../qkeymapper.cpp" line="26558"/>
         <source>X Sens</source>
         <translation>X Sens</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1463"/>
-        <location filename="../qkeymapper.cpp" line="26388"/>
+        <location filename="../qkeymapper.cpp" line="26562"/>
         <source>Recenter</source>
         <translation>Recenter</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1482"/>
-        <location filename="../qkeymapper.cpp" line="26383"/>
+        <location filename="../qkeymapper.cpp" line="26557"/>
         <source>Direct Mode</source>
         <translation>Direct Mode</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1501"/>
-        <location filename="../qkeymapper.cpp" line="26386"/>
+        <location filename="../qkeymapper.cpp" line="26560"/>
         <source>InvertX</source>
         <translation>InvertX</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1520"/>
-        <location filename="../qkeymapper.cpp" line="26387"/>
+        <location filename="../qkeymapper.cpp" line="26561"/>
         <source>InvertY</source>
         <translation>InvertY</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1529"/>
-        <location filename="../qkeymapper.cpp" line="26367"/>
+        <location filename="../qkeymapper.cpp" line="26541"/>
         <source>Gyro2Mouse</source>
         <translation>Gyro2Mouse</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1663"/>
-        <location filename="../qkeymapper.cpp" line="26320"/>
+        <location filename="../qkeymapper.cpp" line="26494"/>
         <source>MinThres</source>
         <translation>MinThres</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1695"/>
-        <location filename="../qkeymapper.cpp" line="26321"/>
+        <location filename="../qkeymapper.cpp" line="26495"/>
         <source>MaxThres</source>
         <translation>MaxThres</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1794"/>
-        <location filename="../qkeymapper.cpp" line="26322"/>
+        <location filename="../qkeymapper.cpp" line="26496"/>
         <source>Advanced</source>
         <translation>Advanced</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1803"/>
-        <location filename="../qkeymapper.cpp" line="26368"/>
+        <location filename="../qkeymapper.cpp" line="26542"/>
         <source>Multi-Input</source>
         <translation>Multi-Input</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1837"/>
-        <location filename="../qkeymapper.cpp" line="22191"/>
-        <location filename="../qkeymapper.cpp" line="22208"/>
-        <location filename="../qkeymapper.cpp" line="26416"/>
+        <location filename="../qkeymapper.cpp" line="22365"/>
+        <location filename="../qkeymapper.cpp" line="22382"/>
+        <location filename="../qkeymapper.cpp" line="26590"/>
         <source>Install Driver</source>
         <translation>Install Driver</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1856"/>
-        <location filename="../qkeymapper.cpp" line="26410"/>
+        <location filename="../qkeymapper.cpp" line="26584"/>
         <source>FilterKeys</source>
         <translation>FilterKeys</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1875"/>
-        <location filename="../qkeymapper.cpp" line="26409"/>
+        <location filename="../qkeymapper.cpp" line="26583"/>
         <source>MultiDevice</source>
         <translation>MultiDevice</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1891"/>
-        <location filename="../qkeymapper.cpp" line="26411"/>
+        <location filename="../qkeymapper.cpp" line="26585"/>
         <source>DeviceList</source>
         <translation>DeviceList</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1900"/>
-        <location filename="../qkeymapper.cpp" line="26369"/>
+        <location filename="../qkeymapper.cpp" line="26543"/>
         <source>Forza</source>
         <translation>Forza</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1951"/>
-        <location filename="../qkeymapper.cpp" line="26286"/>
+        <location filename="../qkeymapper.cpp" line="26460"/>
         <source>DataPort</source>
         <translation>DataPort</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1967"/>
-        <location filename="../qkeymapper.cpp" line="26288"/>
+        <location filename="../qkeymapper.cpp" line="26462"/>
         <source>AccelValue</source>
         <translation>AccelValue</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1983"/>
-        <location filename="../qkeymapper.cpp" line="26287"/>
+        <location filename="../qkeymapper.cpp" line="26461"/>
         <source>BrakeValue</source>
         <translation>BrakeValue</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2017"/>
-        <location filename="../qkeymapper.cpp" line="26407"/>
+        <location filename="../qkeymapper.cpp" line="26581"/>
         <source>Gamepad</source>
         <translation>Gamepad</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="443"/>
-        <location filename="../qkeymapper.cpp" line="26241"/>
+        <location filename="../qkeymapper.cpp" line="26415"/>
         <source>Description</source>
         <translation>Description</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="1009"/>
-        <location filename="../qkeymapper.cpp" line="26305"/>
+        <location filename="../qkeymapper.cpp" line="26479"/>
         <source>General Advanced</source>
         <translation>General Advanced</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2052"/>
-        <location filename="../qkeymapper.cpp" line="26212"/>
+        <location filename="../qkeymapper.cpp" line="26386"/>
         <source>ProcessList</source>
         <translation>ProcessList</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2077"/>
-        <location filename="../qkeymapper.cpp" line="26213"/>
+        <location filename="../qkeymapper.cpp" line="26387"/>
         <source>ShowNotes</source>
         <translation>ShowNotes</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2112"/>
-        <location filename="../qkeymapper.cpp" line="26274"/>
+        <location filename="../qkeymapper.cpp" line="26448"/>
         <source>PushLevel</source>
         <translation>PushLevel</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26208"/>
+        <location filename="../qkeymapper.cpp" line="26382"/>
         <source>Hotkey : L-Ctrl+S</source>
         <translation>Hotkey : L-Ctrl+S</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26272"/>
-        <location filename="../qkeymapper.cpp" line="26273"/>
-        <location filename="../qkeymapper.cpp" line="26389"/>
+        <location filename="../qkeymapper.cpp" line="26446"/>
+        <location filename="../qkeymapper.cpp" line="26447"/>
+        <location filename="../qkeymapper.cpp" line="26563"/>
         <source> ms</source>
         <translation> ms</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26277"/>
+        <location filename="../qkeymapper.cpp" line="26451"/>
         <source>LongPress</source>
         <translation>LongPress</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26278"/>
+        <location filename="../qkeymapper.cpp" line="26452"/>
         <source>DoublePress</source>
         <translation>DoublePress</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1105"/>
-        <location filename="../qkeymapper.cpp" line="23876"/>
-        <location filename="../qkeymapper.cpp" line="23900"/>
-        <location filename="../qkeymapper.cpp" line="26327"/>
+        <location filename="../qkeymapper.cpp" line="24050"/>
+        <location filename="../qkeymapper.cpp" line="24074"/>
+        <location filename="../qkeymapper.cpp" line="26501"/>
         <source>None</source>
         <translation>Hide</translation>
     </message>
@@ -2292,61 +2396,61 @@ Right-click to cancel.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1106"/>
-        <location filename="../qkeymapper.cpp" line="26328"/>
+        <location filename="../qkeymapper.cpp" line="26502"/>
         <source>Top Left</source>
         <translation>Top Left</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1107"/>
-        <location filename="../qkeymapper.cpp" line="26329"/>
+        <location filename="../qkeymapper.cpp" line="26503"/>
         <source>Top Center</source>
         <translation>Top Center</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1108"/>
-        <location filename="../qkeymapper.cpp" line="26330"/>
+        <location filename="../qkeymapper.cpp" line="26504"/>
         <source>Top Right</source>
         <translation>Top Righ</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1109"/>
-        <location filename="../qkeymapper.cpp" line="26331"/>
+        <location filename="../qkeymapper.cpp" line="26505"/>
         <source>Bottom Left</source>
         <translation>Bottom Left</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1110"/>
-        <location filename="../qkeymapper.cpp" line="26332"/>
+        <location filename="../qkeymapper.cpp" line="26506"/>
         <source>Bottom Center</source>
         <translation>Bottom Center</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1111"/>
-        <location filename="../qkeymapper.cpp" line="26333"/>
+        <location filename="../qkeymapper.cpp" line="26507"/>
         <source>Bottom Right</source>
         <translation>Bottom Right</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1117"/>
-        <location filename="../qkeymapper.cpp" line="26336"/>
+        <location filename="../qkeymapper.cpp" line="26510"/>
         <source>Default</source>
         <translation>Default</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1128"/>
-        <location filename="../qkeymapper.cpp" line="26339"/>
+        <location filename="../qkeymapper.cpp" line="26513"/>
         <source>System Default</source>
         <translation>System Default</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1129"/>
-        <location filename="../qkeymapper.cpp" line="26340"/>
+        <location filename="../qkeymapper.cpp" line="26514"/>
         <source>Light</source>
         <translation>Light</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="1130"/>
-        <location filename="../qkeymapper.cpp" line="26341"/>
+        <location filename="../qkeymapper.cpp" line="26515"/>
         <source>Dark</source>
         <translation>Dark</translation>
     </message>
@@ -2421,7 +2525,7 @@ Right-click to cancel.</translation>
     <message>
         <location filename="../qkeymapper.cpp" line="4657"/>
         <location filename="../qkeymapper.cpp" line="4981"/>
-        <location filename="../qkeymapper.cpp" line="29238"/>
+        <location filename="../qkeymapper.cpp" line="29412"/>
         <source>Game controller keys could not be blocked!</source>
         <translation>Game controller keys could not be blocked!</translation>
     </message>
@@ -2443,7 +2547,7 @@ Right-click to cancel.</translation>
         <location filename="../qkeymapper.cpp" line="5525"/>
         <location filename="../qkeymapper.cpp" line="5594"/>
         <location filename="../qkeymapper.cpp" line="5600"/>
-        <location filename="../qkeymapper.cpp" line="7508"/>
+        <location filename="../qkeymapper.cpp" line="7671"/>
         <source>Invalid key &quot;%1&quot;</source>
         <translation>Invalid key &quot;%1&quot;</translation>
     </message>
@@ -2637,261 +2741,261 @@ Right-click to cancel.</translation>
         <translation>It contains duplicate keys.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="7498"/>
+        <location filename="../qkeymapper.cpp" line="7661"/>
         <source>Hotkey is empty.</source>
         <translation>Hotkey is empty.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="7517"/>
+        <location filename="../qkeymapper.cpp" line="7680"/>
         <source>Hotkey key contains duplicate keys.</source>
         <translation>Hotkey key contains duplicate keys.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9287"/>
+        <location filename="../qkeymapper.cpp" line="9450"/>
         <source>ZipUpdater program file %1 does not exist!</source>
         <translation>ZipUpdater program file %1 does not exist!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9296"/>
+        <location filename="../qkeymapper.cpp" line="9459"/>
         <source>Update directory %1 does not exist!</source>
         <translation>Update directory %1 does not exist!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9319"/>
+        <location filename="../qkeymapper.cpp" line="9482"/>
         <source>Failed to copy update program file %1 to %2!</source>
         <translation>Failed to copy update program file %1 to %2!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9336"/>
+        <location filename="../qkeymapper.cpp" line="9499"/>
         <source>The update file name %1 does not match the platform string %2 !</source>
         <translation>The update file name %1 does not match the platform string %2 !</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9930"/>
+        <location filename="../qkeymapper.cpp" line="10097"/>
         <source>Floating Button Setup</source>
         <translation>Floating Button Setup</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9931"/>
+        <location filename="../qkeymapper.cpp" line="10098"/>
         <source>Save Setting</source>
         <translation>Save Setting</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9932"/>
+        <location filename="../qkeymapper.cpp" line="10099"/>
         <source>Move</source>
         <translation>Move</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9934"/>
+        <location filename="../qkeymapper.cpp" line="10101"/>
         <source>Disable Mouse Pass Through</source>
         <translation>Disable Mouse Pass Through</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9934"/>
+        <location filename="../qkeymapper.cpp" line="10101"/>
         <source>Enable Mouse Pass Through</source>
         <translation>Enable Mouse Pass Through</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9935"/>
+        <location filename="../qkeymapper.cpp" line="10102"/>
         <source>Disable Always On Top</source>
         <translation>Disable Always On Top</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9935"/>
+        <location filename="../qkeymapper.cpp" line="10102"/>
         <source>Enable Always On Top</source>
         <translation>Enable Always On Top</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9938"/>
+        <location filename="../qkeymapper.cpp" line="10105"/>
         <source>Hide This Floating Button</source>
         <translation>Hide This Floating Button</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9939"/>
+        <location filename="../qkeymapper.cpp" line="10106"/>
         <source>Hide All Floating Buttons</source>
         <translation>Hide All Floating Buttons</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9940"/>
+        <location filename="../qkeymapper.cpp" line="10107"/>
         <source>Show All Floating Buttons</source>
         <translation>Show All Floating Buttons</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9942"/>
+        <location filename="../qkeymapper.cpp" line="10109"/>
         <source>Hide Tooltip</source>
         <translation>Hide Tooltip</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9942"/>
+        <location filename="../qkeymapper.cpp" line="10109"/>
         <source>Show Tooltip</source>
         <translation>Show Tooltip</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10599"/>
+        <location filename="../qkeymapper.cpp" line="10766"/>
         <source>All tab names (Tab1～Tab999) are already in use. No additional tabs can be added.</source>
         <translation>All tab names (Tab1～Tab999) are already in use. No additional tabs can be added.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10665"/>
-        <location filename="../qkeymapper.cpp" line="10788"/>
-        <location filename="../qkeymapper.cpp" line="26424"/>
+        <location filename="../qkeymapper.cpp" line="10832"/>
+        <location filename="../qkeymapper.cpp" line="10955"/>
+        <location filename="../qkeymapper.cpp" line="26598"/>
         <source>Disable</source>
         <translation>Disable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10668"/>
-        <location filename="../qkeymapper.cpp" line="10791"/>
-        <location filename="../qkeymapper.cpp" line="26427"/>
+        <location filename="../qkeymapper.cpp" line="10835"/>
+        <location filename="../qkeymapper.cpp" line="10958"/>
+        <location filename="../qkeymapper.cpp" line="26601"/>
         <source>Float</source>
         <translation>Float</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="11273"/>
+        <location filename="../qkeymapper.cpp" line="11440"/>
         <source>WindowSwitchKey update success : </source>
         <translation>WindowSwitchKey update success : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="11280"/>
+        <location filename="../qkeymapper.cpp" line="11447"/>
         <source>MappingStartKey update success : </source>
         <translation>MappingStartKey update success : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="11287"/>
+        <location filename="../qkeymapper.cpp" line="11454"/>
         <source>MappingStopKey update success : </source>
         <translation>MappingStopKey update success : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="11296"/>
+        <location filename="../qkeymapper.cpp" line="11463"/>
         <source>Invalid WindowSwitchKey: %1</source>
         <translation>Invalid WindowSwitchKey: %1</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="11300"/>
+        <location filename="../qkeymapper.cpp" line="11467"/>
         <source>Invalid MappingStartKey: %1</source>
         <translation>Invalid MappingStartKey : %1</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="11304"/>
+        <location filename="../qkeymapper.cpp" line="11471"/>
         <source>Invalid MappingStopKey: %1</source>
         <translation>Invalid MappingStopKey: %1</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="11614"/>
-        <location filename="../qkeymapper.cpp" line="11780"/>
+        <location filename="../qkeymapper.cpp" line="11781"/>
+        <location filename="../qkeymapper.cpp" line="11947"/>
         <source>Enabled mapping for &quot;%1&quot;. Other same OriginalKey mapping was disabled.</source>
         <translation>Enabled mapping for &quot;%1&quot;. Other same OriginalKey mapping was disabled.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="11818"/>
+        <location filename="../qkeymapper.cpp" line="11985"/>
         <source>OriginalKey was updated to &quot;%1&quot;</source>
         <translation>OriginalKey was updated to &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="11818"/>
+        <location filename="../qkeymapper.cpp" line="11985"/>
         <source>. But the mapping was disabled due to a conflict.</source>
         <translation>. But the mapping was disabled due to a conflict.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12553"/>
+        <location filename="../qkeymapper.cpp" line="12720"/>
         <source>Tooltip display of Qt.</source>
         <translation>Tooltip display of Qt.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12557"/>
+        <location filename="../qkeymapper.cpp" line="12724"/>
         <source>ComboBox item list display of Qt.</source>
         <translation>ComboBox item list display of Qt.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12561"/>
+        <location filename="../qkeymapper.cpp" line="12728"/>
         <source>Tool window of Qt.</source>
         <translation>Tool window of Qt.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12565"/>
+        <location filename="../qkeymapper.cpp" line="12732"/>
         <source>Shadow display of Windows system.</source>
         <translation>Shadow display of Windows system.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12569"/>
+        <location filename="../qkeymapper.cpp" line="12736"/>
         <source>Alt+Tab multi task view staging.</source>
         <translation>Alt+Tab multi task view staging.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12573"/>
+        <location filename="../qkeymapper.cpp" line="12740"/>
         <source>Alt+Tab multi task view of Win10.</source>
         <translation>Alt+Tab multi task view of Win10.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12577"/>
+        <location filename="../qkeymapper.cpp" line="12744"/>
         <source>Alt+Tab multi task view of Win11.</source>
         <translation>Alt+Tab multi task view of Win11.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12902"/>
-        <location filename="../qkeymapper.cpp" line="22765"/>
-        <location filename="../qkeymapper.cpp" line="26252"/>
+        <location filename="../qkeymapper.cpp" line="13069"/>
+        <location filename="../qkeymapper.cpp" line="22939"/>
+        <location filename="../qkeymapper.cpp" line="26426"/>
         <source>Setting Export</source>
         <translation>Setting Export</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12902"/>
+        <location filename="../qkeymapper.cpp" line="13069"/>
         <source>Export completed.</source>
         <translation>Export completed.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20573"/>
+        <location filename="../qkeymapper.cpp" line="20747"/>
         <source>Fullscreen disabled global key mapping</source>
         <translation>Fullscreen disabled global key mapping</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20673"/>
+        <location filename="../qkeymapper.cpp" line="20847"/>
         <source>Custom Notification</source>
         <translation>Custom Notification Setup</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23895"/>
+        <location filename="../qkeymapper.cpp" line="24069"/>
         <source>%1, %2 (+%3)</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23971"/>
+        <location filename="../qkeymapper.cpp" line="24145"/>
         <source>KeyDown</source>
         <translation>KeyDown</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23974"/>
+        <location filename="../qkeymapper.cpp" line="24148"/>
         <source>KeyUp</source>
         <translation>KeyUp</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23977"/>
+        <location filename="../qkeymapper.cpp" line="24151"/>
         <source>KeyDown+KeyUp</source>
         <translation>KeyDown+KeyUp</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23980"/>
+        <location filename="../qkeymapper.cpp" line="24154"/>
         <source>Normal+KeyUp</source>
         <translation>Normal+KeyUp</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23987"/>
+        <location filename="../qkeymapper.cpp" line="24161"/>
         <source>SendTiming</source>
         <translation>SendTiming</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23989"/>
+        <location filename="../qkeymapper.cpp" line="24163"/>
         <source>KeyUpMapping</source>
         <translation>KeyUpMapping</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="24705"/>
-        <location filename="../qkeymapper.cpp" line="26292"/>
+        <location filename="../qkeymapper.cpp" line="24879"/>
+        <location filename="../qkeymapper.cpp" line="26466"/>
         <source>Enable System FilterKeys</source>
         <translation>Enable System FilterKeys</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="24706"/>
-        <location filename="../qkeymapper.cpp" line="26295"/>
+        <location filename="../qkeymapper.cpp" line="24880"/>
+        <location filename="../qkeymapper.cpp" line="26469"/>
         <source>Turn off key sounds when enabling FilterKeys</source>
         <translation>Turn off key clicks when Filter Keys is enabled</translation>
     </message>
@@ -2909,87 +3013,87 @@ Right-click to cancel.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2578"/>
-        <location filename="../qkeymapper.cpp" line="26215"/>
-        <location filename="../qkeymapper.cpp" line="26509"/>
-        <location filename="../qkeymapper.cpp" line="26661"/>
+        <location filename="../qkeymapper.cpp" line="26389"/>
+        <location filename="../qkeymapper.cpp" line="26683"/>
+        <location filename="../qkeymapper.cpp" line="26835"/>
         <source>ShowFloating</source>
         <translation>Floating</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="27942"/>
+        <location filename="../qkeymapper.cpp" line="28116"/>
         <source>Label</source>
         <translation>Label</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="27945"/>
+        <location filename="../qkeymapper.cpp" line="28119"/>
         <source>No.</source>
         <translation>No.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="27948"/>
+        <location filename="../qkeymapper.cpp" line="28122"/>
         <source>Note</source>
         <translation>Note</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="28933"/>
+        <location filename="../qkeymapper.cpp" line="29107"/>
         <source>&quot;%1&quot; cannot be added as a mapping directly.
 Right click the MappingKeyList to copy it to the clipboard.</source>
         <translation>&quot;%1&quot; cannot be added as a mapping directly.
 Right click the MappingKeyList to copy it to the clipboard.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29127"/>
-        <location filename="../qkeymapper.cpp" line="29138"/>
+        <location filename="../qkeymapper.cpp" line="29301"/>
+        <location filename="../qkeymapper.cpp" line="29312"/>
         <source>Please input the relative mouse move parameters in the format &quot;delta_x,delta_y&quot;.</source>
         <translation>Please input the relative mouse move parameters in the format &quot;delta_x,delta_y&quot;.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29294"/>
+        <location filename="../qkeymapper.cpp" line="29468"/>
         <source>A mapping for the same OriginalKey is already enabled. The newly added one was set to Disabled.</source>
         <translation>A mapping for the same OriginalKey is already enabled. The newly added mapping was disabled.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="32695"/>
-        <location filename="../qkeymapper.cpp" line="32774"/>
+        <location filename="../qkeymapper.cpp" line="33738"/>
+        <location filename="../qkeymapper.cpp" line="33817"/>
         <source>%1 Driver installation failed!</source>
         <translation>%1 Driver installation failed!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35072"/>
+        <location filename="../qkeymapper.cpp" line="36115"/>
         <source>Image files</source>
         <translation>Image files</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35118"/>
+        <location filename="../qkeymapper.cpp" line="36161"/>
         <source>Unable to load the image!</source>
         <translation>Unable to load the image file!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12857"/>
-        <location filename="../qkeymapper.cpp" line="12913"/>
+        <location filename="../qkeymapper.cpp" line="13024"/>
+        <location filename="../qkeymapper.cpp" line="13080"/>
         <source>Invalid file path.</source>
         <translation>Invalid file path.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12944"/>
+        <location filename="../qkeymapper.cpp" line="13111"/>
         <source>No valid groups found in the selected INI file.</source>
         <translation>No valid settings found in the selected INI file.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12961"/>
+        <location filename="../qkeymapper.cpp" line="13128"/>
         <source>Importing setting with the same name will overwrite the existing setting in the current configuration file. Do you want to continue?</source>
         <translation>Importing setting with the same name will overwrite the existing setting in the current configuration file. Do you want to continue?</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12995"/>
+        <location filename="../qkeymapper.cpp" line="13162"/>
         <source>No valid setting found.</source>
         <translation>No valid setting found.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="12960"/>
-        <location filename="../qkeymapper.cpp" line="13000"/>
-        <location filename="../qkeymapper.cpp" line="22766"/>
-        <location filename="../qkeymapper.cpp" line="26253"/>
+        <location filename="../qkeymapper.cpp" line="13127"/>
+        <location filename="../qkeymapper.cpp" line="13167"/>
+        <location filename="../qkeymapper.cpp" line="22940"/>
+        <location filename="../qkeymapper.cpp" line="26427"/>
         <source>Setting Import</source>
         <translation>Setting Import</translation>
     </message>
@@ -3024,61 +3128,61 @@ Values must be within 0～255. Valid formats include [150] or [U=200,D=0,L=150,R
         <translation>Invalid pushlevel[%1] of vJoy-Key &quot;%2&quot;, valid range 0~255</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13000"/>
+        <location filename="../qkeymapper.cpp" line="13167"/>
         <source>Import completed.</source>
         <translation>Import completed.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26235"/>
+        <location filename="../qkeymapper.cpp" line="26409"/>
         <source>WindowProcess</source>
         <translation>Process</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26236"/>
+        <location filename="../qkeymapper.cpp" line="26410"/>
         <source>WindowTitle</source>
         <translation>Title</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26237"/>
+        <location filename="../qkeymapper.cpp" line="26411"/>
         <source>WindowClass</source>
         <translation>Class</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="28996"/>
-        <location filename="../qkeymapper.cpp" line="29074"/>
+        <location filename="../qkeymapper.cpp" line="29170"/>
+        <location filename="../qkeymapper.cpp" line="29248"/>
         <source>Please input the vJoy-Move parameters in the format &quot;X=-60,Y=100&quot; or &quot;RX=6,RY=10&quot;, value range -255~255.</source>
         <translation>Please input the vJoy-Move parameters in the format &quot;X=-60,Y=100&quot; or &quot;RX=6,RY=10&quot;, value range -255～255.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29201"/>
+        <location filename="../qkeymapper.cpp" line="29375"/>
         <source>Please input the command to run!</source>
         <translation>Please input the command to run!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29214"/>
+        <location filename="../qkeymapper.cpp" line="29388"/>
         <source>Please input the tabname to switch!</source>
         <translation>Please input the tabname to switch!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29259"/>
+        <location filename="../qkeymapper.cpp" line="29433"/>
         <source>Please input the OriginalKey of the floating button!</source>
         <translation>Please input the OriginalKey of the floating button!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="24820"/>
+        <location filename="../qkeymapper.cpp" line="24994"/>
         <source>QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?</source>
         <translation>When using QKeyMapper&apos;s keymapping, it is strongly recommended to let the program automatically enable the Windows Filter Keys feature. This helps avoid various unexpected issues that may occur when the system repeatedly sends key presses while a key is held down.
 Are you sure you do not want to automatically enable Filter Keys during the mapping process?</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34999"/>
+        <location filename="../qkeymapper.cpp" line="36042"/>
         <source>Total characters (without spaces) : %1
 </source>
         <translation>Total characters (without spaces) : %1
 </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35000"/>
+        <location filename="../qkeymapper.cpp" line="36043"/>
         <source>Total characters (with spaces) : %2
 </source>
         <translation>Total characters (with spaces) : %2
@@ -3089,14 +3193,14 @@ Are you sure you do not want to automatically enable Filter Keys during the mapp
         <translation type="vanished">Please doubleclick process info table to select valid processinfo for key mapping.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10669"/>
-        <location filename="../qkeymapper.cpp" line="10792"/>
-        <location filename="../qkeymapper.cpp" line="26428"/>
+        <location filename="../qkeymapper.cpp" line="10836"/>
+        <location filename="../qkeymapper.cpp" line="10959"/>
+        <location filename="../qkeymapper.cpp" line="26602"/>
         <source>Category</source>
         <translation>Category</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10722"/>
+        <location filename="../qkeymapper.cpp" line="10889"/>
         <source>_copy</source>
         <translation>_copy</translation>
     </message>
@@ -3113,37 +3217,37 @@ Are you sure you do not want to automatically enable Filter Keys during the mapp
         <translation type="vanished">Invalid input format for MappingStopKey!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13222"/>
+        <location filename="../qkeymapper.cpp" line="13390"/>
         <source>Setting name cannot be empty. Please enter a valid setting name.</source>
         <translation>Setting name cannot be empty. Please enter a valid setting name.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13243"/>
+        <location filename="../qkeymapper.cpp" line="13411"/>
         <source>newline characters</source>
         <translation>newline characters</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13246"/>
+        <location filename="../qkeymapper.cpp" line="13414"/>
         <source>Setting name cannot contain the following characters: %1</source>
         <translation>Setting name cannot contain the following characters: %1</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13259"/>
+        <location filename="../qkeymapper.cpp" line="13427"/>
         <source>Please select &quot;%1&quot;, if you want to modify the global keymapping setting.</source>
         <translation>To modify the global keymapping setting, please select &quot;%1&quot; in the setting list.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="13270"/>
+        <location filename="../qkeymapper.cpp" line="13438"/>
         <source>Setting &quot;%1&quot; already exists. Do you want to overwrite it?</source>
         <translation>Setting &quot;%1&quot; already exists. Do you want to overwrite it?</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14414"/>
+        <location filename="../qkeymapper.cpp" line="14582"/>
         <source>Save success : </source>
         <translation>Save success : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="14425"/>
+        <location filename="../qkeymapper.cpp" line="14593"/>
         <source>Save failure : </source>
         <translation>Save failure : </translation>
     </message>
@@ -3152,71 +3256,71 @@ Are you sure you do not want to automatically enable Filter Keys during the mapp
         <translation type="vanished">Global keymapping setting</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="18695"/>
+        <location filename="../qkeymapper.cpp" line="18866"/>
         <source>Invalid mapping data : </source>
         <translation>Invalid mapping data : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20874"/>
+        <location filename="../qkeymapper.cpp" line="21048"/>
         <source>StartMapping [</source>
         <translation>MappingStart [</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20902"/>
-        <location filename="../qkeymapper.cpp" line="23396"/>
+        <location filename="../qkeymapper.cpp" line="21076"/>
+        <location filename="../qkeymapper.cpp" line="23570"/>
         <source>Idle</source>
         <translation>Idle</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22741"/>
-        <location filename="../qkeymapper.cpp" line="26343"/>
-        <location filename="../qkeymapper.cpp" line="26349"/>
-        <location filename="../qkeymapper.cpp" line="26355"/>
+        <location filename="../qkeymapper.cpp" line="22915"/>
+        <location filename="../qkeymapper.cpp" line="26517"/>
+        <location filename="../qkeymapper.cpp" line="26523"/>
+        <location filename="../qkeymapper.cpp" line="26529"/>
         <source>Ignore</source>
         <translation>Ignore</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22742"/>
-        <location filename="../qkeymapper.cpp" line="26344"/>
-        <location filename="../qkeymapper.cpp" line="26350"/>
-        <location filename="../qkeymapper.cpp" line="26356"/>
+        <location filename="../qkeymapper.cpp" line="22916"/>
+        <location filename="../qkeymapper.cpp" line="26518"/>
+        <location filename="../qkeymapper.cpp" line="26524"/>
+        <location filename="../qkeymapper.cpp" line="26530"/>
         <source>Equals</source>
         <translation>Equals</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22743"/>
-        <location filename="../qkeymapper.cpp" line="26345"/>
-        <location filename="../qkeymapper.cpp" line="26351"/>
-        <location filename="../qkeymapper.cpp" line="26357"/>
+        <location filename="../qkeymapper.cpp" line="22917"/>
+        <location filename="../qkeymapper.cpp" line="26519"/>
+        <location filename="../qkeymapper.cpp" line="26525"/>
+        <location filename="../qkeymapper.cpp" line="26531"/>
         <source>Contains</source>
         <translation>Contains</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22744"/>
-        <location filename="../qkeymapper.cpp" line="26346"/>
-        <location filename="../qkeymapper.cpp" line="26352"/>
-        <location filename="../qkeymapper.cpp" line="26358"/>
+        <location filename="../qkeymapper.cpp" line="22918"/>
+        <location filename="../qkeymapper.cpp" line="26520"/>
+        <location filename="../qkeymapper.cpp" line="26526"/>
+        <location filename="../qkeymapper.cpp" line="26532"/>
         <source>StartsWith</source>
         <translation>StartsWith</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22745"/>
-        <location filename="../qkeymapper.cpp" line="26347"/>
-        <location filename="../qkeymapper.cpp" line="26353"/>
-        <location filename="../qkeymapper.cpp" line="26359"/>
+        <location filename="../qkeymapper.cpp" line="22919"/>
+        <location filename="../qkeymapper.cpp" line="26521"/>
+        <location filename="../qkeymapper.cpp" line="26527"/>
+        <location filename="../qkeymapper.cpp" line="26533"/>
         <source>EndsWith</source>
         <translation>EndsWith</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2435"/>
-        <location filename="../qkeymapper.cpp" line="25295"/>
-        <location filename="../qkeymapper.cpp" line="26228"/>
-        <location filename="../qkeymapper.cpp" line="34936"/>
+        <location filename="../qkeymapper.cpp" line="25469"/>
+        <location filename="../qkeymapper.cpp" line="26402"/>
+        <location filename="../qkeymapper.cpp" line="35979"/>
         <source>Edit</source>
         <translation>Edit</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26371"/>
+        <location filename="../qkeymapper.cpp" line="26545"/>
         <source>WindowInfo setting tab tooltip.</source>
         <translation>The &quot;WindowInfo&quot; setting tab show and customize the process and window title information of the selected setting.
 1. Show and customize the process path and the matching method used during window checking.
@@ -3226,20 +3330,20 @@ Are you sure you do not want to automatically enable Filter Keys during the mapp
 5. Show and customize the description of the setting.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="28677"/>
+        <location filename="../qkeymapper.cpp" line="28851"/>
         <source>The current selected setting is already &quot;%1&quot;</source>
         <translation>The current selected setting is already &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29449"/>
-        <location filename="../qkeymapper.cpp" line="29517"/>
-        <location filename="../qkeymapper.cpp" line="29595"/>
-        <location filename="../qkeymapper.cpp" line="29663"/>
+        <location filename="../qkeymapper.cpp" line="29623"/>
+        <location filename="../qkeymapper.cpp" line="29691"/>
+        <location filename="../qkeymapper.cpp" line="29769"/>
+        <location filename="../qkeymapper.cpp" line="29837"/>
         <source>Cannot move items while the mapping table is filtered!</source>
         <translation>Cannot move items while the mapping table is filtered!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34802"/>
+        <location filename="../qkeymapper.cpp" line="35845"/>
         <source>Restore to absolute process path &quot;%1&quot;?</source>
         <translation>Restore to absolute process path &quot;%1&quot;?</translation>
     </message>
@@ -3248,166 +3352,166 @@ Are you sure you do not want to automatically enable Filter Keys during the mapp
         <translation type="vanished">Checking</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20912"/>
+        <location filename="../qkeymapper.cpp" line="21086"/>
         <source>StopMapping [</source>
         <translation>MappingStop [</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="21978"/>
+        <location filename="../qkeymapper.cpp" line="22152"/>
         <source>ViGEmAvailable</source>
         <translation>ViGEmAvailable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="21986"/>
+        <location filename="../qkeymapper.cpp" line="22160"/>
         <source>ViGEmUnavailable</source>
         <translation>ViGEmUnavailable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22043"/>
-        <location filename="../qkeymapper.cpp" line="22121"/>
+        <location filename="../qkeymapper.cpp" line="22217"/>
+        <location filename="../qkeymapper.cpp" line="22295"/>
         <source>%1 client failed to connect. Please reinstall or restart QKeyMapper.</source>
         <translation>%1 client failed to connect. Please reinstall or restart QKeyMapper.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22051"/>
-        <location filename="../qkeymapper.cpp" line="22129"/>
+        <location filename="../qkeymapper.cpp" line="22225"/>
+        <location filename="../qkeymapper.cpp" line="22303"/>
         <source>%1 client has connected successfully.</source>
         <translation>%1 client has connected successfully.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22090"/>
-        <location filename="../qkeymapper.cpp" line="26400"/>
+        <location filename="../qkeymapper.cpp" line="22264"/>
+        <location filename="../qkeymapper.cpp" line="26574"/>
         <source>Uninstall FakerInput</source>
         <translation>Uninstall FakerInput</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22093"/>
+        <location filename="../qkeymapper.cpp" line="22267"/>
         <source>FakerInput Available</source>
         <translation>FakerInput Available</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22099"/>
+        <location filename="../qkeymapper.cpp" line="22273"/>
         <source>FakerInput Unavailable</source>
         <translation>FakerInput Unavailable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22177"/>
+        <location filename="../qkeymapper.cpp" line="22351"/>
         <source>Available</source>
         <translation>Available</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22194"/>
+        <location filename="../qkeymapper.cpp" line="22368"/>
         <source>RebootRequired</source>
         <translation>RebootRequired</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22211"/>
+        <location filename="../qkeymapper.cpp" line="22385"/>
         <source>Unavailable</source>
         <translation>Unavailable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22241"/>
+        <location filename="../qkeymapper.cpp" line="22415"/>
         <source>PowerWired</source>
         <translation>PowerWired</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22244"/>
+        <location filename="../qkeymapper.cpp" line="22418"/>
         <source>PowerFull</source>
         <translation>PowerFull</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22247"/>
+        <location filename="../qkeymapper.cpp" line="22421"/>
         <source>PowerMedium</source>
         <translation>PowerMedium</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22250"/>
+        <location filename="../qkeymapper.cpp" line="22424"/>
         <source>PowerLow</source>
         <translation>PowerLow</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22253"/>
+        <location filename="../qkeymapper.cpp" line="22427"/>
         <source>PowerEmpty</source>
         <translation>PowerEmpty</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22256"/>
+        <location filename="../qkeymapper.cpp" line="22430"/>
         <source>PowerUnknown</source>
         <translation>PowerUnknown</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22268"/>
+        <location filename="../qkeymapper.cpp" line="22442"/>
         <source> GyroDisabled</source>
         <translation> Gyro Disabled</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22271"/>
+        <location filename="../qkeymapper.cpp" line="22445"/>
         <source> GyroEnabled</source>
         <translation> Gyro Enabled</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22494"/>
+        <location filename="../qkeymapper.cpp" line="22668"/>
         <source>Block Mouse</source>
         <translation>Block Mouse</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22498"/>
+        <location filename="../qkeymapper.cpp" line="22672"/>
         <source>Unblock Mouse</source>
         <translation>Unblock Mouse</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22504"/>
+        <location filename="../qkeymapper.cpp" line="22678"/>
         <source>Block Keyboard</source>
         <translation>Block Keyboard</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22508"/>
+        <location filename="../qkeymapper.cpp" line="22682"/>
         <source>Unblock Keyboard</source>
         <translation>Unblock Keyboard</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22565"/>
-        <location filename="../qkeymapper.cpp" line="23983"/>
+        <location filename="../qkeymapper.cpp" line="22739"/>
+        <location filename="../qkeymapper.cpp" line="24157"/>
         <source>Normal</source>
         <translation>Normal</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22567"/>
+        <location filename="../qkeymapper.cpp" line="22741"/>
         <source>BurstLock</source>
         <translation>BurstLock</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22798"/>
+        <location filename="../qkeymapper.cpp" line="22972"/>
         <source>Show</source>
         <translation>Show</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22799"/>
+        <location filename="../qkeymapper.cpp" line="22973"/>
         <source>Hide</source>
         <translation>Hide</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22800"/>
+        <location filename="../qkeymapper.cpp" line="22974"/>
         <source>Quit</source>
         <translation>Quit</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23330"/>
+        <location filename="../qkeymapper.cpp" line="23504"/>
         <source>Monitoring : </source>
         <translation>Monitoring : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23391"/>
+        <location filename="../qkeymapper.cpp" line="23565"/>
         <source>Mapping : </source>
         <translation>Mapping : </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23388"/>
+        <location filename="../qkeymapper.cpp" line="23562"/>
         <source>Mapping : Global</source>
         <translation>Mapping : Global</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23296"/>
+        <location filename="../qkeymapper.cpp" line="23470"/>
         <source>If you want the program to be hidden to the system tray when you click the close button, please check the option below.
 If you do not check it and click &quot;OK&quot;, the program will close directly when you click the close button in the future.
 Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog again.</source>
@@ -3416,63 +3520,63 @@ If you do not check it and click &quot;OK&quot;, the program will close directly
 Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog again.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23301"/>
+        <location filename="../qkeymapper.cpp" line="23475"/>
         <source>Hide the program to the system tray when clicking the close button</source>
         <translation>Hide the program to the system tray when clicking the close button</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23605"/>
-        <location filename="../qkeymapper.cpp" line="23636"/>
-        <location filename="../qkeymapper.cpp" line="23857"/>
-        <location filename="../qkeymapper.cpp" line="23887"/>
+        <location filename="../qkeymapper.cpp" line="23779"/>
+        <location filename="../qkeymapper.cpp" line="23810"/>
+        <location filename="../qkeymapper.cpp" line="24031"/>
+        <location filename="../qkeymapper.cpp" line="24061"/>
         <source>Blank</source>
         <translation>(Blank)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26059"/>
+        <location filename="../qkeymapper.cpp" line="26233"/>
         <source>Hotkey : %1</source>
         <translation>Hotkey : %1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="2368"/>
-        <location filename="../qkeymapper.cpp" line="26216"/>
+        <location filename="../qkeymapper.cpp" line="26390"/>
         <source>ShowCategory</source>
         <translation>Filter</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26256"/>
-        <location filename="../qkeymapper.cpp" line="26260"/>
+        <location filename="../qkeymapper.cpp" line="26430"/>
+        <location filename="../qkeymapper.cpp" line="26434"/>
         <source>Keyboard Keys</source>
         <translation>Keyboard Keys</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26257"/>
-        <location filename="../qkeymapper.cpp" line="26261"/>
+        <location filename="../qkeymapper.cpp" line="26431"/>
+        <location filename="../qkeymapper.cpp" line="26435"/>
         <source>Mouse Keys</source>
         <translation>Mouse Keys</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26258"/>
-        <location filename="../qkeymapper.cpp" line="26262"/>
+        <location filename="../qkeymapper.cpp" line="26432"/>
+        <location filename="../qkeymapper.cpp" line="26436"/>
         <source>Gamepad Keys</source>
         <translation>Gamepad Keys</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26259"/>
-        <location filename="../qkeymapper.cpp" line="26263"/>
+        <location filename="../qkeymapper.cpp" line="26433"/>
+        <location filename="../qkeymapper.cpp" line="26437"/>
         <source>Function Keys</source>
         <translation>Function Keys</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22746"/>
-        <location filename="../qkeymapper.cpp" line="26348"/>
-        <location filename="../qkeymapper.cpp" line="26354"/>
-        <location filename="../qkeymapper.cpp" line="26360"/>
+        <location filename="../qkeymapper.cpp" line="22920"/>
+        <location filename="../qkeymapper.cpp" line="26522"/>
+        <location filename="../qkeymapper.cpp" line="26528"/>
+        <location filename="../qkeymapper.cpp" line="26534"/>
         <source>RegexMatch</source>
         <translation>RegexMatch</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26372"/>
+        <location filename="../qkeymapper.cpp" line="26546"/>
         <source>General setting tab tooltip.</source>
         <translation>The &quot;General&quot; settings tab includes various options related to the overall functionality of the software:
 1. Set the shortcut key for toggling between normal window display and minimizing to the system tray.
@@ -3487,7 +3591,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 10. Check for software updates and prompt the user to choose whether to upgrade, with options for Github and Gitee.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26373"/>
+        <location filename="../qkeymapper.cpp" line="26547"/>
         <source>Mapping setting tab tooltip.</source>
         <translation>The &quot;Mapping&quot; setting tab includes options related to mapping functions:
 1. Hotkey for &quot;MappingStart&quot; and &quot;MappingStop&quot; can be set separately.
@@ -3498,7 +3602,7 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 5. You can choose whether to accept key inputs from the virtual gamepad created by the software itself.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26374"/>
+        <location filename="../qkeymapper.cpp" line="26548"/>
         <source>VirtualGamepad setting tab tooltip.</source>
         <translation>The &quot;VirtualGamepad&quot; setting tab includes options related to the mapping functions of virtual gamepads created by QKeyMapper:
 1. You can install and uninstall the ViGEm Bus driver for virtual gamepads.
@@ -3511,14 +3615,14 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 9. You can set the &quot;Recenter&quot; delay when controlling the virtual gamepad stick with the mouse. If set to 0, recentering is disabled.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26375"/>
+        <location filename="../qkeymapper.cpp" line="26549"/>
         <source>Gyro2Mouse setting tab tooltip.</source>
         <translation>The &quot;Gyro2Mouse&quot; settings tab includes options for controlling the mouse pointer using the gamepad’s gyroscope.
 1. You can set the speed for horizontal and vertical movement when using the gyroscope to control the mouse pointer. Higher values mean faster speed (range: 0.00–99.99).
 2. Additional advanced options for Gyro2Mouse control are also available.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26377"/>
+        <location filename="../qkeymapper.cpp" line="26551"/>
         <source>Forza setting tab tooltip.</source>
         <translation>The &quot;Forza&quot; setting tab includes options related to automatic brake and throttle control for the Forza series games:
 1. Set the detection threshold for insufficient tire grip (wheel slip) when braking.
@@ -3526,44 +3630,44 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
 3. Set the local port number for receiving game data.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26390"/>
+        <location filename="../qkeymapper.cpp" line="26564"/>
         <source>Unrecenter</source>
         <translation>Unrecenter</translation>
     </message>
     <message>
         <location filename="../qkeymapper.ui" line="596"/>
-        <location filename="../qkeymapper.cpp" line="26434"/>
+        <location filename="../qkeymapper.cpp" line="26608"/>
         <source>Class</source>
         <translation>ClassName</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="27326"/>
+        <location filename="../qkeymapper.cpp" line="27500"/>
         <source>For Windows 10 or higher 64-bit system, it is recommended to use the Qt6_x64 version. The Qt5 version is provided only for compatibility with Windows 7.</source>
         <translation>For Windows 10 or higher 64-bit system, it is recommended to use the Qt6_x64 version. The Qt5 version is provided only for compatibility with Windows 7.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="27327"/>
-        <location filename="../qkeymapper.cpp" line="27374"/>
+        <location filename="../qkeymapper.cpp" line="27501"/>
+        <location filename="../qkeymapper.cpp" line="27548"/>
         <source>Do not show this message again</source>
         <translation>Do not show this message again</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="27373"/>
+        <location filename="../qkeymapper.cpp" line="27547"/>
         <source>Using QKeyMapper is strongly recommended to enable the FilterKeys feature in Windows to avoid various unexpected issues.</source>
         <translation>It is strongly recommended to enable the Windows Filter Keys feature when using QKeyMapper&apos;s keymapping function. This helps prevent unexpected issues caused by the system repeatedly sending key presses when a key is held down.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="28442"/>
+        <location filename="../qkeymapper.cpp" line="28616"/>
         <source>The upgrade package %1 does not exist in the directory %2. Download failed!</source>
         <translation>The upgrade package %1 does not exist in the directory %2. Download failed!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="28447"/>
+        <location filename="../qkeymapper.cpp" line="28621"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;The upgrade package &lt;b&gt;%1&lt;/b&gt; has been successfully downloaded to the directory &lt;b&gt;%2&lt;/b&gt;.&lt;/p&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;The upgrade package &lt;b&gt;%1&lt;/b&gt; has been successfully downloaded to the directory &lt;b&gt;%2&lt;/b&gt;.&lt;/p&gt;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="28449"/>
+        <location filename="../qkeymapper.cpp" line="28623"/>
         <source>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Click [Yes] to automatically close the program and upgrade&lt;/b&gt;, otherwise handle it manually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;p align=&quot;center&quot;&gt;&lt;b&gt;Click [Yes] to automatically close the program and upgrade&lt;/b&gt;, otherwise handle it manually.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
@@ -3576,12 +3680,12 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
         <translation type="vanished">Key sequence mapping to &quot;%1&quot; exceeds the maximum length!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29093"/>
+        <location filename="../qkeymapper.cpp" line="29267"/>
         <source>Need to set a screen mouse point with &quot;%1&quot; click!</source>
         <translation>Need to set a screen mouse point with &quot;%1&quot; click!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29093"/>
+        <location filename="../qkeymapper.cpp" line="29267"/>
         <source>L-Ctrl+Mouse-Left Click</source>
         <translation>L-Ctrl+Mouse-Left Click</translation>
     </message>
@@ -3590,12 +3694,12 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
         <translation type="vanished">Already set a same screen mouse point!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29108"/>
+        <location filename="../qkeymapper.cpp" line="29282"/>
         <source>Need to set a window mouse point with &quot;%1&quot; click!</source>
         <translation>Need to set a window mouse point with &quot;%1&quot; click!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29108"/>
+        <location filename="../qkeymapper.cpp" line="29282"/>
         <source>L-Alt+Mouse-Left Click</source>
         <translation>L-Alt+Mouse-Left Click</translation>
     </message>
@@ -3604,27 +3708,27 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
         <translation type="vanished">Already set a same window mouse point!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29151"/>
+        <location filename="../qkeymapper.cpp" line="29325"/>
         <source>Please input the key to unlock!</source>
         <translation>Please input the original key to unlock!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29166"/>
+        <location filename="../qkeymapper.cpp" line="29340"/>
         <source>Please input the volume value to set!</source>
         <translation>Please input the volume value to set!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29177"/>
+        <location filename="../qkeymapper.cpp" line="29351"/>
         <source>Please input the text to send!</source>
         <translation>Please input the text to send!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29188"/>
+        <location filename="../qkeymapper.cpp" line="29362"/>
         <source>Please input the text to paste!</source>
         <translation>Please input the text to paste!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29228"/>
+        <location filename="../qkeymapper.cpp" line="29402"/>
         <source>Please input the mapping macro!</source>
         <translation>Please input the mapping macro!</translation>
     </message>
@@ -3637,19 +3741,19 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
         <translation type="vanished">Conflict with exist Keys!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29400"/>
-        <location filename="../qkeymapper.cpp" line="29420"/>
-        <location filename="../qkeymapper.cpp" line="29440"/>
+        <location filename="../qkeymapper.cpp" line="29574"/>
+        <location filename="../qkeymapper.cpp" line="29594"/>
+        <location filename="../qkeymapper.cpp" line="29614"/>
         <source>Invalid regular expression : &quot;%1&quot;</source>
         <translation>Invalid regular expression : &quot;%1&quot;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="30360"/>
+        <location filename="../qkeymapper.cpp" line="30534"/>
         <source>Are you sure you want to clear all data in the mapping table?</source>
         <translation>Are you sure you want to clear all data in the mapping table?</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="32364"/>
+        <location filename="../qkeymapper.cpp" line="33407"/>
         <source>Are you sure you want to remove the setting &quot;%1&quot;?</source>
         <translation>Are you sure you want to remove the setting 【%1】?</translation>
     </message>
@@ -3658,17 +3762,17 @@ Hold the &quot;L-Ctrl&quot; key and click the close button to show this dialog a
         <translation type="vanished">%1 driver installation failed!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33248"/>
+        <location filename="../qkeymapper.cpp" line="34291"/>
         <source>System reboot is required for the changes to take effect after uninstalling Interception driver.</source>
         <translation>System reboot is required for the changes to take effect after uninstalling Interception driver.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33294"/>
+        <location filename="../qkeymapper.cpp" line="34337"/>
         <source>System reboot is required for the changes to take effect after installing Interception driver.</source>
         <translation>System reboot is required for the changes to take effect after installing Interception driver.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="33254"/>
+        <location filename="../qkeymapper.cpp" line="34297"/>
         <source>Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using Interception driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.
 
 Do you confirm to continue installing Interception driver?</source>
@@ -3677,87 +3781,87 @@ Do you confirm to continue installing Interception driver?</source>
 Do you confirm to continue installing Interception driver?</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20905"/>
+        <location filename="../qkeymapper.cpp" line="21079"/>
         <source>Monitoring</source>
         <translation>Monitoring</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="21975"/>
-        <location filename="../qkeymapper.cpp" line="26392"/>
+        <location filename="../qkeymapper.cpp" line="22149"/>
+        <location filename="../qkeymapper.cpp" line="26566"/>
         <source>UninstallViGEm</source>
         <translation>UninstallViGEm</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="22174"/>
-        <location filename="../qkeymapper.cpp" line="26413"/>
+        <location filename="../qkeymapper.cpp" line="22348"/>
+        <location filename="../qkeymapper.cpp" line="26587"/>
         <source>Uninstall Driver</source>
         <translation>Uninstall Driver</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10663"/>
-        <location filename="../qkeymapper.cpp" line="10786"/>
-        <location filename="../qkeymapper.cpp" line="26422"/>
-        <location filename="../qkeymapper.cpp" line="27945"/>
+        <location filename="../qkeymapper.cpp" line="10830"/>
+        <location filename="../qkeymapper.cpp" line="10953"/>
+        <location filename="../qkeymapper.cpp" line="26596"/>
+        <location filename="../qkeymapper.cpp" line="28119"/>
         <source>OriginalKey</source>
         <translation>OriginalKey</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9312"/>
+        <location filename="../qkeymapper.cpp" line="9475"/>
         <source>Failed to remove existing update program file %1!</source>
         <translation>Failed to remove existing update program file %1!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="9364"/>
+        <location filename="../qkeymapper.cpp" line="9527"/>
         <source>Failed to start update program %1!</source>
         <translation>Failed to start update program %1!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10102"/>
-        <location filename="../qkeymapper.cpp" line="10114"/>
-        <location filename="../qkeymapper.cpp" line="26231"/>
-        <location filename="../qkeymapper.cpp" line="34932"/>
-        <location filename="../qkeymapper.cpp" line="34961"/>
+        <location filename="../qkeymapper.cpp" line="10269"/>
+        <location filename="../qkeymapper.cpp" line="10281"/>
+        <location filename="../qkeymapper.cpp" line="26405"/>
+        <location filename="../qkeymapper.cpp" line="35975"/>
+        <location filename="../qkeymapper.cpp" line="36004"/>
         <source>Press any key to record...</source>
         <translation>Please press keys to record...</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10664"/>
-        <location filename="../qkeymapper.cpp" line="10787"/>
-        <location filename="../qkeymapper.cpp" line="23988"/>
-        <location filename="../qkeymapper.cpp" line="26423"/>
+        <location filename="../qkeymapper.cpp" line="10831"/>
+        <location filename="../qkeymapper.cpp" line="10954"/>
+        <location filename="../qkeymapper.cpp" line="24162"/>
+        <location filename="../qkeymapper.cpp" line="26597"/>
         <source>MappingKey</source>
         <translation>MappingKey</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10666"/>
-        <location filename="../qkeymapper.cpp" line="10789"/>
-        <location filename="../qkeymapper.cpp" line="22571"/>
-        <location filename="../qkeymapper.cpp" line="26425"/>
+        <location filename="../qkeymapper.cpp" line="10833"/>
+        <location filename="../qkeymapper.cpp" line="10956"/>
+        <location filename="../qkeymapper.cpp" line="22745"/>
+        <location filename="../qkeymapper.cpp" line="26599"/>
         <source>Burst</source>
         <translation>Burst</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="10667"/>
-        <location filename="../qkeymapper.cpp" line="10790"/>
-        <location filename="../qkeymapper.cpp" line="22575"/>
-        <location filename="../qkeymapper.cpp" line="26426"/>
+        <location filename="../qkeymapper.cpp" line="10834"/>
+        <location filename="../qkeymapper.cpp" line="10957"/>
+        <location filename="../qkeymapper.cpp" line="22749"/>
+        <location filename="../qkeymapper.cpp" line="26600"/>
         <source>Lock</source>
         <translation>Lock</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="15287"/>
-        <location filename="../qkeymapper.cpp" line="19578"/>
-        <location filename="../qkeymapper.cpp" line="26247"/>
+        <location filename="../qkeymapper.cpp" line="15458"/>
+        <location filename="../qkeymapper.cpp" line="19752"/>
+        <location filename="../qkeymapper.cpp" line="26421"/>
         <source>GlobalKeyMapping</source>
         <translation>GlobalKeyMapping</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20949"/>
+        <location filename="../qkeymapper.cpp" line="21123"/>
         <source>TabisAlready</source>
         <translation>Already</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="20952"/>
+        <location filename="../qkeymapper.cpp" line="21126"/>
         <source>MappingTabSwitch</source>
         <translation>TabSwitched</translation>
     </message>
@@ -3778,26 +3882,26 @@ Do you confirm to continue installing Interception driver?</translation>
         <translation type="vanished">LockOff</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="23849"/>
-        <location filename="../qkeymapper.cpp" line="23880"/>
-        <location filename="../qkeymapper.cpp" line="24874"/>
-        <location filename="../qkeymapper.cpp" line="25068"/>
-        <location filename="../qkeymapper.cpp" line="25069"/>
+        <location filename="../qkeymapper.cpp" line="24023"/>
+        <location filename="../qkeymapper.cpp" line="24054"/>
+        <location filename="../qkeymapper.cpp" line="25048"/>
+        <location filename="../qkeymapper.cpp" line="25242"/>
+        <location filename="../qkeymapper.cpp" line="25243"/>
         <source>All</source>
         <translation>(Select All)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26314"/>
+        <location filename="../qkeymapper.cpp" line="26488"/>
         <source>Gyro2Mouse X Speed</source>
         <translation>X Speed</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26315"/>
+        <location filename="../qkeymapper.cpp" line="26489"/>
         <source>Gyro2Mouse Y Speed</source>
         <translation>Y Speed</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26376"/>
+        <location filename="../qkeymapper.cpp" line="26550"/>
         <source>Multi-Input setting tab tooltip</source>
         <translation>&lt;html&gt;
 &lt;body&gt;
@@ -3811,7 +3915,7 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
 &lt;/html&gt;</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="26432"/>
+        <location filename="../qkeymapper.cpp" line="26606"/>
         <source>PID</source>
         <translation>PID</translation>
     </message>
@@ -4620,158 +4724,158 @@ Do you want to overwrite them?</source>
 <context>
     <name>QObject</name>
     <message>
-        <location filename="../qvbuttonpanel.cpp" line="591"/>
+        <location filename="../qvbuttonpanel.cpp" line="593"/>
         <source>VButton Panel Setup</source>
         <translation>VButton Panel Setup</translation>
     </message>
     <message>
-        <location filename="../qvbuttonpanel.cpp" line="592"/>
+        <location filename="../qvbuttonpanel.cpp" line="594"/>
         <source>Save Setting</source>
         <translation>Save Setting</translation>
     </message>
     <message>
-        <location filename="../qvbuttonpanel.cpp" line="593"/>
+        <location filename="../qvbuttonpanel.cpp" line="595"/>
         <source>Move</source>
         <translation>Move</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34169"/>
+        <location filename="../qkeymapper.cpp" line="35212"/>
         <source>Disable</source>
         <translation>Disable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34174"/>
+        <location filename="../qkeymapper.cpp" line="35217"/>
         <source>Enable</source>
         <translation>Enable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34185"/>
+        <location filename="../qkeymapper.cpp" line="35228"/>
         <source>Burst Enable</source>
         <translation>Burst Enable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34190"/>
+        <location filename="../qkeymapper.cpp" line="35233"/>
         <source>Burst Disable</source>
         <translation>Burst Disable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34196"/>
+        <location filename="../qkeymapper.cpp" line="35239"/>
         <source>Lock Enable</source>
         <translation>Lock Enable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34201"/>
+        <location filename="../qkeymapper.cpp" line="35244"/>
         <source>Lock Disable</source>
         <translation>Lock Disable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34207"/>
+        <location filename="../qkeymapper.cpp" line="35250"/>
         <source>FloatingButton Enable</source>
         <translation>FloatingButton Enable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34212"/>
+        <location filename="../qkeymapper.cpp" line="35255"/>
         <source>FloatingButton Disable</source>
         <translation>FloatingButton Disable</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34147"/>
-        <location filename="../qkeymapper.cpp" line="34264"/>
+        <location filename="../qkeymapper.cpp" line="35190"/>
+        <location filename="../qkeymapper.cpp" line="35307"/>
         <location filename="../qmacrolistdialog.cpp" line="2006"/>
         <location filename="../qmappingsequenceedit.cpp" line="826"/>
         <source>Edit</source>
         <translation>Edit</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34005"/>
+        <location filename="../qkeymapper.cpp" line="35048"/>
         <source>Select Category</source>
         <translation>Select Category</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34009"/>
+        <location filename="../qkeymapper.cpp" line="35052"/>
         <source>Blank</source>
         <translation>(Blank)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34017"/>
+        <location filename="../qkeymapper.cpp" line="35060"/>
         <source>Input Category</source>
         <translation>Input Category</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34045"/>
+        <location filename="../qkeymapper.cpp" line="35088"/>
         <source>Input category</source>
         <translation>Input category</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34055"/>
+        <location filename="../qkeymapper.cpp" line="35098"/>
         <source>Apply</source>
         <translation>Apply</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34307"/>
+        <location filename="../qkeymapper.cpp" line="35350"/>
         <location filename="../qmacrolistdialog.cpp" line="2068"/>
         <location filename="../qmappingsequenceedit.cpp" line="880"/>
         <source>Move Up</source>
         <translation>Move Up</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34312"/>
+        <location filename="../qkeymapper.cpp" line="35355"/>
         <location filename="../qmacrolistdialog.cpp" line="2073"/>
         <location filename="../qmappingsequenceedit.cpp" line="885"/>
         <source>Move Down</source>
         <translation>Move Down</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34317"/>
+        <location filename="../qkeymapper.cpp" line="35360"/>
         <location filename="../qmacrolistdialog.cpp" line="2078"/>
         <location filename="../qmappingsequenceedit.cpp" line="890"/>
         <source>Move to Top</source>
         <translation>Move to Top</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34322"/>
+        <location filename="../qkeymapper.cpp" line="35365"/>
         <location filename="../qmacrolistdialog.cpp" line="2083"/>
         <location filename="../qmappingsequenceedit.cpp" line="895"/>
         <source>Move to Bottom</source>
         <translation>Move to Bottom</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34337"/>
+        <location filename="../qkeymapper.cpp" line="35380"/>
         <location filename="../qmacrolistdialog.cpp" line="2098"/>
         <location filename="../qmappingsequenceedit.cpp" line="910"/>
         <source>Copy</source>
         <translation>Copy</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34348"/>
+        <location filename="../qkeymapper.cpp" line="35391"/>
         <location filename="../qmacrolistdialog.cpp" line="2121"/>
         <location filename="../qmappingsequenceedit.cpp" line="927"/>
         <source>Insert Copied Items at Top</source>
         <translation>Insert Copied Items at Top</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34355"/>
+        <location filename="../qkeymapper.cpp" line="35398"/>
         <location filename="../qmacrolistdialog.cpp" line="2127"/>
         <location filename="../qmappingsequenceedit.cpp" line="932"/>
         <source>Insert Copied Items at Bottom</source>
         <translation>Insert Copied Items at Bottom</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34367"/>
+        <location filename="../qkeymapper.cpp" line="35410"/>
         <location filename="../qmacrolistdialog.cpp" line="2138"/>
         <location filename="../qmappingsequenceedit.cpp" line="942"/>
         <source>Insert Copied Items Above</source>
         <translation>Insert Copied Items Above</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34374"/>
+        <location filename="../qkeymapper.cpp" line="35417"/>
         <location filename="../qmacrolistdialog.cpp" line="2144"/>
         <location filename="../qmappingsequenceedit.cpp" line="947"/>
         <source>Insert Copied Items Below</source>
         <translation>Insert Copied Items Below</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="34390"/>
+        <location filename="../qkeymapper.cpp" line="35433"/>
         <location filename="../qmacrolistdialog.cpp" line="2161"/>
         <location filename="../qmappingsequenceedit.cpp" line="963"/>
         <source>Delete</source>
@@ -5391,61 +5495,61 @@ Right-click to cancel.</translation>
 <context>
     <name>SettingTransferDialog</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="35600"/>
-        <location filename="../qkeymapper.cpp" line="35737"/>
+        <location filename="../qkeymapper.cpp" line="36643"/>
+        <location filename="../qkeymapper.cpp" line="36780"/>
         <source>Setting Export</source>
         <translation>Setting Export</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35600"/>
-        <location filename="../qkeymapper.cpp" line="35727"/>
-        <location filename="../qkeymapper.cpp" line="35737"/>
+        <location filename="../qkeymapper.cpp" line="36643"/>
+        <location filename="../qkeymapper.cpp" line="36770"/>
+        <location filename="../qkeymapper.cpp" line="36780"/>
         <source>Setting Import</source>
         <translation>Setting Import</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35610"/>
+        <location filename="../qkeymapper.cpp" line="36653"/>
         <source>FileSelect</source>
         <translation>FileSelect</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35612"/>
+        <location filename="../qkeymapper.cpp" line="36655"/>
         <source>INI File:</source>
         <translation>INI File:</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35689"/>
+        <location filename="../qkeymapper.cpp" line="36732"/>
         <source>Select Export INI File</source>
         <translation>Select Export INI File</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35694"/>
+        <location filename="../qkeymapper.cpp" line="36737"/>
         <source>Select Import INI File</source>
         <translation>Select Import INI File</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35745"/>
+        <location filename="../qkeymapper.cpp" line="36788"/>
         <source>Please select one or more settings to export.</source>
         <translation>Please select one or more settings to export.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35748"/>
+        <location filename="../qkeymapper.cpp" line="36791"/>
         <source>Please select one or more settings to import.</source>
         <translation>Please select one or more settings to import.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35691"/>
-        <location filename="../qkeymapper.cpp" line="35696"/>
+        <location filename="../qkeymapper.cpp" line="36734"/>
+        <location filename="../qkeymapper.cpp" line="36739"/>
         <source>INI Files (*.ini)</source>
         <translation>INI Files (*.ini)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35727"/>
+        <location filename="../qkeymapper.cpp" line="36770"/>
         <source>No valid groups found in the selected INI file.</source>
         <translation>No valid settings found in the selected INI file.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="35739"/>
+        <location filename="../qkeymapper.cpp" line="36782"/>
         <source>Please select a INI file.</source>
         <translation>Please select a INI file.</translation>
     </message>
