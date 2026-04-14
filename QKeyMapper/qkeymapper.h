@@ -3,10 +3,6 @@
 
 #include <QDialog>
 #include <QDebug>
-#include <QFrame>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QLineEdit>
 #include <QMetaEnum>
 #include <QMessageBox>
 #include <QVBoxLayout>
