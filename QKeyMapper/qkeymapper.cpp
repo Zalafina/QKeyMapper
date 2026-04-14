@@ -20683,7 +20683,7 @@ bool QKeyMapper::isGlobalMappingFullscreenProcessAllowed(const QString &processN
     }
 
     const QString allowedProcesses = getGlobalMappingFullscreenAllowedProcesses();
-    const QStringList allowedProcessList = allowedProcesses.split(';', Qt::SkipEmptyParts);
+    const QStringList allowedProcessList = allowedProcesses.split(';', QKeyMapperQtCompat::SkipEmptyParts);
     for (const QString &allowedProcess : allowedProcessList) {
         const QString trimmedProcess = allowedProcess.trimmed();
         if (!trimmedProcess.isEmpty() && processName.contains(trimmedProcess, Qt::CaseInsensitive)) {
