@@ -416,6 +416,18 @@ protected:
 
 class KeyListComboBoxPopup;
 
+class KeyListPopupContextMenu : public QMenu
+{
+public:
+    explicit KeyListPopupContextMenu(KeyListComboBoxPopup *popup, QWidget *parent = Q_NULLPTR);
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+
+private:
+    KeyListComboBoxPopup *m_Popup;
+};
+
 class KeyListComboBox : public QComboBox
 {
     Q_OBJECT
@@ -462,14 +474,18 @@ protected:
     void hideEvent(QHideEvent *event) override;
 
 private:
+    friend class KeyListPopupContextMenu;
+
     void refreshToolButtons(void);
     void refreshMainList(void);
     void refreshCollectionList(void);
     void openCollectionPage(KeyListSharedDataType dataType);
     void closeCollectionPage(void);
+    bool showListContextMenuAtGlobalPos(const QPoint &globalPos);
     void updatePopupGeometry(void);
     int calculateListViewportHeight(const QListWidget *listWidget) const;
     void copyItemTextToClipboard(const QString &itemText) const;
+    bool copyCurrentPopupItemText(void) const;
     bool confirmClearCollection(KeyListSharedDataType dataType);
     bool isToolRowVisible(void) const;
     bool isValidActualText(const QString &itemText) const;

@@ -1499,6 +1499,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char GENERAL_SAVESETTING_HOTKEY[]                = "L-Ctrl+S";
     inline constexpr const char KEYLISTCOMBOBOX_SHOW_FAVORITES_HOTKEY[]     = "Ctrl+F";
     inline constexpr const char KEYLISTCOMBOBOX_SHOW_RECENTITEMS_HOTKEY[]   = "Ctrl+R";
+    inline constexpr const char KEYLISTCOMBOBOX_COPY_KEY_NAME_HOTKEY[]      = "Ctrl+C";
 
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
