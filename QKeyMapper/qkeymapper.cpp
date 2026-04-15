@@ -31263,6 +31263,7 @@ void KeyListComboBoxPopup::updatePopupGeometry(void)
 
     const int topBottomMargins = layout()->contentsMargins().top() + layout()->contentsMargins().bottom();
     const int layoutSpacing = static_cast<QVBoxLayout *>(layout())->spacing();
+    const int listViewportHeight = calculateListViewportHeight(activeListWidget);
     int desiredHeight = topBottomMargins + m_SearchLineEdit->sizeHint().height();
     if (m_ToolRowWidget->isVisible()) {
         desiredHeight += layoutSpacing + m_ToolRowWidget->sizeHint().height();
@@ -31271,20 +31272,41 @@ void KeyListComboBoxPopup::updatePopupGeometry(void)
     if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
         desiredHeight += m_BackToolButton->sizeHint().height() + 4;
     }
-    desiredHeight += calculateListViewportHeight(activeListWidget);
+    desiredHeight += listViewportHeight;
 
     QScreen *screen = screenForWidget(m_ComboBox);
+    QRect availableGeometry;
     int popupHeight = desiredHeight;
+    int availableBelow = -1;
     if (screen != Q_NULLPTR) {
-        const QRect availableGeometry = screen->availableGeometry();
+        availableGeometry = screen->availableGeometry();
         if (popupPos.x() + popupWidth > availableGeometry.right()) {
             popupPos.setX(qMax(availableGeometry.left(), availableGeometry.right() - popupWidth + 1));
         }
 
         popupPos.setY(comboRect.bottom());
-        const int availableBelow = qMax(1, availableGeometry.bottom() - popupPos.y() - 2);
+        availableBelow = qMax(1, availableGeometry.bottom() - popupPos.y() - 2);
         popupHeight = qMin(desiredHeight, availableBelow);
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListComboBoxPopup::updatePopupGeometry]"
+             << "page=" << ((m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) ? QStringLiteral("Collection") : QStringLiteral("Main"))
+             << ", comboRect=" << comboRect
+             << ", popupPos=" << popupPos
+             << ", popupWidth=" << popupWidth
+             << ", topBottomMargins=" << topBottomMargins
+             << ", layoutSpacing=" << layoutSpacing
+             << ", toolRowVisible=" << m_ToolRowWidget->isVisible()
+             << ", activeCount=" << (activeListWidget != Q_NULLPTR ? activeListWidget->count() : -1)
+             << ", listViewportHeight=" << listViewportHeight
+             << ", desiredHeight=" << desiredHeight
+             << ", screenName=" << (screen != Q_NULLPTR ? screen->name() : QStringLiteral("<null>"))
+             << ", availableGeometry=" << availableGeometry
+             << ", availableBelow=" << availableBelow
+             << ", popupHeight=" << popupHeight
+             << ", finalGeometry=" << QRect(popupPos, QSize(popupWidth, popupHeight));
+#endif
 
     setGeometry(QRect(popupPos, QSize(popupWidth, popupHeight)));
 }
@@ -31292,6 +31314,10 @@ void KeyListComboBoxPopup::updatePopupGeometry(void)
 int KeyListComboBoxPopup::calculateListViewportHeight(const QListWidget *listWidget) const
 {
     if (listWidget == Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[KeyListComboBoxPopup::calculateListViewportHeight]"
+                 << "listWidget=<null>, viewportHeight=120";
+#endif
         return 120;
     }
 
@@ -31305,7 +31331,18 @@ int KeyListComboBoxPopup::calculateListViewportHeight(const QListWidget *listWid
     }
 
     const int visibleRowCount = qMax(listWidget->count(), 1);
-    return rowHeight * visibleRowCount + listWidget->frameWidth() * 2 + 6;
+    const int viewportHeight = rowHeight * visibleRowCount + listWidget->frameWidth() * 2 + 6;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListComboBoxPopup::calculateListViewportHeight]"
+             << "count=" << listWidget->count()
+             << ", firstEnabledRow=" << firstRow
+             << ", rowHeight=" << rowHeight
+             << ", frameWidth=" << listWidget->frameWidth()
+             << ", viewportHeight=" << viewportHeight;
+#endif
+
+    return viewportHeight;
 }
 
 void KeyListComboBoxPopup::copyItemTextToClipboard(const QString &itemText) const
