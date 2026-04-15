@@ -30839,10 +30839,8 @@ KeyListComboBoxPopup::KeyListComboBoxPopup(KeyListComboBox *comboBox)
     m_FavoritesToolButton->setFocusPolicy(Qt::NoFocus);
     m_RecentToolButton->setFocusPolicy(Qt::NoFocus);
     m_BackToolButton->setFocusPolicy(Qt::NoFocus);
-    // m_MainListWidget->setFocusPolicy(Qt::NoFocus);
-    // m_CollectionListWidget->setFocusPolicy(Qt::NoFocus);
-    m_MainListWidget->setFocusPolicy(Qt::ClickFocus);
-    m_CollectionListWidget->setFocusPolicy(Qt::ClickFocus);
+    m_MainListWidget->setFocusPolicy(Qt::NoFocus);
+    m_CollectionListWidget->setFocusPolicy(Qt::NoFocus);
 
     m_FavoritesToolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     m_FavoritesToolButton->setAutoRaise(false);
