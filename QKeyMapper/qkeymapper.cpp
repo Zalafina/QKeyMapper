@@ -30725,11 +30725,12 @@ KeyListComboBoxPopup::KeyListComboBoxPopup(KeyListComboBox *comboBox)
         m_FavoritesToolButton->setStyle(windowsStyle);
         m_RecentToolButton->setStyle(windowsStyle);
     }
+    m_SearchLineEdit->setFocusPolicy(Qt::StrongFocus);
     m_FavoritesToolButton->setFocusPolicy(Qt::NoFocus);
     m_RecentToolButton->setFocusPolicy(Qt::NoFocus);
     m_BackToolButton->setFocusPolicy(Qt::NoFocus);
-    // m_ComboBox->setFocusPolicy(Qt::NoFocus);
-    // m_CollectionListWidget->setFocusPolicy(Qt::NoFocus);
+    m_MainListWidget->setFocusPolicy(Qt::NoFocus);
+    m_CollectionListWidget->setFocusPolicy(Qt::NoFocus);
 
     m_FavoritesToolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
     m_FavoritesToolButton->setAutoRaise(false);
@@ -30864,6 +30865,33 @@ bool KeyListComboBoxPopup::eventFilter(QObject *watched, QEvent *event)
         return QFrame::eventFilter(watched, event);
     }
 
+    QListWidget *activeListWidget = (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget)
+        ? static_cast<QListWidget *>(m_CollectionListWidget)
+        : static_cast<QListWidget *>(m_MainListWidget);
+
+    if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab) {
+        if (!m_SearchLineEdit->hasFocus()) {
+            m_SearchLineEdit->setFocus(Qt::TabFocusReason);
+        }
+        return true;
+    }
+
+    const Qt::KeyboardModifiers modifiers = keyEvent->modifiers();
+    const bool isCtrlOnlyShortcut = (modifiers & Qt::ControlModifier)
+        && !(modifiers & (Qt::ShiftModifier | Qt::AltModifier | Qt::MetaModifier));
+
+    if (isCtrlOnlyShortcut && keyEvent->key() == Qt::Key_F) {
+        openCollectionPage(KEYLIST_SHARED_FAVORITES);
+        m_SearchLineEdit->setFocus(Qt::ShortcutFocusReason);
+        return true;
+    }
+
+    if (isCtrlOnlyShortcut && keyEvent->key() == Qt::Key_R) {
+        openCollectionPage(KEYLIST_SHARED_RECENTS);
+        m_SearchLineEdit->setFocus(Qt::ShortcutFocusReason);
+        return true;
+    }
+
     if (keyEvent->key() == Qt::Key_Escape) {
         if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
             closeCollectionPage();
@@ -30877,42 +30905,19 @@ bool KeyListComboBoxPopup::eventFilter(QObject *watched, QEvent *event)
         return true;
     }
 
-    if ((keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Up) && (isSearchWidget || isToolButton)) {
-        if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
-            m_CollectionListWidget->setFocus();
-            moveListFocusByKey(m_CollectionListWidget, keyEvent->key());
-        }
-        else {
-            m_MainListWidget->setFocus();
-            moveListFocusByKey(m_MainListWidget, keyEvent->key());
+    if (keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Up) {
+        moveListFocusByKey(activeListWidget, keyEvent->key());
+        if (!m_SearchLineEdit->hasFocus()) {
+            m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
         }
         return true;
     }
 
     if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
-        if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget && isSearchWidget) {
-            QListWidgetItem *currentItem = m_CollectionListWidget->currentItem();
+        if (isSearchWidget || isMainListWidget || isCollectionListWidget || isToolButton) {
+            QListWidgetItem *currentItem = activeListWidget->currentItem();
             if (currentItem != Q_NULLPTR && (currentItem->flags() & Qt::ItemIsEnabled)) {
-                onCollectionListItemClicked(currentItem);
-            }
-            return true;
-        }
-
-        if (isSearchWidget) {
-            QListWidgetItem *currentItem = m_MainListWidget->currentItem();
-            if (currentItem != Q_NULLPTR && (currentItem->flags() & Qt::ItemIsEnabled)) {
-                onMainListItemClicked(currentItem);
-            }
-            return true;
-        }
-    }
-
-    if (isMainListWidget || isCollectionListWidget) {
-        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
-            QListWidgetItem *currentItem = isCollectionListWidget ? m_CollectionListWidget->currentItem()
-                                                                  : m_MainListWidget->currentItem();
-            if (currentItem != Q_NULLPTR && (currentItem->flags() & Qt::ItemIsEnabled)) {
-                if (isCollectionListWidget) {
+                if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
                     onCollectionListItemClicked(currentItem);
                 }
                 else {
@@ -30921,16 +30926,18 @@ bool KeyListComboBoxPopup::eventFilter(QObject *watched, QEvent *event)
             }
             return true;
         }
+    }
 
+    if (!isSearchWidget) {
         const bool hasPrintableText = !keyEvent->text().isEmpty()
             && !(keyEvent->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
             && keyEvent->text().at(0).isPrint();
         if (keyEvent->key() == Qt::Key_Backspace || hasPrintableText) {
-            if (isCollectionListWidget) {
+            if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
                 closeCollectionPage();
             }
 
-            m_SearchLineEdit->setFocus();
+            m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
             if (keyEvent->key() == Qt::Key_Backspace) {
                 m_SearchLineEdit->backspace();
             }
@@ -31058,11 +31065,11 @@ void KeyListComboBoxPopup::openCollectionPage(KeyListSharedDataType dataType)
     refreshToolButtons();
     updatePopupGeometry();
     if (firstEnabledListRow(m_CollectionListWidget) >= 0) {
-        m_CollectionListWidget->setFocus();
         focusFirstEnabledListRow(m_CollectionListWidget);
     }
-    else {
-        m_BackToolButton->setFocus();
+
+    if (isVisible()) {
+        m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
     }
 }
 
@@ -31072,6 +31079,7 @@ void KeyListComboBoxPopup::closeCollectionPage(void)
     refreshToolButtons();
     if (isVisible()) {
         updatePopupGeometry();
+        m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
     }
 }
 
