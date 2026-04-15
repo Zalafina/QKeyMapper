@@ -31261,14 +31261,22 @@ void KeyListComboBoxPopup::updatePopupGeometry(void)
         ? static_cast<const QListWidget *>(m_CollectionListWidget)
         : static_cast<const QListWidget *>(m_MainListWidget);
 
+    if (activeListWidget != Q_NULLPTR && activeListWidget->isVisible()) {
+        const_cast<QListWidget *>(activeListWidget)->doItemsLayout();
+    }
+
     const int topBottomMargins = layout()->contentsMargins().top() + layout()->contentsMargins().bottom();
     const int layoutSpacing = static_cast<QVBoxLayout *>(layout())->spacing();
+    const QMargins stackedMargins = m_ViewStackedWidget->contentsMargins();
+    const int stackedVerticalOverhead = stackedMargins.top() + stackedMargins.bottom() + (m_ViewStackedWidget->frameWidth() * 2);
     const int listViewportHeight = calculateListViewportHeight(activeListWidget);
+    const bool showToolRow = isToolRowVisible();
     int desiredHeight = topBottomMargins + m_SearchLineEdit->sizeHint().height();
-    if (m_ToolRowWidget->isVisible()) {
+    if (showToolRow) {
         desiredHeight += layoutSpacing + m_ToolRowWidget->sizeHint().height();
     }
     desiredHeight += layoutSpacing;
+    desiredHeight += stackedVerticalOverhead;
     if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
         desiredHeight += m_BackToolButton->sizeHint().height() + 4;
     }
@@ -31297,7 +31305,10 @@ void KeyListComboBoxPopup::updatePopupGeometry(void)
              << ", popupWidth=" << popupWidth
              << ", topBottomMargins=" << topBottomMargins
              << ", layoutSpacing=" << layoutSpacing
-             << ", toolRowVisible=" << m_ToolRowWidget->isVisible()
+             << ", stackedFrameWidth=" << m_ViewStackedWidget->frameWidth()
+             << ", stackedMargins=" << stackedMargins
+             << ", stackedVerticalOverhead=" << stackedVerticalOverhead
+             << ", toolRowVisible=" << showToolRow
              << ", activeCount=" << (activeListWidget != Q_NULLPTR ? activeListWidget->count() : -1)
              << ", listViewportHeight=" << listViewportHeight
              << ", desiredHeight=" << desiredHeight
@@ -31321,23 +31332,74 @@ int KeyListComboBoxPopup::calculateListViewportHeight(const QListWidget *listWid
         return 120;
     }
 
-    int rowHeight = 0;
+    const int fallbackRowHeight = listWidget->fontMetrics().height() + 10;
     const int firstRow = firstEnabledListRow(listWidget);
-    if (firstRow >= 0) {
-        rowHeight = listWidget->sizeHintForRow(firstRow);
-    }
-    if (rowHeight <= 0) {
-        rowHeight = listWidget->fontMetrics().height() + 10;
+    const int listSpacing = qMax(0, listWidget->spacing());
+    const QMargins contentsMargins = listWidget->contentsMargins();
+    const QWidget *viewportWidget = listWidget->viewport();
+    const QMargins viewportContentsMargins = (viewportWidget != Q_NULLPTR)
+        ? viewportWidget->contentsMargins()
+        : QMargins();
+    int visualRowsHeight = 0;
+    bool usedVisualRects = false;
+
+    if (listWidget->isVisible() && listWidget->count() > 0 && listWidget->model() != Q_NULLPTR) {
+        const QModelIndex firstIndex = listWidget->model()->index(0, 0);
+        const QModelIndex lastIndex = listWidget->model()->index(listWidget->count() - 1, 0);
+        const QRect firstVisualRect = listWidget->visualRect(firstIndex);
+        const QRect lastVisualRect = listWidget->visualRect(lastIndex);
+        if (firstVisualRect.isValid() && lastVisualRect.isValid()
+            && !firstVisualRect.isNull() && !lastVisualRect.isNull()) {
+            visualRowsHeight = lastVisualRect.bottom() - firstVisualRect.top() + 1;
+            usedVisualRects = (visualRowsHeight > 0);
+        }
     }
 
-    const int visibleRowCount = qMax(listWidget->count(), 1);
-    const int viewportHeight = rowHeight * visibleRowCount + listWidget->frameWidth() * 2 + 6;
+    int totalRowsHeight = 0;
+    int measuredRowCount = 0;
+
+    if (usedVisualRects) {
+        totalRowsHeight = visualRowsHeight;
+    }
+    else {
+        for (int row = 0; row < listWidget->count(); ++row) {
+            int rowHeight = listWidget->sizeHintForRow(row);
+            if (rowHeight <= 0) {
+                rowHeight = fallbackRowHeight;
+            }
+            else {
+                ++measuredRowCount;
+            }
+
+            totalRowsHeight += rowHeight;
+        }
+    }
+
+    if (listWidget->count() <= 0) {
+        totalRowsHeight = fallbackRowHeight;
+    }
+
+    const int itemSpacingHeight = listSpacing * qMax(listWidget->count() - 1, 0);
+    const int viewportHeight = totalRowsHeight
+                             + itemSpacingHeight
+                             + contentsMargins.top() + contentsMargins.bottom()
+                             + viewportContentsMargins.top() + viewportContentsMargins.bottom()
+                             + listWidget->frameWidth() * 2
+                             + 6;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyListComboBoxPopup::calculateListViewportHeight]"
              << "count=" << listWidget->count()
              << ", firstEnabledRow=" << firstRow
-             << ", rowHeight=" << rowHeight
+             << ", fallbackRowHeight=" << fallbackRowHeight
+             << ", usedVisualRects=" << usedVisualRects
+             << ", visualRowsHeight=" << visualRowsHeight
+             << ", measuredRowCount=" << measuredRowCount
+             << ", totalRowsHeight=" << totalRowsHeight
+             << ", listSpacing=" << listSpacing
+             << ", itemSpacingHeight=" << itemSpacingHeight
+             << ", contentsMargins=" << contentsMargins
+             << ", viewportContentsMargins=" << viewportContentsMargins
              << ", frameWidth=" << listWidget->frameWidth()
              << ", viewportHeight=" << viewportHeight;
 #endif
