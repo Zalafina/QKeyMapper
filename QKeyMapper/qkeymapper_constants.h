@@ -1496,6 +1496,10 @@ namespace QKeyMapperConstants {
 
     inline constexpr const int IGNOREWINDOWINFOLIST_ITEM_HEIGHT = 21;
 
+    inline constexpr const char GENERAL_SAVESETTING_HOTKEY[]                = "L-Ctrl+S";
+    inline constexpr const char KEYLISTCOMBOBOX_SHOW_FAVORITES_HOTKEY[]     = "L-Ctrl+F";
+    inline constexpr const char KEYLISTCOMBOBOX_SHOW_RECENTITEMS_HOTKEY[]   = "L-Ctrl+R";
+
     inline constexpr const char ORIKEY_COMBOBOX_NAME[] = "orikeyComboBox";
     inline constexpr const char MAPKEY_COMBOBOX_NAME[] = "mapkeyComboBox";
     inline constexpr const char SETUPDIALOG_ORIKEY_COMBOBOX_NAME[] = "SetupDialog_OriginalKeyListComboBox";

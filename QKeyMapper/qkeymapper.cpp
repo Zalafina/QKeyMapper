@@ -26379,7 +26379,7 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
     ui->savemaplistButton->setText(tr("SaveSetting"));
-    ui->savemaplistButton->setToolTip(tr("Hotkey : L-Ctrl+S"));
+    ui->savemaplistButton->setToolTip(tr("Hotkey : %1").arg(GENERAL_SAVESETTING_HOTKEY));
     ui->addTabButton->setText(tr("AddTab"));
     ui->deleteSelectedButton->setText(tr("Delete"));
     ui->clearallButton->setText(tr("Clear"));
@@ -30735,6 +30735,7 @@ KeyListComboBoxPopup::KeyListComboBoxPopup(KeyListComboBox *comboBox)
     m_FavoritesToolButton->setAutoRaise(false);
     m_FavoritesToolButton->setCheckable(true);
     m_FavoritesToolButton->setText(tr("Favorites"));
+    m_FavoritesToolButton->setToolTip(tr("Hotkey : %1").arg(KEYLISTCOMBOBOX_SHOW_FAVORITES_HOTKEY));
     m_FavoritesToolButton->setContextMenuPolicy(Qt::CustomContextMenu);
     toolRowLayout->addWidget(m_FavoritesToolButton);
 
@@ -30742,6 +30743,7 @@ KeyListComboBoxPopup::KeyListComboBoxPopup(KeyListComboBox *comboBox)
     m_RecentToolButton->setAutoRaise(false);
     m_RecentToolButton->setCheckable(true);
     m_RecentToolButton->setText(tr("Recent Items"));
+    m_RecentToolButton->setToolTip(tr("Hotkey : %1").arg(KEYLISTCOMBOBOX_SHOW_RECENTITEMS_HOTKEY));
     m_RecentToolButton->setContextMenuPolicy(Qt::CustomContextMenu);
     toolRowLayout->addWidget(m_RecentToolButton);
     toolRowLayout->addStretch(1);
