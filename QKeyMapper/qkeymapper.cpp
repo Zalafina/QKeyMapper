@@ -30604,6 +30604,35 @@ void focusFirstEnabledListRow(QListWidget *listWidget)
     }
 }
 
+void moveListFocusByKey(QListWidget *listWidget, int key)
+{
+    if (listWidget == Q_NULLPTR) {
+        return;
+    }
+
+    const int currentRow = listWidget->currentRow();
+    if (currentRow < 0) {
+        focusFirstEnabledListRow(listWidget);
+        return;
+    }
+
+    const int step = (key == Qt::Key_Up) ? -1 : 1;
+    int row = currentRow;
+    while (true) {
+        row += step;
+        if (row < 0 || row >= listWidget->count()) {
+            listWidget->setCurrentRow(currentRow);
+            return;
+        }
+
+        QListWidgetItem *item = listWidget->item(row);
+        if (item != Q_NULLPTR && (item->flags() & Qt::ItemIsEnabled)) {
+            listWidget->setCurrentRow(row);
+            return;
+        }
+    }
+}
+
 QScreen *screenForWidget(QWidget *widget)
 {
     if (widget == Q_NULLPTR) {
@@ -30846,14 +30875,14 @@ bool KeyListComboBoxPopup::eventFilter(QObject *watched, QEvent *event)
         return true;
     }
 
-    if (keyEvent->key() == Qt::Key_Down && (isSearchWidget || isToolButton)) {
+    if ((keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Up) && (isSearchWidget || isToolButton)) {
         if (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget) {
             m_CollectionListWidget->setFocus();
-            focusFirstEnabledListRow(m_CollectionListWidget);
+            moveListFocusByKey(m_CollectionListWidget, keyEvent->key());
         }
         else {
             m_MainListWidget->setFocus();
-            focusFirstEnabledListRow(m_MainListWidget);
+            moveListFocusByKey(m_MainListWidget, keyEvent->key());
         }
         return true;
     }
@@ -31446,6 +31475,12 @@ void KeyListComboBox::hidePopup(void)
 
 void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
 {
+    if ((keyevent->modifiers() & Qt::AltModifier) && keyevent->key() == Qt::Key_Down) {
+        showPopup();
+        keyevent->accept();
+        return;
+    }
+
     /* Check L-Ctrl+S to Save settings */
     if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus
         && keyevent->key() == Qt::Key_S
