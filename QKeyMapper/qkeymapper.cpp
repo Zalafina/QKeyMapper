@@ -3,6 +3,7 @@
 #include "qkeymapper_constants.h"
 
 #include <algorithm>
+#include <QScrollBar>
 #include <QToolTip>
 
 using namespace QKeyMapperConstants;
@@ -30686,6 +30687,53 @@ void restoreKeyListPopupSelection(QListWidget *listWidget, const QString &prefer
     }
 }
 
+int currentListVerticalScrollValue(const QListWidget *listWidget)
+{
+    if (listWidget == Q_NULLPTR) {
+        return -1;
+    }
+
+    QScrollBar *verticalScrollBar = listWidget->verticalScrollBar();
+    if (verticalScrollBar == Q_NULLPTR) {
+        return -1;
+    }
+
+    return verticalScrollBar->value();
+}
+
+void restoreListVerticalScrollValue(QListWidget *listWidget, int preferredValue)
+{
+    if (listWidget == Q_NULLPTR || preferredValue < 0) {
+        return;
+    }
+
+    QScrollBar *verticalScrollBar = listWidget->verticalScrollBar();
+    if (verticalScrollBar == Q_NULLPTR) {
+        return;
+    }
+
+    verticalScrollBar->setValue(qBound(verticalScrollBar->minimum(),
+                                       preferredValue,
+                                       verticalScrollBar->maximum()));
+}
+
+void restoreKeyListPopupSelectionAndScroll(QListWidget *listWidget,
+                                           const QString &preferredActualText,
+                                           int preferredRow,
+                                           int preferredScrollValue,
+                                           bool ensureCurrentItemVisible)
+{
+    if (listWidget == Q_NULLPTR) {
+        return;
+    }
+
+    restoreKeyListPopupSelection(listWidget, preferredActualText, preferredRow);
+
+    if (!ensureCurrentItemVisible) {
+        restoreListVerticalScrollValue(listWidget, preferredScrollValue);
+    }
+}
+
 void moveListFocusByKey(QListWidget *listWidget, int key)
 {
     if (listWidget == Q_NULLPTR) {
@@ -31175,6 +31223,12 @@ void KeyListComboBoxPopup::refreshCollectionList(void)
 
 void KeyListComboBoxPopup::openCollectionPage(KeyListSharedDataType dataType)
 {
+    if (!m_SearchLineEdit->text().trimmed().isEmpty()) {
+        QSignalBlocker blocker(m_SearchLineEdit);
+        m_SearchLineEdit->clear();
+        refreshMainList();
+    }
+
     m_CurrentCollectionType = dataType;
     refreshCollectionList();
     m_ViewStackedWidget->setCurrentWidget(m_CollectionPageWidget);
@@ -31719,13 +31773,44 @@ void KeyListComboBoxPopup::onSharedCollectionsChanged(void)
         : static_cast<QListWidget *>(m_MainListWidget);
     const QString selectedActualText = keyListPopupItemActualText(activeListWidget != Q_NULLPTR ? activeListWidget->currentItem() : Q_NULLPTR);
     const int selectedRow = (activeListWidget != Q_NULLPTR) ? activeListWidget->currentRow() : -1;
+    const int previousScrollValue = currentListVerticalScrollValue(activeListWidget);
 
-    refreshPopupContents();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListComboBoxPopup::onSharedCollectionsChanged]"
+             << "page=" << (wasCollectionPageVisible ? QStringLiteral("Collection") : QStringLiteral("Main"))
+             << ", selectedActualText=" << selectedActualText
+             << ", selectedRow=" << selectedRow
+             << ", previousScrollValue=" << previousScrollValue
+             << ", activeCount=" << (activeListWidget != Q_NULLPTR ? activeListWidget->count() : -1);
+#endif
 
-    QListWidget *restoredListWidget = wasCollectionPageVisible
-        ? static_cast<QListWidget *>(m_CollectionListWidget)
-        : static_cast<QListWidget *>(m_MainListWidget);
-    restoreKeyListPopupSelection(restoredListWidget, selectedActualText, selectedRow);
+    if (!wasCollectionPageVisible) {
+        refreshToolButtons();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[KeyListComboBoxPopup::onSharedCollectionsChanged]"
+                 << "skip refreshMainList on Main Page to preserve scroll position";
+#endif
+        return;
+    }
+
+    refreshCollectionList();
+    updatePopupGeometry();
+    restoreKeyListPopupSelectionAndScroll(m_CollectionListWidget,
+                                          selectedActualText,
+                                          selectedRow,
+                                          previousScrollValue,
+                                          false);
+
+    if (isVisible()) {
+        m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[KeyListComboBoxPopup::onSharedCollectionsChanged]"
+             << "collectionCount=" << m_CollectionListWidget->count()
+             << ", restoredScrollValue=" << currentListVerticalScrollValue(m_CollectionListWidget)
+             << ", currentRow=" << m_CollectionListWidget->currentRow();
+#endif
 }
 
 KeyListCollectionType KeyListComboBox::getCollectionType() const
