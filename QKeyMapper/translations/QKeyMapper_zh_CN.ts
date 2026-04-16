@@ -5200,7 +5200,7 @@ Do you want to overwrite them?</source>
     <message>
         <location filename="../qtrayiconselectdialog.cpp" line="219"/>
         <source>ICO Files (*.ico)</source>
-        <translation>ICO 文件 (.ico)</translation>
+        <translation>ICO 文件 (*.ico)</translation>
     </message>
     <message>
         <location filename="../qtrayiconselectdialog.cpp" line="237"/>
