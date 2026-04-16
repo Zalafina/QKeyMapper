@@ -13,6 +13,7 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    initSelectTrayIconFileDialog();
     initTrayIconComboBoxes();
     ui->idleStateTrayIconSelectComboBox->setCurrentText(TRAYICON_IDLE_DEFAULT_FILE);
     ui->monitoringStateTrayIconSelectComboBox->setCurrentText(TRAYICON_MONITORING_DEFAULT_FILE);
@@ -23,6 +24,13 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
 QTrayIconSelectDialog::~QTrayIconSelectDialog()
 {
     delete ui;
+}
+
+void QTrayIconSelectDialog::initSelectTrayIconFileDialog()
+{
+    m_SelectTrayIconFileDialog = new QFileDialog(this);
+    m_SelectTrayIconFileDialog->setFileMode(QFileDialog::ExistingFiles);
+    // m_SelectTrayIconFileDialog->setDirectory(QDir());
 }
 
 void QTrayIconSelectDialog::initTrayIconComboBoxes()
@@ -102,6 +110,8 @@ void QTrayIconSelectDialog::setUILanguage(int languageindex)
     ui->monitoringStateTrayIconSelectLabel->setText(tr("Monitoring"));
     ui->globalStateTrayIconSelectLabel->setText(tr("Global"));
     ui->matchedStateTrayIconSelectLabel->setText(tr("Matched"));
+
+    ui->addCustomTrayiconsButton->setText(tr("Add custom trayicons"));
 }
 
 QString QTrayIconSelectDialog::getTrayIcon_IdleStateIcon()
@@ -180,6 +190,7 @@ QIcon QTrayIconSelectDialog::getMatchedStateQIcon()
     return tray_icon;
 }
 
+#if 0
 bool QTrayIconSelectDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
@@ -189,10 +200,154 @@ bool QTrayIconSelectDialog::event(QEvent *event)
     }
     return QDialog::event(event);
 }
+#endif
 
 void QTrayIconSelectDialog::closeEvent(QCloseEvent *event)
 {
     QKeyMapper::getInstance()->updateSystemTrayDisplay();
 
     QDialog::closeEvent(event);
+}
+
+void QTrayIconSelectDialog::on_addCustomTrayiconsButton_clicked()
+{
+    if (m_SelectTrayIconFileDialog == Q_NULLPTR) {
+        initSelectTrayIconFileDialog();
+    }
+
+    m_SelectTrayIconFileDialog->setWindowTitle(tr("Select Custom Tray Icon Files"));
+    m_SelectTrayIconFileDialog->setNameFilter(tr("ICO Files (*.ico)"));
+    // m_SelectTrayIconFileDialog->selectFile(QString());
+
+    if (m_SelectTrayIconFileDialog->exec() != QDialog::Accepted) {
+        return;
+    }
+
+    const QStringList selectedFiles = m_SelectTrayIconFileDialog->selectedFiles();
+    if (selectedFiles.isEmpty()) {
+        return;
+    }
+
+    QDir appDir(QCoreApplication::applicationDirPath());
+    const QString targetDirPath = appDir.filePath(CUSTOM_TRAYICONS_DIR);
+    QDir targetDir(targetDirPath);
+
+    if (!targetDir.exists() && !appDir.mkpath(CUSTOM_TRAYICONS_DIR)) {
+        QMessageBox::warning(this, PROGRAM_NAME,
+                             tr("Failed to create the custom tray icon directory.\n\nPath: %1")
+                             .arg(QDir::toNativeSeparators(targetDirPath)));
+        return;
+    }
+
+    QStringList duplicateNames;
+    for (const QString &sourceFilePath : selectedFiles) {
+        QFileInfo sourceFileInfo(sourceFilePath);
+        if (!sourceFileInfo.exists() || !sourceFileInfo.isFile()) {
+            continue;
+        }
+
+        if (QFile::exists(targetDir.filePath(sourceFileInfo.fileName()))
+            && !duplicateNames.contains(sourceFileInfo.fileName(), Qt::CaseInsensitive)) {
+            duplicateNames.append(sourceFileInfo.fileName());
+        }
+    }
+
+    bool overwriteDuplicates = false;
+    if (!duplicateNames.isEmpty()) {
+        QString message;
+        if (duplicateNames.size() == 1) {
+            message = tr("Custom tray icon file \"%1\" already exists.\n\nDo you want to overwrite it?")
+                      .arg(duplicateNames.first());
+        }
+        else {
+            message = tr("Custom tray icon file \"%1\" and %2 other(s) already exist.\n\nDo you want to overwrite them?")
+                      .arg(duplicateNames.first())
+                      .arg(duplicateNames.size() - 1);
+        }
+
+        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+                                                                  QMessageBox::Yes | QMessageBox::No,
+                                                                  QMessageBox::No);
+        overwriteDuplicates = (reply == QMessageBox::Yes);
+    }
+
+    int copiedCount = 0;
+    int skippedCount = 0;
+    int failedCount = 0;
+
+    for (const QString &sourceFilePath : selectedFiles) {
+        QFileInfo sourceFileInfo(sourceFilePath);
+        if (!sourceFileInfo.exists() || !sourceFileInfo.isFile()) {
+            ++failedCount;
+            continue;
+        }
+
+        const QString sourceAbsolutePath = sourceFileInfo.absoluteFilePath();
+        const QString targetFilePath = targetDir.filePath(sourceFileInfo.fileName());
+
+        if (QString::compare(QDir::cleanPath(sourceAbsolutePath),
+                             QDir::cleanPath(QFileInfo(targetFilePath).absoluteFilePath()),
+                             Qt::CaseInsensitive) == 0) {
+            ++skippedCount;
+            continue;
+        }
+
+        if (QFile::exists(targetFilePath)) {
+            if (!overwriteDuplicates) {
+                ++skippedCount;
+                continue;
+            }
+
+            if (!QFile::remove(targetFilePath)) {
+                ++failedCount;
+                continue;
+            }
+        }
+
+        if (QFile::copy(sourceAbsolutePath, targetFilePath)) {
+            ++copiedCount;
+        }
+        else {
+            ++failedCount;
+        }
+    }
+
+    if (copiedCount > 0) {
+        const QString idleStateTrayIcon = getTrayIcon_IdleStateIcon();
+        const QString monitoringStateTrayIcon = getTrayIcon_MonitoringStateIcon();
+        const QString globalStateTrayIcon = getTrayIcon_GlobalStateIcon();
+        const QString matchedStateTrayIcon = getTrayIcon_MatchedStateIcon();
+
+        initTrayIconComboBoxes();
+        setTrayIcon_IdleStateIcon(idleStateTrayIcon);
+        setTrayIcon_MonitoringStateIcon(monitoringStateTrayIcon);
+        setTrayIcon_GlobalStateIcon(globalStateTrayIcon);
+        setTrayIcon_MatchedStateIcon(matchedStateTrayIcon);
+    }
+
+    QString popupMessage;
+    QString popupMessageColor = SUCCESS_COLOR;
+    if (copiedCount > 0) {
+        popupMessage = tr("Added %1 custom tray icon file(s).").arg(copiedCount);
+        if (failedCount > 0) {
+            popupMessage += tr(" %1 file(s) failed to copy.").arg(failedCount);
+            popupMessageColor = FAILURE_COLOR;
+        }
+        if (skippedCount > 0) {
+            popupMessage += tr(" %1 file(s) were skipped.").arg(skippedCount);
+        }
+    }
+    else if (failedCount > 0) {
+        popupMessage = tr("Failed to add the selected custom tray icon file(s).");
+        popupMessageColor = FAILURE_COLOR;
+    }
+    else if (skippedCount > 0) {
+        popupMessage = tr("No new custom tray icon files were added.");
+        popupMessageColor = FAILURE_COLOR;
+    }
+
+    if (!popupMessage.isEmpty()) {
+        int popupMessageDisplayTime = 3000;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+    }
 }

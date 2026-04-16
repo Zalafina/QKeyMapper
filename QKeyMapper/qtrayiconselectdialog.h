@@ -4,6 +4,8 @@
 #include <QDialog>
 #include <orderedmap.h>
 
+class QFileDialog;
+
 namespace Ui {
 class QTrayIconSelectDialog;
 }
@@ -41,11 +43,17 @@ public:
     QIcon getMatchedStateQIcon(void);
 
 protected:
-    bool event(QEvent *event) override;
+    // bool event(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
 
+private slots:
+    void on_addCustomTrayiconsButton_clicked();
+
 private:
+    void initSelectTrayIconFileDialog(void);
+
     static QTrayIconSelectDialog *m_instance;
+    QFileDialog *m_SelectTrayIconFileDialog = Q_NULLPTR;
     Ui::QTrayIconSelectDialog *ui;
 };
 
