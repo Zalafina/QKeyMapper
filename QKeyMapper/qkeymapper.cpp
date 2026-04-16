@@ -31441,6 +31441,8 @@ int KeyListComboBoxPopup::calculateListViewportHeight(const QListWidget *listWid
                              + listWidget->frameWidth() * 2
                              + 6;
 
+    Q_UNUSED(firstRow);
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyListComboBoxPopup::calculateListViewportHeight]"
              << "count=" << listWidget->count()
