@@ -154,6 +154,39 @@ void QTrayIconSelectDialog::setTrayIcon_MatchedStateIcon(const QString &trayicon
     ui->matchedStateTrayIconSelectComboBox->setCurrentText(trayicon_filename);
 }
 
+QString QTrayIconSelectDialog::getTrayIconPathOrDefault(const QString &trayiconpath, const QString &defaultTrayiconpath) const
+{
+    if (false == trayiconpath.isEmpty()) {
+        QIcon trayicon(trayiconpath);
+        if (!trayicon.isNull()) {
+            if (true == trayiconpath.startsWith(":/")) {
+                return trayiconpath;
+            }
+
+            if (true == QFileInfo::exists(trayiconpath)) {
+                return trayiconpath;
+            }
+        }
+    }
+
+    return defaultTrayiconpath;
+}
+
+void QTrayIconSelectDialog::refreshTrayIconComboBoxesWithSelections()
+{
+    const QString idleStateTrayIcon = getTrayIcon_IdleStateIcon();
+    const QString monitoringStateTrayIcon = getTrayIcon_MonitoringStateIcon();
+    const QString globalStateTrayIcon = getTrayIcon_GlobalStateIcon();
+    const QString matchedStateTrayIcon = getTrayIcon_MatchedStateIcon();
+
+    initTrayIconComboBoxes();
+
+    setTrayIcon_IdleStateIcon(getTrayIconPathOrDefault(idleStateTrayIcon, TRAYICON_IDLE_DEFAULT_FILE));
+    setTrayIcon_MonitoringStateIcon(getTrayIconPathOrDefault(monitoringStateTrayIcon, TRAYICON_MONITORING_DEFAULT_FILE));
+    setTrayIcon_GlobalStateIcon(getTrayIconPathOrDefault(globalStateTrayIcon, TRAYICON_GLOBAL_DEFAULT_FILE));
+    setTrayIcon_MatchedStateIcon(getTrayIconPathOrDefault(matchedStateTrayIcon, TRAYICON_MATCHED_DEFAULT_FILE));
+}
+
 QIcon QTrayIconSelectDialog::getIdleStateQIcon()
 {
     QIcon tray_icon = QIcon(getTrayIcon_IdleStateIcon());
@@ -190,6 +223,13 @@ QIcon QTrayIconSelectDialog::getMatchedStateQIcon()
     return tray_icon;
 }
 
+void QTrayIconSelectDialog::showEvent(QShowEvent *event)
+{
+    refreshTrayIconComboBoxesWithSelections();
+
+    QDialog::showEvent(event);
+}
+
 #if 0
 bool QTrayIconSelectDialog::event(QEvent *event)
 {
@@ -217,13 +257,15 @@ void QTrayIconSelectDialog::on_addCustomTrayiconsButton_clicked()
 
     m_SelectTrayIconFileDialog->setWindowTitle(tr("Select Custom Tray Icon Files"));
     m_SelectTrayIconFileDialog->setNameFilter(tr("ICO Files (*.ico)"));
-    // m_SelectTrayIconFileDialog->selectFile(QString());
 
-    if (m_SelectTrayIconFileDialog->exec() != QDialog::Accepted) {
-        return;
-    }
+    QString caption_string = tr("Select Custom Tray Icon Files");
+    QString filter = tr("ICO Files (*.ico)");
 
-    const QStringList selectedFiles = m_SelectTrayIconFileDialog->selectedFiles();
+    const QStringList selectedFiles = m_SelectTrayIconFileDialog->getOpenFileNames(this,
+                                                           caption_string,
+                                                           QString(),
+                                                           filter);
+
     if (selectedFiles.isEmpty()) {
         return;
     }
@@ -313,16 +355,7 @@ void QTrayIconSelectDialog::on_addCustomTrayiconsButton_clicked()
     }
 
     if (copiedCount > 0) {
-        const QString idleStateTrayIcon = getTrayIcon_IdleStateIcon();
-        const QString monitoringStateTrayIcon = getTrayIcon_MonitoringStateIcon();
-        const QString globalStateTrayIcon = getTrayIcon_GlobalStateIcon();
-        const QString matchedStateTrayIcon = getTrayIcon_MatchedStateIcon();
-
-        initTrayIconComboBoxes();
-        setTrayIcon_IdleStateIcon(idleStateTrayIcon);
-        setTrayIcon_MonitoringStateIcon(monitoringStateTrayIcon);
-        setTrayIcon_GlobalStateIcon(globalStateTrayIcon);
-        setTrayIcon_MatchedStateIcon(matchedStateTrayIcon);
+        refreshTrayIconComboBoxesWithSelections();
     }
 
     QString popupMessage;

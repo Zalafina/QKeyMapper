@@ -44,6 +44,7 @@ public:
 
 protected:
     // bool event(QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
@@ -51,6 +52,8 @@ private slots:
 
 private:
     void initSelectTrayIconFileDialog(void);
+    void refreshTrayIconComboBoxesWithSelections(void);
+    QString getTrayIconPathOrDefault(const QString &trayiconpath, const QString &defaultTrayiconpath) const;
 
     static QTrayIconSelectDialog *m_instance;
     QFileDialog *m_SelectTrayIconFileDialog = Q_NULLPTR;

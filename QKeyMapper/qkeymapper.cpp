@@ -31948,6 +31948,7 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
             keycodeString = QString("R-Ctrl");
         }
     }
+#if 0
     else if (VK_MENU == vkeycode.KeyCode){
         if (QT_KEY_L_ALT == (keyevent->nativeModifiers() & QT_KEY_L_ALT)){
             keycodeString = QString("L-Alt");
@@ -31956,6 +31957,7 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
             keycodeString = QString("R-Alt");
         }
     }
+#endif
     else{
     }
 
