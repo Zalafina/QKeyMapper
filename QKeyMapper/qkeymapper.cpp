@@ -30943,10 +30943,24 @@ KeyListComboBoxPopup::KeyListComboBoxPopup(KeyListComboBox *comboBox)
 
     connect(m_SearchLineEdit, &QLineEdit::textChanged, this, &KeyListComboBoxPopup::onSearchTextChanged);
     connect(m_FavoritesToolButton, &QToolButton::clicked, this, [this]() {
-        openCollectionPage(KEYLIST_SHARED_FAVORITES);
+        const bool isFavoritesPageVisible = (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget)
+            && (m_CurrentCollectionType == KEYLIST_SHARED_FAVORITES);
+        if (isFavoritesPageVisible) {
+            closeCollectionPage();
+        }
+        else {
+            openCollectionPage(KEYLIST_SHARED_FAVORITES);
+        }
     });
     connect(m_RecentToolButton, &QToolButton::clicked, this, [this]() {
-        openCollectionPage(KEYLIST_SHARED_RECENTS);
+        const bool isRecentPageVisible = (m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget)
+            && (m_CurrentCollectionType == KEYLIST_SHARED_RECENTS);
+        if (isRecentPageVisible) {
+            closeCollectionPage();
+        }
+        else {
+            openCollectionPage(KEYLIST_SHARED_RECENTS);
+        }
     });
     connect(m_FavoritesToolButton, &QToolButton::customContextMenuRequested, this, &KeyListComboBoxPopup::showFavoritesHeaderMenu);
     connect(m_RecentToolButton, &QToolButton::customContextMenuRequested, this, &KeyListComboBoxPopup::showRecentHeaderMenu);
