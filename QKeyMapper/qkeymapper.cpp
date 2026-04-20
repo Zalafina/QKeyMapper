@@ -30584,6 +30584,130 @@ QString normalizeKeyListSearchText(const QString &text)
     return normalizedText;
 }
 
+enum KeyListSearchMatchPriority {
+    KEYLIST_SEARCH_MATCH_EXACT = 0,
+    KEYLIST_SEARCH_MATCH_PREFIX,
+    KEYLIST_SEARCH_MATCH_WORD_BOUNDARY,
+    KEYLIST_SEARCH_MATCH_SUBSTRING,
+    KEYLIST_SEARCH_MATCH_NONE
+};
+
+struct KeyListPopupDisplayEntry {
+    int comboIndex;
+    QString actualText;
+    QString displayText;
+    bool isCurrentText;
+};
+
+KeyListSearchMatchPriority evaluateKeyListSearchMatch(const QString &normalizedSearchText,
+                                                      const QString &actualText,
+                                                      const QString &displayText,
+                                                      const QString &normalizedActualText,
+                                                      const QString &normalizedDisplayText)
+{
+    if (normalizedSearchText.isEmpty()) {
+        return KEYLIST_SEARCH_MATCH_SUBSTRING;
+    }
+
+    const bool actualExactMatch = !normalizedActualText.isEmpty() && normalizedActualText == normalizedSearchText;
+    const bool displayExactMatch = !normalizedDisplayText.isEmpty() && normalizedDisplayText == normalizedSearchText;
+    if (actualExactMatch || displayExactMatch) {
+        return KEYLIST_SEARCH_MATCH_EXACT;
+    }
+
+    const bool actualPrefixMatch = !normalizedActualText.isEmpty() && normalizedActualText.startsWith(normalizedSearchText);
+    const bool displayPrefixMatch = !normalizedDisplayText.isEmpty() && normalizedDisplayText.startsWith(normalizedSearchText);
+    if (actualPrefixMatch || displayPrefixMatch) {
+        return KEYLIST_SEARCH_MATCH_PREFIX;
+    }
+
+    const auto isKeyListWordBoundaryIndex = [](const QString &sourceText, int index) -> bool {
+        if (index < 0 || index >= sourceText.size()) {
+            return false;
+        }
+
+        const QChar currentChar = sourceText.at(index);
+        if (!currentChar.isLetterOrNumber()) {
+            return false;
+        }
+
+        if (0 == index) {
+            return true;
+        }
+
+        const QChar previousChar = sourceText.at(index - 1);
+        if (!previousChar.isLetterOrNumber()) {
+            return true;
+        }
+
+        if (previousChar.isLower() && currentChar.isUpper()) {
+            return true;
+        }
+
+        if (previousChar.isLetter() && currentChar.isDigit()) {
+            return true;
+        }
+
+        if (previousChar.isDigit() && currentChar.isLetter()) {
+            return true;
+        }
+
+        return false;
+    };
+
+    const auto startsWithNormalizedSearchAtBoundary = [&normalizedSearchText](const QString &sourceText, int startIndex) -> bool {
+        if (normalizedSearchText.isEmpty()) {
+            return false;
+        }
+
+        int searchIndex = 0;
+        for (int index = startIndex; index < sourceText.size(); ++index) {
+            QChar currentChar = sourceText.at(index);
+            if (currentChar == '-' || currentChar == ' ' || currentChar == '_' || currentChar == '\t') {
+                continue;
+            }
+
+            if (currentChar.toLower() != normalizedSearchText.at(searchIndex)) {
+                return false;
+            }
+
+            ++searchIndex;
+            if (searchIndex >= normalizedSearchText.size()) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    const auto hasWordBoundaryMatch = [&](const QString &sourceText) -> bool {
+        for (int index = 0; index < sourceText.size(); ++index) {
+            if (!isKeyListWordBoundaryIndex(sourceText, index)) {
+                continue;
+            }
+
+            if (startsWithNormalizedSearchAtBoundary(sourceText, index)) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    if ((!actualText.isEmpty() && hasWordBoundaryMatch(actualText))
+        || hasWordBoundaryMatch(displayText)) {
+        return KEYLIST_SEARCH_MATCH_WORD_BOUNDARY;
+    }
+
+    const bool actualSubstringMatch = !normalizedActualText.isEmpty() && normalizedActualText.contains(normalizedSearchText);
+    const bool displaySubstringMatch = !normalizedDisplayText.isEmpty() && normalizedDisplayText.contains(normalizedSearchText);
+    if (actualSubstringMatch || displaySubstringMatch) {
+        return KEYLIST_SEARCH_MATCH_SUBSTRING;
+    }
+
+    return KEYLIST_SEARCH_MATCH_NONE;
+}
+
 int firstEnabledListRow(const QListWidget *listWidget)
 {
     if (listWidget == Q_NULLPTR) {
@@ -31162,37 +31286,88 @@ void KeyListComboBoxPopup::refreshMainList(void)
 
     const QString searchText = m_SearchLineEdit->text().trimmed();
     const QString normalizedSearchText = normalizeKeyListSearchText(searchText);
+    QList<KeyListPopupDisplayEntry> exactMatchEntries;
+    QList<KeyListPopupDisplayEntry> prefixMatchEntries;
+    QList<KeyListPopupDisplayEntry> wordBoundaryMatchEntries;
+    QList<KeyListPopupDisplayEntry> substringMatchEntries;
     QListWidgetItem *currentItem = Q_NULLPTR;
+
+    const auto appendMatchedEntry = [&](const KeyListPopupDisplayEntry &entry, KeyListSearchMatchPriority matchPriority) {
+        if (KEYLIST_SEARCH_MATCH_EXACT == matchPriority) {
+            exactMatchEntries.append(entry);
+        }
+        else if (KEYLIST_SEARCH_MATCH_PREFIX == matchPriority) {
+            prefixMatchEntries.append(entry);
+        }
+        else if (KEYLIST_SEARCH_MATCH_WORD_BOUNDARY == matchPriority) {
+            wordBoundaryMatchEntries.append(entry);
+        }
+        else {
+            substringMatchEntries.append(entry);
+        }
+    };
+
+    const auto appendEntryToMainList = [&](const KeyListPopupDisplayEntry &entry) {
+        QListWidgetItem *item = new QListWidgetItem(m_ComboBox->itemIcon(entry.comboIndex), entry.displayText, m_MainListWidget);
+        item->setData(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE, entry.actualText);
+        item->setData(KEYLIST_POPUP_ITEM_EMPTY_PLACEHOLDER_ROLE, entry.actualText.isEmpty());
+        if (entry.actualText.isEmpty()) {
+            item->setToolTip(tr("Clear current selection"));
+        }
+        else {
+            m_CurrentValidItemTexts.append(entry.actualText);
+        }
+
+        if (entry.isCurrentText) {
+            currentItem = item;
+        }
+    };
 
     for (int index = 0; index < m_ComboBox->count(); ++index) {
         const QString actualText = m_ComboBox->itemText(index);
         const QString displayText = actualText.isEmpty() ? tr("(Empty)") : actualText;
 
-        bool isMatched = normalizedSearchText.isEmpty();
-        if (!isMatched && !actualText.isEmpty()) {
-            isMatched = normalizeKeyListSearchText(actualText).contains(normalizedSearchText);
-        }
-        if (!isMatched) {
-            isMatched = normalizeKeyListSearchText(displayText).contains(normalizedSearchText);
-        }
-        if (!isMatched) {
+        const QString normalizedActualText = actualText.isEmpty() ? QString() : normalizeKeyListSearchText(actualText);
+        const QString normalizedDisplayText = normalizeKeyListSearchText(displayText);
+        const KeyListSearchMatchPriority matchPriority = evaluateKeyListSearchMatch(normalizedSearchText,
+                                                                                    actualText,
+                                                                                    displayText,
+                                                                                    normalizedActualText,
+                                                                                    normalizedDisplayText);
+        if (KEYLIST_SEARCH_MATCH_NONE == matchPriority) {
             continue;
         }
 
-        QListWidgetItem *item = new QListWidgetItem(m_ComboBox->itemIcon(index), displayText, m_MainListWidget);
-        item->setData(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE, actualText);
-        item->setData(KEYLIST_POPUP_ITEM_EMPTY_PLACEHOLDER_ROLE, actualText.isEmpty());
-        if (actualText.isEmpty()) {
-            item->setToolTip(tr("Clear current selection"));
-        }
-        else {
-            m_CurrentValidItemTexts.append(actualText);
-        }
-
-        if (m_ComboBox->currentText() == actualText) {
-            currentItem = item;
-        }
+        KeyListPopupDisplayEntry entry;
+        entry.comboIndex = index;
+        entry.actualText = actualText;
+        entry.displayText = displayText;
+        entry.isCurrentText = (m_ComboBox->currentText() == actualText);
+        appendMatchedEntry(entry, matchPriority);
     }
+
+    const auto populateEntries = [&](const QList<KeyListPopupDisplayEntry> &entries) {
+        for (const KeyListPopupDisplayEntry &entry : entries) {
+            appendEntryToMainList(entry);
+        }
+    };
+
+    populateEntries(exactMatchEntries);
+    populateEntries(prefixMatchEntries);
+    populateEntries(wordBoundaryMatchEntries);
+    populateEntries(substringMatchEntries);
+
+#ifdef DEBUG_LOGOUT_ON
+    if (!normalizedSearchText.isEmpty()) {
+        qDebug() << "[KeyListComboBoxPopup::refreshMainList]"
+                 << "searchText=" << searchText
+                 << ", normalizedSearchText=" << normalizedSearchText
+                 << ", exactMatches=" << exactMatchEntries.count()
+                 << ", prefixMatches=" << prefixMatchEntries.count()
+                 << ", wordBoundaryMatches=" << wordBoundaryMatchEntries.count()
+                 << ", substringMatches=" << substringMatchEntries.count();
+    }
+#endif
 
     if (m_MainListWidget->count() == 0) {
         QListWidgetItem *placeholderItem = new QListWidgetItem(tr("No matching items"), m_MainListWidget);
