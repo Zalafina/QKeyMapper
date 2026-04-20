@@ -12638,16 +12638,19 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.windowTitleMatchType = WindowInfoMatchType::RegexMatch;
     info.classNameMatchType = WindowInfoMatchType::Ignore;
     info.processName = "QKeyMapper.exe";
-    info.windowTitle = "虚拟按钮面板设定|VButton Panel Setup|仮想ボタンパネル設定";
+    // info.windowTitle = "^(?:虚拟按钮(?:面板设定|颜色|面板背景色|按下颜色|锁定颜色|字体颜色)|VButton Panel (?:Setup|Button Color|BG Color|Pressed Color|Locked Color|Text Color)|仮想ボタン(?:パネル設定|の色|パネル背景色|押下の色|ロックの色|文字色))$";
+    info.windowTitle = "^(?:虚拟按钮.+|VButton Panel .+|仮想ボタン.+)$";
     info.className.clear();
     s_IgnoreWindowInfoMap[info.ruleName] = info;
+
 
     info.ruleName = "QKeyMapper floating button panel setup window";
     info.processNameMatchType = WindowInfoMatchType::Contains;
     info.windowTitleMatchType = WindowInfoMatchType::RegexMatch;
     info.classNameMatchType = WindowInfoMatchType::Ignore;
     info.processName = "QKeyMapper.exe";
-    info.windowTitle = "悬浮按钮设定|Floating Button Setup|フローティングボタン設定";
+    // info.windowTitle = "^(?:悬浮按钮(?:设定|颜色|按下状态颜色|锁定状态颜色|字体颜色)|Floating Button (?:Setup|Color|Pressed Color|Locked Color|Text Color)|フローティングボタン(?:設定|の色|の押下状態の色|のロック状態の色|の文字色))$";
+    info.windowTitle = "^(?:悬浮按钮.+|Floating Button .+|フローティングボタン.+)$";
     info.className.clear();
     s_IgnoreWindowInfoMap[info.ruleName] = info;
 

@@ -5533,7 +5533,7 @@ Right-click to cancel.</translation>
     <message>
         <location filename="../qvbuttonpanelsetupdialog.cpp" line="144"/>
         <source>VButton Panel Button Color</source>
-        <translation>VButton Color</translation>
+        <translation>VButton Panel Button Color</translation>
     </message>
     <message>
         <location filename="../qvbuttonpanelsetupdialog.cpp" line="147"/>
@@ -5543,7 +5543,7 @@ Right-click to cancel.</translation>
     <message>
         <location filename="../qvbuttonpanelsetupdialog.cpp" line="148"/>
         <source>VButton Panel Pressed Color</source>
-        <translation>VButton Pressed Color</translation>
+        <translation>VButton Panel Pressed Color</translation>
     </message>
     <message>
         <location filename="../qvbuttonpanelsetupdialog.cpp" line="149"/>
@@ -5553,7 +5553,7 @@ Right-click to cancel.</translation>
     <message>
         <location filename="../qvbuttonpanelsetupdialog.cpp" line="150"/>
         <source>VButton Panel Locked Color</source>
-        <translation>VButton Locked Color</translation>
+        <translation>VButton Panel Locked Color</translation>
     </message>
     <message>
         <location filename="../qvbuttonpanelsetupdialog.cpp" line="151"/>
@@ -5563,7 +5563,7 @@ Right-click to cancel.</translation>
     <message>
         <location filename="../qvbuttonpanelsetupdialog.cpp" line="152"/>
         <source>VButton Panel Text Color</source>
-        <translation>VButton Font Color</translation>
+        <translation>VButton Panel Font Color</translation>
     </message>
 </context>
 <context>
