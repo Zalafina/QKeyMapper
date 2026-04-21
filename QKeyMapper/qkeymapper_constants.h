@@ -1312,7 +1312,7 @@ namespace QKeyMapperConstants {
     inline constexpr QColor DISABLED_MAPPING_ROW_FOREGROUND_COLOR = QColor(120, 120, 120);
 #else
     // Fallback for Qt5: QColor is not constexpr
-    inline const QColor DISABLED_MAPPING_ROW_FOREGROUND_COLOR = QColor(208, 210, 212);
+    inline const QColor DISABLED_MAPPING_ROW_FOREGROUND_COLOR = QColor(120, 120, 120);
 #endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
