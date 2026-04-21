@@ -1301,6 +1301,22 @@ namespace QKeyMapperConstants {
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // QColor supports constexpr in Qt6
+    inline constexpr QColor DISABLED_MAPPING_ROW_BACKGROUND_COLOR = QColor(102, 40, 70);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor DISABLED_MAPPING_ROW_BACKGROUND_COLOR = QColor(102, 40, 70);
+#endif
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor DISABLED_MAPPING_ROW_FOREGROUND_COLOR = QColor(120, 120, 120);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor DISABLED_MAPPING_ROW_FOREGROUND_COLOR = QColor(208, 210, 212);
+#endif
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
     inline constexpr QColor HOTKEY_TABBAR_TEXT_COLOR = QColor(0, 168, 138);
 #else
     // Fallback for Qt5: QColor is not constexpr

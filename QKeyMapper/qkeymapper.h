@@ -386,6 +386,14 @@ public:
     void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const;
 };
 
+class KeyMappingTableStyleDelegate : public QStyledItemDelegate
+{
+public:
+    explicit KeyMappingTableStyleDelegate(QWidget *parent = Q_NULLPTR) : QStyledItemDelegate(parent) {}
+
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+};
+
 enum KeyListCollectionType {
     KEYLIST_COLLECTION_ORIGINAL = 0,
     KEYLIST_COLLECTION_MAPPING
@@ -1611,6 +1619,7 @@ private:
     void updateMappingKeyListComboBox(void);
     void setKeyMappingTabWidgetCurrentIndex(int index);
     void forceSwitchKeyMappingTabWidgetIndex(int index);
+    void applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappingDataTable, const QList<MAP_KEYDATA> *mappingDataList, int row);
 public:
     void refreshKeyMappingDataTableByTabIndex(int tabindex);
     void refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList);

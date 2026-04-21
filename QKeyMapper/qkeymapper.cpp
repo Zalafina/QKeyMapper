@@ -11,6 +11,47 @@ using namespace Gdiplus;
 
 namespace {
 
+constexpr int DISABLED_ROW_BACKGROUND_APPLIED_ROLE = Qt::UserRole + 500;
+constexpr int DISABLED_ROW_FOREGROUND_APPLIED_ROLE = Qt::UserRole + 501;
+
+bool isKeyMappingCheckboxOnlyColumn(int column)
+{
+    return column == DISABLED_COLUMN
+           || column == BURST_MODE_COLUMN
+           || column == LOCK_COLUMN
+           || column == FLOATING_COLUMN;
+}
+
+QColor blendColors(const QColor &baseColor, const QColor &overlayColor, qreal overlayRatio)
+{
+    const qreal clampedRatio = qBound(0.0, overlayRatio, 1.0);
+    const qreal baseRatio = 1.0 - clampedRatio;
+
+    return QColor(qRound(baseColor.red() * baseRatio + overlayColor.red() * clampedRatio),
+                  qRound(baseColor.green() * baseRatio + overlayColor.green() * clampedRatio),
+                  qRound(baseColor.blue() * baseRatio + overlayColor.blue() * clampedRatio),
+                  qRound(baseColor.alpha() * baseRatio + overlayColor.alpha() * clampedRatio));
+}
+
+QColor colorFromItemData(const QVariant &data, const QColor &fallbackColor)
+{
+    if (data.canConvert<QBrush>()) {
+        const QBrush brush = qvariant_cast<QBrush>(data);
+        if (brush.style() != Qt::NoBrush) {
+            return brush.color();
+        }
+    }
+
+    if (data.canConvert<QColor>()) {
+        const QColor color = qvariant_cast<QColor>(data);
+        if (color.isValid()) {
+            return color;
+        }
+    }
+
+    return fallbackColor;
+}
+
 bool isDesktopOrShellWindow(HWND hwnd)
 {
     if (hwnd == Q_NULLPTR || !IsWindow(hwnd)) {
@@ -10803,6 +10844,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 
     KeyMappingTableWidget->setFocusPolicy(Qt::ClickFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
+    KeyMappingTableWidget->setItemDelegate(new KeyMappingTableStyleDelegate(KeyMappingTableWidget));
 
     // Initialize floating column visibility based on current button state
     KeyMappingTableWidget->setFloatingColumnVisible(ui->showFloatingButton->isChecked());
@@ -10926,6 +10968,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
     KeyMappingTableWidget->setFocusPolicy(Qt::ClickFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
+    KeyMappingTableWidget->setItemDelegate(new KeyMappingTableStyleDelegate(KeyMappingTableWidget));
 
     // Initialize floating column visibility based on current button state
     KeyMappingTableWidget->setFloatingColumnVisible(ui->showFloatingButton->isChecked());
@@ -11647,6 +11690,63 @@ void QKeyMapper::onTrayIconMenuQuitAction()
     QApplication::quit();
 }
 
+void QKeyMapper::applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappingDataTable, const QList<MAP_KEYDATA> *mappingDataList, int row)
+{
+    if (!mappingDataTable || !mappingDataList) {
+        return;
+    }
+
+    if (row < 0 || row >= mappingDataList->size() || row >= mappingDataTable->rowCount()) {
+        return;
+    }
+
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(row);
+
+    for (int column = 0; column < KEYMAPPINGDATA_TABLE_COLUMN_COUNT; ++column) {
+        QTableWidgetItem *item = mappingDataTable->item(row, column);
+        if (!item) {
+            continue;
+        }
+
+        const bool checkboxOnlyColumn = isKeyMappingCheckboxOnlyColumn(column);
+
+        if (keymapdata.Disabled) {
+            item->setBackground(QBrush(DISABLED_MAPPING_ROW_BACKGROUND_COLOR));
+            item->setData(DISABLED_ROW_BACKGROUND_APPLIED_ROLE, true);
+
+            if (column == ORIGINAL_KEY_COLUMN && keymapdata.PassThrough) {
+                item->setForeground(QBrush(PASS_THROUGH_COLOR));
+                item->setData(DISABLED_ROW_FOREGROUND_APPLIED_ROLE, false);
+            }
+            else if (checkboxOnlyColumn) {
+                item->setData(DISABLED_ROW_FOREGROUND_APPLIED_ROLE, false);
+            }
+            else {
+                item->setForeground(QBrush(DISABLED_MAPPING_ROW_FOREGROUND_COLOR));
+                item->setData(DISABLED_ROW_FOREGROUND_APPLIED_ROLE, true);
+            }
+        }
+        else {
+            if (item->data(DISABLED_ROW_BACKGROUND_APPLIED_ROLE).toBool()) {
+                item->setBackground(QBrush());
+                item->setData(DISABLED_ROW_BACKGROUND_APPLIED_ROLE, false);
+            }
+
+            if (column == ORIGINAL_KEY_COLUMN && keymapdata.PassThrough) {
+                item->setForeground(QBrush(PASS_THROUGH_COLOR));
+                item->setData(DISABLED_ROW_FOREGROUND_APPLIED_ROLE, false);
+            }
+            else if (checkboxOnlyColumn) {
+                item->setData(DISABLED_ROW_FOREGROUND_APPLIED_ROLE, false);
+            }
+            else if (item->data(DISABLED_ROW_FOREGROUND_APPLIED_ROLE).toBool()) {
+                item->setForeground(QBrush());
+                item->setData(DISABLED_ROW_FOREGROUND_APPLIED_ROLE, false);
+            }
+        }
+    }
+}
+
 void QKeyMapper::cellChanged_slot(int row, int col)
 {
     int row_count = QKeyMapper::KeyMappingDataList->size();
@@ -11726,22 +11826,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         if (disabled != KeyMappingDataList->at(row).Disabled) {
             (*KeyMappingDataList)[row].Disabled = disabled;
             emit keyMappingTableItemCheckStateChanged_Signal(row, col, disabled);
-
-            QTableWidgetItem *ori_TableItem = m_KeyMappingDataTable->item(row, ORIGINAL_KEY_COLUMN);
-            if (ori_TableItem) {
-                QFont font = ori_TableItem->font();
-                if (disabled) {
-                    font.setItalic(true);
-                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
-                }
-                else {
-                    font.setItalic(false);
-                    // Clear explicit background so the item inherits the disabled palette
-                    // color correctly in both light and dark themes during mapping mode.
-                    ori_TableItem->setBackground(QBrush());
-                }
-                ori_TableItem->setFont(font);
-            }
+            applyDisabledStyleToMappingRow(m_KeyMappingDataTable, KeyMappingDataList, row);
 
             // Enforce mutual exclusion: within the same normalized OriginalKey group,
             // only one item can be enabled at a time.
@@ -11768,14 +11853,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                     if (disabledItem) {
                         disabledItem->setCheckState(Qt::Checked);
                     }
-
-                    QTableWidgetItem *oriItem = m_KeyMappingDataTable->item(i, ORIGINAL_KEY_COLUMN);
-                    if (oriItem) {
-                        QFont font = oriItem->font();
-                        font.setItalic(true);
-                        oriItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
-                        oriItem->setFont(font);
-                    }
+                    applyDisabledStyleToMappingRow(m_KeyMappingDataTable, KeyMappingDataList, i);
                 }
 
                 if (auto_disabled > 0) {
@@ -25774,14 +25852,6 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             QTableWidgetItem *disabledCheckBox = new QTableWidgetItem();
             if (keymapdata.Disabled == true) {
                 disabledCheckBox->setCheckState(Qt::Checked);
-
-                QTableWidgetItem *ori_TableItem = mappingDataTable->item(rowindex, ORIGINAL_KEY_COLUMN);
-                if (ori_TableItem) {
-                    QFont font = ori_TableItem->font();
-                    font.setItalic(true);
-                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
-                    ori_TableItem->setFont(font);
-                }
             }
             else {
                 disabledCheckBox->setCheckState(Qt::Unchecked);
@@ -25836,6 +25906,8 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             // Category column should be editable
             categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, CATEGORY_COLUMN, categoryItem);
+
+            applyDisabledStyleToMappingRow(mappingDataTable, mappingDataList, rowindex);
 
             rowindex += 1;
 
@@ -26034,22 +26106,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 }
                 mappingDataTable->setItem(row, ORIGINAL_KEY_COLUMN, ori_TableItem);
             }
-            // Sync Disabled state styling (italic font + background) to keep visual
-            // consistency with refreshKeyMappingDataTable and the DISABLED_COLUMN case.
-            {
-                QFont font = ori_TableItem->font();
-                if (keymapdata.Disabled) {
-                    font.setItalic(true);
-                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
-                }
-                else {
-                    font.setItalic(false);
-                    // Clear explicit background so the item inherits the disabled palette
-                    // color correctly in both light and dark themes during mapping mode.
-                    ori_TableItem->setBackground(QBrush());
-                }
-                ori_TableItem->setFont(font);
-            }
+            applyDisabledStyleToMappingRow(mappingDataTable, mappingDataList, row);
             break;
         }
         case MAPPING_KEY_COLUMN: {
@@ -26088,21 +26145,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
                 disabledCheckBox->setFlags(disabledCheckBox->flags() & ~Qt::ItemIsEditable);
                 mappingDataTable->setItem(row, DISABLED_COLUMN, disabledCheckBox);
             }
-            QTableWidgetItem *ori_TableItem = mappingDataTable->item(row, ORIGINAL_KEY_COLUMN);
-            if (ori_TableItem) {
-                QFont font = ori_TableItem->font();
-                if (keymapdata.Disabled) {
-                    font.setItalic(true);
-                    ori_TableItem->setBackground(QBrush(QApplication::palette().color(QPalette::AlternateBase)));
-                }
-                else {
-                    font.setItalic(false);
-                    // Clear explicit background so the item inherits the disabled palette
-                    // color correctly in both light and dark themes during mapping mode.
-                    ori_TableItem->setBackground(QBrush());
-                }
-                ori_TableItem->setFont(font);
-            }
+            applyDisabledStyleToMappingRow(mappingDataTable, mappingDataList, row);
             break;
         }
         case BURST_MODE_COLUMN: {
@@ -30565,6 +30608,53 @@ void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
     else{
         QStyledItemDelegate::paint(painter, option, index);
     }
+}
+
+void KeyMappingTableStyleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    QStyleOptionViewItem styledOption(option);
+    initStyleOption(&styledOption, index);
+
+    QStyle *style = styledOption.widget ? styledOption.widget->style() : QApplication::style();
+    if (!index.data(DISABLED_ROW_BACKGROUND_APPLIED_ROLE).toBool()) {
+        style->drawControl(QStyle::CE_ItemViewItem, &styledOption, painter, styledOption.widget);
+        return;
+    }
+
+    const bool selected = (styledOption.state & QStyle::State_Selected);
+    const bool enabled = (styledOption.state & QStyle::State_Enabled);
+    const bool checkboxOnlyColumn = isKeyMappingCheckboxOnlyColumn(index.column());
+
+    QColor backgroundColor = colorFromItemData(index.data(Qt::BackgroundRole),
+                                               styledOption.palette.color(QPalette::Base));
+    QColor foregroundColor = colorFromItemData(index.data(Qt::ForegroundRole),
+                                               styledOption.palette.color(QPalette::Text));
+
+    if (selected) {
+        const QColor highlightColor = styledOption.palette.color(QPalette::Highlight);
+        backgroundColor = blendColors(backgroundColor, highlightColor, 0.28);
+        styledOption.state &= ~QStyle::State_Selected;
+    }
+
+    if (!enabled) {
+        const QColor disabledBaseColor = styledOption.palette.color(QPalette::Disabled, QPalette::Base);
+        const QColor disabledTextColor = styledOption.palette.color(QPalette::Disabled, QPalette::Text);
+
+        backgroundColor = blendColors(backgroundColor, disabledBaseColor, selected ? 0.45 : 0.58);
+        if (!checkboxOnlyColumn) {
+            foregroundColor = blendColors(foregroundColor, disabledTextColor, 0.50);
+        }
+    }
+
+    styledOption.backgroundBrush = QBrush(backgroundColor);
+    styledOption.palette.setBrush(QPalette::Base, backgroundColor);
+    styledOption.palette.setBrush(QPalette::AlternateBase, backgroundColor);
+    styledOption.palette.setBrush(QPalette::Text, foregroundColor);
+    styledOption.palette.setBrush(QPalette::WindowText, foregroundColor);
+    styledOption.palette.setBrush(QPalette::ButtonText, foregroundColor);
+    styledOption.palette.setBrush(QPalette::HighlightedText, foregroundColor);
+
+    style->drawControl(QStyle::CE_ItemViewItem, &styledOption, painter, styledOption.widget);
 }
 
 namespace {
