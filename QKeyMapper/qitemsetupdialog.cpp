@@ -3714,7 +3714,7 @@ void QItemSetupDialog::on_crosshairSetupButton_clicked()
 void QItemSetupDialog::on_floatingButtonSetupButton_clicked()
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[on_floatingButtonSetupButton_clicked]" << "Show Floating Button Setup Dialog Window";
+    qDebug().nospace().noquote() << "[on_floatingButtonSetupButton_clicked]" << "Show Floating Button Setup Dialog Window, row =" << m_ItemRow;
 #endif
 
     QKeyMapper::getInstance()->showFloatingButtonSetupDialog(m_ItemRow);

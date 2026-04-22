@@ -10217,7 +10217,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     // else if (selectedAction == resetOffsetAction) {
                     //     keymapdata.FloatingButton_X_Offset = FLOATINGBUTTON_X_OFFSET_DEFAULT;
                     //     keymapdata.FloatingButton_Y_Offset = FLOATINGBUTTON_Y_OFFSET_DEFAULT;
-                    //     syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
+                    //     syncFloatingButtonRuntimeDataToCurrentTab(rowindex, keymapdata);
                     //     setFloatingButtonManualHidden(rowindex, false);
                     //     showFloatingButtonStart(rowindex, QString());
                     // }
@@ -10226,12 +10226,12 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     }
                     else if (selectedAction == toggleTopmostAction) {
                         keymapdata.FloatingButton_AlwaysOnTop = !keymapdata.FloatingButton_AlwaysOnTop;
-                        syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
+                        syncFloatingButtonRuntimeDataToCurrentTab(rowindex, keymapdata);
                         showFloatingButtonStart(rowindex, QString());
                     }
                     else if (selectedAction == toggleTooltipAction) {
                         keymapdata.FloatingButton_ShowToolTip = !keymapdata.FloatingButton_ShowToolTip;
-                        syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
+                        syncFloatingButtonRuntimeDataToCurrentTab(rowindex, keymapdata);
                         showFloatingButtonStart(rowindex, QString());
                     }
                     else if (selectedAction == setupAction) {
@@ -10320,7 +10320,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         const int newYOffset = qMax(FLOATINGBUTTON_OFFSET_MIN, qMin(FLOATINGBUTTON_OFFSET_MAX, buttonPos.y() - basePoint.y()));
                         keymapdata.FloatingButton_X_Offset = newXOffset;
                         keymapdata.FloatingButton_Y_Offset = newYOffset;
-                        syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
+                        syncFloatingButtonRuntimeDataToCurrentTab(rowindex, keymapdata);
                     }
 
                     m_FloatingButtonDragging = false;
@@ -28058,49 +28058,54 @@ void QKeyMapper::updateFloatingButtonsPositionIfWindowRef()
     }
 }
 
-void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &runtimeData)
+void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(int rowindex, const MAP_KEYDATA &runtimeData)
 {
     if (s_KeyMappingTabWidgetCurrentIndex < 0 || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()) {
         return;
     }
 
     QList<MAP_KEYDATA> *currentTabData = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
-    if (currentTabData == Q_NULLPTR) {
+    if (currentTabData == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= currentTabData->size()) {
         return;
     }
 
-    for (MAP_KEYDATA &tabData : *currentTabData) {
-        if (tabData.Original_Key != runtimeData.Original_Key) {
-            continue;
-        }
-
-        tabData.FloatingButton_Enable = runtimeData.FloatingButton_Enable;
-        tabData.FloatingButton_Label = runtimeData.FloatingButton_Label;
-        tabData.FloatingButton_ButtonColor = runtimeData.FloatingButton_ButtonColor;
-        tabData.FloatingButton_PressedColor = runtimeData.FloatingButton_PressedColor;
-        tabData.FloatingButton_LockedColor = runtimeData.FloatingButton_LockedColor;
-        tabData.FloatingButton_TextColor = runtimeData.FloatingButton_TextColor;
-        tabData.FloatingButton_Width = runtimeData.FloatingButton_Width;
-        tabData.FloatingButton_Height = runtimeData.FloatingButton_Height;
-        tabData.FloatingButton_FontSize = runtimeData.FloatingButton_FontSize;
-        tabData.FloatingButton_FontWeight = runtimeData.FloatingButton_FontWeight;
-        tabData.FloatingButton_FontFamily = runtimeData.FloatingButton_FontFamily;
-        tabData.FloatingButton_Radius = runtimeData.FloatingButton_Radius;
-        tabData.FloatingButton_NormalOpacity = runtimeData.FloatingButton_NormalOpacity;
-        tabData.FloatingButton_PressedOpacity = runtimeData.FloatingButton_PressedOpacity;
-        tabData.FloatingButton_LockedOpacity = runtimeData.FloatingButton_LockedOpacity;
-        tabData.FloatingButton_Opacity = runtimeData.FloatingButton_Opacity;
-        tabData.FloatingButton_ShowOnMappingStart = runtimeData.FloatingButton_ShowOnMappingStart;
-        tabData.FloatingButton_ShowToolTip = runtimeData.FloatingButton_ShowToolTip;
-        tabData.FloatingButton_SyncPressedLockedState = runtimeData.FloatingButton_SyncPressedLockedState;
-        tabData.FloatingButton_AlwaysOnTop = runtimeData.FloatingButton_AlwaysOnTop;
-        tabData.FloatingButton_MousePassThrough = runtimeData.FloatingButton_MousePassThrough;
-        tabData.FloatingButton_ReferencePoint = runtimeData.FloatingButton_ReferencePoint;
-        tabData.FloatingButton_X_Offset = runtimeData.FloatingButton_X_Offset;
-        tabData.FloatingButton_Y_Offset = runtimeData.FloatingButton_Y_Offset;
-        tabData.FloatingButton_DragToMove = runtimeData.FloatingButton_DragToMove;
-        return;
+#ifdef DEBUG_LOGOUT_ON
+    if (currentTabData->at(rowindex).Original_Key != runtimeData.Original_Key) {
+        qDebug().nospace().noquote() << "[syncFloatingButtonRuntimeDataToCurrentTab]"
+                                     << " row/original-key mismatch row=" << rowindex
+                                     << ", rowOriginalKey=" << currentTabData->at(rowindex).Original_Key
+                                     << ", runtimeOriginalKey=" << runtimeData.Original_Key;
     }
+#endif
+
+    MAP_KEYDATA &tabData = (*currentTabData)[rowindex];
+    tabData.FloatingButton_Enable = runtimeData.FloatingButton_Enable;
+    tabData.FloatingButton_Label = runtimeData.FloatingButton_Label;
+    tabData.FloatingButton_ButtonColor = runtimeData.FloatingButton_ButtonColor;
+    tabData.FloatingButton_PressedColor = runtimeData.FloatingButton_PressedColor;
+    tabData.FloatingButton_LockedColor = runtimeData.FloatingButton_LockedColor;
+    tabData.FloatingButton_TextColor = runtimeData.FloatingButton_TextColor;
+    tabData.FloatingButton_Width = runtimeData.FloatingButton_Width;
+    tabData.FloatingButton_Height = runtimeData.FloatingButton_Height;
+    tabData.FloatingButton_FontSize = runtimeData.FloatingButton_FontSize;
+    tabData.FloatingButton_FontWeight = runtimeData.FloatingButton_FontWeight;
+    tabData.FloatingButton_FontFamily = runtimeData.FloatingButton_FontFamily;
+    tabData.FloatingButton_Radius = runtimeData.FloatingButton_Radius;
+    tabData.FloatingButton_NormalOpacity = runtimeData.FloatingButton_NormalOpacity;
+    tabData.FloatingButton_PressedOpacity = runtimeData.FloatingButton_PressedOpacity;
+    tabData.FloatingButton_LockedOpacity = runtimeData.FloatingButton_LockedOpacity;
+    tabData.FloatingButton_Opacity = runtimeData.FloatingButton_Opacity;
+    tabData.FloatingButton_ShowOnMappingStart = runtimeData.FloatingButton_ShowOnMappingStart;
+    tabData.FloatingButton_ShowToolTip = runtimeData.FloatingButton_ShowToolTip;
+    tabData.FloatingButton_SyncPressedLockedState = runtimeData.FloatingButton_SyncPressedLockedState;
+    tabData.FloatingButton_AlwaysOnTop = runtimeData.FloatingButton_AlwaysOnTop;
+    tabData.FloatingButton_MousePassThrough = runtimeData.FloatingButton_MousePassThrough;
+    tabData.FloatingButton_ReferencePoint = runtimeData.FloatingButton_ReferencePoint;
+    tabData.FloatingButton_X_Offset = runtimeData.FloatingButton_X_Offset;
+    tabData.FloatingButton_Y_Offset = runtimeData.FloatingButton_Y_Offset;
+    tabData.FloatingButton_DragToMove = runtimeData.FloatingButton_DragToMove;
 }
 
 int QKeyMapper::findHoveredFloatingButtonRow(const QPoint &globalPos) const
@@ -28135,7 +28140,7 @@ bool QKeyMapper::setFloatingButtonMousePassThrough(int rowindex, bool enabled)
 
     MAP_KEYDATA &keymapdata = (*mappingDataList)[rowindex];
     keymapdata.FloatingButton_MousePassThrough = enabled;
-    syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
+    syncFloatingButtonRuntimeDataToCurrentTab(rowindex, keymapdata);
     applyFloatingButtonRuntimeState(this, rowindex);
     return true;
 }
@@ -35070,7 +35075,7 @@ void QKeyMapper::onFloatingButtonSettingsApplied()
     }
 
     const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
-    syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
+    syncFloatingButtonRuntimeDataToCurrentTab(rowindex, keymapdata);
     updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, rowindex, FLOATING_COLUMN);
     applyFloatingButtonRuntimeState(this, rowindex);
 }

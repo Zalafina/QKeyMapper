@@ -1520,7 +1520,7 @@ private:
     void syncFloatingButtonAfterBurstAndLockState(int rowindex);
     void updateFloatingButtonsPositionIfWindowRef();
     void resetFloatingButtonWindowTrackingState();
-    void syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &runtimeData);
+    void syncFloatingButtonRuntimeDataToCurrentTab(int rowindex, const MAP_KEYDATA &runtimeData);
 
     // CategoryFilterStateGuard helper class for RAII-style filter state management
     class CategoryFilterStateGuard {
