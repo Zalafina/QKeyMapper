@@ -1392,6 +1392,8 @@ private slots:
     void onVButtonPanelSettingsAccepted();
     void onShowVButtonPanelRequested(bool visible);
     void onSyncVButtonPanel(bool showPanel);
+    void onShowFloatingButtonStartFromCurrentKeyMappingRow(int rowindex, const QString &floatingbutton_keystr);
+    void onShowFloatingButtonStopFromCurrentKeyMappingRow(int rowindex, const QString &floatingbutton_keystr);
     void onSyncFloatingButtonsOnMappingStart();
     void onShowFloatingButtonByOriginalKey(const QString &originalKey, bool visible);
     void onShowAllFloatingButtons(bool visible);
@@ -1504,6 +1506,7 @@ private:
     void restoreCategoryFilterState(const QStringList& filters, bool showState);
     QPoint floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const;
     int findFloatingButtonRowIndexByOriginalKey(const QString &originalKey) const;
+    int findFloatingButtonRowIndexFromCurrentKeyMappingRow(int rowindex) const;
     int findHoveredFloatingButtonRow(const QPoint &globalPos) const;
     bool setFloatingButtonVisibility(int rowindex, bool visible);
     bool setFloatingButtonMousePassThrough(int rowindex, bool enabled);

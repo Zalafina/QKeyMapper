@@ -20,6 +20,16 @@ QString sanitizeFloatingButtonMousePassThroughSwitchKey(const QString &switchKey
     return FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT;
 }
 
+QList<MAP_KEYDATA> *currentTabFullKeyMappingDataList()
+{
+    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return QKeyMapper::s_KeyMappingTabInfoList.at(currentTabIndex).KeyMappingData;
+    }
+
+    return QKeyMapper::KeyMappingDataList;
+}
+
 }
 
 QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
@@ -363,10 +373,12 @@ bool QFloatingButtonSetupDialog::event(QEvent *event)
 
 void QFloatingButtonSetupDialog::showEvent(QShowEvent *event)
 {
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
     loadFromCurrentItem();
 
-    if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
-        m_BackupData = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+    if (mappingDataList != Q_NULLPTR
+        && m_ItemRow >= 0 && m_ItemRow < mappingDataList->size()) {
+        m_BackupData = mappingDataList->at(m_ItemRow);
         m_hasBackup = true;
     }
     else {
@@ -393,10 +405,12 @@ void QFloatingButtonSetupDialog::closeEvent(QCloseEvent *event)
 
 void QFloatingButtonSetupDialog::onApplyButtonClicked()
 {
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
     applyToCurrentItem();
 
-    if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
-        m_BackupData = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+    if (mappingDataList != Q_NULLPTR
+        && m_ItemRow >= 0 && m_ItemRow < mappingDataList->size()) {
+        m_BackupData = mappingDataList->at(m_ItemRow);
         m_hasBackup = true;
     }
 
@@ -405,15 +419,17 @@ void QFloatingButtonSetupDialog::onApplyButtonClicked()
 
 void QFloatingButtonSetupDialog::onRevertButtonClicked()
 {
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
     if (!m_hasBackup) {
         return;
     }
 
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+    if (mappingDataList == Q_NULLPTR
+        || m_ItemRow < 0 || m_ItemRow >= mappingDataList->size()) {
         return;
     }
 
-    (*QKeyMapper::KeyMappingDataList)[m_ItemRow] = m_BackupData;
+    (*mappingDataList)[m_ItemRow] = m_BackupData;
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     if (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
@@ -436,13 +452,15 @@ void QFloatingButtonSetupDialog::onAnyControlChanged()
 
 void QFloatingButtonSetupDialog::loadFromCurrentItem()
 {
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
+        || m_ItemRow < 0 || m_ItemRow >= mappingDataList->size()) {
         return;
     }
 
     m_isLoading = true;
 
-    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(m_ItemRow);
 
     m_EnableCheckBox->setChecked(keymapdata.FloatingButton_Enable);
     m_LabelLineEdit->setText(keymapdata.FloatingButton_Label);
@@ -502,11 +520,13 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
 
 void QFloatingButtonSetupDialog::applyToCurrentItem()
 {
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
+        || m_ItemRow < 0 || m_ItemRow >= mappingDataList->size()) {
         return;
     }
 
-    MAP_KEYDATA &keymapdata = (*QKeyMapper::KeyMappingDataList)[m_ItemRow];
+    MAP_KEYDATA &keymapdata = (*mappingDataList)[m_ItemRow];
 
     keymapdata.FloatingButton_Enable = m_EnableCheckBox->isChecked();
     keymapdata.FloatingButton_Label = m_LabelLineEdit->text();

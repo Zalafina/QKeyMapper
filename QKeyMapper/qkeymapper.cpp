@@ -1337,8 +1337,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::showCarOrdinal_Signal, this, &QKeyMapper::showCarOrdinal, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showCrosshairStart_Signal, this, &QKeyMapper::showCrosshairStart, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showCrosshairStop_Signal, this, &QKeyMapper::showCrosshairStop, Qt::QueuedConnection);
-    QObject::connect(this, &QKeyMapper::showFloatingButtonStart_Signal, this, &QKeyMapper::showFloatingButtonStart, Qt::QueuedConnection);
-    QObject::connect(this, &QKeyMapper::showFloatingButtonStop_Signal, this, &QKeyMapper::showFloatingButtonStop, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showFloatingButtonStart_Signal, this, &QKeyMapper::onShowFloatingButtonStartFromCurrentKeyMappingRow, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showFloatingButtonStop_Signal, this, &QKeyMapper::onShowFloatingButtonStopFromCurrentKeyMappingRow, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::switchMousePassThroughUnderCursor_Signal, this, &QKeyMapper::onSwitchMousePassThroughUnderCursor, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateFakerInputStatus_Signal, this, &QKeyMapper::updateFakerInputStatus, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateViGEmBusStatus_Signal, this, &QKeyMapper::updateViGEmBusStatus, Qt::QueuedConnection);
@@ -7180,36 +7180,83 @@ void QKeyMapper::setFloatingButtonManualHidden(int rowindex, bool hidden)
 
 int QKeyMapper::findFloatingButtonRowIndexByOriginalKey(const QString &originalKey) const
 {
-    if (originalKey.isEmpty() || Q_NULLPTR == KeyMappingDataList) {
+    const QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (originalKey.isEmpty() || mappingDataList == Q_NULLPTR) {
         return -1;
     }
 
     const QString normalizedTarget = normalizeOriginalKeyForExclusiveGroup(originalKey);
-    for (int rowindex = 0; rowindex < KeyMappingDataList->size(); ++rowindex) {
-        const MAP_KEYDATA &keymapdata = KeyMappingDataList->at(rowindex);
-        if (!keymapdata.FloatingButton_Enable) {
+    int exactMatchRow = -1;
+    int normalizedMatchRow = -1;
+#ifdef DEBUG_LOGOUT_ON
+    bool duplicateExactMatch = false;
+    bool duplicateNormalizedMatch = false;
+#endif
+
+    for (int rowindex = 0; rowindex < mappingDataList->size(); ++rowindex) {
+        const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
+        if (keymapdata.Disabled || !keymapdata.FloatingButton_Enable) {
             continue;
         }
 
-        if (keymapdata.Original_Key == originalKey
-            || normalizeOriginalKeyForExclusiveGroup(keymapdata.Original_Key) == normalizedTarget) {
-            return rowindex;
+        if (keymapdata.Original_Key == originalKey) {
+            if (exactMatchRow < 0) {
+                exactMatchRow = rowindex;
+            }
+#ifdef DEBUG_LOGOUT_ON
+            else {
+                duplicateExactMatch = true;
+            }
+#endif
+            continue;
+        }
+
+        if (normalizeOriginalKeyForExclusiveGroup(keymapdata.Original_Key) == normalizedTarget) {
+            if (normalizedMatchRow < 0) {
+                normalizedMatchRow = rowindex;
+            }
+#ifdef DEBUG_LOGOUT_ON
+            else {
+                duplicateNormalizedMatch = true;
+            }
+#endif
         }
     }
 
-    return -1;
+#ifdef DEBUG_LOGOUT_ON
+    if (duplicateExactMatch || duplicateNormalizedMatch) {
+        qDebug().nospace().noquote() << "[findFloatingButtonRowIndexByOriginalKey]"
+                                     << " multiple-enabled-matches originalKey=" << originalKey
+                                     << ", exactDuplicate=" << (duplicateExactMatch ? "true" : "false")
+                                     << ", normalizedDuplicate=" << (duplicateNormalizedMatch ? "true" : "false");
+    }
+#endif
+
+    return exactMatchRow >= 0 ? exactMatchRow : normalizedMatchRow;
+}
+
+int QKeyMapper::findFloatingButtonRowIndexFromCurrentKeyMappingRow(int rowindex) const
+{
+    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return -1;
+    }
+
+    return findFloatingButtonRowIndexByOriginalKey(QKeyMapper::KeyMappingDataList->at(rowindex).Original_Key);
 }
 
 bool QKeyMapper::setFloatingButtonVisibility(int rowindex, bool visible)
 {
-    if (Q_NULLPTR == KeyMappingDataList
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
         || rowindex < 0
-        || rowindex >= KeyMappingDataList->size()) {
+        || rowindex >= mappingDataList->size()) {
         return false;
     }
 
-    const MAP_KEYDATA &keymapdata = KeyMappingDataList->at(rowindex);
-    if (!keymapdata.FloatingButton_Enable) {
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
+    if (keymapdata.Disabled || !keymapdata.FloatingButton_Enable) {
         return false;
     }
 
@@ -7260,13 +7307,14 @@ bool QKeyMapper::consumeFloatingButtonMoveArmedState(int rowindex)
 
 void QKeyMapper::armFloatingButtonMoveState(int rowindex)
 {
-    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
         || rowindex < 0
-        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        || rowindex >= mappingDataList->size()) {
         return;
     }
 
-    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
     QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
     if (isFloatingButtonMoveArmed(rowindex)) {
         if (button != Q_NULLPTR && button->isVisible()) {
@@ -7320,10 +7368,11 @@ void QKeyMapper::clearFloatingButtonMoveState(int rowindex)
         return;
     }
 
-    if (QKeyMapper::KeyMappingDataList != Q_NULLPTR
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList != Q_NULLPTR
         && armedRow >= 0
-        && armedRow < QKeyMapper::KeyMappingDataList->size()) {
-        const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(armedRow);
+        && armedRow < mappingDataList->size()) {
+        const MAP_KEYDATA &keymapdata = mappingDataList->at(armedRow);
         bool pressed = false;
         bool locked = false;
         resolveFloatingButtonVisualState(armedRow, keymapdata,
@@ -10120,6 +10169,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
     if (QPushButton *floatingButton = qobject_cast<QPushButton*>(object)) {
         const int rowindex = floatingButton->property("FloatingButtonRow").toInt();
+        QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
         if (m_FloatingButtonMap.value(rowindex, Q_NULLPTR) == floatingButton) {
             if (event->type() == QEvent::MouseButtonPress
                 || event->type() == QEvent::MouseButtonDblClick) {
@@ -10128,13 +10178,13 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                 if (mouseEvent->button() == Qt::RightButton) {
                     clearFloatingButtonMoveState();
 
-                    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR
+                    if (mappingDataList == Q_NULLPTR
                         || rowindex < 0
-                        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+                        || rowindex >= mappingDataList->size()) {
                         return true;
                     }
 
-                    MAP_KEYDATA &keymapdata = (*QKeyMapper::KeyMappingDataList)[rowindex];
+                    MAP_KEYDATA &keymapdata = (*mappingDataList)[rowindex];
                     QMenu contextMenu;
                     QAction *setupAction = contextMenu.addAction(tr("Floating Button Setup"));
                     QAction *saveSettingAction = contextMenu.addAction(tr("Save Setting"));
@@ -10198,9 +10248,9 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                 }
 
                 if (mouseEvent->button() == Qt::LeftButton
-                    && QKeyMapper::KeyMappingDataList != Q_NULLPTR
-                    && rowindex >= 0 && rowindex < QKeyMapper::KeyMappingDataList->size()) {
-                    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+                    && mappingDataList != Q_NULLPTR
+                    && rowindex >= 0 && rowindex < mappingDataList->size()) {
+                    const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
                     const bool dragFromMoveAction = isFloatingButtonMoveArmed(rowindex);
                     if (dragFromMoveAction
                         || (keymapdata.FloatingButton_DragToMove && (mouseEvent->modifiers() & Qt::ControlModifier))) {
@@ -10261,8 +10311,9 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                 QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
                 if (mouseEvent->button() == Qt::LeftButton
                     && m_FloatingButtonDragging && m_FloatingButtonDraggingRow == rowindex) {
-                    if (rowindex >= 0 && rowindex < QKeyMapper::KeyMappingDataList->size()) {
-                        MAP_KEYDATA &keymapdata = (*QKeyMapper::KeyMappingDataList)[rowindex];
+                    if (mappingDataList != Q_NULLPTR
+                        && rowindex >= 0 && rowindex < mappingDataList->size()) {
+                        MAP_KEYDATA &keymapdata = (*mappingDataList)[rowindex];
                         const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
                         const QPoint buttonPos = floatingButton->pos();
                         const int newXOffset = qMax(FLOATINGBUTTON_OFFSET_MIN, qMin(FLOATINGBUTTON_OFFSET_MAX, buttonPos.x() - basePoint.x()));
@@ -10280,8 +10331,9 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                 }
 
                 if (mouseEvent->button() == Qt::LeftButton
-                    && rowindex >= 0 && rowindex < QKeyMapper::KeyMappingDataList->size()) {
-                    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+                    && mappingDataList != Q_NULLPTR
+                    && rowindex >= 0 && rowindex < mappingDataList->size()) {
+                    const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
                     setFloatingButtonLocalPressed(rowindex, false);
                     bool pressed = false;
                     bool locked = false;
@@ -21469,12 +21521,13 @@ void QKeyMapper::closeVButtonPanelSetupDialog()
 void QKeyMapper::showFloatingButtonSetupDialog(int row)
 {
     QItemSetupDialog *itemSetupDialog = QItemSetupDialog::getInstance();
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
     if (itemSetupDialog == Q_NULLPTR
         || itemSetupDialog->m_FloatingButtonSetupDialog == Q_NULLPTR
-        || QKeyMapper::KeyMappingDataList == Q_NULLPTR) {
+        || mappingDataList == Q_NULLPTR) {
         return;
     }
-    if (row < 0 || row >= QKeyMapper::KeyMappingDataList->size()) {
+    if (row < 0 || row >= mappingDataList->size()) {
         return;
     }
 
@@ -27952,8 +28005,9 @@ void QKeyMapper::resetFloatingButtonWindowTrackingState()
 
 void QKeyMapper::updateFloatingButtonsPositionIfWindowRef()
 {
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
     if (m_FloatingButtonMap.isEmpty()
-        || QKeyMapper::KeyMappingDataList == Q_NULLPTR
+        || mappingDataList == Q_NULLPTR
         || s_CurrentMappingHWND == NULL) {
         resetFloatingButtonWindowTrackingState();
         return;
@@ -27985,11 +28039,11 @@ void QKeyMapper::updateFloatingButtonsPositionIfWindowRef()
             continue;
         }
 
-        if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        if (rowindex < 0 || rowindex >= mappingDataList->size()) {
             continue;
         }
 
-        const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+        const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
         if (!keymapdata.FloatingButton_Enable
             || !isFloatingButtonWindowReferencePoint(keymapdata.FloatingButton_ReferencePoint)) {
             continue;
@@ -28051,12 +28105,13 @@ void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(const MAP_KEYDATA &ru
 
 int QKeyMapper::findHoveredFloatingButtonRow(const QPoint &globalPos) const
 {
-    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR) {
+    if (getCurrentKeyMappingDataList() == Q_NULLPTR) {
         return -1;
     }
 
-    for (int rowindex = 0; rowindex < QKeyMapper::KeyMappingDataList->size(); ++rowindex) {
-        QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+    for (auto it = m_FloatingButtonMap.constBegin(); it != m_FloatingButtonMap.constEnd(); ++it) {
+        const int rowindex = it.key();
+        QPushButton *button = it.value();
         if (button == Q_NULLPTR || !button->isVisible()) {
             continue;
         }
@@ -28071,13 +28126,14 @@ int QKeyMapper::findHoveredFloatingButtonRow(const QPoint &globalPos) const
 
 bool QKeyMapper::setFloatingButtonMousePassThrough(int rowindex, bool enabled)
 {
-    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
         || rowindex < 0
-        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        || rowindex >= mappingDataList->size()) {
         return false;
     }
 
-    MAP_KEYDATA &keymapdata = (*QKeyMapper::KeyMappingDataList)[rowindex];
+    MAP_KEYDATA &keymapdata = (*mappingDataList)[rowindex];
     keymapdata.FloatingButton_MousePassThrough = enabled;
     syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
     applyFloatingButtonRuntimeState(this, rowindex);
@@ -28196,31 +28252,41 @@ void QKeyMapper::refreshFloatingButtonWidget(QPushButton *button, int rowindex, 
 
 void QKeyMapper::syncFloatingButtonAfterBurstAndLockState(int rowindex)
 {
-    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+    int fullRowindex = rowindex;
+    QPushButton *button = m_FloatingButtonMap.value(fullRowindex, Q_NULLPTR);
+    if (button == Q_NULLPTR) {
+        fullRowindex = findFloatingButtonRowIndexFromCurrentKeyMappingRow(rowindex);
+        button = m_FloatingButtonMap.value(fullRowindex, Q_NULLPTR);
+    }
+
     if (button == Q_NULLPTR || !button->isVisible()) {
         return;
     }
 
-    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR
-        || rowindex < 0
-        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
+        || fullRowindex < 0
+        || fullRowindex >= mappingDataList->size()) {
         return;
     }
 
-    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(fullRowindex);
     bool pressed = false;
     bool locked = false;
-    resolveFloatingButtonVisualState(rowindex, keymapdata,
+    resolveFloatingButtonVisualState(fullRowindex, keymapdata,
                                      isFloatingButtonPressedRuntime(keymapdata.Original_Key),
                                      isFloatingButtonLockedRuntime(keymapdata),
                                      false,
                                      pressed, locked);
-    refreshFloatingButtonWidget(button, rowindex, keymapdata, pressed, locked);
+    refreshFloatingButtonWidget(button, fullRowindex, keymapdata, pressed, locked);
 }
 
 void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbutton_keystr)
 {
-    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= mappingDataList->size()) {
 #if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
         qDebug().nospace().noquote() << "[showFloatingButtonStart] skip-invalid-row"
                                      << " setting=" << getCurrentSettingSelectIndex()
@@ -28248,8 +28314,8 @@ void QKeyMapper::showFloatingButtonStart(int rowindex, const QString &floatingbu
         return;
     }
 
-    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
-    if (!keymapdata.FloatingButton_Enable) {
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
+    if (keymapdata.Disabled || !keymapdata.FloatingButton_Enable) {
         showFloatingButtonStop(rowindex, floatingbutton_keystr);
 #if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
         qDebug().nospace().noquote() << "[showFloatingButtonStart] skip-disabled"
@@ -28332,9 +28398,13 @@ void QKeyMapper::showFloatingButtonStop(int rowindex, const QString &floatingbut
 
     bool keepVisible = false;
     const MAP_KEYDATA *keymapdata = Q_NULLPTR;
-    if (rowindex >= 0 && rowindex < QKeyMapper::KeyMappingDataList->size()) {
-        keymapdata = &QKeyMapper::KeyMappingDataList->at(rowindex);
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList != Q_NULLPTR
+        && rowindex >= 0
+        && rowindex < mappingDataList->size()) {
+        keymapdata = &mappingDataList->at(rowindex);
         keepVisible = (m_KeyMapStatus != KEYMAP_IDLE)
+                      && !keymapdata->Disabled
                       && keymapdata->FloatingButton_Enable
                       && keymapdata->FloatingButton_ShowOnMappingStart
                       && !isFloatingButtonManualHidden(rowindex);
@@ -28374,10 +28444,11 @@ void QKeyMapper::onSwitchMousePassThroughUnderCursor()
     }
 
     const int hoveredRow = findHoveredFloatingButtonRow(QCursor::pos());
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
     if (hoveredRow >= 0
-        && QKeyMapper::KeyMappingDataList != Q_NULLPTR
-        && hoveredRow < QKeyMapper::KeyMappingDataList->size()) {
-        const bool enabled = !QKeyMapper::KeyMappingDataList->at(hoveredRow).FloatingButton_MousePassThrough;
+        && mappingDataList != Q_NULLPTR
+        && hoveredRow < mappingDataList->size()) {
+        const bool enabled = !mappingDataList->at(hoveredRow).FloatingButton_MousePassThrough;
         setFloatingButtonMousePassThrough(hoveredRow, enabled);
         return;
     }
@@ -34687,10 +34758,6 @@ void QKeyMapper::onShowAllFloatingButtons(bool visible)
 
 void QKeyMapper::onShowFloatingButtonByOriginalKey(const QString &originalKey, bool visible)
 {
-    if (Q_NULLPTR == KeyMappingDataList) {
-        return;
-    }
-
     int rowindex = findFloatingButtonRowIndexByOriginalKey(originalKey);
     if (rowindex < 0) {
 #ifdef DEBUG_LOGOUT_ON
@@ -34711,6 +34778,36 @@ void QKeyMapper::onShowFloatingButtonByOriginalKey(const QString &originalKey, b
                                  << ", row=" << rowindex
                                  << ", changed=" << changed;
 #endif
+}
+
+void QKeyMapper::onShowFloatingButtonStartFromCurrentKeyMappingRow(int rowindex, const QString &floatingbutton_keystr)
+{
+    const int fullRowindex = findFloatingButtonRowIndexFromCurrentKeyMappingRow(rowindex);
+    if (fullRowindex < 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[onShowFloatingButtonStartFromCurrentKeyMappingRow]"
+                                     << " target-not-found currentRow=" << rowindex
+                                     << ", key=" << floatingbutton_keystr;
+#endif
+        return;
+    }
+
+    showFloatingButtonStart(fullRowindex, floatingbutton_keystr);
+}
+
+void QKeyMapper::onShowFloatingButtonStopFromCurrentKeyMappingRow(int rowindex, const QString &floatingbutton_keystr)
+{
+    const int fullRowindex = findFloatingButtonRowIndexFromCurrentKeyMappingRow(rowindex);
+    if (fullRowindex < 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[onShowFloatingButtonStopFromCurrentKeyMappingRow]"
+                                     << " target-not-found currentRow=" << rowindex
+                                     << ", key=" << floatingbutton_keystr;
+#endif
+        return;
+    }
+
+    showFloatingButtonStop(fullRowindex, floatingbutton_keystr);
 }
 
 void QKeyMapper::onAutoHideAllFloatingButtonsOnMappingStop()
@@ -34796,18 +34893,30 @@ void QKeyMapper::onSyncFloatingButtonsOnMappingStart()
             continue;
         }
 
-        // Keep manual hidden state as the highest priority in the current mapping lifecycle.
-        if (isFloatingButtonManualHidden(rowindex)) {
-#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
-            qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] skip-row-manual-hidden"
+        const int fullRowindex = findFloatingButtonRowIndexFromCurrentKeyMappingRow(rowindex);
+        if (fullRowindex < 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] target-not-found"
                                          << " setting=" << getCurrentSettingSelectIndex()
                                          << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
-                                         << ", row=" << rowindex;
+                                         << ", currentRow=" << rowindex
+                                         << ", originalKey=" << keymapdata.Original_Key;
 #endif
             continue;
         }
 
-        showFloatingButtonStart(rowindex, QString());
+        // Keep manual hidden state as the highest priority in the current mapping lifecycle.
+        if (isFloatingButtonManualHidden(fullRowindex)) {
+#if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
+            qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] skip-row-manual-hidden"
+                                         << " setting=" << getCurrentSettingSelectIndex()
+                                         << ", tab=" << s_KeyMappingTabWidgetCurrentIndex
+                                         << ", row=" << fullRowindex;
+#endif
+            continue;
+        }
+
+        showFloatingButtonStart(fullRowindex, QString());
         ++shownCount;
     }
 
@@ -34841,11 +34950,12 @@ void QKeyMapper::onSwitchBurstAndLockStateApplied(int rowindex)
 
 void QKeyMapper::onUpdateFloatingButtonPressedState(int rowindex, bool pressed)
 {
-    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+    const int fullRowindex = findFloatingButtonRowIndexFromCurrentKeyMappingRow(rowindex);
+    QPushButton *button = m_FloatingButtonMap.value(fullRowindex, Q_NULLPTR);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[onUpdateFloatingButtonPressedState]"
-                                 << " row=" << rowindex
+                                 << " row=" << fullRowindex
                                  << ", pressed=" << (pressed ? "true" : "false")
                                  << ", buttonExists=" << (button != Q_NULLPTR ? "true" : "false")
                                  << ", visible=" << ((button != Q_NULLPTR && button->isVisible()) ? "true" : "false");
@@ -34855,16 +34965,17 @@ void QKeyMapper::onUpdateFloatingButtonPressedState(int rowindex, bool pressed)
         return;
     }
 
-    if (Q_NULLPTR == QKeyMapper::KeyMappingDataList
-        || rowindex < 0
-        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
+        || fullRowindex < 0
+        || fullRowindex >= mappingDataList->size()) {
         return;
     }
 
-    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(fullRowindex);
     bool displayPressed = false;
     bool displayLocked = false;
-    resolveFloatingButtonVisualState(rowindex, keymapdata,
+    resolveFloatingButtonVisualState(fullRowindex, keymapdata,
                                      pressed,
                                      isFloatingButtonLockedRuntime(keymapdata),
                                      false,
@@ -34874,11 +34985,12 @@ void QKeyMapper::onUpdateFloatingButtonPressedState(int rowindex, bool pressed)
 
 void QKeyMapper::onUpdateFloatingButtonLockState(int rowindex, bool locked)
 {
-    QPushButton *button = m_FloatingButtonMap.value(rowindex, Q_NULLPTR);
+    const int fullRowindex = findFloatingButtonRowIndexFromCurrentKeyMappingRow(rowindex);
+    QPushButton *button = m_FloatingButtonMap.value(fullRowindex, Q_NULLPTR);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[onUpdateFloatingButtonLockState]"
-                                 << " row=" << rowindex
+                                 << " row=" << fullRowindex
                                  << ", locked=" << (locked ? "true" : "false")
                                  << ", buttonExists=" << (button != Q_NULLPTR ? "true" : "false")
                                  << ", visible=" << ((button != Q_NULLPTR && button->isVisible()) ? "true" : "false");
@@ -34888,16 +35000,17 @@ void QKeyMapper::onUpdateFloatingButtonLockState(int rowindex, bool locked)
         return;
     }
 
-    if (Q_NULLPTR == QKeyMapper::KeyMappingDataList
-        || rowindex < 0
-        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
+        || fullRowindex < 0
+        || fullRowindex >= mappingDataList->size()) {
         return;
     }
 
-    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(fullRowindex);
     bool displayPressed = false;
     bool displayLocked = false;
-    resolveFloatingButtonVisualState(rowindex, keymapdata,
+    resolveFloatingButtonVisualState(fullRowindex, keymapdata,
                                      isFloatingButtonPressedRuntime(keymapdata.Original_Key),
                                      locked,
                                      false,
@@ -34907,6 +35020,7 @@ void QKeyMapper::onUpdateFloatingButtonLockState(int rowindex, bool locked)
 
 void QKeyMapper::onClearFloatingButtonLockStates()
 {
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
     int updatedCount = 0;
     for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
         QPushButton *button = it.value();
@@ -34915,14 +35029,14 @@ void QKeyMapper::onClearFloatingButtonLockStates()
         }
 
         const int rowindex = it.key();
-        if (Q_NULLPTR == QKeyMapper::KeyMappingDataList
+        if (mappingDataList == Q_NULLPTR
             || rowindex < 0
-            || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+            || rowindex >= mappingDataList->size()) {
             button->setDown(false);
             continue;
         }
 
-        const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+        const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
         bool displayPressed = false;
         bool displayLocked = false;
         resolveFloatingButtonVisualState(rowindex, keymapdata,
@@ -34948,11 +35062,14 @@ void QKeyMapper::onFloatingButtonSettingsApplied()
     }
 
     int rowindex = m_ItemSetupDialog->m_FloatingButtonSetupDialog->getItemRow();
-    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= mappingDataList->size()) {
         return;
     }
 
-    const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
     syncFloatingButtonRuntimeDataToCurrentTab(keymapdata);
     updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, rowindex, FLOATING_COLUMN);
     applyFloatingButtonRuntimeState(this, rowindex);
