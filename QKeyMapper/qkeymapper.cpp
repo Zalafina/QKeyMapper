@@ -32173,6 +32173,39 @@ void KeyListComboBoxPopup::onSharedCollectionsChanged(void)
 #endif
 }
 
+QString QKeyMapper::normalizeMappingKeyCopyText(const QString &mappingKeyText)
+{
+    QString copyText = mappingKeyText;
+
+    if (copyText.startsWith(MOUSE_BUTTON_PREFIX)) {
+        const QString screenPointPostfix = QString(MOUSE_SCREENPOINT_POSTFIX);
+        const QString windowPointPostfix = QString(MOUSE_WINDOWPOINT_POSTFIX);
+        const QString moveRelativePostfix = QString(MOUSE_MOVE_RELATIVE_POSTFIX);
+
+        if (copyText.endsWith(screenPointPostfix)) {
+            copyText.chop(screenPointPostfix.length());
+            copyText += QString("(,)");
+        }
+        else if (copyText.endsWith(windowPointPostfix)) {
+            copyText.chop(windowPointPostfix.length());
+            copyText += QString(":W(,)");
+        }
+        else if (copyText.endsWith(moveRelativePostfix)) {
+            copyText.chop(moveRelativePostfix.length());
+            copyText += QString(":R(,)");
+        }
+    }
+
+    if (copyText == REPEAT_STR) {
+        copyText = REPEAT_TEMPLATE_STR;
+    }
+    else if (copyText == ONLYONCE_STR) {
+        copyText = ONLYONCE_TEMPLATE_STR;
+    }
+
+    return copyText;
+}
+
 KeyListCollectionType KeyListComboBox::getCollectionType() const
 {
     if (objectName() == ORIKEY_COMBOBOX_NAME
@@ -32211,14 +32244,18 @@ void KeyListComboBox::applyPopupSelection(const QString &itemText, bool updateRe
 
 void KeyListComboBox::copyPopupKeyText(const QString &itemText) const
 {
-    const QString normalizedText = itemText.trimmed();
-    if (normalizedText.isEmpty()) {
+    QString copyText = itemText.trimmed();
+    if (copyText.isEmpty()) {
         return;
     }
 
-    QKeyMapper::copyStringToClipboard(normalizedText);
+    if (getCollectionType() == KEYLIST_COLLECTION_MAPPING) {
+        copyText = QKeyMapper::normalizeMappingKeyCopyText(copyText);
+    }
+
+    QKeyMapper::copyStringToClipboard(copyText);
     if (QKeyMapper::getInstance() != Q_NULLPTR) {
-        QString popupMessage = tr("\"%1\" has been copied to the clipboard.").arg(normalizedText);
+        QString popupMessage = tr("\"%1\" has been copied to the clipboard.").arg(copyText);
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage,
                                                                 SUCCESS_COLOR,
                                                                 POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
@@ -32408,30 +32445,8 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
 
             // Copy the mapping key list item to clipboard.
             // Note: Some items are templates/placeholders and should be converted before copying.
-            QString copyText = currentMapKeyText;
+            QString copyText = QKeyMapper::normalizeMappingKeyCopyText(currentMapKeyText);
             const bool isSpecialPrePostFixKey = QKeyMapper::s_SpecialMappingKeyPrePostFixList.contains(currentMapKeyText);
-
-            if (copyText.startsWith(MOUSE_BUTTON_PREFIX)) {
-                // Convert Mouse point helper items to the editable placeholder format.
-                if (copyText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
-                    copyText = copyText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(,)");
-                }
-                else if (copyText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
-                    copyText = copyText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
-                }
-                else if (copyText.endsWith(MOUSE_MOVE_RELATIVE_POSTFIX)) {
-                    copyText = copyText.remove(MOUSE_MOVE_RELATIVE_POSTFIX) + QString(":R(,)");
-                }
-            }
-
-            if (copyText == REPEAT_STR) {
-                // Repeat is a helper keyword; users usually need the template for editing.
-                copyText = REPEAT_TEMPLATE_STR;
-            }
-            else if (copyText == ONLYONCE_STR) {
-                // OnlyOnce is a helper keyword; users usually need the template for editing.
-                copyText = ONLYONCE_TEMPLATE_STR;
-            }
 
             // When holding L-Ctrl + RightClick, prefix SEPARATOR_NEXTARROW ("»") to make a sequence step.
             // Do not prefix for special pre/post-fix keys (the arrow itself is already in the special list).

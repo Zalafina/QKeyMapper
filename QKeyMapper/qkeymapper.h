@@ -910,6 +910,8 @@ class QKeyMapper : public QDialog
 {
     Q_OBJECT
 
+    friend class KeyListComboBox;
+
 public:
     explicit QKeyMapper(QWidget *parent = Q_NULLPTR);
     ~QKeyMapper();
@@ -1496,6 +1498,7 @@ private slots:
 private:
     // Helper methods for saving/restoring category filter state
     // Helper methods for last auto matched setting management
+    static QString normalizeMappingKeyCopyText(const QString &mappingKeyText);
     void recordLastAutoMatchedSetting(const QString &settingName);
     void startLastAutoMatchedSettingTimer();
     void clearLastAutoMatchedSetting();
