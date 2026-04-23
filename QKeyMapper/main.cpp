@@ -179,6 +179,11 @@ void setupQtScaleEnvironment(const QString &program_dir)
 #endif
     int display_scale = settingFile.value(DISPLAY_SCALE, DISPLAY_SCALE_DEFAULT).toInt();
 
+    constexpr double SCALE_50 = 0.5;
+    constexpr double SCALE_60 = 0.6;
+    constexpr double SCALE_70 = 0.7;
+    constexpr double SCALE_80 = 0.8;
+    constexpr double SCALE_90 = 0.9;
     constexpr double SCALE_100 = 1.0;
     constexpr double SCALE_125 = 1.25;
     constexpr double SCALE_150 = 1.5;
@@ -198,9 +203,35 @@ void setupQtScaleEnvironment(const QString &program_dir)
     bool high_dpi = false;
     double scale_value = 0;
     switch (display_scale) {
+    case DISPLAY_SCALE_PERCENT_50:
+        scale_value = SCALE_50;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        system_scale_value = SCALE_50;
+        break;
+    case DISPLAY_SCALE_PERCENT_60:
+        scale_value = SCALE_60;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        system_scale_value = SCALE_60;
+        break;
+    case DISPLAY_SCALE_PERCENT_70:
+        scale_value = SCALE_70;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        system_scale_value = SCALE_70;
+        break;
+    case DISPLAY_SCALE_PERCENT_80:
+        scale_value = SCALE_80;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        system_scale_value = SCALE_80;
+        break;
+    case DISPLAY_SCALE_PERCENT_90:
+        scale_value = SCALE_90;
+        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        system_scale_value = SCALE_90;
+        break;
     case DISPLAY_SCALE_PERCENT_100:
         scale_value = SCALE_100;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
+        system_scale_value = SCALE_100;
         break;
     case DISPLAY_SCALE_PERCENT_125:
         scale_value = SCALE_125;

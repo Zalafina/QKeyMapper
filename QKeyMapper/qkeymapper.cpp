@@ -1155,16 +1155,18 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->notificationComboBox->addItems(positoin_list);
     ui->notificationComboBox->setCurrentIndex(NOTIFICATION_POSITION_DEFAULT);
 
-    QStringList scale_list = QStringList() \
-            << tr("Default")
-            << "100%"
-            << "125%"
-            << "150%"
-            << "175%"
-            << "200%"
-            ;
-    ui->scaleComboBox->addItems(scale_list);
-    ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
+    ui->scaleComboBox->addItem(tr("Default"), DISPLAY_SCALE_DEFAULT);
+    ui->scaleComboBox->addItem("50%", DISPLAY_SCALE_PERCENT_50);
+    ui->scaleComboBox->addItem("60%", DISPLAY_SCALE_PERCENT_60);
+    ui->scaleComboBox->addItem("70%", DISPLAY_SCALE_PERCENT_70);
+    ui->scaleComboBox->addItem("80%", DISPLAY_SCALE_PERCENT_80);
+    ui->scaleComboBox->addItem("90%", DISPLAY_SCALE_PERCENT_90);
+    ui->scaleComboBox->addItem("100%", DISPLAY_SCALE_PERCENT_100);
+    ui->scaleComboBox->addItem("125%", DISPLAY_SCALE_PERCENT_125);
+    ui->scaleComboBox->addItem("150%", DISPLAY_SCALE_PERCENT_150);
+    ui->scaleComboBox->addItem("175%", DISPLAY_SCALE_PERCENT_175);
+    ui->scaleComboBox->addItem("200%", DISPLAY_SCALE_PERCENT_200);
+    ui->scaleComboBox->setCurrentIndex(ui->scaleComboBox->findData(DISPLAY_SCALE_DEFAULT));
 
     QStringList theme_list = QStringList() \
             << tr("System Default")
@@ -13423,7 +13425,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(SHOW_FLOATING, ui->showFloatingButton->isChecked());
     settingFile.setValue(SHOW_CATEGORYS, ui->showCategoryButton->isChecked());
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
-    settingFile.setValue(DISPLAY_SCALE , ui->scaleComboBox->currentIndex());
+    int display_scale = ui->scaleComboBox->currentData().toInt();
+    settingFile.setValue(DISPLAY_SCALE , display_scale);
     settingFile.setValue(THEME_COLOR , ui->themeComboBox->currentIndex());
     if (m_GeneralAdvancedDialog) {
         settingFile.setValue(EDITMODE_TRIGGER, m_GeneralAdvancedDialog->getTableEditModeTrigger());
@@ -15074,14 +15077,20 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         if (true == settingFile.contains(DISPLAY_SCALE)){
             int display_scale = settingFile.value(DISPLAY_SCALE).toInt();
             if (DISPLAY_SCALE_MIN <= display_scale && display_scale <= DISPLAY_SCALE_MAX) {
-                ui->scaleComboBox->setCurrentIndex(display_scale);
+                int scale_index = ui->scaleComboBox->findData(display_scale);
+                if (scale_index >= 0) {
+                    ui->scaleComboBox->setCurrentIndex(scale_index);
+                }
+                else {
+                    ui->scaleComboBox->setCurrentIndex(ui->scaleComboBox->findData(DISPLAY_SCALE_DEFAULT));
+                }
             }
             else {
-                ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
+                ui->scaleComboBox->setCurrentIndex(ui->scaleComboBox->findData(DISPLAY_SCALE_DEFAULT));
             }
         }
         else {
-            ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
+            ui->scaleComboBox->setCurrentIndex(ui->scaleComboBox->findData(DISPLAY_SCALE_DEFAULT));
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Display Scale ->" << ui->scaleComboBox->currentText();
@@ -19410,14 +19419,20 @@ void QKeyMapper::loadGeneralSetting()
     if (true == settingFile.contains(DISPLAY_SCALE)){
         int display_scale = settingFile.value(DISPLAY_SCALE).toInt();
         if (DISPLAY_SCALE_MIN <= display_scale && display_scale <= DISPLAY_SCALE_MAX) {
-            ui->scaleComboBox->setCurrentIndex(display_scale);
+            int scale_index = ui->scaleComboBox->findData(display_scale);
+            if (scale_index >= 0) {
+                ui->scaleComboBox->setCurrentIndex(scale_index);
+            }
+            else {
+                ui->scaleComboBox->setCurrentIndex(ui->scaleComboBox->findData(DISPLAY_SCALE_DEFAULT));
+            }
         }
         else {
-            ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
+            ui->scaleComboBox->setCurrentIndex(ui->scaleComboBox->findData(DISPLAY_SCALE_DEFAULT));
         }
     }
     else {
-        ui->scaleComboBox->setCurrentIndex(DISPLAY_SCALE_DEFAULT);
+        ui->scaleComboBox->setCurrentIndex(ui->scaleComboBox->findData(DISPLAY_SCALE_DEFAULT));
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadGeneralSetting]" << "Display Scale ->" << ui->scaleComboBox->currentText();

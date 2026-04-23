@@ -505,8 +505,13 @@ namespace QKeyMapperConstants {
     inline constexpr int DISPLAY_SCALE_PERCENT_150  = 3;
     inline constexpr int DISPLAY_SCALE_PERCENT_175  = 4;
     inline constexpr int DISPLAY_SCALE_PERCENT_200  = 5;
+    inline constexpr int DISPLAY_SCALE_PERCENT_50   = 6;
+    inline constexpr int DISPLAY_SCALE_PERCENT_60   = 7;
+    inline constexpr int DISPLAY_SCALE_PERCENT_70   = 8;
+    inline constexpr int DISPLAY_SCALE_PERCENT_80   = 9;
+    inline constexpr int DISPLAY_SCALE_PERCENT_90   = 10;
     inline constexpr int DISPLAY_SCALE_MIN = DISPLAY_SCALE_DEFAULT;
-    inline constexpr int DISPLAY_SCALE_MAX = DISPLAY_SCALE_PERCENT_200;
+    inline constexpr int DISPLAY_SCALE_MAX = DISPLAY_SCALE_PERCENT_90;
 
     inline constexpr int MOUSE_POINT_RADIUS = 12;
 
