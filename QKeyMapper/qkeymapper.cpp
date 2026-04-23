@@ -290,6 +290,107 @@ static void activateTextInputWidget(QWidget *widget)
     QApplication::sendEvent(widget, &requestInputPanelEvent);
 }
 
+class MenuFixedFocusController final : public QObject
+{
+public:
+    MenuFixedFocusController(QMenu *menu, QWidget *panel, QComboBox *comboBox, QSpinBox *spinBox)
+        : QObject(menu)
+        , m_Menu(menu)
+        , m_Panel(panel)
+        , m_ComboBox(comboBox)
+        , m_SpinBox(spinBox)
+        , m_SpinEditor(spinBox ? spinBox->findChild<QLineEdit *>() : Q_NULLPTR)
+    {
+        if (m_Menu) {
+            m_Menu->installEventFilter(this);
+        }
+        if (m_Panel) {
+            m_Panel->installEventFilter(this);
+        }
+        if (m_ComboBox) {
+            m_ComboBox->installEventFilter(this);
+        }
+        if (m_SpinBox) {
+            m_SpinBox->installEventFilter(this);
+        }
+        if (m_SpinEditor) {
+            m_SpinEditor->installEventFilter(this);
+        }
+    }
+
+    void syncFocusProxy(void) const
+    {
+        QWidget *targetWidget = preferredFocusWidget();
+        if (!targetWidget) {
+            return;
+        }
+
+        if (m_Panel) {
+            m_Panel->setFocusProxy(targetWidget);
+        }
+        if (m_Menu) {
+            m_Menu->setFocusProxy(targetWidget);
+        }
+    }
+
+    void focusPreferredWidget(Qt::FocusReason reason = Qt::OtherFocusReason)
+    {
+        syncFocusProxy();
+        if (!m_Menu) {
+            return;
+        }
+
+        QTimer::singleShot(0, m_Menu, [this, reason]() {
+            QWidget *targetWidget = preferredFocusWidget();
+            if (!targetWidget) {
+                return;
+            }
+
+            targetWidget->setFocus(reason);
+            if (targetWidget == m_SpinBox) {
+                m_SpinBox->selectAll();
+                activateTextInputWidget(m_SpinBox);
+            }
+        });
+    }
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override
+    {
+        Q_UNUSED(watched);
+
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+            if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab) {
+                focusPreferredWidget(Qt::TabFocusReason);
+                return true;
+            }
+        }
+        else if (event->type() == QEvent::FocusIn || event->type() == QEvent::Show) {
+            syncFocusProxy();
+        }
+
+        return QObject::eventFilter(watched, event);
+    }
+
+private:
+    QWidget *preferredFocusWidget(void) const
+    {
+        if (m_SpinBox && m_SpinBox->isVisible() && m_SpinBox->isEnabled()) {
+            return m_SpinBox;
+        }
+
+        return m_ComboBox;
+    }
+
+private:
+    QMenu *m_Menu;
+    QWidget *m_Panel;
+    QComboBox *m_ComboBox;
+    QSpinBox *m_SpinBox;
+    QWidget *m_SpinEditor;
+};
+
 static QList<int> collectVisibleSelectedRows(const QTableWidget *table)
 {
     QList<int> visibleRows;
@@ -647,6 +748,247 @@ static int applyBatchCategoryChange(QKeyMapper *keymapper, KeyMappingDataTableWi
     }
 
     return changedCount;
+}
+
+enum class OriginalKeyTriggerType {
+    Normal = 0,
+    LongPress,
+    DoublePress,
+};
+
+struct OriginalKeyTriggerInfo {
+    QString baseKey;
+    OriginalKeyTriggerType triggerType = OriginalKeyTriggerType::Normal;
+    int pressTime = 500;
+    bool isValid = false;
+};
+
+static QString originalKeyTriggerTypeDisplayName(OriginalKeyTriggerType triggerType)
+{
+    switch (triggerType) {
+    case OriginalKeyTriggerType::LongPress:
+        return QObject::tr("LongPress");
+    case OriginalKeyTriggerType::DoublePress:
+        return QObject::tr("DoublePress");
+    case OriginalKeyTriggerType::Normal:
+    default:
+        return QObject::tr("Normal");
+    }
+}
+
+static bool originalKeyTriggerTypeUsesDuration(OriginalKeyTriggerType triggerType)
+{
+    return triggerType != OriginalKeyTriggerType::Normal;
+}
+
+static OriginalKeyTriggerInfo parseOriginalKeyTriggerInfo(const QString &originalKey)
+{
+    static QRegularExpression fullKeyRegex(R"(^(.+?)(?:⏲(\d+)|✖(\d+))?$)");
+
+    OriginalKeyTriggerInfo triggerInfo;
+    triggerInfo.baseKey = originalKey;
+
+    const QRegularExpressionMatch match = fullKeyRegex.match(originalKey);
+    if (!match.hasMatch()) {
+        return triggerInfo;
+    }
+
+    triggerInfo.baseKey = match.captured(1);
+
+    bool ok = false;
+    const QString longPressTime = match.captured(2);
+    const QString doublePressTime = match.captured(3);
+    if (!longPressTime.isEmpty()) {
+        triggerInfo.triggerType = OriginalKeyTriggerType::LongPress;
+        triggerInfo.pressTime = longPressTime.toInt(&ok);
+    }
+    else if (!doublePressTime.isEmpty()) {
+        triggerInfo.triggerType = OriginalKeyTriggerType::DoublePress;
+        triggerInfo.pressTime = doublePressTime.toInt(&ok);
+    }
+    else {
+        triggerInfo.triggerType = OriginalKeyTriggerType::Normal;
+        ok = true;
+    }
+
+    if (!ok || triggerInfo.pressTime <= PRESSTIME_MIN) {
+        triggerInfo.pressTime = 500;
+    }
+
+    triggerInfo.isValid = true;
+    return triggerInfo;
+}
+
+static QString removeOriginalKeyDeviceIndex(const QString &originalKey)
+{
+    static QRegularExpression removeIndexRegex(QStringLiteral("@\\d$"));
+
+    QString normalizedKey = originalKey;
+    normalizedKey.remove(removeIndexRegex);
+    return normalizedKey;
+}
+
+static QString buildOriginalKeyTriggerString(const QString &baseKey, OriginalKeyTriggerType triggerType, int pressTime)
+{
+    if (!originalKeyTriggerTypeUsesDuration(triggerType)) {
+        return baseKey;
+    }
+
+    const int boundedPressTime = qBound(PRESSTIME_MIN + 1, pressTime, PRESSTIME_MAX);
+    const QString triggerSuffix = (triggerType == OriginalKeyTriggerType::LongPress)
+        ? QString(SEPARATOR_LONGPRESS)
+        : QString(SEPARATOR_DOUBLEPRESS);
+
+    return baseKey + triggerSuffix + QString::number(boundedPressTime);
+}
+
+static ValidationResult validateOriginalKeyTriggerChange(const MAP_KEYDATA &keymapdata, int row, OriginalKeyTriggerType triggerType, int pressTime)
+{
+    ValidationResult validationResult;
+    validationResult.isValid = true;
+
+    const OriginalKeyTriggerInfo triggerInfo = parseOriginalKeyTriggerInfo(keymapdata.Original_Key);
+    const QString baseKey = triggerInfo.isValid ? triggerInfo.baseKey : keymapdata.Original_Key;
+
+    if (originalKeyTriggerTypeUsesDuration(triggerType)) {
+        const QString normalizedBaseKey = removeOriginalKeyDeviceIndex(baseKey);
+        if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(normalizedBaseKey)
+            || QKeyMapper_Worker::SendOnOriginalKeysList.contains(normalizedBaseKey)) {
+            validationResult.isValid = false;
+            validationResult.errorMessage = QObject::tr("Original key \"%1\" does not support trigger type \"%2\".")
+                                            .arg(normalizedBaseKey, originalKeyTriggerTypeDisplayName(triggerType));
+            return validationResult;
+        }
+    }
+
+    const QString candidateOriginalKey = buildOriginalKeyTriggerString(baseKey, triggerType, pressTime);
+    return QKeyMapper::validateOriginalKeyString(candidateOriginalKey,
+                                                 row,
+                                                 keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW));
+}
+
+static bool originalKeySupportsTimedTrigger(const MAP_KEYDATA &keymapdata, int row, QString *errorMessage = Q_NULLPTR)
+{
+    const ValidationResult longPressValidation = validateOriginalKeyTriggerChange(keymapdata,
+                                                                                  row,
+                                                                                  OriginalKeyTriggerType::LongPress,
+                                                                                  500);
+    if (longPressValidation.isValid) {
+        return true;
+    }
+
+    const ValidationResult doublePressValidation = validateOriginalKeyTriggerChange(keymapdata,
+                                                                                    row,
+                                                                                    OriginalKeyTriggerType::DoublePress,
+                                                                                    500);
+    if (doublePressValidation.isValid) {
+        return true;
+    }
+
+    if (errorMessage) {
+        *errorMessage = !longPressValidation.errorMessage.isEmpty()
+            ? longPressValidation.errorMessage
+            : doublePressValidation.errorMessage;
+    }
+    return false;
+}
+
+static int applyOriginalKeyTriggerChange(QKeyMapper *keymapper,
+                                         KeyMappingDataTableWidget *mappingDataTable,
+                                         const QList<int> &rows,
+                                         OriginalKeyTriggerType triggerType,
+                                         int pressTime,
+                                         QString *errorMessage = Q_NULLPTR)
+{
+    if (!keymapper || !mappingDataTable || rows.isEmpty()) {
+        return 0;
+    }
+
+    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (!mappingDataList) {
+        return 0;
+    }
+
+    QList<QPair<int, QString>> updatedOriginalKeys;
+    updatedOriginalKeys.reserve(rows.size());
+
+    for (int row : rows) {
+        if (row < 0 || row >= mappingDataList->size()) {
+            continue;
+        }
+
+        const MAP_KEYDATA &keymapdata = mappingDataList->at(row);
+        const ValidationResult validationResult = validateOriginalKeyTriggerChange(keymapdata, row, triggerType, pressTime);
+        if (!validationResult.isValid) {
+            if (errorMessage) {
+                *errorMessage = validationResult.errorMessage;
+            }
+            return 0;
+        }
+
+        const OriginalKeyTriggerInfo triggerInfo = parseOriginalKeyTriggerInfo(keymapdata.Original_Key);
+        const QString baseKey = triggerInfo.isValid ? triggerInfo.baseKey : keymapdata.Original_Key;
+        updatedOriginalKeys.append(qMakePair(row, buildOriginalKeyTriggerString(baseKey, triggerType, pressTime)));
+    }
+
+    if (updatedOriginalKeys.isEmpty()) {
+        return 0;
+    }
+
+    const int tabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    QSignalBlocker blocker(mappingDataTable);
+    int changedCount = 0;
+
+    for (const auto &updatedOriginalKey : std::as_const(updatedOriginalKeys)) {
+        const int row = updatedOriginalKey.first;
+        const QString &newOriginalKey = updatedOriginalKey.second;
+
+        if ((*mappingDataList)[row].Original_Key == newOriginalKey) {
+            continue;
+        }
+
+        (*mappingDataList)[row].Original_Key = newOriginalKey;
+        keymapper->updateTableWidgetItem(tabIndex, row, ORIGINAL_KEY_COLUMN);
+        changedCount += 1;
+    }
+
+    return changedCount;
+}
+
+static bool resolveCommonOriginalKeyTriggerType(const QList<MAP_KEYDATA> *mappingDataList,
+                                                const QList<int> &rows,
+                                                OriginalKeyTriggerType *triggerTypeOut)
+{
+    if (!mappingDataList || !triggerTypeOut || rows.isEmpty()) {
+        return false;
+    }
+
+    bool hasAnyType = false;
+    OriginalKeyTriggerType commonType = OriginalKeyTriggerType::Normal;
+
+    for (int row : rows) {
+        if (row < 0 || row >= mappingDataList->size()) {
+            continue;
+        }
+
+        const OriginalKeyTriggerInfo triggerInfo = parseOriginalKeyTriggerInfo(mappingDataList->at(row).Original_Key);
+        const OriginalKeyTriggerType currentType = triggerInfo.isValid ? triggerInfo.triggerType : OriginalKeyTriggerType::Normal;
+
+        if (!hasAnyType) {
+            commonType = currentType;
+            hasAnyType = true;
+        }
+        else if (commonType != currentType) {
+            return false;
+        }
+    }
+
+    if (!hasAnyType) {
+        return false;
+    }
+
+    *triggerTypeOut = commonType;
+    return true;
 }
 
 } // namespace
@@ -36191,9 +36533,237 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     };
 
     bool hasPreviousGroup = false;
+    bool hasOriginalKeyTriggerGroup = false;
+
+    if (hasSelection && current && currentColumn == ORIGINAL_KEY_COLUMN) {
+        const QList<int> visibleSelectedRows = collectVisibleSelectedRows(this);
+        QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+
+        if (mappingDataList && !visibleSelectedRows.isEmpty()) {
+            if (visibleSelectedRows.size() > 1) {
+                QMenu *batchTriggerTypeMenu = contextMenu.addMenu(QObject::tr("Batch Select Trigger Type"));
+
+                OriginalKeyTriggerType commonTriggerType = OriginalKeyTriggerType::Normal;
+                const bool hasCommonTriggerType = resolveCommonOriginalKeyTriggerType(mappingDataList,
+                                                                                     visibleSelectedRows,
+                                                                                     &commonTriggerType);
+
+                const auto addBatchTriggerAction = [batchTriggerTypeMenu,
+                                                    keymapper,
+                                                    this,
+                                                    visibleSelectedRows,
+                                                    hasCommonTriggerType,
+                                                    commonTriggerType](OriginalKeyTriggerType triggerType) {
+                    QAction *triggerAction = batchTriggerTypeMenu->addAction(originalKeyTriggerTypeDisplayName(triggerType));
+                    triggerAction->setCheckable(true);
+                    triggerAction->setChecked(hasCommonTriggerType && commonTriggerType == triggerType);
+
+                    connect(triggerAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows, triggerType]() {
+                        const QString triggerTypeName = originalKeyTriggerTypeDisplayName(triggerType);
+                        QString confirmMessage;
+                        if (originalKeyTriggerTypeUsesDuration(triggerType)) {
+                            confirmMessage = QObject::tr("Change the trigger type of %1 selected OriginalKey item(s) to \"%2\" with the default duration 500 ms?")
+                                                 .arg(visibleSelectedRows.size())
+                                                 .arg(triggerTypeName);
+                        }
+                        else {
+                            confirmMessage = QObject::tr("Change the trigger type of %1 selected OriginalKey item(s) to \"%2\"?")
+                                                 .arg(visibleSelectedRows.size())
+                                                 .arg(triggerTypeName);
+                        }
+
+                        const QMessageBox::StandardButton reply = QMessageBox::question(keymapper,
+                                                                                        PROGRAM_NAME,
+                                                                                        confirmMessage,
+                                                                                        QMessageBox::Ok | QMessageBox::Cancel,
+                                                                                        QMessageBox::Cancel);
+                        if (reply != QMessageBox::Ok) {
+                            return;
+                        }
+
+                        QString errorMessage;
+                        const int pressTime = originalKeyTriggerTypeUsesDuration(triggerType) ? 500 : 0;
+                        applyOriginalKeyTriggerChange(keymapper,
+                                                      this,
+                                                      visibleSelectedRows,
+                                                      triggerType,
+                                                      pressTime,
+                                                      &errorMessage);
+                        if (!errorMessage.isEmpty()) {
+                            keymapper->showFailurePopup(errorMessage);
+                        }
+                    });
+                };
+
+                addBatchTriggerAction(OriginalKeyTriggerType::Normal);
+                addBatchTriggerAction(OriginalKeyTriggerType::LongPress);
+                addBatchTriggerAction(OriginalKeyTriggerType::DoublePress);
+
+                hasOriginalKeyTriggerGroup = !batchTriggerTypeMenu->actions().isEmpty();
+            }
+            else {
+                const int selectedRow = visibleSelectedRows.constFirst();
+                if (selectedRow >= 0 && selectedRow < mappingDataList->size()) {
+                    const MAP_KEYDATA &keymapdata = mappingDataList->at(selectedRow);
+                    if (originalKeySupportsTimedTrigger(keymapdata, selectedRow)) {
+                        const OriginalKeyTriggerInfo triggerInfo = parseOriginalKeyTriggerInfo(keymapdata.Original_Key);
+
+                        QMenu *triggerTypeMenu = contextMenu.addMenu(QObject::tr("Select Trigger Type"));
+                        QWidgetAction *triggerTypeWidgetAction = new QWidgetAction(triggerTypeMenu);
+                        CategoryFilterPanelWidget *triggerTypePanel = new CategoryFilterPanelWidget(triggerTypeMenu);
+                        QVBoxLayout *triggerTypeLayout = new QVBoxLayout(triggerTypePanel);
+                        QComboBox *triggerTypeComboBox = new QComboBox(triggerTypePanel);
+                        QWidget *durationWidget = new QWidget(triggerTypePanel);
+                        QVBoxLayout *durationLayout = new QVBoxLayout(durationWidget);
+                        QSpinBox *pressTimeSpinBox = new QSpinBox(durationWidget);
+
+                        constexpr int TriggerTypePanelMinWidth = 130;
+                        constexpr int TriggerTypeControlHeight = 22;
+                        constexpr int TriggerTypePanelHorizontalMargin = 8;
+                        constexpr int TriggerTypePanelVerticalMargin = 8;
+                        constexpr int TriggerTypePanelSpacing = 6;
+                        constexpr int TriggerTypePanelFixedHeight = (TriggerTypeControlHeight * 2)
+                                                                   + (TriggerTypePanelVerticalMargin * 2)
+                                                                   + TriggerTypePanelSpacing;
+                        constexpr int TriggerTypeInnerControlWidth = TriggerTypePanelMinWidth - (TriggerTypePanelHorizontalMargin * 2);
+
+                        triggerTypePanel->setFixedWidth(TriggerTypePanelMinWidth);
+                        triggerTypePanel->setFixedHeight(TriggerTypePanelFixedHeight);
+                        triggerTypePanel->setFocusPolicy(Qt::ClickFocus);
+                        triggerTypeLayout->setContentsMargins(TriggerTypePanelHorizontalMargin,
+                                                              TriggerTypePanelVerticalMargin,
+                                                              TriggerTypePanelHorizontalMargin,
+                                                              TriggerTypePanelVerticalMargin);
+                        triggerTypeLayout->setSpacing(TriggerTypePanelSpacing);
+                        triggerTypeMenu->setAttribute(Qt::WA_InputMethodEnabled, true);
+
+                        triggerTypeComboBox->setFocusPolicy(Qt::ClickFocus);
+                        triggerTypeComboBox->setFixedWidth(TriggerTypeInnerControlWidth);
+                        triggerTypeComboBox->setFixedHeight(TriggerTypeControlHeight);
+                        triggerTypeComboBox->addItem(originalKeyTriggerTypeDisplayName(OriginalKeyTriggerType::Normal),
+                                                     static_cast<int>(OriginalKeyTriggerType::Normal));
+                        triggerTypeComboBox->addItem(originalKeyTriggerTypeDisplayName(OriginalKeyTriggerType::LongPress),
+                                                     static_cast<int>(OriginalKeyTriggerType::LongPress));
+                        triggerTypeComboBox->addItem(originalKeyTriggerTypeDisplayName(OriginalKeyTriggerType::DoublePress),
+                                                     static_cast<int>(OriginalKeyTriggerType::DoublePress));
+
+                        durationWidget->setFixedWidth(TriggerTypeInnerControlWidth);
+                        durationWidget->setFixedHeight(TriggerTypeControlHeight);
+                        durationLayout->setContentsMargins(0, 0, 0, 0);
+                        durationLayout->setSpacing(0);
+
+                        pressTimeSpinBox->setRange(PRESSTIME_MIN + 1, PRESSTIME_MAX);
+                        pressTimeSpinBox->setValue(triggerInfo.isValid ? triggerInfo.pressTime : 500);
+                        pressTimeSpinBox->setMinimumWidth(TriggerTypeInnerControlWidth);
+                        pressTimeSpinBox->setFixedHeight(TriggerTypeControlHeight);
+                        // pressTimeSpinBox->setPrefix(QObject::tr("Duration "));
+                        pressTimeSpinBox->setSuffix(QObject::tr(" ms"));
+                        durationLayout->addWidget(pressTimeSpinBox);
+
+                        triggerTypeLayout->addWidget(triggerTypeComboBox);
+                        triggerTypeLayout->addWidget(durationWidget);
+                        triggerTypeWidgetAction->setDefaultWidget(triggerTypePanel);
+                        triggerTypeMenu->addAction(triggerTypeWidgetAction);
+
+                        const int initialTriggerIndex = triggerTypeComboBox->findData(static_cast<int>(triggerInfo.triggerType));
+                        if (initialTriggerIndex >= 0) {
+                            triggerTypeComboBox->setCurrentIndex(initialTriggerIndex);
+                        }
+
+                        MenuFixedFocusController *triggerTypeFocusController = new MenuFixedFocusController(triggerTypeMenu,
+                                                                                                            triggerTypePanel,
+                                                                                                            triggerTypeComboBox,
+                                                                                                            pressTimeSpinBox);
+
+                        const auto applySingleTriggerChange = [keymapper, this, selectedRow, triggerTypeComboBox, pressTimeSpinBox]() {
+                            const OriginalKeyTriggerType triggerType = static_cast<OriginalKeyTriggerType>(triggerTypeComboBox->currentData().toInt());
+                            QString errorMessage;
+                            applyOriginalKeyTriggerChange(keymapper,
+                                                          this,
+                                                          QList<int>{selectedRow},
+                                                          triggerType,
+                                                          pressTimeSpinBox->value(),
+                                                          &errorMessage);
+                            if (!errorMessage.isEmpty()) {
+                                keymapper->showFailurePopup(errorMessage);
+                            }
+                        };
+
+                        const auto refreshTriggerTypePanel = [triggerTypeMenu,
+                                                              triggerTypeWidgetAction,
+                                                              triggerTypePanel,
+                                                              triggerTypeFocusController,
+                                                              pressTimeSpinBox,
+                                                              triggerTypeComboBox](bool rebuildActionGeometry) {
+                            const OriginalKeyTriggerType triggerType = static_cast<OriginalKeyTriggerType>(triggerTypeComboBox->currentData().toInt());
+                            const bool showDuration = originalKeyTriggerTypeUsesDuration(triggerType);
+
+                            pressTimeSpinBox->setVisible(showDuration);
+                            pressTimeSpinBox->setEnabled(showDuration);
+                            if (triggerTypeFocusController) {
+                                triggerTypeFocusController->syncFocusProxy();
+                            }
+                            triggerTypePanel->updateGeometry();
+                            triggerTypePanel->update();
+
+                            if (rebuildActionGeometry) {
+                                refreshMenuWidgetActionGeometry(triggerTypeMenu, triggerTypeWidgetAction, triggerTypePanel);
+                            }
+                            else {
+                                const int targetMenuWidth = triggerTypeMenu->isVisible()
+                                                            ? qMax(triggerTypeMenu->width(), triggerTypePanel->width())
+                                                            : triggerTypePanel->width();
+                                refreshMenuWidgetPanelGeometry(triggerTypeMenu, triggerTypePanel, targetMenuWidth);
+                            }
+                        };
+
+                        refreshTriggerTypePanel(false);
+
+                        connect(triggerTypeMenu, &QMenu::aboutToShow, triggerTypeMenu, [refreshTriggerTypePanel, triggerTypeFocusController]() {
+                            refreshTriggerTypePanel(true);
+                            if (triggerTypeFocusController) {
+                                triggerTypeFocusController->focusPreferredWidget(Qt::OtherFocusReason);
+                            }
+                        });
+
+                        connect(triggerTypeComboBox,
+                                QOverload<int>::of(&QComboBox::currentIndexChanged),
+                                triggerTypeMenu,
+                                [pressTimeSpinBox, refreshTriggerTypePanel, applySingleTriggerChange, triggerTypeFocusController](int) {
+                                    if (pressTimeSpinBox->value() <= PRESSTIME_MIN) {
+                                        pressTimeSpinBox->setValue(500);
+                                    }
+                                    refreshTriggerTypePanel(false);
+                                    applySingleTriggerChange();
+                                    if (triggerTypeFocusController) {
+                                        triggerTypeFocusController->focusPreferredWidget(Qt::OtherFocusReason);
+                                    }
+                                });
+
+                        connect(pressTimeSpinBox,
+                                QOverload<int>::of(&QSpinBox::valueChanged),
+                                triggerTypeMenu,
+                                [triggerTypeComboBox, applySingleTriggerChange](int) {
+                                    const OriginalKeyTriggerType triggerType = static_cast<OriginalKeyTriggerType>(triggerTypeComboBox->currentData().toInt());
+                                    if (originalKeyTriggerTypeUsesDuration(triggerType)) {
+                                        applySingleTriggerChange();
+                                    }
+                                });
+
+                        hasOriginalKeyTriggerGroup = true;
+                    }
+                }
+            }
+        }
+    }
 
     // Group 0: Edit current item
     if (canEditCurrentItem()) {
+        if (hasOriginalKeyTriggerGroup) {
+            contextMenu.addSeparator();
+            hasPreviousGroup = true;
+        }
+
         QAction *editAction = contextMenu.addAction(QObject::tr("Edit"));
         connect(editAction, &QAction::triggered, this, [this]() {
             // Re-check editable state at trigger time to avoid stale action state.
@@ -36215,6 +36785,10 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             editItem(cur);
         });
         contextMenu.addSeparator();
+        hasPreviousGroup = true;
+    }
+    else if (hasOriginalKeyTriggerGroup) {
+        hasPreviousGroup = true;
     }
 
     // Group 1: Window dialogs
