@@ -219,6 +219,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr int PRESSTIME_MIN = 1;
     inline constexpr int PRESSTIME_MAX = 9999;
+    inline constexpr int PRESSTIME_DEFAULT = 500;
 
     inline constexpr int REPEAT_MODE_NONE      = 0;
     inline constexpr int REPEAT_MODE_BYKEY     = 1;

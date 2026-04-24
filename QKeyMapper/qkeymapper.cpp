@@ -1333,6 +1333,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->pressTimeSpinBox->setRange(PRESSTIME_MIN, PRESSTIME_MAX);
+    ui->pressTimeSpinBox->setValue(PRESSTIME_DEFAULT);
     connect(ui->keyPressTypeComboBox,
             QOverload<int>::of(&QComboBox::currentIndexChanged),
             this,
