@@ -811,7 +811,7 @@ static OriginalKeyTriggerInfo parseOriginalKeyTriggerInfo(const QString &origina
         ok = true;
     }
 
-    if (!ok || triggerInfo.pressTime <= PRESSTIME_MIN) {
+    if (!ok || triggerInfo.pressTime < PRESSTIME_MIN) {
         triggerInfo.pressTime = 500;
     }
 
@@ -834,7 +834,7 @@ static QString buildOriginalKeyTriggerString(const QString &baseKey, OriginalKey
         return baseKey;
     }
 
-    const int boundedPressTime = qBound(PRESSTIME_MIN + 1, pressTime, PRESSTIME_MAX);
+    const int boundedPressTime = qBound(PRESSTIME_MIN, pressTime, PRESSTIME_MAX);
     const QString triggerSuffix = (triggerType == OriginalKeyTriggerType::LongPress)
         ? QString(SEPARATOR_LONGPRESS)
         : QString(SEPARATOR_DOUBLEPRESS);
@@ -1333,6 +1333,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->waitTimeSpinBox->setRange(MAPPING_WAITTIME_MIN, MAPPING_WAITTIME_MAX);
     ui->pressTimeSpinBox->setRange(PRESSTIME_MIN, PRESSTIME_MAX);
+    connect(ui->keyPressTypeComboBox,
+            QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this,
+            [this](int) {
+                updatePressTimeSpinBoxEnabledState();
+            });
+    updatePressTimeSpinBoxEnabledState();
     // ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     // ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     // ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
@@ -5013,7 +5020,7 @@ ValidationResult QKeyMapper::validateOriginalKeyString(const QString &originalke
             bool ok;
             int pressTime = isLongPress ? longPressTimeString.toInt(&ok) : doublePressTimeString.toInt(&ok);
 
-            if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || (isLongPress && longPressTimeString.startsWith('0')) || (isDoublePress && doublePressTimeString.startsWith('0'))) {
+            if (!ok || pressTime < PRESSTIME_MIN || pressTime > PRESSTIME_MAX || (isLongPress && longPressTimeString.startsWith('0')) || (isDoublePress && doublePressTimeString.startsWith('0'))) {
                 result.isValid = false;
                 result.errorMessage = tr("Invalid press time \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
                 return result;
@@ -5103,7 +5110,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
             bool ok;
             int pressTime = isLongPress ? longPressTimeString.toInt(&ok) : doublePressTimeString.toInt(&ok);
 
-            if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || (isLongPress && longPressTimeString.startsWith('0')) || (isDoublePress && doublePressTimeString.startsWith('0'))) {
+            if (!ok || pressTime < PRESSTIME_MIN || pressTime > PRESSTIME_MAX || (isLongPress && longPressTimeString.startsWith('0')) || (isDoublePress && doublePressTimeString.startsWith('0'))) {
                 result.isValid = false;
                 result.errorMessage = tr("Invalid press time \"%1\"").arg(isLongPress ? longPressTimeString : doublePressTimeString);
             }
@@ -5759,7 +5766,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     // Validate ⏲ time parameter using the same rules as validateSingleOriginalKey
                     bool ok;
                     int pressTime = timeString.toInt(&ok);
-                    if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
+                    if (!ok || pressTime < PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
                         result.isValid = false;
                         result.errorMessage = tr("Invalid press time in KeySequenceBreak(...): \"%1\"").arg(timeString);
                     }
@@ -5784,7 +5791,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     // Validate ⏲ time parameter using the same rules as validateSingleOriginalKey
                     bool ok;
                     int pressTime = timeString.toInt(&ok);
-                    if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
+                    if (!ok || pressTime < PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
                         result.isValid = false;
                         result.errorMessage = tr("Invalid press time in Unlock(...): \"%1\"").arg(timeString);
                     }
@@ -5807,7 +5814,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 else if (!timeString.isEmpty()) {
                     bool ok;
                     int pressTime = timeString.toInt(&ok);
-                    if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
+                    if (!ok || pressTime < PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
                         result.isValid = false;
                         result.errorMessage = tr("Invalid press time in ShowFButton(...): \"%1\"").arg(timeString);
                     }
@@ -5830,7 +5837,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 else if (!timeString.isEmpty()) {
                     bool ok;
                     int pressTime = timeString.toInt(&ok);
-                    if (!ok || pressTime <= PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
+                    if (!ok || pressTime < PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
                         result.isValid = false;
                         result.errorMessage = tr("Invalid press time in HideFButton(...): \"%1\"").arg(timeString);
                     }
@@ -20429,6 +20436,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeyRecordLabel->setFont(customFont);
+    ui->triggerTypeLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
     // ui->burstpressLabel->setFont(customFont);
     // ui->burstpress_msLabel->setFont(customFont);
@@ -20576,6 +20584,7 @@ void QKeyMapper::setControlFontChinese()
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeyRecordLabel->setFont(customFont);
+    ui->triggerTypeLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
     // ui->burstpressLabel->setFont(customFont);
     // ui->burstpress_msLabel->setFont(customFont);
@@ -20723,6 +20732,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->descriptionLabel->setFont(customFont);
     ui->orikeyLabel->setFont(customFont);
     ui->orikeyRecordLabel->setFont(customFont);
+    ui->triggerTypeLabel->setFont(customFont);
     ui->mapkeyLabel->setFont(customFont);
     // ui->burstpressLabel->setFont(customFont);
     // ui->burstpress_msLabel->setFont(customFont);
@@ -20817,6 +20827,32 @@ void QKeyMapper::setControlFontJapanese()
     ui->accelThresholdLabel->setFont(customFont);
 }
 
+void QKeyMapper::setKeyPressTypeComboBoxItems(const QString &normalText, const QString &longPressText, const QString &doublePressText)
+{
+    const int currentIndex = ui->keyPressTypeComboBox->currentIndex();
+    QSignalBlocker blocker(ui->keyPressTypeComboBox);
+
+    ui->keyPressTypeComboBox->clear();
+    ui->keyPressTypeComboBox->addItem(normalText);
+    ui->keyPressTypeComboBox->addItem(longPressText);
+    ui->keyPressTypeComboBox->addItem(doublePressText);
+
+    const int restoredIndex = (currentIndex >= 0 && currentIndex < ui->keyPressTypeComboBox->count())
+        ? currentIndex
+        : KEYPRESS_TYPE_NORMAL;
+    ui->keyPressTypeComboBox->setCurrentIndex(restoredIndex);
+    updatePressTimeSpinBoxEnabledState();
+}
+
+void QKeyMapper::updatePressTimeSpinBoxEnabledState()
+{
+    const int currentIndex = ui->keyPressTypeComboBox->currentIndex();
+    const bool usesPressTime = (currentIndex == KEYPRESS_TYPE_LONGPRESS)
+        || (currentIndex == KEYPRESS_TYPE_DOUBLEPRESS);
+
+    ui->pressTimeSpinBox->setEnabled(ui->keyPressTypeComboBox->isEnabled() && usesPressTime);
+}
+
 void QKeyMapper::changeControlEnableStatus(bool status)
 {
     // if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
@@ -20890,7 +20926,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->waitTimeSpinBox->setEnabled(status);
     ui->pushLevelSlider->setEnabled(status);
     ui->pushLevelSpinBox->setEnabled(status);
-    ui->pressTimeSpinBox->setEnabled(status);
+    updatePressTimeSpinBoxEnabledState();
     // ui->mouseXSpeedLabel->setEnabled(status);
     // ui->mouseYSpeedLabel->setEnabled(status);
     // ui->mouseXSpeedSpinBox->setEnabled(status);
@@ -20913,6 +20949,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->mapList_SelectFunctionButton->setEnabled(status);
     ui->orikeyLabel->setEnabled(status);
     ui->orikeyRecordLabel->setEnabled(status);
+    ui->triggerTypeLabel->setEnabled(status);
     // m_originalKeySeqEdit->setEnabled(status);
     ui->originalKeyRecordLineEdit->setEnabled(status);
     ui->originalKeyEditModeButton->setEnabled(status);
@@ -26894,6 +26931,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->mapList_SelectFunctionButton->setToolTip(tr("Function Keys"));
     ui->orikeyLabel->setText(tr("OriKey"));
     ui->orikeyRecordLabel->setText(tr("OriKeyRecord"));
+    ui->triggerTypeLabel->setText(tr("TriggerType"));
     ui->mapkeyLabel->setText(tr("MapKey"));
     // ui->burstpressLabel->setText(BURSTPRESSLABEL_CHINESE);
     // ui->burstreleaseLabel->setText(BURSTRELEASE_CHINESE);
@@ -26904,9 +26942,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->pressTimeSpinBox->setSuffix(tr(" ms"));
     ui->pushLevelLabel->setText(tr("PushLevel"));
     ui->sendTextLabel->setText(tr("Param"));
-    ui->keyPressTypeComboBox->clear();
-    ui->keyPressTypeComboBox->addItem(tr("LongPress"));
-    ui->keyPressTypeComboBox->addItem(tr("DoublePress"));
+    setKeyPressTypeComboBoxItems(tr("Normal"), tr("LongPress"), tr("DoublePress"));
     ui->pointLabel->setText(tr("Point"));
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
     // ui->mouseXSpeedLabel->setText(tr("X Speed"));
@@ -27159,9 +27195,7 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->pressTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_CHINESE);
     ui->pushLevelLabel->setText(PUSHLEVEL_CHINESE);
     ui->sendTextLabel->setText(SENDTEXTLABEL_CHINESE);
-    ui->keyPressTypeComboBox->clear();
-    ui->keyPressTypeComboBox->addItem(LONGPRESS_CHINESE);
-    ui->keyPressTypeComboBox->addItem(DOUBLEPRESS_CHINESE);
+    setKeyPressTypeComboBoxItems(QStringLiteral("Normal"), LONGPRESS_CHINESE, DOUBLEPRESS_CHINESE);
     ui->pointLabel->setText(POINT_CHINESE);
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_CHINESE);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_CHINESE);
@@ -27311,9 +27345,7 @@ void QKeyMapper::setUILanguage_English()
     ui->pressTimeSpinBox->setSuffix(MILLISECOND_SUFFIX_ENGLISH);
     ui->pushLevelLabel->setText(PUSHLEVEL_ENGLISH);
     ui->sendTextLabel->setText(SENDTEXTLABEL_ENGLISH);
-    ui->keyPressTypeComboBox->clear();
-    ui->keyPressTypeComboBox->addItem(LONGPRESS_ENGLISH);
-    ui->keyPressTypeComboBox->addItem(DOUBLEPRESS_ENGLISH);
+    setKeyPressTypeComboBoxItems(QStringLiteral("Normal"), LONGPRESS_ENGLISH, DOUBLEPRESS_ENGLISH);
     ui->pointLabel->setText(POINT_ENGLISH);
     // ui->waitTime_msLabel->setText(WAITTIME_MSLABEL_ENGLISH);
     ui->mouseXSpeedLabel->setText(MOUSEXSPEEDLABEL_ENGLISH);
@@ -29590,10 +29622,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
 
     int pressTime = ui->pressTimeSpinBox->value();
-    if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime > 0 && isSpecialOriginalKey == false && isSendOnOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR) {
+    if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_LONGPRESS && pressTime >= PRESSTIME_MIN && isSpecialOriginalKey == false && isSendOnOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR) {
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_LONGPRESS) + QString::number(pressTime);
     }
-    else if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_DOUBLEPRESS && pressTime > 0 && isSpecialOriginalKey == false && isSendOnOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR){
+    else if (ui->keyPressTypeComboBox->currentIndex() == KEYPRESS_TYPE_DOUBLEPRESS && pressTime >= PRESSTIME_MIN && isSpecialOriginalKey == false && isSendOnOriginalKey == false && currentMapKeyComboBoxText != KEY_BLOCKED_STR){
         currentOriKeyText = currentOriKeyText + QString(SEPARATOR_DOUBLEPRESS) + QString::number(pressTime);
         isDoublePress = true;
     }
@@ -36652,7 +36684,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                         durationLayout->setContentsMargins(0, 0, 0, 0);
                         durationLayout->setSpacing(0);
 
-                        pressTimeSpinBox->setRange(PRESSTIME_MIN + 1, PRESSTIME_MAX);
+                        pressTimeSpinBox->setRange(PRESSTIME_MIN, PRESSTIME_MAX);
                         pressTimeSpinBox->setValue(triggerInfo.isValid ? triggerInfo.pressTime : 500);
                         pressTimeSpinBox->setMinimumWidth(TriggerTypeInnerControlWidth);
                         pressTimeSpinBox->setFixedHeight(TriggerTypeControlHeight);
@@ -36730,7 +36762,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                                 QOverload<int>::of(&QComboBox::currentIndexChanged),
                                 triggerTypeMenu,
                                 [pressTimeSpinBox, refreshTriggerTypePanel, applySingleTriggerChange, triggerTypeFocusController](int) {
-                                    if (pressTimeSpinBox->value() <= PRESSTIME_MIN) {
+                                    if (pressTimeSpinBox->value() < PRESSTIME_MIN) {
                                         pressTimeSpinBox->setValue(500);
                                     }
                                     refreshTriggerTypePanel(false);

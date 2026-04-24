@@ -1692,6 +1692,8 @@ private:
     void setControlFontChinese(void);
     void setControlFontJapanese(void);
 
+    void setKeyPressTypeComboBoxItems(const QString &normalText, const QString &longPressText, const QString &doublePressText);
+    void updatePressTimeSpinBoxEnabledState();
     void changeControlEnableStatus(bool status);
 
     void extractSoundFiles();

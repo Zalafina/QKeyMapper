@@ -372,7 +372,7 @@
   <widget class="QSpinBox" name="pressTimeSpinBox">
    <property name="geometry">
     <rect>
-     <x>586</x>
+     <x>647</x>
      <y>460</y>
      <width>100</width>
      <height>22</height>
@@ -385,7 +385,7 @@
   <widget class="QComboBox" name="keyPressTypeComboBox">
    <property name="geometry">
     <rect>
-     <x>525</x>
+     <x>586</x>
      <y>460</y>
      <width>56</width>
      <height>21</height>
@@ -1006,31 +1006,12 @@
       <enum>Qt::FocusPolicy::NoFocus</enum>
      </property>
      <property name="text">
-        <string>General Advanced</string>
+      <string>General Advanced</string>
      </property>
      <property name="autoDefault">
       <bool>false</bool>
      </property>
     </widget>
-    <zorder>startupMinimizedCheckBox</zorder>
-    <zorder>autoStartupCheckBox</zorder>
-    <zorder>notificationLabel</zorder>
-    <zorder>notificationComboBox</zorder>
-    <zorder>windowswitchkeyLineEdit</zorder>
-    <zorder>windowswitchkeyLabel</zorder>
-    <zorder>languageComboBox</zorder>
-    <zorder>languageLabel</zorder>
-    <zorder>checkUpdateButton</zorder>
-    <zorder>updateSiteLabel</zorder>
-    <zorder>updateSiteComboBox</zorder>
-    <zorder>selectTrayIconButton</zorder>
-    <zorder>notificationAdvancedSettingButton</zorder>
-    <zorder>startupAutoMonitoringCheckBox</zorder>
-    <zorder>scaleLabel</zorder>
-    <zorder>scaleComboBox</zorder>
-    <zorder>themeComboBox</zorder>
-    <zorder>themeLabel</zorder>
-    <zorder>generalAdvancedButton</zorder>
    </widget>
    <widget class="QWidget" name="mapping">
     <attribute name="title">
@@ -2582,6 +2563,22 @@
    </property>
    <property name="autoDefault">
     <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="triggerTypeLabel">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>460</y>
+     <width>71</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>TriggerType</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
  </widget>

@@ -169,8 +169,9 @@ namespace QKeyMapperConstants {
     inline constexpr int UPDATE_SITE_GITHUB = 0;
     inline constexpr int UPDATE_SITE_GITEE = 1;
 
-    inline constexpr int KEYPRESS_TYPE_LONGPRESS   = 0;
-    inline constexpr int KEYPRESS_TYPE_DOUBLEPRESS = 1;
+    inline constexpr int KEYPRESS_TYPE_NORMAL      = 0;
+    inline constexpr int KEYPRESS_TYPE_LONGPRESS   = 1;
+    inline constexpr int KEYPRESS_TYPE_DOUBLEPRESS = 2;
 
     inline constexpr int EMPTYSETTING_INDEX  = 0;
     inline constexpr int GLOBALSETTING_INDEX = 1;
@@ -216,7 +217,7 @@ namespace QKeyMapperConstants {
     inline constexpr int MAPPING_WAITTIME_MIN = 0;
     inline constexpr int MAPPING_WAITTIME_MAX = 999999;
 
-    inline constexpr int PRESSTIME_MIN = 0;
+    inline constexpr int PRESSTIME_MIN = 1;
     inline constexpr int PRESSTIME_MAX = 9999;
 
     inline constexpr int REPEAT_MODE_NONE      = 0;
