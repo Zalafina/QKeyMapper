@@ -427,13 +427,26 @@ class KeyListComboBoxPopup;
 class KeyListPopupContextMenu : public QMenu
 {
 public:
+    enum PendingShortcutAction {
+        KEYLIST_MENU_SHORTCUT_NONE = 0,
+        KEYLIST_MENU_SHORTCUT_COPY_CURRENT_ITEM,
+        KEYLIST_MENU_SHORTCUT_OPEN_FAVORITES,
+        KEYLIST_MENU_SHORTCUT_OPEN_RECENTS
+    };
+
     explicit KeyListPopupContextMenu(KeyListComboBoxPopup *popup, QWidget *parent = Q_NULLPTR);
 
+    PendingShortcutAction takePendingShortcutAction(void);
+    void setCopyShortcutEnabled(bool enabled);
+
 protected:
+    void keyPressEvent(QKeyEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
 private:
     KeyListComboBoxPopup *m_Popup;
+    PendingShortcutAction m_PendingShortcutAction;
+    bool m_CopyShortcutEnabled;
 };
 
 class KeyListComboBox : public QComboBox
@@ -487,6 +500,7 @@ private:
     void refreshToolButtons(void);
     void refreshMainList(void);
     void refreshCollectionList(void);
+    bool isCurrentCollectionPage(KeyListSharedDataType dataType) const;
     void openCollectionPage(KeyListSharedDataType dataType);
     void closeCollectionPage(void);
     bool showListContextMenuAtGlobalPos(const QPoint &globalPos);

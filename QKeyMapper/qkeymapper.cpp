@@ -31486,7 +31486,49 @@ void KeyListPopupListWidget::mousePressEvent(QMouseEvent *event)
 KeyListPopupContextMenu::KeyListPopupContextMenu(KeyListComboBoxPopup *popup, QWidget *parent)
     : QMenu(parent)
     , m_Popup(popup)
+    , m_PendingShortcutAction(KEYLIST_MENU_SHORTCUT_NONE)
+    , m_CopyShortcutEnabled(false)
 {
+}
+
+KeyListPopupContextMenu::PendingShortcutAction KeyListPopupContextMenu::takePendingShortcutAction(void)
+{
+    const PendingShortcutAction pendingAction = m_PendingShortcutAction;
+    m_PendingShortcutAction = KEYLIST_MENU_SHORTCUT_NONE;
+    return pendingAction;
+}
+
+void KeyListPopupContextMenu::setCopyShortcutEnabled(bool enabled)
+{
+    m_CopyShortcutEnabled = enabled;
+}
+
+void KeyListPopupContextMenu::keyPressEvent(QKeyEvent *event)
+{
+    if (event != Q_NULLPTR && (event->modifiers() & Qt::ControlModifier)) {
+        if (event->key() == Qt::Key_F) {
+            m_PendingShortcutAction = KEYLIST_MENU_SHORTCUT_OPEN_FAVORITES;
+            close();
+            event->accept();
+            return;
+        }
+
+        if (event->key() == Qt::Key_R) {
+            m_PendingShortcutAction = KEYLIST_MENU_SHORTCUT_OPEN_RECENTS;
+            close();
+            event->accept();
+            return;
+        }
+
+        if (m_CopyShortcutEnabled && event->key() == Qt::Key_C) {
+            m_PendingShortcutAction = KEYLIST_MENU_SHORTCUT_COPY_CURRENT_ITEM;
+            close();
+            event->accept();
+            return;
+        }
+    }
+
+    QMenu::keyPressEvent(event);
 }
 
 void KeyListPopupContextMenu::mousePressEvent(QMouseEvent *event)
@@ -31736,14 +31778,18 @@ bool KeyListComboBoxPopup::eventFilter(QObject *watched, QEvent *event)
         && !(modifiers & (Qt::ShiftModifier | Qt::AltModifier | Qt::MetaModifier));
 
     if (isCtrlOnlyShortcut && keyEvent->key() == Qt::Key_F) {
-        openCollectionPage(KEYLIST_SHARED_FAVORITES);
-        m_SearchLineEdit->setFocus(Qt::ShortcutFocusReason);
+        if (!isCurrentCollectionPage(KEYLIST_SHARED_FAVORITES)) {
+            openCollectionPage(KEYLIST_SHARED_FAVORITES);
+            m_SearchLineEdit->setFocus(Qt::ShortcutFocusReason);
+        }
         return true;
     }
 
     if (isCtrlOnlyShortcut && keyEvent->key() == Qt::Key_R) {
-        openCollectionPage(KEYLIST_SHARED_RECENTS);
-        m_SearchLineEdit->setFocus(Qt::ShortcutFocusReason);
+        if (!isCurrentCollectionPage(KEYLIST_SHARED_RECENTS)) {
+            openCollectionPage(KEYLIST_SHARED_RECENTS);
+            m_SearchLineEdit->setFocus(Qt::ShortcutFocusReason);
+        }
         return true;
     }
 
@@ -31969,8 +32015,19 @@ void KeyListComboBoxPopup::refreshCollectionList(void)
     }
 }
 
+bool KeyListComboBoxPopup::isCurrentCollectionPage(KeyListSharedDataType dataType) const
+{
+    return m_ViewStackedWidget != Q_NULLPTR
+        && m_ViewStackedWidget->currentWidget() == m_CollectionPageWidget
+        && m_CurrentCollectionType == dataType;
+}
+
 void KeyListComboBoxPopup::openCollectionPage(KeyListSharedDataType dataType)
 {
+    if (isCurrentCollectionPage(dataType)) {
+        return;
+    }
+
     if (!m_SearchLineEdit->text().trimmed().isEmpty()) {
         QSignalBlocker blocker(m_SearchLineEdit);
         m_SearchLineEdit->clear();
@@ -32352,7 +32409,20 @@ void KeyListComboBoxPopup::showFavoritesHeaderMenu(const QPoint &pos)
     clearAction->setEnabled(!keyMapper->getKeyListSharedItems(m_ComboBox->getCollectionType(), KEYLIST_SHARED_FAVORITES).isEmpty());
 
     QAction *selectedAction = menu.exec(m_FavoritesToolButton->mapToGlobal(pos));
-    if (selectedAction == manageAction) {
+    const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
+    if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_FAVORITES) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+        openCollectionPage(KEYLIST_SHARED_FAVORITES);
+    }
+    else if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_RECENTS) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+        openCollectionPage(KEYLIST_SHARED_RECENTS);
+    }
+    else if (selectedAction == manageAction) {
         if (!isVisible()) {
             showForComboBox();
         }
@@ -32378,7 +32448,20 @@ void KeyListComboBoxPopup::showRecentHeaderMenu(const QPoint &pos)
     clearAction->setEnabled(!keyMapper->getKeyListSharedItems(m_ComboBox->getCollectionType(), KEYLIST_SHARED_RECENTS).isEmpty());
 
     QAction *selectedAction = menu.exec(m_RecentToolButton->mapToGlobal(pos));
-    if (selectedAction == clearAction && confirmClearCollection(KEYLIST_SHARED_RECENTS)) {
+    const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
+    if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_FAVORITES) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+        openCollectionPage(KEYLIST_SHARED_FAVORITES);
+    }
+    else if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_RECENTS) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+        openCollectionPage(KEYLIST_SHARED_RECENTS);
+    }
+    else if (selectedAction == clearAction && confirmClearCollection(KEYLIST_SHARED_RECENTS)) {
         keyMapper->clearKeyListRecentItems(m_ComboBox->getCollectionType());
         if (!isVisible()) {
             showForComboBox();
@@ -32409,11 +32492,31 @@ void KeyListComboBoxPopup::showMainListMenu(const QPoint &pos)
 
     const bool isFavoriteItem = keyMapper->isKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
     KeyListPopupContextMenu menu(this, this);
+    menu.setCopyShortcutEnabled(true);
     QAction *favoriteAction = menu.addAction(isFavoriteItem ? tr("Remove from Favorites") : tr("Add to Favorites"));
     QAction *copyAction = menu.addAction(tr("Copy Key Name") + "   " + KEYLISTCOMBOBOX_COPY_KEY_NAME_HOTKEY);
 
     QAction *selectedAction = menu.exec(m_MainListWidget->viewport()->mapToGlobal(pos));
-    if (selectedAction == favoriteAction) {
+    const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
+    if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_COPY_CURRENT_ITEM) {
+        copyItemTextToClipboard(actualText);
+        if (!isVisible()) {
+            showForComboBox();
+        }
+    }
+    else if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_FAVORITES) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+        openCollectionPage(KEYLIST_SHARED_FAVORITES);
+    }
+    else if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_RECENTS) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+        openCollectionPage(KEYLIST_SHARED_RECENTS);
+    }
+    else if (selectedAction == favoriteAction) {
         if (isFavoriteItem) {
             keyMapper->removeKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
         }
@@ -32453,6 +32556,7 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
     }
 
     if (hasActualItem && isValidActualText(actualText)) {
+        menu.setCopyShortcutEnabled(true);
         selectAction = menu.addAction(tr("Select This Item"));
         if (KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType) {
             favoriteAction = menu.addAction(tr("Remove from Favorites"));
@@ -32471,7 +32575,27 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
     clearAction->setEnabled(!keyMapper->getKeyListSharedItems(m_ComboBox->getCollectionType(), m_CurrentCollectionType).isEmpty());
 
     QAction *selectedAction = menu.exec(m_CollectionListWidget->viewport()->mapToGlobal(pos));
-    if (selectedAction == selectAction) {
+    const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
+    if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_COPY_CURRENT_ITEM) {
+        copyItemTextToClipboard(actualText);
+        if (!isVisible()) {
+            showForComboBox();
+            openCollectionPage(m_CurrentCollectionType);
+        }
+    }
+    else if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_FAVORITES) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+        openCollectionPage(KEYLIST_SHARED_FAVORITES);
+    }
+    else if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_RECENTS) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+        openCollectionPage(KEYLIST_SHARED_RECENTS);
+    }
+    else if (selectedAction == selectAction) {
         m_ComboBox->applyPopupSelection(actualText);
     }
     else if (selectedAction == favoriteAction) {
