@@ -37084,6 +37084,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     else if (hasOriginalKeyTriggerGroup) {
         hasPreviousGroup = true;
     }
+    Q_UNUSED(hasPreviousGroup);
 
     // Group 1: Window dialogs
     if (hasValidCurrentSelectedRow) {
