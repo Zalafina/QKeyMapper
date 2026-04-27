@@ -32763,12 +32763,12 @@ void KeyListComboBoxPopup::showMainListMenu(const QPoint &pos)
     const bool isFavoriteItem = keyMapper->isKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
     KeyListPopupContextMenu menu(this, this);
     menu.setCopyShortcutEnabled(true);
-    QAction *favoriteAction = menu.addAction(isFavoriteItem ? tr("Remove from Favorites") : tr("Add to Favorites"));
+    QAction *copyAction = menu.addAction(tr("Copy Key Name") + "   " + KEYLISTCOMBOBOX_COPY_KEY_NAME_HOTKEY);
     QAction *appendAction = Q_NULLPTR;
     if (supportsSetupDialogAppendAction(m_ComboBox)) {
         appendAction = menu.addAction(tr("Append Key Name to Input Field"));
     }
-    QAction *copyAction = menu.addAction(tr("Copy Key Name") + "   " + KEYLISTCOMBOBOX_COPY_KEY_NAME_HOTKEY);
+    QAction *favoriteAction = menu.addAction(isFavoriteItem ? tr("Remove from Favorites") : tr("Add to Favorites"));
 
     QAction *selectedAction = menu.exec(m_MainListWidget->viewport()->mapToGlobal(pos));
     const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
@@ -32838,6 +32838,10 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
 
     if (hasActualItem && isValidActualText(actualText)) {
         menu.setCopyShortcutEnabled(true);
+        copyAction = menu.addAction(tr("Copy Key Name") + "   " + KEYLISTCOMBOBOX_COPY_KEY_NAME_HOTKEY);
+        if (supportsSetupDialogAppendAction(m_ComboBox)) {
+            appendAction = menu.addAction(tr("Append Key Name to Input Field"));
+        }
         if (KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType) {
             favoriteAction = menu.addAction(tr("Remove from Favorites"));
         }
@@ -32845,10 +32849,6 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
             const bool isFavoriteItem = keyMapper->isKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
             favoriteAction = menu.addAction(isFavoriteItem ? tr("Remove from Favorites") : tr("Add to Favorites"));
         }
-        if (supportsSetupDialogAppendAction(m_ComboBox)) {
-            appendAction = menu.addAction(tr("Append Key Name to Input Field"));
-        }
-        copyAction = menu.addAction(tr("Copy Key Name") + "   " + KEYLISTCOMBOBOX_COPY_KEY_NAME_HOTKEY);
         menu.addSeparator();
     }
 
