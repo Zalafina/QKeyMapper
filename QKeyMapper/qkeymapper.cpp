@@ -31488,6 +31488,7 @@ KeyListPopupContextMenu::KeyListPopupContextMenu(KeyListComboBoxPopup *popup, QW
     , m_Popup(popup)
     , m_PendingShortcutAction(KEYLIST_MENU_SHORTCUT_NONE)
     , m_CopyShortcutEnabled(false)
+    , m_TriggeredWithCtrlModifier(false)
 {
 }
 
@@ -31496,6 +31497,13 @@ KeyListPopupContextMenu::PendingShortcutAction KeyListPopupContextMenu::takePend
     const PendingShortcutAction pendingAction = m_PendingShortcutAction;
     m_PendingShortcutAction = KEYLIST_MENU_SHORTCUT_NONE;
     return pendingAction;
+}
+
+bool KeyListPopupContextMenu::takeTriggeredWithCtrlModifier(void)
+{
+    const bool triggeredWithCtrlModifier = m_TriggeredWithCtrlModifier;
+    m_TriggeredWithCtrlModifier = false;
+    return triggeredWithCtrlModifier;
 }
 
 void KeyListPopupContextMenu::setCopyShortcutEnabled(bool enabled)
@@ -31543,6 +31551,16 @@ void KeyListPopupContextMenu::mousePressEvent(QMouseEvent *event)
     }
 
     QMenu::mousePressEvent(event);
+}
+
+void KeyListPopupContextMenu::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event != Q_NULLPTR && event->button() == Qt::LeftButton) {
+        m_TriggeredWithCtrlModifier = rect().contains(QKeyMapperQtCompat::mouseEventLocalPos(event))
+            && (event->modifiers() & Qt::ControlModifier);
+    }
+
+    QMenu::mouseReleaseEvent(event);
 }
 
 void KeyListPopupListWidget::contextMenuEvent(QContextMenuEvent *event)
@@ -32395,6 +32413,258 @@ void KeyListComboBoxPopup::onCollectionListItemClicked(QListWidgetItem *item)
     m_ComboBox->applyPopupSelection(actualText);
 }
 
+static bool isSetupDialogOriginalKeyListComboBox(const KeyListComboBox *comboBox)
+{
+    return comboBox != Q_NULLPTR && comboBox->objectName() == SETUPDIALOG_ORIKEY_COMBOBOX_NAME;
+}
+
+static bool isSetupDialogMappingKeyListComboBox(const KeyListComboBox *comboBox)
+{
+    return comboBox != Q_NULLPTR && comboBox->objectName() == SETUPDIALOG_MAPKEY_COMBOBOX_NAME;
+}
+
+static bool supportsSetupDialogAppendAction(const KeyListComboBox *comboBox)
+{
+    return isSetupDialogOriginalKeyListComboBox(comboBox)
+        || isSetupDialogMappingKeyListComboBox(comboBox);
+}
+
+static QString buildSetupDialogOriginalKeyText(const QString &currentOriKeyText,
+                                               const QString &currentOriKeyListText,
+                                               int cursorPos)
+{
+    if (currentOriKeyListText.isEmpty()) {
+        return currentOriKeyText;
+    }
+
+    if (currentOriKeyText.isEmpty()) {
+        return currentOriKeyListText;
+    }
+
+    const int safeCursorPos = qBound(0, cursorPos, currentOriKeyText.length());
+    const bool isCursorAtBegin = (safeCursorPos == 0);
+    const bool isCursorAtEnd = (safeCursorPos == currentOriKeyText.length());
+    const bool isTimingSeparator = (currentOriKeyListText == SEPARATOR_LONGPRESS
+                                    || currentOriKeyListText == SEPARATOR_DOUBLEPRESS);
+
+    if (isCursorAtEnd) {
+        if (isTimingSeparator) {
+            return currentOriKeyText + currentOriKeyListText;
+        }
+
+        return currentOriKeyText + QString(SEPARATOR_PLUS) + currentOriKeyListText;
+    }
+
+    if (isTimingSeparator) {
+        return currentOriKeyText.left(safeCursorPos)
+            + currentOriKeyListText
+            + currentOriKeyText.right(currentOriKeyText.length() - safeCursorPos);
+    }
+
+    if (isCursorAtBegin) {
+        return currentOriKeyListText + QString(SEPARATOR_PLUS) + currentOriKeyText;
+    }
+
+    return currentOriKeyText.left(safeCursorPos)
+        + QString(SEPARATOR_PLUS)
+        + currentOriKeyListText
+        + currentOriKeyText.right(currentOriKeyText.length() - safeCursorPos);
+}
+
+static QString normalizeSetupDialogMappingAppendSource(QString currentMapKeyListText)
+{
+    if (currentMapKeyListText.startsWith(MOUSE_BUTTON_PREFIX)) {
+        if (currentMapKeyListText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
+            currentMapKeyListText = currentMapKeyListText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(,)");
+        }
+        else if (currentMapKeyListText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
+            currentMapKeyListText = currentMapKeyListText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
+        }
+        else if (currentMapKeyListText.endsWith(MOUSE_MOVE_RELATIVE_POSTFIX)) {
+            currentMapKeyListText = currentMapKeyListText.remove(MOUSE_MOVE_RELATIVE_POSTFIX) + QString(":R(,)");
+        }
+    }
+
+    return currentMapKeyListText;
+}
+
+static bool isInlineSetupDialogMappingToken(const QString &currentMapKeyListText)
+{
+    return currentMapKeyListText == SEPARATOR_WAITTIME
+        || currentMapKeyListText == SEPARATOR_NEXTARROW
+        || currentMapKeyListText == PREFIX_SEND_DOWN
+        || currentMapKeyListText == PREFIX_SEND_UP
+        || currentMapKeyListText == PREFIX_SEND_TOGGLE
+        || currentMapKeyListText == PREFIX_SEND_BOTH
+        || currentMapKeyListText == PREFIX_SEND_EXCLUSION;
+}
+
+static QString buildSetupDialogMappingKeyText(const QString &currentMapKeyText,
+                                              const QString &currentMapKeyListText,
+                                              int cursorPos,
+                                              bool useSequenceArrow)
+{
+    if (currentMapKeyListText.isEmpty()) {
+        return currentMapKeyText;
+    }
+
+    const QString normalizedMapKeyListText = normalizeSetupDialogMappingAppendSource(currentMapKeyListText);
+    const bool isRepeatToken = (currentMapKeyListText == REPEAT_STR);
+    const bool isOnlyOnceToken = (currentMapKeyListText == ONLYONCE_STR);
+
+    if (currentMapKeyText.isEmpty()) {
+        if (isRepeatToken) {
+            return REPEAT_TEMPLATE_STR;
+        }
+        if (isOnlyOnceToken) {
+            return ONLYONCE_TEMPLATE_STR;
+        }
+
+        return normalizedMapKeyListText;
+    }
+
+    const int safeCursorPos = qBound(0, cursorPos, currentMapKeyText.length());
+    const bool isCursorAtBegin = (safeCursorPos == 0);
+    const bool isCursorAtEnd = (safeCursorPos == currentMapKeyText.length());
+    const bool isInlineToken = isInlineSetupDialogMappingToken(normalizedMapKeyListText);
+
+    if (isRepeatToken) {
+        if (isCursorAtBegin) {
+            return QString(REPEAT_TEMPLATE_STR) + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+        }
+        if (isCursorAtEnd) {
+            return currentMapKeyText + QString(SEPARATOR_NEXTARROW) + QString(REPEAT_TEMPLATE_STR);
+        }
+
+        return currentMapKeyText.left(safeCursorPos)
+            + QString(SEPARATOR_NEXTARROW)
+            + QString(REPEAT_TEMPLATE_STR)
+            + currentMapKeyText.right(currentMapKeyText.length() - safeCursorPos);
+    }
+
+    if (isOnlyOnceToken) {
+        if (isCursorAtBegin) {
+            return QString(ONLYONCE_TEMPLATE_STR) + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+        }
+        if (isCursorAtEnd) {
+            return currentMapKeyText + QString(SEPARATOR_NEXTARROW) + QString(ONLYONCE_TEMPLATE_STR);
+        }
+
+        return currentMapKeyText.left(safeCursorPos)
+            + QString(SEPARATOR_NEXTARROW)
+            + QString(ONLYONCE_TEMPLATE_STR)
+            + currentMapKeyText.right(currentMapKeyText.length() - safeCursorPos);
+    }
+
+    if (useSequenceArrow) {
+        if (isInlineToken) {
+            if (isCursorAtBegin) {
+                return normalizedMapKeyListText + currentMapKeyText;
+            }
+            if (isCursorAtEnd) {
+                return currentMapKeyText + normalizedMapKeyListText;
+            }
+
+            return currentMapKeyText.left(safeCursorPos)
+                + normalizedMapKeyListText
+                + currentMapKeyText.right(currentMapKeyText.length() - safeCursorPos);
+        }
+
+        if (isCursorAtBegin) {
+            return normalizedMapKeyListText + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
+        }
+        if (isCursorAtEnd) {
+            return currentMapKeyText + QString(SEPARATOR_NEXTARROW) + normalizedMapKeyListText;
+        }
+
+        return currentMapKeyText.left(safeCursorPos)
+            + QString(SEPARATOR_NEXTARROW)
+            + normalizedMapKeyListText
+            + currentMapKeyText.right(currentMapKeyText.length() - safeCursorPos);
+    }
+
+    if (isCursorAtEnd) {
+        if (isInlineToken) {
+            return currentMapKeyText + normalizedMapKeyListText;
+        }
+
+        return currentMapKeyText + QString(SEPARATOR_PLUS) + normalizedMapKeyListText;
+    }
+
+    if (isInlineToken) {
+        return currentMapKeyText.left(safeCursorPos)
+            + normalizedMapKeyListText
+            + currentMapKeyText.right(currentMapKeyText.length() - safeCursorPos);
+    }
+
+    if (isCursorAtBegin) {
+        return normalizedMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText;
+    }
+
+    return currentMapKeyText.left(safeCursorPos)
+        + QString(SEPARATOR_PLUS)
+        + normalizedMapKeyListText
+        + currentMapKeyText.right(currentMapKeyText.length() - safeCursorPos);
+}
+
+static bool appendSetupDialogOriginalKeyToEditBox(const QString &currentOriKeyListText, bool appendToEnd)
+{
+    QItemSetupDialog *itemSetupDialog = QItemSetupDialog::getInstance();
+    if (itemSetupDialog == Q_NULLPTR || currentOriKeyListText.isEmpty()) {
+        return false;
+    }
+
+    const QString currentOriKeyText = QItemSetupDialog::getOriginalKeyText();
+    const int cursorPos = appendToEnd ? currentOriKeyText.length() : QItemSetupDialog::getOriginalKeyCursorPosition();
+    const QString newOriKeyText = buildSetupDialogOriginalKeyText(currentOriKeyText,
+                                                                  currentOriKeyListText,
+                                                                  cursorPos);
+    itemSetupDialog->setOriginalKeyText(newOriKeyText);
+    return true;
+}
+
+static bool appendSetupDialogMappingKeyToEditBox(const QString &currentMapKeyListText,
+                                                 bool useSequenceArrow,
+                                                 bool appendToEnd)
+{
+    QItemSetupDialog *itemSetupDialog = QItemSetupDialog::getInstance();
+    if (itemSetupDialog == Q_NULLPTR || currentMapKeyListText.isEmpty()) {
+        return false;
+    }
+
+    const QString currentMapKeyText = QItemSetupDialog::getMappingKeyText();
+    const int cursorPos = appendToEnd ? currentMapKeyText.length() : QItemSetupDialog::getMappingKeyCursorPosition();
+    const QString newMapKeyText = buildSetupDialogMappingKeyText(currentMapKeyText,
+                                                                 currentMapKeyListText,
+                                                                 cursorPos,
+                                                                 useSequenceArrow);
+    itemSetupDialog->setMappingKeyText(newMapKeyText);
+    return true;
+}
+
+static bool appendSetupDialogPopupItemToEditBox(const KeyListComboBox *comboBox,
+                                                const QString &itemText,
+                                                bool useSequenceArrow,
+                                                bool appendToEnd)
+{
+    const QString normalizedItemText = itemText.trimmed();
+    if (normalizedItemText.isEmpty()) {
+        return false;
+    }
+
+    if (isSetupDialogOriginalKeyListComboBox(comboBox)) {
+        return appendSetupDialogOriginalKeyToEditBox(normalizedItemText, appendToEnd);
+    }
+
+    if (isSetupDialogMappingKeyListComboBox(comboBox)) {
+        return appendSetupDialogMappingKeyToEditBox(normalizedItemText,
+                                                    useSequenceArrow,
+                                                    appendToEnd);
+    }
+
+    return false;
+}
+
 void KeyListComboBoxPopup::showFavoritesHeaderMenu(const QPoint &pos)
 {
     QKeyMapper *keyMapper = QKeyMapper::getInstance();
@@ -32494,10 +32764,15 @@ void KeyListComboBoxPopup::showMainListMenu(const QPoint &pos)
     KeyListPopupContextMenu menu(this, this);
     menu.setCopyShortcutEnabled(true);
     QAction *favoriteAction = menu.addAction(isFavoriteItem ? tr("Remove from Favorites") : tr("Add to Favorites"));
+    QAction *appendAction = Q_NULLPTR;
+    if (supportsSetupDialogAppendAction(m_ComboBox)) {
+        appendAction = menu.addAction(tr("Append Key Name to Input Field"));
+    }
     QAction *copyAction = menu.addAction(tr("Copy Key Name") + "   " + KEYLISTCOMBOBOX_COPY_KEY_NAME_HOTKEY);
 
     QAction *selectedAction = menu.exec(m_MainListWidget->viewport()->mapToGlobal(pos));
     const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
+    const bool appendWithCtrlModifier = menu.takeTriggeredWithCtrlModifier();
     if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_COPY_CURRENT_ITEM) {
         copyItemTextToClipboard(actualText);
         if (!isVisible()) {
@@ -32515,6 +32790,12 @@ void KeyListComboBoxPopup::showMainListMenu(const QPoint &pos)
             showForComboBox();
         }
         openCollectionPage(KEYLIST_SHARED_RECENTS);
+    }
+    else if (selectedAction == appendAction) {
+        if (appendSetupDialogPopupItemToEditBox(m_ComboBox, actualText, appendWithCtrlModifier, true)
+            && !isVisible()) {
+            showForComboBox();
+        }
     }
     else if (selectedAction == favoriteAction) {
         if (isFavoriteItem) {
@@ -32546,6 +32827,7 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
     KeyListPopupContextMenu menu(this, this);
     QAction *selectAction = Q_NULLPTR;
     QAction *favoriteAction = Q_NULLPTR;
+    QAction *appendAction = Q_NULLPTR;
     QAction *copyAction = Q_NULLPTR;
     QAction *clearAction = Q_NULLPTR;
 
@@ -32565,6 +32847,9 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
             const bool isFavoriteItem = keyMapper->isKeyListFavoriteItem(m_ComboBox->getCollectionType(), actualText);
             favoriteAction = menu.addAction(isFavoriteItem ? tr("Remove from Favorites") : tr("Add to Favorites"));
         }
+        if (supportsSetupDialogAppendAction(m_ComboBox)) {
+            appendAction = menu.addAction(tr("Append Key Name to Input Field"));
+        }
         copyAction = menu.addAction(tr("Copy Key Name") + "   " + KEYLISTCOMBOBOX_COPY_KEY_NAME_HOTKEY);
         menu.addSeparator();
     }
@@ -32576,6 +32861,7 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
 
     QAction *selectedAction = menu.exec(m_CollectionListWidget->viewport()->mapToGlobal(pos));
     const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
+    const bool appendWithCtrlModifier = menu.takeTriggeredWithCtrlModifier();
     if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_COPY_CURRENT_ITEM) {
         copyItemTextToClipboard(actualText);
         if (!isVisible()) {
@@ -32594,6 +32880,13 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
             showForComboBox();
         }
         openCollectionPage(KEYLIST_SHARED_RECENTS);
+    }
+    else if (selectedAction == appendAction) {
+        if (appendSetupDialogPopupItemToEditBox(m_ComboBox, actualText, appendWithCtrlModifier, true)
+            && !isVisible()) {
+            showForComboBox();
+            openCollectionPage(m_CurrentCollectionType);
+        }
     }
     else if (selectedAction == selectAction) {
         m_ComboBox->applyPopupSelection(actualText);
@@ -32985,182 +33278,31 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
     }
     else if (objectName() == SETUPDIALOG_ORIKEY_COMBOBOX_NAME) {
         if (event->button() == Qt::RightButton) {
-            QString currentOriKeyText = QItemSetupDialog::getOriginalKeyText();
             QString currentOriKeyListText = QItemSetupDialog::getCurrentOriKeyListText();
 #ifdef DEBUG_LOGOUT_ON
+            QString currentOriKeyText = QItemSetupDialog::getOriginalKeyText();
             qDebug() << "[KeyListComboBox_MousePress]" << "Mouse Right Click on SetupDialog_OriginalKeyListComboBox.";
             qDebug().nospace() << "[KeyListComboBox_MousePress]" << " currentOriKeyText -> " << currentOriKeyText << ", currentOriKeyListText -> " << currentOriKeyListText;
 #endif
-            if (currentOriKeyListText.isEmpty() == false) {
-                QString newOriKeyText;
-                if (currentOriKeyText.isEmpty()) {
-                    newOriKeyText = currentOriKeyListText;
-                }
-                else {
-                    int cursorPos = QItemSetupDialog::getOriginalKeyCursorPosition();
-                    bool isCursorAtBegin = (cursorPos == 0);
-                    bool isCursorAtEnd = (cursorPos == currentOriKeyText.length());
-
-                    if (isCursorAtEnd) {
-                        if (currentOriKeyListText == SEPARATOR_LONGPRESS
-                            || currentOriKeyListText == SEPARATOR_DOUBLEPRESS) {
-                            newOriKeyText = currentOriKeyText + currentOriKeyListText;
-                        }
-                        else {
-                            newOriKeyText = currentOriKeyText + QString(SEPARATOR_PLUS) + currentOriKeyListText;
-                        }
-                    }
-                    else {
-                        if (currentOriKeyListText == SEPARATOR_LONGPRESS
-                            || currentOriKeyListText == SEPARATOR_DOUBLEPRESS) {
-                            newOriKeyText = currentOriKeyText.left(cursorPos) + currentOriKeyListText + currentOriKeyText.right(currentOriKeyText.length() - cursorPos);
-                        }
-                        else {
-                            if (isCursorAtBegin) {
-                                newOriKeyText = currentOriKeyListText + QString(SEPARATOR_PLUS) + currentOriKeyText;
-                            }
-                            else {
-                                newOriKeyText = currentOriKeyText.left(cursorPos) + QString(SEPARATOR_PLUS) + currentOriKeyListText + currentOriKeyText.right(currentOriKeyText.length() - cursorPos);
-                            }
-                        }
-                    }
-                }
-                QItemSetupDialog::getInstance()->setOriginalKeyText(newOriKeyText);
+            if (appendSetupDialogPopupItemToEditBox(this, currentOriKeyListText, false, false)) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[KeyListComboBox_MousePress]" << "SetupDialog Set new OriginalKeyText ->" << newOriKeyText;
+                qDebug() << "[KeyListComboBox_MousePress]" << "SetupDialog Set new OriginalKeyText ->" << QItemSetupDialog::getOriginalKeyText();
 #endif
             }
         }
     }
     else if (objectName() == SETUPDIALOG_MAPKEY_COMBOBOX_NAME) {
         if (event->button() == Qt::RightButton) {
-            QString currentMapKeyText = QItemSetupDialog::getMappingKeyText();
             QString currentMapKeyListText = QItemSetupDialog::getCurrentMapKeyListText();
 #ifdef DEBUG_LOGOUT_ON
+            QString currentMapKeyText = QItemSetupDialog::getMappingKeyText();
             qDebug() << "[KeyListComboBox_MousePress]" << "Mouse Right Click on SetupDialog_MappingKeyListComboBox.";
             qDebug().nospace() << "[KeyListComboBox_MousePress]" << " currentMapKeyText -> " << currentMapKeyText << ", currentMapKeyListText -> " << currentMapKeyListText;
 #endif
-            if (currentMapKeyListText.isEmpty() == false) {
-                if (currentMapKeyListText.startsWith(MOUSE_BUTTON_PREFIX)) {
-                    if (currentMapKeyListText.endsWith(MOUSE_SCREENPOINT_POSTFIX)) {
-                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_SCREENPOINT_POSTFIX) + QString("(,)");
-                    }
-                    else if (currentMapKeyListText.endsWith(MOUSE_WINDOWPOINT_POSTFIX)) {
-                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_WINDOWPOINT_POSTFIX) + QString(":W(,)");
-                    }
-                    else if (currentMapKeyListText.endsWith(MOUSE_MOVE_RELATIVE_POSTFIX)) {
-                        currentMapKeyListText = currentMapKeyListText.remove(MOUSE_MOVE_RELATIVE_POSTFIX) + QString(":R(,)");
-                    }
-                }
-
-                QString newMapKeyText;
-                if (currentMapKeyText.isEmpty()) {
-                    if (currentMapKeyListText == REPEAT_STR) {
-                        newMapKeyText = REPEAT_TEMPLATE_STR;
-                    }
-                    else if (currentMapKeyListText == ONLYONCE_STR) {
-                        newMapKeyText = ONLYONCE_TEMPLATE_STR;
-                    }
-                    else {
-                        newMapKeyText = currentMapKeyListText;
-                    }
-                }
-                else {
-                    int cursorPos = QItemSetupDialog::getMappingKeyCursorPosition();
-                    bool isCursorAtBegin = (cursorPos == 0);
-                    bool isCursorAtEnd = (cursorPos == currentMapKeyText.length());
-
-                    if (currentMapKeyListText == REPEAT_STR) {
-                        if (isCursorAtBegin) {
-                            newMapKeyText = REPEAT_TEMPLATE_STR + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
-                        }
-                        else if (isCursorAtEnd) {
-                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR;
-                        }
-                        else {
-                            newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + REPEAT_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
-                        }
-                    }
-                    else if (currentMapKeyListText == ONLYONCE_STR) {
-                        if (isCursorAtBegin) {
-                            newMapKeyText = ONLYONCE_TEMPLATE_STR + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
-                        }
-                        else if (isCursorAtEnd) {
-                            newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + ONLYONCE_TEMPLATE_STR;
-                        }
-                        else {
-                            newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + ONLYONCE_TEMPLATE_STR + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
-                        }
-                    }
-                    else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-                        if (currentMapKeyListText == SEPARATOR_WAITTIME
-                            || currentMapKeyListText == SEPARATOR_NEXTARROW
-                            || currentMapKeyListText == PREFIX_SEND_DOWN
-                            || currentMapKeyListText == PREFIX_SEND_UP
-                            || currentMapKeyListText == PREFIX_SEND_TOGGLE
-                            || currentMapKeyListText == PREFIX_SEND_BOTH
-                            || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
-                            if (isCursorAtBegin) {
-                                newMapKeyText = currentMapKeyListText + currentMapKeyText;
-                            }
-                            else if (isCursorAtEnd) {
-                                newMapKeyText = currentMapKeyText + currentMapKeyListText;
-                            }
-                            else {
-                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
-                            }
-                        }
-                        else {
-                            if (isCursorAtBegin) {
-                                newMapKeyText = currentMapKeyListText + QString(SEPARATOR_NEXTARROW) + currentMapKeyText;
-                            }
-                            else if (isCursorAtEnd) {
-                                newMapKeyText = currentMapKeyText + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText;
-                            }
-                            else {
-                                newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_NEXTARROW) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
-                            }
-                        }
-                    }
-                    else {
-                        if (isCursorAtEnd) {
-                            if (currentMapKeyListText == SEPARATOR_WAITTIME
-                                || currentMapKeyListText == SEPARATOR_NEXTARROW
-                                || currentMapKeyListText == PREFIX_SEND_DOWN
-                                || currentMapKeyListText == PREFIX_SEND_UP
-                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
-                                || currentMapKeyListText == PREFIX_SEND_BOTH
-                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
-                                newMapKeyText = currentMapKeyText + currentMapKeyListText;
-                            }
-                            else {
-                                newMapKeyText = currentMapKeyText + QString(SEPARATOR_PLUS) + currentMapKeyListText;
-                            }
-                        }
-                        else {
-                            if (currentMapKeyListText == SEPARATOR_WAITTIME
-                                || currentMapKeyListText == SEPARATOR_NEXTARROW
-                                || currentMapKeyListText == PREFIX_SEND_DOWN
-                                || currentMapKeyListText == PREFIX_SEND_UP
-                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
-                                || currentMapKeyListText == PREFIX_SEND_BOTH
-                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
-                                newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
-                            }
-                            else {
-                                if (isCursorAtBegin) {
-                                    newMapKeyText = currentMapKeyListText + QString(SEPARATOR_PLUS) + currentMapKeyText;
-                                }
-                                else {
-                                    newMapKeyText = currentMapKeyText.left(cursorPos) + QString(SEPARATOR_PLUS) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
-                                }
-                            }
-                        }
-                    }
-                }
-                QItemSetupDialog::getInstance()->setMappingKeyText(newMapKeyText);
+            const bool useSequenceArrow = (GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0;
+            if (appendSetupDialogPopupItemToEditBox(this, currentMapKeyListText, useSequenceArrow, false)) {
 #ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[KeyListComboBox_MousePress]" << "SetupDialog Set new MappingKeyText ->" << newMapKeyText;
+                qDebug() << "[KeyListComboBox_MousePress]" << "SetupDialog Set new MappingKeyText ->" << QItemSetupDialog::getMappingKeyText();
 #endif
             }
         }

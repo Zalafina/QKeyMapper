@@ -437,16 +437,19 @@ public:
     explicit KeyListPopupContextMenu(KeyListComboBoxPopup *popup, QWidget *parent = Q_NULLPTR);
 
     PendingShortcutAction takePendingShortcutAction(void);
+    bool takeTriggeredWithCtrlModifier(void);
     void setCopyShortcutEnabled(bool enabled);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
     KeyListComboBoxPopup *m_Popup;
     PendingShortcutAction m_PendingShortcutAction;
     bool m_CopyShortcutEnabled;
+    bool m_TriggeredWithCtrlModifier;
 };
 
 class KeyListComboBox : public QComboBox
