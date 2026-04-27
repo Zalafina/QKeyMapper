@@ -32825,7 +32825,6 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
 
     QListWidgetItem *item = m_CollectionListWidget->itemAt(pos);
     KeyListPopupContextMenu menu(this, this);
-    QAction *selectAction = Q_NULLPTR;
     QAction *favoriteAction = Q_NULLPTR;
     QAction *appendAction = Q_NULLPTR;
     QAction *copyAction = Q_NULLPTR;
@@ -32839,7 +32838,6 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
 
     if (hasActualItem && isValidActualText(actualText)) {
         menu.setCopyShortcutEnabled(true);
-        selectAction = menu.addAction(tr("Select This Item"));
         if (KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType) {
             favoriteAction = menu.addAction(tr("Remove from Favorites"));
         }
@@ -32887,9 +32885,6 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
             showForComboBox();
             openCollectionPage(m_CurrentCollectionType);
         }
-    }
-    else if (selectedAction == selectAction) {
-        m_ComboBox->applyPopupSelection(actualText);
     }
     else if (selectedAction == favoriteAction) {
         if (KEYLIST_SHARED_FAVORITES == m_CurrentCollectionType) {
