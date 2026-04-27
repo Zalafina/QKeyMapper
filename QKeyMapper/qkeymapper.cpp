@@ -37057,6 +37057,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             contextMenu.addSeparator();
             hasPreviousGroup = true;
         }
+        Q_UNUSED(hasPreviousGroup);
 
         QAction *editAction = contextMenu.addAction(QObject::tr("Edit"));
         connect(editAction, &QAction::triggered, this, [this]() {
