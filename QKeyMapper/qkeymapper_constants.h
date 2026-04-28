@@ -79,6 +79,8 @@ namespace QKeyMapperConstants {
     inline constexpr int CATEGORY_FILTER_MIN_WIDTH_MAPPINGTABLE     = 100;
     inline constexpr int CATEGORY_FILTER_MAX_WIDTH_MAPPINGTABLE     = 400;
     inline constexpr int CATEGORY_FILTER_MAX_HEIGHT_MAPPINGTABLE    = 600;
+    inline constexpr int MAPPING_START_ACTION_MENU_FONT_POINT_SIZE  = 13;
+    inline constexpr int MAPPING_START_ACTION_MENU_ITEM_MIN_HEIGHT  = 36;
 
     inline constexpr int CATEGORY_FILTER_MIN_WIDTH_MACROLIST        = 100;
     inline constexpr int CATEGORY_FILTER_MAX_WIDTH_MACROLIST        = 400;

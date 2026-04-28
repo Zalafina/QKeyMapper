@@ -18,6 +18,7 @@
 #include <QListWidget>
 #include <QFileIconProvider>
 #include <QHash>
+#include <QActionGroup>
 #include <QWidgetAction>
 #include <QScrollArea>
 
@@ -1897,6 +1898,7 @@ public:
 
 private:
     QMenu *m_MappingStartActionMenu = Q_NULLPTR;
+    QActionGroup *m_MappingStartActionGroup = Q_NULLPTR;
     QAction *m_MappingStartOnlyAction = Q_NULLPTR;
     QAction *m_MappingStartSaveAction = Q_NULLPTR;
     MappingStartActionMode m_MappingStartActionMode = MAPPINGSTART_ACTION_ONLY;

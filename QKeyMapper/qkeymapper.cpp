@@ -82,6 +82,33 @@ QString floatingButtonMoveHintText()
                                         "Ready to move this floating button.\nLeft-drag to move.\nRight-click to cancel.");
 }
 
+void applyMappingStartActionMenuSizing(QMenu *menu)
+{
+    if (!menu) {
+        return;
+    }
+
+    if (MAPPING_START_ACTION_MENU_FONT_POINT_SIZE > 0) {
+        QFont font = menu->font();
+        font.setPointSize(MAPPING_START_ACTION_MENU_FONT_POINT_SIZE);
+        menu->setFont(font);
+    }
+
+    QStringList styleRules;
+
+    if (MAPPING_START_ACTION_MENU_ITEM_MIN_HEIGHT > 0) {
+        styleRules.append(QStringLiteral("QMenu::item { min-height: %1px; }")
+                              .arg(MAPPING_START_ACTION_MENU_ITEM_MIN_HEIGHT));
+    }
+
+    if (!styleRules.isEmpty()) {
+        menu->setStyleSheet(styleRules.join(QLatin1Char(' ')));
+    }
+    else {
+        menu->setStyleSheet(QString());
+    }
+}
+
 } // namespace
 
 void MappingStartToolButton::setMenu(QMenu *menu)
@@ -11052,6 +11079,7 @@ void QKeyMapper::setMappingStartActionMode(MappingStartActionMode actionMode, bo
     }
 
     updateMappingStartActionTexts();
+    updateSysTrayIconMenuText();
 
     if (persist) {
         QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
@@ -11070,11 +11098,16 @@ void QKeyMapper::initMappingStartActionMenu(void)
 
     if (!m_MappingStartActionMenu) {
         m_MappingStartActionMenu = new QMenu(ui->keymapButton);
+        m_MappingStartActionGroup = new QActionGroup(m_MappingStartActionMenu);
+        m_MappingStartActionGroup->setExclusive(true);
+
         m_MappingStartOnlyAction = m_MappingStartActionMenu->addAction(tr("MappingStart"));
         m_MappingStartSaveAction = m_MappingStartActionMenu->addAction(getMappingStartSaveText());
 
         m_MappingStartOnlyAction->setCheckable(true);
         m_MappingStartSaveAction->setCheckable(true);
+        m_MappingStartActionGroup->addAction(m_MappingStartOnlyAction);
+        m_MappingStartActionGroup->addAction(m_MappingStartSaveAction);
 
         QObject::connect(m_MappingStartOnlyAction, &QAction::triggered, this, [this]() {
             setMappingStartActionMode(MAPPINGSTART_ACTION_ONLY);
@@ -11083,6 +11116,8 @@ void QKeyMapper::initMappingStartActionMenu(void)
             setMappingStartActionMode(MAPPINGSTART_ACTION_SAVEANDSTART);
         });
     }
+
+    applyMappingStartActionMenuSizing(m_MappingStartActionMenu);
 
     ui->keymapButton->setPopupMode(QToolButton::MenuButtonPopup);
     ui->keymapButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
@@ -23849,17 +23884,25 @@ void QKeyMapper::initSelectSettingCustomIconFileDialog()
 
 void QKeyMapper::updateSysTrayIconMenuText()
 {
+    if (!m_TrayIconMenu_MappingSwitchAction || !m_TrayIconMenu_ShowHideAction || !m_TrayIconMenu_QuitAction) {
+        return;
+    }
+
     QString mappingStartActionText;
     QString mappingStopActionText;
     QString showActionText;
     QString hideActionText;
     QString quitActionText;
 
+    const QString mappingStartBaseText = (m_MappingStartActionMode == MAPPINGSTART_ACTION_SAVEANDSTART)
+        ? getMappingStartSaveText()
+        : tr("MappingStart");
+
     if (!s_MappingStartKeyString.isEmpty()) {
-        mappingStartActionText = QString("%1   %2").arg(tr("MappingStart"), s_MappingStartKeyString);
+        mappingStartActionText = QString("%1   %2").arg(mappingStartBaseText, s_MappingStartKeyString);
     }
     else {
-        mappingStartActionText = tr("MappingStart");
+        mappingStartActionText = mappingStartBaseText;
     }
     if (!s_MappingStopKeyString.isEmpty()) {
         mappingStopActionText = QString("%1   %2").arg(tr("MappingStop"), s_MappingStopKeyString);
@@ -28098,6 +28141,10 @@ void QKeyMapper::setUITheme(int themeindex)
                 width: 1em;
                 height: 1em;
             }
+            QMenu::indicator {
+                width:20px;
+                height:20px;
+            }
         )");
 
         // Ensure QTabBar's disabled tab text color matches the light theme palette.
@@ -28259,6 +28306,11 @@ void QKeyMapper::setUITheme(int themeindex)
             QLineEdit:focus {
                 border: 1px solid rgb(46, 134, 222);
             }
+            QMenu::indicator {
+                width:20px;
+                height:20px;
+            }
+
         )");
 
         // Ensure QTabBar's disabled tab text color matches the dark theme palette.
@@ -28311,6 +28363,10 @@ void QKeyMapper::setUITheme(int themeindex)
                 width: 1em;
                 height: 1em;
             }
+            QMenu::indicator {
+                width:20px;
+                height:20px;
+            }
         )");
 
         // Ensure QTabBar's disabled tab text color matches the current system palette in System Default mode.
@@ -28332,6 +28388,8 @@ void QKeyMapper::setUITheme(int themeindex)
         // Reapply panel scroll-area transparency after palette/theme has been set.
         m_VButtonPanel->applyScrollAreaTransparencyStyle();
     }
+
+    applyMappingStartActionMenuSizing(m_MappingStartActionMenu);
 }
 
 void QKeyMapper::checkOSVersionMatched()
