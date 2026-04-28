@@ -1535,6 +1535,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mappingStartKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
     ui->mappingStopKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
     initSelectColorDialog();
+    initMappingStartActionMenu();
     initKeyMappingTabWidget();
     m_ItemSetupDialog = new QItemSetupDialog(this);
     if (m_ItemSetupDialog != Q_NULLPTR
@@ -10780,7 +10781,115 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 
 void QKeyMapper::on_keymapButton_clicked()
 {
-    MappingSwitch(MAPPINGSTART_BUTTONCLICK);
+    handleManualMappingSwitchRequest(MAPPINGSTART_BUTTONCLICK);
+}
+
+QString QKeyMapper::getMappingStartSaveText(void) const
+{
+    return tr("Save & Start");
+}
+
+void QKeyMapper::updateMappingStartActionTexts(void)
+{
+    if (m_MappingStartOnlyAction) {
+        m_MappingStartOnlyAction->setText(tr("MappingStart"));
+    }
+
+    if (m_MappingStartSaveAction) {
+        m_MappingStartSaveAction->setText(getMappingStartSaveText());
+    }
+
+    updateMappingStartButtonText();
+}
+
+void QKeyMapper::updateMappingStartButtonText(void)
+{
+    if (!ui || !ui->keymapButton) {
+        return;
+    }
+
+    if (m_KeyMapStatus != KEYMAP_IDLE) {
+        ui->keymapButton->setText(tr("MappingStop"));
+        return;
+    }
+
+    if (MAPPINGSTART_ACTION_SAVEANDSTART == m_MappingStartActionMode) {
+        ui->keymapButton->setText(getMappingStartSaveText());
+    }
+    else {
+        ui->keymapButton->setText(tr("MappingStart"));
+    }
+}
+
+void QKeyMapper::setMappingStartActionMode(MappingStartActionMode actionMode, bool persist)
+{
+    MappingStartActionMode normalizedActionMode = actionMode;
+    if (normalizedActionMode != MAPPINGSTART_ACTION_SAVEANDSTART) {
+        normalizedActionMode = MAPPINGSTART_ACTION_ONLY;
+    }
+
+    m_MappingStartActionMode = normalizedActionMode;
+
+    if (m_MappingStartOnlyAction) {
+        m_MappingStartOnlyAction->setChecked(m_MappingStartActionMode == MAPPINGSTART_ACTION_ONLY);
+    }
+    if (m_MappingStartSaveAction) {
+        m_MappingStartSaveAction->setChecked(m_MappingStartActionMode == MAPPINGSTART_ACTION_SAVEANDSTART);
+    }
+
+    updateMappingStartActionTexts();
+
+    if (persist) {
+        QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+        settingFile.setIniCodec("UTF-8");
+#endif
+        settingFile.setValue(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
+    }
+}
+
+void QKeyMapper::initMappingStartActionMenu(void)
+{
+    if (!ui || !ui->keymapButton) {
+        return;
+    }
+
+    if (!m_MappingStartActionMenu) {
+        m_MappingStartActionMenu = new QMenu(ui->keymapButton);
+        m_MappingStartOnlyAction = m_MappingStartActionMenu->addAction(tr("MappingStart"));
+        m_MappingStartSaveAction = m_MappingStartActionMenu->addAction(getMappingStartSaveText());
+
+        m_MappingStartOnlyAction->setCheckable(true);
+        m_MappingStartSaveAction->setCheckable(true);
+
+        QObject::connect(m_MappingStartOnlyAction, &QAction::triggered, this, [this]() {
+            setMappingStartActionMode(MAPPINGSTART_ACTION_ONLY);
+        });
+        QObject::connect(m_MappingStartSaveAction, &QAction::triggered, this, [this]() {
+            setMappingStartActionMode(MAPPINGSTART_ACTION_SAVEANDSTART);
+        });
+    }
+
+    ui->keymapButton->setPopupMode(QToolButton::MenuButtonPopup);
+    ui->keymapButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    ui->keymapButton->setMenu(m_MappingStartActionMenu);
+
+    updateMappingStartActionTexts();
+    setMappingStartActionMode(m_MappingStartActionMode, false);
+}
+
+bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode startmode)
+{
+    if (KEYMAP_IDLE == m_KeyMapStatus
+        && MAPPINGSTART_LOADSETTING != startmode
+        && MAPPINGSTART_ACTION_SAVEANDSTART == m_MappingStartActionMode) {
+        if (!saveKeyMapSetting(false)) {
+            return false;
+        }
+    }
+
+    MappingSwitch(startmode);
+    return true;
 }
 
 void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
@@ -10796,8 +10905,8 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
 #ifdef CYCLECHECKTIMER_ENABLED
         m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
 #endif
-        ui->keymapButton->setText(tr("MappingStop"));
         m_KeyMapStatus = KEYMAP_CHECKING;
+        updateMappingStartButtonText();
         resetGlobalMappingBlockedByFullscreenState();
         startWinEventHook();
         scheduleGlobalSettingSwitchCheck();
@@ -10813,7 +10922,6 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
 #ifdef CYCLECHECKTIMER_ENABLED
         m_CycleCheckTimer.stop();
 #endif
-        ui->keymapButton->setText(tr("MappingStart"));
 
         if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
             playStopSound();
@@ -10821,6 +10929,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         stopWinEventHook();
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
+        updateMappingStartButtonText();
         resetGlobalMappingBlockedByFullscreenState();
         mappingStopNotification();
         m_CheckGlobalSettingSwitchTimer.stop();
@@ -10942,7 +11051,7 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
     qDebug().nospace() << "[HotKeyStartStopActivated] Shortcut[" << keyseqstr << "], KeyboardModifiers = " << modifiers <<", KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
-    MappingSwitch(MAPPINGSTART_HOTKEY);
+    handleManualMappingSwitchRequest(MAPPINGSTART_HOTKEY);
 
     /* Add for "explorer.exe" AltModifier Bug Fix >>> */
     HWND hwnd = GetForegroundWindow();
@@ -11023,7 +11132,7 @@ void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
     qDebug().nospace() << "[HotKeyMappingSwitchActivated] MappingSwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
-    MappingSwitch(MAPPINGSTART_HOTKEY);
+    handleManualMappingSwitchRequest(MAPPINGSTART_HOTKEY);
 
     /* Add for "explorer.exe" AltModifier Bug Fix >>> */
     HWND hwnd = GetForegroundWindow();
@@ -12080,7 +12189,7 @@ void QKeyMapper::onTrayIconMenuMappingSwitchAction()
     qDebug() << "[onTrayIconMenuMappingSwitchAction]" << "MappingSwitchAction Triggered.";
 #endif
 
-    MappingSwitch(MAPPINGSTART_BUTTONCLICK);
+    handleManualMappingSwitchRequest(MAPPINGSTART_BUTTONCLICK);
 }
 
 void QKeyMapper::onTrayIconMenuQuitAction()
@@ -13710,7 +13819,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     refreshAllKeyMappingTabWidget();
 }
 
-void QKeyMapper::saveKeyMapSetting(void)
+bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
     // Create RAII guard to automatically save and restore category filter state
     CategoryFilterStateGuard filterGuard(this);
@@ -13769,6 +13878,7 @@ void QKeyMapper::saveKeyMapSetting(void)
     settingFile.setValue(PLAY_SOUNDEFFECT, isSoundEffectEnabled());
     settingFile.setValue(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
     settingFile.setValue(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
+    settingFile.setValue(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
     settingFile.setValue(SHOW_PROCESSLIST, ui->processListButton->isChecked());
     settingFile.setValue(SHOW_NOTES, ui->showNotesButton->isChecked());
     settingFile.setValue(HIDE_DISABLED, ui->hideDisabledButton->isChecked());
@@ -13875,7 +13985,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         // Check if setting name is empty
         if (settingNameString.isEmpty()) {
             showFailurePopup(tr("Setting name cannot be empty. Please enter a valid setting name."));
-            return;
+            return false;
         }
 
         // Check for invalid characters in INI group names
@@ -13899,7 +14009,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         }
         if (!foundInvalidChars.isEmpty()) {
             showFailurePopup(tr("Setting name cannot contain the following characters: %1").arg(foundInvalidChars));
-            return;
+            return false;
         }
 
         // Get current selected setting name from combobox (if any)
@@ -13912,7 +14022,7 @@ void QKeyMapper::saveKeyMapSetting(void)
         if ((settingNameString == GROUPNAME_GLOBALSETTING || settingNameString == tr(DISPLAYNAME_GLOBALSETTING))
             && ui->settingselectComboBox->currentIndex() != GLOBALSETTING_INDEX) {
             showFailurePopup(tr("Please select \"%1\", if you want to modify the global keymapping setting.").arg(tr(DISPLAYNAME_GLOBALSETTING)));
-            return;
+            return false;
         }
         else if (currentSelectedSetting == settingNameString) {
             // Case 5: Overwrite existing selected setting
@@ -13932,7 +14042,7 @@ void QKeyMapper::saveKeyMapSetting(void)
                 saveSettingSelectStr = saveSettingSelectStr + "/";
             } else {
                 // User cancelled, don't save
-                return;
+                return false;
             }
         }
         else {
@@ -15060,7 +15170,8 @@ void QKeyMapper::saveKeyMapSetting(void)
     QString popupMessage;
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
-    if (loadresult == savedSettingName) {
+    const bool saveSucceeded = (loadresult == savedSettingName);
+    if (saveSucceeded) {
         QString displaySettingName = savedSettingName;
         if (displaySettingName == GROUPNAME_GLOBALSETTING) {
             displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
@@ -15083,7 +15194,12 @@ void QKeyMapper::saveKeyMapSetting(void)
         qWarning() << "[saveKeyMapSetting]" << "Mapping data error, Save setting failure!!! ->" << savedSettingName;
 #endif
     }
-    showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
+
+    if (!saveSucceeded || showSuccessPopup) {
+        showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
+    }
+
+    return saveSucceeded;
 }
 
 void QKeyMapper::saveCurrentSettingLastTabName(const QString &tabName)
@@ -15884,6 +16000,25 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             ui->startupAutoMonitoringCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains StartupAutoMonitoring, StartupAutoMonitoring set to Unchecked.";
+#endif
+        }
+
+        if (true == settingFile.contains(MAPPINGSTART_ACTION_MODE)){
+            int mappingStartActionMode = settingFile.value(MAPPINGSTART_ACTION_MODE).toInt();
+            if (MAPPINGSTART_ACTION_SAVEANDSTART == mappingStartActionMode) {
+                setMappingStartActionMode(MAPPINGSTART_ACTION_SAVEANDSTART, false);
+            }
+            else {
+                setMappingStartActionMode(MAPPINGSTART_ACTION_ONLY, false);
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Mapping Start Action Mode ->" << mappingStartActionMode;
+#endif
+        }
+        else {
+            setMappingStartActionMode(MAPPINGSTART_ACTION_ONLY, false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains MappingStartActionMode, set to default.";
 #endif
         }
 
@@ -20190,6 +20325,25 @@ void QKeyMapper::loadGeneralSetting()
         ui->startupAutoMonitoringCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains StartupAutoMonitoring, StartupAutoMonitoring set to Unchecked.";
+#endif
+    }
+
+    if (true == settingFile.contains(MAPPINGSTART_ACTION_MODE)){
+        int mappingStartActionMode = settingFile.value(MAPPINGSTART_ACTION_MODE).toInt();
+        if (MAPPINGSTART_ACTION_SAVEANDSTART == mappingStartActionMode) {
+            setMappingStartActionMode(MAPPINGSTART_ACTION_SAVEANDSTART, false);
+        }
+        else {
+            setMappingStartActionMode(MAPPINGSTART_ACTION_ONLY, false);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadGeneralSetting]" << "Mapping Start Action Mode ->" << mappingStartActionMode;
+#endif
+    }
+    else {
+        setMappingStartActionMode(MAPPINGSTART_ACTION_ONLY, false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadGeneralSetting]" << "Do not contains MappingStartActionMode, set to default.";
 #endif
     }
 
@@ -26865,12 +27019,7 @@ void QKeyMapper::reloadUILanguage()
 
 void QKeyMapper::setUILanguage(int languageindex)
 {
-    if (m_KeyMapStatus != KEYMAP_IDLE) {
-        ui->keymapButton->setText(tr("MappingStop"));
-    }
-    else {
-        ui->keymapButton->setText(tr("MappingStart"));
-    }
+    updateMappingStartActionTexts();
 
     // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
     ui->savemaplistButton->setText(tr("SaveSetting"));

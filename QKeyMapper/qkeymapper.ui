@@ -31,12 +31,12 @@
   <property name="windowTitle">
    <string>QKeyMapper</string>
   </property>
-  <widget class="QPushButton" name="keymapButton">
+  <widget class="QToolButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>890</x>
+     <x>880</x>
      <y>590</y>
-     <width>151</width>
+     <width>161</width>
      <height>51</height>
     </rect>
    </property>
@@ -45,12 +45,6 @@
    </property>
    <property name="text">
     <string>MappingStart</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-   <property name="default">
-    <bool>false</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="savemaplistButton">

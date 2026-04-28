@@ -1269,6 +1269,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char PROCESSICON_AS_TRAYICON_CHECKED[] = "ProcessIconAsTrayIconChecked";
     inline constexpr const char SHOW_WINDOW_POINT_KEY[] = "ShowWindowPointKey";
     inline constexpr const char SHOW_SCREEN_POINT_KEY[] = "ShowScreenPointKey";
+    inline constexpr const char MAPPINGSTART_ACTION_MODE[] = "MappingStartActionMode";
+    inline constexpr int MAPPINGSTART_ACTION_MODE_DEFAULT = 0;
     inline constexpr const char MAPPINGSTART_KEY[] = "MappingStartKey";
     inline constexpr const char MAPPINGSTOP_KEY[] = "MappingStopKey";
 

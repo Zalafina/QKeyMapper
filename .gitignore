@@ -19,3 +19,4 @@ QKeyMapper/Makefile*
 QKeyMapper/*-build-*
 QKeyMapper/build/
 QKeyMapper/out/
+QKeyMapper/build_output/

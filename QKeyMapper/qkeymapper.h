@@ -978,6 +978,13 @@ public:
     };
     Q_ENUM(MappingStartMode)
 
+    enum MappingStartActionMode
+    {
+        MAPPINGSTART_ACTION_ONLY = 0U,
+        MAPPINGSTART_ACTION_SAVEANDSTART
+    };
+    Q_ENUM(MappingStartActionMode)
+
 public slots:
     // void WindowStateChangedProc(void);
     // void cycleCheckProcessProc(void);
@@ -1614,6 +1621,7 @@ private:
     void initKeysCategoryMap(void);
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
+    void initMappingStartActionMenu(void);
     void initCategoryFilterControls(void);
     void initSystemFilterKeyPopupControls(void);
     void initKeyboardSelectComboBox(void);
@@ -1636,6 +1644,11 @@ private:
     void updateWindowSwitchKeyString(const QString &keystring);
     void updateMappingStartKeyString(const QString &keystring);
     void updateMappingStopKeyString(const QString &keystring);
+    QString getMappingStartSaveText(void) const;
+    void updateMappingStartActionTexts(void);
+    void updateMappingStartButtonText(void);
+    void setMappingStartActionMode(MappingStartActionMode actionMode, bool persist = true);
+    bool handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode startmode);
     // void initOriginalKeySeqEdit(void);
     void initCombinationKeyLineEdit(void);
     void updateOriginalKeyListComboBox(void);
@@ -1675,7 +1688,7 @@ private:
     void importSelectedGroups(const QString &sourceIni, const QStringList &groups);
 
 public:
-    void saveKeyMapSetting(void);
+    bool saveKeyMapSetting(bool showSuccessPopup = true);
     void saveCurrentSettingLastTabName(const QString &tabName);
     QStringList getKeyListSharedItems(KeyListCollectionType collectionType, KeyListSharedDataType dataType) const;
     bool isKeyListFavoriteItem(KeyListCollectionType collectionType, const QString &itemText) const;
@@ -1850,6 +1863,11 @@ public:
     KeyMapStatus m_KeyMapStatus;
 
 private:
+    QMenu *m_MappingStartActionMenu = Q_NULLPTR;
+    QAction *m_MappingStartOnlyAction = Q_NULLPTR;
+    QAction *m_MappingStartSaveAction = Q_NULLPTR;
+    MappingStartActionMode m_MappingStartActionMode = MAPPINGSTART_ACTION_ONLY;
+
     // Category filter menu UI (built in C++ only)
     QMenu *m_CategoryFilterMenu = Q_NULLPTR;
     QWidgetAction *m_CategoryFilterWidgetAction = Q_NULLPTR;
