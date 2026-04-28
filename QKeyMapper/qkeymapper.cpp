@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <QScrollBar>
+#include <QStyleOptionToolButton>
 #include <QToolTip>
 
 using namespace QKeyMapperConstants;
@@ -80,6 +81,215 @@ QString floatingButtonMoveHintText()
     return QCoreApplication::translate("QKeyMapper",
                                         "Ready to move this floating button.\nLeft-drag to move.\nRight-click to cancel.");
 }
+
+} // namespace
+
+void MappingStartToolButton::setMenu(QMenu *menu)
+{
+    QObject::disconnect(m_MenuAboutToHideConnection);
+    QObject::disconnect(m_MenuDestroyedConnection);
+
+    clearMenuButtonDownState();
+    QToolButton::setMenu(menu);
+
+    if (!menu) {
+        return;
+    }
+
+    m_MenuAboutToHideConnection = QObject::connect(menu, &QMenu::aboutToHide, this, [this]() {
+        clearMenuButtonDownState();
+    });
+    m_MenuDestroyedConnection = QObject::connect(menu, &QObject::destroyed, this, [this]() {
+        clearMenuButtonDownState();
+    });
+}
+
+void MappingStartToolButton::setMenuButtonEnabled(bool enabled)
+{
+    if (m_MenuButtonEnabled == enabled) {
+        if (!enabled) {
+            clearMenuButtonDownState();
+            if (QMenu *popupMenu = menu(); popupMenu && popupMenu->isVisible()) {
+                popupMenu->hide();
+            }
+        }
+        return;
+    }
+
+    m_MenuButtonEnabled = enabled;
+
+    if (!m_MenuButtonEnabled) {
+        clearMenuButtonDownState();
+        if (QMenu *popupMenu = menu(); popupMenu && popupMenu->isVisible()) {
+            popupMenu->hide();
+        }
+    }
+
+    update();
+}
+
+QRect MappingStartToolButton::menuSubControlRect(void) const
+{
+    QStyleOptionToolButton option;
+    initStyleOption(&option);
+    option.features |= QStyleOptionToolButton::HasMenu | QStyleOptionToolButton::MenuButtonPopup;
+    option.subControls = QStyle::SC_ToolButton | QStyle::SC_ToolButtonMenu;
+
+    QRect menuRect = style()->subControlRect(QStyle::CC_ToolButton,
+                                             &option,
+                                             QStyle::SC_ToolButtonMenu,
+                                             this);
+
+    if (menuRect.isEmpty()) {
+        const int indicatorWidth = qMax(16, style()->pixelMetric(QStyle::PM_MenuButtonIndicator, Q_NULLPTR, this));
+        menuRect = QRect(width() - indicatorWidth, 0, indicatorWidth, height());
+    }
+
+    return menuRect;
+}
+
+QPoint MappingStartToolButton::manualPopupPos(const QSize &popupSize) const
+{
+    const QPoint anchor = mapToGlobal(QPoint(width(), 0));
+    QScreen *screen = QGuiApplication::screenAt(anchor);
+    if (!screen) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        screen = this->screen();
+#else
+        QWidget *topLevel = window();
+        screen = (topLevel && topLevel->windowHandle())
+            ? topLevel->windowHandle()->screen()
+            : QGuiApplication::primaryScreen();
+#endif
+    }
+
+    const QRect avail = screen ? screen->availableGeometry() : QRect();
+    QPoint pos = anchor;
+
+    if (screen && !avail.isEmpty()) {
+        const int kMargin = 8;
+        QRect availInner = avail.adjusted(kMargin, kMargin, -kMargin, -kMargin);
+        if (availInner.isEmpty()) {
+            availInner = avail;
+        }
+
+        const int rightCandidate = anchor.x();
+        const int leftCandidate = mapToGlobal(QPoint(0, 0)).x() - popupSize.width();
+        if (rightCandidate + popupSize.width() > availInner.right() + 1) {
+            pos.setX(leftCandidate);
+        }
+
+        const int maxX = qMax(availInner.left(), availInner.right() - popupSize.width() + 1);
+        const int maxY = qMax(availInner.top(), availInner.bottom() - popupSize.height() + 1);
+        pos.setX(qBound(availInner.left(), pos.x(), maxX));
+        pos.setY(qBound(availInner.top(), pos.y(), maxY));
+    }
+
+    return pos;
+}
+
+void MappingStartToolButton::popupManualMenu(void)
+{
+    QMenu *popupMenu = menu();
+    if (!m_MenuButtonEnabled || !popupMenu || popupMenu->isVisible()) {
+        return;
+    }
+
+    popupMenu->ensurePolished();
+    popupMenu->adjustSize();
+
+    m_MenuButtonDown = true;
+    m_SwallowMenuButtonRelease = true;
+    update();
+
+    popupMenu->popup(manualPopupPos(popupMenu->sizeHint()));
+}
+
+void MappingStartToolButton::clearMenuButtonDownState(void)
+{
+    const bool needUpdate = m_MenuButtonDown;
+    m_MenuButtonDown = false;
+    m_SwallowMenuButtonRelease = false;
+
+    if (needUpdate) {
+        update();
+    }
+}
+
+void MappingStartToolButton::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton
+        && menu()
+        && menuSubControlRect().contains(QKeyMapperQtCompat::mouseEventLocalPos(event))) {
+        if (!m_MenuButtonEnabled) {
+            m_SwallowMenuButtonRelease = true;
+            event->accept();
+            return;
+        }
+
+        popupManualMenu();
+        event->accept();
+        return;
+    }
+
+    QToolButton::mousePressEvent(event);
+}
+
+void MappingStartToolButton::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton && m_SwallowMenuButtonRelease) {
+        m_SwallowMenuButtonRelease = false;
+        event->accept();
+        return;
+    }
+
+    QToolButton::mouseReleaseEvent(event);
+}
+
+void MappingStartToolButton::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton
+        && menu()
+        && menuSubControlRect().contains(QKeyMapperQtCompat::mouseEventLocalPos(event))) {
+        event->accept();
+        return;
+    }
+
+    QToolButton::mouseDoubleClickEvent(event);
+}
+
+void MappingStartToolButton::paintEvent(QPaintEvent *event)
+{
+    if (m_MenuButtonEnabled && !m_MenuButtonDown) {
+        QToolButton::paintEvent(event);
+        return;
+    }
+
+    Q_UNUSED(event);
+
+    QStyleOptionToolButton option;
+    initStyleOption(&option);
+
+    QPainter painter(this);
+    style()->drawComplexControl(QStyle::CC_ToolButton, &option, &painter, this);
+
+    if (menu()) {
+        QStyleOptionToolButton menuOption(option);
+        menuOption.subControls = QStyle::SC_ToolButtonMenu;
+        menuOption.activeSubControls = QStyle::SC_ToolButtonMenu;
+
+        if (m_MenuButtonDown) {
+            menuOption.state |= QStyle::State_Sunken;
+        }
+        if (!m_MenuButtonEnabled) {
+            menuOption.state &= ~QStyle::State_Enabled;
+        }
+
+        style()->drawComplexControl(QStyle::CC_ToolButton, &menuOption, &painter, this);
+    }
+}
+
+namespace {
 
 static void applyFloatingButtonNativeWindowStyle(QWidget *widget, bool mousePassThrough)
 {
@@ -10806,6 +11016,10 @@ void QKeyMapper::updateMappingStartButtonText(void)
 {
     if (!ui || !ui->keymapButton) {
         return;
+    }
+
+    if (MappingStartToolButton *mappingStartButton = qobject_cast<MappingStartToolButton *>(ui->keymapButton)) {
+        mappingStartButton->setMenuButtonEnabled(m_KeyMapStatus == KEYMAP_IDLE);
     }
 
     if (m_KeyMapStatus != KEYMAP_IDLE) {

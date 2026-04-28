@@ -36,6 +36,7 @@
 #include <QComboBox>
 #include <QContextMenuEvent>
 #include <QCheckBox>
+#include <QPaintEvent>
 #include <QSpinBox>
 #include <QKeyEvent>
 #include <QDialogButtonBox>
@@ -259,6 +260,38 @@ private slots:
 
 signals:
     void tabOrderChanged(int from, int to);
+};
+
+class MappingStartToolButton : public QToolButton
+{
+    Q_OBJECT
+
+public:
+    explicit MappingStartToolButton(QWidget *parent = Q_NULLPTR)
+        : QToolButton(parent) {}
+
+    void setMenu(QMenu *menu);
+    void setMenuButtonEnabled(bool enabled);
+    bool isMenuButtonEnabled(void) const { return m_MenuButtonEnabled; }
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+
+private:
+    QRect menuSubControlRect(void) const;
+    QPoint manualPopupPos(const QSize &popupSize) const;
+    void popupManualMenu(void);
+    void clearMenuButtonDownState(void);
+
+private:
+    bool m_MenuButtonDown = false;
+    bool m_MenuButtonEnabled = true;
+    bool m_SwallowMenuButtonRelease = false;
+    QMetaObject::Connection m_MenuAboutToHideConnection;
+    QMetaObject::Connection m_MenuDestroyedConnection;
 };
 
 class KeyMappingDataTableWidget : public QTableWidget
