@@ -11262,6 +11262,10 @@ void QKeyMapper::initMappingStartActionMenu(void)
         m_MappingStartActionMenu = new QMenu(ui->keymapButton);
         m_MappingStartActionGroup = new QActionGroup(m_MappingStartActionMenu);
         m_MappingStartActionGroup->setExclusive(true);
+        QStyle *windowsStyle = QKeyMapperStyle::windowsStyle();
+        if (windowsStyle) {
+            m_MappingStartActionMenu->setStyle(windowsStyle);
+        }
 
         m_MappingStartOnlyAction = m_MappingStartActionMenu->addAction(tr("MappingStart"));
         m_MappingStartSaveAction = m_MappingStartActionMenu->addAction(getMappingStartSaveText());
@@ -28303,10 +28307,6 @@ void QKeyMapper::setUITheme(int themeindex)
                 width: 1em;
                 height: 1em;
             }
-            QMenu::indicator {
-                width:20px;
-                height:20px;
-            }
         )");
 
         // Ensure QTabBar's disabled tab text color matches the light theme palette.
@@ -28468,11 +28468,6 @@ void QKeyMapper::setUITheme(int themeindex)
             QLineEdit:focus {
                 border: 1px solid rgb(46, 134, 222);
             }
-            QMenu::indicator {
-                width:20px;
-                height:20px;
-            }
-
         )");
 
         // Ensure QTabBar's disabled tab text color matches the dark theme palette.
@@ -28524,10 +28519,6 @@ void QKeyMapper::setUITheme(int themeindex)
             QCheckBox::indicator {
                 width: 1em;
                 height: 1em;
-            }
-            QMenu::indicator {
-                width:20px;
-                height:20px;
             }
         )");
 
