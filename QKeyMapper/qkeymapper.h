@@ -1679,10 +1679,18 @@ private:
     void updateMappingStartKeyString(const QString &keystring);
     void updateMappingStopKeyString(const QString &keystring);
     QString getMappingStartSaveText(void) const;
+    bool isCtrlKeyPressed(void) const;
+    bool isMainWindowCtrlOverrideContextActive(void) const;
+    bool isMainWindowCtrlOverrideActive(void) const;
+    void updateMainWindowCtrlOverrideState(bool ctrlPressed);
+    void refreshMainWindowCtrlOverrideState(void);
+    void hideMappingStartActionMenuPopup(void);
+    bool shouldUseMappingStartSaveAndStartOverride(bool preferPhysicalCtrlState = false) const;
+    MappingStartActionMode effectiveMappingStartActionMode(bool preferPhysicalCtrlState = false) const;
     void updateMappingStartActionTexts(void);
     void updateMappingStartButtonText(void);
     void setMappingStartActionMode(MappingStartActionMode actionMode, bool persist = true);
-    bool handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode startmode);
+    bool handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode startmode, bool preferPhysicalCtrlState = false);
     // void initOriginalKeySeqEdit(void);
     void initCombinationKeyLineEdit(void);
     void updateOriginalKeyListComboBox(void);
@@ -1902,6 +1910,8 @@ private:
     QAction *m_MappingStartOnlyAction = Q_NULLPTR;
     QAction *m_MappingStartSaveAction = Q_NULLPTR;
     MappingStartActionMode m_MappingStartActionMode = MAPPINGSTART_ACTION_ONLY;
+    bool m_MainWindowCtrlPressed = false;
+    bool m_MainWindowCtrlOverrideActive = false;
 
     // Category filter menu UI (built in C++ only)
     QMenu *m_CategoryFilterMenu = Q_NULLPTR;

@@ -1381,7 +1381,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
-    // qApp->installEventFilter(this);
+    if (qApp) {
+        qApp->installEventFilter(this);
+    }
     ui->originalKeyRecordLineEdit->installEventFilter(this);
     ui->gamepadSelectComboBox->view()->installEventFilter(this);
     ui->settingselectComboBox->view()->installEventFilter(this);
@@ -1983,6 +1985,10 @@ QKeyMapper::~QKeyMapper()
 
 #endif
     s_isDestructing = true;
+
+    if (qApp) {
+        qApp->removeEventFilter(this);
+    }
 
     stopWinEventHook();
     // Unregister WTS session notifications
@@ -10424,6 +10430,7 @@ bool QKeyMapper::event(QEvent *event)
         qDebug() << "[QKeyMapper::event]" << "QKeyMapper ActivationChange";
 #endif
         m_isOriginalKeyLineEdit_CapturingKey = false;
+        refreshMainWindowCtrlOverrideState();
         // closeSelectColorDialog();
         // closeFloatingWindowSetupDialog();
         // closeCrosshairSetupDialog();
@@ -10757,6 +10764,13 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
+    if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+        if (!keyEvent->isAutoRepeat() && keyEvent->key() == Qt::Key_Control) {
+            updateMainWindowCtrlOverrideState(event->type() == QEvent::KeyPress);
+        }
+    }
+
     if (QPushButton *floatingButton = qobject_cast<QPushButton*>(object)) {
         const int rowindex = floatingButton->property("FloatingButtonRow").toInt();
         QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
@@ -11018,12 +11032,89 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 
 void QKeyMapper::on_keymapButton_clicked()
 {
-    handleManualMappingSwitchRequest(MAPPINGSTART_BUTTONCLICK);
+    handleManualMappingSwitchRequest(MAPPINGSTART_BUTTONCLICK, true);
 }
 
 QString QKeyMapper::getMappingStartSaveText(void) const
 {
     return tr("Save & Start");
+}
+
+bool QKeyMapper::isCtrlKeyPressed(void) const
+{
+    return ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0)
+        || ((GetAsyncKeyState(VK_RCONTROL) & 0x8000) != 0);
+}
+
+bool QKeyMapper::isMainWindowCtrlOverrideContextActive(void) const
+{
+    if (isActiveWindow()) {
+        return true;
+    }
+
+    return m_MappingStartActionMenu
+        && m_MappingStartActionMenu->isVisible()
+        && QApplication::activePopupWidget() == m_MappingStartActionMenu;
+}
+
+bool QKeyMapper::isMainWindowCtrlOverrideActive(void) const
+{
+    return m_MainWindowCtrlOverrideActive;
+}
+
+void QKeyMapper::hideMappingStartActionMenuPopup(void)
+{
+    if (!ui || !ui->keymapButton) {
+        return;
+    }
+
+    if (QMenu *popupMenu = ui->keymapButton->menu(); popupMenu && popupMenu->isVisible()) {
+        popupMenu->hide();
+    }
+}
+
+bool QKeyMapper::shouldUseMappingStartSaveAndStartOverride(bool preferPhysicalCtrlState) const
+{
+    if (m_MappingStartActionMode != MAPPINGSTART_ACTION_ONLY) {
+        return false;
+    }
+
+    if (m_KeyMapStatus != KEYMAP_IDLE) {
+        return false;
+    }
+
+    const bool ctrlOverrideActive = preferPhysicalCtrlState
+        ? (isMainWindowCtrlOverrideContextActive() && isCtrlKeyPressed())
+        : isMainWindowCtrlOverrideActive();
+    return ctrlOverrideActive;
+}
+
+QKeyMapper::MappingStartActionMode QKeyMapper::effectiveMappingStartActionMode(bool preferPhysicalCtrlState) const
+{
+    if (shouldUseMappingStartSaveAndStartOverride(preferPhysicalCtrlState)) {
+        return MAPPINGSTART_ACTION_SAVEANDSTART;
+    }
+
+    return m_MappingStartActionMode;
+}
+
+void QKeyMapper::updateMainWindowCtrlOverrideState(bool ctrlPressed)
+{
+    const MappingStartActionMode previousEffectiveActionMode = effectiveMappingStartActionMode();
+
+    m_MainWindowCtrlPressed = ctrlPressed;
+    m_MainWindowCtrlOverrideActive = m_MainWindowCtrlPressed && isMainWindowCtrlOverrideContextActive();
+
+    const MappingStartActionMode currentEffectiveActionMode = effectiveMappingStartActionMode();
+    if (m_KeyMapStatus == KEYMAP_IDLE && previousEffectiveActionMode != currentEffectiveActionMode) {
+        hideMappingStartActionMenuPopup();
+        updateMappingStartButtonText();
+    }
+}
+
+void QKeyMapper::refreshMainWindowCtrlOverrideState(void)
+{
+    updateMainWindowCtrlOverrideState(isMainWindowCtrlOverrideContextActive() && isCtrlKeyPressed());
 }
 
 void QKeyMapper::updateMappingStartActionTexts(void)
@@ -11054,7 +11145,7 @@ void QKeyMapper::updateMappingStartButtonText(void)
         return;
     }
 
-    if (MAPPINGSTART_ACTION_SAVEANDSTART == m_MappingStartActionMode) {
+    if (MAPPINGSTART_ACTION_SAVEANDSTART == effectiveMappingStartActionMode()) {
         ui->keymapButton->setText(getMappingStartSaveText());
     }
     else {
@@ -11127,11 +11218,11 @@ void QKeyMapper::initMappingStartActionMenu(void)
     setMappingStartActionMode(m_MappingStartActionMode, false);
 }
 
-bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode startmode)
+bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode startmode, bool preferPhysicalCtrlState)
 {
     if (KEYMAP_IDLE == m_KeyMapStatus
         && MAPPINGSTART_LOADSETTING != startmode
-        && MAPPINGSTART_ACTION_SAVEANDSTART == m_MappingStartActionMode) {
+        && MAPPINGSTART_ACTION_SAVEANDSTART == effectiveMappingStartActionMode(preferPhysicalCtrlState)) {
         if (!saveKeyMapSetting(false)) {
             return false;
         }
