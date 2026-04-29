@@ -167,10 +167,20 @@ QRect MappingStartToolButton::menuSubControlRect(void) const
                                              QStyle::SC_ToolButtonMenu,
                                              this);
 
+    const int indicatorWidth = qMax(16, style()->pixelMetric(QStyle::PM_MenuButtonIndicator, Q_NULLPTR, this));
+    const int desiredWidth = (MAPPING_START_MENU_BUTTON_WIDTH > 0)
+        ? qMax(indicatorWidth, MAPPING_START_MENU_BUTTON_WIDTH)
+        : indicatorWidth;
+    const int finalWidth = qMin(width(), desiredWidth);
+
     if (menuRect.isEmpty()) {
-        const int indicatorWidth = qMax(16, style()->pixelMetric(QStyle::PM_MenuButtonIndicator, Q_NULLPTR, this));
-        menuRect = QRect(width() - indicatorWidth, 0, indicatorWidth, height());
+        menuRect = QRect(width() - finalWidth, 0, finalWidth, height());
     }
+    else if (menuRect.width() < finalWidth) {
+        menuRect = QRect(width() - finalWidth, menuRect.y(), finalWidth, menuRect.height());
+    }
+
+    menuRect = menuRect.intersected(rect());
 
     return menuRect;
 }
@@ -287,7 +297,7 @@ void MappingStartToolButton::mouseDoubleClickEvent(QMouseEvent *event)
 
 void MappingStartToolButton::paintEvent(QPaintEvent *event)
 {
-    if (m_MenuButtonEnabled && !m_MenuButtonDown) {
+    if (!menu()) {
         QToolButton::paintEvent(event);
         return;
     }
@@ -297,23 +307,84 @@ void MappingStartToolButton::paintEvent(QPaintEvent *event)
     QStyleOptionToolButton option;
     initStyleOption(&option);
 
-    QPainter painter(this);
-    style()->drawComplexControl(QStyle::CC_ToolButton, &option, &painter, this);
-
-    if (menu()) {
-        QStyleOptionToolButton menuOption(option);
-        menuOption.subControls = QStyle::SC_ToolButtonMenu;
-        menuOption.activeSubControls = QStyle::SC_ToolButtonMenu;
-
-        if (m_MenuButtonDown) {
-            menuOption.state |= QStyle::State_Sunken;
-        }
-        if (!m_MenuButtonEnabled) {
-            menuOption.state &= ~QStyle::State_Enabled;
-        }
-
-        style()->drawComplexControl(QStyle::CC_ToolButton, &menuOption, &painter, this);
+    if (m_MenuButtonDown) {
+        option.state |= QStyle::State_Sunken;
     }
+    if (!m_MenuButtonEnabled) {
+        option.state &= ~QStyle::State_Enabled;
+    }
+
+    const QRect menuRect = menuSubControlRect();
+    if (!menuRect.isValid() || menuRect.width() <= 0 || menuRect.height() <= 0) {
+        QToolButton::paintEvent(event);
+        return;
+    }
+
+    QRect mainButtonRect = rect();
+    mainButtonRect.setRight(menuRect.left() - 1);
+    if (!mainButtonRect.isValid() || mainButtonRect.width() <= 0 || mainButtonRect.height() <= 0) {
+        QToolButton::paintEvent(event);
+        return;
+    }
+
+    QPainter painter(this);
+
+    QStyleOptionToolButton baseOption(option);
+    baseOption.text.clear();
+    baseOption.icon = QIcon();
+    style()->drawComplexControl(QStyle::CC_ToolButton, &baseOption, &painter, this);
+
+    if (!option.text.isEmpty() || !option.icon.isNull()) {
+        QStyleOptionToolButton labelOption(option);
+        labelOption.rect = mainButtonRect;
+        if (MAPPING_START_TEXT_X_OFFSET != 0) {
+            labelOption.rect.translate(MAPPING_START_TEXT_X_OFFSET, 0);
+        }
+        labelOption.features &= ~(QStyleOptionToolButton::HasMenu
+                                  | QStyleOptionToolButton::MenuButtonPopup
+                                  | QStyleOptionToolButton::PopupDelay);
+        labelOption.subControls = QStyle::SC_ToolButton;
+        labelOption.activeSubControls = QStyle::SC_ToolButton;
+        style()->drawControl(QStyle::CE_ToolButtonLabel, &labelOption, &painter, this);
+    }
+
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    QStyleOptionToolButton menuOption(option);
+    menuOption.rect = menuRect;
+    menuOption.subControls = QStyle::SC_None;
+    menuOption.activeSubControls = QStyle::SC_ToolButtonMenu;
+    style()->drawPrimitive(QStyle::PE_PanelButtonTool, &menuOption, &painter, this);
+
+    painter.setRenderHint(QPainter::Antialiasing, false);
+    const QColor separatorColor = option.palette.color((menuOption.state & QStyle::State_Enabled)
+                                                       ? QPalette::Mid
+                                                       : QPalette::Midlight);
+    painter.setPen(separatorColor);
+    painter.drawLine(menuRect.left(), menuRect.top() + 2, menuRect.left(), menuRect.bottom() - 2);
+
+    const int maxArrowSize = qMax(6, qMin(menuRect.width(), menuRect.height()) - 8);
+    const int arrowSize = (MAPPING_START_MENU_ARROW_SIZE > 0)
+        ? qMin(MAPPING_START_MENU_ARROW_SIZE, maxArrowSize)
+        : maxArrowSize;
+    const QPointF center(menuRect.left() + (menuRect.width() / 2.0) + MAPPING_START_MENU_ARROW_X_OFFSET,
+                         menuRect.top() + (menuRect.height() / 2.0));
+    const qreal halfWidth = arrowSize / 2.0;
+    const qreal topY = center.y() - (arrowSize / 4.0);
+    const qreal bottomY = center.y() + (arrowSize / 4.0);
+
+    const QColor arrowColor = (menuOption.state & QStyle::State_Enabled)
+        ? option.palette.color(QPalette::ButtonText)
+        : option.palette.color(QPalette::Disabled, QPalette::ButtonText);
+    QPen arrowPen(arrowColor);
+    arrowPen.setWidthF(qMax(1.6, arrowSize / 4.0));
+    arrowPen.setCapStyle(Qt::RoundCap);
+    arrowPen.setJoinStyle(Qt::RoundJoin);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setPen(arrowPen);
+    painter.drawLine(QPointF(center.x() - halfWidth, topY), QPointF(center.x(), bottomY));
+    painter.drawLine(QPointF(center.x(), bottomY), QPointF(center.x() + halfWidth, topY));
+    painter.setBrush(Qt::NoBrush);
 }
 
 namespace {

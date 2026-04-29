@@ -31,12 +31,12 @@
   <property name="windowTitle">
    <string>QKeyMapper</string>
   </property>
-    <widget class="MappingStartToolButton" name="keymapButton">
+  <widget class="MappingStartToolButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>880</x>
+     <x>850</x>
      <y>590</y>
-     <width>161</width>
+     <width>191</width>
      <height>51</height>
     </rect>
    </property>
@@ -2589,11 +2589,11 @@
    <header>qkeymapper.h</header>
    <container>1</container>
   </customwidget>
-    <customwidget>
-     <class>MappingStartToolButton</class>
-     <extends>QToolButton</extends>
-     <header>qkeymapper.h</header>
-    </customwidget>
+  <customwidget>
+   <class>MappingStartToolButton</class>
+   <extends>QToolButton</extends>
+   <header>qkeymapper.h</header>
+  </customwidget>
  </customwidgets>
  <resources/>
  <connections/>
