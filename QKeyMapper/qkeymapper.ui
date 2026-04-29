@@ -34,9 +34,9 @@
   <widget class="MappingStartToolButton" name="keymapButton">
    <property name="geometry">
     <rect>
-     <x>850</x>
+     <x>870</x>
      <y>590</y>
-     <width>191</width>
+     <width>171</width>
      <height>51</height>
     </rect>
    </property>
