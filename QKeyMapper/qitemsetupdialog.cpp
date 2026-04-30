@@ -2,6 +2,15 @@
 #include "qitemsetupdialog.h"
 #include "ui_qitemsetupdialog.h"
 
+namespace {
+void notifySaveSettingDirty()
+{
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+    }
+}
+}
+
 using namespace QKeyMapperConstants;
 
 QItemSetupDialog *QItemSetupDialog::m_instance = Q_NULLPTR;
@@ -1982,6 +1991,7 @@ void QItemSetupDialog::initKeyStringLineEdit()
 void QItemSetupDialog::refreshOriginalKeyRelatedUI()
 {
     if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+    const MAP_KEYDATA previousKeymapData = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
         MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[QItemSetupDialog::refreshOriginalKeyRelatedUI]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
@@ -2242,6 +2252,10 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->repeatByTimesCheckBox->setEnabled(false);
             ui->repeatTimesSpinBox->setEnabled(false);
         }
+
+        if (!(QKeyMapper::KeyMappingDataList->at(m_ItemRow) == previousKeymapData)) {
+            notifySaveSettingDirty();
+        }
     }
 }
 
@@ -2249,6 +2263,7 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
 {
     bool value_changed = false;
     if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+    const MAP_KEYDATA previousKeymapData = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
         MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[QItemSetupDialog::refreshMappingKeyRelatedUI]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
@@ -2552,6 +2567,11 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
 //             qDebug() << "[QItemSetupDialog::refreshMappingKeyRelatedUI]" << "Clear initial Focus.";
 // #endif
 //         }
+
+        value_changed = !(QKeyMapper::KeyMappingDataList->at(m_ItemRow) == previousKeymapData);
+        if (value_changed) {
+            notifySaveSettingDirty();
+        }
     }
 
     return value_changed;
@@ -2567,6 +2587,7 @@ void QItemSetupDialog::refreshAllRelatedUI()
         return;
     }
 
+    const MAP_KEYDATA previousKeymapData = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
     MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[QItemSetupDialog::refreshOriginalKeyRelatedUI]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
@@ -2861,6 +2882,10 @@ void QItemSetupDialog::refreshAllRelatedUI()
     else {
         ui->repeatTimesSpinBox->setValue(REPEAT_TIMES_DEFAULT);
     }
+
+    if (!(QKeyMapper::KeyMappingDataList->at(m_ItemRow) == previousKeymapData)) {
+        notifySaveSettingDirty();
+    }
 }
 
 void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
@@ -3141,6 +3166,7 @@ bool QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, c
         return false;
     }
 
+    const MAP_KEYDATA previousKeymapData = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
     bool showOriginalKeyDisabledPopup = false;
     /* OriginalKey Update */
     if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != originalKey) {
@@ -3169,6 +3195,10 @@ bool QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, c
     QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(m_TabIndex);
 
     refreshAllRelatedUI();
+
+    if (!(QKeyMapper::KeyMappingDataList->at(m_ItemRow) == previousKeymapData)) {
+        notifySaveSettingDirty();
+    }
 
     return showOriginalKeyDisabledPopup;
 }
@@ -3237,6 +3267,7 @@ void QItemSetupDialog::on_burstpressSpinBox_valueChanged(int value)
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).BurstPressTime) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].BurstPressTime = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_burstpressSpinBox_valueChanged]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Press Time -> " << current_value;
 #endif
@@ -3255,6 +3286,7 @@ void QItemSetupDialog::on_burstreleaseSpinBox_valueChanged(int value)
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).BurstReleaseTime) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].BurstReleaseTime = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_burstreleaseSpinBox_valueChanged]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Release Time -> " << current_value;
 #endif
@@ -3275,6 +3307,7 @@ void QItemSetupDialog::on_burstCheckBox_stateChanged(int state)
     if (burst != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Burst) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Burst = burst;
         QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, BURST_MODE_COLUMN);
+        notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst -> " << burst;
@@ -3297,6 +3330,7 @@ void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
     if (lock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Lock) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Lock = lock;
         QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, LOCK_COLUMN);
+        notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Lock -> " << lock;
@@ -3323,6 +3357,7 @@ void QItemSetupDialog::on_disabledCheckBox_stateChanged(int state)
         if (!disabled) {
             QKeyMapper::getInstance()->applyExclusiveEnableMutualExclusion(m_TabIndex, m_ItemRow, true);
         }
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Disabled -> " << disabled;
 #endif
@@ -3339,6 +3374,7 @@ void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)
     int sendtiming_index = ui->sendTimingComboBox->currentIndex();
     if (sendtiming_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).SendTiming) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendTiming = sendtiming_index;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] SendTiming -> " << sendtiming_index;
 #endif
@@ -3357,6 +3393,7 @@ void QItemSetupDialog::on_pasteTextModeComboBox_currentIndexChanged(int index)
     int pastetextmode_index = ui->pasteTextModeComboBox->currentIndex();
     if (pastetextmode_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PasteTextMode) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PasteTextMode = pastetextmode_index;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PasteTextMode -> " << pastetextmode_index;
 #endif
@@ -3373,6 +3410,7 @@ void QItemSetupDialog::on_sendMappingKeyMethodComboBox_currentIndexChanged(int i
     int sendmappingkeymethod_index = ui->sendMappingKeyMethodComboBox->currentIndex();
     if (sendmappingkeymethod_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).SendMappingKeyMethod) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendMappingKeyMethod = sendmappingkeymethod_index;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] SendMappingKeyMethod -> " << sendmappingkeymethod_index;
 #endif
@@ -3389,6 +3427,7 @@ void QItemSetupDialog::on_checkCombKeyOrderCheckBox_stateChanged(int state)
     bool checkcombkeyorder = ui->checkCombKeyOrderCheckBox->isChecked();
     if (checkcombkeyorder != QKeyMapper::KeyMappingDataList->at(m_ItemRow).CheckCombKeyOrder) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].CheckCombKeyOrder = checkcombkeyorder;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] CheckCombKeyOrder -> " << checkcombkeyorder;
 #endif
@@ -3409,6 +3448,7 @@ void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
     if (passthrough != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PassThrough) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PassThrough = passthrough;
         QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
+        notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PassThrough -> " << passthrough;
@@ -3427,6 +3467,7 @@ void QItemSetupDialog::on_keySeqHoldDownCheckBox_stateChanged(int state)
     bool keyseqholddown = ui->keySeqHoldDownCheckBox->isChecked();
     if (keyseqholddown != QKeyMapper::KeyMappingDataList->at(m_ItemRow).KeySeqHoldDown) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = keyseqholddown;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] KeySequenceHoldDown -> " << keyseqholddown;
 #endif
@@ -3525,6 +3566,7 @@ void QItemSetupDialog::on_repeatByKeyCheckBox_stateChanged(int state)
     ui->repeatByTimesCheckBox->blockSignals(false);
     if (repeatmode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatMode) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = repeatmode;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") RepeatMode -> " << repeatmode;
 #endif
@@ -3553,6 +3595,7 @@ void QItemSetupDialog::on_repeatByTimesCheckBox_stateChanged(int state)
     ui->repeatByKeyCheckBox->blockSignals(false);
     if (repeatmode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatMode) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = repeatmode;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") RepeatMode -> " << repeatmode;
 #endif
@@ -3570,6 +3613,7 @@ void QItemSetupDialog::on_repeatTimesSpinBox_valueChanged(int value)
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatTimes) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatTimes = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_repeatTimesSpinBox_valueChanged]" << " Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") Repeat Times -> " << current_value;
 #endif
@@ -3620,6 +3664,7 @@ void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
     bool mappingkeyunlock = ui->mappingKeyUnlockCheckBox->isChecked();
     if (mappingkeyunlock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).MappingKeyUnlock) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeyUnlock = mappingkeyunlock;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] MappingKeyUnlock -> " << mappingkeyunlock;
 #endif
@@ -3636,6 +3681,7 @@ void QItemSetupDialog::on_disableOriginalKeyUnlockCheckBox_stateChanged(int stat
     bool disableoriginalkeyunlock = ui->disableOriginalKeyUnlockCheckBox->isChecked();
     if (disableoriginalkeyunlock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).DisableOriginalKeyUnlock) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].DisableOriginalKeyUnlock = disableoriginalkeyunlock;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] DisableOriginalKeyUnlock -> " << disableoriginalkeyunlock;
 #endif
@@ -3652,6 +3698,7 @@ void QItemSetupDialog::on_disableFnKeySwitchCheckBox_stateChanged(int state)
     bool disablefnkeyswitch = ui->disableFnKeySwitchCheckBox->isChecked();
     if (disablefnkeyswitch != QKeyMapper::KeyMappingDataList->at(m_ItemRow).DisableFnKeySwitch) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].DisableFnKeySwitch = disablefnkeyswitch;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] DisableFnKeySwitch -> " << disablefnkeyswitch;
 #endif
@@ -3686,6 +3733,7 @@ void QItemSetupDialog::on_unbreakableCheckBox_stateChanged(int state)
     bool unbreakable = ui->unbreakableCheckBox->isChecked();
     if (unbreakable != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Unbreakable) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Unbreakable = unbreakable;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Unbreakable -> " << unbreakable;
 #endif
@@ -3753,6 +3801,7 @@ void QItemSetupDialog::on_fixedVKeyCodeSpinBox_valueChanged(int value)
     }
     if (fixedvkeycode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).FixedVKeyCode) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].FixedVKeyCode = fixedvkeycode;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         QString fixedvkeycodeStr = QString("0x%1").arg(QString::number(fixedvkeycode, 16).toUpper(), 2, '0');
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] FixedVKeyCode -> " << fixedvkeycodeStr;
@@ -3827,6 +3876,7 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
 #endif
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note = note_str;
         QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
+        notifySaveSettingDirty();
     }
 }
 

@@ -1705,6 +1705,8 @@ public:
     void updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList, int row, int column);
     void updateKeyMappingTabWidgetTabDisplay(int tabindex);
     void updateTableWidgetItem(int tabindex, int row, int column);
+    void updateSaveSettingActionIcon(QAction *action) const;
+    void requestSaveSettingDirty(void);
 private:
     void refreshAllKeyMappingTabWidget(void);
     void updateMousePointsList(void);
@@ -1715,6 +1717,12 @@ private:
     void resetFontSize(void);
     void sessionLockStateChanged(bool locked);
     void setUITheme(int themeindex);
+    void connectSettingDirtySignals(void);
+    void markSaveSettingDirty(void);
+    void clearSaveSettingDirty(void);
+    bool hasUnsavedSettingChanges(void) const;
+    QIcon saveSettingWarningIcon(void) const;
+    void refreshSaveSettingIndicators(void);
 
 #ifdef SETTINGSFILE_CONVERT
     bool checkSettingsFileNeedtoConvert(void);
@@ -1913,6 +1921,7 @@ private:
     MappingStartActionMode m_MappingStartActionMode = MAPPINGSTART_ACTION_ONLY;
     bool m_MainWindowCtrlPressed = false;
     bool m_MainWindowCtrlOverrideActive = false;
+    bool m_SaveSettingDirty = false;
 
     // Category filter menu UI (built in C++ only)
     QMenu *m_CategoryFilterMenu = Q_NULLPTR;

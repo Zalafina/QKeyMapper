@@ -2,6 +2,15 @@
 #include "qcrosshairsetupdialog.h"
 #include "ui_qcrosshairsetupdialog.h"
 
+namespace {
+void notifySaveSettingDirty()
+{
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+    }
+}
+}
+
 using namespace QKeyMapperConstants;
 
 QCrosshairSetupDialog *QCrosshairSetupDialog::m_instance = Q_NULLPTR;
@@ -196,6 +205,7 @@ void QCrosshairSetupDialog::onCenterColorChanged(QColor &color)
 
     if (color != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_CenterColor) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_CenterColor = color;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[onCenterColorSelected]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Center Color -> " << color;
 #endif
@@ -212,6 +222,7 @@ void QCrosshairSetupDialog::onCrosshairColorChanged(QColor &color)
 
     if (color != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_CrosshairColor) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_CrosshairColor = color;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[onCrosshairColorSelected]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Crosshair Color -> " << color;
 #endif
@@ -230,6 +241,7 @@ void QCrosshairSetupDialog::on_showCenterCheckBox_stateChanged(int state)
     bool show = ui->showCenterCheckBox->isChecked();
     if (show != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_ShowCenter) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_ShowCenter = show;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Show Center -> " << show;
 #endif
@@ -246,6 +258,7 @@ void QCrosshairSetupDialog::on_showTopCheckBox_stateChanged(int state)
     bool show = ui->showTopCheckBox->isChecked();
     if (show != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_ShowTop) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_ShowTop = show;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Show Top -> " << show;
 #endif
@@ -262,6 +275,7 @@ void QCrosshairSetupDialog::on_showBottomCheckBox_stateChanged(int state)
     bool show = ui->showBottomCheckBox->isChecked();
     if (show != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_ShowBottom) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_ShowBottom = show;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Show Bottom -> " << show;
 #endif
@@ -278,6 +292,7 @@ void QCrosshairSetupDialog::on_showLeftCheckBox_stateChanged(int state)
     bool show = ui->showLeftCheckBox->isChecked();
     if (show != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_ShowLeft) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_ShowLeft = show;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Show Left -> " << show;
 #endif
@@ -294,6 +309,7 @@ void QCrosshairSetupDialog::on_showRightCheckBox_stateChanged(int state)
     bool show = ui->showRightCheckBox->isChecked();
     if (show != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_ShowRight) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_ShowRight = show;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Show Right -> " << show;
 #endif
@@ -310,6 +326,7 @@ void QCrosshairSetupDialog::on_centerSizeSpinBox_editingFinished()
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_CenterSize) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_CenterSize = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_centerSizeSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Center Size -> " << current_value;
 #endif
@@ -326,6 +343,7 @@ void QCrosshairSetupDialog::on_centerOpacitySpinBox_editingFinished()
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_CenterOpacity) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_CenterOpacity = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_centerOpacitySpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Center Opacity -> " << current_value;
 #endif
@@ -342,6 +360,7 @@ void QCrosshairSetupDialog::on_crosshairLineWidthSpinBox_editingFinished()
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_CrosshairWidth) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_CrosshairWidth = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_crosshairLineWidthSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Crosshair Width -> " << current_value;
 #endif
@@ -358,6 +377,7 @@ void QCrosshairSetupDialog::on_crosshairLineLengthSpinBox_editingFinished()
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_CrosshairLength) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_CrosshairLength = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_crosshairLineLengthSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Crosshair Length -> " << current_value;
 #endif
@@ -374,6 +394,7 @@ void QCrosshairSetupDialog::on_crosshairOpacitySpinBox_editingFinished()
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_CrosshairOpacity) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_CrosshairOpacity = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_crosshairOpacitySpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Crosshair Opacity -> " << current_value;
 #endif
@@ -390,6 +411,7 @@ void QCrosshairSetupDialog::on_x_offsetSpinBox_editingFinished()
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_X_Offset) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_X_Offset = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_x_offsetSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Crosshair Offset X -> " << current_value;
 #endif
@@ -406,6 +428,7 @@ void QCrosshairSetupDialog::on_y_offsetSpinBox_editingFinished()
 
     if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Crosshair_Y_Offset) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Crosshair_Y_Offset = current_value;
+        notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_y_offsetSpinBox_editingFinished]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Crosshair Offset Y -> " << current_value;
 #endif

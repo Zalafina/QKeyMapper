@@ -588,20 +588,24 @@ void QVButtonPanel::recalcOffsets()
 void QVButtonPanel::showPanelContextMenu(const QPoint &globalPos)
 {
     clearPanelMoveState();
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
 
     QMenu menu(this);
     QAction *setupAction = menu.addAction(QObject::tr("VButton Panel Setup"));
     QAction *saveAction  = menu.addAction(QObject::tr("Save Setting"));
+    if (keyMapper) {
+        keyMapper->updateSaveSettingActionIcon(saveAction);
+    }
     QAction *moveAction  = menu.addAction(QObject::tr("Move"));
     QAction *selected    = menu.exec(globalPos);
 
     if (selected == setupAction) {
-        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        if (keyMapper) {
             keyMapper->openVButtonPanelSetupDialogFromPanelContextMenu();
         }
     }
     else if (selected == saveAction) {
-        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        if (keyMapper) {
             keyMapper->saveKeyMapSetting();
         }
     }

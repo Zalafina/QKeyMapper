@@ -1,5 +1,6 @@
 #include "qgeneraladvanceddialog.h"
 #include "ui_qgeneraladvanceddialog.h"
+#include "qkeymapper.h"
 #include "qkeymapper_constants.h"
 #include "qstyle_singletons.h"
 
@@ -68,10 +69,36 @@ QGeneralAdvancedDialog::QGeneralAdvancedDialog(QWidget *parent)
     ui->fullscreenGlobalMappingProcessLineEdit->clear();
     ui->soundEffectCheckBox->setChecked(true);
 
+    auto notifyDirty = []() {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    };
+
     QObject::connect(ui->startupPositionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                     this, [this](int) { updateStartupSpecifyPositionState(); });
+                     this, [this, notifyDirty](int) {
+                         updateStartupSpecifyPositionState();
+                         notifyDirty();
+                     });
     QObject::connect(ui->disableGlobalMappingInFullscreenCheckBox, &QCheckBox::toggled,
-                     this, [this](bool) { updateGlobalMappingFullscreenState(); });
+                     this, [this, notifyDirty](bool) {
+                         updateGlobalMappingFullscreenState();
+                         notifyDirty();
+                     });
+    QObject::connect(ui->startupSpecifyPositionXSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->startupSpecifyPositionYSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->tableEditModeTriggerComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->tableInsertModeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->fullscreenGlobalMappingProcessLineEdit, &QLineEdit::textEdited,
+                     this, [notifyDirty](const QString &) { notifyDirty(); });
+    QObject::connect(ui->soundEffectCheckBox, &QCheckBox::toggled,
+                     this, [notifyDirty](bool) { notifyDirty(); });
+    QObject::connect(ui->globalSettingSwitchTimerSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
 
     setUILanguage(0);
     updateStartupSpecifyPositionState();

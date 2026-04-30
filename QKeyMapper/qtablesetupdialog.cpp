@@ -201,6 +201,7 @@ void QTableSetupDialog::updateTrayIconPixelSizeWithCurrentText()
 
     QString currentText = ui->customImageTrayIconPixelComboBox->currentText();
     QSize trayicon_size = parseComboBoxTextToSize(currentText);
+    const QSize currentTrayIconPixel = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_TrayIconPixel;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[updateTrayIconPixelSizeWithCurrentText] Custom Image TrayIcon pixel currentText:" << currentText << ", converted Size: " << trayicon_size;
@@ -216,6 +217,9 @@ void QTableSetupDialog::updateTrayIconPixelSizeWithCurrentText()
 
     int tabindex = m_TabIndex;
     QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_TrayIconPixel = trayicon_size;
+    if (trayicon_size != currentTrayIconPixel) {
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
+    }
 }
 
 void QTableSetupDialog::updateTrayIconPixelComboBox(const QIcon &icon, const QSize &targetSize)
@@ -528,6 +532,7 @@ void QTableSetupDialog::onTabFontColorChanged(QColor &color)
         qDebug().nospace().noquote() << "[QTableSetupDialog::onTabFontColorChanged]" << " TabIndex[" << m_TabIndex << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName << "] Tab Font Color -> " << color.name();
 #endif
         QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabFontColor = color;
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
         // QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(m_TabIndex);
     }
 }
@@ -545,6 +550,7 @@ void QTableSetupDialog::onTabBackgroundColorChanged(QColor &color)
             << ", Alpha: " << color.alpha();
 #endif
         QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabBackgroundColor = color;
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
     }
 }
 
@@ -580,6 +586,7 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
 
         if (QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName != tabNameString) {
             QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabName(m_TabIndex, tabNameString);
+            QKeyMapper::getInstance()->requestSaveSettingDirty();
         }
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
@@ -619,6 +626,7 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
             popupMessage = tr("TabHotkey clear success");
 
             QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
+            QKeyMapper::getInstance()->requestSaveSettingDirty();
         }
     }
     else if (ori_tabhotkeystring == QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey) {
@@ -635,6 +643,7 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
             popupMessage = tr("TabHotkey update success: ") + ori_tabhotkeystring;
 
             QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
+            QKeyMapper::getInstance()->requestSaveSettingDirty();
         }
         else
         {
@@ -710,6 +719,7 @@ void QTableSetupDialog::on_importTableButton_clicked()
 
     if (import_result) {
         QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
 
         //Show success popup message
         QString popupMessage;
@@ -768,6 +778,7 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
     }
 
     int tabindex = m_TabIndex;
+    const QString currentTabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
 
     if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
         QKeyMapper::clearTabCustomImage(tabindex);
@@ -776,11 +787,13 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
         updateTrayIconPixelComboBox(QIcon());
         updateTrayIconPixelSizeWithCurrentText();
+        if (!currentTabCustomImage_Path.isEmpty()) {
+            QKeyMapper::getInstance()->requestSaveSettingDirty();
+        }
         return;
     }
 
     QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
-    QString currentTabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
     QString filter = tr("Image files") + "(*.ico;*.png;*.svg)";
     QString caption_string;
     caption_string = tr("Select Custom Image") + (" : ") +TabName;
@@ -834,6 +847,9 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         ui->customImageLabel->setToolTip(customimage_path);
 
         QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
+        if (customimage_path != currentTabCustomImage_Path) {
+            QKeyMapper::getInstance()->requestSaveSettingDirty();
+        }
     }
     else {
         QString popupMessage;
@@ -859,7 +875,10 @@ void QTableSetupDialog::on_customImageShowPositionComboBox_currentIndexChanged(i
 #endif
 
     int tabindex = m_TabIndex;
-    QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowPosition = index;
+    if (index != QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_ShowPosition) {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowPosition = index;
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
+    }
 }
 
 void QTableSetupDialog::on_customImagePaddingSpinBox_valueChanged(int value)
@@ -873,7 +892,10 @@ void QTableSetupDialog::on_customImagePaddingSpinBox_valueChanged(int value)
 #endif
 
     int tabindex = m_TabIndex;
-    QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_Padding = value;
+    if (value != QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_Padding) {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_Padding = value;
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
+    }
 }
 
 void QTableSetupDialog::on_customImageShowAsTrayIconCheckBox_stateChanged(int state)
@@ -887,11 +909,10 @@ void QTableSetupDialog::on_customImageShowAsTrayIconCheckBox_stateChanged(int st
 #endif
 
     int tabindex = m_TabIndex;
-    if (Qt::Checked == state) {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsTrayIcon = true;
-    }
-    else {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsTrayIcon = false;
+    const bool showAsTrayIcon = (Qt::Checked == state);
+    if (showAsTrayIcon != QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_ShowAsTrayIcon) {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsTrayIcon = showAsTrayIcon;
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
     }
 }
 
@@ -916,11 +937,10 @@ void QTableSetupDialog::on_customImageShowAsFloatingWindowCheckBox_stateChanged(
 #endif
 
     int tabindex = m_TabIndex;
-    if (Qt::Checked == state) {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsFloatingWindow = true;
-    }
-    else {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsFloatingWindow = false;
+    const bool showAsFloatingWindow = (Qt::Checked == state);
+    if (showAsFloatingWindow != QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_ShowAsFloatingWindow) {
+        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsFloatingWindow = showAsFloatingWindow;
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
     }
 }
 
@@ -953,5 +973,9 @@ void QTableSetupDialog::on_hideNotificationCheckBox_stateChanged(int state)
     qDebug() << "[HideNotification] Hide Notification state changed ->" << static_cast<Qt::CheckState>(state);
 #endif
 
-    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabHideNotification = static_cast<Qt::CheckState>(state);
+    const Qt::CheckState hideNotificationState = static_cast<Qt::CheckState>(state);
+    if (hideNotificationState != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHideNotification) {
+        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabHideNotification = hideNotificationState;
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
+    }
 }

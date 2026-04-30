@@ -81,18 +81,48 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     ui->x_offsetSpinBox->setValue(NOTIFICATION_X_OFFSET_DEFAULT);
     ui->y_offsetSpinBox->setValue(NOTIFICATION_X_OFFSET_DEFAULT);
 
+    auto notifyDirty = []() {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    };
+
     QObject::connect(m_FontColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onFontColorChanged);
     QObject::connect(m_BackgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onBackgroundColorChanged);
     QObject::connect(ui->fontFamilyComboBox, &QFontComboBox::currentFontChanged, this,
-                     [this](const QFont &font) {
+                     [this, notifyDirty](const QFont &font) {
                          m_FontFamily = font.family().trimmed();
                          ui->fontFamilyDefaultButton->setEnabled(!m_FontFamily.isEmpty());
+                         notifyDirty();
                      });
     QObject::connect(ui->fontFamilyDefaultButton, &QPushButton::clicked, this,
-                     [this]() {
+                     [this, notifyDirty]() {
                          m_FontFamily.clear();
                          syncFontFamilyControls();
+                         notifyDirty();
                      });
+    QObject::connect(ui->fontSizeSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->fontWeightComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->fontItalicCheckBox, &QCheckBox::toggled,
+                     this, [notifyDirty](bool) { notifyDirty(); });
+    QObject::connect(ui->displayDurationSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->fadeinDurationSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->fadeoutDurationSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->borderRadiusSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->paddingSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->opacitySpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     this, [notifyDirty](double) { notifyDirty(); });
+    QObject::connect(ui->x_offsetSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->y_offsetSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
 
     ui->fontFamilyDefaultButton->setAutoDefault(false);
     ui->fontFamilyDefaultButton->setDefault(false);
@@ -378,6 +408,9 @@ void QNotificationSetupDialog::mousePressEvent(QMouseEvent *event)
 void QNotificationSetupDialog::onFontColorChanged(QColor &color)
 {
     Q_UNUSED(color);
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+    }
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[QNotificationSetupDialog::onFontColorChanged] Notification Font Color -> " << color.name();
 #endif
@@ -386,6 +419,9 @@ void QNotificationSetupDialog::onFontColorChanged(QColor &color)
 void QNotificationSetupDialog::onBackgroundColorChanged(QColor &color)
 {
     Q_UNUSED(color);
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+    }
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote()
         << "[QNotificationSetupDialog::onBackgroundColorChanged] Notification Background Color -> " << color.name(QColor::HexArgb)

@@ -1,4 +1,5 @@
 #include "qkeymapper_worker.h"
+#include "qkeymapper.h"
 #include "qmappingadvanceddialog.h"
 #include "ui_qmappingadvanceddialog.h"
 #include "qkeymapper_constants.h"
@@ -85,6 +86,12 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     ui->LS_Threshold_ReleaseSpinBox->setSuffix("%");
     ui->RS_Threshold_ReleaseSpinBox->setSuffix("%");
 
+    auto notifyDirty = []() {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    };
+
     QObject::connect(ui->customNotificationEnableCheckBox, &QCheckBox::toggled, this,
                      [this](bool checked) {
                          updateCustomNotificationState();
@@ -92,6 +99,22 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
                      });
     QObject::connect(ui->customNotificationSetupButton, &QPushButton::clicked,
                      this, &QMappingAdvancedDialog::customNotificationSetupRequested);
+    QObject::connect(ui->mouseXSpeedSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->mouseYSpeedSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->mousePollingIntervalSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->ProcessIconAsTrayIconCheckBox, &QCheckBox::toggled,
+                     this, [notifyDirty](bool) { notifyDirty(); });
+    QObject::connect(ui->acceptVirtualGamepadInputCheckBox, &QCheckBox::toggled,
+                     this, [notifyDirty](bool) { notifyDirty(); });
+    QObject::connect(ui->showWindowPointKeyComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->showScreenPointKeyComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->customNotificationPositionComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     this, [notifyDirty](int) { notifyDirty(); });
 
     updateCustomNotificationState();
 }
@@ -178,48 +201,108 @@ void QMappingAdvancedDialog::initGamepadThresholdSpinBoxes()
     QObject::connect(ui->LT_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
         ui->LT_Threshold_LightPressSpinBox->setMinimum(releaseValue);
     });
+    QObject::connect(ui->LT_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    });
     QObject::connect(ui->LT_Threshold_LightPressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int lightPressValue){
         ui->LT_Threshold_ReleaseSpinBox->setMaximum(lightPressValue);
         ui->LT_Threshold_PressSpinBox->setMinimum(lightPressValue);
     });
+    QObject::connect(ui->LT_Threshold_LightPressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    });
     QObject::connect(ui->LT_Threshold_PressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pressValue){
         ui->LT_Threshold_LightPressSpinBox->setMaximum(pressValue);
+    });
+    QObject::connect(ui->LT_Threshold_PressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
     });
 
     // Connect RT Press / LightPress / Release SpinBox (three-way chain)
     QObject::connect(ui->RT_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
         ui->RT_Threshold_LightPressSpinBox->setMinimum(releaseValue);
     });
+    QObject::connect(ui->RT_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    });
     QObject::connect(ui->RT_Threshold_LightPressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int lightPressValue){
         ui->RT_Threshold_ReleaseSpinBox->setMaximum(lightPressValue);
         ui->RT_Threshold_PressSpinBox->setMinimum(lightPressValue);
     });
+    QObject::connect(ui->RT_Threshold_LightPressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    });
     QObject::connect(ui->RT_Threshold_PressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pressValue){
         ui->RT_Threshold_LightPressSpinBox->setMaximum(pressValue);
+    });
+    QObject::connect(ui->RT_Threshold_PressSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
     });
 
     // Connect LS Push / LightPush / Release SpinBox (three-way chain)
     QObject::connect(ui->LS_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
         ui->LS_Threshold_LightPushSpinBox->setMinimum(releaseValue);
     });
+    QObject::connect(ui->LS_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    });
     QObject::connect(ui->LS_Threshold_LightPushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int lightPushValue){
         ui->LS_Threshold_ReleaseSpinBox->setMaximum(lightPushValue);
         ui->LS_Threshold_PushSpinBox->setMinimum(lightPushValue);
     });
+    QObject::connect(ui->LS_Threshold_LightPushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    });
     QObject::connect(ui->LS_Threshold_PushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pushValue){
         ui->LS_Threshold_LightPushSpinBox->setMaximum(pushValue);
+    });
+    QObject::connect(ui->LS_Threshold_PushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
     });
 
     // Connect RS Push / LightPush / Release SpinBox (three-way chain)
     QObject::connect(ui->RS_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int releaseValue){
         ui->RS_Threshold_LightPushSpinBox->setMinimum(releaseValue);
     });
+    QObject::connect(ui->RS_Threshold_ReleaseSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    });
     QObject::connect(ui->RS_Threshold_LightPushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int lightPushValue){
         ui->RS_Threshold_ReleaseSpinBox->setMaximum(lightPushValue);
         ui->RS_Threshold_PushSpinBox->setMinimum(lightPushValue);
     });
+    QObject::connect(ui->RS_Threshold_LightPushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    });
     QObject::connect(ui->RS_Threshold_PushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int pushValue){
         ui->RS_Threshold_LightPushSpinBox->setMaximum(pushValue);
+    });
+    QObject::connect(ui->RS_Threshold_PushSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int){
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
     });
 }
 

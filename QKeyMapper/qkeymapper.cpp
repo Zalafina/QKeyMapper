@@ -1927,6 +1927,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingNameLineEdit->setText(loadresult);
     Q_UNUSED(loadresult);
     loadSetting_flag = false;
+    connectSettingDirtySignals();
+    clearSaveSettingDirty();
 
     // VButton panel connections (cross-thread: worker -> panel, panel -> worker)
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showVButtonPanel_Signal,
@@ -10894,6 +10896,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     QMenu contextMenu;
                     QAction *setupAction = contextMenu.addAction(tr("Floating Button Setup"));
                     QAction *saveSettingAction = contextMenu.addAction(tr("Save Setting"));
+                    updateSaveSettingActionIcon(saveSettingAction);
                     QAction *moveAction = contextMenu.addAction(tr("Move"));
                     contextMenu.addSeparator();
                     QAction *toggleMousePassThroughAction = contextMenu.addAction(keymapdata.FloatingButton_MousePassThrough ? tr("Disable Mouse Pass Through") : tr("Enable Mouse Pass Through"));
@@ -11338,7 +11341,7 @@ bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode s
     if (KEYMAP_IDLE == m_KeyMapStatus
         && MAPPINGSTART_LOADSETTING != startmode
         && MAPPINGSTART_ACTION_SAVEANDSTART == executionMappingStartActionMode(preferPhysicalCtrlState)) {
-        if (!saveKeyMapSetting(false)) {
+        if (hasUnsavedSettingChanges() && !saveKeyMapSetting(false)) {
             return false;
         }
     }
@@ -11887,6 +11890,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[addTabToKeyMappingTabWidget] Add a new tab with TabName:" << tabName;
 #endif
+    markSaveSettingDirty();
     return true;
 }
 
@@ -12030,6 +12034,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[copyCurrentTabToKeyMappingTabWidget] Copy tab from TabIndex[" << current_tabindex << "] new TabName: " << tabName;
 #endif
+    markSaveSettingDirty();
     return true;
 }
 
@@ -12074,6 +12079,8 @@ int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
     updateKeyMappingDataTableConnection();
 
     ui->keyMappingTabWidget->blockSignals(false);
+
+    markSaveSettingDirty();
 
     return REMOVE_MAPPINGTAB_SUCCESS;
 }
@@ -12152,6 +12159,7 @@ void QKeyMapper::moveTabInKeyMappingTabWidget(int from, int to)
 #endif
 
     collectMappingTableTabHotkeys();
+    markSaveSettingDirty();
 }
 
 int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
@@ -12283,6 +12291,7 @@ int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *auto
         << ") copied items at row(" << boundedInsertRow << ") -> " << insertMappingDataList;
 #endif
 
+    markSaveSettingDirty();
     return inserted_count;
 }
 
@@ -12431,6 +12440,7 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
     QLineEdit* lineEdit = qobject_cast<QLineEdit*>(sender());
     if (lineEdit)
     {
+        bool hotkeyChanged = false;
         static QRegularExpression whitespace_reg(R"(\s+)");
         QString ori_hotkeystring = lineEdit->text().simplified();
         ori_hotkeystring.remove(whitespace_reg);
@@ -12449,6 +12459,7 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
                 if (s_WindowSwitchKeyString != ori_hotkeystring) {
                     updateWindowSwitchKeyString(ori_hotkeystring);
+                    hotkeyChanged = true;
                     showInformationPopup(tr("WindowSwitchKey update success : ") + ori_hotkeystring);
                 }
                 lineEdit->setText(s_WindowSwitchKeyString);
@@ -12456,6 +12467,7 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
             else if (lineEdit->objectName() == MAPPINGSTARTKEY_LINEEDIT_NAME) {
                 if (s_MappingStartKeyString != ori_hotkeystring) {
                     updateMappingStartKeyString(ori_hotkeystring);
+                    hotkeyChanged = true;
                     showInformationPopup(tr("MappingStartKey update success : ") + ori_hotkeystring);
                 }
                 lineEdit->setText(s_MappingStartKeyString);
@@ -12463,6 +12475,7 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
             else if (lineEdit->objectName() == MAPPINGSTOPKEY_LINEEDIT_NAME) {
                 if (s_MappingStopKeyString != ori_hotkeystring) {
                     updateMappingStopKeyString(ori_hotkeystring);
+                    hotkeyChanged = true;
                     showInformationPopup(tr("MappingStopKey update success : ") + ori_hotkeystring);
                 }
                 lineEdit->setText(s_MappingStopKeyString);
@@ -12482,6 +12495,10 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
                 lineEdit->setText(s_MappingStopKeyString);
                 showFailurePopup(tr("Invalid MappingStopKey: %1").arg(validationResult.errorMessage));
             }
+        }
+
+        if (hotkeyChanged) {
+            markSaveSettingDirty();
         }
     }
 }
@@ -12717,6 +12734,7 @@ void QKeyMapper::applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappi
 
 void QKeyMapper::cellChanged_slot(int row, int col)
 {
+    bool settingChanged = false;
     int row_count = QKeyMapper::KeyMappingDataList->size();
     if (row >= row_count || row < 0) {
 #ifdef DEBUG_LOGOUT_ON
@@ -12739,6 +12757,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         if (burst != KeyMappingDataList->at(row).Burst) {
             (*KeyMappingDataList)[row].Burst = burst;
             emit keyMappingTableItemCheckStateChanged_Signal(row, col, burst);
+            settingChanged = true;
 
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) burst changed to (%s)", __func__, row, burst == true?"ON":"OFF");
@@ -12757,6 +12776,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         if (lock != KeyMappingDataList->at(row).Lock) {
             (*KeyMappingDataList)[row].Lock = lock;
             emit keyMappingTableItemCheckStateChanged_Signal(row, col, lock);
+            settingChanged = true;
 
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) lock changed to (%s)", __func__, row, lock == true?"ON":"OFF");
@@ -12776,6 +12796,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             (*KeyMappingDataList)[row].FloatingButton_Enable = floating;
             emit keyMappingTableItemCheckStateChanged_Signal(row, col, floating);
             applyFloatingButtonRuntimeState(this, row);
+            settingChanged = true;
 
 #ifdef DEBUG_LOGOUT_ON
             qDebug("[%s]: row(%d) floating button changed to (%s)", __func__, row, floating == true?"ON":"OFF");
@@ -12795,6 +12816,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             (*KeyMappingDataList)[row].Disabled = disabled;
             emit keyMappingTableItemCheckStateChanged_Signal(row, col, disabled);
             applyDisabledStyleToMappingRow(m_KeyMappingDataTable, KeyMappingDataList, row);
+            settingChanged = true;
 
             // Enforce mutual exclusion: within the same normalized OriginalKey group,
             // only one item can be enabled at a time.
@@ -12842,6 +12864,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         QString category = m_KeyMappingDataTable->item(row, col)->text();
         if (category != KeyMappingDataList->at(row).Category) {
             (*KeyMappingDataList)[row].Category = category;
+            settingChanged = true;
 
             updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, CATEGORY_COLUMN);
 
@@ -12892,6 +12915,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 if (note_new != mapdata_note && update_withnote) {
                     (*KeyMappingDataList)[row].Note = note_new;
                 }
+                settingChanged = true;
                 updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, ORIGINAL_KEY_COLUMN);
 
                 // If the item is currently enabled and the new OriginalKey conflicts with an already enabled
@@ -12932,6 +12956,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, MAPPING_KEY_COLUMN);
                 updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, BURST_MODE_COLUMN);
                 updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, LOCK_COLUMN);
+                settingChanged = true;
                 closeItemSetupDialog(row);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -12949,6 +12974,10 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             }
         }
 
+    }
+
+    if (settingChanged) {
+        markSaveSettingDirty();
     }
 }
 
@@ -15632,6 +15661,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
             displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
         }
         ui->settingNameLineEdit->setText(displaySettingName);
+        clearSaveSettingDirty();
         popupMessage = tr("Save success : ") + displaySettingName;
         popupMessageColor = SUCCESS_COLOR;
         bool backupRet = backupFile(CONFIG_FILENAME, CONFIG_LATEST_FILENAME);
@@ -27487,6 +27517,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
     ui->savemaplistButton->setText(tr("SaveSetting"));
     ui->savemaplistButton->setToolTip(tr("Hotkey : %1").arg(GENERAL_SAVESETTING_HOTKEY));
+    refreshSaveSettingIndicators();
     ui->addTabButton->setText(tr("AddTab"));
     ui->deleteSelectedButton->setText(tr("Delete"));
     ui->clearallButton->setText(tr("Clear"));
@@ -28582,7 +28613,163 @@ void QKeyMapper::setUITheme(int themeindex)
         m_VButtonPanel->applyScrollAreaTransparencyStyle();
     }
 
+    refreshSaveSettingIndicators();
     applyMappingStartActionMenuSizing(m_MappingStartActionMenu);
+}
+
+void QKeyMapper::connectSettingDirtySignals(void)
+{
+    if (!ui) {
+        return;
+    }
+
+    auto connectLineEdit = [this](QLineEdit *lineEdit) {
+        if (!lineEdit) {
+            return;
+        }
+
+        QObject::connect(lineEdit, &QLineEdit::textEdited, this, [this](const QString &) {
+            markSaveSettingDirty();
+        });
+    };
+
+    auto connectComboBox = [this](QComboBox *comboBox) {
+        if (!comboBox) {
+            return;
+        }
+
+        QObject::connect(comboBox,
+                         QOverload<int>::of(&QComboBox::currentIndexChanged),
+                         this,
+                         [this](int) {
+                             markSaveSettingDirty();
+                         });
+    };
+
+    auto connectCheckable = [this](QAbstractButton *button) {
+        if (!button) {
+            return;
+        }
+
+        QObject::connect(button, &QAbstractButton::toggled, this, [this](bool) {
+            markSaveSettingDirty();
+        });
+    };
+
+    auto connectSpinBox = [this](QSpinBox *spinBox) {
+        if (!spinBox) {
+            return;
+        }
+
+        QObject::connect(spinBox,
+                         QOverload<int>::of(&QSpinBox::valueChanged),
+                         this,
+                         [this](int) {
+                             markSaveSettingDirty();
+                         });
+    };
+
+    auto connectAccepted = [this](QDialog *dialog) {
+        if (!dialog) {
+            return;
+        }
+
+        QObject::connect(dialog, &QDialog::accepted, this, [this]() {
+            markSaveSettingDirty();
+        });
+    };
+
+    connectLineEdit(ui->settingNameLineEdit);
+    connectLineEdit(ui->processLineEdit);
+    connectLineEdit(ui->windowTitleLineEdit);
+    connectLineEdit(ui->classNameLineEdit);
+    connectLineEdit(ui->descriptionLineEdit);
+
+    connectComboBox(ui->languageComboBox);
+    connectComboBox(ui->checkProcessComboBox);
+    connectComboBox(ui->checkWindowTitleComboBox);
+    connectComboBox(ui->checkClassNameComboBox);
+    connectComboBox(ui->notificationComboBox);
+    connectComboBox(ui->scaleComboBox);
+    connectComboBox(ui->themeComboBox);
+    connectComboBox(ui->updateSiteComboBox);
+    connectComboBox(ui->virtualGamepadTypeComboBox);
+
+    connectCheckable(ui->startupMinimizedCheckBox);
+    connectCheckable(ui->startupAutoMonitoringCheckBox);
+    connectCheckable(ui->processListButton);
+    connectCheckable(ui->showNotesButton);
+    connectCheckable(ui->hideDisabledButton);
+    connectCheckable(ui->showFloatingButton);
+    connectCheckable(ui->showCategoryButton);
+    connectCheckable(ui->enableVirtualJoystickCheckBox);
+    connectCheckable(ui->multiInputEnableCheckBox);
+    connectCheckable(ui->filterKeysCheckBox);
+    connectCheckable(ui->autoStartMappingCheckBox);
+
+    connectSpinBox(ui->virtualGamepadNumberSpinBox);
+
+    connectAccepted(m_TrayIconSelectDialog);
+    connectAccepted(m_NotificationSetupDialog);
+    connectAccepted(m_CustomNotificationSetupDialog);
+    connectAccepted(m_GeneralAdvancedDialog);
+    connectAccepted(m_IgnoreRulesListDialog);
+    connectAccepted(m_MappingAdvancedDialog);
+    connectAccepted(m_MacroListDialog);
+}
+
+void QKeyMapper::markSaveSettingDirty(void)
+{
+    if (loadSetting_flag || m_SaveSettingDirty) {
+        return;
+    }
+
+    m_SaveSettingDirty = true;
+    refreshSaveSettingIndicators();
+}
+
+void QKeyMapper::clearSaveSettingDirty(void)
+{
+    m_SaveSettingDirty = false;
+    refreshSaveSettingIndicators();
+}
+
+bool QKeyMapper::hasUnsavedSettingChanges(void) const
+{
+    return m_SaveSettingDirty;
+}
+
+QIcon QKeyMapper::saveSettingWarningIcon(void) const
+{
+    QStyle *widgetStyle = style();
+    if (widgetStyle) {
+        return widgetStyle->standardIcon(QStyle::SP_MessageBoxWarning, Q_NULLPTR, const_cast<QKeyMapper *>(this));
+    }
+
+    return QApplication::style()->standardIcon(QStyle::SP_MessageBoxWarning);
+}
+
+void QKeyMapper::refreshSaveSettingIndicators(void)
+{
+    if (!ui || !ui->savemaplistButton) {
+        return;
+    }
+
+    ui->savemaplistButton->setIcon(hasUnsavedSettingChanges() ? saveSettingWarningIcon() : QIcon());
+}
+
+void QKeyMapper::updateSaveSettingActionIcon(QAction *action) const
+{
+    if (!action) {
+        return;
+    }
+
+    action->setIcon(hasUnsavedSettingChanges() ? saveSettingWarningIcon() : QIcon());
+}
+
+void QKeyMapper::requestSaveSettingDirty(void)
+{
+    markSaveSettingDirty();
 }
 
 void QKeyMapper::checkOSVersionMatched()
@@ -30681,6 +30868,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
             m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
         }
     }
+
+    markSaveSettingDirty();
 }
 
 void QKeyMapper::confirmProcessLineEdit()
@@ -30809,6 +30998,8 @@ void QKeyMapper::selectedItemsMoveUp()
         qDebug("MoveUp:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
+
+    markSaveSettingDirty();
 }
 
 void QKeyMapper::selectedItemsMoveToTop()
@@ -30887,6 +31078,8 @@ void QKeyMapper::selectedItemsMoveToTop()
         qDebug("MoveToTop:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
+
+    markSaveSettingDirty();
 }
 
 void QKeyMapper::selectedItemsMoveDown()
@@ -30955,6 +31148,8 @@ void QKeyMapper::selectedItemsMoveDown()
         qDebug("MoveDown:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
+
+    markSaveSettingDirty();
 }
 
 void QKeyMapper::selectedItemsMoveToBottom()
@@ -31033,6 +31228,8 @@ void QKeyMapper::selectedItemsMoveToBottom()
         qDebug("MoveToBottom:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
+
+    markSaveSettingDirty();
 }
 
 void QKeyMapper::highlightSelectUp()
@@ -31654,6 +31851,8 @@ void QKeyMapper::on_deleteSelectedButton_clicked()
         qDebug("Delete: KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
+
+    markSaveSettingDirty();
 }
 
 void QKeyMapper::on_clearallButton_clicked()
@@ -31670,6 +31869,7 @@ void QKeyMapper::on_clearallButton_clicked()
         KeyMappingDataList->clear();
         ScreenMousePointsList.clear();
         WindowMousePointsList.clear();
+        markSaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_clearallButton_clicked]" << "User press confirm button of ClearAll Warning MessageBox.";
 #endif
@@ -35961,6 +36161,7 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
         onSyncVButtonPanel(panelWasVisible);
     }
     QKeyMapper_Worker::s_vbutton_panel_defaultshow = m_VButtonPanelSettings.defaultShow;
+    requestSaveSettingDirty();
 }
 
 void QKeyMapper::onSyncVButtonPanel(bool showPanel)
@@ -36358,6 +36559,7 @@ void QKeyMapper::onFloatingButtonSettingsApplied()
     syncFloatingButtonRuntimeDataToCurrentTab(rowindex, keymapdata);
     updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, rowindex, FLOATING_COLUMN);
     applyFloatingButtonRuntimeState(this, rowindex);
+    requestSaveSettingDirty();
 }
 
 void QKeyMapper::onVButtonPanelSetupDialogClosed()
@@ -37148,7 +37350,6 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
 
     if (hasSelection && current
         && (currentColumn == DISABLED_COLUMN || currentColumn == BURST_MODE_COLUMN || currentColumn == LOCK_COLUMN || currentColumn == FLOATING_COLUMN || currentColumn == CATEGORY_COLUMN)) {
-
         const QList<int> visibleSelectedRows = collectVisibleSelectedRows(this);
         if (visibleSelectedRows.isEmpty()) {
             event->accept();
@@ -37290,7 +37491,6 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
 
             inputCategoryLayout->addWidget(inputCategoryLineEdit, 1);
             inputCategoryLayout->addWidget(applyCategoryButton, 0);
-
             inputCategoryAction->setDefaultWidget(inputCategoryPanel);
             inputCategoryMenu->addAction(inputCategoryAction);
 
@@ -38120,6 +38320,8 @@ void QKeyMapper::onCustomNotificationSetupRequested()
 
 void QKeyMapper::onCustomNotificationEnabledChanged(bool enabled)
 {
+    requestSaveSettingDirty();
+
     if (!enabled) {
         closeCustomNotificationSetupDialog();
         return;

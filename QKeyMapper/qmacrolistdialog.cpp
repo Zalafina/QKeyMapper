@@ -45,6 +45,13 @@ static void refreshMenuWidgetActionGeometry(QMenu *menu, QWidgetAction *action, 
     menu->adjustSize();
 }
 
+static void notifySaveSettingDirty()
+{
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+    }
+}
+
 } // namespace
 
 QMacroListDialog *QMacroListDialog::m_instance = Q_NULLPTR;
@@ -1188,6 +1195,7 @@ void QMacroListDialog::importMacroListFromFile()
     QString popupMessage = tr("Successfully imported %1 macro(s).").arg(importedCount);
     QString popupMessageColor = SUCCESS_COLOR;
     int popupMessageDisplayTime = 3000;
+    notifySaveSettingDirty();
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -1269,6 +1277,8 @@ void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
 
     // Check if macro name already exists
     bool isUpdate = false;
+    bool macroChanged = true;
+    MappingMacroData previousMacroData;
     if (CurrentMacroList.contains(macroname_str)) {
         QString dialogTitle = (macroDataTable == ui->macrolistTable) ? tr("Macro List") : tr("Universal Macro List");
         QString messageText = tr("Macro name already exists. Replace existing macro?");
@@ -1284,6 +1294,10 @@ void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
             return;
         }
         isUpdate = true;
+        previousMacroData = CurrentMacroList.value(macroname_str);
+        macroChanged = previousMacroData.MappingMacro != macro_str
+                       || previousMacroData.Category != category_str
+                       || previousMacroData.Note != macronote_str;
     }
 
     bool insertBySelection = false;
@@ -1331,6 +1345,9 @@ void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
 
     // Refresh the macro list display
     refreshMacroListTabWidget(macroDataTable, CurrentMacroList);
+    if (macroChanged) {
+        notifySaveSettingDirty();
+    }
 
     // Highlight the inserted or updated row so users can see where it landed.
     if (macroDataTable->rowCount() > 0) {
@@ -2462,6 +2479,7 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
                     // Show success message
                     popupMessageColor = SUCCESS_COLOR;
                     popupMessage = tr("Macro name updated from \"%1\" to \"%2\"").arg(macroName, newMacroName);
+                    notifySaveSettingDirty();
                     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
                 }
             }
@@ -2502,6 +2520,7 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
 
                 // Update MacroList Table display for the macro content column
                 updateMacroListTableItem(macroDataTable, macroDataList, row, MACRO_CONTENT_COLUMN);
+                notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
                 QString debugmessage = QString("[QMacroListDialog::%1] row(%2) MacroContent changed : \"%3\"").arg(__func__).arg(row).arg(newMacroContent);
@@ -2519,12 +2538,18 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
         QString newCategory = categoryItem->text();
         newCategory.replace(simplified_regex, " ");
         newCategory = newCategory.trimmed();
+        const QString currentCategory = macroDataList->value(macroName).Category;
+
+        if (newCategory == currentCategory) {
+            return;
+        }
 
         // Update the category in the data list
         (*macroDataList)[macroName].Category = newCategory;
 
         // Update MacroList Table display for the macro category column
         updateMacroListTableItem(macroDataTable, macroDataList, row, MACRO_CATEGORY_COLUMN);
+        notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[macroTableCellChanged]" << "Updated category for macro:" << macroName << "to:" << newCategory;
@@ -2540,12 +2565,18 @@ void QMacroListDialog::macroTableCellChanged(int row, int column)
         QString newNote = noteItem->text();
         newNote.replace(simplified_regex, " ");
         newNote = newNote.trimmed();
+        const QString currentNote = macroDataList->value(macroName).Note;
+
+        if (newNote == currentNote) {
+            return;
+        }
 
         // Update the note in the data list
         (*macroDataList)[macroName].Note = newNote;
 
         // Update MacroList Table display for the macro note column
         updateMacroListTableItem(macroDataTable, macroDataList, row, MACRO_NOTE_COLUMN);
+        notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[macroTableCellChanged]" << "Updated note for macro:" << macroName << "to:" << newNote;
@@ -2642,6 +2673,7 @@ void QMacroListDialog::macroListTableDragDropMove(int top_row, int bottom_row, i
         qDebug() << "[macroListTableDragDropMove] : refreshMacroListTabWidget()";
 #endif
         refreshMacroListTabWidget(macroDataTable, *macroDataList);
+    notifySaveSettingDirty();
 
         // Reselect the moved rows
         QTableWidgetSelectionRange newSelection;
@@ -3474,6 +3506,7 @@ void QMacroListDialog::selectedMacroItemsMoveUp()
     qDebug() << __func__ << ": refreshMacroListTabWidget()";
 #endif
     refreshMacroListTabWidget(macroDataTable, *macroDataList);
+    notifySaveSettingDirty();
 
     // Reselect the moved rows
     QTableWidgetSelectionRange newSelection(topRow - 1, 0, bottomRow - 1, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
@@ -3565,6 +3598,7 @@ void QMacroListDialog::selectedMacroItemsMoveToTop()
     qDebug() << __func__ << ": refreshMacroListTabWidget()";
 #endif
     refreshMacroListTabWidget(macroDataTable, *macroDataList);
+    notifySaveSettingDirty();
 
     // Reselect the moved rows at the top
     QTableWidgetSelectionRange newSelection(0, 0, bottomRow - topRow, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
@@ -3646,6 +3680,7 @@ void QMacroListDialog::selectedMacroItemsMoveDown()
     qDebug() << __func__ << ": refreshMacroListTabWidget()";
 #endif
     refreshMacroListTabWidget(macroDataTable, *macroDataList);
+    notifySaveSettingDirty();
 
     // Reselect the moved rows
     QTableWidgetSelectionRange newSelection(topRow + 1, 0, bottomRow + 1, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
@@ -3737,6 +3772,7 @@ void QMacroListDialog::selectedMacroItemsMoveToBottom()
     qDebug() << __func__ << ": refreshMacroListTabWidget()";
 #endif
     refreshMacroListTabWidget(macroDataTable, *macroDataList);
+    notifySaveSettingDirty();
 
     // Reselect the moved rows at the bottom
     QTableWidgetSelectionRange newSelection(macroDataTable->rowCount() - (bottomRow - topRow + 1), 0, macroDataTable->rowCount() - 1, MACROLISTDATA_TABLE_COLUMN_COUNT - 1);
@@ -3801,6 +3837,7 @@ void QMacroListDialog::deleteMacroSelectedItems()
 
     // Refresh the display
     refreshMacroListTabWidget(macroDataTable, *macroDataList);
+    notifySaveSettingDirty();
 
     // Reselect the row at the top of the deleted range, or the last row if the table is empty
     if (macroDataTable->rowCount() > 0) {

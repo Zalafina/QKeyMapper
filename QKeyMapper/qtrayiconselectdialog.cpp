@@ -19,6 +19,21 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
     ui->monitoringStateTrayIconSelectComboBox->setCurrentText(TRAYICON_MONITORING_DEFAULT_FILE);
     ui->globalStateTrayIconSelectComboBox->setCurrentText(TRAYICON_GLOBAL_DEFAULT_FILE);
     ui->matchedStateTrayIconSelectComboBox->setCurrentText(TRAYICON_MATCHED_DEFAULT_FILE);
+
+    auto notifyDirty = []() {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    };
+
+    QObject::connect(ui->idleStateTrayIconSelectComboBox, QOverload<int>::of(&QComboBox::activated),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->monitoringStateTrayIconSelectComboBox, QOverload<int>::of(&QComboBox::activated),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->globalStateTrayIconSelectComboBox, QOverload<int>::of(&QComboBox::activated),
+                     this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->matchedStateTrayIconSelectComboBox, QOverload<int>::of(&QComboBox::activated),
+                     this, [notifyDirty](int) { notifyDirty(); });
 }
 
 QTrayIconSelectDialog::~QTrayIconSelectDialog()

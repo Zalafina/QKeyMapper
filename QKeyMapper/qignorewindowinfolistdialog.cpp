@@ -164,12 +164,31 @@ void QIgnoreWindowInfoListDialog::on_saveRuleButton_clicked()
 
     // Check if rule already exists (update vs add)
     bool isUpdate = QKeyMapper::s_IgnoreWindowInfoMap.contains(ruleName);
+    bool ruleChanged = true;
+    if (isUpdate) {
+        const IgnoreWindowInfo &currentInfo = QKeyMapper::s_IgnoreWindowInfoMap[ruleName];
+        ruleChanged = currentInfo.ruleName != info.ruleName
+                      || currentInfo.processName != info.processName
+                      || currentInfo.windowTitle != info.windowTitle
+                      || currentInfo.className != info.className
+                      || currentInfo.description != info.description
+                      || currentInfo.processNameMatchType != info.processNameMatchType
+                      || currentInfo.windowTitleMatchType != info.windowTitleMatchType
+                      || currentInfo.classNameMatchType != info.classNameMatchType
+                      || currentInfo.disabled != info.disabled;
+    }
 
     // Add or update rule in map
     QKeyMapper::s_IgnoreWindowInfoMap[ruleName] = info;
 
     // Refresh list widget
     updateRulesListWidget();
+
+    if (ruleChanged) {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    }
 
     // Show success message
     QString popupMessage;
@@ -239,10 +258,17 @@ void QIgnoreWindowInfoListDialog::on_deleteRuleButton_clicked()
     }
 
     // Remove rule from map
-    QKeyMapper::s_IgnoreWindowInfoMap.remove(ruleName);
+    const int removedCount = QKeyMapper::s_IgnoreWindowInfoMap.remove(ruleName);
+    if (removedCount <= 0) {
+        return;
+    }
 
     // Refresh list widget
     updateRulesListWidget();
+
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+    }
 
     // Show success message
     QString popupMessage = tr("Rule \"%1\" deleted successfully").arg(ruleName);
@@ -270,6 +296,10 @@ void QIgnoreWindowInfoListDialog::on_restoreDefaultRulesButton_clicked()
     QKeyMapper::initIgnoreWindowInfoList();
     updateRulesListWidget();
     initRuleWindowInfoArea();
+
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+    }
 
     QString popupMessage = tr("Rules restored to default successfully");
     QString popupMessageColor = SUCCESS_COLOR;
