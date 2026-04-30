@@ -11201,6 +11201,15 @@ QKeyMapper::MappingStartActionMode QKeyMapper::effectiveMappingStartActionMode(b
     return m_MappingStartActionMode;
 }
 
+QKeyMapper::MappingStartActionMode QKeyMapper::executionMappingStartActionMode(bool preferPhysicalCtrlState) const
+{
+    if (preferPhysicalCtrlState && shouldUseMappingStartSaveAndStartOverride(true)) {
+        return MAPPINGSTART_ACTION_SAVEANDSTART;
+    }
+
+    return m_MappingStartActionMode;
+}
+
 void QKeyMapper::updateMainWindowCtrlOverrideState(bool ctrlPressed)
 {
     const MappingStartActionMode previousEffectiveActionMode = effectiveMappingStartActionMode();
@@ -11329,7 +11338,7 @@ bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode s
 {
     if (KEYMAP_IDLE == m_KeyMapStatus
         && MAPPINGSTART_LOADSETTING != startmode
-        && MAPPINGSTART_ACTION_SAVEANDSTART == effectiveMappingStartActionMode(preferPhysicalCtrlState)) {
+        && MAPPINGSTART_ACTION_SAVEANDSTART == executionMappingStartActionMode(preferPhysicalCtrlState)) {
         if (!saveKeyMapSetting(false)) {
             return false;
         }
@@ -11498,7 +11507,7 @@ void QKeyMapper::HotKeyStartStopActivated(const QString &keyseqstr, const Qt::Ke
     qDebug().nospace() << "[HotKeyStartStopActivated] Shortcut[" << keyseqstr << "], KeyboardModifiers = " << modifiers <<", KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
-    handleManualMappingSwitchRequest(MAPPINGSTART_HOTKEY);
+    handleManualMappingSwitchRequest(MAPPINGSTART_HOTKEY, false);
 
     /* Add for "explorer.exe" AltModifier Bug Fix >>> */
     HWND hwnd = GetForegroundWindow();
@@ -11579,7 +11588,7 @@ void QKeyMapper::HotKeyMappingSwitchActivated(const QString &hotkey_string)
     qDebug().nospace() << "[HotKeyMappingSwitchActivated] MappingSwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
-    handleManualMappingSwitchRequest(MAPPINGSTART_HOTKEY);
+    handleManualMappingSwitchRequest(MAPPINGSTART_HOTKEY, false);
 
     /* Add for "explorer.exe" AltModifier Bug Fix >>> */
     HWND hwnd = GetForegroundWindow();
@@ -12636,7 +12645,7 @@ void QKeyMapper::onTrayIconMenuMappingSwitchAction()
     qDebug() << "[onTrayIconMenuMappingSwitchAction]" << "MappingSwitchAction Triggered.";
 #endif
 
-    handleManualMappingSwitchRequest(MAPPINGSTART_BUTTONCLICK);
+    handleManualMappingSwitchRequest(MAPPINGSTART_BUTTONCLICK, false);
 }
 
 void QKeyMapper::onTrayIconMenuQuitAction()

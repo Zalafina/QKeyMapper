@@ -1687,6 +1687,7 @@ private:
     void hideMappingStartActionMenuPopup(void);
     bool shouldUseMappingStartSaveAndStartOverride(bool preferPhysicalCtrlState = false) const;
     MappingStartActionMode effectiveMappingStartActionMode(bool preferPhysicalCtrlState = false) const;
+    MappingStartActionMode executionMappingStartActionMode(bool preferPhysicalCtrlState) const;
     void updateMappingStartActionTexts(void);
     void updateMappingStartButtonText(void);
     void setMappingStartActionMode(MappingStartActionMode actionMode, bool persist = true);
