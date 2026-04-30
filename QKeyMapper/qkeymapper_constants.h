@@ -82,8 +82,8 @@ namespace QKeyMapperConstants {
     inline constexpr int MAPPING_START_ACTION_MENU_FONT_POINT_SIZE  = 13;
     inline constexpr int MAPPING_START_ACTION_MENU_ITEM_MIN_HEIGHT  = 36;
     inline constexpr int MAPPING_START_MENU_BUTTON_WIDTH            = 20;
+    inline constexpr int MAPPING_START_MENU_GAP_WIDTH               = 0;
     inline constexpr int MAPPING_START_MENU_ARROW_SIZE             = 10;
-    inline constexpr int MAPPING_START_TEXT_X_OFFSET               = 2;
     inline constexpr double MAPPING_START_MENU_ARROW_X_OFFSET      = 0.5;
 
     inline constexpr int CATEGORY_FILTER_MIN_WIDTH_MACROLIST        = 100;

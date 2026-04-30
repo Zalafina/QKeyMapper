@@ -109,6 +109,35 @@ void applyMappingStartActionMenuSizing(QMenu *menu)
     }
 }
 
+int mappingStartMenuGapWidth(const QRect &buttonRect, int menuWidth)
+{
+    if (!buttonRect.isValid() || buttonRect.width() <= 0) {
+        return 0;
+    }
+
+    if (MAPPING_START_MENU_GAP_WIDTH <= 0) {
+        return 0;
+    }
+
+    const int availableWidth = qMax(0, buttonRect.width() - qMax(0, menuWidth));
+    return qMin(MAPPING_START_MENU_GAP_WIDTH, availableWidth);
+}
+
+QRect mappingStartMainButtonRect(const QRect &buttonRect, const QRect &menuRect)
+{
+    if (!buttonRect.isValid()) {
+        return QRect();
+    }
+
+    if (!menuRect.isValid() || menuRect.width() <= 0) {
+        return buttonRect;
+    }
+
+    QRect mainRect = buttonRect;
+    mainRect.setRight(menuRect.left() - mappingStartMenuGapWidth(buttonRect, menuRect.width()) - 1);
+    return mainRect.intersected(buttonRect);
+}
+
 } // namespace
 
 void MappingStartToolButton::setMenu(QMenu *menu)
@@ -169,14 +198,15 @@ QRect MappingStartToolButton::menuSubControlRect(void) const
 
     const int indicatorWidth = qMax(16, style()->pixelMetric(QStyle::PM_MenuButtonIndicator, Q_NULLPTR, this));
     const int desiredWidth = (MAPPING_START_MENU_BUTTON_WIDTH > 0)
-        ? qMax(indicatorWidth, MAPPING_START_MENU_BUTTON_WIDTH)
+        ? MAPPING_START_MENU_BUTTON_WIDTH
         : indicatorWidth;
-    const int finalWidth = qMin(width(), desiredWidth);
+    const int exactWidth = qMax(indicatorWidth, desiredWidth);
+    const int finalWidth = qMin(width(), exactWidth);
 
     if (menuRect.isEmpty()) {
         menuRect = QRect(width() - finalWidth, 0, finalWidth, height());
     }
-    else if (menuRect.width() < finalWidth) {
+    else {
         menuRect = QRect(width() - finalWidth, menuRect.y(), finalWidth, menuRect.height());
     }
 
@@ -320,8 +350,7 @@ void MappingStartToolButton::paintEvent(QPaintEvent *event)
         return;
     }
 
-    QRect mainButtonRect = rect();
-    mainButtonRect.setRight(menuRect.left() - 1);
+    const QRect mainButtonRect = mappingStartMainButtonRect(rect(), menuRect);
     if (!mainButtonRect.isValid() || mainButtonRect.width() <= 0 || mainButtonRect.height() <= 0) {
         QToolButton::paintEvent(event);
         return;
@@ -329,17 +358,20 @@ void MappingStartToolButton::paintEvent(QPaintEvent *event)
 
     QPainter painter(this);
 
-    QStyleOptionToolButton baseOption(option);
-    baseOption.text.clear();
-    baseOption.icon = QIcon();
-    style()->drawComplexControl(QStyle::CC_ToolButton, &baseOption, &painter, this);
+    QStyleOptionToolButton mainPanelOption(option);
+    mainPanelOption.rect = mainButtonRect;
+    mainPanelOption.text.clear();
+    mainPanelOption.icon = QIcon();
+    mainPanelOption.features &= ~(QStyleOptionToolButton::HasMenu
+                                  | QStyleOptionToolButton::MenuButtonPopup
+                                  | QStyleOptionToolButton::PopupDelay);
+    mainPanelOption.subControls = QStyle::SC_ToolButton;
+    mainPanelOption.activeSubControls = QStyle::SC_ToolButton;
+    style()->drawComplexControl(QStyle::CC_ToolButton, &mainPanelOption, &painter, this);
 
     if (!option.text.isEmpty() || !option.icon.isNull()) {
         QStyleOptionToolButton labelOption(option);
         labelOption.rect = mainButtonRect;
-        if (MAPPING_START_TEXT_X_OFFSET != 0) {
-            labelOption.rect.translate(MAPPING_START_TEXT_X_OFFSET, 0);
-        }
         labelOption.features &= ~(QStyleOptionToolButton::HasMenu
                                   | QStyleOptionToolButton::MenuButtonPopup
                                   | QStyleOptionToolButton::PopupDelay);
