@@ -337,13 +337,6 @@ void MappingStartToolButton::paintEvent(QPaintEvent *event)
     QStyleOptionToolButton option;
     initStyleOption(&option);
 
-    if (m_MenuButtonDown) {
-        option.state |= QStyle::State_Sunken;
-    }
-    if (!m_MenuButtonEnabled) {
-        option.state &= ~QStyle::State_Enabled;
-    }
-
     const QRect menuRect = menuSubControlRect();
     if (!menuRect.isValid() || menuRect.width() <= 0 || menuRect.height() <= 0) {
         QToolButton::paintEvent(event);
@@ -383,6 +376,12 @@ void MappingStartToolButton::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     QStyleOptionToolButton menuOption(option);
+    if (m_MenuButtonDown) {
+        menuOption.state |= QStyle::State_Sunken;
+    }
+    if (!m_MenuButtonEnabled) {
+        menuOption.state &= ~QStyle::State_Enabled;
+    }
     menuOption.rect = menuRect;
     menuOption.subControls = QStyle::SC_None;
     menuOption.activeSubControls = QStyle::SC_ToolButtonMenu;
