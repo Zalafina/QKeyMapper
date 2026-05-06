@@ -472,10 +472,29 @@
     <number>50</number>
    </property>
   </widget>
-  <widget class="QPushButton" name="okButton">
+    <widget class="QPushButton" name="revertButton">
    <property name="geometry">
     <rect>
-     <x>215</x>
+         <x>20</x>
+     <y>500</y>
+     <width>75</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+        <string>Revert</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+   <property name="default">
+    <bool>false</bool>
+   </property>
+  </widget>
+    <widget class="QPushButton" name="okButton">
+   <property name="geometry">
+    <rect>
+     <x>305</x>
      <y>500</y>
      <width>75</width>
      <height>28</height>
@@ -488,22 +507,6 @@
     <bool>false</bool>
    </property>
    <property name="default">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="cancelButton">
-   <property name="geometry">
-    <rect>
-     <x>305</x>
-     <y>500</y>
-     <width>75</width>
-     <height>28</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Cancel</string>
-   </property>
-   <property name="autoDefault">
     <bool>false</bool>
    </property>
   </widget>
@@ -624,22 +627,5 @@
   </widget>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>cancelButton</sender>
-   <signal>clicked()</signal>
-   <receiver>QVButtonPanelSetupDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>342</x>
-     <y>269</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>200</x>
-     <y>150</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

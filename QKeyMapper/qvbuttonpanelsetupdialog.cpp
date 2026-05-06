@@ -12,6 +12,9 @@ QVButtonPanelSetupDialog *QVButtonPanelSetupDialog::m_instance = nullptr;
 QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QVButtonPanelSetupDialog)
+    , m_isLoading(false)
+    , m_hasBackup(false)
+    , m_BackupSettings()
     , m_BGColorPicker(new ColorPickerWidget(this, "VBtn_BGColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BGCOLOR))
     , m_BtnColorPicker(new ColorPickerWidget(this, "VBtn_BtnColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
     , m_PressedColorPicker(new ColorPickerWidget(this, "VBtn_PressedColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
@@ -84,7 +87,43 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
             [this]() {
                 m_btnFontFamily.clear();
                 syncFontFamilyControls();
+                onAnyControlChanged();
             });
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    connect(ui->alwaysOnTopCheckBox, &QCheckBox::checkStateChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->dragEnabledCheckBox, &QCheckBox::checkStateChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->defaultShowCheckBox, &QCheckBox::checkStateChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+#else
+    connect(ui->alwaysOnTopCheckBox, &QCheckBox::stateChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->dragEnabledCheckBox, &QCheckBox::stateChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->defaultShowCheckBox, &QCheckBox::stateChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+#endif
+    connect(ui->columnsSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->maxRowsSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->btnWidthSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->btnHeightSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->opacitySpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->marginSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->radiusSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->referencePointComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->offsetXSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->offsetYSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->btnFontSizeSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->btnFontWeightComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->btnFontFamilyComboBox, &QFontComboBox::currentFontChanged, this,
+            [this](const QFont &font) {
+                m_btnFontFamily = font.family().trimmed();
+                ui->btnFontFamilyDefaultButton->setEnabled(!m_btnFontFamily.isEmpty());
+                onAnyControlChanged();
+            });
+
+    connect(m_BGColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(m_BtnColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(m_PressedColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(m_LockedColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(m_TextColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+
     syncFontFamilyControls();
 }
 
@@ -136,7 +175,7 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     ui->btnFontWeightComboBox->setItemText(VBTNPANEL_FONT_WEIGHT_BOLD, tr("Bold"));
 
     ui->okButton->setText(tr("Apply"));
-    ui->cancelButton->setText(tr("Cancel"));
+    ui->revertButton->setText(tr("Revert"));
     ui->btnFontFamilyDefaultButton->setText(tr("Default"));
     ui->btnFontFamilyDefaultButton->setToolTip(tr("Use application default font"));
 
@@ -154,6 +193,8 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
 
 void QVButtonPanelSetupDialog::loadSettings(const VButtonPanelSettings &settings)
 {
+    m_isLoading = true;
+
     ui->columnsSpinBox->setValue(settings.columns);
     ui->maxRowsSpinBox->setValue(settings.maxRows);
     ui->btnWidthSpinBox->setValue(settings.btnWidth);
@@ -179,6 +220,8 @@ void QVButtonPanelSetupDialog::loadSettings(const VButtonPanelSettings &settings
     m_PressedColorPicker->setColor(settings.pressedColor);
     m_LockedColorPicker->setColor(settings.lockedColor);
     m_TextColorPicker->setColor(settings.textColor);
+
+    m_isLoading = false;
 }
 
 VButtonPanelSettings QVButtonPanelSetupDialog::getSettings() const
@@ -220,10 +263,38 @@ void QVButtonPanelSetupDialog::syncFontFamilyControls()
     ui->btnFontFamilyDefaultButton->setEnabled(!m_btnFontFamily.isEmpty());
 }
 
+void QVButtonPanelSetupDialog::showEvent(QShowEvent *event)
+{
+    m_BackupSettings = getSettings();
+    m_hasBackup = true;
+
+    QDialog::showEvent(event);
+}
+
 void QVButtonPanelSetupDialog::on_okButton_clicked()
 {
-    // Emit signal to apply current settings without closing the dialog,
-    // allowing the user to continue adjusting while the panel updates live.
+    m_BackupSettings = getSettings();
+    m_hasBackup = true;
+
+    emit settingsApplied();
+}
+
+void QVButtonPanelSetupDialog::on_revertButton_clicked()
+{
+    if (!m_hasBackup) {
+        return;
+    }
+
+    loadSettings(m_BackupSettings);
+    emit settingsApplied();
+}
+
+void QVButtonPanelSetupDialog::onAnyControlChanged()
+{
+    if (m_isLoading) {
+        return;
+    }
+
     emit settingsApplied();
 }
 
@@ -243,6 +314,7 @@ bool QVButtonPanelSetupDialog::event(QEvent *event)
 
 void QVButtonPanelSetupDialog::closeEvent(QCloseEvent *event)
 {
+    m_hasBackup = false;
     QDialog::closeEvent(event);
 
     if (event->isAccepted()) {

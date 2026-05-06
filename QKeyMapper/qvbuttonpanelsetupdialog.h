@@ -61,16 +61,22 @@ signals:
 
 protected:
     bool event(QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void on_okButton_clicked();
+    void on_revertButton_clicked();
+    void onAnyControlChanged();
 
 private:
     void syncFontFamilyControls();
 
     static QVButtonPanelSetupDialog *m_instance;
     Ui::QVButtonPanelSetupDialog    *ui;
+    bool                            m_isLoading;
+    bool                            m_hasBackup;
+    VButtonPanelSettings            m_BackupSettings;
     QString                         m_btnFontFamily;
     ColorPickerWidget               *m_BGColorPicker;
     ColorPickerWidget               *m_BtnColorPicker;
