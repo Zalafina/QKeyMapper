@@ -32290,6 +32290,12 @@ void KeyListPopupListWidget::mousePressEvent(QMouseEvent *event)
 
     QListWidget::mousePressEvent(event);
 
+    if (event->button() == Qt::MiddleButton
+        && clickedItem != Q_NULLPTR
+        && (clickedItem->flags() & Qt::ItemIsEnabled)) {
+        emit middleClickedItem(clickedItem, (event->modifiers() & Qt::ControlModifier));
+    }
+
     if (event->button() == Qt::LeftButton
         && clickedItem != Q_NULLPTR
         && (clickedItem->flags() & Qt::ItemIsEnabled)) {
@@ -32519,9 +32525,11 @@ KeyListComboBoxPopup::KeyListComboBoxPopup(KeyListComboBox *comboBox)
     connect(m_FavoritesToolButton, &QToolButton::customContextMenuRequested, this, &KeyListComboBoxPopup::showFavoritesHeaderMenu);
     connect(m_RecentToolButton, &QToolButton::customContextMenuRequested, this, &KeyListComboBoxPopup::showRecentHeaderMenu);
     connect(m_MainListWidget, &KeyListPopupListWidget::leftClickedItem, this, &KeyListComboBoxPopup::onMainListItemClicked);
+    connect(m_MainListWidget, &KeyListPopupListWidget::middleClickedItem, this, &KeyListComboBoxPopup::onMainListItemMiddleClicked);
     connect(m_MainListWidget, &KeyListPopupListWidget::contextMenuRequestedAt, this, &KeyListComboBoxPopup::showMainListMenu);
     connect(m_BackToolButton, &QToolButton::clicked, this, &KeyListComboBoxPopup::closeCollectionPage);
     connect(m_CollectionListWidget, &KeyListPopupListWidget::leftClickedItem, this, &KeyListComboBoxPopup::onCollectionListItemClicked);
+    connect(m_CollectionListWidget, &KeyListPopupListWidget::middleClickedItem, this, &KeyListComboBoxPopup::onCollectionListItemMiddleClicked);
     connect(m_CollectionListWidget, &KeyListPopupListWidget::contextMenuRequestedAt, this, &KeyListComboBoxPopup::showCollectionListMenu);
 
     m_SearchLineEdit->installEventFilter(this);
@@ -33477,6 +33485,34 @@ static bool appendSetupDialogPopupItemToEditBox(const KeyListComboBox *comboBox,
     }
 
     return false;
+}
+
+void KeyListComboBoxPopup::onMainListItemMiddleClicked(QListWidgetItem *item, bool appendWithCtrlModifier)
+{
+    if (item == Q_NULLPTR || m_ComboBox == Q_NULLPTR || !supportsSetupDialogAppendAction(m_ComboBox)) {
+        return;
+    }
+
+    const QString actualText = item->data(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE).toString().trimmed();
+    if (actualText.isEmpty()) {
+        return;
+    }
+
+    appendSetupDialogPopupItemToEditBox(m_ComboBox, actualText, appendWithCtrlModifier, true);
+}
+
+void KeyListComboBoxPopup::onCollectionListItemMiddleClicked(QListWidgetItem *item, bool appendWithCtrlModifier)
+{
+    if (item == Q_NULLPTR || m_ComboBox == Q_NULLPTR || !supportsSetupDialogAppendAction(m_ComboBox)) {
+        return;
+    }
+
+    const QString actualText = item->data(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE).toString();
+    if (!isValidActualText(actualText)) {
+        return;
+    }
+
+    appendSetupDialogPopupItemToEditBox(m_ComboBox, actualText, appendWithCtrlModifier, true);
 }
 
 void KeyListComboBoxPopup::showFavoritesHeaderMenu(const QPoint &pos)

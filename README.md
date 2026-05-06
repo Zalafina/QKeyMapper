@@ -148,6 +148,19 @@
 
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
+* v1.3.8(Build 20260508)
+    * utils目录下工具脚本追加**多窗口一键隐藏显示切换工具**，详细使用方法参考 utils 目录下 readme.txt 文件:
+      ##### 多窗口一键隐藏显示切换工具
+          ahk.exe hidden_window.ahk process="notepad.exe"                                       (隐藏 / 显示所有记事本窗口)
+          ahk.exe hidden_window.ahk process="explorer.exe"                                      (隐藏 / 显示所有资源管理器窗口)
+          ahk.exe hidden_window.ahk process1="notepad.exe" process2="msedge.exe"                (同时隐藏 / 显示记事本和 Edge)
+          ahk.exe hidden_window.ahk process="notepad.exe" title="工作"                          (仅处理标题包含“工作”的记事本窗口)
+          ahk.exe hidden_window.ahk process="notepad.exe" rule="exclude" title="临时"           (排除标题包含“临时”的记事本窗口)
+          ahk.exe hidden_window.ahk process1="notepad.exe" title1="临时文件" process2="explorer.exe" rule2="exclude" title2="桌面"
+          ahk.exe hidden_window.ahk process1="WeChat.exe" rule1="exact" title1="微信" process2="msedge.exe" title2="抖音" process3="QQ.exe"
+          ahk.exe hidden_window.ahk process="notepad.exe" class="Notepad" classrule="exact"     (仅匹配类名精确为 Notepad 的记事本窗口)
+          ahk.exe hidden_window.ahk process="chrome.exe" classrule="exclude" class="Chrome_WidgetWin_0" title="百度"
+          ahk.exe hidden_window.ahk process="notepad.exe" hideminimizedwindows=false            (仅处理当前可见窗口，不隐藏任务栏最小化窗口)
 * v1.3.8(Build 20260424)
     * 优化触发类型选择方式，映射表原始按键列右键菜单可以选择触发类型进行 **正常/长按/双击** 3种原始按键触发类型切换。
     * 按键下拉选择列表检索后结果排序优化。

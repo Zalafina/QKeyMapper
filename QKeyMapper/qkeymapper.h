@@ -448,6 +448,7 @@ public:
 
 signals:
     void leftClickedItem(QListWidgetItem *item);
+    void middleClickedItem(QListWidgetItem *item, bool appendWithCtrlModifier);
     void contextMenuRequestedAt(const QPoint &pos);
 
 protected:
@@ -554,7 +555,9 @@ private:
 private slots:
     void onSearchTextChanged(const QString &text);
     void onMainListItemClicked(QListWidgetItem *item);
+    void onMainListItemMiddleClicked(QListWidgetItem *item, bool appendWithCtrlModifier);
     void onCollectionListItemClicked(QListWidgetItem *item);
+    void onCollectionListItemMiddleClicked(QListWidgetItem *item, bool appendWithCtrlModifier);
     void showFavoritesHeaderMenu(const QPoint &pos);
     void showRecentHeaderMenu(const QPoint &pos);
     void showMainListMenu(const QPoint &pos);
