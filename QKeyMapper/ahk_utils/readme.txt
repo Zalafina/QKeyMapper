@@ -153,3 +153,41 @@ Run(utils\ahk utils\script\switch_ime.ahk ime=0x04110411 mode=reverse_cycle)
 - HKL编码可能因系统版本和安装的语言包不同而有所差异
 - 切换的输入法必须已在系统中安装，否则切换无效
 - Windows 10/11 系统可在 设置 -> 时间和语言 -> 语言 中添加输入法
+
+8. 多窗口一键隐藏显示切换工具
+ahk.exe hidden_window.ahk process="xxx.exe" [其他参数...]
+说明：
+process= 进程名，必需，可传入可执行文件名或者路径，带空格路径注意外面加双引号；如果是路径会自动提取 exe 文件名用于匹配。
+title= 可传入希望匹配窗口的完整标题或部分标题，带空格标题注意外面加双引号。
+rule= 标题匹配规则，可选 contains / exact / regex / exclude；默认 contains。
+class= 可传入希望匹配窗口的类名，例如 Notepad、CabinetWClass。
+classrule= 类名匹配规则，可选 contains / exact / regex / exclude；默认 contains。
+processN/titleN/ruleN/classN/classruleN 可用于多进程分组匹配，例如 process1、process2、title2。
+hideminimizedwindows=false 可选参数，默认行为是隐藏任务栏中仅最小化显示的窗口；设置为 false 时仅处理当前可见窗口，不隐藏任务栏最小化窗口。
+窗口排序模式在脚本内通过 SortMode 配置，可选 z_order、hwnd、creation_time；默认 creation_time。
+
+匹配规则说明：
+contains：模糊包含匹配（不区分大小写）
+exact：精确匹配（标题或类名完全一致）
+regex：正则表达式匹配
+exclude：排除匹配（匹配到则跳过）
+
+工具命令示例->
+ahk.exe hidden_window.ahk process="notepad.exe"                                                          (隐藏 / 显示所有记事本窗口)
+ahk.exe hidden_window.ahk process="explorer.exe"                                                         (隐藏 / 显示所有资源管理器窗口)
+ahk.exe hidden_window.ahk process1="notepad.exe" process2="chrome.exe"                                 (同时隐藏 / 显示记事本和 Chrome)
+ahk.exe hidden_window.ahk process="notepad.exe" title="工作"                                            (仅处理标题包含“工作”的记事本窗口)
+ahk.exe hidden_window.ahk process="notepad.exe" rule="exclude" title="临时"                           (排除标题包含“临时”的记事本窗口)
+ahk.exe hidden_window.ahk process1="notepad.exe" title1="临时文件" process2="explorer.exe" rule2="exclude" title2="桌面"
+ahk.exe hidden_window.ahk process1="WeChat.exe" rule1="exact" title1="微信" process2="chrome.exe" title2="抖音" process3="QQ.exe"
+ahk.exe hidden_window.ahk process="notepad.exe" class="Notepad" classrule="exact"                    (仅匹配类名精确为 Notepad 的记事本窗口)
+ahk.exe hidden_window.ahk process="chrome.exe" classrule="exclude" class="Chrome_WidgetWin_0" title="百度"
+ahk.exe hidden_window.ahk process="notepad.exe" hideminimizedwindows=false                               (仅处理当前可见窗口，不隐藏任务栏最小化窗口)
+
+映射按键用法示例：
+Run(utils\ahk utils\script\hidden_window.ahk process="notepad.exe")
+Run(utils\ahk utils\script\hidden_window.ahk process1="notepad.exe" process2="chrome.exe")
+Run(utils\ahk utils\script\hidden_window.ahk process="notepad.exe" title="工作")
+Run(utils\ahk utils\script\hidden_window.ahk process="notepad.exe" rule="exclude" title="临时")
+Run(utils\ahk utils\script\hidden_window.ahk process="notepad.exe" class="Notepad" classrule="exact")
+Run(utils\ahk utils\script\hidden_window.ahk process="notepad.exe" hideminimizedwindows=false)
