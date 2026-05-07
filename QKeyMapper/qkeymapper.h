@@ -1685,6 +1685,8 @@ private:
     bool isCtrlKeyPressed(void) const;
     bool isMainWindowCtrlOverrideContextActive(void) const;
     bool isMainWindowCtrlOverrideActive(void) const;
+    bool shouldUseAddNewMappingOverride(bool preferPhysicalCtrlState = false) const;
+    void updateAddMapDataButtonText(void);
     void updateMainWindowCtrlOverrideState(bool ctrlPressed);
     void refreshMainWindowCtrlOverrideState(void);
     void hideMappingStartActionMenuPopup(void);
@@ -1779,6 +1781,9 @@ private:
     void setKeyPressTypeComboBoxItems(const QString &normalText, const QString &longPressText, const QString &doublePressText);
     void updatePressTimeSpinBoxEnabledState();
     void changeControlEnableStatus(bool status);
+    MAP_KEYDATA createDefaultKeyMappingData(const QString &originalKey, const QString &mappingKey, bool disabled) const;
+    void insertNewMappingData(const MAP_KEYDATA &newKeyMappingData, bool openSetupDialog = false);
+    void addFixedDefaultMappingAndOpenSetup(void);
 
     void extractSoundFiles();
     void playStartSound();

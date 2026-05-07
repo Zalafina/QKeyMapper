@@ -1491,6 +1491,9 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         qDebug().nospace().noquote() << "[QItemSetupDialog::showEvent]" << "Load Key Mapping Data[" << m_ItemRow << "] ->" << keymapdata;
 #endif
 
+        /* Load Index String */
+        ui->indexLabel->setText(QString("%1 %2").arg(QObject::tr("No."), QString::number(m_ItemRow + 1)));
+
         /* Load Original Key String */
         QString originalkey_str = keymapdata.Original_Key;
         ui->originalKeyLineEdit->setText(originalkey_str);
@@ -2342,6 +2345,7 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->repeatTimesSpinBox->setEnabled(false);
         }
 
+        Q_UNUSED(value_changed);
         keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
 
 #if 0

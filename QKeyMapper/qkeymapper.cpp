@@ -11167,6 +11167,17 @@ bool QKeyMapper::isMainWindowCtrlOverrideActive(void) const
     return m_MainWindowCtrlOverrideActive;
 }
 
+bool QKeyMapper::shouldUseAddNewMappingOverride(bool preferPhysicalCtrlState) const
+{
+    if (m_KeyMapStatus != KEYMAP_IDLE) {
+        return false;
+    }
+
+    return preferPhysicalCtrlState
+        ? (isMainWindowCtrlOverrideContextActive() && isCtrlKeyPressed())
+        : isMainWindowCtrlOverrideActive();
+}
+
 void QKeyMapper::hideMappingStartActionMenuPopup(void)
 {
     if (!ui || !ui->keymapButton) {
@@ -11219,6 +11230,8 @@ void QKeyMapper::updateMainWindowCtrlOverrideState(bool ctrlPressed)
     m_MainWindowCtrlPressed = ctrlPressed;
     m_MainWindowCtrlOverrideActive = m_MainWindowCtrlPressed && isMainWindowCtrlOverrideContextActive();
 
+    updateAddMapDataButtonText();
+
     const MappingStartActionMode currentEffectiveActionMode = effectiveMappingStartActionMode();
     if (m_KeyMapStatus == KEYMAP_IDLE && previousEffectiveActionMode != currentEffectiveActionMode) {
         hideMappingStartActionMenuPopup();
@@ -11242,6 +11255,17 @@ void QKeyMapper::updateMappingStartActionTexts(void)
     }
 
     updateMappingStartButtonText();
+}
+
+void QKeyMapper::updateAddMapDataButtonText(void)
+{
+    if (!ui || !ui->addmapdataButton) {
+        return;
+    }
+
+    ui->addmapdataButton->setText(shouldUseAddNewMappingOverride(false)
+        ? tr("Add New")
+        : tr("ADD"));
 }
 
 void QKeyMapper::updateMappingStartButtonText(void)
@@ -21621,6 +21645,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 #endif
 
     ui->addmapdataButton->setEnabled(status);
+    updateAddMapDataButtonText();
     ui->addTabButton->setEnabled(status);
     ui->deleteSelectedButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
@@ -27532,7 +27557,7 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     updateIgnoreWindowInfoListDescriptionTranslation();
 
-    ui->addmapdataButton->setText(tr("ADD"));
+    updateAddMapDataButtonText();
     if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_MANUALEDIT) {
         ui->originalKeyEditModeButton->setText(tr("Capture"));
     }
@@ -29415,7 +29440,7 @@ void QKeyMapper::refreshFloatingButtonWidget(QPushButton *button, int rowindex, 
             tip += QString("%1 : %2\n").arg(tr("Label"), fullLabel);
         }
         tip += QString("%1 : %2\n%3 : %4\n")
-                   .arg(tr("No."), QString::number(rowindex + 1), tr("OriginalKey"), keymapdata.Original_Key);
+                   .arg(QObject::tr("No."), QString::number(rowindex + 1), tr("OriginalKey"), keymapdata.Original_Key);
         tip += makeMappingKeyToolTip(keymapdata);
         if (!keymapdata.Note.isEmpty()) {
             tip += QString("\n%1 : %2").arg(tr("Note"), keymapdata.Note);
@@ -30316,6 +30341,11 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
 
 void QKeyMapper::on_addmapdataButton_clicked()
 {
+    if (shouldUseAddNewMappingOverride(true)) {
+        addFixedDefaultMappingAndOpenSetup();
+        return;
+    }
+
     bool isDoublePress = false;
     // bool multiInputSupport = false;
     // if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
@@ -30782,49 +30812,64 @@ void QKeyMapper::on_addmapdataButton_clicked()
         showWarningPopup(tr("A mapping for the same OriginalKey is already enabled. The newly added one was set to Disabled."));
     }
 
-    MAP_KEYDATA newKeyMappingData(currentOriKeyText,                       /* originalkey QString */
-                                  currentMapKeyText,                       /* mappingkeys QString */
-                                  currentMapKeyText,                       /* mappingkeys_keyup QString */
-                                  QString(),                               /* note QString */
-                                  QString(),                               /* category QString */
-                                  autoDisableNewItem,                      /* disabled bool */
-                                  false,                                   /* burst bool */
-                                  BURST_PRESS_TIME_DEFAULT,                /* burstpresstime int */
-                                  BURST_RELEASE_TIME_DEFAULT,              /* burstreleasetime int */
-                                  false,                                   /* lock bool */
-                                  false,                                   /* mappingkeys_unlock bool */
-                                  false,                                   /* disable_originalkeyunlock bool */
-                                  false,                                   /* disable_fnkeyswitch bool */
-                                  SENDMAPPINGKEY_METHOD_SENDINPUT,         /* sendmappingkeymethod int */
-                                  FIXED_VIRTUAL_KEY_CODE_NONE,             /* fixedvkeycode int */
-                                  true,                                    /* checkcombkeyorder bool */
-                                  false,                                   /* unbreakable bool */
-                                  false,                                   /* passthrough bool */
-                                  SENDTIMING_NORMAL,                       /* sendtiming int */
-                                  PASTETEXT_MODE_SHIFTINSERT,              /* pastetextmode int */
-                                  false,                                   /* keyseqholddown bool */
-                                  REPEAT_MODE_NONE,                        /* repeat_mode int */
-                                  REPEAT_TIMES_DEFAULT,                    /* repeat_times int */
-                                  CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR,    /* crosshair_centercolor QColor */
-                                  CROSSHAIR_CENTERSIZE_DEFAULT,            /* crosshair_centersize int */
-                                  CROSSHAIR_CENTEROPACITY_DEFAULT,         /* crosshair_centeropacity int */
-                                  CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR, /* crosshair_crosshaircolor QColor */
-                                  CROSSHAIR_CROSSHAIRWIDTH_DEFAULT,        /* crosshair_crosshairwidth int */
-                                  CROSSHAIR_CROSSHAIRLENGTH_DEFAULT,       /* crosshair_crosshairlength int */
-                                  CROSSHAIR_CROSSHAIROPACITY_DEFAULT,      /* crosshair_crosshairopacity int */
-                                  true,                                    /* crosshair_showcenter bool */
-                                  true,                                    /* crosshair_showtop bool */
-                                  true,                                    /* crosshair_showbottom bool */
-                                  true,                                    /* crosshair_showleft bool */
-                                  true,                                    /* crosshair_showright bool */
-                                  CROSSHAIR_X_OFFSET_DEFAULT,              /* crosshair_x_offset int */
-                                  CROSSHAIR_Y_OFFSET_DEFAULT               /* crosshair_y_offset int */
-                                  );
+    MAP_KEYDATA newKeyMappingData = createDefaultKeyMappingData(currentOriKeyText, currentMapKeyText, autoDisableNewItem);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
+#endif
+    insertNewMappingData(newKeyMappingData);
+}
+
+MAP_KEYDATA QKeyMapper::createDefaultKeyMappingData(const QString &originalKey, const QString &mappingKey, bool disabled) const
+{
+    return MAP_KEYDATA(originalKey,                          /* originalkey QString */
+                       mappingKey,                           /* mappingkeys QString */
+                       mappingKey,                           /* mappingkeys_keyup QString */
+                       QString(),                            /* note QString */
+                       QString(),                            /* category QString */
+                       disabled,                             /* disabled bool */
+                       false,                                /* burst bool */
+                       BURST_PRESS_TIME_DEFAULT,             /* burstpresstime int */
+                       BURST_RELEASE_TIME_DEFAULT,           /* burstreleasetime int */
+                       false,                                /* lock bool */
+                       false,                                /* mappingkeys_unlock bool */
+                       false,                                /* disable_originalkeyunlock bool */
+                       false,                                /* disable_fnkeyswitch bool */
+                       SENDMAPPINGKEY_METHOD_SENDINPUT,      /* sendmappingkeymethod int */
+                       FIXED_VIRTUAL_KEY_CODE_NONE,          /* fixedvkeycode int */
+                       true,                                 /* checkcombkeyorder bool */
+                       false,                                /* unbreakable bool */
+                       false,                                /* passthrough bool */
+                       SENDTIMING_NORMAL,                    /* sendtiming int */
+                       PASTETEXT_MODE_SHIFTINSERT,           /* pastetextmode int */
+                       false,                                /* keyseqholddown bool */
+                       REPEAT_MODE_NONE,                     /* repeat_mode int */
+                       REPEAT_TIMES_DEFAULT,                 /* repeat_times int */
+                       CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR, /* crosshair_centercolor QColor */
+                       CROSSHAIR_CENTERSIZE_DEFAULT,         /* crosshair_centersize int */
+                       CROSSHAIR_CENTEROPACITY_DEFAULT,      /* crosshair_centeropacity int */
+                       CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR, /* crosshair_crosshaircolor QColor */
+                       CROSSHAIR_CROSSHAIRWIDTH_DEFAULT,     /* crosshair_crosshairwidth int */
+                       CROSSHAIR_CROSSHAIRLENGTH_DEFAULT,    /* crosshair_crosshairlength int */
+                       CROSSHAIR_CROSSHAIROPACITY_DEFAULT,   /* crosshair_crosshairopacity int */
+                       true,                                 /* crosshair_showcenter bool */
+                       true,                                 /* crosshair_showtop bool */
+                       true,                                 /* crosshair_showbottom bool */
+                       true,                                 /* crosshair_showleft bool */
+                       true,                                 /* crosshair_showright bool */
+                       CROSSHAIR_X_OFFSET_DEFAULT,           /* crosshair_x_offset int */
+                       CROSSHAIR_Y_OFFSET_DEFAULT            /* crosshair_y_offset int */
+                       );
+}
+
+void QKeyMapper::insertNewMappingData(const MAP_KEYDATA &newKeyMappingData, bool openSetupDialog)
+{
+    if (Q_NULLPTR == KeyMappingDataList || Q_NULLPTR == m_KeyMappingDataTable) {
+        return;
+    }
 
     bool insertBySelection = false;
     int insertRow = -1;
     if (QApplication::keyboardModifiers() & Qt::ShiftModifier) {
-        // When Shift is held, insert relative to the highlighted row based on insert mode.
         QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
         if (!selectedRanges.isEmpty()) {
             const int currentMode = QKeyMapper::getTableInsertModeIndex();
@@ -30843,16 +30888,12 @@ void QKeyMapper::on_addmapdataButton_clicked()
     else {
         KeyMappingDataList->append(newKeyMappingData);
     }
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
-#endif
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
     refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
 
-    // Highlight the newly inserted row so users can see where it landed.
     if (m_KeyMappingDataTable->rowCount() > 0) {
         const int startRow = insertBySelection
             ? insertRow
@@ -30867,9 +30908,37 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (itemToScrollTo) {
             m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
         }
+
+        if (openSetupDialog) {
+            showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, boundedRow);
+        }
     }
 
     markSaveSettingDirty();
+}
+
+void QKeyMapper::addFixedDefaultMappingAndOpenSetup(void)
+{
+    static const QString fixedKey = QStringLiteral("A");
+
+    QStringList mappingKeySeqList = splitMappingKeyString(fixedKey, SPLIT_WITH_NEXT);
+    ValidationResult addResult = QKeyMapper::validateMappingKeyString(fixedKey, mappingKeySeqList, INITIAL_ROW_INDEX);
+    if (!addResult.isValid) {
+        showFailurePopup(addResult.errorMessage);
+        return;
+    }
+
+    const QString groupKey = normalizeOriginalKeyForExclusiveGroup(fixedKey);
+    bool autoDisableNewItem = hasEnabledExclusiveGroupConflict(*KeyMappingDataList, groupKey, -1);
+    if (autoDisableNewItem) {
+        showWarningPopup(tr("A mapping for the same OriginalKey is already enabled. The newly added one was set to Disabled."));
+    }
+
+    MAP_KEYDATA newKeyMappingData = createDefaultKeyMappingData(fixedKey, fixedKey, autoDisableNewItem);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "Add keymapdata :" << fixedKey << "to" << fixedKey;
+#endif
+    insertNewMappingData(newKeyMappingData, true);
 }
 
 void QKeyMapper::confirmProcessLineEdit()

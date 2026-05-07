@@ -185,7 +185,7 @@ void QVButtonPanel::refreshPanel(const QList<MAP_KEYDATA> &dataList)
         int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keyName);
         if (findindex >= 0 && QKeyMapper::KeyMappingDataList && QKeyMapper::getInstance()) {
             const MAP_KEYDATA &entry = QKeyMapper::KeyMappingDataList->at(findindex);
-            QString tip = QString("%1 : %2\n").arg(tr("No."), QString::number(findindex + 1));
+            QString tip = QString("%1 : %2\n").arg(QObject::tr("No."), QString::number(findindex + 1));
             tip += QKeyMapper::getInstance()->makeMappingKeyToolTip(entry);
             if (!entry.Note.isEmpty()) {
                 tip += QString("\n%1 : %2").arg(tr("Note"), entry.Note);
