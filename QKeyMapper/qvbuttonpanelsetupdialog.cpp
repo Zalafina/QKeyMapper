@@ -118,11 +118,23 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
                 onAnyControlChanged();
             });
 
+    m_BGColorPicker->setLivePreviewEnabled(true);
+    m_BtnColorPicker->setLivePreviewEnabled(true);
+    m_PressedColorPicker->setLivePreviewEnabled(true);
+    m_LockedColorPicker->setLivePreviewEnabled(true);
+    m_TextColorPicker->setLivePreviewEnabled(true);
+
     connect(m_BGColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
     connect(m_BtnColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
     connect(m_PressedColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
     connect(m_LockedColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
     connect(m_TextColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+
+    connect(m_BGColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(m_BtnColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(m_PressedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(m_LockedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(m_TextColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
 
     syncFontFamilyControls();
 }

@@ -46,6 +46,18 @@ QColor ColorPickerWidget::getColor()
     return m_color;
 }
 
+void ColorPickerWidget::updateColorLabel(const QColor &color)
+{
+    if (!color.isValid()) {
+        return;
+    }
+
+    QPalette palette = colorLabel->palette();
+    palette.setColor(colorLabel->backgroundRole(), color);
+    colorLabel->setAutoFillBackground(true);
+    colorLabel->setPalette(palette);
+}
+
 #if 0
 void ColorPickerWidget::setUILanguage(int languageindex)
 {
@@ -65,13 +77,13 @@ void ColorPickerWidget::setColor(const QColor &color)
 {
     if (color.isValid()) {
         m_color = color;
-        // If the selected color is valid, update the label with the color name
-        // and change the label's background color to the selected color
-        QPalette palette = colorLabel->palette();
-        palette.setColor(colorLabel->backgroundRole(), color);
-        colorLabel->setAutoFillBackground(true);
-        colorLabel->setPalette(palette);
+        updateColorLabel(color);
     }
+}
+
+void ColorPickerWidget::setLivePreviewEnabled(bool enabled)
+{
+    m_livePreviewEnabled = enabled;
 }
 
 void ColorPickerWidget::setShowAlphaChannel(bool show)
@@ -123,8 +135,29 @@ void ColorPickerWidget::onPickColor()
     selectcolor_dialog->setOptions(options);
     selectcolor_dialog->setWindowTitle(title);
 
+    const QColor originalColor = m_color;
+    const QPalette originalPalette = colorLabel->palette();
+    const bool originalAutoFillBackground = colorLabel->autoFillBackground();
+    QMetaObject::Connection previewConnection;
+    if (m_livePreviewEnabled) {
+        previewConnection = connect(selectcolor_dialog, &QColorDialog::currentColorChanged, this,
+                                    [this](const QColor &previewColor) {
+                                        if (!previewColor.isValid()) {
+                                            return;
+                                        }
+
+                                        m_color = previewColor;
+                                        updateColorLabel(previewColor);
+                                        emit previewColorChanged(previewColor);
+                                    });
+    }
+
     bool accepted = false;
     if (selectcolor_dialog->exec() == QDialog::Accepted) {
+        if (previewConnection) {
+            disconnect(previewConnection);
+        }
+
         QColor color = selectcolor_dialog->selectedColor();
         accepted = true;
         Q_UNUSED(accepted);
@@ -144,13 +177,21 @@ void ColorPickerWidget::onPickColor()
             color = m_color;
         }
 
-        QPalette palette = colorLabel->palette();
-        palette.setColor(colorLabel->backgroundRole(), color);
-        colorLabel->setAutoFillBackground(true);
-        colorLabel->setPalette(palette);
+        updateColorLabel(color);
 
         emit colorChanged(color);
         return;
+    }
+
+    if (previewConnection) {
+        disconnect(previewConnection);
+    }
+
+    if (m_livePreviewEnabled) {
+        m_color = originalColor;
+        colorLabel->setAutoFillBackground(originalAutoFillBackground);
+        colorLabel->setPalette(originalPalette);
+        emit previewColorChanged(originalColor);
     }
 
     // Restore focus to the original window even if cancelled

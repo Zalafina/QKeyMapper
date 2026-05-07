@@ -21,24 +21,29 @@ public:
 
     // void setUILanguage(int languageindex);
     void setColor(const QColor &color);
+    void setLivePreviewEnabled(bool enabled);
     void setShowAlphaChannel(bool show);
     void setWindowTitle(QString title);
     void setButtonText(QString text);
 
 signals:
     void colorChanged(QColor &color);
+    void previewColorChanged(const QColor &color);
 
 private slots:
     void onPickColor();  // Slot to handle color pick button click
     void onColorButtonContextMenu(const QPoint &pos);  // Right-click context menu for default color restore
 
 private:
+    void updateColorLabel(const QColor &color);
+
     QColor m_color = QColor();              // Variable to store the selected color
     QPushButton *colorButton = Q_NULLPTR;   // Button to trigger color picker dialog
     QLabel *colorLabel = Q_NULLPTR;         // Label to display the selected color
     QString m_buttonText = "Color";         // Text for the button
     QString m_windowTitle = QString();
     bool m_showAlphaChannel = false;
+    bool m_livePreviewEnabled = false;
 };
 
 #endif // COLORPICKERWIDGET_H

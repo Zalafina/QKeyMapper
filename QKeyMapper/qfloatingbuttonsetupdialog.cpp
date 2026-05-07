@@ -301,11 +301,23 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     connect(m_OffsetXSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_OffsetYSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
 
+    m_ButtonColorPicker->setLivePreviewEnabled(true);
+    m_PressedColorPicker->setLivePreviewEnabled(true);
+    m_LockedColorPicker->setLivePreviewEnabled(true);
+    m_TextColorPicker->setLivePreviewEnabled(true);
+    m_BorderColorPicker->setLivePreviewEnabled(true);
+
     connect(m_ButtonColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_PressedColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_LockedColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_TextColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_BorderColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+
+    connect(m_ButtonColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_PressedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_LockedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_TextColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_BorderColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
 
     syncFontFamilyControls();
 
