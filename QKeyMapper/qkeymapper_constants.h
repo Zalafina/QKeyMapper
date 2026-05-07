@@ -406,6 +406,7 @@ namespace QKeyMapperConstants {
     inline constexpr QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(100, 118, 198);
     inline constexpr QColor FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR = QColor(168, 127, 190);
     inline constexpr QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
+    inline constexpr QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(0, 0, 0, 90);
 #else
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
@@ -414,6 +415,7 @@ namespace QKeyMapperConstants {
     inline const QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(100, 118, 198);
     inline const QColor FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR = QColor(168, 127, 190);
     inline const QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
+    inline const QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(0, 0, 0, 90);
 #endif
 
     inline constexpr int CROSSHAIR_OPACITY_MIN = 0;
@@ -449,6 +451,9 @@ namespace QKeyMapperConstants {
     inline constexpr int FLOATINGBUTTON_WIDTH_MIN = 4;
     inline constexpr int FLOATINGBUTTON_WIDTH_MAX = 640;
     inline constexpr int FLOATINGBUTTON_WIDTH_DEFAULT = 80;
+    inline constexpr int FLOATINGBUTTON_BORDER_WIDTH_MIN = 0;
+    inline constexpr int FLOATINGBUTTON_BORDER_WIDTH_MAX = 20;
+    inline constexpr int FLOATINGBUTTON_BORDER_WIDTH_DEFAULT = 1;
     inline constexpr int FLOATINGBUTTON_HEIGHT_MIN = 4;
     inline constexpr int FLOATINGBUTTON_HEIGHT_MAX = 640;
     inline constexpr int FLOATINGBUTTON_HEIGHT_DEFAULT = 30;
@@ -1122,6 +1127,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR[] = "KeyMapData_FloatingButton_PressedColor";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR[] = "KeyMapData_FloatingButton_LockedColor";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR[] = "KeyMapData_FloatingButton_TextColor";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR[] = "KeyMapData_FloatingButton_BorderColor";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH[] = "KeyMapData_FloatingButton_BorderWidth";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_WIDTH[] = "KeyMapData_FloatingButton_Width";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HEIGHT[] = "KeyMapData_FloatingButton_Height";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_FONTSIZE[] = "KeyMapData_FloatingButton_FontSize";

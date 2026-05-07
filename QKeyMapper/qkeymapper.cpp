@@ -802,6 +802,18 @@ static double sanitizeFloatingButtonOpacity(double opacity)
         : FLOATINGBUTTON_OPACITY_DEFAULT;
 }
 
+static int sanitizeFloatingButtonBorderWidth(int borderWidth)
+{
+    return (FLOATINGBUTTON_BORDER_WIDTH_MIN <= borderWidth && borderWidth <= FLOATINGBUTTON_BORDER_WIDTH_MAX)
+        ? borderWidth
+        : FLOATINGBUTTON_BORDER_WIDTH_DEFAULT;
+}
+
+static QColor sanitizeFloatingButtonBorderColor(const QColor &color)
+{
+    return color.isValid() ? color : FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR;
+}
+
 static double resolveFloatingButtonStateOpacity(const MAP_KEYDATA &keymapdata, bool pressed, bool locked)
 {
     const double fallbackOpacity = sanitizeFloatingButtonOpacity(keymapdata.FloatingButton_Opacity);
@@ -861,16 +873,20 @@ static void applyFloatingButtonVisualState(QPushButton *button, const MAP_KEYDAT
     const QColor lockedColor = keymapdata.FloatingButton_LockedColor.isValid()
         ? keymapdata.FloatingButton_LockedColor
         : FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR;
+    const QColor borderColor = sanitizeFloatingButtonBorderColor(keymapdata.FloatingButton_BorderColor);
     const QColor visibleColor = locked ? lockedColor : (pressed ? pressedColor : normalColor);
     const QColor pressedStateColor = locked ? lockedColor : pressedColor;
+    const int borderWidth = sanitizeFloatingButtonBorderWidth(keymapdata.FloatingButton_BorderWidth);
 
     button->setWindowOpacity(resolveFloatingButtonStateOpacity(keymapdata, pressed, locked));
-    button->setStyleSheet(QStringLiteral("QPushButton { background-color: %1; color: %2; border: 1px solid rgba(0,0,0,0.35); border-radius: %3px; }"
-                                         "QPushButton:pressed { background-color: %4; }")
-                          .arg(floatingButtonColorToRgba(visibleColor),
-                               floatingButtonColorToRgba(textColor),
-                               QString::number(keymapdata.FloatingButton_Radius),
-                               floatingButtonColorToRgba(pressedStateColor))
+    button->setStyleSheet(QStringLiteral("QPushButton { background-color: %1; color: %2; border: %3px solid %4; border-radius: %5px; }"
+                                         "QPushButton:pressed { background-color: %6; }")
+                          .arg(floatingButtonColorToRgba(visibleColor))
+                          .arg(floatingButtonColorToRgba(textColor))
+                          .arg(QString::number(borderWidth))
+                          .arg(floatingButtonColorToRgba(borderColor))
+                          .arg(QString::number(keymapdata.FloatingButton_Radius))
+                          .arg(floatingButtonColorToRgba(pressedStateColor))
                           + tooltipRule);
     button->setDown(pressed);
 }
@@ -8582,6 +8598,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList floatingbutton_pressedcolorList;
     QStringList floatingbutton_lockedcolorList;
     QStringList floatingbutton_textcolorList;
+    QStringList floatingbutton_bordercolorList;
+    QStringList floatingbutton_borderwidthList;
     QStringList floatingbutton_widthList;
     QStringList floatingbutton_heightList;
     QStringList floatingbutton_fontsizeList;
@@ -8837,6 +8855,9 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
                                                                                       FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
         floatingbutton_textcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_TextColor,
                                                                                     FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
+        floatingbutton_bordercolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_BorderColor,
+                                                                                      FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR));
+        floatingbutton_borderwidthList.append(QString::number(sanitizeFloatingButtonBorderWidth(keymapdata.FloatingButton_BorderWidth)));
 
         if (FLOATINGBUTTON_WIDTH_MIN <= keymapdata.FloatingButton_Width && keymapdata.FloatingButton_Width <= FLOATINGBUTTON_WIDTH_MAX) {
             floatingbutton_widthList.append(QString::number(keymapdata.FloatingButton_Width));
@@ -8981,6 +9002,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR, floatingbutton_pressedcolorList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR, floatingbutton_lockedcolorList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR, floatingbutton_textcolorList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR, floatingbutton_bordercolorList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH, floatingbutton_borderwidthList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_WIDTH, floatingbutton_widthList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HEIGHT, floatingbutton_heightList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE, floatingbutton_fontsizeList);
@@ -9068,6 +9091,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList floatingbutton_pressedcolorStringList;
     QStringList floatingbutton_lockedcolorStringList;
     QStringList floatingbutton_textcolorStringList;
+    QStringList floatingbutton_bordercolorStringList;
+    QStringList floatingbutton_borderwidthStringList;
     QStringList floatingbutton_widthStringList;
     QStringList floatingbutton_heightStringList;
     QStringList floatingbutton_fontsizeStringList;
@@ -9125,6 +9150,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<QColor> floatingbutton_pressedcolorList;
     QList<QColor> floatingbutton_lockedcolorList;
     QList<QColor> floatingbutton_textcolorList;
+    QList<QColor> floatingbutton_bordercolorList;
+    QList<int> floatingbutton_borderwidthList;
     QList<int> floatingbutton_widthList;
     QList<int> floatingbutton_heightList;
     QList<int> floatingbutton_fontsizeList;
@@ -9176,6 +9203,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         QStringList floatingbutton_pressedcolorStringListDefault;
         QStringList floatingbutton_lockedcolorStringListDefault;
         QStringList floatingbutton_textcolorStringListDefault;
+        QStringList floatingbutton_bordercolorStringListDefault;
+        QStringList floatingbutton_borderwidthStringListDefault;
         QStringList floatingbutton_widthStringListDefault;
         QStringList floatingbutton_heightStringListDefault;
         QStringList floatingbutton_fontsizeStringListDefault;
@@ -9209,6 +9238,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             floatingbutton_pressedcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR));
             floatingbutton_lockedcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
             floatingbutton_textcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
+            floatingbutton_bordercolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR));
+            floatingbutton_borderwidthStringListDefault.append(QString::number(FLOATINGBUTTON_BORDER_WIDTH_DEFAULT));
             floatingbutton_widthStringListDefault.append(QString::number(FLOATINGBUTTON_WIDTH_DEFAULT));
             floatingbutton_heightStringListDefault.append(QString::number(FLOATINGBUTTON_HEIGHT_DEFAULT));
             floatingbutton_fontsizeStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_SIZE_DEFAULT));
@@ -9261,6 +9292,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         floatingbutton_pressedcolorStringList = floatingbutton_pressedcolorStringListDefault;
         floatingbutton_lockedcolorStringList = floatingbutton_lockedcolorStringListDefault;
         floatingbutton_textcolorStringList = floatingbutton_textcolorStringListDefault;
+        floatingbutton_bordercolorStringList = floatingbutton_bordercolorStringListDefault;
+        floatingbutton_borderwidthStringList = floatingbutton_borderwidthStringListDefault;
         floatingbutton_widthStringList = floatingbutton_widthStringListDefault;
         floatingbutton_heightStringList = floatingbutton_heightStringListDefault;
         floatingbutton_fontsizeStringList = floatingbutton_fontsizeStringListDefault;
@@ -9400,6 +9433,12 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR)) {
             floatingbutton_textcolorStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR)) {
+            floatingbutton_bordercolorStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH)) {
+            floatingbutton_borderwidthStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_WIDTH)) {
             floatingbutton_widthStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_WIDTH).toStringList();
@@ -9842,6 +9881,22 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
+                const QString &floatingbutton_bordercolorStr = (i < floatingbutton_bordercolorStringList.size()) ? floatingbutton_bordercolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR);
+                floatingbutton_bordercolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_bordercolorStr,
+                                                                                              FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR));
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &floatingbutton_borderwidthStr = (i < floatingbutton_borderwidthStringList.size()) ? floatingbutton_borderwidthStringList.at(i) : QString::number(FLOATINGBUTTON_BORDER_WIDTH_DEFAULT);
+                bool ok;
+                int floatingbutton_borderwidth = floatingbutton_borderwidthStr.toInt(&ok);
+                if (!ok || floatingbutton_borderwidth < FLOATINGBUTTON_BORDER_WIDTH_MIN || floatingbutton_borderwidth > FLOATINGBUTTON_BORDER_WIDTH_MAX) {
+                    floatingbutton_borderwidth = FLOATINGBUTTON_BORDER_WIDTH_DEFAULT;
+                }
+                floatingbutton_borderwidthList.append(floatingbutton_borderwidth);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
                 const QString &floatingbutton_widthStr = (i < floatingbutton_widthStringList.size()) ? floatingbutton_widthStringList.at(i) : QString::number(FLOATINGBUTTON_WIDTH_DEFAULT);
                 bool ok;
                 int floatingbutton_width = floatingbutton_widthStr.toInt(&ok);
@@ -10057,6 +10112,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     loadedData.FloatingButton_PressedColor = floatingbutton_pressedcolorList.at(loadindex);
                     loadedData.FloatingButton_LockedColor = floatingbutton_lockedcolorList.at(loadindex);
                     loadedData.FloatingButton_TextColor = floatingbutton_textcolorList.at(loadindex);
+                    loadedData.FloatingButton_BorderColor = floatingbutton_bordercolorList.at(loadindex);
+                    loadedData.FloatingButton_BorderWidth = floatingbutton_borderwidthList.at(loadindex);
                     loadedData.FloatingButton_Width = floatingbutton_widthList.at(loadindex);
                     loadedData.FloatingButton_Height = floatingbutton_heightList.at(loadindex);
                     loadedData.FloatingButton_FontSize = floatingbutton_fontsizeList.at(loadindex);
@@ -14733,6 +14790,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     QString floatingbutton_pressedcolorList_forsave;
     QString floatingbutton_lockedcolorList_forsave;
     QString floatingbutton_textcolorList_forsave;
+    QString floatingbutton_bordercolorList_forsave;
+    QString floatingbutton_borderwidthList_forsave;
     QString floatingbutton_widthList_forsave;
     QString floatingbutton_heightList_forsave;
     QString floatingbutton_fontsizeList_forsave;
@@ -14853,6 +14912,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
             floatingbutton_pressedcolorList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_lockedcolorList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_textcolorList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_bordercolorList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_borderwidthList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_widthList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_heightList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_fontsizeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -14916,6 +14977,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         QStringList floatingbutton_pressedcolorList;
         QStringList floatingbutton_lockedcolorList;
         QStringList floatingbutton_textcolorList;
+        QStringList floatingbutton_bordercolorList;
+        QStringList floatingbutton_borderwidthList;
         QStringList floatingbutton_widthList;
         QStringList floatingbutton_heightList;
         QStringList floatingbutton_fontsizeList;
@@ -15183,6 +15246,9 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
                                                                                               FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
                 floatingbutton_textcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_TextColor,
                                                                                             FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
+                floatingbutton_bordercolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_BorderColor,
+                                                                                              FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR));
+                floatingbutton_borderwidthList.append(QString::number(sanitizeFloatingButtonBorderWidth(keymapdata.FloatingButton_BorderWidth)));
 
                 if (FLOATINGBUTTON_WIDTH_MIN <= keymapdata.FloatingButton_Width && keymapdata.FloatingButton_Width <= FLOATINGBUTTON_WIDTH_MAX) {
                     floatingbutton_widthList.append(QString::number(keymapdata.FloatingButton_Width));
@@ -15322,6 +15388,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         QString floatingbutton_pressedcolorList_str = floatingbutton_pressedcolorList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_lockedcolorList_str = floatingbutton_lockedcolorList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_textcolorList_str = floatingbutton_textcolorList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_bordercolorList_str = floatingbutton_bordercolorList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_borderwidthList_str = floatingbutton_borderwidthList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_widthList_str = floatingbutton_widthList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_heightList_str = floatingbutton_heightList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_fontsizeList_str = floatingbutton_fontsizeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -15385,6 +15453,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         floatingbutton_pressedcolorList_forsave.append(floatingbutton_pressedcolorList_str);
         floatingbutton_lockedcolorList_forsave.append(floatingbutton_lockedcolorList_str);
         floatingbutton_textcolorList_forsave.append(floatingbutton_textcolorList_str);
+        floatingbutton_bordercolorList_forsave.append(floatingbutton_bordercolorList_str);
+        floatingbutton_borderwidthList_forsave.append(floatingbutton_borderwidthList_str);
         floatingbutton_widthList_forsave.append(floatingbutton_widthList_str);
         floatingbutton_heightList_forsave.append(floatingbutton_heightList_str);
         floatingbutton_fontsizeList_forsave.append(floatingbutton_fontsizeList_str);
@@ -15469,6 +15539,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR, floatingbutton_pressedcolorList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR, floatingbutton_lockedcolorList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR, floatingbutton_textcolorList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR, floatingbutton_bordercolorList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH, floatingbutton_borderwidthList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_WIDTH, floatingbutton_widthList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HEIGHT, floatingbutton_heightList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTSIZE, floatingbutton_fontsizeList_forsave);
@@ -16998,6 +17070,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QString floatingbutton_pressedcolorData_loaded;
         QString floatingbutton_lockedcolorData_loaded;
         QString floatingbutton_textcolorData_loaded;
+        QString floatingbutton_bordercolorData_loaded;
+        QString floatingbutton_borderwidthData_loaded;
         QString floatingbutton_widthData_loaded;
         QString floatingbutton_heightData_loaded;
         QString floatingbutton_fontsizeData_loaded;
@@ -17063,6 +17137,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QStringList floatingbutton_pressedcolorData_split;
         QStringList floatingbutton_lockedcolorData_split;
         QStringList floatingbutton_textcolorData_split;
+        QStringList floatingbutton_bordercolorData_split;
+        QStringList floatingbutton_borderwidthData_split;
         QStringList floatingbutton_widthData_split;
         QStringList floatingbutton_heightData_split;
         QStringList floatingbutton_fontsizeData_split;
@@ -17419,6 +17495,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 floatingbutton_textcolorData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR).toString();
                 floatingbutton_textcolorData_split = floatingbutton_textcolorData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR)) {
+                floatingbutton_bordercolorData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR).toString();
+                floatingbutton_bordercolorData_split = floatingbutton_bordercolorData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH)) {
+                floatingbutton_borderwidthData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH).toString();
+                floatingbutton_borderwidthData_split = floatingbutton_borderwidthData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_WIDTH)) {
                 floatingbutton_widthData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_WIDTH).toString();
                 floatingbutton_widthData_split = floatingbutton_widthData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -17592,6 +17676,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_pressedcolorStringList;
                     QStringList floatingbutton_lockedcolorStringList;
                     QStringList floatingbutton_textcolorStringList;
+                    QStringList floatingbutton_bordercolorStringList;
+                    QStringList floatingbutton_borderwidthStringList;
                     QStringList floatingbutton_widthStringList;
                     QStringList floatingbutton_heightStringList;
                     QStringList floatingbutton_fontsizeStringList;
@@ -17650,6 +17736,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QList<QColor> floatingbutton_pressedcolorList;
                     QList<QColor> floatingbutton_lockedcolorList;
                     QList<QColor> floatingbutton_textcolorList;
+                    QList<QColor> floatingbutton_bordercolorList;
+                    QList<int> floatingbutton_borderwidthList;
                     QList<int> floatingbutton_widthList;
                     QList<int> floatingbutton_heightList;
                     QList<int> floatingbutton_fontsizeList;
@@ -17698,6 +17786,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_pressedcolorStringListDefault;
                     QStringList floatingbutton_lockedcolorStringListDefault;
                     QStringList floatingbutton_textcolorStringListDefault;
+                    QStringList floatingbutton_bordercolorStringListDefault;
+                    QStringList floatingbutton_borderwidthStringListDefault;
                     QStringList floatingbutton_widthStringListDefault;
                     QStringList floatingbutton_heightStringListDefault;
                     QStringList floatingbutton_fontsizeStringListDefault;
@@ -17730,6 +17820,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         floatingbutton_pressedcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR));
                         floatingbutton_lockedcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
                         floatingbutton_textcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
+                        floatingbutton_bordercolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR));
+                        floatingbutton_borderwidthStringListDefault.append(QString::number(FLOATINGBUTTON_BORDER_WIDTH_DEFAULT));
                         floatingbutton_widthStringListDefault.append(QString::number(FLOATINGBUTTON_WIDTH_DEFAULT));
                         floatingbutton_heightStringListDefault.append(QString::number(FLOATINGBUTTON_HEIGHT_DEFAULT));
                         floatingbutton_fontsizeStringListDefault.append(QString::number(FLOATINGBUTTON_FONT_SIZE_DEFAULT));
@@ -17782,6 +17874,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     floatingbutton_pressedcolorStringList = floatingbutton_pressedcolorStringListDefault;
                     floatingbutton_lockedcolorStringList = floatingbutton_lockedcolorStringListDefault;
                     floatingbutton_textcolorStringList = floatingbutton_textcolorStringListDefault;
+                    floatingbutton_bordercolorStringList = floatingbutton_bordercolorStringListDefault;
+                    floatingbutton_borderwidthStringList = floatingbutton_borderwidthStringListDefault;
                     floatingbutton_widthStringList = floatingbutton_widthStringListDefault;
                     floatingbutton_heightStringList = floatingbutton_heightStringListDefault;
                     floatingbutton_fontsizeStringList = floatingbutton_fontsizeStringListDefault;
@@ -17930,6 +18024,12 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     }
                     if (floatingbutton_textcolorData_split.size() == table_count) {
                         floatingbutton_textcolorStringList = floatingbutton_textcolorData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_bordercolorData_split.size() == table_count) {
+                        floatingbutton_bordercolorStringList = floatingbutton_bordercolorData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_borderwidthData_split.size() == table_count) {
+                        floatingbutton_borderwidthStringList = floatingbutton_borderwidthData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (floatingbutton_widthData_split.size() == table_count) {
                         floatingbutton_widthStringList = floatingbutton_widthData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -18369,6 +18469,22 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_bordercolorStr = (i < floatingbutton_bordercolorStringList.size()) ? floatingbutton_bordercolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR);
+                            floatingbutton_bordercolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_bordercolorStr,
+                                                                                                          FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR));
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_borderwidthStr = (i < floatingbutton_borderwidthStringList.size()) ? floatingbutton_borderwidthStringList.at(i) : QString::number(FLOATINGBUTTON_BORDER_WIDTH_DEFAULT);
+                            bool ok;
+                            int floatingbutton_borderwidth = floatingbutton_borderwidthStr.toInt(&ok);
+                            if (!ok || floatingbutton_borderwidth < FLOATINGBUTTON_BORDER_WIDTH_MIN || floatingbutton_borderwidth > FLOATINGBUTTON_BORDER_WIDTH_MAX) {
+                                floatingbutton_borderwidth = FLOATINGBUTTON_BORDER_WIDTH_DEFAULT;
+                            }
+                            floatingbutton_borderwidthList.append(floatingbutton_borderwidth);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
                             const QString &floatingbutton_widthStr = (i < floatingbutton_widthStringList.size()) ? floatingbutton_widthStringList.at(i) : QString::number(FLOATINGBUTTON_WIDTH_DEFAULT);
                             bool ok;
                             int floatingbutton_width = floatingbutton_widthStr.toInt(&ok);
@@ -18594,6 +18710,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                 loadedData.FloatingButton_PressedColor = floatingbutton_pressedcolorList.at(loadindex);
                                 loadedData.FloatingButton_LockedColor = floatingbutton_lockedcolorList.at(loadindex);
                                 loadedData.FloatingButton_TextColor = floatingbutton_textcolorList.at(loadindex);
+                                loadedData.FloatingButton_BorderColor = floatingbutton_bordercolorList.at(loadindex);
+                                loadedData.FloatingButton_BorderWidth = floatingbutton_borderwidthList.at(loadindex);
                                 loadedData.FloatingButton_Width = floatingbutton_widthList.at(loadindex);
                                 loadedData.FloatingButton_Height = floatingbutton_heightList.at(loadindex);
                                 loadedData.FloatingButton_FontSize = floatingbutton_fontsizeList.at(loadindex);

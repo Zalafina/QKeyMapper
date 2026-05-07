@@ -10,6 +10,7 @@ class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QFontComboBox;
+class QGroupBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
@@ -59,6 +60,14 @@ private:
     QString m_BackupMousePassThroughSwitchKey;
     QString m_FontFamily;
 
+    QGroupBox *m_InfoGroup;
+    QLabel *m_ItemOriginalKeyLabel;
+    QLineEdit *m_ItemOriginalKeyLineEdit;
+    QLabel *m_ItemNoteLabel;
+    QLineEdit *m_ItemNoteLineEdit;
+    QLabel *m_ItemIndexLabel;
+    QLineEdit *m_ItemIndexLineEdit;
+
     QCheckBox *m_EnableCheckBox;
     QLabel *m_LabelTextLabel;
     QLineEdit *m_LabelLineEdit;
@@ -78,6 +87,7 @@ private:
     QLabel *m_FontWeightLabel;
     QLabel *m_FontFamilyLabel;
     QLabel *m_RadiusLabel;
+    QLabel *m_BorderWidthLabel;
     QLabel *m_NormalOpacityLabel;
     QLabel *m_PressedOpacityLabel;
     QLabel *m_LockedOpacityLabel;
@@ -89,6 +99,7 @@ private:
     QFontComboBox *m_FontFamilyComboBox;
     QPushButton *m_FontFamilyDefaultButton;
     QSpinBox *m_RadiusSpinBox;
+    QSpinBox *m_BorderWidthSpinBox;
     QDoubleSpinBox *m_NormalOpacitySpinBox;
     QDoubleSpinBox *m_PressedOpacitySpinBox;
     QDoubleSpinBox *m_LockedOpacitySpinBox;
@@ -108,6 +119,7 @@ private:
     ColorPickerWidget *m_PressedColorPicker;
     ColorPickerWidget *m_LockedColorPicker;
     ColorPickerWidget *m_TextColorPicker;
+    ColorPickerWidget *m_BorderColorPicker;
 };
 
 #endif // QFLOATINGBUTTONSETUPDIALOG_H

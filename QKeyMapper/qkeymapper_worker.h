@@ -176,6 +176,8 @@ typedef struct MAP_KEYDATA
     QColor FloatingButton_PressedColor;
     QColor FloatingButton_LockedColor;
     QColor FloatingButton_TextColor;
+    QColor FloatingButton_BorderColor;
+    int FloatingButton_BorderWidth;
     int FloatingButton_Width;
     int FloatingButton_Height;
     int FloatingButton_FontSize;
@@ -244,6 +246,8 @@ typedef struct MAP_KEYDATA
     , FloatingButton_PressedColor(QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR)
     , FloatingButton_LockedColor(QKeyMapperConstants::FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR)
     , FloatingButton_TextColor(QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_BorderColor(QKeyMapperConstants::FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_BorderWidth(QKeyMapperConstants::FLOATINGBUTTON_BORDER_WIDTH_DEFAULT)
     , FloatingButton_Width(QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT)
     , FloatingButton_Height(QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT)
     , FloatingButton_FontSize(QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT)
@@ -334,6 +338,8 @@ typedef struct MAP_KEYDATA
         FloatingButton_PressedColor = QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
         FloatingButton_LockedColor = QKeyMapperConstants::FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR;
         FloatingButton_TextColor = QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
+        FloatingButton_BorderColor = QKeyMapperConstants::FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR;
+        FloatingButton_BorderWidth = QKeyMapperConstants::FLOATINGBUTTON_BORDER_WIDTH_DEFAULT;
         FloatingButton_Width = QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT;
         FloatingButton_Height = QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT;
         FloatingButton_FontSize = QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT;
@@ -400,6 +406,8 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_PressedColor == other.FloatingButton_PressedColor)
                 && (FloatingButton_LockedColor == other.FloatingButton_LockedColor)
                 && (FloatingButton_TextColor == other.FloatingButton_TextColor)
+                && (FloatingButton_BorderColor == other.FloatingButton_BorderColor)
+                && (FloatingButton_BorderWidth == other.FloatingButton_BorderWidth)
                 && (FloatingButton_Width == other.FloatingButton_Width)
                 && (FloatingButton_Height == other.FloatingButton_Height)
                 && (FloatingButton_FontSize == other.FloatingButton_FontSize)
@@ -471,6 +479,8 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_PressedColor:" << data.FloatingButton_PressedColor
                         << ", FloatingButton_LockedColor:" << data.FloatingButton_LockedColor
                         << ", FloatingButton_TextColor:" << data.FloatingButton_TextColor
+                        << ", FloatingButton_BorderColor:" << data.FloatingButton_BorderColor
+                        << ", FloatingButton_BorderWidth:" << data.FloatingButton_BorderWidth
                         << ", FloatingButton_Width:" << data.FloatingButton_Width
                         << ", FloatingButton_Height:" << data.FloatingButton_Height
                         << ", FloatingButton_FontSize:" << data.FloatingButton_FontSize

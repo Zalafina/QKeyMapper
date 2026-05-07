@@ -181,7 +181,8 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
         && "FloatBtn_BtnColor" != m_buttonText
         && "FloatBtn_PressedColor" != m_buttonText
         && "FloatBtn_LockedColor" != m_buttonText
-        && "FloatBtn_TextColor" != m_buttonText) {
+        && "FloatBtn_TextColor" != m_buttonText
+        && "FloatBtn_BorderColor" != m_buttonText) {
         return;
     }
 
@@ -250,6 +251,9 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
     }
     else if ("FloatBtn_TextColor" == m_buttonText) {
         color = FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
+    }
+    else if ("FloatBtn_BorderColor" == m_buttonText) {
+        color = FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR;
     }
 
     // Update stored color and label
