@@ -149,7 +149,7 @@
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
 * v1.3.8(Build 20260508)
-    * "悬浮按钮设定" 窗口中添加 **边框宽度**、**边框颜色** 设置。
+    * "悬浮按钮设定" 窗口中添加 **边框宽度**、**边框颜色** 设置。边框宽度默认值1，范围0～50，宽度0代表无边框。
     * "悬浮按钮设定" 窗口中添加映射项原始按键名、备注、序号等信息显示。
     * "映射开始" 按钮右侧添加下拉菜单选项，可以在"映射开始" 和 "保存并映射开始" 功能之间切换，后者点击按钮时先执行保存设定，再执行映射开始。
     * QKeyMapper主界面是前台激活窗口时，按住Ctrl键时，"映射开始" 按钮会临时变为 "保存并映射开始" 按钮，点击时执行 "保存并映射开始" 功能。
@@ -164,9 +164,9 @@
           ahk.exe hidden_window.ahk process="notepad.exe" title="工作"                          (仅处理标题包含“工作”的记事本窗口)
           ahk.exe hidden_window.ahk process="notepad.exe" rule="exclude" title="临时"           (排除标题包含“临时”的记事本窗口)
           ahk.exe hidden_window.ahk process1="notepad.exe" title1="临时文件" process2="explorer.exe" rule2="exclude" title2="桌面"
-          ahk.exe hidden_window.ahk process1="WeChat.exe" rule1="exact" title1="微信" process2="msedge.exe" title2="抖音" process3="QQ.exe"
+          ahk.exe hidden_window.ahk process1="WeChat.exe" rule1="exact" title1="微信" process2="msedge.exe" title2="必应" process3="QQ.exe"
           ahk.exe hidden_window.ahk process="notepad.exe" class="Notepad" classrule="exact"     (仅匹配类名精确为 Notepad 的记事本窗口)
-          ahk.exe hidden_window.ahk process="chrome.exe" classrule="exclude" class="Chrome_WidgetWin_0" title="百度"
+          ahk.exe hidden_window.ahk process="chrome.exe" classrule="exclude" class="Chrome_WidgetWin_0" title="哔哩哔哩"
           ahk.exe hidden_window.ahk process="notepad.exe" hideminimizedwindows=false            (仅处理当前可见窗口，不隐藏任务栏最小化窗口)
 * v1.3.8(Build 20260424)
     * 优化触发类型选择方式，映射表原始按键列右键菜单可以选择触发类型进行 **正常/长按/双击** 3种原始按键触发类型切换。
