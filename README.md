@@ -162,8 +162,8 @@
           ahk.exe hidden_window.ahk process="notepad.exe"                                       (隐藏 / 显示所有记事本窗口)
           ahk.exe hidden_window.ahk process="explorer.exe"                                      (隐藏 / 显示所有资源管理器窗口)
           ahk.exe hidden_window.ahk process1="notepad.exe" process2="msedge.exe"                (同时隐藏 / 显示记事本和 Edge)
-          ahk.exe hidden_window.ahk process="notepad.exe" title="工作"                          (仅处理标题包含“工作”的记事本窗口)
-          ahk.exe hidden_window.ahk process="notepad.exe" rule="exclude" title="临时"           (排除标题包含“临时”的记事本窗口)
+          ahk.exe hidden_window.ahk process="notepad.exe" title="工作"                          (仅处理标题包含 "工作" 的记事本窗口)
+          ahk.exe hidden_window.ahk process="notepad.exe" rule="exclude" title="临时"           (排除标题包含 "临时" 的记事本窗口)
           ahk.exe hidden_window.ahk process1="notepad.exe" title1="临时文件" process2="explorer.exe" rule2="exclude" title2="桌面"
           ahk.exe hidden_window.ahk process1="WeChat.exe" rule1="exact" title1="微信" process2="msedge.exe" title2="必应" process3="QQ.exe"
           ahk.exe hidden_window.ahk process="notepad.exe" class="Notepad" classrule="exact"     (仅匹配类名精确为 Notepad 的记事本窗口)
