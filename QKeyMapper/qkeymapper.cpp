@@ -6,6 +6,7 @@
 #include <QScrollBar>
 #include <QStyleOptionToolButton>
 #include <QToolTip>
+#include <QVariantAnimation>
 
 using namespace QKeyMapperConstants;
 using namespace Gdiplus;
@@ -14,6 +15,12 @@ namespace {
 
 constexpr int DISABLED_ROW_BACKGROUND_APPLIED_ROLE = Qt::UserRole + 500;
 constexpr int DISABLED_ROW_FOREGROUND_APPLIED_ROLE = Qt::UserRole + 501;
+
+constexpr int FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MS = 190;
+constexpr qreal FLOATINGBUTTON_HOVER_TOP_LIFT_RATIO = 0.24;
+constexpr qreal FLOATINGBUTTON_HOVER_MID_LIFT_RATIO = 0.12;
+constexpr qreal FLOATINGBUTTON_HOVER_BORDER_LIFT_RATIO = 0.14;
+constexpr qreal FLOATINGBUTTON_HOVER_LOCKED_SCALE = 0.55;
 
 bool isKeyMappingCheckboxOnlyColumn(int column)
 {
@@ -32,6 +39,25 @@ QColor blendColors(const QColor &baseColor, const QColor &overlayColor, qreal ov
                   qRound(baseColor.green() * baseRatio + overlayColor.green() * clampedRatio),
                   qRound(baseColor.blue() * baseRatio + overlayColor.blue() * clampedRatio),
                   qRound(baseColor.alpha() * baseRatio + overlayColor.alpha() * clampedRatio));
+}
+
+qreal floatingButtonAdaptiveLiftRatio(const QColor &baseColor, qreal baseRatio)
+{
+    const qreal lightness = baseColor.lightnessF();
+    const qreal lightnessScale = qBound(0.45, 1.10 - lightness * 0.70, 1.05);
+    const qreal alphaScale = qBound(0.60, 0.65 + baseColor.alphaF() * 0.35, 1.0);
+    return qBound(0.0, baseRatio * lightnessScale * alphaScale, 0.42);
+}
+
+QColor liftedFloatingButtonColor(const QColor &baseColor, qreal liftRatio)
+{
+    if (!baseColor.isValid()) {
+        return baseColor;
+    }
+
+    QColor highlightColor(Qt::white);
+    highlightColor.setAlpha(baseColor.alpha());
+    return blendColors(baseColor, highlightColor, floatingButtonAdaptiveLiftRatio(baseColor, liftRatio));
 }
 
 QColor colorFromItemData(const QVariant &data, const QColor &fallbackColor)
@@ -460,16 +486,27 @@ static void applyFloatingButtonNativeWindowStyle(QWidget *widget, bool mousePass
 #endif
 }
 
+static void refreshFloatingButtonHoverVisual(QPushButton *button);
+
 class FloatingButtonWidget final : public QPushButton
 {
 public:
     explicit FloatingButtonWidget(QWidget *parent = Q_NULLPTR)
         : QPushButton(parent)
+        , m_HoverAnimation(new QVariantAnimation(this))
     {
         setFocusPolicy(Qt::NoFocus);
         setAttribute(Qt::WA_ShowWithoutActivating, true);
         setAttribute(Qt::WA_TranslucentBackground, true);
         setAttribute(Qt::WA_NoSystemBackground, true);
+        setProperty("FloatingButtonHoverProgress", 0.0);
+
+        m_HoverAnimation->setDuration(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MS);
+        m_HoverAnimation->setEasingCurve(QEasingCurve::OutCubic);
+        QObject::connect(m_HoverAnimation, &QVariantAnimation::valueChanged, this,
+                         [this](const QVariant &value) {
+                             setHoverProgress(value.toDouble());
+                         });
     }
 
 protected:
@@ -479,6 +516,15 @@ protected:
 
         if (event->type() == QEvent::WinIdChange) {
             applyNoActivateWindowStyle();
+        }
+        else if (event->type() == QEvent::Enter) {
+            animateHoverTo(1.0);
+        }
+        else if (event->type() == QEvent::Leave) {
+            animateHoverTo(0.0);
+        }
+        else if (event->type() == QEvent::Hide) {
+            resetHoverState();
         }
 
         return handled;
@@ -514,10 +560,52 @@ protected:
     }
 
 private:
+    void animateHoverTo(qreal targetProgress)
+    {
+        if (property("FloatingButtonMousePassThrough").toBool()) {
+            resetHoverState();
+            return;
+        }
+
+        const qreal clampedTarget = qBound(0.0, targetProgress, 1.0);
+        if (qAbs(m_HoverProgress - clampedTarget) < 0.0001
+            && m_HoverAnimation->state() != QAbstractAnimation::Running) {
+            return;
+        }
+
+        m_HoverAnimation->stop();
+        m_HoverAnimation->setStartValue(m_HoverProgress);
+        m_HoverAnimation->setEndValue(clampedTarget);
+        m_HoverAnimation->start();
+    }
+
+    void resetHoverState()
+    {
+        m_HoverAnimation->stop();
+        setHoverProgress(0.0);
+    }
+
+    void setHoverProgress(qreal progress)
+    {
+        const qreal clampedProgress = qBound(0.0, progress, 1.0);
+        if (qAbs(m_HoverProgress - clampedProgress) < 0.0001) {
+            return;
+        }
+
+        m_HoverProgress = clampedProgress;
+        setProperty("FloatingButtonHoverProgress", m_HoverProgress);
+        refreshFloatingButtonHoverVisual(this);
+        update();
+    }
+
     void applyNoActivateWindowStyle()
     {
         applyFloatingButtonNativeWindowStyle(this, property("FloatingButtonMousePassThrough").toBool());
     }
+
+private:
+    qreal m_HoverProgress = 0.0;
+    QVariantAnimation *m_HoverAnimation = Q_NULLPTR;
 };
 
 class CategoryFilterPanelWidget final : public QWidget
@@ -853,13 +941,103 @@ static QString resolveFloatingButtonLabel(const MAP_KEYDATA &keymapdata)
     return keymapdata.Original_Key;
 }
 
-static void applyFloatingButtonVisualState(QPushButton *button, const MAP_KEYDATA &keymapdata, bool pressed, bool locked)
+static qreal floatingButtonStoredHoverProgress(const QPushButton *button)
+{
+    return button != Q_NULLPTR
+        ? qBound(0.0, button->property("FloatingButtonHoverProgress").toDouble(), 1.0)
+        : 0.0;
+}
+
+static QString floatingButtonStyleSheet(const QColor &visibleColor,
+                                        const QColor &pressedStateColor,
+                                        const QColor &textColor,
+                                        const QColor &borderColor,
+                                        int borderWidth,
+                                        int radius,
+                                        qreal hoverProgress)
+{
+    static const QString tooltipRule = QStringLiteral("QToolTip { background-color: palette(ToolTipBase); color: palette(ToolTipText); }");
+
+    const QColor gradientTopColor = liftedFloatingButtonColor(visibleColor, FLOATINGBUTTON_HOVER_TOP_LIFT_RATIO * hoverProgress);
+    const QColor gradientMidColor = liftedFloatingButtonColor(visibleColor, FLOATINGBUTTON_HOVER_MID_LIFT_RATIO * hoverProgress);
+    const QColor gradientBottomColor = visibleColor;
+    const QColor visibleBorderColor = liftedFloatingButtonColor(borderColor, FLOATINGBUTTON_HOVER_BORDER_LIFT_RATIO * hoverProgress);
+
+    return QStringLiteral(
+               "QPushButton {"
+               "background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 %1, stop:0.58 %2, stop:1 %3);"
+               "color: %4;"
+               "border: %5px solid %6;"
+               "border-radius: %7px;"
+               "padding-left: 6px;"
+               "padding-right: 6px;"
+               "}"
+               "QPushButton:pressed {"
+               "background-color: %8;"
+               "border: %5px solid %6;"
+               "}")
+               .arg(floatingButtonColorToRgba(gradientTopColor))
+               .arg(floatingButtonColorToRgba(gradientMidColor))
+               .arg(floatingButtonColorToRgba(gradientBottomColor))
+               .arg(floatingButtonColorToRgba(textColor))
+               .arg(QString::number(borderWidth))
+               .arg(floatingButtonColorToRgba(visibleBorderColor))
+               .arg(QString::number(radius))
+               .arg(floatingButtonColorToRgba(pressedStateColor))
+           + tooltipRule;
+}
+
+static void refreshFloatingButtonHoverVisual(QPushButton *button)
 {
     if (button == Q_NULLPTR) {
         return;
     }
 
-    static const QString tooltipRule = QStringLiteral("QToolTip { background-color: palette(ToolTipBase); color: palette(ToolTipText); }");
+    const QVariant normalColorData = button->property("FloatingButtonNormalColor");
+    const QVariant pressedColorData = button->property("FloatingButtonPressedColor");
+    const QVariant textColorData = button->property("FloatingButtonTextColor");
+    const QVariant lockedColorData = button->property("FloatingButtonLockedColor");
+    const QVariant borderColorData = button->property("FloatingButtonBorderColor");
+
+    if (!normalColorData.isValid() || !pressedColorData.isValid() || !textColorData.isValid()
+        || !lockedColorData.isValid() || !borderColorData.isValid()) {
+        return;
+    }
+
+    const QColor normalColor = qvariant_cast<QColor>(normalColorData);
+    const QColor pressedColor = qvariant_cast<QColor>(pressedColorData);
+    const QColor textColor = qvariant_cast<QColor>(textColorData);
+    const QColor lockedColor = qvariant_cast<QColor>(lockedColorData);
+    const QColor borderColor = qvariant_cast<QColor>(borderColorData);
+    const bool pressed = button->property("FloatingButtonPressedState").toBool();
+    const bool locked = button->property("FloatingButtonLockedState").toBool();
+    const int borderWidth = button->property("FloatingButtonBorderWidth").toInt();
+    const int radius = button->property("FloatingButtonRadius").toInt();
+    const QColor visibleColor = locked ? lockedColor : (pressed ? pressedColor : normalColor);
+    const QColor pressedStateColor = locked ? lockedColor : pressedColor;
+    qreal hoverProgress = floatingButtonStoredHoverProgress(button);
+
+    if (pressed) {
+        hoverProgress = 0.0;
+    }
+    else if (locked) {
+        hoverProgress *= FLOATINGBUTTON_HOVER_LOCKED_SCALE;
+    }
+
+    button->setStyleSheet(floatingButtonStyleSheet(visibleColor,
+                                                   pressedStateColor,
+                                                   textColor,
+                                                   borderColor,
+                                                   borderWidth,
+                                                   radius,
+                                                   hoverProgress));
+}
+
+static void applyFloatingButtonVisualState(QPushButton *button, const MAP_KEYDATA &keymapdata, bool pressed, bool locked)
+{
+    if (button == Q_NULLPTR) {
+        return;
+    }
 
     const QColor normalColor = keymapdata.FloatingButton_ButtonColor.isValid()
         ? keymapdata.FloatingButton_ButtonColor
@@ -874,21 +1052,24 @@ static void applyFloatingButtonVisualState(QPushButton *button, const MAP_KEYDAT
         ? keymapdata.FloatingButton_LockedColor
         : FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR;
     const QColor borderColor = sanitizeFloatingButtonBorderColor(keymapdata.FloatingButton_BorderColor);
-    const QColor visibleColor = locked ? lockedColor : (pressed ? pressedColor : normalColor);
-    const QColor pressedStateColor = locked ? lockedColor : pressedColor;
     const int borderWidth = sanitizeFloatingButtonBorderWidth(keymapdata.FloatingButton_BorderWidth);
 
+    button->setProperty("FloatingButtonNormalColor", normalColor);
+    button->setProperty("FloatingButtonPressedColor", pressedColor);
+    button->setProperty("FloatingButtonTextColor", textColor);
+    button->setProperty("FloatingButtonLockedColor", lockedColor);
+    button->setProperty("FloatingButtonBorderColor", borderColor);
+    button->setProperty("FloatingButtonPressedState", pressed);
+    button->setProperty("FloatingButtonLockedState", locked);
+    button->setProperty("FloatingButtonBorderWidth", borderWidth);
+    button->setProperty("FloatingButtonRadius", keymapdata.FloatingButton_Radius);
+    if (!button->property("FloatingButtonHoverProgress").isValid()) {
+        button->setProperty("FloatingButtonHoverProgress", 0.0);
+    }
+
     button->setWindowOpacity(resolveFloatingButtonStateOpacity(keymapdata, pressed, locked));
-    button->setStyleSheet(QStringLiteral("QPushButton { background-color: %1; color: %2; border: %3px solid %4; border-radius: %5px; }"
-                                         "QPushButton:pressed { background-color: %6; }")
-                          .arg(floatingButtonColorToRgba(visibleColor))
-                          .arg(floatingButtonColorToRgba(textColor))
-                          .arg(QString::number(borderWidth))
-                          .arg(floatingButtonColorToRgba(borderColor))
-                          .arg(QString::number(keymapdata.FloatingButton_Radius))
-                          .arg(floatingButtonColorToRgba(pressedStateColor))
-                          + tooltipRule);
     button->setDown(pressed);
+    refreshFloatingButtonHoverVisual(button);
 }
 
 static void applyFloatingButtonRuntimeState(QKeyMapper *keymapper, int row)
