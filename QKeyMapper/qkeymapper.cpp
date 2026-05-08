@@ -1187,12 +1187,12 @@ static void applyFloatingButtonFallbackStyle(QPushButton *button,
     static const QString tooltipRule = QStringLiteral("QToolTip { background-color: palette(ToolTipBase); color: palette(ToolTipText); }");
     button->setStyleSheet(QStringLiteral("QPushButton { background-color: %1; color: %2; border: %3px solid %4; border-radius: %5px; }"
                                          "QPushButton:pressed { background-color: %6; }")
-                          .arg(floatingButtonColorToRgba(visibleColor))
-                          .arg(floatingButtonColorToRgba(textColor))
-                          .arg(QString::number(borderWidth))
-                          .arg(floatingButtonColorToRgba(borderColor))
-                          .arg(QString::number(radius))
-                          .arg(floatingButtonColorToRgba(pressedStateColor))
+                          .arg(floatingButtonColorToRgba(visibleColor),
+                               floatingButtonColorToRgba(textColor),
+                               QString::number(borderWidth),
+                               floatingButtonColorToRgba(borderColor),
+                               QString::number(radius),
+                               floatingButtonColorToRgba(pressedStateColor))
                           + tooltipRule);
 }
 
