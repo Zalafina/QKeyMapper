@@ -295,6 +295,67 @@ private:
     QMetaObject::Connection m_MenuDestroyedConnection;
 };
 
+class FloatingButtonWidget : public QPushButton
+{
+    Q_OBJECT
+    Q_PROPERTY(qreal hoverProgress READ hoverProgress WRITE setHoverProgress)
+
+public:
+    explicit FloatingButtonWidget(QWidget *parent = Q_NULLPTR);
+
+    qreal hoverProgress() const { return m_HoverProgress; }
+    void setHoverProgress(qreal progress);
+    void setVisualState(const QColor &normalColor,
+                        const QColor &pressedColor,
+                        const QColor &lockedColor,
+                        const QColor &textColor,
+                        const QColor &borderColor,
+                        int borderWidth,
+                        int radius,
+                        bool pressed,
+                        bool locked,
+                        bool mousePassThrough);
+
+protected:
+    bool event(QEvent *event) override;
+    void showEvent(QShowEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    void enterEvent(QEnterEvent *event) override;
+#else
+    void enterEvent(QEvent *event) override;
+#endif
+    void leaveEvent(QEvent *event) override;
+    void hideEvent(QHideEvent *event) override;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+#else
+    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
+#endif
+
+private:
+    void animateHoverTo(qreal targetProgress);
+    void resetHoverState();
+    void applyNoActivateWindowStyle();
+    QColor currentBaseColor() const;
+    qreal effectiveHoverProgress() const;
+    QRectF contentRectF() const;
+
+private:
+    QColor m_NormalColor;
+    QColor m_PressedColor;
+    QColor m_LockedColor;
+    QColor m_TextColor;
+    QColor m_BorderColor;
+    int m_BorderWidth = 0;
+    int m_Radius = 0;
+    bool m_PressedState = false;
+    bool m_LockedState = false;
+    bool m_MousePassThrough = false;
+    qreal m_HoverProgress = 0.0;
+    QPropertyAnimation *m_HoverAnimation = Q_NULLPTR;
+};
+
 class KeyMappingDataTableWidget : public QTableWidget
 {
     Q_OBJECT
