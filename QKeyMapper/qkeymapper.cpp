@@ -27,7 +27,6 @@ constexpr qreal FLOATINGBUTTON_HOVER_BORDER_LIFT_RATIO = 0.78;
 constexpr qreal FLOATINGBUTTON_HOVER_GLOW_OUTER_ALPHA = 0.30;
 constexpr qreal FLOATINGBUTTON_HOVER_GLOW_INNER_ALPHA = 0.52;
 constexpr qreal FLOATINGBUTTON_HOVER_SHEEN_ALPHA = 0.14;
-constexpr qreal FLOATINGBUTTON_HOVER_LOCKED_SCALE = 0.55;
 constexpr qreal FLOATINGBUTTON_HOVER_CONTENT_MARGIN = 3.4;
 constexpr qreal FLOATINGBUTTON_HOVER_GLOW_BORDER_BLEND_RATIO = 0.72;
 constexpr qreal FLOATINGBUTTON_HOVER_OUTER_GLOW_WIDTH = 5.2;
@@ -821,11 +820,8 @@ QColor FloatingButtonWidget::currentBaseColor() const
 
 qreal FloatingButtonWidget::effectiveHoverProgress() const
 {
-    if (m_MousePassThrough || m_PressedState) {
+    if (m_MousePassThrough || (m_PressedState && !m_LockedState)) {
         return 0.0;
-    }
-    if (m_LockedState) {
-        return m_HoverProgress * FLOATINGBUTTON_HOVER_LOCKED_SCALE;
     }
     return m_HoverProgress;
 }
