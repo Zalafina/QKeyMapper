@@ -7283,6 +7283,10 @@ void QKeyMapper::switchBurstAndLockState(int rowindex)
             emit QKeyMapper_Worker::getInstance()->stopBurstKeyTimer_Signal(original_key, rowindex, QKeyMapper::KeyMappingDataList);
         }
 
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->syncRuntimeKeyMappingStateFromActiveKeyMappingRow(rowindex);
+        }
+
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[switchBurstAndLockState] "
                                     << "State changed - New Burst:" << newBurst
@@ -7339,6 +7343,10 @@ void QKeyMapper::buildActiveKeyMappingDataList()
 
 void QKeyMapper::restoreKeyMappingDataListPointer()
 {
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->syncRuntimeKeyMappingStatesToCurrentTab();
+    }
+
     // Restore KeyMappingDataList to point to the original tab's KeyMappingData
     if (0 <= s_KeyMappingTabWidgetCurrentIndex && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
         KeyMappingDataList = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
@@ -8303,6 +8311,178 @@ int QKeyMapper::findFloatingButtonRowIndexByOriginalKey(const QString &originalK
 #endif
 
     return exactMatchRow >= 0 ? exactMatchRow : normalizedMatchRow;
+}
+
+int QKeyMapper::findCurrentTabEnabledRowIndexByOriginalKey(const QString &originalKey) const
+{
+    const QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
+    if (originalKey.isEmpty() || mappingDataList == Q_NULLPTR) {
+        return -1;
+    }
+
+    const QString normalizedTarget = normalizeOriginalKeyForExclusiveGroup(originalKey);
+    int exactMatchRow = -1;
+    int normalizedMatchRow = -1;
+#ifdef DEBUG_LOGOUT_ON
+    bool duplicateExactMatch = false;
+    bool duplicateNormalizedMatch = false;
+#endif
+
+    for (int rowindex = 0; rowindex < mappingDataList->size(); ++rowindex) {
+        const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
+        if (keymapdata.Disabled) {
+            continue;
+        }
+
+        if (keymapdata.Original_Key == originalKey) {
+            if (exactMatchRow < 0) {
+                exactMatchRow = rowindex;
+            }
+#ifdef DEBUG_LOGOUT_ON
+            else {
+                duplicateExactMatch = true;
+            }
+#endif
+            continue;
+        }
+
+        if (normalizeOriginalKeyForExclusiveGroup(keymapdata.Original_Key) == normalizedTarget) {
+            if (normalizedMatchRow < 0) {
+                normalizedMatchRow = rowindex;
+            }
+#ifdef DEBUG_LOGOUT_ON
+            else {
+                duplicateNormalizedMatch = true;
+            }
+#endif
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (duplicateExactMatch || duplicateNormalizedMatch) {
+        qDebug().nospace().noquote() << "[findCurrentTabEnabledRowIndexByOriginalKey]"
+                                     << " multiple-enabled-matches originalKey=" << originalKey
+                                     << ", exactDuplicate=" << (duplicateExactMatch ? "true" : "false")
+                                     << ", normalizedDuplicate=" << (duplicateNormalizedMatch ? "true" : "false");
+    }
+#endif
+
+    return exactMatchRow >= 0 ? exactMatchRow : normalizedMatchRow;
+}
+
+int QKeyMapper::findCurrentTabRowIndexFromActiveKeyMappingRow(int rowindex) const
+{
+    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return -1;
+    }
+
+    return findCurrentTabEnabledRowIndexByOriginalKey(QKeyMapper::KeyMappingDataList->at(rowindex).Original_Key);
+}
+
+void QKeyMapper::syncRuntimeKeyMappingStateToCurrentTab(int rowindex, const MAP_KEYDATA &runtimeData)
+{
+    if (s_KeyMappingTabWidgetCurrentIndex < 0 || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    QList<MAP_KEYDATA> *currentTabData = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
+    if (currentTabData == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= currentTabData->size()) {
+        return;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (currentTabData->at(rowindex).Original_Key != runtimeData.Original_Key) {
+        qDebug().nospace().noquote() << "[syncRuntimeKeyMappingStateToCurrentTab]"
+                                     << " row/original-key mismatch row=" << rowindex
+                                     << ", rowOriginalKey=" << currentTabData->at(rowindex).Original_Key
+                                     << ", runtimeOriginalKey=" << runtimeData.Original_Key;
+    }
+#endif
+
+    MAP_KEYDATA &tabData = (*currentTabData)[rowindex];
+    tabData.Burst = runtimeData.Burst;
+    tabData.Lock = runtimeData.Lock;
+    tabData.LockState = runtimeData.LockState;
+}
+
+void QKeyMapper::syncRuntimeKeyMappingStateFromActiveKeyMappingRow(int rowindex)
+{
+    if (QKeyMapper::KeyMappingDataList != &QKeyMapper::s_ActiveKeyMappingDataList
+        || rowindex < 0
+        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    const int fullRowindex = findCurrentTabRowIndexFromActiveKeyMappingRow(rowindex);
+    if (fullRowindex < 0) {
+        return;
+    }
+
+    syncRuntimeKeyMappingStateToCurrentTab(fullRowindex, QKeyMapper::KeyMappingDataList->at(rowindex));
+}
+
+void QKeyMapper::syncRuntimeKeyMappingStatesToCurrentTab(void)
+{
+    QList<MAP_KEYDATA> *sourceDataList = Q_NULLPTR;
+    QList<MAP_KEYDATA> *targetTabData = Q_NULLPTR;
+
+    if (QKeyMapper::KeyMappingDataList == &QKeyMapper::s_ActiveKeyMappingDataList) {
+        sourceDataList = QKeyMapper::KeyMappingDataList;
+        if (0 <= s_KeyMappingTabWidgetCurrentIndex && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
+            targetTabData = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).KeyMappingData;
+        }
+    }
+    else if (QKeyMapper::KeyMappingDataList == &QKeyMapper::s_LastActiveKeyMappingDataList) {
+        sourceDataList = QKeyMapper::KeyMappingDataList;
+        if (0 <= s_KeyMappingTabWidgetLastIndex && s_KeyMappingTabWidgetLastIndex < s_KeyMappingTabInfoList.size()) {
+            targetTabData = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetLastIndex).KeyMappingData;
+        }
+    }
+
+    if (sourceDataList == Q_NULLPTR || targetTabData == Q_NULLPTR) {
+        return;
+    }
+
+    for (const MAP_KEYDATA &runtimeData : std::as_const(*sourceDataList)) {
+        if (runtimeData.Original_Key.isEmpty()) {
+            continue;
+        }
+
+        const QString normalizedTarget = normalizeOriginalKeyForExclusiveGroup(runtimeData.Original_Key);
+        int exactMatchRow = -1;
+        int normalizedMatchRow = -1;
+
+        for (int rowindex = 0; rowindex < targetTabData->size(); ++rowindex) {
+            const MAP_KEYDATA &keymapdata = targetTabData->at(rowindex);
+            if (keymapdata.Disabled) {
+                continue;
+            }
+
+            if (keymapdata.Original_Key == runtimeData.Original_Key) {
+                exactMatchRow = rowindex;
+                break;
+            }
+
+            if (normalizedMatchRow < 0
+                && normalizeOriginalKeyForExclusiveGroup(keymapdata.Original_Key) == normalizedTarget) {
+                normalizedMatchRow = rowindex;
+            }
+        }
+
+        const int targetRowindex = (exactMatchRow >= 0) ? exactMatchRow : normalizedMatchRow;
+        if (targetRowindex < 0) {
+            continue;
+        }
+
+        MAP_KEYDATA &tabData = (*targetTabData)[targetRowindex];
+        tabData.Burst = runtimeData.Burst;
+        tabData.Lock = runtimeData.Lock;
+        tabData.LockState = runtimeData.LockState;
+    }
 }
 
 int QKeyMapper::findFloatingButtonRowIndexFromCurrentKeyMappingRow(int rowindex) const
@@ -14742,6 +14922,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
     // Create RAII guard to automatically save and restore category filter state
     CategoryFilterStateGuard filterGuard(this);
+
+    syncRuntimeKeyMappingStatesToCurrentTab();
 
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
     closeSetupDialog_OnDataChanged();
@@ -29775,6 +29957,8 @@ void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(int rowindex, const M
     tabData.FloatingButton_PressedColor = runtimeData.FloatingButton_PressedColor;
     tabData.FloatingButton_LockedColor = runtimeData.FloatingButton_LockedColor;
     tabData.FloatingButton_TextColor = runtimeData.FloatingButton_TextColor;
+    tabData.FloatingButton_BorderColor = runtimeData.FloatingButton_BorderColor;
+    tabData.FloatingButton_BorderWidth = runtimeData.FloatingButton_BorderWidth;
     tabData.FloatingButton_Width = runtimeData.FloatingButton_Width;
     tabData.FloatingButton_Height = runtimeData.FloatingButton_Height;
     tabData.FloatingButton_FontSize = runtimeData.FloatingButton_FontSize;
@@ -37000,14 +37184,23 @@ void QKeyMapper::onSwitchBurstAndLockStateApplied(int rowindex)
         return;
     }
 
-    if (m_KeyMappingDataTable != Q_NULLPTR) {
-        // Keep QWidget updates on the GUI thread to avoid cross-thread timer warnings.
-        updateKeyMappingDataTableItem(m_KeyMappingDataTable, QKeyMapper::KeyMappingDataList, rowindex, BURST_MODE_COLUMN);
-        updateKeyMappingDataTableItem(m_KeyMappingDataTable, QKeyMapper::KeyMappingDataList, rowindex, LOCK_COLUMN);
+    const int fullRowindex = findCurrentTabRowIndexFromActiveKeyMappingRow(rowindex);
+    QList<MAP_KEYDATA> *currentTabData = getCurrentKeyMappingDataList();
+    const int targetRowindex = (fullRowindex >= 0) ? fullRowindex : rowindex;
+    if (currentTabData == Q_NULLPTR
+        || targetRowindex < 0
+        || targetRowindex >= currentTabData->size()) {
+        return;
     }
 
-    emit keyMappingTableItemCheckStateChanged_Signal(rowindex, BURST_MODE_COLUMN, QKeyMapper::KeyMappingDataList->at(rowindex).Burst);
-    emit keyMappingTableItemCheckStateChanged_Signal(rowindex, LOCK_COLUMN, QKeyMapper::KeyMappingDataList->at(rowindex).Lock);
+    if (m_KeyMappingDataTable != Q_NULLPTR) {
+        // Keep QWidget updates on the GUI thread to avoid cross-thread timer warnings.
+        updateKeyMappingDataTableItem(m_KeyMappingDataTable, currentTabData, targetRowindex, BURST_MODE_COLUMN);
+        updateKeyMappingDataTableItem(m_KeyMappingDataTable, currentTabData, targetRowindex, LOCK_COLUMN);
+    }
+
+    emit keyMappingTableItemCheckStateChanged_Signal(targetRowindex, BURST_MODE_COLUMN, currentTabData->at(targetRowindex).Burst);
+    emit keyMappingTableItemCheckStateChanged_Signal(targetRowindex, LOCK_COLUMN, currentTabData->at(targetRowindex).Lock);
     syncFloatingButtonAfterBurstAndLockState(rowindex);
 }
 
@@ -37048,6 +37241,8 @@ void QKeyMapper::onUpdateFloatingButtonPressedState(int rowindex, bool pressed)
 
 void QKeyMapper::onUpdateFloatingButtonLockState(int rowindex, bool locked)
 {
+    syncRuntimeKeyMappingStateFromActiveKeyMappingRow(rowindex);
+
     const int fullRowindex = findFloatingButtonRowIndexFromCurrentKeyMappingRow(rowindex);
     QPushButton *button = m_FloatingButtonMap.value(fullRowindex, Q_NULLPTR);
 
@@ -37083,6 +37278,8 @@ void QKeyMapper::onUpdateFloatingButtonLockState(int rowindex, bool locked)
 
 void QKeyMapper::onClearFloatingButtonLockStates()
 {
+    syncRuntimeKeyMappingStatesToCurrentTab();
+
     QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
     int updatedCount = 0;
     for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {

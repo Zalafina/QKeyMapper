@@ -1630,6 +1630,8 @@ private:
     bool isCategoryFilterVisible() const;
     void restoreCategoryFilterState(const QStringList& filters, bool showState);
     QPoint floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const;
+    int findCurrentTabEnabledRowIndexByOriginalKey(const QString &originalKey) const;
+    int findCurrentTabRowIndexFromActiveKeyMappingRow(int rowindex) const;
     int findFloatingButtonRowIndexByOriginalKey(const QString &originalKey) const;
     int findFloatingButtonRowIndexFromCurrentKeyMappingRow(int rowindex) const;
     int findHoveredFloatingButtonRow(const QPoint &globalPos) const;
@@ -1645,6 +1647,9 @@ private:
     void syncFloatingButtonAfterBurstAndLockState(int rowindex);
     void updateFloatingButtonsPositionIfWindowRef();
     void resetFloatingButtonWindowTrackingState();
+    void syncRuntimeKeyMappingStateToCurrentTab(int rowindex, const MAP_KEYDATA &runtimeData);
+    void syncRuntimeKeyMappingStateFromActiveKeyMappingRow(int rowindex);
+    void syncRuntimeKeyMappingStatesToCurrentTab(void);
     void syncFloatingButtonRuntimeDataToCurrentTab(int rowindex, const MAP_KEYDATA &runtimeData);
 
     // CategoryFilterStateGuard helper class for RAII-style filter state management
