@@ -406,7 +406,7 @@ namespace QKeyMapperConstants {
     inline constexpr QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(100, 118, 198);
     inline constexpr QColor FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR = QColor(168, 127, 190);
     inline constexpr QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
-    inline constexpr QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(0, 0, 0, 90);
+    inline constexpr QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(166, 166, 166, 255);
 #else
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
@@ -415,7 +415,7 @@ namespace QKeyMapperConstants {
     inline const QColor FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR = QColor(100, 118, 198);
     inline const QColor FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR = QColor(168, 127, 190);
     inline const QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
-    inline const QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(0, 0, 0, 90);
+    inline const QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(166, 166, 166, 255);
 #endif
 
     inline constexpr int CROSSHAIR_OPACITY_MIN = 0;
