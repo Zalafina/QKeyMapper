@@ -8,6 +8,7 @@
 #include <QHBoxLayout>
 #include <QApplication>
 #include <QMenu>
+#include <QEvent>
 
 class ColorPickerWidget : public QWidget
 {
@@ -29,6 +30,9 @@ public:
 signals:
     void colorChanged(QColor &color);
     void previewColorChanged(const QColor &color);
+
+protected:
+    void changeEvent(QEvent *event) override;
 
 private slots:
     void onPickColor();  // Slot to handle color pick button click

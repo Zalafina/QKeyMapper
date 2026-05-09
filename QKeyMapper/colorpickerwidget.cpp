@@ -4,6 +4,44 @@
 
 using namespace QKeyMapperConstants;
 
+namespace {
+
+QColor blendColorComponents(const QColor &baseColor, const QColor &overlayColor, qreal overlayRatio)
+{
+    const qreal clampedRatio = qBound(0.0, overlayRatio, 1.0);
+    const qreal baseRatio = 1.0 - clampedRatio;
+
+    return QColor(qRound(baseColor.red() * baseRatio + overlayColor.red() * clampedRatio),
+                  qRound(baseColor.green() * baseRatio + overlayColor.green() * clampedRatio),
+                  qRound(baseColor.blue() * baseRatio + overlayColor.blue() * clampedRatio),
+                  qRound(baseColor.alpha() * baseRatio + overlayColor.alpha() * clampedRatio));
+}
+
+QColor mutedDisabledSwatchColor(const QColor &color, const QPalette &referencePalette)
+{
+    if (!color.isValid()) {
+        return referencePalette.color(QPalette::Disabled, QPalette::Window);
+    }
+
+    QColor disabledBase = referencePalette.color(QPalette::Disabled, QPalette::Window);
+    if (!disabledBase.isValid()) {
+        disabledBase = referencePalette.color(QPalette::Disabled, QPalette::Base);
+    }
+    if (!disabledBase.isValid()) {
+        disabledBase = referencePalette.color(QPalette::Window);
+    }
+
+    QColor mutedColor = color.toHsl();
+    mutedColor.setHsl(mutedColor.hslHue(),
+                      qRound(mutedColor.hslSaturation() * 0.22),
+                      qBound(0, qRound(mutedColor.lightness() * 0.72 + disabledBase.lightness() * 0.28), 255),
+                      color.alpha());
+
+    return blendColorComponents(mutedColor, disabledBase, 0.40);
+}
+
+}
+
 ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int buttonWidth)
     : QWidget(parent)
     , m_buttonText(buttonText)
@@ -16,6 +54,8 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int bu
 
     // Set color label style
     colorLabel->setFrameStyle(QFrame::WinPanel | QFrame::Sunken);
+    colorLabel->setBackgroundRole(QPalette::Window);
+    colorLabel->setAutoFillBackground(true);
 
     // Set default size for colorLabel and colorButton
     colorLabel->setFixedSize(31, 21);  // Set fixed size for the label
@@ -48,14 +88,25 @@ QColor ColorPickerWidget::getColor()
 
 void ColorPickerWidget::updateColorLabel(const QColor &color)
 {
-    if (!color.isValid()) {
+    if (colorLabel == Q_NULLPTR) {
         return;
     }
 
-    QPalette palette = colorLabel->palette();
-    palette.setColor(colorLabel->backgroundRole(), color);
-    colorLabel->setAutoFillBackground(true);
-    colorLabel->setPalette(palette);
+    const QPalette widgetPalette = palette();
+    const QColor activeColor = color.isValid()
+        ? color
+        : widgetPalette.color(QPalette::Active, QPalette::Window);
+    const QColor inactiveColor = color.isValid()
+        ? color
+        : widgetPalette.color(QPalette::Inactive, QPalette::Window);
+    const QColor disabledColor = mutedDisabledSwatchColor(color, widgetPalette);
+
+    QPalette labelPalette = colorLabel->palette();
+    labelPalette.setColor(QPalette::Active, colorLabel->backgroundRole(), activeColor);
+    labelPalette.setColor(QPalette::Inactive, colorLabel->backgroundRole(), inactiveColor);
+    labelPalette.setColor(QPalette::Disabled, colorLabel->backgroundRole(), disabledColor);
+    colorLabel->setPalette(labelPalette);
+    colorLabel->update();
 }
 
 #if 0
@@ -100,6 +151,15 @@ void ColorPickerWidget::setButtonText(QString text)
 {
     if (!text.isEmpty()) {
         colorButton->setText(text);
+    }
+}
+
+void ColorPickerWidget::changeEvent(QEvent *event)
+{
+    QWidget::changeEvent(event);
+
+    if (event != Q_NULLPTR && event->type() == QEvent::EnabledChange) {
+        updateColorLabel(m_color);
     }
 }
 
