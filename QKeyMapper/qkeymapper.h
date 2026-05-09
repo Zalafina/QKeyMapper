@@ -314,7 +314,9 @@ public:
                         int radius,
                         bool pressed,
                         bool locked,
-                        bool mousePassThrough);
+                        bool mousePassThrough,
+                        bool enableGradientFill,
+                        bool enableHoverAnimation);
 
 protected:
     bool event(QEvent *event) override;
@@ -352,6 +354,8 @@ private:
     bool m_PressedState = false;
     bool m_LockedState = false;
     bool m_MousePassThrough = false;
+    bool m_EnableGradientFill = true;
+    bool m_EnableHoverAnimation = true;
     qreal m_HoverProgress = 0.0;
     QPropertyAnimation *m_HoverAnimation = Q_NULLPTR;
 };

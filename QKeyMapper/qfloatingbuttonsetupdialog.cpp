@@ -55,6 +55,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_AlwaysOnTopCheckBox(new QCheckBox(this))
     , m_MousePassThroughCheckBox(new QCheckBox(this))
     , m_DragToMoveCheckBox(new QCheckBox(this))
+    , m_EnableGradientFillCheckBox(new QCheckBox(this))
+    , m_EnableHoverAnimationCheckBox(new QCheckBox(this))
     , m_MousePassThroughSwitchKeyLabel(new QLabel(this))
     , m_MousePassThroughSwitchKeyComboBox(new QComboBox(this))
     , m_WidthLabel(new QLabel(this))
@@ -188,14 +190,16 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     styleGrid->addWidget(m_FontFamilyComboBox, 3, 1, 1, 4);
     styleGrid->addWidget(m_FontFamilyDefaultButton, 3, 5);
 
+    styleGrid->addWidget(m_EnableGradientFillCheckBox, 4, 1, 1, 3);
+    styleGrid->addWidget(m_EnableHoverAnimationCheckBox, 4, 4, 1, 3);
+
     QGridLayout *colorLayout = new QGridLayout();
-    colorLayout->setContentsMargins(60, 0, 0, 0);
     colorLayout->addWidget(m_ButtonColorPicker, 0, 0);
     colorLayout->addWidget(m_TextColorPicker, 0, 1);
     colorLayout->addWidget(m_PressedColorPicker, 1, 0);
     colorLayout->addWidget(m_LockedColorPicker, 1, 1);
     colorLayout->addWidget(m_BorderColorPicker, 2, 0, 1, 2);
-    styleGrid->addLayout(colorLayout, 4, 0, 1, 6);
+    styleGrid->addLayout(colorLayout, 5, 1, 1, 6);
 
     QGroupBox *positionGroup = new QGroupBox(this);
     QGridLayout *positionGrid = new QGridLayout(positionGroup);
@@ -267,6 +271,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_MousePassThroughCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_DragToMoveCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_EnableGradientFillCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_EnableHoverAnimationCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #else
     connect(m_ShowOnStartCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_ShowToolTipCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
@@ -274,6 +280,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     connect(m_AlwaysOnTopCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_MousePassThroughCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_DragToMoveCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_EnableGradientFillCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_EnableHoverAnimationCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #endif
     connect(m_MousePassThroughSwitchKeyComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_WidthSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
@@ -350,6 +358,8 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     }
     m_DragToMoveCheckBox->setText(tr("Enable Drag to Move"));
     m_DragToMoveCheckBox->setToolTip(tr("Supports Ctrl+drag. Context menu Move is always available."));
+    m_EnableGradientFillCheckBox->setText(tr("Enable Gradient Fill"));
+    m_EnableHoverAnimationCheckBox->setText(tr("Enable Hover Animation"));
 
     m_WidthLabel->setText(tr("Width"));
     m_HeightLabel->setText(tr("Height"));
@@ -536,6 +546,8 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_AlwaysOnTopCheckBox->setChecked(keymapdata.FloatingButton_AlwaysOnTop);
     m_MousePassThroughCheckBox->setChecked(keymapdata.FloatingButton_MousePassThrough);
     m_DragToMoveCheckBox->setChecked(keymapdata.FloatingButton_DragToMove);
+    m_EnableGradientFillCheckBox->setChecked(keymapdata.FloatingButton_EnableGradientFill);
+    m_EnableHoverAnimationCheckBox->setChecked(keymapdata.FloatingButton_EnableHoverAnimation);
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     const QString switchKey = (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size())
@@ -604,6 +616,8 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_AlwaysOnTop = m_AlwaysOnTopCheckBox->isChecked();
     keymapdata.FloatingButton_MousePassThrough = m_MousePassThroughCheckBox->isChecked();
     keymapdata.FloatingButton_DragToMove = m_DragToMoveCheckBox->isChecked();
+    keymapdata.FloatingButton_EnableGradientFill = m_EnableGradientFillCheckBox->isChecked();
+    keymapdata.FloatingButton_EnableHoverAnimation = m_EnableHoverAnimationCheckBox->isChecked();
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     if (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {

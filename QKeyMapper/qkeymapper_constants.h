@@ -448,6 +448,8 @@ namespace QKeyMapperConstants {
     inline constexpr bool FLOATINGBUTTON_ALWAYSONTOP_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_MOUSE_PASSTHROUGH_DEFAULT = false;
     inline constexpr bool FLOATINGBUTTON_DRAGTOMOVE_DEFAULT = true;
+    inline constexpr bool FLOATINGBUTTON_ENABLEGRADIENTFILL_DEFAULT = true;
+    inline constexpr bool FLOATINGBUTTON_ENABLEHOVERANIMATION_DEFAULT = true;
     inline constexpr int FLOATINGBUTTON_WIDTH_MIN = 4;
     inline constexpr int FLOATINGBUTTON_WIDTH_MAX = 640;
     inline constexpr int FLOATINGBUTTON_WIDTH_DEFAULT = 80;
@@ -1144,6 +1146,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE[] = "KeyMapData_FloatingButton_SyncPressedLockedState";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP[] = "KeyMapData_FloatingButton_AlwaysOnTop";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH[] = "KeyMapData_FloatingButton_MousePassThrough";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL[] = "KeyMapData_FloatingButton_EnableGradientFill";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION[] = "KeyMapData_FloatingButton_EnableHoverAnimation";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT[] = "KeyMapData_FloatingButton_ReferencePoint";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_X_OFFSET[] = "KeyMapData_FloatingButton_X_Offset";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET[] = "KeyMapData_FloatingButton_Y_Offset";

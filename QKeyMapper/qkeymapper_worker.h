@@ -178,6 +178,8 @@ typedef struct MAP_KEYDATA
     QColor FloatingButton_TextColor;
     QColor FloatingButton_BorderColor;
     int FloatingButton_BorderWidth;
+    bool FloatingButton_EnableGradientFill;
+    bool FloatingButton_EnableHoverAnimation;
     int FloatingButton_Width;
     int FloatingButton_Height;
     int FloatingButton_FontSize;
@@ -248,6 +250,8 @@ typedef struct MAP_KEYDATA
     , FloatingButton_TextColor(QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR)
     , FloatingButton_BorderColor(QKeyMapperConstants::FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR)
     , FloatingButton_BorderWidth(QKeyMapperConstants::FLOATINGBUTTON_BORDER_WIDTH_DEFAULT)
+    , FloatingButton_EnableGradientFill(QKeyMapperConstants::FLOATINGBUTTON_ENABLEGRADIENTFILL_DEFAULT)
+    , FloatingButton_EnableHoverAnimation(QKeyMapperConstants::FLOATINGBUTTON_ENABLEHOVERANIMATION_DEFAULT)
     , FloatingButton_Width(QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT)
     , FloatingButton_Height(QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT)
     , FloatingButton_FontSize(QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT)
@@ -340,6 +344,8 @@ typedef struct MAP_KEYDATA
         FloatingButton_TextColor = QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
         FloatingButton_BorderColor = QKeyMapperConstants::FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR;
         FloatingButton_BorderWidth = QKeyMapperConstants::FLOATINGBUTTON_BORDER_WIDTH_DEFAULT;
+        FloatingButton_EnableGradientFill = QKeyMapperConstants::FLOATINGBUTTON_ENABLEGRADIENTFILL_DEFAULT;
+        FloatingButton_EnableHoverAnimation = QKeyMapperConstants::FLOATINGBUTTON_ENABLEHOVERANIMATION_DEFAULT;
         FloatingButton_Width = QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT;
         FloatingButton_Height = QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT;
         FloatingButton_FontSize = QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT;
@@ -408,6 +414,8 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_TextColor == other.FloatingButton_TextColor)
                 && (FloatingButton_BorderColor == other.FloatingButton_BorderColor)
                 && (FloatingButton_BorderWidth == other.FloatingButton_BorderWidth)
+                && (FloatingButton_EnableGradientFill == other.FloatingButton_EnableGradientFill)
+                && (FloatingButton_EnableHoverAnimation == other.FloatingButton_EnableHoverAnimation)
                 && (FloatingButton_Width == other.FloatingButton_Width)
                 && (FloatingButton_Height == other.FloatingButton_Height)
                 && (FloatingButton_FontSize == other.FloatingButton_FontSize)
@@ -481,6 +489,8 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_TextColor:" << data.FloatingButton_TextColor
                         << ", FloatingButton_BorderColor:" << data.FloatingButton_BorderColor
                         << ", FloatingButton_BorderWidth:" << data.FloatingButton_BorderWidth
+                        << ", FloatingButton_EnableGradientFill:" << data.FloatingButton_EnableGradientFill
+                        << ", FloatingButton_EnableHoverAnimation:" << data.FloatingButton_EnableHoverAnimation
                         << ", FloatingButton_Width:" << data.FloatingButton_Width
                         << ", FloatingButton_Height:" << data.FloatingButton_Height
                         << ", FloatingButton_FontSize:" << data.FloatingButton_FontSize

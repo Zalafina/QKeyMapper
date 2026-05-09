@@ -77,6 +77,8 @@ private:
     QCheckBox *m_AlwaysOnTopCheckBox;
     QCheckBox *m_MousePassThroughCheckBox;
     QCheckBox *m_DragToMoveCheckBox;
+    QCheckBox *m_EnableGradientFillCheckBox;
+    QCheckBox *m_EnableHoverAnimationCheckBox;
 
     QLabel *m_MousePassThroughSwitchKeyLabel;
     QComboBox *m_MousePassThroughSwitchKeyComboBox;
