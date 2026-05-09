@@ -69,6 +69,10 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_NormalOpacityLabel(new QLabel(this))
     , m_PressedOpacityLabel(new QLabel(this))
     , m_LockedOpacityLabel(new QLabel(this))
+    , m_HoverEffectStrengthLabel(new QLabel(this))
+    , m_HoverGlowStrengthLabel(new QLabel(this))
+    , m_HoverContrastModeLabel(new QLabel(this))
+    , m_HoverAnimationDurationLabel(new QLabel(this))
     , m_WidthSpinBox(new QSpinBox(this))
     , m_HeightSpinBox(new QSpinBox(this))
     , m_FontSizeSpinBox(new QSpinBox(this))
@@ -80,6 +84,10 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_NormalOpacitySpinBox(new QDoubleSpinBox(this))
     , m_PressedOpacitySpinBox(new QDoubleSpinBox(this))
     , m_LockedOpacitySpinBox(new QDoubleSpinBox(this))
+    , m_HoverEffectStrengthSpinBox(new QSpinBox(this))
+    , m_HoverGlowStrengthSpinBox(new QSpinBox(this))
+    , m_HoverContrastModeComboBox(new QComboBox(this))
+    , m_HoverAnimationDurationSpinBox(new QSpinBox(this))
     , m_ReferencePointLabel(new QLabel(this))
     , m_OffsetXLabel(new QLabel(this))
     , m_OffsetYLabel(new QLabel(this))
@@ -93,6 +101,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_LockedColorPicker(new ColorPickerWidget(this, "FloatBtn_LockedColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
     , m_TextColorPicker(new ColorPickerWidget(this, "FloatBtn_TextColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_TEXTCOLOR))
     , m_BorderColorPicker(new ColorPickerWidget(this, "FloatBtn_BorderColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
+    , m_HoverCustomColorPicker(new ColorPickerWidget(this, "FloatBtn_HoverCustomColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
 {
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
 
@@ -101,6 +110,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_LockedColorPicker->setShowAlphaChannel(true);
     m_TextColorPicker->setShowAlphaChannel(true);
     m_BorderColorPicker->setShowAlphaChannel(true);
+    m_HoverCustomColorPicker->setShowAlphaChannel(true);
 
     for (QLineEdit *lineEdit : {m_ItemOriginalKeyLineEdit, m_ItemNoteLineEdit, m_ItemIndexLineEdit}) {
         lineEdit->setReadOnly(true);
@@ -118,6 +128,12 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
         opacitySpinBox->setSingleStep(FLOATINGBUTTON_OPACITY_SINGLESTEP);
         opacitySpinBox->setRange(FLOATINGBUTTON_OPACITY_MIN, FLOATINGBUTTON_OPACITY_MAX);
     }
+    m_HoverEffectStrengthSpinBox->setRange(FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MIN, FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MAX);
+    m_HoverEffectStrengthSpinBox->setSuffix(QStringLiteral("%"));
+    m_HoverGlowStrengthSpinBox->setRange(FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MIN, FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MAX);
+    m_HoverGlowStrengthSpinBox->setSuffix(QStringLiteral("%"));
+    m_HoverAnimationDurationSpinBox->setRange(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MIN, FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MAX);
+    m_HoverAnimationDurationSpinBox->setSuffix(QStringLiteral(" ms"));
     m_OffsetXSpinBox->setRange(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX);
     m_OffsetYSpinBox->setRange(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX);
     m_MousePassThroughSwitchKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
@@ -193,13 +209,24 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     styleGrid->addWidget(m_EnableGradientFillCheckBox, 4, 1, 1, 3);
     styleGrid->addWidget(m_EnableHoverAnimationCheckBox, 4, 4, 1, 3);
 
+    styleGrid->addWidget(m_HoverEffectStrengthLabel, 5, 0);
+    styleGrid->addWidget(m_HoverEffectStrengthSpinBox, 5, 1);
+    styleGrid->addWidget(m_HoverGlowStrengthLabel, 5, 2);
+    styleGrid->addWidget(m_HoverGlowStrengthSpinBox, 5, 3);
+    styleGrid->addWidget(m_HoverAnimationDurationLabel, 5, 4);
+    styleGrid->addWidget(m_HoverAnimationDurationSpinBox, 5, 5);
+
+    styleGrid->addWidget(m_HoverContrastModeLabel, 6, 0);
+    styleGrid->addWidget(m_HoverContrastModeComboBox, 6, 1, 1, 2);
+    styleGrid->addWidget(m_HoverCustomColorPicker, 6, 3, 1, 3);
+
     QGridLayout *colorLayout = new QGridLayout();
     colorLayout->addWidget(m_ButtonColorPicker, 0, 0);
     colorLayout->addWidget(m_TextColorPicker, 0, 1);
     colorLayout->addWidget(m_PressedColorPicker, 1, 0);
     colorLayout->addWidget(m_LockedColorPicker, 1, 1);
     colorLayout->addWidget(m_BorderColorPicker, 2, 0, 1, 2);
-    styleGrid->addLayout(colorLayout, 5, 1, 1, 6);
+    styleGrid->addLayout(colorLayout, 7, 1, 1, 5);
 
     QGroupBox *positionGroup = new QGroupBox(this);
     QGridLayout *positionGrid = new QGridLayout(positionGroup);
@@ -241,6 +268,10 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_NormalOpacityLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_PressedOpacityLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_LockedOpacityLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_HoverEffectStrengthLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_HoverGlowStrengthLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_HoverContrastModeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_HoverAnimationDurationLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_ReferencePointLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetXLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetYLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -254,6 +285,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_LockedColorPicker->raise();
     m_TextColorPicker->raise();
     m_BorderColorPicker->raise();
+    m_HoverCustomColorPicker->raise();
 
     connect(m_ApplyButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onApplyButtonClicked);
     connect(m_RevertButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onRevertButtonClicked);
@@ -301,10 +333,18 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
                 onAnyControlChanged();
             });
     connect(m_RadiusSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
-            connect(m_BorderWidthSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_BorderWidthSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_NormalOpacitySpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_PressedOpacitySpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_LockedOpacitySpinBox, qOverload<double>(&QDoubleSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_HoverEffectStrengthSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_HoverGlowStrengthSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_HoverAnimationDurationSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_HoverContrastModeComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this,
+            [this](int) {
+            updateHoverCustomizationState();
+            onAnyControlChanged();
+            });
     connect(m_ReferencePointComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_OffsetXSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_OffsetYSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
@@ -314,22 +354,26 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_LockedColorPicker->setLivePreviewEnabled(true);
     m_TextColorPicker->setLivePreviewEnabled(true);
     m_BorderColorPicker->setLivePreviewEnabled(true);
+    m_HoverCustomColorPicker->setLivePreviewEnabled(true);
 
     connect(m_ButtonColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_PressedColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_LockedColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_TextColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_BorderColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_HoverCustomColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
 
     connect(m_ButtonColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_PressedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_LockedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_TextColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     connect(m_BorderColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_HoverCustomColorPicker, &ColorPickerWidget::previewColorChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
 
     syncFontFamilyControls();
 
     setUILanguage(QKeyMapper::getLanguageIndex());
+    updateHoverCustomizationState();
     adjustSize();
     setMinimumWidth(qMax(minimumSizeHint().width(), sizeHint().width()));
 }
@@ -360,6 +404,11 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_DragToMoveCheckBox->setToolTip(tr("Supports Ctrl+drag. Context menu Move is always available."));
     m_EnableGradientFillCheckBox->setText(tr("Enable Gradient Fill"));
     m_EnableHoverAnimationCheckBox->setText(tr("Enable Hover Animation"));
+    m_HoverEffectStrengthLabel->setText(tr("Hover Effect"));
+    m_HoverGlowStrengthLabel->setText(tr("Hover Glow"));
+    m_HoverContrastModeLabel->setText(tr("Hover Contrast"));
+    m_HoverAnimationDurationLabel->setText(tr("Hover Duration"));
+    m_HoverAnimationDurationSpinBox->setSuffix(tr(" ms"));
 
     m_WidthLabel->setText(tr("Width"));
     m_HeightLabel->setText(tr("Height"));
@@ -399,6 +448,20 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
         m_FontWeightComboBox->setItemText(2, tr("Bold"));
     }
 
+    if (m_HoverContrastModeComboBox->count() != 4) {
+        m_HoverContrastModeComboBox->clear();
+        m_HoverContrastModeComboBox->addItem(tr("Auto"));
+        m_HoverContrastModeComboBox->addItem(tr("Lighten"));
+        m_HoverContrastModeComboBox->addItem(tr("Darken"));
+        m_HoverContrastModeComboBox->addItem(tr("Custom"));
+    }
+    else {
+        m_HoverContrastModeComboBox->setItemText(FLOATINGBUTTON_HOVER_CONTRASTMODE_AUTO, tr("Auto"));
+        m_HoverContrastModeComboBox->setItemText(FLOATINGBUTTON_HOVER_CONTRASTMODE_LIGHTEN, tr("Lighten"));
+        m_HoverContrastModeComboBox->setItemText(FLOATINGBUTTON_HOVER_CONTRASTMODE_DARKEN, tr("Darken"));
+        m_HoverContrastModeComboBox->setItemText(FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM, tr("Custom"));
+    }
+
     m_LabelLineEdit->setPlaceholderText(tr("Empty = use original key name"));
 
     m_ButtonColorPicker->setButtonText(tr("BtnColor"));
@@ -411,8 +474,11 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_TextColorPicker->setWindowTitle(tr("Floating Button Text Color"));
     m_BorderColorPicker->setButtonText(tr("BorderColor"));
     m_BorderColorPicker->setWindowTitle(tr("Floating Button Border Color"));
+    m_HoverCustomColorPicker->setButtonText(tr("HoverColor"));
+    m_HoverCustomColorPicker->setWindowTitle(tr("Floating Button Hover Color"));
 
     setupReferencePointComboBox();
+    updateHoverCustomizationState();
 }
 
 void QFloatingButtonSetupDialog::setItemRow(int row)
@@ -548,6 +614,18 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_DragToMoveCheckBox->setChecked(keymapdata.FloatingButton_DragToMove);
     m_EnableGradientFillCheckBox->setChecked(keymapdata.FloatingButton_EnableGradientFill);
     m_EnableHoverAnimationCheckBox->setChecked(keymapdata.FloatingButton_EnableHoverAnimation);
+    m_HoverEffectStrengthSpinBox->setValue(qBound(FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MIN,
+                                                  keymapdata.FloatingButton_HoverEffectStrength,
+                                                  FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MAX));
+    m_HoverGlowStrengthSpinBox->setValue(qBound(FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MIN,
+                                                keymapdata.FloatingButton_HoverGlowStrength,
+                                                FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MAX));
+    m_HoverContrastModeComboBox->setCurrentIndex(qBound(FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN,
+                                                        keymapdata.FloatingButton_HoverContrastMode,
+                                                        FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX));
+    m_HoverAnimationDurationSpinBox->setValue(qBound(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MIN,
+                                                     keymapdata.FloatingButton_HoverAnimationDuration,
+                                                     FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MAX));
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     const QString switchKey = (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size())
@@ -594,6 +672,13 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_LockedColorPicker->setColor(keymapdata.FloatingButton_LockedColor);
     m_TextColorPicker->setColor(keymapdata.FloatingButton_TextColor);
     m_BorderColorPicker->setColor(keymapdata.FloatingButton_BorderColor);
+    m_HoverCustomColorPicker->setColor(keymapdata.FloatingButton_HoverCustomColor.isValid()
+                                           ? keymapdata.FloatingButton_HoverCustomColor
+                                           : (keymapdata.FloatingButton_ButtonColor.isValid()
+                                                  ? keymapdata.FloatingButton_ButtonColor
+                                                  : FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR));
+
+    updateHoverCustomizationState();
 
     m_isLoading = false;
 }
@@ -618,6 +703,15 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_DragToMove = m_DragToMoveCheckBox->isChecked();
     keymapdata.FloatingButton_EnableGradientFill = m_EnableGradientFillCheckBox->isChecked();
     keymapdata.FloatingButton_EnableHoverAnimation = m_EnableHoverAnimationCheckBox->isChecked();
+    keymapdata.FloatingButton_HoverEffectStrength = m_HoverEffectStrengthSpinBox->value();
+    keymapdata.FloatingButton_HoverGlowStrength = m_HoverGlowStrengthSpinBox->value();
+    keymapdata.FloatingButton_HoverContrastMode = qBound(FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN,
+                                                         m_HoverContrastModeComboBox->currentIndex(),
+                                                         FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX);
+    keymapdata.FloatingButton_HoverAnimationDuration = m_HoverAnimationDurationSpinBox->value();
+    if (keymapdata.FloatingButton_HoverContrastMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM) {
+        keymapdata.FloatingButton_HoverCustomColor = m_HoverCustomColorPicker->getColor();
+    }
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     if (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
@@ -663,6 +757,24 @@ void QFloatingButtonSetupDialog::syncFontFamilyControls()
     }
 
     m_FontFamilyDefaultButton->setEnabled(!m_FontFamily.isEmpty());
+}
+
+void QFloatingButtonSetupDialog::updateHoverCustomizationState()
+{
+    const int hoverContrastMode = qBound(FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN,
+                                         m_HoverContrastModeComboBox->currentIndex(),
+                                         FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX);
+    const bool customEnabled = (hoverContrastMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM);
+
+    if (customEnabled && !m_HoverCustomColorPicker->getColor().isValid()) {
+        QColor resolvedColor = m_ButtonColorPicker->getColor();
+        if (!resolvedColor.isValid()) {
+            resolvedColor = FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
+        }
+        m_HoverCustomColorPicker->setColor(resolvedColor);
+    }
+
+    m_HoverCustomColorPicker->setEnabled(customEnabled);
 }
 
 void QFloatingButtonSetupDialog::setupReferencePointComboBox()

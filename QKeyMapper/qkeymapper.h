@@ -316,7 +316,12 @@ public:
                         bool locked,
                         bool mousePassThrough,
                         bool enableGradientFill,
-                        bool enableHoverAnimation);
+                        bool enableHoverAnimation,
+                        int hoverEffectStrength,
+                        int hoverGlowStrength,
+                        int hoverContrastMode,
+                        int hoverAnimationDuration,
+                        const QColor &hoverCustomColor);
 
 protected:
     bool event(QEvent *event) override;
@@ -356,6 +361,11 @@ private:
     bool m_MousePassThrough = false;
     bool m_EnableGradientFill = true;
     bool m_EnableHoverAnimation = true;
+    int m_HoverEffectStrength = QKeyMapperConstants::FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT;
+    int m_HoverGlowStrength = QKeyMapperConstants::FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT;
+    int m_HoverContrastMode = QKeyMapperConstants::FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT;
+    int m_HoverAnimationDuration = QKeyMapperConstants::FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT;
+    QColor m_HoverCustomColor;
     qreal m_HoverProgress = 0.0;
     QPropertyAnimation *m_HoverAnimation = Q_NULLPTR;
 };

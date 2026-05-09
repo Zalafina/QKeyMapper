@@ -407,6 +407,7 @@ namespace QKeyMapperConstants {
     inline constexpr QColor FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR = QColor(168, 127, 190);
     inline constexpr QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
     inline constexpr QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(166, 166, 166, 255);
+    inline constexpr QColor FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR = QColor();
 #else
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
@@ -416,6 +417,7 @@ namespace QKeyMapperConstants {
     inline const QColor FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR = QColor(168, 127, 190);
     inline const QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
     inline const QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(166, 166, 166, 255);
+    inline const QColor FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR = QColor();
 #endif
 
     inline constexpr int CROSSHAIR_OPACITY_MIN = 0;
@@ -450,6 +452,22 @@ namespace QKeyMapperConstants {
     inline constexpr bool FLOATINGBUTTON_DRAGTOMOVE_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_ENABLEGRADIENTFILL_DEFAULT = true;
     inline constexpr bool FLOATINGBUTTON_ENABLEHOVERANIMATION_DEFAULT = true;
+    inline constexpr int FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MIN = 0;
+    inline constexpr int FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MAX = 200;
+    inline constexpr int FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT = 100;
+    inline constexpr int FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MIN = 0;
+    inline constexpr int FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MAX = 200;
+    inline constexpr int FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT = 100;
+    inline constexpr int FLOATINGBUTTON_HOVER_CONTRASTMODE_AUTO = 0;
+    inline constexpr int FLOATINGBUTTON_HOVER_CONTRASTMODE_LIGHTEN = 1;
+    inline constexpr int FLOATINGBUTTON_HOVER_CONTRASTMODE_DARKEN = 2;
+    inline constexpr int FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM = 3;
+    inline constexpr int FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN = FLOATINGBUTTON_HOVER_CONTRASTMODE_AUTO;
+    inline constexpr int FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX = FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM;
+    inline constexpr int FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT = FLOATINGBUTTON_HOVER_CONTRASTMODE_AUTO;
+    inline constexpr int FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MIN = 80;
+    inline constexpr int FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MAX = 500;
+    inline constexpr int FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT = 190;
     inline constexpr int FLOATINGBUTTON_WIDTH_MIN = 4;
     inline constexpr int FLOATINGBUTTON_WIDTH_MAX = 640;
     inline constexpr int FLOATINGBUTTON_WIDTH_DEFAULT = 80;
@@ -1148,6 +1166,11 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH[] = "KeyMapData_FloatingButton_MousePassThrough";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL[] = "KeyMapData_FloatingButton_EnableGradientFill";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION[] = "KeyMapData_FloatingButton_EnableHoverAnimation";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH[] = "KeyMapData_FloatingButton_HoverEffectStrength";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH[] = "KeyMapData_FloatingButton_HoverGlowStrength";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE[] = "KeyMapData_FloatingButton_HoverContrastMode";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION[] = "KeyMapData_FloatingButton_HoverAnimationDuration";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR[] = "KeyMapData_FloatingButton_HoverCustomColor";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT[] = "KeyMapData_FloatingButton_ReferencePoint";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_X_OFFSET[] = "KeyMapData_FloatingButton_X_Offset";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET[] = "KeyMapData_FloatingButton_Y_Offset";

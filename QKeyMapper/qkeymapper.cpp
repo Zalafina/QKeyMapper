@@ -16,7 +16,7 @@ namespace {
 constexpr int DISABLED_ROW_BACKGROUND_APPLIED_ROLE = Qt::UserRole + 500;
 constexpr int DISABLED_ROW_FOREGROUND_APPLIED_ROLE = Qt::UserRole + 501;
 
-constexpr int FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MS = 190;
+constexpr qreal FLOATINGBUTTON_HOVER_AUTO_DARKEN_LIGHTNESS_THRESHOLD = 0.72;
 constexpr qreal FLOATINGBUTTON_BASE_TOP_LIFT_RATIO = 0.08;
 constexpr qreal FLOATINGBUTTON_BASE_MID_LIFT_RATIO = 0.03;
 constexpr qreal FLOATINGBUTTON_BASE_SHADE_RATIO = 0.10;
@@ -86,6 +86,86 @@ QColor shadedFloatingButtonColor(const QColor &baseColor, qreal shadeRatio)
     QColor shadeColor(Qt::black);
     shadeColor.setAlpha(baseColor.alpha());
     return blendColors(baseColor, shadeColor, adaptiveRatio);
+}
+
+int sanitizeFloatingButtonHoverEffectStrength(int value)
+{
+    return qBound(FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MIN,
+                  value,
+                  FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MAX);
+}
+
+int sanitizeFloatingButtonHoverGlowStrength(int value)
+{
+    return qBound(FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MIN,
+                  value,
+                  FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MAX);
+}
+
+int sanitizeFloatingButtonHoverContrastMode(int value)
+{
+    return qBound(FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN,
+                  value,
+                  FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX);
+}
+
+int sanitizeFloatingButtonHoverAnimationDuration(int value)
+{
+    return qBound(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MIN,
+                  value,
+                  FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MAX);
+}
+
+qreal floatingButtonHoverStrengthFactor(int strengthPercent)
+{
+    return qBound(0.0,
+                  static_cast<qreal>(strengthPercent) / 100.0,
+                  2.0);
+}
+
+int resolveFloatingButtonHoverContrastMode(const QColor &referenceColor,
+                                          int contrastMode,
+                                          const QColor &customColor)
+{
+    const int sanitizedMode = sanitizeFloatingButtonHoverContrastMode(contrastMode);
+    if (sanitizedMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM && customColor.isValid()) {
+        return FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM;
+    }
+
+    if (sanitizedMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_AUTO
+        || sanitizedMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM) {
+        if (!referenceColor.isValid()) {
+            return FLOATINGBUTTON_HOVER_CONTRASTMODE_LIGHTEN;
+        }
+
+        return referenceColor.lightnessF() >= FLOATINGBUTTON_HOVER_AUTO_DARKEN_LIGHTNESS_THRESHOLD
+            ? FLOATINGBUTTON_HOVER_CONTRASTMODE_DARKEN
+            : FLOATINGBUTTON_HOVER_CONTRASTMODE_LIGHTEN;
+    }
+
+    return sanitizedMode;
+}
+
+QColor contrastedFloatingButtonColor(const QColor &baseColor,
+                                     qreal contrastRatio,
+                                     int contrastMode,
+                                     const QColor &customColor)
+{
+    if (!baseColor.isValid()) {
+        return baseColor;
+    }
+
+    const qreal clampedRatio = qBound(0.0, contrastRatio, 0.92);
+    const int resolvedMode = resolveFloatingButtonHoverContrastMode(baseColor, contrastMode, customColor);
+    switch (resolvedMode) {
+    case FLOATINGBUTTON_HOVER_CONTRASTMODE_DARKEN:
+        return shadedFloatingButtonColor(baseColor, clampedRatio);
+    case FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM:
+        return customColor.isValid() ? blendColors(baseColor, customColor, clampedRatio) : baseColor;
+    case FLOATINGBUTTON_HOVER_CONTRASTMODE_LIGHTEN:
+    default:
+        return liftedFloatingButtonColor(baseColor, clampedRatio);
+    }
 }
 
 QColor colorFromItemData(const QVariant &data, const QColor &fallbackColor)
@@ -527,7 +607,7 @@ FloatingButtonWidget::FloatingButtonWidget(QWidget *parent)
     setFlat(true);
     setMouseTracking(true);
 
-    m_HoverAnimation->setDuration(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MS);
+    m_HoverAnimation->setDuration(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT);
     m_HoverAnimation->setEasingCurve(QEasingCurve::OutCubic);
 }
 
@@ -553,7 +633,12 @@ void FloatingButtonWidget::setVisualState(const QColor &normalColor,
                                           bool locked,
                                           bool mousePassThrough,
                                           bool enableGradientFill,
-                                          bool enableHoverAnimation)
+                                          bool enableHoverAnimation,
+                                          int hoverEffectStrength,
+                                          int hoverGlowStrength,
+                                          int hoverContrastMode,
+                                          int hoverAnimationDuration,
+                                          const QColor &hoverCustomColor)
 {
     const bool hoverEffectWasDisabled = m_MousePassThrough || !m_EnableHoverAnimation;
 
@@ -569,6 +654,12 @@ void FloatingButtonWidget::setVisualState(const QColor &normalColor,
     m_MousePassThrough = mousePassThrough;
     m_EnableGradientFill = enableGradientFill;
     m_EnableHoverAnimation = enableHoverAnimation;
+    m_HoverEffectStrength = sanitizeFloatingButtonHoverEffectStrength(hoverEffectStrength);
+    m_HoverGlowStrength = sanitizeFloatingButtonHoverGlowStrength(hoverGlowStrength);
+    m_HoverContrastMode = sanitizeFloatingButtonHoverContrastMode(hoverContrastMode);
+    m_HoverAnimationDuration = sanitizeFloatingButtonHoverAnimationDuration(hoverAnimationDuration);
+    m_HoverCustomColor = hoverCustomColor;
+    m_HoverAnimation->setDuration(m_HoverAnimationDuration);
 
     setProperty("FloatingButtonMousePassThrough", m_MousePassThrough);
     setStyleSheet(QStringLiteral("QToolTip { background-color: palette(ToolTipBase); color: palette(ToolTipText); }"));
@@ -662,6 +753,15 @@ void FloatingButtonWidget::paintEvent(QPaintEvent *event)
     const QColor baseColor = currentBaseColor();
     const qreal alphaScale = qBound(0.55, 0.45 + baseColor.alphaF() * 0.55, 1.0);
     const qreal radius = qMin(qMin(buttonRect.width(), buttonRect.height()) / 2.0, static_cast<qreal>(m_Radius));
+    const qreal hoverEffectFactor = floatingButtonHoverStrengthFactor(m_HoverEffectStrength);
+    const qreal hoverGlowFactor = qBound(0.0,
+                                         hoverEffectFactor * floatingButtonHoverStrengthFactor(m_HoverGlowStrength),
+                                         3.0);
+    const qreal hoverScaledProgress = hoverProgress * hoverEffectFactor;
+    const int resolvedContrastMode = resolveFloatingButtonHoverContrastMode(baseColor,
+                                                                            m_HoverContrastMode,
+                                                                            m_HoverCustomColor);
+    const bool brightenHoverLayers = (resolvedContrastMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_LIGHTEN);
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
@@ -671,9 +771,15 @@ void FloatingButtonWidget::paintEvent(QPaintEvent *event)
     buttonPath.addRoundedRect(buttonRect, radius, radius);
     if (m_EnableGradientFill) {
         const QColor topColor = liftedFloatingButtonColor(baseColor,
-                                                          FLOATINGBUTTON_BASE_TOP_LIFT_RATIO + FLOATINGBUTTON_HOVER_TOP_LIFT_RATIO * hoverProgress);
+                                                          FLOATINGBUTTON_BASE_TOP_LIFT_RATIO
+                                                              + (brightenHoverLayers
+                                                                     ? FLOATINGBUTTON_HOVER_TOP_LIFT_RATIO * hoverScaledProgress
+                                                                     : 0.0));
         const QColor midColor = liftedFloatingButtonColor(baseColor,
-                                                          FLOATINGBUTTON_BASE_MID_LIFT_RATIO + FLOATINGBUTTON_HOVER_MID_LIFT_RATIO * hoverProgress);
+                                                          FLOATINGBUTTON_BASE_MID_LIFT_RATIO
+                                                              + (brightenHoverLayers
+                                                                     ? FLOATINGBUTTON_HOVER_MID_LIFT_RATIO * hoverScaledProgress
+                                                                     : 0.0));
         const QColor bottomColor = shadedFloatingButtonColor(baseColor,
                                                              m_PressedState ? FLOATINGBUTTON_PRESSED_SHADE_RATIO
                                                                             : FLOATINGBUTTON_BASE_SHADE_RATIO);
@@ -685,23 +791,37 @@ void FloatingButtonWidget::paintEvent(QPaintEvent *event)
     }
     else {
         painter.fillPath(buttonPath, baseColor);
+    }
 
-        if (hoverProgress > 0.001) {
-            QColor hoverFillColor = liftedFloatingButtonColor(baseColor, 0.58);
-            hoverFillColor.setAlphaF(qBound(0.0, 0.24 * hoverProgress * alphaScale, 0.34));
-            if (hoverFillColor.alpha() > 0) {
-                painter.fillPath(buttonPath, hoverFillColor);
-            }
+    if (hoverProgress > 0.001
+        && (!m_EnableGradientFill || resolvedContrastMode != FLOATINGBUTTON_HOVER_CONTRASTMODE_LIGHTEN)) {
+        QColor hoverFillColor = contrastedFloatingButtonColor(baseColor,
+                                                              0.58 * qMax(1.0, hoverEffectFactor),
+                                                              m_HoverContrastMode,
+                                                              m_HoverCustomColor);
+        hoverFillColor.setAlphaF(qBound(0.0,
+                                        0.24 * hoverProgress * alphaScale * hoverEffectFactor,
+                                        0.45));
+        if (hoverFillColor.alpha() > 0) {
+            painter.fillPath(buttonPath, hoverFillColor);
         }
     }
 
     if (hoverProgress > 0.001) {
-        const QColor glowBaseColor = blendColors(liftedFloatingButtonColor(baseColor, 0.68),
-                                                 liftedFloatingButtonColor(m_BorderColor, 0.94),
+        const QColor glowBaseColor = blendColors(contrastedFloatingButtonColor(baseColor,
+                                                                                0.68 * qMax(1.0, hoverEffectFactor),
+                                                                                m_HoverContrastMode,
+                                                                                m_HoverCustomColor),
+                                                 contrastedFloatingButtonColor(m_BorderColor,
+                                                                                0.94 * qMax(1.0, hoverEffectFactor),
+                                                                                m_HoverContrastMode,
+                                                                                m_HoverCustomColor),
                                                  FLOATINGBUTTON_HOVER_GLOW_BORDER_BLEND_RATIO);
 
         QColor outerGlowColor = glowBaseColor;
-        outerGlowColor.setAlphaF(qBound(0.0, FLOATINGBUTTON_HOVER_GLOW_OUTER_ALPHA * hoverProgress * alphaScale, 0.45));
+        outerGlowColor.setAlphaF(qBound(0.0,
+                                        FLOATINGBUTTON_HOVER_GLOW_OUTER_ALPHA * hoverProgress * alphaScale * hoverGlowFactor,
+                                        0.62));
         if (outerGlowColor.alpha() > 0) {
             QPen outerGlowPen(outerGlowColor,
                               FLOATINGBUTTON_HOVER_OUTER_GLOW_WIDTH + hoverProgress * FLOATINGBUTTON_HOVER_OUTER_GLOW_WIDTH_GAIN);
@@ -713,7 +833,9 @@ void FloatingButtonWidget::paintEvent(QPaintEvent *event)
         }
 
         QColor innerGlowColor = glowBaseColor;
-        innerGlowColor.setAlphaF(qBound(0.0, FLOATINGBUTTON_HOVER_GLOW_INNER_ALPHA * hoverProgress * alphaScale, 0.60));
+        innerGlowColor.setAlphaF(qBound(0.0,
+                                        FLOATINGBUTTON_HOVER_GLOW_INNER_ALPHA * hoverProgress * alphaScale * hoverGlowFactor,
+                                        0.82));
         if (innerGlowColor.alpha() > 0) {
             QPen innerGlowPen(innerGlowColor,
                               FLOATINGBUTTON_HOVER_INNER_GLOW_WIDTH + hoverProgress * FLOATINGBUTTON_HOVER_INNER_GLOW_WIDTH_GAIN);
@@ -725,14 +847,18 @@ void FloatingButtonWidget::paintEvent(QPaintEvent *event)
         }
     }
 
-    if (m_EnableGradientFill && hoverProgress > 0.001) {
+    if (m_EnableGradientFill
+        && hoverProgress > 0.001
+        && resolvedContrastMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_LIGHTEN) {
         const QRectF sheenRect(buttonRect.left() + 1.0,
                                buttonRect.top() + 1.0,
                                qMax(0.0, buttonRect.width() - 2.0),
                                buttonRect.height() * 0.48);
         QLinearGradient sheenGradient(sheenRect.topLeft(), sheenRect.bottomLeft());
         QColor sheenColor = liftedFloatingButtonColor(baseColor, 0.84);
-        sheenColor.setAlphaF(qBound(0.0, FLOATINGBUTTON_HOVER_SHEEN_ALPHA * hoverProgress * alphaScale, 0.35));
+        sheenColor.setAlphaF(qBound(0.0,
+                                    FLOATINGBUTTON_HOVER_SHEEN_ALPHA * hoverProgress * alphaScale * hoverEffectFactor,
+                                    0.42));
         QColor transparentSheen = sheenColor;
         transparentSheen.setAlpha(0);
         sheenGradient.setColorAt(0.0, sheenColor);
@@ -747,7 +873,8 @@ void FloatingButtonWidget::paintEvent(QPaintEvent *event)
     }
 
     if (m_BorderWidth > 0) {
-        QColor borderColor = liftedFloatingButtonColor(m_BorderColor, 0.08 + FLOATINGBUTTON_HOVER_BORDER_LIFT_RATIO * hoverProgress);
+        QColor borderColor = liftedFloatingButtonColor(m_BorderColor,
+                                                       0.08 + FLOATINGBUTTON_HOVER_BORDER_LIFT_RATIO * hoverScaledProgress);
         QPen borderPen(borderColor, m_BorderWidth);
         borderPen.setJoinStyle(Qt::RoundJoin);
         borderPen.setCapStyle(Qt::RoundCap);
@@ -761,12 +888,18 @@ void FloatingButtonWidget::paintEvent(QPaintEvent *event)
                                 qMax(0.0, radius - halfBorder));
 
         if (hoverProgress > 0.001) {
-            QColor borderHighlightColor = blendColors(liftedFloatingButtonColor(m_BorderColor, 0.98),
-                                                      liftedFloatingButtonColor(baseColor, 0.48),
+            QColor borderHighlightColor = blendColors(contrastedFloatingButtonColor(m_BorderColor,
+                                                                                     0.98 * qMax(1.0, hoverEffectFactor),
+                                                                                     m_HoverContrastMode,
+                                                                                     m_HoverCustomColor),
+                                                      contrastedFloatingButtonColor(baseColor,
+                                                                                     0.48 * qMax(1.0, hoverEffectFactor),
+                                                                                     m_HoverContrastMode,
+                                                                                     m_HoverCustomColor),
                                                       0.22);
             borderHighlightColor.setAlphaF(qBound(0.0,
-                                                  FLOATINGBUTTON_HOVER_BORDER_HIGHLIGHT_ALPHA * hoverProgress * alphaScale,
-                                                  0.78));
+                                                  FLOATINGBUTTON_HOVER_BORDER_HIGHLIGHT_ALPHA * hoverProgress * alphaScale * hoverEffectFactor,
+                                                  0.86));
 
             if (borderHighlightColor.alpha() > 0) {
                 QPen borderHighlightPen(borderHighlightColor,
@@ -792,7 +925,9 @@ void FloatingButtonWidget::paintEvent(QPaintEvent *event)
     if (!text().isEmpty()) {
         QColor visibleTextColor = m_TextColor;
         if (hoverProgress > 0.001) {
-            visibleTextColor = liftedFloatingButtonColor(m_TextColor, 0.10 * hoverProgress);
+            visibleTextColor = (resolvedContrastMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_DARKEN)
+                ? shadedFloatingButtonColor(m_TextColor, 0.10 * hoverScaledProgress)
+                : liftedFloatingButtonColor(m_TextColor, 0.10 * hoverScaledProgress);
         }
 
         painter.setPen(visibleTextColor);
@@ -1250,7 +1385,12 @@ static void applyFloatingButtonVisualState(QPushButton *button, const MAP_KEYDAT
                                        locked,
                                        keymapdata.FloatingButton_MousePassThrough,
                                        keymapdata.FloatingButton_EnableGradientFill,
-                                       keymapdata.FloatingButton_EnableHoverAnimation);
+                                       keymapdata.FloatingButton_EnableHoverAnimation,
+                                       keymapdata.FloatingButton_HoverEffectStrength,
+                                       keymapdata.FloatingButton_HoverGlowStrength,
+                                       keymapdata.FloatingButton_HoverContrastMode,
+                                       keymapdata.FloatingButton_HoverAnimationDuration,
+                                       keymapdata.FloatingButton_HoverCustomColor);
         return;
     }
 
@@ -9169,6 +9309,11 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList floatingbutton_mousepassthroughList;
     QStringList floatingbutton_enablegradientfillList;
     QStringList floatingbutton_enablehoveranimationList;
+    QStringList floatingbutton_hovereffectstrengthList;
+    QStringList floatingbutton_hoverglowstrengthList;
+    QStringList floatingbutton_hovercontrastmodeList;
+    QStringList floatingbutton_hoveranimationdurationList;
+    QStringList floatingbutton_hovercustomcolorList;
     QStringList floatingbutton_referencepointList;
     QStringList floatingbutton_x_offsetList;
     QStringList floatingbutton_y_offsetList;
@@ -9495,6 +9640,12 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             floatingbutton_enablehoveranimationList.append("OFF");
         }
+        floatingbutton_hovereffectstrengthList.append(QString::number(sanitizeFloatingButtonHoverEffectStrength(keymapdata.FloatingButton_HoverEffectStrength)));
+        floatingbutton_hoverglowstrengthList.append(QString::number(sanitizeFloatingButtonHoverGlowStrength(keymapdata.FloatingButton_HoverGlowStrength)));
+        floatingbutton_hovercontrastmodeList.append(QString::number(sanitizeFloatingButtonHoverContrastMode(keymapdata.FloatingButton_HoverContrastMode)));
+        floatingbutton_hoveranimationdurationList.append(QString::number(sanitizeFloatingButtonHoverAnimationDuration(keymapdata.FloatingButton_HoverAnimationDuration)));
+        floatingbutton_hovercustomcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_HoverCustomColor,
+                                                                                           FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR));
 
         if (FLOATINGWINDOW_REFERENCEPOINT_MIN <= keymapdata.FloatingButton_ReferencePoint && keymapdata.FloatingButton_ReferencePoint <= FLOATINGWINDOW_REFERENCEPOINT_MAX) {
             floatingbutton_referencepointList.append(QString::number(keymapdata.FloatingButton_ReferencePoint));
@@ -9587,6 +9738,11 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH, floatingbutton_mousepassthroughList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL, floatingbutton_enablegradientfillList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION, floatingbutton_enablehoveranimationList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH, floatingbutton_hovereffectstrengthList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH, floatingbutton_hoverglowstrengthList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE, floatingbutton_hovercontrastmodeList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION, floatingbutton_hoveranimationdurationList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR, floatingbutton_hovercustomcolorList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, floatingbutton_referencepointList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, floatingbutton_y_offsetList);
@@ -9678,6 +9834,11 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList floatingbutton_mousepassthroughStringList;
     QStringList floatingbutton_enablegradientfillStringList;
     QStringList floatingbutton_enablehoveranimationStringList;
+    QStringList floatingbutton_hovereffectstrengthStringList;
+    QStringList floatingbutton_hoverglowstrengthStringList;
+    QStringList floatingbutton_hovercontrastmodeStringList;
+    QStringList floatingbutton_hoveranimationdurationStringList;
+    QStringList floatingbutton_hovercustomcolorStringList;
     QStringList floatingbutton_referencepointStringList;
     QStringList floatingbutton_x_offsetStringList;
     QStringList floatingbutton_y_offsetStringList;
@@ -9738,6 +9899,11 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<bool> floatingbutton_mousepassthroughList;
     QList<bool> floatingbutton_enablegradientfillList;
     QList<bool> floatingbutton_enablehoveranimationList;
+    QList<int> floatingbutton_hovereffectstrengthList;
+    QList<int> floatingbutton_hoverglowstrengthList;
+    QList<int> floatingbutton_hovercontrastmodeList;
+    QList<int> floatingbutton_hoveranimationdurationList;
+    QList<QColor> floatingbutton_hovercustomcolorList;
     QList<int> floatingbutton_referencepointList;
     QList<int> floatingbutton_x_offsetList;
     QList<int> floatingbutton_y_offsetList;
@@ -9787,6 +9953,11 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         QStringList floatingbutton_pressedopacityStringListDefault;
         QStringList floatingbutton_lockedopacityStringListDefault;
         QStringList floatingbutton_opacityStringListDefault;
+        QStringList floatingbutton_hovereffectstrengthStringListDefault;
+        QStringList floatingbutton_hoverglowstrengthStringListDefault;
+        QStringList floatingbutton_hovercontrastmodeStringListDefault;
+        QStringList floatingbutton_hoveranimationdurationStringListDefault;
+        QStringList floatingbutton_hovercustomcolorStringListDefault;
         QStringList floatingbutton_referencepointStringListDefault;
         QStringList floatingbutton_x_offsetStringListDefault;
         QStringList floatingbutton_y_offsetStringListDefault;
@@ -9822,6 +9993,11 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             floatingbutton_pressedopacityStringListDefault.append(QString::number(FLOATINGBUTTON_OPACITY_DEFAULT, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
             floatingbutton_lockedopacityStringListDefault.append(QString::number(FLOATINGBUTTON_OPACITY_DEFAULT, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
             floatingbutton_opacityStringListDefault.append(QString::number(FLOATINGBUTTON_OPACITY_DEFAULT, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
+            floatingbutton_hovereffectstrengthStringListDefault.append(QString::number(FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT));
+            floatingbutton_hoverglowstrengthStringListDefault.append(QString::number(FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT));
+            floatingbutton_hovercontrastmodeStringListDefault.append(QString::number(FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT));
+            floatingbutton_hoveranimationdurationStringListDefault.append(QString::number(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT));
+            floatingbutton_hovercustomcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR));
             floatingbutton_referencepointStringListDefault.append(QString::number(FLOATINGWINDOW_REFERENCEPOINT_DEFAULT));
             floatingbutton_x_offsetStringListDefault.append(QString::number(FLOATINGBUTTON_X_OFFSET_DEFAULT));
             floatingbutton_y_offsetStringListDefault.append(QString::number(FLOATINGBUTTON_Y_OFFSET_DEFAULT));
@@ -9881,6 +10057,11 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         floatingbutton_syncpressedlockedstateStringList = stringListAllON;
         floatingbutton_alwaysontopStringList = stringListAllON;
         floatingbutton_mousepassthroughStringList = stringListAllOFF;
+        floatingbutton_hovereffectstrengthStringList = floatingbutton_hovereffectstrengthStringListDefault;
+        floatingbutton_hoverglowstrengthStringList = floatingbutton_hoverglowstrengthStringListDefault;
+        floatingbutton_hovercontrastmodeStringList = floatingbutton_hovercontrastmodeStringListDefault;
+        floatingbutton_hoveranimationdurationStringList = floatingbutton_hoveranimationdurationStringListDefault;
+        floatingbutton_hovercustomcolorStringList = floatingbutton_hovercustomcolorStringListDefault;
         floatingbutton_referencepointStringList = floatingbutton_referencepointStringListDefault;
         floatingbutton_x_offsetStringList = floatingbutton_x_offsetStringListDefault;
         floatingbutton_y_offsetStringList = floatingbutton_y_offsetStringListDefault;
@@ -10075,6 +10256,21 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION)) {
             floatingbutton_enablehoveranimationStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH)) {
+            floatingbutton_hovereffectstrengthStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH)) {
+            floatingbutton_hoverglowstrengthStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE)) {
+            floatingbutton_hovercontrastmodeStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION)) {
+            floatingbutton_hoveranimationdurationStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR)) {
+            floatingbutton_hovercustomcolorStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR).toStringList();
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT)) {
             floatingbutton_referencepointStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT).toStringList();
@@ -10600,6 +10796,48 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
             }
 
             for (int i = 0; i < original_keys.size(); i++) {
+                const QString &floatingbutton_hovereffectstrengthStr = (i < floatingbutton_hovereffectstrengthStringList.size()) ? floatingbutton_hovereffectstrengthStringList.at(i) : QString::number(FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT);
+                bool ok;
+                int floatingbutton_hovereffectstrength = floatingbutton_hovereffectstrengthStr.toInt(&ok);
+                floatingbutton_hovereffectstrengthList.append(ok
+                                                                  ? sanitizeFloatingButtonHoverEffectStrength(floatingbutton_hovereffectstrength)
+                                                                  : FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &floatingbutton_hoverglowstrengthStr = (i < floatingbutton_hoverglowstrengthStringList.size()) ? floatingbutton_hoverglowstrengthStringList.at(i) : QString::number(FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT);
+                bool ok;
+                int floatingbutton_hoverglowstrength = floatingbutton_hoverglowstrengthStr.toInt(&ok);
+                floatingbutton_hoverglowstrengthList.append(ok
+                                                                ? sanitizeFloatingButtonHoverGlowStrength(floatingbutton_hoverglowstrength)
+                                                                : FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &floatingbutton_hovercontrastmodeStr = (i < floatingbutton_hovercontrastmodeStringList.size()) ? floatingbutton_hovercontrastmodeStringList.at(i) : QString::number(FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT);
+                bool ok;
+                int floatingbutton_hovercontrastmode = floatingbutton_hovercontrastmodeStr.toInt(&ok);
+                floatingbutton_hovercontrastmodeList.append(ok
+                                                                ? sanitizeFloatingButtonHoverContrastMode(floatingbutton_hovercontrastmode)
+                                                                : FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &floatingbutton_hoveranimationdurationStr = (i < floatingbutton_hoveranimationdurationStringList.size()) ? floatingbutton_hoveranimationdurationStringList.at(i) : QString::number(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT);
+                bool ok;
+                int floatingbutton_hoveranimationduration = floatingbutton_hoveranimationdurationStr.toInt(&ok);
+                floatingbutton_hoveranimationdurationList.append(ok
+                                                                     ? sanitizeFloatingButtonHoverAnimationDuration(floatingbutton_hoveranimationduration)
+                                                                     : FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT);
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &floatingbutton_hovercustomcolorStr = (i < floatingbutton_hovercustomcolorStringList.size()) ? floatingbutton_hovercustomcolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR);
+                floatingbutton_hovercustomcolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_hovercustomcolorStr,
+                                                                                                  FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR));
+            }
+
+            for (int i = 0; i < original_keys.size(); i++) {
                 const QString &floatingbutton_referencepointStr = (i < floatingbutton_referencepointStringList.size()) ? floatingbutton_referencepointStringList.at(i) : QString::number(FLOATINGWINDOW_REFERENCEPOINT_DEFAULT);
                 bool ok;
                 int floatingbutton_referencepoint = floatingbutton_referencepointStr.toInt(&ok);
@@ -10718,6 +10956,11 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     loadedData.FloatingButton_MousePassThrough = floatingbutton_mousepassthroughList.at(loadindex);
                     loadedData.FloatingButton_EnableGradientFill = floatingbutton_enablegradientfillList.at(loadindex);
                     loadedData.FloatingButton_EnableHoverAnimation = floatingbutton_enablehoveranimationList.at(loadindex);
+                    loadedData.FloatingButton_HoverEffectStrength = floatingbutton_hovereffectstrengthList.at(loadindex);
+                    loadedData.FloatingButton_HoverGlowStrength = floatingbutton_hoverglowstrengthList.at(loadindex);
+                    loadedData.FloatingButton_HoverContrastMode = floatingbutton_hovercontrastmodeList.at(loadindex);
+                    loadedData.FloatingButton_HoverAnimationDuration = floatingbutton_hoveranimationdurationList.at(loadindex);
+                    loadedData.FloatingButton_HoverCustomColor = floatingbutton_hovercustomcolorList.at(loadindex);
                     loadedData.FloatingButton_ReferencePoint = floatingbutton_referencepointList.at(loadindex);
                     loadedData.FloatingButton_X_Offset = floatingbutton_x_offsetList.at(loadindex);
                     loadedData.FloatingButton_Y_Offset = floatingbutton_y_offsetList.at(loadindex);
@@ -15401,6 +15644,11 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     QString floatingbutton_mousepassthroughList_forsave;
     QString floatingbutton_enablegradientfillList_forsave;
     QString floatingbutton_enablehoveranimationList_forsave;
+    QString floatingbutton_hovereffectstrengthList_forsave;
+    QString floatingbutton_hoverglowstrengthList_forsave;
+    QString floatingbutton_hovercontrastmodeList_forsave;
+    QString floatingbutton_hoveranimationdurationList_forsave;
+    QString floatingbutton_hovercustomcolorList_forsave;
     QString floatingbutton_referencepointList_forsave;
     QString floatingbutton_x_offsetList_forsave;
     QString floatingbutton_y_offsetList_forsave;
@@ -15524,6 +15772,11 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
             floatingbutton_mousepassthroughList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_enablegradientfillList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_enablehoveranimationList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_hovereffectstrengthList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_hoverglowstrengthList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_hovercontrastmodeList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_hoveranimationdurationList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_hovercustomcolorList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_referencepointList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_x_offsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_y_offsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -15592,6 +15845,11 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         QStringList floatingbutton_mousepassthroughList;
         QStringList floatingbutton_enablegradientfillList;
         QStringList floatingbutton_enablehoveranimationList;
+        QStringList floatingbutton_hovereffectstrengthList;
+        QStringList floatingbutton_hoverglowstrengthList;
+        QStringList floatingbutton_hovercontrastmodeList;
+        QStringList floatingbutton_hoveranimationdurationList;
+        QStringList floatingbutton_hovercustomcolorList;
         QStringList floatingbutton_referencepointList;
         QStringList floatingbutton_x_offsetList;
         QStringList floatingbutton_y_offsetList;
@@ -15929,6 +16187,12 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
                 else {
                     floatingbutton_enablehoveranimationList.append("OFF");
                 }
+                floatingbutton_hovereffectstrengthList.append(QString::number(sanitizeFloatingButtonHoverEffectStrength(keymapdata.FloatingButton_HoverEffectStrength)));
+                floatingbutton_hoverglowstrengthList.append(QString::number(sanitizeFloatingButtonHoverGlowStrength(keymapdata.FloatingButton_HoverGlowStrength)));
+                floatingbutton_hovercontrastmodeList.append(QString::number(sanitizeFloatingButtonHoverContrastMode(keymapdata.FloatingButton_HoverContrastMode)));
+                floatingbutton_hoveranimationdurationList.append(QString::number(sanitizeFloatingButtonHoverAnimationDuration(keymapdata.FloatingButton_HoverAnimationDuration)));
+                floatingbutton_hovercustomcolorList.append(QKeyMapper::encodeKeyMapDataColorToken(keymapdata.FloatingButton_HoverCustomColor,
+                                                                                                   FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR));
 
                 if (FLOATINGWINDOW_REFERENCEPOINT_MIN <= keymapdata.FloatingButton_ReferencePoint && keymapdata.FloatingButton_ReferencePoint <= FLOATINGWINDOW_REFERENCEPOINT_MAX) {
                     floatingbutton_referencepointList.append(QString::number(keymapdata.FloatingButton_ReferencePoint));
@@ -16016,6 +16280,11 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         QString floatingbutton_mousepassthroughList_str = floatingbutton_mousepassthroughList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_enablegradientfillList_str = floatingbutton_enablegradientfillList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_enablehoveranimationList_str = floatingbutton_enablehoveranimationList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_hovereffectstrengthList_str = floatingbutton_hovereffectstrengthList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_hoverglowstrengthList_str = floatingbutton_hoverglowstrengthList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_hovercontrastmodeList_str = floatingbutton_hovercontrastmodeList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_hoveranimationdurationList_str = floatingbutton_hoveranimationdurationList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_hovercustomcolorList_str = floatingbutton_hovercustomcolorList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_referencepointList_str = floatingbutton_referencepointList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_x_offsetList_str = floatingbutton_x_offsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_y_offsetList_str = floatingbutton_y_offsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -16084,6 +16353,11 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         floatingbutton_mousepassthroughList_forsave.append(floatingbutton_mousepassthroughList_str);
         floatingbutton_enablegradientfillList_forsave.append(floatingbutton_enablegradientfillList_str);
         floatingbutton_enablehoveranimationList_forsave.append(floatingbutton_enablehoveranimationList_str);
+        floatingbutton_hovereffectstrengthList_forsave.append(floatingbutton_hovereffectstrengthList_str);
+        floatingbutton_hoverglowstrengthList_forsave.append(floatingbutton_hoverglowstrengthList_str);
+        floatingbutton_hovercontrastmodeList_forsave.append(floatingbutton_hovercontrastmodeList_str);
+        floatingbutton_hoveranimationdurationList_forsave.append(floatingbutton_hoveranimationdurationList_str);
+        floatingbutton_hovercustomcolorList_forsave.append(floatingbutton_hovercustomcolorList_str);
         floatingbutton_referencepointList_forsave.append(floatingbutton_referencepointList_str);
         floatingbutton_x_offsetList_forsave.append(floatingbutton_x_offsetList_str);
         floatingbutton_y_offsetList_forsave.append(floatingbutton_y_offsetList_str);
@@ -16172,6 +16446,11 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH, floatingbutton_mousepassthroughList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL, floatingbutton_enablegradientfillList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION, floatingbutton_enablehoveranimationList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH, floatingbutton_hovereffectstrengthList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH, floatingbutton_hoverglowstrengthList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE, floatingbutton_hovercontrastmodeList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION, floatingbutton_hoveranimationdurationList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR, floatingbutton_hovercustomcolorList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, floatingbutton_referencepointList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, floatingbutton_y_offsetList_forsave);
@@ -17704,6 +17983,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QString floatingbutton_mousepassthroughData_loaded;
         QString floatingbutton_enablegradientfillData_loaded;
         QString floatingbutton_enablehoveranimationData_loaded;
+        QString floatingbutton_hovereffectstrengthData_loaded;
+        QString floatingbutton_hoverglowstrengthData_loaded;
+        QString floatingbutton_hovercontrastmodeData_loaded;
+        QString floatingbutton_hoveranimationdurationData_loaded;
+        QString floatingbutton_hovercustomcolorData_loaded;
         QString floatingbutton_referencepointData_loaded;
         QString floatingbutton_x_offsetData_loaded;
         QString floatingbutton_y_offsetData_loaded;
@@ -17773,6 +18057,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QStringList floatingbutton_mousepassthroughData_split;
         QStringList floatingbutton_enablegradientfillData_split;
         QStringList floatingbutton_enablehoveranimationData_split;
+        QStringList floatingbutton_hovereffectstrengthData_split;
+        QStringList floatingbutton_hoverglowstrengthData_split;
+        QStringList floatingbutton_hovercontrastmodeData_split;
+        QStringList floatingbutton_hoveranimationdurationData_split;
+        QStringList floatingbutton_hovercustomcolorData_split;
         QStringList floatingbutton_referencepointData_split;
         QStringList floatingbutton_x_offsetData_split;
         QStringList floatingbutton_y_offsetData_split;
@@ -18225,6 +18514,26 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 floatingbutton_enablehoveranimationData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION).toString();
                 floatingbutton_enablehoveranimationData_split = floatingbutton_enablehoveranimationData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH)) {
+                floatingbutton_hovereffectstrengthData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH).toString();
+                floatingbutton_hovereffectstrengthData_split = floatingbutton_hovereffectstrengthData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH)) {
+                floatingbutton_hoverglowstrengthData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH).toString();
+                floatingbutton_hoverglowstrengthData_split = floatingbutton_hoverglowstrengthData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE)) {
+                floatingbutton_hovercontrastmodeData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE).toString();
+                floatingbutton_hovercontrastmodeData_split = floatingbutton_hovercontrastmodeData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION)) {
+                floatingbutton_hoveranimationdurationData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION).toString();
+                floatingbutton_hoveranimationdurationData_split = floatingbutton_hoveranimationdurationData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR)) {
+                floatingbutton_hovercustomcolorData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR).toString();
+                floatingbutton_hovercustomcolorData_split = floatingbutton_hovercustomcolorData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT)) {
                 floatingbutton_referencepointData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT).toString();
                 floatingbutton_referencepointData_split = floatingbutton_referencepointData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -18323,6 +18632,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_mousepassthroughStringList;
                     QStringList floatingbutton_enablegradientfillStringList;
                     QStringList floatingbutton_enablehoveranimationStringList;
+                    QStringList floatingbutton_hovereffectstrengthStringList;
+                    QStringList floatingbutton_hoverglowstrengthStringList;
+                    QStringList floatingbutton_hovercontrastmodeStringList;
+                    QStringList floatingbutton_hoveranimationdurationStringList;
+                    QStringList floatingbutton_hovercustomcolorStringList;
                     QStringList floatingbutton_referencepointStringList;
                     QStringList floatingbutton_x_offsetStringList;
                     QStringList floatingbutton_y_offsetStringList;
@@ -18385,6 +18699,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QList<bool> floatingbutton_mousepassthroughList;
                     QList<bool> floatingbutton_enablegradientfillList;
                     QList<bool> floatingbutton_enablehoveranimationList;
+                    QList<int> floatingbutton_hovereffectstrengthList;
+                    QList<int> floatingbutton_hoverglowstrengthList;
+                    QList<int> floatingbutton_hovercontrastmodeList;
+                    QList<int> floatingbutton_hoveranimationdurationList;
+                    QList<QColor> floatingbutton_hovercustomcolorList;
                     QList<int> floatingbutton_referencepointList;
                     QList<int> floatingbutton_x_offsetList;
                     QList<int> floatingbutton_y_offsetList;
@@ -18429,6 +18748,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_pressedopacityStringListDefault;
                     QStringList floatingbutton_lockedopacityStringListDefault;
                     QStringList floatingbutton_opacityStringListDefault;
+                    QStringList floatingbutton_hovereffectstrengthStringListDefault;
+                    QStringList floatingbutton_hoverglowstrengthStringListDefault;
+                    QStringList floatingbutton_hovercontrastmodeStringListDefault;
+                    QStringList floatingbutton_hoveranimationdurationStringListDefault;
+                    QStringList floatingbutton_hovercustomcolorStringListDefault;
                     QStringList floatingbutton_referencepointStringListDefault;
                     QStringList floatingbutton_x_offsetStringListDefault;
                     QStringList floatingbutton_y_offsetStringListDefault;
@@ -18463,6 +18787,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         floatingbutton_pressedopacityStringListDefault.append(QString::number(FLOATINGBUTTON_OPACITY_DEFAULT, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
                         floatingbutton_lockedopacityStringListDefault.append(QString::number(FLOATINGBUTTON_OPACITY_DEFAULT, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
                         floatingbutton_opacityStringListDefault.append(QString::number(FLOATINGBUTTON_OPACITY_DEFAULT, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
+                        floatingbutton_hovereffectstrengthStringListDefault.append(QString::number(FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT));
+                        floatingbutton_hoverglowstrengthStringListDefault.append(QString::number(FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT));
+                        floatingbutton_hovercontrastmodeStringListDefault.append(QString::number(FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT));
+                        floatingbutton_hoveranimationdurationStringListDefault.append(QString::number(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT));
+                        floatingbutton_hovercustomcolorStringListDefault.append(QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR));
                         floatingbutton_referencepointStringListDefault.append(QString::number(FLOATINGWINDOW_REFERENCEPOINT_DEFAULT));
                         floatingbutton_x_offsetStringListDefault.append(QString::number(FLOATINGBUTTON_X_OFFSET_DEFAULT));
                         floatingbutton_y_offsetStringListDefault.append(QString::number(FLOATINGBUTTON_Y_OFFSET_DEFAULT));
@@ -18524,6 +18853,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     floatingbutton_mousepassthroughStringList = stringListAllOFF;
                     floatingbutton_enablegradientfillStringList = stringListAllON;
                     floatingbutton_enablehoveranimationStringList = stringListAllON;
+                    floatingbutton_hovereffectstrengthStringList = floatingbutton_hovereffectstrengthStringListDefault;
+                    floatingbutton_hoverglowstrengthStringList = floatingbutton_hoverglowstrengthStringListDefault;
+                    floatingbutton_hovercontrastmodeStringList = floatingbutton_hovercontrastmodeStringListDefault;
+                    floatingbutton_hoveranimationdurationStringList = floatingbutton_hoveranimationdurationStringListDefault;
+                    floatingbutton_hovercustomcolorStringList = floatingbutton_hovercustomcolorStringListDefault;
                     floatingbutton_referencepointStringList = floatingbutton_referencepointStringListDefault;
                     floatingbutton_x_offsetStringList = floatingbutton_x_offsetStringListDefault;
                     floatingbutton_y_offsetStringList = floatingbutton_y_offsetStringListDefault;
@@ -18715,6 +19049,21 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     }
                     if (floatingbutton_enablehoveranimationData_split.size() == table_count) {
                         floatingbutton_enablehoveranimationStringList = floatingbutton_enablehoveranimationData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_hovereffectstrengthData_split.size() == table_count) {
+                        floatingbutton_hovereffectstrengthStringList = floatingbutton_hovereffectstrengthData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_hoverglowstrengthData_split.size() == table_count) {
+                        floatingbutton_hoverglowstrengthStringList = floatingbutton_hoverglowstrengthData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_hovercontrastmodeData_split.size() == table_count) {
+                        floatingbutton_hovercontrastmodeStringList = floatingbutton_hovercontrastmodeData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_hoveranimationdurationData_split.size() == table_count) {
+                        floatingbutton_hoveranimationdurationStringList = floatingbutton_hoveranimationdurationData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_hovercustomcolorData_split.size() == table_count) {
+                        floatingbutton_hovercustomcolorStringList = floatingbutton_hovercustomcolorData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
                     if (floatingbutton_referencepointData_split.size() == table_count) {
                         floatingbutton_referencepointStringList = floatingbutton_referencepointData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -19255,6 +19604,48 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                         }
 
                         for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_hovereffectstrengthStr = (i < floatingbutton_hovereffectstrengthStringList.size()) ? floatingbutton_hovereffectstrengthStringList.at(i) : QString::number(FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT);
+                            bool ok;
+                            int floatingbutton_hovereffectstrength = floatingbutton_hovereffectstrengthStr.toInt(&ok);
+                            floatingbutton_hovereffectstrengthList.append(ok
+                                                                              ? sanitizeFloatingButtonHoverEffectStrength(floatingbutton_hovereffectstrength)
+                                                                              : FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_hoverglowstrengthStr = (i < floatingbutton_hoverglowstrengthStringList.size()) ? floatingbutton_hoverglowstrengthStringList.at(i) : QString::number(FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT);
+                            bool ok;
+                            int floatingbutton_hoverglowstrength = floatingbutton_hoverglowstrengthStr.toInt(&ok);
+                            floatingbutton_hoverglowstrengthList.append(ok
+                                                                            ? sanitizeFloatingButtonHoverGlowStrength(floatingbutton_hoverglowstrength)
+                                                                            : FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_hovercontrastmodeStr = (i < floatingbutton_hovercontrastmodeStringList.size()) ? floatingbutton_hovercontrastmodeStringList.at(i) : QString::number(FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT);
+                            bool ok;
+                            int floatingbutton_hovercontrastmode = floatingbutton_hovercontrastmodeStr.toInt(&ok);
+                            floatingbutton_hovercontrastmodeList.append(ok
+                                                                            ? sanitizeFloatingButtonHoverContrastMode(floatingbutton_hovercontrastmode)
+                                                                            : FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_hoveranimationdurationStr = (i < floatingbutton_hoveranimationdurationStringList.size()) ? floatingbutton_hoveranimationdurationStringList.at(i) : QString::number(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT);
+                            bool ok;
+                            int floatingbutton_hoveranimationduration = floatingbutton_hoveranimationdurationStr.toInt(&ok);
+                            floatingbutton_hoveranimationdurationList.append(ok
+                                                                                 ? sanitizeFloatingButtonHoverAnimationDuration(floatingbutton_hoveranimationduration)
+                                                                                 : FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT);
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &floatingbutton_hovercustomcolorStr = (i < floatingbutton_hovercustomcolorStringList.size()) ? floatingbutton_hovercustomcolorStringList.at(i) : QKeyMapper::encodeKeyMapDataColorToken(FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR);
+                            floatingbutton_hovercustomcolorList.append(QKeyMapper::decodeKeyMapDataColorToken(floatingbutton_hovercustomcolorStr,
+                                                                                                              FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR));
+                        }
+
+                        for (int i = 0; i < original_keys.size(); i++) {
                             const QString &floatingbutton_referencepointStr = (i < floatingbutton_referencepointStringList.size()) ? floatingbutton_referencepointStringList.at(i) : QString::number(FLOATINGWINDOW_REFERENCEPOINT_DEFAULT);
                             bool ok;
                             int floatingbutton_referencepoint = floatingbutton_referencepointStr.toInt(&ok);
@@ -19379,6 +19770,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                 loadedData.FloatingButton_MousePassThrough = floatingbutton_mousepassthroughList.at(loadindex);
                                 loadedData.FloatingButton_EnableGradientFill = floatingbutton_enablegradientfillList.at(loadindex);
                                 loadedData.FloatingButton_EnableHoverAnimation = floatingbutton_enablehoveranimationList.at(loadindex);
+                                loadedData.FloatingButton_HoverEffectStrength = floatingbutton_hovereffectstrengthList.at(loadindex);
+                                loadedData.FloatingButton_HoverGlowStrength = floatingbutton_hoverglowstrengthList.at(loadindex);
+                                loadedData.FloatingButton_HoverContrastMode = floatingbutton_hovercontrastmodeList.at(loadindex);
+                                loadedData.FloatingButton_HoverAnimationDuration = floatingbutton_hoveranimationdurationList.at(loadindex);
+                                loadedData.FloatingButton_HoverCustomColor = floatingbutton_hovercustomcolorList.at(loadindex);
                                 loadedData.FloatingButton_ReferencePoint = floatingbutton_referencepointList.at(loadindex);
                                 loadedData.FloatingButton_X_Offset = floatingbutton_x_offsetList.at(loadindex);
                                 loadedData.FloatingButton_Y_Offset = floatingbutton_y_offsetList.at(loadindex);
@@ -30092,6 +30488,11 @@ void QKeyMapper::syncFloatingButtonRuntimeDataToCurrentTab(int rowindex, const M
     tabData.FloatingButton_MousePassThrough = runtimeData.FloatingButton_MousePassThrough;
     tabData.FloatingButton_EnableGradientFill = runtimeData.FloatingButton_EnableGradientFill;
     tabData.FloatingButton_EnableHoverAnimation = runtimeData.FloatingButton_EnableHoverAnimation;
+    tabData.FloatingButton_HoverEffectStrength = runtimeData.FloatingButton_HoverEffectStrength;
+    tabData.FloatingButton_HoverGlowStrength = runtimeData.FloatingButton_HoverGlowStrength;
+    tabData.FloatingButton_HoverContrastMode = runtimeData.FloatingButton_HoverContrastMode;
+    tabData.FloatingButton_HoverCustomColor = runtimeData.FloatingButton_HoverCustomColor;
+    tabData.FloatingButton_HoverAnimationDuration = runtimeData.FloatingButton_HoverAnimationDuration;
     tabData.FloatingButton_ReferencePoint = runtimeData.FloatingButton_ReferencePoint;
     tabData.FloatingButton_X_Offset = runtimeData.FloatingButton_X_Offset;
     tabData.FloatingButton_Y_Offset = runtimeData.FloatingButton_Y_Offset;

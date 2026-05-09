@@ -180,6 +180,11 @@ typedef struct MAP_KEYDATA
     int FloatingButton_BorderWidth;
     bool FloatingButton_EnableGradientFill;
     bool FloatingButton_EnableHoverAnimation;
+    int FloatingButton_HoverEffectStrength;
+    int FloatingButton_HoverGlowStrength;
+    int FloatingButton_HoverContrastMode;
+    QColor FloatingButton_HoverCustomColor;
+    int FloatingButton_HoverAnimationDuration;
     int FloatingButton_Width;
     int FloatingButton_Height;
     int FloatingButton_FontSize;
@@ -252,6 +257,11 @@ typedef struct MAP_KEYDATA
     , FloatingButton_BorderWidth(QKeyMapperConstants::FLOATINGBUTTON_BORDER_WIDTH_DEFAULT)
     , FloatingButton_EnableGradientFill(QKeyMapperConstants::FLOATINGBUTTON_ENABLEGRADIENTFILL_DEFAULT)
     , FloatingButton_EnableHoverAnimation(QKeyMapperConstants::FLOATINGBUTTON_ENABLEHOVERANIMATION_DEFAULT)
+    , FloatingButton_HoverEffectStrength(QKeyMapperConstants::FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT)
+    , FloatingButton_HoverGlowStrength(QKeyMapperConstants::FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT)
+    , FloatingButton_HoverContrastMode(QKeyMapperConstants::FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT)
+    , FloatingButton_HoverCustomColor(QKeyMapperConstants::FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_HoverAnimationDuration(QKeyMapperConstants::FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT)
     , FloatingButton_Width(QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT)
     , FloatingButton_Height(QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT)
     , FloatingButton_FontSize(QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT)
@@ -346,6 +356,11 @@ typedef struct MAP_KEYDATA
         FloatingButton_BorderWidth = QKeyMapperConstants::FLOATINGBUTTON_BORDER_WIDTH_DEFAULT;
         FloatingButton_EnableGradientFill = QKeyMapperConstants::FLOATINGBUTTON_ENABLEGRADIENTFILL_DEFAULT;
         FloatingButton_EnableHoverAnimation = QKeyMapperConstants::FLOATINGBUTTON_ENABLEHOVERANIMATION_DEFAULT;
+        FloatingButton_HoverEffectStrength = QKeyMapperConstants::FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT;
+        FloatingButton_HoverGlowStrength = QKeyMapperConstants::FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT;
+        FloatingButton_HoverContrastMode = QKeyMapperConstants::FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT;
+        FloatingButton_HoverCustomColor = QKeyMapperConstants::FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR;
+        FloatingButton_HoverAnimationDuration = QKeyMapperConstants::FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT;
         FloatingButton_Width = QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT;
         FloatingButton_Height = QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT;
         FloatingButton_FontSize = QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT;
@@ -416,6 +431,11 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_BorderWidth == other.FloatingButton_BorderWidth)
                 && (FloatingButton_EnableGradientFill == other.FloatingButton_EnableGradientFill)
                 && (FloatingButton_EnableHoverAnimation == other.FloatingButton_EnableHoverAnimation)
+                && (FloatingButton_HoverEffectStrength == other.FloatingButton_HoverEffectStrength)
+                && (FloatingButton_HoverGlowStrength == other.FloatingButton_HoverGlowStrength)
+                && (FloatingButton_HoverContrastMode == other.FloatingButton_HoverContrastMode)
+                && (FloatingButton_HoverCustomColor == other.FloatingButton_HoverCustomColor)
+                && (FloatingButton_HoverAnimationDuration == other.FloatingButton_HoverAnimationDuration)
                 && (FloatingButton_Width == other.FloatingButton_Width)
                 && (FloatingButton_Height == other.FloatingButton_Height)
                 && (FloatingButton_FontSize == other.FloatingButton_FontSize)
@@ -491,6 +511,11 @@ typedef struct MAP_KEYDATA
                         << ", FloatingButton_BorderWidth:" << data.FloatingButton_BorderWidth
                         << ", FloatingButton_EnableGradientFill:" << data.FloatingButton_EnableGradientFill
                         << ", FloatingButton_EnableHoverAnimation:" << data.FloatingButton_EnableHoverAnimation
+                        << ", FloatingButton_HoverEffectStrength:" << data.FloatingButton_HoverEffectStrength
+                        << ", FloatingButton_HoverGlowStrength:" << data.FloatingButton_HoverGlowStrength
+                        << ", FloatingButton_HoverContrastMode:" << data.FloatingButton_HoverContrastMode
+                        << ", FloatingButton_HoverCustomColor:" << data.FloatingButton_HoverCustomColor
+                        << ", FloatingButton_HoverAnimationDuration:" << data.FloatingButton_HoverAnimationDuration
                         << ", FloatingButton_Width:" << data.FloatingButton_Width
                         << ", FloatingButton_Height:" << data.FloatingButton_Height
                         << ", FloatingButton_FontSize:" << data.FloatingButton_FontSize

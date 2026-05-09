@@ -51,6 +51,7 @@ private:
     void applyToCurrentItem();
     void setupReferencePointComboBox();
     void syncFontFamilyControls();
+    void updateHoverCustomizationState();
 
 private:
     int m_ItemRow;
@@ -93,6 +94,10 @@ private:
     QLabel *m_NormalOpacityLabel;
     QLabel *m_PressedOpacityLabel;
     QLabel *m_LockedOpacityLabel;
+    QLabel *m_HoverEffectStrengthLabel;
+    QLabel *m_HoverGlowStrengthLabel;
+    QLabel *m_HoverContrastModeLabel;
+    QLabel *m_HoverAnimationDurationLabel;
 
     QSpinBox *m_WidthSpinBox;
     QSpinBox *m_HeightSpinBox;
@@ -105,6 +110,10 @@ private:
     QDoubleSpinBox *m_NormalOpacitySpinBox;
     QDoubleSpinBox *m_PressedOpacitySpinBox;
     QDoubleSpinBox *m_LockedOpacitySpinBox;
+    QSpinBox *m_HoverEffectStrengthSpinBox;
+    QSpinBox *m_HoverGlowStrengthSpinBox;
+    QComboBox *m_HoverContrastModeComboBox;
+    QSpinBox *m_HoverAnimationDurationSpinBox;
 
     QLabel *m_ReferencePointLabel;
     QLabel *m_OffsetXLabel;
@@ -122,6 +131,7 @@ private:
     ColorPickerWidget *m_LockedColorPicker;
     ColorPickerWidget *m_TextColorPicker;
     ColorPickerWidget *m_BorderColorPicker;
+    ColorPickerWidget *m_HoverCustomColorPicker;
 };
 
 #endif // QFLOATINGBUTTONSETUPDIALOG_H
