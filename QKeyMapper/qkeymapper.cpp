@@ -5,8 +5,10 @@
 #include <algorithm>
 #include <QPainterPath>
 #include <QScrollBar>
+#include <QSet>
 #include <QStyleOptionToolButton>
 #include <QToolTip>
+#include <QUrl>
 
 using namespace QKeyMapperConstants;
 using namespace Gdiplus;
@@ -7108,12 +7110,455 @@ bool hasEnabledExclusiveGroupConflict(const QList<MAP_KEYDATA> &mappingData, con
     return false;
 }
 
+constexpr char FLOATINGBUTTON_STYLE_CODE_PREFIX[] = "FBS1";
+constexpr char FLOATINGBUTTON_STYLE_KEY_BUTTON_COLOR[] = "bc";
+constexpr char FLOATINGBUTTON_STYLE_KEY_PRESSED_COLOR[] = "pc";
+constexpr char FLOATINGBUTTON_STYLE_KEY_LOCKED_COLOR[] = "lc";
+constexpr char FLOATINGBUTTON_STYLE_KEY_TEXT_COLOR[] = "tc";
+constexpr char FLOATINGBUTTON_STYLE_KEY_BORDER_COLOR[] = "oc";
+constexpr char FLOATINGBUTTON_STYLE_KEY_BORDER_WIDTH[] = "bw";
+constexpr char FLOATINGBUTTON_STYLE_KEY_GRADIENT_FILL[] = "gf";
+constexpr char FLOATINGBUTTON_STYLE_KEY_HOVER_ANIMATION[] = "ha";
+constexpr char FLOATINGBUTTON_STYLE_KEY_HOVER_EFFECT[] = "he";
+constexpr char FLOATINGBUTTON_STYLE_KEY_HOVER_GLOW[] = "hg";
+constexpr char FLOATINGBUTTON_STYLE_KEY_HOVER_MODE[] = "hm";
+constexpr char FLOATINGBUTTON_STYLE_KEY_HOVER_CUSTOM_COLOR[] = "hc";
+constexpr char FLOATINGBUTTON_STYLE_KEY_HOVER_DURATION[] = "hd";
+constexpr char FLOATINGBUTTON_STYLE_KEY_WIDTH[] = "w";
+constexpr char FLOATINGBUTTON_STYLE_KEY_HEIGHT[] = "h";
+constexpr char FLOATINGBUTTON_STYLE_KEY_FONT_SIZE[] = "fs";
+constexpr char FLOATINGBUTTON_STYLE_KEY_FONT_WEIGHT[] = "fw";
+constexpr char FLOATINGBUTTON_STYLE_KEY_FONT_FAMILY[] = "ff";
+constexpr char FLOATINGBUTTON_STYLE_KEY_RADIUS[] = "r";
+constexpr char FLOATINGBUTTON_STYLE_KEY_NORMAL_OPACITY[] = "no";
+constexpr char FLOATINGBUTTON_STYLE_KEY_PRESSED_OPACITY[] = "po";
+constexpr char FLOATINGBUTTON_STYLE_KEY_LOCKED_OPACITY[] = "lo";
+
+QString encodeFloatingButtonStyleStringValue(const QString &value)
+{
+    return QString::fromLatin1(QUrl::toPercentEncoding(value));
+}
+
+QString decodeFloatingButtonStyleStringValue(const QString &value)
+{
+    return QUrl::fromPercentEncoding(value.toUtf8());
+}
+
+bool isFloatingButtonOpacityValueInRange(double opacity)
+{
+    return FLOATINGBUTTON_OPACITY_MIN <= opacity && opacity <= FLOATINGBUTTON_OPACITY_MAX;
+}
+
+double resolveFloatingButtonOpacityValue(double opacity, double fallbackOpacity)
+{
+    const double resolvedOpacity = isFloatingButtonOpacityValueInRange(opacity)
+        ? opacity
+        : (isFloatingButtonOpacityValueInRange(fallbackOpacity) ? fallbackOpacity : FLOATINGBUTTON_OPACITY_DEFAULT);
+    return qBound(FLOATINGBUTTON_OPACITY_MIN, resolvedOpacity, FLOATINGBUTTON_OPACITY_MAX);
+}
+
+QColor resolveFloatingButtonStyleColor(const QColor &color, const QColor &defaultColor)
+{
+    return color.isValid() ? color : defaultColor;
+}
+
+QColor resolveFloatingButtonHoverCustomStyleColor(const MAP_KEYDATA &keymapdata)
+{
+    if (keymapdata.FloatingButton_HoverCustomColor.isValid()) {
+        return keymapdata.FloatingButton_HoverCustomColor;
+    }
+
+    if (keymapdata.FloatingButton_ButtonColor.isValid()) {
+        return keymapdata.FloatingButton_ButtonColor;
+    }
+
+    return FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
+}
+
+MAP_KEYDATA normalizedFloatingButtonStyleData(const MAP_KEYDATA &keymapdata)
+{
+    MAP_KEYDATA normalizedData = keymapdata;
+    normalizedData.FloatingButton_ButtonColor = resolveFloatingButtonStyleColor(keymapdata.FloatingButton_ButtonColor,
+                                                                               FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR);
+    normalizedData.FloatingButton_PressedColor = resolveFloatingButtonStyleColor(keymapdata.FloatingButton_PressedColor,
+                                                                                 FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR);
+    normalizedData.FloatingButton_LockedColor = resolveFloatingButtonStyleColor(keymapdata.FloatingButton_LockedColor,
+                                                                                FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR);
+    normalizedData.FloatingButton_TextColor = resolveFloatingButtonStyleColor(keymapdata.FloatingButton_TextColor,
+                                                                              FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR);
+    normalizedData.FloatingButton_BorderColor = resolveFloatingButtonStyleColor(keymapdata.FloatingButton_BorderColor,
+                                                                                FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR);
+    normalizedData.FloatingButton_HoverCustomColor = resolveFloatingButtonHoverCustomStyleColor(keymapdata);
+    normalizedData.FloatingButton_BorderWidth = qBound(FLOATINGBUTTON_BORDER_WIDTH_MIN,
+                                                       keymapdata.FloatingButton_BorderWidth,
+                                                       FLOATINGBUTTON_BORDER_WIDTH_MAX);
+    normalizedData.FloatingButton_HoverEffectStrength = sanitizeFloatingButtonHoverEffectStrength(keymapdata.FloatingButton_HoverEffectStrength);
+    normalizedData.FloatingButton_HoverGlowStrength = sanitizeFloatingButtonHoverGlowStrength(keymapdata.FloatingButton_HoverGlowStrength);
+    normalizedData.FloatingButton_HoverContrastMode = sanitizeFloatingButtonHoverContrastMode(keymapdata.FloatingButton_HoverContrastMode);
+    normalizedData.FloatingButton_HoverAnimationDuration = sanitizeFloatingButtonHoverAnimationDuration(keymapdata.FloatingButton_HoverAnimationDuration);
+    normalizedData.FloatingButton_Width = qBound(FLOATINGBUTTON_WIDTH_MIN,
+                                                 keymapdata.FloatingButton_Width,
+                                                 FLOATINGBUTTON_WIDTH_MAX);
+    normalizedData.FloatingButton_Height = qBound(FLOATINGBUTTON_HEIGHT_MIN,
+                                                  keymapdata.FloatingButton_Height,
+                                                  FLOATINGBUTTON_HEIGHT_MAX);
+    normalizedData.FloatingButton_FontSize = qBound(FLOATINGBUTTON_FONT_SIZE_MIN,
+                                                    keymapdata.FloatingButton_FontSize,
+                                                    FLOATINGBUTTON_FONT_SIZE_MAX);
+    normalizedData.FloatingButton_FontWeight = qBound(FLOATINGBUTTON_FONT_WEIGHT_MIN,
+                                                      keymapdata.FloatingButton_FontWeight,
+                                                      FLOATINGBUTTON_FONT_WEIGHT_MAX);
+    normalizedData.FloatingButton_Radius = qBound(FLOATINGBUTTON_RADIUS_MIN,
+                                                  keymapdata.FloatingButton_Radius,
+                                                  FLOATINGBUTTON_RADIUS_MAX);
+    normalizedData.FloatingButton_NormalOpacity = resolveFloatingButtonOpacityValue(keymapdata.FloatingButton_NormalOpacity,
+                                                                                    keymapdata.FloatingButton_Opacity);
+    normalizedData.FloatingButton_PressedOpacity = resolveFloatingButtonOpacityValue(keymapdata.FloatingButton_PressedOpacity,
+                                                                                     keymapdata.FloatingButton_Opacity);
+    normalizedData.FloatingButton_LockedOpacity = resolveFloatingButtonOpacityValue(keymapdata.FloatingButton_LockedOpacity,
+                                                                                    keymapdata.FloatingButton_Opacity);
+    normalizedData.FloatingButton_FontFamily = keymapdata.FloatingButton_FontFamily.trimmed();
+    return normalizedData;
+}
+
+const QStringList &floatingButtonStyleCodeKnownKeys()
+{
+    static const QStringList knownKeys = {
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_BUTTON_COLOR),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_PRESSED_COLOR),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_LOCKED_COLOR),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_TEXT_COLOR),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_BORDER_COLOR),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_BORDER_WIDTH),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_GRADIENT_FILL),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_ANIMATION),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_EFFECT),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_GLOW),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_MODE),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_CUSTOM_COLOR),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_DURATION),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_WIDTH),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HEIGHT),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_FONT_SIZE),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_FONT_WEIGHT),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_FONT_FAMILY),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_RADIUS),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_NORMAL_OPACITY),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_PRESSED_OPACITY),
+        QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_LOCKED_OPACITY)
+    };
+    return knownKeys;
+}
+
+void appendFloatingButtonStyleToken(QStringList &tokens, const char *key, const QString &value)
+{
+    tokens.append(QString::fromLatin1(key) + QStringLiteral("=") + value);
+}
+
+bool parseFloatingButtonStyleBooleanValue(const QString &value, bool &parsedValue)
+{
+    if (value == QStringLiteral("1")) {
+        parsedValue = true;
+        return true;
+    }
+
+    if (value == QStringLiteral("0")) {
+        parsedValue = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool parseFloatingButtonStyleIntegerValue(const QString &value, int minimum, int maximum, int &parsedValue)
+{
+    bool ok = false;
+    const int integerValue = value.toInt(&ok);
+    if (!ok || integerValue < minimum || integerValue > maximum) {
+        return false;
+    }
+
+    parsedValue = integerValue;
+    return true;
+}
+
+bool parseFloatingButtonStyleOpacityValue(const QString &value, double &parsedValue)
+{
+    bool ok = false;
+    const double opacityValue = value.toDouble(&ok);
+    if (!ok || !isFloatingButtonOpacityValueInRange(opacityValue)) {
+        return false;
+    }
+
+    parsedValue = opacityValue;
+    return true;
+}
+
+bool parseFloatingButtonStyleColorValue(const QString &value, QColor &parsedColor)
+{
+    const QColor decodedColor = QKeyMapper::decodeKeyMapDataColorToken(value, QColor());
+    if (!decodedColor.isValid()) {
+        return false;
+    }
+
+    parsedColor = decodedColor;
+    return true;
+}
+
+QKeyMapper::FloatingButtonStyleCodeApplyResult parseAndApplyFloatingButtonStyleCode(const QString &styleCode, MAP_KEYDATA &keymapdata)
+{
+    QKeyMapper::FloatingButtonStyleCodeApplyResult result;
+    const QString trimmedStyleCode = styleCode.trimmed();
+    if (trimmedStyleCode.isEmpty()) {
+        result.errorMessage = QKeyMapper::tr("Floating button style code is empty.");
+        return result;
+    }
+
+    const QStringList tokens = trimmedStyleCode.split(QLatin1Char(';'), Qt::KeepEmptyParts);
+    if (tokens.isEmpty()) {
+        result.errorMessage = QKeyMapper::tr("Invalid floating button style code format.");
+        return result;
+    }
+
+    const QString header = tokens.constFirst().trimmed();
+    if (header != QString::fromLatin1(FLOATINGBUTTON_STYLE_CODE_PREFIX)) {
+        if (header.startsWith(QStringLiteral("FBS"))) {
+            result.errorMessage = QKeyMapper::tr("Unsupported floating button style code version: %1").arg(header);
+        }
+        else {
+            result.errorMessage = QKeyMapper::tr("Invalid floating button style code header: %1").arg(header);
+        }
+        return result;
+    }
+
+    MAP_KEYDATA updatedData = keymapdata;
+    QSet<QString> seenKeys;
+    QSet<QString> seenKnownKeys;
+
+    const QStringList &knownKeys = floatingButtonStyleCodeKnownKeys();
+    for (int i = 1; i < tokens.size(); ++i) {
+        const QString token = tokens.at(i).trimmed();
+        if (token.isEmpty()) {
+            continue;
+        }
+
+        const int separatorIndex = token.indexOf(QLatin1Char('='));
+        if (separatorIndex <= 0) {
+            result.errorMessage = QKeyMapper::tr("Invalid floating button style code token: %1").arg(token);
+            return result;
+        }
+
+        const QString key = token.left(separatorIndex).trimmed();
+        const QString value = token.mid(separatorIndex + 1).trimmed();
+        if (seenKeys.contains(key)) {
+            result.errorMessage = QKeyMapper::tr("Duplicate floating button style code field: %1").arg(key);
+            return result;
+        }
+        seenKeys.insert(key);
+
+        if (!knownKeys.contains(key)) {
+            result.ignoredKeys.append(key);
+            continue;
+        }
+
+        seenKnownKeys.insert(key);
+
+        bool booleanValue = false;
+        int integerValue = 0;
+        double opacityValue = 0.0;
+        QColor colorValue;
+
+        if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_BUTTON_COLOR)) {
+            if (!parseFloatingButtonStyleColorValue(value, colorValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid color value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_ButtonColor = colorValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_PRESSED_COLOR)) {
+            if (!parseFloatingButtonStyleColorValue(value, colorValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid color value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_PressedColor = colorValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_LOCKED_COLOR)) {
+            if (!parseFloatingButtonStyleColorValue(value, colorValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid color value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_LockedColor = colorValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_TEXT_COLOR)) {
+            if (!parseFloatingButtonStyleColorValue(value, colorValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid color value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_TextColor = colorValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_BORDER_COLOR)) {
+            if (!parseFloatingButtonStyleColorValue(value, colorValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid color value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_BorderColor = colorValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_BORDER_WIDTH)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_BORDER_WIDTH_MIN, FLOATINGBUTTON_BORDER_WIDTH_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_BorderWidth = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_GRADIENT_FILL)) {
+            if (!parseFloatingButtonStyleBooleanValue(value, booleanValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid boolean value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_EnableGradientFill = booleanValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_ANIMATION)) {
+            if (!parseFloatingButtonStyleBooleanValue(value, booleanValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid boolean value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_EnableHoverAnimation = booleanValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_EFFECT)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MIN, FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_HoverEffectStrength = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_GLOW)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MIN, FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_HoverGlowStrength = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_MODE)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN, FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_HoverContrastMode = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_CUSTOM_COLOR)) {
+            if (!parseFloatingButtonStyleColorValue(value, colorValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid color value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_HoverCustomColor = colorValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HOVER_DURATION)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MIN, FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_HoverAnimationDuration = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_WIDTH)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_WIDTH_MIN, FLOATINGBUTTON_WIDTH_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_Width = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_HEIGHT)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_HEIGHT_MIN, FLOATINGBUTTON_HEIGHT_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_Height = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_FONT_SIZE)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_FONT_SIZE_MIN, FLOATINGBUTTON_FONT_SIZE_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_FontSize = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_FONT_WEIGHT)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_FONT_WEIGHT_MIN, FLOATINGBUTTON_FONT_WEIGHT_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_FontWeight = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_FONT_FAMILY)) {
+            updatedData.FloatingButton_FontFamily = decodeFloatingButtonStyleStringValue(value).trimmed();
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_RADIUS)) {
+            if (!parseFloatingButtonStyleIntegerValue(value, FLOATINGBUTTON_RADIUS_MIN, FLOATINGBUTTON_RADIUS_MAX, integerValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_Radius = integerValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_NORMAL_OPACITY)) {
+            if (!parseFloatingButtonStyleOpacityValue(value, opacityValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid opacity value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_NormalOpacity = opacityValue;
+            updatedData.FloatingButton_Opacity = opacityValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_PRESSED_OPACITY)) {
+            if (!parseFloatingButtonStyleOpacityValue(value, opacityValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid opacity value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_PressedOpacity = opacityValue;
+        }
+        else if (key == QString::fromLatin1(FLOATINGBUTTON_STYLE_KEY_LOCKED_OPACITY)) {
+            if (!parseFloatingButtonStyleOpacityValue(value, opacityValue)) {
+                result.errorMessage = QKeyMapper::tr("Invalid opacity value for style code field %1: %2").arg(key, value);
+                return result;
+            }
+            updatedData.FloatingButton_LockedOpacity = opacityValue;
+        }
+
+        ++result.appliedFieldCount;
+    }
+
+    if (result.appliedFieldCount <= 0) {
+        result.errorMessage = QKeyMapper::tr("No valid floating button style fields were found in the style code.");
+        return result;
+    }
+
+    for (const QString &knownKey : knownKeys) {
+        if (!seenKnownKeys.contains(knownKey)) {
+            result.missingKeys.append(knownKey);
+        }
+    }
+
+    keymapdata = updatedData;
+    result.success = true;
+    result.partial = !result.missingKeys.isEmpty() || !result.ignoredKeys.isEmpty();
+    return result;
+}
+
 }
 
 void QKeyMapper::copyStringToClipboard(const QString &string)
 {
     QClipboard *clipboard = QGuiApplication::clipboard();
     clipboard->setText(string);
+}
+
+bool QKeyMapper::readClipboardText(QString &clipboardText)
+{
+    clipboardText.clear();
+
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    if (clipboard == Q_NULLPTR) {
+        return false;
+    }
+
+    clipboardText = clipboard->text();
+    return !clipboardText.isNull();
 }
 
 QStringList *QKeyMapper::getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType)
@@ -7354,6 +7799,72 @@ QColor QKeyMapper::decodeKeyMapDataColorToken(const QString &colorToken, const Q
 
     const QColor decodedColor(normalizedToken);
     return decodedColor.isValid() ? decodedColor : defaultColor;
+}
+
+QString QKeyMapper::generateFloatingButtonStyleCode(const MAP_KEYDATA &keymapdata)
+{
+    const MAP_KEYDATA normalizedData = normalizedFloatingButtonStyleData(keymapdata);
+
+    QStringList tokens;
+    tokens.reserve(23);
+    tokens.append(QString::fromLatin1(FLOATINGBUTTON_STYLE_CODE_PREFIX));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_BUTTON_COLOR,
+                                   encodeKeyMapDataColorToken(normalizedData.FloatingButton_ButtonColor, FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_PRESSED_COLOR,
+                                   encodeKeyMapDataColorToken(normalizedData.FloatingButton_PressedColor, FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_LOCKED_COLOR,
+                                   encodeKeyMapDataColorToken(normalizedData.FloatingButton_LockedColor, FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_TEXT_COLOR,
+                                   encodeKeyMapDataColorToken(normalizedData.FloatingButton_TextColor, FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_BORDER_COLOR,
+                                   encodeKeyMapDataColorToken(normalizedData.FloatingButton_BorderColor, FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_BORDER_WIDTH,
+                                   QString::number(normalizedData.FloatingButton_BorderWidth));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_GRADIENT_FILL,
+                                   normalizedData.FloatingButton_EnableGradientFill ? QStringLiteral("1") : QStringLiteral("0"));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_HOVER_ANIMATION,
+                                   normalizedData.FloatingButton_EnableHoverAnimation ? QStringLiteral("1") : QStringLiteral("0"));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_HOVER_EFFECT,
+                                   QString::number(normalizedData.FloatingButton_HoverEffectStrength));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_HOVER_GLOW,
+                                   QString::number(normalizedData.FloatingButton_HoverGlowStrength));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_HOVER_MODE,
+                                   QString::number(normalizedData.FloatingButton_HoverContrastMode));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_HOVER_CUSTOM_COLOR,
+                                   encodeKeyMapDataColorToken(normalizedData.FloatingButton_HoverCustomColor, FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_HOVER_DURATION,
+                                   QString::number(normalizedData.FloatingButton_HoverAnimationDuration));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_WIDTH,
+                                   QString::number(normalizedData.FloatingButton_Width));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_HEIGHT,
+                                   QString::number(normalizedData.FloatingButton_Height));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_FONT_SIZE,
+                                   QString::number(normalizedData.FloatingButton_FontSize));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_FONT_WEIGHT,
+                                   QString::number(normalizedData.FloatingButton_FontWeight));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_FONT_FAMILY,
+                                   encodeFloatingButtonStyleStringValue(normalizedData.FloatingButton_FontFamily));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_RADIUS,
+                                   QString::number(normalizedData.FloatingButton_Radius));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_NORMAL_OPACITY,
+                                   QString::number(normalizedData.FloatingButton_NormalOpacity, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_PRESSED_OPACITY,
+                                   QString::number(normalizedData.FloatingButton_PressedOpacity, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
+    appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_LOCKED_OPACITY,
+                                   QString::number(normalizedData.FloatingButton_LockedOpacity, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
+    return tokens.join(QLatin1Char(';'));
+}
+
+QKeyMapper::FloatingButtonStyleCodeApplyResult QKeyMapper::applyFloatingButtonStyleCode(const QString &styleCode, MAP_KEYDATA &keymapdata)
+{
+    return parseAndApplyFloatingButtonStyleCode(styleCode, keymapdata);
+}
+
+QString QKeyMapper::floatingButtonStyleCodeApplySuccessMessage(const FloatingButtonStyleCodeApplyResult &result)
+{
+    return result.partial
+        ? tr("Floating button style partially updated successfully. Missing or unknown fields were ignored.")
+        : tr("Floating button style updated successfully.");
 }
 
 void QKeyMapper::switchBurstAndLockState(int rowindex)
@@ -11785,6 +12296,8 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     MAP_KEYDATA &keymapdata = (*mappingDataList)[rowindex];
                     QMenu contextMenu;
                     QAction *setupAction = contextMenu.addAction(tr("Floating Button Setup"));
+                    QAction *copyStyleCodeAction = contextMenu.addAction(tr("Copy Style Code"));
+                    QAction *applyStyleCodeAction = contextMenu.addAction(tr("Apply Clipboard Style Code"));
                     QAction *saveSettingAction = contextMenu.addAction(tr("Save Setting"));
                     updateSaveSettingActionIcon(saveSettingAction);
                     QAction *moveAction = contextMenu.addAction(tr("Move"));
@@ -11832,6 +12345,44 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         keymapdata.FloatingButton_ShowToolTip = !keymapdata.FloatingButton_ShowToolTip;
                         syncFloatingButtonRuntimeDataToCurrentTab(rowindex, keymapdata);
                         showFloatingButtonStart(rowindex, QString());
+                    }
+                    else if (selectedAction == copyStyleCodeAction) {
+                        const QString styleCode = generateFloatingButtonStyleCode(keymapdata);
+                        if (styleCode.isEmpty()) {
+                            showFailurePopup(tr("Failed to generate floating button style code."));
+                        }
+                        else {
+                            copyStringToClipboard(styleCode);
+                            showInformationPopup(tr("Floating button style code copied to clipboard."));
+                        }
+                    }
+                    else if (selectedAction == applyStyleCodeAction) {
+                        QString clipboardText;
+                        if (!readClipboardText(clipboardText) || clipboardText.trimmed().isEmpty()) {
+                            showFailurePopup(tr("Clipboard does not contain a floating button style code."));
+                        }
+                        else {
+                            const FloatingButtonStyleCodeApplyResult result = applyFloatingButtonStyleCode(clipboardText, keymapdata);
+                            if (!result.success) {
+                                showFailurePopup(result.errorMessage);
+                            }
+                            else {
+                                syncFloatingButtonRuntimeDataToCurrentTab(rowindex, keymapdata);
+                                updateTableWidgetItem(s_KeyMappingTabWidgetCurrentIndex, rowindex, FLOATING_COLUMN);
+                                applyFloatingButtonRuntimeState(this, rowindex);
+                                requestSaveSettingDirty();
+
+                                QItemSetupDialog *itemSetupDialog = QItemSetupDialog::getInstance();
+                                if (itemSetupDialog != Q_NULLPTR
+                                    && itemSetupDialog->m_FloatingButtonSetupDialog != Q_NULLPTR
+                                    && itemSetupDialog->m_FloatingButtonSetupDialog->isVisible()
+                                    && itemSetupDialog->m_FloatingButtonSetupDialog->getItemRow() == rowindex) {
+                                    itemSetupDialog->m_FloatingButtonSetupDialog->refreshFromCurrentItem();
+                                }
+
+                                showInformationPopup(floatingButtonStyleCodeApplySuccessMessage(result));
+                            }
+                        }
                     }
                     else if (selectedAction == setupAction) {
                         showFloatingButtonSetupDialog(rowindex);

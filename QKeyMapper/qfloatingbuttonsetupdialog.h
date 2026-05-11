@@ -49,6 +49,9 @@ private slots:
 private:
     void loadFromCurrentItem();
     void applyToCurrentItem();
+    void updateStyleCodeDisplay();
+    void copyStyleCodeToClipboard();
+    void applyClipboardStyleCode();
     void setupReferencePointComboBox();
     void syncFontFamilyControls();
     void updateHoverCustomizationState();
@@ -98,6 +101,7 @@ private:
     QLabel *m_HoverGlowStrengthLabel;
     QLabel *m_HoverContrastModeLabel;
     QLabel *m_HoverAnimationDurationLabel;
+    QLabel *m_StyleCodeLabel;
 
     QSpinBox *m_WidthSpinBox;
     QSpinBox *m_HeightSpinBox;
@@ -114,6 +118,9 @@ private:
     QSpinBox *m_HoverGlowStrengthSpinBox;
     QComboBox *m_HoverContrastModeComboBox;
     QSpinBox *m_HoverAnimationDurationSpinBox;
+    QLineEdit *m_StyleCodeLineEdit;
+    QPushButton *m_CopyStyleCodeButton;
+    QPushButton *m_ApplyClipboardStyleCodeButton;
 
     QLabel *m_ReferencePointLabel;
     QLabel *m_OffsetXLabel;

@@ -8773,7 +8773,9 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     emit autoHideAllFloatingButtonsOnMappingStop_Signal();
 
     // Restore KeyMappingDataList pointer to original tab's KeyMappingData
-    QKeyMapper::restoreKeyMappingDataListPointer();
+    if (!s_isWorkerDestructing) {
+        QKeyMapper::restoreKeyMappingDataListPointer();
+    }
 
     s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 

@@ -73,6 +73,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_HoverGlowStrengthLabel(new QLabel(this))
     , m_HoverContrastModeLabel(new QLabel(this))
     , m_HoverAnimationDurationLabel(new QLabel(this))
+    , m_StyleCodeLabel(new QLabel(this))
     , m_WidthSpinBox(new QSpinBox(this))
     , m_HeightSpinBox(new QSpinBox(this))
     , m_FontSizeSpinBox(new QSpinBox(this))
@@ -88,6 +89,9 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_HoverGlowStrengthSpinBox(new QSpinBox(this))
     , m_HoverContrastModeComboBox(new QComboBox(this))
     , m_HoverAnimationDurationSpinBox(new QSpinBox(this))
+    , m_StyleCodeLineEdit(new QLineEdit(this))
+    , m_CopyStyleCodeButton(new QPushButton(this))
+    , m_ApplyClipboardStyleCodeButton(new QPushButton(this))
     , m_ReferencePointLabel(new QLabel(this))
     , m_OffsetXLabel(new QLabel(this))
     , m_OffsetYLabel(new QLabel(this))
@@ -139,8 +143,23 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_MousePassThroughSwitchKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
     m_MousePassThroughSwitchKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
     m_MousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
+    m_StyleCodeLineEdit->setReadOnly(true);
+    m_StyleCodeLineEdit->setMinimumWidth(300);
+    m_CopyStyleCodeButton->setAutoDefault(false);
+    m_CopyStyleCodeButton->setDefault(false);
+    m_ApplyClipboardStyleCodeButton->setAutoDefault(false);
+    m_ApplyClipboardStyleCodeButton->setDefault(false);
 
     setupReferencePointComboBox();
+
+    QWidget *styleCodeWidget = new QWidget(this);
+    QHBoxLayout *styleCodeLayout = new QHBoxLayout(styleCodeWidget);
+    styleCodeLayout->setContentsMargins(0, 0, 0, 0);
+    styleCodeLayout->setSpacing(6);
+    styleCodeLayout->addWidget(m_StyleCodeLineEdit, 1);
+    styleCodeLayout->addWidget(m_CopyStyleCodeButton);
+    styleCodeLayout->addWidget(m_ApplyClipboardStyleCodeButton);
+    styleCodeWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     QWidget *mousePassThroughWidget = new QWidget(this);
     QHBoxLayout *mousePassThroughLayout = new QHBoxLayout(mousePassThroughWidget);
@@ -228,6 +247,9 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     colorLayout->addWidget(m_BorderColorPicker, 2, 0, 1, 2);
     styleGrid->addLayout(colorLayout, 7, 1, 1, 5);
 
+    styleGrid->addWidget(m_StyleCodeLabel, 8, 0);
+    styleGrid->addWidget(styleCodeWidget, 8, 1, 1, 5);
+
     QGroupBox *positionGroup = new QGroupBox(this);
     QGridLayout *positionGrid = new QGridLayout(positionGroup);
     positionGrid->addWidget(m_ReferencePointLabel, 0, 0);
@@ -272,6 +294,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_HoverGlowStrengthLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_HoverContrastModeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_HoverAnimationDurationLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_StyleCodeLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_ReferencePointLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetXLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetYLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -289,6 +312,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
 
     connect(m_ApplyButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onApplyButtonClicked);
     connect(m_RevertButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::onRevertButtonClicked);
+    connect(m_CopyStyleCodeButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::copyStyleCodeToClipboard);
+    connect(m_ApplyClipboardStyleCodeButton, &QPushButton::clicked, this, &QFloatingButtonSetupDialog::applyClipboardStyleCode);
 
     #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     connect(m_EnableCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
@@ -409,6 +434,7 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_HoverContrastModeLabel->setText(tr("Hover Contrast"));
     m_HoverAnimationDurationLabel->setText(tr("Hover Duration"));
     m_HoverAnimationDurationSpinBox->setSuffix(tr(" ms"));
+    m_StyleCodeLabel->setText(tr("Style Code"));
 
     m_WidthLabel->setText(tr("Width"));
     m_HeightLabel->setText(tr("Height"));
@@ -434,6 +460,12 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     if (m_FontFamilyDefaultButton != Q_NULLPTR) {
         m_FontFamilyDefaultButton->setText(tr("Default"));
         m_FontFamilyDefaultButton->setToolTip(tr("Use application default font"));
+    }
+    if (m_CopyStyleCodeButton != Q_NULLPTR) {
+        m_CopyStyleCodeButton->setText(tr("Copy Style Code"));
+    }
+    if (m_ApplyClipboardStyleCodeButton != Q_NULLPTR) {
+        m_ApplyClipboardStyleCodeButton->setText(tr("Apply Clipboard Style Code"));
     }
 
     if (m_FontWeightComboBox->count() != 3) {
@@ -679,6 +711,7 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
                                                   : FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR));
 
     updateHoverCustomizationState();
+    updateStyleCodeDisplay();
 
     m_isLoading = false;
 }
@@ -745,6 +778,84 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_LockedColor = m_LockedColorPicker->getColor();
     keymapdata.FloatingButton_TextColor = m_TextColorPicker->getColor();
     keymapdata.FloatingButton_BorderColor = m_BorderColorPicker->getColor();
+
+    updateStyleCodeDisplay();
+}
+
+void QFloatingButtonSetupDialog::updateStyleCodeDisplay()
+{
+    if (m_StyleCodeLineEdit == Q_NULLPTR) {
+        return;
+    }
+
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
+        || m_ItemRow < 0
+        || m_ItemRow >= mappingDataList->size()) {
+        m_StyleCodeLineEdit->clear();
+        m_StyleCodeLineEdit->setToolTip(QString());
+        return;
+    }
+
+    const QString styleCode = QKeyMapper::generateFloatingButtonStyleCode(mappingDataList->at(m_ItemRow));
+    m_StyleCodeLineEdit->setText(styleCode);
+    m_StyleCodeLineEdit->setCursorPosition(0);
+    m_StyleCodeLineEdit->setToolTip(tr("Generated automatically from Style Group settings"));
+}
+
+void QFloatingButtonSetupDialog::copyStyleCodeToClipboard()
+{
+    updateStyleCodeDisplay();
+
+    const QString styleCode = m_StyleCodeLineEdit->text().trimmed();
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    if (styleCode.isEmpty()) {
+        if (keyMapper != Q_NULLPTR) {
+            keyMapper->showFailurePopup(tr("Failed to generate floating button style code."));
+        }
+        return;
+    }
+
+    QKeyMapper::copyStringToClipboard(styleCode);
+    if (keyMapper != Q_NULLPTR) {
+        keyMapper->showInformationPopup(tr("Floating button style code copied to clipboard."));
+    }
+}
+
+void QFloatingButtonSetupDialog::applyClipboardStyleCode()
+{
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    if (mappingDataList == Q_NULLPTR
+        || m_ItemRow < 0
+        || m_ItemRow >= mappingDataList->size()) {
+        return;
+    }
+
+    QString clipboardText;
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    if (!QKeyMapper::readClipboardText(clipboardText) || clipboardText.trimmed().isEmpty()) {
+        if (keyMapper != Q_NULLPTR) {
+            keyMapper->showFailurePopup(tr("Clipboard does not contain a floating button style code."));
+        }
+        return;
+    }
+
+    MAP_KEYDATA updatedData = mappingDataList->at(m_ItemRow);
+    const QKeyMapper::FloatingButtonStyleCodeApplyResult result = QKeyMapper::applyFloatingButtonStyleCode(clipboardText, updatedData);
+    if (!result.success) {
+        if (keyMapper != Q_NULLPTR) {
+            keyMapper->showFailurePopup(result.errorMessage);
+        }
+        return;
+    }
+
+    (*mappingDataList)[m_ItemRow] = updatedData;
+    loadFromCurrentItem();
+    emit settingsApplied();
+
+    if (keyMapper != Q_NULLPTR) {
+        keyMapper->showInformationPopup(QKeyMapper::floatingButtonStyleCodeApplySuccessMessage(result));
+    }
 }
 
 void QFloatingButtonSetupDialog::syncFontFamilyControls()

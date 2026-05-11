@@ -1182,12 +1182,25 @@ public:
     static QString getOriginalKeyStringWithoutSuffix(const QString &originalkeystr);
     static QString getTrimmedMappingKeyString(const QString &mappingkeystr);
     static QString resolveConfiguredFontFamily(const QString &configuredFamily);
+    struct FloatingButtonStyleCodeApplyResult {
+        bool success = false;
+        bool partial = false;
+        int appliedFieldCount = 0;
+        QString errorMessage;
+        QStringList missingKeys;
+        QStringList ignoredKeys;
+    };
+
     static void copyStringToClipboard(const QString &string);
+    static bool readClipboardText(QString &clipboardText);
     static bool backupFile(const QString &sourceFile, const QString &backupFile);
     static QString escapeSendTextForSaving(const QString &text);
     static QString unescapeSendTextForLoading(const QString &text);
     static QString encodeKeyMapDataColorToken(const QColor &color, const QColor &defaultColor = QColor());
     static QColor decodeKeyMapDataColorToken(const QString &colorToken, const QColor &defaultColor = QColor());
+    static QString generateFloatingButtonStyleCode(const MAP_KEYDATA &keymapdata);
+    static FloatingButtonStyleCodeApplyResult applyFloatingButtonStyleCode(const QString &styleCode, MAP_KEYDATA &keymapdata);
+    static QString floatingButtonStyleCodeApplySuccessMessage(const FloatingButtonStyleCodeApplyResult &result);
     static void switchBurstAndLockState(int rowindex);
     static void buildActiveKeyMappingDataList(void);
     static void restoreKeyMappingDataListPointer(void);
