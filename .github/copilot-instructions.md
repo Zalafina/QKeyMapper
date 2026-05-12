@@ -24,20 +24,20 @@
 - Use a ToDo list to show completed and remaining implementation tasks.
 
 ## Change Safety
-- Perform a final review of all code changes before finishing.
+- Perform a review of all code changes.
 - Confirm that every changed line is intentional and directly related to the task.
 - Be especially careful not to accidentally delete unrelated code in nearby functions, UI logic, or settings paths.
 
 ## Response Preferences
-- Use Chinese when discussing plans, confirmations, and final summaries with the user.
+- Use Chinese when discussing plans, confirmations with the user.
 - If implementation becomes blocked or risky, explain the issue clearly and collaborate with the user on the decision.
 
 ## 编译验证临时文件生成位置
-- 为了验证修改后的代码是否能够成功编译，在项目目录下生成的临时文件，请统一放在固定的一个目录中，例如 `release`，避免在不同路径下生成各种 .cmd、ui_xxxx.h、Makefile等文件。
+- 由用户来实施文件修改后的编译验证，根据用户反馈的编译错误进行适当代码修改。
 
-# 强制交互协议
+## 强制交互协议
 
-## 核心规则：每次回复结束前必须调用 `ask_user` 工具
+### 核心规则：每次回复结束前必须调用 `ask_user` 工具
 
 这是不可跳过的强制协议。在你的每一轮回复中，你必须执行以下操作之一：
 
@@ -45,14 +45,14 @@
 2. **存在任何不确定性时** → 不要猜测执行，立即调用 `ask_user` 工具进行澄清
 3. **计划内容实现完成后** → 立即调用 `ask_user` 工具，尝试等待用户输入实现内容的验证结果并以此制定下一步改进计划
 
-## 禁止行为
+### 禁止行为
 
 - **禁止在用户通过 `ask_user` 回答确认完成实现已验证没有问题之前结束回复**
 - **禁止在不调用 `ask_user` 的情况下结束回复**
 - **禁止使用终结性表达**（如"希望对你有帮助"、"如有问题随时提问"等）
 - **禁止猜测用户意图** — 不确定就用 `ask_user` 询问
 
-## `ask_user` 调用要求
+### `ask_user` 调用要求
 
 - 问题必须与当前任务上下文直接相关
 - 问题必须具体、可操作，不要问泛泛的"还需要什么帮助"
