@@ -39757,6 +39757,15 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     connect(mappingTableSetupAction, &QAction::triggered, this, [keymapper]() {
         keymapper->openCurrentMappingTableSetupDialog();
     });
+    // Add Floating Button Setup under the same group so users can open the
+    // floating button settings directly from the mapping table context menu.
+    QAction *floatingButtonSetupAction = contextMenu.addAction(tr("Floating Button Setup"));
+    connect(floatingButtonSetupAction, &QAction::triggered, this, [this, keymapper]() {
+        QTableWidgetItem *cur = currentItem();
+        if (cur != Q_NULLPTR) {
+            keymapper->showFloatingButtonSetupDialog(cur->row());
+        }
+    });
     hasPreviousGroup = true;
 
     // Group 2: Move selected rows

@@ -54,7 +54,7 @@
         <translation type="vanished">Do not show this message again</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.h" line="873"/>
+        <location filename="../qkeymapper.h" line="872"/>
         <source>OK</source>
         <translation>OK</translation>
     </message>
@@ -172,24 +172,24 @@
 <context>
     <name>GroupSelectionWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="40646"/>
-        <location filename="../qkeymapper.cpp" line="40769"/>
-        <location filename="../qkeymapper.cpp" line="40797"/>
-        <location filename="../qkeymapper.cpp" line="40824"/>
-        <location filename="../qkeymapper.cpp" line="40865"/>
-        <location filename="../qkeymapper.cpp" line="40889"/>
-        <location filename="../qkeymapper.cpp" line="40922"/>
-        <location filename="../qkeymapper.cpp" line="41032"/>
+        <location filename="../qkeymapper.cpp" line="40655"/>
+        <location filename="../qkeymapper.cpp" line="40778"/>
+        <location filename="../qkeymapper.cpp" line="40806"/>
+        <location filename="../qkeymapper.cpp" line="40833"/>
+        <location filename="../qkeymapper.cpp" line="40874"/>
+        <location filename="../qkeymapper.cpp" line="40898"/>
+        <location filename="../qkeymapper.cpp" line="40931"/>
+        <location filename="../qkeymapper.cpp" line="41041"/>
         <source>Select All</source>
         <translation>Select All</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40671"/>
+        <location filename="../qkeymapper.cpp" line="40680"/>
         <source>TopLevelGroup</source>
         <translation>GeneralSetting</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40674"/>
+        <location filename="../qkeymapper.cpp" line="40683"/>
         <source>GlobalKeyMapping</source>
         <translation>GlobalKeyMapping</translation>
     </message>
@@ -332,7 +332,7 @@
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="39113"/>
-        <location filename="../qkeymapper.cpp" line="39802"/>
+        <location filename="../qkeymapper.cpp" line="39811"/>
         <source>%1 selected mapping data copied.</source>
         <translation>%1 selected mapping data copied.</translation>
     </message>
@@ -365,6 +365,11 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <location filename="../qkeymapper.cpp" line="39756"/>
         <source>Mapping Table Setup</source>
         <translation>Mapping Table Setup</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="39762"/>
+        <source>Floating Button Setup</source>
+        <translation>Floating Button Setup</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="39750"/>
@@ -578,27 +583,27 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
 <context>
     <name>QFloatingButtonSetupDialog</name>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="417"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="503"/>
         <source>Label</source>
         <translation>Label</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="420"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="506"/>
         <source>Sync Pressed State</source>
         <translation>Sync Pressed State</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="422"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="508"/>
         <source>MousePassThrough</source>
         <translation>MousePassThrough</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="423"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="509"/>
         <source>MouseSwitchKey</source>
         <translation>PassThroughSwitch</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="425"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="511"/>
         <source>None</source>
         <translation>None</translation>
     </message>
@@ -607,27 +612,27 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <translation type="vanished">Supports Ctrl+drag and context menu Move.</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="438"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="524"/>
         <source>Width</source>
         <translation>Width</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="439"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="525"/>
         <source>Height</source>
         <translation>Height</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="440"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="526"/>
         <source>Font Size</source>
         <translation>Font Size</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="441"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="527"/>
         <source>Font Weight</source>
         <translation>Font Weight</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="443"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="529"/>
         <source>Radius</source>
         <translation>Radius</translation>
     </message>
@@ -636,57 +641,57 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <translation type="vanished">Opacity</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="449"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="535"/>
         <source>Ref Point</source>
         <translation>Ref Point</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="450"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="536"/>
         <source>Offset X</source>
         <translation>Offset X</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="451"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="537"/>
         <source>Offset Y</source>
         <translation>Offset Y</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="454"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="540"/>
         <source>Apply</source>
         <translation>Apply</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="457"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="543"/>
         <source>Revert</source>
         <translation>Restore</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="411"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="497"/>
         <source>Floating Button Setup</source>
         <translation>Floating Button Setup</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="435"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="521"/>
         <source> ms</source>
         <translation> ms</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="414"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="500"/>
         <source>Note</source>
         <translation>Note</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="416"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="502"/>
         <source>Enable Floating Button</source>
         <translation>Enable Floating Button</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="418"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="504"/>
         <source>Show on Mapping Start</source>
         <translation>Show on Mapping Start</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="419"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="505"/>
         <source>Show Tooltip</source>
         <translation>Show Tooltip</translation>
     </message>
@@ -695,7 +700,7 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <translation type="vanished">Sync Pressed State</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="421"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="507"/>
         <source>Always On Top</source>
         <translation>Always On Top</translation>
     </message>
@@ -704,284 +709,284 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <translation type="vanished">Ctrl+Drag to Move</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="413"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="499"/>
         <source>OriginalKey</source>
         <translation>OriginalKey</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="427"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="513"/>
         <source>Enable Drag to Move</source>
         <translation>Enable Drag to Move</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="428"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="514"/>
         <source>Supports Ctrl+drag. Context menu Move is always available.</source>
         <translation>Controls whether Ctrl+drag is supported. Context menu &quot;Move&quot; is always available.</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="429"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="515"/>
         <source>Enable Gradient Fill</source>
         <translation>Enable Gradient Fill</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="430"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="516"/>
         <source>Enable Hover Animation</source>
         <translation>Enable Hover Animation</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="431"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="517"/>
         <source>Hover Effect</source>
         <translation>Hover Effect</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="432"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="518"/>
         <source>Hover Glow</source>
         <translation>Hover Glow</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="433"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="519"/>
         <source>Hover Contrast</source>
         <translation>Hover Contrast</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="434"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="520"/>
         <source>Hover Duration</source>
         <translation>Hover Duration</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="436"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="522"/>
         <source>Style Code</source>
         <translation>Style Code</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="442"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="528"/>
         <source>Font Family</source>
         <translation>Font Family</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="444"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="530"/>
         <source>Border Width</source>
         <translation>Border Width</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="445"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="531"/>
         <source>Normal Opacity</source>
         <translation>Normal Opacity</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="446"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="532"/>
         <source>Pressed Opacity</source>
         <translation>Pressed Opacity</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="447"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="533"/>
         <source>Locked Opacity</source>
         <translation>Locked Opacity</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="460"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="546"/>
         <source>Default</source>
         <translation>Default</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="461"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="547"/>
         <source>Use application default font</source>
         <translation>Use application default font</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="464"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="550"/>
         <source>Copy Style Code</source>
         <translation>Copy Style Code</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="467"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="553"/>
         <source>Apply Clipboard Style Code</source>
         <translation>Apply Clipboard Style Code</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="802"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="888"/>
         <source>Generated automatically from Style Group settings</source>
         <translation>Generated automatically from Style Group settings</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="472"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="477"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="558"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="563"/>
         <source>Light</source>
         <translation>Light</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="473"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="478"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="559"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="564"/>
         <source>Normal</source>
         <translation>Normal</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="474"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="479"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="560"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="565"/>
         <source>Bold</source>
         <translation>Bold</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="484"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="490"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="570"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="576"/>
         <source>Auto</source>
         <translation>Auto</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="485"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="491"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="571"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="577"/>
         <source>Lighten</source>
         <translation>Lighten</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="486"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="492"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="572"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="578"/>
         <source>Darken</source>
         <translation>Darken</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="487"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="493"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="573"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="579"/>
         <source>Custom</source>
         <translation>Custom</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="496"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="582"/>
         <source>Empty = use original key name</source>
         <translation>Empty = use original key name</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="498"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="584"/>
         <source>BtnColor</source>
         <translation>BtnColor</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="499"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="585"/>
         <source>Floating Button Color</source>
         <translation>Floating Button Color</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="500"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="586"/>
         <source>PressedColor</source>
         <translation>PressedColor</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="501"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="587"/>
         <source>Floating Button Pressed Color</source>
         <translation>Floating Button Pressed Color</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="502"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="588"/>
         <source>LockedColor</source>
         <translation>LockedColor</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="503"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="589"/>
         <source>Floating Button Locked Color</source>
         <translation>Floating Button Locked Color</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="504"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="590"/>
         <source>TextColor</source>
         <translation>FontColor</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="505"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="591"/>
         <source>Floating Button Text Color</source>
         <translation>Floating Button Font Color</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="506"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="592"/>
         <source>BorderColor</source>
         <translation>BorderColor</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="507"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="593"/>
         <source>Floating Button Border Color</source>
         <translation>Floating Button Border Color</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="508"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="594"/>
         <source>HoverColor</source>
         <translation>HoverColor</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="509"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="595"/>
         <source>Floating Button Hover Color</source>
         <translation>Floating Button Hover Color</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="813"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="899"/>
         <source>Failed to generate floating button style code.</source>
         <translation>Failed to generate floating button style code.</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="820"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="906"/>
         <source>Floating button style code copied to clipboard.</source>
         <translation>Floating button style code copied to clipboard.</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="837"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="923"/>
         <source>Clipboard does not contain a floating button style code.</source>
         <translation>Clipboard does not contain a floating button style code.</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="893"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="979"/>
         <source>ScreenTopLeft</source>
         <translation>ScreenTopLeft</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="894"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="980"/>
         <source>ScreenTopRight</source>
         <translation>ScreenTopRight</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="895"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="981"/>
         <source>ScreenTopCenter</source>
         <translation>ScreenTopCenter</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="896"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="982"/>
         <source>ScreenBottomLeft</source>
         <translation>ScreenBottomLeft</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="897"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="983"/>
         <source>ScreenBottomRight</source>
         <translation>ScreenBottomRight</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="898"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="984"/>
         <source>ScreenBottomCenter</source>
         <translation>ScreenBottomCenter</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="899"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="985"/>
         <source>WindowTopLeft</source>
         <translation>WindowTopLeft</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="900"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="986"/>
         <source>WindowTopRight</source>
         <translation>WindowTopRight</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="901"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="987"/>
         <source>WindowTopCenter</source>
         <translation>WindowTopCenter</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="902"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="988"/>
         <source>WindowBottomLeft</source>
         <translation>WindowBottomLeft</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="903"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="989"/>
         <source>WindowBottomRight</source>
         <translation>WindowBottomRight</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="904"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="990"/>
         <source>WindowBottomCenter</source>
         <translation>WindowBottomCenter</translation>
     </message>
@@ -2028,7 +2033,7 @@ Update</translation>
     <message>
         <location filename="../qkeymapper.ui" line="657"/>
         <location filename="../qkeymapper.cpp" line="29293"/>
-        <location filename="../qkeymapper.cpp" line="40537"/>
+        <location filename="../qkeymapper.cpp" line="40546"/>
         <source>Select Custom Icon</source>
         <translation>Select Custom Icon</translation>
     </message>
@@ -2242,7 +2247,7 @@ Update</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29279"/>
-        <location filename="../qkeymapper.cpp" line="40407"/>
+        <location filename="../qkeymapper.cpp" line="40416"/>
         <source>Capture</source>
         <translation>Capture</translation>
     </message>
@@ -3324,12 +3329,12 @@ Right click the MappingKeyList to copy it to the clipboard.</translation>
         <translation>%1 Driver installation failed!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40535"/>
+        <location filename="../qkeymapper.cpp" line="40544"/>
         <source>Image files</source>
         <translation>Image files</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40581"/>
+        <location filename="../qkeymapper.cpp" line="40590"/>
         <source>Unable to load the image!</source>
         <translation>Unable to load the image file!</translation>
     </message>
@@ -3440,14 +3445,14 @@ Values must be within 0～255. Valid formats include [150] or [U=200,D=0,L=150,R
 Are you sure you do not want to automatically enable Filter Keys during the mapping process?</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40462"/>
+        <location filename="../qkeymapper.cpp" line="40471"/>
         <source>Total characters (without spaces) : %1
 </source>
         <translation>Total characters (without spaces) : %1
 </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40463"/>
+        <location filename="../qkeymapper.cpp" line="40472"/>
         <source>Total characters (with spaces) : %2
 </source>
         <translation>Total characters (with spaces) : %2
@@ -3580,7 +3585,7 @@ Are you sure you do not want to automatically enable Filter Keys during the mapp
         <location filename="../qkeymapper.ui" line="2410"/>
         <location filename="../qkeymapper.cpp" line="28388"/>
         <location filename="../qkeymapper.cpp" line="29282"/>
-        <location filename="../qkeymapper.cpp" line="40399"/>
+        <location filename="../qkeymapper.cpp" line="40408"/>
         <source>Edit</source>
         <translation>Edit</translation>
     </message>
@@ -3608,7 +3613,7 @@ Are you sure you do not want to automatically enable Filter Keys during the mapp
         <translation>Cannot move items while the mapping table is filtered!</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40265"/>
+        <location filename="../qkeymapper.cpp" line="40274"/>
         <source>Restore to absolute process path &quot;%1&quot;?</source>
         <translation>Restore to absolute process path &quot;%1&quot;?</translation>
     </message>
@@ -4086,8 +4091,8 @@ Do you confirm to continue installing Interception driver?</translation>
         <location filename="../qkeymapper.cpp" line="12513"/>
         <location filename="../qkeymapper.cpp" line="12525"/>
         <location filename="../qkeymapper.cpp" line="29285"/>
-        <location filename="../qkeymapper.cpp" line="40395"/>
-        <location filename="../qkeymapper.cpp" line="40424"/>
+        <location filename="../qkeymapper.cpp" line="40404"/>
+        <location filename="../qkeymapper.cpp" line="40433"/>
         <source>Press any key to record...</source>
         <translation>Please press keys to record...</translation>
     </message>
@@ -5124,70 +5129,70 @@ Do you want to overwrite them?</source>
         <translation> ms</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39768"/>
+        <location filename="../qkeymapper.cpp" line="39777"/>
         <location filename="../qmacrolistdialog.cpp" line="2085"/>
         <location filename="../qmappingsequenceedit.cpp" line="880"/>
         <source>Move Up</source>
         <translation>Move Up</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39773"/>
+        <location filename="../qkeymapper.cpp" line="39782"/>
         <location filename="../qmacrolistdialog.cpp" line="2090"/>
         <location filename="../qmappingsequenceedit.cpp" line="885"/>
         <source>Move Down</source>
         <translation>Move Down</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39778"/>
+        <location filename="../qkeymapper.cpp" line="39787"/>
         <location filename="../qmacrolistdialog.cpp" line="2095"/>
         <location filename="../qmappingsequenceedit.cpp" line="890"/>
         <source>Move to Top</source>
         <translation>Move to Top</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39783"/>
+        <location filename="../qkeymapper.cpp" line="39792"/>
         <location filename="../qmacrolistdialog.cpp" line="2100"/>
         <location filename="../qmappingsequenceedit.cpp" line="895"/>
         <source>Move to Bottom</source>
         <translation>Move to Bottom</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39798"/>
+        <location filename="../qkeymapper.cpp" line="39807"/>
         <location filename="../qmacrolistdialog.cpp" line="2115"/>
         <location filename="../qmappingsequenceedit.cpp" line="910"/>
         <source>Copy</source>
         <translation>Copy</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39809"/>
+        <location filename="../qkeymapper.cpp" line="39818"/>
         <location filename="../qmacrolistdialog.cpp" line="2138"/>
         <location filename="../qmappingsequenceedit.cpp" line="927"/>
         <source>Insert Copied Items at Top</source>
         <translation>Insert Copied Items at Top</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39816"/>
+        <location filename="../qkeymapper.cpp" line="39825"/>
         <location filename="../qmacrolistdialog.cpp" line="2144"/>
         <location filename="../qmappingsequenceedit.cpp" line="932"/>
         <source>Insert Copied Items at Bottom</source>
         <translation>Insert Copied Items at Bottom</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39828"/>
+        <location filename="../qkeymapper.cpp" line="39837"/>
         <location filename="../qmacrolistdialog.cpp" line="2155"/>
         <location filename="../qmappingsequenceedit.cpp" line="942"/>
         <source>Insert Copied Items Above</source>
         <translation>Insert Copied Items Above</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39835"/>
+        <location filename="../qkeymapper.cpp" line="39844"/>
         <location filename="../qmacrolistdialog.cpp" line="2161"/>
         <location filename="../qmappingsequenceedit.cpp" line="947"/>
         <source>Insert Copied Items Below</source>
         <translation>Insert Copied Items Below</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39851"/>
+        <location filename="../qkeymapper.cpp" line="39860"/>
         <location filename="../qmacrolistdialog.cpp" line="2178"/>
         <location filename="../qmappingsequenceedit.cpp" line="963"/>
         <source>Delete</source>
@@ -5205,7 +5210,7 @@ Do you want to overwrite them?</source>
         <translation>Replace</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="415"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="501"/>
         <location filename="../qitemsetupdialog.cpp" line="1495"/>
         <location filename="../qkeymapper.cpp" line="31169"/>
         <location filename="../qvbuttonpanel.cpp" line="188"/>
@@ -5888,61 +5893,61 @@ Right-click to cancel.</translation>
 <context>
     <name>SettingTransferDialog</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="41063"/>
-        <location filename="../qkeymapper.cpp" line="41200"/>
+        <location filename="../qkeymapper.cpp" line="41072"/>
+        <location filename="../qkeymapper.cpp" line="41209"/>
         <source>Setting Export</source>
         <translation>Setting Export</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41063"/>
-        <location filename="../qkeymapper.cpp" line="41190"/>
-        <location filename="../qkeymapper.cpp" line="41200"/>
+        <location filename="../qkeymapper.cpp" line="41072"/>
+        <location filename="../qkeymapper.cpp" line="41199"/>
+        <location filename="../qkeymapper.cpp" line="41209"/>
         <source>Setting Import</source>
         <translation>Setting Import</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41073"/>
+        <location filename="../qkeymapper.cpp" line="41082"/>
         <source>FileSelect</source>
         <translation>FileSelect</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41075"/>
+        <location filename="../qkeymapper.cpp" line="41084"/>
         <source>INI File:</source>
         <translation>INI File:</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41152"/>
+        <location filename="../qkeymapper.cpp" line="41161"/>
         <source>Select Export INI File</source>
         <translation>Select Export INI File</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41157"/>
+        <location filename="../qkeymapper.cpp" line="41166"/>
         <source>Select Import INI File</source>
         <translation>Select Import INI File</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41208"/>
+        <location filename="../qkeymapper.cpp" line="41217"/>
         <source>Please select one or more settings to export.</source>
         <translation>Please select one or more settings to export.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41211"/>
+        <location filename="../qkeymapper.cpp" line="41220"/>
         <source>Please select one or more settings to import.</source>
         <translation>Please select one or more settings to import.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41154"/>
-        <location filename="../qkeymapper.cpp" line="41159"/>
+        <location filename="../qkeymapper.cpp" line="41163"/>
+        <location filename="../qkeymapper.cpp" line="41168"/>
         <source>INI Files (*.ini)</source>
         <translation>INI Files (*.ini)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41190"/>
+        <location filename="../qkeymapper.cpp" line="41199"/>
         <source>No valid groups found in the selected INI file.</source>
         <translation>No valid settings found in the selected INI file.</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41202"/>
+        <location filename="../qkeymapper.cpp" line="41211"/>
         <source>Please select a INI file.</source>
         <translation>Please select a INI file.</translation>
     </message>

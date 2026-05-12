@@ -54,7 +54,7 @@
         <translation type="vanished">このメッセージを再表示しない</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.h" line="873"/>
+        <location filename="../qkeymapper.h" line="872"/>
         <source>OK</source>
         <translation>確認</translation>
     </message>
@@ -172,24 +172,24 @@
 <context>
     <name>GroupSelectionWidget</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="40646"/>
-        <location filename="../qkeymapper.cpp" line="40769"/>
-        <location filename="../qkeymapper.cpp" line="40797"/>
-        <location filename="../qkeymapper.cpp" line="40824"/>
-        <location filename="../qkeymapper.cpp" line="40865"/>
-        <location filename="../qkeymapper.cpp" line="40889"/>
-        <location filename="../qkeymapper.cpp" line="40922"/>
-        <location filename="../qkeymapper.cpp" line="41032"/>
+        <location filename="../qkeymapper.cpp" line="40655"/>
+        <location filename="../qkeymapper.cpp" line="40778"/>
+        <location filename="../qkeymapper.cpp" line="40806"/>
+        <location filename="../qkeymapper.cpp" line="40833"/>
+        <location filename="../qkeymapper.cpp" line="40874"/>
+        <location filename="../qkeymapper.cpp" line="40898"/>
+        <location filename="../qkeymapper.cpp" line="40931"/>
+        <location filename="../qkeymapper.cpp" line="41041"/>
         <source>Select All</source>
         <translation>すべて選択</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40671"/>
+        <location filename="../qkeymapper.cpp" line="40680"/>
         <source>TopLevelGroup</source>
         <translation>一般設定</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40674"/>
+        <location filename="../qkeymapper.cpp" line="40683"/>
         <source>GlobalKeyMapping</source>
         <translation>グローバルキーマッピング</translation>
     </message>
@@ -332,7 +332,7 @@
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="39113"/>
-        <location filename="../qkeymapper.cpp" line="39802"/>
+        <location filename="../qkeymapper.cpp" line="39811"/>
         <source>%1 selected mapping data copied.</source>
         <translation>選択したマッピングデータ %1 件をコピーしました。</translation>
     </message>
@@ -365,6 +365,11 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
         <location filename="../qkeymapper.cpp" line="39756"/>
         <source>Mapping Table Setup</source>
         <translation>マッピングテーブル設定</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="39762"/>
+        <source>Floating Button Setup</source>
+        <translation>フローティングボタン設定</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="39750"/>
@@ -578,27 +583,27 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
 <context>
     <name>QFloatingButtonSetupDialog</name>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="417"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="503"/>
         <source>Label</source>
         <translation>ラベル</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="420"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="506"/>
         <source>Sync Pressed State</source>
         <translation>押下状態を同期する</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="422"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="508"/>
         <source>MousePassThrough</source>
         <translation>マウス透過</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="423"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="509"/>
         <source>MouseSwitchKey</source>
         <translation>マウス透過切替キー</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="425"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="511"/>
         <source>None</source>
         <translation>なし</translation>
     </message>
@@ -607,27 +612,27 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
         <translation type="vanished">Ctrl+ドラッグ移動と右クリックメニューでの移動に対応しています。</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="438"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="524"/>
         <source>Width</source>
         <translation>幅</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="439"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="525"/>
         <source>Height</source>
         <translation>高さ</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="440"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="526"/>
         <source>Font Size</source>
         <translation>フォントサイズ</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="441"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="527"/>
         <source>Font Weight</source>
         <translation>フォント太さ</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="443"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="529"/>
         <source>Radius</source>
         <translation>角丸半径</translation>
     </message>
@@ -636,57 +641,57 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
         <translation type="vanished">不透明度</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="449"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="535"/>
         <source>Ref Point</source>
         <translation>位置基準点</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="450"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="536"/>
         <source>Offset X</source>
         <translation>位置 X</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="451"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="537"/>
         <source>Offset Y</source>
         <translation>位置 Y</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="454"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="540"/>
         <source>Apply</source>
         <translation>適用</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="457"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="543"/>
         <source>Revert</source>
         <translation>元に戻す</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="411"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="497"/>
         <source>Floating Button Setup</source>
         <translation>フローティングボタン設定</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="435"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="521"/>
         <source> ms</source>
         <translation> ミリ秒</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="414"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="500"/>
         <source>Note</source>
         <translation>メモ</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="416"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="502"/>
         <source>Enable Floating Button</source>
         <translation>フローティングボタンを有効にする</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="418"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="504"/>
         <source>Show on Mapping Start</source>
         <translation>マッピング開始時に表示</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="419"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="505"/>
         <source>Show Tooltip</source>
         <translation>ツールチップを表示する</translation>
     </message>
@@ -695,7 +700,7 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
         <translation type="vanished">押下状態を同期する</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="421"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="507"/>
         <source>Always On Top</source>
         <translation>常に最前面に表示</translation>
     </message>
@@ -704,284 +709,284 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
         <translation type="vanished">Ctrl＋ドラッグで移動</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="413"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="499"/>
         <source>OriginalKey</source>
         <translation>元キー</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="427"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="513"/>
         <source>Enable Drag to Move</source>
         <translation>ドラッグ移動を有効にする</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="428"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="514"/>
         <source>Supports Ctrl+drag. Context menu Move is always available.</source>
         <translation>Ctrl+ドラッグ移動の対応可否を制御します。右クリックメニューの「移動」は常に利用できます。</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="429"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="515"/>
         <source>Enable Gradient Fill</source>
         <translation>グラデーション塗りつぶしを有効化</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="430"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="516"/>
         <source>Enable Hover Animation</source>
         <translation>ホバーアニメーションを有効化</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="431"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="517"/>
         <source>Hover Effect</source>
         <translation>ホバー効果</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="432"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="518"/>
         <source>Hover Glow</source>
         <translation>ホバーグロー</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="433"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="519"/>
         <source>Hover Contrast</source>
         <translation>ホバーコントラスト</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="434"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="520"/>
         <source>Hover Duration</source>
         <translation>ホバー時間</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="436"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="522"/>
         <source>Style Code</source>
         <translation>スタイルコード</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="442"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="528"/>
         <source>Font Family</source>
         <translation>フォント</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="444"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="530"/>
         <source>Border Width</source>
         <translation>枠線の太さ</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="445"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="531"/>
         <source>Normal Opacity</source>
         <translation>通常の不透明度</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="446"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="532"/>
         <source>Pressed Opacity</source>
         <translation>押下の不透明度</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="447"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="533"/>
         <source>Locked Opacity</source>
         <translation>ロックの不透明度</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="460"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="546"/>
         <source>Default</source>
         <translation>デフォルト</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="461"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="547"/>
         <source>Use application default font</source>
         <translation>アプリのデフォルトフォントを使用する</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="464"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="550"/>
         <source>Copy Style Code</source>
         <translation>スタイルコードをコピー</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="467"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="553"/>
         <source>Apply Clipboard Style Code</source>
         <translation>スタイルコードを適用</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="802"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="888"/>
         <source>Generated automatically from Style Group settings</source>
         <translation>スタイルグループの設定から自動生成されました</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="472"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="477"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="558"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="563"/>
         <source>Light</source>
         <translation>ライト</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="473"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="478"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="559"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="564"/>
         <source>Normal</source>
         <translation>標準</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="474"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="479"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="560"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="565"/>
         <source>Bold</source>
         <translation>太字</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="484"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="490"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="570"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="576"/>
         <source>Auto</source>
         <translation>自動</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="485"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="491"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="571"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="577"/>
         <source>Lighten</source>
         <translation>明るく</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="486"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="492"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="572"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="578"/>
         <source>Darken</source>
         <translation>暗く</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="487"/>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="493"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="573"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="579"/>
         <source>Custom</source>
         <translation>カスタム</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="496"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="582"/>
         <source>Empty = use original key name</source>
         <translation>空欄の場合は元のキー名を使用</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="498"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="584"/>
         <source>BtnColor</source>
         <translation>ボタンの色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="499"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="585"/>
         <source>Floating Button Color</source>
         <translation>フローティングボタンの色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="500"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="586"/>
         <source>PressedColor</source>
         <translation>押下状態の色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="501"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="587"/>
         <source>Floating Button Pressed Color</source>
         <translation>フローティングボタンの押下状態の色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="502"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="588"/>
         <source>LockedColor</source>
         <translation>ロック状態の色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="503"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="589"/>
         <source>Floating Button Locked Color</source>
         <translation>フローティングボタンのロック状態の色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="504"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="590"/>
         <source>TextColor</source>
         <translation>文字色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="505"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="591"/>
         <source>Floating Button Text Color</source>
         <translation>フローティングボタンの文字色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="506"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="592"/>
         <source>BorderColor</source>
         <translation>枠線色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="507"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="593"/>
         <source>Floating Button Border Color</source>
         <translation>フローティングボタンの枠線色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="508"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="594"/>
         <source>HoverColor</source>
         <translation>ホバー色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="509"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="595"/>
         <source>Floating Button Hover Color</source>
         <translation>ローティングボタンのホバー色</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="813"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="899"/>
         <source>Failed to generate floating button style code.</source>
         <translation>フローティングボタンのスタイルコードの生成に失敗しました。</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="820"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="906"/>
         <source>Floating button style code copied to clipboard.</source>
         <translation>フローティングボタンのスタイルコードをクリップボードにコピーしました。</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="837"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="923"/>
         <source>Clipboard does not contain a floating button style code.</source>
         <translation>クリップボードにフローティングボタンのスタイルコードが含まれていません。</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="893"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="979"/>
         <source>ScreenTopLeft</source>
         <translation>画面左上</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="894"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="980"/>
         <source>ScreenTopRight</source>
         <translation>画面右上</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="895"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="981"/>
         <source>ScreenTopCenter</source>
         <translation>画面上中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="896"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="982"/>
         <source>ScreenBottomLeft</source>
         <translation>画面左下</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="897"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="983"/>
         <source>ScreenBottomRight</source>
         <translation>画面右下</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="898"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="984"/>
         <source>ScreenBottomCenter</source>
         <translation>画面下中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="899"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="985"/>
         <source>WindowTopLeft</source>
         <translation>ウィンドウ左上</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="900"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="986"/>
         <source>WindowTopRight</source>
         <translation>ウィンドウ右上</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="901"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="987"/>
         <source>WindowTopCenter</source>
         <translation>ウィンドウ上中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="902"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="988"/>
         <source>WindowBottomLeft</source>
         <translation>ウィンドウ左下</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="903"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="989"/>
         <source>WindowBottomRight</source>
         <translation>ウィンドウ右下</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="904"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="990"/>
         <source>WindowBottomCenter</source>
         <translation>ウィンドウ下中央</translation>
     </message>
@@ -2045,7 +2050,7 @@ Update</source>
     <message>
         <location filename="../qkeymapper.ui" line="657"/>
         <location filename="../qkeymapper.cpp" line="29293"/>
-        <location filename="../qkeymapper.cpp" line="40537"/>
+        <location filename="../qkeymapper.cpp" line="40546"/>
         <source>Select Custom Icon</source>
         <translation>カスタムアイコンを選択</translation>
     </message>
@@ -2384,7 +2389,7 @@ Update</source>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29279"/>
-        <location filename="../qkeymapper.cpp" line="40407"/>
+        <location filename="../qkeymapper.cpp" line="40416"/>
         <source>Capture</source>
         <translation>キャプチャ</translation>
     </message>
@@ -3309,12 +3314,12 @@ Right click the MappingKeyList to copy it to the clipboard.</source>
         <translation>%1 ドライバーのインストールに失敗しました！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40535"/>
+        <location filename="../qkeymapper.cpp" line="40544"/>
         <source>Image files</source>
         <translation>画像ファイル</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40581"/>
+        <location filename="../qkeymapper.cpp" line="40590"/>
         <source>Unable to load the image!</source>
         <translation>画像ファイルを読み込めませんでした！</translation>
     </message>
@@ -3375,14 +3380,14 @@ Right click the MappingKeyList to copy it to the clipboard.</source>
 マッピング中にフィルターキーを自動的に有効化しなくてもよろしいですか？</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40462"/>
+        <location filename="../qkeymapper.cpp" line="40471"/>
         <source>Total characters (without spaces) : %1
 </source>
         <translation>文字数(スペースを含まない) : %1
 </translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40463"/>
+        <location filename="../qkeymapper.cpp" line="40472"/>
         <source>Total characters (with spaces) : %2
 </source>
         <translation>文字数(スペースを含む) : %2
@@ -3530,7 +3535,7 @@ Right click the MappingKeyList to copy it to the clipboard.</source>
         <location filename="../qkeymapper.ui" line="2410"/>
         <location filename="../qkeymapper.cpp" line="28388"/>
         <location filename="../qkeymapper.cpp" line="29282"/>
-        <location filename="../qkeymapper.cpp" line="40399"/>
+        <location filename="../qkeymapper.cpp" line="40408"/>
         <source>Edit</source>
         <translation>キー編集</translation>
     </message>
@@ -3564,7 +3569,7 @@ Right click the MappingKeyList to copy it to the clipboard.</source>
         <translation>マッピングテーブルがフィルター表示されている場合、項目を移動できません！</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="40265"/>
+        <location filename="../qkeymapper.cpp" line="40274"/>
         <source>Restore to absolute process path &quot;%1&quot;?</source>
         <translation>プロセスの絶対パス「%1」に復元しますか？</translation>
     </message>
@@ -3579,8 +3584,8 @@ Right click the MappingKeyList to copy it to the clipboard.</source>
         <location filename="../qkeymapper.cpp" line="12513"/>
         <location filename="../qkeymapper.cpp" line="12525"/>
         <location filename="../qkeymapper.cpp" line="29285"/>
-        <location filename="../qkeymapper.cpp" line="40395"/>
-        <location filename="../qkeymapper.cpp" line="40424"/>
+        <location filename="../qkeymapper.cpp" line="40404"/>
+        <location filename="../qkeymapper.cpp" line="40433"/>
         <source>Press any key to record...</source>
         <translation>キーを押して記録してください...</translation>
     </message>
@@ -5128,70 +5133,70 @@ Do you want to overwrite them?</source>
         <translation> ミリ秒</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39768"/>
+        <location filename="../qkeymapper.cpp" line="39777"/>
         <location filename="../qmacrolistdialog.cpp" line="2085"/>
         <location filename="../qmappingsequenceedit.cpp" line="880"/>
         <source>Move Up</source>
         <translation>上へ移動</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39773"/>
+        <location filename="../qkeymapper.cpp" line="39782"/>
         <location filename="../qmacrolistdialog.cpp" line="2090"/>
         <location filename="../qmappingsequenceedit.cpp" line="885"/>
         <source>Move Down</source>
         <translation>下へ移動</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39778"/>
+        <location filename="../qkeymapper.cpp" line="39787"/>
         <location filename="../qmacrolistdialog.cpp" line="2095"/>
         <location filename="../qmappingsequenceedit.cpp" line="890"/>
         <source>Move to Top</source>
         <translation>先頭へ移動</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39783"/>
+        <location filename="../qkeymapper.cpp" line="39792"/>
         <location filename="../qmacrolistdialog.cpp" line="2100"/>
         <location filename="../qmappingsequenceedit.cpp" line="895"/>
         <source>Move to Bottom</source>
         <translation>末尾へ移動</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39798"/>
+        <location filename="../qkeymapper.cpp" line="39807"/>
         <location filename="../qmacrolistdialog.cpp" line="2115"/>
         <location filename="../qmappingsequenceedit.cpp" line="910"/>
         <source>Copy</source>
         <translation>コピー</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39809"/>
+        <location filename="../qkeymapper.cpp" line="39818"/>
         <location filename="../qmacrolistdialog.cpp" line="2138"/>
         <location filename="../qmappingsequenceedit.cpp" line="927"/>
         <source>Insert Copied Items at Top</source>
         <translation>コピー項目を先頭に挿入</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39816"/>
+        <location filename="../qkeymapper.cpp" line="39825"/>
         <location filename="../qmacrolistdialog.cpp" line="2144"/>
         <location filename="../qmappingsequenceedit.cpp" line="932"/>
         <source>Insert Copied Items at Bottom</source>
         <translation>コピー項目を末尾に挿入</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39828"/>
+        <location filename="../qkeymapper.cpp" line="39837"/>
         <location filename="../qmacrolistdialog.cpp" line="2155"/>
         <location filename="../qmappingsequenceedit.cpp" line="942"/>
         <source>Insert Copied Items Above</source>
         <translation>コピー項目を上に挿入</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39835"/>
+        <location filename="../qkeymapper.cpp" line="39844"/>
         <location filename="../qmacrolistdialog.cpp" line="2161"/>
         <location filename="../qmappingsequenceedit.cpp" line="947"/>
         <source>Insert Copied Items Below</source>
         <translation>コピー項目を下に挿入</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="39851"/>
+        <location filename="../qkeymapper.cpp" line="39860"/>
         <location filename="../qmacrolistdialog.cpp" line="2178"/>
         <location filename="../qmappingsequenceedit.cpp" line="963"/>
         <source>Delete</source>
@@ -5209,7 +5214,7 @@ Do you want to overwrite them?</source>
         <translation>置換</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="415"/>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="501"/>
         <location filename="../qitemsetupdialog.cpp" line="1495"/>
         <location filename="../qkeymapper.cpp" line="31169"/>
         <location filename="../qvbuttonpanel.cpp" line="188"/>
@@ -5892,61 +5897,61 @@ Right-click to cancel.</source>
 <context>
     <name>SettingTransferDialog</name>
     <message>
-        <location filename="../qkeymapper.cpp" line="41063"/>
-        <location filename="../qkeymapper.cpp" line="41200"/>
+        <location filename="../qkeymapper.cpp" line="41072"/>
+        <location filename="../qkeymapper.cpp" line="41209"/>
         <source>Setting Export</source>
         <translation>設定書き出す</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41063"/>
-        <location filename="../qkeymapper.cpp" line="41190"/>
-        <location filename="../qkeymapper.cpp" line="41200"/>
+        <location filename="../qkeymapper.cpp" line="41072"/>
+        <location filename="../qkeymapper.cpp" line="41199"/>
+        <location filename="../qkeymapper.cpp" line="41209"/>
         <source>Setting Import</source>
         <translation>設定読み込む</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41073"/>
+        <location filename="../qkeymapper.cpp" line="41082"/>
         <source>FileSelect</source>
         <translation>ファイル選択</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41075"/>
+        <location filename="../qkeymapper.cpp" line="41084"/>
         <source>INI File:</source>
         <translation>INI ファイル:</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41152"/>
+        <location filename="../qkeymapper.cpp" line="41161"/>
         <source>Select Export INI File</source>
         <translation>エクスポートするINIファイルを選択</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41157"/>
+        <location filename="../qkeymapper.cpp" line="41166"/>
         <source>Select Import INI File</source>
         <translation>インポートするINIファイルを選択</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41208"/>
+        <location filename="../qkeymapper.cpp" line="41217"/>
         <source>Please select one or more settings to export.</source>
         <translation>エクスポートする設定を1つ以上選択してください。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41211"/>
+        <location filename="../qkeymapper.cpp" line="41220"/>
         <source>Please select one or more settings to import.</source>
         <translation>インポートする設定を1つ以上選択してください。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41154"/>
-        <location filename="../qkeymapper.cpp" line="41159"/>
+        <location filename="../qkeymapper.cpp" line="41163"/>
+        <location filename="../qkeymapper.cpp" line="41168"/>
         <source>INI Files (*.ini)</source>
         <translation>INI ファイル (*.ini)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41190"/>
+        <location filename="../qkeymapper.cpp" line="41199"/>
         <source>No valid groups found in the selected INI file.</source>
         <translation>選択された INI ファイルに有効な設定が見つかりません。</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="41202"/>
+        <location filename="../qkeymapper.cpp" line="41211"/>
         <source>Please select a INI file.</source>
         <translation>INI ファイルを選択してください。</translation>
     </message>
