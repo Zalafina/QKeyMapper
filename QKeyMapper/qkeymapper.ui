@@ -80,9 +80,9 @@
    <property name="geometry">
     <rect>
      <x>970</x>
-     <y>395</y>
+     <y>386</y>
      <width>91</width>
-     <height>32</height>
+     <height>36</height>
     </rect>
    </property>
    <property name="focusPolicy">

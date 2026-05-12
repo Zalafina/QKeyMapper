@@ -29282,6 +29282,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     else {
         ui->originalKeyEditModeButton->setText(tr("Edit"));
     }
+    ui->originalKeyRecordCopyButton->setText(tr("Copy"));
     if (!ui->originalKeyRecordLineEdit->placeholderText().isEmpty()) {
         ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
     }

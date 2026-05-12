@@ -184,6 +184,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     else {
         ui->keyRecordEditModeButton->setText(tr("Edit"));
     }
+    ui->keyRecordCopyButton->setText(tr("Copy"));
     if (!ui->keyRecordLineEdit->placeholderText().isEmpty()) {
         ui->keyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
     }
