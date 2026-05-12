@@ -3,7 +3,6 @@
 #include <QFormLayout>
 #include <QFontComboBox>
 #include <QGroupBox>
-
 #include "qkeymapper.h"
 #include "qkeymapper_constants.h"
 
@@ -144,13 +143,37 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_MousePassThroughSwitchKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
     m_MousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
     m_StyleCodeLineEdit->setReadOnly(true);
-    m_StyleCodeLineEdit->setMinimumWidth(300);
+    m_StyleCodeLineEdit->setMinimumWidth(100);
     m_CopyStyleCodeButton->setAutoDefault(false);
     m_CopyStyleCodeButton->setDefault(false);
     m_ApplyClipboardStyleCodeButton->setAutoDefault(false);
     m_ApplyClipboardStyleCodeButton->setDefault(false);
 
     setupReferencePointComboBox();
+
+    m_LabelLineEdit->setFocusPolicy(Qt::ClickFocus);
+    m_MousePassThroughSwitchKeyComboBox->setFocusPolicy(Qt::ClickFocus);
+    m_ReferencePointComboBox->setFocusPolicy(Qt::ClickFocus);
+    m_WidthSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_HeightSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_FontSizeSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_FontWeightComboBox->setFocusPolicy(Qt::ClickFocus);
+    m_FontFamilyComboBox->setFocusPolicy(Qt::ClickFocus);
+    m_RadiusSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_BorderWidthSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_NormalOpacitySpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_PressedOpacitySpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_LockedOpacitySpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_HoverEffectStrengthSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_HoverGlowStrengthSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_HoverContrastModeComboBox->setFocusPolicy(Qt::ClickFocus);
+    m_HoverAnimationDurationSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_StyleCodeLineEdit->setFocusPolicy(Qt::ClickFocus);
+    m_OffsetXSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_OffsetYSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_FontFamilyDefaultButton->setFocusPolicy(Qt::NoFocus);
+    m_CopyStyleCodeButton->setFocusPolicy(Qt::NoFocus);
+    m_ApplyClipboardStyleCodeButton->setFocusPolicy(Qt::NoFocus);
 
     QWidget *styleCodeWidget = new QWidget(this);
     QHBoxLayout *styleCodeLayout = new QHBoxLayout(styleCodeWidget);
@@ -236,8 +259,10 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     styleGrid->addWidget(m_HoverAnimationDurationSpinBox, 5, 5);
 
     styleGrid->addWidget(m_HoverContrastModeLabel, 6, 0);
-    styleGrid->addWidget(m_HoverContrastModeComboBox, 6, 1, 1, 2);
-    styleGrid->addWidget(m_HoverCustomColorPicker, 6, 3, 1, 3);
+    // Keep the combo in a single control column so it matches other controls' width
+    styleGrid->addWidget(m_HoverContrastModeComboBox, 6, 1, 1, 1);
+    // Place the custom color picker immediately to the right of the combo
+    styleGrid->addWidget(m_HoverCustomColorPicker, 6, 2, 1, 3);
 
     QGridLayout *colorLayout = new QGridLayout();
     colorLayout->addWidget(m_ButtonColorPicker, 0, 0);
@@ -247,8 +272,66 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     colorLayout->addWidget(m_BorderColorPicker, 2, 0, 1, 2);
     styleGrid->addLayout(colorLayout, 7, 1, 1, 5);
 
-    styleGrid->addWidget(m_StyleCodeLabel, 8, 0);
-    styleGrid->addWidget(styleCodeWidget, 8, 1, 1, 5);
+    // Diagnostic: print current column min widths and stretch factors
+#ifdef DEBUG_LOGOUT_ON
+    for (int _col = 0; _col < 6; ++_col) {
+        qDebug() << "styleGrid BEFORE: col" << _col
+                 << "minWidth=" << styleGrid->columnMinimumWidth(_col)
+                 << "stretch=" << styleGrid->columnStretch(_col);
+    }
+#endif
+
+    // Minimal fix: make control columns stretchable so columns with SpinBox/
+    // ComboBox share remaining width evenly (cols 1,3,5). Keep label columns
+    // non-stretch (0,2,4) so labels remain compact.
+    styleGrid->setColumnStretch(0, 0);
+    styleGrid->setColumnStretch(1, 1);
+    styleGrid->setColumnStretch(2, 0);
+    styleGrid->setColumnStretch(3, 1);
+    styleGrid->setColumnStretch(4, 0);
+    styleGrid->setColumnStretch(5, 1);
+    styleGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    // Ensure controls that live in the "control" columns (1,3,5) expand
+    // when those columns receive extra space. This makes SpinBox/ComboBox
+    // width behavior consistent across rows.
+    QWidget *expandWidgets[] = { m_WidthSpinBox, m_HeightSpinBox, m_BorderWidthSpinBox,
+                                 m_RadiusSpinBox, m_NormalOpacitySpinBox, m_PressedOpacitySpinBox,
+                                 m_LockedOpacitySpinBox, m_FontSizeSpinBox, m_FontWeightComboBox,
+                                 m_FontFamilyComboBox, m_HoverEffectStrengthSpinBox, m_HoverGlowStrengthSpinBox,
+                                 m_HoverAnimationDurationSpinBox };
+    for (QWidget *w : expandWidgets) {
+        if (w != Q_NULLPTR) {
+            w->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        }
+    }
+
+    // Put the Style Code row into a full-width container so its horizontal
+    // layout is independent from the grid columns. This keeps the label
+    // flush-left and the action buttons flush-right while the LineEdit
+    // in the middle expands when the dialog is resized.
+    QWidget *styleCodeFullRow = new QWidget(this);
+    QHBoxLayout *styleCodeFullLayout = new QHBoxLayout(styleCodeFullRow);
+    styleCodeFullLayout->setContentsMargins(0, 0, 0, 0);
+    styleCodeFullLayout->setSpacing(6);
+    styleCodeFullLayout->addWidget(m_StyleCodeLabel);
+    styleCodeFullLayout->addWidget(styleCodeWidget, 1);
+    styleCodeFullRow->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    styleGrid->addWidget(styleCodeFullRow, 8, 0, 1, 6);
+
+    // Diagnostic: print grid state and size policies after adding the full-row
+#ifdef DEBUG_LOGOUT_ON
+    for (int _col = 0; _col < 6; ++_col) {
+        qDebug() << "styleGrid AFTER: col" << _col
+                 << "minWidth=" << styleGrid->columnMinimumWidth(_col)
+                 << "stretch=" << styleGrid->columnStretch(_col);
+    }
+    qDebug() << "styleGroup sizePolicy=" << styleGroup->sizePolicy()
+             << "styleCodeFullRow sizePolicy=" << styleCodeFullRow->sizePolicy()
+             << "styleCodeWidget sizePolicy=" << styleCodeWidget->sizePolicy()
+             << "m_StyleCodeLineEdit minW=" << m_StyleCodeLineEdit->minimumWidth()
+             << "lineEdit sizePolicy=" << m_StyleCodeLineEdit->sizePolicy();
+#endif
 
     QGroupBox *positionGroup = new QGroupBox(this);
     QGridLayout *positionGrid = new QGridLayout(positionGroup);
@@ -268,6 +351,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_ApplyButton->setAutoDefault(false);
     m_RevertButton->setDefault(false);
     m_RevertButton->setAutoDefault(false);
+    m_ApplyButton->setFocusPolicy(Qt::NoFocus);
+    m_RevertButton->setFocusPolicy(Qt::NoFocus);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(m_InfoGroup);
