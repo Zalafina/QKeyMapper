@@ -158,6 +158,7 @@ private slots:
     void on_floatingButtonSetupButton_clicked();
     void on_fixedVKeyCodeSpinBox_valueChanged(int value);
     void on_keyRecordEditModeButton_clicked();
+    void on_keyRecordCopyButton_clicked();
     void on_keyRecordLineEdit_textChanged(const QString &text);
     void on_itemNoteLineEdit_textChanged(const QString &text);
     void OrikeyComboBox_currentTextChangedSlot(const QString &text);

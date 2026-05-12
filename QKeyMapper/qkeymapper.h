@@ -1626,6 +1626,8 @@ private slots:
 
     void on_originalKeyEditModeButton_clicked();
 
+    void on_originalKeyRecordCopyButton_clicked();
+
     void on_originalKeyRecordLineEdit_textChanged(const QString &text);
 
     void on_themeComboBox_currentIndexChanged(int index);

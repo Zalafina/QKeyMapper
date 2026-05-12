@@ -3837,6 +3837,28 @@ void QItemSetupDialog::on_keyRecordEditModeButton_clicked()
         ui->keyRecordLineEdit->setCursorPosition(ui->keyRecordLineEdit->text().length());
         ui->keyRecordEditModeButton->setText(tr("Capture"));
     }
+
+    ui->keyRecordCopyButton->setEnabled(m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_CAPTURE);
+}
+
+void QItemSetupDialog::on_keyRecordCopyButton_clicked()
+{
+    if (m_ItemSetupKeyRecordEditMode != KEYRECORD_EDITMODE_CAPTURE) {
+        return;
+    }
+
+    const QString recordText = ui->keyRecordLineEdit->text();
+    if (recordText.isEmpty()) {
+        return;
+    }
+
+    QKeyMapper::copyStringToClipboard(recordText);
+
+    constexpr int popupTextElideWidth = 320;
+    const QString displayText = ui->keyRecordLineEdit->fontMetrics().elidedText(recordText, Qt::ElideMiddle, popupTextElideWidth);
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->showInformationPopup(tr("%1 copied to clipboard.").arg(QString("\"%1\"").arg(displayText)));
+    }
 }
 
 void QItemSetupDialog::on_keyRecordLineEdit_textChanged(const QString &text)

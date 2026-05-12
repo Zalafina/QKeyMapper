@@ -1037,6 +1037,25 @@ Update</string>
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
+  <widget class="QPushButton" name="keyRecordCopyButton">
+   <property name="geometry">
+    <rect>
+     <x>545</x>
+     <y>175</y>
+     <width>76</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Copy</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
  </widget>
  <customwidgets>
   <customwidget>

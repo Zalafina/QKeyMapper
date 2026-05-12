@@ -23334,6 +23334,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // m_originalKeySeqEdit->setEnabled(status);
     ui->originalKeyRecordLineEdit->setEnabled(status);
     ui->originalKeyEditModeButton->setEnabled(status);
+    ui->originalKeyRecordCopyButton->setEnabled(status && m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE);
     ui->sendTextPlainTextEdit->setEnabled(status);
     ui->mapkeyLabel->setEnabled(status);
     ui->orikeyComboBox->setEnabled(status);
@@ -40415,6 +40416,26 @@ void QKeyMapper::on_originalKeyEditModeButton_clicked()
         ui->originalKeyRecordLineEdit->setCursorPosition(ui->originalKeyRecordLineEdit->text().length());
         ui->originalKeyEditModeButton->setText(tr("Capture"));
     }
+
+    ui->originalKeyRecordCopyButton->setEnabled(m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE);
+}
+
+void QKeyMapper::on_originalKeyRecordCopyButton_clicked()
+{
+    if (m_OriginalKeyEditMode != KEYRECORD_EDITMODE_CAPTURE) {
+        return;
+    }
+
+    const QString recordText = ui->originalKeyRecordLineEdit->text();
+    if (recordText.isEmpty()) {
+        return;
+    }
+
+    copyStringToClipboard(recordText);
+
+    constexpr int popupTextElideWidth = 320;
+    const QString displayText = ui->originalKeyRecordLineEdit->fontMetrics().elidedText(recordText, Qt::ElideMiddle, popupTextElideWidth);
+    showInformationPopup(tr("%1 copied to clipboard.").arg(QString("\"%1\"").arg(displayText)));
 }
 
 void QKeyMapper::on_originalKeyRecordLineEdit_textChanged(const QString &text)
