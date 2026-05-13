@@ -6443,6 +6443,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
             static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
             static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK);
+            static QRegularExpression keysequencetoggle_regex(REGEX_PATTERN_KEYSEQUENCETOGGLE);
+            static QRegularExpression keysequencepause_regex(REGEX_PATTERN_KEYSEQUENCEPAUSE);
+            static QRegularExpression keysequencecontinue_regex(REGEX_PATTERN_KEYSEQUENCECONTINUE);
             static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
             static QRegularExpression showfbutton_regex(REGEX_PATTERN_SHOWFBUTTON);
             static QRegularExpression hidefbutton_regex(REGEX_PATTERN_HIDEFBUTTON);
@@ -6455,6 +6458,9 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(mapping_key);
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(mapping_key);
             QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(mapping_key);
+            QRegularExpressionMatch keysequencetoggle_match = keysequencetoggle_regex.match(mapping_key);
+            QRegularExpressionMatch keysequencepause_match = keysequencepause_regex.match(mapping_key);
+            QRegularExpressionMatch keysequencecontinue_match = keysequencecontinue_regex.match(mapping_key);
             QRegularExpressionMatch unlock_match = unlock_regex.match(mapping_key);
             QRegularExpressionMatch showfbutton_match = showfbutton_regex.match(mapping_key);
             QRegularExpressionMatch hidefbutton_match = hidefbutton_regex.match(mapping_key);
@@ -6680,28 +6686,43 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 || switchtab_match.hasMatch()) {
                 result.isValid = true;
             }
-            else if (keysequencebreak_match.hasMatch()) {
-                // Validate KeySequenceBreak(...) mapping key
-                QString fullKey = keysequencebreak_match.captured(1);        // Full key string (e.g., "L-Ctrl+1", "R✖500", "Y+B⏲500")
-                QString baseKey = keysequencebreak_match.captured(2);        // Base key without suffix
-                QString suffix = keysequencebreak_match.captured(3);         // Suffix marker (✖ or ⏲)
-                QString timeString = keysequencebreak_match.captured(4);     // Suffix time digits (for ✖/⏲)
-                Q_UNUSED(fullKey);
-                Q_UNUSED(suffix);
+            else if (keysequencebreak_match.hasMatch()
+                || keysequencetoggle_match.hasMatch()
+                || keysequencepause_match.hasMatch()
+                || keysequencecontinue_match.hasMatch()) {
+                QString functionName;
+                QRegularExpressionMatch keySequenceControlMatch;
+                if (keysequencebreak_match.hasMatch()) {
+                    functionName = KEYSEQUENCEBREAK_STR;
+                    keySequenceControlMatch = keysequencebreak_match;
+                }
+                else if (keysequencetoggle_match.hasMatch()) {
+                    functionName = KEYSEQUENCETOGGLE_STR;
+                    keySequenceControlMatch = keysequencetoggle_match;
+                }
+                else if (keysequencepause_match.hasMatch()) {
+                    functionName = KEYSEQUENCEPAUSE_STR;
+                    keySequenceControlMatch = keysequencepause_match;
+                }
+                else {
+                    functionName = KEYSEQUENCECONTINUE_STR;
+                    keySequenceControlMatch = keysequencecontinue_match;
+                }
 
-                // Validate that the base key is a valid original key (aligned with Unlock(...))
+                QString baseKey = keySequenceControlMatch.captured(2);
+                QString timeString = keySequenceControlMatch.captured(4);
+
                 ValidationResult baseKeyValidation = validateUnlockOriginalKeyString(baseKey);
                 if (!baseKeyValidation.isValid) {
                     result.isValid = false;
-                    result.errorMessage = tr("Invalid key in KeySequenceBreak(...): %1").arg(baseKeyValidation.errorMessage);
+                    result.errorMessage = tr("Invalid key in %1(...): %2").arg(functionName, baseKeyValidation.errorMessage);
                 }
                 else if (!timeString.isEmpty()) {
-                    // Validate ⏲ time parameter using the same rules as validateSingleOriginalKey
                     bool ok;
                     int pressTime = timeString.toInt(&ok);
                     if (!ok || pressTime < PRESSTIME_MIN || pressTime > PRESSTIME_MAX || timeString.startsWith('0')) {
                         result.isValid = false;
-                        result.errorMessage = tr("Invalid press time in KeySequenceBreak(...): \"%1\"").arg(timeString);
+                        result.errorMessage = tr("Invalid press time in %1(...): \"%2\"").arg(functionName, timeString);
                     }
                 }
             }
@@ -7059,6 +7080,9 @@ QString QKeyMapper::getTrimmedMappingKeyString(const QString &mappingkeystr)
     static QRegularExpression run_regex(REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
+    static QRegularExpression keysequencetoggle_regex(REGEX_PATTERN_KEYSEQUENCETOGGLE_FIND);
+    static QRegularExpression keysequencepause_regex(REGEX_PATTERN_KEYSEQUENCEPAUSE_FIND);
+    static QRegularExpression keysequencecontinue_regex(REGEX_PATTERN_KEYSEQUENCECONTINUE_FIND);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression showfbutton_regex(REGEX_PATTERN_SHOWFBUTTON_FIND);
     static QRegularExpression hidefbutton_regex(REGEX_PATTERN_HIDEFBUTTON_FIND);
@@ -7066,13 +7090,16 @@ QString QKeyMapper::getTrimmedMappingKeyString(const QString &mappingkeystr)
     static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE_FIND);
     static QRegularExpression macro_regex(REGEX_PATTERN_MACRO_FIND);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), KeySequenceBreak(...), Unlock(...), ShowFButton(...), HideFButton(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
+    // Extract SendText(...), Run(...), SwitchTab(...), KeySequence controls, Unlock(...), ShowFButton(...), HideFButton(...), SetVolume(...), Repeat{...}x..., and Macro(...) content to preserve them
     QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(
         mappingkeystr,
         sendtext_regex,
         run_regex,
         switchtab_regex,
         keysequencebreak_regex,
+        keysequencetoggle_regex,
+        keysequencepause_regex,
+        keysequencecontinue_regex,
         unlock_regex,
         showfbutton_regex,
         hidefbutton_regex,
@@ -32546,16 +32573,17 @@ void QKeyMapper::on_addmapdataButton_clicked()
                 return;
             }
         }
-        else if (currentMapKeyText == KEYSEQUENCEBREAK_STR) {
-            // Support both:
-            // - KeySequenceBreak            -> break all running key sequences
-            // - KeySequenceBreak(oriKey)    -> break a specific original key's running key sequence
+        else if (currentMapKeyText == KEYSEQUENCEBREAK_STR
+            || currentMapKeyText == KEYSEQUENCETOGGLE_STR
+            || currentMapKeyText == KEYSEQUENCEPAUSE_STR
+            || currentMapKeyText == KEYSEQUENCECONTINUE_STR) {
+            // Support both bare global controls and targeted KeySequenceControl(oriKey) forms.
             // The parameter normalization is aligned with Unlock(...): simplified + remove whitespace.
-            QString break_key = ui->sendTextPlainTextEdit->toPlainText();
-            break_key = break_key.simplified();
-            break_key.remove(whitespace_reg);
-            if (!break_key.isEmpty()) {
-                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, break_key);
+            QString target_key = ui->sendTextPlainTextEdit->toPlainText();
+            target_key = target_key.simplified();
+            target_key.remove(whitespace_reg);
+            if (!target_key.isEmpty()) {
+                currentMapKeyText = QString("%1(%2)").arg(currentMapKeyText, target_key);
             }
         }
         else if (currentMapKeyText == SHOWFBUTTON_STR || currentMapKeyText == HIDEFBUTTON_STR) {

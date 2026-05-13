@@ -1443,17 +1443,23 @@ namespace QKeyMapperConstants {
     // Pattern for finding HideFButton( and the first ) parts in a composite string (non-greedy matching)
     inline constexpr const char REGEX_PATTERN_HIDEFBUTTON_FIND[] = R"(HideFButton\((([^✖⏲)]+?)(✖|⏲(\d+))?)\))";
 
-    // Pattern for matching KeySequenceBreak(...) mapping keys
-    // Matches: KeySequenceBreak(L-Ctrl+1), KeySequenceBreak(F3), KeySequenceBreak(R✖500), KeySequenceBreak(Y+B⏲500)
-    // Does not match: KeySequenceBreak(R✖), KeySequenceBreak(Y+B⏲)
+    // Pattern for matching targeted KeySequence control mapping keys
+    // Matches: KeySequenceBreak(L-Ctrl+1), KeySequenceToggle(F3), KeySequencePause(R✖500), KeySequenceContinue(Y+B⏲500)
+    // Does not match: KeySequenceBreak(R✖), KeySequencePause(Y+B⏲)
     // Note: Bracket form supports the same normalized key rules as Unlock(...).
     //       Suffix markers (✖/⏲) must include a numeric time postfix; numeric range validation is done by application logic.
     // Capture groups: (1) = full key string, (2) = base key without suffix, (3) = suffix marker (✖|⏲), (4) = suffix time digits
     inline constexpr const char REGEX_PATTERN_KEYSEQUENCEBREAK[] = R"(^KeySequenceBreak\((([^✖⏲)]+)(?:(✖|⏲)(\d+))?)\)$)";
+    inline constexpr const char REGEX_PATTERN_KEYSEQUENCETOGGLE[] = R"(^KeySequenceToggle\((([^✖⏲)]+)(?:(✖|⏲)(\d+))?)\)$)";
+    inline constexpr const char REGEX_PATTERN_KEYSEQUENCEPAUSE[] = R"(^KeySequencePause\((([^✖⏲)]+)(?:(✖|⏲)(\d+))?)\)$)";
+    inline constexpr const char REGEX_PATTERN_KEYSEQUENCECONTINUE[] = R"(^KeySequenceContinue\((([^✖⏲)]+)(?:(✖|⏲)(\d+))?)\)$)";
 
-    // Pattern for finding KeySequenceBreak( and the first ) parts in a composite string (non-greedy matching)
-    // Only the bracket form is protected; bare "KeySequenceBreak" remains unaffected.
+    // Pattern for finding targeted KeySequence control mappings in a composite string (non-greedy matching)
+    // Only the bracket form is protected; bare control keywords remain unaffected.
     inline constexpr const char REGEX_PATTERN_KEYSEQUENCEBREAK_FIND[] = R"(KeySequenceBreak\((([^✖⏲)]+?)(?:(✖|⏲)(\d+))?)\))";
+    inline constexpr const char REGEX_PATTERN_KEYSEQUENCETOGGLE_FIND[] = R"(KeySequenceToggle\((([^✖⏲)]+?)(?:(✖|⏲)(\d+))?)\))";
+    inline constexpr const char REGEX_PATTERN_KEYSEQUENCEPAUSE_FIND[] = R"(KeySequencePause\((([^✖⏲)]+?)(?:(✖|⏲)(\d+))?)\))";
+    inline constexpr const char REGEX_PATTERN_KEYSEQUENCECONTINUE_FIND[] = R"(KeySequenceContinue\((([^✖⏲)]+?)(?:(✖|⏲)(\d+))?)\))";
 
     // Pattern for matching SetVolume(...) and SetMicVolume(...) mapping keys
     // Valid matches: SetVolume(50), SetVolume🔊(50), SetMicVolume(50), SetMicVolume🎤(50)

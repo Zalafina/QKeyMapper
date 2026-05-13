@@ -2558,6 +2558,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     static QRegularExpression runcmd_regex(REGEX_PATTERN_RUN);
     static QRegularExpression switchtab_regex(REGEX_PATTERN_SWITCHTAB);
     static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK);
+    static QRegularExpression keysequencetoggle_regex(REGEX_PATTERN_KEYSEQUENCETOGGLE);
+    static QRegularExpression keysequencepause_regex(REGEX_PATTERN_KEYSEQUENCEPAUSE);
+    static QRegularExpression keysequencecontinue_regex(REGEX_PATTERN_KEYSEQUENCECONTINUE);
     static QRegularExpression unlock_regex(REGEX_PATTERN_UNLOCK);
     static QRegularExpression showfbutton_regex(REGEX_PATTERN_SHOWFBUTTON);
     static QRegularExpression hidefbutton_regex(REGEX_PATTERN_HIDEFBUTTON);
@@ -2848,6 +2851,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
             QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(key);
+            QRegularExpressionMatch keysequencetoggle_match = keysequencetoggle_regex.match(key);
+            QRegularExpressionMatch keysequencepause_match = keysequencepause_regex.match(key);
+            QRegularExpressionMatch keysequencecontinue_match = keysequencecontinue_regex.match(key);
             QRegularExpressionMatch unlock_match = unlock_regex.match(key);
             QRegularExpressionMatch showfbutton_match = showfbutton_regex.match(key);
             QRegularExpressionMatch hidefbutton_match = hidefbutton_regex.match(key);
@@ -2865,8 +2871,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                      || key == KEYSEQUENCETOGGLE_STR
                      || key == KEYSEQUENCEPAUSE_STR
                      || key == KEYSEQUENCECONTINUE_STR
-                     || keysequencebreak_match.hasMatch()) {
-                /* KeySequenceBreak/Pause/Continue/Toggle KeyUp do nothing. */
+                     || keysequencebreak_match.hasMatch()
+                     || keysequencetoggle_match.hasMatch()
+                     || keysequencepause_match.hasMatch()
+                     || keysequencecontinue_match.hasMatch()) {
+                 /* KeySequenceBreak/Toggle/Pause/Continue KeyUp do nothing. */
             }
             else if (key == KEY_RECORD_TOGGLE_MAPPING_STR
                      || key == KEY_RECORD_START_MAPPING_STR
@@ -3496,6 +3505,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QRegularExpressionMatch runcmd_match = runcmd_regex.match(key);
                 QRegularExpressionMatch switchtab_match = switchtab_regex.match(key);
                 QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(key);
+                QRegularExpressionMatch keysequencetoggle_match = keysequencetoggle_regex.match(key);
+                QRegularExpressionMatch keysequencepause_match = keysequencepause_regex.match(key);
+                QRegularExpressionMatch keysequencecontinue_match = keysequencecontinue_regex.match(key);
                 QRegularExpressionMatch unlock_match = unlock_regex.match(key);
                 QRegularExpressionMatch showfbutton_match = showfbutton_regex.match(key);
                 QRegularExpressionMatch hidefbutton_match = hidefbutton_regex.match(key);
@@ -3554,6 +3566,27 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     break_key = break_key.simplified();
                     break_key.remove(whitespace_reg);
                     breakRunningKeySequence(break_key);
+                }
+                else if (keysequencetoggle_match.hasMatch()) {
+                    static QRegularExpression whitespace_reg(R"(\s+)");
+                    QString toggle_key = keysequencetoggle_match.captured(1);
+                    toggle_key = toggle_key.simplified();
+                    toggle_key.remove(whitespace_reg);
+                    toggleRunningKeySequence(toggle_key);
+                }
+                else if (keysequencepause_match.hasMatch()) {
+                    static QRegularExpression whitespace_reg(R"(\s+)");
+                    QString pause_key = keysequencepause_match.captured(1);
+                    pause_key = pause_key.simplified();
+                    pause_key.remove(whitespace_reg);
+                    pauseRunningKeySequence(pause_key);
+                }
+                else if (keysequencecontinue_match.hasMatch()) {
+                    static QRegularExpression whitespace_reg(R"(\s+)");
+                    QString continue_key = keysequencecontinue_match.captured(1);
+                    continue_key = continue_key.simplified();
+                    continue_key.remove(whitespace_reg);
+                    continueRunningKeySequence(continue_key);
                 }
                 else if (sendtext_match.hasMatch()) {
                     QString functionName = sendtext_match.captured(1);  // "SendText" or "PasteText"
@@ -4653,7 +4686,13 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
         }
 
         static QRegularExpression keysequencebreak_regex(REGEX_PATTERN_KEYSEQUENCEBREAK);
+        static QRegularExpression keysequencetoggle_regex(REGEX_PATTERN_KEYSEQUENCETOGGLE);
+        static QRegularExpression keysequencepause_regex(REGEX_PATTERN_KEYSEQUENCEPAUSE);
+        static QRegularExpression keysequencecontinue_regex(REGEX_PATTERN_KEYSEQUENCECONTINUE);
         QRegularExpressionMatch keysequencebreak_match = keysequencebreak_regex.match(mappingkeys_str);
+        QRegularExpressionMatch keysequencetoggle_match = keysequencetoggle_regex.match(mappingkeys_str);
+        QRegularExpressionMatch keysequencepause_match = keysequencepause_regex.match(mappingkeys_str);
+        QRegularExpressionMatch keysequencecontinue_match = keysequencecontinue_regex.match(mappingkeys_str);
         if (keysequencebreak_match.hasMatch()) {
             if (keyupdown == KEY_DOWN) {
                 // Normalization is aligned with Unlock(...): simplified + remove whitespace.
@@ -4662,6 +4701,36 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
                 break_key = break_key.simplified();
                 break_key.remove(whitespace_reg);
                 breakRunningKeySequence(break_key);
+            }
+            return;
+        }
+        if (keysequencetoggle_match.hasMatch()) {
+            if (keyupdown == KEY_DOWN) {
+                static QRegularExpression whitespace_reg(R"(\s+)");
+                QString toggle_key = keysequencetoggle_match.captured(1);
+                toggle_key = toggle_key.simplified();
+                toggle_key.remove(whitespace_reg);
+                toggleRunningKeySequence(toggle_key);
+            }
+            return;
+        }
+        if (keysequencepause_match.hasMatch()) {
+            if (keyupdown == KEY_DOWN) {
+                static QRegularExpression whitespace_reg(R"(\s+)");
+                QString pause_key = keysequencepause_match.captured(1);
+                pause_key = pause_key.simplified();
+                pause_key.remove(whitespace_reg);
+                pauseRunningKeySequence(pause_key);
+            }
+            return;
+        }
+        if (keysequencecontinue_match.hasMatch()) {
+            if (keyupdown == KEY_DOWN) {
+                static QRegularExpression whitespace_reg(R"(\s+)");
+                QString continue_key = keysequencecontinue_match.captured(1);
+                continue_key = continue_key.simplified();
+                continue_key.remove(whitespace_reg);
+                continueRunningKeySequence(continue_key);
             }
             return;
         }
@@ -19186,6 +19255,9 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     static QRegularExpression run_regex(QKeyMapperConstants::REGEX_PATTERN_RUN_FIND);
     static QRegularExpression switchtab_regex(QKeyMapperConstants::REGEX_PATTERN_SWITCHTAB_FIND);
     static QRegularExpression keysequencebreak_regex(QKeyMapperConstants::REGEX_PATTERN_KEYSEQUENCEBREAK_FIND);
+    static QRegularExpression keysequencetoggle_regex(QKeyMapperConstants::REGEX_PATTERN_KEYSEQUENCETOGGLE_FIND);
+    static QRegularExpression keysequencepause_regex(QKeyMapperConstants::REGEX_PATTERN_KEYSEQUENCEPAUSE_FIND);
+    static QRegularExpression keysequencecontinue_regex(QKeyMapperConstants::REGEX_PATTERN_KEYSEQUENCECONTINUE_FIND);
     static QRegularExpression unlock_regex(QKeyMapperConstants::REGEX_PATTERN_UNLOCK_FIND);
     static QRegularExpression showfbutton_regex(QKeyMapperConstants::REGEX_PATTERN_SHOWFBUTTON_FIND);
     static QRegularExpression hidefbutton_regex(QKeyMapperConstants::REGEX_PATTERN_HIDEFBUTTON_FIND);
@@ -19197,7 +19269,7 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
     // Capture groups: 1=prefix, 2=keyname, 3=bracket_value, 4=range_min, 5=range_max, 6=fixed_time
     static QRegularExpression mapkey_regex(QKeyMapperConstants::REGEX_PATTERN_MAPKEY_WITH_PUSHLEVEL);
 
-    // Extract SendText(...), Run(...), SwitchTab(...), Unlock(...), ShowFButton(...), HideFButton(...), SetVolume(...), Repeat{...}x..., OnlyOnce{...}x..., and Macro(...) to preserve them during splitting
+    // Extract SendText(...), Run(...), SwitchTab(...), KeySequence controls, Unlock(...), ShowFButton(...), HideFButton(...), SetVolume(...), Repeat{...}x..., OnlyOnce{...}x..., and Macro(...) to preserve them during splitting
     // Note: Repeat/OnlyOnce and Macro patterns need to be preserved as whole patterns to avoid splitting by internal separators (»)
     QPair<QString, QStringList> extractResult = QItemSetupDialog::extractSpecialPatternsWithBracketBalancing(
         mappingkeystr,
@@ -19205,6 +19277,9 @@ QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, 
         run_regex,
         switchtab_regex,
         keysequencebreak_regex,
+        keysequencetoggle_regex,
+        keysequencepause_regex,
+        keysequencecontinue_regex,
         unlock_regex,
         showfbutton_regex,
         hidefbutton_regex,
