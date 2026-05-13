@@ -1672,6 +1672,9 @@ namespace QKeyMapperConstants {
     inline constexpr const char SETVOLUME_NOTIFY_STR[]      = "SetVolume🔊";
     inline constexpr const char SETMICVOLUME_STR[]          = "SetMicVolume";
     inline constexpr const char SETMICVOLUME_NOTIFY_STR[]   = "SetMicVolume🎤";
+    inline constexpr const char KEY_RECORD_TOGGLE_MAPPING_STR[] = "KeyRecordToggle";
+    inline constexpr const char KEY_RECORD_START_MAPPING_STR[]  = "KeyRecordStart";
+    inline constexpr const char KEY_RECORD_STOP_MAPPING_STR[]   = "KeyRecordStop";
     inline constexpr const char KEYSEQUENCEBREAK_STR[]  = "KeySequenceBreak";
     inline constexpr const char SHOWALLFBUTTONS_STR[]      = "ShowAllFButtons";
     inline constexpr const char HIDEALLFBUTTONS_STR[]      = "HideAllFButtons";

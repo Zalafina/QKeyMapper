@@ -69,6 +69,8 @@ QStringList QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
 QStringList QKeyMapper_Worker::pressedVButtonKeysList;
 QList<RecordKeyData> QKeyMapper_Worker::recordKeyList;
 QStringList QKeyMapper_Worker::recordMappingKeysList;
+QStringList QKeyMapper_Worker::s_KeyRecordPendingStartKeyUpSkipKeys;
+QStringList QKeyMapper_Worker::s_KeyRecordImmediateStopSkipKeys;
 QElapsedTimer QKeyMapper_Worker::recordElapsedTimer;
 // QStringList QKeyMapper_Worker::pressedCombinationRealKeysList;
 QStringList QKeyMapper_Worker::pressedVirtualKeysList = QStringList();
@@ -111,6 +113,27 @@ qint64 monotonicNowMs()
 {
     using namespace std::chrono;
     return static_cast<qint64>(duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count());
+}
+
+QStringList normalizeKeyRecordControlKeys(const QStringList &keys)
+{
+    QStringList normalizedKeys;
+
+    for (const QString &key : keys) {
+        const QString normalizedKey = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(key.trimmed());
+        if (!normalizedKey.isEmpty() && !normalizedKeys.contains(normalizedKey)) {
+            normalizedKeys.append(normalizedKey);
+        }
+    }
+
+    return normalizedKeys;
+}
+
+QString buildRecordedMappingKeysClipboardText()
+{
+    QString recordText = QKeyMapper_Worker::recordMappingKeysList.join(SEPARATOR_NEXTARROW);
+    recordText.replace(JOY_KEY_PREFIX, VJOY_KEY_PREFIX);
+    return recordText;
 }
 
 bool tryReadClipboardUnicodeText(QString &clipboardText, int maxRetries = 3)
@@ -2622,6 +2645,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (key == KEYSEQUENCEBREAK_STR || keysequencebreak_match.hasMatch()) {
                 /* KeySequenceBreak KeyUp do nothing. */
             }
+            else if (key == KEY_RECORD_TOGGLE_MAPPING_STR
+                     || key == KEY_RECORD_START_MAPPING_STR
+                     || key == KEY_RECORD_STOP_MAPPING_STR) {
+                /* KeyRecord mapping keys do nothing on KEY_UP. */
+            }
             else if (unlock_match.hasMatch()) {
                 /* Unlock KeyUp do nothing. */
             }
@@ -3285,6 +3313,32 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     // Note: The actual cleanup (remove from running list, resend real key, etc.) is done
                     // by the normal KeySequence stop-flag handling in sendInputKeys.
                     breakAllRunningKeySequence();
+                }
+                else if (key == KEY_RECORD_TOGGLE_MAPPING_STR) {
+                    const QStringList controlKeys = splitOriginalKeyString(original_key, true);
+                    if (s_KeyRecording) {
+                        keyRecordStop();
+                        collectRecordKeysList(false, controlKeys);
+                        emit mappingKeyRecordFinished_Signal(buildRecordedMappingKeysClipboardText());
+                    }
+                    else {
+                        keyRecordStart(controlKeys, QStringList());
+                        emit mappingKeyRecordStarted_Signal();
+                    }
+                }
+                else if (key == KEY_RECORD_START_MAPPING_STR) {
+                    if (!s_KeyRecording) {
+                        keyRecordStart(splitOriginalKeyString(original_key, true), QStringList());
+                        emit mappingKeyRecordStarted_Signal();
+                    }
+                }
+                else if (key == KEY_RECORD_STOP_MAPPING_STR) {
+                    if (s_KeyRecording) {
+                        const QStringList controlKeys = splitOriginalKeyString(original_key, true);
+                        keyRecordStop();
+                        collectRecordKeysList(false, controlKeys);
+                        emit mappingKeyRecordFinished_Signal(buildRecordedMappingKeysClipboardText());
+                    }
                 }
                 else if (keysequencebreak_match.hasMatch()) {
                     // KeySequenceBreak(OriginalKeyName): break a specific original key's running key sequence.
@@ -12444,15 +12498,15 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
             }
         }
 
-        if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
-            bool block = false;
-            if (s_KeyRecording) {
-                bool recorded = updateRecordKeyList(keycodeString, input_type);
-                if (recorded) {
-                    block = true;
-                }
+        bool block = false;
+        if (s_KeyRecording) {
+            bool recorded = updateRecordKeyList(keycodeString, input_type);
+            if (recorded && HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+                block = true;
             }
+        }
 
+        if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
             if (block) {
                 return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
@@ -13805,15 +13859,15 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 }
             }
 
-            if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
-                bool block = false;
-                if (s_KeyRecording) {
-                    bool recorded = updateRecordKeyList(keycodeString, input_type);
-                    if (recorded) {
-                        block = true;
-                    }
+            bool block = false;
+            if (s_KeyRecording) {
+                bool recorded = updateRecordKeyList(keycodeString, input_type);
+                if (recorded && HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+                    block = true;
                 }
+            }
 
+            if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
                 if (block) {
                     return (LRESULT)TRUE;
                 }
@@ -14374,21 +14428,37 @@ int QKeyMapper_Worker::updatePressedRealKeysList(const QString &keycodeString, i
 
 void QKeyMapper_Worker::keyRecordStart()
 {
+    keyRecordStart(QStringList() << KEY_RECORD_START_STR,
+                   QStringList() << KEY_RECORD_STOP_STR);
+}
+
+void QKeyMapper_Worker::keyRecordStart(const QStringList &startKeyUpSkipKeys,
+                                       const QStringList &stopKeySkipKeys)
+{
     recordElapsedTimer.invalidate();
     recordKeyList.clear();
     recordMappingKeysList.clear();
+    s_KeyRecordPendingStartKeyUpSkipKeys = normalizeKeyRecordControlKeys(startKeyUpSkipKeys);
+    s_KeyRecordImmediateStopSkipKeys = normalizeKeyRecordControlKeys(stopKeySkipKeys);
     s_KeyRecording = true;
 }
 
 void QKeyMapper_Worker::keyRecordStop()
 {
     s_KeyRecording = false;
+    s_KeyRecordPendingStartKeyUpSkipKeys.clear();
+    s_KeyRecordImmediateStopSkipKeys.clear();
     recordElapsedTimer.invalidate();
     // recordKeyList.clear();
     // recordMappingKeysList.clear();
 }
 
 void QKeyMapper_Worker::collectRecordKeysList(bool clicked)
+{
+    collectRecordKeysList(clicked, QStringList() << KEY_RECORD_STOP_STR);
+}
+
+void QKeyMapper_Worker::collectRecordKeysList(bool clicked, const QStringList &tailControlKeys)
 {
     if (clicked) {
         if (recordKeyList.size() >= 2) {
@@ -14420,26 +14490,44 @@ void QKeyMapper_Worker::collectRecordKeysList(bool clicked)
         }
     }
     else {
-        if (!recordKeyList.isEmpty()) {
+        QStringList controlKeys = normalizeKeyRecordControlKeys(tailControlKeys);
+        if (controlKeys.isEmpty()) {
+            controlKeys = normalizeKeyRecordControlKeys(QStringList() << KEY_RECORD_STOP_STR);
+        }
+
+        while (!recordKeyList.isEmpty()) {
             RecordKeyData last_record_keydata = recordKeyList.constLast();
-            if (last_record_keydata.keystring == KEY_RECORD_STOP_STR
-                && last_record_keydata.input_type == INPUT_KEY_DOWN) {
+            const QString normalizedKey = getKeycodeStringRemoveMultiInput(last_record_keydata.keystring);
+            if (last_record_keydata.input_type == INPUT_KEY_DOWN
+                && controlKeys.contains(normalizedKey)) {
                 recordKeyList.removeLast();
 #ifdef DEBUG_LOGOUT_ON
-                QString debugmessage = QString("[collectRecordKeysList] recordKeyList remove record stop \"%1\" KEY_DOWN.").arg(KEY_RECORD_STOP_STR);
+                QString debugmessage = QString("[collectRecordKeysList] recordKeyList remove record stop \"%1\" KEY_DOWN.").arg(normalizedKey);
                 qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
             }
+            else {
+                break;
+            }
         }
 
-        if (!recordMappingKeysList.isEmpty()) {
-            QString record_stop_key_str = QString("%1%2").arg(PREFIX_SEND_DOWN, KEY_RECORD_STOP_STR);
-            if (recordMappingKeysList.constLast() == record_stop_key_str) {
-                recordMappingKeysList.removeLast();
+        while (!recordMappingKeysList.isEmpty()) {
+            const QString lastRecordMappingKey = recordMappingKeysList.constLast();
+            bool removed = false;
+            for (const QString &controlKey : std::as_const(controlKeys)) {
+                QString recordStopKey = QString("%1%2").arg(PREFIX_SEND_DOWN, controlKey);
+                if (lastRecordMappingKey == recordStopKey) {
+                    recordMappingKeysList.removeLast();
+                    removed = true;
 #ifdef DEBUG_LOGOUT_ON
-                QString debugmessage = QString("[collectRecordKeysList] recordMappingKeysList remove record stop \"%1\" KEY_DOWN.").arg(KEY_RECORD_STOP_STR);
-                qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
+                    QString debugmessage = QString("[collectRecordKeysList] recordMappingKeysList remove record stop \"%1\" KEY_DOWN.").arg(controlKey);
+                    qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
+                    break;
+                }
+            }
+            if (!removed) {
+                break;
             }
         }
     }
@@ -14466,12 +14554,13 @@ bool QKeyMapper_Worker::updateRecordKeyList(const QString &keycodeString, int in
 {
     bool input_recorded = false;
     bool skip_record_startstop_key = false;
-    if (recordKeyList.isEmpty()
-        && keycodeString == KEY_RECORD_START_STR
-        && input_type == INPUT_KEY_UP) {
+    const QString normalizedKeycodeString = getKeycodeStringRemoveMultiInput(keycodeString);
+    if (s_KeyRecordImmediateStopSkipKeys.contains(normalizedKeycodeString)) {
         skip_record_startstop_key = true;
     }
-    else if (keycodeString == KEY_RECORD_STOP_STR) {
+    else if (input_type == INPUT_KEY_UP
+        && s_KeyRecordPendingStartKeyUpSkipKeys.contains(normalizedKeycodeString)) {
+        s_KeyRecordPendingStartKeyUpSkipKeys.removeOne(normalizedKeycodeString);
         skip_record_startstop_key = true;
     }
 
@@ -17861,6 +17950,9 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR
             << VJOY_RT_ACCEL_STR
+            << KEY_RECORD_TOGGLE_MAPPING_STR
+            << KEY_RECORD_START_MAPPING_STR
+            << KEY_RECORD_STOP_MAPPING_STR
             << SHOWVBUTTONPANEL_STR
             << HIDEVBUTTONPANEL_STR
             << SHOWALLFBUTTONS_STR

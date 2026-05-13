@@ -543,7 +543,6 @@ void QKeyRecord::updateKeyRecordLineEdit(bool finished)
 
 void QKeyRecord::procKeyRecordStart(bool clicked)
 {
-    Q_UNUSED(clicked);
     if (false == QKeyMapper_Worker::s_KeyRecording) {
 #ifdef DEBUG_LOGOUT_ON
         QString debugmessage = QString("[QKeyRecord::procKeyRecordStart] \"%1\" Key pressed on key record STOP state, Start Key Record.").arg(KEY_RECORD_START_STR);
@@ -552,7 +551,13 @@ void QKeyRecord::procKeyRecordStart(bool clicked)
         ui->mergeKeyActionsCheckBox->setEnabled(false);
         ui->ignoreWaitTimeCheckBox->setEnabled(false);
         setKeyRecordLabel(KEYRECORD_STATE_START);
-        QKeyMapper_Worker::keyRecordStart();
+        if (clicked) {
+            QKeyMapper_Worker::keyRecordStart(QStringList(), QStringList() << KEY_RECORD_STOP_STR);
+        }
+        else {
+            QKeyMapper_Worker::keyRecordStart(QStringList() << KEY_RECORD_START_STR,
+                                              QStringList() << KEY_RECORD_STOP_STR);
+        }
         ui->keyRecordLineEdit->clear();
     }
 }

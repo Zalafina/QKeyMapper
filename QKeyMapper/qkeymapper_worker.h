@@ -1229,6 +1229,8 @@ signals:
     void startMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr, int mouse_index);
     void stopMouse2vJoyResetTimer_Signal(const QString &mouse2joy_keystr, int mouse_index);
     void doFunctionMappingProc_Signal(const QString &func_keystring);
+    void mappingKeyRecordStarted_Signal(void);
+    void mappingKeyRecordFinished_Signal(const QString &recordText);
 
     void gameControllerGyroEnabledSwitch_Signal(int gamepadinfo_index);
 
@@ -1346,8 +1348,10 @@ public:
     static int hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
     static int updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
     static void keyRecordStart(void);
+    static void keyRecordStart(const QStringList &startKeyUpSkipKeys, const QStringList &stopKeySkipKeys);
     static void keyRecordStop(void);
     static void collectRecordKeysList(bool clicked);
+    static void collectRecordKeysList(bool clicked, const QStringList &tailControlKeys);
     static bool updateRecordKeyList(const QString &keycodeString, int input_type);
     static bool detectDisplaySwitchKey(const QString &keycodeString, int keyupdown);
     static bool detectMappingSwitchKey(const QString &keycodeString, int keyupdown);
@@ -1515,6 +1519,8 @@ public:
     static QStringList pressedVButtonKeysList;
     static QList<RecordKeyData> recordKeyList;
     static QStringList recordMappingKeysList;
+    static QStringList s_KeyRecordPendingStartKeyUpSkipKeys;
+    static QStringList s_KeyRecordImmediateStopSkipKeys;
     static QElapsedTimer recordElapsedTimer;
     // static QStringList pressedCombinationRealKeysList;
     static QStringList pressedVirtualKeysList;

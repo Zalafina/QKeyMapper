@@ -2460,6 +2460,46 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     connectSettingDirtySignals();
     clearSaveSettingDirty();
 
+    const auto showKeyRecordNotification = [this](const QString &message) {
+        int position = ui->notificationComboBox->currentIndex();
+        if (NOTIFICATION_POSITION_NONE == position) {
+            position = NOTIFICATION_POSITION_DEFAULT;
+        }
+
+        QColor tabFontColor;
+        QColor tabBGColor;
+        if (0 <= s_KeyMappingTabWidgetCurrentIndex && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
+            tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
+            tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
+        }
+
+        QString colorStr;
+        if (tabFontColor.isValid()) {
+            colorStr = tabFontColor.name();
+        }
+        else if (m_NotificationSetupDialog != Q_NULLPTR) {
+            QColor notificationFontColor = m_NotificationSetupDialog->getNotification_FontColor();
+            if (notificationFontColor.isValid()) {
+                colorStr = notificationFontColor.name();
+            }
+        }
+
+        if (colorStr.isEmpty()) {
+            colorStr = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
+        }
+
+        NotificationStyleSettings notificationSettings;
+        if (m_NotificationSetupDialog != Q_NULLPTR) {
+            notificationSettings = m_NotificationSetupDialog->getNotificationSettings();
+        }
+
+        PopupNotificationOptions opts = buildPopupNotificationOptions(notificationSettings,
+                                                                      position,
+                                                                      QColor(colorStr),
+                                                                      tabBGColor);
+        showNotificationPopup(message, opts);
+    };
+
     // VButton panel connections (cross-thread: worker -> panel, panel -> worker)
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::showVButtonPanel_Signal,
                      this, &QKeyMapper::onShowVButtonPanelRequested, Qt::QueuedConnection);
@@ -2485,6 +2525,20 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
                      m_VButtonPanel, &QVButtonPanel::onVButtonClearAllLockStates, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonClearAllLockStates_Signal,
                      this, &QKeyMapper::onClearFloatingButtonLockStates, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::mappingKeyRecordStarted_Signal,
+                     this, [this, showKeyRecordNotification]() {
+                         showKeyRecordNotification(tr("Key recording started"));
+                     }, Qt::QueuedConnection);
+    QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::mappingKeyRecordFinished_Signal,
+                     this, [this, showKeyRecordNotification](const QString &recordText) {
+                         if (!recordText.isEmpty()) {
+                             QKeyMapper::copyStringToClipboard(recordText);
+                             showKeyRecordNotification(tr("Key recording stopped, record copied to clipboard"));
+                         }
+                         else {
+                             showKeyRecordNotification(tr("Key recording stopped"));
+                         }
+                     }, Qt::QueuedConnection);
 
     if (ui->startupAutoMonitoringCheckBox->isChecked()) {
         MappingSwitch(MAPPINGSTART_LOADSETTING);
@@ -27410,6 +27464,9 @@ void QKeyMapper::initKeysCategoryMap()
         << SWITCHTAB_SAVE_STR
         << MACRO_STR
         << UNIVERSAL_MACRO_STR
+        << KEY_RECORD_TOGGLE_MAPPING_STR
+        << KEY_RECORD_START_MAPPING_STR
+        << KEY_RECORD_STOP_MAPPING_STR
         << QKEYMAPPER_FN_KEY_STR
         << BLOCK_KEYBOARD_STR
         << BLOCK_KEYBOARD_NOTIFY_STR
