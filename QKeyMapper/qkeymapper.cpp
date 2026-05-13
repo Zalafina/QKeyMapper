@@ -27473,6 +27473,9 @@ void QKeyMapper::initKeysCategoryMap()
         << BLOCK_MOUSE_STR
         << BLOCK_MOUSE_NOTIFY_STR
         << KEYSEQUENCEBREAK_STR
+        << KEYSEQUENCETOGGLE_STR
+        << KEYSEQUENCEPAUSE_STR
+        << KEYSEQUENCECONTINUE_STR
         << SHOWALLFBUTTONS_STR
         << HIDEALLFBUTTONS_STR
         << SHOWFBUTTON_STR
@@ -32572,6 +32575,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
         if (waitTime > 0
             && currentMapKeyComboBoxText != KEY_BLOCKED_STR
             && currentMapKeyComboBoxText != KEYSEQUENCEBREAK_STR
+            && currentMapKeyComboBoxText != KEYSEQUENCETOGGLE_STR
+            && currentMapKeyComboBoxText != KEYSEQUENCEPAUSE_STR
+            && currentMapKeyComboBoxText != KEYSEQUENCECONTINUE_STR
             && currentMapKeyComboBoxText.startsWith(CROSSHAIR_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false

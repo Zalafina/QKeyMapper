@@ -689,6 +689,7 @@ struct ViGEm_ReportData
 struct SendInputTaskController {
     QThreadPool *task_threadpool;
     QAtomicInt *task_stop_flag; // NOLINT(clang-analyzer-webkit.NoUncountedMemberChecker)
+    QAtomicInt *task_pause_state; // NOLINT(clang-analyzer-webkit.NoUncountedMemberChecker)
     QMutex *task_stop_mutex;
     QWaitCondition *task_stop_condition;
     int sendvirtualkey_state;
@@ -1389,6 +1390,9 @@ public:
     static QString getKeycodeStringRemoveMultiInput(const QString &keycodeString);
     static void breakAllRunningKeySequence(void);
     static void breakRunningKeySequence(const QString &originalKey);
+    static void pauseRunningKeySequence(const QString &originalKey = QString());
+    static void continueRunningKeySequence(const QString &originalKey = QString());
+    static void toggleRunningKeySequence(const QString &originalKey = QString());
 
     static ParsedRunCommand parseRunCommandUserInput(const QString &input);
     // Run an external command with optional wait, working directory, window show mode, and verb.
