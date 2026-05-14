@@ -151,17 +151,17 @@
 * v1.3.8(Build 20260516)
     * 映射键列表中添加 **KeyRecordToggle**、**KeyRecordStart**、**KeyRecordStop** 映射键，用于映射表生效状态下进行按键录制，录制停止时如果有按键录制内容则自动将录制内容复制到剪贴板。
       ##### 按键录制映射键说明
-        KeyRecordToggle     -> 用一个按键切换按键录制开始和停止状态
+        KeyRecordToggle     -> 单按键切换按键录制开始和停止状态
         KeyRecordStart      -> 按键录制开始映射键
         KeyRecordStop       -> 按键录制停止映射键
     * 映射键列表中添加 **KeySequenceToggle**、**KeySequencePause**、**KeySequenceContinue** 映射键，用于按键序列发送暂停发送和继续发送。
       ##### 按键序列暂停和继续映射键说明
-        KeySequenceToggle           -> 用一个按键切换所有按键序列的暂停和继续状态
-        KeySequencePause            -> 暂停当前映射表所有按键序列发送
-        KeyRecordStop               -> 继续当前映射表所有按键序列发送
-        KeySequenceToggle(原始按键) -> 用一个按键切换特定原始按键对应映射项按键序列的暂停和继续状态
-        KeySequencePause(原始按键)  -> 暂停特定原始按键对应映射项按键序列发送
-        KeyRecordStop(原始按键)     -> 继续特定原始按键对应映射项按键序列发送
+        KeySequenceToggle               -> 单按键切换所有按键序列的暂停和继续状态
+        KeySequencePause                -> 暂停所有当前正在执行的按键序列发送
+        KeySequenceContinue             -> 继续所有之前被暂停的按键序列发送
+        KeySequenceToggle(原始按键)     -> 单按键切换特定原始按键对应映射项按键序列的暂停和继续状态
+        KeySequencePause(原始按键)      -> 暂停特定原始按键对应映射项按键序列发送
+        KeySequenceContinue(原始按键)   -> 继续特定原始按键对应映射项按键序列发送
     * "悬浮按钮设定" 窗口中添加 **启用渐变填充**、**启用悬停动画** 复选框，可以禁用悬浮按钮渐变填充和鼠标指针悬停动画。
     * "悬浮按钮设定" 窗口的宽度和高度设定与实际按钮显示可见大小变为一致的像素大小。
     * "悬浮按钮设定" 窗口添加鼠标悬停效果自定义选项，可以调整 **悬停效果**强弱、**悬停辉光**强弱、**悬停动画时长**、**悬停对比**效果(自动/提高/压暗/自定义)。
@@ -1098,13 +1098,22 @@
 | SwitchTab💾{映射表Tab名}  |  切换指定名称的映射表(并进行保存)          |
 | Macro{宏名}               |  发送映射宏列表编辑好的宏名对应的按键或按键序列  |
 | UniversalMacro{通用宏名}   |  发送映射宏列表编辑好的通用宏名对应的按键或按键序列  |
+| KeyRecordToggle           |  单按键切换按键录制开始和停止状态           |
+| KeyRecordStart            |  按键录制开始                               |
+| KeyRecordStop             |  按键录制停止映射键                         |
 | QKeyMapper-Fn             |  先按下此映射键后再按映射表中其他原始按键可以在映射开始状态下切换此映射项连发和锁定状态  |
 | Block-Keyboard            |  按下时禁用映射表和快捷键以外的所有键盘输入  |
 | Block-Keyboard⌨          |  功能与Block-Keyboard相同，只是会显示禁用键盘和启用键盘的提示信息  |
 | Block-Mouse               |  按下时禁用映射表和快捷键以外的所有鼠标输入   |
 | Block-Mouse🖱             |  功能与Block-Mouse相同，只是会显示禁用鼠标和启用鼠标的提示信息  |
 | KeySequenceBreak         |  打断所有当前正在执行的按键序列发送         |
-| KeySequenceBreak(原始按键) |  打断指定原始按键对应的运行中按键序列发送   |
+| KeySequenceBreak(原始按键)    |  打断指定原始按键对应的运行中按键序列发送   |
+| KeySequenceToggle             |  单按键切换所有按键序列的暂停和继续状态    |
+| KeySequencePause              |  暂停所有当前正在执行的按键序列发送        |
+| KeySequenceContinue           |  继续所有之前被暂停的按键序列发送          |
+| KeySequenceToggle(原始按键)   |  单按键切换特定原始按键对应映射项按键序列的暂停和继续状态    |
+| KeySequencePause(原始按键)    |  暂停特定原始按键对应映射项按键序列发送     |
+| KeySequenceContinue(原始按键) |  继续特定原始按键对应映射项按键序列发送     |
 | ShowAllFButtons          |  原始按键按下后显示当前映射表中所有悬浮按钮  |
 | HideAllFButtons          |  原始按键按下后隐藏当前映射表中所有悬浮按钮  |
 | ShowFButton              |  显示指定的原始按键对应的悬浮按钮          |
