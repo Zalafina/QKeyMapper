@@ -2023,7 +2023,9 @@ void QItemSetupDialog::initKeyListComboBoxes()
     s_valiedMappingKeyList.removeOne(SEPARATOR_NEXTARROW);
     s_valiedMappingKeyList.removeOne(PREFIX_SEND_DOWN);
     s_valiedMappingKeyList.removeOne(PREFIX_SEND_UP);
+    s_valiedMappingKeyList.removeOne(PREFIX_SEND_FORCE_UP);
     s_valiedMappingKeyList.removeOne(PREFIX_SEND_TOGGLE);
+    s_valiedMappingKeyList.removeOne(PREFIX_SEND_FORCE_TOGGLE);
     s_valiedMappingKeyList.removeOne(PREFIX_SEND_BOTH);
     s_valiedMappingKeyList.removeOne(PREFIX_SEND_EXCLUSION);
 

@@ -27472,7 +27472,9 @@ void QKeyMapper::initKeysCategoryMap()
         << SEPARATOR_NEXTARROW
         << PREFIX_SEND_DOWN
         << PREFIX_SEND_UP
+        << PREFIX_SEND_FORCE_UP
         << PREFIX_SEND_TOGGLE
+        << PREFIX_SEND_FORCE_TOGGLE
         << PREFIX_SEND_BOTH
         << PREFIX_SEND_EXCLUSION
         << REPEAT_STR
@@ -35204,7 +35206,9 @@ static bool isInlineSetupDialogMappingToken(const QString &currentMapKeyListText
         || currentMapKeyListText == SEPARATOR_NEXTARROW
         || currentMapKeyListText == PREFIX_SEND_DOWN
         || currentMapKeyListText == PREFIX_SEND_UP
+        || currentMapKeyListText == PREFIX_SEND_FORCE_UP
         || currentMapKeyListText == PREFIX_SEND_TOGGLE
+        || currentMapKeyListText == PREFIX_SEND_FORCE_TOGGLE
         || currentMapKeyListText == PREFIX_SEND_BOTH
         || currentMapKeyListText == PREFIX_SEND_EXCLUSION;
 }
@@ -36101,13 +36105,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                         }
                     }
                     else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-                        if (currentMapKeyListText == SEPARATOR_WAITTIME
-                            || currentMapKeyListText == SEPARATOR_NEXTARROW
-                            || currentMapKeyListText == PREFIX_SEND_DOWN
-                            || currentMapKeyListText == PREFIX_SEND_UP
-                            || currentMapKeyListText == PREFIX_SEND_TOGGLE
-                            || currentMapKeyListText == PREFIX_SEND_BOTH
-                            || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
+                        if (isInlineSetupDialogMappingToken(currentMapKeyListText)) {
                             if (isCursorAtBegin) {
                                 newMapKeyText = currentMapKeyListText + currentMapKeyText;
                             }
@@ -36132,13 +36130,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     }
                     else {
                         if (isCursorAtEnd) {
-                            if (currentMapKeyListText == SEPARATOR_WAITTIME
-                                || currentMapKeyListText == SEPARATOR_NEXTARROW
-                                || currentMapKeyListText == PREFIX_SEND_DOWN
-                                || currentMapKeyListText == PREFIX_SEND_UP
-                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
-                                || currentMapKeyListText == PREFIX_SEND_BOTH
-                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
+                            if (isInlineSetupDialogMappingToken(currentMapKeyListText)) {
                                 newMapKeyText = currentMapKeyText + currentMapKeyListText;
                             }
                             else {
@@ -36146,13 +36138,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             }
                         }
                         else {
-                            if (currentMapKeyListText == SEPARATOR_WAITTIME
-                                || currentMapKeyListText == SEPARATOR_NEXTARROW
-                                || currentMapKeyListText == PREFIX_SEND_DOWN
-                                || currentMapKeyListText == PREFIX_SEND_UP
-                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
-                                || currentMapKeyListText == PREFIX_SEND_BOTH
-                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
+                            if (isInlineSetupDialogMappingToken(currentMapKeyListText)) {
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                             }
                             else {
@@ -36234,13 +36220,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                         }
                     }
                     else if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-                        if (currentMapKeyListText == SEPARATOR_WAITTIME
-                            || currentMapKeyListText == SEPARATOR_NEXTARROW
-                            || currentMapKeyListText == PREFIX_SEND_DOWN
-                            || currentMapKeyListText == PREFIX_SEND_UP
-                            || currentMapKeyListText == PREFIX_SEND_TOGGLE
-                            || currentMapKeyListText == PREFIX_SEND_BOTH
-                            || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
+                        if (isInlineSetupDialogMappingToken(currentMapKeyListText)) {
                             if (isCursorAtBegin) {
                                 newMapKeyText = currentMapKeyListText + currentMapKeyText;
                             }
@@ -36265,13 +36245,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                     }
                     else {
                         if (isCursorAtEnd) {
-                            if (currentMapKeyListText == SEPARATOR_WAITTIME
-                                || currentMapKeyListText == SEPARATOR_NEXTARROW
-                                || currentMapKeyListText == PREFIX_SEND_DOWN
-                                || currentMapKeyListText == PREFIX_SEND_UP
-                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
-                                || currentMapKeyListText == PREFIX_SEND_BOTH
-                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
+                            if (isInlineSetupDialogMappingToken(currentMapKeyListText)) {
                                 newMapKeyText = currentMapKeyText + currentMapKeyListText;
                             }
                             else {
@@ -36279,13 +36253,7 @@ void KeyListComboBox::mousePressEvent(QMouseEvent *event)
                             }
                         }
                         else {
-                            if (currentMapKeyListText == SEPARATOR_WAITTIME
-                                || currentMapKeyListText == SEPARATOR_NEXTARROW
-                                || currentMapKeyListText == PREFIX_SEND_DOWN
-                                || currentMapKeyListText == PREFIX_SEND_UP
-                                || currentMapKeyListText == PREFIX_SEND_TOGGLE
-                                || currentMapKeyListText == PREFIX_SEND_BOTH
-                                || currentMapKeyListText == PREFIX_SEND_EXCLUSION) {
+                            if (isInlineSetupDialogMappingToken(currentMapKeyListText)) {
                                 newMapKeyText = currentMapKeyText.left(cursorPos) + currentMapKeyListText + currentMapKeyText.right(currentMapKeyText.length() - cursorPos);
                             }
                             else {
