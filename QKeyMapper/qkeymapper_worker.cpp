@@ -2759,11 +2759,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else if (prefix == PREFIX_SEND_UP) {
                     sendtype = SENDTYPE_UP;
                 }
-                else if (prefix == PREFIX_SEND_FORCE_UP) {
-                    sendtype = SENDTYPE_FORCE_UP;
-                }
                 else if (prefix == PREFIX_SEND_TOGGLE) {
                     sendtype = SENDTYPE_TOGGLE;
+                }
+                else if (prefix == PREFIX_SEND_FORCE_UP) {
+                    sendtype = SENDTYPE_FORCE_UP;
                 }
                 else if (prefix == PREFIX_SEND_FORCE_TOGGLE) {
                     sendtype = SENDTYPE_FORCE_TOGGLE;
@@ -2812,8 +2812,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 || key == KEY_NONE_STR
                 || sendtype == SENDTYPE_DOWN
                 || sendtype == SENDTYPE_UP
-                || sendtype == SENDTYPE_FORCE_UP
                 || sendtype == SENDTYPE_TOGGLE
+                || sendtype == SENDTYPE_FORCE_UP
                 || sendtype == SENDTYPE_FORCE_TOGGLE
                 || sendtype == SENDTYPE_BOTH) {
                 continue;
@@ -3491,11 +3491,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else if (prefix == PREFIX_SEND_UP) {
                         sendtype = SENDTYPE_UP;
                     }
-                    else if (prefix == PREFIX_SEND_FORCE_UP) {
-                        sendtype = SENDTYPE_FORCE_UP;
-                    }
                     else if (prefix == PREFIX_SEND_TOGGLE) {
                         sendtype = SENDTYPE_TOGGLE;
+                    }
+                    else if (prefix == PREFIX_SEND_FORCE_UP) {
+                        sendtype = SENDTYPE_FORCE_UP;
                     }
                     else if (prefix == PREFIX_SEND_FORCE_TOGGLE) {
                         sendtype = SENDTYPE_FORCE_TOGGLE;
@@ -7044,11 +7044,11 @@ void QKeyMapper_Worker::restoreVJoyExcludedKeyOnKeyUp(int gamepad_index, const Q
                 else if (prefix == PREFIX_SEND_UP) {
                     sendtype = SENDTYPE_UP;
                 }
-                else if (prefix == PREFIX_SEND_FORCE_UP) {
-                    sendtype = SENDTYPE_FORCE_UP;
-                }
                 else if (prefix == PREFIX_SEND_TOGGLE) {
                     sendtype = SENDTYPE_TOGGLE;
+                }
+                else if (prefix == PREFIX_SEND_FORCE_UP) {
+                    sendtype = SENDTYPE_FORCE_UP;
                 }
                 else if (prefix == PREFIX_SEND_FORCE_TOGGLE) {
                     sendtype = SENDTYPE_FORCE_TOGGLE;
@@ -7064,8 +7064,8 @@ void QKeyMapper_Worker::restoreVJoyExcludedKeyOnKeyUp(int gamepad_index, const Q
             if (mappingKey.isEmpty()
                 || mappingKey == KEY_NONE_STR
                 || sendtype == SENDTYPE_UP
-                || sendtype == SENDTYPE_FORCE_UP
                 || sendtype == SENDTYPE_TOGGLE
+                || sendtype == SENDTYPE_FORCE_UP
                 || sendtype == SENDTYPE_FORCE_TOGGLE
                 || sendtype == SENDTYPE_BOTH
                 || sendtype == SENDTYPE_EXCLUSION) {

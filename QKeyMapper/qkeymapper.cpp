@@ -27472,8 +27472,8 @@ void QKeyMapper::initKeysCategoryMap()
         << SEPARATOR_NEXTARROW
         << PREFIX_SEND_DOWN
         << PREFIX_SEND_UP
-        << PREFIX_SEND_FORCE_UP
         << PREFIX_SEND_TOGGLE
+        << PREFIX_SEND_FORCE_UP
         << PREFIX_SEND_FORCE_TOGGLE
         << PREFIX_SEND_BOTH
         << PREFIX_SEND_EXCLUSION
@@ -35206,8 +35206,8 @@ static bool isInlineSetupDialogMappingToken(const QString &currentMapKeyListText
         || currentMapKeyListText == SEPARATOR_NEXTARROW
         || currentMapKeyListText == PREFIX_SEND_DOWN
         || currentMapKeyListText == PREFIX_SEND_UP
-        || currentMapKeyListText == PREFIX_SEND_FORCE_UP
         || currentMapKeyListText == PREFIX_SEND_TOGGLE
+        || currentMapKeyListText == PREFIX_SEND_FORCE_UP
         || currentMapKeyListText == PREFIX_SEND_FORCE_TOGGLE
         || currentMapKeyListText == PREFIX_SEND_BOTH
         || currentMapKeyListText == PREFIX_SEND_EXCLUSION;
