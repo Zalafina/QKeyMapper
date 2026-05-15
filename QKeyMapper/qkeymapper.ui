@@ -50,7 +50,7 @@
   <widget class="QPushButton" name="savemaplistButton">
    <property name="geometry">
     <rect>
-     <x>315</x>
+     <x>400</x>
      <y>399</y>
      <width>111</width>
      <height>31</height>
@@ -165,12 +165,12 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QComboBox" name="settingselectComboBox">
+  <widget class="SettingSelectComboBox" name="settingselectComboBox">
    <property name="geometry">
     <rect>
      <x>30</x>
      <y>404</y>
-     <width>271</width>
+     <width>356</width>
      <height>22</height>
     </rect>
    </property>
@@ -179,25 +179,6 @@
    </property>
    <property name="currentIndex">
     <number>-1</number>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="removeSettingButton">
-   <property name="geometry">
-    <rect>
-     <x>440</x>
-     <y>404</y>
-     <width>71</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Remove</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
    </property>
   </widget>
   <widget class="QSpinBox" name="waitTimeSpinBox">
@@ -2611,6 +2592,11 @@
   <customwidget>
    <class>MappingStartToolButton</class>
    <extends>QToolButton</extends>
+   <header>qkeymapper.h</header>
+  </customwidget>
+  <customwidget>
+   <class>SettingSelectComboBox</class>
+   <extends>QComboBox</extends>
    <header>qkeymapper.h</header>
   </customwidget>
  </customwidgets>

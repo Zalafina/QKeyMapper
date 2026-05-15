@@ -533,6 +533,7 @@ protected:
 };
 
 class KeyListComboBoxPopup;
+class SettingSelectComboBoxPopup;
 
 class KeyListPopupContextMenu : public QMenu
 {
@@ -560,6 +561,75 @@ private:
     PendingShortcutAction m_PendingShortcutAction;
     bool m_CopyShortcutEnabled;
     bool m_TriggeredWithCtrlModifier;
+};
+
+class SettingSelectComboBox : public QComboBox
+{
+public:
+    explicit SettingSelectComboBox(QWidget *parent = Q_NULLPTR)
+        : QComboBox(parent)
+        , m_KeyMapper_ptr(parent)
+    {}
+
+protected:
+    void showPopup(void) override;
+    void hidePopup(void) override;
+
+private:
+    friend class SettingSelectComboBoxPopup;
+
+    void ensureCustomPopup(void);
+    void applyPopupSelection(const QString &groupName);
+    QString actualGroupNameForIndex(int index) const;
+    int findIndexByActualGroup(const QString &groupName) const;
+    bool movePopupSelectionToUserIndex(const QString &groupName, int targetUserIndex);
+    bool deletePopupSelection(const QString &groupName);
+
+    QWidget *m_KeyMapper_ptr = Q_NULLPTR;
+    SettingSelectComboBoxPopup *m_SettingSelectPopup = Q_NULLPTR;
+};
+
+class SettingSelectComboBoxPopup : public QFrame
+{
+public:
+    explicit SettingSelectComboBoxPopup(SettingSelectComboBox *comboBox);
+
+    void showForComboBox(void);
+    void refreshPopupContents(const QString &preferredActualGroup = QString(), bool ensureCurrentItemVisible = true);
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
+    void hideEvent(QHideEvent *event) override;
+
+private:
+    void refreshMainList(const QString &preferredActualGroup = QString(), bool ensureCurrentItemVisible = true);
+    void refreshMoveButtons(void);
+    void updatePopupGeometry(void);
+    int calculateListViewportHeight(const QListWidget *listWidget) const;
+    QString highlightedActualGroupName(void) const;
+    int highlightedUserGroupIndex(void) const;
+    bool isMovableActualGroup(const QString &groupName) const;
+    bool isDeletableActualGroup(const QString &groupName) const;
+    QString preferredActualGroupAfterDelete(const QString &groupName) const;
+    void moveHighlightedItemTo(int targetUserIndex);
+    void showMainListMenu(const QPoint &pos);
+    void onSearchTextChanged(const QString &text);
+    void onMainListItemClicked(QListWidgetItem *item);
+    void onMoveTopButtonClicked(void);
+    void onMoveUpButtonClicked(void);
+    void onMoveDownButtonClicked(void);
+    void onMoveBottomButtonClicked(void);
+    void onReorderButtonClicked(void);
+
+    SettingSelectComboBox *m_ComboBox;
+    QLineEdit *m_SearchLineEdit;
+    QWidget *m_ButtonRowWidget;
+    QToolButton *m_MoveTopToolButton;
+    QToolButton *m_MoveUpToolButton;
+    QToolButton *m_MoveDownToolButton;
+    QToolButton *m_MoveBottomToolButton;
+    QToolButton *m_ReorderToolButton;
+    KeyListPopupListWidget *m_MainListWidget;
 };
 
 class KeyListComboBox : public QComboBox
@@ -1527,7 +1597,7 @@ private slots:
     void on_settingselectComboBox_currentTextChanged(const QString &text);
 #endif
 
-    void on_removeSettingButton_clicked();
+    // void on_removeSettingButton_clicked();
 
     void on_autoStartupCheckBox_stateChanged(int state);
 
@@ -1860,6 +1930,16 @@ private:
     QString loadKeyMapSetting(const QString &settingtext, bool load_all = false, bool preserveVButtonPanelVisibility = false);
     void loadEmptyMapSetting(void);
     void loadGeneralSetting(void);
+    void rebuildSettingSelectComboBox(QSettings &settingFile, QStringList *validGroups = Q_NULLPTR);
+    QString currentSettingSelectGroupName(void) const;
+    int findSettingSelectIndexByGroupName(const QString &settingName) const;
+    QStringList currentSettingSelectUserGroups(void) const;
+    void writeSettingSelectOrder(QSettings &settingFile, const QStringList &orderedUserGroups);
+    void appendSettingSelectOrderIfMissing(QSettings &settingFile, const QString &settingName);
+    void removeSettingSelectOrderEntry(QSettings &settingFile, const QString &settingName);
+    void setCurrentSettingSelectByGroupName(const QString &settingName);
+    bool moveSettingSelectOrderEntry(const QString &settingName, int targetUserIndex);
+    bool removeSettingByName(const QString &settingName);
     void saveKeyListSharedCollectionsToINI(QSettings &settingFile) const;
     void loadKeyListSharedCollectionsFromINI(QSettings &settingFile);
     QStringList *getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType);
@@ -2087,6 +2167,8 @@ public:
     QTimer m_LastAutoMatchedSettingTimer;
     bool loadSetting_flag;
 private:
+    friend class SettingSelectComboBox;
+    friend class SettingSelectComboBoxPopup;
     // KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_mappingswitchKeySeqEdit;
     // KeySequenceEditOnlyOne *m_originalKeySeqEdit;

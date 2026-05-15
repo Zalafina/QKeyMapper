@@ -1091,6 +1091,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char TRAYICON_MATCHED[] = "TrayIcon_Matched";
     inline constexpr const char UPDATE_SITE[] = "UpdateSite";
     inline constexpr const char SETTINGSELECT[] = "SettingSelect";
+    inline constexpr const char SETTINGSELECT_ORDER_LIST[] = "SettingSelect_OrderList";
     inline constexpr const char AUTO_STARTUP[] = "AutoStartup";
     inline constexpr const char STARTUP_MINIMIZED[] = "StartupMinimized";
     inline constexpr const char STARTUP_AUTOMONITORING[] = "StartupAutoMonitoring";

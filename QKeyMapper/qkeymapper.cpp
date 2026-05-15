@@ -17,6 +17,7 @@ namespace {
 
 constexpr int DISABLED_ROW_BACKGROUND_APPLIED_ROLE = Qt::UserRole + 500;
 constexpr int DISABLED_ROW_FOREGROUND_APPLIED_ROLE = Qt::UserRole + 501;
+constexpr int SETTINGSELECT_ACTUAL_GROUP_ROLE = Qt::UserRole + 520;
 
 constexpr qreal FLOATINGBUTTON_HOVER_AUTO_DARKEN_LIGHTNESS_THRESHOLD = 0.72;
 constexpr qreal FLOATINGBUTTON_BASE_TOP_LIFT_RATIO = 0.08;
@@ -208,6 +209,131 @@ bool isDesktopOrShellWindow(HWND hwnd)
            || wcscmp(classNameBuffer, L"WorkerW") == 0
            || wcscmp(classNameBuffer, L"Shell_TrayWnd") == 0
            || wcscmp(classNameBuffer, L"Shell_SecondaryTrayWnd") == 0;
+}
+
+struct SettingSelectDisplayData {
+    QString groupName;
+    QString displayText;
+    QIcon icon;
+};
+
+QStringList settingSelectUserGroupsFromChildGroups(const QStringList &childGroups)
+{
+    QStringList userGroups;
+    QSet<QString> addedGroups;
+
+    for (const QString &group : childGroups) {
+        const QString trimmedGroup = group.trimmed();
+        if (trimmedGroup.isEmpty() || trimmedGroup == GROUPNAME_GLOBALSETTING || addedGroups.contains(trimmedGroup)) {
+            continue;
+        }
+
+        addedGroups.insert(trimmedGroup);
+        userGroups.append(trimmedGroup);
+    }
+
+    return userGroups;
+}
+
+QStringList normalizeSettingSelectOrderList(const QStringList &userGroups, const QStringList &storedOrder)
+{
+    QStringList orderedGroups;
+    QSet<QString> existingGroups;
+    QSet<QString> appendedGroups;
+
+    for (const QString &group : userGroups) {
+        existingGroups.insert(group);
+    }
+
+    for (const QString &group : storedOrder) {
+        const QString trimmedGroup = group.trimmed();
+        if (trimmedGroup.isEmpty() || !existingGroups.contains(trimmedGroup) || appendedGroups.contains(trimmedGroup)) {
+            continue;
+        }
+
+        orderedGroups.append(trimmedGroup);
+        appendedGroups.insert(trimmedGroup);
+    }
+
+    for (const QString &group : userGroups) {
+        if (appendedGroups.contains(group)) {
+            continue;
+        }
+
+        orderedGroups.append(group);
+        appendedGroups.insert(group);
+    }
+
+    return orderedGroups;
+}
+
+QStringList orderedSettingSelectUserGroups(QSettings &settingFile)
+{
+    const QStringList childGroups = settingFile.childGroups();
+    const QStringList userGroups = settingSelectUserGroupsFromChildGroups(childGroups);
+    const QStringList storedOrder = settingFile.value(SETTINGSELECT_ORDER_LIST).toStringList();
+    return normalizeSettingSelectOrderList(userGroups, storedOrder);
+}
+
+SettingSelectDisplayData buildSettingSelectDisplayData(QSettings &settingFile, const QString &group)
+{
+    SettingSelectDisplayData displayData;
+    displayData.groupName = group;
+    displayData.displayText = group;
+    displayData.icon = QKeyMapper::s_Icon_Blank;
+
+    if (group.isEmpty()) {
+        return displayData;
+    }
+
+    const QString tempSettingSelectStr = group + "/";
+
+    QString filepathString;
+    if (settingFile.contains(tempSettingSelectStr + PROCESSINFO_FILEPATH)) {
+        filepathString = settingFile.value(tempSettingSelectStr + PROCESSINFO_FILEPATH).toString();
+    }
+
+    QString customiconpath;
+    bool useCustomIcon = false;
+    if (settingFile.contains(tempSettingSelectStr + PROCESSINFO_CUSTOMICONPATH)) {
+        customiconpath = settingFile.value(tempSettingSelectStr + PROCESSINFO_CUSTOMICONPATH).toString();
+        if (!customiconpath.isEmpty() && QFileInfo::exists(customiconpath)) {
+            QIcon iconLoaded = QKeyMapper::loadSettingCustomIcon(customiconpath);
+            if (!iconLoaded.isNull()) {
+                displayData.icon = iconLoaded;
+                useCustomIcon = true;
+            }
+        }
+    }
+
+    if (!useCustomIcon && !filepathString.isEmpty() && QFileInfo::exists(filepathString)) {
+        QIcon fileicon;
+        if (QKeyMapper::s_DisplayScale == 1.0) {
+            fileicon = QKeyMapper::extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
+        }
+        else {
+            fileicon = QKeyMapper::extractIconFromExecutable(filepathString);
+        }
+
+        if (fileicon.isNull()) {
+            QFileIconProvider iconProvider;
+            fileicon = iconProvider.icon(QFileInfo(filepathString));
+        }
+
+        if (!fileicon.isNull()) {
+            displayData.icon = fileicon;
+        }
+    }
+
+    QString descriptionString;
+    if (settingFile.contains(tempSettingSelectStr + PROCESSINFO_DESCRIPTION)) {
+        descriptionString = settingFile.value(tempSettingSelectStr + PROCESSINFO_DESCRIPTION).toString();
+    }
+    if (!descriptionString.isEmpty()) {
+        displayData.displayText = QString(SETTING_DESCRIPTION_FORMAT).arg(group, descriptionString);
+    }
+
+    return displayData;
 }
 
 QString normalizeOriginalKeyForExclusiveGroup(const QString &originalKey);
@@ -2018,7 +2144,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
     ui->originalKeyRecordLineEdit->installEventFilter(this);
     ui->gamepadSelectComboBox->view()->installEventFilter(this);
-    ui->settingselectComboBox->view()->installEventFilter(this);
 
 #ifdef QT_DEBUG
     ui->pointDisplayLabel->setText("X:1100, Y:1200");
@@ -12620,20 +12745,6 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
     if (m_KeyMapStatus == KEYMAP_IDLE) {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
-            if (object == ui->settingselectComboBox->view()
-                && keyEvent->key() == Qt::Key_Delete) {
-                QAbstractItemView *view = ui->settingselectComboBox->view();
-                if (view->isVisible()) {
-                    QModelIndex highlightedIndex = view->currentIndex();
-                    if (highlightedIndex.isValid()) {
-                        int highlightedRow = highlightedIndex.row();
-                        // Delete the highlighted setting directly without changing currentIndex first.
-                        removeSettingByIndex(highlightedRow);
-                    }
-                    return true;
-                }
-            }
-
             if (keyEvent->key() == Qt::Key_F2) {
                 int highlightedRow = -1;
                 QAbstractItemView *view = ui->gamepadSelectComboBox->view();
@@ -15760,6 +15871,8 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
 
     // Perform import (copy selected groups)
     int copied = 0;
+    const bool importGeneralGroup = groups.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME);
+    const bool sourceHasOrderKey = src.contains(SETTINGSELECT_ORDER_LIST);
     for (const QString &g : groups) {
         if (g == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
             // Import top-level keys into destination top-level
@@ -15786,6 +15899,18 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     if (copied == 0) {
         QString message = tr("No valid setting found.");
         showFailurePopup(message);
+
+    if (importGeneralGroup && sourceHasOrderKey) {
+        writeSettingSelectOrder(dst, dst.value(SETTINGSELECT_ORDER_LIST).toStringList());
+    }
+    else {
+        for (const QString &groupName : groups) {
+            if (groupName != CONFIG_FILE_TOPLEVEL_GROUPNAME && groupName != GROUPNAME_GLOBALSETTING) {
+                appendSettingSelectOrderIfMissing(dst, groupName);
+            }
+        }
+    }
+
         return;
     }
 
@@ -15884,6 +16009,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     }
     int languageIndex = ui->languageComboBox->currentIndex();
     bool saveGlobalSetting = false;
+    bool createNewSetting = false;
 
     // m_LastWindowPosition = pos();
     settingFile.setValue(LAST_WINDOWPOSITION, pos());
@@ -16079,6 +16205,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         }
         else {
             // Case 6: New setting name - create new setting
+            createNewSetting = true;
             saveSettingSelectStr = settingNameString;
             settingFile.setValue(SETTINGSELECT, saveSettingSelectStr);
             saveSettingSelectStr = saveSettingSelectStr + "/";
@@ -17228,6 +17355,9 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     }
 
     const QString savedSettingName = saveSettingSelectStr.remove("/");
+    if (!saveGlobalSetting && createNewSetting) {
+        appendSettingSelectOrderIfMissing(settingFile, savedSettingName);
+    }
 
     // Save VButton panel settings to INI
     Q_ASSERT(!savedSettingName.isEmpty());
@@ -17338,6 +17468,220 @@ void QKeyMapper::saveCurrentSettingLastTabName(const QString &tabName)
 #ifdef DEBUG_LOGOUT_ON
     qDebug().noquote().nospace() << "\033[1;34m[saveCurrentSettingLastTabName] Saved LastTabName [" << cursettingSelectStr << "] -> \"" << tabName << "\"\033[0m";
 #endif
+}
+
+void QKeyMapper::rebuildSettingSelectComboBox(QSettings &settingFile, QStringList *validGroups)
+{
+    if (validGroups != Q_NULLPTR) {
+        validGroups->clear();
+    }
+
+    m_SettingSelectListWithoutDescription.clear();
+    ui->settingselectComboBox->clear();
+    ui->settingselectComboBox->addItem(QString());
+    ui->settingselectComboBox->setItemData(EMPTYSETTING_INDEX, QString(), SETTINGSELECT_ACTUAL_GROUP_ROLE);
+    m_SettingSelectListWithoutDescription.append(QString());
+
+    const QString globalSettingName = tr("GlobalKeyMapping");
+    ui->settingselectComboBox->addItem(QIcon(":/function.svg"), globalSettingName);
+    ui->settingselectComboBox->setItemData(GLOBALSETTING_INDEX,
+                                           QString(GROUPNAME_GLOBALSETTING),
+                                           SETTINGSELECT_ACTUAL_GROUP_ROLE);
+    m_SettingSelectListWithoutDescription.append(GROUPNAME_GLOBALSETTING);
+
+    const QStringList orderedGroups = orderedSettingSelectUserGroups(settingFile);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[rebuildSettingSelectComboBox]" << "orderedGroups >>" << orderedGroups;
+#endif
+
+    for (const QString &group : orderedGroups) {
+        const SettingSelectDisplayData displayData = buildSettingSelectDisplayData(settingFile, group);
+        ui->settingselectComboBox->addItem(displayData.icon, displayData.displayText);
+        const int itemIndex = ui->settingselectComboBox->count() - 1;
+        ui->settingselectComboBox->setItemData(itemIndex,
+                                               displayData.groupName,
+                                               SETTINGSELECT_ACTUAL_GROUP_ROLE);
+        m_SettingSelectListWithoutDescription.append(displayData.groupName);
+        if (validGroups != Q_NULLPTR) {
+            validGroups->append(displayData.groupName);
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[rebuildSettingSelectComboBox]" << "Finished";
+#endif
+}
+
+QString QKeyMapper::currentSettingSelectGroupName(void) const
+{
+    if (ui == Q_NULLPTR || ui->settingselectComboBox == Q_NULLPTR) {
+        return QString();
+    }
+
+    const int currentIndex = ui->settingselectComboBox->currentIndex();
+    if (currentIndex < 0 || currentIndex >= m_SettingSelectListWithoutDescription.size()) {
+        return QString();
+    }
+
+    return m_SettingSelectListWithoutDescription.at(currentIndex);
+}
+
+int QKeyMapper::findSettingSelectIndexByGroupName(const QString &settingName) const
+{
+    return m_SettingSelectListWithoutDescription.indexOf(settingName);
+}
+
+QStringList QKeyMapper::currentSettingSelectUserGroups(void) const
+{
+    QStringList orderedUserGroups;
+    for (int index = GLOBALSETTING_INDEX + 1; index < m_SettingSelectListWithoutDescription.size(); ++index) {
+        const QString groupName = m_SettingSelectListWithoutDescription.at(index);
+        if (!groupName.isEmpty() && groupName != GROUPNAME_GLOBALSETTING) {
+            orderedUserGroups.append(groupName);
+        }
+    }
+
+    return orderedUserGroups;
+}
+
+void QKeyMapper::writeSettingSelectOrder(QSettings &settingFile, const QStringList &orderedUserGroups)
+{
+    const QStringList userGroups = settingSelectUserGroupsFromChildGroups(settingFile.childGroups());
+    const QStringList normalizedOrder = normalizeSettingSelectOrderList(userGroups, orderedUserGroups);
+    if (normalizedOrder.isEmpty()) {
+        settingFile.remove(SETTINGSELECT_ORDER_LIST);
+        return;
+    }
+
+    settingFile.setValue(SETTINGSELECT_ORDER_LIST, normalizedOrder);
+}
+
+void QKeyMapper::appendSettingSelectOrderIfMissing(QSettings &settingFile, const QString &settingName)
+{
+    const QString normalizedName = settingName.trimmed();
+    if (normalizedName.isEmpty() || normalizedName == GROUPNAME_GLOBALSETTING) {
+        return;
+    }
+
+    QStringList orderedUserGroups = orderedSettingSelectUserGroups(settingFile);
+    if (!orderedUserGroups.contains(normalizedName)) {
+        orderedUserGroups.append(normalizedName);
+    }
+
+    writeSettingSelectOrder(settingFile, orderedUserGroups);
+}
+
+void QKeyMapper::removeSettingSelectOrderEntry(QSettings &settingFile, const QString &settingName)
+{
+    const QString normalizedName = settingName.trimmed();
+    if (normalizedName.isEmpty() || normalizedName == GROUPNAME_GLOBALSETTING) {
+        return;
+    }
+
+    QStringList orderedUserGroups = orderedSettingSelectUserGroups(settingFile);
+    orderedUserGroups.removeAll(normalizedName);
+    writeSettingSelectOrder(settingFile, orderedUserGroups);
+}
+
+void QKeyMapper::setCurrentSettingSelectByGroupName(const QString &settingName)
+{
+    if (ui == Q_NULLPTR || ui->settingselectComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    int settingIndex = findSettingSelectIndexByGroupName(settingName);
+    if (settingIndex < 0) {
+        settingIndex = EMPTYSETTING_INDEX;
+    }
+
+    ui->settingselectComboBox->setCurrentIndex(settingIndex);
+    ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
+}
+
+bool QKeyMapper::moveSettingSelectOrderEntry(const QString &settingName, int targetUserIndex)
+{
+    if (m_KeyMapStatus != KEYMAP_IDLE
+        || ui == Q_NULLPTR
+        || ui->settingselectComboBox == Q_NULLPTR) {
+        return false;
+    }
+
+    const QString normalizedName = settingName.trimmed();
+    if (normalizedName.isEmpty() || normalizedName == GROUPNAME_GLOBALSETTING) {
+        return false;
+    }
+
+    QStringList orderedUserGroups = currentSettingSelectUserGroups();
+    const int sourceIndex = orderedUserGroups.indexOf(normalizedName);
+    if (sourceIndex < 0 || orderedUserGroups.isEmpty()) {
+        return false;
+    }
+
+    const int clampedTargetIndex = qBound(0, targetUserIndex, orderedUserGroups.size() - 1);
+    if (sourceIndex == clampedTargetIndex) {
+        return false;
+    }
+
+    const QString currentSettingName = currentSettingSelectGroupName();
+    const int sourceComboIndex = findSettingSelectIndexByGroupName(normalizedName);
+    if (sourceComboIndex <= GLOBALSETTING_INDEX) {
+        return false;
+    }
+
+    int targetComboIndex = GLOBALSETTING_INDEX + 1 + clampedTargetIndex;
+    const QString movedDisplayText = ui->settingselectComboBox->itemText(sourceComboIndex);
+    const QIcon movedIcon = ui->settingselectComboBox->itemIcon(sourceComboIndex);
+    const QVariant movedActualGroup = ui->settingselectComboBox->itemData(sourceComboIndex, SETTINGSELECT_ACTUAL_GROUP_ROLE);
+    const QVariant movedToolTip = ui->settingselectComboBox->itemData(sourceComboIndex, Qt::ToolTipRole);
+#ifdef DEBUG_LOGOUT_ON
+    QElapsedTimer elapsedTimer;
+    elapsedTimer.start();
+#endif
+
+    const QString movedGroupName = orderedUserGroups.takeAt(sourceIndex);
+    orderedUserGroups.insert(clampedTargetIndex, movedGroupName);
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+    writeSettingSelectOrder(settingFile, orderedUserGroups);
+
+    QSignalBlocker blocker(ui->settingselectComboBox);
+    ui->settingselectComboBox->removeItem(sourceComboIndex);
+    m_SettingSelectListWithoutDescription.removeAt(sourceComboIndex);
+    ui->settingselectComboBox->insertItem(targetComboIndex, movedIcon, movedDisplayText);
+    ui->settingselectComboBox->setItemData(targetComboIndex, movedActualGroup, SETTINGSELECT_ACTUAL_GROUP_ROLE);
+    if (movedToolTip.isValid()) {
+        ui->settingselectComboBox->setItemData(targetComboIndex, movedToolTip, Qt::ToolTipRole);
+    }
+    m_SettingSelectListWithoutDescription.insert(targetComboIndex, movedActualGroup.toString());
+    setCurrentSettingSelectByGroupName(currentSettingName);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().noquote().nospace()
+        << "[moveSettingSelectOrderEntry] setting=" << normalizedName
+        << ", sourceUserIndex=" << sourceIndex
+        << ", targetUserIndex=" << clampedTargetIndex
+        << ", sourceComboIndex=" << sourceComboIndex
+        << ", targetComboIndex=" << targetComboIndex
+        << ", elapsedMs=" << elapsedTimer.elapsed();
+#endif
+    return true;
+}
+
+bool QKeyMapper::removeSettingByName(const QString &settingName)
+{
+    if (m_KeyMapStatus != KEYMAP_IDLE) {
+        return false;
+    }
+
+    const int settingIndex = findSettingSelectIndexByGroupName(settingName);
+    if (settingIndex < 0) {
+        return false;
+    }
+
+    return removeSettingByIndex(settingIndex);
 }
 
 QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all, bool preserveVButtonPanelVisibility)
@@ -18186,93 +18530,12 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
     }
 
     QString settingSelectStr;
-
-    m_SettingSelectListWithoutDescription.clear();
-    ui->settingselectComboBox->clear();
-    ui->settingselectComboBox->addItem(QString());
-    m_SettingSelectListWithoutDescription.append(QString());
-    QString globalSettingName = tr("GlobalKeyMapping");
-    ui->settingselectComboBox->addItem(globalSettingName);
-    m_SettingSelectListWithoutDescription.append(GROUPNAME_GLOBALSETTING);
-// #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-//     QStandardItemModel* model = qobject_cast<QStandardItemModel*>(ui->settingselectComboBox->model());
-//     QStandardItem* item = model->item(1);
-//     item->setData(QColor(Qt::darkMagenta), Qt::ForegroundRole);
-// #else
-//     QBrush colorBrush(Qt::darkMagenta);
-//     ui->settingselectComboBox->setItemData(1, colorBrush, Qt::TextColorRole);
-// #endif
-    ui->settingselectComboBox->setItemIcon(GLOBALSETTING_INDEX, QIcon(":/function.svg"));
     QStringList groups = settingFile.childGroups();
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadKeyMapSetting]" << "childGroups >>" << groups;
 #endif
     QStringList validgroups;
-
-    for (const QString &group : std::as_const(groups)){
-        if (group == GROUPNAME_GLOBALSETTING) {
-            continue;
-        }
-
-        QString tempSettingSelectStr = group + "/";
-
-        QIcon settingIcon = QKeyMapper::s_Icon_Blank;
-        QString filepathString;
-        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
-            filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
-        }
-        QString customiconpath;
-        bool useCustomIcon = false;
-        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH)){
-            customiconpath = settingFile.value(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH).toString();
-            if ((false == customiconpath.isEmpty())
-                && (true == QFileInfo::exists(customiconpath))){
-                QIcon icon_loaded = loadSettingCustomIcon(customiconpath);
-                if (!icon_loaded.isNull()) {
-                    settingIcon = icon_loaded;
-                    useCustomIcon = true;
-                }
-            }
-        }
-
-        if (!useCustomIcon) {
-            if (!filepathString.isEmpty()
-                && QFileInfo::exists(filepathString)){
-                QIcon fileicon;
-                if (s_DisplayScale == 1.0) {
-                    fileicon = extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
-                }
-                else {
-                    fileicon = extractIconFromExecutable(filepathString);
-                }
-
-                if (fileicon.isNull()) {
-                    QFileIconProvider icon_provider;
-                    fileicon = icon_provider.icon(QFileInfo(filepathString));
-                }
-
-                if (!fileicon.isNull()) {
-                    settingIcon = fileicon;
-                }
-            }
-        }
-
-        QString descriptionString;
-        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
-            descriptionString = settingFile.value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
-        }
-        QString groupnameWithDescription = group;
-        if (!descriptionString.isEmpty()) {
-            groupnameWithDescription = QString(SETTING_DESCRIPTION_FORMAT).arg(group, descriptionString);
-        }
-
-        ui->settingselectComboBox->addItem(settingIcon, groupnameWithDescription);
-        m_SettingSelectListWithoutDescription.append(group);
-        validgroups.append(group);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting] Setting select add FullMatch ->" << group;
-#endif
-    }
+    rebuildSettingSelectComboBox(settingFile, &validgroups);
 
 #if 0
     QStringList validgroups_fullmatch;
@@ -20766,7 +21029,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         ui->checkProcessComboBox->setEnabled(false);
         ui->checkWindowTitleComboBox->setEnabled(false);
         ui->checkClassNameComboBox->setEnabled(false);
-        ui->removeSettingButton->setEnabled(false);
+        // ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
         m_MappingAdvancedDialog->setProcessIconAsTrayIconEnabled(false);
@@ -20778,7 +21041,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
     else {
         if (KEYMAP_IDLE == m_KeyMapStatus){
             ui->settingNameLineEdit->setEnabled(true);
-            ui->removeSettingButton->setEnabled(true);
+            // ui->removeSettingButton->setEnabled(true);
         }
         ui->settingNameLineEdit->setReadOnly(false);
         ui->processLineEdit->setEnabled(true);
@@ -22705,78 +22968,8 @@ void QKeyMapper::loadGeneralSetting()
     }
 
 
-    m_SettingSelectListWithoutDescription.clear();
-    ui->settingselectComboBox->clear();
-    ui->settingselectComboBox->addItem(QString());
-    m_SettingSelectListWithoutDescription.append(QString());
-    QString globalSettingName = tr("GlobalKeyMapping");
-    ui->settingselectComboBox->addItem(globalSettingName);
-    m_SettingSelectListWithoutDescription.append(GROUPNAME_GLOBALSETTING);
-    ui->settingselectComboBox->setItemIcon(GLOBALSETTING_INDEX, QIcon(":/function.svg"));
-    QStringList groups = settingFile.childGroups();
-
     QStringList validgroups;
-    for (const QString &group : std::as_const(groups)){
-        if (group == GROUPNAME_GLOBALSETTING) {
-            continue;
-        }
-
-        QString tempSettingSelectStr = group + "/";
-
-        QIcon settingIcon = QKeyMapper::s_Icon_Blank;
-        QString filepathString;
-        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_FILEPATH)) {
-            filepathString = settingFile.value(tempSettingSelectStr+PROCESSINFO_FILEPATH).toString();
-        }
-        QString customiconpath;
-        bool useCustomIcon = false;
-        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH)){
-            customiconpath = settingFile.value(tempSettingSelectStr+PROCESSINFO_CUSTOMICONPATH).toString();
-            if ((false == customiconpath.isEmpty())
-                && (true == QFileInfo::exists(customiconpath))){
-                QIcon icon_loaded = loadSettingCustomIcon(customiconpath);
-                if (!icon_loaded.isNull()) {
-                    settingIcon = icon_loaded;
-                    useCustomIcon = true;
-                }
-            }
-        }
-
-        if (!useCustomIcon) {
-            if (!filepathString.isEmpty()
-                && QFileInfo::exists(filepathString)){
-                QIcon fileicon;
-                if (QKeyMapper::s_DisplayScale == 1.0) {
-                    fileicon = extractIconFromExecutable(filepathString, ITEM_ICON_SIZE);
-                }
-                else {
-                    fileicon = extractIconFromExecutable(filepathString);
-                }
-
-                if (fileicon.isNull()) {
-                    QFileIconProvider icon_provider;
-                    fileicon = icon_provider.icon(QFileInfo(filepathString));
-                }
-
-                if (!fileicon.isNull()) {
-                    settingIcon = fileicon;
-                }
-            }
-        }
-
-        QString descriptionString;
-        if (true == settingFile.contains(tempSettingSelectStr+PROCESSINFO_DESCRIPTION)) {
-            descriptionString = settingFile.value(tempSettingSelectStr+PROCESSINFO_DESCRIPTION).toString();
-        }
-        QString groupnameWithDescription = group;
-        if (!descriptionString.isEmpty()) {
-            groupnameWithDescription = QString(SETTING_DESCRIPTION_FORMAT).arg(group, descriptionString);
-        }
-
-        ui->settingselectComboBox->addItem(settingIcon, groupnameWithDescription);
-        m_SettingSelectListWithoutDescription.append(group);
-        validgroups.append(group);
-    }
+    rebuildSettingSelectComboBox(settingFile, &validgroups);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadGeneralSetting]" << "validgroups >>" << validgroups;
@@ -22905,7 +23098,7 @@ void QKeyMapper::setControlFontEnglish()
     // ui->burstreleaseLabel->setFont(customFont);
     // ui->burstrelease_msLabel->setFont(customFont);
     // ui->settingselectLabel->setFont(customFont);
-    ui->removeSettingButton->setFont(customFont);
+    // ui->removeSettingButton->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
     ui->pushLevelLabel->setFont(customFont);
     ui->sendTextLabel->setFont(customFont);
@@ -23053,7 +23246,7 @@ void QKeyMapper::setControlFontChinese()
     // ui->burstreleaseLabel->setFont(customFont);
     // ui->burstrelease_msLabel->setFont(customFont);
     // ui->settingselectLabel->setFont(customFont);
-    ui->removeSettingButton->setFont(customFont);
+    // ui->removeSettingButton->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
     ui->pushLevelLabel->setFont(customFont);
     ui->sendTextLabel->setFont(customFont);
@@ -23201,7 +23394,7 @@ void QKeyMapper::setControlFontJapanese()
     // ui->burstreleaseLabel->setFont(customFont);
     // ui->burstrelease_msLabel->setFont(customFont);
     // ui->settingselectLabel->setFont(customFont);
-    ui->removeSettingButton->setFont(customFont);
+    // ui->removeSettingButton->setFont(customFont);
     ui->waitTimeLabel->setFont(customFont);
     ui->pushLevelLabel->setFont(customFont);
     ui->sendTextLabel->setFont(customFont);
@@ -23343,12 +23536,12 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     //     ui->ProcessIconAsTrayIconCheckBox->setEnabled(status);
     // }
 
-    if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
-        ui->removeSettingButton->setEnabled(false);
-    }
-    else {
-        ui->removeSettingButton->setEnabled(status);
-    }
+    // if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
+    //     ui->removeSettingButton->setEnabled(false);
+    // }
+    // else {
+    //     ui->removeSettingButton->setEnabled(status);
+    // }
 
     //ui->processLineEdit->setEnabled(status);
     //ui->windowTitleLineEdit->setEnabled(status);
@@ -29425,7 +29618,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     // ui->mouseXSpeedLabel->setText(tr("X Speed"));
     // ui->mouseYSpeedLabel->setText(tr("Y Speed"));
     // ui->settingselectLabel->setText(SETTINGSELECTLABEL_CHINESE);
-    ui->removeSettingButton->setText(tr("Remove"));
+    // ui->removeSettingButton->setText(tr("Remove"));
     // ui->disableWinKeyCheckBox->setText(DISABLEWINKEYCHECKBOX_CHINESE);
     ui->dataPortLabel->setText(tr("DataPort"));
     ui->brakeThresholdLabel->setText(tr("BrakeValue"));
@@ -31943,7 +32136,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->checkProcessComboBox->setEnabled(true);
         ui->checkWindowTitleComboBox->setEnabled(true);
         ui->checkClassNameComboBox->setEnabled(true);
-        ui->removeSettingButton->setEnabled(true);
+        // ui->removeSettingButton->setEnabled(true);
 
         // QString filename = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
         QString windowTitle = ui->processinfoTable->item(index.row(), PROCESS_TITLE_COLUMN)->text();
@@ -35750,6 +35943,819 @@ QString QKeyMapper::normalizeMappingKeyCopyText(const QString &mappingKeyText)
     return copyText;
 }
 
+static QKeyMapper *settingSelectKeyMapperForCombo(const SettingSelectComboBox *comboBox)
+{
+    if (comboBox != Q_NULLPTR) {
+        if (QKeyMapper *keyMapper = qobject_cast<QKeyMapper *>(comboBox->window())) {
+            return keyMapper;
+        }
+    }
+
+    return QKeyMapper::getInstance();
+}
+
+void SettingSelectComboBox::ensureCustomPopup(void)
+{
+    if (m_SettingSelectPopup == Q_NULLPTR) {
+        m_SettingSelectPopup = new SettingSelectComboBoxPopup(this);
+    }
+}
+
+void SettingSelectComboBox::applyPopupSelection(const QString &groupName)
+{
+    const int comboIndex = findIndexByActualGroup(groupName);
+    if (comboIndex >= 0) {
+        setCurrentIndex(comboIndex);
+    }
+
+    const QString selectedText = currentText();
+    hidePopup();
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    if (QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(this)) {
+        keyMapper->on_settingselectComboBox_textActivated(selectedText);
+    }
+#endif
+
+    setFocus(Qt::OtherFocusReason);
+}
+
+QString SettingSelectComboBox::actualGroupNameForIndex(int index) const
+{
+    if (index < 0 || index >= count()) {
+        return QString();
+    }
+
+    return itemData(index, SETTINGSELECT_ACTUAL_GROUP_ROLE).toString();
+}
+
+int SettingSelectComboBox::findIndexByActualGroup(const QString &groupName) const
+{
+    for (int index = 0; index < count(); ++index) {
+        if (actualGroupNameForIndex(index) == groupName) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
+bool SettingSelectComboBox::movePopupSelectionToUserIndex(const QString &groupName, int targetUserIndex)
+{
+    QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(this);
+    return keyMapper != Q_NULLPTR && keyMapper->moveSettingSelectOrderEntry(groupName, targetUserIndex);
+}
+
+bool SettingSelectComboBox::deletePopupSelection(const QString &groupName)
+{
+    QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(this);
+    return keyMapper != Q_NULLPTR && keyMapper->removeSettingByName(groupName);
+}
+
+void SettingSelectComboBox::showPopup(void)
+{
+    ensureCustomPopup();
+    if (m_SettingSelectPopup == Q_NULLPTR) {
+        QComboBox::showPopup();
+        return;
+    }
+
+    if (m_SettingSelectPopup->isVisible()) {
+        m_SettingSelectPopup->hide();
+        return;
+    }
+
+    m_SettingSelectPopup->showForComboBox();
+}
+
+void SettingSelectComboBox::hidePopup(void)
+{
+    if (m_SettingSelectPopup != Q_NULLPTR && m_SettingSelectPopup->isVisible()) {
+        m_SettingSelectPopup->hide();
+    }
+
+    QComboBox::hidePopup();
+}
+
+SettingSelectComboBoxPopup::SettingSelectComboBoxPopup(SettingSelectComboBox *comboBox)
+    : QFrame(comboBox)
+    , m_ComboBox(comboBox)
+    , m_SearchLineEdit(new QLineEdit(this))
+    , m_ButtonRowWidget(new QWidget(this))
+    , m_MoveUpToolButton(new QToolButton(m_ButtonRowWidget))
+    , m_MoveDownToolButton(new QToolButton(m_ButtonRowWidget))
+    , m_MoveTopToolButton(new QToolButton(m_ButtonRowWidget))
+    , m_MoveBottomToolButton(new QToolButton(m_ButtonRowWidget))
+    , m_ReorderToolButton(new QToolButton(m_ButtonRowWidget))
+    , m_MainListWidget(new KeyListPopupListWidget(this))
+{
+    setWindowFlags(Qt::Popup | Qt::FramelessWindowHint);
+    setFrameShape(QFrame::WinPanel);
+    setFrameShadow(QFrame::Sunken);
+    setAttribute(Qt::WA_DeleteOnClose, false);
+    setAttribute(Qt::WA_InputMethodEnabled, true);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(6, 6, 6, 6);
+    mainLayout->setSpacing(6);
+
+    m_SearchLineEdit->setClearButtonEnabled(true);
+    m_SearchLineEdit->setPlaceholderText(QKeyMapper::tr("Type to filter settings..."));
+    m_SearchLineEdit->setFocusPolicy(Qt::StrongFocus);
+    m_SearchLineEdit->setAttribute(Qt::WA_InputMethodEnabled, true);
+    mainLayout->addWidget(m_SearchLineEdit);
+
+    QHBoxLayout *buttonRowLayout = new QHBoxLayout(m_ButtonRowWidget);
+    buttonRowLayout->setContentsMargins(0, 0, 0, 0);
+    buttonRowLayout->setSpacing(4);
+
+    QStyle *windowsStyle = QKeyMapperStyle::windowsStyle();
+    const QList<QToolButton *> moveButtons = {
+        m_MoveUpToolButton,
+        m_MoveDownToolButton,
+        m_MoveTopToolButton,
+        m_MoveBottomToolButton
+    };
+    for (QToolButton *button : moveButtons) {
+        if (windowsStyle != Q_NULLPTR) {
+            button->setStyle(windowsStyle);
+        }
+        button->setFocusPolicy(Qt::NoFocus);
+        button->setToolButtonStyle(Qt::ToolButtonTextOnly);
+        button->setAutoRaise(false);
+    }
+    m_MoveUpToolButton->setText(QKeyMapper::tr("Up"));
+    m_MoveUpToolButton->setToolTip(QKeyMapper::tr("Move Up"));
+    m_MoveDownToolButton->setText(QKeyMapper::tr("Down"));
+    m_MoveDownToolButton->setToolTip(QKeyMapper::tr("Move Down"));
+    m_MoveTopToolButton->setText(QKeyMapper::tr("Top"));
+    m_MoveTopToolButton->setToolTip(QKeyMapper::tr("Move to Top"));
+    m_MoveBottomToolButton->setText(QKeyMapper::tr("Bottom"));
+    m_MoveBottomToolButton->setToolTip(QKeyMapper::tr("Move to Bottom"));
+
+    if (windowsStyle != Q_NULLPTR) {
+        m_ReorderToolButton->setStyle(windowsStyle);
+    }
+    m_ReorderToolButton->setFocusPolicy(Qt::NoFocus);
+    m_ReorderToolButton->setToolButtonStyle(Qt::ToolButtonTextOnly);
+    m_ReorderToolButton->setAutoRaise(false);
+    m_ReorderToolButton->setText(QKeyMapper::tr("Reorder"));
+    m_ReorderToolButton->setToolTip(QKeyMapper::tr("Reset the custom setting order"));
+
+    buttonRowLayout->addWidget(m_MoveUpToolButton);
+    buttonRowLayout->addWidget(m_MoveDownToolButton);
+    buttonRowLayout->addWidget(m_MoveTopToolButton);
+    buttonRowLayout->addWidget(m_MoveBottomToolButton);
+    buttonRowLayout->addStretch(1);
+    buttonRowLayout->addWidget(m_ReorderToolButton);
+
+    mainLayout->addWidget(m_ButtonRowWidget);
+
+    m_MainListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_MainListWidget->setAlternatingRowColors(false);
+    m_MainListWidget->setFocusPolicy(Qt::NoFocus);
+    m_MainListWidget->setSpacing(0);
+    mainLayout->addWidget(m_MainListWidget, 1);
+
+    connect(m_SearchLineEdit, &QLineEdit::textChanged, this, &SettingSelectComboBoxPopup::onSearchTextChanged);
+    connect(m_MainListWidget, &KeyListPopupListWidget::leftClickedItem, this, &SettingSelectComboBoxPopup::onMainListItemClicked);
+    connect(m_MainListWidget, &KeyListPopupListWidget::contextMenuRequestedAt, this, &SettingSelectComboBoxPopup::showMainListMenu);
+    connect(m_MainListWidget, &QListWidget::itemSelectionChanged, this, [this]() {
+        refreshMoveButtons();
+    });
+    connect(m_MoveTopToolButton, &QToolButton::clicked, this, &SettingSelectComboBoxPopup::onMoveTopButtonClicked);
+    connect(m_MoveUpToolButton, &QToolButton::clicked, this, &SettingSelectComboBoxPopup::onMoveUpButtonClicked);
+    connect(m_MoveDownToolButton, &QToolButton::clicked, this, &SettingSelectComboBoxPopup::onMoveDownButtonClicked);
+    connect(m_MoveBottomToolButton, &QToolButton::clicked, this, &SettingSelectComboBoxPopup::onMoveBottomButtonClicked);
+    connect(m_ReorderToolButton, &QToolButton::clicked, this, &SettingSelectComboBoxPopup::onReorderButtonClicked);
+
+    m_SearchLineEdit->installEventFilter(this);
+    m_MainListWidget->installEventFilter(this);
+}
+
+void SettingSelectComboBoxPopup::showForComboBox(void)
+{
+    if (m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    const QFont comboFont = m_ComboBox->font();
+    m_SearchLineEdit->setFont(comboFont);
+    m_MoveTopToolButton->setFont(comboFont);
+    m_MoveUpToolButton->setFont(comboFont);
+    m_MoveDownToolButton->setFont(comboFont);
+    m_MoveBottomToolButton->setFont(comboFont);
+    m_MainListWidget->setFont(comboFont);
+    m_MainListWidget->setIconSize(m_ComboBox->iconSize());
+
+    m_SearchLineEdit->clear();
+    refreshPopupContents();
+    updatePopupGeometry();
+    show();
+    raise();
+    m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
+    m_SearchLineEdit->selectAll();
+    activateTextInputWidget(m_SearchLineEdit);
+
+    QTimer::singleShot(0, this, [this]() {
+        if (!isVisible()) {
+            return;
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[SettingSelectComboBoxPopup::showForComboBox]"
+                 << "count=" << m_MainListWidget->count()
+                 << ", firstRowHeight=" << m_MainListWidget->sizeHintForRow(0)
+                 << ", spacing=" << m_MainListWidget->spacing();
+#endif
+
+        m_MainListWidget->doItemsLayout();
+    m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
+    m_SearchLineEdit->selectAll();
+    activateTextInputWidget(m_SearchLineEdit);
+        updatePopupGeometry();
+    });
+}
+
+void SettingSelectComboBoxPopup::refreshPopupContents(const QString &preferredActualGroup, bool ensureCurrentItemVisible)
+{
+    refreshMainList(preferredActualGroup, ensureCurrentItemVisible);
+    refreshMoveButtons();
+
+    if (isVisible()) {
+        updatePopupGeometry();
+    }
+}
+
+bool SettingSelectComboBoxPopup::eventFilter(QObject *watched, QEvent *event)
+{
+    if (event->type() != QEvent::KeyPress) {
+        return QFrame::eventFilter(watched, event);
+    }
+
+    if (watched != m_SearchLineEdit && watched != m_MainListWidget) {
+        return QFrame::eventFilter(watched, event);
+    }
+
+    QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+    if (keyEvent->key() == Qt::Key_Tab || keyEvent->key() == Qt::Key_Backtab) {
+        if (!m_SearchLineEdit->hasFocus()) {
+            m_SearchLineEdit->setFocus(Qt::TabFocusReason);
+        }
+        return true;
+    }
+
+    if (keyEvent->key() == Qt::Key_Escape) {
+        if (!m_SearchLineEdit->text().isEmpty()) {
+            m_SearchLineEdit->clear();
+        }
+        else {
+            hide();
+        }
+        return true;
+    }
+
+    if (keyEvent->key() == Qt::Key_Down || keyEvent->key() == Qt::Key_Up) {
+        moveListFocusByKey(m_MainListWidget, keyEvent->key());
+        if (!m_SearchLineEdit->hasFocus()) {
+            m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
+        }
+        refreshMoveButtons();
+        return true;
+    }
+
+    if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+        QListWidgetItem *currentItem = m_MainListWidget->currentItem();
+        if (currentItem != Q_NULLPTR && (currentItem->flags() & Qt::ItemIsEnabled)) {
+            onMainListItemClicked(currentItem);
+        }
+        return true;
+    }
+
+    if (watched != m_SearchLineEdit) {
+        const bool hasPrintableText = !keyEvent->text().isEmpty()
+            && !(keyEvent->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))
+            && keyEvent->text().at(0).isPrint();
+        if (keyEvent->key() == Qt::Key_Backspace || hasPrintableText) {
+            m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
+            if (keyEvent->key() == Qt::Key_Backspace) {
+                m_SearchLineEdit->backspace();
+            }
+            else {
+                m_SearchLineEdit->insert(keyEvent->text());
+            }
+            return true;
+        }
+    }
+
+    return QFrame::eventFilter(watched, event);
+}
+
+void SettingSelectComboBoxPopup::hideEvent(QHideEvent *event)
+{
+    m_SearchLineEdit->clear();
+    QFrame::hideEvent(event);
+}
+
+void SettingSelectComboBoxPopup::refreshMainList(const QString &preferredActualGroup, bool ensureCurrentItemVisible)
+{
+    const int previousRow = m_MainListWidget->currentRow();
+    const int previousScrollValue = currentListVerticalScrollValue(m_MainListWidget);
+    QString targetActualGroup = preferredActualGroup;
+    if (targetActualGroup.isEmpty() && m_ComboBox != Q_NULLPTR) {
+        targetActualGroup = m_ComboBox->actualGroupNameForIndex(m_ComboBox->currentIndex());
+    }
+
+    m_MainListWidget->clear();
+    if (m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    const QString searchText = m_SearchLineEdit->text().trimmed();
+    const QString normalizedSearchText = normalizeKeyListSearchText(searchText);
+    QList<KeyListPopupDisplayEntry> exactMatchEntries;
+    QList<KeyListPopupDisplayEntry> prefixMatchEntries;
+    QList<KeyListPopupDisplayEntry> wordBoundaryMatchEntries;
+    QList<KeyListPopupDisplayEntry> substringMatchEntries;
+
+    const auto appendMatchedEntry = [&](const KeyListPopupDisplayEntry &entry, KeyListSearchMatchPriority matchPriority) {
+        if (KEYLIST_SEARCH_MATCH_EXACT == matchPriority) {
+            exactMatchEntries.append(entry);
+        }
+        else if (KEYLIST_SEARCH_MATCH_PREFIX == matchPriority) {
+            prefixMatchEntries.append(entry);
+        }
+        else if (KEYLIST_SEARCH_MATCH_WORD_BOUNDARY == matchPriority) {
+            wordBoundaryMatchEntries.append(entry);
+        }
+        else {
+            substringMatchEntries.append(entry);
+        }
+    };
+
+    const auto appendEntryToMainList = [&](const KeyListPopupDisplayEntry &entry) {
+        QListWidgetItem *item = new QListWidgetItem(m_ComboBox->itemIcon(entry.comboIndex), entry.displayText, m_MainListWidget);
+        item->setData(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE, entry.actualText);
+        item->setData(KEYLIST_POPUP_ITEM_EMPTY_PLACEHOLDER_ROLE, entry.actualText.isEmpty());
+        item->setToolTip(entry.actualText.isEmpty()
+                             ? QKeyMapper::tr("Clear current selection")
+                             : entry.displayText);
+        const int minimumRowHeight = qMax(m_MainListWidget->fontMetrics().height() + 12,
+                                          m_MainListWidget->iconSize().height() + 8);
+        item->setSizeHint(QSize(item->sizeHint().width(), minimumRowHeight));
+    };
+
+    for (int index = 0; index < m_ComboBox->count(); ++index) {
+        const QString actualGroup = m_ComboBox->actualGroupNameForIndex(index);
+        const QString displayText = actualGroup.isEmpty()
+            ? QKeyMapper::tr("(Empty)")
+            : m_ComboBox->itemText(index);
+        const KeyListSearchMatchPriority matchPriority = evaluateKeyListSearchMatch(normalizedSearchText,
+                                                                                    actualGroup,
+                                                                                    displayText,
+                                                                                    actualGroup.isEmpty() ? QString() : normalizeKeyListSearchText(actualGroup),
+                                                                                    normalizeKeyListSearchText(displayText));
+        if (KEYLIST_SEARCH_MATCH_NONE == matchPriority) {
+            continue;
+        }
+
+        KeyListPopupDisplayEntry entry;
+        entry.comboIndex = index;
+        entry.actualText = actualGroup;
+        entry.displayText = displayText;
+        entry.isCurrentText = (m_ComboBox->currentIndex() == index);
+        appendMatchedEntry(entry, matchPriority);
+    }
+
+    const auto populateEntries = [&](const QList<KeyListPopupDisplayEntry> &entries) {
+        for (const KeyListPopupDisplayEntry &entry : entries) {
+            appendEntryToMainList(entry);
+        }
+    };
+
+    populateEntries(exactMatchEntries);
+    populateEntries(prefixMatchEntries);
+    populateEntries(wordBoundaryMatchEntries);
+    populateEntries(substringMatchEntries);
+
+    if (m_MainListWidget->count() == 0) {
+        QListWidgetItem *placeholderItem = new QListWidgetItem(QKeyMapper::tr("No matching items"), m_MainListWidget);
+        placeholderItem->setFlags(Qt::NoItemFlags);
+    }
+    else {
+        const int preferredRow = targetActualGroup.isEmpty() && m_ComboBox != Q_NULLPTR
+            ? m_ComboBox->currentIndex()
+            : previousRow;
+        restoreKeyListPopupSelectionAndScroll(m_MainListWidget,
+                                              targetActualGroup,
+                                              preferredRow,
+                                              previousScrollValue,
+                                              ensureCurrentItemVisible);
+    }
+}
+
+void SettingSelectComboBoxPopup::refreshMoveButtons(void)
+{
+    QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(m_ComboBox);
+    const bool canModifyList = keyMapper != Q_NULLPTR && keyMapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE;
+    const QString actualGroup = highlightedActualGroupName();
+    const QStringList orderedUserGroups = keyMapper != Q_NULLPTR
+        ? keyMapper->currentSettingSelectUserGroups()
+        : QStringList();
+    const int currentUserIndex = orderedUserGroups.indexOf(actualGroup);
+    const bool movable = canModifyList && isMovableActualGroup(actualGroup) && currentUserIndex >= 0;
+
+    m_MoveTopToolButton->setEnabled(movable && currentUserIndex > 0);
+    m_MoveUpToolButton->setEnabled(movable && currentUserIndex > 0);
+    m_MoveDownToolButton->setEnabled(movable && currentUserIndex >= 0 && currentUserIndex < orderedUserGroups.size() - 1);
+    m_MoveBottomToolButton->setEnabled(movable && currentUserIndex >= 0 && currentUserIndex < orderedUserGroups.size() - 1);
+    m_ReorderToolButton->setEnabled(canModifyList && !orderedUserGroups.isEmpty());
+}
+
+void SettingSelectComboBoxPopup::updatePopupGeometry(void)
+{
+    if (m_ComboBox == Q_NULLPTR || layout() == Q_NULLPTR) {
+        return;
+    }
+
+    const int popupWidth = qMax(m_ComboBox->width(), 360);
+    const QRect comboRect = QRect(m_ComboBox->mapToGlobal(QPoint(0, 0)), m_ComboBox->size());
+    QPoint popupPos = comboRect.bottomLeft();
+
+    m_MainListWidget->doItemsLayout();
+
+    const QMargins margins = layout()->contentsMargins();
+    const int layoutSpacing = static_cast<QVBoxLayout *>(layout())->spacing();
+    const int topBottomMargins = margins.top() + margins.bottom();
+    const int listViewportHeight = calculateListViewportHeight(m_MainListWidget);
+    int desiredHeight = margins.top() + margins.bottom();
+    desiredHeight += m_SearchLineEdit->sizeHint().height();
+    desiredHeight += layoutSpacing + m_ButtonRowWidget->sizeHint().height();
+    desiredHeight += layoutSpacing + listViewportHeight;
+
+    QScreen *screen = screenForWidget(m_ComboBox);
+    QRect availableGeometry;
+    int popupHeight = desiredHeight;
+    int availableBelow = -1;
+#ifndef DEBUG_LOGOUT_ON
+    Q_UNUSED(topBottomMargins);
+#endif
+    if (screen != Q_NULLPTR) {
+        availableGeometry = screen->availableGeometry();
+        if (popupPos.x() + popupWidth > availableGeometry.right()) {
+            popupPos.setX(qMax(availableGeometry.left(), availableGeometry.right() - popupWidth + 1));
+        }
+
+        popupPos.setY(comboRect.bottom());
+        availableBelow = qMax(1, availableGeometry.bottom() - popupPos.y() - 2);
+        popupHeight = qMin(desiredHeight, availableBelow);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[SettingSelectComboBoxPopup::updatePopupGeometry]"
+             << "comboRect=" << comboRect
+             << ", popupPos=" << popupPos
+             << ", popupWidth=" << popupWidth
+             << ", topBottomMargins=" << topBottomMargins
+             << ", layoutSpacing=" << layoutSpacing
+             << ", activeCount=" << m_MainListWidget->count()
+             << ", listViewportHeight=" << listViewportHeight
+             << ", desiredHeight=" << desiredHeight
+             << ", screenName=" << (screen != Q_NULLPTR ? screen->name() : QStringLiteral("<null>"))
+             << ", availableGeometry=" << availableGeometry
+             << ", availableBelow=" << availableBelow
+             << ", popupHeight=" << popupHeight
+             << ", finalGeometry=" << QRect(popupPos, QSize(popupWidth, popupHeight));
+#endif
+
+    setGeometry(QRect(popupPos, QSize(popupWidth, popupHeight)));
+}
+
+int SettingSelectComboBoxPopup::calculateListViewportHeight(const QListWidget *listWidget) const
+{
+    if (listWidget == Q_NULLPTR) {
+        return 120;
+    }
+
+    const int fallbackRowHeight = listWidget->fontMetrics().height() + 10;
+    const int firstRow = firstEnabledListRow(listWidget);
+    const int listSpacing = qMax(0, listWidget->spacing());
+    const QMargins contentsMargins = listWidget->contentsMargins();
+    const QWidget *viewportWidget = listWidget->viewport();
+    const QMargins viewportContentsMargins = viewportWidget != Q_NULLPTR
+        ? viewportWidget->contentsMargins()
+        : QMargins();
+    int visualRowsHeight = 0;
+    bool usedVisualRects = false;
+
+    if (listWidget->isVisible() && listWidget->count() > 0 && listWidget->model() != Q_NULLPTR) {
+        const QModelIndex firstIndex = listWidget->model()->index(0, 0);
+        const QModelIndex lastIndex = listWidget->model()->index(listWidget->count() - 1, 0);
+        const QRect firstVisualRect = listWidget->visualRect(firstIndex);
+        const QRect lastVisualRect = listWidget->visualRect(lastIndex);
+        if (firstVisualRect.isValid() && lastVisualRect.isValid()
+            && !firstVisualRect.isNull() && !lastVisualRect.isNull()) {
+            visualRowsHeight = lastVisualRect.bottom() - firstVisualRect.top() + 1;
+            usedVisualRects = (visualRowsHeight > 0);
+        }
+    }
+
+    int totalRowsHeight = 0;
+    int measuredRowCount = 0;
+
+    if (usedVisualRects) {
+        totalRowsHeight = visualRowsHeight;
+    }
+    else {
+        for (int row = 0; row < listWidget->count(); ++row) {
+            int rowHeight = listWidget->sizeHintForRow(row);
+            if (rowHeight <= 0) {
+                rowHeight = fallbackRowHeight;
+            }
+            else {
+                ++measuredRowCount;
+            }
+
+            totalRowsHeight += rowHeight;
+        }
+    }
+
+    if (listWidget->count() <= 0) {
+        totalRowsHeight = fallbackRowHeight;
+    }
+
+    const int itemSpacingHeight = listSpacing * qMax(listWidget->count() - 1, 0);
+    const int viewportHeight = totalRowsHeight
+                             + itemSpacingHeight
+                             + contentsMargins.top() + contentsMargins.bottom()
+                             + viewportContentsMargins.top() + viewportContentsMargins.bottom()
+                             + listWidget->frameWidth() * 2
+                             + 6;
+
+    Q_UNUSED(firstRow);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[SettingSelectComboBoxPopup::calculateListViewportHeight]"
+             << "count=" << listWidget->count()
+             << ", firstEnabledRow=" << firstRow
+             << ", fallbackRowHeight=" << fallbackRowHeight
+             << ", usedVisualRects=" << usedVisualRects
+             << ", visualRowsHeight=" << visualRowsHeight
+             << ", measuredRowCount=" << measuredRowCount
+             << ", totalRowsHeight=" << totalRowsHeight
+             << ", listSpacing=" << listSpacing
+             << ", itemSpacingHeight=" << itemSpacingHeight
+             << ", contentsMargins=" << contentsMargins
+             << ", viewportContentsMargins=" << viewportContentsMargins
+             << ", frameWidth=" << listWidget->frameWidth()
+             << ", viewportHeight=" << viewportHeight;
+#endif
+
+    return viewportHeight;
+}
+
+QString SettingSelectComboBoxPopup::highlightedActualGroupName(void) const
+{
+    return keyListPopupItemActualText(m_MainListWidget != Q_NULLPTR ? m_MainListWidget->currentItem() : Q_NULLPTR);
+}
+
+int SettingSelectComboBoxPopup::highlightedUserGroupIndex(void) const
+{
+    QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(m_ComboBox);
+    if (keyMapper == Q_NULLPTR) {
+        return -1;
+    }
+
+    return keyMapper->currentSettingSelectUserGroups().indexOf(highlightedActualGroupName());
+}
+
+bool SettingSelectComboBoxPopup::isMovableActualGroup(const QString &groupName) const
+{
+    return !groupName.isEmpty() && groupName != GROUPNAME_GLOBALSETTING;
+}
+
+bool SettingSelectComboBoxPopup::isDeletableActualGroup(const QString &groupName) const
+{
+    return !groupName.isEmpty() && groupName != GROUPNAME_GLOBALSETTING;
+}
+
+QString SettingSelectComboBoxPopup::preferredActualGroupAfterDelete(const QString &groupName) const
+{
+    QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(m_ComboBox);
+    if (keyMapper == Q_NULLPTR) {
+        return QString();
+    }
+
+    QStringList orderedUserGroups = keyMapper->currentSettingSelectUserGroups();
+    const int deleteIndex = orderedUserGroups.indexOf(groupName);
+    if (deleteIndex < 0) {
+        return keyMapper->currentSettingSelectGroupName();
+    }
+
+    orderedUserGroups.removeAt(deleteIndex);
+    if (!orderedUserGroups.isEmpty()) {
+        const int fallbackIndex = qBound(0, deleteIndex, orderedUserGroups.size() - 1);
+        return orderedUserGroups.at(fallbackIndex);
+    }
+
+    const QString currentGroup = keyMapper->currentSettingSelectGroupName();
+    return currentGroup == groupName ? QString(GROUPNAME_GLOBALSETTING) : currentGroup;
+}
+
+void SettingSelectComboBoxPopup::moveHighlightedItemTo(int targetUserIndex)
+{
+    if (m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    const QString actualGroup = highlightedActualGroupName();
+    if (!isMovableActualGroup(actualGroup)) {
+        return;
+    }
+
+    const int previousScrollValue = currentListVerticalScrollValue(m_MainListWidget);
+    const QString searchText = m_SearchLineEdit->text();
+    if (!m_ComboBox->movePopupSelectionToUserIndex(actualGroup, targetUserIndex)) {
+        if (!isVisible()) {
+            showForComboBox();
+        }
+    }
+
+    if (!isVisible()) {
+        showForComboBox();
+    }
+
+    if (m_SearchLineEdit->text() != searchText) {
+        QSignalBlocker blocker(m_SearchLineEdit);
+        m_SearchLineEdit->setText(searchText);
+    }
+
+    refreshPopupContents(actualGroup, false);
+    restoreListVerticalScrollValue(m_MainListWidget, previousScrollValue);
+    if (isVisible()) {
+        m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
+    }
+}
+
+void SettingSelectComboBoxPopup::showMainListMenu(const QPoint &pos)
+{
+    if (m_MainListWidget == Q_NULLPTR || m_ComboBox == Q_NULLPTR) {
+        return;
+    }
+
+    QListWidgetItem *item = m_MainListWidget->itemAt(pos);
+    if (item == Q_NULLPTR) {
+        item = m_MainListWidget->currentItem();
+    }
+    if (item == Q_NULLPTR || !(item->flags() & Qt::ItemIsEnabled)) {
+        return;
+    }
+
+    m_MainListWidget->setCurrentItem(item);
+    const QString actualGroup = keyListPopupItemActualText(item);
+    const int currentUserIndex = highlightedUserGroupIndex();
+    QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(m_ComboBox);
+    const QStringList orderedUserGroups = keyMapper != Q_NULLPTR
+        ? keyMapper->currentSettingSelectUserGroups()
+        : QStringList();
+    const bool canModifyList = keyMapper != Q_NULLPTR && keyMapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE;
+    const bool movable = canModifyList && isMovableActualGroup(actualGroup) && currentUserIndex >= 0;
+    const bool deletable = canModifyList && isDeletableActualGroup(actualGroup);
+
+    QMenu menu(this);
+    QAction *moveUpAction = menu.addAction(QKeyMapper::tr("Move Up"));
+    QAction *moveDownAction = menu.addAction(QKeyMapper::tr("Move Down"));
+    QAction *moveTopAction = menu.addAction(QKeyMapper::tr("Move to Top"));
+    QAction *moveBottomAction = menu.addAction(QKeyMapper::tr("Move to Bottom"));
+    menu.addSeparator();
+    QAction *deleteAction = menu.addAction(QKeyMapper::tr("Remove Setting"));
+
+    moveTopAction->setEnabled(movable && currentUserIndex > 0);
+    moveUpAction->setEnabled(movable && currentUserIndex > 0);
+    moveDownAction->setEnabled(movable && currentUserIndex >= 0 && currentUserIndex < orderedUserGroups.size() - 1);
+    moveBottomAction->setEnabled(movable && currentUserIndex >= 0 && currentUserIndex < orderedUserGroups.size() - 1);
+    deleteAction->setEnabled(deletable);
+
+    QAction *selectedAction = menu.exec(m_MainListWidget->viewport()->mapToGlobal(pos));
+    if (selectedAction == moveTopAction) {
+        moveHighlightedItemTo(0);
+    }
+    else if (selectedAction == moveUpAction) {
+        moveHighlightedItemTo(currentUserIndex - 1);
+    }
+    else if (selectedAction == moveDownAction) {
+        moveHighlightedItemTo(currentUserIndex + 1);
+    }
+    else if (selectedAction == moveBottomAction) {
+        moveHighlightedItemTo(orderedUserGroups.size() - 1);
+    }
+    else if (selectedAction == deleteAction) {
+        const QString searchText = m_SearchLineEdit->text();
+        const int previousScrollValue = currentListVerticalScrollValue(m_MainListWidget);
+        const QString preferredActualGroup = preferredActualGroupAfterDelete(actualGroup);
+        const bool deleted = m_ComboBox->deletePopupSelection(actualGroup);
+
+        if (!isVisible()) {
+            showForComboBox();
+        }
+
+        if (m_SearchLineEdit->text() != searchText) {
+            QSignalBlocker blocker(m_SearchLineEdit);
+            m_SearchLineEdit->setText(searchText);
+        }
+
+        refreshPopupContents(deleted ? preferredActualGroup : actualGroup, false);
+        restoreListVerticalScrollValue(m_MainListWidget, previousScrollValue);
+        if (isVisible()) {
+            m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
+        }
+    }
+}
+
+void SettingSelectComboBoxPopup::onSearchTextChanged(const QString &text)
+{
+    Q_UNUSED(text);
+    const QString preferredActualGroup = highlightedActualGroupName();
+    refreshMainList(preferredActualGroup, true);
+    refreshMoveButtons();
+    if (isVisible()) {
+        updatePopupGeometry();
+    }
+}
+
+void SettingSelectComboBoxPopup::onMainListItemClicked(QListWidgetItem *item)
+{
+    if (item == Q_NULLPTR || m_ComboBox == Q_NULLPTR || !(item->flags() & Qt::ItemIsEnabled)) {
+        return;
+    }
+
+    m_ComboBox->applyPopupSelection(item->data(KEYLIST_POPUP_ITEM_ACTUAL_TEXT_ROLE).toString());
+}
+
+void SettingSelectComboBoxPopup::onReorderButtonClicked(void)
+{
+    QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(m_ComboBox);
+    if (keyMapper == Q_NULLPTR || keyMapper->m_KeyMapStatus != QKeyMapper::KEYMAP_IDLE) {
+        return;
+    }
+
+    const QMessageBox::StandardButton reply = QMessageBox::question(
+        this,
+        PROGRAM_NAME,
+        QKeyMapper::tr("Restore the default settings order?"),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+
+    if (!isVisible()) {
+        showForComboBox();
+    }
+
+    if (reply != QMessageBox::Yes) {
+        refreshMoveButtons();
+        return;
+    }
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+
+    const QString currentSettingName = keyMapper->currentSettingSelectGroupName();
+    {
+        QSignalBlocker blocker(keyMapper->ui->settingselectComboBox);
+        settingFile.remove(SETTINGSELECT_ORDER_LIST);
+        keyMapper->rebuildSettingSelectComboBox(settingFile);
+        keyMapper->setCurrentSettingSelectByGroupName(currentSettingName);
+    }
+
+    refreshPopupContents(currentSettingName, true);
+    if (isVisible()) {
+        m_SearchLineEdit->setFocus(Qt::OtherFocusReason);
+    }
+}
+
+void SettingSelectComboBoxPopup::onMoveTopButtonClicked(void)
+{
+    moveHighlightedItemTo(0);
+}
+
+void SettingSelectComboBoxPopup::onMoveUpButtonClicked(void)
+{
+    moveHighlightedItemTo(highlightedUserGroupIndex() - 1);
+}
+
+void SettingSelectComboBoxPopup::onMoveDownButtonClicked(void)
+{
+    moveHighlightedItemTo(highlightedUserGroupIndex() + 1);
+}
+
+void SettingSelectComboBoxPopup::onMoveBottomButtonClicked(void)
+{
+    QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(m_ComboBox);
+    const int lastUserIndex = keyMapper != Q_NULLPTR ? keyMapper->currentSettingSelectUserGroups().size() - 1 : -1;
+    moveHighlightedItemTo(lastUserIndex);
+}
+
 KeyListCollectionType KeyListComboBox::getCollectionType() const
 {
     if (objectName() == ORIKEY_COMBOBOX_NAME
@@ -37551,7 +38557,7 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         ui->checkProcessComboBox->setEnabled(true);
         ui->checkWindowTitleComboBox->setEnabled(true);
         ui->checkClassNameComboBox->setEnabled(true);
-        ui->removeSettingButton->setEnabled(true);
+        // ui->removeSettingButton->setEnabled(true);
         ui->descriptionLineEdit->clear();
         ui->descriptionLineEdit->setReadOnly(false);
         ui->descriptionLineEdit->setEnabled(true);
@@ -37604,6 +38610,7 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
 #endif
 
         settingFile.remove(settingSelectStr);
+        removeSettingSelectOrderEntry(settingFile, settingSelectStr);
         ui->settingselectComboBox->removeItem(targetSettingIndex);
         m_SettingSelectListWithoutDescription.removeAt(targetSettingIndex);
 #ifdef DEBUG_LOGOUT_ON
@@ -37617,7 +38624,7 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().noquote().nospace() << "[on_removeSettingButton_clicked]" << "Next setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+            qDebug().noquote().nospace() << "[removeSettingByIndex]" << "Next setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
 #endif
         }
         if (false == curSettingSelectStr.isEmpty()) {
@@ -37640,10 +38647,10 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
     return false;
 }
 
-void QKeyMapper::on_removeSettingButton_clicked()
-{
-    removeSettingByIndex(ui->settingselectComboBox->currentIndex());
-}
+// void QKeyMapper::on_removeSettingButton_clicked()
+// {
+//     removeSettingByIndex(ui->settingselectComboBox->currentIndex());
+// }
 
 
 void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
@@ -41217,11 +42224,10 @@ QStringList SettingTransferDialog::readGroupsFromIni(const QString &filePath) {
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     settings.setIniCodec("UTF-8");
 #endif
-    QStringList childGroups = settings.childGroups();
+    QStringList childGroups = orderedSettingSelectUserGroups(settings);
 
     // Move GlobalSetting to the first.
-    if (childGroups.contains(GROUPNAME_GLOBALSETTING)) {
-        childGroups.removeAll(GROUPNAME_GLOBALSETTING);
+    if (settings.childGroups().contains(GROUPNAME_GLOBALSETTING)) {
         childGroups.prepend(GROUPNAME_GLOBALSETTING);
     }
 
