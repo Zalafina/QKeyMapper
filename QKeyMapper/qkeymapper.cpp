@@ -7520,7 +7520,7 @@ QKeyMapper::FloatingButtonStyleCodeApplyResult parseAndApplyFloatingButtonStyleC
         return result;
     }
 
-    const QStringList tokens = trimmedStyleCode.split(QLatin1Char(';'), Qt::KeepEmptyParts);
+    const QStringList tokens = trimmedStyleCode.split(QLatin1Char(';'), QKeyMapperQtCompat::KeepEmptyParts);
     if (tokens.isEmpty()) {
         result.errorMessage = QKeyMapper::tr("Invalid floating button style code format.");
         return result;
