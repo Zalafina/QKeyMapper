@@ -36205,6 +36205,38 @@ bool SettingSelectComboBoxPopup::eventFilter(QObject *watched, QEvent *event)
         return true;
     }
 
+    const Qt::KeyboardModifiers modifiers = keyEvent->modifiers();
+    const bool hasCtrlModifier = (modifiers & Qt::ControlModifier);
+    const bool hasShiftModifier = (modifiers & Qt::ShiftModifier);
+    const bool hasAltOrMetaModifier = (modifiers & (Qt::AltModifier | Qt::MetaModifier));
+    if (hasCtrlModifier && !hasAltOrMetaModifier) {
+        const int currentUserIndex = highlightedUserGroupIndex();
+        QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(m_ComboBox);
+        const int lastUserIndex = keyMapper != Q_NULLPTR ? keyMapper->currentSettingSelectUserGroups().size() - 1 : -1;
+
+        if (keyEvent->key() == Qt::Key_Home
+            || (hasShiftModifier && keyEvent->key() == Qt::Key_Up)) {
+            moveHighlightedItemTo(0);
+            return true;
+        }
+
+        if (keyEvent->key() == Qt::Key_End
+            || (hasShiftModifier && keyEvent->key() == Qt::Key_Down)) {
+            moveHighlightedItemTo(lastUserIndex);
+            return true;
+        }
+
+        if (!hasShiftModifier && keyEvent->key() == Qt::Key_Up) {
+            moveHighlightedItemTo(currentUserIndex - 1);
+            return true;
+        }
+
+        if (!hasShiftModifier && keyEvent->key() == Qt::Key_Down) {
+            moveHighlightedItemTo(currentUserIndex + 1);
+            return true;
+        }
+    }
+
     if (keyEvent->key() == Qt::Key_Escape) {
         if (!m_SearchLineEdit->text().isEmpty()) {
             m_SearchLineEdit->clear();
