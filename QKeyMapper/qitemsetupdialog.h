@@ -31,6 +31,7 @@ public:
     void setUILanguage(int languageindex);
     void resetFontSize(void);
     void setTabIndex(int tabindex);
+    int getTabIndex(void) const;
     void setItemRow(int row);
     int getItemRow(void);
     void updateOriginalKeyListComboBox(void);

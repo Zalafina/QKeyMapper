@@ -424,9 +424,12 @@ public:
 struct KeyMappingTab_Info
 {
     QString TabName;
+    QString TabInternalName;
     QString TabHotkey;
     QColor TabFontColor;
     QColor TabBackgroundColor;
+    bool IncludeCommonMappingTable = QKeyMapperConstants::MAPPINGTABLE_INCLUDE_COMMON_DEFAULT;
+    bool IsCommonTab = false;
     Qt::CheckState TabHideNotification;
     QString TabCustomImage_Path;
     int TabCustomImage_ShowPosition;
@@ -1359,6 +1362,14 @@ public:
     static QString getShowScreenPointKey(void);
     static bool getEnableSystemFilterKeyChecked(void);
     static bool getDisableFilterKeyClickSoundOnEnableChecked(void);
+    static bool isCommonMappingFeatureEnabled(void);
+    static QString getCommonMappingTableInternalName(void);
+    static QString getCommonMappingTableDisplayText(void);
+    static bool isCommonMappingTab(const KeyMappingTab_Info &tabInfo);
+    static bool isCommonMappingTabIndex(int tabIndex);
+    static int findCommonMappingTabIndex(void);
+    static int firstNormalMappingTabIndex(void);
+    static int countNormalMappingTabs(void);
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     static ValidationResult validateCombinationKey(QString &input);
@@ -1504,11 +1515,16 @@ public slots:
     void MappingTableSwitchByTabName(const QString &tabName, bool remember_tabname = false);
     void switchKeyMappingTabIndex(int index);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
+    bool addCommonMappingTabToKeyMappingTabWidget(void);
+    void ensureCommonMappingTabExists(void);
+    void updateCommonMappingTabVisibility(void);
+    void refreshTabsForSourceTabChange(int sourceTabIndex);
     bool copyCurrentTabToKeyMappingTabWidget(void);
     int removeTabFromKeyMappingTabWidget(int tabindex);
     void moveTabInKeyMappingTabWidget(int from, int to);
     int copySelectedKeyMappingDataToCopiedList(void);
     int insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisabledCount = Q_NULLPTR);
+    int insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, int *autoDisabledCount = Q_NULLPTR);
     int insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *autoDisabledCount = Q_NULLPTR);
     void openCurrentMappingTableSetupDialog(void);
     void openCurrentMappingItemSetupDialog(void);

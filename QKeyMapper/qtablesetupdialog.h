@@ -77,6 +77,8 @@ private slots:
 
     void on_hideNotificationCheckBox_stateChanged(int state);
 
+    void on_appendCommonMappingTableCheckBox_stateChanged(int state);
+
 private:
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;

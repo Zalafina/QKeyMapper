@@ -99,6 +99,7 @@ void QTableSetupDialog::setUILanguage(int languageindex)
     ui->exportTableButton->setText(tr(EXPORTTABLEBUTTON_STR));
     ui->importTableButton->setText(tr(IMPORTTABLEBUTTON_STR));
     ui->removeTableButton->setText(tr(REMOVETABLEBUTTON_STR));
+    ui->appendCommonMappingTableCheckBox->setText(tr("Append Common Mapping Table"));
     ui->hideNotificationCheckBox->setText(tr("Hide Notification"));
 
     ui->tabCustomImageGroupBox->setTitle(tr("Tab Custom Image"));
@@ -134,6 +135,7 @@ void QTableSetupDialog::resetFontSize()
     ui->exportTableButton->setFont(customFont);
     ui->importTableButton->setFont(customFont);
     ui->removeTableButton->setFont(customFont);
+    ui->appendCommonMappingTableCheckBox->setFont(customFont);
     ui->hideNotificationCheckBox->setFont(customFont);
 
     if (m_FloatingWindowSetupDialog != Q_NULLPTR) {
@@ -398,6 +400,9 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         bool TabCustomImage_ShowAsTrayIcon = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowAsTrayIcon;
         bool TabCustomImage_ShowAsFloatingWindow = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowAsFloatingWindow;
         QSize TabCustomImage_TrayIconPixel = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_TrayIconPixel;
+        bool IncludeCommonMappingTable = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).IncludeCommonMappingTable;
+        const bool isCommonTab = QKeyMapper::isCommonMappingTabIndex(m_TabIndex);
+        const bool commonFeatureEnabled = QKeyMapper::isCommonMappingFeatureEnabled();
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote()
@@ -442,6 +447,20 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load TabHideNotification
         ui->hideNotificationCheckBox->setCheckState(TabHideNotification);
+
+        ui->appendCommonMappingTableCheckBox->blockSignals(true);
+        ui->appendCommonMappingTableCheckBox->setChecked(commonFeatureEnabled && !isCommonTab && IncludeCommonMappingTable);
+        ui->appendCommonMappingTableCheckBox->setEnabled(commonFeatureEnabled && !isCommonTab);
+        if (!commonFeatureEnabled) {
+            ui->appendCommonMappingTableCheckBox->setToolTip(tr("Enable Common Mapping Table in Mapping Advanced Settings first."));
+        }
+        else if (isCommonTab) {
+            ui->appendCommonMappingTableCheckBox->setToolTip(tr("Common mapping table cannot append itself."));
+        }
+        else {
+            ui->appendCommonMappingTableCheckBox->setToolTip(QString());
+        }
+        ui->appendCommonMappingTableCheckBox->blockSignals(false);
 
         // Load Custom Image
         QIcon icon_loaded;
@@ -768,6 +787,11 @@ void QTableSetupDialog::on_removeTableButton_clicked()
             popupMessage = tr("Cannot remove the last mapping table!");
             emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
         }
+        else if (REMOVE_MAPPINGTAB_PROTECTED == remove_result) {
+            popupMessageColor = FAILURE_COLOR;
+            popupMessage = tr("Common mapping table cannot be removed.");
+            emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        }
     }
 }
 
@@ -978,4 +1002,24 @@ void QTableSetupDialog::on_hideNotificationCheckBox_stateChanged(int state)
         QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabHideNotification = hideNotificationState;
         QKeyMapper::getInstance()->requestSaveSettingDirty();
     }
+}
+
+void QTableSetupDialog::on_appendCommonMappingTableCheckBox_stateChanged(int state)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (QKeyMapper::isCommonMappingTabIndex(m_TabIndex)) {
+        return;
+    }
+
+    const bool appendCommonMappingTable = (state == Qt::Checked);
+    if (QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).IncludeCommonMappingTable == appendCommonMappingTable) {
+        return;
+    }
+
+    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].IncludeCommonMappingTable = appendCommonMappingTable;
+    QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(m_TabIndex);
+    QKeyMapper::getInstance()->requestSaveSettingDirty();
 }

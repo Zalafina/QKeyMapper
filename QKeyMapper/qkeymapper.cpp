@@ -17,6 +17,8 @@ namespace {
 
 constexpr int DISABLED_ROW_BACKGROUND_APPLIED_ROLE = Qt::UserRole + 500;
 constexpr int DISABLED_ROW_FOREGROUND_APPLIED_ROLE = Qt::UserRole + 501;
+constexpr int COMMON_APPENDED_ROW_ROLE = Qt::UserRole + 502;
+constexpr int COMMON_APPENDED_ROW_SEPARATOR_ROLE = Qt::UserRole + 503;
 constexpr int SETTINGSELECT_ACTUAL_GROUP_ROLE = Qt::UserRole + 520;
 
 constexpr qreal FLOATINGBUTTON_HOVER_AUTO_DARKEN_LIGHTNESS_THRESHOLD = 0.72;
@@ -1384,6 +1386,166 @@ static QList<MAP_KEYDATA> *getCurrentKeyMappingDataList()
     return QKeyMapper::KeyMappingDataList;
 }
 
+static bool shouldAppendCommonMappingRows(int tabIndex)
+{
+    if (tabIndex < 0 || tabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    const KeyMappingTab_Info &tabInfo = QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex);
+    return QKeyMapper::isCommonMappingFeatureEnabled()
+        && !QKeyMapper::isCommonMappingTab(tabInfo)
+        && tabInfo.IncludeCommonMappingTable;
+}
+
+static QList<MAP_KEYDATA> buildDisplayKeyMappingDataList(int tabIndex)
+{
+    QList<MAP_KEYDATA> displayDataList;
+    if (tabIndex < 0 || tabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return displayDataList;
+    }
+
+    const KeyMappingTab_Info &tabInfo = QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex);
+    if (tabInfo.KeyMappingData != Q_NULLPTR) {
+        displayDataList = *(tabInfo.KeyMappingData);
+    }
+
+    if (!shouldAppendCommonMappingRows(tabIndex)) {
+        return displayDataList;
+    }
+
+    const int commonTabIndex = QKeyMapper::findCommonMappingTabIndex();
+    if (commonTabIndex < 0 || commonTabIndex == tabIndex || commonTabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return displayDataList;
+    }
+
+    QList<MAP_KEYDATA> *commonMappingData = QKeyMapper::s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData;
+    if (commonMappingData == Q_NULLPTR || commonMappingData->isEmpty()) {
+        return displayDataList;
+    }
+
+    displayDataList.reserve(displayDataList.size() + commonMappingData->size());
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*commonMappingData)) {
+        displayDataList.append(keymapdata);
+    }
+
+    return displayDataList;
+}
+
+static bool resolveDisplayRowSource(int tabIndex, int displayRow, int *sourceTabIndex, int *sourceRow, QList<MAP_KEYDATA> **sourceMappingDataList)
+{
+    if (sourceTabIndex == Q_NULLPTR || sourceRow == Q_NULLPTR || sourceMappingDataList == Q_NULLPTR) {
+        return false;
+    }
+
+    *sourceTabIndex = -1;
+    *sourceRow = -1;
+    *sourceMappingDataList = Q_NULLPTR;
+
+    if (tabIndex < 0 || tabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size() || displayRow < 0) {
+        return false;
+    }
+
+    QList<MAP_KEYDATA> *localMappingDataList = QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+    const int localRowCount = (localMappingDataList != Q_NULLPTR) ? localMappingDataList->size() : 0;
+    if (displayRow < localRowCount) {
+        *sourceTabIndex = tabIndex;
+        *sourceRow = displayRow;
+        *sourceMappingDataList = localMappingDataList;
+        return true;
+    }
+
+    if (!shouldAppendCommonMappingRows(tabIndex)) {
+        return false;
+    }
+
+    const int commonTabIndex = QKeyMapper::findCommonMappingTabIndex();
+    if (commonTabIndex < 0 || commonTabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    QList<MAP_KEYDATA> *commonMappingDataList = QKeyMapper::s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData;
+    if (commonMappingDataList == Q_NULLPTR) {
+        return false;
+    }
+
+    const int commonRow = displayRow - localRowCount;
+    if (commonRow < 0 || commonRow >= commonMappingDataList->size()) {
+        return false;
+    }
+
+    *sourceTabIndex = commonTabIndex;
+    *sourceRow = commonRow;
+    *sourceMappingDataList = commonMappingDataList;
+    return true;
+}
+
+struct DisplayRowSourceInfo {
+    int DisplayRow = -1;
+    int SourceTabIndex = -1;
+    int SourceRow = -1;
+    QList<MAP_KEYDATA> *SourceMappingDataList = Q_NULLPTR;
+};
+
+static bool resolveDisplayRowSourceInfo(int tabIndex, int displayRow, DisplayRowSourceInfo *sourceInfo)
+{
+    if (sourceInfo == Q_NULLPTR) {
+        return false;
+    }
+
+    int sourceTabIndex = -1;
+    int sourceRow = -1;
+    QList<MAP_KEYDATA> *sourceMappingDataList = Q_NULLPTR;
+    if (!resolveDisplayRowSource(tabIndex, displayRow, &sourceTabIndex, &sourceRow, &sourceMappingDataList)) {
+        return false;
+    }
+
+    sourceInfo->DisplayRow = displayRow;
+    sourceInfo->SourceTabIndex = sourceTabIndex;
+    sourceInfo->SourceRow = sourceRow;
+    sourceInfo->SourceMappingDataList = sourceMappingDataList;
+    return true;
+}
+
+static int displayRowFromSource(int currentTabIndex, int sourceTabIndex, int sourceRow)
+{
+    if (currentTabIndex < 0 || currentTabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size() || sourceRow < 0) {
+        return -1;
+    }
+
+    if (sourceTabIndex == currentTabIndex) {
+        return sourceRow;
+    }
+
+    if (!shouldAppendCommonMappingRows(currentTabIndex)) {
+        return -1;
+    }
+
+    const int commonTabIndex = QKeyMapper::findCommonMappingTabIndex();
+    if (sourceTabIndex != commonTabIndex) {
+        return -1;
+    }
+
+    QList<MAP_KEYDATA> *localMappingDataList = QKeyMapper::s_KeyMappingTabInfoList.at(currentTabIndex).KeyMappingData;
+    const int localRowCount = (localMappingDataList != Q_NULLPTR) ? localMappingDataList->size() : 0;
+    return localRowCount + sourceRow;
+}
+
+static int findMappingTabIndexByDataTable(const KeyMappingDataTableWidget *mappingDataTable)
+{
+    if (mappingDataTable == Q_NULLPTR) {
+        return -1;
+    }
+
+    for (int index = 0; index < QKeyMapper::s_KeyMappingTabInfoList.size(); ++index) {
+        if (QKeyMapper::s_KeyMappingTabInfoList.at(index).KeyMappingDataTable == mappingDataTable) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
 static QString floatingButtonColorToRgba(const QColor &color)
 {
     return QString("rgba(%1,%2,%3,%4)")
@@ -1554,44 +1716,51 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
         return 0;
     }
 
-    const int tabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
-    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
-    if (!mappingDataList) {
-        return 0;
-    }
+    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
 
     QSignalBlocker blocker(mappingDataTable);
     int changedCount = 0;
+    bool requiresDisplayRefresh = false;
 
     if (column == BURST_MODE_COLUMN || column == LOCK_COLUMN || column == FLOATING_COLUMN) {
-        for (int row : rows) {
-            if (row < 0 || row >= mappingDataList->size()) {
+        for (int displayRow : rows) {
+            DisplayRowSourceInfo sourceInfo;
+            if (!resolveDisplayRowSourceInfo(currentTabIndex, displayRow, &sourceInfo)
+                || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
                 continue;
             }
 
             bool *state = Q_NULLPTR;
             if (column == BURST_MODE_COLUMN) {
-                state = &(*mappingDataList)[row].Burst;
+                state = &(*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Burst;
             }
             else if (column == LOCK_COLUMN) {
-                state = &(*mappingDataList)[row].Lock;
+                state = &(*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Lock;
             }
             else {
-                state = &(*mappingDataList)[row].FloatingButton_Enable;
+                state = &(*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].FloatingButton_Enable;
             }
             if (*state == checked) {
                 continue;
             }
 
             *state = checked;
-            emit keymapper->keyMappingTableItemCheckStateChanged_Signal(row, column, checked);
-            keymapper->updateTableWidgetItem(tabIndex, row, column);
-            if (column == FLOATING_COLUMN) {
-                applyFloatingButtonRuntimeState(keymapper, row);
+            emit keymapper->keyMappingTableItemCheckStateChanged_Signal(sourceInfo.SourceRow, column, checked);
+            if (sourceInfo.SourceTabIndex == currentTabIndex) {
+                keymapper->updateTableWidgetItem(sourceInfo.SourceTabIndex, sourceInfo.SourceRow, column);
+                if (column == FLOATING_COLUMN) {
+                    applyFloatingButtonRuntimeState(keymapper, sourceInfo.SourceRow);
+                }
+            }
+            else {
+                requiresDisplayRefresh = true;
             }
             changedCount += 1;
         }
 
+        if (changedCount > 0 && requiresDisplayRefresh) {
+            keymapper->refreshKeyMappingDataTableByTabIndex(currentTabIndex);
+        }
         return changedCount;
     }
 
@@ -1599,25 +1768,40 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
         return 0;
     }
 
-    for (int row : rows) {
-        if (row < 0 || row >= mappingDataList->size()) {
+    for (int displayRow : rows) {
+        DisplayRowSourceInfo sourceInfo;
+        if (!resolveDisplayRowSourceInfo(currentTabIndex, displayRow, &sourceInfo)
+            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
             continue;
         }
 
-        if ((*mappingDataList)[row].Disabled != checked) {
-            (*mappingDataList)[row].Disabled = checked;
-            emit keymapper->keyMappingTableItemCheckStateChanged_Signal(row, DISABLED_COLUMN, checked);
+        if ((*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Disabled != checked) {
+            (*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Disabled = checked;
+            emit keymapper->keyMappingTableItemCheckStateChanged_Signal(sourceInfo.SourceRow, DISABLED_COLUMN, checked);
             changedCount += 1;
         }
 
-        keymapper->updateTableWidgetItem(tabIndex, row, DISABLED_COLUMN);
+        if (sourceInfo.SourceTabIndex == currentTabIndex) {
+            keymapper->updateTableWidgetItem(sourceInfo.SourceTabIndex, sourceInfo.SourceRow, DISABLED_COLUMN);
+        }
+        else {
+            requiresDisplayRefresh = true;
+        }
 
         if (!checked) {
-            keymapper->applyExclusiveEnableMutualExclusion(tabIndex, row, false);
+            keymapper->applyExclusiveEnableMutualExclusion(sourceInfo.SourceTabIndex, sourceInfo.SourceRow, false);
+            if (sourceInfo.SourceTabIndex != currentTabIndex) {
+                requiresDisplayRefresh = true;
+            }
         }
     }
 
-    mappingDataTable->reapplyRowVisibility();
+    if (changedCount > 0 && (requiresDisplayRefresh || QKeyMapper::isCommonMappingTabIndex(currentTabIndex))) {
+        keymapper->refreshTabsForSourceTabChange(currentTabIndex);
+    }
+    else {
+        mappingDataTable->reapplyRowVisibility();
+    }
     return changedCount;
 }
 
@@ -1715,29 +1899,36 @@ static int applyBatchCategoryChange(QKeyMapper *keymapper, KeyMappingDataTableWi
         return 0;
     }
 
-    QList<MAP_KEYDATA> *mappingDataList = getCurrentKeyMappingDataList();
-    if (!mappingDataList) {
-        return 0;
-    }
-
+    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     const QString normalizedCategory = category.trimmed();
     QSignalBlocker blocker(mappingDataTable);
     int changedCount = 0;
+    bool requiresDisplayRefresh = false;
 
-    for (int row : rows) {
-        if (row < 0 || row >= mappingDataList->size()) {
+    for (int displayRow : rows) {
+        DisplayRowSourceInfo sourceInfo;
+        if (!resolveDisplayRowSourceInfo(currentTabIndex, displayRow, &sourceInfo)
+            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
             continue;
         }
-        if (mappingDataList->at(row).Category == normalizedCategory) {
+        if (sourceInfo.SourceMappingDataList->at(sourceInfo.SourceRow).Category == normalizedCategory) {
             continue;
         }
 
-        (*mappingDataList)[row].Category = normalizedCategory;
-        updateCategoryTableItemText(mappingDataTable, row, normalizedCategory);
+        (*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Category = normalizedCategory;
+        if (sourceInfo.SourceTabIndex == currentTabIndex) {
+            updateCategoryTableItemText(mappingDataTable, displayRow, normalizedCategory);
+        }
+        else {
+            requiresDisplayRefresh = true;
+        }
         changedCount += 1;
     }
 
     if (changedCount > 0) {
+        if (requiresDisplayRefresh) {
+            keymapper->refreshKeyMappingDataTableByTabIndex(currentTabIndex);
+        }
         keymapper->resizeKeyMappingDataTableColumnWidth(mappingDataTable);
         keymapper->updateCategoryFilterComboBox();
     }
@@ -2343,6 +2534,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // ui->mouseYSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
 
     ui->Gyro2MouseXSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
+
     ui->Gyro2MouseYSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
     ui->Gyro2MouseXSpeedSpinBox->setSingleStep(GYRO2MOUSE_SPEED_SINGLESTEP);
     ui->Gyro2MouseYSpeedSpinBox->setSingleStep(GYRO2MOUSE_SPEED_SINGLESTEP);
@@ -2560,6 +2752,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
                      this, &QKeyMapper::onCustomNotificationSetupRequested);
     QObject::connect(m_MappingAdvancedDialog, &QMappingAdvancedDialog::customNotificationEnabledChanged,
                      this, &QKeyMapper::onCustomNotificationEnabledChanged);
+    QObject::connect(m_MappingAdvancedDialog, &QMappingAdvancedDialog::commonMappingFeatureEnabledChanged,
+                     this, [this](bool) {
+                         updateCommonMappingTabVisibility();
+                     });
 
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
@@ -7255,6 +7451,28 @@ QString QKeyMapper::getTrimmedMappingKeyString(const QString &mappingkeystr)
 
 namespace {
 
+QString buildUniqueCommonTabDisplayName(const QSet<QString> &existingTabNames)
+{
+    const QString preferredName = QString::fromLatin1(MAPPINGTABLE_COMMONTAB_DISPLAY_TEXT);
+    if (!existingTabNames.contains(preferredName)) {
+        return preferredName;
+    }
+
+    const QString fallbackName = preferredName + QStringLiteral("*");
+    if (!existingTabNames.contains(fallbackName)) {
+        return fallbackName;
+    }
+
+    for (int index = 1; index <= 999; ++index) {
+        const QString candidate = QStringLiteral("%1(%2)").arg(fallbackName).arg(index, 3, 10, QChar('0'));
+        if (!existingTabNames.contains(candidate)) {
+            return candidate;
+        }
+    }
+
+    return fallbackName;
+}
+
 QString normalizeOriginalKeyForExclusiveGroup(const QString &originalKey)
 {
     QString normalizedKey = originalKey;
@@ -9844,6 +10062,79 @@ bool QKeyMapper::getDisableFilterKeyClickSoundOnEnableChecked()
     return instance->m_DisableFilterKeyClickSoundPopupCheckBox->isChecked();
 }
 
+bool QKeyMapper::isCommonMappingFeatureEnabled(void)
+{
+    QKeyMapper *instance = getInstance();
+    if (instance == Q_NULLPTR || instance->m_MappingAdvancedDialog == Q_NULLPTR) {
+        return MAPPINGTABLE_COMMON_ENABLED_DEFAULT;
+    }
+
+    return instance->m_MappingAdvancedDialog->getCommonMappingTableEnabled();
+}
+
+QString QKeyMapper::getCommonMappingTableInternalName(void)
+{
+    return QString::fromLatin1(MAPPINGTABLE_COMMONTAB_INTERNAL_NAME);
+}
+
+QString QKeyMapper::getCommonMappingTableDisplayText(void)
+{
+    return QString::fromLatin1(MAPPINGTABLE_COMMONTAB_DISPLAY_TEXT);
+}
+
+bool QKeyMapper::isCommonMappingTab(const KeyMappingTab_Info &tabInfo)
+{
+    if (tabInfo.IsCommonTab) {
+        return true;
+    }
+
+    return !tabInfo.TabInternalName.isEmpty()
+        && tabInfo.TabInternalName == getCommonMappingTableInternalName();
+}
+
+bool QKeyMapper::isCommonMappingTabIndex(int tabIndex)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    return isCommonMappingTab(s_KeyMappingTabInfoList.at(tabIndex));
+}
+
+int QKeyMapper::findCommonMappingTabIndex(void)
+{
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        if (isCommonMappingTab(s_KeyMappingTabInfoList.at(index))) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
+int QKeyMapper::firstNormalMappingTabIndex(void)
+{
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        if (!isCommonMappingTab(s_KeyMappingTabInfoList.at(index))) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
+int QKeyMapper::countNormalMappingTabs(void)
+{
+    int count = 0;
+    for (const KeyMappingTab_Info &tabInfo : std::as_const(s_KeyMappingTabInfoList)) {
+        if (!isCommonMappingTab(tabInfo)) {
+            ++count;
+        }
+    }
+
+    return count;
+}
+
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
 {
     // Iterate through tabinfolist to check if there is a duplicate tabname
@@ -9937,7 +10228,8 @@ int QKeyMapper::tabIndexToSwitchByTabName(const QString &tabName)
 {
     // Iterate through tabinfolist to check if there is a duplicate tabname
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
-        if (s_KeyMappingTabInfoList.at(index).TabName == tabName) {
+        if (s_KeyMappingTabInfoList.at(index).TabName == tabName
+            && !isCommonMappingTabIndex(index)) {
             return index;
         }
     }
@@ -12997,6 +13289,53 @@ bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode s
 {
     if (KEYMAP_IDLE == m_KeyMapStatus
         && MAPPINGSTART_LOADSETTING != startmode
+        && isCommonMappingTabIndex(s_KeyMappingTabWidgetCurrentIndex)) {
+        int targetTabIndex = -1;
+
+        if (0 <= s_KeyMappingTabWidgetLastIndex
+            && s_KeyMappingTabWidgetLastIndex < s_KeyMappingTabInfoList.size()
+            && !isCommonMappingTabIndex(s_KeyMappingTabWidgetLastIndex)) {
+            targetTabIndex = s_KeyMappingTabWidgetLastIndex;
+        }
+        else {
+            QString cursettingSelectStr;
+            const int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+            if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+                cursettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+            }
+
+            if (!cursettingSelectStr.isEmpty()) {
+                QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+                settingFile.setIniCodec("UTF-8");
+#endif
+                const QString lastTabName = settingFile.value(cursettingSelectStr + "/" + MAPPINGTABLE_LASTTABNAME).toString();
+                const int savedTabIndex = tabIndexToSwitchByTabName(lastTabName);
+                if (savedTabIndex >= 0 && !isCommonMappingTabIndex(savedTabIndex)) {
+                    targetTabIndex = savedTabIndex;
+                }
+            }
+        }
+
+        if (targetTabIndex < 0) {
+            targetTabIndex = firstNormalMappingTabIndex();
+        }
+
+        if (targetTabIndex >= 0 && targetTabIndex != s_KeyMappingTabWidgetCurrentIndex) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[handleManualMappingSwitchRequest]"
+                                         << " Switch away from Common tab before mapping start: "
+                                         << s_KeyMappingTabWidgetCurrentIndex << " -> " << targetTabIndex;
+#endif
+            clearLockStatusDisplay();
+            forceSwitchKeyMappingTabWidgetIndex(targetTabIndex);
+            updateFloatingColumnByShowFloatingState();
+            updateCategoryFilterByShowCategoryState();
+        }
+    }
+
+    if (KEYMAP_IDLE == m_KeyMapStatus
+        && MAPPINGSTART_LOADSETTING != startmode
         && MAPPINGSTART_ACTION_SAVEANDSTART == executionMappingStartActionMode(preferPhysicalCtrlState)) {
         if (hasUnsavedSettingChanges() && !saveKeyMapSetting(false)) {
             return false;
@@ -13551,10 +13890,126 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     return true;
 }
 
+bool QKeyMapper::addCommonMappingTabToKeyMappingTabWidget(void)
+{
+    if (findCommonMappingTabIndex() >= 0) {
+        return true;
+    }
+
+    QSet<QString> existingTabNames;
+    existingTabNames.reserve(s_KeyMappingTabInfoList.size());
+    for (const KeyMappingTab_Info &tabInfo : std::as_const(s_KeyMappingTabInfoList)) {
+        existingTabNames.insert(tabInfo.TabName);
+    }
+
+    const QString commonDisplayName = buildUniqueCommonTabDisplayName(existingTabNames);
+    if (!addTabToKeyMappingTabWidget(commonDisplayName)) {
+        return false;
+    }
+
+    const int commonIndex = s_KeyMappingTabInfoList.size() - 1;
+    if (commonIndex < 0) {
+        return false;
+    }
+
+    s_KeyMappingTabInfoList[commonIndex].TabInternalName = getCommonMappingTableInternalName();
+    s_KeyMappingTabInfoList[commonIndex].IsCommonTab = true;
+    s_KeyMappingTabInfoList[commonIndex].IncludeCommonMappingTable = false;
+    s_KeyMappingTabInfoList[commonIndex].TabHotkey.clear();
+    updateKeyMappingTabWidgetTabDisplay(commonIndex);
+
+    return true;
+}
+
+void QKeyMapper::ensureCommonMappingTabExists(void)
+{
+    const int commonIndex = findCommonMappingTabIndex();
+    if (commonIndex < 0) {
+        addCommonMappingTabToKeyMappingTabWidget();
+        return;
+    }
+
+    s_KeyMappingTabInfoList[commonIndex].TabInternalName = getCommonMappingTableInternalName();
+    s_KeyMappingTabInfoList[commonIndex].IsCommonTab = true;
+    s_KeyMappingTabInfoList[commonIndex].IncludeCommonMappingTable = false;
+    if (s_KeyMappingTabInfoList[commonIndex].TabName.isEmpty()) {
+        s_KeyMappingTabInfoList[commonIndex].TabName = getCommonMappingTableDisplayText();
+    }
+    updateKeyMappingTabWidgetTabDisplay(commonIndex);
+}
+
+void QKeyMapper::updateCommonMappingTabVisibility(void)
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return;
+    }
+
+    ensureCommonMappingTabExists();
+
+    const int commonIndex = findCommonMappingTabIndex();
+    if (commonIndex < 0 || commonIndex >= ui->keyMappingTabWidget->count()) {
+        return;
+    }
+
+    const bool enabled = isCommonMappingFeatureEnabled();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[updateCommonMappingTabVisibility]"
+                                 << " currentIndex=" << ui->keyMappingTabWidget->currentIndex()
+                                 << ", trackedCurrentIndex=" << s_KeyMappingTabWidgetCurrentIndex
+                                 << ", commonIndex=" << commonIndex
+                                 << ", enabled=" << (enabled ? "true" : "false");
+#endif
+    if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
+        tabBar->setTabVisible(commonIndex, enabled);
+    }
+
+    if (!enabled && s_KeyMappingTabWidgetCurrentIndex == commonIndex) {
+        const int fallbackIndex = firstNormalMappingTabIndex();
+        if (fallbackIndex >= 0 && fallbackIndex != commonIndex) {
+            forceSwitchKeyMappingTabWidgetIndex(fallbackIndex);
+            return;
+        }
+    }
+
+    if (0 <= s_KeyMappingTabWidgetCurrentIndex
+        && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
+        refreshKeyMappingDataTableByTabIndex(s_KeyMappingTabWidgetCurrentIndex);
+    }
+}
+
+void QKeyMapper::refreshTabsForSourceTabChange(int sourceTabIndex)
+{
+    if (sourceTabIndex < 0 || sourceTabIndex >= s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (isCommonMappingTabIndex(sourceTabIndex)) {
+        for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+            if (index == sourceTabIndex || shouldAppendCommonMappingRows(index)) {
+                refreshKeyMappingDataTableByTabIndex(index);
+            }
+        }
+        return;
+    }
+
+    refreshKeyMappingDataTableByTabIndex(sourceTabIndex);
+
+    if (sourceTabIndex != s_KeyMappingTabWidgetCurrentIndex
+        && 0 <= s_KeyMappingTabWidgetCurrentIndex
+        && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
+        refreshKeyMappingDataTableByTabIndex(s_KeyMappingTabWidgetCurrentIndex);
+    }
+}
+
 bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 {
     int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    if (isCommonMappingTabIndex(current_tabindex)) {
+        showFailurePopup(tr("Common mapping table cannot be copied."));
         return false;
     }
 
@@ -13662,9 +14117,12 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
     // Copy other tab-specific settings from source tab
     tab_info.TabName = tabName;
+    tab_info.TabInternalName.clear();
     tab_info.TabHotkey = sourceTabInfo.TabHotkey;
     tab_info.TabFontColor = sourceTabInfo.TabFontColor;
     tab_info.TabBackgroundColor = sourceTabInfo.TabBackgroundColor;
+    tab_info.IncludeCommonMappingTable = sourceTabInfo.IncludeCommonMappingTable;
+    tab_info.IsCommonTab = false;
     tab_info.TabHideNotification = sourceTabInfo.TabHideNotification;
     tab_info.TabCustomImage_Path = sourceTabInfo.TabCustomImage_Path;
     tab_info.TabCustomImage_ShowPosition = sourceTabInfo.TabCustomImage_ShowPosition;
@@ -13697,18 +14155,25 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
 int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
 {
-    if (ui->keyMappingTabWidget->count() <= 1 || s_KeyMappingTabInfoList.size() <= 1) {
+    if ((tabindex < 0) || (tabindex >= ui->keyMappingTabWidget->count()) || (tabindex >= s_KeyMappingTabInfoList.size())) {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[removeTabFromKeyMappingTabWidget] Invalid index : " << tabindex << ", ValidTabWidgetCount:" << ui->keyMappingTabWidget->count() << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
+#endif
+    return REMOVE_MAPPINGTAB_FAILED;
+    }
+
+    if (isCommonMappingTabIndex(tabindex)) {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[removeTabFromKeyMappingTabWidget] Common tab is protected. Index=" << tabindex;
+#endif
+    return REMOVE_MAPPINGTAB_PROTECTED;
+    }
+
+    if (countNormalMappingTabs() <= 1) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[removeTabFromKeyMappingTabWidget] Can not remove the last tab!" << " ValidTabWidgetCount:" << ui->keyMappingTabWidget->count() << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
 #endif
         return REMOVE_MAPPINGTAB_LASTONE;
-    }
-
-    if ((tabindex < 0) || (tabindex >= ui->keyMappingTabWidget->count()) || (tabindex >= s_KeyMappingTabInfoList.size())) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[removeTabFromKeyMappingTabWidget] Invalid index : " << tabindex << ", ValidTabWidgetCount:" << ui->keyMappingTabWidget->count() << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
-#endif
-        return REMOVE_MAPPINGTAB_FAILED;
     }
 
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
@@ -13765,6 +14230,14 @@ void QKeyMapper::moveTabInKeyMappingTabWidget(int from, int to)
 
     if (from == to) {
         return; // No need to move
+    }
+
+    const int commonIndex = findCommonMappingTabIndex();
+    if (commonIndex >= 0 && (from == commonIndex || to == commonIndex)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[moveTabInKeyMappingTabWidget] Reject move involving common tab" << from << to << commonIndex;
+#endif
+        return;
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -13842,7 +14315,16 @@ int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
         if (m_KeyMappingDataTable->isRowHidden(row)) {
             continue;
         }
-        s_CopiedMappingData.append(KeyMappingDataList->at(row));
+
+        DisplayRowSourceInfo sourceInfo;
+        if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, row, &sourceInfo)
+            || sourceInfo.SourceMappingDataList == Q_NULLPTR
+            || sourceInfo.SourceRow < 0
+            || sourceInfo.SourceRow >= sourceInfo.SourceMappingDataList->size()) {
+            continue;
+        }
+
+        s_CopiedMappingData.append(sourceInfo.SourceMappingDataList->at(sourceInfo.SourceRow));
     }
     copied_count = s_CopiedMappingData.size();
 
@@ -13855,30 +14337,52 @@ int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
 
 int QKeyMapper::insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisabledCount)
 {
+    int targetTabIndex = s_KeyMappingTabWidgetCurrentIndex;
     int insertRow = -1;
     QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
     if (selectedRanges.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[insertKeyMappingDataFromCopiedList] There is no selected item, insert to the end.";
 #endif
-        insertRow = KeyMappingDataList ? KeyMappingDataList->size() : 0;
+        if (targetTabIndex < 0 || targetTabIndex >= s_KeyMappingTabInfoList.size()) {
+            return -1;
+        }
+
+        QList<MAP_KEYDATA> *targetMappingDataList = s_KeyMappingTabInfoList.at(targetTabIndex).KeyMappingData;
+        insertRow = targetMappingDataList ? targetMappingDataList->size() : 0;
     }
     else {
-        // Get the selected row based on insert mode.
         QTableWidgetSelectionRange range = selectedRanges.first();
-        const int preferredRow = (insertMode == TABLE_INSERT_MODE_BELOW)
-            ? (range.bottomRow() + 1)
+        const int anchorDisplayRow = (insertMode == TABLE_INSERT_MODE_BELOW)
+            ? range.bottomRow()
             : range.topRow();
-        insertRow = preferredRow;
+
+        DisplayRowSourceInfo sourceInfo;
+        if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, anchorDisplayRow, &sourceInfo)
+            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
+            return -1;
+        }
+
+        targetTabIndex = sourceInfo.SourceTabIndex;
+        insertRow = sourceInfo.SourceRow + ((insertMode == TABLE_INSERT_MODE_BELOW) ? 1 : 0);
     }
 
-    return insertCopiedKeyMappingDataAtAbsoluteRow(insertRow, autoDisabledCount);
+    return insertCopiedKeyMappingDataAtTargetRow(targetTabIndex, insertRow, autoDisabledCount);
 }
 
-int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *autoDisabledCount)
+int QKeyMapper::insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, int *autoDisabledCount)
 {
     int inserted_count = -1;
-    if (!KeyMappingDataList || !m_KeyMappingDataTable || s_CopiedMappingData.isEmpty()) {
+    if (!m_KeyMappingDataTable || s_CopiedMappingData.isEmpty()) {
+        return inserted_count;
+    }
+
+    if (targetTabIndex < 0 || targetTabIndex >= s_KeyMappingTabInfoList.size()) {
+        return inserted_count;
+    }
+
+    QList<MAP_KEYDATA> *targetMappingDataList = s_KeyMappingTabInfoList.at(targetTabIndex).KeyMappingData;
+    if (targetMappingDataList == Q_NULLPTR) {
         return inserted_count;
     }
 
@@ -13894,7 +14398,7 @@ int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *auto
     // another item in the same normalized OriginalKey group is already enabled,
     // auto-disable the inserted one.
     QList<MAP_KEYDATA> insertMappingDataList;
-    QSet<QString> enabledGroups = collectEnabledExclusiveGroups(*KeyMappingDataList);
+    QSet<QString> enabledGroups = collectEnabledExclusiveGroups(*targetMappingDataList);
     int auto_disabled = 0;
     for (const MAP_KEYDATA &keymapdata : std::as_const(s_CopiedMappingData)) {
         MAP_KEYDATA toInsert = keymapdata;
@@ -13920,36 +14424,88 @@ int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *auto
         *autoDisabledCount = auto_disabled;
     }
 
-    const int boundedInsertRow = qBound(0, insertRow, KeyMappingDataList->size());
+    const int boundedInsertRow = qBound(0, insertRow, targetMappingDataList->size());
 
     // Insert rows at explicit target position in reverse order to preserve sequence.
     for (int i = insertMappingDataList.size() - 1; i >= 0; --i) {
-        KeyMappingDataList->insert(boundedInsertRow, insertMappingDataList.at(i));
+        targetMappingDataList->insert(boundedInsertRow, insertMappingDataList.at(i));
     }
 
-    // Refresh table display.
-    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    // Refresh affected displays.
+    refreshTabsForSourceTabChange(targetTabIndex);
     updateMousePointsList();
 
     if (inserted_count > 0) {
-        int startRow = qBound(0, boundedInsertRow, m_KeyMappingDataTable->rowCount() - 1);
-        int endRow = qBound(startRow, startRow + inserted_count - 1, m_KeyMappingDataTable->rowCount() - 1);
-        QTableWidgetSelectionRange newSelection(startRow, 0, endRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-        m_KeyMappingDataTable->clearSelection();
-        m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+        const int startDisplayRow = displayRowFromSource(s_KeyMappingTabWidgetCurrentIndex, targetTabIndex, boundedInsertRow);
+        const int endDisplayRow = displayRowFromSource(s_KeyMappingTabWidgetCurrentIndex, targetTabIndex, boundedInsertRow + inserted_count - 1);
+        if (startDisplayRow >= 0 && endDisplayRow >= startDisplayRow && endDisplayRow < m_KeyMappingDataTable->rowCount()) {
+            QTableWidgetSelectionRange newSelection(startDisplayRow, 0, endDisplayRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+            m_KeyMappingDataTable->clearSelection();
+            m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
-        // Keep current cell aligned with inserted range for Ctrl/Shift+Click consistency.
-        m_KeyMappingDataTable->setCurrentCell(startRow, 0, QItemSelectionModel::NoUpdate);
+            // Keep current cell aligned with inserted range for Ctrl/Shift+Click consistency.
+            m_KeyMappingDataTable->setCurrentCell(startDisplayRow, 0, QItemSelectionModel::NoUpdate);
+        }
     }
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote()
-        << "[insertCopiedKeyMappingDataAtAbsoluteRow] Insert (" << inserted_count
-        << ") copied items at row(" << boundedInsertRow << ") -> " << insertMappingDataList;
+        << "[insertCopiedKeyMappingDataAtTargetRow] Insert (" << inserted_count
+        << ") copied items at tab(" << targetTabIndex << ") row(" << boundedInsertRow << ") -> " << insertMappingDataList;
 #endif
 
     markSaveSettingDirty();
     return inserted_count;
+}
+
+int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *autoDisabledCount)
+{
+    if (!m_KeyMappingDataTable) {
+        return -1;
+    }
+
+    int targetTabIndex = s_KeyMappingTabWidgetCurrentIndex;
+    int targetInsertRow = insertRow;
+
+    if (insertRow <= 0) {
+        if (m_KeyMappingDataTable->rowCount() > 0) {
+            DisplayRowSourceInfo sourceInfo;
+            if (resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, 0, &sourceInfo)
+                && sourceInfo.SourceMappingDataList != Q_NULLPTR) {
+                targetTabIndex = sourceInfo.SourceTabIndex;
+                targetInsertRow = 0;
+            }
+        }
+        else if (targetTabIndex >= 0 && targetTabIndex < s_KeyMappingTabInfoList.size()) {
+            targetInsertRow = 0;
+        }
+    }
+    else if (insertRow >= m_KeyMappingDataTable->rowCount()) {
+        if (m_KeyMappingDataTable->rowCount() > 0) {
+            DisplayRowSourceInfo sourceInfo;
+            if (resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, m_KeyMappingDataTable->rowCount() - 1, &sourceInfo)
+                && sourceInfo.SourceMappingDataList != Q_NULLPTR) {
+                targetTabIndex = sourceInfo.SourceTabIndex;
+                targetInsertRow = sourceInfo.SourceRow + 1;
+            }
+        }
+        else if (targetTabIndex >= 0 && targetTabIndex < s_KeyMappingTabInfoList.size()) {
+            QList<MAP_KEYDATA> *targetMappingDataList = s_KeyMappingTabInfoList.at(targetTabIndex).KeyMappingData;
+            targetInsertRow = targetMappingDataList ? targetMappingDataList->size() : 0;
+        }
+    }
+    else {
+        DisplayRowSourceInfo sourceInfo;
+        if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, insertRow, &sourceInfo)
+            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
+            return -1;
+        }
+
+        targetTabIndex = sourceInfo.SourceTabIndex;
+        targetInsertRow = sourceInfo.SourceRow;
+    }
+
+    return insertCopiedKeyMappingDataAtTargetRow(targetTabIndex, targetInsertRow, autoDisabledCount);
 }
 
 void QKeyMapper::updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring)
@@ -14392,10 +14948,21 @@ void QKeyMapper::applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappi
 void QKeyMapper::cellChanged_slot(int row, int col)
 {
     bool settingChanged = false;
-    int row_count = QKeyMapper::KeyMappingDataList->size();
-    if (row >= row_count || row < 0) {
+    int sourceTabIndex = s_KeyMappingTabWidgetCurrentIndex;
+    int sourceRow = row;
+    QList<MAP_KEYDATA> *sourceMappingDataList = Q_NULLPTR;
+    if (!resolveDisplayRowSource(s_KeyMappingTabWidgetCurrentIndex, row, &sourceTabIndex, &sourceRow, &sourceMappingDataList)
+        || sourceMappingDataList == Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("\033[1;31m[%s]: row(%d) out of range, row_count(%d), col(%d)\033[0m", __func__, row, row_count, col);
+        qDebug("\033[1;31m[%s]: display row(%d) can not be resolved, col(%d)\033[0m", __func__, row, col);
+#endif
+        return;
+    }
+
+    int row_count = sourceMappingDataList->size();
+    if (sourceRow >= row_count || sourceRow < 0) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug("\033[1;31m[%s]: source row(%d) out of range, row_count(%d), col(%d)\033[0m", __func__, sourceRow, row_count, col);
 #endif
         return;
     }
@@ -14411,13 +14978,13 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             burst = false;
         }
 
-        if (burst != KeyMappingDataList->at(row).Burst) {
-            (*KeyMappingDataList)[row].Burst = burst;
-            emit keyMappingTableItemCheckStateChanged_Signal(row, col, burst);
+        if (burst != sourceMappingDataList->at(sourceRow).Burst) {
+            (*sourceMappingDataList)[sourceRow].Burst = burst;
+            emit keyMappingTableItemCheckStateChanged_Signal(sourceRow, col, burst);
             settingChanged = true;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("[%s]: row(%d) burst changed to (%s)", __func__, row, burst == true?"ON":"OFF");
+            qDebug("[%s]: display row(%d), source row(%d) burst changed to (%s)", __func__, row, sourceRow, burst == true?"ON":"OFF");
 #endif
         }
     }
@@ -14430,13 +14997,13 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             lock = false;
         }
 
-        if (lock != KeyMappingDataList->at(row).Lock) {
-            (*KeyMappingDataList)[row].Lock = lock;
-            emit keyMappingTableItemCheckStateChanged_Signal(row, col, lock);
+        if (lock != sourceMappingDataList->at(sourceRow).Lock) {
+            (*sourceMappingDataList)[sourceRow].Lock = lock;
+            emit keyMappingTableItemCheckStateChanged_Signal(sourceRow, col, lock);
             settingChanged = true;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("[%s]: row(%d) lock changed to (%s)", __func__, row, lock == true?"ON":"OFF");
+            qDebug("[%s]: display row(%d), source row(%d) lock changed to (%s)", __func__, row, sourceRow, lock == true?"ON":"OFF");
 #endif
         }
     }
@@ -14449,14 +15016,16 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             floating = false;
         }
 
-        if (floating != KeyMappingDataList->at(row).FloatingButton_Enable) {
-            (*KeyMappingDataList)[row].FloatingButton_Enable = floating;
-            emit keyMappingTableItemCheckStateChanged_Signal(row, col, floating);
-            applyFloatingButtonRuntimeState(this, row);
+        if (floating != sourceMappingDataList->at(sourceRow).FloatingButton_Enable) {
+            (*sourceMappingDataList)[sourceRow].FloatingButton_Enable = floating;
+            emit keyMappingTableItemCheckStateChanged_Signal(sourceRow, col, floating);
+            if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+                applyFloatingButtonRuntimeState(this, sourceRow);
+            }
             settingChanged = true;
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("[%s]: row(%d) floating button changed to (%s)", __func__, row, floating == true?"ON":"OFF");
+            qDebug("[%s]: display row(%d), source row(%d) floating button changed to (%s)", __func__, row, sourceRow, floating == true?"ON":"OFF");
 #endif
         }
     }
@@ -14469,43 +15038,47 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             disabled = false;
         }
 
-        if (disabled != KeyMappingDataList->at(row).Disabled) {
-            (*KeyMappingDataList)[row].Disabled = disabled;
-            emit keyMappingTableItemCheckStateChanged_Signal(row, col, disabled);
-            applyDisabledStyleToMappingRow(m_KeyMappingDataTable, KeyMappingDataList, row);
+        if (disabled != sourceMappingDataList->at(sourceRow).Disabled) {
+            (*sourceMappingDataList)[sourceRow].Disabled = disabled;
+            emit keyMappingTableItemCheckStateChanged_Signal(sourceRow, col, disabled);
+            if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+                applyDisabledStyleToMappingRow(m_KeyMappingDataTable, sourceMappingDataList, sourceRow);
+            }
             settingChanged = true;
 
             // Enforce mutual exclusion: within the same normalized OriginalKey group,
             // only one item can be enabled at a time.
             if (!disabled) {
-                const QString groupKey = normalizeOriginalKeyForExclusiveGroup(KeyMappingDataList->at(row).Original_Key);
+                const QString groupKey = normalizeOriginalKeyForExclusiveGroup(sourceMappingDataList->at(sourceRow).Original_Key);
                 int auto_disabled = 0;
 
-                for (int i = 0; i < KeyMappingDataList->size(); ++i) {
-                    if (i == row) {
+                for (int i = 0; i < sourceMappingDataList->size(); ++i) {
+                    if (i == sourceRow) {
                         continue;
                     }
-                    if (KeyMappingDataList->at(i).Disabled) {
+                    if (sourceMappingDataList->at(i).Disabled) {
                         continue;
                     }
-                    if (normalizeOriginalKeyForExclusiveGroup(KeyMappingDataList->at(i).Original_Key) != groupKey) {
+                    if (normalizeOriginalKeyForExclusiveGroup(sourceMappingDataList->at(i).Original_Key) != groupKey) {
                         continue;
                     }
 
-                    (*KeyMappingDataList)[i].Disabled = true;
+                    (*sourceMappingDataList)[i].Disabled = true;
                     emit keyMappingTableItemCheckStateChanged_Signal(i, col, true);
                     auto_disabled += 1;
 
-                    QTableWidgetItem *disabledItem = m_KeyMappingDataTable->item(i, DISABLED_COLUMN);
-                    if (disabledItem) {
-                        disabledItem->setCheckState(Qt::Checked);
+                    if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+                        QTableWidgetItem *disabledItem = m_KeyMappingDataTable->item(i, DISABLED_COLUMN);
+                        if (disabledItem) {
+                            disabledItem->setCheckState(Qt::Checked);
+                        }
+                        applyDisabledStyleToMappingRow(m_KeyMappingDataTable, sourceMappingDataList, i);
                     }
-                    applyDisabledStyleToMappingRow(m_KeyMappingDataTable, KeyMappingDataList, i);
                 }
 
                 if (auto_disabled > 0) {
                     QString message = tr("Enabled mapping for \"%1\". Other same OriginalKey mapping was disabled.")
-                                          .arg(KeyMappingDataList->at(row).Original_Key);
+                                          .arg(sourceMappingDataList->at(sourceRow).Original_Key);
                     showInformationPopup(message);
                 }
             }
@@ -14513,20 +15086,22 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             m_KeyMappingDataTable->reapplyRowVisibility();
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("[%s]: row(%d) disabled changed to (%s)", __func__, row, disabled == true?"ON":"OFF");
+            qDebug("[%s]: display row(%d), source row(%d) disabled changed to (%s)", __func__, row, sourceRow, disabled == true?"ON":"OFF");
 #endif
         }
     }
     else if (col == CATEGORY_COLUMN) {
         QString category = m_KeyMappingDataTable->item(row, col)->text();
-        if (category != KeyMappingDataList->at(row).Category) {
-            (*KeyMappingDataList)[row].Category = category;
+        if (category != sourceMappingDataList->at(sourceRow).Category) {
+            (*sourceMappingDataList)[sourceRow].Category = category;
             settingChanged = true;
 
-            updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, CATEGORY_COLUMN);
+            if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+                updateKeyMappingDataTableItem(m_KeyMappingDataTable, sourceMappingDataList, sourceRow, CATEGORY_COLUMN);
+            }
 
 #ifdef DEBUG_LOGOUT_ON
-            QString debugmessage = QString("[%1] row(%2) category changed to \"%3\"").arg(__func__).arg(row).arg(category);
+            QString debugmessage = QString("[%1] display row(%2), source row(%3) category changed to \"%4\"").arg(__func__).arg(row).arg(sourceRow).arg(category);
             qDebug().noquote().nospace() << debugmessage;
 #endif
             // Update category filter ComboBox
@@ -14537,9 +15112,9 @@ void QKeyMapper::cellChanged_slot(int row, int col)
     }
     else if (col == ORIGINAL_KEY_COLUMN) {
         QString originalkey_new = m_KeyMappingDataTable->item(row, col)->text();
-        QString originalkey = KeyMappingDataList->at(row).Original_Key;
-        QString mappingkeys_str = KeyMappingDataList->at(row).Mapping_Keys.join(SEPARATOR_NEXTARROW);
-        QString mapdata_note = KeyMappingDataList->at(row).Note;
+        QString originalkey = sourceMappingDataList->at(sourceRow).Original_Key;
+        QString mappingkeys_str = sourceMappingDataList->at(sourceRow).Mapping_Keys.join(SEPARATOR_NEXTARROW);
+        QString mapdata_note = sourceMappingDataList->at(sourceRow).Note;
         QString originalkey_withnote;
         if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {
             originalkey_withnote = QString(ORIKEY_WITHNOTE_FORMAT).arg(originalkey, mapdata_note);
@@ -14566,27 +15141,29 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 }
             }
 
-            bool isValid = QItemSetupDialog::updateOriginalKey(originalkey_new, mappingkeys_str, row);
+            bool isValid = QItemSetupDialog::updateOriginalKey(originalkey_new, mappingkeys_str, sourceRow);
             if (isValid) {
-                (*KeyMappingDataList)[row].Original_Key = originalkey_new;
+                (*sourceMappingDataList)[sourceRow].Original_Key = originalkey_new;
                 if (note_new != mapdata_note && update_withnote) {
-                    (*KeyMappingDataList)[row].Note = note_new;
+                    (*sourceMappingDataList)[sourceRow].Note = note_new;
                 }
                 settingChanged = true;
-                updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, ORIGINAL_KEY_COLUMN);
+                if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+                    updateKeyMappingDataTableItem(m_KeyMappingDataTable, sourceMappingDataList, sourceRow, ORIGINAL_KEY_COLUMN);
+                }
 
                 // If the item is currently enabled and the new OriginalKey conflicts with an already enabled
                 // item in the same normalized group, allow the update but auto-disable this row.
-                autoDisableRowIfExclusiveGroupConflict(s_KeyMappingTabWidgetCurrentIndex, row, true, true);
+                autoDisableRowIfExclusiveGroupConflict(sourceTabIndex, sourceRow, true, sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex);
                 closeItemSetupDialog(row);
 
 #ifdef DEBUG_LOGOUT_ON
                 if (note_new != mapdata_note && update_withnote) {
-                    QString debugmessage = QString("[%1] row(%2) OriginalKey column changed, OriginalKey: \"%3\", Note: \"%4\"").arg(__func__).arg(row).arg(originalkey_new, note_new);
+                    QString debugmessage = QString("[%1] display row(%2), source row(%3) OriginalKey column changed, OriginalKey: \"%4\", Note: \"%5\"").arg(__func__).arg(row).arg(sourceRow).arg(originalkey_new, note_new);
                     qDebug().noquote().nospace() << debugmessage;
                 }
                 else {
-                    QString debugmessage = QString("[%1] row(%2) OriginalKey column changed, OriginalKey: \"%3\"").arg(__func__).arg(row).arg(originalkey_new);
+                    QString debugmessage = QString("[%1] display row(%2), source row(%3) OriginalKey column changed, OriginalKey: \"%4\"").arg(__func__).arg(row).arg(sourceRow).arg(originalkey_new);
                     qDebug().noquote().nospace() << debugmessage;
                 }
 #endif
@@ -14602,22 +15179,27 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         }
     }
     else if (col == MAPPING_KEY_COLUMN) {
-        QString originalkey = KeyMappingDataList->at(row).Original_Key;
+        QString originalkey = sourceMappingDataList->at(sourceRow).Original_Key;
         QString mappingkeys_str_new = m_KeyMappingDataTable->item(row, col)->text();
-        QString mappingkeys_str = KeyMappingDataList->at(row).Mapping_Keys.join(SEPARATOR_NEXTARROW);
+        QString mappingkeys_str = sourceMappingDataList->at(sourceRow).Mapping_Keys.join(SEPARATOR_NEXTARROW);
         if (mappingkeys_str_new != mappingkeys_str) {
-            bool isValid = QItemSetupDialog::updateMappingKey(mappingkeys_str_new, originalkey, row);
+            bool isValid = QItemSetupDialog::updateMappingKey(mappingkeys_str_new, originalkey, sourceRow);
 
             if (isValid) {
-                QKeyMapper::updateKeyMappingDataListMappingKeys(row, mappingkeys_str_new);
-                updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, MAPPING_KEY_COLUMN);
-                updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, BURST_MODE_COLUMN);
-                updateKeyMappingDataTableItem(m_KeyMappingDataTable, KeyMappingDataList, row, LOCK_COLUMN);
+                if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+                    QKeyMapper::updateKeyMappingDataListMappingKeys(sourceRow, mappingkeys_str_new);
+                    updateKeyMappingDataTableItem(m_KeyMappingDataTable, sourceMappingDataList, sourceRow, MAPPING_KEY_COLUMN);
+                    updateKeyMappingDataTableItem(m_KeyMappingDataTable, sourceMappingDataList, sourceRow, BURST_MODE_COLUMN);
+                    updateKeyMappingDataTableItem(m_KeyMappingDataTable, sourceMappingDataList, sourceRow, LOCK_COLUMN);
+                }
+                else {
+                    (*sourceMappingDataList)[sourceRow].Mapping_Keys = splitMappingKeyString(mappingkeys_str_new, SPLIT_WITH_NEXT);
+                }
                 settingChanged = true;
                 closeItemSetupDialog(row);
 
 #ifdef DEBUG_LOGOUT_ON
-                QString debugmessage = QString("[%1] row(%2) MappingKey changed : \"%3\"").arg(__func__).arg(row).arg(mappingkeys_str_new);
+                QString debugmessage = QString("[%1] display row(%2), source row(%3) MappingKey changed : \"%4\"").arg(__func__).arg(row).arg(sourceRow).arg(mappingkeys_str_new);
                 qDebug().noquote().nospace() << debugmessage;
 #endif
             }
@@ -14634,6 +15216,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
     }
 
     if (settingChanged) {
+        refreshTabsForSourceTabChange(sourceTabIndex);
         markSaveSettingDirty();
     }
 }
@@ -16319,10 +16902,16 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     }
 #endif
 
+    const int tabIndexBeforeSaveReload = s_KeyMappingTabWidgetCurrentIndex;
+
     // settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, s_KeyMappingTabWidgetCurrentIndex);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABNAME, s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName);
+    if (!isCommonMappingTabIndex(s_KeyMappingTabWidgetCurrentIndex)) {
+        settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABNAME, s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName);
+    }
 
     QStringList tabnamelist;
+    QStringList tabinternalnamelist;
+    QStringList tabincludecommonlist;
     QStringList tabhotkeylist;
     QStringList tabfontcolorlist;
     QStringList tabbgcolorlist;
@@ -16415,6 +17004,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
+        QString tabInternalName = s_KeyMappingTabInfoList.at(index).TabInternalName;
+        bool includeCommonMappingTable = s_KeyMappingTabInfoList.at(index).IncludeCommonMappingTable;
         QString tabHotkey = s_KeyMappingTabInfoList.at(index).TabHotkey;
         QString tabFontColor;
         QString tabBGColor;
@@ -16449,6 +17040,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
             floatingWindow_BGColor = s_KeyMappingTabInfoList.at(index).FloatingWindow_BackgroundColor.name(QColor::HexArgb);
         }
         tabnamelist.append(tabName);
+        tabinternalnamelist.append(tabInternalName);
+        tabincludecommonlist.append(includeCommonMappingTable ? "ON" : "OFF");
         tabhotkeylist.append(tabHotkey);
         tabfontcolorlist.append(tabFontColor);
         tabbgcolorlist.append(tabBGColor);
@@ -17124,6 +17717,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     }
 
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABINTERNALNAMELIST, tabinternalnamelist);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABINCLUDECOMMONLIST, tabincludecommonlist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHOTKEYLIST, tabhotkeylist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST, tabfontcolorlist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABBGCOLORLIST, tabbgcolorlist);
@@ -17298,6 +17893,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(saveSettingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED, m_MappingAdvancedDialog->getProcessIconAsTrayIcon());
     settingFile.setValue(saveSettingSelectStr+SHOW_WINDOW_POINT_KEY, m_MappingAdvancedDialog->getShowWindowPointKey());
     settingFile.setValue(saveSettingSelectStr+SHOW_SCREEN_POINT_KEY, m_MappingAdvancedDialog->getShowScreenPointKey());
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_COMMON_ENABLED, m_MappingAdvancedDialog->getCommonMappingTableEnabled());
     settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_ENABLED, m_MappingAdvancedDialog->getCustomNotificationEnabled());
     settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_POSITION, m_MappingAdvancedDialog->getCustomNotificationPosition());
     saveCustomNotificationStyleSettings(settingFile, saveSettingSelectStr);
@@ -17409,6 +18005,15 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     int popupMessageDisplayTime = 3000;
     const bool saveSucceeded = (loadresult == savedSettingName);
     if (saveSucceeded) {
+        if (isCommonMappingTabIndex(tabIndexBeforeSaveReload)) {
+            const int commonTabIndex = findCommonMappingTabIndex();
+            if (commonTabIndex >= 0 && isCommonMappingFeatureEnabled()) {
+                forceSwitchKeyMappingTabWidgetIndex(commonTabIndex);
+                updateFloatingColumnByShowFloatingState();
+                updateCategoryFilterByShowCategoryState();
+            }
+        }
+
         QString displaySettingName = savedSettingName;
         if (displaySettingName == GROUPNAME_GLOBALSETTING) {
             displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
@@ -17461,6 +18066,11 @@ void QKeyMapper::saveCurrentSettingLastTabName(const QString &tabName)
 
     // Determine save path based on current setting selection
     QString saveSettingSelectStr = QString("%1/").arg(cursettingSelectStr);
+
+    const int tabIndex = tabIndexToSwitchByTabName(tabName);
+    if (isCommonMappingTabIndex(tabIndex)) {
+        return;
+    }
 
     // Save the last tab name for the current setting
     settingFile.setValue(saveSettingSelectStr + MAPPINGTABLE_LASTTABNAME, tabName);
@@ -18790,6 +19400,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         initKeyMappingTable = true;
     }
 
+    QStringList tabinternalnamelist_loaded;
+    QStringList tabincludecommonlist_loaded;
     QStringList tabhotkeylist_loaded;
     QStringList tabfontcolorlist_loaded;
     QStringList tabbgcolorlist_loaded;
@@ -18972,6 +19584,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             mappingkeys_keyup_loaded = mapping_keys_loaded;
         }
         tabnamelist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABNAMELIST).toStringList();
+        tabinternalnamelist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABINTERNALNAMELIST).toStringList();
+        tabincludecommonlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABINCLUDECOMMONLIST).toStringList();
         tabhotkeylist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABHOTKEYLIST).toStringList();
         tabfontcolorlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST).toStringList();
         tabbgcolorlist_loaded   = settingFile.value(settingSelectStr+MAPPINGTABLE_TABBGCOLORLIST).toStringList();
@@ -20708,7 +21322,23 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
             for (int index = 0; index < tabnamelist_loaded.size(); ++index) {
                 if ((index < s_KeyMappingTabInfoList.size()) && (index < ui->keyMappingTabWidget->count())) {
+                    const QString loadedInternalName = (index < tabinternalnamelist_loaded.size())
+                        ? tabinternalnamelist_loaded.at(index).trimmed()
+                        : QString();
+                    const bool isCommonTab = (loadedInternalName == getCommonMappingTableInternalName());
+
                     s_KeyMappingTabInfoList[index].TabName = tabnamelist_loaded.at(index);
+                    s_KeyMappingTabInfoList[index].TabInternalName = loadedInternalName;
+                    s_KeyMappingTabInfoList[index].IsCommonTab = isCommonTab;
+                    if (isCommonTab) {
+                        s_KeyMappingTabInfoList[index].IncludeCommonMappingTable = false;
+                    }
+                    else if (index < tabincludecommonlist_loaded.size()) {
+                        s_KeyMappingTabInfoList[index].IncludeCommonMappingTable = (tabincludecommonlist_loaded.at(index) != "OFF");
+                    }
+                    else {
+                        s_KeyMappingTabInfoList[index].IncludeCommonMappingTable = MAPPINGTABLE_INCLUDE_COMMON_DEFAULT;
+                    }
                     ui->keyMappingTabWidget->setTabText(index, tabnamelist_loaded.at(index));
                 }
             }
@@ -20765,6 +21395,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             }
         }
         else {
+            s_KeyMappingTabInfoList[index].TabHotkey.clear();
+        }
+        if (isCommonMappingTabIndex(index)) {
             s_KeyMappingTabInfoList[index].TabHotkey.clear();
         }
         // updateKeyMappingTabWidgetTabDisplay(index);
@@ -20938,6 +21571,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         updateKeyMappingTabWidgetTabDisplay(index);
     }
 
+    ensureCommonMappingTabExists();
     collectMappingTableTabHotkeys();
 
 #if 0
@@ -21915,6 +22549,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
     else {
         m_MappingAdvancedDialog->setCustomNotificationEnabled(false);
     }
+
+    if (true == settingFile.contains(settingSelectStr+MAPPINGTABLE_COMMON_ENABLED)) {
+        bool commonMappingEnabled = settingFile.value(settingSelectStr+MAPPINGTABLE_COMMON_ENABLED).toBool();
+        m_MappingAdvancedDialog->setCommonMappingTableEnabled(commonMappingEnabled);
+    }
+    else {
+        m_MappingAdvancedDialog->setCommonMappingTableEnabled(MAPPINGTABLE_COMMON_ENABLED_DEFAULT);
+    }
     m_MappingAdvancedDialog->blockSignals(false);
 
     m_CustomNotificationStyleInitialized = false;
@@ -22090,6 +22732,25 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         qDebug().nospace().noquote() << "[loadKeyMapSetting]" << " Load setting success : " << "\"" << settingSelectStr << "\"";
 #endif
 
+        if (ui != Q_NULLPTR && ui->keyMappingTabWidget != Q_NULLPTR) {
+            int currentTabIndex = ui->keyMappingTabWidget->currentIndex();
+            if (currentTabIndex < 0 || currentTabIndex >= s_KeyMappingTabInfoList.size()) {
+                currentTabIndex = firstNormalMappingTabIndex();
+            }
+
+            if (currentTabIndex >= 0 && currentTabIndex < s_KeyMappingTabInfoList.size()) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().nospace().noquote() << "[loadKeyMapSetting] final refresh sync"
+                                             << " currentTabIndex=" << currentTabIndex
+                                             << ", trackedCurrentIndex(before)=" << s_KeyMappingTabWidgetCurrentIndex
+                                             << ", commonTabIndex=" << findCommonMappingTabIndex();
+#endif
+                switchKeyMappingTabIndex(currentTabIndex);
+            }
+        }
+
+        updateCommonMappingTabVisibility();
+
         return loadedSettingString;
     }
 }
@@ -22147,6 +22808,8 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->sendToSameTitleWindowsCheckBox->setChecked(false);
     m_MappingAdvancedDialog->setAcceptVirtualGamepadInput(false);
     m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
+    m_MappingAdvancedDialog->setCommonMappingTableEnabled(MAPPINGTABLE_COMMON_ENABLED_DEFAULT);
+    updateCommonMappingTabVisibility();
 
     QString loadedmappingStartKeyStr = MAPPINGSWITCH_KEY_DEFAULT;
     updateMappingStartKeyString(loadedmappingStartKeyStr);
@@ -24732,6 +25395,11 @@ void QKeyMapper::openCurrentMappingTableSetupDialog()
         return;
     }
 
+    if (isCommonMappingTabIndex(currentTabIndex)) {
+        showInformationPopup(tr("Common mapping table does not have table settings."));
+        return;
+    }
+
     showTableSetupDialog(currentTabIndex);
 }
 
@@ -24772,6 +25440,14 @@ void QKeyMapper::showItemSetupDialog(int tabindex, int row)
         return;
     }
 
+    int sourceTabIndex = tabindex;
+    int sourceRow = row;
+    QList<MAP_KEYDATA> *sourceMappingDataList = Q_NULLPTR;
+    if (!resolveDisplayRowSource(tabindex, row, &sourceTabIndex, &sourceRow, &sourceMappingDataList)
+        || sourceMappingDataList == Q_NULLPTR) {
+        return;
+    }
+
     if (m_ItemSetupDialog->isVisible()) {
         m_ItemSetupDialog->close();
     }
@@ -24797,8 +25473,9 @@ void QKeyMapper::showItemSetupDialog(int tabindex, int row)
     y += y_offset;
     m_ItemSetupDialog->move(x, y);
 
-    m_ItemSetupDialog->setTabIndex(tabindex);
-    m_ItemSetupDialog->setItemRow(row);
+    KeyMappingDataList = sourceMappingDataList;
+    m_ItemSetupDialog->setTabIndex(sourceTabIndex);
+    m_ItemSetupDialog->setItemRow(sourceRow);
     m_ItemSetupDialog->show();
 }
 
@@ -24819,18 +25496,32 @@ void QKeyMapper::closeItemSetupDialog(int row)
         return;
     }
 
+    int sourceTabIndex = s_KeyMappingTabWidgetCurrentIndex;
+    int sourceRow = row;
+    QList<MAP_KEYDATA> *sourceMappingDataList = Q_NULLPTR;
+    if (resolveDisplayRowSource(s_KeyMappingTabWidgetCurrentIndex, row, &sourceTabIndex, &sourceRow, &sourceMappingDataList)) {
+        Q_UNUSED(sourceMappingDataList);
+    }
+
     if (m_ItemSetupDialog->isVisible() &&
-        m_ItemSetupDialog->getItemRow() == row) {
+        m_ItemSetupDialog->getTabIndex() == sourceTabIndex &&
+        m_ItemSetupDialog->getItemRow() == sourceRow) {
 #ifdef DEBUG_LOGOUT_ON
-        QString debugmessage = QString("[QKeyMapper::closeItemSetupDialog] row(%1) == getItemRow(%2) & DialogVisible(true), ItemSetupDialog close").arg(row).arg(m_ItemSetupDialog->getItemRow());
+        QString debugmessage = QString("[QKeyMapper::closeItemSetupDialog] display row(%1) -> source tab(%2) row(%3), DialogVisible(true), ItemSetupDialog close")
+            .arg(row)
+            .arg(sourceTabIndex)
+            .arg(sourceRow);
         qDebug().nospace().noquote() << debugmessage;
 #endif
         m_ItemSetupDialog->close();
     }
 #ifdef DEBUG_LOGOUT_ON
     else {
-        QString debugmessage = QString("[QKeyMapper::closeItemSetupDialog] row(%1) & getItemRow(%2) & DialogVisible(%3), ItemSetupDialog NOT closed")
+        QString debugmessage = QString("[QKeyMapper::closeItemSetupDialog] display row(%1) -> source tab(%2) row(%3), dialog tab(%4) row(%5), DialogVisible(%6), ItemSetupDialog NOT closed")
             .arg(row)
+            .arg(sourceTabIndex)
+            .arg(sourceRow)
+            .arg(m_ItemSetupDialog->getTabIndex())
             .arg(m_ItemSetupDialog->getItemRow())
             .arg(m_ItemSetupDialog->isVisible() ? "true" : "false");
         qDebug().nospace().noquote() << debugmessage;
@@ -27395,6 +28086,16 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     }
 #endif
 
+    bool addCommonTabResult = addCommonMappingTabToKeyMappingTabWidget();
+    Q_UNUSED(addCommonTabResult);
+#ifdef DEBUG_LOGOUT_ON
+    if (false == addCommonTabResult) {
+        qWarning() << "[initKeyMappingTabWidget]" << "addCommonMappingTabToKeyMappingTabWidget failed!";
+    }
+#endif
+
+    updateCommonMappingTabVisibility();
+
     setKeyMappingTabWidgetCurrentIndex(0);
     switchKeyMappingTabIndex(0);
 }
@@ -27420,9 +28121,12 @@ void QKeyMapper::clearKeyMappingTabWidget()
 
     if (s_KeyMappingTabInfoList.size() > 0) {
         s_KeyMappingTabInfoList[0].TabName = "Tab1";
+        s_KeyMappingTabInfoList[0].TabInternalName.clear();
         s_KeyMappingTabInfoList[0].TabHotkey.clear();
         s_KeyMappingTabInfoList[0].TabFontColor = QColor();
         s_KeyMappingTabInfoList[0].TabBackgroundColor = QColor();
+        s_KeyMappingTabInfoList[0].IncludeCommonMappingTable = MAPPINGTABLE_INCLUDE_COMMON_DEFAULT;
+        s_KeyMappingTabInfoList[0].IsCommonTab = false;
         s_KeyMappingTabInfoList[0].TabHideNotification = TAB_HIDE_NOTIFICATION_DEFAULT;
         s_KeyMappingTabInfoList[0].TabCustomImage_Path.clear();
         s_KeyMappingTabInfoList[0].TabCustomImage_ShowPosition = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
@@ -28819,15 +29523,42 @@ void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
 {
     if (0 <= tabindex && tabindex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
         KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(tabindex).KeyMappingDataTable;
-        QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+        QList<MAP_KEYDATA> displayMappingDataList = buildDisplayKeyMappingDataList(tabindex);
 
-        refreshKeyMappingDataTable(mappingDataTable, mappingDataList);
+#ifdef DEBUG_LOGOUT_ON
+        const int commonTabIndex = findCommonMappingTabIndex();
+        const QList<MAP_KEYDATA> *localMappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+        const QList<MAP_KEYDATA> *commonMappingDataList = (commonTabIndex >= 0 && commonTabIndex < s_KeyMappingTabInfoList.size())
+            ? s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData
+            : Q_NULLPTR;
+        const KeyMappingTab_Info &tabInfo = s_KeyMappingTabInfoList.at(tabindex);
+        qDebug().nospace().noquote() << "[refreshKeyMappingDataTableByTabIndex]"
+                                     << " tabIndex=" << tabindex
+                                     << ", tabName=" << tabInfo.TabName
+                                     << ", isCommonTab=" << (isCommonMappingTab(tabInfo) ? "true" : "false")
+                                     << ", includeCommon=" << (tabInfo.IncludeCommonMappingTable ? "true" : "false")
+                                     << ", featureEnabled=" << (isCommonMappingFeatureEnabled() ? "true" : "false")
+                                     << ", commonTabIndex=" << commonTabIndex
+                                     << ", localSize=" << (localMappingDataList != Q_NULLPTR ? localMappingDataList->size() : -1)
+                                     << ", commonSize=" << (commonMappingDataList != Q_NULLPTR ? commonMappingDataList->size() : -1)
+                                     << ", displaySize=" << displayMappingDataList.size();
+#endif
+
+        refreshKeyMappingDataTable(mappingDataTable, &displayMappingDataList);
     }
 }
 
 void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList)
 {
     mappingDataTable->setRowCount(0);
+
+    const int tabIndex = findMappingTabIndexByDataTable(mappingDataTable);
+    const int commonStartDisplayRow = (tabIndex >= 0 && shouldAppendCommonMappingRows(tabIndex))
+        ? ((s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData != Q_NULLPTR)
+            ? s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData->size()
+            : 0)
+        : -1;
+    QStringList verticalHeaderLabels;
 
     if (false == mappingDataList->isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
@@ -29027,6 +29758,52 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, CATEGORY_COLUMN, categoryItem);
 
+            const bool isAppendedCommonRow = (commonStartDisplayRow >= 0 && rowindex >= commonStartDisplayRow);
+            const bool isFirstAppendedCommonRow = isAppendedCommonRow && rowindex == commonStartDisplayRow;
+            if (isAppendedCommonRow) {
+                const QBrush commonRowBackground(COMMON_MAPPING_ROW_BACKGROUND_COLOR);
+                const QBrush commonRowForeground(COMMON_MAPPING_ROW_FOREGROUND_COLOR);
+                const QString commonRowHint = tr("From Common mapping table");
+                for (int column = 0; column < KEYMAPPINGDATA_TABLE_COLUMN_COUNT; ++column) {
+                    QTableWidgetItem *item = mappingDataTable->item(rowindex, column);
+                    if (!item) {
+                        continue;
+                    }
+
+                    item->setData(COMMON_APPENDED_ROW_ROLE, true);
+                    item->setData(COMMON_APPENDED_ROW_SEPARATOR_ROLE, isFirstAppendedCommonRow);
+                    item->setBackground(commonRowBackground);
+                    item->setForeground(commonRowForeground);
+
+                    const QString existingToolTip = item->toolTip();
+                    if (!existingToolTip.contains(commonRowHint)) {
+                        item->setToolTip(existingToolTip.isEmpty()
+                                             ? commonRowHint
+                                             : (existingToolTip + QStringLiteral("\n") + commonRowHint));
+                    }
+                }
+
+                verticalHeaderLabels.append(QStringLiteral("C%1").arg(rowindex - commonStartDisplayRow + 1));
+            }
+            else {
+                for (int column = 0; column < KEYMAPPINGDATA_TABLE_COLUMN_COUNT; ++column) {
+                    QTableWidgetItem *item = mappingDataTable->item(rowindex, column);
+                    if (!item) {
+                        continue;
+                    }
+
+                    item->setData(COMMON_APPENDED_ROW_ROLE, false);
+                    item->setData(COMMON_APPENDED_ROW_SEPARATOR_ROLE, false);
+                }
+
+                if (tabIndex >= 0 && isCommonMappingTabIndex(tabIndex)) {
+                    verticalHeaderLabels.append(QStringLiteral("C%1").arg(rowindex + 1));
+                }
+                else {
+                    verticalHeaderLabels.append(QString::number(rowindex + 1));
+                }
+            }
+
             applyDisabledStyleToMappingRow(mappingDataTable, mappingDataList, rowindex);
 
             rowindex += 1;
@@ -29045,6 +29822,8 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
         qDebug() << "[refreshKeyMappingDataTable]" << "Empty mappingDataList";
 #endif
     }
+
+    mappingDataTable->setVerticalHeaderLabels(verticalHeaderLabels);
 
     if (ui->showFloatingButton) {
         mappingDataTable->setFloatingColumnVisible(ui->showFloatingButton->isChecked());
@@ -29418,10 +30197,7 @@ void QKeyMapper::updateTableWidgetItem(int tabindex, int row, int column)
 void QKeyMapper::refreshAllKeyMappingTabWidget()
 {
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
-        KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
-        QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
-
-        refreshKeyMappingDataTable(mappingDataTable, mappingDataList);
+        refreshKeyMappingDataTableByTabIndex(index);
     }
 
     updateMousePointsList();
@@ -31696,6 +32472,11 @@ void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
         qDebug() << "[onKeyMappingTabWidgetTabBarDoubleClicked]" << "KeyMappingTabWidget TabBar doubleclicked :" << index;
 #endif
 
+    if (isCommonMappingTabIndex(index)) {
+        showInformationPopup(tr("Common mapping table does not have table settings."));
+        return;
+    }
+
         showTableSetupDialog(index);
     }
 }
@@ -31738,33 +32519,46 @@ void QKeyMapper::keyMappingTableDragDropMove(int top_row, int bottom_row, int dr
     qDebug() << "[keyMappingTableDragDropMove] DragDrop : Rows" << top_row << ":" << bottom_row << "->" << dragged_to;
 #endif
 
+    DisplayRowSourceInfo topSourceInfo;
+    DisplayRowSourceInfo bottomSourceInfo;
+    DisplayRowSourceInfo targetSourceInfo;
+    if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, top_row, &topSourceInfo)
+        || !resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, bottom_row, &bottomSourceInfo)
+        || !resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, qBound(0, dragged_to, qMax(0, m_KeyMappingDataTable->rowCount() - 1)), &targetSourceInfo)
+        || topSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex
+        || bottomSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex
+        || targetSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex) {
+        showWarningPopup(tr("Reordering appended Common rows is not supported here. Please use the Common tab."));
+        return;
+    }
+
     int mappingdata_size = KeyMappingDataList->size();
-    if (top_row >= 0 && bottom_row < mappingdata_size && dragged_to >= 0 && dragged_to < mappingdata_size
-        && (dragged_to > bottom_row || dragged_to < top_row)) {
+    if (topSourceInfo.SourceRow >= 0 && bottomSourceInfo.SourceRow < mappingdata_size && targetSourceInfo.SourceRow >= 0 && targetSourceInfo.SourceRow < mappingdata_size
+        && (targetSourceInfo.SourceRow > bottomSourceInfo.SourceRow || targetSourceInfo.SourceRow < topSourceInfo.SourceRow)) {
 
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
         closeSetupDialog_OnDataChanged();
 #endif
 
-        int draged_row_count = bottom_row - top_row + 1;
-        bool isDraggedToBottom = (dragged_to > bottom_row);
+        int draged_row_count = bottomSourceInfo.SourceRow - topSourceInfo.SourceRow + 1;
+        bool isDraggedToBottom = (targetSourceInfo.SourceRow > bottomSourceInfo.SourceRow);
 
         if (isDraggedToBottom) {
             for (int i = 0; i < draged_row_count; ++i) {
-                KeyMappingDataList->move(top_row, dragged_to);
+                KeyMappingDataList->move(topSourceInfo.SourceRow, targetSourceInfo.SourceRow);
             }
         }
         else {
             /* Dragged to top */
             for (int i = draged_row_count - 1; i >= 0; --i) {
-                KeyMappingDataList->move(bottom_row, dragged_to);
+                KeyMappingDataList->move(bottomSourceInfo.SourceRow, targetSourceInfo.SourceRow);
             }
         }
 
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyMappingTableDragDropMove] : refreshKeyMappingDataTable()";
 #endif
-        refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
 
         // Reselect the moved rows
         QTableWidgetSelectionRange newSelection;
@@ -31934,7 +32728,12 @@ void QKeyMapper::setupDialogClosed()
         reselectrow = m_KeyMappingDataTable->row(selectedItem);
     }
 
-    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    const int sourceTabIndex = (m_ItemSetupDialog != Q_NULLPTR)
+        ? m_ItemSetupDialog->getTabIndex()
+        : s_KeyMappingTabWidgetCurrentIndex;
+
+    restoreKeyMappingDataListPointer();
+    refreshTabsForSourceTabChange(sourceTabIndex);
     updateMousePointsList();
 
     if (reselectrow >= 0) {
@@ -32906,7 +33705,7 @@ void QKeyMapper::insertNewMappingData(const MAP_KEYDATA &newKeyMappingData, bool
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
 
     if (m_KeyMappingDataTable->rowCount() > 0) {
         const int startRow = insertBySelection
@@ -33037,7 +33836,17 @@ void QKeyMapper::selectedItemsMoveUp()
     int topRow = range.topRow();
     int bottomRow = range.bottomRow();
 
-    if (topRow <= 0) {
+    DisplayRowSourceInfo topSourceInfo;
+    DisplayRowSourceInfo bottomSourceInfo;
+    if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, topRow, &topSourceInfo)
+        || !resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, bottomRow, &bottomSourceInfo)
+        || topSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex
+        || bottomSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex) {
+        showWarningPopup(tr("Reordering appended Common rows is not supported here. Please use the Common tab."));
+        return;
+    }
+
+    if (topSourceInfo.SourceRow <= 0) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[MoveUpItem] Cannot move up, already at the top";
 #endif
@@ -33049,7 +33858,7 @@ void QKeyMapper::selectedItemsMoveUp()
 #endif
 
     // Move the selected rows up by one
-    for (int row = topRow; row <= bottomRow; ++row) {
+    for (int row = topSourceInfo.SourceRow; row <= bottomSourceInfo.SourceRow; ++row) {
         KeyMappingDataList->move(row, row - 1);
     }
 
@@ -33060,7 +33869,7 @@ void QKeyMapper::selectedItemsMoveUp()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
 
     // Reselect the moved rows
     QTableWidgetSelectionRange newSelection(topRow - 1, 0, bottomRow - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
@@ -33107,7 +33916,17 @@ void QKeyMapper::selectedItemsMoveToTop()
     int topRow = range.topRow();
     int bottomRow = range.bottomRow();
 
-    if (topRow <= 0) {
+    DisplayRowSourceInfo topSourceInfo;
+    DisplayRowSourceInfo bottomSourceInfo;
+    if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, topRow, &topSourceInfo)
+        || !resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, bottomRow, &bottomSourceInfo)
+        || topSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex
+        || bottomSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex) {
+        showWarningPopup(tr("Reordering appended Common rows is not supported here. Please use the Common tab."));
+        return;
+    }
+
+    if (topSourceInfo.SourceRow <= 0) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[MoveToTop] Already at the top";
 #endif
@@ -33121,11 +33940,11 @@ void QKeyMapper::selectedItemsMoveToTop()
     // Move the selected rows to the top (preserve order)
     QList<MAP_KEYDATA> tempItems;
     // Save selected items in order
-    for (int row = topRow; row <= bottomRow; ++row) {
+    for (int row = topSourceInfo.SourceRow; row <= bottomSourceInfo.SourceRow; ++row) {
         tempItems.append(KeyMappingDataList->at(row));
     }
     // Remove selected items from bottom to top
-    for (int row = bottomRow; row >= topRow; --row) {
+    for (int row = bottomSourceInfo.SourceRow; row >= topSourceInfo.SourceRow; --row) {
         KeyMappingDataList->removeAt(row);
     }
     // Insert items at the top in reverse order to maintain original sequence
@@ -33140,7 +33959,7 @@ void QKeyMapper::selectedItemsMoveToTop()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
 
     // Reselect the moved rows at the top
     QTableWidgetSelectionRange newSelection(0, 0, bottomRow - topRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
@@ -33187,7 +34006,17 @@ void QKeyMapper::selectedItemsMoveDown()
     int topRow = range.topRow();
     int bottomRow = range.bottomRow();
 
-    if (bottomRow >= m_KeyMappingDataTable->rowCount() - 1) {
+    DisplayRowSourceInfo topSourceInfo;
+    DisplayRowSourceInfo bottomSourceInfo;
+    if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, topRow, &topSourceInfo)
+        || !resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, bottomRow, &bottomSourceInfo)
+        || topSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex
+        || bottomSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex) {
+        showWarningPopup(tr("Reordering appended Common rows is not supported here. Please use the Common tab."));
+        return;
+    }
+
+    if (bottomSourceInfo.SourceRow >= KeyMappingDataList->size() - 1) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[MoveDownItem] Cannot move down, already at the bottom";
 #endif
@@ -33199,7 +34028,7 @@ void QKeyMapper::selectedItemsMoveDown()
 #endif
 
     // Move the selected rows down by one
-    for (int row = bottomRow; row >= topRow; --row) {
+    for (int row = bottomSourceInfo.SourceRow; row >= topSourceInfo.SourceRow; --row) {
         KeyMappingDataList->move(row, row + 1);
     }
 
@@ -33210,7 +34039,7 @@ void QKeyMapper::selectedItemsMoveDown()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
 
     // Reselect the moved rows
     QTableWidgetSelectionRange newSelection(topRow + 1, 0, bottomRow + 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
@@ -33257,7 +34086,17 @@ void QKeyMapper::selectedItemsMoveToBottom()
     int topRow = range.topRow();
     int bottomRow = range.bottomRow();
 
-    if (bottomRow >= m_KeyMappingDataTable->rowCount() - 1) {
+    DisplayRowSourceInfo topSourceInfo;
+    DisplayRowSourceInfo bottomSourceInfo;
+    if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, topRow, &topSourceInfo)
+        || !resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, bottomRow, &bottomSourceInfo)
+        || topSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex
+        || bottomSourceInfo.SourceTabIndex != s_KeyMappingTabWidgetCurrentIndex) {
+        showWarningPopup(tr("Reordering appended Common rows is not supported here. Please use the Common tab."));
+        return;
+    }
+
+    if (bottomSourceInfo.SourceRow >= KeyMappingDataList->size() - 1) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[MoveToBottom] Already at the bottom";
 #endif
@@ -33271,11 +34110,11 @@ void QKeyMapper::selectedItemsMoveToBottom()
     // Move the selected rows to the bottom (preserve order)
     QList<MAP_KEYDATA> tempItems;
     // Save selected items in order
-    for (int row = topRow; row <= bottomRow; ++row) {
+    for (int row = topSourceInfo.SourceRow; row <= bottomSourceInfo.SourceRow; ++row) {
         tempItems.append(KeyMappingDataList->at(row));
     }
     // Remove selected items from bottom to top
-    for (int row = bottomRow; row >= topRow; --row) {
+    for (int row = bottomSourceInfo.SourceRow; row >= topSourceInfo.SourceRow; --row) {
         KeyMappingDataList->removeAt(row);
     }
     // Append items to the bottom in original order
@@ -33290,10 +34129,12 @@ void QKeyMapper::selectedItemsMoveToBottom()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
 
-    // Reselect the moved rows at the bottom
-    QTableWidgetSelectionRange newSelection(m_KeyMappingDataTable->rowCount() - (bottomRow - topRow + 1), 0, m_KeyMappingDataTable->rowCount() - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+    // Reselect the moved rows at the bottom of the local rows, excluding appended Common rows.
+    const int movedRowCount = bottomSourceInfo.SourceRow - topSourceInfo.SourceRow + 1;
+    const int localBottomRow = KeyMappingDataList->size() - 1;
+    QTableWidgetSelectionRange newSelection(localBottomRow - movedRowCount + 1, 0, localBottomRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->clearSelection();
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
@@ -33907,14 +34748,44 @@ void QKeyMapper::on_deleteSelectedButton_clicked()
     qDebug("Delete: topRow(%d), bottomRow(%d)", topRow, bottomRow);
 #endif
 
-    // Remove the selected rows from bottom to top
-    for (int row = bottomRow; row >= topRow; --row) {
-        m_KeyMappingDataTable->removeRow(row);
-        KeyMappingDataList->removeAt(row);
+    QHash<int, QList<int>> rowsBySourceTab;
+    for (int row = topRow; row <= bottomRow; ++row) {
+        if (m_KeyMappingDataTable->isRowHidden(row)) {
+            continue;
+        }
+
+        DisplayRowSourceInfo sourceInfo;
+        if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, row, &sourceInfo)
+            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
+            continue;
+        }
+
+        rowsBySourceTab[sourceInfo.SourceTabIndex].append(sourceInfo.SourceRow);
     }
 
-    // refresh table display
-    refreshKeyMappingDataTable(m_KeyMappingDataTable, KeyMappingDataList);
+    for (auto it = rowsBySourceTab.begin(); it != rowsBySourceTab.end(); ++it) {
+        QList<MAP_KEYDATA> *sourceMappingDataList = s_KeyMappingTabInfoList.at(it.key()).KeyMappingData;
+        if (sourceMappingDataList == Q_NULLPTR) {
+            continue;
+        }
+
+        QList<int> sourceRows = it.value();
+        std::sort(sourceRows.begin(), sourceRows.end(), std::greater<int>());
+        sourceRows.erase(std::unique(sourceRows.begin(), sourceRows.end()), sourceRows.end());
+
+        for (int sourceRow : std::as_const(sourceRows)) {
+            if (sourceRow >= 0 && sourceRow < sourceMappingDataList->size()) {
+                sourceMappingDataList->removeAt(sourceRow);
+            }
+        }
+    }
+
+    // Refresh affected displays.
+    const int commonTabIndex = findCommonMappingTabIndex();
+    const int refreshSourceTabIndex = rowsBySourceTab.contains(commonTabIndex)
+        ? commonTabIndex
+        : s_KeyMappingTabWidgetCurrentIndex;
+    refreshTabsForSourceTabChange(refreshSourceTabIndex);
     // Update the mouse points list
     updateMousePointsList();
 
@@ -33948,8 +34819,8 @@ void QKeyMapper::on_clearallButton_clicked()
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
         closeSetupDialog_OnDataChanged();
 #endif
-        m_KeyMappingDataTable->setRowCount(0);
         KeyMappingDataList->clear();
+        refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
         ScreenMousePointsList.clear();
         WindowMousePointsList.clear();
         markSaveSettingDirty();
@@ -33975,27 +34846,66 @@ void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option
 
 void KeyMappingTableStyleDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
+    // Keep overlay tuning local to paint() so Common/Selected/Disabled contrast
+    // can be adjusted without changing the base row color constants.
+    constexpr qreal kCommonDisabledRowBackgroundBlendRatio = 0.36;
+    constexpr qreal kCommonDisabledRowForegroundBlendRatio = 0.28;
+    constexpr qreal kCommonBaseBackgroundBlendRatio = 0.92;
+    constexpr qreal kCommonBaseForegroundBlendRatio = 0.70;
+    constexpr qreal kDefaultSelectedBackgroundBlendRatio = 0.28;
+    constexpr qreal kCommonSelectedBackgroundBlendRatio = 0.46;
+    constexpr qreal kDefaultWidgetDisabledBackgroundBlendRatio = 0.58;
+    constexpr qreal kDefaultWidgetDisabledSelectedBackgroundBlendRatio = 0.45;
+    constexpr qreal kCommonWidgetDisabledBackgroundBlendRatio = 0.78;
+    constexpr qreal kCommonWidgetDisabledSelectedBackgroundBlendRatio = 0.70;
+    constexpr qreal kDefaultWidgetDisabledForegroundBlendRatio = 0.50;
+    constexpr qreal kCommonWidgetDisabledForegroundBlendRatio = 0.76;
+
     QStyleOptionViewItem styledOption(option);
     initStyleOption(&styledOption, index);
 
-    QStyle *style = styledOption.widget ? styledOption.widget->style() : QApplication::style();
-    if (!index.data(DISABLED_ROW_BACKGROUND_APPLIED_ROLE).toBool()) {
-        style->drawControl(QStyle::CE_ItemViewItem, &styledOption, painter, styledOption.widget);
-        return;
-    }
+    const bool isCommonAppendedRow = index.data(COMMON_APPENDED_ROW_ROLE).toBool();
 
+    QStyle *style = styledOption.widget ? styledOption.widget->style() : QApplication::style();
     const bool selected = (styledOption.state & QStyle::State_Selected);
     const bool enabled = (styledOption.state & QStyle::State_Enabled);
     const bool checkboxOnlyColumn = isKeyMappingCheckboxOnlyColumn(index.column());
+    const bool disabledStyledRow = index.data(DISABLED_ROW_BACKGROUND_APPLIED_ROLE).toBool();
+
+    if (!disabledStyledRow && !isCommonAppendedRow) {
+        style->drawControl(QStyle::CE_ItemViewItem, &styledOption, painter, styledOption.widget);
+        return;
+    }
 
     QColor backgroundColor = colorFromItemData(index.data(Qt::BackgroundRole),
                                                styledOption.palette.color(QPalette::Base));
     QColor foregroundColor = colorFromItemData(index.data(Qt::ForegroundRole),
                                                styledOption.palette.color(QPalette::Text));
 
+    if (isCommonAppendedRow) {
+        const qreal commonBackgroundBlendRatio = disabledStyledRow
+                                                     ? kCommonDisabledRowBackgroundBlendRatio
+                                                     : kCommonBaseBackgroundBlendRatio;
+        const qreal commonForegroundBlendRatio = disabledStyledRow
+                                                     ? kCommonDisabledRowForegroundBlendRatio
+                                                     : kCommonBaseForegroundBlendRatio;
+
+        backgroundColor = blendColors(backgroundColor,
+                                      COMMON_MAPPING_ROW_BACKGROUND_COLOR,
+                                      commonBackgroundBlendRatio);
+        if (!checkboxOnlyColumn) {
+            foregroundColor = blendColors(foregroundColor,
+                                          COMMON_MAPPING_ROW_FOREGROUND_COLOR,
+                                          commonForegroundBlendRatio);
+        }
+    }
+
     if (selected) {
         const QColor highlightColor = styledOption.palette.color(QPalette::Highlight);
-        backgroundColor = blendColors(backgroundColor, highlightColor, 0.28);
+        backgroundColor = blendColors(backgroundColor,
+                                      highlightColor,
+                                      isCommonAppendedRow ? kCommonSelectedBackgroundBlendRatio
+                                                          : kDefaultSelectedBackgroundBlendRatio);
         styledOption.state &= ~QStyle::State_Selected;
     }
 
@@ -34003,9 +34913,17 @@ void KeyMappingTableStyleDelegate::paint(QPainter *painter, const QStyleOptionVi
         const QColor disabledBaseColor = styledOption.palette.color(QPalette::Disabled, QPalette::Base);
         const QColor disabledTextColor = styledOption.palette.color(QPalette::Disabled, QPalette::Text);
 
-        backgroundColor = blendColors(backgroundColor, disabledBaseColor, selected ? 0.45 : 0.58);
+        backgroundColor = blendColors(backgroundColor,
+                                      disabledBaseColor,
+                                      isCommonAppendedRow ? (selected ? kCommonWidgetDisabledSelectedBackgroundBlendRatio
+                                                                      : kCommonWidgetDisabledBackgroundBlendRatio)
+                                                          : (selected ? kDefaultWidgetDisabledSelectedBackgroundBlendRatio
+                                                                      : kDefaultWidgetDisabledBackgroundBlendRatio));
         if (!checkboxOnlyColumn) {
-            foregroundColor = blendColors(foregroundColor, disabledTextColor, 0.50);
+            foregroundColor = blendColors(foregroundColor,
+                                          disabledTextColor,
+                                          isCommonAppendedRow ? kCommonWidgetDisabledForegroundBlendRatio
+                                                              : kDefaultWidgetDisabledForegroundBlendRatio);
         }
     }
 
@@ -39893,6 +40811,15 @@ void KeyMappingTabWidget::onTabMoved(int from, int to)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyMappingTabWidget::onTabMoved] from:" << from << "to:" << to;
 #endif
+
+    const int commonIndex = QKeyMapper::findCommonMappingTabIndex();
+    if (commonIndex >= 0 && (from == commonIndex || to == commonIndex)) {
+        if (QTabBar *bar = tabBar()) {
+            QSignalBlocker blocker(bar);
+            bar->moveTab(to, from);
+        }
+        return;
+    }
 
     // Emit signal to notify parent class about tab reorder
     emit tabOrderChanged(from, to);

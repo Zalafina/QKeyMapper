@@ -661,6 +661,7 @@ namespace QKeyMapperConstants {
     inline constexpr int REMOVE_MAPPINGTAB_FAILED  = 0;
     inline constexpr int REMOVE_MAPPINGTAB_LASTONE = 1;
     inline constexpr int REMOVE_MAPPINGTAB_SUCCESS = 2;
+    inline constexpr int REMOVE_MAPPINGTAB_PROTECTED = 3;
 
     inline constexpr int TRY_LOCK_WAIT_TIME = 1000;
 
@@ -1063,6 +1064,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char CUSTOM_NOTIFICATION_ENABLED[] = "CustomNotification_Enabled";
     inline constexpr const char CUSTOM_NOTIFICATION_POSITION[] = "CustomNotification_Position";
+    inline constexpr const char MAPPINGTABLE_COMMON_ENABLED[] = "MappingTable_Common_Enabled";
     inline constexpr const char CUSTOM_NOTIFICATION_FONTCOLOR[] = "CustomNotification_FontColor";
     inline constexpr const char CUSTOM_NOTIFICATION_FONTSIZE[] = "CustomNotification_FontSize";
     inline constexpr const char CUSTOM_NOTIFICATION_FONTWEIGHT[] = "CustomNotification_FontWeight";
@@ -1222,6 +1224,8 @@ namespace QKeyMapperConstants {
     // inline constexpr const char MAPPINGTABLE_LASTTABINDEX[] = "MappingTable_LastTabIndex";
     inline constexpr const char MAPPINGTABLE_LASTTABNAME[] = "MappingTable_LastTabName";
     inline constexpr const char MAPPINGTABLE_TABNAMELIST[] = "MappingTable_TabNameList";
+    inline constexpr const char MAPPINGTABLE_TABINTERNALNAMELIST[] = "MappingTable_TabInternalNameList";
+    inline constexpr const char MAPPINGTABLE_TABINCLUDECOMMONLIST[] = "MappingTable_TabIncludeCommonList";
     inline constexpr const char MAPPINGTABLE_TABHOTKEYLIST[] = "MappingTable_TabHotkeyList";
     inline constexpr const char MAPPINGTABLE_TABFONTCOLORLIST[] = "MappingTable_TabFontColorList";
     inline constexpr const char MAPPINGTABLE_TABBGCOLORLIST[] = "MappingTable_TabBackgroundColorList";
@@ -1369,6 +1373,32 @@ namespace QKeyMapperConstants {
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor DISABLED_MAPPING_ROW_FOREGROUND_COLOR = QColor(120, 120, 120);
 #endif
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor COMMON_MAPPING_ROW_BACKGROUND_COLOR = QColor(1, 163, 164);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor COMMON_MAPPING_ROW_BACKGROUND_COLOR = QColor(1, 163, 164);
+#endif
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor COMMON_MAPPING_ROW_FOREGROUND_COLOR = QColor(210, 255, 245);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor COMMON_MAPPING_ROW_FOREGROUND_COLOR = QColor(210, 255, 245);
+#endif
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor COMMON_MAPPING_ROW_SEPARATOR_COLOR = QColor(166, 191, 222);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor COMMON_MAPPING_ROW_SEPARATOR_COLOR = QColor(166, 191, 222);
+#endif
+
+    inline constexpr int COMMON_MAPPING_ROW_SEPARATOR_WIDTH = 2;
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // QColor supports constexpr in Qt6
@@ -1595,6 +1625,10 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGSTOPKEY_LINEEDIT_NAME[] = "mappingStopKeyLineEdit";
 
     inline constexpr const char MAPPINGTABLE_TAB_TEXT[] = "Tab";
+    inline constexpr const char MAPPINGTABLE_COMMONTAB_INTERNAL_NAME[] = "__QKM_COMMON__";
+    inline constexpr const char MAPPINGTABLE_COMMONTAB_DISPLAY_TEXT[] = "Common";
+    inline constexpr bool MAPPINGTABLE_COMMON_ENABLED_DEFAULT = false;
+    inline constexpr bool MAPPINGTABLE_INCLUDE_COMMON_DEFAULT = true;
 
     inline constexpr const char KEY_NONE_STR[] = "NONE";
     inline constexpr const char KEY_BLOCKED_STR[] = "BLOCKED";

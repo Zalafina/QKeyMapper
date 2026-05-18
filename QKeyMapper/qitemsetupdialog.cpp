@@ -9,6 +9,39 @@ void notifySaveSettingDirty()
         keyMapper->requestSaveSettingDirty();
     }
 }
+
+void refreshItemSourceCellOrAffectedTabs(int tabIndex, int row, int column)
+{
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        if (QKeyMapper::isCommonMappingTabIndex(tabIndex)) {
+            keyMapper->refreshTabsForSourceTabChange(tabIndex);
+        }
+        else {
+            keyMapper->updateTableWidgetItem(tabIndex, row, column);
+        }
+    }
+}
+
+void refreshItemSourceTableOrAffectedTabs(int tabIndex)
+{
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        if (QKeyMapper::isCommonMappingTabIndex(tabIndex)) {
+            keyMapper->refreshTabsForSourceTabChange(tabIndex);
+        }
+        else {
+            keyMapper->refreshKeyMappingDataTableByTabIndex(tabIndex);
+        }
+    }
+}
+
+QString formatItemIndexText(int tabIndex, int row)
+{
+    if (QKeyMapper::isCommonMappingTabIndex(tabIndex)) {
+        return QStringLiteral("%1 C%2").arg(QObject::tr("No.")).arg(row + 1);
+    }
+
+    return QString("%1 %2").arg(QObject::tr("No.")).arg(row + 1);
+}
 }
 
 using namespace QKeyMapperConstants;
@@ -288,6 +321,11 @@ void QItemSetupDialog::setTabIndex(int tabindex)
 #endif
 
     m_TabIndex = tabindex;
+}
+
+int QItemSetupDialog::getTabIndex(void) const
+{
+    return m_TabIndex;
 }
 
 void QItemSetupDialog::setItemRow(int row)
@@ -1585,7 +1623,7 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
 #endif
 
         /* Load Index String */
-        ui->indexLabel->setText(QString("%1 %2").arg(QObject::tr("No."), QString::number(m_ItemRow + 1)));
+        ui->indexLabel->setText(formatItemIndexText(m_TabIndex, m_ItemRow));
 
         /* Load Original Key String */
         QString originalkey_str = keymapdata.Original_Key;
@@ -2727,7 +2765,7 @@ void QItemSetupDialog::refreshAllRelatedUI()
         if (keymapdata.Burst) {
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Burst = false;
             keymapdata.Burst = false;
-            QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, BURST_MODE_COLUMN);
+            refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, BURST_MODE_COLUMN);
         }
         ui->burstCheckBox->setEnabled(false);
         ui->burstpressSpinBox->setEnabled(false);
@@ -2742,7 +2780,7 @@ void QItemSetupDialog::refreshAllRelatedUI()
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Lock = false;
             (*QKeyMapper::KeyMappingDataList)[m_ItemRow].LockState = LOCK_STATE_LOCKOFF;
             keymapdata.Lock = false;
-            QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, LOCK_COLUMN);
+            refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, LOCK_COLUMN);
         }
         ui->lockCheckBox->setEnabled(false);
         ui->mappingKeyUnlockCheckBox->setEnabled(false);
@@ -3303,7 +3341,7 @@ bool QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, c
         QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(m_ItemRow, mappingKey_KeyUp);
     }
 
-    QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(m_TabIndex);
+    refreshItemSourceTableOrAffectedTabs(m_TabIndex);
 
     refreshAllRelatedUI();
 
@@ -3417,7 +3455,7 @@ void QItemSetupDialog::on_burstCheckBox_stateChanged(int state)
     bool burst = ui->burstCheckBox->isChecked();
     if (burst != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Burst) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Burst = burst;
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, BURST_MODE_COLUMN);
+        refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, BURST_MODE_COLUMN);
         notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -3440,7 +3478,7 @@ void QItemSetupDialog::on_lockCheckBox_stateChanged(int state)
     bool lock = ui->lockCheckBox->isChecked();
     if (lock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Lock) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Lock = lock;
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, LOCK_COLUMN);
+        refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, LOCK_COLUMN);
         notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -3461,7 +3499,7 @@ void QItemSetupDialog::on_disabledCheckBox_stateChanged(int state)
     bool disabled = ui->disabledCheckBox->isChecked();
     if (disabled != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Disabled = disabled;
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, DISABLED_COLUMN);
+        refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, DISABLED_COLUMN);
 
         // Keep behavior consistent with the table: enabling an item will auto-disable
         // other enabled items in the same normalized OriginalKey group.
@@ -3558,7 +3596,7 @@ void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
     bool passthrough = ui->passThroughCheckBox->isChecked();
     if (passthrough != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PassThrough) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PassThrough = passthrough;
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
+        refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
         notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -4008,7 +4046,7 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
         qDebug().nospace().noquote() << "[" << __func__ << "] Item note -> " << note_str;
 #endif
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note = note_str;
-        QKeyMapper::getInstance()->updateTableWidgetItem(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
+        refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
         notifySaveSettingDirty();
     }
 }

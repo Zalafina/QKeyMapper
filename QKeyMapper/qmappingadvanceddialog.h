@@ -31,6 +31,7 @@ public:
     int getMousePollingInterval(void);
     bool getProcessIconAsTrayIcon(void);
     bool getAcceptVirtualGamepadInput(void);
+    bool getCommonMappingTableEnabled(void);
     QString getShowWindowPointKey(void);
     QString getShowScreenPointKey(void);
     int getLeftTriggerPressThreshold(void);
@@ -53,6 +54,7 @@ public:
     void setMousePollingInterval(int interval);
     void setProcessIconAsTrayIcon(bool checked);
     void setAcceptVirtualGamepadInput(bool checked);
+    void setCommonMappingTableEnabled(bool enabled);
     void setShowWindowPointKey(const QString &keyname);
     void setShowScreenPointKey(const QString &keyname);
     void setLeftTriggerPressThreshold(int threshold);
@@ -75,6 +77,7 @@ public:
 signals:
     void customNotificationSetupRequested(void);
     void customNotificationEnabledChanged(bool enabled);
+    void commonMappingFeatureEnabledChanged(bool enabled);
 
 protected:
     bool event(QEvent *event) override;

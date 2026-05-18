@@ -1,5 +1,7 @@
 #include "qfloatingbuttonsetupdialog.h"
 
+#include "qitemsetupdialog.h"
+
 #include <QFormLayout>
 #include <QFontComboBox>
 #include <QGroupBox>
@@ -19,14 +21,34 @@ QString sanitizeFloatingButtonMousePassThroughSwitchKey(const QString &switchKey
     return FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT;
 }
 
-QList<MAP_KEYDATA> *currentTabFullKeyMappingDataList()
+int currentSourceTabIndexForFloatingButtonDialog(const QFloatingButtonSetupDialog *dialog)
 {
-    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (dialog != Q_NULLPTR) {
+        if (const QItemSetupDialog *itemSetupDialog = qobject_cast<const QItemSetupDialog *>(dialog->parentWidget())) {
+            return itemSetupDialog->getTabIndex();
+        }
+    }
+
+    return QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+}
+
+QList<MAP_KEYDATA> *currentTabFullKeyMappingDataList(const QFloatingButtonSetupDialog *dialog)
+{
+    const int currentTabIndex = currentSourceTabIndexForFloatingButtonDialog(dialog);
     if (currentTabIndex >= 0 && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return QKeyMapper::s_KeyMappingTabInfoList.at(currentTabIndex).KeyMappingData;
     }
 
     return QKeyMapper::KeyMappingDataList;
+}
+
+QString formatFloatingButtonItemIndexText(const QFloatingButtonSetupDialog *dialog, int row)
+{
+    if (QKeyMapper::isCommonMappingTabIndex(currentSourceTabIndexForFloatingButtonDialog(dialog))) {
+        return QStringLiteral("C%1").arg(row + 1);
+    }
+
+    return QString::number(row + 1);
 }
 
 }
@@ -626,7 +648,7 @@ bool QFloatingButtonSetupDialog::event(QEvent *event)
 
 void QFloatingButtonSetupDialog::showEvent(QShowEvent *event)
 {
-    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
     loadFromCurrentItem();
 
     if (mappingDataList != Q_NULLPTR
@@ -658,7 +680,7 @@ void QFloatingButtonSetupDialog::closeEvent(QCloseEvent *event)
 
 void QFloatingButtonSetupDialog::onApplyButtonClicked()
 {
-    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
     applyToCurrentItem();
 
     if (mappingDataList != Q_NULLPTR
@@ -672,7 +694,7 @@ void QFloatingButtonSetupDialog::onApplyButtonClicked()
 
 void QFloatingButtonSetupDialog::onRevertButtonClicked()
 {
-    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
     if (!m_hasBackup) {
         return;
     }
@@ -705,7 +727,7 @@ void QFloatingButtonSetupDialog::onAnyControlChanged()
 
 void QFloatingButtonSetupDialog::loadFromCurrentItem()
 {
-    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
     if (mappingDataList == Q_NULLPTR
         || m_ItemRow < 0 || m_ItemRow >= mappingDataList->size()) {
         return;
@@ -719,7 +741,7 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_ItemOriginalKeyLineEdit->setToolTip(keymapdata.Original_Key);
     m_ItemNoteLineEdit->setText(keymapdata.Note);
     m_ItemNoteLineEdit->setToolTip(keymapdata.Note);
-    m_ItemIndexLineEdit->setText(QString::number(m_ItemRow + 1));
+    m_ItemIndexLineEdit->setText(formatFloatingButtonItemIndexText(this, m_ItemRow));
 
     m_EnableCheckBox->setChecked(keymapdata.FloatingButton_Enable);
     m_LabelLineEdit->setText(keymapdata.FloatingButton_Label);
@@ -803,7 +825,7 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
 
 void QFloatingButtonSetupDialog::applyToCurrentItem()
 {
-    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
     if (mappingDataList == Q_NULLPTR
         || m_ItemRow < 0 || m_ItemRow >= mappingDataList->size()) {
         return;
@@ -873,7 +895,7 @@ void QFloatingButtonSetupDialog::updateStyleCodeDisplay()
         return;
     }
 
-    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
     if (mappingDataList == Q_NULLPTR
         || m_ItemRow < 0
         || m_ItemRow >= mappingDataList->size()) {
@@ -909,7 +931,7 @@ void QFloatingButtonSetupDialog::copyStyleCodeToClipboard()
 
 void QFloatingButtonSetupDialog::applyClipboardStyleCode()
 {
-    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList();
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
     if (mappingDataList == Q_NULLPTR
         || m_ItemRow < 0
         || m_ItemRow >= mappingDataList->size()) {

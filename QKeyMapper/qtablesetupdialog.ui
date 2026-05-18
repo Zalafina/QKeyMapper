@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>540</width>
-    <height>360</height>
+    <height>410</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,13 +19,13 @@
   <property name="minimumSize">
    <size>
     <width>540</width>
-    <height>360</height>
+    <height>410</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>540</width>
-    <height>360</height>
+    <height>410</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -182,7 +182,7 @@
    <property name="geometry">
     <rect>
      <x>40</x>
-     <y>175</y>
+     <y>225</y>
      <width>72</width>
      <height>72</height>
     </rect>
@@ -210,7 +210,7 @@
    <property name="geometry">
     <rect>
      <x>130</x>
-     <y>180</y>
+     <y>230</y>
      <width>131</width>
      <height>21</height>
     </rect>
@@ -229,7 +229,7 @@
    <property name="geometry">
     <rect>
      <x>180</x>
-     <y>220</y>
+     <y>270</y>
      <width>81</width>
      <height>21</height>
     </rect>
@@ -248,7 +248,7 @@
    <property name="geometry">
     <rect>
      <x>265</x>
-     <y>220</y>
+     <y>270</y>
      <width>111</width>
      <height>22</height>
     </rect>
@@ -264,7 +264,7 @@
    <property name="geometry">
     <rect>
      <x>380</x>
-     <y>220</y>
+     <y>246</y>
      <width>61</width>
      <height>22</height>
     </rect>
@@ -277,7 +277,7 @@
    <property name="geometry">
     <rect>
      <x>115</x>
-     <y>220</y>
+     <y>270</y>
      <width>61</width>
      <height>21</height>
     </rect>
@@ -293,7 +293,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>150</y>
+     <y>200</y>
      <width>501</width>
      <height>191</height>
     </rect>
@@ -309,7 +309,7 @@
    <property name="geometry">
     <rect>
      <x>140</x>
-     <y>260</y>
+     <y>310</y>
      <width>171</width>
      <height>21</height>
     </rect>
@@ -325,7 +325,7 @@
    <property name="geometry">
     <rect>
      <x>140</x>
-     <y>300</y>
+     <y>350</y>
      <width>171</width>
      <height>21</height>
     </rect>
@@ -341,7 +341,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>300</y>
+     <y>350</y>
      <width>141</width>
      <height>21</height>
     </rect>
@@ -360,7 +360,7 @@
    <property name="geometry">
     <rect>
      <x>275</x>
-     <y>260</y>
+     <y>310</y>
      <width>101</width>
      <height>21</height>
     </rect>
@@ -376,7 +376,7 @@
    <property name="geometry">
     <rect>
      <x>380</x>
-     <y>260</y>
+     <y>310</y>
      <width>121</width>
      <height>21</height>
     </rect>
@@ -389,6 +389,22 @@
    </property>
    <property name="currentIndex">
     <number>-1</number>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="appendCommonMappingTableCheckBox">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>160</y>
+     <width>241</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Append Common Mapping Table</string>
    </property>
   </widget>
   <widget class="QCheckBox" name="hideNotificationCheckBox">
@@ -428,6 +444,7 @@
   <zorder>floatingWindowSetupButton</zorder>
   <zorder>customImageTrayIconPixelComboBox</zorder>
   <zorder>customImageTrayIconPixelLabel</zorder>
+  <zorder>appendCommonMappingTableCheckBox</zorder>
   <zorder>hideNotificationCheckBox</zorder>
  </widget>
  <resources/>

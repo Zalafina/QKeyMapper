@@ -109,6 +109,11 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
                      this, [notifyDirty](bool) { notifyDirty(); });
     QObject::connect(ui->acceptVirtualGamepadInputCheckBox, &QCheckBox::toggled,
                      this, [notifyDirty](bool) { notifyDirty(); });
+    QObject::connect(ui->enableCommonMappingTableCheckBox, &QCheckBox::toggled,
+                     this, [this, notifyDirty](bool checked) {
+                         emit commonMappingFeatureEnabledChanged(checked);
+                         notifyDirty();
+                     });
     QObject::connect(ui->showWindowPointKeyComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, [notifyDirty](int) { notifyDirty(); });
     QObject::connect(ui->showScreenPointKeyComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -137,6 +142,7 @@ void QMappingAdvancedDialog::setUILanguage(int languageindex)
 
     ui->ProcessIconAsTrayIconCheckBox->setText(tr("ProcessIcon as TrayIcon"));
     ui->acceptVirtualGamepadInputCheckBox->setText(tr("Accept Virtual Gamepad Input"));
+    ui->enableCommonMappingTableCheckBox->setText(tr("Enable Common Mapping Table"));
     ui->customNotificationGroupBox->setTitle(tr("Custom Notification"));
     ui->customNotificationEnableCheckBox->setText(tr("Enable Custom Notification"));
     ui->customNotificationPositionLabel->setText(tr("Position"));
@@ -331,6 +337,11 @@ bool QMappingAdvancedDialog::getAcceptVirtualGamepadInput()
     return ui->acceptVirtualGamepadInputCheckBox->isChecked();
 }
 
+bool QMappingAdvancedDialog::getCommonMappingTableEnabled()
+{
+    return ui->enableCommonMappingTableCheckBox->isChecked();
+}
+
 QString QMappingAdvancedDialog::getShowWindowPointKey()
 {
     return ui->showWindowPointKeyComboBox->currentText();
@@ -434,6 +445,11 @@ void QMappingAdvancedDialog::setProcessIconAsTrayIcon(bool checked)
 void QMappingAdvancedDialog::setAcceptVirtualGamepadInput(bool checked)
 {
     ui->acceptVirtualGamepadInputCheckBox->setChecked(checked);
+}
+
+void QMappingAdvancedDialog::setCommonMappingTableEnabled(bool enabled)
+{
+    ui->enableCommonMappingTableCheckBox->setChecked(enabled);
 }
 
 void QMappingAdvancedDialog::setShowWindowPointKey(const QString &keyname)
