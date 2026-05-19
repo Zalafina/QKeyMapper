@@ -32,6 +32,7 @@ public:
     void updateTrayIconPixelComboBox(const QIcon &icon, const QSize &targetSize = QSize());
     QSize parseComboBoxTextToSize(const QString &text);
     void updateTrayIconPixelSizeWithCurrentText(void);
+    void syncAppendCommonMappingTableCheckBoxState(void);
 
     int getSettingSelectIndex(void);
     bool isSelectImageFileDialogVisible(void);

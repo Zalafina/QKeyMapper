@@ -357,6 +357,31 @@ bool QTableSetupDialog::isFloatingWindowSetupDialogVisible()
     }
 }
 
+void QTableSetupDialog::syncAppendCommonMappingTableCheckBoxState(void)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    const bool includeCommonMappingTable = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).IncludeCommonMappingTable;
+    const bool isCommonTab = QKeyMapper::isCommonMappingTabIndex(m_TabIndex);
+    const bool commonFeatureEnabled = QKeyMapper::isCommonMappingFeatureEnabled();
+
+    ui->appendCommonMappingTableCheckBox->blockSignals(true);
+    ui->appendCommonMappingTableCheckBox->setChecked(commonFeatureEnabled && !isCommonTab && includeCommonMappingTable);
+    ui->appendCommonMappingTableCheckBox->setEnabled(commonFeatureEnabled && !isCommonTab);
+    if (!commonFeatureEnabled) {
+        ui->appendCommonMappingTableCheckBox->setToolTip(tr("Enable Common Mapping Table in Mapping Advanced Settings first."));
+    }
+    else if (isCommonTab) {
+        ui->appendCommonMappingTableCheckBox->setToolTip(tr("Common mapping table cannot append itself."));
+    }
+    else {
+        ui->appendCommonMappingTableCheckBox->setToolTip(QString());
+    }
+    ui->appendCommonMappingTableCheckBox->blockSignals(false);
+}
+
 #ifndef CLOSE_SETUPDIALOG_ONDATACHANGED
 bool QTableSetupDialog::event(QEvent *event)
 {
@@ -400,10 +425,6 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         bool TabCustomImage_ShowAsTrayIcon = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowAsTrayIcon;
         bool TabCustomImage_ShowAsFloatingWindow = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_ShowAsFloatingWindow;
         QSize TabCustomImage_TrayIconPixel = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_TrayIconPixel;
-        bool IncludeCommonMappingTable = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).IncludeCommonMappingTable;
-        const bool isCommonTab = QKeyMapper::isCommonMappingTabIndex(m_TabIndex);
-        const bool commonFeatureEnabled = QKeyMapper::isCommonMappingFeatureEnabled();
-
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote()
             << "[QTableSetupDialog::showEvent] "
@@ -448,19 +469,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         // Load TabHideNotification
         ui->hideNotificationCheckBox->setCheckState(TabHideNotification);
 
-        ui->appendCommonMappingTableCheckBox->blockSignals(true);
-        ui->appendCommonMappingTableCheckBox->setChecked(commonFeatureEnabled && !isCommonTab && IncludeCommonMappingTable);
-        ui->appendCommonMappingTableCheckBox->setEnabled(commonFeatureEnabled && !isCommonTab);
-        if (!commonFeatureEnabled) {
-            ui->appendCommonMappingTableCheckBox->setToolTip(tr("Enable Common Mapping Table in Mapping Advanced Settings first."));
-        }
-        else if (isCommonTab) {
-            ui->appendCommonMappingTableCheckBox->setToolTip(tr("Common mapping table cannot append itself."));
-        }
-        else {
-            ui->appendCommonMappingTableCheckBox->setToolTip(QString());
-        }
-        ui->appendCommonMappingTableCheckBox->blockSignals(false);
+        syncAppendCommonMappingTableCheckBoxState();
 
         // Load Custom Image
         QIcon icon_loaded;
@@ -594,6 +603,10 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_tabNameUpdateButton_clicked]" << "TabName was not modified, no action required.";
 #endif
+    }
+    else if (QKeyMapper::isReservedCommonTabDisplayName(tabNameString)) {
+        popupMessageColor = FAILURE_COLOR;
+        popupMessage = tr("Tab name cannot be the same as the Common mapping table name.");
     }
     else if (isduplicate) {
         popupMessageColor = FAILURE_COLOR;

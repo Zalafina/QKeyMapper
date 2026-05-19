@@ -247,11 +247,7 @@ class KeyMappingTabWidget : public QTabWidget
     Q_OBJECT
 
 public:
-    explicit KeyMappingTabWidget(QWidget *parent = Q_NULLPTR) : QTabWidget(parent) {
-        setMovable(true);  // Enable tab moving
-        // Connect the tab bar's moved signal to our slot
-        connect(tabBar(), &QTabBar::tabMoved, this, &KeyMappingTabWidget::onTabMoved, Qt::UniqueConnection);
-    }
+    explicit KeyMappingTabWidget(QWidget *parent = Q_NULLPTR);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
@@ -261,6 +257,25 @@ private slots:
 
 signals:
     void tabOrderChanged(int from, int to);
+};
+
+class KeyMappingTabBar : public QTabBar
+{
+public:
+    explicit KeyMappingTabBar(QWidget *parent = Q_NULLPTR)
+        : QTabBar(parent) {}
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void leaveEvent(QEvent *event) override;
+
+private:
+    bool shouldRejectDragMove(const QPoint &pos) const;
+
+private:
+    int m_DraggedTabIndex = -1;
 };
 
 class MappingStartToolButton : public QToolButton
@@ -1371,6 +1386,7 @@ public:
     static bool isCommonMappingFeatureEnabled(void);
     static QString getCommonMappingTableInternalName(void);
     static QString getCommonMappingTableDisplayText(void);
+    static bool isReservedCommonTabDisplayName(const QString &tabName);
     static bool isCommonMappingTab(const KeyMappingTab_Info &tabInfo);
     static bool isCommonMappingTabIndex(int tabIndex);
     static int findCommonMappingTabIndex(void);
@@ -1520,9 +1536,16 @@ public slots:
     void HotKeyMappingTableSwitchTab(const QString &hotkey_string);
     void MappingTableSwitchByTabName(const QString &tabName, bool remember_tabname = false);
     void switchKeyMappingTabIndex(int index);
+    int normalMappingTabInsertIndex(void) const;
+    void syncTrackedTabIndexesAfterTabStructureChange(QWidget *currentWidget, QWidget *lastWidget);
+    bool rebindCurrentKeyMappingTabAfterRecovery(bool refreshCurrentTable = true);
+    bool syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWidget = Q_NULLPTR, QWidget *lastWidget = Q_NULLPTR);
+    bool recoverKeyMappingTabWidgetOrderAfterTabMoved(int from, int to);
+    void finalizeCommonMappingTabAtIndex(int tabIndex, bool showNameConflictWarning = false);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString());
     bool addCommonMappingTabToKeyMappingTabWidget(void);
     void ensureCommonMappingTabExists(void);
+    void ensureCommonMappingTabIsLast(void);
     void updateCommonMappingTabVisibility(void);
     void refreshTabsForSourceTabChange(int sourceTabIndex);
     bool copyCurrentTabToKeyMappingTabWidget(void);

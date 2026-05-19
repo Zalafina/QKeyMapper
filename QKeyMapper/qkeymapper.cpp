@@ -20,6 +20,7 @@ constexpr int DISABLED_ROW_FOREGROUND_APPLIED_ROLE = Qt::UserRole + 501;
 constexpr int COMMON_APPENDED_ROW_ROLE = Qt::UserRole + 502;
 constexpr int COMMON_APPENDED_ROW_SEPARATOR_ROLE = Qt::UserRole + 503;
 constexpr int SETTINGSELECT_ACTUAL_GROUP_ROLE = Qt::UserRole + 520;
+constexpr int CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH = 120;
 
 constexpr qreal FLOATINGBUTTON_HOVER_AUTO_DARKEN_LIGHTNESS_THRESHOLD = 0.72;
 constexpr qreal FLOATINGBUTTON_BASE_TOP_LIFT_RATIO = 0.08;
@@ -403,6 +404,86 @@ QRect mappingStartMainButtonRect(const QRect &buttonRect, const QRect &menuRect)
 }
 
 } // namespace
+
+#ifdef DEBUG_LOGOUT_ON
+static QString debugPointerString(const void *pointer)
+{
+    return QString::asprintf("%p", pointer);
+}
+
+static QString debugRectString(const QRect &rect)
+{
+    if (!rect.isValid()) {
+        return QStringLiteral("<invalid>");
+    }
+
+    return QStringLiteral("(%1,%2,%3,%4)")
+        .arg(rect.x())
+        .arg(rect.y())
+        .arg(rect.width())
+        .arg(rect.height());
+}
+
+static int debugActualCommonTabIndex(const QTabWidget *tabWidget, int commonDataIndex)
+{
+    if (tabWidget == Q_NULLPTR
+        || commonDataIndex < 0
+        || commonDataIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return -1;
+    }
+
+    QWidget *commonWidget = QKeyMapper::s_KeyMappingTabInfoList.at(commonDataIndex).KeyMappingDataTable;
+    if (commonWidget == Q_NULLPTR) {
+        return -1;
+    }
+
+    return tabWidget->indexOf(commonWidget);
+}
+
+static QString debugPageOrderSummary(const QTabWidget *tabWidget)
+{
+    if (tabWidget == Q_NULLPTR) {
+        return QStringLiteral("<null>");
+    }
+
+    QStringList items;
+    items.reserve(tabWidget->count());
+    const int currentIndex = tabWidget->currentIndex();
+
+    for (int index = 0; index < tabWidget->count(); ++index) {
+        items.append(QStringLiteral("%1:{text=%2,widget=%3,current=%4}")
+                         .arg(index)
+                         .arg(tabWidget->tabText(index), debugPointerString(tabWidget->widget(index)))
+                         .arg(index == currentIndex ? 1 : 0));
+    }
+
+    return items.join(QStringLiteral(" | "));
+}
+
+static QString debugTrackedTabInfoSummary(const QList<KeyMappingTab_Info> &tabInfoList)
+{
+    QStringList items;
+    items.reserve(tabInfoList.size());
+
+    for (int index = 0; index < tabInfoList.size(); ++index) {
+        const KeyMappingTab_Info &tabInfo = tabInfoList.at(index);
+        items.append(QStringLiteral("%1:{name=%2,widget=%3,common=%4}")
+                         .arg(index)
+                         .arg(tabInfo.TabName, debugPointerString(tabInfo.KeyMappingDataTable))
+                         .arg(tabInfo.IsCommonTab ? 1 : 0));
+    }
+
+    return items.join(QStringLiteral(" | "));
+}
+
+static bool debugAllowAdjacentCommonDragRecoveryBypass()
+{
+    // Uncomment the next line temporarily when you need to force the
+    // last normal tab to cross into the Common tab zone for Recovery testing.
+    // return true;
+    return false;
+}
+#endif
 
 void MappingStartToolButton::setMenu(QMenu *menu)
 {
@@ -7583,7 +7664,7 @@ namespace {
 
 QString buildUniqueCommonTabDisplayName(const QSet<QString> &existingTabNames)
 {
-    const QString preferredName = QString::fromLatin1(MAPPINGTABLE_COMMONTAB_DISPLAY_TEXT);
+    const QString preferredName = QKeyMapper::getCommonMappingTableDisplayText();
     if (!existingTabNames.contains(preferredName)) {
         return preferredName;
     }
@@ -7601,6 +7682,22 @@ QString buildUniqueCommonTabDisplayName(const QSet<QString> &existingTabNames)
     }
 
     return fallbackName;
+}
+
+QStringList commonTabReservedDisplayNames(void)
+{
+    QStringList reservedNames;
+    reservedNames << QString::fromLatin1(MAPPINGTABLE_COMMONTAB_DISPLAY_TEXT)
+                  << QStringLiteral("共通");
+    reservedNames.removeDuplicates();
+    return reservedNames;
+}
+
+QString commonTabDisplayNameConflictWarningMessage(const QString &displayName)
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                       "The Common mapping table name conflicts with an existing mapping table. It was renamed to \"%1\" automatically.")
+        .arg(displayName);
 }
 
 QString normalizeOriginalKeyForExclusiveGroup(const QString &originalKey)
@@ -7757,12 +7854,48 @@ QString mappingTableDisplayNameForConflictMessage(int tabIndex)
 
 QString formatConflictMappingTableNames(const QList<NormalTabExclusiveGroupConflict> &conflicts)
 {
+    const QString separator = QStringLiteral(" / ");
+    const QString ellipsis = QStringLiteral("...");
+
     QStringList tabNames;
-    for (const NormalTabExclusiveGroupConflict &conflict : conflicts) {
-        tabNames.append(QStringLiteral("\"%1\"").arg(mappingTableDisplayNameForConflictMessage(conflict.TabIndex)));
+    int totalLength = 0;
+
+    for (int index = 0; index < conflicts.size(); ++index) {
+        const NormalTabExclusiveGroupConflict &conflict = conflicts.at(index);
+        const QString tabName = QStringLiteral("\"%1\"").arg(mappingTableDisplayNameForConflictMessage(conflict.TabIndex));
+        const bool hasMoreNames = (index + 1) < conflicts.size();
+
+        int candidateLength = totalLength;
+        if (!tabNames.isEmpty()) {
+            candidateLength += separator.size();
+        }
+        candidateLength += tabName.size();
+
+        if (!tabNames.isEmpty()) {
+            const int requiredLengthWithEllipsis = hasMoreNames
+                ? candidateLength + separator.size() + ellipsis.size()
+                : candidateLength;
+            if (requiredLengthWithEllipsis > CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH) {
+                if (totalLength + separator.size() + ellipsis.size() <= CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH) {
+                    tabNames.append(ellipsis);
+                }
+                return tabNames.join(separator);
+            }
+        }
+
+        if (tabNames.isEmpty() || candidateLength <= CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH) {
+            tabNames.append(tabName);
+            totalLength = candidateLength;
+            continue;
+        }
+
+        if (totalLength + separator.size() + ellipsis.size() <= CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH) {
+            tabNames.append(ellipsis);
+        }
+        return tabNames.join(separator);
     }
 
-    return tabNames.join(QStringLiteral(" / "));
+    return tabNames.join(separator);
 }
 
 QString newItemDisabledByCommonMappingMessage()
@@ -10438,7 +10571,13 @@ QString QKeyMapper::getCommonMappingTableInternalName(void)
 
 QString QKeyMapper::getCommonMappingTableDisplayText(void)
 {
-    return QString::fromLatin1(MAPPINGTABLE_COMMONTAB_DISPLAY_TEXT);
+    // return QCoreApplication::translate("QKeyMapper", MAPPINGTABLE_COMMONTAB_DISPLAY_TEXT);
+    return QCoreApplication::translate("QKeyMapper", "Common");
+}
+
+bool QKeyMapper::isReservedCommonTabDisplayName(const QString &tabName)
+{
+    return commonTabReservedDisplayNames().contains(tabName.trimmed());
 }
 
 bool QKeyMapper::isCommonMappingTab(const KeyMappingTab_Info &tabInfo)
@@ -14137,6 +14276,361 @@ void QKeyMapper::switchKeyMappingTabIndex(int index)
     }
 }
 
+int QKeyMapper::normalMappingTabInsertIndex(void) const
+{
+    const int commonIndex = findCommonMappingTabIndex();
+    if (commonIndex >= 0) {
+        return commonIndex;
+    }
+
+    return s_KeyMappingTabInfoList.size();
+}
+
+void QKeyMapper::syncTrackedTabIndexesAfterTabStructureChange(QWidget *currentWidget, QWidget *lastWidget)
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return;
+    }
+
+    if (currentWidget != Q_NULLPTR) {
+        const int currentIndex = ui->keyMappingTabWidget->indexOf(currentWidget);
+        if (currentIndex >= 0) {
+            s_KeyMappingTabWidgetCurrentIndex = currentIndex;
+        }
+    }
+    else {
+        s_KeyMappingTabWidgetCurrentIndex = ui->keyMappingTabWidget->currentIndex();
+    }
+
+    if (lastWidget != Q_NULLPTR) {
+        const int lastIndex = ui->keyMappingTabWidget->indexOf(lastWidget);
+        if (lastIndex >= 0) {
+            s_KeyMappingTabWidgetLastIndex = lastIndex;
+            return;
+        }
+    }
+
+    s_KeyMappingTabWidgetLastIndex = s_KeyMappingTabWidgetCurrentIndex;
+}
+
+bool QKeyMapper::rebindCurrentKeyMappingTabAfterRecovery(bool refreshCurrentTable)
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return false;
+    }
+
+    QTabWidget *tabWidget = ui->keyMappingTabWidget;
+    const int currentIndex = tabWidget->currentIndex();
+    if (currentIndex < 0 || currentIndex >= tabWidget->count() || currentIndex >= s_KeyMappingTabInfoList.size()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[rebindCurrentKeyMappingTabAfterRecovery] INVALID_CURRENT_INDEX"
+                                     << " currentIndex=" << currentIndex
+                                     << ", tabWidgetCount=" << tabWidget->count()
+                                     << ", trackedSize=" << s_KeyMappingTabInfoList.size();
+#endif
+        return false;
+    }
+
+    KeyMappingDataTableWidget *currentTable = qobject_cast<KeyMappingDataTableWidget*>(tabWidget->widget(currentIndex));
+    QList<MAP_KEYDATA> *currentDataList = s_KeyMappingTabInfoList.at(currentIndex).KeyMappingData;
+
+    disconnectKeyMappingDataTableConnection();
+
+    s_KeyMappingTabWidgetCurrentIndex = currentIndex;
+    m_KeyMappingDataTable = currentTable;
+    KeyMappingDataList = currentDataList;
+
+    const bool currentBindingMatches = (m_KeyMappingDataTable == s_KeyMappingTabInfoList.at(currentIndex).KeyMappingDataTable)
+                                    && (KeyMappingDataList == s_KeyMappingTabInfoList.at(currentIndex).KeyMappingData);
+
+    updateFloatingColumnByShowFloatingState();
+    updateCategoryFilterByShowCategoryState();
+    if (m_KeyMappingDataTable != Q_NULLPTR) {
+        m_KeyMappingDataTable->setHideDisabledFilter(ui->hideDisabledButton && ui->hideDisabledButton->isChecked());
+    }
+    updateKeyMappingDataTableConnection();
+
+    if (refreshCurrentTable && currentBindingMatches) {
+        refreshKeyMappingDataTableByTabIndex(currentIndex);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[rebindCurrentKeyMappingTabAfterRecovery]"
+                                 << " currentIndex=" << currentIndex
+                                 << ", refreshCurrentTable=" << (refreshCurrentTable ? "true" : "false")
+                                 << ", currentWidget=" << debugPointerString((0 <= currentIndex && currentIndex < tabWidget->count()) ? tabWidget->widget(currentIndex) : Q_NULLPTR)
+                                 << ", m_KeyMappingDataTable=" << debugPointerString(m_KeyMappingDataTable)
+                                 << ", KeyMappingDataList=" << debugPointerString(KeyMappingDataList)
+                                 << ", currentBindingMatches=" << (currentBindingMatches ? "true" : "false")
+                                 << ", pageOrder=[" << debugPageOrderSummary(tabWidget) << "]"
+                                 << ", trackedOrder=[" << debugTrackedTabInfoSummary(s_KeyMappingTabInfoList) << "]";
+#endif
+
+    return currentBindingMatches;
+}
+
+bool QKeyMapper::syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWidget, QWidget *lastWidget)
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return false;
+    }
+
+    QTabWidget *tabWidget = ui->keyMappingTabWidget;
+    if (tabWidget->count() != s_KeyMappingTabInfoList.size()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] COUNT_MISMATCH"
+                                     << " tabWidgetCount=" << tabWidget->count()
+                                     << ", tabInfoListSize=" << s_KeyMappingTabInfoList.size()
+                                     << ", pageOrder=[" << debugPageOrderSummary(tabWidget) << "]"
+                                     << ", trackedOrder=[" << debugTrackedTabInfoSummary(s_KeyMappingTabInfoList) << "]";
+#endif
+        return false;
+    }
+
+    for (const KeyMappingTab_Info &tabInfo : std::as_const(s_KeyMappingTabInfoList)) {
+        if (tabInfo.KeyMappingDataTable == Q_NULLPTR || tabWidget->indexOf(tabInfo.KeyMappingDataTable) < 0) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] MISSING_TRACKED_WIDGET"
+                                         << " tabName=" << tabInfo.TabName
+                                         << ", widget=" << debugPointerString(tabInfo.KeyMappingDataTable)
+                                         << ", pageOrder=[" << debugPageOrderSummary(tabWidget) << "]"
+                                         << ", trackedOrder=[" << debugTrackedTabInfoSummary(s_KeyMappingTabInfoList) << "]";
+#endif
+            return false;
+        }
+    }
+
+    if (currentWidget == Q_NULLPTR) {
+        currentWidget = tabWidget->currentWidget();
+    }
+
+    if (lastWidget == Q_NULLPTR
+        && 0 <= s_KeyMappingTabWidgetLastIndex
+        && s_KeyMappingTabWidgetLastIndex < tabWidget->count()) {
+        lastWidget = tabWidget->widget(s_KeyMappingTabWidgetLastIndex);
+    }
+
+    QTabBar *tabBar = tabWidget->tabBar();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] ENTRY"
+                                 << " currentIndexBefore=" << tabWidget->currentIndex()
+                                 << ", trackedCurrentIndex=" << s_KeyMappingTabWidgetCurrentIndex
+                                 << ", trackedLastIndex=" << s_KeyMappingTabWidgetLastIndex
+                                 << ", currentWidget=" << debugPointerString(currentWidget)
+                                 << ", lastWidget=" << debugPointerString(lastWidget)
+                                 << ", pageOrder=[" << debugPageOrderSummary(tabWidget) << "]"
+                                 << ", trackedOrder=[" << debugTrackedTabInfoSummary(s_KeyMappingTabInfoList) << "]";
+#endif
+
+    disconnectKeyMappingDataTableConnection();
+
+    tabWidget->blockSignals(true);
+    const bool restoreTabBarSignals = (tabBar != Q_NULLPTR);
+    if (restoreTabBarSignals) {
+        tabBar->blockSignals(true);
+    }
+
+    for (int targetIndex = 0; targetIndex < s_KeyMappingTabInfoList.size(); ++targetIndex) {
+        QWidget *desiredWidget = s_KeyMappingTabInfoList.at(targetIndex).KeyMappingDataTable;
+        const int currentIndex = tabWidget->indexOf(desiredWidget);
+        if (currentIndex < 0 || currentIndex == targetIndex) {
+            continue;
+        }
+
+        const bool tabEnabled = tabWidget->isTabEnabled(currentIndex);
+        const QString tabWhatsThis = tabWidget->tabWhatsThis(currentIndex);
+        bool tabVisible = true;
+        QVariant tabData;
+        if (tabBar != Q_NULLPTR) {
+            tabVisible = tabBar->isTabVisible(currentIndex);
+            tabData = tabBar->tabData(currentIndex);
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] REORDER_STEP"
+                                     << " targetIndex=" << targetIndex
+                                     << ", currentIndex=" << currentIndex
+                                     << ", tabName=" << s_KeyMappingTabInfoList.at(targetIndex).TabName
+                                     << ", widget=" << debugPointerString(desiredWidget)
+                                     << ", tabVisible=" << (tabVisible ? "true" : "false")
+                                     << ", tabEnabled=" << (tabEnabled ? "true" : "false")
+                                     << ", tabDataValid=" << (tabData.isValid() ? "true" : "false");
+#endif
+
+        tabWidget->removeTab(currentIndex);
+        tabWidget->insertTab(targetIndex, desiredWidget, QString());
+        tabWidget->setTabWhatsThis(targetIndex, tabWhatsThis);
+        tabWidget->setTabEnabled(targetIndex, tabEnabled);
+        if (tabBar != Q_NULLPTR) {
+            tabBar->setTabVisible(targetIndex, tabVisible);
+            tabBar->setTabData(targetIndex, tabData);
+        }
+    }
+
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        updateKeyMappingTabWidgetTabDisplay(index);
+    }
+
+    if (currentWidget != Q_NULLPTR && tabWidget->indexOf(currentWidget) >= 0) {
+        tabWidget->setCurrentWidget(currentWidget);
+    }
+    else if (tabWidget->count() > 0) {
+        tabWidget->setCurrentIndex(qBound(0, s_KeyMappingTabWidgetCurrentIndex, tabWidget->count() - 1));
+    }
+
+    if (restoreTabBarSignals) {
+        tabBar->blockSignals(false);
+    }
+    tabWidget->blockSignals(false);
+
+    syncTrackedTabIndexesAfterTabStructureChange(currentWidget, lastWidget);
+
+ #ifdef DEBUG_LOGOUT_ON
+    const bool currentBindingMatches = rebindCurrentKeyMappingTabAfterRecovery(true);
+    const int currentIndex = tabWidget->currentIndex();
+    qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] EXIT"
+                                 << " currentIndexAfter=" << tabWidget->currentIndex()
+                                 << ", trackedCurrentIndex=" << s_KeyMappingTabWidgetCurrentIndex
+                                 << ", trackedLastIndex=" << s_KeyMappingTabWidgetLastIndex
+                                 << ", currentWidget=" << debugPointerString((0 <= currentIndex && currentIndex < tabWidget->count()) ? tabWidget->widget(currentIndex) : Q_NULLPTR)
+                                 << ", m_KeyMappingDataTable=" << debugPointerString(m_KeyMappingDataTable)
+                                 << ", KeyMappingDataList=" << debugPointerString(KeyMappingDataList)
+                                 << ", currentBindingMatches=" << (currentBindingMatches ? "true" : "false")
+                                 << ", pageOrder=[" << debugPageOrderSummary(tabWidget) << "]"
+                                 << ", trackedOrder=[" << debugTrackedTabInfoSummary(s_KeyMappingTabInfoList) << "]";
+#else
+    rebindCurrentKeyMappingTabAfterRecovery(true);
+#endif
+
+    return true;
+}
+
+bool QKeyMapper::recoverKeyMappingTabWidgetOrderAfterTabMoved(int from, int to)
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return false;
+    }
+
+    const int commonDataIndex = findCommonMappingTabIndex();
+    if (commonDataIndex < 0 || commonDataIndex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    QWidget *commonWidget = s_KeyMappingTabInfoList.at(commonDataIndex).KeyMappingDataTable;
+    if (commonWidget == Q_NULLPTR) {
+        return false;
+    }
+
+    QTabWidget *tabWidget = ui->keyMappingTabWidget;
+    const int actualCommonIndex = tabWidget->indexOf(commonWidget);
+    QWidget *restoredCurrentWidget = tabWidget->currentWidget();
+
+    auto trackedNormalWidgetAt = [this, commonDataIndex](int index) -> QWidget* {
+        if (index < 0 || index >= s_KeyMappingTabInfoList.size() || index == commonDataIndex) {
+            return Q_NULLPTR;
+        }
+
+        return s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
+    };
+
+    bool pageOrderMismatch = (tabWidget->count() != s_KeyMappingTabInfoList.size());
+    if (!pageOrderMismatch) {
+        for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+            if (tabWidget->widget(index) != s_KeyMappingTabInfoList.at(index).KeyMappingDataTable) {
+                pageOrderMismatch = true;
+                break;
+            }
+        }
+    }
+
+    const bool moveTouchesCommon = (from == commonDataIndex || to == commonDataIndex
+                                    || (actualCommonIndex >= 0 && (from == actualCommonIndex || to == actualCommonIndex)));
+    const bool commonNotLastInPages = (actualCommonIndex >= 0 && actualCommonIndex != (tabWidget->count() - 1));
+
+    if (moveTouchesCommon) {
+        QWidget *draggedNormalWidget = trackedNormalWidgetAt(from);
+        if (draggedNormalWidget == Q_NULLPTR) {
+            draggedNormalWidget = trackedNormalWidgetAt(to);
+        }
+
+        if (draggedNormalWidget != Q_NULLPTR) {
+            restoredCurrentWidget = draggedNormalWidget;
+        }
+    }
+
+    if (!moveTouchesCommon && !commonNotLastInPages) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[recoverKeyMappingTabWidgetOrderAfterTabMoved] SKIP"
+                                     << " from=" << from
+                                     << ", to=" << to
+                                     << ", commonDataIndex=" << commonDataIndex
+                                     << ", actualCommonIndex=" << actualCommonIndex
+                                     << ", moveTouchesCommon=" << (moveTouchesCommon ? "true" : "false")
+                                     << ", commonNotLastInPages=" << (commonNotLastInPages ? "true" : "false")
+                                     << ", pageOrderMismatch=" << (pageOrderMismatch ? "true" : "false")
+                                     << ", restoredCurrentWidget=" << debugPointerString(restoredCurrentWidget)
+                                     << ", currentIndex=" << tabWidget->currentIndex()
+                                     << ", pageOrder=[" << debugPageOrderSummary(tabWidget) << "]"
+                                     << ", trackedOrder=[" << debugTrackedTabInfoSummary(s_KeyMappingTabInfoList) << "]";
+#endif
+        return false;
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[recoverKeyMappingTabWidgetOrderAfterTabMoved] RECOVER"
+                                 << " from=" << from
+                                 << ", to=" << to
+                                 << ", commonDataIndex=" << commonDataIndex
+                                 << ", actualCommonIndex=" << actualCommonIndex
+                                 << ", moveTouchesCommon=" << (moveTouchesCommon ? "true" : "false")
+                                 << ", commonNotLastInPages=" << (commonNotLastInPages ? "true" : "false")
+                                 << ", pageOrderMismatch=" << (pageOrderMismatch ? "true" : "false")
+                                 << ", restoredCurrentWidget=" << debugPointerString(restoredCurrentWidget)
+                                 << ", currentIndex=" << tabWidget->currentIndex()
+                                 << ", pageOrder=[" << debugPageOrderSummary(tabWidget) << "]"
+                                 << ", trackedOrder=[" << debugTrackedTabInfoSummary(s_KeyMappingTabInfoList) << "]";
+#endif
+
+    return syncKeyMappingTabWidgetPagesFromTabInfoList(restoredCurrentWidget);
+}
+
+
+void QKeyMapper::finalizeCommonMappingTabAtIndex(int tabIndex, bool showNameConflictWarning)
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return;
+    }
+
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || tabIndex >= ui->keyMappingTabWidget->count()) {
+        return;
+    }
+
+    QSet<QString> existingTabNames;
+    existingTabNames.reserve(qMax(0, s_KeyMappingTabInfoList.size() - 1));
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        if (index == tabIndex) {
+            continue;
+        }
+
+        existingTabNames.insert(s_KeyMappingTabInfoList.at(index).TabName);
+    }
+
+    const QString preferredName = getCommonMappingTableDisplayText();
+    const QString displayName = buildUniqueCommonTabDisplayName(existingTabNames);
+
+    s_KeyMappingTabInfoList[tabIndex].TabInternalName = getCommonMappingTableInternalName();
+    s_KeyMappingTabInfoList[tabIndex].IsCommonTab = true;
+    s_KeyMappingTabInfoList[tabIndex].IncludeCommonMappingTable = false;
+    s_KeyMappingTabInfoList[tabIndex].TabHotkey.clear();
+    s_KeyMappingTabInfoList[tabIndex].TabName = displayName;
+    updateKeyMappingTabWidgetTabDisplay(tabIndex);
+
+    if (showNameConflictWarning && displayName != preferredName) {
+        showWarningPopup(commonTabDisplayNameConflictWarningMessage(displayName));
+    }
+}
+
 bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 {
     const int tab_count = ui->keyMappingTabWidget->count();
@@ -14250,8 +14744,17 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
         KeyMappingTableWidget->setStyle(fusionStyleForTable);
     }
 
-    // Add the new tab at the end with the generated tabName
-    ui->keyMappingTabWidget->addTab(KeyMappingTableWidget, tabName);
+    QWidget *currentWidget = ui->keyMappingTabWidget->currentWidget();
+    QWidget *lastWidget = Q_NULLPTR;
+    if (0 <= s_KeyMappingTabWidgetLastIndex && s_KeyMappingTabWidgetLastIndex < ui->keyMappingTabWidget->count()) {
+        lastWidget = ui->keyMappingTabWidget->widget(s_KeyMappingTabWidgetLastIndex);
+    }
+
+    const int insertIndex = normalMappingTabInsertIndex();
+    ui->keyMappingTabWidget->insertTab(insertIndex, KeyMappingTableWidget, tabName);
+    if (currentWidget != Q_NULLPTR) {
+        ui->keyMappingTabWidget->setCurrentWidget(currentWidget);
+    }
 
     KeyMappingTab_Info tab_info;
     QList<MAP_KEYDATA> *keyMappingData = new QList<MAP_KEYDATA>();
@@ -14271,7 +14774,8 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
     tab_info.KeyMappingData = keyMappingData;
 
-    s_KeyMappingTabInfoList.append(tab_info);
+    s_KeyMappingTabInfoList.insert(insertIndex, tab_info);
+    syncTrackedTabIndexesAfterTabStructureChange(currentWidget, lastWidget);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[addTabToKeyMappingTabWidget] Add a new tab with TabName:" << tabName;
@@ -14282,7 +14786,10 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 
 bool QKeyMapper::addCommonMappingTabToKeyMappingTabWidget(void)
 {
-    if (findCommonMappingTabIndex() >= 0) {
+    const int existingCommonIndex = findCommonMappingTabIndex();
+    if (existingCommonIndex >= 0) {
+        finalizeCommonMappingTabAtIndex(existingCommonIndex);
+        ensureCommonMappingTabIsLast();
         return true;
     }
 
@@ -14293,20 +14800,13 @@ bool QKeyMapper::addCommonMappingTabToKeyMappingTabWidget(void)
     }
 
     const QString commonDisplayName = buildUniqueCommonTabDisplayName(existingTabNames);
+    const int commonIndex = normalMappingTabInsertIndex();
     if (!addTabToKeyMappingTabWidget(commonDisplayName)) {
         return false;
     }
 
-    const int commonIndex = s_KeyMappingTabInfoList.size() - 1;
-    if (commonIndex < 0) {
-        return false;
-    }
-
-    s_KeyMappingTabInfoList[commonIndex].TabInternalName = getCommonMappingTableInternalName();
-    s_KeyMappingTabInfoList[commonIndex].IsCommonTab = true;
-    s_KeyMappingTabInfoList[commonIndex].IncludeCommonMappingTable = false;
-    s_KeyMappingTabInfoList[commonIndex].TabHotkey.clear();
-    updateKeyMappingTabWidgetTabDisplay(commonIndex);
+    finalizeCommonMappingTabAtIndex(commonIndex, true);
+    ensureCommonMappingTabIsLast();
 
     return true;
 }
@@ -14315,17 +14815,67 @@ void QKeyMapper::ensureCommonMappingTabExists(void)
 {
     const int commonIndex = findCommonMappingTabIndex();
     if (commonIndex < 0) {
-        addCommonMappingTabToKeyMappingTabWidget();
+        if (isCommonMappingFeatureEnabled()) {
+            addCommonMappingTabToKeyMappingTabWidget();
+        }
         return;
     }
 
-    s_KeyMappingTabInfoList[commonIndex].TabInternalName = getCommonMappingTableInternalName();
-    s_KeyMappingTabInfoList[commonIndex].IsCommonTab = true;
-    s_KeyMappingTabInfoList[commonIndex].IncludeCommonMappingTable = false;
-    if (s_KeyMappingTabInfoList[commonIndex].TabName.isEmpty()) {
-        s_KeyMappingTabInfoList[commonIndex].TabName = getCommonMappingTableDisplayText();
+    finalizeCommonMappingTabAtIndex(commonIndex);
+    ensureCommonMappingTabIsLast();
+}
+
+void QKeyMapper::ensureCommonMappingTabIsLast(void)
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return;
     }
-    updateKeyMappingTabWidgetTabDisplay(commonIndex);
+
+    const int commonIndex = findCommonMappingTabIndex();
+    const int lastIndex = s_KeyMappingTabInfoList.size() - 1;
+    if (commonIndex < 0 || commonIndex >= ui->keyMappingTabWidget->count() || commonIndex == lastIndex) {
+        return;
+    }
+
+    QWidget *currentWidget = ui->keyMappingTabWidget->currentWidget();
+    QWidget *lastWidget = Q_NULLPTR;
+    if (0 <= s_KeyMappingTabWidgetLastIndex && s_KeyMappingTabWidgetLastIndex < ui->keyMappingTabWidget->count()) {
+        lastWidget = ui->keyMappingTabWidget->widget(s_KeyMappingTabWidgetLastIndex);
+    }
+
+    QWidget *commonWidget = ui->keyMappingTabWidget->widget(commonIndex);
+    const QString commonTabText = ui->keyMappingTabWidget->tabText(commonIndex);
+    const QIcon commonTabIcon = ui->keyMappingTabWidget->tabIcon(commonIndex);
+    const QString commonTabToolTip = ui->keyMappingTabWidget->tabToolTip(commonIndex);
+    const QString commonTabWhatsThis = ui->keyMappingTabWidget->tabWhatsThis(commonIndex);
+    const bool commonTabEnabled = ui->keyMappingTabWidget->isTabEnabled(commonIndex);
+    bool commonTabVisible = true;
+    QColor commonTabTextColor;
+    QVariant commonTabData;
+    if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
+        commonTabVisible = tabBar->isTabVisible(commonIndex);
+        commonTabTextColor = tabBar->tabTextColor(commonIndex);
+        commonTabData = tabBar->tabData(commonIndex);
+    }
+
+    ui->keyMappingTabWidget->blockSignals(true);
+    ui->keyMappingTabWidget->removeTab(commonIndex);
+    ui->keyMappingTabWidget->insertTab(lastIndex, commonWidget, commonTabIcon, commonTabText);
+    ui->keyMappingTabWidget->setTabToolTip(lastIndex, commonTabToolTip);
+    ui->keyMappingTabWidget->setTabWhatsThis(lastIndex, commonTabWhatsThis);
+    ui->keyMappingTabWidget->setTabEnabled(lastIndex, commonTabEnabled);
+    if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
+        tabBar->setTabVisible(lastIndex, commonTabVisible);
+        tabBar->setTabTextColor(lastIndex, commonTabTextColor);
+        tabBar->setTabData(lastIndex, commonTabData);
+    }
+    if (currentWidget != Q_NULLPTR) {
+        ui->keyMappingTabWidget->setCurrentWidget(currentWidget);
+    }
+    ui->keyMappingTabWidget->blockSignals(false);
+
+    s_KeyMappingTabInfoList.move(commonIndex, lastIndex);
+    syncTrackedTabIndexesAfterTabStructureChange(currentWidget, lastWidget);
 }
 
 void QKeyMapper::updateCommonMappingTabVisibility(void)
@@ -14337,10 +14887,6 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
     ensureCommonMappingTabExists();
 
     const int commonIndex = findCommonMappingTabIndex();
-    if (commonIndex < 0 || commonIndex >= ui->keyMappingTabWidget->count()) {
-        return;
-    }
-
     const bool enabled = isCommonMappingFeatureEnabled();
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[updateCommonMappingTabVisibility]"
@@ -14349,21 +14895,30 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
                                  << ", commonIndex=" << commonIndex
                                  << ", enabled=" << (enabled ? "true" : "false");
 #endif
-    if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
-        tabBar->setTabVisible(commonIndex, enabled);
-    }
+    int fallbackIndex = -1;
+    if (commonIndex >= 0 && commonIndex < ui->keyMappingTabWidget->count()) {
+        if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
+            tabBar->setTabVisible(commonIndex, enabled);
+        }
 
-    if (!enabled && s_KeyMappingTabWidgetCurrentIndex == commonIndex) {
-        const int fallbackIndex = firstNormalMappingTabIndex();
-        if (fallbackIndex >= 0 && fallbackIndex != commonIndex) {
-            forceSwitchKeyMappingTabWidgetIndex(fallbackIndex);
-            return;
+        if (!enabled && s_KeyMappingTabWidgetCurrentIndex == commonIndex) {
+            fallbackIndex = firstNormalMappingTabIndex();
         }
     }
 
-    if (0 <= s_KeyMappingTabWidgetCurrentIndex
-        && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
-        refreshKeyMappingDataTableByTabIndex(s_KeyMappingTabWidgetCurrentIndex);
+    if (fallbackIndex >= 0 && fallbackIndex != commonIndex) {
+        forceSwitchKeyMappingTabWidgetIndex(fallbackIndex);
+    }
+
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        refreshKeyMappingDataTableByTabIndex(index);
+    }
+
+    if (m_TableSetupDialog != Q_NULLPTR
+        && m_TableSetupDialog->isVisible()
+        && ui->settingselectComboBox != Q_NULLPTR
+        && m_TableSetupDialog->getSettingSelectIndex() == ui->settingselectComboBox->currentIndex()) {
+        m_TableSetupDialog->syncAppendCommonMappingTableCheckBoxState();
     }
 }
 
@@ -14491,8 +15046,17 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
         KeyMappingTableWidget->setStyle(fusionStyleForTable);
     }
 
-    // Add the new tab at the end with the generated tabName
-    ui->keyMappingTabWidget->addTab(KeyMappingTableWidget, tabName);
+    QWidget *currentWidget = ui->keyMappingTabWidget->currentWidget();
+    QWidget *lastWidget = Q_NULLPTR;
+    if (0 <= s_KeyMappingTabWidgetLastIndex && s_KeyMappingTabWidgetLastIndex < ui->keyMappingTabWidget->count()) {
+        lastWidget = ui->keyMappingTabWidget->widget(s_KeyMappingTabWidgetLastIndex);
+    }
+
+    const int insertIndex = normalMappingTabInsertIndex();
+    ui->keyMappingTabWidget->insertTab(insertIndex, KeyMappingTableWidget, tabName);
+    if (currentWidget != Q_NULLPTR) {
+        ui->keyMappingTabWidget->setCurrentWidget(currentWidget);
+    }
 
     KeyMappingTab_Info tab_info;
     QList<MAP_KEYDATA> *keyMappingData = new QList<MAP_KEYDATA>();
@@ -14531,10 +15095,11 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     tab_info.KeyMappingDataTable = KeyMappingTableWidget;
     tab_info.KeyMappingData = keyMappingData;
 
-    s_KeyMappingTabInfoList.append(tab_info);
+    s_KeyMappingTabInfoList.insert(insertIndex, tab_info);
+    syncTrackedTabIndexesAfterTabStructureChange(currentWidget, lastWidget);
 
-    refreshKeyMappingDataTableByTabIndex(s_KeyMappingTabInfoList.size() - 1);
-    updateKeyMappingTabWidgetTabDisplay(s_KeyMappingTabInfoList.size() - 1);
+    refreshKeyMappingDataTableByTabIndex(insertIndex);
+    updateKeyMappingTabWidgetTabDisplay(insertIndex);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[copyCurrentTabToKeyMappingTabWidget] Copy tab from TabIndex[" << current_tabindex << "] new TabName: " << tabName;
@@ -22097,7 +22662,6 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         updateKeyMappingTabWidgetTabDisplay(index);
     }
 
-    ensureCommonMappingTabExists();
     collectMappingTableTabHotkeys();
 
 #if 0
@@ -28614,14 +29178,6 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     }
 #endif
 
-    bool addCommonTabResult = addCommonMappingTabToKeyMappingTabWidget();
-    Q_UNUSED(addCommonTabResult);
-#ifdef DEBUG_LOGOUT_ON
-    if (false == addCommonTabResult) {
-        qWarning() << "[initKeyMappingTabWidget]" << "addCommonMappingTabToKeyMappingTabWidget failed!";
-    }
-#endif
-
     updateCommonMappingTabVisibility();
 
     setKeyMappingTabWidgetCurrentIndex(0);
@@ -30060,6 +30616,7 @@ void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
             ? s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData
             : Q_NULLPTR;
         const KeyMappingTab_Info &tabInfo = s_KeyMappingTabInfoList.at(tabindex);
+        const int currentIndex = ui->keyMappingTabWidget ? ui->keyMappingTabWidget->currentIndex() : -1;
         qDebug().nospace().noquote() << "[refreshKeyMappingDataTableByTabIndex]"
                                      << " tabIndex=" << tabindex
                                      << ", tabName=" << tabInfo.TabName
@@ -30067,6 +30624,13 @@ void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
                                      << ", includeCommon=" << (tabInfo.IncludeCommonMappingTable ? "true" : "false")
                                      << ", featureEnabled=" << (isCommonMappingFeatureEnabled() ? "true" : "false")
                                      << ", commonTabIndex=" << commonTabIndex
+                                     << ", currentIndex=" << currentIndex
+                                     << ", trackedCurrentIndex=" << s_KeyMappingTabWidgetCurrentIndex
+                                     << ", currentWidget=" << debugPointerString((ui->keyMappingTabWidget && 0 <= currentIndex && currentIndex < ui->keyMappingTabWidget->count()) ? ui->keyMappingTabWidget->widget(currentIndex) : Q_NULLPTR)
+                                     << ", mappingDataTable=" << debugPointerString(mappingDataTable)
+                                     << ", m_KeyMappingDataTable=" << debugPointerString(m_KeyMappingDataTable)
+                                     << ", KeyMappingDataList=" << debugPointerString(KeyMappingDataList)
+                                     << ", isCurrentTab=" << ((currentIndex == tabindex) ? "true" : "false")
                                      << ", localSize=" << (localMappingDataList != Q_NULLPTR ? localMappingDataList->size() : -1)
                                      << ", commonSize=" << (commonMappingDataList != Q_NULLPTR ? commonMappingDataList->size() : -1)
                                      << ", displaySize=" << displayMappingDataList.size();
@@ -31126,6 +31690,12 @@ void QKeyMapper::setUILanguage(int languageindex)
     if (m_ItemSetupDialog != Q_NULLPTR) {
         m_ItemSetupDialog->setUILanguage(languageindex);
     }
+
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        if (isCommonMappingTabIndex(index)) {
+            finalizeCommonMappingTabAtIndex(index);
+        }
+    }
 }
 
 #if 0
@@ -31690,7 +32260,7 @@ void QKeyMapper::setUITheme(int themeindex)
                 background-color: rgb(173, 208, 255);
                 color: rgb(33, 33, 33);
             }
-            QTableWidget::item:selected:disabled {
+            QTableWidget::item:disabled {
                 color: rgb(160, 160, 160);
             }
             QListWidget::indicator {
@@ -31803,7 +32373,7 @@ void QKeyMapper::setUITheme(int themeindex)
             QTableWidget::item:selected {
                 background-color: rgb(70, 100, 160);
             }
-            QTableWidget::item:selected:disabled {
+            QTableWidget::item:disabled {
                 color: rgb(120, 120, 120);
             }
             QListWidget::indicator {
@@ -31903,7 +32473,7 @@ void QKeyMapper::setUITheme(int themeindex)
                 background-color: rgb(173, 208, 255);
                 color: rgb(33, 33, 33);
             }
-            QTableWidget::item:selected:disabled {
+            QTableWidget::item:disabled {
                 color: rgb(160, 160, 160);
             }
             QListWidget::indicator {
@@ -33077,7 +33647,16 @@ void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
         updateKeyMappingDataTableConnection();
 
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[keyMappingTabWidgetCurrentChanged]" << "KeyMappingTabWidget tab changed :" << index;
+        qDebug().nospace().noquote() << "[keyMappingTabWidgetCurrentChanged]"
+                         << " index=" << index
+                         << ", trackedCurrentIndex=" << s_KeyMappingTabWidgetCurrentIndex
+                         << ", trackedLastIndex=" << s_KeyMappingTabWidgetLastIndex
+                         << ", tabText=" << ui->keyMappingTabWidget->tabText(index)
+                         << ", currentWidget=" << debugPointerString(ui->keyMappingTabWidget->widget(index))
+                         << ", m_KeyMappingDataTable=" << debugPointerString(m_KeyMappingDataTable)
+                         << ", KeyMappingDataList=" << debugPointerString(KeyMappingDataList)
+                         << ", pageOrder=[" << debugPageOrderSummary(ui->keyMappingTabWidget) << "]"
+                         << ", trackedOrder=[" << debugTrackedTabInfoSummary(s_KeyMappingTabInfoList) << "]";
 #endif
     }
 }
@@ -41580,20 +42159,188 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
     QTabWidget::keyPressEvent(event);
 }
 
+KeyMappingTabWidget::KeyMappingTabWidget(QWidget *parent)
+    : QTabWidget(parent)
+{
+    setTabBar(new KeyMappingTabBar(this));
+    setMovable(true);
+    connect(tabBar(), &QTabBar::tabMoved, this, &KeyMappingTabWidget::onTabMoved, Qt::UniqueConnection);
+}
+
+void KeyMappingTabBar::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        m_DraggedTabIndex = tabAt(event->pos());
+
+#ifdef DEBUG_LOGOUT_ON
+        QTabWidget *tabWidget = qobject_cast<QTabWidget*>(parentWidget());
+        const int commonDataIndex = QKeyMapper::findCommonMappingTabIndex();
+        const int actualCommonIndex = debugActualCommonTabIndex(tabWidget, commonDataIndex);
+        qDebug().nospace().noquote() << "[KeyMappingTabBar::mousePressEvent]"
+                                     << " pressPos=(" << event->pos().x() << "," << event->pos().y() << ")"
+                                     << ", draggedTabIndex=" << m_DraggedTabIndex
+                                     << ", currentIndex=" << (tabWidget ? tabWidget->currentIndex() : -1)
+                                     << ", commonDataIndex=" << commonDataIndex
+                                     << ", actualCommonIndex=" << actualCommonIndex
+                                     << ", pageOrder=[" << debugPageOrderSummary(tabWidget) << "]";
+#endif
+    }
+
+    QTabBar::mousePressEvent(event);
+}
+
+bool KeyMappingTabBar::shouldRejectDragMove(const QPoint &pos) const
+{
+    const int commonIndex = QKeyMapper::findCommonMappingTabIndex();
+#ifdef DEBUG_LOGOUT_ON
+    QTabWidget *tabWidget = qobject_cast<QTabWidget*>(parentWidget());
+    const bool debugBypassEnabled = debugAllowAdjacentCommonDragRecoveryBypass();
+#else
+    const bool debugBypassEnabled = false;
+#endif
+
+    bool reject = false;
+    bool debugBypassApplied = false;
+    bool commonVisible = false;
+    QRect commonRect;
+    bool isHorizontal = true;
+    QString reason = QStringLiteral("draggedTabInvalid");
+
+    if (m_DraggedTabIndex < 0) {
+        reason = QStringLiteral("draggedTabInvalid");
+    }
+    else if (commonIndex < 0 || commonIndex >= count()) {
+        reason = QStringLiteral("commonIndexInvalid");
+    }
+    else if (m_DraggedTabIndex == commonIndex) {
+        reject = true;
+        reason = QStringLiteral("draggedTabIsCommon");
+    }
+    else {
+        commonVisible = isTabVisible(commonIndex);
+        if (!commonVisible) {
+            reason = QStringLiteral("commonTabHidden");
+        }
+        else {
+            commonRect = tabRect(commonIndex);
+            if (!commonRect.isValid()) {
+                reason = QStringLiteral("commonRectInvalid");
+            }
+            else {
+                isHorizontal = commonRect.width() >= commonRect.height();
+                reject = isHorizontal ? (pos.x() >= commonRect.left())
+                                      : (pos.y() >= commonRect.top());
+                reason = reject
+                    ? (isHorizontal ? QStringLiteral("x>=commonLeft") : QStringLiteral("y>=commonTop"))
+                    : (isHorizontal ? QStringLiteral("x<commonLeft") : QStringLiteral("y<commonTop"));
+
+                if (reject
+                    && debugBypassEnabled
+                    && commonIndex > 0
+                    && m_DraggedTabIndex == (commonIndex - 1)) {
+                    reject = false;
+                    debugBypassApplied = true;
+                    reason = QStringLiteral("debugBypassAdjacentCommonDrag");
+                }
+            }
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    const int actualCommonIndex = debugActualCommonTabIndex(tabWidget, commonIndex);
+    qDebug().nospace().noquote() << "[KeyMappingTabBar::shouldRejectDragMove]"
+                                 << " pos=(" << pos.x() << "," << pos.y() << ")"
+                                 << ", draggedTabIndex=" << m_DraggedTabIndex
+                                 << ", commonDataIndex=" << commonIndex
+                                 << ", actualCommonIndex=" << actualCommonIndex
+                                 << ", tabCount=" << count()
+                                 << ", currentIndex=" << (tabWidget ? tabWidget->currentIndex() : -1)
+                                 << ", commonVisible=" << (commonVisible ? "true" : "false")
+                                 << ", commonRect=" << debugRectString(commonRect)
+                                 << ", isHorizontal=" << (isHorizontal ? "true" : "false")
+                                 << ", debugBypassEnabled=" << (debugBypassEnabled ? "true" : "false")
+                                 << ", debugBypassApplied=" << (debugBypassApplied ? "true" : "false")
+                                 << ", reject=" << (reject ? "true" : "false")
+                                 << ", reason=" << reason;
+#endif
+
+    return reject;
+}
+
+void KeyMappingTabBar::mouseMoveEvent(QMouseEvent *event)
+{
+    const bool reject = shouldRejectDragMove(event->pos());
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[KeyMappingTabBar::mouseMoveEvent]"
+                                 << " pos=(" << event->pos().x() << "," << event->pos().y() << ")"
+                                 << ", draggedTabIndex=" << m_DraggedTabIndex
+                                 << ", reject=" << (reject ? "true" : "false")
+                                 << ", action=" << (reject ? "ignore" : "forward");
+#endif
+
+    if (reject) {
+        event->ignore();
+        return;
+    }
+
+    QTabBar::mouseMoveEvent(event);
+}
+
+void KeyMappingTabBar::mouseReleaseEvent(QMouseEvent *event)
+{
+#ifdef DEBUG_LOGOUT_ON
+    QTabWidget *tabWidget = qobject_cast<QTabWidget*>(parentWidget());
+    qDebug().nospace().noquote() << "[KeyMappingTabBar::mouseReleaseEvent]"
+                                 << " releasePos=(" << event->pos().x() << "," << event->pos().y() << ")"
+                                 << ", draggedTabIndex=" << m_DraggedTabIndex
+                                 << ", currentIndex=" << (tabWidget ? tabWidget->currentIndex() : -1);
+#endif
+
+    m_DraggedTabIndex = -1;
+    QTabBar::mouseReleaseEvent(event);
+}
+
+void KeyMappingTabBar::leaveEvent(QEvent *event)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[KeyMappingTabBar::leaveEvent]"
+                                 << " draggedTabIndex=" << m_DraggedTabIndex
+                                 << ", leftButtonPressed=" << ((QApplication::mouseButtons() & Qt::LeftButton) ? "true" : "false");
+#endif
+
+    if (!(QApplication::mouseButtons() & Qt::LeftButton)) {
+        m_DraggedTabIndex = -1;
+    }
+
+    QTabBar::leaveEvent(event);
+}
+
 void KeyMappingTabWidget::onTabMoved(int from, int to)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[KeyMappingTabWidget::onTabMoved] from:" << from << "to:" << to;
+    const int commonDataIndex = QKeyMapper::findCommonMappingTabIndex();
+    qDebug().nospace().noquote() << "[KeyMappingTabWidget::onTabMoved] ENTRY"
+                                 << " from=" << from
+                                 << ", to=" << to
+                                 << ", currentIndex=" << currentIndex()
+                                 << ", currentWidget=" << debugPointerString(currentWidget())
+                                 << ", commonDataIndex=" << commonDataIndex
+                                 << ", actualCommonIndex=" << debugActualCommonTabIndex(this, commonDataIndex)
+                                 << ", pageOrder=[" << debugPageOrderSummary(this) << "]"
+                                 << ", trackedOrder=[" << debugTrackedTabInfoSummary(QKeyMapper::s_KeyMappingTabInfoList) << "]";
 #endif
 
-    const int commonIndex = QKeyMapper::findCommonMappingTabIndex();
-    if (commonIndex >= 0 && (from == commonIndex || to == commonIndex)) {
-        if (QTabBar *bar = tabBar()) {
-            QSignalBlocker blocker(bar);
-            bar->moveTab(to, from);
-        }
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance();
+        keyMapper != Q_NULLPTR && keyMapper->recoverKeyMappingTabWidgetOrderAfterTabMoved(from, to)) {
         return;
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[KeyMappingTabWidget::onTabMoved] FORWARD"
+                                 << " from=" << from
+                                 << ", to=" << to;
+#endif
 
     // Emit signal to notify parent class about tab reorder
     emit tabOrderChanged(from, to);
