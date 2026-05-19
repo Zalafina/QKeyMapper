@@ -3109,16 +3109,30 @@ void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
     // Apply UI updates only if all validations passed
     if (allUpdatesSuccessful && !updatePriorities.isEmpty()) {
         // Update LineEdit controls with validated and potentially modified content
-        bool showOriginalKeyDisabledPopup = updateAllMappingInfoFinally(originalKeytoUpdate, mappingKeytoUpdate, mappingKey_KeyUptoUpdate);
+        QKeyMapper::ExclusiveGroupConflictResolutionResult updateResult = static_cast<QKeyMapper::ExclusiveGroupConflictResolutionResult>(
+            updateAllMappingInfoFinally(originalKeytoUpdate, mappingKeytoUpdate, mappingKey_KeyUptoUpdate));
+        if (updateResult == QKeyMapper::ExclusiveGroupConflictResolutionResult::ChangeCancelled) {
+            return;
+        }
 
         // Show success message
         QString popupMessage;
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
 
-        if (showOriginalKeyDisabledPopup) {
+        if (updateResult == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabledAndOtherRowsDisabled) {
+            popupMessageColor = WARNING_COLOR;
+            popupMessage = tr("Key mapping updated successfully")
+                         + tr(". Conflicting mappings in other mapping tables were disabled, and this mapping was disabled due to a conflict.");
+        }
+        else if (updateResult == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabled) {
             popupMessageColor = WARNING_COLOR;
             popupMessage = tr("Key mapping updated successfully") + tr(". But the mapping was disabled due to a conflict.");
+        }
+        else if (updateResult == QKeyMapper::ExclusiveGroupConflictResolutionResult::OtherRowsDisabled) {
+            popupMessageColor = WARNING_COLOR;
+            popupMessage = tr("Key mapping updated successfully")
+                         + tr(". Conflicting mappings in other mapping tables were disabled.");
         }
         else {
             popupMessageColor = SUCCESS_COLOR;
@@ -3305,27 +3319,30 @@ bool QItemSetupDialog::updateMappingKeyKeyUp(QString &mappingKey, const QString 
     }
 }
 
-bool QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, const QString &mappingKey, const QString &mappingKey_KeyUp)
+int QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, const QString &mappingKey, const QString &mappingKey_KeyUp)
 {
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return false;
+        return static_cast<int>(QKeyMapper::ExclusiveGroupConflictResolutionResult::NoConflict);
     }
 
     if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return false;
+        return static_cast<int>(QKeyMapper::ExclusiveGroupConflictResolutionResult::NoConflict);
     }
 
     const MAP_KEYDATA previousKeymapData = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
-    bool showOriginalKeyDisabledPopup = false;
+    QKeyMapper::ExclusiveGroupConflictResolutionResult originalKeyConflictResult = QKeyMapper::ExclusiveGroupConflictResolutionResult::NoConflict;
     /* OriginalKey Update */
     if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key != originalKey) {
+        const QString previousOriginalKey = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key;
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = originalKey;
 
-        // If this item is enabled and the new OriginalKey conflicts with an already enabled item
-        // in the same normalized group, allow the update but auto-disable this row.
-        bool result = QKeyMapper::getInstance()->autoDisableRowIfExclusiveGroupConflict(m_TabIndex, m_ItemRow, false, false);
-        if (result) {
-            showOriginalKeyDisabledPopup = true;
+        originalKeyConflictResult = QKeyMapper::getInstance()->autoDisableRowIfExclusiveGroupConflict(m_TabIndex,
+                                                                                                      m_ItemRow,
+                                                                                                      false,
+                                                                                                      false);
+        if (originalKeyConflictResult == QKeyMapper::ExclusiveGroupConflictResolutionResult::ChangeCancelled) {
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key = previousOriginalKey;
+            return static_cast<int>(originalKeyConflictResult);
         }
     }
 
@@ -3349,7 +3366,7 @@ bool QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, c
         notifySaveSettingDirty();
     }
 
-    return showOriginalKeyDisabledPopup;
+    return static_cast<int>(originalKeyConflictResult);
 }
 
 void QItemSetupDialog::keyMappingTableItemCheckStateChanged(int row, int col, bool checked)
@@ -3496,19 +3513,24 @@ void QItemSetupDialog::on_disabledCheckBox_stateChanged(int state)
         return;
     }
 
+    const bool previousDisabled = QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled;
     bool disabled = ui->disabledCheckBox->isChecked();
-    if (disabled != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled) {
+    if (disabled != previousDisabled) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Disabled = disabled;
         refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, DISABLED_COLUMN);
 
         // Keep behavior consistent with the table: enabling an item will auto-disable
         // other enabled items in the same normalized OriginalKey group.
+        int autoDisabledCount = 0;
         if (!disabled) {
-            QKeyMapper::getInstance()->applyExclusiveEnableMutualExclusion(m_TabIndex, m_ItemRow, true);
+            autoDisabledCount = QKeyMapper::getInstance()->applyExclusiveEnableMutualExclusion(m_TabIndex, m_ItemRow, true);
         }
-        notifySaveSettingDirty();
+
+        if (QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled != previousDisabled || autoDisabledCount > 0) {
+            notifySaveSettingDirty();
+        }
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Disabled -> " << disabled;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Disabled -> " << QKeyMapper::KeyMappingDataList->at(m_ItemRow).Disabled;
 #endif
     }
 }

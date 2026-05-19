@@ -2176,8 +2176,16 @@ private:
     QCheckBox *m_DisableFilterKeyClickSoundPopupCheckBox = Q_NULLPTR;
 
 public:
+    enum class ExclusiveGroupConflictResolutionResult {
+        NoConflict = 0,
+        CurrentRowDisabled,
+        OtherRowsDisabled,
+        CurrentRowDisabledAndOtherRowsDisabled,
+        ChangeCancelled
+    };
+
     int applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow, bool showPopup = true);
-    bool autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup = true, bool updateTableWidget = true);
+    ExclusiveGroupConflictResolutionResult autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup = true, bool updateTableWidget = true);
 
 private:
     static QKeyMapper *m_instance;

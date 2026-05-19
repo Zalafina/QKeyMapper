@@ -7664,6 +7664,171 @@ bool hasEnabledExclusiveGroupConflict(const QList<MAP_KEYDATA> &mappingData, con
     return false;
 }
 
+struct NormalTabExclusiveGroupConflict
+{
+    int TabIndex = -1;
+    QList<int> Rows;
+};
+
+bool hasAnyExclusiveGroupMatch(const QList<MAP_KEYDATA> &mappingData, const QString &groupKey, int excludeRow)
+{
+    for (int i = 0; i < mappingData.size(); ++i) {
+        if (i == excludeRow) {
+            continue;
+        }
+
+        if (normalizeOriginalKeyForExclusiveGroup(mappingData.at(i).Original_Key) == groupKey) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool hasCommonExclusiveGroupPresenceForTab(int tabIndex, const QString &groupKey)
+{
+    if (groupKey.isEmpty() || !shouldAppendCommonMappingRows(tabIndex)) {
+        return false;
+    }
+
+    const int commonTabIndex = QKeyMapper::findCommonMappingTabIndex();
+    if (commonTabIndex < 0
+        || commonTabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()
+        || commonTabIndex == tabIndex) {
+        return false;
+    }
+
+    QList<MAP_KEYDATA> *commonMappingData = QKeyMapper::s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData;
+    if (commonMappingData == Q_NULLPTR) {
+        return false;
+    }
+
+    return hasEnabledExclusiveGroupConflict(*commonMappingData, groupKey, -1);
+}
+
+QList<NormalTabExclusiveGroupConflict> collectEnabledNormalTabExclusiveGroupConflicts(const QString &groupKey)
+{
+    QList<NormalTabExclusiveGroupConflict> conflicts;
+    if (groupKey.isEmpty()) {
+        return conflicts;
+    }
+
+    for (int tabIndex = 0; tabIndex < QKeyMapper::s_KeyMappingTabInfoList.size(); ++tabIndex) {
+        if (!shouldAppendCommonMappingRows(tabIndex)) {
+            continue;
+        }
+
+        QList<MAP_KEYDATA> *mappingDataList = QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+        if (mappingDataList == Q_NULLPTR) {
+            continue;
+        }
+
+        NormalTabExclusiveGroupConflict conflict;
+        conflict.TabIndex = tabIndex;
+        for (int rowindex = 0; rowindex < mappingDataList->size(); ++rowindex) {
+            const MAP_KEYDATA &keymapdata = mappingDataList->at(rowindex);
+            if (keymapdata.Disabled) {
+                continue;
+            }
+            if (normalizeOriginalKeyForExclusiveGroup(keymapdata.Original_Key) != groupKey) {
+                continue;
+            }
+
+            conflict.Rows.append(rowindex);
+        }
+
+        if (!conflict.Rows.isEmpty()) {
+            conflicts.append(conflict);
+        }
+    }
+
+    return conflicts;
+}
+
+QString mappingTableDisplayNameForConflictMessage(int tabIndex)
+{
+    if (tabIndex < 0 || tabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return QString::number(tabIndex + 1);
+    }
+
+    const QString tabName = QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex).TabName;
+    return tabName.isEmpty() ? QString::number(tabIndex + 1) : tabName;
+}
+
+QString formatConflictMappingTableNames(const QList<NormalTabExclusiveGroupConflict> &conflicts)
+{
+    QStringList tabNames;
+    for (const NormalTabExclusiveGroupConflict &conflict : conflicts) {
+        tabNames.append(QStringLiteral("\"%1\"").arg(mappingTableDisplayNameForConflictMessage(conflict.TabIndex)));
+    }
+
+    return tabNames.join(QStringLiteral(" / "));
+}
+
+QString newItemDisabledByCommonMappingMessage()
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                       "A mapping for the same OriginalKey already exists in the Common mapping table. The newly added one was set to Disabled.");
+}
+
+QString currentItemDisabledByCommonMappingMessage(const QString &originalKey)
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                       "The same OriginalKey \"%1\" already exists in the Common mapping table. This mapping remains disabled.")
+        .arg(originalKey);
+}
+
+QString originalKeyUpdatedDisabledByCommonMappingMessage(const QString &originalKey)
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                       "OriginalKey was updated to \"%1\". But the mapping was disabled because the same OriginalKey already exists in the Common mapping table.")
+        .arg(originalKey);
+}
+
+QString commonConflictConfirmationMessage(const QString &originalKey,
+                                         const QList<NormalTabExclusiveGroupConflict> &conflicts)
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                       "Mapping table(s) %1 already contain enabled mapping(s) for OriginalKey \"%2\".\nContinuing will disable those mapping(s).\n\nContinue?")
+        .arg(formatConflictMappingTableNames(conflicts), originalKey);
+}
+
+QString commonConflictRowsDisabledMessage(const QString &originalKey, int affectedTabCount)
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                       "Common mapping priority applied for OriginalKey \"%1\". Conflicting mappings in %2 mapping table(s) were disabled.")
+        .arg(originalKey)
+        .arg(affectedTabCount);
+}
+
+QString commonConflictRowsDisabledAndCurrentDisabledMessage(const QString &originalKey, int affectedTabCount)
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                       "OriginalKey was updated to \"%1\". Conflicting mappings in %2 mapping table(s) were disabled, and this mapping was disabled due to another conflict.")
+        .arg(originalKey)
+        .arg(affectedTabCount);
+}
+
+QString commonConflictRowsDisabledAndNewItemDisabledMessage(const QString &originalKey, int affectedTabCount)
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                       "Common mapping priority applied for OriginalKey \"%1\". Conflicting mappings in %2 mapping table(s) were disabled, and the newly added mapping was set to Disabled due to another conflict.")
+        .arg(originalKey)
+        .arg(affectedTabCount);
+}
+
+bool currentRowDisabledByConflict(QKeyMapper::ExclusiveGroupConflictResolutionResult result)
+{
+    return result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabled
+        || result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabledAndOtherRowsDisabled;
+}
+
+bool otherRowsDisabledByConflict(QKeyMapper::ExclusiveGroupConflictResolutionResult result)
+{
+    return result == QKeyMapper::ExclusiveGroupConflictResolutionResult::OtherRowsDisabled
+        || result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabledAndOtherRowsDisabled;
+}
+
 constexpr char FLOATINGBUTTON_STYLE_CODE_PREFIX[] = "FBS1";
 constexpr char FLOATINGBUTTON_STYLE_KEY_BUTTON_COLOR[] = "bc";
 constexpr char FLOATINGBUTTON_STYLE_KEY_PRESSED_COLOR[] = "pc";
@@ -15255,6 +15420,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         }
     }
     else if (col == DISABLED_COLUMN) {
+        const bool previousDisabled = sourceMappingDataList->at(sourceRow).Disabled;
         bool disabled = false;
         if (m_KeyMappingDataTable->item(row, col)->checkState() == Qt::Checked) {
             disabled = true;
@@ -15263,55 +15429,29 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             disabled = false;
         }
 
-        if (disabled != sourceMappingDataList->at(sourceRow).Disabled) {
+        if (disabled != previousDisabled) {
             (*sourceMappingDataList)[sourceRow].Disabled = disabled;
             emit keyMappingTableItemCheckStateChanged_Signal(sourceRow, col, disabled);
             if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
                 applyDisabledStyleToMappingRow(m_KeyMappingDataTable, sourceMappingDataList, sourceRow);
             }
-            settingChanged = true;
 
-            // Enforce mutual exclusion: within the same normalized OriginalKey group,
-            // only one item can be enabled at a time.
+            int autoDisabledCount = 0;
             if (!disabled) {
-                const QString groupKey = normalizeOriginalKeyForExclusiveGroup(sourceMappingDataList->at(sourceRow).Original_Key);
-                int auto_disabled = 0;
-
-                for (int i = 0; i < sourceMappingDataList->size(); ++i) {
-                    if (i == sourceRow) {
-                        continue;
-                    }
-                    if (sourceMappingDataList->at(i).Disabled) {
-                        continue;
-                    }
-                    if (normalizeOriginalKeyForExclusiveGroup(sourceMappingDataList->at(i).Original_Key) != groupKey) {
-                        continue;
-                    }
-
-                    (*sourceMappingDataList)[i].Disabled = true;
-                    emit keyMappingTableItemCheckStateChanged_Signal(i, col, true);
-                    auto_disabled += 1;
-
-                    if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
-                        QTableWidgetItem *disabledItem = m_KeyMappingDataTable->item(i, DISABLED_COLUMN);
-                        if (disabledItem) {
-                            disabledItem->setCheckState(Qt::Checked);
-                        }
-                        applyDisabledStyleToMappingRow(m_KeyMappingDataTable, sourceMappingDataList, i);
-                    }
-                }
-
-                if (auto_disabled > 0) {
-                    QString message = tr("Enabled mapping for \"%1\". Other same OriginalKey mapping was disabled.")
-                                          .arg(sourceMappingDataList->at(sourceRow).Original_Key);
-                    showInformationPopup(message);
+                autoDisabledCount = applyExclusiveEnableMutualExclusion(sourceTabIndex, sourceRow, true);
+                if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex
+                    && sourceMappingDataList->at(sourceRow).Disabled != disabled) {
+                    updateTableWidgetItem(sourceTabIndex, sourceRow, DISABLED_COLUMN);
                 }
             }
+
+            settingChanged = (sourceMappingDataList->at(sourceRow).Disabled != previousDisabled)
+                             || autoDisabledCount > 0;
 
             m_KeyMappingDataTable->reapplyRowVisibility();
 
 #ifdef DEBUG_LOGOUT_ON
-            qDebug("[%s]: display row(%d), source row(%d) disabled changed to (%s)", __func__, row, sourceRow, disabled == true?"ON":"OFF");
+            qDebug("[%s]: display row(%d), source row(%d) disabled changed to (%s)", __func__, row, sourceRow, sourceMappingDataList->at(sourceRow).Disabled == true?"ON":"OFF");
 #endif
         }
     }
@@ -15368,7 +15508,19 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
             bool isValid = QItemSetupDialog::updateOriginalKey(originalkey_new, mappingkeys_str, sourceRow);
             if (isValid) {
+                const QString previousOriginalKey = sourceMappingDataList->at(sourceRow).Original_Key;
                 (*sourceMappingDataList)[sourceRow].Original_Key = originalkey_new;
+
+                ExclusiveGroupConflictResolutionResult conflictResult = autoDisableRowIfExclusiveGroupConflict(sourceTabIndex,
+                                                                                                               sourceRow,
+                                                                                                               true,
+                                                                                                               sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex);
+                if (conflictResult == ExclusiveGroupConflictResolutionResult::ChangeCancelled) {
+                    (*sourceMappingDataList)[sourceRow].Original_Key = previousOriginalKey;
+                    m_KeyMappingDataTable->item(row, col)->setText(originalkey_withnote);
+                    return;
+                }
+
                 if (note_new != mapdata_note && update_withnote) {
                     (*sourceMappingDataList)[sourceRow].Note = note_new;
                 }
@@ -15376,10 +15528,9 @@ void QKeyMapper::cellChanged_slot(int row, int col)
                 if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
                     updateKeyMappingDataTableItem(m_KeyMappingDataTable, sourceMappingDataList, sourceRow, ORIGINAL_KEY_COLUMN);
                 }
-
-                // If the item is currently enabled and the new OriginalKey conflicts with an already enabled
-                // item in the same normalized group, allow the update but auto-disable this row.
-                autoDisableRowIfExclusiveGroupConflict(sourceTabIndex, sourceRow, true, sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex);
+                else {
+                    refreshTabsForSourceTabChange(sourceTabIndex);
+                }
                 closeItemSetupDialog(row);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -15465,6 +15616,72 @@ int QKeyMapper::applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow
 
     const QString enabledOriKey = mappingDataList->at(enabledRow).Original_Key;
     const QString groupKey = normalizeOriginalKeyForExclusiveGroup(enabledOriKey);
+
+    int affectedTabCount = 0;
+    if (isCommonMappingTabIndex(tabindex)) {
+        const QList<NormalTabExclusiveGroupConflict> conflicts = collectEnabledNormalTabExclusiveGroupConflicts(groupKey);
+        if (!conflicts.isEmpty()) {
+            if (showPopup) {
+                QMessageBox::StandardButton reply = QMessageBox::warning(this,
+                                                                         PROGRAM_NAME,
+                                                                         commonConflictConfirmationMessage(enabledOriKey, conflicts),
+                                                                         QMessageBox::Yes | QMessageBox::No,
+                                                                         QMessageBox::No);
+                if (reply != QMessageBox::Yes) {
+                    (*mappingDataList)[enabledRow].Disabled = true;
+                    emit keyMappingTableItemCheckStateChanged_Signal(enabledRow, DISABLED_COLUMN, true);
+                    updateTableWidgetItem(tabindex, enabledRow, DISABLED_COLUMN);
+                    return 0;
+                }
+            }
+
+            QSet<int> affectedTabs;
+            for (const NormalTabExclusiveGroupConflict &conflict : conflicts) {
+                if (conflict.TabIndex < 0 || conflict.TabIndex >= s_KeyMappingTabInfoList.size()) {
+                    continue;
+                }
+
+                QList<MAP_KEYDATA> *conflictTabData = s_KeyMappingTabInfoList.at(conflict.TabIndex).KeyMappingData;
+                if (conflictTabData == Q_NULLPTR) {
+                    continue;
+                }
+
+                affectedTabs.insert(conflict.TabIndex);
+                for (int conflictRow : conflict.Rows) {
+                    if (conflictRow < 0 || conflictRow >= conflictTabData->size()) {
+                        continue;
+                    }
+                    if (conflictTabData->at(conflictRow).Disabled) {
+                        continue;
+                    }
+                    if (normalizeOriginalKeyForExclusiveGroup(conflictTabData->at(conflictRow).Original_Key) != groupKey) {
+                        continue;
+                    }
+
+                    (*conflictTabData)[conflictRow].Disabled = true;
+                    emit keyMappingTableItemCheckStateChanged_Signal(conflictRow, DISABLED_COLUMN, true);
+                }
+            }
+
+            affectedTabCount = affectedTabs.size();
+            if (affectedTabCount > 0) {
+                refreshTabsForSourceTabChange(tabindex);
+            }
+        }
+    }
+
+    if (!isCommonMappingTabIndex(tabindex) && hasCommonExclusiveGroupPresenceForTab(tabindex, groupKey)) {
+        (*mappingDataList)[enabledRow].Disabled = true;
+        emit keyMappingTableItemCheckStateChanged_Signal(enabledRow, DISABLED_COLUMN, true);
+        updateTableWidgetItem(tabindex, enabledRow, DISABLED_COLUMN);
+
+        if (showPopup) {
+            showWarningPopup(currentItemDisabledByCommonMappingMessage(enabledOriKey));
+        }
+
+        return 0;
+    }
+
     int auto_disabled = 0;
 
     for (int i = 0; i < mappingDataList->size(); ++i) {
@@ -15490,44 +15707,128 @@ int QKeyMapper::applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow
         showInformationPopup(message);
     }
 
+    if (showPopup && affectedTabCount > 0) {
+        showWarningPopup(commonConflictRowsDisabledMessage(enabledOriKey, affectedTabCount));
+    }
+
     return auto_disabled;
 }
 
-bool QKeyMapper::autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup, bool updateTableWidget)
+QKeyMapper::ExclusiveGroupConflictResolutionResult QKeyMapper::autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup, bool updateTableWidget)
 {
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
-        return false;
+        return ExclusiveGroupConflictResolutionResult::NoConflict;
     }
     QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
     if (!mappingDataList) {
-        return false;
+        return ExclusiveGroupConflictResolutionResult::NoConflict;
     }
     if (row < 0 || row >= mappingDataList->size()) {
-        return false;
-    }
-
-    if (mappingDataList->at(row).Disabled) {
-        return false;
+        return ExclusiveGroupConflictResolutionResult::NoConflict;
     }
 
     const QString currentOriKey = mappingDataList->at(row).Original_Key;
     const QString groupKey = normalizeOriginalKeyForExclusiveGroup(currentOriKey);
-    if (!hasEnabledExclusiveGroupConflict(*mappingDataList, groupKey, row)) {
-        return false;
+    int otherRowsDisabled = 0;
+    int affectedTabCount = 0;
+
+    if (isCommonMappingTabIndex(tabindex)) {
+        const QList<NormalTabExclusiveGroupConflict> conflicts = collectEnabledNormalTabExclusiveGroupConflicts(groupKey);
+        if (!conflicts.isEmpty()) {
+            QMessageBox::StandardButton reply = QMessageBox::warning(this,
+                                                                     PROGRAM_NAME,
+                                                                     commonConflictConfirmationMessage(currentOriKey, conflicts),
+                                                                     QMessageBox::Yes | QMessageBox::No,
+                                                                     QMessageBox::No);
+            if (reply != QMessageBox::Yes) {
+                return ExclusiveGroupConflictResolutionResult::ChangeCancelled;
+            }
+
+            QSet<int> affectedTabs;
+            for (const NormalTabExclusiveGroupConflict &conflict : conflicts) {
+                if (conflict.TabIndex < 0 || conflict.TabIndex >= s_KeyMappingTabInfoList.size()) {
+                    continue;
+                }
+
+                QList<MAP_KEYDATA> *conflictTabData = s_KeyMappingTabInfoList.at(conflict.TabIndex).KeyMappingData;
+                if (conflictTabData == Q_NULLPTR) {
+                    continue;
+                }
+
+                affectedTabs.insert(conflict.TabIndex);
+                for (int conflictRow : conflict.Rows) {
+                    if (conflictRow < 0 || conflictRow >= conflictTabData->size()) {
+                        continue;
+                    }
+                    if (conflictTabData->at(conflictRow).Disabled) {
+                        continue;
+                    }
+                    if (normalizeOriginalKeyForExclusiveGroup(conflictTabData->at(conflictRow).Original_Key) != groupKey) {
+                        continue;
+                    }
+
+                    (*conflictTabData)[conflictRow].Disabled = true;
+                    emit keyMappingTableItemCheckStateChanged_Signal(conflictRow, DISABLED_COLUMN, true);
+                    otherRowsDisabled += 1;
+                }
+            }
+
+            affectedTabCount = affectedTabs.size();
+            if (otherRowsDisabled > 0) {
+                refreshTabsForSourceTabChange(tabindex);
+            }
+        }
     }
 
-    (*mappingDataList)[row].Disabled = true;
-    emit keyMappingTableItemCheckStateChanged_Signal(row, DISABLED_COLUMN, true);
-    if (updateTableWidget) {
-        updateTableWidgetItem(tabindex, row, DISABLED_COLUMN);
+    bool disabledCurrentRow = false;
+    bool disabledByCommon = false;
+    if (!mappingDataList->at(row).Disabled) {
+        if (hasEnabledExclusiveGroupConflict(*mappingDataList, groupKey, row)) {
+            disabledCurrentRow = true;
+        }
+        else if (!isCommonMappingTabIndex(tabindex) && hasCommonExclusiveGroupPresenceForTab(tabindex, groupKey)) {
+            disabledCurrentRow = true;
+            disabledByCommon = true;
+        }
+
+        if (disabledCurrentRow) {
+            (*mappingDataList)[row].Disabled = true;
+            emit keyMappingTableItemCheckStateChanged_Signal(row, DISABLED_COLUMN, true);
+            if (updateTableWidget) {
+                updateTableWidgetItem(tabindex, row, DISABLED_COLUMN);
+            }
+        }
     }
 
     if (showPopup) {
-        QString message = tr("OriginalKey was updated to \"%1\"").arg(currentOriKey) + tr(". But the mapping was disabled due to a conflict.");
-        showWarningPopup(message);
+        if (disabledCurrentRow && otherRowsDisabled > 0) {
+            showWarningPopup(commonConflictRowsDisabledAndCurrentDisabledMessage(currentOriKey, affectedTabCount));
+        }
+        else if (disabledCurrentRow) {
+            if (disabledByCommon) {
+                showWarningPopup(originalKeyUpdatedDisabledByCommonMappingMessage(currentOriKey));
+            }
+            else {
+                QString message = tr("OriginalKey was updated to \"%1\"").arg(currentOriKey) + tr(". But the mapping was disabled due to a conflict.");
+                showWarningPopup(message);
+            }
+        }
+        else if (otherRowsDisabled > 0) {
+            showWarningPopup(commonConflictRowsDisabledMessage(currentOriKey, affectedTabCount));
+        }
     }
 
-    return true;
+    if (disabledCurrentRow && otherRowsDisabled > 0) {
+        return ExclusiveGroupConflictResolutionResult::CurrentRowDisabledAndOtherRowsDisabled;
+    }
+    if (disabledCurrentRow) {
+        return ExclusiveGroupConflictResolutionResult::CurrentRowDisabled;
+    }
+    if (otherRowsDisabled > 0) {
+        return ExclusiveGroupConflictResolutionResult::OtherRowsDisabled;
+    }
+
+    return ExclusiveGroupConflictResolutionResult::NoConflict;
 }
 
 void QKeyMapper::keyMappingTableItemSelectionChanged()
@@ -33897,10 +34198,73 @@ void QKeyMapper::on_addmapdataButton_clicked()
     }
 
     const QString groupKey = normalizeOriginalKeyForExclusiveGroup(currentOriKeyText);
+    const int currentTabIndex = s_KeyMappingTabWidgetCurrentIndex;
+    const bool isCommonTab = isCommonMappingTabIndex(currentTabIndex);
     bool autoDisableNewItem = hasEnabledExclusiveGroupConflict(*KeyMappingDataList, groupKey, -1);
-    if (autoDisableNewItem) {
+    bool disabledByCommonConflict = false;
+    int affectedTabCount = 0;
+
+    if (isCommonTab) {
+        const QList<NormalTabExclusiveGroupConflict> conflicts = collectEnabledNormalTabExclusiveGroupConflicts(groupKey);
+        if (!conflicts.isEmpty()) {
+            QMessageBox::StandardButton reply = QMessageBox::warning(this,
+                                                                     PROGRAM_NAME,
+                                                                     commonConflictConfirmationMessage(currentOriKeyText, conflicts),
+                                                                     QMessageBox::Yes | QMessageBox::No,
+                                                                     QMessageBox::No);
+            if (reply != QMessageBox::Yes) {
+                return;
+            }
+
+            QSet<int> affectedTabs;
+            for (const NormalTabExclusiveGroupConflict &conflict : conflicts) {
+                if (conflict.TabIndex < 0 || conflict.TabIndex >= s_KeyMappingTabInfoList.size()) {
+                    continue;
+                }
+
+                QList<MAP_KEYDATA> *conflictTabData = s_KeyMappingTabInfoList.at(conflict.TabIndex).KeyMappingData;
+                if (conflictTabData == Q_NULLPTR) {
+                    continue;
+                }
+
+                affectedTabs.insert(conflict.TabIndex);
+                for (int conflictRow : conflict.Rows) {
+                    if (conflictRow < 0 || conflictRow >= conflictTabData->size()) {
+                        continue;
+                    }
+                    if (conflictTabData->at(conflictRow).Disabled) {
+                        continue;
+                    }
+                    if (normalizeOriginalKeyForExclusiveGroup(conflictTabData->at(conflictRow).Original_Key) != groupKey) {
+                        continue;
+                    }
+
+                    (*conflictTabData)[conflictRow].Disabled = true;
+                    emit keyMappingTableItemCheckStateChanged_Signal(conflictRow, DISABLED_COLUMN, true);
+                }
+            }
+
+            affectedTabCount = affectedTabs.size();
+        }
+    }
+    else if (hasCommonExclusiveGroupPresenceForTab(currentTabIndex, groupKey)) {
+        autoDisableNewItem = true;
+        disabledByCommonConflict = true;
+    }
+
+    QString warningMessage;
+    if (affectedTabCount > 0 && autoDisableNewItem) {
+        warningMessage = commonConflictRowsDisabledAndNewItemDisabledMessage(currentOriKeyText, affectedTabCount);
+    }
+    else if (affectedTabCount > 0) {
+        warningMessage = commonConflictRowsDisabledMessage(currentOriKeyText, affectedTabCount);
+    }
+    else if (disabledByCommonConflict) {
+        warningMessage = newItemDisabledByCommonMappingMessage();
+    }
+    else if (autoDisableNewItem) {
         // If there is already an enabled item in this group, the new item must be disabled.
-        showWarningPopup(tr("A mapping for the same OriginalKey is already enabled. The newly added one was set to Disabled."));
+        warningMessage = tr("A mapping for the same OriginalKey is already enabled. The newly added one was set to Disabled.");
     }
 
     MAP_KEYDATA newKeyMappingData = createDefaultKeyMappingData(currentOriKeyText, currentMapKeyText, autoDisableNewItem);
@@ -33908,6 +34272,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
     qDebug() << "Add keymapdata :" << currentOriKeyText << "to" << currentMapKeyText;
 #endif
     insertNewMappingData(newKeyMappingData);
+
+    if (!warningMessage.isEmpty()) {
+        showWarningPopup(warningMessage);
+    }
 }
 
 MAP_KEYDATA QKeyMapper::createDefaultKeyMappingData(const QString &originalKey, const QString &mappingKey, bool disabled) const
@@ -34020,9 +34388,72 @@ void QKeyMapper::addFixedDefaultMappingAndOpenSetup(void)
     }
 
     const QString groupKey = normalizeOriginalKeyForExclusiveGroup(fixedKey);
+    const int currentTabIndex = s_KeyMappingTabWidgetCurrentIndex;
+    const bool isCommonTab = isCommonMappingTabIndex(currentTabIndex);
     bool autoDisableNewItem = hasEnabledExclusiveGroupConflict(*KeyMappingDataList, groupKey, -1);
-    if (autoDisableNewItem) {
-        showWarningPopup(tr("A mapping for the same OriginalKey is already enabled. The newly added one was set to Disabled."));
+    bool disabledByCommonConflict = false;
+    int affectedTabCount = 0;
+
+    if (isCommonTab) {
+        const QList<NormalTabExclusiveGroupConflict> conflicts = collectEnabledNormalTabExclusiveGroupConflicts(groupKey);
+        if (!conflicts.isEmpty()) {
+            QMessageBox::StandardButton reply = QMessageBox::warning(this,
+                                                                     PROGRAM_NAME,
+                                                                     commonConflictConfirmationMessage(fixedKey, conflicts),
+                                                                     QMessageBox::Yes | QMessageBox::No,
+                                                                     QMessageBox::No);
+            if (reply != QMessageBox::Yes) {
+                return;
+            }
+
+            QSet<int> affectedTabs;
+            for (const NormalTabExclusiveGroupConflict &conflict : conflicts) {
+                if (conflict.TabIndex < 0 || conflict.TabIndex >= s_KeyMappingTabInfoList.size()) {
+                    continue;
+                }
+
+                QList<MAP_KEYDATA> *conflictTabData = s_KeyMappingTabInfoList.at(conflict.TabIndex).KeyMappingData;
+                if (conflictTabData == Q_NULLPTR) {
+                    continue;
+                }
+
+                affectedTabs.insert(conflict.TabIndex);
+                for (int conflictRow : conflict.Rows) {
+                    if (conflictRow < 0 || conflictRow >= conflictTabData->size()) {
+                        continue;
+                    }
+                    if (conflictTabData->at(conflictRow).Disabled) {
+                        continue;
+                    }
+                    if (normalizeOriginalKeyForExclusiveGroup(conflictTabData->at(conflictRow).Original_Key) != groupKey) {
+                        continue;
+                    }
+
+                    (*conflictTabData)[conflictRow].Disabled = true;
+                    emit keyMappingTableItemCheckStateChanged_Signal(conflictRow, DISABLED_COLUMN, true);
+                }
+            }
+
+            affectedTabCount = affectedTabs.size();
+        }
+    }
+    else if (hasCommonExclusiveGroupPresenceForTab(currentTabIndex, groupKey)) {
+        autoDisableNewItem = true;
+        disabledByCommonConflict = true;
+    }
+
+    QString warningMessage;
+    if (affectedTabCount > 0 && autoDisableNewItem) {
+        warningMessage = commonConflictRowsDisabledAndNewItemDisabledMessage(fixedKey, affectedTabCount);
+    }
+    else if (affectedTabCount > 0) {
+        warningMessage = commonConflictRowsDisabledMessage(fixedKey, affectedTabCount);
+    }
+    else if (disabledByCommonConflict) {
+        warningMessage = newItemDisabledByCommonMappingMessage();
+    }
+    else if (autoDisableNewItem) {
+        warningMessage = tr("A mapping for the same OriginalKey is already enabled. The newly added one was set to Disabled.");
     }
 
     MAP_KEYDATA newKeyMappingData = createDefaultKeyMappingData(fixedKey, fixedKey, autoDisableNewItem);
@@ -34030,6 +34461,10 @@ void QKeyMapper::addFixedDefaultMappingAndOpenSetup(void)
     qDebug() << "Add keymapdata :" << fixedKey << "to" << fixedKey;
 #endif
     insertNewMappingData(newKeyMappingData, true);
+
+    if (!warningMessage.isEmpty()) {
+        showWarningPopup(warningMessage);
+    }
 }
 
 void QKeyMapper::confirmProcessLineEdit()
@@ -35146,7 +35581,8 @@ void KeyMappingTableStyleDelegate::paint(QPainter *painter, const QStyleOptionVi
 
     QStyle *style = styledOption.widget ? styledOption.widget->style() : QApplication::style();
     const bool selected = (styledOption.state & QStyle::State_Selected);
-    const bool enabled = (styledOption.state & QStyle::State_Enabled);
+    const bool enabled = (styledOption.state & QStyle::State_Enabled)
+        && (styledOption.widget == Q_NULLPTR || styledOption.widget->isEnabled());
     const bool checkboxOnlyColumn = isKeyMappingCheckboxOnlyColumn(index.column());
     const bool disabledStyledRow = index.data(DISABLED_ROW_BACKGROUND_APPLIED_ROLE).toBool();
 
