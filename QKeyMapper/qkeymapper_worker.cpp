@@ -8752,6 +8752,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     // Initialize lastKeyMappingDataList to nullptr at mapping start
     QKeyMapper::lastKeyMappingDataList = Q_NULLPTR;
     QKeyMapper::s_LastActiveKeyMappingDataList.clear();
+    QKeyMapper::s_LastActiveKeyMappingRowSourceInfoList.clear();
     // Build active key mapping data list (filtering out disabled items)
     // and point KeyMappingDataList to it
     QKeyMapper::buildActiveKeyMappingDataList();
@@ -9211,6 +9212,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     /* Restart Stopping process */
     // Backup current s_ActiveKeyMappingDataList to s_LastActiveKeyMappingDataList for tab switch
     QKeyMapper::s_LastActiveKeyMappingDataList = QKeyMapper::s_ActiveKeyMappingDataList;
+    QKeyMapper::s_LastActiveKeyMappingRowSourceInfoList = QKeyMapper::s_ActiveKeyMappingRowSourceInfoList;
     // Set lastKeyMappingDataList to point to the backup list for resendRealKeyCodeOnStop
     QKeyMapper::lastKeyMappingDataList = &QKeyMapper::s_LastActiveKeyMappingDataList;
     QKeyMapper::buildActiveKeyMappingDataList();

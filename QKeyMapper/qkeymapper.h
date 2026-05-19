@@ -449,6 +449,12 @@ struct KeyMappingTab_Info
     QList<MAP_KEYDATA> *KeyMappingData;
 };
 
+struct ActiveKeyMappingRowSourceInfo
+{
+    int SourceTabIndex = -1;
+    int SourceRow = -1;
+};
+
 // Structure to store icon information with quality metrics
 struct IconInfo {
     HICON hIcon;
@@ -1747,25 +1753,53 @@ private:
     QPoint floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const;
     int findCurrentTabEnabledRowIndexByOriginalKey(const QString &originalKey) const;
     int findCurrentTabRowIndexFromActiveKeyMappingRow(int rowindex) const;
+    int findCurrentDisplayRowFromFloatingButtonSource(const ActiveKeyMappingRowSourceInfo &sourceInfo) const;
     int findFloatingButtonRowIndexByOriginalKey(const QString &originalKey) const;
     int findFloatingButtonRowIndexFromCurrentKeyMappingRow(int rowindex) const;
     int findHoveredFloatingButtonRow(const QPoint &globalPos) const;
+    quint64 buildFloatingButtonSourceKey(int tabindex, int rowindex) const;
+    quint64 buildFloatingButtonSourceKey(const ActiveKeyMappingRowSourceInfo &sourceInfo) const;
+    bool resolveFloatingButtonSourceInfoFromDisplayRow(int rowindex,
+                                                      ActiveKeyMappingRowSourceInfo *sourceInfo,
+                                                      QList<MAP_KEYDATA> **sourceDataList = Q_NULLPTR) const;
+    bool resolveFloatingButtonSourceInfoFromSourceKey(quint64 sourceKey,
+                                                     ActiveKeyMappingRowSourceInfo *sourceInfo,
+                                                     QList<MAP_KEYDATA> **sourceDataList = Q_NULLPTR) const;
     bool setFloatingButtonVisibility(int rowindex, bool visible);
+    bool setFloatingButtonVisibilityForSource(const ActiveKeyMappingRowSourceInfo &sourceInfo,
+                                              int displayRowindex,
+                                              bool visible);
     bool setFloatingButtonMousePassThrough(int rowindex, bool enabled);
-    bool isFloatingButtonLocalPressed(int rowindex) const;
-    void setFloatingButtonLocalPressed(int rowindex, bool pressed);
-    void resolveFloatingButtonVisualState(int rowindex, const MAP_KEYDATA &keymapdata,
+    bool setFloatingButtonMousePassThroughForSource(const ActiveKeyMappingRowSourceInfo &sourceInfo,
+                                                    int displayRowindex,
+                                                    bool enabled);
+    bool isFloatingButtonLocalPressed(quint64 sourceKey) const;
+    void setFloatingButtonLocalPressed(quint64 sourceKey, bool pressed);
+    void resolveFloatingButtonVisualState(quint64 sourceKey, const MAP_KEYDATA &keymapdata,
                                           bool runtimePressed, bool runtimeLocked,
                                           bool forcePressed,
                                           bool &pressed, bool &locked) const;
-    void refreshFloatingButtonWidget(QPushButton *button, int rowindex, const MAP_KEYDATA &keymapdata, bool pressed, bool locked);
+    void refreshFloatingButtonWidget(QPushButton *button,
+                                     quint64 sourceKey,
+                                     int displayRowindex,
+                                     const MAP_KEYDATA &keymapdata,
+                                     bool pressed,
+                                     bool locked);
     void syncFloatingButtonAfterBurstAndLockState(int rowindex);
+    void showFloatingButtonStartForSource(const ActiveKeyMappingRowSourceInfo &sourceInfo,
+                                          int displayRowindex,
+                                          const QString &floatingbutton_keystr);
+    void showFloatingButtonStopForSource(const ActiveKeyMappingRowSourceInfo &sourceInfo,
+                                         int displayRowindex,
+                                         const QString &floatingbutton_keystr);
     void updateFloatingButtonsPositionIfWindowRef();
     void resetFloatingButtonWindowTrackingState();
     void syncRuntimeKeyMappingStateToCurrentTab(int rowindex, const MAP_KEYDATA &runtimeData);
     void syncRuntimeKeyMappingStateFromActiveKeyMappingRow(int rowindex);
     void syncRuntimeKeyMappingStatesToCurrentTab(void);
     void syncFloatingButtonRuntimeDataToCurrentTab(int rowindex, const MAP_KEYDATA &runtimeData);
+    void syncFloatingButtonRuntimeDataToSourceRow(const ActiveKeyMappingRowSourceInfo &sourceInfo,
+                                                  const MAP_KEYDATA &runtimeData);
 
     // CategoryFilterStateGuard helper class for RAII-style filter state management
     class CategoryFilterStateGuard {
@@ -2091,6 +2125,8 @@ public:
     static QList<MAP_KEYDATA> *lastKeyMappingDataList;
     static QList<MAP_KEYDATA> s_ActiveKeyMappingDataList;      // Active mapping list (Disabled items filtered out)
     static QList<MAP_KEYDATA> s_LastActiveKeyMappingDataList;  // Previous active mapping list for tab switch
+    static QList<ActiveKeyMappingRowSourceInfo> s_ActiveKeyMappingRowSourceInfoList;
+    static QList<ActiveKeyMappingRowSourceInfo> s_LastActiveKeyMappingRowSourceInfoList;
     // static QList<MAP_KEYDATA> KeyMappingDataListGlobal;
     static QList<MousePoint_Info> ScreenMousePointsList;
     static QList<MousePoint_Info> WindowMousePointsList;
@@ -2233,13 +2269,13 @@ public:
 private:
     int currentFloatingButtonManualHiddenSettingIndex() const;
     quint64 buildFloatingButtonManualHiddenKey(int tabindex, int rowindex) const;
-    bool isFloatingButtonManualHidden(int rowindex) const;
-    void setFloatingButtonManualHidden(int rowindex, bool hidden);
+    bool isFloatingButtonManualHidden(quint64 sourceKey) const;
+    void setFloatingButtonManualHidden(quint64 sourceKey, bool hidden);
     void clearFloatingButtonManualHiddenForAllSettings(void);
-    bool isFloatingButtonMoveArmed(int rowindex) const;
-    bool consumeFloatingButtonMoveArmedState(int rowindex);
-    void armFloatingButtonMoveState(int rowindex);
-    void clearFloatingButtonMoveState(int rowindex = -1);
+    bool isFloatingButtonMoveArmed(quint64 sourceKey) const;
+    bool consumeFloatingButtonMoveArmedState(quint64 sourceKey);
+    void armFloatingButtonMoveState(quint64 sourceKey);
+    void clearFloatingButtonMoveState(quint64 sourceKey = static_cast<quint64>(-1));
 
 private:
     QItemSetupDialog *m_ItemSetupDialog;
@@ -2247,12 +2283,12 @@ private:
     SettingTransferDialog *m_SettingTransferDialog = Q_NULLPTR;
     QPopupNotification *m_PopupNotification;
     QFloatingIconWindow *m_FloatingIconWindow;
-    QHash<int, QPushButton*> m_FloatingButtonMap;
-    QSet<int> m_FloatingButtonLocalPressedRows;
+    QHash<quint64, QPushButton*> m_FloatingButtonMap;
+    QSet<quint64> m_FloatingButtonLocalPressedRows;
     QHash<int, QSet<quint64>> m_FloatingButtonManualHiddenMap;
-    int m_FloatingButtonMoveArmedRow = -1;
+    quint64 m_FloatingButtonMoveArmedKey = static_cast<quint64>(-1);
     bool m_FloatingButtonDragging = false;
-    int m_FloatingButtonDraggingRow = -1;
+    quint64 m_FloatingButtonDraggingKey = static_cast<quint64>(-1);
     QPoint m_FloatingButtonDragStartGlobalPos;
     QPoint m_FloatingButtonDragStartWidgetPos;
     HWND m_FloatingButtonLastTrackHWND = NULL;
