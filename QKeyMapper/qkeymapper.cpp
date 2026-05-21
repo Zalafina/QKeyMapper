@@ -6,6 +6,7 @@
 #include <QPainterPath>
 #include <QScrollBar>
 #include <QSet>
+#include <QStackedWidget>
 #include <QStyleOptionToolButton>
 #include <QToolTip>
 #include <QUrl>
@@ -484,6 +485,134 @@ static bool debugAllowAdjacentCommonDragRecoveryBypass()
     return false;
 }
 #endif
+
+static bool doesCurrentTabWidgetStateMatch(const QTabWidget *tabWidget, const QWidget *expectedWidget, int expectedIndex)
+{
+    if (tabWidget == Q_NULLPTR
+        || expectedWidget == Q_NULLPTR
+        || expectedIndex < 0
+        || expectedIndex >= tabWidget->count()) {
+        return false;
+    }
+
+    const QTabBar *tabBar = tabWidget->tabBar();
+    const QStackedWidget *stackedWidget = tabWidget->findChild<QStackedWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    return tabWidget->currentIndex() == expectedIndex
+        && tabWidget->currentWidget() == expectedWidget
+        && (tabBar == Q_NULLPTR || tabBar->currentIndex() == expectedIndex)
+        && (stackedWidget == Q_NULLPTR || stackedWidget->currentWidget() == expectedWidget);
+}
+
+static bool forceRestoreCurrentTabWidgetPage(QTabWidget *tabWidget, QWidget *expectedWidget, int expectedIndex = -1)
+{
+    if (tabWidget == Q_NULLPTR) {
+        return false;
+    }
+
+    if (expectedIndex < 0 && expectedWidget != Q_NULLPTR) {
+        expectedIndex = tabWidget->indexOf(expectedWidget);
+    }
+
+    if (expectedWidget == Q_NULLPTR
+        && expectedIndex >= 0
+        && expectedIndex < tabWidget->count()) {
+        expectedWidget = tabWidget->widget(expectedIndex);
+    }
+
+    if (expectedWidget == Q_NULLPTR
+        || expectedIndex < 0
+        || expectedIndex >= tabWidget->count()) {
+        return false;
+    }
+
+    QTabBar *tabBar = tabWidget->tabBar();
+    if (tabBar != Q_NULLPTR && tabBar->currentIndex() != expectedIndex) {
+        tabBar->setCurrentIndex(expectedIndex);
+    }
+
+    if (tabWidget->currentIndex() != expectedIndex) {
+        tabWidget->setCurrentIndex(expectedIndex);
+    }
+
+    if (tabWidget->currentWidget() != expectedWidget) {
+        tabWidget->setCurrentWidget(expectedWidget);
+    }
+
+    if (doesCurrentTabWidgetStateMatch(tabWidget, expectedWidget, expectedIndex)) {
+        return true;
+    }
+
+    QStackedWidget *stackedWidget = tabWidget->findChild<QStackedWidget*>(QString(), Qt::FindDirectChildrenOnly);
+    if (stackedWidget != Q_NULLPTR && stackedWidget->currentWidget() != expectedWidget) {
+        stackedWidget->setCurrentWidget(expectedWidget);
+    }
+
+    if (tabBar != Q_NULLPTR && tabBar->currentIndex() != expectedIndex) {
+        tabBar->setCurrentIndex(expectedIndex);
+    }
+
+    if (tabWidget->currentIndex() != expectedIndex) {
+        tabWidget->setCurrentIndex(expectedIndex);
+    }
+
+    if (tabWidget->currentWidget() != expectedWidget) {
+        tabWidget->setCurrentWidget(expectedWidget);
+    }
+
+    if (doesCurrentTabWidgetStateMatch(tabWidget, expectedWidget, expectedIndex)) {
+        return true;
+    }
+
+    const bool missingCurrentSelection = tabWidget->currentIndex() < 0
+        || (tabBar != Q_NULLPTR && tabBar->currentIndex() < 0);
+    if (missingCurrentSelection && tabWidget->count() > 1) {
+        int alternateIndex = (expectedIndex > 0) ? (expectedIndex - 1) : (expectedIndex + 1);
+        if (alternateIndex == expectedIndex
+            || alternateIndex < 0
+            || alternateIndex >= tabWidget->count()) {
+            alternateIndex = (expectedIndex + 1 < tabWidget->count()) ? (expectedIndex + 1) : (expectedIndex - 1);
+        }
+
+        QWidget *alternateWidget = (0 <= alternateIndex && alternateIndex < tabWidget->count())
+            ? tabWidget->widget(alternateIndex)
+            : Q_NULLPTR;
+        if (alternateWidget != Q_NULLPTR) {
+            if (tabBar != Q_NULLPTR && tabBar->currentIndex() != alternateIndex) {
+                tabBar->setCurrentIndex(alternateIndex);
+            }
+
+            if (tabWidget->currentIndex() != alternateIndex) {
+                tabWidget->setCurrentIndex(alternateIndex);
+            }
+
+            if (stackedWidget != Q_NULLPTR && stackedWidget->currentWidget() != alternateWidget) {
+                stackedWidget->setCurrentWidget(alternateWidget);
+            }
+
+            if (tabWidget->currentWidget() != alternateWidget) {
+                tabWidget->setCurrentWidget(alternateWidget);
+            }
+
+            if (tabBar != Q_NULLPTR && tabBar->currentIndex() != expectedIndex) {
+                tabBar->setCurrentIndex(expectedIndex);
+            }
+
+            if (tabWidget->currentIndex() != expectedIndex) {
+                tabWidget->setCurrentIndex(expectedIndex);
+            }
+
+            if (stackedWidget != Q_NULLPTR && stackedWidget->currentWidget() != expectedWidget) {
+                stackedWidget->setCurrentWidget(expectedWidget);
+            }
+
+            if (tabWidget->currentWidget() != expectedWidget) {
+                tabWidget->setCurrentWidget(expectedWidget);
+            }
+        }
+    }
+
+    return doesCurrentTabWidgetStateMatch(tabWidget, expectedWidget, expectedIndex);
+}
 
 void MappingStartToolButton::setMenu(QMenu *menu)
 {
@@ -14320,7 +14449,21 @@ bool QKeyMapper::rebindCurrentKeyMappingTabAfterRecovery(bool refreshCurrentTabl
     }
 
     QTabWidget *tabWidget = ui->keyMappingTabWidget;
-    const int currentIndex = tabWidget->currentIndex();
+    int currentIndex = tabWidget->currentIndex();
+    if ((currentIndex < 0 || currentIndex >= tabWidget->count() || currentIndex >= s_KeyMappingTabInfoList.size())
+        && !s_KeyMappingTabInfoList.isEmpty()) {
+        const int candidateIndex = qBound(0,
+                                          s_KeyMappingTabWidgetCurrentIndex,
+                                          qMin(tabWidget->count(), s_KeyMappingTabInfoList.size()) - 1);
+        QWidget *candidateWidget = (0 <= candidateIndex && candidateIndex < s_KeyMappingTabInfoList.size())
+            ? s_KeyMappingTabInfoList.at(candidateIndex).KeyMappingDataTable
+            : Q_NULLPTR;
+        if (candidateWidget != Q_NULLPTR) {
+            forceRestoreCurrentTabWidgetPage(tabWidget, candidateWidget, candidateIndex);
+            currentIndex = tabWidget->currentIndex();
+        }
+    }
+
     if (currentIndex < 0 || currentIndex >= tabWidget->count() || currentIndex >= s_KeyMappingTabInfoList.size()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[rebindCurrentKeyMappingTabAfterRecovery] INVALID_CURRENT_INDEX"
@@ -14410,6 +14553,25 @@ bool QKeyMapper::syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWid
         lastWidget = tabWidget->widget(s_KeyMappingTabWidgetLastIndex);
     }
 
+    int expectedCurrentIndex = -1;
+    QWidget *expectedCurrentWidget = currentWidget;
+    if (0 <= s_KeyMappingTabWidgetCurrentIndex
+        && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
+        expectedCurrentIndex = s_KeyMappingTabWidgetCurrentIndex;
+        QWidget *trackedCurrentWidget = s_KeyMappingTabInfoList.at(expectedCurrentIndex).KeyMappingDataTable;
+        if (trackedCurrentWidget != Q_NULLPTR) {
+            expectedCurrentWidget = trackedCurrentWidget;
+        }
+    }
+
+    if (expectedCurrentWidget == Q_NULLPTR) {
+        expectedCurrentWidget = tabWidget->currentWidget();
+    }
+
+    if (expectedCurrentIndex < 0 && expectedCurrentWidget != Q_NULLPTR) {
+        expectedCurrentIndex = tabWidget->indexOf(expectedCurrentWidget);
+    }
+
     QTabBar *tabBar = tabWidget->tabBar();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -14418,6 +14580,8 @@ bool QKeyMapper::syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWid
                                  << ", trackedCurrentIndex=" << s_KeyMappingTabWidgetCurrentIndex
                                  << ", trackedLastIndex=" << s_KeyMappingTabWidgetLastIndex
                                  << ", currentWidget=" << debugPointerString(currentWidget)
+                                 << ", expectedCurrentIndex=" << expectedCurrentIndex
+                                 << ", expectedCurrentWidget=" << debugPointerString(expectedCurrentWidget)
                                  << ", lastWidget=" << debugPointerString(lastWidget)
                                  << ", pageOrder=[" << debugPageOrderSummary(tabWidget) << "]"
                                  << ", trackedOrder=[" << debugTrackedTabInfoSummary(s_KeyMappingTabInfoList) << "]";
@@ -14472,11 +14636,57 @@ bool QKeyMapper::syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWid
         updateKeyMappingTabWidgetTabDisplay(index);
     }
 
-    if (currentWidget != Q_NULLPTR && tabWidget->indexOf(currentWidget) >= 0) {
-        tabWidget->setCurrentWidget(currentWidget);
+    if (0 <= expectedCurrentIndex && expectedCurrentIndex < s_KeyMappingTabInfoList.size()) {
+        QWidget *trackedCurrentWidget = s_KeyMappingTabInfoList.at(expectedCurrentIndex).KeyMappingDataTable;
+        if (trackedCurrentWidget != Q_NULLPTR) {
+            expectedCurrentWidget = trackedCurrentWidget;
+        }
+    }
+
+    if (expectedCurrentWidget != Q_NULLPTR
+        && expectedCurrentIndex < 0) {
+        expectedCurrentIndex = tabWidget->indexOf(expectedCurrentWidget);
+    }
+
+    if (expectedCurrentWidget != Q_NULLPTR
+        && expectedCurrentIndex >= 0
+        && expectedCurrentIndex < tabWidget->count()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] RESTORE_CURRENT_WIDGET"
+                                     << " targetWidget=" << debugPointerString(expectedCurrentWidget)
+                                     << ", targetIndex=" << expectedCurrentIndex
+                                     << ", currentIndexBefore=" << tabWidget->currentIndex();
+#endif
+        const bool restoreCurrentWidgetSucceeded = forceRestoreCurrentTabWidgetPage(tabWidget, expectedCurrentWidget, expectedCurrentIndex);
+        Q_UNUSED(restoreCurrentWidgetSucceeded);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] RESTORE_CURRENT_WIDGET_AFTER"
+                                     << " currentIndexAfter=" << tabWidget->currentIndex()
+                                     << ", currentWidget=" << debugPointerString(tabWidget->currentWidget())
+                                     << ", restoredMatches=" << (doesCurrentTabWidgetStateMatch(tabWidget, expectedCurrentWidget, expectedCurrentIndex) ? "true" : "false")
+                                     << ", restoreCurrentWidgetSucceeded=" << (restoreCurrentWidgetSucceeded ? "true" : "false");
+#endif
     }
     else if (tabWidget->count() > 0) {
-        tabWidget->setCurrentIndex(qBound(0, s_KeyMappingTabWidgetCurrentIndex, tabWidget->count() - 1));
+        const int fallbackIndex = qBound(0, s_KeyMappingTabWidgetCurrentIndex, tabWidget->count() - 1);
+        QWidget *fallbackWidget = (0 <= fallbackIndex && fallbackIndex < s_KeyMappingTabInfoList.size())
+            ? s_KeyMappingTabInfoList.at(fallbackIndex).KeyMappingDataTable
+            : tabWidget->widget(fallbackIndex);
+        expectedCurrentIndex = fallbackIndex;
+        expectedCurrentWidget = fallbackWidget;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] RESTORE_CURRENT_INDEX_FALLBACK"
+                                     << " fallbackIndex=" << fallbackIndex
+                                     << ", currentIndexBefore=" << tabWidget->currentIndex();
+#endif
+        const bool restoreFallbackSucceeded = forceRestoreCurrentTabWidgetPage(tabWidget, fallbackWidget, fallbackIndex);
+        Q_UNUSED(restoreFallbackSucceeded);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] RESTORE_CURRENT_INDEX_FALLBACK_AFTER"
+                                     << " currentIndexAfter=" << tabWidget->currentIndex()
+                                     << ", currentWidget=" << debugPointerString(tabWidget->currentWidget())
+                                     << ", restoreFallbackSucceeded=" << (restoreFallbackSucceeded ? "true" : "false");
+#endif
     }
 
     if (restoreTabBarSignals) {
@@ -14484,7 +14694,27 @@ bool QKeyMapper::syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWid
     }
     tabWidget->blockSignals(false);
 
-    syncTrackedTabIndexesAfterTabStructureChange(currentWidget, lastWidget);
+    if (!doesCurrentTabWidgetStateMatch(tabWidget, expectedCurrentWidget, expectedCurrentIndex)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] RESTORE_CURRENT_WIDGET_POST_UNBLOCK"
+                                     << " targetWidget=" << debugPointerString(expectedCurrentWidget)
+                                     << ", targetIndex=" << expectedCurrentIndex
+                                     << ", currentIndexBefore=" << tabWidget->currentIndex()
+                                     << ", currentWidgetBefore=" << debugPointerString(tabWidget->currentWidget())
+                                     << ", tabBarCurrentIndexBefore=" << (tabBar != Q_NULLPTR ? tabBar->currentIndex() : -1);
+#endif
+        const bool restoreCurrentWidgetPostUnblockSucceeded = forceRestoreCurrentTabWidgetPage(tabWidget, expectedCurrentWidget, expectedCurrentIndex);
+        Q_UNUSED(restoreCurrentWidgetPostUnblockSucceeded);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace().noquote() << "[syncKeyMappingTabWidgetPagesFromTabInfoList] RESTORE_CURRENT_WIDGET_POST_UNBLOCK_AFTER"
+                                     << " currentIndexAfter=" << tabWidget->currentIndex()
+                                     << ", currentWidgetAfter=" << debugPointerString(tabWidget->currentWidget())
+                                     << ", tabBarCurrentIndexAfter=" << (tabBar != Q_NULLPTR ? tabBar->currentIndex() : -1)
+                                     << ", restoreCurrentWidgetPostUnblockSucceeded=" << (restoreCurrentWidgetPostUnblockSucceeded ? "true" : "false");
+#endif
+    }
+
+    syncTrackedTabIndexesAfterTabStructureChange(expectedCurrentWidget, lastWidget);
 
  #ifdef DEBUG_LOGOUT_ON
     const bool currentBindingMatches = rebindCurrentKeyMappingTabAfterRecovery(true);
@@ -30652,6 +30882,22 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
         : -1;
     QStringList verticalHeaderLabels;
 
+#ifdef DEBUG_LOGOUT_ON
+    const int currentIndex = (ui && ui->keyMappingTabWidget) ? ui->keyMappingTabWidget->currentIndex() : -1;
+    qDebug().nospace().noquote() << "[refreshKeyMappingDataTable] ENTRY"
+                                 << " tableTabIndex=" << tabIndex
+                                 << ", mappingDataTable=" << debugPointerString(mappingDataTable)
+                                 << ", mappingDataList=" << debugPointerString(mappingDataList)
+                                 << ", rowCount=" << (mappingDataList != Q_NULLPTR ? mappingDataList->size() : -1)
+                                 << ", commonStartDisplayRow=" << commonStartDisplayRow
+                                 << ", currentIndex=" << currentIndex
+                                 << ", trackedCurrentIndex=" << s_KeyMappingTabWidgetCurrentIndex
+                                 << ", currentWidget=" << debugPointerString((ui && ui->keyMappingTabWidget && 0 <= currentIndex && currentIndex < ui->keyMappingTabWidget->count()) ? ui->keyMappingTabWidget->widget(currentIndex) : Q_NULLPTR)
+                                 << ", m_KeyMappingDataTable=" << debugPointerString(m_KeyMappingDataTable)
+                                 << ", KeyMappingDataList=" << debugPointerString(KeyMappingDataList)
+                                 << ", isCurrentTable=" << ((mappingDataTable == m_KeyMappingDataTable) ? "true" : "false");
+#endif
+
     if (false == mappingDataList->isEmpty()){
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[refreshKeyMappingDataTable]" << "mappingDataList Start >>>";
@@ -42171,14 +42417,26 @@ void KeyMappingTabBar::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
         m_DraggedTabIndex = tabAt(event->pos());
+        const int commonDataIndex = QKeyMapper::findCommonMappingTabIndex();
+        m_DraggedTabAdjacentToCommon = (commonDataIndex > 0 && m_DraggedTabIndex == (commonDataIndex - 1));
+        m_DraggedTabPressPos = event->pos();
+        m_DraggedTabPressRect = (m_DraggedTabIndex >= 0) ? tabRect(m_DraggedTabIndex) : QRect();
+
+#ifdef DEBUG_LOGOUT_ON
+        m_LastAcceptedDragPos = event->pos();
+        m_LastAcceptedTargetIndex = m_DraggedTabIndex;
+#endif
 
 #ifdef DEBUG_LOGOUT_ON
         QTabWidget *tabWidget = qobject_cast<QTabWidget*>(parentWidget());
-        const int commonDataIndex = QKeyMapper::findCommonMappingTabIndex();
         const int actualCommonIndex = debugActualCommonTabIndex(tabWidget, commonDataIndex);
+        const int pressOffsetToRight = m_DraggedTabPressRect.isValid() ? qMax(0, m_DraggedTabPressRect.right() - event->pos().x()) : -1;
         qDebug().nospace().noquote() << "[KeyMappingTabBar::mousePressEvent]"
                                      << " pressPos=(" << event->pos().x() << "," << event->pos().y() << ")"
                                      << ", draggedTabIndex=" << m_DraggedTabIndex
+                                     << ", draggedAdjacentToCommon=" << (m_DraggedTabAdjacentToCommon ? "true" : "false")
+                                     << ", draggedTabRect=" << debugRectString(m_DraggedTabPressRect)
+                                     << ", pressOffsetToRight=" << pressOffsetToRight
                                      << ", currentIndex=" << (tabWidget ? tabWidget->currentIndex() : -1)
                                      << ", commonDataIndex=" << commonDataIndex
                                      << ", actualCommonIndex=" << actualCommonIndex
@@ -42191,19 +42449,45 @@ void KeyMappingTabBar::mousePressEvent(QMouseEvent *event)
 
 bool KeyMappingTabBar::shouldRejectDragMove(const QPoint &pos) const
 {
+    constexpr int COMMON_OVERLAP_REJECT_THRESHOLD = 6;
+
     const int commonIndex = QKeyMapper::findCommonMappingTabIndex();
+    const int hoveredTabIndex = tabAt(pos);
 #ifdef DEBUG_LOGOUT_ON
     QTabWidget *tabWidget = qobject_cast<QTabWidget*>(parentWidget());
     const bool debugBypassEnabled = debugAllowAdjacentCommonDragRecoveryBypass();
 #else
+    QTabWidget *tabWidget = qobject_cast<QTabWidget*>(parentWidget());
     const bool debugBypassEnabled = false;
 #endif
+
+    int dynamicDraggedTabIndex = m_DraggedTabIndex;
+    if (tabWidget != Q_NULLPTR) {
+        const int tabWidgetCurrentIndex = tabWidget->currentIndex();
+        if (tabWidgetCurrentIndex >= 0 && tabWidgetCurrentIndex < count()) {
+            dynamicDraggedTabIndex = tabWidgetCurrentIndex;
+        }
+    }
+    else {
+        const int tabBarCurrentIndex = currentIndex();
+        if (tabBarCurrentIndex >= 0 && tabBarCurrentIndex < count()) {
+            dynamicDraggedTabIndex = tabBarCurrentIndex;
+        }
+    }
 
     bool reject = false;
     bool debugBypassApplied = false;
     bool commonVisible = false;
     QRect commonRect;
     bool isHorizontal = true;
+    bool useCommonOverlapGuard = false;
+    bool dynamicDraggedAdjacentToCommon = false;
+    int pressOffsetToTrailingEdge = -1;
+    int projectedDraggedTrailingEdge = -1;
+    int draggedCommonOverlap = 0;
+    bool overlapReachedRejectThreshold = false;
+    bool hoveredCommonTarget = false;
+    bool hoveredCommonOrBeyond = false;
     QString reason = QStringLiteral("draggedTabInvalid");
 
     if (m_DraggedTabIndex < 0) {
@@ -42212,7 +42496,7 @@ bool KeyMappingTabBar::shouldRejectDragMove(const QPoint &pos) const
     else if (commonIndex < 0 || commonIndex >= count()) {
         reason = QStringLiteral("commonIndexInvalid");
     }
-    else if (m_DraggedTabIndex == commonIndex) {
+    else if (dynamicDraggedTabIndex == commonIndex) {
         reject = true;
         reason = QStringLiteral("draggedTabIsCommon");
     }
@@ -42228,16 +42512,58 @@ bool KeyMappingTabBar::shouldRejectDragMove(const QPoint &pos) const
             }
             else {
                 isHorizontal = commonRect.width() >= commonRect.height();
-                reject = isHorizontal ? (pos.x() >= commonRect.left())
-                                      : (pos.y() >= commonRect.top());
-                reason = reject
-                    ? (isHorizontal ? QStringLiteral("x>=commonLeft") : QStringLiteral("y>=commonTop"))
-                    : (isHorizontal ? QStringLiteral("x<commonLeft") : QStringLiteral("y<commonTop"));
+                dynamicDraggedAdjacentToCommon = (commonIndex > 0 && dynamicDraggedTabIndex == (commonIndex - 1));
+                useCommonOverlapGuard = dynamicDraggedAdjacentToCommon;
+                if (useCommonOverlapGuard) {
+                    if (m_DraggedTabPressRect.isValid()
+                        && m_DraggedTabPressPos.x() >= 0
+                        && m_DraggedTabPressPos.y() >= 0) {
+                        pressOffsetToTrailingEdge = isHorizontal
+                            ? qMax(0, m_DraggedTabPressRect.right() - m_DraggedTabPressPos.x())
+                            : qMax(0, m_DraggedTabPressRect.bottom() - m_DraggedTabPressPos.y());
+                        projectedDraggedTrailingEdge = (isHorizontal ? pos.x() : pos.y()) + pressOffsetToTrailingEdge;
+                        const int commonLeadingEdge = isHorizontal ? commonRect.left() : commonRect.top();
+                        draggedCommonOverlap = qMax(0, projectedDraggedTrailingEdge - commonLeadingEdge + 1);
+                        overlapReachedRejectThreshold = (draggedCommonOverlap >= COMMON_OVERLAP_REJECT_THRESHOLD);
+                    }
+
+                    hoveredCommonTarget = (hoveredTabIndex == commonIndex);
+                    hoveredCommonOrBeyond = (hoveredTabIndex >= commonIndex && hoveredTabIndex >= 0);
+                    reject = overlapReachedRejectThreshold || hoveredCommonOrBeyond;
+                    if (reject) {
+                        if (overlapReachedRejectThreshold && hoveredCommonTarget) {
+                            reason = QStringLiteral("normalTabOverlapReachedThresholdAndTargetsCommon");
+                        }
+                        else if (overlapReachedRejectThreshold) {
+                            reason = QStringLiteral("normalTabOverlapReachedThreshold");
+                        }
+                        else if (hoveredCommonOrBeyond) {
+                            reason = QStringLiteral("normalTabTargetsCommonOrBeyond");
+                        }
+                        else {
+                            reason = QStringLiteral("normalTabGuardRejected");
+                        }
+                    }
+                    else {
+                        if (hoveredCommonTarget) {
+                            reason = QStringLiteral("normalTabTargetsCommonButOverlapBelowThreshold");
+                        }
+                        else {
+                            reason = QStringLiteral("normalTabOverlapBelowThreshold");
+                        }
+                    }
+                }
+                else {
+                    reject = isHorizontal ? (pos.x() >= commonRect.left())
+                                          : (pos.y() >= commonRect.top());
+                    reason = reject
+                        ? (isHorizontal ? QStringLiteral("x>=commonLeft") : QStringLiteral("y>=commonTop"))
+                        : (isHorizontal ? QStringLiteral("x<commonLeft") : QStringLiteral("y<commonTop"));
+                }
 
                 if (reject
                     && debugBypassEnabled
-                    && commonIndex > 0
-                    && m_DraggedTabIndex == (commonIndex - 1)) {
+                    && m_DraggedTabAdjacentToCommon) {
                     reject = false;
                     debugBypassApplied = true;
                     reason = QStringLiteral("debugBypassAdjacentCommonDrag");
@@ -42251,6 +42577,10 @@ bool KeyMappingTabBar::shouldRejectDragMove(const QPoint &pos) const
     qDebug().nospace().noquote() << "[KeyMappingTabBar::shouldRejectDragMove]"
                                  << " pos=(" << pos.x() << "," << pos.y() << ")"
                                  << ", draggedTabIndex=" << m_DraggedTabIndex
+                                 << ", dynamicDraggedTabIndex=" << dynamicDraggedTabIndex
+                                 << ", draggedAdjacentToCommon=" << (m_DraggedTabAdjacentToCommon ? "true" : "false")
+                                 << ", dynamicDraggedAdjacentToCommon=" << (dynamicDraggedAdjacentToCommon ? "true" : "false")
+                                 << ", hoveredTabIndex=" << hoveredTabIndex
                                  << ", commonDataIndex=" << commonIndex
                                  << ", actualCommonIndex=" << actualCommonIndex
                                  << ", tabCount=" << count()
@@ -42258,6 +42588,17 @@ bool KeyMappingTabBar::shouldRejectDragMove(const QPoint &pos) const
                                  << ", commonVisible=" << (commonVisible ? "true" : "false")
                                  << ", commonRect=" << debugRectString(commonRect)
                                  << ", isHorizontal=" << (isHorizontal ? "true" : "false")
+                                 << ", useCommonOverlapGuard=" << (useCommonOverlapGuard ? "true" : "false")
+                                 << ", draggedTabRect=" << debugRectString(m_DraggedTabPressRect)
+                                 << ", pressOffsetToTrailingEdge=" << pressOffsetToTrailingEdge
+                                 << ", projectedDraggedTrailingEdge=" << projectedDraggedTrailingEdge
+                                 << ", draggedCommonOverlap=" << draggedCommonOverlap
+                                 << ", overlapRejectThreshold=" << COMMON_OVERLAP_REJECT_THRESHOLD
+                                 << ", overlapReachedRejectThreshold=" << (overlapReachedRejectThreshold ? "true" : "false")
+                                 << ", hoveredCommonTarget=" << (hoveredCommonTarget ? "true" : "false")
+                                 << ", hoveredCommonOrBeyond=" << (hoveredCommonOrBeyond ? "true" : "false")
+                                 << ", lastAcceptedPos=(" << m_LastAcceptedDragPos.x() << "," << m_LastAcceptedDragPos.y() << ")"
+                                 << ", lastAcceptedTargetIndex=" << m_LastAcceptedTargetIndex
                                  << ", debugBypassEnabled=" << (debugBypassEnabled ? "true" : "false")
                                  << ", debugBypassApplied=" << (debugBypassApplied ? "true" : "false")
                                  << ", reject=" << (reject ? "true" : "false")
@@ -42272,9 +42613,14 @@ void KeyMappingTabBar::mouseMoveEvent(QMouseEvent *event)
     const bool reject = shouldRejectDragMove(event->pos());
 
 #ifdef DEBUG_LOGOUT_ON
+    const int hoveredTabIndex = tabAt(event->pos());
+#endif
+
+#ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[KeyMappingTabBar::mouseMoveEvent]"
                                  << " pos=(" << event->pos().x() << "," << event->pos().y() << ")"
                                  << ", draggedTabIndex=" << m_DraggedTabIndex
+                                 << ", hoveredTabIndex=" << hoveredTabIndex
                                  << ", reject=" << (reject ? "true" : "false")
                                  << ", action=" << (reject ? "ignore" : "forward");
 #endif
@@ -42284,21 +42630,86 @@ void KeyMappingTabBar::mouseMoveEvent(QMouseEvent *event)
         return;
     }
 
+#ifdef DEBUG_LOGOUT_ON
+    m_LastAcceptedDragPos = event->pos();
+    m_LastAcceptedTargetIndex = hoveredTabIndex;
+#endif
+
     QTabBar::mouseMoveEvent(event);
 }
 
 void KeyMappingTabBar::mouseReleaseEvent(QMouseEvent *event)
 {
-#ifdef DEBUG_LOGOUT_ON
     QTabWidget *tabWidget = qobject_cast<QTabWidget*>(parentWidget());
+    QWidget *releaseCurrentWidget = tabWidget ? tabWidget->currentWidget() : Q_NULLPTR;
+    int releaseCurrentIndex = tabWidget ? tabWidget->currentIndex() : -1;
+    if (tabWidget != Q_NULLPTR
+        && releaseCurrentIndex < 0
+        && releaseCurrentWidget != Q_NULLPTR) {
+        releaseCurrentIndex = tabWidget->indexOf(releaseCurrentWidget);
+    }
+    int lastAcceptedTargetIndex = -1;
+#ifdef DEBUG_LOGOUT_ON
+    lastAcceptedTargetIndex = m_LastAcceptedTargetIndex;
+#endif
+
+#ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[KeyMappingTabBar::mouseReleaseEvent]"
                                  << " releasePos=(" << event->pos().x() << "," << event->pos().y() << ")"
                                  << ", draggedTabIndex=" << m_DraggedTabIndex
+                                 << ", draggedAdjacentToCommon=" << (m_DraggedTabAdjacentToCommon ? "true" : "false")
+                                 << ", lastAcceptedPos=(" << m_LastAcceptedDragPos.x() << "," << m_LastAcceptedDragPos.y() << ")"
+                                 << ", lastAcceptedTargetIndex=" << m_LastAcceptedTargetIndex
                                  << ", currentIndex=" << (tabWidget ? tabWidget->currentIndex() : -1);
 #endif
 
     m_DraggedTabIndex = -1;
+    m_DraggedTabAdjacentToCommon = false;
+    m_DraggedTabPressPos = QPoint(-1, -1);
+    m_DraggedTabPressRect = QRect();
+#ifdef DEBUG_LOGOUT_ON
+    m_LastAcceptedDragPos = QPoint(-1, -1);
+    m_LastAcceptedTargetIndex = -1;
+#endif
     QTabBar::mouseReleaseEvent(event);
+
+    if (tabWidget != Q_NULLPTR) {
+        const bool missingCurrentSelection = tabWidget->currentIndex() < 0
+            || (tabWidget->tabBar() != Q_NULLPTR && tabWidget->tabBar()->currentIndex() < 0);
+        if (missingCurrentSelection) {
+            QWidget *restoreWidget = releaseCurrentWidget;
+            int restoreIndex = releaseCurrentIndex;
+
+            if ((restoreWidget == Q_NULLPTR || restoreIndex < 0 || restoreIndex >= tabWidget->count())
+                && 0 <= lastAcceptedTargetIndex
+                && lastAcceptedTargetIndex < tabWidget->count()) {
+                restoreIndex = lastAcceptedTargetIndex;
+                restoreWidget = tabWidget->widget(restoreIndex);
+            }
+
+            if (restoreWidget != Q_NULLPTR
+                && 0 <= restoreIndex
+                && restoreIndex < tabWidget->count()) {
+                forceRestoreCurrentTabWidgetPage(tabWidget, restoreWidget, restoreIndex);
+
+                if (!doesCurrentTabWidgetStateMatch(tabWidget, restoreWidget, restoreIndex)) {
+                    if (QKeyMapper *keyMapper = qobject_cast<QKeyMapper*>(tabWidget->window())) {
+                        if (QTabBar *releaseTabBar = tabWidget->tabBar(); releaseTabBar != Q_NULLPTR && releaseTabBar->currentIndex() != restoreIndex) {
+                            releaseTabBar->setCurrentIndex(restoreIndex);
+                        }
+                        if (tabWidget->currentIndex() != restoreIndex) {
+                            tabWidget->setCurrentIndex(restoreIndex);
+                        }
+                        if (tabWidget->currentWidget() != restoreWidget) {
+                            tabWidget->setCurrentWidget(restoreWidget);
+                        }
+                        keyMapper->switchKeyMappingTabIndex(restoreIndex);
+                        keyMapper->rebindCurrentKeyMappingTabAfterRecovery(true);
+                    }
+                }
+            }
+        }
+    }
 }
 
 void KeyMappingTabBar::leaveEvent(QEvent *event)
@@ -42306,11 +42717,21 @@ void KeyMappingTabBar::leaveEvent(QEvent *event)
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[KeyMappingTabBar::leaveEvent]"
                                  << " draggedTabIndex=" << m_DraggedTabIndex
+                                 << ", draggedAdjacentToCommon=" << (m_DraggedTabAdjacentToCommon ? "true" : "false")
+                                 << ", lastAcceptedPos=(" << m_LastAcceptedDragPos.x() << "," << m_LastAcceptedDragPos.y() << ")"
+                                 << ", lastAcceptedTargetIndex=" << m_LastAcceptedTargetIndex
                                  << ", leftButtonPressed=" << ((QApplication::mouseButtons() & Qt::LeftButton) ? "true" : "false");
 #endif
 
     if (!(QApplication::mouseButtons() & Qt::LeftButton)) {
         m_DraggedTabIndex = -1;
+        m_DraggedTabAdjacentToCommon = false;
+        m_DraggedTabPressPos = QPoint(-1, -1);
+        m_DraggedTabPressRect = QRect();
+#ifdef DEBUG_LOGOUT_ON
+        m_LastAcceptedDragPos = QPoint(-1, -1);
+        m_LastAcceptedTargetIndex = -1;
+#endif
     }
 
     QTabBar::leaveEvent(event);
