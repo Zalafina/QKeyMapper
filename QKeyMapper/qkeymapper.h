@@ -279,10 +279,8 @@ private:
     bool m_DraggedTabAdjacentToCommon = false;
     QPoint m_DraggedTabPressPos = QPoint(-1, -1);
     QRect m_DraggedTabPressRect;
-#ifdef DEBUG_LOGOUT_ON
     QPoint m_LastAcceptedDragPos = QPoint(-1, -1);
     int m_LastAcceptedTargetIndex = -1;
-#endif
 };
 
 class MappingStartToolButton : public QToolButton

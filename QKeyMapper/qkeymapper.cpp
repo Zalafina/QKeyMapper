@@ -566,6 +566,8 @@ static bool forceRestoreCurrentTabWidgetPage(QTabWidget *tabWidget, QWidget *exp
     const bool missingCurrentSelection = tabWidget->currentIndex() < 0
         || (tabBar != Q_NULLPTR && tabBar->currentIndex() < 0);
     if (missingCurrentSelection && tabWidget->count() > 1) {
+        // Some Qt rare paths only recover after briefly switching to a different
+        // page and then restoring the expected one again.
         int alternateIndex = (expectedIndex > 0) ? (expectedIndex - 1) : (expectedIndex + 1);
         if (alternateIndex == expectedIndex
             || alternateIndex < 0
@@ -1562,6 +1564,14 @@ static QList<int> collectVisibleSelectedRows(const QTableWidget *table)
     std::sort(visibleRows.begin(), visibleRows.end());
     return visibleRows;
 }
+static void showMixedNormalAndCommonBatchWarning(QKeyMapper *keymapper)
+{
+    if (!keymapper) {
+        return;
+    }
+
+    keymapper->showWarningPopup(QObject::tr("Batch editing normal and Common mapping rows together is not supported."));
+}
 
 static bool hasDuplicateExclusiveGroupInRows(const QList<MAP_KEYDATA> *mappingDataList, const QList<int> &rows)
 {
@@ -1606,6 +1616,43 @@ static bool shouldAppendCommonMappingRows(int tabIndex)
     return QKeyMapper::isCommonMappingFeatureEnabled()
         && !QKeyMapper::isCommonMappingTab(tabInfo)
         && tabInfo.IncludeCommonMappingTable;
+}
+
+static void refreshCategoryDisplaysForSourceChange(QKeyMapper *keymapper,
+                                                   int currentTabIndex,
+                                                   int sourceTabIndex,
+                                                   bool currentDisplayAlreadyUpdated)
+{
+    if (!keymapper
+        || sourceTabIndex < 0
+        || sourceTabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (QKeyMapper::isCommonMappingTabIndex(sourceTabIndex)) {
+        for (int index = 0; index < QKeyMapper::s_KeyMappingTabInfoList.size(); ++index) {
+            if (index != sourceTabIndex && !shouldAppendCommonMappingRows(index)) {
+                continue;
+            }
+
+            if (currentDisplayAlreadyUpdated && index == currentTabIndex) {
+                continue;
+            }
+
+            keymapper->refreshKeyMappingDataTableByTabIndex(index);
+        }
+        return;
+    }
+
+    if (!currentDisplayAlreadyUpdated) {
+        keymapper->refreshKeyMappingDataTableByTabIndex(sourceTabIndex);
+    }
+
+    if (sourceTabIndex != currentTabIndex
+        && 0 <= currentTabIndex
+        && currentTabIndex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        keymapper->refreshKeyMappingDataTableByTabIndex(currentTabIndex);
+    }
 }
 
 static QList<MAP_KEYDATA> buildDisplayKeyMappingDataList(int tabIndex)
@@ -1825,6 +1872,33 @@ struct DisplayRowSourceInfo {
     QList<MAP_KEYDATA> *SourceMappingDataList = Q_NULLPTR;
 };
 
+enum class DisplayInsertPlacement {
+    SegmentTop,
+    SegmentBottom,
+    AboveAnchor,
+    BelowAnchor,
+};
+
+struct DisplayInsertTargetInfo {
+    int TargetTabIndex = -1;
+    int TargetInsertRow = -1;
+};
+
+static bool isDisplayRowWithinSelectionRanges(const QList<QTableWidgetSelectionRange> &selectionRanges, int displayRow)
+{
+    if (displayRow < 0) {
+        return false;
+    }
+
+    for (const QTableWidgetSelectionRange &range : selectionRanges) {
+        if (displayRow >= range.topRow() && displayRow <= range.bottomRow()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static bool resolveDisplayRowSourceInfo(int tabIndex, int displayRow, DisplayRowSourceInfo *sourceInfo)
 {
     if (sourceInfo == Q_NULLPTR) {
@@ -1842,6 +1916,85 @@ static bool resolveDisplayRowSourceInfo(int tabIndex, int displayRow, DisplayRow
     sourceInfo->SourceTabIndex = sourceTabIndex;
     sourceInfo->SourceRow = sourceRow;
     sourceInfo->SourceMappingDataList = sourceMappingDataList;
+    return true;
+}
+
+static QList<DisplayRowSourceInfo> collectSelectedDisplayRowSourceInfo(int currentTabIndex, const QList<int> &displayRows)
+{
+    QList<DisplayRowSourceInfo> sourceInfos;
+    sourceInfos.reserve(displayRows.size());
+
+    for (int displayRow : displayRows) {
+        DisplayRowSourceInfo sourceInfo;
+        if (!resolveDisplayRowSourceInfo(currentTabIndex, displayRow, &sourceInfo)
+            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
+            continue;
+        }
+
+        sourceInfos.append(sourceInfo);
+    }
+
+    return sourceInfos;
+}
+
+static bool selectionIncludesMultipleSourceTabs(const QList<DisplayRowSourceInfo> &sourceInfos)
+{
+    QSet<int> sourceTabIndexes;
+    for (const DisplayRowSourceInfo &sourceInfo : sourceInfos) {
+        sourceTabIndexes.insert(sourceInfo.SourceTabIndex);
+        if (sourceTabIndexes.size() > 1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool resolveDisplayInsertTargetForSegment(int currentTabIndex,
+                                                 int anchorDisplayRow,
+                                                 DisplayInsertPlacement placement,
+                                                 DisplayInsertTargetInfo *targetInfo)
+{
+    if (targetInfo == Q_NULLPTR) {
+        return false;
+    }
+
+    targetInfo->TargetTabIndex = -1;
+    targetInfo->TargetInsertRow = -1;
+
+    DisplayRowSourceInfo sourceInfo;
+    if (!resolveDisplayRowSourceInfo(currentTabIndex, anchorDisplayRow, &sourceInfo)
+        || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
+        return false;
+    }
+
+    const int commonTabIndex = shouldAppendCommonMappingRows(currentTabIndex)
+        ? QKeyMapper::findCommonMappingTabIndex()
+        : -1;
+    if (sourceInfo.SourceTabIndex != currentTabIndex
+        && sourceInfo.SourceTabIndex != commonTabIndex) {
+        return false;
+    }
+
+    const int segmentRowCount = sourceInfo.SourceMappingDataList->size();
+    int targetInsertRow = 0;
+    switch (placement) {
+    case DisplayInsertPlacement::SegmentTop:
+        targetInsertRow = 0;
+        break;
+    case DisplayInsertPlacement::SegmentBottom:
+        targetInsertRow = segmentRowCount;
+        break;
+    case DisplayInsertPlacement::AboveAnchor:
+        targetInsertRow = qBound(0, sourceInfo.SourceRow, segmentRowCount);
+        break;
+    case DisplayInsertPlacement::BelowAnchor:
+        targetInsertRow = qBound(0, sourceInfo.SourceRow + 1, segmentRowCount);
+        break;
+    }
+
+    targetInfo->TargetTabIndex = sourceInfo.SourceTabIndex;
+    targetInfo->TargetInsertRow = targetInsertRow;
     return true;
 }
 
@@ -2239,36 +2392,48 @@ static int applyBatchCategoryChange(QKeyMapper *keymapper, KeyMappingDataTableWi
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     const QString normalizedCategory = category.trimmed();
+    const QList<DisplayRowSourceInfo> sourceInfos = collectSelectedDisplayRowSourceInfo(currentTabIndex, rows);
+    if (sourceInfos.isEmpty()) {
+        return 0;
+    }
+
+    if (selectionIncludesMultipleSourceTabs(sourceInfos)) {
+        showMixedNormalAndCommonBatchWarning(keymapper);
+        return 0;
+    }
+
+    const int sourceTabIndex = sourceInfos.constFirst().SourceTabIndex;
+    const bool currentDisplayAlreadyUpdated = (sourceTabIndex == currentTabIndex);
     QSignalBlocker blocker(mappingDataTable);
     int changedCount = 0;
-    bool requiresDisplayRefresh = false;
 
-    for (int displayRow : rows) {
-        DisplayRowSourceInfo sourceInfo;
-        if (!resolveDisplayRowSourceInfo(currentTabIndex, displayRow, &sourceInfo)
-            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
+    for (const DisplayRowSourceInfo &sourceInfo : sourceInfos) {
+        if (sourceInfo.SourceRow < 0
+            || sourceInfo.SourceRow >= sourceInfo.SourceMappingDataList->size()) {
             continue;
         }
+
         if (sourceInfo.SourceMappingDataList->at(sourceInfo.SourceRow).Category == normalizedCategory) {
             continue;
         }
 
         (*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Category = normalizedCategory;
-        if (sourceInfo.SourceTabIndex == currentTabIndex) {
-            updateCategoryTableItemText(mappingDataTable, displayRow, normalizedCategory);
-        }
-        else {
-            requiresDisplayRefresh = true;
+        if (currentDisplayAlreadyUpdated) {
+            updateCategoryTableItemText(mappingDataTable, sourceInfo.DisplayRow, normalizedCategory);
         }
         changedCount += 1;
     }
 
     if (changedCount > 0) {
-        if (requiresDisplayRefresh) {
-            keymapper->refreshKeyMappingDataTableByTabIndex(currentTabIndex);
+        if (QKeyMapper::isCommonMappingTabIndex(sourceTabIndex) || !currentDisplayAlreadyUpdated) {
+            refreshCategoryDisplaysForSourceChange(keymapper,
+                                                  currentTabIndex,
+                                                  sourceTabIndex,
+                                                  currentDisplayAlreadyUpdated);
         }
         keymapper->resizeKeyMappingDataTableColumnWidth(mappingDataTable);
         keymapper->updateCategoryFilterComboBox();
+        keymapper->requestSaveSettingDirty();
     }
 
     return changedCount;
@@ -14518,6 +14683,8 @@ bool QKeyMapper::syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWid
         return false;
     }
 
+    // This path owns page-order recovery after structural tab changes.
+
     QTabWidget *tabWidget = ui->keyMappingTabWidget;
     if (tabWidget->count() != s_KeyMappingTabInfoList.size()) {
 #ifdef DEBUG_LOGOUT_ON
@@ -15538,18 +15705,32 @@ int QKeyMapper::insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisa
     }
     else {
         QTableWidgetSelectionRange range = selectedRanges.first();
-        const int anchorDisplayRow = (insertMode == TABLE_INSERT_MODE_BELOW)
-            ? range.bottomRow()
-            : range.topRow();
-
-        DisplayRowSourceInfo sourceInfo;
-        if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, anchorDisplayRow, &sourceInfo)
-            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
-            return -1;
+        const int currentDisplayRow = m_KeyMappingDataTable->currentRow();
+        DisplayInsertTargetInfo targetInfo;
+        if (isDisplayRowWithinSelectionRanges(selectedRanges, currentDisplayRow)
+            && resolveDisplayInsertTargetForSegment(s_KeyMappingTabWidgetCurrentIndex,
+                                                    currentDisplayRow,
+                                                    (insertMode == TABLE_INSERT_MODE_BELOW)
+                                                        ? DisplayInsertPlacement::BelowAnchor
+                                                        : DisplayInsertPlacement::AboveAnchor,
+                                                    &targetInfo)) {
+            targetTabIndex = targetInfo.TargetTabIndex;
+            insertRow = targetInfo.TargetInsertRow;
         }
+        else {
+            const int anchorDisplayRow = (insertMode == TABLE_INSERT_MODE_BELOW)
+                ? range.bottomRow()
+                : range.topRow();
 
-        targetTabIndex = sourceInfo.SourceTabIndex;
-        insertRow = sourceInfo.SourceRow + ((insertMode == TABLE_INSERT_MODE_BELOW) ? 1 : 0);
+            DisplayRowSourceInfo sourceInfo;
+            if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, anchorDisplayRow, &sourceInfo)
+                || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
+                return -1;
+            }
+
+            targetTabIndex = sourceInfo.SourceTabIndex;
+            insertRow = sourceInfo.SourceRow + ((insertMode == TABLE_INSERT_MODE_BELOW) ? 1 : 0);
+        }
     }
 
     return insertCopiedKeyMappingDataAtTargetRow(targetTabIndex, insertRow, autoDisabledCount);
@@ -16256,8 +16437,16 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             (*sourceMappingDataList)[sourceRow].Category = category;
             settingChanged = true;
 
-            if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+            const bool currentDisplayAlreadyUpdated = (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex);
+            if (currentDisplayAlreadyUpdated) {
                 updateKeyMappingDataTableItem(m_KeyMappingDataTable, sourceMappingDataList, sourceRow, CATEGORY_COLUMN);
+            }
+
+            if (isCommonMappingTabIndex(sourceTabIndex) || !currentDisplayAlreadyUpdated) {
+                refreshCategoryDisplaysForSourceChange(this,
+                                                      s_KeyMappingTabWidgetCurrentIndex,
+                                                      sourceTabIndex,
+                                                      currentDisplayAlreadyUpdated);
             }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -30872,6 +31061,21 @@ void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
 
 void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList)
 {
+    if (mappingDataTable == Q_NULLPTR || mappingDataList == Q_NULLPTR) {
+        return;
+    }
+
+    // Cache optional UI state so refresh remains safe during recovery/teardown paths.
+    const bool showNotes = ui != Q_NULLPTR
+        && ui->showNotesButton != Q_NULLPTR
+        && ui->showNotesButton->isChecked();
+    const bool showFloatingColumn = ui != Q_NULLPTR
+        && ui->showFloatingButton != Q_NULLPTR
+        && ui->showFloatingButton->isChecked();
+    const bool hideDisabled = ui != Q_NULLPTR
+        && ui->hideDisabledButton != Q_NULLPTR
+        && ui->hideDisabledButton->isChecked();
+
     mappingDataTable->setRowCount(0);
 
     const int tabIndex = findMappingTabIndexByDataTable(mappingDataTable);
@@ -31010,7 +31214,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             /* ORIGINAL_KEY_COLUMN */
             QString mapdata_note = keymapdata.Note;
             QString orikey_withnote;
-            if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {
+            if (showNotes && !mapdata_note.isEmpty()) {
                 orikey_withnote = QString(ORIKEY_WITHNOTE_FORMAT).arg(keymapdata.Original_Key, mapdata_note);
             }
             else {
@@ -31163,15 +31367,11 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 
     mappingDataTable->setVerticalHeaderLabels(verticalHeaderLabels);
 
-    if (ui->showFloatingButton) {
-        mappingDataTable->setFloatingColumnVisible(ui->showFloatingButton->isChecked());
-    }
+    mappingDataTable->setFloatingColumnVisible(showFloatingColumn);
 
     resizeKeyMappingDataTableColumnWidth(mappingDataTable);
 
-    if (ui->hideDisabledButton) {
-        mappingDataTable->setHideDisabledFilter(ui->hideDisabledButton->isChecked());
-    }
+    mappingDataTable->setHideDisabledFilter(hideDisabled);
 
     // Re-apply current category filters after table rows are rebuilt.
     // This keeps row visibility consistent for all refresh paths.
@@ -36265,8 +36465,8 @@ void QKeyMapper::on_addTabButton_clicked()
 
 void QKeyMapper::on_deleteSelectedButton_clicked()
 {
-    QList<QTableWidgetSelectionRange> selectedRanges = m_KeyMappingDataTable->selectedRanges();
-    if (selectedRanges.isEmpty()) {
+    const QList<int> visibleSelectedRows = collectVisibleSelectedRows(m_KeyMappingDataTable);
+    if (visibleSelectedRows.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[DeleteItem] There is no selected item";
 #endif
@@ -36277,27 +36477,25 @@ void QKeyMapper::on_deleteSelectedButton_clicked()
     closeSetupDialog_OnDataChanged();
 #endif
 
-    // Get the first selected range
-    QTableWidgetSelectionRange range = selectedRanges.first();
-    int topRow = range.topRow();
-    int bottomRow = range.bottomRow();
+    const int topRow = visibleSelectedRows.constFirst();
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug("Delete: topRow(%d), bottomRow(%d)", topRow, bottomRow);
+    qDebug("Delete: topRow(%d), bottomRow(%d)", topRow, visibleSelectedRows.constLast());
 #endif
 
+    const QList<DisplayRowSourceInfo> sourceInfos = collectSelectedDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex,
+                                                                                        visibleSelectedRows);
+    if (sourceInfos.isEmpty()) {
+        return;
+    }
+
+    if (selectionIncludesMultipleSourceTabs(sourceInfos)) {
+        showMixedNormalAndCommonBatchWarning(this);
+        return;
+    }
+
     QHash<int, QList<int>> rowsBySourceTab;
-    for (int row = topRow; row <= bottomRow; ++row) {
-        if (m_KeyMappingDataTable->isRowHidden(row)) {
-            continue;
-        }
-
-        DisplayRowSourceInfo sourceInfo;
-        if (!resolveDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex, row, &sourceInfo)
-            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
-            continue;
-        }
-
+    for (const DisplayRowSourceInfo &sourceInfo : sourceInfos) {
         rowsBySourceTab[sourceInfo.SourceTabIndex].append(sourceInfo.SourceRow);
     }
 
@@ -42421,11 +42619,8 @@ void KeyMappingTabBar::mousePressEvent(QMouseEvent *event)
         m_DraggedTabAdjacentToCommon = (commonDataIndex > 0 && m_DraggedTabIndex == (commonDataIndex - 1));
         m_DraggedTabPressPos = event->pos();
         m_DraggedTabPressRect = (m_DraggedTabIndex >= 0) ? tabRect(m_DraggedTabIndex) : QRect();
-
-#ifdef DEBUG_LOGOUT_ON
         m_LastAcceptedDragPos = event->pos();
         m_LastAcceptedTargetIndex = m_DraggedTabIndex;
-#endif
 
 #ifdef DEBUG_LOGOUT_ON
         QTabWidget *tabWidget = qobject_cast<QTabWidget*>(parentWidget());
@@ -42611,10 +42806,7 @@ bool KeyMappingTabBar::shouldRejectDragMove(const QPoint &pos) const
 void KeyMappingTabBar::mouseMoveEvent(QMouseEvent *event)
 {
     const bool reject = shouldRejectDragMove(event->pos());
-
-#ifdef DEBUG_LOGOUT_ON
     const int hoveredTabIndex = tabAt(event->pos());
-#endif
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[KeyMappingTabBar::mouseMoveEvent]"
@@ -42630,10 +42822,8 @@ void KeyMappingTabBar::mouseMoveEvent(QMouseEvent *event)
         return;
     }
 
-#ifdef DEBUG_LOGOUT_ON
     m_LastAcceptedDragPos = event->pos();
     m_LastAcceptedTargetIndex = hoveredTabIndex;
-#endif
 
     QTabBar::mouseMoveEvent(event);
 }
@@ -42648,10 +42838,7 @@ void KeyMappingTabBar::mouseReleaseEvent(QMouseEvent *event)
         && releaseCurrentWidget != Q_NULLPTR) {
         releaseCurrentIndex = tabWidget->indexOf(releaseCurrentWidget);
     }
-    int lastAcceptedTargetIndex = -1;
-#ifdef DEBUG_LOGOUT_ON
-    lastAcceptedTargetIndex = m_LastAcceptedTargetIndex;
-#endif
+    const int lastAcceptedTargetIndex = m_LastAcceptedTargetIndex;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[KeyMappingTabBar::mouseReleaseEvent]"
@@ -42667,16 +42854,16 @@ void KeyMappingTabBar::mouseReleaseEvent(QMouseEvent *event)
     m_DraggedTabAdjacentToCommon = false;
     m_DraggedTabPressPos = QPoint(-1, -1);
     m_DraggedTabPressRect = QRect();
-#ifdef DEBUG_LOGOUT_ON
     m_LastAcceptedDragPos = QPoint(-1, -1);
     m_LastAcceptedTargetIndex = -1;
-#endif
     QTabBar::mouseReleaseEvent(event);
 
     if (tabWidget != Q_NULLPTR) {
         const bool missingCurrentSelection = tabWidget->currentIndex() < 0
             || (tabWidget->tabBar() != Q_NULLPTR && tabWidget->tabBar()->currentIndex() < 0);
         if (missingCurrentSelection) {
+            // Final release-time restore only covers the rare path where Qt leaves
+            // the tab widget without a current page after drag recovery.
             QWidget *restoreWidget = releaseCurrentWidget;
             int restoreIndex = releaseCurrentIndex;
 
@@ -42703,7 +42890,6 @@ void KeyMappingTabBar::mouseReleaseEvent(QMouseEvent *event)
                         if (tabWidget->currentWidget() != restoreWidget) {
                             tabWidget->setCurrentWidget(restoreWidget);
                         }
-                        keyMapper->switchKeyMappingTabIndex(restoreIndex);
                         keyMapper->rebindCurrentKeyMappingTabAfterRecovery(true);
                     }
                 }
@@ -42728,10 +42914,8 @@ void KeyMappingTabBar::leaveEvent(QEvent *event)
         m_DraggedTabAdjacentToCommon = false;
         m_DraggedTabPressPos = QPoint(-1, -1);
         m_DraggedTabPressRect = QRect();
-#ifdef DEBUG_LOGOUT_ON
         m_LastAcceptedDragPos = QPoint(-1, -1);
         m_LastAcceptedTargetIndex = -1;
-#endif
     }
 
     QTabBar::leaveEvent(event);
@@ -43419,15 +43603,8 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     }
 
     const int currentRow = this->currentRow();
-    bool hasValidCurrentSelectedRow = false;
-    if (currentRow >= 0 && hasSelection) {
-        for (const QTableWidgetSelectionRange &range : selectionRanges) {
-            if (currentRow >= range.topRow() && currentRow <= range.bottomRow()) {
-                hasValidCurrentSelectedRow = true;
-                break;
-            }
-        }
-    }
+    const bool hasValidCurrentSelectedRow = hasSelection
+        && isDisplayRowWithinSelectionRanges(selectionRanges, currentRow);
 
     QMenu contextMenu(this);
 
@@ -43451,6 +43628,27 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                 keymapper->showInformationPopup(message);
             }
         }
+    };
+
+    const auto insertCopiedItemsForPlacement = [keymapper, this, currentRow, hasValidCurrentSelectedRow, handleInsertResult](DisplayInsertPlacement placement, int fallbackInsertRow) {
+        int auto_disabled = 0;
+        int inserted_count = -1;
+
+        DisplayInsertTargetInfo targetInfo;
+        if (hasValidCurrentSelectedRow
+            && resolveDisplayInsertTargetForSegment(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex,
+                                                    currentRow,
+                                                    placement,
+                                                    &targetInfo)) {
+            inserted_count = keymapper->insertCopiedKeyMappingDataAtTargetRow(targetInfo.TargetTabIndex,
+                                                                              targetInfo.TargetInsertRow,
+                                                                              &auto_disabled);
+        }
+        else {
+            inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(fallbackInsertRow, &auto_disabled);
+        }
+
+        handleInsertResult(inserted_count, auto_disabled);
     };
 
     bool hasPreviousGroup = false;
@@ -43785,17 +43983,13 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
 
         if (hasCopiedItems) {
             QAction *insertHeaderAction = contextMenu.addAction(QObject::tr("Insert Copied Items at Top"));
-            connect(insertHeaderAction, &QAction::triggered, this, [keymapper, handleInsertResult]() {
-                int auto_disabled = 0;
-                const int inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(0, &auto_disabled);
-                handleInsertResult(inserted_count, auto_disabled);
+            connect(insertHeaderAction, &QAction::triggered, this, [insertCopiedItemsForPlacement]() {
+                insertCopiedItemsForPlacement(DisplayInsertPlacement::SegmentTop, 0);
             });
 
             QAction *insertTailAction = contextMenu.addAction(QObject::tr("Insert Copied Items at Bottom"));
-            connect(insertTailAction, &QAction::triggered, this, [keymapper, this, handleInsertResult]() {
-                int auto_disabled = 0;
-                const int inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(this->rowCount(), &auto_disabled);
-                handleInsertResult(inserted_count, auto_disabled);
+            connect(insertTailAction, &QAction::triggered, this, [this, insertCopiedItemsForPlacement]() {
+                insertCopiedItemsForPlacement(DisplayInsertPlacement::SegmentBottom, this->rowCount());
             });
 
             if (hasSelection) {
@@ -43804,17 +43998,13 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                 const int insertBelowRow = firstRange.bottomRow() + 1;
 
                 QAction *insertAboveAction = contextMenu.addAction(QObject::tr("Insert Copied Items Above"));
-                connect(insertAboveAction, &QAction::triggered, this, [keymapper, insertAboveRow, handleInsertResult]() {
-                    int auto_disabled = 0;
-                    const int inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(insertAboveRow, &auto_disabled);
-                    handleInsertResult(inserted_count, auto_disabled);
+                connect(insertAboveAction, &QAction::triggered, this, [insertAboveRow, insertCopiedItemsForPlacement]() {
+                    insertCopiedItemsForPlacement(DisplayInsertPlacement::AboveAnchor, insertAboveRow);
                 });
 
                 QAction *insertBelowAction = contextMenu.addAction(QObject::tr("Insert Copied Items Below"));
-                connect(insertBelowAction, &QAction::triggered, this, [keymapper, insertBelowRow, handleInsertResult]() {
-                    int auto_disabled = 0;
-                    const int inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(insertBelowRow, &auto_disabled);
-                    handleInsertResult(inserted_count, auto_disabled);
+                connect(insertBelowAction, &QAction::triggered, this, [insertBelowRow, insertCopiedItemsForPlacement]() {
+                    insertCopiedItemsForPlacement(DisplayInsertPlacement::BelowAnchor, insertBelowRow);
                 });
             }
         }
