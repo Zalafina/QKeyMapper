@@ -1618,10 +1618,10 @@ static bool shouldAppendCommonMappingRows(int tabIndex)
         && tabInfo.IncludeCommonMappingTable;
 }
 
-static void refreshCategoryDisplaysForSourceChange(QKeyMapper *keymapper,
-                                                   int currentTabIndex,
-                                                   int sourceTabIndex,
-                                                   bool currentDisplayAlreadyUpdated)
+static void refreshDisplaysForSourceChange(QKeyMapper *keymapper,
+                                           int currentTabIndex,
+                                           int sourceTabIndex,
+                                           bool currentDisplayAlreadyUpdated)
 {
     if (!keymapper
         || sourceTabIndex < 0
@@ -2208,16 +2208,26 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
     }
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    const QList<DisplayRowSourceInfo> sourceInfos = collectSelectedDisplayRowSourceInfo(currentTabIndex, rows);
+    if (sourceInfos.isEmpty()) {
+        return 0;
+    }
+
+    if (selectionIncludesMultipleSourceTabs(sourceInfos)) {
+        showMixedNormalAndCommonBatchWarning(keymapper);
+        return 0;
+    }
+
+    const int sourceTabIndex = sourceInfos.constFirst().SourceTabIndex;
+    const bool currentDisplayAlreadyUpdated = (sourceTabIndex == currentTabIndex);
 
     QSignalBlocker blocker(mappingDataTable);
     int changedCount = 0;
-    bool requiresDisplayRefresh = false;
 
     if (column == BURST_MODE_COLUMN || column == LOCK_COLUMN || column == FLOATING_COLUMN) {
-        for (int displayRow : rows) {
-            DisplayRowSourceInfo sourceInfo;
-            if (!resolveDisplayRowSourceInfo(currentTabIndex, displayRow, &sourceInfo)
-                || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
+        for (const DisplayRowSourceInfo &sourceInfo : sourceInfos) {
+            if (sourceInfo.SourceRow < 0
+                || sourceInfo.SourceRow >= sourceInfo.SourceMappingDataList->size()) {
                 continue;
             }
 
@@ -2237,20 +2247,20 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
 
             *state = checked;
             emit keymapper->keyMappingTableItemCheckStateChanged_Signal(sourceInfo.SourceRow, column, checked);
-            if (sourceInfo.SourceTabIndex == currentTabIndex) {
+            if (currentDisplayAlreadyUpdated) {
                 keymapper->updateTableWidgetItem(sourceInfo.SourceTabIndex, sourceInfo.SourceRow, column);
                 if (column == FLOATING_COLUMN) {
                     applyFloatingButtonRuntimeState(keymapper, sourceInfo.SourceRow);
                 }
             }
-            else {
-                requiresDisplayRefresh = true;
-            }
             changedCount += 1;
         }
 
-        if (changedCount > 0 && requiresDisplayRefresh) {
-            keymapper->refreshKeyMappingDataTableByTabIndex(currentTabIndex);
+        if (changedCount > 0 && (QKeyMapper::isCommonMappingTabIndex(sourceTabIndex) || !currentDisplayAlreadyUpdated)) {
+            refreshDisplaysForSourceChange(keymapper,
+                                           currentTabIndex,
+                                           sourceTabIndex,
+                                           currentDisplayAlreadyUpdated);
         }
         return changedCount;
     }
@@ -2259,10 +2269,9 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
         return 0;
     }
 
-    for (int displayRow : rows) {
-        DisplayRowSourceInfo sourceInfo;
-        if (!resolveDisplayRowSourceInfo(currentTabIndex, displayRow, &sourceInfo)
-            || sourceInfo.SourceMappingDataList == Q_NULLPTR) {
+    for (const DisplayRowSourceInfo &sourceInfo : sourceInfos) {
+        if (sourceInfo.SourceRow < 0
+            || sourceInfo.SourceRow >= sourceInfo.SourceMappingDataList->size()) {
             continue;
         }
 
@@ -2272,23 +2281,20 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
             changedCount += 1;
         }
 
-        if (sourceInfo.SourceTabIndex == currentTabIndex) {
+        if (currentDisplayAlreadyUpdated) {
             keymapper->updateTableWidgetItem(sourceInfo.SourceTabIndex, sourceInfo.SourceRow, DISABLED_COLUMN);
-        }
-        else {
-            requiresDisplayRefresh = true;
         }
 
         if (!checked) {
             keymapper->applyExclusiveEnableMutualExclusion(sourceInfo.SourceTabIndex, sourceInfo.SourceRow, false);
-            if (sourceInfo.SourceTabIndex != currentTabIndex) {
-                requiresDisplayRefresh = true;
-            }
         }
     }
 
-    if (changedCount > 0 && (requiresDisplayRefresh || QKeyMapper::isCommonMappingTabIndex(currentTabIndex))) {
-        keymapper->refreshTabsForSourceTabChange(currentTabIndex);
+    if (changedCount > 0 && (QKeyMapper::isCommonMappingTabIndex(sourceTabIndex) || !currentDisplayAlreadyUpdated)) {
+        refreshDisplaysForSourceChange(keymapper,
+                                       currentTabIndex,
+                                       sourceTabIndex,
+                                       currentDisplayAlreadyUpdated);
     }
     else {
         mappingDataTable->reapplyRowVisibility();
@@ -2426,10 +2432,10 @@ static int applyBatchCategoryChange(QKeyMapper *keymapper, KeyMappingDataTableWi
 
     if (changedCount > 0) {
         if (QKeyMapper::isCommonMappingTabIndex(sourceTabIndex) || !currentDisplayAlreadyUpdated) {
-            refreshCategoryDisplaysForSourceChange(keymapper,
-                                                  currentTabIndex,
-                                                  sourceTabIndex,
-                                                  currentDisplayAlreadyUpdated);
+            refreshDisplaysForSourceChange(keymapper,
+                                           currentTabIndex,
+                                           sourceTabIndex,
+                                           currentDisplayAlreadyUpdated);
         }
         keymapper->resizeKeyMappingDataTableColumnWidth(mappingDataTable);
         keymapper->updateCategoryFilterComboBox();
@@ -16443,10 +16449,10 @@ void QKeyMapper::cellChanged_slot(int row, int col)
             }
 
             if (isCommonMappingTabIndex(sourceTabIndex) || !currentDisplayAlreadyUpdated) {
-                refreshCategoryDisplaysForSourceChange(this,
-                                                      s_KeyMappingTabWidgetCurrentIndex,
-                                                      sourceTabIndex,
-                                                      currentDisplayAlreadyUpdated);
+                refreshDisplaysForSourceChange(this,
+                                               s_KeyMappingTabWidgetCurrentIndex,
+                                               sourceTabIndex,
+                                               currentDisplayAlreadyUpdated);
             }
 
 #ifdef DEBUG_LOGOUT_ON
