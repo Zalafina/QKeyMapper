@@ -2212,10 +2212,41 @@ public:
         ChangeCancelled
     };
 
+    struct CommonPriorityRepairSummary {
+        int DisabledRowCount = 0;
+        QSet<int> AffectedTabIndexes;
+
+        bool hasChanges(void) const
+        {
+            return DisabledRowCount > 0;
+        }
+
+        int affectedTabCount(void) const
+        {
+            return AffectedTabIndexes.size();
+        }
+
+        void merge(const CommonPriorityRepairSummary &other)
+        {
+            DisabledRowCount += other.DisabledRowCount;
+            AffectedTabIndexes.unite(other.AffectedTabIndexes);
+        }
+
+        void clear(void)
+        {
+            DisabledRowCount = 0;
+            AffectedTabIndexes.clear();
+        }
+    };
+
     int applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow, bool showPopup = true);
     ExclusiveGroupConflictResolutionResult autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup = true, bool updateTableWidget = true);
 
 private:
+    CommonPriorityRepairSummary reconcileCommonPriorityConflicts(void);
+    void queuePendingCommonPriorityRepairSummary(const CommonPriorityRepairSummary &summary);
+    void flushPendingCommonPriorityRepairAfterLoad(void);
+
     static QKeyMapper *m_instance;
     static QString DEFAULT_TITLE;
     Ui::QKeyMapper *ui;
@@ -2255,6 +2286,7 @@ public:
     QTimer m_LastAutoMatchedSettingTimer;
     bool loadSetting_flag;
 private:
+    CommonPriorityRepairSummary m_PendingCommonPriorityRepairSummary;
     friend class SettingSelectComboBox;
     friend class SettingSelectComboBoxPopup;
     // KeySequenceEditOnlyOne *m_windowswitchKeySeqEdit;

@@ -44,6 +44,8 @@ constexpr qreal FLOATINGBUTTON_HOVER_BORDER_HIGHLIGHT_ALPHA = 0.56;
 constexpr qreal FLOATINGBUTTON_HOVER_BORDER_HIGHLIGHT_WIDTH = 1.3;
 constexpr qreal FLOATINGBUTTON_HOVER_BORDER_HIGHLIGHT_WIDTH_GAIN = 1.1;
 
+QString commonPriorityRowsDisabledMessage(int disabledRowCount);
+
 bool isKeyMappingCheckboxOnlyColumn(int column)
 {
     return column == DISABLED_COLUMN
@@ -3264,8 +3266,18 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(m_MappingAdvancedDialog, &QMappingAdvancedDialog::customNotificationEnabledChanged,
                      this, &QKeyMapper::onCustomNotificationEnabledChanged);
     QObject::connect(m_MappingAdvancedDialog, &QMappingAdvancedDialog::commonMappingFeatureEnabledChanged,
-                     this, [this](bool) {
+                     this, [this](bool checked) {
+                         CommonPriorityRepairSummary repairSummary;
+                         if (checked) {
+                             repairSummary = reconcileCommonPriorityConflicts();
+                         }
+
                          updateCommonMappingTabVisibility();
+
+                         if (checked && repairSummary.hasChanges()) {
+                             requestSaveSettingDirty();
+                             showWarningPopup(commonPriorityRowsDisabledMessage(repairSummary.DisabledRowCount));
+                         }
                      });
 
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
@@ -3291,6 +3303,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     loadSetting_flag = false;
     connectSettingDirtySignals();
     clearSaveSettingDirty();
+    flushPendingCommonPriorityRepairAfterLoad();
 
     const auto showKeyRecordNotification = [this](const QString &message) {
         int position = ui->notificationComboBox->currentIndex();
@@ -3725,6 +3738,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
                             ui->settingNameLineEdit->setText(loadresult);
                             Q_UNUSED(loadresult)
                             loadSetting_flag = false;
+                            flushPendingCommonPriorityRepairAfterLoad();
                         }
                         else {
 #ifdef DEBUG_LOGOUT_ON
@@ -4050,6 +4064,7 @@ void QKeyMapper::matchForegroundWindow()
                     ui->settingNameLineEdit->setText(loadresult);
                     Q_UNUSED(loadresult)
                     loadSetting_flag = false;
+                    flushPendingCommonPriorityRepairAfterLoad();
 
                     matchProcessIndex = ui->checkProcessComboBox->currentIndex();
                     matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
@@ -4337,6 +4352,7 @@ void QKeyMapper::matchForegroundWindow()
                                 ui->settingNameLineEdit->setText(loadresult);
                                 Q_UNUSED(loadresult)
                                 loadSetting_flag = false;
+                                flushPendingCommonPriorityRepairAfterLoad();
 
                                 // Record this as the last auto matched setting
                                 recordLastAutoMatchedSetting(newAutoMatchSetting);
@@ -4477,6 +4493,7 @@ void QKeyMapper::checkGlobalSettingSwitchTimeout()
             ui->settingNameLineEdit->setText(tr(DISPLAYNAME_GLOBALSETTING));
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
+            flushPendingCommonPriorityRepairAfterLoad();
 
             if (!m_LastAutoMatchedSetting.isEmpty()) {
                 startLastAutoMatchedSettingTimer();
@@ -8248,6 +8265,13 @@ QString commonConflictRowsDisabledAndNewItemDisabledMessage(const QString &origi
                                        "Common mapping priority applied for OriginalKey \"%1\". Conflicting mappings in %2 mapping table(s) were disabled, and the newly added mapping was set to Disabled due to another conflict.")
         .arg(originalKey)
         .arg(affectedTabCount);
+}
+
+QString commonPriorityRowsDisabledMessage(int disabledRowCount)
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                       "There are %1 mapping(s) in normal mapping table(s) that conflict with the Common mapping table. They were disabled automatically.")
+        .arg(disabledRowCount);
 }
 
 bool currentRowDisabledByConflict(QKeyMapper::ExclusiveGroupConflictResolutionResult result)
@@ -15661,6 +15685,14 @@ int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
         return copied_count;
     }
 
+    const QList<int> visibleSelectedRows = collectVisibleSelectedRows(m_KeyMappingDataTable);
+    const QList<DisplayRowSourceInfo> sourceInfos = collectSelectedDisplayRowSourceInfo(s_KeyMappingTabWidgetCurrentIndex,
+                                                                                        visibleSelectedRows);
+    if (selectionIncludesMultipleSourceTabs(sourceInfos)) {
+        showMixedNormalAndCommonBatchWarning(this);
+        return copied_count;
+    }
+
     // Get the first selected range
     QTableWidgetSelectionRange range = selectedRanges.first();
     int top_row = range.topRow();
@@ -16819,6 +16851,87 @@ QKeyMapper::ExclusiveGroupConflictResolutionResult QKeyMapper::autoDisableRowIfE
     }
 
     return ExclusiveGroupConflictResolutionResult::NoConflict;
+}
+
+QKeyMapper::CommonPriorityRepairSummary QKeyMapper::reconcileCommonPriorityConflicts(void)
+{
+    CommonPriorityRepairSummary summary;
+
+    if (!isCommonMappingFeatureEnabled()) {
+        return summary;
+    }
+
+    const int commonTabIndex = findCommonMappingTabIndex();
+    if (commonTabIndex < 0 || commonTabIndex >= s_KeyMappingTabInfoList.size()) {
+        return summary;
+    }
+
+    QList<MAP_KEYDATA> *commonMappingData = s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData;
+    if (commonMappingData == Q_NULLPTR || commonMappingData->isEmpty()) {
+        return summary;
+    }
+
+    QSet<QString> commonEnabledGroups = collectEnabledExclusiveGroups(*commonMappingData);
+    commonEnabledGroups.remove(QString());
+    if (commonEnabledGroups.isEmpty()) {
+        return summary;
+    }
+
+    for (int tabIndex = 0; tabIndex < s_KeyMappingTabInfoList.size(); ++tabIndex) {
+        if (!shouldAppendCommonMappingRows(tabIndex)) {
+            continue;
+        }
+
+        QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+        if (mappingDataList == Q_NULLPTR) {
+            continue;
+        }
+
+        bool tabAffected = false;
+        for (int row = 0; row < mappingDataList->size(); ++row) {
+            if (mappingDataList->at(row).Disabled) {
+                continue;
+            }
+
+            const QString groupKey = normalizeOriginalKeyForExclusiveGroup(mappingDataList->at(row).Original_Key);
+            if (groupKey.isEmpty() || !commonEnabledGroups.contains(groupKey)) {
+                continue;
+            }
+
+            (*mappingDataList)[row].Disabled = true;
+            emit keyMappingTableItemCheckStateChanged_Signal(row, DISABLED_COLUMN, true);
+            summary.DisabledRowCount += 1;
+            tabAffected = true;
+        }
+
+        if (tabAffected) {
+            summary.AffectedTabIndexes.insert(tabIndex);
+        }
+    }
+
+    return summary;
+}
+
+void QKeyMapper::queuePendingCommonPriorityRepairSummary(const CommonPriorityRepairSummary &summary)
+{
+    if (!summary.hasChanges()) {
+        return;
+    }
+
+    m_PendingCommonPriorityRepairSummary.merge(summary);
+}
+
+void QKeyMapper::flushPendingCommonPriorityRepairAfterLoad(void)
+{
+    if (!m_PendingCommonPriorityRepairSummary.hasChanges()) {
+        return;
+    }
+
+    const CommonPriorityRepairSummary summary = m_PendingCommonPriorityRepairSummary;
+    m_PendingCommonPriorityRepairSummary.clear();
+
+    requestSaveSettingDirty();
+    showWarningPopup(commonPriorityRowsDisabledMessage(summary.DisabledRowCount));
 }
 
 void QKeyMapper::keyMappingTableItemSelectionChanged()
@@ -18037,6 +18150,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
         loadSetting_flag = true;
         loadGeneralSetting();
         loadSetting_flag = false;
+        flushPendingCommonPriorityRepairAfterLoad();
     }
     else {
         loadSetting_flag = true;
@@ -18048,6 +18162,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
         ui->settingNameLineEdit->setText(displaySettingName);
         Q_UNUSED(loadresult);
         loadSetting_flag = false;
+        flushPendingCommonPriorityRepairAfterLoad();
     }
 
     setUITheme(ui->themeComboBox->currentIndex());
@@ -24261,6 +24376,17 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                              << ", commonTabIndex=" << findCommonMappingTabIndex();
 #endif
                 switchKeyMappingTabIndex(currentTabIndex);
+            }
+        }
+
+        const CommonPriorityRepairSummary repairSummary = reconcileCommonPriorityConflicts();
+        if (repairSummary.hasChanges()) {
+            if (loadSetting_flag) {
+                queuePendingCommonPriorityRepairSummary(repairSummary);
+            }
+            else {
+                requestSaveSettingDirty();
+                showWarningPopup(commonPriorityRowsDisabledMessage(repairSummary.DisabledRowCount));
             }
         }
 
@@ -34595,6 +34721,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
                 ui->settingNameLineEdit->setText(loadresult);
                 Q_UNUSED(loadresult)
                 loadSetting_flag = false;
+                flushPendingCommonPriorityRepairAfterLoad();
 
                 if (loadresult == loadSettingSelectStr) {
                     switchToWindowInfoTab();
@@ -41233,6 +41360,7 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         ui->settingNameLineEdit->setText(displaySettingName);
         Q_UNUSED(loadresult);
         loadSetting_flag = false;
+        flushPendingCommonPriorityRepairAfterLoad();
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
@@ -41333,6 +41461,7 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
             ui->settingNameLineEdit->setText(displaySettingName);
             Q_UNUSED(loadresult);
             loadSetting_flag = false;
+            flushPendingCommonPriorityRepairAfterLoad();
         }
         return true;
     }
@@ -45487,6 +45616,7 @@ bool QKeyMapper::switchBackToLastMatchedSetting()
     ui->settingNameLineEdit->setText(loadresult);
     Q_UNUSED(loadresult)
     loadSetting_flag = false;
+    flushPendingCommonPriorityRepairAfterLoad();
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[switchBackToLastMatchedSetting]" << "Successfully switched back to:" << settingToRestore;
