@@ -1767,6 +1767,9 @@ private slots:
     void on_mappingMacroListButton_clicked();
 
 private:
+    void restoreDefaultSettingCustomIcon();
+    void showSelectSettingCustomIconButtonContextMenu(const QPoint &pos);
+
     // Helper methods for saving/restoring category filter state
     // Helper methods for last auto matched setting management
     static QString normalizeMappingKeyCopyText(const QString &mappingKeyText);

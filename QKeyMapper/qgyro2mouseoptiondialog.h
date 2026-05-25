@@ -33,6 +33,9 @@ public:
     void setGyro2Mouse_MouseXRevert(bool revert);
     void setGyro2Mouse_MouseYRevert(bool revert);
 
+signals:
+    void settingsChanged();
+
 protected:
     bool event(QEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;

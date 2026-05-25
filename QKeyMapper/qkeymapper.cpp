@@ -2969,6 +2969,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_CheckGlobalSettingSwitchTimer.setSingleShot(true);
 
     ui->iconLabel->setStyle(windowsStyle);
+    ui->selectSettingCustomIconButton->setContextMenuPolicy(Qt::CustomContextMenu);
+    QObject::connect(ui->selectSettingCustomIconButton, &QPushButton::customContextMenuRequested,
+                     this, &QKeyMapper::showSelectSettingCustomIconButtonContextMenu);
     ui->pointDisplayLabel->setStyle(windowsStyle);
     // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
     // ui->processCheckBox->setChecked(true);
@@ -27046,7 +27049,7 @@ void QKeyMapper::openCurrentMappingTableSetupDialog()
     }
 
     if (isCommonMappingTabIndex(currentTabIndex)) {
-        showInformationPopup(tr("Common mapping table does not have table settings."));
+        showWarningPopup(tr("Common mapping table does not have table settings."));
         return;
     }
 
@@ -33154,6 +33157,19 @@ void QKeyMapper::connectSettingDirtySignals(void)
                          });
     };
 
+    auto connectDoubleSpinBox = [this](QDoubleSpinBox *spinBox) {
+        if (!spinBox) {
+            return;
+        }
+
+        QObject::connect(spinBox,
+                         QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                         this,
+                         [this](double) {
+                             markSaveSettingDirty();
+                         });
+    };
+
     auto connectAccepted = [this](QDialog *dialog) {
         if (!dialog) {
             return;
@@ -33162,6 +33178,14 @@ void QKeyMapper::connectSettingDirtySignals(void)
         QObject::connect(dialog, &QDialog::accepted, this, [this]() {
             markSaveSettingDirty();
         });
+    };
+
+    auto connectSettingsChanged = [this](QGyro2MouseOptionDialog *dialog) {
+        if (!dialog) {
+            return;
+        }
+
+        QObject::connect(dialog, &QGyro2MouseOptionDialog::settingsChanged, this, &QKeyMapper::requestSaveSettingDirty);
     };
 
     connectLineEdit(ui->settingNameLineEdit);
@@ -33191,8 +33215,30 @@ void QKeyMapper::connectSettingDirtySignals(void)
     connectCheckable(ui->multiInputEnableCheckBox);
     connectCheckable(ui->filterKeysCheckBox);
     connectCheckable(ui->autoStartMappingCheckBox);
+    connectCheckable(ui->directModeCheckBox);
+    connectCheckable(ui->lockCursorCheckBox);
+    connectCheckable(ui->vJoyInvertXCheckBox);
+    connectCheckable(ui->vJoyInvertYCheckBox);
+    connectCheckable(ui->sendToSameTitleWindowsCheckBox);
+    connectCheckable(m_EnableSystemFilterKeyPopupCheckBox);
+    connectCheckable(m_DisableFilterKeyClickSoundPopupCheckBox);
 
     connectSpinBox(ui->virtualGamepadNumberSpinBox);
+    connectSpinBox(ui->dataPortSpinBox);
+    connectSpinBox(ui->vJoyXSensSpinBox);
+    connectSpinBox(ui->vJoyYSensSpinBox);
+    connectSpinBox(ui->vJoyRecenterSpinBox);
+
+    connectDoubleSpinBox(ui->brakeThresholdDoubleSpinBox);
+    connectDoubleSpinBox(ui->accelThresholdDoubleSpinBox);
+    connectDoubleSpinBox(ui->Gyro2MouseXSpeedSpinBox);
+    connectDoubleSpinBox(ui->Gyro2MouseYSpeedSpinBox);
+    connectDoubleSpinBox(ui->Gyro2MouseMinXSensSpinBox);
+    connectDoubleSpinBox(ui->Gyro2MouseMinYSensSpinBox);
+    connectDoubleSpinBox(ui->Gyro2MouseMinThresholdSpinBox);
+    connectDoubleSpinBox(ui->Gyro2MouseMaxXSensSpinBox);
+    connectDoubleSpinBox(ui->Gyro2MouseMaxYSensSpinBox);
+    connectDoubleSpinBox(ui->Gyro2MouseMaxThresholdSpinBox);
 
     connectAccepted(m_TrayIconSelectDialog);
     connectAccepted(m_NotificationSetupDialog);
@@ -33201,6 +33247,7 @@ void QKeyMapper::connectSettingDirtySignals(void)
     connectAccepted(m_IgnoreRulesListDialog);
     connectAccepted(m_MappingAdvancedDialog);
     connectAccepted(m_MacroListDialog);
+    connectSettingsChanged(m_Gyro2MouseOptionDialog);
 }
 
 void QKeyMapper::markSaveSettingDirty(void)
@@ -34207,7 +34254,7 @@ void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
 #endif
 
     if (isCommonMappingTabIndex(index)) {
-        showInformationPopup(tr("Common mapping table does not have table settings."));
+        showWarningPopup(tr("Common mapping table does not have table settings."));
         return;
     }
 
@@ -44853,14 +44900,31 @@ void QKeyMapper::on_ignoreRulesListButton_clicked()
     showIgnoreRulesListDialog();
 }
 
-void QKeyMapper::on_selectSettingCustomIconButton_clicked()
+void QKeyMapper::restoreDefaultSettingCustomIcon()
 {
-    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-        m_MapProcessInfo.CustomIconPath.clear();
-        updateProcessInfoDisplay();
+    if (m_MapProcessInfo.CustomIconPath.isEmpty()) {
         return;
     }
 
+    m_MapProcessInfo.CustomIconPath.clear();
+    updateProcessInfoDisplay();
+    markSaveSettingDirty();
+}
+
+void QKeyMapper::showSelectSettingCustomIconButtonContextMenu(const QPoint &pos)
+{
+    QMenu menu(this);
+    QAction *restoreAction = menu.addAction(QObject::tr("Restore Default"));
+    restoreAction->setEnabled(!m_MapProcessInfo.CustomIconPath.isEmpty());
+
+    QAction *selectedAction = menu.exec(ui->selectSettingCustomIconButton->mapToGlobal(pos));
+    if (selectedAction == restoreAction) {
+        restoreDefaultSettingCustomIcon();
+    }
+}
+
+void QKeyMapper::on_selectSettingCustomIconButton_clicked()
+{
     QString currentCustomIconPath = m_MapProcessInfo.CustomIconPath;
     QString filter = tr("Image files") + "(*.ico;*.png;*.svg)";
     QString caption_string;
@@ -44899,13 +44963,10 @@ void QKeyMapper::on_selectSettingCustomIconButton_clicked()
     if (!icon_loaded.isNull()) {
         m_MapProcessInfo.CustomIconPath = customiconpath;
         m_MapProcessInfo.WindowIcon = icon_loaded;
-
-        QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT));
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[on_selectSettingCustomIconButton_clicked]" << " Scaled(" << QSize(DEFAULT_ICON_WIDTH, DEFAULT_ICON_HEIGHT) << ") pixmap size: " << scaled_pixmap.size();
-#endif
-        ui->iconLabel->setPixmap(scaled_pixmap);
-        ui->iconLabel->setToolTip(customiconpath);
+        updateProcessInfoDisplay();
+        if (customiconpath != currentCustomIconPath) {
+            markSaveSettingDirty();
+        }
     }
     else {
         QString message = tr("Unable to load the image!");

@@ -69,10 +69,14 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     ui->customImageShowPositionComboBox->addItems(showPositionList);
     ui->customImageShowPositionComboBox->setCurrentIndex(TAB_CUSTOMIMAGE_POSITION_DEFAULT);
 
+    ui->selectCustomImageButton->setContextMenuPolicy(Qt::CustomContextMenu);
+
     clearTrayIconPixelComboBox();
 
     QObject::connect(ui->tabNameLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabNameUpdateButton_clicked);
     QObject::connect(ui->tabHotkeyLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabHotkeyUpdateButton_clicked);
+    QObject::connect(ui->selectCustomImageButton, &QPushButton::customContextMenuRequested,
+                     this, &QTableSetupDialog::showSelectCustomImageButtonContextMenu);
     QObject::connect(m_NotificationFontColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabFontColorChanged);
     QObject::connect(m_NotificationBackgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabBackgroundColorChanged);
 }
@@ -817,19 +821,6 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
     int tabindex = m_TabIndex;
     const QString currentTabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
 
-    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-        QKeyMapper::clearTabCustomImage(tabindex);
-        ui->customImageLabel->clear();
-        ui->customImageLabel->setToolTip("");
-        QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
-        updateTrayIconPixelComboBox(QIcon());
-        updateTrayIconPixelSizeWithCurrentText();
-        if (!currentTabCustomImage_Path.isEmpty()) {
-            QKeyMapper::getInstance()->requestSaveSettingDirty();
-        }
-        return;
-    }
-
     QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
     QString filter = tr("Image files") + "(*.ico;*.png;*.svg)";
     QString caption_string;
@@ -899,6 +890,43 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
 
     updateTrayIconPixelComboBox(icon_loaded);
     updateTrayIconPixelSizeWithCurrentText();
+}
+
+void QTableSetupDialog::restoreDefaultCustomImage()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    const int tabindex = m_TabIndex;
+    const QString currentTabCustomImagePath = QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_Path;
+    if (currentTabCustomImagePath.isEmpty()) {
+        return;
+    }
+
+    QKeyMapper::clearTabCustomImage(tabindex);
+    ui->customImageLabel->clear();
+    ui->customImageLabel->setToolTip(QString());
+    QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
+    updateTrayIconPixelComboBox(QIcon());
+    updateTrayIconPixelSizeWithCurrentText();
+    QKeyMapper::getInstance()->requestSaveSettingDirty();
+}
+
+void QTableSetupDialog::showSelectCustomImageButtonContextMenu(const QPoint &pos)
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    QMenu menu(this);
+    QAction *restoreAction = menu.addAction(QObject::tr("Restore Default"));
+    restoreAction->setEnabled(!QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path.isEmpty());
+
+    QAction *selectedAction = menu.exec(ui->selectCustomImageButton->mapToGlobal(pos));
+    if (selectedAction == restoreAction) {
+        restoreDefaultCustomImage();
+    }
 }
 
 void QTableSetupDialog::on_customImageShowPositionComboBox_currentIndexChanged(int index)

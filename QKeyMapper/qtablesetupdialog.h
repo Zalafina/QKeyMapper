@@ -81,6 +81,9 @@ private slots:
     void on_appendCommonMappingTableCheckBox_stateChanged(int state);
 
 private:
+    void restoreDefaultCustomImage();
+    void showSelectCustomImageButtonContextMenu(const QPoint &pos);
+
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;
     int m_TabIndex;

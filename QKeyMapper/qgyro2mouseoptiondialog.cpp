@@ -21,6 +21,25 @@ QGyro2MouseOptionDialog::QGyro2MouseOptionDialog(QWidget *parent)
     ui->mouseYInputSourceComboBox->addItems(mouseInputSourceList);
     ui->mouseXInputSourceComboBox->setCurrentIndex(GYRO2MOUSE_MOUSE_X_INPUT_SOURCE_DEFAULT);
     ui->mouseYInputSourceComboBox->setCurrentIndex(GYRO2MOUSE_MOUSE_Y_INPUT_SOURCE_DEFAULT);
+
+    QObject::connect(ui->mouseXInputSourceComboBox,
+                     QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     this,
+                     [this](int) {
+                         emit settingsChanged();
+                     });
+    QObject::connect(ui->mouseYInputSourceComboBox,
+                     QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     this,
+                     [this](int) {
+                         emit settingsChanged();
+                     });
+    QObject::connect(ui->mouseXRevertCheckBox, &QCheckBox::toggled, this, [this](bool) {
+        emit settingsChanged();
+    });
+    QObject::connect(ui->mouseYRevertCheckBox, &QCheckBox::toggled, this, [this](bool) {
+        emit settingsChanged();
+    });
 }
 
 QGyro2MouseOptionDialog::~QGyro2MouseOptionDialog()
