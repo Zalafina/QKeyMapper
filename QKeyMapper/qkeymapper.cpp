@@ -14190,8 +14190,15 @@ bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode s
     if (KEYMAP_IDLE == m_KeyMapStatus
         && MAPPINGSTART_LOADSETTING != startmode
         && MAPPINGSTART_ACTION_SAVEANDSTART == executionMappingStartActionMode(preferPhysicalCtrlState)) {
-        if (hasUnsavedSettingChanges() && !saveKeyMapSetting(false)) {
-            return false;
+        const bool hasUnsavedChanges = hasUnsavedSettingChanges();
+        if (hasUnsavedChanges) {
+            if (!saveKeyMapSetting(false)) {
+                return false;
+            }
+        }
+        else if (0 <= s_KeyMappingTabWidgetCurrentIndex
+                 && s_KeyMappingTabWidgetCurrentIndex < s_KeyMappingTabInfoList.size()) {
+            saveCurrentSettingLastTabName(s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName);
         }
     }
 
