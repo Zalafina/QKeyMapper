@@ -1593,8 +1593,12 @@ public:
     static QStringList s_VirtualGamepadList;
     static BYTE s_Auto_Brake;
     static BYTE s_Auto_Accel;
+    static double s_Auto_Brake_Level;
+    static double s_Auto_Accel_Level;
     static BYTE s_last_Auto_Brake;
     static BYTE s_last_Auto_Accel;
+    static quint32 s_LastForzaTimestampMs;
+    static bool s_HasLastForzaTimestamp;
     static GripDetectStates s_GripDetect_EnableState;
     // static Joy2vJoyState s_Joy2vJoyState;
     static QHash<int, Joy2vJoyState> s_Joy2vJoy_EnableStateMap;

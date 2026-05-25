@@ -548,8 +548,12 @@ QList<ViGEm_ReportData> QKeyMapper_Worker::s_ViGEmTarget_ReportList;
 QStringList QKeyMapper_Worker::s_VirtualGamepadList = QStringList() << VIRTUAL_GAMEPAD_X360;
 BYTE QKeyMapper_Worker::s_Auto_Brake = AUTO_BRAKE_DEFAULT;
 BYTE QKeyMapper_Worker::s_Auto_Accel = AUTO_ACCEL_DEFAULT;
+double QKeyMapper_Worker::s_Auto_Brake_Level = AUTO_BRAKE_DEFAULT;
+double QKeyMapper_Worker::s_Auto_Accel_Level = AUTO_ACCEL_DEFAULT;
 BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
 BYTE QKeyMapper_Worker::s_last_Auto_Accel = 0;
+quint32 QKeyMapper_Worker::s_LastForzaTimestampMs = 0;
+bool QKeyMapper_Worker::s_HasLastForzaTimestamp = false;
 QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::s_GripDetect_EnableState = QKeyMapper_Worker::GRIPDETECT_NONE;
 // QKeyMapper_Worker::Joy2vJoyState QKeyMapper_Worker::s_Joy2vJoyState = Joy2vJoyState();
 QHash<int, QKeyMapper_Worker::Joy2vJoyState> QKeyMapper_Worker::s_Joy2vJoy_EnableStateMap;
@@ -6777,6 +6781,71 @@ static BYTE clampTriggerValue(const ViGEm_ReportData &reportData, bool isLeft, B
     return (value > maxValue) ? static_cast<BYTE>(maxValue) : value;
 }
 
+static double averageTopTwoAbsValues(double first, double second, double third, double fourth)
+{
+    double largest = qAbs(first);
+    double secondLargest = qAbs(second);
+    if (secondLargest > largest) {
+        qSwap(largest, secondLargest);
+    }
+
+    const double thirdAbs = qAbs(third);
+    if (thirdAbs > largest) {
+        secondLargest = largest;
+        largest = thirdAbs;
+    }
+    else if (thirdAbs > secondLargest) {
+        secondLargest = thirdAbs;
+    }
+
+    const double fourthAbs = qAbs(fourth);
+    if (fourthAbs > largest) {
+        secondLargest = largest;
+        largest = fourthAbs;
+    }
+    else if (fourthAbs > secondLargest) {
+        secondLargest = fourthAbs;
+    }
+
+    return (largest + secondLargest) * 0.5;
+}
+
+static constexpr double FORZA_ADJUST_BASELINE_DELTA_SECONDS = 1.0 / 60.0;
+static constexpr double FORZA_ADJUST_MAX_DELTA_MS = 50.0;
+
+static double forzaAdjustDeltaSeconds(quint32 timestampMs, bool &hasLastTimestamp, quint32 &lastTimestampMs)
+{
+    if (!hasLastTimestamp) {
+        hasLastTimestamp = true;
+        lastTimestampMs = timestampMs;
+        return FORZA_ADJUST_BASELINE_DELTA_SECONDS;
+    }
+
+    if (timestampMs < lastTimestampMs) {
+#ifdef GRIP_VERBOSE_LOG
+        qDebug() << "[forzaAdjustDeltaSeconds]" << "Timestamp moved backwards, resync ->"
+                 << "previous =" << lastTimestampMs << ", current =" << timestampMs;
+#endif
+        lastTimestampMs = timestampMs;
+        return FORZA_ADJUST_BASELINE_DELTA_SECONDS;
+    }
+
+    const quint32 rawDeltaMs = timestampMs - lastTimestampMs;
+    lastTimestampMs = timestampMs;
+    if (rawDeltaMs == 0) {
+        return 0.0;
+    }
+
+    const double clampedDeltaMs = qBound(1.0, static_cast<double>(rawDeltaMs), FORZA_ADJUST_MAX_DELTA_MS);
+    return clampedDeltaMs / 1000.0;
+}
+
+static BYTE levelToTriggerValue(double level)
+{
+    const double clampedLevel = qBound(0.0, level, static_cast<double>(XINPUT_TRIGGER_MAX));
+    return static_cast<BYTE>(clampedLevel + 0.5);
+}
+
 static void setVJoyTriggerMax(ViGEm_ReportData &reportData, bool isLeft, uint value)
 {
     uint maxValue = sanitizeTriggerMaxValue(value);
@@ -7715,10 +7784,12 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
 #endif
                     if (joystickButton == VJOY_LT_BRAKE_STR || joystickButton == VJOY_RT_BRAKE_STR) {
                         s_Auto_Brake = AUTO_BRAKE_DEFAULT;
+                        s_Auto_Brake_Level = AUTO_BRAKE_DEFAULT;
                         s_last_Auto_Brake = 0;
                     }
                     else if (joystickButton == VJOY_LT_ACCEL_STR || joystickButton == VJOY_RT_ACCEL_STR) {
                         s_Auto_Accel = AUTO_ACCEL_DEFAULT;
+                        s_Auto_Accel_Level = AUTO_ACCEL_DEFAULT;
                         s_last_Auto_Accel = 0;
                     }
                 }
@@ -8823,8 +8894,12 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 #ifdef VIGEM_CLIENT_SUPPORT
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
     s_Auto_Accel = AUTO_ACCEL_DEFAULT;
+    s_Auto_Brake_Level = AUTO_BRAKE_DEFAULT;
+    s_Auto_Accel_Level = AUTO_ACCEL_DEFAULT;
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
+    s_LastForzaTimestampMs = 0;
+    s_HasLastForzaTimestamp = false;
     s_GripDetect_EnableState = checkGripDetectEnableState();
     // s_Joy2vJoyState = checkJoy2vJoyState();
     s_Joy2vJoy_EnableStateMap = checkJoy2vJoyEnableStateMap();
@@ -9053,8 +9128,12 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
     s_Auto_Accel = AUTO_ACCEL_DEFAULT;
+    s_Auto_Brake_Level = AUTO_BRAKE_DEFAULT;
+    s_Auto_Accel_Level = AUTO_ACCEL_DEFAULT;
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
+    s_LastForzaTimestampMs = 0;
+    s_HasLastForzaTimestamp = false;
     s_GripDetect_EnableState = GRIPDETECT_NONE;
     // s_Joy2vJoyState = Joy2vJoyState();
     s_Joy2vJoy_EnableStateMap.clear();
@@ -9279,8 +9358,12 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
     s_Auto_Accel = AUTO_ACCEL_DEFAULT;
+    s_Auto_Brake_Level = AUTO_BRAKE_DEFAULT;
+    s_Auto_Accel_Level = AUTO_ACCEL_DEFAULT;
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
+    s_LastForzaTimestampMs = 0;
+    s_HasLastForzaTimestamp = false;
     s_GripDetect_EnableState = GRIPDETECT_NONE;
     s_Joy2vJoy_EnableStateMap.clear();
     s_Mouse2vJoy_delta = QPoint();
@@ -9820,14 +9903,14 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
     float wheel_rotation_speed_FR;
     float wheel_rotation_speed_RL;
     float wheel_rotation_speed_RR;
-    float wheel_on_rumble_strip_FL;
-    float wheel_on_rumble_strip_FR;
-    float wheel_on_rumble_strip_RL;
-    float wheel_on_rumble_strip_RR;
-    float wheel_in_puddle_FL;
-    float wheel_in_puddle_FR;
-    float wheel_in_puddle_RL;
-    float wheel_in_puddle_RR;
+    qint32 wheel_on_rumble_strip_FL;
+    qint32 wheel_on_rumble_strip_FR;
+    qint32 wheel_on_rumble_strip_RL;
+    qint32 wheel_on_rumble_strip_RR;
+    qint32 wheel_in_puddle_FL;
+    qint32 wheel_in_puddle_FR;
+    qint32 wheel_in_puddle_RL;
+    qint32 wheel_in_puddle_RR;
     float surface_rumble_FL;
     float surface_rumble_FR;
     float surface_rumble_RL;
@@ -9968,15 +10051,34 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
     secondPartStream >> norm_ai_brake_diff;
     }
 
-    // double average_slip_ratio = (qAbs(tire_slip_ratio_FL) + qAbs(tire_slip_ratio_FR) + qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 4;
-    // double average_slip_ratio = (qAbs(tire_slip_ratio_RL) + qAbs(tire_slip_ratio_RR)) / 2;
-    // double max_slip_ratio = qMax(qMax(qAbs(tire_slip_ratio_FL), qAbs(tire_slip_ratio_FR)), qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR)));
-    // double max_slip_ratio = qMax(qAbs(tire_slip_ratio_RL), qAbs(tire_slip_ratio_RR));
-    double average_slip_ratio = (qAbs(tire_combined_slip_FL) + qAbs(tire_combined_slip_FR) + qAbs(tire_combined_slip_RL) + qAbs(tire_combined_slip_RR)) / 4;
-    double max_slip_ratio = qMax(qMax(qAbs(tire_combined_slip_FL), qAbs(tire_combined_slip_FR)), qMax(qAbs(tire_combined_slip_RL), qAbs(tire_combined_slip_RR)));
-    if (s_LastCarOrdinal != car_ordinal) {
-        s_LastCarOrdinal = car_ordinal;
-    }
+    double brake_slip_metric = averageTopTwoAbsValues(tire_slip_ratio_FL,
+                                                      tire_slip_ratio_FR,
+                                                      tire_slip_ratio_RL,
+                                                      tire_slip_ratio_RR);
+    double accel_slip_metric = averageTopTwoAbsValues(tire_combined_slip_FL,
+                                                      tire_combined_slip_FR,
+                                                      tire_combined_slip_RL,
+                                                      tire_combined_slip_RR);
+
+    brake_slip_metric = qMin(brake_slip_metric, GRIP_THRESHOLD_MAX);
+    accel_slip_metric = qMin(accel_slip_metric, GRIP_THRESHOLD_MAX);
+
+    int autoadjust = AUTO_ADJUST_NONE;
+    double gripThreshold_Brake = QKeyMapper::getBrakeThreshold();
+    double gripThreshold_Accel = QKeyMapper::getAccelThreshold();
+    int gamepad_index = 0;
+    QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
+    const bool brake_trigger_active = pressedvJoyButtons_ref.contains(VJOY_LT_BRAKE_STR)
+        || pressedvJoyButtons_ref.contains(VJOY_RT_BRAKE_STR);
+    const bool accel_trigger_active = pressedvJoyButtons_ref.contains(VJOY_LT_ACCEL_STR)
+        || pressedvJoyButtons_ref.contains(VJOY_RT_ACCEL_STR);
+    const double adjust_delta_seconds = forzaAdjustDeltaSeconds(timestamp_ms,
+                                                                s_HasLastForzaTimestamp,
+                                                                s_LastForzaTimestampMs);
+
+    const double brake_adjust_step = AUTO_BRAKE_ADJUST_VALUE * 60.0 * adjust_delta_seconds;
+    const double accel_adjust_step = AUTO_ACCEL_ADJUST_VALUE * 60.0 * adjust_delta_seconds;
+    s_LastCarOrdinal = car_ordinal;
 
 #ifdef GRIP_VERBOSE_LOG
     // qDebug().nospace() << "[processForzaFormatData]" << " secondPartData = " << secondPartData.toHex();
@@ -9984,28 +10086,22 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
     qDebug() << "[processForzaFormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
     qDebug() << "[processForzaFormatData]" << "tire_slip_angle_FL =" << tire_slip_angle_FL << ", tire_slip_angle_FR =" << tire_slip_angle_FR << ", tire_slip_angle_RL =" << tire_slip_angle_RL << ", tire_slip_angle_RR =" << tire_slip_angle_RR;
     qDebug() << "[processForzaFormatData]" << "tire_combined_slip_FL =" << tire_combined_slip_FL << ", tire_combined_slip_FR =" << tire_combined_slip_FR << ", tire_combined_slip_RL =" << tire_combined_slip_RL << ", tire_combined_slip_RR =" << tire_combined_slip_RR;
-    // qDebug() << "[processForzaFormatData]" << "tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
-    qDebug() << "[processForzaFormatData]" << "average_slip_ratio =" << average_slip_ratio << ", max_slip_ratio =" << max_slip_ratio << ", car_ordinal =" << car_ordinal;
+    qDebug() << "[processForzaFormatData]" << "brake_slip_metric =" << brake_slip_metric << ", accel_slip_metric =" << accel_slip_metric << ", car_ordinal =" << car_ordinal << ", gear =" << gear;
+    qDebug() << "[processForzaFormatData]"
+             << "adjust_delta_seconds =" << adjust_delta_seconds
+             << ", brake_adjust_step =" << brake_adjust_step
+             << ", accel_adjust_step =" << accel_adjust_step
+             << ", s_Auto_Brake_Level =" << s_Auto_Brake_Level
+             << ", s_Auto_Accel_Level =" << s_Auto_Accel_Level;
 #endif
 
-    if (average_slip_ratio > GRIP_THRESHOLD_MAX) {
-        average_slip_ratio = GRIP_THRESHOLD_MAX;
-    }
-
-    if (max_slip_ratio > GRIP_THRESHOLD_MAX) {
-        max_slip_ratio = GRIP_THRESHOLD_MAX;
-    }
-
-    int autoadjust = AUTO_ADJUST_NONE;
-    double gripThreshold_Brake = QKeyMapper::getBrakeThreshold();
-    double gripThreshold_Accel = QKeyMapper::getAccelThreshold();
-    int gamepad_index = 0;
-    QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
-    if (average_slip_ratio > gripThreshold_Brake || max_slip_ratio > gripThreshold_Brake) {
-    // if (average_slip_ratio > gripThreshold_Brake) {
-        if (pressedvJoyButtons_ref.contains(VJOY_LT_BRAKE_STR) || pressedvJoyButtons_ref.contains(VJOY_RT_BRAKE_STR)){
-            if (s_Auto_Brake > AUTO_BRAKE_ADJUST_VALUE) {
-                s_Auto_Brake -= AUTO_BRAKE_ADJUST_VALUE;
+    if (brake_slip_metric > gripThreshold_Brake) {
+        if (brake_trigger_active) {
+            if (s_Auto_Brake_Level > 0.0) {
+                s_Auto_Brake_Level = qBound(0.0,
+                                            s_Auto_Brake_Level - brake_adjust_step,
+                                            static_cast<double>(XINPUT_TRIGGER_MAX));
+                s_Auto_Brake = levelToTriggerValue(s_Auto_Brake_Level);
 #ifdef GRIP_VERBOSE_LOG
                 qDebug() << "[processForzaFormatData]" << "s_Auto_Brake ----- ->" << s_Auto_Brake;
 #endif
@@ -10015,12 +10111,12 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
         }
     }
     else {
-        if (pressedvJoyButtons_ref.contains(VJOY_LT_BRAKE_STR) || pressedvJoyButtons_ref.contains(VJOY_RT_BRAKE_STR)){
-            if (s_Auto_Brake < XINPUT_TRIGGER_MAX) {
-                s_Auto_Brake += AUTO_BRAKE_ADJUST_VALUE;
-                if (s_Auto_Brake > XINPUT_TRIGGER_MAX) {
-                    s_Auto_Brake = XINPUT_TRIGGER_MAX;
-                }
+        if (brake_trigger_active) {
+            if (s_Auto_Brake_Level < XINPUT_TRIGGER_MAX) {
+                s_Auto_Brake_Level = qBound(0.0,
+                                            s_Auto_Brake_Level + brake_adjust_step,
+                                            static_cast<double>(XINPUT_TRIGGER_MAX));
+                s_Auto_Brake = levelToTriggerValue(s_Auto_Brake_Level);
 #ifdef GRIP_VERBOSE_LOG
                 qDebug() << "[processForzaFormatData]" << "s_Auto_Brake +++++ ->" << s_Auto_Brake;
 #endif
@@ -10030,11 +10126,13 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
         }
     }
 
-    if (average_slip_ratio > gripThreshold_Accel || max_slip_ratio > gripThreshold_Accel) {
-    // if (average_slip_ratio > gripThreshold_Accel) {
-        if (pressedvJoyButtons_ref.contains(VJOY_LT_ACCEL_STR) || pressedvJoyButtons_ref.contains(VJOY_RT_ACCEL_STR)){
-            if (s_Auto_Accel > AUTO_ACCEL_ADJUST_VALUE) {
-                s_Auto_Accel -= AUTO_ACCEL_ADJUST_VALUE;
+    if (accel_slip_metric > gripThreshold_Accel) {
+        if (accel_trigger_active) {
+            if (s_Auto_Accel_Level > 0.0) {
+                s_Auto_Accel_Level = qBound(0.0,
+                                            s_Auto_Accel_Level - accel_adjust_step,
+                                            static_cast<double>(XINPUT_TRIGGER_MAX));
+                s_Auto_Accel = levelToTriggerValue(s_Auto_Accel_Level);
 #ifdef GRIP_VERBOSE_LOG
                 qDebug() << "[processForzaFormatData]" << "s_Auto_Accel ----- ->" << s_Auto_Accel;
 #endif
@@ -10044,12 +10142,12 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
         }
     }
     else {
-        if (pressedvJoyButtons_ref.contains(VJOY_LT_ACCEL_STR) || pressedvJoyButtons_ref.contains(VJOY_RT_ACCEL_STR)){
-            if (s_Auto_Accel < XINPUT_TRIGGER_MAX) {
-                s_Auto_Accel += AUTO_ACCEL_ADJUST_VALUE;
-                if (s_Auto_Accel > XINPUT_TRIGGER_MAX) {
-                    s_Auto_Accel = XINPUT_TRIGGER_MAX;
-                }
+        if (accel_trigger_active) {
+            if (s_Auto_Accel_Level < XINPUT_TRIGGER_MAX) {
+                s_Auto_Accel_Level = qBound(0.0,
+                                            s_Auto_Accel_Level + accel_adjust_step,
+                                            static_cast<double>(XINPUT_TRIGGER_MAX));
+                s_Auto_Accel = levelToTriggerValue(s_Auto_Accel_Level);
 #ifdef GRIP_VERBOSE_LOG
                 qDebug() << "[processForzaFormatData]" << "s_Auto_Accel +++++ ->" << s_Auto_Accel;
 #endif
