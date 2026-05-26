@@ -1290,6 +1290,16 @@ public:
         QStringList ignoredKeys;
     };
 
+    struct MappingCodeApplyResult {
+        bool success = false;
+        bool partial = false;
+        int appliedFieldCount = 0;
+        bool disabledStatePreserved = true;
+        QString errorMessage;
+        QStringList missingKeys;
+        QStringList ignoredKeys;
+    };
+
     static void copyStringToClipboard(const QString &string);
     static bool readClipboardText(QString &clipboardText);
     static bool backupFile(const QString &sourceFile, const QString &backupFile);
@@ -1297,6 +1307,10 @@ public:
     static QString unescapeSendTextForLoading(const QString &text);
     static QString encodeKeyMapDataColorToken(const QColor &color, const QColor &defaultColor = QColor());
     static QColor decodeKeyMapDataColorToken(const QString &colorToken, const QColor &defaultColor = QColor());
+    static QString generateMappingCode(const MAP_KEYDATA &keymapdata);
+    static MappingCodeApplyResult applyMappingCode(const QString &mappingCode, const MAP_KEYDATA &currentData, MAP_KEYDATA &keymapdata);
+    static QString mappingCodeApplySuccessMessage(const MappingCodeApplyResult &result);
+    MappingCodeApplyResult applyMappingCodeToSourceRow(int sourceTabIndex, int sourceRow, const QString &mappingCode);
     static QString generateFloatingButtonStyleCode(const MAP_KEYDATA &keymapdata);
     static FloatingButtonStyleCodeApplyResult applyFloatingButtonStyleCode(const QString &styleCode, MAP_KEYDATA &keymapdata);
     static QString floatingButtonStyleCodeApplySuccessMessage(const FloatingButtonStyleCodeApplyResult &result);

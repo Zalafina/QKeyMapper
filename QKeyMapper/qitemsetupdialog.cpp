@@ -8,6 +8,10 @@ void notifySaveSettingDirty()
     if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
         keyMapper->requestSaveSettingDirty();
     }
+
+    if (QItemSetupDialog *itemSetupDialog = QItemSetupDialog::getInstance()) {
+        itemSetupDialog->updateMappingCodeDisplay();
+    }
 }
 
 void refreshItemSourceCellOrAffectedTabs(int tabIndex, int row, int column)
@@ -61,9 +65,18 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     , m_FloatingButtonSetupDialog(Q_NULLPTR)
     , m_OriginalKeyListComboBox(new KeyListComboBox(this))
     , m_MappingKeyListComboBox(new KeyListComboBox(this))
+    , m_MappingCodeLabel(Q_NULLPTR)
+    , m_MappingCodeLineEdit(Q_NULLPTR)
+    , m_CopyMappingCodeButton(Q_NULLPTR)
+    , m_ApplyClipboardMappingCodeButton(Q_NULLPTR)
 {
     m_instance = this;
     ui->setupUi(this);
+
+    m_MappingCodeLabel = ui->mappingCodeLabel;
+    m_MappingCodeLineEdit = ui->mappingCodeLineEdit;
+    m_CopyMappingCodeButton = ui->copyMappingCodeButton;
+    m_ApplyClipboardMappingCodeButton = ui->applyClipboardMappingCodeButton;
 
     ui->keyRecordLineEdit->installEventFilter(this);
 
@@ -145,6 +158,22 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->keyRecordLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->keyRecordEditModeButton->setText(tr("Edit"));
 
+    if (m_MappingCodeLineEdit != Q_NULLPTR) {
+        m_MappingCodeLineEdit->setFocusPolicy(Qt::ClickFocus);
+    }
+    if (m_CopyMappingCodeButton != Q_NULLPTR) {
+        m_CopyMappingCodeButton->setAutoDefault(false);
+        m_CopyMappingCodeButton->setDefault(false);
+        m_CopyMappingCodeButton->setFocusPolicy(Qt::NoFocus);
+        connect(m_CopyMappingCodeButton, &QPushButton::clicked, this, &QItemSetupDialog::copyMappingCodeToClipboard);
+    }
+    if (m_ApplyClipboardMappingCodeButton != Q_NULLPTR) {
+        m_ApplyClipboardMappingCodeButton->setAutoDefault(false);
+        m_ApplyClipboardMappingCodeButton->setDefault(false);
+        m_ApplyClipboardMappingCodeButton->setFocusPolicy(Qt::NoFocus);
+        connect(m_ApplyClipboardMappingCodeButton, &QPushButton::clicked, this, &QItemSetupDialog::applyClipboardMappingCode);
+    }
+
     QObject::connect(m_OriginalKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QItemSetupDialog::OrikeyComboBox_currentTextChangedSlot);
     QObject::connect(m_MappingKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QItemSetupDialog::MapkeyComboBox_currentTextChangedSlot);
     QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_OriginalKeyFirst);
@@ -210,6 +239,15 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     ui->fixedVKeyCodeLabel->setText(tr("FixedVKeyCode"));
     ui->pasteTextModeLabel->setText(tr("PasteTextMode"));
     ui->repeatTimesSpinBox->setSpecialValueText(tr("Unlimited"));
+    if (m_MappingCodeLabel != Q_NULLPTR) {
+        m_MappingCodeLabel->setText(tr("MappingCode"));
+    }
+    if (m_CopyMappingCodeButton != Q_NULLPTR) {
+        m_CopyMappingCodeButton->setText(tr("Copy KMC"));
+    }
+    if (m_ApplyClipboardMappingCodeButton != Q_NULLPTR) {
+        m_ApplyClipboardMappingCodeButton->setText(tr("Apply KMC"));
+    }
 
     if (m_ItemSetupKeyRecordEditMode == KEYRECORD_EDITMODE_MANUALEDIT) {
         ui->keyRecordEditModeButton->setText(tr("Capture"));
@@ -304,6 +342,18 @@ void QItemSetupDialog::resetFontSize()
     ui->sendTimingComboBox->setFont(customFont);
     ui->pasteTextModeLabel->setFont(customFont);
     ui->pasteTextModeComboBox->setFont(customFont);
+    if (m_MappingCodeLabel != Q_NULLPTR) {
+        m_MappingCodeLabel->setFont(customFont);
+    }
+    if (m_MappingCodeLineEdit != Q_NULLPTR) {
+        m_MappingCodeLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
+    }
+    if (m_CopyMappingCodeButton != Q_NULLPTR) {
+        m_CopyMappingCodeButton->setFont(customFont);
+    }
+    if (m_ApplyClipboardMappingCodeButton != Q_NULLPTR) {
+        m_ApplyClipboardMappingCodeButton->setFont(customFont);
+    }
 
     if (m_KeyRecordDialog != Q_NULLPTR) {
         m_KeyRecordDialog->resetFontSize();
@@ -1905,6 +1955,11 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
             ui->repeatByTimesCheckBox->setEnabled(false);
             ui->repeatTimesSpinBox->setEnabled(false);
         }
+
+        updateMappingCodeDisplay();
+    }
+    else {
+        updateMappingCodeDisplay();
     }
 
     QDialog::showEvent(event);
@@ -2714,6 +2769,44 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
     return value_changed;
 }
 
+void QItemSetupDialog::refreshFromCurrentItem()
+{
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        updateMappingCodeDisplay();
+        return;
+    }
+
+    ui->indexLabel->setText(formatItemIndexText(m_TabIndex, m_ItemRow));
+    ui->itemNoteLineEdit->setText(QKeyMapper::KeyMappingDataList->at(m_ItemRow).Note);
+    refreshAllRelatedUI();
+
+    if (m_FloatingButtonSetupDialog != Q_NULLPTR
+        && m_FloatingButtonSetupDialog->isVisible()
+        && m_FloatingButtonSetupDialog->getItemRow() == m_ItemRow) {
+        m_FloatingButtonSetupDialog->refreshFromCurrentItem();
+    }
+
+    updateMappingCodeDisplay();
+}
+
+void QItemSetupDialog::updateMappingCodeDisplay()
+{
+    if (m_MappingCodeLineEdit == Q_NULLPTR) {
+        return;
+    }
+
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        m_MappingCodeLineEdit->clear();
+        m_MappingCodeLineEdit->setToolTip(QString());
+        return;
+    }
+
+    const QString mappingCode = QKeyMapper::generateMappingCode(QKeyMapper::KeyMappingDataList->at(m_ItemRow));
+    m_MappingCodeLineEdit->setText(mappingCode);
+    m_MappingCodeLineEdit->setCursorPosition(0);
+    m_MappingCodeLineEdit->setToolTip(tr("Generated automatically from the current mapping item settings"));
+}
+
 void QItemSetupDialog::refreshAllRelatedUI()
 {
     if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
@@ -3023,6 +3116,8 @@ void QItemSetupDialog::refreshAllRelatedUI()
     if (!(QKeyMapper::KeyMappingDataList->at(m_ItemRow) == previousKeymapData)) {
         notifySaveSettingDirty();
     }
+
+    updateMappingCodeDisplay();
 }
 
 void QItemSetupDialog::updateMappingInfoByOrder(int update_order)
@@ -3420,6 +3515,57 @@ void QItemSetupDialog::keyMappingTableItemCheckStateChanged(int row, int col, bo
 #endif
         }
     }
+
+    updateMappingCodeDisplay();
+}
+
+void QItemSetupDialog::copyMappingCodeToClipboard()
+{
+    updateMappingCodeDisplay();
+
+    const QString mappingCode = m_MappingCodeLineEdit->text().trimmed();
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    if (mappingCode.isEmpty()) {
+        if (keyMapper != Q_NULLPTR) {
+            keyMapper->showFailurePopup(tr("Failed to generate mapping code."));
+        }
+        return;
+    }
+
+    QKeyMapper::copyStringToClipboard(mappingCode);
+    if (keyMapper != Q_NULLPTR) {
+        keyMapper->showInformationPopup(tr("Mapping code copied to clipboard."));
+    }
+}
+
+void QItemSetupDialog::applyClipboardMappingCode()
+{
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return;
+    }
+
+    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
+        return;
+    }
+
+    QString clipboardText;
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    if (keyMapper == Q_NULLPTR) {
+        return;
+    }
+
+    if (!QKeyMapper::readClipboardText(clipboardText) || clipboardText.trimmed().isEmpty()) {
+        keyMapper->showFailurePopup(tr("Clipboard does not contain a mapping code."));
+        return;
+    }
+
+    const QKeyMapper::MappingCodeApplyResult result = keyMapper->applyMappingCodeToSourceRow(m_TabIndex, m_ItemRow, clipboardText);
+    if (!result.success) {
+        keyMapper->showFailurePopup(result.errorMessage);
+        return;
+    }
+
+    keyMapper->showInformationPopup(QKeyMapper::mappingCodeApplySuccessMessage(result));
 }
 
 void QItemSetupDialog::on_burstpressSpinBox_valueChanged(int value)

@@ -42,6 +42,8 @@ public:
     void updateMappingKey_KeyUpLineEdit(const QString &new_mappingkeystr);
     void syncConnectOriginalKeySelectButtons(void);
     void syncConnectMappingKeySelectButtons(void);
+    void refreshFromCurrentItem(void);
+    void updateMappingCodeDisplay(void);
 
     QPushButton* getOriListSelectKeyboardButton(void) const;
     QPushButton* getOriListSelectMouseButton(void) const;
@@ -122,6 +124,10 @@ public:
     QFloatingButtonSetupDialog *m_FloatingButtonSetupDialog;
     KeyListComboBox *m_OriginalKeyListComboBox;
     KeyListComboBox *m_MappingKeyListComboBox;
+    QLabel *m_MappingCodeLabel;
+    QLineEdit *m_MappingCodeLineEdit;
+    QPushButton *m_CopyMappingCodeButton;
+    QPushButton *m_ApplyClipboardMappingCodeButton;
     int m_ItemSetupKeyRecordEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
     bool m_isItemSetupKeyRecordLineEdit_CapturingKey = false;
 
@@ -174,6 +180,8 @@ private slots:
     void updateMappingInfo_MappingKey_KeyUpFirst();
     void updateMappingInfoByOrder(int update_order = QKeyMapperConstants::MAPPING_UPDATE_ORDER_DEFAULT);
     void on_updateMappingInfoButton_clicked();
+    void copyMappingCodeToClipboard();
+    void applyClipboardMappingCode();
 };
 
 class KeyStringLineEdit : public QLineEdit

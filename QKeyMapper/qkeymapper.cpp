@@ -3,6 +3,9 @@
 #include "qkeymapper_constants.h"
 
 #include <algorithm>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonParseError>
 #include <QPainterPath>
 #include <QScrollBar>
 #include <QSet>
@@ -8290,6 +8293,7 @@ bool otherRowsDisabledByConflict(QKeyMapper::ExclusiveGroupConflictResolutionRes
 }
 
 constexpr char FLOATINGBUTTON_STYLE_CODE_PREFIX[] = "FBS1";
+constexpr char MAPPING_CODE_PREFIX[] = "KMC1";
 constexpr char FLOATINGBUTTON_STYLE_KEY_BUTTON_COLOR[] = "bc";
 constexpr char FLOATINGBUTTON_STYLE_KEY_PRESSED_COLOR[] = "pc";
 constexpr char FLOATINGBUTTON_STYLE_KEY_LOCKED_COLOR[] = "lc";
@@ -8313,6 +8317,89 @@ constexpr char FLOATINGBUTTON_STYLE_KEY_NORMAL_OPACITY[] = "no";
 constexpr char FLOATINGBUTTON_STYLE_KEY_PRESSED_OPACITY[] = "po";
 constexpr char FLOATINGBUTTON_STYLE_KEY_LOCKED_OPACITY[] = "lo";
 
+#define MAPPINGCODE_STRING_FIELDS(X) \
+    X(KEYMAPDATA_ORIGINALKEYS, Original_Key) \
+    X(KEYMAPDATA_NOTE, Note) \
+    X(KEYMAPDATA_CATEGORY, Category) \
+    X(KEYMAPDATA_FLOATINGBUTTON_LABEL, FloatingButton_Label) \
+    X(KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY, FloatingButton_FontFamily)
+
+#define MAPPINGCODE_STRINGLIST_FIELDS(X) \
+    X(KEYMAPDATA_MAPPINGKEYS, Mapping_Keys) \
+    X(KEYMAPDATA_MAPPINGKEYS_KEYUP, MappingKeys_KeyUp)
+
+#define MAPPINGCODE_BOOL_FIELDS(X) \
+    X(KEYMAPDATA_DISABLED, Disabled) \
+    X(KEYMAPDATA_BURST, Burst) \
+    X(KEYMAPDATA_LOCK, Lock) \
+    X(KEYMAPDATA_MAPPINGKEYUNLOCK, MappingKeyUnlock) \
+    X(KEYMAPDATA_DISABLEORIGINALKEYUNLOCK, DisableOriginalKeyUnlock) \
+    X(KEYMAPDATA_DISABLEFNKEYSWITCH, DisableFnKeySwitch) \
+    X(KEYMAPDATA_CHECKCOMBKEYORDER, CheckCombKeyOrder) \
+    X(KEYMAPDATA_UNBREAKABLE, Unbreakable) \
+    X(KEYMAPDATA_PASSTHROUGH, PassThrough) \
+    X(KEYMAPDATA_KEYSEQHOLDDOWN, KeySeqHoldDown) \
+    X(KEYMAPDATA_CROSSHAIR_SHOWCENTER, Crosshair_ShowCenter) \
+    X(KEYMAPDATA_CROSSHAIR_SHOWTOP, Crosshair_ShowTop) \
+    X(KEYMAPDATA_CROSSHAIR_SHOWBOTTOM, Crosshair_ShowBottom) \
+    X(KEYMAPDATA_CROSSHAIR_SHOWLEFT, Crosshair_ShowLeft) \
+    X(KEYMAPDATA_CROSSHAIR_SHOWRIGHT, Crosshair_ShowRight) \
+    X(KEYMAPDATA_FLOATINGBUTTON_ENABLE, FloatingButton_Enable) \
+    X(KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL, FloatingButton_EnableGradientFill) \
+    X(KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION, FloatingButton_EnableHoverAnimation) \
+    X(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART, FloatingButton_ShowOnMappingStart) \
+    X(KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP, FloatingButton_ShowToolTip) \
+    X(KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE, FloatingButton_SyncPressedLockedState) \
+    X(KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP, FloatingButton_AlwaysOnTop) \
+    X(KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH, FloatingButton_MousePassThrough) \
+    X(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE, FloatingButton_DragToMove)
+
+#define MAPPINGCODE_INT_FIELDS(X) \
+    X(KEYMAPDATA_BURSTPRESS_TIME, BurstPressTime) \
+    X(KEYMAPDATA_BURSTRELEASE_TIME, BurstReleaseTime) \
+    X(KEYMAPDATA_SENDMAPPINGKEYMETHOD, SendMappingKeyMethod) \
+    X(KEYMAPDATA_FIXEDVKEYCODE, FixedVKeyCode) \
+    X(KEYMAPDATA_SENDTIMING, SendTiming) \
+    X(KEYMAPDATA_PASTETEXTMODE, PasteTextMode) \
+    X(KEYMAPDATA_REPEATMODE, RepeatMode) \
+    X(KEYMAPDATA_REPEATIMES, RepeatTimes) \
+    X(KEYMAPDATA_CROSSHAIR_CENTERSIZE, Crosshair_CenterSize) \
+    X(KEYMAPDATA_CROSSHAIR_CENTEROPACITY, Crosshair_CenterOpacity) \
+    X(KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH, Crosshair_CrosshairWidth) \
+    X(KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH, Crosshair_CrosshairLength) \
+    X(KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY, Crosshair_CrosshairOpacity) \
+    X(KEYMAPDATA_CROSSHAIR_X_OFFSET, Crosshair_X_Offset) \
+    X(KEYMAPDATA_CROSSHAIR_Y_OFFSET, Crosshair_Y_Offset) \
+    X(KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH, FloatingButton_BorderWidth) \
+    X(KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH, FloatingButton_HoverEffectStrength) \
+    X(KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH, FloatingButton_HoverGlowStrength) \
+    X(KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE, FloatingButton_HoverContrastMode) \
+    X(KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION, FloatingButton_HoverAnimationDuration) \
+    X(KEYMAPDATA_FLOATINGBUTTON_WIDTH, FloatingButton_Width) \
+    X(KEYMAPDATA_FLOATINGBUTTON_HEIGHT, FloatingButton_Height) \
+    X(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE, FloatingButton_FontSize) \
+    X(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT, FloatingButton_FontWeight) \
+    X(KEYMAPDATA_FLOATINGBUTTON_RADIUS, FloatingButton_Radius) \
+    X(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, FloatingButton_ReferencePoint) \
+    X(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, FloatingButton_X_Offset) \
+    X(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, FloatingButton_Y_Offset)
+
+#define MAPPINGCODE_DOUBLE_FIELDS(X) \
+    X(KEYMAPDATA_FLOATINGBUTTON_OPACITY, FloatingButton_Opacity) \
+    X(KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY, FloatingButton_NormalOpacity) \
+    X(KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY, FloatingButton_PressedOpacity) \
+    X(KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY, FloatingButton_LockedOpacity)
+
+#define MAPPINGCODE_COLOR_FIELDS(X) \
+    X(KEYMAPDATA_CROSSHAIR_CENTERCOLOR, Crosshair_CenterColor, CROSSHAIR_CENTERCOLOR_DEFAULT) \
+    X(KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR, Crosshair_CrosshairColor, CROSSHAIR_CROSSHAIRCOLOR_DEFAULT) \
+    X(KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR, FloatingButton_ButtonColor, FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR) \
+    X(KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR, FloatingButton_PressedColor, FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR) \
+    X(KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR, FloatingButton_LockedColor, FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR) \
+    X(KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR, FloatingButton_TextColor, FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR) \
+    X(KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR, FloatingButton_BorderColor, FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR) \
+    X(KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR, FloatingButton_HoverCustomColor, FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR)
+
 QString encodeFloatingButtonStyleStringValue(const QString &value)
 {
     return QString::fromLatin1(QUrl::toPercentEncoding(value));
@@ -8321,6 +8408,313 @@ QString encodeFloatingButtonStyleStringValue(const QString &value)
 QString decodeFloatingButtonStyleStringValue(const QString &value)
 {
     return QUrl::fromPercentEncoding(value.toUtf8());
+}
+
+QString encodeMappingCodeStringValue(const QString &value)
+{
+    return QString::fromLatin1(QUrl::toPercentEncoding(value));
+}
+
+QString decodeMappingCodeStringValue(const QString &value)
+{
+    return QUrl::fromPercentEncoding(value.toUtf8());
+}
+
+QString encodeMappingCodeStringListValue(const QStringList &values)
+{
+    QJsonArray jsonArray;
+    for (const QString &value : values) {
+        jsonArray.append(value);
+    }
+
+    const QString jsonText = QString::fromUtf8(QJsonDocument(jsonArray).toJson(QJsonDocument::Compact));
+    return encodeMappingCodeStringValue(jsonText);
+}
+
+bool decodeMappingCodeStringListValue(const QString &value, QStringList &decodedValues)
+{
+    decodedValues.clear();
+
+    const QString decodedText = decodeMappingCodeStringValue(value);
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(decodedText.toUtf8(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isArray()) {
+        return false;
+    }
+
+    const QJsonArray jsonArray = document.array();
+    for (const QJsonValue &jsonValue : jsonArray) {
+        if (!jsonValue.isString()) {
+            return false;
+        }
+
+        decodedValues.append(jsonValue.toString());
+    }
+
+    return true;
+}
+
+void appendMappingCodeToken(QStringList &tokens, const char *key, const QString &value)
+{
+    tokens.append(QString::fromLatin1(key) + QStringLiteral("=") + value);
+}
+
+bool parseMappingCodeBooleanValue(const QString &value, bool &parsedValue)
+{
+    if (value == QStringLiteral("1")) {
+        parsedValue = true;
+        return true;
+    }
+
+    if (value == QStringLiteral("0")) {
+        parsedValue = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool parseMappingCodeIntegerValue(const QString &value, int &parsedValue)
+{
+    bool ok = false;
+    const int integerValue = value.toInt(&ok);
+    if (!ok) {
+        return false;
+    }
+
+    parsedValue = integerValue;
+    return true;
+}
+
+bool parseMappingCodeDoubleValue(const QString &value, double &parsedValue)
+{
+    bool ok = false;
+    const double doubleValue = value.toDouble(&ok);
+    if (!ok) {
+        return false;
+    }
+
+    parsedValue = doubleValue;
+    return true;
+}
+
+bool parseMappingCodeColorValue(const QString &value, const QColor &defaultColor, QColor &parsedColor)
+{
+    const QColor decodedColor = QKeyMapper::decodeKeyMapDataColorToken(value, defaultColor);
+    if (!decodedColor.isValid()) {
+        return false;
+    }
+
+    parsedColor = decodedColor;
+    return true;
+}
+
+void refreshMappingCodeDerivedFields(MAP_KEYDATA &keymapdata)
+{
+    keymapdata.Pure_OriginalKeys = splitOriginalKeyString(keymapdata.Original_Key, true);
+    keymapdata.Pure_OriginalKeys.removeDuplicates();
+
+    const QString mappingKeysText = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
+    keymapdata.Pure_MappingKeys = splitMappingKeyString(mappingKeysText, SPLIT_WITH_PLUSANDNEXT, true);
+    keymapdata.Pure_MappingKeys.removeDuplicates();
+
+    if (keymapdata.MappingKeys_KeyUp.isEmpty()) {
+        keymapdata.MappingKeys_KeyUp = keymapdata.Mapping_Keys;
+        keymapdata.Pure_MappingKeys_KeyUp = keymapdata.Pure_MappingKeys;
+    }
+    else {
+        const QString mappingKeysKeyUpText = keymapdata.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW);
+        keymapdata.Pure_MappingKeys_KeyUp = splitMappingKeyString(mappingKeysKeyUpText, SPLIT_WITH_PLUSANDNEXT, true);
+        keymapdata.Pure_MappingKeys_KeyUp.removeDuplicates();
+    }
+}
+
+const QStringList &mappingCodeKnownKeys()
+{
+    static const QStringList knownKeys = []() {
+        QStringList keys;
+        keys.reserve(71);
+
+#define APPEND_MAPPINGCODE_KEY(key, field) keys.append(QString::fromLatin1(key));
+#define APPEND_MAPPINGCODE_COLOR_KEY(key, field, defaultColor) keys.append(QString::fromLatin1(key));
+        MAPPINGCODE_STRING_FIELDS(APPEND_MAPPINGCODE_KEY)
+        MAPPINGCODE_STRINGLIST_FIELDS(APPEND_MAPPINGCODE_KEY)
+        MAPPINGCODE_BOOL_FIELDS(APPEND_MAPPINGCODE_KEY)
+        MAPPINGCODE_INT_FIELDS(APPEND_MAPPINGCODE_KEY)
+        MAPPINGCODE_DOUBLE_FIELDS(APPEND_MAPPINGCODE_KEY)
+        MAPPINGCODE_COLOR_FIELDS(APPEND_MAPPINGCODE_COLOR_KEY)
+#undef APPEND_MAPPINGCODE_COLOR_KEY
+#undef APPEND_MAPPINGCODE_KEY
+
+        return keys;
+    }();
+
+    return knownKeys;
+}
+
+QKeyMapper::MappingCodeApplyResult parseAndApplyMappingCode(const QString &mappingCode,
+                                                            const MAP_KEYDATA &currentData,
+                                                            MAP_KEYDATA &keymapdata)
+{
+    QKeyMapper::MappingCodeApplyResult result;
+    const QString trimmedMappingCode = mappingCode.trimmed();
+    if (trimmedMappingCode.isEmpty()) {
+        result.errorMessage = QKeyMapper::tr("Mapping code is empty.");
+        return result;
+    }
+
+    const QStringList tokens = trimmedMappingCode.split(QLatin1Char(';'), QKeyMapperQtCompat::KeepEmptyParts);
+    if (tokens.isEmpty()) {
+        result.errorMessage = QKeyMapper::tr("Invalid mapping code format.");
+        return result;
+    }
+
+    const QString header = tokens.constFirst().trimmed();
+    if (header != QString::fromLatin1(MAPPING_CODE_PREFIX)) {
+        if (header.startsWith(QStringLiteral("KMC"))) {
+            result.errorMessage = QKeyMapper::tr("Unsupported mapping code version: %1").arg(header);
+        }
+        else {
+            result.errorMessage = QKeyMapper::tr("Invalid mapping code header: %1").arg(header);
+        }
+        return result;
+    }
+
+    MAP_KEYDATA updatedData = currentData;
+    QSet<QString> seenKeys;
+    QSet<QString> seenKnownKeys;
+
+    const QStringList &knownKeys = mappingCodeKnownKeys();
+    for (int i = 1; i < tokens.size(); ++i) {
+        const QString token = tokens.at(i).trimmed();
+        if (token.isEmpty()) {
+            continue;
+        }
+
+        const int separatorIndex = token.indexOf(QLatin1Char('='));
+        if (separatorIndex <= 0) {
+            result.errorMessage = QKeyMapper::tr("Invalid mapping code token: %1").arg(token);
+            return result;
+        }
+
+        const QString key = token.left(separatorIndex).trimmed();
+        const QString value = token.mid(separatorIndex + 1).trimmed();
+        if (seenKeys.contains(key)) {
+            result.errorMessage = QKeyMapper::tr("Duplicate mapping code field: %1").arg(key);
+            return result;
+        }
+        seenKeys.insert(key);
+
+        if (!knownKeys.contains(key)) {
+            result.ignoredKeys.append(key);
+            continue;
+        }
+
+        seenKnownKeys.insert(key);
+
+        bool booleanValue = false;
+        int integerValue = 0;
+        double doubleValue = 0.0;
+        QColor colorValue;
+        QStringList stringListValue;
+
+#define PARSE_MAPPINGCODE_STRING_FIELD(keyConst, field) \
+        if (key == QString::fromLatin1(keyConst)) { \
+            updatedData.field = decodeMappingCodeStringValue(value); \
+        } \
+        else
+
+#define PARSE_MAPPINGCODE_STRINGLIST_FIELD(keyConst, field) \
+        if (key == QString::fromLatin1(keyConst)) { \
+            if (!decodeMappingCodeStringListValue(value, stringListValue)) { \
+                result.errorMessage = QKeyMapper::tr("Invalid list value for mapping code field %1: %2").arg(key, value); \
+                return result; \
+            } \
+            updatedData.field = stringListValue; \
+        } \
+        else
+
+#define PARSE_MAPPINGCODE_BOOL_FIELD(keyConst, field) \
+        if (key == QString::fromLatin1(keyConst)) { \
+            if (!parseMappingCodeBooleanValue(value, booleanValue)) { \
+                result.errorMessage = QKeyMapper::tr("Invalid boolean value for mapping code field %1: %2").arg(key, value); \
+                return result; \
+            } \
+            if (QString::fromLatin1(keyConst) != QString::fromLatin1(KEYMAPDATA_DISABLED)) { \
+                updatedData.field = booleanValue; \
+            } \
+        } \
+        else
+
+#define PARSE_MAPPINGCODE_INT_FIELD(keyConst, field) \
+        if (key == QString::fromLatin1(keyConst)) { \
+            if (!parseMappingCodeIntegerValue(value, integerValue)) { \
+                result.errorMessage = QKeyMapper::tr("Invalid integer value for mapping code field %1: %2").arg(key, value); \
+                return result; \
+            } \
+            updatedData.field = integerValue; \
+        } \
+        else
+
+#define PARSE_MAPPINGCODE_DOUBLE_FIELD(keyConst, field) \
+        if (key == QString::fromLatin1(keyConst)) { \
+            if (!parseMappingCodeDoubleValue(value, doubleValue)) { \
+                result.errorMessage = QKeyMapper::tr("Invalid number value for mapping code field %1: %2").arg(key, value); \
+                return result; \
+            } \
+            updatedData.field = doubleValue; \
+        } \
+        else
+
+#define PARSE_MAPPINGCODE_COLOR_FIELD(keyConst, field, defaultColor) \
+        if (key == QString::fromLatin1(keyConst)) { \
+            if (!parseMappingCodeColorValue(value, defaultColor, colorValue)) { \
+                result.errorMessage = QKeyMapper::tr("Invalid color value for mapping code field %1: %2").arg(key, value); \
+                return result; \
+            } \
+            updatedData.field = colorValue; \
+        } \
+        else
+
+        MAPPINGCODE_STRING_FIELDS(PARSE_MAPPINGCODE_STRING_FIELD)
+        MAPPINGCODE_STRINGLIST_FIELDS(PARSE_MAPPINGCODE_STRINGLIST_FIELD)
+        MAPPINGCODE_BOOL_FIELDS(PARSE_MAPPINGCODE_BOOL_FIELD)
+        MAPPINGCODE_INT_FIELDS(PARSE_MAPPINGCODE_INT_FIELD)
+        MAPPINGCODE_DOUBLE_FIELDS(PARSE_MAPPINGCODE_DOUBLE_FIELD)
+        MAPPINGCODE_COLOR_FIELDS(PARSE_MAPPINGCODE_COLOR_FIELD)
+        {
+            result.errorMessage = QKeyMapper::tr("Unhandled mapping code field: %1").arg(key);
+            return result;
+        }
+
+#undef PARSE_MAPPINGCODE_COLOR_FIELD
+#undef PARSE_MAPPINGCODE_DOUBLE_FIELD
+#undef PARSE_MAPPINGCODE_INT_FIELD
+#undef PARSE_MAPPINGCODE_BOOL_FIELD
+#undef PARSE_MAPPINGCODE_STRINGLIST_FIELD
+#undef PARSE_MAPPINGCODE_STRING_FIELD
+
+        ++result.appliedFieldCount;
+    }
+
+    if (result.appliedFieldCount <= 0) {
+        result.errorMessage = QKeyMapper::tr("No valid mapping fields were found in the mapping code.");
+        return result;
+    }
+
+    for (const QString &knownKey : knownKeys) {
+        if (!seenKnownKeys.contains(knownKey)) {
+            result.missingKeys.append(knownKey);
+        }
+    }
+
+    updatedData.Disabled = currentData.Disabled;
+    refreshMappingCodeDerivedFields(updatedData);
+
+    keymapdata = updatedData;
+    result.success = true;
+    result.partial = !result.missingKeys.isEmpty() || !result.ignoredKeys.isEmpty();
+    return result;
 }
 
 bool isFloatingButtonOpacityValueInRange(double opacity)
@@ -9032,6 +9426,119 @@ QString QKeyMapper::generateFloatingButtonStyleCode(const MAP_KEYDATA &keymapdat
     appendFloatingButtonStyleToken(tokens, FLOATINGBUTTON_STYLE_KEY_LOCKED_OPACITY,
                                    QString::number(normalizedData.FloatingButton_LockedOpacity, 'f', FLOATINGBUTTON_OPACITY_DECIMALS));
     return tokens.join(QLatin1Char(';'));
+}
+
+QString QKeyMapper::generateMappingCode(const MAP_KEYDATA &keymapdata)
+{
+    QStringList tokens;
+    tokens.reserve(72);
+    tokens.append(QString::fromLatin1(MAPPING_CODE_PREFIX));
+
+#define APPEND_MAPPINGCODE_STRING_FIELD(keyConst, field) \
+    appendMappingCodeToken(tokens, keyConst, encodeMappingCodeStringValue(keymapdata.field));
+
+#define APPEND_MAPPINGCODE_STRINGLIST_FIELD(keyConst, field) \
+    appendMappingCodeToken(tokens, keyConst, encodeMappingCodeStringListValue(keymapdata.field));
+
+#define APPEND_MAPPINGCODE_BOOL_FIELD(keyConst, field) \
+    appendMappingCodeToken(tokens, keyConst, keymapdata.field ? QStringLiteral("1") : QStringLiteral("0"));
+
+#define APPEND_MAPPINGCODE_INT_FIELD(keyConst, field) \
+    appendMappingCodeToken(tokens, keyConst, QString::number(keymapdata.field));
+
+#define APPEND_MAPPINGCODE_DOUBLE_FIELD(keyConst, field) \
+    appendMappingCodeToken(tokens, keyConst, QString::number(keymapdata.field, 'g', 16));
+
+#define APPEND_MAPPINGCODE_COLOR_FIELD(keyConst, field, defaultColor) \
+    appendMappingCodeToken(tokens, keyConst, encodeKeyMapDataColorToken(keymapdata.field, defaultColor));
+
+    MAPPINGCODE_STRING_FIELDS(APPEND_MAPPINGCODE_STRING_FIELD)
+    MAPPINGCODE_STRINGLIST_FIELDS(APPEND_MAPPINGCODE_STRINGLIST_FIELD)
+    MAPPINGCODE_BOOL_FIELDS(APPEND_MAPPINGCODE_BOOL_FIELD)
+    MAPPINGCODE_INT_FIELDS(APPEND_MAPPINGCODE_INT_FIELD)
+    MAPPINGCODE_DOUBLE_FIELDS(APPEND_MAPPINGCODE_DOUBLE_FIELD)
+    MAPPINGCODE_COLOR_FIELDS(APPEND_MAPPINGCODE_COLOR_FIELD)
+
+#undef APPEND_MAPPINGCODE_COLOR_FIELD
+#undef APPEND_MAPPINGCODE_DOUBLE_FIELD
+#undef APPEND_MAPPINGCODE_INT_FIELD
+#undef APPEND_MAPPINGCODE_BOOL_FIELD
+#undef APPEND_MAPPINGCODE_STRINGLIST_FIELD
+#undef APPEND_MAPPINGCODE_STRING_FIELD
+
+    return tokens.join(QLatin1Char(';'));
+}
+
+QKeyMapper::MappingCodeApplyResult QKeyMapper::applyMappingCode(const QString &mappingCode,
+                                                               const MAP_KEYDATA &currentData,
+                                                               MAP_KEYDATA &keymapdata)
+{
+    return parseAndApplyMappingCode(mappingCode, currentData, keymapdata);
+}
+
+QString QKeyMapper::mappingCodeApplySuccessMessage(const MappingCodeApplyResult &result)
+{
+    if (result.partial) {
+        return tr("Mapping partially updated successfully. Missing or unknown fields were ignored.");
+    }
+
+    if (result.disabledStatePreserved) {
+        return tr("Mapping updated successfully.");
+    }
+
+    return tr("Mapping updated successfully.");
+}
+
+QKeyMapper::MappingCodeApplyResult QKeyMapper::applyMappingCodeToSourceRow(int sourceTabIndex,
+                                                                           int sourceRow,
+                                                                           const QString &mappingCode)
+{
+    MappingCodeApplyResult result;
+
+    if (sourceTabIndex < 0 || sourceTabIndex >= s_KeyMappingTabInfoList.size()) {
+        result.errorMessage = tr("Failed to resolve the mapping item for the mapping code.");
+        return result;
+    }
+
+    QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(sourceTabIndex).KeyMappingData;
+    if (mappingDataList == Q_NULLPTR || sourceRow < 0 || sourceRow >= mappingDataList->size()) {
+        result.errorMessage = tr("Failed to resolve the mapping item for the mapping code.");
+        return result;
+    }
+
+    const MAP_KEYDATA previousData = mappingDataList->at(sourceRow);
+    MAP_KEYDATA updatedData = previousData;
+    result = applyMappingCode(mappingCode, previousData, updatedData);
+    if (!result.success) {
+        return result;
+    }
+
+    (*mappingDataList)[sourceRow] = updatedData;
+
+    ExclusiveGroupConflictResolutionResult conflictResult = ExclusiveGroupConflictResolutionResult::NoConflict;
+    if (!previousData.Disabled) {
+        conflictResult = autoDisableRowIfExclusiveGroupConflict(sourceTabIndex, sourceRow, true, false);
+        if (conflictResult == ExclusiveGroupConflictResolutionResult::ChangeCancelled) {
+            (*mappingDataList)[sourceRow] = previousData;
+            result.success = false;
+            result.errorMessage = tr("Applying the mapping code was cancelled.");
+            return result;
+        }
+    }
+
+    refreshTabsForSourceTabChange(sourceTabIndex);
+    requestSaveSettingDirty();
+
+    QItemSetupDialog *itemSetupDialog = QItemSetupDialog::getInstance();
+    if (itemSetupDialog != Q_NULLPTR
+        && itemSetupDialog->isVisible()
+        && itemSetupDialog->getTabIndex() == sourceTabIndex
+        && itemSetupDialog->getItemRow() == sourceRow) {
+        itemSetupDialog->refreshFromCurrentItem();
+    }
+
+    Q_UNUSED(conflictResult);
+    return result;
 }
 
 QKeyMapper::FloatingButtonStyleCodeApplyResult QKeyMapper::applyFloatingButtonStyleCode(const QString &styleCode, MAP_KEYDATA &keymapdata)
@@ -43528,6 +44035,42 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         return current->flags() & Qt::ItemIsEditable;
     };
 
+    const auto copyMappingCodeForSourceInfo = [keymapper](const DisplayRowSourceInfo &sourceInfo) {
+        if (sourceInfo.SourceMappingDataList == Q_NULLPTR
+            || sourceInfo.SourceRow < 0
+            || sourceInfo.SourceRow >= sourceInfo.SourceMappingDataList->size()) {
+            keymapper->showFailurePopup(QObject::tr("Failed to generate mapping code."));
+            return;
+        }
+
+        const QString mappingCode = QKeyMapper::generateMappingCode(sourceInfo.SourceMappingDataList->at(sourceInfo.SourceRow));
+        if (mappingCode.isEmpty()) {
+            keymapper->showFailurePopup(QObject::tr("Failed to generate mapping code."));
+            return;
+        }
+
+        QKeyMapper::copyStringToClipboard(mappingCode);
+        keymapper->showInformationPopup(QObject::tr("Mapping code copied to clipboard."));
+    };
+
+    const auto applyClipboardMappingCodeForSourceInfo = [keymapper](const DisplayRowSourceInfo &sourceInfo) {
+        QString clipboardText;
+        if (!QKeyMapper::readClipboardText(clipboardText) || clipboardText.trimmed().isEmpty()) {
+            keymapper->showFailurePopup(QObject::tr("Clipboard does not contain a mapping code."));
+            return;
+        }
+
+        const QKeyMapper::MappingCodeApplyResult result = keymapper->applyMappingCodeToSourceRow(sourceInfo.SourceTabIndex,
+                                                                                                  sourceInfo.SourceRow,
+                                                                                                  clipboardText);
+        if (!result.success) {
+            keymapper->showFailurePopup(result.errorMessage);
+            return;
+        }
+
+        keymapper->showInformationPopup(QKeyMapper::mappingCodeApplySuccessMessage(result));
+    };
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyMappingDataTableWidget::contextMenuEvent]" << "Current Column:" << currentColumn
             << ", Has Selection:" << hasSelection
@@ -43796,6 +44339,13 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         && isDisplayRowWithinSelectionRanges(selectionRanges, currentRow);
 
     QMenu contextMenu(this);
+
+    DisplayRowSourceInfo currentSelectedSourceInfo;
+    const bool hasSingleSelectedDisplayRow = hasValidCurrentSelectedRow
+        && collectVisibleSelectedRows(this).size() == 1
+        && resolveDisplayRowSourceInfo(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex, currentRow, &currentSelectedSourceInfo);
+    const bool canShowMappingCodeActions = hasSingleSelectedDisplayRow
+        && (currentColumn == ORIGINAL_KEY_COLUMN || currentColumn == MAPPING_KEY_COLUMN);
 
     auto handleInsertResult = [keymapper](int inserted_count, int auto_disabled) {
         const int copied_count = QKeyMapper::s_CopiedMappingData.size();
@@ -44196,6 +44746,18 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                     insertCopiedItemsForPlacement(DisplayInsertPlacement::BelowAnchor, insertBelowRow);
                 });
             }
+        }
+
+        if (canShowMappingCodeActions) {
+            QAction *copyMappingCodeAction = contextMenu.addAction(QObject::tr("Copy Mapping Code"));
+            connect(copyMappingCodeAction, &QAction::triggered, this, [copyMappingCodeForSourceInfo, currentSelectedSourceInfo]() {
+                copyMappingCodeForSourceInfo(currentSelectedSourceInfo);
+            });
+
+            QAction *applyClipboardMappingCodeAction = contextMenu.addAction(QObject::tr("Apply Clipboard Mapping Code"));
+            connect(applyClipboardMappingCodeAction, &QAction::triggered, this, [applyClipboardMappingCodeForSourceInfo, currentSelectedSourceInfo]() {
+                applyClipboardMappingCodeForSourceInfo(currentSelectedSourceInfo);
+            });
         }
     }
 
