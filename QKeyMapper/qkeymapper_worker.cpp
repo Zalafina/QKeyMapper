@@ -553,6 +553,8 @@ double QKeyMapper_Worker::s_Auto_Accel_Level = AUTO_ACCEL_DEFAULT;
 BYTE QKeyMapper_Worker::s_last_Auto_Brake = 0;
 BYTE QKeyMapper_Worker::s_last_Auto_Accel = 0;
 quint8 QKeyMapper_Worker::s_BrakeSlipOverThresholdFrames = 0;
+quint8 QKeyMapper_Worker::s_BrakeSlipUnderThresholdFrames = 0;
+bool QKeyMapper_Worker::s_BrakeSlipConfirmed = false;
 quint32 QKeyMapper_Worker::s_LastForzaTimestampMs = 0;
 bool QKeyMapper_Worker::s_HasLastForzaTimestamp = false;
 QKeyMapper_Worker::GripDetectStates QKeyMapper_Worker::s_GripDetect_EnableState = QKeyMapper_Worker::GRIPDETECT_NONE;
@@ -6819,6 +6821,7 @@ static double averageTopTwoAbsValues(double first, double second, double third, 
 static constexpr double FORZA_ADJUST_BASELINE_DELTA_SECONDS = 1.0 / 60.0;
 static constexpr double FORZA_ADJUST_MAX_DELTA_MS = 50.0;
 static constexpr quint8 FORZA_BRAKE_SLIP_CONFIRM_FRAMES = 2;
+static constexpr quint8 FORZA_BRAKE_SLIP_EXIT_CONFIRM_FRAMES = 2;
 
 static double forzaAdjustDeltaSeconds(quint32 timestampMs, bool &hasLastTimestamp, quint32 &lastTimestampMs)
 {
@@ -7802,6 +7805,8 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
                         s_Auto_Brake_Level = AUTO_BRAKE_DEFAULT;
                         s_last_Auto_Brake = 0;
                         s_BrakeSlipOverThresholdFrames = 0;
+                        s_BrakeSlipUnderThresholdFrames = 0;
+                        s_BrakeSlipConfirmed = false;
                     }
                     else if (joystickButton == VJOY_LT_ACCEL_STR || joystickButton == VJOY_RT_ACCEL_STR) {
                         s_Auto_Accel = AUTO_ACCEL_DEFAULT;
@@ -8915,6 +8920,8 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
     s_BrakeSlipOverThresholdFrames = 0;
+    s_BrakeSlipUnderThresholdFrames = 0;
+    s_BrakeSlipConfirmed = false;
     s_LastForzaTimestampMs = 0;
     s_HasLastForzaTimestamp = false;
     s_GripDetect_EnableState = checkGripDetectEnableState();
@@ -9150,6 +9157,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
     s_BrakeSlipOverThresholdFrames = 0;
+    s_BrakeSlipUnderThresholdFrames = 0;
+    s_BrakeSlipConfirmed = false;
     s_LastForzaTimestampMs = 0;
     s_HasLastForzaTimestamp = false;
     s_GripDetect_EnableState = GRIPDETECT_NONE;
@@ -9381,6 +9390,8 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_last_Auto_Brake = 0;
     s_last_Auto_Accel = 0;
     s_BrakeSlipOverThresholdFrames = 0;
+    s_BrakeSlipUnderThresholdFrames = 0;
+    s_BrakeSlipConfirmed = false;
     s_LastForzaTimestampMs = 0;
     s_HasLastForzaTimestamp = false;
     s_GripDetect_EnableState = GRIPDETECT_NONE;
@@ -10097,25 +10108,47 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
                                                                 s_LastForzaTimestampMs);
     const bool brake_slip_over_threshold = brake_slip_metric > gripThreshold_Brake;
     if (brake_trigger_active) {
-        if (brake_slip_over_threshold) {
+        if (s_BrakeSlipConfirmed) {
+            if (brake_slip_over_threshold) {
+                s_BrakeSlipUnderThresholdFrames = 0;
+            }
+            else if (s_BrakeSlipUnderThresholdFrames < FORZA_BRAKE_SLIP_EXIT_CONFIRM_FRAMES) {
+                ++s_BrakeSlipUnderThresholdFrames;
+                if (s_BrakeSlipUnderThresholdFrames >= FORZA_BRAKE_SLIP_EXIT_CONFIRM_FRAMES) {
+                    s_BrakeSlipConfirmed = false;
+                    s_BrakeSlipOverThresholdFrames = 0;
+                    s_BrakeSlipUnderThresholdFrames = 0;
+                }
+            }
+        }
+        else if (brake_slip_over_threshold) {
             if (s_BrakeSlipOverThresholdFrames < FORZA_BRAKE_SLIP_CONFIRM_FRAMES) {
                 ++s_BrakeSlipOverThresholdFrames;
+            }
+            if (s_BrakeSlipOverThresholdFrames >= FORZA_BRAKE_SLIP_CONFIRM_FRAMES) {
+                s_BrakeSlipConfirmed = true;
+                s_BrakeSlipUnderThresholdFrames = 0;
             }
         }
         else {
             s_BrakeSlipOverThresholdFrames = 0;
+            s_BrakeSlipUnderThresholdFrames = 0;
         }
     }
     else {
         s_BrakeSlipOverThresholdFrames = 0;
+        s_BrakeSlipUnderThresholdFrames = 0;
+        s_BrakeSlipConfirmed = false;
     }
-    const bool brake_slip_confirmed = s_BrakeSlipOverThresholdFrames >= FORZA_BRAKE_SLIP_CONFIRM_FRAMES;
+    const bool brake_slip_confirmed = s_BrakeSlipConfirmed;
 
     const double brake_adjust_step = AUTO_BRAKE_ADJUST_VALUE * 60.0 * adjust_delta_seconds;
     const double accel_adjust_step = AUTO_ACCEL_ADJUST_VALUE * 60.0 * adjust_delta_seconds;
     s_LastCarOrdinal = car_ordinal;
 
 #ifdef GRIP_VERBOSE_LOG
+    const bool brake_exit_pending = brake_slip_confirmed && s_BrakeSlipUnderThresholdFrames > 0;
+
     // qDebug().nospace() << "[processForzaFormatData]" << " secondPartData = " << secondPartData.toHex();
     // qDebug().nospace() << "[processForzaFormatData]" << " thirdPartData = " << thirdPartData.toHex();
     qDebug() << "[processForzaFormatData]" << "tire_slip_ratio_FL =" << tire_slip_ratio_FL << ", tire_slip_ratio_FR =" << tire_slip_ratio_FR << ", tire_slip_ratio_RL =" << tire_slip_ratio_RL << ", tire_slip_ratio_RR =" << tire_slip_ratio_RR;
@@ -10126,7 +10159,9 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
              << ", brake_slip_metric =" << brake_slip_metric
              << ", brake_threshold =" << gripThreshold_Brake
              << ", brake_confirm_frames =" << s_BrakeSlipOverThresholdFrames
+             << ", brake_exit_confirm_frames =" << s_BrakeSlipUnderThresholdFrames
              << ", brake_slip_confirmed =" << brake_slip_confirmed
+             << ", brake_exit_pending =" << brake_exit_pending
              << ", accel_slip_metric =" << accel_slip_metric
              << ", accel_threshold =" << gripThreshold_Accel
              << ", car_ordinal =" << car_ordinal
@@ -10140,7 +10175,7 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
 #endif
 
     if (brake_trigger_active) {
-        if (brake_slip_confirmed) {
+        if (brake_slip_confirmed && brake_slip_over_threshold) {
             if (s_Auto_Brake_Level > 0.0) {
                 s_Auto_Brake_Level = qBound(0.0,
                                             s_Auto_Brake_Level - brake_adjust_step,
@@ -10151,7 +10186,7 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
 #endif
             }
         }
-        else if (!brake_slip_over_threshold) {
+        else if (!brake_slip_confirmed && !brake_slip_over_threshold) {
             if (s_Auto_Brake_Level < XINPUT_TRIGGER_MAX) {
                 s_Auto_Brake_Level = qBound(0.0,
                                             s_Auto_Brake_Level + brake_adjust_step,
