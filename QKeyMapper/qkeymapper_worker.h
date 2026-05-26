@@ -1597,6 +1597,7 @@ public:
     static double s_Auto_Accel_Level;
     static BYTE s_last_Auto_Brake;
     static BYTE s_last_Auto_Accel;
+    static quint8 s_BrakeSlipOverThresholdFrames;
     static quint32 s_LastForzaTimestampMs;
     static bool s_HasLastForzaTimestamp;
     static GripDetectStates s_GripDetect_EnableState;
