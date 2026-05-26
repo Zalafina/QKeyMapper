@@ -6,6 +6,7 @@ build-*
 .vscode/
 *.TMP
 *.tmp
+forzahorizon6_official_format.txt
 QKeyMapper/*.pro.user
 QKeyMapper/*.pro.user.*
 QKeyMapper/*.moc
