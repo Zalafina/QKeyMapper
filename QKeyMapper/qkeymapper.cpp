@@ -15460,7 +15460,7 @@ bool QKeyMapper::syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWid
         bool tabVisible = true;
         QVariant tabData;
         if (tabBar != Q_NULLPTR) {
-            tabVisible = tabBar->isTabVisible(currentIndex);
+            tabVisible = QKeyMapperQtCompat::tabBarIsTabVisible(tabBar, currentIndex);
             tabData = tabBar->tabData(currentIndex);
         }
 
@@ -15480,7 +15480,7 @@ bool QKeyMapper::syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWid
         tabWidget->setTabWhatsThis(targetIndex, tabWhatsThis);
         tabWidget->setTabEnabled(targetIndex, tabEnabled);
         if (tabBar != Q_NULLPTR) {
-            tabBar->setTabVisible(targetIndex, tabVisible);
+            QKeyMapperQtCompat::tabBarSetTabVisible(tabBar, targetIndex, tabVisible);
             tabBar->setTabData(targetIndex, tabData);
         }
     }
@@ -15937,7 +15937,7 @@ void QKeyMapper::ensureCommonMappingTabIsLast(void)
     QColor commonTabTextColor;
     QVariant commonTabData;
     if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
-        commonTabVisible = tabBar->isTabVisible(commonIndex);
+        commonTabVisible = QKeyMapperQtCompat::tabBarIsTabVisible(tabBar, commonIndex);
         commonTabTextColor = tabBar->tabTextColor(commonIndex);
         commonTabData = tabBar->tabData(commonIndex);
     }
@@ -15949,7 +15949,7 @@ void QKeyMapper::ensureCommonMappingTabIsLast(void)
     ui->keyMappingTabWidget->setTabWhatsThis(lastIndex, commonTabWhatsThis);
     ui->keyMappingTabWidget->setTabEnabled(lastIndex, commonTabEnabled);
     if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
-        tabBar->setTabVisible(lastIndex, commonTabVisible);
+        QKeyMapperQtCompat::tabBarSetTabVisible(tabBar, lastIndex, commonTabVisible);
         tabBar->setTabTextColor(lastIndex, commonTabTextColor);
         tabBar->setTabData(lastIndex, commonTabData);
     }
@@ -15982,7 +15982,7 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
     int fallbackIndex = -1;
     if (commonIndex >= 0 && commonIndex < ui->keyMappingTabWidget->count()) {
         if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
-            tabBar->setTabVisible(commonIndex, enabled);
+            QKeyMapperQtCompat::tabBarSetTabVisible(tabBar, commonIndex, enabled);
         }
 
         if (!enabled && s_KeyMappingTabWidgetCurrentIndex == commonIndex) {
@@ -43654,7 +43654,7 @@ bool KeyMappingTabBar::shouldRejectDragMove(const QPoint &pos) const
         reason = QStringLiteral("draggedTabIsCommon");
     }
     else {
-        commonVisible = isTabVisible(commonIndex);
+        commonVisible = QKeyMapperQtCompat::tabBarIsTabVisible(const_cast<KeyMappingTabBar*>(this), commonIndex);
         if (!commonVisible) {
             reason = QStringLiteral("commonTabHidden");
         }
