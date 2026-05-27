@@ -1687,19 +1687,19 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
         <location filename="../qitemsetupdialog.ui" line="1069"/>
         <location filename="../qitemsetupdialog.cpp" line="246"/>
         <source>MappingCode</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコード</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="1101"/>
         <location filename="../qitemsetupdialog.cpp" line="249"/>
         <source>Copy KMC</source>
-        <translation type="unfinished"></translation>
+        <translation>KMCをコピー</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="1120"/>
         <location filename="../qitemsetupdialog.cpp" line="252"/>
         <source>Apply KMC</source>
-        <translation type="unfinished"></translation>
+        <translation>KMCを適用</translation>
     </message>
     <message>
         <source>Update</source>
@@ -1910,7 +1910,7 @@ Update</source>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="2810"/>
         <source>Generated automatically from the current mapping item settings</source>
-        <translation type="unfinished"></translation>
+        <translation>現在のマッピング項目設定に基づいて自動生成</translation>
     </message>
     <message>
         <source>No.</source>
@@ -1948,17 +1948,17 @@ Update</source>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3533"/>
         <source>Failed to generate mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードの生成に失敗しました。</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3540"/>
         <source>Mapping code copied to clipboard.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードをクリップボードにコピーしました。</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3561"/>
         <source>Clipboard does not contain a mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>クリップボードにマッピングコードが含まれていません。</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3825"/>
@@ -2984,67 +2984,67 @@ Continue?</source>
     <message>
         <location filename="../qkeymapper.cpp" line="8562"/>
         <source>Mapping code is empty.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードが空です。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8568"/>
         <source>Invalid mapping code format.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードの形式が無効です。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8575"/>
         <source>Unsupported mapping code version: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>サポートされていないマッピングコードのバージョンです：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8578"/>
         <source>Invalid mapping code header: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードのヘッダーが無効です：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8596"/>
         <source>Invalid mapping code token: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードのトークンが無効です：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8603"/>
         <source>Duplicate mapping code field: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードの項目が重複しています：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8630"/>
         <source>Invalid list value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコード項目「%1」のブール値が無効です：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8640"/>
         <source>Invalid boolean value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコード項目「%1」のブール値が無効です：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8652"/>
         <source>Invalid integer value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコード項目「%1」の整数値が無効です：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8662"/>
         <source>Invalid number value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコード項目「%1」の数値が無効です：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8672"/>
         <source>Invalid color value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコード項目「%1」のカラー値が無効です：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8686"/>
         <source>Unhandled mapping code field: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>未処理のマッピングコード項目：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8701"/>
         <source>No valid mapping fields were found in the mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコード内に有効なマッピング項目が見つかりませんでした。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8886"/>
@@ -3121,24 +3121,25 @@ Continue?</source>
     <message>
         <location filename="../qkeymapper.cpp" line="9482"/>
         <source>Mapping partially updated successfully. Missing or unknown fields were ignored.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングを部分的に更新しました。
+不足または未知の項目は無視されました。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9486"/>
         <location filename="../qkeymapper.cpp" line="9489"/>
         <source>Mapping updated successfully.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピング更新に成功しました。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9499"/>
         <location filename="../qkeymapper.cpp" line="9505"/>
         <source>Failed to resolve the mapping item for the mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードに対応するマッピング項目を特定できませんでした。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9524"/>
         <source>Applying the mapping code was cancelled.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードの適用はキャンセルされました。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9552"/>
@@ -5450,17 +5451,17 @@ Do you want to overwrite them?</source>
         <location filename="../qkeymapper.cpp" line="44042"/>
         <location filename="../qkeymapper.cpp" line="44048"/>
         <source>Failed to generate mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードの生成に失敗しました。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44053"/>
         <source>Mapping code copied to clipboard.</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードをクリップボードにコピーしました。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44059"/>
         <source>Clipboard does not contain a mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>クリップボードにマッピングコードが含まれていません。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44118"/>
@@ -5578,12 +5579,12 @@ Do you want to overwrite them?</source>
     <message>
         <location filename="../qkeymapper.cpp" line="44752"/>
         <source>Copy Mapping Code</source>
-        <translation type="unfinished"></translation>
+        <translation>マッピングコードをコピー</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44757"/>
         <source>Apply Clipboard Mapping Code</source>
-        <translation type="unfinished"></translation>
+        <translation>クリップボードのマッピングコードを適用</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44770"/>

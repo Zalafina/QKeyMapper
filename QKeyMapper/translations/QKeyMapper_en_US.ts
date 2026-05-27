@@ -1687,19 +1687,19 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <location filename="../qitemsetupdialog.ui" line="1069"/>
         <location filename="../qitemsetupdialog.cpp" line="246"/>
         <source>MappingCode</source>
-        <translation type="unfinished"></translation>
+        <translation>MappingCode</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="1101"/>
         <location filename="../qitemsetupdialog.cpp" line="249"/>
         <source>Copy KMC</source>
-        <translation type="unfinished"></translation>
+        <translation>Copy KMC</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="1120"/>
         <location filename="../qitemsetupdialog.cpp" line="252"/>
         <source>Apply KMC</source>
-        <translation type="unfinished"></translation>
+        <translation>Apply KMC</translation>
     </message>
     <message>
         <source>Update</source>
@@ -1910,7 +1910,7 @@ Update</translation>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="2810"/>
         <source>Generated automatically from the current mapping item settings</source>
-        <translation type="unfinished"></translation>
+        <translation>Generated automatically from the current mapping item settings</translation>
     </message>
     <message>
         <source>No.</source>
@@ -1948,17 +1948,17 @@ Conflicting mappings in other mapping tables were disabled.</translation>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3533"/>
         <source>Failed to generate mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>Failed to generate mapping code.</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3540"/>
         <source>Mapping code copied to clipboard.</source>
-        <translation type="unfinished"></translation>
+        <translation>Mapping code copied to clipboard.</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3561"/>
         <source>Clipboard does not contain a mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>Clipboard does not contain a mapping code.</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3825"/>
@@ -3105,24 +3105,25 @@ Conflicting mappings in %2 mapping table(s) were disabled, and the newly added m
     <message>
         <location filename="../qkeymapper.cpp" line="9482"/>
         <source>Mapping partially updated successfully. Missing or unknown fields were ignored.</source>
-        <translation type="unfinished"></translation>
+        <translation>Mapping partially updated successfully.
+Missing or unknown fields were ignored.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9486"/>
         <location filename="../qkeymapper.cpp" line="9489"/>
         <source>Mapping updated successfully.</source>
-        <translation type="unfinished"></translation>
+        <translation>Mapping updated successfully.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9499"/>
         <location filename="../qkeymapper.cpp" line="9505"/>
         <source>Failed to resolve the mapping item for the mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>Failed to resolve the mapping item for the mapping code.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9524"/>
         <source>Applying the mapping code was cancelled.</source>
-        <translation type="unfinished"></translation>
+        <translation>Applying the mapping code was cancelled.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9552"/>
@@ -3678,67 +3679,67 @@ Values must be within 0～255. Valid formats include [150] or [U=200,D=0,L=150,R
     <message>
         <location filename="../qkeymapper.cpp" line="8562"/>
         <source>Mapping code is empty.</source>
-        <translation type="unfinished"></translation>
+        <translation>Mapping code is empty.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8568"/>
         <source>Invalid mapping code format.</source>
-        <translation type="unfinished"></translation>
+        <translation>Invalid mapping code format.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8575"/>
         <source>Unsupported mapping code version: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Unsupported mapping code version: %1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8578"/>
         <source>Invalid mapping code header: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Invalid mapping code header: %1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8596"/>
         <source>Invalid mapping code token: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Invalid mapping code token: %1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8603"/>
         <source>Duplicate mapping code field: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Duplicate mapping code field: %1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8630"/>
         <source>Invalid list value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Invalid list value for mapping code field %1: %2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8640"/>
         <source>Invalid boolean value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Invalid boolean value for mapping code field %1: %2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8652"/>
         <source>Invalid integer value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Invalid integer value for mapping code field %1: %2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8662"/>
         <source>Invalid number value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Invalid number value for mapping code field %1: %2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8672"/>
         <source>Invalid color value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>Invalid color value for mapping code field %1: %2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8686"/>
         <source>Unhandled mapping code field: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>Unhandled mapping code field: %1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8701"/>
         <source>No valid mapping fields were found in the mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>No valid mapping fields were found in the mapping code.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="18646"/>
@@ -5450,17 +5451,17 @@ Do you want to overwrite them?</source>
         <location filename="../qkeymapper.cpp" line="44042"/>
         <location filename="../qkeymapper.cpp" line="44048"/>
         <source>Failed to generate mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>Failed to generate mapping code.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44053"/>
         <source>Mapping code copied to clipboard.</source>
-        <translation type="unfinished"></translation>
+        <translation>Mapping code copied to clipboard.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44059"/>
         <source>Clipboard does not contain a mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>Clipboard does not contain a mapping code.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44118"/>
@@ -5578,12 +5579,12 @@ Do you want to overwrite them?</source>
     <message>
         <location filename="../qkeymapper.cpp" line="44752"/>
         <source>Copy Mapping Code</source>
-        <translation type="unfinished"></translation>
+        <translation>Copy Mapping Code</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44757"/>
         <source>Apply Clipboard Mapping Code</source>
-        <translation type="unfinished"></translation>
+        <translation>Apply Clipboard Mapping Code</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44770"/>

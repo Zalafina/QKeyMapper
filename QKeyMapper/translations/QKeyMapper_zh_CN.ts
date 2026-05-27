@@ -1687,19 +1687,19 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
         <location filename="../qitemsetupdialog.ui" line="1069"/>
         <location filename="../qitemsetupdialog.cpp" line="246"/>
         <source>MappingCode</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="1101"/>
         <location filename="../qitemsetupdialog.cpp" line="249"/>
         <source>Copy KMC</source>
-        <translation type="unfinished"></translation>
+        <translation>复制映射码</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.ui" line="1120"/>
         <location filename="../qitemsetupdialog.cpp" line="252"/>
         <source>Apply KMC</source>
-        <translation type="unfinished"></translation>
+        <translation>应用映射码</translation>
     </message>
     <message>
         <source>Update</source>
@@ -1909,7 +1909,7 @@ Update</source>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="2810"/>
         <source>Generated automatically from the current mapping item settings</source>
-        <translation type="unfinished"></translation>
+        <translation>根据当前映射项设定自动生成</translation>
     </message>
     <message>
         <source>No.</source>
@@ -1947,17 +1947,17 @@ Update</source>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3533"/>
         <source>Failed to generate mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>生成映射码失败。</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3540"/>
         <source>Mapping code copied to clipboard.</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码已复制到剪贴板。</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3561"/>
         <source>Clipboard does not contain a mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>剪贴板中不包含映射码。</translation>
     </message>
     <message>
         <location filename="../qitemsetupdialog.cpp" line="3825"/>
@@ -3104,24 +3104,24 @@ Continue?</source>
     <message>
         <location filename="../qkeymapper.cpp" line="9482"/>
         <source>Mapping partially updated successfully. Missing or unknown fields were ignored.</source>
-        <translation type="unfinished"></translation>
+        <translation>映射部分更新成功，已忽略缺失或未知字段。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9486"/>
         <location filename="../qkeymapper.cpp" line="9489"/>
         <source>Mapping updated successfully.</source>
-        <translation type="unfinished"></translation>
+        <translation>映射更新成功。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9499"/>
         <location filename="../qkeymapper.cpp" line="9505"/>
         <source>Failed to resolve the mapping item for the mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>无法解析映射码对应的映射项。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9524"/>
         <source>Applying the mapping code was cancelled.</source>
-        <translation type="unfinished"></translation>
+        <translation>已取消应用映射码。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="9552"/>
@@ -3675,67 +3675,67 @@ Valid range is 0~255, and format like [150] or [U=200,D=0,L=150,R=150].</source>
     <message>
         <location filename="../qkeymapper.cpp" line="8562"/>
         <source>Mapping code is empty.</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码为空。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8568"/>
         <source>Invalid mapping code format.</source>
-        <translation type="unfinished"></translation>
+        <translation>无效的映射码格式。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8575"/>
         <source>Unsupported mapping code version: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>不支持的映射码版本：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8578"/>
         <source>Invalid mapping code header: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>无效的映射码头部：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8596"/>
         <source>Invalid mapping code token: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>无效的映射码标记：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8603"/>
         <source>Duplicate mapping code field: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码字段重复：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8630"/>
         <source>Invalid list value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码字段 &quot;%1&quot; 的列表值无效：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8640"/>
         <source>Invalid boolean value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码字段 &quot;%1&quot; 的布尔值无效：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8652"/>
         <source>Invalid integer value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码字段 &quot;%1&quot; 的整数值无效：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8662"/>
         <source>Invalid number value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码字段 &quot;%1&quot; 的数值无效：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8672"/>
         <source>Invalid color value for mapping code field %1: %2</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码字段 &quot;%1&quot; 的颜色值无效：%2</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8686"/>
         <source>Unhandled mapping code field: %1</source>
-        <translation type="unfinished"></translation>
+        <translation>未处理的映射码字段：%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="8701"/>
         <source>No valid mapping fields were found in the mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码中未找到任何有效的映射字段。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="18646"/>
@@ -5451,17 +5451,17 @@ Do you want to overwrite them?</source>
         <location filename="../qkeymapper.cpp" line="44042"/>
         <location filename="../qkeymapper.cpp" line="44048"/>
         <source>Failed to generate mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>生成映射码失败。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44053"/>
         <source>Mapping code copied to clipboard.</source>
-        <translation type="unfinished"></translation>
+        <translation>映射码已复制到剪贴板。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44059"/>
         <source>Clipboard does not contain a mapping code.</source>
-        <translation type="unfinished"></translation>
+        <translation>剪贴板中不包含映射码。</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44118"/>
@@ -5579,12 +5579,12 @@ Do you want to overwrite them?</source>
     <message>
         <location filename="../qkeymapper.cpp" line="44752"/>
         <source>Copy Mapping Code</source>
-        <translation type="unfinished"></translation>
+        <translation>复制映射码</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44757"/>
         <source>Apply Clipboard Mapping Code</source>
-        <translation type="unfinished"></translation>
+        <translation>应用剪贴板映射码</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="44770"/>
