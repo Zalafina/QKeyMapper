@@ -15626,6 +15626,7 @@ bool QKeyMapper::recoverKeyMappingTabWidgetOrderAfterTabMoved(int from, int to)
             }
         }
     }
+    Q_UNUSED(pageOrderMismatch);
 
     const bool moveTouchesCommon = (from == commonDataIndex || to == commonDataIndex
                                     || (actualCommonIndex >= 0 && (from == actualCommonIndex || to == actualCommonIndex)));
