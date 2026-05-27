@@ -8280,6 +8280,141 @@ QString commonPriorityRowsDisabledMessage(int disabledRowCount)
         .arg(disabledRowCount);
 }
 
+QString formatBatchConflictOriginalKeys(const QStringList &originalKeys)
+{
+    const QString separator = QStringLiteral(" / ");
+    const QString ellipsis = QStringLiteral("...");
+
+    QStringList formattedKeys;
+    int totalLength = 0;
+
+    for (int index = 0; index < originalKeys.size(); ++index) {
+        const QString keyText = QStringLiteral("\"%1\"").arg(originalKeys.at(index));
+        const bool hasMoreNames = (index + 1) < originalKeys.size();
+
+        int candidateLength = totalLength;
+        if (!formattedKeys.isEmpty()) {
+            candidateLength += separator.size();
+        }
+        candidateLength += keyText.size();
+
+        if (!formattedKeys.isEmpty()) {
+            const int requiredLengthWithEllipsis = hasMoreNames
+                ? candidateLength + separator.size() + ellipsis.size()
+                : candidateLength;
+            if (requiredLengthWithEllipsis > CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH) {
+                if (totalLength + separator.size() + ellipsis.size() <= CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH) {
+                    formattedKeys.append(ellipsis);
+                }
+                return formattedKeys.join(separator);
+            }
+        }
+
+        if (formattedKeys.isEmpty() || candidateLength <= CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH) {
+            formattedKeys.append(keyText);
+            totalLength = candidateLength;
+            continue;
+        }
+
+        if (totalLength + separator.size() + ellipsis.size() <= CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH) {
+            formattedKeys.append(ellipsis);
+        }
+        return formattedKeys.join(separator);
+    }
+
+    return formattedKeys.join(separator);
+}
+
+QString batchCommonConflictConfirmationMessage(const QStringList &originalKeys,
+                                              int disabledRowCount,
+                                              int affectedTabCount)
+{
+    const QString originalKeyText = originalKeys.isEmpty()
+        ? QCoreApplication::translate("QKeyMapper", "(unknown)")
+        : formatBatchConflictOriginalKeys(originalKeys);
+
+    return QCoreApplication::translate("QKeyMapper",
+                                       "Normal mapping table(s) already contain enabled mapping(s) for %1 OriginalKey group(s): %2.\nContinuing will disable %3 conflicting mapping(s) in %4 mapping table(s).\n\nContinue?")
+        .arg(originalKeys.size())
+        .arg(originalKeyText)
+        .arg(disabledRowCount)
+        .arg(affectedTabCount);
+}
+
+QString buildMappingDataInsertResultMessageImpl(const QString &successMessage,
+                                                const QKeyMapper::MappingDataInsertSummary &summary)
+{
+    QStringList details;
+
+    if (summary.ExclusiveConflictDisabledNewRowCount > 0) {
+        details.append(QCoreApplication::translate("QKeyMapper",
+                                                   "%1 mapping(s) were disabled due to a conflict in the target mapping table.")
+                           .arg(summary.ExclusiveConflictDisabledNewRowCount));
+    }
+
+    if (summary.CommonConflictDisabledNewRowCount > 0) {
+        details.append(QCoreApplication::translate("QKeyMapper",
+                                                   "%1 mapping(s) were disabled because the same OriginalKey already exists in the Common mapping table.")
+                           .arg(summary.CommonConflictDisabledNewRowCount));
+    }
+
+    if (summary.CommonPriorityRepair.hasChanges()) {
+        details.append(QCoreApplication::translate("QKeyMapper",
+                                                   "Common mapping priority disabled %1 conflicting mapping(s) in %2 normal mapping table(s).")
+                           .arg(summary.CommonPriorityRepair.DisabledRowCount)
+                           .arg(summary.CommonPriorityRepair.affectedTabCount()));
+    }
+
+    if (details.isEmpty()) {
+        return successMessage;
+    }
+
+    QString message = successMessage;
+    if (!message.isEmpty()) {
+        const QChar lastChar = message.at(message.size() - 1);
+        if (lastChar != QLatin1Char('.')
+            && lastChar != QLatin1Char('!')
+            && lastChar != QLatin1Char('?')) {
+            message.append(QLatin1Char('.'));
+        }
+        message.append(QLatin1Char(' '));
+    }
+
+    message.append(details.join(QStringLiteral(" ")));
+    return message;
+}
+
+void showCopiedMappingInsertResultPopup(QKeyMapper *keymapper,
+                                        int insertedCount,
+                                        const QKeyMapper::MappingDataInsertSummary &summary)
+{
+    if (!keymapper || summary.Cancelled) {
+        return;
+    }
+
+    const int copiedCount = QKeyMapper::s_CopiedMappingData.size();
+    if (insertedCount == 0) {
+        const QString message = QCoreApplication::translate("QKeyMapper",
+                                                            "%1 copied mapping data failed to insert!")
+            .arg(copiedCount);
+        keymapper->showFailurePopup(message);
+        return;
+    }
+
+    if (insertedCount > 0) {
+        const QString successMessage = QCoreApplication::translate("QKeyMapper",
+                                                                   "Inserted %1 copied mapping data into current mapping table.")
+            .arg(insertedCount);
+        const QString message = buildMappingDataInsertResultMessageImpl(successMessage, summary);
+        if (summary.hasWarning()) {
+            keymapper->showWarningPopup(message);
+        }
+        else {
+            keymapper->showInformationPopup(message);
+        }
+    }
+}
+
 bool currentRowDisabledByConflict(QKeyMapper::ExclusiveGroupConflictResolutionResult result)
 {
     return result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabled
@@ -9150,6 +9285,12 @@ const QStringList *QKeyMapper::getKeyListSharedItemsRef(KeyListCollectionType co
     }
 
     return (KEYLIST_SHARED_FAVORITES == dataType) ? &m_FavoriteMappingKeys : &m_RecentMappingKeys;
+}
+
+QString QKeyMapper::buildMappingDataInsertResultMessage(const QString &successMessage,
+                                                        const MappingDataInsertSummary &summary)
+{
+    return buildMappingDataInsertResultMessageImpl(successMessage, summary);
 }
 
 QStringList QKeyMapper::getKeyListSharedItems(KeyListCollectionType collectionType, KeyListSharedDataType dataType) const
@@ -12092,10 +12233,10 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     return true;
 }
 
-bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filename, int *autoDisabledCount)
+bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filename, MappingDataInsertSummary *insertSummary)
 {
-    if (autoDisabledCount) {
-        *autoDisabledCount = 0;
+    if (insertSummary) {
+        insertSummary->clear();
     }
 
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
@@ -13323,29 +13464,27 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         return false;
     }
 
-    // Seed enabled group set from existing table so newly imported items won't override enabled state.
-    QSet<QString> enabledGroups = collectEnabledExclusiveGroups(*mappingDataList);
-    int auto_disabled = 0;
-
-    for (const MAP_KEYDATA &keymapdata : std::as_const(loadkeymapdata)) {
-        MAP_KEYDATA toInsert = keymapdata;
-        if (!toInsert.Disabled) {
-            const QString groupKey = normalizeOriginalKeyForExclusiveGroup(toInsert.Original_Key);
-            if (enabledGroups.contains(groupKey)) {
-                toInsert.Disabled = true;
-                auto_disabled += 1;
-            }
-            else {
-                enabledGroups.insert(groupKey);
-            }
-        }
-
-        mappingDataList->append(toInsert);
-        import_result = true;
+    QKeyMapper *keymapper = QKeyMapper::getInstance();
+    if (keymapper == Q_NULLPTR) {
+        return false;
     }
 
-    if (autoDisabledCount) {
-        *autoDisabledCount = auto_disabled;
+    QList<MAP_KEYDATA> insertMappingDataList;
+    MappingDataInsertSummary preparedSummary = keymapper->prepareMappingDataForInsertion(tabindex,
+                                                                                         loadkeymapdata,
+                                                                                         &insertMappingDataList,
+                                                                                         true);
+    if (insertSummary) {
+        *insertSummary = preparedSummary;
+    }
+
+    if (preparedSummary.Cancelled || insertMappingDataList.isEmpty()) {
+        return false;
+    }
+
+    for (const MAP_KEYDATA &keymapdata : std::as_const(insertMappingDataList)) {
+        mappingDataList->append(keymapdata);
+        import_result = true;
     }
 
     return import_result;
@@ -16242,7 +16381,7 @@ int QKeyMapper::copySelectedKeyMappingDataToCopiedList()
     return copied_count;
 }
 
-int QKeyMapper::insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisabledCount)
+int QKeyMapper::insertKeyMappingDataFromCopiedList(int insertMode, MappingDataInsertSummary *insertSummary)
 {
     int targetTabIndex = s_KeyMappingTabWidgetCurrentIndex;
     int insertRow = -1;
@@ -16288,11 +16427,15 @@ int QKeyMapper::insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisa
         }
     }
 
-    return insertCopiedKeyMappingDataAtTargetRow(targetTabIndex, insertRow, autoDisabledCount);
+    return insertCopiedKeyMappingDataAtTargetRow(targetTabIndex, insertRow, insertSummary);
 }
 
-int QKeyMapper::insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, int *autoDisabledCount)
+int QKeyMapper::insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, MappingDataInsertSummary *insertSummary)
 {
+    if (insertSummary) {
+        insertSummary->clear();
+    }
+
     int inserted_count = -1;
     if (!m_KeyMappingDataTable || s_CopiedMappingData.isEmpty()) {
         return inserted_count;
@@ -16307,42 +16450,26 @@ int QKeyMapper::insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int in
         return inserted_count;
     }
 
-    if (autoDisabledCount) {
-        *autoDisabledCount = 0;
-    }
-
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
     closeSetupDialog_OnDataChanged();
 #endif
 
-    // Prepare insert list (duplicates allowed). If an inserted item is enabled while
-    // another item in the same normalized OriginalKey group is already enabled,
-    // auto-disable the inserted one.
     QList<MAP_KEYDATA> insertMappingDataList;
-    QSet<QString> enabledGroups = collectEnabledExclusiveGroups(*targetMappingDataList);
-    int auto_disabled = 0;
-    for (const MAP_KEYDATA &keymapdata : std::as_const(s_CopiedMappingData)) {
-        MAP_KEYDATA toInsert = keymapdata;
-        if (!toInsert.Disabled) {
-            const QString groupKey = normalizeOriginalKeyForExclusiveGroup(toInsert.Original_Key);
-            if (enabledGroups.contains(groupKey)) {
-                toInsert.Disabled = true;
-                auto_disabled += 1;
-            }
-            else {
-                enabledGroups.insert(groupKey);
-            }
-        }
-        insertMappingDataList.append(toInsert);
+    MappingDataInsertSummary preparedSummary = prepareMappingDataForInsertion(targetTabIndex,
+                                                                              s_CopiedMappingData,
+                                                                              &insertMappingDataList,
+                                                                              true);
+    if (insertSummary) {
+        *insertSummary = preparedSummary;
+    }
+
+    if (preparedSummary.Cancelled) {
+        return 0;
     }
 
     inserted_count = insertMappingDataList.size();
     if (insertMappingDataList.isEmpty()) {
         return inserted_count;
-    }
-
-    if (autoDisabledCount) {
-        *autoDisabledCount = auto_disabled;
     }
 
     const int boundedInsertRow = qBound(0, insertRow, targetMappingDataList->size());
@@ -16375,11 +16502,13 @@ int QKeyMapper::insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int in
         << ") copied items at tab(" << targetTabIndex << ") row(" << boundedInsertRow << ") -> " << insertMappingDataList;
 #endif
 
-    markSaveSettingDirty();
+    if (inserted_count > 0 || preparedSummary.CommonPriorityRepair.hasChanges()) {
+        markSaveSettingDirty();
+    }
     return inserted_count;
 }
 
-int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *autoDisabledCount)
+int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, MappingDataInsertSummary *insertSummary)
 {
     if (!m_KeyMappingDataTable) {
         return -1;
@@ -16426,7 +16555,7 @@ int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *auto
         targetInsertRow = sourceInfo.SourceRow;
     }
 
-    return insertCopiedKeyMappingDataAtTargetRow(targetTabIndex, targetInsertRow, autoDisabledCount);
+    return insertCopiedKeyMappingDataAtTargetRow(targetTabIndex, targetInsertRow, insertSummary);
 }
 
 void QKeyMapper::updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring)
@@ -17449,6 +17578,156 @@ void QKeyMapper::flushPendingCommonPriorityRepairAfterLoad(void)
 
     requestSaveSettingDirty();
     showWarningPopup(commonPriorityRowsDisabledMessage(summary.DisabledRowCount));
+}
+
+QKeyMapper::MappingDataInsertSummary QKeyMapper::prepareMappingDataForInsertion(int targetTabIndex,
+                                                                                const QList<MAP_KEYDATA> &sourceMappingData,
+                                                                                QList<MAP_KEYDATA> *insertMappingDataList,
+                                                                                bool allowCommonConflictPrompt)
+{
+    MappingDataInsertSummary summary;
+
+    if (insertMappingDataList == Q_NULLPTR) {
+        return summary;
+    }
+
+    insertMappingDataList->clear();
+
+    if (targetTabIndex < 0 || targetTabIndex >= s_KeyMappingTabInfoList.size()) {
+        return summary;
+    }
+
+    QList<MAP_KEYDATA> *targetMappingDataList = s_KeyMappingTabInfoList.at(targetTabIndex).KeyMappingData;
+    if (targetMappingDataList == Q_NULLPTR) {
+        return summary;
+    }
+
+    const bool targetIsCommon = isCommonMappingTabIndex(targetTabIndex);
+    QSet<QString> commonEnabledGroups;
+    if (!targetIsCommon && shouldAppendCommonMappingRows(targetTabIndex)) {
+        const int commonTabIndex = findCommonMappingTabIndex();
+        if (commonTabIndex >= 0
+            && commonTabIndex < s_KeyMappingTabInfoList.size()
+            && commonTabIndex != targetTabIndex) {
+            QList<MAP_KEYDATA> *commonMappingData = s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData;
+            if (commonMappingData != Q_NULLPTR) {
+                commonEnabledGroups = collectEnabledExclusiveGroups(*commonMappingData);
+                commonEnabledGroups.remove(QString());
+            }
+        }
+    }
+
+    if (targetIsCommon) {
+        QHash<int, QSet<int>> conflictingRowsByTab;
+        QStringList conflictingOriginalKeys;
+        QSet<QString> processedGroupKeys;
+
+        for (const MAP_KEYDATA &keymapdata : std::as_const(sourceMappingData)) {
+            if (keymapdata.Disabled) {
+                continue;
+            }
+
+            const QString groupKey = normalizeOriginalKeyForExclusiveGroup(keymapdata.Original_Key);
+            if (groupKey.isEmpty() || processedGroupKeys.contains(groupKey)) {
+                continue;
+            }
+            processedGroupKeys.insert(groupKey);
+
+            const QList<NormalTabExclusiveGroupConflict> conflicts = collectEnabledNormalTabExclusiveGroupConflicts(groupKey);
+            if (conflicts.isEmpty()) {
+                continue;
+            }
+
+            conflictingOriginalKeys.append(keymapdata.Original_Key);
+            for (const NormalTabExclusiveGroupConflict &conflict : conflicts) {
+                if (conflict.TabIndex < 0 || conflict.TabIndex >= s_KeyMappingTabInfoList.size()) {
+                    continue;
+                }
+
+                QSet<int> &rows = conflictingRowsByTab[conflict.TabIndex];
+                for (int row : conflict.Rows) {
+                    if (row >= 0) {
+                        rows.insert(row);
+                    }
+                }
+            }
+        }
+
+        int conflictingNormalRowCount = 0;
+        QSet<int> affectedTabIndexes;
+        for (auto it = conflictingRowsByTab.constBegin(); it != conflictingRowsByTab.constEnd(); ++it) {
+            affectedTabIndexes.insert(it.key());
+            conflictingNormalRowCount += it.value().size();
+        }
+
+        if (conflictingNormalRowCount > 0) {
+            if (allowCommonConflictPrompt) {
+                const QString message = batchCommonConflictConfirmationMessage(conflictingOriginalKeys,
+                                                                              conflictingNormalRowCount,
+                                                                              affectedTabIndexes.size());
+                QMessageBox::StandardButton reply = QMessageBox::warning(this,
+                                                                         PROGRAM_NAME,
+                                                                         message,
+                                                                         QMessageBox::Yes | QMessageBox::No,
+                                                                         QMessageBox::No);
+                if (reply != QMessageBox::Yes) {
+                    summary.Cancelled = true;
+                    return summary;
+                }
+            }
+
+            for (auto it = conflictingRowsByTab.constBegin(); it != conflictingRowsByTab.constEnd(); ++it) {
+                const int tabIndex = it.key();
+                QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+                if (mappingDataList == Q_NULLPTR) {
+                    continue;
+                }
+
+                bool tabAffected = false;
+                for (int row : it.value()) {
+                    if (row < 0 || row >= mappingDataList->size()) {
+                        continue;
+                    }
+                    if (mappingDataList->at(row).Disabled) {
+                        continue;
+                    }
+
+                    (*mappingDataList)[row].Disabled = true;
+                    emit keyMappingTableItemCheckStateChanged_Signal(row, DISABLED_COLUMN, true);
+                    summary.CommonPriorityRepair.DisabledRowCount += 1;
+                    tabAffected = true;
+                }
+
+                if (tabAffected) {
+                    summary.CommonPriorityRepair.AffectedTabIndexes.insert(tabIndex);
+                }
+            }
+        }
+    }
+
+    QSet<QString> enabledGroups = collectEnabledExclusiveGroups(*targetMappingDataList);
+    for (const MAP_KEYDATA &keymapdata : std::as_const(sourceMappingData)) {
+        MAP_KEYDATA toInsert = keymapdata;
+        if (!toInsert.Disabled) {
+            const QString groupKey = normalizeOriginalKeyForExclusiveGroup(toInsert.Original_Key);
+            if (enabledGroups.contains(groupKey)) {
+                toInsert.Disabled = true;
+                summary.ExclusiveConflictDisabledNewRowCount += 1;
+            }
+            else if (!targetIsCommon && !groupKey.isEmpty() && commonEnabledGroups.contains(groupKey)) {
+                toInsert.Disabled = true;
+                summary.CommonConflictDisabledNewRowCount += 1;
+            }
+            else {
+                enabledGroups.insert(groupKey);
+            }
+        }
+
+        insertMappingDataList->append(toInsert);
+    }
+
+    summary.InsertedRowCount = insertMappingDataList->size();
+    return summary;
 }
 
 void QKeyMapper::keyMappingTableItemSelectionChanged()
@@ -43268,31 +43547,13 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
         }
     }
     else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
-        int auto_disabled = 0;
+        QKeyMapper::MappingDataInsertSummary insertSummary;
         const int currentMode = QKeyMapper::getTableInsertModeIndex();
         const int insertMode = (event->modifiers() & Qt::ShiftModifier)
             ? getOppositeTableInsertMode(currentMode)
             : currentMode;
-        int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(insertMode, &auto_disabled);
-        int copied_count = QKeyMapper::s_CopiedMappingData.size();
-        if (inserted_count == 0) {
-            QString message = tr("%1 copied mapping data failed to insert!").arg(copied_count);
-            QKeyMapper::getInstance()->showFailurePopup(message);
-        }
-        else if (inserted_count > 0) {
-            QString message;
-            if (auto_disabled > 0) {
-                message = tr("Inserted %1 copied mapping data into current mapping table. %2 mapping(s) were disabled due to a conflict.")
-                              .arg(inserted_count)
-                              .arg(auto_disabled);
-                QKeyMapper::getInstance()->showWarningPopup(message);
-            }
-            else {
-                message = tr("Inserted %1 copied mapping data into current mapping table.")
-                              .arg(inserted_count);
-                QKeyMapper::getInstance()->showInformationPopup(message);
-            }
-        }
+        int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(insertMode, &insertSummary);
+        showCopiedMappingInsertResultPopup(QKeyMapper::getInstance(), inserted_count, insertSummary);
         return;
     }
 
@@ -43965,31 +44226,13 @@ void KeyMappingDataTableWidget::keyPressEvent(QKeyEvent *event)
         }
     }
     else if (event->key() == Qt::Key_V && (event->modifiers() & Qt::ControlModifier)) {
-        int auto_disabled = 0;
+        QKeyMapper::MappingDataInsertSummary insertSummary;
         const int currentMode = QKeyMapper::getTableInsertModeIndex();
         const int insertMode = (event->modifiers() & Qt::ShiftModifier)
             ? getOppositeTableInsertMode(currentMode)
             : currentMode;
-        int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(insertMode, &auto_disabled);
-        int copied_count = QKeyMapper::s_CopiedMappingData.size();
-        if (inserted_count == 0) {
-            QString message = tr("%1 copied mapping data failed to insert!").arg(copied_count);
-            QKeyMapper::getInstance()->showFailurePopup(message);
-        }
-        else if (inserted_count > 0) {
-            QString message;
-            if (auto_disabled > 0) {
-                message = tr("Inserted %1 copied mapping data into current mapping table. %2 mapping(s) were disabled due to a conflict.")
-                              .arg(inserted_count)
-                              .arg(auto_disabled);
-                QKeyMapper::getInstance()->showWarningPopup(message);
-            }
-            else {
-                message = tr("Inserted %1 copied mapping data into current mapping table.")
-                              .arg(inserted_count);
-                QKeyMapper::getInstance()->showInformationPopup(message);
-            }
-        }
+        int inserted_count = QKeyMapper::getInstance()->insertKeyMappingDataFromCopiedList(insertMode, &insertSummary);
+        showCopiedMappingInsertResultPopup(QKeyMapper::getInstance(), inserted_count, insertSummary);
         return;
     }
 
@@ -44347,31 +44590,13 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     const bool canShowMappingCodeActions = hasSingleSelectedDisplayRow
         && (currentColumn == ORIGINAL_KEY_COLUMN || currentColumn == MAPPING_KEY_COLUMN);
 
-    auto handleInsertResult = [keymapper](int inserted_count, int auto_disabled) {
-        const int copied_count = QKeyMapper::s_CopiedMappingData.size();
-        if (inserted_count == 0) {
-            QString message = tr("%1 copied mapping data failed to insert!").arg(copied_count);
-            keymapper->showFailurePopup(message);
-        }
-        else if (inserted_count > 0) {
-            QString message;
-            if (auto_disabled > 0) {
-                message = tr("Inserted %1 copied mapping data into current mapping table. %2 mapping(s) were disabled due to a conflict.")
-                              .arg(inserted_count)
-                              .arg(auto_disabled);
-                keymapper->showWarningPopup(message);
-            }
-            else {
-                message = tr("Inserted %1 copied mapping data into current mapping table.")
-                              .arg(inserted_count);
-                keymapper->showInformationPopup(message);
-            }
-        }
+    auto handleInsertResult = [keymapper](int inserted_count, const QKeyMapper::MappingDataInsertSummary &insertSummary) {
+        showCopiedMappingInsertResultPopup(keymapper, inserted_count, insertSummary);
     };
 
     const auto insertCopiedItemsForPlacement = [keymapper, this, currentRow, hasValidCurrentSelectedRow, handleInsertResult](DisplayInsertPlacement placement, int fallbackInsertRow) {
-        int auto_disabled = 0;
         int inserted_count = -1;
+        QKeyMapper::MappingDataInsertSummary insertSummary;
 
         DisplayInsertTargetInfo targetInfo;
         if (hasValidCurrentSelectedRow
@@ -44381,13 +44606,13 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                                                     &targetInfo)) {
             inserted_count = keymapper->insertCopiedKeyMappingDataAtTargetRow(targetInfo.TargetTabIndex,
                                                                               targetInfo.TargetInsertRow,
-                                                                              &auto_disabled);
+                                                                              &insertSummary);
         }
         else {
-            inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(fallbackInsertRow, &auto_disabled);
+            inserted_count = keymapper->insertCopiedKeyMappingDataAtAbsoluteRow(fallbackInsertRow, &insertSummary);
         }
 
-        handleInsertResult(inserted_count, auto_disabled);
+        handleInsertResult(inserted_count, insertSummary);
     };
 
     bool hasPreviousGroup = false;

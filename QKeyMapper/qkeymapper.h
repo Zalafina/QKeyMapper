@@ -1417,7 +1417,9 @@ public:
     static int tabIndexToSwitchByTabHotkey(const QString &hotkey_string, bool *isSame = nullptr);
     static int tabIndexToSwitchByTabName(const QString &tabName);
     static bool exportKeyMappingDataToFile(int tabindex, const QString &filename);
-    static bool importKeyMappingDataFromFile(int tabindex, const QString &filename, int *autoDisabledCount = Q_NULLPTR);
+    struct MappingDataInsertSummary;
+    static bool importKeyMappingDataFromFile(int tabindex, const QString &filename, MappingDataInsertSummary *insertSummary = Q_NULLPTR);
+    static QString buildMappingDataInsertResultMessage(const QString &successMessage, const MappingDataInsertSummary &summary);
     static void updateKeyMappingDataListMappingKeys(int rowindex, const QString &mappingkeystr);
     static void updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QString &mappingkeystr);
     static bool validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata);
@@ -1571,9 +1573,9 @@ public slots:
     int removeTabFromKeyMappingTabWidget(int tabindex);
     void moveTabInKeyMappingTabWidget(int from, int to);
     int copySelectedKeyMappingDataToCopiedList(void);
-    int insertKeyMappingDataFromCopiedList(int insertMode, int *autoDisabledCount = Q_NULLPTR);
-    int insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, int *autoDisabledCount = Q_NULLPTR);
-    int insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, int *autoDisabledCount = Q_NULLPTR);
+    int insertKeyMappingDataFromCopiedList(int insertMode, MappingDataInsertSummary *insertSummary = Q_NULLPTR);
+    int insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, MappingDataInsertSummary *insertSummary = Q_NULLPTR);
+    int insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, MappingDataInsertSummary *insertSummary = Q_NULLPTR);
     void openCurrentMappingTableSetupDialog(void);
     void openCurrentMappingItemSetupDialog(void);
     void updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring);
@@ -2256,10 +2258,46 @@ public:
         }
     };
 
+    struct MappingDataInsertSummary {
+        int InsertedRowCount = 0;
+        int ExclusiveConflictDisabledNewRowCount = 0;
+        int CommonConflictDisabledNewRowCount = 0;
+        bool Cancelled = false;
+        CommonPriorityRepairSummary CommonPriorityRepair;
+
+        bool hasInsertedRows(void) const
+        {
+            return InsertedRowCount > 0;
+        }
+
+        int totalDisabledNewRowCount(void) const
+        {
+            return ExclusiveConflictDisabledNewRowCount + CommonConflictDisabledNewRowCount;
+        }
+
+        bool hasWarning(void) const
+        {
+            return totalDisabledNewRowCount() > 0 || CommonPriorityRepair.hasChanges();
+        }
+
+        void clear(void)
+        {
+            InsertedRowCount = 0;
+            ExclusiveConflictDisabledNewRowCount = 0;
+            CommonConflictDisabledNewRowCount = 0;
+            Cancelled = false;
+            CommonPriorityRepair.clear();
+        }
+    };
+
     int applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow, bool showPopup = true);
     ExclusiveGroupConflictResolutionResult autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup = true, bool updateTableWidget = true);
 
 private:
+    MappingDataInsertSummary prepareMappingDataForInsertion(int targetTabIndex,
+                                                            const QList<MAP_KEYDATA> &sourceMappingData,
+                                                            QList<MAP_KEYDATA> *insertMappingDataList,
+                                                            bool allowCommonConflictPrompt = true);
     CommonPriorityRepairSummary reconcileCommonPriorityConflicts(void);
     void queuePendingCommonPriorityRepairSummary(const CommonPriorityRepairSummary &summary);
     void flushPendingCommonPriorityRepairAfterLoad(void);

@@ -750,26 +750,40 @@ void QTableSetupDialog::on_importTableButton_clicked()
     qDebug().nospace() << "[on_importTableButton_clicked]" << "import_filename from QFileDialog -> TabIndex[" << tabindex << "] : " << import_filename;
 #endif
 
-    int auto_disabled = 0;
-    bool import_result = QKeyMapper::importKeyMappingDataFromFile(tabindex, import_filename, &auto_disabled);
+    QKeyMapper::MappingDataInsertSummary insertSummary;
+    bool import_result = QKeyMapper::importKeyMappingDataFromFile(tabindex, import_filename, &insertSummary);
 
     if (import_result) {
-        QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(tabindex);
+        QKeyMapper::getInstance()->refreshTabsForSourceTabChange(tabindex);
         QKeyMapper::getInstance()->requestSaveSettingDirty();
 
         //Show success popup message
-        QString popupMessage;
+        QString popupMessage = tr("Import mapping data to table \"%1\" successfully.").arg(TabName);
+        QStringList popupMessageDetails;
+        if (insertSummary.ExclusiveConflictDisabledNewRowCount > 0) {
+            popupMessageDetails.append(tr("%1 mapping(s) were disabled due to a conflict in the target mapping table.")
+                                           .arg(insertSummary.ExclusiveConflictDisabledNewRowCount));
+        }
+        if (insertSummary.CommonConflictDisabledNewRowCount > 0) {
+            popupMessageDetails.append(tr("%1 mapping(s) were disabled because the same OriginalKey already exists in the Common mapping table.")
+                                           .arg(insertSummary.CommonConflictDisabledNewRowCount));
+        }
+        if (insertSummary.CommonPriorityRepair.hasChanges()) {
+            popupMessageDetails.append(tr("Common mapping priority disabled %1 conflicting mapping(s) in %2 normal mapping table(s).")
+                                           .arg(insertSummary.CommonPriorityRepair.DisabledRowCount)
+                                           .arg(insertSummary.CommonPriorityRepair.affectedTabCount()));
+        }
+        if (!popupMessageDetails.isEmpty()) {
+            popupMessage.append(QStringLiteral(" "));
+            popupMessage.append(popupMessageDetails.join(QStringLiteral(" ")));
+        }
         QString popupMessageColor;
         int popupMessageDisplayTime = 3000;
-        if (auto_disabled > 0) {
+        if (insertSummary.hasWarning()) {
             popupMessageColor = WARNING_COLOR;
-            popupMessage = tr("Import mapping data to table \"%1\" successfully. %2 mapping(s) were disabled due to a conflict.")
-                              .arg(TabName)
-                              .arg(auto_disabled);
         }
         else {
             popupMessageColor = SUCCESS_COLOR;
-            popupMessage = tr("Import mapping data to table \"%1\" successfully").arg(TabName);
         }
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
