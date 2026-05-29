@@ -670,6 +670,53 @@ struct GameControllerTouchpadState
     {}
 };
 
+struct GameControllerTouchpadGestureState
+{
+    int touchpad;
+    int primaryFinger;
+    int secondaryFinger;
+    bool primaryDown;
+    bool secondaryDown;
+    bool tapEligible;
+    bool twoFingerEligible;
+    bool twoFingerTriggered;
+    quint32 primaryDownTimestamp;
+    quint32 secondFingerDownTimestamp;
+    qreal primaryStartX;
+    qreal primaryStartY;
+    qreal primaryLastX;
+    qreal primaryLastY;
+    qreal secondaryLastX;
+    qreal secondaryLastY;
+    qreal tapPathLength;
+    qreal twoFingerBaseCenterX;
+    qreal twoFingerBaseCenterY;
+    qreal twoFingerBaseSpan;
+
+    GameControllerTouchpadGestureState()
+        : touchpad(-1)
+        , primaryFinger(-1)
+        , secondaryFinger(-1)
+        , primaryDown(false)
+        , secondaryDown(false)
+        , tapEligible(false)
+        , twoFingerEligible(false)
+        , twoFingerTriggered(false)
+        , primaryDownTimestamp(0)
+        , secondFingerDownTimestamp(0)
+        , primaryStartX(0.0)
+        , primaryStartY(0.0)
+        , primaryLastX(0.0)
+        , primaryLastY(0.0)
+        , secondaryLastX(0.0)
+        , secondaryLastY(0.0)
+        , tapPathLength(0.0)
+        , twoFingerBaseCenterX(0.0)
+        , twoFingerBaseCenterY(0.0)
+        , twoFingerBaseSpan(0.0)
+    {}
+};
+
 struct ViGEm_ReportData
 {
     XUSB_REPORT xusb_report;
@@ -1341,6 +1388,9 @@ public slots:
     QHash<int, QKeyMapper_Worker::Joy2MouseStates> checkJoy2MouseEnableStateMap(int &sendMappingKeyMethod);
     bool checkKey2MouseEnableState(int &sendMappingKeyMethod);
     bool checkGyro2MouseEnableState(int &sendMappingKeyMethod);
+    bool checkGamepadTouchpadEnableState(void);
+    bool checkGamepadTouchpadTapEnableState(void);
+    bool checkGamepadTouchpad2FEnableState(void);
     bool checkGamepadTouchpad2MouseEnableState(int &sendMappingKeyMethod);
     bool checkGyro2MouseMoveActiveState(void);
     void doFunctionMappingProc(const QString &func_keystring);
@@ -1360,7 +1410,10 @@ private:
     void joystick2MouseMoveProc(int player_index, int sendmappingkeymethod);
     void key2MouseMoveProc(int sendmappingkeymethod);
     void gyro2MouseMoveProc(const GameControllerSensorData &sensor_data, int sendmappingkeymethod);
-    void gamepadTouchpad2MouseMoveProc(const QJoystickTouchpadEvent &e, int sendmappingkeymethod);
+    void gamepadTouchpad2MouseMoveProc(const QJoystickTouchpadEvent &e, int sendmappingkeymethod, bool suppressMouseMove = false);
+    bool handleGamepadTouchpadGesture(const QJoystickTouchpadEvent &e);
+    bool dispatchTouchpadDerivedKey(const QString &keycodeString, int keyupdown, const QJoystickDevice *joystick);
+    void clearGamepadTouchpadRuntimeState(void);
 
 public:
     static ULONG_PTR generateUniqueRandomValue(QSet<ULONG_PTR>& existingValues);
@@ -1508,7 +1561,7 @@ public:
     static QAtomicBool s_BlockMouse;
     static QAtomicBool s_Mouse2vJoy_Hold;
     static QAtomicBool s_Gyro2Mouse_MoveActive;
-    static QAtomicBool s_GamepadTouchpad2Mouse_Active;
+    static QAtomicBool s_GamepadTouchpad_Active;
     static QAtomicBool s_Crosshair_Normal;
     static QAtomicBool s_Crosshair_TypeA;
     static QAtomicBool s_Key2Mouse_Up;
@@ -1643,6 +1696,9 @@ public:
 
     static bool s_Key2Mouse_EnableState;
     static bool s_GameControllerSensor_EnableState;
+    static bool s_GamepadTouchpad_EnableState;
+    static bool s_GamepadTouchpadTap_EnableState;
+    static bool s_GamepadTouchpad2F_EnableState;
     static bool s_GamepadTouchpad2Mouse_EnableState;
     // static Joy2MouseStates s_Joy2Mouse_EnableState;
     static QHash<int, Joy2MouseStates> s_Joy2Mouse_EnableStateMap;
@@ -1685,6 +1741,7 @@ private:
     QHash<int, JoystickDPadCode> m_JoystickPOVMap;
     GamepadMotion m_GamdpadMotion;
     QHash<int, GameControllerTouchpadState> m_GamepadTouchpadStateMap;
+    QHash<int, GameControllerTouchpadGestureState> m_GamepadTouchpadGestureStateMap;
     bool m_ComInitialized = false;
 
     // Volume control instance

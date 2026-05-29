@@ -2542,6 +2542,25 @@ static QString buildOriginalKeyTriggerString(const QString &baseKey, OriginalKey
     return baseKey + triggerSuffix + QString::number(boundedPressTime);
 }
 
+static bool isGamepadTouchpadPlayerlessOriginalKey(const QString &originalKey)
+{
+    return originalKey == JOY_TOUCHPAD2MOUSE_STR
+        || originalKey == JOY_TOUCHPAD_TAP_STR
+        || originalKey == JOY_TOUCHPAD_2F_UP_STR
+        || originalKey == JOY_TOUCHPAD_2F_DOWN_STR
+        || originalKey == JOY_TOUCHPAD_2F_LEFT_STR
+        || originalKey == JOY_TOUCHPAD_2F_RIGHT_STR;
+}
+
+static bool isGamepadTouchpadTimeRestrictedOriginalKey(const QString &originalKey)
+{
+    return originalKey == JOY_TOUCHPAD2MOUSE_STR
+        || originalKey == JOY_TOUCHPAD_2F_UP_STR
+        || originalKey == JOY_TOUCHPAD_2F_DOWN_STR
+        || originalKey == JOY_TOUCHPAD_2F_LEFT_STR
+        || originalKey == JOY_TOUCHPAD_2F_RIGHT_STR;
+}
+
 static ValidationResult validateOriginalKeyTriggerChange(const MAP_KEYDATA &keymapdata, int row, OriginalKeyTriggerType triggerType, int pressTime)
 {
     ValidationResult validationResult;
@@ -6894,6 +6913,22 @@ ValidationResult QKeyMapper::validateSingleOriginalKey(const QString &orikey, in
     }
 
     if (validKey) {
+        if (original_key == JOY_TOUCHPAD_TAP_STR && isLongPress) {
+            result.isValid = false;
+            result.errorMessage = tr("Original key \"%1\" does not support trigger type \"%2\".")
+                                      .arg(original_key, originalKeyTriggerTypeDisplayName(OriginalKeyTriggerType::LongPress));
+            return result;
+        }
+
+        if (isGamepadTouchpadTimeRestrictedOriginalKey(original_key) && (isLongPress || isDoublePress)) {
+            result.isValid = false;
+            result.errorMessage = tr("Original key \"%1\" does not support trigger type \"%2\".")
+                                      .arg(original_key,
+                                           originalKeyTriggerTypeDisplayName(isLongPress ? OriginalKeyTriggerType::LongPress
+                                                                                         : OriginalKeyTriggerType::DoublePress));
+            return result;
+        }
+
         if (isLongPress || isDoublePress) {
             bool ok;
             int pressTime = isLongPress ? longPressTimeString.toInt(&ok) : doublePressTimeString.toInt(&ok);
@@ -6957,7 +6992,13 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
     }
 
     if (validKey) {
-        if ((original_key == JOY_GYRO2MOUSE_STR || original_key == JOY_TOUCHPAD2MOUSE_STR) && !indexString.isEmpty()) {
+        if (isGamepadTouchpadPlayerlessOriginalKey(original_key) && !indexString.isEmpty()) {
+            result.isValid = false;
+            result.errorMessage = tr("Invalid key format \"%1\", do not add Player suffix to %2.").arg(orikey, original_key);
+            return result;
+        }
+
+        if ((original_key == JOY_GYRO2MOUSE_STR || isGamepadTouchpadPlayerlessOriginalKey(original_key)) && !indexString.isEmpty()) {
             result.isValid = false;
             result.errorMessage = tr("Invalid key format \"%1\", do not add Player suffix to %2.").arg(orikey, original_key);
             return result;
@@ -31093,6 +31134,11 @@ void QKeyMapper::initKeysCategoryMap()
         << JOY_RS2MOUSE_STR
         << JOY_GYRO2MOUSE_STR
         << JOY_TOUCHPAD2MOUSE_STR
+        << JOY_TOUCHPAD_TAP_STR
+        << JOY_TOUCHPAD_2F_UP_STR
+        << JOY_TOUCHPAD_2F_DOWN_STR
+        << JOY_TOUCHPAD_2F_LEFT_STR
+        << JOY_TOUCHPAD_2F_RIGHT_STR
         << "Joy-LS-Up"
         << "Joy-LS-Down"
         << "Joy-LS-Left"

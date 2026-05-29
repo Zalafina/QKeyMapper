@@ -29,7 +29,7 @@ QAtomicBool QKeyMapper_Worker::s_BlockKeyboard;
 QAtomicBool QKeyMapper_Worker::s_BlockMouse;
 QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Hold;
 QAtomicBool QKeyMapper_Worker::s_Gyro2Mouse_MoveActive;
-QAtomicBool QKeyMapper_Worker::s_GamepadTouchpad2Mouse_Active;
+QAtomicBool QKeyMapper_Worker::s_GamepadTouchpad_Active;
 QAtomicBool QKeyMapper_Worker::s_Crosshair_Normal;
 QAtomicBool QKeyMapper_Worker::s_Crosshair_TypeA;
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Up;
@@ -224,6 +224,58 @@ QStringList buildKeySequencePauseTargets(const QString &originalKey)
     }
 
     return QStringList() << normalizedOriginalKey;
+}
+
+bool isAnyGamepadTouchpadOriginalKey(const QString &originalKey)
+{
+    return originalKey.contains(JOY_TOUCHPAD2MOUSE_STR)
+        || originalKey.contains(JOY_TOUCHPAD_TAP_STR)
+        || originalKey.contains(JOY_TOUCHPAD_2F_UP_STR)
+        || originalKey.contains(JOY_TOUCHPAD_2F_DOWN_STR)
+        || originalKey.contains(JOY_TOUCHPAD_2F_LEFT_STR)
+        || originalKey.contains(JOY_TOUCHPAD_2F_RIGHT_STR);
+}
+
+bool isGamepadTouchpad2FOriginalKey(const QString &originalKey)
+{
+    return originalKey.contains(JOY_TOUCHPAD_2F_UP_STR)
+        || originalKey.contains(JOY_TOUCHPAD_2F_DOWN_STR)
+        || originalKey.contains(JOY_TOUCHPAD_2F_LEFT_STR)
+        || originalKey.contains(JOY_TOUCHPAD_2F_RIGHT_STR);
+}
+
+qreal touchpadDistance(qreal x1, qreal y1, qreal x2, qreal y2)
+{
+    const qreal deltaX = x2 - x1;
+    const qreal deltaY = y2 - y1;
+    return qSqrt(deltaX * deltaX + deltaY * deltaY);
+}
+
+qreal touchpadCenterX(const GameControllerTouchpadGestureState &gestureState)
+{
+    return (gestureState.primaryLastX + gestureState.secondaryLastX) * 0.5;
+}
+
+qreal touchpadCenterY(const GameControllerTouchpadGestureState &gestureState)
+{
+    return (gestureState.primaryLastY + gestureState.secondaryLastY) * 0.5;
+}
+
+qreal touchpadSpan(const GameControllerTouchpadGestureState &gestureState)
+{
+    return touchpadDistance(gestureState.primaryLastX,
+                            gestureState.primaryLastY,
+                            gestureState.secondaryLastX,
+                            gestureState.secondaryLastY);
+}
+
+QString touchpad2FDirectionKey(qreal travelX, qreal travelY)
+{
+    if (qAbs(travelX) >= qAbs(travelY)) {
+        return (travelX >= 0.0) ? QString(JOY_TOUCHPAD_2F_RIGHT_STR) : QString(JOY_TOUCHPAD_2F_LEFT_STR);
+    }
+
+    return (travelY >= 0.0) ? QString(JOY_TOUCHPAD_2F_DOWN_STR) : QString(JOY_TOUCHPAD_2F_UP_STR);
 }
 
 void cleanupKeySequenceRuntimeState(const QString &originalKey, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, bool resendRealKey = true)
@@ -594,6 +646,9 @@ QMutex QKeyMapper_Worker::s_FakerInputMouseWheelExtraInfoQueue_Mutex;
 #endif // FAKERINPUT_SUPPORT
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
 bool QKeyMapper_Worker::s_GameControllerSensor_EnableState = false;
+bool QKeyMapper_Worker::s_GamepadTouchpad_EnableState = false;
+bool QKeyMapper_Worker::s_GamepadTouchpadTap_EnableState = false;
+bool QKeyMapper_Worker::s_GamepadTouchpad2F_EnableState = false;
 bool QKeyMapper_Worker::s_GamepadTouchpad2Mouse_EnableState = false;
 // QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
 QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::s_Joy2Mouse_EnableStateMap;
@@ -4281,14 +4336,16 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         && sendtype != SENDTYPE_FORCE_UP
                         && sendtype != SENDTYPE_EXCLUSION) {
                         if (key == GAMEPAD_TOUCHPAD_ON_KEY_STR) {
-                            s_GamepadTouchpad2Mouse_Active = true;
+                            s_GamepadTouchpad_Active = true;
                         }
                         else if (key == GAMEPAD_TOUCHPAD_OFF_KEY_STR) {
-                            s_GamepadTouchpad2Mouse_Active = false;
+                            s_GamepadTouchpad_Active = false;
                         }
                         else {
-                            s_GamepadTouchpad2Mouse_Active = !s_GamepadTouchpad2Mouse_Active.loadAcquire();
+                            s_GamepadTouchpad_Active = !s_GamepadTouchpad_Active.loadAcquire();
                         }
+
+                        clearGamepadTouchpadRuntimeState();
                     }
                 }
                 else if (key == BLOCK_KEYBOARD_STR
@@ -8995,9 +9052,12 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap(s_Joy2Mouse_SendMethod);
     s_GameControllerSensor_EnableState = checkGyro2MouseEnableState(s_Gyro2Mouse_SendMethod);
     s_Gyro2Mouse_MoveActive = checkGyro2MouseMoveActiveState();
+    s_GamepadTouchpad_EnableState = checkGamepadTouchpadEnableState();
+    s_GamepadTouchpadTap_EnableState = checkGamepadTouchpadTapEnableState();
+    s_GamepadTouchpad2F_EnableState = checkGamepadTouchpad2FEnableState();
     s_GamepadTouchpad2Mouse_EnableState = checkGamepadTouchpad2MouseEnableState(s_GamepadTouchpad2Mouse_SendMethod);
-    s_GamepadTouchpad2Mouse_Active = true;
-    m_GamepadTouchpadStateMap.clear();
+    s_GamepadTouchpad_Active = true;
+    clearGamepadTouchpadRuntimeState();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getvJoyLockCursorStatus()) {
@@ -9151,13 +9211,16 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
     s_Joy2Mouse_EnableStateMap.clear();
     s_GameControllerSensor_EnableState = false;
+    s_GamepadTouchpad_EnableState = false;
+    s_GamepadTouchpadTap_EnableState = false;
+    s_GamepadTouchpad2F_EnableState = false;
     s_GamepadTouchpad2Mouse_EnableState = false;
     s_Key2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     s_Joy2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     s_Gyro2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     s_GamepadTouchpad2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
-    s_GamepadTouchpad2Mouse_Active = false;
-    m_GamepadTouchpadStateMap.clear();
+    s_GamepadTouchpad_Active = false;
+    clearGamepadTouchpadRuntimeState();
     setWorkerJoystickCaptureStop();
 
     if (m_Key2MouseCycleTimer.isActive()) {
@@ -9515,9 +9578,12 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap(s_Joy2Mouse_SendMethod);
     s_GameControllerSensor_EnableState = checkGyro2MouseEnableState(s_Gyro2Mouse_SendMethod);
     s_Gyro2Mouse_MoveActive = checkGyro2MouseMoveActiveState();
+    s_GamepadTouchpad_EnableState = checkGamepadTouchpadEnableState();
+    s_GamepadTouchpadTap_EnableState = checkGamepadTouchpadTapEnableState();
+    s_GamepadTouchpad2F_EnableState = checkGamepadTouchpad2FEnableState();
     s_GamepadTouchpad2Mouse_EnableState = checkGamepadTouchpad2MouseEnableState(s_GamepadTouchpad2Mouse_SendMethod);
-    s_GamepadTouchpad2Mouse_Active = true;
-    m_GamepadTouchpadStateMap.clear();
+    s_GamepadTouchpad_Active = true;
+    clearGamepadTouchpadRuntimeState();
 
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && QKeyMapper::getvJoyLockCursorStatus()) {
         POINT pt;
@@ -10906,11 +10972,15 @@ void QKeyMapper_Worker::checkJoystickTouchpad(const QJoystickTouchpadEvent &e)
         return;
     }
 
-    if (false == s_GamepadTouchpad2Mouse_EnableState) {
+    if (false == s_GamepadTouchpad_EnableState
+        || false == s_GamepadTouchpad_Active) {
         return;
     }
 
-    gamepadTouchpad2MouseMoveProc(e, s_GamepadTouchpad2Mouse_SendMethod);
+    const bool suppressMouseMove = handleGamepadTouchpadGesture(e);
+    if (s_GamepadTouchpad2Mouse_EnableState) {
+        gamepadTouchpad2MouseMoveProc(e, s_GamepadTouchpad2Mouse_SendMethod, suppressMouseMove);
+    }
 }
 
 void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param)
@@ -11101,6 +11171,39 @@ bool QKeyMapper_Worker::checkGyro2MouseEnableState(int &sendMappingKeyMethod)
 #endif
 
     return gyro2mouse_enablestate;
+}
+
+bool QKeyMapper_Worker::checkGamepadTouchpadEnableState()
+{
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
+        if (isAnyGamepadTouchpadOriginalKey(keymapdata.Original_Key)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool QKeyMapper_Worker::checkGamepadTouchpadTapEnableState()
+{
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
+        if (keymapdata.Original_Key.contains(JOY_TOUCHPAD_TAP_STR)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool QKeyMapper_Worker::checkGamepadTouchpad2FEnableState()
+{
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
+        if (isGamepadTouchpad2FOriginalKey(keymapdata.Original_Key)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool QKeyMapper_Worker::checkGamepadTouchpad2MouseEnableState(int &sendMappingKeyMethod)
@@ -12313,7 +12416,7 @@ void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &senso
     }
 }
 
-void QKeyMapper_Worker::gamepadTouchpad2MouseMoveProc(const QJoystickTouchpadEvent &e, int sendmappingkeymethod)
+void QKeyMapper_Worker::gamepadTouchpad2MouseMoveProc(const QJoystickTouchpadEvent &e, int sendmappingkeymethod, bool suppressMouseMove)
 {
     if (e.joystick == Q_NULLPTR) {
         return;
@@ -12355,7 +12458,7 @@ void QKeyMapper_Worker::gamepadTouchpad2MouseMoveProc(const QJoystickTouchpadEve
     touchpadState.lastX = e.x;
     touchpadState.lastY = e.y;
 
-    if (false == s_GamepadTouchpad2Mouse_Active) {
+    if (false == s_GamepadTouchpad_Active || suppressMouseMove) {
         touchpadState.remainderX = 0.0;
         touchpadState.remainderY = 0.0;
         return;
@@ -12414,6 +12517,184 @@ void QKeyMapper_Worker::gamepadTouchpad2MouseMoveProc(const QJoystickTouchpadEve
         qDebug().nospace().noquote() << "[gamepadTouchpad2MouseMoveProc] postMouseMove(" << delta_x << ", " << delta_y <<") -> " << QKeyMapper::s_last_HWNDList;
 #endif
     }
+}
+
+bool QKeyMapper_Worker::dispatchTouchpadDerivedKey(const QString &keycodeString, int keyupdown, const QJoystickDevice *joystick)
+{
+    if (joystick == Q_NULLPTR) {
+        return false;
+    }
+
+    QJoystickDevice gestureJoystick = *joystick;
+    gestureJoystick.playerindex = INITIAL_PLAYER_INDEX;
+    return JoyStickKeysProc(keycodeString, keyupdown, &gestureJoystick);
+}
+
+void QKeyMapper_Worker::clearGamepadTouchpadRuntimeState()
+{
+    m_GamepadTouchpadStateMap.clear();
+    m_GamepadTouchpadGestureStateMap.clear();
+}
+
+bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEvent &e)
+{
+    if ((false == s_GamepadTouchpadTap_EnableState && false == s_GamepadTouchpad2F_EnableState)
+        || e.joystick == Q_NULLPTR) {
+        return false;
+    }
+
+    const int instanceId = e.joystick->instanceID;
+    GameControllerTouchpadGestureState &gestureState = m_GamepadTouchpadGestureStateMap[instanceId];
+
+    auto resetGestureState = [&gestureState]() {
+        gestureState = GameControllerTouchpadGestureState();
+    };
+
+    auto refreshTwoFingerBaseline = [&gestureState]() {
+        gestureState.twoFingerBaseCenterX = touchpadCenterX(gestureState);
+        gestureState.twoFingerBaseCenterY = touchpadCenterY(gestureState);
+        gestureState.twoFingerBaseSpan = touchpadSpan(gestureState);
+    };
+
+    if (e.eventType == TouchpadEventDown) {
+        if (!gestureState.primaryDown) {
+            gestureState = GameControllerTouchpadGestureState();
+            gestureState.touchpad = e.touchpad;
+            gestureState.primaryFinger = e.finger;
+            gestureState.primaryDown = true;
+            gestureState.primaryDownTimestamp = e.timestamp;
+            gestureState.primaryStartX = e.x;
+            gestureState.primaryStartY = e.y;
+            gestureState.primaryLastX = e.x;
+            gestureState.primaryLastY = e.y;
+            gestureState.tapEligible = s_GamepadTouchpadTap_EnableState;
+            return gestureState.tapEligible;
+        }
+
+        if (gestureState.touchpad != e.touchpad) {
+            resetGestureState();
+            return false;
+        }
+
+        if (!gestureState.secondaryDown && e.finger != gestureState.primaryFinger) {
+            gestureState.secondaryDown = true;
+            gestureState.secondaryFinger = e.finger;
+            gestureState.secondaryLastX = e.x;
+            gestureState.secondaryLastY = e.y;
+            gestureState.secondFingerDownTimestamp = e.timestamp;
+            gestureState.tapEligible = false;
+            gestureState.twoFingerEligible = s_GamepadTouchpad2F_EnableState;
+            gestureState.twoFingerTriggered = false;
+            refreshTwoFingerBaseline();
+            return gestureState.twoFingerEligible;
+        }
+
+        gestureState.tapEligible = false;
+        return gestureState.twoFingerEligible;
+    }
+
+    if (gestureState.touchpad != e.touchpad) {
+        resetGestureState();
+        return false;
+    }
+
+    if (e.eventType == TouchpadEventMotion) {
+        if (gestureState.primaryDown && e.finger == gestureState.primaryFinger) {
+            gestureState.tapPathLength += touchpadDistance(gestureState.primaryLastX,
+                                                           gestureState.primaryLastY,
+                                                           e.x,
+                                                           e.y);
+            gestureState.primaryLastX = e.x;
+            gestureState.primaryLastY = e.y;
+
+            if (gestureState.tapEligible) {
+                const quint32 tapElapsed = e.timestamp - gestureState.primaryDownTimestamp;
+                const qreal tapDisplacement = touchpadDistance(gestureState.primaryStartX,
+                                                               gestureState.primaryStartY,
+                                                               e.x,
+                                                               e.y);
+                if (tapElapsed > GAMEPAD_TOUCHPAD_TAP_MAX_DURATION_MS
+                    || tapDisplacement > GAMEPAD_TOUCHPAD_TAP_MAX_DISPLACEMENT
+                    || gestureState.tapPathLength > GAMEPAD_TOUCHPAD_TAP_MAX_PATH_LENGTH) {
+                    gestureState.tapEligible = false;
+                }
+            }
+        }
+        else if (gestureState.secondaryDown && e.finger == gestureState.secondaryFinger) {
+            gestureState.secondaryLastX = e.x;
+            gestureState.secondaryLastY = e.y;
+        }
+        else {
+            return gestureState.tapEligible || (gestureState.secondaryDown && gestureState.twoFingerEligible);
+        }
+
+        if (gestureState.secondaryDown && gestureState.twoFingerEligible && !gestureState.twoFingerTriggered) {
+            const quint32 settleElapsed = e.timestamp - gestureState.secondFingerDownTimestamp;
+            if (settleElapsed < GAMEPAD_TOUCHPAD_2F_SETTLE_TIME_MS) {
+                refreshTwoFingerBaseline();
+                return true;
+            }
+
+            const qreal centerX = touchpadCenterX(gestureState);
+            const qreal centerY = touchpadCenterY(gestureState);
+            const qreal travelX = centerX - gestureState.twoFingerBaseCenterX;
+            const qreal travelY = centerY - gestureState.twoFingerBaseCenterY;
+            const qreal absTravelX = qAbs(travelX);
+            const qreal absTravelY = qAbs(travelY);
+            const qreal primaryTravel = qMax(absTravelX, absTravelY);
+            const qreal secondaryTravel = qMin(absTravelX, absTravelY);
+            const qreal axisDominance = (secondaryTravel <= 0.000001)
+                ? 999999.0
+                : (primaryTravel / secondaryTravel);
+            const qreal spanDelta = qAbs(touchpadSpan(gestureState) - gestureState.twoFingerBaseSpan);
+
+            if (primaryTravel >= GAMEPAD_TOUCHPAD_2F_MIN_PRIMARY_TRAVEL
+                && axisDominance >= GAMEPAD_TOUCHPAD_2F_AXIS_DOMINANCE_RATIO
+                && spanDelta <= GAMEPAD_TOUCHPAD_2F_MAX_SPAN_DELTA) {
+                const QString directionKey = touchpad2FDirectionKey(travelX, travelY);
+                dispatchTouchpadDerivedKey(directionKey, KEY_DOWN, e.joystick);
+                dispatchTouchpadDerivedKey(directionKey, KEY_UP, e.joystick);
+                gestureState.twoFingerTriggered = true;
+            }
+
+            return true;
+        }
+
+        return gestureState.tapEligible;
+    }
+
+    if (e.eventType == TouchpadEventUp) {
+        if (gestureState.primaryDown && e.finger == gestureState.primaryFinger) {
+            const qreal finalPathLength = gestureState.tapPathLength + touchpadDistance(gestureState.primaryLastX,
+                                                                                        gestureState.primaryLastY,
+                                                                                        e.x,
+                                                                                        e.y);
+            const qreal finalDisplacement = touchpadDistance(gestureState.primaryStartX,
+                                                             gestureState.primaryStartY,
+                                                             e.x,
+                                                             e.y);
+            const quint32 tapElapsed = e.timestamp - gestureState.primaryDownTimestamp;
+
+            if (gestureState.tapEligible
+                && !gestureState.secondaryDown
+                && tapElapsed <= GAMEPAD_TOUCHPAD_TAP_MAX_DURATION_MS
+                && finalDisplacement <= GAMEPAD_TOUCHPAD_TAP_MAX_DISPLACEMENT
+                && finalPathLength <= GAMEPAD_TOUCHPAD_TAP_MAX_PATH_LENGTH) {
+                dispatchTouchpadDerivedKey(QString(JOY_TOUCHPAD_TAP_STR), KEY_DOWN, e.joystick);
+                dispatchTouchpadDerivedKey(QString(JOY_TOUCHPAD_TAP_STR), KEY_UP, e.joystick);
+            }
+
+            resetGestureState();
+            return false;
+        }
+
+        if (gestureState.secondaryDown && e.finger == gestureState.secondaryFinger) {
+            resetGestureState();
+            return false;
+        }
+    }
+
+    return gestureState.tapEligible || (gestureState.secondaryDown && gestureState.twoFingerEligible);
 }
 
 ULONG_PTR QKeyMapper_Worker::generateUniqueRandomValue(QSet<ULONG_PTR> &existingValues)
@@ -19011,7 +19292,7 @@ void QKeyMapper_Worker::clearCustomKeyFlags(bool restart)
     s_BlockMouse = false;
     s_Mouse2vJoy_Hold = false;
     s_Gyro2Mouse_MoveActive = false;
-    s_GamepadTouchpad2Mouse_Active = false;
+    s_GamepadTouchpad_Active = false;
     s_Key2Mouse_Up = false;
     s_Key2Mouse_Down = false;
     s_Key2Mouse_Left = false;

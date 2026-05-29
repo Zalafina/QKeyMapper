@@ -521,6 +521,13 @@ namespace QKeyMapperConstants {
     inline constexpr double GAMEPAD_TOUCHPAD_SPEED_MAX = 200.0;
     inline constexpr double GAMEPAD_TOUCHPAD_SPEED_SINGLESTEP = 0.10;
     inline constexpr double GAMEPAD_TOUCHPAD_SPEED_DEFAULT = 1.0;
+    inline constexpr unsigned int GAMEPAD_TOUCHPAD_TAP_MAX_DURATION_MS = 180U;
+    inline constexpr double GAMEPAD_TOUCHPAD_TAP_MAX_DISPLACEMENT = 0.030;
+    inline constexpr double GAMEPAD_TOUCHPAD_TAP_MAX_PATH_LENGTH = 0.045;
+    inline constexpr unsigned int GAMEPAD_TOUCHPAD_2F_SETTLE_TIME_MS = 35U;
+    inline constexpr double GAMEPAD_TOUCHPAD_2F_MIN_PRIMARY_TRAVEL = 0.100;
+    inline constexpr double GAMEPAD_TOUCHPAD_2F_AXIS_DOMINANCE_RATIO = 1.75;
+    inline constexpr double GAMEPAD_TOUCHPAD_2F_MAX_SPAN_DELTA = 0.080;
 
     inline constexpr int MOUSE_POLLING_INTERNAL_MIN     = 1;
     inline constexpr int MOUSE_POLLING_INTERNAL_MAX     = 99;
@@ -1788,6 +1795,11 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char JOY_GYRO2MOUSE_STR[] = "Joy-Gyro2Mouse";
     inline constexpr const char JOY_TOUCHPAD2MOUSE_STR[] = "Joy-Touchpad2Mouse";
+    inline constexpr const char JOY_TOUCHPAD_TAP_STR[] = "Joy-Touchpad-Tap";
+    inline constexpr const char JOY_TOUCHPAD_2F_UP_STR[] = "Joy-Touchpad-2F-Up";
+    inline constexpr const char JOY_TOUCHPAD_2F_DOWN_STR[] = "Joy-Touchpad-2F-Down";
+    inline constexpr const char JOY_TOUCHPAD_2F_LEFT_STR[] = "Joy-Touchpad-2F-Left";
+    inline constexpr const char JOY_TOUCHPAD_2F_RIGHT_STR[] = "Joy-Touchpad-2F-Right";
 
     inline constexpr const char SENDON_MAPPINGSTART_STR[] = "SendOnMappingStart";
     inline constexpr const char SENDON_MAPPINGSTOP_STR[] = "SendOnMappingStop";
