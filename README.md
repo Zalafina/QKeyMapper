@@ -152,15 +152,15 @@
     * 添加PS手柄"触摸板"功能，如果物理游戏手柄支持触摸板(DS4、DS5等)，可以在原始按键列表中选择"Joy-Touchpad2Mouse"使用触摸板转鼠标映射功能，通过单个手指在触摸板上滑动控制鼠标指针水平和垂直方向移动。
       - "映射高级设定"窗口中可以调整触摸板专鼠标功能的"水平速度"和"垂直速度"，数值范围0.00~200.00。默认值0.50。
       ##### 其他新增触摸板原始按键
-        Joy-Touchpad-Tap        -> 触摸板单指轻触
-        Joy-Touchpad-2F-Up      -> 触摸板两指上划
-        Joy-Touchpad-2F-Down    -> 触摸板两指下划
-        Joy-Touchpad-2F-Left    -> 触摸板两指左划
-        Joy-Touchpad-2F-Right   -> 触摸板两指右划
+          Joy-Touchpad-Tap        -> 触摸板单指轻触
+          Joy-Touchpad-2F-Up      -> 触摸板两指上划
+          Joy-Touchpad-2F-Down    -> 触摸板两指下划
+          Joy-Touchpad-2F-Left    -> 触摸板两指左划
+          Joy-Touchpad-2F-Right   -> 触摸板两指右划
       ##### 其他新增触摸板映射按键
-        GamepadTouchpadOn       -> 触摸板检测开启
-        GamepadTouchpadOff      -> 触摸板检测关闭
-        GamepadTouchpadToggle   -> 触摸板检测状态切换(开启和关闭状态间互相切换)
+          GamepadTouchpadOn       -> 触摸板检测开启
+          GamepadTouchpadOff      -> 触摸板检测关闭
+          GamepadTouchpadToggle   -> 触摸板检测状态切换(开启和关闭状态间互相切换)
     * 为映射表中映射项添加映射码，可通过 "映射项设定" 窗口中复制映射码到剪贴板和从剪贴板应用映射码。映射表选择单个映射项时，右键菜单也有相同功能的复制映射码和应用映射码菜单选项。
     * "映射高级设定"窗口中添加 **启用共通映射表** 复选框，默认为未勾选状态。勾选后当前设定配置中最后一个Tab追加"共通"映射表，并且共通映射表内映射项自动追加到所有Tab末尾。各个设定配置的共通映射表各自独立。
     * "映射表设定"窗口中添加 **追加共通映射表** 复选框，开启**启用共通映射表**后，默认是勾选状态。某个Tab不希望追加共通映射项可以取消勾选。
