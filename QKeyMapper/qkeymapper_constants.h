@@ -520,7 +520,7 @@ namespace QKeyMapperConstants {
     inline constexpr double GAMEPAD_TOUCHPAD_SPEED_MIN = 0.0;
     inline constexpr double GAMEPAD_TOUCHPAD_SPEED_MAX = 200.0;
     inline constexpr double GAMEPAD_TOUCHPAD_SPEED_SINGLESTEP = 0.10;
-    inline constexpr double GAMEPAD_TOUCHPAD_SPEED_DEFAULT = 1.0;
+    inline constexpr double GAMEPAD_TOUCHPAD_SPEED_DEFAULT = 0.5;
     inline constexpr unsigned int GAMEPAD_TOUCHPAD_TAP_MAX_DURATION_MS = 180U;
     inline constexpr double GAMEPAD_TOUCHPAD_TAP_MAX_DISPLACEMENT = 0.030;
     inline constexpr double GAMEPAD_TOUCHPAD_TAP_MAX_PATH_LENGTH = 0.045;
