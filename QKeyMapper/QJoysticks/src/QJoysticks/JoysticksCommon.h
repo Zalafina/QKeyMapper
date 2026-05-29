@@ -70,6 +70,14 @@ enum QJoystickEventType
     GameControllerEvent = 1     /**< Mapped game controller event */
 };
 
+enum QJoystickTouchpadEventType
+{
+   TouchpadEventDown = 0,
+   TouchpadEventMotion,
+   TouchpadEventUp,
+   TouchpadEventUnknown
+};
+
 /**
  * @brief Represents a joystick rumble request
  *
@@ -142,6 +150,18 @@ struct QJoystickSensorEvent
    float accelZ;
    uint64_t timestamp;
    int sensorType; /**< Type of sensor (gyro or accel) */
+   QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
+};
+
+struct QJoystickTouchpadEvent
+{
+   int touchpad; /**< The numerical ID of the touchpad */
+   int finger; /**< The numerical ID of the finger on the touchpad */
+   qreal x; /**< Normalized in the range 0...1 with 0 being on the left */
+   qreal y; /**< Normalized in the range 0...1 with 0 being at the top */
+   qreal pressure; /**< Normalized in the range 0...1 */
+   Uint32 timestamp; /**< In milliseconds, populated using SDL_GetTicks() */
+   QJoystickTouchpadEventType eventType; /**< Touchpad event kind */
    QJoystickDevice *joystick; /**< Pointer to the device that caused the event */
 };
 

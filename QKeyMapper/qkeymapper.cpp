@@ -6957,9 +6957,9 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
     }
 
     if (validKey) {
-        if (original_key == JOY_GYRO2MOUSE_STR && !indexString.isEmpty()) {
+        if ((original_key == JOY_GYRO2MOUSE_STR || original_key == JOY_TOUCHPAD2MOUSE_STR) && !indexString.isEmpty()) {
             result.isValid = false;
-            result.errorMessage = tr("Invalid key format \"%1\", do not add Player suffix to Joy-Gyro2Mouse.").arg(orikey);
+            result.errorMessage = tr("Invalid key format \"%1\", do not add Player suffix to %2.").arg(orikey, original_key);
             return result;
         }
     }
@@ -11367,6 +11367,26 @@ int QKeyMapper::getGamepadRightStickReleaseThreshold()
     return getInstance()->m_MappingAdvancedDialog->getRightStickReleaseThreshold();
 }
 
+double QKeyMapper::getGamepadTouchpadXSpeed()
+{
+    return getInstance()->m_MappingAdvancedDialog->getGamepadTouchpadXSpeed();
+}
+
+double QKeyMapper::getGamepadTouchpadYSpeed()
+{
+    return getInstance()->m_MappingAdvancedDialog->getGamepadTouchpadYSpeed();
+}
+
+bool QKeyMapper::getGamepadTouchpadInvertXStatus()
+{
+    return getInstance()->m_MappingAdvancedDialog->getGamepadTouchpadInvertX();
+}
+
+bool QKeyMapper::getGamepadTouchpadInvertYStatus()
+{
+    return getInstance()->m_MappingAdvancedDialog->getGamepadTouchpadInvertY();
+}
+
 double QKeyMapper::getGyro2MouseXSpeed()
 {
     return getInstance()->ui->Gyro2MouseXSpeedSpinBox->value();
@@ -13538,6 +13558,7 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
     if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
         || keymapdata.Original_Key == JOY_RS2MOUSE_STR
         || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
+        || keymapdata.Original_Key == JOY_TOUCHPAD2MOUSE_STR
         || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
         || keymapdata.Original_Key == SENDON_MAPPINGSTOP_STR
         || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
@@ -17768,6 +17789,7 @@ void QKeyMapper::OrikeyComboBox_currentTextChangedSlot(const QString &text)
         || JOY_LS2MOUSE_STR == text
         || JOY_RS2MOUSE_STR == text
         || JOY_GYRO2MOUSE_STR == text
+        || JOY_TOUCHPAD2MOUSE_STR == text
         || JOY_LS2VJOYLS_STR == text
         || JOY_RS2VJOYRS_STR == text
         || JOY_LS2VJOYRS_STR == text
@@ -20254,6 +20276,11 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_PUSH,        m_MappingAdvancedDialog->getRightStickPushThreshold());
     settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_LIGHTPUSH,   m_MappingAdvancedDialog->getRightStickLightPushThreshold());
     settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_RELEASE,     m_MappingAdvancedDialog->getRightStickReleaseThreshold());
+
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_TOUCHPAD_X_SPEED,         m_MappingAdvancedDialog->getGamepadTouchpadXSpeed());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_TOUCHPAD_Y_SPEED,         m_MappingAdvancedDialog->getGamepadTouchpadYSpeed());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_TOUCHPAD_INVERT_X,        m_MappingAdvancedDialog->getGamepadTouchpadInvertX());
+    settingFile.setValue(saveSettingSelectStr+GAMEPAD_TOUCHPAD_INVERT_Y,        m_MappingAdvancedDialog->getGamepadTouchpadInvertY());
 
     settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_X_SPEED, ui->Gyro2MouseXSpeedSpinBox->value());
     settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_Y_SPEED, ui->Gyro2MouseYSpeedSpinBox->value());
@@ -24558,6 +24585,50 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         m_MappingAdvancedDialog->setRightStickLightPushThreshold(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
     }
 
+    if (true == settingFile.contains(settingSelectStr+GAMEPAD_TOUCHPAD_X_SPEED)){
+        double gamepadTouchpadXSpeed = settingFile.value(settingSelectStr+GAMEPAD_TOUCHPAD_X_SPEED).toDouble();
+        m_MappingAdvancedDialog->setGamepadTouchpadXSpeed(gamepadTouchpadXSpeed);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gamepad Touchpad X Speed =" << gamepadTouchpadXSpeed;
+#endif
+    }
+    else {
+        m_MappingAdvancedDialog->setGamepadTouchpadXSpeed(GAMEPAD_TOUCHPAD_SPEED_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GAMEPAD_TOUCHPAD_Y_SPEED)){
+        double gamepadTouchpadYSpeed = settingFile.value(settingSelectStr+GAMEPAD_TOUCHPAD_Y_SPEED).toDouble();
+        m_MappingAdvancedDialog->setGamepadTouchpadYSpeed(gamepadTouchpadYSpeed);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gamepad Touchpad Y Speed =" << gamepadTouchpadYSpeed;
+#endif
+    }
+    else {
+        m_MappingAdvancedDialog->setGamepadTouchpadYSpeed(GAMEPAD_TOUCHPAD_SPEED_DEFAULT);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GAMEPAD_TOUCHPAD_INVERT_X)){
+        bool gamepadTouchpadInvertX = settingFile.value(settingSelectStr+GAMEPAD_TOUCHPAD_INVERT_X).toBool();
+        m_MappingAdvancedDialog->setGamepadTouchpadInvertX(gamepadTouchpadInvertX);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gamepad Touchpad Invert X =" << gamepadTouchpadInvertX;
+#endif
+    }
+    else {
+        m_MappingAdvancedDialog->setGamepadTouchpadInvertX(false);
+    }
+
+    if (true == settingFile.contains(settingSelectStr+GAMEPAD_TOUCHPAD_INVERT_Y)){
+        bool gamepadTouchpadInvertY = settingFile.value(settingSelectStr+GAMEPAD_TOUCHPAD_INVERT_Y).toBool();
+        m_MappingAdvancedDialog->setGamepadTouchpadInvertY(gamepadTouchpadInvertY);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadKeyMapSetting]" << "Gamepad Touchpad Invert Y =" << gamepadTouchpadInvertY;
+#endif
+    }
+    else {
+        m_MappingAdvancedDialog->setGamepadTouchpadInvertY(false);
+    }
+
     if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_X_SPEED)){
         double gyro2mouseXSpeed = settingFile.value(settingSelectStr+GYRO2MOUSE_X_SPEED).toDouble();
         ui->Gyro2MouseXSpeedSpinBox->setValue(gyro2mouseXSpeed);
@@ -26721,6 +26792,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
             || ui->orikeyComboBox->currentText() == JOY_LS2MOUSE_STR
             || ui->orikeyComboBox->currentText() == JOY_RS2MOUSE_STR
             || ui->orikeyComboBox->currentText() == JOY_GYRO2MOUSE_STR
+            || ui->orikeyComboBox->currentText() == JOY_TOUCHPAD2MOUSE_STR
             || ui->orikeyComboBox->currentText() == JOY_LS2VJOYLS_STR
             || ui->orikeyComboBox->currentText() == JOY_RS2VJOYRS_STR
             || ui->orikeyComboBox->currentText() == JOY_LS2VJOYRS_STR
@@ -31020,6 +31092,7 @@ void QKeyMapper::initKeysCategoryMap()
         << JOY_LS2MOUSE_STR
         << JOY_RS2MOUSE_STR
         << JOY_GYRO2MOUSE_STR
+        << JOY_TOUCHPAD2MOUSE_STR
         << "Joy-LS-Up"
         << "Joy-LS-Down"
         << "Joy-LS-Left"
@@ -31090,6 +31163,9 @@ void QKeyMapper::initKeysCategoryMap()
     mapping_gamepad_keylist = QStringList() \
         << GYRO2MOUSE_HOLD_KEY_STR
         << GYRO2MOUSE_MOVE_KEY_STR
+        << GAMEPAD_TOUCHPAD_ON_KEY_STR
+        << GAMEPAD_TOUCHPAD_OFF_KEY_STR
+        << GAMEPAD_TOUCHPAD_TOGGLE_KEY_STR
         << MOUSE2VJOY_HOLD_KEY_STR
         << VJOY_LS_RADIUS_STR
         << VJOY_RS_RADIUS_STR
@@ -32062,6 +32138,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
                 || keymapdata.Original_Key == JOY_RS2MOUSE_STR
                 || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
+                || keymapdata.Original_Key == JOY_TOUCHPAD2MOUSE_STR
                 || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
                 || keymapdata.Original_Key == SENDON_MAPPINGSTOP_STR
                 || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
@@ -32105,6 +32182,10 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(GYRO2MOUSE_PREFIX)) {
                 disable_burst = true;
                 // disable_lock = true;
+            }
+            else if (keymapdata.Mapping_Keys.constFirst().startsWith(GAMEPAD_TOUCHPAD_PREFIX)) {
+                disable_burst = true;
+                disable_lock = true;
             }
             else if (keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_LS_RADIUS_STR)
                 || keymapdata.Mapping_Keys.constFirst().startsWith(VJOY_RS_RADIUS_STR)
@@ -32353,6 +32434,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
     if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
         || keymapdata.Original_Key == JOY_RS2MOUSE_STR
         || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
+        || keymapdata.Original_Key == JOY_TOUCHPAD2MOUSE_STR
         || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
         || keymapdata.Original_Key == SENDON_MAPPINGSTOP_STR
         || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
@@ -32394,6 +32476,10 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         // disable_lock = true;
     }
     else if (keymapdata.Mapping_Keys.constFirst().startsWith(GYRO2MOUSE_PREFIX)) {
+        disable_burst = true;
+        // disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(GAMEPAD_TOUCHPAD_PREFIX)) {
         disable_burst = true;
         // disable_lock = true;
     }
@@ -36181,6 +36267,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             && currentMapKeyComboBoxText.startsWith(CROSSHAIR_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false
+            && currentMapKeyComboBoxText.startsWith(GAMEPAD_TOUCHPAD_PREFIX) == false
             && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
             && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR
             && currentMapKeyComboBoxText != VJOY_LT_ACCEL_STR

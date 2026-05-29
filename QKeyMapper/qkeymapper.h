@@ -1374,6 +1374,10 @@ public:
     static int getGamepadRightStickPushThreshold(void);
     static int getGamepadRightStickLightPushThreshold(void);
     static int getGamepadRightStickReleaseThreshold(void);
+    static double getGamepadTouchpadXSpeed(void);
+    static double getGamepadTouchpadYSpeed(void);
+    static bool getGamepadTouchpadInvertXStatus(void);
+    static bool getGamepadTouchpadInvertYStatus(void);
     static double getGyro2MouseXSpeed(void);
     static double getGyro2MouseYSpeed(void);
     static double getGyro2MouseMinThreshold(void);

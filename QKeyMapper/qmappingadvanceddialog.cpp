@@ -19,7 +19,13 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->mouseGroupBox->setStyle(windowsStyle);
         ui->gamepadGroupBox->setStyle(windowsStyle);
+        ui->gamepadTouchpadGroupBox->setStyle(windowsStyle);
         ui->customNotificationGroupBox->setStyle(windowsStyle);
+    }
+
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        ui->gamepadTouchpadXSpeedSpinBox->setStyle(fusionStyle);
+        ui->gamepadTouchpadYSpeedSpinBox->setStyle(fusionStyle);
     }
 
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
@@ -29,6 +35,15 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
 
     ui->mousePollingIntervalSpinBox->setRange(MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX);
     ui->mousePollingIntervalSpinBox->setValue(MOUSE_POLLING_INTERNAL_DEFAULT);
+
+    ui->gamepadTouchpadXSpeedSpinBox->setDecimals(2);
+    ui->gamepadTouchpadYSpeedSpinBox->setDecimals(2);
+    ui->gamepadTouchpadXSpeedSpinBox->setRange(GAMEPAD_TOUCHPAD_SPEED_MIN, GAMEPAD_TOUCHPAD_SPEED_MAX);
+    ui->gamepadTouchpadYSpeedSpinBox->setRange(GAMEPAD_TOUCHPAD_SPEED_MIN, GAMEPAD_TOUCHPAD_SPEED_MAX);
+    ui->gamepadTouchpadXSpeedSpinBox->setSingleStep(GAMEPAD_TOUCHPAD_SPEED_SINGLESTEP);
+    ui->gamepadTouchpadYSpeedSpinBox->setSingleStep(GAMEPAD_TOUCHPAD_SPEED_SINGLESTEP);
+    ui->gamepadTouchpadXSpeedSpinBox->setValue(GAMEPAD_TOUCHPAD_SPEED_DEFAULT);
+    ui->gamepadTouchpadYSpeedSpinBox->setValue(GAMEPAD_TOUCHPAD_SPEED_DEFAULT);
 
     ui->showWindowPointKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
     ui->showWindowPointKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
@@ -105,6 +120,14 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
                      this, [notifyDirty](int) { notifyDirty(); });
     QObject::connect(ui->mousePollingIntervalSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
                      this, [notifyDirty](int) { notifyDirty(); });
+    QObject::connect(ui->gamepadTouchpadXSpeedSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     this, [notifyDirty](double) { notifyDirty(); });
+    QObject::connect(ui->gamepadTouchpadYSpeedSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     this, [notifyDirty](double) { notifyDirty(); });
+    QObject::connect(ui->gamepadTouchpadInvertXCheckBox, &QCheckBox::toggled,
+                     this, [notifyDirty](bool) { notifyDirty(); });
+    QObject::connect(ui->gamepadTouchpadInvertYCheckBox, &QCheckBox::toggled,
+                     this, [notifyDirty](bool) { notifyDirty(); });
     QObject::connect(ui->ProcessIconAsTrayIconCheckBox, &QCheckBox::toggled,
                      this, [notifyDirty](bool) { notifyDirty(); });
     QObject::connect(ui->acceptVirtualGamepadInputCheckBox, &QCheckBox::toggled,
@@ -159,6 +182,11 @@ void QMappingAdvancedDialog::setUILanguage(int languageindex)
     ui->showScreenPointKeyLabel->setText(tr("ShowScreenPoint"));
 
     ui->gamepadGroupBox->setTitle(tr("Gamepad"));
+    ui->gamepadTouchpadGroupBox->setTitle(tr("Touchpad2Mouse"));
+    ui->gamepadTouchpadXSpeedLabel->setText(tr("X Speed"));
+    ui->gamepadTouchpadYSpeedLabel->setText(tr("Y Speed"));
+    ui->gamepadTouchpadInvertXCheckBox->setText(tr("Invert X"));
+    ui->gamepadTouchpadInvertYCheckBox->setText(tr("Invert Y"));
     ui->LT_ThresholdLabel->setText(tr("LT Threshold"));
     ui->RT_ThresholdLabel->setText(tr("RT Threshold"));
     ui->LS_ThresholdLabel->setText(tr("LS Threshold"));
@@ -412,6 +440,26 @@ int QMappingAdvancedDialog::getRightStickReleaseThreshold()
     return ui->RS_Threshold_ReleaseSpinBox->value();
 }
 
+double QMappingAdvancedDialog::getGamepadTouchpadXSpeed()
+{
+    return ui->gamepadTouchpadXSpeedSpinBox->value();
+}
+
+double QMappingAdvancedDialog::getGamepadTouchpadYSpeed()
+{
+    return ui->gamepadTouchpadYSpeedSpinBox->value();
+}
+
+bool QMappingAdvancedDialog::getGamepadTouchpadInvertX()
+{
+    return ui->gamepadTouchpadInvertXCheckBox->isChecked();
+}
+
+bool QMappingAdvancedDialog::getGamepadTouchpadInvertY()
+{
+    return ui->gamepadTouchpadInvertYCheckBox->isChecked();
+}
+
 bool QMappingAdvancedDialog::getCustomNotificationEnabled()
 {
     return ui->customNotificationEnableCheckBox->isChecked();
@@ -536,6 +584,26 @@ void QMappingAdvancedDialog::setRightStickLightPushThreshold(int threshold)
 void QMappingAdvancedDialog::setRightStickReleaseThreshold(int threshold)
 {
     ui->RS_Threshold_ReleaseSpinBox->setValue(threshold);
+}
+
+void QMappingAdvancedDialog::setGamepadTouchpadXSpeed(double speed)
+{
+    ui->gamepadTouchpadXSpeedSpinBox->setValue(speed);
+}
+
+void QMappingAdvancedDialog::setGamepadTouchpadYSpeed(double speed)
+{
+    ui->gamepadTouchpadYSpeedSpinBox->setValue(speed);
+}
+
+void QMappingAdvancedDialog::setGamepadTouchpadInvertX(bool enabled)
+{
+    ui->gamepadTouchpadInvertXCheckBox->setChecked(enabled);
+}
+
+void QMappingAdvancedDialog::setGamepadTouchpadInvertY(bool enabled)
+{
+    ui->gamepadTouchpadInvertYCheckBox->setChecked(enabled);
 }
 
 void QMappingAdvancedDialog::setCustomNotificationEnabled(bool enabled)

@@ -46,6 +46,10 @@ public:
     int getRightStickPushThreshold(void);
     int getRightStickLightPushThreshold(void);
     int getRightStickReleaseThreshold(void);
+    double getGamepadTouchpadXSpeed(void);
+    double getGamepadTouchpadYSpeed(void);
+    bool getGamepadTouchpadInvertX(void);
+    bool getGamepadTouchpadInvertY(void);
     bool getCustomNotificationEnabled(void);
     int getCustomNotificationPosition(void);
 
@@ -69,6 +73,10 @@ public:
     void setRightStickPushThreshold(int threshold);
     void setRightStickLightPushThreshold(int threshold);
     void setRightStickReleaseThreshold(int threshold);
+    void setGamepadTouchpadXSpeed(double speed);
+    void setGamepadTouchpadYSpeed(double speed);
+    void setGamepadTouchpadInvertX(bool enabled);
+    void setGamepadTouchpadInvertY(bool enabled);
     void setCustomNotificationEnabled(bool enabled);
     void setCustomNotificationPosition(int position);
 

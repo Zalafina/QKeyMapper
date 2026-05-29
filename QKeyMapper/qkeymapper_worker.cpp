@@ -29,6 +29,7 @@ QAtomicBool QKeyMapper_Worker::s_BlockKeyboard;
 QAtomicBool QKeyMapper_Worker::s_BlockMouse;
 QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Hold;
 QAtomicBool QKeyMapper_Worker::s_Gyro2Mouse_MoveActive;
+QAtomicBool QKeyMapper_Worker::s_GamepadTouchpad2Mouse_Active;
 QAtomicBool QKeyMapper_Worker::s_Crosshair_Normal;
 QAtomicBool QKeyMapper_Worker::s_Crosshair_TypeA;
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Up;
@@ -593,11 +594,13 @@ QMutex QKeyMapper_Worker::s_FakerInputMouseWheelExtraInfoQueue_Mutex;
 #endif // FAKERINPUT_SUPPORT
 bool QKeyMapper_Worker::s_Key2Mouse_EnableState = false;
 bool QKeyMapper_Worker::s_GameControllerSensor_EnableState = false;
+bool QKeyMapper_Worker::s_GamepadTouchpad2Mouse_EnableState = false;
 // QKeyMapper_Worker::Joy2MouseStates QKeyMapper_Worker::s_Joy2Mouse_EnableState = QKeyMapper_Worker::JOY2MOUSE_NONE;
 QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::s_Joy2Mouse_EnableStateMap;
 int QKeyMapper_Worker::s_Key2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
 int QKeyMapper_Worker::s_Joy2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
 int QKeyMapper_Worker::s_Gyro2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+int QKeyMapper_Worker::s_GamepadTouchpad2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
 // Joystick_AxisState QKeyMapper_Worker::s_JoyAxisState = Joystick_AxisState();
 QHash<int, Joystick_AxisState> QKeyMapper_Worker::s_JoyAxisStateMap;
 int QKeyMapper_Worker::s_LastJoyAxisPlayerIndex = INITIAL_PLAYER_INDEX;
@@ -636,7 +639,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_JoystickLStickMap(),
     m_JoystickRStickMap(),
     m_JoystickPOVMap(),
-    m_GamdpadMotion()
+    m_GamdpadMotion(),
+    m_GamepadTouchpadStateMap()
 {
     qRegisterMetaType<HWND>("HWND");
     qRegisterMetaType<V_KEYCODE>("V_KEYCODE");
@@ -644,6 +648,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     qRegisterMetaType<QJoystickPOVEvent>("QJoystickPOVEvent");
     qRegisterMetaType<QJoystickAxisEvent>("QJoystickAxisEvent");
     qRegisterMetaType<QJoystickButtonEvent>("QJoystickButtonEvent");
+    qRegisterMetaType<QJoystickTouchpadEvent>("QJoystickTouchpadEvent");
     qRegisterMetaType<Qt::KeyboardModifiers>("Qt::KeyboardModifiers");
 
     Q_UNUSED(parent);
@@ -711,12 +716,14 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(instance, &QJoysticks::axisEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickAxisEvent);
     QObject::connect(instance, &QJoysticks::buttonEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickButtonEvent);
     QObject::connect(instance, &QJoysticks::sensorEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickSensorEvent);
+    QObject::connect(instance, &QJoysticks::touchpadEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickTouchpadEvent);
     QObject::connect(instance, &QJoysticks::batteryEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickBatteryEvent);
 #else
     QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
     QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
     QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
     QObject::connect(instance, &QJoysticks::sensorEvent, this, &QKeyMapper_Worker::onJoystickSensorEvent);
+    QObject::connect(instance, &QJoysticks::touchpadEvent, this, &QKeyMapper_Worker::onJoystickTouchpadEvent);
     QObject::connect(instance, &QJoysticks::batteryEvent, this, &QKeyMapper_Worker::onJoystickBatteryEvent);
 #endif
 
@@ -3177,6 +3184,11 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 }
             }
+            else if (key == GAMEPAD_TOUCHPAD_ON_KEY_STR
+                || key == GAMEPAD_TOUCHPAD_OFF_KEY_STR
+                || key == GAMEPAD_TOUCHPAD_TOGGLE_KEY_STR) {
+                /* Touchpad control mapping keys are one-shot actions handled on KEY_DOWN only. */
+            }
             else if (key == BLOCK_KEYBOARD_STR
                 || key == BLOCK_KEYBOARD_NOTIFY_STR) {
                 s_BlockKeyboard = false;
@@ -4258,6 +4270,24 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #ifdef DEBUG_LOGOUT_ON
                             qDebug().nospace().noquote() << "[sendInputKeys] SENDTYPE_BOTH postVirtualKeyCode(" << key << ") KeyDown -> " << QKeyMapper::s_last_HWNDList;
 #endif
+                        }
+                    }
+                }
+                else if (key == GAMEPAD_TOUCHPAD_ON_KEY_STR
+                    || key == GAMEPAD_TOUCHPAD_OFF_KEY_STR
+                    || key == GAMEPAD_TOUCHPAD_TOGGLE_KEY_STR) {
+                    if (sendmode != SENDMODE_FORCE_STOP
+                        && sendtype != SENDTYPE_UP
+                        && sendtype != SENDTYPE_FORCE_UP
+                        && sendtype != SENDTYPE_EXCLUSION) {
+                        if (key == GAMEPAD_TOUCHPAD_ON_KEY_STR) {
+                            s_GamepadTouchpad2Mouse_Active = true;
+                        }
+                        else if (key == GAMEPAD_TOUCHPAD_OFF_KEY_STR) {
+                            s_GamepadTouchpad2Mouse_Active = false;
+                        }
+                        else {
+                            s_GamepadTouchpad2Mouse_Active = !s_GamepadTouchpad2Mouse_Active.loadAcquire();
                         }
                     }
                 }
@@ -8965,6 +8995,9 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap(s_Joy2Mouse_SendMethod);
     s_GameControllerSensor_EnableState = checkGyro2MouseEnableState(s_Gyro2Mouse_SendMethod);
     s_Gyro2Mouse_MoveActive = checkGyro2MouseMoveActiveState();
+    s_GamepadTouchpad2Mouse_EnableState = checkGamepadTouchpad2MouseEnableState(s_GamepadTouchpad2Mouse_SendMethod);
+    s_GamepadTouchpad2Mouse_Active = true;
+    m_GamepadTouchpadStateMap.clear();
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && QKeyMapper::getvJoyLockCursorStatus()) {
@@ -9118,9 +9151,13 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // s_Joy2Mouse_EnableState = JOY2MOUSE_NONE;
     s_Joy2Mouse_EnableStateMap.clear();
     s_GameControllerSensor_EnableState = false;
+    s_GamepadTouchpad2Mouse_EnableState = false;
     s_Key2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     s_Joy2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     s_Gyro2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+    s_GamepadTouchpad2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+    s_GamepadTouchpad2Mouse_Active = false;
+    m_GamepadTouchpadStateMap.clear();
     setWorkerJoystickCaptureStop();
 
     if (m_Key2MouseCycleTimer.isActive()) {
@@ -9478,6 +9515,9 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_Joy2Mouse_EnableStateMap = checkJoy2MouseEnableStateMap(s_Joy2Mouse_SendMethod);
     s_GameControllerSensor_EnableState = checkGyro2MouseEnableState(s_Gyro2Mouse_SendMethod);
     s_Gyro2Mouse_MoveActive = checkGyro2MouseMoveActiveState();
+    s_GamepadTouchpad2Mouse_EnableState = checkGamepadTouchpad2MouseEnableState(s_GamepadTouchpad2Mouse_SendMethod);
+    s_GamepadTouchpad2Mouse_Active = true;
+    m_GamepadTouchpadStateMap.clear();
 
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && QKeyMapper::getvJoyLockCursorStatus()) {
         POINT pt;
@@ -10498,6 +10538,8 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
 
 void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed)
 {
+    m_GamepadTouchpadStateMap.remove(joystick_removed.instanceID);
+
     Q_UNUSED(joystick_removed);
 #ifdef DEBUG_LOGOUT_ON
     QString vendorIdStr = QStringLiteral("0x") + QString("%1").arg(joystick_removed.vendorid, 4, 16, QChar('0')).toUpper();
@@ -10587,6 +10629,20 @@ void QKeyMapper_Worker::onJoystickSensorEvent(const QJoystickSensorEvent &e)
 // #endif
 
     checkJoystickSensor(e);
+}
+
+void QKeyMapper_Worker::onJoystickTouchpadEvent(const QJoystickTouchpadEvent &e)
+{
+    if (e.joystick == Q_NULLPTR) {
+        return;
+    }
+
+    if (e.joystick->blacklisted
+        && QKeyMapper::getAcceptVirtualGamepadInputStatus() == false) {
+        return;
+    }
+
+    checkJoystickTouchpad(e);
 }
 
 void QKeyMapper_Worker::onJoystickBatteryEvent(const QJoystickBatteryEvent &e)
@@ -10844,6 +10900,19 @@ void QKeyMapper_Worker::checkJoystickSensor(const QJoystickSensorEvent &e)
     gyro2MouseMoveProc(sensor_data, s_Gyro2Mouse_SendMethod);
 }
 
+void QKeyMapper_Worker::checkJoystickTouchpad(const QJoystickTouchpadEvent &e)
+{
+    if (e.joystick == Q_NULLPTR) {
+        return;
+    }
+
+    if (false == s_GamepadTouchpad2Mouse_EnableState) {
+        return;
+    }
+
+    gamepadTouchpad2MouseMoveProc(e, s_GamepadTouchpad2Mouse_SendMethod);
+}
+
 void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param)
 {
     Q_UNUSED(mouse_index_param);
@@ -11032,6 +11101,29 @@ bool QKeyMapper_Worker::checkGyro2MouseEnableState(int &sendMappingKeyMethod)
 #endif
 
     return gyro2mouse_enablestate;
+}
+
+bool QKeyMapper_Worker::checkGamepadTouchpad2MouseEnableState(int &sendMappingKeyMethod)
+{
+    bool gamepadTouchpad2mouseEnableState = false;
+    sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+
+    for (const MAP_KEYDATA &keymapdata : std::as_const(*QKeyMapper::KeyMappingDataList)) {
+        if (keymapdata.Original_Key.contains(JOY_TOUCHPAD2MOUSE_STR)) {
+            gamepadTouchpad2mouseEnableState = true;
+            if (keymapdata.SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_FAKERINPUT
+                && sendMappingKeyMethod != SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+                sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
+            }
+            break;
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[checkGamepadTouchpad2MouseEnableState]" << "JoyTouchpad2Mouse_EnableState ->" << gamepadTouchpad2mouseEnableState;
+#endif
+
+    return gamepadTouchpad2mouseEnableState;
 }
 
 bool QKeyMapper_Worker::checkGyro2MouseMoveActiveState()
@@ -12218,6 +12310,109 @@ void QKeyMapper_Worker::gyro2MouseMoveProc(const GameControllerSensorData &senso
             qDebug().nospace().noquote() << "[gyro2MouseMoveProc] postMouseMove(" << delta_x << ", " << delta_y <<") -> " << QKeyMapper::s_last_HWNDList;
 #endif
         }
+    }
+}
+
+void QKeyMapper_Worker::gamepadTouchpad2MouseMoveProc(const QJoystickTouchpadEvent &e, int sendmappingkeymethod)
+{
+    if (e.joystick == Q_NULLPTR) {
+        return;
+    }
+
+    const int instanceId = e.joystick->instanceID;
+    GameControllerTouchpadState &touchpadState = m_GamepadTouchpadStateMap[instanceId];
+
+    if (e.eventType == TouchpadEventDown) {
+        if (!touchpadState.tracking) {
+            touchpadState.tracking = true;
+            touchpadState.touchpad = e.touchpad;
+            touchpadState.finger = e.finger;
+            touchpadState.lastX = e.x;
+            touchpadState.lastY = e.y;
+            touchpadState.remainderX = 0.0;
+            touchpadState.remainderY = 0.0;
+        }
+        return;
+    }
+
+    if (!touchpadState.tracking
+        || touchpadState.touchpad != e.touchpad
+        || touchpadState.finger != e.finger) {
+        return;
+    }
+
+    if (e.eventType == TouchpadEventUp) {
+        touchpadState = GameControllerTouchpadState();
+        return;
+    }
+
+    if (e.eventType != TouchpadEventMotion) {
+        return;
+    }
+
+    const qreal deltaNormalizedX = e.x - touchpadState.lastX;
+    const qreal deltaNormalizedY = e.y - touchpadState.lastY;
+    touchpadState.lastX = e.x;
+    touchpadState.lastY = e.y;
+
+    if (false == s_GamepadTouchpad2Mouse_Active) {
+        touchpadState.remainderX = 0.0;
+        touchpadState.remainderY = 0.0;
+        return;
+    }
+
+    const double touchpadXSpeed = QKeyMapper::getGamepadTouchpadXSpeed();
+    const double touchpadYSpeed = QKeyMapper::getGamepadTouchpadYSpeed();
+    const bool invertX = QKeyMapper::getGamepadTouchpadInvertXStatus();
+    const bool invertY = QKeyMapper::getGamepadTouchpadInvertYStatus();
+
+    const double screenWidth = qMax(1, GetSystemMetrics(SM_CXSCREEN));
+    const double screenHeight = qMax(1, GetSystemMetrics(SM_CYSCREEN));
+
+    int delta_x = 0;
+    int delta_y = 0;
+
+    if (touchpadXSpeed > 0.0) {
+        const double moveX = (invertX ? -deltaNormalizedX : deltaNormalizedX) * screenWidth * touchpadXSpeed + touchpadState.remainderX;
+        delta_x = static_cast<int>(std::trunc(moveX));
+        touchpadState.remainderX = moveX - delta_x;
+    }
+    else {
+        touchpadState.remainderX = 0.0;
+    }
+
+    if (touchpadYSpeed > 0.0) {
+        const double moveY = (invertY ? -deltaNormalizedY : deltaNormalizedY) * screenHeight * touchpadYSpeed + touchpadState.remainderY;
+        delta_y = static_cast<int>(std::trunc(moveY));
+        touchpadState.remainderY = moveY - delta_y;
+    }
+    else {
+        touchpadState.remainderY = 0.0;
+    }
+
+    if (delta_x == 0 && delta_y == 0) {
+        return;
+    }
+
+#ifdef JOYSTICK_VERBOSE_LOG
+    qDebug().nospace() << "[gamepadTouchpad2MouseMoveProc]"
+                       << "P[" << e.joystick->playerindex << "] Delta X ->" << delta_x << ", Delta Y ->" << delta_y;
+#endif
+
+    if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+        (void)FakerInputClient_sendMouseMove(delta_x, delta_y);
+    }
+    else {
+        sendMouseMove(delta_x, delta_y);
+    }
+
+    if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
+        for (const HWND &hwnd : std::as_const(QKeyMapper::s_last_HWNDList)) {
+            postMouseMove(hwnd, delta_x, delta_y);
+        }
+#ifdef MOUSE_VERBOSE_LOG
+        qDebug().nospace().noquote() << "[gamepadTouchpad2MouseMoveProc] postMouseMove(" << delta_x << ", " << delta_y <<") -> " << QKeyMapper::s_last_HWNDList;
+#endif
     }
 }
 
@@ -18464,6 +18659,7 @@ void QKeyMapper_Worker::initSpecialOriginalKeysList()
             << JOY_LS2MOUSE_STR
             << JOY_RS2MOUSE_STR
             << JOY_GYRO2MOUSE_STR
+            << JOY_TOUCHPAD2MOUSE_STR
             << JOY_LS2VJOYLS_STR
             << JOY_RS2VJOYRS_STR
             << JOY_LS2VJOYRS_STR
@@ -18487,6 +18683,9 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << VJOY_RT_BRAKE_STR
             << VJOY_LT_ACCEL_STR
             << VJOY_RT_ACCEL_STR
+            << GAMEPAD_TOUCHPAD_ON_KEY_STR
+            << GAMEPAD_TOUCHPAD_OFF_KEY_STR
+            << GAMEPAD_TOUCHPAD_TOGGLE_KEY_STR
             << KEY_RECORD_TOGGLE_MAPPING_STR
             << KEY_RECORD_START_MAPPING_STR
             << KEY_RECORD_STOP_MAPPING_STR
@@ -18812,6 +19011,7 @@ void QKeyMapper_Worker::clearCustomKeyFlags(bool restart)
     s_BlockMouse = false;
     s_Mouse2vJoy_Hold = false;
     s_Gyro2Mouse_MoveActive = false;
+    s_GamepadTouchpad2Mouse_Active = false;
     s_Key2Mouse_Up = false;
     s_Key2Mouse_Down = false;
     s_Key2Mouse_Left = false;
@@ -19383,6 +19583,11 @@ void QKeyMapper_Hook_Proc::onJoystickButtonEvent(const QJoystickButtonEvent &e)
 void QKeyMapper_Hook_Proc::onJoystickSensorEvent(const QJoystickSensorEvent &e)
 {
     QKeyMapper_Worker::getInstance()->onJoystickSensorEvent(e);
+}
+
+void QKeyMapper_Hook_Proc::onJoystickTouchpadEvent(const QJoystickTouchpadEvent &e)
+{
+    QKeyMapper_Worker::getInstance()->onJoystickTouchpadEvent(e);
 }
 
 void QKeyMapper_Hook_Proc::onJoystickBatteryEvent(const QJoystickBatteryEvent &e)

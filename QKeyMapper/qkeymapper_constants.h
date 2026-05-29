@@ -517,6 +517,11 @@ namespace QKeyMapperConstants {
     inline constexpr int MOUSE_SPEED_MAX = 99;
     inline constexpr int MOUSE_SPEED_DEFAULT = 3;
 
+    inline constexpr double GAMEPAD_TOUCHPAD_SPEED_MIN = 0.0;
+    inline constexpr double GAMEPAD_TOUCHPAD_SPEED_MAX = 200.0;
+    inline constexpr double GAMEPAD_TOUCHPAD_SPEED_SINGLESTEP = 0.10;
+    inline constexpr double GAMEPAD_TOUCHPAD_SPEED_DEFAULT = 1.0;
+
     inline constexpr int MOUSE_POLLING_INTERNAL_MIN     = 1;
     inline constexpr int MOUSE_POLLING_INTERNAL_MAX     = 99;
     inline constexpr int MOUSE_POLLING_INTERNAL_DEFAULT = 2;
@@ -1199,6 +1204,11 @@ namespace QKeyMapperConstants {
     inline constexpr const char GAMEPAD_RS_THRESHOLD_LIGHTPUSH[]    = "Gamepad_RS_Threshold_LightPush";
     inline constexpr const char GAMEPAD_RS_THRESHOLD_RELEASE[]      = "Gamepad_RS_Threshold_Release";
 
+    inline constexpr const char GAMEPAD_TOUCHPAD_X_SPEED[]          = "GamepadTouchpad_XSpeed";
+    inline constexpr const char GAMEPAD_TOUCHPAD_Y_SPEED[]          = "GamepadTouchpad_YSpeed";
+    inline constexpr const char GAMEPAD_TOUCHPAD_INVERT_X[]         = "GamepadTouchpad_InvertX";
+    inline constexpr const char GAMEPAD_TOUCHPAD_INVERT_Y[]         = "GamepadTouchpad_InvertY";
+
     inline constexpr const char GYRO2MOUSE_X_SPEED[] = "Gyro2Mouse_XSpeed";
     inline constexpr const char GYRO2MOUSE_Y_SPEED[] = "Gyro2Mouse_YSpeed";
     inline constexpr const char GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY[] = "Gyro2Mouse_Min_Gyro_X_Sensitivity";
@@ -1777,6 +1787,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char JOY_RS2MOUSE_STR[] = "Joy-RS2Mouse";
 
     inline constexpr const char JOY_GYRO2MOUSE_STR[] = "Joy-Gyro2Mouse";
+    inline constexpr const char JOY_TOUCHPAD2MOUSE_STR[] = "Joy-Touchpad2Mouse";
 
     inline constexpr const char SENDON_MAPPINGSTART_STR[] = "SendOnMappingStart";
     inline constexpr const char SENDON_MAPPINGSTOP_STR[] = "SendOnMappingStop";
@@ -1785,6 +1796,11 @@ namespace QKeyMapperConstants {
     inline constexpr const char GYRO2MOUSE_PREFIX[] = "Gyro2Mouse-";
     inline constexpr const char GYRO2MOUSE_HOLD_KEY_STR[] = "Gyro2Mouse-Hold";
     inline constexpr const char GYRO2MOUSE_MOVE_KEY_STR[] = "Gyro2Mouse-Move";
+
+    inline constexpr const char GAMEPAD_TOUCHPAD_PREFIX[] = "GamepadTouchpad";
+    inline constexpr const char GAMEPAD_TOUCHPAD_ON_KEY_STR[] = "GamepadTouchpadOn";
+    inline constexpr const char GAMEPAD_TOUCHPAD_OFF_KEY_STR[] = "GamepadTouchpadOff";
+    inline constexpr const char GAMEPAD_TOUCHPAD_TOGGLE_KEY_STR[] = "GamepadTouchpadToggle";
 
     inline constexpr const char KEY2MOUSE_PREFIX[]     = "Key2Mouse-";
     inline constexpr const char KEY2MOUSE_UP_STR[]     = "Key2Mouse-Up";

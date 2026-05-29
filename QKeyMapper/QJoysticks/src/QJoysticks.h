@@ -66,6 +66,7 @@ signals:
    void axisEvent(const QJoystickAxisEvent &event);
    void buttonEvent(const QJoystickButtonEvent &event);
    void sensorEvent(const QJoystickSensorEvent &event);
+   void touchpadEvent(const QJoystickTouchpadEvent &event);
    void batteryEvent(const QJoystickBatteryEvent &event);
    void povChanged(const int js, const int pov, const int angle);
    void axisChanged(const int js, const int axis, const qreal value);

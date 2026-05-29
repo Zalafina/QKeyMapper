@@ -52,6 +52,7 @@ signals:
    void axisEvent(const QJoystickAxisEvent &event);
    void buttonEvent(const QJoystickButtonEvent &event);
    void sensorEvent(const QJoystickSensorEvent &event);
+   void touchpadEvent(const QJoystickTouchpadEvent &event);
    void batteryEvent(const QJoystickBatteryEvent &event);
 
 public:
@@ -75,6 +76,7 @@ private:
    QJoystickButtonEvent getButtonEvent(const SDL_Event *sdl_event);
    QJoystickButtonEvent getControllerButtonEvent(const SDL_Event *sdl_event);
    QJoystickSensorEvent getSensorEvent(const SDL_Event *sdl_event);
+   QJoystickTouchpadEvent getTouchpadEvent(const SDL_Event *sdl_event);
    QJoystickBatteryEvent getBatteryEvent(const SDL_Event *sdl_event);
 
    QMap<int, QJoystickDevice *> m_joysticks;

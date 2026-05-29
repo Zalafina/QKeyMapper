@@ -169,6 +169,124 @@
     <set>Qt::AlignmentFlag::AlignCenter</set>
    </property>
   </widget>
+  <widget class="QGroupBox" name="gamepadTouchpadGroupBox">
+   <property name="geometry">
+    <rect>
+     <x>500</x>
+     <y>220</y>
+     <width>231</width>
+     <height>121</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Touchpad2Mouse</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
+   <widget class="QLabel" name="gamepadTouchpadXSpeedLabel">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>28</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>X Speed</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="gamepadTouchpadYSpeedLabel">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>58</y>
+      <width>71</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Y Speed</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="gamepadTouchpadInvertXCheckBox">
+    <property name="geometry">
+     <rect>
+      <x>26</x>
+      <y>88</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Invert X</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="gamepadTouchpadInvertYCheckBox">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>88</y>
+      <width>91</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
+    </property>
+    <property name="text">
+     <string>Invert Y</string>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="gamepadTouchpadYSpeedSpinBox">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>58</y>
+      <width>81</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::ClickFocus</enum>
+    </property>
+    <property name="decimals">
+     <number>2</number>
+    </property>
+    <property name="value">
+     <double>1.000000000000000</double>
+    </property>
+   </widget>
+   <widget class="QDoubleSpinBox" name="gamepadTouchpadXSpeedSpinBox">
+    <property name="geometry">
+     <rect>
+      <x>90</x>
+      <y>28</y>
+      <width>81</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::ClickFocus</enum>
+    </property>
+    <property name="decimals">
+     <number>2</number>
+    </property>
+    <property name="value">
+     <double>1.000000000000000</double>
+    </property>
+   </widget>
+  </widget>
   <widget class="QGroupBox" name="customNotificationGroupBox">
    <property name="geometry">
     <rect>
@@ -756,6 +874,7 @@
   </widget>
   <zorder>enableCommonMappingTableCheckBox</zorder>
   <zorder>gamepadGroupBox</zorder>
+  <zorder>gamepadTouchpadGroupBox</zorder>
   <zorder>mouseGroupBox</zorder>
   <zorder>customNotificationGroupBox</zorder>
   <zorder>ProcessIconAsTrayIconCheckBox</zorder>

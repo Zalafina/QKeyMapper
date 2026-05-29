@@ -38,6 +38,21 @@
  */
 static QString GENERIC_MAPPINGS;
 
+static QJoystickTouchpadEventType getTouchpadEventType(const SDL_Event *sdl_event)
+{
+   switch (sdl_event->type)
+   {
+   case SDL_CONTROLLERTOUCHPADDOWN:
+      return TouchpadEventDown;
+   case SDL_CONTROLLERTOUCHPADMOTION:
+      return TouchpadEventMotion;
+   case SDL_CONTROLLERTOUCHPADUP:
+      return TouchpadEventUp;
+   default:
+      return TouchpadEventUnknown;
+   }
+}
+
 /**
  * Load a different generic/backup mapping for each operating system.
  */
@@ -205,6 +220,17 @@ void SDL_Joysticks::update()
             }
         }
         break;
+      case SDL_CONTROLLERTOUCHPADDOWN:
+      case SDL_CONTROLLERTOUCHPADMOTION:
+      case SDL_CONTROLLERTOUCHPADUP:
+      {
+         SDL_GameController *gc = SDL_GameControllerFromInstanceID(event.ctouchpad.which);
+         if (gc != nullptr)
+         {
+            emit touchpadEvent(getTouchpadEvent(&event));
+         }
+      }
+      break;
         case SDL_CONTROLLERBUTTONDOWN:
         case SDL_CONTROLLERBUTTONUP:
             emit buttonEvent(getControllerButtonEvent(&event));
@@ -558,6 +584,35 @@ QJoystickSensorEvent SDL_Joysticks::getSensorEvent(const SDL_Event *sdl_event)
     event.joystick = m_joysticks[sdl_event->csensor.which];
 
     return event;
+}
+
+QJoystickTouchpadEvent SDL_Joysticks::getTouchpadEvent(const SDL_Event *sdl_event)
+{
+   QJoystickTouchpadEvent event;
+   event.touchpad = 0;
+   event.finger = 0;
+   event.x = 0;
+   event.y = 0;
+   event.pressure = 0;
+   event.timestamp = 0;
+   event.eventType = TouchpadEventUnknown;
+   event.joystick = Q_NULLPTR;
+
+   if (!m_joysticks.contains(sdl_event->ctouchpad.which))
+   {
+      return event;
+   }
+
+   event.touchpad = sdl_event->ctouchpad.touchpad;
+   event.finger = sdl_event->ctouchpad.finger;
+   event.x = sdl_event->ctouchpad.x;
+   event.y = sdl_event->ctouchpad.y;
+   event.pressure = sdl_event->ctouchpad.pressure;
+   event.timestamp = sdl_event->ctouchpad.timestamp;
+   event.eventType = getTouchpadEventType(sdl_event);
+   event.joystick = m_joysticks[sdl_event->ctouchpad.which];
+
+   return event;
 }
 
 QJoystickBatteryEvent SDL_Joysticks::getBatteryEvent(const SDL_Event *sdl_event)
