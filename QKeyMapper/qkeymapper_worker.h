@@ -717,6 +717,25 @@ struct GameControllerTouchpadGestureState
     {}
 };
 
+struct GameControllerTouchpadTapHistory
+{
+    int touchpad;
+    int finger;
+    bool valid;
+    quint32 timestamp;
+    qreal x;
+    qreal y;
+
+    GameControllerTouchpadTapHistory()
+        : touchpad(-1)
+        , finger(-1)
+        , valid(false)
+        , timestamp(0)
+        , x(0.0)
+        , y(0.0)
+    {}
+};
+
 struct ViGEm_ReportData
 {
     XUSB_REPORT xusb_report;
@@ -1742,6 +1761,7 @@ private:
     GamepadMotion m_GamdpadMotion;
     QHash<int, GameControllerTouchpadState> m_GamepadTouchpadStateMap;
     QHash<int, GameControllerTouchpadGestureState> m_GamepadTouchpadGestureStateMap;
+    QHash<int, GameControllerTouchpadTapHistory> m_GamepadTouchpadTapHistoryMap;
     bool m_ComInitialized = false;
 
     // Volume control instance

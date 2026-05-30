@@ -524,6 +524,8 @@ namespace QKeyMapperConstants {
     inline constexpr unsigned int GAMEPAD_TOUCHPAD_TAP_MAX_DURATION_MS = 180U;
     inline constexpr double GAMEPAD_TOUCHPAD_TAP_MAX_DISPLACEMENT = 0.030;
     inline constexpr double GAMEPAD_TOUCHPAD_TAP_MAX_PATH_LENGTH = 0.045;
+    inline constexpr unsigned int GAMEPAD_TOUCHPAD_TAP_DUPLICATE_INTERVAL_MS = 60U;
+    inline constexpr double GAMEPAD_TOUCHPAD_TAP_DUPLICATE_MAX_DISTANCE = 0.010;
     inline constexpr unsigned int GAMEPAD_TOUCHPAD_2F_SETTLE_TIME_MS = 35U;
     inline constexpr double GAMEPAD_TOUCHPAD_2F_MIN_PRIMARY_TRAVEL = 0.100;
     inline constexpr double GAMEPAD_TOUCHPAD_2F_AXIS_DOMINANCE_RATIO = 1.75;

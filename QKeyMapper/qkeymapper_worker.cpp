@@ -10605,6 +10605,8 @@ void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
 void QKeyMapper_Worker::onJoystickRemoved(const QJoystickDevice joystick_removed)
 {
     m_GamepadTouchpadStateMap.remove(joystick_removed.instanceID);
+    m_GamepadTouchpadGestureStateMap.remove(joystick_removed.instanceID);
+    m_GamepadTouchpadTapHistoryMap.remove(joystick_removed.instanceID);
 
     Q_UNUSED(joystick_removed);
 #ifdef DEBUG_LOGOUT_ON
@@ -12534,6 +12536,7 @@ void QKeyMapper_Worker::clearGamepadTouchpadRuntimeState()
 {
     m_GamepadTouchpadStateMap.clear();
     m_GamepadTouchpadGestureStateMap.clear();
+    m_GamepadTouchpadTapHistoryMap.clear();
 }
 
 bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEvent &e)
@@ -12545,6 +12548,51 @@ bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEven
 
     const int instanceId = e.joystick->instanceID;
     GameControllerTouchpadGestureState &gestureState = m_GamepadTouchpadGestureStateMap[instanceId];
+    GameControllerTouchpadTapHistory &tapHistory = m_GamepadTouchpadTapHistoryMap[instanceId];
+
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+    auto touchpadEventTypeToString = [](QJoystickTouchpadEventType eventType) -> const char * {
+        switch (eventType) {
+        case TouchpadEventDown:
+            return "Down";
+        case TouchpadEventMotion:
+            return "Motion";
+        case TouchpadEventUp:
+            return "Up";
+        default:
+            return "Unknown";
+        }
+    };
+
+    auto logTouchpadGesture = [&](const char *stage, const QString &detail = QString()) {
+        qDebug().nospace().noquote()
+            << "[handleGamepadTouchpadGesture] "
+            << stage
+            << " Event=" << touchpadEventTypeToString(e.eventType)
+            << ", InstanceID=" << instanceId
+            << ", PlayerIndex=" << e.joystick->playerindex
+            << ", Touchpad=" << e.touchpad
+            << ", Finger=" << e.finger
+            << ", Timestamp=" << e.timestamp
+            << ", X=" << e.x
+            << ", Y=" << e.y
+            << ", Pressure=" << e.pressure
+            << ", PrimaryFinger=" << gestureState.primaryFinger
+            << ", SecondaryFinger=" << gestureState.secondaryFinger
+            << ", PrimaryDown=" << gestureState.primaryDown
+            << ", SecondaryDown=" << gestureState.secondaryDown
+            << ", TapEligible=" << gestureState.tapEligible
+            << ", TwoFingerEligible=" << gestureState.twoFingerEligible
+            << ", TwoFingerTriggered=" << gestureState.twoFingerTriggered
+            << ", TapPathLength=" << gestureState.tapPathLength
+            << ", PrimaryDownTimestamp=" << gestureState.primaryDownTimestamp
+            << ", SecondFingerDownTimestamp=" << gestureState.secondFingerDownTimestamp;
+
+        if (!detail.isEmpty()) {
+            qDebug().nospace().noquote() << "[handleGamepadTouchpadGesture] Detail: " << detail;
+        }
+    };
+#endif
 
     auto resetGestureState = [&gestureState]() {
         gestureState = GameControllerTouchpadGestureState();
@@ -12568,10 +12616,17 @@ bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEven
             gestureState.primaryLastX = e.x;
             gestureState.primaryLastY = e.y;
             gestureState.tapEligible = s_GamepadTouchpadTap_EnableState;
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+            logTouchpadGesture("PrimaryDownAccepted");
+#endif
             return gestureState.tapEligible;
         }
 
         if (gestureState.touchpad != e.touchpad) {
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+            logTouchpadGesture("ResetOnTouchpadMismatch",
+                               QString("StateTouchpad=%1").arg(gestureState.touchpad));
+#endif
             resetGestureState();
             return false;
         }
@@ -12586,14 +12641,24 @@ bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEven
             gestureState.twoFingerEligible = s_GamepadTouchpad2F_EnableState;
             gestureState.twoFingerTriggered = false;
             refreshTwoFingerBaseline();
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+            logTouchpadGesture("SecondaryDownAccepted");
+#endif
             return gestureState.twoFingerEligible;
         }
 
         gestureState.tapEligible = false;
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+        logTouchpadGesture("UnexpectedRepeatedDown");
+#endif
         return gestureState.twoFingerEligible;
     }
 
     if (gestureState.touchpad != e.touchpad) {
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+        logTouchpadGesture("ResetOnTouchpadMismatchAfterDown",
+                           QString("StateTouchpad=%1").arg(gestureState.touchpad));
+#endif
         resetGestureState();
         return false;
     }
@@ -12617,6 +12682,13 @@ bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEven
                     || tapDisplacement > GAMEPAD_TOUCHPAD_TAP_MAX_DISPLACEMENT
                     || gestureState.tapPathLength > GAMEPAD_TOUCHPAD_TAP_MAX_PATH_LENGTH) {
                     gestureState.tapEligible = false;
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+                    logTouchpadGesture("TapInvalidatedOnMotion",
+                                       QString("TapElapsed=%1, TapDisplacement=%2, TapPathLength=%3")
+                                           .arg(tapElapsed)
+                                           .arg(tapDisplacement, 0, 'f', 6)
+                                           .arg(gestureState.tapPathLength, 0, 'f', 6));
+#endif
                 }
             }
         }
@@ -12625,6 +12697,9 @@ bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEven
             gestureState.secondaryLastY = e.y;
         }
         else {
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+            logTouchpadGesture("UnexpectedMotionIgnored");
+#endif
             return gestureState.tapEligible || (gestureState.secondaryDown && gestureState.twoFingerEligible);
         }
 
@@ -12632,6 +12707,10 @@ bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEven
             const quint32 settleElapsed = e.timestamp - gestureState.secondFingerDownTimestamp;
             if (settleElapsed < GAMEPAD_TOUCHPAD_2F_SETTLE_TIME_MS) {
                 refreshTwoFingerBaseline();
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+                logTouchpadGesture("TwoFingerSettling",
+                                   QString("SettleElapsed=%1").arg(settleElapsed));
+#endif
                 return true;
             }
 
@@ -12655,6 +12734,15 @@ bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEven
                 dispatchTouchpadDerivedKey(directionKey, KEY_DOWN, e.joystick);
                 dispatchTouchpadDerivedKey(directionKey, KEY_UP, e.joystick);
                 gestureState.twoFingerTriggered = true;
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+                logTouchpadGesture("TwoFingerDirectionTriggered",
+                                   QString("DirectionKey=%1, TravelX=%2, TravelY=%3, AxisDominance=%4, SpanDelta=%5")
+                                       .arg(directionKey)
+                                       .arg(travelX, 0, 'f', 6)
+                                       .arg(travelY, 0, 'f', 6)
+                                       .arg(axisDominance, 0, 'f', 6)
+                                       .arg(spanDelta, 0, 'f', 6));
+#endif
             }
 
             return true;
@@ -12674,24 +12762,77 @@ bool QKeyMapper_Worker::handleGamepadTouchpadGesture(const QJoystickTouchpadEven
                                                              e.x,
                                                              e.y);
             const quint32 tapElapsed = e.timestamp - gestureState.primaryDownTimestamp;
+            const qreal duplicateDistance = tapHistory.valid
+                ? touchpadDistance(tapHistory.x, tapHistory.y, e.x, e.y)
+                : 0.0;
+            const quint32 duplicateElapsed = tapHistory.valid
+                ? (e.timestamp - tapHistory.timestamp)
+                : 0U;
+            const bool duplicateTap = tapHistory.valid
+                && tapHistory.touchpad == e.touchpad
+                && tapHistory.finger == e.finger
+                && duplicateElapsed <= GAMEPAD_TOUCHPAD_TAP_DUPLICATE_INTERVAL_MS
+                && duplicateDistance <= GAMEPAD_TOUCHPAD_TAP_DUPLICATE_MAX_DISTANCE;
 
             if (gestureState.tapEligible
                 && !gestureState.secondaryDown
                 && tapElapsed <= GAMEPAD_TOUCHPAD_TAP_MAX_DURATION_MS
                 && finalDisplacement <= GAMEPAD_TOUCHPAD_TAP_MAX_DISPLACEMENT
-                && finalPathLength <= GAMEPAD_TOUCHPAD_TAP_MAX_PATH_LENGTH) {
+                && finalPathLength <= GAMEPAD_TOUCHPAD_TAP_MAX_PATH_LENGTH
+                && !duplicateTap) {
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+                logTouchpadGesture("TapAccepted",
+                                   QString("TapElapsed=%1, FinalDisplacement=%2, FinalPathLength=%3")
+                                       .arg(tapElapsed)
+                                       .arg(finalDisplacement, 0, 'f', 6)
+                                       .arg(finalPathLength, 0, 'f', 6));
+#endif
+                tapHistory.touchpad = e.touchpad;
+                tapHistory.finger = e.finger;
+                tapHistory.valid = true;
+                tapHistory.timestamp = e.timestamp;
+                tapHistory.x = e.x;
+                tapHistory.y = e.y;
                 dispatchTouchpadDerivedKey(QString(JOY_TOUCHPAD_TAP_STR), KEY_DOWN, e.joystick);
                 dispatchTouchpadDerivedKey(QString(JOY_TOUCHPAD_TAP_STR), KEY_UP, e.joystick);
             }
+            else if (duplicateTap) {
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+                logTouchpadGesture("TapSuppressedAsDuplicate",
+                                   QString("DuplicateElapsed=%1, DuplicateDistance=%2, LastAcceptedTimestamp=%3")
+                                       .arg(duplicateElapsed)
+                                       .arg(duplicateDistance, 0, 'f', 6)
+                                       .arg(tapHistory.timestamp));
+#endif
+            }
+            else {
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+                logTouchpadGesture("TapRejected",
+                                   QString("TapElapsed=%1, FinalDisplacement=%2, FinalPathLength=%3")
+                                       .arg(tapElapsed)
+                                       .arg(finalDisplacement, 0, 'f', 6)
+                                       .arg(finalPathLength, 0, 'f', 6));
+#endif
+            }
 
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+            logTouchpadGesture("ResetOnPrimaryUpComplete");
+#endif
             resetGestureState();
             return false;
         }
 
         if (gestureState.secondaryDown && e.finger == gestureState.secondaryFinger) {
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+            logTouchpadGesture("ResetOnSecondaryUp");
+#endif
             resetGestureState();
             return false;
         }
+
+#if defined(DEBUG_LOGOUT_ON) && defined(GAMECONTROLLER_TOUCHPAD_VERBOSE_LOG)
+        logTouchpadGesture("UnexpectedUpIgnored");
+#endif
     }
 
     return gestureState.tapEligible || (gestureState.secondaryDown && gestureState.twoFingerEligible);
