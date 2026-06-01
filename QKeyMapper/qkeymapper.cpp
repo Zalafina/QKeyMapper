@@ -6992,13 +6992,7 @@ ValidationResult QKeyMapper::validateSingleOriginalKeyWithoutTimeSuffix(const QS
     }
 
     if (validKey) {
-        if (isGamepadTouchpadPlayerlessOriginalKey(original_key) && !indexString.isEmpty()) {
-            result.isValid = false;
-            result.errorMessage = tr("Invalid key format \"%1\", do not add Player suffix to %2.").arg(orikey, original_key);
-            return result;
-        }
-
-        if ((original_key == JOY_GYRO2MOUSE_STR || isGamepadTouchpadPlayerlessOriginalKey(original_key)) && !indexString.isEmpty()) {
+        if (original_key == JOY_GYRO2MOUSE_STR && !indexString.isEmpty()) {
             result.isValid = false;
             result.errorMessage = tr("Invalid key format \"%1\", do not add Player suffix to %2.").arg(orikey, original_key);
             return result;
@@ -13582,6 +13576,7 @@ void QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QS
 bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
 {
     bool disable_sendtiming = false;
+    const QString normalizedOriginalKey = removeOriginalKeyDeviceIndex(keymapdata.Original_Key);
 
     if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
         disable_sendtiming = true;
@@ -13596,13 +13591,13 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
         disable_sendtiming = true;
     }
 
-    if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
-        || keymapdata.Original_Key == JOY_RS2MOUSE_STR
-        || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
-        || keymapdata.Original_Key == JOY_TOUCHPAD2MOUSE_STR
-        || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
-        || keymapdata.Original_Key == SENDON_MAPPINGSTOP_STR
-        || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
+    if (normalizedOriginalKey == JOY_LS2MOUSE_STR
+        || normalizedOriginalKey == JOY_RS2MOUSE_STR
+        || normalizedOriginalKey == JOY_GYRO2MOUSE_STR
+        || normalizedOriginalKey == JOY_TOUCHPAD2MOUSE_STR
+        || normalizedOriginalKey == SENDON_MAPPINGSTART_STR
+        || normalizedOriginalKey == SENDON_MAPPINGSTOP_STR
+        || normalizedOriginalKey == SENDON_SWITCHTAB_STR) {
         disable_sendtiming = true;
     }
 
@@ -32164,6 +32159,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
         {
             bool disable_burst = false;
             bool disable_lock = false;
+            const QString normalizedOriginalKey = removeOriginalKeyDeviceIndex(keymapdata.Original_Key);
 
 #ifdef VIGEM_CLIENT_SUPPORT
             if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
@@ -32181,13 +32177,13 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_lock = true;
             }
 #endif
-            if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
-                || keymapdata.Original_Key == JOY_RS2MOUSE_STR
-                || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
-                || keymapdata.Original_Key == JOY_TOUCHPAD2MOUSE_STR
-                || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
-                || keymapdata.Original_Key == SENDON_MAPPINGSTOP_STR
-                || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
+            if (normalizedOriginalKey == JOY_LS2MOUSE_STR
+                || normalizedOriginalKey == JOY_RS2MOUSE_STR
+                || normalizedOriginalKey == JOY_GYRO2MOUSE_STR
+                || normalizedOriginalKey == JOY_TOUCHPAD2MOUSE_STR
+                || normalizedOriginalKey == SENDON_MAPPINGSTART_STR
+                || normalizedOriginalKey == SENDON_MAPPINGSTOP_STR
+                || normalizedOriginalKey == SENDON_SWITCHTAB_STR) {
                 disable_burst = true;
                 disable_lock = true;
             }
@@ -32461,6 +32457,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
     // Determine disable flags based on the same logic as refreshKeyMappingDataTable
     bool disable_burst = false;
     bool disable_lock = false;
+    const QString normalizedOriginalKey = removeOriginalKeyDeviceIndex(keymapdata.Original_Key);
 
     if (keymapdata.Original_Key == VJOY_MOUSE2LS_STR || keymapdata.Original_Key == VJOY_MOUSE2RS_STR) {
         disable_burst = true;
@@ -32477,13 +32474,13 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         disable_lock = true;
     }
 
-    if (keymapdata.Original_Key == JOY_LS2MOUSE_STR
-        || keymapdata.Original_Key == JOY_RS2MOUSE_STR
-        || keymapdata.Original_Key == JOY_GYRO2MOUSE_STR
-        || keymapdata.Original_Key == JOY_TOUCHPAD2MOUSE_STR
-        || keymapdata.Original_Key == SENDON_MAPPINGSTART_STR
-        || keymapdata.Original_Key == SENDON_MAPPINGSTOP_STR
-        || keymapdata.Original_Key == SENDON_SWITCHTAB_STR) {
+    if (normalizedOriginalKey == JOY_LS2MOUSE_STR
+        || normalizedOriginalKey == JOY_RS2MOUSE_STR
+        || normalizedOriginalKey == JOY_GYRO2MOUSE_STR
+        || normalizedOriginalKey == JOY_TOUCHPAD2MOUSE_STR
+        || normalizedOriginalKey == SENDON_MAPPINGSTART_STR
+        || normalizedOriginalKey == SENDON_MAPPINGSTOP_STR
+        || normalizedOriginalKey == SENDON_SWITCHTAB_STR) {
         disable_burst = true;
         disable_lock = true;
     }

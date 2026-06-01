@@ -1410,7 +1410,7 @@ public slots:
     bool checkGamepadTouchpadEnableState(void);
     bool checkGamepadTouchpadTapEnableState(void);
     bool checkGamepadTouchpad2FEnableState(void);
-    bool checkGamepadTouchpad2MouseEnableState(int &sendMappingKeyMethod);
+    QHash<int, bool> checkGamepadTouchpad2MouseEnableStateMap(int &sendMappingKeyMethod);
     bool checkGyro2MouseMoveActiveState(void);
     void doFunctionMappingProc(const QString &func_keystring);
 
@@ -1719,6 +1719,7 @@ public:
     static bool s_GamepadTouchpadTap_EnableState;
     static bool s_GamepadTouchpad2F_EnableState;
     static bool s_GamepadTouchpad2Mouse_EnableState;
+    static QHash<int, bool> s_GamepadTouchpad2Mouse_EnableStateMap;
     // static Joy2MouseStates s_Joy2Mouse_EnableState;
     static QHash<int, Joy2MouseStates> s_Joy2Mouse_EnableStateMap;
     static int s_Key2Mouse_SendMethod;
