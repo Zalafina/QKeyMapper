@@ -32,10 +32,5 @@
 - Use Chinese when discussing plans, confirmations with the user.
 - If implementation becomes blocked or risky, explain the issue clearly and collaborate with the user on the decision.
 
-## 编译验证临时文件生成位置
-- 由用户来实施文件修改后的编译验证，根据用户反馈的编译错误进行适当代码修改。
-
-## 尽量节省输出tokens规则
-- 在不影响用户理解的前提下，尽量节省输出tokens，避免冗长的解释和描述。
-- 直接给出代码实现，必要时附上简短的说明和注释，避免过多的背景介绍和细节描述。
-- 在用户明确要求提供详细解释时，才进行更深入的说明。
+## 可以不进行文件编译验证
+- 为节省输出tokens，代码修改实施后，由用户对修改后文件进行编译验证，根据用户反馈的编译错误进行适当代码修改。
