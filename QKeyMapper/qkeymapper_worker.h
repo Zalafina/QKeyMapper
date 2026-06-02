@@ -1581,6 +1581,7 @@ public:
     static QAtomicBool s_Mouse2vJoy_Hold;
     static QAtomicBool s_Gyro2Mouse_MoveActive;
     static QAtomicBool s_GamepadTouchpad_Active;
+    static QAtomicInt s_GamepadTouchpad_PlayerMask;
     static QAtomicBool s_Crosshair_Normal;
     static QAtomicBool s_Crosshair_TypeA;
     static QAtomicBool s_Key2Mouse_Up;

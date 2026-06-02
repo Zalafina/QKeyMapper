@@ -3500,6 +3500,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateGamepadSelectComboBox_Signal, this, &QKeyMapper::updateGamepadSelectComboBox, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showSetVolumeNotification_Signal, this, &QKeyMapper::showSetVolumeNotification, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showBlockInputDeviceNotification_Signal, this, &QKeyMapper::showBlockInputDeviceNotification, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::showGamepadTouchpadNotification_Signal, this, &QKeyMapper::showGamepadTouchpadNotification, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::showSwitchBurstAndLockNotification_Signal, this, &QKeyMapper::showSwitchBurstAndLockNotification, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::switchBurstAndLockStateApplied_Signal, this, &QKeyMapper::onSwitchBurstAndLockStateApplied, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
@@ -7106,7 +7107,7 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                     foundMacroMappingKey = true;
                     break;
                 }
-                if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mapkey)) {
+                if (QKeyMapper_Worker::SpecialMappingKeysList.contains(mapkey_noindex)) {
                     foundSpecialMappingKey = mapkey;
                     break;
                 }
@@ -7325,6 +7326,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             static QRegularExpression mousepoint_regex(R"(^Mouse-(L|R|M|X1|X2|Move)(:W)?(:BG)?\((-?\d+),(-?\d+)\)$)");
             // Relative mouse move: "Mouse-Move:R(delta_x,delta_y)" (no :W / :BG support by design)
             static QRegularExpression mousemove_relative_regex(R"(^Mouse-Move:R\((-?\d+),(-?\d+)\)$)");
+            static QRegularExpression gamepad_touchpad_mapping_key_regex(QKeyMapperConstants::REGEX_PATTERN_GAMEPAD_TOUCHPAD_MAPPING_KEY);
             // Use non-greedy matching and multiline support for SendText
             static QRegularExpression sendtext_regex(
                 REGEX_PATTERN_SENDTEXT,
@@ -7344,6 +7346,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             QRegularExpressionMatch joy2vjoy_mapkey_match = joy2vjoy_mapkey_regex.match(mapping_key);
             QRegularExpressionMatch mousepoint_match = mousepoint_regex.match(mapping_key);
             QRegularExpressionMatch mousemove_relative_match = mousemove_relative_regex.match(mapping_key);
+            QRegularExpressionMatch gamepad_touchpad_mapping_key_match = gamepad_touchpad_mapping_key_regex.match(mapping_key);
             QRegularExpressionMatch sendtext_match = sendtext_regex.match(mapping_key);
             QRegularExpressionMatch runcmd_match = runcmd_regex.match(mapping_key);
             QRegularExpressionMatch switchtab_match = switchtab_regex.match(mapping_key);
@@ -7568,6 +7571,27 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
             }
             else if (joy2vjoy_mapkey_match.hasMatch()) {
                 result.isValid = true;
+            }
+            else if (gamepad_touchpad_mapping_key_match.hasMatch()) {
+                QString playerIndexString = gamepad_touchpad_mapping_key_match.captured(4);
+                if (!playerIndexString.isEmpty()) {
+                    bool ok = false;
+                    int playerIndex = playerIndexString.toInt(&ok);
+                    bool hasLeadingZero = playerIndexString.size() > 1 && playerIndexString.startsWith('0');
+                    if (!ok || hasLeadingZero || playerIndex < JOYSTICK_PLAYER_INDEX_MIN || playerIndex > JOYSTICK_PLAYER_INDEX_MAX) {
+                        result.isValid = false;
+                        result.errorMessage = tr("Invalid PlayerIndex[%1] of mapping key \"%2\", valid range %3~%4")
+                                                  .arg(playerIndexString, mapping_key)
+                                                  .arg(JOYSTICK_PLAYER_INDEX_MIN)
+                                                  .arg(JOYSTICK_PLAYER_INDEX_MAX);
+                    }
+                    else {
+                        result.isValid = true;
+                    }
+                }
+                else {
+                    result.isValid = true;
+                }
             }
             else if (mousepoint_match.hasMatch()
                 || mousemove_relative_match.hasMatch()
@@ -29116,6 +29140,56 @@ void QKeyMapper::showBlockInputDeviceNotification(int devicetype, bool blocked)
     showNotificationPopup(popupNotification, opts);
 }
 
+void QKeyMapper::showGamepadTouchpadNotification(int playerindex, bool active)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().noquote().nospace() << "[QKeyMapper::showGamepadTouchpadNotification] PlayerIndex=" << playerindex << ", Active=" << active;
+#endif
+
+    int position = ui->notificationComboBox->currentIndex();
+    if (NOTIFICATION_POSITION_NONE == position) {
+        position = NOTIFICATION_POSITION_DEFAULT;
+    }
+
+    QColor tabFontColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabFontColor;
+    QColor tabBGColor = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabBackgroundColor;
+    QString color_str;
+    if (tabFontColor.isValid()) {
+        color_str = tabFontColor.name();
+    }
+    else {
+        QColor notification_font_color = m_NotificationSetupDialog->getNotification_FontColor();
+        if (notification_font_color.isValid()) {
+            color_str = notification_font_color.name();
+        }
+        else {
+            color_str = NOTIFICATION_COLOR_NORMAL_DEFAULT_STR;
+        }
+    }
+
+    PopupNotificationOptions opts = buildPopupNotificationOptions(m_NotificationSetupDialog->getNotificationSettings(),
+                                                                  position,
+                                                                  QColor(color_str),
+                                                                  tabBGColor);
+
+    QString popupNotification;
+    if (playerindex == INITIAL_PLAYER_INDEX) {
+        popupNotification = active ? tr("Gamepad Touchpad On") : tr("Gamepad Touchpad Off");
+    }
+    else if (active) {
+        popupNotification = tr("Gamepad Touchpad On (@%1)").arg(playerindex);
+    }
+    else {
+        popupNotification = tr("Gamepad Touchpad Off (@%1)").arg(playerindex);
+    }
+
+    opts.iconPath = ":/gamepad.svg";
+    opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
+    opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
+
+    showNotificationPopup(popupNotification, opts);
+}
+
 void QKeyMapper::showSwitchBurstAndLockNotification(int rowindex)
 {
     if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
@@ -31207,6 +31281,9 @@ void QKeyMapper::initKeysCategoryMap()
         << GAMEPAD_TOUCHPAD_ON_KEY_STR
         << GAMEPAD_TOUCHPAD_OFF_KEY_STR
         << GAMEPAD_TOUCHPAD_TOGGLE_KEY_STR
+        << GAMEPAD_TOUCHPAD_ON_NOTIFY_KEY_STR
+        << GAMEPAD_TOUCHPAD_OFF_NOTIFY_KEY_STR
+        << GAMEPAD_TOUCHPAD_TOGGLE_NOTIFY_KEY_STR
         << MOUSE2VJOY_HOLD_KEY_STR
         << VJOY_LS_RADIUS_STR
         << VJOY_RS_RADIUS_STR

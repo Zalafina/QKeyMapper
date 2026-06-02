@@ -6,6 +6,51 @@
 
 using namespace QKeyMapperConstants;
 
+namespace {
+constexpr int GAMEPAD_TOUCHPAD_PLAYER_COUNT = JOYSTICK_PLAYER_INDEX_MAX - JOYSTICK_PLAYER_INDEX_MIN + 1;
+constexpr int GAMEPAD_TOUCHPAD_ALL_PLAYERS_MASK = (1 << GAMEPAD_TOUCHPAD_PLAYER_COUNT) - 1;
+
+bool parseGamepadTouchpadMappingKey(const QString &key, QString *baseKey = nullptr, bool *showNotification = nullptr, int *playerIndex = nullptr)
+{
+    static QRegularExpression gamepadTouchpadMappingKeyRegex(QKeyMapperConstants::REGEX_PATTERN_GAMEPAD_TOUCHPAD_MAPPING_KEY);
+    QRegularExpressionMatch match = gamepadTouchpadMappingKeyRegex.match(key);
+    if (!match.hasMatch()) {
+        return false;
+    }
+
+    if (baseKey != nullptr) {
+        *baseKey = match.captured(1);
+    }
+
+    if (showNotification != nullptr) {
+        *showNotification = !match.captured(3).isEmpty();
+    }
+
+    if (playerIndex != nullptr) {
+        const QString playerIndexString = match.captured(4);
+        *playerIndex = playerIndexString.isEmpty() ? INITIAL_PLAYER_INDEX : playerIndexString.toInt();
+    }
+
+    return true;
+}
+
+bool isGamepadTouchpadPlayerIndexValid(int playerIndex)
+{
+    return playerIndex >= JOYSTICK_PLAYER_INDEX_MIN && playerIndex <= JOYSTICK_PLAYER_INDEX_MAX;
+}
+
+int gamepadTouchpadPlayerBit(int playerIndex)
+{
+    return 1 << (playerIndex - JOYSTICK_PLAYER_INDEX_MIN);
+}
+
+bool isGamepadTouchpadPlayerEnabled(int playerMask, int playerIndex)
+{
+    return isGamepadTouchpadPlayerIndexValid(playerIndex)
+        && ((playerMask & gamepadTouchpadPlayerBit(playerIndex)) != 0);
+}
+}
+
 QMutex SendInputTask::s_SendInputTaskControllerMapMutex;
 QHash<QString, SendInputTaskController> SendInputTask::s_SendInputTaskControllerMap;
 SendInputTaskController SendInputTask::s_GlobalSendInputTaskController;
@@ -30,6 +75,7 @@ QAtomicBool QKeyMapper_Worker::s_BlockMouse;
 QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Hold;
 QAtomicBool QKeyMapper_Worker::s_Gyro2Mouse_MoveActive;
 QAtomicBool QKeyMapper_Worker::s_GamepadTouchpad_Active;
+QAtomicInt QKeyMapper_Worker::s_GamepadTouchpad_PlayerMask = GAMEPAD_TOUCHPAD_ALL_PLAYERS_MASK;
 QAtomicBool QKeyMapper_Worker::s_Crosshair_Normal;
 QAtomicBool QKeyMapper_Worker::s_Crosshair_TypeA;
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Up;
@@ -3240,9 +3286,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                 }
             }
-            else if (key == GAMEPAD_TOUCHPAD_ON_KEY_STR
-                || key == GAMEPAD_TOUCHPAD_OFF_KEY_STR
-                || key == GAMEPAD_TOUCHPAD_TOGGLE_KEY_STR) {
+            else if (parseGamepadTouchpadMappingKey(key)) {
                 /* Touchpad control mapping keys are one-shot actions handled on KEY_DOWN only. */
             }
             else if (key == BLOCK_KEYBOARD_STR
@@ -3601,6 +3645,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QRegularExpressionMatch showfbutton_match = showfbutton_regex.match(key);
                 QRegularExpressionMatch hidefbutton_match = hidefbutton_regex.match(key);
                 QRegularExpressionMatch setvolume_match = setvolume_regex.match(key);
+                QString gamepadTouchpadBaseKey;
+                bool showGamepadTouchpadNotification = false;
+                int gamepadTouchpadPlayerIndex = INITIAL_PLAYER_INDEX;
+                bool isGamepadTouchpadMappingKey = parseGamepadTouchpadMappingKey(key, &gamepadTouchpadBaseKey, &showGamepadTouchpadNotification, &gamepadTouchpadPlayerIndex);
                 if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
@@ -4329,21 +4377,45 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                     }
                 }
-                else if (key == GAMEPAD_TOUCHPAD_ON_KEY_STR
-                    || key == GAMEPAD_TOUCHPAD_OFF_KEY_STR
-                    || key == GAMEPAD_TOUCHPAD_TOGGLE_KEY_STR) {
+                else if (isGamepadTouchpadMappingKey) {
                     if (sendmode != SENDMODE_FORCE_STOP
                         && sendtype != SENDTYPE_UP
                         && sendtype != SENDTYPE_FORCE_UP
                         && sendtype != SENDTYPE_EXCLUSION) {
-                        if (key == GAMEPAD_TOUCHPAD_ON_KEY_STR) {
-                            s_GamepadTouchpad_Active = true;
-                        }
-                        else if (key == GAMEPAD_TOUCHPAD_OFF_KEY_STR) {
-                            s_GamepadTouchpad_Active = false;
+                        bool currentActive = false;
+                        if (gamepadTouchpadPlayerIndex == INITIAL_PLAYER_INDEX) {
+                            if (gamepadTouchpadBaseKey == GAMEPAD_TOUCHPAD_ON_KEY_STR) {
+                                s_GamepadTouchpad_Active = true;
+                            }
+                            else if (gamepadTouchpadBaseKey == GAMEPAD_TOUCHPAD_OFF_KEY_STR) {
+                                s_GamepadTouchpad_Active = false;
+                            }
+                            else {
+                                s_GamepadTouchpad_Active = !s_GamepadTouchpad_Active.loadAcquire();
+                            }
+
+                            currentActive = s_GamepadTouchpad_Active.loadAcquire();
                         }
                         else {
-                            s_GamepadTouchpad_Active = !s_GamepadTouchpad_Active.loadAcquire();
+                            int playerMask = s_GamepadTouchpad_PlayerMask.loadAcquire();
+                            const int playerBit = gamepadTouchpadPlayerBit(gamepadTouchpadPlayerIndex);
+
+                            if (gamepadTouchpadBaseKey == GAMEPAD_TOUCHPAD_ON_KEY_STR) {
+                                playerMask |= playerBit;
+                            }
+                            else if (gamepadTouchpadBaseKey == GAMEPAD_TOUCHPAD_OFF_KEY_STR) {
+                                playerMask &= ~playerBit;
+                            }
+                            else {
+                                playerMask ^= playerBit;
+                            }
+
+                            s_GamepadTouchpad_PlayerMask.storeRelease(playerMask);
+                            currentActive = ((playerMask & playerBit) != 0);
+                        }
+
+                        if (showGamepadTouchpadNotification) {
+                            emit QKeyMapper::getInstance()->showGamepadTouchpadNotification_Signal(gamepadTouchpadPlayerIndex, currentActive);
                         }
 
                         clearGamepadTouchpadRuntimeState();
@@ -9059,6 +9131,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     s_GamepadTouchpad2Mouse_EnableStateMap = checkGamepadTouchpad2MouseEnableStateMap(s_GamepadTouchpad2Mouse_SendMethod);
     s_GamepadTouchpad2Mouse_EnableState = !s_GamepadTouchpad2Mouse_EnableStateMap.isEmpty();
     s_GamepadTouchpad_Active = true;
+    s_GamepadTouchpad_PlayerMask.storeRelease(GAMEPAD_TOUCHPAD_ALL_PLAYERS_MASK);
     clearGamepadTouchpadRuntimeState();
 
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -9223,6 +9296,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     s_Gyro2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     s_GamepadTouchpad2Mouse_SendMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
     s_GamepadTouchpad_Active = false;
+    s_GamepadTouchpad_PlayerMask.storeRelease(0);
     clearGamepadTouchpadRuntimeState();
     setWorkerJoystickCaptureStop();
 
@@ -9587,6 +9661,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_GamepadTouchpad2Mouse_EnableStateMap = checkGamepadTouchpad2MouseEnableStateMap(s_GamepadTouchpad2Mouse_SendMethod);
     s_GamepadTouchpad2Mouse_EnableState = !s_GamepadTouchpad2Mouse_EnableStateMap.isEmpty();
     s_GamepadTouchpad_Active = true;
+    s_GamepadTouchpad_PlayerMask.storeRelease(GAMEPAD_TOUCHPAD_ALL_PLAYERS_MASK);
     clearGamepadTouchpadRuntimeState();
 
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && QKeyMapper::getvJoyLockCursorStatus()) {
@@ -10983,8 +11058,13 @@ void QKeyMapper_Worker::checkJoystickTouchpad(const QJoystickTouchpadEvent &e)
         return;
     }
 
-    const bool suppressMouseMove = handleGamepadTouchpadGesture(e);
     const int playerIndex = e.joystick->playerindex;
+    const int playerMask = s_GamepadTouchpad_PlayerMask.loadAcquire();
+    if (!isGamepadTouchpadPlayerEnabled(playerMask, playerIndex)) {
+        return;
+    }
+
+    const bool suppressMouseMove = handleGamepadTouchpadGesture(e);
     const bool touchpad2MouseEnabledForPlayer = s_GamepadTouchpad2Mouse_EnableStateMap.contains(INITIAL_PLAYER_INDEX)
         || s_GamepadTouchpad2Mouse_EnableStateMap.contains(playerIndex);
     if (touchpad2MouseEnabledForPlayer) {
@@ -19116,6 +19196,9 @@ void QKeyMapper_Worker::initSpecialMappingKeysList()
             << GAMEPAD_TOUCHPAD_ON_KEY_STR
             << GAMEPAD_TOUCHPAD_OFF_KEY_STR
             << GAMEPAD_TOUCHPAD_TOGGLE_KEY_STR
+            << GAMEPAD_TOUCHPAD_ON_NOTIFY_KEY_STR
+            << GAMEPAD_TOUCHPAD_OFF_NOTIFY_KEY_STR
+            << GAMEPAD_TOUCHPAD_TOGGLE_NOTIFY_KEY_STR
             << KEY_RECORD_TOGGLE_MAPPING_STR
             << KEY_RECORD_START_MAPPING_STR
             << KEY_RECORD_STOP_MAPPING_STR
