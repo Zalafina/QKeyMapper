@@ -29177,15 +29177,15 @@ void QKeyMapper::showGamepadTouchpadNotification(int playerindex, bool active)
         popupNotification = active ? tr("Gamepad Touchpad On") : tr("Gamepad Touchpad Off");
     }
     else if (active) {
-        popupNotification = tr("Gamepad Touchpad On (@%1)").arg(playerindex);
+        popupNotification = tr("Gamepad Touchpad On : @%1").arg(playerindex);
     }
     else {
-        popupNotification = tr("Gamepad Touchpad Off (@%1)").arg(playerindex);
+        popupNotification = tr("Gamepad Touchpad Off : @%1").arg(playerindex);
     }
 
-    opts.iconPath = ":/gamepad.svg";
-    opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
-    opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
+    // opts.iconPath = ":/gamepad.svg";
+    // opts.iconPosition = TAB_CUSTOMIMAGE_SHOW_LEFT;
+    // opts.iconPadding = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabCustomImage_Padding;
 
     showNotificationPopup(popupNotification, opts);
 }

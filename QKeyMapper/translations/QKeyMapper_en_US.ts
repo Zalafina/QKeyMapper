@@ -3399,14 +3399,12 @@ Missing or unknown fields were ignored.</translation>
         <translation>Gamepad Touchpad Off</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29180"/>
         <source>Gamepad Touchpad On (@%1)</source>
-        <translation>Gamepad Touchpad On (@%1)</translation>
+        <translation type="vanished">Gamepad Touchpad On (@%1)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29183"/>
         <source>Gamepad Touchpad Off (@%1)</source>
-        <translation>Gamepad Touchpad Off (@%1)</translation>
+        <translation type="vanished">Gamepad Touchpad Off (@%1)</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="30576"/>
@@ -3814,6 +3812,16 @@ Continue?</translation>
         <translation>Import completed.</translation>
     </message>
     <message>
+        <location filename="../qkeymapper.cpp" line="29180"/>
+        <source>Gamepad Touchpad On : @%1</source>
+        <translation>Gamepad Touchpad On : @%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="29183"/>
+        <source>Gamepad Touchpad Off : @%1</source>
+        <translation>Gamepad Touchpad Off : @%1</translation>
+    </message>
+    <message>
         <location filename="../qkeymapper.cpp" line="32437"/>
         <source>From Common mapping table</source>
         <translation>From Common mapping table</translation>
@@ -4148,22 +4156,22 @@ Are you sure you do not want to automatically enable Filter Keys during the mapp
     <message>
         <location filename="../qkeymapper.cpp" line="29117"/>
         <source>Block Mouse</source>
-        <translation>Block Mouse</translation>
+        <translation>Mouse disabled</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29121"/>
         <source>Unblock Mouse</source>
-        <translation>Unblock Mouse</translation>
+        <translation>Mouse enabled</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29127"/>
         <source>Block Keyboard</source>
-        <translation>Block Keyboard</translation>
+        <translation>Keyboard disabled</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29131"/>
         <source>Unblock Keyboard</source>
-        <translation>Unblock Keyboard</translation>
+        <translation>Keyboard enabled</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29238"/>
@@ -6514,8 +6522,5 @@ Right-click to cancel.</translation>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
-</context>
-</TS>
-
 </context>
 </TS>

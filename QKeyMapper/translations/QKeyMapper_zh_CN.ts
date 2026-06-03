@@ -3396,14 +3396,12 @@ Continue?</source>
         <translation>游戏手柄触摸板已禁用</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29180"/>
         <source>Gamepad Touchpad On (@%1)</source>
-        <translation>游戏手柄触摸板已启用 (@%1)</translation>
+        <translation type="vanished">游戏手柄触摸板已启用 (@%1)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29183"/>
         <source>Gamepad Touchpad Off (@%1)</source>
-        <translation>游戏手柄触摸板已禁用 (@%1)</translation>
+        <translation type="vanished">游戏手柄触摸板已禁用 (@%1)</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="30576"/>
@@ -3810,6 +3808,16 @@ Continue?</source>
         <translation>导入完成。</translation>
     </message>
     <message>
+        <location filename="../qkeymapper.cpp" line="29180"/>
+        <source>Gamepad Touchpad On : @%1</source>
+        <translation>游戏手柄触摸板已启用 : @%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="29183"/>
+        <source>Gamepad Touchpad Off : @%1</source>
+        <translation>游戏手柄触摸板已禁用 : @%1</translation>
+    </message>
+    <message>
         <location filename="../qkeymapper.cpp" line="32437"/>
         <source>From Common mapping table</source>
         <translation>来自共通映射表</translation>
@@ -4144,22 +4152,22 @@ Continue?</source>
     <message>
         <location filename="../qkeymapper.cpp" line="29117"/>
         <source>Block Mouse</source>
-        <translation>禁用鼠标</translation>
+        <translation>鼠标已禁用</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29121"/>
         <source>Unblock Mouse</source>
-        <translation>启用鼠标</translation>
+        <translation>鼠标已启用</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29127"/>
         <source>Block Keyboard</source>
-        <translation>禁用键盘</translation>
+        <translation>键盘已禁用</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29131"/>
         <source>Unblock Keyboard</source>
-        <translation>启用键盘</translation>
+        <translation>键盘已启用</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29238"/>

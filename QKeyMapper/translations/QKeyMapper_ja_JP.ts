@@ -3466,14 +3466,12 @@ Continue?</source>
         <translation>タッチパッドを無効化</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29180"/>
         <source>Gamepad Touchpad On (@%1)</source>
-        <translation>タッチパッドを有効化 (@%1)</translation>
+        <translation type="vanished">タッチパッドを有効化 (@%1)</translation>
     </message>
     <message>
-        <location filename="../qkeymapper.cpp" line="29183"/>
         <source>Gamepad Touchpad Off (@%1)</source>
-        <translation>タッチパッドを無効化 (@%1)</translation>
+        <translation type="vanished">タッチパッドを無効化 (@%1)</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="30576"/>
@@ -4133,22 +4131,32 @@ Right click the MappingKeyList to copy it to the clipboard.</source>
     <message>
         <location filename="../qkeymapper.cpp" line="29117"/>
         <source>Block Mouse</source>
-        <translation>マウスを無効化</translation>
+        <translation>マウスが無効になりました</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29121"/>
         <source>Unblock Mouse</source>
-        <translation>マウスを有効化</translation>
+        <translation>マウスが有効になりました</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29127"/>
         <source>Block Keyboard</source>
-        <translation>キーボードを無効化</translation>
+        <translation>キーボードが無効になりました</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29131"/>
         <source>Unblock Keyboard</source>
-        <translation>キーボードを有効化</translation>
+        <translation>キーボードが有効になりました</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="29180"/>
+        <source>Gamepad Touchpad On : @%1</source>
+        <translation>タッチパッドを有効化 : @%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="29183"/>
+        <source>Gamepad Touchpad Off : @%1</source>
+        <translation>タッチパッドを無効化 : @%1</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="29238"/>
