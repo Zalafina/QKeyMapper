@@ -7111,6 +7111,13 @@ ValidationResult QKeyMapper::validateMappingKeyString(const QString &mappingkeys
                     foundSpecialMappingKey = mapkey;
                     break;
                 }
+                if (mapkey_noindex.contains(VJOY_LT_BRAKE_STR)
+                    || mapkey_noindex.contains(VJOY_RT_BRAKE_STR)
+                    || mapkey_noindex.contains(VJOY_LT_ACCEL_STR)
+                    || mapkey_noindex.contains(VJOY_RT_ACCEL_STR)) {
+                    foundSpecialMappingKey = mapkey;
+                    break;
+                }
                 if (QKeyMapper_Worker::SpecialOriginalKeysList.contains(mapkey_noindex)) {
                     foundSpecialOriginalKey = mapkey;
                     break;
@@ -7364,11 +7371,13 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
                 static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
                 static QRegularExpression vjoy_move_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_MOVE_KEYS);
+                static QRegularExpression vjoy_forza_auto_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_FORZA_AUTO_KEYS);
                 QStringList vJoyKeyList = QItemSetupDialog::s_valiedMappingKeyList.filter(vjoy_keys_regex);
                 QString vjoy_key = vjoy_match.captured(1);
                 QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(vjoy_key);
                 QRegularExpressionMatch vjoy_radius_keys_match = vjoy_radius_keys_regex.match(vjoy_key);
                 QRegularExpressionMatch vjoy_move_keys_match = vjoy_move_keys_regex.match(vjoy_key);
+                QRegularExpressionMatch vjoy_forza_auto_keys_match = vjoy_forza_auto_keys_regex.match(vjoy_key);
 
                 auto parseRadiusValue = [](const QString &valueText, int &value) -> bool {
                     if (valueText.isEmpty()) {
@@ -7531,11 +7540,101 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     return hasX || hasY || hasRX || hasRY;
                 };
 
+                auto parseForzaInitValue = [](const QString &valueText, int &value) -> bool {
+                    QString trimmed = valueText.trimmed();
+                    if (trimmed.isEmpty()) {
+                        return false;
+                    }
+                    if (trimmed.size() > 1 && trimmed.startsWith('0')) {
+                        return false;
+                    }
+
+                    bool ok = true;
+                    value = trimmed.toInt(&ok);
+                    if (!ok || value < XINPUT_TRIGGER_MIN || value > XINPUT_TRIGGER_MAX) {
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                auto parseForzaThresholdValue = [](const QString &valueText, double &value) -> bool {
+                    QString trimmed = valueText.trimmed();
+                    if (trimmed.isEmpty()) {
+                        return false;
+                    }
+
+                    static QRegularExpression threshold_regex(R"(^(?:0|[1-9]\d{0,3})(?:\.(\d{1,5}))?$)");
+                    if (!threshold_regex.match(trimmed).hasMatch()) {
+                        return false;
+                    }
+
+                    bool ok = true;
+                    value = trimmed.toDouble(&ok);
+                    if (!ok || value < GRIP_THRESHOLD_BRAKE_MIN || value > GRIP_THRESHOLD_BRAKE_MAX) {
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                auto validateForzaAutoSpec = [&](const QString &spec) -> bool {
+                    QString trimmed = spec.trimmed();
+                    if (trimmed.isEmpty()) {
+                        return false;
+                    }
+
+                    QStringList tokens = trimmed.split(',', QKeyMapperQtCompat::KeepEmptyParts);
+                    bool hasInit = false;
+                    bool hasThr = false;
+
+                    for (const QString &tokenRaw : std::as_const(tokens)) {
+                        QString token = tokenRaw.trimmed();
+                        if (token.isEmpty()) {
+                            return false;
+                        }
+
+                        int eqPos = token.indexOf('=');
+                        if (eqPos <= 0 || token.indexOf('=', eqPos + 1) >= 0) {
+                            return false;
+                        }
+
+                        QString keyText = token.left(eqPos).trimmed().toUpper();
+                        QString valueText = token.mid(eqPos + 1).trimmed();
+                        if (keyText == "INIT") {
+                            int value = 0;
+                            if (hasInit || !parseForzaInitValue(valueText, value)) {
+                                return false;
+                            }
+                            hasInit = true;
+                        }
+                        else if (keyText == "THR") {
+                            double value = 0.0;
+                            if (hasThr || !parseForzaThresholdValue(valueText, value)) {
+                                return false;
+                            }
+                            hasThr = true;
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+
+                    return hasInit || hasThr;
+                };
+
                 if (vjoy_move_keys_match.hasMatch()) {
                     QString moveSpec = vjoy_move_keys_match.captured(2);
                     if (!validateMoveSpec(moveSpec)) {
                         result.isValid = false;
                         result.errorMessage = tr("Invalid vJoy-Move spec \"%1\".\nValid range is -255~255, and format like [X=-60,Y=100] or [RX=6,RY=10].").arg(mapping_key);
+                    }
+                }
+                else if (vjoy_forza_auto_keys_match.hasMatch()) {
+                    QString forzaSpec = vjoy_forza_auto_keys_match.captured(3);
+                    if (!validateForzaAutoSpec(forzaSpec)) {
+                        result.isValid = false;
+                        result.errorMessage = tr("Invalid Forza vJoy spec \"%1\".\nUse a format like [INIT=100,THR=1.5], where INIT is 0~255 and THR is 0.00001~1000.").arg(mapping_key);
                     }
                 }
                 else if (vjoy_radius_keys_match.hasMatch()) {
@@ -31321,6 +31420,10 @@ void QKeyMapper::initKeysCategoryMap()
         << VJOY_RT_BRAKE_STR
         << VJOY_LT_ACCEL_STR
         << VJOY_RT_ACCEL_STR
+        << VJOY_LT_BRAKE_TEMPLATE_STR
+        << VJOY_RT_BRAKE_TEMPLATE_STR
+        << VJOY_LT_ACCEL_TEMPLATE_STR
+        << VJOY_RT_ACCEL_TEMPLATE_STR
         ;
 
     /* Original Function Keys */
@@ -36058,6 +36161,31 @@ void QKeyMapper::on_addmapdataButton_clicked()
 
     static QRegularExpression whitespace_reg(R"(\s+)");
     static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_KEYS_NO_PUSHLEVEL);
+    auto buildForzaAutoDefaultMapping = [](const QString &templateKey) -> QString {
+        QString baseKey;
+        int defaultInit = AUTO_BRAKE_DEFAULT;
+        double defaultThr = GRIP_THRESHOLD_BRAKE_DEFAULT;
+
+        if (templateKey == VJOY_LT_BRAKE_TEMPLATE_STR || templateKey == VJOY_RT_BRAKE_TEMPLATE_STR) {
+            baseKey = (templateKey == VJOY_LT_BRAKE_TEMPLATE_STR) ? QString(VJOY_LT_BRAKE_STR) : QString(VJOY_RT_BRAKE_STR);
+            defaultInit = AUTO_BRAKE_DEFAULT;
+            defaultThr = GRIP_THRESHOLD_BRAKE_DEFAULT;
+        }
+        else if (templateKey == VJOY_LT_ACCEL_TEMPLATE_STR || templateKey == VJOY_RT_ACCEL_TEMPLATE_STR) {
+            baseKey = (templateKey == VJOY_LT_ACCEL_TEMPLATE_STR) ? QString(VJOY_LT_ACCEL_STR) : QString(VJOY_RT_ACCEL_STR);
+            defaultInit = AUTO_ACCEL_DEFAULT;
+            defaultThr = GRIP_THRESHOLD_ACCEL_DEFAULT;
+        }
+
+        if (baseKey.isEmpty()) {
+            return templateKey;
+        }
+
+        return QString("%1[INIT=%2,THR=%3]")
+            .arg(baseKey,
+                 QString::number(defaultInit),
+                 QString::number(defaultThr, 'f', GRIP_THRESHOLD_DECIMALS));
+    };
 
     // Add button behavior: always create a new row (do not merge/append to existing OriginalKey).
     // Duplicate OriginalKey is allowed; mutual exclusion is handled by enabled-state logic.
@@ -36098,6 +36226,15 @@ void QKeyMapper::on_addmapdataButton_clicked()
                     /* Add [pushlevel] value postfix */
                     currentMapKeyText = QString("%1[%2]").arg(currentMapKeyText, QString::number(pushlevel));
                 }
+            }
+        }
+        else if (currentMapKeyText == VJOY_LT_BRAKE_TEMPLATE_STR
+            || currentMapKeyText == VJOY_RT_BRAKE_TEMPLATE_STR
+            || currentMapKeyText == VJOY_LT_ACCEL_TEMPLATE_STR
+            || currentMapKeyText == VJOY_RT_ACCEL_TEMPLATE_STR) {
+            currentMapKeyText = buildForzaAutoDefaultMapping(currentMapKeyText);
+            if (virtualgamepad_index > 0) {
+                currentMapKeyText = QString("%1@%2").arg(currentMapKeyText, QString::number(virtualgamepad_index - 1));
             }
         }
         else if (currentMapKeyText == VJOY_LS_MOVE_STR || currentMapKeyText == VJOY_RS_MOVE_STR) {
@@ -36378,6 +36515,10 @@ void QKeyMapper::on_addmapdataButton_clicked()
         }
 
         int waitTime = ui->waitTimeSpinBox->value();
+        const bool isForzaAutoMapping = currentMapKeyText.contains(VJOY_LT_BRAKE_STR)
+            || currentMapKeyText.contains(VJOY_RT_BRAKE_STR)
+            || currentMapKeyText.contains(VJOY_LT_ACCEL_STR)
+            || currentMapKeyText.contains(VJOY_RT_ACCEL_STR);
         if (waitTime > 0
             && currentMapKeyComboBoxText != KEY_BLOCKED_STR
             && currentMapKeyComboBoxText != KEYSEQUENCEBREAK_STR
@@ -36388,10 +36529,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
             && currentMapKeyComboBoxText.startsWith(FUNC_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(GYRO2MOUSE_PREFIX) == false
             && currentMapKeyComboBoxText.startsWith(GAMEPAD_TOUCHPAD_PREFIX) == false
-            && currentMapKeyComboBoxText != VJOY_LT_BRAKE_STR
-            && currentMapKeyComboBoxText != VJOY_RT_BRAKE_STR
-            && currentMapKeyComboBoxText != VJOY_LT_ACCEL_STR
-            && currentMapKeyComboBoxText != VJOY_RT_ACCEL_STR) {
+            && !isForzaAutoMapping) {
             currentMapKeyText = currentMapKeyText + QString(SEPARATOR_WAITTIME) + QString::number(waitTime);
         }
     }
@@ -39750,6 +39888,32 @@ QString QKeyMapper::normalizeMappingKeyCopyText(const QString &mappingKeyText)
 {
     QString copyText = mappingKeyText;
 
+    auto buildForzaAutoDefaultMapping = [](const QString &templateKey) -> QString {
+        QString baseKey;
+        int defaultInit = AUTO_BRAKE_DEFAULT;
+        double defaultThr = GRIP_THRESHOLD_BRAKE_DEFAULT;
+
+        if (templateKey == VJOY_LT_BRAKE_TEMPLATE_STR || templateKey == VJOY_RT_BRAKE_TEMPLATE_STR) {
+            baseKey = (templateKey == VJOY_LT_BRAKE_TEMPLATE_STR) ? QString(VJOY_LT_BRAKE_STR) : QString(VJOY_RT_BRAKE_STR);
+            defaultInit = AUTO_BRAKE_DEFAULT;
+            defaultThr = GRIP_THRESHOLD_BRAKE_DEFAULT;
+        }
+        else if (templateKey == VJOY_LT_ACCEL_TEMPLATE_STR || templateKey == VJOY_RT_ACCEL_TEMPLATE_STR) {
+            baseKey = (templateKey == VJOY_LT_ACCEL_TEMPLATE_STR) ? QString(VJOY_LT_ACCEL_STR) : QString(VJOY_RT_ACCEL_STR);
+            defaultInit = AUTO_ACCEL_DEFAULT;
+            defaultThr = GRIP_THRESHOLD_ACCEL_DEFAULT;
+        }
+
+        if (baseKey.isEmpty()) {
+            return templateKey;
+        }
+
+        return QString("%1[INIT=%2,THR=%3]")
+            .arg(baseKey,
+                 QString::number(defaultInit),
+                 QString::number(defaultThr, 'f', GRIP_THRESHOLD_DECIMALS));
+    };
+
     if (copyText.startsWith(MOUSE_BUTTON_PREFIX)) {
         const QString screenPointPostfix = QString(MOUSE_SCREENPOINT_POSTFIX);
         const QString windowPointPostfix = QString(MOUSE_WINDOWPOINT_POSTFIX);
@@ -39774,6 +39938,12 @@ QString QKeyMapper::normalizeMappingKeyCopyText(const QString &mappingKeyText)
     }
     else if (copyText == ONLYONCE_STR) {
         copyText = ONLYONCE_TEMPLATE_STR;
+    }
+    else if (copyText == VJOY_LT_BRAKE_TEMPLATE_STR
+        || copyText == VJOY_RT_BRAKE_TEMPLATE_STR
+        || copyText == VJOY_LT_ACCEL_TEMPLATE_STR
+        || copyText == VJOY_RT_ACCEL_TEMPLATE_STR) {
+        copyText = buildForzaAutoDefaultMapping(copyText);
     }
 
     return copyText;

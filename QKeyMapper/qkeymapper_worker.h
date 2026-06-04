@@ -1263,7 +1263,9 @@ public:
     static void ViGEmClient_setConnectState(ViGEmClient_ConnectState connectstate);
 
     static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index, QJoystickEventType event_type = GameControllerEvent);
+    static void ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index, const QString &runtimeToken, QJoystickEventType event_type = GameControllerEvent);
     static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index);
+    static void ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index, const QString &runtimeToken);
     static void ViGEmClient_MoveStick(const QString &moveKey, int gamepad_index);
     static void ViGEmClient_CheckJoysticksReportData(int gamepad_index);
     static void ViGEmClient_RefreshMaskedState(int gamepad_index);

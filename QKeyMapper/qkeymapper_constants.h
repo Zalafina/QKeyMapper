@@ -507,10 +507,10 @@ namespace QKeyMapperConstants {
     inline constexpr int GRIP_THRESHOLD_DECIMALS = 5;
     inline constexpr double GRIP_THRESHOLD_BRAKE_MIN = 0.00001;
     inline constexpr double GRIP_THRESHOLD_BRAKE_MAX = 1000.00000;
-    inline constexpr double GRIP_THRESHOLD_BRAKE_DEFAULT = 0.47000;
+    inline constexpr double GRIP_THRESHOLD_BRAKE_DEFAULT = 1.00000;
     inline constexpr double GRIP_THRESHOLD_ACCEL_MIN = 0.00001;
     inline constexpr double GRIP_THRESHOLD_ACCEL_MAX = 1000.00000;
-    inline constexpr double GRIP_THRESHOLD_ACCEL_DEFAULT = 1.00000;
+    inline constexpr double GRIP_THRESHOLD_ACCEL_DEFAULT = 7.00000;
     inline constexpr double GRIP_THRESHOLD_SINGLE_STEP = 0.01;
 
     inline constexpr int MOUSE_SPEED_MIN = 1;
@@ -1567,6 +1567,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS[] = R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|LT-Max|RT-Max|(?:LS|RS)-(?:Up|Down|Left|Right))(?:\[(\d{1,3})\])?$)";
     inline constexpr const char REGEX_PATTERN_VJOY_RADIUS_KEYS[] = R"(^vJoy-(LS|RS)-Radius(?:\[(.+)\])?$)";
     inline constexpr const char REGEX_PATTERN_VJOY_MOVE_KEYS[] = R"(^vJoy-(LS|RS)-Move\[(.+)\]$)";
+    inline constexpr const char REGEX_PATTERN_VJOY_FORZA_AUTO_KEYS[] = R"(^vJoy-(Key11\(LT\)|Key12\(RT\))_(BRAKE|ACCEL)\[(.*)\]$)";
     inline constexpr const char REGEX_PATTERN_VJOY_KEYS_NO_PUSHLEVEL[] = R"(^vJoy-(Key11\(LT\)|Key12\(RT\)|LT-Max|RT-Max|(?:LS|RS)-(?:Up|Down|Left|Right|Radius))$)";
 
 
@@ -1774,6 +1775,10 @@ namespace QKeyMapperConstants {
     inline constexpr const char VJOY_RT_BRAKE_STR[] = "vJoy-Key12(RT)_BRAKE";
     inline constexpr const char VJOY_LT_ACCEL_STR[] = "vJoy-Key11(LT)_ACCEL";
     inline constexpr const char VJOY_RT_ACCEL_STR[] = "vJoy-Key12(RT)_ACCEL";
+    inline constexpr const char VJOY_LT_BRAKE_TEMPLATE_STR[] = "vJoy-Key11(LT)_BRAKE[]";
+    inline constexpr const char VJOY_RT_BRAKE_TEMPLATE_STR[] = "vJoy-Key12(RT)_BRAKE[]";
+    inline constexpr const char VJOY_LT_ACCEL_TEMPLATE_STR[] = "vJoy-Key11(LT)_ACCEL[]";
+    inline constexpr const char VJOY_RT_ACCEL_TEMPLATE_STR[] = "vJoy-Key12(RT)_ACCEL[]";
 
     inline constexpr const char VJOY_LS_RADIUS_STR[] = "vJoy-LS-Radius";
     inline constexpr const char VJOY_RS_RADIUS_STR[] = "vJoy-RS-Radius";

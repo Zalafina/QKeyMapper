@@ -2138,6 +2138,10 @@ void QItemSetupDialog::initKeyListComboBoxes()
     s_valiedMappingKeyList.removeOne(SETVOLUME_NOTIFY_STR);
     s_valiedMappingKeyList.removeOne(SETMICVOLUME_STR);
     s_valiedMappingKeyList.removeOne(SETMICVOLUME_NOTIFY_STR);
+    s_valiedMappingKeyList.removeOne(VJOY_LT_BRAKE_TEMPLATE_STR);
+    s_valiedMappingKeyList.removeOne(VJOY_RT_BRAKE_TEMPLATE_STR);
+    s_valiedMappingKeyList.removeOne(VJOY_LT_ACCEL_TEMPLATE_STR);
+    s_valiedMappingKeyList.removeOne(VJOY_RT_ACCEL_TEMPLATE_STR);
 
     s_valiedMappingKeyList.removeOne(MOUSE_L_WINDOWPOINT_STR);
     s_valiedMappingKeyList.removeOne(MOUSE_R_WINDOWPOINT_STR);

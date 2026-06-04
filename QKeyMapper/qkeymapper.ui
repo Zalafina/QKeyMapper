@@ -389,7 +389,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>6</number>
    </property>
    <widget class="QWidget" name="windowinfo">
     <attribute name="title">
@@ -1860,7 +1860,7 @@
       <rect>
        <x>90</x>
        <y>40</y>
-       <width>60</width>
+       <width>101</width>
        <height>21</height>
       </rect>
      </property>
@@ -1873,7 +1873,7 @@
       <rect>
        <x>90</x>
        <y>10</y>
-       <width>60</width>
+       <width>101</width>
        <height>21</height>
       </rect>
      </property>
@@ -1886,7 +1886,7 @@
       <rect>
        <x>90</x>
        <y>70</y>
-       <width>60</width>
+       <width>101</width>
        <height>21</height>
       </rect>
      </property>
