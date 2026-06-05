@@ -1466,7 +1466,7 @@ public:
     static void startBurstKeyTimer(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
     static void stopBurstKeyTimer(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
     void stopBurstKeyTimerForce(const QString &burstKey, int mappingIndex);
-    static void resendRealKeyCodeOnStop(int rowindex, bool restart = false, QList<MAP_KEYDATA> *keyMappingDataListToCheck = Q_NULLPTR);
+    static void resendRealKeyCodeOnStop(int rowindex, bool restart = false, QList<MAP_KEYDATA> *keyMappingDataListForRow = Q_NULLPTR, QList<MAP_KEYDATA> *keyMappingDataListToCheck = Q_NULLPTR);
 
     static void collectBlockedKeysList(void);
     static QStringList collectCertainMappingDataListBlockedKeysList(QList<MAP_KEYDATA> *keyMappingDataListToCheck);

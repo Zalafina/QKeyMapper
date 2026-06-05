@@ -632,7 +632,7 @@ void cleanupKeySequenceRuntimeState(const QString &originalKey, QList<MAP_KEYDAT
         const int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(normalizedOriginalKey, targetKeyMappingDataList);
         if (findindex >= 0) {
             if (resendRealKey) {
-                QKeyMapper_Worker::resendRealKeyCodeOnStop(findindex);
+                QKeyMapper_Worker::resendRealKeyCodeOnStop(findindex, false, targetKeyMappingDataList);
             }
 
             const int repeat_mode = targetKeyMappingDataList->at(findindex).RepeatMode;
@@ -3609,7 +3609,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 QString debugmessage = QString("[sendInputKeys] Originalkey \"%1\" bustkey is released on sendmode = SENDMODE_BURSTKEY_STOP, call resendRealKeyCodeOnStop()").arg(original_key);
                 qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
-                resendRealKeyCodeOnStop(rowindex);
+                resendRealKeyCodeOnStop(rowindex, false, keyMappingDataList);
             }
         }
         else if (sendmode == SENDMODE_BURSTKEY_STOP_ON_HOOKSTOPPED && rowindex >= 0) {
@@ -3617,14 +3617,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             QString debugmessage = QString("[sendInputKeys] Originalkey \"%1\" bustkey is released on sendmode = SENDMODE_BURSTKEY_STOP_ON_HOOKSTOPPED, call resendRealKeyCodeOnStop()").arg(original_key);
             qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
-            resendRealKeyCodeOnStop(rowindex);
+            resendRealKeyCodeOnStop(rowindex, false, keyMappingDataList);
         }
         else if (sendmode == SENDMODE_BURSTKEY_STOP_ON_HOOKRESTART && rowindex >= 0) {
 #ifdef DEBUG_LOGOUT_ON
             QString debugmessage = QString("[sendInputKeys] Originalkey \"%1\" bustkey is released on sendmode = SENDMODE_BURSTKEY_STOP_ON_HOOKRESTART, call resendRealKeyCodeOnStop(restart)").arg(original_key);
             qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
 #endif
-            resendRealKeyCodeOnStop(rowindex, true);
+            resendRealKeyCodeOnStop(rowindex, true, keyMappingDataList);
         }
 
         if (*controller.task_stop_flag == INPUTSTOP_SINGLE) {
@@ -16997,18 +16997,26 @@ void QKeyMapper_Worker::stopBurstKeyTimerForce(const QString &burstKey, int mapp
     sendBurstKeyUpForce(mappingIndex);
 }
 
-void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QList<MAP_KEYDATA> *keyMappingDataListToCheck)
+void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QList<MAP_KEYDATA> *keyMappingDataListForRow, QList<MAP_KEYDATA> *keyMappingDataListToCheck)
 {
     if (pressedRealKeysListRemoveMultiInput.isEmpty()) {
         return;
     }
 
-    QList<MAP_KEYDATA> *KeyMappingDataList_ForResend = QKeyMapper::KeyMappingDataList;
+    QList<MAP_KEYDATA> *KeyMappingDataList_ForResend = keyMappingDataListForRow;
+    if (KeyMappingDataList_ForResend == Q_NULLPTR) {
+        KeyMappingDataList_ForResend = QKeyMapper::KeyMappingDataList;
 
-    if (restart) {
-        if (QKeyMapper::lastKeyMappingDataList != Q_NULLPTR) {
+        if (restart && QKeyMapper::lastKeyMappingDataList != Q_NULLPTR) {
             KeyMappingDataList_ForResend = QKeyMapper::lastKeyMappingDataList;
         }
+    }
+
+    if (KeyMappingDataList_ForResend == Q_NULLPTR) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[resendRealKeyCodeOnStop] KeyMappingDataList_ForResend is null, skip resend.";
+#endif
+        return;
     }
 
     bool hook_proc_stopped = false;
@@ -17019,7 +17027,7 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QLis
     QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
     if (!hook_proc_stopped) {
         QList<MAP_KEYDATA> *KeyMappingDataList_ToCheck = KeyMappingDataList_ForResend;
-        if (restart && keyMappingDataListToCheck != Q_NULLPTR) {
+        if (keyMappingDataListToCheck != Q_NULLPTR) {
             KeyMappingDataList_ToCheck = keyMappingDataListToCheck;
         }
 
@@ -17059,6 +17067,16 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QLis
 #endif
 
     if (pressedRealKeysListToCheck.isEmpty()) {
+        return;
+    }
+
+    if (rowindex < 0 || rowindex >= KeyMappingDataList_ForResend->size()) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning().nospace().noquote() << "[resendRealKeyCodeOnStop] rowindex out of range, rowindex = "
+                                       << rowindex
+                                       << ", resendListSize = " << KeyMappingDataList_ForResend->size()
+                                       << ", restart = " << restart;
+#endif
         return;
     }
 
@@ -19937,10 +19955,10 @@ void QKeyMapper_Worker::clearAllNormalPressedMappingKeys(bool restart, QList<MAP
         for (const int &rowindex : clearedRowIndexList) {
             if (rowindex >= 0 && rowindex < KeyMappingDataList_ToClear->size()) {
                 if (restart) {
-                    resendRealKeyCodeOnStop(rowindex, true, keyMappingDataListToCheck);
+                    resendRealKeyCodeOnStop(rowindex, true, KeyMappingDataList_ToClear, keyMappingDataListToCheck);
                 }
                 else {
-                    resendRealKeyCodeOnStop(rowindex);
+                    resendRealKeyCodeOnStop(rowindex, false, KeyMappingDataList_ToClear);
                 }
             }
         }
