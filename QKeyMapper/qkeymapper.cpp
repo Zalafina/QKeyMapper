@@ -14838,6 +14838,7 @@ void QKeyMapper::updateMainWindowCtrlOverrideState(bool ctrlPressed)
     m_MainWindowCtrlOverrideActive = m_MainWindowCtrlPressed && isMainWindowCtrlOverrideContextActive();
 
     updateAddMapDataButtonText();
+    updateAddTabButtonText();
 
     const MappingStartActionMode currentEffectiveActionMode = effectiveMappingStartActionMode();
     if (m_KeyMapStatus == KEYMAP_IDLE && previousEffectiveActionMode != currentEffectiveActionMode) {
@@ -14873,6 +14874,17 @@ void QKeyMapper::updateAddMapDataButtonText(void)
     ui->addmapdataButton->setText(shouldUseAddNewMappingOverride(false)
         ? tr("Add New")
         : tr("ADD"));
+}
+
+void QKeyMapper::updateAddTabButtonText(void)
+{
+    if (!ui || !ui->addTabButton) {
+        return;
+    }
+
+    ui->addTabButton->setText(shouldUseAddNewMappingOverride(false)
+        ? tr("CopyTab")
+        : tr("AddTab"));
 }
 
 void QKeyMapper::updateMappingStartButtonText(void)
@@ -16040,6 +16052,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 
     s_KeyMappingTabInfoList.insert(insertIndex, tab_info);
     syncTrackedTabIndexesAfterTabStructureChange(currentWidget, lastWidget);
+    refreshKeyMappingDataTableByTabIndex(insertIndex);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[addTabToKeyMappingTabWidget] Add a new tab with TabName:" << tabName;
@@ -33095,7 +33108,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->savemaplistButton->setText(tr("SaveSetting"));
     ui->savemaplistButton->setToolTip(tr("Hotkey : %1").arg(GENERAL_SAVESETTING_HOTKEY));
     refreshSaveSettingIndicators();
-    ui->addTabButton->setText(tr("AddTab"));
+    updateAddTabButtonText();
     ui->deleteSelectedButton->setText(tr("Delete"));
     ui->clearallButton->setText(tr("Clear"));
     ui->processListButton->setText(tr("ProcessList"));
@@ -37748,10 +37761,7 @@ void QKeyMapper::highlightSelectOpenItemSetup()
 
 void QKeyMapper::on_addTabButton_clicked()
 {
-    bool copy_tab = false;
-    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-        copy_tab = true;
-    }
+    const bool copy_tab = shouldUseAddNewMappingOverride(true);
 
 #ifdef DEBUG_LOGOUT_ON
     if (copy_tab) {

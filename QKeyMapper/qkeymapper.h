@@ -1954,6 +1954,7 @@ private:
     bool isMainWindowCtrlOverrideActive(void) const;
     bool shouldUseAddNewMappingOverride(bool preferPhysicalCtrlState = false) const;
     void updateAddMapDataButtonText(void);
+    void updateAddTabButtonText(void);
     void updateMainWindowCtrlOverrideState(bool ctrlPressed);
     void refreshMainWindowCtrlOverrideState(void);
     void hideMappingStartActionMenuPopup(void);
