@@ -1578,9 +1578,9 @@ public slots:
     int removeTabFromKeyMappingTabWidget(int tabindex);
     void moveTabInKeyMappingTabWidget(int from, int to);
     int copySelectedKeyMappingDataToCopiedList(void);
-    int insertKeyMappingDataFromCopiedList(int insertMode, MappingDataInsertSummary *insertSummary = Q_NULLPTR);
-    int insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, MappingDataInsertSummary *insertSummary = Q_NULLPTR);
-    int insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, MappingDataInsertSummary *insertSummary = Q_NULLPTR);
+    int insertKeyMappingDataFromCopiedList(int insertMode, QKeyMapper::MappingDataInsertSummary *insertSummary = Q_NULLPTR);
+    int insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, QKeyMapper::MappingDataInsertSummary *insertSummary = Q_NULLPTR);
+    int insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, QKeyMapper::MappingDataInsertSummary *insertSummary = Q_NULLPTR);
     void openCurrentMappingTableSetupDialog(void);
     void openCurrentMappingItemSetupDialog(void);
     void updateKeyComboBoxWithJoystickKey(const QString &joystick_keystring);
