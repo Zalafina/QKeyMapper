@@ -746,6 +746,23 @@ void QFloatingButtonSetupDialog::resizeEvent(QResizeEvent *event)
     }
 
     updateLayoutModeFromWidth(event->size().width(), true);
+
+    if (m_LayoutMode == FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL) {
+        const int preferredHeight = sizeHint().height();
+        if (preferredHeight > 0 && size().height() != preferredHeight) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace()
+                << "[QFloatingButtonSetupDialog::resizeEvent]"
+                << " horizontalHeightCorrection"
+                << " currentSize=" << size()
+                << ", preferredHeight=" << preferredHeight
+                << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+                << ", isRelayouting=" << m_isRelayouting
+                << ", isAutoResizingForLayout=" << m_isAutoResizingForLayout;
+#endif
+            adjustDialogSizeForCurrentLayout();
+        }
+    }
 }
 
 void QFloatingButtonSetupDialog::showEvent(QShowEvent *event)
@@ -772,16 +789,19 @@ void QFloatingButtonSetupDialog::showEvent(QShowEvent *event)
     }
 
 #ifdef DEBUG_LOGOUT_ON
+    qreal devicePixelRatio = qApp->devicePixelRatio();
     const int showEventHorizontalEnterWidthBeforeApply = preferredHorizontalEnterWidth();
     const int showEventVerticalReturnWidthBeforeApply = qMax(preferredVerticalWidth(),
                                                              showEventHorizontalEnterWidthBeforeApply - FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH);
     qDebug().nospace()
         << "[QFloatingButtonSetupDialog::showEvent]"
+        << " qApp->devicePixelRatio()=" << devicePixelRatio
         << " beforeApply"
         << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
         << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
         << ", size=" << size()
         << ", sizeHint=" << sizeHint()
+        << ", minimumSizeHint=" << minimumSizeHint()
         << ", isVisible=" << isVisible()
         << ", horizontalEnterWidth=" << showEventHorizontalEnterWidthBeforeApply
         << ", verticalReturnWidth=" << showEventVerticalReturnWidthBeforeApply;
