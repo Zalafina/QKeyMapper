@@ -12,6 +12,45 @@ using namespace QKeyMapperConstants;
 
 namespace {
 
+constexpr int FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_ENTER_EXTRA_WIDTH = 48;
+constexpr int FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH = 96;
+constexpr int FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_LEFT_STRETCH = 4;
+constexpr int FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_RIGHT_STRETCH = 5;
+constexpr int FLOATINGBUTTON_SETUP_LAYOUT_OUTER_SPACING = 8;
+
+const char *floatingButtonSetupLayoutModeName(int layoutMode)
+{
+    switch (layoutMode) {
+    case FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL:
+        return "Horizontal";
+    case FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL:
+        return "Vertical";
+    default:
+        return "Unknown";
+    }
+}
+
+const char *floatingButtonSetupLayoutClassName(const QLayout *layout)
+{
+    return (layout != Q_NULLPTR)
+        ? layout->metaObject()->className()
+        : "null";
+}
+
+void notifySaveSettingDirty()
+{
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+    }
+}
+
+int sanitizeFloatingButtonSetupLayoutMode(int layoutMode)
+{
+    return (layoutMode == FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL)
+        ? FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL
+        : FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL;
+}
+
 QString sanitizeFloatingButtonMousePassThroughSwitchKey(const QString &switchKey)
 {
     if (switchKey == FUNCTION_KEY_NONE || QKeyMapper_Worker::MultiKeyboardInputList.contains(switchKey)) {
@@ -60,7 +99,15 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_hasBackup(false)
     , m_BackupMousePassThroughSwitchKey(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT)
     , m_FontFamily()
+    , m_LayoutMode(FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL)
+    , m_isRelayouting(false)
+    , m_isAutoResizingForLayout(false)
+    , m_PreferredVerticalWidth(0)
+    , m_ContentWidget(new QWidget(this))
     , m_InfoGroup(new QGroupBox(this))
+    , m_BasicGroup(new QGroupBox(this))
+    , m_StyleGroup(new QGroupBox(this))
+    , m_PositionGroup(new QGroupBox(this))
     , m_ItemOriginalKeyLabel(new QLabel(this))
     , m_ItemOriginalKeyLineEdit(new QLineEdit(this))
     , m_ItemNoteLabel(new QLabel(this))
@@ -231,8 +278,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_ItemNoteLineEdit->setFocusPolicy(Qt::NoFocus);
     m_ItemIndexLineEdit->setFocusPolicy(Qt::NoFocus);
 
-    QGroupBox *basicGroup = new QGroupBox(this);
-    QFormLayout *basicForm = new QFormLayout(basicGroup);
+    QFormLayout *basicForm = new QFormLayout(m_BasicGroup);
     basicForm->addRow(m_EnableCheckBox);
     basicForm->addRow(m_LabelTextLabel, m_LabelLineEdit);
     basicForm->addRow(m_ShowOnStartCheckBox);
@@ -242,8 +288,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     basicForm->addRow(mousePassThroughWidget);
     basicForm->addRow(m_DragToMoveCheckBox);
 
-    QGroupBox *styleGroup = new QGroupBox(this);
-    QGridLayout *styleGrid = new QGridLayout(styleGroup);
+    QGridLayout *styleGrid = new QGridLayout(m_StyleGroup);
     styleGrid->addWidget(m_WidthLabel, 0, 0);
     styleGrid->addWidget(m_WidthSpinBox, 0, 1);
     styleGrid->addWidget(m_HeightLabel, 0, 2);
@@ -312,7 +357,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     styleGrid->setColumnStretch(3, 1);
     styleGrid->setColumnStretch(4, 0);
     styleGrid->setColumnStretch(5, 1);
-    styleGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_StyleGroup->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     // Ensure controls that live in the "control" columns (1,3,5) expand
     // when those columns receive extra space. This makes SpinBox/ComboBox
@@ -348,15 +393,14 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
                  << "minWidth=" << styleGrid->columnMinimumWidth(_col)
                  << "stretch=" << styleGrid->columnStretch(_col);
     }
-    qDebug() << "styleGroup sizePolicy=" << styleGroup->sizePolicy()
+    qDebug() << "styleGroup sizePolicy=" << m_StyleGroup->sizePolicy()
              << "styleCodeFullRow sizePolicy=" << styleCodeFullRow->sizePolicy()
              << "styleCodeWidget sizePolicy=" << styleCodeWidget->sizePolicy()
              << "m_StyleCodeLineEdit minW=" << m_StyleCodeLineEdit->minimumWidth()
              << "lineEdit sizePolicy=" << m_StyleCodeLineEdit->sizePolicy();
 #endif
 
-    QGroupBox *positionGroup = new QGroupBox(this);
-    QGridLayout *positionGrid = new QGridLayout(positionGroup);
+    QGridLayout *positionGrid = new QGridLayout(m_PositionGroup);
     positionGrid->addWidget(m_ReferencePointLabel, 0, 0);
     positionGrid->addWidget(m_ReferencePointComboBox, 0, 1, 1, 3);
     positionGrid->addWidget(m_OffsetXLabel, 1, 0);
@@ -377,10 +421,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_RevertButton->setFocusPolicy(Qt::NoFocus);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    mainLayout->addWidget(m_InfoGroup);
-    mainLayout->addWidget(basicGroup);
-    mainLayout->addWidget(styleGroup);
-    mainLayout->addWidget(positionGroup);
+    mainLayout->addWidget(m_ContentWidget);
     mainLayout->addWidget(buttonBox);
 
     m_ItemOriginalKeyLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -506,8 +547,10 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
 
     setUILanguage(QKeyMapper::getLanguageIndex());
     updateHoverCustomizationState();
+    applyDialogLayoutMode(m_LayoutMode, false, true);
     adjustSize();
-    setMinimumWidth(qMax(minimumSizeHint().width(), sizeHint().width()));
+    m_PreferredVerticalWidth = qMax(minimumSizeHint().width(), sizeHint().width());
+    setMinimumWidth(m_PreferredVerticalWidth);
 }
 
 QFloatingButtonSetupDialog::~QFloatingButtonSetupDialog() = default;
@@ -635,6 +678,32 @@ void QFloatingButtonSetupDialog::refreshFromCurrentItem()
     loadFromCurrentItem();
 }
 
+void QFloatingButtonSetupDialog::setPreferredLayoutMode(int layoutMode)
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::setPreferredLayoutMode]"
+        << " request=" << floatingButtonSetupLayoutModeName(layoutMode) << "(" << layoutMode << ")"
+        << ", current=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", visible=" << isVisible();
+#endif
+    applyDialogLayoutMode(sanitizeFloatingButtonSetupLayoutMode(layoutMode), false);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::setPreferredLayoutMode]"
+        << " result=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", size=" << size()
+        << ", sizeHint=" << sizeHint();
+#endif
+}
+
+int QFloatingButtonSetupDialog::getPreferredLayoutMode() const
+{
+    return m_LayoutMode;
+}
+
 bool QFloatingButtonSetupDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
@@ -644,6 +713,39 @@ bool QFloatingButtonSetupDialog::event(QEvent *event)
     }
 
     return QDialog::event(event);
+}
+
+void QFloatingButtonSetupDialog::resizeEvent(QResizeEvent *event)
+{
+    QDialog::resizeEvent(event);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::resizeEvent]"
+        << " newSize=" << event->size()
+        << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", isRelayouting=" << m_isRelayouting
+        << ", isAutoResizingForLayout=" << m_isAutoResizingForLayout;
+#endif
+
+    if (m_isRelayouting || m_isAutoResizingForLayout) {
+        return;
+    }
+
+    if (!isVisible()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace()
+            << "[QFloatingButtonSetupDialog::resizeEvent]"
+            << " skipHiddenResize"
+            << " newSize=" << event->size()
+            << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+            << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout());
+#endif
+        return;
+    }
+
+    updateLayoutModeFromWidth(event->size().width(), true);
 }
 
 void QFloatingButtonSetupDialog::showEvent(QShowEvent *event)
@@ -669,6 +771,88 @@ void QFloatingButtonSetupDialog::showEvent(QShowEvent *event)
         m_BackupMousePassThroughSwitchKey = FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT;
     }
 
+#ifdef DEBUG_LOGOUT_ON
+    const int showEventHorizontalEnterWidthBeforeApply = preferredHorizontalEnterWidth();
+    const int showEventVerticalReturnWidthBeforeApply = qMax(preferredVerticalWidth(),
+                                                             showEventHorizontalEnterWidthBeforeApply - FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH);
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::showEvent]"
+        << " beforeApply"
+        << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", size=" << size()
+        << ", sizeHint=" << sizeHint()
+        << ", isVisible=" << isVisible()
+        << ", horizontalEnterWidth=" << showEventHorizontalEnterWidthBeforeApply
+        << ", verticalReturnWidth=" << showEventVerticalReturnWidthBeforeApply;
+#endif
+
+    applyDialogLayoutMode(m_LayoutMode, false);
+
+#ifdef DEBUG_LOGOUT_ON
+    const int showEventHorizontalEnterWidthAfterApply = preferredHorizontalEnterWidth();
+    const int showEventVerticalReturnWidthAfterApply = qMax(preferredVerticalWidth(),
+                                                            showEventHorizontalEnterWidthAfterApply - FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH);
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::showEvent]"
+        << " afterApply"
+        << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", size=" << size()
+        << ", sizeHint=" << sizeHint()
+        << ", isVisible=" << isVisible()
+        << ", horizontalEnterWidth=" << showEventHorizontalEnterWidthAfterApply
+        << ", verticalReturnWidth=" << showEventVerticalReturnWidthAfterApply;
+#endif
+
+    if (m_LayoutMode == FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL) {
+        adjustDialogSizeForCurrentLayout();
+        QTimer::singleShot(0, this,
+                           [this]() {
+#ifdef DEBUG_LOGOUT_ON
+                               qDebug().nospace()
+                                   << "[QFloatingButtonSetupDialog::showEvent]"
+                                   << " queuedAdjust"
+                                   << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+                                   << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+                                   << ", size=" << size()
+                                   << ", isVisible=" << isVisible();
+#endif
+                               adjustDialogSizeForCurrentLayout();
+                           });
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    const int showEventHorizontalEnterWidthBeforeUpdate = preferredHorizontalEnterWidth();
+    const int showEventVerticalReturnWidthBeforeUpdate = qMax(preferredVerticalWidth(),
+                                                              showEventHorizontalEnterWidthBeforeUpdate - FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH);
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::showEvent]"
+        << " beforeUpdateLayoutModeFromWidth"
+        << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", width=" << width()
+        << ", horizontalEnterWidth=" << showEventHorizontalEnterWidthBeforeUpdate
+        << ", verticalReturnWidth=" << showEventVerticalReturnWidthBeforeUpdate;
+#endif
+
+    updateLayoutModeFromWidth(width(), false);
+
+#ifdef DEBUG_LOGOUT_ON
+    const int showEventHorizontalEnterWidthAfterUpdate = preferredHorizontalEnterWidth();
+    const int showEventVerticalReturnWidthAfterUpdate = qMax(preferredVerticalWidth(),
+                                                             showEventHorizontalEnterWidthAfterUpdate - FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH);
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::showEvent]"
+        << " afterUpdateLayoutModeFromWidth"
+        << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", size=" << size()
+        << ", sizeHint=" << sizeHint()
+        << ", horizontalEnterWidth=" << showEventHorizontalEnterWidthAfterUpdate
+        << ", verticalReturnWidth=" << showEventVerticalReturnWidthAfterUpdate;
+#endif
+
     QDialog::showEvent(event);
 }
 
@@ -676,6 +860,271 @@ void QFloatingButtonSetupDialog::closeEvent(QCloseEvent *event)
 {
     m_hasBackup = false;
     QDialog::closeEvent(event);
+}
+
+void QFloatingButtonSetupDialog::rebuildContentLayout()
+{
+    if (QLayout *oldLayout = m_ContentWidget->layout()) {
+        delete oldLayout;
+    }
+
+    if (m_LayoutMode == FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL) {
+        QHBoxLayout *contentLayout = new QHBoxLayout(m_ContentWidget);
+        contentLayout->setContentsMargins(0, 0, 0, 0);
+        contentLayout->setSpacing(FLOATINGBUTTON_SETUP_LAYOUT_OUTER_SPACING);
+
+        QVBoxLayout *leftColumnLayout = new QVBoxLayout();
+        leftColumnLayout->setSpacing(FLOATINGBUTTON_SETUP_LAYOUT_OUTER_SPACING);
+        leftColumnLayout->addWidget(m_InfoGroup);
+        leftColumnLayout->addWidget(m_BasicGroup);
+        leftColumnLayout->addWidget(m_PositionGroup);
+        leftColumnLayout->addStretch();
+
+        contentLayout->addLayout(leftColumnLayout, FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_LEFT_STRETCH);
+        contentLayout->addWidget(m_StyleGroup, FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_RIGHT_STRETCH);
+        contentLayout->setAlignment(m_StyleGroup, Qt::AlignTop);
+        return;
+    }
+
+    QVBoxLayout *contentLayout = new QVBoxLayout(m_ContentWidget);
+    contentLayout->setContentsMargins(0, 0, 0, 0);
+    contentLayout->setSpacing(FLOATINGBUTTON_SETUP_LAYOUT_OUTER_SPACING);
+    contentLayout->addWidget(m_InfoGroup);
+    contentLayout->addWidget(m_BasicGroup);
+    contentLayout->addWidget(m_StyleGroup);
+    contentLayout->addWidget(m_PositionGroup);
+    contentLayout->addStretch();
+}
+
+void QFloatingButtonSetupDialog::adjustDialogSizeForCurrentLayout()
+{
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::adjustDialogSizeForCurrentLayout]"
+        << " entry"
+        << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", size=" << size()
+        << ", sizeHint=" << sizeHint()
+        << ", isVisible=" << isVisible();
+#endif
+
+    if (!isVisible()) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QFloatingButtonSetupDialog::adjustDialogSizeForCurrentLayout] skip because dialog is not visible.";
+#endif
+        return;
+    }
+
+    QSize targetSize = size();
+    int horizontalWidth = -1;
+    if (m_LayoutMode == FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL) {
+        horizontalWidth = preferredHorizontalEnterWidth();
+        if (targetSize.width() < horizontalWidth) {
+            targetSize.setWidth(horizontalWidth);
+        }
+    }
+
+    const int preferredHeight = sizeHint().height();
+    if (preferredHeight > 0) {
+        targetSize.setHeight(preferredHeight);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::adjustDialogSizeForCurrentLayout]"
+        << " target"
+        << ", currentSize=" << size()
+        << ", targetSize=" << targetSize
+        << ", preferredHeight=" << preferredHeight
+        << ", horizontalWidth=" << horizontalWidth;
+#endif
+
+    if (targetSize != size()) {
+        m_isAutoResizingForLayout = true;
+        resize(targetSize);
+        m_isAutoResizingForLayout = false;
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace()
+            << "[QFloatingButtonSetupDialog::adjustDialogSizeForCurrentLayout]"
+            << " resized"
+            << ", newSize=" << size();
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QFloatingButtonSetupDialog::adjustDialogSizeForCurrentLayout] no resize needed.";
+#endif
+    }
+}
+
+void QFloatingButtonSetupDialog::applyDialogLayoutMode(int layoutMode, bool markDirty, bool force)
+{
+    const int sanitizedLayoutMode = sanitizeFloatingButtonSetupLayoutMode(layoutMode);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::applyDialogLayoutMode]"
+        << " request=" << floatingButtonSetupLayoutModeName(sanitizedLayoutMode) << "(" << sanitizedLayoutMode << ")"
+        << ", current=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", force=" << force
+        << ", markDirty=" << markDirty
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", isVisible=" << isVisible();
+#endif
+
+    if (!force && m_LayoutMode == sanitizedLayoutMode) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace()
+            << "[QFloatingButtonSetupDialog::applyDialogLayoutMode] earlyReturn"
+            << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+            << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout());
+#endif
+        return;
+    }
+
+    m_isRelayouting = true;
+    m_LayoutMode = sanitizedLayoutMode;
+    rebuildContentLayout();
+
+    if (QLayout *dialogLayout = layout()) {
+        dialogLayout->activate();
+    }
+    m_ContentWidget->updateGeometry();
+    updateGeometry();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace()
+        << "[QFloatingButtonSetupDialog::applyDialogLayoutMode] rebuilt"
+        << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+        << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+        << ", size=" << size()
+        << ", sizeHint=" << sizeHint();
+#endif
+
+    if (isVisible()) {
+        adjustDialogSizeForCurrentLayout();
+        QTimer::singleShot(0, this,
+                           [this]() {
+#ifdef DEBUG_LOGOUT_ON
+                               qDebug().nospace()
+                                   << "[QFloatingButtonSetupDialog::applyDialogLayoutMode]"
+                                   << " queuedAdjust"
+                                   << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+                                   << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+                                   << ", size=" << size()
+                                   << ", isVisible=" << isVisible();
+#endif
+                               adjustDialogSizeForCurrentLayout();
+                           });
+    }
+
+    m_isRelayouting = false;
+
+    if (markDirty) {
+        notifySaveSettingDirty();
+    }
+}
+
+void QFloatingButtonSetupDialog::updateLayoutModeFromWidth(int width, bool markDirty)
+{
+    const int horizontalEnterWidth = preferredHorizontalEnterWidth();
+    const int verticalReturnWidth = qMax(preferredVerticalWidth(),
+                                         horizontalEnterWidth - FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH);
+
+#ifdef DEBUG_LOGOUT_ON
+    const char *decision = "KeepCurrent";
+#endif
+
+    if (m_LayoutMode == FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL) {
+        if (width >= horizontalEnterWidth) {
+#ifdef DEBUG_LOGOUT_ON
+            decision = "SwitchToHorizontal";
+            qDebug().nospace()
+                << "[QFloatingButtonSetupDialog::updateLayoutModeFromWidth]"
+                << " width=" << width
+                << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+                << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+                << ", horizontalEnterWidth=" << horizontalEnterWidth
+                << ", verticalReturnWidth=" << verticalReturnWidth
+                << ", decision=" << decision
+                << ", markDirty=" << markDirty;
+#endif
+            applyDialogLayoutMode(FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL, markDirty);
+        }
+#ifdef DEBUG_LOGOUT_ON
+        else {
+            qDebug().nospace()
+                << "[QFloatingButtonSetupDialog::updateLayoutModeFromWidth]"
+                << " width=" << width
+                << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+                << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+                << ", horizontalEnterWidth=" << horizontalEnterWidth
+                << ", verticalReturnWidth=" << verticalReturnWidth
+                << ", decision=" << decision
+                << ", markDirty=" << markDirty;
+        }
+#endif
+        return;
+    }
+
+    if (width <= verticalReturnWidth) {
+#ifdef DEBUG_LOGOUT_ON
+        decision = "SwitchToVertical";
+        qDebug().nospace()
+            << "[QFloatingButtonSetupDialog::updateLayoutModeFromWidth]"
+            << " width=" << width
+            << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+            << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+            << ", horizontalEnterWidth=" << horizontalEnterWidth
+            << ", verticalReturnWidth=" << verticalReturnWidth
+            << ", decision=" << decision
+            << ", markDirty=" << markDirty;
+#endif
+        applyDialogLayoutMode(FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL, markDirty);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    else {
+        qDebug().nospace()
+            << "[QFloatingButtonSetupDialog::updateLayoutModeFromWidth]"
+            << " width=" << width
+            << ", mode=" << floatingButtonSetupLayoutModeName(m_LayoutMode) << "(" << m_LayoutMode << ")"
+            << ", contentLayout=" << floatingButtonSetupLayoutClassName(m_ContentWidget->layout())
+            << ", horizontalEnterWidth=" << horizontalEnterWidth
+            << ", verticalReturnWidth=" << verticalReturnWidth
+            << ", decision=" << decision
+            << ", markDirty=" << markDirty;
+    }
+#endif
+}
+
+int QFloatingButtonSetupDialog::preferredHorizontalEnterWidth() const
+{
+    const int leftColumnWidth = qMax(m_InfoGroup->sizeHint().width(),
+                                     qMax(m_BasicGroup->sizeHint().width(),
+                                          m_PositionGroup->sizeHint().width()));
+    const int dialogSpacing = (layout() != Q_NULLPTR && layout()->spacing() >= 0)
+        ? layout()->spacing()
+        : 6;
+    const QMargins dialogMargins = (layout() != Q_NULLPTR)
+        ? layout()->contentsMargins()
+        : QMargins();
+
+    return qMax(preferredVerticalWidth(),
+                leftColumnWidth
+                + m_StyleGroup->sizeHint().width()
+                + dialogSpacing
+                + dialogMargins.left()
+                + dialogMargins.right()
+                + FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_ENTER_EXTRA_WIDTH);
+}
+
+int QFloatingButtonSetupDialog::preferredVerticalWidth() const
+{
+    return (m_PreferredVerticalWidth > 0)
+        ? m_PreferredVerticalWidth
+        : qMax(minimumSizeHint().width(), sizeHint().width());
 }
 
 void QFloatingButtonSetupDialog::onApplyButtonClicked()

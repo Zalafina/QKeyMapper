@@ -1097,6 +1097,11 @@ namespace QKeyMapperConstants {
     inline constexpr const char STARTUP_POSITION_INDEX[] = "StartupPosition_Index";
     inline constexpr const char STARTUP_POSITION_SPECIFYPOINT[] = "StartupPosition_SpecifyPoint";
     inline constexpr const char GLOBALSETTING_SWITCH_TIMEOUT[] = "GlobalSettingSwitchTimeout";
+    inline constexpr const char FLOATINGBUTTON_SETUP_LAYOUT_MODE[] = "FloatingButtonSetup_LayoutMode";
+    inline constexpr int FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL = 0;
+    inline constexpr int FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL = 1;
+    inline constexpr int FLOATINGBUTTON_SETUP_LAYOUT_MODE_MIN = FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL;
+    inline constexpr int FLOATINGBUTTON_SETUP_LAYOUT_MODE_MAX = FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL;
     inline constexpr const char GLOBALMAPPING_DISABLE_IN_FULLSCREEN[] = "GlobalMappingDisableInFullscreen";
     inline constexpr const char GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES[] = "GlobalMappingFullscreenAllowedProcesses";
     inline constexpr bool GLOBALMAPPING_DISABLE_IN_FULLSCREEN_DEFAULT = false;

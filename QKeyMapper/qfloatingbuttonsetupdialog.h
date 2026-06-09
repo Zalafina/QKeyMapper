@@ -9,12 +9,15 @@
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
+class QDialogButtonBox;
 class QFontComboBox;
 class QGroupBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
+class QResizeEvent;
 class QSpinBox;
+class QWidget;
 
 namespace Ui {
 class QFloatingButtonSetupDialog;
@@ -31,6 +34,8 @@ public:
     void setUILanguage(int languageindex);
     void setItemRow(int row);
     int getItemRow() const;
+    void setPreferredLayoutMode(int layoutMode);
+    int getPreferredLayoutMode() const;
     void refreshFromCurrentItem();
 
 signals:
@@ -38,6 +43,7 @@ signals:
 
 protected:
     bool event(QEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
 
@@ -47,6 +53,12 @@ private slots:
     void onAnyControlChanged();
 
 private:
+    void rebuildContentLayout();
+    void adjustDialogSizeForCurrentLayout();
+    void applyDialogLayoutMode(int layoutMode, bool markDirty = false, bool force = false);
+    void updateLayoutModeFromWidth(int width, bool markDirty = false);
+    int preferredHorizontalEnterWidth() const;
+    int preferredVerticalWidth() const;
     void loadFromCurrentItem();
     void applyToCurrentItem();
     void updateStyleCodeDisplay();
@@ -63,8 +75,17 @@ private:
     MAP_KEYDATA m_BackupData;
     QString m_BackupMousePassThroughSwitchKey;
     QString m_FontFamily;
+    int m_LayoutMode;
+    bool m_isRelayouting;
+    bool m_isAutoResizingForLayout;
+    int m_PreferredVerticalWidth;
+
+    QWidget *m_ContentWidget;
 
     QGroupBox *m_InfoGroup;
+    QGroupBox *m_BasicGroup;
+    QGroupBox *m_StyleGroup;
+    QGroupBox *m_PositionGroup;
     QLabel *m_ItemOriginalKeyLabel;
     QLineEdit *m_ItemOriginalKeyLineEdit;
     QLabel *m_ItemNoteLabel;

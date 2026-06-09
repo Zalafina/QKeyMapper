@@ -19292,6 +19292,11 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         settingFile.setValue(STARTUP_POSITION_SPECIFYPOINT, m_GeneralAdvancedDialog->getSpecifyStartupPosition());
         settingFile.setValue(GLOBALSETTING_SWITCH_TIMEOUT, static_cast<int>(m_GeneralAdvancedDialog->getGlobalSettingSwitchTimeout()));
     }
+    if (m_ItemSetupDialog != Q_NULLPTR
+        && m_ItemSetupDialog->m_FloatingButtonSetupDialog != Q_NULLPTR) {
+        settingFile.setValue(FLOATINGBUTTON_SETUP_LAYOUT_MODE,
+                             m_ItemSetupDialog->m_FloatingButtonSetupDialog->getPreferredLayoutMode());
+    }
 
     settingFile.setValue(TRAYICON_IDLE , m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon());
     settingFile.setValue(TRAYICON_MONITORING , m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon());
@@ -21004,6 +21009,30 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             fullscreenAllowedProcesses = settingFile.value(GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES).toString();
         }
         m_GeneralAdvancedDialog->setGlobalMappingFullscreenAllowedProcesses(fullscreenAllowedProcesses);
+
+        int floatingButtonSetupLayoutMode = FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL;
+        if (true == settingFile.contains(FLOATINGBUTTON_SETUP_LAYOUT_MODE)) {
+            floatingButtonSetupLayoutMode = settingFile.value(FLOATINGBUTTON_SETUP_LAYOUT_MODE).toInt();
+        }
+#ifdef DEBUG_LOGOUT_ON
+        const int floatingButtonSetupLayoutModeRaw = floatingButtonSetupLayoutMode;
+#endif
+        if (floatingButtonSetupLayoutMode < FLOATINGBUTTON_SETUP_LAYOUT_MODE_MIN
+            || floatingButtonSetupLayoutMode > FLOATINGBUTTON_SETUP_LAYOUT_MODE_MAX) {
+            floatingButtonSetupLayoutMode = FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL;
+        }
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace()
+            << "[loadKeyMapSetting]"
+            << " FloatingButtonSetup LayoutMode raw=" << floatingButtonSetupLayoutModeRaw
+            << ", sanitized=" << floatingButtonSetupLayoutMode
+            << ", itemSetupDialog=" << static_cast<const void *>(m_ItemSetupDialog)
+            << ", floatingButtonSetupDialog=" << static_cast<const void *>((m_ItemSetupDialog != Q_NULLPTR) ? m_ItemSetupDialog->m_FloatingButtonSetupDialog : Q_NULLPTR);
+#endif
+        if (m_ItemSetupDialog != Q_NULLPTR
+            && m_ItemSetupDialog->m_FloatingButtonSetupDialog != Q_NULLPTR) {
+            m_ItemSetupDialog->m_FloatingButtonSetupDialog->setPreferredLayoutMode(floatingButtonSetupLayoutMode);
+        }
 
         if (settingtext.isEmpty()) {
             QPoint startup_point = pos();
@@ -25613,6 +25642,30 @@ void QKeyMapper::loadGeneralSetting()
     }
     m_GeneralAdvancedDialog->setGlobalMappingFullscreenAllowedProcesses(fullscreenAllowedProcesses);
 
+    int floatingButtonSetupLayoutMode = FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL;
+    if (true == settingFile.contains(FLOATINGBUTTON_SETUP_LAYOUT_MODE)) {
+        floatingButtonSetupLayoutMode = settingFile.value(FLOATINGBUTTON_SETUP_LAYOUT_MODE).toInt();
+    }
+#ifdef DEBUG_LOGOUT_ON
+    const int floatingButtonSetupLayoutModeRaw = floatingButtonSetupLayoutMode;
+#endif
+    if (floatingButtonSetupLayoutMode < FLOATINGBUTTON_SETUP_LAYOUT_MODE_MIN
+        || floatingButtonSetupLayoutMode > FLOATINGBUTTON_SETUP_LAYOUT_MODE_MAX) {
+        floatingButtonSetupLayoutMode = FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL;
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace()
+        << "[loadGeneralSetting]"
+        << " FloatingButtonSetup LayoutMode raw=" << floatingButtonSetupLayoutModeRaw
+        << ", sanitized=" << floatingButtonSetupLayoutMode
+        << ", itemSetupDialog=" << static_cast<const void *>(m_ItemSetupDialog)
+        << ", floatingButtonSetupDialog=" << static_cast<const void *>((m_ItemSetupDialog != Q_NULLPTR) ? m_ItemSetupDialog->m_FloatingButtonSetupDialog : Q_NULLPTR);
+#endif
+    if (m_ItemSetupDialog != Q_NULLPTR
+        && m_ItemSetupDialog->m_FloatingButtonSetupDialog != Q_NULLPTR) {
+        m_ItemSetupDialog->m_FloatingButtonSetupDialog->setPreferredLayoutMode(floatingButtonSetupLayoutMode);
+    }
+
     // if (settingtext.isEmpty()) {
     //     int startup_position = m_GeneralAdvancedDialog->getStartupPosition();
     //     if (startup_position == STARTUP_POSITION_LASTSAVED) {
@@ -27929,6 +27982,18 @@ void QKeyMapper::showFloatingButtonSetupDialog(int row)
     QFloatingButtonSetupDialog *floatingButtonSetupDialog = itemSetupDialog->m_FloatingButtonSetupDialog;
     const bool itemChanged = (itemSetupDialog->getTabIndex() != sourceInfo.SourceTabIndex)
         || (floatingButtonSetupDialog->getItemRow() != sourceInfo.SourceRow);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace()
+        << "[showFloatingButtonSetupDialog]"
+        << " row=" << row
+        << ", sourceTabIndex=" << sourceInfo.SourceTabIndex
+        << ", sourceRow=" << sourceInfo.SourceRow
+        << ", itemChanged=" << itemChanged
+        << ", preferredLayoutMode=" << floatingButtonSetupDialog->getPreferredLayoutMode()
+        << ", dialogVisible=" << floatingButtonSetupDialog->isVisible()
+        << ", dialogSize=" << floatingButtonSetupDialog->size();
+#endif
 
     KeyMappingDataList = sourceMappingDataList;
     itemSetupDialog->setTabIndex(sourceInfo.SourceTabIndex);
