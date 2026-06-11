@@ -12,6 +12,7 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 2. Step to the nearest owning function, class, or dialog.
 3. Check same-module patterns before broad search.
 4. Keep the first change small and reversible.
+5. Before editing, identify a unique anchor for the exact snippet; if the file has repeated similar blocks, do not patch until the target is uniquely disambiguated by nearby literal text or line context.
 
 ## Core files
 - qkeymapper.cpp / qkeymapper.h
@@ -35,6 +36,8 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 - If compile errors mention Ui::QKeyMapper members, first check for stray source-tree ui_qkeymapper.h.
 - Use build-directory generated ui_*.h.
 - If qkeymapper.cpp compiles but behavior is still suspect, do one follow-up link build or the smallest runtime check.
+- Do not spend multiple iterations inventing new jom commands; use the known build-directory workflow first. If a jom failure is due to environment, path, or quoting uncertainty, stop after one retry and hand the validation back to the user.
+- After any patch, run the cheapest discriminating check immediately. If the check shows the edit landed in the wrong place, repair that same slice before widening scope or editing other files.
 
 ## Style
 - Keep scope narrow.
