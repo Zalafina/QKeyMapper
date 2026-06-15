@@ -66,7 +66,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QTableWidget" name="processinfoTable">
+  <widget class="ProcessInfoTableWidget" name="processinfoTable">
    <property name="geometry">
     <rect>
      <x>30</x>
@@ -2578,6 +2578,11 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
+  <customwidget>
+   <class>ProcessInfoTableWidget</class>
+   <extends>QTableWidget</extends>
+   <header>qkeymapper.h</header>
+  </customwidget>
   <customwidget>
    <class>KeyListComboBox</class>
    <extends>QComboBox</extends>

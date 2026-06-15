@@ -390,6 +390,22 @@ private:
     QPropertyAnimation *m_HoverAnimation = Q_NULLPTR;
 };
 
+class ProcessInfoTableWidget : public QTableWidget
+{
+    Q_OBJECT
+
+public:
+    explicit ProcessInfoTableWidget(QWidget *parent = Q_NULLPTR)
+        : QTableWidget(parent) {}
+
+protected:
+    void contextMenuEvent(QContextMenuEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+
+private:
+    bool copyCellContentToClipboard(const QTableWidgetItem *item);
+};
+
 class KeyMappingDataTableWidget : public QTableWidget
 {
     Q_OBJECT
@@ -1757,7 +1773,7 @@ private slots:
 
     void on_restoreProcessPathButton_clicked();
 
-    void on_processinfoTable_clicked(const QModelIndex &index);
+    // void on_processinfoTable_clicked(const QModelIndex &index);
 
     void on_keyboardSelectComboBox_currentIndexChanged(int index);
 

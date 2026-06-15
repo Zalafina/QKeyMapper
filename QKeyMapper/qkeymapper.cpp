@@ -29504,7 +29504,7 @@ void QKeyMapper::initHotKeySequence()
 void QKeyMapper::initProcessInfoTable(void)
 {
     //ui->processinfoTable->setStyle(QStyleFactory::create("windows"));
-    ui->processinfoTable->setFocusPolicy(Qt::NoFocus);
+    ui->processinfoTable->setFocusPolicy(Qt::ClickFocus);
     ui->processinfoTable->setColumnCount(PROCESSINFO_TABLE_COLUMN_COUNT);
 //    ui->processinfoTable->setHorizontalHeaderLabels(QStringList()   << "Name"
 //                                                                    << "PID"
@@ -44562,6 +44562,101 @@ bool KeyMappingDataTableWidget::isCategoryColumnVisible() const
     return m_CategoryColumnVisible;
 }
 
+bool ProcessInfoTableWidget::copyCellContentToClipboard(const QTableWidgetItem *item)
+{
+    if (!item) {
+        return false;
+    }
+
+    const int col = item->column();
+    const QString cellText = item->text();
+    if (cellText.isEmpty()) {
+        return false;
+    }
+
+    QKeyMapper::copyStringToClipboard(cellText);
+
+    // Build two-line popup message with elided content, following the pattern
+    // of QKeyMapper::on_originalKeyRecordCopyButton_clicked.
+    constexpr int elideWidth = POPUP_MESSAGE_ELIDE_WIDTH;
+    const QString elidedText = fontMetrics().elidedText(cellText, Qt::ElideMiddle, elideWidth);
+    const QString contentLine = QString("\"%1\"").arg(elidedText);
+
+    QString labelLine;
+    if (col == QKeyMapperConstants::PROCESS_NAME_COLUMN) {
+        labelLine = tr("Process name copied to clipboard:");
+    } else if (col == QKeyMapperConstants::PROCESS_TITLE_COLUMN) {
+        labelLine = tr("Window title copied to clipboard:");
+    } else {
+        labelLine = tr("Class name copied to clipboard:");
+    }
+
+    QKeyMapper::getInstance()->showInformationPopup(labelLine + QStringLiteral("\n") + contentLine);
+    return true;
+}
+
+void ProcessInfoTableWidget::contextMenuEvent(QContextMenuEvent *event)
+{
+    QTableWidgetItem *item = currentItem();
+    if (!item) {
+        QTableWidget::contextMenuEvent(event);
+        return;
+    }
+
+    const int col = item->column();
+    // Only show context menu for process name, title, and class columns
+    if (col != QKeyMapperConstants::PROCESS_NAME_COLUMN
+        && col != QKeyMapperConstants::PROCESS_TITLE_COLUMN
+        && col != QKeyMapperConstants::PROCESS_CLASS_COLUMN) {
+        QTableWidget::contextMenuEvent(event);
+        return;
+    }
+
+    QMenu contextMenu(this);
+    QString actionText;
+
+    if (col == QKeyMapperConstants::PROCESS_NAME_COLUMN) {
+        actionText = tr("Copy Process Name");
+    } else if (col == QKeyMapperConstants::PROCESS_TITLE_COLUMN) {
+        actionText = tr("Copy Window Title");
+    } else {
+        actionText = tr("Copy Class Name");
+    }
+
+    QAction *copyAction = contextMenu.addAction(actionText);
+    QAction *selectedAction = contextMenu.exec(event->globalPos());
+
+    if (selectedAction == copyAction) {
+        copyCellContentToClipboard(item);
+    }
+}
+
+void ProcessInfoTableWidget::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_C && (event->modifiers() & Qt::ControlModifier)) {
+        // Only handle Ctrl+C when exactly one row is selected
+        const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+        if (ranges.size() == 1 && ranges.first().rowCount() == 1) {
+            QTableWidgetItem *item = currentItem();
+            if (item) {
+                const int row = item->row();
+                const int col = item->column();
+                if (row >= 0 && row < rowCount() && col >= 0 && col < columnCount()) {
+                    if (col == QKeyMapperConstants::PROCESS_NAME_COLUMN
+                        || col == QKeyMapperConstants::PROCESS_TITLE_COLUMN
+                        || col == QKeyMapperConstants::PROCESS_CLASS_COLUMN) {
+                        if (copyCellContentToClipboard(item)) {
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    QTableWidget::keyPressEvent(event);
+}
+
 void KeyMappingDataTableWidget::keyPressEvent(QKeyEvent *event)
 {
     if (QKeyMapper::KEYMAP_IDLE != QKeyMapper::getInstance()->m_KeyMapStatus) {
@@ -45872,6 +45967,7 @@ void QKeyMapper::on_restoreProcessPathButton_clicked()
     }
 }
 
+#if 0
 void QKeyMapper::on_processinfoTable_clicked(const QModelIndex &index)
 {
     Q_UNUSED(index);
@@ -45884,6 +45980,7 @@ void QKeyMapper::on_processinfoTable_clicked(const QModelIndex &index)
         focused->clearFocus();
     }
 }
+#endif
 
 QStringList QKeyMapper::getCurrentCategoryFilters() const
 {

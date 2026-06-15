@@ -33,6 +33,7 @@ namespace QKeyMapperConstants {
     inline constexpr unsigned int SWITCH_BACKTO_LAST_MATCHED_SETTING_TIMEOUT = 20000U;
 
     inline constexpr int POPUP_MESSAGE_DISPLAY_TIME_DEFAULT = 3000;
+    inline constexpr int POPUP_MESSAGE_ELIDE_WIDTH = 320;
 
     inline constexpr int VIRTUALGAMEPADTYPECOMBOBOX_X = 610;
 
