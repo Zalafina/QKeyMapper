@@ -1,191 +1,459 @@
 ---
 name: self-improving-agent
-description: Logs corrections, errors, and feature requests during AI-assisted coding sessions to enable continuous improvement across sessions. Use when the user corrects you, a command fails, the user requests a new capability, or you discover a better approach.
-when_to_use: When the user corrects a mistake, a command or tool call fails, the user asks for a missing feature, or you discover outdated knowledge or a better approach. Also when wrapping up a task — review pending learnings.
+description: A universal self-improving agent that learns from ALL skill experiences. Uses multi-memory architecture (semantic + episodic + working) to continuously evolve the codebase. Auto-triggers on skill completion/error with hooks-based self-correction.
+allowed-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch
+metadata:
+  hooks:
+    before_start:
+      - trigger: session-logger
+        mode: auto
+        context: "Start {skill_name}"
+    after_complete:
+      - trigger: create-pr
+        mode: ask_first
+        condition: skills_modified
+        reason: "Submit improvements to repository"
+      - trigger: session-logger
+        mode: auto
+        context: "Self-improvement cycle complete"
+    # Note: on_error intentionally only logs to session to avoid infinite recursion
+    # Self-correction is triggered by other skills (debugger, code-reviewer) completing their work
+    on_error:
+      - trigger: session-logger
+        mode: auto
+        context: "Error captured in {skill_name}"
 ---
 
 # Self-Improving Agent
 
-Log corrections, errors, and feature requests to `.claude/.learnings/` so you improve across sessions.
+> "An AI agent that learns from every interaction, accumulating patterns and insights to continuously improve its own capabilities." — Based on 2025 lifelong learning research
 
-## First-use initialization
+## Overview
 
-The first time this skill activates in a project, create the `.claude/.learnings/` directory:
+This is a **universal self-improvement system** that learns from ALL skill experiences, not just PRDs. It implements a complete feedback loop with:
 
-```bash
-mkdir -p .claude/.learnings
-```
+- **Multi-Memory Architecture**: Semantic + Episodic + Working memory
+- **Self-Correction**: Detects and fixes skill guidance errors
+- **Self-Validation**: Periodically verifies skill accuracy
+- **Hooks Integration**: Auto-triggers on skill events (before_start, after_complete, on_error)
+- **Evolution Markers**: Traceable changes with source attribution
 
-If `.claude/.learnings/LEARNINGS.md` does not exist:
-```bash
-printf "# Learnings\n\nCorrections, insights, and knowledge gaps discovered during AI-assisted work.\n" > .claude/.learnings/LEARNINGS.md
-```
+## Research-Based Design
 
-If `.claude/.learnings/ERRORS.md` does not exist:
-```bash
-printf "# Errors\n\nCommand failures and integration errors encountered during AI-assisted work.\n" > .claude/.learnings/ERRORS.md
-```
+Based on 2025 research:
 
-If `.claude/.learnings/FEATURE_REQUESTS.md` does not exist:
-```bash
-printf "# Feature Requests\n\nCapabilities requested by the user that are not yet implemented.\n" > .claude/.learnings/FEATURE_REQUESTS.md
-```
+| Research | Key Insight | Application |
+|----------|-------------|-------------|
+| [SimpleMem](https://arxiv.org/html/2601.02553v1) | Efficient lifelong memory | Pattern accumulation system |
+| [Multi-Memory Survey](https://dl.acm.org/doi/10.1145/3748302) | Semantic + Episodic memory | World knowledge + experiences |
+| [Lifelong Learning](https://arxiv.org/html/2501.07278v1) | Continuous task stream learning | Learn from every skill use |
+| [Evo-Memory](https://shothota.medium.com/evo-memory-deepminds-new-benchmark) | Test-time lifelong learning | Real-time adaptation |
 
-Never overwrite existing files. This is a no-op if `.claude/.learnings/` is already initialized.
-
-## Quick reference
-
-| Situation | Action |
-|---|---|
-| Command or tool call fails | Log to `ERRORS.md` |
-| User corrects you | Log to `LEARNINGS.md` (category: `correction`) |
-| User wants a missing feature | Log to `FEATURE_REQUESTS.md` |
-| External tool / API fails | Log to `ERRORS.md` with full context |
-| Knowledge was outdated or wrong | Log to `LEARNINGS.md` (category: `knowledge_gap`) |
-| Found a better approach | Log to `LEARNINGS.md` (category: `best_practice`) |
-
-## Logging formats
-
-### Learning entry
+## The Self-Improvement Loop
 
 ```
-## [LRN-YYYYMMDD-XXX] category
-**Logged**: ISO-8601 timestamp
-**Priority**: low | medium | high | critical
-**Status**: pending
-**Area**: frontend | backend | infra | tests | docs | config
-### Summary
-One-line summary of the learning.
-### Details
-What happened — include the original mistake, the correction, and why it matters.
-### Suggested Action
-What should change going forward to avoid repeating this.
-### Metadata
-- Source: conversation | code_review | error | user_feedback
+┌─────────────────────────────────────────────────────────────────┐
+│                    UNIVERSAL SELF-IMPROVEMENT                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Skill Event → Extract Experience → Abstract Pattern → Update  │
+│        │                  │                │         │          │
+│        ▼                  ▼                ▼         ▼          │
+│   ┌─────────────────────────────────────────────────────┐       │
+│   │              MULTI-MEMORY SYSTEM                      │       │
+│   ├─────────────────────────────────────────────────────┤       │
+│   │  Semantic Memory   │  Episodic Memory  │ Working Memory │  │
+│   │  (Patterns/Rules)  │  (Experiences)    │  (Current)     │  │
+│   │  memory/semantic/  │  memory/episodic/ │  memory/working/│  │
+│   └─────────────────────────────────────────────────────┘       │
+│                                                                 │
+│   ┌─────────────────────────────────────────────────────┐       │
+│   │              FEEDBACK LOOP                            │       │
+│   │  User Feedback → Confidence Update → Pattern Adapt   │       │
+│   └─────────────────────────────────────────────────────┘       │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Error entry
+## When This Activates
 
-```
-## [ERR-YYYYMMDD-XXX] command_or_tool_name
-**Logged**: ISO-8601 timestamp
-**Priority**: high
-**Status**: pending
-### Summary
-One-line description of the error.
-### Error
-The exact error message or exit code.
-### Context
-What you were trying to do, relevant environment details.
-### Suggested Fix
-What resolved it (or what to try next time).
-### Metadata
-- Exit code: N
-- Tool: tool_name
-```
+### Automatic Triggers (via hooks)
 
-### Feature request entry
+| Event | Trigger | Action |
+|-------|---------|--------|
+| **before_start** | Any skill starts | Log session start |
+| **after_complete** | Any skill completes | Extract patterns, update skills |
+| **on_error** | Bash returns non-zero exit | Capture error context, trigger self-correction |
 
-```
-## [FEAT-YYYYMMDD-XXX] capability_name
-**Logged**: ISO-8601 timestamp
-**Priority**: medium
-**Status**: pending
-### Requested Capability
-What the user asked for.
-### User Context
-Why they need it, what problem it solves.
-### Complexity Estimate
-low | medium | high | unknown
-### Suggested Implementation
-High-level approach if obvious.
-### Metadata
-- Source: user_request
-```
+### Manual Triggers
 
-## ID generation
+- User says "自我进化", "self-improve", "从经验中学习"
+- User says "分析今天的经验", "总结教训"
+- User asks to improve a specific skill
 
-Format: `TYPE-YYYYMMDD-XXX` where TYPE is `LRN`, `ERR`, or `FEAT`. Generate XXX as sequential within the day (001, 002, …) by counting existing entries with the same date prefix in the target file.
+## Evolution Priority Matrix
 
-## Resolving entries
+Trigger evolution when new reusable knowledge appears:
 
-When a learning is applied, an error has a confirmed fix, or a feature is implemented, update `**Status**: pending` to `**Status**: resolved` and add `**Resolved**: ISO-8601 timestamp`.
+| Trigger | Target Skill | Priority | Action |
+|---------|--------------|----------|--------|
+| New PRD pattern discovered | prd-planner | High | Add to quality checklist |
+| Architecture tradeoff clarified | architecting-solutions | High | Add to decision patterns |
+| API design rule learned | api-designer | High | Update template |
+| Debugging fix discovered | debugger | High | Add to anti-patterns |
+| Review checklist gap | code-reviewer | High | Add checklist item |
+| Perf/security insight | performance-engineer, security-auditor | High | Add to patterns |
+| UI/UX spec issue | prd-planner, architecting-solutions | High | Add visual spec requirements |
+| React/state pattern | debugger, refactoring-specialist | Medium | Add to patterns |
+| Test strategy improvement | test-automator, qa-expert | Medium | Update approach |
+| CI/deploy fix | deployment-engineer | Medium | Add to troubleshooting |
 
-## Priority guidelines
+## Multi-Memory Architecture
 
-| Priority | When to use |
-|---|---|
-| **critical** | Causes data loss, security issue, or blocks all work |
-| **high** | Breaks a workflow, repeated corrections on same topic |
-| **medium** | Useful improvement, moderate impact |
-| **low** | Minor style preference, nice-to-have |
+### 1. Semantic Memory (`memory/semantic-patterns.json`)
 
-## Area tags
+Stores **abstract patterns and rules** reusable across contexts:
 
-| Area | Applies to |
-|---|---|
-| `frontend` | UI, dialogs, widgets, layouts |
-| `backend` | Core logic, workers, state machines |
-| `infra` | Build system, CI, environment, dependencies |
-| `tests` | Testing, validation, verification |
-| `docs` | Documentation, comments, README |
-| `config` | Settings, project files, .pro, .ini |
-
-## Promotion to CLAUDE.md
-
-When a learning is confirmed across multiple sessions, promote it to a permanent instruction file. For Claude Code projects, promote to `.claude/CLAUDE.md` or the appropriate `.claude/rules/*.md`.
-
-| Learning type | Promote to | Example |
-|---|---|---|
-| Behavioral patterns | `.claude/CLAUDE.md` | "Prefer targeted builds over full rebuilds" |
-| Module-specific rules | `.claude/rules/<area>.md` | "Never edit .ts files unless asked" |
-| Tool gotchas | `.claude/CLAUDE.md` | "Check for stray ui_*.h before reporting compile errors" |
-
-Promotion criteria:
-- `Recurrence-Count >= 3` across at least 2 distinct sessions
-- All occurrences within a 30-day window
-- Solution is tested and working
-
-## Detection triggers
-
-Automatically detect these conversation patterns and log without being asked:
-
-| User says | Action |
-|---|---|
-| "No, that's not right" / "Wrong" / "Incorrect" | Log correction to LEARNINGS.md |
-| "Can you also…" / "I wish you could…" / "Add a feature to…" | Log feature request |
-| User provides information you didn't know | Log knowledge gap |
-| Any tool returns non-zero exit code | Log error to ERRORS.md |
-
-## Periodic review
-
-When wrapping up a task, run:
-```bash
-grep -c "Status\*\*: pending" .claude/.learnings/*.md 2>/dev/null || echo "0 pending items"
+```json
+{
+  "patterns": {
+    "pattern_id": {
+      "id": "pat-2025-01-11-001",
+      "name": "Pattern Name",
+      "source": "user_feedback|implementation_review|retrospective",
+      "confidence": 0.95,
+      "applications": 5,
+      "created": "2025-01-11",
+      "category": "prd_structure|react_patterns|async_patterns|...",
+      "pattern": "One-line summary",
+      "problem": "What problem does this solve?",
+      "solution": { ... },
+      "quality_rules": [ ... ],
+      "target_skills": [ ... ]
+    }
+  }
+}
 ```
 
-If there are pending items, briefly summarize the top 3 by priority and ask the user if any should be promoted to CLAUDE.md or resolved.
+### 2. Episodic Memory (`memory/episodic/`)
 
-## Security
+Stores **specific experiences and what happened**:
 
-Never log secrets, tokens, API keys, passwords, private keys, or full environment variable values. If a credential is involved in an error, redact it and note that a credential was present.
-
-## Best practices
-
-1. **Log immediately** — write the entry while context is fresh, don't queue it
-2. **Be specific** — include exact error messages, file paths, and line references
-3. **Include reproduction steps** — what command or action triggered the issue
-4. **Link related files** — reference paths like `QKeyMapper/qkeymapper.cpp`
-5. **Suggest concrete fixes** — not just "fix it" but how to fix it
-6. **Use consistent categories** — same Area and Priority tags across entries
-7. **Promote aggressively** — when a pattern is clear, move it to CLAUDE.md
-8. **Review regularly** — scan pending items at natural breakpoints
-
-## Gitignore
-
-Add to project `.gitignore` to keep learnings local (recommended):
 ```
-.claude/.learnings/
+memory/episodic/
+├── 2025/
+│   ├── 2025-01-11-prd-creation.json
+│   ├── 2025-01-11-debug-session.json
+│   └── 2025-01-12-refactoring.json
 ```
 
-Or commit `.claude/.learnings/` to share with the team. At minimum, never commit entries that contain internal URLs, server names, or local paths.
+```json
+{
+  "id": "ep-2025-01-11-001",
+  "timestamp": "2025-01-11T10:30:00Z",
+  "skill": "debugger",
+  "situation": "User reported data not refreshing after form submission",
+  "root_cause": "Empty callback in onRefresh prop",
+  "solution": "Implement actual refresh logic in callback",
+  "lesson": "Always verify callbacks are not empty functions",
+  "related_pattern": "callback_verification",
+  "user_feedback": {
+    "rating": 8,
+    "comments": "This was exactly the issue"
+  }
+}
+```
+
+### 3. Working Memory (`memory/working/`)
+
+Stores **current session context**:
+
+```
+memory/working/
+├── current_session.json   # Active session data
+├── last_error.json        # Error context for self-correction
+└── session_end.json       # Session end marker
+```
+
+## Self-Improvement Process
+
+### Phase 1: Experience Extraction
+
+After any skill completes, extract:
+
+```yaml
+What happened:
+  skill_used: {which skill}
+  task: {what was being done}
+  outcome: {success|partial|failure}
+
+Key Insights:
+  what_went_well: [what worked]
+  what_went_wrong: [what didn't work]
+  root_cause: {underlying issue if applicable}
+
+User Feedback:
+  rating: {1-10 if provided}
+  comments: {specific feedback}
+```
+
+### Phase 2: Pattern Abstraction
+
+Convert experiences to reusable patterns:
+
+| Concrete Experience | Abstract Pattern | Target Skill |
+|--------------------|------------------|--------------|
+| "User forgot to save PRD notes" | "Always persist thinking to files" | prd-planner |
+| "Code review missed SQL injection" | "Add security checklist item" | code-reviewer |
+| "Callback was empty, didn't work" | "Verify callback implementations" | debugger |
+| "Net APY position ambiguous" | "UI specs need exact relative positions" | prd-planner |
+
+**Abstraction Rules:**
+
+```yaml
+If experience_repeats 3+ times:
+  pattern_level: critical
+  action: Add to skill's "Critical Mistakes" section
+
+If solution_was_effective:
+  pattern_level: best_practice
+  action: Add to skill's "Best Practices" section
+
+If user_rating >= 7:
+  pattern_level: strength
+  action: Reinforce this approach
+
+If user_rating <= 4:
+  pattern_level: weakness
+  action: Add to "What to Avoid" section
+```
+
+### Phase 3: Skill Updates
+
+Update the appropriate skill files with **evolution markers**:
+
+```markdown
+<!-- Evolution: 2025-01-12 | source: ep-2025-01-12-001 | skill: debugger -->
+
+## Pattern Added (2025-01-12)
+
+**Pattern**: Always verify callbacks are not empty functions
+
+**Source**: Episode ep-2025-01-12-001
+
+**Confidence**: 0.95
+
+### Updated Checklist
+- [ ] Verify all callbacks have implementations
+- [ ] Test callback execution paths
+```
+
+**Correction Markers** (when fixing wrong guidance):
+
+```markdown
+<!-- Correction: 2025-01-12 | was: "Use callback chain" | reason: caused stale refresh -->
+
+## Corrected Guidance
+
+Use direct state monitoring instead of callback chains:
+```typescript
+// ✅ Do: Direct state monitoring
+const prevPendingCount = usePrevious(pendingCount);
+```
+```
+
+### Phase 4: Memory Consolidation
+
+1. **Update semantic memory** (`memory/semantic-patterns.json`)
+2. **Store episodic memory** (`memory/episodic/YYYY-MM-DD-{skill}.json`)
+3. **Update pattern confidence** based on applications/feedback
+4. **Prune outdated patterns** (low confidence, no recent applications)
+
+## Promotion Policy
+
+Self-improvement has two separate jobs:
+
+1. **Capture** facts, corrections, failed assumptions, and reusable patterns as memory or proposal artifacts.
+2. **Promote** only validated patterns into `SKILL.md`, `AGENTS.md`, docs, or CLI behavior.
+
+Default to capture-first. Promote a change only when one of these is true:
+
+- The user explicitly asks to update a skill or repository instruction.
+- The same pattern recurs across multiple episodes.
+- A focused test or review proves the current guidance is wrong or incomplete.
+- The change is low-risk documentation that preserves existing behavior and is clearly traceable.
+
+Promotion targets:
+
+| Artifact | Use For | Approval Level |
+|----------|---------|----------------|
+| `memory/episodic/*.json` | Raw episode facts and signals | Auto |
+| `memory/semantic-patterns.json` | Candidate reusable patterns with confidence | Auto |
+| `memory/proposals/*.md` | Proposed skill/doc/code changes with evidence | Auto |
+| `SKILL.md` / `references/` | Validated workflow guidance | Ask first unless user requested editing |
+| `AGENTS.md` / repo rules | Cross-repo behavior or hard constraints | Ask first |
+| CLI/runtime code | Automation semantics | Require tests |
+
+## Self-Correction (on_error hook)
+
+Triggered when:
+- Bash command returns non-zero exit code
+- Tests fail after following skill guidance
+- User reports the guidance produced incorrect results
+
+**Process:**
+
+```markdown
+## Self-Correction Workflow
+
+1. Detect Error
+   - Capture error context from working/last_error.json
+   - Identify which skill guidance was followed
+
+2. Verify Root Cause
+   - Was the skill guidance incorrect?
+   - Was the guidance misinterpreted?
+   - Was the guidance incomplete?
+
+3. Create Proposal
+   - Write a proposal with evidence, affected skill names, and expected behavior
+   - Add correction marker text in the proposal, not directly in the skill yet
+   - Update related patterns in semantic memory with low initial confidence
+
+4. Validate Fix
+   - Test the corrected guidance
+   - Ask user to verify
+
+5. Promote
+   - Apply the skill/doc/code change after validation or explicit approval
+   - Keep the source episode/proposal id in the change note
+```
+
+**Example:**
+
+```markdown
+<!-- Correction: 2025-01-12 | was: "useMemo for claimable ids" | reason: stale data at click time -->
+
+## Self-Correction: Click-Time Computation
+
+**Issue**: Using useMemo for claimable IDs caused stale data
+**Fix**: Compute at click time for always-fresh data
+**Pattern**: click_time_vs_open_time_computation
+```
+
+## Self-Validation
+
+Use the validation template in `references/appendix.md` when reviewing updates.
+
+## Hooks Integration
+
+### Runtime Trigger Source
+
+`agent-playbook self-improve` reads skill chaining from each skill's `SKILL.md` frontmatter:
+
+```yaml
+metadata:
+  hooks:
+    after_complete:
+      - trigger: self-improving-agent
+        mode: background
+        reason: "Extract patterns"
+```
+
+Treat `metadata.hooks` as the source of truth. Do not maintain a second hardcoded hook map in runtime code. This keeps skill behavior auditable and lets Skill Creator style reviews inspect the same file that the agent executes.
+
+### Wiring Hooks in Claude Code Settings
+
+Add to Claude Code settings (`~/.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${SKILLS_DIR}/self-improving-agent/hooks/pre-tool.sh \"$TOOL_NAME\" \"$TOOL_INPUT\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${SKILLS_DIR}/self-improving-agent/hooks/post-bash.sh \"$TOOL_OUTPUT\" \"$EXIT_CODE\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ${SKILLS_DIR}/self-improving-agent/hooks/session-end.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Replace `${SKILLS_DIR}` with your actual skills path.
+
+## Additional References
+
+See `references/appendix.md` for memory structure, workflow diagrams, metrics, feedback templates, and research links.
+
+## Best Practices
+
+### DO
+
+- ✅ Learn from EVERY skill interaction
+- ✅ Extract patterns at the right abstraction level
+- ✅ Update multiple related skills
+- ✅ Track confidence and apply counts
+- ✅ Ask for user feedback on improvements
+- ✅ Use evolution/correction markers for traceability
+- ✅ Validate guidance before applying broadly
+- ✅ Write proposals before mutating durable skill guidance
+- ✅ Keep hook routing in `metadata.hooks`
+
+### DON'T
+
+- ❌ Over-generalize from single experiences
+- ❌ Update skills without confidence tracking
+- ❌ Ignore negative feedback
+- ❌ Make changes that break existing functionality
+- ❌ Create contradictory patterns
+- ❌ Update skills without understanding context
+- ❌ Silently promote self-improvement findings into repo rules
+- ❌ Duplicate hook definitions in CLI code and skill frontmatter
+
+## Quick Start
+
+After any skill completes, this agent automatically:
+
+1. **Analyzes** what happened
+2. **Extracts** patterns and insights
+3. **Writes** memory and proposal artifacts
+4. **Promotes** validated improvements when approval or evidence is sufficient
+5. **Reports** summary to user
+
+## References
+
+- [SimpleMem: Efficient Lifelong Memory for LLM Agents](https://arxiv.org/html/2601.02553v1)
+- [A Survey on the Memory Mechanism of Large Language Model Agents](https://dl.acm.org/doi/10.1145/3748302)
+- [Lifelong Learning of LLM based Agents](https://arxiv.org/html/2501.07278v1)
+- [Evo-Memory: DeepMind's Benchmark](https://shothota.medium.com/evo-memory-deepminds-new-benchmark)
+- [Let's Build a Self-Improving AI Agent](https://medium.com/@nomannayeem/lets-build-a-self-improving-ai-agent-that-learns-from-your-feedback-722d2ce9c2d9)
+- [OpenClaw self-improving-agent skill](https://github.com/openclaw/skills/tree/main/skills/pskoett/self-improving-agent)
+- [OpenCrabs local self-improving agent](https://github.com/adolfousier/opencrabs)
+- [ELL-StuLife experience-driven lifelong learning](https://github.com/ECNU-ICALK/ELL-StuLife)
