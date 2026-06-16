@@ -46,3 +46,6 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 - New comments in English.
 - No .ts edits unless asked.
 - Keep Qt/C++ source UTF-8 without BOM.
+
+## Continuous improvement
+After completing a task in this skill — especially when the user corrects you, a command fails, or you discover a better approach — invoke the self-improving-agent skill to extract patterns and update memory. This closes the loop so future sessions benefit from what was learned.
