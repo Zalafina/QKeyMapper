@@ -31,6 +31,9 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 - Forza/runtime mapping: keep legacy and new syntax on the same runtime path; verify press/release ordering and per-player state transitions; add DEBUG_LOGOUT_ON only at the exact transition point.
 - Serialization/settings: keep keymapdata.ini and Save Setting paths in sync; check load/apply/save/recover paths together.
 
+## Qt version compatibility
+- Code must compile on both Qt 6.8.3 and Qt 5.12.10 from a single source tree. When an API differs between versions, add a compatibility wrapper in `qkeymapper_qt_compat.h` — avoid scattering `#if QT_VERSION` checks throughout the codebase.
+
 ## Validation
 - Use the build directory under QKeyMapper/build/ (e.g., Desktop_Qt_6_x_x_MSVC2022_64bit-Release) for Qt/MSVC validation. Check the actual directory name at build time — it varies with the Qt version.
 - Prefer targeted object builds over full rebuilds.
@@ -46,6 +49,9 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 - New comments in English.
 - No .ts edits unless asked.
 - Keep Qt/C++ source UTF-8 without BOM.
+
+## Translation
+- When adding or modifying `tr(...)` strings, provide Chinese and Japanese translation recommendations alongside the English original. Present each string as a three-row table for readability: `| English | <original> |` / `| 中文 | <translation> |` / `| 日本語 | <translation> |`.
 
 ## Continuous improvement
 After completing a task in this skill — especially when the user corrects you, a command fails, or you discover a better approach — invoke the self-improving-agent skill to extract patterns and update memory. This closes the loop so future sessions benefit from what was learned.
