@@ -1,1 +1,1 @@
-SDL2-devel-2.32.6-VC
+SDL2-devel-2.32.10-VC
