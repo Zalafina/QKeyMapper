@@ -11,18 +11,12 @@
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+   <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
   <property name="minimumSize">
-   <size>
-    <width>1070</width>
-    <height>670</height>
-   </size>
-  </property>
-  <property name="maximumSize">
    <size>
     <width>1070</width>
     <height>670</height>
@@ -389,7 +383,7 @@
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="currentIndex">
-    <number>6</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="windowinfo">
     <attribute name="title">

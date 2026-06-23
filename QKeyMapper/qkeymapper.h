@@ -1509,6 +1509,7 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
     void mousePressEvent(QMouseEvent *event) override;
     bool eventFilter(QObject *object, QEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 public slots:
     void on_keymapButton_clicked();
@@ -1899,6 +1900,7 @@ private:
     void showProcessList(void);
     void setKeyMappingTabWidgetWideMode(void);
     void setKeyMappingTabWidgetNarrowMode(void);
+    void applyResizeLayout(int dw, int dh);
     bool isCloseToSystemtray(bool force_showdialog);
 
 public:

@@ -120,6 +120,8 @@ void QGeneralAdvancedDialog::setUILanguage(int languageindex)
     ui->startupSpecifyPositionXLabel->setText(tr("Position X"));
     ui->startupSpecifyPositionYLabel->setText(tr("Position Y"));
 
+    ui->saveWindowSizeCheckBox->setText(tr("Save Window Size"));
+
     ui->startupPositionComboBox->setItemText(STARTUP_POSITION_DEFAULT,      tr("Default"));
     ui->startupPositionComboBox->setItemText(STARTUP_POSITION_LASTSAVED,    tr("LastSaved"));
     ui->startupPositionComboBox->setItemText(STARTUP_POSITION_SPECIFY,      tr("Specify"));
@@ -153,6 +155,16 @@ QPoint QGeneralAdvancedDialog::getSpecifyStartupPosition()
 {
     return QPoint(ui->startupSpecifyPositionXSpinBox->value(),
                   ui->startupSpecifyPositionYSpinBox->value());
+}
+
+bool QGeneralAdvancedDialog::getSaveWindowSize() const
+{
+    return ui->saveWindowSizeCheckBox->isChecked();
+}
+
+void QGeneralAdvancedDialog::setSaveWindowSize(bool save)
+{
+    ui->saveWindowSizeCheckBox->setChecked(save);
 }
 
 int QGeneralAdvancedDialog::getTableEditModeTrigger()

@@ -3520,6 +3520,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         setKeyMappingTabWidgetWideMode();
     }
     refreshAllKeyMappingTabWidget();
+    applyResizeLayout(0, 0);  // ensure initial layout matches base window size
     // resizeAllKeyMappingTabWidgetColumnWidth();
 #if defined(QT_NO_DEBUG) && defined(AUTO_REFRESH_PROCESSINFOLIST)
     m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
@@ -16057,6 +16058,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[addTabToKeyMappingTabWidget] Add a new tab with TabName:" << tabName;
 #endif
+    applyResizeLayout(qMax(0, this->width() - WINDOW_BASE_WIDTH), this->height() - WINDOW_BASE_HEIGHT);
     markSaveSettingDirty();
     return true;
 }
@@ -16381,6 +16383,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[copyCurrentTabToKeyMappingTabWidget] Copy tab from TabIndex[" << current_tabindex << "] new TabName: " << tabName;
 #endif
+    applyResizeLayout(qMax(0, this->width() - WINDOW_BASE_WIDTH), this->height() - WINDOW_BASE_HEIGHT);
     markSaveSettingDirty();
     return true;
 }
@@ -19218,6 +19221,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 
     // m_LastWindowPosition = pos();
     settingFile.setValue(LAST_WINDOWPOSITION, pos());
+    settingFile.setValue(LAST_WINDOW_SIZE, size());
+    settingFile.setValue(SAVE_WINDOW_SIZE, m_GeneralAdvancedDialog->getSaveWindowSize());
 
     QString productVersion = getExeProductVersion();
     QString platformString = getPlatformString();
@@ -20986,6 +20991,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadKeyMapSetting]" << "Startup Position SpecifyPoint ->" << m_GeneralAdvancedDialog->getSpecifyStartupPosition();
 #endif
+        if (true == settingFile.contains(SAVE_WINDOW_SIZE)){
+            m_GeneralAdvancedDialog->setSaveWindowSize(settingFile.value(SAVE_WINDOW_SIZE).toBool());
+        }
 
         unsigned int generalSwitchTimeout = CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
         if (true == settingFile.contains(GLOBALSETTING_SWITCH_TIMEOUT)) {
@@ -21055,6 +21063,19 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Startup move position ->" << startup_point;
 #endif
+        }
+
+        // Restore saved window size if enabled
+        if (settingFile.value(SAVE_WINDOW_SIZE, false).toBool()) {
+            if (settingFile.contains(LAST_WINDOW_SIZE)) {
+                QSize savedSize = settingFile.value(LAST_WINDOW_SIZE).toSize();
+                if (savedSize.width() >= WINDOW_MIN_WIDTH && savedSize.height() >= WINDOW_MIN_HEIGHT) {
+                    resize(savedSize);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[loadKeyMapSetting]" << "Restore saved window size ->" << savedSize;
+#endif
+                }
+            }
         }
 
         if (true == settingFile.contains(LANGUAGE_INDEX)){
@@ -25597,6 +25618,9 @@ void QKeyMapper::loadGeneralSetting()
     else {
         m_GeneralAdvancedDialog->setStartupPosition(STARTUP_POSITION_LASTSAVED);
     }
+    if (true == settingFile.contains(SAVE_WINDOW_SIZE)){
+        m_GeneralAdvancedDialog->setSaveWindowSize(settingFile.value(SAVE_WINDOW_SIZE).toBool());
+    }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadGeneralSetting]" << "Startup Position ->" << m_GeneralAdvancedDialog->getStartupPosition();
 #endif
@@ -30059,6 +30083,140 @@ void QKeyMapper::forceHide()
     }
 }
 
+void QKeyMapper::resizeEvent(QResizeEvent *event)
+{
+    QDialog::resizeEvent(event);
+    int dw = qMax(0, this->width() - WINDOW_BASE_WIDTH);  // width can only increase
+    int dh = this->height() - WINDOW_BASE_HEIGHT;         // height can increase or decrease
+    applyResizeLayout(dw, dh);
+}
+
+void QKeyMapper::applyResizeLayout(int dw, int dh)
+{
+    const bool narrowMode = ui->processListButton->isChecked();
+    // Left/right boundary shift in narrow mode (wide mode: left zone hidden, no split needed)
+    // Window split-line shift (independent of processinfoTable visibility)
+    int boundaryShift = dw / 2;
+
+    // ===== 1. Height: tables absorb delta; bottom half shifts as a whole =====
+    int newTableH = qMax(MIN_PROCESSINFO_HEIGHT, KEYMAPPINGDATATABLE_HEIGHT + dh);
+    int newTabH   = qMax(MIN_KEYMAPPINGTAB_HEIGHT, KEYMAPPINGTABWIDGET_HEIGHT + dh);
+
+    // ===== 2. Top half: table area width distribution =====
+    if (narrowMode) {
+        int procW = PROCESSINFO_BASE_WIDTH + boundaryShift;
+        int tabX  = PROCESSINFO_LEFT + procW + TABLE_GAP;
+        int tabW  = KEYMAPPINGTABWIDGET_NARROW_WIDTH + (dw - boundaryShift);
+        ui->processinfoTable->setGeometry(PROCESSINFO_LEFT, 30, procW, newTableH);
+        ui->keyMappingTabWidget->setGeometry(tabX, KEYMAPPINGTABWIDGET_TOP, tabW, newTabH);
+    } else {
+        int tabW = KEYMAPPINGTABWIDGET_WIDE_WIDTH + dw;
+        ui->keyMappingTabWidget->setGeometry(KEYMAPPINGTABWIDGET_WIDE_LEFT,
+                                             KEYMAPPINGTABWIDGET_TOP, tabW, newTabH);
+    }
+
+    // ===== 3. Internal DataTable geometries =====
+    int tableW = ui->keyMappingTabWidget->width() - 4;
+    int tableH = ui->keyMappingTabWidget->height() - 23;
+    for (int i = 0; i < s_KeyMappingTabInfoList.size(); ++i) {
+        KeyMappingDataTableWidget *dt = s_KeyMappingTabInfoList.at(i).KeyMappingDataTable;
+        if (dt) dt->setGeometry(0, 0, tableW, tableH);
+    }
+    if (m_KeyMappingDataTable) {
+        resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+    }
+
+    // ===== 4. Right-anchored controls (x >= 870): keep distance from right edge =====
+    int btnX = this->width() - 71 - 9;
+    ui->addTabButton->setGeometry(btnX, 11, 71, 19);
+    ui->processListButton->setGeometry(btnX, 50, 71, 25);
+    ui->showNotesButton->setGeometry(btnX, 90, 71, 25);
+    ui->hideDisabledButton->setGeometry(btnX, 130, 71, 25);
+    ui->showFloatingButton->setGeometry(btnX, 170, 71, 25);
+    ui->showCategoryButton->setGeometry(btnX, 210, 71, 25);
+    ui->categoryFilterToolButton->setGeometry(btnX, 250, 71, 25);
+    ui->deleteSelectedButton->setGeometry(btnX, 290, 71, 25);
+    ui->clearallButton->setGeometry(btnX, 330, 71, 25);
+
+    ui->addmapdataButton->setGeometry(this->width() - 91 - 9,  386 + dh, 91, 36);
+    ui->originalKeyRecordCopyButton->setGeometry(this->width() - 71 - 29, 430 + dh, 71, 22);
+    ui->originalKeyEditModeButton->setGeometry(this->width() - 71 - 109, 430 + dh, 71, 22);
+    ui->pushLevelSpinBox->setGeometry(this->width() - 51 - 49, 490 + dh, 51, 22);
+    ui->pointDisplayLabel->setGeometry(this->width() - 100 - 20, 462 + dh, 100, 20);
+    ui->keymapButton->setGeometry(this->width() - 171 - 29, 590 + dh, 171, 51);
+
+    // ===== 5. Bottom half left zone (x < 511): stretch right + Y shift =====
+    ui->settingNameLabel->setGeometry(4,  370 + dh, 71, 22);
+    ui->settingNameLineEdit->setGeometry(80,  370 + dh, 346 + boundaryShift, 22);
+    ui->backupSettingButton->setGeometry(440 + boundaryShift, 370 + dh, 71, 22);
+    ui->settingselectComboBox->setGeometry(30,  404 + dh, 356 + boundaryShift, 22);
+    ui->savemaplistButton->setGeometry(400 + boundaryShift, 399 + dh, 111, 31);
+    // settingTabWidget: widen by boundaryShift; WindowInfo LineEdits stretch rightward
+    ui->settingTabWidget->setGeometry(20, 445 + dh, 491 + boundaryShift, 211);
+    int winfoEditW = 281 + boundaryShift;
+    ui->processLineEdit->setGeometry(153, 10, winfoEditW, 21);
+    ui->windowTitleLineEdit->setGeometry(153, 40, winfoEditW, 21);
+    ui->classNameLineEdit->setGeometry(153, 70, winfoEditW, 21);
+    ui->descriptionLineEdit->setGeometry(153, 100, winfoEditW, 21);
+    // restoreProcessPathButton: keep 6px gap after processLineEdit
+    ui->restoreProcessPathButton->setGeometry(440 + boundaryShift, 10, 41, 20);
+    // Other settingTabWidget tabs keep left-relative X; container width change is enough
+
+    // ===== 6. Bottom half right zone (x >= 500): shift right + Y shift =====
+    // --- y=370: source select buttons ---
+    ui->oriList_SelectKeyboardButton->setGeometry(586 + boundaryShift, 370 + dh, 22, 22);
+    ui->oriList_SelectMouseButton->setGeometry(616 + boundaryShift, 370 + dh, 22, 22);
+    ui->oriList_SelectGamepadButton->setGeometry(646 + boundaryShift, 370 + dh, 22, 22);
+    ui->oriList_SelectFunctionButton->setGeometry(676 + boundaryShift, 370 + dh, 22, 22);
+    ui->mapList_SelectKeyboardButton->setGeometry(810 + boundaryShift, 370 + dh, 22, 22);
+    ui->mapList_SelectMouseButton->setGeometry(840 + boundaryShift, 370 + dh, 22, 22);
+    ui->mapList_SelectGamepadButton->setGeometry(870 + boundaryShift, 370 + dh, 22, 22);
+    ui->mapList_SelectFunctionButton->setGeometry(900 + boundaryShift, 370 + dh, 22, 22);
+
+    // --- y=400: orikey/mapkey labels and combos ---
+    ui->orikeyLabel->setGeometry(500 + boundaryShift, 400 + dh, 81, 22);
+    ui->mapkeyLabel->setGeometry(744 + boundaryShift, 400 + dh, 61, 22);
+    ui->orikeyComboBox->setGeometry(586 + boundaryShift, 400 + dh, 161, 22);
+    ui->mapkeyComboBox->setGeometry(810 + boundaryShift, 400 + dh, 151, 22);
+
+    // --- y=430: original key record line (keep 10px gap before originalKeyEditModeButton) ---
+    ui->orikeyRecordLabel->setGeometry(510 + boundaryShift, 430 + dh, 71, 22);
+    int oriRecW = this->width() - 776 - boundaryShift;
+    ui->originalKeyRecordLineEdit->setGeometry(586 + boundaryShift, 430 + dh, oriRecW, 22);
+
+    // --- y=460: trigger type / timing row ---
+    ui->triggerTypeLabel->setGeometry(510 + boundaryShift, 460 + dh, 71, 22);
+    ui->keyPressTypeComboBox->setGeometry(586 + boundaryShift, 460 + dh, 56, 21);
+    ui->pressTimeSpinBox->setGeometry(647 + boundaryShift, 460 + dh, 100, 22);
+    ui->waitTimeLabel->setGeometry(754 + boundaryShift, 460 + dh, 51, 22);
+    ui->waitTimeSpinBox->setGeometry(810 + boundaryShift, 460 + dh, 100, 22);
+    ui->pointLabel->setGeometry(this->width() - 166, 460 + dh, 41, 22);
+
+    // --- y=490: pushLevel + keyboard select ---
+    ui->pushLevelLabel->setGeometry(744 + boundaryShift, 490 + dh, 61, 22);
+    int sliderW = this->width() - 51 - 49 - 9 - (810 + boundaryShift);
+    ui->pushLevelSlider->setGeometry(810 + boundaryShift, 493 + dh, sliderW, 16);
+
+    ui->keyboardSelectLabel->setGeometry(510 + boundaryShift, 490 + dh, 71, 22);
+    ui->keyboardSelectComboBox->setGeometry(586 + boundaryShift, 490 + dh, 161, 22);
+
+    // --- y=520: mouse select + sendText ---
+    ui->mouseSelectLabel->setGeometry(510 + boundaryShift, 520 + dh, 71, 22);
+    ui->mouseSelectComboBox->setGeometry(586 + boundaryShift, 520 + dh, 161, 22);
+    ui->sendTextLabel->setGeometry(754 + boundaryShift, 520 + dh, 51, 41);
+    int sendTextW = this->width() - 29 - (810 + boundaryShift);
+    ui->sendTextPlainTextEdit->setGeometry(810 + boundaryShift, 520 + dh, sendTextW, 51);
+
+    // --- y=550: gamepad select ---
+    ui->gamepadSelectLabel->setGeometry(510 + boundaryShift, 550 + dh, 71, 22);
+    ui->gamepadSelectComboBox->setGeometry(586 + boundaryShift, 550 + dh, 161, 22);
+
+    // ===== 7. Wide mode note =====
+    // boundaryShift depends only on window width (dw/2), not processinfoTable state.
+    // Bottom half layout mirrors the same proportional split in both modes.
+    // setGeometry on hidden processinfoTable is harmless; Qt ignores it at paint time.
+}
+
 void QKeyMapper::hideProcessList()
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -30082,26 +30240,8 @@ void QKeyMapper::setKeyMappingTabWidgetWideMode()
     if (ui->processListButton->isChecked()) {
         return;
     }
-
-    QRect widgetGeometry = ui->keyMappingTabWidget->geometry();
-    int widget_left = KEYMAPPINGTABWIDGET_WIDE_LEFT;
-    int widget_width = KEYMAPPINGTABWIDGET_WIDE_WIDTH;
-    int widget_top = widgetGeometry.top();
-    int widget_height = widgetGeometry.height();
-    ui->keyMappingTabWidget->setGeometry(QRect(widget_left, widget_top, widget_width, widget_height));
-
-    int table_left = KEYMAPPINGDATATABLE_WIDE_LEFT;
-    int table_width = KEYMAPPINGDATATABLE_WIDE_WIDTH;
-    int table_top = KEYMAPPINGDATATABLE_TOP;
-    int table_height = KEYMAPPINGDATATABLE_HEIGHT;
-
-    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
-        KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
-        mappingDataTable->setGeometry(QRect(table_left, table_top, table_width, table_height));
-    }
-    if (m_KeyMappingDataTable) {
-        resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
-    }
+    applyResizeLayout(qMax(0, this->width() - WINDOW_BASE_WIDTH),
+                      this->height() - WINDOW_BASE_HEIGHT);
 }
 
 void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
@@ -30109,26 +30249,8 @@ void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
     if (!ui->processListButton->isChecked()) {
         return;
     }
-
-    int table_left = KEYMAPPINGDATATABLE_NARROW_LEFT;
-    int table_width = KEYMAPPINGDATATABLE_NARROW_WIDTH;
-    int table_top = KEYMAPPINGDATATABLE_TOP;
-    int table_height = KEYMAPPINGDATATABLE_HEIGHT;
-
-    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
-        KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(index).KeyMappingDataTable;
-        mappingDataTable->setGeometry(QRect(table_left, table_top, table_width, table_height));
-    }
-    if (m_KeyMappingDataTable) {
-        resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
-    }
-
-    QRect widgetGeometry = ui->keyMappingTabWidget->geometry();
-    int widget_left = KEYMAPPINGTABWIDGET_NARROW_LEFT;
-    int widget_width = KEYMAPPINGTABWIDGET_NARROW_WIDTH;
-    int widget_top = widgetGeometry.top();
-    int widget_height = widgetGeometry.height();
-    ui->keyMappingTabWidget->setGeometry(QRect(widget_left, widget_top, widget_width, widget_height));
+    applyResizeLayout(qMax(0, this->width() - WINDOW_BASE_WIDTH),
+                      this->height() - WINDOW_BASE_HEIGHT);
 }
 
 bool QKeyMapper::isCloseToSystemtray(bool force_showdialog)

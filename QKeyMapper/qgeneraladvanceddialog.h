@@ -40,6 +40,8 @@ public:
     void setGlobalSettingSwitchTimeout(unsigned int timeout);
     void setDisableGlobalMappingInFullscreen(bool enabled);
     void setGlobalMappingFullscreenAllowedProcesses(const QString &processes);
+    bool getSaveWindowSize(void) const;
+    void setSaveWindowSize(bool save);
 
 protected:
     bool event(QEvent *event) override;

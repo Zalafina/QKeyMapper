@@ -108,6 +108,21 @@ namespace QKeyMapperConstants {
     inline constexpr int BLOCK_INPUTDEVICE_KEYBOARD         = 0;
     inline constexpr int BLOCK_INPUTDEVICE_MOUSE            = 1;
 
+    // Window resize base dimensions
+    inline constexpr int WINDOW_BASE_WIDTH  = 1070;
+    inline constexpr int WINDOW_BASE_HEIGHT = 670;
+    inline constexpr int WINDOW_MIN_WIDTH   = 1070;  // minimum window width (= currently fixed width)
+    inline constexpr int WINDOW_MIN_HEIGHT  = 670;   // minimum window height (user adjustable)
+
+    // Minimum table sizes when window height is reduced
+    inline constexpr int MIN_PROCESSINFO_HEIGHT = 100;   // processinfoTable minimum height
+    inline constexpr int MIN_KEYMAPPINGTAB_HEIGHT = 120; // keyMappingTabWidget minimum height
+
+    // Narrow-mode layout base values
+    inline constexpr int PROCESSINFO_BASE_WIDTH  = 470;
+    inline constexpr int PROCESSINFO_LEFT = 30;
+    inline constexpr int TABLE_GAP = 26;  // 526 - (30+470)
+
     inline constexpr int KEYMAPPINGTABWIDGET_TOP           = 9;
     inline constexpr int KEYMAPPINGTABWIDGET_HEIGHT        = 347;
     inline constexpr int KEYMAPPINGTABWIDGET_NARROW_LEFT   = 526;
@@ -1023,6 +1038,8 @@ namespace QKeyMapperConstants {
 
     /* General global settings >>> */
     inline constexpr const char LAST_WINDOWPOSITION[] = "LastWindowPosition";
+    inline constexpr const char SAVE_WINDOW_SIZE[] = "SaveWindowSize";
+    inline constexpr const char LAST_WINDOW_SIZE[] = "LastWindowSize";
     inline constexpr const char PROGRAM_VERSION[] = "ProgramVersion";
     inline constexpr const char PROGRAM_PLATFORM[] = "ProgramPlatform";
     inline constexpr const char LANGUAGE_INDEX[] = "LanguageIndex";
