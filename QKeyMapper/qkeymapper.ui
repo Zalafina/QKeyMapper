@@ -25,6 +25,9 @@
   <property name="windowTitle">
    <string>QKeyMapper</string>
   </property>
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
   <widget class="MappingStartToolButton" name="keymapButton">
    <property name="geometry">
     <rect>
