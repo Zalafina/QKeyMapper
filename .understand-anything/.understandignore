@@ -1,0 +1,52 @@
+# .understandignore — patterns for files/dirs to exclude from analysis
+# Syntax: same as .gitignore (globs, # comments, ! negation, trailing / for dirs)
+# Lines below are suggestions — uncomment to activate.
+# Use ! prefix to force-include something excluded by defaults.
+#
+# Built-in defaults (always excluded unless negated):
+#   node_modules/, .git/, dist/, build/, obj/, *.lock, *.min.js, etc.
+#
+
+# --- From .gitignore (uncomment to exclude) ---
+
+# build-*/*
+# build-*
+# *-build-*
+# *.TMP
+# *.tmp
+# forzahorizon6_official_format.txt
+# QKeyMapper/*.pro.user
+# QKeyMapper/*.pro.user.*
+# QKeyMapper/*.moc
+# QKeyMapper/*.bin
+# QKeyMapper/**/*.TMP
+# QKeyMapper/**/*.tmp
+# QKeyMapper/moc_*.cpp
+# QKeyMapper/qrc_*.cpp
+# QKeyMapper/ui_*.h
+# QKeyMapper/Makefile*
+# QKeyMapper/*-build-*
+# QKeyMapper/build/
+# QKeyMapper/out/
+# QKeyMapper/build_output/
+# QKeyMapper/build_verify/
+# QKeyMapper/release/
+
+# --- Test file patterns (uncomment to exclude) ---
+
+# JS / TS
+# *.test.*
+# *.spec.*
+# *.snap
+# C# / .NET
+# **/*Tests.cs
+# **/*Test.cs
+# **/*Fixture.cs
+# **/*.Tests.csproj
+# Java / Kotlin
+# **/src/test/**
+# **/*Test.java
+# **/*IT.java
+# **/*Spec.kt
+# Go
+# **/*_test.go

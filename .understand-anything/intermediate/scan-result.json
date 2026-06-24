@@ -1,0 +1,843 @@
+{
+  "projectName": "QKeyMapper",
+  "projectDescription": "兼容Win7/Win10/Win11的开源按键映射工具，使用Qt Widget和WinAPI基于C++开发，支持键盘、鼠标、游戏手柄、虚拟游戏手柄之间各种互相按键映射。",
+  "languages": [
+    "c++",
+    "c",
+    "markdown",
+    "autohotkey",
+    "vbscript",
+    "qmake",
+    "xml"
+  ],
+  "frameworks": [
+    "Qt"
+  ],
+  "totalFiles": 117,
+  "complexity": "large",
+  "filteredByIgnore": 0,
+  "files": [
+    {
+      "path": ".gitignore",
+      "language": "text",
+      "sizeLines": 26,
+      "fileCategory": "config"
+    },
+    {
+      "path": "CombinationSupportKeys.md",
+      "language": "markdown",
+      "sizeLines": 130,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "KeyNameChanged.md",
+      "language": "markdown",
+      "sizeLines": 51,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "LICENSE",
+      "language": "text",
+      "sizeLines": 675,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/active_window.ahk",
+      "language": "autohotkey",
+      "sizeLines": 161,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/config_window.ahk",
+      "language": "autohotkey",
+      "sizeLines": 200,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/hidden_window.ahk",
+      "language": "autohotkey",
+      "sizeLines": 501,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/kill.vbs",
+      "language": "vbscript",
+      "sizeLines": 10,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/mouse_position.ahk",
+      "language": "autohotkey",
+      "sizeLines": 34,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/move_window.ahk",
+      "language": "autohotkey",
+      "sizeLines": 166,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/show_ime_hkl.ahk",
+      "language": "autohotkey",
+      "sizeLines": 55,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/switch_ime.ahk",
+      "language": "autohotkey",
+      "sizeLines": 537,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/winmove_ex.ahk",
+      "language": "autohotkey",
+      "sizeLines": 363,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/ahk_utils/script/winmove.ahk",
+      "language": "autohotkey",
+      "sizeLines": 170,
+      "fileCategory": "script"
+    },
+    {
+      "path": "QKeyMapper/colorpickerwidget.cpp",
+      "language": "c++",
+      "sizeLines": 381,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/colorpickerwidget.h",
+      "language": "c++",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/FakerInput/include/fakerinputclient.h",
+      "language": "c++",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/FakerInput/include/fakerinputcommon.h",
+      "language": "c++",
+      "sizeLines": 136,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/font.qrc",
+      "language": "xml",
+      "sizeLines": 6,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/GamepadMotion/GamepadMotion.hpp",
+      "language": "c++",
+      "sizeLines": 1315,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/image.qrc",
+      "language": "xml",
+      "sizeLines": 42,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/interception_worker.cpp",
+      "language": "c++",
+      "sizeLines": 1026,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/interception_worker.h",
+      "language": "c++",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/Interception/include/interception.h",
+      "language": "c",
+      "sizeLines": 195,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/main.cpp",
+      "language": "c++",
+      "sizeLines": 436,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/orderedmap/orderedmap.h",
+      "language": "c++",
+      "sizeLines": 876,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qcrosshairsetupdialog.cpp",
+      "language": "c++",
+      "sizeLines": 437,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qcrosshairsetupdialog.h",
+      "language": "c++",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qcrosshairsetupdialog.ui",
+      "language": "xml",
+      "sizeLines": 391,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qfloatingbuttonsetupdialog.cpp",
+      "language": "c++",
+      "sizeLines": 1484,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qfloatingbuttonsetupdialog.h",
+      "language": "c++",
+      "sizeLines": 167,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qfloatingwindowsetupdialog.cpp",
+      "language": "c++",
+      "sizeLines": 402,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qfloatingwindowsetupdialog.h",
+      "language": "c++",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qfloatingwindowsetupdialog.ui",
+      "language": "xml",
+      "sizeLines": 257,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qgeneraladvanceddialog.cpp",
+      "language": "c++",
+      "sizeLines": 284,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qgeneraladvanceddialog.h",
+      "language": "c++",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qgeneraladvanceddialog.ui",
+      "language": "xml",
+      "sizeLines": 453,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qgyro2mouseoptiondialog.cpp",
+      "language": "c++",
+      "sizeLines": 131,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qgyro2mouseoptiondialog.h",
+      "language": "c++",
+      "sizeLines": 49,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qgyro2mouseoptiondialog.ui",
+      "language": "xml",
+      "sizeLines": 140,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qhotkey.prc",
+      "language": "text",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": "QKeyMapper/qhotkey.pri",
+      "language": "qmake",
+      "sizeLines": 18,
+      "fileCategory": "config"
+    },
+    {
+      "path": "QKeyMapper/qignorewindowinfolistdialog.cpp",
+      "language": "c++",
+      "sizeLines": 375,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qignorewindowinfolistdialog.h",
+      "language": "c++",
+      "sizeLines": 57,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qignorewindowinfolistdialog.ui",
+      "language": "xml",
+      "sizeLines": 561,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qinputdevicelistwindow.cpp",
+      "language": "c++",
+      "sizeLines": 528,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qinputdevicelistwindow.h",
+      "language": "c++",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qinputdevicelistwindow.ui",
+      "language": "xml",
+      "sizeLines": 134,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qitemsetupdialog.cpp",
+      "language": "c++",
+      "sizeLines": 4292,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qitemsetupdialog.h",
+      "language": "c++",
+      "sizeLines": 207,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qitemsetupdialog.ui",
+      "language": "xml",
+      "sizeLines": 1137,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/QJoysticks/QJoysticks.pri",
+      "language": "qmake",
+      "sizeLines": 56,
+      "fileCategory": "config"
+    },
+    {
+      "path": "QKeyMapper/QJoysticks/src/QJoysticks.cpp",
+      "language": "c++",
+      "sizeLines": 669,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QJoysticks/src/QJoysticks.h",
+      "language": "c++",
+      "sizeLines": 140,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QJoysticks/src/QJoysticks/JoysticksCommon.h",
+      "language": "c++",
+      "sizeLines": 175,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QJoysticks/src/QJoysticks/SDL_Joysticks.cpp",
+      "language": "c++",
+      "sizeLines": 634,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QJoysticks/src/QJoysticks/SDL_Joysticks.h",
+      "language": "c++",
+      "sizeLines": 86,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qkeymapper_constants.h",
+      "language": "c++",
+      "sizeLines": 1957,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qkeymapper_qt_compat.h",
+      "language": "c++",
+      "sizeLines": 219,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qkeymapper_worker.cpp",
+      "language": "c++",
+      "sizeLines": 21197,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qkeymapper_worker.h",
+      "language": "c++",
+      "sizeLines": 1822,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qkeymapper.cpp",
+      "language": "c++",
+      "sizeLines": 47174,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QKeyMapper.h",
+      "language": "c++",
+      "sizeLines": 2463,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QKeyMapper.pro",
+      "language": "qmake",
+      "sizeLines": 300,
+      "fileCategory": "config"
+    },
+    {
+      "path": "QKeyMapper/QKeyMapper.rc",
+      "language": "rc",
+      "sizeLines": 43,
+      "fileCategory": "config"
+    },
+    {
+      "path": "QKeyMapper/qkeymapper.ui",
+      "language": "xml",
+      "sizeLines": 2608,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qkeyrecord.cpp",
+      "language": "c++",
+      "sizeLines": 676,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qkeyrecord.h",
+      "language": "c++",
+      "sizeLines": 67,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qkeyrecord.ui",
+      "language": "xml",
+      "sizeLines": 184,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qmacrolistdialog.cpp",
+      "language": "c++",
+      "sizeLines": 3864,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qmacrolistdialog.h",
+      "language": "c++",
+      "sizeLines": 216,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qmacrolistdialog.ui",
+      "language": "xml",
+      "sizeLines": 812,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qmappingadvanceddialog.cpp",
+      "language": "c++",
+      "sizeLines": 659,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qmappingadvanceddialog.h",
+      "language": "c++",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qmappingadvanceddialog.ui",
+      "language": "xml",
+      "sizeLines": 928,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qmappingsequenceedit.cpp",
+      "language": "c++",
+      "sizeLines": 1865,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qmappingsequenceedit.h",
+      "language": "c++",
+      "sizeLines": 179,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qmappingsequenceedit.ui",
+      "language": "xml",
+      "sizeLines": 588,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qnotificationsetupdialog.cpp",
+      "language": "c++",
+      "sizeLines": 431,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qnotificationsetupdialog.h",
+      "language": "c++",
+      "sizeLines": 118,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qnotificationsetupdialog.ui",
+      "language": "xml",
+      "sizeLines": 487,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/include/QSimpleUpdater.h",
+      "language": "c++",
+      "sizeLines": 123,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/QSimpleUpdater.pri",
+      "language": "qmake",
+      "sizeLines": 47,
+      "fileCategory": "config"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/src/AuthenticateDialog.cpp",
+      "language": "c++",
+      "sizeLines": 35,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/src/AuthenticateDialog.h",
+      "language": "c++",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/src/AuthenticateDialog.ui",
+      "language": "c++",
+      "sizeLines": 112,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/src/Downloader.cpp",
+      "language": "c++",
+      "sizeLines": 600,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/src/Downloader.h",
+      "language": "c++",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/src/Downloader.ui",
+      "language": "c++",
+      "sizeLines": 175,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/src/QSimpleUpdater.cpp",
+      "language": "c++",
+      "sizeLines": 506,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/src/Updater.cpp",
+      "language": "c++",
+      "sizeLines": 751,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/QSimpleUpdater/src/Updater.h",
+      "language": "c++",
+      "sizeLines": 123,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qstyle_singletons.cpp",
+      "language": "c++",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qstyle_singletons.h",
+      "language": "c++",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qtablesetupdialog.cpp",
+      "language": "c++",
+      "sizeLines": 1081,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qtablesetupdialog.h",
+      "language": "c++",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qtablesetupdialog.ui",
+      "language": "xml",
+      "sizeLines": 453,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qtrayiconselectdialog.cpp",
+      "language": "c++",
+      "sizeLines": 402,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qtrayiconselectdialog.h",
+      "language": "c++",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qtrayiconselectdialog.ui",
+      "language": "xml",
+      "sizeLines": 197,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/qvbuttonpanel.cpp",
+      "language": "c++",
+      "sizeLines": 825,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qvbuttonpanel.h",
+      "language": "c++",
+      "sizeLines": 139,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qvbuttonpanelsetupdialog.cpp",
+      "language": "c++",
+      "sizeLines": 336,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qvbuttonpanelsetupdialog.h",
+      "language": "c++",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/qvbuttonpanelsetupdialog.ui",
+      "language": "xml",
+      "sizeLines": 632,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/singleapp/singleapplication.cpp",
+      "language": "c++",
+      "sizeLines": 284,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/singleapp/singleapplication.h",
+      "language": "c++",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/sound.qrc",
+      "language": "xml",
+      "sizeLines": 7,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/translations.qrc",
+      "language": "xml",
+      "sizeLines": 8,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/usb-ids.qrc",
+      "language": "xml",
+      "sizeLines": 6,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "QKeyMapper/ViGEm/include/ViGEm/Client.h",
+      "language": "c",
+      "sizeLines": 659,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/ViGEm/include/ViGEm/Common.h",
+      "language": "c",
+      "sizeLines": 320,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/ViGEm/include/ViGEm/Util.h",
+      "language": "c",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/volumecontroller.cpp",
+      "language": "c++",
+      "sizeLines": 467,
+      "fileCategory": "code"
+    },
+    {
+      "path": "QKeyMapper/volumecontroller.h",
+      "language": "c++",
+      "sizeLines": 86,
+      "fileCategory": "code"
+    },
+    {
+      "path": "README_en.md",
+      "language": "markdown",
+      "sizeLines": 1163,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 1593,
+      "fileCategory": "docs"
+    }
+  ],
+  "importMap": {},
+  "dirTree": [
+    ".gitignore",
+    "CombinationSupportKeys.md",
+    "KeyNameChanged.md",
+    "LICENSE",
+    "QKeyMapper/ahk_utils/script/active_window.ahk",
+    "QKeyMapper/ahk_utils/script/config_window.ahk",
+    "QKeyMapper/ahk_utils/script/hidden_window.ahk",
+    "QKeyMapper/ahk_utils/script/kill.vbs",
+    "QKeyMapper/ahk_utils/script/mouse_position.ahk",
+    "QKeyMapper/ahk_utils/script/move_window.ahk",
+    "QKeyMapper/ahk_utils/script/show_ime_hkl.ahk",
+    "QKeyMapper/ahk_utils/script/switch_ime.ahk",
+    "QKeyMapper/ahk_utils/script/winmove_ex.ahk",
+    "QKeyMapper/ahk_utils/script/winmove.ahk",
+    "QKeyMapper/colorpickerwidget.cpp",
+    "QKeyMapper/colorpickerwidget.h",
+    "QKeyMapper/FakerInput/include/fakerinputclient.h",
+    "QKeyMapper/FakerInput/include/fakerinputcommon.h",
+    "QKeyMapper/font.qrc",
+    "QKeyMapper/GamepadMotion/GamepadMotion.hpp",
+    "QKeyMapper/image.qrc",
+    "QKeyMapper/interception_worker.cpp",
+    "QKeyMapper/interception_worker.h",
+    "QKeyMapper/Interception/include/interception.h",
+    "QKeyMapper/main.cpp",
+    "QKeyMapper/orderedmap/orderedmap.h",
+    "QKeyMapper/qcrosshairsetupdialog.cpp",
+    "QKeyMapper/qcrosshairsetupdialog.h",
+    "QKeyMapper/qcrosshairsetupdialog.ui",
+    "QKeyMapper/qfloatingbuttonsetupdialog.cpp",
+    "QKeyMapper/qfloatingbuttonsetupdialog.h",
+    "QKeyMapper/qfloatingwindowsetupdialog.cpp",
+    "QKeyMapper/qfloatingwindowsetupdialog.h",
+    "QKeyMapper/qfloatingwindowsetupdialog.ui",
+    "QKeyMapper/qgeneraladvanceddialog.cpp",
+    "QKeyMapper/qgeneraladvanceddialog.h",
+    "QKeyMapper/qgeneraladvanceddialog.ui",
+    "QKeyMapper/qgyro2mouseoptiondialog.cpp",
+    "QKeyMapper/qgyro2mouseoptiondialog.h",
+    "QKeyMapper/qgyro2mouseoptiondialog.ui",
+    "QKeyMapper/qhotkey.prc",
+    "QKeyMapper/qhotkey.pri",
+    "QKeyMapper/qignorewindowinfolistdialog.cpp",
+    "QKeyMapper/qignorewindowinfolistdialog.h",
+    "QKeyMapper/qignorewindowinfolistdialog.ui",
+    "QKeyMapper/qinputdevicelistwindow.cpp",
+    "QKeyMapper/qinputdevicelistwindow.h",
+    "QKeyMapper/qinputdevicelistwindow.ui",
+    "QKeyMapper/qitemsetupdialog.cpp",
+    "QKeyMapper/qitemsetupdialog.h",
+    "QKeyMapper/qitemsetupdialog.ui",
+    "QKeyMapper/QJoysticks/QJoysticks.pri",
+    "QKeyMapper/QJoysticks/src/QJoysticks.cpp",
+    "QKeyMapper/QJoysticks/src/QJoysticks.h",
+    "QKeyMapper/QJoysticks/src/QJoysticks/JoysticksCommon.h",
+    "QKeyMapper/QJoysticks/src/QJoysticks/SDL_Joysticks.cpp",
+    "QKeyMapper/QJoysticks/src/QJoysticks/SDL_Joysticks.h",
+    "QKeyMapper/qkeymapper_constants.h",
+    "QKeyMapper/qkeymapper_qt_compat.h",
+    "QKeyMapper/qkeymapper_worker.cpp",
+    "QKeyMapper/qkeymapper_worker.h",
+    "QKeyMapper/qkeymapper.cpp",
+    "QKeyMapper/QKeyMapper.h",
+    "QKeyMapper/QKeyMapper.pro",
+    "QKeyMapper/QKeyMapper.rc",
+    "QKeyMapper/qkeymapper.ui",
+    "QKeyMapper/qkeyrecord.cpp",
+    "QKeyMapper/qkeyrecord.h",
+    "QKeyMapper/qkeyrecord.ui",
+    "QKeyMapper/qmacrolistdialog.cpp",
+    "QKeyMapper/qmacrolistdialog.h",
+    "QKeyMapper/qmacrolistdialog.ui",
+    "QKeyMapper/qmappingadvanceddialog.cpp",
+    "QKeyMapper/qmappingadvanceddialog.h",
+    "QKeyMapper/qmappingadvanceddialog.ui",
+    "QKeyMapper/qmappingsequenceedit.cpp",
+    "QKeyMapper/qmappingsequenceedit.h",
+    "QKeyMapper/qmappingsequenceedit.ui",
+    "QKeyMapper/qnotificationsetupdialog.cpp",
+    "QKeyMapper/qnotificationsetupdialog.h",
+    "QKeyMapper/qnotificationsetupdialog.ui",
+    "QKeyMapper/QSimpleUpdater/include/QSimpleUpdater.h",
+    "QKeyMapper/QSimpleUpdater/QSimpleUpdater.pri",
+    "QKeyMapper/QSimpleUpdater/src/AuthenticateDialog.cpp",
+    "QKeyMapper/QSimpleUpdater/src/AuthenticateDialog.h",
+    "QKeyMapper/QSimpleUpdater/src/AuthenticateDialog.ui",
+    "QKeyMapper/QSimpleUpdater/src/Downloader.cpp",
+    "QKeyMapper/QSimpleUpdater/src/Downloader.h",
+    "QKeyMapper/QSimpleUpdater/src/Downloader.ui",
+    "QKeyMapper/QSimpleUpdater/src/QSimpleUpdater.cpp",
+    "QKeyMapper/QSimpleUpdater/src/Updater.cpp",
+    "QKeyMapper/QSimpleUpdater/src/Updater.h",
+    "QKeyMapper/qstyle_singletons.cpp",
+    "QKeyMapper/qstyle_singletons.h",
+    "QKeyMapper/qtablesetupdialog.cpp",
+    "QKeyMapper/qtablesetupdialog.h",
+    "QKeyMapper/qtablesetupdialog.ui",
+    "QKeyMapper/qtrayiconselectdialog.cpp",
+    "QKeyMapper/qtrayiconselectdialog.h",
+    "QKeyMapper/qtrayiconselectdialog.ui",
+    "QKeyMapper/qvbuttonpanel.cpp",
+    "QKeyMapper/qvbuttonpanel.h",
+    "QKeyMapper/qvbuttonpanelsetupdialog.cpp",
+    "QKeyMapper/qvbuttonpanelsetupdialog.h",
+    "QKeyMapper/qvbuttonpanelsetupdialog.ui",
+    "QKeyMapper/singleapp/singleapplication.cpp",
+    "QKeyMapper/singleapp/singleapplication.h",
+    "QKeyMapper/sound.qrc",
+    "QKeyMapper/translations.qrc",
+    "QKeyMapper/usb-ids.qrc",
+    "QKeyMapper/ViGEm/include/ViGEm/Client.h",
+    "QKeyMapper/ViGEm/include/ViGEm/Common.h",
+    "QKeyMapper/ViGEm/include/ViGEm/Util.h",
+    "QKeyMapper/volumecontroller.cpp",
+    "QKeyMapper/volumecontroller.h",
+    "README_en.md",
+    "README.md"
+  ]
+}

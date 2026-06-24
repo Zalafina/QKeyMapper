@@ -23,3 +23,6 @@ QKeyMapper/out/
 QKeyMapper/build_output/
 QKeyMapper/build_verify/
 QKeyMapper/release/
+
+# Understand Anything temporary trash dirs
+.understand-anything/.trash-*
