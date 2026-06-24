@@ -7,3 +7,4 @@
 - Plans, confirmations, and summaries in Chinese; use AskUserQuestion for decisions; include a freeform option when offering choices.
 - If a change touches stability, driver behavior, or system API side effects, call it out and ask the user to decide.
 - After edits, let the user do compile validation unless they ask otherwise.
+- Project experience memory is in .claude/memory/ (MEMORY.md is the index). Check for relevant experience before starting each task.
