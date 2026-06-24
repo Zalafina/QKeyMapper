@@ -29717,6 +29717,42 @@ void QKeyMapper::updateSysTrayIconMenuText()
 #endif
 }
 
+void QKeyMapper::resizeProcessInfoTableColumnWidth()
+{
+    int referenceWidth = ui->processinfoTable->width();
+    int processname_width_max = referenceWidth / 4;
+    int classname_width_max = referenceWidth / 5;
+
+    ui->processinfoTable->resizeColumnToContents(PROCESS_NAME_COLUMN);
+    if (ui->processinfoTable->columnWidth(PROCESS_NAME_COLUMN) > processname_width_max){
+        ui->processinfoTable->setColumnWidth(PROCESS_NAME_COLUMN, processname_width_max);
+    }
+
+    ui->processinfoTable->resizeColumnToContents(PROCESS_PID_COLUMN);
+
+    ui->processinfoTable->horizontalHeader()->setStretchLastSection(false);
+    ui->processinfoTable->resizeColumnToContents(PROCESS_CLASS_COLUMN);
+    if (ui->processinfoTable->columnWidth(PROCESS_CLASS_COLUMN) > classname_width_max){
+        ui->processinfoTable->setColumnWidth(PROCESS_CLASS_COLUMN, classname_width_max);
+    }
+    int processname_width = ui->processinfoTable->columnWidth(PROCESS_NAME_COLUMN);
+    int pid_width = ui->processinfoTable->columnWidth(PROCESS_PID_COLUMN);
+    int classname_width = ui->processinfoTable->columnWidth(PROCESS_CLASS_COLUMN);
+    int title_width = ui->processinfoTable->width() - processname_width - pid_width - classname_width - 16;
+    ui->processinfoTable->horizontalHeader()->setStretchLastSection(true);
+
+    ui->processinfoTable->setColumnWidth(PROCESS_NAME_COLUMN, processname_width);
+    ui->processinfoTable->setColumnWidth(PROCESS_PID_COLUMN, pid_width);
+    ui->processinfoTable->setColumnWidth(PROCESS_TITLE_COLUMN, title_width);
+    ui->processinfoTable->setColumnWidth(PROCESS_CLASS_COLUMN, classname_width);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[resizeProcessInfoTableColumnWidth]" << "processname_width =" << processname_width
+             << ", pid_width =" << pid_width << ", title_width =" << title_width
+             << ", classname_width =" << classname_width << ", tableWidth =" << ui->processinfoTable->width();
+#endif
+}
+
 void QKeyMapper::refreshProcessInfoTable(bool resize)
 {
     bool isSelected = false;
@@ -29749,33 +29785,7 @@ void QKeyMapper::refreshProcessInfoTable(bool resize)
     ui->processinfoTable->sortItems(PROCESS_NAME_COLUMN);
 
     if (resize) {
-        ui->processinfoTable->resizeColumnToContents(PROCESS_NAME_COLUMN);
-        if (ui->processinfoTable->columnWidth(PROCESS_NAME_COLUMN) > PROCESS_NAME_COLUMN_WIDTH_MAX){
-            ui->processinfoTable->setColumnWidth(PROCESS_NAME_COLUMN, PROCESS_NAME_COLUMN_WIDTH_MAX);
-        }
-
-        ui->processinfoTable->resizeColumnToContents(PROCESS_PID_COLUMN);
-
-        ui->processinfoTable->horizontalHeader()->setStretchLastSection(false);
-        ui->processinfoTable->resizeColumnToContents(PROCESS_CLASS_COLUMN);
-        if (ui->processinfoTable->columnWidth(PROCESS_CLASS_COLUMN) > CLASS_NAME_COLUMN_WIDTH_MAX){
-            ui->processinfoTable->setColumnWidth(PROCESS_CLASS_COLUMN, CLASS_NAME_COLUMN_WIDTH_MAX);
-        }
-        int processname_width = ui->processinfoTable->columnWidth(PROCESS_NAME_COLUMN);
-        int pid_width = ui->processinfoTable->columnWidth(PROCESS_PID_COLUMN);
-        int classname_width = ui->processinfoTable->columnWidth(PROCESS_CLASS_COLUMN);
-        int title_width = ui->processinfoTable->width() - processname_width - pid_width - classname_width - 16;
-        ui->processinfoTable->horizontalHeader()->setStretchLastSection(true);
-
-        ui->processinfoTable->setColumnWidth(PROCESS_NAME_COLUMN, processname_width);
-        ui->processinfoTable->setColumnWidth(PROCESS_PID_COLUMN, pid_width);
-        ui->processinfoTable->setColumnWidth(PROCESS_TITLE_COLUMN, title_width);
-        ui->processinfoTable->setColumnWidth(PROCESS_CLASS_COLUMN, classname_width);
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[refreshProcessInfoTable]" << "ui->processinfoTable->rowCount" << ui->processinfoTable->rowCount();
-        qDebug() << "[refreshProcessInfoTable]" << "processname_width =" << processname_width << ", pid_width =" << pid_width << ", title_width =" << title_width << ", classname_width =" << classname_width;
-#endif
+        resizeProcessInfoTableColumnWidth();
     }
 
     if (isSelected) {
@@ -30125,6 +30135,7 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     if (m_KeyMappingDataTable) {
         resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
     }
+    resizeProcessInfoTableColumnWidth();
 
     // ===== 4. Right-anchored controls (x >= 870): keep distance from right edge =====
     int btnX = this->width() - 71 - 9;

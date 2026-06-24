@@ -1891,6 +1891,7 @@ private:
     void initSelectSettingCustomIconFileDialog(void);
     void updateSysTrayIconMenuText(void);
     void refreshProcessInfoTable(bool resize = true);
+    void resizeProcessInfoTableColumnWidth(void);
     void setProcessInfoTable(QList<MAP_PROCESSINFO> &processinfolist);
     void updateProcessInfoDisplay(void);
     void showQKeyMapperWindowToTop(void);
