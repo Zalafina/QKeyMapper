@@ -27096,6 +27096,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->addmapdataButton->setEnabled(status);
     updateAddMapDataButtonText();
     ui->addTabButton->setEnabled(status);
+    ui->rightPanelToggleButton->setEnabled(status);
     ui->deleteSelectedButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
     ui->processListButton->setEnabled(status);
