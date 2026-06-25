@@ -133,6 +133,12 @@
      <height>25</height>
     </rect>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>25</height>
+    </size>
+   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -151,6 +157,12 @@
      <width>71</width>
      <height>25</height>
     </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>25</height>
+    </size>
    </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -1998,6 +2010,12 @@
      <height>25</height>
     </rect>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>25</height>
+    </size>
+   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -2022,6 +2040,12 @@
      <width>71</width>
      <height>25</height>
     </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>25</height>
+    </size>
    </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2314,6 +2338,12 @@
      <height>25</height>
     </rect>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>25</height>
+    </size>
+   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -2467,6 +2497,12 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>25</height>
+    </size>
+   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -2540,6 +2576,12 @@
      <height>25</height>
     </rect>
    </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>25</height>
+    </size>
+   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -2561,6 +2603,12 @@
      <width>71</width>
      <height>25</height>
     </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>0</width>
+     <height>25</height>
+    </size>
    </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
