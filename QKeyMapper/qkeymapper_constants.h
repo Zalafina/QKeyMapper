@@ -112,7 +112,10 @@ namespace QKeyMapperConstants {
     inline constexpr int WINDOW_BASE_WIDTH  = 1070;
     inline constexpr int WINDOW_BASE_HEIGHT = 670;
     inline constexpr int WINDOW_MIN_WIDTH   = 1070;  // minimum window width (= currently fixed width)
-    inline constexpr int WINDOW_MIN_HEIGHT  = 670;   // minimum window height (user adjustable)
+    inline constexpr int WINDOW_MIN_HEIGHT  = 430;   // minimum window height (user adjustable)
+
+    // Right side collapsible button panel
+    inline constexpr int RIGHT_PANEL_WIDTH = 90;
 
     // Minimum table sizes when window height is reduced
     inline constexpr int MIN_PROCESSINFO_HEIGHT = 100;   // processinfoTable minimum height
@@ -1040,6 +1043,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char LAST_WINDOWPOSITION[] = "LastWindowPosition";
     inline constexpr const char SAVE_WINDOW_SIZE[] = "SaveWindowSize";
     inline constexpr const char LAST_WINDOW_SIZE[] = "LastWindowSize";
+    inline constexpr const char SHOW_RIGHT_PANEL[] = "ShowRightPanel";
     inline constexpr const char PROGRAM_VERSION[] = "ProgramVersion";
     inline constexpr const char PROGRAM_PLATFORM[] = "ProgramPlatform";
     inline constexpr const char LANGUAGE_INDEX[] = "LanguageIndex";

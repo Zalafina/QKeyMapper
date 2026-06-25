@@ -1734,6 +1734,8 @@ private slots:
 
     void on_autoStartMappingCheckBox_stateChanged(int state);
 
+    void on_rightPanelToggleButton_toggled(bool checked);
+
     void on_processListButton_toggled(bool checked);
 
     void on_showNotesButton_toggled(bool checked);
@@ -2404,6 +2406,8 @@ private:
     QNotificationSetupDialog *m_CustomNotificationSetupDialog = Q_NULLPTR;
     bool m_CustomNotificationStyleInitialized = false;
     QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
+    QFrame *m_rightPanel = Q_NULLPTR;
+    bool m_rightPanelExpanded = false;
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QMacroListDialog *m_MacroListDialog = Q_NULLPTR;
