@@ -1,6 +1,6 @@
 # QKeyMapper 参数映射键完整速查表
 
-本文件列出了 QKeyMapper 中所有需要填写参数的映射键，按功能分组，每个映射键附带格式说明和使用示例。
+本文件列出了 QKeyMapper 中所有需要填写参数的映射键，按常用程度分组，每个映射键附带格式说明和使用示例。
 
 ---
 
@@ -15,10 +15,15 @@
 示例：SendText(你好世界)
 ```
 
-**特殊参数：** 支持 `{{CLIPBOARD_TEXT}}` 读取剪贴板内容发送
+**特殊参数：** 支持动态内容占位符
 ```
 格式：SendText({{CLIPBOARD_TEXT}})
-说明：读取当前 Windows 系统剪贴板中的字符串发送
+说明：读取当前 Windows 系统剪贴板中的字符串并发送
+
+格式：SendText({{ENV:变量名}})
+说明：读取指定系统环境变量的值并发送
+示例：SendText({{ENV:USERPROFILE}})
+示例：PasteText({{ENV:PATH}})
 ```
 
 ---
@@ -31,7 +36,7 @@
 示例：PasteText(Hello World)
 ```
 
-**特殊参数：** 支持 `{{CLIPBOARD_TEXT}}`
+**特殊参数：** 同样支持 `{{CLIPBOARD_TEXT}}` 和 `{{ENV:变量名}}`
 ```
 格式：PasteText({{CLIPBOARD_TEXT}})
 说明：将系统剪贴板中已复制的内容用粘贴方式发送
@@ -41,7 +46,132 @@
 
 ---
 
-## 二、运行命令类
+## 二、鼠标坐标点击类
+
+以下映射键用于在指定坐标位置执行鼠标点击。坐标可以是屏幕坐标或窗口内坐标。
+
+### 屏幕坐标点击
+鼠标指针移动到屏幕指定坐标位置后点击（实际移动鼠标指针）。
+
+```
+格式：Mouse-L(x,y)      ← 鼠标左键点击屏幕坐标 (x,y)
+       Mouse-R(x,y)     ← 鼠标右键点击
+       Mouse-M(x,y)     ← 鼠标中键点击
+       Mouse-X1(x,y)    ← 鼠标侧键1点击
+       Mouse-X2(x,y)    ← 鼠标侧键2点击
+示例：Mouse-L(500,100)   ← 鼠标左键点击屏幕坐标 x=500, y=100
+示例：Mouse-R(1920,1080) ← 鼠标右键点击屏幕坐标 x=1920, y=1080
+```
+
+### 窗口内坐标点击
+鼠标指针移动到当前前台匹配窗口内的相对坐标位置后点击。
+
+```
+格式：Mouse-L:W(x,y)     ← 鼠标左键点击窗口内坐标 (x,y)
+       Mouse-R:W(x,y)    ← 鼠标右键点击窗口内坐标
+       Mouse-M:W(x,y)    ← 鼠标中键点击窗口内坐标
+       Mouse-X1:W(x,y)   ← 鼠标侧键1点击窗口内坐标
+       Mouse-X2:W(x,y)   ← 鼠标侧键2点击窗口内坐标
+示例：Mouse-L:W(500,100) ← 鼠标左键点击当前匹配窗口内坐标 x=500, y=100
+```
+
+### PostMessage 后台发送（:BG 修饰符）
+添加 `:BG` 后，鼠标事件通过 PostMessage 直接发送给窗口，**屏幕上的鼠标指针不动**。配合"发送到同名窗口"勾选框，可发送给后台窗口。
+
+```
+格式：Mouse-L:BG(x,y)          ← 屏幕坐标，后台发送
+       Mouse-L:W:BG(x,y)       ← 窗口坐标，后台发送
+       Mouse-R:BG(x,y)
+       Mouse-R:W:BG(x,y)
+       Mouse-M:BG(x,y)
+       Mouse-M:W:BG(x,y)
+       Mouse-X1:BG(x,y)
+       Mouse-X1:W:BG(x,y)
+       Mouse-X2:BG(x,y)
+       Mouse-X2:W:BG(x,y)
+示例：Mouse-L:BG(500,100)                 ← 后台发送屏幕坐标点击
+示例：Mouse-L:W:BG(500,100)               ← 后台发送窗口内坐标点击
+```
+
+### 坐标拾取辅助按键名
+
+以下划线后缀（`_WindowPoint`、`_ScreenPoint`）结尾的按键名是映射按键选择列表中显示的选项。选择这些按键进行添加时，软件会引导你通过坐标拾取器获取坐标，然后自动将对应的标准格式写入映射表：
+
+| 按键列表中的名称 | 操作方式 | 映射表中自动插入为 |
+|-----------|---------|-------------|
+| `Mouse-L_WindowPoint` | L-Alt + 鼠标左键点击窗口内目标位置 | `Mouse-L:W(x,y)` |
+| `Mouse-R_WindowPoint` | 同上 | `Mouse-R:W(x,y)` |
+| `Mouse-M_WindowPoint` | 同上 | `Mouse-M:W(x,y)` |
+| `Mouse-X1_WindowPoint` | 同上 | `Mouse-X1:W(x,y)` |
+| `Mouse-X2_WindowPoint` | 同上 | `Mouse-X2:W(x,y)` |
+| `Mouse-L_ScreenPoint` | L-Ctrl + 鼠标左键点击屏幕目标位置 | `Mouse-L(x,y)` |
+| `Mouse-R_ScreenPoint` | 同上 | `Mouse-R(x,y)` |
+| `Mouse-M_ScreenPoint` | 同上 | `Mouse-M(x,y)` |
+| `Mouse-X1_ScreenPoint` | 同上 | `Mouse-X1(x,y)` |
+| `Mouse-X2_ScreenPoint` | 同上 | `Mouse-X2(x,y)` |
+| `Mouse-Move_WindowPoint` | 同上 | `Mouse-Move:W(x,y)` |
+| `Mouse-Move_ScreenPoint` | 同上 | `Mouse-Move(x,y)` |
+| `Mouse-Move_Relative` | 在弹出的文本框中输入偏移量（如 `6,10`） | `Mouse-Move:R(dx,dy)` |
+
+> 💡 坐标不能直接在按键名后手写，必须通过拾取器获取后由软件自动生成。
+
+---
+
+## 三、鼠标移动类
+
+### `Mouse-Move(x,y)`
+将鼠标指针移动到指定屏幕坐标位置。
+
+```
+格式：Mouse-Move(x,y)
+       Mouse-Move:W(x,y)
+       Mouse-Move:BG(x,y)
+       Mouse-Move:W:BG(x,y)
+示例：Mouse-Move(800,600)            ← 移动到屏幕坐标 (800,600)
+示例：Mouse-Move:W(500,400)          ← 移动到窗口内坐标 (500,400)
+```
+
+---
+
+### `Mouse-Move:R(delta_x,delta_y)`
+鼠标指针基于当前位置进行相对位移（不移动到绝对坐标，而是移动指定的偏移量）。
+
+```
+格式：Mouse-Move:R(delta_x,delta_y)
+示例：Mouse-Move:R(6,10)        ← 指针 x+6, y+10（右移6，下移10）
+示例：Mouse-Move:R(-6,-10)      ← 指针 x-6, y-10（左移6，上移10）
+示例：Mouse-Move:R(0,8)         ← 指针 x不变, y+8（垂直下移8）
+示例：Mouse-Move:R(-2,0)        ← 指针 x-2, y不变（水平左移2）
+```
+
+> 💡 按键列表中的 `Mouse-Move_Relative` 选择后需在文本框中输入偏移量，软件自动插入为 `Mouse-Move:R(dx,dy)`。  
+> `Mouse-Move_WindowPoint` 和 `Mouse-Move_ScreenPoint` 同理，分别对应 `Mouse-Move:W(x,y)` 和 `Mouse-Move(x,y)`。
+
+---
+
+### `Mouse-PosSave`
+保存当前鼠标指针位置。
+
+```
+格式：Mouse-PosSave
+```
+
+### `Mouse-PosRestore`
+鼠标指针恢复到之前保存的位置。
+
+```
+格式：Mouse-PosRestore
+```
+
+**组合使用示例：**
+```
+Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore
+说明：先保存当前位置 → 左键点击 (300,200) → 恢复之前位置
+```
+
+---
+
+## 四、运行命令类
 
 ### `Run(命令)`
 运行指定的程序或命令。
@@ -57,6 +187,8 @@
 
 | 参数 | 说明 |
 |------|------|
+| `Wait=true` | 等待被启动的程序执行完毕后才继续后续映射键 |
+| `Wait=false` | 不等待（默认行为） |
 | `WorkingDir="路径"` | 指定工作目录 |
 | `ShowOption=Max` | 最大化启动 |
 | `ShowOption=Min` | 最小化启动 |
@@ -64,6 +196,7 @@
 
 ```
 示例：Run(E:\Game.exe WorkingDir="E:\Game" ShowOption=Max)
+示例：Run(C:\script.bat Wait=true)
 ```
 
 **系统动作（命令开头指定）：**
@@ -87,102 +220,7 @@
 
 ---
 
-## 三、映射表切换类
-
-### `SwitchTab(映射表Tab名)`
-映射过程中切换到指定名称的映射表 Tab。
-
-```
-格式：SwitchTab(Tab名称)
-示例：SwitchTab(Tab1)
-示例：SwitchTab(战斗模式)
-```
-
-### `SwitchTab💾(映射表Tab名)`
-切换映射表并记录保存此 Tab 名，下次切换到此设定时会记住此 Tab。
-
-```
-格式：SwitchTab💾(Tab名称)
-示例：SwitchTab💾(Tab2)
-```
-
----
-
-## 四、宏调用类
-
-### `Macro(宏名)`
-发送当前设定项中已添加的宏。宏在"映射宏列表"→"宏"标签页中编辑。
-
-```
-格式：Macro(宏名)
-示例：Macro(宏A)
-示例：Macro(连招一套)x3    ← 发送3次
-```
-
-### `UniversalMacro(通用宏名)`
-发送通用宏（所有设定项共用）。通用宏在"映射宏列表"→"通用宏"标签页中编辑。
-
-```
-格式：UniversalMacro(通用宏名)
-示例：UniversalMacro(通用宏B)
-示例：UniversalMacro(通用宏B)x5    ← 发送5次
-```
-
-> 💡 宏内容编写格式与映射按键内容相同。
-
----
-
-## 五、循环与条件类
-
-### `Repeat{...}`
-将 `{}` 内的映射按键循环发送指定次数。
-
-```
-格式：Repeat{映射内容}x循环次数
-示例：Repeat{A⏱50}x5
-示例：Repeat{B+C}x3
-示例：A⏱50»Repeat{C+D»E⏱50}x2»F
-```
-
-**注意：**
-- 循环次数范围 1~99999
-- 也可在"映射项设定"窗口中勾选"按键按下时循环"或"循环次数"来实现循环，无需手动写 `Repeat{}`
-
----
-
-### `OnlyOnce{...}`
-`{}` 内的映射按键仅在按键序列首次发送时执行一次，后续循环中跳过。
-
-```
-格式：OnlyOnce{映射内容}
-示例：OnlyOnce{Mouse-L⏱50}»A⏱50»B⏱50
-```
-
-**带重复次数：**
-```
-格式：OnlyOnce{映射内容}xN
-说明：xN 表示 OnlyOnce 部分执行次数
-```
-
----
-
-## 六、解锁类
-
-### `Unlock(原始按键)`
-解锁指定原始按键的锁定状态。
-
-```
-格式：Unlock(原始按键名)
-示例：A->B（B键勾选锁定）
-     C->Unlock(A)
-说明：A键按下后B键持续按下（锁定状态），按下C键可解锁A键，释放B键
-```
-
-> 💡 配合"映射项设定"中的"禁用原始按键解锁"勾选框，锁定后的按键只能通过 `Unlock()` 或停止映射来解除锁定。
-
----
-
-## 七、音量控制类
+## 五、音量控制类
 
 ### `SetVolume(数值)`
 设置当前播放设备音量。
@@ -230,31 +268,41 @@
 
 ---
 
-## 八、悬浮按钮控制类
+## 六、循环与条件类
 
-### `ShowFButton(原始按键)`
-显示指定原始按键对应的悬浮按钮。
-
-```
-格式：ShowFButton(原始按键)
-示例：ShowFButton(A)
-说明：显示A原始按键对应的悬浮按钮
-```
-
-### `HideFButton(原始按键)`
-隐藏指定原始按键对应的悬浮按钮。
+### `Repeat{...}`
+将 `{}` 内的映射按键循环发送指定次数。
 
 ```
-格式：HideFButton(原始按键)
-示例：C->HideFButton(A)
-说明：C键按下时隐藏A原始按键对应的悬浮按钮
+格式：Repeat{映射内容}x循环次数
+示例：Repeat{A⏱50}x5
+示例：Repeat{B+C}x3
+示例：A⏱50»Repeat{C+D»E⏱50}x2»F
 ```
 
-> 💡 可配合锁定功能让特定悬浮按钮切换隐藏/显示状态。
+**注意：**
+- 循环次数范围 1~99999
+- 也可在"映射项设定"窗口中勾选"按键按下时循环"或"循环次数"来实现循环，无需手动写 `Repeat{}`
 
 ---
 
-## 九、按键序列控制类
+### `OnlyOnce{...}`
+`{}` 内的映射按键仅在按键序列首次发送时执行一次，后续循环中跳过。
+
+```
+格式：OnlyOnce{映射内容}
+示例：OnlyOnce{Mouse-L⏱50}»A⏱50»B⏱50
+```
+
+**带重复次数：**
+```
+格式：OnlyOnce{映射内容}xN
+说明：xN 表示 OnlyOnce 部分执行次数
+```
+
+---
+
+## 七、按键序列控制类
 
 ### `KeySequenceBreak`
 打断所有当前正在执行的按键序列发送。
@@ -313,124 +361,202 @@
 
 ---
 
-## 十、鼠标坐标点击类
+## 八、解锁类
 
-以下映射键用于在指定坐标位置执行鼠标点击。坐标可以是屏幕坐标或窗口内坐标。
-
-### 屏幕坐标点击
-鼠标指针移动到屏幕指定坐标位置后点击（实际移动鼠标指针）。
+### `Unlock(原始按键)`
+解锁指定原始按键的锁定状态。
 
 ```
-格式：Mouse-L(x,y)      ← 鼠标左键点击屏幕坐标 (x,y)
-       Mouse-R(x,y)     ← 鼠标右键点击
-       Mouse-M(x,y)     ← 鼠标中键点击
-       Mouse-X1(x,y)    ← 鼠标侧键1点击
-       Mouse-X2(x,y)    ← 鼠标侧键2点击
-示例：Mouse-L(500,100)   ← 鼠标左键点击屏幕坐标 x=500, y=100
-示例：Mouse-R(1920,1080) ← 鼠标右键点击屏幕坐标 x=1920, y=1080
+格式：Unlock(原始按键名)
+示例：A->B（B键勾选锁定）
+     C->Unlock(A)
+说明：A键按下后B键持续按下（锁定状态），按下C键可解锁A键，释放B键
 ```
 
-### 窗口内坐标点击
-鼠标指针移动到当前前台匹配窗口内的相对坐标位置后点击。
-
+**双击/长按触发解锁：**
 ```
-格式：Mouse-L:W(x,y)     ← 鼠标左键点击窗口内坐标 (x,y)
-       Mouse-R:W(x,y)    ← 鼠标右键点击窗口内坐标
-       Mouse-M:W(x,y)    ← 鼠标中键点击窗口内坐标
-       Mouse-X1:W(x,y)   ← 鼠标侧键1点击窗口内坐标
-       Mouse-X2:W(x,y)   ← 鼠标侧键2点击窗口内坐标
-示例：Mouse-L:W(500,100) ← 鼠标左键点击当前匹配窗口内坐标 x=500, y=100
+格式：Unlock(原始按键✖)        ← 双击原始按键时触发解锁
+       Unlock(原始按键⏲数值)   ← 长按指定毫秒后触发解锁
+示例：Unlock(A✖)                ← 双击A键时解锁
+示例：Unlock(A⏲500)            ← 长按A键500毫秒时解锁
 ```
 
-### 替代格式（下划线后缀形式）
-以下格式与 `:W(,)` 格式功能相同：
-
-```
-Mouse-L_WindowPoint(500,100)   等同于 Mouse-L:W(500,100)
-Mouse-L_ScreenPoint(500,100)   等同于 Mouse-L(500,100)
-Mouse-R_WindowPoint(500,100)   等同于 Mouse-R:W(500,100)
-Mouse-R_ScreenPoint(500,100)   等同于 Mouse-R(500,100)
-Mouse-Move_WindowPoint(500,100) 等同于 Mouse-Move:W(500,100)
-Mouse-Move_ScreenPoint(500,100) 等同于 Mouse-Move(500,100)
-Mouse-Move_Relative(6,10)       等同于 Mouse-Move:R(6,10)
-```
-
-### PostMessage 后台发送（:BG 修饰符）
-添加 `:BG` 后，鼠标事件通过 PostMessage 直接发送给窗口，**屏幕上的鼠标指针不动**。配合"发送到同名窗口"勾选框，可发送给后台窗口。
-
-```
-格式：Mouse-L:BG(x,y)          ← 屏幕坐标，后台发送
-       Mouse-L:W:BG(x,y)       ← 窗口坐标，后台发送
-       Mouse-R:BG(x,y)
-       Mouse-R:W:BG(x,y)
-       Mouse-M:BG(x,y)
-       Mouse-M:W:BG(x,y)
-       Mouse-X1:BG(x,y)
-       Mouse-X1:W:BG(x,y)
-       Mouse-X2:BG(x,y)
-       Mouse-X2:W:BG(x,y)
-示例：Mouse-L:BG(500,100)                 ← 后台发送屏幕坐标点击
-示例：Mouse-L:W:BG(500,100)               ← 后台发送窗口内坐标点击
-```
-
-**坐标选取方法：**
-- **屏幕坐标：** 按住 `L-Ctrl` + 鼠标左键点击目标位置选取坐标
-- **窗口坐标：** 按住 `L-Alt` + 鼠标左键点击目标位置选取坐标（窗口需与设定匹配）
+> 💡 配合"映射项设定"中的"禁用原始按键解锁"勾选框，锁定后的按键只能通过 `Unlock()` 或停止映射来解除锁定。
 
 ---
 
-## 十一、鼠标移动类
+## 九、映射表切换类
 
-### `Mouse-Move(x,y)`
-将鼠标指针移动到指定屏幕坐标位置。
+### `SwitchTab(映射表Tab名)`
+映射过程中切换到指定名称的映射表 Tab。
 
 ```
-格式：Mouse-Move(x,y)
-       Mouse-Move:W(x,y)
-       Mouse-Move:BG(x,y)
-       Mouse-Move:W:BG(x,y)
-示例：Mouse-Move(800,600)            ← 移动到屏幕坐标 (800,600)
-示例：Mouse-Move:W(500,400)          ← 移动到窗口内坐标 (500,400)
+格式：SwitchTab(Tab名称)
+示例：SwitchTab(Tab1)
+示例：SwitchTab(战斗模式)
+```
+
+### `SwitchTab💾(映射表Tab名)`
+切换映射表并记录保存此 Tab 名，下次切换到此设定时会记住此 Tab。
+
+```
+格式：SwitchTab💾(Tab名称)
+示例：SwitchTab💾(Tab2)
 ```
 
 ---
 
-### `Mouse-Move:R(delta_x,delta_y)`
-鼠标指针基于当前位置进行相对位移（不移动到绝对坐标，而是移动指定的偏移量）。
+## 十、宏调用类
+
+### `Macro(宏名)`
+发送当前设定项中已添加的宏。宏在"映射宏列表"→"宏"标签页中编辑。
 
 ```
-格式：Mouse-Move:R(delta_x,delta_y)
-示例：Mouse-Move:R(6,10)        ← 指针 x+6, y+10（右移6，下移10）
-示例：Mouse-Move:R(-6,-10)      ← 指针 x-6, y-10（左移6，上移10）
-示例：Mouse-Move:R(0,8)         ← 指针 x不变, y+8（垂直下移8）
-示例：Mouse-Move:R(-2,0)        ← 指针 x-2, y不变（水平左移2）
+格式：Macro(宏名)
+示例：Macro(宏A)
+示例：Macro(连招一套)x3    ← 发送3次
 ```
+
+### `UniversalMacro(通用宏名)`
+发送通用宏（所有设定项共用）。通用宏在"映射宏列表"→"通用宏"标签页中编辑。
+
+```
+格式：UniversalMacro(通用宏名)
+示例：UniversalMacro(通用宏B)
+示例：UniversalMacro(通用宏B)x5    ← 发送5次
+```
+
+> 💡 宏内容编写格式与映射按键内容相同。
 
 ---
 
-### `Mouse-PosSave`
-保存当前鼠标指针位置。
+## 十一、悬浮按钮控制类
+
+### `ShowFButton(原始按键)`
+显示指定原始按键对应的悬浮按钮。
 
 ```
-格式：Mouse-PosSave
+格式：ShowFButton(原始按键)
+示例：ShowFButton(A)
+说明：显示A原始按键对应的悬浮按钮
 ```
 
-### `Mouse-PosRestore`
-鼠标指针恢复到之前保存的位置。
+### `HideFButton(原始按键)`
+隐藏指定原始按键对应的悬浮按钮。
 
 ```
-格式：Mouse-PosRestore
+格式：HideFButton(原始按键)
+示例：C->HideFButton(A)
+说明：C键按下时隐藏A原始按键对应的悬浮按钮
 ```
 
-**组合使用示例：**
-```
-Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore
-说明：先保存当前位置 → 左键点击 (300,200) → 恢复之前位置
-```
+> 💡 可配合锁定功能让特定悬浮按钮切换隐藏/显示状态。
 
 ---
 
-## 十二、虚拟手柄扳机限定类
+## 十二、虚拟按钮类
+
+### `VButton{标签}`
+添加一个虚拟按钮，鼠标点击后发送此按钮对应的映射按键内容。虚拟按钮会显示在虚拟按钮面板中。
+
+```
+格式：VButton{按钮标签}
+示例：VButton{Button1}
+示例：VButton{开火}
+示例：VButton{一键连招}
+```
+
+> 💡 按钮的布局、颜色、尺寸等可在"虚拟按钮面板设定"中自定义。  
+> 勾选"启用悬浮按钮"后，虚拟按钮将以悬浮按钮形式单独显示，不在虚拟按钮面板中显示。
+
+---
+
+## 十三、手柄触摸板控制类
+
+### `GamepadTouchpadOn`
+启用手柄触摸板转鼠标功能。
+
+```
+格式：GamepadTouchpadOn
+```
+
+### `GamepadTouchpadOff`
+禁用手柄触摸板转鼠标功能。
+
+```
+格式：GamepadTouchpadOff
+```
+
+### `GamepadTouchpadToggle`
+切换手柄触摸板转鼠标功能的启用/禁用状态。
+
+```
+格式：GamepadTouchpadToggle
+```
+
+**可选后缀：**
+
+| 后缀 | 说明 | 示例 |
+|------|------|------|
+| `🎮` | 切换时显示提示通知 | `GamepadTouchpadToggle🎮` |
+| `@N` | 指定玩家编号（0~9） | `GamepadTouchpadToggle@0` |
+| `🎮@N` | 通知 + 玩家编号 | `GamepadTouchpadOn🎮@1` |
+
+```
+示例：GamepadTouchpadToggle🎮     ← 切换并显示通知
+示例：GamepadTouchpadOn@1          ← 启用1号玩家的触摸板
+示例：GamepadTouchpadOff🎮@2       ← 禁用2号玩家的触摸板并提示
+```
+
+> 💡 不指定 `@N` 时作用于所有已连接的手柄。
+
+---
+
+## 十四、虚拟手柄轻推值类
+
+以下虚拟手柄按键可添加 `[数值]` 后缀指定轻推/轻按的按压值，范围 0~255。
+
+```
+格式：vJoy-按键名[数值]
+示例：vJoy-LS-Up[150]         ← 左摇杆上推，轻推值为150
+示例：vJoy-Key12(RT)[100]     ← 右扳机轻按值为100
+```
+
+**支持的按键列表：**
+```
+vJoy-Key11(LT)
+vJoy-Key12(RT)
+vJoy-LS-Up
+vJoy-LS-Down
+vJoy-LS-Left
+vJoy-LS-Right
+vJoy-RS-Up
+vJoy-RS-Down
+vJoy-RS-Left
+vJoy-RS-Right
+```
+
+> 💡 数值为 255 时按键效果等同于不加后缀的按到底效果。  
+> 注意：按键序列中的 `vJoy-` 普通虚拟手柄按键未指定 `⏱` 时，默认按下保持 20 毫秒。
+
+---
+
+## 十五、虚拟手柄编号后缀
+
+### `vJoy-按键@编号`
+为虚拟手柄按键指定映射到哪个虚拟手柄设备。编号范围 0~3。
+
+```
+格式：vJoy-按键名@编号
+示例：vJoy-Key1(A/×)@0      ← 映射到0号虚拟手柄的A键
+示例：vJoy-LS-Up@1           ← 映射到1号虚拟手柄的左摇杆上推
+```
+
+> 💡 不添加 `@编号` 时，默认映射到 0 号虚拟手柄。
+
+---
+
+## 十六、虚拟手柄扳机限定类
 
 ### `vJoy-LT-Max[数值]`
 限定虚拟手柄左扳机键（vJoy-Key11）的最大按压值。
@@ -452,7 +578,7 @@ Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore
 
 ---
 
-## 十三、虚拟手柄摇杆半径限定类
+## 十七、虚拟手柄摇杆半径限定类
 
 ### `vJoy-LS-Radius[数值]`
 限定虚拟手柄左摇杆的偏移半径范围。
@@ -479,7 +605,7 @@ Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore
 
 ---
 
-## 十四、虚拟手柄摇杆偏移移动类
+## 十八、虚拟手柄摇杆偏移移动类
 
 ### `vJoy-LS-Move[X=数值,Y=数值]`
 设置虚拟手柄左摇杆的偏移位置（绝对偏移或相对偏移）。
@@ -520,57 +646,19 @@ vJoy-RS-Move[RX=-2,RY=0]      ← 基于当前位置，水平左偏2（垂直不
 vJoy-RS-Move[X=-200,RY=-10]   ← 水平绝对覆盖为左偏200，垂直基于当前位置上移10
 ```
 
-> 💡 X 轴：负值向左，正值向右  
-> Y 轴：负值向上，正值向下  
-> 数值范围 -255~255
+### `vJoy-Mouse2LS` / `vJoy-Mouse2RS`
+将鼠标移动映射为虚拟手柄左/右摇杆偏移。这两个键作为**原始按键**使用——将其设为映射项中的原始按键，按住时鼠标移动会转换为对应摇杆偏移。
+
+```
+格式：vJoy-Mouse2LS           ← 鼠标→左摇杆
+       vJoy-Mouse2RS           ← 鼠标→右摇杆
+```
+
+> 💡 它们不带 `@编号` 后缀，始终作用于 0 号虚拟手柄。
 
 ---
 
-## 十五、虚拟手柄轻推值类
-
-以下虚拟手柄按键可添加 `[数值]` 后缀指定轻推/轻按的按压值，范围 0~255。
-
-```
-格式：vJoy-按键名[数值]
-示例：vJoy-LS-Up[150]         ← 左摇杆上推，轻推值为150
-示例：vJoy-Key12(RT)[100]     ← 右扳机轻按值为100
-```
-
-**支持的按键列表：**
-```
-vJoy-Key11(LT)
-vJoy-Key12(RT)
-vJoy-LS-Up
-vJoy-LS-Down
-vJoy-LS-Left
-vJoy-LS-Right
-vJoy-RS-Up
-vJoy-RS-Down
-vJoy-RS-Left
-vJoy-RS-Right
-```
-
-> 💡 数值为 255 时按键效果等同于不加后缀的按到底效果。  
-> 注意：按键序列中的 `vJoy-` 普通虚拟手柄按键未指定 `⏱` 时，默认按下保持 20 毫秒。
-
----
-
-## 十六、虚拟手柄编号后缀
-
-### `vJoy-按键@编号`
-为虚拟手柄按键指定映射到哪个虚拟手柄设备。编号范围 0~3。
-
-```
-格式：vJoy-按键名@编号
-示例：vJoy-Key1(A/×)@0      ← 映射到0号虚拟手柄的A键
-示例：vJoy-LS-Up@1           ← 映射到1号虚拟手柄的左摇杆上推
-```
-
-> 💡 不添加 `@编号` 时，默认映射到 0 号虚拟手柄。
-
----
-
-## 十七、物理手柄编号后缀
+## 十九、物理手柄编号后缀
 
 ### `Joy-按键@编号`
 为物理手柄原始按键指定区分玩家编号。编号范围 0~9。
@@ -585,20 +673,30 @@ vJoy-RS-Right
 
 ---
 
-## 十八、虚拟按钮类
+## 二十、Forza 自动映射键
 
-### `VButton{标签}`
-添加一个虚拟按钮，鼠标点击后发送此按钮对应的映射按键内容。虚拟按钮会显示在虚拟按钮面板中。
+以下映射键用于 Forza 系列赛车游戏的自动油门/刹车控制。
 
 ```
-格式：VButton{按钮标签}
-示例：VButton{Button1}
-示例：VButton{开火}
-示例：VButton{一键连招}
+格式：vJoy-Key11(LT)_BRAKE[INIT=数值,THR=数值]    ← LT作刹车自动控制
+       vJoy-Key11(LT)_ACCEL[INIT=数值,THR=数值]    ← LT作油门自动控制
+       vJoy-Key12(RT)_BRAKE[INIT=数值,THR=数值]    ← RT作刹车自动控制
+       vJoy-Key12(RT)_ACCEL[INIT=数值,THR=数值]    ← RT作油门自动控制
 ```
 
-> 💡 按钮的布局、颜色、尺寸等可在"虚拟按钮面板设定"中自定义。  
-> 勾选"启用悬浮按钮"后，虚拟按钮将以悬浮按钮形式单独显示，不在虚拟按钮面板中显示。
+**参数说明：**
+
+| 参数 | 含义 | 取值范围 |
+|------|------|---------|
+| `INIT` | 扳机初始按压值 | 0~255 |
+| `THR` | 触发阈值（游戏内数值） | 0~10000（支持最多5位小数） |
+
+```
+示例：vJoy-Key11(LT)_BRAKE[INIT=150,THR=85.5]  ← LT初始值150，当游戏数据达到85.5时触发刹车
+示例：vJoy-Key12(RT)_ACCEL[INIT=100,THR=200]   ← RT初始值100，阈值200时触发油门
+```
+
+> 💡 两个参数至少填写一个。该功能依赖 Forza 游戏数据读取，仅在支持的游戏上有效。
 
 ---
 
@@ -606,45 +704,50 @@ vJoy-RS-Right
 
 | 映射键 | 参数格式 | 参数含义 |
 |-------|---------|---------|
-| `SendText(文本)` | 文本 | 要发送的字符串 |
-| `PasteText(文本)` | 文本 | 要粘贴的字符串 |
-| `Run(命令 参数)` | 命令+参数 | 可执行文件路径及参数 |
-| `SwitchTab(Tab名)` | 名称 | 要切换到的映射表Tab名称 |
-| `SwitchTab💾(Tab名)` | 名称 | 要切换到的映射表Tab名称（并保存） |
-| `Macro(宏名)` | 名称 | 宏的名称 |
-| `UniversalMacro(宏名)` | 名称 | 通用宏的名称 |
-| `Repeat{内容}xN` | {映射键}x次数 | 循环发送的映射键内容和循环次数 |
-| `OnlyOnce{内容}` | {映射键} | 仅首次发送的映射键内容 |
-| `Unlock(原始按键)` | 按键名 | 要解锁的原始按键名称 |
+| `SendText(文本)` | 文本 或 `{{CLIPBOARD_TEXT}}` 或 `{{ENV:变量名}}` | 要发送的字符串 / 剪贴板 / 环境变量 |
+| `PasteText(文本)` | 文本 或 `{{CLIPBOARD_TEXT}}` 或 `{{ENV:变量名}}` | 要粘贴的字符串 / 剪贴板 / 环境变量 |
+| `Mouse-L(x,y)` | (x坐标,y坐标) | 屏幕坐标，可选 `:W`（窗口坐标）、`:BG`（后台发送） |
+| `Mouse-L:W(x,y)` | (x坐标,y坐标) | 窗口内相对坐标 |
+| `Mouse-L:BG(x,y)` | (x坐标,y坐标) | 后台发送不移动鼠标指针 |
+| `Mouse-Move(x,y)` | (x坐标,y坐标) | 移动到的目标坐标，可选 `:W`、`:BG` |
+| `Mouse-Move:R(dx,dy)` | (delta_x,delta_y) | 相对偏移量 |
+| `Mouse-PosSave` | 无 | 保存指针位置 |
+| `Mouse-PosRestore` | 无 | 恢复指针位置 |
+| `Run(命令 参数)` | 命令+参数 | 可执行文件路径及参数，可选 `Wait`、`WorkingDir`、`ShowOption` |
 | `SetVolume(数值)` | 数值/+/-/Mute | 音量数值或增减量 |
 | `SetVolume🔊(数值)` | 数值/+/-/Mute | 音量数值或增减量（带提示） |
 | `SetMicVolume(数值)` | 数值/+/-/Mute | 麦克风音量数值或增减量 |
 | `SetMicVolume🎤(数值)` | 数值/+/-/Mute | 麦克风音量数值或增减量（带提示） |
-| `ShowFButton(原始按键)` | 按键名 | 要显示悬浮按钮对应的原始按键 |
-| `HideFButton(原始按键)` | 按键名 | 要隐藏悬浮按钮对应的原始按键 |
+| `Repeat{内容}xN` | {映射键}x次数 | 循环发送的映射键内容和循环次数 |
+| `OnlyOnce{内容}` | {映射键} | 仅首次发送的映射键内容 |
 | `KeySequenceBreak(原始按键)` | 按键名(可选) | 要打断的原始按键（不填则打断全部） |
 | `KeySequenceToggle(原始按键)` | 按键名 | 切换暂停/继续的原始按键 |
 | `KeySequencePause(原始按键)` | 按键名 | 暂停的原始按键 |
 | `KeySequenceContinue(原始按键)` | 按键名 | 继续的原始按键 |
+| `Unlock(原始按键)` | 按键名，可选 ✖/⏲N 后缀 | 要解锁的原始按键，支持双击/长按触发 |
+| `SwitchTab(Tab名)` | 名称 | 要切换到的映射表Tab名称 |
+| `SwitchTab💾(Tab名)` | 名称 | 要切换到的映射表Tab名称（并保存） |
+| `Macro(宏名)` | 名称 | 宏的名称，可选 `xN` 重复次数 |
+| `UniversalMacro(宏名)` | 名称 | 通用宏的名称，可选 `xN` 重复次数 |
+| `ShowFButton(原始按键)` | 按键名 | 要显示悬浮按钮对应的原始按键 |
+| `HideFButton(原始按键)` | 按键名 | 要隐藏悬浮按钮对应的原始按键 |
 | `VButton{标签}` | {标签文本} | 虚拟按钮上显示的标签文字 |
-| `Mouse-L(x,y)` | (x坐标,y坐标) | 屏幕坐标或带`:W`前缀的窗口坐标 |
-| `Mouse-L:W(x,y)` | (x坐标,y坐标) | 窗口内相对坐标 |
-| `Mouse-L:BG(x,y)` | (x坐标,y坐标) | 后台发送不移动鼠标指针 |
-| `Mouse-Move(x,y)` | (x坐标,y坐标) | 移动到的目标坐标 |
-| `Mouse-Move:W(x,y)` | (x坐标,y坐标) | 窗口内目标坐标 |
-| `Mouse-Move:R(dx,dy)` | (delta_x,delta_y) | 相对偏移量 |
-| `Mouse-PosSave` | 无 | 保存指针位置 |
-| `Mouse-PosRestore` | 无 | 恢复指针位置 |
+| `GamepadTouchpadOn` | 可选 `🎮`、`@N` | 启用手柄触摸板（可指定玩家编号） |
+| `GamepadTouchpadOff` | 同上 | 禁用手柄触摸板 |
+| `GamepadTouchpadToggle` | 同上 | 切换手柄触摸板 |
+| `vJoy-按键[数值]` | [数值] | 轻推值，0~255 |
+| `vJoy-按键@编号` | @编号 | 虚拟手柄设备编号 0~3 |
 | `vJoy-LT-Max[数值]` | [数值] | 最大按压值，0~255 |
 | `vJoy-RT-Max[数值]` | [数值] | 最大按压值，0~255 |
 | `vJoy-LS-Radius[数值]` | [数值] 或 [U=,D=,L=,R=] | 半径限定值或各方向独立限定 |
 | `vJoy-RS-Radius[数值]` | 同上 | 同上 |
 | `vJoy-LS-Move[X=,Y=]` | [X=,Y=] 或 [RX=,RY=] | 绝对或相对偏移坐标 |
 | `vJoy-RS-Move[X=,Y=]` | 同上 | 同上 |
-| `vJoy-按键[数值]` | [数值] | 轻推值，0~255 |
-| `vJoy-按键@编号` | @编号 | 虚拟手柄设备编号 0~3 |
+| `vJoy-Mouse2LS` | 无 | 鼠标→左摇杆映射（原始按键，作0号手柄） |
+| `vJoy-Mouse2RS` | 无 | 鼠标→右摇杆映射（原始按键，作0号手柄） |
 | `Joy-按键@编号` | @编号 | 物理手柄玩家编号 0~9 |
+| `vJoy-Key1x(LT)_BRAKE[INIT=,THR=]` | [INIT=数值,THR=数值] | Forza 自动刹车/油门 |
 
 ---
 
-> 📌 以上文档基于 QKeyMapper 官方文档整理，具体功能表现以实际软件版本为准。
+> 📌 以上文档基于 QKeyMapper 源码整理，具体功能表现以实际软件版本为准。
