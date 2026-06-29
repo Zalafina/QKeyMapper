@@ -5436,7 +5436,7 @@ QIcon QKeyMapper::extractBestIconFromExecutable(const QString &filePath, int tar
 
 #ifdef EXTRACTICON_VERBOSE_LOG
                         qDebug().nospace() << "[extractBestIconFromExecutable] Processing icon " << (i+1) << "/" << pDir->idCount
-                                          << " - Size:" << (int)entry.bWidth << "x" << (int)entry.bHeight 
+                                          << " - Size:" << (int)entry.bWidth << "x" << (int)entry.bHeight
                                           << ", BitCount:" << entry.wBitCount << ", ID:" << entry.nID;
 #endif
 
@@ -5861,7 +5861,7 @@ QIcon QKeyMapper::extractAllBestIconsFromExecutable(const QString &filePath)
             if (!pixmap.isNull()) {
                 result.addPixmap(pixmap);
 #ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[extractAllBestIconsFromExecutable] Added icon: " << iconSize << "x" << iconSize 
+                qDebug().nospace() << "[extractAllBestIconsFromExecutable] Added icon: " << iconSize << "x" << iconSize
                                   << " (" << bitCount << " bits) - actual pixmap: " << pixmap.size();
 #endif
             }
@@ -16331,7 +16331,8 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
         lastWidget = ui->keyMappingTabWidget->widget(s_KeyMappingTabWidgetLastIndex);
     }
 
-    const int insertIndex = normalMappingTabInsertIndex();
+    // ponytail: insert copy right after the current tab (not at normalMappingTabInsertIndex)
+    const int insertIndex = current_tabindex + 1;
     ui->keyMappingTabWidget->insertTab(insertIndex, KeyMappingTableWidget, tabName);
     if (currentWidget != Q_NULLPTR) {
         ui->keyMappingTabWidget->setCurrentWidget(currentWidget);
@@ -45557,7 +45558,119 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     }
     Q_UNUSED(hasPreviousGroup);
 
+    // Group: Tab operations (between Edit group and Window dialogs group)
+    {
+        contextMenu.addSeparator();
+
+        QAction *addBlankTabAction = contextMenu.addAction(QObject::tr("Add Blank Tab"));
+        connect(addBlankTabAction, &QAction::triggered, this, [keymapper]() {
+            keymapper->addTabToKeyMappingTabWidget();
+        });
+
+        const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+        const bool isCommonTab = keymapper->isCommonMappingTabIndex(currentTabIndex);
+
+        // Copy and Delete: not available for common mapping table
+        if (!isCommonTab) {
+            QAction *copyCurrentTabAction = contextMenu.addAction(QObject::tr("Copy Current Tab"));
+            connect(copyCurrentTabAction, &QAction::triggered, this, [keymapper]() {
+                keymapper->copyCurrentTabToKeyMappingTabWidget();
+            });
+
+            QAction *deleteCurrentTabAction = contextMenu.addAction(QObject::tr("Delete Current Tab"));
+            connect(deleteCurrentTabAction, &QAction::triggered, this, [keymapper, currentTabIndex]() {
+                const QString tabName = QKeyMapper::s_KeyMappingTabInfoList.at(currentTabIndex).TabName;
+                const QString message = QObject::tr("Are you sure you want to remove the mapping table \"%1\"?").arg(tabName);
+                QMessageBox::StandardButton reply = QMessageBox::warning(keymapper, PROGRAM_NAME, message,
+                                                                         QMessageBox::Yes | QMessageBox::No);
+                if (reply != QMessageBox::Yes) {
+                    return;
+                }
+
+                // Defer deletion via QTimer::singleShot so the stack-allocated QMenu
+                // (child of the table widget being deleted) is already destroyed.
+                QTimer::singleShot(0, keymapper, [keymapper, currentTabIndex, tabName]() {
+                    const int result = keymapper->removeTabFromKeyMappingTabWidget(currentTabIndex);
+                    QString popupMessage;
+                    QString popupMessageColor;
+                    constexpr int popupMessageDisplayTime = 3000;
+                    if (REMOVE_MAPPINGTAB_SUCCESS == result) {
+                        popupMessageColor = SUCCESS_COLOR;
+                        popupMessage = QObject::tr("Mapping table \"%1\" removed successfully").arg(tabName);
+                    } else if (REMOVE_MAPPINGTAB_LASTONE == result) {
+                        popupMessageColor = FAILURE_COLOR;
+                        popupMessage = QObject::tr("Cannot remove the last mapping table!");
+                    }
+                    if (!popupMessage.isEmpty()) {
+                        emit keymapper->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+                    }
+                });
+            });
+        }
+
+        // Export
+        QAction *exportTableAction = contextMenu.addAction(QObject::tr("Export Mapping Table"));
+        connect(exportTableAction, &QAction::triggered, this, [keymapper, currentTabIndex]() {
+            const QString tabName = QKeyMapper::s_KeyMappingTabInfoList.at(currentTabIndex).TabName;
+            const QString filename = QFileDialog::getSaveFileName(keymapper,
+                QObject::tr("Export mapping data table : ") + tabName,
+                QStringLiteral("mapdatatable.ini"),
+                QObject::tr("INI files (*.ini)"));
+            if (filename.isEmpty()) {
+                return;
+            }
+            if (QKeyMapper::exportKeyMappingDataToFile(currentTabIndex, filename)) {
+                emit keymapper->showPopupMessage_Signal(
+                    QObject::tr("Mapping data of table \"%1\" export successfully").arg(tabName),
+                    SUCCESS_COLOR, 3000);
+            }
+        });
+
+        // Import
+        QAction *importTableAction = contextMenu.addAction(QObject::tr("Import Mapping Table"));
+        connect(importTableAction, &QAction::triggered, this, [keymapper, currentTabIndex]() {
+            const QString tabName = QKeyMapper::s_KeyMappingTabInfoList.at(currentTabIndex).TabName;
+            const QString filename = QFileDialog::getOpenFileName(keymapper,
+                QObject::tr("Import mapping data table : ") + tabName,
+                QString(), QObject::tr("INI files (*.ini)"));
+            if (filename.isEmpty()) {
+                return;
+            }
+            QKeyMapper::MappingDataInsertSummary insertSummary;
+            if (QKeyMapper::importKeyMappingDataFromFile(currentTabIndex, filename, &insertSummary)) {
+                keymapper->refreshTabsForSourceTabChange(currentTabIndex);
+                keymapper->requestSaveSettingDirty();
+                QString popupMessage = QObject::tr("Import mapping data to table \"%1\" successfully.").arg(tabName);
+                QStringList details;
+                if (insertSummary.ExclusiveConflictDisabledNewRowCount > 0) {
+                    details.append(QObject::tr("%1 mapping(s) were disabled due to a conflict in the target mapping table.")
+                                       .arg(insertSummary.ExclusiveConflictDisabledNewRowCount));
+                }
+                if (insertSummary.CommonConflictDisabledNewRowCount > 0) {
+                    details.append(QObject::tr("%1 mapping(s) were disabled because the same OriginalKey already exists in the Common mapping table.")
+                                       .arg(insertSummary.CommonConflictDisabledNewRowCount));
+                }
+                if (insertSummary.CommonPriorityRepair.hasChanges()) {
+                    details.append(QObject::tr("Common mapping priority disabled %1 conflicting mapping(s) in %2 normal mapping table(s).")
+                                       .arg(insertSummary.CommonPriorityRepair.DisabledRowCount)
+                                       .arg(insertSummary.CommonPriorityRepair.affectedTabCount()));
+                }
+                if (!details.isEmpty()) {
+                    popupMessage.append(QStringLiteral(" "));
+                    popupMessage.append(details.join(QStringLiteral(" ")));
+                }
+                emit keymapper->showPopupMessage_Signal(popupMessage,
+                    insertSummary.hasWarning() ? WARNING_COLOR : SUCCESS_COLOR, 3000);
+            }
+        });
+
+        hasPreviousGroup = true;
+    }
+
     // Group 1: Window dialogs
+    if (hasPreviousGroup) {
+        contextMenu.addSeparator();
+    }
     if (hasValidCurrentSelectedRow) {
         QAction *mappingItemSetupAction = contextMenu.addAction(tr("Mapping Item Setup"));
         connect(mappingItemSetupAction, &QAction::triggered, this, [keymapper]() {
