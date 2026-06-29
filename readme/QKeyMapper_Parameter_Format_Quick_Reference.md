@@ -111,7 +111,7 @@
 | `Mouse-X2_ScreenPoint` | 同上 | `Mouse-X2(x,y)` |
 | `Mouse-Move_WindowPoint` | 同上 | `Mouse-Move:W(x,y)` |
 | `Mouse-Move_ScreenPoint` | 同上 | `Mouse-Move(x,y)` |
-| `Mouse-Move_Relative` | 在弹出的文本框中输入偏移量（如 `6,10`） | `Mouse-Move:R(dx,dy)` |
+| `Mouse-Move_Relative` | 在主窗口"参数"文本框中手动输入偏移量 `dx,dy`，如：`6,10` | `Mouse-Move:R(dx,dy)` |
 
 > 💡 通过映射按键列表选择添加的坐标映射键，可以在映射表中右键菜单中选择编辑手动修改坐标。
 
