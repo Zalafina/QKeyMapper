@@ -1674,8 +1674,10 @@ public slots:
 
     void on_addTabButton_clicked();
 
+    void deleteSelectedMappingData(void);
     void on_deleteSelectedButton_clicked();
 
+    void clearCurrentMappingTable(void);
     void on_clearallButton_clicked();
 
 private slots:

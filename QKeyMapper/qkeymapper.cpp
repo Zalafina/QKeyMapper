@@ -37991,7 +37991,7 @@ void QKeyMapper::on_addTabButton_clicked()
 #endif
 }
 
-void QKeyMapper::on_deleteSelectedButton_clicked()
+void QKeyMapper::deleteSelectedMappingData()
 {
     const QList<int> visibleSelectedRows = collectVisibleSelectedRows(m_KeyMappingDataTable);
     if (visibleSelectedRows.isEmpty()) {
@@ -38073,12 +38073,15 @@ void QKeyMapper::on_deleteSelectedButton_clicked()
     markSaveSettingDirty();
 }
 
-void QKeyMapper::on_clearallButton_clicked()
+void QKeyMapper::on_deleteSelectedButton_clicked()
+{
+    deleteSelectedMappingData();
+}
+
+void QKeyMapper::clearCurrentMappingTable()
 {
     QString message = tr("Are you sure you want to clear all data in the mapping table?");
-
     QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
-
     if (reply == QMessageBox::Yes) {
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
         closeSetupDialog_OnDataChanged();
@@ -38088,10 +38091,15 @@ void QKeyMapper::on_clearallButton_clicked()
         ScreenMousePointsList.clear();
         WindowMousePointsList.clear();
         markSaveSettingDirty();
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[on_clearallButton_clicked]" << "User press confirm button of ClearAll Warning MessageBox.";
-#endif
     }
+}
+
+void QKeyMapper::on_clearallButton_clicked()
+{
+    clearCurrentMappingTable();
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[on_clearallButton_clicked]" << "User press confirm button of ClearAll Warning MessageBox.";
+#endif
 }
 
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -44094,7 +44102,7 @@ void KeyMappingTabWidget::keyPressEvent(QKeyEvent *event)
         return;
     }
     else if (event->key() == Qt::Key_Delete) {
-        QKeyMapper::getInstance()->on_deleteSelectedButton_clicked();
+        QKeyMapper::getInstance()->deleteSelectedMappingData();
         return;
     }
     else if (event->key() == Qt::Key_Home) {
@@ -44868,7 +44876,7 @@ void KeyMappingDataTableWidget::keyPressEvent(QKeyEvent *event)
         return;
     }
     else if (event->key() == Qt::Key_Delete) {
-        QKeyMapper::getInstance()->on_deleteSelectedButton_clicked();
+        QKeyMapper::getInstance()->deleteSelectedMappingData();
         return;
     }
     else if (event->key() == Qt::Key_Home) {
@@ -45608,6 +45616,12 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             });
         }
 
+        // Clear
+        QAction *clearCurrentTabAction = contextMenu.addAction(QObject::tr("Clear Current Mapping Table"));
+        connect(clearCurrentTabAction, &QAction::triggered, this, [keymapper]() {
+            keymapper->clearCurrentMappingTable();
+        });
+
         // Export
         QAction *exportTableAction = contextMenu.addAction(QObject::tr("Export Mapping Table"));
         connect(exportTableAction, &QAction::triggered, this, [keymapper, currentTabIndex]() {
@@ -45788,7 +45802,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
 
         QAction *deleteAction = contextMenu.addAction(QObject::tr("Delete"));
         connect(deleteAction, &QAction::triggered, this, [keymapper]() {
-            keymapper->on_deleteSelectedButton_clicked();
+            keymapper->deleteSelectedMappingData();
         });
     }
 
