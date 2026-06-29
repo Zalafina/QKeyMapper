@@ -3027,7 +3027,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mapList_SelectGamepadButton->setChecked(true);
     ui->mapList_SelectFunctionButton->setChecked(true);
 
-    ui->rightPanelToggleButton->setStyle(windowsStyle);
     ui->processListButton->setStyle(windowsStyle);
     ui->showNotesButton->setStyle(windowsStyle);
     ui->hideDisabledButton->setStyle(windowsStyle);
@@ -3107,27 +3106,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->accelThresholdDoubleSpinBox->setSingleStep(GRIP_THRESHOLD_SINGLE_STEP);
 
     initSysTrayIcon();
-
-    // Create right-side collapsible button panel
-    m_rightPanel = new QFrame(this);
-    m_rightPanel->setObjectName("rightPanelFrame");
-    m_rightPanel->setStyleSheet(
-        "QFrame#rightPanelFrame { border-left: 1px solid #555; background-color: palette(window); }");
-    m_rightPanel->setAutoFillBackground(true);
-    QVBoxLayout *panelLayout = new QVBoxLayout(m_rightPanel);
-    panelLayout->setContentsMargins(8, 10, 8, 10); // left, top, right, bottom
-    panelLayout->setSpacing(15);
-    // Reparent the 8 right-side buttons into the panel
-    panelLayout->addWidget(ui->processListButton);
-    panelLayout->addWidget(ui->showNotesButton);
-    panelLayout->addWidget(ui->hideDisabledButton);
-    panelLayout->addWidget(ui->showFloatingButton);
-    panelLayout->addWidget(ui->showCategoryButton);
-    panelLayout->addWidget(ui->categoryFilterToolButton);
-    panelLayout->addWidget(ui->deleteSelectedButton);
-    panelLayout->addWidget(ui->clearallButton);
-    panelLayout->addStretch();
-    m_rightPanel->setVisible(false);
 
 #ifdef VIGEM_CLIENT_SUPPORT
     ui->vJoyXSensSpinBox->setRange(VIRTUAL_JOYSTICK_SENSITIVITY_MIN, VIRTUAL_JOYSTICK_SENSITIVITY_MAX);
@@ -19245,7 +19223,6 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(LAST_WINDOWPOSITION, pos());
     settingFile.setValue(LAST_WINDOW_SIZE, size());
     settingFile.setValue(SAVE_WINDOW_SIZE, m_GeneralAdvancedDialog->getSaveWindowSize());
-    settingFile.setValue(SHOW_RIGHT_PANEL, m_rightPanelExpanded);
 
     QString productVersion = getExeProductVersion();
     QString platformString = getPlatformString();
@@ -21016,12 +20993,6 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 #endif
         if (true == settingFile.contains(SAVE_WINDOW_SIZE)){
             m_GeneralAdvancedDialog->setSaveWindowSize(settingFile.value(SAVE_WINDOW_SIZE).toBool());
-        }
-        if (true == settingFile.contains(SHOW_RIGHT_PANEL)){
-            bool showPanel = settingFile.value(SHOW_RIGHT_PANEL).toBool();
-            if (showPanel != m_rightPanelExpanded) {
-                ui->rightPanelToggleButton->setChecked(showPanel);
-            }
         }
 
         unsigned int generalSwitchTimeout = CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
@@ -25650,12 +25621,6 @@ void QKeyMapper::loadGeneralSetting()
     if (true == settingFile.contains(SAVE_WINDOW_SIZE)){
         m_GeneralAdvancedDialog->setSaveWindowSize(settingFile.value(SAVE_WINDOW_SIZE).toBool());
     }
-    if (true == settingFile.contains(SHOW_RIGHT_PANEL)){
-        bool showPanel = settingFile.value(SHOW_RIGHT_PANEL).toBool();
-        if (showPanel != m_rightPanelExpanded) {
-            ui->rightPanelToggleButton->setChecked(showPanel);
-        }
-    }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadGeneralSetting]" << "Startup Position ->" << m_GeneralAdvancedDialog->getStartupPosition();
 #endif
@@ -27096,7 +27061,6 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->addmapdataButton->setEnabled(status);
     updateAddMapDataButtonText();
     ui->addTabButton->setEnabled(status);
-    ui->rightPanelToggleButton->setEnabled(status);
     ui->deleteSelectedButton->setEnabled(status);
     ui->clearallButton->setEnabled(status);
     ui->processListButton->setEnabled(status);
@@ -30140,27 +30104,23 @@ void QKeyMapper::resizeEvent(QResizeEvent *event)
 void QKeyMapper::applyResizeLayout(int dw, int dh)
 {
     const bool narrowMode = ui->processListButton->isChecked();
-    // Panel affects content area; all layout calculations use contentDw, not dw
-    int panelWidth = m_rightPanelExpanded ? RIGHT_PANEL_WIDTH : 0;
-    int contentWidth = this->width() - panelWidth;
-    int contentDw = qMax(0, dw - panelWidth);
-    // Dynamic minimum width: content area must stay >= base width
-    this->setMinimumWidth(WINDOW_MIN_WIDTH + panelWidth);
-    int boundaryShift = contentDw / 2;
+    // Left/right boundary shift in narrow mode (wide mode: left zone hidden, no split needed)
+    // Window split-line shift (independent of processinfoTable visibility)
+    int boundaryShift = dw / 2;
 
     // ===== 1. Height: tables absorb delta; bottom half shifts as a whole =====
     int newTableH = qMax(MIN_PROCESSINFO_HEIGHT, KEYMAPPINGDATATABLE_HEIGHT + dh);
     int newTabH   = qMax(MIN_KEYMAPPINGTAB_HEIGHT, KEYMAPPINGTABWIDGET_HEIGHT + dh);
 
-    // ===== 2. Top half: table area width distribution (uses contentDw) =====
+    // ===== 2. Top half: table area width distribution =====
     if (narrowMode) {
         int procW = PROCESSINFO_BASE_WIDTH + boundaryShift;
         int tabX  = PROCESSINFO_LEFT + procW + TABLE_GAP;
-        int tabW  = KEYMAPPINGTABWIDGET_NARROW_WIDTH + (contentDw - boundaryShift);
+        int tabW  = KEYMAPPINGTABWIDGET_NARROW_WIDTH + (dw - boundaryShift);
         ui->processinfoTable->setGeometry(PROCESSINFO_LEFT, 30, procW, newTableH);
         ui->keyMappingTabWidget->setGeometry(tabX, KEYMAPPINGTABWIDGET_TOP, tabW, newTabH);
     } else {
-        int tabW = KEYMAPPINGTABWIDGET_WIDE_WIDTH + contentDw;
+        int tabW = KEYMAPPINGTABWIDGET_WIDE_WIDTH + dw;
         ui->keyMappingTabWidget->setGeometry(KEYMAPPINGTABWIDGET_WIDE_LEFT,
                                              KEYMAPPINGTABWIDGET_TOP, tabW, newTabH);
     }
@@ -30177,22 +30137,24 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     }
     resizeProcessInfoTableColumnWidth();
 
-    // ===== 4. Right panel + right-anchored controls =====
-    // panelWidth/contentWidth/contentDw already computed above
+    // ===== 4. Right-anchored controls (x >= 870): keep distance from right edge =====
+    int btnX = this->width() - 71 - 9;
+    ui->addTabButton->setGeometry(btnX, 11, 71, 19);
+    ui->processListButton->setGeometry(btnX, 50, 71, 25);
+    ui->showNotesButton->setGeometry(btnX, 90, 71, 25);
+    ui->hideDisabledButton->setGeometry(btnX, 130, 71, 25);
+    ui->showFloatingButton->setGeometry(btnX, 170, 71, 25);
+    ui->showCategoryButton->setGeometry(btnX, 210, 71, 25);
+    ui->categoryFilterToolButton->setGeometry(btnX, 250, 71, 25);
+    ui->deleteSelectedButton->setGeometry(btnX, 290, 71, 25);
+    ui->clearallButton->setGeometry(btnX, 330, 71, 25);
 
-    // Panel and toggle button geometry
-    m_rightPanel->setGeometry(contentWidth, 0, panelWidth, this->height());
-    ui->rightPanelToggleButton->setGeometry(contentWidth - 71 - 9, 50, 71, 25);
-    // addTabButton stays on main window
-    ui->addTabButton->setGeometry(contentWidth - 71 - 9, 11, 71, 19);
-
-    // Right-anchored controls use contentWidth instead of this->width()
-    ui->addmapdataButton->setGeometry(contentWidth - 91 - 9,  386 + dh, 91, 36);
-    ui->originalKeyRecordCopyButton->setGeometry(contentWidth - 71 - 29, 430 + dh, 71, 22);
-    ui->originalKeyEditModeButton->setGeometry(contentWidth - 71 - 109, 430 + dh, 71, 22);
-    ui->pushLevelSpinBox->setGeometry(contentWidth - 51 - 49, 490 + dh, 51, 22);
-    ui->pointDisplayLabel->setGeometry(contentWidth - 100 - 20, 462 + dh, 100, 20);
-    ui->keymapButton->setGeometry(contentWidth - 171 - 29, 590 + dh, 171, 51);
+    ui->addmapdataButton->setGeometry(this->width() - 91 - 9,  386 + dh, 91, 36);
+    ui->originalKeyRecordCopyButton->setGeometry(this->width() - 71 - 29, 430 + dh, 71, 22);
+    ui->originalKeyEditModeButton->setGeometry(this->width() - 71 - 109, 430 + dh, 71, 22);
+    ui->pushLevelSpinBox->setGeometry(this->width() - 51 - 49, 490 + dh, 51, 22);
+    ui->pointDisplayLabel->setGeometry(this->width() - 100 - 20, 462 + dh, 100, 20);
+    ui->keymapButton->setGeometry(this->width() - 171 - 29, 590 + dh, 171, 51);
 
     // ===== 5. Bottom half left zone (x < 511): stretch right + Y shift =====
     ui->settingNameLabel->setGeometry(4,  370 + dh, 71, 22);
@@ -30230,7 +30192,7 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
 
     // --- y=430: original key record line (keep 10px gap before originalKeyEditModeButton) ---
     ui->orikeyRecordLabel->setGeometry(510 + boundaryShift, 430 + dh, 71, 22);
-    int oriRecW = contentWidth - 776 - boundaryShift;
+    int oriRecW = this->width() - 776 - boundaryShift;
     ui->originalKeyRecordLineEdit->setGeometry(586 + boundaryShift, 430 + dh, oriRecW, 22);
 
     // --- y=460: trigger type / timing row ---
@@ -30239,11 +30201,11 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     ui->pressTimeSpinBox->setGeometry(647 + boundaryShift, 460 + dh, 100, 22);
     ui->waitTimeLabel->setGeometry(754 + boundaryShift, 460 + dh, 51, 22);
     ui->waitTimeSpinBox->setGeometry(810 + boundaryShift, 460 + dh, 100, 22);
-    ui->pointLabel->setGeometry(contentWidth - 166, 460 + dh, 41, 22);
+    ui->pointLabel->setGeometry(this->width() - 166, 460 + dh, 41, 22);
 
     // --- y=490: pushLevel + keyboard select ---
     ui->pushLevelLabel->setGeometry(744 + boundaryShift, 490 + dh, 61, 22);
-    int sliderW = contentWidth - 51 - 49 - 9 - (810 + boundaryShift);
+    int sliderW = this->width() - 51 - 49 - 9 - (810 + boundaryShift);
     ui->pushLevelSlider->setGeometry(810 + boundaryShift, 493 + dh, sliderW, 16);
 
     ui->keyboardSelectLabel->setGeometry(510 + boundaryShift, 490 + dh, 71, 22);
@@ -30253,7 +30215,7 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     ui->mouseSelectLabel->setGeometry(510 + boundaryShift, 520 + dh, 71, 22);
     ui->mouseSelectComboBox->setGeometry(586 + boundaryShift, 520 + dh, 161, 22);
     ui->sendTextLabel->setGeometry(754 + boundaryShift, 520 + dh, 51, 41);
-    int sendTextW = contentWidth - 29 - (810 + boundaryShift);
+    int sendTextW = this->width() - 29 - (810 + boundaryShift);
     ui->sendTextPlainTextEdit->setGeometry(810 + boundaryShift, 520 + dh, sendTextW, 51);
 
     // --- y=550: gamepad select ---
@@ -45802,33 +45764,6 @@ void QKeyMapper::on_autoStartMappingCheckBox_stateChanged(int state)
             }
         }
     }
-}
-
-void QKeyMapper::on_rightPanelToggleButton_toggled(bool checked)
-{
-    m_rightPanelExpanded = checked;
-    // Button text shows the action: ">>" = expand, "<<" = collapse
-    ui->rightPanelToggleButton->setText(checked ? "<<" : ">>");
-    m_rightPanel->setVisible(checked);
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[rightPanelToggle]" << (checked ? "EXPAND" : "COLLAPSE")
-             << "| before: width =" << this->width() << "minWidth =" << this->minimumWidth();
-#endif
-
-    if (checked) {
-        // Expand: resize first (current width >= base min, safe), then lock minimum
-        this->resize(this->width() + RIGHT_PANEL_WIDTH, this->height());
-        this->setMinimumWidth(WINDOW_MIN_WIDTH + RIGHT_PANEL_WIDTH);
-    } else {
-        // Collapse: lower minimum first (so resize isn't clamped), then shrink
-        this->setMinimumWidth(WINDOW_MIN_WIDTH);
-        this->resize(this->width() - RIGHT_PANEL_WIDTH, this->height());
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[rightPanelToggle]" << "after:  width =" << this->width() << "minWidth =" << this->minimumWidth();
-#endif
 }
 
 void QKeyMapper::on_processListButton_toggled(bool checked)

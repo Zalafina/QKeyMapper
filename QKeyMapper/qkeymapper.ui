@@ -19,7 +19,7 @@
   <property name="minimumSize">
    <size>
     <width>1070</width>
-    <height>443</height>
+    <height>670</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -133,12 +133,6 @@
      <height>25</height>
     </rect>
    </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>25</height>
-    </size>
-   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -157,12 +151,6 @@
      <width>71</width>
      <height>25</height>
     </rect>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>25</height>
-    </size>
    </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2010,12 +1998,6 @@
      <height>25</height>
     </rect>
    </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>25</height>
-    </size>
-   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -2040,12 +2022,6 @@
      <width>71</width>
      <height>25</height>
     </rect>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>25</height>
-    </size>
    </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2338,12 +2314,6 @@
      <height>25</height>
     </rect>
    </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>25</height>
-    </size>
-   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -2371,38 +2341,6 @@
    </property>
    <property name="text">
     <string>AddTab</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="rightPanelToggleButton">
-   <property name="geometry">
-    <rect>
-     <x>990</x>
-     <y>50</y>
-     <width>71</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Consolas</family>
-     <pointsize>12</pointsize>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>&gt;&gt;</string>
-   </property>
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>false</bool>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
@@ -2491,18 +2429,6 @@
      <height>25</height>
     </rect>
    </property>
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>25</height>
-    </size>
-   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -2576,12 +2502,6 @@
      <height>25</height>
     </rect>
    </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>25</height>
-    </size>
-   </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
@@ -2603,12 +2523,6 @@
      <width>71</width>
      <height>25</height>
     </rect>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>0</width>
-     <height>25</height>
-    </size>
    </property>
    <property name="focusPolicy">
     <enum>Qt::FocusPolicy::NoFocus</enum>
