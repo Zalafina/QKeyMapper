@@ -26493,8 +26493,8 @@ void QKeyMapper::setControlFontEnglish()
 
     customFont.setPointSize(9);
     ui->addTabButton->setFont(customFont);
-    ui->deleteSelectedButton->setFont(customFont);
-    ui->clearallButton->setFont(customFont);
+    // ui->deleteSelectedButton->setFont(customFont);
+    // ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->hideDisabledButton->setFont(customFont);
@@ -26641,8 +26641,8 @@ void QKeyMapper::setControlFontChinese()
 
     customFont.setPointSize(9);
     ui->addTabButton->setFont(customFont);
-    ui->deleteSelectedButton->setFont(customFont);
-    ui->clearallButton->setFont(customFont);
+    // ui->deleteSelectedButton->setFont(customFont);
+    // ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->hideDisabledButton->setFont(customFont);
@@ -26789,8 +26789,8 @@ void QKeyMapper::setControlFontJapanese()
 
     customFont.setPointSize(9);
     ui->addTabButton->setFont(customFont);
-    ui->deleteSelectedButton->setFont(customFont);
-    ui->clearallButton->setFont(customFont);
+    // ui->deleteSelectedButton->setFont(customFont);
+    // ui->clearallButton->setFont(customFont);
     ui->processListButton->setFont(customFont);
     ui->showNotesButton->setFont(customFont);
     ui->hideDisabledButton->setFont(customFont);
@@ -27062,8 +27062,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->addmapdataButton->setEnabled(status);
     updateAddMapDataButtonText();
     ui->addTabButton->setEnabled(status);
-    ui->deleteSelectedButton->setEnabled(status);
-    ui->clearallButton->setEnabled(status);
+    // ui->deleteSelectedButton->setEnabled(status);
+    // ui->clearallButton->setEnabled(status);
     ui->processListButton->setEnabled(status);
     ui->showNotesButton->setEnabled(status);
     ui->hideDisabledButton->setEnabled(status);
@@ -30147,8 +30147,8 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     ui->showFloatingButton->setGeometry(btnX, 170, 71, 25);
     ui->showCategoryButton->setGeometry(btnX, 210, 71, 25);
     ui->categoryFilterToolButton->setGeometry(btnX, 250, 71, 25);
-    ui->deleteSelectedButton->setGeometry(btnX, 290, 71, 25);
-    ui->clearallButton->setGeometry(btnX, 330, 71, 25);
+    // ui->deleteSelectedButton->setGeometry(btnX, 290, 71, 25);
+    // ui->clearallButton->setGeometry(btnX, 330, 71, 25);
 
     ui->addmapdataButton->setGeometry(this->width() - 91 - 9,  386 + dh, 91, 36);
     ui->originalKeyRecordCopyButton->setGeometry(this->width() - 71 - 29, 430 + dh, 71, 22);
@@ -33308,8 +33308,8 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->savemaplistButton->setToolTip(tr("Hotkey : %1").arg(GENERAL_SAVESETTING_HOTKEY));
     refreshSaveSettingIndicators();
     updateAddTabButtonText();
-    ui->deleteSelectedButton->setText(tr("Delete"));
-    ui->clearallButton->setText(tr("Clear"));
+    // ui->deleteSelectedButton->setText(tr("Delete"));
+    // ui->clearallButton->setText(tr("Clear"));
     ui->processListButton->setText(tr("ProcessList"));
     ui->showNotesButton->setText(tr("ShowNotes"));
     ui->hideDisabledButton->setText(tr("HideDisabled"));
@@ -38073,10 +38073,10 @@ void QKeyMapper::deleteSelectedMappingData()
     markSaveSettingDirty();
 }
 
-void QKeyMapper::on_deleteSelectedButton_clicked()
-{
-    deleteSelectedMappingData();
-}
+// void QKeyMapper::on_deleteSelectedButton_clicked()
+// {
+//     deleteSelectedMappingData();
+// }
 
 void QKeyMapper::clearCurrentMappingTable()
 {
@@ -38094,13 +38094,13 @@ void QKeyMapper::clearCurrentMappingTable()
     }
 }
 
-void QKeyMapper::on_clearallButton_clicked()
-{
-    clearCurrentMappingTable();
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[on_clearallButton_clicked]" << "User press confirm button of ClearAll Warning MessageBox.";
-#endif
-}
+// void QKeyMapper::on_clearallButton_clicked()
+// {
+//     clearCurrentMappingTable();
+// #ifdef DEBUG_LOGOUT_ON
+//     qDebug() << "[on_clearallButton_clicked]" << "User press confirm button of ClearAll Warning MessageBox.";
+// #endif
+// }
 
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {

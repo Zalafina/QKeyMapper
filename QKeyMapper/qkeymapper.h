@@ -1675,10 +1675,10 @@ public slots:
     void on_addTabButton_clicked();
 
     void deleteSelectedMappingData(void);
-    void on_deleteSelectedButton_clicked();
+    // void on_deleteSelectedButton_clicked();
 
     void clearCurrentMappingTable(void);
-    void on_clearallButton_clicked();
+    // void on_clearallButton_clicked();
 
 private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))

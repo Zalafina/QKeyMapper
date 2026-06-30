@@ -124,44 +124,6 @@
     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
    </property>
   </widget>
-  <widget class="QPushButton" name="deleteSelectedButton">
-   <property name="geometry">
-    <rect>
-     <x>990</x>
-     <y>290</y>
-     <width>71</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Delete</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="clearallButton">
-   <property name="geometry">
-    <rect>
-     <x>990</x>
-     <y>330</y>
-     <width>71</width>
-     <height>25</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Clear</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
-   </property>
-  </widget>
   <widget class="SettingSelectComboBox" name="settingselectComboBox">
    <property name="geometry">
     <rect>
