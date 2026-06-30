@@ -3027,10 +3027,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mapList_SelectGamepadButton->setChecked(true);
     ui->mapList_SelectFunctionButton->setChecked(true);
 
-    ui->processListButton->setStyle(windowsStyle);
-    ui->showNotesButton->setStyle(windowsStyle);
-    ui->hideDisabledButton->setStyle(windowsStyle);
-    ui->showFloatingButton->setStyle(windowsStyle);
+    //ui->processListButton->setStyle(windowsStyle);
+    //ui->showNotesButton->setStyle(windowsStyle);
+    //ui->hideDisabledButton->setStyle(windowsStyle);
+    //ui->showFloatingButton->setStyle(windowsStyle);
     ui->showCategoryButton->setStyle(windowsStyle);
 
     // Initialize checkable button state
@@ -3038,10 +3038,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_ShowNotes = false;
     m_HideDisabled = false;
     m_ShowFloating = false;
-    ui->processListButton->setChecked(true);
-    ui->showNotesButton->setChecked(false);
-    ui->hideDisabledButton->setChecked(false);
-    ui->showFloatingButton->setChecked(false);
+    //ui->processListButton->setChecked(true);
+    //ui->showNotesButton->setChecked(false);
+    //ui->hideDisabledButton->setChecked(false);
+    //ui->showFloatingButton->setChecked(false);
     ui->showCategoryButton->setChecked(false);
 
     initProcessInfoTable();
@@ -3172,7 +3172,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         m_ActionShowNotes->setChecked(m_ShowNotes);
         connect(m_ActionShowNotes, &QAction::toggled, this, [this](bool c) {
             m_ShowNotes = c;
-            if (ui->showNotesButton) ui->showNotesButton->setChecked(c);
+            //if (ui->showNotesButton) ui->showNotesButton->setChecked(c);
             refreshAllKeyMappingTabWidget();
         });
 
@@ -3191,10 +3191,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         });
 
         // Button -> action reverse sync
-        connect(ui->processListButton, &QPushButton::toggled, m_ActionShowProcessList, &QAction::setChecked);
-        connect(ui->showNotesButton, &QPushButton::toggled, m_ActionShowNotes, &QAction::setChecked);
-        connect(ui->showFloatingButton, &QPushButton::toggled, m_ActionShowFloating, &QAction::setChecked);
-        connect(ui->hideDisabledButton, &QPushButton::toggled, m_ActionHideDisabled, &QAction::setChecked);
+        //connect(ui->processListButton, &QPushButton::toggled, m_ActionShowProcessList, &QAction::setChecked);
+        //connect(ui->showNotesButton, &QPushButton::toggled, m_ActionShowNotes, &QAction::setChecked);
+        //connect(ui->showFloatingButton, &QPushButton::toggled, m_ActionShowFloating, &QAction::setChecked);
+        //connect(ui->hideDisabledButton, &QPushButton::toggled, m_ActionHideDisabled, &QAction::setChecked);
 
         // Menu bar background
         this->menuBar()->setStyleSheet(
@@ -14949,7 +14949,7 @@ void QKeyMapper::updateMainWindowCtrlOverrideState(bool ctrlPressed)
     m_MainWindowCtrlOverrideActive = m_MainWindowCtrlPressed && isMainWindowCtrlOverrideContextActive();
 
     updateAddMapDataButtonText();
-    updateAddTabButtonText();
+    // updateAddTabButtonText();
 
     const MappingStartActionMode currentEffectiveActionMode = effectiveMappingStartActionMode();
     if (m_KeyMapStatus == KEYMAP_IDLE && previousEffectiveActionMode != currentEffectiveActionMode) {
@@ -14987,16 +14987,16 @@ void QKeyMapper::updateAddMapDataButtonText(void)
         : tr("ADD"));
 }
 
-void QKeyMapper::updateAddTabButtonText(void)
-{
-    if (!ui || !ui->addTabButton) {
-        return;
-    }
+// void QKeyMapper::updateAddTabButtonText(void)
+// {
+//     if (!ui || !ui->addTabButton) {
+//        return;
+//     }
 
-    ui->addTabButton->setText(shouldUseAddNewMappingOverride(false)
-        ? tr("CopyTab")
-        : tr("AddTab"));
-}
+//     ui->addTabButton->setText(shouldUseAddNewMappingOverride(false)
+//        ? tr("CopyTab")
+//        : tr("AddTab"));
+// }
 
 void QKeyMapper::updateMappingStartButtonText(void)
 {
@@ -21205,66 +21205,70 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         if (true == settingFile.contains(SHOW_PROCESSLIST)){
             bool showProcessList = settingFile.value(SHOW_PROCESSLIST).toBool();
             m_ProcessListVisible = showProcessList;
-            ui->processListButton->setChecked(showProcessList);
+            //ui->processListButton->setChecked(showProcessList);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Show ProcessList Button ->" << showProcessList;
 #endif
         }
         else {
             m_ProcessListVisible = true;
-            ui->processListButton->setChecked(true);
+            //ui->processListButton->setChecked(true);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowProcessList, Show ProcessList Button set to Checked.";
 #endif
         }
+        m_ActionShowProcessList->setChecked(m_ProcessListVisible);
 
         if (true == settingFile.contains(SHOW_NOTES)){
             bool showNotes = settingFile.value(SHOW_NOTES).toBool();
             m_ShowNotes = showNotes;
-            ui->showNotesButton->setChecked(showNotes);
+            //ui->showNotesButton->setChecked(showNotes);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Show Notes Button ->" << showNotes;
 #endif
         }
         else {
             m_ShowNotes = false;
-            ui->showNotesButton->setChecked(false);
+            //ui->showNotesButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
 #endif
         }
+        m_ActionShowNotes->setChecked(m_ShowNotes);
 
         if (true == settingFile.contains(HIDE_DISABLED)){
             bool hideDisabled = settingFile.value(HIDE_DISABLED).toBool();
             m_HideDisabled = hideDisabled;
-            ui->hideDisabledButton->setChecked(hideDisabled);
+            //ui->hideDisabledButton->setChecked(hideDisabled);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Hide Disabled Button ->" << hideDisabled;
 #endif
         }
         else {
             m_HideDisabled = false;
-            ui->hideDisabledButton->setChecked(false);
+            //ui->hideDisabledButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains HideDisabled, Hide Disabled Button set to Unchecked.";
 #endif
         }
+        m_ActionHideDisabled->setChecked(m_HideDisabled);
 
         if (true == settingFile.contains(SHOW_FLOATING)){
             bool showFloating = settingFile.value(SHOW_FLOATING).toBool();
             m_ShowFloating = showFloating;
-            ui->showFloatingButton->setChecked(showFloating);
+            //ui->showFloatingButton->setChecked(showFloating);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Show Floating Button ->" << showFloating;
 #endif
         }
         else {
             m_ShowFloating = false;
-            ui->showFloatingButton->setChecked(false);
+            //ui->showFloatingButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowFloating, Show Floating Button set to Unchecked.";
 #endif
         }
+        m_ActionShowFloating->setChecked(m_ShowFloating);
 
         if (true == settingFile.contains(SHOW_CATEGORYS)){
             bool showCategorys = settingFile.value(SHOW_CATEGORYS).toBool();
@@ -25822,66 +25826,70 @@ void QKeyMapper::loadGeneralSetting()
     if (true == settingFile.contains(SHOW_PROCESSLIST)){
         bool showProcessList = settingFile.value(SHOW_PROCESSLIST).toBool();
         m_ProcessListVisible = showProcessList;
-        ui->processListButton->setChecked(showProcessList);
+        //ui->processListButton->setChecked(showProcessList);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Show ProcessList Button ->" << showProcessList;
 #endif
     }
     else {
         m_ProcessListVisible = true;
-        ui->processListButton->setChecked(true);
+        //ui->processListButton->setChecked(true);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains ShowProcessList, Show ProcessList Button set to Checked.";
 #endif
     }
+    m_ActionShowProcessList->setChecked(m_ProcessListVisible);
 
     if (true == settingFile.contains(SHOW_NOTES)){
         bool showNotes = settingFile.value(SHOW_NOTES).toBool();
         m_ShowNotes = showNotes;
-        ui->showNotesButton->setChecked(showNotes);
+        //ui->showNotesButton->setChecked(showNotes);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Show Notes Button ->" << showNotes;
 #endif
     }
     else {
         m_ShowNotes = false;
-        ui->showNotesButton->setChecked(false);
+        //ui->showNotesButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
 #endif
     }
+    m_ActionShowNotes->setChecked(m_ShowNotes);
 
     if (true == settingFile.contains(HIDE_DISABLED)){
         bool hideDisabled = settingFile.value(HIDE_DISABLED).toBool();
         m_HideDisabled = hideDisabled;
-        ui->hideDisabledButton->setChecked(hideDisabled);
+        //ui->hideDisabledButton->setChecked(hideDisabled);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Hide Disabled Button ->" << hideDisabled;
 #endif
     }
     else {
         m_HideDisabled = false;
-        ui->hideDisabledButton->setChecked(false);
+        //ui->hideDisabledButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains HideDisabled, Hide Disabled Button set to Unchecked.";
 #endif
     }
+    m_ActionHideDisabled->setChecked(m_HideDisabled);
 
     if (true == settingFile.contains(SHOW_FLOATING)){
         bool showFloating = settingFile.value(SHOW_FLOATING).toBool();
         m_ShowFloating = showFloating;
-        ui->showFloatingButton->setChecked(showFloating);
+        //ui->showFloatingButton->setChecked(showFloating);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Show Floating Button ->" << showFloating;
 #endif
     }
     else {
         m_ShowFloating = false;
-        ui->showFloatingButton->setChecked(false);
+        //ui->showFloatingButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains ShowFloating, Show Floating Button set to Unchecked.";
 #endif
     }
+    m_ActionShowFloating->setChecked(m_ShowFloating);
 
     if (true == settingFile.contains(SHOW_CATEGORYS)){
         bool showCategorys = settingFile.value(SHOW_CATEGORYS).toBool();
@@ -26578,13 +26586,13 @@ void QKeyMapper::setControlFontEnglish()
     // m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
 
     customFont.setPointSize(9);
-    ui->addTabButton->setFont(customFont);
+    //ui->addTabButton->setFont(customFont);
     // ui->deleteSelectedButton->setFont(customFont);
     // ui->clearallButton->setFont(customFont);
-    ui->processListButton->setFont(customFont);
-    ui->showNotesButton->setFont(customFont);
-    ui->hideDisabledButton->setFont(customFont);
-    ui->showFloatingButton->setFont(customFont);
+    //ui->processListButton->setFont(customFont);
+    //ui->showNotesButton->setFont(customFont);
+    //ui->hideDisabledButton->setFont(customFont);
+    //ui->showFloatingButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
@@ -26726,13 +26734,13 @@ void QKeyMapper::setControlFontChinese()
     // m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
 
     customFont.setPointSize(9);
-    ui->addTabButton->setFont(customFont);
+    //ui->addTabButton->setFont(customFont);
     // ui->deleteSelectedButton->setFont(customFont);
     // ui->clearallButton->setFont(customFont);
-    ui->processListButton->setFont(customFont);
-    ui->showNotesButton->setFont(customFont);
-    ui->hideDisabledButton->setFont(customFont);
-    ui->showFloatingButton->setFont(customFont);
+    //ui->processListButton->setFont(customFont);
+    //ui->showNotesButton->setFont(customFont);
+    //ui->hideDisabledButton->setFont(customFont);
+    //ui->showFloatingButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
@@ -26874,13 +26882,13 @@ void QKeyMapper::setControlFontJapanese()
     // m_KeyMappingDataTable->horizontalHeader()->setFont(customFont);
 
     customFont.setPointSize(9);
-    ui->addTabButton->setFont(customFont);
+    //ui->addTabButton->setFont(customFont);
     // ui->deleteSelectedButton->setFont(customFont);
     // ui->clearallButton->setFont(customFont);
-    ui->processListButton->setFont(customFont);
-    ui->showNotesButton->setFont(customFont);
-    ui->hideDisabledButton->setFont(customFont);
-    ui->showFloatingButton->setFont(customFont);
+    //ui->processListButton->setFont(customFont);
+    //ui->showNotesButton->setFont(customFont);
+    //ui->hideDisabledButton->setFont(customFont);
+    //ui->showFloatingButton->setFont(customFont);
     ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
@@ -27147,13 +27155,13 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
     ui->addmapdataButton->setEnabled(status);
     updateAddMapDataButtonText();
-    ui->addTabButton->setEnabled(status);
+    //ui->addTabButton->setEnabled(status);
     // ui->deleteSelectedButton->setEnabled(status);
     // ui->clearallButton->setEnabled(status);
-    ui->processListButton->setEnabled(status);
-    ui->showNotesButton->setEnabled(status);
-    ui->hideDisabledButton->setEnabled(status);
-    ui->showFloatingButton->setEnabled(status);
+    //ui->processListButton->setEnabled(status);
+    //ui->showNotesButton->setEnabled(status);
+    //ui->hideDisabledButton->setEnabled(status);
+    //ui->showFloatingButton->setEnabled(status);
     ui->showCategoryButton->setEnabled(status);
     if (ui->categoryFilterToolButton) {
         ui->categoryFilterToolButton->setEnabled(status);
@@ -27233,14 +27241,31 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     ui->processinfoTable->setEnabled(status);
     // m_KeyMappingDataTable->setEnabled(status);
 
-    // Menu actions (m_MenuMappingTableOp cascades to all its children)
-    if (m_MenuMappingTableOp) {
-        m_MenuMappingTableOp->setEnabled(status);
+    // MenuBar — close menus and dismiss any modal dialogs before disabling
+    if (!status) {
+        if (m_MenuMappingTableOp) m_MenuMappingTableOp->close();
+        if (m_MenuView)           m_MenuView->close();
+
+        // Dismiss any modal QMessageBox / QFileDialog opened from menu/context menu
+        QWidget *modal = QApplication::activeModalWidget();
+        while (modal && modal != this) {
+            if (modal->parentWidget() == this) break;
+            modal = modal->parentWidget();
+        }
+        if (modal && modal != this) {
+            if (qobject_cast<QMessageBox *>(modal)) {
+                static_cast<QMessageBox *>(modal)->reject();
+            } else if (qobject_cast<QFileDialog *>(modal)) {
+                static_cast<QFileDialog *>(modal)->reject();
+            } else {
+                modal->close();
+            }
+        }
     }
-    if (m_ActionShowProcessList) m_ActionShowProcessList->setEnabled(status);
-    if (m_ActionShowNotes)      m_ActionShowNotes->setEnabled(status);
-    if (m_ActionShowFloating)   m_ActionShowFloating->setEnabled(status);
-    if (m_ActionHideDisabled)   m_ActionHideDisabled->setEnabled(status);
+
+    // Top-level menus cascade enabled state to children
+    if (m_MenuMappingTableOp) m_MenuMappingTableOp->setEnabled(status);
+    if (m_MenuView)           m_MenuView->setEnabled(status);
 }
 
 void QKeyMapper::extractSoundFiles()
@@ -30235,13 +30260,13 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
 
     // ===== 4. Right-anchored controls (x >= 870): keep distance from right edge =====
     int btnX = this->width() - 71 - 9;
-    ui->addTabButton->setGeometry(btnX, 11, 71, 19);
-    ui->processListButton->setGeometry(btnX, 50, 71, 25);
-    ui->showNotesButton->setGeometry(btnX, 90, 71, 25);
-    ui->hideDisabledButton->setGeometry(btnX, 130, 71, 25);
-    ui->showFloatingButton->setGeometry(btnX, 170, 71, 25);
-    ui->showCategoryButton->setGeometry(btnX, 210, 71, 25);
-    ui->categoryFilterToolButton->setGeometry(btnX, 250, 71, 25);
+    //ui->addTabButton->setGeometry(btnX, 11, 71, 19);
+    //ui->processListButton->setGeometry(btnX, 50, 71, 25);
+    //ui->showNotesButton->setGeometry(btnX, 90, 71, 25);
+    //ui->hideDisabledButton->setGeometry(btnX, 130, 71, 25);
+    //ui->showFloatingButton->setGeometry(btnX, 170, 71, 25);
+    ui->showCategoryButton->setGeometry(btnX, 30, 71, 25);
+    ui->categoryFilterToolButton->setGeometry(btnX, 70, 71, 25);
     // ui->deleteSelectedButton->setGeometry(btnX, 290, 71, 25);
     // ui->clearallButton->setGeometry(btnX, 330, 71, 25);
 
@@ -31035,7 +31060,7 @@ void QKeyMapper::updateFloatingColumnByShowFloatingState()
         return;
     }
 
-    const bool checked = ui->showFloatingButton && m_ShowFloating;
+    const bool checked = /*ui->showFloatingButton &&*/ m_ShowFloating;
     m_KeyMappingDataTable->setFloatingColumnVisible(checked);
     resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
 
@@ -31101,7 +31126,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
     ui->keyMappingTabWidget->setGeometry(QRect(left, KEYMAPPINGTABWIDGET_TOP, width, KEYMAPPINGTABWIDGET_HEIGHT));
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->keyMappingTabWidget->setStyle(windowsStyle);
-        ui->addTabButton->setStyle(windowsStyle);
+        //ui->addTabButton->setStyle(windowsStyle);
     }
     ui->keyMappingTabWidget->setFocusPolicy(Qt::StrongFocus);
     QTabBar *bar = ui->keyMappingTabWidget->tabBar();
@@ -32605,9 +32630,9 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
     }
 
     // Cache optional UI state so refresh remains safe during recovery/teardown paths.
-    const bool showNotes = ui != Q_NULLPTR && m_ShowNotes;
-    const bool showFloatingColumn = ui != Q_NULLPTR && m_ShowFloating;
-    const bool hideDisabled = ui != Q_NULLPTR && m_HideDisabled;
+    const bool showNotes = m_ShowNotes;
+    const bool showFloatingColumn = m_ShowFloating;
+    const bool hideDisabled = m_HideDisabled;
 
     mappingDataTable->setRowCount(0);
 
@@ -33402,13 +33427,13 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->savemaplistButton->setText(tr("SaveSetting"));
     ui->savemaplistButton->setToolTip(tr("Hotkey : %1").arg(GENERAL_SAVESETTING_HOTKEY));
     refreshSaveSettingIndicators();
-    updateAddTabButtonText();
+    // updateAddTabButtonText();
     // ui->deleteSelectedButton->setText(tr("Delete"));
     // ui->clearallButton->setText(tr("Clear"));
-    ui->processListButton->setText(tr("ProcessList"));
-    ui->showNotesButton->setText(tr("ShowNotes"));
-    ui->hideDisabledButton->setText(tr("HideDisabled"));
-    ui->showFloatingButton->setText(tr("ShowFloating"));
+    //ui->processListButton->setText(tr("ProcessList"));
+    //ui->showNotesButton->setText(tr("ShowNotes"));
+    //ui->hideDisabledButton->setText(tr("HideDisabled"));
+    //ui->showFloatingButton->setText(tr("ShowFloating"));
     ui->showCategoryButton->setText(tr("ShowCategory"));
 
     // Update category filter controls text
@@ -33727,9 +33752,9 @@ void QKeyMapper::setUILanguage_Chinese()
     ui->savemaplistButton->setToolTip("快捷键 : L-Ctrl+S");
     ui->deleteSelectedButton->setText(DELETEONEBUTTON_CHINESE);
     ui->clearallButton->setText(CLEARALLBUTTON_CHINESE);
-    ui->processListButton->setText(PROCESSLISTBUTTON_CHINESE);
-    ui->showNotesButton->setText(SHOWNOTESBUTTON_CHINESE);
-    ui->showFloatingButton->setText(tr("ShowFloating"));
+    //ui->processListButton->setText(PROCESSLISTBUTTON_CHINESE);
+    //ui->showNotesButton->setText(SHOWNOTESBUTTON_CHINESE);
+    //ui->showFloatingButton->setText(tr("ShowFloating"));
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_CHINESE);
     ui->processCheckBox->setText(NAMECHECKBOX_CHINESE);
     ui->titleCheckBox->setText(TITLECHECKBOX_CHINESE);
@@ -33877,9 +33902,9 @@ void QKeyMapper::setUILanguage_English()
     ui->savemaplistButton->setToolTip("Hotkey : L-Ctrl+S");
     ui->deleteSelectedButton->setText(DELETEONEBUTTON_ENGLISH);
     ui->clearallButton->setText(CLEARALLBUTTON_ENGLISH);
-    ui->processListButton->setText(PROCESSLISTBUTTON_ENGLISH);
-    ui->showNotesButton->setText(SHOWNOTESBUTTON_ENGLISH);
-    ui->showFloatingButton->setText(tr("ShowFloating"));
+    //ui->processListButton->setText(PROCESSLISTBUTTON_ENGLISH);
+    //ui->showNotesButton->setText(SHOWNOTESBUTTON_ENGLISH);
+    //ui->showFloatingButton->setText(tr("ShowFloating"));
     ui->addmapdataButton->setText(ADDMAPDATABUTTON_ENGLISH);
     ui->processCheckBox->setText(NAMECHECKBOX_ENGLISH);
     ui->titleCheckBox->setText(TITLECHECKBOX_ENGLISH);
@@ -34630,10 +34655,10 @@ void QKeyMapper::connectSettingDirtySignals(void)
 
     connectCheckable(ui->startupMinimizedCheckBox);
     connectCheckable(ui->startupAutoMonitoringCheckBox);
-    connectCheckable(ui->processListButton);
-    connectCheckable(ui->showNotesButton);
-    connectCheckable(ui->hideDisabledButton);
-    connectCheckable(ui->showFloatingButton);
+    //connectCheckable(ui->processListButton);
+    //connectCheckable(ui->showNotesButton);
+    //connectCheckable(ui->hideDisabledButton);
+    //connectCheckable(ui->showFloatingButton);
     connectCheckable(ui->showCategoryButton);
     connectCheckable(ui->enableVirtualJoystickCheckBox);
     connectCheckable(ui->multiInputEnableCheckBox);
@@ -38074,6 +38099,7 @@ void QKeyMapper::highlightSelectOpenItemSetup()
     showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, rowIndex);
 }
 
+#if 0
 void QKeyMapper::on_addTabButton_clicked()
 {
     const bool copy_tab = shouldUseAddNewMappingOverride(true);
@@ -38106,6 +38132,7 @@ void QKeyMapper::on_addTabButton_clicked()
     }
 #endif
 }
+#endif
 
 void QKeyMapper::deleteSelectedMappingData()
 {
@@ -38230,7 +38257,7 @@ void QKeyMapper::setProcessListVisible(bool visible)
         refreshAllKeyMappingTabWidget();
         showProcessList();
     }
-    ui->processListButton->setChecked(visible);
+    //ui->processListButton->setChecked(visible);
 }
 
 void QKeyMapper::setHideDisabledRows(bool hide)
@@ -38241,7 +38268,7 @@ void QKeyMapper::setHideDisabledRows(bool hide)
             tabInfo.KeyMappingDataTable->setHideDisabledFilter(hide);
         }
     }
-    ui->hideDisabledButton->setChecked(hide);
+    //ui->hideDisabledButton->setChecked(hide);
 }
 
 void QKeyMapper::setFloatingColumnVisible(bool visible)
@@ -38250,7 +38277,7 @@ void QKeyMapper::setFloatingColumnVisible(bool visible)
     if (m_KeyMappingDataTable) {
         m_KeyMappingDataTable->setFloatingColumnVisible(visible);
     }
-    ui->showFloatingButton->setChecked(visible);
+    //ui->showFloatingButton->setChecked(visible);
 }
 
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -46053,26 +46080,26 @@ bool QKeyMapper::deleteMappingTableByTabIndex(int tabIndex)
     return (REMOVE_MAPPINGTAB_SUCCESS == result);
 }
 
-void QKeyMapper::on_processListButton_toggled(bool checked)
-{
-    setProcessListVisible(checked);
-}
+// void QKeyMapper::on_processListButton_toggled(bool checked)
+// {
+//     setProcessListVisible(checked);
+// }
 
-void QKeyMapper::on_showNotesButton_toggled(bool checked)
-{
-    m_ShowNotes = checked;
-    refreshAllKeyMappingTabWidget();
-}
+// void QKeyMapper::on_showNotesButton_toggled(bool checked)
+// {
+//     m_ShowNotes = checked;
+//     refreshAllKeyMappingTabWidget();
+// }
 
-void QKeyMapper::on_hideDisabledButton_toggled(bool checked)
-{
-    setHideDisabledRows(checked);
-}
+// void QKeyMapper::on_hideDisabledButton_toggled(bool checked)
+// {
+//     setHideDisabledRows(checked);
+// }
 
-void QKeyMapper::on_showFloatingButton_toggled(bool checked)
-{
-    setFloatingColumnVisible(checked);
-}
+// void QKeyMapper::on_showFloatingButton_toggled(bool checked)
+// {
+//     setFloatingColumnVisible(checked);
+// }
 
 void QKeyMapper::on_showCategoryButton_toggled(bool checked)
 {

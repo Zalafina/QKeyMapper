@@ -1672,7 +1672,7 @@ public slots:
 
     void highlightSelectOpenItemSetup();
 
-    void on_addTabButton_clicked();
+    // void on_addTabButton_clicked();
 
     void deleteSelectedMappingData(void);
     // void on_deleteSelectedButton_clicked();
@@ -1751,13 +1751,13 @@ private slots:
 
     void on_autoStartMappingCheckBox_stateChanged(int state);
 
-    void on_processListButton_toggled(bool checked);
+    // void on_processListButton_toggled(bool checked);
 
-    void on_showNotesButton_toggled(bool checked);
+    // void on_showNotesButton_toggled(bool checked);
 
-    void on_hideDisabledButton_toggled(bool checked);
+    // void on_hideDisabledButton_toggled(bool checked);
 
-    void on_showFloatingButton_toggled(bool checked);
+    // void on_showFloatingButton_toggled(bool checked);
 
     void on_showCategoryButton_toggled(bool checked);
 
@@ -1990,7 +1990,7 @@ private:
     bool isMainWindowCtrlOverrideActive(void) const;
     bool shouldUseAddNewMappingOverride(bool preferPhysicalCtrlState = false) const;
     void updateAddMapDataButtonText(void);
-    void updateAddTabButtonText(void);
+    // void updateAddTabButtonText(void);
     void updateMainWindowCtrlOverrideState(bool ctrlPressed);
     void refreshMainWindowCtrlOverrideState(void);
     void hideMappingStartActionMenuPopup(void);
