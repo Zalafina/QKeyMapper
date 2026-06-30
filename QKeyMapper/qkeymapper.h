@@ -1685,6 +1685,11 @@ public slots:
     void setHideDisabledRows(bool hide);
     void setFloatingColumnVisible(bool visible);
 
+    // Export/Import/Delete tab helpers (shared across dialog buttons, menu bar, context menu)
+    void exportMappingTableByTabIndex(int tabIndex);
+    void importMappingTableByTabIndex(int tabIndex);
+    bool deleteMappingTableByTabIndex(int tabIndex);
+
     bool isProcessListVisible() const { return m_ProcessListVisible; }
     bool isShowNotesEnabled() const    { return m_ShowNotes; }
     bool isHideDisabledEnabled() const { return m_HideDisabled; }
@@ -2407,6 +2412,20 @@ private:
     bool m_ShowNotes = false;
     bool m_HideDisabled = false;
     bool m_ShowFloating = false;
+    // MenuBar actions and menus
+    QMenu *m_MenuMappingTableOp = Q_NULLPTR;
+    QMenu *m_MenuView = Q_NULLPTR;
+    QMenu *m_MenuMappingTableView = Q_NULLPTR;
+    QAction *m_ActionAddBlankTab = Q_NULLPTR;
+    QAction *m_ActionCopyCurrentTab = Q_NULLPTR;
+    QAction *m_ActionDeleteCurrentTab = Q_NULLPTR;
+    QAction *m_ActionClearCurrentMappingTable = Q_NULLPTR;
+    QAction *m_ActionExportMappingTable = Q_NULLPTR;
+    QAction *m_ActionImportMappingTable = Q_NULLPTR;
+    QAction *m_ActionShowProcessList = Q_NULLPTR;
+    QAction *m_ActionShowNotes = Q_NULLPTR;
+    QAction *m_ActionShowFloating = Q_NULLPTR;
+    QAction *m_ActionHideDisabled = Q_NULLPTR;
     int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_INITIAL;
     ActionPopup *m_SettingBackupActionPopup = Q_NULLPTR;
     QFileDialog *m_SelectSettingCustomIconFileDialog = Q_NULLPTR;

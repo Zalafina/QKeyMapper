@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>1070</width>
-    <height>695</height>
+    <height>692</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>1070</width>
-    <height>695</height>
+    <height>692</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -2526,6 +2526,19 @@
      <bool>false</bool>
     </property>
    </widget>
+   <widget class="Line" name="menuBarSeparatorLine">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>-10</y>
+      <width>1070</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Orientation::Horizontal</enum>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -2533,13 +2546,13 @@
      <x>0</x>
      <y>0</y>
      <width>1070</width>
-     <height>25</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="minimumSize">
     <size>
      <width>0</width>
-     <height>25</height>
+     <height>22</height>
     </size>
    </property>
   </widget>

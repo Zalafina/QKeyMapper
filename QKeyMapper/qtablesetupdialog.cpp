@@ -696,134 +696,18 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
 
 void QTableSetupDialog::on_exportTableButton_clicked()
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return;
-    }
-
-    int tabindex = m_TabIndex;
-    QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
-    QString default_filename = "mapdatatable.ini";
-    QString filter = "INI files (*.ini)";
-    QString caption_string = tr("Export mapping data table : ") +TabName;
-
-    QString export_filename = QFileDialog::getSaveFileName(parentWidget(),
-                                                           caption_string,
-                                                           default_filename,
-                                                           filter);
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[on_exportTableButton_clicked]" << "export_filename from QFileDialog -> TabIndex[" << tabindex << "] : " << export_filename;
-#endif
-
-    bool export_result = QKeyMapper::exportKeyMappingDataToFile(tabindex, export_filename);
-
-    if (export_result) {
-        //Show success popup message
-        QString popupMessage;
-        QString popupMessageColor;
-        int popupMessageDisplayTime = 3000;
-        popupMessageColor = SUCCESS_COLOR;
-        popupMessage = tr("Mapping data of table \"%1\" export successfully").arg(TabName);;
-        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
-    }
+    QKeyMapper::getInstance()->exportMappingTableByTabIndex(m_TabIndex);
 }
 
 
 void QTableSetupDialog::on_importTableButton_clicked()
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return;
-    }
-
-    int tabindex = m_TabIndex;
-    QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
-    QString filter = "INI files (*.ini)";
-    QString caption_string;
-    caption_string = tr("Import mapping data table : ") +TabName;
-
-    QString import_filename = QFileDialog::getOpenFileName(parentWidget(),
-                                                           caption_string,
-                                                           NULL,
-                                                           filter);
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[on_importTableButton_clicked]" << "import_filename from QFileDialog -> TabIndex[" << tabindex << "] : " << import_filename;
-#endif
-
-    QKeyMapper::MappingDataInsertSummary insertSummary;
-    bool import_result = QKeyMapper::importKeyMappingDataFromFile(tabindex, import_filename, &insertSummary);
-
-    if (import_result) {
-        QKeyMapper::getInstance()->refreshTabsForSourceTabChange(tabindex);
-        QKeyMapper::getInstance()->requestSaveSettingDirty();
-
-        //Show success popup message
-        QString popupMessage = tr("Import mapping data to table \"%1\" successfully.").arg(TabName);
-        QStringList popupMessageDetails;
-        if (insertSummary.ExclusiveConflictDisabledNewRowCount > 0) {
-            popupMessageDetails.append(tr("%1 mapping(s) were disabled due to a conflict in the target mapping table.")
-                                           .arg(insertSummary.ExclusiveConflictDisabledNewRowCount));
-        }
-        if (insertSummary.CommonConflictDisabledNewRowCount > 0) {
-            popupMessageDetails.append(tr("%1 mapping(s) were disabled because the same OriginalKey already exists in the Common mapping table.")
-                                           .arg(insertSummary.CommonConflictDisabledNewRowCount));
-        }
-        if (insertSummary.CommonPriorityRepair.hasChanges()) {
-            popupMessageDetails.append(tr("Common mapping priority disabled %1 conflicting mapping(s) in %2 normal mapping table(s).")
-                                           .arg(insertSummary.CommonPriorityRepair.DisabledRowCount)
-                                           .arg(insertSummary.CommonPriorityRepair.affectedTabCount()));
-        }
-        if (!popupMessageDetails.isEmpty()) {
-            popupMessage.append(QStringLiteral(" "));
-            popupMessage.append(popupMessageDetails.join(QStringLiteral(" ")));
-        }
-        QString popupMessageColor;
-        int popupMessageDisplayTime = 3000;
-        if (insertSummary.hasWarning()) {
-            popupMessageColor = WARNING_COLOR;
-        }
-        else {
-            popupMessageColor = SUCCESS_COLOR;
-        }
-        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
-    }
+    QKeyMapper::getInstance()->importMappingTableByTabIndex(m_TabIndex);
 }
 
 void QTableSetupDialog::on_removeTableButton_clicked()
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return;
-    }
-
-    int tabindex = m_TabIndex;
-    QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;
-    QString message;
-    QMessageBox::StandardButton reply;
-    message = tr("Are you sure you want to remove the mapping table \"%1\"?").arg(TabName);
-    reply = QMessageBox::warning(parentWidget(), PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
-
-    if (reply == QMessageBox::Yes) {
-        int remove_result = QKeyMapper::getInstance()->removeTabFromKeyMappingTabWidget(tabindex);
-
-        QString popupMessage;
-        QString popupMessageColor;
-        int popupMessageDisplayTime = 3000;
-        if (REMOVE_MAPPINGTAB_SUCCESS == remove_result) {
-            popupMessageColor = SUCCESS_COLOR;
-            popupMessage = tr("Mapping table \"%1\" removed successfully").arg(TabName);;
-            emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
-        }
-        else if (REMOVE_MAPPINGTAB_LASTONE == remove_result) {
-            popupMessageColor = FAILURE_COLOR;
-            popupMessage = tr("Cannot remove the last mapping table!");
-            emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
-        }
-        else if (REMOVE_MAPPINGTAB_PROTECTED == remove_result) {
-            popupMessageColor = FAILURE_COLOR;
-            popupMessage = tr("Common mapping table cannot be removed.");
-            emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
-        }
-    }
+    QKeyMapper::getInstance()->deleteMappingTableByTabIndex(m_TabIndex);
 }
 
 void QTableSetupDialog::on_selectCustomImageButton_clicked()
