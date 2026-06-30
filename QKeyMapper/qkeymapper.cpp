@@ -3034,6 +3034,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->showCategoryButton->setStyle(windowsStyle);
 
     // Initialize checkable button state
+    m_ProcessListVisible = true;
+    m_ShowNotes = false;
+    m_HideDisabled = false;
+    m_ShowFloating = false;
     ui->processListButton->setChecked(true);
     ui->showNotesButton->setChecked(false);
     ui->hideDisabledButton->setChecked(false);
@@ -3515,7 +3519,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     updateHWNDListProc();
     refreshProcessInfoTable();
-    if (!ui->processListButton->isChecked()) {
+    if (!m_ProcessListVisible) {
         hideProcessList();
         setKeyMappingTabWidgetWideMode();
     }
@@ -15533,7 +15537,7 @@ bool QKeyMapper::rebindCurrentKeyMappingTabAfterRecovery(bool refreshCurrentTabl
     updateFloatingColumnByShowFloatingState();
     updateCategoryFilterByShowCategoryState();
     if (m_KeyMappingDataTable != Q_NULLPTR) {
-        m_KeyMappingDataTable->setHideDisabledFilter(ui->hideDisabledButton && ui->hideDisabledButton->isChecked());
+        m_KeyMappingDataTable->setHideDisabledFilter(m_HideDisabled);
     }
     updateKeyMappingDataTableConnection();
 
@@ -15964,7 +15968,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     int width = KEYMAPPINGDATATABLE_NARROW_WIDTH;
     int top = KEYMAPPINGDATATABLE_TOP;
     int height = KEYMAPPINGDATATABLE_HEIGHT;
-    if (!ui->processListButton->isChecked()) {
+    if (!m_ProcessListVisible) {
         left    = KEYMAPPINGDATATABLE_WIDE_LEFT;
         width   = KEYMAPPINGDATATABLE_WIDE_WIDTH;
     }
@@ -15975,7 +15979,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     KeyMappingTableWidget->setItemDelegate(new KeyMappingTableStyleDelegate(KeyMappingTableWidget));
 
     // Initialize floating column visibility based on current button state
-    KeyMappingTableWidget->setFloatingColumnVisible(ui->showFloatingButton->isChecked());
+    KeyMappingTableWidget->setFloatingColumnVisible(m_ShowFloating);
 
     // Initialize category column visibility based on current button state
     KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
@@ -16268,7 +16272,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     int width = KEYMAPPINGDATATABLE_NARROW_WIDTH;
     int top = KEYMAPPINGDATATABLE_TOP;
     int height = KEYMAPPINGDATATABLE_HEIGHT;
-    if (!ui->processListButton->isChecked()) {
+    if (!m_ProcessListVisible) {
         left    = KEYMAPPINGDATATABLE_WIDE_LEFT;
         width   = KEYMAPPINGDATATABLE_WIDE_WIDTH;
     }
@@ -16279,7 +16283,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     KeyMappingTableWidget->setItemDelegate(new KeyMappingTableStyleDelegate(KeyMappingTableWidget));
 
     // Initialize floating column visibility based on current button state
-    KeyMappingTableWidget->setFloatingColumnVisible(ui->showFloatingButton->isChecked());
+    KeyMappingTableWidget->setFloatingColumnVisible(m_ShowFloating);
 
     // Initialize category column visibility based on current button state
     KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
@@ -17347,7 +17351,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         QString mappingkeys_str = sourceMappingDataList->at(sourceRow).Mapping_Keys.join(SEPARATOR_NEXTARROW);
         QString mapdata_note = sourceMappingDataList->at(sourceRow).Note;
         QString originalkey_withnote;
-        if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {
+        if (m_ShowNotes && !mapdata_note.isEmpty()) {
             originalkey_withnote = QString(ORIKEY_WITHNOTE_FORMAT).arg(originalkey, mapdata_note);
         }
         else {
@@ -17357,7 +17361,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         if (originalkey_new != originalkey_withnote) {
             bool update_withnote = false;
             QString note_new;
-            if (ui->showNotesButton->isChecked()) {
+            if (m_ShowNotes) {
                 update_withnote = true;
             }
 
@@ -19176,7 +19180,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     updateViGEmBusStatus();
     updateVirtualGamepadListDisplay();
 
-    if (!ui->processListButton->isChecked()) {
+    if (!m_ProcessListVisible) {
         hideProcessList();
         setKeyMappingTabWidgetWideMode();
     }
@@ -19248,10 +19252,10 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
     settingFile.setValue(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
     settingFile.setValue(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
-    settingFile.setValue(SHOW_PROCESSLIST, ui->processListButton->isChecked());
-    settingFile.setValue(SHOW_NOTES, ui->showNotesButton->isChecked());
-    settingFile.setValue(HIDE_DISABLED, ui->hideDisabledButton->isChecked());
-    settingFile.setValue(SHOW_FLOATING, ui->showFloatingButton->isChecked());
+    settingFile.setValue(SHOW_PROCESSLIST, m_ProcessListVisible);
+    settingFile.setValue(SHOW_NOTES, m_ShowNotes);
+    settingFile.setValue(HIDE_DISABLED, m_HideDisabled);
+    settingFile.setValue(SHOW_FLOATING, m_ShowFloating);
     settingFile.setValue(SHOW_CATEGORYS, ui->showCategoryButton->isChecked());
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     int display_scale = ui->scaleComboBox->currentData().toInt();
@@ -21094,17 +21098,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
         if (true == settingFile.contains(SHOW_PROCESSLIST)){
             bool showProcessList = settingFile.value(SHOW_PROCESSLIST).toBool();
-            if (!showProcessList) {
-                ui->processListButton->setChecked(false);
-            }
-            else {
-                ui->processListButton->setChecked(true);
-            }
+            m_ProcessListVisible = showProcessList;
+            ui->processListButton->setChecked(showProcessList);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Show ProcessList Button ->" << showProcessList;
 #endif
         }
         else {
+            m_ProcessListVisible = true;
             ui->processListButton->setChecked(true);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowProcessList, Show ProcessList Button set to Checked.";
@@ -21113,17 +21114,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
         if (true == settingFile.contains(SHOW_NOTES)){
             bool showNotes = settingFile.value(SHOW_NOTES).toBool();
-            if (showNotes) {
-                ui->showNotesButton->setChecked(true);
-            }
-            else {
-                ui->showNotesButton->setChecked(false);
-            }
+            m_ShowNotes = showNotes;
+            ui->showNotesButton->setChecked(showNotes);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Show Notes Button ->" << showNotes;
 #endif
         }
         else {
+            m_ShowNotes = false;
             ui->showNotesButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
@@ -21132,17 +21130,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
         if (true == settingFile.contains(HIDE_DISABLED)){
             bool hideDisabled = settingFile.value(HIDE_DISABLED).toBool();
-            if (hideDisabled) {
-                ui->hideDisabledButton->setChecked(true);
-            }
-            else {
-                ui->hideDisabledButton->setChecked(false);
-            }
+            m_HideDisabled = hideDisabled;
+            ui->hideDisabledButton->setChecked(hideDisabled);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Hide Disabled Button ->" << hideDisabled;
 #endif
         }
         else {
+            m_HideDisabled = false;
             ui->hideDisabledButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains HideDisabled, Hide Disabled Button set to Unchecked.";
@@ -21151,17 +21146,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
         if (true == settingFile.contains(SHOW_FLOATING)){
             bool showFloating = settingFile.value(SHOW_FLOATING).toBool();
-            if (showFloating) {
-                ui->showFloatingButton->setChecked(true);
-            }
-            else {
-                ui->showFloatingButton->setChecked(false);
-            }
+            m_ShowFloating = showFloating;
+            ui->showFloatingButton->setChecked(showFloating);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Show Floating Button ->" << showFloating;
 #endif
         }
         else {
+            m_ShowFloating = false;
             ui->showFloatingButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowFloating, Show Floating Button set to Unchecked.";
@@ -25723,17 +25715,14 @@ void QKeyMapper::loadGeneralSetting()
 
     if (true == settingFile.contains(SHOW_PROCESSLIST)){
         bool showProcessList = settingFile.value(SHOW_PROCESSLIST).toBool();
-        if (!showProcessList) {
-            ui->processListButton->setChecked(false);
-        }
-        else {
-            ui->processListButton->setChecked(true);
-        }
+        m_ProcessListVisible = showProcessList;
+        ui->processListButton->setChecked(showProcessList);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Show ProcessList Button ->" << showProcessList;
 #endif
     }
     else {
+        m_ProcessListVisible = true;
         ui->processListButton->setChecked(true);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains ShowProcessList, Show ProcessList Button set to Checked.";
@@ -25742,17 +25731,14 @@ void QKeyMapper::loadGeneralSetting()
 
     if (true == settingFile.contains(SHOW_NOTES)){
         bool showNotes = settingFile.value(SHOW_NOTES).toBool();
-        if (showNotes) {
-            ui->showNotesButton->setChecked(true);
-        }
-        else {
-            ui->showNotesButton->setChecked(false);
-        }
+        m_ShowNotes = showNotes;
+        ui->showNotesButton->setChecked(showNotes);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Show Notes Button ->" << showNotes;
 #endif
     }
     else {
+        m_ShowNotes = false;
         ui->showNotesButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains ShowNotes, Show Notes Button set to Unchecked.";
@@ -25761,17 +25747,14 @@ void QKeyMapper::loadGeneralSetting()
 
     if (true == settingFile.contains(HIDE_DISABLED)){
         bool hideDisabled = settingFile.value(HIDE_DISABLED).toBool();
-        if (hideDisabled) {
-            ui->hideDisabledButton->setChecked(true);
-        }
-        else {
-            ui->hideDisabledButton->setChecked(false);
-        }
+        m_HideDisabled = hideDisabled;
+        ui->hideDisabledButton->setChecked(hideDisabled);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Hide Disabled Button ->" << hideDisabled;
 #endif
     }
     else {
+        m_HideDisabled = false;
         ui->hideDisabledButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains HideDisabled, Hide Disabled Button set to Unchecked.";
@@ -25780,17 +25763,14 @@ void QKeyMapper::loadGeneralSetting()
 
     if (true == settingFile.contains(SHOW_FLOATING)){
         bool showFloating = settingFile.value(SHOW_FLOATING).toBool();
-        if (showFloating) {
-            ui->showFloatingButton->setChecked(true);
-        }
-        else {
-            ui->showFloatingButton->setChecked(false);
-        }
+        m_ShowFloating = showFloating;
+        ui->showFloatingButton->setChecked(showFloating);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Show Floating Button ->" << showFloating;
 #endif
     }
     else {
+        m_ShowFloating = false;
         ui->showFloatingButton->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains ShowFloating, Show Floating Button set to Unchecked.";
@@ -30104,7 +30084,7 @@ void QKeyMapper::resizeEvent(QResizeEvent *event)
 
 void QKeyMapper::applyResizeLayout(int dw, int dh)
 {
-    const bool narrowMode = ui->processListButton->isChecked();
+    const bool narrowMode = m_ProcessListVisible;
     // Left/right boundary shift in narrow mode (wide mode: left zone hidden, no split needed)
     // Window split-line shift (independent of processinfoTable visibility)
     int boundaryShift = dw / 2;
@@ -30249,7 +30229,7 @@ void QKeyMapper::showProcessList()
 
 void QKeyMapper::setKeyMappingTabWidgetWideMode()
 {
-    if (ui->processListButton->isChecked()) {
+    if (m_ProcessListVisible) {
         return;
     }
     applyResizeLayout(qMax(0, this->width() - WINDOW_BASE_WIDTH),
@@ -30258,7 +30238,7 @@ void QKeyMapper::setKeyMappingTabWidgetWideMode()
 
 void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
 {
-    if (!ui->processListButton->isChecked()) {
+    if (!m_ProcessListVisible) {
         return;
     }
     applyResizeLayout(qMax(0, this->width() - WINDOW_BASE_WIDTH),
@@ -30934,7 +30914,7 @@ void QKeyMapper::updateFloatingColumnByShowFloatingState()
         return;
     }
 
-    const bool checked = ui->showFloatingButton && ui->showFloatingButton->isChecked();
+    const bool checked = ui->showFloatingButton && m_ShowFloating;
     m_KeyMappingDataTable->setFloatingColumnVisible(checked);
     resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
 
@@ -30987,7 +30967,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
 {
     int left = KEYMAPPINGTABWIDGET_NARROW_LEFT;
     int width = KEYMAPPINGTABWIDGET_NARROW_WIDTH;
-    if (!ui->processListButton->isChecked()) {
+    if (!m_ProcessListVisible) {
         left    = KEYMAPPINGTABWIDGET_WIDE_LEFT;
         width   = KEYMAPPINGTABWIDGET_WIDE_WIDTH;
     }
@@ -32504,15 +32484,9 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
     }
 
     // Cache optional UI state so refresh remains safe during recovery/teardown paths.
-    const bool showNotes = ui != Q_NULLPTR
-        && ui->showNotesButton != Q_NULLPTR
-        && ui->showNotesButton->isChecked();
-    const bool showFloatingColumn = ui != Q_NULLPTR
-        && ui->showFloatingButton != Q_NULLPTR
-        && ui->showFloatingButton->isChecked();
-    const bool hideDisabled = ui != Q_NULLPTR
-        && ui->hideDisabledButton != Q_NULLPTR
-        && ui->hideDisabledButton->isChecked();
+    const bool showNotes = ui != Q_NULLPTR && m_ShowNotes;
+    const bool showFloatingColumn = ui != Q_NULLPTR && m_ShowFloating;
+    const bool hideDisabled = ui != Q_NULLPTR && m_HideDisabled;
 
     mappingDataTable->setRowCount(0);
 
@@ -32957,7 +32931,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         case ORIGINAL_KEY_COLUMN: {
             QString mapdata_note = keymapdata.Note;
             QString orikey_withnote;
-            if (ui->showNotesButton->isChecked() && !mapdata_note.isEmpty()) {
+            if (m_ShowNotes && !mapdata_note.isEmpty()) {
                 orikey_withnote = QString(ORIKEY_WITHNOTE_FORMAT).arg(keymapdata.Original_Key, mapdata_note);
             }
             else {
@@ -35581,8 +35555,8 @@ void QKeyMapper::keyMappingTabWidgetCurrentChanged(int index)
         switchKeyMappingTabIndex(index);
         updateFloatingColumnByShowFloatingState();
         updateCategoryFilterByShowCategoryState();
-        if (m_KeyMappingDataTable && ui->hideDisabledButton) {
-            m_KeyMappingDataTable->setHideDisabledFilter(ui->hideDisabledButton->isChecked());
+        if (m_KeyMappingDataTable) {
+            m_KeyMappingDataTable->setHideDisabledFilter(m_HideDisabled);
         }
         updateKeyMappingDataTableConnection();
 
@@ -38101,6 +38075,41 @@ void QKeyMapper::clearCurrentMappingTable()
 //     qDebug() << "[on_clearallButton_clicked]" << "User press confirm button of ClearAll Warning MessageBox.";
 // #endif
 // }
+
+void QKeyMapper::setProcessListVisible(bool visible)
+{
+    m_ProcessListVisible = visible;
+    if (!visible) {
+        hideProcessList();
+        setKeyMappingTabWidgetWideMode();
+        refreshAllKeyMappingTabWidget();
+    } else {
+        setKeyMappingTabWidgetNarrowMode();
+        refreshAllKeyMappingTabWidget();
+        showProcessList();
+    }
+    ui->processListButton->setChecked(visible);
+}
+
+void QKeyMapper::setHideDisabledRows(bool hide)
+{
+    m_HideDisabled = hide;
+    for (const KeyMappingTab_Info &tabInfo : std::as_const(s_KeyMappingTabInfoList)) {
+        if (tabInfo.KeyMappingDataTable) {
+            tabInfo.KeyMappingDataTable->setHideDisabledFilter(hide);
+        }
+    }
+    ui->hideDisabledButton->setChecked(hide);
+}
+
+void QKeyMapper::setFloatingColumnVisible(bool visible)
+{
+    m_ShowFloating = visible;
+    if (m_KeyMappingDataTable) {
+        m_KeyMappingDataTable->setFloatingColumnVisible(visible);
+    }
+    ui->showFloatingButton->setChecked(visible);
+}
 
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
@@ -45895,37 +45904,23 @@ void QKeyMapper::on_autoStartMappingCheckBox_stateChanged(int state)
 
 void QKeyMapper::on_processListButton_toggled(bool checked)
 {
-    if (!checked) {
-        hideProcessList();
-        setKeyMappingTabWidgetWideMode();
-        refreshAllKeyMappingTabWidget();
-    }
-    else {
-        setKeyMappingTabWidgetNarrowMode();
-        refreshAllKeyMappingTabWidget();
-        showProcessList();
-    }
+    setProcessListVisible(checked);
 }
 
 void QKeyMapper::on_showNotesButton_toggled(bool checked)
 {
-    Q_UNUSED(checked);
+    m_ShowNotes = checked;
     refreshAllKeyMappingTabWidget();
 }
 
 void QKeyMapper::on_hideDisabledButton_toggled(bool checked)
 {
-    for (const KeyMappingTab_Info &tabInfo : std::as_const(s_KeyMappingTabInfoList)) {
-        if (tabInfo.KeyMappingDataTable) {
-            tabInfo.KeyMappingDataTable->setHideDisabledFilter(checked);
-        }
-    }
+    setHideDisabledRows(checked);
 }
 
 void QKeyMapper::on_showFloatingButton_toggled(bool checked)
 {
-    Q_UNUSED(checked);
-    updateFloatingColumnByShowFloatingState();
+    setFloatingColumnVisible(checked);
 }
 
 void QKeyMapper::on_showCategoryButton_toggled(bool checked)

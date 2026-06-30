@@ -1680,6 +1680,16 @@ public slots:
     void clearCurrentMappingTable(void);
     // void on_clearallButton_clicked();
 
+    // Button toggle state members (survive button deletion, used by menu actions)
+    void setProcessListVisible(bool visible);
+    void setHideDisabledRows(bool hide);
+    void setFloatingColumnVisible(bool visible);
+
+    bool isProcessListVisible() const { return m_ProcessListVisible; }
+    bool isShowNotesEnabled() const    { return m_ShowNotes; }
+    bool isHideDisabledEnabled() const { return m_HideDisabled; }
+    bool isShowFloatingEnabled() const { return m_ShowFloating; }
+
 private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     void on_settingselectComboBox_textActivated(const QString &text);
@@ -2392,6 +2402,11 @@ private:
     int m_OriginalKeyEditMode = QKeyMapperConstants::KEYRECORD_EDITMODE_CAPTURE;
     bool m_isOriginalKeyLineEdit_CapturingKey = false;
     bool m_isWindowsDarkMode = false;
+    // Button toggle states (replaces ui->xxxButton->isChecked() — survives button deletion)
+    bool m_ProcessListVisible = true;   // processListButton default checked
+    bool m_ShowNotes = false;
+    bool m_HideDisabled = false;
+    bool m_ShowFloating = false;
     int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_INITIAL;
     ActionPopup *m_SettingBackupActionPopup = Q_NULLPTR;
     QFileDialog *m_SelectSettingCustomIconFileDialog = Q_NULLPTR;
