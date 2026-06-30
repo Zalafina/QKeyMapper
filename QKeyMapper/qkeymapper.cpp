@@ -2757,7 +2757,7 @@ int QKeyMapper::s_TransParentWindowInitialWidth = 0;
 int QKeyMapper::s_TransParentWindowInitialHeight = 0;
 
 QKeyMapper::QKeyMapper(QWidget *parent) :
-    QDialog(parent),
+    QMainWindow(parent),
     // m_UI_Scale(UI_SCALE_NORMAL),
     m_KeyMapStatus(KEYMAP_IDLE),
     ui(new Ui::QKeyMapper),
@@ -14097,7 +14097,7 @@ bool QKeyMapper::event(QEvent *event)
         // closeTrayIconSelectDialog();
         // closeNotificationSetupDialog();
     }
-    return QDialog::event(event);
+    return QMainWindow::event(event);
 }
 
 void QKeyMapper::showEvent(QShowEvent *event)
@@ -14127,7 +14127,7 @@ void QKeyMapper::showEvent(QShowEvent *event)
 //         });
     }
 
-    QDialog::showEvent(event);
+    QMainWindow::showEvent(event);
 }
 
 void QKeyMapper::closeEvent(QCloseEvent *event)
@@ -14210,7 +14210,7 @@ void QKeyMapper::changeEvent(QEvent *event)
         }
     }
 
-    QDialog::changeEvent(event);
+    QMainWindow::changeEvent(event);
 }
 
 void QKeyMapper::keyPressEvent(QKeyEvent *event)
@@ -14406,7 +14406,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
         return;
     }
 
-    QDialog::keyPressEvent(event);
+    QMainWindow::keyPressEvent(event);
 }
 
 void QKeyMapper::mousePressEvent(QMouseEvent *event)
@@ -14418,7 +14418,7 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
         }
     }
 
-    QDialog::mousePressEvent(event);
+    QMainWindow::mousePressEvent(event);
 }
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
@@ -14744,7 +14744,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
             }
         }
     }
-    return QDialog::eventFilter(object, event);
+    return QMainWindow::eventFilter(object, event);
 }
 
 void QKeyMapper::on_keymapButton_clicked()
@@ -30076,7 +30076,7 @@ void QKeyMapper::forceHide()
 
 void QKeyMapper::resizeEvent(QResizeEvent *event)
 {
-    QDialog::resizeEvent(event);
+    QMainWindow::resizeEvent(event);
     int dw = qMax(0, this->width() - WINDOW_BASE_WIDTH);  // width can only increase
     int dh = this->height() - WINDOW_BASE_HEIGHT;         // height can increase or decrease
     applyResizeLayout(dw, dh);

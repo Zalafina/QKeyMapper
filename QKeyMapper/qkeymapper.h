@@ -1,7 +1,7 @@
 #ifndef QKEYMAPPER_H
 #define QKEYMAPPER_H
 
-#include <QDialog>
+#include <QMainWindow>
 #include <QDebug>
 #include <QMetaEnum>
 #include <QMessageBox>
@@ -1150,7 +1150,7 @@ private:
 };
 #endif
 
-class QKeyMapper : public QDialog
+class QKeyMapper : public QMainWindow
 {
     Q_OBJECT
 

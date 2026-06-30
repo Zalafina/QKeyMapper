@@ -110,7 +110,7 @@ namespace QKeyMapperConstants {
 
     // Window resize base dimensions
     inline constexpr int WINDOW_BASE_WIDTH  = 1070;
-    inline constexpr int WINDOW_BASE_HEIGHT = 670;
+    inline constexpr int WINDOW_BASE_HEIGHT = 695;
     inline constexpr int WINDOW_MIN_WIDTH   = 1070;  // minimum window width (= currently fixed width)
     inline constexpr int WINDOW_MIN_HEIGHT  = 670;   // minimum window height (user adjustable)
 

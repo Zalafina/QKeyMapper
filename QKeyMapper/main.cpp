@@ -397,11 +397,11 @@ int main(int argc, char *argv[])
     QObject::connect(&app, &SingleApplication::showUp, &w, &QKeyMapper::otherInstancesStarted);
 #endif
 
-    // Remove "?" Button from QDialog
-    Qt::WindowFlags flags = Qt::Dialog;
-    flags |= Qt::WindowMinMaxButtonsHint;
-    flags |= Qt::WindowCloseButtonHint;
-    w.setWindowFlags(flags);
+    // QMainWindow window flags
+    // Qt::WindowFlags flags = Qt::Window;
+    // flags |= Qt::WindowMinMaxButtonsHint;
+    // flags |= Qt::WindowCloseButtonHint;
+    // w.setWindowFlags(flags);
 
     if (QKeyMapper::getStartupMinimizedStatus()) {
 #ifdef DEBUG_LOGOUT_ON
