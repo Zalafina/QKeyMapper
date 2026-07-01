@@ -27261,6 +27261,8 @@ void QKeyMapper::changeControlEnableStatus(bool status)
                 modal->close();
             }
         }
+
+        if (m_SettingBackupActionPopup) m_SettingBackupActionPopup->hide();
     }
 
     // Top-level menus cascade enabled state to children
