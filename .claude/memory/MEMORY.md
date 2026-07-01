@@ -3,3 +3,6 @@
 - [Qt Absolute-Positioning Window Resize Pattern](qt-no-layout-resize-pattern.md) — Core pattern for adding resize to dialogs without layout managers
 - [Window Size Persistence](window-size-persistence.md) — INI-based save/restore with conditional checkbox
 - [settingTabWidget Internal Resize](settingtabwidget-internal-resize.md) — Handling QTabWidget width changes with absolute-positioned pages
+- [Qt 6 QTabBar setTabVisible Scroll Button Bug](qt-tabbar-settabvisible-bug.md) — Broken scroll button calculation and removeTab/insertTab workaround
+- [QVariantMap/QVariantList Save/Load Pattern](qvariantmap-saveload-pattern.md) — Persisting struct data to QSettings using Qt-native serialization
+- [Nested Brace Pitfalls in Save/Load Code](nested-brace-pitfalls.md) — Common bugs when modifying deeply nested serialization functions
