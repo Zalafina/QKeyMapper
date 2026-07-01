@@ -16200,6 +16200,110 @@ bool QKeyMapper::addCommonMappingTabToKeyMappingTabWidget(void)
     return true;
 }
 
+void QKeyMapper::detachCommonMappingTab(void)
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return;
+    }
+
+    const int commonIndex = findCommonMappingTabIndex();
+    if (commonIndex < 0 || commonIndex >= ui->keyMappingTabWidget->count()
+        || commonIndex >= s_KeyMappingTabInfoList.size()) {
+        return;  // already detached or invalid
+    }
+
+    // Sync current common tab data to dedicated storage before removing
+    QList<MAP_KEYDATA> *commonData = s_KeyMappingTabInfoList.at(commonIndex).KeyMappingData;
+    if (commonData) {
+        m_CommonMappingData = *commonData;
+    }
+
+    // Physically remove the common tab page from QTabWidget.
+    // removeTab uses a well-tested Qt code path that correctly
+    // recalculates layout and scroll buttons (unlike setTabVisible).
+    ui->keyMappingTabWidget->removeTab(commonIndex);
+
+    // Clean up the widget and data — attachCommonMappingTab creates new ones.
+    QWidget *pageWidget = s_KeyMappingTabInfoList.at(commonIndex).KeyMappingDataTable;
+    if (pageWidget) {
+        delete pageWidget;
+    }
+    if (commonData) {
+        delete commonData;
+    }
+    s_KeyMappingTabInfoList.removeAt(commonIndex);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[detachCommonMappingTab] detached"
+                                 << " tabBarCount=" << ui->keyMappingTabWidget->count()
+                                 << " tabInfoListSize=" << s_KeyMappingTabInfoList.size()
+                                 << " commonDataSize=" << m_CommonMappingData.size();
+#endif
+}
+
+void QKeyMapper::attachCommonMappingTab(void)
+{
+    if (!ui || !ui->keyMappingTabWidget) {
+        return;
+    }
+
+    const int existingIndex = findCommonMappingTabIndex();
+    if (existingIndex >= 0) {
+        // Already in the list — ensure correct position and restore data
+        // if the tab was newly created with empty data (e.g. on re-enable).
+        ensureCommonMappingTabIsLast();
+        if (!m_CommonMappingData.isEmpty()) {
+            QList<MAP_KEYDATA> *commonData = s_KeyMappingTabInfoList.at(existingIndex).KeyMappingData;
+            if (commonData && commonData->isEmpty()) {
+                *commonData = m_CommonMappingData;
+            }
+        }
+        return;
+    }
+
+    // Create the common tab using the standard add-tab flow
+    QSet<QString> existingTabNames;
+    existingTabNames.reserve(s_KeyMappingTabInfoList.size());
+    for (const KeyMappingTab_Info &tabInfo : std::as_const(s_KeyMappingTabInfoList)) {
+        existingTabNames.insert(tabInfo.TabName);
+    }
+
+    const QString commonDisplayName = buildUniqueCommonTabDisplayName(existingTabNames);
+    if (!addTabToKeyMappingTabWidget(commonDisplayName)) {
+        return;
+    }
+
+    const int commonIndex = s_KeyMappingTabInfoList.size() - 1;
+    finalizeCommonMappingTabAtIndex(commonIndex, true);
+    ensureCommonMappingTabIsLast();
+
+    // Restore previously detached common mapping data
+    if (!m_CommonMappingData.isEmpty()) {
+        QList<MAP_KEYDATA> *commonData = s_KeyMappingTabInfoList.at(commonIndex).KeyMappingData;
+        if (commonData) {
+            *commonData = m_CommonMappingData;
+        }
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[attachCommonMappingTab] attached"
+                                 << " tabBarCount=" << ui->keyMappingTabWidget->count()
+                                 << " tabInfoListSize=" << s_KeyMappingTabInfoList.size()
+                                 << " commonDataSize=" << m_CommonMappingData.size();
+#endif
+}
+
+void QKeyMapper::syncCommonMappingDataForSave(void)
+{
+    const int commonIndex = findCommonMappingTabIndex();
+    if (commonIndex >= 0 && commonIndex < s_KeyMappingTabInfoList.size()) {
+        QList<MAP_KEYDATA> *commonData = s_KeyMappingTabInfoList.at(commonIndex).KeyMappingData;
+        if (commonData) {
+            m_CommonMappingData = *commonData;
+        }
+    }
+}
+
 void QKeyMapper::ensureCommonMappingTabExists(void)
 {
     const int commonIndex = findCommonMappingTabIndex();
@@ -16210,8 +16314,14 @@ void QKeyMapper::ensureCommonMappingTabExists(void)
         return;
     }
 
-    finalizeCommonMappingTabAtIndex(commonIndex);
-    ensureCommonMappingTabIsLast();
+    // If the common tab is already in the list and properly marked,
+    // attachCommonMappingTab / detachCommonMappingTab will handle
+    // widget visibility. Only finalize if the tab is not yet marked.
+    if (!isCommonMappingTab(s_KeyMappingTabInfoList.at(commonIndex))) {
+        finalizeCommonMappingTabAtIndex(commonIndex);
+    }
+    // ensureCommonMappingTabIsLast is now called by attachCommonMappingTab
+    // when the tab is actually present in the widget.
 }
 
 void QKeyMapper::ensureCommonMappingTabIsLast(void)
@@ -16282,17 +16392,25 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
                                  << " currentIndex=" << ui->keyMappingTabWidget->currentIndex()
                                  << ", trackedCurrentIndex=" << s_KeyMappingTabWidgetCurrentIndex
                                  << ", commonIndex=" << commonIndex
-                                 << ", enabled=" << (enabled ? "true" : "false");
+                                 << ", enabled=" << (enabled ? "true" : "false")
+                                 << " tabBarCount=" << ui->keyMappingTabWidget->count()
+                                 << " tabInfoListSize=" << s_KeyMappingTabInfoList.size();
 #endif
     int fallbackIndex = -1;
-    if (commonIndex >= 0 && commonIndex < ui->keyMappingTabWidget->count()) {
-        if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
-            QKeyMapperQtCompat::tabBarSetTabVisible(tabBar, commonIndex, enabled);
-        }
 
-        if (!enabled && s_KeyMappingTabWidgetCurrentIndex == commonIndex) {
+    if (enabled) {
+        // Feature enabled: ensure common tab is attached (visible in widget)
+        attachCommonMappingTab();
+    } else {
+        // Feature disabled: detach common tab from widget to avoid
+        // QTabBar::setTabVisible(false) Qt bug with scroll button state.
+        //
+        // Must check tracked current index BEFORE detach, since detach
+        // changes the tab count and shifts indices.
+        if (s_KeyMappingTabWidgetCurrentIndex == commonIndex) {
             fallbackIndex = firstNormalMappingTabIndex();
         }
+        detachCommonMappingTab();
     }
 
     if (fallbackIndex >= 0 && fallbackIndex != commonIndex) {
@@ -16309,6 +16427,25 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
         && m_TableSetupDialog->getSettingSelectIndex() == ui->settingselectComboBox->currentIndex()) {
         m_TableSetupDialog->syncAppendCommonMappingTableCheckBoxState();
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (ui && ui->keyMappingTabWidget) {
+        if (QTabBar *tabBar = ui->keyMappingTabWidget->tabBar()) {
+            qDebug().nospace().noquote() << "[updateCommonMappingTabVisibility] END final state"
+                                         << " tabBarCount=" << tabBar->count()
+                                         << " tabBarRect=" << tabBar->geometry()
+                                         << " currentIndex=" << ui->keyMappingTabWidget->currentIndex();
+            for (QObject *child : tabBar->children()) {
+                if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {
+                    qDebug().nospace().noquote() << "  QToolButton: enabled=" << btn->isEnabled()
+                                                 << " visible=" << btn->isVisible()
+                                                 << " arrowType=" << (int)btn->arrowType()
+                                                 << " geometry=" << btn->geometry();
+                }
+            }
+        }
+    }
+#endif
 }
 
 void QKeyMapper::refreshTabsForSourceTabChange(int sourceTabIndex)
@@ -20642,6 +20779,91 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(saveSettingSelectStr+SHOW_WINDOW_POINT_KEY, m_MappingAdvancedDialog->getShowWindowPointKey());
     settingFile.setValue(saveSettingSelectStr+SHOW_SCREEN_POINT_KEY, m_MappingAdvancedDialog->getShowScreenPointKey());
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_COMMON_ENABLED, m_MappingAdvancedDialog->getCommonMappingTableEnabled());
+
+    // Save common mapping data as a standalone backup (survives tab detach).
+    // Uses QVariantMap per entry → QVariantList, same pattern as macro export.
+    // Always write the list (even empty) to clear stale data from previous saves.
+    syncCommonMappingDataForSave();
+    QVariantList commonList;
+    if (!m_CommonMappingData.isEmpty()) {
+        for (const MAP_KEYDATA &d : std::as_const(m_CommonMappingData)) {
+            QVariantMap m;
+            m[KEYMAPDATA_ORIGINALKEYS] = d.Original_Key;
+            m[KEYMAPDATA_MAPPINGKEYS] = d.Mapping_Keys;
+            m[KEYMAPDATA_MAPPINGKEYS_KEYUP] = d.MappingKeys_KeyUp;
+            m[KEYMAPDATA_NOTE] = d.Note;
+            m[KEYMAPDATA_CATEGORY] = d.Category;
+            m[KEYMAPDATA_DISABLED] = d.Disabled;
+            m[KEYMAPDATA_BURST] = d.Burst;
+            m[KEYMAPDATA_BURSTPRESS_TIME] = d.BurstPressTime;
+            m[KEYMAPDATA_BURSTRELEASE_TIME] = d.BurstReleaseTime;
+            m[KEYMAPDATA_LOCK] = d.Lock;
+            m[KEYMAPDATA_MAPPINGKEYUNLOCK] = d.MappingKeyUnlock;
+            m[KEYMAPDATA_DISABLEORIGINALKEYUNLOCK] = d.DisableOriginalKeyUnlock;
+            m[KEYMAPDATA_DISABLEFNKEYSWITCH] = d.DisableFnKeySwitch;
+            m[KEYMAPDATA_SENDMAPPINGKEYMETHOD] = d.SendMappingKeyMethod;
+            m[KEYMAPDATA_FIXEDVKEYCODE] = d.FixedVKeyCode;
+            m[KEYMAPDATA_CHECKCOMBKEYORDER] = d.CheckCombKeyOrder;
+            m[KEYMAPDATA_UNBREAKABLE] = d.Unbreakable;
+            m[KEYMAPDATA_PASSTHROUGH] = d.PassThrough;
+            m[KEYMAPDATA_SENDTIMING] = d.SendTiming;
+            m[KEYMAPDATA_PASTETEXTMODE] = d.PasteTextMode;
+            m[KEYMAPDATA_KEYSEQHOLDDOWN] = d.KeySeqHoldDown;
+            m[KEYMAPDATA_REPEATMODE] = d.RepeatMode;
+            m[KEYMAPDATA_REPEATIMES] = d.RepeatTimes;
+            m[KEYMAPDATA_CROSSHAIR_CENTERCOLOR] = d.Crosshair_CenterColor;
+            m[KEYMAPDATA_CROSSHAIR_CENTERSIZE] = d.Crosshair_CenterSize;
+            m[KEYMAPDATA_CROSSHAIR_CENTEROPACITY] = d.Crosshair_CenterOpacity;
+            m[KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR] = d.Crosshair_CrosshairColor;
+            m[KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH] = d.Crosshair_CrosshairWidth;
+            m[KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH] = d.Crosshair_CrosshairLength;
+            m[KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY] = d.Crosshair_CrosshairOpacity;
+            m[KEYMAPDATA_CROSSHAIR_SHOWCENTER] = d.Crosshair_ShowCenter;
+            m[KEYMAPDATA_CROSSHAIR_SHOWTOP] = d.Crosshair_ShowTop;
+            m[KEYMAPDATA_CROSSHAIR_SHOWBOTTOM] = d.Crosshair_ShowBottom;
+            m[KEYMAPDATA_CROSSHAIR_SHOWLEFT] = d.Crosshair_ShowLeft;
+            m[KEYMAPDATA_CROSSHAIR_SHOWRIGHT] = d.Crosshair_ShowRight;
+            m[KEYMAPDATA_CROSSHAIR_X_OFFSET] = d.Crosshair_X_Offset;
+            m[KEYMAPDATA_CROSSHAIR_Y_OFFSET] = d.Crosshair_Y_Offset;
+            m[KEYMAPDATA_FLOATINGBUTTON_ENABLE] = d.FloatingButton_Enable;
+            m[KEYMAPDATA_FLOATINGBUTTON_LABEL] = d.FloatingButton_Label;
+            m[KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR] = d.FloatingButton_ButtonColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR] = d.FloatingButton_PressedColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR] = d.FloatingButton_LockedColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR] = d.FloatingButton_TextColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR] = d.FloatingButton_BorderColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH] = d.FloatingButton_BorderWidth;
+            m[KEYMAPDATA_FLOATINGBUTTON_WIDTH] = d.FloatingButton_Width;
+            m[KEYMAPDATA_FLOATINGBUTTON_HEIGHT] = d.FloatingButton_Height;
+            m[KEYMAPDATA_FLOATINGBUTTON_FONTSIZE] = d.FloatingButton_FontSize;
+            m[KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT] = d.FloatingButton_FontWeight;
+            m[KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY] = d.FloatingButton_FontFamily;
+            m[KEYMAPDATA_FLOATINGBUTTON_RADIUS] = d.FloatingButton_Radius;
+            m[KEYMAPDATA_FLOATINGBUTTON_OPACITY] = d.FloatingButton_Opacity;
+            m[KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY] = d.FloatingButton_NormalOpacity;
+            m[KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY] = d.FloatingButton_PressedOpacity;
+            m[KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY] = d.FloatingButton_LockedOpacity;
+            m[KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART] = d.FloatingButton_ShowOnMappingStart;
+            m[KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP] = d.FloatingButton_ShowToolTip;
+            m[KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE] = d.FloatingButton_SyncPressedLockedState;
+            m[KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP] = d.FloatingButton_AlwaysOnTop;
+            m[KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH] = d.FloatingButton_MousePassThrough;
+            m[KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL] = d.FloatingButton_EnableGradientFill;
+            m[KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION] = d.FloatingButton_EnableHoverAnimation;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH] = d.FloatingButton_HoverEffectStrength;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH] = d.FloatingButton_HoverGlowStrength;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE] = d.FloatingButton_HoverContrastMode;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR] = d.FloatingButton_HoverCustomColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION] = d.FloatingButton_HoverAnimationDuration;
+            m[KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT] = d.FloatingButton_ReferencePoint;
+            m[KEYMAPDATA_FLOATINGBUTTON_X_OFFSET] = d.FloatingButton_X_Offset;
+            m[KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET] = d.FloatingButton_Y_Offset;
+            m[KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE] = d.FloatingButton_DragToMove;
+            commonList.append(m);
+        }
+    }
+    settingFile.setValue(saveSettingSelectStr + COMMONMAPPINGDATA, commonList);
+
     settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_ENABLED, m_MappingAdvancedDialog->getCustomNotificationEnabled());
     settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_POSITION, m_MappingAdvancedDialog->getCustomNotificationPosition());
     saveCustomNotificationStyleSettings(settingFile, saveSettingSelectStr);
@@ -25381,6 +25603,91 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         m_MappingAdvancedDialog->setCommonMappingTableEnabled(MAPPINGTABLE_COMMON_ENABLED_DEFAULT);
     }
     m_MappingAdvancedDialog->blockSignals(false);
+
+    // Load standalone common mapping data backup (survives tab detach)
+    {
+        QVariantList commonList = settingFile.value(settingSelectStr + COMMONMAPPINGDATA).toList();
+        if (!commonList.isEmpty()) {
+            m_CommonMappingData.clear();
+            m_CommonMappingData.reserve(commonList.size());
+            for (const QVariant &v : std::as_const(commonList)) {
+                QVariantMap m = v.toMap();
+                MAP_KEYDATA d;
+                d.Original_Key = m.value(KEYMAPDATA_ORIGINALKEYS).toString();
+                d.Mapping_Keys = m.value(KEYMAPDATA_MAPPINGKEYS).toStringList();
+                d.MappingKeys_KeyUp = m.value(KEYMAPDATA_MAPPINGKEYS_KEYUP).toStringList();
+                d.Note = m.value(KEYMAPDATA_NOTE).toString();
+                d.Category = m.value(KEYMAPDATA_CATEGORY).toString();
+                d.Disabled = m.value(KEYMAPDATA_DISABLED).toBool();
+                d.Burst = m.value(KEYMAPDATA_BURST).toBool();
+                d.BurstPressTime = m.value(KEYMAPDATA_BURSTPRESS_TIME).toInt();
+                d.BurstReleaseTime = m.value(KEYMAPDATA_BURSTRELEASE_TIME).toInt();
+                d.Lock = m.value(KEYMAPDATA_LOCK).toBool();
+                d.MappingKeyUnlock = m.value(KEYMAPDATA_MAPPINGKEYUNLOCK).toBool();
+                d.DisableOriginalKeyUnlock = m.value(KEYMAPDATA_DISABLEORIGINALKEYUNLOCK).toBool();
+                d.DisableFnKeySwitch = m.value(KEYMAPDATA_DISABLEFNKEYSWITCH).toBool();
+                d.SendMappingKeyMethod = m.value(KEYMAPDATA_SENDMAPPINGKEYMETHOD).toInt();
+                d.FixedVKeyCode = m.value(KEYMAPDATA_FIXEDVKEYCODE).toInt();
+                d.CheckCombKeyOrder = m.value(KEYMAPDATA_CHECKCOMBKEYORDER).toBool();
+                d.Unbreakable = m.value(KEYMAPDATA_UNBREAKABLE).toBool();
+                d.PassThrough = m.value(KEYMAPDATA_PASSTHROUGH).toBool();
+                d.SendTiming = m.value(KEYMAPDATA_SENDTIMING).toInt();
+                d.PasteTextMode = m.value(KEYMAPDATA_PASTETEXTMODE).toInt();
+                d.KeySeqHoldDown = m.value(KEYMAPDATA_KEYSEQHOLDDOWN).toBool();
+                d.RepeatMode = m.value(KEYMAPDATA_REPEATMODE).toInt();
+                d.RepeatTimes = m.value(KEYMAPDATA_REPEATIMES).toInt();
+                d.Crosshair_CenterColor = m.value(KEYMAPDATA_CROSSHAIR_CENTERCOLOR).value<QColor>();
+                d.Crosshair_CenterSize = m.value(KEYMAPDATA_CROSSHAIR_CENTERSIZE).toInt();
+                d.Crosshair_CenterOpacity = m.value(KEYMAPDATA_CROSSHAIR_CENTEROPACITY).toInt();
+                d.Crosshair_CrosshairColor = m.value(KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR).value<QColor>();
+                d.Crosshair_CrosshairWidth = m.value(KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH).toInt();
+                d.Crosshair_CrosshairLength = m.value(KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH).toInt();
+                d.Crosshair_CrosshairOpacity = m.value(KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY).toInt();
+                d.Crosshair_ShowCenter = m.value(KEYMAPDATA_CROSSHAIR_SHOWCENTER).toBool();
+                d.Crosshair_ShowTop = m.value(KEYMAPDATA_CROSSHAIR_SHOWTOP).toBool();
+                d.Crosshair_ShowBottom = m.value(KEYMAPDATA_CROSSHAIR_SHOWBOTTOM).toBool();
+                d.Crosshair_ShowLeft = m.value(KEYMAPDATA_CROSSHAIR_SHOWLEFT).toBool();
+                d.Crosshair_ShowRight = m.value(KEYMAPDATA_CROSSHAIR_SHOWRIGHT).toBool();
+                d.Crosshair_X_Offset = m.value(KEYMAPDATA_CROSSHAIR_X_OFFSET).toInt();
+                d.Crosshair_Y_Offset = m.value(KEYMAPDATA_CROSSHAIR_Y_OFFSET).toInt();
+                d.FloatingButton_Enable = m.value(KEYMAPDATA_FLOATINGBUTTON_ENABLE).toBool();
+                d.FloatingButton_Label = m.value(KEYMAPDATA_FLOATINGBUTTON_LABEL).toString();
+                d.FloatingButton_ButtonColor = m.value(KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR).value<QColor>();
+                d.FloatingButton_PressedColor = m.value(KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR).value<QColor>();
+                d.FloatingButton_LockedColor = m.value(KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR).value<QColor>();
+                d.FloatingButton_TextColor = m.value(KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR).value<QColor>();
+                d.FloatingButton_BorderColor = m.value(KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR).value<QColor>();
+                d.FloatingButton_BorderWidth = m.value(KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH).toInt();
+                d.FloatingButton_Width = m.value(KEYMAPDATA_FLOATINGBUTTON_WIDTH).toInt();
+                d.FloatingButton_Height = m.value(KEYMAPDATA_FLOATINGBUTTON_HEIGHT).toInt();
+                d.FloatingButton_FontSize = m.value(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE).toInt();
+                d.FloatingButton_FontWeight = m.value(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT).toInt();
+                d.FloatingButton_FontFamily = m.value(KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY).toString();
+                d.FloatingButton_Radius = m.value(KEYMAPDATA_FLOATINGBUTTON_RADIUS).toInt();
+                d.FloatingButton_Opacity = m.value(KEYMAPDATA_FLOATINGBUTTON_OPACITY).toDouble();
+                d.FloatingButton_NormalOpacity = m.value(KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY).toDouble();
+                d.FloatingButton_PressedOpacity = m.value(KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY).toDouble();
+                d.FloatingButton_LockedOpacity = m.value(KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY).toDouble();
+                d.FloatingButton_ShowOnMappingStart = m.value(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART).toBool();
+                d.FloatingButton_ShowToolTip = m.value(KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP).toBool();
+                d.FloatingButton_SyncPressedLockedState = m.value(KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE).toBool();
+                d.FloatingButton_AlwaysOnTop = m.value(KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP).toBool();
+                d.FloatingButton_MousePassThrough = m.value(KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH).toBool();
+                d.FloatingButton_EnableGradientFill = m.value(KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL).toBool();
+                d.FloatingButton_EnableHoverAnimation = m.value(KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION).toBool();
+                d.FloatingButton_HoverEffectStrength = m.value(KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH).toInt();
+                d.FloatingButton_HoverGlowStrength = m.value(KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH).toInt();
+                d.FloatingButton_HoverContrastMode = m.value(KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE).toInt();
+                d.FloatingButton_HoverCustomColor = m.value(KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR).value<QColor>();
+                d.FloatingButton_HoverAnimationDuration = m.value(KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION).toInt();
+                d.FloatingButton_ReferencePoint = m.value(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT).toInt();
+                d.FloatingButton_X_Offset = m.value(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET).toInt();
+                d.FloatingButton_Y_Offset = m.value(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET).toInt();
+                d.FloatingButton_DragToMove = m.value(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE).toBool();
+                m_CommonMappingData.append(d);
+            }
+        }
+    }
 
     m_CustomNotificationStyleInitialized = false;
     if (hasStoredCustomNotificationStyle(settingFile, settingSelectStr)) {

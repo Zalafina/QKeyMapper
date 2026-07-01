@@ -1429,6 +1429,9 @@ public:
     static bool isCommonMappingTab(const KeyMappingTab_Info &tabInfo);
     static bool isCommonMappingTabIndex(int tabIndex);
     static int findCommonMappingTabIndex(void);
+    void detachCommonMappingTab(void);
+    void attachCommonMappingTab(void);
+    void syncCommonMappingDataForSave(void);
     static int firstNormalMappingTabIndex(void);
     static int countNormalMappingTabs(void);
     static bool isTabTextDuplicate(const QString &tabName);
@@ -2442,6 +2445,7 @@ private:
     QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
+    QList<MAP_KEYDATA> m_CommonMappingData;  // dedicated common mapping data (survives detach)
     QMacroListDialog *m_MacroListDialog = Q_NULLPTR;
     QVButtonPanel *m_VButtonPanel = Q_NULLPTR;
     QVButtonPanelSetupDialog *m_VButtonPanelSetupDialog = Q_NULLPTR;

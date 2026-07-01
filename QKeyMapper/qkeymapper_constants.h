@@ -1148,6 +1148,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char GROUPNAME_GLOBALSETTING[] = "QKeyMapperGlobalSetting";
     inline constexpr const char DISPLAYNAME_GLOBALSETTING[] = "GlobalKeyMapping";
 
+    inline constexpr const char COMMONMAPPINGDATA[] = "CommonMappingData";
+
     inline constexpr const char KEYMAPDATA_ORIGINALKEYS[] = "KeyMapData_OriginalKeys";
     inline constexpr const char KEYMAPDATA_MAPPINGKEYS[] = "KeyMapData_MappingKeys";
     inline constexpr const char KEYMAPDATA_MAPPINGKEYS_KEYUP[] = "KeyMapData_MappingKeys_KeyUp";
