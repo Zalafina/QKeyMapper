@@ -28291,11 +28291,6 @@ void QKeyMapper::openCurrentMappingTableSetupDialog()
         return;
     }
 
-    if (isCommonMappingTabIndex(currentTabIndex)) {
-        showWarningPopup(tr("Common mapping table does not have table settings."));
-        return;
-    }
-
     showTableSetupDialog(currentTabIndex);
 }
 
@@ -35703,11 +35698,6 @@ void QKeyMapper::onKeyMappingTabWidgetTabBarDoubleClicked(int index)
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[onKeyMappingTabWidgetTabBarDoubleClicked]" << "KeyMappingTabWidget TabBar doubleclicked :" << index;
 #endif
-
-    if (isCommonMappingTabIndex(index)) {
-        showWarningPopup(tr("Common mapping table does not have table settings."));
-        return;
-    }
 
         showTableSetupDialog(index);
     }

@@ -83,11 +83,13 @@ private slots:
 private:
     void restoreDefaultCustomImage();
     void showSelectCustomImageButtonContextMenu(const QPoint &pos);
+    void applyCommonTabMode();
 
     static QTableSetupDialog *m_instance;
     Ui::QTableSetupDialog *ui;
     int m_TabIndex;
     int m_SettingSelectIndex;
+    bool m_IsCommonTabMode;
     ColorPickerWidget *m_NotificationFontColorPicker;
     ColorPickerWidget *m_NotificationBackgroundColorPicker;
     QFileDialog *m_SelectImageFileDialog = Q_NULLPTR;

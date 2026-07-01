@@ -11,6 +11,7 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     , ui(new Ui::QTableSetupDialog)
     , m_TabIndex(-1)
     , m_SettingSelectIndex(-1)
+    , m_IsCommonTabMode(false)
     , m_NotificationFontColorPicker(new ColorPickerWidget(this, "TabFontColor", COLORPICKER_BUTTON_WIDTH_TABFONTCOLOR))
     , m_NotificationBackgroundColorPicker(new ColorPickerWidget(this, "TabBGColor", COLORPICKER_BUTTON_WIDTH_TABBGCOLOR))
 {
@@ -411,6 +412,7 @@ void QTableSetupDialog::closeEvent(QCloseEvent *event)
 #endif
     m_TabIndex = -1;
     m_SettingSelectIndex = -1;
+    m_IsCommonTabMode = false;
 
     QDialog::closeEvent(event);
 }
@@ -523,6 +525,12 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load Custom Image Show As Floating Window
         ui->customImageShowAsFloatingWindowCheckBox->setChecked(TabCustomImage_ShowAsFloatingWindow);
+    }
+
+    const bool isCommonTab = QKeyMapper::isCommonMappingTabIndex(m_TabIndex);
+    if (isCommonTab != m_IsCommonTabMode) {
+        m_IsCommonTabMode = isCommonTab;
+        applyCommonTabMode();
     }
 
     QDialog::showEvent(event);
@@ -961,4 +969,31 @@ void QTableSetupDialog::on_appendCommonMappingTableCheckBox_stateChanged(int sta
     QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].IncludeCommonMappingTable = appendCommonMappingTable;
     QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(m_TabIndex);
     QKeyMapper::getInstance()->requestSaveSettingDirty();
+}
+
+void QTableSetupDialog::applyCommonTabMode()
+{
+    const bool isCommon = m_IsCommonTabMode;
+
+    // Keep only export/import/select-image/image-label enabled for common tab
+    ui->tabNameLabel->setEnabled(!isCommon);
+    ui->tabHotkeyLabel->setEnabled(!isCommon);
+    ui->customImageShowPositionLabel->setEnabled(!isCommon);
+    ui->customImagePaddingLabel->setEnabled(!isCommon);
+    ui->customImageTrayIconPixelLabel->setEnabled(!isCommon);
+    ui->tabNameLineEdit->setEnabled(!isCommon);
+    ui->tabNameUpdateButton->setEnabled(!isCommon);
+    ui->tabHotkeyLineEdit->setEnabled(!isCommon);
+    ui->tabHotkeyUpdateButton->setEnabled(!isCommon);
+    ui->removeTableButton->setEnabled(!isCommon);
+    ui->hideNotificationCheckBox->setEnabled(!isCommon);
+    ui->appendCommonMappingTableCheckBox->setEnabled(!isCommon && QKeyMapper::isCommonMappingFeatureEnabled());
+    ui->customImageShowPositionComboBox->setEnabled(!isCommon);
+    ui->customImagePaddingSpinBox->setEnabled(!isCommon);
+    ui->customImageShowAsTrayIconCheckBox->setEnabled(!isCommon);
+    ui->customImageTrayIconPixelComboBox->setEnabled(!isCommon);
+    ui->customImageShowAsFloatingWindowCheckBox->setEnabled(!isCommon);
+    ui->floatingWindowSetupButton->setEnabled(!isCommon);
+    m_NotificationFontColorPicker->setEnabled(!isCommon);
+    m_NotificationBackgroundColorPicker->setEnabled(!isCommon);
 }
