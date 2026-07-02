@@ -32890,6 +32890,13 @@ void QKeyMapper::forceSwitchKeyMappingTabWidgetIndex(int index)
     ui->keyMappingTabWidget->blockSignals(false);
 }
 
+void QKeyMapper::switchToMappingTableTab(int index)
+{
+    if (0 <= index && index < ui->keyMappingTabWidget->count()) {
+        ui->keyMappingTabWidget->setCurrentIndex(index);
+    }
+}
+
 void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
 {
     if (0 <= tabindex && tabindex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
@@ -46043,6 +46050,20 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     }
     Q_UNUSED(hasPreviousGroup);
 
+    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    const bool isCommonTab = keymapper->isCommonMappingTabIndex(currentTabIndex);
+
+    // Group: Jump to Common Mapping Table
+    const int commonTabIndex = keymapper->findCommonMappingTabIndex();
+    if (!isCommonTab && keymapper->isCommonMappingFeatureEnabled() && commonTabIndex >= 0) {
+        contextMenu.addSeparator();
+        hasPreviousGroup = true;
+        QAction *jumpToCommonAction = contextMenu.addAction(QObject::tr("Jump to Common Mapping Table"));
+        connect(jumpToCommonAction, &QAction::triggered, this, [keymapper, commonTabIndex]() {
+            keymapper->switchToMappingTableTab(commonTabIndex);
+        });
+    }
+
     // Group: Tab operations (between Edit group and Window dialogs group)
     {
         contextMenu.addSeparator();
@@ -46051,9 +46072,6 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         connect(addBlankTabAction, &QAction::triggered, this, [keymapper]() {
             keymapper->addTabToKeyMappingTabWidget();
         });
-
-        const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
-        const bool isCommonTab = keymapper->isCommonMappingTabIndex(currentTabIndex);
 
         // Copy and Delete: not available for common mapping table
         if (!isCommonTab) {

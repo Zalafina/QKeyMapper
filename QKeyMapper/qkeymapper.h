@@ -2012,6 +2012,7 @@ private:
     void forceSwitchKeyMappingTabWidgetIndex(int index);
     void applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappingDataTable, const QList<MAP_KEYDATA> *mappingDataList, int row);
 public:
+    void switchToMappingTableTab(int index);
     void refreshKeyMappingDataTableByTabIndex(int tabindex);
     void refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList);
     void updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList, int row, int column);
