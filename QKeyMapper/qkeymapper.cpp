@@ -31560,13 +31560,14 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
         verticalHeaderWidth = qMax(mappingDataTable->verticalHeader()->width(),
                                   mappingDataTable->verticalHeader()->sizeHint().width());
     }
+    Q_UNUSED(verticalHeaderWidth);
 
     int referenceWidth = mappingDataTable->width();
     int viewportWidth = mappingDataTable->viewport()->width();
 
     mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
 
-    int original_key_width_min = referenceWidth/5 - 15;
+    int original_key_width_min = referenceWidth / 5 - 30;
     int original_key_width_max = referenceWidth / 2 - 32;
     int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
 
@@ -31634,6 +31635,14 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
         if (overflow > 0) {
             mapping_key_width = qMax(mapping_key_width_min, mapping_key_width - overflow);
         }
+    }
+
+    // ponytail: if still overflowing after category + mapping_key compression,
+    // compress original_key_width as last resort
+    totalWidth = original_key_width + mapping_key_width + disabled_width + burst_mode_width + lock_width + floating_width + category_width;
+    overflow = totalWidth - viewportWidth;
+    if (overflow > 0) {
+        original_key_width = qMax(original_key_width_min, original_key_width - overflow);
     }
 
     mappingDataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
@@ -46085,7 +46094,6 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     else if (hasOriginalKeyTriggerGroup) {
         hasPreviousGroup = true;
     }
-    Q_UNUSED(hasPreviousGroup);
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     const bool isCommonTab = keymapper->isCommonMappingTabIndex(currentTabIndex);
@@ -46100,6 +46108,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             keymapper->switchToMappingTableTab(commonTabIndex);
         });
     }
+    Q_UNUSED(hasPreviousGroup);
 
     // Group: Table Operations submenu
     {
