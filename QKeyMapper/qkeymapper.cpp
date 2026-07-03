@@ -3190,6 +3190,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             setHideDisabledRows(c);
         });
 
+        // Keep checked state in sync with the backing members (context menu may toggle them too)
+        connect(m_MenuMappingTableView, &QMenu::aboutToShow, this, [this]() {
+            m_ActionShowNotes->setChecked(m_ShowNotes);
+            m_ActionShowFloating->setChecked(m_ShowFloating);
+            m_ActionHideDisabled->setChecked(m_HideDisabled);
+        });
+
         // Button -> action reverse sync
         //connect(ui->processListButton, &QPushButton::toggled, m_ActionShowProcessList, &QAction::setChecked);
         //connect(ui->showNotesButton, &QPushButton::toggled, m_ActionShowNotes, &QAction::setChecked);
@@ -38591,6 +38598,12 @@ void QKeyMapper::setHideDisabledRows(bool hide)
     //ui->hideDisabledButton->setChecked(hide);
 }
 
+void QKeyMapper::setShowNotes(bool show)
+{
+    m_ShowNotes = show;
+    refreshAllKeyMappingTabWidget();
+}
+
 void QKeyMapper::setFloatingColumnVisible(bool visible)
 {
     m_ShowFloating = visible;
@@ -45925,6 +45938,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                                                      static_cast<int>(OriginalKeyTriggerType::LongPress));
                         triggerTypeComboBox->addItem(originalKeyTriggerTypeDisplayName(OriginalKeyTriggerType::DoublePress),
                                                      static_cast<int>(OriginalKeyTriggerType::DoublePress));
+                        triggerTypeComboBox->setStyle(QKeyMapperStyle::fusionStyle());
 
                         durationWidget->setFixedWidth(TriggerTypeInnerControlWidth);
                         durationWidget->setFixedHeight(TriggerTypeControlHeight);
@@ -45937,6 +45951,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                         pressTimeSpinBox->setFixedHeight(TriggerTypeControlHeight);
                         // pressTimeSpinBox->setPrefix(QObject::tr("Duration "));
                         pressTimeSpinBox->setSuffix(QObject::tr(" ms"));
+                        pressTimeSpinBox->setStyle(QKeyMapperStyle::fusionStyle());
                         durationLayout->addWidget(pressTimeSpinBox);
 
                         triggerTypeLayout->addWidget(triggerTypeComboBox);
@@ -46086,23 +46101,25 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         });
     }
 
-    // Group: Tab operations (between Edit group and Window dialogs group)
+    // Group: Table Operations submenu
     {
         contextMenu.addSeparator();
 
-        QAction *addBlankTabAction = contextMenu.addAction(QObject::tr("Add Blank Tab"));
+        QMenu *tableOpsMenu = contextMenu.addMenu(QObject::tr("Table Operations"));
+
+        QAction *addBlankTabAction = tableOpsMenu->addAction(QObject::tr("Add Blank Tab"));
         connect(addBlankTabAction, &QAction::triggered, this, [keymapper]() {
             keymapper->addTabToKeyMappingTabWidget();
         });
 
         // Copy and Delete: not available for common mapping table
         if (!isCommonTab) {
-            QAction *copyCurrentTabAction = contextMenu.addAction(QObject::tr("Copy Current Tab"));
+            QAction *copyCurrentTabAction = tableOpsMenu->addAction(QObject::tr("Copy Current Tab"));
             connect(copyCurrentTabAction, &QAction::triggered, this, [keymapper]() {
                 keymapper->copyCurrentTabToKeyMappingTabWidget();
             });
 
-            QAction *deleteCurrentTabAction = contextMenu.addAction(QObject::tr("Delete Current Tab"));
+            QAction *deleteCurrentTabAction = tableOpsMenu->addAction(QObject::tr("Delete Current Tab"));
             connect(deleteCurrentTabAction, &QAction::triggered, this, [keymapper, currentTabIndex]() {
                 // Defer via QTimer::singleShot so the stack-allocated QMenu
                 // (child of the table widget being deleted) is already destroyed.
@@ -46112,25 +46129,61 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             });
         }
 
+        tableOpsMenu->addSeparator();
+
         // Clear
-        QAction *clearCurrentTabAction = contextMenu.addAction(QObject::tr("Clear Current Mapping Table"));
+        QAction *clearCurrentTabAction = tableOpsMenu->addAction(QObject::tr("Clear Current Mapping Table"));
         connect(clearCurrentTabAction, &QAction::triggered, this, [keymapper]() {
             keymapper->clearCurrentMappingTable();
         });
 
         // Export
-        QAction *exportTableAction = contextMenu.addAction(QObject::tr("Export Mapping Table"));
+        QAction *exportTableAction = tableOpsMenu->addAction(QObject::tr("Export Mapping Table"));
         connect(exportTableAction, &QAction::triggered, this, [keymapper, currentTabIndex]() {
             keymapper->exportMappingTableByTabIndex(currentTabIndex);
         });
 
         // Import
-        QAction *importTableAction = contextMenu.addAction(QObject::tr("Import Mapping Table"));
+        QAction *importTableAction = tableOpsMenu->addAction(QObject::tr("Import Mapping Table"));
         connect(importTableAction, &QAction::triggered, this, [keymapper, currentTabIndex]() {
             keymapper->importMappingTableByTabIndex(currentTabIndex);
         });
 
+        if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+            tableOpsMenu->setStyle(windowsStyle);
+        }
+
         hasPreviousGroup = true;
+    }
+
+    // Group: Mapping Table View submenu
+    {
+        QMenu *viewMenu = contextMenu.addMenu(QObject::tr("Mapping Table View"));
+
+        QAction *showNotesAction = viewMenu->addAction(QObject::tr("Show Notes"));
+        showNotesAction->setCheckable(true);
+        showNotesAction->setChecked(keymapper->isShowNotesEnabled());
+        connect(showNotesAction, &QAction::toggled, keymapper, [keymapper](bool c) {
+            keymapper->setShowNotes(c);
+        });
+
+        QAction *showFloatingAction = viewMenu->addAction(QObject::tr("Show Floating Column"));
+        showFloatingAction->setCheckable(true);
+        showFloatingAction->setChecked(keymapper->isShowFloatingEnabled());
+        connect(showFloatingAction, &QAction::toggled, keymapper, [keymapper](bool c) {
+            keymapper->setFloatingColumnVisible(c);
+        });
+
+        QAction *hideDisabledAction = viewMenu->addAction(QObject::tr("Hide Disabled Rows"));
+        hideDisabledAction->setCheckable(true);
+        hideDisabledAction->setChecked(keymapper->isHideDisabledEnabled());
+        connect(hideDisabledAction, &QAction::toggled, keymapper, [keymapper](bool c) {
+            keymapper->setHideDisabledRows(c);
+        });
+
+        if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+            viewMenu->setStyle(windowsStyle);
+        }
     }
 
     // Group 1: Window dialogs

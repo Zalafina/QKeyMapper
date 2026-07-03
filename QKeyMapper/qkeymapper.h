@@ -1686,6 +1686,7 @@ public slots:
     // Button toggle state members (survive button deletion, used by menu actions)
     void setProcessListVisible(bool visible);
     void setHideDisabledRows(bool hide);
+    void setShowNotes(bool show);
     void setFloatingColumnVisible(bool visible);
 
     // Export/Import/Delete tab helpers (shared across dialog buttons, menu bar, context menu)
