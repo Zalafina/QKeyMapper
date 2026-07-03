@@ -31555,6 +31555,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 
     int referenceWidth = mappingDataTable->width();
+    int viewportWidth = mappingDataTable->viewport()->width();
 
     mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
 
@@ -31610,9 +31611,22 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 
     int mapping_key_width_min = referenceWidth/5 - 15;
-    int mapping_key_width = referenceWidth - verticalHeaderWidth - original_key_width - disabled_width - burst_mode_width - lock_width - floating_width - category_width - 16;
+    int mapping_key_width = viewportWidth - original_key_width - disabled_width - burst_mode_width - lock_width - floating_width - category_width;
     if (mapping_key_width < mapping_key_width_min) {
         mapping_key_width = mapping_key_width_min;
+    }
+
+    // ponytail: overflow protection — compress category_width first, then mapping_key_width
+    static constexpr int category_width_min = 36;
+    int totalWidth = original_key_width + mapping_key_width + disabled_width + burst_mode_width + lock_width + floating_width + category_width;
+    int overflow = totalWidth - viewportWidth;
+    if (overflow > 0) {
+        int catReduce = qMin(category_width - category_width_min, overflow);
+        category_width -= catReduce;
+        overflow -= catReduce;
+        if (overflow > 0) {
+            mapping_key_width = qMax(mapping_key_width_min, mapping_key_width - overflow);
+        }
     }
 
     mappingDataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
@@ -31628,7 +31642,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", floating_width =" << floating_width << ", category_width =" << category_width;
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", viewportWidth =" << viewportWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", floating_width =" << floating_width << ", category_width =" << category_width << ", totalWidth =" << totalWidth;
 #endif
 }
 
