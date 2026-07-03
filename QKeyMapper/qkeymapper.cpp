@@ -45264,6 +45264,11 @@ void ProcessInfoTableWidget::contextMenuEvent(QContextMenuEvent *event)
     }
 
     QAction *copyAction = contextMenu.addAction(actionText);
+
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        contextMenu.setStyle(windowsStyle);
+    }
+
     QAction *selectedAction = contextMenu.exec(event->globalPos());
 
     if (selectedAction == copyAction) {
@@ -45759,6 +45764,9 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         }
 
         if (!stateContextMenu.actions().isEmpty()) {
+            if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+                stateContextMenu.setStyle(windowsStyle);
+            }
             stateContextMenu.exec(event->globalPos());
             event->accept();
             return;
@@ -46251,6 +46259,9 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     }
 
     if (!contextMenu.actions().isEmpty()) {
+        if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+            contextMenu.setStyle(windowsStyle);
+        }
         contextMenu.exec(event->globalPos());
         event->accept();
         return;
