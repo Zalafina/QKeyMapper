@@ -38,13 +38,13 @@ void refreshItemSourceTableOrAffectedTabs(int tabIndex)
     }
 }
 
-QString formatItemIndexText(int tabIndex, int row)
+QString formatItemIndexValueText(int tabIndex, int row)
 {
     if (QKeyMapper::isCommonMappingTabIndex(tabIndex)) {
-        return QStringLiteral("%1 C%2").arg(QObject::tr("No.")).arg(row + 1);
+        return QStringLiteral("C%1").arg(row + 1);
     }
 
-    return QString("%1 %2").arg(QObject::tr("No.")).arg(row + 1);
+    return QString::number(row + 1);
 }
 }
 
@@ -193,6 +193,7 @@ QItemSetupDialog::~QItemSetupDialog()
 void QItemSetupDialog::setUILanguage(int languageindex)
 {
     setWindowTitle(tr(ITEMSETUPDIALOG_WINDOWTITLE_STR));
+    ui->indexLabel->setText(QObject::tr("No."));
     ui->disabledCheckBox->setText(tr("Disabled"));
     ui->burstCheckBox->setText(tr(BURSTCHECKBOX_STR));
     ui->lockCheckBox->setText(tr(LOCKCHECKBOX_STR));
@@ -305,6 +306,7 @@ void QItemSetupDialog::resetFontSize()
         // }
     }
 
+    ui->indexLabel->setFont(customFont);
     ui->disabledCheckBox->setFont(customFont);
     ui->burstCheckBox->setFont(customFont);
     ui->lockCheckBox->setFont(customFont);
@@ -1681,7 +1683,7 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
 #endif
 
         /* Load Index String */
-        ui->indexLabel->setText(formatItemIndexText(m_TabIndex, m_ItemRow));
+        ui->indexValueLineEdit->setText(formatItemIndexValueText(m_TabIndex, m_ItemRow));
 
         /* Load Original Key String */
         QString originalkey_str = keymapdata.Original_Key;
@@ -1826,6 +1828,8 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         else {
             ui->sendTimingComboBox->setEnabled(true);
         }
+
+        updateKeyUpMappingEnabledState();
 
         /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
         if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
@@ -2315,6 +2319,8 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
             ui->sendTimingComboBox->setEnabled(true);
         }
 
+        updateKeyUpMappingEnabledState();
+
         /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
         if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
             if (isKeySequence(keymapdata.Mapping_Keys)) {
@@ -2676,6 +2682,8 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
             ui->sendTimingComboBox->setEnabled(true);
         }
 
+        updateKeyUpMappingEnabledState();
+
         /* Only SENDTIMING_NORMAL enable KeySeqHoldDown */
         if (SENDTIMING_NORMAL == keymapdata.SendTiming) {
             if (isKeySequence(keymapdata.Mapping_Keys)) {
@@ -2777,7 +2785,7 @@ void QItemSetupDialog::refreshFromCurrentItem()
         return;
     }
 
-    ui->indexLabel->setText(formatItemIndexText(m_TabIndex, m_ItemRow));
+    ui->indexValueLineEdit->setText(formatItemIndexValueText(m_TabIndex, m_ItemRow));
     ui->itemNoteLineEdit->setText(QKeyMapper::KeyMappingDataList->at(m_ItemRow).Note);
     refreshAllRelatedUI();
 
@@ -3699,6 +3707,18 @@ void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)
     }
 
     refreshMappingKeyRelatedUI();
+    updateKeyUpMappingEnabledState();
+}
+
+void QItemSetupDialog::updateKeyUpMappingEnabledState()
+{
+    const int timing = ui->sendTimingComboBox->currentIndex();
+    const bool needKeyUp = (timing == SENDTIMING_KEYUP
+        || timing == SENDTIMING_KEYDOWN_AND_KEYUP
+        || timing == SENDTIMING_NORMAL_AND_KEYUP);
+    ui->mappingKey_KeyUpLabel->setEnabled(needKeyUp);
+    ui->SetupDialog_MappingKey_KeyUpLineEdit->setEnabled(needKeyUp);
+    ui->mappingKey_KeyUpSequenceEditButton->setEnabled(needKeyUp);
 }
 
 void QItemSetupDialog::on_pasteTextModeComboBox_currentIndexChanged(int index)

@@ -103,6 +103,7 @@ private:
     void refreshOriginalKeyRelatedUI(void);
     bool refreshMappingKeyRelatedUI(void);
     void refreshAllRelatedUI(void);
+    void updateKeyUpMappingEnabledState(void);
 
     // Unified update system helper methods
 public:
