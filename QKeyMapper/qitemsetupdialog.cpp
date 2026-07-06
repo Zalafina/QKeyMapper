@@ -63,8 +63,6 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     , m_KeyRecordDialog(Q_NULLPTR)
     , m_CrosshairSetupDialog(Q_NULLPTR)
     , m_FloatingButtonSetupDialog(Q_NULLPTR)
-    , m_OriginalKeyListComboBox(new KeyListComboBox(this))
-    , m_MappingKeyListComboBox(new KeyListComboBox(this))
     , m_MappingCodeLabel(Q_NULLPTR)
     , m_MappingCodeLineEdit(Q_NULLPTR)
     , m_CopyMappingCodeButton(Q_NULLPTR)
@@ -126,8 +124,8 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
     ui->burstpressSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->burstreleaseSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
     ui->repeatTimesSpinBox->setFont(QFont(FONTNAME_ENGLISH, 9));
-    m_OriginalKeyListComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
-    m_MappingKeyListComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
+    ui->SetupDialog_OriginalKeyListComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
+    ui->SetupDialog_MappingKeyListComboBox->setFont(QFont(FONTNAME_ENGLISH, 9));
 
     ui->burstpressSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
     ui->burstreleaseSpinBox->setRange(BURST_TIME_MIN, BURST_TIME_MAX);
@@ -174,8 +172,8 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
         connect(m_ApplyClipboardMappingCodeButton, &QPushButton::clicked, this, &QItemSetupDialog::applyClipboardMappingCode);
     }
 
-    QObject::connect(m_OriginalKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QItemSetupDialog::OrikeyComboBox_currentTextChangedSlot);
-    QObject::connect(m_MappingKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QItemSetupDialog::MapkeyComboBox_currentTextChangedSlot);
+    QObject::connect(ui->SetupDialog_OriginalKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QItemSetupDialog::OrikeyComboBox_currentTextChangedSlot);
+    QObject::connect(ui->SetupDialog_MappingKeyListComboBox, &KeyListComboBox::currentTextChanged, this, &QItemSetupDialog::MapkeyComboBox_currentTextChangedSlot);
     QObject::connect(ui->originalKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_OriginalKeyFirst);
     QObject::connect(ui->SetupDialog_MappingKeyLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKeyFirst);
     QObject::connect(ui->SetupDialog_MappingKey_KeyUpLineEdit, &QLineEdit::returnPressed, this, &QItemSetupDialog::updateMappingInfo_MappingKey_KeyUpFirst);
@@ -396,16 +394,16 @@ void QItemSetupDialog::updateOriginalKeyListComboBox()
 {
     const KeyListComboBox *orikeyComboBox = QKeyMapper::getInstance()->getOriKeyComboBox();
 
-    m_OriginalKeyListComboBox->clear();
+    ui->SetupDialog_OriginalKeyListComboBox->clear();
 
     const QIcon &common_icon = QKeyMapper::s_Icon_Blank;
-    m_OriginalKeyListComboBox->addItem(QString());
-    m_OriginalKeyListComboBox->addItem(common_icon, SEPARATOR_LONGPRESS);
-    m_OriginalKeyListComboBox->addItem(common_icon, SEPARATOR_DOUBLEPRESS);
+    ui->SetupDialog_OriginalKeyListComboBox->addItem(QString());
+    ui->SetupDialog_OriginalKeyListComboBox->addItem(common_icon, SEPARATOR_LONGPRESS);
+    ui->SetupDialog_OriginalKeyListComboBox->addItem(common_icon, SEPARATOR_DOUBLEPRESS);
     for(int i = 1; i < orikeyComboBox->count(); i++) {
         QIcon icon = orikeyComboBox->itemIcon(i);
         QString text = orikeyComboBox->itemText(i);
-        m_OriginalKeyListComboBox->addItem(icon, text);
+        ui->SetupDialog_OriginalKeyListComboBox->addItem(icon, text);
     }
 }
 
@@ -413,13 +411,13 @@ void QItemSetupDialog::updateMappingKeyListComboBox()
 {
     const KeyListComboBox *mapkeyComboBox = QKeyMapper::getInstance()->getMapKeyComboBox();
 
-    m_MappingKeyListComboBox->clear();
+    ui->SetupDialog_MappingKeyListComboBox->clear();
 
-    m_MappingKeyListComboBox->addItem(QString());
+    ui->SetupDialog_MappingKeyListComboBox->addItem(QString());
     for(int i = 1; i < mapkeyComboBox->count(); i++) {
         QIcon icon = mapkeyComboBox->itemIcon(i);
         QString text = mapkeyComboBox->itemText(i);
-        m_MappingKeyListComboBox->addItem(icon, text);
+        ui->SetupDialog_MappingKeyListComboBox->addItem(icon, text);
     }
 }
 
@@ -704,12 +702,22 @@ void QItemSetupDialog::setMappingKey_KeyUpLineEditText(const QString &keytext)
 
 QString QItemSetupDialog::getCurrentOriKeyListText()
 {
-    return getInstance()->m_OriginalKeyListComboBox->currentText();
+    return getInstance()->ui->SetupDialog_OriginalKeyListComboBox->currentText();
 }
 
 QString QItemSetupDialog::getCurrentMapKeyListText()
 {
-    return getInstance()->m_MappingKeyListComboBox->currentText();
+    return getInstance()->ui->SetupDialog_MappingKeyListComboBox->currentText();
+}
+
+KeyListComboBox* QItemSetupDialog::getOriginalKeyListComboBox()
+{
+    return getInstance()->ui->SetupDialog_OriginalKeyListComboBox;
+}
+
+KeyListComboBox* QItemSetupDialog::getMappingKeyListComboBox()
+{
+    return getInstance()->ui->SetupDialog_MappingKeyListComboBox;
 }
 
 void QItemSetupDialog::setEditingMappingKeyLineEdit(int editing_lineedit)
@@ -2157,17 +2165,6 @@ void QItemSetupDialog::initKeyListComboBoxes()
     s_valiedMappingKeyList.removeOne(MOUSE_MOVE_SCREENPOINT_STR);
     s_valiedMappingKeyList.removeOne(MOUSE_MOVE_RELATIVE_STR);
 
-    int left = ui->orikeyListLabel->x() + ui->orikeyListLabel->width() + 5;
-    int top = ui->orikeyListLabel->y();
-    m_OriginalKeyListComboBox->setObjectName(SETUPDIALOG_ORIKEY_COMBOBOX_NAME);
-    m_OriginalKeyListComboBox->setGeometry(QRect(left, top, 160, 22));
-    m_OriginalKeyListComboBox->setFocusPolicy(Qt::ClickFocus);
-
-    left = ui->mapkeyListLabel->x() + ui->mapkeyListLabel->width() + 5;
-    top = ui->mapkeyListLabel->y();
-    m_MappingKeyListComboBox->setObjectName(SETUPDIALOG_MAPKEY_COMBOBOX_NAME);
-    m_MappingKeyListComboBox->setGeometry(QRect(left, top, 160, 22));
-    m_MappingKeyListComboBox->setFocusPolicy(Qt::ClickFocus);
 }
 
 void QItemSetupDialog::initKeyStringLineEdit()
@@ -4226,14 +4223,14 @@ void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
 void QItemSetupDialog::OrikeyComboBox_currentTextChangedSlot(const QString &text)
 {
     if (!text.isEmpty()) {
-        m_OriginalKeyListComboBox->setToolTip(text);
+        ui->SetupDialog_OriginalKeyListComboBox->setToolTip(text);
     }
 }
 
 void QItemSetupDialog::MapkeyComboBox_currentTextChangedSlot(const QString &text)
 {
     if (!text.isEmpty()) {
-        m_MappingKeyListComboBox->setToolTip(text);
+        ui->SetupDialog_MappingKeyListComboBox->setToolTip(text);
     }
 }
 

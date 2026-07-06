@@ -122,8 +122,8 @@ private:
 public:
     QCrosshairSetupDialog *m_CrosshairSetupDialog;
     QFloatingButtonSetupDialog *m_FloatingButtonSetupDialog;
-    KeyListComboBox *m_OriginalKeyListComboBox;
-    KeyListComboBox *m_MappingKeyListComboBox;
+    static KeyListComboBox* getOriginalKeyListComboBox();
+    static KeyListComboBox* getMappingKeyListComboBox();
     QLabel *m_MappingCodeLabel;
     QLineEdit *m_MappingCodeLineEdit;
     QPushButton *m_CopyMappingCodeButton;

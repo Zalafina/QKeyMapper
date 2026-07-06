@@ -17029,11 +17029,11 @@ void QKeyMapper::updateKeyComboBoxWithJoystickKey(const QString &joystick_keystr
 #endif
     }
 
-    if (QItemSetupDialog::getInstance()->m_OriginalKeyListComboBox->hasFocus()) {
-        QItemSetupDialog::getInstance()->m_OriginalKeyListComboBox->setCurrentText(joystick_keystring);
+    if (QItemSetupDialog::getOriginalKeyListComboBox()->hasFocus()) {
+        QItemSetupDialog::getOriginalKeyListComboBox()->setCurrentText(joystick_keystring);
 
 #ifdef DEBUG_LOGOUT_ON
-        if (QItemSetupDialog::getInstance()->m_OriginalKeyListComboBox->currentText() == joystick_keystring) {
+        if (QItemSetupDialog::getOriginalKeyListComboBox()->currentText() == joystick_keystring) {
             qDebug() << "[QKeyMapper::updateKeyComboBoxWithJoystickKey] QItemSetupDialog OriginalKey ComboBox setCurrentText ->" << joystick_keystring;
         }
         else {
