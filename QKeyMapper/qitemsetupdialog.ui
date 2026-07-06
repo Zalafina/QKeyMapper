@@ -474,7 +474,7 @@
   <widget class="QPushButton" name="oriList_SelectGamepadButton">
    <property name="geometry">
     <rect>
-     <x>175</x>
+     <x>160</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -502,7 +502,7 @@
   <widget class="QPushButton" name="oriList_SelectKeyboardButton">
    <property name="geometry">
     <rect>
-     <x>115</x>
+     <x>100</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -530,7 +530,7 @@
   <widget class="QPushButton" name="oriList_SelectMouseButton">
    <property name="geometry">
     <rect>
-     <x>145</x>
+     <x>130</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -558,7 +558,7 @@
   <widget class="QPushButton" name="oriList_SelectFunctionButton">
    <property name="geometry">
     <rect>
-     <x>205</x>
+     <x>190</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -586,7 +586,7 @@
   <widget class="QPushButton" name="mapList_SelectFunctionButton">
    <property name="geometry">
     <rect>
-     <x>510</x>
+     <x>496</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -614,7 +614,7 @@
   <widget class="QPushButton" name="mapList_SelectMouseButton">
    <property name="geometry">
     <rect>
-     <x>450</x>
+     <x>436</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -642,7 +642,7 @@
   <widget class="QPushButton" name="mapList_SelectGamepadButton">
    <property name="geometry">
     <rect>
-     <x>480</x>
+     <x>466</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
@@ -670,7 +670,7 @@
   <widget class="QPushButton" name="mapList_SelectKeyboardButton">
    <property name="geometry">
     <rect>
-     <x>420</x>
+     <x>406</x>
      <y>110</y>
      <width>22</width>
      <height>22</height>
