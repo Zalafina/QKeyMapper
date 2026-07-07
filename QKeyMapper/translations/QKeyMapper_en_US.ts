@@ -820,6 +820,11 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <translation>Locked Opacity</translation>
     </message>
     <message>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="665"/>
+        <source>Group Button Count</source>
+        <translation>Group Button Count</translation>
+    </message>
+    <message>
         <location filename="../qfloatingbuttonsetupdialog.cpp" line="678"/>
         <source>Default</source>
         <translation>Default</translation>
@@ -879,9 +884,8 @@ Only the last mapping in each OriginalKey group will be enabled.</translation>
         <translation>Group synchronized move</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="665"/>
         <source>Button Count</source>
-        <translation>Button Count</translation>
+        <translation type="vanished">Button Count</translation>
     </message>
     <message>
         <location filename="../qfloatingbuttonsetupdialog.cpp" line="666"/>

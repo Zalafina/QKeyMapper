@@ -662,7 +662,7 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_OffsetYLabel->setText(tr("Offset Y"));
     m_SyncGroupLabel->setText(tr("Group ID"));
     m_SyncGroupMoveCheckBox->setText(tr("Group synchronized move"));
-    m_ButtonCountLabel->setText(tr("Button Count"));
+    m_ButtonCountLabel->setText(tr("Group Button Count"));
     m_SyncGroupNoteLabel->setText(tr("Group Note"));
     m_SyncGroupIdSpinBox->setSpecialValueText(tr("No Group"));
     m_SyncGroupIdSpinBox->setToolTip(tr("Assign this button to a group. Buttons in the same group can move synchronously."));

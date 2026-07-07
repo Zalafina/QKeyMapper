@@ -820,6 +820,11 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
         <translation>锁定不透明度</translation>
     </message>
     <message>
+        <location filename="../qfloatingbuttonsetupdialog.cpp" line="665"/>
+        <source>Group Button Count</source>
+        <translation>组内按钮数量</translation>
+    </message>
+    <message>
         <location filename="../qfloatingbuttonsetupdialog.cpp" line="678"/>
         <source>Default</source>
         <translation>默认</translation>
@@ -879,9 +884,8 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
         <translation>组内按钮同步移动</translation>
     </message>
     <message>
-        <location filename="../qfloatingbuttonsetupdialog.cpp" line="665"/>
         <source>Button Count</source>
-        <translation>按钮数量</translation>
+        <translation type="vanished">按钮数量</translation>
     </message>
     <message>
         <location filename="../qfloatingbuttonsetupdialog.cpp" line="666"/>
