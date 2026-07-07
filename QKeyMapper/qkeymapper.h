@@ -2467,6 +2467,32 @@ private:
     bool consumeFloatingButtonMoveArmedState(quint64 sourceKey);
     void armFloatingButtonMoveState(quint64 sourceKey);
     void clearFloatingButtonMoveState(quint64 sourceKey = static_cast<quint64>(-1));
+    // Sync group move armed state (parallel to single-button move armed state)
+    bool isFloatingButtonSyncGroupMoveArmed(quint64 sourceKey) const;
+    bool consumeFloatingButtonSyncGroupMoveArmedState(quint64 sourceKey);
+    void armFloatingButtonSyncGroupMoveState(quint64 sourceKey);
+    void clearFloatingButtonSyncGroupMoveState();
+    void snapshotSyncGroupMembers(const ActiveKeyMappingRowSourceInfo &sourceInfo,
+                                  QList<MAP_KEYDATA> *sourceDataList,
+                                  int groupId, quint64 excludeKey);
+    // Sync group notes serialization (follows saveMacroListToINI pattern)
+    void saveSyncGroupNotesToINI(const QString &setting_groupname);
+    void loadSyncGroupNotesFromINI(const QString &setting_groupname);
+
+public:
+    // Sync group note accessors (used by QFloatingButtonSetupDialog)
+    QString getSyncGroupNote(int groupId) const
+    {
+        return m_FloatingButtonSyncGroupNotes.value(groupId);
+    }
+    void setSyncGroupNote(int groupId, const QString &note)
+    {
+        if (note.isEmpty()) {
+            m_FloatingButtonSyncGroupNotes.remove(groupId);
+        } else {
+            m_FloatingButtonSyncGroupNotes[groupId] = note;
+        }
+    }
 
 private:
     QItemSetupDialog *m_ItemSetupDialog;
@@ -2482,6 +2508,12 @@ private:
     quint64 m_FloatingButtonDraggingKey = static_cast<quint64>(-1);
     QPoint m_FloatingButtonDragStartGlobalPos;
     QPoint m_FloatingButtonDragStartWidgetPos;
+    // Sync group drag state (parallel to existing single-button drag)
+    quint64 m_FloatingButtonSyncGroupMoveArmedKey = static_cast<quint64>(-1);
+    QHash<quint64, QPoint> m_FloatingButtonGroupDragStartOffsets;   // sourceKey -> start offset for ALL group members
+    QHash<quint64, QPoint> m_FloatingButtonGroupDragStartPositions; // sourceKey -> start widget pos for visible group members
+    // Sync group notes: GroupId -> Note text (serialized per-setting via QVariantList)
+    QHash<int, QString> m_FloatingButtonSyncGroupNotes;
     HWND m_FloatingButtonLastTrackHWND = NULL;
     RECT m_FloatingButtonLastTrackClientRect = {};
 #ifdef USE_CUSTOMSTYLE

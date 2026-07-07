@@ -67,6 +67,9 @@ private:
     void setupReferencePointComboBox();
     void syncFontFamilyControls();
     void updateHoverCustomizationState();
+    void updateGroupMemberCountLabel();
+    void syncGroupNoteFromData();
+    void applySyncGroupOffsetDelta();
 
 private:
     int m_ItemRow;
@@ -150,6 +153,14 @@ private:
     QComboBox *m_ReferencePointComboBox;
     QSpinBox *m_OffsetXSpinBox;
     QSpinBox *m_OffsetYSpinBox;
+
+    QLabel *m_SyncGroupLabel;
+    QSpinBox *m_SyncGroupIdSpinBox;
+    QCheckBox *m_SyncGroupMoveCheckBox;
+    QLabel *m_ButtonCountLabel;
+    QLineEdit *m_ButtonCountLineEdit;
+    QLabel *m_SyncGroupNoteLabel;
+    QLineEdit *m_SyncGroupNoteLineEdit;
 
     QPushButton *m_ApplyButton;
     QPushButton *m_RevertButton;

@@ -204,6 +204,7 @@ typedef struct MAP_KEYDATA
     int FloatingButton_X_Offset;
     int FloatingButton_Y_Offset;
     bool FloatingButton_DragToMove;
+    int FloatingButton_SyncGroupId;  // 0 = no group, 1-999 = sync group ID
 
     MAP_KEYDATA() :
       Original_Key()
@@ -281,6 +282,7 @@ typedef struct MAP_KEYDATA
     , FloatingButton_X_Offset(QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT)
     , FloatingButton_Y_Offset(QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT)
     , FloatingButton_DragToMove(QKeyMapperConstants::FLOATINGBUTTON_DRAGTOMOVE_DEFAULT)
+    , FloatingButton_SyncGroupId(QKeyMapperConstants::FLOATINGBUTTON_SYNCGROUPID_DEFAULT)
     {}
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,
@@ -380,6 +382,7 @@ typedef struct MAP_KEYDATA
         FloatingButton_X_Offset = QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT;
         FloatingButton_Y_Offset = QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT;
         FloatingButton_DragToMove = QKeyMapperConstants::FLOATINGBUTTON_DRAGTOMOVE_DEFAULT;
+        FloatingButton_SyncGroupId = QKeyMapperConstants::FLOATINGBUTTON_SYNCGROUPID_DEFAULT;
     }
 
     bool operator==(const MAP_KEYDATA& other) const

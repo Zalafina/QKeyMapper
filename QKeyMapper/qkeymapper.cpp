@@ -353,6 +353,12 @@ QString floatingButtonMoveHintText()
                                         "Ready to move this floating button.\nLeft-drag to move.\nRight-click to cancel.");
 }
 
+QString floatingButtonSyncGroupMoveHintText()
+{
+    return QCoreApplication::translate("QKeyMapper",
+                                        "Ready to sync-group move this floating button.\nLeft-drag to move group.\nRight-click to cancel.");
+}
+
 void applyMappingStartActionMenuSizing(QMenu *menu)
 {
     if (!menu) {
@@ -8793,7 +8799,8 @@ constexpr char FLOATINGBUTTON_STYLE_KEY_LOCKED_OPACITY[] = "lo";
     X(KEYMAPDATA_FLOATINGBUTTON_RADIUS, FloatingButton_Radius) \
     X(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, FloatingButton_ReferencePoint) \
     X(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, FloatingButton_X_Offset) \
-    X(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, FloatingButton_Y_Offset)
+    X(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, FloatingButton_Y_Offset) \
+    X(KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID, FloatingButton_SyncGroupId)
 
 #define MAPPINGCODE_DOUBLE_FIELDS(X) \
     X(KEYMAPDATA_FLOATINGBUTTON_OPACITY, FloatingButton_Opacity) \
@@ -11391,6 +11398,140 @@ bool QKeyMapper::consumeFloatingButtonMoveArmedState(quint64 sourceKey)
     return true;
 }
 
+// --- Sync group move armed state (parallel to single-button move) ---
+
+bool QKeyMapper::isFloatingButtonSyncGroupMoveArmed(quint64 sourceKey) const
+{
+    return sourceKey != static_cast<quint64>(-1)
+        && m_FloatingButtonSyncGroupMoveArmedKey == sourceKey;
+}
+
+bool QKeyMapper::consumeFloatingButtonSyncGroupMoveArmedState(quint64 sourceKey)
+{
+    if (!isFloatingButtonSyncGroupMoveArmed(sourceKey)) {
+        return false;
+    }
+
+    m_FloatingButtonSyncGroupMoveArmedKey = static_cast<quint64>(-1);
+    QToolTip::hideText();
+    return true;
+}
+
+void QKeyMapper::armFloatingButtonSyncGroupMoveState(quint64 sourceKey)
+{
+    ActiveKeyMappingRowSourceInfo sourceInfo;
+    QList<MAP_KEYDATA> *sourceDataList = Q_NULLPTR;
+    if (!resolveFloatingButtonSourceInfoFromSourceKey(sourceKey, &sourceInfo, &sourceDataList)) {
+        return;
+    }
+
+    const int displayRowindex = findCurrentDisplayRowFromFloatingButtonSource(sourceInfo);
+    const MAP_KEYDATA &keymapdata = sourceDataList->at(sourceInfo.SourceRow);
+    QPushButton *button = m_FloatingButtonMap.value(sourceKey, Q_NULLPTR);
+
+    if (isFloatingButtonSyncGroupMoveArmed(sourceKey)) {
+        if (button != Q_NULLPTR && button->isVisible()) {
+            QToolTip::showText(button->mapToGlobal(button->rect().center()),
+                               floatingButtonSyncGroupMoveHintText(),
+                               button,
+                               button->rect(),
+                               3000);
+        }
+        return;
+    }
+
+    clearFloatingButtonMoveState();
+    m_FloatingButtonSyncGroupMoveArmedKey = sourceKey;
+
+    if (button != Q_NULLPTR) {
+        bool pressed = false;
+        bool locked = false;
+        resolveFloatingButtonVisualState(sourceKey, keymapdata,
+                                         isFloatingButtonPressedRuntime(keymapdata.Original_Key),
+                                         isFloatingButtonLockedRuntime(keymapdata),
+                                         false,
+                                         pressed, locked);
+        refreshFloatingButtonWidget(button, sourceKey, displayRowindex, keymapdata, pressed, locked);
+
+        if (button->isVisible()) {
+            QToolTip::showText(button->mapToGlobal(button->rect().center()),
+                               floatingButtonSyncGroupMoveHintText(),
+                               button,
+                               button->rect(),
+                               3000);
+        }
+    }
+}
+
+void QKeyMapper::clearFloatingButtonSyncGroupMoveState()
+{
+    const quint64 armedKey = m_FloatingButtonSyncGroupMoveArmedKey;
+    if (armedKey == static_cast<quint64>(-1)) {
+        return;
+    }
+
+    m_FloatingButtonSyncGroupMoveArmedKey = static_cast<quint64>(-1);
+    QToolTip::hideText();
+
+    QPushButton *button = m_FloatingButtonMap.value(armedKey, Q_NULLPTR);
+    if (button == Q_NULLPTR) {
+        return;
+    }
+
+    ActiveKeyMappingRowSourceInfo sourceInfo;
+    QList<MAP_KEYDATA> *sourceDataList = Q_NULLPTR;
+    if (resolveFloatingButtonSourceInfoFromSourceKey(armedKey, &sourceInfo, &sourceDataList)) {
+        const int displayRowindex = findCurrentDisplayRowFromFloatingButtonSource(sourceInfo);
+        const MAP_KEYDATA &keymapdata = sourceDataList->at(sourceInfo.SourceRow);
+        bool pressed = false;
+        bool locked = false;
+        resolveFloatingButtonVisualState(armedKey, keymapdata,
+                                         isFloatingButtonPressedRuntime(keymapdata.Original_Key),
+                                         isFloatingButtonLockedRuntime(keymapdata),
+                                         false,
+                                         pressed, locked);
+        refreshFloatingButtonWidget(button, armedKey, displayRowindex, keymapdata, pressed, locked);
+        return;
+    }
+
+    button->setCursor(Qt::ArrowCursor);
+    button->setToolTip(QString());
+}
+
+void QKeyMapper::snapshotSyncGroupMembers(const ActiveKeyMappingRowSourceInfo &sourceInfo,
+                                          QList<MAP_KEYDATA> *sourceDataList,
+                                          int groupId, quint64 excludeKey)
+{
+    m_FloatingButtonGroupDragStartOffsets.clear();
+    m_FloatingButtonGroupDragStartPositions.clear();
+
+    if (sourceDataList == Q_NULLPTR) {
+        return;
+    }
+
+    for (int row = 0; row < sourceDataList->size(); ++row) {
+        const MAP_KEYDATA &data = sourceDataList->at(row);
+        if (data.FloatingButton_SyncGroupId != groupId) {
+            continue;
+        }
+
+        const quint64 key = buildFloatingButtonSourceKey(sourceInfo.SourceTabIndex, row);
+        if (key == excludeKey) {
+            continue;
+        }
+
+        // Record start offset for ALL group members (including hidden, for writeback on release)
+        m_FloatingButtonGroupDragStartOffsets.insert(key,
+            QPoint(data.FloatingButton_X_Offset, data.FloatingButton_Y_Offset));
+
+        // Record start widget position for visible members only (for real-time move during drag)
+        QPushButton *btn = m_FloatingButtonMap.value(key, Q_NULLPTR);
+        if (btn != Q_NULLPTR && btn->isVisible()) {
+            m_FloatingButtonGroupDragStartPositions.insert(key, btn->pos());
+        }
+    }
+}
+
 void QKeyMapper::armFloatingButtonMoveState(quint64 sourceKey)
 {
     ActiveKeyMappingRowSourceInfo sourceInfo;
@@ -11438,6 +11579,9 @@ void QKeyMapper::armFloatingButtonMoveState(quint64 sourceKey)
 
 void QKeyMapper::clearFloatingButtonMoveState(quint64 sourceKey)
 {
+    // Also clear sync group move armed state
+    clearFloatingButtonSyncGroupMoveState();
+
     const quint64 armedKey = m_FloatingButtonMoveArmedKey;
     if (armedKey == static_cast<quint64>(-1)) {
         return;
@@ -12096,6 +12240,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList floatingbutton_x_offsetList;
     QStringList floatingbutton_y_offsetList;
     QStringList floatingbutton_dragtomoveList;
+    QStringList floatingbutton_syncgroupidList;
 
     for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
     {
@@ -12451,6 +12596,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else {
             floatingbutton_dragtomoveList.append("OFF");
         }
+
+        floatingbutton_syncgroupidList.append(QString::number(keymapdata.FloatingButton_SyncGroupId));
     }
 
     keyMappingDataFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
@@ -12525,6 +12672,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, floatingbutton_y_offsetList);
     keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE, floatingbutton_dragtomoveList);
+    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID, floatingbutton_syncgroupidList);
 
     return true;
 }
@@ -12621,6 +12769,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList floatingbutton_x_offsetStringList;
     QStringList floatingbutton_y_offsetStringList;
     QStringList floatingbutton_dragtomoveStringList;
+    QStringList floatingbutton_syncgroupidStringList;
     QList<bool> disabledList;
     QList<bool> burstList;
     QList<int> burstpresstimeList;
@@ -12686,6 +12835,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<int> floatingbutton_x_offsetList;
     QList<int> floatingbutton_y_offsetList;
     QList<bool> floatingbutton_dragtomoveList;
+    QList<int> floatingbutton_syncgroupidList;
     QList<MAP_KEYDATA> loadkeymapdata;
     bool hasLegacyFloatingButtonOpacity = false;
 
@@ -12844,6 +12994,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         floatingbutton_x_offsetStringList = floatingbutton_x_offsetStringListDefault;
         floatingbutton_y_offsetStringList = floatingbutton_y_offsetStringListDefault;
         floatingbutton_dragtomoveStringList = stringListAllON;
+        floatingbutton_syncgroupidStringList = stringListAllZERO;
 
         if (true == keyMappingDataFile.contains(KEYMAPDATA_NOTE)) {
             notesList = keyMappingDataFile.value(KEYMAPDATA_NOTE).toStringList();
@@ -13061,6 +13212,9 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
         if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE)) {
             floatingbutton_dragtomoveStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE).toStringList();
+        }
+        if (true == keyMappingDataFile.contains(KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID)) {
+            floatingbutton_syncgroupidStringList = keyMappingDataFile.value(KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID).toStringList();
         }
 
         if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -13650,6 +13804,16 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 floatingbutton_dragtomoveList.append(floatingbutton_dragtomove != "OFF");
             }
 
+            for (int i = 0; i < original_keys.size(); i++) {
+                const QString &syncgroupIdStr = (i < floatingbutton_syncgroupidStringList.size()) ? floatingbutton_syncgroupidStringList.at(i) : "0";
+                bool ok = false;
+                int syncGroupId = syncgroupIdStr.toInt(&ok);
+                if (!ok || syncGroupId < FLOATINGBUTTON_SYNCGROUPID_MIN || syncGroupId > FLOATINGBUTTON_SYNCGROUPID_MAX) {
+                    syncGroupId = FLOATINGBUTTON_SYNCGROUPID_DEFAULT;
+                }
+                floatingbutton_syncgroupidList.append(syncGroupId);
+            }
+
             int loadindex = 0;
             for (const QString &ori_key_nochange : std::as_const(original_keys)){
                 QString ori_key = ori_key_nochange;
@@ -13743,6 +13907,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     loadedData.FloatingButton_X_Offset = floatingbutton_x_offsetList.at(loadindex);
                     loadedData.FloatingButton_Y_Offset = floatingbutton_y_offsetList.at(loadindex);
                     loadedData.FloatingButton_DragToMove = floatingbutton_dragtomoveList.at(loadindex);
+                    loadedData.FloatingButton_SyncGroupId = floatingbutton_syncgroupidList.at(loadindex);
                 }
 
                 loadindex += 1;
@@ -14570,6 +14735,10 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     QAction *saveSettingAction = contextMenu.addAction(tr("Save Setting"));
                     updateSaveSettingActionIcon(saveSettingAction);
                     QAction *moveAction = contextMenu.addAction(tr("Move"));
+                    QAction *syncGroupMoveAction = Q_NULLPTR;
+                    if (keymapdata.FloatingButton_SyncGroupId > 0) {
+                        syncGroupMoveAction = contextMenu.addAction(tr("Group synchronized move"));
+                    }
                     contextMenu.addSeparator();
                     QAction *toggleMousePassThroughAction = contextMenu.addAction(keymapdata.FloatingButton_MousePassThrough ? tr("Disable Mouse Pass Through") : tr("Enable Mouse Pass Through"));
                     QAction *toggleTopmostAction = contextMenu.addAction(keymapdata.FloatingButton_AlwaysOnTop ? tr("Disable Always On Top") : tr("Enable Always On Top"));
@@ -14686,6 +14855,9 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     else if (selectedAction == moveAction) {
                         armFloatingButtonMoveState(sourceKey);
                     }
+                    else if (selectedAction == syncGroupMoveAction) {
+                        armFloatingButtonSyncGroupMoveState(sourceKey);
+                    }
 
                     return true;
                 }
@@ -14693,14 +14865,23 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                 if (mouseEvent->button() == Qt::LeftButton
                     && hasSourceInfo
                     && sourceDataList != Q_NULLPTR) {
-                    const MAP_KEYDATA &keymapdata = sourceDataList->at(sourceInfo.SourceRow);
+                    MAP_KEYDATA &keymapdata = (*sourceDataList)[sourceInfo.SourceRow];
                     const bool dragFromMoveAction = isFloatingButtonMoveArmed(sourceKey);
-                    if (dragFromMoveAction
-                        || (keymapdata.FloatingButton_DragToMove && (mouseEvent->modifiers() & Qt::ControlModifier))) {
+                    const bool dragFromSyncGroupAction = isFloatingButtonSyncGroupMoveArmed(sourceKey);
+                    const bool ctrlDrag = keymapdata.FloatingButton_DragToMove && (mouseEvent->modifiers() & Qt::ControlModifier);
+                    const bool altDrag = (keymapdata.FloatingButton_SyncGroupId > 0) && (mouseEvent->modifiers() & Qt::AltModifier);
+
+                    const bool isSingleDrag = dragFromMoveAction || ctrlDrag;
+                    const bool isSyncGroupDrag = dragFromSyncGroupAction || altDrag;
+
+                    if (isSingleDrag || isSyncGroupDrag) {
                         if (dragFromMoveAction) {
                             (void)consumeFloatingButtonMoveArmedState(sourceKey);
                         }
-                        else if (m_FloatingButtonMoveArmedKey != static_cast<quint64>(-1)) {
+                        if (dragFromSyncGroupAction) {
+                            (void)consumeFloatingButtonSyncGroupMoveArmedState(sourceKey);
+                        }
+                        if (!isSingleDrag && !isSyncGroupDrag) {
                             clearFloatingButtonMoveState();
                         }
 
@@ -14709,6 +14890,15 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         m_FloatingButtonDragStartGlobalPos = QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent);
                         m_FloatingButtonDragStartWidgetPos = floatingButton->pos();
                         floatingButton->setCursor(Qt::ClosedHandCursor);
+
+                        if (isSyncGroupDrag) {
+                            snapshotSyncGroupMembers(sourceInfo, sourceDataList,
+                                                     keymapdata.FloatingButton_SyncGroupId, sourceKey);
+                        } else {
+                            m_FloatingButtonGroupDragStartOffsets.clear();
+                            m_FloatingButtonGroupDragStartPositions.clear();
+                        }
+
                         return true;
                     }
 
@@ -14747,6 +14937,18 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
                     const QPoint delta = QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent) - m_FloatingButtonDragStartGlobalPos;
                     floatingButton->move(m_FloatingButtonDragStartWidgetPos + delta);
+
+                    // Move visible sync group members
+                    if (!m_FloatingButtonGroupDragStartPositions.isEmpty()) {
+                        for (auto it = m_FloatingButtonGroupDragStartPositions.constBegin();
+                             it != m_FloatingButtonGroupDragStartPositions.constEnd(); ++it) {
+                            QPushButton *btn = m_FloatingButtonMap.value(it.key(), Q_NULLPTR);
+                            if (btn != Q_NULLPTR) {
+                                btn->move(it.value() + delta);
+                            }
+                        }
+                    }
+
                     return true;
                 }
             }
@@ -14771,8 +14973,52 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         }
                     }
 
+                    // Save offsets for sync group members (including hidden)
+                    if (!m_FloatingButtonGroupDragStartOffsets.isEmpty()) {
+                        const QPoint delta = QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent) - m_FloatingButtonDragStartGlobalPos;
+
+                        for (auto it = m_FloatingButtonGroupDragStartOffsets.constBegin();
+                             it != m_FloatingButtonGroupDragStartOffsets.constEnd(); ++it) {
+                            ActiveKeyMappingRowSourceInfo otherInfo;
+                            QList<MAP_KEYDATA> *otherDataList = Q_NULLPTR;
+                            if (!resolveFloatingButtonSourceInfoFromSourceKey(it.key(), &otherInfo, &otherDataList)) {
+                                continue;
+                            }
+                            if (otherDataList == Q_NULLPTR
+                                || otherInfo.SourceRow < 0
+                                || otherInfo.SourceRow >= otherDataList->size()) {
+                                continue;
+                            }
+
+                            MAP_KEYDATA &otherData = (*otherDataList)[otherInfo.SourceRow];
+                            QPushButton *btn = m_FloatingButtonMap.value(it.key(), Q_NULLPTR);
+
+                            int newX, newY;
+                            if (btn != Q_NULLPTR && btn->isVisible()) {
+                                const QPoint basePoint = floatingButtonReferenceBasePoint(otherData);
+                                newX = btn->pos().x() - basePoint.x();
+                                newY = btn->pos().y() - basePoint.y();
+                            } else {
+                                newX = it.value().x() + delta.x();
+                                newY = it.value().y() + delta.y();
+                            }
+
+                            otherData.FloatingButton_X_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN, qMin(FLOATINGBUTTON_OFFSET_MAX, newX));
+                            otherData.FloatingButton_Y_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN, qMin(FLOATINGBUTTON_OFFSET_MAX, newY));
+                            syncFloatingButtonRuntimeDataToSourceRow(otherInfo, otherData);
+                            if (otherInfo.SourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+                                updateTableWidgetItem(otherInfo.SourceTabIndex, otherInfo.SourceRow, FLOATING_COLUMN);
+                            } else {
+                                refreshTabsForSourceTabChange(otherInfo.SourceTabIndex);
+                            }
+                        }
+                    }
+
+                    // Cleanup drag state
                     m_FloatingButtonDragging = false;
                     m_FloatingButtonDraggingKey = static_cast<quint64>(-1);
+                    m_FloatingButtonGroupDragStartOffsets.clear();
+                    m_FloatingButtonGroupDragStartPositions.clear();
                     floatingButton->setCursor(Qt::ArrowCursor);
                     showFloatingButtonStartForSource(sourceInfo, displayRowindex, QString());
                     return true;
@@ -15267,6 +15513,9 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         clearFloatingButtonManualHiddenForAllSettings();
         m_FloatingButtonDragging = false;
         m_FloatingButtonDraggingKey = static_cast<quint64>(-1);
+        m_FloatingButtonSyncGroupMoveArmedKey = static_cast<quint64>(-1);
+        m_FloatingButtonGroupDragStartOffsets.clear();
+        m_FloatingButtonGroupDragStartPositions.clear();
 
         for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
             if (it.value() != Q_NULLPTR) {
@@ -19101,6 +19350,71 @@ void QKeyMapper::loadMacroListFromINI(const QString &setting_groupname)
 #endif
 }
 
+// --- SyncGroupNotes save/load (follows saveMacroListToINI pattern) ---
+
+void QKeyMapper::saveSyncGroupNotesToINI(const QString &setting_groupname)
+{
+    if (setting_groupname.isEmpty()) {
+        return;
+    }
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+
+    QVariantList notesList;
+    for (auto it = m_FloatingButtonSyncGroupNotes.constBegin();
+         it != m_FloatingButtonSyncGroupNotes.constEnd(); ++it) {
+        if (it.value().isEmpty()) {
+            continue;
+        }
+        QVariantMap noteMap;
+        noteMap[SYNCGROUPNOTES_FIELD_GROUPID] = it.key();
+        noteMap[SYNCGROUPNOTES_FIELD_NOTE] = it.value();
+        notesList.append(noteMap);
+    }
+
+    QString settingKey = setting_groupname + "/" + SYNCGROUPNOTES;
+    settingFile.setValue(settingKey, notesList);
+}
+
+void QKeyMapper::loadSyncGroupNotesFromINI(const QString &setting_groupname)
+{
+    m_FloatingButtonSyncGroupNotes.clear();
+    if (setting_groupname.isEmpty()) {
+        return;
+    }
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settingFile.setIniCodec("UTF-8");
+#endif
+
+    QString settingKey = setting_groupname + "/" + SYNCGROUPNOTES;
+    if (!settingFile.contains(settingKey)) {
+        return;
+    }
+
+    QVariant notesVar = settingFile.value(settingKey);
+    if (!notesVar.isValid() || !notesVar.canConvert<QVariantList>()) {
+        return;
+    }
+
+    QVariantList notesList = notesVar.toList();
+    for (const QVariant &noteVar : std::as_const(notesList)) {
+        if (!noteVar.canConvert<QVariantMap>()) {
+            continue;
+        }
+        QVariantMap noteMap = noteVar.toMap();
+        int groupId = noteMap.value(SYNCGROUPNOTES_FIELD_GROUPID).toInt();
+        QString note = noteMap.value(SYNCGROUPNOTES_FIELD_NOTE).toString();
+        if (groupId > 0 && !note.isEmpty()) {
+            m_FloatingButtonSyncGroupNotes[groupId] = note;
+        }
+    }
+}
+
 void QKeyMapper::saveUniversalMacroListToINI()
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
@@ -19888,6 +20202,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     QString floatingbutton_x_offsetList_forsave;
     QString floatingbutton_y_offsetList_forsave;
     QString floatingbutton_dragtomoveList_forsave;
+    QString floatingbutton_syncgroupidList_forsave;
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         QString tabName = s_KeyMappingTabInfoList.at(index).TabName;
@@ -20020,6 +20335,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
             floatingbutton_x_offsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_y_offsetList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
             floatingbutton_dragtomoveList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
+            floatingbutton_syncgroupidList_forsave.append(SEPARATOR_KEYMAPDATA_LEVEL2);
         }
 
         QStringList original_keys;
@@ -20093,6 +20409,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         QStringList floatingbutton_x_offsetList;
         QStringList floatingbutton_y_offsetList;
         QStringList floatingbutton_dragtomoveList;
+        QStringList floatingbutton_syncgroupidList;
         if (mappingDataList->size() > 0) {
             for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
             {
@@ -20457,6 +20774,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
                 else {
                     floatingbutton_dragtomoveList.append("OFF");
                 }
+
+                floatingbutton_syncgroupidList.append(QString::number(keymapdata.FloatingButton_SyncGroupId));
             }
         }
         // join QStringList variables first (use SEPARATOR_KEYMAPDATA_LEVEL1)
@@ -20528,6 +20847,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         QString floatingbutton_x_offsetList_str = floatingbutton_x_offsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_y_offsetList_str = floatingbutton_y_offsetList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
         QString floatingbutton_dragtomoveList_str = floatingbutton_dragtomoveList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
+        QString floatingbutton_syncgroupidList_str = floatingbutton_syncgroupidList.join(SEPARATOR_KEYMAPDATA_LEVEL1);
 
         // append joined QString variables to forsave variables
         original_keys_forsave.append(original_keys_str);
@@ -20601,6 +20921,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         floatingbutton_x_offsetList_forsave.append(floatingbutton_x_offsetList_str);
         floatingbutton_y_offsetList_forsave.append(floatingbutton_y_offsetList_str);
         floatingbutton_dragtomoveList_forsave.append(floatingbutton_dragtomoveList_str);
+        floatingbutton_syncgroupidList_forsave.append(floatingbutton_syncgroupidList_str);
     }
 
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
@@ -20696,6 +21017,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, floatingbutton_y_offsetList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE, floatingbutton_dragtomoveList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID, floatingbutton_syncgroupidList_forsave);
 
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED,            m_MappingAdvancedDialog->getMouseXSpeed());
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED,            m_MappingAdvancedDialog->getMouseYSpeed());
@@ -20866,6 +21188,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
             m[KEYMAPDATA_FLOATINGBUTTON_X_OFFSET] = d.FloatingButton_X_Offset;
             m[KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET] = d.FloatingButton_Y_Offset;
             m[KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE] = d.FloatingButton_DragToMove;
+            m[KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID] = d.FloatingButton_SyncGroupId;
             commonList.append(m);
         }
     }
@@ -20969,6 +21292,9 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 
     // Save UniversalMacroList to INI file
     saveUniversalMacroListToINI();
+
+    // Save SyncGroupNotes to INI file
+    saveSyncGroupNotesToINI(savedSettingName);
 
     const bool preserveVButtonPanelVisibility = (m_VButtonPanel != Q_NULLPTR && m_VButtonPanel->isVisible());
 
@@ -22508,6 +22834,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QString floatingbutton_x_offsetData_loaded;
         QString floatingbutton_y_offsetData_loaded;
         QString floatingbutton_dragtomoveData_loaded;
+        QString floatingbutton_syncgroupidData_loaded;
         int table_count = 0;
         QStringList original_keys_split;
         QStringList mapping_keys_split;
@@ -22582,6 +22909,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         QStringList floatingbutton_x_offsetData_split;
         QStringList floatingbutton_y_offsetData_split;
         QStringList floatingbutton_dragtomoveData_split;
+        QStringList floatingbutton_syncgroupidData_split;
 
         bool hasLegacyFloatingButtonOpacity = false;
         original_keys_loaded    = settingFile.value(settingSelectStr+KEYMAPDATA_ORIGINALKEYS).toString();
@@ -23068,6 +23396,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 floatingbutton_dragtomoveData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE).toString();
                 floatingbutton_dragtomoveData_split = floatingbutton_dragtomoveData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
             }
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID)) {
+                floatingbutton_syncgroupidData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID).toString();
+                floatingbutton_syncgroupidData_split = floatingbutton_syncgroupidData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
+            }
 
             for (int index = 0; index < table_count && datavalidflag != false; ++index) {
                 QList<MAP_KEYDATA> loadkeymapdata;
@@ -23159,6 +23491,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QStringList floatingbutton_x_offsetStringList;
                     QStringList floatingbutton_y_offsetStringList;
                     QStringList floatingbutton_dragtomoveStringList;
+                    QStringList floatingbutton_syncgroupidStringList;
                     QList<bool> disabledList;
                     QList<bool> burstList;
                     QList<int> burstpresstimeList;
@@ -23226,6 +23559,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     QList<int> floatingbutton_x_offsetList;
                     QList<int> floatingbutton_y_offsetList;
                     QList<bool> floatingbutton_dragtomoveList;
+                    QList<int> floatingbutton_syncgroupidList;
 
                     original_keys = original_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     mapping_keys = mapping_keys_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -23380,6 +23714,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     floatingbutton_x_offsetStringList = floatingbutton_x_offsetStringListDefault;
                     floatingbutton_y_offsetStringList = floatingbutton_y_offsetStringListDefault;
                     floatingbutton_dragtomoveStringList = stringListAllON;
+                    floatingbutton_syncgroupidStringList = stringListAllZERO;
 
                     if (notes_load_asString) {
                         if (notes_split_string.size() == table_count) {
@@ -23594,6 +23929,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     }
                     if (floatingbutton_dragtomoveData_split.size() == table_count) {
                         floatingbutton_dragtomoveStringList = floatingbutton_dragtomoveData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
+                    }
+                    if (floatingbutton_syncgroupidData_split.size() == table_count) {
+                        floatingbutton_syncgroupidStringList = floatingbutton_syncgroupidData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
                     }
 
                     if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
@@ -24198,6 +24536,16 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                             floatingbutton_dragtomoveList.append(floatingbutton_dragtomove != "OFF");
                         }
 
+                        for (int i = 0; i < original_keys.size(); i++) {
+                            const QString &syncgroupIdStr = (i < floatingbutton_syncgroupidStringList.size()) ? floatingbutton_syncgroupidStringList.at(i) : "0";
+                            bool ok = false;
+                            int syncGroupId = syncgroupIdStr.toInt(&ok);
+                            if (!ok || syncGroupId < FLOATINGBUTTON_SYNCGROUPID_MIN || syncGroupId > FLOATINGBUTTON_SYNCGROUPID_MAX) {
+                                syncGroupId = FLOATINGBUTTON_SYNCGROUPID_DEFAULT;
+                            }
+                            floatingbutton_syncgroupidList.append(syncGroupId);
+                        }
+
                         int loadindex = 0;
                         for (const QString &ori_key_nochange : std::as_const(original_keys)){
                             QString ori_key = ori_key_nochange;
@@ -24297,6 +24645,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                 loadedData.FloatingButton_X_Offset = floatingbutton_x_offsetList.at(loadindex);
                                 loadedData.FloatingButton_Y_Offset = floatingbutton_y_offsetList.at(loadindex);
                                 loadedData.FloatingButton_DragToMove = floatingbutton_dragtomoveList.at(loadindex);
+                                loadedData.FloatingButton_SyncGroupId = floatingbutton_syncgroupidList.at(loadindex);
                             }
                             else{
                                 datavalidflag = false;
@@ -25691,6 +26040,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 d.FloatingButton_X_Offset = m.value(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET).toInt();
                 d.FloatingButton_Y_Offset = m.value(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET).toInt();
                 d.FloatingButton_DragToMove = m.value(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE).toBool();
+                d.FloatingButton_SyncGroupId = m.value(KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID, FLOATINGBUTTON_SYNCGROUPID_DEFAULT).toInt();
                 m_CommonMappingData.append(d);
             }
         }
@@ -25757,14 +26107,16 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 #endif
 
     // Load MacroList from INI file for the current setting group
+    QString loadSettingName = settingSelectStr;
+    loadSettingName.remove("/");
     if (settingFile.contains(settingSelectStr+MACROLIST)){
-        QString loadSettingName = settingSelectStr;
-        loadSettingName.remove("/");
         loadMacroListFromINI(loadSettingName);
     }
     else {
         loadMacroListFromINI(QString());
     }
+    // Load SyncGroupNotes for the current setting group
+    loadSyncGroupNotesFromINI(loadSettingName);
 
     // Load VButton panel settings
     {
@@ -25842,6 +26194,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
     if (false == datavalidflag){
         showFailurePopup(tr("Invalid mapping data : ") + settingtext);
         loadMacroListFromINI(QString());
+        loadSyncGroupNotesFromINI(QString());
         return loadedSettingString;
     }
     else {
@@ -25908,6 +26261,7 @@ void QKeyMapper::loadEmptyMapSetting()
     clearKeyMappingTabWidget();
     KeyMappingDataList->clear();
     loadMacroListFromINI(QString());
+    loadSyncGroupNotesFromINI(QString());
 
     // setMapProcessInfo(QString(DEFAULT_NAME), QString(DEFAULT_TITLE), QString(), QString(), QIcon(":/DefaultIcon.ico"));
     ui->settingNameLineEdit->setText(QString());
@@ -35606,6 +35960,7 @@ static void syncFloatingButtonRuntimeFields(MAP_KEYDATA &tabData, const MAP_KEYD
     tabData.FloatingButton_X_Offset = runtimeData.FloatingButton_X_Offset;
     tabData.FloatingButton_Y_Offset = runtimeData.FloatingButton_Y_Offset;
     tabData.FloatingButton_DragToMove = runtimeData.FloatingButton_DragToMove;
+    tabData.FloatingButton_SyncGroupId = runtimeData.FloatingButton_SyncGroupId;
 }
 
 void QKeyMapper::syncFloatingButtonRuntimeDataToSourceRow(const ActiveKeyMappingRowSourceInfo &sourceInfo,

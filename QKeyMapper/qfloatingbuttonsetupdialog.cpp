@@ -166,6 +166,13 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_ReferencePointComboBox(new QComboBox(this))
     , m_OffsetXSpinBox(new QSpinBox(this))
     , m_OffsetYSpinBox(new QSpinBox(this))
+    , m_SyncGroupLabel(new QLabel(this))
+    , m_SyncGroupIdSpinBox(new QSpinBox(this))
+    , m_SyncGroupMoveCheckBox(new QCheckBox(this))
+    , m_ButtonCountLabel(new QLabel(this))
+    , m_ButtonCountLineEdit(new QLineEdit(this))
+    , m_SyncGroupNoteLabel(new QLabel(this))
+    , m_SyncGroupNoteLineEdit(new QLineEdit(this))
     , m_ApplyButton(Q_NULLPTR)
     , m_RevertButton(Q_NULLPTR)
     , m_ButtonColorPicker(new ColorPickerWidget(this, "FloatBtn_BtnColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
@@ -208,6 +215,15 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_HoverAnimationDurationSpinBox->setSuffix(QStringLiteral(" ms"));
     m_OffsetXSpinBox->setRange(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX);
     m_OffsetYSpinBox->setRange(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX);
+    m_SyncGroupIdSpinBox->setRange(FLOATINGBUTTON_SYNCGROUPID_MIN, FLOATINGBUTTON_SYNCGROUPID_MAX);
+    m_SyncGroupIdSpinBox->setSpecialValueText(tr("No Group"));
+    m_SyncGroupIdSpinBox->setToolTip(tr("Assign this button to a group. Buttons in the same group can move synchronously."));
+    m_ButtonCountLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_ButtonCountLineEdit->setReadOnly(true);
+    m_ButtonCountLineEdit->setAlignment(Qt::AlignCenter);
+    m_ButtonCountLineEdit->setMaximumWidth(60);
+    m_ButtonCountLineEdit->setFocusPolicy(Qt::NoFocus);
+    m_SyncGroupNoteLineEdit->setPlaceholderText(tr("Optional group description"));
     m_MousePassThroughSwitchKeyComboBox->addItem(tr(FUNCTION_KEY_NONE));
     m_MousePassThroughSwitchKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
     m_MousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
@@ -240,6 +256,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_StyleCodeLineEdit->setFocusPolicy(Qt::ClickFocus);
     m_OffsetXSpinBox->setFocusPolicy(Qt::ClickFocus);
     m_OffsetYSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_SyncGroupIdSpinBox->setFocusPolicy(Qt::ClickFocus);
+    m_SyncGroupNoteLineEdit->setFocusPolicy(Qt::ClickFocus);
     m_FontFamilyDefaultButton->setFocusPolicy(Qt::NoFocus);
     m_CopyStyleCodeButton->setFocusPolicy(Qt::NoFocus);
     m_ApplyClipboardStyleCodeButton->setFocusPolicy(Qt::NoFocus);
@@ -403,10 +421,21 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     QGridLayout *positionGrid = new QGridLayout(m_PositionGroup);
     positionGrid->addWidget(m_ReferencePointLabel, 0, 0);
     positionGrid->addWidget(m_ReferencePointComboBox, 0, 1, 1, 3);
+    // Row 1: Offset X + Sync Group Move checkbox at right
     positionGrid->addWidget(m_OffsetXLabel, 1, 0);
     positionGrid->addWidget(m_OffsetXSpinBox, 1, 1);
-    positionGrid->addWidget(m_OffsetYLabel, 1, 2);
-    positionGrid->addWidget(m_OffsetYSpinBox, 1, 3);
+    positionGrid->addWidget(m_SyncGroupMoveCheckBox, 1, 2, 1, 2);
+    // Row 2: Offset Y (below Offset X, same X coordinate)
+    positionGrid->addWidget(m_OffsetYLabel, 2, 0);
+    positionGrid->addWidget(m_OffsetYSpinBox, 2, 1);
+    // Row 3: Sync Group ID + Button Count at right
+    positionGrid->addWidget(m_SyncGroupLabel, 3, 0);
+    positionGrid->addWidget(m_SyncGroupIdSpinBox, 3, 1);
+    positionGrid->addWidget(m_ButtonCountLabel, 3, 2);
+    positionGrid->addWidget(m_ButtonCountLineEdit, 3, 3);
+    // Row 4: Group Note
+    positionGrid->addWidget(m_SyncGroupNoteLabel, 4, 0);
+    positionGrid->addWidget(m_SyncGroupNoteLineEdit, 4, 1, 1, 3);
 
     QDialogButtonBox *buttonBox = new QDialogButtonBox(this);
     m_ApplyButton = buttonBox->addButton(QString(), QDialogButtonBox::ApplyRole);
@@ -446,6 +475,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     m_ReferencePointLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetXLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_OffsetYLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_SyncGroupLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_SyncGroupNoteLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_MousePassThroughSwitchKeyLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_FontFamilyDefaultButton->setFixedWidth(75);
     m_FontFamilyDefaultButton->setAutoDefault(false);
@@ -519,8 +550,37 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
             onAnyControlChanged();
             });
     connect(m_ReferencePointComboBox, qOverload<int>(&QComboBox::currentIndexChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
-    connect(m_OffsetXSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
-    connect(m_OffsetYSpinBox, qOverload<int>(&QSpinBox::valueChanged), this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    connect(m_OffsetXSpinBox, qOverload<int>(&QSpinBox::valueChanged), this,
+            [this](int) {
+                onAnyControlChanged();
+                applySyncGroupOffsetDelta();
+            });
+    connect(m_OffsetYSpinBox, qOverload<int>(&QSpinBox::valueChanged), this,
+            [this](int) {
+                onAnyControlChanged();
+                applySyncGroupOffsetDelta();
+            });
+    connect(m_SyncGroupIdSpinBox, qOverload<int>(&QSpinBox::valueChanged), this,
+            [this](int) {
+                updateGroupMemberCountLabel();
+                syncGroupNoteFromData();
+                onAnyControlChanged();
+            });
+    connect(m_SyncGroupNoteLineEdit, &QLineEdit::textChanged, this,
+            [this](const QString &text) {
+                const int groupId = m_SyncGroupIdSpinBox->value();
+                if (groupId > 0) {
+                    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+                        keyMapper->setSyncGroupNote(groupId, text);
+                    }
+                    notifySaveSettingDirty();
+                }
+            });
+    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    connect(m_SyncGroupMoveCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    #else
+    connect(m_SyncGroupMoveCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    #endif
 
     m_ButtonColorPicker->setLivePreviewEnabled(true);
     m_PressedColorPicker->setLivePreviewEnabled(true);
@@ -600,6 +660,13 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_ReferencePointLabel->setText(tr("Ref Point"));
     m_OffsetXLabel->setText(tr("Offset X"));
     m_OffsetYLabel->setText(tr("Offset Y"));
+    m_SyncGroupLabel->setText(tr("Group ID"));
+    m_SyncGroupMoveCheckBox->setText(tr("Group synchronized move"));
+    m_ButtonCountLabel->setText(tr("Button Count"));
+    m_SyncGroupNoteLabel->setText(tr("Group Note"));
+    m_SyncGroupIdSpinBox->setSpecialValueText(tr("No Group"));
+    m_SyncGroupIdSpinBox->setToolTip(tr("Assign this button to a group. Buttons in the same group can move synchronously."));
+    m_SyncGroupNoteLineEdit->setPlaceholderText(tr("Optional group description"));
 
     if (m_ApplyButton != Q_NULLPTR) {
         m_ApplyButton->setText(tr("Apply"));
@@ -1274,6 +1341,10 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_ReferencePointComboBox->setCurrentIndex(referencePoint);
     m_OffsetXSpinBox->setValue(keymapdata.FloatingButton_X_Offset);
     m_OffsetYSpinBox->setValue(keymapdata.FloatingButton_Y_Offset);
+    m_SyncGroupIdSpinBox->setValue(keymapdata.FloatingButton_SyncGroupId);
+    m_SyncGroupMoveCheckBox->setChecked(false);  // always start unchecked (session-only)
+    updateGroupMemberCountLabel();
+    syncGroupNoteFromData();
 
     m_ButtonColorPicker->setColor(keymapdata.FloatingButton_ButtonColor);
     m_PressedColorPicker->setColor(keymapdata.FloatingButton_PressedColor);
@@ -1348,6 +1419,7 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
     keymapdata.FloatingButton_ReferencePoint = m_ReferencePointComboBox->currentIndex();
     keymapdata.FloatingButton_X_Offset = m_OffsetXSpinBox->value();
     keymapdata.FloatingButton_Y_Offset = m_OffsetYSpinBox->value();
+    keymapdata.FloatingButton_SyncGroupId = m_SyncGroupIdSpinBox->value();
 
     keymapdata.FloatingButton_ButtonColor = m_ButtonColorPicker->getColor();
     keymapdata.FloatingButton_PressedColor = m_PressedColorPicker->getColor();
@@ -1479,5 +1551,104 @@ void QFloatingButtonSetupDialog::setupReferencePointComboBox()
     m_ReferencePointComboBox->addItem(tr("WindowBottomLeft"));
     m_ReferencePointComboBox->addItem(tr("WindowBottomRight"));
     m_ReferencePointComboBox->addItem(tr("WindowBottomCenter"));
+}
+
+void QFloatingButtonSetupDialog::updateGroupMemberCountLabel()
+{
+    const int groupId = m_SyncGroupIdSpinBox->value();
+    if (groupId <= 0) {
+        m_ButtonCountLineEdit->clear();
+        return;
+    }
+
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
+    if (mappingDataList == Q_NULLPTR) {
+        m_ButtonCountLineEdit->clear();
+        return;
+    }
+
+    int count = 0;
+    for (const MAP_KEYDATA &data : std::as_const(*mappingDataList)) {
+        if (data.FloatingButton_SyncGroupId == groupId) {
+            ++count;
+        }
+    }
+    // The current item's MAP_KEYDATA may not have been updated yet by applyToCurrentItem(),
+    // so account for the pending change: if the current row is not already counted, add 1.
+    if (m_ItemRow >= 0 && m_ItemRow < mappingDataList->size()) {
+        if ((*mappingDataList)[m_ItemRow].FloatingButton_SyncGroupId != groupId) {
+            ++count;
+        }
+    }
+    m_ButtonCountLineEdit->setText(QString::number(count));
+}
+
+void QFloatingButtonSetupDialog::syncGroupNoteFromData()
+{
+    const int groupId = m_SyncGroupIdSpinBox->value();
+    if (groupId <= 0) {
+        m_SyncGroupNoteLineEdit->clear();
+        m_SyncGroupNoteLineEdit->setEnabled(false);
+        m_SyncGroupNoteLabel->setEnabled(false);
+        return;
+    }
+
+    m_SyncGroupNoteLineEdit->setEnabled(true);
+    m_SyncGroupNoteLabel->setEnabled(true);
+
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    if (keyMapper != Q_NULLPTR) {
+        m_SyncGroupNoteLineEdit->setText(keyMapper->getSyncGroupNote(groupId));
+    } else {
+        m_SyncGroupNoteLineEdit->clear();
+    }
+}
+
+void QFloatingButtonSetupDialog::applySyncGroupOffsetDelta()
+{
+    if (m_isLoading) {
+        return;
+    }
+
+    if (!m_SyncGroupMoveCheckBox->isChecked()) {
+        return;
+    }
+
+    const int groupId = m_SyncGroupIdSpinBox->value();
+    if (groupId <= 0) {
+        return;
+    }
+
+    if (!m_hasBackup) {
+        return;
+    }
+
+    const int deltaX = m_OffsetXSpinBox->value() - m_BackupData.FloatingButton_X_Offset;
+    const int deltaY = m_OffsetYSpinBox->value() - m_BackupData.FloatingButton_Y_Offset;
+    if (deltaX == 0 && deltaY == 0) {
+        return;
+    }
+
+    QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
+    if (mappingDataList == Q_NULLPTR) {
+        return;
+    }
+
+    for (int row = 0; row < mappingDataList->size(); ++row) {
+        if (row == m_ItemRow) {
+            continue;
+        }
+        MAP_KEYDATA &data = (*mappingDataList)[row];
+        if (data.FloatingButton_SyncGroupId != groupId) {
+            continue;
+        }
+
+        data.FloatingButton_X_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
+            qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_X_Offset + deltaX));
+        data.FloatingButton_Y_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
+            qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_Y_Offset + deltaY));
+    }
+
+    emit settingsApplied();  // trigger main window to refresh group member button positions
 }
 

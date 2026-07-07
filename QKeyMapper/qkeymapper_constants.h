@@ -510,6 +510,10 @@ namespace QKeyMapperConstants {
     inline constexpr int FLOATINGBUTTON_X_OFFSET_DEFAULT = 50;
     inline constexpr int FLOATINGBUTTON_Y_OFFSET_DEFAULT = 50;
 
+    inline constexpr int FLOATINGBUTTON_SYNCGROUPID_MIN = 0;
+    inline constexpr int FLOATINGBUTTON_SYNCGROUPID_MAX = 999;
+    inline constexpr int FLOATINGBUTTON_SYNCGROUPID_DEFAULT = 0;
+
     inline constexpr int FLOATINGBUTTON_OPACITY_DECIMALS = 2;
     inline constexpr double FLOATINGBUTTON_OPACITY_SINGLESTEP = 0.01;
     inline constexpr double FLOATINGBUTTON_OPACITY_MIN = 0.01;
@@ -1079,6 +1083,11 @@ namespace QKeyMapperConstants {
     inline constexpr const char MACROLIST_FIELD_MACROCATEGORY[] = "macroCategory";
     inline constexpr const char MACROLIST_FIELD_MACRONOTE[] = "macroNote";
 
+    // SyncGroupNotes data field names for INI storage (same pattern as MacroList)
+    inline constexpr const char SYNCGROUPNOTES[] = "SyncGroupNotes";
+    inline constexpr const char SYNCGROUPNOTES_FIELD_GROUPID[] = "groupId";
+    inline constexpr const char SYNCGROUPNOTES_FIELD_NOTE[] = "note";
+
     inline constexpr const char NOTIFICATION_FONTCOLOR[] = "Notification_FontColor";
     inline constexpr const char NOTIFICATION_FONTSIZE[] = "Notification_FontSize";
     inline constexpr const char NOTIFICATION_FONTWEIGHT[] = "Notification_FontWeight";
@@ -1222,6 +1231,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_X_OFFSET[] = "KeyMapData_FloatingButton_X_Offset";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET[] = "KeyMapData_FloatingButton_Y_Offset";
     inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE[] = "KeyMapData_FloatingButton_DragToMove";
+    inline constexpr const char KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID[] = "KeyMapData_FloatingButton_SyncGroupId";
     inline constexpr const char KEY2MOUSE_X_SPEED[] = "Key2Mouse_XSpeed";
     inline constexpr const char KEY2MOUSE_Y_SPEED[] = "Key2Mouse_YSpeed";
     inline constexpr const char KEY2MOUSE_POLLING_INTERVAL[] = "Key2Mouse_PollingInterval";
