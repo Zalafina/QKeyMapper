@@ -37,6 +37,7 @@ public:
     void setPreferredLayoutMode(int layoutMode);
     int getPreferredLayoutMode() const;
     void refreshFromCurrentItem();
+    void updateOffsetDisplay(int xOffset, int yOffset);
 
 signals:
     void settingsApplied();

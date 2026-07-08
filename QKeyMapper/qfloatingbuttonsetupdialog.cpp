@@ -1802,3 +1802,11 @@ void QFloatingButtonSetupDialog::applySyncGroupOffsetDelta()
     }
 }
 
+void QFloatingButtonSetupDialog::updateOffsetDisplay(int xOffset, int yOffset)
+{
+    m_OffsetXSpinBox->setValue(xOffset);
+    m_OffsetYSpinBox->setValue(yOffset);
+    m_LastAppliedOffsetX = xOffset;
+    m_LastAppliedOffsetY = yOffset;
+}
+

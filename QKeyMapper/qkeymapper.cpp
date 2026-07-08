@@ -14986,6 +14986,15 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     const QPoint delta = QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent) - m_FloatingButtonDragStartGlobalPos;
                     floatingButton->move(m_FloatingButtonDragStartWidgetPos + delta);
 
+                    // Update setup dialog spin boxes in real-time during drag
+                    if (hasSourceInfo && sourceDataList != Q_NULLPTR) {
+                        MAP_KEYDATA &dragData = (*sourceDataList)[sourceInfo.SourceRow];
+                        const QPoint basePoint = floatingButtonReferenceBasePoint(dragData);
+                        const QPoint newPos = m_FloatingButtonDragStartWidgetPos + delta;
+                        notifySetupDialogOffsetChanged(sourceInfo,
+                            newPos.x() - basePoint.x(), newPos.y() - basePoint.y());
+                    }
+
                     // Move visible sync group members
                     if (!m_FloatingButtonGroupDragStartPositions.isEmpty()) {
                         for (auto it = m_FloatingButtonGroupDragStartPositions.constBegin();
@@ -14993,6 +15002,21 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                             QPushButton *btn = m_FloatingButtonMap.value(it.key(), Q_NULLPTR);
                             if (btn != Q_NULLPTR) {
                                 btn->move(it.value() + delta);
+
+                                // Also update dialog for group members during drag
+                                ActiveKeyMappingRowSourceInfo memberInfo;
+                                QList<MAP_KEYDATA> *memberDataList = Q_NULLPTR;
+                                if (resolveFloatingButtonSourceInfoFromSourceKey(it.key(), &memberInfo, &memberDataList)
+                                    && memberDataList != Q_NULLPTR
+                                    && memberInfo.SourceRow >= 0
+                                    && memberInfo.SourceRow < memberDataList->size()) {
+                                    const MAP_KEYDATA &memberData = memberDataList->at(memberInfo.SourceRow);
+                                    const QPoint memberBasePoint = floatingButtonReferenceBasePoint(memberData);
+                                    const QPoint memberNewPos = it.value() + delta;
+                                    notifySetupDialogOffsetChanged(memberInfo,
+                                        memberNewPos.x() - memberBasePoint.x(),
+                                        memberNewPos.y() - memberBasePoint.y());
+                                }
                             }
                         }
                     }
@@ -44700,6 +44724,25 @@ void QKeyMapper::refreshFloatingButtonPositionForSource(const ActiveKeyMappingRo
 #endif
 
     button->move(newPos);
+
+    // Also update the setup dialog spin boxes if open for this button
+    notifySetupDialogOffsetChanged(sourceInfo, keymapdata.FloatingButton_X_Offset, keymapdata.FloatingButton_Y_Offset);
+}
+
+void QKeyMapper::notifySetupDialogOffsetChanged(const ActiveKeyMappingRowSourceInfo &sourceInfo, int xOffset, int yOffset)
+{
+    if (m_ItemSetupDialog == Q_NULLPTR || m_ItemSetupDialog->m_FloatingButtonSetupDialog == Q_NULLPTR) {
+        return;
+    }
+    QFloatingButtonSetupDialog *dialog = m_ItemSetupDialog->m_FloatingButtonSetupDialog;
+    if (!dialog->isVisible()) {
+        return;
+    }
+    const int dialogTab = m_ItemSetupDialog->getTabIndex();
+    const int dialogRow = dialog->getItemRow();
+    if (dialogTab == sourceInfo.SourceTabIndex && dialogRow == sourceInfo.SourceRow) {
+        dialog->updateOffsetDisplay(xOffset, yOffset);
+    }
 }
 
 void QKeyMapper::onFloatingButtonSettingsApplied()

@@ -2494,6 +2494,7 @@ public:
         }
     }
     void refreshFloatingButtonPositionForSource(const ActiveKeyMappingRowSourceInfo &sourceInfo);
+    void notifySetupDialogOffsetChanged(const ActiveKeyMappingRowSourceInfo &sourceInfo, int xOffset, int yOffset);
 
 private:
     QItemSetupDialog *m_ItemSetupDialog;
