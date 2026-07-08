@@ -6,3 +6,6 @@
 - [Qt 6 QTabBar setTabVisible Scroll Button Bug](qt-tabbar-settabvisible-bug.md) — Broken scroll button calculation and removeTab/insertTab workaround
 - [QVariantMap/QVariantList Save/Load Pattern](qvariantmap-saveload-pattern.md) — Persisting struct data to QSettings using Qt-native serialization
 - [Nested Brace Pitfalls in Save/Load Code](nested-brace-pitfalls.md) — Common bugs when modifying deeply nested serialization functions
+- [Floating Button Sync Group Session](floating-button-sync-group-session.md) — Full session record: 6 files, 5 bugs, design decisions, and lessons from implementing sync group feature
+- [Qt QSpinBox Incremental Delta Pattern](qt-incremental-delta-spinbox.md) — valueChanged fires per-step; use incremental delta not cumulative from backup
+- [Bidirectional Cross-Tab Sync](bidirectional-cross-tab-sync.md) — Sync checks must handle both A→B and B→A directions using display context
