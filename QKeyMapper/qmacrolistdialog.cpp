@@ -1402,7 +1402,6 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
     macroDataTable->setFocusPolicy(Qt::ClickFocus);
     macroDataTable->setColumnCount(MACROLISTDATA_TABLE_COLUMN_COUNT);
 
-    macroDataTable->horizontalHeader()->setStretchLastSection(true);
     macroDataTable->horizontalHeader()->setHighlightSections(false);
 
     // macroDataTable->verticalHeader()->setVisible(false);
@@ -1470,24 +1469,14 @@ void QMacroListDialog::resizeMacroListTabWidgetColumnWidth()
 
 void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable)
 {
-    // When verticalHeader is visible (row numbers), it consumes horizontal space
-    // from the table viewport. Subtract it from our column width budget to keep
-    // the same no-horizontal-scroll behavior as when verticalHeader was hidden.
-    int verticalHeaderWidth = 0;
-    if (macroDataTable->verticalHeader()) {
-        verticalHeaderWidth = qMax(macroDataTable->verticalHeader()->width(),
-                                  macroDataTable->verticalHeader()->sizeHint().width());
-    }
-
-    int referenceWidth = ui->macroListTabWidget->width();
+    int referenceWidth = macroDataTable->width();
+    int viewportWidth = macroDataTable->viewport()->width();
 
     macroDataTable->resizeColumnToContents(MACRO_NAME_COLUMN);
 
     int macro_name_width_min = referenceWidth/7 - 15;
     int macro_name_width_max = referenceWidth / 2;
     int macro_name_width = macroDataTable->columnWidth(MACRO_NAME_COLUMN);
-
-    macroDataTable->horizontalHeader()->setStretchLastSection(false);
 
     // Calculate Category column width
     int macro_category_width_min = referenceWidth / 20 + 5;
@@ -1513,8 +1502,6 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
         macro_note_width = macro_note_width_max;
     }
 
-    macroDataTable->horizontalHeader()->setStretchLastSection(true);
-
     if (macro_name_width < macro_name_width_min) {
         macro_name_width = macro_name_width_min;
     }
@@ -1523,18 +1510,19 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     }
 
     int macro_content_width_min = referenceWidth/5 - 15;
-    int macro_content_width = referenceWidth - verticalHeaderWidth - macro_name_width - macro_category_width - macro_note_width - 24;
+    int macro_content_width = viewportWidth - macro_name_width - macro_category_width - macro_note_width;
     if (macro_content_width < macro_content_width_min) {
         macro_content_width = macro_content_width_min;
     }
 
     macroDataTable->setColumnWidth(MACRO_NAME_COLUMN, macro_name_width);
     macroDataTable->setColumnWidth(MACRO_CONTENT_COLUMN, macro_content_width);
+    macroDataTable->horizontalHeader()->setSectionResizeMode(MACRO_CONTENT_COLUMN, QHeaderView::Stretch);
     macroDataTable->setColumnWidth(MACRO_CATEGORY_COLUMN, macro_category_width);
     macroDataTable->setColumnWidth(MACRO_NOTE_COLUMN, macro_note_width);
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeMacroListTableColumnWidth]" << "macroDataTable->rowCount" << macroDataTable->rowCount();
-    qDebug() << "[resizeMacroListTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width << ", macro_note_width =" << macro_note_width;
+    qDebug() << "[resizeMacroListTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", viewportWidth =" << viewportWidth << ", macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width << ", macro_note_width =" << macro_note_width;
 #endif
 }
 

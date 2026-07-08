@@ -16346,7 +16346,6 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     // Initialize category column visibility based on current button state
     KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
 
-    KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
@@ -16787,7 +16786,6 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     // Initialize category column visibility based on current button state
     KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
 
-    KeyMappingTableWidget->horizontalHeader()->setStretchLastSection(true);
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
@@ -30320,7 +30318,6 @@ void QKeyMapper::initProcessInfoTable(void)
 //                                                                    << "PID"
 //                                                                    << "Title" );
 
-    ui->processinfoTable->horizontalHeader()->setStretchLastSection(true);
     ui->processinfoTable->horizontalHeader()->setHighlightSections(false);
     ui->processinfoTable->verticalHeader()->setVisible(false);
     ui->processinfoTable->verticalHeader()->setDefaultSectionSize(25);
@@ -30516,7 +30513,8 @@ void QKeyMapper::resizeProcessInfoTableColumnWidth()
 
     ui->processinfoTable->resizeColumnToContents(PROCESS_PID_COLUMN);
 
-    ui->processinfoTable->horizontalHeader()->setStretchLastSection(false);
+    int viewportWidth = ui->processinfoTable->viewport()->width();
+
     ui->processinfoTable->resizeColumnToContents(PROCESS_CLASS_COLUMN);
     if (ui->processinfoTable->columnWidth(PROCESS_CLASS_COLUMN) > classname_width_max){
         ui->processinfoTable->setColumnWidth(PROCESS_CLASS_COLUMN, classname_width_max);
@@ -30524,12 +30522,12 @@ void QKeyMapper::resizeProcessInfoTableColumnWidth()
     int processname_width = ui->processinfoTable->columnWidth(PROCESS_NAME_COLUMN);
     int pid_width = ui->processinfoTable->columnWidth(PROCESS_PID_COLUMN);
     int classname_width = ui->processinfoTable->columnWidth(PROCESS_CLASS_COLUMN);
-    int title_width = ui->processinfoTable->width() - processname_width - pid_width - classname_width - 16;
-    ui->processinfoTable->horizontalHeader()->setStretchLastSection(true);
+    int title_width = viewportWidth - processname_width - pid_width - classname_width;
 
     ui->processinfoTable->setColumnWidth(PROCESS_NAME_COLUMN, processname_width);
     ui->processinfoTable->setColumnWidth(PROCESS_PID_COLUMN, pid_width);
     ui->processinfoTable->setColumnWidth(PROCESS_TITLE_COLUMN, title_width);
+    ui->processinfoTable->horizontalHeader()->setSectionResizeMode(PROCESS_TITLE_COLUMN, QHeaderView::Stretch);
     ui->processinfoTable->setColumnWidth(PROCESS_CLASS_COLUMN, classname_width);
 
 #ifdef DEBUG_LOGOUT_ON
@@ -31906,7 +31904,6 @@ void QKeyMapper::updateKeyMappingDataTableConnection()
 
 void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable)
 {
-    mappingDataTable->horizontalHeader()->setStretchLastSection(false);
     int referenceWidth = mappingDataTable->width();
     int viewportWidth = mappingDataTable->viewport()->width();
     // Safety cap: columns must not exceed this even if a vertical scrollbar
