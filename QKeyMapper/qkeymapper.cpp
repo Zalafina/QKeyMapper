@@ -11530,6 +11530,54 @@ void QKeyMapper::snapshotSyncGroupMembers(const ActiveKeyMappingRowSourceInfo &s
             m_FloatingButtonGroupDragStartPositions.insert(key, btn->pos());
         }
     }
+
+    // Also snapshot members from the other tab (bidirectional)
+    if (isCommonMappingFeatureEnabled()) {
+        const int commonTabIndex = findCommonMappingTabIndex();
+        if (commonTabIndex >= 0) {
+            const bool sourceIsCommon = isCommonMappingTabIndex(sourceInfo.SourceTabIndex);
+
+            int otherTabIndex = -1;
+            if (!sourceIsCommon && shouldAppendCommonMappingRows(sourceInfo.SourceTabIndex)
+                && commonTabIndex != sourceInfo.SourceTabIndex) {
+                // Source is a regular tab → also snapshot common tab members
+                otherTabIndex = commonTabIndex;
+            } else if (sourceIsCommon) {
+                // Source is common tab → also snapshot regular display tab members
+                const int displayTab = s_KeyMappingTabWidgetCurrentIndex;
+                if (displayTab >= 0 && displayTab != commonTabIndex
+                    && shouldAppendCommonMappingRows(displayTab)) {
+                    otherTabIndex = displayTab;
+                }
+            }
+
+            if (otherTabIndex >= 0 && otherTabIndex < s_KeyMappingTabInfoList.size()) {
+                QList<MAP_KEYDATA> *otherDataList =
+                    s_KeyMappingTabInfoList.at(otherTabIndex).KeyMappingData;
+                if (otherDataList != Q_NULLPTR) {
+                    for (int row = 0; row < otherDataList->size(); ++row) {
+                        const MAP_KEYDATA &data = otherDataList->at(row);
+                        if (data.FloatingButton_SyncGroupId != groupId) {
+                            continue;
+                        }
+
+                        const quint64 key = buildFloatingButtonSourceKey(otherTabIndex, row);
+                        if (key == excludeKey) {
+                            continue;
+                        }
+
+                        m_FloatingButtonGroupDragStartOffsets.insert(key,
+                            QPoint(data.FloatingButton_X_Offset, data.FloatingButton_Y_Offset));
+
+                        QPushButton *btn = m_FloatingButtonMap.value(key, Q_NULLPTR);
+                        if (btn != Q_NULLPTR && btn->isVisible()) {
+                            m_FloatingButtonGroupDragStartPositions.insert(key, btn->pos());
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void QKeyMapper::armFloatingButtonMoveState(quint64 sourceKey)

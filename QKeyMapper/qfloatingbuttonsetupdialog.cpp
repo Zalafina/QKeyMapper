@@ -90,6 +90,78 @@ QString formatFloatingButtonItemIndexText(const QFloatingButtonSetupDialog *dial
     return QString::number(row + 1);
 }
 
+// Check if common mapping rows should be appended for the given tab index.
+// Mirrors shouldAppendCommonMappingRows() from qkeymapper.cpp.
+bool shouldIncludeCommonMappingRows(int tabIndex)
+{
+    if (tabIndex < 0 || tabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+    const KeyMappingTab_Info &tabInfo = QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex);
+    return QKeyMapper::isCommonMappingFeatureEnabled()
+        && !QKeyMapper::isCommonMappingTab(tabInfo)
+        && tabInfo.IncludeCommonMappingTable;
+}
+
+// Apply sync group offset delta to rows in the given data list that match groupId.
+// Returns the number of rows updated.
+int applySyncGroupDeltaToDataList(QList<MAP_KEYDATA> *dataList, int tabIndex,
+                                  int groupId, int excludeRow,
+                                  int deltaX, int deltaY,
+                                  QKeyMapper *keyMapper)
+{
+    if (dataList == Q_NULLPTR || keyMapper == Q_NULLPTR) {
+        return 0;
+    }
+
+    int count = 0;
+    for (int row = 0; row < dataList->size(); ++row) {
+        if (tabIndex >= 0 && row == excludeRow) {
+            continue;
+        }
+        MAP_KEYDATA &data = (*dataList)[row];
+        if (data.FloatingButton_SyncGroupId != groupId) {
+            continue;
+        }
+
+        if (deltaX != 0) {
+            data.FloatingButton_X_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
+                qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_X_Offset + deltaX));
+        }
+        if (deltaY != 0) {
+            data.FloatingButton_Y_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
+                qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_Y_Offset + deltaY));
+        }
+
+        // Refresh on-screen position for visible group member buttons
+        ActiveKeyMappingRowSourceInfo otherInfo;
+        otherInfo.SourceTabIndex = tabIndex;
+        otherInfo.SourceRow = row;
+        keyMapper->refreshFloatingButtonPositionForSource(otherInfo);
+
+        ++count;
+    }
+    return count;
+}
+
+// Count rows matching groupId in a data list (excluding excludeRow).
+int countGroupMembersInDataList(QList<MAP_KEYDATA> *dataList, int groupId, int excludeRow)
+{
+    if (dataList == Q_NULLPTR) {
+        return 0;
+    }
+    int count = 0;
+    for (int row = 0; row < dataList->size(); ++row) {
+        if (row == excludeRow) {
+            continue;
+        }
+        if (dataList->at(row).FloatingButton_SyncGroupId == groupId) {
+            ++count;
+        }
+    }
+    return count;
+}
+
 }
 
 QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
@@ -1587,6 +1659,34 @@ void QFloatingButtonSetupDialog::updateGroupMemberCountLabel()
             ++count;
         }
     }
+
+    // Also count members from the other tab (bidirectional)
+    if (QKeyMapper::isCommonMappingFeatureEnabled()) {
+        const int commonTab = QKeyMapper::findCommonMappingTabIndex();
+        if (commonTab >= 0) {
+            const int currentTab = currentSourceTabIndexForFloatingButtonDialog(this);
+            const bool sourceIsCommon = QKeyMapper::isCommonMappingTabIndex(currentTab);
+
+            if (!sourceIsCommon && shouldIncludeCommonMappingRows(currentTab)
+                && commonTab != currentTab && commonTab < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+                // Source is a regular tab → also count common tab members
+                QList<MAP_KEYDATA> *commonDataList =
+                    QKeyMapper::s_KeyMappingTabInfoList.at(commonTab).KeyMappingData;
+                count += countGroupMembersInDataList(commonDataList, groupId, -1);
+            } else if (sourceIsCommon) {
+                // Source is common tab → also count regular display tab members
+                const int displayTab = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+                if (displayTab >= 0 && displayTab != commonTab
+                    && shouldIncludeCommonMappingRows(displayTab)
+                    && displayTab < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+                    QList<MAP_KEYDATA> *displayDataList =
+                        QKeyMapper::s_KeyMappingTabInfoList.at(displayTab).KeyMappingData;
+                    count += countGroupMembersInDataList(displayDataList, groupId, -1);
+                }
+            }
+        }
+    }
+
     m_ButtonCountLineEdit->setText(QString::number(count));
 }
 
@@ -1657,43 +1757,48 @@ void QFloatingButtonSetupDialog::applySyncGroupOffsetDelta()
     QKeyMapper *keyMapper = QKeyMapper::getInstance();
     const int tabIndex = currentSourceTabIndexForFloatingButtonDialog(this);
 
-    for (int row = 0; row < mappingDataList->size(); ++row) {
-        if (row == m_ItemRow) {
-            continue;
-        }
-        MAP_KEYDATA &data = (*mappingDataList)[row];
-        if (data.FloatingButton_SyncGroupId != groupId) {
-            continue;
-        }
+    // Apply delta to current tab's group members
+    applySyncGroupDeltaToDataList(mappingDataList, tabIndex, groupId, m_ItemRow,
+                                  deltaX, deltaY, keyMapper);
 
-#ifdef DEBUG_LOGOUT_ON
-        const int oldX = data.FloatingButton_X_Offset;
-        const int oldY = data.FloatingButton_Y_Offset;
-#endif
+    // Also apply delta to the other tab's group members (bidirectional)
+    if (QKeyMapper::isCommonMappingFeatureEnabled()) {
+        const int commonTab = QKeyMapper::findCommonMappingTabIndex();
+        if (commonTab >= 0) {
+            const bool sourceIsCommon = QKeyMapper::isCommonMappingTabIndex(tabIndex);
 
-        if (deltaX != 0) {
-            data.FloatingButton_X_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
-                qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_X_Offset + deltaX));
+            if (!sourceIsCommon && shouldIncludeCommonMappingRows(tabIndex)
+                && commonTab != tabIndex && commonTab < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+                // Source is a regular tab → also process common tab
+                QList<MAP_KEYDATA> *commonDataList =
+                    QKeyMapper::s_KeyMappingTabInfoList.at(commonTab).KeyMappingData;
+                applySyncGroupDeltaToDataList(commonDataList, commonTab, groupId, -1,
+                                              deltaX, deltaY, keyMapper);
+            } else if (sourceIsCommon) {
+                // Source is the common tab → also process the regular display tab
+                const int displayTab = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+                if (displayTab >= 0 && displayTab != commonTab
+                    && shouldIncludeCommonMappingRows(displayTab)
+                    && displayTab < QKeyMapper::s_KeyMappingTabInfoList.size()) {
+                    QList<MAP_KEYDATA> *displayDataList =
+                        QKeyMapper::s_KeyMappingTabInfoList.at(displayTab).KeyMappingData;
+                    applySyncGroupDeltaToDataList(displayDataList, displayTab, groupId, -1,
+                                                  deltaX, deltaY, keyMapper);
+                }
+            }
         }
-        if (deltaY != 0) {
-            data.FloatingButton_Y_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
-                qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_Y_Offset + deltaY));
-        }
+    }
 
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[applySyncGroupOffsetDelta]"
-                            << " row=" << row
-                            << " oldOffset=(" << oldX << "," << oldY << ")"
-                            << " newOffset=(" << data.FloatingButton_X_Offset << "," << data.FloatingButton_Y_Offset << ")";
-#endif
-
-        // Refresh on-screen position for visible group member buttons
-        if (keyMapper != Q_NULLPTR) {
-            ActiveKeyMappingRowSourceInfo otherInfo;
-            otherInfo.SourceTabIndex = tabIndex;
-            otherInfo.SourceRow = row;
-            keyMapper->refreshFloatingButtonPositionForSource(otherInfo);
-        }
+    // Also refresh the current button's on-screen position immediately.
+    // applyToCurrentItem() already updated its MAP_KEYDATA offset, but the
+    // queued settingsApplied signal may be delayed (especially for common tab
+    // buttons where onFloatingButtonSettingsApplied triggers heavy
+    // refreshTabsForSourceTabChange). Move the widget here synchronously.
+    if (keyMapper != Q_NULLPTR) {
+        ActiveKeyMappingRowSourceInfo currentInfo;
+        currentInfo.SourceTabIndex = tabIndex;
+        currentInfo.SourceRow = m_ItemRow;
+        keyMapper->refreshFloatingButtonPositionForSource(currentInfo);
     }
 }
 
