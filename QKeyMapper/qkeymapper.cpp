@@ -31906,47 +31906,43 @@ void QKeyMapper::updateKeyMappingDataTableConnection()
 
 void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable)
 {
-    // When verticalHeader is visible (row numbers), it consumes horizontal space
-    // from the table viewport. Subtract it from our column width budget to keep
-    // the same no-horizontal-scroll behavior as when verticalHeader was hidden.
-    int verticalHeaderWidth = 0;
-    if (mappingDataTable->verticalHeader()) {
-        verticalHeaderWidth = qMax(mappingDataTable->verticalHeader()->width(),
-                                  mappingDataTable->verticalHeader()->sizeHint().width());
-    }
-    Q_UNUSED(verticalHeaderWidth);
-
+    mappingDataTable->horizontalHeader()->setStretchLastSection(false);
     int referenceWidth = mappingDataTable->width();
     int viewportWidth = mappingDataTable->viewport()->width();
+    // Safety cap: columns must not exceed this even if a vertical scrollbar
+    // appears later. Reserve scrollbar extent + 2px buffer (PM_ScrollBarExtent
+    // can slightly undershoot the actual rendered width).
+    int maxAllowableWidth = viewportWidth;
+    if (mappingDataTable->verticalScrollBar() && !mappingDataTable->verticalScrollBar()->isVisible()) {
+        maxAllowableWidth -= qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent) + 2;
+    }
 
     mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
 
+    int checkable_column_width_min = 32;
     int original_key_width_min = referenceWidth / 5 - 30;
     int original_key_width_max = referenceWidth / 2 - 32;
     int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
 
     mappingDataTable->resizeColumnToContents(DISABLED_COLUMN);
     int disabled_width = mappingDataTable->columnWidth(DISABLED_COLUMN);
-    disabled_width += 8;
+    disabled_width = qMax(disabled_width, checkable_column_width_min);
     mappingDataTable->resizeColumnToContents(BURST_MODE_COLUMN);
     int burst_mode_width = mappingDataTable->columnWidth(BURST_MODE_COLUMN);
-    burst_mode_width += 8;
-    mappingDataTable->horizontalHeader()->setStretchLastSection(false);
+    burst_mode_width = qMax(burst_mode_width, checkable_column_width_min);
     mappingDataTable->resizeColumnToContents(LOCK_COLUMN);
     int lock_width = mappingDataTable->columnWidth(LOCK_COLUMN);
-    lock_width += 4;
+    lock_width = qMax(lock_width, checkable_column_width_min);
 
     int floating_width = 0;
     if (mappingDataTable->isFloatingColumnVisible()) {
         mappingDataTable->resizeColumnToContents(FLOATING_COLUMN);
         floating_width = mappingDataTable->columnWidth(FLOATING_COLUMN);
-        floating_width += 4;
+        floating_width = qMax(floating_width, checkable_column_width_min);
     }
 
     int category_width = 0;
     if (mappingDataTable->isCategoryColumnVisible()) {
-        lock_width += 4; // Add padding for lock column
-        mappingDataTable->horizontalHeader()->setStretchLastSection(false);
         int category_width_max = referenceWidth / 5;
         mappingDataTable->resizeColumnToContents(CATEGORY_COLUMN);
         category_width = mappingDataTable->columnWidth(CATEGORY_COLUMN);
@@ -31956,13 +31952,6 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
         if (category_width > category_width_max) {
             category_width = category_width_max;
         }
-        mappingDataTable->horizontalHeader()->setStretchLastSection(true);
-    }
-    else if (!mappingDataTable->isFloatingColumnVisible()) {
-        mappingDataTable->horizontalHeader()->setStretchLastSection(true);
-    }
-    else {
-        mappingDataTable->horizontalHeader()->setStretchLastSection(false);
     }
 
     if (original_key_width < original_key_width_min) {
@@ -31981,11 +31970,13 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     // ponytail: overflow protection — compress category_width first, then mapping_key_width
     static constexpr int category_width_min = 36;
     int totalWidth = original_key_width + mapping_key_width + disabled_width + burst_mode_width + lock_width + floating_width + category_width;
-    int overflow = totalWidth - viewportWidth;
+    int overflow = totalWidth - maxAllowableWidth;
     if (overflow > 0) {
-        int catReduce = qMin(category_width - category_width_min, overflow);
-        category_width -= catReduce;
-        overflow -= catReduce;
+        if (category_width > category_width_min) {
+            int catReduce = qMin(category_width - category_width_min, overflow);
+            category_width -= catReduce;
+            overflow -= catReduce;
+        }
         if (overflow > 0) {
             mapping_key_width = qMax(mapping_key_width_min, mapping_key_width - overflow);
         }
@@ -31994,13 +31985,16 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     // ponytail: if still overflowing after category + mapping_key compression,
     // compress original_key_width as last resort
     totalWidth = original_key_width + mapping_key_width + disabled_width + burst_mode_width + lock_width + floating_width + category_width;
-    overflow = totalWidth - viewportWidth;
+    overflow = totalWidth - maxAllowableWidth;
     if (overflow > 0) {
         original_key_width = qMax(original_key_width_min, original_key_width - overflow);
     }
 
     mappingDataTable->setColumnWidth(ORIGINAL_KEY_COLUMN, original_key_width);
     mappingDataTable->setColumnWidth(MAPPING_KEY_COLUMN, mapping_key_width);
+    // MAPPING_KEY_COLUMN stretches to fill remaining space and auto-shrinks
+    // when a vertical scrollbar appears later.
+    mappingDataTable->horizontalHeader()->setSectionResizeMode(MAPPING_KEY_COLUMN, QHeaderView::Stretch);
     mappingDataTable->setColumnWidth(DISABLED_COLUMN, disabled_width);
     mappingDataTable->setColumnWidth(BURST_MODE_COLUMN, burst_mode_width);
     mappingDataTable->setColumnWidth(LOCK_COLUMN, lock_width);
@@ -32012,7 +32006,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", viewportWidth =" << viewportWidth << ", verticalHeaderWidth =" << verticalHeaderWidth << ", original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", floating_width =" << floating_width << ", category_width =" << category_width << ", totalWidth =" << totalWidth;
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", viewportWidth =" << viewportWidth << ", maxAllowableWidth =" << maxAllowableWidth << ", original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", floating_width =" << floating_width << ", category_width =" << category_width << ", totalWidth =" << totalWidth;
 #endif
 }
 
