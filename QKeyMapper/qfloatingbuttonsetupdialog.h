@@ -82,6 +82,8 @@ private:
     bool m_isRelayouting;
     bool m_isAutoResizingForLayout;
     int m_PreferredVerticalWidth;
+    int m_LastAppliedOffsetX;
+    int m_LastAppliedOffsetY;
 
     QWidget *m_ContentWidget;
 

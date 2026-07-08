@@ -44625,6 +44625,44 @@ void QKeyMapper::onClearFloatingButtonLockStates()
 #endif
 }
 
+void QKeyMapper::refreshFloatingButtonPositionForSource(const ActiveKeyMappingRowSourceInfo &sourceInfo)
+{
+    const quint64 sourceKey = buildFloatingButtonSourceKey(sourceInfo);
+    QPushButton *button = m_FloatingButtonMap.value(sourceKey, Q_NULLPTR);
+    if (button == Q_NULLPTR || !button->isVisible()) {
+        return;
+    }
+
+    QList<MAP_KEYDATA> *sourceDataList = Q_NULLPTR;
+    if (!resolveFloatingButtonSourceInfoFromSourceKey(sourceKey, Q_NULLPTR, &sourceDataList)) {
+        return;
+    }
+    if (sourceDataList == Q_NULLPTR
+        || sourceInfo.SourceRow < 0
+        || sourceInfo.SourceRow >= sourceDataList->size()) {
+        return;
+    }
+
+    const MAP_KEYDATA &keymapdata = sourceDataList->at(sourceInfo.SourceRow);
+    const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
+    const QPoint oldPos = button->pos();
+    const QPoint newPos(basePoint.x() + keymapdata.FloatingButton_X_Offset,
+                        basePoint.y() + keymapdata.FloatingButton_Y_Offset);
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[refreshFloatingButtonPos]"
+                        << " tab=" << sourceInfo.SourceTabIndex
+                        << " row=" << sourceInfo.SourceRow
+                        << " refPoint=" << keymapdata.FloatingButton_ReferencePoint
+                        << " basePoint=(" << basePoint.x() << "," << basePoint.y() << ")"
+                        << " offset=(" << keymapdata.FloatingButton_X_Offset << "," << keymapdata.FloatingButton_Y_Offset << ")"
+                        << " oldPos=(" << oldPos.x() << "," << oldPos.y() << ")"
+                        << " newPos=(" << newPos.x() << "," << newPos.y() << ")";
+#endif
+
+    button->move(newPos);
+}
+
 void QKeyMapper::onFloatingButtonSettingsApplied()
 {
     if (m_ItemSetupDialog == Q_NULLPTR

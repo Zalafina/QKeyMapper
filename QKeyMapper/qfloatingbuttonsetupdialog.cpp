@@ -103,6 +103,8 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_isRelayouting(false)
     , m_isAutoResizingForLayout(false)
     , m_PreferredVerticalWidth(0)
+    , m_LastAppliedOffsetX(0)
+    , m_LastAppliedOffsetY(0)
     , m_ContentWidget(new QWidget(this))
     , m_InfoGroup(new QGroupBox(this))
     , m_BasicGroup(new QGroupBox(this))
@@ -424,10 +426,10 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     // Row 1: Offset X + Sync Group Move checkbox at right
     positionGrid->addWidget(m_OffsetXLabel, 1, 0);
     positionGrid->addWidget(m_OffsetXSpinBox, 1, 1);
-    positionGrid->addWidget(m_SyncGroupMoveCheckBox, 1, 2, 1, 2);
     // Row 2: Offset Y (below Offset X, same X coordinate)
     positionGrid->addWidget(m_OffsetYLabel, 2, 0);
     positionGrid->addWidget(m_OffsetYSpinBox, 2, 1);
+    positionGrid->addWidget(m_SyncGroupMoveCheckBox, 2, 2, 1, 2, Qt::AlignRight);
     // Row 3: Sync Group ID + Button Count at right
     positionGrid->addWidget(m_SyncGroupLabel, 3, 0);
     positionGrid->addWidget(m_SyncGroupIdSpinBox, 3, 1);
@@ -568,6 +570,9 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
             });
     connect(m_SyncGroupNoteLineEdit, &QLineEdit::textChanged, this,
             [this](const QString &text) {
+                if (m_isLoading) {
+                    return;
+                }
                 const int groupId = m_SyncGroupIdSpinBox->value();
                 if (groupId > 0) {
                     if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
@@ -1341,6 +1346,8 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_ReferencePointComboBox->setCurrentIndex(referencePoint);
     m_OffsetXSpinBox->setValue(keymapdata.FloatingButton_X_Offset);
     m_OffsetYSpinBox->setValue(keymapdata.FloatingButton_Y_Offset);
+    m_LastAppliedOffsetX = keymapdata.FloatingButton_X_Offset;
+    m_LastAppliedOffsetY = keymapdata.FloatingButton_Y_Offset;
     m_SyncGroupIdSpinBox->setValue(keymapdata.FloatingButton_SyncGroupId);
     m_SyncGroupMoveCheckBox->setChecked(false);  // always start unchecked (session-only)
     updateGroupMemberCountLabel();
@@ -1623,16 +1630,32 @@ void QFloatingButtonSetupDialog::applySyncGroupOffsetDelta()
         return;
     }
 
-    const int deltaX = m_OffsetXSpinBox->value() - m_BackupData.FloatingButton_X_Offset;
-    const int deltaY = m_OffsetYSpinBox->value() - m_BackupData.FloatingButton_Y_Offset;
+    // Use incremental delta: only apply the change since last call,
+    // not the cumulative delta from backup (which would stack on each valueChanged step).
+    const int deltaX = m_OffsetXSpinBox->value() - m_LastAppliedOffsetX;
+    const int deltaY = m_OffsetYSpinBox->value() - m_LastAppliedOffsetY;
     if (deltaX == 0 && deltaY == 0) {
         return;
     }
+    m_LastAppliedOffsetX = m_OffsetXSpinBox->value();
+    m_LastAppliedOffsetY = m_OffsetYSpinBox->value();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace() << "[applySyncGroupOffsetDelta]"
+                        << " groupId=" << groupId
+                        << " itemRow=" << m_ItemRow
+                        << " lastAppliedXY=(" << m_LastAppliedOffsetX << "," << m_LastAppliedOffsetY << ")"
+                        << " currentXY=(" << m_OffsetXSpinBox->value() << "," << m_OffsetYSpinBox->value() << ")"
+                        << " delta=(" << deltaX << "," << deltaY << ")";
+#endif
 
     QList<MAP_KEYDATA> *mappingDataList = currentTabFullKeyMappingDataList(this);
     if (mappingDataList == Q_NULLPTR) {
         return;
     }
+
+    QKeyMapper *keyMapper = QKeyMapper::getInstance();
+    const int tabIndex = currentSourceTabIndexForFloatingButtonDialog(this);
 
     for (int row = 0; row < mappingDataList->size(); ++row) {
         if (row == m_ItemRow) {
@@ -1643,12 +1666,34 @@ void QFloatingButtonSetupDialog::applySyncGroupOffsetDelta()
             continue;
         }
 
-        data.FloatingButton_X_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
-            qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_X_Offset + deltaX));
-        data.FloatingButton_Y_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
-            qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_Y_Offset + deltaY));
-    }
+#ifdef DEBUG_LOGOUT_ON
+        const int oldX = data.FloatingButton_X_Offset;
+        const int oldY = data.FloatingButton_Y_Offset;
+#endif
 
-    emit settingsApplied();  // trigger main window to refresh group member button positions
+        if (deltaX != 0) {
+            data.FloatingButton_X_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
+                qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_X_Offset + deltaX));
+        }
+        if (deltaY != 0) {
+            data.FloatingButton_Y_Offset = qMax(FLOATINGBUTTON_OFFSET_MIN,
+                qMin(FLOATINGBUTTON_OFFSET_MAX, data.FloatingButton_Y_Offset + deltaY));
+        }
+
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[applySyncGroupOffsetDelta]"
+                            << " row=" << row
+                            << " oldOffset=(" << oldX << "," << oldY << ")"
+                            << " newOffset=(" << data.FloatingButton_X_Offset << "," << data.FloatingButton_Y_Offset << ")";
+#endif
+
+        // Refresh on-screen position for visible group member buttons
+        if (keyMapper != Q_NULLPTR) {
+            ActiveKeyMappingRowSourceInfo otherInfo;
+            otherInfo.SourceTabIndex = tabIndex;
+            otherInfo.SourceRow = row;
+            keyMapper->refreshFloatingButtonPositionForSource(otherInfo);
+        }
+    }
 }
 

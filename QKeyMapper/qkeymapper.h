@@ -2493,6 +2493,7 @@ public:
             m_FloatingButtonSyncGroupNotes[groupId] = note;
         }
     }
+    void refreshFloatingButtonPositionForSource(const ActiveKeyMappingRowSourceInfo &sourceInfo);
 
 private:
     QItemSetupDialog *m_ItemSetupDialog;
