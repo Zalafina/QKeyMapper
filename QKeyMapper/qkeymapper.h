@@ -1688,6 +1688,8 @@ public slots:
     void setHideDisabledRows(bool hide);
     void setShowNotes(bool show);
     void setFloatingColumnVisible(bool visible);
+    void setCategoryColumnVisible(bool visible);
+    void showCategoryFilterPopup(const QPoint &globalAnchorPos, const QRect &anchorGlobalRect);
 
     // Export/Import/Delete tab helpers (shared across dialog buttons, menu bar, context menu)
     void exportMappingTableByTabIndex(int tabIndex);
@@ -1698,6 +1700,7 @@ public slots:
     bool isShowNotesEnabled() const    { return m_ShowNotes; }
     bool isHideDisabledEnabled() const { return m_HideDisabled; }
     bool isShowFloatingEnabled() const { return m_ShowFloating; }
+    bool isShowCategoryEnabled() const { return m_ShowCategory; }
 
 private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -1763,7 +1766,7 @@ private slots:
 
     // void on_showFloatingButton_toggled(bool checked);
 
-    void on_showCategoryButton_toggled(bool checked);
+    void updateCategoryFilterHeaderAppearance(void);
 
     void on_checkUpdateButton_clicked();
 
@@ -1977,7 +1980,6 @@ private:
 
     // Category filter toolbutton (QToolButton + QMenu + QWidgetAction) helpers
     void rebuildCategoryFilterMenuForCurrentTab(void);
-    void updateCategoryFilterToolButtonSummaryForCurrentTab(void);
     void applyCategoryFilterFromMenuStateForCurrentTab(void);
     void updateCategoryFilterAllCheckStateFromItems(void);
     void initWindowSwitchKeyLineEdit(void);
@@ -2417,6 +2419,7 @@ private:
     bool m_ShowNotes = false;
     bool m_HideDisabled = false;
     bool m_ShowFloating = false;
+    bool m_ShowCategory = false;
     // MenuBar actions and menus
     QMenu *m_MenuMappingTableOp = Q_NULLPTR;
     QMenu *m_MenuView = Q_NULLPTR;
@@ -2431,6 +2434,7 @@ private:
     QAction *m_ActionShowNotes = Q_NULLPTR;
     QAction *m_ActionShowFloating = Q_NULLPTR;
     QAction *m_ActionHideDisabled = Q_NULLPTR;
+    QAction *m_ActionShowCategory = Q_NULLPTR;
     int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_INITIAL;
     ActionPopup *m_SettingBackupActionPopup = Q_NULLPTR;
     QFileDialog *m_SelectSettingCustomIconFileDialog = Q_NULLPTR;

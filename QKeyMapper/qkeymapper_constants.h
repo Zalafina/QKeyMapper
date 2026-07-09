@@ -126,14 +126,14 @@ namespace QKeyMapperConstants {
     inline constexpr int KEYMAPPINGTABWIDGET_TOP           = 9;
     inline constexpr int KEYMAPPINGTABWIDGET_HEIGHT        = 347;
     inline constexpr int KEYMAPPINGTABWIDGET_NARROW_LEFT   = 526;
-    inline constexpr int KEYMAPPINGTABWIDGET_NARROW_WIDTH  = 458;
+    inline constexpr int KEYMAPPINGTABWIDGET_NARROW_WIDTH  = 514;
     inline constexpr int KEYMAPPINGTABWIDGET_WIDE_LEFT     = 26;
-    inline constexpr int KEYMAPPINGTABWIDGET_WIDE_WIDTH    = 958;
+    inline constexpr int KEYMAPPINGTABWIDGET_WIDE_WIDTH    = 1014;
 
     inline constexpr int KEYMAPPINGDATATABLE_NARROW_LEFT   = 0;
-    inline constexpr int KEYMAPPINGDATATABLE_NARROW_WIDTH  = 454;
+    inline constexpr int KEYMAPPINGDATATABLE_NARROW_WIDTH  = 510;
     inline constexpr int KEYMAPPINGDATATABLE_WIDE_LEFT     = 0;
-    inline constexpr int KEYMAPPINGDATATABLE_WIDE_WIDTH    = 954;
+    inline constexpr int KEYMAPPINGDATATABLE_WIDE_WIDTH    = 1010;
 
     inline constexpr int KEYMAPPINGDATATABLE_TOP       = 0;
     inline constexpr int KEYMAPPINGDATATABLE_HEIGHT    = 324;
@@ -1457,9 +1457,11 @@ namespace QKeyMapperConstants {
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // QColor supports constexpr in Qt6
     inline constexpr QColor HOTKEY_TABBAR_TEXT_COLOR = QColor(0, 168, 138);
+    inline constexpr QColor CATEGORY_FILTER_ACTIVE_HEADER_COLOR = QColor(0, 168, 138);
 #else
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor HOTKEY_TABBAR_TEXT_COLOR = QColor(0, 168, 138);
+    inline const QColor CATEGORY_FILTER_ACTIVE_HEADER_COLOR = QColor(0, 168, 138);
 #endif
 
     inline constexpr const char REGEX_STRING_EMPTYSTRING[] = "^$";

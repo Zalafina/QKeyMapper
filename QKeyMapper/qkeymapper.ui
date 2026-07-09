@@ -68,19 +68,6 @@
      <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
     </property>
    </widget>
-   <widget class="QToolButton" name="categoryFilterToolButton">
-    <property name="geometry">
-     <rect>
-      <x>990</x>
-      <y>70</y>
-      <width>71</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="focusPolicy">
-     <enum>Qt::FocusPolicy::NoFocus</enum>
-    </property>
-   </widget>
    <widget class="QLabel" name="pointLabel">
     <property name="geometry">
      <rect>
@@ -305,28 +292,6 @@
      <number>-1</number>
     </property>
    </widget>
-   <widget class="QPushButton" name="showCategoryButton">
-    <property name="geometry">
-     <rect>
-      <x>990</x>
-      <y>30</y>
-      <width>71</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="focusPolicy">
-     <enum>Qt::FocusPolicy::NoFocus</enum>
-    </property>
-    <property name="text">
-     <string>ShowCategory</string>
-    </property>
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="autoDefault">
-     <bool>false</bool>
-    </property>
-   </widget>
    <widget class="QSpinBox" name="pushLevelSpinBox">
     <property name="geometry">
      <rect>
@@ -458,7 +423,7 @@
      <rect>
       <x>970</x>
       <y>430</y>
-      <width>71</width>
+      <width>81</width>
       <height>22</height>
      </rect>
     </property>
@@ -2356,7 +2321,7 @@
      <rect>
       <x>970</x>
       <y>386</y>
-      <width>91</width>
+      <width>81</width>
       <height>36</height>
      </rect>
     </property>
@@ -2375,7 +2340,7 @@
      <rect>
       <x>526</x>
       <y>9</y>
-      <width>458</width>
+      <width>514</width>
       <height>347</height>
      </rect>
     </property>

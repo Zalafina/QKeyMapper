@@ -3037,18 +3037,17 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     //ui->showNotesButton->setStyle(windowsStyle);
     //ui->hideDisabledButton->setStyle(windowsStyle);
     //ui->showFloatingButton->setStyle(windowsStyle);
-    ui->showCategoryButton->setStyle(windowsStyle);
 
     // Initialize checkable button state
     m_ProcessListVisible = true;
     m_ShowNotes = false;
     m_HideDisabled = false;
     m_ShowFloating = false;
+    m_ShowCategory = false;
     //ui->processListButton->setChecked(true);
     //ui->showNotesButton->setChecked(false);
     //ui->hideDisabledButton->setChecked(false);
     //ui->showFloatingButton->setChecked(false);
-    ui->showCategoryButton->setChecked(false);
 
     initProcessInfoTable();
     // ui->processCheckBox->setFocusPolicy(Qt::NoFocus);
@@ -3173,6 +3172,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
         m_MenuMappingTableView = m_MenuView->addMenu(QObject::tr("Mapping Table View"));
 
+        m_ActionShowCategory = m_MenuMappingTableView->addAction(QObject::tr("Show Category Column"));
+        m_ActionShowCategory->setCheckable(true);
+        m_ActionShowCategory->setChecked(m_ShowCategory);
+        connect(m_ActionShowCategory, &QAction::toggled, this, [this](bool c) {
+            setCategoryColumnVisible(c);
+        });
+
         m_ActionShowNotes = m_MenuMappingTableView->addAction(QObject::tr("Show Notes"));
         m_ActionShowNotes->setCheckable(true);
         m_ActionShowNotes->setChecked(m_ShowNotes);
@@ -3198,6 +3204,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
         // Keep checked state in sync with the backing members (context menu may toggle them too)
         connect(m_MenuMappingTableView, &QMenu::aboutToShow, this, [this]() {
+            m_ActionShowCategory->setChecked(m_ShowCategory);
             m_ActionShowNotes->setChecked(m_ShowNotes);
             m_ActionShowFloating->setChecked(m_ShowFloating);
             m_ActionHideDisabled->setChecked(!m_HideDisabled);
@@ -16415,10 +16422,25 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     // Initialize floating column visibility based on current button state
     KeyMappingTableWidget->setFloatingColumnVisible(m_ShowFloating);
 
-    // Initialize category column visibility based on current button state
-    KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
+    // Initialize category column visibility based on current state
+    KeyMappingTableWidget->setCategoryColumnVisible(m_ShowCategory);
 
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
+
+    // Category column header click -> show filter popup
+    connect(KeyMappingTableWidget->horizontalHeader(), &QHeaderView::sectionClicked,
+            this, [this](int logicalIndex) {
+        if (logicalIndex == CATEGORY_COLUMN && m_ShowCategory && m_CategoryFilterMenu) {
+            QHeaderView *header = m_KeyMappingDataTable->horizontalHeader();
+            const int sectionRight = header->sectionViewportPosition(CATEGORY_COLUMN)
+                                     + header->sectionSize(CATEGORY_COLUMN);
+            const int sectionLeft = header->sectionViewportPosition(CATEGORY_COLUMN);
+            const QPoint headerTopRight = header->mapToGlobal(QPoint(sectionRight, 0));
+            const QRect anchorRect = QRect(header->mapToGlobal(QPoint(sectionLeft, 0)),
+                                           QSize(header->sectionSize(CATEGORY_COLUMN), header->height()));
+            showCategoryFilterPopup(headerTopRight, anchorRect);
+        }
+    });
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
 
@@ -16855,10 +16877,25 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     // Initialize floating column visibility based on current button state
     KeyMappingTableWidget->setFloatingColumnVisible(m_ShowFloating);
 
-    // Initialize category column visibility based on current button state
-    KeyMappingTableWidget->setCategoryColumnVisible(ui->showCategoryButton->isChecked());
+    // Initialize category column visibility based on current state
+    KeyMappingTableWidget->setCategoryColumnVisible(m_ShowCategory);
 
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
+
+    // Category column header click -> show filter popup
+    connect(KeyMappingTableWidget->horizontalHeader(), &QHeaderView::sectionClicked,
+            this, [this](int logicalIndex) {
+        if (logicalIndex == CATEGORY_COLUMN && m_ShowCategory && m_CategoryFilterMenu) {
+            QHeaderView *header = m_KeyMappingDataTable->horizontalHeader();
+            const int sectionRight = header->sectionViewportPosition(CATEGORY_COLUMN)
+                                     + header->sectionSize(CATEGORY_COLUMN);
+            const int sectionLeft = header->sectionViewportPosition(CATEGORY_COLUMN);
+            const QPoint headerTopRight = header->mapToGlobal(QPoint(sectionRight, 0));
+            const QRect anchorRect = QRect(header->mapToGlobal(QPoint(sectionLeft, 0)),
+                                           QSize(header->sectionSize(CATEGORY_COLUMN), header->height()));
+            showCategoryFilterPopup(headerTopRight, anchorRect);
+        }
+    });
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
 
@@ -19890,7 +19927,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(SHOW_NOTES, m_ShowNotes);
     settingFile.setValue(HIDE_DISABLED, m_HideDisabled);
     settingFile.setValue(SHOW_FLOATING, m_ShowFloating);
-    settingFile.setValue(SHOW_CATEGORYS, ui->showCategoryButton->isChecked());
+    settingFile.setValue(SHOW_CATEGORYS, m_ShowCategory);
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     int display_scale = ui->scaleComboBox->currentData().toInt();
     settingFile.setValue(DISPLAY_SCALE , display_scale);
@@ -21897,18 +21934,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
         if (true == settingFile.contains(SHOW_CATEGORYS)){
             bool showCategorys = settingFile.value(SHOW_CATEGORYS).toBool();
-            if (showCategorys) {
-                ui->showCategoryButton->setChecked(true);
-            }
-            else {
-                ui->showCategoryButton->setChecked(false);
-            }
+            setCategoryColumnVisible(showCategorys);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Show Categorys Button ->" << showCategorys;
 #endif
         }
         else {
-            ui->showCategoryButton->setChecked(false);
+            setCategoryColumnVisible(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowCategorys, Show Categorys Button set to Unchecked.";
 #endif
@@ -26631,18 +26663,13 @@ void QKeyMapper::loadGeneralSetting()
 
     if (true == settingFile.contains(SHOW_CATEGORYS)){
         bool showCategorys = settingFile.value(SHOW_CATEGORYS).toBool();
-        if (showCategorys) {
-            ui->showCategoryButton->setChecked(true);
-        }
-        else {
-            ui->showCategoryButton->setChecked(false);
-        }
+        setCategoryColumnVisible(showCategorys);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Show Categorys Button ->" << showCategorys;
 #endif
     }
     else {
-        ui->showCategoryButton->setChecked(false);
+        setCategoryColumnVisible(false);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains ShowCategorys, Show Categorys Button set to Unchecked.";
 #endif
@@ -27331,7 +27358,6 @@ void QKeyMapper::setControlFontEnglish()
     //ui->showNotesButton->setFont(customFont);
     //ui->hideDisabledButton->setFont(customFont);
     //ui->showFloatingButton->setFont(customFont);
-    ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
@@ -27479,7 +27505,6 @@ void QKeyMapper::setControlFontChinese()
     //ui->showNotesButton->setFont(customFont);
     //ui->hideDisabledButton->setFont(customFont);
     //ui->showFloatingButton->setFont(customFont);
-    ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
@@ -27627,7 +27652,6 @@ void QKeyMapper::setControlFontJapanese()
     //ui->showNotesButton->setFont(customFont);
     //ui->hideDisabledButton->setFont(customFont);
     //ui->showFloatingButton->setFont(customFont);
-    ui->showCategoryButton->setFont(customFont);
     // ui->processCheckBox->setFont(customFont);
     // ui->titleCheckBox->setFont(customFont);
     ui->processLabel->setFont(customFont);
@@ -27900,10 +27924,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     //ui->showNotesButton->setEnabled(status);
     //ui->hideDisabledButton->setEnabled(status);
     //ui->showFloatingButton->setEnabled(status);
-    ui->showCategoryButton->setEnabled(status);
-    if (ui->categoryFilterToolButton) {
-        ui->categoryFilterToolButton->setEnabled(status);
-    }
+    //ui->showCategoryButton->setEnabled(status);
 
     ui->settingTabWidget->setEnabled(status);
 
@@ -30994,19 +31015,17 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     resizeProcessInfoTableColumnWidth();
 
     // ===== 4. Right-anchored controls (x >= 870): keep distance from right edge =====
-    int btnX = this->width() - 71 - 9;
+    // int btnX = this->width() - 71 - 9;
     //ui->addTabButton->setGeometry(btnX, 11, 71, 19);
     //ui->processListButton->setGeometry(btnX, 50, 71, 25);
     //ui->showNotesButton->setGeometry(btnX, 90, 71, 25);
     //ui->hideDisabledButton->setGeometry(btnX, 130, 71, 25);
     //ui->showFloatingButton->setGeometry(btnX, 170, 71, 25);
-    ui->showCategoryButton->setGeometry(btnX, 30, 71, 25);
-    ui->categoryFilterToolButton->setGeometry(btnX, 70, 71, 25);
     // ui->deleteSelectedButton->setGeometry(btnX, 290, 71, 25);
     // ui->clearallButton->setGeometry(btnX, 330, 71, 25);
 
-    ui->addmapdataButton->setGeometry(this->width() - 91 - 9,  386 + dh, 91, 36);
-    ui->originalKeyRecordCopyButton->setGeometry(this->width() - 71 - 29, 430 + dh, 71, 22);
+    ui->addmapdataButton->setGeometry(this->width() - 81 - 19,  386 + dh, 81, 36);
+    ui->originalKeyRecordCopyButton->setGeometry(this->width() - 81 - 19, 430 + dh, 81, 22);
     ui->originalKeyEditModeButton->setGeometry(this->width() - 71 - 109, 430 + dh, 71, 22);
     ui->pushLevelSpinBox->setGeometry(this->width() - 51 - 49, 490 + dh, 51, 22);
     ui->pointDisplayLabel->setGeometry(this->width() - 100 - 20, 462 + dh, 100, 20);
@@ -31427,14 +31446,14 @@ void QKeyMapper::updateCategoryFilterComboBox(void)
         m_KeyMappingDataTable->setCategoryFilters(filters);
     }
 
-    updateCategoryFilterToolButtonSummaryForCurrentTab();
+    updateCategoryFilterHeaderAppearance();
 }
 
 void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
 {
     static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
 
-    if (!ui->categoryFilterToolButton || !m_CategoryFilterMenu || !m_CategoryFilterListLayout || !m_CategoryFilterAllCheckBox) {
+    if (!m_CategoryFilterMenu || !m_CategoryFilterListLayout || !m_CategoryFilterAllCheckBox) {
         return;
     }
     if (!m_KeyMappingDataTable) {
@@ -31544,7 +31563,7 @@ void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
 
     Q_UNUSED(total);
     updateCategoryFilterAllCheckStateFromItems();
-    updateCategoryFilterToolButtonSummaryForCurrentTab();
+    updateCategoryFilterHeaderAppearance();
 
     // Dynamically size the panel to content (width fits longest checkbox text; height fits items up to max).
     if (m_CategoryFilterPanel && m_CategoryFilterScrollArea && m_CategoryFilterAllCheckBox) {
@@ -31688,83 +31707,33 @@ void QKeyMapper::applyCategoryFilterFromMenuStateForCurrentTab(void)
 
     m_KeyMappingDataTable->setCategoryFilters(selected);
     updateCategoryFilterAllCheckStateFromItems();
-    updateCategoryFilterToolButtonSummaryForCurrentTab();
+    updateCategoryFilterHeaderAppearance();
 }
 
-void QKeyMapper::updateCategoryFilterToolButtonSummaryForCurrentTab(void)
+void QKeyMapper::updateCategoryFilterHeaderAppearance(void)
 {
-    static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
-    if (!ui->categoryFilterToolButton || !m_KeyMappingDataTable) {
+    if (!m_KeyMappingDataTable) {
         return;
     }
 
+    const QSet<QString> filters = m_KeyMappingDataTable->m_CategoryFilters;
+    const bool isFiltering = !filters.isEmpty();
+
+    // Keep the "All" checkbox text in sync with current UI language.
     if (m_CategoryFilterAllCheckBox) {
         m_CategoryFilterAllCheckBox->setText(tr("All"));
     }
 
-    if (m_CategoryFilterDisplayOrder.isEmpty()) {
-        QStringList categories = m_KeyMappingDataTable->getAvailableCategories();
-        QStringList regularCategories;
-        bool hasBlankOption = false;
-        for (const QString &category : std::as_const(categories)) {
-            if (category == tr("Blank")) {
-                hasBlankOption = true;
-            }
-            else {
-                regularCategories.append(category);
-            }
-        }
-        regularCategories.sort();
-        m_CategoryFilterDisplayOrder = regularCategories;
-        if (hasBlankOption) {
-            m_CategoryFilterDisplayOrder.append(QString());
-        }
+    QTableWidgetItem *headerItem = m_KeyMappingDataTable->horizontalHeaderItem(CATEGORY_COLUMN);
+    if (headerItem) {
+        headerItem->setForeground(isFiltering ? QBrush(CATEGORY_FILTER_ACTIVE_HEADER_COLOR) : QBrush());
     }
-
-    const QSet<QString> filters = m_KeyMappingDataTable->m_CategoryFilters;
-    QString buttonText;
-    QString tooltip;
-
-    if (filters.contains(kNoneToken)) {
-        buttonText = tr("None");
-        tooltip = buttonText;
-    }
-    else if (filters.isEmpty()) {
-        buttonText = tr("All");
-        tooltip = buttonText;
-    }
-    else {
-        QStringList selectedInOrder;
-        for (const QString &v : std::as_const(m_CategoryFilterDisplayOrder)) {
-            if (filters.contains(v)) {
-                selectedInOrder.append(v.isEmpty() ? tr("Blank") : v);
-            }
-        }
-        tooltip = selectedInOrder.join("\n");
-        if (selectedInOrder.size() <= 2) {
-            buttonText = selectedInOrder.join(", ");
-        }
-        else {
-            buttonText = tr("%1, %2 (+%3)")
-                             .arg(selectedInOrder.at(0), selectedInOrder.at(1))
-                             .arg(selectedInOrder.size() - 2);
-        }
-        if (buttonText.isEmpty()) {
-            buttonText = tr("None");
-        }
-        else {
-            buttonText.replace("&", "&&");
-        }
-    }
-
-    ui->categoryFilterToolButton->setText(buttonText);
-    ui->categoryFilterToolButton->setToolTip(tooltip);
 }
 
 void QKeyMapper::updateCategoryFilterByShowCategoryState()
 {
     // Update category-related controls after tab switch
-    if (ui->showCategoryButton->isChecked()) {
+    if (m_ShowCategory) {
         // If category feature is enabled, update the new tab accordingly
         if (m_KeyMappingDataTable) {
             m_KeyMappingDataTable->setCategoryColumnVisible(true);
@@ -31782,7 +31751,7 @@ void QKeyMapper::updateCategoryFilterByShowCategoryState()
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[updateCategoryFilterByShowCategoryState]" << "Category button checked:" << ui->showCategoryButton->isChecked();
+    qDebug() << "[updateCategoryFilterByShowCategoryState]" << "Category button checked:" << m_ShowCategory;
     if (m_KeyMappingDataTable) {
         qDebug() << "[updateCategoryFilterByShowCategoryState]" << "Category column visible:" << m_KeyMappingDataTable->isCategoryColumnVisible();
     }
@@ -32751,17 +32720,13 @@ void QKeyMapper::setDisableFilterKeyClickSoundCheckedInternal(bool checked)
 
 void QKeyMapper::initCategoryFilterControls()
 {
-    // New multi-select filter UI: QToolButton + QMenu + QWidgetAction + QCheckBox list
-    if (!ui->categoryFilterToolButton) {
+    // Multi-select filter UI: QMenu + QWidgetAction + QCheckBox list (triggered via header click)
+    if (m_CategoryFilterMenu) {
         return;
     }
 
-    ui->categoryFilterToolButton->setVisible(false);
-    // Avoid QToolButton default menu popup positioning/sizing constraints.
-    ui->categoryFilterToolButton->setPopupMode(QToolButton::DelayedPopup);
-
     if (!m_CategoryFilterMenu) {
-        m_CategoryFilterMenu = new QMenu(ui->categoryFilterToolButton);
+        m_CategoryFilterMenu = new QMenu(this);
 
         m_CategoryFilterWidgetAction = new QWidgetAction(m_CategoryFilterMenu);
         m_CategoryFilterPanel = new CategoryFilterPanelWidget(m_CategoryFilterMenu);
@@ -32790,128 +32755,6 @@ void QKeyMapper::initCategoryFilterControls()
 
         m_CategoryFilterWidgetAction->setDefaultWidget(m_CategoryFilterPanel);
         m_CategoryFilterMenu->addAction(m_CategoryFilterWidgetAction);
-
-        // Deterministic popup: rebuild just before popup and clamp to screen.
-        QObject::connect(ui->categoryFilterToolButton, &QToolButton::clicked, this, [this]() {
-            if (!m_CategoryFilterMenu || !ui->categoryFilterToolButton || !m_CategoryFilterPanel) {
-                return;
-            }
-
-            // Clear any previous fixed sizing so rebuild can compute a fresh fixed size.
-            const int maxHeight = CATEGORY_FILTER_MAX_HEIGHT_MAPPINGTABLE;
-            m_CategoryFilterPanel->setMinimumSize(0, 0);
-            m_CategoryFilterPanel->setMaximumSize(QWIDGETSIZE_MAX, maxHeight);
-            rebuildCategoryFilterMenuForCurrentTab();
-
-            // Force menu/action to discard cached geometry and follow rebuilt panel size.
-            refreshMenuWidgetActionGeometry(m_CategoryFilterMenu, m_CategoryFilterWidgetAction, m_CategoryFilterPanel);
-
-            int minPanelH = 0;
-            if (m_CategoryFilterAllCheckBox) {
-                const QVBoxLayout *panelLayout = qobject_cast<const QVBoxLayout *>(m_CategoryFilterPanel->layout());
-                const QMargins margins = panelLayout ? panelLayout->contentsMargins() : QMargins();
-                const int spacing = panelLayout ? panelLayout->spacing() : 0;
-
-                minPanelH = margins.top() + margins.bottom() + m_CategoryFilterAllCheckBox->sizeHint().height();
-                if (!m_CategoryFilterCheckBoxes.isEmpty()) {
-                    QCheckBox *anyCb = Q_NULLPTR;
-                    for (auto it = m_CategoryFilterCheckBoxes.constBegin(); it != m_CategoryFilterCheckBoxes.constEnd(); ++it) {
-                        if (it.value()) {
-                            anyCb = it.value();
-                            break;
-                        }
-                    }
-                    const int oneRowH = anyCb ? anyCb->sizeHint().height() : 0;
-                    const int scrollFrameH = m_CategoryFilterScrollArea ? (m_CategoryFilterScrollArea->frameWidth() * 2) : 0;
-                    const int scrollMinH = oneRowH + scrollFrameH;
-                    minPanelH += spacing + scrollMinH;
-                }
-            }
-
-            m_CategoryFilterMenu->ensurePolished();
-            m_CategoryFilterMenu->adjustSize();
-
-            const QPoint anchor = ui->categoryFilterToolButton->mapToGlobal(QPoint(ui->categoryFilterToolButton->width(), 0));
-            QScreen *screen = QGuiApplication::screenAt(anchor);
-            if (!screen) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                screen = ui->categoryFilterToolButton->screen();
-#else
-                QWidget *topLevel = ui->categoryFilterToolButton->window();
-                screen = (topLevel && topLevel->windowHandle())
-                    ? topLevel->windowHandle()->screen()
-                    : QGuiApplication::primaryScreen();
-#endif
-            }
-            const QRect avail = screen ? screen->availableGeometry() : QRect();
-
-            QSize popupSize = m_CategoryFilterMenu->sizeHint();
-            QPoint pos = anchor; // prefer right, top-aligned
-
-            if (screen && !avail.isEmpty()) {
-                const int kMargin = 8;
-                QRect availInner = avail.adjusted(kMargin, kMargin, -kMargin, -kMargin);
-                if (availInner.isEmpty()) {
-                    availInner = avail;
-                }
-
-                const int rightCandidate = anchor.x();
-                const int leftCandidate = ui->categoryFilterToolButton->mapToGlobal(QPoint(0, 0)).x() - popupSize.width();
-
-                // If right side doesn't fit, use left.
-                if (rightCandidate + popupSize.width() > availInner.right() + 1) {
-                    pos.setX(leftCandidate);
-                }
-
-                // If after switching sides it's still off-screen due to popup bigger than available, shrink panel to fit.
-                if (popupSize.width() > availInner.width() || popupSize.height() > availInner.height()) {
-                    const int basePanelW = qMax(m_CategoryFilterPanel->width(), m_CategoryFilterPanel->sizeHint().width());
-                    const int basePanelH = qMax(m_CategoryFilterPanel->height(), m_CategoryFilterPanel->sizeHint().height());
-
-                    int newPanelW = basePanelW;
-                    int newPanelH = basePanelH;
-
-                    if (popupSize.width() > availInner.width()) {
-                        newPanelW = basePanelW - (popupSize.width() - availInner.width());
-                        const int minW = qMin(CATEGORY_FILTER_MIN_WIDTH_MAPPINGTABLE, availInner.width());
-                        newPanelW = qMax(minW, newPanelW);
-                        newPanelW = qMin(newPanelW, availInner.width());
-                    }
-                    if (popupSize.height() > availInner.height()) {
-                        newPanelH = basePanelH - (popupSize.height() - availInner.height());
-                        const int effectiveMinH = qMin(minPanelH, availInner.height());
-                        newPanelH = qMax(effectiveMinH, newPanelH);
-                        newPanelH = qMin(newPanelH, availInner.height());
-                    }
-
-                    m_CategoryFilterPanel->setFixedSize(newPanelW, newPanelH);
-                    m_CategoryFilterPanel->updateGeometry();
-
-                    refreshMenuWidgetActionGeometry(m_CategoryFilterMenu, m_CategoryFilterWidgetAction, m_CategoryFilterPanel);
-                    popupSize = m_CategoryFilterMenu->sizeHint();
-
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug().nospace() << "[CategoryFilter][PopupClamp] "
-                                     << "avail=" << availInner
-                                     << ", popupSizeHint=" << popupSize
-                                     << ", newPanel=" << QSize(newPanelW, newPanelH);
-#endif
-
-                    // Re-evaluate side with updated size.
-                    const int leftCandidate2 = ui->categoryFilterToolButton->mapToGlobal(QPoint(0, 0)).x() - popupSize.width();
-                    pos.setX(rightCandidate);
-                    if (rightCandidate + popupSize.width() > availInner.right() + 1) {
-                        pos.setX(leftCandidate2);
-                    }
-                }
-
-                // Clamp within available geometry.
-                pos.setX(qBound(availInner.left(), pos.x(), availInner.right() - popupSize.width() + 1));
-                pos.setY(qBound(availInner.top(), pos.y(), availInner.bottom() - popupSize.height() + 1));
-            }
-
-            m_CategoryFilterMenu->popup(pos);
-        });
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
         QObject::connect(m_CategoryFilterAllCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
@@ -32961,10 +32804,6 @@ void QKeyMapper::initCategoryFilterControls()
         });
 #endif
     }
-
-    // Default summary
-    ui->categoryFilterToolButton->setText(tr("All"));
-    ui->categoryFilterToolButton->setToolTip(tr("All"));
 }
 
 void QKeyMapper::initKeyboardSelectComboBox()
@@ -34192,7 +34031,6 @@ void QKeyMapper::setUILanguage(int languageindex)
     //ui->showNotesButton->setText(tr("ShowNotes"));
     //ui->hideDisabledButton->setText(tr("HideDisabled"));
     //ui->showFloatingButton->setText(tr("ShowFloating"));
-    ui->showCategoryButton->setText(tr("ShowCategory"));
 
     // Update category filter controls text
     updateCategoryFilterComboBox();
@@ -34428,6 +34266,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     }
     if (m_MenuMappingTableView) {
         m_MenuMappingTableView->setTitle(QObject::tr("Mapping Table View"));
+        m_ActionShowCategory->setText(QObject::tr("Show Category Column"));
         m_ActionShowNotes->setText(QObject::tr("Show Notes"));
         m_ActionShowFloating->setText(QObject::tr("Show Floating Column"));
         m_ActionHideDisabled->setText(QObject::tr("Show Disabled Rows"));
@@ -35417,7 +35256,6 @@ void QKeyMapper::connectSettingDirtySignals(void)
     //connectCheckable(ui->showNotesButton);
     //connectCheckable(ui->hideDisabledButton);
     //connectCheckable(ui->showFloatingButton);
-    connectCheckable(ui->showCategoryButton);
     connectCheckable(ui->enableVirtualJoystickCheckBox);
     connectCheckable(ui->multiInputEnableCheckBox);
     connectCheckable(ui->filterKeysCheckBox);
@@ -39038,6 +38876,150 @@ void QKeyMapper::setFloatingColumnVisible(bool visible)
         m_KeyMappingDataTable->setFloatingColumnVisible(visible);
     }
     //ui->showFloatingButton->setChecked(visible);
+}
+
+void QKeyMapper::setCategoryColumnVisible(bool visible)
+{
+    m_ShowCategory = visible;
+    if (m_KeyMappingDataTable) {
+        m_KeyMappingDataTable->setCategoryColumnVisible(visible);
+        resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+    }
+    if (!visible && m_KeyMappingDataTable) {
+        m_KeyMappingDataTable->clearCategoryFilters();
+        updateCategoryFilterHeaderAppearance();
+    } else if (visible) {
+        updateCategoryFilterComboBox();
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[setCategoryColumnVisible]" << "Category controls visibility set to:" << visible;
+#endif
+}
+
+void QKeyMapper::showCategoryFilterPopup(const QPoint &globalAnchorPos, const QRect &anchorGlobalRect)
+{
+    if (!m_CategoryFilterMenu || !m_CategoryFilterPanel) {
+        return;
+    }
+
+    // Clear any previous fixed sizing so rebuild can compute a fresh fixed size.
+    const int maxHeight = CATEGORY_FILTER_MAX_HEIGHT_MAPPINGTABLE;
+    m_CategoryFilterPanel->setMinimumSize(0, 0);
+    m_CategoryFilterPanel->setMaximumSize(QWIDGETSIZE_MAX, maxHeight);
+    rebuildCategoryFilterMenuForCurrentTab();
+
+    // Force menu/action to discard cached geometry and follow rebuilt panel size.
+    refreshMenuWidgetActionGeometry(m_CategoryFilterMenu, m_CategoryFilterWidgetAction, m_CategoryFilterPanel);
+
+    int minPanelH = 0;
+    if (m_CategoryFilterAllCheckBox) {
+        const QVBoxLayout *panelLayout = qobject_cast<const QVBoxLayout *>(m_CategoryFilterPanel->layout());
+        const QMargins margins = panelLayout ? panelLayout->contentsMargins() : QMargins();
+        const int spacing = panelLayout ? panelLayout->spacing() : 0;
+
+        minPanelH = margins.top() + margins.bottom() + m_CategoryFilterAllCheckBox->sizeHint().height();
+        if (!m_CategoryFilterCheckBoxes.isEmpty()) {
+            QCheckBox *anyCb = Q_NULLPTR;
+            for (auto it = m_CategoryFilterCheckBoxes.constBegin(); it != m_CategoryFilterCheckBoxes.constEnd(); ++it) {
+                if (it.value()) {
+                    anyCb = it.value();
+                    break;
+                }
+            }
+            const int oneRowH = anyCb ? anyCb->sizeHint().height() : 0;
+            const int scrollFrameH = m_CategoryFilterScrollArea ? (m_CategoryFilterScrollArea->frameWidth() * 2) : 0;
+            const int scrollMinH = oneRowH + scrollFrameH;
+            minPanelH += spacing + scrollMinH;
+        }
+    }
+
+    m_CategoryFilterMenu->ensurePolished();
+    m_CategoryFilterMenu->adjustSize();
+
+    const QPoint anchor = globalAnchorPos;
+    QScreen *screen = QGuiApplication::screenAt(anchor);
+    if (!screen) {
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+        screen = QGuiApplication::screenAt(anchor);
+        if (!screen) {
+            screen = QGuiApplication::primaryScreen();
+        }
+#else
+        QWidget *topLevel = this->window();
+        screen = (topLevel && topLevel->windowHandle())
+            ? topLevel->windowHandle()->screen()
+            : QGuiApplication::primaryScreen();
+#endif
+    }
+    const QRect avail = screen ? screen->availableGeometry() : QRect();
+
+    QSize popupSize = m_CategoryFilterMenu->sizeHint();
+    QPoint pos = anchor; // prefer right, top-aligned
+
+    if (screen && !avail.isEmpty()) {
+        const int kMargin = 8;
+        QRect availInner = avail.adjusted(kMargin, kMargin, -kMargin, -kMargin);
+        if (availInner.isEmpty()) {
+            availInner = avail;
+        }
+
+        const int rightCandidate = anchor.x();
+        const int leftCandidate = anchorGlobalRect.left() - popupSize.width();
+
+        // If right side doesn't fit, use left.
+        if (rightCandidate + popupSize.width() > availInner.right() + 1) {
+            pos.setX(leftCandidate);
+        }
+
+        // If after switching sides it's still off-screen due to popup bigger than available, shrink panel to fit.
+        if (popupSize.width() > availInner.width() || popupSize.height() > availInner.height()) {
+            const int basePanelW = qMax(m_CategoryFilterPanel->width(), m_CategoryFilterPanel->sizeHint().width());
+            const int basePanelH = qMax(m_CategoryFilterPanel->height(), m_CategoryFilterPanel->sizeHint().height());
+
+            int newPanelW = basePanelW;
+            int newPanelH = basePanelH;
+
+            if (popupSize.width() > availInner.width()) {
+                newPanelW = basePanelW - (popupSize.width() - availInner.width());
+                const int minW = qMin(CATEGORY_FILTER_MIN_WIDTH_MAPPINGTABLE, availInner.width());
+                newPanelW = qMax(minW, newPanelW);
+                newPanelW = qMin(newPanelW, availInner.width());
+            }
+            if (popupSize.height() > availInner.height()) {
+                newPanelH = basePanelH - (popupSize.height() - availInner.height());
+                const int effectiveMinH = qMin(minPanelH, availInner.height());
+                newPanelH = qMax(effectiveMinH, newPanelH);
+                newPanelH = qMin(newPanelH, availInner.height());
+            }
+
+            m_CategoryFilterPanel->setFixedSize(newPanelW, newPanelH);
+            m_CategoryFilterPanel->updateGeometry();
+
+            refreshMenuWidgetActionGeometry(m_CategoryFilterMenu, m_CategoryFilterWidgetAction, m_CategoryFilterPanel);
+            popupSize = m_CategoryFilterMenu->sizeHint();
+
+#ifdef DEBUG_LOGOUT_ON
+            qDebug().nospace() << "[CategoryFilter][PopupClamp] "
+                             << "avail=" << availInner
+                             << ", popupSizeHint=" << popupSize
+                             << ", newPanel=" << QSize(newPanelW, newPanelH);
+#endif
+
+            // Re-evaluate side with updated size.
+            const int leftCandidate2 = anchorGlobalRect.left() - popupSize.width();
+            pos.setX(rightCandidate);
+            if (rightCandidate + popupSize.width() > availInner.right() + 1) {
+                pos.setX(leftCandidate2);
+            }
+        }
+
+        // Clamp within available geometry.
+        pos.setX(qBound(availInner.left(), pos.x(), availInner.right() - popupSize.width() + 1));
+        pos.setY(qBound(availInner.top(), pos.y(), availInner.bottom() - popupSize.height() + 1));
+    }
+
+    m_CategoryFilterMenu->popup(pos);
 }
 
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
@@ -46644,6 +46626,13 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     {
         QMenu *viewMenu = contextMenu.addMenu(QObject::tr("Mapping Table View"));
 
+        QAction *showCategoryAction = viewMenu->addAction(QObject::tr("Show Category Column"));
+        showCategoryAction->setCheckable(true);
+        showCategoryAction->setChecked(keymapper->isShowCategoryEnabled());
+        connect(showCategoryAction, &QAction::toggled, keymapper, [keymapper](bool c) {
+            keymapper->setCategoryColumnVisible(c);
+        });
+
         QAction *showNotesAction = viewMenu->addAction(QObject::tr("Show Notes"));
         showNotesAction->setCheckable(true);
         showNotesAction->setChecked(keymapper->isShowNotesEnabled());
@@ -46980,31 +46969,6 @@ bool QKeyMapper::deleteMappingTableByTabIndex(int tabIndex)
 //     setFloatingColumnVisible(checked);
 // }
 
-void QKeyMapper::on_showCategoryButton_toggled(bool checked)
-{
-    if (m_KeyMappingDataTable) {
-        m_KeyMappingDataTable->setCategoryColumnVisible(checked);
-        resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
-    }
-
-    if (ui->categoryFilterToolButton) {
-        ui->categoryFilterToolButton->setVisible(checked);
-    }
-
-    // When hiding Category column, also clear filter to show all rows (keeps behavior consistent).
-    if (!checked && m_KeyMappingDataTable) {
-        m_KeyMappingDataTable->clearCategoryFilters();
-        updateCategoryFilterToolButtonSummaryForCurrentTab();
-    }
-    else if (checked) {
-        updateCategoryFilterComboBox();
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[on_showCategoryButton_toggled]" << "Category controls visibility set to:" << checked;
-#endif
-}
-
 void QKeyMapper::on_checkUpdateButton_clicked()
 {
     QString qkeymapper_updates_url;
@@ -47306,7 +47270,7 @@ QStringList QKeyMapper::getCurrentCategoryFilters() const
 
 bool QKeyMapper::isCategoryFilterVisible() const
 {
-    return ui->showCategoryButton && ui->showCategoryButton->isChecked();
+    return m_ShowCategory;
 }
 
 void QKeyMapper::restoreCategoryFilterState(const QStringList& filters, bool showState)
@@ -47316,8 +47280,8 @@ void QKeyMapper::restoreCategoryFilterState(const QStringList& filters, bool sho
 #endif
 
     // Restore category filter visibility state first
-    if (ui->showCategoryButton && ui->showCategoryButton->isChecked() != showState) {
-        ui->showCategoryButton->setChecked(showState);
+    if (m_ShowCategory != showState) {
+        setCategoryColumnVisible(showState);
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[restoreCategoryFilterState] Set showCategoryButton to:" << showState;
 #endif
@@ -47335,7 +47299,7 @@ void QKeyMapper::restoreCategoryFilterState(const QStringList& filters, bool sho
             }
             m_KeyMappingDataTable->setCategoryFilters(set);
         }
-        updateCategoryFilterToolButtonSummaryForCurrentTab();
+        updateCategoryFilterHeaderAppearance();
     }
 }
 
