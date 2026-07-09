@@ -3189,18 +3189,18 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             setFloatingColumnVisible(c);
         });
 
-        m_ActionHideDisabled = m_MenuMappingTableView->addAction(QObject::tr("Hide Disabled Rows"));
+        m_ActionHideDisabled = m_MenuMappingTableView->addAction(QObject::tr("Show Disabled Rows"));
         m_ActionHideDisabled->setCheckable(true);
-        m_ActionHideDisabled->setChecked(m_HideDisabled);
+        m_ActionHideDisabled->setChecked(!m_HideDisabled);
         connect(m_ActionHideDisabled, &QAction::toggled, this, [this](bool c) {
-            setHideDisabledRows(c);
+            setHideDisabledRows(!c);
         });
 
         // Keep checked state in sync with the backing members (context menu may toggle them too)
         connect(m_MenuMappingTableView, &QMenu::aboutToShow, this, [this]() {
             m_ActionShowNotes->setChecked(m_ShowNotes);
             m_ActionShowFloating->setChecked(m_ShowFloating);
-            m_ActionHideDisabled->setChecked(m_HideDisabled);
+            m_ActionHideDisabled->setChecked(!m_HideDisabled);
         });
 
         // Button -> action reverse sync
@@ -21876,7 +21876,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             qDebug() << "[loadKeyMapSetting]" << "Do not contains HideDisabled, Hide Disabled Button set to Unchecked.";
 #endif
         }
-        m_ActionHideDisabled->setChecked(m_HideDisabled);
+        m_ActionHideDisabled->setChecked(!m_HideDisabled);
 
         if (true == settingFile.contains(SHOW_FLOATING)){
             bool showFloating = settingFile.value(SHOW_FLOATING).toBool();
@@ -26610,7 +26610,7 @@ void QKeyMapper::loadGeneralSetting()
         qDebug() << "[loadGeneralSetting]" << "Do not contains HideDisabled, Hide Disabled Button set to Unchecked.";
 #endif
     }
-    m_ActionHideDisabled->setChecked(m_HideDisabled);
+    m_ActionHideDisabled->setChecked(!m_HideDisabled);
 
     if (true == settingFile.contains(SHOW_FLOATING)){
         bool showFloating = settingFile.value(SHOW_FLOATING).toBool();
@@ -34430,7 +34430,7 @@ void QKeyMapper::setUILanguage(int languageindex)
         m_MenuMappingTableView->setTitle(QObject::tr("Mapping Table View"));
         m_ActionShowNotes->setText(QObject::tr("Show Notes"));
         m_ActionShowFloating->setText(QObject::tr("Show Floating Column"));
-        m_ActionHideDisabled->setText(QObject::tr("Hide Disabled Rows"));
+        m_ActionHideDisabled->setText(QObject::tr("Show Disabled Rows"));
     }
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
@@ -46658,11 +46658,11 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             keymapper->setFloatingColumnVisible(c);
         });
 
-        QAction *hideDisabledAction = viewMenu->addAction(QObject::tr("Hide Disabled Rows"));
+        QAction *hideDisabledAction = viewMenu->addAction(QObject::tr("Show Disabled Rows"));
         hideDisabledAction->setCheckable(true);
-        hideDisabledAction->setChecked(keymapper->isHideDisabledEnabled());
+        hideDisabledAction->setChecked(!keymapper->isHideDisabledEnabled());
         connect(hideDisabledAction, &QAction::toggled, keymapper, [keymapper](bool c) {
-            keymapper->setHideDisabledRows(c);
+            keymapper->setHideDisabledRows(!c);
         });
 
         if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
