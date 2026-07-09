@@ -9,3 +9,5 @@
 - [Floating Button Sync Group Session](floating-button-sync-group-session.md) — Full session record: 6 files, 5 bugs, design decisions, and lessons from implementing sync group feature
 - [Qt QSpinBox Incremental Delta Pattern](qt-incremental-delta-spinbox.md) — valueChanged fires per-step; use incremental delta not cumulative from backup
 - [Bidirectional Cross-Tab Sync](bidirectional-cross-tab-sync.md) — Sync checks must handle both A→B and B→A directions using display context
+- [.ui Button → Menu + State Member Migration](ui-button-to-menu-migration.md) — Step-by-step pattern for replacing .ui button dependencies with menu actions + member state
+- [Category Filter Header Color Indicator](category-filter-header-color.md) — Visual filter state via QHeaderView foreground color, replacing removed button text summary
