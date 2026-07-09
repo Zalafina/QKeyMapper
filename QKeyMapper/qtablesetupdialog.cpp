@@ -528,10 +528,8 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
     }
 
     const bool isCommonTab = QKeyMapper::isCommonMappingTabIndex(m_TabIndex);
-    if (isCommonTab != m_IsCommonTabMode) {
-        m_IsCommonTabMode = isCommonTab;
-        applyCommonTabMode();
-    }
+    m_IsCommonTabMode = isCommonTab;
+    applyCommonTabMode();
 
     QDialog::showEvent(event);
 }
