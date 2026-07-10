@@ -11,3 +11,8 @@
 - [Bidirectional Cross-Tab Sync](bidirectional-cross-tab-sync.md) — Sync checks must handle both A→B and B→A directions using display context
 - [.ui Button → Menu + State Member Migration](ui-button-to-menu-migration.md) — Step-by-step pattern for replacing .ui button dependencies with menu actions + member state
 - [Category Filter Header Color Indicator](category-filter-header-color.md) — Visual filter state via QHeaderView foreground color, replacing removed button text summary
+- [loadSetting_flag Constructor Init Order](loadsetting-flag-startup-dirty-guard.md) — Guard flag must cover entire constructor; connectSettingDirtySignals must be last
+- [FloatingButton Tooltip — Manual QToolTip::showText](floatingbutton-tooltip-manual-qttooltip.md) — Qt tooltip timer doesn't fire on top-level tool windows; use QToolTip::showText() in enterEvent/leaveEvent
+- [QMenu Null Action Comparison Pitfall](qmenu-null-action-comparison-pitfall.md) — QMenu::exec() returning Q_NULLPTR on dismiss + conditionally-created QAction also Q_NULLPTR → false match
+- [SyncGroupId 0 Sentinel Guard](syncgroupid-zero-sentinel-guard.md) — Group ID 0 means "not grouped" and must be guarded in group operations
+- [Qt Event Trace Debug Log Pattern](qt-event-trace-debug-log.md) — Instrument event() with DEBUG_LOGOUT_ON to trace which Qt events arrive and which don't
