@@ -11643,7 +11643,7 @@ void QKeyMapper::snapshotSyncGroupMembers(const ActiveKeyMappingRowSourceInfo &s
     m_FloatingButtonGroupDragStartOffsets.clear();
     m_FloatingButtonGroupDragStartPositions.clear();
 
-    if (sourceDataList == Q_NULLPTR) {
+    if (groupId <= 0 || sourceDataList == Q_NULLPTR) {
         return;
     }
 
@@ -15051,7 +15051,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     else if (selectedAction == moveAction) {
                         armFloatingButtonMoveState(sourceKey);
                     }
-                    else if (selectedAction == syncGroupMoveAction) {
+                    else if (syncGroupMoveAction != Q_NULLPTR && selectedAction == syncGroupMoveAction) {
                         armFloatingButtonSyncGroupMoveState(sourceKey);
                     }
 
