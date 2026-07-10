@@ -2028,8 +2028,6 @@ private:
     void updateMousePointsList(void);
     void reloadUILanguage(void);
     void setUILanguage(int languageindex);
-    // void setUILanguage_Chinese(void);
-    // void setUILanguage_English(void);
     void resetFontSize(void);
     void sessionLockStateChanged(bool locked);
     void setUITheme(int themeindex);
