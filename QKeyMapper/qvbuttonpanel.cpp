@@ -660,8 +660,7 @@ void QVButtonPanel::armPanelMoveState()
             QToolTip::showText(mapToGlobal(rect().center()),
                                vButtonPanelMoveHintText(),
                                this,
-                               rect(),
-                               3000);
+                               rect());
         }
         return;
     }
@@ -674,8 +673,7 @@ void QVButtonPanel::armPanelMoveState()
         QToolTip::showText(mapToGlobal(rect().center()),
                            vButtonPanelMoveHintText(),
                            this,
-                           rect(),
-                           3000);
+                           rect());
     }
 }
 

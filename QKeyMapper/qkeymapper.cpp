@@ -1121,6 +1121,14 @@ bool FloatingButtonWidget::event(QEvent *event)
 {
     const bool handled = QPushButton::event(event);
 
+#if defined(DEBUG_LOGOUT_ON)
+    if (event->type() == QEvent::Enter || event->type() == QEvent::ToolTip) {
+        qDebug().nospace().noquote()
+            << "[FloatingButtonWidget::event] type=" << event->type()
+            << " toolTip=\"" << toolTip() << "\"";
+    }
+#endif
+
     if (event->type() == QEvent::WinIdChange) {
         applyNoActivateWindowStyle();
     }
@@ -1137,25 +1145,59 @@ void FloatingButtonWidget::showEvent(QShowEvent *event)
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 void FloatingButtonWidget::enterEvent(QEnterEvent *event)
 {
+#if defined(DEBUG_LOGOUT_ON)
+    qDebug().nospace().noquote()
+        << "[FloatingButtonWidget::enterEvent] toolTip=\""
+        << toolTip() << "\" underMouse=" << underMouse();
+#endif
     animateHoverTo(1.0);
     QPushButton::enterEvent(event);
+
+    if (!toolTip().isEmpty() && !m_MousePassThrough) {
+        QTimer::singleShot(700, this, [this]() {
+            if (underMouse() && !toolTip().isEmpty()) {
+                QToolTip::showText(mapToGlobal(rect().center()),
+                                   toolTip(),
+                                   this,
+                                   rect());
+            }
+        });
+    }
 }
 #else
 void FloatingButtonWidget::enterEvent(QEvent *event)
 {
+#if defined(DEBUG_LOGOUT_ON)
+    qDebug().nospace().noquote()
+        << "[FloatingButtonWidget::enterEvent] toolTip=\""
+        << toolTip() << "\" underMouse=" << underMouse();
+#endif
     animateHoverTo(1.0);
     QPushButton::enterEvent(event);
+
+    if (!toolTip().isEmpty() && !m_MousePassThrough) {
+        QTimer::singleShot(700, this, [this]() {
+            if (underMouse() && !toolTip().isEmpty()) {
+                QToolTip::showText(mapToGlobal(rect().center()),
+                                   toolTip(),
+                                   this,
+                                   rect());
+            }
+        });
+    }
 }
 #endif
 
 void FloatingButtonWidget::leaveEvent(QEvent *event)
 {
+    QToolTip::hideText();
     animateHoverTo(0.0);
     QPushButton::leaveEvent(event);
 }
 
 void FloatingButtonWidget::hideEvent(QHideEvent *event)
 {
+    QToolTip::hideText();
     resetHoverState();
     QPushButton::hideEvent(event);
 }
@@ -11532,8 +11574,7 @@ void QKeyMapper::armFloatingButtonSyncGroupMoveState(quint64 sourceKey)
             QToolTip::showText(button->mapToGlobal(button->rect().center()),
                                floatingButtonSyncGroupMoveHintText(),
                                button,
-                               button->rect(),
-                               3000);
+                               button->rect());
         }
         return;
     }
@@ -11555,8 +11596,7 @@ void QKeyMapper::armFloatingButtonSyncGroupMoveState(quint64 sourceKey)
             QToolTip::showText(button->mapToGlobal(button->rect().center()),
                                floatingButtonSyncGroupMoveHintText(),
                                button,
-                               button->rect(),
-                               3000);
+                               button->rect());
         }
     }
 }
@@ -11694,8 +11734,7 @@ void QKeyMapper::armFloatingButtonMoveState(quint64 sourceKey)
             QToolTip::showText(button->mapToGlobal(button->rect().center()),
                                floatingButtonMoveHintText(),
                                button,
-                               button->rect(),
-                               3000);
+                               button->rect());
         }
         return;
     }
@@ -11717,8 +11756,7 @@ void QKeyMapper::armFloatingButtonMoveState(quint64 sourceKey)
             QToolTip::showText(button->mapToGlobal(button->rect().center()),
                                floatingButtonMoveHintText(),
                                button,
-                               button->rect(),
-                               3000);
+                               button->rect());
         }
     }
 }
@@ -35873,6 +35911,11 @@ void QKeyMapper::refreshFloatingButtonWidget(QPushButton *button,
     const QString displayLabel = button->fontMetrics().elidedText(fullLabel, Qt::ElideMiddle, availableTextWidth);
     button->setText(displayLabel);
 
+    // Apply visual state FIRST so QStyleSheetStyle is established before setToolTip
+    const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
+    button->move(basePoint.x() + keymapdata.FloatingButton_X_Offset, basePoint.y() + keymapdata.FloatingButton_Y_Offset);
+    applyFloatingButtonVisualState(button, keymapdata, pressed, locked);
+
     if (keymapdata.FloatingButton_ShowToolTip) {
         QString itemIndexText;
         if (hasSourceInfo && QKeyMapper::isCommonMappingTabIndex(sourceInfo.SourceTabIndex)) {
@@ -35899,6 +35942,11 @@ void QKeyMapper::refreshFloatingButtonWidget(QPushButton *button,
             tip += QString("\n%1 : %2").arg(tr("Note"), keymapdata.Note);
         }
         button->setToolTip(tip);
+#if defined(DEBUG_LOGOUT_ON)
+        qDebug().nospace().noquote()
+            << "[refreshFloatingButtonWidget] setToolTip len=" << tip.length()
+            << " showToolTip=" << keymapdata.FloatingButton_ShowToolTip;
+#endif
     }
     else {
         button->setToolTip(QString());
@@ -35918,9 +35966,6 @@ void QKeyMapper::refreshFloatingButtonWidget(QPushButton *button,
         button->setCursor(Qt::ArrowCursor);
     }
 
-    const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
-    button->move(basePoint.x() + keymapdata.FloatingButton_X_Offset, basePoint.y() + keymapdata.FloatingButton_Y_Offset);
-    applyFloatingButtonVisualState(button, keymapdata, pressed, locked);
     button->update();
 }
 
