@@ -3525,6 +3525,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->mappingStopKeyLineEdit->setText(MAPPINGSWITCH_KEY_DEFAULT);
     initSelectColorDialog();
     initMappingStartActionMenu();
+    loadSetting_flag = true;
     initKeyMappingTabWidget();
     m_ItemSetupDialog = new QItemSetupDialog(this);
     if (m_ItemSetupDialog != Q_NULLPTR
@@ -3570,7 +3571,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
-    loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(QString());
     int languageIndex = ui->languageComboBox->currentIndex();
     if (LANGUAGE_ENGLISH == languageIndex) {
@@ -3588,10 +3588,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     }
     ui->settingNameLineEdit->setText(loadresult);
     Q_UNUSED(loadresult);
-    loadSetting_flag = false;
-    connectSettingDirtySignals();
-    clearSaveSettingDirty();
-    flushPendingCommonPriorityRepairAfterLoad();
 
     const auto showKeyRecordNotification = [this](const QString &message) {
         int position = ui->notificationComboBox->currentIndex();
@@ -3800,6 +3796,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
         }
     });
+
+    loadSetting_flag = false;
+    connectSettingDirtySignals();
+    clearSaveSettingDirty();
+    flushPendingCommonPriorityRepairAfterLoad();
 }
 QKeyMapper::~QKeyMapper()
 {
