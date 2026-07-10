@@ -159,6 +159,7 @@ private:
 
     QLabel *m_SyncGroupLabel;
     QSpinBox *m_SyncGroupIdSpinBox;
+    QCheckBox *m_ShowDragCoordinateCheckBox;
     QCheckBox *m_SyncGroupMoveCheckBox;
     QLabel *m_ButtonCountLabel;
     QLineEdit *m_ButtonCountLineEdit;

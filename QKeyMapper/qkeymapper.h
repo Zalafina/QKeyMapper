@@ -1701,6 +1701,8 @@ public slots:
     bool isHideDisabledEnabled() const { return m_HideDisabled; }
     bool isShowFloatingEnabled() const { return m_ShowFloating; }
     bool isShowCategoryEnabled() const { return m_ShowCategory; }
+    bool isFloatingButtonDragCoordinateEnabled() const { return m_FloatingButton_ShowDragCoordinate; }
+    void setFloatingButtonDragCoordinateEnabled(bool enabled);
 
 private slots:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -2418,6 +2420,7 @@ private:
     bool m_HideDisabled = false;
     bool m_ShowFloating = false;
     bool m_ShowCategory = false;
+    bool m_FloatingButton_ShowDragCoordinate = QKeyMapperConstants::FLOATINGBUTTON_SHOW_DRAG_COORDINATE_DEFAULT;
     // MenuBar actions and menus
     QMenu *m_MenuMappingTableOp = Q_NULLPTR;
     QMenu *m_MenuView = Q_NULLPTR;
@@ -2497,6 +2500,10 @@ public:
     }
     void refreshFloatingButtonPositionForSource(const ActiveKeyMappingRowSourceInfo &sourceInfo);
     void notifySetupDialogOffsetChanged(const ActiveKeyMappingRowSourceInfo &sourceInfo, int xOffset, int yOffset);
+    // Drag coordinate label
+    void ensureDragCoordinateLabel();
+    QPoint calculateDragCoordinateLabelPos(const QPushButton *button) const;
+    void updateDragCoordinateLabel(const QPushButton *button, const MAP_KEYDATA &keymapdata);
 
 private:
     QItemSetupDialog *m_ItemSetupDialog;
@@ -2518,6 +2525,7 @@ private:
     QHash<quint64, QPoint> m_FloatingButtonGroupDragStartPositions; // sourceKey -> start widget pos for visible group members
     // Sync group notes: GroupId -> Note text (serialized per-setting via QVariantList)
     QHash<int, QString> m_FloatingButtonSyncGroupNotes;
+    QLabel *m_FloatingButtonDragCoordinateLabel = Q_NULLPTR;
     HWND m_FloatingButtonLastTrackHWND = NULL;
     RECT m_FloatingButtonLastTrackClientRect = {};
 #ifdef USE_CUSTOMSTYLE

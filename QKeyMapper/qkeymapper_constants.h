@@ -424,6 +424,7 @@ namespace QKeyMapperConstants {
     inline constexpr QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
     inline constexpr QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(166, 166, 166, 255);
     inline constexpr QColor FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR = QColor(255, 255, 255, 255);
+    inline constexpr QColor FLOATINGBUTTON_DRAG_COORD_LABEL_TEXT_COLOR = QColor(220, 221, 221);
 #else
     // Fallback for Qt5: QColor is not constexpr
     inline const QColor CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR = QColor(112, 161, 255);
@@ -434,6 +435,7 @@ namespace QKeyMapperConstants {
     inline const QColor FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR = QColor(208, 210, 212);
     inline const QColor FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR = QColor(166, 166, 166, 255);
     inline const QColor FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR = QColor(255, 255, 255, 255);
+    inline const QColor FLOATINGBUTTON_DRAG_COORD_LABEL_TEXT_COLOR = QColor(220, 221, 221);
 #endif
 
     inline constexpr int CROSSHAIR_OPACITY_MIN = 0;
@@ -513,6 +515,16 @@ namespace QKeyMapperConstants {
     inline constexpr int FLOATINGBUTTON_SYNCGROUPID_MIN = 0;
     inline constexpr int FLOATINGBUTTON_SYNCGROUPID_MAX = 999;
     inline constexpr int FLOATINGBUTTON_SYNCGROUPID_DEFAULT = 0;
+
+    inline constexpr bool FLOATINGBUTTON_SHOW_DRAG_COORDINATE_DEFAULT = true;
+
+    // Drag coordinate label appearance
+    inline constexpr int FLOATINGBUTTON_DRAG_COORD_LABEL_BG_ALPHA = 120;
+    inline constexpr int FLOATINGBUTTON_DRAG_COORD_LABEL_RADIUS = 6;
+    inline constexpr int FLOATINGBUTTON_DRAG_COORD_LABEL_FONT_SIZE = 12;
+    inline constexpr int FLOATINGBUTTON_DRAG_COORD_LABEL_PADDING_H = 8;
+    inline constexpr int FLOATINGBUTTON_DRAG_COORD_LABEL_PADDING_V = 4;
+    inline constexpr int FLOATINGBUTTON_DRAG_COORD_LABEL_MARGIN = 4;
 
     inline constexpr int FLOATINGBUTTON_OPACITY_DECIMALS = 2;
     inline constexpr double FLOATINGBUTTON_OPACITY_SINGLESTEP = 0.01;
@@ -1054,6 +1066,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char HIDE_DISABLED[] = "HideDisabled";
     inline constexpr const char SHOW_FLOATING[] = "ShowFloating";
     inline constexpr const char SHOW_CATEGORYS[] = "ShowCategorys";
+    inline constexpr const char FLOATINGBUTTON_SHOW_DRAG_COORDINATE[] = "FloatingButton_ShowDragCoordinate";
     inline constexpr const char NOTSHOW_VERSION_UNMATCHED[] = "NotShow_VersionUnmatched";
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
     inline constexpr const char NOTSHOW_FILTERKEYS_DISABLED[] = "NotShow_FilterKeysDisabled";

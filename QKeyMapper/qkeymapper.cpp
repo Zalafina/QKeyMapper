@@ -417,6 +417,96 @@ QRect mappingStartMainButtonRect(const QRect &buttonRect, const QRect &menuRect)
 
 } // namespace
 
+class DragCoordinateLabel : public QLabel
+{
+public:
+    using QLabel::QLabel;
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setBrush(QColor(0, 0, 0, QKeyMapperConstants::FLOATINGBUTTON_DRAG_COORD_LABEL_BG_ALPHA));
+        painter.setPen(Qt::NoPen);
+        painter.drawRoundedRect(rect(),
+                                QKeyMapperConstants::FLOATINGBUTTON_DRAG_COORD_LABEL_RADIUS,
+                                QKeyMapperConstants::FLOATINGBUTTON_DRAG_COORD_LABEL_RADIUS);
+        QLabel::paintEvent(event);
+    }
+};
+
+void QKeyMapper::ensureDragCoordinateLabel()
+{
+    if (!m_FloatingButton_ShowDragCoordinate) return;
+    if (m_FloatingButtonDragCoordinateLabel != Q_NULLPTR) return;
+
+    DragCoordinateLabel *label = new DragCoordinateLabel();
+    label->setWindowFlags(Qt::Tool | Qt::FramelessWindowHint
+                          | Qt::WindowStaysOnTopHint | Qt::WindowDoesNotAcceptFocus);
+    label->setAttribute(Qt::WA_TranslucentBackground);
+    label->setAttribute(Qt::WA_ShowWithoutActivating);
+    label->setStyleSheet(QString("color: rgb(220, 221, 221); padding: %1px %2px; font-size: %3pt;")
+                         .arg(QKeyMapperConstants::FLOATINGBUTTON_DRAG_COORD_LABEL_PADDING_V)
+                         .arg(QKeyMapperConstants::FLOATINGBUTTON_DRAG_COORD_LABEL_PADDING_H)
+                         .arg(QKeyMapperConstants::FLOATINGBUTTON_DRAG_COORD_LABEL_FONT_SIZE));
+
+    m_FloatingButtonDragCoordinateLabel = label;
+}
+
+QPoint QKeyMapper::calculateDragCoordinateLabelPos(const QPushButton *button) const
+{
+    const QPoint btnTL = button->pos();
+    const int btnW = button->width();
+    const int margin = QKeyMapperConstants::FLOATINGBUTTON_DRAG_COORD_LABEL_MARGIN;
+
+    QLabel *label = m_FloatingButtonDragCoordinateLabel;
+    const int labelW = label->sizeHint().width();
+    const int labelH = label->sizeHint().height();
+
+    // Determine which screen the button is on (multi-monitor aware)
+    QScreen *screen = QGuiApplication::screenAt(btnTL);
+    if (screen == Q_NULLPTR) {
+        screen = QGuiApplication::primaryScreen();
+    }
+    const QRect screenGeo = (screen != Q_NULLPTR)
+        ? screen->availableGeometry()
+        : QRect(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
+
+    // Priority 1: above the button's top-left anchor point
+    int x = btnTL.x();
+    int y = btnTL.y() - labelH - margin;
+    if (y >= screenGeo.top()) return QPoint(x, y);
+
+    // Priority 2: left of the button's top-left anchor point
+    x = btnTL.x() - labelW - margin;
+    y = btnTL.y();
+    if (x >= screenGeo.left()) return QPoint(x, y);
+
+    // Priority 3: right of the button's top-right anchor point
+    x = btnTL.x() + btnW + margin;
+    y = btnTL.y();
+    return QPoint(x, y);
+}
+
+void QKeyMapper::updateDragCoordinateLabel(const QPushButton *button, const MAP_KEYDATA &keymapdata)
+{
+    QLabel *label = m_FloatingButtonDragCoordinateLabel;
+    if (label == Q_NULLPTR || !label->isVisible()) return;
+
+    const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
+    const int offsetX = button->pos().x() - basePoint.x();
+    const int offsetY = button->pos().y() - basePoint.y();
+
+    label->setText(QString("X:%1, Y:%2 (%3 x %4 px)")
+        .arg(offsetX)
+        .arg(offsetY)
+        .arg(button->width())
+        .arg(button->height()));
+    label->adjustSize();
+    label->move(calculateDragCoordinateLabelPos(button));
+}
+
 #ifdef DEBUG_LOGOUT_ON
 static QString debugPointerString(const void *pointer)
 {
@@ -3044,6 +3134,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_HideDisabled = false;
     m_ShowFloating = false;
     m_ShowCategory = false;
+    m_FloatingButton_ShowDragCoordinate = QKeyMapperConstants::FLOATINGBUTTON_SHOW_DRAG_COORDINATE_DEFAULT;
     //ui->processListButton->setChecked(true);
     //ui->showNotesButton->setChecked(false);
     //ui->hideDisabledButton->setChecked(false);
@@ -14803,8 +14894,16 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     QAction *hideAllAction = contextMenu.addAction(tr("Hide All Floating Buttons"));
                     QAction *showAllAction = contextMenu.addAction(tr("Show All Floating Buttons"));
                     contextMenu.addSeparator();
-                    QAction *toggleTooltipAction = contextMenu.addAction(keymapdata.FloatingButton_ShowToolTip ? tr("Hide Tooltip") : tr("Show Tooltip"));
+                    QAction *toggleTooltipAction = contextMenu.addAction(tr("Show Tooltip"));
+                    toggleTooltipAction->setCheckable(true);
+                    toggleTooltipAction->setChecked(keymapdata.FloatingButton_ShowToolTip);
+                    QAction *toggleDragCoordAction = contextMenu.addAction(QObject::tr("Show coordinates while dragging(Global)"));
+                    toggleDragCoordAction->setCheckable(true);
+                    toggleDragCoordAction->setChecked(m_FloatingButton_ShowDragCoordinate);
 
+                    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+                        contextMenu.setStyle(windowsStyle);
+                    }
                     QAction *selectedAction = contextMenu.exec(QCursor::pos());
                     if (selectedAction == showAllAction) {
                         onShowAllFloatingButtons(true);
@@ -14844,7 +14943,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         requestSaveSettingDirty();
                     }
                     else if (selectedAction == toggleTooltipAction) {
-                        keymapdata.FloatingButton_ShowToolTip = !keymapdata.FloatingButton_ShowToolTip;
+                        keymapdata.FloatingButton_ShowToolTip = toggleTooltipAction->isChecked();
                         syncFloatingButtonRuntimeDataToSourceRow(sourceInfo, keymapdata);
                         if (sourceInfo.SourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
                             updateTableWidgetItem(sourceInfo.SourceTabIndex, sourceInfo.SourceRow, FLOATING_COLUMN);
@@ -14853,6 +14952,10 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                             refreshTabsForSourceTabChange(sourceInfo.SourceTabIndex);
                         }
                         showFloatingButtonStartForSource(sourceInfo, displayRowindex, QString());
+                        requestSaveSettingDirty();
+                    }
+                    else if (selectedAction == toggleDragCoordAction) {
+                        m_FloatingButton_ShowDragCoordinate = !m_FloatingButton_ShowDragCoordinate;
                         requestSaveSettingDirty();
                     }
                     else if (selectedAction == copyStyleCodeAction) {
@@ -14954,6 +15057,11 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                             m_FloatingButtonGroupDragStartPositions.clear();
                         }
 
+                        // Show drag coordinate label
+                        ensureDragCoordinateLabel();
+                        updateDragCoordinateLabel(floatingButton, keymapdata);
+                        m_FloatingButtonDragCoordinateLabel->show();
+
                         return true;
                     }
 
@@ -15028,6 +15136,11 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         }
                     }
 
+                    // Update drag coordinate label in real-time
+                    if (hasSourceInfo && sourceDataList != Q_NULLPTR) {
+                        updateDragCoordinateLabel(floatingButton, (*sourceDataList)[sourceInfo.SourceRow]);
+                    }
+
                     return true;
                 }
             }
@@ -15098,6 +15211,9 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                     m_FloatingButtonDraggingKey = static_cast<quint64>(-1);
                     m_FloatingButtonGroupDragStartOffsets.clear();
                     m_FloatingButtonGroupDragStartPositions.clear();
+                    if (m_FloatingButtonDragCoordinateLabel != Q_NULLPTR) {
+                        m_FloatingButtonDragCoordinateLabel->hide();
+                    }
                     floatingButton->setCursor(Qt::ArrowCursor);
                     showFloatingButtonStartForSource(sourceInfo, displayRowindex, QString());
                     return true;
@@ -15595,6 +15711,9 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         m_FloatingButtonSyncGroupMoveArmedKey = static_cast<quint64>(-1);
         m_FloatingButtonGroupDragStartOffsets.clear();
         m_FloatingButtonGroupDragStartPositions.clear();
+        if (m_FloatingButtonDragCoordinateLabel != Q_NULLPTR) {
+            m_FloatingButtonDragCoordinateLabel->hide();
+        }
 
         for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
             if (it.value() != Q_NULLPTR) {
@@ -19928,6 +20047,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(HIDE_DISABLED, m_HideDisabled);
     settingFile.setValue(SHOW_FLOATING, m_ShowFloating);
     settingFile.setValue(SHOW_CATEGORYS, m_ShowCategory);
+    settingFile.setValue(FLOATINGBUTTON_SHOW_DRAG_COORDINATE, m_FloatingButton_ShowDragCoordinate);
     settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
     int display_scale = ui->scaleComboBox->currentData().toInt();
     settingFile.setValue(DISPLAY_SCALE , display_scale);
@@ -21944,6 +22064,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains ShowCategorys, Show Categorys Button set to Unchecked.";
 #endif
+        }
+
+        if (true == settingFile.contains(FLOATINGBUTTON_SHOW_DRAG_COORDINATE)){
+            m_FloatingButton_ShowDragCoordinate = settingFile.value(FLOATINGBUTTON_SHOW_DRAG_COORDINATE).toBool();
+        }
+        else {
+            m_FloatingButton_ShowDragCoordinate = QKeyMapperConstants::FLOATINGBUTTON_SHOW_DRAG_COORDINATE_DEFAULT;
         }
 
         if (true == settingFile.contains(VIRTUALGAMEPAD_TYPE)){
@@ -26673,6 +26800,13 @@ void QKeyMapper::loadGeneralSetting()
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[loadGeneralSetting]" << "Do not contains ShowCategorys, Show Categorys Button set to Unchecked.";
 #endif
+    }
+
+    if (true == settingFile.contains(FLOATINGBUTTON_SHOW_DRAG_COORDINATE)){
+        m_FloatingButton_ShowDragCoordinate = settingFile.value(FLOATINGBUTTON_SHOW_DRAG_COORDINATE).toBool();
+    }
+    else {
+        m_FloatingButton_ShowDragCoordinate = QKeyMapperConstants::FLOATINGBUTTON_SHOW_DRAG_COORDINATE_DEFAULT;
     }
 
     if (true == settingFile.contains(VIRTUALGAMEPAD_TYPE)){
@@ -38580,6 +38714,11 @@ void QKeyMapper::setFloatingColumnVisible(bool visible)
         m_KeyMappingDataTable->setFloatingColumnVisible(visible);
     }
     //ui->showFloatingButton->setChecked(visible);
+}
+
+void QKeyMapper::setFloatingButtonDragCoordinateEnabled(bool enabled)
+{
+    m_FloatingButton_ShowDragCoordinate = enabled;
 }
 
 void QKeyMapper::setCategoryColumnVisible(bool visible)

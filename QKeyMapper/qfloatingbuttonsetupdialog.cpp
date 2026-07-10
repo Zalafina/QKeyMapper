@@ -242,6 +242,7 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     , m_OffsetYSpinBox(new QSpinBox(this))
     , m_SyncGroupLabel(new QLabel(this))
     , m_SyncGroupIdSpinBox(new QSpinBox(this))
+    , m_ShowDragCoordinateCheckBox(new QCheckBox(this))
     , m_SyncGroupMoveCheckBox(new QCheckBox(this))
     , m_ButtonCountLabel(new QLabel(this))
     , m_ButtonCountLineEdit(new QLineEdit(this))
@@ -495,9 +496,10 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     QGridLayout *positionGrid = new QGridLayout(m_PositionGroup);
     positionGrid->addWidget(m_ReferencePointLabel, 0, 0);
     positionGrid->addWidget(m_ReferencePointComboBox, 0, 1, 1, 3);
-    // Row 1: Offset X + Sync Group Move checkbox at right
+    // Row 1: Offset X + Show Drag Coordinate checkbox at right
     positionGrid->addWidget(m_OffsetXLabel, 1, 0);
     positionGrid->addWidget(m_OffsetXSpinBox, 1, 1);
+    positionGrid->addWidget(m_ShowDragCoordinateCheckBox, 1, 2, 1, 2, Qt::AlignRight);
     // Row 2: Offset Y (below Offset X, same X coordinate)
     positionGrid->addWidget(m_OffsetYLabel, 2, 0);
     positionGrid->addWidget(m_OffsetYSpinBox, 2, 1);
@@ -658,6 +660,16 @@ QFloatingButtonSetupDialog::QFloatingButtonSetupDialog(QWidget *parent)
     #else
     connect(m_SyncGroupMoveCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
     #endif
+    #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    connect(m_ShowDragCoordinateCheckBox, &QCheckBox::checkStateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    #else
+    connect(m_ShowDragCoordinateCheckBox, &QCheckBox::stateChanged, this, &QFloatingButtonSetupDialog::onAnyControlChanged);
+    #endif
+    connect(m_ShowDragCoordinateCheckBox, &QCheckBox::toggled, this, [](bool checked) {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->setFloatingButtonDragCoordinateEnabled(checked);
+        }
+    });
 
     m_ButtonColorPicker->setLivePreviewEnabled(true);
     m_PressedColorPicker->setLivePreviewEnabled(true);
@@ -738,6 +750,7 @@ void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
     m_OffsetXLabel->setText(tr("Offset X"));
     m_OffsetYLabel->setText(tr("Offset Y"));
     m_SyncGroupLabel->setText(tr("Group ID"));
+    m_ShowDragCoordinateCheckBox->setText(QObject::tr("Show coordinates while dragging(Global)"));
     m_SyncGroupMoveCheckBox->setText(tr("Group synchronized move"));
     m_ButtonCountLabel->setText(tr("Group Button Count"));
     m_SyncGroupNoteLabel->setText(tr("Group Note"));
@@ -1422,6 +1435,9 @@ void QFloatingButtonSetupDialog::loadFromCurrentItem()
     m_LastAppliedOffsetY = keymapdata.FloatingButton_Y_Offset;
     m_SyncGroupIdSpinBox->setValue(keymapdata.FloatingButton_SyncGroupId);
     m_SyncGroupMoveCheckBox->setChecked(false);  // always start unchecked (session-only)
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        m_ShowDragCoordinateCheckBox->setChecked(keyMapper->isFloatingButtonDragCoordinateEnabled());
+    }
     updateGroupMemberCountLabel();
     syncGroupNoteFromData();
 
