@@ -44581,6 +44581,7 @@ void QKeyMapper::refreshFloatingButtonPositionForSource(const ActiveKeyMappingRo
     const QPoint oldPos = button->pos();
     const QPoint newPos(basePoint.x() + keymapdata.FloatingButton_X_Offset,
                         basePoint.y() + keymapdata.FloatingButton_Y_Offset);
+    Q_UNUSED(oldPos);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[refreshFloatingButtonPos]"
