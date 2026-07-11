@@ -21564,6 +21564,19 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 
     const bool preserveVButtonPanelVisibility = (m_VButtonPanel != Q_NULLPTR && m_VButtonPanel->isVisible());
 
+    // Save scroll positions of all mapping table widgets before the reload
+    // validates the saved data. This preserves the user's scroll position across
+    // the loadKeyMapSetting call which recreates all KeyMappingDataTableWidget instances.
+    QVector<int> savedScrollPositions(s_KeyMappingTabInfoList.size(), -1);
+    for (int i = 0; i < s_KeyMappingTabInfoList.size(); ++i) {
+        if (s_KeyMappingTabInfoList[i].KeyMappingDataTable != Q_NULLPTR) {
+            QScrollBar *sb = s_KeyMappingTabInfoList[i].KeyMappingDataTable->verticalScrollBar();
+            if (sb != Q_NULLPTR) {
+                savedScrollPositions[i] = sb->value();
+            }
+        }
+    }
+
     loadSetting_flag = true;
     QString loadresult = loadKeyMapSetting(savedSettingName, false, preserveVButtonPanelVisibility);
     Q_UNUSED(loadresult);
@@ -21574,6 +21587,26 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     int popupMessageDisplayTime = 3000;
     const bool saveSucceeded = (loadresult == savedSettingName);
     if (saveSucceeded) {
+        // Restore scroll positions on the next event loop iteration,
+        // after the CategoryFilterStateGuard destructor has re-applied
+        // row visibility filters and Qt layout is finalized.
+        QTimer::singleShot(0, this, [this, savedScrollPositions]() {
+            // If the tab count changed unexpectedly, skip restoration to preserve original behavior.
+            if (savedScrollPositions.size() != s_KeyMappingTabInfoList.size()) {
+                return;
+            }
+            for (int i = 0; i < savedScrollPositions.size(); ++i) {
+                const int value = savedScrollPositions[i];
+                if (value < 0) continue;
+                if (s_KeyMappingTabInfoList[i].KeyMappingDataTable != Q_NULLPTR) {
+                    QScrollBar *sb = s_KeyMappingTabInfoList[i].KeyMappingDataTable->verticalScrollBar();
+                    if (sb != Q_NULLPTR) {
+                        sb->setValue(qBound(sb->minimum(), value, sb->maximum()));
+                    }
+                }
+            }
+        });
+
         if (isCommonMappingTabIndex(tabIndexBeforeSaveReload)) {
             const int commonTabIndex = findCommonMappingTabIndex();
             if (commonTabIndex >= 0 && isCommonMappingFeatureEnabled()) {
