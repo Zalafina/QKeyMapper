@@ -16,3 +16,4 @@
 - [QMenu Null Action Comparison Pitfall](qmenu-null-action-comparison-pitfall.md) — QMenu::exec() returning Q_NULLPTR on dismiss + conditionally-created QAction also Q_NULLPTR → false match
 - [SyncGroupId 0 Sentinel Guard](syncgroupid-zero-sentinel-guard.md) — Group ID 0 means "not grouped" and must be guarded in group operations
 - [Qt Event Trace Debug Log Pattern](qt-event-trace-debug-log.md) — Instrument event() with DEBUG_LOGOUT_ON to trace which Qt events arrive and which don't
+- [DragCoordinateLabel Memory Leak Fix](episodic/2026-07-11-drag-coordinate-label-memory-leak.md) — VLD 检测到顶层 QLabel 未在析构函数中 delete；每次新增顶层 widget 成员必须同步添加析构清理
