@@ -3871,6 +3871,11 @@ QKeyMapper::~QKeyMapper()
         m_PopupMessageLabel = Q_NULLPTR;
     }
 
+    if (m_FloatingButtonDragCoordinateLabel != Q_NULLPTR) {
+        delete m_FloatingButtonDragCoordinateLabel;
+        m_FloatingButtonDragCoordinateLabel = Q_NULLPTR;
+    }
+
     exitDeleteKeyMappingTabWidget();
 }
 
