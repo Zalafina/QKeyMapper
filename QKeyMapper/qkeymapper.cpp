@@ -37567,8 +37567,8 @@ void QKeyMapper::insertNewMappingData(const MAP_KEYDATA &newKeyMappingData, bool
     if (m_KeyMappingDataTable->rowCount() > 0) {
         const int startRow = insertBySelection
             ? insertRow
-            : (m_KeyMappingDataTable->rowCount() - 1);
-        const int boundedRow = qBound(0, startRow, m_KeyMappingDataTable->rowCount() - 1);
+            : (KeyMappingDataList->size() - 1);
+        int boundedRow = qBound(0, startRow, m_KeyMappingDataTable->rowCount() - 1);
         QTableWidgetSelectionRange newSelection(boundedRow, 0, boundedRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
         m_KeyMappingDataTable->clearSelection();
         m_KeyMappingDataTable->setRangeSelected(newSelection, true);
@@ -37580,7 +37580,28 @@ void QKeyMapper::insertNewMappingData(const MAP_KEYDATA &newKeyMappingData, bool
         }
 
         if (openSetupDialog) {
-            showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, boundedRow);
+            // Safety check: verify boundedRow points to the item just inserted
+            bool rowPointsToNewItem = false;
+            if (boundedRow >= 0 && boundedRow < KeyMappingDataList->size()) {
+                const MAP_KEYDATA &item = KeyMappingDataList->at(boundedRow);
+                rowPointsToNewItem = (item.Original_Key == newKeyMappingData.Original_Key)
+                                  && (item.Mapping_Keys == newKeyMappingData.Mapping_Keys);
+            }
+            if (!rowPointsToNewItem) {
+                // Fallback: search backward in KeyMappingDataList for the new item
+                for (int i = KeyMappingDataList->size() - 1; i >= 0; --i) {
+                    const MAP_KEYDATA &item = KeyMappingDataList->at(i);
+                    if (item.Original_Key == newKeyMappingData.Original_Key
+                        && item.Mapping_Keys == newKeyMappingData.Mapping_Keys) {
+                        boundedRow = i;
+                        rowPointsToNewItem = true;
+                        break;
+                    }
+                }
+            }
+            if (rowPointsToNewItem) {
+                showItemSetupDialog(s_KeyMappingTabWidgetCurrentIndex, boundedRow);
+            }
         }
     }
 
@@ -46477,6 +46498,20 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         hasPreviousGroup = true;
     }
     else if (hasOriginalKeyTriggerGroup) {
+        hasPreviousGroup = true;
+    }
+
+    // "Add New Mapping" — always visible, in same group as Edit
+    {
+        if (hasOriginalKeyTriggerGroup && !canEditCurrentItem()) {
+            // Trigger Type group has no trailing separator; need one before us
+            contextMenu.addSeparator();
+        }
+        QAction *addNewMappingAction = contextMenu.addAction(QObject::tr("Add New Mapping"));
+        connect(addNewMappingAction, &QAction::triggered, this, [keymapper]() {
+            keymapper->addFixedDefaultMappingAndOpenSetup();
+        });
+        contextMenu.addSeparator();
         hasPreviousGroup = true;
     }
 

@@ -2104,8 +2104,9 @@ private:
     void changeControlEnableStatus(bool status);
     MAP_KEYDATA createDefaultKeyMappingData(const QString &originalKey, const QString &mappingKey, bool disabled) const;
     void insertNewMappingData(const MAP_KEYDATA &newKeyMappingData, bool openSetupDialog = false);
+public:
     void addFixedDefaultMappingAndOpenSetup(void);
-
+private:
     void extractSoundFiles();
     void playStartSound();
     void playStopSound();
