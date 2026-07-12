@@ -492,7 +492,7 @@ QPoint QKeyMapper::calculateDragCoordinateLabelPos(const QPushButton *button) co
 void QKeyMapper::updateDragCoordinateLabel(const QPushButton *button, const MAP_KEYDATA &keymapdata)
 {
     QLabel *label = m_FloatingButtonDragCoordinateLabel;
-    if (label == Q_NULLPTR || !label->isVisible()) return;
+    if (label == Q_NULLPTR) return;
 
     const QPoint basePoint = floatingButtonReferenceBasePoint(keymapdata);
     const int offsetX = button->pos().x() - basePoint.x();
@@ -46516,6 +46516,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     else if (hasOriginalKeyTriggerGroup) {
         hasPreviousGroup = true;
     }
+    Q_UNUSED(hasPreviousGroup);
 
     // "Add New Mapping" — always visible, in same group as Edit
     {
@@ -46530,6 +46531,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         contextMenu.addSeparator();
         hasPreviousGroup = true;
     }
+    Q_UNUSED(hasPreviousGroup);
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     const bool isCommonTab = keymapper->isCommonMappingTabIndex(currentTabIndex);
