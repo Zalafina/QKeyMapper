@@ -14711,7 +14711,7 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
 //         m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 // #endif
         updateHWNDListProc();
-        refreshProcessInfoTable();
+        refreshProcessInfoTable(false);
         (void)Interception_Worker::getRefreshedKeyboardDeviceList();
         (void)Interception_Worker::getRefreshedMouseDeviceList();
         Interception_Worker::syncDisabledKeyboardList();
@@ -30849,12 +30849,15 @@ void QKeyMapper::refreshProcessInfoTable(bool resize)
     QString selectedPID;
     QString selectedTitle;
     QString selectedClassName;
+    int selectedColumn = 0;
     if (!items.empty()) {
         selectedProcess = items.at(PROCESS_NAME_COLUMN)->text();
         selectedPID = items.at(PROCESS_PID_COLUMN)->text();
         selectedTitle = items.at(PROCESS_TITLE_COLUMN)->text();
         selectedClassName = items.at(PROCESS_CLASS_COLUMN)->text();
         isSelected = true;
+        QTableWidgetItem *current = ui->processinfoTable->currentItem();
+        selectedColumn = current ? current->column() : 0;
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[refreshProcessInfoTable]" << "Selected[" << items.size() << "] -> " << selectedProcess << " | " << selectedPID << " | " << selectedTitle << " | " << selectedClassName;
 #endif
@@ -30891,6 +30894,15 @@ void QKeyMapper::refreshProcessInfoTable(bool resize)
         if (reselectrow != -1) {
             QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, PROCESSINFO_TABLE_COLUMN_COUNT - 1);
             ui->processinfoTable->setRangeSelected(selection, true);
+            QTableWidgetItem *newItem = ui->processinfoTable->item(reselectrow, selectedColumn);
+            if (newItem) {
+                ui->processinfoTable->setCurrentItem(newItem);
+            }
+        } else {
+            QWidget *popup = QApplication::activePopupWidget();
+            if (popup) {
+                popup->close();
+            }
         }
     }
 }
@@ -45700,7 +45712,11 @@ void ProcessInfoTableWidget::contextMenuEvent(QContextMenuEvent *event)
     QAction *selectedAction = contextMenu.exec(event->globalPos());
 
     if (selectedAction == copyAction) {
-        copyCellContentToClipboard(item);
+        // Re-fetch currentItem() — the table may have been refreshed while the menu was open
+        QTableWidgetItem *current = currentItem();
+        if (current) {
+            copyCellContentToClipboard(current);
+        }
     }
 }
 
