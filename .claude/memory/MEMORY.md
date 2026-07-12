@@ -19,3 +19,5 @@
 - [DragCoordinateLabel Memory Leak Fix](episodic/2026-07-11-drag-coordinate-label-memory-leak.md) — VLD 检测到顶层 QLabel 未在析构函数中 delete；每次新增顶层 widget 成员必须同步添加析构清理
 - [Display Row vs Data List Size Pitfall](display-row-vs-data-list-size.md) — `rowCount()` ≠ `KeyMappingDataList->size()` 当共通映射追加时，操作自有数据必须用后者
 - [Add New Mapping Row Target Bug](episodic/2026-07-12-add-new-mapping-row-target-bug.md) — Ctrl+点击"添加新映射"在共通追加场景下打开错误映射项设定的修复记录
+- [ProcessInfoTable Context Menu Refresh Race](episodic/2026-07-12-processinfo-context-menu-refresh-race.md) — 右键菜单与自动刷新竞态导致悬空 QTableWidgetItem 指针的修复记录
+- [QTableWidget Context Menu Stale Pointer](qtablewidget-context-menu-stale-pointer.md) — QMenu::exec() 期间后台刷新导致 item 指针失效的通用模式及修复方法
