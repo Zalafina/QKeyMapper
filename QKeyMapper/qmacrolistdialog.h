@@ -178,7 +178,9 @@ private:
     // Category filter toolbutton (QToolButton + QMenu + QWidgetAction) helpers
     void initMacroCategoryFilterToolButton(void);
     void rebuildMacroCategoryFilterMenu(void);
-    void updateMacroCategoryFilterToolButtonSummary(void);
+    void updateMacroCategoryFilterHeaderAppearance(void);
+    void showMacroCategoryFilterPopup(const QPoint &globalAnchorPos, const QRect &anchorGlobalRect);
+    void onMacroCategoryColumnHeaderClicked(int logicalIndex);
     void applyMacroCategoryFilterFromUI(void);
     void updateMacroAllCheckStateFromItems(void);
     void resizeMacroListTabWidgetColumnWidth(void);

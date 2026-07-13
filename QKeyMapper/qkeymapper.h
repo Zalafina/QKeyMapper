@@ -1690,6 +1690,7 @@ public slots:
     void setFloatingColumnVisible(bool visible);
     void setCategoryColumnVisible(bool visible);
     void showCategoryFilterPopup(const QPoint &globalAnchorPos, const QRect &anchorGlobalRect);
+    void onCategoryColumnHeaderClicked(int logicalIndex);
 
     // Export/Import/Delete tab helpers (shared across dialog buttons, menu bar, context menu)
     void exportMappingTableByTabIndex(int tabIndex);

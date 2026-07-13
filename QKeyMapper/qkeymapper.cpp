@@ -16590,20 +16590,9 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
 
-    // Category column header click -> show filter popup
-    connect(KeyMappingTableWidget->horizontalHeader(), &QHeaderView::sectionClicked,
-            this, [this](int logicalIndex) {
-        if (logicalIndex == CATEGORY_COLUMN && m_ShowCategory && m_CategoryFilterMenu) {
-            QHeaderView *header = m_KeyMappingDataTable->horizontalHeader();
-            const int sectionRight = header->sectionViewportPosition(CATEGORY_COLUMN)
-                                     + header->sectionSize(CATEGORY_COLUMN);
-            const int sectionLeft = header->sectionViewportPosition(CATEGORY_COLUMN);
-            const QPoint headerTopRight = header->mapToGlobal(QPoint(sectionRight, 0));
-            const QRect anchorRect = QRect(header->mapToGlobal(QPoint(sectionLeft, 0)),
-                                           QSize(header->sectionSize(CATEGORY_COLUMN), header->height()));
-            showCategoryFilterPopup(headerTopRight, anchorRect);
-        }
-    });
+    // Category column header click -> show/hide filter popup
+    connect(KeyMappingTableWidget->horizontalHeader(), &QHeaderView::sectionPressed,
+            this, &QKeyMapper::onCategoryColumnHeaderClicked);
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
 
@@ -17045,20 +17034,9 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
     KeyMappingTableWidget->horizontalHeader()->setHighlightSections(false);
 
-    // Category column header click -> show filter popup
-    connect(KeyMappingTableWidget->horizontalHeader(), &QHeaderView::sectionClicked,
-            this, [this](int logicalIndex) {
-        if (logicalIndex == CATEGORY_COLUMN && m_ShowCategory && m_CategoryFilterMenu) {
-            QHeaderView *header = m_KeyMappingDataTable->horizontalHeader();
-            const int sectionRight = header->sectionViewportPosition(CATEGORY_COLUMN)
-                                     + header->sectionSize(CATEGORY_COLUMN);
-            const int sectionLeft = header->sectionViewportPosition(CATEGORY_COLUMN);
-            const QPoint headerTopRight = header->mapToGlobal(QPoint(sectionRight, 0));
-            const QRect anchorRect = QRect(header->mapToGlobal(QPoint(sectionLeft, 0)),
-                                           QSize(header->sectionSize(CATEGORY_COLUMN), header->height()));
-            showCategoryFilterPopup(headerTopRight, anchorRect);
-        }
-    });
+    // Category column header click -> show/hide filter popup
+    connect(KeyMappingTableWidget->horizontalHeader(), &QHeaderView::sectionPressed,
+            this, &QKeyMapper::onCategoryColumnHeaderClicked);
 
     resizeKeyMappingDataTableColumnWidth(KeyMappingTableWidget);
 
@@ -38980,6 +38958,25 @@ void QKeyMapper::showCategoryFilterPopup(const QPoint &globalAnchorPos, const QR
     }
 
     m_CategoryFilterMenu->popup(pos);
+}
+
+void QKeyMapper::onCategoryColumnHeaderClicked(int logicalIndex)
+{
+    if (logicalIndex != CATEGORY_COLUMN || !m_ShowCategory || !m_CategoryFilterMenu) {
+        return;
+    }
+    if (m_CategoryFilterMenu->isVisible()) {
+        m_CategoryFilterMenu->close();
+        return;
+    }
+    QHeaderView *header = m_KeyMappingDataTable->horizontalHeader();
+    const int sectionRight = header->sectionViewportPosition(CATEGORY_COLUMN)
+                             + header->sectionSize(CATEGORY_COLUMN);
+    const int sectionLeft = header->sectionViewportPosition(CATEGORY_COLUMN);
+    const QPoint headerTopRight = header->mapToGlobal(QPoint(sectionRight, 0));
+    const QRect anchorRect = QRect(header->mapToGlobal(QPoint(sectionLeft, 0)),
+                                   QSize(header->sectionSize(CATEGORY_COLUMN), header->height()));
+    showCategoryFilterPopup(headerTopRight, anchorRect);
 }
 
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const

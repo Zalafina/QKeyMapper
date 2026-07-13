@@ -308,212 +308,91 @@ bool QMacroListDialog::isMacroDataTableFiltered()
 void QMacroListDialog::updateMacroCategoryFilterComboBox()
 {
     // Repurposed: refresh toolbutton summary.
-    updateMacroCategoryFilterToolButtonSummary();
+    updateMacroCategoryFilterHeaderAppearance();
 }
 
 void QMacroListDialog::initMacroCategoryFilterToolButton(void)
 {
-    if (!ui->categoryFilterToolButton) {
+    if (m_CategoryFilterMenu) {
         return;
     }
 
-    // Avoid QToolButton default menu popup positioning/sizing constraints.
-    ui->categoryFilterToolButton->setPopupMode(QToolButton::DelayedPopup);
+    m_CategoryFilterMenu = new QMenu(this);
 
-    if (!m_CategoryFilterMenu) {
-        m_CategoryFilterMenu = new QMenu(ui->categoryFilterToolButton);
+    m_CategoryFilterWidgetAction = new QWidgetAction(m_CategoryFilterMenu);
+    m_CategoryFilterPanel = new MacroCategoryFilterPanelWidget(m_CategoryFilterMenu);
+    QVBoxLayout *panelLayout = new QVBoxLayout(m_CategoryFilterPanel);
+    panelLayout->setContentsMargins(8, 8, 8, 8);
+    panelLayout->setSpacing(6);
 
-        m_CategoryFilterWidgetAction = new QWidgetAction(m_CategoryFilterMenu);
-        m_CategoryFilterPanel = new MacroCategoryFilterPanelWidget(m_CategoryFilterMenu);
-        QVBoxLayout *panelLayout = new QVBoxLayout(m_CategoryFilterPanel);
-        panelLayout->setContentsMargins(8, 8, 8, 8);
-        panelLayout->setSpacing(6);
+    m_CategoryFilterAllCheckBox = new QCheckBox(tr("All"), m_CategoryFilterPanel);
+    m_CategoryFilterAllCheckBox->setTristate(true);
+    panelLayout->addWidget(m_CategoryFilterAllCheckBox);
 
-        m_CategoryFilterAllCheckBox = new QCheckBox(tr("All"), m_CategoryFilterPanel);
-        m_CategoryFilterAllCheckBox->setTristate(true);
-        panelLayout->addWidget(m_CategoryFilterAllCheckBox);
+    m_CategoryFilterScrollArea = new QScrollArea(m_CategoryFilterPanel);
+    m_CategoryFilterScrollArea->setWidgetResizable(true);
+    m_CategoryFilterScrollArea->setFrameShape(QFrame::NoFrame);
+    panelLayout->addWidget(m_CategoryFilterScrollArea);
 
-        m_CategoryFilterScrollArea = new QScrollArea(m_CategoryFilterPanel);
-        m_CategoryFilterScrollArea->setWidgetResizable(true);
-        m_CategoryFilterScrollArea->setFrameShape(QFrame::NoFrame);
-        panelLayout->addWidget(m_CategoryFilterScrollArea);
+    m_CategoryFilterListContainer = new QWidget(m_CategoryFilterScrollArea);
+    m_CategoryFilterListLayout = new QVBoxLayout(m_CategoryFilterListContainer);
+    m_CategoryFilterListLayout->setContentsMargins(0, 0, 0, 0);
+    m_CategoryFilterListLayout->setSpacing(2);
+    m_CategoryFilterScrollArea->setWidget(m_CategoryFilterListContainer);
 
-        m_CategoryFilterListContainer = new QWidget(m_CategoryFilterScrollArea);
-        m_CategoryFilterListLayout = new QVBoxLayout(m_CategoryFilterListContainer);
-        m_CategoryFilterListLayout->setContentsMargins(0, 0, 0, 0);
-        m_CategoryFilterListLayout->setSpacing(2);
-        m_CategoryFilterScrollArea->setWidget(m_CategoryFilterListContainer);
+    m_CategoryFilterPanel->setMinimumWidth(CATEGORY_FILTER_MIN_WIDTH_MACROLIST);
+    m_CategoryFilterPanel->setMaximumHeight(CATEGORY_FILTER_MAX_HEIGHT_MACROLIST);
 
-        m_CategoryFilterPanel->setMinimumWidth(CATEGORY_FILTER_MIN_WIDTH_MACROLIST);
-        m_CategoryFilterPanel->setMaximumHeight(CATEGORY_FILTER_MAX_HEIGHT_MACROLIST);
-
-        m_CategoryFilterWidgetAction->setDefaultWidget(m_CategoryFilterPanel);
-        m_CategoryFilterMenu->addAction(m_CategoryFilterWidgetAction);
-
-        // Deterministic popup: rebuild just before popup and clamp to screen.
-        QObject::connect(ui->categoryFilterToolButton, &QToolButton::clicked, this, [this]() {
-            if (!m_CategoryFilterMenu || !ui->categoryFilterToolButton || !m_CategoryFilterPanel) {
-                return;
-            }
-
-            // Clear any previous fixed sizing so rebuild can compute a fresh fixed size.
-            const int maxHeight = CATEGORY_FILTER_MAX_HEIGHT_MACROLIST;
-            m_CategoryFilterPanel->setMinimumSize(0, 0);
-            m_CategoryFilterPanel->setMaximumSize(QWIDGETSIZE_MAX, maxHeight);
-            rebuildMacroCategoryFilterMenu();
-
-            // Force menu/action to discard cached geometry and follow rebuilt panel size.
-            refreshMenuWidgetActionGeometry(m_CategoryFilterMenu, m_CategoryFilterWidgetAction, m_CategoryFilterPanel);
-
-            int minPanelH = 0;
-            if (m_CategoryFilterAllCheckBox) {
-                const QVBoxLayout *panelLayout = qobject_cast<const QVBoxLayout *>(m_CategoryFilterPanel->layout());
-                const QMargins margins = panelLayout ? panelLayout->contentsMargins() : QMargins();
-                const int spacing = panelLayout ? panelLayout->spacing() : 0;
-
-                minPanelH = margins.top() + margins.bottom() + m_CategoryFilterAllCheckBox->sizeHint().height();
-                if (!m_CategoryFilterCheckBoxes.isEmpty()) {
-                    QCheckBox *anyCb = Q_NULLPTR;
-                    for (auto it = m_CategoryFilterCheckBoxes.constBegin(); it != m_CategoryFilterCheckBoxes.constEnd(); ++it) {
-                        if (it.value()) {
-                            anyCb = it.value();
-                            break;
-                        }
-                    }
-                    const int oneRowH = anyCb ? anyCb->sizeHint().height() : 0;
-                    const int scrollFrameH = m_CategoryFilterScrollArea ? (m_CategoryFilterScrollArea->frameWidth() * 2) : 0;
-                    const int scrollMinH = oneRowH + scrollFrameH;
-                    minPanelH += spacing + scrollMinH;
-                }
-            }
-
-            m_CategoryFilterMenu->ensurePolished();
-            m_CategoryFilterMenu->adjustSize();
-
-            const QPoint anchor = ui->categoryFilterToolButton->mapToGlobal(QPoint(ui->categoryFilterToolButton->width(), 0));
-            QScreen *screen = QGuiApplication::screenAt(anchor);
-            if (!screen) {
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-                screen = ui->categoryFilterToolButton->screen();
-#else
-                QWidget *topLevel = ui->categoryFilterToolButton->window();
-                screen = (topLevel && topLevel->windowHandle())
-                    ? topLevel->windowHandle()->screen()
-                    : QGuiApplication::primaryScreen();
-#endif
-            }
-            const QRect avail = screen ? screen->availableGeometry() : QRect();
-
-            QSize popupSize = m_CategoryFilterMenu->sizeHint();
-            QPoint pos = anchor; // prefer right, top-aligned
-
-            if (screen && !avail.isEmpty()) {
-                const int kMargin = 8;
-                QRect availInner = avail.adjusted(kMargin, kMargin, -kMargin, -kMargin);
-                if (availInner.isEmpty()) {
-                    availInner = avail;
-                }
-
-                const int rightCandidate = anchor.x();
-                const int leftCandidate = ui->categoryFilterToolButton->mapToGlobal(QPoint(0, 0)).x() - popupSize.width();
-
-                // If right side doesn't fit, use left.
-                if (rightCandidate + popupSize.width() > availInner.right() + 1) {
-                    pos.setX(leftCandidate);
-                }
-
-                // If after switching sides it's still off-screen due to popup bigger than available, shrink panel to fit.
-                if (popupSize.width() > availInner.width() || popupSize.height() > availInner.height()) {
-                    const int basePanelW = qMax(m_CategoryFilterPanel->width(), m_CategoryFilterPanel->sizeHint().width());
-                    const int basePanelH = qMax(m_CategoryFilterPanel->height(), m_CategoryFilterPanel->sizeHint().height());
-
-                    int newPanelW = basePanelW;
-                    int newPanelH = basePanelH;
-
-                    if (popupSize.width() > availInner.width()) {
-                        newPanelW = basePanelW - (popupSize.width() - availInner.width());
-                        const int minW = qMin(CATEGORY_FILTER_MIN_WIDTH_MACROLIST, availInner.width());
-                        newPanelW = qMax(minW, newPanelW);
-                        newPanelW = qMin(newPanelW, availInner.width());
-                    }
-                    if (popupSize.height() > availInner.height()) {
-                        newPanelH = basePanelH - (popupSize.height() - availInner.height());
-                        const int effectiveMinH = qMin(minPanelH, availInner.height());
-                        newPanelH = qMax(effectiveMinH, newPanelH);
-                        newPanelH = qMin(newPanelH, availInner.height());
-                    }
-
-                    m_CategoryFilterPanel->setFixedSize(newPanelW, newPanelH);
-                    m_CategoryFilterPanel->updateGeometry();
-
-                    refreshMenuWidgetActionGeometry(m_CategoryFilterMenu, m_CategoryFilterWidgetAction, m_CategoryFilterPanel);
-                    popupSize = m_CategoryFilterMenu->sizeHint();
-
-                    // Re-evaluate side with updated size.
-                    const int leftCandidate2 = ui->categoryFilterToolButton->mapToGlobal(QPoint(0, 0)).x() - popupSize.width();
-                    pos.setX(rightCandidate);
-                    if (rightCandidate + popupSize.width() > availInner.right() + 1) {
-                        pos.setX(leftCandidate2);
-                    }
-                }
-
-                // Clamp within available geometry.
-                pos.setX(qBound(availInner.left(), pos.x(), availInner.right() - popupSize.width() + 1));
-                pos.setY(qBound(availInner.top(), pos.y(), availInner.bottom() - popupSize.height() + 1));
-            }
-
-            m_CategoryFilterMenu->popup(pos);
-        });
+    m_CategoryFilterWidgetAction->setDefaultWidget(m_CategoryFilterPanel);
+    m_CategoryFilterMenu->addAction(m_CategoryFilterWidgetAction);
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
-        QObject::connect(m_CategoryFilterAllCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
-            if (m_CategoryFilterGuard) {
-                return;
-            }
+    QObject::connect(m_CategoryFilterAllCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
+        if (m_CategoryFilterGuard) {
+            return;
+        }
 
-            Qt::CheckState newState = state;
-            if (newState == Qt::PartiallyChecked) {
-                m_CategoryFilterGuard = true;
-                m_CategoryFilterAllCheckBox->setCheckState(Qt::Checked);
-                m_CategoryFilterGuard = false;
-                newState = Qt::Checked;
-            }
-
+        Qt::CheckState newState = state;
+        if (newState == Qt::PartiallyChecked) {
             m_CategoryFilterGuard = true;
-            const bool checkAll = (newState == Qt::Checked);
-            for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
-                cb->setChecked(checkAll);
-            }
+            m_CategoryFilterAllCheckBox->setCheckState(Qt::Checked);
             m_CategoryFilterGuard = false;
-            applyMacroCategoryFilterFromUI();
-        });
+            newState = Qt::Checked;
+        }
+
+        m_CategoryFilterGuard = true;
+        const bool checkAll = (newState == Qt::Checked);
+        for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
+            cb->setChecked(checkAll);
+        }
+        m_CategoryFilterGuard = false;
+        applyMacroCategoryFilterFromUI();
+    });
 #else
-        QObject::connect(m_CategoryFilterAllCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
-            if (m_CategoryFilterGuard) {
-                return;
-            }
+    QObject::connect(m_CategoryFilterAllCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+        if (m_CategoryFilterGuard) {
+            return;
+        }
 
-            Qt::CheckState newState = static_cast<Qt::CheckState>(state);
-            if (newState == Qt::PartiallyChecked) {
-                m_CategoryFilterGuard = true;
-                m_CategoryFilterAllCheckBox->setCheckState(Qt::Checked);
-                m_CategoryFilterGuard = false;
-                newState = Qt::Checked;
-            }
-
+        Qt::CheckState newState = static_cast<Qt::CheckState>(state);
+        if (newState == Qt::PartiallyChecked) {
             m_CategoryFilterGuard = true;
-            const bool checkAll = (newState == Qt::Checked);
-            for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
-                cb->setChecked(checkAll);
-            }
+            m_CategoryFilterAllCheckBox->setCheckState(Qt::Checked);
             m_CategoryFilterGuard = false;
-            applyMacroCategoryFilterFromUI();
-        });
-#endif
-    }
+            newState = Qt::Checked;
+        }
 
-    ui->categoryFilterToolButton->setText(tr("All"));
-    ui->categoryFilterToolButton->setToolTip(tr("All"));
+        m_CategoryFilterGuard = true;
+        const bool checkAll = (newState == Qt::Checked);
+        for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
+            cb->setChecked(checkAll);
+        }
+        m_CategoryFilterGuard = false;
+        applyMacroCategoryFilterFromUI();
+    });
+#endif
+
+    updateMacroCategoryFilterHeaderAppearance();
 }
 
 void QMacroListDialog::rebuildMacroCategoryFilterMenu(void)
@@ -601,7 +480,7 @@ void QMacroListDialog::rebuildMacroCategoryFilterMenu(void)
     }
 
     updateMacroAllCheckStateFromItems();
-    updateMacroCategoryFilterToolButtonSummary();
+    updateMacroCategoryFilterHeaderAppearance();
 
     // Dynamically size the panel to content (width fits longest checkbox text; height fits items up to max).
     if (m_CategoryFilterPanel && m_CategoryFilterScrollArea && m_CategoryFilterAllCheckBox) {
@@ -687,7 +566,7 @@ void QMacroListDialog::applyMacroCategoryFilterFromUI(void)
 
     macroDataTable->setCategoryFilters(selected);
     updateMacroAllCheckStateFromItems();
-    updateMacroCategoryFilterToolButtonSummary();
+    updateMacroCategoryFilterHeaderAppearance();
 }
 
 void QMacroListDialog::updateMacroAllCheckStateFromItems(void)
@@ -725,78 +604,156 @@ void QMacroListDialog::updateMacroAllCheckStateFromItems(void)
     m_CategoryFilterGuard = false;
 }
 
-void QMacroListDialog::updateMacroCategoryFilterToolButtonSummary(void)
+void QMacroListDialog::updateMacroCategoryFilterHeaderAppearance(void)
 {
-    static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
-    if (!ui->categoryFilterToolButton) {
-        return;
-    }
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
     if (!macroDataTable) {
         return;
     }
 
+    const QSet<QString> filters = macroDataTable->m_CategoryFilters;
+    const bool isFiltering = !filters.isEmpty();
+
     if (m_CategoryFilterAllCheckBox) {
         m_CategoryFilterAllCheckBox->setText(tr("All"));
     }
 
-    if (m_CategoryFilterDisplayOrder.isEmpty()) {
-        QStringList categories = macroDataTable->getAvailableCategories();
-        QStringList regularCategories;
-        bool hasBlankOption = false;
-        for (const QString &category : std::as_const(categories)) {
-            if (category == tr("Blank")) {
-                hasBlankOption = true;
+    QTableWidgetItem *headerItem = macroDataTable->horizontalHeaderItem(MACRO_CATEGORY_COLUMN);
+    if (headerItem) {
+        headerItem->setForeground(isFiltering ? QBrush(CATEGORY_FILTER_ACTIVE_HEADER_COLOR) : QBrush());
+    }
+}
+
+void QMacroListDialog::showMacroCategoryFilterPopup(const QPoint &globalAnchorPos, const QRect &anchorGlobalRect)
+{
+    if (!m_CategoryFilterMenu || !m_CategoryFilterPanel) {
+        return;
+    }
+
+    // Clear any previous fixed sizing so rebuild can compute a fresh fixed size.
+    const int maxHeight = CATEGORY_FILTER_MAX_HEIGHT_MACROLIST;
+    m_CategoryFilterMenu->setMinimumWidth(0);
+    m_CategoryFilterMenu->setMaximumWidth(QWIDGETSIZE_MAX);
+    m_CategoryFilterPanel->setMinimumSize(0, 0);
+    m_CategoryFilterPanel->setMaximumSize(QWIDGETSIZE_MAX, maxHeight);
+    rebuildMacroCategoryFilterMenu();
+
+    // Force menu/action to discard cached geometry and follow rebuilt panel size.
+    refreshMenuWidgetActionGeometry(m_CategoryFilterMenu, m_CategoryFilterWidgetAction, m_CategoryFilterPanel);
+
+    int minPanelH = 0;
+    if (m_CategoryFilterAllCheckBox) {
+        const QVBoxLayout *panelLayout = qobject_cast<const QVBoxLayout *>(m_CategoryFilterPanel->layout());
+        const QMargins margins = panelLayout ? panelLayout->contentsMargins() : QMargins();
+        const int spacing = panelLayout ? panelLayout->spacing() : 0;
+
+        minPanelH = margins.top() + margins.bottom() + m_CategoryFilterAllCheckBox->sizeHint().height();
+        if (!m_CategoryFilterCheckBoxes.isEmpty()) {
+            QCheckBox *anyCb = Q_NULLPTR;
+            for (auto it = m_CategoryFilterCheckBoxes.constBegin(); it != m_CategoryFilterCheckBoxes.constEnd(); ++it) {
+                if (it.value()) {
+                    anyCb = it.value();
+                    break;
+                }
             }
-            else {
-                regularCategories.append(category);
-            }
-        }
-        regularCategories.sort();
-        m_CategoryFilterDisplayOrder = regularCategories;
-        if (hasBlankOption) {
-            m_CategoryFilterDisplayOrder.append(QString());
+            const int oneRowH = anyCb ? anyCb->sizeHint().height() : 0;
+            const int scrollFrameH = m_CategoryFilterScrollArea ? (m_CategoryFilterScrollArea->frameWidth() * 2) : 0;
+            const int scrollMinH = oneRowH + scrollFrameH;
+            minPanelH += spacing + scrollMinH;
         }
     }
 
-    const QSet<QString> filters = macroDataTable->m_CategoryFilters;
-    QString buttonText;
-    QString tooltip;
+    m_CategoryFilterMenu->ensurePolished();
+    m_CategoryFilterMenu->adjustSize();
 
-    if (filters.contains(kNoneToken)) {
-        buttonText = tr("None");
-        tooltip = buttonText;
+    QScreen *screen = QGuiApplication::screenAt(globalAnchorPos);
+    if (!screen) {
+        screen = QGuiApplication::primaryScreen();
     }
-    else if (filters.isEmpty()) {
-        buttonText = tr("All");
-        tooltip = buttonText;
-    }
-    else {
-        QStringList selectedInOrder;
-        for (const QString &v : std::as_const(m_CategoryFilterDisplayOrder)) {
-            if (filters.contains(v)) {
-                selectedInOrder.append(v.isEmpty() ? tr("Blank") : v);
+    const QRect avail = screen ? screen->availableGeometry() : QRect();
+
+    QSize popupSize = m_CategoryFilterMenu->sizeHint();
+    QPoint pos = globalAnchorPos; // prefer right, top-aligned
+
+    if (screen && !avail.isEmpty()) {
+        const int kMargin = 8;
+        QRect availInner = avail.adjusted(kMargin, kMargin, -kMargin, -kMargin);
+        if (availInner.isEmpty()) {
+            availInner = avail;
+        }
+
+        const int rightCandidate = globalAnchorPos.x();
+        const int leftCandidate = anchorGlobalRect.left() - popupSize.width();
+
+        // If right side doesn't fit, use left.
+        if (rightCandidate + popupSize.width() > availInner.right() + 1) {
+            pos.setX(leftCandidate);
+        }
+
+        // If after switching sides it's still off-screen due to popup bigger than available, shrink panel to fit.
+        if (popupSize.width() > availInner.width() || popupSize.height() > availInner.height()) {
+            const int basePanelW = qMax(m_CategoryFilterPanel->width(), m_CategoryFilterPanel->sizeHint().width());
+            const int basePanelH = qMax(m_CategoryFilterPanel->height(), m_CategoryFilterPanel->sizeHint().height());
+
+            int newPanelW = basePanelW;
+            int newPanelH = basePanelH;
+
+            if (popupSize.width() > availInner.width()) {
+                newPanelW = basePanelW - (popupSize.width() - availInner.width());
+                const int minW = qMin(CATEGORY_FILTER_MIN_WIDTH_MACROLIST, availInner.width());
+                newPanelW = qMax(minW, newPanelW);
+                newPanelW = qMin(newPanelW, availInner.width());
+            }
+            if (popupSize.height() > availInner.height()) {
+                newPanelH = basePanelH - (popupSize.height() - availInner.height());
+                const int effectiveMinH = qMin(minPanelH, availInner.height());
+                newPanelH = qMax(effectiveMinH, newPanelH);
+                newPanelH = qMin(newPanelH, availInner.height());
+            }
+
+            m_CategoryFilterPanel->setFixedSize(newPanelW, newPanelH);
+            m_CategoryFilterPanel->updateGeometry();
+
+            refreshMenuWidgetActionGeometry(m_CategoryFilterMenu, m_CategoryFilterWidgetAction, m_CategoryFilterPanel);
+            popupSize = m_CategoryFilterMenu->sizeHint();
+
+            // Re-evaluate side with updated size.
+            const int leftCandidate2 = anchorGlobalRect.left() - popupSize.width();
+            pos.setX(rightCandidate);
+            if (rightCandidate + popupSize.width() > availInner.right() + 1) {
+                pos.setX(leftCandidate2);
             }
         }
-        tooltip = selectedInOrder.join("\n");
-        if (selectedInOrder.size() <= 2) {
-            buttonText = selectedInOrder.join(", ");
-        }
-        else {
-            buttonText = tr("%1, %2 (+%3)")
-                             .arg(selectedInOrder.at(0), selectedInOrder.at(1))
-                             .arg(selectedInOrder.size() - 2);
-        }
-        if (buttonText.isEmpty()) {
-            buttonText = tr("None");
-        }
-        else {
-            buttonText.replace("&", "&&");
-        }
+
+        // Clamp within available geometry.
+        pos.setX(qBound(availInner.left(), pos.x(), availInner.right() - popupSize.width() + 1));
+        pos.setY(qBound(availInner.top(), pos.y(), availInner.bottom() - popupSize.height() + 1));
     }
 
-    ui->categoryFilterToolButton->setText(buttonText);
-    ui->categoryFilterToolButton->setToolTip(tooltip);
+    m_CategoryFilterMenu->popup(pos);
+}
+
+void QMacroListDialog::onMacroCategoryColumnHeaderClicked(int logicalIndex)
+{
+    if (logicalIndex != MACRO_CATEGORY_COLUMN || !m_CategoryFilterMenu) {
+        return;
+    }
+    if (m_CategoryFilterMenu->isVisible()) {
+        m_CategoryFilterMenu->close();
+        return;
+    }
+    MacroListDataTableWidget *table = getCurrentMacroDataTable();
+    if (!table) {
+        return;
+    }
+    QHeaderView *header = table->horizontalHeader();
+    const int sectionRight = header->sectionViewportPosition(MACRO_CATEGORY_COLUMN)
+                             + header->sectionSize(MACRO_CATEGORY_COLUMN);
+    const int sectionLeft = header->sectionViewportPosition(MACRO_CATEGORY_COLUMN);
+    const QPoint headerTopRight = header->mapToGlobal(QPoint(sectionRight, 0));
+    const QRect anchorRect = QRect(header->mapToGlobal(QPoint(sectionLeft, 0)),
+                                   QSize(header->sectionSize(MACRO_CATEGORY_COLUMN), header->height()));
+    showMacroCategoryFilterPopup(headerTopRight, anchorRect);
 }
 
 void QMacroListDialog::showEvent(QShowEvent *event)
@@ -1433,6 +1390,10 @@ void QMacroListDialog::initMacroListTable(MacroListDataTableWidget *macroDataTab
 
     // Connect signals for this table
     updateMacroDataTableConnection(macroDataTable);
+
+    // Category column header click -> show/hide filter popup
+    connect(macroDataTable->horizontalHeader(), &QHeaderView::sectionPressed,
+            this, &QMacroListDialog::onMacroCategoryColumnHeaderClicked);
 }
 
 void QMacroListDialog::updateMacroDataTableConnection(MacroListDataTableWidget *macroDataTable)
