@@ -22,3 +22,5 @@
 - [Add New Mapping Row Target Bug](episodic/2026-07-12-add-new-mapping-row-target-bug.md) — Ctrl+点击"添加新映射"在共通追加场景下打开错误映射项设定的修复记录
 - [ProcessInfoTable Context Menu Refresh Race](episodic/2026-07-12-processinfo-context-menu-refresh-race.md) — 右键菜单与自动刷新竞态导致悬空 QTableWidgetItem 指针的修复记录
 - [QTableWidget Context Menu Stale Pointer](qtablewidget-context-menu-stale-pointer.md) — QMenu::exec() 期间后台刷新导致 item 指针失效的通用模式及修复方法
+- [sectionPressed vs sectionClicked: QMenu Toggle Timing](sectionpressed-vs-sectionclicked-qmenu-toggle.md) — QMenu 在 mouse-press 时自动关闭，sectionClicked 在 mouse-release 时 isVisible() 已为 false；用 sectionPressed 替代
+- [Button Popup → Context Menu Migration](button-popup-to-context-menu.md) — 按钮弹出 ActionPopup 迁移到右键菜单子菜单的模式，区别于 toggle button 迁移
