@@ -597,6 +597,10 @@ void QVButtonPanel::showPanelContextMenu(const QPoint &globalPos)
         keyMapper->updateSaveSettingActionIcon(saveAction);
     }
     QAction *moveAction  = menu.addAction(QObject::tr("Move"));
+
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        menu.setStyle(windowsStyle);
+    }
     QAction *selected    = menu.exec(globalPos);
 
     if (selected == setupAction) {

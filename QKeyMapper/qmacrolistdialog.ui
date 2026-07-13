@@ -409,13 +409,13 @@
           <property name="minimumSize">
            <size>
             <width>460</width>
-            <height>116</height>
+            <height>76</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>460</width>
-            <height>116</height>
+            <height>76</height>
            </size>
           </property>
           <widget class="QPushButton" name="mapList_SelectKeyboardButton">
@@ -625,22 +625,6 @@
             <enum>Qt::FocusPolicy::ClickFocus</enum>
            </property>
           </widget>
-          <widget class="QLabel" name="categoryFilterLabel">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>80</y>
-             <width>61</width>
-             <height>22</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string>Filter</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-           </property>
-          </widget>
           <widget class="QPushButton" name="clearButton">
            <property name="geometry">
             <rect>
@@ -660,48 +644,13 @@
             <bool>false</bool>
            </property>
           </widget>
-          <widget class="QPushButton" name="macroListBackupButton">
-           <property name="geometry">
-            <rect>
-             <x>290</x>
-             <y>80</y>
-             <width>151</width>
-             <height>22</height>
-            </rect>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::FocusPolicy::NoFocus</enum>
-           </property>
-           <property name="text">
-            <string>MacroList Backup</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-          <widget class="QToolButton" name="categoryFilterToolButton">
-           <property name="geometry">
-            <rect>
-             <x>76</x>
-             <y>80</y>
-             <width>151</width>
-             <height>22</height>
-            </rect>
-           </property>
-           <property name="focusPolicy">
-            <enum>Qt::FocusPolicy::NoFocus</enum>
-           </property>
-          </widget>
           <zorder>mapList_SelectKeyboardButton</zorder>
           <zorder>mapList_SelectFunctionButton</zorder>
           <zorder>mapList_SelectGamepadButton</zorder>
           <zorder>mapList_SelectMouseButton</zorder>
           <zorder>MacroList_MappingKeyListComboBox</zorder>
-          <zorder>categoryFilterLabel</zorder>
           <zorder>clearButton</zorder>
-          <zorder>macroListBackupButton</zorder>
           <zorder>mapkeyLabel</zorder>
-          <zorder>categoryFilterToolButton</zorder>
          </widget>
         </item>
         <item>
@@ -728,20 +677,20 @@
           <property name="minimumSize">
            <size>
             <width>120</width>
-            <height>116</height>
+            <height>76</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
             <width>120</width>
-            <height>116</height>
+            <height>76</height>
            </size>
           </property>
           <widget class="QPushButton" name="addMacroButton">
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>40</y>
+             <y>10</y>
              <width>120</width>
              <height>53</height>
             </rect>
@@ -785,6 +734,11 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>KeyListComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qkeymapper.h</header>
+  </customwidget>
+  <customwidget>
    <class>MacroListTabWidget</class>
    <extends>QTabWidget</extends>
    <header>qmacrolistdialog.h</header>
@@ -794,11 +748,6 @@
    <class>MacroListDataTableWidget</class>
    <extends>QTableWidget</extends>
    <header>qmacrolistdialog.h</header>
-  </customwidget>
-  <customwidget>
-   <class>KeyListComboBox</class>
-   <extends>QComboBox</extends>
-   <header>qkeymapper.h</header>
   </customwidget>
   <customwidget>
    <class>KeyStringLineEdit</class>

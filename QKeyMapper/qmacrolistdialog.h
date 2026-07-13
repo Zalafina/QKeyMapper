@@ -11,8 +11,6 @@
 
 #include "qkeymapper_worker.h"
 
-class ActionPopup;
-
 namespace Ui {
 class QMacroListDialog;
 }
@@ -110,6 +108,10 @@ public:
     void selectedMacroItemsMoveToBottom(void);
     void deleteMacroSelectedItems(void);
 
+    // MacroList export and import methods
+    void exportMacroListToFile(void);
+    void importMacroListFromFile(void);
+
     // Macro list highlight selection operations
     void highlightSelectUp(void);
     void highlightSelectDown(void);
@@ -142,7 +144,6 @@ protected:
 private slots:
     void on_addMacroButton_clicked();
     void on_clearButton_clicked();
-    void on_macroListBackupButton_clicked();
 
     // Slot for handling macro table item double click
     void macroTableItemDoubleClicked(QTableWidgetItem *item);
@@ -163,9 +164,6 @@ private slots:
 private slots:
     void addMacroToList(void);
 
-    // Slots for MacroList backup popup actions
-    void macroListBackupActionTriggered(const QString &actionName);
-
     void on_macroContent_SequenceEditButton_clicked();
 
 private:
@@ -173,7 +171,6 @@ private:
     void initMacroListTabWidget(void);
     void initMacroListTable(MacroListDataTableWidget *macroDataTable);
     void initKeyListComboBoxes(void);
-    void initMacroListBackupActionPopup(void);
 
     // Category filter toolbutton (QToolButton + QMenu + QWidgetAction) helpers
     void initMacroCategoryFilterToolButton(void);
@@ -192,14 +189,9 @@ private:
     MacroListDataTableWidget* getCurrentMacroDataTable(void);
     OrderedMap<QString, MappingMacroData>* getCurrentMacroDataList(void);
 
-    // MacroList export and import methods
-    void exportMacroListToFile(void);
-    void importMacroListFromFile(void);
-
 private:
     static QMacroListDialog *m_instance;
     Ui::QMacroListDialog *ui;
-    ActionPopup *m_MacroListBackupActionPopup = Q_NULLPTR;
 
     // Category filter menu UI (built in C++ only)
     QMenu *m_CategoryFilterMenu = Q_NULLPTR;

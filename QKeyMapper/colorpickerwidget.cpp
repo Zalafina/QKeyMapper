@@ -289,6 +289,9 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
 
     QMenu menu(this);
     QAction *restoreAction = menu.addAction(tr("Restore Default Color"));
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        menu.setStyle(windowsStyle);
+    }
     QAction *selected = menu.exec(colorButton->mapToGlobal(pos));
     if (selected != restoreAction) {
         return;

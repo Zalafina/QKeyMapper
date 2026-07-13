@@ -40681,6 +40681,9 @@ void KeyListComboBoxPopup::showFavoritesHeaderMenu(const QPoint &pos)
     QAction *clearAction = menu.addAction(tr("Clear Favorites..."));
     clearAction->setEnabled(!keyMapper->getKeyListSharedItems(m_ComboBox->getCollectionType(), KEYLIST_SHARED_FAVORITES).isEmpty());
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        menu.setStyle(windowsStyle);
+    }
     QAction *selectedAction = menu.exec(m_FavoritesToolButton->mapToGlobal(pos));
     const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
     if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_FAVORITES) {
@@ -40720,6 +40723,9 @@ void KeyListComboBoxPopup::showRecentHeaderMenu(const QPoint &pos)
     QAction *clearAction = menu.addAction(tr("Clear Recent Items..."));
     clearAction->setEnabled(!keyMapper->getKeyListSharedItems(m_ComboBox->getCollectionType(), KEYLIST_SHARED_RECENTS).isEmpty());
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        menu.setStyle(windowsStyle);
+    }
     QAction *selectedAction = menu.exec(m_RecentToolButton->mapToGlobal(pos));
     const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
     if (pendingShortcutAction == KeyListPopupContextMenu::KEYLIST_MENU_SHORTCUT_OPEN_FAVORITES) {
@@ -40773,6 +40779,9 @@ void KeyListComboBoxPopup::showMainListMenu(const QPoint &pos)
     }
     QAction *favoriteAction = menu.addAction(isFavoriteItem ? tr("Remove from Favorites") : tr("Add to Favorites"));
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        menu.setStyle(windowsStyle);
+    }
     QAction *selectedAction = menu.exec(m_MainListWidget->viewport()->mapToGlobal(pos));
     const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
     const bool appendWithCtrlModifier = menu.takeTriggeredWithCtrlModifier();
@@ -40860,6 +40869,9 @@ void KeyListComboBoxPopup::showCollectionListMenu(const QPoint &pos)
                                      : tr("Clear Recent Items..."));
     clearAction->setEnabled(!keyMapper->getKeyListSharedItems(m_ComboBox->getCollectionType(), m_CurrentCollectionType).isEmpty());
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        menu.setStyle(windowsStyle);
+    }
     QAction *selectedAction = menu.exec(m_CollectionListWidget->viewport()->mapToGlobal(pos));
     const KeyListPopupContextMenu::PendingShortcutAction pendingShortcutAction = menu.takePendingShortcutAction();
     const bool appendWithCtrlModifier = menu.takeTriggeredWithCtrlModifier();
@@ -41768,6 +41780,9 @@ void SettingSelectComboBoxPopup::showMainListMenu(const QPoint &pos)
     moveBottomAction->setEnabled(movable && currentUserIndex >= 0 && currentUserIndex < orderedUserGroups.size() - 1);
     deleteAction->setEnabled(deletable);
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        menu.setStyle(windowsStyle);
+    }
     QAction *selectedAction = menu.exec(m_MainListWidget->viewport()->mapToGlobal(pos));
     if (selectedAction == moveTopAction) {
         moveHighlightedItemTo(0);
@@ -47508,6 +47523,9 @@ void QKeyMapper::showSelectSettingCustomIconButtonContextMenu(const QPoint &pos)
     QAction *restoreAction = menu.addAction(QObject::tr("Restore Default"));
     restoreAction->setEnabled(!m_MapProcessInfo.CustomIconPath.isEmpty());
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        menu.setStyle(windowsStyle);
+    }
     QAction *selectedAction = menu.exec(ui->selectSettingCustomIconButton->mapToGlobal(pos));
     if (selectedAction == restoreAction) {
         restoreDefaultSettingCustomIcon();

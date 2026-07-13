@@ -827,6 +827,10 @@ void QTableSetupDialog::showSelectCustomImageButtonContextMenu(const QPoint &pos
     QAction *restoreAction = menu.addAction(QObject::tr("Restore Default"));
     restoreAction->setEnabled(!QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path.isEmpty());
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        menu.setStyle(windowsStyle);
+    }
+
     QAction *selectedAction = menu.exec(ui->selectCustomImageButton->mapToGlobal(pos));
     if (selectedAction == restoreAction) {
         restoreDefaultCustomImage();

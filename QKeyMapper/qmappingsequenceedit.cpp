@@ -966,6 +966,10 @@ void MappingSequenceEditTableWidget::contextMenuEvent(QContextMenuEvent *event)
         });
     }
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        contextMenu.setStyle(windowsStyle);
+    }
+
     if (!contextMenu.actions().isEmpty()) {
         contextMenu.exec(event->globalPos());
         event->accept();
