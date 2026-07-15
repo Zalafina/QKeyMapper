@@ -315,7 +315,12 @@ void SDL_Joysticks::configureJoystick(const SDL_Event *event)
                 }
             }
         }
-        emit joystickAdded(joystick);
+        /* Detect virtual gamepads and blacklist them before emitting the signal */
+        if (m_virtualGamepadDetector
+            && m_virtualGamepadDetector(joystick->vendorid, joystick->productid, joystick->serial)) {
+            joystick->blacklisted = true;
+        }
+        emit joystickAdded(*joystick);
     }
 
     emit countChanged();

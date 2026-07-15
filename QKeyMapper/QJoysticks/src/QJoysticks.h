@@ -59,7 +59,7 @@ class QJoysticks : public QObject
 
 signals:
    void countChanged();
-   void joystickAdded(QJoystickDevice *joystick);
+   void joystickAdded(const QJoystickDevice joystick);
    void joystickRemoved(const QJoystickDevice joystick);
    void enabledChanged(const bool enabled);
    void POVEvent(const QJoystickPOVEvent &event);
@@ -100,7 +100,7 @@ public:
    QList<QJoystickDevice *> inputDevices() const;
 
 public slots:
-   void onJoystickAdded(QJoystickDevice *joystick);
+   void onJoystickAdded(const QJoystickDevice joystick);
    void onJoystickRemoved(const QJoystickDevice joystick);
    void updateInterfaces();
 #ifdef VIRTUALJOYSTICK

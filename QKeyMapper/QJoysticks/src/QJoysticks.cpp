@@ -396,7 +396,7 @@ void QJoysticks::switchSensorDisabled(int instance_id)
     m_devices.at(index)->sensor_disabled = !m_devices.at(index)->sensor_disabled;
 }
 
-void QJoysticks::onJoystickAdded(QJoystickDevice *joystick)
+void QJoysticks::onJoystickAdded(const QJoystickDevice joystick)
 {
     emit joystickAdded(joystick);
 }

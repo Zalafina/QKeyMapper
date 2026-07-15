@@ -3,6 +3,7 @@
 #include <QtMath>
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
+#include <QJoysticks/SDL_Joysticks.h>
 
 using namespace QKeyMapperConstants;
 
@@ -1092,6 +1093,17 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
 
     /* Connect QJoysticks Signals */
     QJoysticks *instance = QJoysticks::getInstance();
+
+    /* Register virtual gamepad detector callback — called on main thread before joystickAdded is emitted */
+    instance->sdlJoysticks()->setVirtualGamepadDetector(
+        [](uint16_t vendorId, uint16_t productId, const QString& serial) -> bool {
+            return (vendorId == VIRTUALGAMPAD_VENDORID_X360
+                    && productId == VIRTUALGAMPAD_PRODUCTID_X360)
+                || (serial.startsWith(VIRTUALGAMPAD_SERIAL_PREFIX_DS4)
+                    && vendorId == VIRTUALGAMPAD_VENDORID_DS4
+                    && productId == VIRTUALGAMPAD_PRODUCTID_DS4);
+        });
+
     // QObject::connect(instance, &QJoysticks::countChanged, this, &QKeyMapper_Worker::onJoystickcountChanged, Qt::QueuedConnection);
     QObject::connect(instance, &QJoysticks::joystickAdded, this, &QKeyMapper_Worker::onJoystickAdded, Qt::QueuedConnection);
     QObject::connect(instance, &QJoysticks::joystickRemoved, this, &QKeyMapper_Worker::onJoystickRemoved, Qt::QueuedConnection);
@@ -11034,78 +11046,47 @@ void QKeyMapper_Worker::onJoystickcountChanged()
 }
 #endif
 
-void QKeyMapper_Worker::onJoystickAdded(QJoystickDevice *joystick_added)
+void QKeyMapper_Worker::onJoystickAdded(const QJoystickDevice joystick_added)
 {
-    if (joystick_added == Q_NULLPTR) {
-        return;
-    }
+    Q_UNUSED(joystick_added);
 
 #ifdef DEBUG_LOGOUT_ON
-    QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_added->vendorid, 16).toUpper(), 4, '0');
-    QString productIdStr = QString("0x%1").arg(QString::number(joystick_added->productid, 16).toUpper(), 4, '0');
+    QString vendorIdStr = QString("0x%1").arg(QString::number(joystick_added.vendorid, 16).toUpper(), 4, '0');
+    QString productIdStr = QString("0x%1").arg(QString::number(joystick_added.productid, 16).toUpper(), 4, '0');
     QString powerLevelStr;
-    if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_WIRED) {
+    if (joystick_added.powerlevel == SDL_JOYSTICK_POWER_WIRED) {
         powerLevelStr = "Wired";
     }
-    else if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_FULL) {
+    else if (joystick_added.powerlevel == SDL_JOYSTICK_POWER_FULL) {
         powerLevelStr = "Full";
     }
-    else if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_MEDIUM) {
+    else if (joystick_added.powerlevel == SDL_JOYSTICK_POWER_MEDIUM) {
         powerLevelStr = "Medium";
     }
-    else if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_LOW) {
+    else if (joystick_added.powerlevel == SDL_JOYSTICK_POWER_LOW) {
         powerLevelStr = "Low";
     }
-    else if (joystick_added->powerlevel == SDL_JOYSTICK_POWER_EMPTY) {
+    else if (joystick_added.powerlevel == SDL_JOYSTICK_POWER_EMPTY) {
         powerLevelStr = "Empty";
     }
     else {
         powerLevelStr = "Unknown";
     }
 
-    QString debugmessage = QString("[onJoystickAdded] Added a New Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7, HasGyro=%8, HasAccel=%9, PowerLevel=%10") // NOLINT(clazy-qstring-arg)
-        .arg(joystick_added->name)
-        .arg(joystick_added->playerindex)
-        .arg(joystick_added->id)
+    QString debugmessage = QString("[onJoystickAdded] Added a New Gamepad -> Name=\"%1\", PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, ButtonNumbers=%6, Serial=%7, HasGyro=%8, HasAccel=%9, PowerLevel=%10, Blacklisted=%11") // NOLINT(clazy-qstring-arg)
+        .arg(joystick_added.name)
+        .arg(joystick_added.playerindex)
+        .arg(joystick_added.id)
         .arg(vendorIdStr)
         .arg(productIdStr)
-        .arg(joystick_added->numbuttons)
-        .arg(joystick_added->serial,
-             joystick_added->has_gyro ? "true" : "false",
-             joystick_added->has_accel ? "true" : "false")
-        .arg(powerLevelStr);
+        .arg(joystick_added.numbuttons)
+        .arg(joystick_added.serial,
+             joystick_added.has_gyro ? "true" : "false",
+             joystick_added.has_accel ? "true" : "false")
+        .arg(powerLevelStr)
+        .arg(joystick_added.blacklisted ? "true" : "false");
     qDebug().nospace().noquote() << debugmessage;
 #endif
-
-    bool virtualgamepad = false;
-    USHORT vendorid = joystick_added->vendorid;
-    USHORT productid = joystick_added->productid;
-
-    if (vendorid == VIRTUALGAMPAD_VENDORID_X360
-        && productid == VIRTUALGAMPAD_PRODUCTID_X360) {
-        virtualgamepad = true;
-    }
-    else if (joystick_added->serial.startsWith(VIRTUALGAMPAD_SERIAL_PREFIX_DS4)
-        && vendorid == VIRTUALGAMPAD_VENDORID_DS4
-        && productid == VIRTUALGAMPAD_PRODUCTID_DS4) {
-        virtualgamepad = true;
-    }
-
-    if (virtualgamepad) {
-        joystick_added->blacklisted = true;
-#ifdef DEBUG_LOGOUT_ON
-        // Build debug message for a blacklisted virtual gamepad.
-        // Note: use single-argument arg() chaining to avoid placeholder re-numbering issues.
-        QString debugmessage =
-            QString("[onJoystickAdded] VirtualGamepad[%1] PlayerIndex=%2, ID=%3, VendorID=%4, ProductID=%5, is Blacklisted!") // NOLINT(clazy-qstring-arg)
-                .arg(joystick_added->name)              // %1 -> device name
-                .arg(joystick_added->playerindex)       // %2 -> player index
-                .arg(joystick_added->id)                // %3 -> internal id
-                .arg(vendorIdStr)                       // %4 -> formatted vendor ID
-                .arg(productIdStr);                     // %5 -> formatted product ID
-        qDebug().nospace().noquote() << debugmessage;
-#endif
-    }
 
     emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(JOYSTICK_INVALID_INSTANCE_ID);
 }

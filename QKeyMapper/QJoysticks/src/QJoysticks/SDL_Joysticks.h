@@ -26,6 +26,7 @@
 #include <SDL.h>
 #include <QObject>
 #include <QMap>
+#include <functional>
 #include <QJoysticks/JoysticksCommon.h>
 
 /**
@@ -46,7 +47,7 @@ class SDL_Joysticks : public QObject
 
 signals:
    void countChanged();
-   void joystickAdded(QJoystickDevice *joystick);
+   void joystickAdded(const QJoystickDevice joystick);
    void joystickRemoved(const QJoystickDevice joystick);
    void POVEvent(const QJoystickPOVEvent &event);
    void axisEvent(const QJoystickAxisEvent &event);
@@ -60,6 +61,9 @@ public:
    ~SDL_Joysticks();
 
    QMap<int, QJoystickDevice *> joysticks();
+
+   using VirtualGamepadDetector = std::function<bool(uint16_t vendorId, uint16_t productId, const QString& serial)>;
+   void setVirtualGamepadDetector(VirtualGamepadDetector detector) { m_virtualGamepadDetector = std::move(detector); }
 
 public slots:
    void rumble(const QJoystickRumble &request);
@@ -80,6 +84,7 @@ private:
    QJoystickBatteryEvent getBatteryEvent(const SDL_Event *sdl_event);
 
    QMap<int, QJoystickDevice *> m_joysticks;
+   VirtualGamepadDetector m_virtualGamepadDetector;
 };
 
 #endif
