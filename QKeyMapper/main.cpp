@@ -285,8 +285,75 @@ void setupQtScaleEnvironment(const QString &program_dir)
 #endif
 }
 
+static bool IsProcessRunAsAdmin()
+{
+    BOOL isRunAsAdmin = FALSE;
+    PSID adminGroupSid = NULL;
+
+    SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
+    if (AllocateAndInitializeSid(
+            &ntAuthority,
+            2,
+            SECURITY_BUILTIN_DOMAIN_RID,
+            DOMAIN_ALIAS_RID_ADMINS,
+            0, 0, 0, 0, 0, 0,
+            &adminGroupSid))
+    {
+        CheckTokenMembership(NULL, adminGroupSid, &isRunAsAdmin);
+        FreeSid(adminGroupSid);
+    }
+
+    return (isRunAsAdmin != FALSE);
+}
+
 int main(int argc, char *argv[])
 {
+    if (!IsProcessRunAsAdmin()) {
+        // Priority 1: Read LanguageIndex from keymapdata.ini (user's saved preference)
+        int languageIndex = -1;
+        QString programPath = QString::fromLocal8Bit(argv[0]);
+        QFileInfo fileInfo(programPath);
+        QString configFilePath = fileInfo.absolutePath() + "/" + CONFIG_FILENAME;
+        QSettings settings(configFilePath, QSettings::IniFormat);
+        if (settings.contains(LANGUAGE_INDEX)) {
+            int index = settings.value(LANGUAGE_INDEX).toInt();
+            if (index >= LANGUAGE_CHINESE && index <= LANGUAGE_JAPANESE) {
+                languageIndex = index;
+            }
+        }
+
+        const wchar_t *msg = nullptr;
+        const wchar_t *title = nullptr;
+
+        if (languageIndex == LANGUAGE_ENGLISH) {
+            msg = L"QKeyMapper requires administrator privileges to run. Please restart the program as an administrator.";
+            title = L"QKeyMapper - Insufficient Privileges";
+        } else if (languageIndex == LANGUAGE_JAPANESE) {
+            msg = L"QKeyMapper は管理者権限で実行する必要があります。管理者として再起動してください。";
+            title = L"QKeyMapper - 権限不足";
+        } else if (languageIndex == LANGUAGE_CHINESE) {
+            msg = L"QKeyMapper 需要以管理员权限运行，请以管理员身份重新启动程序。";
+            title = L"QKeyMapper - 权限不足";
+        } else {
+            // Priority 2: Fallback to system UI language
+            LANGID langId = GetUserDefaultUILanguage();
+            WORD primaryLangId = PRIMARYLANGID(langId);
+            if (primaryLangId == LANG_JAPANESE) {
+                msg = L"QKeyMapper は管理者権限で実行する必要があります。管理者として再起動してください。";
+                title = L"QKeyMapper - 権限不足";
+            } else if (primaryLangId == LANG_CHINESE) {
+                msg = L"QKeyMapper 需要以管理员权限运行，请以管理员身份重新启动程序。";
+                title = L"QKeyMapper - 权限不足";
+            } else {
+                msg = L"QKeyMapper requires administrator privileges to run. Please restart the program as an administrator.";
+                title = L"QKeyMapper - Insufficient Privileges";
+            }
+        }
+
+        MessageBoxW(NULL, msg, title, MB_OK | MB_ICONERROR);
+        return ERROR_ELEVATION_REQUIRED;
+    }
+
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 
     if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10) {
