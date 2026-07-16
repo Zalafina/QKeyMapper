@@ -14618,12 +14618,7 @@ void QKeyMapper::closeEvent(QCloseEvent *event)
         return;
     }
 
-    bool force_showdialog = false;
-    if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) != 0) {
-        force_showdialog = true;
-    }
-
-    bool closeto_systemtray = isCloseToSystemtray(force_showdialog);
+    bool closeto_systemtray = isCloseToSystemtray();
 
     if (closeto_systemtray) {
         if (m_deviceListWindow->isVisible()) {
@@ -20063,6 +20058,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(PLAY_SOUNDEFFECT, isSoundEffectEnabled());
     settingFile.setValue(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
     settingFile.setValue(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
+    settingFile.setValue(CLOSETO_SYSTEMTRAY, ui->closeToSystemTrayCheckBox->isChecked());
     settingFile.setValue(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
     settingFile.setValue(SHOW_PROCESSLIST, m_ProcessListVisible);
     settingFile.setValue(SHOW_NOTES, m_ShowNotes);
@@ -22681,6 +22677,20 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             ui->startupAutoMonitoringCheckBox->setChecked(false);
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[loadKeyMapSetting]" << "Do not contains StartupAutoMonitoring, StartupAutoMonitoring set to Unchecked.";
+#endif
+        }
+
+        if (true == settingFile.contains(CLOSETO_SYSTEMTRAY)){
+            bool closetosystemtrayChecked = settingFile.value(CLOSETO_SYSTEMTRAY).toBool();
+            ui->closeToSystemTrayCheckBox->setChecked(closetosystemtrayChecked);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Close to System Tray Checkbox ->" << closetosystemtrayChecked;
+#endif
+        }
+        else {
+            ui->closeToSystemTrayCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "Do not contains CloseToSystemtray, Close to System Tray set to Unchecked.";
 #endif
         }
 
@@ -27368,6 +27378,20 @@ void QKeyMapper::loadGeneralSetting()
 #endif
     }
 
+    if (true == settingFile.contains(CLOSETO_SYSTEMTRAY)){
+        bool closetosystemtrayChecked = settingFile.value(CLOSETO_SYSTEMTRAY).toBool();
+        ui->closeToSystemTrayCheckBox->setChecked(closetosystemtrayChecked);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadGeneralSetting]" << "Close to System Tray Checkbox ->" << closetosystemtrayChecked;
+#endif
+    }
+    else {
+        ui->closeToSystemTrayCheckBox->setChecked(false);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[loadGeneralSetting]" << "Do not contains CloseToSystemtray, Close to System Tray set to Unchecked.";
+#endif
+    }
+
     if (true == settingFile.contains(MAPPINGSTART_ACTION_MODE)){
         int mappingStartActionMode = settingFile.value(MAPPINGSTART_ACTION_MODE).toInt();
         if (MAPPINGSTART_ACTION_SAVEANDSTART == mappingStartActionMode) {
@@ -27625,6 +27649,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->startupAutoMonitoringCheckBox->setFont(customFont);
+    ui->closeToSystemTrayCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
@@ -27772,6 +27797,7 @@ void QKeyMapper::setControlFontChinese()
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->startupAutoMonitoringCheckBox->setFont(customFont);
+    ui->closeToSystemTrayCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
@@ -27919,6 +27945,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->autoStartupCheckBox->setFont(customFont);
     ui->startupMinimizedCheckBox->setFont(customFont);
     ui->startupAutoMonitoringCheckBox->setFont(customFont);
+    ui->closeToSystemTrayCheckBox->setFont(customFont);
     ui->notificationLabel->setFont(customFont);
     ui->languageLabel->setFont(customFont);
     ui->updateSiteLabel->setFont(customFont);
@@ -31346,42 +31373,53 @@ void QKeyMapper::setKeyMappingTabWidgetNarrowMode()
                       this->height() - WINDOW_BASE_HEIGHT);
 }
 
-bool QKeyMapper::isCloseToSystemtray(bool force_showdialog)
+bool QKeyMapper::isCloseToSystemtray()
 {
     bool closeto_systemtray = false;
-
-#ifdef DEBUG_LOGOUT_ON
-    QString debugmessage = QString("\033[1;34m[isCloseToSystemtray] Check setting to show close to systemtray dialog. ForceShowDialog = %1\033[0m").arg(force_showdialog?"true":"false");
-    qDebug().noquote() << debugmessage;
-#endif
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     settingFile.setIniCodec("UTF-8");
 #endif
-    bool setting_contains = false;
     if (true == settingFile.contains(CLOSETO_SYSTEMTRAY)){
-        setting_contains = true;
         closeto_systemtray = settingFile.value(CLOSETO_SYSTEMTRAY).toBool();
     }
 
-    if (force_showdialog || setting_contains != true) {
-        QString message = tr(
-            "If you want the program to be hidden to the system tray when you click the close button, please check the option below.\n"
-            "If you do not check it and click \"OK\", the program will close directly when you click the close button in the future.\n"
-            "Hold the \"L-Ctrl\" key and click the close button to show this dialog again."
-        );
-        QString checkbox_message = tr("Hide the program to the system tray when clicking the close button");
-        bool ischecked = showMessageBoxWithCheckbox(this, message, checkbox_message, CustomMessageBox::Question);
-        if (ischecked) {
-            settingFile.setValue(CLOSETO_SYSTEMTRAY, true);
-            closeto_systemtray = true;
-        }
-        else {
-            settingFile.setValue(CLOSETO_SYSTEMTRAY, false);
+    bool user_decided = false;
+    if (true == settingFile.contains(CLOSETO_SYSTEMTRAY_DECIDED)){
+        user_decided = settingFile.value(CLOSETO_SYSTEMTRAY_DECIDED).toBool();
+    }
+
+    if (!user_decided) {
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle(PROGRAM_NAME);
+        msgBox.setText(tr("When you click the close button, do you want to minimize the program to the system tray?"));
+        msgBox.setInformativeText(tr("You can change this option later in General Setting Tab."));
+        msgBox.setIcon(QMessageBox::Question);
+        QPushButton *yesButton = msgBox.addButton(tr("Minimize to Tray"), QMessageBox::YesRole);
+        QPushButton *noButton = msgBox.addButton(tr("Exit Directly"), QMessageBox::NoRole);
+        Q_UNUSED(noButton);
+        msgBox.setDefaultButton(yesButton);
+        msgBox.exec();
+
+        if (msgBox.clickedButton() == noButton) {
             closeto_systemtray = false;
         }
+        else {
+            closeto_systemtray = true;
+        }
+        settingFile.setValue(CLOSETO_SYSTEMTRAY, closeto_systemtray);
+        settingFile.setValue(CLOSETO_SYSTEMTRAY_DECIDED, true);
+        ui->closeToSystemTrayCheckBox->setChecked(closeto_systemtray);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote() << QString("\033[1;34m[isCloseToSystemtray] First time close dialog. User chose: %1\033[0m").arg(closeto_systemtray ? "Minimize to Tray" : "Exit Directly");
+#endif
     }
+#ifdef DEBUG_LOGOUT_ON
+    else {
+        qDebug().noquote() << QString("\033[1;34m[isCloseToSystemtray] Close to systemtray setting: %1\033[0m").arg(closeto_systemtray ? "true" : "false");
+    }
+#endif
 
     return closeto_systemtray;
 }
@@ -34317,6 +34355,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->autoStartupCheckBox->setText(tr("Auto Startup"));
     ui->startupMinimizedCheckBox->setText(tr("Startup Minimized"));
     ui->startupAutoMonitoringCheckBox->setText(tr("Startup AutoMonitoring"));
+    ui->closeToSystemTrayCheckBox->setText(tr("Minimize to tray on close"));
     ui->notificationLabel->setText(tr("Notification"));
     ui->languageLabel->setText(tr("Language"));
     ui->updateSiteLabel->setText(tr("UpdateSite"));
@@ -35157,6 +35196,14 @@ void QKeyMapper::connectSettingDirtySignals(void)
 
     connectCheckable(ui->startupMinimizedCheckBox);
     connectCheckable(ui->startupAutoMonitoringCheckBox);
+    connectCheckable(ui->closeToSystemTrayCheckBox);
+    QObject::connect(ui->closeToSystemTrayCheckBox, &QCheckBox::clicked, this, [this]() {
+        QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+        settingFile.setIniCodec("UTF-8");
+#endif
+        settingFile.setValue(CLOSETO_SYSTEMTRAY_DECIDED, true);
+    });
     //connectCheckable(ui->processListButton);
     //connectCheckable(ui->showNotesButton);
     //connectCheckable(ui->hideDisabledButton);

@@ -1254,6 +1254,22 @@
        <string>Startup AutoMonitoring</string>
       </property>
      </widget>
+     <widget class="QCheckBox" name="closeToSystemTrayCheckBox">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>130</y>
+        <width>191</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::FocusPolicy::NoFocus</enum>
+      </property>
+      <property name="text">
+       <string>Minimize to tray on close</string>
+      </property>
+     </widget>
      <widget class="QLabel" name="scaleLabel">
       <property name="geometry">
        <rect>

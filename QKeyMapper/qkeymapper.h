@@ -1929,7 +1929,7 @@ private:
     void setKeyMappingTabWidgetWideMode(void);
     void setKeyMappingTabWidgetNarrowMode(void);
     void applyResizeLayout(int dw, int dh);
-    bool isCloseToSystemtray(bool force_showdialog);
+    bool isCloseToSystemtray();
 
 public:
     void updateSystemTrayDisplay(void);
