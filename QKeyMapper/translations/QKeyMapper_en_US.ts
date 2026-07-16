@@ -4317,7 +4317,7 @@ Are you sure you do not want to automatically enable Filter Keys during the mapp
     <message>
         <location filename="../qkeymapper.cpp" line="31397"/>
         <source>You can change this option later in General Setting Tab.</source>
-        <translation>You can change this option later in General Setting Tab.</translation>
+        <translation>You can change this option later in &quot;General&quot; Setting Tab.</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="31441"/>
