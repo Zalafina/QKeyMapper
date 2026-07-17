@@ -30839,10 +30839,18 @@ void QKeyMapper::resizeProcessInfoTableColumnWidth()
     ui->processinfoTable->horizontalHeader()->setSectionResizeMode(PROCESS_TITLE_COLUMN, QHeaderView::Stretch);
     ui->processinfoTable->setColumnWidth(PROCESS_CLASS_COLUMN, classname_width);
 
+    int title_width_final = ui->processinfoTable->columnWidth(PROCESS_TITLE_COLUMN);
+    ui->processinfoTable->horizontalHeader()->setSectionResizeMode(PROCESS_TITLE_COLUMN, QHeaderView::Interactive);
+    Q_UNUSED(title_width_final);
+
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[resizeProcessInfoTableColumnWidth]" << "processname_width =" << processname_width
-             << ", pid_width =" << pid_width << ", title_width =" << title_width
-             << ", classname_width =" << classname_width << ", tableWidth =" << ui->processinfoTable->width();
+    qDebug() << "[resizeProcessInfoTableColumnWidth]" << "processinfoTable->rowCount" << ui->processinfoTable->rowCount();
+    qDebug() << "[resizeProcessInfoTableColumnWidth]" << "referenceWidth =" << referenceWidth
+             << ", viewportWidth =" << viewportWidth
+             << ", processname_width =" << processname_width
+             << ", pid_width =" << pid_width
+             << ", title_width_final =" << title_width_final
+             << ", classname_width =" << classname_width;
 #endif
 }
 
@@ -31241,6 +31249,11 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
         resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
     }
     resizeProcessInfoTableColumnWidth();
+
+    // Correct after scrollbar state settles (appear/disappear)
+    QTimer::singleShot(0, this, [this]() {
+        resizeProcessInfoTableColumnWidth();
+    });
 
     // ===== 4. Right-anchored controls (x >= 870): keep distance from right edge =====
     // int btnX = this->width() - 71 - 9;
@@ -32281,9 +32294,14 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     if (mappingDataTable->isCategoryColumnVisible()) {
         mappingDataTable->setColumnWidth(CATEGORY_COLUMN, category_width);
     }
+
+    int mapping_key_width_final = mappingDataTable->columnWidth(MAPPING_KEY_COLUMN);
+    mappingDataTable->horizontalHeader()->setSectionResizeMode(MAPPING_KEY_COLUMN, QHeaderView::Interactive);
+    Q_UNUSED(mapping_key_width_final);
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();
-    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", viewportWidth =" << viewportWidth << ", maxAllowableWidth =" << maxAllowableWidth << ", original_key_width =" << original_key_width << ", mapping_key_width =" << mapping_key_width << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", floating_width =" << floating_width << ", category_width =" << category_width << ", totalWidth =" << totalWidth;
+    qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", viewportWidth =" << viewportWidth << ", maxAllowableWidth =" << maxAllowableWidth << ", original_key_width =" << original_key_width << ", mapping_key_width_final =" << mapping_key_width_final << ", disabled_width =" << disabled_width << ", burst_mode_width =" << burst_mode_width << ", lock_width =" << lock_width << ", floating_width =" << floating_width << ", category_width =" << category_width << ", totalWidth =" << totalWidth;
 #endif
 }
 

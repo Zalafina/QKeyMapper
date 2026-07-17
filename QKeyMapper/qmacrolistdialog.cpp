@@ -748,6 +748,11 @@ void QMacroListDialog::showEvent(QShowEvent *event)
     refreshMacroListTabWidget(ui->universalmacrolistTable, QKeyMapper::s_UniversalMappingMacroList);
 
     QDialog::showEvent(event);
+
+    // Defer column resize to after layout is fully computed
+    QTimer::singleShot(0, this, [this]() {
+        resizeMacroListTabWidgetColumnWidth();
+    });
 }
 
 void QMacroListDialog::mousePressEvent(QMouseEvent *event)
@@ -769,6 +774,11 @@ void QMacroListDialog::resizeEvent(QResizeEvent *event)
 
     // Adjust table column widths to fit new window size
     resizeMacroListTabWidgetColumnWidth();
+
+    // Correct after scrollbar state settles (appear/disappear)
+    QTimer::singleShot(0, this, [this]() {
+        resizeMacroListTabWidgetColumnWidth();
+    });
 }
 
 void QMacroListDialog::on_addMacroButton_clicked()
@@ -1415,9 +1425,14 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     macroDataTable->horizontalHeader()->setSectionResizeMode(MACRO_CONTENT_COLUMN, QHeaderView::Stretch);
     macroDataTable->setColumnWidth(MACRO_CATEGORY_COLUMN, macro_category_width);
     macroDataTable->setColumnWidth(MACRO_NOTE_COLUMN, macro_note_width);
+
+    int macro_content_width_final = macroDataTable->columnWidth(MACRO_CONTENT_COLUMN);
+    macroDataTable->horizontalHeader()->setSectionResizeMode(MACRO_CONTENT_COLUMN, QHeaderView::Interactive);
+    Q_UNUSED(macro_content_width_final);
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeMacroListTableColumnWidth]" << "macroDataTable->rowCount" << macroDataTable->rowCount();
-    qDebug() << "[resizeMacroListTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", viewportWidth =" << viewportWidth << ", macro_name_width =" << macro_name_width << ", macro_content_width =" << macro_content_width << ", macro_category_width =" << macro_category_width << ", macro_note_width =" << macro_note_width;
+    qDebug() << "[resizeMacroListTableColumnWidth]" << "referenceWidth =" << referenceWidth << ", viewportWidth =" << viewportWidth << ", macro_name_width =" << macro_name_width << ", macro_content_width_final =" << macro_content_width_final << ", macro_category_width =" << macro_category_width << ", macro_note_width =" << macro_note_width;
 #endif
 }
 
@@ -2281,6 +2296,10 @@ void QMacroListDialog::macroListTabWidgetCurrentChanged(int index)
 {
     Q_UNUSED(index);
     updateMacroCategoryFilterComboBox();
+    // Defer to after layout settles for the newly-visible tab
+    QTimer::singleShot(0, this, [this]() {
+        resizeMacroListTabWidgetColumnWidth();
+    });
 }
 
 void QMacroListDialog::macroTableCellChanged(int row, int column)
