@@ -24,3 +24,8 @@
 - [QTableWidget Context Menu Stale Pointer](qtablewidget-context-menu-stale-pointer.md) — QMenu::exec() 期间后台刷新导致 item 指针失效的通用模式及修复方法
 - [sectionPressed vs sectionClicked: QMenu Toggle Timing](sectionpressed-vs-sectionclicked-qmenu-toggle.md) — QMenu 在 mouse-press 时自动关闭，sectionClicked 在 mouse-release 时 isVisible() 已为 false；用 sectionPressed 替代
 - [Button Popup → Context Menu Migration](button-popup-to-context-menu.md) — 按钮弹出 ActionPopup 迁移到右键菜单子菜单的模式，区别于 toggle button 迁移
+- [First-Time Prompt Decided Flag Pattern](first-time-prompt-decided-flag.md) — 用独立的 _Decided 标记替代 "key 是否存在" 来判断是否弹出首次提示对话框
+- [Close-to-Tray CheckBox Session](episodic/2026-07-17-close-to-tray-checkbox.md) — 添加关闭时最小化到托盘 CheckBox、简化 closeEvent、修复首次弹窗时机问题
+- [Joystick Hotplug TOCTOU Crash Fix](episodic/2026-07-17-joystick-hotplug-toctou-crash.md) — joystickAdded 信号传裸指针跨线程导致悬空指针崩溃；改为值传递 + 回调注入虚拟手柄检测
+- [Qt QueuedConnection Raw Pointer TOCTOU Pattern](qt-queued-connection-pointer-toctou.md) — Qt::QueuedConnection 传裸指针的通用 TOCTOU 崩溃模式及三种修复方案
+- [Callback Injection Library Extensibility](callback-injection-library-extensibility.md) — std::function 回调注入模式：在不修改库架构的前提下为库代码添加应用特定逻辑
