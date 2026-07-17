@@ -30811,6 +30811,8 @@ void QKeyMapper::updateSysTrayIconMenuText()
 
 void QKeyMapper::resizeProcessInfoTableColumnWidth()
 {
+    ui->processinfoTable->horizontalHeader()->setStretchLastSection(false);
+
     int referenceWidth = ui->processinfoTable->width();
     int processname_width_max = referenceWidth / 4;
     int classname_width_max = referenceWidth / 5;
@@ -30842,6 +30844,8 @@ void QKeyMapper::resizeProcessInfoTableColumnWidth()
     int title_width_final = ui->processinfoTable->columnWidth(PROCESS_TITLE_COLUMN);
     ui->processinfoTable->horizontalHeader()->setSectionResizeMode(PROCESS_TITLE_COLUMN, QHeaderView::Interactive);
     Q_UNUSED(title_width_final);
+
+    ui->processinfoTable->horizontalHeader()->setStretchLastSection(true);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeProcessInfoTableColumnWidth]" << "processinfoTable->rowCount" << ui->processinfoTable->rowCount();
@@ -32197,6 +32201,8 @@ void QKeyMapper::updateKeyMappingDataTableConnection()
 
 void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget *mappingDataTable)
 {
+    mappingDataTable->horizontalHeader()->setStretchLastSection(false);
+
     int referenceWidth = mappingDataTable->width();
     int viewportWidth = mappingDataTable->viewport()->width();
     // Safety cap: columns must not exceed this even if a vertical scrollbar
@@ -32298,6 +32304,8 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     int mapping_key_width_final = mappingDataTable->columnWidth(MAPPING_KEY_COLUMN);
     mappingDataTable->horizontalHeader()->setSectionResizeMode(MAPPING_KEY_COLUMN, QHeaderView::Interactive);
     Q_UNUSED(mapping_key_width_final);
+
+    mappingDataTable->horizontalHeader()->setStretchLastSection(true);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeKeyMappingDataTableColumnWidth]" << "mappingDataTable->rowCount" << mappingDataTable->rowCount();

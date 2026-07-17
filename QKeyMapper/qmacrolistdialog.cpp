@@ -1374,6 +1374,8 @@ void QMacroListDialog::resizeMacroListTabWidgetColumnWidth()
 
 void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget *macroDataTable)
 {
+    macroDataTable->horizontalHeader()->setStretchLastSection(false);
+
     int referenceWidth = macroDataTable->width();
     int viewportWidth = macroDataTable->viewport()->width();
 
@@ -1429,6 +1431,8 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     int macro_content_width_final = macroDataTable->columnWidth(MACRO_CONTENT_COLUMN);
     macroDataTable->horizontalHeader()->setSectionResizeMode(MACRO_CONTENT_COLUMN, QHeaderView::Interactive);
     Q_UNUSED(macro_content_width_final);
+
+    macroDataTable->horizontalHeader()->setStretchLastSection(true);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[resizeMacroListTableColumnWidth]" << "macroDataTable->rowCount" << macroDataTable->rowCount();
