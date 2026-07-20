@@ -17061,7 +17061,15 @@ void QKeyMapper_Worker::resendRealKeyCodeOnStop(int rowindex, bool restart, QLis
         return;
     }
 
-    QStringList keyListToCheck = KeyMappingDataList_ForResend->at(rowindex).Pure_MappingKeys;
+    // For FakeInput rows, exclude Pure_MappingKeys from resend check:
+    // FakeInput sends keys via kernel driver with extraInfo=0, which the hook
+    // cannot distinguish from real physical key presses. This causes FakeInput-
+    // sent mapping keys to pollute pressedRealKeysList. Since these keys are
+    // synthetic (never physically pressed), they should never trigger a resend.
+    QStringList keyListToCheck;
+    if (KeyMappingDataList_ForResend->at(rowindex).SendMappingKeyMethod != SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+        keyListToCheck = KeyMappingDataList_ForResend->at(rowindex).Pure_MappingKeys;
+    }
     if (hook_proc_stopped || restart) {
         QStringList pure_originalkeylist = KeyMappingDataList_ForResend->at(rowindex).Pure_OriginalKeys;
         keyListToCheck = keyListToCheck + pure_originalkeylist;
