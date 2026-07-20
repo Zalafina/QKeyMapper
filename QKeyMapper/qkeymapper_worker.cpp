@@ -3654,6 +3654,22 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             *controller.task_stop_flag = INPUTSTOP_NONE;
 
             keyseq_finished = false;
+
+#ifdef FAKERINPUT_SUPPORT
+            // Release mapping keys from FakerInput HID report on sequence break.
+            // The KEY_UP was never sent via FakerInput (break happened before
+            // KEY_UP processing), so the HID report still has the keycodes.
+            {
+                QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS, true);
+                for (const QString &mappingkey : std::as_const(mappingKeyListToClear)) {
+                    if (QKeyMapper_Worker::VirtualKeyCodeMap.contains(mappingkey)) {
+                        V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(mappingkey);
+                        FakerInputClient_sendKeyboardInput(vkeycode.KeyCode, vkeycode.ExtenedFlag, KEY_UP, 0);
+                    }
+                }
+            }
+#endif
+
             QString orikey_str = original_key.left(original_key.indexOf(":"));
             cleanupKeySequenceRuntimeState(orikey_str, keyMappingDataList);
         }
@@ -4834,6 +4850,23 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     emit updateFloatingButtonPressedState_Signal(rowindex, false);
                 }
                 clearPressedVirtualKeysOfMappingKeys(mappingkeys_str);
+
+#ifdef FAKERINPUT_SUPPORT
+                // Also release mapping keys from FakerInput HID report.
+                // clearPressedVirtualKeysOfMappingKeys sends KEY_UP via SendInput API,
+                // which does NOT clean the FakerInput driver's HID report keycodes.
+                // Stale keycodes cause subsequent sequence iterations to conflict
+                // ("already in report" -> no new Windows event -> stuck key).
+                {
+                    QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS, true);
+                    for (const QString &mappingkey : std::as_const(mappingKeyListToClear)) {
+                        if (QKeyMapper_Worker::VirtualKeyCodeMap.contains(mappingkey)) {
+                            V_KEYCODE vkeycode = QKeyMapper_Worker::VirtualKeyCodeMap.value(mappingkey);
+                            FakerInputClient_sendKeyboardInput(vkeycode.KeyCode, vkeycode.ExtenedFlag, KEY_UP, 0);
+                        }
+                    }
+                }
+#endif
 
                 QString orikey_str = original_key.left(original_key.indexOf(":"));
                 cleanupKeySequenceRuntimeState(orikey_str, keyMappingDataList);
@@ -6421,30 +6454,67 @@ bool QKeyMapper_Worker::matchFakerInputKeyboardExtraInfo(quint8 vkeycode, int ke
 
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
 
-    // Check if the front of the queue matches the current key event
-    const FakerInputKeyboardExtraInfo &front = s_FakerInputKeyboardExtraInfoQueue.head();
-
-    // Check time window first - if event is too old, it's likely a stale entry
-    qint64 timeDiff = currentTime - front.timestamp;
-    if (timeDiff > FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS) {
-        // Event is too old, remove stale entry and don't match
+    // Step 1: Drain ALL stale entries from the front (fixes slow stale drain:
+    // previously only one entry was removed per call; now we drain in a loop)
+    while (!s_FakerInputKeyboardExtraInfoQueue.isEmpty()) {
+        const FakerInputKeyboardExtraInfo &front = s_FakerInputKeyboardExtraInfoQueue.head();
+        qint64 timeDiff = currentTime - front.timestamp;
+        if (timeDiff <= FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS)
+            break;
         s_FakerInputKeyboardExtraInfoQueue.dequeue();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[matchFakerInputKeyboardExtraInfo] Discarded stale entry: VK:0x%02X, Age:%lldms > %lldms",
-               front.vkeycode, timeDiff, FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS);
+        qDebug("[matchFakerInputKeyboardExtraInfo] Discarded stale entry: VK:0x%02X, Age:%lldms > %lldms, QueueSize:%d",
+               front.vkeycode, timeDiff, FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS,
+               s_FakerInputKeyboardExtraInfoQueue.size());
 #endif
+    }
+
+    if (s_FakerInputKeyboardExtraInfoQueue.isEmpty()) {
         return false;
     }
 
-    if (front.vkeycode == vkeycode && front.keyupdown == keyupdown) {
-        outExtraInfo = front.extraInfo;
-        s_FakerInputKeyboardExtraInfoQueue.dequeue();
+    // Step 2: Check if head matches (the common fast path)
+    {
+        const FakerInputKeyboardExtraInfo &front = s_FakerInputKeyboardExtraInfoQueue.head();
+        if (front.vkeycode == vkeycode && front.keyupdown == keyupdown) {
+            outExtraInfo = front.extraInfo;
+            s_FakerInputKeyboardExtraInfoQueue.dequeue();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[matchFakerInputKeyboardExtraInfo] Matched VK:0x%02X, %s, ExtraInfo:0x%08X, QueueSize:%d",
-               vkeycode, (keyupdown == KEY_DOWN) ? "DOWN" : "UP", (unsigned int)outExtraInfo,
-               s_FakerInputKeyboardExtraInfoQueue.size());
+            qDebug("[matchFakerInputKeyboardExtraInfo] Matched VK:0x%02X, %s, ExtraInfo:0x%08X, QueueSize:%d",
+                   vkeycode, (keyupdown == KEY_DOWN) ? "DOWN" : "UP", (unsigned int)outExtraInfo,
+                   s_FakerInputKeyboardExtraInfoQueue.size());
 #endif
-        return true;
+            return true;
+        }
+    }
+
+    // Step 3: Head mismatch — search deeper in the queue (fixes cascading mismatch:
+    // if a HID event was lost by Windows, the corresponding queue entry blocks all
+    // subsequent entries. Now we skip over lost-event entries to find the real match.)
+    for (int i = 1; i < s_FakerInputKeyboardExtraInfoQueue.size(); ++i) {
+        const FakerInputKeyboardExtraInfo &entry = s_FakerInputKeyboardExtraInfoQueue.at(i);
+        if (entry.vkeycode == vkeycode && entry.keyupdown == keyupdown) {
+            // Entries [0..i-1] correspond to lost HID events — discard them all
+            int discardedCount = 0;
+            for (int j = 0; j < i; ++j) {
+                s_FakerInputKeyboardExtraInfoQueue.dequeue();
+                ++discardedCount;
+            }
+#ifdef DEBUG_LOGOUT_ON
+            if (discardedCount > 0) {
+                qDebug("[matchFakerInputKeyboardExtraInfo] Skipped %d lost-event entries, VK:0x%02X matched at index %d, QueueSize:%d",
+                       discardedCount, vkeycode, i, s_FakerInputKeyboardExtraInfoQueue.size());
+            }
+#endif
+            outExtraInfo = s_FakerInputKeyboardExtraInfoQueue.head().extraInfo;
+            s_FakerInputKeyboardExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[matchFakerInputKeyboardExtraInfo] Matched VK:0x%02X, %s, ExtraInfo:0x%08X (deep match) QueueSize:%d",
+                   vkeycode, (keyupdown == KEY_DOWN) ? "DOWN" : "UP", (unsigned int)outExtraInfo,
+                   s_FakerInputKeyboardExtraInfoQueue.size());
+#endif
+            return true;
+        }
     }
 
     return false;
@@ -6460,30 +6530,63 @@ bool QKeyMapper_Worker::matchFakerInputMouseButtonExtraInfo(WPARAM wParam, WORD 
 
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
 
-    // Check if the front of the queue matches the current mouse event
-    const FakerInputMouseButtonExtraInfo &front = s_FakerInputMouseButtonExtraInfoQueue.head();
-
-    // Check time window first - if event is too old, it's likely a stale entry
-    qint64 timeDiff = currentTime - front.timestamp;
-    if (timeDiff > FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS) {
-        // Event is too old, remove stale entry and don't match
+    // Step 1: Drain ALL stale entries from the front
+    while (!s_FakerInputMouseButtonExtraInfoQueue.isEmpty()) {
+        const FakerInputMouseButtonExtraInfo &front = s_FakerInputMouseButtonExtraInfoQueue.head();
+        qint64 timeDiff = currentTime - front.timestamp;
+        if (timeDiff <= FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS)
+            break;
         s_FakerInputMouseButtonExtraInfoQueue.dequeue();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[matchFakerInputMouseButtonExtraInfo] Discarded stale entry: wParam:0x%04X, Age:%lldms > %lldms",
-               (unsigned int)front.wParam, timeDiff, FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS);
+        qDebug("[matchFakerInputMouseButtonExtraInfo] Discarded stale entry: wParam:0x%04X, Age:%lldms > %lldms, QueueSize:%d",
+               (unsigned int)front.wParam, timeDiff, FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS,
+               s_FakerInputMouseButtonExtraInfoQueue.size());
 #endif
+    }
+
+    if (s_FakerInputMouseButtonExtraInfoQueue.isEmpty()) {
         return false;
     }
 
-    if (front.wParam == wParam && front.xbutton == xbutton) {
-        outExtraInfo = front.extraInfo;
-        s_FakerInputMouseButtonExtraInfoQueue.dequeue();
+    // Step 2: Check if head matches (the common fast path)
+    {
+        const FakerInputMouseButtonExtraInfo &front = s_FakerInputMouseButtonExtraInfoQueue.head();
+        if (front.wParam == wParam && front.xbutton == xbutton) {
+            outExtraInfo = front.extraInfo;
+            s_FakerInputMouseButtonExtraInfoQueue.dequeue();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[matchFakerInputMouseButtonExtraInfo] Matched wParam:0x%04X, XButton:%d, ExtraInfo:0x%08X, QueueSize:%d",
-               (unsigned int)wParam, xbutton, (unsigned int)outExtraInfo,
-               s_FakerInputMouseButtonExtraInfoQueue.size());
+            qDebug("[matchFakerInputMouseButtonExtraInfo] Matched wParam:0x%04X, XButton:%d, ExtraInfo:0x%08X, QueueSize:%d",
+                   (unsigned int)wParam, xbutton, (unsigned int)outExtraInfo,
+                   s_FakerInputMouseButtonExtraInfoQueue.size());
 #endif
-        return true;
+            return true;
+        }
+    }
+
+    // Step 3: Head mismatch — search deeper in the queue
+    for (int i = 1; i < s_FakerInputMouseButtonExtraInfoQueue.size(); ++i) {
+        const FakerInputMouseButtonExtraInfo &entry = s_FakerInputMouseButtonExtraInfoQueue.at(i);
+        if (entry.wParam == wParam && entry.xbutton == xbutton) {
+            int discardedCount = 0;
+            for (int j = 0; j < i; ++j) {
+                s_FakerInputMouseButtonExtraInfoQueue.dequeue();
+                ++discardedCount;
+            }
+#ifdef DEBUG_LOGOUT_ON
+            if (discardedCount > 0) {
+                qDebug("[matchFakerInputMouseButtonExtraInfo] Skipped %d lost-event entries, wParam:0x%04X matched at index %d, QueueSize:%d",
+                       discardedCount, (unsigned int)wParam, i, s_FakerInputMouseButtonExtraInfoQueue.size());
+            }
+#endif
+            outExtraInfo = s_FakerInputMouseButtonExtraInfoQueue.head().extraInfo;
+            s_FakerInputMouseButtonExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[matchFakerInputMouseButtonExtraInfo] Matched wParam:0x%04X, XButton:%d, ExtraInfo:0x%08X (deep match) QueueSize:%d",
+                   (unsigned int)wParam, xbutton, (unsigned int)outExtraInfo,
+                   s_FakerInputMouseButtonExtraInfoQueue.size());
+#endif
+            return true;
+        }
     }
 
     return false;
@@ -6499,32 +6602,66 @@ bool QKeyMapper_Worker::matchFakerInputMouseWheelExtraInfo(WPARAM wParam, short 
 
     qint64 currentTime = QDateTime::currentMSecsSinceEpoch();
 
-    // Check if the front of the queue matches the current wheel event
-    // Match by message type and delta sign (positive/negative for direction)
-    const FakerInputMouseWheelExtraInfo &front = s_FakerInputMouseWheelExtraInfoQueue.head();
-
-    // Check time window first - if event is too old, it's likely a stale entry
-    qint64 timeDiff = currentTime - front.timestamp;
-    if (timeDiff > FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS) {
-        // Event is too old, remove stale entry and don't match
+    // Step 1: Drain ALL stale entries from the front
+    while (!s_FakerInputMouseWheelExtraInfoQueue.isEmpty()) {
+        const FakerInputMouseWheelExtraInfo &front = s_FakerInputMouseWheelExtraInfoQueue.head();
+        qint64 timeDiff = currentTime - front.timestamp;
+        if (timeDiff <= FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS)
+            break;
         s_FakerInputMouseWheelExtraInfoQueue.dequeue();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[matchFakerInputMouseWheelExtraInfo] Discarded stale entry: wParam:0x%04X, Age:%lldms > %lldms",
-               (unsigned int)front.wParam, timeDiff, FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS);
+        qDebug("[matchFakerInputMouseWheelExtraInfo] Discarded stale entry: wParam:0x%04X, Age:%lldms > %lldms, QueueSize:%d",
+               (unsigned int)front.wParam, timeDiff, FAKERINPUT_EXTRAINFO_MATCH_TIME_WINDOW_MS,
+               s_FakerInputMouseWheelExtraInfoQueue.size());
 #endif
+    }
+
+    if (s_FakerInputMouseWheelExtraInfoQueue.isEmpty()) {
         return false;
     }
 
-    bool deltaSignMatch = ((front.wheelDelta > 0) == (wheelDelta > 0)) || ((front.wheelDelta < 0) == (wheelDelta < 0));
-    if (front.wParam == wParam && deltaSignMatch) {
-        outExtraInfo = front.extraInfo;
-        s_FakerInputMouseWheelExtraInfoQueue.dequeue();
+    // Step 2: Check if head matches (the common fast path)
+    bool deltaSignMatch = false;
+    {
+        const FakerInputMouseWheelExtraInfo &front = s_FakerInputMouseWheelExtraInfoQueue.head();
+        deltaSignMatch = ((front.wheelDelta > 0) == (wheelDelta > 0)) || ((front.wheelDelta < 0) == (wheelDelta < 0));
+        if (front.wParam == wParam && deltaSignMatch) {
+            outExtraInfo = front.extraInfo;
+            s_FakerInputMouseWheelExtraInfoQueue.dequeue();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug("[matchFakerInputMouseWheelExtraInfo] Matched wParam:0x%04X, WheelDelta:%d, ExtraInfo:0x%08X, QueueSize:%d",
-               (unsigned int)wParam, wheelDelta, (unsigned int)outExtraInfo,
-               s_FakerInputMouseWheelExtraInfoQueue.size());
+            qDebug("[matchFakerInputMouseWheelExtraInfo] Matched wParam:0x%04X, WheelDelta:%d, ExtraInfo:0x%08X, QueueSize:%d",
+                   (unsigned int)wParam, wheelDelta, (unsigned int)outExtraInfo,
+                   s_FakerInputMouseWheelExtraInfoQueue.size());
 #endif
-        return true;
+            return true;
+        }
+    }
+
+    // Step 3: Head mismatch — search deeper in the queue
+    for (int i = 1; i < s_FakerInputMouseWheelExtraInfoQueue.size(); ++i) {
+        const FakerInputMouseWheelExtraInfo &entry = s_FakerInputMouseWheelExtraInfoQueue.at(i);
+        deltaSignMatch = ((entry.wheelDelta > 0) == (wheelDelta > 0)) || ((entry.wheelDelta < 0) == (wheelDelta < 0));
+        if (entry.wParam == wParam && deltaSignMatch) {
+            int discardedCount = 0;
+            for (int j = 0; j < i; ++j) {
+                s_FakerInputMouseWheelExtraInfoQueue.dequeue();
+                ++discardedCount;
+            }
+#ifdef DEBUG_LOGOUT_ON
+            if (discardedCount > 0) {
+                qDebug("[matchFakerInputMouseWheelExtraInfo] Skipped %d lost-event entries, wParam:0x%04X matched at index %d, QueueSize:%d",
+                       discardedCount, (unsigned int)wParam, i, s_FakerInputMouseWheelExtraInfoQueue.size());
+            }
+#endif
+            outExtraInfo = s_FakerInputMouseWheelExtraInfoQueue.head().extraInfo;
+            s_FakerInputMouseWheelExtraInfoQueue.dequeue();
+#ifdef DEBUG_LOGOUT_ON
+            qDebug("[matchFakerInputMouseWheelExtraInfo] Matched wParam:0x%04X, WheelDelta:%d, ExtraInfo:0x%08X (deep match) QueueSize:%d",
+                   (unsigned int)wParam, wheelDelta, (unsigned int)outExtraInfo,
+                   s_FakerInputMouseWheelExtraInfoQueue.size());
+#endif
+            return true;
+        }
     }
 
     return false;
