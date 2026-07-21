@@ -28,4 +28,8 @@
 - [Close-to-Tray CheckBox Session](episodic/2026-07-17-close-to-tray-checkbox.md) — 添加关闭时最小化到托盘 CheckBox、简化 closeEvent、修复首次弹窗时机问题
 - [Joystick Hotplug TOCTOU Crash Fix](episodic/2026-07-17-joystick-hotplug-toctou-crash.md) — joystickAdded 信号传裸指针跨线程导致悬空指针崩溃；改为值传递 + 回调注入虚拟手柄检测
 - [Qt QueuedConnection Raw Pointer TOCTOU Pattern](qt-queued-connection-pointer-toctou.md) — Qt::QueuedConnection 传裸指针的通用 TOCTOU 崩溃模式及三种修复方案
+- [FakerInput Resend Consumer Filter Pattern](fakeinput-resend-consumer-filter.md) — FakerInput extraInfo=0 污染应在消费端过滤而非 Hook 端追踪的架构原则
+- [FAKERINPUT_EXTRAINFO Known Limitations](fakerinput-extra-info-limitations.md) — FAKERINPUT_EXTRAINFO 宏无法稳定启用的 5 个根本原因
+- [FakeInput Resend Bug Fix Session](episodic/2026-07-20-fakeinput-resend-fix.json) — resendRealKeyCodeOnStop 错误重发 FakeInput 序列末尾按键的修复
+- [FAKERINPUT_EXTRAINFO Code Review Session](episodic/2026-07-20-fakeinput-extra-info-review.json) — FAKERINPUT_EXTRAINFO 机制全面审查及 3 个 match 函数优化
 - [Callback Injection Library Extensibility](callback-injection-library-extensibility.md) — std::function 回调注入模式：在不修改库架构的前提下为库代码添加应用特定逻辑

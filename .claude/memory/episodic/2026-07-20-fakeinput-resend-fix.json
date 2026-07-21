@@ -1,0 +1,17 @@
+{
+  "id": "ep-2026-07-20-fakeinput-resend",
+  "timestamp": "2026-07-20T16:00:00+08:00",
+  "skill": "qkeymapper-workflow",
+  "situation": "用户报告使用 FakeInput 发送模式执行按键序列 F1→A⏱100+B⏱200»C⏱200 时，序列末尾的 C 键被 resendRealKeyCodeOnStop 错误重发，导致 C 键卡在按下状态",
+  "root_cause": "FAKERINPUT_EXTRAINFO 宏被注释掉（QKeyMapper.pro line 40: # DEFINES += FAKERINPUT_EXTRAINFO），FakerInput 通过内核驱动发送按键时 extraInfo=0，Hook 无法区分虚拟按键和物理按键，将其加入 pressedRealKeysList。序列结束时 resendRealKeyCodeOnStop 在 pressedRealKeysList 中发现 C（Hook 尚未处理 KEY_UP），错误地重发 C KEY_DOWN",
+  "solution": "在 resendRealKeyCodeOnStop 中检查行 SendMappingKeyMethod：当为 SENDMAPPINGKEY_METHOD_FAKERINPUT 时跳过 Pure_MappingKeys 的 resend 检查。因为 FakerInput 发送的映射键是合成按键，永远不应出现在 pressedRealKeysList 中，出现即是污染数据",
+  "lesson": "FakerInput 驱动的根本限制（extraInfo=0）无法在 Hook 层面修复。最安全的修复位置是在消费端（resendRealKeyCodeOnStop）过滤，而非在 Hook 端尝试追踪",
+  "user_feedback": {
+    "rating": 8,
+    "comments": "FAKERINPUT_EXTRAINFO 宏之前测试过无法使用，方案需要排除此依赖。修改后 FAKERINPUT_EXTRAINFO OFF 测试通过"
+  },
+  "files_modified": [
+    "QKeyMapper/qkeymapper_worker.cpp:17064-17076 (resendRealKeyCodeOnStop)"
+  ],
+  "related_pattern": "fakeinput-resend-consumer-filter"
+}

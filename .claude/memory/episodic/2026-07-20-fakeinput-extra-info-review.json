@@ -1,0 +1,17 @@
+{
+  "id": "ep-2026-07-20-fakeinput-extra-info-review",
+  "timestamp": "2026-07-20T17:00:00+08:00",
+  "skill": "qkeymapper-workflow",
+  "situation": "用户要求全面审查 FAKERINPUT_EXTRAINFO 编译宏内部代码的功能逻辑、稳定性和完备性。该宏在 QKeyMapper.pro 中被注释掉（# DEFINES += FAKERINPUT_EXTRAINFO），用户想了解其是否可靠",
+  "root_cause": "FAKERINPUT_EXTRAINFO 使用 FIFO 队列（s_FakerInputKeyboardExtraInfoQueue）匹配 FakerInput 发送的按键与 Hook 接收的事件。s_FakerInputClient_Mutex 序列化发送操作，保证入队顺序 = 发送顺序。但存在多个设计和 Windows 层面的限制",
+  "solution": "完成全面 Review，发现 5 个已知问题：\n1. 相同 VK Windows 去重（不可修复，HID 栈底层限制）\n2. FIFO 队列级联失配（可修复，已通过深度搜索优化）\n3. Stale 慢速排空（可修复，已通过 while 循环优化）\n4. 物理+FakerInput 同 VK 碰撞（不可完美修复）\n5. 序列中断时 ThreadPool clear 丢弃异步 KEY_UP 任务（可修复但未修复，仅 FAKERINPUT_EXTRAINFO ON 时暴露）",
+  "lesson": "FAKERINPUT_EXTRAINFO 机制在代码层面完整正确，但因 Windows 输入栈的底层限制（同 VK 去重、extraInfo=0 无法区分来源）无法稳定启用。该宏被注释掉是正确的决定。修复应针对 FAKERINPUT_SUPPORT（而非 FAKERINPUT_EXTRAINFO）",
+  "user_feedback": {
+    "rating": 9,
+    "comments": "分析非常详细。FAKERINPUT_EXTRAINFO 的这些问题都有对应的深入分析，明确了宏无法启用的根本原因"
+  },
+  "files_modified": [
+    "QKeyMapper/qkeymapper_worker.cpp:6414-6635 (3个 match 函数的 while 排空 + 深度搜索优化)"
+  ],
+  "related_pattern": "fakerinput-queue-match-optimization"
+}
