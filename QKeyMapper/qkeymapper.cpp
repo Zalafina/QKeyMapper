@@ -23,6 +23,7 @@ constexpr int DISABLED_ROW_BACKGROUND_APPLIED_ROLE = Qt::UserRole + 500;
 constexpr int DISABLED_ROW_FOREGROUND_APPLIED_ROLE = Qt::UserRole + 501;
 constexpr int COMMON_APPENDED_ROW_ROLE = Qt::UserRole + 502;
 constexpr int COMMON_APPENDED_ROW_SEPARATOR_ROLE = Qt::UserRole + 503;
+constexpr int COMMON_APPENDED_SEPARATOR_ROW_ROLE = Qt::UserRole + 504;
 constexpr int SETTINGSELECT_ACTUAL_GROUP_ROLE = Qt::UserRole + 520;
 constexpr int CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH = 120;
 
@@ -1987,6 +1988,12 @@ static bool resolveDisplayRowSource(int tabIndex, int displayRow, int *sourceTab
         return false;
     }
 
+    // Check for separator row (does not map to any data)
+    KeyMappingDataTableWidget *table = QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex).KeyMappingDataTable;
+    if (table && table->hasCommonSeparator() && displayRow == table->commonSeparatorDisplayRow()) {
+        return false;
+    }
+
     const int commonTabIndex = QKeyMapper::findCommonMappingTabIndex();
     if (commonTabIndex < 0 || commonTabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return false;
@@ -1997,7 +2004,9 @@ static bool resolveDisplayRowSource(int tabIndex, int displayRow, int *sourceTab
         return false;
     }
 
-    const int commonRow = displayRow - localRowCount;
+    // Adjust offset if separator row exists
+    const int separatorOffset = (table && table->hasCommonSeparator()) ? 1 : 0;
+    const int commonRow = displayRow - localRowCount - separatorOffset;
     if (commonRow < 0 || commonRow >= commonMappingDataList->size()) {
         return false;
     }
@@ -16502,6 +16511,7 @@ void QKeyMapper::finalizeCommonMappingTabAtIndex(int tabIndex, bool showNameConf
     s_KeyMappingTabInfoList[tabIndex].TabInternalName = getCommonMappingTableInternalName();
     s_KeyMappingTabInfoList[tabIndex].IsCommonTab = true;
     s_KeyMappingTabInfoList[tabIndex].IncludeCommonMappingTable = false;
+    s_KeyMappingTabInfoList[tabIndex].CommonMappingCollapsed = false;
     s_KeyMappingTabInfoList[tabIndex].TabHotkey.clear();
     s_KeyMappingTabInfoList[tabIndex].TabName = displayName;
     updateKeyMappingTabWidgetTabDisplay(tabIndex);
@@ -16594,6 +16604,9 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
     // KeyMappingTableWidget->verticalHeader()->setVisible(false);
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
     KeyMappingTableWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
+    KeyMappingTableWidget->verticalHeader()->setSectionsClickable(true);
+    connect(KeyMappingTableWidget->verticalHeader(), &QHeaderView::sectionClicked,
+            this, &QKeyMapper::onCommonMappingSeparatorHeaderClicked);
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)
@@ -17038,6 +17051,9 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     // KeyMappingTableWidget->verticalHeader()->setVisible(false);
     KeyMappingTableWidget->verticalHeader()->setDefaultSectionSize(25);
     KeyMappingTableWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
+    KeyMappingTableWidget->verticalHeader()->setSectionsClickable(true);
+    connect(KeyMappingTableWidget->verticalHeader(), &QHeaderView::sectionClicked,
+            this, &QKeyMapper::onCommonMappingSeparatorHeaderClicked);
     KeyMappingTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
     KeyMappingTableWidget->setSelectionMode(QAbstractItemView::ContiguousSelection);
     // Allow editing only for specific columns (will be controlled per item)
@@ -17102,6 +17118,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     tab_info.TabFontColor = sourceTabInfo.TabFontColor;
     tab_info.TabBackgroundColor = sourceTabInfo.TabBackgroundColor;
     tab_info.IncludeCommonMappingTable = sourceTabInfo.IncludeCommonMappingTable;
+    tab_info.CommonMappingCollapsed = sourceTabInfo.CommonMappingCollapsed;
     tab_info.IsCommonTab = false;
     tab_info.TabHideNotification = sourceTabInfo.TabHideNotification;
     tab_info.TabCustomImage_Path = sourceTabInfo.TabCustomImage_Path;
@@ -17882,20 +17899,22 @@ void QKeyMapper::onTrayIconMenuQuitAction()
     QApplication::quit();
 }
 
-void QKeyMapper::applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappingDataTable, const QList<MAP_KEYDATA> *mappingDataList, int row)
+void QKeyMapper::applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappingDataTable, const QList<MAP_KEYDATA> *mappingDataList, int dataRow, int displayRow)
 {
     if (!mappingDataTable || !mappingDataList) {
         return;
     }
 
-    if (row < 0 || row >= mappingDataList->size() || row >= mappingDataTable->rowCount()) {
+    const int tableRow = (displayRow >= 0) ? displayRow : dataRow;
+
+    if (dataRow < 0 || dataRow >= mappingDataList->size() || tableRow >= mappingDataTable->rowCount()) {
         return;
     }
 
-    const MAP_KEYDATA &keymapdata = mappingDataList->at(row);
+    const MAP_KEYDATA &keymapdata = mappingDataList->at(dataRow);
 
     for (int column = 0; column < KEYMAPPINGDATA_TABLE_COLUMN_COUNT; ++column) {
-        QTableWidgetItem *item = mappingDataTable->item(row, column);
+        QTableWidgetItem *item = mappingDataTable->item(tableRow, column);
         if (!item) {
             continue;
         }
@@ -20358,6 +20377,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     QStringList tabnamelist;
     QStringList tabinternalnamelist;
     QStringList tabincludecommonlist;
+    QStringList tabcommoncollapsedlist;
     QStringList tabhotkeylist;
     QStringList tabfontcolorlist;
     QStringList tabbgcolorlist;
@@ -20489,6 +20509,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         tabnamelist.append(tabName);
         tabinternalnamelist.append(tabInternalName);
         tabincludecommonlist.append(includeCommonMappingTable ? "ON" : "OFF");
+        tabcommoncollapsedlist.append(s_KeyMappingTabInfoList.at(index).CommonMappingCollapsed ? "ON" : "OFF");
         tabhotkeylist.append(tabHotkey);
         tabfontcolorlist.append(tabFontColor);
         tabbgcolorlist.append(tabBGColor);
@@ -21172,6 +21193,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABINTERNALNAMELIST, tabinternalnamelist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABINCLUDECOMMONLIST, tabincludecommonlist);
+    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCOMMONCOLLAPSEDLIST, tabcommoncollapsedlist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHOTKEYLIST, tabhotkeylist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST, tabfontcolorlist);
     settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABBGCOLORLIST, tabbgcolorlist);
@@ -23031,6 +23053,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
     QStringList tabinternalnamelist_loaded;
     QStringList tabincludecommonlist_loaded;
+    QStringList tabcommoncollapsedlist_loaded;
     QStringList tabhotkeylist_loaded;
     QStringList tabfontcolorlist_loaded;
     QStringList tabbgcolorlist_loaded;
@@ -23217,6 +23240,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         tabnamelist_loaded      = settingFile.value(settingSelectStr+MAPPINGTABLE_TABNAMELIST).toStringList();
         tabinternalnamelist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABINTERNALNAMELIST).toStringList();
         tabincludecommonlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABINCLUDECOMMONLIST).toStringList();
+        tabcommoncollapsedlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABCOMMONCOLLAPSEDLIST).toStringList();
         tabhotkeylist_loaded    = settingFile.value(settingSelectStr+MAPPINGTABLE_TABHOTKEYLIST).toStringList();
         tabfontcolorlist_loaded = settingFile.value(settingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST).toStringList();
         tabbgcolorlist_loaded   = settingFile.value(settingSelectStr+MAPPINGTABLE_TABBGCOLORLIST).toStringList();
@@ -24984,12 +25008,20 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     s_KeyMappingTabInfoList[index].IsCommonTab = isCommonTab;
                     if (isCommonTab) {
                         s_KeyMappingTabInfoList[index].IncludeCommonMappingTable = false;
+                        s_KeyMappingTabInfoList[index].CommonMappingCollapsed = false;
                     }
                     else if (index < tabincludecommonlist_loaded.size()) {
                         s_KeyMappingTabInfoList[index].IncludeCommonMappingTable = (tabincludecommonlist_loaded.at(index) != "OFF");
                     }
                     else {
                         s_KeyMappingTabInfoList[index].IncludeCommonMappingTable = MAPPINGTABLE_INCLUDE_COMMON_DEFAULT;
+                    }
+
+                    if (index < tabcommoncollapsedlist_loaded.size()) {
+                        s_KeyMappingTabInfoList[index].CommonMappingCollapsed = (tabcommoncollapsedlist_loaded.at(index) == "ON");
+                    }
+                    else {
+                        s_KeyMappingTabInfoList[index].CommonMappingCollapsed = MAPPINGTABLE_COMMON_COLLAPSED_DEFAULT;
                     }
                     ui->keyMappingTabWidget->setTabText(index, tabnamelist_loaded.at(index));
                 }
@@ -32137,6 +32169,7 @@ void QKeyMapper::clearKeyMappingTabWidget()
         s_KeyMappingTabInfoList[0].TabFontColor = QColor();
         s_KeyMappingTabInfoList[0].TabBackgroundColor = QColor();
         s_KeyMappingTabInfoList[0].IncludeCommonMappingTable = MAPPINGTABLE_INCLUDE_COMMON_DEFAULT;
+        s_KeyMappingTabInfoList[0].CommonMappingCollapsed = MAPPINGTABLE_COMMON_COLLAPSED_DEFAULT;
         s_KeyMappingTabInfoList[0].IsCommonTab = false;
         s_KeyMappingTabInfoList[0].TabHideNotification = TAB_HIDE_NOTIFICATION_DEFAULT;
         s_KeyMappingTabInfoList[0].TabCustomImage_Path.clear();
@@ -33499,12 +33532,23 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
     mappingDataTable->setRowCount(0);
 
     const int tabIndex = findMappingTabIndexByDataTable(mappingDataTable);
+    const int localRowCount = (tabIndex >= 0 && s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData != Q_NULLPTR)
+        ? s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData->size()
+        : 0;
     const int commonStartDisplayRow = (tabIndex >= 0 && shouldAppendCommonMappingRows(tabIndex))
-        ? ((s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData != Q_NULLPTR)
-            ? s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData->size()
-            : 0)
+        ? localRowCount
         : -1;
+    const int commonDataCount = (commonStartDisplayRow >= 0)
+        ? (mappingDataList->size() - localRowCount)
+        : 0;
+    const bool hasSeparatorRow = (commonStartDisplayRow >= 0 && commonDataCount > 0);
     QStringList verticalHeaderLabels;
+
+    // Restore per-tab collapse state onto the table widget
+    const bool collapsedState = (tabIndex >= 0 && tabIndex < s_KeyMappingTabInfoList.size())
+        ? s_KeyMappingTabInfoList.at(tabIndex).CommonMappingCollapsed
+        : false;
+    mappingDataTable->setCommonRowsCollapsed(collapsedState);
 
 #ifdef DEBUG_LOGOUT_ON
     const int currentIndex = (ui && ui->keyMappingTabWidget) ? ui->keyMappingTabWidget->currentIndex() : -1;
@@ -33514,6 +33558,9 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                                  << ", mappingDataList=" << debugPointerString(mappingDataList)
                                  << ", rowCount=" << (mappingDataList != Q_NULLPTR ? mappingDataList->size() : -1)
                                  << ", commonStartDisplayRow=" << commonStartDisplayRow
+                                 << ", commonDataCount=" << commonDataCount
+                                 << ", hasSeparatorRow=" << (hasSeparatorRow ? "true" : "false")
+                                 << ", collapsedState=" << (collapsedState ? "true" : "false")
                                  << ", currentIndex=" << currentIndex
                                  << ", trackedCurrentIndex=" << s_KeyMappingTabWidgetCurrentIndex
                                  << ", currentWidget=" << debugPointerString((ui && ui->keyMappingTabWidget && 0 <= currentIndex && currentIndex < ui->keyMappingTabWidget->count()) ? ui->keyMappingTabWidget->widget(currentIndex) : Q_NULLPTR)
@@ -33527,10 +33574,38 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
         qDebug() << "[refreshKeyMappingDataTable]" << "mappingDataList Start >>>";
 #endif
         QSignalBlocker blocker(mappingDataTable);
+        const int totalDisplayRows = mappingDataList->size() + (hasSeparatorRow ? 1 : 0);
+        mappingDataTable->setRowCount(totalDisplayRows);
+
         int rowindex = 0;
-        mappingDataTable->setRowCount(mappingDataList->size());
-        for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
+        mappingDataTable->setCommonSeparatorDisplayRow(hasSeparatorRow ? commonStartDisplayRow : -1);
+        for (int dataIndex = 0; dataIndex < mappingDataList->size(); ++dataIndex)
         {
+            // Insert separator row before first common mapping item
+            if (hasSeparatorRow && dataIndex == commonStartDisplayRow) {
+                for (int col = 0; col < KEYMAPPINGDATA_TABLE_COLUMN_COUNT; ++col) {
+                    QTableWidgetItem *sepItem = new QTableWidgetItem(QString());
+                    sepItem->setFlags(Qt::NoItemFlags);  // Non-editable, non-selectable
+                    sepItem->setData(COMMON_APPENDED_SEPARATOR_ROW_ROLE, true);
+                    if (col == 0) {  // Column 0 is the spanning cell after setSpan
+                        const QString hintText = collapsedState
+                            ? tr("Common mapping items collapsed (%1 items) — click left 「＋」 to expand").arg(commonDataCount)
+                            : tr("Common mapping items — click left 「－」 to collapse");
+                        sepItem->setText(hintText);
+                        sepItem->setTextAlignment(Qt::AlignCenter);
+                        sepItem->setForeground(QBrush(COMMON_APPENDED_SEPARATOR_FOREGROUND_COLOR));
+                    }
+                    sepItem->setBackground(QBrush(COMMON_APPENDED_SEPARATOR_BACKGROUND_COLOR));
+                    mappingDataTable->setItem(rowindex, col, sepItem);
+                }
+                // Merge all columns into one spanning cell
+                mappingDataTable->setSpan(rowindex, 0, 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
+
+                verticalHeaderLabels.append(collapsedState ? QStringLiteral("＋") : QStringLiteral("－"));
+                rowindex += 1;
+            }
+
+            const MAP_KEYDATA &keymapdata = mappingDataList->at(dataIndex);
             bool disable_burst = false;
             bool disable_lock = false;
             const QString normalizedOriginalKey = removeOriginalKeyDeviceIndex(keymapdata.Original_Key);
@@ -33726,8 +33801,8 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             categoryItem->setFlags(categoryItem->flags() | Qt::ItemIsEditable);
             mappingDataTable->setItem(rowindex, CATEGORY_COLUMN, categoryItem);
 
-            const bool isAppendedCommonRow = (commonStartDisplayRow >= 0 && rowindex >= commonStartDisplayRow);
-            const bool isFirstAppendedCommonRow = isAppendedCommonRow && rowindex == commonStartDisplayRow;
+            const bool isAppendedCommonRow = (commonStartDisplayRow >= 0 && dataIndex >= commonStartDisplayRow);
+            const bool isFirstAppendedCommonRow = isAppendedCommonRow && dataIndex == commonStartDisplayRow;
             if (isAppendedCommonRow) {
                 const QBrush commonRowBackground(COMMON_MAPPING_ROW_BACKGROUND_COLOR);
                 const QBrush commonRowForeground(COMMON_MAPPING_ROW_FOREGROUND_COLOR);
@@ -33751,7 +33826,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                     }
                 }
 
-                verticalHeaderLabels.append(QStringLiteral("C%1").arg(rowindex - commonStartDisplayRow + 1));
+                verticalHeaderLabels.append(QStringLiteral("C%1").arg(dataIndex - commonStartDisplayRow + 1));
             }
             else {
                 for (int column = 0; column < KEYMAPPINGDATA_TABLE_COLUMN_COUNT; ++column) {
@@ -33765,14 +33840,14 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 }
 
                 if (tabIndex >= 0 && isCommonMappingTabIndex(tabIndex)) {
-                    verticalHeaderLabels.append(QStringLiteral("C%1").arg(rowindex + 1));
+                    verticalHeaderLabels.append(QStringLiteral("C%1").arg(dataIndex + 1));
                 }
                 else {
-                    verticalHeaderLabels.append(QString::number(rowindex + 1));
+                    verticalHeaderLabels.append(QString::number(dataIndex + 1));
                 }
             }
 
-            applyDisabledStyleToMappingRow(mappingDataTable, mappingDataList, rowindex);
+            applyDisabledStyleToMappingRow(mappingDataTable, mappingDataList, dataIndex, rowindex);
 
             rowindex += 1;
 
@@ -33792,6 +33867,26 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
     }
 
     mappingDataTable->setVerticalHeaderLabels(verticalHeaderLabels);
+
+    // Apply bold font on separator row's vertical header item
+    if (hasSeparatorRow) {
+        const int sepRow = mappingDataTable->commonSeparatorDisplayRow();
+        QTableWidgetItem *sepHeader = mappingDataTable->verticalHeaderItem(sepRow);
+        if (sepHeader) {
+            QFont boldFont = sepHeader->font();
+            boldFont.setBold(true);
+            boldFont.setPointSize(boldFont.pointSize() + 3);
+            sepHeader->setFont(boldFont);
+        }
+    }
+
+    // Apply collapse state for common mapping rows
+    if (hasSeparatorRow && collapsedState) {
+        const int sepRow = mappingDataTable->commonSeparatorDisplayRow();
+        for (int r = sepRow + 1; r < mappingDataTable->rowCount(); ++r) {
+            mappingDataTable->setRowHidden(r, true);
+        }
+    }
 
     mappingDataTable->setFloatingColumnVisible(showFloatingColumn);
 
@@ -39052,6 +39147,64 @@ void QKeyMapper::onCategoryColumnHeaderClicked(int logicalIndex)
     showCategoryFilterPopup(headerTopRight, anchorRect);
 }
 
+void QKeyMapper::onCommonMappingSeparatorHeaderClicked(int logicalIndex)
+{
+    if (!m_KeyMappingDataTable) {
+        return;
+    }
+
+    if (!m_KeyMappingDataTable->hasCommonSeparator()
+        || m_KeyMappingDataTable->commonSeparatorDisplayRow() != logicalIndex) {
+        return;
+    }
+
+    const bool newCollapsed = !m_KeyMappingDataTable->isCommonRowsCollapsed();
+    m_KeyMappingDataTable->setCommonRowsCollapsed(newCollapsed);
+
+    // Persist per-tab collapsed state
+    const int tabIndex = findMappingTabIndexByDataTable(m_KeyMappingDataTable);
+    if (tabIndex >= 0 && tabIndex < s_KeyMappingTabInfoList.size()) {
+        s_KeyMappingTabInfoList[tabIndex].CommonMappingCollapsed = newCollapsed;
+    }
+
+    // Update separator row — header toggle symbol
+    const int sepRow = m_KeyMappingDataTable->commonSeparatorDisplayRow();
+    const QString toggleSymbol = newCollapsed ? QStringLiteral("＋") : QStringLiteral("－");
+    QTableWidgetItem *headerItem = m_KeyMappingDataTable->verticalHeaderItem(sepRow);
+    if (headerItem) {
+        headerItem->setText(toggleSymbol);
+    }
+
+    // Update separator row hint text (merged cell at column 0, the spanning cell)
+    QTableWidgetItem *hintItem = m_KeyMappingDataTable->item(sepRow, 0);
+    if (hintItem) {
+        const int commonTabIndex = findCommonMappingTabIndex();
+        const int commonCount = (commonTabIndex >= 0 && commonTabIndex < s_KeyMappingTabInfoList.size())
+            ? (s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData
+                ? s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData->size()
+                : 0)
+            : 0;
+        if (newCollapsed) {
+            hintItem->setText(tr("Common mapping items collapsed (%1 items) — click left 「＋」 to expand").arg(commonCount));
+        } else {
+            hintItem->setText(tr("Common mapping items — click left 「－」 to collapse"));
+        }
+    }
+
+    // Show / hide common mapping rows
+    const int totalRows = m_KeyMappingDataTable->rowCount();
+    for (int r = sepRow + 1; r < totalRows; ++r) {
+        m_KeyMappingDataTable->setRowHidden(r, newCollapsed);
+    }
+
+    // Trigger reapplyRowVisibility to respect filters for non-collapsed rows
+    if (!newCollapsed) {
+        m_KeyMappingDataTable->reapplyRowVisibility();
+    }
+
+    requestSaveSettingDirty();
+}
+
 void StyledDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     if (PROCESS_PID_COLUMN == index.column())
@@ -39086,9 +39239,18 @@ void KeyMappingTableStyleDelegate::paint(QPainter *painter, const QStyleOptionVi
     QStyleOptionViewItem styledOption(option);
     initStyleOption(&styledOption, index);
 
+    const bool isSeparatorRow = index.data(COMMON_APPENDED_SEPARATOR_ROW_ROLE).toBool();
     const bool isCommonAppendedRow = index.data(COMMON_APPENDED_ROW_ROLE).toBool();
 
     QStyle *style = styledOption.widget ? styledOption.widget->style() : QApplication::style();
+
+    // Separator row: draw with direct colors, no blending
+    if (isSeparatorRow) {
+        styledOption.state &= ~QStyle::State_Selected;
+        styledOption.state |= QStyle::State_Enabled;
+        style->drawControl(QStyle::CE_ItemViewItem, &styledOption, painter, styledOption.widget);
+        return;
+    }
     const bool selected = (styledOption.state & QStyle::State_Selected);
     const bool enabled = (styledOption.state & QStyle::State_Enabled)
         && (styledOption.widget == Q_NULLPTR || styledOption.widget->isEnabled());
@@ -45550,6 +45712,11 @@ void KeyMappingDataTableWidget::dropEvent(QDropEvent *event)
             droppedRow = rowCount() - 1;
         }
 
+        // Clamp drop target to separator row when common rows are collapsed
+        if (hasCommonSeparator() && isCommonRowsCollapsed() && droppedRow > m_CommonSeparatorDisplayRow) {
+            droppedRow = m_CommonSeparatorDisplayRow;
+        }
+
         emit QKeyMapper::getInstance()->keyMappingTableDragDropMove_Signal(m_DraggedTopRow, m_DraggedBottomRow, droppedRow);
     }
 }
@@ -45985,6 +46152,12 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     const bool hasCopiedItems = !QKeyMapper::s_CopiedMappingData.isEmpty();
     QTableWidgetItem *current = currentItem();
     const int currentColumn = current ? current->column() : -1;
+
+    // Block context menu on separator row
+    if (current && current->row() == m_CommonSeparatorDisplayRow) {
+        event->accept();
+        return;
+    }
 
     const auto canEditCurrentItem = [this, &selectionRanges, current]() -> bool {
         if (selectionRanges.isEmpty() || !current) {
@@ -46869,6 +47042,19 @@ void KeyMappingDataTableWidget::updateRowVisibility()
     bool hasHiddenRows = false;
 
     for (int row = 0; row < rowCount(); ++row) {
+        // Separator row is always visible
+        if (row == m_CommonSeparatorDisplayRow) {
+            setRowHidden(row, false);
+            continue;
+        }
+
+        // Collapsed common rows are always hidden (overrides filter)
+        if (m_CommonRowsCollapsed && m_CommonSeparatorDisplayRow >= 0 && row > m_CommonSeparatorDisplayRow) {
+            setRowHidden(row, true);
+            hasHiddenRows = true;
+            continue;
+        }
+
         bool categoryVisible = true;
         if (hasCategoryFilter) {
             QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);

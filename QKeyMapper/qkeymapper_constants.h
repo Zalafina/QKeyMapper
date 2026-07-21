@@ -1294,6 +1294,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGTABLE_TABNAMELIST[] = "MappingTable_TabNameList";
     inline constexpr const char MAPPINGTABLE_TABINTERNALNAMELIST[] = "MappingTable_TabInternalNameList";
     inline constexpr const char MAPPINGTABLE_TABINCLUDECOMMONLIST[] = "MappingTable_TabIncludeCommonList";
+    inline constexpr const char MAPPINGTABLE_TABCOMMONCOLLAPSEDLIST[] = "MappingTable_TabCommonCollapsedList";
     inline constexpr const char MAPPINGTABLE_TABHOTKEYLIST[] = "MappingTable_TabHotkeyList";
     inline constexpr const char MAPPINGTABLE_TABFONTCOLORLIST[] = "MappingTable_TabFontColorList";
     inline constexpr const char MAPPINGTABLE_TABBGCOLORLIST[] = "MappingTable_TabBackgroundColorList";
@@ -1467,6 +1468,16 @@ namespace QKeyMapperConstants {
 #endif
 
     inline constexpr int COMMON_MAPPING_ROW_SEPARATOR_WIDTH = 2;
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    // QColor supports constexpr in Qt6
+    inline constexpr QColor COMMON_APPENDED_SEPARATOR_BACKGROUND_COLOR = QColor(70, 70, 130);
+    inline constexpr QColor COMMON_APPENDED_SEPARATOR_FOREGROUND_COLOR = QColor(160, 170, 180);
+#else
+    // Fallback for Qt5: QColor is not constexpr
+    inline const QColor COMMON_APPENDED_SEPARATOR_BACKGROUND_COLOR = QColor(70, 70, 130);
+    inline const QColor COMMON_APPENDED_SEPARATOR_FOREGROUND_COLOR = QColor(160, 170, 180);
+#endif
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     // QColor supports constexpr in Qt6
@@ -1700,6 +1711,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MAPPINGTABLE_COMMONTAB_DISPLAY_TEXT[] = "Common";
     inline constexpr bool MAPPINGTABLE_COMMON_ENABLED_DEFAULT = false;
     inline constexpr bool MAPPINGTABLE_INCLUDE_COMMON_DEFAULT = true;
+    inline constexpr bool MAPPINGTABLE_COMMON_COLLAPSED_DEFAULT = false;
 
     inline constexpr const char KEY_NONE_STR[] = "NONE";
     inline constexpr const char KEY_BLOCKED_STR[] = "BLOCKED";

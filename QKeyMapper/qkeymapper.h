@@ -450,11 +450,19 @@ private:
     bool m_CategoryColumnVisible = false;  // Category column visibility
     bool m_HideDisabledFilterEnabled = false;
     bool m_HasHiddenRows = false;
+    int m_CommonSeparatorDisplayRow = -1;
+    bool m_CommonRowsCollapsed = false;
 public:
     // Current category filters:
     // - Empty set means "All" (no filtering)
     // - Empty-string element (""), when present, represents the built-in "Blank" option
     QSet<QString> m_CategoryFilters;
+
+    int commonSeparatorDisplayRow() const { return m_CommonSeparatorDisplayRow; }
+    void setCommonSeparatorDisplayRow(int row) { m_CommonSeparatorDisplayRow = row; }
+    bool hasCommonSeparator() const { return m_CommonSeparatorDisplayRow >= 0; }
+    bool isCommonRowsCollapsed() const { return m_CommonRowsCollapsed; }
+    void setCommonRowsCollapsed(bool collapsed) { m_CommonRowsCollapsed = collapsed; }
 };
 
 struct KeyMappingTab_Info
@@ -465,6 +473,7 @@ struct KeyMappingTab_Info
     QColor TabFontColor;
     QColor TabBackgroundColor;
     bool IncludeCommonMappingTable = QKeyMapperConstants::MAPPINGTABLE_INCLUDE_COMMON_DEFAULT;
+    bool CommonMappingCollapsed = QKeyMapperConstants::MAPPINGTABLE_COMMON_COLLAPSED_DEFAULT;
     bool IsCommonTab = false;
     Qt::CheckState TabHideNotification;
     QString TabCustomImage_Path;
@@ -1691,6 +1700,7 @@ public slots:
     void setCategoryColumnVisible(bool visible);
     void showCategoryFilterPopup(const QPoint &globalAnchorPos, const QRect &anchorGlobalRect);
     void onCategoryColumnHeaderClicked(int logicalIndex);
+    void onCommonMappingSeparatorHeaderClicked(int logicalIndex);
 
     // Export/Import/Delete tab helpers (shared across dialog buttons, menu bar, context menu)
     void exportMappingTableByTabIndex(int tabIndex);
@@ -2016,7 +2026,7 @@ private:
     void updateMappingKeyListComboBox(void);
     void setKeyMappingTabWidgetCurrentIndex(int index);
     void forceSwitchKeyMappingTabWidgetIndex(int index);
-    void applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappingDataTable, const QList<MAP_KEYDATA> *mappingDataList, int row);
+    void applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappingDataTable, const QList<MAP_KEYDATA> *mappingDataList, int dataRow, int displayRow = -1);
 public:
     void switchToMappingTableTab(int index);
     void refreshKeyMappingDataTableByTabIndex(int tabindex);
