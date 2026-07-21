@@ -25313,6 +25313,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 #endif
     refreshAllKeyMappingTabWidget();
 
+    // Correct after scrollbar state settles (appear/disappear)
+    QTimer::singleShot(0, this, [this]() {
+        if (m_KeyMappingDataTable) {
+            resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+        }
+    });
+
     if (loadGlobalSetting && loadDefault != true) {
         ui->settingNameLineEdit->setText(tr(DISPLAYNAME_GLOBALSETTING));
         ui->settingNameLineEdit->setReadOnly(true);
