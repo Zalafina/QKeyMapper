@@ -738,6 +738,36 @@ void QItemSetupDialog::setEditingMappingKeyLineEdit(int editing_lineedit)
     }
 }
 
+void QItemSetupDialog::setPendingMappingComments(const QStringList &comments)
+{
+    if (QItemSetupDialog *inst = getInstance()) {
+        // Reconcile with current segments before storing
+        QStringList currentSegs = splitMappingKeyString(
+            QKeyMapper::getTrimmedMappingKeyString(inst->ui->SetupDialog_MappingKeyLineEdit->text()), SPLIT_WITH_NEXT);
+        inst->m_PendingMappingComments = QKeyMapper::reconcileMappingKeyComments(currentSegs, comments, currentSegs);
+        inst->m_PendingMappingKeysSegments = currentSegs;  // Save for later reconciliation
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[setPendingMappingComments] Received" << comments << "-> Reconciled:" << inst->m_PendingMappingComments
+                 << "segments:" << inst->m_PendingMappingKeysSegments;
+#endif
+    }
+}
+
+void QItemSetupDialog::setPendingMappingKeyUpComments(const QStringList &comments)
+{
+    if (QItemSetupDialog *inst = getInstance()) {
+        // Reconcile with current segments before storing
+        QStringList currentSegs = splitMappingKeyString(
+            QKeyMapper::getTrimmedMappingKeyString(inst->ui->SetupDialog_MappingKey_KeyUpLineEdit->text()), SPLIT_WITH_NEXT);
+        inst->m_PendingMappingKeyUpComments = QKeyMapper::reconcileMappingKeyComments(currentSegs, comments, currentSegs);
+        inst->m_PendingMappingKeyUpSegments = currentSegs;  // Save for later reconciliation
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[setPendingMappingKeyUpComments] Received" << comments << "-> Reconciled:" << inst->m_PendingMappingKeyUpComments
+                 << "segments:" << inst->m_PendingMappingKeyUpSegments;
+#endif
+    }
+}
+
 QLineEdit *QItemSetupDialog::getKeyRecordLineEdit()
 {
     return ui->keyRecordLineEdit;
@@ -1654,6 +1684,10 @@ void QItemSetupDialog::closeEvent(QCloseEvent *event)
 #endif
     m_ItemRow = -1;
     m_TabIndex = -1;
+    m_PendingMappingComments.clear();
+    m_PendingMappingKeyUpComments.clear();
+    m_PendingMappingKeysSegments.clear();
+    m_PendingMappingKeyUpSegments.clear();
 
     QWidget *focusedWidget = focusWidget();
     if (focusedWidget && focusedWidget != this) {
@@ -3451,15 +3485,77 @@ int QItemSetupDialog::updateAllMappingInfoFinally(const QString &originalKey, co
     }
 
     /* MappingKey Update */
+    const QStringList oldMappingKeys = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys;
     QKeyMapper::updateKeyMappingDataListMappingKeys(m_ItemRow, mappingKey);
+    const QStringList &newSegs = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys;
+
+    /* MappingKey Comments Update */
+    if (!m_PendingMappingComments.isEmpty()) {
+        // Use pending comments (most recent from SeqEdit "Confirm")
+        QStringList oldSegs = m_PendingMappingKeysSegments;
+        if (oldSegs.isEmpty()) {
+            oldSegs = newSegs;
+        }
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_Comments =
+            QKeyMapper::reconcileMappingKeyComments(oldSegs, m_PendingMappingComments, newSegs);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateAllMappingInfoFinally] oldSegs:" << oldSegs
+                 << "pending:" << m_PendingMappingComments
+                 << "newSegs:" << newSegs
+                 << "-> MappingKeys_Comments:" << (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_Comments;
+#endif
+        m_PendingMappingComments.clear();
+        m_PendingMappingKeysSegments.clear();
+    } else if (oldMappingKeys != newSegs) {
+        // Segments changed without SeqEdit session: reconcile stored comments
+        auto &storedComments = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_Comments;
+        storedComments = QKeyMapper::reconcileMappingKeyComments(oldMappingKeys, storedComments, newSegs);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[updateAllMappingInfoFinally] (no pending) oldSegs:" << oldMappingKeys
+                 << "-> newSegs:" << newSegs
+                 << "-> MappingKeys_Comments:" << storedComments;
+#endif
+    }
 
     /* KeyUp MappingKey Update */
+    const QStringList oldKeyUpMappingKeys = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp;
     if (mappingKey_KeyUp.isEmpty()) {
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Mapping_Keys;
         (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys_KeyUp = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Pure_MappingKeys;
+        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp_Comments.clear();
+        m_PendingMappingKeyUpComments.clear();
+        m_PendingMappingKeyUpSegments.clear();
     }
     else {
         QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(m_ItemRow, mappingKey_KeyUp);
+        const QStringList &newKeyUpSegs = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp;
+
+        /* KeyUp MappingKey Comments Update */
+        if (!m_PendingMappingKeyUpComments.isEmpty()) {
+            QStringList oldKeyUpSegs = m_PendingMappingKeyUpSegments;
+            if (oldKeyUpSegs.isEmpty()) {
+                oldKeyUpSegs = newKeyUpSegs;
+            }
+            (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp_Comments =
+                QKeyMapper::reconcileMappingKeyComments(oldKeyUpSegs, m_PendingMappingKeyUpComments, newKeyUpSegs);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[updateAllMappingInfoFinally] oldKeyUpSegs:" << oldKeyUpSegs
+                     << "pending:" << m_PendingMappingKeyUpComments
+                     << "newKeyUpSegs:" << newKeyUpSegs
+                     << "-> MappingKeys_KeyUp_Comments:" << (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp_Comments;
+#endif
+            m_PendingMappingKeyUpComments.clear();
+            m_PendingMappingKeyUpSegments.clear();
+        } else if (oldKeyUpMappingKeys != newKeyUpSegs) {
+            // KeyUp segments changed without SeqEdit session: reconcile stored comments
+            auto &storedKeyUpComments = (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeys_KeyUp_Comments;
+            storedKeyUpComments = QKeyMapper::reconcileMappingKeyComments(oldKeyUpMappingKeys, storedKeyUpComments, newKeyUpSegs);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[updateAllMappingInfoFinally] (no pending) oldKeyUpSegs:" << oldKeyUpMappingKeys
+                     << "-> newKeyUpSegs:" << newKeyUpSegs
+                     << "-> MappingKeys_KeyUp_Comments:" << storedKeyUpComments;
+#endif
+        }
     }
 
     refreshItemSourceTableOrAffectedTabs(m_TabIndex);
@@ -4263,7 +4359,36 @@ void QItemSetupDialog::on_mappingKey_SequenceEditButton_clicked()
 
         QString title =  tr("Mapping Sequence Edit") + " : " + tr("MappingKey");
         mappingSequenceEdit->setTitle(title);
-        mappingSequenceEdit->setMappingSequence(ui->SetupDialog_MappingKeyLineEdit->text());
+
+        // Use pending comments from last confirm if available, otherwise fall back to stored comments
+        QStringList comments;
+        if (!m_PendingMappingComments.isEmpty()) {
+            // Pending: comments from recent "confirm" not yet committed via "Update"
+            QStringList currentSegs = splitMappingKeyString(
+                QKeyMapper::getTrimmedMappingKeyString(ui->SetupDialog_MappingKeyLineEdit->text()), SPLIT_WITH_NEXT);
+            // Use the exact segment list that was saved alongside the pending comments
+            QStringList oldSegs = m_PendingMappingKeysSegments;
+            if (oldSegs.isEmpty()) {
+                oldSegs = currentSegs;
+            }
+            comments = QKeyMapper::reconcileMappingKeyComments(
+                oldSegs, m_PendingMappingComments, currentSegs);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_mappingKey_SequenceEditButton_clicked] Using pending comments:" << m_PendingMappingComments
+                     << "oldSegs:" << oldSegs << "->" << comments;
+#endif
+        } else if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+            // Fallback: stored comments in MAP_KEYDATA
+            const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+            QStringList oldSegs = splitMappingKeyString(
+                QKeyMapper::getTrimmedMappingKeyString(ui->SetupDialog_MappingKeyLineEdit->text()), SPLIT_WITH_NEXT);
+            comments = QKeyMapper::reconcileMappingKeyComments(
+                keymapdata.Mapping_Keys, keymapdata.MappingKeys_Comments, oldSegs);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_mappingKey_SequenceEditButton_clicked] Using stored comments:" << comments;
+#endif
+        }
+        mappingSequenceEdit->setMappingSequenceWithComments(ui->SetupDialog_MappingKeyLineEdit->text(), comments);
         mappingSequenceEdit->setMappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS);
 
         QKeyMapper::getInstance()->showMappingSequenceEdit();
@@ -4280,7 +4405,34 @@ void QItemSetupDialog::on_mappingKey_KeyUpSequenceEditButton_clicked()
 
         QString title = tr("Mapping Sequence Edit") + " : " + tr("KeyUpMapping");
         mappingSequenceEdit->setTitle(title);
-        mappingSequenceEdit->setMappingSequence(ui->SetupDialog_MappingKey_KeyUpLineEdit->text());
+
+        // Use pending comments from last confirm if available, otherwise fall back to stored comments
+        QStringList comments;
+        if (!m_PendingMappingKeyUpComments.isEmpty()) {
+            QStringList currentSegs = splitMappingKeyString(
+                QKeyMapper::getTrimmedMappingKeyString(ui->SetupDialog_MappingKey_KeyUpLineEdit->text()), SPLIT_WITH_NEXT);
+            // Use the exact segment list that was saved alongside the pending comments
+            QStringList oldSegs = m_PendingMappingKeyUpSegments;
+            if (oldSegs.isEmpty()) {
+                oldSegs = currentSegs;
+            }
+            comments = QKeyMapper::reconcileMappingKeyComments(
+                oldSegs, m_PendingMappingKeyUpComments, currentSegs);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_mappingKey_KeyUpSequenceEditButton_clicked] Using pending KeyUp comments:" << m_PendingMappingKeyUpComments
+                     << "oldSegs:" << oldSegs << "->" << comments;
+#endif
+        } else if (m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+            const MAP_KEYDATA &keymapdata = QKeyMapper::KeyMappingDataList->at(m_ItemRow);
+            QStringList oldSegs = splitMappingKeyString(
+                QKeyMapper::getTrimmedMappingKeyString(ui->SetupDialog_MappingKey_KeyUpLineEdit->text()), SPLIT_WITH_NEXT);
+            comments = QKeyMapper::reconcileMappingKeyComments(
+                keymapdata.MappingKeys_KeyUp, keymapdata.MappingKeys_KeyUp_Comments, oldSegs);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_mappingKey_KeyUpSequenceEditButton_clicked] Using stored KeyUp comments:" << comments;
+#endif
+        }
+        mappingSequenceEdit->setMappingSequenceWithComments(ui->SetupDialog_MappingKey_KeyUpLineEdit->text(), comments);
         mappingSequenceEdit->setMappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP);
 
         QKeyMapper::getInstance()->showMappingSequenceEdit();

@@ -14,6 +14,7 @@ QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QMappingSequenceEdit)
     , m_MappingSequenceList()
+    , m_MappingCommentList()
     , m_MappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS)
     , m_HistorySnapshots()
     , m_HistoryIndex(-1)
@@ -88,7 +89,7 @@ void QMappingSequenceEdit::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
 
-    ui->mappingSequenceEditTable->setHorizontalHeaderLabels(QStringList() << tr("Split Mapping Sequence"));
+    ui->mappingSequenceEditTable->setHorizontalHeaderLabels(QStringList() << tr("Split Mapping Sequence") << tr("Note"));
     ui->confirmButton->setText(tr(CONFIRMBUTTON_STR));
     ui->cancelButton->setText(tr(CANCELBUTTON_STR));
     ui->deleteButton->setText(tr("Delete"));
@@ -130,6 +131,30 @@ void QMappingSequenceEdit::setMappingSequence(const QString &mappingsequence)
 
     // Always update internal list. Empty input means clearing previous state.
     m_MappingSequenceList = mappingKeySeqList;
+    m_MappingCommentList.clear();
+}
+
+void QMappingSequenceEdit::setMappingSequenceWithComments(const QString &mappingsequence, const QStringList &comments)
+{
+    // New content is being loaded. Reset undo/redo history (Excel-like).
+    clearHistory();
+    updateUndoRedoButtonsEnabled();
+
+    QString trimmed_mappingsequence = QKeyMapper::getTrimmedMappingKeyString(mappingsequence);
+
+    QStringList mappingKeySeqList = splitMappingKeyString(trimmed_mappingsequence, SPLIT_WITH_NEXT);
+
+    m_MappingSequenceList = mappingKeySeqList;
+
+    // Size-align comments list with segments
+    const int segCount = mappingKeySeqList.size();
+    QStringList alignedComments(segCount);
+    for (int i = 0; i < segCount && i < comments.size(); ++i) {
+        if (!comments[i].isEmpty()) {
+            alignedComments[i] = comments[i];
+        }
+    }
+    m_MappingCommentList = alignedComments;
 }
 
 void QMappingSequenceEdit::setMappingSequenceEditType(int edit_type)
@@ -166,14 +191,23 @@ void QMappingSequenceEdit::refreshMappingSequenceEditTableWidget(MappingSequence
     mappingSequenceEditTable->setRowCount(mappingSequenceList.size());
 
     for (const QString &mappingkeystr : mappingSequenceList) {
-        /* MACRO_CONTENT_COLUMN */
+        /* MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN */
         QTableWidgetItem *mappingkey_TableItem = new QTableWidgetItem(mappingkeystr);
         mappingSequenceEditTable->setItem(rowindex, MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN, mappingkey_TableItem);
+
+        /* MAPPINGSEQUENCEEDIT_COMMENT_COLUMN */
+        QString commentText;
+        if (rowindex < m_MappingCommentList.size()) {
+            commentText = m_MappingCommentList[rowindex];
+        }
+        QTableWidgetItem *comment_TableItem = new QTableWidgetItem(commentText);
+        comment_TableItem->setToolTip(commentText.isEmpty() ? QString() : commentText);
+        mappingSequenceEditTable->setItem(rowindex, MAPPINGSEQUENCEEDIT_COMMENT_COLUMN, comment_TableItem);
 
         rowindex += 1;
 
 #ifdef DEBUG_LOGOUT_ON
-        QString debugmessage = QString("[refreshMappingSequenceEditTableWidget] row(%1) -> \"%2\"").arg(rowindex).arg(mappingkeystr);
+        QString debugmessage = QString("[refreshMappingSequenceEditTableWidget] row(%1) -> \"%2\" comment=\"%3\"").arg(rowindex).arg(mappingkeystr, commentText);
         qDebug().nospace().noquote() << debugmessage;
 #endif
     }
@@ -208,6 +242,49 @@ QString QMappingSequenceEdit::joinCurentMappingSequenceTable()
     joined_mappingsequence = QKeyMapper::getTrimmedMappingKeyString(joined_mappingsequence);
 
     return joined_mappingsequence;
+}
+
+void QMappingSequenceEdit::resizeMappingSequenceEditTableColumnWidth()
+{
+    MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
+    if (!table) return;
+
+    table->horizontalHeader()->setStretchLastSection(false);
+
+    const int referenceWidth = table->width();
+    int viewportWidth = table->viewport()->width();
+
+    // Reserve scrollbar width to prevent horizontal scrollbar from appearing
+    int maxAllowableWidth = viewportWidth;
+    if (table->verticalScrollBar() && !table->verticalScrollBar()->isVisible()) {
+        maxAllowableWidth -= qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent) + 2;
+    }
+
+    // Comment column: resize to content, clamp between min and max
+    const int commentWidthMin = 50;
+    const int commentWidthMax = referenceWidth / 3;
+    const int mappingKeyWidthMin = referenceWidth / 5;
+    table->resizeColumnToContents(MAPPINGSEQUENCEEDIT_COMMENT_COLUMN);
+    int commentWidth = table->columnWidth(MAPPINGSEQUENCEEDIT_COMMENT_COLUMN);
+    commentWidth = qMax(commentWidth, commentWidthMin);
+    commentWidth = qMin(commentWidth, commentWidthMax);
+    // Ensure comment column doesn't squeeze mapping key column below its minimum
+    commentWidth = qMin(commentWidth, maxAllowableWidth - mappingKeyWidthMin);
+
+    // Mapping key column: takes remaining space
+    int mappingKeyWidth = maxAllowableWidth - commentWidth;
+    mappingKeyWidth = qMax(mappingKeyWidth, mappingKeyWidthMin);
+
+    // Set both column widths first, then apply Stretch (matches resizeMacroListTableColumnWidth pattern)
+    table->setColumnWidth(MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN, mappingKeyWidth);
+    table->setColumnWidth(MAPPINGSEQUENCEEDIT_COMMENT_COLUMN, commentWidth);
+    table->horizontalHeader()->setSectionResizeMode(MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN, QHeaderView::Stretch);
+
+    int mappingKeyWidthFinal = table->columnWidth(MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN);
+    table->horizontalHeader()->setSectionResizeMode(MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN, QHeaderView::Interactive);
+    Q_UNUSED(mappingKeyWidthFinal);
+
+    table->horizontalHeader()->setStretchLastSection(true);
 }
 
 void QMappingSequenceEdit::reopenMappingSequenceEditConfirm()
@@ -291,6 +368,7 @@ void QMappingSequenceEdit::showEvent(QShowEvent *event)
     ui->mappingSequenceEditTable->setCurrentCell(-1, -1);
 
     updateUndoRedoButtonsEnabled();
+    resizeMappingSequenceEditTableColumnWidth();
 
     QDialog::showEvent(event);
 }
@@ -301,6 +379,16 @@ void QMappingSequenceEdit::closeEvent(QCloseEvent *event)
     clearHistory();
     updateUndoRedoButtonsEnabled();
     QDialog::closeEvent(event);
+}
+
+void QMappingSequenceEdit::resizeEvent(QResizeEvent *event)
+{
+    QDialog::resizeEvent(event);
+    resizeMappingSequenceEditTableColumnWidth();
+    // Correct after scrollbar state settles
+    QTimer::singleShot(0, this, [this]() {
+        resizeMappingSequenceEditTableColumnWidth();
+    });
 }
 
 void QMappingSequenceEdit::clearHistory()
@@ -349,6 +437,7 @@ QMappingSequenceEdit::MappingSequenceHistorySnapshot QMappingSequenceEdit::captu
 {
     MappingSequenceHistorySnapshot snapshot;
     snapshot.mappingSequenceList = m_MappingSequenceList;
+    snapshot.mappingCommentList = m_MappingCommentList;
 
     const MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
@@ -375,6 +464,7 @@ void QMappingSequenceEdit::restoreHistorySnapshot(const MappingSequenceHistorySn
     QSignalBlocker blocker(table);
 
     m_MappingSequenceList = snapshot.mappingSequenceList;
+    m_MappingCommentList = snapshot.mappingCommentList;
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
 
     table->clearSelection();
@@ -404,6 +494,7 @@ void QMappingSequenceEdit::restoreHistorySnapshot(const MappingSequenceHistorySn
     m_IsRestoringHistory = false;
 
     updateUndoRedoButtonsEnabled();
+    resizeMappingSequenceEditTableColumnWidth();
 }
 
 void QMappingSequenceEdit::commitHistorySnapshotIfNeeded()
@@ -416,7 +507,8 @@ void QMappingSequenceEdit::commitHistorySnapshotIfNeeded()
 
     // Skip empty steps: only record when the list content actually changes.
     if (m_HistoryIndex >= 0 && m_HistoryIndex < m_HistorySnapshots.size()) {
-        if (m_HistorySnapshots.at(m_HistoryIndex).mappingSequenceList == snapshot.mappingSequenceList) {
+        if (m_HistorySnapshots.at(m_HistoryIndex).mappingSequenceList == snapshot.mappingSequenceList
+            && m_HistorySnapshots.at(m_HistoryIndex).mappingCommentList == snapshot.mappingCommentList) {
             return;
         }
     }
@@ -541,8 +633,10 @@ void QMappingSequenceEdit::insertMappingKeyToTable(int insertMode)
 
     if (insertRow >= m_MappingSequenceList.size()) {
         m_MappingSequenceList.append(trimmed);
+        m_MappingCommentList.append(QString());
     } else {
         m_MappingSequenceList.insert(insertRow, trimmed);
+        m_MappingCommentList.insert(insertRow, QString());
     }
 
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
@@ -991,15 +1085,24 @@ void QMappingSequenceEdit::on_insertMappingKeyButton_clicked()
 void QMappingSequenceEdit::on_confirmButton_clicked()
 {
     QString joined_mappingsequence = joinCurentMappingSequenceTable();
+    QStringList comments = m_MappingCommentList;
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[on_confirmButton_clicked] EditType:" << m_MappingSequenceEditType
+             << "Comments:" << comments;
+#endif
 
     if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT) {
         QMacroListDialog::setEditingMacroText(joined_mappingsequence);
+        QMacroListDialog::setPendingMacroComments(comments);
     }
     else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS) {
         QItemSetupDialog::getInstance()->updateMappingKeyLineEdit(joined_mappingsequence);
+        QItemSetupDialog::setPendingMappingComments(comments);
     }
     else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP) {
         QItemSetupDialog::getInstance()->updateMappingKey_KeyUpLineEdit(joined_mappingsequence);
+        QItemSetupDialog::setPendingMappingKeyUpComments(comments);
     }
 
     close();
@@ -1050,7 +1153,7 @@ void QMappingSequenceEdit::initMappingSequenceEditTable(MappingSequenceEditTable
     mappingSequenceEditTable->setDragDropMode(QAbstractItemView::InternalMove);
     mappingSequenceEditTable->setDefaultDropAction(Qt::MoveAction);
 
-    mappingSequenceEditTable->setHorizontalHeaderLabels(QStringList() << tr("Split Mapping Sequence"));
+    mappingSequenceEditTable->setHorizontalHeaderLabels(QStringList() << tr("Split Mapping Sequence") << tr("Note"));
 
     QFont customFont(FONTNAME_ENGLISH, 9);
     mappingSequenceEditTable->setFont(customFont);
@@ -1235,13 +1338,23 @@ void QMappingSequenceEdit::mappingSequenceTableDragDropMove(int top_row, int bot
 
     QStringList moved;
     moved.reserve(draggedCount);
+    QStringList movedComments;
+    movedComments.reserve(draggedCount);
     for (int i = top_row; i <= bottom_row; ++i) {
         moved.append(m_MappingSequenceList.at(i));
+        if (i < m_MappingCommentList.size()) {
+            movedComments.append(m_MappingCommentList.at(i));
+        } else {
+            movedComments.append(QString());
+        }
     }
 
     // Remove original block
     for (int i = 0; i < draggedCount; ++i) {
         m_MappingSequenceList.removeAt(top_row);
+        if (top_row < m_MappingCommentList.size()) {
+            m_MappingCommentList.removeAt(top_row);
+        }
     }
 
     int insertPos = dragged_to;
@@ -1253,6 +1366,10 @@ void QMappingSequenceEdit::mappingSequenceTableDragDropMove(int top_row, int bot
 
     for (int i = 0; i < moved.size(); ++i) {
         m_MappingSequenceList.insert(insertPos + i, moved.at(i));
+        const int commentInsertPos = insertPos + i;
+        if (commentInsertPos <= m_MappingCommentList.size()) {
+            m_MappingCommentList.insert(commentInsertPos, movedComments.at(i));
+        }
     }
 
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
@@ -1267,10 +1384,6 @@ void QMappingSequenceEdit::mappingSequenceTableDragDropMove(int top_row, int bot
 
 void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
 {
-    if (column != MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN) {
-        return;
-    }
-
     MappingSequenceEditTableWidget *table = ui->mappingSequenceEditTable;
 
     if (row < 0 || row >= table->rowCount()) {
@@ -1279,6 +1392,32 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
 
     QTableWidgetItem *item = table->item(row, column);
     if (!item) {
+        return;
+    }
+
+    if (column == MAPPINGSEQUENCEEDIT_COMMENT_COLUMN) {
+        // Comment column: strip newlines, commit to m_MappingCommentList
+        QString commentText = item->text();
+        commentText.remove(QChar::LineFeed);
+        commentText.remove(QChar::CarriageReturn);
+        if (item->text() != commentText) {
+            QSignalBlocker blocker(table);
+            item->setText(commentText);
+        }
+
+        ensureBaseSnapshotBeforeListChange();
+
+        if (row >= m_MappingCommentList.size()) {
+            QKeyMapperQtCompat::resizeQList(m_MappingCommentList, row + 1);
+        }
+        m_MappingCommentList[row] = commentText;
+
+        commitHistorySnapshotIfNeeded();
+        resizeMappingSequenceEditTableColumnWidth();
+        return;
+    }
+
+    if (column != MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN) {
         return;
     }
 
@@ -1323,6 +1462,7 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
 
     if (listWillChange) {
         commitHistorySnapshotIfNeeded();
+        resizeMappingSequenceEditTableColumnWidth();
     }
 }
 
@@ -1358,15 +1498,27 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveUp()
 
     const int count = bottom - top + 1;
     QStringList moved;
+    QStringList movedComments;
     for (int i = 0; i < count; ++i) {
         moved.append(m_MappingSequenceList.at(top + i));
+        if (top + i < m_MappingCommentList.size()) {
+            movedComments.append(m_MappingCommentList.at(top + i));
+        } else {
+            movedComments.append(QString());
+        }
     }
     for (int i = 0; i < count; ++i) {
         m_MappingSequenceList.removeAt(top);
+        if (top < m_MappingCommentList.size()) {
+            m_MappingCommentList.removeAt(top);
+        }
     }
     const int insertPos = top - 1;
     for (int i = 0; i < moved.size(); ++i) {
         m_MappingSequenceList.insert(insertPos + i, moved.at(i));
+        if (insertPos + i <= m_MappingCommentList.size()) {
+            m_MappingCommentList.insert(insertPos + i, movedComments.at(i));
+        }
     }
 
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
@@ -1401,15 +1553,27 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveDown()
 
     const int count = bottom - top + 1;
     QStringList moved;
+    QStringList movedComments;
     for (int i = 0; i < count; ++i) {
         moved.append(m_MappingSequenceList.at(top + i));
+        if (top + i < m_MappingCommentList.size()) {
+            movedComments.append(m_MappingCommentList.at(top + i));
+        } else {
+            movedComments.append(QString());
+        }
     }
     for (int i = 0; i < count; ++i) {
         m_MappingSequenceList.removeAt(top);
+        if (top < m_MappingCommentList.size()) {
+            m_MappingCommentList.removeAt(top);
+        }
     }
     const int insertPos = top + 1;
     for (int i = 0; i < moved.size(); ++i) {
         m_MappingSequenceList.insert(insertPos + i, moved.at(i));
+        if (insertPos + i <= m_MappingCommentList.size()) {
+            m_MappingCommentList.insert(insertPos + i, movedComments.at(i));
+        }
     }
 
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
@@ -1444,14 +1608,26 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveToTop()
 
     const int count = bottom - top + 1;
     QStringList moved;
+    QStringList movedComments;
     for (int i = 0; i < count; ++i) {
         moved.append(m_MappingSequenceList.at(top + i));
+        if (top + i < m_MappingCommentList.size()) {
+            movedComments.append(m_MappingCommentList.at(top + i));
+        } else {
+            movedComments.append(QString());
+        }
     }
     for (int i = 0; i < count; ++i) {
         m_MappingSequenceList.removeAt(top);
+        if (top < m_MappingCommentList.size()) {
+            m_MappingCommentList.removeAt(top);
+        }
     }
     for (int i = 0; i < moved.size(); ++i) {
         m_MappingSequenceList.insert(i, moved.at(i));
+        if (i <= m_MappingCommentList.size()) {
+            m_MappingCommentList.insert(i, movedComments.at(i));
+        }
     }
 
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
@@ -1486,16 +1662,28 @@ void QMappingSequenceEdit::selectedMappingKeyItemsMoveToBottom()
 
     const int count = bottom - top + 1;
     QStringList moved;
+    QStringList movedComments;
     for (int i = 0; i < count; ++i) {
         moved.append(m_MappingSequenceList.at(top + i));
+        if (top + i < m_MappingCommentList.size()) {
+            movedComments.append(m_MappingCommentList.at(top + i));
+        } else {
+            movedComments.append(QString());
+        }
     }
     for (int i = 0; i < count; ++i) {
         m_MappingSequenceList.removeAt(top);
+        if (top < m_MappingCommentList.size()) {
+            m_MappingCommentList.removeAt(top);
+        }
     }
 
     const int insertPos = m_MappingSequenceList.size();
     for (const QString &s : std::as_const(moved)) {
         m_MappingSequenceList.append(s);
+    }
+    for (const QString &c : std::as_const(movedComments)) {
+        m_MappingCommentList.append(c);
     }
 
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
@@ -1529,6 +1717,9 @@ void QMappingSequenceEdit::deleteMappingKeySelectedItems()
     const int count = bottom - top + 1;
     for (int i = 0; i < count; ++i) {
         m_MappingSequenceList.removeAt(top);
+        if (top < m_MappingCommentList.size()) {
+            m_MappingCommentList.removeAt(top);
+        }
     }
 
     refreshMappingSequenceEditTableWidget(table, m_MappingSequenceList);
@@ -1792,6 +1983,7 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedListAtAbsoluteRow(int insert
     if (boundedInsertRow >= m_MappingSequenceList.size()) {
         for (const QString &s : std::as_const(s_CopiedMappingSequenceList)) {
             m_MappingSequenceList.append(s);
+            m_MappingCommentList.append(QString());  // ponytail: copied items have no comments
             insertedCount++;
         }
     }
@@ -1799,6 +1991,9 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedListAtAbsoluteRow(int insert
         int pos = boundedInsertRow;
         for (const QString &s : std::as_const(s_CopiedMappingSequenceList)) {
             m_MappingSequenceList.insert(pos, s);
+            if (pos <= m_MappingCommentList.size()) {
+                m_MappingCommentList.insert(pos, QString());
+            }
             pos++;
             insertedCount++;
         }

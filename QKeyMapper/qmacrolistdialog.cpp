@@ -277,6 +277,21 @@ void QMacroListDialog::setEditingMacroText(const QString &new_macrotext)
     return getInstance()->ui->macroContentLineEdit->setText(new_macrotext);
 }
 
+void QMacroListDialog::setPendingMacroComments(const QStringList &comments)
+{
+    if (QMacroListDialog *inst = getInstance()) {
+        // Reconcile with current segments in the line edit
+        QStringList currentSegs = splitMappingKeyString(
+            QKeyMapper::getTrimmedMappingKeyString(inst->ui->macroContentLineEdit->text()), SPLIT_WITH_NEXT);
+        inst->m_PendingMacroComments = QKeyMapper::reconcileMappingKeyComments(currentSegs, comments, currentSegs);
+        inst->m_PendingMacroSegments = currentSegs;  // Save for later reconciliation
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[setPendingMacroComments] Received" << comments << "-> Reconciled:" << inst->m_PendingMacroComments
+                 << "segments:" << inst->m_PendingMacroSegments;
+#endif
+    }
+}
+
 QString QMacroListDialog::getCurrentMapKeyListText()
 {
     return getInstance()->ui->MacroList_MappingKeyListComboBox->currentText();
@@ -822,7 +837,42 @@ void QMacroListDialog::on_macroContent_SequenceEditButton_clicked()
 
         QString title =  tr("Mapping Sequence Edit") + " : " + tr("Macro");
         mappingSequenceEdit->setTitle(title);
-        mappingSequenceEdit->setMappingSequence(ui->macroContentLineEdit->text());
+
+        // Use pending comments from last confirm if available, otherwise fall back to stored comments
+        QStringList comments;
+        if (!m_PendingMacroComments.isEmpty()) {
+            // Pending: comments from recent "confirm" not yet committed via "Add Macro"
+            QStringList currentSegs = splitMappingKeyString(
+                QKeyMapper::getTrimmedMappingKeyString(ui->macroContentLineEdit->text()), SPLIT_WITH_NEXT);
+            // Use the exact segment list that was saved alongside the pending comments
+            QStringList oldSegs = m_PendingMacroSegments;
+            if (oldSegs.isEmpty()) {
+                oldSegs = currentSegs;
+            }
+            comments = QKeyMapper::reconcileMappingKeyComments(
+                oldSegs, m_PendingMacroComments, currentSegs);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[on_macroContent_SequenceEditButton_clicked] Using pending macro comments:" << m_PendingMacroComments
+                     << "oldSegs:" << oldSegs << "->" << comments;
+#endif
+        } else {
+            OrderedMap<QString, MappingMacroData> *macroDataList = getCurrentMacroDataList();
+            if (macroDataList) {
+                QString macroName = ui->macroNameLineEdit->text().trimmed();
+                if (macroDataList->contains(macroName)) {
+                    const MappingMacroData &macroData = macroDataList->value(macroName);
+                    QStringList oldSegs = splitMappingKeyString(
+                        QKeyMapper::getTrimmedMappingKeyString(ui->macroContentLineEdit->text()), SPLIT_WITH_NEXT);
+                    QStringList oldMacroSegs = splitMappingKeyString(
+                        QKeyMapper::getTrimmedMappingKeyString(macroData.MappingMacro), SPLIT_WITH_NEXT);
+                    comments = QKeyMapper::reconcileMappingKeyComments(oldMacroSegs, macroData.MacroComments, oldSegs);
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[on_macroContent_SequenceEditButton_clicked] Using stored macro comments:" << comments;
+#endif
+                }
+            }
+        }
+        mappingSequenceEdit->setMappingSequenceWithComments(ui->macroContentLineEdit->text(), comments);
         mappingSequenceEdit->setMappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT);
 
         QKeyMapper::getInstance()->showMappingSequenceEdit();
@@ -1217,15 +1267,43 @@ void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
         }
     }
 
+    // Build macro data with pending comments
+    MappingMacroData newMacroData = { macro_str, category_str, macronote_str};
+
+    if (!m_PendingMacroComments.isEmpty()) {
+        // Use pending comments (most recent from SeqEdit "Confirm")
+        newMacroData.MacroComments = m_PendingMacroComments;
+        m_PendingMacroComments.clear();
+        m_PendingMacroSegments.clear();
+    } else if (isUpdate) {
+        // Segments changed without SeqEdit session: reconcile stored comments
+        QStringList oldSegs = splitMappingKeyString(
+            QKeyMapper::getTrimmedMappingKeyString(previousMacroData.MappingMacro), SPLIT_WITH_NEXT);
+        QStringList newSegs = splitMappingKeyString(
+            QKeyMapper::getTrimmedMappingKeyString(macro_str), SPLIT_WITH_NEXT);
+        if (oldSegs != newSegs) {
+            newMacroData.MacroComments = QKeyMapper::reconcileMappingKeyComments(
+                oldSegs, previousMacroData.MacroComments, newSegs);
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[addMacroToListInternal] (no pending) oldSegs:" << oldSegs
+                     << "storedComments:" << previousMacroData.MacroComments
+                     << "-> newSegs:" << newSegs
+                     << "-> MacroComments:" << newMacroData.MacroComments;
+#endif
+        } else {
+            newMacroData.MacroComments = previousMacroData.MacroComments;
+        }
+    }
+
     // Insert or update macro in the list
     if (isUpdate) {
-        CurrentMacroList[macroname_str] = MappingMacroData{ macro_str, category_str, macronote_str};
+        CurrentMacroList[macroname_str] = newMacroData;
     }
     else if (insertBySelection) {
-        CurrentMacroList.insertAt(insertRow, macroname_str, MappingMacroData{ macro_str, category_str, macronote_str});
+        CurrentMacroList.insertAt(insertRow, macroname_str, newMacroData);
     }
     else {
-        CurrentMacroList[macroname_str] = MappingMacroData{ macro_str, category_str, macronote_str};
+        CurrentMacroList[macroname_str] = newMacroData;
     }
 
     // Show success message

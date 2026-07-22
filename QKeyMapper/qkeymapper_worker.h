@@ -135,6 +135,8 @@ typedef struct MAP_KEYDATA
     QStringList Pure_OriginalKeys;
     QStringList MappingKeys_KeyUp;
     QStringList Pure_MappingKeys_KeyUp;
+    QStringList MappingKeys_Comments;      // Per-segment comments, index-aligned with Mapping_Keys
+    QStringList MappingKeys_KeyUp_Comments; // Per-segment comments, index-aligned with MappingKeys_KeyUp
     QString Note;
     QString Category;
     bool Disabled;
@@ -383,6 +385,8 @@ typedef struct MAP_KEYDATA
         FloatingButton_Y_Offset = QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT;
         FloatingButton_DragToMove = QKeyMapperConstants::FLOATINGBUTTON_DRAGTOMOVE_DEFAULT;
         FloatingButton_SyncGroupId = QKeyMapperConstants::FLOATINGBUTTON_SYNCGROUPID_DEFAULT;
+        MappingKeys_Comments.clear();
+        MappingKeys_KeyUp_Comments.clear();
     }
 
     bool operator==(const MAP_KEYDATA& other) const
@@ -390,6 +394,8 @@ typedef struct MAP_KEYDATA
         return ((Original_Key == other.Original_Key)
                 && (Mapping_Keys == other.Mapping_Keys)
                 && (MappingKeys_KeyUp == other.MappingKeys_KeyUp)
+                && (MappingKeys_Comments == other.MappingKeys_Comments)
+                && (MappingKeys_KeyUp_Comments == other.MappingKeys_KeyUp_Comments)
                 && (Note == other.Note)
                 && (Category == other.Category) // Compare new category field
                 && (Disabled == other.Disabled)
@@ -469,6 +475,8 @@ typedef struct MAP_KEYDATA
                         << "Original_Key:" << data.Original_Key
                         << ", Mapping_Keys:" << data.Mapping_Keys
                         << ", MappingKeys_KeyUp:" << data.MappingKeys_KeyUp
+                        << ", MappingKeys_Comments:" << data.MappingKeys_Comments
+                        << ", MappingKeys_KeyUp_Comments:" << data.MappingKeys_KeyUp_Comments
                         << ", Note:" << data.Note
                         << ", Category:" << data.Category
                         << ", Disabled:" << data.Disabled
@@ -549,6 +557,7 @@ struct MappingMacroData
     QString MappingMacro;
     QString Category;
     QString Note;
+    QStringList MacroComments;  // Per-segment comments, index-aligned with MappingMacro segments
 };
 
 typedef struct V_KEYCODE

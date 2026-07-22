@@ -1305,6 +1305,7 @@ public:
     static void collectMappingTableTabHotkeys(void);
     static QString getOriginalKeyStringWithoutSuffix(const QString &originalkeystr);
     static QString getTrimmedMappingKeyString(const QString &mappingkeystr);
+    static QStringList reconcileMappingKeyComments(const QStringList &oldSegs, const QStringList &oldComments, const QStringList &newSegs);
     static QString resolveConfiguredFontFamily(const QString &configuredFamily);
     struct FloatingButtonStyleCodeApplyResult {
         bool success = false;

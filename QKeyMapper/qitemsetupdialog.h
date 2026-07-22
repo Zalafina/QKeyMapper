@@ -66,6 +66,8 @@ public:
     static QString getCurrentOriKeyListText(void);
     static QString getCurrentMapKeyListText(void);
     static void setEditingMappingKeyLineEdit(int editing_lineedit);
+    static void setPendingMappingComments(const QStringList &comments);
+    static void setPendingMappingKeyUpComments(const QStringList &comments);
     // static QPair<QString, QStringList> extractSendTextWithBracketBalancing(const QString &mappingKey, const QRegularExpression &sendtext_regex);
     static QPair<QString, QStringList> extractSpecialPatternsWithBracketBalancing(
         const QString &mappingKey,
@@ -119,6 +121,10 @@ private:
     int m_TabIndex;
     int m_ItemRow;
     QKeyRecord *m_KeyRecordDialog;
+    QStringList m_PendingMappingComments;
+    QStringList m_PendingMappingKeyUpComments;
+    QStringList m_PendingMappingKeysSegments;      // Segments at time of setPendingMappingComments
+    QStringList m_PendingMappingKeyUpSegments;     // Segments at time of setPendingMappingKeyUpComments
 
 public:
     QCrosshairSetupDialog *m_CrosshairSetupDialog;

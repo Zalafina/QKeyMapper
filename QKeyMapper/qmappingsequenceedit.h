@@ -47,6 +47,7 @@ public:
     void setUILanguage(int languageindex);
     void setTitle(const QString &title);
     void setMappingSequence(const QString &mappingsequence);
+    void setMappingSequenceWithComments(const QString &mappingsequence, const QStringList &comments);
     void setMappingSequenceEditType(int edit_type);
     void refreshMappingSequenceEditTableWidget(MappingSequenceEditTableWidget *mappingSequenceEditTable, const QStringList& mappingSequenceList);
     void updateMappingKeyListComboBox(void);
@@ -103,6 +104,7 @@ signals:
 protected:
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
     // Override keyPressEvent to handle keyboard shortcuts for the editor.
     void keyPressEvent(QKeyEvent *event) override;
@@ -152,6 +154,7 @@ private:
 private:
     struct MappingSequenceHistorySnapshot {
         QStringList mappingSequenceList;
+        QStringList mappingCommentList;
         int selectionTopRow = -1;
         int selectionBottomRow = -1;
         int currentRow = -1;
@@ -165,9 +168,13 @@ private:
     void restoreHistorySnapshot(const MappingSequenceHistorySnapshot &snapshot);
     void commitHistorySnapshotIfNeeded(void);
 
+    void resizeMappingSequenceEditTableColumnWidth(void);
+    const QStringList& getMappingCommentList(void) const { return m_MappingCommentList; }
+
     static QMappingSequenceEdit *m_instance;
     Ui::QMappingSequenceEdit *ui;
     QStringList m_MappingSequenceList;
+    QStringList m_MappingCommentList;
     int m_MappingSequenceEditType;
 
     QVector<MappingSequenceHistorySnapshot> m_HistorySnapshots;

@@ -8898,7 +8898,9 @@ constexpr char FLOATINGBUTTON_STYLE_KEY_LOCKED_OPACITY[] = "lo";
 
 #define MAPPINGCODE_STRINGLIST_FIELDS(X) \
     X(KEYMAPDATA_MAPPINGKEYS, Mapping_Keys) \
-    X(KEYMAPDATA_MAPPINGKEYS_KEYUP, MappingKeys_KeyUp)
+    X(KEYMAPDATA_MAPPINGKEYS_KEYUP, MappingKeys_KeyUp) \
+    X(KEYMAPDATA_MAPPINGKEYS_COMMENTS, MappingKeys_Comments) \
+    X(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS, MappingKeys_KeyUp_Comments)
 
 #define MAPPINGCODE_BOOL_FIELDS(X) \
     X(KEYMAPDATA_DISABLED, Disabled) \
@@ -12373,6 +12375,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList mappingkeys_keyupList;
     QStringList notesList;
     QStringList categorysList;
+    QVariantList mappingKeysCommentsList;
+    QVariantList mappingKeysKeyUpCommentsList;
     QStringList disabledList;
     QStringList burstList;
     QStringList burstpresstimeList;
@@ -12455,6 +12459,20 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         }
         notesList << keymapdata.Note;
         categorysList << keymapdata.Category;
+
+        // Export comments as QVariantList
+        QVariantList commentsVariant;
+        for (const QString &c : keymapdata.MappingKeys_Comments) {
+            commentsVariant << c;
+        }
+        mappingKeysCommentsList << QVariant(commentsVariant);
+
+        QVariantList keyUpCommentsVariant;
+        for (const QString &c : keymapdata.MappingKeys_KeyUp_Comments) {
+            keyUpCommentsVariant << c;
+        }
+        mappingKeysKeyUpCommentsList << QVariant(keyUpCommentsVariant);
+
         if (true == keymapdata.Disabled) {
             disabledList.append("ON");
         }
@@ -12802,6 +12820,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     keyMappingDataFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS, mapping_keysList);
     keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS_KEYUP, mappingkeys_keyupList);
+    keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS_COMMENTS, mappingKeysCommentsList);
+    keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS, mappingKeysKeyUpCommentsList);
     keyMappingDataFile.setValue(KEYMAPDATA_NOTE, notesList);
     keyMappingDataFile.setValue(KEYMAPDATA_CATEGORY, categorysList);
     keyMappingDataFile.setValue(KEYMAPDATA_DISABLED, disabledList);
@@ -14176,6 +14196,91 @@ void QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QS
     QStringList pure_mappingKeys = splitMappingKeyString(mappingkeystr, SPLIT_WITH_PLUSANDNEXT, true);
     pure_mappingKeys.removeDuplicates();
     (*QKeyMapper::KeyMappingDataList)[rowindex].Pure_MappingKeys_KeyUp = pure_mappingKeys;
+}
+
+/*
+ * Reconcile comments when the mapping key segment list has changed.
+ * Algorithm:
+ *   pass0: newSegs == oldSegs → return oldComments unchanged
+ *   pass1: same position + same text → keep comment (mark used)
+ *   pass2: old comment's segment text has exactly one match in newSegs
+ *          at an unclaimed position → migrate; otherwise discard
+ * Complexity O(n*m), only called on editor open/confirm — zero hot-path impact.
+ */
+QStringList QKeyMapper::reconcileMappingKeyComments(
+    const QStringList &oldSegs, const QStringList &oldComments, const QStringList &newSegs)
+{
+    const int newSize = newSegs.size();
+
+    // pass0: identical lists → fast path (with size guard)
+    if (oldSegs == newSegs) {
+        if (oldComments.size() == newSize) {
+            return oldComments;
+        }
+        // Size mismatch: truncate or pad to match newSegs
+        QStringList result = oldComments.mid(0, newSize);
+        while (result.size() < newSize) {
+            result.append(QString());
+        }
+        return result;
+    }
+
+    QStringList newComments(newSize);  // all empty by default
+
+    if (oldComments.isEmpty()) {
+        return newComments;
+    }
+
+    // Track which old comments and new positions have been used
+    QVector<bool> oldUsed(oldComments.size(), false);
+    QVector<bool> newClaimed(newSize, false);
+
+    // pass1: same position, same segment text → keep comment
+    for (int i = 0; i < qMin(oldSegs.size(), newSize); ++i) {
+        if (oldSegs[i] == newSegs[i] && !oldComments[i].isEmpty()) {
+            newComments[i] = oldComments[i];
+            oldUsed[i] = true;
+            newClaimed[i] = true;
+        }
+    }
+
+    // pass2: unmatched old comments whose segment has exactly one match in newSegs
+    for (int oi = 0; oi < oldComments.size(); ++oi) {
+        if (oldUsed[oi] || oldComments[oi].isEmpty()) {
+            continue;
+        }
+
+        // Guard: oldSegs may be shorter than oldComments when segments were
+        // added/removed in the sequence editor without committing via "Update".
+        if (oi >= oldSegs.size()) {
+            // Beyond oldSegs bounds — try position-based fallback
+            if (oi < newSize && !newClaimed[oi]) {
+                newComments[oi] = oldComments[oi];
+                newClaimed[oi] = true;
+            }
+            continue;
+        }
+
+        const QString &oldSeg = oldSegs[oi];
+        int matchIdx = -1;
+        for (int ni = 0; ni < newSize; ++ni) {
+            if (newClaimed[ni]) continue;
+            if (newSegs[ni] == oldSeg) {
+                if (matchIdx >= 0) {
+                    matchIdx = -1;  // multiple matches → discard
+                    break;
+                }
+                matchIdx = ni;
+            }
+        }
+
+        if (matchIdx >= 0) {
+            newComments[matchIdx] = oldComments[oi];
+            newClaimed[matchIdx] = true;
+        }
+    }
+
+    return newComments;
 }
 
 bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
@@ -19548,6 +19653,13 @@ void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
         macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
         macroMap[MACROLIST_FIELD_MACROCATEGORY] = it.value().Category;
         macroMap[MACROLIST_FIELD_MACRONOTE] = it.value().Note;
+
+        // Save comments as QVariantList
+        QVariantList commentsList;
+        for (const QString &c : it.value().MacroComments) {
+            commentsList << c;
+        }
+        macroMap[MACROLIST_FIELD_MACROCOMMENTS] = commentsList;
         macroList.append(macroMap);
     }
 
@@ -19601,9 +19713,21 @@ void QKeyMapper::loadMacroListFromINI(const QString &setting_groupname)
         QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
         QString note = macroMap.value(MACROLIST_FIELD_MACRONOTE).toString();
 
+        // Load comments (backward compatible: empty if not present)
+        QStringList macroComments;
+        QVariant commentsVar = macroMap.value(MACROLIST_FIELD_MACROCOMMENTS);
+        if (commentsVar.isValid() && commentsVar.canConvert<QVariantList>()) {
+            QVariantList commentsList = commentsVar.toList();
+            for (const QVariant &c : std::as_const(commentsList)) {
+                macroComments << c.toString();
+            }
+        }
+
         // Add to map if macro name is not empty
         if (!macroName.isEmpty()) {
-            s_MappingMacroList[macroName] = MappingMacroData{ macroContent, category, note };
+            MappingMacroData macroData = { macroContent, category, note };
+            macroData.MacroComments = macroComments;
+            s_MappingMacroList[macroName] = macroData;
         }
     }
 
@@ -19692,6 +19816,13 @@ void QKeyMapper::saveUniversalMacroListToINI()
         macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
         macroMap[MACROLIST_FIELD_MACROCATEGORY] = it.value().Category;
         macroMap[MACROLIST_FIELD_MACRONOTE] = it.value().Note;
+
+        // Save comments as QVariantList
+        QVariantList commentsList;
+        for (const QString &c : it.value().MacroComments) {
+            commentsList << c;
+        }
+        macroMap[MACROLIST_FIELD_MACROCOMMENTS] = commentsList;
         macroList.append(macroMap);
     }
 
@@ -19738,9 +19869,21 @@ void QKeyMapper::loadUniversalMacroListFromINI()
         QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
         QString note = macroMap.value(MACROLIST_FIELD_MACRONOTE).toString();
 
+        // Load comments (backward compatible: empty if not present)
+        QStringList macroComments;
+        QVariant commentsVar = macroMap.value(MACROLIST_FIELD_MACROCOMMENTS);
+        if (commentsVar.isValid() && commentsVar.canConvert<QVariantList>()) {
+            QVariantList commentsList = commentsVar.toList();
+            for (const QVariant &c : std::as_const(commentsList)) {
+                macroComments << c.toString();
+            }
+        }
+
         // Add to map if macro name is not empty
         if (!macroName.isEmpty()) {
-            s_UniversalMappingMacroList[macroName] = MappingMacroData{ macroContent, category, note };
+            MappingMacroData macroData = { macroContent, category, note };
+            macroData.MacroComments = macroComments;
+            s_UniversalMappingMacroList[macroName] = macroData;
         }
     }
 
@@ -20401,6 +20544,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     QString mappingkeys_keyupList_forsave;
     QVariantList notesList_forsave;
     QVariantList categorysList_forsave;
+    QVariantList mappingKeysCommentsList_forsave;
+    QVariantList mappingKeysKeyUpCommentsList_forsave;
     QString disabledList_forsave;
     QString burstList_forsave;
     QString burstpresstimeList_forsave;
@@ -20609,6 +20754,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         QStringList mappingkeys_keyupList;
         QStringList notesList;
         QStringList categorysList;
+        QVariantList mappingKeysCommentsList;
+        QVariantList mappingKeysKeyUpCommentsList;
         QStringList disabledList;
         QStringList burstList;
         QStringList burstpresstimeList;
@@ -20703,6 +20850,20 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
                 }
                 notesList << keymapdata.Note;
                 categorysList << keymapdata.Category;
+
+                // Save comments as QVariantList (serializable by QSettings INI backend)
+                QVariantList commentsVariant;
+                for (const QString &c : keymapdata.MappingKeys_Comments) {
+                    commentsVariant << c;
+                }
+                mappingKeysCommentsList << QVariant(commentsVariant);
+
+                QVariantList keyUpCommentsVariant;
+                for (const QString &c : keymapdata.MappingKeys_KeyUp_Comments) {
+                    keyUpCommentsVariant << c;
+                }
+                mappingKeysKeyUpCommentsList << QVariant(keyUpCommentsVariant);
+
                 if (true == keymapdata.Disabled) {
                     disabledList.append("ON");
                 }
@@ -21121,6 +21282,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         mappingkeys_keyupList_forsave.append(mappingkeys_keyupList_str);
         notesList_forsave.append(notesList);
         categorysList_forsave.append(categorysList);
+        mappingKeysCommentsList_forsave.append(QVariant(mappingKeysCommentsList));
+        mappingKeysKeyUpCommentsList_forsave.append(QVariant(mappingKeysKeyUpCommentsList));
         disabledList_forsave.append(disabledList_str);
         burstList_forsave.append(burstList_str);
         burstpresstimeList_forsave.append(burstpresstimeList_str);
@@ -21216,6 +21379,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS_KEYUP , mappingkeys_keyupList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS_COMMENTS , mappingKeysCommentsList_forsave);
+    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS , mappingKeysKeyUpCommentsList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_NOTE , notesList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CATEGORY, categorysList_forsave);
     settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DISABLED, disabledList_forsave);
@@ -23412,6 +23577,33 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     categorys_split.append(variant.toStringList());
                 }
             }
+
+            // Load mapping key comments (new field, backward compatible)
+            QList<QList<QStringList>> mappingKeysComments_split;
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS_COMMENTS)) {
+                QVariantList commentsLoaded = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS_COMMENTS).toList();
+                for (const QVariant &tabVariant : std::as_const(commentsLoaded)) {
+                    QList<QStringList> tabComments;
+                    QVariantList tabList = tabVariant.toList();
+                    for (const QVariant &rowVariant : std::as_const(tabList)) {
+                        tabComments.append(rowVariant.toStringList());
+                    }
+                    mappingKeysComments_split.append(tabComments);
+                }
+            }
+            QList<QList<QStringList>> mappingKeysKeyUpComments_split;
+            if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS)) {
+                QVariantList commentsLoaded = settingFile.value(settingSelectStr+KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS).toList();
+                for (const QVariant &tabVariant : std::as_const(commentsLoaded)) {
+                    QList<QStringList> tabComments;
+                    QVariantList tabList = tabVariant.toList();
+                    for (const QVariant &rowVariant : std::as_const(tabList)) {
+                        tabComments.append(rowVariant.toStringList());
+                    }
+                    mappingKeysKeyUpComments_split.append(tabComments);
+                }
+            }
+
             if (true == settingFile.contains(settingSelectStr+KEYMAPDATA_DISABLED)) {
                 disabledData_loaded = settingFile.value(settingSelectStr+KEYMAPDATA_DISABLED).toString();
                 disabledData_split = disabledData_loaded.split(SEPARATOR_KEYMAPDATA_LEVEL2);
@@ -24046,6 +24238,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     }
                     if (categorys_split.size() == table_count) {
                         categorysList = categorys_split.at(index);
+                    }
+                    QList<QStringList> mappingKeysCommentsList;
+                    if (mappingKeysComments_split.size() == table_count) {
+                        mappingKeysCommentsList = mappingKeysComments_split.at(index);
+                    }
+                    QList<QStringList> mappingKeysKeyUpCommentsList;
+                    if (mappingKeysKeyUpComments_split.size() == table_count) {
+                        mappingKeysKeyUpCommentsList = mappingKeysKeyUpComments_split.at(index);
                     }
                     if (disabledData_split.size() == table_count) {
                         disabledStringList = disabledData_split.at(index).split(SEPARATOR_KEYMAPDATA_LEVEL1);
@@ -24964,6 +25164,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                                 loadedData.FloatingButton_Y_Offset = floatingbutton_y_offsetList.at(loadindex);
                                 loadedData.FloatingButton_DragToMove = floatingbutton_dragtomoveList.at(loadindex);
                                 loadedData.FloatingButton_SyncGroupId = floatingbutton_syncgroupidList.at(loadindex);
+
+                                // Load comments (backward compatible: empty list if not present)
+                                if (loadindex < mappingKeysCommentsList.size()) {
+                                    loadedData.MappingKeys_Comments = mappingKeysCommentsList.at(loadindex);
+                                }
+                                if (loadindex < mappingKeysKeyUpCommentsList.size()) {
+                                    loadedData.MappingKeys_KeyUp_Comments = mappingKeysKeyUpCommentsList.at(loadindex);
+                                }
                             }
                             else{
                                 datavalidflag = false;

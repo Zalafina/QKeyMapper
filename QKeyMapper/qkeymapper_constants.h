@@ -40,7 +40,7 @@ namespace QKeyMapperConstants {
     inline constexpr int PROCESSINFO_TABLE_COLUMN_COUNT = 4;
     inline constexpr int KEYMAPPINGDATA_TABLE_COLUMN_COUNT = 7;
     inline constexpr int MACROLISTDATA_TABLE_COLUMN_COUNT = 4;
-    inline constexpr int MAPPINGSEQUENCEEDIT_TABLE_COLUMN_COUNT = 1;
+    inline constexpr int MAPPINGSEQUENCEEDIT_TABLE_COLUMN_COUNT = 2;
 
     // MappingSequenceEdit undo/redo maximum undo steps (Excel-like).
     // Snapshot-based history stores (maxUndoSteps + 1) states including the base state.
@@ -70,6 +70,7 @@ namespace QKeyMapperConstants {
     inline constexpr int MACRO_NOTE_COLUMN = 3;
 
     inline constexpr int MAPPINGSEQUENCEEDIT_MAPPINGKEY_COLUMN = 0;
+    inline constexpr int MAPPINGSEQUENCEEDIT_COMMENT_COLUMN = 1;
 
     inline constexpr int MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS         = 0;
     inline constexpr int MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP   = 1;
@@ -1096,6 +1097,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char MACROLIST_FIELD_MACROCONTENT[] = "macroContent";
     inline constexpr const char MACROLIST_FIELD_MACROCATEGORY[] = "macroCategory";
     inline constexpr const char MACROLIST_FIELD_MACRONOTE[] = "macroNote";
+    inline constexpr const char MACROLIST_FIELD_MACROCOMMENTS[] = "macroComments";
 
     // SyncGroupNotes data field names for INI storage (same pattern as MacroList)
     inline constexpr const char SYNCGROUPNOTES[] = "SyncGroupNotes";
@@ -1176,6 +1178,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char KEYMAPDATA_ORIGINALKEYS[] = "KeyMapData_OriginalKeys";
     inline constexpr const char KEYMAPDATA_MAPPINGKEYS[] = "KeyMapData_MappingKeys";
     inline constexpr const char KEYMAPDATA_MAPPINGKEYS_KEYUP[] = "KeyMapData_MappingKeys_KeyUp";
+    inline constexpr const char KEYMAPDATA_MAPPINGKEYS_COMMENTS[] = "KeyMapData_MappingKeys_Comments";
+    inline constexpr const char KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS[] = "KeyMapData_MappingKeys_KeyUp_Comments";
     inline constexpr const char KEYMAPDATA_NOTE[] = "KeyMapData_Note";
     inline constexpr const char KEYMAPDATA_CATEGORY[] = "KeyMapData_Category";
     inline constexpr const char KEYMAPDATA_DISABLED[] = "KeyMapData_Disabled";

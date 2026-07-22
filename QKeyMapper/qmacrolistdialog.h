@@ -96,6 +96,7 @@ public:
     static QString getEditingMacroText(void);
     static int getEditingMacroCursorPosition(void);
     static void setEditingMacroText(const QString &new_macrotext);
+    static void setPendingMacroComments(const QStringList &comments);
     static QString getCurrentMapKeyListText(void);
 
     bool isMacroDataTableFiltered(void);
@@ -204,6 +205,8 @@ private:
     QHash<QString, QCheckBox*> m_CategoryFilterCheckBoxes;
     QStringList m_CategoryFilterDisplayOrder;
     bool m_CategoryFilterGuard = false;
+    QStringList m_PendingMacroComments;
+    QStringList m_PendingMacroSegments;     // Segments at time of setPendingMacroComments
 };
 
 #endif // QMACROLISTDIALOG_H
