@@ -9,6 +9,7 @@ using namespace QKeyMapperConstants;
 
 QMappingSequenceEdit *QMappingSequenceEdit::m_instance = Q_NULLPTR;
 QStringList QMappingSequenceEdit::s_CopiedMappingSequenceList;
+QStringList QMappingSequenceEdit::s_CopiedMappingCommentList;
 
 QMappingSequenceEdit::QMappingSequenceEdit(QWidget *parent)
     : QDialog(parent)
@@ -1953,8 +1954,14 @@ int QMappingSequenceEdit::copySelectedMappingKeyToCopiedList()
     bottom = qBound(top, bottom, last);
 
     s_CopiedMappingSequenceList.clear();
+    s_CopiedMappingCommentList.clear();
     for (int row = top; row <= bottom; ++row) {
         s_CopiedMappingSequenceList.append(m_MappingSequenceList.at(row));
+        if (row < m_MappingCommentList.size()) {
+            s_CopiedMappingCommentList.append(m_MappingCommentList.at(row));
+        } else {
+            s_CopiedMappingCommentList.append(QString());
+        }
     }
 
     copiedCount = s_CopiedMappingSequenceList.size();
@@ -1981,18 +1988,24 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedListAtAbsoluteRow(int insert
     ensureBaseSnapshotBeforeListChange();
 
     if (boundedInsertRow >= m_MappingSequenceList.size()) {
-        for (const QString &s : std::as_const(s_CopiedMappingSequenceList)) {
-            m_MappingSequenceList.append(s);
-            m_MappingCommentList.append(QString());  // ponytail: copied items have no comments
+        for (int i = 0; i < s_CopiedMappingSequenceList.size(); ++i) {
+            m_MappingSequenceList.append(s_CopiedMappingSequenceList.at(i));
+            if (i < s_CopiedMappingCommentList.size()) {
+                m_MappingCommentList.append(s_CopiedMappingCommentList.at(i));
+            } else {
+                m_MappingCommentList.append(QString());
+            }
             insertedCount++;
         }
     }
     else {
         int pos = boundedInsertRow;
-        for (const QString &s : std::as_const(s_CopiedMappingSequenceList)) {
-            m_MappingSequenceList.insert(pos, s);
+        for (int i = 0; i < s_CopiedMappingSequenceList.size(); ++i) {
+            m_MappingSequenceList.insert(pos, s_CopiedMappingSequenceList.at(i));
+            const QString comment = (i < s_CopiedMappingCommentList.size())
+                ? s_CopiedMappingCommentList.at(i) : QString();
             if (pos <= m_MappingCommentList.size()) {
-                m_MappingCommentList.insert(pos, QString());
+                m_MappingCommentList.insert(pos, comment);
             }
             pos++;
             insertedCount++;
@@ -2052,6 +2065,15 @@ int QMappingSequenceEdit::pasteMappingKeyFromCopiedList(int insertMode)
     // On failure: cellChanged will roll back from m_MappingSequenceList and show the popup.
     reselectionRangeAndScroll(topRow, topRow);
     item->setText(s_CopiedMappingSequenceList.first());
+
+    // Also paste the copied comment for this single row
+    if (!s_CopiedMappingCommentList.isEmpty()) {
+        ensureBaseSnapshotBeforeListChange();
+        if (topRow >= m_MappingCommentList.size()) {
+            QKeyMapperQtCompat::resizeQList(m_MappingCommentList, topRow + 1);
+        }
+        m_MappingCommentList[topRow] = s_CopiedMappingCommentList.first();
+    }
 
     const QString committed = (topRow >= 0 && topRow < m_MappingSequenceList.size())
         ? m_MappingSequenceList.at(topRow)

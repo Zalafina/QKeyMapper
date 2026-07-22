@@ -96,6 +96,7 @@ public:
 
 public:
     static QStringList s_CopiedMappingSequenceList;
+    static QStringList s_CopiedMappingCommentList;
 
 signals:
     // Signal for drag and drop move operation
