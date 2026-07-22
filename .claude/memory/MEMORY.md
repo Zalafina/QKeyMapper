@@ -33,3 +33,5 @@
 - [FakeInput Resend Bug Fix Session](episodic/2026-07-20-fakeinput-resend-fix.json) — resendRealKeyCodeOnStop 错误重发 FakeInput 序列末尾按键的修复
 - [FAKERINPUT_EXTRAINFO Code Review Session](episodic/2026-07-20-fakeinput-extra-info-review.json) — FAKERINPUT_EXTRAINFO 机制全面审查及 3 个 match 函数优化
 - [Callback Injection Library Extensibility](callback-injection-library-extensibility.md) — std::function 回调注入模式：在不修改库架构的前提下为库代码添加应用特定逻辑
+- [Mapping Sequence Comments](mapping-sequence-comments.md) — 映射序列编辑窗口"备注"列：纯数据字段方案、两阶段提交数据流、reconcile 对齐算法、已知陷阱
+- [Mapping Sequence Comment — Full Session](episodic/2026-07-22-mapping-sequence-comment.md) — 全部 8 个 Bug 的发现、根因、修复记录
