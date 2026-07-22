@@ -434,6 +434,10 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     // Show context menu for mapping table operations.
     void contextMenuEvent(QContextMenuEvent *event) override;
+    // Block selection from crossing the common mapping separator row.
+    QItemSelectionModel::SelectionFlags selectionCommand(const QModelIndex &index, const QEvent *event) const override;
+    // Block Shift+click mouse events from crossing the separator row (also prevents currentIndex change).
+    void mousePressEvent(QMouseEvent *event) override;
     // Drag and drop support for row reordering
     void startDrag(Qt::DropActions supportedActions) override;
     void dropEvent(QDropEvent *event) override;

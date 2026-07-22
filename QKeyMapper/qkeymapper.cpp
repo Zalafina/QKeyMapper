@@ -33800,7 +33800,7 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
             if (hasSeparatorRow && dataIndex == commonStartDisplayRow) {
                 for (int col = 0; col < KEYMAPPINGDATA_TABLE_COLUMN_COUNT; ++col) {
                     QTableWidgetItem *sepItem = new QTableWidgetItem(QString());
-                    sepItem->setFlags(Qt::NoItemFlags);  // Non-editable, non-selectable
+                    sepItem->setFlags(Qt::ItemIsEnabled);  // Enabled (for painting), non-editable, non-selectable
                     sepItem->setData(COMMON_APPENDED_SEPARATOR_ROW_ROLE, true);
                     if (col == 0) {  // Column 0 is the spanning cell after setSpan
                         const QString hintText = collapsedState
@@ -38515,7 +38515,8 @@ void QKeyMapper::highlightSelectUp()
     // Find the previous visible row
     int newSelectedRow = -1;
     for (int row = topVisibleSelectedRow - 1; row >= 0; --row) {
-        if (!m_KeyMappingDataTable->isRowHidden(row)) {
+        if (!m_KeyMappingDataTable->isRowHidden(row)
+            && row != m_KeyMappingDataTable->commonSeparatorDisplayRow()) {
             newSelectedRow = row;
             break;
         }
@@ -38526,6 +38527,14 @@ void QKeyMapper::highlightSelectUp()
         qDebug() << "[highlightSelectUp] Already at the top visible row, cannot select up";
 #endif
         return;
+    }
+
+    // Separator boundary: don't move if we would cross it
+    {
+        const int sepRow = m_KeyMappingDataTable->commonSeparatorDisplayRow();
+        if (sepRow >= 0 && topVisibleSelectedRow > sepRow && newSelectedRow < sepRow) {
+            return;
+        }
     }
 
     // Clear current selection
@@ -38592,7 +38601,8 @@ void QKeyMapper::highlightSelectDown()
     int newSelectedRow = -1;
     int rowCount = m_KeyMappingDataTable->rowCount();
     for (int row = bottomVisibleSelectedRow + 1; row < rowCount; ++row) {
-        if (!m_KeyMappingDataTable->isRowHidden(row)) {
+        if (!m_KeyMappingDataTable->isRowHidden(row)
+            && row != m_KeyMappingDataTable->commonSeparatorDisplayRow()) {
             newSelectedRow = row;
             break;
         }
@@ -38603,6 +38613,14 @@ void QKeyMapper::highlightSelectDown()
         qDebug() << "[highlightSelectDown] Already at the bottom visible row, cannot select down";
 #endif
         return;
+    }
+
+    // Separator boundary: don't move if we would cross it
+    {
+        const int sepRow = m_KeyMappingDataTable->commonSeparatorDisplayRow();
+        if (sepRow >= 0 && bottomVisibleSelectedRow < sepRow && newSelectedRow > sepRow) {
+            return;
+        }
     }
 
     // Clear current selection
@@ -38685,7 +38703,8 @@ void QKeyMapper::highlightSelectExtendUp()
         // Current is at top or in middle - extend selection upward to next visible row
         int nextVisibleRowUp = -1;
         for (int row = topRow - 1; row >= 0; --row) {
-            if (!m_KeyMappingDataTable->isRowHidden(row)) {
+            if (!m_KeyMappingDataTable->isRowHidden(row)
+                && row != m_KeyMappingDataTable->commonSeparatorDisplayRow()) {
                 nextVisibleRowUp = row;
                 break;
             }
@@ -38712,7 +38731,8 @@ void QKeyMapper::highlightSelectExtendUp()
         // Find the second-to-last visible row
         int prevVisibleRow = -1;
         for (int row = bottomRow - 1; row >= topRow; --row) {
-            if (!m_KeyMappingDataTable->isRowHidden(row)) {
+            if (!m_KeyMappingDataTable->isRowHidden(row)
+                && row != m_KeyMappingDataTable->commonSeparatorDisplayRow()) {
                 prevVisibleRow = row;
                 break;
             }
@@ -38722,6 +38742,14 @@ void QKeyMapper::highlightSelectExtendUp()
         }
         newBottomRow = prevVisibleRow;
         newCurrentRow = prevVisibleRow;
+    }
+
+    // Separator boundary: block selection that would span across it
+    {
+        const int sepRow = m_KeyMappingDataTable->commonSeparatorDisplayRow();
+        if (sepRow >= 0 && newTopRow < sepRow && newBottomRow > sepRow) {
+            return;
+        }
     }
 
     // Apply new selection
@@ -38803,7 +38831,8 @@ void QKeyMapper::highlightSelectExtendDown()
         // Current is at bottom or in middle - extend selection downward to next visible row
         int nextVisibleRowDown = -1;
         for (int row = bottomRow + 1; row < rowCount; ++row) {
-            if (!m_KeyMappingDataTable->isRowHidden(row)) {
+            if (!m_KeyMappingDataTable->isRowHidden(row)
+                && row != m_KeyMappingDataTable->commonSeparatorDisplayRow()) {
                 nextVisibleRowDown = row;
                 break;
             }
@@ -38830,7 +38859,8 @@ void QKeyMapper::highlightSelectExtendDown()
         // Find the second visible row from top
         int nextVisibleRow = -1;
         for (int row = topRow + 1; row <= bottomRow; ++row) {
-            if (!m_KeyMappingDataTable->isRowHidden(row)) {
+            if (!m_KeyMappingDataTable->isRowHidden(row)
+                && row != m_KeyMappingDataTable->commonSeparatorDisplayRow()) {
                 nextVisibleRow = row;
                 break;
             }
@@ -38840,6 +38870,14 @@ void QKeyMapper::highlightSelectExtendDown()
         }
         newTopRow = nextVisibleRow;
         newCurrentRow = nextVisibleRow;
+    }
+
+    // Separator boundary: block selection that would span across it
+    {
+        const int sepRow = m_KeyMappingDataTable->commonSeparatorDisplayRow();
+        if (sepRow >= 0 && newTopRow < sepRow && newBottomRow > sepRow) {
+            return;
+        }
     }
 
     // Apply new selection
@@ -38877,7 +38915,8 @@ void QKeyMapper::highlightSelectFirst()
     int newSelectedRow = -1;
     int rowCount = m_KeyMappingDataTable->rowCount();
     for (int row = 0; row < rowCount; ++row) {
-        if (!m_KeyMappingDataTable->isRowHidden(row)) {
+        if (!m_KeyMappingDataTable->isRowHidden(row)
+            && row != m_KeyMappingDataTable->commonSeparatorDisplayRow()) {
             newSelectedRow = row;
             break;
         }
@@ -38923,7 +38962,8 @@ void QKeyMapper::highlightSelectLast()
     // Find the last visible row
     int newSelectedRow = -1;
     for (int row = m_KeyMappingDataTable->rowCount() - 1; row >= 0; --row) {
-        if (!m_KeyMappingDataTable->isRowHidden(row)) {
+        if (!m_KeyMappingDataTable->isRowHidden(row)
+            && row != m_KeyMappingDataTable->commonSeparatorDisplayRow()) {
             newSelectedRow = row;
             break;
         }
@@ -39459,20 +39499,21 @@ void KeyMappingTableStyleDelegate::paint(QPainter *painter, const QStyleOptionVi
 
     QStyle *style = styledOption.widget ? styledOption.widget->style() : QApplication::style();
 
-    // Separator row: draw with direct colors, no blending
+    // Separator row: suppress selection highlight, skip common-row blending,
+    // but let disabled blending apply when widget is disabled.
+    const bool effectiveIsCommonRow = isSeparatorRow ? false : isCommonAppendedRow;
     if (isSeparatorRow) {
         styledOption.state &= ~QStyle::State_Selected;
-        styledOption.state |= QStyle::State_Enabled;
-        style->drawControl(QStyle::CE_ItemViewItem, &styledOption, painter, styledOption.widget);
-        return;
     }
+
     const bool selected = (styledOption.state & QStyle::State_Selected);
     const bool enabled = (styledOption.state & QStyle::State_Enabled)
         && (styledOption.widget == Q_NULLPTR || styledOption.widget->isEnabled());
     const bool checkboxOnlyColumn = isKeyMappingCheckboxOnlyColumn(index.column());
     const bool disabledStyledRow = index.data(DISABLED_ROW_BACKGROUND_APPLIED_ROLE).toBool();
 
-    if (!disabledStyledRow && !isCommonAppendedRow) {
+    // Quick-exit: no special styling needed (separator always goes through color blending)
+    if (!disabledStyledRow && !effectiveIsCommonRow && !isSeparatorRow) {
         style->drawControl(QStyle::CE_ItemViewItem, &styledOption, painter, styledOption.widget);
         return;
     }
@@ -39482,7 +39523,7 @@ void KeyMappingTableStyleDelegate::paint(QPainter *painter, const QStyleOptionVi
     QColor foregroundColor = colorFromItemData(index.data(Qt::ForegroundRole),
                                                styledOption.palette.color(QPalette::Text));
 
-    if (isCommonAppendedRow) {
+    if (effectiveIsCommonRow) {
         const qreal commonBackgroundBlendRatio = disabledStyledRow
                                                      ? kCommonDisabledRowBackgroundBlendRatio
                                                      : kCommonBaseBackgroundBlendRatio;
@@ -39504,7 +39545,7 @@ void KeyMappingTableStyleDelegate::paint(QPainter *painter, const QStyleOptionVi
         const QColor highlightColor = styledOption.palette.color(QPalette::Highlight);
         backgroundColor = blendColors(backgroundColor,
                                       highlightColor,
-                                      isCommonAppendedRow ? kCommonSelectedBackgroundBlendRatio
+                                      effectiveIsCommonRow ? kCommonSelectedBackgroundBlendRatio
                                                           : kDefaultSelectedBackgroundBlendRatio);
         styledOption.state &= ~QStyle::State_Selected;
     }
@@ -39515,14 +39556,14 @@ void KeyMappingTableStyleDelegate::paint(QPainter *painter, const QStyleOptionVi
 
         backgroundColor = blendColors(backgroundColor,
                                       disabledBaseColor,
-                                      isCommonAppendedRow ? (selected ? kCommonWidgetDisabledSelectedBackgroundBlendRatio
+                                      effectiveIsCommonRow ? (selected ? kCommonWidgetDisabledSelectedBackgroundBlendRatio
                                                                       : kCommonWidgetDisabledBackgroundBlendRatio)
                                                           : (selected ? kDefaultWidgetDisabledSelectedBackgroundBlendRatio
                                                                       : kDefaultWidgetDisabledBackgroundBlendRatio));
         if (!checkboxOnlyColumn) {
             foregroundColor = blendColors(foregroundColor,
                                           disabledTextColor,
-                                          isCommonAppendedRow ? kCommonWidgetDisabledForegroundBlendRatio
+                                          effectiveIsCommonRow ? kCommonWidgetDisabledForegroundBlendRatio
                                                               : kDefaultWidgetDisabledForegroundBlendRatio);
         }
     }
@@ -47248,6 +47289,48 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
     }
 
     QTableWidget::contextMenuEvent(event);
+}
+
+void KeyMappingDataTableWidget::mousePressEvent(QMouseEvent *event)
+{
+    // Block Shift+click that would cross the separator row (completely, including currentIndex).
+    if (hasCommonSeparator() && (event->modifiers() & Qt::ShiftModifier)) {
+        const QModelIndex idx = indexAt(event->pos());
+        if (idx.isValid()) {
+            const int clickedRow = idx.row();
+            const int sepRow = m_CommonSeparatorDisplayRow;
+            const QModelIndex current = currentIndex();
+            if (current.isValid()) {
+                const int currentRow = current.row();
+                if ((currentRow < sepRow && clickedRow > sepRow)
+                    || (currentRow > sepRow && clickedRow < sepRow)) {
+                    event->accept();
+                    return;
+                }
+            }
+        }
+    }
+    QTableWidget::mousePressEvent(event);
+}
+
+QItemSelectionModel::SelectionFlags KeyMappingDataTableWidget::selectionCommand(const QModelIndex &index, const QEvent *event) const
+{
+    // Block Shift+click selection extension that would cross the separator row.
+    if (event && hasCommonSeparator() && index.isValid()
+        && (QGuiApplication::keyboardModifiers() & Qt::ShiftModifier)) {
+        const int clickedRow = index.row();
+        const int sepRow = m_CommonSeparatorDisplayRow;
+        const QList<QTableWidgetSelectionRange> ranges = selectedRanges();
+        for (const QTableWidgetSelectionRange &range : ranges) {
+            for (int r = range.topRow(); r <= range.bottomRow(); ++r) {
+                // Check if any selected row is on the opposite side of the separator
+                if ((r < sepRow && clickedRow > sepRow) || (r > sepRow && clickedRow < sepRow)) {
+                    return QItemSelectionModel::NoUpdate;
+                }
+            }
+        }
+    }
+    return QTableWidget::selectionCommand(index, event);
 }
 
 void KeyMappingDataTableWidget::updateRowVisibility()
