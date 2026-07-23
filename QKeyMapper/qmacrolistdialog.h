@@ -186,6 +186,7 @@ private:
     void updateMacroDataTableConnection(MacroListDataTableWidget *macroDataTable);
     void updateMacroListTableItem(MacroListDataTableWidget *macroDataTable, OrderedMap<QString, MappingMacroData> *macroDataList, int row, int column);
 
+public:
     // Helper methods to get current macro table and data list
     MacroListDataTableWidget* getCurrentMacroDataTable(void);
     OrderedMap<QString, MappingMacroData>* getCurrentMacroDataList(void);

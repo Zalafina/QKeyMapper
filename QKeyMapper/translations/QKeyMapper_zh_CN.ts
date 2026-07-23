@@ -420,24 +420,24 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="1923"/>
-        <location filename="../qmacrolistdialog.cpp" line="2099"/>
+        <location filename="../qmacrolistdialog.cpp" line="2137"/>
         <source>%1 selected macro(s) copied.</source>
         <translation>已复制选中的 %1 个宏。</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="1937"/>
-        <location filename="../qmacrolistdialog.cpp" line="2109"/>
+        <location filename="../qmacrolistdialog.cpp" line="2147"/>
         <source>%1 copied macro(s) could not be inserted!</source>
         <translation>已复制的 %1 个宏无法插入！</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="1941"/>
-        <location filename="../qmacrolistdialog.cpp" line="2113"/>
+        <location filename="../qmacrolistdialog.cpp" line="2151"/>
         <source>Inserted %1 macro(s) into current macro list.</source>
         <translation>已将 %1 个宏插入当前宏列表。</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="2223"/>
+        <location filename="../qmacrolistdialog.cpp" line="2261"/>
         <source>Cannot move items while the macro table is filtered!</source>
         <translation>宏列表处于筛选显示状态时，无法移动项目！</translation>
     </message>
@@ -4819,7 +4819,7 @@ Do you confirm to continue installing Interception driver?</source>
         <location filename="../qmacrolistdialog.cpp" line="985"/>
         <location filename="../qmacrolistdialog.cpp" line="1224"/>
         <location filename="../qmacrolistdialog.cpp" line="1400"/>
-        <location filename="../qmacrolistdialog.cpp" line="2511"/>
+        <location filename="../qmacrolistdialog.cpp" line="2549"/>
         <source>Macro</source>
         <translation>宏</translation>
     </message>
@@ -5001,13 +5001,13 @@ Do you want to overwrite them?</source>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="1206"/>
-        <location filename="../qmacrolistdialog.cpp" line="2436"/>
+        <location filename="../qmacrolistdialog.cpp" line="2474"/>
         <source>Macro name cannot be empty.</source>
         <translation>宏名不能为空。</translation>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="1215"/>
-        <location filename="../qmacrolistdialog.cpp" line="2444"/>
+        <location filename="../qmacrolistdialog.cpp" line="2482"/>
         <source>Macro name cannot contain &apos;)&apos; character.</source>
         <translation>宏名不能包含 “)” 字符。</translation>
     </message>
@@ -5039,36 +5039,36 @@ Do you want to overwrite them?</source>
         <translation>宏 &quot;%1&quot; 添加成功</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="2452"/>
+        <location filename="../qmacrolistdialog.cpp" line="2490"/>
         <source>Macro name &quot;%1&quot; already exists.</source>
         <translation>宏名 &quot;%1&quot; 已存在。</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="2479"/>
+        <location filename="../qmacrolistdialog.cpp" line="2517"/>
         <source>Macro name updated from &quot;%1&quot; to &quot;%2&quot;</source>
         <translation>宏名已从 &quot;%1&quot; 变更为 &quot;%2&quot;</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="3357"/>
-        <location filename="../qmacrolistdialog.cpp" line="3380"/>
+        <location filename="../qmacrolistdialog.cpp" line="3395"/>
+        <location filename="../qmacrolistdialog.cpp" line="3418"/>
         <source>_copy</source>
         <translation>_副本</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="3452"/>
-        <location filename="../qmacrolistdialog.cpp" line="3534"/>
-        <location filename="../qmacrolistdialog.cpp" line="3626"/>
-        <location filename="../qmacrolistdialog.cpp" line="3708"/>
+        <location filename="../qmacrolistdialog.cpp" line="3491"/>
+        <location filename="../qmacrolistdialog.cpp" line="3573"/>
+        <location filename="../qmacrolistdialog.cpp" line="3665"/>
+        <location filename="../qmacrolistdialog.cpp" line="3747"/>
         <source>Cannot move items while the macro table is filtered!</source>
         <translation>宏列表处于筛选显示状态时，无法移动项目！</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="3856"/>
+        <location filename="../qmacrolistdialog.cpp" line="3895"/>
         <source>Macro &quot;%1&quot; deleted successfully</source>
         <translation>宏 &quot;%1&quot; 已成功删除</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="3858"/>
+        <location filename="../qmacrolistdialog.cpp" line="3897"/>
         <source>%1 macros deleted successfully</source>
         <translation>已成功删除 %1 个宏</translation>
     </message>
@@ -5353,7 +5353,7 @@ Do you want to overwrite them?</source>
     <message>
         <location filename="../qmappingsequenceedit.ui" line="230"/>
         <location filename="../qmappingsequenceedit.cpp" line="100"/>
-        <location filename="../qmappingsequenceedit.cpp" line="1298"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1371"/>
         <source>MappingKey</source>
         <translation>映射按键</translation>
     </message>
@@ -5371,7 +5371,7 @@ Do you want to overwrite them?</source>
     </message>
     <message>
         <location filename="../qmappingsequenceedit.cpp" line="93"/>
-        <location filename="../qmappingsequenceedit.cpp" line="1192"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1265"/>
         <source>Note</source>
         <translation>备注</translation>
     </message>
@@ -5396,13 +5396,24 @@ Do you want to overwrite them?</source>
         <translation>功能按键</translation>
     </message>
     <message>
-        <location filename="../qmappingsequenceedit.cpp" line="298"/>
+        <location filename="../qmappingsequenceedit.cpp" line="310"/>
         <source>Do you want to update the current mapping sequence to the lineedit before reopening the mapping sequence editor?</source>
         <translation>重新打开映射序列编辑窗口前，是否将当前编辑中的映射序列更新到单行编辑框中？</translation>
     </message>
     <message>
+        <location filename="../qmappingsequenceedit.cpp" line="327"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1184"/>
+        <source>Macro content cannot be empty.</source>
+        <translation>宏不能为空。</translation>
+    </message>
+    <message>
+        <location filename="../qmappingsequenceedit.cpp" line="1190"/>
+        <source>Macro</source>
+        <translation>宏</translation>
+    </message>
+    <message>
         <location filename="../qmappingsequenceedit.cpp" line="93"/>
-        <location filename="../qmappingsequenceedit.cpp" line="1192"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1265"/>
         <source>Split Mapping Sequence</source>
         <translation>映射序列项</translation>
     </message>
@@ -5627,7 +5638,7 @@ Do you want to overwrite them?</source>
         <location filename="../qkeymapper.cpp" line="46694"/>
         <location filename="../qkeymapper.cpp" line="47048"/>
         <location filename="../qmacrolistdialog.cpp" line="2003"/>
-        <location filename="../qmappingsequenceedit.cpp" line="921"/>
+        <location filename="../qmappingsequenceedit.cpp" line="956"/>
         <source>Edit</source>
         <translation>编辑</translation>
     </message>
@@ -5890,64 +5901,64 @@ Do you want to overwrite them?</source>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47230"/>
-        <location filename="../qmacrolistdialog.cpp" line="2065"/>
-        <location filename="../qmappingsequenceedit.cpp" line="975"/>
+        <location filename="../qmacrolistdialog.cpp" line="2103"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1010"/>
         <source>Move Up</source>
         <translation>上移</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47235"/>
-        <location filename="../qmacrolistdialog.cpp" line="2070"/>
-        <location filename="../qmappingsequenceedit.cpp" line="980"/>
+        <location filename="../qmacrolistdialog.cpp" line="2108"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1015"/>
         <source>Move Down</source>
         <translation>下移</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47240"/>
-        <location filename="../qmacrolistdialog.cpp" line="2075"/>
-        <location filename="../qmappingsequenceedit.cpp" line="985"/>
+        <location filename="../qmacrolistdialog.cpp" line="2113"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1020"/>
         <source>Move to Top</source>
         <translation>上移到顶部</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47245"/>
-        <location filename="../qmacrolistdialog.cpp" line="2080"/>
-        <location filename="../qmappingsequenceedit.cpp" line="990"/>
+        <location filename="../qmacrolistdialog.cpp" line="2118"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1025"/>
         <source>Move to Bottom</source>
         <translation>下移到底部</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47260"/>
-        <location filename="../qmacrolistdialog.cpp" line="2095"/>
-        <location filename="../qmappingsequenceedit.cpp" line="1005"/>
+        <location filename="../qmacrolistdialog.cpp" line="2133"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1040"/>
         <source>Copy</source>
         <translation>复制</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47271"/>
-        <location filename="../qmacrolistdialog.cpp" line="2118"/>
-        <location filename="../qmappingsequenceedit.cpp" line="1022"/>
+        <location filename="../qmacrolistdialog.cpp" line="2156"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1057"/>
         <source>Insert Copied Items at Top</source>
         <translation>在顶部插入复制项</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47276"/>
-        <location filename="../qmacrolistdialog.cpp" line="2124"/>
-        <location filename="../qmappingsequenceedit.cpp" line="1027"/>
+        <location filename="../qmacrolistdialog.cpp" line="2162"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1062"/>
         <source>Insert Copied Items at Bottom</source>
         <translation>在底部插入复制项</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47286"/>
-        <location filename="../qmacrolistdialog.cpp" line="2135"/>
-        <location filename="../qmappingsequenceedit.cpp" line="1037"/>
+        <location filename="../qmacrolistdialog.cpp" line="2173"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1072"/>
         <source>Insert Copied Items Above</source>
         <translation>在上方插入复制项</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47291"/>
-        <location filename="../qmacrolistdialog.cpp" line="2141"/>
-        <location filename="../qmappingsequenceedit.cpp" line="1042"/>
+        <location filename="../qmacrolistdialog.cpp" line="2179"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1077"/>
         <source>Insert Copied Items Below</source>
         <translation>在下方插入复制项</translation>
     </message>
@@ -5963,8 +5974,8 @@ Do you want to overwrite them?</source>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="47317"/>
-        <location filename="../qmacrolistdialog.cpp" line="2158"/>
-        <location filename="../qmappingsequenceedit.cpp" line="1093"/>
+        <location filename="../qmacrolistdialog.cpp" line="2196"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1128"/>
         <source>Delete</source>
         <translation>删除</translation>
     </message>
@@ -5981,47 +5992,58 @@ Do you want to overwrite them?</source>
     </message>
     <message>
         <location filename="../qmacrolistdialog.cpp" line="2027"/>
-        <location filename="../qmappingsequenceedit.cpp" line="945"/>
+        <location filename="../qmappingsequenceedit.cpp" line="980"/>
         <source>Load</source>
         <translation>读取</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="2168"/>
+        <location filename="../qmacrolistdialog.cpp" line="2068"/>
+        <location filename="../qmacrolistdialog.cpp" line="2081"/>
+        <source>Mapping Sequence Edit</source>
+        <translation>映射序列编辑</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="2081"/>
+        <source>Macro</source>
+        <translation>宏</translation>
+    </message>
+    <message>
+        <location filename="../qmacrolistdialog.cpp" line="2206"/>
         <source>Macro List Backup</source>
         <translation>宏列表备份</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="2169"/>
+        <location filename="../qmacrolistdialog.cpp" line="2207"/>
         <source>Macro List Export</source>
         <translation>宏列表导出</translation>
     </message>
     <message>
-        <location filename="../qmacrolistdialog.cpp" line="2171"/>
+        <location filename="../qmacrolistdialog.cpp" line="2209"/>
         <source>Macro List Import</source>
         <translation>宏列表导入</translation>
     </message>
     <message>
-        <location filename="../qmappingsequenceedit.cpp" line="1011"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1046"/>
         <source>Replace</source>
         <translation>替换</translation>
     </message>
     <message>
-        <location filename="../qmappingsequenceedit.cpp" line="1058"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1093"/>
         <source>Insert Blank Item at Top</source>
         <translation>在顶部插入空白项</translation>
     </message>
     <message>
-        <location filename="../qmappingsequenceedit.cpp" line="1063"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1098"/>
         <source>Insert Blank Item at Bottom</source>
         <translation>在底部插入空白项</translation>
     </message>
     <message>
-        <location filename="../qmappingsequenceedit.cpp" line="1073"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1108"/>
         <source>Insert Blank Item Above</source>
         <translation>在上方插入空白项</translation>
     </message>
     <message>
-        <location filename="../qmappingsequenceedit.cpp" line="1078"/>
+        <location filename="../qmappingsequenceedit.cpp" line="1113"/>
         <source>Insert Blank Item Below</source>
         <translation>在下方插入空白项</translation>
     </message>

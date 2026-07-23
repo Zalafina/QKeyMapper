@@ -825,6 +825,8 @@ void QMacroListDialog::on_clearButton_clicked()
         ui->macroContentLineEdit->clear();
         ui->macroNoteLineEdit->clear();
         ui->categoryLineEdit->clear();
+        m_PendingMacroComments.clear();
+        m_PendingMacroSegments.clear();
     }
 }
 
@@ -1233,14 +1235,14 @@ void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
     if (CurrentMacroList.contains(macroname_str)) {
         QString dialogTitle = (macroDataTable == ui->macrolistTable) ? tr("Macro List") : tr("Universal Macro List");
         QString messageText = tr("Macro name already exists. Replace existing macro?");
-        
+
         QMessageBox::StandardButton reply = QMessageBox::question(
             this,
             dialogTitle,
             messageText,
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No);
-        
+
         if (reply != QMessageBox::Yes) {
             return;
         }
@@ -2054,6 +2056,44 @@ void MacroListDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         hasGroup0Action = true;
     }
 
+    // Sequence Edit action: open current macro item directly in sequence editor
+    {
+        OrderedMap<QString, MappingMacroData> *macroDataList = macroListDialog->getCurrentMacroDataList();
+        if (macroDataList) {
+            QTableWidgetItem *cur = currentItem();
+            if (cur) {
+                const int r = cur->row();
+                QTableWidgetItem *nameItem = item(r, MACRO_NAME_COLUMN);
+                if (nameItem) {
+                    QString macroName = nameItem->text().trimmed();
+                    if (macroDataList->contains(macroName)) {
+                        QAction *seqEditAction = contextMenu.addAction(QObject::tr("Mapping Sequence Edit"));
+                        connect(seqEditAction, &QAction::triggered, this, [macroListDialog, macroName, macroDataList]() {
+                            QMappingSequenceEdit *seqEdit = QKeyMapper::getInstance()->m_MappingSequenceEdit;
+                            if (!seqEdit) return;
+
+                            seqEdit->reopenMappingSequenceEditConfirm();
+
+                            const MappingMacroData &macroData = macroDataList->value(macroName);
+                            QStringList oldSegs = splitMappingKeyString(
+                                QKeyMapper::getTrimmedMappingKeyString(macroData.MappingMacro), SPLIT_WITH_NEXT);
+                            QStringList comments = QKeyMapper::reconcileMappingKeyComments(
+                                oldSegs, macroData.MacroComments, oldSegs);
+
+                            seqEdit->setTitle(QObject::tr("Mapping Sequence Edit") + " : " + QObject::tr("Macro"));
+                            seqEdit->setMappingSequenceWithComments(macroData.MappingMacro, comments);
+                            seqEdit->setMappingSequenceEditType(MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT_DIRECT);
+                            seqEdit->setDirectMacroName(macroName);
+
+                            QKeyMapper::getInstance()->showMappingSequenceEdit();
+                        });
+                        hasGroup0Action = true;
+                    }
+                }
+            }
+        }
+    }
+
     if (hasGroup0Action) {
         contextMenu.addSeparator();
     }
@@ -2355,6 +2395,10 @@ void QMacroListDialog::macroTableItemDoubleClicked(QTableWidgetItem *item)
         if (noteItem) {
             ui->macroNoteLineEdit->setText(noteItem->text());
         }
+
+        // Clear stale pending comments from previous SeqEdit session
+        m_PendingMacroComments.clear();
+        m_PendingMacroSegments.clear();
 
         // Restore edit triggers after event processing
         QTimer::singleShot(0, this, [=]() {
@@ -3259,6 +3303,10 @@ void QMacroListDialog::highlightSelectLoadData()
         ui->macroNoteLineEdit->setText(noteItem->text());
     }
 
+    // Clear stale pending comments from previous SeqEdit session
+    m_PendingMacroComments.clear();
+    m_PendingMacroSegments.clear();
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[highlightSelectLoadData] Loaded macro data to LineEdit controls";
 #endif
@@ -3438,7 +3486,8 @@ int QMacroListDialog::insertMacroDataFromCopiedListAtAbsoluteRow(int insertRow)
 void QMacroListDialog::closeEvent(QCloseEvent *event)
 {
     int mappingsequence_edittype = QMappingSequenceEdit::getInstance()->getMappingSequenceEditType();
-    if (mappingsequence_edittype == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT) {
+    if (mappingsequence_edittype == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT
+        || mappingsequence_edittype == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT_DIRECT) {
         QKeyMapper::getInstance()->closeMappingSequenceEdit();
     }
 

@@ -162,9 +162,15 @@ void QMappingSequenceEdit::setMappingSequenceEditType(int edit_type)
 {
     if (edit_type == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS
         || edit_type == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS_KEYUP
-        || edit_type == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT) {
+        || edit_type == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT
+        || edit_type == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT_DIRECT) {
         m_MappingSequenceEditType = edit_type;
     }
+}
+
+void QMappingSequenceEdit::setDirectMacroName(const QString &macroName)
+{
+    m_DirectMacroName = macroName;
 }
 
 void QMappingSequenceEdit::refreshMappingSequenceEditTableWidget(MappingSequenceEditTableWidget *mappingSequenceEditTable, const QStringList &mappingSequenceList)
@@ -311,8 +317,26 @@ void QMappingSequenceEdit::reopenMappingSequenceEditConfirm()
         }
 
         QString joined_mappingsequence = mappingSequenceEdit->joinCurentMappingSequenceTable();
+        QStringList comments = mappingSequenceEdit->getMappingCommentList();
         if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT) {
             QMacroListDialog::setEditingMacroText(joined_mappingsequence);
+        }
+        else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT_DIRECT) {
+            if (joined_mappingsequence.trimmed().isEmpty()) {
+                emit QKeyMapper::getInstance()->showPopupMessage_Signal(
+                    tr("Macro content cannot be empty."), FAILURE_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+                return;  // Stay open
+            }
+            QMacroListDialog *macroDlg = QMacroListDialog::getInstance();
+            if (macroDlg && !m_DirectMacroName.isEmpty()) {
+                OrderedMap<QString, MappingMacroData> *macroDataList = macroDlg->getCurrentMacroDataList();
+                if (macroDataList && macroDataList->contains(m_DirectMacroName)) {
+                    (*macroDataList)[m_DirectMacroName].MappingMacro = joined_mappingsequence;
+                    (*macroDataList)[m_DirectMacroName].MacroComments = comments;
+                    macroDlg->refreshMacroListTabWidget(macroDlg->getCurrentMacroDataTable(), *macroDataList);
+                    QKeyMapper::getInstance()->requestSaveSettingDirty();
+                }
+            }
         }
         else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS) {
             QItemSetupDialog::getInstance()->updateMappingKeyLineEdit(joined_mappingsequence);
@@ -322,6 +346,7 @@ void QMappingSequenceEdit::reopenMappingSequenceEditConfirm()
         }
         QKeyMapper::getInstance()->closeMappingSequenceEdit();
     }
+    m_DirectMacroName.clear();
 }
 
 QPushButton *QMappingSequenceEdit::getMapListSelectKeyboardButton() const
@@ -371,6 +396,10 @@ QString QMappingSequenceEdit::getCurrentMapKeyListText()
 
 void QMappingSequenceEdit::showEvent(QShowEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QMappingSequenceEdit::showEvent] EditType:" << m_MappingSequenceEditType;
+#endif
+
     refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
     ui->mappingSequenceEditTable->setCurrentCell(-1, -1);
 
@@ -385,6 +414,7 @@ void QMappingSequenceEdit::closeEvent(QCloseEvent *event)
     // Dialog instance is reused. Clear history to avoid cross-session undo/redo.
     clearHistory();
     updateUndoRedoButtonsEnabled();
+    m_DirectMacroName.clear();
     QDialog::closeEvent(event);
 }
 
@@ -1147,6 +1177,34 @@ void QMappingSequenceEdit::on_confirmButton_clicked()
     if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT) {
         QMacroListDialog::setEditingMacroText(joined_mappingsequence);
         QMacroListDialog::setPendingMacroComments(comments);
+    }
+    else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_MACROLIST_MACROCONTENT_DIRECT) {
+        // Direct write-back from context menu: update OrderedMap directly, bypass lineedits
+        if (joined_mappingsequence.trimmed().isEmpty()) {
+            emit QKeyMapper::getInstance()->showPopupMessage_Signal(
+                tr("Macro content cannot be empty."), FAILURE_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+            return;  // Stay open so user can fix
+        }
+        ValidationResult result = QKeyMapper::validateMappingKeyString(joined_mappingsequence);
+        if (!result.isValid) {
+            emit QKeyMapper::getInstance()->showPopupMessage_Signal(
+                tr("Macro") + " -> " + result.errorMessage, FAILURE_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+            return;  // Stay open so user can fix
+        }
+
+        QMacroListDialog *macroDlg = QMacroListDialog::getInstance();
+        if (!macroDlg || m_DirectMacroName.isEmpty()) {
+            close();
+            return;
+        }
+        OrderedMap<QString, MappingMacroData> *macroDataList = macroDlg->getCurrentMacroDataList();
+        if (macroDataList && macroDataList->contains(m_DirectMacroName)) {
+            (*macroDataList)[m_DirectMacroName].MappingMacro = joined_mappingsequence;
+            (*macroDataList)[m_DirectMacroName].MacroComments = comments;
+            macroDlg->refreshMacroListTabWidget(macroDlg->getCurrentMacroDataTable(), *macroDataList);
+            QKeyMapper::getInstance()->requestSaveSettingDirty();
+        }
+        m_DirectMacroName.clear();
     }
     else if (m_MappingSequenceEditType == MAPPINGSEQUENCEEDIT_TYPE_ITEMSETUP_MAPPINGKEYS) {
         QItemSetupDialog::getInstance()->updateMappingKeyLineEdit(joined_mappingsequence);

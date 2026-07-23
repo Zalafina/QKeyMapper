@@ -49,6 +49,7 @@ public:
     void setMappingSequence(const QString &mappingsequence);
     void setMappingSequenceWithComments(const QString &mappingsequence, const QStringList &comments);
     void setMappingSequenceEditType(int edit_type);
+    void setDirectMacroName(const QString &macroName);
     void refreshMappingSequenceEditTableWidget(MappingSequenceEditTableWidget *mappingSequenceEditTable, const QStringList& mappingSequenceList);
     void updateMappingKeyListComboBox(void);
     QString joinCurentMappingSequenceTable(void);
@@ -178,6 +179,7 @@ private:
     QStringList m_MappingSequenceList;
     QStringList m_MappingCommentList;
     int m_MappingSequenceEditType;
+    QString m_DirectMacroName;          // Macro name for DIRECT context menu edit
 
     QVector<MappingSequenceHistorySnapshot> m_HistorySnapshots;
     int m_HistoryIndex;
