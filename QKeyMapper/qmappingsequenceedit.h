@@ -88,6 +88,7 @@ public:
     int copySelectedMappingKeyToCopiedList(void);
     int insertMappingKeyFromCopiedList(int insertMode);
     int insertMappingKeyFromCopiedListAtAbsoluteRow(int insertRow);
+    int insertBlankMappingKeyAtAbsoluteRow(int insertRow);
     int pasteMappingKeyFromCopiedList(int insertMode);
 
     // Mapping sequence undo/redo operations

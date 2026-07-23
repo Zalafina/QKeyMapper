@@ -1049,6 +1049,41 @@ void MappingSequenceEditTableWidget::contextMenuEvent(QContextMenuEvent *event)
         hasPreviousGroup = true;
     }
 
+    // Group 2.5: Insert blank item
+    {
+        if (hasPreviousGroup) {
+            contextMenu.addSeparator();
+        }
+
+        QAction *insertBlankTopAction = contextMenu.addAction(QObject::tr("Insert Blank Item at Top"));
+        connect(insertBlankTopAction, &QAction::triggered, this, [dlg]() {
+            dlg->insertBlankMappingKeyAtAbsoluteRow(0);
+        });
+
+        QAction *insertBlankBottomAction = contextMenu.addAction(QObject::tr("Insert Blank Item at Bottom"));
+        connect(insertBlankBottomAction, &QAction::triggered, this, [dlg, this]() {
+            dlg->insertBlankMappingKeyAtAbsoluteRow(rowCount());
+        });
+
+        if (hasSelection) {
+            const QTableWidgetSelectionRange firstRange = selectionRanges.first();
+            const int insertAboveRow = firstRange.topRow();
+            const int insertBelowRow = firstRange.bottomRow() + 1;
+
+            QAction *insertBlankAboveAction = contextMenu.addAction(QObject::tr("Insert Blank Item Above"));
+            connect(insertBlankAboveAction, &QAction::triggered, this, [dlg, insertAboveRow]() {
+                dlg->insertBlankMappingKeyAtAbsoluteRow(insertAboveRow);
+            });
+
+            QAction *insertBlankBelowAction = contextMenu.addAction(QObject::tr("Insert Blank Item Below"));
+            connect(insertBlankBelowAction, &QAction::triggered, this, [dlg, insertBelowRow]() {
+                dlg->insertBlankMappingKeyAtAbsoluteRow(insertBelowRow);
+            });
+        }
+
+        hasPreviousGroup = true;
+    }
+
     // Group 3: Delete selected rows
     if (hasSelection) {
         if (hasPreviousGroup) {
@@ -2024,6 +2059,29 @@ int QMappingSequenceEdit::insertMappingKeyFromCopiedListAtAbsoluteRow(int insert
     }
 
     return insertedCount;
+}
+
+int QMappingSequenceEdit::insertBlankMappingKeyAtAbsoluteRow(int insertRow)
+{
+    if (insertRow < 0 || insertRow > m_MappingSequenceList.size()) {
+        return 0;
+    }
+
+    ensureBaseSnapshotBeforeListChange();
+
+    m_MappingSequenceList.insert(insertRow, QString());
+    m_MappingCommentList.insert(insertRow, QString());
+
+    refreshMappingSequenceEditTableWidget(ui->mappingSequenceEditTable, m_MappingSequenceList);
+
+    // Select and scroll to the newly inserted blank row
+    if (insertRow < m_MappingSequenceList.size()) {
+        reselectionRangeAndScroll(insertRow, insertRow);
+    }
+
+    commitHistorySnapshotIfNeeded();
+
+    return 1;
 }
 
 int QMappingSequenceEdit::pasteMappingKeyFromCopiedList(int insertMode)
