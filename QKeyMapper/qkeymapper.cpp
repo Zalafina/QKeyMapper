@@ -12940,6 +12940,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QStringList repeattimesStringList;
     QStringList notesList;
     QStringList categorysList;
+    QList<QStringList> mappingKeysCommentsList;
+    QList<QStringList> mappingKeysKeyUpCommentsList;
     QStringList crosshair_centercolorStringList;
     QStringList crosshair_centersizeStringList;
     QStringList crosshair_centeropacityStringList;
@@ -13221,6 +13223,37 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         if (true == keyMappingDataFile.contains(KEYMAPDATA_CATEGORY)) {
             categorysList = keyMappingDataFile.value(KEYMAPDATA_CATEGORY).toStringList();
         }
+
+        // Load mapping key comments (QVariantList of QVariantList per row)
+        QVariant commentsVar = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYS_COMMENTS);
+        if (commentsVar.isValid() && commentsVar.canConvert<QVariantList>()) {
+            const QVariantList outerList = commentsVar.toList();
+            for (const QVariant &rowVar : outerList) {
+                QStringList rowComments;
+                if (rowVar.canConvert<QVariantList>()) {
+                    const QVariantList innerList = rowVar.toList();
+                    for (const QVariant &c : innerList) {
+                        rowComments << c.toString();
+                    }
+                }
+                mappingKeysCommentsList << rowComments;
+            }
+        }
+        QVariant keyUpCommentsVar = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS);
+        if (keyUpCommentsVar.isValid() && keyUpCommentsVar.canConvert<QVariantList>()) {
+            const QVariantList outerList = keyUpCommentsVar.toList();
+            for (const QVariant &rowVar : outerList) {
+                QStringList rowComments;
+                if (rowVar.canConvert<QVariantList>()) {
+                    const QVariantList innerList = rowVar.toList();
+                    for (const QVariant &c : innerList) {
+                        rowComments << c.toString();
+                    }
+                }
+                mappingKeysKeyUpCommentsList << rowComments;
+            }
+        }
+
         if (true == keyMappingDataFile.contains(KEYMAPDATA_DISABLED)) {
             disabledStringList = keyMappingDataFile.value(KEYMAPDATA_DISABLED).toStringList();
         }
@@ -14127,6 +14160,14 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     loadedData.FloatingButton_Y_Offset = floatingbutton_y_offsetList.at(loadindex);
                     loadedData.FloatingButton_DragToMove = floatingbutton_dragtomoveList.at(loadindex);
                     loadedData.FloatingButton_SyncGroupId = floatingbutton_syncgroupidList.at(loadindex);
+
+                    // Load mapping key comments (backward compatible)
+                    if (loadindex < mappingKeysCommentsList.size()) {
+                        loadedData.MappingKeys_Comments = mappingKeysCommentsList.at(loadindex);
+                    }
+                    if (loadindex < mappingKeysKeyUpCommentsList.size()) {
+                        loadedData.MappingKeys_KeyUp_Comments = mappingKeysKeyUpCommentsList.at(loadindex);
+                    }
                 }
 
                 loadindex += 1;
