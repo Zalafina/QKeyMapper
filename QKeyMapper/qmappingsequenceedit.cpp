@@ -1121,7 +1121,17 @@ void QMappingSequenceEdit::on_insertMappingKeyButton_clicked()
 void QMappingSequenceEdit::on_confirmButton_clicked()
 {
     QString joined_mappingsequence = joinCurentMappingSequenceTable();
-    QStringList comments = m_MappingCommentList;
+
+    // Filter comments to align with non-empty segments
+    // (joinCurentMappingSequenceTable removes empty "" segments via removeAll)
+    QStringList nonEmptyComments;
+    for (int i = 0; i < m_MappingSequenceList.size(); ++i) {
+        if (!m_MappingSequenceList.at(i).isEmpty()) {
+            nonEmptyComments.append(
+                i < m_MappingCommentList.size() ? m_MappingCommentList.at(i) : QString());
+        }
+    }
+    QStringList comments = nonEmptyComments;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[on_confirmButton_clicked] EditType:" << m_MappingSequenceEditType
