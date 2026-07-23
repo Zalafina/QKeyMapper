@@ -217,6 +217,12 @@ void QMappingSequenceEdit::refreshMappingSequenceEditTableWidget(MappingSequence
     debugmessage = QString("[refreshMappingSequenceEditTableWidget] mappingSequenceList(%1) End <<<").arg(mappingSequenceList.size());
     qDebug().nospace().noquote() << debugmessage;
 #endif
+
+    resizeMappingSequenceEditTableColumnWidth();
+    // Correct after scrollbar state settles (appear/disappear)
+    QTimer::singleShot(0, this, [this]() {
+        resizeMappingSequenceEditTableColumnWidth();
+    });
 }
 
 void QMappingSequenceEdit::updateMappingKeyListComboBox()
