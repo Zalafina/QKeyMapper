@@ -19697,7 +19697,7 @@ void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
 
         // Save comments as QVariantList
         QVariantList commentsList;
-        for (const QString &c : it.value().MacroComments) {
+        for (const QString &c : std::as_const(it.value().MacroComments)) {
             commentsList << c;
         }
         macroMap[MACROLIST_FIELD_MACROCOMMENTS] = commentsList;
@@ -19860,7 +19860,7 @@ void QKeyMapper::saveUniversalMacroListToINI()
 
         // Save comments as QVariantList
         QVariantList commentsList;
-        for (const QString &c : it.value().MacroComments) {
+        for (const QString &c : std::as_const(it.value().MacroComments)) {
             commentsList << c;
         }
         macroMap[MACROLIST_FIELD_MACROCOMMENTS] = commentsList;
