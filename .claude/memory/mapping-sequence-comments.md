@@ -54,6 +54,8 @@ pass2: unique segment text match in newSegs → migrate comment
 | SeqEdit 内新增段后加备注 | pass2 bounds guard + 同位 fallback |
 | 复制粘贴多行 | `s_CopiedMappingCommentList` 并行剪贴板 |
 | Mapping Code 复制/粘贴 | `MAPPINGCODE_STRINGLIST_FIELDS` X-macro 自动包含 Comments 字段 |
+| 插入空白行后 confirm | `joinCurentMappingSequenceTable` removeAll("") 与 comments 不同步，confirm 时过滤空段对应备注 |
+| 映射表导出→导入 round-trip | exportKeyMappingDataToFile 和 importKeyMappingDataFromFile 中所有 KEYMAPDATA_ 字段需逐一对齐 |
 
 ## 涉及文件
 
