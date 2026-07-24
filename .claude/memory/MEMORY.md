@@ -37,3 +37,7 @@
 - [Mapping Sequence Comment — Full Session](episodic/2026-07-22-mapping-sequence-comment.md) — 全部 Bug 的发现、根因、修复记录（持续更新）
 - [Tray Restore White Flash Fix](episodic/2026-07-24-tray-restore-white-flash.md) — 深色主题下系统托盘恢复显示白色闪烁的根因分析与双重修复
 - [Qt hide/show White Flash Fix Pattern](qt-hide-show-white-flash-fix.md) — Qt Windows 深色主题 hide()→show() 白色闪烁的通用修复模式（nativeEvent + paintEvent/WA_OpaquePaintEvent）
+- [Block-Input @0~9 Device Index Session](episodic/2026-07-24-block-input-device-index.md) — Block-Keyboard/Block-Mouse @0~9 扩展完整过程：设计、实现、Bug 修复
+- [Qt if-else Chain Variable Declaration](qt-ifelse-chain-variable-declaration.md) — 在已有 if-else if 链中新增需要局部变量的分支时，变量须声明在链作用域而非用 else{} 包裹
+- [QLatin1String Emoji Pitfall](qlatin1string-emoji-pitfall.md) — QLatin1String 只支持 Latin-1；emoji/非 BMP Unicode 须用 QStringLiteral
+- [Bitmask No-Fallback in LowLevel Hook](bitmask-no-fallback-lowlevel-hook.md) — 设备编号未知时 bitmask 不应回退为 mask!=0；只有全局 bool 控制屏蔽
