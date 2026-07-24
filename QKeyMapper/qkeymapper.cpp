@@ -7982,7 +7982,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                 QRegularExpressionMatch blockInputMatch = blockInputRegex.match(mapping_key);
                 if (!blockInputMatch.hasMatch()) {
                     result.isValid = false;
-                    result.errorMessage = tr("Invalid mapping key \"%1\".\nValid format: Block-Keyboard, Block-Keyboard⌨, Block-Mouse, Block-Mouse🖱, optionally with @0~9 suffix.")
+                    result.errorMessage = tr("Invalid blockinput key \"%1\".\nValid format: Block‑Keyboard[⌨] or Block‑Mouse[🖱], with an optional @0–9 suffix.")
                                               .arg(mapping_key);
                 }
                 else {
@@ -7994,7 +7994,7 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                                              || (deviceType == QLatin1String("Mouse") && emoji == QStringLiteral("🖱"));
                         if (!validEmoji) {
                             result.isValid = false;
-                            result.errorMessage = tr("Invalid emoji for mapping key \"%1\". Block-Keyboard uses ⌨, Block-Mouse uses 🖱.")
+                            result.errorMessage = tr("Invalid emoji for blockinput key \"%1\".\nBlock-Keyboard uses ⌨, Block-Mouse uses 🖱.")
                                                       .arg(mapping_key);
                         }
                         else {
@@ -30764,13 +30764,13 @@ void QKeyMapper::showBlockInputDeviceNotification(int devicetype, bool blocked, 
         if (blocked) {
             popupNotification = (deviceIndex == -1)
                 ? tr("Block Mouse")
-                : tr("Block Mouse : @%1").arg(deviceIndex);
+                : tr("Block Mouse") + QString(" : @%1").arg(deviceIndex);
             deviceIcon = ":/block_mouse.svg";
         }
         else {
             popupNotification = (deviceIndex == -1)
                 ? tr("Unblock Mouse")
-                : tr("Unblock Mouse : @%1").arg(deviceIndex);
+                : tr("Unblock Mouse") + QString(" : @%1").arg(deviceIndex);
             deviceIcon = ":/unblock_mouse.svg";
         }
     }
@@ -30778,13 +30778,13 @@ void QKeyMapper::showBlockInputDeviceNotification(int devicetype, bool blocked, 
         if (blocked) {
             popupNotification = (deviceIndex == -1)
                 ? tr("Block Keyboard")
-                : tr("Block Keyboard : @%1").arg(deviceIndex);
+                : tr("Block Keyboard") + QString(" : @%1").arg(deviceIndex);
             deviceIcon = ":/block_keyboard.svg";
         }
         else {
             popupNotification = (deviceIndex == -1)
                 ? tr("Unblock Keyboard")
-                : tr("Unblock Keyboard : @%1").arg(deviceIndex);
+                : tr("Unblock Keyboard") + QString(" : @%1").arg(deviceIndex);
             deviceIcon = ":/unblock_keyboard.svg";
         }
     }
