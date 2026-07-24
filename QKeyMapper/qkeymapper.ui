@@ -2100,7 +2100,7 @@
         <x>30</x>
         <y>70</y>
         <width>101</width>
-        <height>21</height>
+        <height>22</height>
        </rect>
       </property>
       <property name="focusPolicy">
@@ -2159,8 +2159,8 @@
      <widget class="QCheckBox" name="filterKeysCheckBox">
       <property name="geometry">
        <rect>
-        <x>190</x>
-        <y>10</y>
+        <x>20</x>
+        <y>40</y>
         <width>91</width>
         <height>21</height>
        </rect>
@@ -2180,7 +2180,7 @@
        <rect>
         <x>20</x>
         <y>10</y>
-        <width>71</width>
+        <width>141</width>
         <height>21</height>
        </rect>
       </property>
@@ -2194,10 +2194,10 @@
      <widget class="QPushButton" name="multiInputDeviceListButton">
       <property name="geometry">
        <rect>
-        <x>90</x>
+        <x>150</x>
         <y>10</y>
-        <width>81</width>
-        <height>21</height>
+        <width>101</width>
+        <height>22</height>
        </rect>
       </property>
       <property name="focusPolicy">
