@@ -14301,7 +14301,7 @@ QStringList QKeyMapper::reconcileMappingKeyComments(
         return result;
     }
 
-    QStringList newComments(newSize);  // all empty by default
+    QStringList newComments = QKeyMapperQtCompat::makeQStringList(newSize);  // all empty by default
 
     if (oldComments.isEmpty()) {
         return newComments;

@@ -213,6 +213,15 @@ inline void tabBarSetTabVisible(QTabBar *tabBar, int index, bool visible)
 #endif
 }
 
+inline QStringList makeQStringList(int size)
+{
+    QStringList list;
+    while (list.size() < size) {
+        list.append(QString());
+    }
+    return list;
+}
+
 } // namespace QKeyMapperQtCompat
 
 #endif // QKEYMAPPER_QT_COMPAT_H

@@ -149,7 +149,7 @@ void QMappingSequenceEdit::setMappingSequenceWithComments(const QString &mapping
 
     // Size-align comments list with segments
     const int segCount = mappingKeySeqList.size();
-    QStringList alignedComments(segCount);
+    QStringList alignedComments = QKeyMapperQtCompat::makeQStringList(segCount);
     for (int i = 0; i < segCount && i < comments.size(); ++i) {
         if (!comments[i].isEmpty()) {
             alignedComments[i] = comments[i];
