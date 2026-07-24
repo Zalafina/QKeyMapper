@@ -72,3 +72,5 @@ metadata:
 - [x] undo/redo 后列宽自动更新
 - [x] 插入空白行后 confirm 备注不串位
 - [x] 映射表导出→导入备注 round-trip
+- [x] 宏列表右键菜单直接序列编辑（DIRECT 模式，绕过 LineEdit）
+- [x] Clear/Load/DoubleClick 时清空 stale pending
