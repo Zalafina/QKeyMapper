@@ -2978,6 +2978,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug() << "[QKeyMapper()]" << "Mainwindow HWND ID ->" << reinterpret_cast<HWND>(winId());
 #endif
 
+    // Prevent white flash when restoring from system tray.
+    // WA_OpaquePaintEvent tells the Windows QPA to skip the default white
+    // WM_ERASEBKGND brush, so the paintEvent override can fill with the
+    // current palette color from the first frame.
+    setAttribute(Qt::WA_OpaquePaintEvent, true);
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QKeyMapper()]" << "AvailableStyles ->" << QStyleFactory::keys();
 #endif
@@ -14700,6 +14706,25 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
                 }
             }
         }
+        else if (msg->message == WM_ERASEBKGND) {
+            // Intercept WM_ERASEBKGND to prevent the white flash when restoring
+            // from system tray. Windows fills the client area with the default
+            // white brush before Qt's palette-aware paint system runs; we replace
+            // it with the current palette Window color instead.
+            HDC hdc = reinterpret_cast<HDC>(msg->wParam);
+            if (hdc) {
+                QColor bgColor = palette().color(QPalette::Window);
+                HBRUSH brush = CreateSolidBrush(RGB(bgColor.red(), bgColor.green(), bgColor.blue()));
+                if (brush) {
+                    RECT rect;
+                    GetClipBox(hdc, &rect);
+                    FillRect(hdc, &rect, brush);
+                    DeleteObject(brush);
+                }
+            }
+            *result = TRUE;   // Tell Windows we erased the background
+            return true;      // Message handled; prevent default white fill
+        }
     }
 
     return QWidget::nativeEvent(eventType, message, result);
@@ -14751,6 +14776,18 @@ void QKeyMapper::showEvent(QShowEvent *event)
     }
 
     QMainWindow::showEvent(event);
+}
+
+void QKeyMapper::paintEvent(QPaintEvent *event)
+{
+    Q_UNUSED(event);
+
+    // Fill background with the current palette Window color.
+    // Combined with WA_OpaquePaintEvent, this prevents the white flash when
+    // restoring from system tray: hide() destroys the backing store, and
+    // without this override WM_ERASEBKGND would fill with white first.
+    QPainter painter(this);
+    painter.fillRect(rect(), palette().color(QPalette::Window));
 }
 
 void QKeyMapper::closeEvent(QCloseEvent *event)
