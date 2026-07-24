@@ -41,3 +41,5 @@
 - [Qt if-else Chain Variable Declaration](qt-ifelse-chain-variable-declaration.md) — 在已有 if-else if 链中新增需要局部变量的分支时，变量须声明在链作用域而非用 else{} 包裹
 - [QLatin1String Emoji Pitfall](qlatin1string-emoji-pitfall.md) — QLatin1String 只支持 Latin-1；emoji/非 BMP Unicode 须用 QStringLiteral
 - [Bitmask No-Fallback in LowLevel Hook](bitmask-no-fallback-lowlevel-hook.md) — 设备编号未知时 bitmask 不应回退为 mask!=0；只有全局 bool 控制屏蔽
+- [Qt Compat Header Transitive Include](qt-compat-header-transitive-include.md) — qkeymapper_qt_compat.h 通过 qkeymapper.h 间接包含，多数文件无需手动 include
+- [QStringList(int) Qt5 Compat Fix](episodic/2026-07-24-qstringlist-int-constructor-qt5-compat.json) — Qt5.12 QStringList(int) 构造函数不兼容修复：添加 makeQStringList helper

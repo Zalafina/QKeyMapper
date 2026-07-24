@@ -1,0 +1,14 @@
+{
+  "id": "ep-2026-07-24-001",
+  "timestamp": "2026-07-24T00:00:00Z",
+  "skill": "qkeymapper-workflow",
+  "situation": "Qt5.12.10 编译报错 C2664：QStringList(int) 构造函数不存在，Qt6.8.3 正常。两处报错：qmappingsequenceedit.cpp:152 和 qkeymapper.cpp:14304",
+  "root_cause": "Qt5 的 QStringList 自身构造函数隐藏了基类 QList<QString>::QList(int)，导致 QStringList(segCount) 尝试匹配 QStringList(const QString &) 失败",
+  "solution": "在 qkeymapper_qt_compat.h 添加 makeQStringList(int) inline helper，用 while-loop 填充空字符串；两处调用点替换为 QKeyMapperQtCompat::makeQStringList(size)",
+  "lesson": "QStringList 的跨版本差异不仅限于 SplitBehavior；任何 QStringList 构造函数差异都应通过 qkeymapper_qt_compat.h 吸收",
+  "user_feedback": {
+    "type": "correction",
+    "detail": "qkeymapper.h 已包含 qkeymapper_qt_compat.h，两个报错文件都引用了 qkeymapper.h，无需额外添加 #include"
+  },
+  "related_pattern": "qt-compat-header-transitive-include"
+}
