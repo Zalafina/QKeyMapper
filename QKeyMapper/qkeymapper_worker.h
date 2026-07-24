@@ -1592,6 +1592,8 @@ public:
     static QAtomicInt s_AtomicHookProcState;
     static QAtomicBool s_BlockKeyboard;
     static QAtomicBool s_BlockMouse;
+    static QAtomicInt s_BlockKeyboardMask;  // bit 0~9 → keyboard device 0~9
+    static QAtomicInt s_BlockMouseMask;     // bit 0~9 → mouse device 0~9
     static QAtomicBool s_Mouse2vJoy_Hold;
     static QAtomicBool s_Gyro2Mouse_MoveActive;
     static QAtomicBool s_GamepadTouchpad_Active;

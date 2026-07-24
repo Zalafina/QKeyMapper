@@ -50,6 +50,58 @@ bool isGamepadTouchpadPlayerEnabled(int playerMask, int playerIndex)
     return isGamepadTouchpadPlayerIndexValid(playerIndex)
         && ((playerMask & gamepadTouchpadPlayerBit(playerIndex)) != 0);
 }
+
+constexpr int BLOCK_INPUT_DEVICE_COUNT = INTERCEPTION_MAX_KEYBOARD; // 10
+constexpr int INITIAL_DEVICE_INDEX = -1;
+
+inline bool isBlockDeviceMaskSet(int mask, int deviceIndex)
+{
+    return (mask & (1 << deviceIndex)) != 0;
+}
+
+inline int setBlockDeviceMaskBit(int mask, int deviceIndex)
+{
+    return mask | (1 << deviceIndex);
+}
+
+inline int clearBlockDeviceMaskBit(int mask, int deviceIndex)
+{
+    return mask & ~(1 << deviceIndex);
+}
+
+bool parseBlockInputMappingKey(const QString &key, QString *baseKey = nullptr, bool *showNotification = nullptr, int *deviceIndex = nullptr)
+{
+    static QRegularExpression blockInputMappingKeyRegex(QKeyMapperConstants::REGEX_PATTERN_BLOCK_INPUT_MAPPING_KEY);
+    QRegularExpressionMatch match = blockInputMappingKeyRegex.match(key);
+    if (!match.hasMatch()) {
+        return false;
+    }
+
+    if (baseKey != nullptr) {
+        *baseKey = match.captured(1);  // "Block-Keyboard" or "Block-Mouse"
+    }
+
+    if (showNotification != nullptr) {
+        const QString deviceType = match.captured(2);  // "Keyboard" or "Mouse"
+        const QString emoji = match.captured(3);
+        if (!emoji.isEmpty()) {
+            // Validate emoji matches device type: Keyboard→⌨, Mouse→🖱
+            const bool validEmoji = (deviceType == QLatin1String("Keyboard") && emoji == QStringLiteral("⌨"))
+                                 || (deviceType == QLatin1String("Mouse") && emoji == QStringLiteral("🖱"));
+            if (!validEmoji) {
+                return false;
+            }
+        }
+        *showNotification = !emoji.isEmpty();
+    }
+
+    if (deviceIndex != nullptr) {
+        const QString deviceIndexString = match.captured(4);
+        *deviceIndex = deviceIndexString.isEmpty() ? INITIAL_DEVICE_INDEX : deviceIndexString.toInt();
+    }
+
+    return true;
+}
 }
 
 QMutex SendInputTask::s_SendInputTaskControllerMapMutex;
@@ -73,6 +125,8 @@ bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 QAtomicInt QKeyMapper_Worker::s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 QAtomicBool QKeyMapper_Worker::s_BlockKeyboard;
 QAtomicBool QKeyMapper_Worker::s_BlockMouse;
+QAtomicInt QKeyMapper_Worker::s_BlockKeyboardMask;
+QAtomicInt QKeyMapper_Worker::s_BlockMouseMask;
 QAtomicBool QKeyMapper_Worker::s_Mouse2vJoy_Hold;
 QAtomicBool QKeyMapper_Worker::s_Gyro2Mouse_MoveActive;
 QAtomicBool QKeyMapper_Worker::s_GamepadTouchpad_Active;
@@ -3216,6 +3270,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
             }
 
+            QString baseKeyResult;
+            bool showNotificationResult = false;
+            int deviceIndexResult = INITIAL_DEVICE_INDEX;
+
             if (key.isEmpty()
                 || key == KEY_NONE_STR
                 || sendtype == SENDTYPE_DOWN
@@ -3582,18 +3640,28 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             else if (parseGamepadTouchpadMappingKey(key)) {
                 /* Touchpad control mapping keys are one-shot actions handled on KEY_DOWN only. */
             }
-            else if (key == BLOCK_KEYBOARD_STR
-                || key == BLOCK_KEYBOARD_NOTIFY_STR) {
-                s_BlockKeyboard = false;
-                if (key == BLOCK_KEYBOARD_NOTIFY_STR) {
-                    emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_KEYBOARD, false);
-                }
-            }
-            else if (key == BLOCK_MOUSE_STR
-                || key == BLOCK_MOUSE_NOTIFY_STR) {
-                s_BlockMouse = false;
-                if (key == BLOCK_MOUSE_NOTIFY_STR) {
-                    emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_MOUSE, false);
+            else if (parseBlockInputMappingKey(key, &baseKeyResult, &showNotificationResult, &deviceIndexResult)) {
+                const bool isKeyboard = (baseKeyResult == BLOCK_KEYBOARD_STR);
+                const bool isMouse = (baseKeyResult == BLOCK_MOUSE_STR);
+
+                if (isKeyboard || isMouse) {
+                    QAtomicBool &blockAll = isKeyboard ? s_BlockKeyboard : s_BlockMouse;
+                    QAtomicInt &mask = isKeyboard ? s_BlockKeyboardMask : s_BlockMouseMask;
+                    const int devicetype = isKeyboard ? BLOCK_INPUTDEVICE_KEYBOARD : BLOCK_INPUTDEVICE_MOUSE;
+
+                    if (deviceIndexResult == INITIAL_DEVICE_INDEX) {
+                        // No @N suffix: unblock ALL devices
+                        blockAll = false;
+                        mask.storeRelease(0);
+                    } else {
+                        // @N suffix: unblock only the specified device
+                        int currentMask = mask.loadAcquire();
+                        mask.storeRelease(clearBlockDeviceMaskBit(currentMask, deviceIndexResult));
+                    }
+
+                    if (showNotificationResult) {
+                        emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(devicetype, false, deviceIndexResult);
+                    }
                 }
             }
             else if (key.startsWith(MOUSE_POS_PREFIX)) {
@@ -3958,6 +4026,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 bool showGamepadTouchpadNotification = false;
                 int gamepadTouchpadPlayerIndex = INITIAL_PLAYER_INDEX;
                 bool isGamepadTouchpadMappingKey = parseGamepadTouchpadMappingKey(key, &gamepadTouchpadBaseKey, &showGamepadTouchpadNotification, &gamepadTouchpadPlayerIndex);
+                QString baseKeyResult;
+                bool showNotificationResult = false;
+                int deviceIndexResult = INITIAL_DEVICE_INDEX;
                 if (key.isEmpty() || key == KEY_NONE_STR) {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendInputKeys] KeySequence KeyDown only wait time ->" << waitTime;
@@ -4727,39 +4798,50 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         clearGamepadTouchpadRuntimeState();
                     }
                 }
-                else if (key == BLOCK_KEYBOARD_STR
-                    || key == BLOCK_KEYBOARD_NOTIFY_STR) {
-                    if (sendtype == SENDTYPE_UP || sendtype == SENDTYPE_FORCE_UP) {
-                        s_BlockKeyboard = false;
-                        if (key == BLOCK_KEYBOARD_NOTIFY_STR) {
-                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_KEYBOARD, false);
+                else if (parseBlockInputMappingKey(key, &baseKeyResult, &showNotificationResult, &deviceIndexResult)) {
+                    const bool isKeyboard = (baseKeyResult == BLOCK_KEYBOARD_STR);
+                    const bool isMouse = (baseKeyResult == BLOCK_MOUSE_STR);
+
+                    if (!isKeyboard && !isMouse) {
+                        /* Should not reach here given the regex, but be safe. */
+                    }
+                    else if (sendtype == SENDTYPE_UP || sendtype == SENDTYPE_FORCE_UP) {
+                        QAtomicBool &blockAll = isKeyboard ? s_BlockKeyboard : s_BlockMouse;
+                        QAtomicInt &mask = isKeyboard ? s_BlockKeyboardMask : s_BlockMouseMask;
+                        const int devicetype = isKeyboard ? BLOCK_INPUTDEVICE_KEYBOARD : BLOCK_INPUTDEVICE_MOUSE;
+
+                        if (deviceIndexResult == INITIAL_DEVICE_INDEX) {
+                            // No @N suffix: unblock ALL devices
+                            blockAll = false;
+                            mask.storeRelease(0);
+                        } else {
+                            // @N suffix: unblock only the specified device
+                            int currentMask = mask.loadAcquire();
+                            mask.storeRelease(clearBlockDeviceMaskBit(currentMask, deviceIndexResult));
+                        }
+
+                        if (showNotificationResult) {
+                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(devicetype, false, deviceIndexResult);
                         }
                     }
                     else if (sendtype == SENDTYPE_NORMAL
                         || sendtype == SENDTYPE_DOWN
                         || sendtype == SENDTYPE_TOGGLE
                         || sendtype == SENDTYPE_FORCE_TOGGLE) {
-                        s_BlockKeyboard = true;
-                        if (key == BLOCK_KEYBOARD_NOTIFY_STR) {
-                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_KEYBOARD, true);
+                        QAtomicBool &blockAll = isKeyboard ? s_BlockKeyboard : s_BlockMouse;
+                        QAtomicInt &mask = isKeyboard ? s_BlockKeyboardMask : s_BlockMouseMask;
+                        const int devicetype = isKeyboard ? BLOCK_INPUTDEVICE_KEYBOARD : BLOCK_INPUTDEVICE_MOUSE;
+
+                        if (deviceIndexResult == INITIAL_DEVICE_INDEX) {
+                            // No @N: block ALL devices
+                            blockAll = true;
+                        } else {
+                            int currentMask = mask.loadAcquire();
+                            mask.storeRelease(setBlockDeviceMaskBit(currentMask, deviceIndexResult));
                         }
-                    }
-                }
-                else if (key == BLOCK_MOUSE_STR
-                    || key == BLOCK_MOUSE_NOTIFY_STR) {
-                    if (sendtype == SENDTYPE_UP || sendtype == SENDTYPE_FORCE_UP) {
-                        s_BlockMouse = false;
-                        if (key == BLOCK_MOUSE_NOTIFY_STR) {
-                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_MOUSE, false);
-                        }
-                    }
-                    else if (sendtype == SENDTYPE_NORMAL
-                        || sendtype == SENDTYPE_DOWN
-                        || sendtype == SENDTYPE_TOGGLE
-                        || sendtype == SENDTYPE_FORCE_TOGGLE) {
-                        s_BlockMouse = true;
-                        if (key == BLOCK_MOUSE_NOTIFY_STR) {
-                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(BLOCK_INPUTDEVICE_MOUSE, true);
+
+                        if (showNotificationResult) {
+                            emit QKeyMapper::getInstance()->showBlockInputDeviceNotification_Signal(devicetype, true, deviceIndexResult);
                         }
                     }
                 }
@@ -14402,7 +14484,9 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
             // Keep consistent behavior with LowLevelMouseHookProc:
             // - LockCursor or Block-Mouse should swallow mouse move (cursor does not move).
             // - Hold mode should not update joystick, but still respects swallow when enabled.
-            const bool blockMouse = QKEYMAPPER_ATOMIC_LOAD_RELAXED(s_BlockMouse);
+            const int mouseMask = s_BlockMouseMask.loadAcquire();
+            const bool blockMouse = s_BlockMouse.loadAcquire()
+                || (mouse_index >= 0 && isBlockDeviceMaskSet(mouseMask, mouse_index));
             const bool swallowMouseMove = (lockCursor || blockMouse);
 
             if (s_Mouse2vJoy_Hold) {
@@ -14998,7 +15082,19 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 #endif
     }
 
-    if (s_BlockKeyboard
+    /* Decode keyboard device index from extraInfo for per-device block check */
+    int keyboard_index = INITIAL_KEYBOARD_INDEX;
+    if (extraInfo > INTERCEPTION_EXTRA_INFO && extraInfo <= (INTERCEPTION_EXTRA_INFO + INTERCEPTION_MAX_DEVICE)) {
+        InterceptionDevice device = extraInfo - INTERCEPTION_EXTRA_INFO;
+        if (interception_is_keyboard(device)) {
+            keyboard_index = device - INTERCEPTION_KEYBOARD(0);
+        }
+    }
+
+    const int keyboardMask = s_BlockKeyboardMask.loadAcquire();
+    const bool blockKeyboard = s_BlockKeyboard.loadAcquire()
+        || (keyboard_index >= 0 && isBlockDeviceMaskSet(keyboardMask, keyboard_index));
+    if (blockKeyboard
         && extraInfo != VIRTUAL_KEY_SEND
         && extraInfo != VIRTUAL_KEY_OVERLAY
         && extraInfo != VIRTUAL_CUSTOM_KEYS
@@ -15795,7 +15891,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 const bool lockCursor = QKeyMapper::getvJoyLockCursorStatus();
                 // When we swallow WM_MOUSEMOVE (LockCursor or BlockMouse), Windows does not update the system cursor position.
                 // In that case, we must keep a stable baseline (s_Mouse2vJoy_prev) to compute correct relative delta.
-                const bool blockMouse = QKEYMAPPER_ATOMIC_LOAD_RELAXED(s_BlockMouse);
+                const int mouseMask = s_BlockMouseMask.loadAcquire();
+                const bool blockMouse = s_BlockMouse.loadAcquire()
+                    || (mouse_index >= 0 && isBlockDeviceMaskSet(mouseMask, mouse_index));
                 const bool swallowMouseMove = (lockCursor || blockMouse);
 
                 if (s_Mouse2vJoy_Hold) {
@@ -15836,7 +15934,19 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 #endif
 
-    if (s_BlockMouse
+    /* Decode mouse device index from extraInfo for per-device block check */
+    int mouse_index_block = INITIAL_MOUSE_INDEX;
+    if (extraInfo > INTERCEPTION_EXTRA_INFO && extraInfo <= (INTERCEPTION_EXTRA_INFO + INTERCEPTION_MAX_DEVICE)) {
+        InterceptionDevice device = extraInfo - INTERCEPTION_EXTRA_INFO;
+        if (interception_is_mouse(device)) {
+            mouse_index_block = device - INTERCEPTION_MOUSE(0);
+        }
+    }
+
+    const int mouseBlockMask = s_BlockMouseMask.loadAcquire();
+    const bool blockMouse = s_BlockMouse.loadAcquire()
+        || (mouse_index_block >= 0 && isBlockDeviceMaskSet(mouseBlockMask, mouse_index_block));
+    if (blockMouse
         && extraInfo != VIRTUAL_KEY_SEND
         && extraInfo != VIRTUAL_KEY_OVERLAY
         && extraInfo != VIRTUAL_MOUSE_POINTCLICK
@@ -20095,6 +20205,8 @@ void QKeyMapper_Worker::clearCustomKeyFlags(bool restart)
 {
     s_BlockKeyboard = false;
     s_BlockMouse = false;
+    s_BlockKeyboardMask.storeRelease(0);
+    s_BlockMouseMask.storeRelease(0);
     s_Mouse2vJoy_Hold = false;
     s_Gyro2Mouse_MoveActive = false;
     s_GamepadTouchpad_Active = false;

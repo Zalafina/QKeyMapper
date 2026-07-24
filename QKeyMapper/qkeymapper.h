@@ -1498,7 +1498,7 @@ signals:
     void updateInputDeviceSelectComboBoxes_Signal(void);
     void updateGamepadSelectComboBox_Signal(int instance_id);
     void showSetVolumeNotification_Signal(float volume, bool muted, int volume_type);
-    void showBlockInputDeviceNotification_Signal(int devicetype, bool blocked);
+    void showBlockInputDeviceNotification_Signal(int devicetype, bool blocked, int deviceIndex = -1);
     void showGamepadTouchpadNotification_Signal(int playerindex, bool active);
     void showSwitchBurstAndLockNotification_Signal(int rowindex);
     void switchBurstAndLockStateApplied_Signal(int rowindex);
@@ -2214,7 +2214,7 @@ public slots:
     void updateInputDeviceSelectComboBoxes(void);
     void updateGamepadSelectComboBox(int instance_id);
     void showSetVolumeNotification(float volume, bool muted, int volume_type);
-    void showBlockInputDeviceNotification(int devicetype, bool blocked);
+    void showBlockInputDeviceNotification(int devicetype, bool blocked, int deviceIndex = -1);
     void showGamepadTouchpadNotification(int playerindex, bool active);
     void showSwitchBurstAndLockNotification(int rowindex);
     void updateKeyMappingTabWidgetTabName(int tabindex, const QString &tabname);

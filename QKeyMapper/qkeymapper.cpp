@@ -7977,6 +7977,35 @@ ValidationResult QKeyMapper::validateSingleMappingKey(const QString &mapkey, int
                     result.isValid = true;
                 }
             }
+            else if (mapping_key.startsWith(BLOCK_INPUT_PREFIX)) {
+                static QRegularExpression blockInputRegex(QKeyMapperConstants::REGEX_PATTERN_BLOCK_INPUT_MAPPING_KEY);
+                QRegularExpressionMatch blockInputMatch = blockInputRegex.match(mapping_key);
+                if (!blockInputMatch.hasMatch()) {
+                    result.isValid = false;
+                    result.errorMessage = tr("Invalid mapping key \"%1\".\nValid format: Block-Keyboard, Block-Keyboard⌨, Block-Mouse, Block-Mouse🖱, optionally with @0~9 suffix.")
+                                              .arg(mapping_key);
+                }
+                else {
+                    // Validate emoji matches device type
+                    const QString deviceType = blockInputMatch.captured(2);
+                    const QString emoji = blockInputMatch.captured(3);
+                    if (!emoji.isEmpty()) {
+                        const bool validEmoji = (deviceType == QLatin1String("Keyboard") && emoji == QStringLiteral("⌨"))
+                                             || (deviceType == QLatin1String("Mouse") && emoji == QStringLiteral("🖱"));
+                        if (!validEmoji) {
+                            result.isValid = false;
+                            result.errorMessage = tr("Invalid emoji for mapping key \"%1\". Block-Keyboard uses ⌨, Block-Mouse uses 🖱.")
+                                                      .arg(mapping_key);
+                        }
+                        else {
+                            result.isValid = true;
+                        }
+                    }
+                    else {
+                        result.isValid = true;
+                    }
+                }
+            }
             else if (mousepoint_match.hasMatch()
                 || mousemove_relative_match.hasMatch()
                 || sendtext_match.hasMatch()
@@ -30695,7 +30724,7 @@ void QKeyMapper::showSetVolumeNotification(float volume, bool muted, int volume_
     showNotificationPopup(popupNotification, opts);
 }
 
-void QKeyMapper::showBlockInputDeviceNotification(int devicetype, bool blocked)
+void QKeyMapper::showBlockInputDeviceNotification(int devicetype, bool blocked, int deviceIndex)
 {
 #ifdef DEBUG_LOGOUT_ON
     const char* deviceTypeStr = (devicetype == BLOCK_INPUTDEVICE_MOUSE) ? "Mouse" : "Keyboard";
@@ -30733,21 +30762,29 @@ void QKeyMapper::showBlockInputDeviceNotification(int devicetype, bool blocked)
     QString deviceIcon;
     if (devicetype == BLOCK_INPUTDEVICE_MOUSE) {
         if (blocked) {
-            popupNotification = tr("Block Mouse");
+            popupNotification = (deviceIndex == -1)
+                ? tr("Block Mouse")
+                : tr("Block Mouse : @%1").arg(deviceIndex);
             deviceIcon = ":/block_mouse.svg";
         }
         else {
-            popupNotification = tr("Unblock Mouse");
+            popupNotification = (deviceIndex == -1)
+                ? tr("Unblock Mouse")
+                : tr("Unblock Mouse : @%1").arg(deviceIndex);
             deviceIcon = ":/unblock_mouse.svg";
         }
     }
     else {  // BLOCK_INPUTDEVICE_KEYBOARD
         if (blocked) {
-            popupNotification = tr("Block Keyboard");
+            popupNotification = (deviceIndex == -1)
+                ? tr("Block Keyboard")
+                : tr("Block Keyboard : @%1").arg(deviceIndex);
             deviceIcon = ":/block_keyboard.svg";
         }
         else {
-            popupNotification = tr("Unblock Keyboard");
+            popupNotification = (deviceIndex == -1)
+                ? tr("Unblock Keyboard")
+                : tr("Unblock Keyboard : @%1").arg(deviceIndex);
             deviceIcon = ":/unblock_keyboard.svg";
         }
     }
@@ -33985,16 +34022,15 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
-#if 0
-            else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
+            else if (keymapdata.Mapping_Keys.constFirst().startsWith(BLOCK_INPUT_PREFIX)) {
                 disable_burst = true;
-                // disable_lock = true;
+                disable_lock = true;
             }
-            else if (keymapdata.Mapping_Keys.constFirst().contains(SENDTEXT_STR)) {
+            else if (keymapdata.Mapping_Keys.constFirst().startsWith(SENDTEXT_STR)) {
                 // disable_burst = true;
                 disable_lock = true;
             }
-            else if (keymapdata.Mapping_Keys.constFirst().contains(RUN_STR)) {
+            else if (keymapdata.Mapping_Keys.constFirst().startsWith(RUN_STR)) {
                 // disable_burst = true;
                 disable_lock = true;
             }
@@ -34003,7 +34039,6 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
                 disable_burst = true;
                 disable_lock = true;
             }
-#endif
 
             /* ORIGINAL_KEY_COLUMN */
             QString mapdata_note = keymapdata.Note;
@@ -34302,25 +34337,23 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
         disable_burst = true;
         disable_lock = true;
     }
-#if 0
-    else if (keymapdata.Mapping_Keys.constFirst().contains(BLOCK_INPUT_PREFIX)) {
-        disable_burst = true;
-        // disable_lock = true;
-    }
-    else if (keymapdata.Mapping_Keys.constFirst().contains(SENDTEXT_STR)) {
-        // disable_burst = true;
-        disable_lock = true;
-    }
-    else if (keymapdata.Mapping_Keys.constFirst().contains(RUN_STR)) {
-        // disable_burst = true;
-        disable_lock = true;
-    }
-    else if (keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_STR)
-        || keymapdata.Mapping_Keys.constFirst().contains(SWITCHTAB_SAVE_STR)) {
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(BLOCK_INPUT_PREFIX)) {
         disable_burst = true;
         disable_lock = true;
     }
-#endif
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(SENDTEXT_STR)) {
+        // disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(RUN_STR)) {
+        // disable_burst = true;
+        disable_lock = true;
+    }
+    else if (keymapdata.Mapping_Keys.constFirst().startsWith(SWITCHTAB_STR)
+        || keymapdata.Mapping_Keys.constFirst().startsWith(SWITCHTAB_SAVE_STR)) {
+        disable_burst = true;
+        disable_lock = true;
+    }
 
     // Update the specific column
     switch (column) {

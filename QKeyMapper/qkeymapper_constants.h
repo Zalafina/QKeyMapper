@@ -1892,6 +1892,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char GAMEPAD_TOUCHPAD_OFF_NOTIFY_KEY_STR[] = "GamepadTouchpadOff🎮";
     inline constexpr const char GAMEPAD_TOUCHPAD_TOGGLE_NOTIFY_KEY_STR[] = "GamepadTouchpadToggle🎮";
     inline constexpr const char REGEX_PATTERN_GAMEPAD_TOUCHPAD_MAPPING_KEY[] = R"(^(GamepadTouchpad(On|Off|Toggle))(🎮)?(?:@(\d+))?$)";
+    inline constexpr const char REGEX_PATTERN_BLOCK_INPUT_MAPPING_KEY[] = R"(^(Block-(Keyboard|Mouse))(?:([⌨🖱]))?(?:@([0-9]))?$)";
 
     inline constexpr const char KEY2MOUSE_PREFIX[]     = "Key2Mouse-";
     inline constexpr const char KEY2MOUSE_UP_STR[]     = "Key2Mouse-Up";
