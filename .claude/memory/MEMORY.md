@@ -35,3 +35,5 @@
 - [Callback Injection Library Extensibility](callback-injection-library-extensibility.md) — std::function 回调注入模式：在不修改库架构的前提下为库代码添加应用特定逻辑
 - [Mapping Sequence Comments](mapping-sequence-comments.md) — 映射序列编辑窗口"备注"列：纯数据字段方案、两阶段提交数据流、reconcile 对齐算法、已知陷阱
 - [Mapping Sequence Comment — Full Session](episodic/2026-07-22-mapping-sequence-comment.md) — 全部 Bug 的发现、根因、修复记录（持续更新）
+- [Tray Restore White Flash Fix](episodic/2026-07-24-tray-restore-white-flash.md) — 深色主题下系统托盘恢复显示白色闪烁的根因分析与双重修复
+- [Qt hide/show White Flash Fix Pattern](qt-hide-show-white-flash-fix.md) — Qt Windows 深色主题 hide()→show() 白色闪烁的通用修复模式（nativeEvent + paintEvent/WA_OpaquePaintEvent）
