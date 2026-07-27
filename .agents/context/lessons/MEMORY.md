@@ -1,4 +1,5 @@
 # QKeyMapper Project Memory
+- [Agent Workspace Sharing Migration](episodic/2026-07-27-agent-workspace-sharing.md) — Shared Codex/Claude guidance, workspace memory routing, manual skill-copy policy, and remote-integration note.
 
 - [Qt Absolute-Positioning Window Resize Pattern](qt-no-layout-resize-pattern.md) — Core pattern for adding resize to dialogs without layout managers
 - [Window Size Persistence](window-size-persistence.md) — INI-based save/restore with conditional checkbox

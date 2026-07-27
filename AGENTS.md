@@ -1,14 +1,16 @@
 # QKeyMapper Workspace Instructions
 
+- This is the shared repository instruction file for Claude Code and Codex.
 - Windows-only Qt Widgets + WinAPI C++.
 - Keep changes small and local; reuse existing QKeyMapper architecture; avoid new frameworks and large refactors.
-- For QKeyMapper work, invoke the qkeymapper-workflow skill as the repo playbook.
+- For QKeyMapper work, use `.agents/skills/qkeymapper-workflow/SKILL.md` as the repo playbook.
 - Qt/C++ source files use UTF-8 without BOM; new code comments in English; do not edit .ts files unless asked.
-- Plans, confirmations, and summaries in Chinese; use AskUserQuestion for decisions; include a freeform option when offering choices.
+- Plans, confirmations, and summaries are in Chinese. When a user decision is needed, ask a clear question and allow a freeform response.
 - If a change touches stability, driver behavior, or system API side effects, call it out and ask the user to decide.
 - After edits, let the user do compile validation unless they ask otherwise.
-- Project experience memory is in .claude/memory/ (MEMORY.md is the index). Check for relevant experience before starting each task.
-- Knowledge graph at `.understand-anything/knowledge-graph.json` (use `/understand-chat` to query).
+- Shared project experience memory is in `.agents/context/`; start with `.agents/context/project-memory.md` and consult its linked index before relevant work. Update it only with durable, verified knowledge.
+- For QKeyMapper work, self-improving-agent artifacts must be stored in `.agents/context/lessons/` and indexed in `.agents/context/lessons/MEMORY.md`; never write QKeyMapper-specific experience to a global skill `memory/` directory.
+- Knowledge graph at `.understand-anything/knowledge-graph.json`; use an available knowledge-graph tool when present, otherwise inspect the file directly.
 
 ## Architecture quick reference (按需查阅)
 
