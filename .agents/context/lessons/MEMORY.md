@@ -36,8 +36,8 @@
 - [Callback Injection Library Extensibility](callback-injection-library-extensibility.md) — std::function 回调注入模式：在不修改库架构的前提下为库代码添加应用特定逻辑
 - [Mapping Sequence Comments](mapping-sequence-comments.md) — 映射序列编辑窗口"备注"列：纯数据字段方案、两阶段提交数据流、reconcile 对齐算法、已知陷阱
 - [Mapping Sequence Comment — Full Session](episodic/2026-07-22-mapping-sequence-comment.md) — 全部 Bug 的发现、根因、修复记录（持续更新）
-- [Tray Restore White Flash Fix](episodic/2026-07-24-tray-restore-white-flash.md) — 深色主题下系统托盘恢复显示白色闪烁的根因分析与双重修复
-- [Qt hide/show White Flash Fix Pattern](qt-hide-show-white-flash-fix.md) — Qt Windows 深色主题 hide()→show() 白色闪烁的通用修复模式（nativeEvent + paintEvent/WA_OpaquePaintEvent）
+- [Tray Restore White Flash Fix](episodic/2026-07-24-tray-restore-white-flash.md) — 深色主题托盘恢复白闪的修正记录：全局双重绘制的拖动回归与恢复期首帧保护
+- [Qt hide/show White Flash Fix Pattern](qt-hide-show-white-flash-fix.md) — Qt Windows 深色主题 hide()→show() 白闪的恢复期首帧主题色保护模式
 - [Block-Input @0~9 Device Index Session](episodic/2026-07-24-block-input-device-index.md) — Block-Keyboard/Block-Mouse @0~9 扩展完整过程：设计、实现、Bug 修复
 - [Qt if-else Chain Variable Declaration](qt-ifelse-chain-variable-declaration.md) — 在已有 if-else if 链中新增需要局部变量的分支时，变量须声明在链作用域而非用 else{} 包裹
 - [QLatin1String Emoji Pitfall](qlatin1string-emoji-pitfall.md) — QLatin1String 只支持 Latin-1；emoji/非 BMP Unicode 须用 QStringLiteral

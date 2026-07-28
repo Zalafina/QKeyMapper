@@ -1,21 +1,42 @@
 ---
 name: qt-hide-show-white-flash-fix
-description: Qt Widgets 深色主题下 hide()→show() 恢复显示时白色闪烁的根因与双重修复模式
+description: Qt Widgets 深色主题下 hide()→show() 白色闪烁的恢复期首帧保护模式
 metadata:
   type: pattern
   category: qt_windows_rendering
   confidence: 0.95
   applications: 1
   created: 2026-07-24
+  verified: 2026-07-29
 ---
 
 # Qt Dark Theme: hide()→show() 白色闪烁修复模式
+
+<!-- Correction: 2026-07-29 | was: global WM_ERASEBKGND + WA_OpaquePaintEvent + custom paintEvent | reason: title-bar dragging flickered -->
 
 ## 问题
 
 Qt Widgets 程序使用深色主题（`QPalette::Window` = 深色），窗口从 `hide()` 状态恢复 `show()` 时，会先闪一下白色背景，然后才显示深色内容。浅色主题下不明显（白色接近浅色内容），但深色主题下非常刺眼。
 
-## 根因
+## 已验证修复模式：恢复期首帧保护
+
+仅在窗口原本 `isHidden()` 且即将恢复时启用一个默认 `false` 的私有状态，例如 `m_TrayRestoreBackgroundFillActive`：
+
+1. 必须在任何 `ShowWindow()` 或带 `SWP_SHOWWINDOW` 的 `SetWindowPos()` 前启用该状态。
+2. `nativeEvent()` 仅对主窗口自身、且该状态有效时的 `WM_ERASEBKGND` 使用 `msg->wParam` HDC、`GetClientRect()` 与 `palette().color(QPalette::Window)` 填色；仅在 `FillRect()` 成功时返回已处理，并立即释放临时 brush。
+3. `event()` 先让 `QMainWindow::event()` 处理首个 `QEvent::UpdateRequest`，再关闭该状态；收到 `QEvent::Hide` 时也关闭，避免状态残留。
+4. 其余时间全部使用 Qt 的默认 backing-store 绘制路径，保持原有 `SWP_SHOWWINDOW`、显示、置顶与激活逻辑。
+
+2026-07-29 Windows 实机验证确认：主题色首帧保护消除了深色主题白闪，标题栏拖动不再抽搐闪烁。
+
+## 禁止回归
+
+- 不要全生命周期拦截每一次 `WM_ERASEBKGND`。
+- 不要恢复 `WA_OpaquePaintEvent` 或主窗口自定义 `paintEvent()`。
+- 不要把移除 `SWP_SHOWWINDOW` 记录为白闪修复手段；该尝试未解决问题，且可能延长中间帧。
+- 不要用 opacity、定时器、`processEvents()` 或改变 `hide()`/`show()` 语义来替代上述有限状态保护。
+
+## 历史根因假设（已弃用）
 
 Windows 原生窗口层面：
 1. `QWidget::hide()` → 销毁 HWND 的 backing store
@@ -32,7 +53,7 @@ Windows 原生窗口层面：
 - 使用 `hide()` / `show()` 切换可见性（系统托盘恢复场景最常见）
 - 使用深色 QPalette 或深色 stylesheet
 
-## 修复模式：双重保障
+## 历史双重绘制方案（已弃用，禁止采用）
 
 ### 第一层：nativeEvent 拦截 WM_ERASEBKGND（主力修复）
 
@@ -79,7 +100,7 @@ void MyWindow::paintEvent(QPaintEvent *event)
 
 **注意：** 不要调用 `QMainWindow::paintEvent(event)` —— `WA_OpaquePaintEvent` 表示我们完全接管背景绘制。Qt 仍会自动绘制所有子控件。
 
-## 为什么这是最小方案
+## 为什么旧方案不再是最小方案
 
 - 不需要 `WA_TranslucentBackground`（会强制无边框窗口）
 - 不需要 `Qt::FramelessWindowHint`

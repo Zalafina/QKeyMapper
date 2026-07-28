@@ -1,9 +1,10 @@
 ---
 name: 2026-07-24-tray-restore-white-flash
-description: 深色主题下从系统托盘恢复显示时白色闪烁的根因分析与双重修复
+description: 深色主题托盘恢复白闪的修正记录：从全局双重绘制改为恢复期首帧保护
 metadata:
   type: episodic
   date: 2026-07-24
+  corrected: 2026-07-29
   skill: qkeymapper-workflow
   files:
     - QKeyMapper/qkeymapper.h
@@ -12,11 +13,21 @@ metadata:
 
 # 深色主题托盘恢复白色闪烁修复
 
+<!-- Correction: 2026-07-29 | was: global dual drawing | reason: it removed white flash but caused title-bar drag flicker -->
+
 ## 问题
 
 深色主题下，从系统托盘恢复主窗口（双击托盘图标或快捷键）时，先看到白色窗口背景闪一下，然后深色内容才显示。浅色主题下不明显。最小化→恢复没有此问题。
 
-## 根因分析
+## 2026-07-29 修正与实机验证
+
+原提交 `466a8ac` 的全生命周期 `WM_ERASEBKGND` 填色、`WA_OpaquePaintEvent` 与主窗口自定义 `paintEvent()` 虽消除了白闪，但用户实测标题栏拖动会抽搐闪烁。移除这三项后拖动恢复稳定，但白闪重新出现；仅移除 `SWP_SHOWWINDOW` 也未解决问题。
+
+最终实现改为恢复期首帧保护：在 `showQKeyMapperWindowToTop()` 发现 `isHidden()` 时、任何显示 HWND 的 WinAPI 调用前启用 `m_TrayRestoreBackgroundFillActive`；只在该状态下处理主窗口 `WM_ERASEBKGND`，用当前 `QPalette::Window` 填充客户区；`QMainWindow::event()` 完成首个 `QEvent::UpdateRequest` 后立即关闭状态，并在 `QEvent::Hide` 时清理。恢复原有 `SWP_SHOWWINDOW`，不再使用 `WA_OpaquePaintEvent` 或主窗口自定义 `paintEvent()`。
+
+用户已在 Windows 实机确认：隐藏恢复时主题色背景填充正常，深色白闪消失，标题栏拖动不再抽搐闪烁。
+
+## 原始根因分析（保留为历史记录，不作为修复依据）
 
 `hide()` 调用会销毁 Win32 window backing store。再次 `show()`/`showNormal()` 时：
 1. Windows 重新创建 backing store → 立即发送 `WM_ERASEBKGND`
@@ -27,7 +38,7 @@ metadata:
 
 最小化（`showMinimized()`）不销毁 backing store，所以没有此问题。
 
-## 候选方案评估
+## 原始候选方案评估（已被后续实机结果修正）
 
 | 方案 | 原理 | 有效性 | 风险 | 采纳 |
 |------|------|--------|------|------|
@@ -37,7 +48,7 @@ metadata:
 | D: A+B 组合 | 双重保障 | ⭐⭐⭐⭐⭐ | 低 | ✅ 采纳 |
 | E: 不完整隐藏 | 用 SW_HIDE 替代 hide() 保留 backing store | ⭐⭐⭐⭐ | 高 | ❌ (太侵入) |
 
-## 实施的修改
+## 466a8ac 原始实施（已撤销）
 
 ### qkeymapper.h (1 处)
 - L1524: `paintEvent(QPaintEvent*)` 声明，插入 `showEvent` 与 `closeEvent` 之间
@@ -49,15 +60,15 @@ metadata:
 
 总共 ~35 行新代码，2 个文件。
 
-## 关键经验
+## 原始关键经验（第 4 项已被撤销）
 
 1. **Qt hide() vs minimize() 的区别不仅在于可见性** —— hide() 销毁 backing store，minimize() 保留。这影响恢复时的绘制行为。
 2. **`WM_ERASEBKGND` 是 Windows 原生窗口白色闪烁的根因** —— Qt 的 palette 系统在它之后运行，无法阻止第一次白色填充。
 3. **nativeEvent 已有基础设施** —— 本项目 nativeEvent 已处理 `WM_WTSSESSION_CHANGE` 和 `WM_SETTINGCHANGE`，添加 `WM_ERASEBKGND` 风格一致。
-4. **WA_OpaquePaintEvent + paintEvent 作为安全网** —— 即使 nativeEvent 在某些边缘情况未触发，paintEvent 保证 Qt 层背景正确。
+4. **已撤销：WA_OpaquePaintEvent + paintEvent 作为安全网** —— 标准主窗口的全生命周期绘制接管会造成拖动回归；应使用恢复期首帧保护。
 5. **不改变 hide/show 语义** —— 保持 `hide()` 和 `DISPLAYSWITCHMODE` 逻辑不变，只在渲染层面修复。
 
-## 待验证
+## 原始待验证清单（2026-07-29 已由用户完成核心视觉验证）
 
 - [ ] 编译通过
 - [ ] 深色主题托盘恢复无白色闪烁
@@ -69,4 +80,4 @@ metadata:
 
 ## 关联记忆
 
-- [[qt-hide-show-white-flash-fix]] — 可复用的通用模式
+- [[qt-hide-show-white-flash-fix]] — 可复用的恢复期首帧保护模式
