@@ -1521,7 +1521,6 @@ protected:
 #endif
     bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
-    void paintEvent(QPaintEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void changeEvent(QEvent *event) override;
     void keyPressEvent(QKeyEvent* event) override;
@@ -2392,6 +2391,7 @@ private:
         DISPLAYSWITCHMODE_TASKBAR
     };
     DisplaySwitchMode m_DisplaySwitchMode;
+    bool m_TrayRestoreBackgroundFillActive = false;
     QLabel* m_PopupMessageLabel;
     QPropertyAnimation* m_PopupMessageAnimation;
 #ifdef USE_SAOFONT
