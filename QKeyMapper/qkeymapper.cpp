@@ -14730,12 +14730,20 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
             }
         }
         else if (msg->message == WM_ERASEBKGND
-                 && m_TrayRestoreBackgroundFillActive
+                 && m_MainWindowBackgroundFillActive
                  && msg->hwnd == reinterpret_cast<HWND>(winId())) {
             HDC hdc = reinterpret_cast<HDC>(msg->wParam);
             RECT clientRect = {};
             if (hdc != NULL && GetClientRect(msg->hwnd, &clientRect)) {
                 const QColor backgroundColor = palette().color(QPalette::Window);
+#ifdef DEBUG_LOGOUT_ON
+                qDebug().noquote().nospace()
+                    << "[QKeyMapper::nativeEvent] WM_ERASEBKGND backgroundColor -> "
+                    << backgroundColor.name(QColor::HexArgb)
+                    << ", RGB(" << backgroundColor.red()
+                    << "," << backgroundColor.green()
+                    << "," << backgroundColor.blue() << ")";
+#endif
                 HBRUSH brush = CreateSolidBrush(RGB(backgroundColor.red(),
                                                     backgroundColor.green(),
                                                     backgroundColor.blue()));
@@ -14758,11 +14766,11 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
 
 bool QKeyMapper::event(QEvent *event)
 {
-    const bool trayRestoreUpdateRequest = m_TrayRestoreBackgroundFillActive
-                                          && event->type() == QEvent::UpdateRequest;
+    const bool backgroundFillUpdateRequest = m_MainWindowBackgroundFillActive
+                                             && event->type() == QEvent::UpdateRequest;
 
     if (event->type() == QEvent::Hide) {
-        m_TrayRestoreBackgroundFillActive = false;
+        m_MainWindowBackgroundFillActive = false;
     }
 
     if (event->type() == QEvent::ActivationChange) {
@@ -14781,9 +14789,9 @@ bool QKeyMapper::event(QEvent *event)
 
     const bool handled = QMainWindow::event(event);
 
-    // Qt has synchronized the first backing-store frame after tray restore.
-    if (trayRestoreUpdateRequest) {
-        m_TrayRestoreBackgroundFillActive = false;
+    // Qt has synchronized the first backing-store frame after showing the main window.
+    if (backgroundFillUpdateRequest) {
+        m_MainWindowBackgroundFillActive = false;
     }
 
     return handled;
@@ -14814,6 +14822,11 @@ void QKeyMapper::showEvent(QShowEvent *event)
 //                 }
 //             }
 //         });
+    }
+
+    // Qt sends non-spontaneous show events before exposing the native window.
+    if (false == event->spontaneous()) {
+        m_MainWindowBackgroundFillActive = true;
     }
 
     QMainWindow::showEvent(event);
@@ -31403,7 +31416,7 @@ void QKeyMapper::showQKeyMapperWindowToTop()
 {
     if (isHidden()) {
         // Arm the background fill before any WinAPI call can expose the hidden HWND.
-        m_TrayRestoreBackgroundFillActive = true;
+        m_MainWindowBackgroundFillActive = true;
     }
 
     HWND hwnd = reinterpret_cast<HWND>(winId());

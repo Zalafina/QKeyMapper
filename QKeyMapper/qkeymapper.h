@@ -2391,7 +2391,7 @@ private:
         DISPLAYSWITCHMODE_TASKBAR
     };
     DisplaySwitchMode m_DisplaySwitchMode;
-    bool m_TrayRestoreBackgroundFillActive = false;
+    bool m_MainWindowBackgroundFillActive = false;
     QLabel* m_PopupMessageLabel;
     QPropertyAnimation* m_PopupMessageAnimation;
 #ifdef USE_SAOFONT
