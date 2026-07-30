@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1070</width>
-    <height>692</height>
+    <height>722</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -726,7 +726,7 @@
       <x>20</x>
       <y>445</y>
       <width>491</width>
-      <height>211</height>
+      <height>241</height>
      </rect>
     </property>
     <property name="focusPolicy">
@@ -742,9 +742,9 @@
      <widget class="QLineEdit" name="descriptionLineEdit">
       <property name="geometry">
        <rect>
-        <x>153</x>
+        <x>222</x>
         <y>100</y>
-        <width>281</width>
+        <width>211</width>
         <height>21</height>
        </rect>
       </property>
@@ -752,9 +752,9 @@
      <widget class="QLabel" name="descriptionLabel">
       <property name="geometry">
        <rect>
-        <x>84</x>
+        <x>143</x>
         <y>100</y>
-        <width>61</width>
+        <width>71</width>
         <height>21</height>
        </rect>
       </property>
@@ -789,7 +789,7 @@
       <property name="geometry">
        <rect>
         <x>14</x>
-        <y>100</y>
+        <y>130</y>
         <width>72</width>
         <height>72</height>
        </rect>
@@ -951,7 +951,7 @@
       <property name="geometry">
        <rect>
         <x>283</x>
-        <y>130</y>
+        <y>140</y>
         <width>151</width>
         <height>22</height>
        </rect>
@@ -970,7 +970,7 @@
       <property name="geometry">
        <rect>
         <x>100</x>
-        <y>130</y>
+        <y>140</y>
         <width>151</width>
         <height>21</height>
        </rect>
@@ -985,6 +985,58 @@
        <bool>false</bool>
       </property>
      </widget>
+     <widget class="QLabel" name="fullScreenLabel">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>100</y>
+        <width>61</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>FullscreenState</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="checkFullScreenComboBox">
+      <property name="geometry">
+       <rect>
+        <x>65</x>
+        <y>100</y>
+        <width>80</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::FocusPolicy::NoFocus</enum>
+      </property>
+      <property name="currentText">
+       <string/>
+      </property>
+      <property name="currentIndex">
+       <number>-1</number>
+      </property>
+     </widget>
+     <zorder>descriptionLineEdit</zorder>
+     <zorder>processLineEdit</zorder>
+     <zorder>windowTitleLineEdit</zorder>
+     <zorder>iconLabel</zorder>
+     <zorder>checkProcessComboBox</zorder>
+     <zorder>checkWindowTitleComboBox</zorder>
+     <zorder>processLabel</zorder>
+     <zorder>windowTitleLabel</zorder>
+     <zorder>restoreProcessPathButton</zorder>
+     <zorder>classNameLabel</zorder>
+     <zorder>classNameLineEdit</zorder>
+     <zorder>checkClassNameComboBox</zorder>
+     <zorder>ignoreRulesListButton</zorder>
+     <zorder>selectSettingCustomIconButton</zorder>
+     <zorder>fullScreenLabel</zorder>
+     <zorder>checkFullScreenComboBox</zorder>
+     <zorder>descriptionLabel</zorder>
     </widget>
     <widget class="QWidget" name="general">
      <attribute name="title">

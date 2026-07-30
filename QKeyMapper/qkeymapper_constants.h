@@ -112,7 +112,7 @@ namespace QKeyMapperConstants {
 
     // Window resize base dimensions
     inline constexpr int WINDOW_BASE_WIDTH  = 1070;
-    inline constexpr int WINDOW_BASE_HEIGHT = 692;
+    inline constexpr int WINDOW_BASE_HEIGHT = 722;
     inline constexpr int WINDOW_MIN_WIDTH   = 1070;  // minimum window width (= currently fixed width)
     inline constexpr int WINDOW_MIN_HEIGHT  = 462;   // minimum window height (user adjustable)
 
@@ -231,6 +231,13 @@ namespace QKeyMapperConstants {
     inline constexpr int WINDOWINFO_MATCH_INDEX_DEFAULT    = WINDOWINFO_MATCH_INDEX_CONTAINS;
     inline constexpr int WINDOWINFO_MATCH_INDEX_MIN        = WINDOWINFO_MATCH_INDEX_IGNORE;
     inline constexpr int WINDOWINFO_MATCH_INDEX_MAX        = WINDOWINFO_MATCH_INDEX_REGEXMATCH;
+
+    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE     = 0;
+    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN = 1;
+    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED   = 2;
+    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT    = WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE;
+    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_MIN        = WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE;
+    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_MAX        = WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED;
 
     inline constexpr int BURST_TIME_MIN = 1;
     inline constexpr int BURST_TIME_MAX = 99999;
@@ -1378,6 +1385,7 @@ namespace QKeyMapperConstants {
     inline constexpr const char PROCESSINFO_FILENAME_MATCH_INDEX[] = "ProcessInfo_FileNameMatchIndex";
     inline constexpr const char PROCESSINFO_WINDOWTITLE_MATCH_INDEX[] = "ProcessInfo_WindowTitleMatchIndex";
     inline constexpr const char PROCESSINFO_CLASSNAME_MATCH_INDEX[] = "ProcessInfo_ClassNameMatchIndex";
+    inline constexpr const char PROCESSINFO_FULLSCREEN_MATCH_INDEX[] = "ProcessInfo_FullScreenMatchIndex";
     inline constexpr const char PROCESSINFO_DESCRIPTION[] = "ProcessInfo_Description";
 
     inline constexpr const char MACROLIST[] = "MacroList";
@@ -1999,4 +2007,3 @@ namespace QKeyMapperConstants {
     inline constexpr const int VOLUME_DEVICE_TYPE_PLAYBACK   = 0;      // Playback device (speakers/headphones)
     inline constexpr const int VOLUME_DEVICE_TYPE_CAPTURE    = 1;      // Capture device (microphone)
 }
-
