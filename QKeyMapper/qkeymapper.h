@@ -2393,6 +2393,7 @@ private:
     };
     DisplaySwitchMode m_DisplaySwitchMode;
     bool m_MainWindowBackgroundFillActive = false;
+    bool m_KeyMappingDataTableColumnResizePending = false;
     QLabel* m_PopupMessageLabel;
     QPropertyAnimation* m_PopupMessageAnimation;
 #ifdef USE_SAOFONT

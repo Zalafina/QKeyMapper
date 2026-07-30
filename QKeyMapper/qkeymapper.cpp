@@ -14876,6 +14876,18 @@ void QKeyMapper::showEvent(QShowEvent *event)
     }
 
     QMainWindow::showEvent(event);
+
+    if (m_KeyMappingDataTableColumnResizePending) {
+        m_KeyMappingDataTableColumnResizePending = false;
+        QTimer::singleShot(0, this, [this]() {
+            if (isHidden()) {
+                m_KeyMappingDataTableColumnResizePending = true;
+            }
+            else if (m_KeyMappingDataTable) {
+                resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
+            }
+        });
+    }
 }
 
 void QKeyMapper::closeEvent(QCloseEvent *event)
@@ -25604,7 +25616,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
     // Correct after scrollbar state settles (appear/disappear)
     QTimer::singleShot(0, this, [this]() {
-        if (m_KeyMappingDataTable) {
+        if (isHidden()) {
+            m_KeyMappingDataTableColumnResizePending = true;
+        }
+        else if (m_KeyMappingDataTable) {
+            m_KeyMappingDataTableColumnResizePending = false;
             resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
         }
     });
