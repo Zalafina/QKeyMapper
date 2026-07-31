@@ -141,6 +141,7 @@ foreach ($build in $selectedBuilds) {
     Invoke-ReleaseBuild -BuildDirectory $build.Directory -Diagnostic $build.Diagnostic
 }
 
+""
 foreach ($build in $selectedBuilds) {
     $executable = Join-Path $build.Directory "release/QKeyMapper.exe"
     if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
