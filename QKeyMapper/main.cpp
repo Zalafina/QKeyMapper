@@ -8,6 +8,7 @@
 #endif
 #ifdef LOGOUT_TOFILE
 #include <QDateTime>
+#include <QMutexLocker>
 #include <QTextStream>
 #endif
 
@@ -20,12 +21,12 @@
 using namespace QKeyMapperConstants;
 
 #ifdef LOGOUT_TOFILE
-static QMutex *logfile_mutex = Q_NULLPTR;
+static QMutex logfile_mutex;
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     Q_UNUSED(context)
-    logfile_mutex->lock();
+    QMutexLocker locker(&logfile_mutex);
 
     QString level;
     switch(type)
@@ -56,18 +57,17 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
     QString message = QString("%1%2 %3").arg(current_date).arg(level).arg(msg);
 
     QFile file("log.txt");
-    file.open(QIODevice::WriteOnly | QIODevice::Append);
-    QTextStream text_stream(&file);
-    text_stream << message << "\r\n";
-    file.flush();
-    file.close();
+    if (file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        QTextStream text_stream(&file);
+        text_stream << message << "\r\n";
+        file.flush();
+        file.close();
+    }
 
 #ifdef QT_NO_DEBUG
 #else
     fprintf(stderr, "%s\n", message.toLocal8Bit().constData());
 #endif
-
-    logfile_mutex->unlock();
 }
 #endif
 
@@ -401,7 +401,13 @@ int main(int argc, char *argv[])
         setupQtScaleEnvironment(programDir);
     }
 
+#ifdef LOGOUT_TOFILE
+    QString applicationName = QString(argv[0]);
+    applicationName.chop(QFileInfo(applicationName).fileName().size());
+    QApplication::setApplicationName(applicationName + "QKeyMapper.exe");
+#else
     QApplication::setApplicationName(QString(argv[0]));
+#endif
     QApplication::setOrganizationName("AsukaVoV");
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "ApplicationName ->" << QApplication::applicationName();
@@ -417,8 +423,8 @@ int main(int argc, char *argv[])
     }
 
 #ifdef LOGOUT_TOFILE
-    logfile_mutex = new QMutex();
     qInstallMessageHandler(outputMessage);
+    qInfo().noquote() << "==================== QKeyMapper diagnostic session started ====================";
 #endif
 
     // Prefer the QString overload to avoid manual QStyle ownership/lifetime issues.
@@ -480,10 +486,6 @@ int main(int argc, char *argv[])
     }
 
     int ret = app.exec();
-
-#ifdef LOGOUT_TOFILE
-    delete logfile_mutex;
-#endif
 
     Interception_Worker::interceptionLoopBreak();
     interceptionThread->quit();
