@@ -27,24 +27,24 @@ constexpr int COMMON_APPENDED_SEPARATOR_ROW_ROLE = Qt::UserRole + 504;
 constexpr int SETTINGSELECT_ACTUAL_GROUP_ROLE = Qt::UserRole + 520;
 constexpr int CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH = 120;
 
-constexpr bool fullscreenStateMatches(int matchIndex, int fullscreenStateIndex)
+constexpr bool displayModeMatches(int matchIndex, int displayModeIndex)
 {
-    return matchIndex == WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE
-           || matchIndex == fullscreenStateIndex;
+    return matchIndex == WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE
+           || matchIndex == displayModeIndex;
 }
 
-static_assert(fullscreenStateMatches(WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE,
-                                    WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN));
-static_assert(fullscreenStateMatches(WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE,
-                                    WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED));
-static_assert(fullscreenStateMatches(WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN,
-                                    WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN));
-static_assert(!fullscreenStateMatches(WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN,
-                                     WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED));
-static_assert(fullscreenStateMatches(WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED,
-                                    WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED));
-static_assert(!fullscreenStateMatches(WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED,
-                                     WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN));
+static_assert(displayModeMatches(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE,
+                                    WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN));
+static_assert(displayModeMatches(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE,
+                                    WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED));
+static_assert(displayModeMatches(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN,
+                                    WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN));
+static_assert(!displayModeMatches(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN,
+                                     WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED));
+static_assert(displayModeMatches(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED,
+                                    WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED));
+static_assert(!displayModeMatches(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED,
+                                     WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN));
 
 constexpr qreal FLOATINGBUTTON_HOVER_AUTO_DARKEN_LIGHTNESS_THRESHOLD = 0.72;
 constexpr qreal FLOATINGBUTTON_BASE_TOP_LIFT_RATIO = 0.08;
@@ -4280,22 +4280,22 @@ void QKeyMapper::matchForegroundWindow()
         QString filename;
         QString ProcessPath;
         HWND hwnd = GetForegroundWindow();
-        const int fullscreenStateIndex = isWindowFullscreen(hwnd)
-            ? WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN
-            : WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED;
+        const int displayModeIndex = isWindowFullscreen(hwnd)
+            ? WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN
+            : WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED;
         QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
         Q_UNUSED(keymapstatusEnum);
 
         int matchProcessIndex = ui->checkProcessComboBox->currentIndex();
         int matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
         int matchClassNameIndex = ui->checkClassNameComboBox->currentIndex();
-        int matchFullscreenIndex = ui->checkFullScreenComboBox->currentIndex();
+        int matchDisplayModeIndex = ui->checkDisplayModeComboBox->currentIndex();
         bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
         bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
         bool matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.ClassName.isEmpty());
-        bool matchFullscreen = (matchFullscreenIndex != WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE);
+        bool matchDisplayMode = (matchDisplayModeIndex != WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE);
 
-        if (!matchProcess && !matchWindowTitle && !matchClassName && !matchFullscreen) {
+        if (!matchProcess && !matchWindowTitle && !matchClassName && !matchDisplayMode) {
             matchResult = MatchResult::IgnoreAllChecks;
         }
         else if (getSendToSameTitleWindowsStatus()
@@ -4371,7 +4371,7 @@ void QKeyMapper::matchForegroundWindow()
 
         if ((!processName.isEmpty() || isProtectedProcess)
             && !isIgnoredWindow) {
-            QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle, className, fullscreenStateIndex);
+            QString autoMatchSettingGroup = matchAutoStartSaveSettings(processName, windowTitle, className, displayModeIndex);
 
             if (!autoMatchSettingGroup.isEmpty() && (KEYMAP_CHECKING == m_KeyMapStatus || KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus)) {
                 QString curSettingSelectStr;
@@ -4398,11 +4398,11 @@ void QKeyMapper::matchForegroundWindow()
                     matchProcessIndex = ui->checkProcessComboBox->currentIndex();
                     matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
                     matchClassNameIndex = ui->checkClassNameComboBox->currentIndex();
-                    matchFullscreenIndex = ui->checkFullScreenComboBox->currentIndex();
+                    matchDisplayModeIndex = ui->checkDisplayModeComboBox->currentIndex();
                     matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
                     matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
                     matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.ClassName.isEmpty());
-                    matchFullscreen = (matchFullscreenIndex != WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE);
+                    matchDisplayMode = (matchDisplayModeIndex != WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE);
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
@@ -4418,7 +4418,7 @@ void QKeyMapper::matchForegroundWindow()
             bool processMatched = false;
             bool windowTitleMatched = false;
             bool classNameMatched = false;
-            const bool fullscreenMatched = fullscreenStateMatches(matchFullscreenIndex, fullscreenStateIndex);
+            const bool displayModeMatched = displayModeMatches(matchDisplayModeIndex, displayModeIndex);
 
             // Check for process name match
             if (matchProcess) {
@@ -4508,18 +4508,18 @@ void QKeyMapper::matchForegroundWindow()
             }
 
             // Simplified match result logic: if any matching is enabled and all enabled conditions are satisfied, it's a match
-            bool anyMatchingEnabled = matchProcess || matchWindowTitle || matchClassName || matchFullscreen;
+            bool anyMatchingEnabled = matchProcess || matchWindowTitle || matchClassName || matchDisplayMode;
             bool allEnabledConditionsSatisfied = (!matchProcess || processMatched) &&
                                                 (!matchWindowTitle || windowTitleMatched) &&
                                                 (!matchClassName || classNameMatched) &&
-                                                (!matchFullscreen || fullscreenMatched);
+                                                (!matchDisplayMode || displayModeMatched);
 
             if (anyMatchingEnabled && allEnabledConditionsSatisfied) {
                 matchResult = MatchResult::ProcessMatched;
             }
         }
 
-        if (matchFullscreen && !fullscreenStateMatches(matchFullscreenIndex, fullscreenStateIndex)) {
+        if (matchDisplayMode && !displayModeMatches(matchDisplayModeIndex, displayModeIndex)) {
             matchResult = MatchResult::NoMatch;
         }
 
@@ -4655,7 +4655,7 @@ void QKeyMapper::matchForegroundWindow()
 
                 // Seamless switching check: When currently in mapping state, check if new window also has matching settings
                 if (!processName.isEmpty()) {
-                    QString newAutoMatchSetting = matchAutoStartSaveSettings(processName, windowTitle, className, fullscreenStateIndex);
+                    QString newAutoMatchSetting = matchAutoStartSaveSettings(processName, windowTitle, className, displayModeIndex);
 
                     if (!newAutoMatchSetting.isEmpty()) {
                         // New window also has matching settings, check if we should perform seamless switching
@@ -4701,13 +4701,13 @@ void QKeyMapper::matchForegroundWindow()
                                 int newMatchProcessIndex = ui->checkProcessComboBox->currentIndex();
                                 int newMatchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
                                 int newMatchClassNameIndex = ui->checkClassNameComboBox->currentIndex();
-                                int newMatchFullscreenIndex = ui->checkFullScreenComboBox->currentIndex();
+                                int newMatchDisplayModeIndex = ui->checkDisplayModeComboBox->currentIndex();
                                 bool newMatchProcess = (newMatchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.FileName.isEmpty());
                                 bool newMatchWindowTitle = (newMatchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.WindowTitle.isEmpty());
                                 bool newMatchClassName = (newMatchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !m_MapProcessInfo.ClassName.isEmpty());
-                                bool newMatchFullscreen = (newMatchFullscreenIndex != WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE);
+                                bool newMatchDisplayMode = (newMatchDisplayModeIndex != WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE);
 
-                                if (!newMatchProcess && !newMatchWindowTitle && !newMatchClassName && !newMatchFullscreen) {
+                                if (!newMatchProcess && !newMatchWindowTitle && !newMatchClassName && !newMatchDisplayMode) {
                                     newMatchResult = MatchResult::IgnoreAllChecks;
                                 } else if (getSendToSameTitleWindowsStatus() && newMatchWindowTitle) {
                                     newMatchResult = MatchResult::SendToSameWindows;
@@ -4862,12 +4862,12 @@ void QKeyMapper::updateHWNDListProc()
     int matchProcessIndex = ui->checkProcessComboBox->currentIndex();
     int matchWindowTitleIndex = ui->checkWindowTitleComboBox->currentIndex();
     int matchClassNameIndex = ui->checkClassNameComboBox->currentIndex();
-    int matchFullscreenIndex = ui->checkFullScreenComboBox->currentIndex();
+    int matchDisplayModeIndex = ui->checkDisplayModeComboBox->currentIndex();
     bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !processNameString.isEmpty());
     bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty());
     bool matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !classNameString.isEmpty());
-    bool matchFullscreen = (matchFullscreenIndex != WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE);
-    if (matchProcess || matchWindowTitle || matchClassName || matchFullscreen) {
+    bool matchDisplayMode = (matchDisplayModeIndex != WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE);
+    if (matchProcess || matchWindowTitle || matchClassName || matchDisplayMode) {
         EnumWindows((WNDENUMPROC)QKeyMapper::EnumWindowsBgProc, 0);
     }
 
@@ -6607,20 +6607,20 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
     int matchProcessIndex = getMatchProcessNameIndex();
     int matchWindowTitleIndex = getMatchWindowTitleIndex();
     int matchClassNameIndex = getMatchClassNameIndex();
-    int matchFullscreenIndex = QKeyMapper::getInstance()->ui->checkFullScreenComboBox->currentIndex();
+    int matchDisplayModeIndex = QKeyMapper::getInstance()->ui->checkDisplayModeComboBox->currentIndex();
     bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !processNameString.isEmpty());
     bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty());
     bool matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !classNameString.isEmpty());
-    bool matchFullscreen = (matchFullscreenIndex != WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE);
+    bool matchDisplayMode = (matchDisplayModeIndex != WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE);
 
-    if (!matchProcess && !matchWindowTitle && !matchClassName && !matchFullscreen) {
+    if (!matchProcess && !matchWindowTitle && !matchClassName && !matchDisplayMode) {
         return;
     }
 
-    const int fullscreenStateIndex = isWindowFullscreen(hWnd)
-        ? WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN
-        : WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED;
-    if (matchFullscreen && !fullscreenStateMatches(matchFullscreenIndex, fullscreenStateIndex)) {
+    const int displayModeIndex = isWindowFullscreen(hWnd)
+        ? WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN
+        : WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED;
+    if (matchDisplayMode && !displayModeMatches(matchDisplayModeIndex, displayModeIndex)) {
         return;
     }
 
@@ -6748,7 +6748,7 @@ void QKeyMapper::collectWindowsHWND(HWND hWnd)
         }
 
         // Use simplified match result logic from matchForegroundWindow function
-        bool anyMatchingEnabled = matchProcess || matchWindowTitle || matchClassName || matchFullscreen;
+        bool anyMatchingEnabled = matchProcess || matchWindowTitle || matchClassName || matchDisplayMode;
         bool allEnabledConditionsSatisfied = (!matchProcess || processMatched) &&
                                            (!matchWindowTitle || windowTitleMatched) &&
                                            (!matchClassName || classNameMatched);
@@ -19194,7 +19194,7 @@ int QKeyMapper::checkAutoStartSaveSettings(const QString &executablename, const 
 }
 #endif
 
-QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle, const QString &classname, int fullscreenStateIndex)
+QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle, const QString &classname, int displayModeIndex)
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -19205,7 +19205,7 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
 
     QString bestMatch;
     int bestPriority = 9;
-    bool bestUsesExplicitFullscreenState = false;
+    bool bestUsesExplicitDisplayMode = false;
 
     for (const QString &group : std::as_const(groups)) {
         // Skip groups without autoStartMapping enabled
@@ -19240,10 +19240,10 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
         }
 
         ok = false;
-        int matchFullscreenIndex = settingFile.value(tempSettingSelectStr+PROCESSINFO_FULLSCREEN_MATCH_INDEX).toInt(&ok);
-        if (!ok || matchFullscreenIndex < WINDOWINFO_FULLSCREEN_MATCH_INDEX_MIN
-            || matchFullscreenIndex > WINDOWINFO_FULLSCREEN_MATCH_INDEX_MAX) {
-            matchFullscreenIndex = WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT;
+        int matchDisplayModeIndex = settingFile.value(tempSettingSelectStr+PROCESSINFO_DISPLAYMODE_MATCH_INDEX).toInt(&ok);
+        if (!ok || matchDisplayModeIndex < WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MIN
+            || matchDisplayModeIndex > WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MAX) {
+            matchDisplayModeIndex = WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT;
         }
 
         // Get match strings
@@ -19255,13 +19255,13 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
         bool matchProcess = (matchProcessIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !processNameString.isEmpty());
         bool matchWindowTitle = (matchWindowTitleIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !windowTitleString.isEmpty());
         bool matchClassName = (matchClassNameIndex != WINDOWINFO_MATCH_INDEX_IGNORE && !classNameString.isEmpty());
-        bool matchFullscreen = (matchFullscreenIndex != WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE);
+        bool matchDisplayMode = (matchDisplayModeIndex != WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE);
 
-        if (!matchProcess && !matchWindowTitle && !matchClassName && !matchFullscreen) {
+        if (!matchProcess && !matchWindowTitle && !matchClassName && !matchDisplayMode) {
             continue; // Skip groups that don't require matching
         }
 
-        if (!fullscreenStateMatches(matchFullscreenIndex, fullscreenStateIndex)) {
+        if (!displayModeMatches(matchDisplayModeIndex, displayModeIndex)) {
             continue;
         }
 
@@ -19369,12 +19369,12 @@ QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const
         else if (matchWindowTitle) priority = 6;
         else if (matchClassName) priority = 7;
 
-        const bool usesExplicitFullscreenState = matchFullscreen;
+        const bool usesExplicitDisplayMode = matchDisplayMode;
         if (priority < bestPriority
-            || (priority == bestPriority && usesExplicitFullscreenState && !bestUsesExplicitFullscreenState)) {
+            || (priority == bestPriority && usesExplicitDisplayMode && !bestUsesExplicitDisplayMode)) {
             bestMatch = group;
             bestPriority = priority;
-            bestUsesExplicitFullscreenState = usesExplicitFullscreenState;
+            bestUsesExplicitDisplayMode = usesExplicitDisplayMode;
         }
     }
 
@@ -19418,7 +19418,7 @@ int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &
 }
 #endif
 
-QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString &windowtitle, const QString &classname, int fullscreenStateIndex)
+QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString &windowtitle, const QString &classname, int displayModeIndex)
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -19431,7 +19431,7 @@ QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString
     QString bestOppositeMatch;
     int bestCompatiblePriority = 11;
     int bestOppositePriority = 11;
-    bool bestCompatibleUsesExplicitFullscreenState = false;
+    bool bestCompatibleUsesExplicitDisplayMode = false;
 
     for (const QString &group : std::as_const(groups)) {
         QString tempSettingSelectStr = group + "/";
@@ -19441,19 +19441,19 @@ QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString
         QString windowtitleString = settingFile.value(tempSettingSelectStr+PROCESSINFO_WINDOWTITLE).toString();
         QString classnameString = settingFile.value(tempSettingSelectStr+PROCESSINFO_CLASSNAME).toString();
         bool ok = false;
-        int matchFullscreenIndex = settingFile.value(tempSettingSelectStr+PROCESSINFO_FULLSCREEN_MATCH_INDEX).toInt(&ok);
-        if (!ok || matchFullscreenIndex < WINDOWINFO_FULLSCREEN_MATCH_INDEX_MIN
-            || matchFullscreenIndex > WINDOWINFO_FULLSCREEN_MATCH_INDEX_MAX) {
-            matchFullscreenIndex = WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT;
+        int matchDisplayModeIndex = settingFile.value(tempSettingSelectStr+PROCESSINFO_DISPLAYMODE_MATCH_INDEX).toInt(&ok);
+        if (!ok || matchDisplayModeIndex < WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MIN
+            || matchDisplayModeIndex > WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MAX) {
+            matchDisplayModeIndex = WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT;
         }
 
         // Determine what needs to match (enabled conditions)
         bool matchFilepath = !filepathString.trimmed().isEmpty();
         bool matchWindowtitle = !windowtitleString.trimmed().isEmpty();
         bool matchClassname = !classnameString.trimmed().isEmpty();
-        bool matchFullscreen = (matchFullscreenIndex != WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE);
+        bool matchDisplayMode = (matchDisplayModeIndex != WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE);
 
-        if (!matchFilepath && !matchWindowtitle && !matchClassname && !matchFullscreen) {
+        if (!matchFilepath && !matchWindowtitle && !matchClassname && !matchDisplayMode) {
             continue; // Skip groups that don't require matching
         }
 
@@ -19482,23 +19482,23 @@ QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString
         else if (matchFilepath && !matchWindowtitle && !matchClassname && filepathMatched) priority = 7;
         else if (!matchFilepath && matchWindowtitle && !matchClassname && windowtitleExactMatched) priority = 8;
         else if (!matchFilepath && !matchWindowtitle && matchClassname && classnameMatched) priority = 9;
-        else if (!matchFilepath && !matchWindowtitle && !matchClassname && matchFullscreen) priority = 10;
+        else if (!matchFilepath && !matchWindowtitle && !matchClassname && matchDisplayMode) priority = 10;
 
         if (priority == 0) {
             continue;
         }
 
-        const bool actualStateKnown = fullscreenStateIndex == WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN
-                                      || fullscreenStateIndex == WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED;
-        const bool compatible = !matchFullscreen
-                                || (actualStateKnown && matchFullscreenIndex == fullscreenStateIndex);
+        const bool actualDisplayModeKnown = displayModeIndex == WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN
+                                      || displayModeIndex == WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED;
+        const bool compatible = !matchDisplayMode
+                                || (actualDisplayModeKnown && matchDisplayModeIndex == displayModeIndex);
         if (compatible) {
             if (priority < bestCompatiblePriority
                 || (priority == bestCompatiblePriority
-                    && matchFullscreen && !bestCompatibleUsesExplicitFullscreenState)) {
+                    && matchDisplayMode && !bestCompatibleUsesExplicitDisplayMode)) {
                 bestCompatibleMatch = group;
                 bestCompatiblePriority = priority;
-                bestCompatibleUsesExplicitFullscreenState = matchFullscreen;
+                bestCompatibleUsesExplicitDisplayMode = matchDisplayMode;
             }
         }
         else if (priority < bestOppositePriority) {
@@ -21619,7 +21619,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_MATCH_INDEX, ui->checkProcessComboBox->currentIndex());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_MATCH_INDEX, ui->checkWindowTitleComboBox->currentIndex());
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CLASSNAME_MATCH_INDEX, ui->checkClassNameComboBox->currentIndex());
-        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FULLSCREEN_MATCH_INDEX, ui->checkFullScreenComboBox->currentIndex());
+        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_DISPLAYMODE_MATCH_INDEX, ui->checkDisplayModeComboBox->currentIndex());
 
         settingFile.setValue(saveSettingSelectStr+PROCESSINFO_DESCRIPTION, ui->descriptionLineEdit->text());
     }
@@ -25640,7 +25640,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
-        ui->checkFullScreenComboBox->setCurrentIndex(WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT);
+        ui->checkDisplayModeComboBox->setCurrentIndex(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT);
         // ui->disableWinKeyCheckBox->setChecked(false);
         ui->sendToSameTitleWindowsCheckBox->setChecked(false);
         m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
@@ -25656,11 +25656,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         ui->processLabel->setEnabled(false);
         ui->windowTitleLabel->setEnabled(false);
         ui->classNameLabel->setEnabled(false);
-        ui->fullScreenLabel->setEnabled(false);
+        ui->displayModeLabel->setEnabled(false);
         ui->checkProcessComboBox->setEnabled(false);
         ui->checkWindowTitleComboBox->setEnabled(false);
         ui->checkClassNameComboBox->setEnabled(false);
-        ui->checkFullScreenComboBox->setEnabled(false);
+        ui->checkDisplayModeComboBox->setEnabled(false);
         // ui->removeSettingButton->setEnabled(false);
         // ui->disableWinKeyCheckBox->setEnabled(false);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
@@ -25686,11 +25686,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         ui->processLabel->setEnabled(true);
         ui->windowTitleLabel->setEnabled(true);
         ui->classNameLabel->setEnabled(true);
-        ui->fullScreenLabel->setEnabled(true);
+        ui->displayModeLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);
         ui->checkWindowTitleComboBox->setEnabled(true);
         ui->checkClassNameComboBox->setEnabled(true);
-        ui->checkFullScreenComboBox->setEnabled(true);
+        ui->checkDisplayModeComboBox->setEnabled(true);
         // ui->disableWinKeyCheckBox->setEnabled(true);
         ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
         m_MappingAdvancedDialog->setProcessIconAsTrayIconEnabled(true);
@@ -25763,7 +25763,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
-            ui->checkFullScreenComboBox->setCurrentIndex(WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT);
+            ui->checkDisplayModeComboBox->setCurrentIndex(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT);
             setEnableSystemFilterKeyCheckedInternal(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
             setDisableFilterKeyClickSoundCheckedInternal(DISABLE_FILTERKEY_CLICKSOUND_ON_ENABLE_DEFAULT);
             ui->sendToSameTitleWindowsCheckBox->setChecked(false);
@@ -25821,17 +25821,17 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
         }
 
-        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_FULLSCREEN_MATCH_INDEX)){
+        if (true == settingFile.contains(settingSelectStr+PROCESSINFO_DISPLAYMODE_MATCH_INDEX)){
             bool ok = false;
-            int fullscreenMatchIndex = settingFile.value(settingSelectStr+PROCESSINFO_FULLSCREEN_MATCH_INDEX).toInt(&ok);
-            if (!ok || fullscreenMatchIndex < WINDOWINFO_FULLSCREEN_MATCH_INDEX_MIN
-                || fullscreenMatchIndex > WINDOWINFO_FULLSCREEN_MATCH_INDEX_MAX) {
-                fullscreenMatchIndex = WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT;
+            int displayModeMatchIndex = settingFile.value(settingSelectStr+PROCESSINFO_DISPLAYMODE_MATCH_INDEX).toInt(&ok);
+            if (!ok || displayModeMatchIndex < WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MIN
+                || displayModeMatchIndex > WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MAX) {
+                displayModeMatchIndex = WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT;
             }
-            ui->checkFullScreenComboBox->setCurrentIndex(fullscreenMatchIndex);
+            ui->checkDisplayModeComboBox->setCurrentIndex(displayModeMatchIndex);
         }
         else {
-            ui->checkFullScreenComboBox->setCurrentIndex(WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT);
+            ui->checkDisplayModeComboBox->setCurrentIndex(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT);
         }
 
 #if 0
@@ -25874,7 +25874,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
-            ui->checkFullScreenComboBox->setCurrentIndex(WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT);
+            ui->checkDisplayModeComboBox->setCurrentIndex(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT);
         }
     }
 
@@ -26932,7 +26932,7 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
-    ui->checkFullScreenComboBox->setCurrentIndex(WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT);
+    ui->checkDisplayModeComboBox->setCurrentIndex(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT);
     m_MapProcessInfo = MAP_PROCESSINFO();
 
     // ui->mouseXSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
@@ -27941,7 +27941,7 @@ void QKeyMapper::setControlFontEnglish()
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
     ui->classNameLabel->setFont(customFont);
-    ui->fullScreenLabel->setFont(customFont);
+    ui->displayModeLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
     ui->selectSettingCustomIconButton->setFont(customFont);
     ui->ignoreRulesListButton->setFont(customFont);
@@ -28090,7 +28090,7 @@ void QKeyMapper::setControlFontChinese()
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
     ui->classNameLabel->setFont(customFont);
-    ui->fullScreenLabel->setFont(customFont);
+    ui->displayModeLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
     ui->selectSettingCustomIconButton->setFont(customFont);
     ui->ignoreRulesListButton->setFont(customFont);
@@ -28239,7 +28239,7 @@ void QKeyMapper::setControlFontJapanese()
     ui->processLabel->setFont(customFont);
     ui->windowTitleLabel->setFont(customFont);
     ui->classNameLabel->setFont(customFont);
-    ui->fullScreenLabel->setFont(customFont);
+    ui->displayModeLabel->setFont(customFont);
     ui->restoreProcessPathButton->setFont(customFont);
     ui->selectSettingCustomIconButton->setFont(customFont);
     ui->ignoreRulesListButton->setFont(customFont);
@@ -31089,11 +31089,11 @@ void QKeyMapper::initWindowInfoMatchComboBoxes()
     ui->checkProcessComboBox->addItems(windowinfoMatchList);
     ui->checkWindowTitleComboBox->addItems(windowinfoMatchList);
     ui->checkClassNameComboBox->addItems(windowinfoMatchList);
-    ui->checkFullScreenComboBox->addItems({tr("Ignore"), tr("Fullscreen"), tr("Windowed")});
+    ui->checkDisplayModeComboBox->addItems({tr("Ignore"), tr("Fullscreen"), tr("Windowed")});
     ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
     ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
-    ui->checkFullScreenComboBox->setCurrentIndex(WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT);
+    ui->checkDisplayModeComboBox->setCurrentIndex(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT);
 }
 
 void QKeyMapper::initSettingBackupActionPopup()
@@ -31673,8 +31673,8 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     ui->processLineEdit->setGeometry(153, 10, winfoEditW, 21);
     ui->windowTitleLineEdit->setGeometry(153, 40, winfoEditW, 21);
     ui->classNameLineEdit->setGeometry(153, 70, winfoEditW, 21);
-    ui->fullScreenLabel->setGeometry(0, 100, 61, 21);
-    ui->checkFullScreenComboBox->setGeometry(65, 100, 80, 21);
+    ui->displayModeLabel->setGeometry(0, 100, 61, 21);
+    ui->checkDisplayModeComboBox->setGeometry(65, 100, 80, 21);
     ui->descriptionLabel->setGeometry(143, 100, 71, 21);
     ui->descriptionLineEdit->setGeometry(222, 100, 211 + boundaryShift, 21);
     // restoreProcessPathButton: keep 6px gap after processLineEdit
@@ -34767,7 +34767,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->processLabel->setText(tr("WindowProcess"));
     ui->windowTitleLabel->setText(tr("WindowTitle"));
     ui->classNameLabel->setText(tr("WindowClass"));
-    ui->fullScreenLabel->setText(tr("FullscreenState"));
+    ui->displayModeLabel->setText(tr("DisplayMode"));
     ui->restoreProcessPathButton->setText(tr("Restore"));
     ui->selectSettingCustomIconButton->setText(tr("Select Custom Icon"));
     ui->settingNameLabel->setText(tr("Setting"));
@@ -34891,9 +34891,9 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->checkClassNameComboBox->setItemText(WINDOWINFO_MATCH_INDEX_STARTSWITH,  tr("StartsWith"));
     ui->checkClassNameComboBox->setItemText(WINDOWINFO_MATCH_INDEX_ENDSWITH,    tr("EndsWith"));
     ui->checkClassNameComboBox->setItemText(WINDOWINFO_MATCH_INDEX_REGEXMATCH,  tr("RegexMatch"));
-    ui->checkFullScreenComboBox->setItemText(WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE,     tr("Ignore"));
-    ui->checkFullScreenComboBox->setItemText(WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN, tr("Fullscreen"));
-    ui->checkFullScreenComboBox->setItemText(WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED,   tr("Windowed"));
+    ui->checkDisplayModeComboBox->setItemText(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE,     tr("Ignore"));
+    ui->checkDisplayModeComboBox->setItemText(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN, tr("Fullscreen"));
+    ui->checkDisplayModeComboBox->setItemText(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED,   tr("Windowed"));
 
     QTabWidget *tabWidget = ui->settingTabWidget;
     tabWidget->setTabText(tabWidget->indexOf(ui->windowinfo),       tr("WindowInfo")    );
@@ -35667,7 +35667,7 @@ void QKeyMapper::connectSettingDirtySignals(void)
     connectComboBox(ui->checkProcessComboBox);
     connectComboBox(ui->checkWindowTitleComboBox);
     connectComboBox(ui->checkClassNameComboBox);
-    connectComboBox(ui->checkFullScreenComboBox);
+    connectComboBox(ui->checkDisplayModeComboBox);
     connectComboBox(ui->notificationComboBox);
     connectComboBox(ui->scaleComboBox);
     connectComboBox(ui->themeComboBox);
@@ -37202,11 +37202,11 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         ui->processLabel->setEnabled(true);
         ui->windowTitleLabel->setEnabled(true);
         ui->classNameLabel->setEnabled(true);
-        ui->fullScreenLabel->setEnabled(true);
+        ui->displayModeLabel->setEnabled(true);
         ui->checkProcessComboBox->setEnabled(true);
         ui->checkWindowTitleComboBox->setEnabled(true);
         ui->checkClassNameComboBox->setEnabled(true);
-        ui->checkFullScreenComboBox->setEnabled(true);
+        ui->checkDisplayModeComboBox->setEnabled(true);
         // ui->removeSettingButton->setEnabled(true);
 
         // QString filename = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
@@ -37217,18 +37217,18 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
         DWORD dwProcessId = pidStr.toULong();
         HWND selectedHwnd = reinterpret_cast<HWND>(static_cast<quintptr>(
             ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->data(Qt::UserRole).toULongLong()));
-        int fullscreenStateIndex = WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE;
+        int displayModeIndex = WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE;
         if (IsWindow(selectedHwnd)) {
-            fullscreenStateIndex = isWindowFullscreen(selectedHwnd)
-                ? WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN
-                : WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED;
+            displayModeIndex = isWindowFullscreen(selectedHwnd)
+                ? WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN
+                : WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED;
         }
 
         getProcessInfoFromPID(dwProcessId, ProcessPath);
 
         QString loadSettingSelectStr;
         if ((GetAsyncKeyState(VK_LCONTROL) & 0x8000) == 0) {
-            loadSettingSelectStr = matchSavedSettings(ProcessPath, windowTitle, className, fullscreenStateIndex);
+            loadSettingSelectStr = matchSavedSettings(ProcessPath, windowTitle, className, displayModeIndex);
         }
 
         if (loadSettingSelectStr.isEmpty()) {
@@ -37237,7 +37237,7 @@ void QKeyMapper::on_processinfoTable_doubleClicked(const QModelIndex &index)
             ui->checkProcessComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkWindowTitleComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_DEFAULT);
             ui->checkClassNameComboBox->setCurrentIndex(WINDOWINFO_MATCH_INDEX_IGNORE);
-            ui->checkFullScreenComboBox->setCurrentIndex(WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT);
+            ui->checkDisplayModeComboBox->setCurrentIndex(WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT);
             ui->settingNameLineEdit->setText(windowTitle);
             if (windowTitle.isEmpty()) {
                 QString processName = ui->processinfoTable->item(index.row(), PROCESS_NAME_COLUMN)->text();
@@ -44352,8 +44352,8 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
         ui->checkWindowTitleComboBox->setEnabled(true);
         ui->checkClassNameComboBox->setEnabled(true);
         // ui->removeSettingButton->setEnabled(true);
-        ui->fullScreenLabel->setEnabled(true);
-        ui->checkFullScreenComboBox->setEnabled(true);
+        ui->displayModeLabel->setEnabled(true);
+        ui->checkDisplayModeComboBox->setEnabled(true);
         ui->descriptionLineEdit->clear();
         ui->descriptionLineEdit->setReadOnly(false);
         ui->descriptionLineEdit->setEnabled(true);

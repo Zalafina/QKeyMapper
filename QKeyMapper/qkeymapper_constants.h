@@ -232,12 +232,12 @@ namespace QKeyMapperConstants {
     inline constexpr int WINDOWINFO_MATCH_INDEX_MIN        = WINDOWINFO_MATCH_INDEX_IGNORE;
     inline constexpr int WINDOWINFO_MATCH_INDEX_MAX        = WINDOWINFO_MATCH_INDEX_REGEXMATCH;
 
-    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE     = 0;
-    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_FULLSCREEN = 1;
-    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED   = 2;
-    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_DEFAULT    = WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE;
-    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_MIN        = WINDOWINFO_FULLSCREEN_MATCH_INDEX_IGNORE;
-    inline constexpr int WINDOWINFO_FULLSCREEN_MATCH_INDEX_MAX        = WINDOWINFO_FULLSCREEN_MATCH_INDEX_WINDOWED;
+    inline constexpr int WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE     = 0;
+    inline constexpr int WINDOWINFO_DISPLAYMODE_MATCH_INDEX_FULLSCREEN = 1;
+    inline constexpr int WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED   = 2;
+    inline constexpr int WINDOWINFO_DISPLAYMODE_MATCH_INDEX_DEFAULT    = WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE;
+    inline constexpr int WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MIN        = WINDOWINFO_DISPLAYMODE_MATCH_INDEX_IGNORE;
+    inline constexpr int WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MAX        = WINDOWINFO_DISPLAYMODE_MATCH_INDEX_WINDOWED;
 
     inline constexpr int BURST_TIME_MIN = 1;
     inline constexpr int BURST_TIME_MAX = 99999;
@@ -1385,7 +1385,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char PROCESSINFO_FILENAME_MATCH_INDEX[] = "ProcessInfo_FileNameMatchIndex";
     inline constexpr const char PROCESSINFO_WINDOWTITLE_MATCH_INDEX[] = "ProcessInfo_WindowTitleMatchIndex";
     inline constexpr const char PROCESSINFO_CLASSNAME_MATCH_INDEX[] = "ProcessInfo_ClassNameMatchIndex";
-    inline constexpr const char PROCESSINFO_FULLSCREEN_MATCH_INDEX[] = "ProcessInfo_FullScreenMatchIndex";
+    // Keep the serialized key stable so existing settings remain compatible.
+    inline constexpr const char PROCESSINFO_DISPLAYMODE_MATCH_INDEX[] = "ProcessInfo_DisplayModeMatchIndex";
     inline constexpr const char PROCESSINFO_DESCRIPTION[] = "ProcessInfo_Description";
 
     inline constexpr const char MACROLIST[] = "MacroList";

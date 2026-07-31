@@ -985,7 +985,7 @@
        <bool>false</bool>
       </property>
      </widget>
-     <widget class="QLabel" name="fullScreenLabel">
+     <widget class="QLabel" name="displayModeLabel">
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -995,13 +995,13 @@
        </rect>
       </property>
       <property name="text">
-       <string>FullscreenState</string>
+       <string>DisplayMode</string>
       </property>
       <property name="alignment">
        <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
       </property>
      </widget>
-     <widget class="QComboBox" name="checkFullScreenComboBox">
+     <widget class="QComboBox" name="checkDisplayModeComboBox">
       <property name="geometry">
        <rect>
         <x>65</x>
@@ -1034,8 +1034,8 @@
      <zorder>checkClassNameComboBox</zorder>
      <zorder>ignoreRulesListButton</zorder>
      <zorder>selectSettingCustomIconButton</zorder>
-     <zorder>fullScreenLabel</zorder>
-     <zorder>checkFullScreenComboBox</zorder>
+     <zorder>displayModeLabel</zorder>
+     <zorder>checkDisplayModeComboBox</zorder>
      <zorder>descriptionLabel</zorder>
     </widget>
     <widget class="QWidget" name="general">
