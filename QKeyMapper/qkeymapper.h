@@ -1265,7 +1265,6 @@ public:
     static QString getExeProductVersion(void);
     static QString getPlatformString(void);
     static bool isWindowsFilterKeysEnabled(void);
-    static void setWindowsFilterKeysEnabled(bool enable);
     static bool isWindowsDarkMode(void);
     static bool isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname);
     static bool isViGEmBusInstalled(void);
@@ -1996,6 +1995,13 @@ private:
     void handleEnableSystemFilterKeyPopupCheckStateChanged(Qt::CheckState state);
     void setEnableSystemFilterKeyCheckedInternal(bool checked);
     void setDisableFilterKeyClickSoundCheckedInternal(bool checked);
+    static bool readWindowsFilterKeys(FILTERKEYS &filterKeys);
+    static bool filterKeysStateEqual(const FILTERKEYS &left, const FILTERKEYS &right);
+    bool setWindowsFilterKeysEnabled(bool enable, bool clickSoundEnabled);
+    void beginSystemFilterKeysSession(void);
+    void applySystemFilterKeysForCurrentSetting(void);
+    void restoreSystemFilterKeysBaseline(void);
+    void clearSystemFilterKeysSession(void);
 
     // Category filter toolbutton (QToolButton + QMenu + QWidgetAction) helpers
     void rebuildCategoryFilterMenuForCurrentTab(void);
@@ -2289,6 +2295,14 @@ private:
     QFrame *m_SystemFilterKeyPopupFrame = Q_NULLPTR;
     QCheckBox *m_EnableSystemFilterKeyPopupCheckBox = Q_NULLPTR;
     QCheckBox *m_DisableFilterKeyClickSoundPopupCheckBox = Q_NULLPTR;
+    bool m_SystemFilterKeysBaselineEnabled = false;
+    bool m_SystemFilterKeysBaselineClickSoundEnabled = false;
+    bool m_SystemFilterKeysBaselineValid = false;
+    bool m_SystemFilterKeysManualOverride = false;
+    bool m_SystemFilterKeysWriteInProgress = false;
+    QString m_SystemFilterKeysManualOverrideSettingName;
+    FILTERKEYS m_LastWrittenSystemFilterKeys = { sizeof(FILTERKEYS) };
+    bool m_LastWrittenSystemFilterKeysValid = false;
 
 public:
     enum class ExclusiveGroupConflictResolutionResult {

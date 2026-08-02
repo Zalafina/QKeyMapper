@@ -138,7 +138,6 @@ QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Down;
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Left;
 QAtomicBool QKeyMapper_Worker::s_Key2Mouse_Right;
 QAtomicBool QKeyMapper_Worker::s_KeyRecording;
-QAtomicBool QKeyMapper_Worker::s_RestoreFilterKeysState;
 qint32 QKeyMapper_Worker::s_LastCarOrdinal = 0;
 QHash<QString, V_KEYCODE> QKeyMapper_Worker::VirtualKeyCodeMap = QHash<QString, V_KEYCODE>();
 QHash<QString, V_MOUSECODE> QKeyMapper_Worker::VirtualMouseButtonMap = QHash<QString, V_MOUSECODE>();
@@ -9670,9 +9669,6 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     // and point KeyMappingDataList to it
     QKeyMapper::buildActiveKeyMappingDataList();
 
-    // Handle FilterKeys state on mapping start
-    handleFilterKeysOnMappingStart();
-
     // Q_UNUSED(hWnd);
     clearAllBurstKeyTimersAndLockKeys();
     breakAllRunningKeySequence();
@@ -9886,9 +9882,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
     s_AtomicHookProcState = HOOKPROC_STATE_STOPPING;
 
-    // Handle FilterKeys state on mapping stop
-    handleFilterKeysOnMappingStop();
-
     clearAllBurstKeyTimersAndLockKeys();
     breakAllRunningKeySequence();
     clearAllNormalPressedMappingKeys();
@@ -10088,60 +10081,6 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc End.\033[0m");
-#endif
-}
-
-void QKeyMapper_Worker::handleFilterKeysOnMappingStart()
-{
-    // Reset restore flag at the start of mapping
-    s_RestoreFilterKeysState = false;
-
-    // Check if we need to enable FilterKeys during mapping
-    if (QKeyMapper::getEnableSystemFilterKeyChecked()) {
-        // If FilterKeys is not enabled, enable it and set restore flag
-        if (!QKeyMapper::isWindowsFilterKeysEnabled()) {
-            QKeyMapper::setWindowsFilterKeysEnabled(true);
-            s_RestoreFilterKeysState = true;
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper_Worker::handleFilterKeysOnMappingStart] Enabled FilterKeys for mapping, will restore on stop";
-#endif
-        } else {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper_Worker::handleFilterKeysOnMappingStart] FilterKeys already enabled, no change needed";
-#endif
-        }
-    } else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper_Worker::handleFilterKeysOnMappingStart] EnableSystemFilterKey is unchecked, no change needed";
-#endif
-    }
-}
-
-void QKeyMapper_Worker::handleFilterKeysOnMappingStop()
-{
-    // Only restore if the flag is set (we enabled FilterKeys and user didn't change it)
-    if (s_RestoreFilterKeysState && QKeyMapper::isWindowsFilterKeysEnabled()) {
-        // Disable FilterKeys (restore to original disabled state)
-        QKeyMapper::setWindowsFilterKeysEnabled(false);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper_Worker::handleFilterKeysOnMappingStop] Restored FilterKeys to disabled state";
-#endif
-    } else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper_Worker::handleFilterKeysOnMappingStop] No FilterKeys state restore needed";
-#endif
-    }
-
-    // Reset restore flag
-    s_RestoreFilterKeysState = false;
-}
-
-void QKeyMapper_Worker::notifyUserChangedFilterKeys()
-{
-    // Clear the restore flag since user manually changed FilterKeys
-    s_RestoreFilterKeysState = false;
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QKeyMapper_Worker::notifyUserChangedFilterKeys] User changed FilterKeys, clearing restore flag";
 #endif
 }
 

@@ -3793,7 +3793,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(this, &QKeyMapper::updateKeyComboBoxWithJoystickKey_Signal, this, &QKeyMapper::updateKeyComboBoxWithJoystickKey, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, this, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper::systemThemeChanged_Signal, this, &QKeyMapper::systemThemeChanged, Qt::QueuedConnection);
-    QObject::connect(this, &QKeyMapper::systemFilterKeysSettingChanged_Signal, this, &QKeyMapper::systemFilterKeysSettingChanged, Qt::QueuedConnection);
+    QObject::connect(this, &QKeyMapper::systemFilterKeysSettingChanged_Signal, this, &QKeyMapper::systemFilterKeysSettingChanged);
     QObject::connect(this, &QKeyMapper::keyMappingTableItemCheckStateChanged_Signal, m_ItemSetupDialog, &QItemSetupDialog::keyMappingTableItemCheckStateChanged);
 
     QObject::connect(ui->processLineEdit, &QLineEdit::returnPressed, this, &QKeyMapper::confirmProcessLineEdit);
@@ -3837,6 +3837,9 @@ QKeyMapper::~QKeyMapper()
 
 #endif
     s_isDestructing = true;
+
+    restoreSystemFilterKeysBaseline();
+    clearSystemFilterKeysSession();
 
     if (qApp) {
         qApp->removeEventFilter(this);
@@ -4947,6 +4950,8 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 {
     // updateShortcutsMap();
 
+    applySystemFilterKeysForCurrentSetting();
+
     if (hWnd == NULL) {
         if (s_last_HWNDList.isEmpty()
             || s_last_HWNDList.contains(s_CurrentMappingHWND) == false) {
@@ -4963,6 +4968,8 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 void QKeyMapper::setKeyUnHook(void)
 {
     // freeShortcuts();
+
+    restoreSystemFilterKeysBaseline();
 
     if (s_last_HWNDList.isEmpty()
         || s_last_HWNDList.contains(s_CurrentMappingHWND) == false) {
@@ -5193,43 +5200,154 @@ QString QKeyMapper::getPlatformString()
     return platform_string;
 }
 
-bool QKeyMapper::isWindowsFilterKeysEnabled()
+bool QKeyMapper::readWindowsFilterKeys(FILTERKEYS &filterKeys)
 {
-    FILTERKEYS filterKeys = { sizeof(FILTERKEYS) };
-    if (SystemParametersInfo(SPI_GETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, 0)) {
-        // Check if the dwFlags in the FILTERKEYS structure contains the FKF_FILTERKEYSON flag
-        return (filterKeys.dwFlags & FKF_FILTERKEYSON) != 0;
-    }
-    return false;
+    filterKeys = FILTERKEYS{ sizeof(FILTERKEYS) };
+    return SystemParametersInfo(SPI_GETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, 0) != FALSE;
 }
 
-void QKeyMapper::setWindowsFilterKeysEnabled(bool enable)
+bool QKeyMapper::filterKeysStateEqual(const FILTERKEYS &left, const FILTERKEYS &right)
 {
-    FILTERKEYS filterKeys = { sizeof(FILTERKEYS) };
+    return left.cbSize == right.cbSize
+           && left.dwFlags == right.dwFlags
+           && left.iWaitMSec == right.iWaitMSec
+           && left.iDelayMSec == right.iDelayMSec
+           && left.iRepeatMSec == right.iRepeatMSec
+           && left.iBounceMSec == right.iBounceMSec;
+}
 
-    // Get current settings
-    if (!SystemParametersInfo(SPI_GETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, 0)) {
-        return; // Failed to get settings
+bool QKeyMapper::isWindowsFilterKeysEnabled()
+{
+    FILTERKEYS filterKeys;
+    return readWindowsFilterKeys(filterKeys)
+           && (filterKeys.dwFlags & FKF_FILTERKEYSON) != 0;
+}
+
+bool QKeyMapper::setWindowsFilterKeysEnabled(bool enable, bool clickSoundEnabled)
+{
+    FILTERKEYS filterKeys;
+    if (!readWindowsFilterKeys(filterKeys) || !(filterKeys.dwFlags & FKF_AVAILABLE)) {
+        return false;
     }
 
-    // Only modify FilterKeys flags if the system supports FilterKeys
-    if (filterKeys.dwFlags & FKF_AVAILABLE) {
-        if (enable) {
-            filterKeys.dwFlags |= FKF_FILTERKEYSON;
-            if (getDisableFilterKeyClickSoundOnEnableChecked()) {
-                filterKeys.dwFlags &= ~FKF_CLICKON;
-            }
-        } else {
-            filterKeys.dwFlags &= ~FKF_FILTERKEYSON;
+    const bool currentEnabled = (filterKeys.dwFlags & FKF_FILTERKEYSON) != 0;
+    const bool currentClickSoundEnabled = (filterKeys.dwFlags & FKF_CLICKON) != 0;
+    if (currentEnabled == enable && currentClickSoundEnabled == clickSoundEnabled) {
+        return true;
+    }
+
+    if (enable) {
+        filterKeys.dwFlags |= FKF_FILTERKEYSON;
+    }
+    else {
+        filterKeys.dwFlags &= ~FKF_FILTERKEYSON;
+    }
+    if (clickSoundEnabled) {
+        filterKeys.dwFlags |= FKF_CLICKON;
+    }
+    else {
+        filterKeys.dwFlags &= ~FKF_CLICKON;
+    }
+    filterKeys.iWaitMSec = 0;
+    filterKeys.iDelayMSec = 0;
+    filterKeys.iRepeatMSec = 0;
+    filterKeys.iBounceMSec = 0;
+
+    m_SystemFilterKeysWriteInProgress = true;
+    const bool writeSucceeded = SystemParametersInfo(SPI_SETFILTERKEYS,
+                                                     sizeof(FILTERKEYS),
+                                                     &filterKeys,
+                                                     SPIF_SENDCHANGE) != FALSE;
+    m_SystemFilterKeysWriteInProgress = false;
+    if (!writeSucceeded) {
+        return false;
+    }
+
+    FILTERKEYS appliedFilterKeys;
+    m_LastWrittenSystemFilterKeysValid = readWindowsFilterKeys(appliedFilterKeys);
+    if (m_LastWrittenSystemFilterKeysValid) {
+        m_LastWrittenSystemFilterKeys = appliedFilterKeys;
+    }
+    return true;
+}
+
+void QKeyMapper::beginSystemFilterKeysSession()
+{
+    clearSystemFilterKeysSession();
+
+    FILTERKEYS filterKeys;
+    if (!readWindowsFilterKeys(filterKeys) || !(filterKeys.dwFlags & FKF_AVAILABLE)) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[beginSystemFilterKeysSession] Failed to capture available FilterKeys state";
+#endif
+        return;
+    }
+
+    m_SystemFilterKeysBaselineEnabled = (filterKeys.dwFlags & FKF_FILTERKEYSON) != 0;
+    m_SystemFilterKeysBaselineClickSoundEnabled = (filterKeys.dwFlags & FKF_CLICKON) != 0;
+    m_SystemFilterKeysBaselineValid = true;
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[beginSystemFilterKeysSession] Baseline captured"
+             << "enabled=" << m_SystemFilterKeysBaselineEnabled
+             << "clickSound=" << m_SystemFilterKeysBaselineClickSoundEnabled;
+#endif
+}
+
+void QKeyMapper::applySystemFilterKeysForCurrentSetting()
+{
+    if (!m_SystemFilterKeysBaselineValid) {
+        return;
+    }
+
+    const QString currentSettingName = currentSettingSelectGroupName();
+    if (m_SystemFilterKeysManualOverride) {
+        if (currentSettingName == m_SystemFilterKeysManualOverrideSettingName) {
+            return;
         }
-        filterKeys.iWaitMSec = 0;
-        filterKeys.iDelayMSec = 0;
-        filterKeys.iRepeatMSec = 0;
-        filterKeys.iBounceMSec = 0;
 
-        // Apply the settings
-        SystemParametersInfo(SPI_SETFILTERKEYS, sizeof(FILTERKEYS), &filterKeys, SPIF_SENDCHANGE);
+        FILTERKEYS filterKeys;
+        if (!readWindowsFilterKeys(filterKeys) || !(filterKeys.dwFlags & FKF_AVAILABLE)) {
+            return;
+        }
+        m_SystemFilterKeysBaselineEnabled = (filterKeys.dwFlags & FKF_FILTERKEYSON) != 0;
+        m_SystemFilterKeysBaselineClickSoundEnabled = (filterKeys.dwFlags & FKF_CLICKON) != 0;
+        m_SystemFilterKeysManualOverride = false;
+        m_SystemFilterKeysManualOverrideSettingName.clear();
+        m_LastWrittenSystemFilterKeysValid = false;
     }
+
+    const bool enableFilterKeys = getEnableSystemFilterKeyChecked();
+    const bool disableClickSound = getDisableFilterKeyClickSoundOnEnableChecked();
+    const bool targetEnabled = enableFilterKeys ? true : m_SystemFilterKeysBaselineEnabled;
+    const bool targetClickSoundEnabled = (enableFilterKeys && disableClickSound)
+                                             ? false
+                                             : m_SystemFilterKeysBaselineClickSoundEnabled;
+
+    Q_ASSERT(targetEnabled == (enableFilterKeys || m_SystemFilterKeysBaselineEnabled));
+    Q_ASSERT(targetClickSoundEnabled
+             == (m_SystemFilterKeysBaselineClickSoundEnabled
+                 && !(enableFilterKeys && disableClickSound)));
+    setWindowsFilterKeysEnabled(targetEnabled, targetClickSoundEnabled);
+}
+
+void QKeyMapper::restoreSystemFilterKeysBaseline()
+{
+    if (!m_SystemFilterKeysBaselineValid || m_SystemFilterKeysManualOverride) {
+        return;
+    }
+
+    setWindowsFilterKeysEnabled(m_SystemFilterKeysBaselineEnabled,
+                                m_SystemFilterKeysBaselineClickSoundEnabled);
+}
+
+void QKeyMapper::clearSystemFilterKeysSession()
+{
+    m_SystemFilterKeysBaselineEnabled = false;
+    m_SystemFilterKeysBaselineClickSoundEnabled = false;
+    m_SystemFilterKeysBaselineValid = false;
+    m_SystemFilterKeysManualOverride = false;
+    m_SystemFilterKeysManualOverrideSettingName.clear();
+    m_LastWrittenSystemFilterKeysValid = false;
 }
 
 bool QKeyMapper::isWindowsDarkMode()
@@ -14742,6 +14860,13 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
             }
         }
         else if (msg->message == WM_SETTINGCHANGE) {
+            if (msg->wParam == SPI_SETFILTERKEYS) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[QKeyMapper::nativeEvent]" << "Filter Keys settings changed";
+#endif
+                emit systemFilterKeysSettingChanged_Signal();
+            }
+
             if (msg->lParam) {
                 // Try reading as wide-char string
                 QString param = QString::fromWCharArray(reinterpret_cast<const wchar_t*>(msg->lParam));
@@ -14767,12 +14892,6 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
                 qDebug() << "[QKeyMapper::nativeEvent]" << "WM_SETTINGCHANGE -> (NULL lParam), wParam =" << msg->wParam;
 #endif
 
-                if (msg->wParam == SPI_SETFILTERKEYS) {
-#ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[QKeyMapper::nativeEvent]" << "Filter Keys settings changed";
-#endif
-                    emit systemFilterKeysSettingChanged_Signal();
-                }
             }
         }
         else if (msg->message == WM_ERASEBKGND
@@ -15947,6 +16066,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
     Q_UNUSED(mappingstartmodeEnum);
 
     if (KEYMAP_IDLE == m_KeyMapStatus){
+        beginSystemFilterKeysSession();
 #ifdef CYCLECHECKTIMER_ENABLED
         m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
 #endif
@@ -15974,6 +16094,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         stopWinEventHook();
         setKeyUnHook();
         m_KeyMapStatus = KEYMAP_IDLE;
+        clearSystemFilterKeysSession();
         updateMappingStartButtonText();
         resetGlobalMappingBlockedByFullscreenState();
         mappingStopNotification();
@@ -17933,13 +18054,40 @@ void QKeyMapper::systemThemeChanged()
 
 void QKeyMapper::systemFilterKeysSettingChanged()
 {
-#ifdef DEBUG_LOGOUT_ON
-    bool current_system_filterkeys_enabled = isWindowsFilterKeysEnabled();
-    qDebug() << "[QKeyMapper::systemFilterKeysSettingChanged] WindowsFilterKeysEnabledChanged ->" << current_system_filterkeys_enabled;
-#endif
+    if (m_SystemFilterKeysWriteInProgress) {
+        return;
+    }
 
-    // Notify QKeyMapper_Worker that user changed FilterKeys during mapping
-    QKeyMapper_Worker::getInstance()->notifyUserChangedFilterKeys();
+    FILTERKEYS filterKeys;
+    if (!readWindowsFilterKeys(filterKeys) || !(filterKeys.dwFlags & FKF_AVAILABLE)) {
+        return;
+    }
+
+    if (m_LastWrittenSystemFilterKeysValid
+        && filterKeysStateEqual(filterKeys, m_LastWrittenSystemFilterKeys)) {
+        return;
+    }
+    m_LastWrittenSystemFilterKeysValid = false;
+
+    if (!m_SystemFilterKeysBaselineValid || KEYMAP_IDLE == m_KeyMapStatus) {
+        return;
+    }
+
+    m_SystemFilterKeysBaselineEnabled = (filterKeys.dwFlags & FKF_FILTERKEYSON) != 0;
+    m_SystemFilterKeysBaselineClickSoundEnabled = (filterKeys.dwFlags & FKF_CLICKON) != 0;
+    const bool mappingActive = KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus
+                               || KEYMAP_MAPPING_MATCHED == m_KeyMapStatus;
+    m_SystemFilterKeysManualOverride = mappingActive;
+    m_SystemFilterKeysManualOverrideSettingName = mappingActive
+                                                      ? currentSettingSelectGroupName()
+                                                      : QString();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::systemFilterKeysSettingChanged] User change detected"
+             << "enabled=" << m_SystemFilterKeysBaselineEnabled
+             << "clickSound=" << m_SystemFilterKeysBaselineClickSoundEnabled
+             << "paused=" << m_SystemFilterKeysManualOverride;
+#endif
 }
 
 void QKeyMapper::onHotKeyLineEditEditingFinished()
@@ -26910,6 +27058,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
         updateCommonMappingTabVisibility();
 
+        if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus
+            || KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
+            applySystemFilterKeysForCurrentSetting();
+        }
+
         return loadedSettingString;
     }
 }
@@ -35180,6 +35333,14 @@ void QKeyMapper::resetFontSize()
 
 void QKeyMapper::sessionLockStateChanged(bool locked)
 {
+    if (locked) {
+        restoreSystemFilterKeysBaseline();
+    }
+    else if (KEYMAP_MAPPING_GLOBAL == m_KeyMapStatus
+             || KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
+        applySystemFilterKeysForCurrentSetting();
+    }
+
     emit QKeyMapper_Worker::getInstance()->sessionLockStateChanged_Signal(locked);
 }
 

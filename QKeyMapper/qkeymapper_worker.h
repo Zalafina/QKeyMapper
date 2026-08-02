@@ -1428,11 +1428,6 @@ public slots:
     bool checkGyro2MouseMoveActiveState(void);
     void doFunctionMappingProc(const QString &func_keystring);
 
-    // FilterKeys management functions
-    void handleFilterKeysOnMappingStart();
-    void handleFilterKeysOnMappingStop();
-    void notifyUserChangedFilterKeys();
-
 private:
     void joystickLTRTButtonProc(const QJoystickAxisEvent &e);
     void joystickLSHorizontalProc(const QJoystickAxisEvent &e);
@@ -1605,7 +1600,6 @@ public:
     static QAtomicBool s_Key2Mouse_Left;
     static QAtomicBool s_Key2Mouse_Right;
     static QAtomicBool s_KeyRecording;
-    static QAtomicBool s_RestoreFilterKeysState;
     static qint32 s_LastCarOrdinal;
     static QHash<QString, V_KEYCODE> VirtualKeyCodeMap;
     static QHash<QString, V_MOUSECODE> VirtualMouseButtonMap;
@@ -1832,4 +1826,3 @@ bool EnablePrivilege(LPCWSTR privilege);
 bool DisablePrivilege(LPCWSTR privilege);
 
 #endif // QKEYMAPPER_WORKER_H
-
