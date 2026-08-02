@@ -1,4 +1,5 @@
 # QKeyMapper Project Memory
+- [FilterKeys SettingSelect Session Management](episodic/2026-08-02-filterkeys-settingselect-session.md) — Main-thread two-bit baseline management, self-notification fingerprinting, and user-override behavior; Windows runtime validation pending.
 - [Agent Workspace Sharing Migration](episodic/2026-07-27-agent-workspace-sharing.md) — Shared Codex/Claude guidance, workspace memory routing, manual skill-copy policy, and remote-integration note.
 - [Large Source Rename Safety](large-file-patch-safety.md) — Validate large-file rename patches with git apply and line-count/diff-size gates; repeated apply_patch calls may truncate qkeymapper.cpp.
 
