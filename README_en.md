@@ -92,7 +92,7 @@ QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, 
 
 If the **QKeyMapper** key mapping software has been helpful to you, please give it a ⭐ Star to support the project and help more people discover **QKeyMapper**.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.com/#Zalafina/QKeyMapper&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.dera.page/#Zalafina/QKeyMapper&Date)
 
 ---
 ## 💡 Usage notes

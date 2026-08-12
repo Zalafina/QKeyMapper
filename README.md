@@ -105,7 +105,7 @@
 
 如果 **QKeyMapper** 按键映射软件对您有帮助，请给个 ⭐ Star 支持一下，让更多的人看到 **QKeyMapper**
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.com/#Zalafina/QKeyMapper&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.dera.page/#Zalafina/QKeyMapper&Date)
 
 ---
 ## 💡 软件使用须知
