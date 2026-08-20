@@ -84,6 +84,8 @@ bool tryMergeComboSequence(const QStringList &tokens, QString *mergedOutput)
         }
     }
 
+    Q_UNUSED(hasWaitTimeToken);
+
 #ifdef DEBUG_LOGOUT_ON
     if (hasWaitTimeToken) {
         qDebug().nospace().noquote()
@@ -238,24 +240,24 @@ bool tryMergeComboSequenceAllowMergedInner(const QStringList &tokens, QString *m
     return true;
 }
 
-bool tryMergeComboSequenceAtTail(const QStringList &tokens, QString *mergedOutput, int *startIndex)
-{
-    if (!mergedOutput || !startIndex) {
-        return false;
-    }
+// bool tryMergeComboSequenceAtTail(const QStringList &tokens, QString *mergedOutput, int *startIndex)
+// {
+//     if (!mergedOutput || !startIndex) {
+//         return false;
+//     }
 
-    for (int i = 0; i < tokens.size(); ++i) {
-        QString merged;
-        const QStringList tailTokens = tokens.mid(i);
-        if (tryMergeComboSequenceAllowMergedInner(tailTokens, &merged)) {
-            *mergedOutput = merged;
-            *startIndex = i;
-            return true;
-        }
-    }
+//     for (int i = 0; i < tokens.size(); ++i) {
+//         QString merged;
+//         const QStringList tailTokens = tokens.mid(i);
+//         if (tryMergeComboSequenceAllowMergedInner(tailTokens, &merged)) {
+//             *mergedOutput = merged;
+//             *startIndex = i;
+//             return true;
+//         }
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
 bool tryConsumeComboSequence(const QStringList &tokens, int startIndex, int *endIndex, QString *mergedOutput)
 {

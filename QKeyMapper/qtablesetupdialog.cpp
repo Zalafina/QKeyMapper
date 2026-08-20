@@ -722,7 +722,7 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         return;
     }
 
-    int tabindex = m_TabIndex;
+    int tabindex;
     const QString currentTabCustomImage_Path = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Path;
 
     QString TabName = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName;

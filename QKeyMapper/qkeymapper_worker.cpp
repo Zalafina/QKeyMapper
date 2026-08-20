@@ -51,7 +51,7 @@ bool isGamepadTouchpadPlayerEnabled(int playerMask, int playerIndex)
         && ((playerMask & gamepadTouchpadPlayerBit(playerIndex)) != 0);
 }
 
-constexpr int BLOCK_INPUT_DEVICE_COUNT = INTERCEPTION_MAX_KEYBOARD; // 10
+// constexpr int BLOCK_INPUT_DEVICE_COUNT = INTERCEPTION_MAX_KEYBOARD; // 10
 constexpr int INITIAL_DEVICE_INDEX = -1;
 
 inline bool isBlockDeviceMaskSet(int mask, int deviceIndex)
@@ -790,35 +790,35 @@ QString buildRecordedMappingKeysClipboardText()
     return recordText;
 }
 
-bool tryReadClipboardUnicodeText(QString &clipboardText, int maxRetries = 3)
-{
-    clipboardText.clear();
+// bool tryReadClipboardUnicodeText(QString &clipboardText, int maxRetries = 3)
+// {
+//     clipboardText.clear();
 
-    for (int attempt = 0; attempt < maxRetries; ++attempt) {
-        if (OpenClipboard(NULL)) {
-            bool hasUnicodeText = false;
-            HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+//     for (int attempt = 0; attempt < maxRetries; ++attempt) {
+//         if (OpenClipboard(NULL)) {
+//             bool hasUnicodeText = false;
+//             HANDLE hData = GetClipboardData(CF_UNICODETEXT);
 
-            if (hData != NULL) {
-                const wchar_t *pData = static_cast<const wchar_t*>(GlobalLock(hData));
-                if (pData != NULL) {
-                    clipboardText = QString::fromWCharArray(pData);
-                    GlobalUnlock(hData);
-                    hasUnicodeText = true;
-                }
-            }
+//             if (hData != NULL) {
+//                 const wchar_t *pData = static_cast<const wchar_t*>(GlobalLock(hData));
+//                 if (pData != NULL) {
+//                     clipboardText = QString::fromWCharArray(pData);
+//                     GlobalUnlock(hData);
+//                     hasUnicodeText = true;
+//                 }
+//             }
 
-            CloseClipboard();
-            return hasUnicodeText;
-        }
+//             CloseClipboard();
+//             return hasUnicodeText;
+//         }
 
-        if (attempt < (maxRetries - 1)) {
-            QThread::msleep(5);
-        }
-    }
+//         if (attempt < (maxRetries - 1)) {
+//             QThread::msleep(5);
+//         }
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
 bool decodeClipboardNarrowText(HANDLE hData, UINT codePage, QString &clipboardText)
 {
@@ -18577,7 +18577,7 @@ void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown
     QString original_key = entry.Original_Key;
     int mappingkeylist_size = mappingKeyList.size();
 
-    auto removePressedVButtonKey = [this, &original_key]() {
+    auto removePressedVButtonKey = [&original_key]() {
         QMutexLocker locker(&s_PressedVButtonKeysListMutex);
         pressedVButtonKeysList.removeAll(original_key);
     };

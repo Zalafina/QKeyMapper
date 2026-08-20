@@ -57,7 +57,7 @@ constexpr qreal FLOATINGBUTTON_HOVER_BORDER_LIFT_RATIO = 0.78;
 constexpr qreal FLOATINGBUTTON_HOVER_GLOW_OUTER_ALPHA = 0.30;
 constexpr qreal FLOATINGBUTTON_HOVER_GLOW_INNER_ALPHA = 0.52;
 constexpr qreal FLOATINGBUTTON_HOVER_SHEEN_ALPHA = 0.14;
-constexpr qreal FLOATINGBUTTON_HOVER_CONTENT_MARGIN = 3.4;
+// constexpr qreal FLOATINGBUTTON_HOVER_CONTENT_MARGIN = 3.4;
 constexpr qreal FLOATINGBUTTON_HOVER_GLOW_BORDER_BLEND_RATIO = 0.72;
 constexpr qreal FLOATINGBUTTON_HOVER_OUTER_GLOW_WIDTH = 5.2;
 constexpr qreal FLOATINGBUTTON_HOVER_OUTER_GLOW_WIDTH_GAIN = 3.4;
@@ -2708,15 +2708,15 @@ static QString buildOriginalKeyTriggerString(const QString &baseKey, OriginalKey
     return baseKey + triggerSuffix + QString::number(boundedPressTime);
 }
 
-static bool isGamepadTouchpadPlayerlessOriginalKey(const QString &originalKey)
-{
-    return originalKey == JOY_TOUCHPAD2MOUSE_STR
-        || originalKey == JOY_TOUCHPAD_TAP_STR
-        || originalKey == JOY_TOUCHPAD_2F_UP_STR
-        || originalKey == JOY_TOUCHPAD_2F_DOWN_STR
-        || originalKey == JOY_TOUCHPAD_2F_LEFT_STR
-        || originalKey == JOY_TOUCHPAD_2F_RIGHT_STR;
-}
+// static bool isGamepadTouchpadPlayerlessOriginalKey(const QString &originalKey)
+// {
+//     return originalKey == JOY_TOUCHPAD2MOUSE_STR
+//         || originalKey == JOY_TOUCHPAD_TAP_STR
+//         || originalKey == JOY_TOUCHPAD_2F_UP_STR
+//         || originalKey == JOY_TOUCHPAD_2F_DOWN_STR
+//         || originalKey == JOY_TOUCHPAD_2F_LEFT_STR
+//         || originalKey == JOY_TOUCHPAD_2F_RIGHT_STR;
+// }
 
 static bool isGamepadTouchpadTimeRestrictedOriginalKey(const QString &originalKey)
 {
@@ -3683,11 +3683,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonClearAllLockStates_Signal,
                      this, &QKeyMapper::onClearFloatingButtonLockStates, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::mappingKeyRecordStarted_Signal,
-                     this, [this, showKeyRecordNotification]() {
+                     this, [showKeyRecordNotification]() {
                          showKeyRecordNotification(tr("Key recording started"));
                      }, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::mappingKeyRecordFinished_Signal,
-                     this, [this, showKeyRecordNotification](const QString &recordText) {
+                     this, [showKeyRecordNotification](const QString &recordText) {
                          if (!recordText.isEmpty()) {
                              QKeyMapper::copyStringToClipboard(recordText);
                              showKeyRecordNotification(tr("Key recording stopped, record copied to clipboard"));
@@ -8720,20 +8720,20 @@ struct NormalTabExclusiveGroupConflict
     QList<int> Rows;
 };
 
-bool hasAnyExclusiveGroupMatch(const QList<MAP_KEYDATA> &mappingData, const QString &groupKey, int excludeRow)
-{
-    for (int i = 0; i < mappingData.size(); ++i) {
-        if (i == excludeRow) {
-            continue;
-        }
+// bool hasAnyExclusiveGroupMatch(const QList<MAP_KEYDATA> &mappingData, const QString &groupKey, int excludeRow)
+// {
+//     for (int i = 0; i < mappingData.size(); ++i) {
+//         if (i == excludeRow) {
+//             continue;
+//         }
 
-        if (normalizeOriginalKeyForExclusiveGroup(mappingData.at(i).Original_Key) == groupKey) {
-            return true;
-        }
-    }
+//         if (normalizeOriginalKeyForExclusiveGroup(mappingData.at(i).Original_Key) == groupKey) {
+//             return true;
+//         }
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
 bool hasCommonExclusiveGroupPresenceForTab(int tabIndex, const QString &groupKey)
 {
@@ -9045,17 +9045,17 @@ void showCopiedMappingInsertResultPopup(QKeyMapper *keymapper,
     }
 }
 
-bool currentRowDisabledByConflict(QKeyMapper::ExclusiveGroupConflictResolutionResult result)
-{
-    return result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabled
-        || result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabledAndOtherRowsDisabled;
-}
+// bool currentRowDisabledByConflict(QKeyMapper::ExclusiveGroupConflictResolutionResult result)
+// {
+//     return result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabled
+//         || result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabledAndOtherRowsDisabled;
+// }
 
-bool otherRowsDisabledByConflict(QKeyMapper::ExclusiveGroupConflictResolutionResult result)
-{
-    return result == QKeyMapper::ExclusiveGroupConflictResolutionResult::OtherRowsDisabled
-        || result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabledAndOtherRowsDisabled;
-}
+// bool otherRowsDisabledByConflict(QKeyMapper::ExclusiveGroupConflictResolutionResult result)
+// {
+//     return result == QKeyMapper::ExclusiveGroupConflictResolutionResult::OtherRowsDisabled
+//         || result == QKeyMapper::ExclusiveGroupConflictResolutionResult::CurrentRowDisabledAndOtherRowsDisabled;
+// }
 
 constexpr char FLOATINGBUTTON_STYLE_CODE_PREFIX[] = "FBS1";
 constexpr char MAPPING_CODE_PREFIX[] = "KMC1";
@@ -16818,7 +16818,7 @@ bool QKeyMapper::recoverKeyMappingTabWidgetOrderAfterTabMoved(int from, int to)
     const int actualCommonIndex = tabWidget->indexOf(commonWidget);
     QWidget *restoredCurrentWidget = tabWidget->currentWidget();
 
-    auto trackedNormalWidgetAt = [this, commonDataIndex](int index) -> QWidget* {
+    auto trackedNormalWidgetAt = [commonDataIndex](int index) -> QWidget* {
         if (index < 0 || index >= s_KeyMappingTabInfoList.size() || index == commonDataIndex) {
             return Q_NULLPTR;
         }
@@ -21997,7 +21997,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         // Restore scroll positions on the next event loop iteration,
         // after the CategoryFilterStateGuard destructor has re-applied
         // row visibility filters and Qt layout is finalized.
-        QTimer::singleShot(0, this, [this, savedScrollPositions]() {
+        QTimer::singleShot(0, this, [savedScrollPositions]() {
             // If the tab count changed unexpectedly, skip restoration to preserve original behavior.
             if (savedScrollPositions.size() != s_KeyMappingTabInfoList.size()) {
                 return;
@@ -35846,7 +35846,7 @@ void QKeyMapper::connectSettingDirtySignals(void)
     connectCheckable(ui->startupMinimizedCheckBox);
     connectCheckable(ui->startupAutoMonitoringCheckBox);
     connectCheckable(ui->closeToSystemTrayCheckBox);
-    QObject::connect(ui->closeToSystemTrayCheckBox, &QCheckBox::clicked, this, [this]() {
+    QObject::connect(ui->closeToSystemTrayCheckBox, &QCheckBox::clicked, this, []() {
         QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
         settingFile.setIniCodec("UTF-8");
@@ -41040,6 +41040,8 @@ int KeyListComboBoxPopup::calculateListViewportHeight(const QListWidget *listWid
         }
     }
 
+    Q_UNUSED(measuredRowCount);
+
     if (listWidget->count() <= 0) {
         totalRowsHeight = fallbackRowHeight;
     }
@@ -41969,9 +41971,9 @@ SettingSelectComboBoxPopup::SettingSelectComboBoxPopup(SettingSelectComboBox *co
     , m_ComboBox(comboBox)
     , m_SearchLineEdit(new QLineEdit(this))
     , m_ButtonRowWidget(new QWidget(this))
+    , m_MoveTopToolButton(new QToolButton(m_ButtonRowWidget))
     , m_MoveUpToolButton(new QToolButton(m_ButtonRowWidget))
     , m_MoveDownToolButton(new QToolButton(m_ButtonRowWidget))
-    , m_MoveTopToolButton(new QToolButton(m_ButtonRowWidget))
     , m_MoveBottomToolButton(new QToolButton(m_ButtonRowWidget))
     , m_ReorderToolButton(new QToolButton(m_ButtonRowWidget))
     , m_MainListWidget(new KeyListPopupListWidget(this))
@@ -42438,6 +42440,8 @@ int SettingSelectComboBoxPopup::calculateListViewportHeight(const QListWidget *l
             totalRowsHeight += rowHeight;
         }
     }
+
+    Q_UNUSED(measuredRowCount);
 
     if (listWidget->count() <= 0) {
         totalRowsHeight = fallbackRowHeight;
@@ -45202,6 +45206,8 @@ void QKeyMapper::onAutoHideAllFloatingButtonsOnMappingStop()
         }
     }
 
+    Q_UNUSED(hiddenCount);
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[onAutoHideAllFloatingButtonsOnMappingStop]"
                                  << " hiddenCount=" << hiddenCount
@@ -45248,6 +45254,8 @@ void QKeyMapper::onSyncFloatingButtonsOnMappingStart()
             ++hiddenCount;
         }
     }
+
+    Q_UNUSED(hiddenCount);
 
 #if defined(DEBUG_LOGOUT_ON) && defined(FBUTTON_VERBOSE_LOG)
     qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] converge-hide"
@@ -45304,6 +45312,8 @@ void QKeyMapper::onSyncFloatingButtonsOnMappingStart()
         showFloatingButtonStartForSource(sourceInfo, displayRowindex, QString());
         ++shownCount;
     }
+
+    Q_UNUSED(shownCount);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[onSyncFloatingButtonsOnMappingStart] end"
@@ -45452,6 +45462,8 @@ void QKeyMapper::onClearFloatingButtonLockStates()
         applyFloatingButtonVisualState(button, keymapdata, displayPressed, displayLocked);
         ++updatedCount;
     }
+
+    Q_UNUSED(updatedCount);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[onClearFloatingButtonLockStates]"
@@ -46085,6 +46097,8 @@ bool KeyMappingTabBar::shouldRejectDragMove(const QPoint &pos) const
             }
         }
     }
+
+    Q_UNUSED(debugBypassApplied);
 
 #ifdef DEBUG_LOGOUT_ON
     const int actualCommonIndex = debugActualCommonTabIndex(tabWidget, commonIndex);
@@ -46896,8 +46910,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
 
             const auto updateInputCategoryPanelGeometry = [inputCategoryMenu, inputCategoryAction, inputCategoryPanel, inputCategoryLayout, inputCategoryLineEdit, applyCategoryButton,
                                                            kInputCategoryLineEditMinWidth, kInputCategoryLineEditMaxWidth,
-                                                           kInputCategoryButtonMinWidth, kInputCategoryPanelMinHeight,
-                                                           kInputCategoryLayoutHorizontalMargin, kInputCategoryControlSpacing](bool rebuildActionGeometry) {
+                                                           kInputCategoryButtonMinWidth, kInputCategoryPanelMinHeight](bool rebuildActionGeometry) {
                 const QString widthText = inputCategoryLineEdit->text().isEmpty()
                                           ? inputCategoryLineEdit->placeholderText()
                                           : inputCategoryLineEdit->text();
@@ -47074,7 +47087,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         showCopiedMappingInsertResultPopup(keymapper, inserted_count, insertSummary);
     };
 
-    const auto insertCopiedItemsForPlacement = [keymapper, this, currentRow, hasValidCurrentSelectedRow, handleInsertResult](DisplayInsertPlacement placement, int fallbackInsertRow) {
+    const auto insertCopiedItemsForPlacement = [keymapper, currentRow, hasValidCurrentSelectedRow, handleInsertResult](DisplayInsertPlacement placement, int fallbackInsertRow) {
         int inserted_count = -1;
         QKeyMapper::MappingDataInsertSummary insertSummary;
 

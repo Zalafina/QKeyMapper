@@ -434,6 +434,9 @@ void QVButtonPanel::buildGrid()
         }
     }
 
+    Q_UNUSED(reservedVSpace);
+    Q_UNUSED(reservedHSpace);
+
 #ifdef DEBUG_LOGOUT_ON
     const QMargins mainMargins = m_mainLayout ? m_mainLayout->contentsMargins() : QMargins();
     const QSize scrollAreaSize = m_scrollArea ? m_scrollArea->size() : QSize();

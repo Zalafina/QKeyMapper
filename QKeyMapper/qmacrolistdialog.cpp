@@ -2068,7 +2068,7 @@ void MacroListDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                     QString macroName = nameItem->text().trimmed();
                     if (macroDataList->contains(macroName)) {
                         QAction *seqEditAction = contextMenu.addAction(QObject::tr("Mapping Sequence Edit"));
-                        connect(seqEditAction, &QAction::triggered, this, [macroListDialog, macroName, macroDataList]() {
+                        connect(seqEditAction, &QAction::triggered, this, [macroName, macroDataList]() {
                             QMappingSequenceEdit *seqEdit = QKeyMapper::getInstance()->m_MappingSequenceEdit;
                             if (!seqEdit) return;
 
@@ -2143,7 +2143,7 @@ void MacroListDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
         }
 
         if (hasCopiedItems) {
-            auto showInsertResult = [macroListDialog](int inserted_count) {
+            auto showInsertResult = [](int inserted_count) {
                 int copied_count = QMacroListDialog::s_CopiedMacroData.size();
                 if (inserted_count == 0 && copied_count > 0) {
                     QString message = tr("%1 copied macro(s) could not be inserted!").arg(copied_count);

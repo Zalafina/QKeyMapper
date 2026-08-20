@@ -18,6 +18,7 @@ constexpr int FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_LEFT_STRETCH = 4;
 constexpr int FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_RIGHT_STRETCH = 5;
 constexpr int FLOATINGBUTTON_SETUP_LAYOUT_OUTER_SPACING = 8;
 
+#ifdef DEBUG_LOGOUT_ON
 const char *floatingButtonSetupLayoutModeName(int layoutMode)
 {
     switch (layoutMode) {
@@ -36,6 +37,7 @@ const char *floatingButtonSetupLayoutClassName(const QLayout *layout)
         ? layout->metaObject()->className()
         : "null";
 }
+#endif
 
 void notifySaveSettingDirty()
 {
