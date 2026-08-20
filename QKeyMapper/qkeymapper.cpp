@@ -31660,7 +31660,6 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             m_DisplaySwitchMode = DISPLAYSWITCHMODE_TASKBAR;
             showMinimized();
         } else {
-            m_DisplaySwitchMode = DISPLAYSWITCHMODE_TRAY;
             // Common hide logic
             // m_LastWindowPosition = pos(); // Save the current position before hiding
             closeSelectColorDialog();
@@ -31679,10 +31678,14 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
             closeTableSetupDialog();
             closeItemSetupDialog();
             closeSettingTransferDialog();
+            // Let Windows transfer foreground focus before removing the taskbar button.
+            if (GetForegroundWindow() == reinterpret_cast<HWND>(winId())) {
+                showMinimized();
+            }
+            m_DisplaySwitchMode = DISPLAYSWITCHMODE_TRAY;
             hide();
         }
 #else
-        m_DisplaySwitchMode = DISPLAYSWITCHMODE_TRAY;
         // Common hide logic
         // m_LastWindowPosition = pos(); // Save the current position before hiding
         closeSelectColorDialog();
@@ -31696,6 +31699,11 @@ void QKeyMapper::switchShowHide(bool hotkey_switch)
         closeFloatingButtonSetupDialog();
         closeItemSetupDialog();
         closeSettingTransferDialog();
+        // Let Windows transfer foreground focus before removing the taskbar button.
+        if (GetForegroundWindow() == reinterpret_cast<HWND>(winId())) {
+            showMinimized();
+        }
+        m_DisplaySwitchMode = DISPLAYSWITCHMODE_TRAY;
         hide();
 #endif
 
