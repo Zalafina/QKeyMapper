@@ -94,31 +94,6 @@
 #include "qvbuttonpanelsetupdialog.h"
 #include "qmappingsequenceedit.h"
 
-struct InputDeviceInfo
-{
-    QString hardwareid;
-    QString devicedesc;
-    ushort vendorid;
-    ushort productid;
-    QString VendorStr;
-    QString ManufacturerStr;
-    QString ProductStr;
-};
-
-struct InputDevice
-{
-    InterceptionDevice device;
-    InputDeviceInfo deviceinfo;
-    QAtomicBool disabled;
-};
-
-struct USBDeviceInfo {
-    QString vendorName;
-    QString productName;
-};
-
-#include "interception_worker.h"
-
 namespace Ui {
 class QKeyMapper;
 }

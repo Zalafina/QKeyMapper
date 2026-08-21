@@ -1,5 +1,6 @@
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
+#include "interception_worker.h"
 #include "qkeymapper_constants.h"
 
 #include <algorithm>

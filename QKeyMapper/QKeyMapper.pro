@@ -238,6 +238,7 @@ HEADERS     += \
     interception_worker.h \
     qinputdevicelistwindow.h \
     qkeymapper.h \
+    qkeymapper_input_device_types.h \
     qkeymapper_worker.h \
     qkeymapper_constants.h \
     qkeymapper_qt_compat.h \

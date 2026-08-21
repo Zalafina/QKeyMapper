@@ -1,6 +1,19 @@
-#include <QCoreApplication>
 #include "interception_worker.h"
+
 #include "qkeymapper_constants.h"
+#include "qkeymapper_qt_compat.h"
+
+#include <QByteArray>
+#include <QCoreApplication>
+#include <QDebug>
+#include <QFile>
+#include <QRegularExpression>
+#include <QSettings>
+#include <QTextStream>
+#include <QThread>
+#include <libusb.h>
+#include <windows.h>
+#include <setupapi.h>
 
 using namespace QKeyMapperConstants;
 

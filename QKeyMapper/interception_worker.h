@@ -4,7 +4,7 @@
 #include <QObject>
 #include <interception.h>
 
-#include "qkeymapper.h"
+#include "qkeymapper_input_device_types.h"
 #include "qkeymapper_worker.h"
 
 typedef struct
