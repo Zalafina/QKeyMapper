@@ -2,6 +2,7 @@
 - [FilterKeys SettingSelect Session Management](episodic/2026-08-02-filterkeys-settingselect-session.md) — Main-thread two-bit baseline management, self-notification fingerprinting, and user-override behavior; Windows runtime validation pending.
 - [Agent Workspace Sharing Migration](episodic/2026-07-27-agent-workspace-sharing.md) — Shared Codex/Claude guidance, workspace memory routing, manual skill-copy policy, and remote-integration note.
 - [Large Source Rename Safety](large-file-patch-safety.md) — Validate large-file rename patches with git apply and line-count/diff-size gates; repeated apply_patch calls may truncate qkeymapper.cpp.
+- [Qt Header Name Collision on Windows](qt-header-name-collision-windows.md) — Avoid project headers that shadow Qt headers or reuse their include guards on case-insensitive filesystems.
 
 - [Qt Absolute-Positioning Window Resize Pattern](qt-no-layout-resize-pattern.md) — Core pattern for adding resize to dialogs without layout managers
 - [Window Size Persistence](window-size-persistence.md) — INI-based save/restore with conditional checkbox
