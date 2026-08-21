@@ -1,6 +1,7 @@
 #include "qkeymapper.h"
 #include "qtablesetupdialog.h"
 #include "ui_qtablesetupdialog.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 

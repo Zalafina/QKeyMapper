@@ -1,6 +1,8 @@
 #include "qkeymapper.h"
 #include "qitemsetupdialog.h"
 #include "ui_qitemsetupdialog.h"
+#include "qkeymapper_qt_compat.h"
+#include "qstyle_singletons.h"
 
 namespace {
 void notifySaveSettingDirty()

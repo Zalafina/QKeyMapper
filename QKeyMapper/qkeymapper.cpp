@@ -2,6 +2,8 @@
 #include "ui_qkeymapper.h"
 #include "interception_worker.h"
 #include "qkeymapper_constants.h"
+#include "qkeymapper_qt_compat.h"
+#include "qstyle_singletons.h"
 
 #include <algorithm>
 #include <QJsonArray>

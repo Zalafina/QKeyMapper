@@ -4,6 +4,7 @@
 #include "qkeymapper.h"
 #include "interception_worker.h"
 #include "qkeymapper_worker.h"
+#include "qkeymapper_qt_compat.h"
 #include <QJoysticks/SDL_Joysticks.h>
 
 using namespace QKeyMapperConstants;

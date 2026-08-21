@@ -1,6 +1,7 @@
 #include "qkeymapper.h"
 #include "qcrosshairsetupdialog.h"
 #include "ui_qcrosshairsetupdialog.h"
+#include "qstyle_singletons.h"
 
 namespace {
 void notifySaveSettingDirty()

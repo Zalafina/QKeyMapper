@@ -1,6 +1,7 @@
 #include "qkeymapper.h"
 #include "qnotificationsetupdialog.h"
 #include "ui_qnotificationsetupdialog.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 

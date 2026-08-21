@@ -129,6 +129,10 @@ typedef ushort* Utf16Pointer;
 
 typedef struct MAP_KEYDATA
 {
+    double FloatingButton_NormalOpacity;
+    double FloatingButton_PressedOpacity;
+    double FloatingButton_LockedOpacity;
+    double FloatingButton_Opacity;
     QString Original_Key;
     QStringList Mapping_Keys;
     QStringList Pure_MappingKeys;
@@ -139,77 +143,77 @@ typedef struct MAP_KEYDATA
     QStringList MappingKeys_KeyUp_Comments; // Per-segment comments, index-aligned with MappingKeys_KeyUp
     QString Note;
     QString Category;
-    bool Disabled;
-    bool Burst;
+    QString FloatingButton_Label;
+    QString FloatingButton_FontFamily;
     int BurstPressTime;
     int BurstReleaseTime;
-    bool Lock;
-    bool MappingKeyUnlock;
-    bool DisableOriginalKeyUnlock;
-    bool DisableFnKeySwitch;
     int SendMappingKeyMethod;
     int FixedVKeyCode;
     uint LockState;
-    bool CheckCombKeyOrder;
-    bool Unbreakable;
-    bool PassThrough;
     int SendTiming;
     int PasteTextMode;
-    bool KeySeqHoldDown;
     int RepeatMode;
     int RepeatTimes;
-    QColor Crosshair_CenterColor;
     int Crosshair_CenterSize;
     int Crosshair_CenterOpacity;
-    QColor Crosshair_CrosshairColor;
     int Crosshair_CrosshairWidth;
     int Crosshair_CrosshairLength;
     int Crosshair_CrosshairOpacity;
-    bool Crosshair_ShowCenter;
-    bool Crosshair_ShowTop;
-    bool Crosshair_ShowBottom;
-    bool Crosshair_ShowLeft;
-    bool Crosshair_ShowRight;
     int Crosshair_X_Offset;
     int Crosshair_Y_Offset;
-    bool FloatingButton_Enable;
-    QString FloatingButton_Label;
-    QColor FloatingButton_ButtonColor;
-    QColor FloatingButton_PressedColor;
-    QColor FloatingButton_LockedColor;
-    QColor FloatingButton_TextColor;
-    QColor FloatingButton_BorderColor;
     int FloatingButton_BorderWidth;
-    bool FloatingButton_EnableGradientFill;
-    bool FloatingButton_EnableHoverAnimation;
     int FloatingButton_HoverEffectStrength;
     int FloatingButton_HoverGlowStrength;
     int FloatingButton_HoverContrastMode;
-    QColor FloatingButton_HoverCustomColor;
     int FloatingButton_HoverAnimationDuration;
     int FloatingButton_Width;
     int FloatingButton_Height;
     int FloatingButton_FontSize;
     int FloatingButton_FontWeight;
-    QString FloatingButton_FontFamily;
     int FloatingButton_Radius;
-    double FloatingButton_NormalOpacity;
-    double FloatingButton_PressedOpacity;
-    double FloatingButton_LockedOpacity;
-    double FloatingButton_Opacity;
+    int FloatingButton_ReferencePoint;
+    int FloatingButton_X_Offset;
+    int FloatingButton_Y_Offset;
+    int FloatingButton_SyncGroupId;  // 0 = no group, 1-999 = sync group ID
+    QColor Crosshair_CenterColor;
+    QColor Crosshair_CrosshairColor;
+    QColor FloatingButton_ButtonColor;
+    QColor FloatingButton_PressedColor;
+    QColor FloatingButton_LockedColor;
+    QColor FloatingButton_TextColor;
+    QColor FloatingButton_BorderColor;
+    QColor FloatingButton_HoverCustomColor;
+    bool Disabled;
+    bool Burst;
+    bool Lock;
+    bool MappingKeyUnlock;
+    bool DisableOriginalKeyUnlock;
+    bool DisableFnKeySwitch;
+    bool CheckCombKeyOrder;
+    bool Unbreakable;
+    bool PassThrough;
+    bool KeySeqHoldDown;
+    bool Crosshair_ShowCenter;
+    bool Crosshair_ShowTop;
+    bool Crosshair_ShowBottom;
+    bool Crosshair_ShowLeft;
+    bool Crosshair_ShowRight;
+    bool FloatingButton_Enable;
+    bool FloatingButton_EnableGradientFill;
+    bool FloatingButton_EnableHoverAnimation;
     bool FloatingButton_ShowOnMappingStart;
     bool FloatingButton_ShowToolTip;
     bool FloatingButton_SyncPressedLockedState;
     bool FloatingButton_AlwaysOnTop;
     bool FloatingButton_MousePassThrough;
-    int FloatingButton_ReferencePoint;
-    int FloatingButton_X_Offset;
-    int FloatingButton_Y_Offset;
     bool FloatingButton_DragToMove;
-    int FloatingButton_SyncGroupId;  // 0 = no group, 1-999 = sync group ID
 
     MAP_KEYDATA() :
-      Original_Key()
+      FloatingButton_NormalOpacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
+    , FloatingButton_PressedOpacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
+    , FloatingButton_LockedOpacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
+    , FloatingButton_Opacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
+    , Original_Key()
     , Mapping_Keys()
     , Pure_MappingKeys()
     , Pure_OriginalKeys()
@@ -217,74 +221,70 @@ typedef struct MAP_KEYDATA
     , Pure_MappingKeys_KeyUp()
     , Note()
     , Category()
-    , Disabled(false)
-    , Burst(false)
+    , FloatingButton_Label()
+    , FloatingButton_FontFamily()
     , BurstPressTime(QKeyMapperConstants::BURST_PRESS_TIME_DEFAULT)
     , BurstReleaseTime(QKeyMapperConstants::BURST_RELEASE_TIME_DEFAULT)
-    , Lock(false)
-    , MappingKeyUnlock(false)
-    , DisableOriginalKeyUnlock(false)
-    , DisableFnKeySwitch(false)
     , SendMappingKeyMethod(QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT)
     , FixedVKeyCode(QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_NONE)
     , LockState(QKeyMapperConstants::LOCK_STATE_LOCKOFF)
-    , CheckCombKeyOrder(true)
-    , Unbreakable(false)
-    , PassThrough(false)
     , SendTiming(QKeyMapperConstants::SENDTIMING_NORMAL)
     , PasteTextMode(QKeyMapperConstants::PASTETEXT_MODE_SHIFTINSERT)
-    , KeySeqHoldDown(false)
     , RepeatMode(QKeyMapperConstants::REPEAT_MODE_NONE)
     , RepeatTimes(QKeyMapperConstants::REPEAT_TIMES_DEFAULT)
-    , Crosshair_CenterColor(QKeyMapperConstants::CROSSHAIR_CENTERCOLOR_DEFAULT)
     , Crosshair_CenterSize(QKeyMapperConstants::CROSSHAIR_CENTERSIZE_DEFAULT)
     , Crosshair_CenterOpacity(QKeyMapperConstants::CROSSHAIR_CENTEROPACITY_DEFAULT)
-    , Crosshair_CrosshairColor(QKeyMapperConstants::CROSSHAIR_CROSSHAIRCOLOR_DEFAULT)
     , Crosshair_CrosshairWidth(QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_DEFAULT)
     , Crosshair_CrosshairLength(QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_DEFAULT)
     , Crosshair_CrosshairOpacity(QKeyMapperConstants::CROSSHAIR_CROSSHAIROPACITY_DEFAULT)
-    , Crosshair_ShowCenter(true)
-    , Crosshair_ShowTop(true)
-    , Crosshair_ShowBottom(true)
-    , Crosshair_ShowLeft(true)
-    , Crosshair_ShowRight(true)
     , Crosshair_X_Offset(QKeyMapperConstants::CROSSHAIR_X_OFFSET_DEFAULT)
     , Crosshair_Y_Offset(QKeyMapperConstants::CROSSHAIR_Y_OFFSET_DEFAULT)
-    , FloatingButton_Enable(QKeyMapperConstants::FLOATINGBUTTON_ENABLE_DEFAULT)
-    , FloatingButton_Label()
-    , FloatingButton_ButtonColor(QKeyMapperConstants::FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR)
-    , FloatingButton_PressedColor(QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR)
-    , FloatingButton_LockedColor(QKeyMapperConstants::FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR)
-    , FloatingButton_TextColor(QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR)
-    , FloatingButton_BorderColor(QKeyMapperConstants::FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR)
     , FloatingButton_BorderWidth(QKeyMapperConstants::FLOATINGBUTTON_BORDER_WIDTH_DEFAULT)
-    , FloatingButton_EnableGradientFill(QKeyMapperConstants::FLOATINGBUTTON_ENABLEGRADIENTFILL_DEFAULT)
-    , FloatingButton_EnableHoverAnimation(QKeyMapperConstants::FLOATINGBUTTON_ENABLEHOVERANIMATION_DEFAULT)
     , FloatingButton_HoverEffectStrength(QKeyMapperConstants::FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT)
     , FloatingButton_HoverGlowStrength(QKeyMapperConstants::FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT)
     , FloatingButton_HoverContrastMode(QKeyMapperConstants::FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT)
-    , FloatingButton_HoverCustomColor(QKeyMapperConstants::FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR)
     , FloatingButton_HoverAnimationDuration(QKeyMapperConstants::FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT)
     , FloatingButton_Width(QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT)
     , FloatingButton_Height(QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT)
     , FloatingButton_FontSize(QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT)
     , FloatingButton_FontWeight(QKeyMapperConstants::FLOATINGBUTTON_FONT_WEIGHT_DEFAULT)
-    , FloatingButton_FontFamily()
     , FloatingButton_Radius(QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT)
-    , FloatingButton_NormalOpacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
-    , FloatingButton_PressedOpacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
-    , FloatingButton_LockedOpacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
-    , FloatingButton_Opacity(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT)
+    , FloatingButton_ReferencePoint(QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT)
+    , FloatingButton_X_Offset(QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT)
+    , FloatingButton_Y_Offset(QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT)
+    , FloatingButton_SyncGroupId(QKeyMapperConstants::FLOATINGBUTTON_SYNCGROUPID_DEFAULT)
+    , Crosshair_CenterColor(QKeyMapperConstants::CROSSHAIR_CENTERCOLOR_DEFAULT)
+    , Crosshair_CrosshairColor(QKeyMapperConstants::CROSSHAIR_CROSSHAIRCOLOR_DEFAULT)
+    , FloatingButton_ButtonColor(QKeyMapperConstants::FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_PressedColor(QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_LockedColor(QKeyMapperConstants::FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_TextColor(QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_BorderColor(QKeyMapperConstants::FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR)
+    , FloatingButton_HoverCustomColor(QKeyMapperConstants::FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR)
+    , Disabled(false)
+    , Burst(false)
+    , Lock(false)
+    , MappingKeyUnlock(false)
+    , DisableOriginalKeyUnlock(false)
+    , DisableFnKeySwitch(false)
+    , CheckCombKeyOrder(true)
+    , Unbreakable(false)
+    , PassThrough(false)
+    , KeySeqHoldDown(false)
+    , Crosshair_ShowCenter(true)
+    , Crosshair_ShowTop(true)
+    , Crosshair_ShowBottom(true)
+    , Crosshair_ShowLeft(true)
+    , Crosshair_ShowRight(true)
+    , FloatingButton_Enable(QKeyMapperConstants::FLOATINGBUTTON_ENABLE_DEFAULT)
+    , FloatingButton_EnableGradientFill(QKeyMapperConstants::FLOATINGBUTTON_ENABLEGRADIENTFILL_DEFAULT)
+    , FloatingButton_EnableHoverAnimation(QKeyMapperConstants::FLOATINGBUTTON_ENABLEHOVERANIMATION_DEFAULT)
     , FloatingButton_ShowOnMappingStart(QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT)
     , FloatingButton_ShowToolTip(QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT)
     , FloatingButton_SyncPressedLockedState(QKeyMapperConstants::FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE_DEFAULT)
     , FloatingButton_AlwaysOnTop(QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT)
     , FloatingButton_MousePassThrough(QKeyMapperConstants::FLOATINGBUTTON_MOUSE_PASSTHROUGH_DEFAULT)
-    , FloatingButton_ReferencePoint(QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT)
-    , FloatingButton_X_Offset(QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT)
-    , FloatingButton_Y_Offset(QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT)
     , FloatingButton_DragToMove(QKeyMapperConstants::FLOATINGBUTTON_DRAGTOMOVE_DEFAULT)
-    , FloatingButton_SyncGroupId(QKeyMapperConstants::FLOATINGBUTTON_SYNCGROUPID_DEFAULT)
     {}
 
     MAP_KEYDATA(QString originalkey, QString mappingkeys, QString mappingkeys_keyup, QString note, QString category,

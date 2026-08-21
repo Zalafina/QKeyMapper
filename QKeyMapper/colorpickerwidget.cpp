@@ -1,5 +1,6 @@
 #include "qkeymapper.h"
 #include "colorpickerwidget.h"
+#include "qstyle_singletons.h"
 #include <QMenu>
 
 using namespace QKeyMapperConstants;

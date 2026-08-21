@@ -2,6 +2,7 @@
 #include "qkeymapper_constants.h"
 #include "qkeymapper_qt_compat.h"
 #include "qkeymapper.h"
+#include "qstyle_singletons.h"
 
 #include <QPainter>
 #include <QScrollBar>

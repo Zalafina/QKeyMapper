@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <guiddef.h>
+
 struct IMMDeviceEnumerator;
 struct IMMDevice;
 struct IAudioEndpointVolume;

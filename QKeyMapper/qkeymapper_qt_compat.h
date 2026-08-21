@@ -82,12 +82,12 @@ inline void setTabEnabledCompat(QTabBar *tabBar, int index, bool enabled)
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 using SplitBehavior = Qt::SplitBehavior;
-constexpr SplitBehavior KeepEmptyParts = Qt::KeepEmptyParts;
-constexpr SplitBehavior SkipEmptyParts = Qt::SkipEmptyParts;
+inline constexpr SplitBehavior KeepEmptyParts = Qt::KeepEmptyParts;
+inline constexpr SplitBehavior SkipEmptyParts = Qt::SkipEmptyParts;
 #else
 using SplitBehavior = QString::SplitBehavior;
-constexpr SplitBehavior KeepEmptyParts = QString::KeepEmptyParts;
-constexpr SplitBehavior SkipEmptyParts = QString::SkipEmptyParts;
+inline constexpr SplitBehavior KeepEmptyParts = QString::KeepEmptyParts;
+inline constexpr SplitBehavior SkipEmptyParts = QString::SkipEmptyParts;
 #endif
 
 template <typename T>

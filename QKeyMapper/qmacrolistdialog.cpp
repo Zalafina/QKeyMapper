@@ -1,6 +1,7 @@
 #include "qmacrolistdialog.h"
 #include "ui_qmacrolistdialog.h"
 #include "qkeymapper_constants.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 
