@@ -46871,9 +46871,10 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
             constexpr int kInputCategoryLineEditMaxWidth = 600;
             constexpr int kInputCategoryControlHeight = 22;
             constexpr int kInputCategoryButtonMinWidth = 64;
-            constexpr int kInputCategoryLayoutHorizontalMargin = 8;
+            // Static storage for lambda-used constants avoids the legacy MSVC capture bug.
+            static constexpr int kInputCategoryLayoutHorizontalMargin = 8;
             constexpr int kInputCategoryLayoutVerticalMargin = 8;
-            constexpr int kInputCategoryControlSpacing = 6;
+            static constexpr int kInputCategoryControlSpacing = 6;
 
             const int kInputCategoryPanelMinHeight = kInputCategoryControlHeight + (kInputCategoryLayoutVerticalMargin * 2);
 
