@@ -10926,7 +10926,10 @@ void QKeyMapper::DrawCrosshair(HWND hwnd, HDC hdc, int showParam)
     qDebug().nospace().noquote() << "[DrawCrosshair] Show Mode = " << (showParam == SHOW_MODE_CROSSHAIR_TYPEA ? "SHOW_MODE_CROSSHAIR_TYPEA" : "SHOW_MODE_CROSSHAIR_NORMAL") << ", Row Index = " << rowindex;
 #endif
 
-    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+    if (showMode == SHOW_MODE_NONE
+        || QKeyMapper::KeyMappingDataList == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
@@ -11117,8 +11120,8 @@ HWND QKeyMapper::createCrosshairWindow()
     m_CrosshairWindowInitialWidth = screenWidth;
     m_CrosshairWindowInitialHeight = screenHeight;
 
-    // Initialize the show mode to SHOW_MODE_CROSSHAIR_NORMAL
-    SetWindowLongPtr(hwnd, GWLP_USERDATA, SHOW_MODE_CROSSHAIR_NORMAL);
+    // Keep the hidden window inactive until showCrosshairStart() supplies valid mapping data.
+    SetWindowLongPtr(hwnd, GWLP_USERDATA, SHOW_MODE_NONE);
 
     return hwnd;
 }
@@ -36201,7 +36204,9 @@ void QKeyMapper::showCrosshairStart(int rowindex, const QString &crosshair_keyst
         return;
     }
 
-    if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
+    if (QKeyMapper::KeyMappingDataList == Q_NULLPTR
+        || rowindex < 0
+        || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
     MAP_KEYDATA keymapdata = QKeyMapper::KeyMappingDataList->at(rowindex);
