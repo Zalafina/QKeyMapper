@@ -9,7 +9,7 @@
 #ifdef LOGOUT_TOFILE
 #include <QDateTime>
 #include <QMutexLocker>
-#include <QTextStream>
+#include <QRegularExpression>
 #endif
 
 #ifdef QT_DEBUG
@@ -21,12 +21,99 @@
 using namespace QKeyMapperConstants;
 
 #ifdef LOGOUT_TOFILE
+namespace {
+constexpr qint64 LOG_FILE_MAX_SIZE = 100LL * 1024 * 1024;
+constexpr int LOG_FILE_MAX_COUNT = 10;
+const QString LOG_DIRECTORY_NAME = QStringLiteral("log");
+const QString ACTIVE_LOG_FILE_NAME = QStringLiteral("QKeyMapper.log");
+
 static QMutex logfile_mutex;
+
+bool writeLogLine(const QString &filePath, const QByteArray &logLine, bool *fileOpened = nullptr)
+{
+    if (fileOpened != nullptr) {
+        *fileOpened = false;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Append)) {
+        return false;
+    }
+
+    if (fileOpened != nullptr) {
+        *fileOpened = true;
+    }
+
+    qint64 totalWritten = 0;
+    const qint64 logLineSize = logLine.size();
+    while (totalWritten < logLineSize) {
+        const qint64 written = file.write(logLine.constData() + totalWritten, logLineSize - totalWritten);
+        if (written <= 0) {
+            file.close();
+            return false;
+        }
+        totalWritten += written;
+    }
+
+    const bool flushed = file.flush();
+    file.close();
+    return flushed;
+}
+
+QString createArchiveLogFilePath(const QDir &logDirectory)
+{
+    const QString timestamp = QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd_HHmmss_zzz"));
+    const QString archiveBaseName = QStringLiteral("QKeyMapper_%1").arg(timestamp);
+    QString archivePath = logDirectory.filePath(archiveBaseName + QStringLiteral(".log"));
+
+    int suffix = 1;
+    while (QFileInfo::exists(archivePath)) {
+        archivePath = logDirectory.filePath(
+            QStringLiteral("%1_%2.log").arg(archiveBaseName).arg(suffix++));
+    }
+
+    return archivePath;
+}
+
+bool isArchiveLogFile(const QString &fileName)
+{
+    static const QRegularExpression archiveNamePattern(
+        QStringLiteral("^QKeyMapper_\\d{8}_\\d{6}_\\d{3}(?:_\\d+)?\\.log$"));
+    return archiveNamePattern.match(fileName).hasMatch();
+}
+
+void cleanupOldLogFiles(const QDir &logDirectory, const QString &activeLogPath)
+{
+    const QFileInfoList candidates = logDirectory.entryInfoList(
+        QStringList{QStringLiteral("QKeyMapper_*.log")}, QDir::Files, QDir::Name);
+    QFileInfoList archiveFiles;
+    for (const QFileInfo &fileInfo : candidates) {
+        if (isArchiveLogFile(fileInfo.fileName())) {
+            archiveFiles.append(fileInfo);
+        }
+    }
+
+    int totalLogFileCount = archiveFiles.size();
+    if (QFileInfo::exists(activeLogPath)) {
+        ++totalLogFileCount;
+    }
+
+    for (const QFileInfo &fileInfo : archiveFiles) {
+        if (totalLogFileCount <= LOG_FILE_MAX_COUNT) {
+            break;
+        }
+        if (!QFile::remove(fileInfo.absoluteFilePath())) {
+            break;
+        }
+        --totalLogFileCount;
+    }
+}
+}
+
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg);
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     Q_UNUSED(context)
-    QMutexLocker locker(&logfile_mutex);
 
     QString level;
     switch(type)
@@ -55,13 +142,37 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
     QString current_date_time = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");
     QString current_date = QString("[%1]").arg(current_date_time);
     QString message = QString("%1%2 %3").arg(current_date).arg(level).arg(msg);
+    QByteArray logLine = message.toUtf8();
+    logLine.append("\r\n");
 
-    QFile file("log.txt");
-    if (file.open(QIODevice::WriteOnly | QIODevice::Append)) {
-        QTextStream text_stream(&file);
-        text_stream << message << "\r\n";
-        file.flush();
-        file.close();
+    QMutexLocker locker(&logfile_mutex);
+
+    QDir applicationDirectory(QCoreApplication::applicationDirPath());
+    if (applicationDirectory.mkpath(LOG_DIRECTORY_NAME)) {
+        QDir logDirectory(applicationDirectory.filePath(LOG_DIRECTORY_NAME));
+        const QString activeLogPath = logDirectory.filePath(ACTIVE_LOG_FILE_NAME);
+        const qint64 activeLogSize = QFileInfo(activeLogPath).size();
+        QString archiveLogPath;
+        bool rotated = false;
+
+        if (activeLogSize > 0
+            && (activeLogSize >= LOG_FILE_MAX_SIZE
+                || logLine.size() > LOG_FILE_MAX_SIZE - activeLogSize)) {
+            archiveLogPath = createArchiveLogFilePath(logDirectory);
+            rotated = QFile::rename(activeLogPath, archiveLogPath);
+        }
+
+        bool activeLogOpened = false;
+        bool logWritten = writeLogLine(activeLogPath, logLine, &activeLogOpened);
+        if (!logWritten && rotated && !activeLogOpened) {
+            logWritten = writeLogLine(archiveLogPath, logLine);
+        }
+
+        static bool cleanupOnStartup = true;
+        if (logWritten && (cleanupOnStartup || rotated)) {
+            cleanupOldLogFiles(logDirectory, activeLogPath);
+            cleanupOnStartup = false;
+        }
     }
 
 #ifdef QT_NO_DEBUG
