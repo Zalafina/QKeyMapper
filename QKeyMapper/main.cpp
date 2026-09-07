@@ -1,7 +1,8 @@
 #include <QApplication>
 #include <QDir>
+#include <QTimer>
 #include "qkeymapper.h"
-#include <dbghelp.h>
+#include "diagnostics/crash_monitor.h"
 #include "qkeymapper_worker.h"
 #include "interception_worker.h"
 #ifdef SINGLE_APPLICATION
@@ -418,79 +419,8 @@ static bool IsProcessRunAsAdmin()
     return (isRunAsAdmin != FALSE);
 }
 
-static LONG WINAPI QKeyMapperUnhandledExceptionFilter(EXCEPTION_POINTERS *pExceptionInfo)
-{
-    WCHAR dumpPath[MAX_PATH] = { 0 };
-    WCHAR exePath[MAX_PATH] = { 0 };
-    GetModuleFileNameW(NULL, exePath, MAX_PATH);
-
-    WCHAR *lastSlash = wcsrchr(exePath, L'\\');
-    if (lastSlash) {
-        *lastSlash = L'\0';
-    }
-
-    SYSTEMTIME st;
-    GetLocalTime(&st);
-
-    WCHAR logDir[MAX_PATH] = { 0 };
-    swprintf_s(logDir, MAX_PATH, L"%s\\log", exePath);
-    CreateDirectoryW(logDir, NULL);
-
-    swprintf_s(dumpPath, MAX_PATH, L"%s\\QKeyMapper_Crash_%04d%02d%02d_%02d%02d%02d_%03d.dmp",
-               logDir, st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
-
-    HANDLE hDumpFile = CreateFileW(dumpPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hDumpFile != INVALID_HANDLE_VALUE) {
-        MINIDUMP_EXCEPTION_INFORMATION dumpInfo;
-        dumpInfo.ThreadId = GetCurrentThreadId();
-        dumpInfo.ExceptionPointers = pExceptionInfo;
-        dumpInfo.ClientPointers = FALSE;
-
-        MiniDumpWriteDump(
-            GetCurrentProcess(),
-            GetCurrentProcessId(),
-            hDumpFile,
-            MiniDumpNormal,
-            &dumpInfo,
-            NULL,
-            NULL
-        );
-        CloseHandle(hDumpFile);
-    }
-
-    DWORD exceptionCode = (pExceptionInfo && pExceptionInfo->ExceptionRecord) ? pExceptionInfo->ExceptionRecord->ExceptionCode : 0;
-    PVOID exceptionAddress = (pExceptionInfo && pExceptionInfo->ExceptionRecord) ? pExceptionInfo->ExceptionRecord->ExceptionAddress : NULL;
-
-    char crashLogMsg[1024] = { 0 };
-    sprintf_s(crashLogMsg, sizeof(crashLogMsg),
-              "\r\n==================== [FATAL CRASH DETECTED] ====================\r\n"
-              "Time: %04d-%02d-%02d %02d:%02d:%02d.%03d\r\n"
-              "ExceptionCode: 0x%08lX\r\n"
-              "ExceptionAddress: 0x%p\r\n"
-              "MiniDump File: %ls\r\n"
-              "=================================================================\r\n",
-              st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds,
-              (unsigned long)exceptionCode, exceptionAddress, dumpPath);
-
-    WCHAR activeLogPath[MAX_PATH] = { 0 };
-    swprintf_s(activeLogPath, MAX_PATH, L"%s\\QKeyMapper.log", logDir);
-    HANDLE hLogFile = CreateFileW(activeLogPath, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    if (hLogFile != INVALID_HANDLE_VALUE) {
-        DWORD bytesWritten = 0;
-        WriteFile(hLogFile, crashLogMsg, (DWORD)strlen(crashLogMsg), &bytesWritten, NULL);
-        CloseHandle(hLogFile);
-    }
-
-    fprintf(stderr, "%s\n", crashLogMsg);
-    fflush(stderr);
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 int main(int argc, char *argv[])
 {
-    SetUnhandledExceptionFilter(QKeyMapperUnhandledExceptionFilter);
-
     if (!IsProcessRunAsAdmin()) {
         // Priority 1: Read LanguageIndex from keymapdata.ini (user's saved preference)
         int languageIndex = -1;
@@ -537,6 +467,23 @@ int main(int argc, char *argv[])
         return ERROR_ELEVATION_REQUIRED;
     }
 
+#ifdef LOGOUT_TOFILE
+    QkmDiagnostics::Session diagnostics(QT_VERSION_STR, "diagnostic");
+#else
+    QkmDiagnostics::Session diagnostics(QT_VERSION_STR, "standard");
+#endif
+    {
+        const QString directory = QString::fromWCharArray(QkmDiagnostics::applicationDirectory());
+        if (!directory.isEmpty()) {
+            QSettings settings(QDir(directory).filePath(QString::fromLatin1(CONFIG_FILENAME)), QSettings::IniFormat);
+            const QString enabled = settings.value(QStringLiteral("CrashDiagnosticsHangEnabled"), true).toString().trimmed().toLower();
+            bool validTimeout = false;
+            const uint timeout = settings.value(QStringLiteral("CrashDiagnosticsHangTimeoutSeconds"), 30).toUInt(&validTimeout);
+            QkmDiagnostics::configureHang(enabled != QStringLiteral("false") && enabled != QStringLiteral("0"),
+                                         validTimeout ? timeout : QkmDiagnostics::DefaultHangSeconds);
+        }
+    }
+    QkmDiagnostics::markProgress();
     SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 
     if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10) {
@@ -596,10 +543,16 @@ int main(int argc, char *argv[])
     qDebug() << "ApplicationName ->" << QApplication::applicationName();
 #endif
 #ifdef SINGLE_APPLICATION
+    QkmDiagnostics::markProgress();
     SingleApplication app(argc, argv);
 #else
     QApplication app(argc, argv);
 #endif
+    QkmDiagnostics::markProgress();
+    QkmCrashMonitor crashMonitor(&app);
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, &crashMonitor, []() {
+        QkmDiagnostics::markPhase(QkmDiagnostics::Stopping);
+    });
 
     if (QDir::currentPath() != QCoreApplication::applicationDirPath()) {
         QDir::setCurrent(QCoreApplication::applicationDirPath());
@@ -621,28 +574,44 @@ int main(int argc, char *argv[])
     QThread * const interceptionThread = new QThread();
     interceptionThread->setObjectName("Interception_Worker");
     interception_worker->moveToThread(interceptionThread);
+    crashMonitor.watch(interceptionThread, QkmDiagnostics::Interception);
     QObject::connect(interceptionThread, &QThread::started, interception_worker, &Interception_Worker::InterceptionThreadStarted);
     interceptionThread->start();
+    QkmDiagnostics::markProgress();
 
     QKeyMapper_Hook_Proc * const keymapper_hook_proc = QKeyMapper_Hook_Proc::getInstance();
     // Move Hook Process to a sub thread
     QThread * const hookprocThread = new QThread();
     keymapper_hook_proc->moveToThread(hookprocThread);
     hookprocThread->setObjectName("QKeyMapper_Hook_Proc");
+    crashMonitor.watch(hookprocThread, QkmDiagnostics::Hook);
     QObject::connect(hookprocThread, &QThread::started, keymapper_hook_proc, &QKeyMapper_Hook_Proc::HookProcThreadStarted);
     QObject::connect(hookprocThread, &QThread::finished, keymapper_hook_proc, &QKeyMapper_Hook_Proc::HookProcThreadFinished);
     hookprocThread->start();
+    QkmDiagnostics::markProgress();
 
     QKeyMapper_Worker * const keymapper_worker = QKeyMapper_Worker::getInstance();
     // Move Worker to a sub thread
     QThread * const workerThread = new QThread();
     keymapper_worker->moveToThread(workerThread);
     workerThread->setObjectName("QKeyMapper_Worker");
+    crashMonitor.watch(workerThread, QkmDiagnostics::Worker);
     QObject::connect(workerThread, &QThread::started, keymapper_worker, &QKeyMapper_Worker::threadStarted, Qt::DirectConnection);
     QObject::connect(workerThread, &QThread::finished, keymapper_worker, &QKeyMapper_Worker::threadFinished, Qt::DirectConnection);
     workerThread->start();
+    QkmDiagnostics::markProgress();
 
     QKeyMapper w;
+    QkmDiagnostics::markProgress();
+    QObject::connect(&crashMonitor, &QkmCrashMonitor::diagnosticMessage, &w,
+                     [&w](const QString &message) {
+        // Diagnostic availability must remain visible when mapping notifications are disabled.
+        w.showNotificationPopup(message, PopupNotificationOptions{});
+    });
+    QTimer::singleShot(0, &w, [&crashMonitor]() {
+        QkmDiagnostics::markPhase(QkmDiagnostics::Running);
+        crashMonitor.announce();
+    });
     emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(QKeyMapperConstants::JOYSTICK_INVALID_INSTANCE_ID);
     emit QKeyMapper::getInstance()->checkOSVersionMatched_Signal();
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
@@ -669,19 +638,23 @@ int main(int argc, char *argv[])
     }
 
     int ret = app.exec();
+    QkmDiagnostics::markPhase(QkmDiagnostics::Stopping);
 
     Interception_Worker::interceptionLoopBreak();
     interceptionThread->quit();
     interceptionThread->wait();
     delete interceptionThread;
+    QkmDiagnostics::markProgress();
 
     hookprocThread->quit();
     hookprocThread->wait();
     delete hookprocThread;
+    QkmDiagnostics::markProgress();
 
     workerThread->quit();
     workerThread->wait();
     delete workerThread;
+    QkmDiagnostics::markProgress();
 
     return ret;
 }

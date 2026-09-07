@@ -132,7 +132,6 @@ LIBS        += SetupAPI.Lib
 LIBS        += WtsApi32.Lib
 LIBS        += gdiplus.lib
 LIBS        += Ole32.lib
-LIBS        += DbgHelp.Lib
 contains( DEFINES, DINPUT_TEST ) {
     LIBS    += dinput8.lib
 }
@@ -289,6 +288,8 @@ RESOURCES   += font.qrc
 
 RC_FILE     += \
     QKeyMapper.rc
+
+include(diagnostics/diagnostics.pri)
 
 DISTFILES   += \
     QKeyMapper.rc \

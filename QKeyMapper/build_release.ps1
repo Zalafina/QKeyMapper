@@ -9,6 +9,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot 'diagnostics/diagnostic_artifacts.ps1')
 
 function Resolve-BuildTool {
     param(
@@ -148,4 +149,6 @@ foreach ($build in $selectedBuilds) {
         throw "Expected release executable was not generated: $executable"
     }
     Write-Output "$($build.Name)=$([System.IO.Path]::GetFullPath($executable))"
+    Save-DiagnosticSymbols -BuildDirectory $build.Directory -ArchiveRoot (Join-Path $BuildRoot 'symbols') `
+        -Variant $build.Name -QMakePath $ResolvedQMake
 }
