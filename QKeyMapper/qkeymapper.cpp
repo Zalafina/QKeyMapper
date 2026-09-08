@@ -3303,11 +3303,19 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         m_MenuMappingTableOp = mb->addMenu(QObject::tr("Table Operations"));
 
         m_ActionAddBlankTab = m_MenuMappingTableOp->addAction(QObject::tr("Add Blank Tab"));
+        m_ActionAddBlankTab->setShortcut(QKeySequence(QStringLiteral("Ctrl+N")));
+        m_ActionAddBlankTab->setShortcutContext(Qt::WindowShortcut);
+        m_ActionAddBlankTab->setAutoRepeat(false);
+        addAction(m_ActionAddBlankTab);
         connect(m_ActionAddBlankTab, &QAction::triggered, this, [this]() {
-            addTabToKeyMappingTabWidget();
+            addTabToKeyMappingTabWidget(QString(), true);
         });
 
         m_ActionCopyCurrentTab = m_MenuMappingTableOp->addAction(QObject::tr("Copy Current Tab"));
+        m_ActionCopyCurrentTab->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
+        m_ActionCopyCurrentTab->setShortcutContext(Qt::WindowShortcut);
+        m_ActionCopyCurrentTab->setAutoRepeat(false);
+        addAction(m_ActionCopyCurrentTab);
         connect(m_ActionCopyCurrentTab, &QAction::triggered, this, [this]() {
             copyCurrentTabToKeyMappingTabWidget();
         });
@@ -15390,6 +15398,23 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
+    if (event->type() == QEvent::Shortcut
+        && (object == m_ActionAddBlankTab || object == m_ActionCopyCurrentTab)) {
+        // Window shortcuts must not modify tabs from a child dialog or key capture.
+        if (QApplication::activeWindow() != this || !isVisible() || isMinimized()
+            || m_KeyMapStatus != KEYMAP_IDLE
+            || (ui->originalKeyRecordLineEdit->hasFocus()
+                && m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE)) {
+            return true;
+        }
+        if (object == m_ActionCopyCurrentTab
+            && (s_KeyMappingTabWidgetCurrentIndex < 0
+                || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()
+                || isCommonMappingTabIndex(s_KeyMappingTabWidgetCurrentIndex))) {
+            return true;
+        }
+    }
+
     if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease) {
         QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
         if (!keyEvent->isAutoRepeat() && keyEvent->key() == Qt::Key_Control) {
@@ -15790,7 +15815,17 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
     }
 
     if (object == ui->originalKeyRecordLineEdit) {
-        if (event->type() == QEvent::FocusIn) {
+        if (event->type() == QEvent::ShortcutOverride
+            && ui->originalKeyRecordLineEdit->hasFocus()
+            && m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
+            QKeyEvent *keyEvent = static_cast<QKeyEvent*>(event);
+            if (keyEvent->modifiers() == Qt::ControlModifier
+                && (keyEvent->key() == Qt::Key_N || keyEvent->key() == Qt::Key_D)) {
+                keyEvent->accept();
+                return true;
+            }
+        }
+        else if (event->type() == QEvent::FocusIn) {
             if (m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
                 ui->originalKeyRecordLineEdit->setPlaceholderText(tr("Press any key to record..."));
             }
@@ -16555,6 +16590,9 @@ void QKeyMapper::switchKeyMappingTabIndex(int index)
         KeyMappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
         s_KeyMappingTabWidgetLastIndex = s_KeyMappingTabWidgetCurrentIndex;
         s_KeyMappingTabWidgetCurrentIndex = index;
+        if (m_ActionCopyCurrentTab) {
+            m_ActionCopyCurrentTab->setVisible(!isCommonMappingTabIndex(index));
+        }
     }
 }
 
@@ -16635,6 +16673,9 @@ bool QKeyMapper::rebindCurrentKeyMappingTabAfterRecovery(bool refreshCurrentTabl
     s_KeyMappingTabWidgetCurrentIndex = currentIndex;
     m_KeyMappingDataTable = currentTable;
     KeyMappingDataList = currentDataList;
+    if (m_ActionCopyCurrentTab) {
+        m_ActionCopyCurrentTab->setVisible(!isCommonMappingTabIndex(currentIndex));
+    }
 
     const bool currentBindingMatches = (m_KeyMappingDataTable == s_KeyMappingTabInfoList.at(currentIndex).KeyMappingDataTable)
                                     && (KeyMappingDataList == s_KeyMappingTabInfoList.at(currentIndex).KeyMappingData);
@@ -17018,8 +17059,12 @@ void QKeyMapper::finalizeCommonMappingTabAtIndex(int tabIndex, bool showNameConf
     }
 }
 
-bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
+bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName, bool activateNewTab)
 {
+    if (activateNewTab && m_KeyMapStatus != KEYMAP_IDLE) {
+        return false;
+    }
+
     const int tab_count = ui->keyMappingTabWidget->count();
     QSet<QString> existingTabNames;
     existingTabNames.reserve(tab_count);
@@ -17176,6 +17221,9 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName)
 #endif
     applyResizeLayout(qMax(0, this->width() - WINDOW_BASE_WIDTH), this->height() - WINDOW_BASE_HEIGHT);
     markSaveSettingDirty();
+    if (activateNewTab) {
+        switchToMappingTableTab(insertIndex);
+    }
     return true;
 }
 
@@ -17480,6 +17528,10 @@ void QKeyMapper::refreshTabsForSourceTabChange(int sourceTabIndex)
 
 bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 {
+    if (m_KeyMapStatus != KEYMAP_IDLE) {
+        return false;
+    }
+
     int current_tabindex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
     if (current_tabindex < 0 || current_tabindex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return false;
@@ -28853,6 +28905,11 @@ void QKeyMapper::changeControlEnableStatus(bool status)
 
         if (m_SettingBackupActionPopup) m_SettingBackupActionPopup->hide();
     }
+
+    // Also disable actions associated directly with the main window.
+    const bool tabActionsEnabled = status && m_KeyMapStatus == KEYMAP_IDLE;
+    if (m_ActionAddBlankTab) m_ActionAddBlankTab->setEnabled(tabActionsEnabled);
+    if (m_ActionCopyCurrentTab) m_ActionCopyCurrentTab->setEnabled(tabActionsEnabled);
 
     // Top-level menus cascade enabled state to children
     if (m_MenuMappingTableOp) m_MenuMappingTableOp->setEnabled(status);
@@ -47536,7 +47593,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
 
         QAction *addBlankTabAction = tableOpsMenu->addAction(QObject::tr("Add Blank Tab"));
         connect(addBlankTabAction, &QAction::triggered, this, [keymapper]() {
-            keymapper->addTabToKeyMappingTabWidget();
+            keymapper->addTabToKeyMappingTabWidget(QString(), true);
         });
 
         // Copy and Delete: not available for common mapping table
