@@ -17,6 +17,9 @@ include(QSimpleUpdater/QSimpleUpdater.pri)
 
 DEFINES += SINGLE_APPLICATION
 
+# Enable the startup administrator privilege check (disabled by default).
+# DEFINES += QKM_REQUIRE_ADMIN
+
 # DEFINES += LOGOUT_TOFILE
 # DEFINES += USE_SAOFONT
 # DEFINES += DINPUT_TEST

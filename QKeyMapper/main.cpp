@@ -398,6 +398,7 @@ void setupQtScaleEnvironment(const QString &program_dir)
 #endif
 }
 
+#ifdef QKM_REQUIRE_ADMIN
 static bool IsProcessRunAsAdmin()
 {
     BOOL isRunAsAdmin = FALSE;
@@ -418,9 +419,11 @@ static bool IsProcessRunAsAdmin()
 
     return (isRunAsAdmin != FALSE);
 }
+#endif
 
 int main(int argc, char *argv[])
 {
+#ifdef QKM_REQUIRE_ADMIN
     if (!IsProcessRunAsAdmin()) {
         // Priority 1: Read LanguageIndex from keymapdata.ini (user's saved preference)
         int languageIndex = -1;
@@ -466,6 +469,7 @@ int main(int argc, char *argv[])
         MessageBoxW(NULL, msg, title, MB_OK | MB_ICONERROR);
         return ERROR_ELEVATION_REQUIRED;
     }
+#endif
 
 #ifdef LOGOUT_TOFILE
     QkmDiagnostics::Session diagnostics(QT_VERSION_STR, "diagnostic");
