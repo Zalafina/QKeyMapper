@@ -15194,17 +15194,17 @@ void QKeyMapper::keyPressEvent(QKeyEvent *event)
     qDebug("[QKeyMapper::keyPressEvent] event->key() -> 0x%08X", event->key());
 #endif
 
-    /* Check L-Ctrl+S to Save settings */
+    /* Check Ctrl+S to Save settings */
     if (m_KeyMapStatus == KEYMAP_IDLE
         && event->key() == Qt::Key_S
-        && QT_KEY_L_CTRL == (event->nativeModifiers() & QT_KEY_L_CTRL)) {
+        && event->modifiers().testFlag(Qt::ControlModifier)) {
         if (ui->originalKeyRecordLineEdit->hasFocus()
             && m_OriginalKeyEditMode == KEYRECORD_EDITMODE_CAPTURE) {
-            /* OriginalKeyRecord Capture Mode need to skip L-Ctrl+S */
+            /* OriginalKeyRecord Capture Mode need to skip Ctrl+S */
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[QKeyMapper::keyPressEvent]" << "\"L-Ctrl+S\" CombinationKey Pressed -> saveKeyMappingDataToFile()";
+            qDebug() << "[QKeyMapper::keyPressEvent]" << "\"Ctrl+S\" CombinationKey Pressed -> saveKeyMappingDataToFile()";
 #endif
             saveKeyMapSetting();
             return;
@@ -42994,12 +42994,12 @@ void KeyListComboBox::keyPressEvent(QKeyEvent *keyevent)
         return;
     }
 
-    /* Check L-Ctrl+S to Save settings */
+    /* Check Ctrl+S to Save settings */
     if (QKeyMapper::KEYMAP_IDLE == QKeyMapper::getInstance()->m_KeyMapStatus
         && keyevent->key() == Qt::Key_S
-        && QT_KEY_L_CTRL == (keyevent->nativeModifiers() & QT_KEY_L_CTRL)) {
+        && keyevent->modifiers().testFlag(Qt::ControlModifier)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[KeyListComboBox::keyPressEvent]" << "\"L-Ctrl+S\" CombinationKey Pressed -> saveKeyMappingDataToFile()";
+        qDebug() << "[KeyListComboBox::keyPressEvent]" << "\"Ctrl+S\" CombinationKey Pressed -> saveKeyMappingDataToFile()";
 #endif
         QKeyMapper::getInstance()->saveKeyMapSetting();
         return;

@@ -1699,7 +1699,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr const int IGNOREWINDOWINFOLIST_ITEM_HEIGHT = 21;
 
-    inline constexpr const char GENERAL_SAVESETTING_HOTKEY[]                = "L-Ctrl+S";
+    inline constexpr const char GENERAL_SAVESETTING_HOTKEY[]                = "Ctrl+S";
     inline constexpr const char KEYLISTCOMBOBOX_SHOW_FAVORITES_HOTKEY[]     = "Ctrl+F";
     inline constexpr const char KEYLISTCOMBOBOX_SHOW_RECENTITEMS_HOTKEY[]   = "Ctrl+R";
     inline constexpr const char KEYLISTCOMBOBOX_COPY_KEY_NAME_HOTKEY[]      = "Ctrl+C";
