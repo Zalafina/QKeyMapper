@@ -3372,9 +3372,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         m_ActionShowNotes->setCheckable(true);
         m_ActionShowNotes->setChecked(m_ShowNotes);
         connect(m_ActionShowNotes, &QAction::toggled, this, [this](bool c) {
-            m_ShowNotes = c;
-            //if (ui->showNotesButton) ui->showNotesButton->setChecked(c);
-            refreshAllKeyMappingTabWidget();
+            setShowNotes(c);
         });
 
         m_ActionShowFloating = m_MenuMappingTableView->addAction(QObject::tr("Show Floating Column"));
@@ -39702,6 +39700,7 @@ void QKeyMapper::clearCurrentMappingTable()
 
 void QKeyMapper::setProcessListVisible(bool visible)
 {
+    const bool changed = (m_ProcessListVisible != visible);
     m_ProcessListVisible = visible;
     if (!visible) {
         hideProcessList();
@@ -39713,10 +39712,15 @@ void QKeyMapper::setProcessListVisible(bool visible)
         showProcessList();
     }
     //ui->processListButton->setChecked(visible);
+
+    if (changed) {
+        markSaveSettingDirty();
+    }
 }
 
 void QKeyMapper::setHideDisabledRows(bool hide)
 {
+    const bool changed = (m_HideDisabled != hide);
     m_HideDisabled = hide;
     for (const KeyMappingTab_Info &tabInfo : std::as_const(s_KeyMappingTabInfoList)) {
         if (tabInfo.KeyMappingDataTable) {
@@ -39724,21 +39728,36 @@ void QKeyMapper::setHideDisabledRows(bool hide)
         }
     }
     //ui->hideDisabledButton->setChecked(hide);
+
+    if (changed) {
+        markSaveSettingDirty();
+    }
 }
 
 void QKeyMapper::setShowNotes(bool show)
 {
+    const bool changed = (m_ShowNotes != show);
     m_ShowNotes = show;
     refreshAllKeyMappingTabWidget();
+
+    if (changed) {
+        markSaveSettingDirty();
+    }
 }
 
 void QKeyMapper::setFloatingColumnVisible(bool visible)
 {
+    const bool changed = (m_ShowFloating != visible);
     m_ShowFloating = visible;
     if (m_KeyMappingDataTable) {
         m_KeyMappingDataTable->setFloatingColumnVisible(visible);
+        resizeKeyMappingDataTableColumnWidth(m_KeyMappingDataTable);
     }
     //ui->showFloatingButton->setChecked(visible);
+
+    if (changed) {
+        markSaveSettingDirty();
+    }
 }
 
 void QKeyMapper::setFloatingButtonDragCoordinateEnabled(bool enabled)
@@ -39748,6 +39767,7 @@ void QKeyMapper::setFloatingButtonDragCoordinateEnabled(bool enabled)
 
 void QKeyMapper::setCategoryColumnVisible(bool visible)
 {
+    const bool changed = (m_ShowCategory != visible);
     m_ShowCategory = visible;
     if (m_KeyMappingDataTable) {
         m_KeyMappingDataTable->setCategoryColumnVisible(visible);
@@ -39763,6 +39783,10 @@ void QKeyMapper::setCategoryColumnVisible(bool visible)
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[setCategoryColumnVisible]" << "Category controls visibility set to:" << visible;
 #endif
+
+    if (changed) {
+        markSaveSettingDirty();
+    }
 }
 
 void QKeyMapper::showCategoryFilterPopup(const QPoint &globalAnchorPos, const QRect &anchorGlobalRect)
