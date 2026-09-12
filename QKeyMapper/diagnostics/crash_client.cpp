@@ -146,6 +146,8 @@ bool start(const char *qtVersion, const char *variant)
         static_cast<unsigned long long>(reinterpret_cast<ULONG_PTR>(shutdownEvent)));
     STARTUPINFOEXW startup = {};
     startup.StartupInfo.cb = sizeof(startup);
+    // Suppress startup cursor feedback for the windowless reporter.
+    startup.StartupInfo.dwFlags |= STARTF_FORCEOFFFEEDBACK;
     startup.lpAttributeList = attributes;
     PROCESS_INFORMATION process = {};
     // Called before Qt/business threads start; the child inherits this mode even before its entry point.
