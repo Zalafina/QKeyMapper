@@ -14,6 +14,7 @@
 #include <QScrollBar>
 #include <QSet>
 #include <QStackedWidget>
+#include <QStyleOptionMenuItem>
 #include <QStyleOptionToolButton>
 #include <QToolTip>
 #include <QUrl>
@@ -30,6 +31,52 @@ constexpr int COMMON_APPENDED_ROW_SEPARATOR_ROLE = Qt::UserRole + 503;
 constexpr int COMMON_APPENDED_SEPARATOR_ROW_ROLE = Qt::UserRole + 504;
 constexpr int SETTINGSELECT_ACTUAL_GROUP_ROLE = Qt::UserRole + 520;
 constexpr int CONFLICT_MAPPING_TABLE_NAMES_MAX_LENGTH = 120;
+constexpr int MAPPING_TABLE_MENU_SHORTCUT_GAP = 16;
+
+class MappingTableMenuStyle final : public QProxyStyle
+{
+public:
+    explicit MappingTableMenuStyle(QStyle *windowsStyle, QMenu *menu)
+        : QProxyStyle(windowsStyle)
+    {
+        setParent(menu);
+    }
+
+    QSize sizeFromContents(ContentsType type, const QStyleOption *option,
+                           const QSize &contentsSize, const QWidget *widget = nullptr) const override
+    {
+        if (type != CT_MenuItem) {
+            return QProxyStyle::sizeFromContents(type, option, contentsSize, widget);
+        }
+
+        const auto *menuItem = qstyleoption_cast<const QStyleOptionMenuItem *>(option);
+        const auto *menu = qobject_cast<const QMenu *>(widget);
+        if (!menuItem || !menu || menuItem->menuItemType != QStyleOptionMenuItem::Normal) {
+            return QProxyStyle::sizeFromContents(type, option, contentsSize, widget);
+        }
+
+        const auto actions = menu->actions();
+        const bool hasShortcutColumn = std::any_of(actions.cbegin(), actions.cend(), [](const QAction *action) {
+            return action->isVisible() && !action->isSeparator()
+                   && (!action->shortcut().isEmpty() || action->text().contains(QLatin1Char('\t')));
+        });
+        if (!hasShortcutColumn) {
+            return QProxyStyle::sizeFromContents(type, option, contentsSize, widget);
+        }
+
+        // QMenu measures the label and adds the shared shortcut width after sizing all rows.
+        // Remove only the sizing option's shortcut so Windows does not add a per-row gap.
+        QStyleOptionMenuItem labelOption = *menuItem;
+        labelOption.text = labelOption.text.section(QLatin1Char('\t'), 0, 0);
+        QSize size = QProxyStyle::sizeFromContents(type, &labelOption, contentsSize, widget);
+
+        // Qt 5.12/6.8 Windows painting starts shortcuts one pixel before the label edge
+        // implied by its no-shortcut size. Compensate in logical pixels, without DPR scaling.
+        constexpr int windowsTextEdgeAdjustment = 1;
+        size.rwidth() += MAPPING_TABLE_MENU_SHORTCUT_GAP + windowsTextEdgeAdjustment;
+        return size;
+    }
+};
 
 constexpr bool displayModeMatches(int matchIndex, int displayModeIndex)
 {
@@ -3419,6 +3466,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             m_MenuMappingTableOp->setStyle(windowsStyle);
             m_MenuView->setStyle(windowsStyle);
             m_MenuMappingTableView->setStyle(windowsStyle);
+        }
+
+        // QProxyStyle owns its base style; never pass the shared Windows style singleton.
+        if (QStyle *menuWindowsStyle = QStyleFactory::create(QStringLiteral("Windows"))) {
+            m_MenuMappingTableOp->setStyle(new MappingTableMenuStyle(menuWindowsStyle, m_MenuMappingTableOp));
         }
     }
 
