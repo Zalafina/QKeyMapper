@@ -4,6 +4,7 @@ build-*/*
 build-*
 *-build-*
 .vscode/
+.infcode/
 *.TMP
 *.tmp
 forzahorizon6_official_format.txt

@@ -57,6 +57,7 @@ QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, 
 ## 💡 Common Terminology List
 | Term | Description |
 |------|-------------|
+| Mapping Start/Stop Hotkey | Start and stop the software's mapping function via keyboard, mouse, or gamepad keys. Default hotkey: L-Ctrl+F6 (press the left Ctrl and F6 keys simultaneously) |
 | OriginalKey | Keys pressed directly on physical input devices such as keyboard, mouse, or gamepad |
 | MappingKey | Virtual keys you want the game/software to receive |
 | KeyUpMapping | Similar to MappingKey; with SendTiming, allows sending different virtual keys when the OriginalKey is released |
@@ -67,6 +68,8 @@ QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, 
 | Combination Key | Represents multiple keys pressed simultaneously in OriginalKey or MappingKey, connected with "+" (e.g. A+B) |
 | Mapping Sequence | Represents pressing and releasing keys in order in MappingKey, connected with "»" (e.g. A+B⏱50»NONE⏱200»C⏱50) |
 | Burst | Continuously sends MappingKey while OriginalKey is held; the interval is configurable |
+| Burst Press Time | When Burst is enabled, how long each key stays pressed in each burst cycle. Burst Press Time + Burst Release Time forms the interval of each burst |
+| Burst Release Time | When Burst is enabled, how long each key stays released in each burst cycle. Burst Press Time + Burst Release Time forms the interval of each burst |
 | Lock | Press OriginalKey once to keep MappingKey pressed; press OriginalKey again to unlock and release. Can be used with Burst |
 | LongPress | Triggers sending MappingKey after holding OriginalKey for a specified duration |
 | DoubleClick | Triggers sending MappingKey when OriginalKey is double-clicked within the specified time interval |
@@ -85,7 +88,7 @@ QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, 
 
 ### https://gitee.com/asukavov/QKeyMapper/releases/latest
 
-### ※ The ZIP packages starting with QKeyMapper_vX.Y.Z_x64/x86 are compiled executable file zip packages. Build_YYYYMMDD represents the compilation date, and the newer compilation date has corresponding new feature descriptions.
+### ※ The ZIP packages starting with QKeyMapper_vX.Y.Z_x64/x86 are compiled executable file zip packages. Build_YYYYMMDD represents the compilation date, and the newer compilation date has corresponding new feature descriptions. For Windows 10 and Windows 11, the Qt6_x64 release package is recommended; only Windows 7 systems that cannot run the Qt 6 version need to use the Qt 5 release package.
 
 ---------------
 ## ⭐ Star Trend
@@ -123,7 +126,257 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
     <div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/Win11_FilterKey.png" width="1182" height="auto"/></div>
 
 ---
+## 📣 Known Issues
+#### ※ When a physical gamepad original key is mapped to the left mouse button, avoid using this method to click the close, minimize, or maximize button areas in the QKeyMapper window title bar, as this will cause the UI to freeze. If the UI freezes after performing the above operation, you can unfreeze it by switching the foreground window via the keyboard, such as pressing the Win key or the Win+D combination.
+
+---
 ### 🎯 New features list (sorted in descending order of update time)
+* v1.3.8 (Build 20260912)
+    * Fixed issues related to view option switching and the setting-change notification.
+    * Added shortcuts for mapping table operations: **Ctrl+N** to add a blank Tab and **Ctrl+D** to duplicate the current Tab. These shortcuts only take effect when the main window has focus, mapping is not started, and no key is being captured. After adding, the view automatically switches to the new Tab; after duplicating, the view stays on the original Tab.
+    * The "Save Settings" shortcut is unified to **Ctrl+S**, supporting both the left and right Ctrl keys on the keyboard.
+    * Removed the startup blocking dialog for insufficient administrator privileges introduced previously, improving startup compatibility on computers with restricted administrator rights.
+    * Fixed several issues that could cause QKeyMapper to crash during startup or runtime.
+    * Added automatic saving of diagnostic files when a crash or suspected freeze occurs. The files are saved in the **log** subdirectory by default to help locate problems.
+* v1.3.8 (Build 20260906)
+    * Fixed an issue on Windows 11 where the window focus was not properly handed over when the "Display Switch" shortcut switched to tray display.
+    * Fixed a crash when starting the Qt5 version.
+    * Optimized the log saving strategy for the logging version: log files are stored in the **log** subdirectory. A single log file is automatically rotated and archived when it reaches 100MB, keeping up to **10** files (total log capacity limit is about **1GB**), preventing a single log file from growing indefinitely.
+* v1.3.8 (Build 20260802)
+    * Added a "Display Mode" matching option in the "Window Info" tab. "Display Mode" is set to "Ignore" by default; select "Fullscreen Mode" or "Window Mode" from the dropdown list when you need to match them.
+    * Fixed content flickering when dragging the main window.
+    * Fixed issues with the system Filter Keys feature.
+* v1.3.8 (Build 20260726)
+    * The common mapping items appended at the end of the mapping table can now be collapsed or expanded by clicking the "－"/"＋" icon on the left side of the separator row.
+    * Added a Notes column to the Mapping Sequence Editor window.
+    * The "Block-Keyboard" and "Block-Mouse" device-blocking mapping keys now support the "@0~9" suffix. When Multi-Input is enabled, you can specify the device number to block.
+* v1.3.8 (Build 20260718)
+    * Added a "Minimize to Tray on Close" checkbox in the "General Settings" tab, replacing the previous method of holding Ctrl while clicking the close button to choose whether to minimize to the system tray on close.
+    * In the "Macro List" window, the "Category Filter" button has been removed; clicking the header of the "Category" column now pops up the filter box instead. The "Macro List Backup" button has also been removed, and the backup function has been moved to the list's right-click menu.
+    * Fixed incorrect coordinate display when dragging floating buttons.
+    * Fixed the "Add New Mapping" issue and added an "Add New Mapping" item to the mapping table's right-click menu.
+    * Fixed an issue where content copied from the process list right-click menu could be offset or cause the program to crash.
+    * When saving settings, the mapping table's display position is now preserved and no longer automatically scrolls back to the top.
+* v1.3.8 (Build 20260710)
+    * Added a grouping feature to the "Floating Button Settings" window. After setting the same **Group ID** for floating buttons in the same mapping table Tab (Group ID range 1~999, 0 means ungrouped), they can be moved synchronously in the following ways:
+      - When dragging a floating button with Alt + left mouse button, other floating buttons in the same group move synchronously. (Ctrl + left-button drag still moves a single floating button.)
+      - Select the **Sync Move in Group** option in the floating button's right-click menu; when dragging this floating button with the left mouse button, other floating buttons in the same group move synchronously.
+      - In the "Floating Button Settings" window, after checking the **Sync Move in Group** checkbox, adjustments to the X and Y coordinates are applied as deltas to the other floating buttons in the same group.
+    * The X and Y coordinates are now displayed while dragging a floating button.
+    * The button column on the right side of the mapping table has been removed; its functions have been moved to the **Mapping Table Operations** and **View** menus at the top of the window.
+      - The **Mapping Table Operations** menu includes: "Add Blank Tab", "Duplicate Current Tab", "Delete Current Tab", "Clear Current Mapping Table", "Export Mapping Table", "Import Mapping Table".
+      - The **View** menu includes: "Show Process List", "Show Category Column", "Show Notes", "Show Floating Column", "Show Disabled Rows".
+    * The category filter feature has been changed to left-clicking the "Category" column header to pop up a checkbox list of categories for filtering.
+    * The "Hide Disabled Rows" feature has been changed to "Show Disabled Rows", which is enabled by default with the same behavior as before; unchecking it hides disabled rows in the mapping table.
+    * The mapping table's right-click menu now includes the same **Mapping Table Operations** and **Mapping Table View** menu items as the top menus.
+    * The Common Mapping Table now allows opening the Mapping Table Settings window, but only "Export Mapping Table", "Import Mapping Table", and "Select Custom Image" are available.
+    * Added a **Jump to Common Mapping Table** menu item to the right-click menu of normal mapping tables.
+    * The main window's maximize button is now available.
+    * Added the **QKeyMapper Mapping Key Parameter Quick Reference** PDF document to the release ZIP package, which describes the formats and examples of special mapping keys that accept parameters.
+* v1.3.8 (Build 20260626)
+    * The main window is now resizable by dragging. Added a "Save Window Size" option in the "General Advanced Settings" window; when checked, the window size is saved with the settings, and the next program launch will use the window size recorded at the last save.
+    * The button column on the right side of the main window's mapping table is now shown only after pressing the right-side expansion panel button; the right panel is collapsed by default.
+* v1.3.8 (Build 20260622)
+    * Right-clicking a cell in the left process information list now pops up a context menu to copy the "Process Name", "Window Title", or "Class Name". Pressing "Ctrl+C" after left-clicking a cell performs the same copy action.
+    * In the "Floating Button Settings" window, dragging the right border to adjust the window width switches between horizontal and vertical layout display modes; saving settings also saves this display mode.
+    * Updated the SDL2 physical gamepad database.
+* v1.3.8 (Build 20260606)
+    * Added Forza-specific virtual gamepad brake and throttle parameter extension mapping keys such as "vJoy-Key11(LT)_BRAKE[]" and "vJoy-Key12(RT)_ACCEL[]" to the mapping key list. Each mapping can independently set the trigger's initial press value and threshold control. Parameter format: [INIT=100,THR=1.5]. INIT range: 0~255; THR range: 0.00001~1000.
+      **※INIT and THR in the parameters stand for Initial Value and Threshold respectively.**
+      ##### Brake and throttle parameter examples
+          vJoy-Key11(LT)_BRAKE[INIT=150,THR=2.0]  -> Brake initial press value 150 (about 60%), grip threshold 2.0.
+          vJoy-Key12(RT)_ACCEL[INIT=50,THR=3.0]   -> Throttle initial press value 50 (about 20%), grip threshold 3.0.
+          vJoy-Key11(LT)_BRAKE[INIT=200]          -> Brake initial press value 200; grip threshold uses the brake threshold setting on the "Forza" settings tab.
+          vJoy-Key11(LT)_BRAKE[THR=1.3]           -> Brake initial press value uses the software's built-in default 95; grip threshold 1.3.
+          vJoy-Key12(RT)_ACCEL[THR=2.0]           -> Throttle initial press value uses the software's built-in default 191; grip threshold 2.0.
+    * Fixed a crash when stopping mapping while the Common Mapping Table and Burst mappings were used together.
+* v1.3.8 (Build 20260530)
+    * Added PS controller "Touchpad" support. If your physical gamepad has a touchpad (DS4, DS5, etc.), you can select "Joy-Touchpad2Mouse" in the original key list to use the touchpad-to-mouse mapping feature, controlling the mouse pointer's horizontal and vertical movement by sliding a single finger on the touchpad.
+      - In the "Advanced Mapping Settings" window, you can adjust the "Horizontal Speed" and "Vertical Speed" of the touchpad-to-mouse function. Range: 0.00~200.00. Default: 0.50.
+      ##### Other new touchpad original keys
+          Joy-Touchpad-Tap        -> Single-finger tap on the touchpad
+          Joy-Touchpad-2F-Up      -> Two-finger swipe up on the touchpad
+          Joy-Touchpad-2F-Down    -> Two-finger swipe down on the touchpad
+          Joy-Touchpad-2F-Left    -> Two-finger swipe left on the touchpad
+          Joy-Touchpad-2F-Right   -> Two-finger swipe right on the touchpad
+      ##### Other new touchpad mapping keys
+          GamepadTouchpadOn       -> Enable touchpad detection
+          GamepadTouchpadOff      -> Disable touchpad detection
+          GamepadTouchpadToggle   -> Toggle touchpad detection state (switch between on and off)
+    * Added a Mapping Code for mapping items in the mapping table. You can copy the mapping code to the clipboard and apply it from the clipboard in the "Mapping Item Settings" window. When a single mapping item is selected in the mapping table, the right-click menu also provides the same Copy Mapping Code and Apply Mapping Code options.
+    * Added an **Enable Common Mapping Table** checkbox in the "Advanced Mapping Settings" window, unchecked by default. When checked, a "Common" mapping table is appended as the last Tab of the current setting, and the mapping items in the Common Mapping Table are automatically appended to the end of all Tabs. Each setting has its own independent Common Mapping Table.
+    * Added an **Append Common Mapping Table** checkbox in the "Mapping Table Settings" window. After enabling **Enable Common Mapping Table**, it is checked by default. Uncheck it for a Tab that should not append the common mapping items.
+    * The "Select Custom Icon" button and the "Select Custom Image" button in Tab settings now use the right-click menu to perform "Restore Default", replacing the previous Ctrl + left-click method.
+    * Fixed an issue where the yellow exclamation mark icon was not shown on the left side of the "Save Settings" button after certain software settings were changed.
+* v1.3.8 (Build 20260516)
+    * Added custom sorting to the setting list. The right-click menu of the setting dropdown list can remove settings, replacing the main window's "Remove Setting" button, which has been removed. When the setting list dropdown is expanded, you can also use Ctrl+↑/↓ and Ctrl+Home/End to move the highlighted item in the list.
+    * Added **KeyRecordToggle**, **KeyRecordStart**, and **KeyRecordStop** mapping keys to the mapping key list, used for key recording while the mapping table is active. When recording stops, any recorded content is automatically copied to the clipboard.
+      ##### Key recording mapping keys
+        KeyRecordToggle     -> Single key to toggle key recording start/stop state
+        KeyRecordStart      -> Start key recording
+        KeyRecordStop       -> Stop key recording
+    * Added **KeySequenceToggle**, **KeySequencePause**, and **KeySequenceContinue** mapping keys to the mapping key list, used to pause and resume key sequence sending.
+      ##### Key sequence pause/resume mapping keys
+        KeySequenceToggle               -> Single key to toggle pause/resume state of all key sequences
+        KeySequencePause                -> Pause all currently executing key sequences
+        KeySequenceContinue             -> Resume all previously paused key sequences
+        KeySequenceToggle(OriginalKey)  -> Single key to toggle pause/resume state of the key sequence of the mapping item for the specified original key
+        KeySequencePause(OriginalKey)   -> Pause the key sequence of the mapping item for the specified original key
+        KeySequenceContinue(OriginalKey)-> Resume the key sequence of the mapping item for the specified original key
+    * Added "⇧" and "⇳" to the mapping key list. They are used the same way as the "↑" and "↕" prefixes, added before normal mapping keys. The difference is that even if the corresponding physical key is currently pressed, "⇧" and "⇳" force a key release to be sent. This way, even if the physical key remains held, the system state becomes key-released.
+    * Added a Style Code for floating buttons. You can copy the style code to the clipboard and apply it from the clipboard in the "Floating Button Settings" window. The floating button's right-click menu also provides the same Copy Style Code and Apply Style Code options.
+    * Added **Enable Gradient Fill** and **Enable Hover Animation** checkboxes in the "Floating Button Settings" window, allowing you to disable the floating button's gradient fill and mouse pointer hover animation.
+    * The width and height settings in the "Floating Button Settings" window now match the actual visible pixel size of the button.
+    * Added mouse hover effect customization options in the "Floating Button Settings" window: **Hover Effect** intensity, **Hover Glow** intensity, **Hover Animation Duration**, and **Hover Contrast** (Auto/Enhance/Darken/Custom).
+* v1.3.8 (Build 20260508)
+    * Added **Border Width** and **Border Color** settings in the "Floating Button Settings" window. Border width default is 1, range 0~50; width 0 means no border.
+    * Added display of the mapping item's original key name, note, and index information in the "Floating Button Settings" window.
+    * While mapping is active, color adjustments made in the color settings windows for "Floating Button" and "Virtual Button" are synchronized to the button's appearance in real time.
+    * Added a mouse pointer hover animation effect to floating buttons.
+    * Added a dropdown menu option on the right side of the "Mapping Start" button, allowing you to switch between "Mapping Start" and "Save and Start Mapping". The latter saves settings first and then starts mapping when the button is clicked.
+    * When the QKeyMapper main window is the foreground active window, holding the Ctrl key temporarily changes the "Mapping Start" button to the "Save and Start Mapping" button, which performs "Save and Start Mapping" when clicked.
+    * When the QKeyMapper main window is the foreground active window, holding the Ctrl key temporarily changes the "Add" button to the "Add New Mapping" button. Clicking it adds a mapping item with original key A and mapped key A, and automatically opens the "Mapping Item Settings" window for the newly added item.
+    * In the key dropdown lists of the "Mapping Item Settings" window, right-clicking a list entry pops up a menu, or middle-clicking an entry directly, performs "Append Key Name to Edit Box". Holding the Ctrl key distinguishes whether to append with "+" or "»".
+    * After adjusting any software setting, a yellow exclamation mark icon is displayed on the left side of the "Save Settings" button, indicating that there are unsaved changes. The icon disappears after the settings are successfully saved by clicking "Save Settings".
+    * Added the **Multi-Window Hide/Show Toggle Tool** script to the utils directory. For details, see the readme.txt file in the utils directory:
+      ##### Multi-Window Hide/Show Toggle Tool
+          ahk.exe hidden_window.ahk process="notepad.exe"                                       (Hide / show all Notepad windows)
+          ahk.exe hidden_window.ahk process="explorer.exe"                                      (Hide / show all Explorer windows)
+          ahk.exe hidden_window.ahk process1="notepad.exe" process2="msedge.exe"                (Hide / show both Notepad and Edge)
+          ahk.exe hidden_window.ahk process="notepad.exe" title="work"                          (Only handle Notepad windows whose title contains "work")
+          ahk.exe hidden_window.ahk process="notepad.exe" rule="exclude" title="temp"           (Exclude Notepad windows whose title contains "temp")
+          ahk.exe hidden_window.ahk process1="notepad.exe" title1="temp file" process2="explorer.exe" rule2="exclude" title2="Desktop"
+          ahk.exe hidden_window.ahk process1="WeChat.exe" rule1="exact" title1="WeChat" process2="msedge.exe" title2="Bing" process3="QQ.exe"
+          ahk.exe hidden_window.ahk process="notepad.exe" class="Notepad" classrule="exact"     (Only match Notepad windows with exact class name Notepad)
+          ahk.exe hidden_window.ahk process="chrome.exe" classrule="exclude" class="Chrome_WidgetWin_0" title="bilibili"
+          ahk.exe hidden_window.ahk process="notepad.exe" hideminimizedwindows=false            (Only handle currently visible windows; do not hide taskbar-minimized windows)
+* v1.3.8 (Build 20260424)
+    * Optimized the trigger type selection: the right-click menu of the mapping table's Original Key column can now switch among the three original key trigger types: **Normal / Long Press / Double Click**.
+    * Optimized the sorting of search results in the key dropdown selection lists.
+    * Disabled rows in the mapping table are now displayed with a plum-red background across the entire row.
+    * Added 50%~90% options to the "Scaling Ratio" setting. Other scaling ratios can also be controlled via a startup parameter such as "--scale=0.75" in a shortcut. Note that the "--scale=" startup parameter has higher priority than the in-program setting.
+    * Fixed an issue where floating button settings could be saved to the wrong mapping item when disabled items with the same original key exist in the mapping table.
+    * Added default ignore rules for the Floating Button Settings and Virtual Button Panel Settings windows to the "Ignore Rules List". After upgrading from an old version, you need to click the "Restore Default Rules" button to update the built-in default ignore rules. Note that this will overwrite your existing custom ignore rules, so save your custom rules before clicking "Restore Default Rules".
+    * Added the **kill.vbs** script, which can terminate a process with the specified file name using a command in the form Run(wscript utils\script\kill.vbs xxx.exe).
+* v1.3.8 (Build 20260416)
+    * Added a search function to the Original Key and Mapped Key dropdown selection lists.
+      - The right-click menu in the dropdown list can add a key name to the Favorites list or copy the key name.
+      - Recently selected key names in the dropdown list are added to the Recently Used list.
+      - The right-click menu in the "Favorites" list can remove or clear favorites; the right-click menu in the "Recently Used" list can clear recently used items.
+      - Click the "Favorites" and "Recently Used" buttons at the top of the dropdown box to switch to the corresponding list. While the dropdown list is shown, the shortcuts Ctrl+F (Favorites) and Ctrl+R (Recently Used) can also switch to the corresponding list.
+      - While the dropdown list is shown, use the ↑/↓ keys to move the highlighted selection up and down, and Ctrl+C to copy the key name of the currently highlighted row.
+    * In the "Virtual Button Panel Settings", "Drag to Move" has been changed to the same Ctrl + left-click method used by floating buttons. Ctrl + left-click anywhere in the virtual button panel, including the background and button areas, can drag the panel. A "Move" option has also been added to the panel's right-click menu for dragging the panel.
+    * Added a "Disable Global Key Mapping in Fullscreen Mode" checkbox in the "General Advanced Settings" window, unchecked by default. When checked, "Global Key Mapping" will not be enabled while the foreground window is displayed in fullscreen.
+    * Added a "Mouse Through" checkbox in the "Floating Button Settings" window, unchecked by default. Move the mouse over a floating button and press the key set in "Mouse Through Toggle Key" to toggle the floating button's mouse-through state (default toggle key: F3).
+    * Added a "Disable Key Sound When Enabling Filter Keys" checkbox, checked by default. Uncheck this option if you do not want the key sound to be turned off when the system Filter Keys are automatically enabled.
+    * Added an **Add Custom Tray Icon** button in the "Select System Tray Icon" window. Clicking it opens an ICO file selection dialog; the selected ICO file is automatically copied to the "custom_trayicons" subdirectory under the software directory and can be selected in the tray icon list.
+* v1.3.8 (Build 20260410)
+    * Added **ShowFButton** and **HideFButton** mapping keys to the mapping key list. You can use them to add mapping keys in the form "**ShowFButton(...)/HideFButton(...)**" to show or hide the floating button corresponding to a specified original key. Example: A->B (with floating button enabled), C->HideFButton(A). While key C is held, the floating button for original key A is hidden. Combined with the Lock feature, this can toggle a specific floating button between hidden and shown states.
+    * Added a **Prompt Message Customization** setting in the "Advanced Mapping Settings" window. After checking "Enable Prompt Message Customization", the selected customized prompt settings override the global prompt settings for the current mapping configuration's prompt display.
+    * Added a **General Advanced Settings** button in the "General Settings" tab to open the **General Advanced Settings** window. The original "Startup Position" and "Prompt Sound" settings have been moved into the **General Advanced Settings** window.
+    * Added a **Global Mapping Switch Timer** setting in the "General Advanced Settings" window. Range: 0~999999999 ms, default: 2000 ms.
+    * In the "Mapping Item Settings" window, setting the key sequence loop count to 0 now displays "No Limit", allowing infinite loops.
+    * Added "Mapping Start" / "Mapping Stop" menu items to the system tray icon menu.
+    * The "Opacity" setting in the "Floating Button Settings" window has been split into three settings: **Normal Opacity**, **Pressed Opacity**, and **Locked Opacity**.
+    * When "Enable System Filter Keys" is checked in QKeyMapper and the software automatically enables the system Filter Keys on your behalf, it also turns off the Windows Filter Keys option "Make a sound when pressing or accepting keys", preventing sounds when pressing keys.
+* v1.3.8 (Build 20260402)
+    * Right-clicking the **Category** column in the mapping table now pops up a dedicated context menu with **Select Category** and **Enter Category** options.
+    * Added a **Sync Display of Pressed and Locked States** checkbox in the "Floating Button Settings" window, checked by default. Pressing a keyboard, mouse, or gamepad original key is synchronized to the floating button's display.
+    * Added a font selection dropdown list to the "Floating Button Settings" and "Virtual Button Panel Settings" windows.
+    * Fixed an issue where color-related settings in "Floating Button Settings" could not be saved.
+    * Added a "Show Floating Column" toggle button on the right side of the main window. When pressed, the mapping table displays the "Floating" column, where you can view and change whether each mapping item has the floating button feature enabled.
+* v1.3.8 (Build 20260328)
+    * **SendText(...)** and **PasteText(...)** now support the special parameter **{{CLIPBOARD_TEXT}}**. When the content inside the parentheses is exactly **{{CLIPBOARD_TEXT}}**, the string content from the current Windows clipboard is read and sent; if there is no string content in the clipboard, nothing is sent.
+      ##### Send/paste clipboard text examples
+          SendText({{CLIPBOARD_TEXT}})
+          PasteText({{CLIPBOARD_TEXT}})
+    * Added **Floating Button Settings** to the "Mapping Item Settings" window. Checking "Enable Floating Button" displays a separate clickable floating button for this mapping item. After a VButton{Virtual Button} enables the floating button, that virtual button is no longer shown in the Virtual Button Panel and is displayed as a floating button instead.
+    * Added **ShowAllFButtons** and **HideAllFButtons** mapping keys, which can be used together with the "Show on Mapping Start" option in "Floating Button Settings" to control the visibility of all floating buttons in the current mapping table.
+    * Right-clicking the "Disabled", "Burst", or "Lock" columns in the mapping table now pops up a dedicated context menu.
+    * Adjusted the "Display Switch" shortcut behavior: by default it toggles directly between hidden-to-tray state and normal display state. If you actively minimize the window to the taskbar, the "Display Switch" shortcut toggles between taskbar-minimized and normal display instead; this state reverts to the default tray/normal toggle after you manually hide the window to the system tray.
+* v1.3.8 (Build 20260320)
+    * Added right-click context menus to three tables: the main window mapping table, the Macro List, and the Mapping Sequence Editor list.
+    * Fixed the VButton panel display layout issue.
+* v1.3.8 (Build 20260316)
+    * Fixed VButton display issues.
+    * Fixed gamepad stick threshold detection issues.
+* v1.3.8 (Build 20260306)
+    * Added support for the **VButton{VirtualButtonLabel}** original key. After adding virtual button mappings of this type, all virtual buttons in the current mapping table can be displayed in the Virtual Button Panel, and clicking a button with the mouse sends the corresponding mapped key.
+      **※Custom settings for the Virtual Button Panel, such as grid rows and columns, colors, layout, size, opacity, and display position, can be adjusted in the "Virtual Button Panel Settings" dialog on the "Mapping Settings" tab. While the Virtual Button Panel is displayed, you can also select "Virtual Button Panel Settings" from the right-click menu to open the same settings window.**
+    * Added **ShowVButtonPanel** and **HideVButtonPanel** mapping keys, which can be used together with the "Show on Mapping Start" option in "Virtual Button Panel Settings" to control the panel's visibility.
+    * Added **Hard Push / Light Push** and **Hard Press / Light Press** detection for physical gamepad sticks and triggers. In the Mapping Settings tab -> Advanced Mapping Settings window, you can set the **Hard Push / Light Push** and **Hard Press / Light Press** thresholds for the left/right sticks and left/right triggers separately.
+      ##### New original keys for light push/light press
+          Joy-LS-Up_Light       -> Light push up on the left stick
+          Joy-LS-Down_Light     -> Light push down on the left stick
+          Joy-LS-Left_Light     -> Light push left on the left stick
+          Joy-LS-Right_Light    -> Light push right on the left stick
+          Joy-RS-Up_Light       -> Light push up on the right stick
+          Joy-RS-Down_Light     -> Light push down on the right stick
+          Joy-RS-Left_Light     -> Light push left on the right stick
+          Joy-RS-Right_Light    -> Light push right on the right stick
+          Joy-Key11(LT)_Light   -> Light press on the left trigger
+          Joy-Key12(RT)_Light   -> Light press on the right trigger
+      **※The newly added original keys with the _Light suffix, such as Joy-LS-Up_Light/Down_Light/Left_Light/Right_Light, correspond to light push/light press operations, while the existing keys without the _Light suffix, such as Joy-LS-Up/Down/Left/Right, correspond to hard push/hard press operations.**
+      **※The default light push/light press threshold is 35%, and the default hard push/hard press threshold is 50%. When you need to use both light and hard push original key mappings at the same time, you can adjust the hard push/hard press threshold to 70% (leaving some distance from the light push/light press threshold) for a relatively better experience.**
+    * Added a right-click popup menu to all color selection buttons in the settings windows, with a "Restore Default Color" option.
+* v1.3.8 (Build 20260218)
+    * Added a "Hide Disabled Rows" toggle button on the right side of the main window's mapping table. When checked, disabled rows in the mapping table are hidden. The "Hide Disabled Rows" button is unchecked by default.
+      **※When disabled rows are hidden, the mapping table is also in a filtered display state, and rows in the mapping table cannot be moved up or down.**
+    * Added support for the "！" input-override prefix for normal virtual gamepad mapping keys.
+    * In normal virtual gamepad mapping key sequences, you can now specify a time parameter to override the original default key hold time of 20 ms (different games and software have different gamepad key detection performance; set a reasonable key press duration for your situation).
+    * Fixed issues with category filter display and mapping key validation.
+* v1.3.8 (Build 20260212)
+    * Added **vJoy-LT-Max** and **vJoy-RT-Max** maximum press value limit mapping keys, which can limit the maximum press value of the virtual gamepad's left and right triggers. Range: 0~255.
+      ##### Trigger maximum press value limit examples
+          vJoy-LT-Max[150]  -> Left trigger press is limited to 150 or below
+          vJoy-RT-Max[50]   -> Right trigger press is limited to 50 or below
+    * Added a **Table Edit Settings** button in the "General Settings" tab, containing an **Insert Position** dropdown list. You can choose whether copied/pasted content is inserted "Above Current Row" or "Below Current Row". Default: "Above Current Row".
+      **※When adding or pasting, you can hold the Shift key to use the opposite insertion method. For example, when Insert Position is set to "Above Current Row", you can use Ctrl+Shift+V to paste the copied content "Below Current Row".**
+    * During "Continuous Key Recording", when both **Merge Key Operations** and **Ignore Key Duration** are checked, sequences such as "↓A»↓B»↓C»↑C»↑B»↑A" that match combination-key press order are merged into "A+B+C". The key order must match exactly; otherwise, they will not be merged into a combination key.
+* v1.3.8 (Build 20260206)
+    * Extended the parameters of the "vJoy-LS-Radius" and "vJoy-RS-Radius" radius limit mapping keys, supporting independent maximum offset limits for the up, down, left, and right directions of the virtual sticks.
+      **※In the parameters, U/D/L/R stand for Up, Down, Left, and Right respectively.**
+      ##### Virtual stick radius limit examples (U/D/L/R = Up/Down/Left/Right)
+          vJoy-LS-Radius[150]                     -> Limit the overall radius of the left stick to 150.
+          vJoy-LS-Radius[U=200,D=0,L=150,R=150]   -> Left stick: max radius 200 upward, offset disabled downward, limited to 150 left and right.
+          vJoy-RS-Radius[U=120,R=180]             -> Right stick: max radius 120 upward, max radius 180 rightward; other unspecified directions use the default 255.
+          vJoy-RS-Radius[150,U=100,R=200]         -> Right stick: overall radius 150, upward overridden to 100, rightward overridden to 200.
+    * Added **vJoy-LS-Move** and **vJoy-RS-Move** virtual gamepad stick offset mapping keys, used to send absolute or relative movement commands to the virtual gamepad's left/right sticks. Parameters use labeled key-value pairs: `X`/`Y` for absolute coordinates, `RX`/`RY` for relative offsets. All values range from -255 to 255. `X`, `Y` are absolute offsets (relative to center); `RX`, `RY` are relative offsets based on the current value.
+      **※X axis convention: negative values move left, positive values move right. Y axis convention: negative values move up, positive values move down.**
+      ##### Virtual stick movement (vJoy-LS-Move / vJoy-RS-Move) examples
+          Examples (absolute offset):
+          vJoy-LS-Move[X=-60,Y=100]     -> Set the left stick to 60 left horizontally and 100 down vertically.
+          vJoy-RS-Move[X=-60,Y=-100]    -> Set the right stick to 60 left horizontally and 100 up vertically.
+          vJoy-LS-Move[X=0,Y=80]        -> Left stick horizontally centered, 80 down vertically.
+          vJoy-RS-Move[X=200,Y=0]       -> Right stick 200 right horizontally, vertically centered.
+          Examples (relative offset):
+          vJoy-LS-Move[RX=6,RY=10]      -> Based on the current left stick position, move 6 right horizontally and 10 down vertically.
+          vJoy-RS-Move[RX=-6,RY=-10]    -> Based on the current right stick position, move 6 left horizontally and 10 up vertically.
+          vJoy-LS-Move[RX=0,RY=8]       -> Based on the current left stick position, move 8 down vertically (horizontal unchanged).
+          vJoy-RS-Move[RX=-2,RY=0]      -> Based on the current right stick position, move 2 left horizontally (vertical unchanged).
+          Examples (mixed offset):
+          vJoy-LS-Move[RX=6,Y=200]      -> Left stick: horizontal based on current position moved 6 right; vertical absolutely overridden to 200 down.
+          vJoy-RS-Move[X=-200,RY=-10]   -> Right stick: horizontal absolutely overridden to 200 left; vertical based on current position moved 10 up.
+    * Added **Merge Key Operations** and **Ignore Key Duration** checkboxes in the "Continuous Key Recording" window.
+      - When **Merge Key Operations** is checked, adjacent "↓A" and "↑A" (press and release of the same key) are merged into A.
+      - When **Ignore Key Duration** is checked, duration information such as "⏱<duration>" is removed from the output.
+    * Adjusted the valid value range of the "Light Push Value" for virtual gamepad sticks and triggers from "1~254" to "0~255".
+* v1.3.8 (Build 20260124)
+    * Added a **Sequence Edit** button to the Macro List, which can be used to edit a macro's key sequence.
+    * Fixed an issue where keyboard key mappings controlling a virtual stick would affect mouse control of the other virtual stick's movement.
+* v1.3.8 (Build 20260120)
+    * Fixed an issue where duplicate keys connected by "»" inside wrapped mapping keys such as Repeat{...} and OnlyOnce{...} were incorrectly validated as containing duplicate keys.
+    * Fixed an issue where the same original key with different @N suffixes in the mapping table was incorrectly judged as a duplicate original key.
+    * Changed the duplicate-name detection mechanism when adding a Tab: it now sequentially searches for an unused Tab name within "Tab1~Tab999".
+* v1.3.8 (Build 20260116)
+    * Added the OnlyOnce{...}xN mapping key syntax: the OnlyOnce{...} part is executed only when the key sequence is sent for the first time; subsequent mapping sequence loops (**Repeat on Key Down** or a specified **Repeat Times**) will skip this part. Example: OnlyOnce{Mouse-L⏱50}»A⏱50»B⏱50.
+    * Added the "↕" prefix to the mapping key list. Used similarly to prefixes such as "↓" and "↑", it is added before a normal mapping key and toggles the state based on the previously sent key's pressed/released state: if the key is currently pressed, it is released; if currently released, it is pressed.
+    * In the main window, right-clicking the Original Key List or Mapped Key List copies the current dropdown list content to the clipboard. Holding L-Ctrl while right-clicking the Mapped Key List prepends "»" to the copied content.
+    * Added commonly used mapping key prefix/suffix symbols such as "⏱" and "»" to the main window's Mapped Key List. They cannot be added directly, but can be copied to the clipboard by right-clicking.
+    * Removed the "»" checkbox from the main window; its function is replaced by the more convenient method of right-clicking the Mapped Key List to copy and paste "»" and other symbols.
+    * Fixed an issue where multiple original key mappings with the same combination key could not be added to the mapping table.
+    * Fixed an issue where incorrect validation of the "»" separator in mapping keys could cause the program to crash.
+
 * v1.3.8 (Build 20260110)
     * Added a **Sequence Edit** button after the "Mapped Keys" and "Key Release Mapping" single-line edit boxes in the "Mapping Item Settings" window. You can split the current key sequence into multiple lines for editing. After editing, click "OK" to merge the multi-line content back into a sorted single-line sequence and update the corresponding edit box.
       ##### Mapping Sequence Editor Instructions
@@ -331,7 +584,9 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 
 * v1.3.8 (Build 20250926)
     * Added "**Regex Match**" as a process and window title matching method. When using this method, the process and window title will be matched based on the regular expression entered in the single-line edit boxes for process and title. After entering a "**Regex Match**" pattern, you can press Enter to validate the regular expression. If invalid, a prompt will display: "Invalid regular expression : ...".
+    * Added "**QKeyMapper-Fn**" mapping key to the mapping key list. Press this mapping key first and then press another original key in the mapping table to cycle that mapping's Burst and Lock states in the order: Normal -> Burst -> Burst + Lock -> Normal. This Fn key switching can be disabled for a specific mapping item in the "Mapping Item Settings" window.
     * Added "**SetVolume🔊**" mapping key to the mapping key list. This mapping key sets the volume of the system’s current playback device and also displays the new volume value via a notification message.
+    * Fixed issues with using "Send Timing" on Long Press and Double Click mapping items.
 
 * v1.3.8 (Build 20250920)
     * Added two original keys to the original key list: "**SendOnMappingStart**" and "**SendOnSwitchTab**".
@@ -641,6 +896,13 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 * v1.3.7(Build 20241126)
     * Fixed the crash issue when importing older version mapdata INI files into the November new version program.
 
+* v1.3.7(Build 20241124)
+    * Added "Mouse-Move_WindowPoint" and "Mouse-Move_ScreenPoint" mapping keys, which can move the mouse pointer to a specific coordinate point within the window or on the screen. Coordinate points are set the same way as mouse button click mappings: L-Ctrl + left mouse button to pick a fullscreen coordinate, L-Alt + left mouse button to pick a coordinate within the window of the currently selected window title.
+    * In the "Mapping Item Settings" window, you can append ":BG" to mouse coordinate mappings such as (Mouse-L|R|M|X1|X2|Move_WindowPoint) and (Mouse-L|R|M|X1|X2|Move_ScreenPoint). Together with the "Send to Same-Named Window" checkbox, this sends only PostMessage mouse events to the window with the specified title without moving the on-screen mouse pointer.
+      * Example: PostMessage left mouse click at x=500, y=100 within the window -> "Mouse-L:W:BG(500,100)"
+      * Example: PostMessage left mouse click at x=500, y=100 on the screen -> "Mouse-L:BG(500,100)"
+    * Fixed a UI freeze issue when installing/uninstalling the "ViGEm" driver, introduced in recent November versions.
+
 * v1.3.7(Build 20241120)
     * Added the "CheckCombinationKeyOrder" checkbox in the mapping settings window. When enabled, if the original key is a combination, the order in which the keys are pressed must match the sequence of the original key combination for it to trigger. For example, for the original key combination "A+B" with "CheckCombKeyOrder" enabled, pressing A first and then B will trigger the combination. The default value for "CheckCombKeyOrder" is enabled. If you do not want to check the order, uncheck this option.
 
@@ -803,26 +1065,42 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
   * Fixed the problem that the virtual key that is locked and pressed down is not released when the key mapping stops.
   * Fixed the problem that the delay setting of the mapped key is greater than 1000 milliseconds and cannot take effect. The upper limit of the delay setting of the mapped key is increased to 9999 milliseconds.
 * v1.3.6(Build 20240316)
-  * The UI control overall layout changes.
-  * Added support for virtual gamepad type selection (X360/DS4), if you use the settings of the previous version, it prompts "Invalid settings data loaded from INI file", after backing up keymapdata.ini in the program path, use a text editing tool to replace text in keymapdata.ini to continue using the old configuration file. Replace content: (A) -> (A/×), (B) -> (B/○), (X) -> (X/□), (Y) -> (Y/△)
+  * Added Mouse-(L/R/M/X1/X2)_Point to the mapping key list, used to simulate mouse button clicks at specific coordinate points on the screen. Click anywhere on the screen with "L-Ctrl + Left Mouse Button" to update the "X:???,Y:???" coordinate display in the "Coordinates" label. For example: select "Mouse-L_Point" as the mapping key together with the "Coordinates" display label, and after adding, Mouse-L(aaa,bbb) is added to the mapping list, simulating a left mouse button click at horizontal coordinate aaa and vertical coordinate bbb. Pressing "F9" displays the click coordinate positions of the current mapping list as translucent windows with colored dots; different mouse buttons use different dot colors: left button (red), right button (green), middle button (yellow), side button 1 (blue), side button 2 (purple).
+  * Added Joy-LS_2vJoyLS, Joy-RS_2vJoyRS, Joy-LS_2vJoyRS, and Joy-RS_2vJoyLS to the original key list, which can fully map physical gamepad sticks to virtual gamepad sticks.
+  * Added mouse wheel support to original combination keys: "Mouse-WheelUp" and "Mouse-WheelDown".
+* v1.3.6(Build 20240312)
+  * Added compatibility support for high-priority process windows such as Parsec. For other cases where the process executable file name cannot be read due to permission reasons, the process name is uniformly displayed as QKeyMapperUnknown.
+  * Added functional mapping keys with the "Func-" prefix: Func-Refresh (Refresh) / Func-LockScreen (Lock Screen) / Func-Shutdown (Shutdown) / Func-Reboot (Reboot) / Func-Logoff (Logoff) / Func-Sleep (Sleep) / Func-Hibernate (Hibernate).
+* v1.3.6(Build 20240305)
+  * [Forza Motorsport: Horizon] The keyboard can use the virtual gamepad "vJoy-Key11(LT)_BRAKE" mapping to automatically control brake force based on the "Brake Threshold".
+  * Changed the combination key mapping strategy: "Original Combination Key" is now a text box for manual input. All keys listed in the [CombinationSupportKeys.txt key list](https://github.com/Zalafina/QKeyMapper/wiki/CombinationSupportKeys) can now be combined, and keyboard keys can be combined with mouse buttons. Refer to the CombinationSupportKeys.txt file in the release package for the supported key list. Keys are connected with "+" when writing, for example: "L-Ctrl+Home", "A+B+C".
+  * The "Display Switch Key" and "Mapping Toggle Key" hotkeys are also changed to text boxes for manual input.
+  * Removed the "Disable Win Key" checkbox; you can now disable any key by selecting "BLOCKED" as the mapping key.
+  * Added two mappable control keys for the mouse-controlled virtual gamepad left/right stick feature (Mouse2Joystick): Mouse2vJoy-Hold (while pressed, the current stick offset is held unchanged; on release, the stick offset returns to 0) and Mouse2vJoy-Direct (while pressed, the stick offset follows the mouse movement direction; on release, the stick offset returns to 0).
+  * Added mouse key function: you can control mouse pointer movement via keys with the "Key2Mouse-" prefix in the mapping key list. Movement speed is also controlled by "X-axis Speed" and "Y-axis Speed", range 1~15, where 1 is the slowest.
+
+#### ※ Note: v1.3.6(Build 20240223) changed some key names (see the [KeyNameChanged wiki page](https://github.com/Zalafina/QKeyMapper/wiki/KeyNameChanged) for the key name change list), and old version configuration files may fail to load. It is recommended to back up the keymapdata.ini configuration file in the executable file path before updating to this version. You can edit the old key names in the keymapdata.ini configuration file according to the key names in the CombinationSupportKeys.txt file in the new release ZIP package to continue using the old configuration file.
+
 * v1.3.6(Build 20240131)
-  * UI control position fine-tuning, setting selection list is placed under the process name and title name text box. Added a GroupBox frame for virtual gamepad settings.
-  * When the window is visible, the process list displayed on the left is automatically refreshed every 3 seconds.
-  * ADD button right side "»" checkbox added key sequence can support "vJoy" prefix virtual gamepad keys.
-  * "Save Settings" button can save the current window position, after hiding and then displaying the window, it will be displayed at the window position before hiding. The program starts to display according to the window position when the last saved setting is saved.
-  * Use the "»" checkbox to add a key sequence to use the delay function.
-  * Window title added Build Number display.
-  * Added "sound effect" checkbox, after checking, start mapping and stop mapping will play sound effects.
-  * Added the function of controlling the virtual gamepad left/right joystick with the mouse (Mouse2Joystick).
+  * The UI control overall layout changes.
+  * Added support for virtual gamepad type selection (X360/DS4). If you use the settings of the previous version, it prompts "Invalid settings data loaded from INI file"; after backing up keymapdata.ini in the program path, use a text editing tool to replace text in keymapdata.ini to continue using the old configuration file. Replace content: (A) -> (A/×), (B) -> (B/○), (X) -> (X/□), (Y) -> (Y/△)
 * v1.3.6(Build 20240125)
-  * Added a fixed global mapping setting item (QKeyMapperGlobalSetting). If the global mapping is checked to automatically start mapping, after exiting from the matching window in the start mapping state, it will automatically switch to the global mapping setting and enable mapping after a few seconds. A special tray icon is added for the global mapping state.
-  * The "original shortcut key" edit box has been added, and the combination keys containing Ctrl, Shift, and Alt keys can be set as original input (when the original key drop-down box is empty, the setting key in the original shortcut key edit box will be added).
-  * Added sound effect when stopping key mapping.
+  * Added a window display switch key edit box, which can be used to change the shortcut key for displaying and hiding the window to the system tray.
+  * The single-line text edit box used to match the window title can now be manually edited and saved to settings. Multiple different window title settings can be saved for the same process (up to 9 different title settings per process), and different titles are saved to settings in the form <process.exe|TitleX>. Saving a setting with the same process name and the same title again will overwrite the previously existing setting.
+  * After double-clicking the left process list, if the process name and title exactly match an already saved setting, the previously saved setting will be automatically loaded and displayed.
+  * UI control position fine-tuning; the setting selection list is placed under the process name and title name text boxes. Added a GroupBox frame for virtual gamepad settings.
+  * When the window is visible, the process list displayed on the left is automatically refreshed every 3 seconds.
+  * The "»" checkbox on the right side of the ADD button adds key sequences that can support keys with the "vJoy" prefix.
+  * The "Save Settings" button can save the current window position; after hiding and then displaying the window, it will be displayed at the window position before hiding. The program starts displaying according to the window position when the last setting was saved.
+  * Key sequences added with the "»" checkbox can now use the delay function.
+  * Window title added Build Number display.
+  * Added a "Sound Effect" checkbox; when checked, sound effects will be played when starting and stopping mapping.
+  * Added the function of controlling the mouse pointer with the gamepad left/right sticks (Joy-LS2Mouse & Joy-RS2Mouse).
 * v1.3.6(Build 20240112)
-  * Added "Delay" numeric adjustment box for mapped keys, which can appropriately increase the waiting time between pressing and releasing of combination keys.
+  * Added a fixed global mapping setting item (QKeyMapperGlobalSetting). If the global mapping is checked to automatically start mapping, after exiting from the matching window in the start mapping state, it will automatically switch to the global mapping setting and enable mapping after a few seconds. A special tray icon is added for the global mapping state.
 * v1.3.6(Build 20240106)
-  * Added "Lock Cursor" checkbox. When checked, when the mouse controls the virtual gamepad joystick, the mouse cursor is locked at the lower right corner of the screen (please confirm that the mapping switch combination key is available before using this function to avoid the mouse being unable to move and the key mapping cannot be turned off to restore mouse movement).
-  * Added support for mouse wheel scrolling up and down mapping function.
+  * Added the "Original Shortcut Key" edit box; combination keys containing Ctrl, Shift, and Alt keys can be set as original input (only when the original key dropdown box is empty will the key set in the original shortcut key edit box be added).
+  * Added a sound effect when stopping key mapping.
 * v1.3.6(Build 20231230)
   * Added "Delay" numeric adjustment box for mapped keys, which can appropriately increase the waiting time between pressing and releasing of combination keys.
 * v1.3.6(Build 20231225)
@@ -977,25 +1255,55 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | SendOnMappingStart          | Execute the mapped key content when mapping starts for this table  |
 | SendOnMappingStop           | Execute the mapped key content when mapping stops for this table   |
 | SendOnSwitchTab             | Execute the mapped key content when switching to this mapping table |
+| VButton                     | Add a virtual button; clicking the virtual button with the mouse sends the mapped key content |
 
 ---------------
 ## 📜 Special Mapping Key Table
 | QKeyMapper Mapping Key Name | Description                                                        |
 |----------------------------|--------------------------------------------------------------------|
 | ⏱                         | Key delay suffix, add a number to indicate hold duration (ms)      |
+| »                         | Key sequence connector: the key before it is pressed and released first, then the key after it is pressed |
 | ↓                          | Key down prefix (must be paired with up mapping, or key won't release) |
 | ↑                          | Key up prefix                                                      |
+| ↕                          | Toggle based on the current mapped key's pressed/released state    |
+| ⇧                          | Key up prefix; forces a key release to be sent even if the corresponding physical key is still held |
+| ⇳                          | Toggle based on the current mapped key's pressed/released state; forces a key release to be sent even if the corresponding physical key is still held |
+| ⇵                          | Prefix that sends a key press immediately followed by a key release |
 | ！                         | Override (post-cover) prefix for mapped keys                        |
 | Repeat                     | Repeat the mapping content inside {} for a specified number of times |
+| OnlyOnce{...}              | The content inside {} is executed only on the first send of the key sequence; subsequent loops skip it. Can take an xN repeat count |
 | BLOCKED                    | Block original key (no response on press)                          |
 | NONE                       | Empty key (used as delay placeholder, etc.)                        |
 | Unlock                     | Unlock the locked state of a specified original key                |
 | SendText                   | Send text string directly                                          |
+| PasteText                  | Send a text string via clipboard paste                             |
 | Run                        | Run a specified command (with optional arguments)                  |
 | SwitchTab                  | Switch to a mapping table tab by name                              |
 | SwitchTab💾                | Switch to a mapping table tab by name (and save it)                |
+| Macro(macro_name)          | Send the key or key sequence corresponding to the macro name edited in the Macro List |
+| UniversalMacro(universal_macro_name) | Send the key or key sequence corresponding to the universal macro name edited in the Macro List |
+| KeyRecordToggle            | Single key to toggle key recording start/stop state                |
+| KeyRecordStart             | Start key recording                                                |
+| KeyRecordStop              | Stop key recording                                                 |
+| QKeyMapper-Fn              | Press this mapping key first, then press another original key in the mapping table to cycle that mapping's Burst and Lock states while mapping is active |
+| Block-Keyboard             | While pressed, disable all keyboard input except the mapping table and hotkeys |
+| Block-Keyboard⌨            | Same as Block-Keyboard, but shows notification prompts when disabling/enabling the keyboard |
+| Block-Mouse                | While pressed, disable all mouse input except the mapping table and hotkeys |
+| Block-Mouse🖱              | Same as Block-Mouse, but shows notification prompts when disabling/enabling the mouse |
 | KeySequenceBreak           | Interrupt all currently executing key sequences                    |
 | KeySequenceBreak(OriginalKey) | Interrupt the running key sequence for a specific original key |
+| KeySequenceToggle          | Single key to toggle pause/resume state of all key sequences       |
+| KeySequencePause           | Pause all currently executing key sequences                        |
+| KeySequenceContinue        | Resume all previously paused key sequences                         |
+| KeySequenceToggle(OriginalKey) | Single key to toggle pause/resume state of the key sequence of the mapping item for the specified original key |
+| KeySequencePause(OriginalKey) | Pause the key sequence of the mapping item for the specified original key |
+| KeySequenceContinue(OriginalKey) | Resume the key sequence of the mapping item for the specified original key |
+| ShowAllFButtons            | Show all floating buttons in the current mapping table after the original key is pressed |
+| HideAllFButtons            | Hide all floating buttons in the current mapping table after the original key is pressed |
+| ShowFButton                | Show the floating button corresponding to the specified original key |
+| HideFButton                | Hide the floating button corresponding to the specified original key |
+| ShowVButtonPanel           | Show the Virtual Button Panel after the original key is pressed    |
+| HideVButtonPanel           | Hide the Virtual Button Panel after the original key is pressed    |
 | Key2Mouse-Up               | Move mouse pointer up while key is held                            |
 | Key2Mouse-Down             | Move mouse pointer down while key is held                          |
 | Key2Mouse-Left             | Move mouse pointer left while key is held                          |
@@ -1012,6 +1320,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | Mouse-X1_ScreenPoint       | Side button 1 click at specified screen coordinate                 |
 | Mouse-X2_ScreenPoint       | Side button 2 click at specified screen coordinate                 |
 | Mouse-Move_ScreenPoint     | Move mouse pointer to specified screen coordinate                  |
+| Mouse-Move_Relative        | Move the mouse pointer by a relative offset from the current position |
 | Mouse-PosSave              | Save current mouse cursor position                                 |
 | Mouse-PosRestore           | Restore mouse cursor position to a previously saved position       |
 | SetVolume                  | Set the current playback device volume                             |
@@ -1061,6 +1370,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | Back Button           | Joy-Key7(Back)               |
 | Start Button          | Joy-Key8(Start)              |
 | Guide Button          | Joy-Key13(Guide)             |
+##### Original keys starting with "Joy-" in the original key list can add a numeric suffix "@0~@9" to select the gamepad player index (PlayerIndex) for differentiated mapping; 10 player indices (0 to 9) are supported in total. Without the "@0~@9" suffix, the mapping applies to input from all physical gamepads.
 
 ## 🎮 Special Physical Controller Buttons
 | Gamepad Physical Button | QKeyMapper Original Key Name |
@@ -1077,6 +1387,12 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | Joy-LS2Mouse                | Move mouse pointer with left stick (light push = slow, hard push = fast)                  |
 | Joy-RS2Mouse                | Move mouse pointer with right stick (light push = slow, hard push = fast)                 |
 | Joy-Gyro2Mouse              | Control mouse pointer movement horizontally and vertically by detecting controller gyro rotation |
+| Joy-Touchpad2Mouse          | Control the mouse pointer's horizontal and vertical movement by detecting single-finger movement on the gamepad touchpad |
+| Joy-Touchpad-Tap            | Single-finger tap on the gamepad touchpad                         |
+| Joy-Touchpad-2F-Up          | Two-finger swipe up on the gamepad touchpad                       |
+| Joy-Touchpad-2F-Down        | Two-finger swipe down on the gamepad touchpad                     |
+| Joy-Touchpad-2F-Left        | Two-finger swipe left on the gamepad touchpad                     |
+| Joy-Touchpad-2F-Right       | Two-finger swipe right on the gamepad touchpad                    |
 
 ##### Mouse pointer speed controlled by stick can be further adjusted for X and Y axes in the mapping settings; higher values move faster.
 ##### Mouse pointer speed controlled by the controller gyro can be adjusted separately for horizontal and vertical directions in the "Gyro2Mouse" settings; higher values move faster.
@@ -1085,6 +1401,9 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 |----------------------------|--------------------------------------------------------------------------------------------|
 | Gyro2Mouse-Hold            | Suppress gyro mouse pointer movement while held, allow movement when released              |
 | Gyro2Mouse-Move            | Allow gyro mouse pointer movement while held, suppress movement when released              |
+| GamepadTouchpadOn          | Enable gamepad touchpad detection                                                          |
+| GamepadTouchpadOff         | Disable gamepad touchpad detection                                                         |
+| GamepadTouchpadToggle      | Toggle gamepad touchpad detection state (switch between on and off)                        |
 
 ## 🎮 Extended Controller Keys
 | QKeyMapper Original Key Name | Function |
@@ -1103,24 +1422,24 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | Right Stick Down     | Joy-RS-Down                 |
 | Right Stick Left     | Joy-RS-Left                 |
 | Right Stick Right    | Joy-RS-Right                |
-| Left Stick Press     | Joy-Key8(Start)             |
-| Right Stick Press    | Joy-Key9(LS-Click)          |
-| D-Pad Up             | Joy-Key14                   |
-| D-Pad Down           | Joy-Key15                   |
-| D-Pad Left           | Joy-Key16                   |
-| D-Pad Right          | Joy-Key17                   |
+| Left Stick Press     | Joy-Key9(LS-Click)          |
+| Right Stick Press    | Joy-Key10(RS-Click)         |
+| D-Pad Up             | Joy-DPad-Up                 |
+| D-Pad Down           | Joy-DPad-Down               |
+| D-Pad Left           | Joy-DPad-Left               |
+| D-Pad Right          | Joy-DPad-Right              |
 | × Button             | Joy-Key1(A/×)               |
 | ○ Button             | Joy-Key2(B/○)               |
 | □ Button             | Joy-Key3(X/□)               |
 | △ Button             | Joy-Key4(Y/△)               |
-| Left Shoulder        | Joy-Key10(RS-Click)         |
-| Right Shoulder       | Joy-Key13(Guide)            |
+| Left Shoulder        | Joy-Key5(LB)                |
+| Right Shoulder       | Joy-Key6(RB)                |
 | Left Trigger         | Joy-Key11(LT)               |
 | Right Trigger        | Joy-Key12(RT)               |
-| SHARE Button         | Joy-Key5(LB)                |
-| OPTIONS Button       | Joy-Key7(Back)              |
-| Touchpad Button      | Joy-Key18                   |
-| PS Button            | Joy-Key6(RB)                |
+| SHARE Button         | Joy-Key7(Back)              |
+| OPTIONS Button       | Joy-Key8(Start)             |
+| Touchpad Button      | Joy-Touchpad                |
+| PS Button            | Joy-Key13(Guide)            |
 
 ---------------
 ## 🎮 Xbox360 Virtual Controller Button Table
@@ -1133,12 +1452,18 @@ Example:
 | D-Pad Down                    | vJoy-DPad-Down              |
 | A Button                      | vJoy-Key1(A/×)              |
 | Right Trigger                 | vJoy-Key12(RT)              |
+##### Mapping keys starting with "vJoy-" in the mapping key list can add "@+ numeric index 0~3" to select which virtual gamepad to map to. Without "@+ numeric index", the mapping defaults to virtual gamepad 0.
+##### In key sequences, normal "vJoy-" virtual gamepad mapping keys (including LS/RS direction keys and their `[push_level]` forms) have a default press hold time of 20 ms when no ⏱ is specified, preventing key presses that are too short to be detected by games.
 
 ## 🎮 Special Virtual Controller Keys
 | QKeyMapper Original Key Name | Function                                                        |
 |-----------------------------|-----------------------------------------------------------------|
 | vJoy-Mouse2LS               | Control virtual left stick with mouse                           |
 | vJoy-Mouse2RS               | Control virtual right stick with mouse                          |
+| vJoy-LS-Radius              | Set the radius limit of the virtual left stick                  |
+| vJoy-RS-Radius              | Set the radius limit of the virtual right stick                 |
+| vJoy-LS-Move                | Set absolute or relative offset of the virtual left stick       |
+| vJoy-RS-Move                | Set absolute or relative offset of the virtual right stick      |
 ##### Mouse control of virtual controller can be used for games like Zelda in emulators to control the camera. The default recenter delay is 20ms, adjustable in the "Virtual Gamepad" tab. Set to 0 to disable auto recentering.
 ##### The "X Axis Sensitivity" and "Y Axis Sensitivity" in the "Virtual Gamepad" tab adjust the sensitivity of mouse control for the virtual stick; range is 1~50000.
 ##### Mouse control of the virtual stick can enable "Direct Control Mode" for 1:1 mapping between mouse movement and stick offset.
