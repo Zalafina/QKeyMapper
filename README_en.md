@@ -131,6 +131,10 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 
 ---
 ### 🎯 New features list (sorted in descending order of update time)
+* v1.3.8 (Build 20260920)
+    * Fixed an issue where Burst and Lock could not be checked for "Block-Input" and related mapping keys in the mapping table.
+    * Optimized shortcut alignment and spacing display in the **Mapping Table Operations** menu.
+    * Fixed an issue where the mouse pointer briefly showed a busy cursor when the background crash diagnostic module started.
 * v1.3.8 (Build 20260912)
     * Fixed issues related to view option switching and the setting-change notification.
     * Added shortcuts for mapping table operations: **Ctrl+N** to add a blank Tab and **Ctrl+D** to duplicate the current Tab. These shortcuts only take effect when the main window has focus, mapping is not started, and no key is being captured. After adding, the view automatically switches to the new Tab; after duplicating, the view stays on the original Tab.
