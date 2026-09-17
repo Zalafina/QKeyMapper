@@ -49,3 +49,10 @@ mappingDataTable->setRowCount(0);
 - **回车/快捷键入口**：`highlightSelectOpenItemSetup()` 检查 `if (m_KeyMappingDataTable->isRowHidden(topRow)) return;`；
 - **对话框关闭 fallback**：`setupDialogClosed()` 检查 `!m_KeyMappingDataTable->isRowHidden(reselectrow)`；
 - **批量/删除操作**：统一使用 `collectVisibleSelectedRows()` 提取操作目标，天然排除隐藏行。
+
+### 6. 删除/结构变更后的接替行重选守卫（Post-Deletion Reselection Guard）
+当调用方（如 `deleteSelectedMappingData`）在行数减少后显式接替选区时，若直接根据旧的顶部行索引（如 `qMin(topRow, rowCount - 1)`）重新选择，在开启“隐藏禁用项”或分类筛选时可能命中隐藏行，或选中不可选的公共分隔行（`commonSeparatorDisplayRow()`）：
+- **双向扫描寻找可见项**：先以 `topRow` 为基准向下遍历 `[startRow..rowCount-1]` 寻找第一个 `!isRowHidden(r) && r != sepRow` 的行；若向下未找到（如删除的是最后一条可见项），则向上回溯 `[startRow-1..0]` 寻找。
+- **定位与视口同步**：找到接替行后，设置连续整行选区，同步 `currentCell`，并调用 `scrollToItem(..., EnsureVisible)` 确保视口跟随可见。
+- **彻底清空无效焦点**：若全表已无可重选的可见行，显式调用 `clearSelection()`、`setCurrentCell(-1, -1)` 和 `setCurrentItem(Q_NULLPTR)`，避免焦点残留于看不见的隐藏行上导致快捷键误触发。
+

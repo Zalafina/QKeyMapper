@@ -48,5 +48,5 @@
 - [Qt Compat Header Transitive Include](qt-compat-header-transitive-include.md) — qkeymapper_qt_compat.h 通过 qkeymapper.h 间接包含，多数文件无需手动 include
 - [QStringList(int) Qt5 Compat Fix](episodic/2026-07-24-qstringlist-int-constructor-qt5-compat.json) — Qt5.12 QStringList(int) 构造函数不兼容修复：添加 makeQStringList helper
 - [Global Windows Hook Startup Lifecycle Guard](hook-startup-lifecycle-guard.md) — 全局 Windows 钩子子线程与主 GUI 窗口启动时序竞争空指针崩溃的生命周期原子守卫与透明透传模式
-- [Mapping Table Selection Preservation Pattern](mapping-table-selection-preservation-pattern.md) — QTableWidget 重建刷新期间保持选区、焦点与滚动条的标准模式：信号屏蔽、行数守卫、结构重排裁剪与隐藏行连续分段过滤
+- [Mapping Table Selection Preservation Pattern](mapping-table-selection-preservation-pattern.md) — QTableWidget 重建刷新与删除接替期间保持选区、焦点与滚动条的标准模式：信号屏蔽、行数守卫、结构重排裁剪、隐藏行连续分段过滤与删除后双向可见行重选
 
