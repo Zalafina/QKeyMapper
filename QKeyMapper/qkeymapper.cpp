@@ -17552,7 +17552,7 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
 #endif
 }
 
-void QKeyMapper::refreshTabsForSourceTabChange(int sourceTabIndex)
+void QKeyMapper::refreshTabsForSourceTabChange(int sourceTabIndex, bool structuralReorder)
 {
     if (sourceTabIndex < 0 || sourceTabIndex >= s_KeyMappingTabInfoList.size()) {
         return;
@@ -17561,7 +17561,8 @@ void QKeyMapper::refreshTabsForSourceTabChange(int sourceTabIndex)
     if (isCommonMappingTabIndex(sourceTabIndex)) {
         for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
             if (index == sourceTabIndex || shouldAppendCommonMappingRows(index)) {
-                refreshKeyMappingDataTableByTabIndex(index);
+                const bool commonReordered = (structuralReorder && index != sourceTabIndex);
+                refreshKeyMappingDataTableByTabIndex(index, commonReordered);
             }
         }
         return;
@@ -34231,7 +34232,7 @@ void QKeyMapper::switchToMappingTableTab(int index)
     }
 }
 
-void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
+void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex, bool commonReordered)
 {
     if (0 <= tabindex && tabindex < QKeyMapper::s_KeyMappingTabInfoList.size()) {
         KeyMappingDataTableWidget *mappingDataTable = s_KeyMappingTabInfoList.at(tabindex).KeyMappingDataTable;
@@ -34261,14 +34262,15 @@ void QKeyMapper::refreshKeyMappingDataTableByTabIndex(int tabindex)
                                      << ", isCurrentTab=" << ((currentIndex == tabindex) ? "true" : "false")
                                      << ", localSize=" << (localMappingDataList != Q_NULLPTR ? localMappingDataList->size() : -1)
                                      << ", commonSize=" << (commonMappingDataList != Q_NULLPTR ? commonMappingDataList->size() : -1)
-                                     << ", displaySize=" << displayMappingDataList.size();
+                                     << ", displaySize=" << displayMappingDataList.size()
+                                     << ", commonReordered=" << (commonReordered ? "true" : "false");
 #endif
 
-        refreshKeyMappingDataTable(mappingDataTable, &displayMappingDataList);
+        refreshKeyMappingDataTable(mappingDataTable, &displayMappingDataList, commonReordered);
     }
 }
 
-void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList)
+void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList, bool commonReordered)
 {
     if (mappingDataTable == Q_NULLPTR || mappingDataList == Q_NULLPTR) {
         return;
@@ -34278,6 +34280,17 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
     const bool showNotes = m_ShowNotes;
     const bool showFloatingColumn = m_ShowFloating;
     const bool hideDisabled = m_HideDisabled;
+
+    // Save selection, current cell, and scroll state before clearing rows
+    const int previousRowCount = mappingDataTable->rowCount();
+    const int savedCurrentRow = mappingDataTable->currentRow();
+    const int savedCurrentColumn = mappingDataTable->currentColumn();
+    const QList<QTableWidgetSelectionRange> savedRanges = mappingDataTable->selectedRanges();
+    const int savedVScroll = mappingDataTable->verticalScrollBar() ? mappingDataTable->verticalScrollBar()->value() : -1;
+    const int savedHScroll = mappingDataTable->horizontalScrollBar() ? mappingDataTable->horizontalScrollBar()->value() : -1;
+
+    // Block table signals while reconstructing table to avoid spurious selection/cell changed events
+    QSignalBlocker blocker(mappingDataTable);
 
     mappingDataTable->setRowCount(0);
 
@@ -34323,7 +34336,6 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[refreshKeyMappingDataTable]" << "mappingDataList Start >>>";
 #endif
-        QSignalBlocker blocker(mappingDataTable);
         const int totalDisplayRows = mappingDataList->size() + (hasSeparatorRow ? 1 : 0);
         mappingDataTable->setRowCount(totalDisplayRows);
 
@@ -34651,6 +34663,93 @@ void QKeyMapper::refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDa
     // Update category filter ComboBox if category column is visible
     if (mappingDataTable->isCategoryColumnVisible()) {
         updateCategoryFilterComboBox();
+    }
+
+    // Restore selection, current cell, and scroll bar positions when row count is unchanged
+    const int newRowCount = mappingDataTable->rowCount();
+    if (previousRowCount == newRowCount && newRowCount > 0) {
+        if (!savedRanges.isEmpty()) {
+            mappingDataTable->clearSelection();
+
+            int firstVisibleSelectedRow = -1;
+            int firstVisibleSelectedCol = -1;
+
+            for (const QTableWidgetSelectionRange &range : savedRanges) {
+                if (range.topRow() >= newRowCount || range.leftColumn() >= mappingDataTable->columnCount()) {
+                    continue;
+                }
+
+                const int top = qBound(0, range.topRow(), newRowCount - 1);
+                int bottom = qBound(0, range.bottomRow(), newRowCount - 1);
+                const int left = qBound(0, range.leftColumn(), mappingDataTable->columnCount() - 1);
+                const int right = qBound(0, range.rightColumn(), mappingDataTable->columnCount() - 1);
+
+                // If common mapping was structurally reordered, discard selection in the appended common rows
+                if (commonReordered && commonStartDisplayRow >= 0) {
+                    if (top >= commonStartDisplayRow) {
+                        continue;
+                    }
+                    bottom = qMin(bottom, commonStartDisplayRow - 1);
+                }
+
+                // Select only visible rows within [top, bottom] by contiguous segments
+                int segTop = -1;
+                for (int r = top; r <= bottom; ++r) {
+                    if (!mappingDataTable->isRowHidden(r)) {
+                        if (segTop == -1) {
+                            segTop = r;
+                        }
+                    }
+                    else {
+                        if (segTop != -1) {
+                            mappingDataTable->setRangeSelected(QTableWidgetSelectionRange(segTop, left, r - 1, right), true);
+                            if (firstVisibleSelectedRow == -1) {
+                                firstVisibleSelectedRow = segTop;
+                                firstVisibleSelectedCol = left;
+                            }
+                            segTop = -1;
+                        }
+                    }
+                }
+                if (segTop != -1) {
+                    mappingDataTable->setRangeSelected(QTableWidgetSelectionRange(segTop, left, bottom, right), true);
+                    if (firstVisibleSelectedRow == -1) {
+                        firstVisibleSelectedRow = segTop;
+                        firstVisibleSelectedCol = left;
+                    }
+                }
+            }
+
+            int effectiveCurrentRow = savedCurrentRow;
+            if (commonReordered && commonStartDisplayRow >= 0 && effectiveCurrentRow >= commonStartDisplayRow) {
+                effectiveCurrentRow = -1;
+            }
+
+            if (effectiveCurrentRow >= 0 && effectiveCurrentRow < newRowCount
+                && savedCurrentColumn >= 0 && savedCurrentColumn < mappingDataTable->columnCount()
+                && !mappingDataTable->isRowHidden(effectiveCurrentRow)) {
+                mappingDataTable->setCurrentCell(effectiveCurrentRow, savedCurrentColumn, QItemSelectionModel::NoUpdate);
+            }
+            else if (firstVisibleSelectedRow >= 0) {
+                mappingDataTable->setCurrentCell(firstVisibleSelectedRow, firstVisibleSelectedCol, QItemSelectionModel::NoUpdate);
+            }
+            else {
+                mappingDataTable->setCurrentItem(Q_NULLPTR);
+            }
+        }
+
+        if (mappingDataTable->verticalScrollBar() && savedVScroll >= 0) {
+            mappingDataTable->verticalScrollBar()->setValue(
+                qBound(mappingDataTable->verticalScrollBar()->minimum(),
+                       savedVScroll,
+                       mappingDataTable->verticalScrollBar()->maximum()));
+        }
+        if (mappingDataTable->horizontalScrollBar() && savedHScroll >= 0) {
+            mappingDataTable->horizontalScrollBar()->setValue(
+                qBound(mappingDataTable->horizontalScrollBar()->minimum(),
+                       savedHScroll,
+                       mappingDataTable->horizontalScrollBar()->maximum()));
+        }
     }
 }
 
@@ -37234,7 +37333,7 @@ void QKeyMapper::keyMappingTableDragDropMove(int top_row, int bottom_row, int dr
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[keyMappingTableDragDropMove] : refreshKeyMappingDataTable()";
 #endif
-    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
 
         // Reselect the moved rows
         QTableWidgetSelectionRange newSelection;
@@ -37412,7 +37511,10 @@ void QKeyMapper::setupDialogClosed()
     refreshTabsForSourceTabChange(sourceTabIndex);
     updateMousePointsList();
 
-    if (reselectrow >= 0) {
+    if (m_KeyMappingDataTable->selectedRanges().isEmpty()
+        && reselectrow >= 0
+        && reselectrow < m_KeyMappingDataTable->rowCount()
+        && !m_KeyMappingDataTable->isRowHidden(reselectrow)) {
         QTableWidgetSelectionRange selection = QTableWidgetSelectionRange(reselectrow, 0, reselectrow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
         m_KeyMappingDataTable->setRangeSelected(selection, true);
 
@@ -38748,7 +38850,7 @@ void QKeyMapper::selectedItemsMoveUp()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
 
     // Reselect the moved rows
     QTableWidgetSelectionRange newSelection(topRow - 1, 0, bottomRow - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
@@ -38838,7 +38940,7 @@ void QKeyMapper::selectedItemsMoveToTop()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
 
     // Reselect the moved rows at the top
     QTableWidgetSelectionRange newSelection(0, 0, bottomRow - topRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
@@ -38918,7 +39020,7 @@ void QKeyMapper::selectedItemsMoveDown()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
 
     // Reselect the moved rows
     QTableWidgetSelectionRange newSelection(topRow + 1, 0, bottomRow + 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
@@ -39008,7 +39110,7 @@ void QKeyMapper::selectedItemsMoveToBottom()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << __func__ << ": refreshKeyMappingDataTable()";
 #endif
-    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
 
     // Reselect the moved rows at the bottom of the local rows, excluding appended Common rows.
     const int movedRowCount = bottomSourceInfo.SourceRow - topSourceInfo.SourceRow + 1;
@@ -39594,6 +39696,13 @@ void QKeyMapper::highlightSelectOpenItemSetup()
     if (topRow != bottomRow) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[highlightSelectOpenItemSetup] Multiple rows selected, topRow:" << topRow << ", bottomRow:" << bottomRow;
+#endif
+        return;
+    }
+
+    if (m_KeyMappingDataTable->isRowHidden(topRow)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[highlightSelectOpenItemSetup] Selected row is hidden:" << topRow;
 #endif
         return;
     }

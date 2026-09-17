@@ -1585,7 +1585,7 @@ public slots:
     void ensureCommonMappingTabExists(void);
     void ensureCommonMappingTabIsLast(void);
     void updateCommonMappingTabVisibility(void);
-    void refreshTabsForSourceTabChange(int sourceTabIndex);
+    void refreshTabsForSourceTabChange(int sourceTabIndex, bool structuralReorder = false);
     bool copyCurrentTabToKeyMappingTabWidget(void);
     int removeTabFromKeyMappingTabWidget(int tabindex);
     void moveTabInKeyMappingTabWidget(int from, int to);
@@ -2019,8 +2019,8 @@ private:
     void applyDisabledStyleToMappingRow(KeyMappingDataTableWidget *mappingDataTable, const QList<MAP_KEYDATA> *mappingDataList, int dataRow, int displayRow = -1);
 public:
     void switchToMappingTableTab(int index);
-    void refreshKeyMappingDataTableByTabIndex(int tabindex);
-    void refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList);
+    void refreshKeyMappingDataTableByTabIndex(int tabindex, bool commonReordered = false);
+    void refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList, bool commonReordered = false);
     void updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList, int row, int column);
     void updateKeyMappingTabWidgetTabDisplay(int tabindex);
     void updateTableWidgetItem(int tabindex, int row, int column);
