@@ -39814,15 +39814,46 @@ void QKeyMapper::deleteSelectedMappingData()
     // Update the mouse points list
     updateMousePointsList();
 
-    // Reselect the row at the top of the deleted range, or the last row if the table is empty
-    if (m_KeyMappingDataTable->rowCount() > 0) {
-        int newRow = qMin(topRow, m_KeyMappingDataTable->rowCount() - 1);
-        QTableWidgetSelectionRange newSelection = QTableWidgetSelectionRange(newRow, 0, newRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-        m_KeyMappingDataTable->clearSelection();
-        m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+    // Reselect the nearest visible selectable row, or clear selection if no visible row remains
+    const int rowCount = m_KeyMappingDataTable->rowCount();
+    if (rowCount > 0) {
+        const int sepRow = m_KeyMappingDataTable->commonSeparatorDisplayRow();
+        const int startRow = qBound(0, topRow, rowCount - 1);
+        int targetVisibleRow = -1;
 
-        // Update current cell to match the new selection for Ctrl/Shift+Click consistency
-        m_KeyMappingDataTable->setCurrentCell(newRow, 0, QItemSelectionModel::NoUpdate);
+        // Search downward for the next visible, selectable row
+        for (int r = startRow; r < rowCount; ++r) {
+            if (!m_KeyMappingDataTable->isRowHidden(r) && r != sepRow) {
+                targetVisibleRow = r;
+                break;
+            }
+        }
+
+        // If not found downward (e.g. deleted the last visible item), search upward
+        if (targetVisibleRow == -1) {
+            for (int r = startRow - 1; r >= 0; --r) {
+                if (!m_KeyMappingDataTable->isRowHidden(r) && r != sepRow) {
+                    targetVisibleRow = r;
+                    break;
+                }
+            }
+        }
+
+        m_KeyMappingDataTable->clearSelection();
+        if (targetVisibleRow != -1) {
+            QTableWidgetSelectionRange newSelection(targetVisibleRow, 0, targetVisibleRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+            m_KeyMappingDataTable->setRangeSelected(newSelection, true);
+            m_KeyMappingDataTable->setCurrentCell(targetVisibleRow, 0, QItemSelectionModel::NoUpdate);
+
+            QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(targetVisibleRow, 0);
+            if (itemToScrollTo) {
+                m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
+            }
+        }
+        else {
+            m_KeyMappingDataTable->setCurrentItem(Q_NULLPTR);
+            m_KeyMappingDataTable->setCurrentCell(-1, -1);
+        }
     }
 
 #ifdef DEBUG_LOGOUT_ON
