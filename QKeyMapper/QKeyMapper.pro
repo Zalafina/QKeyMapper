@@ -205,6 +205,7 @@ HEADERS     += \
     qtrayiconselectdialog.h \
     qvbuttonpanel.h \
     qvbuttonpanelsetupdialog.h \
+    qpointpickerdialog.h \
     volumecontroller.h
 # Interception Driver Support <<<
 
@@ -217,6 +218,7 @@ SOURCES     += \
     interception_worker.cpp \
     main.cpp \
     qmappingsequenceedit.cpp \
+    qpointpickerdialog.cpp \
     qstyle_singletons.cpp \
     qcrosshairsetupdialog.cpp \
     qfloatingbuttonsetupdialog.cpp \

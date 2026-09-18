@@ -160,6 +160,8 @@ bool QKeyMapper_Worker::s_vbutton_panel_defaultshow = VBTNPANEL_DEFAULT_DEFAULTS
 QAtomicBool QKeyMapper_Worker::s_vbutton_click_suppress(false);
 HWND QKeyMapper_Worker::s_vbutton_panel_hwnd = Q_NULLPTR;
 #endif
+HWND QKeyMapper_Worker::s_point_picker_hwnd = Q_NULLPTR;
+QAtomicInt QKeyMapper_Worker::s_PickPointDragActive = 0;
 QList<quint8> QKeyMapper_Worker::SpecialVirtualKeyCodeList;
 // QStringList QKeyMapper_Worker::skipReleaseModifiersKeysList = QStringList();
 // QHash<QString, int> QKeyMapper_Worker::JoyStickKeyMap = QHash<QString, int>();
@@ -13984,6 +13986,22 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
 #ifdef DEBUG_LOGOUT_ON
         qDebug("[InterceptionMouseHookProc] Real \"%s\" %s, extraInfo(0x%08X)", keycodeString.toStdString().c_str(), (keyupdown == KEY_DOWN?"Button Down":"Button Up"), extraInfo);
 #endif
+        // Point Picker Defense Line 1: HWND-based bypass — clicks on point picker dialog pass through
+        if (s_point_picker_hwnd != Q_NULLPTR && (mouse_event == EVENT_LBUTTONDOWN || mouse_event == EVENT_LBUTTONUP)) {
+            POINT pt;
+            if (GetCursorPos(&pt)) {
+                HWND hwndAtPoint = WindowFromPoint(pt);
+                if (hwndAtPoint == s_point_picker_hwnd || IsChild(s_point_picker_hwnd, hwndAtPoint)) {
+                    return INTERCEPTION_RETURN_NORMALSEND;
+                }
+            }
+        }
+
+        // Point Picker Defense Line 2: Atomic flag bypass — drag picking across windows passes through
+        if (s_PickPointDragActive.loadAcquire()) {
+            return INTERCEPTION_RETURN_NORMALSEND;
+        }
+
         if ((GetAsyncKeyState(PICK_SCREEN_POINT_KEY) & 0x8000) != 0 && mouse_event == EVENT_LBUTTONDOWN) {
             POINT pt;
             if (GetCursorPos(&pt)) {
@@ -15302,6 +15320,20 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                 }
 #endif
+                // Point Picker Defense Line 1: HWND-based bypass — clicks on point picker dialog pass through
+                if (s_point_picker_hwnd != Q_NULLPTR && (wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP)) {
+                    POINT pt = pMouse->pt;
+                    HWND hwndAtPoint = WindowFromPoint(pt);
+                    if (hwndAtPoint == s_point_picker_hwnd || IsChild(s_point_picker_hwnd, hwndAtPoint)) {
+                        return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                    }
+                }
+
+                // Point Picker Defense Line 2: Atomic flag bypass — drag picking across windows passes through
+                if (s_PickPointDragActive.loadAcquire()) {
+                    return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
+                }
+
                 if ((GetAsyncKeyState(PICK_SCREEN_POINT_KEY) & 0x8000) != 0 && wParam == WM_LBUTTONDOWN) {
                     POINT pt;
                     if (GetCursorPos(&pt)) {

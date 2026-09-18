@@ -1620,6 +1620,8 @@ public:
     static QAtomicBool s_vbutton_click_suppress;    // Suppress one LButton Down+Up cycle after VButton click
     static HWND s_vbutton_panel_hwnd;               // HWND of the VButton panel for Hook-side bypass
 #endif
+    static HWND s_point_picker_hwnd;
+    static QAtomicInt s_PickPointDragActive;
     static QList<quint8> SpecialVirtualKeyCodeList;
     // static QStringList skipReleaseModifiersKeysList;
     // static QHash<QString, int> JoyStickKeyMap;

@@ -91,6 +91,7 @@
 #include "qvbuttonpanel.h"
 #include "qvbuttonpanelsetupdialog.h"
 #include "qmappingsequenceedit.h"
+#include "qpointpickerdialog.h"
 
 namespace Ui {
 class QKeyMapper;
@@ -1346,6 +1347,9 @@ public:
     void destroyCrosshairWindow(HWND hwnd);
     static void clearCrosshairWindow(HWND hwnd, HDC hdc);
     static QPoint getMousePointFromLabelString(QString &labelstr);
+    QString getPointDisplayLabelText() const;
+    void showPointPickerDialog(bool show);
+    void ensurePointPickerDialog();
 
     static bool getStartupMinimizedStatus(void);
     // static bool getDisableWinKeyStatus(void);
@@ -2445,6 +2449,7 @@ private:
     QAction *m_ActionExportMappingTable = Q_NULLPTR;
     QAction *m_ActionImportMappingTable = Q_NULLPTR;
     QAction *m_ActionShowProcessList = Q_NULLPTR;
+    QAction *m_ActionShowPointPicker = Q_NULLPTR;
     QAction *m_ActionShowNotes = Q_NULLPTR;
     QAction *m_ActionShowFloating = Q_NULLPTR;
     QAction *m_ActionHideDisabled = Q_NULLPTR;
@@ -2467,6 +2472,7 @@ private:
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QList<MAP_KEYDATA> m_CommonMappingData;  // dedicated common mapping data (survives detach)
     QMacroListDialog *m_MacroListDialog = Q_NULLPTR;
+    QPointPickerDialog *m_PointPickerDialog = Q_NULLPTR;
     QVButtonPanel *m_VButtonPanel = Q_NULLPTR;
     QVButtonPanelSetupDialog *m_VButtonPanelSetupDialog = Q_NULLPTR;
     VButtonPanelSettings m_VButtonPanelSettings;

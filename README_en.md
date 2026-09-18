@@ -1271,9 +1271,11 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | Func-Logoff                | Trigger Windows logoff                                             |
 | Func-Sleep                 | Trigger Windows sleep (power saving)                               |
 | Func-Hibernate             | Trigger Windows hibernate (save state to disk, almost no power)    |
-##### Keys starting with "Key2Mouse-" control mouse pointer movement in four directions. You can further adjust X and Y axis speed in the mapping settings; higher values move faster.
-##### WindowPoint mapping keys require using "Left Alt + Mouse Left Button" to pick a coordinate in the selected window.
-##### ScreenPoint mapping keys require using "Left Ctrl + Mouse Left Button" to pick a coordinate on the screen.
+##### Coordinate Picking Methods:
+- **Recommended Method**: From the top menu bar "View" -> check "Show Point Picker" to open an independent topmost floating window. Switch between "Screen" and "Window" modes, preview real-time physical coordinates under the cursor, hold and drag the aim icon to the target position, and release the left mouse button to sample coordinates and automatically sync to the main window; click the right mouse button during dragging to cancel.
+- **Shortcut Method**: You can also continue using global shortcuts for quick sampling:
+  - WindowPoint: When the target window is active and matched, press "Left Alt + Mouse Left Button" at the target position within the window to pick relative coordinates;
+  - ScreenPoint: Press "Left Ctrl + Mouse Left Button" anywhere on the screen to pick fullscreen physical coordinates.
 ##### The "！" prefix is a special full-width exclamation mark (not the keyboard '!'). It is used for the "post-cover" behavior: for example, mapping D -> ！A will release A when D is pressed, and when D is released, A will be pressed again automatically if the physical A key is still held.
 
 ---------------

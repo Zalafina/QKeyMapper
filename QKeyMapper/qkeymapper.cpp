@@ -3406,6 +3406,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
             setProcessListVisible(c);
         });
 
+        m_ActionShowPointPicker = m_MenuView->addAction(QObject::tr("Show Point Picker"));
+        m_ActionShowPointPicker->setCheckable(true);
+        m_ActionShowPointPicker->setChecked(false);
+        connect(m_ActionShowPointPicker, &QAction::toggled, this, [this](bool c) {
+            showPointPickerDialog(c);
+        });
+
         m_MenuMappingTableView = m_MenuView->addMenu(QObject::tr("Mapping Table View"));
 
         m_ActionShowCategory = m_MenuMappingTableView->addAction(QObject::tr("Show Category Column"));
@@ -3960,6 +3967,12 @@ QKeyMapper::~QKeyMapper()
         m_VButtonPanel->setVisible(false);
         delete m_VButtonPanel;
         m_VButtonPanel = Q_NULLPTR;
+    }
+
+    if (m_PointPickerDialog != Q_NULLPTR) {
+        m_PointPickerDialog->setVisible(false);
+        delete m_PointPickerDialog;
+        m_PointPickerDialog = Q_NULLPTR;
     }
 
     for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
@@ -35477,6 +35490,9 @@ void QKeyMapper::setUILanguage(int languageindex)
     if (m_MenuView) {
         m_MenuView->setTitle(QObject::tr("View"));
         m_ActionShowProcessList->setText(QObject::tr("Show Process List"));
+        if (m_ActionShowPointPicker) {
+            m_ActionShowPointPicker->setText(QObject::tr("Show Point Picker"));
+        }
     }
     if (m_MenuMappingTableView) {
         m_MenuMappingTableView->setTitle(QObject::tr("Mapping Table View"));
@@ -35498,6 +35514,10 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_Gyro2MouseOptionDialog != Q_NULLPTR) {
         m_Gyro2MouseOptionDialog->setUILanguage(languageindex);
+    }
+
+    if (m_PointPickerDialog != Q_NULLPTR) {
+        m_PointPickerDialog->retranslateUi();
     }
 
     if (m_TrayIconSelectDialog != Q_NULLPTR) {
@@ -36391,6 +36411,49 @@ void QKeyMapper::updateMousePointLabelDisplay(const QPoint &point)
 
     QString labelText = QString("X:%1, Y:%2").arg(point.x()).arg(point.y());
     ui->pointDisplayLabel->setText(labelText);
+
+    if (m_PointPickerDialog != Q_NULLPTR && m_PointPickerDialog->isVisible()) {
+        m_PointPickerDialog->syncPickedPoint(point);
+    }
+}
+
+QString QKeyMapper::getPointDisplayLabelText() const
+{
+    return (ui && ui->pointDisplayLabel) ? ui->pointDisplayLabel->text() : QString();
+}
+
+void QKeyMapper::showPointPickerDialog(bool show)
+{
+    if (show) {
+        ensurePointPickerDialog();
+        if (m_PointPickerDialog != Q_NULLPTR) {
+            m_PointPickerDialog->show();
+            m_PointPickerDialog->raise();
+            m_PointPickerDialog->activateWindow();
+        }
+    } else {
+        if (m_PointPickerDialog != Q_NULLPTR) {
+            m_PointPickerDialog->hide();
+        }
+    }
+}
+
+void QKeyMapper::ensurePointPickerDialog()
+{
+    if (m_PointPickerDialog == Q_NULLPTR) {
+        m_PointPickerDialog = new QPointPickerDialog(Q_NULLPTR);
+        connect(m_PointPickerDialog, &QPointPickerDialog::visibilityChanged, this, [this](bool visible) {
+            if (m_ActionShowPointPicker != Q_NULLPTR && m_ActionShowPointPicker->isChecked() != visible) {
+                m_ActionShowPointPicker->blockSignals(true);
+                m_ActionShowPointPicker->setChecked(visible);
+                m_ActionShowPointPicker->blockSignals(false);
+            }
+        });
+        connect(m_PointPickerDialog, &QPointPickerDialog::pointPicked, this, [this](const QPoint &point, bool isWindowMode) {
+            Q_UNUSED(isWindowMode);
+            updateMousePointLabelDisplay(point);
+        });
+    }
 }
 
 void QKeyMapper::showMousePoints(int showpoints_trigger)
