@@ -36007,16 +36007,98 @@ void QKeyMapper::setUITheme(int themeindex)
                 image: url(:/partiallychecked_disabled.svg);
                 border: 1px solid rgb(86, 86, 86);
             }
-            QLineEdit {
+            QLineEdit, QPlainTextEdit {
                 border: 1px solid rgb(108, 108, 108);
                 border-radius: 2px;
                 background-color: rgb(60, 60, 60);
             }
-            QLineEdit:disabled {
+            QLineEdit:disabled, QPlainTextEdit:disabled {
                 border: 1px solid rgb(86, 86, 86);
                 background-color: rgb(50, 50, 50);
             }
-            QLineEdit:focus {
+            QLineEdit:focus, QPlainTextEdit:focus {
+                border: 1px solid rgb(46, 134, 222);
+            }
+            QSpinBox, QDoubleSpinBox {
+                border: 1px solid rgb(108, 108, 108);
+                border-radius: 2px;
+                background-color: rgb(60, 60, 60);
+                padding: 0px 18px 1px 3px;
+            }
+            QSpinBox:disabled, QDoubleSpinBox:disabled {
+                border: 1px solid rgb(86, 86, 86);
+                background-color: rgb(50, 50, 50);
+            }
+            QSpinBox:focus, QDoubleSpinBox:focus {
+                border: 1px solid rgb(46, 134, 222);
+            }
+            QSpinBox::up-button, QDoubleSpinBox::up-button {
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 17px;
+                border-left: 1px solid rgb(108, 108, 108);
+                border-bottom: 1px solid rgb(108, 108, 108);
+                background-color: rgb(62, 62, 62);
+                border-top-right-radius: 2px;
+            }
+            QSpinBox::up-button:hover:!off, QDoubleSpinBox::up-button:hover:!off {
+                background-color: rgb(75, 75, 75);
+            }
+            QSpinBox::up-button:pressed:!off, QDoubleSpinBox::up-button:pressed:!off {
+                background-color: rgb(50, 50, 50);
+            }
+            QSpinBox::up-button:disabled, QDoubleSpinBox::up-button:disabled {
+                border-left: 1px solid rgb(86, 86, 86);
+                border-bottom: 1px solid rgb(86, 86, 86);
+                background-color: rgb(50, 50, 50);
+            }
+            QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
+                image: url(:/spin_up.svg);
+                width: 7px;
+                height: 4px;
+            }
+            QSpinBox::up-arrow:disabled, QDoubleSpinBox::up-arrow:disabled,
+            QSpinBox::up-arrow:off, QDoubleSpinBox::up-arrow:off {
+                image: url(:/spin_up_disabled.svg);
+            }
+            QSpinBox::down-button, QDoubleSpinBox::down-button {
+                subcontrol-origin: padding;
+                subcontrol-position: bottom right;
+                width: 17px;
+                border-left: 1px solid rgb(108, 108, 108);
+                background-color: rgb(62, 62, 62);
+                border-bottom-right-radius: 2px;
+            }
+            QSpinBox::down-button:hover:!off, QDoubleSpinBox::down-button:hover:!off {
+                background-color: rgb(75, 75, 75);
+            }
+            QSpinBox::down-button:pressed:!off, QDoubleSpinBox::down-button:pressed:!off {
+                background-color: rgb(50, 50, 50);
+            }
+            QSpinBox::down-button:disabled, QDoubleSpinBox::down-button:disabled {
+                border-left: 1px solid rgb(86, 86, 86);
+                background-color: rgb(50, 50, 50);
+            }
+            QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
+                image: url(:/spin_down.svg);
+                width: 7px;
+                height: 4px;
+            }
+            QSpinBox::down-arrow:disabled, QDoubleSpinBox::down-arrow:disabled,
+            QSpinBox::down-arrow:off, QDoubleSpinBox::down-arrow:off {
+                image: url(:/spin_down_disabled.svg);
+            }
+            QFontComboBox {
+                border: 1px solid rgb(108, 108, 108);
+                border-radius: 2px;
+                background-color: rgb(60, 60, 60);
+                padding: 1px 18px 1px 3px;
+            }
+            QFontComboBox:disabled {
+                border: 1px solid rgb(86, 86, 86);
+                background-color: rgb(50, 50, 50);
+            }
+            QFontComboBox:focus {
                 border: 1px solid rgb(46, 134, 222);
             }
         )");

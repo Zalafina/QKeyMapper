@@ -37,5 +37,9 @@
         <file alias="checked_disabled.svg">image\button_image\checked-disabled.svg</file>
         <file alias="partiallychecked.svg">image\button_image\partiallychecked-enabled.svg</file>
         <file alias="partiallychecked_disabled.svg">image\button_image\partiallychecked-disabled.svg</file>
+        <file alias="spin_up.svg">image\button_image\spin_up.svg</file>
+        <file alias="spin_up_disabled.svg">image\button_image\spin_up_disabled.svg</file>
+        <file alias="spin_down.svg">image\button_image\spin_down.svg</file>
+        <file alias="spin_down_disabled.svg">image\button_image\spin_down_disabled.svg</file>
     </qresource>
 </RCC>
