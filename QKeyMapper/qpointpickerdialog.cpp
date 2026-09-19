@@ -8,41 +8,116 @@ namespace {
 const QColor PICKER_THEME_COLOR_DARK(112, 161, 255);
 const QColor PICKER_THEME_COLOR_LIGHT(46, 134, 222);
 
-QCursor createCrosshairCursor(const QColor &color)
+HCURSOR createWin32CrosshairCursor(const QColor &color, qreal dpr)
 {
-    const int size = 31;
-    const int center = 15;
-    QPixmap pixmap(size, size);
-    pixmap.fill(Qt::transparent);
+    // Compute physical cursor dimension matching target DPI
+    // Windows standard cursor: 32x32 at 100%, 48x48 at 150%, 64x64 at 200%
+    const int physicalSize = qMax(32, qRound(32.0 * dpr));
+    const int center = physicalSize / 2;
 
-    QPainter painter(&pixmap);
+    QImage img(physicalSize, physicalSize, QImage::Format_ARGB32_Premultiplied);
+    img.fill(Qt::transparent);
+
+    QPainter painter(&img);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // 1. Outer high-contrast shadow outline for readability on both light and dark backgrounds
-    QPen shadowPen(QColor(0, 0, 0, 200), 2.8);
-    painter.setPen(shadowPen);
+    const qreal scale = static_cast<qreal>(physicalSize) / 32.0;
+
+    // Use solid crisp pen width aligned with physical scaling
+    const qreal penWidth = qMax(1.8, 1.8 * scale);
+    QPen pen(color, penWidth);
+    painter.setPen(pen);
     painter.setBrush(Qt::NoBrush);
-    painter.drawEllipse(QPoint(center, center), 7, 7);
-    painter.drawLine(center, 1, center, center - 3);
-    painter.drawLine(center, center + 3, center, size - 2);
-    painter.drawLine(1, center, center - 3, center);
-    painter.drawLine(center + 3, center, size - 2, center);
 
-    // 2. Main crosshair lines in specified theme color
-    QPen colorPen(color, 1.6);
-    painter.setPen(colorPen);
-    painter.drawEllipse(QPoint(center, center), 7, 7);
-    painter.drawLine(center, 2, center, center - 3);
-    painter.drawLine(center, center + 3, center, size - 3);
-    painter.drawLine(2, center, center - 3, center);
-    painter.drawLine(center + 3, center, size - 3, center);
+    const qreal radius = 9.0 * scale;
+    painter.drawEllipse(QPointF(center, center), radius, radius);
 
-    // 3. Center pinpoint dot
+    const qreal innerGap = 3.0 * scale;
+    const qreal outerLen = 13.0 * scale;
+    painter.drawLine(QPointF(center, center - outerLen), QPointF(center, center - innerGap));
+    painter.drawLine(QPointF(center, center + innerGap), QPointF(center, center + outerLen));
+    painter.drawLine(QPointF(center - outerLen, center), QPointF(center - innerGap, center));
+    painter.drawLine(QPointF(center + innerGap, center), QPointF(center + outerLen, center));
+
     painter.setPen(Qt::NoPen);
     painter.setBrush(color);
-    painter.drawEllipse(QPoint(center, center), 1, 1);
+    painter.drawEllipse(QPointF(center, center), qMax(1.0, 1.2 * scale), qMax(1.0, 1.2 * scale));
 
-    return QCursor(pixmap, center, center);
+    painter.end();
+
+    // Create 32-bit ARGB DIBSection matching QImage format
+    BITMAPV5HEADER bi;
+    ZeroMemory(&bi, sizeof(bi));
+    bi.bV5Size = sizeof(bi);
+    bi.bV5Width = physicalSize;
+    bi.bV5Height = -physicalSize; // Top-down DIB
+    bi.bV5Planes = 1;
+    bi.bV5BitCount = 32;
+    bi.bV5Compression = BI_BITFIELDS;
+    bi.bV5RedMask   = 0x00FF0000;
+    bi.bV5GreenMask = 0x0000FF00;
+    bi.bV5BlueMask  = 0x000000FF;
+    bi.bV5AlphaMask = 0xFF000000;
+
+    HDC hdc = GetDC(NULL);
+    void *lpBits = NULL;
+    HBITMAP hBitmap = CreateDIBSection(hdc, reinterpret_cast<BITMAPINFO *>(&bi), DIB_RGB_COLORS, &lpBits, NULL, 0);
+    ReleaseDC(NULL, hdc);
+
+    if (!hBitmap || !lpBits) {
+        if (hBitmap) {
+            DeleteObject(hBitmap);
+        }
+        return NULL;
+    }
+
+    memcpy(lpBits, img.constBits(), physicalSize * physicalSize * 4);
+
+    // Create empty 1-bpp monochrome mask required by CreateIconIndirect
+    HBITMAP hMonoMask = CreateBitmap(physicalSize, physicalSize, 1, 1, NULL);
+
+    ICONINFO ii;
+    ZeroMemory(&ii, sizeof(ii));
+    ii.fIcon = FALSE; // FALSE indicates cursor, TRUE indicates icon
+    ii.xHotspot = center;
+    ii.yHotspot = center;
+    ii.hbmMask = hMonoMask;
+    ii.hbmColor = hBitmap;
+
+    HCURSOR hCursor = CreateIconIndirect(&ii);
+
+    DeleteObject(hBitmap);
+    DeleteObject(hMonoMask);
+
+    return hCursor;
+}
+
+qreal getDprAtPhysicalPoint(const POINT &pt)
+{
+    HMONITOR hMon = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+    if (hMon != NULL) {
+        typedef HRESULT (WINAPI *GetDpiForMonitorFunc)(HMONITOR, int, UINT*, UINT*);
+        static GetDpiForMonitorFunc pGetDpiForMonitor = []() -> GetDpiForMonitorFunc {
+            HMODULE hShcore = LoadLibraryW(L"shcore.dll");
+            if (hShcore != NULL) {
+                return reinterpret_cast<GetDpiForMonitorFunc>(GetProcAddress(hShcore, "GetDpiForMonitor"));
+            }
+            return nullptr;
+        }();
+
+        if (pGetDpiForMonitor != nullptr) {
+            UINT dpiX = 96;
+            UINT dpiY = 96;
+            if (SUCCEEDED(pGetDpiForMonitor(hMon, 0 /* MDT_EFFECTIVE_DPI */, &dpiX, &dpiY)) && dpiX > 0) {
+                return static_cast<qreal>(dpiX) / 96.0;
+            }
+        }
+    }
+
+    if (QGuiApplication::primaryScreen() != nullptr) {
+        return QGuiApplication::primaryScreen()->devicePixelRatio();
+    }
+    return 1.0;
 }
 
 } // namespace
@@ -62,6 +137,10 @@ PointPickerDragTool::PointPickerDragTool(QWidget *parent)
 PointPickerDragTool::~PointPickerDragTool()
 {
     cancelDrag();
+    if (m_hNativeCursor != NULL) {
+        ::DestroyIcon(m_hNativeCursor);
+        m_hNativeCursor = NULL;
+    }
 }
 
 void PointPickerDragTool::setTheme(bool isDark)
@@ -139,7 +218,20 @@ void PointPickerDragTool::mousePressEvent(QMouseEvent *event)
         m_isDragging = true;
         update();
         QKeyMapper_Worker::s_PickPointDragActive.storeRelease(1);
-        QApplication::setOverrideCursor(createCrosshairCursor(m_isDark ? PICKER_THEME_COLOR_DARK : PICKER_THEME_COLOR_LIGHT));
+
+        POINT pt = {0, 0};
+        GetCursorPos(&pt);
+        m_currentDpr = getDprAtPhysicalPoint(pt);
+
+        if (m_hNativeCursor != NULL) {
+            ::DestroyIcon(m_hNativeCursor);
+            m_hNativeCursor = NULL;
+        }
+        m_hNativeCursor = createWin32CrosshairCursor(m_isDark ? PICKER_THEME_COLOR_DARK : PICKER_THEME_COLOR_LIGHT, m_currentDpr);
+        if (m_hNativeCursor != NULL) {
+            ::SetCursor(m_hNativeCursor);
+        }
+
         grabMouse();
         emit dragStarted();
         event->accept();
@@ -157,6 +249,17 @@ void PointPickerDragTool::mouseMoveEvent(QMouseEvent *event)
     if (m_isDragging) {
         POINT pt;
         if (GetCursorPos(&pt)) {
+            qreal currentDpr = getDprAtPhysicalPoint(pt);
+            if (currentDpr > 0.0 && !qFuzzyCompare(currentDpr, m_currentDpr)) {
+                m_currentDpr = currentDpr;
+                if (m_hNativeCursor != NULL) {
+                    ::DestroyIcon(m_hNativeCursor);
+                }
+                m_hNativeCursor = createWin32CrosshairCursor(m_isDark ? PICKER_THEME_COLOR_DARK : PICKER_THEME_COLOR_LIGHT, m_currentDpr);
+            }
+            if (m_hNativeCursor != NULL) {
+                ::SetCursor(m_hNativeCursor);
+            }
             emit dragMoved(QPoint(pt.x, pt.y));
         }
         event->accept();
@@ -193,13 +296,34 @@ void PointPickerDragTool::hideEvent(QHideEvent *event)
     QFrame::hideEvent(event);
 }
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+bool PointPickerDragTool::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
+#else
+bool PointPickerDragTool::nativeEvent(const QByteArray &eventType, void *message, long *result)
+#endif
+{
+    MSG *msg = static_cast<MSG *>(message);
+    if (msg != nullptr && m_isDragging && m_hNativeCursor != NULL) {
+        if (msg->message == WM_SETCURSOR) {
+            ::SetCursor(m_hNativeCursor);
+            *result = TRUE;
+            return true;
+        }
+    }
+    return QFrame::nativeEvent(eventType, message, result);
+}
+
 void PointPickerDragTool::finishDrag(bool commit)
 {
     if (m_isDragging) {
         m_isDragging = false;
         update();
         releaseMouse();
-        QApplication::restoreOverrideCursor();
+        if (m_hNativeCursor != NULL) {
+            ::DestroyIcon(m_hNativeCursor);
+            m_hNativeCursor = NULL;
+        }
+        ::SetCursor(::LoadCursor(NULL, IDC_ARROW));
         QKeyMapper_Worker::s_PickPointDragActive.storeRelease(0);
 
         POINT pt = {0, 0};

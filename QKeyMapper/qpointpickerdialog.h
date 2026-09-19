@@ -29,11 +29,18 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void hideEvent(QHideEvent *event) override;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+#else
+    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
+#endif
 
 private:
     void finishDrag(bool commit);
     bool m_isDragging = false;
     bool m_isDark = false;
+    HCURSOR m_hNativeCursor = NULL;
+    qreal m_currentDpr = 1.0;
 };
 
 class QPointPickerDialog : public QDialog
