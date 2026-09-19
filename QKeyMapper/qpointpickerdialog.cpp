@@ -510,7 +510,7 @@ void QPointPickerDialog::setupUi()
     connect(m_dragTool, &PointPickerDragTool::dragMoved, this, &QPointPickerDialog::onDragMoved);
     connect(m_dragTool, &PointPickerDragTool::dragFinished, this, &QPointPickerDialog::onDragFinished);
 
-    setFixedSize(260, 82);
+    setFixedSize(220, 82);
 }
 
 void QPointPickerDialog::retranslateUi()
@@ -535,26 +535,80 @@ void QPointPickerDialog::onModeChanged()
 
 void QPointPickerDialog::updateTargetWindowInfo()
 {
-    if (!m_windowRadio->isChecked()) {
-        m_targetInfoLabel->clear();
-        m_lastTargetHWND = NULL;
-        return;
-    }
-    HWND hwnd = QKeyMapper::s_CurrentMappingHWND;
-    m_lastTargetHWND = hwnd;
-    if (hwnd != NULL && IsWindow(hwnd)) {
-        QString processPath;
-        QKeyMapper::getProcessInfoFromHWND(hwnd, processPath);
-        QString fileName = QFileInfo(processPath).fileName();
-        if (fileName.isEmpty() && QKeyMapper::getInstance() != Q_NULLPTR) {
-            fileName = QKeyMapper::getInstance()->m_MapProcessInfo.FileName;
+    QString fullText;
+    if (m_windowRadio->isChecked()) {
+        HWND hwnd = QKeyMapper::s_CurrentMappingHWND;
+        m_lastTargetHWND = hwnd;
+        if (hwnd != NULL && IsWindow(hwnd)) {
+            QString processPath;
+            QKeyMapper::getProcessInfoFromHWND(hwnd, processPath);
+            QString fileName = QFileInfo(processPath).fileName();
+            if (fileName.isEmpty() && QKeyMapper::getInstance() != Q_NULLPTR) {
+                fileName = QKeyMapper::getInstance()->m_MapProcessInfo.FileName;
+            }
+            if (fileName.isEmpty()) {
+                fileName = QStringLiteral("HWND 0x%1").arg(reinterpret_cast<quintptr>(hwnd), 0, 16);
+            }
+            fullText = tr("Target: %1").arg(fileName);
+        } else {
+            fullText = tr("Target: (No matched window)");
         }
-        if (fileName.isEmpty()) {
-            fileName = QStringLiteral("HWND 0x%1").arg(reinterpret_cast<quintptr>(hwnd), 0, 16);
-        }
-        m_targetInfoLabel->setText(tr("Target: %1").arg(fileName));
     } else {
-        m_targetInfoLabel->setText(tr("Target: (No matched window)"));
+        m_lastTargetHWND = NULL;
+    }
+
+    const int MIN_DIALOG_WIDTH = 220;
+    const int MAX_DIALOG_WIDTH = 360;
+    const int DIALOG_HEIGHT = 82;
+
+    const int margins = 16; // 8 left + 8 right
+    const int radiosWidth = m_screenRadio->sizeHint().width() + m_windowRadio->sizeHint().width() + 8 /*spacing*/ + 4 /*addSpacing*/;
+
+    // Minimum width required by Row 2 (drag tool, labels, coordinate edit)
+    const int col0Width = qMax(m_currentCoordLabel->sizeHint().width(), m_pickedCoordLabel->sizeHint().width());
+    const int row2Width = margins + 42 /*dragTool*/ + 8 /*spacing*/ + col0Width + 4 /*spacing*/ + 105 /*edit box & coord*/;
+    const int baseMinWidth = qMax(MIN_DIALOG_WIDTH, row2Width);
+
+    int targetWidth = baseMinWidth;
+
+    if (fullText.isEmpty()) {
+        m_targetInfoLabel->clear();
+        m_targetInfoLabel->setToolTip(QString());
+    } else {
+        QFontMetrics fm(m_targetInfoLabel->font());
+        int textWidth = fm.horizontalAdvance(fullText);
+        int neededWidth = margins + radiosWidth + 8 /*spacing*/ + textWidth;
+
+        targetWidth = qBound(baseMinWidth, neededWidth, MAX_DIALOG_WIDTH);
+        int availableLabelWidth = targetWidth - margins - radiosWidth - 8;
+
+        if (textWidth > availableLabelWidth) {
+            QString elidedText = fm.elidedText(fullText, Qt::ElideMiddle, availableLabelWidth);
+            m_targetInfoLabel->setText(elidedText);
+        } else {
+            m_targetInfoLabel->setText(fullText);
+        }
+        m_targetInfoLabel->setToolTip(fullText);
+    }
+
+    if (width() != targetWidth) {
+        setFixedSize(targetWidth, DIALOG_HEIGHT);
+
+        // Screen edge guard: prevent overflowing right edge of current monitor
+        QScreen *screen = this->screen();
+        if (screen == nullptr) {
+            screen = QGuiApplication::primaryScreen();
+        }
+        if (screen != nullptr) {
+            QRect avail = screen->availableGeometry();
+            if (this->x() + targetWidth > avail.right()) {
+                int newX = qMax(avail.left(), avail.right() - targetWidth);
+                move(newX, this->y());
+            }
+        }
+        if (m_hasUserMoved && !isMinimized() && !isMaximized()) {
+            m_lastUserPos = this->pos();
+        }
     }
 }
 
