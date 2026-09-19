@@ -2,6 +2,7 @@
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
 #include "qkeymapper_constants.h"
+#include <QDebug>
 
 namespace {
 
@@ -176,6 +177,9 @@ void PointPickerDragTool::setTheme(bool isDark)
 
 void PointPickerDragTool::cancelDrag()
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[PointPickerDragTool::cancelDrag] m_isDragging =" << m_isDragging;
+#endif
     finishDrag(false);
 }
 
@@ -214,6 +218,12 @@ void PointPickerDragTool::paintEvent(QPaintEvent *event)
 
 void PointPickerDragTool::mousePressEvent(QMouseEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[PointPickerDragTool::mousePressEvent] button =" << event->button()
+             << "m_isDragging was =" << m_isDragging
+             << "physical primary down ="
+             << ((GetAsyncKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON) & 0x8000) != 0);
+#endif
     if (event->button() == Qt::LeftButton) {
         m_isDragging = true;
         update();
@@ -249,6 +259,20 @@ void PointPickerDragTool::mouseMoveEvent(QMouseEvent *event)
     if (m_isDragging) {
         POINT pt;
         if (GetCursorPos(&pt)) {
+            int vKey = GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON;
+            bool isPhysicalDown = ((GetAsyncKeyState(vKey) & 0x8000) != 0);
+            if (!isPhysicalDown) {
+#if defined(DEBUG_LOGOUT_ON) && defined(POINTPICKER_VERBOSE_LOG)
+                qDebug() << "[PointPickerDragTool::mouseMoveEvent] Physical button released outside, finishing drag at pos ("
+                         << pt.x << "," << pt.y << ")";
+#endif
+                finishDrag(true);
+                event->accept();
+                return;
+            }
+#if defined(DEBUG_LOGOUT_ON) && defined(POINTPICKER_VERBOSE_LOG)
+            qDebug() << "[PointPickerDragTool::mouseMoveEvent] move pos = (" << pt.x << "," << pt.y << ")";
+#endif
             qreal currentDpr = getDprAtPhysicalPoint(pt);
             if (currentDpr > 0.0 && !qFuzzyCompare(currentDpr, m_currentDpr)) {
                 m_currentDpr = currentDpr;
@@ -270,6 +294,12 @@ void PointPickerDragTool::mouseMoveEvent(QMouseEvent *event)
 
 void PointPickerDragTool::mouseReleaseEvent(QMouseEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[PointPickerDragTool::mouseReleaseEvent] button =" << event->button()
+             << "m_isDragging =" << m_isDragging
+             << "physical primary down ="
+             << ((GetAsyncKeyState(GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON) & 0x8000) != 0);
+#endif
     if (m_isDragging && event->button() == Qt::LeftButton) {
         finishDrag(true);
         event->accept();
@@ -280,6 +310,10 @@ void PointPickerDragTool::mouseReleaseEvent(QMouseEvent *event)
 
 void PointPickerDragTool::keyPressEvent(QKeyEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[PointPickerDragTool::keyPressEvent] key =" << event->key()
+             << "m_isDragging =" << m_isDragging;
+#endif
     if (m_isDragging && event->key() == Qt::Key_Escape) {
         finishDrag(false);
         event->accept();
@@ -290,6 +324,9 @@ void PointPickerDragTool::keyPressEvent(QKeyEvent *event)
 
 void PointPickerDragTool::hideEvent(QHideEvent *event)
 {
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[PointPickerDragTool::hideEvent] m_isDragging =" << m_isDragging;
+#endif
     if (m_isDragging) {
         finishDrag(false);
     }
@@ -309,12 +346,25 @@ bool PointPickerDragTool::nativeEvent(const QByteArray &eventType, void *message
             *result = TRUE;
             return true;
         }
+#ifdef DEBUG_LOGOUT_ON
+        if (msg->message != WM_SETCURSOR) {
+            qDebug() << "[PointPickerDragTool::nativeEvent] message = 0x" << QString::number(msg->message, 16)
+                     << "wParam =" << msg->wParam << "lParam =" << msg->lParam;
+        }
+#endif
     }
     return QFrame::nativeEvent(eventType, message, result);
 }
 
 void PointPickerDragTool::finishDrag(bool commit)
 {
+    POINT pt = {0, 0};
+    GetCursorPos(&pt);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[PointPickerDragTool::finishDrag] commit =" << commit
+             << "m_isDragging was =" << m_isDragging
+             << "at pos (" << pt.x << "," << pt.y << ")";
+#endif
     if (m_isDragging) {
         m_isDragging = false;
         update();
@@ -326,8 +376,6 @@ void PointPickerDragTool::finishDrag(bool commit)
         ::SetCursor(::LoadCursor(NULL, IDC_ARROW));
         QKeyMapper_Worker::s_PickPointDragActive.storeRelease(0);
 
-        POINT pt = {0, 0};
-        GetCursorPos(&pt);
         emit dragFinished(commit, QPoint(pt.x, pt.y));
     }
 }
@@ -517,6 +565,22 @@ void QPointPickerDialog::onUpdateCurrentCoord()
         return;
     }
 
+    // Auto-heal defense: If drag is active but physical mouse button has been released outside
+    // (e.g., swallowed by third-party screenshot tools like PixPin or window switching),
+    // cleanly finish the drag and restore normal state within 50ms.
+    if (m_dragTool != nullptr && m_dragTool->isDragging()) {
+        int vKey = GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON;
+        bool isDown = ((GetAsyncKeyState(vKey) & 0x8000) != 0);
+        if (!isDown) {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[QPointPickerDialog::onUpdateCurrentCoord] 50ms Timer: physical button released outside, auto-finishing drag at pos ("
+                     << pt.x << "," << pt.y << ")";
+#endif
+            m_dragTool->finishDrag(true);
+            return;
+        }
+    }
+
     bool isWindowMode = m_windowRadio->isChecked();
     HWND currentTargetHwnd = isWindowMode ? QKeyMapper::s_CurrentMappingHWND : NULL;
 
@@ -693,6 +757,18 @@ bool QPointPickerDialog::nativeEvent(const QByteArray &eventType, void *message,
                 }
             }
         }
+#ifdef DEBUG_LOGOUT_ON
+        if (msg->message == WM_CAPTURECHANGED) {
+            qDebug() << "[QPointPickerDialog::nativeEvent] WM_CAPTURECHANGED received! newCaptureHWND ="
+                     << (HWND)msg->lParam << "m_dragTool isDragging ="
+                     << (m_dragTool ? m_dragTool->isDragging() : false);
+        } else if (msg->message == WM_ACTIVATE) {
+            qDebug() << "[QPointPickerDialog::nativeEvent] WM_ACTIVATE received! state ="
+                     << LOWORD(msg->wParam) << "otherHWND =" << (HWND)msg->lParam
+                     << "m_dragTool isDragging ="
+                     << (m_dragTool ? m_dragTool->isDragging() : false);
+        }
+#endif
     }
     return QDialog::nativeEvent(eventType, message, result);
 }

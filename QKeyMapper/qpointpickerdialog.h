@@ -14,6 +14,7 @@ public:
     explicit PointPickerDragTool(QWidget *parent = nullptr);
     ~PointPickerDragTool() override;
     void cancelDrag();
+    void finishDrag(bool commit = true);
     bool isDragging() const { return m_isDragging; }
     void setTheme(bool isDark);
 
@@ -36,7 +37,6 @@ protected:
 #endif
 
 private:
-    void finishDrag(bool commit);
     bool m_isDragging = false;
     bool m_isDark = false;
     HCURSOR m_hNativeCursor = NULL;
