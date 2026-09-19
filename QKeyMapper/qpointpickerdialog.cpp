@@ -484,7 +484,7 @@ void QPointPickerDialog::setupUi()
     m_currentCoordValueLabel = new QLabel(this);
     m_currentCoordValueLabel->setFocusPolicy(Qt::NoFocus);
     m_currentCoordValueLabel->setFixedHeight(16);
-    QFont monoFont(QStringLiteral("Consolas"), 9);
+    QFont monoFont(QStringLiteral("Consolas"), 11);
     monoFont.setStyleHint(QFont::Monospace);
     m_currentCoordValueLabel->setFont(monoFont);
 
