@@ -1,7 +1,6 @@
 #ifndef QPOINTPICKERDIALOG_H
 #define QPOINTPICKERDIALOG_H
 
-// #include <windows.h>
 #include <QDialog>
 #include <QRadioButton>
 #include <QLabel>
@@ -44,6 +43,7 @@ public:
     explicit QPointPickerDialog(QWidget *parent = nullptr);
     ~QPointPickerDialog() override;
 
+    void setVisible(bool visible) override;
     void retranslateUi();
     void syncPickedPoint(const QPoint &point);
     void applyTheme();
@@ -59,6 +59,12 @@ protected:
     void hideEvent(QHideEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void changeEvent(QEvent *event) override;
+    void moveEvent(QMoveEvent *event) override;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+#else
+    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
+#endif
 
 private slots:
     void onUpdateCurrentCoord();
@@ -70,6 +76,7 @@ private slots:
 private:
     void setupUi();
     void updateTargetWindowInfo();
+    bool isPositionValidOnScreens(const QPoint &pos, const QSize &size) const;
 
     QRadioButton *m_screenRadio = nullptr;
     QRadioButton *m_windowRadio = nullptr;
@@ -84,6 +91,13 @@ private:
     QPoint m_lastCoord = QPoint(-99999, -99999);
     bool m_lastModeWasWindow = false;
     HWND m_lastTargetHWND = NULL;
+
+    bool m_hasUserMoved = false;
+    QPoint m_lastUserPos;
+    bool m_initialShowCompleted = false;
+    bool m_isRestoringPos = false;
+    bool m_isUserMoving = false;
+    QPoint m_posBeforeMove;
 };
 
 #endif // QPOINTPICKERDIALOG_H

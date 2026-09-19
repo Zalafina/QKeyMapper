@@ -233,6 +233,21 @@ QPointPickerDialog::~QPointPickerDialog()
     }
 }
 
+void QPointPickerDialog::setVisible(bool visible)
+{
+    if (visible && m_hasUserMoved) {
+        if (isPositionValidOnScreens(m_lastUserPos, size())) {
+            m_isRestoringPos = true;
+            move(m_lastUserPos);
+            m_isRestoringPos = false;
+        } else {
+            // Position is invalid on current displays; fallback to default
+            m_hasUserMoved = false;
+        }
+    }
+    QDialog::setVisible(visible);
+}
+
 bool QPointPickerDialog::event(QEvent *e)
 {
     if (e->type() == QEvent::KeyPress) {
@@ -459,6 +474,11 @@ void QPointPickerDialog::syncPickedPoint(const QPoint &point)
 void QPointPickerDialog::showEvent(QShowEvent *event)
 {
     QDialog::showEvent(event);
+    if (!m_initialShowCompleted) {
+        QTimer::singleShot(0, this, [this]() {
+            m_initialShowCompleted = true;
+        });
+    }
     QKeyMapper_Worker::s_point_picker_hwnd = reinterpret_cast<HWND>(winId());
     applyTheme();
     m_coordTimer->start(50);
@@ -476,6 +496,12 @@ void QPointPickerDialog::showEvent(QShowEvent *event)
 
 void QPointPickerDialog::hideEvent(QHideEvent *event)
 {
+    if (m_isUserMoving) {
+        m_isUserMoving = false;
+    }
+    if (m_hasUserMoved && !isMinimized() && !isMaximized()) {
+        m_lastUserPos = this->pos();
+    }
     if (m_dragTool) {
         m_dragTool->cancelDrag();
     }
@@ -489,6 +515,12 @@ void QPointPickerDialog::hideEvent(QHideEvent *event)
 
 void QPointPickerDialog::closeEvent(QCloseEvent *event)
 {
+    if (m_isUserMoving) {
+        m_isUserMoving = false;
+    }
+    if (m_hasUserMoved && !isMinimized() && !isMaximized()) {
+        m_lastUserPos = this->pos();
+    }
     if (m_dragTool) {
         m_dragTool->cancelDrag();
     }
@@ -498,6 +530,64 @@ void QPointPickerDialog::closeEvent(QCloseEvent *event)
     QKeyMapper_Worker::s_point_picker_hwnd = Q_NULLPTR;
     emit visibilityChanged(false);
     QDialog::closeEvent(event);
+}
+
+void QPointPickerDialog::moveEvent(QMoveEvent *event)
+{
+    QDialog::moveEvent(event);
+    if (!m_initialShowCompleted || m_isRestoringPos || !isVisible()) {
+        return;
+    }
+    if (!isMinimized() && !isMaximized()) {
+        if (event->pos() != event->oldPos()) {
+            m_hasUserMoved = true;
+            m_lastUserPos = event->pos();
+        }
+    }
+}
+
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+bool QPointPickerDialog::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
+#else
+bool QPointPickerDialog::nativeEvent(const QByteArray &eventType, void *message, long *result)
+#endif
+{
+    MSG *msg = static_cast<MSG *>(message);
+    if (msg != nullptr) {
+        if (msg->message == WM_ENTERSIZEMOVE) {
+            m_isUserMoving = true;
+            m_posBeforeMove = this->pos();
+        } else if (msg->message == WM_EXITSIZEMOVE) {
+            if (m_isUserMoving) {
+                m_isUserMoving = false;
+                if (!isMinimized() && !isMaximized()) {
+                    QPoint currentPos = this->pos();
+                    if (currentPos != m_posBeforeMove) {
+                        m_hasUserMoved = true;
+                        m_lastUserPos = currentPos;
+                    }
+                }
+            }
+        }
+    }
+    return QDialog::nativeEvent(eventType, message, result);
+}
+
+bool QPointPickerDialog::isPositionValidOnScreens(const QPoint &pos, const QSize &size) const
+{
+    QRect windowRect(pos, size);
+    const QList<QScreen *> screens = QGuiApplication::screens();
+    for (QScreen *screen : screens) {
+        if (screen == nullptr) {
+            continue;
+        }
+        QRect availableGeo = screen->availableGeometry();
+        QRect intersection = availableGeo.intersected(windowRect);
+        if (intersection.width() >= 30 && intersection.height() >= 20) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void QPointPickerDialog::changeEvent(QEvent *event)
