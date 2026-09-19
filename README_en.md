@@ -138,6 +138,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
     * Fixed an issue where the main table lost its highlight selection and focus after updating a mapping in "Mapping Item Settings", and preserved the viewport scroll position during updates.
     * Optimized the row reselection logic after deleting mapping items in the mapping table to automatically skip hidden and separator rows and select the nearest visible row.
     * Added a standalone "Point Picker" floating tool window supporting real-time screen and window physical coordinate display, crosshair drag-and-drop point sampling bidirectionally synchronized with the main window, and runtime window drag position memory.
+    * Optimized border display for input and numerical controls in dark theme.
 * v1.3.8 (Build 20260912)
     * Fixed issues related to view option switching and the setting-change notification.
     * Added shortcuts for mapping table operations: **Ctrl+N** to add a blank Tab and **Ctrl+D** to duplicate the current Tab. These shortcuts only take effect when the main window has focus, mapping is not started, and no key is being captured. After adding, the view automatically switches to the new Tab; after duplicating, the view stays on the original Tab.
