@@ -36093,6 +36093,11 @@ void QKeyMapper::setUITheme(int themeindex)
         m_VButtonPanel->applyScrollAreaTransparencyStyle();
     }
 
+    if (m_PointPickerDialog) {
+        m_PointPickerDialog->applyTheme(m_Current_UIPalette == UI_PALETTE_CUSTOMDARK
+            || (m_Current_UIPalette == UI_PALETTE_SYSTEMDEFAULT && m_isWindowsDarkMode));
+    }
+
     refreshSaveSettingIndicators();
     applyMappingStartActionMenuSizing(m_MappingStartActionMenu);
 }
@@ -36442,6 +36447,8 @@ void QKeyMapper::ensurePointPickerDialog()
 {
     if (m_PointPickerDialog == Q_NULLPTR) {
         m_PointPickerDialog = new QPointPickerDialog(Q_NULLPTR);
+        m_PointPickerDialog->applyTheme(m_Current_UIPalette == UI_PALETTE_CUSTOMDARK
+            || (m_Current_UIPalette == UI_PALETTE_SYSTEMDEFAULT && m_isWindowsDarkMode));
         connect(m_PointPickerDialog, &QPointPickerDialog::visibilityChanged, this, [this](bool visible) {
             if (m_ActionShowPointPicker != Q_NULLPTR && m_ActionShowPointPicker->isChecked() != visible) {
                 m_ActionShowPointPicker->blockSignals(true);

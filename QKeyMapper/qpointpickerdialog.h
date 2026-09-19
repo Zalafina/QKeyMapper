@@ -1,6 +1,7 @@
 #ifndef QPOINTPICKERDIALOG_H
 #define QPOINTPICKERDIALOG_H
 
+// #include <windows.h>
 #include <QDialog>
 #include <QRadioButton>
 #include <QLabel>
@@ -15,6 +16,7 @@ public:
     ~PointPickerDragTool() override;
     void cancelDrag();
     bool isDragging() const { return m_isDragging; }
+    void setTheme(bool isDark);
 
 signals:
     void dragStarted();
@@ -32,6 +34,7 @@ protected:
 private:
     void finishDrag(bool commit);
     bool m_isDragging = false;
+    bool m_isDark = false;
 };
 
 class QPointPickerDialog : public QDialog
@@ -43,6 +46,8 @@ public:
 
     void retranslateUi();
     void syncPickedPoint(const QPoint &point);
+    void applyTheme();
+    void applyTheme(bool isDark);
 
 signals:
     void pointPicked(const QPoint &point, bool isWindowMode);
@@ -70,6 +75,7 @@ private:
     QRadioButton *m_windowRadio = nullptr;
     QLabel *m_targetInfoLabel = nullptr;
     QLabel *m_currentCoordLabel = nullptr;
+    QLabel *m_currentCoordValueLabel = nullptr;
     PointPickerDragTool *m_dragTool = nullptr;
     QLabel *m_pickedCoordLabel = nullptr;
     QLineEdit *m_pickedCoordEdit = nullptr;
@@ -77,6 +83,7 @@ private:
 
     QPoint m_lastCoord = QPoint(-99999, -99999);
     bool m_lastModeWasWindow = false;
+    HWND m_lastTargetHWND = NULL;
 };
 
 #endif // QPOINTPICKERDIALOG_H
