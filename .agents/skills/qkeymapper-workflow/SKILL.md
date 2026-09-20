@@ -43,6 +43,12 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 - Do not spend multiple iterations inventing new jom commands; use the known build-directory workflow first. If a jom failure is due to environment, path, or quoting uncertainty, stop after one retry and hand the validation back to the user.
 - After any patch, verify the edit took effect in the right place before moving on — for example, grep for the changed line or check that a related symbol reference resolves correctly. If the edit landed wrong, repair it in the same slice; do not widen scope or touch other files.
 
+## Advanced diagnostic sandbox (Opt-in Heavy Diagnosis)
+- Default to Level 1 lightweight analysis: keep changes small and reversible; do not launch heavy custom build sandboxes for ordinary bugs.
+- When an issue touches deep internal mechanisms (Qt-internal shared cache, hidden state, Win32 hook/message races, driver I/O) or resists standard debugging, propose Level 2 escalation to the user first:
+  Ask explicitly: "是否需要让 Agent 自主搭建完整诊断工作流来解析定位复杂问题根因？"
+- Only after explicit user approval, refer to `.agents/context/lessons/qt-headless-sandbox-diagnostic-workflow.md` to spin up the standalone headless console sandbox using the fast-path toolchain and batch templates.
+
 ## Style
 - Keep scope narrow.
 - Reuse existing architecture.
