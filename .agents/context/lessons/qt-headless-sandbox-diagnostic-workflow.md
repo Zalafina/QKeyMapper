@@ -114,3 +114,10 @@ void testFixedScenario(const QString &testPath) {
 1. **环境与产物隔离**：测试代码与构建产物必须统一存放在 `<artifacts>/scratch/` 或专用临时目录中，严禁污染主仓库源码树；
 2. **清理临时文件**：诊断完成后，及时清理 `.obj`、`.exe` 等大型中间二进制文件，保留关键的 `.cpp` 测试源码供案例引用；
 3. **沉淀经验至知识库**：将排障过程中发现的深层机制陷阱提炼后记录至 `.agents/context/lessons/`。
+
+---
+
+## 六、经典实战参考范例
+
+完整认知演进、单步断桩抓现行与思维推演全景案例详见：
+👉 [Qt5 INI Unicode Escape & Shared Cache Race (Episodic Benchmark)](episodic/2026-09-21-qt5-ini-unicode-escape-shared-cache.md)
