@@ -23548,7 +23548,13 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             }
 
             if (settingSelectStr != settingtext) {
-                settingFile.setValue(SETTINGSELECT , settingtext);
+                // Do not call settingFile.setValue(SETTINGSELECT, settingtext) here.
+                // loadKeyMapSetting is a read-only configuration loader (triggered frequently
+                // by foreground window matching and switch-to-global timeout). Writing to disk
+                // during read operations creates unwanted disk I/O and leaves uncommitted dirty
+                // keys in Qt's shared QConfFile cache, which triggers Unicode escape corruption
+                // (\xXXXX) on Qt5 when subsequent local QSettings instances are constructed.
+                // Disk persistence is strictly handled by saveKeyMapSetting().
                 settingSelectStr = settingtext;
             }
 
