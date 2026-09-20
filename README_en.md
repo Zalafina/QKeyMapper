@@ -131,6 +131,8 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 
 ---
 ### 🎯 New features list (sorted in descending order of update time)
+* v1.3.8 (Build 20260926)
+    * Fixed an issue in Qt5 and related environments where non-ASCII characters (such as Chinese setting names and tray icon paths) in the configuration file (INI) were corrupted into Unicode escape sequences (\xXXXX) when saving settings or switching window mappings, ensuring consistent native UTF-8 encoding.
 * v1.3.8 (Build 20260920)
     * Fixed an issue where Burst and Lock could not be checked for "Block-Input" and related mapping keys in the mapping table.
     * Optimized shortcut alignment and spacing display in the **Mapping Table Operations** menu.
