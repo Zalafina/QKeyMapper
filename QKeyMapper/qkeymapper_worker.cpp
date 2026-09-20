@@ -7136,9 +7136,7 @@ void QKeyMapper_Worker::saveVirtualGamepadList()
 #endif
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     settingFile.setValue(VIRTUAL_GAMEPADLIST, s_VirtualGamepadList);
 }
 

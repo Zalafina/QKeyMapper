@@ -1,5 +1,6 @@
 #include "qmacrolistdialog.h"
 #include "ui_qmacrolistdialog.h"
+#include "qkeymapper_qt_compat.h"
 #include "qkeymapper_constants.h"
 #include "qstyle_singletons.h"
 
@@ -948,9 +949,7 @@ void QMacroListDialog::exportMacroListToFile()
 
     // Save to INI file
     QSettings exportFile(export_filename, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    exportFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(exportFile);
 
     // Convert OrderedMap to QVariantList for INI storage
     QVariantList macroList;
@@ -1008,9 +1007,7 @@ void QMacroListDialog::importMacroListFromFile()
 
     // Load from INI file
     QSettings importFile(import_filename, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    importFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(importFile);
 
     if (!importFile.contains(MACROLIST_EXPORT)) {
         // No MacroList_Export key found in file

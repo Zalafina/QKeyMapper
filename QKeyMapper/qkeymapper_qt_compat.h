@@ -10,6 +10,8 @@
 #include <QPoint>
 #include <QTabBar>
 #include <QTabWidget>
+#include <QSettings>
+#include <QScopedPointer>
 
 namespace QKeyMapperQtCompat {
 
@@ -220,6 +222,31 @@ inline QStringList makeQStringList(int size)
         list.append(QString());
     }
     return list;
+}
+
+// Ensure INI format uses UTF-8 encoding across Qt 5 and Qt 6
+inline void setIniCodecUtf8(QSettings &settings)
+{
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    settings.setIniCodec("UTF-8");
+#else
+    Q_UNUSED(settings);
+#endif
+}
+
+inline void setIniCodecUtf8(QSettings *settings)
+{
+    if (settings != Q_NULLPTR) {
+        setIniCodecUtf8(*settings);
+    }
+}
+
+template <typename T>
+inline void setIniCodecUtf8(const QScopedPointer<T> &settings)
+{
+    if (settings.data() != Q_NULLPTR) {
+        setIniCodecUtf8(*settings.data());
+    }
 }
 
 } // namespace QKeyMapperQtCompat

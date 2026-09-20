@@ -12666,9 +12666,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     }
 
     QSettings keyMappingDataFile(filename, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    keyMappingDataFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(keyMappingDataFile);
     QStringList original_keys;
     QStringList mapping_keysList;
     QStringList mappingkeys_keyupList;
@@ -13213,9 +13211,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     }
 
     QSettings keyMappingDataFile(filename, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    keyMappingDataFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(keyMappingDataFile);
     QStringList original_keys;
     QStringList mapping_keys;
     QStringList mappingkeys_keyup;
@@ -16131,9 +16127,7 @@ void QKeyMapper::setMappingStartActionMode(MappingStartActionMode actionMode, bo
 
     if (persist) {
         QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-        settingFile.setIniCodec("UTF-8");
-#endif
+        QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
         settingFile.setValue(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
     }
 }
@@ -16200,9 +16194,7 @@ bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode s
 
             if (!cursettingSelectStr.isEmpty()) {
                 QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-                settingFile.setIniCodec("UTF-8");
-#endif
+                QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
                 const QString lastTabName = settingFile.value(cursettingSelectStr + "/" + MAPPINGTABLE_LASTTABNAME).toString();
                 const int savedTabIndex = tabIndexToSwitchByTabName(lastTabName);
                 if (savedTabIndex >= 0 && !isCommonMappingTabIndex(savedTabIndex)) {
@@ -19554,9 +19546,7 @@ int QKeyMapper::checkAutoStartSaveSettings(const QString &executablename, const 
 QString QKeyMapper::matchAutoStartSaveSettings(const QString &processpath, const QString &windowtitle, const QString &classname, int displayModeIndex)
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     QStringList groups = settingFile.childGroups();
     groups.removeOne(GROUPNAME_GLOBALSETTING);
 
@@ -19778,9 +19768,7 @@ int QKeyMapper::checkSaveSettings(const QString &executablename, const QString &
 QString QKeyMapper::matchSavedSettings(const QString &processpath, const QString &windowtitle, const QString &classname, int displayModeIndex)
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     QStringList groups = settingFile.childGroups();
     groups.removeOne(GROUPNAME_GLOBALSETTING);
 
@@ -19871,9 +19859,7 @@ bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, Q
 {
     bool readresult = false;
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     QString setting_key = group + "/" + key;
     if (true == settingFile.contains(setting_key)){
         settingdata = settingFile.value(setting_key);
@@ -20010,9 +19996,7 @@ void QKeyMapper::updateIgnoreWindowInfoListDescriptionTranslation()
 void QKeyMapper::saveIgnoreRulesToINI()
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     // Convert OrderedMap to QVariantList for INI storage
     QVariantList rulesList;
@@ -20038,9 +20022,7 @@ void QKeyMapper::saveIgnoreRulesToINI()
 void QKeyMapper::loadIgnoreRulesFromINI()
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     if (!settingFile.contains(IGNOREWINDOWINFO_RULES)){
         initIgnoreWindowInfoList();
@@ -20090,9 +20072,7 @@ void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     // Convert OrderedMap to QVariantList for INI storage
     QVariantList macroList;
@@ -20131,9 +20111,7 @@ void QKeyMapper::loadMacroListFromINI(const QString &setting_groupname)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     QString settingKey = setting_groupname + "/" + MACROLIST;
 
@@ -20194,9 +20172,7 @@ void QKeyMapper::saveSyncGroupNotesToINI(const QString &setting_groupname)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     QVariantList notesList;
     for (auto it = m_FloatingButtonSyncGroupNotes.constBegin();
@@ -20222,9 +20198,7 @@ void QKeyMapper::loadSyncGroupNotesFromINI(const QString &setting_groupname)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     QString settingKey = setting_groupname + "/" + SYNCGROUPNOTES;
     if (!settingFile.contains(settingKey)) {
@@ -20253,9 +20227,7 @@ void QKeyMapper::loadSyncGroupNotesFromINI(const QString &setting_groupname)
 void QKeyMapper::saveUniversalMacroListToINI()
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     // Convert OrderedMap to QVariantList for INI storage
     QVariantList macroList;
@@ -20289,9 +20261,7 @@ void QKeyMapper::loadUniversalMacroListFromINI()
     s_UniversalMappingMacroList.clear();
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     if (!settingFile.contains(MACROLIST_UNIVERSAL)) {
         // No UniversalMacroList saved
@@ -20392,9 +20362,7 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
 
     // Only export user-selected groups, no automatic inclusion of General
     QSettings src(sourceIni, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    src.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(src);
     QStringList srcGroups = src.childGroups();
     QStringList exportList = groups; // keep UI/childGroups order
     // if (!src.childKeys().isEmpty() && !exportList.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
@@ -20407,9 +20375,7 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
 
     // Write selected groups to target file
     QSettings dst(targetIni, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    dst.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(dst);
     for (const QString &g : exportList) {
         if (g == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
             // Copy top-level keys (General)
@@ -20448,13 +20414,9 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
 
     // Read source and destination INIs
     QSettings src(sourceIni, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    src.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(src);
     QSettings dst(QKeyMapperConstants::CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    dst.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(dst);
 
     bool hasGeneralgroup = false;
     QStringList rootKeys = src.childKeys();
@@ -20620,9 +20582,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     saveIgnoreRulesToINI();
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     // int burstpressTime = ui->burstpressSpinBox->value();
     // int burstreleaseTime = ui->burstreleaseSpinBox->value();
 
@@ -22266,9 +22226,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 void QKeyMapper::saveCurrentSettingLastTabName(const QString &tabName)
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     QString cursettingSelectStr;
     int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
@@ -22470,9 +22428,7 @@ bool QKeyMapper::moveSettingSelectOrderEntry(const QString &settingName, int tar
     orderedUserGroups.insert(clampedTargetIndex, movedGroupName);
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     writeSettingSelectOrder(settingFile, orderedUserGroups);
 
     QSignalBlocker blocker(ui->settingselectComboBox);
@@ -22525,9 +22481,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
     bool selectSettingContainsFlag = false;
     quint8 datavalidflag = 0xFF;
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     if (settingtext.isEmpty() || load_all) {
         // Load ignore rules from INI file
@@ -27385,9 +27339,7 @@ void QKeyMapper::loadGeneralSetting()
 #endif
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     // Load ignore rules from INI file
     loadIgnoreRulesFromINI();
@@ -32187,9 +32139,7 @@ bool QKeyMapper::isCloseToSystemtray()
     bool closeto_systemtray = false;
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     if (true == settingFile.contains(CLOSETO_SYSTEMTRAY)){
         closeto_systemtray = settingFile.value(CLOSETO_SYSTEMTRAY).toBool();
     }
@@ -36289,9 +36239,7 @@ void QKeyMapper::connectSettingDirtySignals(void)
     connectCheckable(ui->closeToSystemTrayCheckBox);
     QObject::connect(ui->closeToSystemTrayCheckBox, &QCheckBox::clicked, this, []() {
         QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-        settingFile.setIniCodec("UTF-8");
-#endif
+        QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
         settingFile.setValue(CLOSETO_SYSTEMTRAY_DECIDED, true);
     });
     //connectCheckable(ui->processListButton);
@@ -36398,9 +36346,7 @@ void QKeyMapper::checkOSVersionMatched()
         QString platformString = getPlatformString();
         if (platformString.startsWith("Qt5")) {
             QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-            settingFile.setIniCodec("UTF-8");
-#endif
+            QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
             bool notshow_versionunmatched = false;
             if (true == settingFile.contains(NOTSHOW_VERSION_UNMATCHED)){
                 notshow_versionunmatched = settingFile.value(NOTSHOW_VERSION_UNMATCHED).toBool();
@@ -36445,9 +36391,7 @@ void QKeyMapper::checkFilterKeysEnabled()
         qDebug() << "\033[1;34m[checkFilterKeysEnabled]" << "FilterKeys -> Disabled\033[0m";
 #endif
         QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-        settingFile.setIniCodec("UTF-8");
-#endif
+        QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
         bool notshow_filterkeys_disabled = false;
         if (true == settingFile.contains(NOTSHOW_FILTERKEYS_DISABLED)){
             notshow_filterkeys_disabled = settingFile.value(NOTSHOW_FILTERKEYS_DISABLED).toBool();
@@ -43237,9 +43181,7 @@ void SettingSelectComboBoxPopup::onReorderButtonClicked(void)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     const QString currentSettingName = keyMapper->currentSettingSelectGroupName();
     {
@@ -45114,9 +45056,7 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     QStringList groups = settingFile.childGroups();
     if (groups.contains(settingSelectStr)) {
 
@@ -45193,9 +45133,7 @@ void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     const char operate_char_binary[] = { 0b01110010, 0b01110101, 0b01101110, 0b01100001, 0b01110011, 0b00000000 }; // "runas"
     QString operate_str = QString(operate_char_binary);
     const char  executable_char_binary[] = {0b01110011, 0b01100011, 0b01101000, 0b01110100, 0b01100001, 0b01110011, 0b01101011, 0b01110011, 0b00000000}; // "schtasks"
@@ -45334,9 +45272,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     if (true == checked_result) {
         ui->vJoyXSensSpinBox->setEnabled(true);
@@ -46265,9 +46201,7 @@ void QKeyMapper::on_multiInputEnableCheckBox_stateChanged(int state)
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     if (Qt::Checked == state) {
         settingFile.setValue(MULTI_INPUT_ENABLE , true);
@@ -49107,9 +49041,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
     QScopedPointer<QSettings> settingFile;
     if (!configfile.isEmpty()) {
         settingFile.reset(new QSettings(configfile, QSettings::IniFormat));
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-        settingFile->setIniCodec("UTF-8");
-#endif
+        QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     }
 
     // Create group items in the exact order provided by caller
@@ -49576,9 +49508,7 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
 
 QStringList SettingTransferDialog::readGroupsFromIni(const QString &filePath) {
     QSettings settings(filePath, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settings.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settings);
     QStringList childGroups = orderedSettingSelectUserGroups(settings);
 
     // Move GlobalSetting to the first.
@@ -49617,9 +49547,7 @@ void SettingTransferDialog::onBrowseFile() {
                 groupWidget->setGroups(groups, fileName);
 
                 QSettings curIni(QKeyMapperConstants::CONFIG_FILENAME, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-                curIni.setIniCodec("UTF-8");
-#endif
+                QKeyMapperQtCompat::setIniCodecUtf8(curIni);
                 QStringList existingGroups = curIni.childGroups();
                 QSet<QString> existing;
                 for (const QString &group : std::as_const(existingGroups)) {

@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QDir>
 #include <QTimer>
+#include "qkeymapper_qt_compat.h"
 #include "qkeymapper.h"
 #include "diagnostics/crash_monitor.h"
 #include "qkeymapper_worker.h"
@@ -287,9 +288,7 @@ void setupQtScaleEnvironment(const QString &program_dir)
 {
     QString config_file_path = program_dir + "/" + CONFIG_FILENAME;
     QSettings settingFile(config_file_path, QSettings::IniFormat);
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    settingFile.setIniCodec("UTF-8");
-#endif
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     int display_scale = settingFile.value(DISPLAY_SCALE, DISPLAY_SCALE_DEFAULT).toInt();
 
     constexpr double SCALE_50 = 0.5;
@@ -431,6 +430,7 @@ int main(int argc, char *argv[])
         QFileInfo fileInfo(programPath);
         QString configFilePath = fileInfo.absolutePath() + "/" + CONFIG_FILENAME;
         QSettings settings(configFilePath, QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(settings);
         if (settings.contains(LANGUAGE_INDEX)) {
             int index = settings.value(LANGUAGE_INDEX).toInt();
             if (index >= LANGUAGE_CHINESE && index <= LANGUAGE_JAPANESE) {
@@ -480,6 +480,7 @@ int main(int argc, char *argv[])
         const QString directory = QString::fromWCharArray(QkmDiagnostics::applicationDirectory());
         if (!directory.isEmpty()) {
             QSettings settings(QDir(directory).filePath(QString::fromLatin1(CONFIG_FILENAME)), QSettings::IniFormat);
+            QKeyMapperQtCompat::setIniCodecUtf8(settings);
             const QString enabled = settings.value(QStringLiteral("CrashDiagnosticsHangEnabled"), true).toString().trimmed().toLower();
             bool validTimeout = false;
             const uint timeout = settings.value(QStringLiteral("CrashDiagnosticsHangTimeoutSeconds"), 30).toUInt(&validTimeout);
