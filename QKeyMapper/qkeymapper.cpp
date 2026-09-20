@@ -32059,7 +32059,7 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     ui->addmapdataButton->setGeometry(this->width() - 81 - 19,  386 + dh, 81, 36);
     ui->originalKeyRecordCopyButton->setGeometry(this->width() - 81 - 19, 430 + dh, 81, 22);
     ui->originalKeyEditModeButton->setGeometry(this->width() - 71 - 109, 430 + dh, 71, 22);
-    ui->pushLevelSpinBox->setGeometry(this->width() - 51 - 49, 490 + dh, 51, 22);
+    ui->pushLevelSpinBox->setGeometry(this->width() - 61 - 29, 490 + dh, 61, 22);
     ui->pointDisplayLabel->setGeometry(this->width() - 100 - 20, 462 + dh, 100, 20);
     ui->keymapButton->setGeometry(this->width() - 171 - 29, 590 + dh, 171, 51);
 
@@ -32117,7 +32117,7 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
 
     // --- y=490: pushLevel + keyboard select ---
     ui->pushLevelLabel->setGeometry(744 + boundaryShift, 490 + dh, 61, 22);
-    int sliderW = this->width() - 51 - 49 - 9 - (810 + boundaryShift);
+    int sliderW = this->width() - 61 - 29 - 9 - (810 + boundaryShift);
     ui->pushLevelSlider->setGeometry(810 + boundaryShift, 493 + dh, sliderW, 16);
 
     ui->keyboardSelectLabel->setGeometry(510 + boundaryShift, 490 + dh, 71, 22);

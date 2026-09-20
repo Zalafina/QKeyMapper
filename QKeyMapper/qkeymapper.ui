@@ -208,7 +208,7 @@
      <rect>
       <x>810</x>
       <y>493</y>
-      <width>151</width>
+      <width>161</width>
       <height>16</height>
      </rect>
     </property>
@@ -295,9 +295,9 @@
    <widget class="QSpinBox" name="pushLevelSpinBox">
     <property name="geometry">
      <rect>
-      <x>970</x>
+      <x>980</x>
       <y>490</y>
-      <width>51</width>
+      <width>61</width>
       <height>22</height>
      </rect>
     </property>
