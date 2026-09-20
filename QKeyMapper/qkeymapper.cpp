@@ -36023,7 +36023,7 @@ void QKeyMapper::setUITheme(int themeindex)
                 border: 1px solid rgb(108, 108, 108);
                 border-radius: 2px;
                 background-color: rgb(60, 60, 60);
-                padding: 0px 18px 1px 3px;
+                padding: 0px 2px 1px 3px;
             }
             QSpinBox:disabled, QDoubleSpinBox:disabled {
                 border: 1px solid rgb(86, 86, 86);
