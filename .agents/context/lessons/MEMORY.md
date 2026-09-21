@@ -51,4 +51,5 @@
 - [Mapping Table Selection Preservation Pattern](mapping-table-selection-preservation-pattern.md) — QTableWidget 重建刷新与删除接替期间保持选区、焦点与滚动条的标准模式：信号屏蔽、行数守卫、结构重排裁剪、隐藏行连续分段过滤与删除后双向可见行重选
 - [Qt Headless Sandbox Diagnostic Workflow](qt-headless-sandbox-diagnostic-workflow.md) — 复杂底层问题（Qt内部机制/时序竞争/驱动交互）的独立无界面沙箱诊断工作流规范，含两级分阶准则（Level 1 vs Level 2）、用户授权确认门禁与 Windows+Qt 工具链直通速查。
 - [Qt5 INI Unicode Escape & Shared Cache Race](episodic/2026-09-21-qt5-ini-unicode-escape-shared-cache.md) — Qt5 环境下 INI 配置文件触发 Unicode 转义(\xXXXX)的深度排障记录：QConfFile 共享缓存单例与 iniCodec 构造期冲盘时差竞争机制、BOM 抹除事实及 loadKeyMapSetting 副作用写盘根除。
+- [Header Default Argument Namespace Qualification](header-default-argument-namespace-qualification.md) — 头文件函数默认实参中使用常量时必须显式指定命名空间限定符（如 QKeyMapperConstants::），切勿直接使用未限定名称。
 
