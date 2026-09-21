@@ -23539,69 +23539,47 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         }
     }
     else {
-        /* Select setting from combobox */
-        if (true == settingFile.contains(SETTINGSELECT)){
+        // Explicit loads do not depend on or update the saved startup selection.
+        settingSelectStr = settingtext;
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select Setting" << settingtext;
+        qDebug() << "[loadKeyMapSetting]" << "Load requested setting" << settingtext;
 #endif
-            QVariant settingSelect = settingFile.value(SETTINGSELECT);
-            if (settingSelect.canConvert<QString>()) {
-                settingSelectStr = settingSelect.toString();
-            }
 
-            if (settingSelectStr != settingtext) {
-                // Do not call settingFile.setValue(SETTINGSELECT, settingtext) here.
-                // loadKeyMapSetting is a read-only configuration loader (triggered frequently
-                // by foreground window matching and switch-to-global timeout). Writing to disk
-                // during read operations creates unwanted disk I/O and leaves uncommitted dirty
-                // keys in Qt's shared QConfFile cache, which triggers Unicode escape corruption
-                // (\xXXXX) on Qt5 when subsequent local QSettings instances are constructed.
-                // Disk persistence is strictly handled by saveKeyMapSetting().
-                settingSelectStr = settingtext;
-            }
-
-            if (false == validgroups.contains(settingSelectStr)) {
-                if (settingSelectStr == GROUPNAME_GLOBALSETTING) {
+        if (false == validgroups.contains(settingSelectStr)) {
+            if (settingSelectStr == GROUPNAME_GLOBALSETTING) {
 #ifdef DEBUG_LOGOUT_ON
-                    qWarning() << "[loadKeyMapSetting] No valid Global Setting, Create a empty one! ->" << settingSelectStr;
-#endif
-                }
-                else {
-#ifdef DEBUG_LOGOUT_ON
-                    qWarning() << "[loadKeyMapSetting] Invalid setting select name ->" << settingSelectStr;
-#endif
-                    settingSelectStr.clear();
-                }
-                initKeyMappingTable = true;
-            }
-            else {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[loadKeyMapSetting] Setting select name ->" << settingSelectStr;
-#endif
-            }
-
-            if (false == settingSelectStr.contains("/")) {
-                settingSelectStr = settingSelectStr + "/";
-            }
-
-            if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
-                    && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))){
-                selectSettingContainsFlag = true;
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading contains Setting" << settingSelectStr;
+                qWarning() << "[loadKeyMapSetting] No valid Global Setting, Create a empty one! ->" << settingSelectStr;
 #endif
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading do not contain Setting" << settingSelectStr;
+                qWarning() << "[loadKeyMapSetting] Invalid setting select name ->" << settingSelectStr;
 #endif
+                settingSelectStr.clear();
             }
+            initKeyMappingTable = true;
         }
         else {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading do not contain SettingSelect";
+            qDebug() << "[loadKeyMapSetting] Setting select name ->" << settingSelectStr;
 #endif
-            initKeyMappingTable = true;
+        }
+
+        if (false == settingSelectStr.contains("/")) {
+            settingSelectStr = settingSelectStr + "/";
+        }
+
+        if ((true == settingFile.contains(settingSelectStr+KEYMAPDATA_ORIGINALKEYS))
+                && (true == settingFile.contains(settingSelectStr+KEYMAPDATA_MAPPINGKEYS))){
+            selectSettingContainsFlag = true;
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading contains Setting" << settingSelectStr;
+#endif
+        }
+        else {
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[loadKeyMapSetting]" << "SettingSelect combox select loading do not contain Setting" << settingSelectStr;
+#endif
         }
     }
 
@@ -45160,8 +45138,23 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
 
         settingFile.remove(settingSelectStr);
         removeSettingSelectOrderEntry(settingFile, settingSelectStr);
-        ui->settingselectComboBox->removeItem(targetSettingIndex);
-        m_SettingSelectListWithoutDescription.removeAt(targetSettingIndex);
+        if (settingFile.value(SETTINGSELECT).toString() == settingSelectStr) {
+            settingFile.remove(SETTINGSELECT);
+        }
+
+        // Flush with UTF-8 before a reload constructs another QSettings instance.
+        settingFile.sync();
+        if (settingFile.status() != QSettings::NoError) {
+            showFailurePopup(tr("Save failure : ") + settingSelectStr);
+            return false;
+        }
+
+        {
+            // Qt 5 emits currentTextChanged while removing the selected item.
+            const QSignalBlocker blocker(ui->settingselectComboBox);
+            ui->settingselectComboBox->removeItem(targetSettingIndex);
+            m_SettingSelectListWithoutDescription.removeAt(targetSettingIndex);
+        }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[removeSetting] Remove setting select ->" << settingSelectStr;
 #endif
