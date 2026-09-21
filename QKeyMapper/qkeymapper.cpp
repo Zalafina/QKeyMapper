@@ -3833,7 +3833,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     updateKeyMappingDataTableConnection();
     QObject::connect(this, &QKeyMapper::keyMappingTableDragDropMove_Signal, this, &QKeyMapper::keyMappingTableDragDropMove);
     QObject::connect(this, &QKeyMapper::setupDialogClosed_Signal, this, &QKeyMapper::setupDialogClosed);
-    QObject::connect(this, &QKeyMapper::showPopupMessage_Signal, this, &QKeyMapper::showPopupMessage);
+    QObject::connect(this, &QKeyMapper::showPopupMessage_Signal, this, [this](const QString &msg, const QString &color, int duration) {
+        showPopupMessage(msg, color, duration);
+    });
 
     // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::keySeqEditChanged_Signal, this, &QKeyMapper::onWindowSwitchKeySequenceChanged);
     // QObject::connect(m_windowswitchKeySeqEdit, &KeySequenceEditOnlyOne::editingFinished, this, &QKeyMapper::onWindowSwitchKeySequenceEditingFinished);
@@ -32282,19 +32284,19 @@ void QKeyMapper::updateSystemTrayDisplay()
     m_SysTrayIcon->setToolTip(systray_tooltip);
 }
 
-void QKeyMapper::showInformationPopup(const QString &message)
+void QKeyMapper::showInformationPopup(const QString &message, const QRect &targetRect, int displayDuration)
 {
-    showPopupMessage(message, SUCCESS_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+    showPopupMessage(message, SUCCESS_COLOR, displayDuration, targetRect);
 }
 
-void QKeyMapper::showWarningPopup(const QString &message)
+void QKeyMapper::showWarningPopup(const QString &message, const QRect &targetRect, int displayDuration)
 {
-    showPopupMessage(message, WARNING_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+    showPopupMessage(message, WARNING_COLOR, displayDuration, targetRect);
 }
 
-void QKeyMapper::showFailurePopup(const QString &message)
+void QKeyMapper::showFailurePopup(const QString &message, const QRect &targetRect, int displayDuration)
 {
-    showPopupMessage(message, FAILURE_COLOR, POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+    showPopupMessage(message, FAILURE_COLOR, displayDuration, targetRect);
 }
 
 void QKeyMapper::showNotificationPopup(const QString &message, const PopupNotificationOptions &options)
@@ -36567,6 +36569,11 @@ void QKeyMapper::showMousePoints(int showpoints_trigger)
 
 void QKeyMapper::showPopupMessage(const QString& message, const QString& color, int displayDuration)
 {
+    showPopupMessage(message, color, displayDuration, QRect());
+}
+
+void QKeyMapper::showPopupMessage(const QString& message, const QString& color, int displayDuration, const QRect &targetRect)
+{
     if (!m_PopupMessageLabel || !m_PopupMessageAnimation) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[showPopupMessage]" << "PopupMessage not initialized!";
@@ -36578,22 +36585,67 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
     m_PopupMessageLabel->hide();
     m_PopupMessageLabel->clear();
 
-    // QString styleSheet = QString("background-color: rgba(0, 0, 0, 180); color: white; padding: 15px; border-radius: 5px; color: %1;").arg(color);
-    QString styleSheet = QString("color: %1;").arg(color);
-    m_PopupMessageLabel->setStyleSheet(styleSheet);
+    const bool isLocalized = !targetRect.isNull() && targetRect.isValid();
 
-    QFont customFont(FONTNAME_ENGLISH, 16, QFont::Bold);
-    if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
-        customFont.setPointSize(20);
+    if (isLocalized) {
+        // Compact Toast badge style for localized target (e.g. Point Picker or other dialogs)
+        QFont customFont(FONTNAME_ENGLISH, 12, QFont::Bold);
+        m_PopupMessageLabel->setFont(customFont);
+        m_PopupMessageLabel->setPopupStyle(
+            QColor(color),
+            QColor(28, 28, 30, 235),
+            QColor(120, 120, 120, 140),
+            4,   // borderRadius
+            12,  // hPadding
+            5    // vPadding
+        );
+    } else {
+        // Large card style for main window center with unified dark semi-transparent background
+        QFont customFont(FONTNAME_ENGLISH, 16, QFont::Bold);
+        if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale) {
+            customFont.setPointSize(20);
+        }
+        m_PopupMessageLabel->setFont(customFont);
+        m_PopupMessageLabel->setPopupStyle(
+            QColor(color),
+            QColor(28, 28, 30, 235),
+            QColor(120, 120, 120, 140),
+            8,   // borderRadius
+            24,  // hPadding
+            10   // vPadding
+        );
     }
-    m_PopupMessageLabel->setFont(customFont);
+
     m_PopupMessageLabel->setText(message);
     m_PopupMessageLabel->adjustSize();
 
-    QRect windowGeometry = this->geometry();
-    int x = windowGeometry.x() + (windowGeometry.width() - m_PopupMessageLabel->width()) / 2;
-    int y = windowGeometry.y() + (windowGeometry.height() - m_PopupMessageLabel->height()) / 2;
-    m_PopupMessageLabel->move(x, y);
+    if (isLocalized) {
+        int toastWidth = m_PopupMessageLabel->width();
+        int toastHeight = m_PopupMessageLabel->height();
+
+        int x = targetRect.x() + (targetRect.width() - toastWidth) / 2;
+        int y = targetRect.bottom() + 4;
+
+        // Ensure within target screen bounds
+        QScreen *screen = QGuiApplication::screenAt(targetRect.center());
+        if (screen == nullptr) {
+            screen = QGuiApplication::primaryScreen();
+        }
+        if (screen != nullptr) {
+            QRect avail = screen->availableGeometry();
+            if (y + toastHeight > avail.bottom()) {
+                // Flip to above targetRect if overflowing bottom
+                y = targetRect.top() - toastHeight - 4;
+            }
+            x = qBound(avail.left() + 4, x, avail.right() - toastWidth - 4);
+        }
+        m_PopupMessageLabel->move(x, y);
+    } else {
+        QRect windowGeometry = this->geometry();
+        int x = windowGeometry.x() + (windowGeometry.width() - m_PopupMessageLabel->width()) / 2;
+        int y = windowGeometry.y() + (windowGeometry.height() - m_PopupMessageLabel->height()) / 2;
+        m_PopupMessageLabel->move(x, y);
+    }
 
     m_PopupMessageAnimation->setDuration(displayDuration);
     m_PopupMessageAnimation->setStartValue(1.0);
@@ -36602,6 +36654,7 @@ void QKeyMapper::showPopupMessage(const QString& message, const QString& color, 
 
     m_PopupMessageLabel->show();
 }
+
 
 void QKeyMapper::showCarOrdinal(qint32 car_ordinal)
 {
@@ -43781,19 +43834,45 @@ QPopupMessageLabel::QPopupMessageLabel(QWidget *parent)
     SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 }
 
+void QPopupMessageLabel::setPopupStyle(const QColor &textColor,
+                                      const QColor &bgColor,
+                                      const QColor &borderColor,
+                                      int borderRadius,
+                                      int hPadding,
+                                      int vPadding)
+{
+    m_textColor = textColor;
+    m_backgroundColor = bgColor;
+    m_borderColor = borderColor;
+    m_borderRadius = borderRadius;
+    setContentsMargins(hPadding, vPadding, hPadding, vPadding);
+    setStyleSheet(QString());
+    update();
+}
+
 void QPopupMessageLabel::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
 
-    // Create painter with transparency support
     QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Fill with transparent background
-    painter.fillRect(rect(), Qt::transparent);
+    // 1. Draw rounded rectangle background and border if visible
+    if (m_backgroundColor.alpha() > 0) {
+        QRectF bgRect = QRectF(rect()).adjusted(0.5, 0.5, -0.5, -0.5);
+        if (m_borderColor.alpha() > 0) {
+            painter.setPen(QPen(m_borderColor, 1));
+        } else {
+            painter.setPen(Qt::NoPen);
+        }
+        painter.setBrush(m_backgroundColor);
+        painter.drawRoundedRect(bgRect, m_borderRadius, m_borderRadius);
+    }
 
-    // Call parent's paint for text rendering
-    QLabel::paintEvent(event);
+    // 2. Draw centered text inside contentsRect() honoring padding
+    painter.setFont(font());
+    painter.setPen(m_textColor);
+    painter.drawText(contentsRect(), alignment(), text());
 }
 
 QPopupNotification::QPopupNotification(QWidget *parent)

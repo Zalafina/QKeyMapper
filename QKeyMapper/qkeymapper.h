@@ -21,6 +21,7 @@
 #include <QActionGroup>
 #include <QWidgetAction>
 #include <QScrollArea>
+#include <QColor>
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtWin>
@@ -765,8 +766,21 @@ class QPopupMessageLabel : public QLabel
 public:
     explicit QPopupMessageLabel(QWidget *parent = Q_NULLPTR);
 
+    void setPopupStyle(const QColor &textColor,
+                       const QColor &bgColor,
+                       const QColor &borderColor,
+                       int borderRadius,
+                       int hPadding,
+                       int vPadding);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
+
+private:
+    QColor m_textColor = Qt::white;
+    QColor m_backgroundColor = QColor(28, 28, 30, 235);
+    QColor m_borderColor = QColor(120, 120, 120, 140);
+    int m_borderRadius = 4;
 };
 
 class QPopupNotification : public QWidget
@@ -1529,7 +1543,8 @@ public slots:
 
     void showMousePoints(int showpoints_trigger);
 
-    void showPopupMessage(const QString &message, const QString &color, int displayDuration);
+    void showPopupMessage(const QString &message, const QString &color, int displayDuration = QKeyMapperConstants::POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+    void showPopupMessage(const QString &message, const QString &color, int displayDuration, const QRect &targetRect);
 
     void showCarOrdinal(qint32 car_ordinal);
 
@@ -1930,9 +1945,9 @@ private:
 
 public:
     void updateSystemTrayDisplay(void);
-    void showInformationPopup(const QString &message);
-    void showWarningPopup(const QString &message);
-    void showFailurePopup(const QString &message);
+    void showInformationPopup(const QString &message, const QRect &targetRect = QRect(), int displayDuration = QKeyMapperConstants::POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+    void showWarningPopup(const QString &message, const QRect &targetRect = QRect(), int displayDuration = QKeyMapperConstants::POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
+    void showFailurePopup(const QString &message, const QRect &targetRect = QRect(), int displayDuration = QKeyMapperConstants::POPUP_MESSAGE_DISPLAY_TIME_DEFAULT);
     void showNotificationPopup(const QString &message, const PopupNotificationOptions &options);
     void showNotificationPopup(const QString &message);
     void showFloatingIconWindow(const FloatingWindowOptions &options);
@@ -2391,7 +2406,7 @@ private:
     DisplaySwitchMode m_DisplaySwitchMode;
     bool m_MainWindowBackgroundFillActive = false;
     bool m_KeyMappingDataTableColumnResizePending = false;
-    QLabel* m_PopupMessageLabel;
+    QPopupMessageLabel* m_PopupMessageLabel;
     QPropertyAnimation* m_PopupMessageAnimation;
 #ifdef USE_SAOFONT
     int m_SAO_FontFamilyID;

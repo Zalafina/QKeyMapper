@@ -3,6 +3,8 @@
 #include "qkeymapper_worker.h"
 #include "qkeymapper_constants.h"
 #include <QDebug>
+#include <QClipboard>
+#include <QKeyEvent>
 
 namespace {
 
@@ -437,6 +439,31 @@ bool QPointPickerDialog::event(QEvent *e)
     return QDialog::event(e);
 }
 
+bool QPointPickerDialog::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == m_pickedCoordEdit && event->type() == QEvent::KeyPress) {
+        QKeyEvent *ke = static_cast<QKeyEvent *>(event);
+        if (ke->matches(QKeySequence::Copy) ||
+            (ke->key() == Qt::Key_C && (ke->modifiers() & Qt::ControlModifier))) {
+            if (!m_pickedCoordEdit->hasSelectedText()) {
+                QString coordText = m_pickedCoordEdit->text().trimmed();
+                if (!coordText.isEmpty()) {
+                    QClipboard *clipboard = QGuiApplication::clipboard();
+                    if (clipboard != nullptr) {
+                        clipboard->setText(coordText);
+                    }
+                    if (QKeyMapper::getInstance() != Q_NULLPTR) {
+                        QKeyMapper::getInstance()->showInformationPopup(tr("Copied: %1").arg(coordText), this->geometry(), 1500);
+                    }
+                    return true;
+                }
+            }
+            return false; // If text is selected, pass through to native QLineEdit copy
+        }
+    }
+    return QDialog::eventFilter(watched, event);
+}
+
 void QPointPickerDialog::setupUi()
 {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -497,6 +524,7 @@ void QPointPickerDialog::setupUi()
     m_pickedCoordEdit->setFixedHeight(22);
     m_pickedCoordEdit->setFont(monoFont);
     m_pickedCoordEdit->setPlaceholderText(QStringLiteral("0,0"));
+    m_pickedCoordEdit->installEventFilter(this);
 
     coordLayout->addWidget(m_currentCoordLabel, 0, 0, Qt::AlignLeft | Qt::AlignVCenter);
     coordLayout->addWidget(m_currentCoordValueLabel, 0, 1, Qt::AlignLeft | Qt::AlignVCenter);
@@ -705,6 +733,7 @@ void QPointPickerDialog::onDragFinished(bool commit, const QPoint &screenPt)
     }
 
     m_pickedCoordEdit->setText(QString("%1,%2").arg(pickedPt.x()).arg(pickedPt.y()));
+    m_pickedCoordEdit->setFocus(Qt::OtherFocusReason);
     emit pointPicked(pickedPt, isWindowMode);
 }
 
@@ -907,7 +936,7 @@ void QPointPickerDialog::applyTheme(bool isDark)
             "  padding: 0 4px;"
             "}"
             "QLineEdit:focus {"
-            "  border: 1px solid rgb(46, 134, 222);"
+            "  border: 1px solid rgb(112, 161, 255);"
             "}"
         ));
     } else {
