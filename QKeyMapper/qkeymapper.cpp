@@ -4621,6 +4621,17 @@ void QKeyMapper::matchForegroundWindow()
             matchResult = MatchResult::NoMatch;
         }
 
+        // Keep an empty draft waiting for saved profiles, but allow unsaved mappings to run.
+        if (ui->settingselectComboBox->currentIndex() == EMPTYSETTING_INDEX
+            && std::none_of(s_KeyMappingTabInfoList.cbegin(),
+                            s_KeyMappingTabInfoList.cend(),
+                            [](const KeyMappingTab_Info &tabInfo) {
+                                return tabInfo.KeyMappingData != Q_NULLPTR
+                                    && !tabInfo.KeyMappingData->isEmpty();
+                            })) {
+            matchResult = MatchResult::NoMatch;
+        }
+
         bool isVisibleWindow = false;
         bool isExToolWindow = false;
         bool isInVisibleExToolWidow = false;
