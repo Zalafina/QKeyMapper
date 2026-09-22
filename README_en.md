@@ -90,12 +90,18 @@ QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, 
 
 ### ※ The ZIP packages starting with QKeyMapper_vX.Y.Z_x64/x86 are compiled executable file zip packages. Build_YYYYMMDD represents the compilation date, and the newer compilation date has corresponding new feature descriptions. For Windows 10 and Windows 11, the Qt6_x64 release package is recommended; only Windows 7 systems that cannot run the Qt 6 version need to use the Qt 5 release package.
 
----------------
+---
 ## ⭐ Star Trend
 
 If the **QKeyMapper** key mapping software has been helpful to you, please give it a ⭐ Star to support the project and help more people discover **QKeyMapper**.
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Zalafina/QKeyMapper&type=Date)](https://star-history.com/#Zalafina/QKeyMapper&Date)
+<a href="https://star-history.com/#Zalafina/QKeyMapper&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Zalafina/QKeyMapper&type=Date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Zalafina/QKeyMapper&type=Date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Zalafina/QKeyMapper&type=Date&legend=top-left" />
+ </picture>
+</a>
 
 ---
 ## 💡 Usage notes
