@@ -35967,6 +35967,7 @@ void QKeyMapper::setUITheme(int themeindex)
                 border: 1px solid rgb(46, 134, 222);
             }
             QSpinBox, QDoubleSpinBox {
+                spincontrol-disable-on-bounds: 1;
                 border: 1px solid rgb(108, 108, 108);
                 border-radius: 2px;
                 background-color: rgb(60, 60, 60);
@@ -35984,20 +35985,46 @@ void QKeyMapper::setUITheme(int themeindex)
                 subcontrol-position: top right;
                 width: 17px;
                 border-left: 1px solid rgb(108, 108, 108);
-                border-bottom: 1px solid rgb(108, 108, 108);
+                border-bottom: none;
+                margin-bottom: -1px;
                 background-color: rgb(62, 62, 62);
                 border-top-right-radius: 2px;
             }
-            QSpinBox::up-button:hover:!off, QDoubleSpinBox::up-button:hover:!off {
+            QSpinBox::down-button, QDoubleSpinBox::down-button {
+                subcontrol-origin: padding;
+                subcontrol-position: bottom right;
+                width: 17px;
+                border-left: 1px solid rgb(108, 108, 108);
+                border-top: 1px solid rgb(108, 108, 108);
+                background-color: rgb(62, 62, 62);
+                border-bottom-right-radius: 2px;
+            }
+            QSpinBox::up-button:enabled:!off:hover,
+            QSpinBox::down-button:enabled:!off:hover,
+            QDoubleSpinBox::up-button:enabled:!off:hover,
+            QDoubleSpinBox::down-button:enabled:!off:hover {
                 background-color: rgb(75, 75, 75);
             }
-            QSpinBox::up-button:pressed:!off, QDoubleSpinBox::up-button:pressed:!off {
+            QSpinBox::up-button:enabled:!off:pressed,
+            QSpinBox::down-button:enabled:!off:pressed,
+            QDoubleSpinBox::up-button:enabled:!off:pressed,
+            QDoubleSpinBox::down-button:enabled:!off:pressed {
+                background-color: rgb(50, 50, 50);
+            }
+            QSpinBox::up-button:off, QSpinBox::down-button:off,
+            QDoubleSpinBox::up-button:off, QDoubleSpinBox::down-button:off {
+                background-color: rgb(62, 62, 62);
+            }
+            QSpinBox::up-button:disabled, QSpinBox::down-button:disabled,
+            QDoubleSpinBox::up-button:disabled, QDoubleSpinBox::down-button:disabled {
+                border-left-color: rgb(86, 86, 86);
                 background-color: rgb(50, 50, 50);
             }
             QSpinBox::up-button:disabled, QDoubleSpinBox::up-button:disabled {
-                border-left: 1px solid rgb(86, 86, 86);
-                border-bottom: 1px solid rgb(86, 86, 86);
-                background-color: rgb(50, 50, 50);
+                border-bottom: none;
+            }
+            QSpinBox::down-button:disabled, QDoubleSpinBox::down-button:disabled {
+                border-top-color: rgb(86, 86, 86);
             }
             QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {
                 image: url(:/spin_up.svg);
@@ -36007,24 +36034,6 @@ void QKeyMapper::setUITheme(int themeindex)
             QSpinBox::up-arrow:disabled, QDoubleSpinBox::up-arrow:disabled,
             QSpinBox::up-arrow:off, QDoubleSpinBox::up-arrow:off {
                 image: url(:/spin_up_disabled.svg);
-            }
-            QSpinBox::down-button, QDoubleSpinBox::down-button {
-                subcontrol-origin: padding;
-                subcontrol-position: bottom right;
-                width: 17px;
-                border-left: 1px solid rgb(108, 108, 108);
-                background-color: rgb(62, 62, 62);
-                border-bottom-right-radius: 2px;
-            }
-            QSpinBox::down-button:hover:!off, QDoubleSpinBox::down-button:hover:!off {
-                background-color: rgb(75, 75, 75);
-            }
-            QSpinBox::down-button:pressed:!off, QDoubleSpinBox::down-button:pressed:!off {
-                background-color: rgb(50, 50, 50);
-            }
-            QSpinBox::down-button:disabled, QDoubleSpinBox::down-button:disabled {
-                border-left: 1px solid rgb(86, 86, 86);
-                background-color: rgb(50, 50, 50);
             }
             QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {
                 image: url(:/spin_down.svg);
