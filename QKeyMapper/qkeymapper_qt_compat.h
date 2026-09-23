@@ -157,7 +157,7 @@ inline bool tabBarIsTabVisible(QTabBar *tabBar, int index)
         return false;
     }
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     return tabBar->isTabVisible(index);
 #else
     const QObject *stateOwner = detail::tabVisibilityStateOwner(tabBar);
@@ -179,7 +179,7 @@ inline void tabBarSetTabVisible(QTabBar *tabBar, int index, bool visible)
         return;
     }
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 15, 0))
     tabBar->setTabVisible(index, visible);
 #else
     QObject *stateOwner = detail::tabVisibilityStateOwner(tabBar);

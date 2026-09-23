@@ -42447,7 +42447,7 @@ void SettingSelectComboBox::applyPopupSelection(const QString &groupName)
     const QString selectedText = currentText();
     hidePopup();
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     if (QKeyMapper *keyMapper = settingSelectKeyMapperForCombo(this)) {
         keyMapper->on_settingselectComboBox_textActivated(selectedText);
     }
@@ -45039,7 +45039,7 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
 }
 #endif
 
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 void QKeyMapper::on_settingselectComboBox_textActivated(const QString &text)
 #else
 void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text)

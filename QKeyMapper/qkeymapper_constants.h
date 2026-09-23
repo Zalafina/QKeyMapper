@@ -8,9 +8,9 @@
 #include <QListWidgetItem>
 
 // Qt5/Qt6 atomic relaxed compatibility helpers.
-// Qt6: QAtomicInteger has loadRelaxed/storeRelaxed.
+// Qt6 and Qt5.14+: QAtomicInteger has loadRelaxed/storeRelaxed.
 // Qt5.12: use load/store with QAtomic::MemoryOrderRelaxed.
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 #define QKEYMAPPER_ATOMIC_STORE_RELAXED(atomic, value) (atomic).storeRelaxed((value))
 #define QKEYMAPPER_ATOMIC_LOAD_RELAXED(atomic) (atomic).loadRelaxed()
 #else

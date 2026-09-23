@@ -1718,7 +1718,7 @@ public slots:
     void setFloatingButtonDragCoordinateEnabled(bool enabled);
 
 private slots:
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     void on_settingselectComboBox_textActivated(const QString &text);
 #else
     void on_settingselectComboBox_currentTextChanged(const QString &text);
