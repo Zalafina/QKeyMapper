@@ -1941,6 +1941,8 @@ private:
     void setKeyMappingTabWidgetWideMode(void);
     void setKeyMappingTabWidgetNarrowMode(void);
     void applyResizeLayout(int dw, int dh);
+    void resetMainTableSplitterToDefault(void);
+    void updateSplitterHandleToolTip(void);
     bool isCloseToSystemtray();
 
 public:

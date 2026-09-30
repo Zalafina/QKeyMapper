@@ -3053,9 +3053,13 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         ui->mainTableSplitter->setHandleWidth(10);
         ui->mainTableSplitter->setStretchFactor(0, 1);
         ui->mainTableSplitter->setStretchFactor(1, 1);
-        int contentW = WINDOW_BASE_WIDTH - 20 - ui->mainTableSplitter->handleWidth();
+        int contentW = WINDOW_BASE_WIDTH - 24 - ui->mainTableSplitter->handleWidth();
         int half = contentW / 2;
         ui->mainTableSplitter->setSizes({half, contentW - half});
+        if (QSplitterHandle *handle = ui->mainTableSplitter->handle(1)) {
+            handle->installEventFilter(this);
+        }
+        updateSplitterHandleToolTip();
     }
 
     initProcessInfoTable();
@@ -3099,6 +3103,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->windowinfo));
 
     ui->settingTabWidget->setFocusPolicy(Qt::StrongFocus);
+    ui->settingTabWidget->setUsesScrollButtons(true);
+    if (ui->settingTabWidget->tabBar()) {
+        ui->settingTabWidget->tabBar()->setStyleSheet("QTabBar::tab { padding-left: 6px; padding-right: 6px; }");
+    }
     QTabBar *bar = ui->settingTabWidget->tabBar();
     for (QObject *child : bar->children()) {
         if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {
@@ -15479,6 +15487,16 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
+    if (ui && ui->mainTableSplitter && object == ui->mainTableSplitter->handle(1)) {
+        if (event->type() == QEvent::MouseButtonDblClick) {
+            QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
+            if (mouseEvent && mouseEvent->button() == Qt::LeftButton) {
+                resetMainTableSplitterToDefault();
+                return true;
+            }
+        }
+    }
+
     if (event->type() == QEvent::Shortcut
         && (object == m_ActionAddBlankTab || object == m_ActionCopyCurrentTab)) {
         // Window shortcuts must not modify tabs from a child dialog or key capture.
@@ -32031,6 +32049,40 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     });
 }
 
+void QKeyMapper::resetMainTableSplitterToDefault()
+{
+    if (!ui || !ui->mainTableSplitter) {
+        return;
+    }
+    int totalW = ui->mainTableSplitter->width() - ui->mainTableSplitter->handleWidth();
+    if (totalW <= 0) {
+        totalW = width() - 24 - ui->mainTableSplitter->handleWidth();
+    }
+    int half = totalW / 2;
+    ui->mainTableSplitter->setSizes({half, totalW - half});
+}
+
+void QKeyMapper::updateSplitterHandleToolTip()
+{
+    if (!ui || !ui->mainTableSplitter) {
+        return;
+    }
+    QSplitterHandle *handle = ui->mainTableSplitter->handle(1);
+    if (!handle) {
+        return;
+    }
+    const int lang = getLanguageIndex();
+    if (LANGUAGE_CHINESE == lang) {
+        handle->setToolTip(QString::fromUtf8("双击分界线重置居中对齐"));
+    }
+    else if (LANGUAGE_JAPANESE == lang) {
+        handle->setToolTip(QString::fromUtf8("ダブルクリックで境界線を中央にリセット"));
+    }
+    else {
+        handle->setToolTip(QString::fromUtf8("Double-click to reset splitter to center"));
+    }
+}
+
 void QKeyMapper::hideProcessList()
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -32052,7 +32104,7 @@ void QKeyMapper::showProcessList()
         if (currentSizes.size() == 2 && currentSizes[0] <= 0) {
             int totalW = ui->mainTableSplitter->width() - ui->mainTableSplitter->handleWidth();
             if (totalW <= 0) {
-                totalW = width() - 20 - ui->mainTableSplitter->handleWidth();
+                totalW = width() - 24 - ui->mainTableSplitter->handleWidth();
             }
             int half = totalW / 2;
             ui->mainTableSplitter->setSizes({half, totalW - half});
@@ -35445,6 +35497,8 @@ void QKeyMapper::setUILanguage(int languageindex)
     if (m_ItemSetupDialog != Q_NULLPTR) {
         m_ItemSetupDialog->setUILanguage(languageindex);
     }
+
+    updateSplitterHandleToolTip();
 }
 
 void QKeyMapper::resetFontSize()
