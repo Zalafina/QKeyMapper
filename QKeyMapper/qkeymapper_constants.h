@@ -111,9 +111,9 @@ namespace QKeyMapperConstants {
     inline constexpr int BLOCK_INPUTDEVICE_MOUSE            = 1;
 
     // Window resize base dimensions
-    inline constexpr int WINDOW_BASE_WIDTH  = 1070;
+    inline constexpr int WINDOW_BASE_WIDTH  = 1130;
     inline constexpr int WINDOW_BASE_HEIGHT = 722;
-    inline constexpr int WINDOW_MIN_WIDTH   = 1070;  // minimum window width (= currently fixed width)
+    inline constexpr int WINDOW_MIN_WIDTH   = 1130;  // minimum window width (= currently fixed width)
     inline constexpr int WINDOW_MIN_HEIGHT  = 462;   // minimum window height (user adjustable)
 
     // Minimum table sizes when window height is reduced

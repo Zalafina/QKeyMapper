@@ -3103,10 +3103,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->windowinfo));
 
     ui->settingTabWidget->setFocusPolicy(Qt::StrongFocus);
-    ui->settingTabWidget->setUsesScrollButtons(true);
-    if (ui->settingTabWidget->tabBar()) {
-        ui->settingTabWidget->tabBar()->setStyleSheet("QTabBar::tab { padding-left: 6px; padding-right: 6px; }");
-    }
     QTabBar *bar = ui->settingTabWidget->tabBar();
     for (QObject *child : bar->children()) {
         if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {

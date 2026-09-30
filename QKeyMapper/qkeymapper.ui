@@ -6,13 +6,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1070</width>
+    <width>1130</width>
     <height>722</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>1070</width>
+    <width>1130</width>
     <height>462</height>
    </size>
   </property>
@@ -185,9 +185,6 @@
            <widget class="QTabWidget" name="settingTabWidget">
             <property name="focusPolicy">
              <enum>Qt::FocusPolicy::NoFocus</enum>
-            </property>
-            <property name="usesScrollButtons">
-             <bool>true</bool>
             </property>
             <property name="currentIndex">
              <number>0</number>
@@ -2716,7 +2713,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1070</width>
+     <width>1130</width>
      <height>22</height>
     </rect>
    </property>
