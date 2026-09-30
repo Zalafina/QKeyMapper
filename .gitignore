@@ -28,3 +28,8 @@ QKeyMapper/release/
 
 # Understand Anything temporary trash dirs
 .understand-anything/.trash-*
+
+# Temporary testing, build, snapshot & static analysis directories
+build_test_qt6/
+test_snapshots/
+out/
