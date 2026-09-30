@@ -125,13 +125,7 @@ void QGeneralAdvancedDialog::setUILanguage(int languageindex)
     ui->startupSpecifyPositionYLabel->setText(tr("Position Y"));
 
     ui->saveWindowSizeCheckBox->setText(tr("Save Window Size"));
-    if (LANGUAGE_CHINESE == languageindex) {
-        ui->saveSplitterPositionCheckBox->setText(QString::fromUtf8("保存主窗口分界线位置"));
-    } else if (LANGUAGE_JAPANESE == languageindex) {
-        ui->saveSplitterPositionCheckBox->setText(QString::fromUtf8("メインウィンドウの境界線位置を保存"));
-    } else {
-        ui->saveSplitterPositionCheckBox->setText(tr("Save Window Splitter Position"));
-    }
+    ui->saveSplitterPositionCheckBox->setText(tr("Save Window Splitter Position"));
 
     ui->startupPositionComboBox->setItemText(STARTUP_POSITION_DEFAULT,      tr("Default"));
     ui->startupPositionComboBox->setItemText(STARTUP_POSITION_LASTSAVED,    tr("LastSaved"));

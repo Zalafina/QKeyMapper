@@ -32071,16 +32071,7 @@ void QKeyMapper::updateSplitterHandleToolTip()
     if (!handle) {
         return;
     }
-    const int lang = getLanguageIndex();
-    if (LANGUAGE_CHINESE == lang) {
-        handle->setToolTip(QString::fromUtf8("双击分界线重置居中对齐"));
-    }
-    else if (LANGUAGE_JAPANESE == lang) {
-        handle->setToolTip(QString::fromUtf8("ダブルクリックで境界線を中央にリセット"));
-    }
-    else {
-        handle->setToolTip(QString::fromUtf8("Double-click to reset splitter to center"));
-    }
+    handle->setToolTip(tr("Double-click to reset splitter to center"));
 }
 
 void QKeyMapper::hideProcessList()
