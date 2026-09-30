@@ -3110,6 +3110,11 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         }
     }
 
+    // Set horizontal contents margins to ensure breathing room between text and sunken frame
+    ui->ViGEmBusStatusLabel->setContentsMargins(6, 0, 6, 0);
+    ui->multiInputStatusLabel->setContentsMargins(6, 0, 6, 0);
+    ui->FakerInputStatusLabel->setContentsMargins(6, 0, 6, 0);
+
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
@@ -35342,7 +35347,7 @@ void QKeyMapper::setUILanguage(int languageindex)
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // ui->virtualgamepadGroupBox->setTitle(VIRTUALGAMEPADGROUPBOX_CHINESE);
-    ui->enableVirtualJoystickCheckBox->setText(tr("VirtualGamepad"));
+    ui->enableVirtualJoystickCheckBox->setText(tr("Enable Virtual Gamepad"));
     ui->lockCursorCheckBox->setText(tr("Lock Cursor"));
     ui->directModeCheckBox->setText(tr("Direct Mode"));
     ui->vJoyXSensLabel->setText(tr("X Sens"));
@@ -35370,7 +35375,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     ui->mouseSelectLabel->setText(tr("Mouse"));
     ui->gamepadSelectLabel->setText(tr("Gamepad"));
     // ui->multiInputGroupBox->setTitle(MULTIINPUTGROUPBOX_CHINESE);
-    ui->multiInputEnableCheckBox->setText(tr("MultiDevice"));
+    ui->multiInputEnableCheckBox->setText(tr("Enable Multi-Device Support"));
     ui->filterKeysCheckBox->setText(tr("FilterKeys"));
     ui->multiInputDeviceListButton->setText(tr("DeviceList"));
     if (Interception_Worker::INTERCEPTION_AVAILABLE == Interception_Worker::getInterceptionState()) {
