@@ -1065,6 +1065,8 @@ namespace QKeyMapperConstants {
     inline constexpr const char LAST_WINDOWPOSITION[] = "LastWindowPosition";
     inline constexpr const char SAVE_WINDOW_SIZE[] = "SaveWindowSize";
     inline constexpr const char LAST_WINDOW_SIZE[] = "LastWindowSize";
+    inline constexpr const char SAVE_SPLITTER_POSITION[] = "SaveSplitterPosition";
+    inline constexpr const char LAST_SPLITTER_POSITION[] = "LastSplitterPosition";
     inline constexpr const char PROGRAM_VERSION[] = "ProgramVersion";
     inline constexpr const char PROGRAM_PLATFORM[] = "ProgramPlatform";
     inline constexpr const char LANGUAGE_INDEX[] = "LanguageIndex";

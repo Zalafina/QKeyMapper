@@ -3050,9 +3050,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->setupUi(this);
 
     if (ui->mainTableSplitter) {
+        ui->mainTableSplitter->setHandleWidth(10);
         ui->mainTableSplitter->setStretchFactor(0, 1);
         ui->mainTableSplitter->setStretchFactor(1, 1);
-        ui->mainTableSplitter->setSizes({PROCESSINFO_BASE_WIDTH, KEYMAPPINGTABWIDGET_NARROW_WIDTH});
+        int contentW = WINDOW_BASE_WIDTH - 20 - ui->mainTableSplitter->handleWidth();
+        int half = contentW / 2;
+        ui->mainTableSplitter->setSizes({half, contentW - half});
     }
 
     initProcessInfoTable();
@@ -20625,6 +20628,14 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(LAST_WINDOWPOSITION, pos());
     settingFile.setValue(LAST_WINDOW_SIZE, size());
     settingFile.setValue(SAVE_WINDOW_SIZE, m_GeneralAdvancedDialog->getSaveWindowSize());
+    bool saveSplitter = m_GeneralAdvancedDialog->getSaveSplitterPosition();
+    settingFile.setValue(SAVE_SPLITTER_POSITION, saveSplitter);
+    if (saveSplitter && ui->mainTableSplitter && m_ProcessListVisible) {
+        QList<int> sizes = ui->mainTableSplitter->sizes();
+        if (sizes.size() == 2 && sizes[0] > 0 && sizes[1] > 0) {
+            settingFile.setValue(LAST_SPLITTER_POSITION, QString("%1,%2").arg(sizes[0]).arg(sizes[1]));
+        }
+    }
 
     QString productVersion = getExeProductVersion();
     QString platformString = getPlatformString();
@@ -22548,6 +22559,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         if (true == settingFile.contains(SAVE_WINDOW_SIZE)){
             m_GeneralAdvancedDialog->setSaveWindowSize(settingFile.value(SAVE_WINDOW_SIZE).toBool());
         }
+        if (true == settingFile.contains(SAVE_SPLITTER_POSITION)){
+            m_GeneralAdvancedDialog->setSaveSplitterPosition(settingFile.value(SAVE_SPLITTER_POSITION).toBool());
+        }
 
         unsigned int generalSwitchTimeout = CHECK_GLOBALSETTING_SWITCH_TIMEOUT;
         if (true == settingFile.contains(GLOBALSETTING_SWITCH_TIMEOUT)) {
@@ -22627,6 +22641,23 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                     resize(savedSize);
 #ifdef DEBUG_LOGOUT_ON
                     qDebug() << "[loadKeyMapSetting]" << "Restore saved window size ->" << savedSize;
+#endif
+                }
+            }
+        }
+
+        // Restore saved splitter position if enabled
+        if (m_GeneralAdvancedDialog->getSaveSplitterPosition() && settingFile.contains(LAST_SPLITTER_POSITION)) {
+            QString sizesStr = settingFile.value(LAST_SPLITTER_POSITION).toString();
+            QStringList parts = sizesStr.split(',', Qt::SkipEmptyParts);
+            if (parts.size() == 2) {
+                bool ok1 = false, ok2 = false;
+                int s0 = parts[0].trimmed().toInt(&ok1);
+                int s1 = parts[1].trimmed().toInt(&ok2);
+                if (ok1 && ok2 && s0 > 0 && s1 > 0 && ui->mainTableSplitter) {
+                    ui->mainTableSplitter->setSizes({s0, s1});
+#ifdef DEBUG_LOGOUT_ON
+                    qDebug() << "[loadKeyMapSetting]" << "Restore saved splitter sizes ->" << s0 << s1;
 #endif
                 }
             }
@@ -27368,6 +27399,9 @@ void QKeyMapper::loadGeneralSetting()
     if (true == settingFile.contains(SAVE_WINDOW_SIZE)){
         m_GeneralAdvancedDialog->setSaveWindowSize(settingFile.value(SAVE_WINDOW_SIZE).toBool());
     }
+    if (true == settingFile.contains(SAVE_SPLITTER_POSITION)){
+        m_GeneralAdvancedDialog->setSaveSplitterPosition(settingFile.value(SAVE_SPLITTER_POSITION).toBool());
+    }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadGeneralSetting]" << "Startup Position ->" << m_GeneralAdvancedDialog->getStartupPosition();
 #endif
@@ -28675,6 +28709,8 @@ void QKeyMapper::setKeyPressTypeComboBoxItems(const QString &normalText, const Q
         ? currentIndex
         : KEYPRESS_TYPE_NORMAL;
     ui->keyPressTypeComboBox->setCurrentIndex(restoredIndex);
+    ui->keyPressTypeComboBox->updateGeometry();
+    ui->keyPressTypeComboBox->adjustSize();
     updatePressTimeSpinBoxEnabledState();
 }
 
@@ -31962,17 +31998,14 @@ void QKeyMapper::resizeEvent(QResizeEvent *event)
 
 void QKeyMapper::applyResizeLayout(int dw, int dh)
 {
+    Q_UNUSED(dw);
     Q_UNUSED(dh);
     const bool narrowMode = m_ProcessListVisible;
-    int boundaryShift = dw / 2;
 
     // Top half: mainTableSplitter manages processinfoTable and keyMappingTabWidget
     if (ui->mainTableSplitter) {
         if (narrowMode) {
             ui->processinfoTable->setVisible(true);
-            int procW = PROCESSINFO_BASE_WIDTH + boundaryShift;
-            int tabW  = KEYMAPPINGTABWIDGET_NARROW_WIDTH + (dw - boundaryShift);
-            ui->mainTableSplitter->setSizes({procW, tabW});
         } else {
             ui->processinfoTable->setVisible(false);
         }
@@ -32015,11 +32048,15 @@ void QKeyMapper::showProcessList()
 
     ui->processinfoTable->setVisible(true);
     if (ui->mainTableSplitter) {
-        int dw = qMax(0, this->width() - WINDOW_BASE_WIDTH);
-        int boundaryShift = dw / 2;
-        int procW = PROCESSINFO_BASE_WIDTH + boundaryShift;
-        int tabW = KEYMAPPINGTABWIDGET_NARROW_WIDTH + (dw - boundaryShift);
-        ui->mainTableSplitter->setSizes({procW, tabW});
+        QList<int> currentSizes = ui->mainTableSplitter->sizes();
+        if (currentSizes.size() == 2 && currentSizes[0] <= 0) {
+            int totalW = ui->mainTableSplitter->width() - ui->mainTableSplitter->handleWidth();
+            if (totalW <= 0) {
+                totalW = width() - 20 - ui->mainTableSplitter->handleWidth();
+            }
+            int half = totalW / 2;
+            ui->mainTableSplitter->setSizes({half, totalW - half});
+        }
     }
 }
 

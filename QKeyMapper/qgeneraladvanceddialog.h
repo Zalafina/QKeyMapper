@@ -42,6 +42,8 @@ public:
     void setGlobalMappingFullscreenAllowedProcesses(const QString &processes);
     bool getSaveWindowSize(void) const;
     void setSaveWindowSize(bool save);
+    bool getSaveSplitterPosition(void) const;
+    void setSaveSplitterPosition(bool save);
 
 protected:
     bool event(QEvent *event) override;

@@ -95,6 +95,10 @@ QGeneralAdvancedDialog::QGeneralAdvancedDialog(QWidget *parent)
                      this, [notifyDirty](int) { notifyDirty(); });
     QObject::connect(ui->fullscreenGlobalMappingProcessLineEdit, &QLineEdit::textEdited,
                      this, [notifyDirty](const QString &) { notifyDirty(); });
+    QObject::connect(ui->saveWindowSizeCheckBox, &QCheckBox::toggled,
+                     this, [notifyDirty](bool) { notifyDirty(); });
+    QObject::connect(ui->saveSplitterPositionCheckBox, &QCheckBox::toggled,
+                     this, [notifyDirty](bool) { notifyDirty(); });
     QObject::connect(ui->soundEffectCheckBox, &QCheckBox::toggled,
                      this, [notifyDirty](bool) { notifyDirty(); });
     QObject::connect(ui->globalSettingSwitchTimerSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
@@ -121,6 +125,13 @@ void QGeneralAdvancedDialog::setUILanguage(int languageindex)
     ui->startupSpecifyPositionYLabel->setText(tr("Position Y"));
 
     ui->saveWindowSizeCheckBox->setText(tr("Save Window Size"));
+    if (LANGUAGE_CHINESE == languageindex) {
+        ui->saveSplitterPositionCheckBox->setText(QString::fromUtf8("保存主窗口分界线位置"));
+    } else if (LANGUAGE_JAPANESE == languageindex) {
+        ui->saveSplitterPositionCheckBox->setText(QString::fromUtf8("メインウィンドウの境界線位置を保存"));
+    } else {
+        ui->saveSplitterPositionCheckBox->setText(tr("Save Window Splitter Position"));
+    }
 
     ui->startupPositionComboBox->setItemText(STARTUP_POSITION_DEFAULT,      tr("Default"));
     ui->startupPositionComboBox->setItemText(STARTUP_POSITION_LASTSAVED,    tr("LastSaved"));
@@ -165,6 +176,16 @@ bool QGeneralAdvancedDialog::getSaveWindowSize() const
 void QGeneralAdvancedDialog::setSaveWindowSize(bool save)
 {
     ui->saveWindowSizeCheckBox->setChecked(save);
+}
+
+bool QGeneralAdvancedDialog::getSaveSplitterPosition() const
+{
+    return ui->saveSplitterPositionCheckBox->isChecked();
+}
+
+void QGeneralAdvancedDialog::setSaveSplitterPosition(bool save)
+{
+    ui->saveSplitterPositionCheckBox->setChecked(save);
 }
 
 int QGeneralAdvancedDialog::getTableEditModeTrigger()

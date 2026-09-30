@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <ui version="4.0">
  <class>QKeyMapper</class>
  <widget class="QMainWindow" name="QKeyMapper">
@@ -22,16 +22,16 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="centralVerticalLayout" stretch="0,1,0">
     <property name="leftMargin">
-     <number>6</number>
+     <number>10</number>
     </property>
     <property name="topMargin">
      <number>4</number>
     </property>
     <property name="rightMargin">
-     <number>6</number>
+     <number>10</number>
     </property>
     <property name="bottomMargin">
-     <number>6</number>
+     <number>10</number>
     </property>
     <property name="spacing">
      <number>4</number>
@@ -53,6 +53,9 @@
       </property>
       <widget class="ProcessInfoTableWidget" name="processinfoTable" />
       <widget class="KeyMappingTabWidget" name="keyMappingTabWidget" />
+      <property name="handleWidth">
+       <number>10</number>
+      </property>
      </widget>
     </item>
     <item>
@@ -71,7 +74,7 @@
         <number>0</number>
        </property>
        <property name="spacing">
-        <number>8</number>
+        <number>10</number>
        </property>
        <item>
         <widget class="QWidget" name="leftPanelWidget">
@@ -1933,299 +1936,332 @@
            <number>4</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="sourceRowLayout">
-            <property name="spacing">
+           <layout class="QGridLayout" name="keyEditGridLayout" columnstretch="0,2,0,2,0,0">
+            <property name="horizontalSpacing">
              <number>4</number>
             </property>
-            <item>
-             <widget class="QPushButton" name="oriList_SelectKeyboardButton">
-              <property name="focusPolicy">
-               <enum>Qt::FocusPolicy::NoFocus</enum>
+            <property name="verticalSpacing">
+             <number>4</number>
+            </property>
+            <item row="0" column="1">
+             <layout class="QHBoxLayout" name="sourceCategoryLayout">
+              <property name="spacing">
+               <number>2</number>
               </property>
-              <property name="text">
-               <string />
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-             </widget>
+              <item>
+               <widget class="QPushButton" name="oriList_SelectKeyboardButton">
+                <property name="focusPolicy">
+                 <enum>Qt::FocusPolicy::NoFocus</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>16</width>
+                  <height>16</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="oriList_SelectMouseButton">
+                <property name="focusPolicy">
+                 <enum>Qt::FocusPolicy::NoFocus</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>16</width>
+                  <height>16</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="oriList_SelectGamepadButton">
+                <property name="focusPolicy">
+                 <enum>Qt::FocusPolicy::NoFocus</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>16</width>
+                  <height>16</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="oriList_SelectFunctionButton">
+                <property name="focusPolicy">
+                 <enum>Qt::FocusPolicy::NoFocus</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>16</width>
+                  <height>16</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="spacer_orikey_cat">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Policy::Expanding</enum>
+                </property>
+                <property name="sizeHint">
+                 <size>
+                  <width>10</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
             </item>
-            <item>
-             <widget class="QPushButton" name="oriList_SelectMouseButton">
-              <property name="focusPolicy">
-               <enum>Qt::FocusPolicy::NoFocus</enum>
+            <item row="0" column="3" colspan="2">
+             <layout class="QHBoxLayout" name="targetCategoryLayout">
+              <property name="spacing">
+               <number>2</number>
               </property>
-              <property name="text">
-               <string />
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-             </widget>
+              <item>
+               <widget class="QPushButton" name="mapList_SelectKeyboardButton">
+                <property name="focusPolicy">
+                 <enum>Qt::FocusPolicy::NoFocus</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>16</width>
+                  <height>16</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="mapList_SelectMouseButton">
+                <property name="focusPolicy">
+                 <enum>Qt::FocusPolicy::NoFocus</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>16</width>
+                  <height>16</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="mapList_SelectGamepadButton">
+                <property name="focusPolicy">
+                 <enum>Qt::FocusPolicy::NoFocus</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>16</width>
+                  <height>16</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="mapList_SelectFunctionButton">
+                <property name="focusPolicy">
+                 <enum>Qt::FocusPolicy::NoFocus</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>16</width>
+                  <height>16</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>22</width>
+                  <height>22</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="spacer_mapkey_cat">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Policy::Expanding</enum>
+                </property>
+                <property name="sizeHint">
+                 <size>
+                  <width>10</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
             </item>
-            <item>
-             <widget class="QPushButton" name="oriList_SelectGamepadButton">
-              <property name="focusPolicy">
-               <enum>Qt::FocusPolicy::NoFocus</enum>
-              </property>
-              <property name="text">
-               <string />
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="oriList_SelectFunctionButton">
-              <property name="focusPolicy">
-               <enum>Qt::FocusPolicy::NoFocus</enum>
-              </property>
-              <property name="text">
-               <string />
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="spacer_c114ea61">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-<property name="sizeType"><enum>QSizePolicy::Policy::Expanding</enum></property>
-<property name="sizeHint"><size><width>10</width><height>20</height></size></property></spacer>
-            </item>
-            <item>
-             <widget class="QPushButton" name="mapList_SelectKeyboardButton">
-              <property name="focusPolicy">
-               <enum>Qt::FocusPolicy::NoFocus</enum>
-              </property>
-              <property name="text">
-               <string />
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="mapList_SelectMouseButton">
-              <property name="focusPolicy">
-               <enum>Qt::FocusPolicy::NoFocus</enum>
-              </property>
-              <property name="text">
-               <string />
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="mapList_SelectGamepadButton">
-              <property name="focusPolicy">
-               <enum>Qt::FocusPolicy::NoFocus</enum>
-              </property>
-              <property name="text">
-               <string />
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="mapList_SelectFunctionButton">
-              <property name="focusPolicy">
-               <enum>Qt::FocusPolicy::NoFocus</enum>
-              </property>
-              <property name="text">
-               <string />
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-              <property name="checkable">
-               <bool>true</bool>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>22</width>
-                <height>22</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="spacer_f32ca4d9">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
-              </property>
-<property name="sizeType"><enum>QSizePolicy::Policy::Expanding</enum></property>
-<property name="sizeHint"><size><width>10</width><height>20</height></size></property></spacer>
-            </item>
-            <item>
+            <item row="0" column="5" rowspan="2">
              <widget class="QPushButton" name="addmapdataButton">
               <property name="focusPolicy">
                <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2250,17 +2286,7 @@
               </property>
              </widget>
             </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QGridLayout" name="keyEditGridLayout" columnstretch="0,2,0,2,0,0">
-            <property name="horizontalSpacing">
-             <number>4</number>
-            </property>
-            <property name="verticalSpacing">
-             <number>4</number>
-            </property>
-            <item row="0" column="0">
+            <item row="1" column="0">
              <widget class="QLabel" name="orikeyLabel">
               <property name="text">
                <string>OriKey</string>
@@ -2270,7 +2296,7 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
+            <item row="1" column="1">
              <widget class="KeyListComboBox" name="orikeyComboBox">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -2289,7 +2315,7 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="2">
+            <item row="1" column="2">
              <widget class="QLabel" name="mapkeyLabel">
               <property name="text">
                <string>MapKey</string>
@@ -2299,7 +2325,7 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="3" colspan="3">
+            <item row="1" column="3" colspan="2">
              <widget class="KeyListComboBox" name="mapkeyComboBox">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -2318,7 +2344,7 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="0">
+            <item row="2" column="0">
              <widget class="QLabel" name="orikeyRecordLabel">
               <property name="text">
                <string>OriKeyRecord</string>
@@ -2328,10 +2354,10 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1" colspan="3">
-             <widget class="QLineEdit" name="originalKeyRecordLineEdit" />
+            <item row="2" column="1" colspan="3">
+             <widget class="QLineEdit" name="originalKeyRecordLineEdit"/>
             </item>
-            <item row="1" column="4">
+            <item row="2" column="4">
              <widget class="QPushButton" name="originalKeyEditModeButton">
               <property name="focusPolicy">
                <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2356,7 +2382,7 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="5">
+            <item row="2" column="5">
              <widget class="QPushButton" name="originalKeyRecordCopyButton">
               <property name="focusPolicy">
                <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2381,7 +2407,7 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
+            <item row="3" column="0">
              <widget class="QLabel" name="triggerTypeLabel">
               <property name="text">
                <string>TriggerType</string>
@@ -2391,18 +2417,21 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="1" colspan="2">
-             <layout class="QHBoxLayout" name="triggerSubLayout">
+            <item row="3" column="1" colspan="5">
+             <layout class="QHBoxLayout" name="triggerRowLayout">
               <property name="spacing">
-               <number>4</number>
+               <number>6</number>
               </property>
               <item>
                <widget class="QComboBox" name="keyPressTypeComboBox">
+                <property name="sizeAdjustPolicy">
+                 <enum>QComboBox::SizeAdjustPolicy::AdjustToContents</enum>
+                </property>
                 <property name="focusPolicy">
                  <enum>Qt::FocusPolicy::NoFocus</enum>
                 </property>
                 <property name="currentText">
-                 <string />
+                 <string/>
                 </property>
                 <property name="currentIndex">
                  <number>-1</number>
@@ -2416,20 +2445,13 @@
                 </property>
                </widget>
               </item>
-             </layout>
-            </item>
-            <item row="2" column="3" colspan="2">
-             <layout class="QHBoxLayout" name="waitSubLayout">
-              <property name="spacing">
-               <number>4</number>
-              </property>
               <item>
                <widget class="QLabel" name="waitTimeLabel">
                 <property name="text">
                  <string>Delay</string>
                 </property>
                 <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
               </item>
@@ -2440,20 +2462,13 @@
                 </property>
                </widget>
               </item>
-             </layout>
-            </item>
-            <item row="2" column="5">
-             <layout class="QHBoxLayout" name="pointSubLayout">
-              <property name="spacing">
-               <number>4</number>
-              </property>
               <item>
                <widget class="QLabel" name="pointLabel">
                 <property name="text">
                  <string>Point</string>
                 </property>
                 <property name="alignment">
-                 <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+                 <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
                 </property>
                </widget>
               </item>
@@ -2465,6 +2480,12 @@
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>68</width>
+                  <height>20</height>
+                 </size>
+                </property>
                 <property name="frameShape">
                  <enum>QFrame::Shape::WinPanel</enum>
                 </property>
@@ -2472,16 +2493,32 @@
                  <enum>QFrame::Shadow::Sunken</enum>
                 </property>
                 <property name="text">
-                 <string />
+                 <string/>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignmentFlag::AlignCenter</set>
                 </property>
                </widget>
               </item>
+              <item>
+               <spacer name="spacer_trigger_tail">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Horizontal</enum>
+                </property>
+                <property name="sizeType">
+                 <enum>QSizePolicy::Policy::Expanding</enum>
+                </property>
+                <property name="sizeHint">
+                 <size>
+                  <width>10</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
              </layout>
             </item>
-            <item row="3" column="0">
+            <item row="4" column="0">
              <widget class="QLabel" name="keyboardSelectLabel">
               <property name="text">
                <string>Keyboard</string>
@@ -2491,7 +2528,7 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="1">
+            <item row="4" column="1">
              <widget class="QComboBox" name="keyboardSelectComboBox">
               <property name="focusPolicy">
                <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2501,7 +2538,7 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="2">
+            <item row="4" column="2">
              <widget class="QLabel" name="pushLevelLabel">
               <property name="text">
                <string>PushLevel</string>
@@ -2511,7 +2548,7 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="3" colspan="2">
+            <item row="4" column="3" colspan="2">
              <widget class="QSlider" name="pushLevelSlider">
               <property name="focusPolicy">
                <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2521,7 +2558,7 @@
               </property>
              </widget>
             </item>
-            <item row="3" column="5">
+            <item row="4" column="5">
              <widget class="QSpinBox" name="pushLevelSpinBox">
               <property name="focusPolicy">
                <enum>Qt::FocusPolicy::ClickFocus</enum>
@@ -2540,7 +2577,7 @@
               </property>
              </widget>
             </item>
-            <item row="4" column="0">
+            <item row="5" column="0">
              <widget class="QLabel" name="mouseSelectLabel">
               <property name="text">
                <string>Mouse</string>
@@ -2550,7 +2587,7 @@
               </property>
              </widget>
             </item>
-            <item row="4" column="1">
+            <item row="5" column="1">
              <widget class="QComboBox" name="mouseSelectComboBox">
               <property name="focusPolicy">
                <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2560,7 +2597,7 @@
               </property>
              </widget>
             </item>
-            <item row="4" column="2">
+            <item row="5" column="2">
              <widget class="QLabel" name="sendTextLabel">
               <property name="text">
                <string>Param</string>
@@ -2570,10 +2607,10 @@
               </property>
              </widget>
             </item>
-            <item row="4" column="3" rowspan="2" colspan="3">
-             <widget class="QPlainTextEdit" name="sendTextPlainTextEdit" />
+            <item row="5" column="3" rowspan="2" colspan="3">
+             <widget class="QPlainTextEdit" name="sendTextPlainTextEdit"/>
             </item>
-            <item row="5" column="0">
+            <item row="6" column="0">
              <widget class="QLabel" name="gamepadSelectLabel">
               <property name="text">
                <string>Gamepad</string>
@@ -2583,7 +2620,7 @@
               </property>
              </widget>
             </item>
-            <item row="5" column="1">
+            <item row="6" column="1">
              <widget class="QComboBox" name="gamepadSelectComboBox">
               <property name="focusPolicy">
                <enum>Qt::FocusPolicy::NoFocus</enum>
@@ -2605,8 +2642,16 @@
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
               </property>
-<property name="sizeType"><enum>QSizePolicy::Policy::Expanding</enum></property>
-<property name="sizeHint"><size><width>10</width><height>20</height></size></property></spacer>
+              <property name="sizeType">
+               <enum>QSizePolicy::Policy::Expanding</enum>
+              </property>
+              <property name="sizeHint">
+               <size>
+                <width>10</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
             </item>
             <item>
              <widget class="MappingStartToolButton" name="keymapButton">
