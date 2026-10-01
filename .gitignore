@@ -33,3 +33,6 @@ QKeyMapper/release/
 build_test_qt6/
 test_snapshots/
 out/
+scratch/
+*.obj
+

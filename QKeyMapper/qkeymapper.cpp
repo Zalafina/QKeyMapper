@@ -3120,6 +3120,18 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
 
+    // Ensure combo boxes do not artificially inflate layout minimum width when populated with long item text
+    ui->gamepadSelectComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    ui->gamepadSelectComboBox->setMinimumContentsLength(5);
+    ui->keyboardSelectComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    ui->keyboardSelectComboBox->setMinimumContentsLength(5);
+    ui->mouseSelectComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    ui->mouseSelectComboBox->setMinimumContentsLength(5);
+    ui->keyPressTypeComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    ui->keyPressTypeComboBox->setMinimumContentsLength(5);
+    ui->settingselectComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    ui->settingselectComboBox->setMinimumContentsLength(5);
+
     if (qApp) {
         qApp->installEventFilter(this);
     }
