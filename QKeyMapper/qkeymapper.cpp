@@ -3103,12 +3103,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->settingTabWidget->setCurrentIndex(ui->settingTabWidget->indexOf(ui->windowinfo));
 
     ui->settingTabWidget->setFocusPolicy(Qt::StrongFocus);
+    ui->settingTabWidget->setUsesScrollButtons(true);
     QTabBar *bar = ui->settingTabWidget->tabBar();
     for (QObject *child : bar->children()) {
         if (QToolButton *btn = qobject_cast<QToolButton *>(child)) {
             btn->setFocusPolicy(Qt::NoFocus);
         }
     }
+    updateMinimumWindowSize();
 
     // Set horizontal contents margins to ensure breathing room between text and sunken frame
     ui->ViGEmBusStatusLabel->setContentsMargins(6, 0, 6, 0);
@@ -15183,6 +15185,7 @@ void QKeyMapper::showEvent(QShowEvent *event)
     // Qt sends non-spontaneous show events before exposing the native window.
     if (false == event->spontaneous()) {
         m_MainWindowBackgroundFillActive = true;
+        updateMinimumWindowSize();
     }
 
     QMainWindow::showEvent(event);
@@ -32059,8 +32062,10 @@ void QKeyMapper::resetMainTableSplitterToDefault()
     if (totalW <= 0) {
         totalW = width() - 24 - ui->mainTableSplitter->handleWidth();
     }
-    int half = totalW / 2;
-    ui->mainTableSplitter->setSizes({half, totalW - half});
+    int leftW = (ui->leftPanelWidget && ui->leftPanelWidget->width() > 0)
+                    ? ui->leftPanelWidget->width()
+                    : (totalW / 2);
+    ui->mainTableSplitter->setSizes({leftW, totalW - leftW});
 }
 
 void QKeyMapper::updateSplitterHandleToolTip()
@@ -32073,6 +32078,32 @@ void QKeyMapper::updateSplitterHandleToolTip()
         return;
     }
     handle->setToolTip(tr("Double-click to reset splitter to center"));
+}
+
+void QKeyMapper::updateMinimumWindowSize()
+{
+    if (!ui || !ui->settingTabWidget || !ui->rightPanelWidget) {
+        return;
+    }
+
+    int leftNeeded = 0;
+    if (ui->leftPanelWidget && ui->leftPanelWidget->layout()) {
+        leftNeeded = ui->leftPanelWidget->layout()->minimumSize().width();
+    }
+
+    int rightNeeded = 0;
+    if (ui->rightPanelWidget->layout()) {
+        rightNeeded = ui->rightPanelWidget->layout()->minimumSize().width();
+    }
+
+    // Both panels are allocated 50% in bottomHorizontalLayout (stretch 1:1).
+    // The half-width must be at least max(leftNeeded, rightNeeded).
+    int halfNeeded = qMax(leftNeeded, rightNeeded);
+    int minContentWidth = halfNeeded * 2;
+    int minWindowWidth = minContentWidth + 24 + 10; // 12px margins left/right + 10px splitter handle/spacing
+
+    int finalMinW = qMax(WINDOW_MIN_WIDTH, minWindowWidth);
+    setMinimumWidth(finalMinW);
 }
 
 void QKeyMapper::hideProcessList()
@@ -32094,12 +32125,7 @@ void QKeyMapper::showProcessList()
     if (ui->mainTableSplitter) {
         QList<int> currentSizes = ui->mainTableSplitter->sizes();
         if (currentSizes.size() == 2 && currentSizes[0] <= 0) {
-            int totalW = ui->mainTableSplitter->width() - ui->mainTableSplitter->handleWidth();
-            if (totalW <= 0) {
-                totalW = width() - 24 - ui->mainTableSplitter->handleWidth();
-            }
-            int half = totalW / 2;
-            ui->mainTableSplitter->setSizes({half, totalW - half});
+            resetMainTableSplitterToDefault();
         }
     }
 }
@@ -35491,6 +35517,7 @@ void QKeyMapper::setUILanguage(int languageindex)
     }
 
     updateSplitterHandleToolTip();
+    updateMinimumWindowSize();
 }
 
 void QKeyMapper::resetFontSize()

@@ -1943,6 +1943,7 @@ private:
     void applyResizeLayout(int dw, int dh);
     void resetMainTableSplitterToDefault(void);
     void updateSplitterHandleToolTip(void);
+    void updateMinimumWindowSize(void);
     bool isCloseToSystemtray();
 
 public:
