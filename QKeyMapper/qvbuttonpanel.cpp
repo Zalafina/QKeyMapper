@@ -532,7 +532,7 @@ QString QVButtonPanel::extractButtonLabel(const QString &vbuttonKey) const
 QPoint QVButtonPanel::calculateReferenceOrigin(int referencePoint) const
 {
     // Screen-based reference points
-    QScreen *screen = QGuiApplication::primaryScreen();
+    QScreen *screen = this->windowHandle() ? this->windowHandle()->screen() : QGuiApplication::primaryScreen();
     QRect screenRect = screen ? screen->geometry() : QRect(0, 0, 1920, 1080);
 
     switch (referencePoint) {
@@ -561,7 +561,11 @@ QPoint QVButtonPanel::calculateReferenceOrigin(int referencePoint) const
 
     RECT wr = {};
     GetWindowRect(targetHwnd, &wr);
-    int wl = wr.left, wt = wr.top, ww = wr.right - wr.left, wh = wr.bottom - wr.top;
+    const qreal dpiScale = screen ? screen->devicePixelRatio() : 1.0;
+    const int wl = (dpiScale > 0.0) ? qRound(wr.left / dpiScale) : wr.left;
+    const int wt = (dpiScale > 0.0) ? qRound(wr.top / dpiScale) : wr.top;
+    const int ww = (dpiScale > 0.0) ? qRound((wr.right - wr.left) / dpiScale) : (wr.right - wr.left);
+    const int wh = (dpiScale > 0.0) ? qRound((wr.bottom - wr.top) / dpiScale) : (wr.bottom - wr.top);
 
     switch (referencePoint) {
     case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT:

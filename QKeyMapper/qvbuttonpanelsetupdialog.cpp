@@ -27,32 +27,27 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
 
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->colorGroupBox->setStyle(windowsStyle);
+        ui->panelSettingsGroupBox->setStyle(windowsStyle);
+        ui->fontGroupBox->setStyle(windowsStyle);
+        ui->positionGroupBox->setStyle(windowsStyle);
     }
 
-    // Position color pickers inside the color group box.
-    // raise() is required because the pickers are created in the member initializer list
-    // (before setupUi), so colorGroupBox has a higher z-order and would otherwise eat
-    // all mouse events over that area.
-    m_BtnColorPicker->move(40, 30);
+    // Add color pickers into the color group box grid layout
+    ui->gridLayout_Color->addWidget(m_BtnColorPicker, 0, 0);
     m_BtnColorPicker->setColor(VBTNPANEL_BUTTON_COLOR_DEFAULT);
-    m_BtnColorPicker->raise();
 
     m_BGColorPicker->setShowAlphaChannel(true);
-    m_BGColorPicker->move(185, 30);
+    ui->gridLayout_Color->addWidget(m_BGColorPicker, 0, 1);
     m_BGColorPicker->setColor(VBTNPANEL_BACKGROUND_COLOR_DEFAULT);
-    m_BGColorPicker->raise();
 
-    m_PressedColorPicker->move(40, 65);
+    ui->gridLayout_Color->addWidget(m_PressedColorPicker, 1, 0);
     m_PressedColorPicker->setColor(VBTNPANEL_PRESSED_COLOR_DEFAULT);
-    m_PressedColorPicker->raise();
 
-    m_LockedColorPicker->move(185, 65);
+    ui->gridLayout_Color->addWidget(m_LockedColorPicker, 1, 1);
     m_LockedColorPicker->setColor(VBTNPANEL_LOCKED_COLOR_DEFAULT);
-    m_LockedColorPicker->raise();
 
-    m_TextColorPicker->move(40, 100);
+    ui->gridLayout_Color->addWidget(m_TextColorPicker, 2, 0);
     m_TextColorPicker->setColor(VBTNPANEL_TEXT_COLOR_DEFAULT);
-    m_TextColorPicker->raise();
     // Populate reference point combo box — index must match FLOATINGWINDOW_REFERENCEPOINT_* values exactly
     QStringList referencePointList;
     referencePointList.append(tr("ScreenTopLeft"));      // 0  FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT
@@ -151,6 +146,9 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     setWindowTitle(tr("VButton Panel Setup"));
 
     ui->colorGroupBox->setTitle(tr("Color"));
+    ui->panelSettingsGroupBox->setTitle(tr("Panel"));
+    ui->fontGroupBox->setTitle(tr("Font"));
+    ui->positionGroupBox->setTitle(tr("Position"));
     ui->columnsLabel->setText(tr("Columns"));
     ui->maxRowsLabel->setText(tr("Max Rows"));
     ui->btnWidthLabel->setText(tr("Btn Width"));
