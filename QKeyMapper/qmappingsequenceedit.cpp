@@ -1280,6 +1280,8 @@ void QMappingSequenceEdit::initMappingSequenceEditTable(MappingSequenceEditTable
 
 void QMappingSequenceEdit::initKeyListComboBoxes()
 {
+    ui->MappingSequenceEdit_MappingKeyListComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    ui->MappingSequenceEdit_MappingKeyListComboBox->setMinimumContentsLength(5);
     updateMappingKeyListComboBox();
 }
 
