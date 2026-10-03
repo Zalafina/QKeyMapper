@@ -2143,6 +2143,12 @@ bool QItemSetupDialog::eventFilter(QObject *object, QEvent *event)
 
 void QItemSetupDialog::initKeyListComboBoxes()
 {
+    // Ensure combo boxes do not artificially inflate layout minimum width when populated with long item text
+    ui->SetupDialog_OriginalKeyListComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    ui->SetupDialog_OriginalKeyListComboBox->setMinimumContentsLength(5);
+    ui->SetupDialog_MappingKeyListComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    ui->SetupDialog_MappingKeyListComboBox->setMinimumContentsLength(5);
+
     updateOriginalKeyListComboBox();
     updateMappingKeyListComboBox();
 

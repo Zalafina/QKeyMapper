@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -19,13 +19,7 @@
   <property name="minimumSize">
    <size>
     <width>720</width>
-    <height>480</height>
-   </size>
-  </property>
-  <property name="maximumSize">
-   <size>
-    <width>16777215</width>
-    <height>480</height>
+    <height>0</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -194,8 +188,8 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>91</width>
-         <height>51</height>
+         <width>120</width>
+         <height>52</height>
         </size>
        </property>
        <property name="focusPolicy">
@@ -260,7 +254,7 @@ Update</string>
     </layout>
    </item>
    <item>
-    <layout class="QGridLayout" name="filterComboGridLayout">
+    <layout class="QGridLayout" name="filterComboGridLayout" columnstretch="0,1,0,0,1,0">
      <property name="spacing">
       <number>4</number>
      </property>
@@ -609,23 +603,16 @@ Update</string>
       </layout>
      </item>
      <item row="0" column="5">
-      <spacer name="filterRow_rightSpacer">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="0" column="6">
       <widget class="QPushButton" name="recordKeysButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize">
         <size>
-         <width>121</width>
+         <width>120</width>
          <height>0</height>
         </size>
        </property>
@@ -659,16 +646,22 @@ Update</string>
      <item row="1" column="1">
       <widget class="KeyListComboBox" name="SetupDialog_OriginalKeyListComboBox">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
-         <width>151</width>
+         <width>140</width>
          <height>0</height>
         </size>
+       </property>
+       <property name="sizeAdjustPolicy">
+        <enum>QComboBox::SizeAdjustPolicy::AdjustToMinimumContentsLengthWithIcon</enum>
+       </property>
+       <property name="minimumContentsLength">
+        <number>5</number>
        </property>
        <property name="focusPolicy">
         <enum>Qt::FocusPolicy::ClickFocus</enum>
@@ -710,6 +703,31 @@ Update</string>
      <item row="1" column="4">
       <widget class="KeyListComboBox" name="SetupDialog_MappingKeyListComboBox">
        <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>140</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="sizeAdjustPolicy">
+        <enum>QComboBox::SizeAdjustPolicy::AdjustToMinimumContentsLengthWithIcon</enum>
+       </property>
+       <property name="minimumContentsLength">
+        <number>5</number>
+       </property>
+       <property name="focusPolicy">
+        <enum>Qt::FocusPolicy::ClickFocus</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="5">
+      <widget class="QPushButton" name="crosshairSetupButton">
+       <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
@@ -717,20 +735,7 @@ Update</string>
        </property>
        <property name="minimumSize">
         <size>
-         <width>151</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="focusPolicy">
-        <enum>Qt::FocusPolicy::ClickFocus</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="6">
-      <widget class="QPushButton" name="crosshairSetupButton">
-       <property name="minimumSize">
-        <size>
-         <width>121</width>
+         <width>120</width>
          <height>0</height>
         </size>
        </property>
@@ -811,9 +816,15 @@ Update</string>
      </item>
      <item row="0" column="4">
       <widget class="QPushButton" name="floatingButtonSetupButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="minimumSize">
         <size>
-         <width>121</width>
+         <width>120</width>
          <height>0</height>
         </size>
        </property>
@@ -844,7 +855,7 @@ Update</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="1" column="1" colspan="4">
       <widget class="QLineEdit" name="itemNoteLineEdit"/>
      </item>
     </layout>
