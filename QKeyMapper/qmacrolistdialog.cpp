@@ -1441,6 +1441,8 @@ void QMacroListDialog::updateMacroDataTableConnection(MacroListDataTableWidget *
 
 void QMacroListDialog::initKeyListComboBoxes()
 {
+    ui->MacroList_MappingKeyListComboBox->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    ui->MacroList_MappingKeyListComboBox->setMinimumContentsLength(5);
     updateMappingKeyListComboBox();
 }
 
