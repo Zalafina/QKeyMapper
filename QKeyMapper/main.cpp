@@ -313,7 +313,6 @@ void setupQtScaleEnvironment(const QString &program_dir)
     double system_scale_value = dWidth / dScreenWidth;
     ReleaseDC(NULL, hdc);
 
-    bool high_dpi = false;
     double scale_value = 0;
     switch (display_scale) {
     case DISPLAY_SCALE_PERCENT_50:
@@ -349,31 +348,24 @@ void setupQtScaleEnvironment(const QString &program_dir)
     case DISPLAY_SCALE_PERCENT_125:
         scale_value = SCALE_125;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        high_dpi = true;
         system_scale_value = SCALE_125;
         break;
     case DISPLAY_SCALE_PERCENT_150:
         scale_value = SCALE_150;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        high_dpi = true;
         system_scale_value = SCALE_150;
         break;
     case DISPLAY_SCALE_PERCENT_175:
         scale_value = SCALE_175;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        high_dpi = true;
         system_scale_value = SCALE_175;
         break;
     case DISPLAY_SCALE_PERCENT_200:
         scale_value = SCALE_200;
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        high_dpi = true;
         system_scale_value = SCALE_200;
         break;
     default:
-        if (width >= 3840) {
-            high_dpi = true;
-        }
         break;
     }
 
@@ -386,14 +378,9 @@ void setupQtScaleEnvironment(const QString &program_dir)
     QKeyMapper::setDisplayScaleValue(system_scale_value);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
-    if (high_dpi) {
-        QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::Ceil);
-    }
-    else {
-        QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
-    }
-#else
-    Q_UNUSED(high_dpi);
+    // Standardize HighDpiScaleFactorRoundingPolicy to PassThrough across all scaling modes.
+    // This honors exact OS fractional scaling (e.g. 150%) linearly instead of forcibly rounding to 200%.
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 #endif
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
