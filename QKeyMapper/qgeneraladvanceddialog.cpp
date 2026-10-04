@@ -25,15 +25,12 @@ QGeneralAdvancedDialog::QGeneralAdvancedDialog(QWidget *parent)
     }
 
     if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
-        ui->startupPositionComboBox->setStyle(fusionStyle);
-        ui->startupSpecifyPositionXSpinBox->setStyle(fusionStyle);
-        ui->startupSpecifyPositionYSpinBox->setStyle(fusionStyle);
-        ui->tableEditModeTriggerComboBox->setStyle(fusionStyle);
-        ui->tableInsertModeComboBox->setStyle(fusionStyle);
-        ui->disableGlobalMappingInFullscreenCheckBox->setStyle(fusionStyle);
-        ui->fullscreenGlobalMappingProcessLineEdit->setStyle(fusionStyle);
-        ui->soundEffectCheckBox->setStyle(fusionStyle);
-        ui->globalSettingSwitchTimerSpinBox->setStyle(fusionStyle);
+        const auto childWidgets = findChildren<QWidget*>();
+        for (QWidget *w : childWidgets) {
+            if (!qobject_cast<QGroupBox*>(w)) {
+                w->setStyle(fusionStyle);
+            }
+        }
     }
 
     QStringList startupPositionList;

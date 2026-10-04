@@ -24,8 +24,12 @@ QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     }
 
     if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
-        ui->gamepadTouchpadXSpeedSpinBox->setStyle(fusionStyle);
-        ui->gamepadTouchpadYSpeedSpinBox->setStyle(fusionStyle);
+        const auto childWidgets = findChildren<QWidget*>();
+        for (QWidget *w : childWidgets) {
+            if (!qobject_cast<QGroupBox*>(w)) {
+                w->setStyle(fusionStyle);
+            }
+        }
     }
 
     ui->mouseXSpeedSpinBox->setRange(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX);
