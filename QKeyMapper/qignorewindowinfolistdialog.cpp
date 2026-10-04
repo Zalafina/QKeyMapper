@@ -2,6 +2,7 @@
 #include "qignorewindowinfolistdialog.h"
 #include "ui_qignorewindowinfolistdialog.h"
 #include "qkeymapper_constants.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 
@@ -13,6 +14,19 @@ QIgnoreWindowInfoListDialog::QIgnoreWindowInfoListDialog(QWidget *parent)
 {
     m_instance = this;
     ui->setupUi(this);
+
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        ui->ruleEditGroupBox->setStyle(windowsStyle);
+        ui->ruleListGroupBox->setStyle(windowsStyle);
+    }
+
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        for (QWidget *child : findChildren<QWidget*>()) {
+            if (!qobject_cast<QGroupBox*>(child)) {
+                child->setStyle(fusionStyle);
+            }
+        }
+    }
 
     QStringList windowinfoMatchList;
     windowinfoMatchList.append(tr("Ignore"));
@@ -49,6 +63,9 @@ void QIgnoreWindowInfoListDialog::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
     setWindowTitle(tr("Ignore Rules List"));
+
+    ui->ruleEditGroupBox->setTitle(tr("Rule Configuration"));
+    ui->ruleListGroupBox->setTitle(tr("Rules List"));
 
     ui->ruleNameLabel->setText(tr("Rule Name"));
     ui->ruleProcessNameLabel->setText(tr("Process"));

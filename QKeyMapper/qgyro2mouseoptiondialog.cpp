@@ -1,6 +1,7 @@
 #include "qgyro2mouseoptiondialog.h"
 #include "ui_qgyro2mouseoptiondialog.h"
 #include "qkeymapper_constants.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 
@@ -12,6 +13,19 @@ QGyro2MouseOptionDialog::QGyro2MouseOptionDialog(QWidget *parent)
 {
     m_instance = this;
     ui->setupUi(this);
+
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        ui->xAxisGroupBox->setStyle(windowsStyle);
+        ui->yAxisGroupBox->setStyle(windowsStyle);
+    }
+
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        for (QWidget *child : findChildren<QWidget*>()) {
+            if (!qobject_cast<QGroupBox*>(child)) {
+                child->setStyle(fusionStyle);
+            }
+        }
+    }
 
     QStringList mouseInputSourceList;
     mouseInputSourceList.append(tr("Gyro X"));
@@ -51,6 +65,9 @@ void QGyro2MouseOptionDialog::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
     setWindowTitle(tr("Gyro2Mouse Advanced Setting"));
+
+    ui->xAxisGroupBox->setTitle(tr("X Axis"));
+    ui->yAxisGroupBox->setTitle(tr("Y Axis"));
 
     ui->mouseXInputSourceLabel->setText(tr("X Source"));
     ui->mouseYInputSourceLabel->setText(tr("Y Source"));

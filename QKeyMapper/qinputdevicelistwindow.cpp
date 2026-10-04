@@ -3,6 +3,7 @@
 #include "interception_worker.h"
 #include "qkeymapper.h"
 #include "ui_qinputdevicelistwindow.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 
@@ -11,6 +12,19 @@ QInputDeviceListWindow::QInputDeviceListWindow(QWidget *parent)
     , ui(new Ui::QInputDeviceListWindow)
 {
     ui->setupUi(this);
+
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        ui->keyboardGroupBox->setStyle(windowsStyle);
+        ui->mouseGroupBox->setStyle(windowsStyle);
+    }
+
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        for (QWidget *child : findChildren<QWidget*>()) {
+            if (!qobject_cast<QGroupBox*>(child)) {
+                child->setStyle(fusionStyle);
+            }
+        }
+    }
 
     initKeyboardDeviceTable();
     initMouseDeviceTable();
@@ -33,6 +47,8 @@ void QInputDeviceListWindow::setUILanguage(int languageindex)
     ui->cancelButton->setText(tr(CANCELBUTTON_STR));
     ui->keyboardLabel->setText(tr(KEYBOARDLABEL_STR));
     ui->mouseLabel->setText(tr(MOUSELABEL_STR));
+    ui->keyboardGroupBox->setTitle(tr(KEYBOARDLABEL_STR));
+    ui->mouseGroupBox->setTitle(tr(MOUSELABEL_STR));
 
     ui->keyboardDeviceTable->setHorizontalHeaderLabels(QStringList()    << tr("No.")
                                                                         << tr("Device Description")
@@ -94,12 +110,6 @@ void QInputDeviceListWindow::resetFontSize()
         else {
             customFont.setPointSize(9);
         }
-        // if (UI_SCALE_4K_PERCENT_150 == scale) {
-        //     customFont.setPointSize(13);
-        // }
-        // else {
-        //     customFont.setPointSize(11);
-        // }
     }
 
     ui->keyboardLabel->setFont(customFont);
@@ -120,17 +130,6 @@ void QInputDeviceListWindow::resetFontSize()
 
     ui->keyboardDeviceTable->setFont(QFont("Microsoft YaHei", 9));
     ui->mouseDeviceTable->setFont(QFont("Microsoft YaHei", 9));
-
-    if (UI_SCALE_4K_PERCENT_150 == scale) {
-        /* change hight to 265 */
-        ui->keyboardDeviceTable->setFixedHeight(265);
-        ui->mouseDeviceTable->setFixedHeight(265);
-    }
-    else {
-        /* change hight to 268 */
-        ui->keyboardDeviceTable->setFixedHeight(268);
-        ui->mouseDeviceTable->setFixedHeight(268);
-    }
 }
 
 void QInputDeviceListWindow::updateDeviceListInfo()
@@ -373,7 +372,7 @@ void QInputDeviceListWindow::initKeyboardDeviceTable()
 {
     ui->keyboardDeviceTable->setFocusPolicy(Qt::NoFocus);
     ui->keyboardDeviceTable->setColumnCount(KEYBOARD_TABLE_COLUMN_COUNT);
-    ui->keyboardDeviceTable->horizontalHeader()->setStretchLastSection(true);
+    ui->keyboardDeviceTable->horizontalHeader()->setStretchLastSection(false);
     ui->keyboardDeviceTable->horizontalHeader()->setHighlightSections(false);
     ui->keyboardDeviceTable->verticalHeader()->setVisible(false);
     ui->keyboardDeviceTable->verticalHeader()->setDefaultSectionSize(25);
@@ -381,32 +380,40 @@ void QInputDeviceListWindow::initKeyboardDeviceTable()
     ui->keyboardDeviceTable->setSelectionMode(QAbstractItemView::NoSelection);
     ui->keyboardDeviceTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    int number_width = 26;
-    int devicedesc_width = ui->keyboardDeviceTable->width()/7;
-    int vendorid_width = 60;
-    int productid_width = 60;
-    int vendorstr_width = ui->keyboardDeviceTable->width()/7 - 40;
-    int productstr_width = ui->keyboardDeviceTable->width()/5 - 30;
-    int manufacturer_width = vendorstr_width;
-    int disable_width = 30;
-    int hardwareid_width = ui->keyboardDeviceTable->width() - number_width - devicedesc_width - vendorid_width - productid_width - vendorstr_width - productstr_width - manufacturer_width - disable_width - 12;
+    int number_width = 32;
+    int devicedesc_width = 180;
+    int vendorid_width = 65;
+    int productid_width = 65;
+    int vendorstr_width = 120;
+    int productstr_width = 150;
+    int manufacturer_width = 120;
+    int disable_width = 50;
 
     ui->keyboardDeviceTable->setColumnWidth(DEVICE_TABLE_NUMBER_COLUMN, number_width);
     ui->keyboardDeviceTable->setColumnWidth(DEVICE_TABLE_DEVICEDESC_COLUMN, devicedesc_width);
-    ui->keyboardDeviceTable->setColumnWidth(DEVICE_TABLE_HARDWAREID_COLUMN, hardwareid_width);
     ui->keyboardDeviceTable->setColumnWidth(DEVICE_TABLE_VENDORID_COLUMN, vendorid_width);
     ui->keyboardDeviceTable->setColumnWidth(DEVICE_TABLE_PRODUCTID_COLUMN, productid_width);
     ui->keyboardDeviceTable->setColumnWidth(DEVICE_TABLE_VENDORSTR_COLUMN, vendorstr_width);
     ui->keyboardDeviceTable->setColumnWidth(DEVICE_TABLE_PRODUCTSTR_COLUMN, productstr_width);
     ui->keyboardDeviceTable->setColumnWidth(DEVICE_TABLE_MANUFACTURER_COLUMN, manufacturer_width);
     ui->keyboardDeviceTable->setColumnWidth(DEVICE_TABLE_DISABLE_COLUMN, disable_width);
+
+    ui->keyboardDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_NUMBER_COLUMN, QHeaderView::Fixed);
+    ui->keyboardDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_DEVICEDESC_COLUMN, QHeaderView::Interactive);
+    ui->keyboardDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_HARDWAREID_COLUMN, QHeaderView::Stretch);
+    ui->keyboardDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_VENDORID_COLUMN, QHeaderView::Fixed);
+    ui->keyboardDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_PRODUCTID_COLUMN, QHeaderView::Fixed);
+    ui->keyboardDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_VENDORSTR_COLUMN, QHeaderView::Interactive);
+    ui->keyboardDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_PRODUCTSTR_COLUMN, QHeaderView::Interactive);
+    ui->keyboardDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_MANUFACTURER_COLUMN, QHeaderView::Interactive);
+    ui->keyboardDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_DISABLE_COLUMN, QHeaderView::Fixed);
 }
 
 void QInputDeviceListWindow::initMouseDeviceTable()
 {
     ui->mouseDeviceTable->setFocusPolicy(Qt::NoFocus);
     ui->mouseDeviceTable->setColumnCount(MOUSE_TABLE_COLUMN_COUNT);
-    ui->mouseDeviceTable->horizontalHeader()->setStretchLastSection(true);
+    ui->mouseDeviceTable->horizontalHeader()->setStretchLastSection(false);
     ui->mouseDeviceTable->horizontalHeader()->setHighlightSections(false);
     ui->mouseDeviceTable->verticalHeader()->setVisible(false);
     ui->mouseDeviceTable->verticalHeader()->setDefaultSectionSize(25);
@@ -414,25 +421,33 @@ void QInputDeviceListWindow::initMouseDeviceTable()
     ui->mouseDeviceTable->setSelectionMode(QAbstractItemView::NoSelection);
     ui->mouseDeviceTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    int number_width = 26;
-    int devicedesc_width = ui->mouseDeviceTable->width()/7;
-    int vendorid_width = 60;
-    int productid_width = 60;
-    int vendorstr_width = ui->mouseDeviceTable->width()/7 - 40;
-    int productstr_width = ui->mouseDeviceTable->width()/5 - 30;
-    int manufacturer_width = vendorstr_width;
-    int disable_width = 30;
-    int hardwareid_width = ui->mouseDeviceTable->width() - number_width - devicedesc_width - vendorid_width - productid_width - vendorstr_width - productstr_width - manufacturer_width - disable_width - 12;
+    int number_width = 32;
+    int devicedesc_width = 180;
+    int vendorid_width = 65;
+    int productid_width = 65;
+    int vendorstr_width = 120;
+    int productstr_width = 150;
+    int manufacturer_width = 120;
+    int disable_width = 50;
 
     ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_NUMBER_COLUMN, number_width);
     ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_DEVICEDESC_COLUMN, devicedesc_width);
-    ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_HARDWAREID_COLUMN, hardwareid_width);
     ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_VENDORID_COLUMN, vendorid_width);
     ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_PRODUCTID_COLUMN, productid_width);
     ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_VENDORSTR_COLUMN, vendorstr_width);
     ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_PRODUCTSTR_COLUMN, productstr_width);
     ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_MANUFACTURER_COLUMN, manufacturer_width);
     ui->mouseDeviceTable->setColumnWidth(DEVICE_TABLE_DISABLE_COLUMN, disable_width);
+
+    ui->mouseDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_NUMBER_COLUMN, QHeaderView::Fixed);
+    ui->mouseDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_DEVICEDESC_COLUMN, QHeaderView::Interactive);
+    ui->mouseDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_HARDWAREID_COLUMN, QHeaderView::Stretch);
+    ui->mouseDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_VENDORID_COLUMN, QHeaderView::Fixed);
+    ui->mouseDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_PRODUCTID_COLUMN, QHeaderView::Fixed);
+    ui->mouseDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_VENDORSTR_COLUMN, QHeaderView::Interactive);
+    ui->mouseDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_PRODUCTSTR_COLUMN, QHeaderView::Interactive);
+    ui->mouseDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_MANUFACTURER_COLUMN, QHeaderView::Interactive);
+    ui->mouseDeviceTable->horizontalHeader()->setSectionResizeMode(DEVICE_TABLE_DISABLE_COLUMN, QHeaderView::Fixed);
 }
 
 void QInputDeviceListWindow::onKeyboardListCellChanged(int row, int col)

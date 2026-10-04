@@ -1,6 +1,7 @@
 #include "qtrayiconselectdialog.h"
 #include "ui_qtrayiconselectdialog.h"
 #include "qkeymapper.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 
@@ -12,6 +13,18 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
 {
     m_instance = this;
     ui->setupUi(this);
+
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        ui->trayIconGroupBox->setStyle(windowsStyle);
+    }
+
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        for (QWidget *child : findChildren<QWidget*>()) {
+            if (!qobject_cast<QGroupBox*>(child)) {
+                child->setStyle(fusionStyle);
+            }
+        }
+    }
 
     initSelectTrayIconFileDialog();
     initTrayIconComboBoxes();
@@ -120,6 +133,8 @@ void QTrayIconSelectDialog::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
     setWindowTitle(tr("Select Systemtray Icon"));
+
+    ui->trayIconGroupBox->setTitle(tr("State Icons"));
 
     ui->idleStateTrayIconSelectLabel->setText(tr("Idle"));
     ui->monitoringStateTrayIconSelectLabel->setText(tr("Monitoring"));

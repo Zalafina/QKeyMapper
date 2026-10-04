@@ -17,6 +17,14 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    if (QGridLayout *fontLayout = qobject_cast<QGridLayout*>(ui->fontGroupBox->layout())) {
+        fontLayout->addWidget(m_FontColorPicker, 0, 0, 1, 3);
+    }
+    if (QGridLayout *borderLayout = qobject_cast<QGridLayout*>(ui->borderGroupBox->layout())) {
+        borderLayout->addWidget(m_BackgroundColorPicker, 0, 0, 1, 2);
+    }
+    m_BackgroundColorPicker->setShowAlphaChannel(true);
+
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->fontGroupBox->setStyle(windowsStyle);
         ui->durationGroupBox->setStyle(windowsStyle);
@@ -24,29 +32,13 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
         ui->offsetGroupBox->setStyle(windowsStyle);
     }
 
-    int x_offset = 13;
-    int y_offset = 15;
-    QRect fontWidgetGeometry = ui->fontGroupBox->geometry();
-    int font_color_x = fontWidgetGeometry.x();
-    int font_color_y = fontWidgetGeometry.y();
-    font_color_x += x_offset;
-    font_color_y += y_offset;
-    // Set position for the font color picker
-    m_FontColorPicker->move(font_color_x, font_color_y);
-
-    x_offset = 19;
-    y_offset = 15;
-    QRect borderWidgetGeometry = ui->borderGroupBox->geometry();
-    int background_color_x = borderWidgetGeometry.x();
-    int background_color_y = borderWidgetGeometry.y();
-    background_color_x += x_offset;
-    background_color_y += y_offset;
-    // Set position for the background color picker
-    m_BackgroundColorPicker->move(background_color_x, background_color_y);
-
-    m_FontColorPicker->raise();
-    m_BackgroundColorPicker->raise();
-    m_BackgroundColorPicker->setShowAlphaChannel(true);
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        for (QWidget *child : findChildren<QWidget*>()) {
+            if (!qobject_cast<QGroupBox*>(child)) {
+                child->setStyle(fusionStyle);
+            }
+        }
+    }
 
     QStringList fontWeightList;
     fontWeightList.append(tr("Light"));
