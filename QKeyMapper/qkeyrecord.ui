@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>600</width>
-    <height>160</height>
+    <width>560</width>
+    <height>165</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,22 +18,22 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>600</width>
+    <width>520</width>
     <height>160</height>
-   </size>
-  </property>
-  <property name="maximumSize">
-   <size>
-    <width>16777215</width>
-    <height>320</height>
    </size>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <property name="leftMargin">
-    <number>19</number>
+    <number>15</number>
+   </property>
+   <property name="topMargin">
+    <number>12</number>
    </property>
    <property name="rightMargin">
-    <number>19</number>
+    <number>15</number>
+   </property>
+   <property name="bottomMargin">
+    <number>12</number>
    </property>
    <item>
     <widget class="QLabel" name="keyRecordLabel">
@@ -57,64 +57,57 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>10</number>
+     </property>
      <item>
-      <widget class="QWidget" name="widget" native="true">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
+      <widget class="QGroupBox" name="recordingOptionsGroupBox">
+       <property name="alignment">
+        <set>Qt::AlignmentFlag::AlignCenter</set>
        </property>
-       <property name="minimumSize">
-        <size>
-         <width>181</width>
-         <height>71</height>
-        </size>
+       <property name="title">
+        <string>Recording Options</string>
        </property>
-       <property name="maximumSize">
-        <size>
-         <width>181</width>
-         <height>71</height>
-        </size>
-       </property>
-       <widget class="QCheckBox" name="ignoreWaitTimeCheckBox">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>40</y>
-          <width>181</width>
-          <height>21</height>
-         </rect>
+       <layout class="QVBoxLayout" name="recordingOptionsLayout">
+        <property name="leftMargin">
+         <number>10</number>
         </property>
-        <property name="focusPolicy">
-         <enum>Qt::FocusPolicy::NoFocus</enum>
+        <property name="topMargin">
+         <number>6</number>
         </property>
-        <property name="text">
-         <string>Ignore waittime</string>
+        <property name="rightMargin">
+         <number>10</number>
         </property>
-        <property name="checked">
-         <bool>false</bool>
+        <property name="bottomMargin">
+         <number>6</number>
         </property>
-       </widget>
-       <widget class="QCheckBox" name="mergeKeyActionsCheckBox">
-        <property name="geometry">
-         <rect>
-          <x>10</x>
-          <y>10</y>
-          <width>181</width>
-          <height>21</height>
-         </rect>
-        </property>
-        <property name="focusPolicy">
-         <enum>Qt::FocusPolicy::NoFocus</enum>
-        </property>
-        <property name="text">
-         <string>Merge key actions</string>
-        </property>
-        <property name="checked">
-         <bool>false</bool>
-        </property>
-       </widget>
+        <item>
+         <widget class="QCheckBox" name="mergeKeyActionsCheckBox">
+          <property name="focusPolicy">
+           <enum>Qt::FocusPolicy::NoFocus</enum>
+          </property>
+          <property name="text">
+           <string>Merge key actions</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCheckBox" name="ignoreWaitTimeCheckBox">
+          <property name="focusPolicy">
+           <enum>Qt::FocusPolicy::NoFocus</enum>
+          </property>
+          <property name="text">
+           <string>Ignore waittime</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </item>
      <item>
@@ -124,7 +117,7 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>40</width>
+         <width>20</width>
          <height>20</height>
         </size>
        </property>
@@ -133,21 +126,15 @@
      <item>
       <widget class="QPushButton" name="recordStartStopButton">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
-         <width>121</width>
-         <height>31</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>122</width>
-         <height>31</height>
+         <width>120</width>
+         <height>32</height>
         </size>
        </property>
        <property name="focusPolicy">
@@ -168,7 +155,7 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>40</width>
+         <width>20</width>
          <height>20</height>
         </size>
        </property>

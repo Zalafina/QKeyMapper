@@ -508,110 +508,110 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
 <context>
     <name>QCrosshairSetupDialog</name>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="32"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="84"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="26"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="80"/>
         <source>Crosshair Setup</source>
         <translation>十字線設定</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="44"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="91"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="195"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="87"/>
         <source>Width</source>
         <translation>線幅</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="76"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="95"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="123"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="91"/>
         <source>Show Center</source>
         <translation>中心点表示</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="92"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="98"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="254"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="94"/>
         <source>Show Left</source>
         <translation>左側表示</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="118"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="92"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="228"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="88"/>
         <source>Length</source>
         <translation>線長</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="163"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="97"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="221"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="93"/>
         <source>Show Bottom</source>
         <translation>下側表示</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="192"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="96"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="188"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="92"/>
         <source>Show Top</source>
         <translation>上側表示</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="218"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="102"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="353"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="98"/>
         <source>Y-Offset</source>
         <translation>Yオフセット</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="234"/>
-        <location filename="../qcrosshairsetupdialog.ui" line="295"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="90"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="93"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="103"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="261"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="86"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="89"/>
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="263"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="101"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="330"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="97"/>
         <source>X-Offset</source>
         <translation>Xオフセット</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="279"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="89"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="80"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="85"/>
         <source>Size</source>
         <translation>サイズ</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="311"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="85"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="53"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="81"/>
         <source>Center</source>
         <translation>十字線中心点</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="327"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="86"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="158"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="82"/>
         <source>Crosshair</source>
         <translation>十字線</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="346"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="99"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="287"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="95"/>
         <source>Show Right</source>
         <translation>右側表示</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="359"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="87"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="303"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="83"/>
         <source>Offset</source>
         <translation>オフセット</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.cpp" line="79"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="80"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="75"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="76"/>
         <source>Color</source>
         <translation>色の設定</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.cpp" line="81"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="77"/>
         <source>Select Crosshair Center Color</source>
         <translation>十字線中心点色を選択</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.cpp" line="82"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="78"/>
         <source>Select Crosshair Color</source>
         <translation>十字線色を選択</translation>
     </message>
@@ -1092,143 +1092,155 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
 <context>
     <name>QFloatingWindowSetupDialog</name>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="32"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="93"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="26"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="100"/>
         <source>Floating Window Setup</source>
         <translation>フローティングウィンドウ設定</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="44"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="100"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="108"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="109"/>
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="73"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="96"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="74"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="105"/>
         <source>Size</source>
         <translation>サイズ</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="128"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="97"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="47"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="101"/>
+        <source>Window Style</source>
+        <translation>ウィンドウ外観</translation>
+    </message>
+    <message>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="141"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="102"/>
+        <source>Position &amp; Interaction</source>
+        <translation>位置と操作</translation>
+    </message>
+    <message>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="185"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="106"/>
         <source>Position X</source>
         <translation>位置 X</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="144"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="98"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="202"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="107"/>
         <source>Position Y</source>
         <translation>位置 Y</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="163"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="101"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="222"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="110"/>
         <source>MousePassThrough</source>
         <translation>マウス透過</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="176"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="105"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="168"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="114"/>
         <source>RefPoint</source>
         <translation>位置基準点</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="218"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="102"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="229"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="111"/>
         <source>MouseSwitchKey</source>
         <translation>透過切替キー</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="247"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="99"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="91"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="108"/>
         <source>Radius</source>
         <translation>角丸半径</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="41"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="106"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="48"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="115"/>
         <source>ScreenTopLeft</source>
         <translation>画面左上</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="42"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="107"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="49"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="116"/>
         <source>ScreenTopRight</source>
         <translation>画面右上</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="43"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="108"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="50"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="117"/>
         <source>ScreenTopCenter</source>
         <translation>画面上中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="44"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="109"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="51"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="118"/>
         <source>ScreenBottomLeft</source>
         <translation>画面左下</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="45"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="110"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="52"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="119"/>
         <source>ScreenBottomRight</source>
         <translation>画面右下</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="46"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="111"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="53"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="120"/>
         <source>ScreenBottomCenter</source>
         <translation>画面下中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="47"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="112"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="54"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="121"/>
         <source>WindowTopLeft</source>
         <translation>ウィンドウ左上</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="48"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="113"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="55"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="122"/>
         <source>WindowTopRight</source>
         <translation>ウィンドウ右上</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="49"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="114"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="56"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="123"/>
         <source>WindowTopCenter</source>
         <translation>ウィンドウ上中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="50"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="115"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="57"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="124"/>
         <source>WindowBottomLeft</source>
         <translation>ウィンドウ左下</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="51"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="116"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="58"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="125"/>
         <source>WindowBottomRight</source>
         <translation>ウィンドウ右下</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="52"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="117"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="59"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="126"/>
         <source>WindowBottomCenter</source>
         <translation>ウィンドウ下中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="94"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="103"/>
         <source>BGColor</source>
         <translation>背景色</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="95"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="104"/>
         <source>Select Floating Window Background Color</source>
         <translation>フローティングウィンドウ背景色を選択</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="103"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="112"/>
         <source>None</source>
         <translation>なし</translation>
     </message>
@@ -4855,46 +4867,52 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <translation>キー入力記録の開始を待機中、「F11」キーを押して入力記録を開始します</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.ui" line="93"/>
-        <location filename="../qkeyrecord.cpp" line="476"/>
+        <location filename="../qkeyrecord.ui" line="69"/>
+        <location filename="../qkeyrecord.cpp" line="488"/>
+        <source>Recording Options</source>
+        <translation>記録オプション</translation>
+    </message>
+    <message>
+        <location filename="../qkeyrecord.ui" line="103"/>
+        <location filename="../qkeyrecord.cpp" line="491"/>
         <source>Ignore waittime</source>
         <translation>キー入力時間を無視する</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.ui" line="112"/>
-        <location filename="../qkeyrecord.cpp" line="475"/>
+        <location filename="../qkeyrecord.ui" line="90"/>
+        <location filename="../qkeyrecord.cpp" line="490"/>
         <source>Merge key actions</source>
         <translation>キー動作をまとめる</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.ui" line="157"/>
-        <location filename="../qkeyrecord.cpp" line="474"/>
-        <location filename="../qkeyrecord.cpp" line="666"/>
+        <location filename="../qkeyrecord.ui" line="144"/>
+        <location filename="../qkeyrecord.cpp" line="489"/>
+        <location filename="../qkeyrecord.cpp" line="682"/>
         <source>Start Record</source>
         <translation>記録開始</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="473"/>
+        <location filename="../qkeyrecord.cpp" line="487"/>
         <source>Record Keys</source>
         <translation>連続キー記録</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="538"/>
+        <location filename="../qkeyrecord.cpp" line="554"/>
         <source>Recorded keys have been copied to the clipboard</source>
         <translation>キー入力記録がクリップボードにコピーされました</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="657"/>
+        <location filename="../qkeyrecord.cpp" line="673"/>
         <source>Key recording started, press &quot;%1&quot; to stop key recording</source>
         <translation>キー入力記録中、「%1」キーを押して記録を停止します</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="660"/>
+        <location filename="../qkeyrecord.cpp" line="676"/>
         <source>Stop Record</source>
         <translation>記録停止</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="663"/>
+        <location filename="../qkeyrecord.cpp" line="679"/>
         <source>Wait to start key recording, press &quot;%1&quot; to start key recording</source>
         <translation>キー入力記録の開始を待機中、「%1」キーを押して入力記録を開始します</translation>
     </message>
@@ -6092,7 +6110,7 @@ Do you want to overwrite them?</source>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="49031"/>
-        <location filename="../qtablesetupdialog.cpp" line="828"/>
+        <location filename="../qtablesetupdialog.cpp" line="817"/>
         <source>Restore Default</source>
         <translation>デフォルトに戻す</translation>
     </message>
@@ -6260,183 +6278,189 @@ Do you want to overwrite them?</source>
 <context>
     <name>QTableSetupDialog</name>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="32"/>
+        <location filename="../qtablesetupdialog.ui" line="26"/>
         <source>Mapping Table Setup</source>
         <translation>マッピングテーブル設定</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="47"/>
-        <location filename="../qtablesetupdialog.ui" line="92"/>
+        <location filename="../qtablesetupdialog.ui" line="107"/>
+        <location filename="../qtablesetupdialog.ui" line="145"/>
         <source>Update</source>
         <translation>更新</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="63"/>
+        <location filename="../qtablesetupdialog.ui" line="117"/>
         <source>TabHotkey</source>
         <translation>ホットキー</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="108"/>
+        <location filename="../qtablesetupdialog.ui" line="79"/>
         <source>TabName</source>
         <translation>タブ名</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="137"/>
+        <location filename="../qtablesetupdialog.ui" line="47"/>
+        <location filename="../qtablesetupdialog.cpp" line="97"/>
+        <source>Tab Settings</source>
+        <translation>タブ設定</translation>
+    </message>
+    <message>
+        <location filename="../qtablesetupdialog.ui" line="165"/>
         <source>ExportTable</source>
         <translation>テーブル書出し</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="156"/>
+        <location filename="../qtablesetupdialog.ui" line="178"/>
         <source>ImportTable</source>
         <translation>テーブル読込</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="175"/>
+        <location filename="../qtablesetupdialog.ui" line="191"/>
         <source>RemoveTable</source>
         <translation>テーブル削除</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="222"/>
-        <location filename="../qtablesetupdialog.cpp" line="112"/>
-        <location filename="../qtablesetupdialog.cpp" line="732"/>
+        <location filename="../qtablesetupdialog.ui" line="315"/>
+        <location filename="../qtablesetupdialog.cpp" line="99"/>
+        <location filename="../qtablesetupdialog.cpp" line="721"/>
         <source>Select Custom Image</source>
         <translation>カスタム画像を選択</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="257"/>
-        <location filename="../qtablesetupdialog.cpp" line="114"/>
+        <location filename="../qtablesetupdialog.ui" line="348"/>
+        <location filename="../qtablesetupdialog.cpp" line="101"/>
         <source>Padding</source>
         <translation>画像の間隔</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="321"/>
-        <location filename="../qtablesetupdialog.cpp" line="115"/>
+        <location filename="../qtablesetupdialog.ui" line="368"/>
+        <location filename="../qtablesetupdialog.cpp" line="102"/>
         <source>Show as TrayIcon</source>
         <translation>トレイアイコンに表示</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="407"/>
-        <location filename="../qtablesetupdialog.cpp" line="108"/>
+        <location filename="../qtablesetupdialog.ui" line="236"/>
+        <location filename="../qtablesetupdialog.cpp" line="94"/>
         <source>Append Common Mapping Table</source>
         <translation>共通マッピングテーブルを追加する</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="423"/>
-        <location filename="../qtablesetupdialog.cpp" line="109"/>
+        <location filename="../qtablesetupdialog.ui" line="224"/>
+        <location filename="../qtablesetupdialog.cpp" line="95"/>
         <source>Hide Notification</source>
         <translation>通知を非表示</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="302"/>
-        <location filename="../qtablesetupdialog.cpp" line="111"/>
+        <location filename="../qtablesetupdialog.ui" line="246"/>
+        <location filename="../qtablesetupdialog.cpp" line="98"/>
         <source>Tab Custom Image</source>
         <translation>タブのカスタム画像</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="353"/>
-        <location filename="../qtablesetupdialog.cpp" line="117"/>
+        <location filename="../qtablesetupdialog.ui" line="411"/>
+        <location filename="../qtablesetupdialog.cpp" line="104"/>
         <source>FloatingWindow Setup</source>
         <translation>フローティング設定</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="369"/>
-        <location filename="../qtablesetupdialog.cpp" line="123"/>
+        <location filename="../qtablesetupdialog.ui" line="375"/>
+        <location filename="../qtablesetupdialog.cpp" line="110"/>
         <source>TrayIcon Pixel</source>
         <translation>アイコン選択</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="337"/>
-        <location filename="../qtablesetupdialog.cpp" line="116"/>
+        <location filename="../qtablesetupdialog.ui" line="401"/>
+        <location filename="../qtablesetupdialog.cpp" line="103"/>
         <source>Show as FloatingWindow</source>
         <translation>フローティングに表示</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="95"/>
+        <location filename="../qtablesetupdialog.cpp" line="81"/>
         <source>TabFontColor</source>
         <translation>タブ通知文字色</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="286"/>
-        <location filename="../qtablesetupdialog.cpp" line="113"/>
+        <location filename="../qtablesetupdialog.ui" line="325"/>
+        <location filename="../qtablesetupdialog.cpp" line="100"/>
         <source>ShowPositoin</source>
         <translation>表示位置</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="68"/>
-        <location filename="../qtablesetupdialog.cpp" line="119"/>
+        <location filename="../qtablesetupdialog.cpp" line="54"/>
+        <location filename="../qtablesetupdialog.cpp" line="106"/>
         <source>None</source>
         <translation>非表示</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="69"/>
-        <location filename="../qtablesetupdialog.cpp" line="120"/>
+        <location filename="../qtablesetupdialog.cpp" line="55"/>
+        <location filename="../qtablesetupdialog.cpp" line="107"/>
         <source>Left</source>
         <translation>左側表示</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="70"/>
-        <location filename="../qtablesetupdialog.cpp" line="121"/>
+        <location filename="../qtablesetupdialog.cpp" line="56"/>
+        <location filename="../qtablesetupdialog.cpp" line="108"/>
         <source>Right</source>
         <translation>右側表示</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="124"/>
-        <location filename="../qtablesetupdialog.cpp" line="179"/>
+        <location filename="../qtablesetupdialog.cpp" line="111"/>
+        <location filename="../qtablesetupdialog.cpp" line="168"/>
         <source>Default</source>
         <translation>デフォルト</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="96"/>
+        <location filename="../qtablesetupdialog.cpp" line="82"/>
         <source>Select Tab Notification Font Color</source>
         <translation>タブ通知フォント色を選択</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="97"/>
+        <location filename="../qtablesetupdialog.cpp" line="83"/>
         <source>TabBGColor</source>
         <translation>タブ通知背景色</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="98"/>
+        <location filename="../qtablesetupdialog.cpp" line="84"/>
         <source>Select Tab Notification Background Color</source>
         <translation>タブ通知背景色を選択</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="380"/>
+        <location filename="../qtablesetupdialog.cpp" line="369"/>
         <source>Enable Common Mapping Table in Mapping Advanced Settings first.</source>
         <translation>先にマッピング詳細設定で共通マッピングテーブルを有効にしてください。</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="383"/>
+        <location filename="../qtablesetupdialog.cpp" line="372"/>
         <source>Common mapping table cannot append itself.</source>
         <translation>共通マッピングテーブルをそれ自身に追加することはできません。</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="611"/>
+        <location filename="../qtablesetupdialog.cpp" line="600"/>
         <source>TabName is empty!</source>
         <translation>タブ名が未記入です！</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="620"/>
+        <location filename="../qtablesetupdialog.cpp" line="609"/>
         <source>Tab name cannot be the same as the Common mapping table name.</source>
         <translation>タブ名を共通マッピングテーブル名と同じにすることはできません。</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="624"/>
+        <location filename="../qtablesetupdialog.cpp" line="613"/>
         <source>TabName is duplicate: </source>
         <translation>同じタブ名が存在します: </translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="628"/>
+        <location filename="../qtablesetupdialog.cpp" line="617"/>
         <source>TabName update success: </source>
         <translation>タブ名の更新に成功しました: </translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="669"/>
+        <location filename="../qtablesetupdialog.cpp" line="658"/>
         <source>TabHotkey clear success</source>
         <translation>タブホットキーが正常にクリアされました</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="686"/>
+        <location filename="../qtablesetupdialog.cpp" line="675"/>
         <source>TabHotkey update success: </source>
         <translation>タブホットキーが更新されました : </translation>
     </message>
@@ -6465,7 +6489,7 @@ Do you want to overwrite them?</source>
         <translation type="vanished">タブホットキー入力フォーマットが誤っています: %1</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="694"/>
+        <location filename="../qtablesetupdialog.cpp" line="683"/>
         <source>Invalid TabHotkey: %1</source>
         <translation>無効なタブホットキー : %1</translation>
     </message>
@@ -6502,12 +6526,12 @@ Do you want to overwrite them?</source>
         <translation type="vanished">共通マッピングテーブルは削除できません。</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="730"/>
+        <location filename="../qtablesetupdialog.cpp" line="719"/>
         <source>Image files</source>
         <translation>画像ファイル</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="792"/>
+        <location filename="../qtablesetupdialog.cpp" line="781"/>
         <source>Unable to load the image!</source>
         <translation>画像ファイルを読み込めませんでした！</translation>
     </message>

@@ -6,384 +6,387 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>520</width>
-    <height>160</height>
+    <width>620</width>
+    <height>180</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
   <property name="minimumSize">
    <size>
-    <width>520</width>
-    <height>160</height>
-   </size>
-  </property>
-  <property name="maximumSize">
-   <size>
-    <width>520</width>
-    <height>160</height>
+    <width>620</width>
+    <height>180</height>
    </size>
   </property>
   <property name="windowTitle">
    <string>Crosshair Setup</string>
   </property>
-  <widget class="QLabel" name="crosshairLineWidthLabel">
-   <property name="geometry">
-    <rect>
-     <x>160</x>
-     <y>55</y>
-     <width>41</width>
-     <height>21</height>
-    </rect>
+  <layout class="QHBoxLayout" name="mainHorizontalLayout" stretch="1,2,1">
+   <property name="leftMargin">
+    <number>10</number>
    </property>
-   <property name="text">
-    <string>Width</string>
+   <property name="topMargin">
+    <number>10</number>
    </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+   <property name="rightMargin">
+    <number>10</number>
    </property>
-  </widget>
-  <widget class="QSpinBox" name="crosshairLineLengthSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>206</x>
-     <y>85</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
+   <property name="bottomMargin">
+    <number>10</number>
    </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
+   <property name="spacing">
+    <number>8</number>
    </property>
-  </widget>
-  <widget class="QCheckBox" name="showCenterCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>115</y>
-     <width>101</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Show Center</string>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="showLeftCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>270</x>
-     <y>85</y>
-     <width>71</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Show Left</string>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="crosshairLineWidthSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>206</x>
-     <y>55</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
-   </property>
-  </widget>
-  <widget class="QLabel" name="crosshairLineLengthLabel">
-   <property name="geometry">
-    <rect>
-     <x>160</x>
-     <y>85</y>
-     <width>41</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Length</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="centerOpacitySpinBox">
-   <property name="geometry">
-    <rect>
-     <x>76</x>
-     <y>85</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="crosshairOpacitySpinBox">
-   <property name="geometry">
-    <rect>
-     <x>206</x>
-     <y>115</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="showBottomCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>270</x>
-     <y>55</y>
-     <width>81</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Show Bottom</string>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="y_offsetSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>426</x>
-     <y>55</y>
-     <width>60</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="showTopCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>270</x>
-     <y>25</y>
-     <width>71</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Show Top</string>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="x_offsetSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>426</x>
-     <y>25</y>
-     <width>60</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
-   </property>
-  </widget>
-  <widget class="QLabel" name="y_offsetLabel">
-   <property name="geometry">
-    <rect>
-     <x>370</x>
-     <y>55</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Y-Offset</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QLabel" name="centerOpacityLabel">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>85</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Opacity</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QSpinBox" name="centerSizeSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>76</x>
-     <y>55</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::ClickFocus</enum>
-   </property>
-  </widget>
-  <widget class="QLabel" name="x_offsetLabel">
-   <property name="geometry">
-    <rect>
-     <x>370</x>
-     <y>25</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>X-Offset</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QLabel" name="centerSizeLabel">
-   <property name="geometry">
-    <rect>
-     <x>30</x>
-     <y>55</y>
-     <width>41</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Size</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QLabel" name="crosshairOpacityLabel">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>115</y>
-     <width>51</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Opacity</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-   </property>
-  </widget>
-  <widget class="QGroupBox" name="centerGroupBox">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>10</y>
-     <width>121</width>
-     <height>136</height>
-    </rect>
-   </property>
-   <property name="title">
-    <string>Center</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignCenter</set>
-   </property>
-  </widget>
-  <widget class="QGroupBox" name="crosshairGroupBox">
-   <property name="geometry">
-    <rect>
-     <x>150</x>
-     <y>10</y>
-     <width>201</width>
-     <height>136</height>
-    </rect>
-   </property>
-   <property name="title">
-    <string>Crosshair</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignCenter</set>
-   </property>
-  </widget>
-  <widget class="QCheckBox" name="showRightCheckBox">
-   <property name="geometry">
-    <rect>
-     <x>270</x>
-     <y>115</y>
-     <width>71</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="focusPolicy">
-    <enum>Qt::FocusPolicy::NoFocus</enum>
-   </property>
-   <property name="text">
-    <string>Show Right</string>
-   </property>
-  </widget>
-  <widget class="QGroupBox" name="offsetGroupBox">
-   <property name="geometry">
-    <rect>
-     <x>360</x>
-     <y>10</y>
-     <width>141</width>
-     <height>136</height>
-    </rect>
-   </property>
-   <property name="title">
-    <string>Offset</string>
-   </property>
-   <property name="alignment">
-    <set>Qt::AlignmentFlag::AlignCenter</set>
-   </property>
-  </widget>
-  <zorder>offsetGroupBox</zorder>
-  <zorder>crosshairGroupBox</zorder>
-  <zorder>centerGroupBox</zorder>
-  <zorder>crosshairLineWidthLabel</zorder>
-  <zorder>crosshairLineLengthSpinBox</zorder>
-  <zorder>showCenterCheckBox</zorder>
-  <zorder>showLeftCheckBox</zorder>
-  <zorder>crosshairLineWidthSpinBox</zorder>
-  <zorder>crosshairLineLengthLabel</zorder>
-  <zorder>centerOpacitySpinBox</zorder>
-  <zorder>crosshairOpacitySpinBox</zorder>
-  <zorder>showBottomCheckBox</zorder>
-  <zorder>y_offsetSpinBox</zorder>
-  <zorder>showTopCheckBox</zorder>
-  <zorder>x_offsetSpinBox</zorder>
-  <zorder>y_offsetLabel</zorder>
-  <zorder>centerOpacityLabel</zorder>
-  <zorder>centerSizeSpinBox</zorder>
-  <zorder>x_offsetLabel</zorder>
-  <zorder>centerSizeLabel</zorder>
-  <zorder>crosshairOpacityLabel</zorder>
-  <zorder>showRightCheckBox</zorder>
+   <item>
+    <widget class="QGroupBox" name="centerGroupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="title">
+      <string>Center</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+     <layout class="QGridLayout" name="centerLayout">
+      <property name="leftMargin">
+       <number>8</number>
+      </property>
+      <property name="topMargin">
+       <number>8</number>
+      </property>
+      <property name="rightMargin">
+       <number>8</number>
+      </property>
+      <property name="bottomMargin">
+       <number>8</number>
+      </property>
+      <property name="horizontalSpacing">
+       <number>6</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>6</number>
+      </property>
+      <item row="1" column="0">
+       <widget class="QLabel" name="centerSizeLabel">
+        <property name="text">
+         <string>Size</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="centerSizeSpinBox">
+        <property name="maximumSize">
+         <size>
+          <width>55</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::ClickFocus</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="centerOpacityLabel">
+        <property name="text">
+         <string>Opacity</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="centerOpacitySpinBox">
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::ClickFocus</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QCheckBox" name="showCenterCheckBox">
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Show Center</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <spacer name="centerVerticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>0</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="crosshairGroupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>2</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>250</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="title">
+      <string>Crosshair</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+     <layout class="QGridLayout" name="crosshairLayout" columnstretch="0,0,1">
+      <property name="leftMargin">
+       <number>8</number>
+      </property>
+      <property name="topMargin">
+       <number>8</number>
+      </property>
+      <property name="rightMargin">
+       <number>8</number>
+      </property>
+      <property name="bottomMargin">
+       <number>8</number>
+      </property>
+      <property name="horizontalSpacing">
+       <number>6</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>6</number>
+      </property>
+      <item row="0" column="2">
+       <widget class="QCheckBox" name="showTopCheckBox">
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Show Top</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="crosshairLineWidthLabel">
+        <property name="text">
+         <string>Width</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="crosshairLineWidthSpinBox">
+        <property name="maximumSize">
+         <size>
+          <width>55</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::ClickFocus</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QCheckBox" name="showBottomCheckBox">
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Show Bottom</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="crosshairLineLengthLabel">
+        <property name="text">
+         <string>Length</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="crosshairLineLengthSpinBox">
+        <property name="maximumSize">
+         <size>
+          <width>55</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::ClickFocus</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QCheckBox" name="showLeftCheckBox">
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Show Left</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="crosshairOpacityLabel">
+        <property name="text">
+         <string>Opacity</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QSpinBox" name="crosshairOpacitySpinBox">
+        <property name="maximumSize">
+         <size>
+          <width>55</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::ClickFocus</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QCheckBox" name="showRightCheckBox">
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::NoFocus</enum>
+        </property>
+        <property name="text">
+         <string>Show Right</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="offsetGroupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="title">
+      <string>Offset</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+     <layout class="QGridLayout" name="offsetLayout">
+      <property name="leftMargin">
+       <number>8</number>
+      </property>
+      <property name="topMargin">
+       <number>8</number>
+      </property>
+      <property name="rightMargin">
+       <number>8</number>
+      </property>
+      <property name="bottomMargin">
+       <number>8</number>
+      </property>
+      <property name="horizontalSpacing">
+       <number>6</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>6</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="x_offsetLabel">
+        <property name="text">
+         <string>X-Offset</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QSpinBox" name="x_offsetSpinBox">
+        <property name="maximumSize">
+         <size>
+          <width>55</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::ClickFocus</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="y_offsetLabel">
+        <property name="text">
+         <string>Y-Offset</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="y_offsetSpinBox">
+        <property name="maximumSize">
+         <size>
+          <width>55</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::FocusPolicy::ClickFocus</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <spacer name="offsetVerticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections/>

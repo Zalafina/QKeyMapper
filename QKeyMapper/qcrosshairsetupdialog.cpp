@@ -32,26 +32,22 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
         ui->offsetGroupBox->setStyle(windowsStyle);
     }
 
-    int x_offset = 15;
-    int y_offset = 10;
-    QRect centerWidgetGeometry = ui->centerGroupBox->geometry();
-    int center_color_x = centerWidgetGeometry.x();
-    int center_color_y = centerWidgetGeometry.y();
-    center_color_x += x_offset;
-    center_color_y += y_offset;
-    // Set position for the center color picker
-    m_CenterColorPicker->move(center_color_x, center_color_y);
+    if (QGridLayout *centerLayout = qobject_cast<QGridLayout*>(ui->centerGroupBox->layout())) {
+        centerLayout->addWidget(m_CenterColorPicker, 0, 0, 1, 2, Qt::AlignCenter);
+    }
 
-    QRect crosshairWidgetGeometry = ui->crosshairGroupBox->geometry();
-    int crosshair_color_x = crosshairWidgetGeometry.x();
-    int crosshair_color_y = crosshairWidgetGeometry.y();
-    crosshair_color_x += x_offset;
-    crosshair_color_y += y_offset;
-    // Set position for the crosshair color picker
-    m_CrosshairColorPicker->move(crosshair_color_x, crosshair_color_y);
+    if (QGridLayout *crosshairLayout = qobject_cast<QGridLayout*>(ui->crosshairGroupBox->layout())) {
+        crosshairLayout->addWidget(m_CrosshairColorPicker, 0, 0, 1, 2, Qt::AlignCenter);
+    }
 
-    m_CenterColorPicker->raise();
-    m_CrosshairColorPicker->raise();
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        const auto children = findChildren<QWidget*>();
+        for (QWidget *child : children) {
+            if (!qobject_cast<QGroupBox*>(child)) {
+                child->setStyle(fusionStyle);
+            }
+        }
+    }
 
     ui->centerSizeSpinBox->setRange(CROSSHAIR_CENTERSIZE_MIN, CROSSHAIR_CENTERSIZE_MAX);
     ui->centerOpacitySpinBox->setRange(CROSSHAIR_OPACITY_MIN, CROSSHAIR_OPACITY_MAX);

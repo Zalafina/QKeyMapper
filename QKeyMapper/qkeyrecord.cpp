@@ -2,6 +2,7 @@
 #include "qkeyrecord.h"
 #include "ui_qkeyrecord.h"
 #include "qkeymapper_qt_compat.h"
+#include "qstyle_singletons.h"
 
 using namespace QKeyMapperConstants;
 
@@ -453,6 +454,19 @@ QKeyRecord::QKeyRecord(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        ui->recordingOptionsGroupBox->setStyle(windowsStyle);
+    }
+
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        const auto children = findChildren<QWidget*>();
+        for (QWidget *child : children) {
+            if (!qobject_cast<QGroupBox*>(child)) {
+                child->setStyle(fusionStyle);
+            }
+        }
+    }
+
     ui->keyRecordLineEdit->setFocusPolicy(Qt::NoFocus);
 
     ui->keyRecordLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
@@ -471,6 +485,7 @@ void QKeyRecord::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
     setWindowTitle(tr("Record Keys"));
+    ui->recordingOptionsGroupBox->setTitle(tr("Recording Options"));
     ui->recordStartStopButton->setText(tr("Start Record"));
     ui->mergeKeyActionsCheckBox->setText(tr("Merge key actions"));
     ui->ignoreWaitTimeCheckBox->setText(tr("Ignore waittime"));
@@ -503,6 +518,7 @@ void QKeyRecord::resetFontSize()
         // }
     }
 
+    ui->recordingOptionsGroupBox->setFont(customFont);
     ui->keyRecordLabel->setFont(customFont);
     ui->recordStartStopButton->setFont(customFont);
     ui->mergeKeyActionsCheckBox->setFont(customFont);

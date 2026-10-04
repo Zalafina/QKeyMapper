@@ -508,110 +508,110 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
 <context>
     <name>QCrosshairSetupDialog</name>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="32"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="84"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="26"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="80"/>
         <source>Crosshair Setup</source>
         <translation>十字准星设定</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="44"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="91"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="195"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="87"/>
         <source>Width</source>
         <translation>线宽</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="76"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="95"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="123"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="91"/>
         <source>Show Center</source>
         <translation>显示中心点</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="92"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="98"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="254"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="94"/>
         <source>Show Left</source>
         <translation>显示左侧</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="118"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="92"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="228"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="88"/>
         <source>Length</source>
         <translation>线长</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="163"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="97"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="221"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="93"/>
         <source>Show Bottom</source>
         <translation>显示下侧</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="192"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="96"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="188"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="92"/>
         <source>Show Top</source>
         <translation>显示上侧</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="218"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="102"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="353"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="98"/>
         <source>Y-Offset</source>
         <translation>Y偏移量</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="234"/>
-        <location filename="../qcrosshairsetupdialog.ui" line="295"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="90"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="93"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="103"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="261"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="86"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="89"/>
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="263"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="101"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="330"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="97"/>
         <source>X-Offset</source>
         <translation>X偏移量</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="279"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="89"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="80"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="85"/>
         <source>Size</source>
         <translation>大小</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="311"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="85"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="53"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="81"/>
         <source>Center</source>
         <translation>准星中心点</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="327"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="86"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="158"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="82"/>
         <source>Crosshair</source>
         <translation>准星十字线</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="346"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="99"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="287"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="95"/>
         <source>Show Right</source>
         <translation>显示右侧</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.ui" line="359"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="87"/>
+        <location filename="../qcrosshairsetupdialog.ui" line="303"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="83"/>
         <source>Offset</source>
         <translation>偏移量</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.cpp" line="79"/>
-        <location filename="../qcrosshairsetupdialog.cpp" line="80"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="75"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="76"/>
         <source>Color</source>
         <translation>颜色设定</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.cpp" line="81"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="77"/>
         <source>Select Crosshair Center Color</source>
         <translation>选择准星中心点颜色</translation>
     </message>
     <message>
-        <location filename="../qcrosshairsetupdialog.cpp" line="82"/>
+        <location filename="../qcrosshairsetupdialog.cpp" line="78"/>
         <source>Select Crosshair Color</source>
         <translation>选择准星颜色</translation>
     </message>
@@ -1092,143 +1092,155 @@ Only the last mapping in each OriginalKey group will be enabled.</source>
 <context>
     <name>QFloatingWindowSetupDialog</name>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="32"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="93"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="26"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="100"/>
         <source>Floating Window Setup</source>
         <translation>悬浮窗口设定</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="44"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="100"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="108"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="109"/>
         <source>Opacity</source>
         <translation>不透明度</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="73"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="96"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="74"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="105"/>
         <source>Size</source>
         <translation>大小</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="128"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="97"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="47"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="101"/>
+        <source>Window Style</source>
+        <translation>窗口样式</translation>
+    </message>
+    <message>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="141"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="102"/>
+        <source>Position &amp; Interaction</source>
+        <translation>位置与交互</translation>
+    </message>
+    <message>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="185"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="106"/>
         <source>Position X</source>
         <translation>坐标 X</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="144"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="98"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="202"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="107"/>
         <source>Position Y</source>
         <translation>坐标 Y</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="163"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="101"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="222"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="110"/>
         <source>MousePassThrough</source>
         <translation>鼠标穿透</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="176"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="105"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="168"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="114"/>
         <source>RefPoint</source>
         <translation>坐标基准点</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="218"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="102"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="229"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="111"/>
         <source>MouseSwitchKey</source>
         <translation>穿透切换键</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.ui" line="247"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="99"/>
+        <location filename="../qfloatingwindowsetupdialog.ui" line="91"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="108"/>
         <source>Radius</source>
         <translation>圆角半径</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="41"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="106"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="48"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="115"/>
         <source>ScreenTopLeft</source>
         <translation>屏幕左上角</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="42"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="107"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="49"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="116"/>
         <source>ScreenTopRight</source>
         <translation>屏幕右上角</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="43"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="108"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="50"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="117"/>
         <source>ScreenTopCenter</source>
         <translation>屏幕顶部中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="44"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="109"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="51"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="118"/>
         <source>ScreenBottomLeft</source>
         <translation>屏幕左下角</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="45"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="110"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="52"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="119"/>
         <source>ScreenBottomRight</source>
         <translation>屏幕右下角</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="46"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="111"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="53"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="120"/>
         <source>ScreenBottomCenter</source>
         <translation>屏幕底部中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="47"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="112"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="54"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="121"/>
         <source>WindowTopLeft</source>
         <translation>窗口左上角</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="48"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="113"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="55"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="122"/>
         <source>WindowTopRight</source>
         <translation>窗口右上角</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="49"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="114"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="56"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="123"/>
         <source>WindowTopCenter</source>
         <translation>窗口顶部中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="50"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="115"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="57"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="124"/>
         <source>WindowBottomLeft</source>
         <translation>窗口左下角</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="51"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="116"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="58"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="125"/>
         <source>WindowBottomRight</source>
         <translation>窗口右下角</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="52"/>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="117"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="59"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="126"/>
         <source>WindowBottomCenter</source>
         <translation>窗口底部中央</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="94"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="103"/>
         <source>BGColor</source>
         <translation>背景色</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="95"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="104"/>
         <source>Select Floating Window Background Color</source>
         <translation>选择悬浮窗口背景色</translation>
     </message>
     <message>
-        <location filename="../qfloatingwindowsetupdialog.cpp" line="103"/>
+        <location filename="../qfloatingwindowsetupdialog.cpp" line="112"/>
         <source>None</source>
         <translation>无</translation>
     </message>
@@ -4855,46 +4867,52 @@ Do you confirm to continue installing Interception driver?</source>
         <translation>等待开始按键录制, 按&quot;F11&quot;键开始按键录制</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.ui" line="93"/>
-        <location filename="../qkeyrecord.cpp" line="476"/>
+        <location filename="../qkeyrecord.ui" line="69"/>
+        <location filename="../qkeyrecord.cpp" line="488"/>
+        <source>Recording Options</source>
+        <translation>录制选项</translation>
+    </message>
+    <message>
+        <location filename="../qkeyrecord.ui" line="103"/>
+        <location filename="../qkeyrecord.cpp" line="491"/>
         <source>Ignore waittime</source>
         <translation>忽略按键时长</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.ui" line="112"/>
-        <location filename="../qkeyrecord.cpp" line="475"/>
+        <location filename="../qkeyrecord.ui" line="90"/>
+        <location filename="../qkeyrecord.cpp" line="490"/>
         <source>Merge key actions</source>
         <translation>合并按键动作</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.ui" line="157"/>
-        <location filename="../qkeyrecord.cpp" line="474"/>
-        <location filename="../qkeyrecord.cpp" line="666"/>
+        <location filename="../qkeyrecord.ui" line="144"/>
+        <location filename="../qkeyrecord.cpp" line="489"/>
+        <location filename="../qkeyrecord.cpp" line="682"/>
         <source>Start Record</source>
         <translation>开始录制</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="473"/>
+        <location filename="../qkeyrecord.cpp" line="487"/>
         <source>Record Keys</source>
         <translation>连续按键录制</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="538"/>
+        <location filename="../qkeyrecord.cpp" line="554"/>
         <source>Recorded keys have been copied to the clipboard</source>
         <translation>按键记录已复制到剪贴板</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="657"/>
+        <location filename="../qkeyrecord.cpp" line="673"/>
         <source>Key recording started, press &quot;%1&quot; to stop key recording</source>
         <translation>按键录制中, 按&quot;%1&quot;键停止按键录制</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="660"/>
+        <location filename="../qkeyrecord.cpp" line="676"/>
         <source>Stop Record</source>
         <translation>停止录制</translation>
     </message>
     <message>
-        <location filename="../qkeyrecord.cpp" line="663"/>
+        <location filename="../qkeyrecord.cpp" line="679"/>
         <source>Wait to start key recording, press &quot;%1&quot; to start key recording</source>
         <translation>等待开始按键录制, 按&quot;%1&quot;键开始按键录制</translation>
     </message>
@@ -6092,7 +6110,7 @@ Do you want to overwrite them?</source>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="49031"/>
-        <location filename="../qtablesetupdialog.cpp" line="828"/>
+        <location filename="../qtablesetupdialog.cpp" line="817"/>
         <source>Restore Default</source>
         <translation>恢复默认</translation>
     </message>
@@ -6260,183 +6278,189 @@ Do you want to overwrite them?</source>
 <context>
     <name>QTableSetupDialog</name>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="32"/>
+        <location filename="../qtablesetupdialog.ui" line="26"/>
         <source>Mapping Table Setup</source>
         <translation>映射表设定</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="47"/>
-        <location filename="../qtablesetupdialog.ui" line="92"/>
+        <location filename="../qtablesetupdialog.ui" line="107"/>
+        <location filename="../qtablesetupdialog.ui" line="145"/>
         <source>Update</source>
         <translation>更新</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="63"/>
+        <location filename="../qtablesetupdialog.ui" line="117"/>
         <source>TabHotkey</source>
         <translation>快捷键</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="108"/>
+        <location filename="../qtablesetupdialog.ui" line="79"/>
         <source>TabName</source>
         <translation>映射表名</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="137"/>
+        <location filename="../qtablesetupdialog.ui" line="47"/>
+        <location filename="../qtablesetupdialog.cpp" line="97"/>
+        <source>Tab Settings</source>
+        <translation>标签页设置</translation>
+    </message>
+    <message>
+        <location filename="../qtablesetupdialog.ui" line="165"/>
         <source>ExportTable</source>
         <translation>导出映射表</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="156"/>
+        <location filename="../qtablesetupdialog.ui" line="178"/>
         <source>ImportTable</source>
         <translation>导入映射表</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="175"/>
+        <location filename="../qtablesetupdialog.ui" line="191"/>
         <source>RemoveTable</source>
         <translation>删除映射表</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="222"/>
-        <location filename="../qtablesetupdialog.cpp" line="112"/>
-        <location filename="../qtablesetupdialog.cpp" line="732"/>
+        <location filename="../qtablesetupdialog.ui" line="315"/>
+        <location filename="../qtablesetupdialog.cpp" line="99"/>
+        <location filename="../qtablesetupdialog.cpp" line="721"/>
         <source>Select Custom Image</source>
         <translation>选择自定义图片</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="257"/>
-        <location filename="../qtablesetupdialog.cpp" line="114"/>
+        <location filename="../qtablesetupdialog.ui" line="348"/>
+        <location filename="../qtablesetupdialog.cpp" line="101"/>
         <source>Padding</source>
         <translation>图片间距</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="321"/>
-        <location filename="../qtablesetupdialog.cpp" line="115"/>
+        <location filename="../qtablesetupdialog.ui" line="368"/>
+        <location filename="../qtablesetupdialog.cpp" line="102"/>
         <source>Show as TrayIcon</source>
         <translation>显示为托盘图标</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="407"/>
-        <location filename="../qtablesetupdialog.cpp" line="108"/>
+        <location filename="../qtablesetupdialog.ui" line="236"/>
+        <location filename="../qtablesetupdialog.cpp" line="94"/>
         <source>Append Common Mapping Table</source>
         <translation>追加共通映射表</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="423"/>
-        <location filename="../qtablesetupdialog.cpp" line="109"/>
+        <location filename="../qtablesetupdialog.ui" line="224"/>
+        <location filename="../qtablesetupdialog.cpp" line="95"/>
         <source>Hide Notification</source>
         <translation>不显示提示信息</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="302"/>
-        <location filename="../qtablesetupdialog.cpp" line="111"/>
+        <location filename="../qtablesetupdialog.ui" line="246"/>
+        <location filename="../qtablesetupdialog.cpp" line="98"/>
         <source>Tab Custom Image</source>
         <translation>映射表自定义图片</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="353"/>
-        <location filename="../qtablesetupdialog.cpp" line="117"/>
+        <location filename="../qtablesetupdialog.ui" line="411"/>
+        <location filename="../qtablesetupdialog.cpp" line="104"/>
         <source>FloatingWindow Setup</source>
         <translation>悬浮窗口设定</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="369"/>
-        <location filename="../qtablesetupdialog.cpp" line="123"/>
+        <location filename="../qtablesetupdialog.ui" line="375"/>
+        <location filename="../qtablesetupdialog.cpp" line="110"/>
         <source>TrayIcon Pixel</source>
         <translation>图标选择</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="337"/>
-        <location filename="../qtablesetupdialog.cpp" line="116"/>
+        <location filename="../qtablesetupdialog.ui" line="401"/>
+        <location filename="../qtablesetupdialog.cpp" line="103"/>
         <source>Show as FloatingWindow</source>
         <translation>显示为悬浮窗口</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="95"/>
+        <location filename="../qtablesetupdialog.cpp" line="81"/>
         <source>TabFontColor</source>
         <translation>Tab提示字体颜色</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.ui" line="286"/>
-        <location filename="../qtablesetupdialog.cpp" line="113"/>
+        <location filename="../qtablesetupdialog.ui" line="325"/>
+        <location filename="../qtablesetupdialog.cpp" line="100"/>
         <source>ShowPositoin</source>
         <translation>显示位置</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="68"/>
-        <location filename="../qtablesetupdialog.cpp" line="119"/>
+        <location filename="../qtablesetupdialog.cpp" line="54"/>
+        <location filename="../qtablesetupdialog.cpp" line="106"/>
         <source>None</source>
         <translation>不显示</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="69"/>
-        <location filename="../qtablesetupdialog.cpp" line="120"/>
+        <location filename="../qtablesetupdialog.cpp" line="55"/>
+        <location filename="../qtablesetupdialog.cpp" line="107"/>
         <source>Left</source>
         <translation>左侧显示</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="70"/>
-        <location filename="../qtablesetupdialog.cpp" line="121"/>
+        <location filename="../qtablesetupdialog.cpp" line="56"/>
+        <location filename="../qtablesetupdialog.cpp" line="108"/>
         <source>Right</source>
         <translation>右侧显示</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="124"/>
-        <location filename="../qtablesetupdialog.cpp" line="179"/>
+        <location filename="../qtablesetupdialog.cpp" line="111"/>
+        <location filename="../qtablesetupdialog.cpp" line="168"/>
         <source>Default</source>
         <translation>默认</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="96"/>
+        <location filename="../qtablesetupdialog.cpp" line="82"/>
         <source>Select Tab Notification Font Color</source>
         <translation>选择Tab提示信息字体颜色</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="97"/>
+        <location filename="../qtablesetupdialog.cpp" line="83"/>
         <source>TabBGColor</source>
         <translation>Tab提示背景色</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="98"/>
+        <location filename="../qtablesetupdialog.cpp" line="84"/>
         <source>Select Tab Notification Background Color</source>
         <translation>选择Tab提示信息背景色</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="380"/>
+        <location filename="../qtablesetupdialog.cpp" line="369"/>
         <source>Enable Common Mapping Table in Mapping Advanced Settings first.</source>
         <translation>请先在映射高级设置中启用共通映射表。</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="383"/>
+        <location filename="../qtablesetupdialog.cpp" line="372"/>
         <source>Common mapping table cannot append itself.</source>
         <translation>共通映射表不能追加到自身。</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="611"/>
+        <location filename="../qtablesetupdialog.cpp" line="600"/>
         <source>TabName is empty!</source>
         <translation>未填写映射表名！</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="620"/>
+        <location filename="../qtablesetupdialog.cpp" line="609"/>
         <source>Tab name cannot be the same as the Common mapping table name.</source>
         <translation>映射表名不允许与共通映射表名相同。</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="624"/>
+        <location filename="../qtablesetupdialog.cpp" line="613"/>
         <source>TabName is duplicate: </source>
         <translation>存在相同的映射表名: </translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="628"/>
+        <location filename="../qtablesetupdialog.cpp" line="617"/>
         <source>TabName update success: </source>
         <translation>映射表名更新成功: </translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="669"/>
+        <location filename="../qtablesetupdialog.cpp" line="658"/>
         <source>TabHotkey clear success</source>
         <translation>映射表快捷键清除成功</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="686"/>
+        <location filename="../qtablesetupdialog.cpp" line="675"/>
         <source>TabHotkey update success: </source>
         <translation>映射表快捷键更新成功 : </translation>
     </message>
@@ -6465,7 +6489,7 @@ Do you want to overwrite them?</source>
         <translation type="vanished">映射表快捷键输入格式错误: %1</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="694"/>
+        <location filename="../qtablesetupdialog.cpp" line="683"/>
         <source>Invalid TabHotkey: %1</source>
         <translation>无效的映射表快捷键 : %1</translation>
     </message>
@@ -6502,12 +6526,12 @@ Do you want to overwrite them?</source>
         <translation type="vanished">共通映射表无法删除。</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="730"/>
+        <location filename="../qtablesetupdialog.cpp" line="719"/>
         <source>Image files</source>
         <translation>图片文件</translation>
     </message>
     <message>
-        <location filename="../qtablesetupdialog.cpp" line="792"/>
+        <location filename="../qtablesetupdialog.cpp" line="781"/>
         <source>Unable to load the image!</source>
         <translation>无法加载图片文件！</translation>
     </message>

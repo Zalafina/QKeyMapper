@@ -24,8 +24,22 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     initSelectImageFileDialog();
 
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        ui->tabSettingsGroupBox->setStyle(windowsStyle);
         ui->tabCustomImageGroupBox->setStyle(windowsStyle);
         ui->customImageLabel->setStyle(windowsStyle);
+    }
+
+    ui->notificationLayout->insertWidget(0, m_NotificationFontColorPicker);
+    ui->notificationLayout->insertWidget(1, m_NotificationBackgroundColorPicker);
+    m_NotificationBackgroundColorPicker->setShowAlphaChannel(true);
+
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        const auto children = findChildren<QWidget*>();
+        for (QWidget *child : children) {
+            if (!qobject_cast<QGroupBox*>(child)) {
+                child->setStyle(fusionStyle);
+            }
+        }
     }
 
     ui->hideNotificationCheckBox->setTristate(true);
@@ -33,36 +47,8 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     ui->tabNameLineEdit->setFocusPolicy(Qt::ClickFocus);
     ui->tabHotkeyLineEdit->setFocusPolicy(Qt::ClickFocus);
 
-    // ui->tabNameLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
-    // ui->tabHotkeyLineEdit->setFont(QFont(FONTNAME_ENGLISH, 9));
-
     ui->customImagePaddingSpinBox->setRange(TAB_CUSTOMIMAGE_PADDING_MIN, TAB_CUSTOMIMAGE_PADDING_MAX);
     ui->customImagePaddingSpinBox->setValue(TAB_CUSTOMIMAGE_PADDING_DEFAULT);
-
-    int x_offset;
-    int y_offset;
-    QRect exportTableButtonGeometry = ui->exportTableButton->geometry();
-
-    x_offset = -50;
-    y_offset = 30;
-    int tabfont_color_x = exportTableButtonGeometry.x();
-    int tabfont_color_y = exportTableButtonGeometry.y();
-    tabfont_color_x += x_offset;
-    tabfont_color_y += y_offset;
-    // Set position for the tabfont color picker
-    m_NotificationFontColorPicker->move(tabfont_color_x, tabfont_color_y);
-    m_NotificationFontColorPicker->raise();
-
-    x_offset = 160;
-    y_offset = 0;
-    int tabbg_color_x = tabfont_color_x;
-    int tabbg_color_y = tabfont_color_y;
-    tabbg_color_x += x_offset;
-    tabbg_color_y += y_offset;
-    // Set position for the tabbackground color picker
-    m_NotificationBackgroundColorPicker->move(tabbg_color_x, tabbg_color_y);
-    m_NotificationBackgroundColorPicker->raise();
-    m_NotificationBackgroundColorPicker->setShowAlphaChannel(true);
 
     QStringList showPositionList;
     showPositionList.append(tr("None"));
@@ -108,6 +94,7 @@ void QTableSetupDialog::setUILanguage(int languageindex)
     ui->appendCommonMappingTableCheckBox->setText(tr("Append Common Mapping Table"));
     ui->hideNotificationCheckBox->setText(tr("Hide Notification"));
 
+    ui->tabSettingsGroupBox->setTitle(tr("Tab Settings"));
     ui->tabCustomImageGroupBox->setTitle(tr("Tab Custom Image"));
     ui->selectCustomImageButton->setText(tr("Select Custom Image"));
     ui->customImageShowPositionLabel->setText(tr("ShowPositoin"));
@@ -132,6 +119,8 @@ void QTableSetupDialog::resetFontSize()
 {
     QFont customFont(FONTNAME_ENGLISH, 9);
 
+    ui->tabSettingsGroupBox->setFont(customFont);
+    ui->tabCustomImageGroupBox->setFont(customFont);
     ui->tabNameLabel->setFont(customFont);
     ui->tabHotkeyLabel->setFont(customFont);
     ui->tabNameLineEdit->setFont(customFont);

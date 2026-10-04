@@ -1,6 +1,7 @@
 #include "qkeymapper.h"
 #include "qfloatingwindowsetupdialog.h"
 #include "ui_qfloatingwindowsetupdialog.h"
+#include "qstyle_singletons.h"
 
 namespace {
 void notifySaveSettingDirty()
@@ -23,19 +24,25 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     m_instance = this;
     ui->setupUi(this);
 
-    int x_offset = -41;
-    int y_offset = -6;
-    QRect referencePointComboBoxGeometry = ui->referencePointComboBox->geometry();
-    QRect windowSizeSpinBoxGeometry = ui->windowSizeSpinBox->geometry();
-    int background_color_x = windowSizeSpinBoxGeometry.x();
-    int background_color_y = referencePointComboBoxGeometry.y();
-    background_color_x += x_offset;
-    background_color_y += y_offset;
-    // Set position for the background color picker
-    m_FloatingWindow_BGColorPicker->move(background_color_x, background_color_y);
-    m_FloatingWindow_BGColorPicker->raise();
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        ui->windowStyleGroupBox->setStyle(windowsStyle);
+        ui->windowPositionGroupBox->setStyle(windowsStyle);
+    }
+
+    if (QGridLayout *styleLayout = qobject_cast<QGridLayout*>(ui->windowStyleGroupBox->layout())) {
+        styleLayout->addWidget(m_FloatingWindow_BGColorPicker, 0, 0, 1, 2, Qt::AlignCenter);
+    }
     m_FloatingWindow_BGColorPicker->setShowAlphaChannel(true);
     m_FloatingWindow_BGColorPicker->setColor(FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT);
+
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        const auto children = findChildren<QWidget*>();
+        for (QWidget *child : children) {
+            if (!qobject_cast<QGroupBox*>(child)) {
+                child->setStyle(fusionStyle);
+            }
+        }
+    }
 
     QStringList referencePointList;
     referencePointList.append(tr("ScreenTopLeft"));
@@ -91,6 +98,8 @@ void QFloatingWindowSetupDialog::setUILanguage(int languageindex)
     Q_UNUSED(languageindex);
 
     setWindowTitle(tr("Floating Window Setup"));
+    ui->windowStyleGroupBox->setTitle(tr("Window Style"));
+    ui->windowPositionGroupBox->setTitle(tr("Position & Interaction"));
     m_FloatingWindow_BGColorPicker->setButtonText(tr("BGColor"));
     m_FloatingWindow_BGColorPicker->setWindowTitle(tr("Select Floating Window Background Color"));
     ui->windowSizeLabel->setText(tr("Size"));
