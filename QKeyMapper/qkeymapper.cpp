@@ -3057,6 +3057,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         int half = contentW / 2;
         ui->mainTableSplitter->setSizes({half, contentW - half});
         if (QSplitterHandle *handle = ui->mainTableSplitter->handle(1)) {
+            m_mainTableSplitterHandle = handle;
             handle->installEventFilter(this);
         }
         updateSplitterHandleToolTip();
@@ -3966,6 +3967,11 @@ QKeyMapper::~QKeyMapper()
         qApp->removeEventFilter(this);
     }
 
+    if (m_mainTableSplitterHandle) {
+        m_mainTableSplitterHandle->removeEventFilter(this);
+        m_mainTableSplitterHandle = Q_NULLPTR;
+    }
+
     stopWinEventHook();
     // Unregister WTS session notifications
     WTSUnRegisterSessionNotification(reinterpret_cast<HWND>(winId()));
@@ -3975,8 +3981,6 @@ QKeyMapper::~QKeyMapper()
     destroyCrosshairWindow(m_CrosshairHandle);
     m_CrosshairHandle = NULL;
     ShutdownGDIPlus();
-
-    delete ui;
 
     if (m_ProcessInfoTableDelegate != Q_NULLPTR) {
         delete m_ProcessInfoTableDelegate;
@@ -4035,6 +4039,9 @@ QKeyMapper::~QKeyMapper()
     }
 
     exitDeleteKeyMappingTabWidget();
+
+    delete ui;
+    ui = Q_NULLPTR;
 }
 
 #if 0
@@ -15503,8 +15510,8 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
-    if (ui && ui->mainTableSplitter && object == ui->mainTableSplitter->handle(1)) {
-        if (event->type() == QEvent::MouseButtonDblClick) {
+    if (event && event->type() == QEvent::MouseButtonDblClick) {
+        if (m_mainTableSplitterHandle && object == m_mainTableSplitterHandle.data()) {
             QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
             if (mouseEvent && mouseEvent->button() == Qt::LeftButton) {
                 resetMainTableSplitterToDefault();
@@ -32082,10 +32089,8 @@ void QKeyMapper::resetMainTableSplitterToDefault()
 
 void QKeyMapper::updateSplitterHandleToolTip()
 {
-    if (!ui || !ui->mainTableSplitter) {
-        return;
-    }
-    QSplitterHandle *handle = ui->mainTableSplitter->handle(1);
+    QSplitterHandle *handle = m_mainTableSplitterHandle ? m_mainTableSplitterHandle.data()
+                            : ((ui && ui->mainTableSplitter) ? ui->mainTableSplitter->handle(1) : Q_NULLPTR);
     if (!handle) {
         return;
     }

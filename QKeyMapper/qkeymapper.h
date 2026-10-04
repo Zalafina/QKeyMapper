@@ -22,6 +22,7 @@
 #include <QWidgetAction>
 #include <QScrollArea>
 #include <QColor>
+#include <QPointer>
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtWin>
@@ -100,6 +101,7 @@ class QKeyMapper;
 
 // class QFrame;
 // class QLabel;
+class QSplitterHandle;
 
 struct MAP_PROCESSINFO
 {
@@ -2388,6 +2390,7 @@ private:
     static QKeyMapper *m_instance;
     static QString DEFAULT_TITLE;
     Ui::QKeyMapper *ui;
+    QPointer<QSplitterHandle> m_mainTableSplitterHandle = Q_NULLPTR;
     // QPoint m_LastWindowPosition;
 #ifdef CYCLECHECKTIMER_ENABLED
     QTimer m_CycleCheckTimer;
