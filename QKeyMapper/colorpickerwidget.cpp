@@ -58,9 +58,15 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int bu
     colorLabel->setBackgroundRole(QPalette::Window);
     colorLabel->setAutoFillBackground(true);
 
-    // Set default size for colorLabel and colorButton
-    colorLabel->setFixedSize(31, 21);  // Set fixed size for the label
-    colorButton->setFixedSize(buttonWidth, 21); // Set fixed size for the button
+    // Set dynamic size for colorLabel and colorButton based on font metrics
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        colorButton->setStyle(fusionStyle);
+    }
+    const int btnHeight = qMax(22, colorButton->fontMetrics().height() + 6);
+    colorLabel->setFixedSize(31, btnHeight);
+    colorButton->setFixedHeight(btnHeight);
+    const int textWidth = colorButton->fontMetrics().horizontalAdvance(buttonText) + 14;
+    colorButton->setMinimumWidth(qMax(buttonWidth, textWidth));
 
     // Setup layout and add the button and label to it
     QHBoxLayout *layout = new QHBoxLayout(this);
@@ -151,7 +157,13 @@ void ColorPickerWidget::setWindowTitle(QString title)
 void ColorPickerWidget::setButtonText(QString text)
 {
     if (!text.isEmpty()) {
+        m_buttonText = text;
         colorButton->setText(text);
+        const int btnHeight = qMax(22, colorButton->fontMetrics().height() + 6);
+        colorLabel->setFixedSize(31, btnHeight);
+        colorButton->setFixedHeight(btnHeight);
+        const int textWidth = colorButton->fontMetrics().horizontalAdvance(text) + 14;
+        colorButton->setMinimumWidth(qMax(colorButton->minimumWidth(), textWidth));
     }
 }
 
@@ -159,8 +171,16 @@ void ColorPickerWidget::changeEvent(QEvent *event)
 {
     QWidget::changeEvent(event);
 
-    if (event != Q_NULLPTR && event->type() == QEvent::EnabledChange) {
-        updateColorLabel(m_color);
+    if (event != Q_NULLPTR) {
+        if (event->type() == QEvent::EnabledChange) {
+            updateColorLabel(m_color);
+        } else if (event->type() == QEvent::FontChange || event->type() == QEvent::StyleChange) {
+            const int btnHeight = qMax(22, colorButton->fontMetrics().height() + 6);
+            colorLabel->setFixedSize(31, btnHeight);
+            colorButton->setFixedHeight(btnHeight);
+            const int textWidth = colorButton->fontMetrics().horizontalAdvance(colorButton->text()) + 14;
+            colorButton->setMinimumWidth(qMax(colorButton->minimumWidth(), textWidth));
+        }
     }
 }
 

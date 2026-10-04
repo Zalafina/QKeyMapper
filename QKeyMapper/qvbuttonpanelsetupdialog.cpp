@@ -32,6 +32,16 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
         ui->positionGroupBox->setStyle(windowsStyle);
     }
 
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        const auto childWidgets = findChildren<QWidget*>();
+        for (QWidget *w : childWidgets) {
+            if (w != ui->colorGroupBox && w != ui->panelSettingsGroupBox
+                && w != ui->fontGroupBox && w != ui->positionGroupBox) {
+                w->setStyle(fusionStyle);
+            }
+        }
+    }
+
     // Add color pickers into the color group box grid layout
     ui->gridLayout_Color->addWidget(m_BtnColorPicker, 0, 0);
     m_BtnColorPicker->setColor(VBTNPANEL_BUTTON_COLOR_DEFAULT);

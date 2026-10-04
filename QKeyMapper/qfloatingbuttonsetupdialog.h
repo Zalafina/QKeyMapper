@@ -47,6 +47,11 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+    bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result) override;
+#else
+    bool nativeEvent(const QByteArray &eventType, void *message, long *result) override;
+#endif
 
 private slots:
     void onApplyButtonClicked();
@@ -60,6 +65,8 @@ private:
     void updateLayoutModeFromWidth(int width, bool markDirty = false);
     int preferredHorizontalEnterWidth() const;
     int preferredVerticalWidth() const;
+    int preferredHorizontalHeight() const;
+    int preferredVerticalHeight() const;
     void loadFromCurrentItem();
     void applyToCurrentItem();
     void updateStyleCodeDisplay();
@@ -166,6 +173,7 @@ private:
     QLabel *m_SyncGroupNoteLabel;
     QLineEdit *m_SyncGroupNoteLineEdit;
 
+    QDialogButtonBox *m_ButtonBox;
     QPushButton *m_ApplyButton;
     QPushButton *m_RevertButton;
 

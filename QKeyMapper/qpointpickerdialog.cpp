@@ -128,7 +128,8 @@ qreal getDprAtPhysicalPoint(const POINT &pt)
 PointPickerDragTool::PointPickerDragTool(QWidget *parent)
     : QFrame(parent)
 {
-    setFixedSize(42, 42);
+    const int toolSize = qMax(42, fontMetrics().height() * 2 + 10);
+    setFixedSize(toolSize, toolSize);
     setCursor(Qt::PointingHandCursor);
     setFrameShape(QFrame::StyledPanel);
     setFrameShadow(QFrame::Sunken);
@@ -506,11 +507,11 @@ void QPointPickerDialog::setupUi()
 
     m_currentCoordLabel = new QLabel(this);
     m_currentCoordLabel->setFocusPolicy(Qt::NoFocus);
-    m_currentCoordLabel->setFixedHeight(16);
+    m_currentCoordLabel->setMinimumHeight(qMax(16, m_currentCoordLabel->fontMetrics().height()));
 
     m_currentCoordValueLabel = new QLabel(this);
     m_currentCoordValueLabel->setFocusPolicy(Qt::NoFocus);
-    m_currentCoordValueLabel->setFixedHeight(16);
+    m_currentCoordValueLabel->setMinimumHeight(qMax(16, m_currentCoordValueLabel->fontMetrics().height()));
     QFont monoFont(QStringLiteral("Consolas"), 11);
     monoFont.setStyleHint(QFont::Monospace);
     m_currentCoordValueLabel->setFont(monoFont);
@@ -521,7 +522,7 @@ void QPointPickerDialog::setupUi()
     m_pickedCoordEdit = new QLineEdit(this);
     m_pickedCoordEdit->setReadOnly(true);
     m_pickedCoordEdit->setFocusPolicy(Qt::ClickFocus);
-    m_pickedCoordEdit->setFixedHeight(22);
+    m_pickedCoordEdit->setMinimumHeight(qMax(22, m_pickedCoordEdit->fontMetrics().height() + 4));
     m_pickedCoordEdit->setFont(monoFont);
     m_pickedCoordEdit->setPlaceholderText(QStringLiteral("0,0"));
     m_pickedCoordEdit->installEventFilter(this);
@@ -538,7 +539,10 @@ void QPointPickerDialog::setupUi()
     connect(m_dragTool, &PointPickerDragTool::dragMoved, this, &QPointPickerDialog::onDragMoved);
     connect(m_dragTool, &PointPickerDragTool::dragFinished, this, &QPointPickerDialog::onDragFinished);
 
-    setFixedSize(220, 82);
+    adjustSize();
+    const int initialWidth = qMax(220, sizeHint().width());
+    const int initialHeight = qMax(82, sizeHint().height());
+    setFixedSize(initialWidth, initialHeight);
 }
 
 void QPointPickerDialog::retranslateUi()
@@ -587,14 +591,14 @@ void QPointPickerDialog::updateTargetWindowInfo()
 
     const int MIN_DIALOG_WIDTH = 220;
     const int MAX_DIALOG_WIDTH = 360;
-    const int DIALOG_HEIGHT = 82;
 
     const int margins = 16; // 8 left + 8 right
     const int radiosWidth = m_screenRadio->sizeHint().width() + m_windowRadio->sizeHint().width() + 8 /*spacing*/ + 4 /*addSpacing*/;
 
     // Minimum width required by Row 2 (drag tool, labels, coordinate edit)
+    const int dragToolWidth = m_dragTool ? m_dragTool->width() : 42;
     const int col0Width = qMax(m_currentCoordLabel->sizeHint().width(), m_pickedCoordLabel->sizeHint().width());
-    const int row2Width = margins + 42 /*dragTool*/ + 8 /*spacing*/ + col0Width + 4 /*spacing*/ + 105 /*edit box & coord*/;
+    const int row2Width = margins + dragToolWidth + 8 /*spacing*/ + col0Width + 4 /*spacing*/ + 105 /*edit box & coord*/;
     const int baseMinWidth = qMax(MIN_DIALOG_WIDTH, row2Width);
 
     int targetWidth = baseMinWidth;
@@ -619,8 +623,9 @@ void QPointPickerDialog::updateTargetWindowInfo()
         m_targetInfoLabel->setToolTip(fullText);
     }
 
-    if (width() != targetWidth) {
-        setFixedSize(targetWidth, DIALOG_HEIGHT);
+    const int targetHeight = qMax(82, sizeHint().height());
+    if (width() != targetWidth || height() != targetHeight) {
+        setFixedSize(targetWidth, targetHeight);
 
         // Screen edge guard: prevent overflowing right edge of current monitor
         QScreen *screen = this->screen();
@@ -875,7 +880,7 @@ bool QPointPickerDialog::isPositionValidOnScreens(const QPoint &pos, const QSize
 
 void QPointPickerDialog::changeEvent(QEvent *event)
 {
-    if (event->type() == QEvent::LanguageChange) {
+    if (event->type() == QEvent::LanguageChange || event->type() == QEvent::FontChange || event->type() == QEvent::StyleChange) {
         retranslateUi();
     }
     QDialog::changeEvent(event);

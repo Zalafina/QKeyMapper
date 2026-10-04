@@ -49104,7 +49104,8 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     m_listWidget->setRowCount(0);
     m_listWidget->horizontalHeader()->setVisible(false);
     m_listWidget->verticalHeader()->setVisible(true);
-    m_listWidget->verticalHeader()->setDefaultSectionSize(GROUPSELECTWIDGET_ITEM_HEIGHT);
+    const int itemHeight = qMax(GROUPSELECTWIDGET_ITEM_HEIGHT, m_listWidget->fontMetrics().height() + 8);
+    m_listWidget->verticalHeader()->setDefaultSectionSize(itemHeight);
     m_listWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
     m_listWidget->verticalHeader()->setHighlightSections(false);
     m_listWidget->horizontalHeader()->setHighlightSections(false);
@@ -49143,6 +49144,8 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
     m_listWidget->setRowCount(0);
 
     // Only create "Select All" item if there are groups to select
+    const int itemHeight = qMax(GROUPSELECTWIDGET_ITEM_HEIGHT, m_listWidget->fontMetrics().height() + 8);
+    m_listWidget->verticalHeader()->setDefaultSectionSize(itemHeight);
     bool hasGroups = !groups.isEmpty();
     if (hasGroups) {
         m_listWidget->setRowCount(1);
@@ -49151,7 +49154,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
         selectAllItem->setFlags(selectAllItem->flags() | Qt::ItemIsUserCheckable);
         selectAllItem->setCheckState(Qt::Unchecked);
         m_listWidget->setItem(0, 0, selectAllItem);
-        m_listWidget->setRowHeight(0, GROUPSELECTWIDGET_ITEM_HEIGHT);
+        m_listWidget->setRowHeight(0, itemHeight);
     }
 
     // Create QSettings object once before the loop if configfile is provided
@@ -49241,7 +49244,7 @@ void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &c
         item->setFlags((item->flags() | Qt::ItemIsUserCheckable) & ~Qt::ItemIsAutoTristate);
         item->setCheckState(Qt::Unchecked);
         m_listWidget->setItem(row, 0, item);
-        m_listWidget->setRowHeight(row, GROUPSELECTWIDGET_ITEM_HEIGHT);
+        m_listWidget->setRowHeight(row, itemHeight);
     }
 
     // Vertical header row numbers: keep "Select All" row blank and start numbering from 1 on the first group row.
@@ -49580,7 +49583,8 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
 
     // Group selection widget
     groupWidget = new GroupSelectionWidget(this);
-    groupWidget->setMinimumHeight(GROUPSELECTWIDGET_ITEM_HEIGHT * GROUPSELECTWIDGET_HEIGHT_ITEM_COUNT_MIN + 2);
+    const int itemHeight = qMax(GROUPSELECTWIDGET_ITEM_HEIGHT, fontMetrics().height() + 8);
+    groupWidget->setMinimumHeight(itemHeight * GROUPSELECTWIDGET_HEIGHT_ITEM_COUNT_MIN + 2);
     mainLayout->addWidget(groupWidget);
 
     // OK / Cancel buttons
@@ -49597,6 +49601,13 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
     cancelButton->setFocusPolicy(Qt::NoFocus);
     cancelButton->setAutoDefault(false);
     cancelButton->setDefault(false);
+
+    if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
+        browseBtn->setStyle(fusionStyle);
+        okButton->setStyle(fusionStyle);
+        cancelButton->setStyle(fusionStyle);
+        filePathEdit->setStyle(fusionStyle);
+    }
 
     setFocus();
 
