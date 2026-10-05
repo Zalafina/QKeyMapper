@@ -64,8 +64,6 @@ private:
     static QCrosshairSetupDialog *m_instance;
     Ui::QCrosshairSetupDialog *ui;
     int m_ItemRow;
-    ColorPickerWidget *m_CenterColorPicker;
-    ColorPickerWidget *m_CrosshairColorPicker;
 };
 
 #endif // QCROSSHAIRSETUPDIALOG_H

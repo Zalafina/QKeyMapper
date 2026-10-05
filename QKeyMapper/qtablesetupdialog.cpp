@@ -13,8 +13,6 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     , m_TabIndex(-1)
     , m_SettingSelectIndex(-1)
     , m_IsCommonTabMode(false)
-    , m_NotificationFontColorPicker(new ColorPickerWidget(this, "TabFontColor", COLORPICKER_BUTTON_WIDTH_TABFONTCOLOR))
-    , m_NotificationBackgroundColorPicker(new ColorPickerWidget(this, "TabBGColor", COLORPICKER_BUTTON_WIDTH_TABBGCOLOR))
 {
     m_instance = this;
     ui->setupUi(this);
@@ -29,9 +27,12 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
         ui->customImageLabel->setStyle(windowsStyle);
     }
 
-    ui->notificationLayout->insertWidget(0, m_NotificationFontColorPicker);
-    ui->notificationLayout->insertWidget(1, m_NotificationBackgroundColorPicker);
-    m_NotificationBackgroundColorPicker->setShowAlphaChannel(true);
+    ui->notificationFontColorPicker->setColorType("TabFontColor");
+    ui->notificationFontColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_TABFONTCOLOR);
+
+    ui->notificationBackgroundColorPicker->setColorType("TabBGColor");
+    ui->notificationBackgroundColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_TABBGCOLOR);
+    ui->notificationBackgroundColorPicker->setShowAlphaChannel(true);
 
     if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
         const auto children = findChildren<QWidget*>();
@@ -65,8 +66,8 @@ QTableSetupDialog::QTableSetupDialog(QWidget *parent)
     QObject::connect(ui->tabHotkeyLineEdit, &QLineEdit::returnPressed, this, &QTableSetupDialog::on_tabHotkeyUpdateButton_clicked);
     QObject::connect(ui->selectCustomImageButton, &QPushButton::customContextMenuRequested,
                      this, &QTableSetupDialog::showSelectCustomImageButtonContextMenu);
-    QObject::connect(m_NotificationFontColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabFontColorChanged);
-    QObject::connect(m_NotificationBackgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabBackgroundColorChanged);
+    QObject::connect(ui->notificationFontColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabFontColorChanged);
+    QObject::connect(ui->notificationBackgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QTableSetupDialog::onTabBackgroundColorChanged);
 }
 
 QTableSetupDialog::~QTableSetupDialog()
@@ -78,10 +79,10 @@ void QTableSetupDialog::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
 
-    m_NotificationFontColorPicker->setButtonText(tr("TabFontColor"));
-    m_NotificationFontColorPicker->setWindowTitle(tr("Select Tab Notification Font Color"));
-    m_NotificationBackgroundColorPicker->setButtonText(tr("TabBGColor"));
-    m_NotificationBackgroundColorPicker->setWindowTitle(tr("Select Tab Notification Background Color"));
+    ui->notificationFontColorPicker->setButtonText(tr("TabFontColor"));
+    ui->notificationFontColorPicker->setWindowTitle(tr("Select Tab Notification Font Color"));
+    ui->notificationBackgroundColorPicker->setButtonText(tr("TabBGColor"));
+    ui->notificationBackgroundColorPicker->setWindowTitle(tr("Select Tab Notification Background Color"));
 
     setWindowTitle(tr(TABLESETUPDIALOG_WINDOWTITLE_STR));
     ui->tabNameLabel->setText(tr(TABNAMELABEL_STR));
@@ -454,13 +455,13 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
                 TabFontColor = NOTIFICATION_COLOR_NORMAL_DEFAULT;
             }
         }
-        m_NotificationFontColorPicker->setColor(TabFontColor);
+        ui->notificationFontColorPicker->setColor(TabFontColor);
 
         // Load TabBackgroundColor
         if (TabBackgroundColor.isValid() != true) {
             TabBackgroundColor = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
         }
-        m_NotificationBackgroundColorPicker->setColor(TabBackgroundColor);
+        ui->notificationBackgroundColorPicker->setColor(TabBackgroundColor);
 
         // Load TabHideNotification
         ui->hideNotificationCheckBox->setCheckState(TabHideNotification);
@@ -986,6 +987,6 @@ void QTableSetupDialog::applyCommonTabMode()
     ui->customImageTrayIconPixelComboBox->setEnabled(!isCommon);
     ui->customImageShowAsFloatingWindowCheckBox->setEnabled(!isCommon);
     ui->floatingWindowSetupButton->setEnabled(!isCommon);
-    m_NotificationFontColorPicker->setEnabled(!isCommon);
-    m_NotificationBackgroundColorPicker->setEnabled(!isCommon);
+    ui->notificationFontColorPicker->setEnabled(!isCommon);
+    ui->notificationBackgroundColorPicker->setEnabled(!isCommon);
 }

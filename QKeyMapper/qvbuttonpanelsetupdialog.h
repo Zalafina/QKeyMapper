@@ -78,11 +78,6 @@ private:
     bool                            m_hasBackup;
     VButtonPanelSettings            m_BackupSettings;
     QString                         m_btnFontFamily;
-    ColorPickerWidget               *m_BGColorPicker;
-    ColorPickerWidget               *m_BtnColorPicker;
-    ColorPickerWidget               *m_PressedColorPicker;
-    ColorPickerWidget               *m_LockedColorPicker;
-    ColorPickerWidget               *m_TextColorPicker;
 };
 
 #endif // QVBUTTONPANELSETUPDIALOG_H

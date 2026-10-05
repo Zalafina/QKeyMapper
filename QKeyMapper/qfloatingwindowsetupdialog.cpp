@@ -19,7 +19,6 @@ QFloatingWindowSetupDialog *QFloatingWindowSetupDialog::m_instance = Q_NULLPTR;
 QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QFloatingWindowSetupDialog)
-    , m_FloatingWindow_BGColorPicker(new ColorPickerWidget(this, "FW_BGColor", COLORPICKER_BUTTON_WIDTH_FLOATINGWINDOW_BGCOLOR))
 {
     m_instance = this;
     ui->setupUi(this);
@@ -29,11 +28,10 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
         ui->windowPositionGroupBox->setStyle(windowsStyle);
     }
 
-    if (QGridLayout *styleLayout = qobject_cast<QGridLayout*>(ui->windowStyleGroupBox->layout())) {
-        styleLayout->addWidget(m_FloatingWindow_BGColorPicker, 0, 0, 1, 2, Qt::AlignCenter);
-    }
-    m_FloatingWindow_BGColorPicker->setShowAlphaChannel(true);
-    m_FloatingWindow_BGColorPicker->setColor(FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT);
+    ui->floatingWindow_BGColorPicker->setColorType("FW_BGColor");
+    ui->floatingWindow_BGColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_FLOATINGWINDOW_BGCOLOR);
+    ui->floatingWindow_BGColorPicker->setShowAlphaChannel(true);
+    ui->floatingWindow_BGColorPicker->setColor(FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT);
 
     if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
         const auto children = findChildren<QWidget*>();
@@ -85,7 +83,7 @@ QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     ui->mousePassThroughSwitchKeyComboBox->addItems(QKeyMapper_Worker::MultiKeyboardInputList);
     ui->mousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
 
-    QObject::connect(m_FloatingWindow_BGColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingWindowSetupDialog::onBackgroundColorChanged);
+    QObject::connect(ui->floatingWindow_BGColorPicker, &ColorPickerWidget::colorChanged, this, &QFloatingWindowSetupDialog::onBackgroundColorChanged);
 }
 
 QFloatingWindowSetupDialog::~QFloatingWindowSetupDialog()
@@ -100,8 +98,8 @@ void QFloatingWindowSetupDialog::setUILanguage(int languageindex)
     setWindowTitle(tr("Floating Window Setup"));
     ui->windowStyleGroupBox->setTitle(tr("Window Style"));
     ui->windowPositionGroupBox->setTitle(tr("Position & Interaction"));
-    m_FloatingWindow_BGColorPicker->setButtonText(tr("BGColor"));
-    m_FloatingWindow_BGColorPicker->setWindowTitle(tr("Select Floating Window Background Color"));
+    ui->floatingWindow_BGColorPicker->setButtonText(tr("BGColor"));
+    ui->floatingWindow_BGColorPicker->setWindowTitle(tr("Select Floating Window Background Color"));
     ui->windowSizeLabel->setText(tr("Size"));
     ui->windowPositionXLabel->setText(tr("Position X"));
     ui->windowPositionYLabel->setText(tr("Position Y"));
@@ -204,7 +202,7 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
             ui->mousePassThroughSwitchKeyComboBox->setCurrentText(FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
         }
 
-        m_FloatingWindow_BGColorPicker->setColor(WindowBGColor);
+        ui->floatingWindow_BGColorPicker->setColor(WindowBGColor);
         ui->referencePointComboBox->setCurrentIndex(PositionReferencePoint);
         ui->windowPositionXSpinBox->setValue(WindowPosition.x());
         ui->windowPositionYSpinBox->setValue(WindowPosition.y());

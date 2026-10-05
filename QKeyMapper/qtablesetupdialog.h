@@ -90,8 +90,6 @@ private:
     int m_TabIndex;
     int m_SettingSelectIndex;
     bool m_IsCommonTabMode;
-    ColorPickerWidget *m_NotificationFontColorPicker;
-    ColorPickerWidget *m_NotificationBackgroundColorPicker;
     QFileDialog *m_SelectImageFileDialog = Q_NULLPTR;
 
 public:

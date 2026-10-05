@@ -46,6 +46,7 @@ QColor mutedDisabledSwatchColor(const QColor &color, const QPalette &referencePa
 ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int buttonWidth)
     : QWidget(parent)
     , m_buttonText(buttonText)
+    , m_colorType(buttonText)
 {
     colorLabel = new QLabel(this);
     colorButton = new QPushButton(buttonText, this);
@@ -62,14 +63,14 @@ ColorPickerWidget::ColorPickerWidget(QWidget *parent, QString buttonText, int bu
     if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
         colorButton->setStyle(fusionStyle);
     }
-    const int btnHeight = qMax(22, colorButton->fontMetrics().height() + 6);
-    colorLabel->setFixedSize(31, btnHeight);
-    colorButton->setFixedHeight(btnHeight);
+    updateControlSizes();
     const int textWidth = colorButton->fontMetrics().horizontalAdvance(buttonText) + 14;
     colorButton->setMinimumWidth(qMax(buttonWidth, textWidth));
 
     // Setup layout and add the button and label to it
     QHBoxLayout *layout = new QHBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(6);
     layout->addWidget(colorLabel);
     layout->addWidget(colorButton);
     layout->addStretch();
@@ -116,6 +117,18 @@ void ColorPickerWidget::updateColorLabel(const QColor &color)
     colorLabel->update();
 }
 
+void ColorPickerWidget::updateControlSizes()
+{
+    if (colorButton == Q_NULLPTR || colorLabel == Q_NULLPTR) {
+        return;
+    }
+
+    const int btnHeight = qMax(22, colorButton->fontMetrics().height() + 4);
+    colorLabel->setFixedSize(31, btnHeight);
+    colorButton->setFixedHeight(btnHeight);
+    setFixedHeight(btnHeight);
+}
+
 #if 0
 void ColorPickerWidget::setUILanguage(int languageindex)
 {
@@ -159,11 +172,27 @@ void ColorPickerWidget::setButtonText(QString text)
     if (!text.isEmpty()) {
         m_buttonText = text;
         colorButton->setText(text);
-        const int btnHeight = qMax(22, colorButton->fontMetrics().height() + 6);
-        colorLabel->setFixedSize(31, btnHeight);
-        colorButton->setFixedHeight(btnHeight);
+        updateControlSizes();
         const int textWidth = colorButton->fontMetrics().horizontalAdvance(text) + 14;
         colorButton->setMinimumWidth(qMax(colorButton->minimumWidth(), textWidth));
+    }
+}
+
+void ColorPickerWidget::setColorType(const QString &type)
+{
+    m_colorType = type;
+}
+
+QString ColorPickerWidget::colorType() const
+{
+    return m_colorType;
+}
+
+void ColorPickerWidget::setButtonWidth(int width)
+{
+    if (width > 0 && colorButton != Q_NULLPTR) {
+        const int textWidth = colorButton->fontMetrics().horizontalAdvance(colorButton->text()) + 14;
+        colorButton->setMinimumWidth(qMax(width, textWidth));
     }
 }
 
@@ -175,9 +204,7 @@ void ColorPickerWidget::changeEvent(QEvent *event)
         if (event->type() == QEvent::EnabledChange) {
             updateColorLabel(m_color);
         } else if (event->type() == QEvent::FontChange || event->type() == QEvent::StyleChange) {
-            const int btnHeight = qMax(22, colorButton->fontMetrics().height() + 6);
-            colorLabel->setFixedSize(31, btnHeight);
-            colorButton->setFixedHeight(btnHeight);
+            updateControlSizes();
             const int textWidth = colorButton->fontMetrics().horizontalAdvance(colorButton->text()) + 14;
             colorButton->setMinimumWidth(qMax(colorButton->minimumWidth(), textWidth));
         }
@@ -287,24 +314,26 @@ void ColorPickerWidget::onPickColor()
 
 void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
 {
+    const QString targetType = !m_colorType.isEmpty() ? m_colorType : m_buttonText;
+
     // Only show context menu for button texts that have a known default color
-    if ("TabFontColor" != m_buttonText
-        && "TabBGColor"    != m_buttonText
-        && "FW_BGColor"    != m_buttonText
-        && "FontColor"     != m_buttonText
-        && "BGColor"       != m_buttonText
-        && "CenterColor"   != m_buttonText
-        && "CrosshairColor" != m_buttonText
-        && "VBtn_BGColor"   != m_buttonText
-        && "VBtn_BtnColor"  != m_buttonText
-        && "VBtn_PressedColor" != m_buttonText
-        && "VBtn_LockedColor" != m_buttonText
-        && "VBtn_TextColor" != m_buttonText
-        && "FloatBtn_BtnColor" != m_buttonText
-        && "FloatBtn_PressedColor" != m_buttonText
-        && "FloatBtn_LockedColor" != m_buttonText
-        && "FloatBtn_TextColor" != m_buttonText
-        && "FloatBtn_BorderColor" != m_buttonText) {
+    if ("TabFontColor" != targetType
+        && "TabBGColor"    != targetType
+        && "FW_BGColor"    != targetType
+        && "FontColor"     != targetType
+        && "BGColor"       != targetType
+        && "CenterColor"   != targetType
+        && "CrosshairColor" != targetType
+        && "VBtn_BGColor"   != targetType
+        && "VBtn_BtnColor"  != targetType
+        && "VBtn_PressedColor" != targetType
+        && "VBtn_LockedColor" != targetType
+        && "VBtn_TextColor" != targetType
+        && "FloatBtn_BtnColor" != targetType
+        && "FloatBtn_PressedColor" != targetType
+        && "FloatBtn_LockedColor" != targetType
+        && "FloatBtn_TextColor" != targetType
+        && "FloatBtn_BorderColor" != targetType) {
         return;
     }
 
@@ -320,7 +349,7 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
 
     // Determine the default color for this button type
     QColor color;
-    if ("TabFontColor" == m_buttonText) {
+    if ("TabFontColor" == targetType) {
         int setting_select_index = QTableSetupDialog::getInstance()->getSettingSelectIndex();
         if (setting_select_index < 0) {
             return;
@@ -332,52 +361,52 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
             color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
         }
     }
-    else if ("TabBGColor" == m_buttonText) {
+    else if ("TabBGColor" == targetType) {
         color = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
     }
-    else if ("FW_BGColor" == m_buttonText) {
+    else if ("FW_BGColor" == targetType) {
         color = FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;
     }
-    else if ("FontColor" == m_buttonText) {
+    else if ("FontColor" == targetType) {
         color = NOTIFICATION_COLOR_NORMAL_DEFAULT;
     }
-    else if ("BGColor" == m_buttonText) {
+    else if ("BGColor" == targetType) {
         color = NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
     }
-    else if ("CenterColor" == m_buttonText) {
+    else if ("CenterColor" == targetType) {
         color = CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR;
     }
-    else if ("CrosshairColor" == m_buttonText) {
+    else if ("CrosshairColor" == targetType) {
         color = CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR;
     }
-    else if ("VBtn_BGColor" == m_buttonText) {
+    else if ("VBtn_BGColor" == targetType) {
         color = VBTNPANEL_BACKGROUND_COLOR_DEFAULT;
     }
-    else if ("VBtn_BtnColor" == m_buttonText) {
+    else if ("VBtn_BtnColor" == targetType) {
         color = VBTNPANEL_BUTTON_COLOR_DEFAULT;
     }
-    else if ("VBtn_PressedColor" == m_buttonText) {
+    else if ("VBtn_PressedColor" == targetType) {
         color = VBTNPANEL_PRESSED_COLOR_DEFAULT;
     }
-    else if ("VBtn_LockedColor" == m_buttonText) {
+    else if ("VBtn_LockedColor" == targetType) {
         color = VBTNPANEL_LOCKED_COLOR_DEFAULT;
     }
-    else if ("VBtn_TextColor" == m_buttonText) {
+    else if ("VBtn_TextColor" == targetType) {
         color = VBTNPANEL_TEXT_COLOR_DEFAULT;
     }
-    else if ("FloatBtn_BtnColor" == m_buttonText) {
+    else if ("FloatBtn_BtnColor" == targetType) {
         color = FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
     }
-    else if ("FloatBtn_PressedColor" == m_buttonText) {
+    else if ("FloatBtn_PressedColor" == targetType) {
         color = FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
     }
-    else if ("FloatBtn_LockedColor" == m_buttonText) {
+    else if ("FloatBtn_LockedColor" == targetType) {
         color = FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR;
     }
-    else if ("FloatBtn_TextColor" == m_buttonText) {
+    else if ("FloatBtn_TextColor" == targetType) {
         color = FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
     }
-    else if ("FloatBtn_BorderColor" == m_buttonText) {
+    else if ("FloatBtn_BorderColor" == targetType) {
         color = FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR;
     }
 
@@ -392,9 +421,9 @@ void ColorPickerWidget::onColorButtonContextMenu(const QPoint &pos)
     colorLabel->setPalette(palette);
 
     // Emit signal — Tab/FW types use empty color to signal "use system default"
-    if ("TabFontColor" == m_buttonText
-        || "TabBGColor" == m_buttonText
-        || "FW_BGColor" == m_buttonText) {
+    if ("TabFontColor" == targetType
+        || "TabBGColor" == targetType
+        || "FW_BGColor" == targetType) {
         QColor emptyColor;
         emit colorChanged(emptyColor);
     }

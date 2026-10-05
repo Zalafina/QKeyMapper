@@ -110,8 +110,6 @@ private:
     static QNotificationSetupDialog *m_instance;
     Ui::QNotificationSetupDialog *ui;
     QString m_FontFamily;
-    ColorPickerWidget *m_FontColorPicker;
-    ColorPickerWidget *m_BackgroundColorPicker;
 };
 
 #endif // QNOTIFICATIONSETUPDIALOG_H

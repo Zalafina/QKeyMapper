@@ -11,19 +11,16 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QNotificationSetupDialog)
     , m_FontFamily()
-    , m_FontColorPicker(new ColorPickerWidget(this, "FontColor", COLORPICKER_BUTTON_WIDTH_NOTIFICATION_FONTCOLOR))
-    , m_BackgroundColorPicker(new ColorPickerWidget(this, "BGColor", COLORPICKER_BUTTON_WIDTH_NOTIFICATION_BGCOLOR))
 {
     m_instance = this;
     ui->setupUi(this);
 
-    if (QGridLayout *fontLayout = qobject_cast<QGridLayout*>(ui->fontGroupBox->layout())) {
-        fontLayout->addWidget(m_FontColorPicker, 0, 0, 1, 3);
-    }
-    if (QGridLayout *borderLayout = qobject_cast<QGridLayout*>(ui->borderGroupBox->layout())) {
-        borderLayout->addWidget(m_BackgroundColorPicker, 0, 0, 1, 2);
-    }
-    m_BackgroundColorPicker->setShowAlphaChannel(true);
+    ui->fontColorPicker->setColorType("FontColor");
+    ui->fontColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_NOTIFICATION_FONTCOLOR);
+
+    ui->backgroundColorPicker->setColorType("BGColor");
+    ui->backgroundColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_NOTIFICATION_BGCOLOR);
+    ui->backgroundColorPicker->setShowAlphaChannel(true);
 
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->fontGroupBox->setStyle(windowsStyle);
@@ -47,8 +44,8 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
     ui->fontWeightComboBox->addItems(fontWeightList);
     ui->fontWeightComboBox->setCurrentIndex(NOTIFICATION_FONT_WEIGHT_DEFAULT);
 
-    m_FontColorPicker->setColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
-    m_BackgroundColorPicker->setColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
+    ui->fontColorPicker->setColor(NOTIFICATION_COLOR_NORMAL_DEFAULT);
+    ui->backgroundColorPicker->setColor(NOTIFICATION_BACKGROUND_COLOR_DEFAULT);
 
     ui->opacitySpinBox->setDecimals(NOTIFICATION_OPACITY_DECIMALS);
     ui->opacitySpinBox->setSingleStep(NOTIFICATION_OPACITY_SINGLESTEP);
@@ -80,8 +77,8 @@ QNotificationSetupDialog::QNotificationSetupDialog(QWidget *parent)
         }
     };
 
-    QObject::connect(m_FontColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onFontColorChanged);
-    QObject::connect(m_BackgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onBackgroundColorChanged);
+    QObject::connect(ui->fontColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onFontColorChanged);
+    QObject::connect(ui->backgroundColorPicker, &ColorPickerWidget::colorChanged, this, &QNotificationSetupDialog::onBackgroundColorChanged);
     QObject::connect(ui->fontFamilyComboBox, &QFontComboBox::currentFontChanged, this,
                      [this, notifyDirty](const QFont &font) {
                          m_FontFamily = font.family().trimmed();
@@ -134,8 +131,8 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
 
     /* Font Group */
     ui->fontGroupBox->setTitle(tr("Font"));
-    m_FontColorPicker->setButtonText(tr("FontColor"));
-    m_FontColorPicker->setWindowTitle(tr("Select Notification Font Color"));
+    ui->fontColorPicker->setButtonText(tr("FontColor"));
+    ui->fontColorPicker->setWindowTitle(tr("Select Notification Font Color"));
     ui->fontSizeLabel->setText(tr("Size"));
     ui->fontWeightLabel->setText(tr("Weight"));
     ui->fontItalicCheckBox->setText(tr("Italic"));
@@ -155,8 +152,8 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
 
     /* Border Group */
     ui->borderGroupBox->setTitle(tr("Border"));
-    m_BackgroundColorPicker->setButtonText(tr("BGColor"));
-    m_BackgroundColorPicker->setWindowTitle(tr("Select Notification Background Color"));
+    ui->backgroundColorPicker->setButtonText(tr("BGColor"));
+    ui->backgroundColorPicker->setWindowTitle(tr("Select Notification Background Color"));
     ui->borderRadiusLabel->setText(tr("Radius"));
     ui->paddingLabel->setText(tr("Padding"));
     ui->opacityLabel->setText(tr("Opacity"));
@@ -169,21 +166,21 @@ void QNotificationSetupDialog::setUILanguage(int languageindex)
 
 QColor QNotificationSetupDialog::getNotification_FontColor()
 {
-    if (m_FontColorPicker == Q_NULLPTR) {
+    if (ui->fontColorPicker == Q_NULLPTR) {
         return NOTIFICATION_COLOR_NORMAL_DEFAULT;
     }
     else {
-        return m_FontColorPicker->getColor();
+        return ui->fontColorPicker->getColor();
     }
 }
 
 QColor QNotificationSetupDialog::getNotification_BackgroundColor()
 {
-    if (m_BackgroundColorPicker == Q_NULLPTR) {
+    if (ui->backgroundColorPicker == Q_NULLPTR) {
         return NOTIFICATION_BACKGROUND_COLOR_DEFAULT;
     }
     else {
-        return m_BackgroundColorPicker->getColor();
+        return ui->backgroundColorPicker->getColor();
     }
 }
 
@@ -270,14 +267,14 @@ NotificationStyleSettings QNotificationSetupDialog::getNotificationSettings()
 void QNotificationSetupDialog::setNotification_FontColor(const QColor &color)
 {
     if (color.isValid()) {
-        m_FontColorPicker->setColor(color);
+        ui->fontColorPicker->setColor(color);
     }
 }
 
 void QNotificationSetupDialog::setNotification_BackgroundColor(const QColor &color)
 {
     if (color.isValid()) {
-        m_BackgroundColorPicker->setColor(color);
+        ui->backgroundColorPicker->setColor(color);
     }
 }
 

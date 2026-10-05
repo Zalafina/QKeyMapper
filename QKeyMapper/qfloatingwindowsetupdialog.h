@@ -55,7 +55,6 @@ private:
     static QFloatingWindowSetupDialog *m_instance;
     Ui::QFloatingWindowSetupDialog *ui;
     int m_TabIndex;
-    ColorPickerWidget *m_FloatingWindow_BGColorPicker;
 };
 
 #endif // QFLOATINGWINDOWSETUPDIALOG_H

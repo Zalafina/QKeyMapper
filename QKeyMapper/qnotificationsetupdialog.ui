@@ -71,6 +71,22 @@
       <property name="bottomMargin">
        <number>8</number>
       </property>
+      <item row="0" column="0" colspan="3" alignment="Qt::AlignmentFlag::AlignCenter">
+       <widget class="ColorPickerWidget" name="fontColorPicker" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>22</height>
+         </size>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="fontFamilyLabel">
         <property name="text">
@@ -153,6 +169,19 @@
          <string>Italic</string>
         </property>
        </widget>
+      </item>
+      <item row="4" column="0" colspan="3">
+       <spacer name="fontVerticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>0</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>
@@ -238,6 +267,19 @@
         </property>
        </widget>
       </item>
+      <item row="3" column="0" colspan="2">
+       <spacer name="durationVerticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>0</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
      </layout>
     </widget>
    </item>
@@ -271,6 +313,22 @@
       <property name="bottomMargin">
        <number>8</number>
       </property>
+      <item row="0" column="0" colspan="2" alignment="Qt::AlignmentFlag::AlignCenter">
+       <widget class="ColorPickerWidget" name="backgroundColorPicker" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>22</height>
+         </size>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="borderRadiusLabel">
         <property name="text">
@@ -321,6 +379,19 @@
          <enum>Qt::FocusPolicy::ClickFocus</enum>
         </property>
        </widget>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <spacer name="borderVerticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>0</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>
@@ -407,6 +478,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ColorPickerWidget</class>
+   <extends>QWidget</extends>
+   <header>colorpickerwidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

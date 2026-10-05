@@ -20,8 +20,6 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QCrosshairSetupDialog)
     , m_ItemRow(-1)
-    , m_CenterColorPicker(new ColorPickerWidget(this, "CenterColor", 51))
-    , m_CrosshairColorPicker(new ColorPickerWidget(this, "CrosshairColor", 51))
 {
     m_instance = this;
     ui->setupUi(this);
@@ -32,14 +30,6 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
         ui->offsetGroupBox->setStyle(windowsStyle);
     }
 
-    if (QGridLayout *centerLayout = qobject_cast<QGridLayout*>(ui->centerGroupBox->layout())) {
-        centerLayout->addWidget(m_CenterColorPicker, 0, 0, 1, 2, Qt::AlignCenter);
-    }
-
-    if (QGridLayout *crosshairLayout = qobject_cast<QGridLayout*>(ui->crosshairGroupBox->layout())) {
-        crosshairLayout->addWidget(m_CrosshairColorPicker, 0, 0, 1, 2, Qt::AlignCenter);
-    }
-
     if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
         const auto children = findChildren<QWidget*>();
         for (QWidget *child : children) {
@@ -48,6 +38,9 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
             }
         }
     }
+
+    ui->centerColorPicker->setColorType("CenterColor");
+    ui->crosshairColorPicker->setColorType("CrosshairColor");
 
     ui->centerSizeSpinBox->setRange(CROSSHAIR_CENTERSIZE_MIN, CROSSHAIR_CENTERSIZE_MAX);
     ui->centerOpacitySpinBox->setRange(CROSSHAIR_OPACITY_MIN, CROSSHAIR_OPACITY_MAX);
@@ -60,8 +53,8 @@ QCrosshairSetupDialog::QCrosshairSetupDialog(QWidget *parent)
     ui->centerOpacityLabel->setVisible(false);
     ui->centerOpacitySpinBox->setVisible(false);
 
-    QObject::connect(m_CenterColorPicker, &ColorPickerWidget::colorChanged, this, &QCrosshairSetupDialog::onCenterColorChanged);
-    QObject::connect(m_CrosshairColorPicker, &ColorPickerWidget::colorChanged, this, &QCrosshairSetupDialog::onCrosshairColorChanged);
+    QObject::connect(ui->centerColorPicker, &ColorPickerWidget::colorChanged, this, &QCrosshairSetupDialog::onCenterColorChanged);
+    QObject::connect(ui->crosshairColorPicker, &ColorPickerWidget::colorChanged, this, &QCrosshairSetupDialog::onCrosshairColorChanged);
 }
 
 QCrosshairSetupDialog::~QCrosshairSetupDialog()
@@ -72,10 +65,10 @@ QCrosshairSetupDialog::~QCrosshairSetupDialog()
 void QCrosshairSetupDialog::setUILanguage(int languageindex)
 {
     Q_UNUSED(languageindex);
-    m_CenterColorPicker->setButtonText(tr("Color"));
-    m_CrosshairColorPicker->setButtonText(tr("Color"));
-    m_CenterColorPicker->setWindowTitle(tr("Select Crosshair Center Color"));
-    m_CrosshairColorPicker->setWindowTitle(tr("Select Crosshair Color"));
+    ui->centerColorPicker->setButtonText(tr("Color"));
+    ui->crosshairColorPicker->setButtonText(tr("Color"));
+    ui->centerColorPicker->setWindowTitle(tr("Select Crosshair Center Color"));
+    ui->crosshairColorPicker->setWindowTitle(tr("Select Crosshair Color"));
 
     setWindowTitle(tr("Crosshair Setup"));
     ui->centerGroupBox->setTitle(tr("Center"));
@@ -154,7 +147,7 @@ void QCrosshairSetupDialog::showEvent(QShowEvent *event)
         if (CenterColor.isValid() != true) {
             CenterColor = CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR;
         }
-        m_CenterColorPicker->setColor(CenterColor);
+        ui->centerColorPicker->setColor(CenterColor);
         ui->centerSizeSpinBox->setValue(keymapdata.Crosshair_CenterSize);
         ui->centerOpacitySpinBox->setValue(keymapdata.Crosshair_CenterOpacity);
 
@@ -162,7 +155,7 @@ void QCrosshairSetupDialog::showEvent(QShowEvent *event)
         if (CrosshairColor.isValid() != true) {
             CrosshairColor = CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR;
         }
-        m_CrosshairColorPicker->setColor(CrosshairColor);
+        ui->crosshairColorPicker->setColor(CrosshairColor);
         ui->crosshairLineWidthSpinBox->setValue(keymapdata.Crosshair_CrosshairWidth);
         ui->crosshairLineLengthSpinBox->setValue(keymapdata.Crosshair_CrosshairLength);
         ui->crosshairOpacitySpinBox->setValue(keymapdata.Crosshair_CrosshairOpacity);

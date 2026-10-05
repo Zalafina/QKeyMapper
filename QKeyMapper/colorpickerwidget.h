@@ -26,6 +26,9 @@ public:
     void setShowAlphaChannel(bool show);
     void setWindowTitle(QString title);
     void setButtonText(QString text);
+    void setColorType(const QString &type);
+    QString colorType() const;
+    void setButtonWidth(int width);
 
 signals:
     void colorChanged(QColor &color);
@@ -40,11 +43,13 @@ private slots:
 
 private:
     void updateColorLabel(const QColor &color);
+    void updateControlSizes();
 
     QColor m_color = QColor();              // Variable to store the selected color
     QPushButton *colorButton = Q_NULLPTR;   // Button to trigger color picker dialog
     QLabel *colorLabel = Q_NULLPTR;         // Label to display the selected color
     QString m_buttonText = "Color";         // Text for the button
+    QString m_colorType = QString();        // Type identifier for default color lookup
     QString m_windowTitle = QString();
     bool m_showAlphaChannel = false;
     bool m_livePreviewEnabled = false;

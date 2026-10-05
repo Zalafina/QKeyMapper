@@ -15,11 +15,6 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
     , m_isLoading(false)
     , m_hasBackup(false)
     , m_BackupSettings()
-    , m_BGColorPicker(new ColorPickerWidget(this, "VBtn_BGColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BGCOLOR))
-    , m_BtnColorPicker(new ColorPickerWidget(this, "VBtn_BtnColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
-    , m_PressedColorPicker(new ColorPickerWidget(this, "VBtn_PressedColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
-    , m_LockedColorPicker(new ColorPickerWidget(this, "VBtn_LockedColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR))
-    , m_TextColorPicker(new ColorPickerWidget(this, "VBtn_TextColor", COLORPICKER_BUTTON_WIDTH_VBTNPANEL_TEXTCOLOR))
 {
     ui->setupUi(this);
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
@@ -42,22 +37,26 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
         }
     }
 
-    // Add color pickers into the color group box grid layout
-    ui->gridLayout_Color->addWidget(m_BtnColorPicker, 0, 0);
-    m_BtnColorPicker->setColor(VBTNPANEL_BUTTON_COLOR_DEFAULT);
+    ui->btnColorPicker->setColorType("VBtn_BtnColor");
+    ui->btnColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR);
+    ui->btnColorPicker->setColor(VBTNPANEL_BUTTON_COLOR_DEFAULT);
 
-    m_BGColorPicker->setShowAlphaChannel(true);
-    ui->gridLayout_Color->addWidget(m_BGColorPicker, 0, 1);
-    m_BGColorPicker->setColor(VBTNPANEL_BACKGROUND_COLOR_DEFAULT);
+    ui->bgColorPicker->setColorType("VBtn_BGColor");
+    ui->bgColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BGCOLOR);
+    ui->bgColorPicker->setShowAlphaChannel(true);
+    ui->bgColorPicker->setColor(VBTNPANEL_BACKGROUND_COLOR_DEFAULT);
 
-    ui->gridLayout_Color->addWidget(m_PressedColorPicker, 1, 0);
-    m_PressedColorPicker->setColor(VBTNPANEL_PRESSED_COLOR_DEFAULT);
+    ui->pressedColorPicker->setColorType("VBtn_PressedColor");
+    ui->pressedColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR);
+    ui->pressedColorPicker->setColor(VBTNPANEL_PRESSED_COLOR_DEFAULT);
 
-    ui->gridLayout_Color->addWidget(m_LockedColorPicker, 1, 1);
-    m_LockedColorPicker->setColor(VBTNPANEL_LOCKED_COLOR_DEFAULT);
+    ui->lockedColorPicker->setColorType("VBtn_LockedColor");
+    ui->lockedColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_VBTNPANEL_BTNCOLOR);
+    ui->lockedColorPicker->setColor(VBTNPANEL_LOCKED_COLOR_DEFAULT);
 
-    ui->gridLayout_Color->addWidget(m_TextColorPicker, 2, 0);
-    m_TextColorPicker->setColor(VBTNPANEL_TEXT_COLOR_DEFAULT);
+    ui->textColorPicker->setColorType("VBtn_TextColor");
+    ui->textColorPicker->setButtonWidth(COLORPICKER_BUTTON_WIDTH_VBTNPANEL_TEXTCOLOR);
+    ui->textColorPicker->setColor(VBTNPANEL_TEXT_COLOR_DEFAULT);
     // Populate reference point combo box — index must match FLOATINGWINDOW_REFERENCEPOINT_* values exactly
     QStringList referencePointList;
     referencePointList.append(tr("ScreenTopLeft"));      // 0  FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT
@@ -123,23 +122,23 @@ QVButtonPanelSetupDialog::QVButtonPanelSetupDialog(QWidget *parent)
                 onAnyControlChanged();
             });
 
-    m_BGColorPicker->setLivePreviewEnabled(true);
-    m_BtnColorPicker->setLivePreviewEnabled(true);
-    m_PressedColorPicker->setLivePreviewEnabled(true);
-    m_LockedColorPicker->setLivePreviewEnabled(true);
-    m_TextColorPicker->setLivePreviewEnabled(true);
+    ui->bgColorPicker->setLivePreviewEnabled(true);
+    ui->btnColorPicker->setLivePreviewEnabled(true);
+    ui->pressedColorPicker->setLivePreviewEnabled(true);
+    ui->lockedColorPicker->setLivePreviewEnabled(true);
+    ui->textColorPicker->setLivePreviewEnabled(true);
 
-    connect(m_BGColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
-    connect(m_BtnColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
-    connect(m_PressedColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
-    connect(m_LockedColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
-    connect(m_TextColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->bgColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->btnColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->pressedColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->lockedColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->textColorPicker, &ColorPickerWidget::colorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
 
-    connect(m_BGColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
-    connect(m_BtnColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
-    connect(m_PressedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
-    connect(m_LockedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
-    connect(m_TextColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->bgColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->btnColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->pressedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->lockedColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
+    connect(ui->textColorPicker, &ColorPickerWidget::previewColorChanged, this, &QVButtonPanelSetupDialog::onAnyControlChanged);
 
     syncFontFamilyControls();
 }
@@ -199,16 +198,16 @@ void QVButtonPanelSetupDialog::setUILanguage(int languageindex)
     ui->btnFontFamilyDefaultButton->setText(tr("Default"));
     ui->btnFontFamilyDefaultButton->setToolTip(tr("Use application default font"));
 
-    m_BtnColorPicker->setButtonText(tr("BtnColor"));
-    m_BtnColorPicker->setWindowTitle(tr("VButton Panel Button Color"));
-    m_BGColorPicker->setButtonText(tr("BGColor"));
-    m_BGColorPicker->setWindowTitle(tr("VButton Panel BG Color"));
-    m_PressedColorPicker->setButtonText(tr("PressedColor"));
-    m_PressedColorPicker->setWindowTitle(tr("VButton Panel Pressed Color"));
-    m_LockedColorPicker->setButtonText(tr("LockedColor"));
-    m_LockedColorPicker->setWindowTitle(tr("VButton Panel Locked Color"));
-    m_TextColorPicker->setButtonText(tr("TextColor"));
-    m_TextColorPicker->setWindowTitle(tr("VButton Panel Text Color"));
+    ui->btnColorPicker->setButtonText(tr("BtnColor"));
+    ui->btnColorPicker->setWindowTitle(tr("VButton Panel Button Color"));
+    ui->bgColorPicker->setButtonText(tr("BGColor"));
+    ui->bgColorPicker->setWindowTitle(tr("VButton Panel BG Color"));
+    ui->pressedColorPicker->setButtonText(tr("PressedColor"));
+    ui->pressedColorPicker->setWindowTitle(tr("VButton Panel Pressed Color"));
+    ui->lockedColorPicker->setButtonText(tr("LockedColor"));
+    ui->lockedColorPicker->setWindowTitle(tr("VButton Panel Locked Color"));
+    ui->textColorPicker->setButtonText(tr("TextColor"));
+    ui->textColorPicker->setWindowTitle(tr("VButton Panel Text Color"));
 }
 
 void QVButtonPanelSetupDialog::loadSettings(const VButtonPanelSettings &settings)
@@ -235,11 +234,11 @@ void QVButtonPanelSetupDialog::loadSettings(const VButtonPanelSettings &settings
     ui->btnFontWeightComboBox->setCurrentIndex(qBound(VBTNPANEL_FONT_WEIGHT_MIN, settings.btnFontWeight, VBTNPANEL_FONT_WEIGHT_MAX));
     m_btnFontFamily = settings.btnFontFamily.trimmed();
     syncFontFamilyControls();
-    m_BGColorPicker->setColor(settings.bgColor);
-    m_BtnColorPicker->setColor(settings.btnColor);
-    m_PressedColorPicker->setColor(settings.pressedColor);
-    m_LockedColorPicker->setColor(settings.lockedColor);
-    m_TextColorPicker->setColor(settings.textColor);
+    ui->bgColorPicker->setColor(settings.bgColor);
+    ui->btnColorPicker->setColor(settings.btnColor);
+    ui->pressedColorPicker->setColor(settings.pressedColor);
+    ui->lockedColorPicker->setColor(settings.lockedColor);
+    ui->textColorPicker->setColor(settings.textColor);
 
     m_isLoading = false;
 }
@@ -263,11 +262,11 @@ VButtonPanelSettings QVButtonPanelSetupDialog::getSettings() const
     s.btnFontSize    = ui->btnFontSizeSpinBox->value();
     s.btnFontWeight  = ui->btnFontWeightComboBox->currentIndex();
     s.btnFontFamily  = m_btnFontFamily;
-    s.bgColor        = m_BGColorPicker->getColor();
-    s.btnColor       = m_BtnColorPicker->getColor();
-    s.pressedColor   = m_PressedColorPicker->getColor();
-    s.lockedColor    = m_LockedColorPicker->getColor();
-    s.textColor      = m_TextColorPicker->getColor();
+    s.bgColor        = ui->bgColorPicker->getColor();
+    s.btnColor       = ui->btnColorPicker->getColor();
+    s.pressedColor   = ui->pressedColorPicker->getColor();
+    s.lockedColor    = ui->lockedColorPicker->getColor();
+    s.textColor      = ui->textColorPicker->getColor();
     return s;
 }
 

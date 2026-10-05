@@ -68,6 +68,22 @@
       <property name="verticalSpacing">
        <number>6</number>
       </property>
+      <item row="0" column="0" colspan="2" alignment="Qt::AlignmentFlag::AlignCenter">
+       <widget class="ColorPickerWidget" name="floatingWindow_BGColorPicker" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>22</height>
+         </size>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="windowSizeLabel">
         <property name="text">
@@ -258,6 +274,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ColorPickerWidget</class>
+   <extends>QWidget</extends>
+   <header>colorpickerwidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
