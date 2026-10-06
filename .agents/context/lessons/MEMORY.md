@@ -54,4 +54,4 @@
 - [Header Default Argument Namespace Qualification](header-default-argument-namespace-qualification.md) — 头文件函数默认实参中使用常量时必须显式指定命名空间限定符（如 QKeyMapperConstants::），切勿直接使用未限定名称。
 - [Qt eventFilter Use-After-Free 规避与析构顺序规范](eventfilter-uaf-and-destructor-order.md) — eventFilter 中事件类型前置短路、QPointer 句柄弱引用守卫、析构首部卸载 Filter 与 delete ui 置空尾随规范。
 - [Qt Promoted Widget 边距归零与多列 GroupBox 网格弹簧对齐规范](qt-designer-promoted-widget-and-grid-spacer-pattern.md) — 自定义复合控件内边距清零与 22px 标准高度锁定，多列 GroupBox 全员配备底部垂直弹簧消除 Y 坐标错位与拉伸行距，以及 scratch/ 临时文件规范。
-
+- [Agent 自治构建、多维门禁与工程化工具链规范](agent-autonomous-validation-toolchain.md) — 废除用户代跑编译限制，建立多核 JOM 增量构建、多模态视觉快照自检、Clang-Tidy + Clazy 静态分析与 MSVC ASan 内存检测分层门禁体系。

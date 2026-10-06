@@ -34,14 +34,33 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 ## Qt version compatibility
 - Code must compile on both Qt 6.8.3 and Qt 5.12.10 from a single source tree. When an API differs between versions, add a compatibility wrapper in `qkeymapper_qt_compat.h` — avoid scattering `#if QT_VERSION` checks throughout the codebase.
 
-## Validation
-- Use the build directory under QKeyMapper/build/ (e.g., Desktop_Qt_6_x_x_MSVC2022_64bit-Release) for Qt/MSVC validation. Check the actual directory name at build time — it varies with the Qt version.
-- Prefer targeted object builds over full rebuilds.
-- If compile errors mention Ui::QKeyMapper members, first check for stray source-tree ui_qkeymapper.h.
-- Use build-directory generated ui_*.h.
-- If qkeymapper.cpp compiles but behavior is still suspect, do one follow-up link build or the smallest runtime check.
-- Do not spend multiple iterations inventing new jom commands; use the known build-directory workflow first. If a jom failure is due to environment, path, or quoting uncertainty, stop after one retry and hand the validation back to the user.
-- After any patch, verify the edit took effect in the right place before moving on — for example, grep for the changed line or check that a related symbol reference resolves correctly. If the edit landed wrong, repair it in the same slice; do not widen scope or touch other files.
+## Autonomous quality gates & validation
+
+The Agent must autonomously execute build and verification gates instead of delegating ordinary compilation to the user:
+
+### 1. Build validation (`scripts/build_qt6.ps1`)
+- Standard build: `powershell -File .\scripts\build_qt6.ps1` (Release) or with `-Configuration Debug`.
+- ASan build: `powershell -File .\scripts\build_qt6.ps1 -AddressSanitizer` (builds to `build_test_qt6_asan/`).
+- Incremental compilation: JOM automatically parallelizes object compilation in seconds.
+- Compiler error diagnostics: Read exact compiler output (file, line, symbol, C-error code); fix syntax or unresolved identifiers directly in the source file and re-run build. Only pause if external toolchains or system dependencies are unrecoverable.
+- Generated UI headers: UI compiler outputs `ui_*.h` to the build directory. If symbols mismatch, check for stray source-tree `QKeyMapper/ui_*.h` shadows.
+
+### 2. Visual inspection (`scripts/capture_ui_snapshots.ps1`)
+- Snapshot capture: `powershell -File .\scripts\capture_ui_snapshots.ps1 -Label <name> [-Arguments <cli-args>]`
+- Multimodal review: Use the `view_file` tool to inspect the captured PNG in `test_snapshots/` directly. Check layout alignment, padding, margins, font clipping, and high DPI scaling.
+
+### 3. Static analysis (`scripts/run_static_analysis.ps1`)
+- Run Clang-Tidy & Clazy (53 checks): `powershell -File .\scripts\run_static_analysis.ps1 [-Files @("QKeyMapper\file.cpp")]`
+- Review report: Check `out/static-analysis/summary.txt` to confirm 0 diagnostics in project code.
+
+### 4. Memory safety validation (`scripts/run_asan_check.ps1`)
+- After building with `-AddressSanitizer`, run: `powershell -File .\scripts\run_asan_check.ps1`
+- Smoke checks monitor runtime execution for 15s under `ASAN_OPTIONS`. Check `out/asan/` for violations.
+
+### 5. Layered gate protocol
+- **Iteration Check**: Every code edit -> run `build_qt6.ps1` -> ensure 0 errors and 0 warnings.
+- **UI Visual Gate**: UI changes -> run `capture_ui_snapshots.ps1` -> use `view_file` to review rendered layout.
+- **Milestone Gate**: Feature/stage completion -> run `run_static_analysis.ps1` (0 warnings) + ASan check (0 memory bugs) before declaring milestone ready for review.
 
 ## Advanced diagnostic sandbox (Opt-in Heavy Diagnosis)
 - Default to Level 1 lightweight analysis: keep changes small and reversible; do not launch heavy custom build sandboxes for ordinary bugs.

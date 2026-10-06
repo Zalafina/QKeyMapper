@@ -7,7 +7,10 @@
 - Qt/C++ source files use UTF-8 without BOM; new code comments in English; do not edit .ts files unless asked.
 - Plans, confirmations, and summaries are in Chinese. When a user decision is needed, ask a clear question and allow a freeform response.
 - If a change touches stability, driver behavior, or system API side effects, call it out and ask the user to decide.
-- After edits, let the user do compile validation unless they ask otherwise.
+- Autonomous validation & quality gates: After edits, the Agent MUST autonomously validate compilation using `scripts\build_qt6.ps1` and ensure 0 errors and 0 warnings before reporting completion. Follow layered quality gates (iteration build -> visual snapshot review -> stage Clang-Tidy/Clazy static analysis -> milestone ASan memory check).
+- Visual debugging & acceptance: Use `scripts\capture_ui_snapshots.ps1` to capture UI screenshots and inspect them autonomously via `view_file`. Do not request interactive Computer Use or ask the user to do routine visual inspections that can be verified through static snapshots.
+- Non-elevated execution boundary: Keep source edits, Git, builds, static analysis, and UI snapshots non-elevated. Only test execution requiring low-level keyboard/mouse driver hooks needs elevation (or user execution).
+- Review and handover protocol: At completion, state whether the work forms a local development checkpoint ("本地开发检查点") or an independent commit slice ("独立提交切点"). Without explicit user commit instruction, do not automatically commit or push.
 - Shared project experience memory is in `.agents/context/`; start with `.agents/context/project-memory.md` and consult its linked index before relevant work. Update it only with durable, verified knowledge.
 - For QKeyMapper work, self-improving-agent artifacts must be stored in `.agents/context/lessons/` and indexed in `.agents/context/lessons/MEMORY.md`; never write QKeyMapper-specific experience to a global skill `memory/` directory.
 - Knowledge graph at `.understand-anything/knowledge-graph.json`; use an available knowledge-graph tool when present, otherwise inspect the file directly.
