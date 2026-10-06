@@ -4,6 +4,8 @@
 #include "qkeymapper_constants.h"
 #include "qkeymapper_qt_compat.h"
 #include "qstyle_singletons.h"
+#include "qkm_ui_scale.h"
+#include <QScopedValueRollback>
 
 #include <algorithm>
 #include <vector>
@@ -23,6 +25,73 @@ using namespace QKeyMapperConstants;
 using namespace Gdiplus;
 
 namespace {
+
+#ifdef DEBUG_LOGOUT_ON
+void logScaleWidget(const QWidget *widget, quint64 sequence)
+{
+    if (!widget) {
+        return;
+    }
+    const QSizePolicy policy = widget->sizePolicy();
+    qDebug() << "[UI_SCALE] WIDGET seq=" << sequence
+             << "name=" << widget->objectName() << "class=" << widget->metaObject()->className()
+             << "parent=" << (widget->parentWidget() ? widget->parentWidget()->objectName() : QString())
+             << "geometry=" << widget->geometry() << "minimum=" << widget->minimumSize()
+             << "maximum=" << widget->maximumSize() << "hint=" << widget->sizeHint()
+             << "minHint=" << widget->minimumSizeHint() << "fontPt=" << widget->font().pointSizeF()
+             << "policy=" << policy.horizontalPolicy() << policy.verticalPolicy()
+             << "margins=" << widget->contentsMargins() << "hidden=" << widget->isHidden();
+}
+
+void logScaleLayout(const QLayout *layout, quint64 sequence)
+{
+    if (!layout) {
+        return;
+    }
+    qDebug() << "[UI_SCALE] LAYOUT seq=" << sequence << "name=" << layout->objectName()
+             << "class=" << layout->metaObject()->className() << "geometry=" << layout->geometry()
+             << "minimum=" << layout->minimumSize() << "hint=" << layout->sizeHint()
+             << "margins=" << layout->contentsMargins() << "spacing=" << layout->spacing()
+             << "constraint=" << layout->sizeConstraint();
+    if (const auto *grid = qobject_cast<const QGridLayout *>(layout)) {
+        qDebug() << "[UI_SCALE] GRID seq=" << sequence << "name=" << layout->objectName()
+                 << "horizontalSpacing=" << grid->horizontalSpacing()
+                 << "verticalSpacing=" << grid->verticalSpacing();
+    }
+    for (int index = 0; index < layout->count(); ++index) {
+        QLayoutItem *item = layout->itemAt(index);
+        if (!item) {
+            continue;
+        }
+        qDebug() << "[UI_SCALE] ITEM seq=" << sequence << "layout=" << layout->objectName()
+                 << "index=" << index
+                 << "name=" << (item->widget() ? item->widget()->objectName() : QString())
+                 << "minimum=" << item->minimumSize() << "hint=" << item->sizeHint()
+                 << "maximum=" << item->maximumSize() << "geometry=" << item->geometry()
+                 << "empty=" << item->isEmpty();
+    }
+}
+
+void logScaleTable(const QTableWidget *table, quint64 sequence)
+{
+    if (!table) {
+        return;
+    }
+    QList<int> columns;
+    for (int column = 0; column < table->columnCount(); ++column) {
+        columns.append(table->columnWidth(column));
+    }
+    qDebug() << "[UI_SCALE] TABLE seq=" << sequence << "name=" << table->objectName()
+             << "size=" << table->size() << "viewport=" << table->viewport()->size()
+             << "rowDefault=" << table->verticalHeader()->defaultSectionSize()
+             << "rowMinimum=" << table->verticalHeader()->minimumSectionSize()
+             << "firstRow=" << (table->rowCount() > 0 ? table->rowHeight(0) : -1)
+             << "headerHeight=" << table->horizontalHeader()->height()
+             << "headerDefault=" << table->horizontalHeader()->defaultSectionSize()
+             << "columns=" << columns << "scrollbars="
+             << table->horizontalScrollBar()->isVisible() << table->verticalScrollBar()->isVisible();
+}
+#endif
 
 constexpr int DISABLED_ROW_BACKGROUND_APPLIED_ROLE = Qt::UserRole + 500;
 constexpr int DISABLED_ROW_FOREGROUND_APPLIED_ROLE = Qt::UserRole + 501;
@@ -844,9 +913,10 @@ QRect MappingStartToolButton::menuSubControlRect(void) const
                                              QStyle::SC_ToolButtonMenu,
                                              this);
 
-    const int indicatorWidth = qMax(16, style()->pixelMetric(QStyle::PM_MenuButtonIndicator, Q_NULLPTR, this));
+    const qreal ratio = font().pointSizeF() > 0 ? font().pointSizeF() / 14.0 : 1.0;
+    const int indicatorWidth = qMax(qMax(1, qRound(16 * ratio)), style()->pixelMetric(QStyle::PM_MenuButtonIndicator, Q_NULLPTR, this));
     const int desiredWidth = (MAPPING_START_MENU_BUTTON_WIDTH > 0)
-        ? MAPPING_START_MENU_BUTTON_WIDTH
+        ? qMax(1, qRound(MAPPING_START_MENU_BUTTON_WIDTH * ratio))
         : indicatorWidth;
     const int exactWidth = qMax(indicatorWidth, desiredWidth);
     const int finalWidth = qMin(width(), exactWidth);
@@ -2941,6 +3011,7 @@ QList<MAP_PROCESSINFO> QKeyMapper::static_ProcessInfoList = QList<MAP_PROCESSINF
 QList<HWND> QKeyMapper::s_hWndList;
 QList<HWND> QKeyMapper::s_last_HWNDList;
 double QKeyMapper::s_DisplayScale = 1.0;
+double QKeyMapper::s_StartupGlobalScaleFactor = 1.0;
 QList<KeyMappingTab_Info> QKeyMapper::s_KeyMappingTabInfoList;
 OrderedMap<QString, IgnoreWindowInfo> QKeyMapper::s_IgnoreWindowInfoMap;
 OrderedMap<QString, MappingMacroData> QKeyMapper::s_MappingMacroList;
@@ -3048,6 +3119,20 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug() << "[QKeyMapper()] Calling setupUi...";
 #endif
     ui->setupUi(this);
+
+    m_targetScaleFactor = s_StartupGlobalScaleFactor;
+    m_runtimeScaleCompensation = 1.0;
+    m_normalWindowBaseSize = QSize(WINDOW_BASE_WIDTH, WINDOW_BASE_HEIGHT);
+    m_isApplyingLiveScale = false;
+
+#ifdef DEBUG_LOGOUT_ON
+    m_uiScaleDiagnosticTimer.setSingleShot(true);
+    connect(&m_uiScaleDiagnosticTimer, &QTimer::timeout, this, [this]() {
+        const bool includeTree = m_uiScaleDiagnosticIncludeTree;
+        m_uiScaleDiagnosticIncludeTree = false;
+        logScaleDiagnostics("SETTLED", includeTree);
+    });
+#endif
 
     if (ui->mainTableSplitter) {
         ui->mainTableSplitter->setHandleWidth(10);
@@ -3652,6 +3737,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->scaleComboBox->addItem("175%", DISPLAY_SCALE_PERCENT_175);
     ui->scaleComboBox->addItem("200%", DISPLAY_SCALE_PERCENT_200);
     ui->scaleComboBox->setCurrentIndex(ui->scaleComboBox->findData(DISPLAY_SCALE_DEFAULT));
+    connect(ui->scaleComboBox, QOverload<int>::of(&QComboBox::activated),
+            this, &QKeyMapper::onScaleComboBoxActivated);
 
     QStringList theme_list = QStringList() \
             << tr("System Default")
@@ -3945,10 +4032,59 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         }
     });
 
+    // Baselines are captured after the first show has finalized legacy constraints.
+    m_uiScale = new QkmUiScale(this);
+    m_uiScale->setStyleResolver([this](QWidget *widget) -> QStyle * {
+        if (widget == m_MenuMappingTableOp) {
+            const auto styles = widget->findChildren<QStyle *>();
+            for (QStyle *style : styles) {
+                if (dynamic_cast<MappingTableMenuStyle *>(style)) { return style; }
+            }
+        }
+        QWidget *owner = widget;
+        while (!owner->testAttribute(Qt::WA_SetStyle) && !owner->isWindow() && owner->parentWidget()) {
+            owner = owner->parentWidget();
+        }
+        const QString name = owner->objectName();
+        const bool nativeWindows = qobject_cast<QMenu *>(owner) || owner == menuBar()
+            || owner == ui->settingTabWidget || owner == ui->keyMappingTabWidget
+            || owner == ui->pushLevelSlider || owner == ui->iconLabel || owner == ui->pointDisplayLabel
+            || name.startsWith(QStringLiteral("oriList_Select")) || name.startsWith(QStringLiteral("mapList_Select"))
+            || (qobject_cast<QToolButton *>(owner) && owner != ui->keymapButton
+                && !name.startsWith(QStringLiteral("qt_")));
+        return nativeWindows ? QKeyMapperStyle::windowsStyle() : QKeyMapperStyle::fusionStyle();
+    });
+    m_uiScale->setStyleFactory([](QStyle *original, QWidget *widget) -> QStyle * {
+        if (dynamic_cast<MappingTableMenuStyle *>(original)) {
+            return new MappingTableMenuStyle(QStyleFactory::create(QStringLiteral("Windows")),
+                                             qobject_cast<QMenu *>(widget));
+        }
+        return nullptr;
+    });
+    m_liveScaleSettleTimer.setSingleShot(true);
+    m_liveScaleSettleTimer.setInterval(0);
+    connect(&m_liveScaleSettleTimer, &QTimer::timeout, this, [this]() {
+        if (!ui || s_isDestructing) { return; }
+        m_uiScale->refreshLayouts();
+        if (!isMaximized() && !isMinimized()) {
+            const QSize target(qMax(minimumWidth(), qRound(m_normalWindowBaseSize.width() * m_runtimeScaleCompensation)),
+                               qMax(minimumHeight(), qRound(m_normalWindowBaseSize.height() * m_runtimeScaleCompensation)));
+            if (size() != target) { resize(target); }
+        }
+        resizeAllKeyMappingTabWidgetColumnWidth();
+        resizeProcessInfoTableColumnWidth();
+        m_isApplyingLiveScale = false;
+    });
     loadSetting_flag = false;
     connectSettingDirtySignals();
     clearSaveSettingDirty();
     flushPendingCommonPriorityRepairAfterLoad();
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[UI_SCALE] BUILD exe=" << QCoreApplication::applicationFilePath()
+             << "compiled=" << __DATE__ << __TIME__ << "qt=" << QT_VERSION_STR << qVersion();
+    scheduleScaleDiagnostics(QStringLiteral("startup"), true);
+#endif
     QKEYMAPPER_ATOMIC_STORE_RELAXED(s_AtomicIsInitialized, 1);
 }
 QKeyMapper::~QKeyMapper()
@@ -3958,6 +4094,10 @@ QKeyMapper::~QKeyMapper()
 
 #endif
     s_isDestructing = true;
+    m_liveScaleSettleTimer.stop();
+#ifdef DEBUG_LOGOUT_ON
+    m_uiScaleDiagnosticTimer.stop();
+#endif
     QKEYMAPPER_ATOMIC_STORE_RELAXED(s_AtomicIsInitialized, 0);
 
     restoreSystemFilterKeysBaseline();
@@ -3965,6 +4105,7 @@ QKeyMapper::~QKeyMapper()
 
     if (qApp) {
         qApp->removeEventFilter(this);
+        if (m_uiScale) { qApp->removeEventFilter(m_uiScale); }
     }
 
     if (m_mainTableSplitterHandle) {
@@ -5671,6 +5812,21 @@ void QKeyMapper::setDisplayScaleValue(double scale)
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[QKeyMapper::setDisplayScaleValue]"<< " Set display scale value = " << scale;
 #endif
+}
+
+void QKeyMapper::setStartupGlobalScaleFactor(double scaleFactor)
+{
+    if (scaleFactor > 0.0) {
+        s_StartupGlobalScaleFactor = scaleFactor;
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug().nospace().noquote() << "[QKeyMapper::setStartupGlobalScaleFactor] Set startup global scale factor = " << s_StartupGlobalScaleFactor;
+#endif
+}
+
+double QKeyMapper::getStartupGlobalScaleFactor(void)
+{
+    return s_StartupGlobalScaleFactor;
 }
 
 void QKeyMapper::getProcessInfoFromPID(DWORD processID, QString &processPathStr)
@@ -15042,6 +15198,14 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
             return false;
         }
 
+        if (msg->message == WM_ENTERSIZEMOVE) {
+            m_userWindowResizeActive = false;
+        } else if (msg->message == WM_SIZING) {
+            m_userWindowResizeActive = true;
+        } else if (msg->message == WM_EXITSIZEMOVE) {
+            m_userWindowResizeActive = false;
+        }
+
         if (msg->message == WM_WTSSESSION_CHANGE) {
             if (msg->wParam == WTS_SESSION_LOCK) {
 #ifdef DEBUG_LOGOUT_ON
@@ -15209,6 +15373,13 @@ void QKeyMapper::showEvent(QShowEvent *event)
 
     QMainWindow::showEvent(event);
 
+    if (m_uiScale && !m_liveScaleBaselinesReady) {
+        // Initialize S0 from the effective default size, including localized minima.
+        m_normalWindowBaseSize = m_normalWindowBaseSize.expandedTo(minimumSize());
+        m_uiScale->capture();
+        m_liveScaleBaselinesReady = true;
+    }
+
     if (m_KeyMappingDataTableColumnResizePending) {
         m_KeyMappingDataTableColumnResizePending = false;
         QTimer::singleShot(0, this, [this]() {
@@ -15295,9 +15466,26 @@ void QKeyMapper::changeEvent(QEvent *event)
         if (!was_minimized && is_minimized) {
             m_DisplaySwitchMode = DISPLAYSWITCHMODE_TASKBAR;
         }
+
+        const bool was_maximized = (window_state_event->oldState() & Qt::WindowMaximized) != 0;
+        const bool is_maximized = (windowState() & Qt::WindowMaximized) != 0;
+        if (was_maximized && !is_maximized && !is_minimized) {
+            const double r = (m_runtimeScaleCompensation > 0.0) ? m_runtimeScaleCompensation : 1.0;
+            int targetW = qRound(m_normalWindowBaseSize.width() * r);
+            int targetH = qRound(m_normalWindowBaseSize.height() * r);
+            targetW = qMax(targetW, minimumWidth());
+            targetH = qMax(targetH, minimumHeight());
+            QScopedValueRollback<bool> guard(m_isApplyingLiveScale, true);
+            resize(targetW, targetH);
+        }
     }
 
     QMainWindow::changeEvent(event);
+#ifdef DEBUG_LOGOUT_ON
+    if (event->type() == QEvent::WindowStateChange) {
+        scheduleScaleDiagnostics(QStringLiteral("window-state-change"));
+    }
+#endif
 }
 
 void QKeyMapper::keyPressEvent(QKeyEvent *event)
@@ -15510,7 +15698,20 @@ void QKeyMapper::mousePressEvent(QMouseEvent *event)
 
 bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
 {
-    if (event && event->type() == QEvent::MouseButtonDblClick) {
+    if (!event || !ui) {
+        return QMainWindow::eventFilter(object, event);
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    if (event->type() == QEvent::LayoutRequest) {
+        if (object == this || object == ui->centralwidget || object == ui->bottomContainerWidget
+            || object == ui->leftPanelWidget || object == ui->rightPanelWidget) {
+            scheduleScaleDiagnostics(QStringLiteral("layout-request"));
+        }
+    }
+#endif
+
+    if (event->type() == QEvent::MouseButtonDblClick) {
         if (m_mainTableSplitterHandle && object == m_mainTableSplitterHandle.data()) {
             QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
             if (mouseEvent && mouseEvent->button() == Qt::LeftButton) {
@@ -17233,15 +17434,7 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName, bool 
 
     KeyMappingDataTableWidget *KeyMappingTableWidget = new KeyMappingDataTableWidget(this);
 
-    int left = KEYMAPPINGDATATABLE_NARROW_LEFT;
-    int width = KEYMAPPINGDATATABLE_NARROW_WIDTH;
-    int top = KEYMAPPINGDATATABLE_TOP;
-    int height = KEYMAPPINGDATATABLE_HEIGHT;
-    if (!m_ProcessListVisible) {
-        left    = KEYMAPPINGDATATABLE_WIDE_LEFT;
-        width   = KEYMAPPINGDATATABLE_WIDE_WIDTH;
-    }
-    KeyMappingTableWidget->setGeometry(QRect(left, top, width, height));
+    // QTabWidget owns the page geometry, including newly created tables.
 
     KeyMappingTableWidget->setFocusPolicy(Qt::ClickFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
@@ -17308,6 +17501,12 @@ bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName, bool 
 
     const int insertIndex = normalMappingTabInsertIndex();
     ui->keyMappingTabWidget->insertTab(insertIndex, KeyMappingTableWidget, tabName);
+    if (m_uiScale && m_liveScaleBaselinesReady) {
+        m_isApplyingLiveScale = true;
+        m_uiScale->capture(KeyMappingTableWidget);
+        m_uiScale->apply(m_runtimeScaleCompensation);
+        m_liveScaleSettleTimer.start();
+    }
     if (currentWidget != Q_NULLPTR) {
         ui->keyMappingTabWidget->setCurrentWidget(currentWidget);
     }
@@ -17688,15 +17887,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
     KeyMappingDataTableWidget *KeyMappingTableWidget = new KeyMappingDataTableWidget(this);
 
-    int left = KEYMAPPINGDATATABLE_NARROW_LEFT;
-    int width = KEYMAPPINGDATATABLE_NARROW_WIDTH;
-    int top = KEYMAPPINGDATATABLE_TOP;
-    int height = KEYMAPPINGDATATABLE_HEIGHT;
-    if (!m_ProcessListVisible) {
-        left    = KEYMAPPINGDATATABLE_WIDE_LEFT;
-        width   = KEYMAPPINGDATATABLE_WIDE_WIDTH;
-    }
-    KeyMappingTableWidget->setGeometry(QRect(left, top, width, height));
+    // QTabWidget owns the page geometry, including newly created tables.
 
     KeyMappingTableWidget->setFocusPolicy(Qt::ClickFocus);
     KeyMappingTableWidget->setColumnCount(KEYMAPPINGDATA_TABLE_COLUMN_COUNT);
@@ -17764,6 +17955,12 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     // ponytail: insert copy right after the current tab (not at normalMappingTabInsertIndex)
     const int insertIndex = current_tabindex + 1;
     ui->keyMappingTabWidget->insertTab(insertIndex, KeyMappingTableWidget, tabName);
+    if (m_uiScale && m_liveScaleBaselinesReady) {
+        m_isApplyingLiveScale = true;
+        m_uiScale->capture(KeyMappingTableWidget);
+        m_uiScale->apply(m_runtimeScaleCompensation);
+        m_liveScaleSettleTimer.start();
+    }
     if (currentWidget != Q_NULLPTR) {
         ui->keyMappingTabWidget->setCurrentWidget(currentWidget);
     }
@@ -20667,7 +20864,12 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 
     // m_LastWindowPosition = pos();
     settingFile.setValue(LAST_WINDOWPOSITION, pos());
-    settingFile.setValue(LAST_WINDOW_SIZE, size());
+    settingFile.setValue(LAST_WINDOW_SIZE, m_normalWindowBaseSize);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[UI_SCALE] SAVE seq=" << m_uiScaleDiagnosticSequence
+             << "base=" << m_normalWindowBaseSize << "size=" << size()
+             << "R=" << m_runtimeScaleCompensation;
+#endif
     settingFile.setValue(SAVE_WINDOW_SIZE, m_GeneralAdvancedDialog->getSaveWindowSize());
     bool saveSplitter = m_GeneralAdvancedDialog->getSaveSplitterPosition();
     settingFile.setValue(SAVE_SPLITTER_POSITION, saveSplitter);
@@ -22679,9 +22881,17 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             if (settingFile.contains(LAST_WINDOW_SIZE)) {
                 QSize savedSize = settingFile.value(LAST_WINDOW_SIZE).toSize();
                 if (savedSize.width() >= WINDOW_MIN_WIDTH && savedSize.height() >= WINDOW_MIN_HEIGHT) {
-                    resize(savedSize);
+                    m_normalWindowBaseSize = savedSize;
+                    QSize targetSize = QSize(qRound(savedSize.width() * m_runtimeScaleCompensation),
+                                             qRound(savedSize.height() * m_runtimeScaleCompensation));
+                    QScopedValueRollback<bool> sizeGuard(m_isApplyingLiveScale, true);
+                    resize(targetSize);
 #ifdef DEBUG_LOGOUT_ON
-                    qDebug() << "[loadKeyMapSetting]" << "Restore saved window size ->" << savedSize;
+                    qDebug() << "[loadKeyMapSetting]" << "Restore saved window size ->" << targetSize << ", base ->" << savedSize;
+                    qDebug() << "[UI_SCALE] LOAD seq=" << m_uiScaleDiagnosticSequence
+                             << "savedBase=" << savedSize << "requested=" << targetSize
+                             << "actual=" << size() << "minimum=" << minimumSize()
+                             << "R=" << m_runtimeScaleCompensation;
 #endif
                 }
             }
@@ -22690,7 +22900,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         // Restore saved splitter position if enabled
         if (m_GeneralAdvancedDialog->getSaveSplitterPosition() && settingFile.contains(LAST_SPLITTER_POSITION)) {
             QString sizesStr = settingFile.value(LAST_SPLITTER_POSITION).toString();
-            QStringList parts = sizesStr.split(',', Qt::SkipEmptyParts);
+            QStringList parts = sizesStr.split(',', QKeyMapperQtCompat::SkipEmptyParts);
             if (parts.size() == 2) {
                 bool ok1 = false, ok2 = false;
                 int s0 = parts[0].trimmed().toInt(&ok1);
@@ -27239,6 +27449,14 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         showFailurePopup(tr("Invalid mapping data : ") + settingtext);
         loadMacroListFromINI(QString());
         loadSyncGroupNotesFromINI(QString());
+        if (m_uiScale) {
+            if (settingtext.isEmpty() || load_all) {
+                m_targetScaleFactor = displayScaleEnumToFactor(ui->scaleComboBox->currentData().toInt());
+                applyLiveScaleCompensation(m_targetScaleFactor / s_StartupGlobalScaleFactor);
+            } else {
+                resetFontSize();
+            }
+        }
         return loadedSettingString;
     }
     else {
@@ -28225,6 +28443,11 @@ void QKeyMapper::loadGeneralSetting()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[loadGeneralSetting]" << "validgroups >>" << validgroups;
 #endif
+    if (m_uiScale && !loadSetting_flag) {
+        m_targetScaleFactor = displayScaleEnumToFactor(ui->scaleComboBox->currentData().toInt());
+        applyLiveScaleCompensation(m_targetScaleFactor / s_StartupGlobalScaleFactor);
+    }
+
 }
 
 void QKeyMapper::loadFontFile(const QString fontfilename, int &returnback_fontid, QString &fontname)
@@ -32032,9 +32255,19 @@ void QKeyMapper::forceHide()
 void QKeyMapper::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
-    int dw = qMax(0, this->width() - WINDOW_BASE_WIDTH);  // width can only increase
-    int dh = this->height() - WINDOW_BASE_HEIGHT;         // height can increase or decrease
+    const double r = (m_runtimeScaleCompensation > 0.0) ? m_runtimeScaleCompensation : 1.0;
+    if (m_userWindowResizeActive && !m_isApplyingLiveScale && !loadSetting_flag
+        && !isMaximized() && !isMinimized()
+        && !IsZoomed(reinterpret_cast<HWND>(winId())) && !IsIconic(reinterpret_cast<HWND>(winId()))) {
+        m_normalWindowBaseSize = QSize(qRound(this->width() / r),
+                                       qRound(this->height() / r));
+    }
+    int dw = qMax(0, this->width() - qRound(WINDOW_BASE_WIDTH * r));
+    int dh = this->height() - qRound(WINDOW_BASE_HEIGHT * r);
     applyResizeLayout(dw, dh);
+#ifdef DEBUG_LOGOUT_ON
+    scheduleScaleDiagnostics(QStringLiteral("resize"));
+#endif
 }
 
 void QKeyMapper::applyResizeLayout(int dw, int dh)
@@ -32053,7 +32286,7 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
     }
 
     // DataTable internal geometries & column resizing
-    if (ui->keyMappingTabWidget) {
+    if (ui->keyMappingTabWidget && qFuzzyCompare(m_runtimeScaleCompensation, 1.0)) {
         int tableW = ui->keyMappingTabWidget->width() - 4;
         int tableH = ui->keyMappingTabWidget->height() - 23;
         for (int i = 0; i < s_KeyMappingTabInfoList.size(); ++i) {
@@ -32068,7 +32301,9 @@ void QKeyMapper::applyResizeLayout(int dw, int dh)
 
     // Correct after scrollbar state settles (appear/disappear)
     QTimer::singleShot(0, this, [this]() {
+        if (!ui || s_isDestructing) { return; }
         resizeProcessInfoTableColumnWidth();
+        if (m_uiScale) { resizeAllKeyMappingTabWidgetColumnWidth(); }
     });
 }
 
@@ -32097,30 +32332,210 @@ void QKeyMapper::updateSplitterHandleToolTip()
     handle->setToolTip(tr("Double-click to reset splitter to center"));
 }
 
+void QKeyMapper::scaleMainWindowWidgetMetrics(double r)
+{
+    if (!ui) {
+        return;
+    }
+    if (m_uiScale && m_liveScaleBaselinesReady &&
+        (!qFuzzyCompare(r, 1.0) || m_scaledWidgetMetricsActive)) {
+        m_uiScale->capture();
+        m_uiScale->apply(r);
+        m_scaledWidgetMetricsActive = !qFuzzyCompare(r, 1.0);
+        return;
+    }
+
+    auto scaleFixed = [r](QWidget *w, int baseW, int baseH, int minW = 20, int minH = 16) {
+        if (w) {
+            w->setFixedSize(qMax(minW, qRound(baseW * r)), qMax(minH, qRound(baseH * r)));
+        }
+    };
+
+    auto scaleMinW = [r](QWidget *w, int baseW, int minW = 20) {
+        if (w) {
+            w->setMinimumWidth(qMax(minW, qRound(baseW * r)));
+        }
+    };
+
+    auto scaleMinSize = [r](QWidget *w, int baseW, int baseH, int minW = 20, int minH = 16) {
+        if (w) {
+            w->setMinimumSize(qMax(minW, qRound(baseW * r)), qMax(minH, qRound(baseH * r)));
+        }
+    };
+
+    // Right panel: operation buttons & controls
+    scaleFixed(ui->addmapdataButton, 81, 36, 45, 20);
+    scaleFixed(ui->keymapButton, 171, 51, 85, 26);
+    scaleFixed(ui->originalKeyRecordCopyButton, 81, 22, 45, 18);
+    scaleFixed(ui->originalKeyEditModeButton, 71, 22, 40, 18);
+    scaleFixed(ui->pushLevelSpinBox, 61, 22, 35, 18);
+    scaleMinSize(ui->pointDisplayLabel, 68, 20, 36, 16);
+    scaleMinW(ui->orikeyComboBox, 80, 40);
+    scaleMinW(ui->mapkeyComboBox, 80, 40);
+
+    // Right panel: category icon buttons
+    const int catBtnSize = qMax(16, qRound(22 * r));
+    const int catIconSize = qMax(12, qRound(16 * r));
+    QPushButton *catButtons[] = {
+        ui->oriList_SelectKeyboardButton, ui->oriList_SelectMouseButton,
+        ui->oriList_SelectGamepadButton, ui->oriList_SelectFunctionButton,
+        ui->mapList_SelectKeyboardButton, ui->mapList_SelectMouseButton,
+        ui->mapList_SelectGamepadButton, ui->mapList_SelectFunctionButton
+    };
+    for (QPushButton *btn : catButtons) {
+        if (btn) {
+            btn->setFixedSize(catBtnSize, catBtnSize);
+            btn->setIconSize(QSize(catIconSize, catIconSize));
+        }
+    }
+
+    // Right panel: layout spacing
+    if (ui->keyEditGridLayout) {
+        ui->keyEditGridLayout->setHorizontalSpacing(qMax(2, qRound(4 * r)));
+        ui->keyEditGridLayout->setVerticalSpacing(qMax(2, qRound(4 * r)));
+    }
+
+    // Left panel: top header controls
+    scaleFixed(ui->backupSettingButton, 71, 22, 40, 18);
+    scaleFixed(ui->savemaplistButton, 111, 31, 60, 20);
+
+    // Left panel: Tab 0 (Window Info)
+    scaleMinW(ui->checkProcessComboBox, 80, 40);
+    scaleMinSize(ui->restoreProcessPathButton, 41, 20, 24, 16);
+    scaleMinW(ui->checkWindowTitleComboBox, 80, 40);
+    scaleMinW(ui->checkClassNameComboBox, 80, 40);
+    scaleMinW(ui->checkDisplayModeComboBox, 80, 40);
+    scaleFixed(ui->iconLabel, 72, 72, 36, 36);
+    scaleFixed(ui->selectSettingCustomIconButton, 151, 21, 75, 18);
+    scaleFixed(ui->ignoreRulesListButton, 151, 22, 75, 18);
+
+    // Left panel: Tab 1 (General Settings)
+    scaleFixed(ui->languageComboBox, 81, 21, 45, 18);
+    scaleFixed(ui->selectTrayIconButton, 111, 21, 60, 18);
+    scaleFixed(ui->notificationComboBox, 81, 21, 45, 18);
+    scaleFixed(ui->notificationAdvancedSettingButton, 111, 21, 60, 18);
+    scaleFixed(ui->updateSiteComboBox, 81, 21, 45, 18);
+    scaleFixed(ui->checkUpdateButton, 111, 21, 60, 18);
+    scaleFixed(ui->scaleComboBox, 81, 21, 45, 18);
+    scaleFixed(ui->generalAdvancedButton, 111, 21, 60, 18);
+    scaleFixed(ui->themeComboBox, 81, 21, 45, 18);
+
+    // Left panel: Tab 2 (Mapping Settings)
+    scaleFixed(ui->enableSystemFilterKeyButton, 191, 21, 95, 18);
+    scaleFixed(ui->mappingAdvancedSettingButton, 141, 22, 75, 18);
+    scaleFixed(ui->mappingMacroListButton, 141, 22, 75, 18);
+    scaleFixed(ui->vButtonPanelSetupButton, 141, 22, 75, 18);
+    scaleFixed(ui->installFakerInputButton, 191, 21, 95, 18);
+
+    // Left panel: Tab 3 (Virtual Gamepad)
+    scaleFixed(ui->virtualGamepadTypeComboBox, 56, 21, 30, 18);
+    scaleFixed(ui->virtualGamepadNumberSpinBox, 35, 21, 22, 18);
+    scaleFixed(ui->virtualGamepadListComboBox, 71, 21, 40, 18);
+    scaleMinSize(ui->ViGEmBusStatusLabel, 81, 21, 45, 18);
+    scaleFixed(ui->installViGEmBusButton, 91, 21, 50, 18);
+    scaleFixed(ui->vJoyRecenterSpinBox, 91, 21, 50, 18);
+    scaleFixed(ui->vJoyXSensSpinBox, 65, 21, 35, 18);
+    scaleFixed(ui->vJoyYSensSpinBox, 65, 21, 35, 18);
+
+    // Left panel: Tab 4/5 (Gyro & Multi-Input)
+    scaleFixed(ui->Gyro2MouseAdvancedSettingButton, 101, 22, 55, 18);
+    scaleFixed(ui->multiInputDeviceListButton, 101, 22, 55, 18);
+    scaleMinSize(ui->multiInputStatusLabel, 81, 21, 45, 18);
+    scaleFixed(ui->installInterceptionButton, 91, 21, 50, 18);
+
+    // Spacing between panels
+    if (ui->bottomHorizontalLayout) {
+        ui->bottomHorizontalLayout->setSpacing(qMax(2, qRound(4 * r)));
+    }
+}
+
 void QKeyMapper::updateMinimumWindowSize()
 {
     if (!ui || !ui->settingTabWidget || !ui->rightPanelWidget) {
         return;
     }
 
-    int leftNeeded = 0;
+    const double r = (m_runtimeScaleCompensation > 0.0) ? m_runtimeScaleCompensation : 1.0;
+    if (m_uiScale && m_liveScaleBaselinesReady && qFuzzyCompare(r, 1.0)) {
+        // Preserve the established default constraints, including localized UIs.
+        setMinimumSize(m_uiScale->defaultWindowMinimum());
+        return;
+    }
+    if (m_uiScale && m_liveScaleBaselinesReady) {
+        ui->bottomContainerWidget->setMinimumHeight(0);
+        m_uiScale->refreshLayouts();
+        const QSize left = ui->leftPanelWidget->layout()->minimumSize();
+        const QSize right = ui->rightPanelWidget->layout()->minimumSize();
+        const QMargins margins = ui->centralwidget->layout()->contentsMargins();
+        const int bottomWidth = 2 * qMax(left.width(), right.width())
+            + ui->bottomHorizontalLayout->spacing() + margins.left() + margins.right();
+        ui->bottomContainerWidget->setMinimumHeight(qMax(left.height(), right.height()));
+        ui->mainTableSplitter->setMinimumHeight(qMax(1, qRound(MIN_KEYMAPPINGTAB_HEIGHT * r)));
+        m_uiScale->refreshLayouts();
+        const QSize rootMinimum = ui->centralwidget->layout()->minimumSize();
+        const QSize measured(qMax(bottomWidth, rootMinimum.width()),
+                             rootMinimum.height() + menuBar()->sizeHint().height());
+        setMinimumSize(qMax(qRound(WINDOW_MIN_WIDTH * r), measured.width()),
+                       qMax(qRound(WINDOW_MIN_HEIGHT * r), measured.height()));
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[UI_SCALE] MINIMUM fresh=" << measured << "left=" << left << "right=" << right
+                 << "R=" << r << "final=" << minimumSize();
+#endif
+        return;
+    }
+
+    // 1. First scale the rigid child widgets so layouts measure their true scaled metrics
+    scaleMainWindowWidgetMetrics(r);
+
+    // 2. Measure needed healthy size of bottom panels
+    int leftMinW = 0;
+    int leftMinH = 0;
     if (ui->leftPanelWidget && ui->leftPanelWidget->layout()) {
-        leftNeeded = ui->leftPanelWidget->layout()->minimumSize().width();
+        QSize sz = ui->leftPanelWidget->layout()->minimumSize();
+        leftMinW = sz.width();
+        leftMinH = sz.height();
     }
 
-    int rightNeeded = 0;
-    if (ui->rightPanelWidget->layout()) {
-        rightNeeded = ui->rightPanelWidget->layout()->minimumSize().width();
+    int rightMinW = 0;
+    int rightMinH = 0;
+    if (ui->rightPanelWidget && ui->rightPanelWidget->layout()) {
+        QSize sz = ui->rightPanelWidget->layout()->minimumSize();
+        rightMinW = sz.width();
+        rightMinH = sz.height();
     }
 
+    // 3. Strongly protect bottom container from being vertically crushed or overlapping:
+    // Lock bottomContainerWidget's minimum height to the max healthy height needed by left/right panels.
+    int bottomNeededH = qMax(leftMinH, rightMinH);
+    if (ui->bottomContainerWidget) {
+        ui->bottomContainerWidget->setMinimumHeight(bottomNeededH);
+    }
+
+    // 4. Calculate window minimum width:
     // Both panels are allocated 50% in bottomHorizontalLayout (stretch 1:1).
-    // The half-width must be at least max(leftNeeded, rightNeeded).
-    int halfNeeded = qMax(leftNeeded, rightNeeded);
+    int halfNeeded = qMax(leftMinW, rightMinW);
     int minContentWidth = halfNeeded * 2;
     int minWindowWidth = minContentWidth + 24 + 10; // 12px margins left/right + 10px splitter handle/spacing
 
-    int finalMinW = qMax(WINDOW_MIN_WIDTH, minWindowWidth);
+    int baseMinW = qRound(WINDOW_MIN_WIDTH * r);
+    int finalMinW = qMax(baseMinW, minWindowWidth);
     setMinimumWidth(finalMinW);
+
+    // 5. Calculate window minimum height:
+    // Healthy bottom height + minimum usable table height + menubar/separator/margins
+    int minTableH = qMax(50, qRound(MIN_KEYMAPPINGTAB_HEIGHT * r));
+    int minWindowHeight = bottomNeededH + minTableH + 35; // 35px: margins + spacings + separator line
+    int baseMinH = qRound(WINDOW_MIN_HEIGHT * r);
+    int finalMinH = qMax(baseMinH, minWindowHeight);
+    setMinimumHeight(finalMinH);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[UI_SCALE] MINIMUM seq=" << m_uiScaleDiagnosticSequence << "R=" << r
+             << "panels=" << QSize(leftMinW, leftMinH) << QSize(rightMinW, rightMinH)
+             << "halfNeeded=" << halfNeeded << "widthOverhead=" << 24 + 10
+             << "bottomNeededH=" << bottomNeededH << "minTableH=" << minTableH
+             << "heightOverhead=" << 35 << "computed=" << QSize(minWindowWidth, minWindowHeight)
+             << "baseline=" << QSize(baseMinW, baseMinH) << "final=" << minimumSize();
+#endif
 }
 
 void QKeyMapper::hideProcessList()
@@ -32968,6 +33383,7 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
 
     mappingDataTable->horizontalHeader()->setStretchLastSection(false);
 
+    const double r = m_runtimeScaleCompensation;
     int referenceWidth = mappingDataTable->width();
     int viewportWidth = mappingDataTable->viewport()->width();
     // Safety cap: columns must not exceed this even if a vertical scrollbar
@@ -32975,14 +33391,17 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
     // can slightly undershoot the actual rendered width).
     int maxAllowableWidth = viewportWidth;
     if (mappingDataTable->verticalScrollBar() && !mappingDataTable->verticalScrollBar()->isVisible()) {
-        maxAllowableWidth -= qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent) + 2;
+        const int scrollbarExtent = qFuzzyCompare(r, 1.0)
+            ? qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent)
+            : mappingDataTable->style()->pixelMetric(QStyle::PM_ScrollBarExtent, nullptr, mappingDataTable);
+        maxAllowableWidth -= scrollbarExtent + qMax(1, qRound(2 * r));
     }
 
     mappingDataTable->resizeColumnToContents(ORIGINAL_KEY_COLUMN);
 
-    int checkable_column_width_min = 32;
-    int original_key_width_min = referenceWidth / 5 - 30;
-    int original_key_width_max = referenceWidth / 2 - 32;
+    int checkable_column_width_min = qMax(1, qRound(32 * r));
+    int original_key_width_min = referenceWidth / 5 - qRound(30 * r);
+    int original_key_width_max = referenceWidth / 2 - qRound(32 * r);
     int original_key_width = mappingDataTable->columnWidth(ORIGINAL_KEY_COLUMN);
 
     mappingDataTable->resizeColumnToContents(DISABLED_COLUMN);
@@ -33022,14 +33441,14 @@ void QKeyMapper::resizeKeyMappingDataTableColumnWidth(KeyMappingDataTableWidget 
         original_key_width = original_key_width_max;
     }
 
-    int mapping_key_width_min = referenceWidth/5 - 15;
+    int mapping_key_width_min = referenceWidth/5 - qRound(15 * r);
     int mapping_key_width = viewportWidth - original_key_width - disabled_width - burst_mode_width - lock_width - floating_width - category_width;
     if (mapping_key_width < mapping_key_width_min) {
         mapping_key_width = mapping_key_width_min;
     }
 
     // ponytail: overflow protection — compress category_width first, then mapping_key_width
-    static constexpr int category_width_min = 36;
+    const int category_width_min = qMax(1, qRound(36 * r));
     int totalWidth = original_key_width + mapping_key_width + disabled_width + burst_mode_width + lock_width + floating_width + category_width;
     int overflow = totalWidth - maxAllowableWidth;
     if (overflow > 0) {
@@ -35537,119 +35956,92 @@ void QKeyMapper::setUILanguage(int languageindex)
     updateMinimumWindowSize();
 }
 
-void QKeyMapper::resetFontSize()
+void QKeyMapper::resetFontSize(double R)
 {
-#if 0
-    QFont customFont(FONTNAME_ENGLISH, 9);
-    if (UI_SCALE_2K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_2K_PERCENT_150 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_100 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_125 == m_UI_Scale
-        || UI_SCALE_1K_PERCENT_150 == m_UI_Scale) {
-
-        ui->settingNameLineEdit->setFont(customFont);
-        ui->processLineEdit->setFont(customFont);
-        ui->windowTitleLineEdit->setFont(customFont);
-        ui->checkProcessComboBox->setFont(customFont);
-        ui->checkWindowTitleComboBox->setFont(customFont);
-        ui->descriptionLineEdit->setFont(customFont);
-        ui->languageComboBox->setFont(customFont);
-        ui->notificationComboBox->setFont(customFont);
-        ui->updateSiteComboBox->setFont(customFont);
-        ui->virtualGamepadTypeComboBox->setFont(customFont);
-        ui->orikeyComboBox->setFont(customFont);
-        ui->mapkeyComboBox->setFont(customFont);
-        ui->keyboardSelectComboBox->setFont(customFont);
-        ui->mouseSelectComboBox->setFont(customFont);
-        ui->gamepadSelectComboBox->setFont(customFont);
-        ui->settingselectComboBox->setFont(customFont);
-        // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->windowswitchkeyLineEdit->setFont(customFont);
-        ui->mappingStartKeyLineEdit->setFont(customFont);
-        ui->mappingStopKeyLineEdit->setFont(customFont);
-        // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->originalKeyRecordLineEdit->setFont(customFont);
-        ui->sendTextPlainTextEdit->setFont(customFont);
-        ui->waitTimeSpinBox->setFont(customFont);
-        ui->pushLevelSpinBox->setFont(customFont);
-        ui->pressTimeSpinBox->setFont(customFont);
-        ui->pointDisplayLabel->setFont(customFont);
-        ui->dataPortSpinBox->setFont(customFont);
-        ui->brakeThresholdDoubleSpinBox->setFont(customFont);
-        ui->accelThresholdDoubleSpinBox->setFont(customFont);
-        ui->mouseXSpeedSpinBox->setFont(customFont);
-        ui->mouseYSpeedSpinBox->setFont(customFont);
-
-        // ui->burstpressSpinBox->setFont(customFont);
-        // ui->burstreleaseSpinBox->setFont(customFont);
-        ui->processinfoTable->setFont(customFont);
-        ui->processinfoTable->horizontalHeader()->setFont(customFont);
-        // ui->keyMappingTabWidget->tabBar()->setFont(QFont(FONTNAME_ENGLISH, 8));
-        // for (int tabindex = 0; tabindex < ui->keyMappingTabWidget->count(); ++tabindex) {
-        //     KeyMappingDataTableWidget *mappingTable = qobject_cast<KeyMappingDataTableWidget*>(ui->keyMappingTabWidget->widget(tabindex));
-        //     mappingTable->setFont(customFont);
-        //     mappingTable->horizontalHeader()->setFont(customFont);
-        // }
-
-        ui->vJoyXSensSpinBox->setFont(customFont);
-        ui->vJoyYSensSpinBox->setFont(customFont);
-        ui->virtualGamepadNumberSpinBox->setFont(customFont);
-        ui->virtualGamepadListComboBox->setFont(customFont);
-    }
-    else {
-        ui->settingNameLineEdit->setFont(customFont);
-        ui->processLineEdit->setFont(customFont);
-        ui->windowTitleLineEdit->setFont(customFont);
-        ui->checkProcessComboBox->setFont(customFont);
-        ui->checkWindowTitleComboBox->setFont(customFont);
-        ui->descriptionLineEdit->setFont(customFont);
-        ui->languageComboBox->setFont(customFont);
-        ui->notificationComboBox->setFont(customFont);
-        ui->updateSiteComboBox->setFont(customFont);
-        ui->virtualGamepadTypeComboBox->setFont(customFont);
-        ui->orikeyComboBox->setFont(customFont);
-        ui->mapkeyComboBox->setFont(customFont);
-        ui->keyboardSelectComboBox->setFont(customFont);
-        ui->mouseSelectComboBox->setFont(customFont);
-        ui->gamepadSelectComboBox->setFont(customFont);
-        ui->settingselectComboBox->setFont(customFont);
-        // m_windowswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        // m_mappingswitchKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->windowswitchkeyLineEdit->setFont(customFont);
-        ui->mappingStartKeyLineEdit->setFont(customFont);
-        ui->mappingStopKeyLineEdit->setFont(customFont);
-        // m_originalKeySeqEdit->setFont(QFont("Microsoft YaHei", 9));
-        ui->originalKeyRecordLineEdit->setFont(customFont);
-        ui->sendTextPlainTextEdit->setFont(customFont);
-        ui->waitTimeSpinBox->setFont(customFont);
-        ui->pushLevelSpinBox->setFont(customFont);
-        ui->pressTimeSpinBox->setFont(customFont);
-        ui->pointDisplayLabel->setFont(customFont);
-        ui->dataPortSpinBox->setFont(customFont);
-        ui->brakeThresholdDoubleSpinBox->setFont(customFont);
-        ui->accelThresholdDoubleSpinBox->setFont(customFont);
-        ui->mouseXSpeedSpinBox->setFont(customFont);
-        ui->mouseYSpeedSpinBox->setFont(customFont);
-
-        // ui->burstpressSpinBox->setFont(customFont);
-        // ui->burstreleaseSpinBox->setFont(customFont);
-        ui->processinfoTable->setFont(customFont);
-        ui->processinfoTable->horizontalHeader()->setFont(customFont);
-        // ui->keyMappingTabWidget->tabBar()->setFont(customFont);
-        // for (int tabindex = 0; tabindex < ui->keyMappingTabWidget->count(); ++tabindex) {
-        //     KeyMappingDataTableWidget *mappingTable = qobject_cast<KeyMappingDataTableWidget*>(ui->keyMappingTabWidget->widget(tabindex));
-        //     mappingTable->setFont(customFont);
-        //     mappingTable->horizontalHeader()->setFont(customFont);
-        // }
-
-        ui->vJoyXSensSpinBox->setFont(customFont);
-        ui->vJoyYSensSpinBox->setFont(customFont);
-        ui->virtualGamepadNumberSpinBox->setFont(customFont);
-        ui->virtualGamepadListComboBox->setFont(customFont);
-    }
+    const double r = (R > 0.0) ? R : m_runtimeScaleCompensation;
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[UI_SCALE] FONT seq=" << m_uiScaleDiagnosticSequence
+             << "requestedR=" << r << "runtimeR=" << m_runtimeScaleCompensation;
+    scheduleScaleDiagnostics(QStringLiteral("font-refresh"));
 #endif
+    QFont customFont(FONTNAME_ENGLISH);
+    customFont.setPointSizeF(9.0 * r);
+    if (m_uiScale && m_liveScaleBaselinesReady &&
+        (!qFuzzyCompare(r, 1.0) || m_scaledWidgetMetricsActive)) {
+        m_isApplyingLiveScale = true;
+        scaleMainWindowWidgetMetrics(r);
+        updateMinimumWindowSize();
+        m_liveScaleSettleTimer.start();
+    }
+    if (!m_uiScale || qFuzzyCompare(r, 1.0)) {
+    setFont(customFont);
+
+    // Update prominent action buttons
+    QFont keymapFont(FONTNAME_ENGLISH);
+    keymapFont.setPointSizeF(14.0 * r);
+    if (ui->keymapButton) {
+        ui->keymapButton->setFont(keymapFont);
+    }
+
+    QFont saveMapFont(FONTNAME_ENGLISH);
+    saveMapFont.setPointSizeF(12.0 * r);
+    if (ui->savemaplistButton) {
+        ui->savemaplistButton->setFont(saveMapFont);
+    }
+    if (ui->addmapdataButton) {
+        ui->addmapdataButton->setFont(saveMapFont);
+    }
+
+    // Apply customFont to child widgets in centralWidget
+    if (ui->centralwidget) {
+        const QList<QWidget*> childWidgets = ui->centralwidget->findChildren<QWidget*>();
+        for (QWidget *w : childWidgets) {
+            if (w == ui->keymapButton || w == ui->savemaplistButton || w == ui->addmapdataButton) {
+                continue;
+            }
+            QFont f = w->font();
+            f.setFamily(FONTNAME_ENGLISH);
+            f.setPointSizeF(9.0 * r);
+            w->setFont(f);
+        }
+    }
+
+    }
+    // Process info table & header
+    if (ui->processinfoTable) {
+        ui->processinfoTable->setFont(customFont);
+        if (ui->processinfoTable->horizontalHeader()) {
+            ui->processinfoTable->horizontalHeader()->setFont(customFont);
+            ui->processinfoTable->horizontalHeader()->setDefaultSectionSize(qRound(25 * r));
+        }
+        if (m_uiScale && ui->processinfoTable->verticalHeader()) {
+            ui->processinfoTable->verticalHeader()->setDefaultSectionSize(qMax(1, qRound(25 * r)));
+            for (int row = 0; row < ui->processinfoTable->rowCount(); ++row) {
+                ui->processinfoTable->setRowHeight(row, qMax(1, qRound(25 * r)));
+            }
+        }
+    }
+
+    // Key mapping tab tables & headers
+    if (ui->keyMappingTabWidget) {
+        ui->keyMappingTabWidget->setFont(customFont);
+        for (int i = 0; i < s_KeyMappingTabInfoList.size(); ++i) {
+            KeyMappingDataTableWidget *dt = s_KeyMappingTabInfoList.at(i).KeyMappingDataTable;
+            if (dt) {
+                dt->setFont(customFont);
+                if (dt->horizontalHeader()) {
+                    dt->horizontalHeader()->setFont(customFont);
+                }
+                if (dt->verticalHeader()) {
+                    dt->verticalHeader()->setFont(customFont);
+                    dt->verticalHeader()->setDefaultSectionSize(qMax(1, qRound(25 * r)));
+                    for (int row = 0; row < dt->rowCount(); ++row) {
+                        dt->setRowHeight(row, qMax(1, qRound(25 * r)));
+                    }
+                }
+            }
+        }
+    }
 
     if (m_deviceListWindow != Q_NULLPTR) {
         m_deviceListWindow->resetFontSize();
@@ -35662,6 +36054,181 @@ void QKeyMapper::resetFontSize()
     if (m_ItemSetupDialog != Q_NULLPTR) {
         m_ItemSetupDialog->resetFontSize();
     }
+}
+
+void QKeyMapper::applyLiveScaleCompensation(double R)
+{
+    if (R <= 0.0) {
+        return;
+    }
+    if (m_uiScale && !m_liveScaleBaselinesReady) {
+        // A hidden startup can receive a configuration refresh before first show.
+        updateMinimumWindowSize();
+        m_normalWindowBaseSize = m_normalWindowBaseSize.expandedTo(minimumSize());
+        m_uiScale->capture();
+        m_liveScaleBaselinesReady = true;
+    }
+#ifdef DEBUG_LOGOUT_ON
+    ++m_uiScaleDiagnosticSequence;
+    logScaleDiagnostics("BEFORE", true);
+#endif
+    m_isApplyingLiveScale = true;
+    m_runtimeScaleCompensation = R;
+
+    // 1. Update font sizes
+    resetFontSize(R);
+
+    // 2. Update minimum window size
+    updateMinimumWindowSize();
+#ifdef DEBUG_LOGOUT_ON
+    logScaleDiagnostics("METRICS", true);
+#endif
+
+    // 3. Update normal window size if not maximized/minimized
+    if (!isMaximized() && !isMinimized()) {
+        int targetW = qRound(m_normalWindowBaseSize.width() * R);
+        int targetH = qRound(m_normalWindowBaseSize.height() * R);
+        targetW = qMax(targetW, minimumWidth());
+        targetH = qMax(targetH, minimumHeight());
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[UI_SCALE] RESIZE_REQUEST seq=" << m_uiScaleDiagnosticSequence
+                 << "raw=" << QSize(qRound(m_normalWindowBaseSize.width() * R),
+                                     qRound(m_normalWindowBaseSize.height() * R))
+                 << "clamped=" << QSize(targetW, targetH);
+#endif
+        resize(targetW, targetH);
+    }
+
+    // 4. Update layout and table columns
+    int dw = qMax(0, this->width() - qRound(WINDOW_BASE_WIDTH * R));
+    int dh = this->height() - qRound(WINDOW_BASE_HEIGHT * R);
+    applyResizeLayout(dw, dh);
+
+    // Keep the user's splitter ratio. Qt scales the two panes as a unit.
+    m_liveScaleSettleTimer.start();
+#ifdef DEBUG_LOGOUT_ON
+    logScaleDiagnostics("AFTER");
+    scheduleScaleDiagnostics(QStringLiteral("scale-switch"), true);
+#endif
+}
+
+#ifdef DEBUG_LOGOUT_ON
+void QKeyMapper::scheduleScaleDiagnostics(const QString &reason, bool includeTree)
+{
+    if (!ui) {
+        return;
+    }
+    m_uiScaleDiagnosticReason = reason;
+    m_uiScaleDiagnosticIncludeTree = m_uiScaleDiagnosticIncludeTree || includeTree;
+    m_uiScaleDiagnosticTimer.start(150);
+}
+
+void QKeyMapper::logScaleDiagnostics(const char *phase, bool includeTree) const
+{
+    if (!ui || !ui->centralwidget) {
+        return;
+    }
+    const QWindow *handle = windowHandle();
+    const QScreen *screen = handle ? handle->screen() : QGuiApplication::primaryScreen();
+    qDebug() << "[UI_SCALE] STATE seq=" << m_uiScaleDiagnosticSequence << "phase=" << phase
+             << "reason=" << m_uiScaleDiagnosticReason << "B=" << s_StartupGlobalScaleFactor
+             << "T=" << m_targetScaleFactor << "R=" << m_runtimeScaleCompensation
+             << "QT_SCALE_FACTOR=" << qgetenv("QT_SCALE_FACTOR") << "DPR=" << devicePixelRatioF()
+             << "screenDPR=" << (screen ? screen->devicePixelRatio() : 0.0)
+             << "logicalDPI=" << (screen ? screen->logicalDotsPerInch() : 0.0)
+             << "size=" << size() << "minimum=" << minimumSize() << "minHint=" << minimumSizeHint()
+             << "frame=" << frameGeometry() << "base=" << m_normalWindowBaseSize
+             << "normal=" << normalGeometry() << "windowState=" << windowState()
+             << "applying=" << m_isApplyingLiveScale;
+    const QWidget *panels[] = {ui->centralwidget, ui->bottomContainerWidget,
+                              ui->leftPanelWidget, ui->rightPanelWidget, ui->keymapButton};
+    for (const QWidget *panel : panels) {
+        logScaleWidget(panel, m_uiScaleDiagnosticSequence);
+    }
+    if (ui->mainTableSplitter) {
+        qDebug() << "[UI_SCALE] SPLITTER seq=" << m_uiScaleDiagnosticSequence
+                 << "sizes=" << ui->mainTableSplitter->sizes()
+                 << "handleWidth=" << ui->mainTableSplitter->handleWidth();
+    }
+    if (ui->keymapButton) {
+        const QRect buttonRect(ui->keymapButton->mapTo(this, QPoint()), ui->keymapButton->size());
+        QRect visibleRect = buttonRect;
+        for (const QWidget *ancestor = ui->keymapButton->parentWidget(); ancestor;
+             ancestor = ancestor->parentWidget()) {
+            const QRect ancestorRect(ancestor->mapTo(this, QPoint()), ancestor->size());
+            visibleRect = visibleRect.intersected(ancestorRect);
+            qDebug() << "[UI_SCALE] CLIP seq=" << m_uiScaleDiagnosticSequence
+                     << "ancestor=" << ancestor->objectName() << "rect=" << ancestorRect
+                     << "buttonRect=" << buttonRect << "contained=" << ancestorRect.contains(buttonRect)
+                     << "visibleRect=" << visibleRect;
+            if (ancestor == this) {
+                break;
+            }
+        }
+    }
+    logScaleTable(ui->processinfoTable, m_uiScaleDiagnosticSequence);
+    const auto &tabInfos = s_KeyMappingTabInfoList;
+    for (const auto &tabInfo : tabInfos) {
+        logScaleTable(tabInfo.KeyMappingDataTable, m_uiScaleDiagnosticSequence);
+    }
+    if (!includeTree) {
+        return;
+    }
+    logScaleWidget(this, m_uiScaleDiagnosticSequence);
+    const auto widgets = findChildren<QWidget *>();
+    for (const QWidget *widget : widgets) {
+        if (widget->window() == this && !widget->objectName().isEmpty()) {
+            logScaleWidget(widget, m_uiScaleDiagnosticSequence);
+        }
+    }
+    const auto layouts = findChildren<QLayout *>();
+    for (const QLayout *layout : layouts) {
+        if (layout->parentWidget() && layout->parentWidget()->window() == this) {
+            logScaleLayout(layout, m_uiScaleDiagnosticSequence);
+        }
+    }
+}
+#endif
+
+void QKeyMapper::onScaleComboBoxActivated(int index)
+{
+    if (m_KeyMapStatus != KEYMAP_IDLE) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onScaleComboBoxActivated] Mapping is running, scale adjustment ignored.";
+#endif
+        return;
+    }
+
+    if (!ui || !ui->scaleComboBox || index < 0 || index >= ui->scaleComboBox->count()) {
+        return;
+    }
+
+    int scaleEnum = ui->scaleComboBox->itemData(index).toInt();
+    double targetScale = QKeyMapperConstants::displayScaleEnumToFactor(scaleEnum);
+
+    double b = (s_StartupGlobalScaleFactor > 0.0) ? s_StartupGlobalScaleFactor : 1.0;
+    double newR = targetScale / b;
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[UI_SCALE] SELECT nextSeq=" << m_uiScaleDiagnosticSequence + 1
+             << "index=" << index << "enum=" << scaleEnum << "B=" << b
+             << "T=" << targetScale << "R=" << newR;
+#endif
+
+    if (qFuzzyCompare(newR, m_runtimeScaleCompensation)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[onScaleComboBoxActivated] Same scale factor requested ->" << newR;
+#endif
+        return;
+    }
+
+    m_targetScaleFactor = targetScale;
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[onScaleComboBoxActivated] Applying live scale -> index:" << index
+             << ", targetScale:" << targetScale << ", B:" << b << ", R:" << newR;
+#endif
+
+    applyLiveScaleCompensation(newR);
+    markSaveSettingDirty();
 }
 
 void QKeyMapper::sessionLockStateChanged(bool locked)
@@ -36162,6 +36729,8 @@ void QKeyMapper::setUITheme(int themeindex)
 
     refreshSaveSettingIndicators();
     applyMappingStartActionMenuSizing(m_MappingStartActionMenu);
+    if (m_uiScale) { m_uiScale->refreshTheme(); }
+
 }
 
 void QKeyMapper::connectSettingDirtySignals(void)
@@ -41096,6 +41665,15 @@ void KeyListComboBoxPopup::showForComboBox(void)
     if (m_ComboBox == Q_NULLPTR) {
         return;
     }
+    if (auto *main = qobject_cast<QKeyMapper *>(m_ComboBox->window())) {
+        if (main->m_uiScale) {
+            main->m_uiScale->capture();
+            if (!qFuzzyCompare(main->m_runtimeScaleCompensation, 1.0)) {
+                main->m_uiScale->apply(main->m_runtimeScaleCompensation, this);
+            }
+        }
+    }
+
 
     m_SearchLineEdit->setFont(m_ComboBox->font());
     m_FavoritesToolButton->setFont(m_ComboBox->font());
@@ -41498,7 +42076,9 @@ void KeyListComboBoxPopup::updatePopupGeometry(void)
         return;
     }
 
-    const int popupWidth = qMax(m_ComboBox->width(), 280);
+    const auto *main = qobject_cast<QKeyMapper *>(m_ComboBox->window());
+    const qreal ratio = main ? main->m_runtimeScaleCompensation : 1.0;
+    const int popupWidth = qMax(m_ComboBox->width(), qRound(280 * ratio));
     const QRect comboRect = QRect(m_ComboBox->mapToGlobal(QPoint(0, 0)), m_ComboBox->size());
     QPoint popupPos = comboRect.bottomLeft();
 
@@ -42647,6 +43227,15 @@ void SettingSelectComboBoxPopup::showForComboBox(void)
     if (m_ComboBox == Q_NULLPTR) {
         return;
     }
+    if (auto *main = qobject_cast<QKeyMapper *>(m_ComboBox->window())) {
+        if (main->m_uiScale) {
+            main->m_uiScale->capture();
+            if (!qFuzzyCompare(main->m_runtimeScaleCompensation, 1.0)) {
+                main->m_uiScale->apply(main->m_runtimeScaleCompensation, this);
+            }
+        }
+    }
+
 
     const QFont comboFont = m_ComboBox->font();
     m_SearchLineEdit->setFont(comboFont);
@@ -42919,7 +43508,9 @@ void SettingSelectComboBoxPopup::updatePopupGeometry(void)
         return;
     }
 
-    const int popupWidth = qMax(m_ComboBox->width(), 360);
+    const auto *main = qobject_cast<QKeyMapper *>(m_ComboBox->window());
+    const qreal ratio = main ? main->m_runtimeScaleCompensation : 1.0;
+    const int popupWidth = qMax(m_ComboBox->width(), qRound(360 * ratio));
     const QRect comboRect = QRect(m_ComboBox->mapToGlobal(QPoint(0, 0)), m_ComboBox->size());
     QPoint popupPos = comboRect.bottomLeft();
 

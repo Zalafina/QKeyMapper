@@ -1,4 +1,5 @@
 #include "qpointpickerdialog.h"
+#include "qkeymapper_qt_compat.h"
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
 #include "qkeymapper_constants.h"
@@ -628,7 +629,7 @@ void QPointPickerDialog::updateTargetWindowInfo()
         setFixedSize(targetWidth, targetHeight);
 
         // Screen edge guard: prevent overflowing right edge of current monitor
-        QScreen *screen = this->screen();
+        QScreen *screen = QKeyMapperQtCompat::widgetScreen(this);
         if (screen == nullptr) {
             screen = QGuiApplication::primaryScreen();
         }

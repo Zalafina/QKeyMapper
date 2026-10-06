@@ -24,6 +24,8 @@
 #include <QColor>
 #include <QPointer>
 
+class QkmUiScale;
+
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtWin>
 #endif
@@ -1159,6 +1161,7 @@ class QKeyMapper : public QMainWindow
     Q_OBJECT
 
     friend class KeyListComboBox;
+    friend class KeyListComboBoxPopup;
 
 public:
     explicit QKeyMapper(QWidget *parent = Q_NULLPTR);
@@ -1267,6 +1270,8 @@ public:
     static bool checkForSysDevice(const wchar_t* searchHardwareId);
 
     static void setDisplayScaleValue(double scale);
+    static void setStartupGlobalScaleFactor(double scaleFactor);
+    static double getStartupGlobalScaleFactor(void);
     static void getProcessInfoFromPID(DWORD processID, QString &processPathStr);
     static void getProcessInfoFromHWND(HWND hWnd, QString &processPathStr);
     static QString getProcessPathFromPID(DWORD dwProcessId);
@@ -1720,6 +1725,7 @@ public slots:
     void setFloatingButtonDragCoordinateEnabled(bool enabled);
 
 private slots:
+    void onScaleComboBoxActivated(int index);
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     void on_settingselectComboBox_textActivated(const QString &text);
 #else
@@ -1946,6 +1952,7 @@ private:
     void resetMainTableSplitterToDefault(void);
     void updateSplitterHandleToolTip(void);
     void updateMinimumWindowSize(void);
+    void scaleMainWindowWidgetMetrics(double r);
     bool isCloseToSystemtray();
 
 public:
@@ -2055,7 +2062,12 @@ private:
     void updateMousePointsList(void);
     void reloadUILanguage(void);
     void setUILanguage(int languageindex);
-    void resetFontSize(void);
+    void resetFontSize(double R = -1.0);
+    void applyLiveScaleCompensation(double R);
+#ifdef DEBUG_LOGOUT_ON
+    void logScaleDiagnostics(const char *phase, bool includeTree = false) const;
+    void scheduleScaleDiagnostics(const QString &reason, bool includeTree = false);
+#endif
     void sessionLockStateChanged(bool locked);
     void setUITheme(int themeindex);
     void connectSettingDirtySignals(void);
@@ -2238,6 +2250,7 @@ public:
     static QList<HWND> s_hWndList;
     static QList<HWND> s_last_HWNDList;
     static double s_DisplayScale;
+    static double s_StartupGlobalScaleFactor;
     static QList<KeyMappingTab_Info> s_KeyMappingTabInfoList;
     static OrderedMap<QString, IgnoreWindowInfo> s_IgnoreWindowInfoMap;
     static OrderedMap<QString, MappingMacroData> s_MappingMacroList;
@@ -2281,6 +2294,21 @@ private:
     bool m_MainWindowCtrlPressed = false;
     bool m_MainWindowCtrlOverrideActive = false;
     bool m_SaveSettingDirty = false;
+    double m_targetScaleFactor = 1.0;
+    double m_runtimeScaleCompensation = 1.0;
+    QSize m_normalWindowBaseSize = QSize(QKeyMapperConstants::WINDOW_BASE_WIDTH, QKeyMapperConstants::WINDOW_BASE_HEIGHT);
+    bool m_isApplyingLiveScale = false;
+    bool m_userWindowResizeActive = false;
+    bool m_liveScaleBaselinesReady = false;
+    bool m_scaledWidgetMetricsActive = false;
+    QkmUiScale *m_uiScale = nullptr;
+    QTimer m_liveScaleSettleTimer;
+#ifdef DEBUG_LOGOUT_ON
+    quint64 m_uiScaleDiagnosticSequence = 0;
+    QTimer m_uiScaleDiagnosticTimer;
+    QString m_uiScaleDiagnosticReason;
+    bool m_uiScaleDiagnosticIncludeTree = false;
+#endif
 
     // Category filter menu UI (built in C++ only)
     QMenu *m_CategoryFilterMenu = Q_NULLPTR;

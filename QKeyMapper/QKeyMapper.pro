@@ -109,7 +109,7 @@ CONFIG(asan) {
         message("Building with MSVC AddressSanitizer (ASan)")
         QMAKE_CFLAGS += -fsanitize=address
         QMAKE_CXXFLAGS += -fsanitize=address
-        QMAKE_LFLAGS += -fsanitize=address /INCREMENTAL:NO
+        QMAKE_LFLAGS += /INCREMENTAL:NO
         DEFINES += QKM_ENABLE_ASAN
     }
 }
@@ -239,6 +239,7 @@ SOURCES     += \
     qinputdevicelistwindow.cpp \
     qitemsetupdialog.cpp \
     qkeymapper.cpp \
+    qkm_ui_scale.cpp \
     qkeymapper_worker.cpp \
     qkeyrecord.cpp \
     qmacrolistdialog.cpp \
@@ -255,6 +256,7 @@ HEADERS     += \
     interception_worker.h \
     qinputdevicelistwindow.h \
     qkeymapper.h \
+    qkm_ui_scale.h \
     qkeymapper_input_device_types.h \
     qkeymapper_worker.h \
     qkeymapper_constants.h \

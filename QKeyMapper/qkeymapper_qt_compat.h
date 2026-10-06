@@ -12,8 +12,48 @@
 #include <QTabWidget>
 #include <QSettings>
 #include <QScopedPointer>
+#include <QStyleOptionMenuItem>
+#include <QStringView>
+#include <QWindow>
+#include <QGuiApplication>
 
 namespace QKeyMapperQtCompat {
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+using UiScaleHeaderOption = QStyleOptionHeaderV2;
+#else
+using UiScaleHeaderOption = QStyleOptionHeader;
+#endif
+
+inline QScreen *widgetScreen(const QWidget *widget)
+{
+    if (!widget) { return QGuiApplication::primaryScreen(); }
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+    return widget->screen();
+#else
+    const QWidget *window = widget->window();
+    if (window && window->windowHandle()) { return window->windowHandle()->screen(); }
+    return QGuiApplication::screenAt(widget->mapToGlobal(widget->rect().center()));
+#endif
+}
+
+inline void appendStringSlice(QString &target, const QString &source, int start, int length = -1)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    target += QStringView(source).mid(start, length);
+#else
+    target += source.midRef(start, length);
+#endif
+}
+
+inline void scaleMenuShortcutWidth(QStyleOptionMenuItem &option, qreal ratio)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    option.reservedShortcutWidth = qRound(option.reservedShortcutWidth * ratio);
+#else
+    option.tabWidth = qRound(option.tabWidth * ratio);
+#endif
+}
 
 namespace detail {
 

@@ -1,4 +1,5 @@
 #include "qfloatingbuttonsetupdialog.h"
+#include "qkeymapper_qt_compat.h"
 
 #include "qitemsetupdialog.h"
 
@@ -921,8 +922,8 @@ bool QFloatingButtonSetupDialog::nativeEvent(const QByteArray &eventType, void *
             if (GetWindowRect(hwnd, &wr) && GetClientRect(hwnd, &cr)) {
                 const int ncWidth = (wr.right - wr.left) - (cr.right - cr.left);
                 const int ncHeight = (wr.bottom - wr.top) - (cr.bottom - cr.top);
-                const qreal dpr = (screen() != Q_NULLPTR)
-                    ? screen()->devicePixelRatio()
+                const qreal dpr = (QKeyMapperQtCompat::widgetScreen(this) != Q_NULLPTR)
+                    ? QKeyMapperQtCompat::widgetScreen(this)->devicePixelRatio()
                     : (qApp != Q_NULLPTR ? qApp->devicePixelRatio() : 1.0);
 
                 const int proposedClientWidthPhysical = (rc->right - rc->left) - ncWidth;

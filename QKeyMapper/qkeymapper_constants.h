@@ -601,6 +601,25 @@ namespace QKeyMapperConstants {
     inline constexpr int DISPLAY_SCALE_MIN = DISPLAY_SCALE_DEFAULT;
     inline constexpr int DISPLAY_SCALE_MAX = DISPLAY_SCALE_PERCENT_90;
 
+    inline constexpr double displayScaleEnumToFactor(int displayScaleEnum)
+    {
+        switch (displayScaleEnum) {
+        case DISPLAY_SCALE_PERCENT_50:  return 0.5;
+        case DISPLAY_SCALE_PERCENT_60:  return 0.6;
+        case DISPLAY_SCALE_PERCENT_70:  return 0.7;
+        case DISPLAY_SCALE_PERCENT_80:  return 0.8;
+        case DISPLAY_SCALE_PERCENT_90:  return 0.9;
+        case DISPLAY_SCALE_PERCENT_100: return 1.0;
+        case DISPLAY_SCALE_PERCENT_125: return 1.25;
+        case DISPLAY_SCALE_PERCENT_150: return 1.5;
+        case DISPLAY_SCALE_PERCENT_175: return 1.75;
+        case DISPLAY_SCALE_PERCENT_200: return 2.0;
+        case DISPLAY_SCALE_DEFAULT:
+        default:
+            return 1.0;
+        }
+    }
+
     inline constexpr int MOUSE_POINT_RADIUS = 12;
 
     inline constexpr int SHOW_POINTSIN_SCREEN_OFF  = 0;

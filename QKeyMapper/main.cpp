@@ -292,17 +292,6 @@ void setupQtScaleEnvironment(const QString &program_dir)
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     int display_scale = settingFile.value(DISPLAY_SCALE, DISPLAY_SCALE_DEFAULT).toInt();
 
-    constexpr double SCALE_50 = 0.5;
-    constexpr double SCALE_60 = 0.6;
-    constexpr double SCALE_70 = 0.7;
-    constexpr double SCALE_80 = 0.8;
-    constexpr double SCALE_90 = 0.9;
-    constexpr double SCALE_100 = 1.0;
-    constexpr double SCALE_125 = 1.25;
-    constexpr double SCALE_150 = 1.5;
-    constexpr double SCALE_175 = 1.75;
-    constexpr double SCALE_200 = 2.0;
-
     int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
     HDC hdc = GetDC(NULL);
     int width = GetDeviceCaps(hdc, DESKTOPHORZRES);
@@ -314,59 +303,10 @@ void setupQtScaleEnvironment(const QString &program_dir)
     ReleaseDC(NULL, hdc);
 
     double scale_value = 0;
-    switch (display_scale) {
-    case DISPLAY_SCALE_PERCENT_50:
-        scale_value = SCALE_50;
+    if (display_scale != DISPLAY_SCALE_DEFAULT) {
+        scale_value = QKeyMapperConstants::displayScaleEnumToFactor(display_scale);
         qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_50;
-        break;
-    case DISPLAY_SCALE_PERCENT_60:
-        scale_value = SCALE_60;
-        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_60;
-        break;
-    case DISPLAY_SCALE_PERCENT_70:
-        scale_value = SCALE_70;
-        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_70;
-        break;
-    case DISPLAY_SCALE_PERCENT_80:
-        scale_value = SCALE_80;
-        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_80;
-        break;
-    case DISPLAY_SCALE_PERCENT_90:
-        scale_value = SCALE_90;
-        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_90;
-        break;
-    case DISPLAY_SCALE_PERCENT_100:
-        scale_value = SCALE_100;
-        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_100;
-        break;
-    case DISPLAY_SCALE_PERCENT_125:
-        scale_value = SCALE_125;
-        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_125;
-        break;
-    case DISPLAY_SCALE_PERCENT_150:
-        scale_value = SCALE_150;
-        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_150;
-        break;
-    case DISPLAY_SCALE_PERCENT_175:
-        scale_value = SCALE_175;
-        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_175;
-        break;
-    case DISPLAY_SCALE_PERCENT_200:
-        scale_value = SCALE_200;
-        qputenv("QT_SCALE_FACTOR", QByteArray::number(scale_value));
-        system_scale_value = SCALE_200;
-        break;
-    default:
-        break;
+        system_scale_value = scale_value;
     }
 
 #ifdef DEBUG_LOGOUT_ON
@@ -376,6 +316,21 @@ void setupQtScaleEnvironment(const QString &program_dir)
 #endif
 
     QKeyMapper::setDisplayScaleValue(system_scale_value);
+
+    double startup_scale = 1.0;
+    if (scale_value > 0.0) {
+        startup_scale = scale_value;
+    } else {
+        QByteArray envScale = qgetenv("QT_SCALE_FACTOR");
+        if (!envScale.isEmpty()) {
+            bool ok = false;
+            double v = envScale.toDouble(&ok);
+            if (ok && v > 0.0) {
+                startup_scale = v;
+            }
+        }
+    }
+    QKeyMapper::setStartupGlobalScaleFactor(startup_scale);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
     // Standardize HighDpiScaleFactorRoundingPolicy to PassThrough across all scaling modes.
@@ -500,6 +455,15 @@ int main(int argc, char *argv[])
             qputenv("QT_SCALE_FACTOR", scaleValue.toUtf8());
             scale_from_param = true;
 
+            bool ok = false;
+            double paramScale = scaleValue.toDouble(&ok);
+            if (ok && paramScale > 0.0) {
+                QKeyMapper::setStartupGlobalScaleFactor(paramScale);
+                QKeyMapper::setDisplayScaleValue(paramScale);
+            } else {
+                QKeyMapper::setStartupGlobalScaleFactor(1.0);
+            }
+
             if (scaleValue == "1.0") {
                 int nScreenWidth = GetSystemMetrics(SM_CXSCREEN);
                 HDC hdc = GetDC(NULL);
@@ -518,13 +482,21 @@ int main(int argc, char *argv[])
         }
     }
 
-    // updateQtDisplayEnvironment();
     if (!scale_from_param) {
         QString programPath = QString::fromLocal8Bit(argv[0]);
         QFileInfo fileInfo(programPath);
         QString programDir = fileInfo.absolutePath();
         setupQtScaleEnvironment(programDir);
     }
+
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
+    // Standardize HighDpiScaleFactorRoundingPolicy to PassThrough across all scaling modes.
+    // This honors exact OS fractional scaling (e.g. 150%) linearly instead of forcibly rounding to 200%.
+    QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
+#endif
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
 
 #ifdef LOGOUT_TOFILE
     QString applicationName = QString(argv[0]);
