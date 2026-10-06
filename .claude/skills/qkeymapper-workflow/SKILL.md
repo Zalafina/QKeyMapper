@@ -36,31 +36,56 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 
 ## Autonomous quality gates & validation
 
-The Agent must autonomously execute build and verification gates instead of delegating ordinary compilation to the user:
+The Agent must autonomously execute build and verification gates instead of delegating ordinary compilation to the user. The default milestone gates remain unchanged; task-specific exceptions require explicit user authorization and must be reported with their scope.
 
 ### 1. Build validation (`scripts/build_qt6.ps1`)
-- Standard build: `powershell -File .\scripts\build_qt6.ps1` (Release) or with `-Configuration Debug`.
-- ASan build: `powershell -File .\scripts\build_qt6.ps1 -AddressSanitizer` (builds to `build_test_qt6_asan/`).
-- Incremental compilation: JOM automatically parallelizes object compilation in seconds.
-- Compiler error diagnostics: Read exact compiler output (file, line, symbol, C-error code); fix syntax or unresolved identifiers directly in the source file and re-run build. Only pause if external toolchains or system dependencies are unrecoverable.
-- Generated UI headers: UI compiler outputs `ui_*.h` to the build directory. If symbols mismatch, check for stray source-tree `QKeyMapper/ui_*.h` shadows.
+
+- Standard build: `pwsh -NoProfile -File .\scripts\build_qt6.ps1` (Release) or with `-Configuration Debug`.
+- Diagnostic Release: `pwsh -NoProfile -File .\scripts\build_qt6.ps1 -Diagnostic` (outputs to `out/build_qt6_diagnostic/`). Diagnostic plus ASan uses `-Diagnostic -AddressSanitizer` and a separate output directory.
+- Standard ASan build: `pwsh -NoProfile -File .\scripts\build_qt6.ps1 -AddressSanitizer` (outputs to `build_test_qt6_asan/`).
+- JOM incrementally builds changed objects. Read compiler failures, fix the exact source, and rebuild; do not treat whitespace or encoding checks as compilation.
+- Use build-directory generated `ui_*.h`; if Ui members mismatch, check for source-tree shadow headers.
+- Record source/worktree version, configuration, Qt/toolchain, build output and the tested EXE path/hash. Keep compiler, linker and static-analysis diagnostics distinct; disclose warnings rather than silently filtering them.
 
 ### 2. Visual inspection (`scripts/capture_ui_snapshots.ps1`)
-- Snapshot capture: `powershell -File .\scripts\capture_ui_snapshots.ps1 -Label <name> [-Arguments <cli-args>]`
-- Multimodal review: Use the `view_file` tool to inspect the captured PNG in `test_snapshots/` directly. Check layout alignment, padding, margins, font clipping, and high DPI scaling.
+
+- Launch a prepared isolated runtime: `pwsh -NoProfile -File .\scripts\capture_ui_snapshots.ps1 -ExecutablePath .\out\ui_validation\runtime\QKeyMapper.exe -PrintWindow -Label ui_check`. The example runtime must first be populated with the intended EXE, dependencies and test INI; the capture script does not deploy it.
+- Set `$testPid` to the verified intended PID, then attach: `pwsh -NoProfile -File .\scripts\capture_ui_snapshots.ps1 -ProcessId $testPid -PrintWindow -Label ui_attached`. Attachment leaves the process running; do not combine it with launch options.
+- Inspect PNGs with the available image-viewing tool, such as `view_image` or `view_file`. Check alignment, padding, text clipping and control visibility.
+- Match language, theme, INI, client size, DPI, capture method and page-visit history before comparing. Distinguish logical client sizes from screenshot pixels and genuine OS DPI from simulated Qt factors.
 
 ### 3. Static analysis (`scripts/run_static_analysis.ps1`)
-- Run Clang-Tidy & Clazy (53 checks): `powershell -File .\scripts\run_static_analysis.ps1 [-Files @("QKeyMapper\file.cpp")]`
-- Review report: Check `out/static-analysis/summary.txt` to confirm 0 diagnostics in project code.
+
+- Run Clang-Tidy and Clazy on the affected sources. For a diagnostic build, use `pwsh -NoProfile -File .\scripts\run_static_analysis.ps1 -Files QKeyMapper\qkeymapper.cpp -Diagnostic -BuildDirectory .\out\build_qt6_diagnostic`.
+- Default gate: 0 project diagnostics in `out/static-analysis/summary.txt`; retain full reports and inspect tool/compiler failures.
+- An explicitly authorized incremental gate must preserve a versioned baseline and compare diagnostic identity, code context and multiplicity, accounting for line shifts. Equal totals alone do not prove zero new diagnostics. Report the strict gate's actual exit status and remaining diagnostics.
 
 ### 4. Memory safety validation (`scripts/run_asan_check.ps1`)
-- After building with `-AddressSanitizer`, run: `powershell -File .\scripts\run_asan_check.ps1`
-- Smoke checks monitor runtime execution for 15s under `ASAN_OPTIONS`. Check `out/asan/` for violations.
+
+- After an ASan build and isolated runtime preparation, pass the intended instrumented EXE with `-ExecutablePath`; do not substitute an ordinary Release binary.
+- Verify the instrumentation/build target, observed execution, exit code, violation reports and exercised scenarios. Startup/close smoke coverage does not establish mapping or interactive UI coverage.
+- Record explicitly authorized omissions. Earlier ASan results do not cover subsequent code changes; this does not waive the default milestone gate.
 
 ### 5. Layered gate protocol
-- **Iteration Check**: Every code edit -> run `build_qt6.ps1` -> ensure 0 errors and 0 warnings.
-- **UI Visual Gate**: UI changes -> run `capture_ui_snapshots.ps1` -> use `view_file` to review rendered layout.
-- **Milestone Gate**: Feature/stage completion -> run `run_static_analysis.ps1` (0 warnings) + ASan check (0 memory bugs) before declaring milestone ready for review.
+
+- **Iteration Check**: Code changes -> affected build -> 0 errors and 0 warnings.
+- **UI Visual Gate**: UI changes -> screenshots -> autonomous image review.
+- **Milestone Gate**: Feature/stage completion -> Clang-Tidy/Clazy (0 project diagnostics) + ASan (0 memory bugs), unless the user explicitly authorizes a task-specific exception.
+- After successful checks, repeat or broaden them only for new changes, failures or unresolved concerns. For a later edit, identify and recheck affected paths while retaining the version and coverage of reused evidence.
+- Documentation-only changes need command/interface, link, mirror and whitespace checks; do not claim C++ build or runtime validation from these checks.
+
+### 6. Diagnostic operation and evidence
+
+1. Prepare test EXE/INI/logs under existing ignored paths and preserve the user's runtime/configuration. Use explicit EXE paths or PIDs; avoid choosing an arbitrary same-name process.
+2. Reuse `scripts/test_process.ps1` for owned-process startup/close. Check PID, absolute EXE and start time; close normally, report an unclosed process, and do not force-kill another instance.
+3. Keep editing, Git, builds, analysis and capture non-elevated. Only necessary test startup/close may use already-authorized `-UseGsudo` (driver requirements or the original executable manifest); the user handles UAC. Do not run the whole development workflow under gsudo.
+4. Preserve the formal/source manifest. A temporary asInvoker copy may be used only for isolated UI checks without mapping/driver tests; report that boundary and do not claim privileged behavior was tested.
+5. Separate startup arguments from live actions. Confirm the intended event actually changes application state; sample the latest matching request after layout settles, not merely after a fixed sleep or a successful automation call.
+6. For layout faults, compare requested/actual sizes and constraint/hint chains, including hidden pages. Check clipping against every ancestor, and table row heights against the actual vertical header/viewport.
+7. Keep original snapshots, raw logs and diffs; explain comparison crops and masks. Exclude only justified dynamic content, not unexpected static regressions. Redact private configuration, mapping text, device names and window titles from durable/shared examples.
+8. Handover separates current-binary checks, historical evidence and unperformed coverage; include authorization scope, remaining diagnostics and checkpoint/commit status.
+
+Detailed preparation, commands and diagnostic pitfalls: [Autonomous validation toolchain](../../../.agents/context/lessons/agent-autonomous-validation-toolchain.md).
 
 ## Advanced diagnostic sandbox (Opt-in Heavy Diagnosis)
 - Default to Level 1 lightweight analysis: keep changes small and reversible; do not launch heavy custom build sandboxes for ordinary bugs.
