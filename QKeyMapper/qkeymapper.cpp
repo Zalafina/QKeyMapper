@@ -32950,6 +32950,11 @@ void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
     for (const QString &categoryValue : std::as_const(m_CategoryFilterDisplayOrder)) {
         const bool isBlank = categoryValue.isEmpty();
         QCheckBox *cb = new QCheckBox(isBlank ? tr("Blank") : categoryValue, m_CategoryFilterListContainer);
+        if (m_uiScale && !qFuzzyCompare(m_runtimeScaleCompensation, 1.0)) {
+            // Newly created popup children may resolve the application font
+            // instead of inheriting the compensated font through a QMenu.
+            cb->setFont(m_CategoryFilterAllCheckBox->font());
+        }
         cb->setTristate(false);
         cb->setProperty("categoryValue", categoryValue);
         QString cb_text = cb->text();
@@ -33009,6 +33014,13 @@ void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
     updateCategoryFilterAllCheckStateFromItems();
     updateCategoryFilterHeaderAppearance();
 
+    // Capture new checkboxes from their current compensated font and apply
+    // popup metrics before measuring the rebuilt contents.
+    if (m_uiScale && !qFuzzyCompare(m_runtimeScaleCompensation, 1.0)) {
+        m_uiScale->capture();
+        m_uiScale->apply(m_runtimeScaleCompensation, m_CategoryFilterMenu);
+    }
+
     // Dynamically size the panel to content (width fits longest checkbox text; height fits items up to max).
     if (m_CategoryFilterPanel && m_CategoryFilterScrollArea && m_CategoryFilterAllCheckBox) {
         const QVBoxLayout *panelLayout = qobject_cast<QVBoxLayout *>(m_CategoryFilterPanel->layout());
@@ -33033,9 +33045,10 @@ void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
         itemsHeight += listMargins.top() + listMargins.bottom();
 
         const int allHeight = m_CategoryFilterAllCheckBox->sizeHint().height();
-        const int otherHeight = panelMargins.top() + panelMargins.bottom() + allHeight + panelSpacing + 16;
+        const int otherHeight = panelMargins.top() + panelMargins.bottom() + allHeight + panelSpacing
+                                + qRound(16 * m_runtimeScaleCompensation);
 
-        const int maxHeight = CATEGORY_FILTER_MAX_HEIGHT_MAPPINGTABLE;
+        const int maxHeight = qRound(CATEGORY_FILTER_MAX_HEIGHT_MAPPINGTABLE * m_runtimeScaleCompensation);
         const int desiredHeightUncapped = otherHeight + itemsHeight;
         const int desiredHeight = qMin(desiredHeightUncapped, maxHeight);
 
@@ -33046,8 +33059,8 @@ void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
             idealWidth += sbExtent;
         }
 
-        int desiredWidth = qMax(idealWidth, CATEGORY_FILTER_MIN_WIDTH_MAPPINGTABLE);
-        desiredWidth = qMin(desiredWidth, CATEGORY_FILTER_MAX_WIDTH_MAPPINGTABLE);
+        int desiredWidth = qMax(idealWidth, qRound(CATEGORY_FILTER_MIN_WIDTH_MAPPINGTABLE * m_runtimeScaleCompensation));
+        desiredWidth = qMin(desiredWidth, qRound(CATEGORY_FILTER_MAX_WIDTH_MAPPINGTABLE * m_runtimeScaleCompensation));
 
         // Ensure horizontal scrolling can happen when width is capped.
         if (m_CategoryFilterListContainer) {
@@ -34046,7 +34059,12 @@ void QKeyMapper::showSystemFilterKeyPopup()
         return;
     }
 
-    const int popupMinimumWidth = qMax(ui->enableSystemFilterKeyButton->width(), 220);
+    if (m_uiScale && !qFuzzyCompare(m_runtimeScaleCompensation, 1.0)) {
+        m_uiScale->capture();
+        m_uiScale->apply(m_runtimeScaleCompensation, m_SystemFilterKeyPopupFrame);
+    }
+    const int popupMinimumWidth = qMax(ui->enableSystemFilterKeyButton->width(),
+                                      qRound(220 * m_runtimeScaleCompensation));
     m_SystemFilterKeyPopupFrame->setMinimumWidth(popupMinimumWidth);
     m_SystemFilterKeyPopupFrame->ensurePolished();
     m_SystemFilterKeyPopupFrame->adjustSize();
@@ -34112,6 +34130,11 @@ void QKeyMapper::showSystemFilterKeyPopup()
 
     const QRect finalRect(pos, popupSize);
     m_SystemFilterKeyPopupFrame->setGeometry(finalRect);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[UI_SCALE] POPUP FilterKeys R=" << m_runtimeScaleCompensation
+             << "minimumWidth=" << popupMinimumWidth << "hint=" << m_SystemFilterKeyPopupFrame->sizeHint()
+             << "requested=" << finalRect << "actual=" << m_SystemFilterKeyPopupFrame->geometry();
+#endif
     m_SystemFilterKeyPopupFrame->setWindowOpacity(0.0);
     m_SystemFilterKeyPopupFrame->show();
 
@@ -40738,7 +40761,7 @@ void QKeyMapper::showCategoryFilterPopup(const QPoint &globalAnchorPos, const QR
     }
 
     // Clear any previous fixed sizing so rebuild can compute a fresh fixed size.
-    const int maxHeight = CATEGORY_FILTER_MAX_HEIGHT_MAPPINGTABLE;
+    const int maxHeight = qRound(CATEGORY_FILTER_MAX_HEIGHT_MAPPINGTABLE * m_runtimeScaleCompensation);
     m_CategoryFilterPanel->setMinimumSize(0, 0);
     m_CategoryFilterPanel->setMaximumSize(QWIDGETSIZE_MAX, maxHeight);
     rebuildCategoryFilterMenuForCurrentTab();
@@ -40816,7 +40839,8 @@ void QKeyMapper::showCategoryFilterPopup(const QPoint &globalAnchorPos, const QR
 
             if (popupSize.width() > availInner.width()) {
                 newPanelW = basePanelW - (popupSize.width() - availInner.width());
-                const int minW = qMin(CATEGORY_FILTER_MIN_WIDTH_MAPPINGTABLE, availInner.width());
+                const int minW = qMin(qRound(CATEGORY_FILTER_MIN_WIDTH_MAPPINGTABLE * m_runtimeScaleCompensation),
+                                     availInner.width());
                 newPanelW = qMax(minW, newPanelW);
                 newPanelW = qMin(newPanelW, availInner.width());
             }
@@ -40854,6 +40878,11 @@ void QKeyMapper::showCategoryFilterPopup(const QPoint &globalAnchorPos, const QR
     }
 
     m_CategoryFilterMenu->popup(pos);
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[UI_SCALE] POPUP Category R=" << m_runtimeScaleCompensation
+             << "requested=" << QRect(pos, popupSize) << "actual=" << m_CategoryFilterMenu->geometry()
+             << "panel=" << m_CategoryFilterPanel->size() << "hint=" << m_CategoryFilterMenu->sizeHint();
+#endif
 }
 
 void QKeyMapper::onCategoryColumnHeaderClicked(int logicalIndex)
@@ -49567,6 +49596,23 @@ void QKeyMapper::on_backupSettingButton_clicked()
     QPoint globalPos = ui->backupSettingButton->mapToGlobal(QPoint(ui->backupSettingButton->width(), 0));
     int popupWidth = 120;
     int popupHeight = 80;
+
+    if (m_uiScale && !qFuzzyCompare(m_runtimeScaleCompensation, qreal(1))) {
+        // Always derive the popup frame from its authored size, like its children.
+        m_uiScale->capture();
+        m_uiScale->apply(m_runtimeScaleCompensation, m_SettingBackupActionPopup);
+        m_SettingBackupActionPopup->ensurePolished();
+        if (QLayout *layout = m_SettingBackupActionPopup->layout()) {
+            layout->invalidate();
+            layout->activate();
+        }
+        const QSize scaledSize(qRound(120 * m_runtimeScaleCompensation),
+                               qRound(80 * m_runtimeScaleCompensation));
+        const QSize popupSize = scaledSize.expandedTo(m_SettingBackupActionPopup->minimumSize())
+                                         .expandedTo(m_SettingBackupActionPopup->minimumSizeHint());
+        popupWidth = popupSize.width();
+        popupHeight = popupSize.height();
+    }
 
     // Use opacity animation instead of geometry animation to avoid layout interference
     QRect finalRect(globalPos.x(), globalPos.y(), popupWidth, popupHeight);

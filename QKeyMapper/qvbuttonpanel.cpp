@@ -272,12 +272,10 @@ void QVButtonPanel::applyPosition(int referencePoint, int offsetX, int offsetY)
     m_offsetX = offsetX;
     m_offsetY = offsetY;
 
-    QPoint origin = calculateReferenceOrigin(m_referencePoint);
-    move(origin + QPoint(m_offsetX, m_offsetY));
-
-    // Reset debounce cache so the next updatePositionIfWindowRef() call does a full reposition
-    m_lastTrackHWND = nullptr;
-    m_lastTrackRect = {};
+    QPoint origin;
+    if (calculateReferenceOrigin(m_referencePoint, origin)) {
+        move(origin + QPoint(m_offsetX, m_offsetY));
+    }
 }
 
 // ── Private slots ────────────────────────────────────────────────────────────
@@ -331,25 +329,11 @@ void QVButtonPanel::updatePositionIfWindowRef()
     if (m_referencePoint < FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT) return;  // Screen ref: static, no tracking needed
     if (m_dragging) return;  // Don't reposition while the user is dragging
 
-    HWND targetHwnd = QKeyMapper::s_CurrentMappingHWND;
-    if (!targetHwnd) return;
+    if (!QKeyMapper::s_CurrentMappingHWND) return;
+    QPoint origin;
+    if (!calculateReferenceOrigin(m_referencePoint, origin)) return;
 
-    RECT wr = {};
-    if (!GetWindowRect(targetHwnd, &wr)) return;
-
-    // Debounce: skip if same window and same position
-    if (targetHwnd == m_lastTrackHWND
-        && wr.left   == m_lastTrackRect.left
-        && wr.top    == m_lastTrackRect.top
-        && wr.right  == m_lastTrackRect.right
-        && wr.bottom == m_lastTrackRect.bottom) {
-        return;
-    }
-
-    m_lastTrackHWND = targetHwnd;
-    m_lastTrackRect = wr;
-
-    QPoint newPos = calculateReferenceOrigin(m_referencePoint) + QPoint(m_offsetX, m_offsetY);
+    const QPoint newPos = origin + QPoint(m_offsetX, m_offsetY);
     if (newPos != pos()) {
         move(newPos);
     }
@@ -529,7 +513,7 @@ QString QVButtonPanel::extractButtonLabel(const QString &vbuttonKey) const
     return m.hasMatch() ? m.captured(1) : vbuttonKey;
 }
 
-QPoint QVButtonPanel::calculateReferenceOrigin(int referencePoint) const
+bool QVButtonPanel::calculateReferenceOrigin(int referencePoint, QPoint &origin) const
 {
     // Screen-based reference points
     QScreen *screen = this->windowHandle() ? this->windowHandle()->screen() : QGuiApplication::primaryScreen();
@@ -537,17 +521,17 @@ QPoint QVButtonPanel::calculateReferenceOrigin(int referencePoint) const
 
     switch (referencePoint) {
     case FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT:
-        return QPoint(screenRect.left(), screenRect.top());
+        origin = QPoint(screenRect.left(), screenRect.top()); return true;
     case FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPRIGHT:
-        return QPoint(screenRect.right(), screenRect.top());
+        origin = QPoint(screenRect.right(), screenRect.top()); return true;
     case FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPCENTER:
-        return QPoint(screenRect.center().x(), screenRect.top());
+        origin = QPoint(screenRect.center().x(), screenRect.top()); return true;
     case FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMLEFT:
-        return QPoint(screenRect.left(), screenRect.bottom());
+        origin = QPoint(screenRect.left(), screenRect.bottom()); return true;
     case FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMRIGHT:
-        return QPoint(screenRect.right(), screenRect.bottom());
+        origin = QPoint(screenRect.right(), screenRect.bottom()); return true;
     case FLOATINGWINDOW_REFERENCEPOINT_SCREENBOTTOMCENTER:
-        return QPoint(screenRect.center().x(), screenRect.bottom());
+        origin = QPoint(screenRect.center().x(), screenRect.bottom()); return true;
     default:
         break;
     }
@@ -556,41 +540,79 @@ QPoint QVButtonPanel::calculateReferenceOrigin(int referencePoint) const
     HWND targetHwnd = QKeyMapper::s_CurrentMappingHWND;
     if (!targetHwnd) {
         // Fall back to screen top-left if no target window
-        return QPoint(screenRect.left(), screenRect.top());
+        origin = screenRect.topLeft(); return true;
     }
 
     RECT wr = {};
-    GetWindowRect(targetHwnd, &wr);
-    const qreal dpiScale = screen ? screen->devicePixelRatio() : 1.0;
-    const int wl = (dpiScale > 0.0) ? qRound(wr.left / dpiScale) : wr.left;
-    const int wt = (dpiScale > 0.0) ? qRound(wr.top / dpiScale) : wr.top;
-    const int ww = (dpiScale > 0.0) ? qRound((wr.right - wr.left) / dpiScale) : (wr.right - wr.left);
-    const int wh = (dpiScale > 0.0) ? qRound((wr.bottom - wr.top) / dpiScale) : (wr.bottom - wr.top);
+    if (!GetWindowRect(targetHwnd, &wr)) { return false; }
+    const HMONITOR monitor = MonitorFromWindow(targetHwnd, MONITOR_DEFAULTTONEAREST);
+    MONITORINFOEXW info = {};
+    info.cbSize = sizeof(info);
+    if (!monitor || !GetMonitorInfoW(monitor, reinterpret_cast<MONITORINFO *>(&info))) { return false; }
+    QScreen *targetScreen = nullptr;
+    const QString device = QString::fromWCharArray(info.szDevice);
+    const auto screens = QGuiApplication::screens();
+    for (QScreen *candidate : screens) {
+        if (candidate->name().compare(device, Qt::CaseInsensitive) == 0) { targetScreen = candidate; break; }
+    }
+    if (!targetScreen) {
+        // Qt can expose a friendly monitor name instead of the Win32 device.
+        // Windows/Qt desktop origins identify an extended display independently
+        // of its DPR; reject ambiguous matches rather than choosing a wrong one.
+        const QPoint nativeOrigin(info.rcMonitor.left, info.rcMonitor.top);
+        for (QScreen *candidate : screens) {
+            if (candidate->geometry().topLeft() != nativeOrigin) { continue; }
+            if (targetScreen) { return false; }
+            targetScreen = candidate;
+        }
+    }
+    if (!targetScreen) { return false; }
+    const qreal dpiScale = targetScreen->devicePixelRatio();
+    if (!qIsFinite(dpiScale) || dpiScale <= 0) { return false; }
+    // Windows screen origins remain in desktop coordinates in Qt. Scale only
+    // distances within the target monitor, keeping the existing edge rounding.
+    const QPoint screenOrigin = targetScreen->geometry().topLeft();
+    const int wl = screenOrigin.x() + qRound((wr.left - info.rcMonitor.left) / dpiScale);
+    const int wt = screenOrigin.y() + qRound((wr.top - info.rcMonitor.top) / dpiScale);
+    const int ww = qRound((wr.right - wr.left) / dpiScale);
+    const int wh = qRound((wr.bottom - wr.top) / dpiScale);
 
     switch (referencePoint) {
     case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT:
-        return QPoint(wl, wt);
+        origin = QPoint(wl, wt); break;
     case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPRIGHT:
-        return QPoint(wl + ww, wt);
+        origin = QPoint(wl + ww, wt); break;
     case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPCENTER:
-        return QPoint(wl + ww / 2, wt);
+        origin = QPoint(wl + ww / 2, wt); break;
     case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMLEFT:
-        return QPoint(wl, wt + wh);
+        origin = QPoint(wl, wt + wh); break;
     case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMRIGHT:
-        return QPoint(wl + ww, wt + wh);
+        origin = QPoint(wl + ww, wt + wh); break;
     case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER:
-        return QPoint(wl + ww / 2, wt + wh);
+        origin = QPoint(wl + ww / 2, wt + wh); break;
     default:
-        break;
+        origin = screenRect.topLeft(); break;
     }
-    return QPoint(screenRect.left(), screenRect.top());
+#ifdef DEBUG_LOGOUT_ON
+    if (origin + QPoint(m_offsetX, m_offsetY) != pos()) {
+        qDebug() << "[VButtonPanel][WindowReference] hwnd=" << targetHwnd << "device=" << device
+                 << "nativeRect=" << QRect(wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top)
+                 << "nativeMonitorOrigin=" << QPoint(info.rcMonitor.left, info.rcMonitor.top)
+                 << "qtScreen=" << targetScreen->geometry() << "DPR=" << dpiScale
+                 << "reference=" << referencePoint << "origin=" << origin
+                 << "requested=" << origin + QPoint(m_offsetX, m_offsetY) << "before=" << pos();
+    }
+#endif
+    return true;
 }
 
 void QVButtonPanel::recalcOffsets()
 {
-    QPoint origin = calculateReferenceOrigin(m_referencePoint);
-    m_offsetX = pos().x() - origin.x();
-    m_offsetY = pos().y() - origin.y();
+    QPoint origin;
+    if (calculateReferenceOrigin(m_referencePoint, origin)) {
+        m_offsetX = pos().x() - origin.x();
+        m_offsetY = pos().y() - origin.y();
+    }
 }
 
 void QVButtonPanel::showPanelContextMenu(const QPoint &globalPos)

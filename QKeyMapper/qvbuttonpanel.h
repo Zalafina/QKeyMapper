@@ -40,7 +40,7 @@ public:
     void applyPosition(int referencePoint, int offsetX, int offsetY);
 
     // Called from matchForegroundWindow: repositions if using a Window reference point
-    // and the target window has actually moved (debounced via cached RECT).
+    // and the target window or its display coordinate transform has changed.
     void updatePositionIfWindowRef();
 
     // Current offset relative to the active reference-point origin (updated after drag).
@@ -87,7 +87,7 @@ private:
     void    applyButtonFont(QToolButton *button);
     void    applyButtonStyle(QToolButton *button, bool locked);
     QString extractButtonLabel(const QString &vbuttonKey) const;
-    QPoint  calculateReferenceOrigin(int referencePoint) const;
+    bool    calculateReferenceOrigin(int referencePoint, QPoint &origin) const;
     void    showPanelContextMenu(const QPoint &globalPos);
     void    beginPanelDrag(const QPoint &globalPos, const QPoint &panelLocalPos);
     void    finishPanelDrag();
@@ -126,8 +126,6 @@ private:
     int    m_referencePoint  = 0;
     int    m_offsetX         = 50;
     int    m_offsetY         = 50;
-    HWND   m_lastTrackHWND   = nullptr;  // debounce: last tracked window handle
-    RECT   m_lastTrackRect   = {};       // debounce: last tracked window rect
 
     // Drag-to-move
     bool   m_dragging   = false;

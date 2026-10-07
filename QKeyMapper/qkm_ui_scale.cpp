@@ -663,36 +663,36 @@ void QkmUiScale::apply(qreal ratio, QWidget *subtree)
             }
         }
     }
-    if (!subtree) { refreshTheme(); }
+    // A popup's own stylesheet may have just been restored from its template.
+    // Reapply the inherited theme dimensions after all local styles are ready.
+    refreshTheme();
     refreshLayouts();
 }
 
 void QkmUiScale::refreshTheme()
 {
     if (!d->window) { return; }
-    // The root theme remains unchanged for LS-2 dialogs. Only override pixel
-    // dimensions on the main central widget, never colors, URLs, or em units.
+    // The root theme remains unchanged for LS-2 dialogs. Override dimensions
+    // only on the central widget and main-window-owned popup roots.
     QWidget *central = d->window->findChild<QWidget *>(QStringLiteral("centralwidget"));
     if (!central) { return; }
     const QString theme = d->window->styleSheet();
-    if (qFuzzyCompare(d->ratio, qreal(1))) {
-        for (const auto &s : d->widgets) {
-            if (s.target == central) { central->setStyleSheet(s.sheet); break; }
-        }
-        return;
-    }
-    QString adjusted = scaledStyleSheet(theme, d->ratio);
-    // Qt stylesheet em lengths use the application font, which intentionally
-    // remains unchanged. Resolve these main-window indicators from their baseline.
+    const bool original = qFuzzyCompare(d->ratio, qreal(1));
     for (const auto &s : d->widgets) {
-        if (s.target == central) {
+        QWidget *target = s.target;
+        if (!target || (target != central &&
+            !(target->isWindow() && target->windowType() == Qt::Popup && d->owned(target)))) { continue; }
+        QString adjusted = s.sheet;
+        if (!original) {
+            adjusted = scaledStyleSheet(theme, d->ratio);
+            if (!s.sheet.isEmpty()) { adjusted += QLatin1Char('\n') + scaledStyleSheet(s.sheet, d->ratio); }
+            // Stylesheet em lengths use the unchanged application font.
             const int indicator = scaled(QFontMetrics(s.font).height(), d->ratio);
             adjusted += QStringLiteral("QCheckBox::indicator, QTableView::indicator, QListWidget::indicator "
                                        "{ width: %1px; height: %1px; }").arg(indicator);
-            break;
         }
+        if (target->styleSheet() != adjusted) { target->setStyleSheet(adjusted); }
     }
-    central->setStyleSheet(adjusted);
 }
 
 void QkmUiScale::refreshLayouts()
