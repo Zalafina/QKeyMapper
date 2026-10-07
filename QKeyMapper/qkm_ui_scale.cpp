@@ -83,6 +83,38 @@ QString scaledStyleSheet(const QString &sheet, qreal ratio)
     return adjusted;
 }
 
+#ifdef DEBUG_LOGOUT_ON
+void logSpinEditor(const QWidget *widget, quint64 sequence, qreal ratio, const char *phase)
+{
+    const auto *spin = qobject_cast<const QAbstractSpinBox *>(widget);
+    if (!spin && qobject_cast<const QLineEdit *>(widget)) {
+        spin = qobject_cast<const QAbstractSpinBox *>(widget->parentWidget());
+    }
+    if (!spin) { return; }
+    const auto *edit = spin->findChild<QLineEdit *>(QStringLiteral("qt_spinbox_lineedit"),
+                                                  Qt::FindDirectChildrenOnly);
+    if (!edit) { return; }
+    QStyleOptionSpinBox option;
+    option.initFrom(spin);
+    option.frame = spin->hasFrame();
+    option.buttonSymbols = spin->buttonSymbols();
+    option.subControls = QStyle::SC_SpinBoxEditField;
+    const QRect expected = spin->style()->subControlRect(QStyle::CC_SpinBox, &option,
+                                                         QStyle::SC_SpinBoxEditField, spin);
+    qDebug() << "[UI_SCALE] SPIN_EDITOR qkmSeq=" << sequence << "phase=" << phase
+             << "R=" << ratio << "spin=" << spin->objectName() << "target=" << widget->objectName()
+             << "size=" << spin->size() << "minimum=" << spin->minimumSize()
+             << "maximum=" << spin->maximumSize() << "editor=" << edit->geometry()
+             << "expected=" << expected << "matches=" << (edit->geometry() == expected)
+             << "editorMinimum=" << edit->minimumSize() << "editorMaximum=" << edit->maximumSize()
+             << "editorHint=" << edit->sizeHint() << "editorMinHint=" << edit->minimumSizeHint()
+             << "fontPt=" << spin->font().pointSizeF() << "editorFontPt=" << edit->font().pointSizeF()
+             << "fontHeight=" << edit->fontMetrics().height() << "textMargins=" << edit->textMargins()
+             << "alignment=" << edit->alignment() << "DPR=" << spin->devicePixelRatioF()
+             << "style=" << spin->style()->metaObject()->className();
+}
+#endif
+
 // Normalize style queries and painting together, including styles with hard-coded
 // button/arrow sizes. The original style is restored at ratio 1.
 class ScaleStyle final : public QProxyStyle
@@ -347,6 +379,7 @@ struct QkmUiScale::Data
         QString sheet;
         bool hasSheetMetrics = false;
         bool explicitStyle = false;
+        bool spinEditor = false;
     };
     struct Layout {
         QPointer<QLayout> target;
@@ -365,6 +398,9 @@ struct QkmUiScale::Data
     bool handlingPopup = false;
     bool restoredDefaultHints = false;
     QSet<int> pendingDefaultPages;
+#ifdef DEBUG_LOGOUT_ON
+    quint64 sequence = 0;
+#endif
 
     bool owned(const QWidget *w) const
     {
@@ -479,7 +515,11 @@ void QkmUiScale::capture(QWidget *authoredRoot)
             s.headerMinimum = header->minimumSectionSize();
             s.headerDefault = header->defaultSectionSize();
         }
-        if (qobject_cast<QLineEdit *>(w) || qobject_cast<QAbstractSpinBox *>(w)) {
+        s.spinEditor = qobject_cast<QLineEdit *>(w)
+            && qobject_cast<QAbstractSpinBox *>(w->parentWidget());
+        // A spin box owns its editor geometry. Its size hint is not an
+        // independent height constraint and must not outlive a scale change.
+        if ((qobject_cast<QLineEdit *>(w) && !s.spinEditor) || qobject_cast<QAbstractSpinBox *>(w)) {
             if (w->window() == d->window && s.minimum.height() != s.maximum.height()) {
                 s.preferredHeight = w->sizeHint().height();
                 s.defaultHeight = s.preferredHeight;
@@ -501,6 +541,9 @@ void QkmUiScale::capture(QWidget *authoredRoot)
             }
         }
         d->widgets.push_back(s);
+#ifdef DEBUG_LOGOUT_ON
+        logSpinEditor(w, d->sequence, d->ratio, "CAPTURE");
+#endif
     }
     QSet<QLayout *> knownLayouts;
     for (const auto &s : d->layouts) { if (s.target) { knownLayouts.insert(s.target); } }
@@ -526,6 +569,9 @@ void QkmUiScale::capture(QWidget *authoredRoot)
 void QkmUiScale::apply(qreal ratio, QWidget *subtree)
 {
     if (!d->window || ratio <= 0) { return; }
+#ifdef DEBUG_LOGOUT_ON
+    ++d->sequence;
+#endif
     // Style changes may synchronously polish popup children. Keep the baseline
     // registry stable until the current traversal has finished.
     QScopedValueRollback<bool> popupGuard(d->handlingPopup, true);
@@ -555,11 +601,26 @@ void QkmUiScale::apply(qreal ratio, QWidget *subtree)
         if (original) { qApp->removeEventFilter(this); }
         else { qApp->installEventFilter(this); }
     }
+    // Prepare child constraints before native style/resize handling lays out
+    // the parent spin box. Never impose a synthetic height on these editors.
+    for (const auto &s : d->widgets) {
+        QWidget *w = s.target;
+        if (!w || !s.spinEditor) { continue; }
+        if (subtree && w != subtree && !subtree->isAncestorOf(w)) { continue; }
+        w->setMinimumSize(scaledSize(s.minimum, ratio));
+        w->setMaximumSize(scaledSize(s.maximum, ratio));
+#ifdef DEBUG_LOGOUT_ON
+        logSpinEditor(w, d->sequence, ratio, "EDITOR_CONSTRAINTS_READY");
+#endif
+    }
     if (!subtree) { refreshTheme(); }
     for (auto &s : d->widgets) {
         QWidget *w = s.target;
         if (!w) { continue; }
         if (subtree && w != subtree && !subtree->isAncestorOf(w)) { continue; }
+#ifdef DEBUG_LOGOUT_ON
+        logSpinEditor(w, d->sequence, ratio, "BEFORE_PROPERTIES");
+#endif
         w->setFont(scaledFont(s.font, ratio));
         if (w != d->window) {
             // Local menu/header dimensions override inherited theme rules. Scale
@@ -640,6 +701,9 @@ void QkmUiScale::apply(qreal ratio, QWidget *subtree)
         }
         w->updateGeometry();
         w->update();
+#ifdef DEBUG_LOGOUT_ON
+        logSpinEditor(w, d->sequence, ratio, "AFTER_PROPERTIES");
+#endif
     }
     for (const auto &s : d->layouts) {
         QLayout *layout = s.target;
@@ -699,4 +763,11 @@ void QkmUiScale::refreshLayouts()
     for (auto it = d->layouts.rbegin(); it != d->layouts.rend(); ++it) {
         if (it->target) { it->target->invalidate(); it->target->activate(); }
     }
+#ifdef DEBUG_LOGOUT_ON
+    for (const auto &baseline : d->widgets) {
+        if (baseline.target && qobject_cast<QAbstractSpinBox *>(baseline.target.data())) {
+            logSpinEditor(baseline.target, d->sequence, d->ratio, "LAYOUT_REFRESHED");
+        }
+    }
+#endif
 }
