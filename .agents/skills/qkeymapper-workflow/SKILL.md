@@ -100,7 +100,15 @@ Detailed preparation, commands and diagnostic pitfalls: [Autonomous validation t
 - No .ts edits unless asked.
 - Keep Qt/C++ source UTF-8 without BOM.
 
-## Translation
+## UI language priority and localization
+
+- Chinese is the primary UI acceptance language. Verify it first and protect its functionality, display and interaction experience, especially the existing Default/100% presentation. Continue maintaining and validating affected English and Japanese paths; language priority does not waive quality gates.
+- Fix minor English or Japanese visual defects normally when a small, low-risk local change is available.
+- If Chinese is correct and a minor English or Japanese visual defect would require disproportionate stability risk, performance cost or architectural/design complexity to fix, present screenshots, affected language/page/conditions, user impact, the proposed fix and its concrete tradeoffs. Ask the user whether to accept the defect or proceed with the fix before treating it as an exception. Chinese priority is not advance approval to ignore defects.
+- Defects that impair text comprehension, control visibility, interaction or business functionality do not qualify as harmless visual exceptions under this rule.
+- For an accepted exception, record the affected language, page, triggering conditions, remaining impact and the user's decision in the task's acceptance record. Do not claim that all three languages fully passed.
+
+### Translation strings
 - When adding or modifying `tr(...)` strings, provide Chinese and Japanese translation recommendations alongside the English original. Present each string as a three-row table for readability: `| English | <original> |` / `| 中文 | <translation> |` / `| 日本語 | <translation> |`.
 
 ## Continuous improvement
