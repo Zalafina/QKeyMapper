@@ -2,7 +2,7 @@
 
 ## Purpose and ownership
 
-This reference describes reusable QKeyMapper diagnostic and acceptance methods. The repository playbooks own the operational rules; AGENTS.md carries short workspace principles. Preserve autonomous validation and the default milestone gates. Exceptions require explicit user authorization for the current task.
+This reference describes reusable QKeyMapper diagnostic and acceptance methods. The repository playbooks own the operational rules; AGENTS.md carries short workspace principles. Preserve autonomous validation and the default milestone gates, apart from the explicitly documented standing vendor-warning exception below. Other exceptions require explicit user authorization for the current task.
 
 Do not store task-specific dimensions, pixel-mask coordinates, diagnostic counts, private INI contents or session transcripts here. Keep detailed task evidence in ignored local artifacts. This existing reference is already indexed in lessons/MEMORY.md.
 
@@ -36,6 +36,20 @@ The script discovers supported MSVC, Qt and JOM locations; use its reported EXE 
 A build-output EXE is not necessarily a complete runnable package. Prepare a runtime under an ignored directory with the intended EXE, matching DLLs/resources and a controlled test INI. Do not use the user's normal runtime as a test fixture. Capture/ASan scripts do not deploy a package automatically. Verify the artifact path/hash after copying.
 
 Before generating artifacts, confirm the destination is ignored with git check-ignore. Record source commit plus relevant worktree state or source hashes, Qt/toolchain, build configuration, EXE path/hash, launch arguments, environment overrides and test scenarios. Compilation, link warnings, static diagnostics and runtime results are separate evidence.
+
+### Standing exception: Qt5 qtmain missing-PDB LNK4099
+
+The user approved a continuing exception for the already investigated vendor warning. Accept it only when all three conditions hold:
+
+- The linked library comes from the official Qt 5.15.2 x64 `msvc2019_64` kit.
+- The diagnostic identifies `qtmain.lib(qtmain_win.obj) : warning LNK4099`.
+- The reason is a missing vendor PDB, with the object linked without debug information.
+
+Provenance evidence: the local Qt5 logs `out/backup_popup_fix/build_qt5.log`, `out/font_clarity/build_qt5_direct.log` and `out/spin_editor_fix/build_fixed_qt5.log` show the same library/object warning in the QKeyMapper link step and the Qt 5.15.2 `msvc2019_64` build context. These are historical ignored local artifacts, not guaranteed to exist in another checkout or evidence of a later build. Keep the original logs; localized wording or console encoding may differ. Verify the current kit/library origin and missing-PDB cause rather than accepting the code or basename alone.
+
+Matching occurrences remain in raw logs but do not fail Qt5 compatibility acceptance or require repetitive routine reminders. When the build otherwise passes, use "Qt5.15.2 兼容构建通过" in the routine summary. If the user asks for warning counts or detailed diagnostics, disclose the actual occurrences and their accepted status; never claim literal zero warnings for such a build.
+
+Other libraries, objects, causes or Qt versions are outside this exception. Re-evaluate a changed Qt library source or diagnostic identity/cause. Do not add `/IGNORE:4099`, filter output, modify build scripts or rewrite historical results. Qt6 still requires zero errors and warnings; all other build, static-analysis and ASan gates remain unchanged. This named standing exception does not carry a task-specific static-analysis or coverage exception into future tasks.
 
 ## Permissions and test-process ownership
 

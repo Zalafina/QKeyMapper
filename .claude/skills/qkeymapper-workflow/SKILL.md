@@ -36,7 +36,7 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 
 ## Autonomous quality gates & validation
 
-The Agent must autonomously execute build and verification gates instead of delegating ordinary compilation to the user. The default milestone gates remain unchanged; task-specific exceptions require explicit user authorization and must be reported with their scope.
+The Agent must autonomously execute build and verification gates instead of delegating ordinary compilation to the user. The default milestone gates remain unchanged apart from the explicitly documented standing vendor-warning exception below; other task-specific exceptions require explicit user authorization and must be reported with their scope.
 
 ### 1. Build validation (`scripts/build_qt6.ps1`)
 
@@ -47,7 +47,14 @@ The Agent must autonomously execute build and verification gates instead of dele
 - Keep all validation build trees under ignored `out/`. Ordinary ASan uses `out/build_qt6_asan/`; diagnostic ASan uses `out/build_qt6_diagnostic_asan/`. Do not reuse or fall back to legacy root build trees; regenerate qmake files in the new location.
 - JOM incrementally builds changed objects. Read compiler failures, fix the exact source, and rebuild; do not treat whitespace or encoding checks as compilation.
 - Use build-directory generated `ui_*.h`; if Ui members mismatch, check for source-tree shadow headers.
-- Record source/worktree version, configuration, Qt/toolchain, build output and the tested EXE path/hash. Keep compiler, linker and static-analysis diagnostics distinct; disclose warnings rather than silently filtering them.
+- Record source/worktree version, configuration, Qt/toolchain, build output and the tested EXE path/hash. Keep compiler, linker and static-analysis diagnostics distinct; retain raw diagnostics and disclose warnings subject to the narrowly accepted reporting exception below.
+
+#### Accepted Qt5 vendor linker warning
+
+- Standing user-authorized exception: accept LNK4099 only when all conditions match: the library comes from the official Qt 5.15.2 x64 `msvc2019_64` kit, the diagnostic identifies `qtmain.lib(qtmain_win.obj) : warning LNK4099`, and the cause is a missing vendor PDB with the object linked without debug information. Confirm kit/library provenance; the warning code or filename alone is insufficient. Localized linker wording may differ, but the diagnostic identity and cause must match.
+- Matching occurrences do not block Qt5 compatibility acceptance and need no repeated routine reminder. Say "Qt5.15.2 兼容构建通过" when the build otherwise passes. Keep every occurrence in the original log; report actual warnings and the accepted exception when explicitly asked for counts or detailed diagnostics. Do not describe a build containing it as literally zero warnings.
+- Other libraries, objects, causes or Qt versions do not qualify. Re-evaluate if the Qt library source or diagnostic identity/cause changes. This does not waive errors, other warnings, the Qt6 zero-error/zero-warning gate, static analysis or ASan.
+- Do not add `/IGNORE:4099`, filter logs, change build scripts or rewrite historical evidence to implement this exception. Detailed provenance and reporting guidance are in the autonomous validation toolchain reference.
 
 ### 2. Visual inspection (`scripts/capture_ui_snapshots.ps1`)
 
