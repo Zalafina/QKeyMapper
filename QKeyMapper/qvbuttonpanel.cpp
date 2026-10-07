@@ -7,6 +7,8 @@
 #include <QPainter>
 #include <QScrollBar>
 #include <QToolTip>
+#include <QTimer>
+#include <QScopedValueRollback>
 
 using namespace QKeyMapperConstants;
 
@@ -103,6 +105,27 @@ void QVButtonPanel::applyScrollAreaTransparencyStyle()
 
 // ── Event overrides ─────────────────────────────────────────────────────────
 
+bool QVButtonPanel::event(QEvent *event)
+{
+    const QEvent::Type type = event->type();
+    if (type == QEvent::Hide) {
+        invalidatePositionRequest();
+        if (m_dragging) {
+            m_dragging = false;
+            m_nativeDrag = false;
+            if (QWidget::mouseGrabber() == this) { releaseMouse(); }
+            syncMoveCursorState();
+        }
+    }
+    const bool handled = QWidget::event(event);
+    if ((type == QEvent::ScreenChangeInternal || type == QEvent::WinIdChange)
+        && m_referencePoint >= FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT
+        && QKeyMapper::s_CurrentMappingHWND && (isVisible() || m_nativePositioning)) {
+        schedulePositionCorrection();
+    }
+    return handled;
+}
+
 void QVButtonPanel::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
@@ -122,6 +145,11 @@ void QVButtonPanel::showEvent(QShowEvent *event)
     // Recalculate once after the panel becomes visible, so scrollbar-based correction
     // uses stable viewport geometry instead of hidden-state transient values.
     buildGrid();
+    if (m_referencePoint >= FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT
+        && QKeyMapper::s_CurrentMappingHWND) {
+        invalidatePositionRequest();
+        applyCurrentPosition();
+    }
 }
 
 void QVButtonPanel::paintEvent(QPaintEvent *event)
@@ -272,10 +300,8 @@ void QVButtonPanel::applyPosition(int referencePoint, int offsetX, int offsetY)
     m_offsetX = offsetX;
     m_offsetY = offsetY;
 
-    QPoint origin;
-    if (calculateReferenceOrigin(m_referencePoint, origin)) {
-        move(origin + QPoint(m_offsetX, m_offsetY));
-    }
+    invalidatePositionRequest();
+    applyCurrentPosition();
 }
 
 // ── Private slots ────────────────────────────────────────────────────────────
@@ -330,13 +356,8 @@ void QVButtonPanel::updatePositionIfWindowRef()
     if (m_dragging) return;  // Don't reposition while the user is dragging
 
     if (!QKeyMapper::s_CurrentMappingHWND) return;
-    QPoint origin;
-    if (!calculateReferenceOrigin(m_referencePoint, origin)) return;
-
-    const QPoint newPos = origin + QPoint(m_offsetX, m_offsetY);
-    if (newPos != pos()) {
-        move(newPos);
-    }
+    invalidatePositionRequest();
+    applyCurrentPosition();
 }
 
 // ── Private helpers ──────────────────────────────────────────────────────────
@@ -513,12 +534,80 @@ QString QVButtonPanel::extractButtonLabel(const QString &vbuttonKey) const
     return m.hasMatch() ? m.captured(1) : vbuttonKey;
 }
 
+QPoint QVButtonPanel::WindowReferenceTransform::nativePosition(const QPoint &offset) const
+{
+    const QPoint local = anchor - qtOrigin + offset;
+    return nativeOrigin + QPoint(qRound(local.x() * dpr), qRound(local.y() * dpr));
+}
+
+QPoint QVButtonPanel::WindowReferenceTransform::offsetsFromNative(const QPoint &position) const
+{
+    const QPoint local = position - nativeOrigin;
+    return qtOrigin + QPoint(qRound(local.x() / dpr), qRound(local.y() / dpr)) - anchor;
+}
+
+bool QVButtonPanel::calculateWindowReferenceTransform(int referencePoint, WindowReferenceTransform &transform) const
+{
+    HWND targetHwnd = QKeyMapper::s_CurrentMappingHWND;
+    if (!targetHwnd) { return false; }
+    RECT wr = {};
+    if (!GetWindowRect(targetHwnd, &wr)) { return false; }
+    const HMONITOR monitor = MonitorFromWindow(targetHwnd, MONITOR_DEFAULTTONEAREST);
+    MONITORINFOEXW info = {};
+    info.cbSize = sizeof(info);
+    if (!monitor || !GetMonitorInfoW(monitor, reinterpret_cast<MONITORINFO *>(&info))) { return false; }
+    QScreen *targetScreen = nullptr;
+    const QString device = QString::fromWCharArray(info.szDevice);
+    const auto screens = QGuiApplication::screens();
+    for (QScreen *candidate : screens) {
+        if (candidate->name().compare(device, Qt::CaseInsensitive) == 0) { targetScreen = candidate; break; }
+    }
+    if (!targetScreen) {
+        // Friendly Qt names can differ from Win32 device names. Accept only a unique origin match.
+        const QPoint nativeOrigin(info.rcMonitor.left, info.rcMonitor.top);
+        for (QScreen *candidate : screens) {
+            if (candidate->geometry().topLeft() != nativeOrigin) { continue; }
+            if (targetScreen) { return false; }
+            targetScreen = candidate;
+        }
+    }
+    if (!targetScreen) { return false; }
+    const qreal dpiScale = targetScreen->devicePixelRatio();
+    if (!qIsFinite(dpiScale) || dpiScale <= 0) { return false; }
+    const QPoint screenOrigin = targetScreen->geometry().topLeft();
+    // Preserve the existing monitor-local edge and center rounding and offset units.
+    const int wl = screenOrigin.x() + qRound((wr.left - info.rcMonitor.left) / dpiScale);
+    const int wt = screenOrigin.y() + qRound((wr.top - info.rcMonitor.top) / dpiScale);
+    const int ww = qRound((wr.right - wr.left) / dpiScale);
+    const int wh = qRound((wr.bottom - wr.top) / dpiScale);
+    QPoint origin;
+    switch (referencePoint) {
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT:
+        origin = QPoint(wl, wt); break;
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPRIGHT:
+        origin = QPoint(wl + ww, wt); break;
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPCENTER:
+        origin = QPoint(wl + ww / 2, wt); break;
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMLEFT:
+        origin = QPoint(wl, wt + wh); break;
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMRIGHT:
+        origin = QPoint(wl + ww, wt + wh); break;
+    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER:
+        origin = QPoint(wl + ww / 2, wt + wh); break;
+    default:
+        return false;
+    }
+    transform.nativeOrigin = QPoint(info.rcMonitor.left, info.rcMonitor.top);
+    transform.qtOrigin = screenOrigin;
+    transform.anchor = origin;
+    transform.dpr = dpiScale;
+    return true;
+}
+
 bool QVButtonPanel::calculateReferenceOrigin(int referencePoint, QPoint &origin) const
 {
-    // Screen-based reference points
-    QScreen *screen = this->windowHandle() ? this->windowHandle()->screen() : QGuiApplication::primaryScreen();
-    QRect screenRect = screen ? screen->geometry() : QRect(0, 0, 1920, 1080);
-
+    QScreen *screen = windowHandle() ? windowHandle()->screen() : QGuiApplication::primaryScreen();
+    const QRect screenRect = screen ? screen->geometry() : QRect(0, 0, 1920, 1080);
     switch (referencePoint) {
     case FLOATINGWINDOW_REFERENCEPOINT_SCREENTOPLEFT:
         origin = QPoint(screenRect.left(), screenRect.top()); return true;
@@ -535,79 +624,135 @@ bool QVButtonPanel::calculateReferenceOrigin(int referencePoint, QPoint &origin)
     default:
         break;
     }
-
-    // Window-based reference points: use s_CurrentMappingHWND
-    HWND targetHwnd = QKeyMapper::s_CurrentMappingHWND;
-    if (!targetHwnd) {
-        // Fall back to screen top-left if no target window
+    if (!QKeyMapper::s_CurrentMappingHWND) {
         origin = screenRect.topLeft(); return true;
     }
+    WindowReferenceTransform transform;
+    if (!calculateWindowReferenceTransform(referencePoint, transform)) { return false; }
+    origin = transform.anchor;
+    return true;
+}
 
-    RECT wr = {};
-    if (!GetWindowRect(targetHwnd, &wr)) { return false; }
-    const HMONITOR monitor = MonitorFromWindow(targetHwnd, MONITOR_DEFAULTTONEAREST);
-    MONITORINFOEXW info = {};
-    info.cbSize = sizeof(info);
-    if (!monitor || !GetMonitorInfoW(monitor, reinterpret_cast<MONITORINFO *>(&info))) { return false; }
-    QScreen *targetScreen = nullptr;
-    const QString device = QString::fromWCharArray(info.szDevice);
-    const auto screens = QGuiApplication::screens();
-    for (QScreen *candidate : screens) {
-        if (candidate->name().compare(device, Qt::CaseInsensitive) == 0) { targetScreen = candidate; break; }
-    }
-    if (!targetScreen) {
-        // Qt can expose a friendly monitor name instead of the Win32 device.
-        // Windows/Qt desktop origins identify an extended display independently
-        // of its DPR; reject ambiguous matches rather than choosing a wrong one.
-        const QPoint nativeOrigin(info.rcMonitor.left, info.rcMonitor.top);
-        for (QScreen *candidate : screens) {
-            if (candidate->geometry().topLeft() != nativeOrigin) { continue; }
-            if (targetScreen) { return false; }
-            targetScreen = candidate;
-        }
-    }
-    if (!targetScreen) { return false; }
-    const qreal dpiScale = targetScreen->devicePixelRatio();
-    if (!qIsFinite(dpiScale) || dpiScale <= 0) { return false; }
-    // Windows screen origins remain in desktop coordinates in Qt. Scale only
-    // distances within the target monitor, keeping the existing edge rounding.
-    const QPoint screenOrigin = targetScreen->geometry().topLeft();
-    const int wl = screenOrigin.x() + qRound((wr.left - info.rcMonitor.left) / dpiScale);
-    const int wt = screenOrigin.y() + qRound((wr.top - info.rcMonitor.top) / dpiScale);
-    const int ww = qRound((wr.right - wr.left) / dpiScale);
-    const int wh = qRound((wr.bottom - wr.top) / dpiScale);
+bool QVButtonPanel::nativePanelPosition(QPoint &position) const
+{
+    const WId id = internalWinId();
+    RECT rect = {};
+    if (!id || !GetWindowRect(reinterpret_cast<HWND>(id), &rect)) { return false; }
+    position = QPoint(rect.left, rect.top);
+    return true;
+}
 
-    switch (referencePoint) {
-    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT:
-        origin = QPoint(wl, wt); break;
-    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPRIGHT:
-        origin = QPoint(wl + ww, wt); break;
-    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPCENTER:
-        origin = QPoint(wl + ww / 2, wt); break;
-    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMLEFT:
-        origin = QPoint(wl, wt + wh); break;
-    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMRIGHT:
-        origin = QPoint(wl + ww, wt + wh); break;
-    case FLOATINGWINDOW_REFERENCEPOINT_WINDOWBOTTOMCENTER:
-        origin = QPoint(wl + ww / 2, wt + wh); break;
-    default:
-        origin = screenRect.topLeft(); break;
+void QVButtonPanel::invalidatePositionRequest()
+{
+    ++m_positionRequest;
+    m_queuedCorrectionRequest = 0;
+}
+
+bool QVButtonPanel::movePanelToNativePosition(const QPoint &position)
+{
+    QScopedValueRollback<bool> positioning(m_nativePositioning, true);
+    const HWND hwnd = reinterpret_cast<HWND>(winId());
+    QPoint before;
+    if (!nativePanelPosition(before)) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[VButtonPanel][NativePosition] query failed" << GetLastError();
+#endif
+        return false;
+    }
+    if (before == position) { return true; }
+    if (!SetWindowPos(hwnd, nullptr, position.x(), position.y(), 0, 0,
+                      SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER)) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[VButtonPanel][NativePosition] move failed" << GetLastError();
+#endif
+        return false;
     }
 #ifdef DEBUG_LOGOUT_ON
-    if (origin + QPoint(m_offsetX, m_offsetY) != pos()) {
-        qDebug() << "[VButtonPanel][WindowReference] hwnd=" << targetHwnd << "device=" << device
-                 << "nativeRect=" << QRect(wr.left, wr.top, wr.right - wr.left, wr.bottom - wr.top)
-                 << "nativeMonitorOrigin=" << QPoint(info.rcMonitor.left, info.rcMonitor.top)
-                 << "qtScreen=" << targetScreen->geometry() << "DPR=" << dpiScale
-                 << "reference=" << referencePoint << "origin=" << origin
-                 << "requested=" << origin + QPoint(m_offsetX, m_offsetY) << "before=" << pos();
-    }
+    QPoint actual;
+    nativePanelPosition(actual);
+    qDebug() << "[VButtonPanel][NativePosition] request=" << m_positionRequest
+             << "before=" << before << "requested=" << position << "actual=" << actual
+             << "panelDPR=" << devicePixelRatioF() << "correction=" << m_positionCorrection;
 #endif
+    // Screen/handle events schedule the one correction after Qt's DPI geometry update.
     return true;
+}
+
+bool QVButtonPanel::applyCurrentPosition()
+{
+    if (m_referencePoint >= FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT
+        && QKeyMapper::s_CurrentMappingHWND) {
+        WindowReferenceTransform transform;
+        if (!calculateWindowReferenceTransform(m_referencePoint, transform)) {
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[VButtonPanel][WindowReference] invalid transform";
+#endif
+            return false;
+        }
+        const QPoint requested = transform.nativePosition(QPoint(m_offsetX, m_offsetY));
+#ifdef DEBUG_LOGOUT_ON
+        QPoint actual;
+        if (!nativePanelPosition(actual) || actual != requested) {
+            qDebug() << "[VButtonPanel][WindowReference] request=" << m_positionRequest
+                     << "nativeOrigin=" << transform.nativeOrigin << "qtOrigin=" << transform.qtOrigin
+                     << "anchor=" << transform.anchor << "targetDPR=" << transform.dpr
+                     << "offset=" << QPoint(m_offsetX, m_offsetY) << "nativeRequested=" << requested;
+        }
+#endif
+        return movePanelToNativePosition(requested);
+    }
+    QPoint origin;
+    if (!calculateReferenceOrigin(m_referencePoint, origin)) { return false; }
+    move(origin + QPoint(m_offsetX, m_offsetY));
+    return true;
+}
+
+void QVButtonPanel::schedulePositionCorrection()
+{
+    if (m_positionCorrection || m_correctedRequest == m_positionRequest
+        || m_queuedCorrectionRequest == m_positionRequest) { return; }
+    const quint64 request = m_positionRequest;
+    m_queuedCorrectionRequest = request;
+    QTimer::singleShot(0, this, [this, request]() {
+        if (request != m_positionRequest || m_queuedCorrectionRequest != request) { return; }
+        m_queuedCorrectionRequest = 0;
+        m_correctedRequest = request;
+        if (!isVisible() || m_referencePoint < FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT
+            || !QKeyMapper::s_CurrentMappingHWND) { return; }
+        QScopedValueRollback<bool> correction(m_positionCorrection, true);
+        if (m_dragging && m_nativeDrag) {
+            movePanelDuringDrag(QPoint());
+        } else if (!m_dragging) {
+            applyCurrentPosition();
+        }
+#ifdef DEBUG_LOGOUT_ON
+        WindowReferenceTransform transform;
+        QPoint actual;
+        if (!m_dragging && calculateWindowReferenceTransform(m_referencePoint, transform)
+            && nativePanelPosition(actual)
+            && actual != transform.nativePosition(QPoint(m_offsetX, m_offsetY))) {
+            qWarning() << "[VButtonPanel][NativePosition] unsettled request=" << request << "actual=" << actual;
+        }
+#endif
+    });
 }
 
 void QVButtonPanel::recalcOffsets()
 {
+    if (m_nativeDrag) {
+        QPoint position;
+        WindowReferenceTransform transform;
+        if (!nativePanelPosition(position) || position == m_nativeDragStart
+            || !calculateWindowReferenceTransform(m_referencePoint, transform)) { return; }
+        const QPoint offset = transform.offsetsFromNative(position);
+        m_offsetX = offset.x();
+        m_offsetY = offset.y();
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[VButtonPanel][DragOffsets] native=" << position << "offset=" << offset
+                 << "targetDPR=" << transform.dpr;
+#endif
+        return;
+    }
     QPoint origin;
     if (calculateReferenceOrigin(m_referencePoint, origin)) {
         m_offsetX = pos().x() - origin.x();
@@ -650,29 +795,61 @@ void QVButtonPanel::showPanelContextMenu(const QPoint &globalPos)
 
 void QVButtonPanel::beginPanelDrag(const QPoint &globalPos, const QPoint &panelLocalPos)
 {
+    m_nativeDrag = m_referencePoint >= FLOATINGWINDOW_REFERENCEPOINT_WINDOWTOPLEFT
+        && QKeyMapper::s_CurrentMappingHWND;
+    if (m_nativeDrag) {
+        POINT cursor = {};
+        WindowReferenceTransform transform;
+        const qreal dpr = devicePixelRatioF();
+        if (!qIsFinite(dpr) || dpr <= 0 || !GetPhysicalCursorPos(&cursor)
+            || !nativePanelPosition(m_nativeDragStart)
+            || !calculateWindowReferenceTransform(m_referencePoint, transform)) {
+            m_nativeDrag = false;
+#ifdef DEBUG_LOGOUT_ON
+            qWarning() << "[VButtonPanel][Drag] cannot prepare physical drag";
+#endif
+            return;
+        }
+        m_nativeDragGrab = QPointF(cursor.x - m_nativeDragStart.x(), cursor.y - m_nativeDragStart.y()) / dpr;
+    }
+    invalidatePositionRequest();
     m_dragging = true;
     m_dragOffset = panelLocalPos;
     syncMoveCursorState();
-
     if (QWidget::mouseGrabber() != this) {
         grabMouse();
     }
+    if (!m_nativeDrag) { move(globalPos - m_dragOffset); }
+}
 
-    move(globalPos - m_dragOffset);
+void QVButtonPanel::movePanelDuringDrag(const QPoint &globalPos)
+{
+    if (!m_dragging) { return; }
+    if (!m_positionCorrection) { invalidatePositionRequest(); }
+    if (!m_nativeDrag) {
+        move(globalPos - m_dragOffset);
+        return;
+    }
+    POINT cursor = {};
+    const qreal dpr = devicePixelRatioF();
+    if (!qIsFinite(dpr) || dpr <= 0 || !GetPhysicalCursorPos(&cursor)) { return; }
+    const QPoint grab(qRound(m_nativeDragGrab.x() * dpr), qRound(m_nativeDragGrab.y() * dpr));
+    movePanelToNativePosition(QPoint(cursor.x, cursor.y) - grab);
 }
 
 void QVButtonPanel::finishPanelDrag()
 {
-    if (!m_dragging) {
-        return;
-    }
-
+    if (!m_dragging) { return; }
+    if (m_nativeDrag) { movePanelDuringDrag(QPoint()); }
+    // Final native geometry is authoritative; stale DPI callbacks must not overwrite the release.
+    invalidatePositionRequest();
+    recalcOffsets();
     m_dragging = false;
+    m_nativeDrag = false;
     if (QWidget::mouseGrabber() == this) {
         releaseMouse();
     }
     syncMoveCursorState();
-    recalcOffsets();
 }
 
 bool QVButtonPanel::consumePanelMoveArmedState()
@@ -767,7 +944,7 @@ void QVButtonPanel::mousePressEvent(QMouseEvent *event)
 void QVButtonPanel::mouseMoveEvent(QMouseEvent *event)
 {
     if (m_dragging && (event->buttons() & Qt::LeftButton)) {
-        move(QKeyMapperQtCompat::mouseEventGlobalPos(event) - m_dragOffset);
+        movePanelDuringDrag(QKeyMapperQtCompat::mouseEventGlobalPos(event));
         event->accept();
         return;
     }
@@ -837,7 +1014,7 @@ bool QVButtonPanel::eventFilter(QObject *watched, QEvent *event)
         else if (event->type() == QEvent::MouseMove) {
             QMouseEvent *mouseEvent = static_cast<QMouseEvent*>(event);
             if (m_dragging && (mouseEvent->buttons() & Qt::LeftButton)) {
-                move(QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent) - m_dragOffset);
+                movePanelDuringDrag(QKeyMapperQtCompat::mouseEventGlobalPos(mouseEvent));
                 event->accept();
                 return true;
             }

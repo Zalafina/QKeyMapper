@@ -3,6 +3,7 @@
 
 #include <QGridLayout>
 #include <QScrollArea>
+#include <QPointF>
 #include <QToolButton>
 
 #include "qkeymapper_worker.h"
@@ -61,6 +62,7 @@ signals:
     void triggerVButtonKey_Signal(const QString &keyName, bool isKeyDown);
 
 protected:
+    bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -87,7 +89,22 @@ private:
     void    applyButtonFont(QToolButton *button);
     void    applyButtonStyle(QToolButton *button, bool locked);
     QString extractButtonLabel(const QString &vbuttonKey) const;
+    struct WindowReferenceTransform {
+        QPoint nativeOrigin;
+        QPoint qtOrigin;
+        QPoint anchor;
+        qreal dpr = 1.0;
+        QPoint nativePosition(const QPoint &offset) const;
+        QPoint offsetsFromNative(const QPoint &position) const;
+    };
+    bool    calculateWindowReferenceTransform(int referencePoint, WindowReferenceTransform &transform) const;
     bool    calculateReferenceOrigin(int referencePoint, QPoint &origin) const;
+    bool    nativePanelPosition(QPoint &position) const;
+    bool    movePanelToNativePosition(const QPoint &position);
+    bool    applyCurrentPosition();
+    void    invalidatePositionRequest();
+    void    schedulePositionCorrection();
+    void    movePanelDuringDrag(const QPoint &globalPos);
     void    showPanelContextMenu(const QPoint &globalPos);
     void    beginPanelDrag(const QPoint &globalPos, const QPoint &panelLocalPos);
     void    finishPanelDrag();
@@ -130,6 +147,14 @@ private:
     // Drag-to-move
     bool   m_dragging   = false;
     QPoint m_dragOffset;
+    bool   m_nativeDrag = false;
+    QPointF m_nativeDragGrab;
+    QPoint m_nativeDragStart;
+    quint64 m_positionRequest = 0;
+    quint64 m_queuedCorrectionRequest = 0;
+    quint64 m_correctedRequest = 0;
+    bool   m_nativePositioning = false;
+    bool   m_positionCorrection = false;
     bool   m_moveArmed  = false;
 };
 
