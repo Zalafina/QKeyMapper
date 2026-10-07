@@ -32,7 +32,7 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 - Serialization/settings: keep keymapdata.ini and Save Setting paths in sync; check load/apply/save/recover paths together.
 
 ## Qt version compatibility
-- Code must compile on both Qt 6.8.3 and Qt 5.12.10 from a single source tree. When an API differs between versions, add a compatibility wrapper in `qkeymapper_qt_compat.h` — avoid scattering `#if QT_VERSION` checks throughout the codebase.
+- Code must compile on both Qt 6.8.3 and Qt 5.15.2 from a single source tree. When an API differs between versions, add a compatibility wrapper in `qkeymapper_qt_compat.h` — avoid scattering `#if QT_VERSION` checks throughout the codebase.
 
 ## Autonomous quality gates & validation
 
@@ -40,9 +40,11 @@ The Agent must autonomously execute build and verification gates instead of dele
 
 ### 1. Build validation (`scripts/build_qt6.ps1`)
 
-- Standard build: `pwsh -NoProfile -File .\scripts\build_qt6.ps1` (Release) or with `-Configuration Debug`.
+- Standard build: `pwsh -NoProfile -File .\scripts\build_qt6.ps1` (ordinary Release, outputs to `out/build_qt6/`) or with `-Configuration Debug`. Daily iterations use ordinary Release; build diagnostic when diagnosis needs it or diagnostic-only code changes. Full milestones build both ordinary and diagnostic Release and verify the intended ASan-instrumented target, without requiring duplicate ASan configurations.
 - Diagnostic Release: `pwsh -NoProfile -File .\scripts\build_qt6.ps1 -Diagnostic` (outputs to `out/build_qt6_diagnostic/`). Diagnostic plus ASan uses `-Diagnostic -AddressSanitizer` and a separate output directory.
-- Standard ASan build: `pwsh -NoProfile -File .\scripts\build_qt6.ps1 -AddressSanitizer` (outputs to `build_test_qt6_asan/`).
+- Standard ASan build: `pwsh -NoProfile -File .\scripts\build_qt6.ps1 -AddressSanitizer` (outputs to `out/build_qt6_asan/`).
+- Qt5 compatibility: `pwsh -NoProfile -File .\scripts\build_qt5.ps1` uses Qt 5.15.2 x64 Release and `out/build_qt5_5152/`; supports `-Jobs` and `-Clean`. Check compatibility at stage acceptance, earlier when changing version-dependent APIs.
+- Keep all validation build trees under ignored `out/`. Ordinary ASan uses `out/build_qt6_asan/`; diagnostic ASan uses `out/build_qt6_diagnostic_asan/`. Do not reuse or fall back to legacy root build trees; regenerate qmake files in the new location.
 - JOM incrementally builds changed objects. Read compiler failures, fix the exact source, and rebuild; do not treat whitespace or encoding checks as compilation.
 - Use build-directory generated `ui_*.h`; if Ui members mismatch, check for source-tree shadow headers.
 - Record source/worktree version, configuration, Qt/toolchain, build output and the tested EXE path/hash. Keep compiler, linker and static-analysis diagnostics distinct; disclose warnings rather than silently filtering them.
@@ -68,9 +70,9 @@ The Agent must autonomously execute build and verification gates instead of dele
 
 ### 5. Layered gate protocol
 
-- **Iteration Check**: Code changes -> affected build -> 0 errors and 0 warnings.
+- **Iteration Check**: Code changes -> ordinary Qt6 Release and affected paths -> 0 errors and 0 warnings; diagnostic is targeted as described above.
 - **UI Visual Gate**: UI changes -> screenshots -> autonomous image review.
-- **Milestone Gate**: Feature/stage completion -> Clang-Tidy/Clazy (0 project diagnostics) + ASan (0 memory bugs), unless the user explicitly authorizes a task-specific exception.
+- **Milestone Gate**: Feature/stage completion -> ordinary and diagnostic Release, Qt5 compatibility, Clang-Tidy/Clazy (0 project diagnostics) + actual ASan target (0 memory bugs), unless the user explicitly authorizes a task-specific exception.
 - After successful checks, repeat or broaden them only for new changes, failures or unresolved concerns. For a later edit, identify and recheck affected paths while retaining the version and coverage of reused evidence.
 - Documentation-only changes need command/interface, link, mirror and whitespace checks; do not claim C++ build or runtime validation from these checks.
 

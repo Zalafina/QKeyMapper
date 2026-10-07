@@ -12,7 +12,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 if (-not $ExecutablePath) {
-    $ExecutablePath = Join-Path $repoRoot "build_test_qt6_asan\release\QKeyMapper.exe"
+    $ExecutablePath = Join-Path $repoRoot "out\build_qt6_asan\release\QKeyMapper.exe"
 }
 
 if (-not (Test-Path $ExecutablePath)) {

@@ -63,7 +63,7 @@ $proc = $null
 $testProcess = $null
 
 if (-not $ProcessId -and -not $ExecutablePath) {
-    $candidateExe = Join-Path $repoRoot "build_test_qt6\release\QKeyMapper.exe"
+    $candidateExe = Join-Path $repoRoot "out\build_qt6\release\QKeyMapper.exe"
     if (Test-Path $candidateExe) {
         $ExecutablePath = $candidateExe
     }
@@ -77,10 +77,7 @@ if ($ProcessId) {
     $proc = $testProcess.Process
     Start-Sleep -Seconds 3
 } else {
-    $proc = Get-Process -Name "QKeyMapper" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (-not $proc) {
-        throw "No running QKeyMapper process found and no ExecutablePath provided."
-    }
+    throw "No default executable at $candidateExe. Build it or provide -ExecutablePath / -ProcessId explicitly."
 }
 
 try {

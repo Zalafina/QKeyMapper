@@ -19,10 +19,15 @@ pwsh -NoProfile -File .\scripts\build_qt6.ps1 -Diagnostic -AddressSanitizer
 
 | Release target | Build directory |
 |---|---|
-| Standard | build_test_qt6/ |
+| Standard | out/build_qt6/ |
 | Diagnostic | out/build_qt6_diagnostic/ |
-| Standard ASan | build_test_qt6_asan/ |
+| Standard ASan | out/build_qt6_asan/ |
 | Diagnostic ASan | out/build_qt6_diagnostic_asan/ |
+| Qt 5.15.2 x64 Release | out/build_qt5_5152/ |
+
+Daily iterations build ordinary Qt6 Release and verify affected UI paths. Build diagnostic for an actual diagnostic need or changes to diagnostic-only code. Full milestones retain ordinary and diagnostic Release, the intended ASan target, static analysis and visual gates; two ASan variants are not automatically required. Check Qt 5.15.2 compatibility at stage acceptance, earlier for version-specific APIs.
+
+Use `pwsh -NoProfile -File .\scripts\build_qt5.ps1` for incremental Qt 5.15.2 x64 Release; `-Jobs` and `-Clean` are supported. All validation build trees belong under ignored `out/`. Existing root build trees are legacy artifacts: leave them untouched, regenerate qmake files in the new location and never silently use an old EXE as fallback.
 
 Diagnostic requires Release, enables LOGOUT_TOFILE/DEBUG_LOGOUT_ON and writes the existing rotating log to `log/QKeyMapper.log` under the EXE directory. Ordinary Release does not compile the diagnostic-only sampling. Do not turn a diagnostic fix into unconditional logging.
 
@@ -62,7 +67,7 @@ Set `$testPid` to the verified intended PID before attaching to a running test i
 pwsh -NoProfile -File .\scripts\capture_ui_snapshots.ps1 -ProcessId $testPid -PrintWindow -Label ui_attached
 ```
 
-Attachment does not close it and cannot be combined with launch options. When selecting a particular window, -WindowHandle must belong to that PID. Avoid the script's arbitrary same-name fallback for reproducible multi-instance tests.
+Attachment does not close it and cannot be combined with launch options. When selecting a particular window, -WindowHandle must belong to that PID. If the default build EXE is missing, the capture script requires an explicit EXE path or PID; it never selects an arbitrary same-name instance. Prefer explicit targets for reproducible multi-instance tests.
 
 -PrintWindow captures the HWND without depending on screen occlusion; the default screen-copy capture has different behavior. Use the same method for before/after comparisons, inspect the resulting image and report incomplete/invalid captures rather than assuming the API call proves visual correctness.
 
@@ -112,9 +117,9 @@ This command is for an ASan-instrumented runtime, not the ordinary diagnostic ex
 
 ## Layered gates and handover
 
-1. Code iteration: affected build, zero errors and warnings.
+1. Code iteration: ordinary Qt6 Release and affected paths, zero errors and warnings; diagnostic is targeted when needed.
 2. UI change: snapshots plus autonomous visual review.
-3. Feature/stage milestone: Clang-Tidy/Clazy with zero project diagnostics and ASan with zero memory bugs, unless an explicit task-specific authorization changes the required coverage.
+3. Feature/stage milestone: ordinary and diagnostic Release, Qt 5.15.2 compatibility, Clang-Tidy/Clazy with zero project diagnostics and actual ASan instrumentation with zero memory bugs, unless an explicit task-specific authorization changes the required coverage.
 
 After passing checks, repeat or widen them for new changes, failures or unresolved concerns, not merely because earlier checks finished. Identify affected paths after the last edit. Reuse results for unchanged inputs only with their original version and coverage; never label old ASan or UI evidence as a rerun of later source.
 

@@ -1,18 +1,13 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("Release", "Debug")]
+    [ValidateSet("Release")]
     [string]$Configuration = "Release",
-    [switch]$Diagnostic,
-    [switch]$AddressSanitizer,
     [switch]$Clean,
+    [ValidateRange(1, 256)]
     [int]$Jobs = [System.Environment]::ProcessorCount
 )
 
 $ErrorActionPreference = "Stop"
-
-if ($Diagnostic -and $Configuration -ne "Release") {
-    throw "-Diagnostic requires -Configuration Release."
-}
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $proFile = Join-Path $repoRoot "QKeyMapper\QKeyMapper.pro"
@@ -37,8 +32,8 @@ $vcvarsCandidates = @(
     "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
 )
 $qmakeCandidates = @(
-    "C:\Qt\Qt6\6.8.3\msvc2022_64\bin\qmake.exe",
-    "C:\Qt\6.8.3\msvc2022_64\bin\qmake.exe"
+    "C:\Qt\Qt6\5.15.2\msvc2019_64\bin\qmake.exe",
+    "C:\Qt\5.15.2\msvc2019_64\bin\qmake.exe"
 )
 $jomCandidates = @(
     "C:\Qt\Qt6\Tools\QtCreator\bin\jom\jom.exe",
@@ -48,16 +43,19 @@ $jomCandidates = @(
 $vcvars = Resolve-Tool $vcvarsCandidates "vcvars64.bat"
 $qmake = Resolve-Tool $qmakeCandidates "qmake.exe"
 $jom = Resolve-Tool $jomCandidates "jom.exe"
+$qtVersion = (& $qmake -query QT_VERSION | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or $qtVersion -ne "5.15.2") {
+    throw "Qt 5.15.2 is required; selected qmake reports '$qtVersion': $qmake"
+}
+$qtArch = Get-Content -LiteralPath (Join-Path (Split-Path -Parent (Split-Path -Parent $qmake)) 'mkspecs\qconfig.pri') | Select-String '^QT_ARCH\s*=\s*x86_64\s*$'
+if (-not $qtArch) { throw "The Qt 5.15.2 kit must target x86_64: $qmake" }
+Write-Output "QtVersion=$qtVersion QMake=$qmake"
 
 if (-not (Test-Path -LiteralPath $proFile)) {
     throw "Project file not found: $proFile"
 }
 
-$buildDirName = if ($Diagnostic) {
-    if ($AddressSanitizer) { "out\build_qt6_diagnostic_asan" } else { "out\build_qt6_diagnostic" }
-} else {
-    if ($AddressSanitizer) { "out\build_qt6_asan" } else { "out\build_qt6" }
-}
+$buildDirName = "out\build_qt5_5152"
 $buildDir = [IO.Path]::GetFullPath((Join-Path $repoRoot $buildDirName))
 $workspacePrefix = [IO.Path]::GetFullPath($repoRoot).TrimEnd('\') + '\'
 if (-not $buildDir.StartsWith($workspacePrefix, [StringComparison]::OrdinalIgnoreCase)) {
@@ -73,16 +71,7 @@ if (-not (Test-Path -LiteralPath $buildDir)) {
     New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 }
 
-$qmakeConfig = @(
-    "CONFIG-=$(@{ Release = 'debug'; Debug = 'release' }[$Configuration])",
-    "CONFIG+=$($Configuration.ToLowerInvariant())"
-)
-if ($Diagnostic) {
-    $qmakeConfig += "DEFINES+=LOGOUT_TOFILE"
-}
-if ($AddressSanitizer) {
-    $qmakeConfig += "CONFIG+=asan"
-}
+$qmakeConfig = @("CONFIG-=debug", "CONFIG+=release")
 
 $qmakeArgs = @(
     ('"{0}"' -f $proFile),
@@ -130,6 +119,3 @@ if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
     throw "Expected executable was not generated: $executable"
 }
 Write-Output "Executable=$executable"
-if ($Diagnostic) {
-    Write-Output "DiagnosticLog=$(Join-Path (Split-Path -Parent $executable) 'log\QKeyMapper.log')"
-}

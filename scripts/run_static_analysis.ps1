@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 if (-not $BuildDirectory) {
-    $BuildDirectory = Join-Path $repoRoot "build_test_qt6"
+    $BuildDirectory = Join-Path $repoRoot "out\build_qt6"
 }
 
 $reportDirectory = Join-Path $repoRoot "out\static-analysis"
