@@ -313,17 +313,15 @@ private:
         }
         if (option->rect.isEmpty()) { return; }
         QScopedValueRollback<bool> guard(delegating, true);
-        // Render at the final physical resolution so native style pixmap caches
-        // and text remain sharp even when startup and runtime factors differ.
-        const qreal dpr = painter->device()->devicePixelRatioF();
-        QPixmap surface(QSize(qCeil(option->rect.width() * dpr), qCeil(option->rect.height() * dpr)));
-        surface.setDevicePixelRatio(dpr * ratio);
-        surface.fill(Qt::transparent);
-        QPainter local(&surface);
-        local.setFont(scaledFont(widget ? widget->font() : painter->font(), 1 / ratio));
-        visit(option, widget, [&](const QStyleOption *base) { fn(base, &local); });
-        local.end();
-        painter->drawPixmap(QRectF(option->rect), surface, QRectF(surface.rect()));
+        // Keep glyph rasterization on the final paint device. An intermediate
+        // transparent pixmap changes text blending and pixel alignment.
+        painter->save();
+        painter->setClipRect(option->rect, Qt::IntersectClip);
+        painter->translate(option->rect.topLeft());
+        painter->scale(ratio, ratio);
+        painter->setFont(scaledFont(widget ? widget->font() : painter->font(), 1 / ratio));
+        visit(option, widget, [&](const QStyleOption *base) { fn(base, painter); });
+        painter->restore();
     }
 };
 }
