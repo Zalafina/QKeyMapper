@@ -54,6 +54,7 @@ $reporter = $db | Where-Object { $_.file -like '*crash_reporter.cpp' }
 Assert-Analysis ($reporter.arguments -contains '-D_MT' -and $reporter.arguments -notcontains '-D_DLL' -and $reporter.arguments -notcontains '-DQT_CORE_LIB') 'Native helper inherited main-target flags.'
 Assert-Analysis (@($db | Where-Object { $_.file -like '*crash_client.cpp' }).Count -eq 2) 'Shared diagnostic source needs both target configurations.'
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'diagnostics-test' -and $_.Source -like '*diagnostics_test.cpp' }).Count -eq 1) 'Diagnostics test was omitted.'
+Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'ui-scale-test' -and $_.Source -like '*qkm_ui_scale_test.cpp' }).Count -eq 1) 'UI scale test was omitted.'
 
 $failureReport = Join-Path $testDirectory 'fail'
 $failed = $false

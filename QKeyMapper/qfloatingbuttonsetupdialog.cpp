@@ -1,11 +1,13 @@
 #include "qfloatingbuttonsetupdialog.h"
 #include "qkeymapper_qt_compat.h"
+#include "qkm_ui_scale.h"
 
 #include "qitemsetupdialog.h"
 
 #include <QFormLayout>
 #include <QFontComboBox>
 #include <QGroupBox>
+#include <QScopedValueRollback>
 #include "qkeymapper.h"
 #include "qkeymapper_constants.h"
 #include "qstyle_singletons.h"
@@ -727,6 +729,7 @@ QFloatingButtonSetupDialog::~QFloatingButtonSetupDialog() = default;
 
 void QFloatingButtonSetupDialog::setUILanguage(int languageindex)
 {
+    QScopedValueRollback<bool> loading(m_isLoading, true);
     Q_UNUSED(languageindex);
 
     setWindowTitle(tr("Floating Button Setup"));
@@ -930,7 +933,7 @@ bool QFloatingButtonSetupDialog::nativeEvent(const QByteArray &eventType, void *
                 const int proposedClientWidthLogical = qRound(proposedClientWidthPhysical / dpr);
 
                 const int horizontalEnterWidth = preferredHorizontalEnterWidth();
-                const int verticalReturnWidth = horizontalEnterWidth - FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH;
+                const int verticalReturnWidth = horizontalEnterWidth - presentationPixels(FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH);
 
                 int targetLayoutMode = m_LayoutMode;
                 if (m_LayoutMode == FLOATINGBUTTON_SETUP_LAYOUT_VERTICAL) {
@@ -1011,6 +1014,10 @@ void QFloatingButtonSetupDialog::resizeEvent(QResizeEvent *event)
 #endif
 
     if (m_isRelayouting || m_isAutoResizingForLayout) {
+        return;
+    }
+    if (m_uiScale && m_uiScale->isApplying()) {
+        adjustDialogSizeForCurrentLayout();
         return;
     }
 
@@ -1268,6 +1275,10 @@ void QFloatingButtonSetupDialog::applyDialogLayoutMode(int layoutMode, bool mark
     m_isRelayouting = true;
     m_LayoutMode = sanitizedLayoutMode;
     rebuildContentLayout();
+    if (m_uiScale) {
+        m_uiScale->capture(m_ContentWidget);
+        m_uiScale->apply(m_uiScale->ratio());
+    }
 
     if (QLayout *dialogLayout = layout()) {
         dialogLayout->activate();
@@ -1302,6 +1313,7 @@ void QFloatingButtonSetupDialog::applyDialogLayoutMode(int layoutMode, bool mark
     }
 
     m_isRelayouting = false;
+    if (m_uiScale) { m_uiScale->setWindowSizeMode(m_LayoutMode); }
 
     if (markDirty) {
         notifySaveSettingDirty();
@@ -1311,7 +1323,7 @@ void QFloatingButtonSetupDialog::applyDialogLayoutMode(int layoutMode, bool mark
 void QFloatingButtonSetupDialog::updateLayoutModeFromWidth(int width, bool markDirty)
 {
     const int horizontalEnterWidth = preferredHorizontalEnterWidth();
-    const int verticalReturnWidth = horizontalEnterWidth - FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH;
+    const int verticalReturnWidth = horizontalEnterWidth - presentationPixels(FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH);
 
 #ifdef DEBUG_LOGOUT_ON
     const char *decision = "KeepCurrent";
@@ -1379,6 +1391,11 @@ void QFloatingButtonSetupDialog::updateLayoutModeFromWidth(int width, bool markD
 #endif
 }
 
+int QFloatingButtonSetupDialog::presentationPixels(int value) const
+{
+    return qRound(value * (m_uiScale ? m_uiScale->ratio() : 1));
+}
+
 int QFloatingButtonSetupDialog::preferredHorizontalEnterWidth() const
 {
     const int leftColumnWidth = qMax(m_InfoGroup->sizeHint().width(),
@@ -1396,9 +1413,9 @@ int QFloatingButtonSetupDialog::preferredHorizontalEnterWidth() const
         + dialogSpacing
         + dialogMargins.left()
         + dialogMargins.right()
-        + FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_ENTER_EXTRA_WIDTH;
+        + presentationPixels(FLOATINGBUTTON_SETUP_LAYOUT_HORIZONTAL_ENTER_EXTRA_WIDTH);
 
-    return qMax(preferredVerticalWidth() + FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH,
+    return qMax(preferredVerticalWidth() + presentationPixels(FLOATINGBUTTON_SETUP_LAYOUT_SWITCH_HYSTERESIS_WIDTH),
                 calculatedHorizontalWidth);
 }
 
@@ -1422,7 +1439,7 @@ int QFloatingButtonSetupDialog::preferredVerticalWidth() const
     return singleColumnWidth
         + dialogMargins.left()
         + dialogMargins.right()
-        + 16;
+        + presentationPixels(16);
 }
 
 int QFloatingButtonSetupDialog::preferredHorizontalHeight() const
@@ -1430,7 +1447,7 @@ int QFloatingButtonSetupDialog::preferredHorizontalHeight() const
     const int leftColHeight = m_InfoGroup->sizeHint().height()
                             + m_BasicGroup->sizeHint().height()
                             + m_PositionGroup->sizeHint().height()
-                            + 2 * FLOATINGBUTTON_SETUP_LAYOUT_OUTER_SPACING;
+                            + 2 * presentationPixels(FLOATINGBUTTON_SETUP_LAYOUT_OUTER_SPACING);
     const int rightColHeight = m_StyleGroup->sizeHint().height();
     const int contentHeight = qMax(leftColHeight, rightColHeight);
 
@@ -1450,7 +1467,7 @@ int QFloatingButtonSetupDialog::preferredHorizontalHeight() const
          + dialogSpacing
          + dialogMargins.top()
          + dialogMargins.bottom()
-         + 14;
+         + presentationPixels(14);
 }
 
 int QFloatingButtonSetupDialog::preferredVerticalHeight() const
@@ -1459,7 +1476,7 @@ int QFloatingButtonSetupDialog::preferredVerticalHeight() const
                             + m_BasicGroup->sizeHint().height()
                             + m_StyleGroup->sizeHint().height()
                             + m_PositionGroup->sizeHint().height()
-                            + 3 * FLOATINGBUTTON_SETUP_LAYOUT_OUTER_SPACING;
+                            + 3 * presentationPixels(FLOATINGBUTTON_SETUP_LAYOUT_OUTER_SPACING);
 
     const int buttonBoxHeight = (m_ButtonBox != Q_NULLPTR)
         ? m_ButtonBox->sizeHint().height()
@@ -1808,6 +1825,8 @@ void QFloatingButtonSetupDialog::updateHoverCustomizationState()
 
 void QFloatingButtonSetupDialog::setupReferencePointComboBox()
 {
+    const int currentIndex = m_ReferencePointComboBox->currentIndex();
+    const QSignalBlocker blocker(m_ReferencePointComboBox);
     m_ReferencePointComboBox->clear();
     m_ReferencePointComboBox->addItem(tr("ScreenTopLeft"));
     m_ReferencePointComboBox->addItem(tr("ScreenTopRight"));
@@ -1821,6 +1840,7 @@ void QFloatingButtonSetupDialog::setupReferencePointComboBox()
     m_ReferencePointComboBox->addItem(tr("WindowBottomLeft"));
     m_ReferencePointComboBox->addItem(tr("WindowBottomRight"));
     m_ReferencePointComboBox->addItem(tr("WindowBottomCenter"));
+    m_ReferencePointComboBox->setCurrentIndex(qMax(0, currentIndex));
 }
 
 void QFloatingButtonSetupDialog::updateGroupMemberCountLabel()

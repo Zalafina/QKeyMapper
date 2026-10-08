@@ -5,7 +5,9 @@
 #include "qkeymapper_qt_compat.h"
 #include "qstyle_singletons.h"
 #include "qkm_ui_scale.h"
+#include "qfloatingbuttonsetupdialog.h"
 #include <QScopedValueRollback>
+#include <QGroupBox>
 
 #include <algorithm>
 #include <vector>
@@ -4032,6 +4034,40 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         }
     });
 
+    // Register only the seven editor roots; each manager belongs to its window.
+    QWidget *editorRoots[] = {
+        m_ItemSetupDialog, m_TableSetupDialog, m_deviceListWindow,
+        m_ItemSetupDialog->findChild<QKeyRecord *>(),
+        m_ItemSetupDialog->findChild<QCrosshairSetupDialog *>(),
+        m_ItemSetupDialog->findChild<QFloatingButtonSetupDialog *>(),
+        m_TableSetupDialog->findChild<QFloatingWindowSetupDialog *>()
+    };
+    for (QWidget *root : editorRoots) {
+        Q_ASSERT(root);
+        if (!root) { continue; }
+        // Main-window font inheritance may already reflect a non-default startup R.
+        root->setFont(QFont(FONTNAME_ENGLISH, 9));
+        auto *scale = new QkmUiScale(root);
+        scale->setStyleResolver([](QWidget *widget) -> QStyle * {
+            QWidget *owner = widget;
+            while (!owner->testAttribute(Qt::WA_SetStyle) && !owner->isWindow() && owner->parentWidget()) {
+                owner = owner->parentWidget();
+            }
+            const QString name = owner->objectName();
+            return qobject_cast<QGroupBox *>(owner) || qobject_cast<QMenu *>(owner)
+                || name.startsWith(QStringLiteral("oriList_Select")) || name.startsWith(QStringLiteral("mapList_Select"))
+                || (qobject_cast<QToolButton *>(owner) && !name.startsWith(QStringLiteral("qt_")))
+                ? QKeyMapperStyle::windowsStyle() : QKeyMapperStyle::fusionStyle();
+        });
+        scale->manageWindow();
+        m_editorUiScales.append(scale);
+        if (auto *floating = qobject_cast<QFloatingButtonSetupDialog *>(root)) {
+            floating->m_uiScale = scale;
+            scale->setWindowSizeMode(floating->getPreferredLayoutMode());
+        }
+        scale->applyWindow(m_runtimeScaleCompensation);
+    }
+
     // Baselines are captured after the first show has finalized legacy constraints.
     m_uiScale = new QkmUiScale(this);
     m_uiScale->setStyleResolver([this](QWidget *widget) -> QStyle * {
@@ -4094,6 +4130,9 @@ QKeyMapper::~QKeyMapper()
 
 #endif
     s_isDestructing = true;
+    // Stop observers and context-bound refreshes before editor UI teardown.
+    for (const auto &scale : std::as_const(m_editorUiScales)) { delete scale.data(); }
+    m_editorUiScales.clear();
     m_liveScaleSettleTimer.stop();
 #ifdef DEBUG_LOGOUT_ON
     m_uiScaleDiagnosticTimer.stop();
@@ -36066,16 +36105,14 @@ void QKeyMapper::resetFontSize(double R)
         }
     }
 
-    if (m_deviceListWindow != Q_NULLPTR) {
-        m_deviceListWindow->resetFontSize();
-    }
-
-    if (m_TableSetupDialog != Q_NULLPTR) {
-        m_TableSetupDialog->resetFontSize();
-    }
-
-    if (m_ItemSetupDialog != Q_NULLPTR) {
-        m_ItemSetupDialog->resetFontSize();
+    if (m_editorUiScales.isEmpty()) {
+        if (m_deviceListWindow) { m_deviceListWindow->resetFontSize(); }
+        if (m_TableSetupDialog) { m_TableSetupDialog->resetFontSize(); }
+        if (m_ItemSetupDialog) { m_ItemSetupDialog->resetFontSize(); }
+    } else {
+        for (const auto &scale : std::as_const(m_editorUiScales)) {
+            if (scale) { scale->applyWindow(r); }
+        }
     }
 }
 
@@ -36753,6 +36790,9 @@ void QKeyMapper::setUITheme(int themeindex)
     refreshSaveSettingIndicators();
     applyMappingStartActionMenuSizing(m_MappingStartActionMenu);
     if (m_uiScale) { m_uiScale->refreshTheme(); }
+    for (const auto &scale : std::as_const(m_editorUiScales)) {
+        if (scale) { scale->applyWindow(m_runtimeScaleCompensation); }
+    }
 
 }
 
@@ -41690,6 +41730,16 @@ KeyListComboBoxPopup::KeyListComboBoxPopup(KeyListComboBox *comboBox)
     }
 }
 
+QkmUiScale *KeyListComboBoxPopup::editorUiScale() const
+{
+    QKeyMapper *main = QKeyMapper::getInstance();
+    if (!main || QKeyMapper::s_isDestructing || !m_ComboBox) { return nullptr; }
+    for (const auto &scale : std::as_const(main->m_editorUiScales)) {
+        if (scale && scale->parent() == m_ComboBox->window()) { return scale.data(); }
+    }
+    return nullptr;
+}
+
 void KeyListComboBoxPopup::showForComboBox(void)
 {
     if (m_ComboBox == Q_NULLPTR) {
@@ -41702,6 +41752,9 @@ void KeyListComboBoxPopup::showForComboBox(void)
                 main->m_uiScale->apply(main->m_runtimeScaleCompensation, this);
             }
         }
+    } else if (QkmUiScale *scale = editorUiScale()) {
+        scale->capture();
+        if (!qFuzzyCompare(scale->ratio(), qreal(1))) { scale->apply(scale->ratio(), this); }
     }
 
 
@@ -42107,7 +42160,8 @@ void KeyListComboBoxPopup::updatePopupGeometry(void)
     }
 
     const auto *main = qobject_cast<QKeyMapper *>(m_ComboBox->window());
-    const qreal ratio = main ? main->m_runtimeScaleCompensation : 1.0;
+    const QkmUiScale *editorScale = main ? nullptr : editorUiScale();
+    const qreal ratio = main ? main->m_runtimeScaleCompensation : (editorScale ? editorScale->ratio() : 1.0);
     const int popupWidth = qMax(m_ComboBox->width(), qRound(280 * ratio));
     const QRect comboRect = QRect(m_ComboBox->mapToGlobal(QPoint(0, 0)), m_ComboBox->size());
     QPoint popupPos = comboRect.bottomLeft();

@@ -2,6 +2,7 @@
 #define QKEYMAPPER_QT_COMPAT_H
 
 #include <QtGlobal>
+#include <QLabel>
 #include <QList>
 #include <QString>
 #include <QVariant>
@@ -18,6 +19,21 @@
 #include <QGuiApplication>
 
 namespace QKeyMapperQtCompat {
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+using NativeEventResult = qintptr;
+#else
+using NativeEventResult = long;
+#endif
+
+inline QPixmap labelPixmap(const QLabel *label)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+    return label->pixmap();
+#else
+    return label->pixmap(Qt::ReturnByValue);
+#endif
+}
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 using UiScaleHeaderOption = QStyleOptionHeaderV2;

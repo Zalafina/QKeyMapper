@@ -2,6 +2,7 @@
 #define QFLOATINGBUTTONSETUPDIALOG_H
 
 #include <QDialog>
+#include <QPointer>
 
 #include "colorpickerwidget.h"
 #include "qkeymapper_worker.h"
@@ -18,6 +19,7 @@ class QPushButton;
 class QResizeEvent;
 class QSpinBox;
 class QWidget;
+class QkmUiScale;
 
 namespace Ui {
 class QFloatingButtonSetupDialog;
@@ -67,6 +69,7 @@ private:
     int preferredVerticalWidth() const;
     int preferredHorizontalHeight() const;
     int preferredVerticalHeight() const;
+    int presentationPixels(int value) const;
     void loadFromCurrentItem();
     void applyToCurrentItem();
     void updateStyleCodeDisplay();
@@ -80,6 +83,8 @@ private:
     void applySyncGroupOffsetDelta();
 
 private:
+    friend class QKeyMapper;
+    QPointer<QkmUiScale> m_uiScale;
     int m_ItemRow;
     bool m_isLoading;
     bool m_hasBackup;

@@ -24,6 +24,8 @@
 #include <QStringView>
 #include <QTableWidget>
 #include <QTabWidget>
+#include <QTimer>
+#include <qt_windows.h>
 #include <QtMath>
 #include <vector>
 #include <utility>
@@ -376,6 +378,9 @@ struct QkmUiScale::Data
         int splitterWidth = 0;
         int headerMinimum = -1;
         int headerDefault = -1;
+        std::vector<int> fixedColumns;
+        QPixmap authoredPixmap;
+        qint64 appliedPixmapKey = 0;
         QString sheet;
         bool hasSheetMetrics = false;
         bool explicitStyle = false;
@@ -397,6 +402,13 @@ struct QkmUiScale::Data
     qreal ratio = 1;
     bool handlingPopup = false;
     bool restoredDefaultHints = false;
+    bool managedWindow = false;
+    bool applying = false;
+    bool userResizing = false;
+    bool scaledWindow = false;
+    int sizeMode = 0;
+    QSizeF normalSizes[2];
+    QTimer settleTimer;
     QSet<int> pendingDefaultPages;
 #ifdef DEBUG_LOGOUT_ON
     quint64 sequence = 0;
@@ -418,11 +430,127 @@ QkmUiScale::QkmUiScale(QWidget *window) : QObject(window), d(new Data)
 }
 QkmUiScale::~QkmUiScale()
 {
-    if (qApp) { qApp->removeEventFilter(this); }
+    if (qApp) {
+        qApp->removeEventFilter(this);
+        qApp->removeNativeEventFilter(this);
+    }
+    if (d->window) { d->window->removeEventFilter(this); }
+    d->applying = true;
+    // A manager can be retired before its still-visible editor is destroyed.
+    for (const auto &s : d->widgets) {
+        if (s.target && s.proxy) { s.target->setStyle(s.explicitStyle ? s.original.data() : nullptr); }
+    }
+}
+
+void QkmUiScale::manageWindow()
+{
+    if (!d->window || d->managedWindow) { return; }
+    d->managedWindow = true;
+    d->normalSizes[0] = d->window->size();
+    capture();
+    d->window->installEventFilter(this);
+    d->settleTimer.setSingleShot(true);
+    connect(&d->settleTimer, &QTimer::timeout, this, [this]() {
+        if (!d->window) { return; }
+        if (!d->scaledWindow) {
+            d->normalSizes[d->sizeMode] = d->window->size();
+            return;
+        }
+        applyWindow(d->ratio);
+    });
+    if (qApp) { qApp->installNativeEventFilter(this); }
+}
+
+qreal QkmUiScale::ratio() const { return d->ratio; }
+bool QkmUiScale::isApplying() const { return d->applying; }
+
+void QkmUiScale::setWindowSizeMode(int mode)
+{
+    Q_ASSERT(mode == 0 || mode == 1);
+    if (mode < 0 || mode > 1 || !d->window) { return; }
+    d->sizeMode = mode;
+    // The floating-button editor derives height from its current layout, not a fixed root floor.
+    for (auto &s : d->widgets) { if (s.target == d->window) { s.minimum.setHeight(0); break; } }
+    if (d->normalSizes[mode].isEmpty()) {
+        d->normalSizes[mode] = QSizeF(d->window->size()) / d->ratio;
+    }
+}
+
+bool QkmUiScale::nativeEventFilter(const QByteArray &eventType, void *message,
+                                 QKeyMapperQtCompat::NativeEventResult *result)
+{
+    Q_UNUSED(result);
+    if (eventType != "windows_generic_MSG" || !d->window || !d->window->effectiveWinId()) { return false; }
+    const auto *msg = static_cast<const MSG *>(message);
+    if (!msg || msg->hwnd != reinterpret_cast<HWND>(d->window->effectiveWinId())) { return false; }
+    if (msg->message == WM_ENTERSIZEMOVE) { d->userResizing = true; }
+    else if (msg->message == WM_EXITSIZEMOVE && d->userResizing) {
+        d->userResizing = false;
+        const qreal exitRatio = d->ratio;
+        if (!d->window->isMaximized() && !d->window->isMinimized()) {
+            d->normalSizes[d->sizeMode] = QSizeF(d->window->size()) / exitRatio;
+        }
+        // The dialog's native handler may finish its layout after this filter.
+        QTimer::singleShot(0, this, [this, exitRatio]() {
+            if (d->window && !d->applying && qFuzzyCompare(d->ratio, exitRatio)
+                && !d->window->isMaximized() && !d->window->isMinimized()) {
+                d->normalSizes[d->sizeMode] = QSizeF(d->window->size()) / d->ratio;
+            }
+        });
+    }
+    return false;
+}
+
+void QkmUiScale::applyWindow(qreal ratio)
+{
+    if (!d->managedWindow || !d->window || ratio <= 0 || d->applying) { return; }
+    if (!d->scaledWindow && qFuzzyCompare(ratio, qreal(1))) { return; }
+    d->scaledWindow = true;
+    QScopedValueRollback<bool> guard(d->applying, true);
+    capture();
+    apply(ratio);
+    for (const auto &s : d->widgets) {
+        if (s.target != d->window) { continue; }
+        d->window->setMinimumSize(scaledSize(s.minimum, ratio));
+        d->window->setMaximumSize(scaledSize(s.maximum, ratio));
+        d->window->setContentsMargins(scaledMargins(s.margins, ratio));
+        break;
+    }
+    refreshLayouts();
+    if (!d->window->isMaximized() && !d->window->isMinimized()) {
+        const QSize target = (d->normalSizes[d->sizeMode] * ratio).toSize()
+            .expandedTo(d->window->minimumSizeHint()).expandedTo(d->window->minimumSize());
+        d->window->resize(target);
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[UI_SCALE] EDITOR root=" << d->window->metaObject()->className()
+             << "R=" << ratio << "mode=" << d->sizeMode
+             << "base=" << d->normalSizes[d->sizeMode] << "size=" << d->window->size();
+#endif
 }
 
 bool QkmUiScale::eventFilter(QObject *object, QEvent *event)
 {
+    if (d->managedWindow && object == d->window && event->type() == QEvent::Show) {
+        d->settleTimer.start(0);
+    }
+    if (d->managedWindow && !d->applying && event->type() == QEvent::Paint
+        && !qFuzzyCompare(d->ratio, qreal(1)) && qobject_cast<QLabel *>(object)) {
+        for (auto &s : d->widgets) {
+            if (s.target != object) { continue; }
+            auto *label = static_cast<QLabel *>(object);
+            const QPixmap current = QKeyMapperQtCompat::labelPixmap(label);
+            if (!current.isNull() && current.cacheKey() != s.appliedPixmapKey) {
+                // A newly selected image is authored content, even at a non-default R.
+                s.authoredPixmap = current;
+                const QPixmap adjusted = current.scaled(scaledSize(current.size(), d->ratio),
+                    Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                s.appliedPixmapKey = adjusted.cacheKey();
+                label->setPixmap(adjusted);
+            }
+            break;
+        }
+    }
     if (!d->handlingPopup && event->type() == QEvent::Polish && !qFuzzyCompare(d->ratio, qreal(1))) {
         auto *popup = qobject_cast<QWidget *>(object);
         if (popup && popup->isWindow() && popup->windowType() == Qt::Popup && d->owned(popup)) {
@@ -514,6 +642,21 @@ void QkmUiScale::capture(QWidget *authoredRoot)
         if (auto *header = qobject_cast<QHeaderView *>(w)) {
             s.headerMinimum = header->minimumSectionSize();
             s.headerDefault = header->defaultSectionSize();
+            if (d->managedWindow && header->orientation() == Qt::Horizontal) {
+                for (int section = 0; section < header->count(); ++section) {
+                    if (header->sectionResizeMode(section) == QHeaderView::Fixed) {
+                        s.headerMinimum = qMin(s.headerMinimum, header->sectionSize(section));
+                    }
+                }
+            }
+        }
+        if (d->managedWindow) {
+            if (auto *table = qobject_cast<QTableWidget *>(w)) {
+                for (int column = 0; column < table->columnCount(); ++column) {
+                    s.fixedColumns.push_back(table->horizontalHeader()->sectionResizeMode(column) == QHeaderView::Fixed
+                        ? table->columnWidth(column) : -1);
+                }
+            }
         }
         s.spinEditor = qobject_cast<QLineEdit *>(w)
             && qobject_cast<QAbstractSpinBox *>(w->parentWidget());
@@ -550,7 +693,7 @@ void QkmUiScale::capture(QWidget *authoredRoot)
     const auto layouts = d->window->findChildren<QLayout *>();
     for (QLayout *layout : layouts) {
         if (knownLayouts.contains(layout) || !layout->parentWidget() ||
-            layout->parentWidget() == d->window || !d->owned(layout->parentWidget())) { continue; }
+            (!d->managedWindow && layout->parentWidget() == d->window) || !d->owned(layout->parentWidget())) { continue; }
         Data::Layout s;
         s.target = layout;
         s.margins = layout->contentsMargins();
@@ -705,6 +848,27 @@ void QkmUiScale::apply(qreal ratio, QWidget *subtree)
         logSpinEditor(w, d->sequence, ratio, "AFTER_PROPERTIES");
 #endif
     }
+    // Header minima must be ready before fixed sections are resized (Qt5 clamps early).
+    for (auto &s : d->widgets) {
+        QWidget *w = s.target;
+        if (!w || (subtree && w != subtree && !subtree->isAncestorOf(w))) { continue; }
+        if (auto *table = qobject_cast<QTableWidget *>(w)) {
+            for (int column = 0; column < int(s.fixedColumns.size()) && column < table->columnCount(); ++column) {
+                if (s.fixedColumns[column] > 0) { table->setColumnWidth(column, scaled(s.fixedColumns[column], ratio)); }
+            }
+        }
+        if (d->managedWindow) {
+            if (auto *label = qobject_cast<QLabel *>(w)) {
+                const QPixmap current = QKeyMapperQtCompat::labelPixmap(label);
+                if (current.isNull()) { s.authoredPixmap = QPixmap(); s.appliedPixmapKey = 0; continue; }
+                if (current.cacheKey() != s.appliedPixmapKey) { s.authoredPixmap = current; }
+                const QPixmap adjusted = original ? s.authoredPixmap
+                    : s.authoredPixmap.scaled(scaledSize(s.authoredPixmap.size(), ratio), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                label->setPixmap(adjusted);
+                s.appliedPixmapKey = adjusted.cacheKey();
+            }
+        }
+    }
     for (const auto &s : d->layouts) {
         QLayout *layout = s.target;
         if (!layout) { continue; }
@@ -734,8 +898,22 @@ void QkmUiScale::apply(qreal ratio, QWidget *subtree)
 void QkmUiScale::refreshTheme()
 {
     if (!d->window) { return; }
-    // The root theme remains unchanged for LS-2 dialogs. Override dimensions
-    // only on the central widget and main-window-owned popup roots.
+    if (d->managedWindow) {
+        QString authored;
+        for (const auto &s : d->widgets) { if (s.target == d->window) { authored = s.sheet; break; } }
+        QWidget *owner = d->window->parentWidget();
+        while (owner && owner->parentWidget()) { owner = owner->parentWidget(); }
+        QString theme = owner ? owner->styleSheet() : QString();
+        QString adjusted = authored;
+        if (!qFuzzyCompare(d->ratio, qreal(1))) {
+            adjusted = scaledStyleSheet(theme, d->ratio) + QLatin1Char('\n') + scaledStyleSheet(authored, d->ratio);
+            const int indicator = scaled(QFontMetrics(d->widgets.front().font).height(), d->ratio);
+            adjusted += QStringLiteral("QCheckBox::indicator, QTableView::indicator, QListWidget::indicator "
+                                       "{ width: %1px; height: %1px; }").arg(indicator);
+        }
+        if (d->window->styleSheet() != adjusted) { d->window->setStyleSheet(adjusted); }
+        return;
+    }
     QWidget *central = d->window->findChild<QWidget *>(QStringLiteral("centralwidget"));
     if (!central) { return; }
     const QString theme = d->window->styleSheet();

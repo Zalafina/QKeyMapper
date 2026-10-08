@@ -133,6 +133,16 @@ $targets = @(
     @{ Name = 'crash-reporter'; Makefile = (Join-Path $BuildDirectory 'crash-reporter\Makefile') },
     @{ Name = 'diagnostics-test'; Makefile = $testMakefilePath }
 )
+$uiTestBuildDirectory = Join-Path $reportDirectory 'ui-scale-test-qmake'
+New-Item -ItemType Directory -Force -Path $uiTestBuildDirectory | Out-Null
+$uiTestMakefile = Join-Path $uiTestBuildDirectory 'Makefile'
+$uiTestProject = Join-Path $sourceRoot 'tests\ui_scale_test.pro'
+$uiTestCommand = 'call "{0}" >nul && "{1}" -o "{2}" "{3}" -spec win32-msvc' -f $vcvars, $qmake, $uiTestMakefile, $uiTestProject
+$uiTestOutput = @(& $env:ComSpec /d /s /c $uiTestCommand 2>&1)
+$uiTestExitCode = $LASTEXITCODE
+$uiTestOutput | Set-Content -LiteralPath (Join-Path $reportDirectory 'qmake-ui-scale-test.txt') -Encoding utf8
+if ($uiTestExitCode -ne 0) { throw 'Cannot generate UI-scale-test compilation parameters.' }
+$targets += @{ Name = 'ui-scale-test'; Makefile = $uiTestMakefile }
 $sourceFiles = if ($Files -and $Files.Count -gt 0) {
     @($Files | ForEach-Object {
         $resolved = (Resolve-Path -LiteralPath $_ -ErrorAction Stop).Path

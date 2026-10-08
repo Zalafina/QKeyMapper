@@ -719,6 +719,7 @@ protected:
 private:
     friend class KeyListPopupContextMenu;
 
+    QkmUiScale *editorUiScale() const;
     void refreshToolButtons(void);
     void refreshMainList(void);
     void refreshCollectionList(void);
@@ -2308,6 +2309,7 @@ private:
     bool m_liveScaleBaselinesReady = false;
     bool m_scaledWidgetMetricsActive = false;
     QkmUiScale *m_uiScale = nullptr;
+    QList<QPointer<QkmUiScale>> m_editorUiScales;
     QTimer m_liveScaleSettleTimer;
 #ifdef DEBUG_LOGOUT_ON
     quint64 m_uiScaleDiagnosticSequence = 0;
