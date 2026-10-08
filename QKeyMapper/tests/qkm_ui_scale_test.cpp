@@ -1,5 +1,6 @@
 #include "../qkm_ui_scale.h"
 #include <QApplication>
+#include <QComboBox>
 #include <QDialog>
 #include <QHeaderView>
 #include <QLineEdit>
@@ -33,6 +34,17 @@ int main(int argc, char **argv)
     picture.fill(Qt::red);
     preview->setPixmap(picture);
     layout->addWidget(preview);
+    auto *reservedIconCombo = new QComboBox(&root);
+    auto *iconCombo = new QComboBox(&root);
+    for (auto *combo : {reservedIconCombo, iconCombo}) {
+        combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+        combo->setMinimumContentsLength(5);
+        combo->setIconSize(QSize(16, 16));
+        combo->addItems({QStringLiteral("First"), QStringLiteral("Second")});
+        combo->setCurrentIndex(1);
+        layout->addWidget(combo);
+    }
+    iconCombo->setItemIcon(1, QIcon(picture));
     auto *table = new QTableWidget(2, 2, &root);
     table->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     table->setColumnWidth(0, 80);
@@ -48,6 +60,8 @@ int main(int argc, char **argv)
     root.show();
     app.processEvents();
     const QSize baseline = root.size();
+    const int reservedComboHeight = reservedIconCombo->sizeHint().height();
+    const int iconComboHeight = iconCombo->sizeHint().height();
     for (int round = 0; round < 10; ++round) {
         for (qreal ratio : {0.5, 0.6, 0.7, 0.8, 0.9, 1.25, 1.5, 1.75, 2.0, 1.0}) {
             scale.applyWindow(ratio);
@@ -61,6 +75,14 @@ int main(int argc, char **argv)
             require(table->columnWidth(0) == qRound(80 * ratio), "Fixed column was not scaled");
             require(table->rowHeight(0) == qRound(25 * ratio), "Actual table row height was not scaled");
             require(nested.font() == nestedFont, "Nested root scaled twice");
+            require(qAbs(reservedIconCombo->sizeHint().height() - qRound(reservedComboHeight * ratio)) <= 1,
+                    "Reserved-icon combo height was not scaled once");
+            require(qAbs(iconCombo->sizeHint().height() - qRound(iconComboHeight * ratio)) <= 1,
+                    "Icon combo height was not scaled once");
+            for (auto *combo : {reservedIconCombo, iconCombo}) {
+                require(combo->iconSize() == QSize(qRound(16 * ratio), qRound(16 * ratio)), "Combo icon size changed");
+                require(combo->currentIndex() == 1 && combo->currentText() == QStringLiteral("Second"), "Combo selection changed");
+            }
         }
         require(root.size() == baseline, "Round trip lost session size");
     }

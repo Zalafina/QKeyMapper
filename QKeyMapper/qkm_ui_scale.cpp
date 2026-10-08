@@ -258,6 +258,7 @@ private:
 
     void normalize(QStyleOption &) const {}
     void normalize(QStyleOptionButton &o) const { o.iconSize = scaledSize(o.iconSize, 1 / ratio); }
+    void normalize(QStyleOptionComboBox &o) const { o.iconSize = scaledSize(o.iconSize, 1 / ratio); }
     void normalize(QStyleOptionToolButton &o) const
     {
         o.iconSize = scaledSize(o.iconSize, 1 / ratio);
