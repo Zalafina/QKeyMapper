@@ -27,8 +27,9 @@ using namespace QKeyMapperConstants;
 namespace {
 constexpr qint64 LOG_FILE_MAX_SIZE = 100LL * 1024 * 1024;
 constexpr int LOG_FILE_MAX_COUNT = 10;
-const QString LOG_DIRECTORY_NAME = QStringLiteral("log");
-const QString ACTIVE_LOG_FILE_NAME = QStringLiteral("QKeyMapper.log");
+// Immutable log names are initialized before the message handler and retain process lifetime.
+const QString LOG_DIRECTORY_NAME = QStringLiteral("log"); // clazy:exclude=non-pod-global-static
+const QString ACTIVE_LOG_FILE_NAME = QStringLiteral("QKeyMapper.log"); // clazy:exclude=non-pod-global-static
 
 static QMutex logfile_mutex;
 
@@ -144,7 +145,7 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
 //    QString context_info = QString("File:(%1) Line:(%2)").arg(QString(context.file)).arg(context.line);
     QString current_date_time = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");
     QString current_date = QString("[%1]").arg(current_date_time);
-    QString message = QString("%1%2 %3").arg(current_date).arg(level).arg(msg);
+    QString message = QString("%1%2 %3").arg(current_date, level, msg);
     QByteArray logLine = message.toUtf8();
     logLine.append("\r\n");
 

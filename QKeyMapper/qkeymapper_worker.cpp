@@ -199,7 +199,8 @@ constexpr int KEYSEQUENCE_PAUSE_STATE_NONE = 0;
 constexpr int KEYSEQUENCE_PAUSE_STATE_REQUESTED = 1;
 constexpr int KEYSEQUENCE_PAUSE_STATE_ACTIVE = 2;
 
-QMutex s_RunningKeySequenceOrikeyListMutex;
+// Process state outlives the runtime-created worker singleton and its send tasks.
+QMutex s_RunningKeySequenceOrikeyListMutex; // clazy:exclude=non-pod-global-static
 
 struct ForzaAutoMappingSpec {
     QString baseKey;
@@ -208,8 +209,8 @@ struct ForzaAutoMappingSpec {
     bool useGlobalThreshold = false;
 };
 
-QList<OrderedMap<QString, ForzaAutoMappingSpec>> s_PressedForzaBrakeSpecsList;
-QList<OrderedMap<QString, ForzaAutoMappingSpec>> s_PressedForzaAccelSpecsList;
+QList<OrderedMap<QString, ForzaAutoMappingSpec>> s_PressedForzaBrakeSpecsList; // clazy:exclude=non-pod-global-static
+QList<OrderedMap<QString, ForzaAutoMappingSpec>> s_PressedForzaAccelSpecsList; // clazy:exclude=non-pod-global-static
 
 void ensureForzaAutoSpecListsInitialized()
 {
@@ -759,12 +760,14 @@ struct PressTimerState {
     qint64 expiresAtMs = 0;
 };
 
-QMutex g_longPressStateMutex;
-QHash<QString, PressTimerState> g_longPressStateMap; // key: "<key>⏲<ms>"
+// Timer callbacks use the worker context; main() joins its thread before static teardown.
+// Keys are "<key>⏲<ms>" for long press and "<key>✖" for double press.
+QMutex g_longPressStateMutex; // clazy:exclude=non-pod-global-static
+QHash<QString, PressTimerState> g_longPressStateMap; // clazy:exclude=non-pod-global-static
 QAtomicInteger<quint32> g_longPressTokenSerial = 0;
 
-QMutex g_doublePressStateMutex;
-QHash<QString, PressTimerState> g_doublePressStateMap; // key: "<key>✖"
+QMutex g_doublePressStateMutex; // clazy:exclude=non-pod-global-static
+QHash<QString, PressTimerState> g_doublePressStateMap; // clazy:exclude=non-pod-global-static
 QAtomicInteger<quint32> g_doublePressTokenSerial = 0;
 
 qint64 monotonicNowMs()
@@ -2974,7 +2977,6 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             keyseq_finished = true;
         }
 
-        QString keyseq = inputKeys.constFirst();
         if (keyupdown == KEY_DOWN) {
             if (keyseq_start) {
                 if (*controller.task_stop_flag != INPUTSTOP_NONE) {
@@ -2986,7 +2988,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
             }
         }
 #if 0
-        else if (keyupdown == KEY_UP && keyseq.contains("vJoy-")) {
+        else if (keyupdown == KEY_UP && inputKeys.constFirst().contains("vJoy-")) {
+            const QString keyseq = inputKeys.constFirst();
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[sendInputKeys] vJoy Key Up wait start ->" << keyseq;
 #endif
@@ -11735,9 +11738,9 @@ QHash<int, QKeyMapper_Worker::Joy2MouseStates> QKeyMapper_Worker::checkJoy2Mouse
                 sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
             }
 
-            QString mappingkey = keymapdata.Mapping_Keys.constFirst();
             Q_UNUSED(originalkey_withoutindex);
 #ifdef DEBUG_LOGOUT_ON
+            const QString mappingkey = keymapdata.Mapping_Keys.constFirst();
             if (originalkey_withoutindex != mappingkey) {
                 qDebug() << "[checkJoy2MouseEnableStateMap]" << "OriginalKey and MappingKey unmatched! ->" << "OriKey: " << originalkey_withoutindex << "MapKey: " << mappingkey;
             }

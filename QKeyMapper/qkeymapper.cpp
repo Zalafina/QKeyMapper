@@ -38773,7 +38773,8 @@ void QKeyMapper::on_addmapdataButton_clicked()
         QString autoName = QString("%1{Button1}").arg(VBUTTON_ORIKEY_STR);  // fallback: Button1
         if (KeyMappingDataList) {
             QSet<QString> existingVButtonKeys;
-            for (const MAP_KEYDATA &data : *KeyMappingDataList) {
+            const auto &mappingDataList = *KeyMappingDataList;
+            for (const MAP_KEYDATA &data : mappingDataList) {
                 if (data.Original_Key.startsWith(VBUTTON_ORIKEY_STR)) {
                     existingVButtonKeys.insert(data.Original_Key);
                 }

@@ -55,7 +55,7 @@ QString removeWaitTimeFromTokenFallback(const QString &token)
 {
     QString result = token;
     const QString waitPrefix = QString::fromUtf8(SEPARATOR_WAITTIME);
-    const QRegularExpression waitRe(waitPrefix + QStringLiteral("(?:\\(\\d+~\\d+\\)|\\d+)"));
+    static const QRegularExpression waitRe(waitPrefix + QStringLiteral("(?:\\(\\d+~\\d+\\)|\\d+)"));
     result.remove(waitRe);
     return result;
 }

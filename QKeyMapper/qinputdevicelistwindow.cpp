@@ -19,7 +19,8 @@ QInputDeviceListWindow::QInputDeviceListWindow(QWidget *parent)
     }
 
     if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
-        for (QWidget *child : findChildren<QWidget*>()) {
+        const auto childWidgets = findChildren<QWidget*>();
+        for (QWidget *child : childWidgets) {
             if (!qobject_cast<QGroupBox*>(child)) {
                 child->setStyle(fusionStyle);
             }
@@ -310,8 +311,6 @@ void QInputDeviceListWindow::writeDeviceList()
 
 void QInputDeviceListWindow::writeKeyboardDeviceList()
 {
-    QList<InputDevice> keyboardlist = Interception_Worker::getKeyboardDeviceList();
-
     int rowCount = ui->keyboardDeviceTable->rowCount();
     for (int row = 0; row < rowCount; ++row) {
         QTableWidgetItem* item = ui->keyboardDeviceTable->item(row, DEVICE_TABLE_DISABLE_COLUMN);
@@ -334,8 +333,6 @@ void QInputDeviceListWindow::writeKeyboardDeviceList()
 
 void QInputDeviceListWindow::writeMouseDeviceList()
 {
-    QList<InputDevice> mouselist = Interception_Worker::getMouseDeviceList();
-
     int rowCount = ui->mouseDeviceTable->rowCount();
     for (int row = 0; row < rowCount; ++row) {
         QTableWidgetItem* item = ui->mouseDeviceTable->item(row, DEVICE_TABLE_DISABLE_COLUMN);

@@ -19,7 +19,8 @@ QTrayIconSelectDialog::QTrayIconSelectDialog(QWidget *parent)
     }
 
     if (QStyle *fusionStyle = QKeyMapperStyle::fusionStyle()) {
-        for (QWidget *child : findChildren<QWidget*>()) {
+        const auto childWidgets = findChildren<QWidget*>();
+        for (QWidget *child : childWidgets) {
             if (!qobject_cast<QGroupBox*>(child)) {
                 child->setStyle(fusionStyle);
             }

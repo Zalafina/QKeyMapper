@@ -298,7 +298,8 @@ private:
 class FloatingButtonWidget : public QPushButton
 {
     Q_OBJECT
-    Q_PROPERTY(qreal hoverProgress READ hoverProgress WRITE setHoverProgress)
+    // Animation-only property; no binding or notification consumers.
+    Q_PROPERTY(qreal hoverProgress READ hoverProgress WRITE setHoverProgress) // clazy:exclude=qproperty-without-notify
 
 public:
     explicit FloatingButtonWidget(QWidget *parent = Q_NULLPTR);
@@ -1600,7 +1601,10 @@ public slots:
     void HotKeyMappingTableSwitchTab(const QString &hotkey_string);
     void MappingTableSwitchByTabName(const QString &tabName, bool remember_tabname = false);
     void switchKeyMappingTabIndex(int index);
+public:
     int normalMappingTabInsertIndex(void) const;
+
+public slots:
     void syncTrackedTabIndexesAfterTabStructureChange(QWidget *currentWidget, QWidget *lastWidget);
     bool rebindCurrentKeyMappingTabAfterRecovery(bool refreshCurrentTable = true);
     bool syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWidget = Q_NULLPTR, QWidget *lastWidget = Q_NULLPTR);
@@ -1716,12 +1720,14 @@ public slots:
     void importMappingTableByTabIndex(int tabIndex);
     bool deleteMappingTableByTabIndex(int tabIndex);
 
+public:
     bool isProcessListVisible() const { return m_ProcessListVisible; }
     bool isShowNotesEnabled() const    { return m_ShowNotes; }
     bool isHideDisabledEnabled() const { return m_HideDisabled; }
     bool isShowFloatingEnabled() const { return m_ShowFloating; }
     bool isShowCategoryEnabled() const { return m_ShowCategory; }
     bool isFloatingButtonDragCoordinateEnabled() const { return m_FloatingButton_ShowDragCoordinate; }
+public slots:
     void setFloatingButtonDragCoordinateEnabled(bool enabled);
 
 private slots:

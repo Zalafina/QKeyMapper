@@ -1281,7 +1281,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
         if (depth == 0) {
             // Found balanced braces, now look for the "x<count>" part
             // Note: Don't use ^ anchor because we're matching from an offset position
-            QRegularExpression countPattern(R"(x(\d+))");
+            static const QRegularExpression countPattern(R"(x(\d+))");
             QRegularExpressionMatch countMatch = countPattern.match(mappingKey, bracePos);
 
             if (countMatch.hasMatch()) {
@@ -1328,7 +1328,7 @@ QPair<QString, QStringList> QItemSetupDialog::extractSpecialPatternsWithBracketB
 
         if (depth == 0) {
             // Found balanced braces, now look for the optional "x<count>" part
-            QRegularExpression countPattern(R"(x(\d+))");
+            static const QRegularExpression countPattern(R"(x(\d+))");
             QRegularExpressionMatch countMatch = countPattern.match(mappingKey, bracePos);
 
             MatchInfo info;
