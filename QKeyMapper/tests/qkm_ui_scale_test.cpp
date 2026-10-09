@@ -73,9 +73,28 @@ void verifyClearButtonScaling()
 }
 }
 
+namespace {
+void verifyAuthoredWindowSize()
+{
+    class HintDialog final : public QDialog {
+    public:
+        QSize minimumSizeHint() const override { return QSize(240, 120); }
+    };
+    HintDialog root;
+    root.resize(180, 120);
+    const QSize authored = root.size();
+    QkmUiScale scale(&root);
+    scale.manageWindow();
+    scale.applyWindow(2);
+    scale.applyWindow(1);
+    require(root.size() == authored, "Default session size was expanded by an implicit hint");
+}
+}
+
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
+    verifyAuthoredWindowSize();
     verifyClearButtonScaling();
     QDialog root;
     root.setFont(QFont(QStringLiteral("Arial"), 9));

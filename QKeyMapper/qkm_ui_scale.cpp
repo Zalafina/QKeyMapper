@@ -520,8 +520,9 @@ void QkmUiScale::applyWindow(qreal ratio)
     }
     refreshLayouts();
     if (!d->window->isMaximized() && !d->window->isMinimized()) {
-        const QSize target = (d->normalSizes[d->sizeMode] * ratio).toSize()
-            .expandedTo(d->window->minimumSizeHint()).expandedTo(d->window->minimumSize());
+        QSize target = (d->normalSizes[d->sizeMode] * ratio).toSize().expandedTo(d->window->minimumSize());
+        // At R=1, preserve authored/session sizes that intentionally undercut implicit hints.
+        if (!qFuzzyCompare(ratio, qreal(1))) { target = target.expandedTo(d->window->minimumSizeHint()); }
         d->window->resize(target);
     }
 #ifdef DEBUG_LOGOUT_ON

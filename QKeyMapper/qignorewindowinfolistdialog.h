@@ -4,6 +4,10 @@
 #include <QDialog>
 #include <QMouseEvent>
 #include <QListWidgetItem>
+#include <QPointer>
+#include <QTimer>
+
+class QkmUiScale;
 
 namespace Ui {
 class QIgnoreWindowInfoListDialog;
@@ -28,6 +32,7 @@ public:
 protected:
     // bool event(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
+    void changeEvent(QEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
 
 private slots:
@@ -47,6 +52,12 @@ private:
     void initRuleWindowInfoArea(void);
     void loadRuleToUI(const QString &ruleName);
     void updateSaveRuleButtonText(void);
+    void refreshRuleItemHeights();
+
+    friend class QKeyMapper;
+    QPointer<QkmUiScale> m_uiScale;
+    QTimer m_scrollRestoreTimer;
+    int m_ruleScrollValue = 0;
 
 private:
     static QIgnoreWindowInfoListDialog *m_instance;

@@ -4041,7 +4041,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         m_ItemSetupDialog->findChild<QCrosshairSetupDialog *>(),
         m_ItemSetupDialog->findChild<QFloatingButtonSetupDialog *>(),
         m_TableSetupDialog->findChild<QFloatingWindowSetupDialog *>(),
-        m_MacroListDialog, m_MappingSequenceEdit
+        m_MacroListDialog, m_MappingSequenceEdit,
+        m_GeneralAdvancedDialog, m_MappingAdvancedDialog, m_VButtonPanelSetupDialog,
+        m_Gyro2MouseOptionDialog, m_TrayIconSelectDialog, m_NotificationSetupDialog,
+        m_CustomNotificationSetupDialog, m_IgnoreRulesListDialog
     };
     for (QWidget *root : editorRoots) { registerEditorUiScale(root); }
 
@@ -4126,6 +4129,7 @@ void QKeyMapper::registerEditorUiScale(QWidget *root)
     }
     if (auto *macro = qobject_cast<QMacroListDialog *>(root)) { macro->m_uiScale = scale; }
     if (auto *sequence = qobject_cast<QMappingSequenceEdit *>(root)) { sequence->m_uiScale = scale; }
+    if (auto *rules = qobject_cast<QIgnoreWindowInfoListDialog *>(root)) { rules->m_uiScale = scale; }
     scale->applyWindow(m_runtimeScaleCompensation);
 }
 

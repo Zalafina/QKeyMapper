@@ -3,6 +3,8 @@
 #include "ui_qignorewindowinfolistdialog.h"
 #include "qkeymapper_constants.h"
 #include "qstyle_singletons.h"
+#include "qkm_ui_scale.h"
+#include <QScrollBar>
 
 using namespace QKeyMapperConstants;
 
@@ -14,6 +16,11 @@ QIgnoreWindowInfoListDialog::QIgnoreWindowInfoListDialog(QWidget *parent)
 {
     m_instance = this;
     ui->setupUi(this);
+
+    m_scrollRestoreTimer.setSingleShot(true);
+    connect(&m_scrollRestoreTimer, &QTimer::timeout, this, [this]() {
+        ui->ruleListWidget->verticalScrollBar()->setValue(m_ruleScrollValue);
+    });
 
     if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
         ui->ruleEditGroupBox->setStyle(windowsStyle);
@@ -102,6 +109,8 @@ void QIgnoreWindowInfoListDialog::setUILanguage(int languageindex)
 
 void QIgnoreWindowInfoListDialog::updateRulesListWidget()
 {
+    // A business rebuild keeps its existing scroll-reset contract.
+    m_scrollRestoreTimer.stop();
     // Clear existing items
     ui->ruleListWidget->clear();
 
@@ -116,12 +125,32 @@ void QIgnoreWindowInfoListDialog::updateRulesListWidget()
             item->setFont(font);
             item->setForeground(Qt::gray);
         }
-        item->setSizeHint(QSize(0, IGNOREWINDOWINFOLIST_ITEM_HEIGHT));
 
         ui->ruleListWidget->addItem(item);
     }
 
+    refreshRuleItemHeights();
     updateSaveRuleButtonText();
+}
+
+void QIgnoreWindowInfoListDialog::refreshRuleItemHeights()
+{
+    const qreal ratio = m_uiScale ? m_uiScale->ratio() : 1.0;
+    const int height = qMax(1, qRound(IGNOREWINDOWINFOLIST_ITEM_HEIGHT * ratio));
+    for (int row = 0; row < ui->ruleListWidget->count(); ++row) {
+        ui->ruleListWidget->item(row)->setSizeHint(QSize(0, height));
+    }
+}
+
+void QIgnoreWindowInfoListDialog::changeEvent(QEvent *event)
+{
+    if (event->type() == QEvent::FontChange && m_uiScale && m_uiScale->isApplying()) {
+        // Row heights can temporarily clamp scrolling before the root is resized.
+        if (!m_scrollRestoreTimer.isActive()) { m_ruleScrollValue = ui->ruleListWidget->verticalScrollBar()->value(); }
+        m_scrollRestoreTimer.start(0);
+    }
+    QDialog::changeEvent(event);
+    if (event->type() == QEvent::FontChange) { refreshRuleItemHeights(); }
 }
 
 void QIgnoreWindowInfoListDialog::showEvent(QShowEvent *event)
