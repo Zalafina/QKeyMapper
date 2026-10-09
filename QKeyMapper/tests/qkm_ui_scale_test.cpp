@@ -8,6 +8,7 @@
 #include <QScrollBar>
 #include <QStyleFactory>
 #include <QTableWidget>
+#include <QToolButton>
 #include <QVBoxLayout>
 #include <qt_windows.h>
 #include <cstdio>
@@ -18,11 +19,64 @@ void require(bool ok, const char *message)
 {
     if (!ok) { std::fprintf(stderr, "%s\n", message); std::exit(1); }
 }
+
+void verifyClearButtonScaling()
+{
+    QDialog root;
+    root.setFont(QFont(QStringLiteral("Arial"), 9));
+    auto *fusion = QStyleFactory::create(QStringLiteral("Fusion"));
+    fusion->setParent(&root);
+    root.setStyle(fusion);
+    auto *layout = new QVBoxLayout(&root);
+    auto *edit = new QLineEdit(&root);
+    edit->setStyle(fusion);
+    edit->setClearButtonEnabled(true);
+    edit->setText(QStringLiteral("vjoy"));
+    layout->addWidget(edit);
+    root.resize(400, 100);
+    root.show();
+    QApplication::processEvents();
+    auto *button = edit->findChild<QToolButton *>(QString(), Qt::FindDirectChildrenOnly);
+    require(button, "Native clear button missing");
+    const QRect authoredButton = button->geometry();
+    QList<QStyle::PixelMetric> metrics = {QStyle::PM_SmallIconSize, QStyle::PM_TabBarIconSize,
+        QStyle::PM_ListViewIconSize, QStyle::PM_IconViewIconSize, QStyle::PM_ScrollView_ScrollBarSpacing};
+#if QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)
+    metrics.prepend(QStyle::PM_LineEditIconMargin);
+    metrics.prepend(QStyle::PM_LineEditIconSize);
+#endif
+    QList<int> baseline;
+    for (auto metric : metrics) { baseline.append(edit->style()->pixelMetric(metric, nullptr, edit)); }
+    QkmUiScale scale(&root);
+    scale.manageWindow();
+    for (qreal ratio : {1.0, 2.0, 0.5, 1.0}) {
+        scale.applyWindow(ratio);
+        QApplication::processEvents();
+        for (int i = 0; i < metrics.size(); ++i) {
+            const int actual = edit->style()->pixelMetric(metrics[i], nullptr, edit);
+            std::printf("Style metric=%d R=%.2f baseline=%d actual=%d\n", int(metrics[i]), double(ratio), baseline[i], actual);
+            std::fflush(stdout);
+            require(actual == qRound(baseline[i] * ratio), "Style metric was scaled more than once");
+        }
+        require(edit->rect().contains(button->geometry()), "Clear button clipped by line edit");
+        if (qFuzzyCompare(ratio, qreal(1))) {
+            require(button->geometry() == authoredButton, "Default clear button geometry changed");
+        }
+        const auto *focus = QApplication::focusWidget();
+        button->click();
+        require(edit->text().isEmpty(), "Native clear button did not clear text");
+        require(QApplication::focusWidget() == focus, "Clear button stole focus");
+        edit->setText(QStringLiteral("vjoy"));
+        QApplication::processEvents();
+    }
+    std::puts("Native clear button and nested style metrics passed");
+}
 }
 
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
+    verifyClearButtonScaling();
     QDialog root;
     root.setFont(QFont(QStringLiteral("Arial"), 9));
     auto *layout = new QVBoxLayout(&root);

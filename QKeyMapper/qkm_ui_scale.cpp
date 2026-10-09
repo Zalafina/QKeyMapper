@@ -128,8 +128,9 @@ public:
 
     int pixelMetric(PixelMetric metric, const QStyleOption *option, const QWidget *widget) const override
     {
-        const int value = QProxyStyle::pixelMetric(metric, option, widget);
-        return delegating ? value : scaled(value, ratio);
+        if (delegating) { return QProxyStyle::pixelMetric(metric, option, widget); }
+        QScopedValueRollback<bool> guard(delegating, true);
+        return scaled(QProxyStyle::pixelMetric(metric, option, widget), ratio);
     }
 
     QSize sizeFromContents(ContentsType type, const QStyleOption *option,
