@@ -107,7 +107,9 @@ Detailed preparation, commands and diagnostic pitfalls: [Autonomous validation t
 - Reuse existing architecture.
 - New comments in English.
 - No .ts edits unless asked.
-- Keep Qt/C++ source UTF-8 without BOM.
+- Keep first-party Qt/C++ source files, including tests, UTF-8 without BOM with LF line endings. Create new files as LF and preserve LF when editing existing files.
+- Before committing, verify the working-tree line endings of staged new or edited source files with `git ls-files --eol`; `core.autocrlf=input` can hide working-tree CRLF from `git diff`.
+- Do not normalize third-party or unrelated files as part of this rule.
 
 ## UI language priority and localization
 
