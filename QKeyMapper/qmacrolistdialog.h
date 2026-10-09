@@ -2,6 +2,7 @@
 #define QMACROLISTDIALOG_H
 
 #include <QDialog>
+#include <QPointer>
 #include <QTabWidget>
 #include <QTableWidget>
 #include <QWidgetAction>
@@ -10,6 +11,8 @@
 #include <QVBoxLayout>
 
 #include "qkeymapper_worker.h"
+
+class QkmUiScale;
 
 namespace Ui {
 class QMacroListDialog;
@@ -194,6 +197,8 @@ public:
 private:
     static QMacroListDialog *m_instance;
     Ui::QMacroListDialog *ui;
+    friend class QKeyMapper;
+    QPointer<QkmUiScale> m_uiScale;
 
     // Category filter menu UI (built in C++ only)
     QMenu *m_CategoryFilterMenu = Q_NULLPTR;

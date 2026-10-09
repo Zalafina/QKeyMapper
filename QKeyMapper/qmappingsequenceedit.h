@@ -2,7 +2,10 @@
 #define QMAPPINGSEQUENCEEDIT_H
 
 #include <QDialog>
+#include <QPointer>
 #include <QTableWidget>
+
+class QkmUiScale;
 
 namespace Ui {
 class QMappingSequenceEdit;
@@ -176,6 +179,8 @@ private:
 
     static QMappingSequenceEdit *m_instance;
     Ui::QMappingSequenceEdit *ui;
+    friend class QKeyMapper;
+    QPointer<QkmUiScale> m_uiScale;
     QStringList m_MappingSequenceList;
     QStringList m_MappingCommentList;
     int m_MappingSequenceEditType;

@@ -2310,6 +2310,7 @@ private:
     bool m_scaledWidgetMetricsActive = false;
     QkmUiScale *m_uiScale = nullptr;
     QList<QPointer<QkmUiScale>> m_editorUiScales;
+    void registerEditorUiScale(QWidget *root);
     QTimer m_liveScaleSettleTimer;
 #ifdef DEBUG_LOGOUT_ON
     quint64 m_uiScaleDiagnosticSequence = 0;

@@ -4034,39 +4034,16 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         }
     });
 
-    // Register only the seven editor roots; each manager belongs to its window.
+    // Each editor root owns its manager; nested windows are registered separately.
     QWidget *editorRoots[] = {
         m_ItemSetupDialog, m_TableSetupDialog, m_deviceListWindow,
         m_ItemSetupDialog->findChild<QKeyRecord *>(),
         m_ItemSetupDialog->findChild<QCrosshairSetupDialog *>(),
         m_ItemSetupDialog->findChild<QFloatingButtonSetupDialog *>(),
-        m_TableSetupDialog->findChild<QFloatingWindowSetupDialog *>()
+        m_TableSetupDialog->findChild<QFloatingWindowSetupDialog *>(),
+        m_MacroListDialog, m_MappingSequenceEdit
     };
-    for (QWidget *root : editorRoots) {
-        Q_ASSERT(root);
-        if (!root) { continue; }
-        // Main-window font inheritance may already reflect a non-default startup R.
-        root->setFont(QFont(FONTNAME_ENGLISH, 9));
-        auto *scale = new QkmUiScale(root);
-        scale->setStyleResolver([](QWidget *widget) -> QStyle * {
-            QWidget *owner = widget;
-            while (!owner->testAttribute(Qt::WA_SetStyle) && !owner->isWindow() && owner->parentWidget()) {
-                owner = owner->parentWidget();
-            }
-            const QString name = owner->objectName();
-            return qobject_cast<QGroupBox *>(owner) || qobject_cast<QMenu *>(owner)
-                || name.startsWith(QStringLiteral("oriList_Select")) || name.startsWith(QStringLiteral("mapList_Select"))
-                || (qobject_cast<QToolButton *>(owner) && !name.startsWith(QStringLiteral("qt_")))
-                ? QKeyMapperStyle::windowsStyle() : QKeyMapperStyle::fusionStyle();
-        });
-        scale->manageWindow();
-        m_editorUiScales.append(scale);
-        if (auto *floating = qobject_cast<QFloatingButtonSetupDialog *>(root)) {
-            floating->m_uiScale = scale;
-            scale->setWindowSizeMode(floating->getPreferredLayoutMode());
-        }
-        scale->applyWindow(m_runtimeScaleCompensation);
-    }
+    for (QWidget *root : editorRoots) { registerEditorUiScale(root); }
 
     // Baselines are captured after the first show has finalized legacy constraints.
     m_uiScale = new QkmUiScale(this);
@@ -4123,6 +4100,35 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
 #endif
     QKEYMAPPER_ATOMIC_STORE_RELAXED(s_AtomicIsInitialized, 1);
 }
+void QKeyMapper::registerEditorUiScale(QWidget *root)
+{
+    Q_ASSERT(root);
+    if (!root) { return; }
+    // Main-window font inheritance may already reflect a non-default startup R.
+    root->setFont(QFont(FONTNAME_ENGLISH, 9));
+    auto *scale = new QkmUiScale(root);
+    scale->setStyleResolver([](QWidget *widget) -> QStyle * {
+        QWidget *owner = widget;
+        while (!owner->testAttribute(Qt::WA_SetStyle) && !owner->isWindow() && owner->parentWidget()) {
+            owner = owner->parentWidget();
+        }
+        const QString name = owner->objectName();
+        return qobject_cast<QGroupBox *>(owner) || qobject_cast<QMenu *>(owner)
+            || name.startsWith(QStringLiteral("oriList_Select")) || name.startsWith(QStringLiteral("mapList_Select"))
+            || (qobject_cast<QToolButton *>(owner) && !name.startsWith(QStringLiteral("qt_")))
+            ? QKeyMapperStyle::windowsStyle() : QKeyMapperStyle::fusionStyle();
+    });
+    scale->manageWindow();
+    m_editorUiScales.append(scale);
+    if (auto *floating = qobject_cast<QFloatingButtonSetupDialog *>(root)) {
+        floating->m_uiScale = scale;
+        scale->setWindowSizeMode(floating->getPreferredLayoutMode());
+    }
+    if (auto *macro = qobject_cast<QMacroListDialog *>(root)) { macro->m_uiScale = scale; }
+    if (auto *sequence = qobject_cast<QMappingSequenceEdit *>(root)) { sequence->m_uiScale = scale; }
+    scale->applyWindow(m_runtimeScaleCompensation);
+}
+
 QKeyMapper::~QKeyMapper()
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -42191,20 +42197,32 @@ void KeyListComboBoxPopup::updatePopupGeometry(void)
     }
     desiredHeight += listViewportHeight;
 
+    const int minimumHeight = minimumSizeHint().height();
+    desiredHeight = qMax(desiredHeight, minimumHeight);
     QScreen *screen = screenForWidget(m_ComboBox);
     QRect availableGeometry;
     int popupHeight = desiredHeight;
     int availableBelow = -1;
+    int availableAbove = -1;
+    int availableHeight = QWIDGETSIZE_MAX;
+    bool openAbove = false;
     if (screen != Q_NULLPTR) {
         availableGeometry = screen->availableGeometry();
         if (popupPos.x() + popupWidth > availableGeometry.right()) {
             popupPos.setX(qMax(availableGeometry.left(), availableGeometry.right() - popupWidth + 1));
         }
 
-        popupPos.setY(comboRect.bottom());
-        availableBelow = qMax(1, availableGeometry.bottom() - popupPos.y() - 2);
-        popupHeight = qMin(desiredHeight, availableBelow);
+        availableBelow = qMax(0, availableGeometry.bottom() - comboRect.bottom() - 2);
+        availableAbove = qMax(0, comboRect.top() - availableGeometry.top() - 2);
+        openAbove = desiredHeight > availableBelow && availableAbove > availableBelow;
+        availableHeight = qBound(1, openAbove ? availableAbove : availableBelow, availableGeometry.height());
+        popupHeight = qMin(desiredHeight, availableHeight);
+        popupPos.setY(openAbove ? comboRect.top() - popupHeight : comboRect.bottom());
+        popupPos.setY(qBound(availableGeometry.top(), popupPos.y(), availableGeometry.bottom() - popupHeight + 1));
     }
+    // A layout minimum must not defeat the screen-space limit; the list can scroll.
+    setMaximumHeight(availableHeight);
+    setMinimumHeight(qMin(minimumHeight, popupHeight));
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[KeyListComboBoxPopup::updatePopupGeometry]"
@@ -42224,6 +42242,8 @@ void KeyListComboBoxPopup::updatePopupGeometry(void)
              << ", screenName=" << (screen != Q_NULLPTR ? screen->name() : QStringLiteral("<null>"))
              << ", availableGeometry=" << availableGeometry
              << ", availableBelow=" << availableBelow
+             << ", availableAbove=" << availableAbove
+             << ", openAbove=" << openAbove
              << ", popupHeight=" << popupHeight
              << ", finalGeometry=" << QRect(popupPos, QSize(popupWidth, popupHeight));
 #endif

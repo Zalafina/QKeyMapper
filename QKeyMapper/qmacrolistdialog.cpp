@@ -3,6 +3,7 @@
 #include "qkeymapper_qt_compat.h"
 #include "qkeymapper_constants.h"
 #include "qstyle_singletons.h"
+#include "qkm_ui_scale.h"
 
 using namespace QKeyMapperConstants;
 
@@ -219,6 +220,7 @@ void QMacroListDialog::refreshMacroListTabWidget(MacroListDataTableWidget *macro
 #endif
     }
 
+    if (m_uiScale) { m_uiScale->applyWindow(m_uiScale->ratio()); }
     resizeMacroListTableColumnWidth(macroDataTable);
 
     updateMacroCategoryFilterComboBox();
@@ -434,6 +436,9 @@ void QMacroListDialog::rebuildMacroCategoryFilterMenu(void)
     for (const QString &categoryValue : std::as_const(m_CategoryFilterDisplayOrder)) {
         const bool isBlank = categoryValue.isEmpty();
         QCheckBox *cb = new QCheckBox(isBlank ? tr("Blank") : categoryValue, m_CategoryFilterListContainer);
+        if (m_uiScale && !qFuzzyCompare(m_uiScale->ratio(), qreal(1))) {
+            cb->setFont(m_CategoryFilterAllCheckBox->font());
+        }
         cb->setTristate(false);
         cb->setProperty("categoryValue", categoryValue);
         QString cb_text = cb->text();
@@ -485,6 +490,12 @@ void QMacroListDialog::rebuildMacroCategoryFilterMenu(void)
     updateMacroAllCheckStateFromItems();
     updateMacroCategoryFilterHeaderAppearance();
 
+    const qreal ratio = m_uiScale ? m_uiScale->ratio() : 1;
+    if (m_uiScale && !qFuzzyCompare(ratio, qreal(1))) {
+        m_uiScale->capture();
+        m_uiScale->apply(ratio, m_CategoryFilterMenu);
+    }
+
     // Dynamically size the panel to content (width fits longest checkbox text; height fits items up to max).
     if (m_CategoryFilterPanel && m_CategoryFilterScrollArea && m_CategoryFilterAllCheckBox) {
         const QVBoxLayout *panelLayout = qobject_cast<QVBoxLayout *>(m_CategoryFilterPanel->layout());
@@ -509,9 +520,9 @@ void QMacroListDialog::rebuildMacroCategoryFilterMenu(void)
         itemsHeight += listMargins.top() + listMargins.bottom();
 
         const int allHeight = m_CategoryFilterAllCheckBox->sizeHint().height();
-        const int otherHeight = panelMargins.top() + panelMargins.bottom() + allHeight + panelSpacing + 16;
+        const int otherHeight = panelMargins.top() + panelMargins.bottom() + allHeight + panelSpacing + qRound(16 * ratio);
 
-        const int maxHeight = CATEGORY_FILTER_MAX_HEIGHT_MACROLIST;
+        const int maxHeight = qRound(CATEGORY_FILTER_MAX_HEIGHT_MACROLIST * ratio);
         const int desiredHeightUncapped = otherHeight + itemsHeight;
         const int desiredHeight = qMin(desiredHeightUncapped, maxHeight);
 
@@ -523,8 +534,8 @@ void QMacroListDialog::rebuildMacroCategoryFilterMenu(void)
             idealWidth += sbExtent;
         }
 
-        int desiredWidth = qMax(idealWidth, CATEGORY_FILTER_MIN_WIDTH_MACROLIST);
-        desiredWidth = qMin(desiredWidth, CATEGORY_FILTER_MAX_WIDTH_MACROLIST);
+        int desiredWidth = qMax(idealWidth, qRound(CATEGORY_FILTER_MIN_WIDTH_MACROLIST * ratio));
+        desiredWidth = qMin(desiredWidth, qRound(CATEGORY_FILTER_MAX_WIDTH_MACROLIST * ratio));
 
         // Ensure horizontal scrolling can happen when width is capped.
         if (m_CategoryFilterListContainer) {
@@ -633,8 +644,9 @@ void QMacroListDialog::showMacroCategoryFilterPopup(const QPoint &globalAnchorPo
         return;
     }
 
+    const qreal ratio = m_uiScale ? m_uiScale->ratio() : 1;
     // Clear any previous fixed sizing so rebuild can compute a fresh fixed size.
-    const int maxHeight = CATEGORY_FILTER_MAX_HEIGHT_MACROLIST;
+    const int maxHeight = qRound(CATEGORY_FILTER_MAX_HEIGHT_MACROLIST * ratio);
     m_CategoryFilterMenu->setMinimumWidth(0);
     m_CategoryFilterMenu->setMaximumWidth(QWIDGETSIZE_MAX);
     m_CategoryFilterPanel->setMinimumSize(0, 0);
@@ -679,7 +691,7 @@ void QMacroListDialog::showMacroCategoryFilterPopup(const QPoint &globalAnchorPo
     QPoint pos = globalAnchorPos; // prefer right, top-aligned
 
     if (screen && !avail.isEmpty()) {
-        const int kMargin = 8;
+        const int kMargin = qRound(8 * ratio);
         QRect availInner = avail.adjusted(kMargin, kMargin, -kMargin, -kMargin);
         if (availInner.isEmpty()) {
             availInner = avail;
@@ -703,7 +715,7 @@ void QMacroListDialog::showMacroCategoryFilterPopup(const QPoint &globalAnchorPo
 
             if (popupSize.width() > availInner.width()) {
                 newPanelW = basePanelW - (popupSize.width() - availInner.width());
-                const int minW = qMin(CATEGORY_FILTER_MIN_WIDTH_MACROLIST, availInner.width());
+                const int minW = qMin(qRound(CATEGORY_FILTER_MIN_WIDTH_MACROLIST * ratio), availInner.width());
                 newPanelW = qMax(minW, newPanelW);
                 newPanelW = qMin(newPanelW, availInner.width());
             }
@@ -1461,12 +1473,18 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
 
     macroDataTable->resizeColumnToContents(MACRO_NAME_COLUMN);
 
-    int macro_name_width_min = referenceWidth/7 - 15;
+    const qreal ratio = m_uiScale ? m_uiScale->ratio() : 1;
+    int macro_name_width_min = referenceWidth/7 - qRound(15 * ratio);
+    if (m_uiScale) {
+        const int rowHeight = qRound(25 * ratio);
+        macroDataTable->verticalHeader()->setDefaultSectionSize(rowHeight);
+        for (int row = 0; row < macroDataTable->rowCount(); ++row) { macroDataTable->setRowHeight(row, rowHeight); }
+    }
     int macro_name_width_max = referenceWidth / 2;
     int macro_name_width = macroDataTable->columnWidth(MACRO_NAME_COLUMN);
 
     // Calculate Category column width
-    int macro_category_width_min = referenceWidth / 20 + 5;
+    int macro_category_width_min = referenceWidth / 20 + qRound(5 * ratio);
     int macro_category_width_max = referenceWidth / 5;
     macroDataTable->resizeColumnToContents(MACRO_CATEGORY_COLUMN);
     int macro_category_width = macroDataTable->columnWidth(MACRO_CATEGORY_COLUMN);
@@ -1478,7 +1496,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
     }
 
     // Calculate Note column width
-    int macro_note_width_min = referenceWidth / 20 + 5;
+    int macro_note_width_min = referenceWidth / 20 + qRound(5 * ratio);
     int macro_note_width_max = referenceWidth / 5;
     macroDataTable->resizeColumnToContents(MACRO_NOTE_COLUMN);
     int macro_note_width = macroDataTable->columnWidth(MACRO_NOTE_COLUMN);
@@ -1496,7 +1514,7 @@ void QMacroListDialog::resizeMacroListTableColumnWidth(MacroListDataTableWidget 
         macro_name_width = macro_name_width_max;
     }
 
-    int macro_content_width_min = referenceWidth/5 - 15;
+    int macro_content_width_min = referenceWidth/5 - qRound(15 * ratio);
     int macro_content_width = viewportWidth - macro_name_width - macro_category_width - macro_note_width;
     if (macro_content_width < macro_content_width_min) {
         macro_content_width = macro_content_width_min;

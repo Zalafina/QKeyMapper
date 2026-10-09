@@ -1,4 +1,5 @@
 #include "qmappingsequenceedit.h"
+#include "qkm_ui_scale.h"
 #include "ui_qmappingsequenceedit.h"
 #include "qkeymapper.h"
 #include "qkeymapper_constants.h"
@@ -226,6 +227,7 @@ void QMappingSequenceEdit::refreshMappingSequenceEditTableWidget(MappingSequence
     qDebug().nospace().noquote() << debugmessage;
 #endif
 
+    if (m_uiScale) { m_uiScale->applyWindow(m_uiScale->ratio()); }
     resizeMappingSequenceEditTableColumnWidth();
     // Correct after scrollbar state settles (appear/disappear)
     QTimer::singleShot(0, this, [this]() {
@@ -269,14 +271,20 @@ void QMappingSequenceEdit::resizeMappingSequenceEditTableColumnWidth()
     const int referenceWidth = table->width();
     int viewportWidth = table->viewport()->width();
 
+    const qreal ratio = m_uiScale ? m_uiScale->ratio() : 1;
+    if (m_uiScale) {
+        const int rowHeight = qRound(25 * ratio);
+        table->verticalHeader()->setDefaultSectionSize(rowHeight);
+        for (int row = 0; row < table->rowCount(); ++row) { table->setRowHeight(row, rowHeight); }
+    }
     // Reserve scrollbar width to prevent horizontal scrollbar from appearing
     int maxAllowableWidth = viewportWidth;
     if (table->verticalScrollBar() && !table->verticalScrollBar()->isVisible()) {
-        maxAllowableWidth -= qApp->style()->pixelMetric(QStyle::PM_ScrollBarExtent) + 2;
+        maxAllowableWidth -= table->style()->pixelMetric(QStyle::PM_ScrollBarExtent) + qRound(2 * ratio);
     }
 
     // Comment column: resize to content, clamp between min and max
-    const int commentWidthMin = 50;
+    const int commentWidthMin = qRound(50 * ratio);
     const int commentWidthMax = referenceWidth / 3;
     const int mappingKeyWidthMin = referenceWidth / 5;
     table->resizeColumnToContents(MAPPINGSEQUENCEEDIT_COMMENT_COLUMN);

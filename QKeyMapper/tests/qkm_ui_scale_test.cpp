@@ -5,6 +5,8 @@
 #include <QHeaderView>
 #include <QLineEdit>
 #include <QLabel>
+#include <QScrollBar>
+#include <QStyleFactory>
 #include <QTableWidget>
 #include <QVBoxLayout>
 #include <qt_windows.h>
@@ -45,11 +47,16 @@ int main(int argc, char **argv)
         layout->addWidget(combo);
     }
     iconCombo->setItemIcon(1, QIcon(picture));
-    auto *table = new QTableWidget(2, 2, &root);
+    auto *table = new QTableWidget(0, 2, &root);
     table->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
     table->setColumnWidth(0, 80);
     table->verticalHeader()->setMinimumSectionSize(10);
     table->verticalHeader()->setDefaultSectionSize(25);
+    table->verticalHeader()->setStyleSheet(QStringLiteral("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px; }"));
+    auto *tableStyle = QStyleFactory::create(QStringLiteral("Fusion"));
+    tableStyle->setParent(table);
+    table->setStyle(tableStyle);
+    table->setRowCount(2);
     layout->addWidget(table);
     root.resize(600, 400);
     QDialog nested(&root);
@@ -88,6 +95,29 @@ int main(int argc, char **argv)
     }
     std::puts("Ten scale cycles passed");
     std::fflush(stdout);
+    scale.applyWindow(2);
+    table->setRowCount(0);
+    table->setRowCount(20);
+    table->setItem(4, 1, new QTableWidgetItem(QStringLiteral("pending comment")));
+    table->setRangeSelected(QTableWidgetSelectionRange(3, 0, 5, 1), true);
+    table->setCurrentCell(4, 1, QItemSelectionModel::NoUpdate);
+    scale.applyWindow(2);
+    app.processEvents();
+    require(table->rowHeight(19) == 50, "Rebuilt table lost scaled row height");
+    table->verticalScrollBar()->setValue(5);
+    const int scroll = table->verticalScrollBar()->value();
+    scale.applyWindow(2);
+    app.processEvents();
+    require(table->item(4, 1)->text() == QStringLiteral("pending comment")
+            && table->currentRow() == 4 && table->currentColumn() == 1
+            && table->selectedItems().size() == 1 && table->selectedRanges().size() == 1
+            && table->selectedRanges().constFirst().topRow() == 3
+            && table->selectedRanges().constFirst().bottomRow() == 5, "Table draft/selection changed on refresh");
+    require(table->verticalScrollBar()->value() == scroll, "Repeated refresh changed table scroll");
+    scale.applyWindow(1);
+    app.processEvents();
+    require(table->rowHeight(19) == 25, "Rebuilt table lost authored row height");
+    table->setRowCount(2);
     scale.applyWindow(2);
     QPixmap replacement(32, 16);
     replacement.fill(Qt::blue);
