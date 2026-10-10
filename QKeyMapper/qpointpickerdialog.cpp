@@ -1,5 +1,6 @@
 #include "qpointpickerdialog.h"
 #include "qkeymapper_qt_compat.h"
+#include "qkm_ui_scale.h"
 #include "qkeymapper.h"
 #include "qkeymapper_worker.h"
 #include "qkeymapper_constants.h"
@@ -151,8 +152,9 @@ PointPickerDragTool::~PointPickerDragTool()
 void PointPickerDragTool::setTheme(bool isDark)
 {
     m_isDark = isDark;
+    QString sheet;
     if (isDark) {
-        setStyleSheet(QStringLiteral(
+        sheet = QStringLiteral(
             "PointPickerDragTool {"
             "  border: 1px solid rgb(85, 85, 85);"
             "  border-radius: 4px;"
@@ -162,9 +164,9 @@ void PointPickerDragTool::setTheme(bool isDark)
             "  background-color: rgb(55, 55, 55);"
             "  border-color: rgb(112, 161, 255);"
             "}"
-        ));
+        );
     } else {
-        setStyleSheet(QStringLiteral(
+        sheet = QStringLiteral(
             "PointPickerDragTool {"
             "  border: 1px solid rgb(200, 200, 200);"
             "  border-radius: 4px;"
@@ -174,8 +176,11 @@ void PointPickerDragTool::setTheme(bool isDark)
             "  background-color: rgb(235, 240, 248);"
             "  border-color: rgb(46, 134, 222);"
             "}"
-        ));
+        );
     }
+    if (auto *picker = qobject_cast<QPointPickerDialog *>(parentWidget())) {
+        picker->setAuthoredStyleSheet(this, sheet);
+    } else { setStyleSheet(sheet); }
     update();
 }
 
@@ -196,6 +201,12 @@ void PointPickerDragTool::paintEvent(QPaintEvent *event)
 
     const int cx = width() / 2;
     const int cy = height() / 2;
+
+    if (!qFuzzyCompare(m_presentationRatio, qreal(1))) {
+        painter.translate(cx, cy);
+        painter.scale(m_presentationRatio, m_presentationRatio);
+        painter.translate(-cx, -cy);
+    }
 
     QColor crossColor = m_isDark ? PICKER_THEME_COLOR_DARK : PICKER_THEME_COLOR_LIGHT;
     if (m_isDragging) {
@@ -397,10 +408,33 @@ QPointPickerDialog::QPointPickerDialog(QWidget *parent)
 
     applyTheme();
     retranslateUi();
+
+    m_presentationTimer.setSingleShot(true);
+    connect(&m_presentationTimer, &QTimer::timeout, this, &QPointPickerDialog::refreshPresentation);
+    m_presentationReady = true;
+}
+
+void QPointPickerDialog::captureAuthoredPresentation()
+{
+    ensurePolished();
+    const auto widgets = findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly);
+    for (QWidget *widget : widgets) { widget->ensurePolished(); }
+    const auto layouts = findChildren<QLayout *>();
+    for (QLayout *layout : layouts) { layout->invalidate(); }
+    updateTargetWindowInfo();
+    m_authoredFont = font();
+    m_authoredDragSize = m_dragTool->size();
+    m_authoredHeight = qMax(82, sizeHint().height());
+    const QFontMetrics fm(m_authoredFont);
+    m_screenRadioChrome = m_screenRadio->sizeHint().width() - fm.horizontalAdvance(m_screenRadio->text());
+    m_windowRadioChrome = m_windowRadio->sizeHint().width() - fm.horizontalAdvance(m_windowRadio->text());
+    m_coordLabelChrome = m_currentCoordLabel->sizeHint().width() - fm.horizontalAdvance(m_currentCoordLabel->text());
 }
 
 QPointPickerDialog::~QPointPickerDialog()
 {
+    m_presentationReady = false;
+    m_presentationTimer.stop();
     if (m_dragTool) {
         m_dragTool->cancelDrag();
     }
@@ -593,12 +627,21 @@ void QPointPickerDialog::updateTargetWindowInfo()
     const int MIN_DIALOG_WIDTH = 220;
     const int MAX_DIALOG_WIDTH = 360;
 
-    const int margins = 16; // 8 left + 8 right
-    const int radiosWidth = m_screenRadio->sizeHint().width() + m_windowRadio->sizeHint().width() + 8 /*spacing*/ + 4 /*addSpacing*/;
+    const qreal ratio = m_uiScale ? m_uiScale->ratio() : 1;
+    const bool original = qFuzzyCompare(ratio, qreal(1));
+    const QFontMetrics authoredFm(original ? font() : m_authoredFont);
+    const int margins = 16; // Authored dimensions, before R compensation.
+    const int radiosWidth = (original
+        ? m_screenRadio->sizeHint().width() + m_windowRadio->sizeHint().width()
+        : authoredFm.horizontalAdvance(m_screenRadio->text()) + m_screenRadioChrome
+          + authoredFm.horizontalAdvance(m_windowRadio->text()) + m_windowRadioChrome) + 8 + 4;
 
     // Minimum width required by Row 2 (drag tool, labels, coordinate edit)
-    const int dragToolWidth = m_dragTool ? m_dragTool->width() : 42;
-    const int col0Width = qMax(m_currentCoordLabel->sizeHint().width(), m_pickedCoordLabel->sizeHint().width());
+    const int dragToolWidth = original ? m_dragTool->width() : m_authoredDragSize.width();
+    const int col0Width = original
+        ? qMax(m_currentCoordLabel->sizeHint().width(), m_pickedCoordLabel->sizeHint().width())
+        : qMax(authoredFm.horizontalAdvance(m_currentCoordLabel->text()),
+               authoredFm.horizontalAdvance(m_pickedCoordLabel->text())) + m_coordLabelChrome;
     const int row2Width = margins + dragToolWidth + 8 /*spacing*/ + col0Width + 4 /*spacing*/ + 105 /*edit box & coord*/;
     const int baseMinWidth = qMax(MIN_DIALOG_WIDTH, row2Width);
 
@@ -609,13 +652,13 @@ void QPointPickerDialog::updateTargetWindowInfo()
         m_targetInfoLabel->setToolTip(QString());
     } else {
         QFontMetrics fm(m_targetInfoLabel->font());
-        int textWidth = fm.horizontalAdvance(fullText);
+        int textWidth = authoredFm.horizontalAdvance(fullText);
         int neededWidth = margins + radiosWidth + 8 /*spacing*/ + textWidth;
 
         targetWidth = qBound(baseMinWidth, neededWidth, MAX_DIALOG_WIDTH);
-        int availableLabelWidth = targetWidth - margins - radiosWidth - 8;
+        int availableLabelWidth = qMax(0, qRound((targetWidth - margins - radiosWidth - 8) * ratio));
 
-        if (textWidth > availableLabelWidth) {
+        if (fm.horizontalAdvance(fullText) > availableLabelWidth) {
             QString elidedText = fm.elidedText(fullText, Qt::ElideMiddle, availableLabelWidth);
             m_targetInfoLabel->setText(elidedText);
         } else {
@@ -624,9 +667,13 @@ void QPointPickerDialog::updateTargetWindowInfo()
         m_targetInfoLabel->setToolTip(fullText);
     }
 
-    const int targetHeight = qMax(82, sizeHint().height());
-    if (width() != targetWidth || height() != targetHeight) {
-        setFixedSize(targetWidth, targetHeight);
+    const int targetHeight = original ? qMax(82, sizeHint().height()) : m_authoredHeight;
+    if (original) { m_authoredHeight = targetHeight; }
+    const QSize previousSize = m_lastPresentationSize.isValid() ? m_lastPresentationSize : size();
+    if (m_uiScale) { m_uiScale->setAuthoredFixedSize(QSize(targetWidth, targetHeight)); }
+    else { setFixedSize(targetWidth, targetHeight); }
+    m_lastPresentationSize = size();
+    if (size() != previousSize) {
 
         // Screen edge guard: prevent overflowing right edge of current monitor
         QScreen *screen = QKeyMapperQtCompat::widgetScreen(this);
@@ -635,8 +682,8 @@ void QPointPickerDialog::updateTargetWindowInfo()
         }
         if (screen != nullptr) {
             QRect avail = screen->availableGeometry();
-            if (this->x() + targetWidth > avail.right()) {
-                int newX = qMax(avail.left(), avail.right() - targetWidth);
+            if (this->x() + width() > avail.right()) {
+                int newX = qMax(avail.left(), avail.right() - width());
                 move(newX, this->y());
             }
         }
@@ -773,6 +820,7 @@ void QPointPickerDialog::showEvent(QShowEvent *event)
 
 void QPointPickerDialog::hideEvent(QHideEvent *event)
 {
+    m_presentationTimer.stop();
     if (m_isUserMoving) {
         m_isUserMoving = false;
     }
@@ -792,6 +840,7 @@ void QPointPickerDialog::hideEvent(QHideEvent *event)
 
 void QPointPickerDialog::closeEvent(QCloseEvent *event)
 {
+    m_presentationTimer.stop();
     if (m_isUserMoving) {
         m_isUserMoving = false;
     }
@@ -881,10 +930,26 @@ bool QPointPickerDialog::isPositionValidOnScreens(const QPoint &pos, const QSize
 
 void QPointPickerDialog::changeEvent(QEvent *event)
 {
-    if (event->type() == QEvent::LanguageChange || event->type() == QEvent::FontChange || event->type() == QEvent::StyleChange) {
-        retranslateUi();
+    if (m_presentationReady) {
+        if (event->type() == QEvent::LanguageChange) { retranslateUi(); }
+        else if (event->type() == QEvent::FontChange || event->type() == QEvent::StyleChange) {
+            m_presentationTimer.start(0);
+        }
     }
     QDialog::changeEvent(event);
+}
+
+void QPointPickerDialog::refreshPresentation()
+{
+    m_dragTool->m_presentationRatio = m_uiScale ? m_uiScale->ratio() : 1;
+    m_dragTool->update();
+    updateTargetWindowInfo();
+}
+
+void QPointPickerDialog::setAuthoredStyleSheet(QWidget *widget, const QString &sheet)
+{
+    if (m_uiScale) { m_uiScale->setAuthoredStyleSheet(widget, sheet); }
+    else { widget->setStyleSheet(sheet); }
 }
 
 void QPointPickerDialog::applyTheme()
@@ -912,8 +977,8 @@ void QPointPickerDialog::applyTheme(bool isDark)
     }
 
     if (isDark) {
-        m_targetInfoLabel->setStyleSheet(QStringLiteral("color: rgb(176, 176, 176);"));
-        setStyleSheet(QStringLiteral(
+        setAuthoredStyleSheet(m_targetInfoLabel, QStringLiteral("color: rgb(176, 176, 176);"));
+        setAuthoredStyleSheet(this, QStringLiteral(
             "QRadioButton {"
             "  color: rgb(208, 210, 212);"
             "}"
@@ -946,8 +1011,8 @@ void QPointPickerDialog::applyTheme(bool isDark)
             "}"
         ));
     } else {
-        m_targetInfoLabel->setStyleSheet(QStringLiteral("color: rgb(85, 85, 85);"));
-        setStyleSheet(QStringLiteral(
+        setAuthoredStyleSheet(m_targetInfoLabel, QStringLiteral("color: rgb(85, 85, 85);"));
+        setAuthoredStyleSheet(this, QStringLiteral(
             "QRadioButton {"
             "  color: rgb(33, 33, 33);"
             "}"

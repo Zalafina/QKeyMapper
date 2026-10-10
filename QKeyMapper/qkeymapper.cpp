@@ -4109,6 +4109,7 @@ void QKeyMapper::registerEditorUiScale(QWidget *root)
     if (!root) { return; }
     // Main-window font inheritance may already reflect a non-default startup R.
     root->setFont(QFont(FONTNAME_ENGLISH, 9));
+    if (auto *picker = qobject_cast<QPointPickerDialog *>(root)) { picker->captureAuthoredPresentation(); }
     auto *scale = new QkmUiScale(root);
     scale->setStyleResolver([](QWidget *widget) -> QStyle * {
         QWidget *owner = widget;
@@ -4130,7 +4131,9 @@ void QKeyMapper::registerEditorUiScale(QWidget *root)
     if (auto *macro = qobject_cast<QMacroListDialog *>(root)) { macro->m_uiScale = scale; }
     if (auto *sequence = qobject_cast<QMappingSequenceEdit *>(root)) { sequence->m_uiScale = scale; }
     if (auto *rules = qobject_cast<QIgnoreWindowInfoListDialog *>(root)) { rules->m_uiScale = scale; }
+    if (auto *picker = qobject_cast<QPointPickerDialog *>(root)) { picker->m_uiScale = scale; }
     scale->applyWindow(m_runtimeScaleCompensation);
+    if (auto *picker = qobject_cast<QPointPickerDialog *>(root)) { picker->refreshPresentation(); }
 }
 
 QKeyMapper::~QKeyMapper()
@@ -37158,6 +37161,7 @@ void QKeyMapper::ensurePointPickerDialog()
             Q_UNUSED(isWindowMode);
             updateMousePointLabelDisplay(point);
         });
+        registerEditorUiScale(m_PointPickerDialog);
     }
 }
 

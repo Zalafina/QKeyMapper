@@ -74,6 +74,37 @@ void verifyClearButtonScaling()
 }
 
 namespace {
+void verifyDynamicFixedPresentation()
+{
+    QDialog root;
+    auto *layout = new QVBoxLayout(&root);
+    auto *label = new QLabel(QStringLiteral("Target"), &root);
+    layout->addWidget(label);
+    root.setFixedSize(220, 82);
+    root.setStyleSheet(QStringLiteral("QDialog { padding: 4px; color: red; }"));
+    label->setStyleSheet(QStringLiteral("padding: 3px; color: red;"));
+    QkmUiScale scale(&root);
+    scale.manageWindow();
+    scale.applyWindow(2);
+    scale.setAuthoredFixedSize(QSize(360, 82));
+    const QString rootSheet = QStringLiteral("QDialog { padding: 4px; color: blue; }");
+    const QString labelSheet = QStringLiteral("padding: 3px; color: blue;");
+    scale.setAuthoredStyleSheet(&root, rootSheet);
+    scale.setAuthoredStyleSheet(label, labelSheet);
+    require(root.size() == QSize(720, 164) && root.minimumSize() == root.maximumSize(), "Dynamic fixed root not scaled");
+    require(root.styleSheet().contains(QStringLiteral("padding: 8px"))
+            && label->styleSheet().contains(QStringLiteral("padding: 6px")), "New theme template not scaled");
+    for (qreal ratio : {0.5, 2.0, 1.0}) {
+        scale.applyWindow(ratio);
+        QApplication::processEvents();
+        require(root.size() == QSize(qRound(360 * ratio), qRound(82 * ratio)), "Dynamic fixed root baseline lost");
+        require(root.styleSheet().contains(QStringLiteral("color: blue"))
+                && label->styleSheet().contains(QStringLiteral("color: blue")), "New theme reverted");
+    }
+    require(root.styleSheet() == rootSheet && label->styleSheet() == labelSheet, "Authored theme not restored");
+    std::puts("Dynamic fixed root and authored theme passed");
+}
+
 void verifyAuthoredWindowSize()
 {
     class HintDialog final : public QDialog {
@@ -94,6 +125,7 @@ void verifyAuthoredWindowSize()
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
+    verifyDynamicFixedPresentation();
     verifyAuthoredWindowSize();
     verifyClearButtonScaling();
     QDialog root;

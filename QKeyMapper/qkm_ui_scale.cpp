@@ -478,6 +478,34 @@ void QkmUiScale::setWindowSizeMode(int mode)
     }
 }
 
+void QkmUiScale::setAuthoredFixedSize(const QSize &size)
+{
+    if (!d->managedWindow || !d->window || size.isEmpty() || d->applying) { return; }
+    for (auto &s : d->widgets) {
+        if (s.target != d->window) { continue; }
+        s.minimum = s.maximum = size;
+        d->normalSizes[d->sizeMode] = size;
+        d->window->setFixedSize(scaledSize(size, d->ratio));
+        break;
+    }
+}
+
+void QkmUiScale::setAuthoredStyleSheet(QWidget *widget, const QString &sheet)
+{
+    if (!widget || !d->owned(widget)) { return; }
+    for (auto &s : d->widgets) {
+        if (s.target != widget) { continue; }
+        s.sheet = sheet;
+        s.hasSheetMetrics = scaledStyleSheet(sheet, qreal(0.5)) != sheet;
+        if (widget == d->window) { refreshTheme(); }
+        else {
+            const QString adjusted = scaledStyleSheet(sheet, d->ratio);
+            if (widget->styleSheet() != adjusted) { widget->setStyleSheet(adjusted); }
+        }
+        break;
+    }
+}
+
 bool QkmUiScale::nativeEventFilter(const QByteArray &eventType, void *message,
                                  QKeyMapperQtCompat::NativeEventResult *result)
 {

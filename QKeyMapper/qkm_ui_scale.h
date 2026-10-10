@@ -28,6 +28,8 @@ public:
     void manageWindow();
     void applyWindow(qreal ratio);
     void setWindowSizeMode(int mode);
+    void setAuthoredFixedSize(const QSize &size);
+    void setAuthoredStyleSheet(QWidget *widget, const QString &sheet);
     bool isApplying() const;
     qreal ratio() const;
 

@@ -6,6 +6,10 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QFrame>
+#include <QPointer>
+#include <QTimer>
+
+class QkmUiScale;
 
 class PointPickerDragTool : public QFrame
 {
@@ -37,6 +41,8 @@ protected:
 #endif
 
 private:
+    friend class QPointPickerDialog;
+    qreal m_presentationRatio = 1.0;
     bool m_isDragging = false;
     bool m_isDark = false;
     HCURSOR m_hNativeCursor = NULL;
@@ -82,9 +88,25 @@ private slots:
     void onDragFinished(bool commit, const QPoint &screenPt);
 
 private:
+    friend class QKeyMapper;
+    friend class PointPickerDragTool;
     void setupUi();
+    void captureAuthoredPresentation();
     void updateTargetWindowInfo();
+    void refreshPresentation();
+    void setAuthoredStyleSheet(QWidget *widget, const QString &sheet);
     bool isPositionValidOnScreens(const QPoint &pos, const QSize &size) const;
+
+    QPointer<QkmUiScale> m_uiScale;
+    QTimer m_presentationTimer;
+    QFont m_authoredFont;
+    QSize m_authoredDragSize;
+    QSize m_lastPresentationSize;
+    int m_authoredHeight = 82;
+    int m_screenRadioChrome = 0;
+    int m_windowRadioChrome = 0;
+    int m_coordLabelChrome = 0;
+    bool m_presentationReady = false;
 
     QRadioButton *m_screenRadio = nullptr;
     QRadioButton *m_windowRadio = nullptr;
