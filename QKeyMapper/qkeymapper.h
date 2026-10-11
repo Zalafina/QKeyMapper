@@ -1095,8 +1095,16 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
+    friend class SettingTransferDialog;
+
     QTableWidget *m_listWidget;
     bool m_setupConnectionsDone { false }; // Ensure we only connect signals once
+    const int m_authoredItemHeight;
+    qreal m_presentationRatio = 1.0;
+    quint64 m_presentationSequence = 0;
+
+    void refreshPresentation(qreal ratio, int scrollValue);
+    int presentationItemHeight() const;
 
     // Update "Select All" item state based on child items
     void updateSelectAllState();
@@ -1123,9 +1131,14 @@ private slots:
     void onFilePathChanged(const QString &path);
 
 private:
+    friend class QKeyMapper;
+
     Mode m_mode;
     QLineEdit *filePathEdit;
     GroupSelectionWidget *groupWidget;
+    QkmUiScale *m_uiScale = nullptr;
+
+    void applyPresentation(qreal ratio);
 };
 
 #if 0

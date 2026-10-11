@@ -4107,6 +4107,14 @@ void QKeyMapper::registerEditorUiScale(QWidget *root)
 {
     Q_ASSERT(root);
     if (!root) { return; }
+    // Transient stack dialogs leave weak entries behind after exec() returns.
+    for (auto it = m_editorUiScales.begin(); it != m_editorUiScales.end();) {
+        if (it->isNull()) { it = m_editorUiScales.erase(it); }
+        else {
+            if ((*it)->parent() == root) { return; }
+            ++it;
+        }
+    }
     // Main-window font inheritance may already reflect a non-default startup R.
     root->setFont(QFont(FONTNAME_ENGLISH, 9));
     if (auto *picker = qobject_cast<QPointPickerDialog *>(root)) { picker->captureAuthoredPresentation(); }
@@ -4132,7 +4140,9 @@ void QKeyMapper::registerEditorUiScale(QWidget *root)
     if (auto *sequence = qobject_cast<QMappingSequenceEdit *>(root)) { sequence->m_uiScale = scale; }
     if (auto *rules = qobject_cast<QIgnoreWindowInfoListDialog *>(root)) { rules->m_uiScale = scale; }
     if (auto *picker = qobject_cast<QPointPickerDialog *>(root)) { picker->m_uiScale = scale; }
-    scale->applyWindow(m_runtimeScaleCompensation);
+    if (auto *transfer = qobject_cast<SettingTransferDialog *>(root)) { transfer->m_uiScale = scale; }
+    if (auto *transfer = qobject_cast<SettingTransferDialog *>(root)) { transfer->applyPresentation(m_runtimeScaleCompensation); }
+    else { scale->applyWindow(m_runtimeScaleCompensation); }
     if (auto *picker = qobject_cast<QPointPickerDialog *>(root)) { picker->refreshPresentation(); }
 }
 
@@ -20631,6 +20641,7 @@ void QKeyMapper::exportSettingToFile()
 
     // Export
     SettingTransferDialog dlg(SettingTransferDialog::ExportMode, this);
+    registerEditorUiScale(&dlg);
     m_SettingTransferDialog = &dlg;  // Save pointer for potential auto-close
     int result = dlg.exec();
     m_SettingTransferDialog = Q_NULLPTR;  // Clear pointer after dialog closes
@@ -20650,6 +20661,7 @@ void QKeyMapper::importSettingFromFile()
 
     // Import
     SettingTransferDialog dlg(SettingTransferDialog::ImportMode, this);
+    registerEditorUiScale(&dlg);
     m_SettingTransferDialog = &dlg;  // Save pointer for potential auto-close
     int result = dlg.exec();
     m_SettingTransferDialog = Q_NULLPTR;  // Clear pointer after dialog closes
@@ -36124,7 +36136,10 @@ void QKeyMapper::resetFontSize(double R)
         if (m_ItemSetupDialog) { m_ItemSetupDialog->resetFontSize(); }
     } else {
         for (const auto &scale : std::as_const(m_editorUiScales)) {
-            if (scale) { scale->applyWindow(r); }
+            if (scale) {
+                if (auto *transfer = qobject_cast<SettingTransferDialog *>(scale->parent())) { transfer->applyPresentation(r); }
+                else { scale->applyWindow(r); }
+            }
         }
     }
 }
@@ -36804,7 +36819,10 @@ void QKeyMapper::setUITheme(int themeindex)
     applyMappingStartActionMenuSizing(m_MappingStartActionMenu);
     if (m_uiScale) { m_uiScale->refreshTheme(); }
     for (const auto &scale : std::as_const(m_editorUiScales)) {
-        if (scale) { scale->applyWindow(m_runtimeScaleCompensation); }
+        if (scale) {
+            if (auto *transfer = qobject_cast<SettingTransferDialog *>(scale->parent())) { transfer->applyPresentation(m_runtimeScaleCompensation); }
+            else { scale->applyWindow(m_runtimeScaleCompensation); }
+        }
     }
 
 }
@@ -49818,7 +49836,8 @@ void QKeyMapper::on_mappingMacroListButton_clicked()
 
 GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     : QWidget(parent),
-      m_listWidget(new QTableWidget(this))
+      m_listWidget(new QTableWidget(this)),
+      m_authoredItemHeight(qMax(GROUPSELECTWIDGET_ITEM_HEIGHT, m_listWidget->fontMetrics().height() + 8))
 {
     // m_listWidget->setFrameShape(QFrame::WinPanel);
 
@@ -49829,8 +49848,7 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     m_listWidget->setRowCount(0);
     m_listWidget->horizontalHeader()->setVisible(false);
     m_listWidget->verticalHeader()->setVisible(true);
-    const int itemHeight = qMax(GROUPSELECTWIDGET_ITEM_HEIGHT, m_listWidget->fontMetrics().height() + 8);
-    m_listWidget->verticalHeader()->setDefaultSectionSize(itemHeight);
+    m_listWidget->verticalHeader()->setDefaultSectionSize(m_authoredItemHeight);
     m_listWidget->verticalHeader()->setStyleSheet("QHeaderView::section { color: #1A9EDB; padding-left: 2px; padding-right: 1px;}");
     m_listWidget->verticalHeader()->setHighlightSections(false);
     m_listWidget->horizontalHeader()->setHighlightSections(false);
@@ -49862,14 +49880,38 @@ GroupSelectionWidget::GroupSelectionWidget(QWidget *parent)
     });
 }
 
+int GroupSelectionWidget::presentationItemHeight() const
+{
+    return qMax(1, qRound(m_authoredItemHeight * m_presentationRatio));
+}
+
+void GroupSelectionWidget::refreshPresentation(qreal ratio, int scrollValue)
+{
+    m_presentationRatio = ratio;
+    const int itemHeight = presentationItemHeight();
+    // Resize existing sections without rebuilding items or changing selection.
+    m_listWidget->verticalHeader()->setDefaultSectionSize(itemHeight);
+    for (int row = 0; row < m_listWidget->rowCount(); ++row) {
+        m_listWidget->setRowHeight(row, itemHeight);
+    }
+    // An old large viewport can temporarily clamp the scroll value to zero.
+    m_listWidget->verticalScrollBar()->setValue(scrollValue);
+    const quint64 sequence = ++m_presentationSequence;
+    QTimer::singleShot(0, this, [this, sequence, scrollValue]() {
+        if (sequence == m_presentationSequence) { m_listWidget->verticalScrollBar()->setValue(scrollValue); }
+    });
+}
+
 // Add "Select All" item at the top only when groups are not empty
 void GroupSelectionWidget::setGroups(const QStringList &groups, const QString &configfile)
 {
+    // A file selection starts a new model; do not restore the previous model's scroll.
+    ++m_presentationSequence;
     QSignalBlocker blocker(m_listWidget);
     m_listWidget->setRowCount(0);
 
     // Only create "Select All" item if there are groups to select
-    const int itemHeight = qMax(GROUPSELECTWIDGET_ITEM_HEIGHT, m_listWidget->fontMetrics().height() + 8);
+    const int itemHeight = presentationItemHeight();
     m_listWidget->verticalHeader()->setDefaultSectionSize(itemHeight);
     bool hasGroups = !groups.isEmpty();
     if (hasGroups) {
@@ -50289,6 +50331,8 @@ void GroupSelectionWidget::updateSelectAllState()
 SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
     : QDialog(parent), m_mode(mode)
 {
+    // Prepare authored metrics before constructing rows under a scaled owner.
+    setFont(QFont(FONTNAME_ENGLISH, 9));
     setWindowTitle(mode == ExportMode ? tr("Setting Export") : tr("Setting Import"));
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -50357,6 +50401,23 @@ SettingTransferDialog::SettingTransferDialog(Mode mode, QWidget *parent)
         // Import mode: group list will be loaded after file selection
         groupWidget->setGroups({});
     }
+
+    // Capture Qt's first-show size, not the constructor's placeholder geometry.
+    ensurePolished();
+    const auto layouts = findChildren<QLayout *>();
+    for (auto it = layouts.crbegin(); it != layouts.crend(); ++it) {
+        (*it)->invalidate();
+        (*it)->activate();
+    }
+    adjustSize();
+}
+
+void SettingTransferDialog::applyPresentation(qreal ratio)
+{
+    if (!m_uiScale) { return; }
+    const int scrollValue = groupWidget->m_listWidget->verticalScrollBar()->value();
+    m_uiScale->applyWindow(ratio);
+    groupWidget->refreshPresentation(m_uiScale->ratio(), scrollValue);
 }
 
 QStringList SettingTransferDialog::readGroupsFromIni(const QString &filePath) {
