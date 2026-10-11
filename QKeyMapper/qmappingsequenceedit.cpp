@@ -1,3 +1,4 @@
+#include "qkm_message_box.h"
 #include "qmappingsequenceedit.h"
 #include "qkm_ui_scale.h"
 #include "ui_qmappingsequenceedit.h"
@@ -318,7 +319,7 @@ void QMappingSequenceEdit::reopenMappingSequenceEditConfirm()
 
         /* Show MessageBox confirm whether join current editing mappingsequence back to lineedit */
         QString message = tr("Do you want to update the current mapping sequence to the lineedit before reopening the mapping sequence editor?");
-        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+        QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                   QMessageBox::Yes | QMessageBox::No,
                                                                   QMessageBox::No);
         if (reply != QMessageBox::Yes) {

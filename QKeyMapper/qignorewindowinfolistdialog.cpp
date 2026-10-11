@@ -1,3 +1,4 @@
+#include "qkm_message_box.h"
 #include "qkeymapper.h"
 #include "qignorewindowinfolistdialog.h"
 #include "ui_qignorewindowinfolistdialog.h"
@@ -269,7 +270,7 @@ void QIgnoreWindowInfoListDialog::on_clearRuleButton_clicked()
         || !ruleDescription.isEmpty()
         || ruleDisabled) {
         QString message = tr("Are you sure you want to clear the rule information fields?");
-        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+        QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                   QMessageBox::Yes | QMessageBox::No,
                                                                   QMessageBox::No);
         if (reply != QMessageBox::Yes) {
@@ -296,7 +297,7 @@ void QIgnoreWindowInfoListDialog::on_deleteRuleButton_clicked()
 
     // Show confirmation dialog
     QString message = tr("Are you sure you want to delete rule \"%1\"?").arg(ruleName);
-    QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+    QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                               QMessageBox::Yes | QMessageBox::No,
                                                               QMessageBox::No);
     if (reply != QMessageBox::Yes) {
@@ -333,7 +334,7 @@ void QIgnoreWindowInfoListDialog::on_restoreDefaultRulesButton_clicked()
 {
     // Confirm before replacing all existing rules with built-in defaults.
     QString message = tr("Are you sure you want to restore all rules to default?");
-    QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message,
+    QMessageBox::StandardButton reply = QkmMessageBox::warning(this, PROGRAM_NAME, message,
                                                               QMessageBox::Yes | QMessageBox::No,
                                                               QMessageBox::No);
     if (reply != QMessageBox::Yes) {

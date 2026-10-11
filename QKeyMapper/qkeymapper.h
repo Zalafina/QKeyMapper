@@ -1179,6 +1179,7 @@ class QKeyMapper : public QMainWindow
 
     friend class KeyListComboBox;
     friend class KeyListComboBoxPopup;
+    friend class QkmMessageBox;
 
 public:
     explicit QKeyMapper(QWidget *parent = Q_NULLPTR);

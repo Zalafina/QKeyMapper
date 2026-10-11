@@ -1,3 +1,4 @@
+#include "qkm_message_box.h"
 #include "qtrayiconselectdialog.h"
 #include "ui_qtrayiconselectdialog.h"
 #include "qkeymapper.h"
@@ -306,7 +307,7 @@ void QTrayIconSelectDialog::on_addCustomTrayiconsButton_clicked()
     QDir targetDir(targetDirPath);
 
     if (!targetDir.exists() && !appDir.mkpath(CUSTOM_TRAYICONS_DIR)) {
-        QMessageBox::warning(this, PROGRAM_NAME,
+        QkmMessageBox::warning(this, PROGRAM_NAME,
                              tr("Failed to create the custom tray icon directory.\n\nPath: %1")
                              .arg(QDir::toNativeSeparators(targetDirPath)));
         return;
@@ -338,7 +339,7 @@ void QTrayIconSelectDialog::on_addCustomTrayiconsButton_clicked()
                       .arg(duplicateNames.size() - 1);
         }
 
-        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+        QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                   QMessageBox::Yes | QMessageBox::No,
                                                                   QMessageBox::No);
         overwriteDuplicates = (reply == QMessageBox::Yes);

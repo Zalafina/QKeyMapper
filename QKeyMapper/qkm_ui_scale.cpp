@@ -12,6 +12,7 @@
 #include <QLayout>
 #include <QLineEdit>
 #include <QMenu>
+#include <QMessageBox>
 #include <QPainter>
 #include <QProxyStyle>
 #include <QRegularExpression>
@@ -405,6 +406,7 @@ struct QkmUiScale::Data
     bool handlingPopup = false;
     bool restoredDefaultHints = false;
     bool managedWindow = false;
+    bool contentSized = false;
     bool applying = false;
     bool userResizing = false;
     bool scaledWindow = false;
@@ -448,6 +450,8 @@ void QkmUiScale::manageWindow()
 {
     if (!d->window || d->managedWindow) { return; }
     d->managedWindow = true;
+    // QMessageBox measures visible content and owns its fixed size itself.
+    d->contentSized = qobject_cast<QMessageBox *>(d->window.data()) != nullptr;
     d->normalSizes[0] = d->window->size();
     capture();
     d->window->installEventFilter(this);
@@ -460,7 +464,7 @@ void QkmUiScale::manageWindow()
         }
         applyWindow(d->ratio);
     });
-    if (qApp) { qApp->installNativeEventFilter(this); }
+    if (qApp && !d->contentSized) { qApp->installNativeEventFilter(this); }
 }
 
 qreal QkmUiScale::ratio() const { return d->ratio; }
@@ -547,6 +551,7 @@ void QkmUiScale::applyWindow(qreal ratio)
         break;
     }
     refreshLayouts();
+    if (d->contentSized) { return; }
     if (!d->window->isMaximized() && !d->window->isMinimized()) {
         QSize target = (d->normalSizes[d->sizeMode] * ratio).toSize().expandedTo(d->window->minimumSize());
         // At R=1, preserve authored/session sizes that intentionally undercut implicit hints.
@@ -562,7 +567,7 @@ void QkmUiScale::applyWindow(qreal ratio)
 
 bool QkmUiScale::eventFilter(QObject *object, QEvent *event)
 {
-    if (d->managedWindow && object == d->window && event->type() == QEvent::Show) {
+    if (d->managedWindow && !d->contentSized && object == d->window && event->type() == QEvent::Show) {
         d->settleTimer.start(0);
     }
     if (d->managedWindow && !d->applying && event->type() == QEvent::Paint

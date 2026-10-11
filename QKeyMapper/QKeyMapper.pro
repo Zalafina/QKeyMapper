@@ -240,6 +240,7 @@ SOURCES     += \
     qitemsetupdialog.cpp \
     qkeymapper.cpp \
     qkm_ui_scale.cpp \
+    qkm_message_box.cpp \
     qkeymapper_worker.cpp \
     qkeyrecord.cpp \
     qmacrolistdialog.cpp \
@@ -257,6 +258,7 @@ HEADERS     += \
     qinputdevicelistwindow.h \
     qkeymapper.h \
     qkm_ui_scale.h \
+    qkm_message_box.h \
     qkeymapper_input_device_types.h \
     qkeymapper_worker.h \
     qkeymapper_constants.h \

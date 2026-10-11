@@ -1,3 +1,4 @@
+#include "qkm_message_box.h"
 #include "qmacrolistdialog.h"
 #include "ui_qmacrolistdialog.h"
 #include "qkeymapper_qt_compat.h"
@@ -826,7 +827,7 @@ void QMacroListDialog::on_clearButton_clicked()
     // Check if any field has content
     if (!macroName.isEmpty() || !macroContent.isEmpty() || !category.isEmpty() || !macroNote.isEmpty()) {
         QString message = tr("Are you sure you want to clear the macro information fields?");
-        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+        QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                   QMessageBox::Yes | QMessageBox::No,
                                                                   QMessageBox::No);
         if (reply != QMessageBox::Yes) {
@@ -1090,7 +1091,7 @@ void QMacroListDialog::importMacroListFromFile()
                       .arg(duplicateNames.first())
                       .arg(duplicateNames.size() - 1);
         }
-        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+        QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                   QMessageBox::Yes | QMessageBox::No,
                                                                   QMessageBox::No);
         overwriteDuplicates = (reply == QMessageBox::Yes);
@@ -1246,7 +1247,7 @@ void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
         QString dialogTitle = (macroDataTable == ui->macrolistTable) ? tr("Macro List") : tr("Universal Macro List");
         QString messageText = tr("Macro name already exists. Replace existing macro?");
 
-        QMessageBox::StandardButton reply = QMessageBox::question(
+        QMessageBox::StandardButton reply = QkmMessageBox::question(
             this,
             dialogTitle,
             messageText,

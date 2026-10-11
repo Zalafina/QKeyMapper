@@ -5,6 +5,7 @@
 #include <QHeaderView>
 #include <QLineEdit>
 #include <QLabel>
+#include <QMessageBox>
 #include <QScrollBar>
 #include <QStyleFactory>
 #include <QTableWidget>
@@ -120,6 +121,34 @@ void verifyAuthoredWindowSize()
     scale.applyWindow(1);
     require(root.size() == authored, "Default session size was expanded by an implicit hint");
 }
+
+void verifyContentSizedMessageBox()
+{
+    QMessageBox box(QMessageBox::Warning, QStringLiteral("Content"),
+        QStringLiteral("A short message"), QMessageBox::Ok);
+    box.setFont(QFont(QStringLiteral("Arial"), 9));
+    box.ensurePolished();
+    QkmUiScale scale(&box);
+    scale.manageWindow();
+    QSize authored;
+    for (qreal ratio : {1.0, 2.0, 0.5, 1.0}) {
+        scale.applyWindow(ratio);
+        box.show();
+        for (int i = 0; i < 4; ++i) { QApplication::processEvents(); }
+        require(box.minimumSize() == box.maximumSize(), "Message box lost Qt content sizing");
+        require(box.width() < qRound(640 * ratio), "Message box used the constructor's session size");
+        require(qFuzzyCompare(box.font().pointSizeF(), 9 * ratio), "Message box font scaled twice");
+        auto *label = box.findChild<QLabel *>(QStringLiteral("qt_msgbox_label"));
+        require(label && box.rect().contains(QRect(label->mapTo(&box, QPoint()), label->size())),
+                "Message box text clipped by the root");
+        if (authored.isEmpty()) { authored = box.size(); }
+        else if (qFuzzyCompare(ratio, qreal(1))) {
+            require(box.size() == authored, "Message box default content size drifted");
+        }
+        box.hide();
+    }
+    std::puts("Content-sized message box round trip passed");
+}
 }
 
 int main(int argc, char **argv)
@@ -127,6 +156,7 @@ int main(int argc, char **argv)
     QApplication app(argc, argv);
     verifyDynamicFixedPresentation();
     verifyAuthoredWindowSize();
+    verifyContentSizedMessageBox();
     verifyClearButtonScaling();
     QDialog root;
     root.setFont(QFont(QStringLiteral("Arial"), 9));

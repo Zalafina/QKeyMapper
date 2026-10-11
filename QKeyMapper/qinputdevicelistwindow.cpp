@@ -1,3 +1,4 @@
+#include "qkm_message_box.h"
 #include "qinputdevicelistwindow.h"
 
 #include "interception_worker.h"
@@ -467,7 +468,7 @@ void QInputDeviceListWindow::onKeyboardListCellChanged(int row, int col)
             ui->keyboardDeviceTable->blockSignals(true);
             ui->keyboardDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
             QString message = tr("Please use the disable function with caution. Disabling the input device that is currently in use will prevent any further operations!");
-            QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+            QMessageBox::StandardButton reply = QkmMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
             if (reply == QMessageBox::No) {
                 ui->keyboardDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
 #ifdef DEBUG_LOGOUT_ON
@@ -507,7 +508,7 @@ void QInputDeviceListWindow::onMouseListCellChanged(int row, int col)
             ui->mouseDeviceTable->blockSignals(true);
             ui->mouseDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
             QString message = tr("Please use the disable function with caution. Disabling the input device that is currently in use will prevent any further operations!");
-            QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+            QMessageBox::StandardButton reply = QkmMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
             if (reply == QMessageBox::No) {
                 ui->mouseDeviceTable->item(row, col)->setCheckState(Qt::Unchecked);
 #ifdef DEBUG_LOGOUT_ON

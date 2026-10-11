@@ -1,3 +1,4 @@
+#include "qkm_message_box.h"
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
 #include "interception_worker.h"
@@ -19207,7 +19208,7 @@ int QKeyMapper::applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow
         const QList<NormalTabExclusiveGroupConflict> conflicts = collectEnabledNormalTabExclusiveGroupConflicts(groupKey);
         if (!conflicts.isEmpty()) {
             if (showPopup) {
-                QMessageBox::StandardButton reply = QMessageBox::warning(this,
+                QMessageBox::StandardButton reply = QkmMessageBox::warning(this,
                                                                          PROGRAM_NAME,
                                                                          commonConflictConfirmationMessage(enabledOriKey, conflicts),
                                                                          QMessageBox::Yes | QMessageBox::No,
@@ -19320,7 +19321,7 @@ QKeyMapper::ExclusiveGroupConflictResolutionResult QKeyMapper::autoDisableRowIfE
     if (isCommonMappingTabIndex(tabindex)) {
         const QList<NormalTabExclusiveGroupConflict> conflicts = collectEnabledNormalTabExclusiveGroupConflicts(groupKey);
         if (!conflicts.isEmpty()) {
-            QMessageBox::StandardButton reply = QMessageBox::warning(this,
+            QMessageBox::StandardButton reply = QkmMessageBox::warning(this,
                                                                      PROGRAM_NAME,
                                                                      commonConflictConfirmationMessage(currentOriKey, conflicts),
                                                                      QMessageBox::Yes | QMessageBox::No,
@@ -19582,7 +19583,7 @@ QKeyMapper::MappingDataInsertSummary QKeyMapper::prepareMappingDataForInsertion(
                 const QString message = batchCommonConflictConfirmationMessage(conflictingOriginalKeys,
                                                                               conflictingNormalRowCount,
                                                                               affectedTabIndexes.size());
-                QMessageBox::StandardButton reply = QMessageBox::warning(this,
+                QMessageBox::StandardButton reply = QkmMessageBox::warning(this,
                                                                          PROGRAM_NAME,
                                                                          message,
                                                                          QMessageBox::Yes | QMessageBox::No,
@@ -20721,7 +20722,7 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
     }
 
     dst.sync();
-    QMessageBox::information(this, tr("Setting Export"), tr("Export completed."));
+    QkmMessageBox::information(this, tr("Setting Export"), tr("Export completed."));
 }
 
 void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringList &groups)
@@ -20773,7 +20774,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     bool hasDuplicate = false;
     for (const QString &g : groups) { if (dstExisting.contains(g)) { hasDuplicate = true; break; } }
     if (hasDuplicate) {
-        QMessageBox::StandardButton btn = QMessageBox::warning(
+        QMessageBox::StandardButton btn = QkmMessageBox::warning(
             this,
             tr("Setting Import"),
             tr("Importing setting with the same name will overwrite the existing setting in the current configuration file. Do you want to continue?"),
@@ -20829,7 +20830,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
         return;
     }
 
-    QMessageBox::information(this, tr("Setting Import"), tr("Import completed."));
+    QkmMessageBox::information(this, tr("Setting Import"), tr("Import completed."));
 
     if (loadSetting_flag) {
 #ifdef DEBUG_LOGOUT_ON
@@ -21128,7 +21129,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         else if (groups.contains(settingNameString)) {
             // Case 7: Setting name exists but not currently selected - ask for confirmation
             QString message = tr("Setting \"%1\" already exists. Do you want to overwrite it?").arg(settingNameString);
-            QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+            QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                        QMessageBox::Yes | QMessageBox::No,
                                                                        QMessageBox::No);
             if (reply == QMessageBox::Yes) {
@@ -32669,7 +32670,7 @@ bool QKeyMapper::isCloseToSystemtray()
         QPushButton *noButton = msgBox.addButton(tr("Exit Directly"), QMessageBox::NoRole);
         Q_UNUSED(noButton);
         msgBox.setDefaultButton(yesButton);
-        msgBox.exec();
+        QkmMessageBox::exec(msgBox);
 
         if (msgBox.clickedButton() == noButton) {
             closeto_systemtray = false;
@@ -34224,7 +34225,7 @@ void QKeyMapper::handleEnableSystemFilterKeyPopupCheckStateChanged(Qt::CheckStat
     }
 
     QString message = tr("QKeyMapper is strongly recommended to enable the FilterKeys, do you really want to disable it while mapping?");
-    QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+    QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                QMessageBox::Yes | QMessageBox::No,
                                                                QMessageBox::No);
     if (reply != QMessageBox::Yes) {
@@ -38392,7 +38393,7 @@ void QKeyMapper::onUpdateDownloadFinished(const QString &url, const QString &fil
             .arg(filename.toHtmlEscaped(), dirname.toHtmlEscaped());
     message += tr("<p align=\"center\"><b>Click [Yes] to automatically close the program and upgrade</b>, otherwise handle it manually.</p></body></html>");
 
-    QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message);
+    QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message);
 
     if (reply == QMessageBox::Yes) {
         QFileInfo configFileInfo(CONFIG_FILENAME);
@@ -39299,7 +39300,7 @@ void QKeyMapper::on_addmapdataButton_clicked()
     if (isCommonTab) {
         const QList<NormalTabExclusiveGroupConflict> conflicts = collectEnabledNormalTabExclusiveGroupConflicts(groupKey);
         if (!conflicts.isEmpty()) {
-            QMessageBox::StandardButton reply = QMessageBox::warning(this,
+            QMessageBox::StandardButton reply = QkmMessageBox::warning(this,
                                                                      PROGRAM_NAME,
                                                                      commonConflictConfirmationMessage(currentOriKeyText, conflicts),
                                                                      QMessageBox::Yes | QMessageBox::No,
@@ -39510,7 +39511,7 @@ void QKeyMapper::addFixedDefaultMappingAndOpenSetup(void)
     if (isCommonTab) {
         const QList<NormalTabExclusiveGroupConflict> conflicts = collectEnabledNormalTabExclusiveGroupConflicts(groupKey);
         if (!conflicts.isEmpty()) {
-            QMessageBox::StandardButton reply = QMessageBox::warning(this,
+            QMessageBox::StandardButton reply = QkmMessageBox::warning(this,
                                                                      PROGRAM_NAME,
                                                                      commonConflictConfirmationMessage(fixedKey, conflicts),
                                                                      QMessageBox::Yes | QMessageBox::No,
@@ -40718,7 +40719,7 @@ void QKeyMapper::deleteSelectedMappingData()
 void QKeyMapper::clearCurrentMappingTable()
 {
     QString message = tr("Are you sure you want to clear all data in the mapping table?");
-    QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
+    QMessageBox::StandardButton reply = QkmMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No);
     if (reply == QMessageBox::Yes) {
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
         closeSetupDialog_OnDataChanged();
@@ -42413,7 +42414,7 @@ bool KeyListComboBoxPopup::confirmClearCollection(KeyListSharedDataType dataType
     const QString message = (KEYLIST_SHARED_FAVORITES == dataType)
         ? tr("Are you sure you want to clear all favorites?")
         : tr("Are you sure you want to clear all recent items?");
-    QMessageBox::StandardButton reply = QMessageBox::question(this,
+    QMessageBox::StandardButton reply = QkmMessageBox::question(this,
                                                               PROGRAM_NAME,
                                                               message,
                                                               QMessageBox::Yes | QMessageBox::No,
@@ -43969,7 +43970,7 @@ void SettingSelectComboBoxPopup::onReorderButtonClicked(void)
         return;
     }
 
-    const QMessageBox::StandardButton reply = QMessageBox::question(
+    const QMessageBox::StandardButton reply = QkmMessageBox::question(
         this,
         PROGRAM_NAME,
         QKeyMapper::tr("Restore the default settings order?"),
@@ -45892,7 +45893,7 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
     if (groups.contains(settingSelectStr)) {
 
         QString message = tr("Are you sure you want to remove the setting \"%1\"?").arg(settingSelectStr);
-        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+        QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                    QMessageBox::Yes | QMessageBox::No,
                                                                    QMessageBox::No);
         if (reply != QMessageBox::Yes) {
@@ -46976,13 +46977,13 @@ void QKeyMapper::on_installInterceptionButton_clicked()
 #endif
             /* Show Reboot Required MessageBox after Uninstall Interception Driver */
             QString message = tr("System reboot is required for the changes to take effect after uninstalling Interception driver.");
-            QMessageBox::warning(this, PROGRAM_NAME, message);
+            QkmMessageBox::warning(this, PROGRAM_NAME, message);
         }
     }
     else {
         /* Show a confirmation dialog before installing the driver */
         QString message = tr("Under special scenarios such as repeatedly plugging and unplugging input devices or repeatedly putting the system into sleep and waking it up while using Interception driver, issues like mouse or keyboard input device failure may occur. Please carefully read the software instructions related to multi-input devices before proceeding.\n\nDo you confirm to continue installing Interception driver?");
-        QMessageBox::StandardButton reply = QMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        QMessageBox::StandardButton reply = QkmMessageBox::warning(this, PROGRAM_NAME, message, QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
         if (reply != QMessageBox::Yes) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[on_installInterceptionButton_clicked]" << "User chose not to install the Interception Driver.";
@@ -47022,7 +47023,7 @@ void QKeyMapper::on_installInterceptionButton_clicked()
 #endif
             /* Show Reboot Required MessageBox after Install Interception Driver */
             QString message = tr("System reboot is required for the changes to take effect after installing Interception driver.");
-            QMessageBox::warning(this, PROGRAM_NAME, message);
+            QkmMessageBox::warning(this, PROGRAM_NAME, message);
         }
     }
 }
@@ -48484,7 +48485,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                                                  .arg(triggerTypeName);
                         }
 
-                        const QMessageBox::StandardButton reply = QMessageBox::question(keymapper,
+                        const QMessageBox::StandardButton reply = QkmMessageBox::question(keymapper,
                                                                                         PROGRAM_NAME,
                                                                                         confirmMessage,
                                                                                         QMessageBox::Ok | QMessageBox::Cancel,
@@ -49151,7 +49152,7 @@ void QKeyMapper::importMappingTableByTabIndex(int tabIndex)
 bool QKeyMapper::deleteMappingTableByTabIndex(int tabIndex)
 {
     const QString name = s_KeyMappingTabInfoList.at(tabIndex).TabName;
-    if (QMessageBox::warning(this, PROGRAM_NAME,
+    if (QkmMessageBox::warning(this, PROGRAM_NAME,
             QObject::tr("Are you sure you want to remove the mapping table \"%1\"?").arg(name),
             QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
         return false;
@@ -49456,7 +49457,7 @@ void QKeyMapper::on_restoreProcessPathButton_clicked()
     if (!m_MapProcessInfo.FilePath.isEmpty()
         && ui->processLineEdit->text() != m_MapProcessInfo.FilePath) {
         QString message = tr("Restore to absolute process path \"%1\"?").arg(m_MapProcessInfo.FilePath);
-        QMessageBox::StandardButton reply = QMessageBox::question(this, PROGRAM_NAME, message,
+        QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                    QMessageBox::Yes | QMessageBox::No,
                                                                    QMessageBox::No);
         if (reply != QMessageBox::Yes) {
@@ -50483,7 +50484,7 @@ void SettingTransferDialog::onBrowseFile() {
                 groupWidget->highlightDuplicates(dups, SETTING_BACKUP_IMPORT_EXISTING_GROUP_COLOR);
             }
             else {
-                QMessageBox::warning(this, tr("Setting Import"), tr("No valid groups found in the selected INI file."));
+                QkmMessageBox::warning(this, tr("Setting Import"), tr("No valid groups found in the selected INI file."));
             }
         }
     }
@@ -50495,7 +50496,7 @@ void SettingTransferDialog::onBrowseFile() {
 void SettingTransferDialog::onAccept() {
     QString title = (m_mode == ExportMode ? tr("Setting Export") : tr("Setting Import"));
     if (filePathEdit->text().isEmpty()) {
-        QMessageBox::warning(this, title, tr("Please select a INI file."));
+        QkmMessageBox::warning(this, title, tr("Please select a INI file."));
         return;
     }
     if (groupWidget->selectedGroups().isEmpty()) {
@@ -50506,7 +50507,7 @@ void SettingTransferDialog::onAccept() {
         else {
             message = tr("Please select one or more settings to import.");
         }
-        QMessageBox::warning(this, title, message);
+        QkmMessageBox::warning(this, title, message);
         return;
     }
     // Remove automatic General inclusion logic - only export what user selects
