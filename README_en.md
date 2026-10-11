@@ -137,6 +137,10 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 
 ---
 ### 🎯 New features list (sorted in descending order of update time)
+* v1.3.8 (Build 20261016)
+    * Added a draggable splitter between the process list and mapping table in the upper part of the main window.
+    * Changes to the "Scaling Ratio" setting now take effect immediately. The UI may look different at Windows scaling settings other than 100%; continue using an older version if you prefer the previous appearance.
+    * Fixed an issue where keystrokes sent by VoiceAttack and other third-party software were incorrectly blocked while mapping was enabled.
 * v1.3.8 (Build 20260926)
     * Fixed an issue in the Qt5 version where configuration files were saved incorrectly when using Chinese setting names, Chinese tray icon filenames, and similar items.
     * In the "Point Picker" window, added support for directly pressing the shortcut **Ctrl+C** to quickly copy coordinate text after dragging the crosshair to sample points.
@@ -147,7 +151,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
     * Fixed an issue where the mouse pointer briefly showed a busy cursor when the background crash diagnostic module started.
     * Fixed an issue where the main table lost its highlight selection and focus after updating a mapping in "Mapping Item Settings", and preserved the viewport scroll position during updates.
     * Optimized the row reselection logic after deleting mapping items in the mapping table to automatically skip hidden and separator rows and select the nearest visible row.
-    * Added a standalone "Point Picker" floating tool window supporting real-time screen and window physical coordinate display, crosshair drag-and-drop point sampling bidirectionally synchronized with the main window, and runtime window drag position memory.
+    * Added a standalone "Point Picker" floating window, enabled from the top "View" menu. It supports real-time display of physical screen and target-window coordinates, crosshair dragging to sample points, and remembers its position during runtime.
     * Optimized border display for input and numerical controls in dark theme.
 * v1.3.8 (Build 20260912)
     * Fixed issues related to view option switching and the setting-change notification.
@@ -561,7 +565,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
           Repeat{B+C}x3
           A⏱50»Repeat{C+D»E⏱50}x2»F
     * Mouse mappings that include coordinate points now support extended displays, including: Mouse-Move, Mouse-L/R/M/X1/X2, Mouse-PosSave, Mouse-PosRestore, etc.
-    * Added "vJoy-Touchpad" virtual controller mapping key for the PS4/PS5 touchpad button.
+    * Added "vJoy-Touchpad" as a PS4 virtual gamepad mapping key corresponding to the touchpad button.
     * Added utility tools under the utils directory. For details, see utils/readme.txt:
       ##### 1. Window state configuration tool
           config_window.exe opacity=XXX     (Change opacity of the window under the mouse cursor or the current foreground window; range 20~255)
@@ -770,7 +774,19 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
     * Fixed an issue introduced in **v1.3.7.20250618** where gamepad buttons could not be detected properly. (The 0618 version files are no longer provided; upgrade to the 0622 version to resolve the issue.)
 * v1.3.7 (Build 20250618)
     * Added "vJoy-LS-Radius" and "vJoy-RS-Radius" mapping keys to the mapped key list. These can be used with the "Light Push Value" slider to add mapping keys such as "vJoy-LS-Radius[100]" or "vJoy-RS-Radius[150]" to switch the radius of the left/right virtual analog sticks. **Stick radius range**: 1~254.
-    * Added a "Mapping Table Templates" folder to the ZIP package of the software release. It contains several ready-to-import mapping table templates for reference. 
+    * Added a "Mapping Table Templates" folder to the ZIP package of the software release. It contains the following ready-to-import mapping table templates for reference:
+      - PS手柄映射到键盘和鼠标.ini
+      - WASD按下轻推左摇杆双击重推左摇杆.ini
+      - Xbox手柄映射到键盘和鼠标.ini
+      - 左Ctrl和WASD组合键轻推左摇杆WASD按下重推左摇杆.ini
+      - 手柄右摇杆控制鼠标移动.ini
+      - 手柄左摇杆控制鼠标移动.ini
+      - 手柄陀螺仪控制鼠标移动.ini
+      - 虚拟游戏手柄左摇杆半径切换.ini
+      - 键盘WASD映射到键盘上下左右键.ini
+      - 键盘和鼠标映射到虚拟游戏手柄.ini
+      - 鼠标控制虚拟游戏手柄右摇杆.ini
+      - 鼠标控制虚拟游戏手柄左摇杆.ini
 * v1.3.7 (Build 20250616)
     * Added the "Gyro2Mouse" feature. If your physical game controller supports the standard gyro protocol (DS4, DS5, etc.), you can select "Joy-Gyro2Mouse" in the original key list to use gyro-to-mouse mapping, allowing you to control the mouse pointer's horizontal and vertical movement by rotating the controller along a specific axis.
       - Added a "Gyro2Mouse" settings tab, where "Horizontal Speed" and "Vertical Speed" can be adjusted to control the horizontal and vertical movement speed of the gyro-to-mouse function. Value range: 0.00~99.99.
@@ -779,6 +795,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
       - The "Gyro2Mouse" settings tab contains other advanced options. The default values are usually sufficient. If you need to modify them, please make sure you fully understand their functions before making changes.
 * v1.3.7 (Build 20250608)
     * The close button in the upper right corner of the window now hides the window to the system tray. The minimize button minimizes the window to the taskbar. You can exit the program by right-clicking the system tray icon and selecting "Exit", or by pressing Alt+F4 when the window is visible.
+    * Renamed the "Multi-Input Devices" tab to "Multi-Input"; its functionality remains unchanged.
     * Fixed calculation errors when moving the mouse pointer using controller sticks or keyboard keys.
     * Added tooltip information to the "General Settings", "Mapping Settings", "Virtual Gamepad", "Multi-Input", and "Forza Motorsport" tabs. Hovering the mouse pointer over the tab name will display the tooltip.
     * Updated the SDL2 library for game controller detection to SDL2-2.32.6 (released 2025-05-05), and the SDL_GameControllerDB database to 20250523.
@@ -1218,16 +1235,16 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 | ⇳                          | Toggle based on the current mapped key's pressed/released state; forces a key release to be sent even if the corresponding physical key is still held |
 | ⇵                          | Prefix that sends a key press immediately followed by a key release |
 | ！                         | Override (post-cover) prefix for mapped keys                        |
-| Repeat                     | Repeat the mapping content inside {} for a specified number of times |
+| Repeat{...}              | Repeat the mapping content inside {} for a specified number of times |
 | OnlyOnce{...}              | The content inside {} is executed only on the first send of the key sequence; subsequent loops skip it. Can take an xN repeat count |
 | BLOCKED                    | Block original key (no response on press)                          |
 | NONE                       | Empty key (used as delay placeholder, etc.)                        |
-| Unlock                     | Unlock the locked state of a specified original key                |
-| SendText                   | Send text string directly                                          |
-| PasteText                  | Send a text string via clipboard paste                             |
-| Run                        | Run a specified command (with optional arguments)                  |
-| SwitchTab                  | Switch to a mapping table tab by name                              |
-| SwitchTab💾                | Switch to a mapping table tab by name (and save it)                |
+| Unlock(OriginalKey)      | Unlock the locked state of a specified original key |
+| SendText(text)           | Send text string directly |
+| PasteText(text)          | Send a text string via clipboard paste |
+| Run(command)             | Run a specified command (with optional arguments) |
+| SwitchTab(tab_name)      | Switch to a mapping table tab by name |
+| SwitchTab💾(tab_name)     | Switch to a mapping table tab by name (and save it) |
 | Macro(macro_name)          | Send the key or key sequence corresponding to the macro name edited in the Macro List |
 | UniversalMacro(universal_macro_name) | Send the key or key sequence corresponding to the universal macro name edited in the Macro List |
 | KeyRecordToggle            | Single key to toggle key recording start/stop state                |
