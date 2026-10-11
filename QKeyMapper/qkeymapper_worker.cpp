@@ -14522,8 +14522,8 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                    .arg(static_cast<qulonglong>(rawExtraInfo), hexWidth, 16, QLatin1Char('0'))
                    .arg(static_cast<qulonglong>(extraInfo), hexWidth, 16, QLatin1Char('0'))
                    .arg(pKeyBoard->flags, 8, 16, QLatin1Char('0'))
-                   .arg((pKeyBoard->flags & LLKHF_INJECTED) != 0 ? QStringLiteral("true") : QStringLiteral("false"))
-                   .arg(isCustomVirtualKeyExtraInfo(rawExtraInfo) ? QStringLiteral("true") : QStringLiteral("false"));
+                   .arg((pKeyBoard->flags & LLKHF_INJECTED) != 0 ? QStringLiteral("true") : QStringLiteral("false"),
+                        isCustomVirtualKeyExtraInfo(rawExtraInfo) ? QStringLiteral("true") : QStringLiteral("false"));
     }
 #endif
 
@@ -15145,9 +15145,37 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 
     MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
+#ifdef DEBUG_LOGOUT_ON
+    const ULONG_PTR rawExtraInfo = pMouse->dwExtraInfo;
+#endif
     ULONG_PTR extraInfo_nochanged = pMouse->dwExtraInfo;
     ULONG_PTR extraInfo = extraInfo_nochanged & ~0xF;
     DWORD mousedata = pMouse->mouseData;
+
+#ifdef DEBUG_LOGOUT_ON
+    bool logInputTag = wParam == WM_LBUTTONDOWN || wParam == WM_LBUTTONUP
+        || wParam == WM_RBUTTONDOWN || wParam == WM_RBUTTONUP
+        || wParam == WM_MBUTTONDOWN || wParam == WM_MBUTTONUP
+        || wParam == WM_XBUTTONDOWN || wParam == WM_XBUTTONUP
+        || wParam == WM_MOUSEWHEEL || wParam == WM_MOUSEHWHEEL;
+#ifdef MOUSE_VERBOSE_LOG
+    logInputTag = logInputTag || wParam == WM_MOUSEMOVE;
+#endif
+    if (logInputTag && ((pMouse->flags & LLMHF_INJECTED) != 0 || rawExtraInfo != extraInfo)) {
+        const int hexWidth = static_cast<int>(sizeof(ULONG_PTR) * 2);
+        qDebug().noquote() << "[LowLevelMouseHookProc] InputTag:"
+            << QStringLiteral("wParam=0x%1, mouseData=0x%2, x=%3, y=%4, rawExtraInfo=0x%5, normalizedExtraInfo=0x%6, flags=0x%7, injected=%8, lowerIntegrityInjected=%9")
+                   .arg(static_cast<qulonglong>(wParam), hexWidth, 16, QLatin1Char('0'))
+                   .arg(static_cast<qulonglong>(mousedata), 8, 16, QLatin1Char('0'))
+                   .arg(static_cast<qlonglong>(pMouse->pt.x))
+                   .arg(static_cast<qlonglong>(pMouse->pt.y))
+                   .arg(static_cast<qulonglong>(rawExtraInfo), hexWidth, 16, QLatin1Char('0'))
+                   .arg(static_cast<qulonglong>(extraInfo), hexWidth, 16, QLatin1Char('0'))
+                   .arg(static_cast<qulonglong>(pMouse->flags), 8, 16, QLatin1Char('0'))
+                   .arg((pMouse->flags & LLMHF_INJECTED) != 0 ? QStringLiteral("true") : QStringLiteral("false"),
+                        (pMouse->flags & LLMHF_LOWER_IL_INJECTED) != 0 ? QStringLiteral("true") : QStringLiteral("false"));
+    }
+#endif
 
     if (extraInfo == VIRTUAL_RESEND_REALKEY) {
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
