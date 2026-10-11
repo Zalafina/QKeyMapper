@@ -63,6 +63,19 @@ The Agent must autonomously execute build and verification gates instead of dele
 - Inspect PNGs with the available image-viewing tool, such as `view_image` or `view_file`. Check alignment, padding, text clipping and control visibility.
 - Match language, theme, INI, client size, DPI, capture method and page-visit history before comparing. Distinguish logical client sizes from screenshot pixels and genuine OS DPI from simulated Qt factors.
 
+#### Desktop selection and user disruption
+
+- Prefer real windows on an available private Windows desktop with `PrintWindow` for fonts, layout, sizes, clipping, programmatic scale changes, creation/destruction and return-value checks, when this can fully prove the intended result. Confirm actual application state and inspect the captured content.
+- Use the user's `Default` desktop for necessary real mouse/keyboard, foreground-focus, user-desktop taskbar/tray, occlusion/z-order and physical cross-monitor dragging/focus/DPI-recovery scenarios. Programmatic positioning checks may run in isolation; they do not prove physical dragging.
+- A private Windows desktop is distinct from Qt offscreen rendering, a hidden window and Windows Task View desktops. Do not change the tested style, DPI or business behavior to make a test run in the background. Modal dialogs, menus, ComboBox popups and native file dialogs do not require `Default` solely because of their type.
+- If a private desktop is unavailable or capture cannot establish the intended behavior, explain the limitation and the necessity of a `Default` fallback. Keep quality gates and global sandbox configuration unchanged; do not use elevation merely to bypass desktop isolation.
+- Before execution, the plan must identify every necessary `Default` scenario, its reason, operation/capture method, visible-window and focus/mouse/keyboard impact, and estimated duration. Explicitly state when no `Default` tests are needed. The current capture script attempts `SetForegroundWindow`; `PrintWindow` on `Default` can therefore affect focus and must not be described as completely silent.
+- Once the plan is approved, notify the user before starting and execute its tests, including planned short real-input/foreground use, without asking again for a time slot. Group necessary visible tests to limit disruption. Disclose added `Default` scenarios first; new input/foreground scope beyond the approved plan requires user authorization.
+- Release keys and mouse buttons held by the test and gracefully close only self-started instances. Attachment leaves the user's instance running and preserves user configuration.
+- Evidence must identify the target PID/EXE, the target window's actual desktop, capture and operation methods, and coverage limits. Launcher settings or a successful capture do not establish desktop identity or real interaction. Mark unverifiable desktop identity explicitly, report private-desktop checks separately from real user-desktop interaction, and do not invent missing historical desktop evidence.
+
+Desktop identity checks, scenario selection and limitations: [Autonomous validation toolchain](../../../.agents/context/lessons/agent-autonomous-validation-toolchain.md#desktop-selection-and-user-disruption).
+
 ### 3. Static analysis (`scripts/run_static_analysis.ps1`)
 
 - Run Clang-Tidy and Clazy on the affected sources. For a diagnostic build, use `pwsh -NoProfile -File .\scripts\run_static_analysis.ps1 -Files QKeyMapper\qkeymapper.cpp -Diagnostic -BuildDirectory .\out\build_qt6_diagnostic`.

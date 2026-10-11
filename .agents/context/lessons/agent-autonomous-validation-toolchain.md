@@ -63,6 +63,35 @@ Reuse scripts/test_process.ps1 rather than process-name searches or new lifecycl
 
 Preserve the formal executable and source manifest. A temporary asInvoker copy is limited to isolated UI checks without starting mapping or performing driver tests. Record that it differs from the formal runtime; it cannot establish administrator/driver behavior.
 
+## Desktop selection and user disruption
+
+Prefer the least disruptive execution environment that can fully establish the intended result. A private desktop here is a Windows desktop object: a real Qt window can have an HWND and render there without appearing on the user's active `Default` desktop or taskbar. It is not Qt offscreen rendering, a hidden window or Windows Task View. Never change the tested style, DPI or business behavior merely to obtain background execution.
+
+| Intended evidence | Recommended execution |
+|---|---|
+| Fonts, layout, sizes, clipping, programmatic scale changes, window creation/destruction and return values | Real windows on an available private desktop, `PrintWindow`, actual state checks and image inspection, when sufficient for the scenario |
+| Real mouse/keyboard, foreground focus, user-desktop taskbar/tray, occlusion or z-order | Necessary scenarios on the user's `Default` desktop |
+| Physical cross-monitor dragging and associated focus/DPI recovery | `Default`; programmatic positioning can be checked separately in isolation |
+| Private desktop unavailable, or captured content cannot prove the behavior | Explain the limitation and why `Default` is needed; preserve quality gates and global sandbox configuration |
+
+Modal dialogs, menus, ComboBox popups and native file dialogs do not require `Default` solely because of their type. Choose from the required behavior and input method. A programmatic action or UIAutomation invocation may establish its observed state transition, but must not be reported as proof of a physical mouse/keyboard action.
+
+### Planning and execution
+
+Plans must list necessary `Default` scenarios, reasons, operation/capture methods, visible-window/focus/mouse/keyboard impact and estimated duration; explicitly state none when no such tests are required. For example, distinguish a private-desktop layout snapshot from a short `Default` mouse-drag test rather than calling both "UI verification".
+
+After plan approval, notify the user before starting and execute the planned tests, including approved short real-input/foreground use, without reconfirming a time slot. Batch visible tests to reduce disruption. Disclose added `Default` scenarios before execution; new input/foreground scope outside the approved plan requires user authorization. Release any keys or mouse buttons held by the test, gracefully close self-started instances, and leave attached user instances and user configuration intact.
+
+The current `scripts/capture_ui_snapshots.ps1` attempts `SetForegroundWindow` before either capture path. Consequently, `-PrintWindow` on `Default` can affect focus; the flag selects the capture method, not a silent launch or a desktop. `CreateNoWindow` does not prevent the GUI application from creating its own windows. Do not use elevation merely to bypass desktop isolation or change global sandbox settings as a test convenience. The existing privilege and process-ownership rules still apply.
+
+### Desktop identity and evidence boundaries
+
+Record the tested PID/absolute EXE, target window desktop, operation/capture methods and actual coverage. When available, use the target HWND's thread ID from `GetWindowThreadProcessId`, then `GetThreadDesktop` and `GetUserObjectInformation` (`UOI_NAME`) to identify its desktop. The runner's thread desktop and the current input desktop (`OpenInputDesktop`) provide comparison context, not a substitute for target identity. Check query success and access limitations; an unavailable identity is "unverified", not an assumed private or `Default` desktop.
+
+Do not infer the target's desktop from `config.toml`, launcher options, a console window's absence, a successful `SetForegroundWindow` attempt or a saved PNG. Launch routes and effective sandbox behavior may vary between machines or helpers. Inspect the actual target after launch or relaunch. A private-desktop capture must contain the intended, settled content; API success alone does not establish validity.
+
+Report private-desktop presentation/state checks separately from real user-desktop interaction. They do not by themselves prove foreground activation, physical input, user-desktop shell behavior or physical dragging. Preserve historical evidence as recorded; do not retroactively assign a desktop to old runs that did not record it. No new diagnostic framework or changes to the default milestone gates are implied by this guidance.
+
 ## Screenshot capture and comparison
 
 After preparing the example runtime, launch and capture it:
