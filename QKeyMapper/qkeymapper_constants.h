@@ -987,6 +987,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr ULONG_PTR VIRTUAL_UNICODE_CHAR     = 0xCDCACDC0;
     inline constexpr ULONG_PTR VIRTUAL_CUSTOM_KEYS      = 0x3A3A0000;
+    inline constexpr ULONG_PTR VIRTUAL_CUSTOM_KEYS_TAG_MASK = ~static_cast<ULONG_PTR>(0xFFFFu);
     inline constexpr ULONG_PTR VIRTUAL_MOUSE_MOVE       = 0xBFBCBFB0;
     inline constexpr ULONG_PTR VIRTUAL_MOUSE_MOVE_BYKEYS= 0x3F3F3F30;
 

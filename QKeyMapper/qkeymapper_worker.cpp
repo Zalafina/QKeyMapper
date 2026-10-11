@@ -10,6 +10,22 @@
 using namespace QKeyMapperConstants;
 
 namespace {
+constexpr bool isCustomVirtualKeyExtraInfo(ULONG_PTR extraInfo)
+{
+    // Only the low 16 bits carry a row index; all other bits identify the tag.
+    return (extraInfo & VIRTUAL_CUSTOM_KEYS_TAG_MASK) == VIRTUAL_CUSTOM_KEYS;
+}
+
+static_assert(isCustomVirtualKeyExtraInfo(VIRTUAL_CUSTOM_KEYS));
+static_assert(isCustomVirtualKeyExtraInfo(VIRTUAL_CUSTOM_KEYS | 0x1234u));
+static_assert(isCustomVirtualKeyExtraInfo(VIRTUAL_CUSTOM_KEYS | 0xFFFFu));
+static_assert(!isCustomVirtualKeyExtraInfo(static_cast<ULONG_PTR>(0xFFFFFFFFFFFFFC19ULL)));
+static_assert(!isCustomVirtualKeyExtraInfo(static_cast<ULONG_PTR>(0xFFFFFFFFu)));
+static_assert(!isCustomVirtualKeyExtraInfo(static_cast<ULONG_PTR>(0xFFFFFFFFFFFFFFFFULL)));
+static_assert(!isCustomVirtualKeyExtraInfo(static_cast<ULONG_PTR>(0x7A3A1234u)));
+static_assert(sizeof(ULONG_PTR) <= 4
+    || !isCustomVirtualKeyExtraInfo(static_cast<ULONG_PTR>(0x000000013A3A1234ULL)));
+
 constexpr int GAMEPAD_TOUCHPAD_PLAYER_COUNT = JOYSTICK_PLAYER_INDEX_MAX - JOYSTICK_PLAYER_INDEX_MIN + 1;
 constexpr int GAMEPAD_TOUCHPAD_ALL_PLAYERS_MASK = (1 << GAMEPAD_TOUCHPAD_PLAYER_COUNT) - 1;
 
@@ -13504,7 +13520,7 @@ ULONG_PTR QKeyMapper_Worker::generateUniqueRandomValue(QSet<ULONG_PTR> &existing
     ULONG_PTR newValue;
     do {
         newValue = QRandomGenerator::global()->generate() & ~0xF;  // Mask out the lowest 4 bits (set them to zero)
-    } while (existingValues.contains(newValue));
+    } while (existingValues.contains(newValue) || isCustomVirtualKeyExtraInfo(newValue));
     existingValues.insert(newValue);
     return newValue;
 }
@@ -14485,13 +14501,31 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
 
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
     ULONG_PTR extraInfo_nochanged = pKeyBoard->dwExtraInfo;
+#ifdef DEBUG_LOGOUT_ON
+    const ULONG_PTR rawExtraInfo = pKeyBoard->dwExtraInfo;
+#endif
     ULONG_PTR extraInfo;
-    if ((extraInfo_nochanged & VIRTUAL_CUSTOM_KEYS) == VIRTUAL_CUSTOM_KEYS) {
+    if (isCustomVirtualKeyExtraInfo(extraInfo_nochanged)) {
         extraInfo = VIRTUAL_CUSTOM_KEYS;
     }
     else {
         extraInfo = extraInfo_nochanged & ~0xF;
     }
+
+#ifdef DEBUG_LOGOUT_ON
+    if ((pKeyBoard->flags & LLKHF_INJECTED) != 0 || rawExtraInfo != extraInfo) {
+        const int hexWidth = static_cast<int>(sizeof(ULONG_PTR) * 2);
+        qDebug().noquote() << "[LowLevelKeyboardHookProc] InputTag:"
+            << QStringLiteral("vkCode=0x%1, wParam=0x%2, rawExtraInfo=0x%3, normalizedExtraInfo=0x%4, flags=0x%5, injected=%6, customTag=%7")
+                   .arg(pKeyBoard->vkCode, 2, 16, QLatin1Char('0'))
+                   .arg(static_cast<qulonglong>(wParam), 0, 16)
+                   .arg(static_cast<qulonglong>(rawExtraInfo), hexWidth, 16, QLatin1Char('0'))
+                   .arg(static_cast<qulonglong>(extraInfo), hexWidth, 16, QLatin1Char('0'))
+                   .arg(pKeyBoard->flags, 8, 16, QLatin1Char('0'))
+                   .arg((pKeyBoard->flags & LLKHF_INJECTED) != 0 ? QStringLiteral("true") : QStringLiteral("false"))
+                   .arg(isCustomVirtualKeyExtraInfo(rawExtraInfo) ? QStringLiteral("true") : QStringLiteral("false"));
+    }
+#endif
 
     if (extraInfo == VIRTUAL_RESEND_REALKEY
         || extraInfo == VIRTUAL_UNICODE_CHAR) {
