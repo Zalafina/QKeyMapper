@@ -32899,6 +32899,9 @@ void QKeyMapper::setParentForSelectColorDialog(QWidget *parent)
 bool QKeyMapper::showMessageBoxWithCheckbox(QWidget *parent, QString message, QString checkbox_message, CustomMessageBox::IconType icontype)
 {
     CustomMessageBox msgBox(parent, message, checkbox_message, icontype);
+    msgBox.ensurePolished();
+    msgBox.adjustSize();
+    registerEditorUiScale(&msgBox);
     bool ischecked = false;
     if (msgBox.exec() == QDialog::Accepted) {
         if (msgBox.isCheckBoxChecked()) {

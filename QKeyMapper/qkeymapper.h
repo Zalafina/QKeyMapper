@@ -956,6 +956,8 @@ public:
 
     CustomMessageBox(QWidget *parent = nullptr, QString message = QString(), QString checkbox_message = QString(), IconType iconType = Warning)
         : QDialog(parent) {
+        // Child metrics must be authored before inheriting a scaled owner.
+        setFont(QFont(QKeyMapperConstants::FONTNAME_ENGLISH, 9));
         setWindowTitle(QKeyMapperConstants::PROGRAM_NAME);
 
         QVBoxLayout *mainLayout = new QVBoxLayout(this);
