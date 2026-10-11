@@ -3742,6 +3742,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->scaleComboBox->setCurrentIndex(ui->scaleComboBox->findData(DISPLAY_SCALE_DEFAULT));
     connect(ui->scaleComboBox, QOverload<int>::of(&QComboBox::activated),
             this, &QKeyMapper::onScaleComboBoxActivated);
+    initScaleMenu();
 
     QStringList theme_list = QStringList() \
             << tr("System Default")
@@ -16456,6 +16457,58 @@ void QKeyMapper::setMappingStartActionMode(MappingStartActionMode actionMode, bo
         QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
         QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
         settingFile.setValue(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
+    }
+}
+
+void QKeyMapper::initScaleMenu(void)
+{
+    if (!m_MenuView || !ui || !ui->scaleComboBox || m_MenuScale) { return; }
+
+    m_MenuScale = m_MenuView->addMenu(ui->scaleLabel->text());
+    m_MenuScale->setObjectName(QStringLiteral("uiScaleMenu"));
+    m_MenuScale->setStyleSheet(QStringLiteral("QMenu::item { min-height: 22px; }"));
+    if (QStyle *windowsStyle = QKeyMapperStyle::windowsStyle()) {
+        m_MenuScale->setStyle(windowsStyle);
+    }
+    auto *group = new QActionGroup(m_MenuScale);
+    group->setExclusive(true);
+    for (int index = 0; index < ui->scaleComboBox->count(); ++index) {
+        QAction *action = m_MenuScale->addAction(ui->scaleComboBox->itemText(index));
+        action->setData(ui->scaleComboBox->itemData(index));
+        action->setCheckable(true);
+        group->addAction(action);
+    }
+    connect(group, &QActionGroup::triggered, this, [this](QAction *action) {
+        if (!action || m_KeyMapStatus != KEYMAP_IDLE || !ui->scaleComboBox->isEnabled()) {
+            syncScaleMenu();
+            return;
+        }
+        const int index = ui->scaleComboBox->findData(action->data());
+        if (index < 0) { syncScaleMenu(); return; }
+        // Preserve index-change dirty tracking; only activation applies scaling.
+        ui->scaleComboBox->setCurrentIndex(index);
+        onScaleComboBoxActivated(index);
+    });
+    connect(ui->scaleComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int) { syncScaleMenu(); });
+    connect(m_MenuView, &QMenu::aboutToShow, this, &QKeyMapper::syncScaleMenu);
+    connect(m_MenuScale, &QMenu::aboutToShow, this, &QKeyMapper::syncScaleMenu);
+    syncScaleMenu();
+}
+
+void QKeyMapper::syncScaleMenu(void)
+{
+    if (!m_MenuView || !m_MenuScale || !ui || !ui->scaleComboBox) { return; }
+    m_MenuScale->setTitle(ui->scaleLabel->text());
+    m_MenuScale->setEnabled(m_KeyMapStatus == KEYMAP_IDLE
+                           && ui->scaleComboBox->isEnabled() && m_MenuView->isEnabled());
+    const auto actions = m_MenuScale->actions();
+    for (QAction *action : actions) {
+        const int index = ui->scaleComboBox->findData(action->data());
+        if (index < 0) { continue; }
+        action->setText(ui->scaleComboBox->itemText(index));
+        // Programmatic checks do not emit triggered(), avoiding a feedback loop.
+        action->setChecked(index == ui->scaleComboBox->currentIndex());
     }
 }
 
@@ -29298,6 +29351,7 @@ void QKeyMapper::changeControlEnableStatus(bool status)
     // Top-level menus cascade enabled state to children
     if (m_MenuMappingTableOp) m_MenuMappingTableOp->setEnabled(status);
     if (m_MenuView)           m_MenuView->setEnabled(status);
+    syncScaleMenu();
 }
 
 void QKeyMapper::extractSoundFiles()
@@ -35979,6 +36033,7 @@ void QKeyMapper::setUILanguage(int languageindex)
         m_ActionShowFloating->setText(QObject::tr("Show Floating Column"));
         m_ActionHideDisabled->setText(QObject::tr("Show Disabled Rows"));
     }
+    syncScaleMenu();
 
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         if (isCommonMappingTabIndex(index)) {

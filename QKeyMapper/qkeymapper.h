@@ -2019,6 +2019,8 @@ private:
     void initAddKeyComboBoxes(void);
     void initInputDeviceSelectComboBoxes(void);
     void initMappingStartActionMenu(void);
+    void initScaleMenu(void);
+    void syncScaleMenu(void);
     void initCategoryFilterControls(void);
     void initSystemFilterKeyPopupControls(void);
     void initKeyboardSelectComboBox(void);
@@ -2516,6 +2518,7 @@ private:
     QMenu *m_MenuMappingTableOp = Q_NULLPTR;
     QMenu *m_MenuView = Q_NULLPTR;
     QMenu *m_MenuMappingTableView = Q_NULLPTR;
+    QMenu *m_MenuScale = Q_NULLPTR;
     QAction *m_ActionAddBlankTab = Q_NULLPTR;
     QAction *m_ActionCopyCurrentTab = Q_NULLPTR;
     QAction *m_ActionDeleteCurrentTab = Q_NULLPTR;
