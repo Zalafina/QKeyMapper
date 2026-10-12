@@ -11,6 +11,8 @@ plan/
 forzahorizon6_official_format.txt
 QKeyMapper/*.pro.user
 QKeyMapper/*.pro.user.*
+QKeyMapper/tests/**/*.pro.user
+QKeyMapper/tests/**/*.pro.user.*
 QKeyMapper/*.moc
 QKeyMapper/*.bin
 QKeyMapper/**/*.TMP

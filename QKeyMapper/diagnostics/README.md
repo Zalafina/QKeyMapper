@@ -74,7 +74,7 @@ CrashDiagnosticsHangTimeoutSeconds=30
 下列脚本由用户显式运行。默认只编译原生测试程序/辅助程序并执行心跳策略自检、正确和错误 EXE/PDB 配对检查及导入表检查，不启动正式 QKeyMapper，也不调用输入驱动：
 
 ```powershell
-& 'D:\work\mygithub\QKeyMapper\QKeyMapper\QKeyMapper\diagnostics\tests\run_checks.ps1' `
+& 'D:\work\mygithub\QKeyMapper\QKeyMapper\QKeyMapper\tests\diagnostics\run_checks.ps1' `
     -QMakePath 'C:\Qt\6.8.3\msvc2022_64\bin\qmake.exe' `
     -MakePath 'C:\Qt\Tools\QtCreator\bin\jom\jom.exe'
 ```
@@ -105,9 +105,10 @@ k
 可对已经显式启动的目标进程进行只读 CPU/内存采样（PID 用该轮实际值替换）：
 
 ```powershell
-& 'D:\work\mygithub\QKeyMapper\QKeyMapper\QKeyMapper\diagnostics\tests\measure_overhead.ps1' `
+New-Item -ItemType Directory -Force -Path '.\out\tests\diagnostics' | Out-Null
+& 'D:\work\mygithub\QKeyMapper\QKeyMapper\QKeyMapper\tests\diagnostics\measure_overhead.ps1' `
     -MainProcessId 1234 -Seconds 120 -Label 'default-idle-round1' |
-    Export-Csv -LiteralPath '.\default-idle-round1.csv' -NoTypeInformation
+    Export-Csv -LiteralPath '.\out\tests\diagnostics\default-idle-round1.csv' -NoTypeInformation
 ```
 
 此脚本只计主程序和已确认的相邻子辅助程序，不包含采样脚本自身；输出的是两进程 CPU/私有内存总量，**开销须由同场景各轮差值计算**，CPU 以单核 100% 为基准。采样结果不能代替输入延迟或磁盘写入验证。

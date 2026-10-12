@@ -26,3 +26,9 @@ scripts/test_static_analysis.ps1. The latter uses native stubs only to verify
 reporting: vendor-warning exclusion, first-party-warning rejection and silent
 nonzero exit rejection. It does not establish C++ correctness; run the actual
 tools separately.
+
+Maintained first-party test projects, sources and dedicated runners live in
+QKeyMapper/tests/<topic>/; generated builds and reporting fixtures live under
+out/. Keep target discovery aligned when moving a test; reporting-stub checks
+verify inventory and failure handling, not actual static-analysis diagnostics.
+See QKeyMapper/tests/README.md for the current engineering entry points.

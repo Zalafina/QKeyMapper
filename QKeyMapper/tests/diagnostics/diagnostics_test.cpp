@@ -1,6 +1,6 @@
-#include "../crash_client.h"
-#include "../hang_monitor.h"
-#include "../crash_files.h"
+#include "../../diagnostics/crash_client.h"
+#include "../../diagnostics/hang_monitor.h"
+#include "../../diagnostics/crash_files.h"
 #include <strsafe.h>
 #include <cstdio>
 #ifdef NDEBUG

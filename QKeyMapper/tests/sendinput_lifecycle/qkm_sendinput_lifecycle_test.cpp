@@ -5,7 +5,7 @@
 #include <QJsonObject>
 #include <QSemaphore>
 #include <QTimer>
-#include "../qkeymapper_worker.h"
+#include "../../qkeymapper_worker.h"
 
 namespace {
 using namespace QKeyMapperConstants;
@@ -170,7 +170,7 @@ void installLifecycleTest()
 
 Q_COREAPP_STARTUP_FUNCTION(installLifecycleTest)
 #define main qkmProductMain
-#include "../main.cpp"
+#include "../../main.cpp"
 #undef main
 
 int main(int argc, char *argv[])

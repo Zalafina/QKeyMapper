@@ -1,4 +1,4 @@
-#include "../qkm_ui_scale.h"
+#include "../../qkm_ui_scale.h"
 #include <QApplication>
 #include <QComboBox>
 #include <QDialog>

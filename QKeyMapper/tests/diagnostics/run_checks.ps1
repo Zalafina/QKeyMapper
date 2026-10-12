@@ -2,13 +2,13 @@
 param(
     [Parameter(Mandatory)][string]$QMakePath,
     [Parameter(Mandatory)][string]$MakePath,
-    [string]$BuildDirectory = (Join-Path $PSScriptRoot '../../build/diagnostics-tests'),
+    [string]$BuildDirectory = (Join-Path $PSScriptRoot '../../../out/tests/diagnostics'),
     [switch]$Runtime,
     [switch]$LongLifecycleTests
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
-. (Join-Path $PSScriptRoot '../diagnostic_artifacts.ps1')
+. (Join-Path $PSScriptRoot '../../diagnostics/diagnostic_artifacts.ps1')
 $BuildDirectory = [IO.Path]::GetFullPath($BuildDirectory)
 New-Item -ItemType Directory -Path $BuildDirectory -Force | Out-Null
 Push-Location -LiteralPath $BuildDirectory
@@ -20,7 +20,7 @@ try {
 }
 finally { Pop-Location }
 $outputDirectory = Join-Path $BuildDirectory 'release'
-& (Join-Path $PSScriptRoot '../build_crash_reporter.ps1') -QMakePath $QMakePath -MakePath $MakePath `
+& (Join-Path $PSScriptRoot '../../diagnostics/build_crash_reporter.ps1') -QMakePath $QMakePath -MakePath $MakePath `
     -BuildDirectory (Join-Path $BuildDirectory 'reporter') -DeployDirectory $outputDirectory
 $testExe = Join-Path $outputDirectory 'QKeyMapperDiagnosticsTest.exe'
 & $testExe '--self-test'

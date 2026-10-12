@@ -4,7 +4,7 @@ param([string]$BuildDirectory)
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
 if (-not $BuildDirectory) { $BuildDirectory = Join-Path $repoRoot 'out\build_qt6' }
-$testDirectory = Join-Path $repoRoot ('out\static-analysis-tests\' + [Guid]::NewGuid().ToString('N'))
+$testDirectory = Join-Path $repoRoot ('out\tests\static_analysis\' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $testDirectory | Out-Null
 $analysisScript = Join-Path $PSScriptRoot 'run_static_analysis.ps1'
 
@@ -18,7 +18,7 @@ $passTool = Join-Path $testDirectory 'pass.exe'
 $failTool = Join-Path $testDirectory 'fail.exe'
 $stubSource = Join-Path $testDirectory 'stub.c'
 $vendorPath = (Join-Path $repoRoot 'QKeyMapper\QJoysticks\vendor.h').Replace('\', '/')
-$ownedPath = (Join-Path $repoRoot 'QKeyMapper\diagnostics\tests\diagnostics_test.cpp').Replace('\', '/')
+$ownedPath = (Join-Path $repoRoot 'QKeyMapper\tests\diagnostics\diagnostics_test.cpp').Replace('\', '/')
 @'
 #include <stdio.h>
 #include <string.h>
@@ -61,7 +61,7 @@ Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'sendinput-lifecycl
 $failureReport = Join-Path $testDirectory 'fail'
 $failed = $false
 try {
-    & $analysisScript -Files (Join-Path $repoRoot 'QKeyMapper\diagnostics\tests\diagnostics_test.cpp') -BuildDirectory $BuildDirectory -ReportDirectory $failureReport -ClangTidyPath $failTool -ClazyPath $passTool
+    & $analysisScript -Files (Join-Path $repoRoot 'QKeyMapper\tests\diagnostics\diagnostics_test.cpp') -BuildDirectory $BuildDirectory -ReportDirectory $failureReport -ClangTidyPath $failTool -ClazyPath $passTool
 } catch {
     $failed = $_.Exception.Message -like '*nonzero exit codes*'
 }

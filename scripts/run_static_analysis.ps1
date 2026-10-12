@@ -121,7 +121,7 @@ $useSdlGuard = $clangVersion -match 'LLVM version 22\.' -and
 $testBuildDirectory = Join-Path $reportDirectory 'diagnostics-test-qmake'
 New-Item -ItemType Directory -Force -Path $testBuildDirectory | Out-Null
 $testMakefilePath = Join-Path $testBuildDirectory 'Makefile'
-$testProjectPath = Join-Path $sourceRoot 'diagnostics\tests\diagnostics_test.pro'
+$testProjectPath = Join-Path $sourceRoot 'tests\diagnostics\diagnostics_test.pro'
 $qmakeCommand = 'call "{0}" >nul && "{1}" -o "{2}" "{3}" -spec win32-msvc' -f $vcvars, $qmake, $testMakefilePath, $testProjectPath
 $qmakeOutput = @(& $env:ComSpec /d /s /c $qmakeCommand 2>&1)
 $qmakeExitCode = $LASTEXITCODE
@@ -136,7 +136,7 @@ $targets = @(
 $uiTestBuildDirectory = Join-Path $reportDirectory 'ui-scale-test-qmake'
 New-Item -ItemType Directory -Force -Path $uiTestBuildDirectory | Out-Null
 $uiTestMakefile = Join-Path $uiTestBuildDirectory 'Makefile'
-$uiTestProject = Join-Path $sourceRoot 'tests\ui_scale_test.pro'
+$uiTestProject = Join-Path $sourceRoot 'tests\ui_scale\ui_scale_test.pro'
 $uiTestCommand = 'call "{0}" >nul && "{1}" -o "{2}" "{3}" -spec win32-msvc' -f $vcvars, $qmake, $uiTestMakefile, $uiTestProject
 $uiTestOutput = @(& $env:ComSpec /d /s /c $uiTestCommand 2>&1)
 $uiTestExitCode = $LASTEXITCODE
@@ -146,7 +146,7 @@ $targets += @{ Name = 'ui-scale-test'; Makefile = $uiTestMakefile }
 $lifecycleBuildDirectory = Join-Path $reportDirectory 'sendinput-lifecycle-test-qmake'
 New-Item -ItemType Directory -Force -Path $lifecycleBuildDirectory | Out-Null
 $lifecycleMakefile = Join-Path $lifecycleBuildDirectory 'Makefile'
-$lifecycleProject = Join-Path $sourceRoot 'sendinput_lifecycle_test.pro'
+$lifecycleProject = Join-Path $sourceRoot 'tests\sendinput_lifecycle\sendinput_lifecycle_test.pro'
 $lifecycleFlags = if ($Diagnostic) { ' "DEFINES+=LOGOUT_TOFILE"' } else { '' }
 $lifecycleCommand = 'call "{0}" >nul && "{1}" -o "{2}" "{3}" -spec win32-msvc "CONFIG+=release" "CONFIG-=debug" "INCLUDEPATH+={4}"{5}' -f $vcvars, $qmake, $lifecycleMakefile, $lifecycleProject, $BuildDirectory, $lifecycleFlags
 $lifecycleOutput = @(& $env:ComSpec /d /s /c $lifecycleCommand 2>&1)
