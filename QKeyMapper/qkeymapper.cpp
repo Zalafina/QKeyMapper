@@ -15262,6 +15262,12 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
             return false;
         }
 
+        if (msg->message == WM_DPICHANGED && m_liveScaleBaselinesReady && isVisible()) {
+            // Qt/Windows may retain the old physical extent after a screen disappears.
+            m_isApplyingLiveScale = true;
+            m_liveScaleSettleTimer.start();
+        }
+
         if (msg->message == WM_ENTERSIZEMOVE) {
             m_userWindowResizeActive = false;
         } else if (msg->message == WM_SIZING) {
@@ -15774,6 +15780,39 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
         }
     }
 #endif
+
+    if (event->type() == QEvent::ScreenChangeInternal || event->type() == QEvent::Resize) {
+        auto *box = qobject_cast<QMessageBox *>(object);
+        QWidget *owner = box ? box->parentWidget() : nullptr;
+        while (owner && owner != this) { owner = owner->parentWidget(); }
+        if (box && owner == this
+            && (event->type() == QEvent::ScreenChangeInternal
+                || (box->minimumSize() == box->maximumSize() && box->size() != box->minimumSize()))) {
+            const QString name = QStringLiteral("qkmMessageScreenSettle");
+            auto *timer = box->findChild<QTimer *>(name, Qt::FindDirectChildrenOnly);
+            if (!timer) {
+                timer = new QTimer(box);
+                timer->setObjectName(name);
+                timer->setSingleShot(true);
+                connect(timer, &QTimer::timeout, box, [box]() {
+                    // Re-enter Qt's content measurement after its screen/DPI update.
+                    if (!box->isVisible()) { return; }
+                    box->setText(box->text());
+                    // Qt skips resizing when the measured fixed-size constraints are unchanged.
+                    box->resize(box->minimumSize());
+                    if (QScreen *screen = QKeyMapperQtCompat::widgetScreen(box)) {
+                        const QRect area = screen->availableGeometry();
+                        const QRect frame = box->frameGeometry();
+                        if (!area.isEmpty() && !area.contains(frame)) {
+                            box->move(qBound(area.left(), frame.x(), qMax(area.left(), area.right() - frame.width() + 1)),
+                                      qBound(area.top(), frame.y(), qMax(area.top(), area.bottom() - frame.height() + 1)));
+                        }
+                    }
+                });
+            }
+            timer->start(0);
+        }
+    }
 
     if (event->type() == QEvent::MouseButtonDblClick) {
         if (m_mainTableSplitterHandle && object == m_mainTableSplitterHandle.data()) {
@@ -22987,6 +23026,22 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 startup_point = m_GeneralAdvancedDialog->getSpecifyStartupPosition();
             }
 
+            bool visibleOnScreen = false;
+            const QRect startupRect(startup_point, size());
+            const auto screens = QGuiApplication::screens();
+            for (const QScreen *screen : screens) {
+                if (screen->availableGeometry().intersects(startupRect)) {
+                    visibleOnScreen = true;
+                    break;
+                }
+            }
+            if (!visibleOnScreen) {
+                if (const QScreen *screen = QGuiApplication::primaryScreen()) {
+                    const QRect area = screen->availableGeometry();
+                    startup_point = area.topLeft() + QPoint(qMax(0, (area.width() - width()) / 2),
+                                                           qMax(0, (area.height() - height()) / 2));
+                }
+            }
             move(startup_point);
 
 #ifdef DEBUG_LOGOUT_ON

@@ -1,0 +1,14 @@
+# Qt DPI Window Recovery and Native Visibility
+
+Verified with Qt 6.8.3 and Qt 5.15.2 Windows Widgets.
+
+- Preserve immutable authored metrics and the normal user-size baseline across system DPI changes. Reuse the existing coalesced layout/size pass; system-generated resize events must not become user resize baselines.
+- An independent dialog can have parentWidget() set while QWidget::isAncestorOf() does not establish the expected ownership. Follow the parentWidget chain for application-owned top-level message boxes; inspect the native owner separately.
+- Qt 6.8.3 QWidget::setFixedSize() returns early when minimum and maximum constraints are unchanged. After a DPI transition, repeating QMessageBox content measurement can therefore leave its actual geometry different from the measured fixed size. Measure through Qt first, then restore that measured size explicitly when needed. Do not apply an editor-window authored size to a message box.
+- Coalesce delayed message-box recovery in a child timer with the message box as connection context. Preserve exec, buttons, default/Escape behavior, return values, and native owner disabling. Correct positions only when the frame is outside the current work area; do not add automatic shrinking or saving.
+- Qt 6 Windows global native filters skip synchronous input messages such as WM_SIZING. A standalone invocation of the filter is not proof that real border resizing reaches that branch. Verify ordinary resizing with actual system input before changing the existing resize capture protocol.
+- Hidden helper startup can leave QWidget::isVisible() true while Win32 IsWindowVisible() is false. Establish a visible baseline through Qt itself before runtime acceptance, and record both states. Directly showing a native handle does not prove that subsequent Qt screen state is coherent.
+- Capture with the intended thread DPI awareness. Inspect the actual PNG: PrintWindow may succeed while producing a black image; screen capture can contain another window. Neither is a visual pass. Record actual desktop, PID/EXE, Qt screen/DPR, native monitor/DPI, client/frame rectangles, owner and enabled state.
+- Qt screen coordinates and physical Win32 coordinates differ on mixed-DPI desktops. Test visibility against the matching work-area coordinate system; captured regions outside the physical screen and invisible native frame margins are not visible-content evidence.
+
+A resize gesture that also crosses DPI boundaries needs separate coverage. Keeping the pre-gesture user-size baseline is a bounded fallback, not proof that the combined resize/move gesture is fully supported. Isolated UI probes and a local repair loop do not replace complete stage gates, actual ASan instrumentation or hardware-input validation.

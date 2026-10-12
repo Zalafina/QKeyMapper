@@ -518,6 +518,8 @@ bool QkmUiScale::nativeEventFilter(const QByteArray &eventType, void *message,
     const auto *msg = static_cast<const MSG *>(message);
     if (!msg || msg->hwnd != reinterpret_cast<HWND>(d->window->effectiveWinId())) { return false; }
     if (msg->message == WM_ENTERSIZEMOVE) { d->userResizing = true; }
+    // shortcut: DPI changes preserve the pre-drag size; revisit for resizing across screens.
+    else if (msg->message == WM_DPICHANGED) { d->userResizing = false; }
     else if (msg->message == WM_EXITSIZEMOVE && d->userResizing) {
         d->userResizing = false;
         const qreal exitRatio = d->ratio;

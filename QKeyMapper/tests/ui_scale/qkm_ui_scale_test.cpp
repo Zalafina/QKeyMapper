@@ -151,9 +151,33 @@ void verifyContentSizedMessageBox()
 }
 }
 
+void verifyMovePreservesSessionSize()
+{
+    QDialog root;
+    root.resize(500, 300);
+    QkmUiScale scale(&root);
+    scale.manageWindow();
+    root.show();
+    QApplication::processEvents();
+    scale.applyWindow(1.5);
+    MSG message = {};
+    message.hwnd = reinterpret_cast<HWND>(root.winId());
+    message.message = WM_ENTERSIZEMOVE;
+    static_cast<QAbstractNativeEventFilter *>(&scale)->nativeEventFilter("windows_generic_MSG", &message, nullptr);
+    message.message = WM_DPICHANGED;
+    static_cast<QAbstractNativeEventFilter *>(&scale)->nativeEventFilter("windows_generic_MSG", &message, nullptr);
+    root.resize(900, 600);
+    message.message = WM_EXITSIZEMOVE;
+    static_cast<QAbstractNativeEventFilter *>(&scale)->nativeEventFilter("windows_generic_MSG", &message, nullptr);
+    QApplication::processEvents();
+    scale.applyWindow(1);
+    require(root.size() == QSize(500, 300), "Move/DPI resize changed session baseline");
+}
+
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
+    verifyMovePreservesSessionSize();
     verifyDynamicFixedPresentation();
     verifyAuthoredWindowSize();
     verifyContentSizedMessageBox();
