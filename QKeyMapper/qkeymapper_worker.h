@@ -789,6 +789,7 @@ struct SendInputTaskController {
     QThreadPool *task_threadpool;
     QAtomicInt *task_stop_flag; // NOLINT(clang-analyzer-webkit.NoUncountedMemberChecker)
     QAtomicInt *task_pause_state; // NOLINT(clang-analyzer-webkit.NoUncountedMemberChecker)
+    QAtomicInt task_stopping{0};
     QMutex *task_stop_mutex;
     QWaitCondition *task_stop_condition;
     int sendvirtualkey_state;
@@ -1523,6 +1524,9 @@ public slots:
     // isKeyDown=true -> send KEY_DOWN only; isKeyDown=false -> send KEY_UP only
     void triggerVButtonKey(const QString &keyName, bool isKeyDown);
 
+private slots:
+    void shutdownSendInputTasks();
+
 private:
     bool JoyStickKeysProc(QString keycodeString, int keyupdown, const QJoystickDevice *joystick);
 #ifdef DINPUT_TEST
@@ -1777,6 +1781,7 @@ private:
     QHash<int, GameControllerTouchpadGestureState> m_GamepadTouchpadGestureStateMap;
     QHash<int, GameControllerTouchpadTapHistory> m_GamepadTouchpadTapHistoryMap;
     bool m_ComInitialized = false;
+    bool m_sendInputTasksStopping = false;
 
     // Volume control instance
     VolumeController m_volumeController;

@@ -108,7 +108,7 @@ CONFIG(asan) {
     win32-msvc* {
         message("Building with MSVC AddressSanitizer (ASan)")
         QMAKE_CFLAGS += -fsanitize=address
-        QMAKE_CXXFLAGS += -fsanitize=address
+        QMAKE_CXXFLAGS += -fsanitize=address /bigobj
         QMAKE_LFLAGS += /INCREMENTAL:NO
         DEFINES += QKM_ENABLE_ASAN
     }

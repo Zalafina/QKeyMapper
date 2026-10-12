@@ -52,9 +52,11 @@ Assert-Analysis ($worker.arguments -contains '-DSDL_SUPPORTED' -and $worker.argu
 Assert-Analysis (@($worker.arguments | Where-Object { $_ -match '^-I[A-Z]:/.*/QtCore$' }).Count -gt 0) 'Absolute Qt include path was corrupted.'
 $reporter = $db | Where-Object { $_.file -like '*crash_reporter.cpp' }
 Assert-Analysis ($reporter.arguments -contains '-D_MT' -and $reporter.arguments -notcontains '-D_DLL' -and $reporter.arguments -notcontains '-DQT_CORE_LIB') 'Native helper inherited main-target flags.'
-Assert-Analysis (@($db | Where-Object { $_.file -like '*crash_client.cpp' }).Count -eq 2) 'Shared diagnostic source needs both target configurations.'
+$sharedTargets = @($runs.Runs | Where-Object { $_.Source -like '*crash_client.cpp' } | ForEach-Object { $_.Target } | Sort-Object -Unique)
+Assert-Analysis ($sharedTargets.Count -eq 3 -and $sharedTargets -contains 'main' -and $sharedTargets -contains 'diagnostics-test' -and $sharedTargets -contains 'sendinput-lifecycle-test') 'Shared diagnostic source needs every target configuration.'
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'diagnostics-test' -and $_.Source -like '*diagnostics_test.cpp' }).Count -eq 1) 'Diagnostics test was omitted.'
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'ui-scale-test' -and $_.Source -like '*qkm_ui_scale_test.cpp' }).Count -eq 1) 'UI scale test was omitted.'
+Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'sendinput-lifecycle-test' -and $_.Source -like '*qkm_sendinput_lifecycle_test.cpp' }).Count -eq 1) 'SendInput lifecycle test was omitted.'
 
 $failureReport = Join-Path $testDirectory 'fail'
 $failed = $false

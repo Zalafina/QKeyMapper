@@ -198,6 +198,13 @@ int main(int argc, char **argv)
     nested.setFont(QFont(QStringLiteral("Arial"), 11));
     const QFont nestedFont = nested.font();
     QkmUiScale scale(&root);
+    // Compare against the same authored style, including Qt5's native WindowsVista style.
+    scale.setStyleResolver([applicationStyle = app.style(), table, tableStyle](QWidget *widget) -> QStyle * {
+        return widget == table || table->isAncestorOf(widget) ? tableStyle : applicationStyle;
+    });
+    scale.setStyleFactory([](QStyle *original, QWidget *) -> QStyle * {
+        return original ? QStyleFactory::create(original->objectName()) : nullptr;
+    });
     scale.manageWindow();
     root.show();
     app.processEvents();

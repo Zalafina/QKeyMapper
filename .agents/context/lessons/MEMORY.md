@@ -56,3 +56,4 @@
 - [Qt eventFilter Use-After-Free 规避与析构顺序规范](eventfilter-uaf-and-destructor-order.md) — eventFilter 中事件类型前置短路、QPointer 句柄弱引用守卫、析构首部卸载 Filter 与 delete ui 置空尾随规范。
 - [Qt Promoted Widget 边距归零与多列 GroupBox 网格弹簧对齐规范](qt-designer-promoted-widget-and-grid-spacer-pattern.md) — 自定义复合控件内边距清零与 22px 标准高度锁定，多列 GroupBox 全员配备底部垂直弹簧消除 Y 坐标错位与拉伸行距，以及 scratch/ 临时文件规范。
 - [Agent 自治构建、多维门禁与工程化工具链规范](agent-autonomous-validation-toolchain.md) — 废除用户代跑编译限制，建立多核 JOM 增量构建、多模态视觉快照自检、Clang-Tidy + Clazy 静态分析与 MSVC ASan 内存检测分层门禁体系。
+- [SendInputTask Controller Completion and Destruction](sendinput-controller-completion-and-destruction.md) — 独立线程池完成保证、同锁停止／唤醒、保留KEY_UP、借用保护与销毁顺序；真实任务ASan和无输出用例的覆盖边界

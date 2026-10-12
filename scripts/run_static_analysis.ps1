@@ -143,6 +143,17 @@ $uiTestExitCode = $LASTEXITCODE
 $uiTestOutput | Set-Content -LiteralPath (Join-Path $reportDirectory 'qmake-ui-scale-test.txt') -Encoding utf8
 if ($uiTestExitCode -ne 0) { throw 'Cannot generate UI-scale-test compilation parameters.' }
 $targets += @{ Name = 'ui-scale-test'; Makefile = $uiTestMakefile }
+$lifecycleBuildDirectory = Join-Path $reportDirectory 'sendinput-lifecycle-test-qmake'
+New-Item -ItemType Directory -Force -Path $lifecycleBuildDirectory | Out-Null
+$lifecycleMakefile = Join-Path $lifecycleBuildDirectory 'Makefile'
+$lifecycleProject = Join-Path $sourceRoot 'sendinput_lifecycle_test.pro'
+$lifecycleFlags = if ($Diagnostic) { ' "DEFINES+=LOGOUT_TOFILE"' } else { '' }
+$lifecycleCommand = 'call "{0}" >nul && "{1}" -o "{2}" "{3}" -spec win32-msvc "CONFIG+=release" "CONFIG-=debug" "INCLUDEPATH+={4}"{5}' -f $vcvars, $qmake, $lifecycleMakefile, $lifecycleProject, $BuildDirectory, $lifecycleFlags
+$lifecycleOutput = @(& $env:ComSpec /d /s /c $lifecycleCommand 2>&1)
+$lifecycleExitCode = $LASTEXITCODE
+$lifecycleOutput | Set-Content -LiteralPath (Join-Path $reportDirectory 'qmake-sendinput-lifecycle-test.txt') -Encoding utf8
+if ($lifecycleExitCode -ne 0) { throw 'Cannot generate SendInput lifecycle test compilation parameters.' }
+$targets += @{ Name = 'sendinput-lifecycle-test'; Makefile = (Join-Path $lifecycleBuildDirectory 'Makefile.Release') }
 $sourceFiles = if ($Files -and $Files.Count -gt 0) {
     @($Files | ForEach-Object {
         $resolved = (Resolve-Path -LiteralPath $_ -ErrorAction Stop).Path
@@ -178,7 +189,7 @@ foreach ($target in $targets) {
     foreach ($include in $systemIncludes) {
         $compilerArgs += @('-isystem', $include.Replace('\', '/'))
     }
-    if ($target.Name -eq 'main' -and $useSdlGuard) { $compilerArgs += '-D__PRFCHWINTRIN_H' }
+    if ($target.Name -in @('main', 'sendinput-lifecycle-test') -and $useSdlGuard) { $compilerArgs += '-D__PRFCHWINTRIN_H' }
     $targetDbDirectory = Join-Path $reportDirectory $target.Name
     New-Item -ItemType Directory -Force -Path $targetDbDirectory | Out-Null
     $entries = @($targetSources | ForEach-Object {
