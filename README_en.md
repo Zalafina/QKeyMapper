@@ -140,7 +140,9 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 * v1.3.8 (Build 20261016)
     * Added a draggable splitter between the process list and mapping table in the upper part of the main window.
     * Changes to the "Scaling Ratio" setting now take effect immediately. The UI may look different at Windows scaling settings other than 100%; continue using an older version if you prefer the previous appearance.
+    * Added a **Scaling Ratio** submenu to the top "View" menu, allowing direct switching of UI scaling and keeping it synchronized with the option in the "General Settings" tab.
     * Fixed an issue where keystrokes sent by VoiceAttack and other third-party software were incorrectly blocked while mapping was enabled.
+    * Optimized software startup display in multi-monitor environments: automatically restores to the visible area of the primary screen if display connection changes cause the software to start outside the visible display area.
 * v1.3.8 (Build 20260926)
     * Fixed an issue in the Qt5 version where configuration files were saved incorrectly when using Chinese setting names, Chinese tray icon filenames, and similar items.
     * In the "Point Picker" window, added support for directly pressing the shortcut **Ctrl+C** to quickly copy coordinate text after dragging the crosshair to sample points.
