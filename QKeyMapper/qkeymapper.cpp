@@ -38320,6 +38320,8 @@ void QKeyMapper::keyMappingTableDragDropMove(int top_row, int bottom_row, int dr
             qDebug("keyMappingTableDragDropMove : KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
         }
 #endif
+
+        markSaveSettingDirty();
     }
 }
 
