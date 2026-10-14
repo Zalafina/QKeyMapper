@@ -37,8 +37,10 @@ inline QPixmap labelPixmap(const QLabel *label)
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 using UiScaleHeaderOption = QStyleOptionHeaderV2;
+using UiScaleTabOption = QStyleOptionTab;
 #else
 using UiScaleHeaderOption = QStyleOptionHeader;
+using UiScaleTabOption = QStyleOptionTabV4;
 #endif
 
 inline QScreen *widgetScreen(const QWidget *widget)

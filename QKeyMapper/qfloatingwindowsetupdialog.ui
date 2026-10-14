@@ -138,7 +138,7 @@
       <item row="4" column="0" colspan="2">
        <spacer name="styleVerticalSpacer">
         <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -259,7 +259,7 @@
       <item row="5" column="0" colspan="2">
        <spacer name="positionVerticalSpacer">
         <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>

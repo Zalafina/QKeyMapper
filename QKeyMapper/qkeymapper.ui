@@ -549,7 +549,7 @@
               <item>
                <spacer name="spacer_wininfo_v">
                 <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
+                 <enum>Qt::Vertical</enum>
                 </property>
                 <property name="sizeType">
                  <enum>QSizePolicy::Policy::Expanding</enum>
@@ -948,7 +948,7 @@
               <item>
                <spacer name="spacer_gen_v">
                 <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
+                 <enum>Qt::Vertical</enum>
                 </property>
                 <property name="sizeType">
                  <enum>QSizePolicy::Policy::Expanding</enum>
@@ -1197,7 +1197,7 @@
               <item>
                <spacer name="spacer_map_v">
                 <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
+                 <enum>Qt::Vertical</enum>
                 </property>
                 <property name="sizeType">
                  <enum>QSizePolicy::Policy::Expanding</enum>
@@ -1610,7 +1610,7 @@
               <item>
                <spacer name="spacer_vgamepad_v">
                 <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
+                 <enum>Qt::Vertical</enum>
                 </property>
                 <property name="sizeType">
                  <enum>QSizePolicy::Policy::Expanding</enum>
@@ -1837,7 +1837,7 @@
               <item>
                <spacer name="spacer_gyro_v">
                 <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
+                 <enum>Qt::Vertical</enum>
                 </property>
                 <property name="sizeType">
                  <enum>QSizePolicy::Policy::Expanding</enum>
@@ -2025,7 +2025,7 @@
               <item>
                <spacer name="spacer_multiinput_v">
                 <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
+                 <enum>Qt::Vertical</enum>
                 </property>
                 <property name="sizeType">
                  <enum>QSizePolicy::Policy::Expanding</enum>
@@ -2124,7 +2124,7 @@
               <item>
                <spacer name="spacer_forza_v">
                 <property name="orientation">
-                 <enum>Qt::Orientation::Vertical</enum>
+                 <enum>Qt::Vertical</enum>
                 </property>
                 <property name="sizeType">
                  <enum>QSizePolicy::Policy::Expanding</enum>
@@ -2173,7 +2173,7 @@
             <item row="0" column="1">
              <layout class="QHBoxLayout" name="sourceCategoryLayout">
               <property name="spacing">
-               <number>2</number>
+               <number>8</number>
               </property>
               <item>
                <widget class="QPushButton" name="oriList_SelectKeyboardButton">
@@ -2332,7 +2332,7 @@
             <item row="0" column="3" colspan="2">
              <layout class="QHBoxLayout" name="targetCategoryLayout">
               <property name="spacing">
-               <number>2</number>
+               <number>8</number>
               </property>
               <item>
                <widget class="QPushButton" name="mapList_SelectKeyboardButton">

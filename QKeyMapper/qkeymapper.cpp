@@ -4127,7 +4127,7 @@ void QKeyMapper::registerEditorUiScale(QWidget *root)
             owner = owner->parentWidget();
         }
         const QString name = owner->objectName();
-        return qobject_cast<QGroupBox *>(owner) || qobject_cast<QMenu *>(owner)
+        return qobject_cast<QGroupBox *>(owner) || qobject_cast<QMenu *>(owner) || qobject_cast<QTabWidget *>(owner)
             || name.startsWith(QStringLiteral("oriList_Select")) || name.startsWith(QStringLiteral("mapList_Select"))
             || (qobject_cast<QToolButton *>(owner) && !name.startsWith(QStringLiteral("qt_")))
             ? QKeyMapperStyle::windowsStyle() : QKeyMapperStyle::fusionStyle();
@@ -15273,7 +15273,13 @@ bool QKeyMapper::nativeEvent(const QByteArray &eventType, void *message, long *r
         } else if (msg->message == WM_SIZING) {
             m_userWindowResizeActive = true;
         } else if (msg->message == WM_EXITSIZEMOVE) {
+            const bool userResized = m_userWindowResizeActive;
             m_userWindowResizeActive = false;
+            // Native moving can finalize DPI geometry after the first settle callback.
+            if (!userResized && m_liveScaleBaselinesReady && isVisible()) {
+                m_isApplyingLiveScale = true;
+                m_liveScaleSettleTimer.start();
+            }
         }
 
         if (msg->message == WM_WTSSESSION_CHANGE) {

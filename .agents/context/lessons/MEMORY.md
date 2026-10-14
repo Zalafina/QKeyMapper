@@ -58,3 +58,4 @@
 - [Agent 自治构建、多维门禁与工程化工具链规范](agent-autonomous-validation-toolchain.md) — 废除用户代跑编译限制，建立多核 JOM 增量构建、多模态视觉快照自检、Clang-Tidy + Clazy 静态分析与 MSVC ASan 内存检测分层门禁体系。
 - [SendInputTask Controller Completion and Destruction](sendinput-controller-completion-and-destruction.md) — 独立线程池完成保证、同锁停止／唤醒、保留KEY_UP、借用保护与销毁顺序；真实任务ASan和无输出用例的覆盖边界
 - [Qt DPI Window Recovery and Native Visibility](qt-dpi-window-recovery.md) — DPI size baselines, content-measured message-box geometry, parent/native ownership, real resize coverage and native-visible screenshot evidence.
+- [Qt5 uic Enums and Native UI Evidence](qt5-uic-enums-and-native-ui-evidence.md) — Qt5垂直弹簧短枚举、Tab V4与动态调色板；模拟native回调和真实快慢跨DPI输入的证据边界、祖先裁剪及语言残留的用户确认

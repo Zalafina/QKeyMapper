@@ -173,7 +173,7 @@
       <item row="4" column="0" colspan="3">
        <spacer name="fontVerticalSpacer">
         <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -270,7 +270,7 @@
       <item row="3" column="0" colspan="2">
        <spacer name="durationVerticalSpacer">
         <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -383,7 +383,7 @@
       <item row="4" column="0" colspan="2">
        <spacer name="borderVerticalSpacer">
         <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
@@ -463,7 +463,7 @@
       <item row="2" column="0" colspan="2">
        <spacer name="offsetVerticalSpacer">
         <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
+         <enum>Qt::Vertical</enum>
         </property>
         <property name="sizeHint" stdset="0">
          <size>

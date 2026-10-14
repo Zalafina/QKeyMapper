@@ -6,7 +6,9 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QMessageBox>
+#include <QProxyStyle>
 #include <QScrollBar>
+#include <QStyleOptionTab>
 #include <QStyleFactory>
 #include <QTableWidget>
 #include <QToolButton>
@@ -19,6 +21,75 @@ namespace {
 void require(bool ok, const char *message)
 {
     if (!ok) { std::fprintf(stderr, "%s\n", message); std::exit(1); }
+}
+
+void verifyDynamicSwatchPalette()
+{
+    QWidget owner;
+    auto *fusion = QStyleFactory::create(QStringLiteral("Fusion"));
+    fusion->setParent(&owner);
+    owner.setStyle(fusion);
+    owner.setStyleSheet(QStringLiteral("QTableView::indicator { width: 1em; height: 1em; }"));
+    QDialog root(&owner);
+    auto *layout = new QVBoxLayout(&root);
+    auto *swatch = new QLabel(&root);
+    swatch->setFrameStyle(QFrame::WinPanel | QFrame::Sunken);
+    swatch->setAutoFillBackground(true);
+    swatch->setBackgroundRole(QPalette::Window);
+    layout->addWidget(swatch);
+    root.show();
+    QApplication::processEvents();
+    QkmUiScale scale(&root);
+    scale.manageWindow();
+    for (const QColor color : {QColor(Qt::green), QColor(Qt::red)}) {
+        QPalette palette = swatch->palette();
+        palette.setColor(QPalette::Window, color);
+        swatch->setPalette(palette);
+        for (const qreal ratio : {2.0, 0.5, 1.0}) {
+            scale.applyWindow(ratio);
+            QApplication::processEvents();
+            require(swatch->palette().color(QPalette::Window) == color,
+                    "Scale refresh lost the current swatch palette");
+            require(swatch->autoFillBackground(), "Scale refresh disabled swatch fill");
+            require(swatch->grab().toImage().pixelColor(swatch->rect().center()) == color,
+                    "Scale refresh changed the painted swatch color");
+        }
+    }
+}
+
+void verifyTabPaintCoordinates()
+{
+    class RecordingStyle final : public QProxyStyle {
+    public:
+        explicit RecordingStyle(QRect *label) : QProxyStyle(QStyleFactory::create(QStringLiteral("Windows"))), label(label) {}
+        void drawControl(ControlElement element, const QStyleOption *option,
+                         QPainter *painter, const QWidget *widget) const override
+        {
+            if (element == CE_TabBarTabLabel) { *label = option->rect; }
+            QProxyStyle::drawControl(element, option, painter, widget);
+        }
+        QRect *label;
+    };
+    QDialog root;
+    auto *layout = new QVBoxLayout(&root);
+    auto *tabs = new QTabWidget(&root);
+    tabs->addTab(new QWidget(tabs), QStringLiteral("First"));
+    tabs->addTab(new QWidget(tabs), QStringLiteral("Second"));
+    layout->addWidget(tabs);
+    root.show();
+    QApplication::processEvents();
+    QRect label;
+    QkmUiScale scale(&root);
+    scale.setStyleFactory([&label](QStyle *, QWidget *) { return new RecordingStyle(&label); });
+    scale.manageWindow();
+    for (const qreal ratio : {2.0, 0.5}) {
+        scale.applyWindow(ratio);
+        QApplication::processEvents();
+        tabs->tabBar()->grab();
+        require(label.topLeft().isNull() && label.height() == qRound(tabs->tabBar()->tabRect(1).height() / ratio),
+                "Tab label paint coordinates were not normalized");
+    }
+    scale.applyWindow(1);
 }
 
 void verifyClearButtonScaling()
@@ -153,30 +224,36 @@ void verifyContentSizedMessageBox()
 
 void verifyMovePreservesSessionSize()
 {
-    QDialog root;
-    root.resize(500, 300);
-    QkmUiScale scale(&root);
-    scale.manageWindow();
-    root.show();
-    QApplication::processEvents();
-    scale.applyWindow(1.5);
-    MSG message = {};
-    message.hwnd = reinterpret_cast<HWND>(root.winId());
-    message.message = WM_ENTERSIZEMOVE;
-    static_cast<QAbstractNativeEventFilter *>(&scale)->nativeEventFilter("windows_generic_MSG", &message, nullptr);
-    message.message = WM_DPICHANGED;
-    static_cast<QAbstractNativeEventFilter *>(&scale)->nativeEventFilter("windows_generic_MSG", &message, nullptr);
-    root.resize(900, 600);
-    message.message = WM_EXITSIZEMOVE;
-    static_cast<QAbstractNativeEventFilter *>(&scale)->nativeEventFilter("windows_generic_MSG", &message, nullptr);
-    QApplication::processEvents();
-    scale.applyWindow(1);
-    require(root.size() == QSize(500, 300), "Move/DPI resize changed session baseline");
+    for (const qreal ratio : {1.0, 1.5}) {
+        QDialog root;
+        root.resize(500, 300);
+        QkmUiScale scale(&root);
+        scale.manageWindow();
+        root.show();
+        QApplication::processEvents();
+        scale.applyWindow(ratio);
+        MSG message = {};
+        message.hwnd = reinterpret_cast<HWND>(root.winId());
+        message.message = WM_ENTERSIZEMOVE;
+        static_cast<QAbstractNativeEventFilter *>(&scale)->nativeEventFilter("windows_generic_MSG", &message, nullptr);
+        message.message = WM_DPICHANGED;
+        static_cast<QAbstractNativeEventFilter *>(&scale)->nativeEventFilter("windows_generic_MSG", &message, nullptr);
+        root.resize(900, 600);
+        message.message = WM_EXITSIZEMOVE;
+        static_cast<QAbstractNativeEventFilter *>(&scale)->nativeEventFilter("windows_generic_MSG", &message, nullptr);
+        QApplication::processEvents();
+        require(root.size() == QSize(qRound(500 * ratio), qRound(300 * ratio)),
+                "Move/DPI resize was not settled after the move loop");
+        scale.applyWindow(1);
+        require(root.size() == QSize(500, 300), "Move/DPI resize changed session baseline");
+    }
 }
 
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
+    verifyTabPaintCoordinates();
+    verifyDynamicSwatchPalette();
     verifyMovePreservesSessionSize();
     verifyDynamicFixedPresentation();
     verifyAuthoredWindowSize();

@@ -19,9 +19,6 @@
   <property name="windowTitle">
    <string>General Advanced Setting</string>
   </property>
-  <property name="sizeGripEnabled">
-   <bool>true</bool>
-  </property>
   <layout class="QVBoxLayout" name="dialogVerticalLayout">
    <property name="spacing">
     <number>8</number>
@@ -431,7 +428,7 @@
    <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
-      <enum>Qt::Orientation::Vertical</enum>
+      <enum>Qt::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>

@@ -323,7 +323,13 @@ private:
                 copyOption<QStyleOptionHeader>(o, w, fn);
             }
             break;
-        case QStyleOptionTab::Type: copyOption<QStyleOptionTab>(o, w, fn); break;
+        case QStyleOptionTab::Type:
+            if (o->version >= QKeyMapperQtCompat::UiScaleTabOption::Version) {
+                copyOption<QKeyMapperQtCompat::UiScaleTabOption>(o, w, fn);
+            } else {
+                copyOption<QStyleOptionTab>(o, w, fn);
+            }
+            break;
         case QStyleOptionTabWidgetFrame::Type: copyOption<QStyleOptionTabWidgetFrame>(o, w, fn); break;
         case QStyleOptionTabBarBase::Type: copyOption<QStyleOptionTabBarBase>(o, w, fn); break;
         case QStyleOptionFrame::Type: copyOption<QStyleOptionFrame>(o, w, fn); break;
@@ -409,6 +415,7 @@ struct QkmUiScale::Data
     bool contentSized = false;
     bool applying = false;
     bool userResizing = false;
+    bool settlingDpi = false;
     bool scaledWindow = false;
     int sizeMode = 0;
     QSizeF normalSizes[2];
@@ -458,8 +465,13 @@ void QkmUiScale::manageWindow()
     d->settleTimer.setSingleShot(true);
     connect(&d->settleTimer, &QTimer::timeout, this, [this]() {
         if (!d->window) { return; }
+        const bool settlingDpi = std::exchange(d->settlingDpi, false);
         if (!d->scaledWindow) {
-            d->normalSizes[d->sizeMode] = d->window->size();
+            if (settlingDpi) {
+                if (!d->window->isMaximized() && !d->window->isMinimized()) {
+                    d->window->resize((d->normalSizes[d->sizeMode] * d->ratio).toSize());
+                }
+            } else { d->normalSizes[d->sizeMode] = d->window->size(); }
             return;
         }
         applyWindow(d->ratio);
@@ -519,7 +531,12 @@ bool QkmUiScale::nativeEventFilter(const QByteArray &eventType, void *message,
     if (!msg || msg->hwnd != reinterpret_cast<HWND>(d->window->effectiveWinId())) { return false; }
     if (msg->message == WM_ENTERSIZEMOVE) { d->userResizing = true; }
     // shortcut: DPI changes preserve the pre-drag size; revisit for resizing across screens.
-    else if (msg->message == WM_DPICHANGED) { d->userResizing = false; }
+    else if (msg->message == WM_DPICHANGED || (msg->message == WM_EXITSIZEMOVE && !d->userResizing)) {
+        d->userResizing = false;
+        // Qt can finalize its DPI resize after the native move loop finishes.
+        d->settlingDpi = true;
+        d->settleTimer.start(0);
+    }
     else if (msg->message == WM_EXITSIZEMOVE && d->userResizing) {
         d->userResizing = false;
         const qreal exitRatio = d->ratio;
@@ -750,6 +767,15 @@ void QkmUiScale::capture(QWidget *authoredRoot)
 void QkmUiScale::apply(qreal ratio, QWidget *subtree)
 {
     if (!d->window || ratio <= 0) { return; }
+    // Repolishing inherited styles must preserve live color swatches, not an authored color.
+    QList<QPair<QPointer<QWidget>, QPalette>> palettes;
+    for (const auto &s : d->widgets) {
+        QWidget *w = s.target;
+        if (w && w->testAttribute(Qt::WA_SetPalette)
+            && (!subtree || w == subtree || subtree->isAncestorOf(w))) {
+            palettes.append(qMakePair(QPointer<QWidget>(w), w->palette()));
+        }
+    }
 #ifdef DEBUG_LOGOUT_ON
     ++d->sequence;
 #endif
@@ -930,6 +956,7 @@ void QkmUiScale::apply(qreal ratio, QWidget *subtree)
     // A popup's own stylesheet may have just been restored from its template.
     // Reapply the inherited theme dimensions after all local styles are ready.
     refreshTheme();
+    for (const auto &entry : palettes) { if (entry.first) { entry.first->setPalette(entry.second); } }
     refreshLayouts();
 }
 
