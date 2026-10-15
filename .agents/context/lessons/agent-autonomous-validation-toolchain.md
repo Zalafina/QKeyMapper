@@ -2,7 +2,7 @@
 
 ## Purpose and ownership
 
-This reference describes reusable QKeyMapper diagnostic and acceptance methods. The repository playbooks own the operational rules; AGENTS.md carries short workspace principles. Preserve autonomous validation and the default milestone gates, apart from the explicitly documented standing vendor-warning exception below. Other exceptions require explicit user authorization for the current task.
+This reference describes reusable QKeyMapper diagnostic and acceptance methods, not a checklist to execute in full. AGENTS.md and the repository playbooks own risk-based check selection. Read only the methods needed for the selected scope; the examples below do not automatically require diagnostic, Qt5, full static analysis or ASan. Complete agreed coverage and obtain approval before reducing it.
 
 Do not store task-specific dimensions, pixel-mask coordinates, diagnostic counts, private INI contents or session transcripts here. Keep detailed task evidence in ignored local artifacts. This existing reference is already indexed in lessons/MEMORY.md.
 
@@ -25,17 +25,17 @@ pwsh -NoProfile -File .\scripts\build_qt6.ps1 -Diagnostic -AddressSanitizer
 | Diagnostic ASan | out/build_qt6_diagnostic_asan/ |
 | Qt 5.15.2 x64 Release | out/build_qt5_5152/ |
 
-Daily iterations build ordinary Qt6 Release and verify affected UI paths. Build diagnostic for an actual diagnostic need or changes to diagnostic-only code. Full milestones retain ordinary and diagnostic Release, the intended ASan target, static analysis and visual gates; two ASan variants are not automatically required. Check Qt 5.15.2 compatibility at stage acceptance, earlier for version-specific APIs.
+Product C++/.ui/build-config changes default to one incremental ordinary Qt6 Release build (zero errors/warnings) and affected behavior; test-only edits build the relevant test target, and documentation/comments need no product build. Do not clean/rebuild by default. Select diagnostic for diagnosis or affected diagnostic-only code, Qt5 for affected version-specific APIs/styles/layout/serialization or planned compatibility acceptance, and targeted ASan for memory/lifetime risks. Stage completion alone does not require all configurations; use the playbook's selection table.
 
 Use `pwsh -NoProfile -File .\scripts\build_qt5.ps1` for incremental Qt 5.15.2 x64 Release; `-Jobs` and `-Clean` are supported. All validation build trees belong under ignored `out/`. Existing root build trees are legacy artifacts: leave them untouched, regenerate qmake files in the new location and never silently use an old EXE as fallback.
 
-Diagnostic requires Release, enables LOGOUT_TOFILE/DEBUG_LOGOUT_ON and writes the existing rotating log to `log/QKeyMapper.log` under the EXE directory. Ordinary Release does not compile the diagnostic-only sampling. Do not turn a diagnostic fix into unconditional logging.
+Diagnostic requires Release, enables LOGOUT_TOFILE/DEBUG_LOGOUT_ON and writes the existing rotating log to `log/QKeyMapper.log` under the EXE directory. Ordinary Release does not compile the diagnostic-only sampling and is the performance baseline; diagnostic/ASan results establish diagnostic or safety behavior, not ordinary-user performance. Do not turn a diagnostic fix into unconditional logging.
 
 The script discovers supported MSVC, Qt and JOM locations; use its reported EXE rather than inventing local build commands. JOM handles incremental object compilation. Resolve errors at their exact source location, use build-generated ui headers and check for source-tree shadows when Ui members disagree.
 
-A build-output EXE is not necessarily a complete runnable package. Prepare a runtime under an ignored directory with the intended EXE, matching DLLs/resources and a controlled test INI. Do not use the user's normal runtime as a test fixture. Capture/ASan scripts do not deploy a package automatically. Verify the artifact path/hash after copying.
+A build-output EXE is not necessarily a complete runnable package. Prepare a runtime under an ignored directory with the intended EXE, matching DLLs/resources and a controlled test INI. Do not use the user's normal runtime as a test fixture. Capture/ASan scripts do not deploy a package automatically. Confirm the actual copied/started EXE path and build source; hash relevant artifacts only when identity or provenance needs it.
 
-Before generating artifacts, confirm the destination is ignored with git check-ignore. Record source commit plus relevant worktree state or source hashes, Qt/toolchain, build configuration, EXE path/hash, launch arguments, environment overrides and test scenarios. Compilation, link warnings, static diagnostics and runtime results are separate evidence.
+Keep artifacts under ignored out/ paths (use git check-ignore for a new destination). Routine evidence is source commit/relevant worktree changes, configuration, actual EXE path, results and necessary logs/PNGs, with arguments/environment when relevant. Hash only for confusing binaries, cross-machine handover, deployment/provenance or reused-artifact identity; reuse hashes for unchanged inputs. No default whole-source fingerprints at any stage without an explicit byte-identity requirement, JSON receipts or duplicate manifests. Compilation, link warnings, static diagnostics and runtime results remain separate evidence.
 
 ### Standing exception: Qt5 qtmain missing-PDB LNK4099
 
@@ -49,7 +49,7 @@ Provenance evidence: the local Qt5 logs `out/backup_popup_fix/build_qt5.log`, `o
 
 Matching occurrences remain in raw logs but do not fail Qt5 compatibility acceptance or require repetitive routine reminders. When the build otherwise passes, use "Qt5.15.2 兼容构建通过" in the routine summary. If the user asks for warning counts or detailed diagnostics, disclose the actual occurrences and their accepted status; never claim literal zero warnings for such a build.
 
-Other libraries, objects, causes or Qt versions are outside this exception. Re-evaluate a changed Qt library source or diagnostic identity/cause. Do not add `/IGNORE:4099`, filter output, modify build scripts or rewrite historical results. Qt6 still requires zero errors and warnings; all other build, static-analysis and ASan gates remain unchanged. This named standing exception does not carry a task-specific static-analysis or coverage exception into future tasks.
+Other libraries, objects, causes or Qt versions are outside this exception. Re-evaluate a changed Qt library source or diagnostic identity/cause. Do not add `/IGNORE:4099`, filter output, modify build scripts or rewrite historical results. Qt6 still requires zero errors and warnings, and other selected checks retain their pass criteria. This named standing exception does not carry a task-specific static-analysis or coverage exception into future tasks.
 
 ## Permissions and test-process ownership
 
@@ -90,7 +90,7 @@ Record the tested PID/absolute EXE, target window desktop, operation/capture met
 
 Do not infer the target's desktop from `config.toml`, launcher options, a console window's absence, a successful `SetForegroundWindow` attempt or a saved PNG. Launch routes and effective sandbox behavior may vary between machines or helpers. Inspect the actual target after launch or relaunch. A private-desktop capture must contain the intended, settled content; API success alone does not establish validity.
 
-Report private-desktop presentation/state checks separately from real user-desktop interaction. They do not by themselves prove foreground activation, physical input, user-desktop shell behavior or physical dragging. Preserve historical evidence as recorded; do not retroactively assign a desktop to old runs that did not record it. No new diagnostic framework or changes to the default milestone gates are implied by this guidance.
+Report private-desktop presentation/state checks separately from real user-desktop interaction. They do not by themselves prove foreground activation, physical input, user-desktop shell behavior or physical dragging. Preserve historical evidence as recorded; do not retroactively assign a desktop to old runs that did not record it. These methods do not expand the selected verification scope or require a new diagnostic framework.
 
 ## Screenshot capture and comparison
 
@@ -116,7 +116,7 @@ Attachment does not close it and cannot be combined with launch options. When se
 
 Use the image-viewing tool available on the current host (for example view_image or view_file). Do not block routine review on one tool name or request user screenshots when static capture can establish the result.
 
-Match the baseline's language, theme, INI, client dimensions, DPI, populated data and page-visit history. Compare both fresh startup and relevant interaction history when hidden-page caches may matter. Check default presentation first when the task preserves it, then changed states and return paths.
+For the chosen comparison, match language, theme, INI, client dimensions, DPI, populated data and page-visit history. Start with Chinese and affected states; expand languages/themes when changed text, fonts, layout or theme mechanisms affect them, not into a default complete matrix. Compare fresh startup and relevant interaction history when hidden-page caches matter, then changed states and return paths.
 
 Separate Qt logical client geometry from physical PNG dimensions, which may include native title bars and borders. QT_SCALE_FACTOR or QT_SCREEN_SCALE_FACTORS simulations are not genuine OS-DPI coverage. A localized baseline may have different content minima; do not force one language's nominal width onto another.
 
@@ -140,17 +140,17 @@ Take correlated measurements before choosing a fix. Diagnostic trees need not co
 
 ## Static and memory-safety evidence
 
-For an affected diagnostic translation unit:
+Simple, direct low-risk fixes need no static analysis. For C++ changes to control flow, state, lifetime or interfaces, select affected translation units and necessary target configurations; full first-party inventory is not a routine default. For example, an ordinary Release translation unit:
 
 ```powershell
-pwsh -NoProfile -File .\scripts\run_static_analysis.ps1 -Files QKeyMapper\qkeymapper.cpp -Diagnostic -BuildDirectory .\out\build_qt6_diagnostic
+pwsh -NoProfile -File .\scripts\run_static_analysis.ps1 -Files QKeyMapper\qkeymapper.cpp -BuildDirectory .\out\build_qt6
 ```
 
-Match compile flags/generated headers to the tested build. Default gate: zero project diagnostics. Preserve `out/static-analysis/summary.txt`, `clang-tidy.txt` and `clazy.txt`; a subsequent run overwrites these paths, so copy the baseline/final evidence before rerunning. Check tool/compiler errors separately.
+Match compile flags/generated headers to the tested build; for a selected diagnostic configuration add -Diagnostic and its build directory. Require native tool exits 0 and zero project diagnostics. Keep raw `out/static-analysis/summary.txt`, `clang-tidy.txt` and `clazy.txt`; preserve relevant baseline/final reports before a rerun overwrites them. Tool/compiler failures are not a zero-diagnostic pass.
 
 If the user explicitly authorizes an incremental gate, preserve the baseline version, full inventory and final diff. Compare file/rule/message, code context and multiplicity; account for shifted lines and inspect diagnostics on changed code. An unchanged total can hide a removed warning replaced by a new one. Do not suppress remaining diagnostics, reinterpret the strict script's failure as all-project success, or carry the exception to another task.
 
-ASan requires the intended instrumented EXE. scripts/run_asan_check.ps1 checks the runtime marker and refuses ordinary Release fallback; confirm the build configuration and actual instrumented execution as well. After preparing the isolated ASan runtime:
+When memory/lifetime risk or the acceptance plan selects ASan, use the intended instrumented EXE. scripts/run_asan_check.ps1 checks the runtime marker and refuses ordinary Release fallback; confirm the build configuration and actual instrumented execution as well. After preparing the isolated ASan runtime:
 
 ```powershell
 pwsh -NoProfile -File .\scripts\run_asan_check.ps1 -ExecutablePath .\out\ui_validation\runtime\QKeyMapper.exe
@@ -160,12 +160,10 @@ This command is for an ASan-instrumented runtime, not the ordinary diagnostic ex
 
 ## Layered gates and handover
 
-1. Code iteration: ordinary Qt6 Release and affected paths, zero errors and warnings; diagnostic is targeted when needed.
-2. UI change: snapshots plus autonomous visual review.
-3. Feature/stage milestone: ordinary and diagnostic Release, Qt 5.15.2 compatibility, Clang-Tidy/Clazy with zero project diagnostics and actual ASan instrumentation with zero memory bugs, unless an explicit task-specific authorization changes the required coverage.
+Choose checks using the playbook's risk-based table. A plan briefly names risk, recommended checks and important omissions; offer 精简／推荐／扩展 only for meaningful coverage/cost tradeoffs. A small feature or stage completion does not automatically require full gates. If a full gate is selected, complete ordinary and diagnostic Release, Qt5 compatibility, full first-party Clang-Tidy/Clazy, actual ASan and relevant UI acceptance; duplicate ASan variants need a reason. Obtain approval before reducing agreed coverage.
 
 After passing checks, repeat or widen them for new changes, failures or unresolved concerns, not merely because earlier checks finished. Identify affected paths after the last edit. Reuse results for unchanged inputs only with their original version and coverage; never label old ASan or UI evidence as a rerun of later source.
 
-For documentation-only edits, verify command parameters, output paths, links, mirrored playbooks and whitespace. This does not establish compilation or runtime results and does not weaken code-change milestone gates.
+For documentation-only edits, verify relevant command parameters, output paths, links, mirrored playbooks and whitespace; do not build/run the product. This establishes document consistency, not compilation or runtime results. Missing targeted tests call for the smallest reproduction/assertion that proves the behavior, not automatic static-only acceptance. Do not create elaborate mocks, permanent test projects or heavy sandboxes for simple fixes, and do not use line count or a fixed duration cutoff to skip necessary checks.
 
-Handover names current-build checks, historical checks, authorized omissions, unperformed scenarios and disclosed diagnostics. Keep compiler/linker/static results distinct. State local checkpoint versus independent commit slice, and do not commit or push without explicit user instruction.
+Small tasks need a short handover naming current checks, reused evidence, important unperformed coverage and diagnostics; update progress documents only when relevant, without rewriting historical reports. Keep compiler/linker/static results distinct. State local checkpoint versus independent commit slice, and do not commit or push without explicit user instruction. Update experience only for new, verified, reusable knowledge, not every task completion, correction or failed command; do not duplicate playbook policy as a new lesson.

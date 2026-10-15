@@ -12,7 +12,7 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 1. Anchor on the user-visible behavior, failing command, or touched file.
 2. Step to the nearest owning function, class, or dialog.
 3. Check same-module patterns before broad search.
-4. Keep the first change small and reversible.
+4. Trace affected callers/contracts and keep changes small and reversible; do not refactor adjacent code or add speculative abstractions.
 5. Before editing, identify a unique anchor for the exact snippet; if the file has repeated similar blocks, do not patch until the target is uniquely disambiguated by nearby literal text or line context.
 
 ## Core files
@@ -26,7 +26,7 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 - QKeyMapper.pro
 
 ## Module guidelines
-- Dialog/UI: update load, apply, save, and restore together; if generated UI members are involved, check for a source-tree ui_*.h shadow file first.
+- Dialog/UI: review affected load/apply/save/restore contracts and change only the necessary paths; if generated UI members are involved, check for a source-tree ui_*.h shadow file first.
 - Floating Button: treat constants, worker state, dialog load/apply, runtime visuals, and save/restore as one pipeline; watch resize loops; validate the smallest slice.
 - Forza/runtime mapping: keep legacy and new syntax on the same runtime path; verify press/release ordering and per-player state transitions; add DEBUG_LOGOUT_ON only at the exact transition point.
 - Serialization/settings: keep keymapdata.ini and Save Setting paths in sync; check load/apply/save/recover paths together.
@@ -36,24 +36,36 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 
 ## Autonomous quality gates & validation
 
-The Agent must autonomously execute build and verification gates instead of delegating ordinary compilation to the user. The default milestone gates remain unchanged apart from the explicitly documented standing vendor-warning exception below; other task-specific exceptions require explicit user authorization and must be reported with their scope.
+Autonomously execute the smallest checks that prove the change; do not delegate routine compilation to the user. Select by behavior, risk and affected callers, not changed-line count or a fixed time limit. Briefly state risk, recommended checks and important omissions. Offer 精简／推荐／扩展 with the extra cost/coverage only when a meaningful tradeoff exists; otherwise use the tailored recommendation without another selection round.
+
+| Change | Default verification |
+|---|---|
+| Documentation, comments, workflow rules | Diff, relevant links/command parameters and mirror consistency; no product build |
+| Local, low-risk fix | Incremental ordinary Qt6 Release; defect trigger, corrected result and direct boundaries; affected-region screenshots for appearance changes |
+| State, persistence, shared mechanism or cross-module logic | Above plus strict static analysis of affected translation units/target configurations and related transitions/callers; failure, cancel, restart or lifecycle cases as applicable |
+| Stage integration or release acceptance | Plan the configurations, modules, UI and compatibility coverage from actual risk; full gates are available, not automatic |
+
+- Prefer existing tests, probes and capture tools. If none proves the result, add the smallest reproduction/assertion; do not fall back to static-only proof of runtime behavior or create elaborate mocks, permanent test projects or sandboxes for simple fixes.
+- Follow shared callers to determine coverage. A small diff in a shared mechanism may affect many windows; unrelated modules and complete language/theme matrices are not default coverage.
+- Complete a coherent edit before verification. Once selected checks pass, stop; repeat or expand only for subsequent changes, failures or unresolved risks. Reuse unchanged-input results with their original version and coverage.
+- Duration informs estimates, not permission to skip necessary checks. Investigate failures at their cause; do not expand into unrelated test-infrastructure repair without explaining the need. Safety/system-side-effect decisions and heavy diagnostic sandbox authorization still apply.
 
 ### 1. Build validation (`scripts/build_qt6.ps1`)
 
-- Standard build: `pwsh -NoProfile -File .\scripts\build_qt6.ps1` (ordinary Release, outputs to `out/build_qt6/`) or with `-Configuration Debug`. Daily iterations use ordinary Release; build diagnostic when diagnosis needs it or diagnostic-only code changes. Full milestones build both ordinary and diagnostic Release and verify the intended ASan-instrumented target, without requiring duplicate ASan configurations.
+- Standard build: `pwsh -NoProfile -File .\scripts\build_qt6.ps1` (ordinary Release, `out/build_qt6/`). Product C++/.ui/build-config changes default to one incremental build with 0 errors/warnings; do not default to `-Clean`. Test-only changes build the affected test target; documentation/comments need no product build. Build diagnostic only for diagnosis or affected diagnostic-only code. Performance baselines use ordinary, non-diagnostic Release.
 - Diagnostic Release: `pwsh -NoProfile -File .\scripts\build_qt6.ps1 -Diagnostic` (outputs to `out/build_qt6_diagnostic/`). Diagnostic plus ASan uses `-Diagnostic -AddressSanitizer` and a separate output directory.
 - Standard ASan build: `pwsh -NoProfile -File .\scripts\build_qt6.ps1 -AddressSanitizer` (outputs to `out/build_qt6_asan/`).
-- Qt5 compatibility: `pwsh -NoProfile -File .\scripts\build_qt5.ps1` uses Qt 5.15.2 x64 Release and `out/build_qt5_5152/`; supports `-Jobs` and `-Clean`. Check compatibility at stage acceptance, earlier when changing version-dependent APIs.
+- Qt5 compatibility: `pwsh -NoProfile -File .\scripts\build_qt5.ps1` uses Qt 5.15.2 x64 Release and `out/build_qt5_5152/`; supports `-Jobs` and `-Clean`. Select it for affected version-dependent APIs, styles/layout, serialization differences or planned compatibility acceptance.
 - Keep all validation build trees under ignored `out/`. Ordinary ASan uses `out/build_qt6_asan/`; diagnostic ASan uses `out/build_qt6_diagnostic_asan/`. Do not reuse or fall back to legacy root build trees; regenerate qmake files in the new location.
 - JOM incrementally builds changed objects. Read compiler failures, fix the exact source, and rebuild; do not treat whitespace or encoding checks as compilation.
 - Use build-directory generated `ui_*.h`; if Ui members mismatch, check for source-tree shadow headers.
-- Record source/worktree version, configuration, Qt/toolchain, build output and the tested EXE path/hash. Keep compiler, linker and static-analysis diagnostics distinct; retain raw diagnostics and disclose warnings subject to the narrowly accepted reporting exception below.
+- Record source commit/relevant worktree changes, build configuration, actual EXE path and results with necessary logs. Keep compiler, linker and static diagnostics distinct; inspect native tool exit codes, not just parsed warning counts. Artifact hashes are conditional as described under evidence below.
 
 #### Accepted Qt5 vendor linker warning
 
 - Standing user-authorized exception: accept LNK4099 only when all conditions match: the library comes from the official Qt 5.15.2 x64 `msvc2019_64` kit, the diagnostic identifies `qtmain.lib(qtmain_win.obj) : warning LNK4099`, and the cause is a missing vendor PDB with the object linked without debug information. Confirm kit/library provenance; the warning code or filename alone is insufficient. Localized linker wording may differ, but the diagnostic identity and cause must match.
 - Matching occurrences do not block Qt5 compatibility acceptance and need no repeated routine reminder. Say "Qt5.15.2 兼容构建通过" when the build otherwise passes. Keep every occurrence in the original log; report actual warnings and the accepted exception when explicitly asked for counts or detailed diagnostics. Do not describe a build containing it as literally zero warnings.
-- Other libraries, objects, causes or Qt versions do not qualify. Re-evaluate if the Qt library source or diagnostic identity/cause changes. This does not waive errors, other warnings, the Qt6 zero-error/zero-warning gate, static analysis or ASan.
+- Other libraries, objects, causes or Qt versions do not qualify. Re-evaluate if the Qt library source or diagnostic identity/cause changes. This does not waive errors, other warnings, Qt6 zero-error/zero-warning requirements or any other selected checks.
 - Do not add `/IGNORE:4099`, filter logs, change build scripts or rewrite historical evidence to implement this exception. Detailed provenance and reporting guidance are in the autonomous validation toolchain reference.
 
 ### 2. Visual inspection (`scripts/capture_ui_snapshots.ps1`)
@@ -61,6 +73,7 @@ The Agent must autonomously execute build and verification gates instead of dele
 - Launch a prepared isolated runtime: `pwsh -NoProfile -File .\scripts\capture_ui_snapshots.ps1 -ExecutablePath .\out\ui_validation\runtime\QKeyMapper.exe -PrintWindow -Label ui_check`. The example runtime must first be populated with the intended EXE, dependencies and test INI; the capture script does not deploy it.
 - Set `$testPid` to the verified intended PID, then attach: `pwsh -NoProfile -File .\scripts\capture_ui_snapshots.ps1 -ProcessId $testPid -PrintWindow -Label ui_attached`. Attachment leaves the process running; do not combine it with launch options.
 - Inspect PNGs with the available image-viewing tool, such as `view_image` or `view_file`. Check alignment, padding, text clipping and control visibility.
+- Start with Chinese and the affected states/regions. Extend languages/themes when changed text, fonts, layout or theme mechanisms can affect them; do not default to every language/theme/scale combination.
 - Match language, theme, INI, client size, DPI, capture method and page-visit history before comparing. Distinguish logical client sizes from screenshot pixels and genuine OS DPI from simulated Qt factors.
 
 #### Desktop selection and user disruption
@@ -78,23 +91,21 @@ Desktop identity checks, scenario selection and limitations: [Autonomous validat
 
 ### 3. Static analysis (`scripts/run_static_analysis.ps1`)
 
-- Run Clang-Tidy and Clazy on the affected sources. For a diagnostic build, use `pwsh -NoProfile -File .\scripts\run_static_analysis.ps1 -Files QKeyMapper\qkeymapper.cpp -Diagnostic -BuildDirectory .\out\build_qt6_diagnostic`.
-- Default gate: 0 project diagnostics in `out/static-analysis/summary.txt`; retain full reports and inspect tool/compiler failures.
+- Simple, direct low-risk fixes do not require static analysis. C++ changes involving control flow, state, lifetime or interfaces require strict Clang-Tidy/Clazy on affected translation units and necessary target configurations; do not run the full inventory by default. For ordinary Release: `pwsh -NoProfile -File .\scripts\run_static_analysis.ps1 -Files QKeyMapper\qkeymapper.cpp -BuildDirectory .\out\build_qt6`. Add `-Diagnostic` and its build directory only for that configuration.
+- When selected, require native tool exit 0 and 0 project diagnostics in `out/static-analysis/summary.txt`; retain raw reports and inspect tool/compiler failures. Full inventory checks include maintained first-party helpers/tests and shared-source target configurations.
 - An explicitly authorized incremental gate must preserve a versioned baseline and compare diagnostic identity, code context and multiplicity, accounting for line shifts. Equal totals alone do not prove zero new diagnostics. Report the strict gate's actual exit status and remaining diagnostics.
 
 ### 4. Memory safety validation (`scripts/run_asan_check.ps1`)
 
-- After an ASan build and isolated runtime preparation, pass the intended instrumented EXE with `-ExecutablePath`; do not substitute an ordinary Release binary.
+- Select targeted ASan for memory/lifetime risks or an acceptance plan that includes it, not every local fix. After an ASan build and isolated runtime preparation, pass the intended instrumented EXE with `-ExecutablePath`; do not substitute an ordinary Release binary.
 - Verify the instrumentation/build target, observed execution, exit code, violation reports and exercised scenarios. Startup/close smoke coverage does not establish mapping or interactive UI coverage.
-- Record explicitly authorized omissions. Earlier ASan results do not cover subsequent code changes; this does not waive the default milestone gate.
+- State exercised and unperformed scenarios. Earlier ASan results do not cover later affected code changes; do not label historical results as current execution.
 
 ### 5. Layered gate protocol
 
-- **Iteration Check**: Code changes -> ordinary Qt6 Release and affected paths -> 0 errors and 0 warnings; diagnostic is targeted as described above.
-- **UI Visual Gate**: UI changes -> screenshots -> autonomous image review.
-- **Milestone Gate**: Feature/stage completion -> ordinary and diagnostic Release, Qt5 compatibility, Clang-Tidy/Clazy (0 project diagnostics) + actual ASan target (0 memory bugs), unless the user explicitly authorizes a task-specific exception.
-- After successful checks, repeat or broaden them only for new changes, failures or unresolved concerns. For a later edit, identify and recheck affected paths while retaining the version and coverage of reused evidence.
-- Documentation-only changes need command/interface, link, mirror and whitespace checks; do not claim C++ build or runtime validation from these checks.
+- Stage completion alone does not trigger full gates. Specify configurations, modules, compatibility, UI coverage and important omissions in its plan using the selection table above.
+- A selected **full gate** retains ordinary and diagnostic Release, Qt5 compatibility, full first-party Clang-Tidy/Clazy, actual ASan instrumentation and relevant visual/interaction acceptance. Do not require duplicate ASan variants without a reason. Once selected, complete that scope; explain and obtain approval before reducing an agreed requirement.
+- Documentation-only verification establishes document consistency, not C++ compilation or runtime correctness. Mark unperformed checks accurately, without treating every unselected suite as an exception requiring permission.
 
 ### 6. Diagnostic operation and evidence
 
@@ -106,6 +117,8 @@ Desktop identity checks, scenario selection and limitations: [Autonomous validat
 6. For layout faults, compare requested/actual sizes and constraint/hint chains, including hidden pages. Check clipping against every ancestor, and table row heights against the actual vertical header/viewport.
 7. Keep original snapshots, raw logs and diffs; explain comparison crops and masks. Exclude only justified dynamic content, not unexpected static regressions. Redact private configuration, mapping text, device names and window titles from durable/shared examples.
 8. Handover separates current-binary checks, historical evidence and unperformed coverage; include authorization scope, remaining diagnostics and checkpoint/commit status.
+
+Routine evidence is the source commit/relevant diff, configuration, actual EXE path, checks/results and necessary logs/PNGs. Hash only relevant artifacts when confusing binaries, cross-machine handover, deployment/provenance checks or reused-artifact identity need it; do not repeat hashes for unchanged inputs. No default whole-source fingerprints, including at milestones, without an explicit byte-identity requirement. Small tasks need a short handover, not mandatory JSON receipts, duplicate manifests or updates to every historical tracking file; update existing progress documents only when relevant to the task.
 
 Detailed preparation, commands and diagnostic pitfalls: [Autonomous validation toolchain](../../../.agents/context/lessons/agent-autonomous-validation-toolchain.md).
 
@@ -153,4 +166,4 @@ modify the global self-improving-agent installation's `memory/` directory.
 The `.agents/context/` directory is version-controlled workspace knowledge and
 must be the source used for remote synchronization.
 
-After completing a task in this skill — especially when the user corrects you, a command fails, or you discover a better approach — invoke the self-improving-agent skill to extract patterns and update memory. This closes the loop so future sessions benefit from what was learned.
+Update experience only when new, verified and reusable knowledge appears. Task completion, a correction or a failed command alone does not require a memory update or a self-improving-agent cycle. Keep workflow policy in this playbook instead of duplicating it as a new lesson; when the playbook changes, manually synchronize its Claude mirror.
