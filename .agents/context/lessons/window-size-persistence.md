@@ -12,16 +12,19 @@ Pattern for saving QDialog window size to QSettings INI file, with a user-facing
 
 ### Flow
 
-1. **Save**: In `saveKeyMapSetting()`, always save `size()` alongside `pos()`. Also save checkbox state.
-   - `settingFile.setValue(LAST_WINDOW_SIZE, size())`
+1. **Save**: In `saveKeyMapSetting()`, save the uncompensated normal user-size baseline alongside `pos()`. Also save checkbox state.
+   - `settingFile.setValue(LAST_WINDOW_SIZE, m_normalWindowBaseSize)`
    - `settingFile.setValue(SAVE_WINDOW_SIZE, checkboxValue)`
    - Do NOT call `markSaveSettingDirty()` on resize — too frequent.
+   - With live scaling, the displayed normal size is `S0 * R`, where `R = T / B`; saving the displayed size would accumulate scaling across restarts. Programmatic resize, DPI migration and maximized/minimized extents must not replace the normal user-size baseline.
 
 2. **Load**: In `loadKeyMapSetting()`, restore size only if checkbox is checked AND saved size >= minimum.
    - `if (SAVE_WINDOW_SIZE && contains(LAST_WINDOW_SIZE) && size >= min) resize(savedSize)`
 
 3. **Dialog state**: In both `loadKeyMapSetting()` and `loadGeneralSetting()`, restore checkbox UI state.
    - `m_GeneralAdvancedDialog->setSaveWindowSize(value)`
+
+<!-- Correction: 2026-10-15 | source: LS-3A | reason: live scaling persists S0, not the displayed size -->
 
 ### UI: Checkbox in GeneralAdvancedDialog
 

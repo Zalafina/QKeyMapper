@@ -326,8 +326,10 @@ void setupQtScaleEnvironment(const QString &program_dir)
         if (!envScale.isEmpty()) {
             bool ok = false;
             double v = envScale.toDouble(&ok);
-            if (ok && v > 0.0) {
+            if (ok && v > 0.0 && qIsFinite(v)) {
                 startup_scale = v;
+            } else {
+                qputenv("QT_SCALE_FACTOR", QByteArrayLiteral("1"));
             }
         }
     }
@@ -453,15 +455,16 @@ int main(int argc, char *argv[])
 #endif
         if (argument.startsWith("--scale=")) {
             QString scaleValue = argument.mid(QString("--scale=").length());
-            qputenv("QT_SCALE_FACTOR", scaleValue.toUtf8());
             scale_from_param = true;
 
             bool ok = false;
             double paramScale = scaleValue.toDouble(&ok);
-            if (ok && paramScale > 0.0) {
+            if (ok && paramScale > 0.0 && qIsFinite(paramScale)) {
+                qputenv("QT_SCALE_FACTOR", scaleValue.toUtf8());
                 QKeyMapper::setStartupGlobalScaleFactor(paramScale);
                 QKeyMapper::setDisplayScaleValue(paramScale);
             } else {
+                qputenv("QT_SCALE_FACTOR", QByteArrayLiteral("1"));
                 QKeyMapper::setStartupGlobalScaleFactor(1.0);
             }
 
