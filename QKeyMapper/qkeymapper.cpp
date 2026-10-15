@@ -4094,6 +4094,33 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         resizeProcessInfoTableColumnWidth();
         m_isApplyingLiveScale = false;
     });
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    connect(qGuiApp, &QGuiApplication::screenAdded, this, [this](QScreen *) {
+        QTimer::singleShot(0, this, [this]() {
+            if (!ui || s_isDestructing || !isVisible()) { return; }
+            auto *handle = windowHandle();
+            const auto hwnd = effectiveWinId();
+            MONITORINFOEXW info{};
+            info.cbSize = sizeof(info);
+            if (!handle || !handle->screen() || !hwnd
+                || !GetMonitorInfoW(MonitorFromWindow(reinterpret_cast<HWND>(hwnd), MONITOR_DEFAULTTONEAREST), &info)) {
+                return;
+            }
+            const QString actualScreen = QString::fromWCharArray(info.szDevice);
+            const auto screens = QGuiApplication::screens();
+            for (QScreen *screen : screens) {
+                if (screen != handle->screen() && screen->name() == actualScreen
+                    && handle->screen()->virtualSiblings().contains(screen)) {
+                    // Qt5 can retain the old screen when Windows restores a reconnected monitor.
+                    m_isApplyingLiveScale = true;
+                    handle->setScreen(screen);
+                    m_liveScaleSettleTimer.start();
+                    break;
+                }
+            }
+        });
+    });
+#endif
     loadSetting_flag = false;
     connectSettingDirtySignals();
     clearSaveSettingDirty();
@@ -15406,6 +15433,13 @@ bool QKeyMapper::event(QEvent *event)
     }
 
     const bool handled = QMainWindow::event(event);
+
+    if (event->type() == QEvent::ScreenChangeInternal
+        && m_liveScaleBaselinesReady && isVisible()) {
+        // Qt can finish screen reconfiguration after the native DPI callback.
+        m_isApplyingLiveScale = true;
+        m_liveScaleSettleTimer.start();
+    }
 
     // Qt has synchronized the first backing-store frame after showing the main window.
     if (backgroundFillUpdateRequest) {
