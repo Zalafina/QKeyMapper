@@ -41,9 +41,11 @@ Keep artifacts under ignored out/ paths (use git check-ignore for a new destinat
 
 The user approved a continuing exception for the already investigated vendor warning. Accept it only when all three conditions hold:
 
-- The linked library comes from the official Qt 5.15.2 x64 `msvc2019_64` kit.
+- The linked library comes from the official Qt 5.15.2 x64 `msvc2019_64` or x86 `msvc2019` kit.
 - The diagnostic identifies `qtmain.lib(qtmain_win.obj) : warning LNK4099`.
 - The reason is a missing vendor PDB, with the object linked without debug information.
+
+On 2026-10-16, the user explicitly extended this standing exception to the official Qt 5.15.2 x86 `msvc2019` kit after Release validation confirmed the same `qtmain.lib(qtmain_win.obj)` missing-PDB diagnostic and the actual library path in `Makefile.Release`. The local release logs retain the x86 diagnostic and original stdout/stderr bytes; these rotating local artifacts are evidence for that run, not guaranteed files in another checkout. Architecture alone is not a reason to reject an otherwise fully matching authorized exception.
 
 Provenance evidence: the local Qt5 logs `out/backup_popup_fix/build_qt5.log`, `out/font_clarity/build_qt5_direct.log` and `out/spin_editor_fix/build_fixed_qt5.log` show the same library/object warning in the QKeyMapper link step and the Qt 5.15.2 `msvc2019_64` build context. These are historical ignored local artifacts, not guaranteed to exist in another checkout or evidence of a later build. Keep the original logs; localized wording or console encoding may differ. Verify the current kit/library origin and missing-PDB cause rather than accepting the code or basename alone.
 
