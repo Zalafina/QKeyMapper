@@ -30,6 +30,29 @@ using namespace Gdiplus;
 
 namespace {
 
+QWidget *activeMainWindowModal(QWidget *mainWindow)
+{
+    QWidget *modal = QApplication::activeModalWidget();
+    for (QWidget *parent = modal; parent; parent = parent->parentWidget()) {
+        if (parent == mainWindow) {
+            return modal;
+        }
+    }
+    return nullptr;
+}
+
+bool inputThreadsShareDesktop(DWORD firstThread, DWORD secondThread)
+{
+    wchar_t firstName[256] = {};
+    wchar_t secondName[256] = {};
+    DWORD needed = 0;
+    return GetUserObjectInformationW(GetThreadDesktop(firstThread), UOI_NAME,
+                                    firstName, sizeof(firstName), &needed)
+        && GetUserObjectInformationW(GetThreadDesktop(secondThread), UOI_NAME,
+                                    secondName, sizeof(secondName), &needed)
+        && lstrcmpW(firstName, secondName) == 0;
+}
+
 #ifdef DEBUG_LOGOUT_ON
 void logScaleWidget(const QWidget *widget, quint64 sequence)
 {
@@ -16926,6 +16949,17 @@ void QKeyMapper::HotKeyDisplaySwitchActivated(const QString &hotkey_string)
     qDebug().nospace() << "[HotKeyDisplaySwitchActivated] DisplaySwitchKey[" << hotkey_string << "] Activated, KeyMapStatus = " << keymapstatusEnum.valueToKey(m_KeyMapStatus);
 #endif
 
+    if (m_deviceListWindow->isVisible()) {
+        return;
+    }
+
+    const HWND hwnd = reinterpret_cast<HWND>(winId());
+    if (activeMainWindowModal(this) || !IsWindowEnabled(hwnd)
+        || (!isHidden() && !isMinimized() && GetForegroundWindow() != hwnd)) {
+        showQKeyMapperWindowToTop();
+        return;
+    }
+
 #ifdef DISPLAY_SWITCHKEY_MINIMIZED
     const bool useTaskbarMode = !isHidden() && (isMinimized() || DISPLAYSWITCHMODE_TASKBAR == m_DisplaySwitchMode);
     switchShowHide(useTaskbarMode);
@@ -32337,63 +32371,69 @@ void QKeyMapper::updateProcessInfoDisplay()
 
 void QKeyMapper::showQKeyMapperWindowToTop()
 {
+    const HWND previousForeground = GetForegroundWindow();
     if (isHidden()) {
         // Arm the background fill before any WinAPI call can expose the hidden HWND.
         m_MainWindowBackgroundFillActive = true;
     }
 
-    HWND hwnd = reinterpret_cast<HWND>(winId());
+    setWindowState(windowState() & ~Qt::WindowMinimized);
+    show();
 
-    // Method 1: Try to restore from minimized state first
-    if (IsIconic(hwnd)) {
-        ShowWindow(hwnd, SW_RESTORE);
+    QWidget *target = activeMainWindowModal(this);
+    if (!target) {
+        target = this;
     }
-
-    // Method 2: Use SetWindowPos with HWND_TOP and proper flags
-    SetWindowPos(hwnd, HWND_TOP, 0, 0, 0, 0,
-                 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE);
-
-    // Method 3: Qt methods in proper sequence
-    // showNormal() handles both hidden and minimized states
-    showNormal();
-    // Bring to front in Qt's window order
-    raise();
-    // Request focus and activation
-    activateWindow();
-
-    // Method 4: Additional Windows API calls for better reliability
-    HWND foregroundWindow = GetForegroundWindow();
-    DWORD foregroundThreadId = GetWindowThreadProcessId(foregroundWindow, NULL);
-    DWORD currentThreadId = GetCurrentThreadId();
-
-    // Only try thread attachment if we're not already the foreground window
-    if (foregroundWindow != hwnd && foregroundThreadId != currentThreadId) {
-        // Temporarily attach to foreground thread
-        if (AttachThreadInput(foregroundThreadId, currentThreadId, TRUE)) {
-            // Now we can set foreground window
-            SetForegroundWindow(hwnd);
-            BringWindowToTop(hwnd);
-            // Detach thread input
-            AttachThreadInput(foregroundThreadId, currentThreadId, FALSE);
-        } else {
-            // If attachment fails, try alternative method
-            // Flash the window to get user attention if we can't bring it to front
-            FLASHWINFO fwi;
-            fwi.cbSize = sizeof(FLASHWINFO);
-            fwi.hwnd = hwnd;
-            fwi.dwFlags = FLASHW_ALL | FLASHW_TIMERNOFG;
-            fwi.uCount = 3;
-            fwi.dwTimeout = 0;
-            FlashWindowEx(&fwi);
-
-            // Try SetForegroundWindow anyway
-            SetForegroundWindow(hwnd);
+    HWND hwnd = reinterpret_cast<HWND>(target->winId());
+    if (!IsWindowVisible(hwnd) || !IsWindowEnabled(hwnd)) {
+        // Native modal dialogs may not be represented by activeModalWidget().
+        const HWND popup = GetLastActivePopup(reinterpret_cast<HWND>(winId()));
+        if (popup != hwnd && IsWindowVisible(popup) && IsWindowEnabled(popup)) {
+            hwnd = popup;
         }
     }
 
-    // Method 5: Final Qt activation
-    setWindowState(windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
-    activateWindow();
+    if (IsWindowVisible(hwnd) && IsWindowEnabled(hwnd)) {
+        if (hwnd == reinterpret_cast<HWND>(target->winId())) {
+            target->raise();
+            target->activateWindow();
+        }
+        SetForegroundWindow(hwnd);
+    }
+    if (GetForegroundWindow() == hwnd) {
+        return;
+    }
+
+    const DWORD foregroundThread = previousForeground
+        ? GetWindowThreadProcessId(previousForeground, nullptr) : 0;
+    const DWORD currentThread = GetCurrentThreadId();
+    if (IsWindow(previousForeground) && foregroundThread != 0
+        && foregroundThread != currentThread
+        && GetForegroundWindow() == previousForeground
+        && inputThreadsShareDesktop(foregroundThread, currentThread)) {
+        DWORD_PTR response = 0;
+        // Probe before joining queues; a joined unresponsive queue can block activation.
+        if (SendMessageTimeoutW(previousForeground, WM_NULL, 0, 0,
+                                SMTO_BLOCK | SMTO_ABORTIFHUNG | SMTO_ERRORONEXIT,
+                                100, &response)
+            && GetForegroundWindow() == previousForeground
+            && GetWindowThreadProcessId(previousForeground, nullptr) == foregroundThread
+            && IsWindow(hwnd) && IsWindowVisible(hwnd) && IsWindowEnabled(hwnd)
+            && AttachThreadInput(foregroundThread, currentThread, TRUE)) {
+            SetForegroundWindow(hwnd);
+            BringWindowToTop(hwnd);
+            AttachThreadInput(foregroundThread, currentThread, FALSE);
+        }
+    }
+
+    if (GetForegroundWindow() != hwnd) {
+        FLASHWINFO flash = {};
+        flash.cbSize = sizeof(flash);
+        flash.hwnd = hwnd;
+        flash.dwFlags = FLASHW_ALL | FLASHW_TIMERNOFG;
+        flash.uCount = 3;
+        FlashWindowEx(&flash);
+    }
 }
 
 void QKeyMapper::switchShowHide(bool hotkey_switch)
