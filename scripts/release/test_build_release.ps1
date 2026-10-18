@@ -177,11 +177,12 @@ Publish-Release $packageRoot $pending $publishWork $variants $newVersion
 Check (@(Get-ChildItem -LiteralPath "$publishWork/previous_release/latest_release" -File).Count -eq 3) 'repeat publication keeps exactly one backup generation'
 Check (-not (Test-Path -LiteralPath "$publishWork/previous_release/latest_release/QKeyMapper_${oldVersion}_Qt6_x64.zip")) 'older backup generation does not accumulate'
 
-foreach ($case in @('missing-script', 'parse-error', 'native-failure', 'missing-powershell')) {
+foreach ($case in @('success', 'missing-script', 'parse-error', 'native-failure', 'missing-powershell')) {
     $folder = Join-Path $testRoot "launcher-$case"
     New-Item -ItemType Directory -Path $folder -Force | Out-Null
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'build_release.bat') -Destination $folder
     switch ($case) {
+        'success' { Put "$folder/build_release.ps1" 'Write-Host "fixture success"; exit 0' }
         'parse-error' { Put "$folder/build_release.ps1" 'if (' }
         'native-failure' { Put "$folder/build_release.ps1" 'Write-Host "fixture native failure"; exit 7' }
         'missing-powershell' { Put "$folder/build_release.ps1" 'exit 0' }
@@ -196,4 +197,75 @@ for ($index = 0; $index -lt 3; $index++) {
     $fixtureScript = $fixtureScript.Replace("Repository = '$($realRepositories[$index])'", "Repository = '$($variants[$index].Repository)'")
 }
 Put (Join-Path $dirtyLauncher 'build_release.ps1') $fixtureScript
+
+# Start-Process reproduces traditional CMD's skipped UTF-8 command bug; a ConPTY alone does not.
+$enterFile = Join-Path $testRoot 'enter.txt'
+Put $enterFile "`r`n"
+$launcherCases = @(
+    @{ Name = 'success'; Exit = 0; Message = 'fixture success' }
+    @{ Name = 'native-failure'; Exit = 7; Message = '退出码 7' }
+    @{ Name = 'parse-error'; Exit = 1; Message = '退出码 1' }
+    @{ Name = 'missing-script'; Exit = 1; Message = '缺少脚本' }
+    @{ Name = 'missing-powershell'; Exit = 1; Message = '找不到 PowerShell' }
+    @{ Name = 'dirty-repository'; Exit = 1; Message = '未提交改动' }
+)
+foreach ($case in $launcherCases) {
+    $folder = Join-Path $testRoot "launcher-$($case.Name)"
+    $stdout = Join-Path $folder 'stdout.txt'
+    $stderr = Join-Path $folder 'stderr.txt'
+    $command = '"{0}\build_release.bat"' -f $folder
+    $process = $null
+    try {
+        if ($case.Name -eq 'missing-powershell') {
+            $command = 'set "ProgramFiles={0}" & set "PATH={1}\System32" & call "{2}\build_release.bat"' -f (Join-Path $testRoot 'no-program-files'), $env:SystemRoot, $folder
+        }
+        $process = Start-Process -FilePath $env:ComSpec -ArgumentList @('/d', '/c', $command) -WindowStyle Hidden -RedirectStandardInput $enterFile -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+        if (-not $process.WaitForExit(15000)) { throw "Launcher timed out: $($case.Name)" }
+        $output = [IO.File]::ReadAllText($stdout)
+        $errors = [IO.File]::ReadAllText($stderr)
+        Check ($process.ExitCode -eq $case.Exit) "traditional CMD $($case.Name) preserves exit $($case.Exit)"
+        Check ($output.Contains($case.Message) -and $output.Contains('按任意键关闭窗口')) "traditional CMD $($case.Name) displays reason and closing prompt"
+        Check (($case.Name -eq 'parse-error' -and $errors -match 'ParserError' -and $errors -notmatch 'is not recognized|不是内部或外部命令') -or ($case.Name -ne 'parse-error' -and $errors.Length -eq 0)) "traditional CMD $($case.Name) has no unexpected command error"
+    } finally {
+        if ($process) {
+            if (-not $process.HasExited) { $process.Kill($true); $process.WaitForExit() }
+            $process.Dispose()
+        }
+    }
+}
+
+# Keep stdin open to prove that the unmodified BAT waits, then supply its closing key.
+foreach ($case in $launcherCases) {
+    $folder = Join-Path $testRoot "launcher-$($case.Name)"
+    $info = [Diagnostics.ProcessStartInfo]::new($env:ComSpec, ('/d /c ""{0}\build_release.bat""' -f $folder))
+    if ($case.Name -eq 'missing-powershell') {
+        $info.Arguments = '/d /c set "ProgramFiles={0}" & set "PATH={1}\System32" & call "{2}\build_release.bat"' -f (Join-Path $testRoot 'no-program-files'), $env:SystemRoot, $folder
+    }
+    $info.UseShellExecute = $false
+    $info.WindowStyle = [Diagnostics.ProcessWindowStyle]::Hidden
+    $info.RedirectStandardInput = $true
+    $info.RedirectStandardOutput = $true
+    $info.RedirectStandardError = $true
+    $info.StandardOutputEncoding = [Text.Encoding]::UTF8
+    $process = [Diagnostics.Process]::Start($info)
+    try {
+        $errors = $process.StandardError.ReadToEndAsync()
+        $line = $process.StandardOutput.ReadLineAsync()
+        $deadline = [DateTime]::UtcNow.AddSeconds(15)
+        $promptSeen = $false
+        while ([DateTime]::UtcNow -lt $deadline) {
+            if (-not $line.Wait(100)) { continue }
+            if ($null -eq $line.Result) { break }
+            if ($line.Result.Contains('按任意键关闭窗口')) { $promptSeen = $true; break }
+            $line = $process.StandardOutput.ReadLineAsync()
+        }
+        Check ($promptSeen -and -not $process.WaitForExit(300)) "$($case.Name) waits for input after showing result"
+        $process.StandardInput.WriteLine()
+        if (-not $process.WaitForExit(10000)) { throw "Launcher did not exit after input: $($case.Name)" }
+        Check ($process.ExitCode -eq $case.Exit) "$($case.Name) preserves exit after closing input"
+    } finally {
+        if (-not $process.HasExited) { $process.Kill($true); $process.WaitForExit() }
+        $process.Dispose()
+    }
+}
 Write-Host "`n$passed checks passed. Launcher fixtures: $testRoot"
