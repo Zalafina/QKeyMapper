@@ -620,8 +620,76 @@
 <section id="virtual-first" data-search="键盘转手柄 A映射手柄 虚拟A键 vJoy-Key1(A/×) 虚拟手柄测试">
 <h2>第一条输出：键盘A → 虚拟手柄A／×</h2>
 <ol class="steps"><li>左侧原始按键选 <code>A</code>，右侧映射按键选 <code>vJoy-Key1(A/×)</code>。</li><li>添加后核对A → vJoy-Key1，保存设定。先不要加入连发、宏或复杂发送前缀。</li><li>打开测试工具，选中虚拟设备，开始映射；按住／松开A，预期看到对应虚拟按钮按下／释放。</li><li>停止映射，确认不再输出。进入游戏后还要在游戏自己的输入设置中选择或绑定这台手柄。</li></ol>
-<p>其他基本输出可按物理按键表把 <code>Joy-</code> 换成 <code>vJoy-</code> 理解，例如 <code>vJoy-DPad-Up</code>、<code>vJoy-Key5(LB)</code>。仅限实际输出列表支持的名称，不能推断所有物理传感器／背键都有同名虚拟输出。</p>
+<p>其他按钮及方向见下方<a href="#virtual-keynames">虚拟手柄位置图与完整名称表</a>；模拟量和专用命令见<a href="#virtual-special-names">参数命令速查</a>。</p>
 <p>普通vJoy按钮／方向键在序列中未指定保持时间时使用默认20毫秒保持；这是序列默认行为，不代表所有游戏都会识别这么短的输入。需要时明确设置合适时长并在目标软件核对。</p>
+</section>
+<section id="virtual-keynames" data-search="虚拟手柄完整名称 vJoy按键 输出名称 控制器布局 位置图 Xbox X360 DS4 PS vJoy-Touchpad">
+<h2>按键名称速查：vJoy是虚拟输出</h2>
+<p>下表的普通按钮／方向名称填写在右侧“映射按键”，表示希望软件收到的虚拟手柄动作；左侧可以是键盘、鼠标或实际手柄输入。先从图中认位置，再查完整名称，不要自行给任意物理Joy名称加v。</p>
+<figure class="controller-figure">
+<div class="controller-scroll" tabindex="0" role="region" aria-label="vJoy手柄位置示意图；窄窗口可左右滚动">
+<svg class="controller-map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 690" role="img" aria-labelledby="virtual-pad-title virtual-pad-desc">
+<title id="virtual-pad-title">vJoy手柄位置图：希望软件收到的虚拟输出</title>
+<desc id="virtual-pad-desc">Xbox常见布局：左上是左摇杆，左下是十字键，右上是面键，右下是右摇杆。顶部分别为肩键与扳机，中间为Back、Guide和Start。下方另画PS布局的触摸板按下位置。十二组标注对应紧随的完整名称表。</desc>
+<text class="map-heading" x="32" y="38">vJoy- · 希望软件收到的虚拟输出</text>
+<g class="pad-shell">
+<path d="M305 142 L310 104 Q334 84 360 106 L365 144 Z"/>
+<path d="M635 144 L640 106 Q666 84 690 104 L695 142 Z"/>
+<path d="M268 177 Q276 139 307 137 L384 148 L387 176 Z"/>
+<path d="M613 176 L616 148 L693 137 Q724 139 732 177 Z"/>
+<path d="M270 177 Q317 145 382 177 Q424 200 500 197 Q576 200 618 177 Q683 145 730 177 Q778 204 795 268 L830 421 Q842 493 794 508 Q750 524 702 463 L650 405 Q579 387 500 392 Q421 387 350 405 L298 463 Q250 524 206 508 Q158 493 170 421 L205 268 Q222 204 270 177 Z"/>
+</g>
+<g class="pad-detail">
+<circle cx="310" cy="272" r="57"/><circle class="pad-stick" cx="310" cy="272" r="40"/>
+<circle cx="605" cy="365" r="57"/><circle class="pad-stick" cx="605" cy="365" r="40"/>
+<circle cx="389" cy="365" r="56"/>
+<path class="pad-key" d="M375 328 H403 V351 H426 V379 H403 V402 H375 V379 H352 V351 H375 Z"/>
+<circle class="pad-key" cx="500" cy="253" r="29"/>
+<ellipse class="pad-key" cx="437" cy="261" rx="17" ry="12"/>
+<ellipse class="pad-key" cx="563" cy="261" rx="17" ry="12"/>
+<circle class="pad-key" cx="698" cy="224" r="25"/><circle class="pad-key" cx="744" cy="270" r="25"/>
+<circle class="pad-key" cx="652" cy="270" r="25"/><circle class="pad-key" cx="698" cy="316" r="25"/>
+</g>
+<g class="pad-label">
+<text x="698" y="232">Y/△</text><text x="744" y="278">B/○</text><text x="652" y="278">X/□</text><text x="698" y="324">A/×</text>
+<text x="500" y="261">⌂</text><text x="437" y="268">−</text><text x="563" y="268">≡</text>
+</g>
+<g class="map-leader">
+<path d="M338 108 L283 77 H54"/><path d="M662 108 L717 77 H946"/>
+<path d="M308 158 L246 137 H54"/><path d="M692 158 L754 137 H946"/>
+<path d="M277 268 L212 236 H54"/><path d="M722 305 L800 236 H946"/>
+<path d="M361 379 L257 424 H54"/><path d="M640 386 L755 424 H946"/>
+<path d="M437 254 V184 L410 116"/><path d="M500 224 V116"/><path d="M563 254 V184 L590 116"/>
+</g>
+<g class="map-label">
+<text x="32" y="68">07 LT / L2 扳机</text><text x="968" y="68" text-anchor="end">08 RT / R2 扳机</text>
+<text x="32" y="128">05 LB / L1 肩键</text><text x="968" y="128" text-anchor="end">06 RB / R1 肩键</text>
+<text x="32" y="226">03 左摇杆</text><text x="968" y="226" text-anchor="end">01 面键</text>
+<text x="32" y="455">02 十字键</text><text x="968" y="455" text-anchor="end">04 右摇杆</text>
+<text x="400" y="88" text-anchor="end">09 Back</text><text x="500" y="88" text-anchor="middle">11 Guide</text><text x="600" y="88">10 Start</text>
+<text class="map-note" x="500" y="472" text-anchor="middle">摇杆推向四方 ≠ 把摇杆向下按</text>
+</g>
+<path class="map-divider" d="M32 538 H968"/>
+<text class="map-label" x="32" y="575">PS 布局补充</text>
+<text class="map-note" x="32" y="607">触摸板位于正面中央</text>
+<g class="pad-shell">
+<path d="M390 570 Q414 546 447 562 H553 Q586 546 610 570 L632 642 Q637 668 616 670 L580 643 H420 L384 670 Q363 668 368 642 Z"/>
+<rect x="450" y="569" width="100" height="43" rx="7"/>
+</g>
+<g class="pad-detail"><circle class="pad-stick" cx="441" cy="631" r="16"/><circle class="pad-stick" cx="559" cy="631" r="16"/></g>
+<path class="map-leader" d="M550 590 H655 L680 573 H945"/>
+<text class="map-label" x="685" y="562">12 触摸板按下</text>
+<text class="map-note" x="685" y="606">不是轻触或滑动轨迹</text>
+</svg></div>
+<figcaption>位置示意：01～12对应下表。PS摇杆布局不同，底部单独标出触摸板位置。窄窗口可左右滚动图示，也可使用浏览器缩放；完整名称可在下表选择复制。</figcaption>
+</figure><table class="controller-keys"><thead><tr><th>图中位置／用途</th><th>映射按键完整名称</th><th>说明</th></tr></thead><tbody><tr><td>01 面键：下／右／左／上</td><td><code>vJoy-Key1(A/×)</code><br><code>vJoy-Key2(B/○)</code><br><code>vJoy-Key3(X/□)</code><br><code>vJoy-Key4(Y/△)</code></td><td>按图中的位置识别A／×、B／○、X／□、Y／△。</td></tr><tr><td>02 十字键</td><td><code>vJoy-DPad-Up</code><br><code>vJoy-DPad-Down</code><br><code>vJoy-DPad-Left</code><br><code>vJoy-DPad-Right</code></td><td>上／下／左／右；与摇杆方向分开。</td></tr><tr><td>03 左摇杆</td><td><code>vJoy-LS-Up</code><br><code>vJoy-LS-Down</code><br><code>vJoy-LS-Left</code><br><code>vJoy-LS-Right</code><br><code>vJoy-Key9(LS-Click)</code></td><td>前四项是推向四个方向；最后一项是摇杆按下（PS的L3／R3）。</td></tr><tr><td>04 右摇杆</td><td><code>vJoy-RS-Up</code><br><code>vJoy-RS-Down</code><br><code>vJoy-RS-Left</code><br><code>vJoy-RS-Right</code><br><code>vJoy-Key10(RS-Click)</code></td><td>前四项是推向四个方向；最后一项是摇杆按下（PS的L3／R3）。</td></tr><tr><td>05 左肩键</td><td><code>vJoy-Key5(LB)</code></td><td>PS的L1。</td></tr><tr><td>06 右肩键</td><td><code>vJoy-Key6(RB)</code></td><td>PS的R1。</td></tr><tr><td>07 左扳机</td><td><code>vJoy-Key11(LT)</code></td><td>PS的L2；与左肩键不同。</td></tr><tr><td>08 右扳机</td><td><code>vJoy-Key12(RT)</code></td><td>PS的R2；与右肩键不同。</td></tr><tr><td>09 Back</td><td><code>vJoy-Key7(Back)</code></td><td>PS的SHARE／Create等对应位置；以设备报告为准。</td></tr><tr><td>10 Start</td><td><code>vJoy-Key8(Start)</code></td><td>PS的OPTIONS对应位置。</td></tr><tr><td>11 Guide</td><td><code>vJoy-Key13(Guide)</code></td><td>PS键对应位置；物理按钮可能被系统／平台占用。</td></tr><tr><td>12 触摸板按下</td><td><code>vJoy-Touchpad</code></td><td>仅DS4虚拟类型支持；X360跳过此按钮。不是重放触摸轨迹。</td></tr></tbody></table>
+<p>上表包含全部26个基础输出名称：13个编号按钮、12个十字键／摇杆方向，以及DS4专用触摸板按钮。<strong>没有<code>vJoy-Key14</code>～<code>vJoy-Key30</code>、<code>vJoy-Paddle1</code>或<code>vJoy-…_Light</code>这样的对应输出。</strong>模拟量使用<a href="#virtual-analog">方括号力度值</a>，设备选择使用<a href="#virtual-targets">@0～@3目标后缀</a>；不能把物理输入后缀或_Light规则直接照搬。</p>
+</section>
+<section id="virtual-special-names" data-search="vJoy完整命令 参数名称 限幅 半径 移动 自动扳机 鼠标转摇杆 左侧原始入口">
+<h2>参数命令与vJoy前缀例外</h2>
+<p>这些名称没有独立的实体按钮位置。需要参数的条目列出完整基础名称和可照做的例子；详细范围与行为由链接教程统一说明。</p>
+<table class="controller-keys"><thead><tr><th>图中位置／用途</th><th>完整名称（注意填写侧）</th><th>说明</th></tr></thead><tbody><tr><td>右侧：扳机限幅</td><td><a href="#virtual-analog"><code>vJoy-LT-Max</code></a><br><a href="#virtual-analog"><code>vJoy-RT-Max</code></a></td><td>例：<code>vJoy-LT-Max[150]</code>；限制最大按压。</td></tr><tr><td>右侧：摇杆半径</td><td><a href="#virtual-analog"><code>vJoy-LS-Radius</code></a><br><a href="#virtual-analog"><code>vJoy-RS-Radius</code></a></td><td>例：<code>vJoy-LS-Radius[150,U=100,R=200]</code>。</td></tr><tr><td>右侧：摇杆移动</td><td><a href="#virtual-move"><code>vJoy-LS-Move</code></a><br><a href="#virtual-move"><code>vJoy-RS-Move</code></a></td><td>例：<code>vJoy-RS-Move[X=-60,RY=-10]</code>；绝对／相对偏移。</td></tr><tr><td>右侧：Forza自动扳机</td><td><a href="#forza-keys"><code>vJoy-Key11(LT)_BRAKE</code></a><br><a href="#forza-keys"><code>vJoy-Key12(RT)_BRAKE</code></a><br><a href="#forza-keys"><code>vJoy-Key11(LT)_ACCEL</code></a><br><a href="#forza-keys"><code>vJoy-Key12(RT)_ACCEL</code></a></td><td>BRAKE为自动刹车，ACCEL为自动油门；依赖遥测。</td></tr><tr><td>右侧：Forza参数模板</td><td><a href="#forza-keys"><code>vJoy-Key11(LT)_BRAKE[]</code></a><br><a href="#forza-keys"><code>vJoy-Key12(RT)_BRAKE[]</code></a><br><a href="#forza-keys"><code>vJoy-Key11(LT)_ACCEL[]</code></a><br><a href="#forza-keys"><code>vJoy-Key12(RT)_ACCEL[]</code></a></td><td>列表中的空方括号是待填写模板，不能原样作为完整配置。例：<code>vJoy-Key12(RT)_ACCEL[INIT=100,THR=7]</code>。</td></tr><tr><td>左侧：鼠标转虚拟摇杆</td><td><a href="#mouse-virtual-stick"><code>vJoy-Mouse2LS</code></a><br><a href="#mouse-virtual-stick"><code>vJoy-Mouse2RS</code></a></td><td>虽然以vJoy开头，却在原始按键侧；当前作用于0号虚拟手柄，右侧普通输出置灰。</td></tr></tbody></table>
+<p><code>Mouse2vJoy-Hold</code>不以vJoy开头，是右侧用于保持鼠标所控摇杆偏移的<a href="#mouse-virtual-stick">辅助命令</a>。物理模拟量直连则使用左侧的<a href="#gamepad-special-inputs">Joy专用入口</a>。</p>
 </section>
 <section id="virtual-targets" data-search="虚拟手柄编号 @0 @1 @2 @3 多虚拟手柄 默认0号 4台">
 <h2>多台输出：@编号选目标</h2>
@@ -814,10 +882,78 @@
 <figure><button type="button" class="image-button"><img data-src="images/stage5-gamepad-entry.png" alt="添加映射区域，左侧Joy-Key1(A/×)，右侧Space，手柄设备选择为空"></button><figcaption>编辑示例：左侧是实际手柄输入，右侧是键盘输出。图中设备列表为空，不代表已完成手柄连接或游戏测试。</figcaption></figure>
 <p>若完全没有响应，依次检查设备供电／连接、SDL2识别、按键名称、是否开始、目标焦点、玩家后缀和禁用状态。不要把“安装更多驱动”作为默认排错步骤。</p>
 </section>
-<section id="gamepad-keynames" data-search="手柄按键名称 Xbox PS4 PS5 DualShock DualSense Joy-DPad Joy-Key11(LT) Joy-Key12(RT) Joy-Paddle Joy-Misc1 Light 轻推 重推">
+<section id="gamepad-keynames" data-search="手柄按键名称 Xbox PS4 PS5 DualShock DualSense 控制器布局 位置图 Joy-DPad Joy-Key11(LT) Joy-Key12(RT) Joy-Paddle Joy-Misc1 Light 轻推 重推">
 <h2>按键名称速查：Joy是物理输入</h2>
-<table><thead><tr><th>物理位置</th><th>原始按键名称</th></tr></thead><tbody><tr><td>Xbox A／B／X／Y；PS ×／○／□／△</td><td><code>Joy-Key1(A/×)</code>、<code>Joy-Key2(B/○)</code>、<code>Joy-Key3(X/□)</code>、<code>Joy-Key4(Y/△)</code></td></tr><tr><td>肩键LB／RB，PS L1／R1</td><td><code>Joy-Key5(LB)</code>、<code>Joy-Key6(RB)</code></td></tr><tr><td>Back／Start，PS SHARE／OPTIONS</td><td><code>Joy-Key7(Back)</code>、<code>Joy-Key8(Start)</code></td></tr><tr><td>左右摇杆按下、Guide／PS</td><td><code>Joy-Key9(LS-Click)</code>、<code>Joy-Key10(RS-Click)</code>、<code>Joy-Key13(Guide)</code></td></tr><tr><td>方向十字键</td><td><code>Joy-DPad-Up</code>／<code>Down</code>／<code>Left</code>／<code>Right</code>（后面三项同样带Joy-DPad-前缀）</td></tr><tr><td>左右摇杆四方向</td><td><code>Joy-LS-Up</code>／Down／Left／Right、<code>Joy-RS-Up</code>／Down／Left／Right，均保留完整前缀</td></tr><tr><td>左右扳机</td><td><code>Joy-Key11(LT)</code>、<code>Joy-Key12(RT)</code></td></tr><tr><td>轻推／轻按</td><td>摇杆方向和LT／RT名称加 <code>_Light</code>，如 <code>Joy-LS-Up_Light</code>、<code>Joy-Key11(LT)_Light</code>。无_Light的对应输入用于重推／重按判定，阈值见<a href="#mapping-advanced">映射高级设定</a>。</td></tr><tr><td>其他设备专用按钮</td><td><code>Joy-Misc1</code>、<code>Joy-Paddle1</code>～<code>Joy-Paddle4</code>、<code>Joy-Touchpad</code>；仅支持相应输入协议和按钮的设备才会报告。</td></tr></tbody></table>
-<p>名称中的Xbox／PS图案用于帮助认位置，不承诺所有第三方手柄都有同样编号或布局。Guide等按钮还可能被系统／平台占用；先在测试工具中核对。轻／重阈值是模拟量门槛，不是长按毫秒数。</p>
+<p>先在图上找到自己实际操作的位置，再从同编号的表格行选择完整原始按键名称。图中是常见布局示意，不是设备连接或输入测试结果；第三方手柄的布局、按钮编号与可用功能需在<a href="#tools">测试工具</a>中核对。</p>
+<figure class="controller-figure">
+<div class="controller-scroll" tabindex="0" role="region" aria-label="Joy手柄位置示意图；窄窗口可左右滚动">
+<svg class="controller-map" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 690" role="img" aria-labelledby="physical-pad-title physical-pad-desc">
+<title id="physical-pad-title">Joy手柄位置图：自己实际按的输入</title>
+<desc id="physical-pad-desc">Xbox常见布局：左上是左摇杆，左下是十字键，右上是面键，右下是右摇杆。顶部分别为肩键与扳机，中间为Back、Guide和Start。下方另画PS布局的触摸板按下位置。十二组标注对应紧随的完整名称表。</desc>
+<text class="map-heading" x="32" y="38">Joy- · 自己实际按的输入</text>
+<g class="pad-shell">
+<path d="M305 142 L310 104 Q334 84 360 106 L365 144 Z"/>
+<path d="M635 144 L640 106 Q666 84 690 104 L695 142 Z"/>
+<path d="M268 177 Q276 139 307 137 L384 148 L387 176 Z"/>
+<path d="M613 176 L616 148 L693 137 Q724 139 732 177 Z"/>
+<path d="M270 177 Q317 145 382 177 Q424 200 500 197 Q576 200 618 177 Q683 145 730 177 Q778 204 795 268 L830 421 Q842 493 794 508 Q750 524 702 463 L650 405 Q579 387 500 392 Q421 387 350 405 L298 463 Q250 524 206 508 Q158 493 170 421 L205 268 Q222 204 270 177 Z"/>
+</g>
+<g class="pad-detail">
+<circle cx="310" cy="272" r="57"/><circle class="pad-stick" cx="310" cy="272" r="40"/>
+<circle cx="605" cy="365" r="57"/><circle class="pad-stick" cx="605" cy="365" r="40"/>
+<circle cx="389" cy="365" r="56"/>
+<path class="pad-key" d="M375 328 H403 V351 H426 V379 H403 V402 H375 V379 H352 V351 H375 Z"/>
+<circle class="pad-key" cx="500" cy="253" r="29"/>
+<ellipse class="pad-key" cx="437" cy="261" rx="17" ry="12"/>
+<ellipse class="pad-key" cx="563" cy="261" rx="17" ry="12"/>
+<circle class="pad-key" cx="698" cy="224" r="25"/><circle class="pad-key" cx="744" cy="270" r="25"/>
+<circle class="pad-key" cx="652" cy="270" r="25"/><circle class="pad-key" cx="698" cy="316" r="25"/>
+</g>
+<g class="pad-label">
+<text x="698" y="232">Y/△</text><text x="744" y="278">B/○</text><text x="652" y="278">X/□</text><text x="698" y="324">A/×</text>
+<text x="500" y="261">⌂</text><text x="437" y="268">−</text><text x="563" y="268">≡</text>
+</g>
+<g class="map-leader">
+<path d="M338 108 L283 77 H54"/><path d="M662 108 L717 77 H946"/>
+<path d="M308 158 L246 137 H54"/><path d="M692 158 L754 137 H946"/>
+<path d="M277 268 L212 236 H54"/><path d="M722 305 L800 236 H946"/>
+<path d="M361 379 L257 424 H54"/><path d="M640 386 L755 424 H946"/>
+<path d="M437 254 V184 L410 116"/><path d="M500 224 V116"/><path d="M563 254 V184 L590 116"/>
+</g>
+<g class="map-label">
+<text x="32" y="68">07 LT / L2 扳机</text><text x="968" y="68" text-anchor="end">08 RT / R2 扳机</text>
+<text x="32" y="128">05 LB / L1 肩键</text><text x="968" y="128" text-anchor="end">06 RB / R1 肩键</text>
+<text x="32" y="226">03 左摇杆</text><text x="968" y="226" text-anchor="end">01 面键</text>
+<text x="32" y="455">02 十字键</text><text x="968" y="455" text-anchor="end">04 右摇杆</text>
+<text x="400" y="88" text-anchor="end">09 Back</text><text x="500" y="88" text-anchor="middle">11 Guide</text><text x="600" y="88">10 Start</text>
+<text class="map-note" x="500" y="472" text-anchor="middle">摇杆推向四方 ≠ 把摇杆向下按</text>
+</g>
+<path class="map-divider" d="M32 538 H968"/>
+<text class="map-label" x="32" y="575">PS 布局补充</text>
+<text class="map-note" x="32" y="607">触摸板位于正面中央</text>
+<g class="pad-shell">
+<path d="M390 570 Q414 546 447 562 H553 Q586 546 610 570 L632 642 Q637 668 616 670 L580 643 H420 L384 670 Q363 668 368 642 Z"/>
+<rect x="450" y="569" width="100" height="43" rx="7"/>
+</g>
+<g class="pad-detail"><circle class="pad-stick" cx="441" cy="631" r="16"/><circle class="pad-stick" cx="559" cy="631" r="16"/></g>
+<path class="map-leader" d="M550 590 H655 L680 573 H945"/>
+<text class="map-label" x="685" y="562">12 触摸板按下</text>
+<text class="map-note" x="685" y="606">不是轻触或滑动轨迹</text>
+</svg></div>
+<figcaption>位置示意：01～12对应下表。PS摇杆布局不同，底部单独标出触摸板位置。窄窗口可左右滚动图示，也可使用浏览器缩放；完整名称可在下表选择复制。</figcaption>
+</figure><table class="controller-keys"><thead><tr><th>图中位置／用途</th><th>原始按键完整名称</th><th>说明</th></tr></thead><tbody><tr><td>01 面键：下／右／左／上</td><td><code>Joy-Key1(A/×)</code><br><code>Joy-Key2(B/○)</code><br><code>Joy-Key3(X/□)</code><br><code>Joy-Key4(Y/△)</code></td><td>按图中的位置识别A／×、B／○、X／□、Y／△。</td></tr><tr><td>02 十字键</td><td><code>Joy-DPad-Up</code><br><code>Joy-DPad-Down</code><br><code>Joy-DPad-Left</code><br><code>Joy-DPad-Right</code></td><td>上／下／左／右；与摇杆方向分开。</td></tr><tr><td>03 左摇杆</td><td><code>Joy-LS-Up</code><br><code>Joy-LS-Down</code><br><code>Joy-LS-Left</code><br><code>Joy-LS-Right</code><br><code>Joy-Key9(LS-Click)</code></td><td>前四项是推向四个方向；最后一项是摇杆按下（PS的L3／R3）。</td></tr><tr><td>04 右摇杆</td><td><code>Joy-RS-Up</code><br><code>Joy-RS-Down</code><br><code>Joy-RS-Left</code><br><code>Joy-RS-Right</code><br><code>Joy-Key10(RS-Click)</code></td><td>前四项是推向四个方向；最后一项是摇杆按下（PS的L3／R3）。</td></tr><tr><td>05 左肩键</td><td><code>Joy-Key5(LB)</code></td><td>PS的L1。</td></tr><tr><td>06 右肩键</td><td><code>Joy-Key6(RB)</code></td><td>PS的R1。</td></tr><tr><td>07 左扳机</td><td><code>Joy-Key11(LT)</code></td><td>PS的L2；与左肩键不同。</td></tr><tr><td>08 右扳机</td><td><code>Joy-Key12(RT)</code></td><td>PS的R2；与右肩键不同。</td></tr><tr><td>09 Back</td><td><code>Joy-Key7(Back)</code></td><td>PS的SHARE／Create等对应位置；以设备报告为准。</td></tr><tr><td>10 Start</td><td><code>Joy-Key8(Start)</code></td><td>PS的OPTIONS对应位置。</td></tr><tr><td>11 Guide</td><td><code>Joy-Key13(Guide)</code></td><td>PS键对应位置；物理按钮可能被系统／平台占用。</td></tr><tr><td>12 触摸板按下</td><td><code>Joy-Touchpad</code></td><td>物理设备须报告该按钮。</td></tr></tbody></table>
+<h3>轻推／轻按：完整的_Light名称</h3>
+<p>以下仍填写在左侧“原始按键”。不带<code>_Light</code>的对应摇杆方向／扳机输入用于重推／重按判定；轻／重阈值见<a href="#mapping-advanced">映射高级设定</a>，它是模拟量门槛，不是长按毫秒数。</p>
+<table class="controller-keys"><thead><tr><th>图中位置／用途</th><th>原始按键完整名称</th><th>说明</th></tr></thead><tbody><tr><td>03 左摇杆轻推</td><td><code>Joy-LS-Up_Light</code><br><code>Joy-LS-Down_Light</code><br><code>Joy-LS-Left_Light</code><br><code>Joy-LS-Right_Light</code></td><td></td></tr><tr><td>04 右摇杆轻推</td><td><code>Joy-RS-Up_Light</code><br><code>Joy-RS-Down_Light</code><br><code>Joy-RS-Left_Light</code><br><code>Joy-RS-Right_Light</code></td><td></td></tr><tr><td>07／08 扳机轻按</td><td><code>Joy-Key11(LT)_Light</code><br><code>Joy-Key12(RT)_Light</code></td><td></td></tr></tbody></table>
+<h3>设备专用按钮：没有统一物理位置</h3>
+<p>这些名称也可作为原始输入，但只有设备与当前协议实际报告时才有效。不能把额外编号直接套到上图，也不能认为每只手柄都具有背键或触摸板。</p>
+<table class="controller-keys"><thead><tr><th>图中位置／用途</th><th>原始按键完整名称</th><th>说明</th></tr></thead><tbody><tr><td>其他／附加按钮</td><td><code>Joy-Misc1</code></td><td>具体位置依设备而定。</td></tr><tr><td>背键／拨片</td><td><code>Joy-Paddle1</code><br><code>Joy-Paddle2</code><br><code>Joy-Paddle3</code><br><code>Joy-Paddle4</code></td><td>Paddle1～4的实际位置依设备而定。</td></tr><tr><td>其他编号按钮</td><td><code>Joy-Key14</code><br><code>Joy-Key15</code><br><code>Joy-Key16</code><br><code>Joy-Key17</code><br><code>Joy-Key18</code><br><code>Joy-Key19</code><br><code>Joy-Key20</code><br><code>Joy-Key21</code><br><code>Joy-Key22</code><br><code>Joy-Key23</code><br><code>Joy-Key24</code><br><code>Joy-Key25</code><br><code>Joy-Key26</code><br><code>Joy-Key27</code><br><code>Joy-Key28</code><br><code>Joy-Key29</code><br><code>Joy-Key30</code></td><td>逐键在实际设备上核对；编号不表示上图中的位置。</td></tr></tbody></table>
+</section>
+<section id="gamepad-special-inputs" data-search="手柄专用输入 触摸板手势 模拟量直连 Joy-LS2Mouse Joy-RS2Mouse Joy-Gyro2Mouse Joy-Touchpad2Mouse">
+<h2>手势与专用转换入口</h2>
+<p>下表统一列出完整名称，点击可看操作教程。触摸板手势是输入事件；专用转换项自带输出含义，添加时右侧普通映射按键置灰，不能当作普通按钮填到右侧。</p>
+<table class="controller-keys"><thead><tr><th>图中位置／用途</th><th>原始按键完整名称</th><th>说明</th></tr></thead><tbody><tr><td>触摸板轻触／两指滑动</td><td><a href="#touchpad-first"><code>Joy-Touchpad-Tap</code></a><br><a href="#touchpad-first"><code>Joy-Touchpad-2F-Up</code></a><br><a href="#touchpad-first"><code>Joy-Touchpad-2F-Down</code></a><br><a href="#touchpad-first"><code>Joy-Touchpad-2F-Left</code></a><br><a href="#touchpad-first"><code>Joy-Touchpad-2F-Right</code></a></td><td>可映射到普通输出；与12触摸板按下不同。</td></tr><tr><td>摇杆转鼠标</td><td><a href="#gamepad-stick-mouse"><code>Joy-LS2Mouse</code></a><br><a href="#gamepad-stick-mouse"><code>Joy-RS2Mouse</code></a></td><td>专用转换。</td></tr><tr><td>陀螺仪转鼠标</td><td><a href="#gyro-first"><code>Joy-Gyro2Mouse</code></a></td><td>专用转换；需要传感器，当前格式不加玩家后缀。</td></tr><tr><td>触摸板移动转鼠标</td><td><a href="#touchpad-first"><code>Joy-Touchpad2Mouse</code></a></td><td>专用转换；需要设备与协议支持。</td></tr><tr><td>摇杆模拟量直连</td><td><a href="#gamepad-virtual"><code>Joy-LS_2vJoyLS</code></a><br><a href="#gamepad-virtual"><code>Joy-RS_2vJoyRS</code></a><br><a href="#gamepad-virtual"><code>Joy-LS_2vJoyRS</code></a><br><a href="#gamepad-virtual"><code>Joy-RS_2vJoyLS</code></a></td><td>前两项同侧，后两项交叉。</td></tr><tr><td>扳机模拟量直连</td><td><a href="#gamepad-virtual"><code>Joy-Key11(LT)_2vJoyLT</code></a><br><a href="#gamepad-virtual"><code>Joy-Key12(RT)_2vJoyRT</code></a></td><td>左右扳机分别传递模拟量。</td></tr></tbody></table>
+<p>玩家编号见<a href="#gamepad-players">物理输入后缀</a>；鼠标转虚拟摇杆的两个左侧入口见<a href="#virtual-special-names">vJoy前缀例外</a>。</p>
 </section>
 <section id="gamepad-players" data-search="物理手柄编号 Joy@0 Joy@9 PlayerIndex 多手柄 @编号 接受虚拟手柄输入">
 <h2>多只手柄：用玩家后缀限定输入</h2>
@@ -947,7 +1083,7 @@
 <tr><td><a href="#command-prefixes"><code>↓</code></a>／<a href="#command-prefixes"><code>↑</code></a>／<a href="#command-prefixes"><code>↕</code></a>／<a href="#command-prefixes"><code>⇧</code></a>／<a href="#command-prefixes"><code>⇳</code></a>／<a href="#command-prefixes"><code>⇵</code></a>／<a href="#command-prefixes"><code>！</code></a>、<a href="#sequence-basics"><code>⏱</code></a>、<a href="#sequence-basics"><code>»</code></a>、<a href="#sequence-repeat"><code>Repeat</code></a>、<a href="#sequence-repeat"><code>OnlyOnce</code></a></td><td>映射内容中的前后缀／结构</td><td><a href="#command-prefixes">前缀</a>、<a href="#sequence-basics">步骤</a>与<a href="#sequence-repeat">循环</a></td></tr>
 </tbody></table><p>没有真实硬件按键的事件／转换项不要与“按下哪个键”混淆；也不能把内部输出命令任意填到左边。优先用下拉列表和对应教程生成完整写法。</p></section>
 <section id="keys-gamepad" data-search="Xbox PS4 PS5 DualShock DualSense XInput SDL2 Joy-Key14 Joy-Key30 vJoy-Touchpad _Light 物理虚拟名称 GamepadTouchpadOff GamepadTouchpadOff🎮 GamepadTouchpadOn GamepadTouchpadOn🎮 GamepadTouchpadToggle GamepadTouchpadToggle🎮 Gyro2Mouse-Hold Gyro2Mouse-Move Joy-DPad-Down Joy-DPad-Left Joy-DPad-Right Joy-DPad-Up Joy-Gyro2Mouse Joy-Key1(A/×) Joy-Key10(RS-Click) Joy-Key11(LT) Joy-Key11(LT)_2vJoyLT Joy-Key11(LT)_Light Joy-Key12(RT) Joy-Key12(RT)_2vJoyRT Joy-Key12(RT)_Light Joy-Key13(Guide) Joy-Key14 Joy-Key15 Joy-Key16 Joy-Key17 Joy-Key18 Joy-Key19 Joy-Key2(B/○) Joy-Key20 Joy-Key21 Joy-Key22 Joy-Key23 Joy-Key24 Joy-Key25 Joy-Key26 Joy-Key27 Joy-Key28 Joy-Key29 Joy-Key3(X/□) Joy-Key30 Joy-Key4(Y/△) Joy-Key5(LB) Joy-Key6(RB) Joy-Key7(Back) Joy-Key8(Start) Joy-Key9(LS-Click) Joy-LS-Down Joy-LS-Down_Light Joy-LS-Left Joy-LS-Left_Light Joy-LS-Right Joy-LS-Right_Light Joy-LS-Up Joy-LS-Up_Light Joy-LS2Mouse Joy-LS_2vJoyLS Joy-LS_2vJoyRS Joy-Misc1 Joy-Paddle1 Joy-Paddle2 Joy-Paddle3 Joy-Paddle4 Joy-RS-Down Joy-RS-Down_Light Joy-RS-Left Joy-RS-Left_Light Joy-RS-Right Joy-RS-Right_Light Joy-RS-Up Joy-RS-Up_Light Joy-RS2Mouse Joy-RS_2vJoyLS Joy-RS_2vJoyRS Joy-Touchpad Joy-Touchpad-2F-Down Joy-Touchpad-2F-Left Joy-Touchpad-2F-Right Joy-Touchpad-2F-Up Joy-Touchpad-Tap Joy-Touchpad2Mouse Mouse2vJoy-Hold vJoy-DPad-Down vJoy-DPad-Left vJoy-DPad-Right vJoy-DPad-Up vJoy-Key1(A/×) vJoy-Key10(RS-Click) vJoy-Key11(LT) vJoy-Key11(LT)_ACCEL vJoy-Key11(LT)_ACCEL[] vJoy-Key11(LT)_BRAKE vJoy-Key11(LT)_BRAKE[] vJoy-Key12(RT) vJoy-Key12(RT)_ACCEL vJoy-Key12(RT)_ACCEL[] vJoy-Key12(RT)_BRAKE vJoy-Key12(RT)_BRAKE[] vJoy-Key13(Guide) vJoy-Key2(B/○) vJoy-Key3(X/□) vJoy-Key4(Y/△) vJoy-Key5(LB) vJoy-Key6(RB) vJoy-Key7(Back) vJoy-Key8(Start) vJoy-Key9(LS-Click) vJoy-LS-Down vJoy-LS-Left vJoy-LS-Move vJoy-LS-Radius vJoy-LS-Right vJoy-LS-Up vJoy-LT-Max vJoy-Mouse2LS vJoy-Mouse2RS vJoy-RS-Down vJoy-RS-Left vJoy-RS-Move vJoy-RS-Radius vJoy-RS-Right vJoy-RS-Up vJoy-RT-Max vJoy-Touchpad">
-<h2>手柄：Joy输入与vJoy输出不能混用</h2><p><a href="#gamepad-keynames">物理按钮与Xbox／PS位置对照</a>已列出A／×、B／○、X／□、Y／△、肩键、扳机、摇杆按下、方向键、Guide／PS、背键及触摸板。完整方向名均保留前缀，如<code>Joy-RS-Left</code>，轻推为<code>Joy-RS-Left_Light</code>。</p><ul><li><code>Joy-Key14</code>～<code>Joy-Key30</code>为其他编号按钮；具体设备是否报告以及对应位置要在列表／测试工具中确认，不是所有手柄都具有这些键。</li><li><a href="#touchpad-first"><code>Joy-Touchpad-Tap</code></a>、<a href="#touchpad-first"><code>Joy-Touchpad-2F-Up</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad-2F-Down</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad-2F-Left</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad-2F-Right</code></a>是轻触和双指手势输入，见<a href="#touchpad-first">触摸板教程</a>。</li><li><a href="#gamepad-stick-mouse"><code>Joy-LS2Mouse</code></a>／<a href="#gamepad-stick-mouse"><code>Joy-RS2Mouse</code></a>、<a href="#gyro-first"><code>Joy-Gyro2Mouse</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad2Mouse</code></a>、<a href="#gamepad-virtual"><code>Joy-LS_2vJoyLS</code></a>等属于左侧专用转换入口。<a href="#mouse-virtual-stick"><code>vJoy-Mouse2LS</code></a>／<a href="#mouse-virtual-stick"><code>vJoy-Mouse2RS</code></a>虽然带v，也放在左边。</li><li>右侧普通虚拟输出使用<code>vJoy-Key1(A/×)</code>、<code>vJoy-DPad-Down</code>、<code>vJoy-LS-Up</code>等。<strong>不能把任意Joy名称加一个v就认为支持输出</strong>；_Light是物理判定，虚拟力度使用方括号数值。</li><li><a href="#virtual-setup"><code>vJoy-Touchpad</code></a>是DS4虚拟手柄的触摸板<strong>按键</strong>，Xbox360类型跳过此按钮；不是向游戏重放任意触摸轨迹。</li></ul><p>玩家编号见<a href="#gamepad-players">物理@0～@9</a>，输出设备见<a href="#virtual-targets">虚拟@0～@3</a>；不要混成一个编号范围。手柄映射前先读<a href="#gamepad-boundary">不能直接屏蔽物理输入</a>及<a href="#double-input">双重输入</a>。</p></section>
+<h2>手柄：Joy输入与vJoy输出不能混用</h2><p><a href="#virtual-keynames">虚拟输出位置图与完整vJoy名称</a>、<a href="#virtual-special-names">虚拟参数命令</a>和<a href="#gamepad-special-inputs">物理手势／转换入口</a>可分别查阅。<a href="#gamepad-keynames">物理按钮与Xbox／PS位置对照</a>已列出A／×、B／○、X／□、Y／△、肩键、扳机、摇杆按下、方向键、Guide／PS、背键及触摸板。完整方向名均保留前缀，如<code>Joy-RS-Left</code>，轻推为<code>Joy-RS-Left_Light</code>。</p><ul><li><code>Joy-Key14</code>～<code>Joy-Key30</code>为其他编号按钮；具体设备是否报告以及对应位置要在列表／测试工具中确认，不是所有手柄都具有这些键。</li><li><a href="#touchpad-first"><code>Joy-Touchpad-Tap</code></a>、<a href="#touchpad-first"><code>Joy-Touchpad-2F-Up</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad-2F-Down</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad-2F-Left</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad-2F-Right</code></a>是轻触和双指手势输入，见<a href="#touchpad-first">触摸板教程</a>。</li><li><a href="#gamepad-stick-mouse"><code>Joy-LS2Mouse</code></a>／<a href="#gamepad-stick-mouse"><code>Joy-RS2Mouse</code></a>、<a href="#gyro-first"><code>Joy-Gyro2Mouse</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad2Mouse</code></a>、<a href="#gamepad-virtual"><code>Joy-LS_2vJoyLS</code></a>等属于左侧专用转换入口。<a href="#mouse-virtual-stick"><code>vJoy-Mouse2LS</code></a>／<a href="#mouse-virtual-stick"><code>vJoy-Mouse2RS</code></a>虽然带v，也放在左边。</li><li>右侧普通虚拟输出使用<code>vJoy-Key1(A/×)</code>、<code>vJoy-DPad-Down</code>、<code>vJoy-LS-Up</code>等。<strong>不能把任意Joy名称加一个v就认为支持输出</strong>；_Light是物理判定，虚拟力度使用方括号数值。</li><li><a href="#virtual-setup"><code>vJoy-Touchpad</code></a>是DS4虚拟手柄的触摸板<strong>按键</strong>，Xbox360类型跳过此按钮；不是向游戏重放任意触摸轨迹。</li></ul><p>玩家编号见<a href="#gamepad-players">物理@0～@9</a>，输出设备见<a href="#virtual-targets">虚拟@0～@3</a>；不要混成一个编号范围。手柄映射前先读<a href="#gamepad-boundary">不能直接屏蔽物理输入</a>及<a href="#double-input">双重输入</a>。</p></section>
 </article>
 <article id="parameters" data-title="参数与格式索引"><header><p class="eyebrow">忘了怎么写时来这里</p><h1>参数与格式索引</h1><p class="lead">这里集中给出写法和去向；用途、步骤、边界在对应教程只说明一次。尖括号或中文占位词表示需要替换，不要原样输入“数值／宏名”。</p><p>点击带下划线的写法查看教程，点击旁边的“复制”取得该条文字，不会跳转。多个写法分别复制，不包含分隔它们的“／”。示例参数仍需按自己的配置调整；自动复制受限时，可在弹出的文字框按Ctrl+C。</p></header>
 <section id="format-rules" data-search="语法 参数格式 英文括号 全角 半角 字符 ⏱ ⏲ » ✖ xN +">

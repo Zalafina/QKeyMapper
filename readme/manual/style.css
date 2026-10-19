@@ -201,3 +201,34 @@ footer a { margin-left: 12px; }
   .image-button:after { display: none; }
   figcaption { background: #fff; }
 }
+
+/* Keep the white controller identical in both themes; only annotations adapt. */
+.controller-scroll { overflow-x: auto; padding: 12px; }
+.controller-scroll:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.controller-map { display: block; width: 100%; min-width: 780px; height: auto; }
+.controller-map .pad-shell { fill: #f2f2ee; stroke: #525963; stroke-width: 3; stroke-linejoin: round; }
+.controller-map .pad-detail { fill: #d9dcdf; stroke: #525963; stroke-width: 3; }
+.controller-map .pad-stick { fill: #606975; }
+.controller-map .pad-key { fill: #e5e7e8; }
+.controller-map .pad-label { fill: #252c36; text-anchor: middle; font: 600 21px "Segoe UI", "Microsoft YaHei", sans-serif; }
+.controller-map .map-leader { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; }
+.controller-map .map-label { fill: var(--text); font-size: 23px; font-weight: 600; }
+.controller-map .map-heading { fill: var(--accent); font-size: 24px; font-weight: 600; }
+.controller-map .map-note { fill: var(--muted); font-size: 21px; font-weight: 400; }
+.controller-map .map-divider { stroke: var(--line); stroke-width: 1; }
+.controller-keys td:first-child { width: 23%; }
+.controller-keys td:nth-child(2) { width: 43%; }
+@media (max-width: 620px) {
+  .controller-keys thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+  .controller-keys tr { display: block; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .controller-keys td { display: block; width: auto !important; border: 0; padding: 4px 8px; }
+  .controller-keys td:first-child { font-weight: 600; }
+}
+@media print {
+  .controller-scroll { overflow: visible; }
+  .controller-map { min-width: 0; }
+  .controller-map .map-label { fill: #222; }
+  .controller-map .map-heading { fill: #235e75; }
+  .controller-map .map-note { fill: #444; }
+  .controller-map .map-leader { stroke: #235e75; }
+}
