@@ -6,9 +6,10 @@ rule collection or authorization to change runtime behavior.
 
 - Use each generated qmake target's sources, definitions, include paths and CRT
   configuration. Native helpers must not inherit the Qt application's flags.
-  A shared source used by multiple targets needs each target configuration.
-- Include maintained first-party diagnostic helpers and tests in the default
-  inventory. Fail on an unmatched first-party source instead of silently
+  For shared source, select configurations whose effective code or contracts
+  are affected; do not mechanically analyze every target that includes the file.
+- When a full inventory is selected, include maintained first-party diagnostic
+  helpers and tests. Fail on an unmatched first-party source instead of silently
   dropping it. Vendor dependencies still need to parse; exclude vendor targets
   and diagnostics separately.
 - Check native exit status independently of parsed diagnostics. Empty output
@@ -20,6 +21,11 @@ rule collection or authorization to change runtime behavior.
 - Use the current user-approved checks; record centralized exclusions and
   audited point waivers separately. Preserve intentional meta-object consumers
   and object lifetimes rather than changing behavior merely to remove a warning.
+
+Select whether static analysis is needed using the playbook first. Diagnostic-only
+log collection does not select this gate automatically. For a targeted check,
+choose only configurations affected by the actual change; script discovery of
+shared test targets does not make those targets mandatory for every task.
 
 Entry points: scripts/run_static_analysis.ps1 and
 scripts/test_static_analysis.ps1. The latter uses native stubs only to verify
