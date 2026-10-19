@@ -10,7 +10,7 @@
 <h2>开始之前，先确认能停下来</h2>
 <div class="emergency-card"><strong>默认停止映射：按住左 Ctrl，再按一下 F6。</strong><p><kbd>L-Ctrl</kbd> + <kbd>F6</kbd>，不是右 Ctrl。请先在“映射设定”页确认当前“映射停止”快捷键；如果改过，以实际设置为准。</p><p class="small">默认开始与停止共用这个组合键。确认已经停止后，不要反复按，以免再次开始。详见<a href="#emergency">应急停止</a>。</p></div>
 <ul><li>先选“全局按键映射”，暂时取消“自动匹配前台进程”。后续练习只保留一条 A → B。</li><li>测试时避开聊天框、文档编辑和游戏操作。全局配置可能影响其他前台程序，先打开一个空白测试窗口。</li><li>不要先改鼠标左键、Ctrl、F6或停止组合键；第一条练习不需要“多设备支持”及Interception。</li></ul>
-<figure><button type="button" class="image-button"><img data-src="images/hotkeys.png" alt="映射设定页：映射开始和停止均为L-Ctrl加F6，自动匹配前台进程未勾选"></button><figcaption><b>先看这里。</b>主窗口左下“映射设定”页可确认开始／停止键。截图来自专用演示配置；你的配置可能不同。</figcaption></figure>
+<figure><button type="button" class="image-button"><img data-src="images/hotkeys.png" alt="映射设定页：映射开始和停止均为L-Ctrl加F6，自动匹配前台进程未勾选"></button><figcaption><b>先看这里。</b>主窗口左下“映射设定”页可确认开始／停止键。图中为示例配置，请以自己的快捷键设定为准。</figcaption></figure>
 </section>
 <section id="first-mapping" data-search="添加映射 保存设定 全局按键映射 记事本 第一次怎么用">
 <h2>完成第一条 A → B</h2>
@@ -22,7 +22,7 @@
 <li><strong>在空白记事本中试按 A</strong>先把输入焦点放入记事本文本区，切换英文输入，关闭大写锁定，再按 A。普通 A → B 的预期是得到小写 b；大小写会受到 Shift／大写锁定影响。</li>
 <li><strong>停止并确认恢复</strong>按住左 Ctrl，再按一下 F6（默认配置），确认QKeyMapper显示已停止；回到记事本按 A，应恢复为正常的 a 输入。</li>
 </ol>
-<figure><button type="button" class="image-button"><img data-src="images/overview.png" alt="QKeyMapper主窗口深色界面：右侧映射表有A到B，左侧为全局按键映射和映射设定页"></button><figcaption><b>主窗口定位。</b>右上看映射结果，右下添加和开始，左侧管理配置和保存。进程列表是隔离演示环境，不代表必须运行某个游戏。</figcaption></figure>
+<figure><button type="button" class="image-button"><img data-src="images/overview.png" alt="QKeyMapper主窗口深色界面：右侧映射表有A到B，左侧为全局按键映射和映射设定页"></button><figcaption><b>主窗口定位。</b>右上看映射结果，右下添加和开始，左侧管理配置和保存。进程列表中的窗口仅为示例，练习时无需运行游戏。</figcaption></figure>
 <div class="callout"><strong>这里先观察一个结果。</strong><p>记事本练习顺利后，再尝试组合键、连发、手柄和窗口匹配。不要同时开启多个复杂选项，否则出错时很难判断是哪一步导致的。</p></div>
 </section>
 <section id="save-before-switch" data-search="保存设定 忘记保存 未保存丢失 映射消失 切换配置 自动匹配 自动切换 找不回 草稿">
@@ -45,7 +45,7 @@
 </article>
 
 <article id="add-mapping" data-title="添加映射">
-<header><p class="eyebrow">建立你需要的输入关系</p><h1>添加映射</h1><p class="lead">先确定“按什么、发送什么”，再选择触发方式。每次添加后，都到映射表中核对一遍。</p><span class="tag green">完整样章</span></header>
+<header><p class="eyebrow">建立你需要的输入关系</p><h1>添加映射</h1><p class="lead">先确定“按什么、发送什么”，再选择触发方式。每次添加后，都到映射表中核对一遍。</p><span class="tag green">操作教程</span></header>
 <section id="add-controls" data-search="A映射为B 添加 原始按键 映射按键 分类筛选 按钮 键盘 鼠标 手柄 特殊功能">
 <h2>找到原始按键和映射按键</h2>
 <figure><button type="button" class="image-button"><img data-src="images/entry.png" alt="添加映射区域：左侧原始按键为A，右侧映射按键为B，右上角为添加按钮"></button><figcaption><b>从左到右读。</b>实际按 A → 希望发送 B → 点击“添加”。上方四个分类按钮控制对应按键列表的显示范围。</figcaption></figure>
@@ -78,7 +78,7 @@
 </article>
 
 <article id="item-settings" data-title="映射项设定">
-<header><p class="eyebrow">调整一行映射的具体行为</p><h1>映射项设定</h1><p class="lead">在映射表中打开一行，修改它的输入、输出和发送选项。先学会基础编辑，再逐项尝试连发、锁定与发送时机。</p><span class="tag green">完整样章</span></header>
+<header><p class="eyebrow">调整一行映射的具体行为</p><h1>映射项设定</h1><p class="lead">在映射表中打开一行，修改它的输入、输出和发送选项。先学会基础编辑，再逐项尝试连发、锁定与发送时机。</p><span class="tag green">操作教程</span></header>
 <section id="open-item" data-search="映射项设定 编辑 修改 一行 双击 表格">
 <h2>打开并看懂这个窗口</h2>
 <p>在映射表中选中需要调整的条目，通过该条目的双击／编辑入口打开“映射项设定”。确认窗口中的原始按键、映射按键及序号对应你准备编辑的条目。</p>
@@ -123,12 +123,12 @@
 <tr><td>十字准星设定／悬浮按钮</td><td>打开相关外观或按钮设置；全册将在对应辅助功能章节展开。</td></tr>
 <tr><td>映射码／复制映射码／应用映射码</td><td>用文本形式复制或应用映射项配置。只应用可信且理解用途的内容；应用后核对结果并按需保存。</td></tr>
 </tbody></table></div>
-<div class="related"><a href="#first-mapping">回到基础练习</a><a href="#glossary">查术语</a><a href="#roadmap">查看全册后续章节</a></div>
+<div class="related"><a href="#first-mapping">回到基础练习</a><a href="#glossary">查术语</a><a href="#roadmap">查看全册目录</a></div>
 </section>
 </article>
 
 <article id="tables" data-title="映射表与Tab">
-<header><p class="eyebrow">把映射整理成容易维护的工作区</p><h1>映射表与Tab</h1><p class="lead">一套配置可以包含多张映射表。先选对配置和Tab，再选择、复制或排序；共通映射另外管理，避免改错来源。</p><span class="tag green">阶段1 · 日常操作</span></header>
+<header><p class="eyebrow">把映射整理成容易维护的工作区</p><h1>映射表与Tab</h1><p class="lead">一套配置可以包含多张映射表。先选对配置和Tab，再选择、复制或排序；共通映射另外管理，避免改错来源。</p><span class="tag green">日常操作</span></header>
 <section id="table-structure" data-search="映射表 Tab 标签页 表格 多张映射 共通 Common C1 分隔行">
 <h2>先分清：配置、Tab和映射项</h2>
 <p>下方“设定”列表选择一套配置；上方Tab选择这套配置中的一张映射表；表格里每一行是一条映射项。<strong>新增Tab不等于新建配置，切换Tab也不是保存。</strong></p>
@@ -217,7 +217,7 @@
 </article>
 
 <article id="profiles" data-title="配置与备份">
-<header><p class="eyebrow">先分清试用、保存与文件备份</p><h1>配置与备份</h1><p class="lead">编辑界面的内容、已经保存的配置和导出的文件，是三件不同的事。先保存需要保留的改动，再切换、分享或导入。</p><span class="tag green">阶段1 · 日常操作</span></header>
+<header><p class="eyebrow">先分清试用、保存与文件备份</p><h1>配置与备份</h1><p class="lead">编辑界面的内容、已经保存的配置和导出的文件，是三件不同的事。先保存需要保留的改动，再切换、分享或导入。</p><span class="tag green">日常操作</span></header>
 <section id="profile-basics" data-search="配置 设定 全局配置 空白设定 General 通用设定 未保存 脏状态 keymapdata.ini">
 <h2>一套配置里保存了什么？</h2>
 <p>配置包含多张Tab、映射项及相关匹配和行为设定；语言、主题等通用设置另有作用范围。软件的工作配置文件为程序使用的<code>keymapdata.ini</code>。不建议初学者直接编辑其中的编码字段。</p>
@@ -273,7 +273,7 @@
 <tr><td>分享当前表中的映射</td><td>映射表操作 → 导出映射表</td><td>导出文件单独生成；当前编辑是否保存仍要另行确认</td></tr><tr><td>把单表文件加入另一张表</td><td>先选目标Tab → 导入映射表</td><td>需要检查并保存当前设定</td></tr><tr><td>备份一套或多套已保存配置</td><td>设定备份 → 设定导出</td><td>导出前先保存草稿，否则导出的是旧保存内容</td></tr><tr><td>把配置备份写入当前软件</td><td>设定备份 → 设定导入</td><td>导入本身会写入工作配置，不以最后点击保存为生效条件</td></tr>
 </tbody></table></div>
 <p>第一次练习可先用“新建练习”配置，保存G → H，再导出到一个新文件。需要试导入时使用单独的软件副本与工作INI；确认理解同名覆盖和通用设定的范围后，再操作日常配置。</p>
-<div class="related"><a href="#tables">回到映射表管理</a><a href="#profile-backup">备份与外部文件</a><a href="#roadmap">查看后续编写阶段</a></div>
+<div class="related"><a href="#tables">回到映射表管理</a><a href="#profile-backup">备份与外部文件</a><a href="#roadmap">查看全册目录</a></div>
 </section>
 </article>
 
@@ -284,7 +284,7 @@
 <p>“前台”指当前正在操作的窗口。目标窗口只是开着、被遮挡或最小化，并不等于它正在前台。点击QKeyMapper修改设定时，前台也可能暂时变成QKeyMapper。</p><p class="small">入门时先保留一份简单配置，不同时叠加全局回退、同名窗口发送等进阶选项。切换到其他应用不一定停止所有映射：还要看是否配置了全局映射或其他自动匹配配置。</p></section>
 <section id="window-process-list" data-search="进程列表 进程号 PID 窗口标题 类名 双击 左Ctrl Ctrl双击 复制进程名称 Ctrl+C 显示进程列表">
 <h2>从进程列表取得窗口信息</h2><ol class="steps"><li><strong>先打开目标软件，再停止当前映射。</strong>编辑时先用停止快捷键或停止按钮停下。若左上列表被隐藏，在“视图”菜单打开“显示进程列表”。</li><li><strong>在左上列表找到目标窗口，双击该行。</strong>程序会取得进程路径、窗口标题和类名，切换到下方“窗口信息”页。列表按窗口列出，同一进程可以出现多行；PID是本次运行的进程号，不适合当作长期匹配条件。</li><li><strong>先看配置是否被切换，再继续编辑。</strong>双击可能载入已有的相应配置；找不到时会填入新窗口信息。已有未保存内容应先保存。需要跳过已有配置查找时，可按住<strong>左Ctrl</strong>双击，再核对当前映射内容和设定名称。</li></ol>
-<figure><button type="button" class="image-button" data-full="images/stage2-process.png"><img data-src="images/stage2-process.png" alt="真实进程列表中的受控星际练习场演示窗口，包含进程名称、PID、标题和类名"></button><figcaption><b>从这里选窗口。</b>“星际练习场（演示）”是截图助手创建的真实受控窗口，与助手共用进程；没有启动游戏。进程名称被列宽截断时，可悬停查看完整文字。</figcaption></figure>
+<figure><button type="button" class="image-button" data-full="images/stage2-process.png"><img data-src="images/stage2-process.png" alt="真实进程列表中的受控星际练习场演示窗口，包含进程名称、PID、标题和类名"></button><figcaption><b>从这里选窗口。</b>“星际练习场（演示）”是示例窗口，请选择自己需要匹配的软件窗口。进程名称被列宽截断时，可悬停查看完整文字。</figcaption></figure>
 <p>要单独复制名称、标题或类名，先点相应单元格，再用右键菜单或在单行选中时按<kbd>Ctrl+C</kbd>。列表的进程名称与下方用于匹配的完整路径并不相同。</p><p class="small">看不到目标时，先确认目标窗口实际可见、不是仅运行在后台的服务，并留意权限或受保护进程可能使信息读取不完整。不要凭相似标题直接选择启动器、覆盖层或聊天子窗。</p></section>
 <section id="window-conditions" data-search="窗口进程 完整路径 等于 包含 以开头 以结尾 恢复 窗口类名 显示模式 全屏 窗口化 区分大小写 AND">
 <h2>匹配条件怎样组合？</h2><p>位置：主窗口左下“窗口信息”。进程、标题、类名分别选择比较方式；<strong>所有启用且非空的文本条件，以及启用的显示模式条件，都要同时满足</strong>。不是任意一个满足就生效。</p>
@@ -300,20 +300,20 @@
 <figure><button type="button" class="image-button" data-full="images/stage2-auto.png"><img data-src="images/stage2-auto.png" alt="映射设定页的自动匹配前台进程复选框，以及开始和停止快捷键"></button><figcaption><b>勾选后还要保存。</b>图示只展示编辑状态；勾选不等于已开始实际映射。默认开始／停止均为左Ctrl+F6，以你的实际设定为准。</figcaption></figure>
 <p>多个已保存配置都命中时，程序优先考虑更具体的条件组合：进程＋标题＋类名、进程＋标题、进程＋类名、标题＋类名、仅进程、仅标题、仅类名，最后才是仅显示模式；相同组合下显式显示模式优先于忽略模式。<strong>不要依赖配置列表排列顺序解决重叠规则</strong>，最好让配置条件互不冲突。</p><p class="small">全局配置不作为普通自动匹配候选。手动选择某配置，也不等于修改下次启动默认选择；下次启动选择与明确保存有关，见<a href="#profile-save">配置保存</a>。回退计时及全屏全局限制见<a href="#general-advanced">通用高级设定</a>。</p></section>
 <section id="window-icons" data-search="配置图标 自定义图标 ico png svg 设定描述 恢复默认 游戏图标">
-<h2>用图标与描述辨认配置</h2><p>在“窗口信息”页点击“选择自定义图标”，选择<code>.ico</code>、<code>.png</code>或<code>.svg</code>。确认预览正确后保存设定。图标会帮助你在配置列表中辨认相应配置，<strong>不会改变窗口匹配范围</strong>。</p><ul><li>右键“选择自定义图标”按钮，可“恢复默认”；该改动同样需要保存。</li><li>默认图标可从已记录的程序路径读取；未取得有效路径或文件不存在时，显示效果可能不同。</li><li>图标文件仍是外部资源，路径要保持有效。搬到另一台电脑或移动文件后，需要重新指定；配置导出不等于把图标文件一起打包。</li><li>配置图标与系统托盘图标是不同设置；不要为改图标改写进程匹配路径。</li></ul><p class="small">本章图示采用用户提供的演示图标，仅作配置辨认示例，没有运行对应游戏。</p></section>
+<h2>用图标与描述辨认配置</h2><p>在“窗口信息”页点击“选择自定义图标”，选择<code>.ico</code>、<code>.png</code>或<code>.svg</code>。确认预览正确后保存设定。图标会帮助你在配置列表中辨认相应配置，<strong>不会改变窗口匹配范围</strong>。</p><ul><li>右键“选择自定义图标”按钮，可“恢复默认”；该改动同样需要保存。</li><li>默认图标可从已记录的程序路径读取；未取得有效路径或文件不存在时，显示效果可能不同。</li><li>图标文件仍是外部资源，路径要保持有效。搬到另一台电脑或移动文件后，需要重新指定；配置导出不等于把图标文件一起打包。</li><li>配置图标与系统托盘图标是不同设置；不要为改图标改写进程匹配路径。</li></ul></section>
 <section id="window-troubleshooting" data-search="匹配不生效 不自动切换 游戏切出仍映射 启动器 标题变化 正则错误">
 <h2>没有按预期匹配时，按这个顺序检查</h2><ol><li>确认已开始监测，且目标确实在前台；不是只勾选了自动匹配。</li><li>重新双击实际游戏窗口，核对是否选成启动器或其他子窗口。先保存已有草稿。</li><li>逐项看条件：完整路径／文件名是否混用，大小写是否一致，标题是否变化，显示模式是否过度限定。</li><li>确认该配置已勾选自动匹配并保存；排查另一个已保存配置是否也能命中。</li><li>先减少条件，用简单“包含／结尾”验证，再引入正则。不要直接删除所有内置忽略规则。</li><li>若切出后仍映射，核对全局配置、同名窗口发送等设置；忽略规则也可能保持先前匹配状态，见下节。</li></ol><p>需要立即结束时使用<a href="#emergency">应急停止入口</a>，不要靠不断切换窗口尝试停止。</p></section>
 <section id="window-ignore" data-search="忽略规则 高阶技巧 普通用户无需更改 不打断 保持映射 内置规则 禁用 清空 恢复默认规则">
 <h2>高阶技巧：忽略规则通常无需改动</h2><div class="callout"><strong>普通用户保留内置规则即可。</strong><p>仅建议熟练掌握窗口匹配、理解规则影响的用户添加或修改。它不是新手配置步骤，也不是“给这个软件禁用映射”的黑名单。</p></div>
 <p>入口：“窗口信息” → “忽略规则列表”。内置规则覆盖部分提示窗、下拉列表、系统阴影与任务切换界面等，目的是减少这些临时窗口对匹配判断的干扰。命中规则时可能<strong>沿用此前的映射状态</strong>；把日常应用加入忽略列表，反而可能让切过去后映射继续。</p>
-<figure><button type="button" class="image-button" data-full="images/stage2-ignore.png"><img data-src="images/stage2-ignore.png" alt="忽略规则列表，选中内置Qt下拉列表规则，显示规则名称、进程、标题、类名、描述与禁用选项"></button><figcaption><b>先理解内置规则，再决定是否修改。</b>图中仅查看已有规则，未删除或更改内置项。规则名称用于管理，描述用于备注；真正判断的是启用的进程／标题／类名条件。</figcaption></figure>
+<figure><button type="button" class="image-button" data-full="images/stage2-ignore.png"><img data-src="images/stage2-ignore.png" alt="忽略规则列表，选中内置Qt下拉列表规则，显示规则名称、进程、标题、类名、描述与禁用选项"></button><figcaption><b>先理解内置规则，再决定是否修改。</b>规则名称用于管理，描述用于备注；真正判断的是启用的进程／标题／类名条件。</figcaption></figure>
 <table><thead><tr><th>操作</th><th>实际作用</th></tr></thead><tbody><tr><td>双击规则</td><td>载入上方编辑区；仅选中列表不等于已更新规则。</td></tr><tr><td>添加／更新</td><td>规则名不能为空；新名称添加，同名更新。多个有效条件在一条规则内要同时成立，任一启用规则命中即可忽略该窗口。</td></tr><tr><td>禁用</td><td>勾选后点击“更新”，暂时停用该规则，保留内容。不是停用实际键盘、鼠标或整个配置。</td></tr><tr><td>清空</td><td>确认后清空当前输入区，不等于删除规则列表。</td></tr><tr><td>删除</td><td>选中已有规则并确认后删除；慎重处理内置项。</td></tr><tr><td>恢复默认规则</td><td>确认后用内置集合替换当前规则；自行添加的规则也会被替换，先备份。</td></tr></tbody></table>
 <p>添加、更新、删除和恢复默认会改变当前规则并产生未保存状态；关闭编辑窗不是撤销，最终还需在主窗口“保存设定”才能持久保留。这些是全局规则，不是当前游戏专属。实验前先<a href="#profile-backup">备份配置文件</a>；使用配置导出时需包含General全局组才能带上这些规则。记录原值，每次只改一项。</p><p>规则中的“忽略”比较方式表示不检查该字段。空字段不参与判断；三个字段都没有有效条件的规则不会匹配一切。正则格式沿用<a href="#regex">下一章速查</a>，也要注意进程字段比较完整路径。</p></section>
 <div class="related"><a href="#profiles">配置与保存</a><a href="#regex">正则入门与速查</a><a href="#terms-window">窗口术语</a></div>
 </article>
 
 <article id="regex" data-title="正则入门与速查">
-<header><p class="eyebrow">按需要查，不必从头学编程</p><h1>让变化的窗口名称也能匹配</h1><p class="lead">能用“包含”或“以…结尾”解决时，先用简单方式。需要多个候选、版本号或排除条件时，再切换“正则匹配”。</p><span class="tag">进阶速查</span><span class="tag">已整合原正则指南</span></header>
+<header><p class="eyebrow">按需要查，不必从头学编程</p><h1>让变化的窗口名称也能匹配</h1><p class="lead">能用“包含”或“以…结尾”解决时，先用简单方式。需要多个候选、版本号或排除条件时，再切换“正则匹配”。</p><span class="tag">进阶速查</span></header>
 <section id="regex-basics" data-search="正则表达式 RegexMatch PCRE 大小写 (?i) 部分匹配 完整匹配 空标题 ^$">
 <h2>在QKeyMapper里怎样填写</h2><ol class="steps"><li><strong>选字段，再选“正则匹配”。</strong>在“窗口信息”的进程、标题或类名旁选择；忽略规则的对应字段也可选择。</li><li><strong>输入表达式本身。</strong>不要加代码块标记、引号或JavaScript风格的两端斜线。表达式作用于该字段的完整原始文本；进程字段是完整路径。</li><li><strong>用一个会命中和一个不应命中的窗口核对。</strong>有合法格式不代表范围正确。保存后，再按正常监测流程观察；先保留停止快捷键。</li></ol>
 <p>默认<strong>区分大小写</strong>。<code>Game</code>不会命中<code>game</code>，需要时写<code>(?i)Game</code>。默认可在文本任意位置找到匹配；需要整个字段都符合时加<code>^</code>和<code>$</code>。</p><p><code>^$</code>用于空标题；<code>^我的游戏</code>用于以该文字开头；<code>我的游戏</code>只要求任意位置包含。不要把“任意位置匹配”误认为“等于”。</p></section>
@@ -345,7 +345,7 @@
 <section id="regex-title-examples" data-search="窗口标题正则 多语言 关卡 版本 空白标题 排除设置 排除启动器">
 <h2>窗口标题常用模板</h2><table><thead><tr><th>需求</th><th>表达式</th><th>示例</th></tr></thead><tbody><tr><td>标题随关卡变化</td><td><code>^我的游戏</code></td><td>我的游戏 - 第一关、我的游戏 - 主菜单。</td></tr><tr><td>中文或英文标题</td><td><code>^(?:My Game|我的游戏)</code></td><td>两个前缀之一；英文默认区分大小写。</td></tr><tr><td>带版本号</td><td><code>^Game v[0-9]+\.[0-9]+</code></td><td>Game v1.0、Game v2.5后可接其他文字。</td></tr><tr><td>任意位置有关键词</td><td><code>游戏</code></td><td>战斗模式 - 游戏、游戏 - 冒险模式；仅此需求可直接选“包含”。</td></tr><tr><td>有游戏字样，但排除设置窗口</td><td><code>^(?!.*设置).*游戏.*$</code></td><td>命中“我的游戏”，不命中“游戏设置”。要退出匹配用这样的条件，不要用忽略规则代替。</td></tr><tr><td>完全空白标题</td><td><code>^$</code></td><td>长度为0；只有空格的标题不满足。</td></tr></tbody></table></section>
 <section id="regex-class-examples" data-search="UnityWndClass UnrealWindow Qt683QWindowIcon Qt5QWindowIcon Qt6QWindowIcon #32770 类名正则">
-<h2>窗口类名常用模板</h2><p>下面是名称模板，<strong>不是所有同类游戏都保证采用这些类名</strong>。先复制实际类名，再决定怎样匹配；类名通常要搭配进程条件，避免把其他程序也选中。</p><table><thead><tr><th>类别</th><th>表达式</th><th>说明</th></tr></thead><tbody><tr><td>Unity类名示例</td><td><code>^UnityWndClass$</code></td><td>整个类名相同。</td></tr><tr><td>Unreal类名示例</td><td><code>UnrealWindow</code></td><td>名称中包含这一段。</td></tr><tr><td>固定前缀</td><td><code>^GameWindow_</code></td><td>如GameWindow_Main、GameWindow_Chat。</td></tr><tr><td>Qt窗口示例</td><td><code>^Qt[0-9]+QWindowIcon$</code></td><td>兼顾Qt5QWindowIcon及本次实际出现的Qt683QWindowIcon；不要只允许一个版本数字。</td></tr><tr><td>标准对话框类名示例</td><td><code>^#32770$</code></td><td>许多Windows对话框共用，单独使用很宽泛。</td></tr><tr><td>同一类名中两段固定文字</td><td><code>GameName.*Window</code></td><td>GameName在前、Window在后，中间可为空。</td></tr></tbody></table></section>
+<h2>窗口类名常用模板</h2><p>下面是名称模板，<strong>不是所有同类游戏都保证采用这些类名</strong>。先复制实际类名，再决定怎样匹配；类名通常要搭配进程条件，避免把其他程序也选中。</p><table><thead><tr><th>类别</th><th>表达式</th><th>说明</th></tr></thead><tbody><tr><td>Unity类名示例</td><td><code>^UnityWndClass$</code></td><td>整个类名相同。</td></tr><tr><td>Unreal类名示例</td><td><code>UnrealWindow</code></td><td>名称中包含这一段。</td></tr><tr><td>固定前缀</td><td><code>^GameWindow_</code></td><td>如GameWindow_Main、GameWindow_Chat。</td></tr><tr><td>Qt窗口示例</td><td><code>^Qt[0-9]+QWindowIcon$</code></td><td>可匹配Qt5QWindowIcon、Qt683QWindowIcon等名称；版本数字可能不止一位。</td></tr><tr><td>标准对话框类名示例</td><td><code>^#32770$</code></td><td>许多Windows对话框共用，单独使用很宽泛。</td></tr><tr><td>同一类名中两段固定文字</td><td><code>GameName.*Window</code></td><td>GameName在前、Window在后，中间可为空。</td></tr></tbody></table></section>
 <section id="regex-check" data-search="正则不生效 Invalid regular expression regex101 在线测试 正则报错 效率">
 <h2>格式正确，还要检查误匹配</h2><ul><li>原样保留实际窗口信息作为样本；至少试“应命中／不应命中”各一个。<code>Game.exe</code>中的点是通配符，准确文件名要写<code>Game\.exe</code>。</li><li>表达式无效时不会正常命中；看到格式提示先修正，不要靠关闭条件或反复点击开始绕过。</li><li>范围过宽会影响其他应用，特别是<code>.*</code>、单个常见词和通用类名。先限定进程，再处理变化标题。</li><li>避免无必要的多层重复、嵌套量词和很长的候选列表；前台信息会重复检查，简单可读的规则通常更适合日常使用。</li></ul><p>可使用<a href="https://regex101.com/" target="_blank" rel="noopener noreferrer">regex101（需联网）</a>辅助试写，选择接近Qt所用正则语法的PCRE2模式；QKeyMapper最终以自身匹配结果为准。该网站不是内置功能，网站上的选项也不会自动带入程序。</p><p class="small">在外部网站只粘贴虚构或去敏后的标题和路径，不上传账号、文件名或工作窗口信息。没有必要为了使用手册打开在线工具。</p></section>
 <div class="related"><a href="#window-conditions">返回窗口匹配</a><a href="#window-ignore">忽略规则的用途</a><a href="#terms-window">术语速查</a></div>
@@ -388,7 +388,7 @@
 <figure><button type="button" class="image-button"><img data-src="images/stage3-universal.png" alt="通用宏页中添加通用问候，内容为SendText发送你好世界"></button><figcaption><b>通用宏单独引用。</b>图中内容是文本示例；普通Macro与UniversalMacro不能混用名称前缀。</figcaption></figure>
 <p>通用宏保存在全局设定范围。备份／导出时，普通配置组与General全局组的范围不同；只导出游戏配置可能没有带走通用宏。见<a href="#profile-backup">配置备份</a>。更新通用宏前，考虑所有引用它的配置。</p></section>
 <section id="macro-manage" data-search="宏删除 宏排序 宏复制 粘贴 导入 导出 宏分类 清空编辑区">
-<h2>管理、整理和交换宏</h2><ul><li>双击宏行载入编辑区，核对宏名后更新。换一个新名称再添加通常是在建立另一个宏，不代表所有旧引用自动改名。</li><li>分类、备注用于检索与说明；分类筛选只改变显示范围，不会暂停宏。先清除筛选，再进行需要完整顺序的整理。</li><li>使用右键菜单或快捷键复制、粘贴、删除和排序；常用移动为Ctrl+Up／Down、Ctrl+Home／End。操作前确认选中行和当前“宏／通用宏”页。</li><li>宏列表菜单提供导入／导出。遇到同名提示先核对覆盖范围；宏依赖的图片、脚本或程序仍是外部文件，不会因导出宏就自动打包。</li><li>“清空编辑区”针对下方草稿，不是删除上方全部宏。删除已有宏或批量覆盖前先备份，完成后在主窗口保存。</li></ul><p class="small">完整按键和参数不在本章重复列出。宏内容使用与映射按键相同的序列、文本和鼠标格式，分别链接后续速查即可。</p></section>
+<h2>管理、整理和交换宏</h2><ul><li>双击宏行载入编辑区，核对宏名后更新。换一个新名称再添加通常是在建立另一个宏，不代表所有旧引用自动改名。</li><li>分类、备注用于检索与说明；分类筛选只改变显示范围，不会暂停宏。先清除筛选，再进行需要完整顺序的整理。</li><li>使用右键菜单或快捷键复制、粘贴、删除和排序；常用移动为Ctrl+Up／Down、Ctrl+Home／End。操作前确认选中行和当前“宏／通用宏”页。</li><li>宏列表菜单提供导入／导出。遇到同名提示先核对覆盖范围；宏依赖的图片、脚本或程序仍是外部文件，不会因导出宏就自动打包。</li><li>“清空编辑区”针对下方草稿，不是删除上方全部宏。删除已有宏或批量覆盖前先备份，完成后在主窗口保存。</li></ul><p class="small">宏内容使用与映射按键相同的序列、文本和鼠标格式。忘记写法时，直接查<a href="#parameters">参数与格式索引</a>，不必在各章寻找重复说明。</p></section>
 <div class="related"><a href="#sequences">序列与循环</a><a href="#commands">文本与常用命令</a><a href="#profiles">保存与备份</a></div>
 </article>
 
@@ -406,8 +406,27 @@
 <h2>音量与麦克风</h2><table><thead><tr><th>目标</th><th>写法</th><th>预期</th></tr></thead><tbody><tr><td>输出音量</td><td><code>SetVolume(30.8)</code></td><td>设为约30.8%，实际精度由设备支持决定。</td></tr><tr><td>增加／降低</td><td><code>SetVolume(+5)</code>／<code>SetVolume(-20)</code></td><td>相对增加5／降低20个百分点，不是当前值乘百分比。</td></tr><tr><td>静音</td><td><code>SetVolume(Mute)</code>、<code>MuteOn</code>、<code>MuteOff</code></td><td>切换／明确静音／明确取消静音；后两者也写在SetVolume括号里。</td></tr><tr><td>麦克风</td><td><code>SetMicVolume(50.5)</code>、<code>SetMicVolume(-5.5)</code></td><td>更改麦克风音量；静音参数同理。</td></tr><tr><td>同时显示提示</td><td><code>SetVolume🔊(+10)</code>、<code>SetMicVolume🎤(Mute)</code></td><td>在名称中保留相应图标字符，附带软件通知。</td></tr></tbody></table>
 <p>绝对值按0～100范围使用；<code>+5</code>和<code>5</code>含义不同。先用小幅度变化确认当前音频设备，不要把测试值设为突然很大的音量。</p></section>
 <section id="command-tabs" data-search="SwitchTab SwitchTab💾 切换映射表 记住表名 保存标记">
-<h2>用按键切换映射表</h2><p><code>SwitchTab(Tab1)</code>切换到当前配置中同名的映射表。中文名也可以，例如<code>SwitchTab(战斗模式)</code>，前提是该表实际存在，名称一致。</p><p><code>SwitchTab💾(Tab1)</code>还会按该命令的流程记住切换后的表名。不要把它当成完整“保存设定”：其他未保存条目和全局设置仍需要明确保存。普通切表与持久记住表名不同，试用前先<a href="#profile-backup">备份</a>。</p><p>如果只是手动切表，也可使用<a href="#table-tabs">映射表快捷键</a>。序列控制、解锁命令集中在<a href="#sequence-controls">序列控制速查</a>；悬浮按钮与设备控制命令随相应后续章节补充。</p></section>
+<h2>用按键切换映射表</h2><p><code>SwitchTab(Tab1)</code>切换到当前配置中同名的映射表。中文名也可以，例如<code>SwitchTab(战斗模式)</code>，前提是该表实际存在，名称一致。</p><p><code>SwitchTab💾(Tab1)</code>还会按该命令的流程记住切换后的表名。不要把它当成完整“保存设定”：其他未保存条目和全局设置仍需要明确保存。普通切表与持久记住表名不同，试用前先<a href="#profile-backup">备份</a>。</p><p>如果只是手动切表，也可使用<a href="#table-tabs">映射表快捷键</a>。序列控制、解锁命令见<a href="#sequence-controls">序列控制速查</a>；悬浮按钮、设备及其他格式见<a href="#parameters">参数索引</a>。</p></section>
 <div class="related"><a href="#sequences">序列控制</a><a href="#macros">宏调用</a><a href="#mouse">鼠标参数</a></div>
+
+<section id="command-events" data-search="SendOnMappingStart SendOnMappingStop SendOnSwitchTab 开始自动发送 停止自动发送 切换Tab触发 特殊原始按键">
+<h2>在开始、停止或切换映射表时自动发送</h2><p>这三项放在<strong>左侧原始按键</strong>，代表软件事件，不是要在键盘上寻找的键。右侧填写希望自动执行的内容。</p>
+<table><thead><tr><th>左侧名称</th><th>何时触发</th></tr></thead><tbody><tr><td><code>SendOnMappingStart</code></td><td>相应映射表进入开始映射流程时。</td></tr><tr><td><code>SendOnMappingStop</code></td><td>相应映射表停止映射流程时。</td></tr><tr><td><code>SendOnSwitchTab</code></td><td>映射运行中切换到这张表时；不是编辑状态下点Tab就测试一次。</td></tr></tbody></table>
+<ol class="steps"><li>先停止映射，选择要设置的表。</li><li>左侧选择上述事件之一，右侧填简单输出，例如<code>B</code>；添加后核对并保存。</li><li>在空白测试窗口中执行对应开始／停止或切表动作，观察是否发送一次，再停止练习。</li></ol><div class="callout warning"><strong>这些输出不需要你再按某个物理键。</strong><p>自动匹配与切表可能间接进入相关流程。不要初次练习就填写关机、运行程序、循环宏或会再次切表的命令，避免意外动作或反复触发。</p></div>
+</section>
+<section id="command-recording" data-search="KeyRecordToggle KeyRecordStart KeyRecordStop 映射中录制 连续录制 自动剪贴板">
+<h2>用映射键控制录制</h2><p><code>KeyRecordToggle</code>切换录制开始／停止；<code>KeyRecordStart</code>只开始，<code>KeyRecordStop</code>只停止。它们放在<strong>右侧映射按键</strong>，与在<a href="#sequence-record">连续按键录制窗按F11／F12</a>是两种入口。</p><ol class="steps"><li>用专用练习配置，给一个不影响操作的控制键映射<code>KeyRecordToggle</code>；或者用两个控制键分别映射Start、Stop。</li><li>保存并开始映射，再按录制控制键。录制期间不要输入密码、聊天或工作内容。</li><li>停止录制后，结果会交给程序的录制完成处理并复制至剪贴板。先停止映射，再粘贴到映射按键输入区检查，最后更新／保存。</li></ol><p>停止录制不等于停止映射；录制控制键会被作为控制输入处理，不要把它与需要录入的动作混用。格式可接受也不保证能原样重放所有设备。</p>
+</section>
+<section id="command-fn-block" data-search="QKeyMapper-Fn Fn功能键 BLOCKED Block-Keyboard Block-Mouse Block-Keyboard⌨ Block-Mouse🖱 禁用全部键盘 禁用鼠标 @编号">
+<h2>屏蔽输入与QKeyMapper-Fn：熟悉基础操作后再用</h2><table><thead><tr><th>右侧名称</th><th>用途与边界</th></tr></thead><tbody><tr><td><code>BLOCKED</code></td><td>只屏蔽这条映射的原始输入；不是禁用整台设备。物理手柄不能因此获得键鼠同样的拦截能力。</td></tr><tr><td><code>QKeyMapper-Fn</code></td><td>按住映射出来的程序Fn键，再按已有映射项的原始键，可切换该项连发／锁定状态；该项“禁用Fn键切换”会阻止此操作。它不是笔记本硬件Fn键。</td></tr><tr><td><code>Block-Keyboard</code>／<code>Block-Mouse</code></td><td>按住输出时拦截映射项和快捷键以外的相应键盘／鼠标输入，松开时解除；影响范围远大于BLOCKED。</td></tr><tr><td><code>Block-Keyboard⌨</code>／<code>Block-Mouse🖱</code></td><td>同类屏蔽，并显示启用／解除提示。</td></tr></tbody></table>
+<p>需要按设备编号限定时，可在Block命令后加<code>@0</code>～<code>@9</code>，例如<code>Block-Keyboard⌨@0</code>。按设备区分依赖<a href="#interception">多键鼠与Interception</a>，不要仅为试这个后缀安装驱动。</p><div class="callout warning"><strong>先确认停止快捷键仍可用，不要先用鼠标左键或唯一操作入口试屏蔽。</strong><p>运行时Fn切换不是磁盘保存；想长期保留调整需核对表格并保存设定。强制释放／屏蔽不应当作驱动故障的救援手段。</p></div>
+</section>
+<section id="command-prefixes" data-search="↓ ↑ ↕ ⇧ ⇳ ⇵ ！ 单独按下 强制抬起 强制切换 状态反转 后覆盖 前缀 叹号">
+<h2>特殊发送前缀</h2><p>这些符号加在<strong>右侧具体按键名称前</strong>，例如<code>↓B</code>，不是左侧触发类型。普通改键不需要它们；先读<a href="#sequence-basics">发送步骤与释放配对</a>。</p><table><thead><tr><th>前缀</th><th>含义</th></tr></thead><tbody><tr><td><code>↓B</code></td><td>单独发送B按下。必须安排对应释放，不能只留下按下。</td></tr><tr><td><code>↑B</code></td><td>单独发送B抬起。</td></tr><tr><td><code>↕B</code></td><td>根据程序记录的虚拟按下状态反转按下／抬起，不等于切换整个映射。</td></tr><tr><td><code>⇧B</code></td><td>强制发送抬起；即使相应物理键仍按住，也允许走强制释放路径。</td></tr><tr><td><code>⇳B</code></td><td>状态反转，释放时使用强制释放路径。</td></tr><tr><td><code>⇵B</code></td><td>发送一次按下后抬起，不保持按住。</td></tr><tr><td><code>！B</code></td><td>后覆盖／排除控制：对支持的键临时抑制已有输入，结束时按当前状态恢复。它受原始输入、透传及输出类型影响，不等于BLOCKED或禁用整个键盘。</td></tr></tbody></table><p>例：<code>↓B⏱50»↑B</code>明确按下B、等待再释放。强制释放和覆盖会影响目标看到的状态；先用普通键小范围练习，不给系统组合键、鼠标左键或不明特殊命令随意加前缀。<code>！</code>是全角符号，不能用英文<code>!</code>替代；不是所有前缀都适用于所有命令或发送后端。</p>
+</section>
+<section id="command-system" data-search="Func-Refresh Func-LockScreen Func-Shutdown Func-Reboot Func-Logoff Func-Sleep Func-Hibernate 系统刷新 锁屏 关机 重启 注销 睡眠 休眠">
+<h2>系统动作：避免误触</h2><p>右侧的<code>Func-Refresh</code>用于Windows刷新；<code>Func-LockScreen</code>锁屏；<code>Func-Shutdown</code>关机；<code>Func-Reboot</code>重启；<code>Func-Logoff</code>注销；<code>Func-Sleep</code>睡眠；<code>Func-Hibernate</code>休眠。实际可用性受系统策略、权限和电源能力影响。</p><div class="callout warning"><strong>关机、重启、注销会中断其他程序，可能损失未保存工作。</strong><p>不要把它们放进新手练习、连发／循环、事件自动发送或容易误触的按键。本手册不演示执行，也不保证目标程序会先提示保存。</p></div>
+</section>
 </article>
 
 <article id="mouse" data-title="鼠标与坐标">
@@ -423,6 +442,8 @@
 <h2>坐标点击格式</h2><table><thead><tr><th>需求</th><th>映射按键示例</th><th>作用</th></tr></thead><tbody><tr><td>屏幕点左键</td><td><code>Mouse-L(500,100)</code></td><td>将指针移到该屏幕点并发送左键动作。</td></tr><tr><td>窗口内右键</td><td><code>Mouse-R:W(500,100)</code></td><td>将指针移到目标客户区相对点并发送右键。</td></tr><tr><td>中键与侧键</td><td><code>Mouse-M(500,100)</code>、<code>Mouse-X1:W(500,100)</code>、<code>Mouse-X2(500,100)</code></td><td>L、R、M、X1、X2分别表示左、右、中、侧键1、侧键2；均可按支持格式选择屏幕／窗口参考。</td></tr></tbody></table><p>普通按键动作还受触发的按下／抬起及发送时机影响。只想单次点击时，先使用普通触发和明确释放的练习，不要同时开启锁定或连发。</p></section>
 <section id="mouse-move" data-search="Mouse-Move Mouse-Move:R Mouse-Move_Relative Mouse-PosSave Mouse-PosRestore 恢复鼠标位置">
 <h2>绝对移动、相对移动和位置还原</h2><table><thead><tr><th>写法</th><th>作用</th></tr></thead><tbody><tr><td><code>Mouse-Move(800,600)</code></td><td>移到屏幕绝对位置，不点击。</td></tr><tr><td><code>Mouse-Move:W(500,400)</code></td><td>移到目标窗口客户区中的位置。</td></tr><tr><td><code>Mouse-Move:R(6,10)</code></td><td>从当前位置向右6、向下10；<code>(-6,-10)</code>为向左、向上。</td></tr><tr><td><code>Mouse-PosSave</code>／<code>Mouse-PosRestore</code></td><td>保存／还原指针位置；还原前先保存，不等于恢复窗口或游戏状态。</td></tr></tbody></table><p>在列表选择Mouse-Move_Relative时，“参数”区填<code>6,10</code>，程序生成<code>Mouse-Move:R(6,10)</code>。屏幕／窗口移动辅助项也分别生成无后缀／:W格式。</p><p>组合示例：<code>Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore</code>先保存位置、点击、再还原。仍须先确认目标安全、按键释放和序列时机；外部软件是否接受并非由格式检查保证。</p></section>
+<section id="mouse-keyboard" data-search="Key2Mouse-Up Key2Mouse-Down Key2Mouse-Left Key2Mouse-Right 键盘移动鼠标 X轴速度 Y轴速度">
+<h2>用键盘持续移动鼠标指针</h2><ol class="steps"><li>选择一个练习用原始键，例如<code>I</code>；右侧选择<code>Key2Mouse-Up</code>，添加并保存。</li><li>在安全的空白桌面区域开始映射，按住I时预期指针持续上移，松开后停止；先确认停止快捷键。</li><li>其他三个方向使用<code>Key2Mouse-Down</code>、<code>Key2Mouse-Left</code>和<code>Key2Mouse-Right</code>。它们是按住控制方向，不是跳到一个绝对坐标。</li><li>在“映射高级设定”核对X轴／Y轴鼠标移动速度，分别影响水平／垂直节奏；先小幅调整，再保存配置。</li></ol><p>这个用途不要求先装Interception或创建虚拟手柄。不要同时混用坐标移动、鼠标转摇杆、锁定和连发来排查基础移动问题。这里描述操作预期，未发送真实鼠标输入。</p></section>
 <section id="mouse-background" data-search=":BG PostMessage 后台 同名窗口 鼠标不动 不支持后台点击">
 <h2>高阶：不移动指针的后台消息</h2><p><code>:BG</code>通过窗口消息方式发送，屏幕上的指针不按普通坐标点击那样移动。常用格式：</p><table><thead><tr><th>写法</th><th>含义</th></tr></thead><tbody><tr><td><code>Mouse-L:BG(500,100)</code></td><td>以屏幕坐标描述点击点，再转换到目标窗口消息所需坐标。</td></tr><tr><td><code>Mouse-L:W:BG(500,100)</code></td><td>以目标客户区坐标发送左键消息。</td></tr><tr><td><code>Mouse-R:W:BG(500,100)</code></td><td>右键；M、X1、X2使用相同修饰顺序。</td></tr><tr><td><code>Mouse-Move:BG(800,600)</code>／<code>Mouse-Move:W:BG(500,400)</code></td><td>发送对应鼠标移动消息，不是将真实桌面指针挪到那里。</td></tr></tbody></table><p>与“发送到同名窗口”有关的使用方式，需要先确认目标窗口范围；它与自动匹配前台进程不是同一个开关。<strong>很多游戏不接受后台窗口消息</strong>，权限、窗口实现和输入机制也会影响结果，不能把:BG理解为适用于所有游戏的后台控制。</p><p class="small">后台消息不会自动模拟硬件、绕过游戏限制或保证对最小化窗口有效。先用普通发送和单窗口验证，确有需要再尝试这一高阶路径。</p></section>
 <div class="related"><a href="#sequences">序列与节奏</a><a href="#windows">目标窗口</a><a href="#emergency">停止映射</a></div>
@@ -556,7 +577,7 @@
 <p>标签不能为空，例如 <code>VButton{开火}</code>；这类输入不能再拼接设备后缀、组合键或长按／双击时间标记。若某个VButton条目同时启用独立“悬浮按钮”，它以独立按钮显示，不再在面板重复显示。</p>
 <p>启用拖拽后，用<strong>Ctrl＋左键拖动</strong>移动整块面板，也可右键使用移动／设定等入口；普通左键用于点击按钮。最大行数限制同时显示的行数，按钮较多时注意面板滚动区域，不是超出行数就自动删除配置。</p>
 <p>右侧命令 <code>ShowVButtonPanel</code>、<code>HideVButtonPanel</code> 可由其他原始键触发，用于显示／隐藏面板。隐藏面板不等于停止映射，也不删除VButton配置。“应用／恢复”与悬浮按钮类似，只管理本次编辑检查点；最终仍需“保存设定”。</p>
-<div class="related"><a href="#save-before-switch">离开前先保存</a><a href="#item-settings">返回映射项设定</a><a href="#roadmap">查看后续手柄／设备章节</a></div>
+<div class="related"><a href="#save-before-switch">离开前先保存</a><a href="#item-settings">返回映射项设定</a><a href="#gamepad">手柄与设备教程</a></div>
 </section>
 </article>
 
@@ -579,9 +600,9 @@
 <section id="testing-tools" data-search="Keyboard Test Utility DirectXGamepadViewer 测试网站 gobing 手柄按键测试 键盘测试 QQ群 工具下载">
 <h2>按需要选择工具</h2><div class="table-wrap"><table><thead><tr><th>工具</th><th>适合观察</th><th>获取与限制</th></tr></thead><tbody>
 <tr><td>记事本</td><td>字母、文本和简单组合键结果。</td><td>Windows常用工具。先用空白文档，不用真实工作内容。</td></tr>
-<tr><td>Keyboard Test Utility</td><td>键盘按下／抬起、修饰键和组合。</td><td>项目QQ群文件中已提供（用户提供的信息）。本手册不捆绑该工具。</td></tr>
+<tr><td>Keyboard Test Utility</td><td>键盘按下／抬起、修饰键和组合。</td><td>可从项目QQ群文件获取。本手册不捆绑该工具。</td></tr>
 <tr><td><a href="https://gobing.cn/experiment/key" target="_blank" rel="noopener noreferrer">Go柄网手柄测试</a></td><td>物理或虚拟手柄的按钮、摇杆等输入。</td><td>外部网页，需要联网。实际识别取决于浏览器、设备和权限；可能需要先操作手柄激活检测。</td></tr>
-<tr><td>DirectXGamepadViewer</td><td>手柄按钮、摇杆和扳机。</td><td>项目QQ群文件中已提供（用户提供的信息）。不是键盘输入测试工具。</td></tr>
+<tr><td>DirectXGamepadViewer</td><td>手柄按钮、摇杆和扳机。</td><td>可从项目QQ群文件获取。不是键盘输入测试工具。</td></tr>
 </tbody></table></div><p class="small">项目QQ群：906963961。请按完整工具名查找群文件。这里不提供未经核实的下载站，也不声称已对所有工具版本、浏览器和设备做过兼容测试。</p></section>
 <section id="test-results" data-search="测试有反应 游戏没反应 两个手柄 双重输入 无法屏蔽">
 <h2>怎样理解检测结果</h2><p>测试工具有响应，说明该工具看到了输入，不等于游戏一定接受。游戏无响应时再查窗口匹配、发送方式和游戏自身条件；不要立即安装更多驱动。</p><p>物理手柄转虚拟手柄时，测试工具可能同时显示两台设备。这不一定是QKeyMapper重复添加，可能是物理与虚拟设备都可见。先看<a href="#gamepad">手柄能力边界</a>，不要误把物理输入当成已被屏蔽。</p></section>
@@ -675,7 +696,7 @@
 <h2>ViGEmBus：只在需要虚拟手柄时安装</h2>
 <ol class="steps"><li>保存并备份配置，停止映射，关闭正在使用虚拟手柄的游戏／测试工具。确认自己需要虚拟输出，而不是普通手柄转键鼠。</li><li>完整解压与系统兼容的发布包，保留 <code>ViGEmBusDriver</code> 等附带目录；只复制QKeyMapper.exe会缺少安装资源。</li><li>在“虚拟手柄”页使用“安装ViGEm”。已经显示“卸载ViGEm”时不要再点它来尝试安装；按钮含义随当前状态变化。</li><li>阅读UAC和安装结果；要求重启时先结束工作并按提示重启。返回软件确认可用状态，再<a href="#virtual-setup">启用一台虚拟手柄</a>测试。</li></ol>
 <p>卸载使用同一页的卸载入口，先停用依赖它的虚拟输出；其他软件也可能使用ViGEmBus，移除会影响它们。异常时记录提示和版本，不反复安装／卸载碰运气。</p>
-<div class="callout"><strong>驱动支持与维护状态需要单独核对。</strong><p>ViGEm项目已退休／归档。上游说明1.16及以前面向Win7／8.1／10，1.17及以后面向Win10／11；这不是建议旧系统随意降级安装，也不是本手册对旧版驱动的验收。</p></div>
+<div class="callout"><strong>驱动支持与维护状态需要单独核对。</strong><p>ViGEm项目已退休／归档。上游说明1.16及以前面向Win7／8.1／10，1.17及以后面向Win10／11；这不是建议旧系统随意降级安装，安装前应查阅对应版本的系统要求。</p></div>
 <p class="small"><a href="https://github.com/nefarius/ViGEmBus#supported-systems" target="_blank" rel="noopener noreferrer">上游支持系统说明</a>、<a href="https://docs.nefarius.at/projects/ViGEm/End-of-Life/" target="_blank" rel="noopener noreferrer">退休及旧更新组件说明</a>（需联网）。按你实际包内的驱动版本核对，不从名称相似的网站下载替换组件。</p>
 </section>
 <section id="driver-fakerinput" data-search="安装FakerInput 卸载FakerInput FakerInputDriver 发送方式 虚拟键盘鼠标 SendInput 驱动发送">
@@ -820,12 +841,215 @@
 <h2>为什么会收到两份输入？</h2><p>游戏可能同时看到物理手柄和QKeyMapper输出的虚拟手柄，于是原始动作与映射动作一起发生。QKeyMapper读取物理手柄，并不会自动将它从游戏中隐藏。</p><div class="callout"><strong>需要隐藏物理输入时，可配合HidHide等专用工具。</strong><p>正确原则是：让QKeyMapper仍能读取物理设备，让目标游戏使用虚拟设备。不能把物理手柄同时对QKeyMapper隐藏，也不要误隐藏虚拟输出。</p></div><p>这些是独立工具，安装、设备选择、应用白名单及系统兼容条件需要另外核对。手册面向Win7不等于HidHide也支持Win7；外部驱动的系统与版本要求独立核对；本手册不保证所有环境通用。</p><p class="small"><a href="https://docs.nefarius.at/projects/HidHide/Simple-Setup-Guide/" target="_blank" rel="noopener noreferrer">HidHide官方配置指南（需联网）</a>。设备隐藏是针对应用可见性的控制，不应理解为所有情况下物理硬件都“停止发送”。</p></section>
 </article>
 
+<article id="keynames" data-title="按键名称速查">
+<header><p class="eyebrow">按类型查名称 · 先分清左右</p><h1>按键名称速查</h1><p class="lead">左边选自己实际按下的输入，右边选希望发送的输出。下表中的范围只是说明缩写，输入时请填写一个完整名称；不要把“F1～F24”整段写进映射框。</p><p>带下划线的名称可点击查看教程，旁边的“复制”只复制文字、不跳转；普通文字可直接选择复制。复制示例后仍需补全参数或替换占位词。若浏览器不允许自动复制，会打开文字框，按Ctrl+C手动复制即可。跳转后可用右下角“返回”回到刚才的位置。</p></header>
+<section id="keys-keyboard" data-search="键盘 A~Z 0~9 F1 F24 Ctrl Shift Win Esc Backspace PrintScrn Pause ScrollLock 反斜杠"><h2>普通键盘</h2><table><thead><tr><th>名称／范围</th><th>说明（原始、映射两侧均可）</th></tr></thead><tbody>
+<tr><td><a href="#first-mapping"><code>A~Z</code></a></td><td>键盘字母区26个字母按键</td></tr>
+<tr><td><code>0~9</code></td><td>键盘字母区上方一排数字键</td></tr>
+<tr><td><code>Up</code></td><td>键盘方向键上(↑)</td></tr>
+<tr><td><code>Down</code></td><td>键盘方向键下(↓)</td></tr>
+<tr><td><code>Left</code></td><td>键盘方向键左(←)</td></tr>
+<tr><td><code>Right</code></td><td>键盘方向键右(→)</td></tr>
+<tr><td><code>Insert</code></td><td>键盘Insert键</td></tr>
+<tr><td><code>Delete</code></td><td>键盘Delete键</td></tr>
+<tr><td><code>Home</code></td><td>键盘Home键</td></tr>
+<tr><td><code>End</code></td><td>键盘End键</td></tr>
+<tr><td><code>PageUp</code></td><td>键盘上翻页键</td></tr>
+<tr><td><code>PageDown</code></td><td>键盘下翻页键</td></tr>
+<tr><td><code>Space</code></td><td>键盘空格键</td></tr>
+<tr><td><code>Tab</code></td><td>键盘Tab键</td></tr>
+<tr><td><code>Enter</code></td><td>键盘回车键</td></tr>
+<tr><td><a href="#add-combination"><code>L-Shift</code></a></td><td>键盘左Shift键</td></tr>
+<tr><td><a href="#add-combination"><code>R-Shift</code></a></td><td>键盘右Shift键</td></tr>
+<tr><td><a href="#add-combination"><code>L-Ctrl</code></a></td><td>键盘左Ctrl键</td></tr>
+<tr><td><a href="#add-combination"><code>R-Ctrl</code></a></td><td>键盘右Ctrl键</td></tr>
+<tr><td><a href="#add-combination"><code>L-Alt</code></a></td><td>键盘左Alt键</td></tr>
+<tr><td><a href="#add-combination"><code>R-Alt</code></a></td><td>键盘右Alt键</td></tr>
+<tr><td><code>L-Win</code></td><td>键盘左Windows键</td></tr>
+<tr><td><code>R-Win</code></td><td>键盘右Windows键</td></tr>
+<tr><td><code>Backspace</code></td><td>键盘退格键</td></tr>
+<tr><td><code>`</code></td><td>键盘左上角波浪号键(数字键左侧)</td></tr>
+<tr><td><code>-</code></td><td>键盘减号键(数字键右侧)</td></tr>
+<tr><td><code>=</code></td><td>键盘等号键(数字键右侧)</td></tr>
+<tr><td><code>[</code></td><td>键盘左方括号键</td></tr>
+<tr><td><code>]</code></td><td>键盘右方括号键</td></tr>
+<tr><td><code>\</code></td><td>键盘反斜杠键</td></tr>
+<tr><td><code>;</code></td><td>键盘分号键</td></tr>
+<tr><td><code>&#x27;</code></td><td>键盘单引号键</td></tr>
+<tr><td><code>,</code></td><td>键盘逗号键</td></tr>
+<tr><td><code>.</code></td><td>键盘句号键</td></tr>
+<tr><td><code>/</code></td><td>键盘斜杠键</td></tr>
+<tr><td><code>Esc</code></td><td>键盘Esc键</td></tr>
+<tr><td><code>F1~F24</code></td><td>键盘功能键F1~F24(键盘最上方一排)</td></tr>
+<tr><td><code>CapsLock</code></td><td>键盘大写锁定键</td></tr>
+<tr><td><code>Application</code></td><td>键盘菜单键(右侧Ctrl键左边)</td></tr>
+<tr><td><code>PrintScrn</code></td><td>键盘屏幕打印键(键盘右上位置)</td></tr>
+<tr><td><code>ScrollLock</code></td><td>键盘滚动锁定键(键盘右上位置)</td></tr>
+<tr><td><code>Pause</code></td><td>键盘暂停键(键盘右上位置)</td></tr>
+</tbody></table><p>左右修饰键分别命名；<a href="#add-combination"><code>L-Ctrl</code></a>是左Ctrl，<a href="#add-combination"><code>R-Ctrl</code></a>是右Ctrl。加号连接组合键；要发送大写字母或符号，需考虑Shift、输入法和目标键盘布局，不是把名称改成中文。</p></section>
+<section id="keys-keypad" data-search="Num＋ NumEnter NumOFF 小键盘加号 数字锁定"><h2>数字小键盘与NumLock</h2><table><thead><tr><th>名称／范围</th><th>说明（原始、映射两侧均可）</th></tr></thead><tbody>
+<tr><td><code>NumLock</code></td><td>小键盘区数字锁定键</td></tr>
+<tr><td><code>Num/</code></td><td>小键盘区除号键</td></tr>
+<tr><td><code>Num*</code></td><td>小键盘区乘号键</td></tr>
+<tr><td><code>Num-</code></td><td>小键盘区减号键</td></tr>
+<tr><td><code>Num＋</code></td><td>小键盘区加号键</td></tr>
+<tr><td><code>Num.</code></td><td>小键盘区小数点键</td></tr>
+<tr><td><code>Num0~9</code></td><td>小键盘区数字0~9键</td></tr>
+<tr><td><code>NumEnter</code></td><td>小键盘区回车键</td></tr>
+<tr><td><code>Num.(NumOFF)</code></td><td>小键盘区小数点键（数字锁定关闭状态 ）</td></tr>
+<tr><td><code>Num0~9(NumOFF)</code></td><td>小键盘区数字0~9键（数字锁定关闭状态）</td></tr>
+</tbody></table><p>主键盘<code>1</code>与<code>Num1</code>是不同键。<code>Num1(NumOFF)</code>表示NumLock关闭时的小键盘位置；普通方向／导航键仍使用Up、End等名称。<code>Num＋</code>包含全角加号，与组合键的半角<code>+</code>不同。</p></section>
+<section id="keys-mouse" data-search="Mouse-L Mouse-R Mouse-M Mouse-X1 Mouse-X2 Mouse-WheelUp Mouse-WheelDown Mouse-WheelLeft Mouse-WheelRight"><h2>鼠标按钮与滚轮</h2><table><thead><tr><th>名称／范围</th><th>说明（原始、映射两侧均可）</th></tr></thead><tbody>
+<tr><td><a href="#mouse-safety"><code>Mouse-L</code></a></td><td>鼠标左键</td></tr>
+<tr><td><a href="#mouse-click"><code>Mouse-R</code></a></td><td>鼠标右键</td></tr>
+<tr><td><a href="#mouse-click"><code>Mouse-M</code></a></td><td>鼠标中键</td></tr>
+<tr><td><a href="#mouse-click"><code>Mouse-X1</code></a></td><td>鼠标1号侧键</td></tr>
+<tr><td><a href="#mouse-click"><code>Mouse-X2</code></a></td><td>鼠标2号侧键</td></tr>
+<tr><td><code>Mouse-WheelUp</code></td><td>鼠标滚轮上滚</td></tr>
+<tr><td><code>Mouse-WheelDown</code></td><td>鼠标滚轮下滚</td></tr>
+<tr><td><code>Mouse-WheelLeft</code></td><td>鼠标滚轮左滚</td></tr>
+<tr><td><code>Mouse-WheelRight</code></td><td>鼠标滚轮右滚</td></tr>
+</tbody></table><p>初次练习不要映射鼠标左键；先记住<a href="#emergency">应急停止</a>。坐标点击、相对移动及键控鼠标是右侧特殊功能，见<a href="#mouse">鼠标与坐标</a>。</p></section>
+<section id="keys-media" data-search="VolumeMute MediaPlayPause BrowserHome LaunchApp1 LaunchMail SelectMedia"><h2>多媒体、浏览器与应用键</h2><table><thead><tr><th>名称／范围</th><th>说明（原始、映射两侧均可）</th></tr></thead><tbody>
+<tr><td><code>VolumeMute</code></td><td>键盘静音键</td></tr>
+<tr><td><code>VolumeDown</code></td><td>键盘音量减小键</td></tr>
+<tr><td><code>VolumeUp</code></td><td>键盘音量增大键</td></tr>
+<tr><td><code>MediaNext</code></td><td>键盘媒体下一曲键</td></tr>
+<tr><td><code>MediaPrev</code></td><td>键盘媒体上一曲键</td></tr>
+<tr><td><code>MediaStop</code></td><td>键盘媒体停止键</td></tr>
+<tr><td><code>MediaPlayPause</code></td><td>键盘媒体播放/暂停键</td></tr>
+<tr><td><code>LaunchMail</code></td><td>键盘启动邮件客户端键</td></tr>
+<tr><td><code>SelectMedia</code></td><td>键盘选择媒体键</td></tr>
+<tr><td><code>LaunchApp1</code></td><td>键盘启动应用程序1键</td></tr>
+<tr><td><code>LaunchApp2</code></td><td>键盘启动应用程序2键</td></tr>
+<tr><td><code>BrowserBack</code></td><td>键盘浏览器后退键</td></tr>
+<tr><td><code>BrowserForward</code></td><td>键盘浏览器前进键</td></tr>
+<tr><td><code>BrowserRefresh</code></td><td>键盘浏览器刷新键</td></tr>
+<tr><td><code>BrowserStop</code></td><td>键盘浏览器停止键</td></tr>
+<tr><td><code>BrowserSearch</code></td><td>键盘浏览器搜索键</td></tr>
+<tr><td><code>BrowserFavorites</code></td><td>键盘浏览器收藏夹键</td></tr>
+<tr><td><code>BrowserHome</code></td><td>键盘浏览器主页键</td></tr>
+</tbody></table><p>能选择名称不代表键盘有对应实体按钮；媒体／浏览器响应还取决于Windows和目标程序。</p></section>
+<section id="keys-special" data-search="特殊原始键 特殊映射键 SendOnMappingStart SendOnMappingStop SendOnSwitchTab KeyRecordToggle KeyRecordStart KeyRecordStop QKeyMapper-Fn Block-Keyboard Block-Mouse BLOCKED NONE Func-Refresh">
+<h2>特殊名称放哪边？</h2><table><thead><tr><th>名称／系列</th><th>填写位置</th><th>主要说明</th></tr></thead><tbody>
+<tr><td><a href="#command-events"><code>SendOnMappingStart</code></a>／<a href="#command-events"><code>SendOnMappingStop</code></a>／<a href="#command-events"><code>SendOnSwitchTab</code></a></td><td>原始</td><td><a href="#command-events">开始／停止／切表事件</a></td></tr>
+<tr><td><a href="#vbutton-panel"><code>VButton{标签}</code></a></td><td>原始</td><td><a href="#vbutton-panel">虚拟按钮及面板</a></td></tr>
+<tr><td><a href="#command-fn-block"><code>BLOCKED</code></a>／<a href="#sequence-basics"><code>NONE</code></a>／<a href="#sequence-controls"><code>Unlock</code></a></td><td>映射</td><td><a href="#command-fn-block">屏蔽</a>、<a href="#sequence-basics">等待</a>与<a href="#sequence-controls">解锁</a></td></tr>
+<tr><td><a href="#command-text"><code>SendText</code></a>／<a href="#command-text"><code>PasteText</code></a>／<a href="#command-run"><code>Run</code></a>／<a href="#command-volume"><code>SetVolume</code></a>／<a href="#command-volume"><code>SetMicVolume</code></a></td><td>映射</td><td><a href="#parameters">格式索引</a></td></tr>
+<tr><td><a href="#command-tabs"><code>SwitchTab</code></a>／<a href="#command-tabs"><code>SwitchTab💾</code></a>／<a href="#macro-call"><code>Macro</code></a>／<a href="#macro-call"><code>UniversalMacro</code></a></td><td>映射</td><td><a href="#command-tabs">切表</a>与<a href="#macro-call">宏调用</a></td></tr>
+<tr><td><a href="#command-recording"><code>KeyRecordToggle</code></a>／<a href="#command-recording"><code>KeyRecordStart</code></a>／<a href="#command-recording"><code>KeyRecordStop</code></a></td><td>映射</td><td><a href="#command-recording">控制录制</a></td></tr>
+<tr><td><a href="#command-fn-block"><code>QKeyMapper-Fn</code></a>／<a href="#command-fn-block"><code>Block-Keyboard⌨</code></a>／<a href="#command-fn-block"><code>Block-Mouse🖱</code></a></td><td>映射</td><td><a href="#command-fn-block">Fn及输入屏蔽</a></td></tr>
+<tr><td><a href="#sequence-controls"><code>KeySequenceBreak</code></a>／<a href="#sequence-controls"><code>KeySequenceToggle</code></a>／<a href="#sequence-controls"><code>KeySequencePause</code></a>／<a href="#sequence-controls"><code>KeySequenceContinue</code></a></td><td>映射</td><td><a href="#sequence-controls">运行序列控制</a></td></tr>
+<tr><td><a href="#floating-commands"><code>ShowAllFButtons</code></a>／<a href="#floating-commands"><code>HideAllFButtons</code></a>／<a href="#floating-commands"><code>ShowFButton</code></a>／<a href="#floating-commands"><code>HideFButton</code></a>／<a href="#vbutton-panel"><code>ShowVButtonPanel</code></a>／<a href="#vbutton-panel"><code>HideVButtonPanel</code></a></td><td>映射</td><td><a href="#floating-commands">悬浮与面板控制</a></td></tr>
+<tr><td><a href="#mouse-keyboard"><code>Key2Mouse-Up</code></a>／<a href="#mouse-keyboard"><code>Key2Mouse-Down</code></a>／<a href="#mouse-keyboard"><code>Key2Mouse-Left</code></a>／<a href="#mouse-keyboard"><code>Key2Mouse-Right</code></a></td><td>映射</td><td><a href="#mouse-keyboard">四方向移动鼠标</a></td></tr>
+<tr><td><a href="#crosshair"><code>Crosshair-Normal</code></a>／<a href="#crosshair"><code>Crosshair-TypeA</code></a></td><td>映射</td><td><a href="#crosshair">十字准星</a></td></tr>
+<tr><td><a href="#command-system"><code>Func-Refresh</code></a>／<a href="#command-system"><code>Func-LockScreen</code></a>／<a href="#command-system"><code>Func-Shutdown</code></a>／<a href="#command-system"><code>Func-Reboot</code></a>／<a href="#command-system"><code>Func-Logoff</code></a>／<a href="#command-system"><code>Func-Sleep</code></a>／<a href="#command-system"><code>Func-Hibernate</code></a></td><td>映射</td><td><a href="#command-system">系统动作及误触风险</a></td></tr>
+<tr><td><a href="#command-prefixes"><code>↓</code></a>／<a href="#command-prefixes"><code>↑</code></a>／<a href="#command-prefixes"><code>↕</code></a>／<a href="#command-prefixes"><code>⇧</code></a>／<a href="#command-prefixes"><code>⇳</code></a>／<a href="#command-prefixes"><code>⇵</code></a>／<a href="#command-prefixes"><code>！</code></a>、<a href="#sequence-basics"><code>⏱</code></a>、<a href="#sequence-basics"><code>»</code></a>、<a href="#sequence-repeat"><code>Repeat</code></a>、<a href="#sequence-repeat"><code>OnlyOnce</code></a></td><td>映射内容中的前后缀／结构</td><td><a href="#command-prefixes">前缀</a>、<a href="#sequence-basics">步骤</a>与<a href="#sequence-repeat">循环</a></td></tr>
+</tbody></table><p>没有真实硬件按键的事件／转换项不要与“按下哪个键”混淆；也不能把内部输出命令任意填到左边。优先用下拉列表和对应教程生成完整写法。</p></section>
+<section id="keys-gamepad" data-search="Xbox PS4 PS5 DualShock DualSense XInput SDL2 Joy-Key14 Joy-Key30 vJoy-Touchpad _Light 物理虚拟名称 GamepadTouchpadOff GamepadTouchpadOff🎮 GamepadTouchpadOn GamepadTouchpadOn🎮 GamepadTouchpadToggle GamepadTouchpadToggle🎮 Gyro2Mouse-Hold Gyro2Mouse-Move Joy-DPad-Down Joy-DPad-Left Joy-DPad-Right Joy-DPad-Up Joy-Gyro2Mouse Joy-Key1(A/×) Joy-Key10(RS-Click) Joy-Key11(LT) Joy-Key11(LT)_2vJoyLT Joy-Key11(LT)_Light Joy-Key12(RT) Joy-Key12(RT)_2vJoyRT Joy-Key12(RT)_Light Joy-Key13(Guide) Joy-Key14 Joy-Key15 Joy-Key16 Joy-Key17 Joy-Key18 Joy-Key19 Joy-Key2(B/○) Joy-Key20 Joy-Key21 Joy-Key22 Joy-Key23 Joy-Key24 Joy-Key25 Joy-Key26 Joy-Key27 Joy-Key28 Joy-Key29 Joy-Key3(X/□) Joy-Key30 Joy-Key4(Y/△) Joy-Key5(LB) Joy-Key6(RB) Joy-Key7(Back) Joy-Key8(Start) Joy-Key9(LS-Click) Joy-LS-Down Joy-LS-Down_Light Joy-LS-Left Joy-LS-Left_Light Joy-LS-Right Joy-LS-Right_Light Joy-LS-Up Joy-LS-Up_Light Joy-LS2Mouse Joy-LS_2vJoyLS Joy-LS_2vJoyRS Joy-Misc1 Joy-Paddle1 Joy-Paddle2 Joy-Paddle3 Joy-Paddle4 Joy-RS-Down Joy-RS-Down_Light Joy-RS-Left Joy-RS-Left_Light Joy-RS-Right Joy-RS-Right_Light Joy-RS-Up Joy-RS-Up_Light Joy-RS2Mouse Joy-RS_2vJoyLS Joy-RS_2vJoyRS Joy-Touchpad Joy-Touchpad-2F-Down Joy-Touchpad-2F-Left Joy-Touchpad-2F-Right Joy-Touchpad-2F-Up Joy-Touchpad-Tap Joy-Touchpad2Mouse Mouse2vJoy-Hold vJoy-DPad-Down vJoy-DPad-Left vJoy-DPad-Right vJoy-DPad-Up vJoy-Key1(A/×) vJoy-Key10(RS-Click) vJoy-Key11(LT) vJoy-Key11(LT)_ACCEL vJoy-Key11(LT)_ACCEL[] vJoy-Key11(LT)_BRAKE vJoy-Key11(LT)_BRAKE[] vJoy-Key12(RT) vJoy-Key12(RT)_ACCEL vJoy-Key12(RT)_ACCEL[] vJoy-Key12(RT)_BRAKE vJoy-Key12(RT)_BRAKE[] vJoy-Key13(Guide) vJoy-Key2(B/○) vJoy-Key3(X/□) vJoy-Key4(Y/△) vJoy-Key5(LB) vJoy-Key6(RB) vJoy-Key7(Back) vJoy-Key8(Start) vJoy-Key9(LS-Click) vJoy-LS-Down vJoy-LS-Left vJoy-LS-Move vJoy-LS-Radius vJoy-LS-Right vJoy-LS-Up vJoy-LT-Max vJoy-Mouse2LS vJoy-Mouse2RS vJoy-RS-Down vJoy-RS-Left vJoy-RS-Move vJoy-RS-Radius vJoy-RS-Right vJoy-RS-Up vJoy-RT-Max vJoy-Touchpad">
+<h2>手柄：Joy输入与vJoy输出不能混用</h2><p><a href="#gamepad-keynames">物理按钮与Xbox／PS位置对照</a>已列出A／×、B／○、X／□、Y／△、肩键、扳机、摇杆按下、方向键、Guide／PS、背键及触摸板。完整方向名均保留前缀，如<code>Joy-RS-Left</code>，轻推为<code>Joy-RS-Left_Light</code>。</p><ul><li><code>Joy-Key14</code>～<code>Joy-Key30</code>为其他编号按钮；具体设备是否报告以及对应位置要在列表／测试工具中确认，不是所有手柄都具有这些键。</li><li><a href="#touchpad-first"><code>Joy-Touchpad-Tap</code></a>、<a href="#touchpad-first"><code>Joy-Touchpad-2F-Up</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad-2F-Down</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad-2F-Left</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad-2F-Right</code></a>是轻触和双指手势输入，见<a href="#touchpad-first">触摸板教程</a>。</li><li><a href="#gamepad-stick-mouse"><code>Joy-LS2Mouse</code></a>／<a href="#gamepad-stick-mouse"><code>Joy-RS2Mouse</code></a>、<a href="#gyro-first"><code>Joy-Gyro2Mouse</code></a>／<a href="#touchpad-first"><code>Joy-Touchpad2Mouse</code></a>、<a href="#gamepad-virtual"><code>Joy-LS_2vJoyLS</code></a>等属于左侧专用转换入口。<a href="#mouse-virtual-stick"><code>vJoy-Mouse2LS</code></a>／<a href="#mouse-virtual-stick"><code>vJoy-Mouse2RS</code></a>虽然带v，也放在左边。</li><li>右侧普通虚拟输出使用<code>vJoy-Key1(A/×)</code>、<code>vJoy-DPad-Down</code>、<code>vJoy-LS-Up</code>等。<strong>不能把任意Joy名称加一个v就认为支持输出</strong>；_Light是物理判定，虚拟力度使用方括号数值。</li><li><a href="#virtual-setup"><code>vJoy-Touchpad</code></a>是DS4虚拟手柄的触摸板<strong>按键</strong>，Xbox360类型跳过此按钮；不是向游戏重放任意触摸轨迹。</li></ul><p>玩家编号见<a href="#gamepad-players">物理@0～@9</a>，输出设备见<a href="#virtual-targets">虚拟@0～@3</a>；不要混成一个编号范围。手柄映射前先读<a href="#gamepad-boundary">不能直接屏蔽物理输入</a>及<a href="#double-input">双重输入</a>。</p></section>
+</article>
+<article id="parameters" data-title="参数与格式索引"><header><p class="eyebrow">忘了怎么写时来这里</p><h1>参数与格式索引</h1><p class="lead">这里集中给出写法和去向；用途、步骤、边界在对应教程只说明一次。尖括号或中文占位词表示需要替换，不要原样输入“数值／宏名”。</p><p>点击带下划线的写法查看教程，点击旁边的“复制”取得该条文字，不会跳转。多个写法分别复制，不包含分隔它们的“／”。示例参数仍需按自己的配置调整；自动复制受限时，可在弹出的文字框按Ctrl+C。</p></header>
+<section id="format-rules" data-search="语法 参数格式 英文括号 全角 半角 字符 ⏱ ⏲ » ✖ xN +">
+<h2>先检查符号和填写位置</h2><ul><li>命令名、大小写与特殊字符使用界面给出的名称。参数括号通常是英文<code>()</code>／<code>[]</code>／<code>{}</code>；逗号和等号按相应格式使用。</li><li><code>+</code>是同一步组合，<code>»</code>是步骤先后；<code>⏱50</code>是输出延时，<code>⏲500</code>是原始长按标识，<code>✖</code>是双击标识。它们不是可随意互换的相似字符。</li><li>名字引用必须实际存在，如Tab、宏、悬浮按钮及设备；<strong>格式通过不等于引用存在或输出有效</strong>。</li><li>不熟悉时，先在下拉列表选命令、填写界面参数，再核对生成内容，不同时叠加循环、强制前缀和设备后缀。</li></ul><p>发送状态前缀见<a href="#command-prefixes">↓、↑、↕等</a>；常见名称见<a href="#keynames">按键速查</a>。</p></section>
+<section id="format-text-run" data-search="SendText PasteText Run SetVolume SetMicVolume WorkingDir ShowOption Mute"><h2>文本、程序与音量</h2><table><thead><tr><th>写法示例（点击看说明）</th><th>填写位置与要点</th></tr></thead><tbody>
+<tr><td><a href="#command-text"><code>SendText(Hello)</code></a></td><td>映射；直接文本</td></tr>
+<tr><td><a href="#command-text"><code>PasteText(Hello)</code></a></td><td>映射；剪贴板粘贴，注意原剪贴板及模式</td></tr>
+<tr><td><a href="#command-run"><code>Run(notepad.exe)</code></a></td><td>映射；程序／参数、Wait、WorkingDir、ShowOption见教程</td></tr>
+<tr><td><a href="#command-volume"><code>SetVolume(50)／SetVolume🔊(+5)</code></a></td><td>映射；播放设备音量，通知符号紧接命令名</td></tr>
+<tr><td><a href="#command-volume"><code>SetMicVolume(Mute)／SetMicVolume🎤(-5)</code></a></td><td>映射；麦克风音量／静音</td></tr>
+</tbody></table></section>
+<section id="format-mouse" data-search="Mouse-L Mouse-R Mouse-M Mouse-X1 Mouse-X2 Mouse-Move :W :R :BG WindowPoint ScreenPoint"><h2>鼠标坐标与位置</h2><table><thead><tr><th>写法示例（点击看说明）</th><th>填写位置与要点</th></tr></thead><tbody>
+<tr><td><a href="#mouse-coordinates"><code>Mouse-L(100,200)</code></a></td><td>映射；屏幕坐标点击，R／M／X1／X2同类</td></tr>
+<tr><td><a href="#mouse-coordinates"><code>Mouse-L:W(100,200)</code></a></td><td>映射；目标窗口客户区坐标</td></tr>
+<tr><td><a href="#mouse-background"><code>Mouse-L:W:BG(100,200)</code></a></td><td>映射；后台PostMessage，依目标支持</td></tr>
+<tr><td><a href="#mouse-coordinates"><code>Mouse-Move(100,200)／Mouse-Move:W(100,200)</code></a></td><td>映射；屏幕／窗口移动</td></tr>
+<tr><td><a href="#mouse-coordinates"><code>Mouse-Move:R(10,-5)</code></a></td><td>映射；相对当前指针位移</td></tr>
+<tr><td><a href="#mouse-coordinates"><code>Mouse-PosSave／Mouse-PosRestore</code></a></td><td>映射；保存／还原指针位置</td></tr>
+<tr><td><a href="#mouse-picker"><code>Mouse-L_WindowPoint／Mouse-L_ScreenPoint</code></a></td><td>界面拾取辅助入口；最终坐标格式见教程</td></tr>
+</tbody></table></section>
+<section id="format-sequence" data-search="Repeat OnlyOnce KeySequenceBreak KeySequenceToggle KeySequencePause KeySequenceContinue Unlock"><h2>序列、循环与控制</h2><table><thead><tr><th>写法示例（点击看说明）</th><th>填写位置与要点</th></tr></thead><tbody>
+<tr><td><a href="#sequence-basics"><code>B⏱50»NONE⏱200»C⏱50</code></a></td><td>映射；按步骤发送及等待</td></tr>
+<tr><td><a href="#sequence-repeat"><code>Repeat{B⏱50»C⏱50}x3</code></a></td><td>映射；重复块，次数1～99999</td></tr>
+<tr><td><a href="#sequence-repeat"><code>OnlyOnce{B⏱50}x2»C⏱50</code></a></td><td>映射；循环首轮准备部分</td></tr>
+<tr><td><a href="#sequence-controls"><code>KeySequenceBreak／KeySequenceBreak(A)</code></a></td><td>映射；全部／指定原始键的序列</td></tr>
+<tr><td><a href="#sequence-controls"><code>KeySequenceToggle／KeySequencePause／KeySequenceContinue</code></a></td><td>映射；无参全部，可带(A)限定</td></tr>
+<tr><td><a href="#sequence-controls"><code>Unlock(A)／Unlock(A⏲500)／Unlock(A✖)</code></a></td><td>映射；完整原始键标识及触发后缀</td></tr>
+</tbody></table></section>
+<section id="format-names" data-search="SwitchTab SwitchTab💾 Macro UniversalMacro ShowFButton HideFButton VButton 标签 宏名"><h2>表名、宏与辅助按钮</h2><table><thead><tr><th>写法示例（点击看说明）</th><th>填写位置与要点</th></tr></thead><tbody>
+<tr><td><a href="#command-tabs"><code>SwitchTab(Tab2)／SwitchTab💾(Tab2)</code></a></td><td>映射；带💾记住表名，不等于完整保存</td></tr>
+<tr><td><a href="#macro-call"><code>Macro(练习)x2／UniversalMacro(公共练习)x2</code></a></td><td>映射；引用存在的宏，可指定重复次数</td></tr>
+<tr><td><a href="#floating-commands"><code>ShowFButton(A)／HideFButton(A)</code></a></td><td>映射；按原始键标识定位已存在按钮</td></tr>
+<tr><td><a href="#floating-commands"><code>ShowAllFButtons／HideAllFButtons</code></a></td><td>映射；当前表的按钮集合</td></tr>
+<tr><td><a href="#vbutton-panel"><code>ShowVButtonPanel／HideVButtonPanel</code></a></td><td>映射；显示／隐藏面板</td></tr>
+<tr><td><a href="#vbutton-panel"><code>VButton{跳跃}</code></a></td><td>原始；标签与长按／双击限制见教程</td></tr>
+</tbody></table></section>
+<section id="format-physical" data-search="Joy @玩家 A@0 Block-Keyboard⌨@0 GamepadTouchpadOn🎮@1"><h2>物理设备与触摸板</h2><table><thead><tr><th>写法示例（点击看说明）</th><th>填写位置与要点</th></tr></thead><tbody>
+<tr><td><a href="#interception-first"><code>A@0／Mouse-L@1</code></a></td><td>原始；键鼠设备区分，依赖多键鼠驱动</td></tr>
+<tr><td><a href="#gamepad-players"><code>Joy-Key1(A/×)@0／Joy-LS-Up@1</code></a></td><td>原始；物理玩家0～9，省略为不限定</td></tr>
+<tr><td><a href="#touchpad-switch"><code>GamepadTouchpadOn🎮@1</code></a></td><td>映射；On／Off／Toggle，可选通知及玩家编号</td></tr>
+<tr><td><a href="#command-fn-block"><code>Block-Keyboard⌨@0／Block-Mouse🖱@1</code></a></td><td>映射；按设备屏蔽，先了解风险</td></tr>
+</tbody></table></section>
+<section id="format-virtual" data-search="vJoy [push_level] Radius LT-Max RT-Max @编号 Move RX RY"><h2>虚拟手柄力度与目标</h2><table><thead><tr><th>写法示例（点击看说明）</th><th>填写位置与要点</th></tr></thead><tbody>
+<tr><td><a href="#virtual-targets"><code>vJoy-Key1(A/×)@1</code></a></td><td>映射；虚拟目标0～3，省略为0</td></tr>
+<tr><td><a href="#virtual-analog"><code>vJoy-LS-Up[150]@1／vJoy-Key12(RT)[100]</code></a></td><td>映射；支持的模拟量0～255，力度在设备后缀之前</td></tr>
+<tr><td><a href="#virtual-analog"><code>vJoy-LT-Max[150]／vJoy-RT-Max[150]</code></a></td><td>映射；扳机上限0～255</td></tr>
+<tr><td><a href="#virtual-analog"><code>vJoy-LS-Radius[150,U=100,R=200]</code></a></td><td>映射；半径及方向覆盖，RS同类</td></tr>
+<tr><td><a href="#virtual-move"><code>vJoy-RS-Move[X=-200,RY=-10]</code></a></td><td>映射；绝对／相对或混合，两轴值-255～255</td></tr>
+<tr><td><a href="#mouse-virtual-stick"><code>vJoy-Mouse2LS／vJoy-Mouse2RS</code></a></td><td>原始专用转换；目标0，不按普通键额外加@编号</td></tr>
+</tbody></table></section>
+<section id="format-forza" data-search="Forza vJoy-Key11(LT)_BRAKE vJoy-Key12(RT)_ACCEL INIT THR"><h2>专项自动扳机</h2><table><thead><tr><th>写法示例（点击看说明）</th><th>填写位置与要点</th></tr></thead><tbody>
+<tr><td><a href="#forza-keys"><code>vJoy-Key11(LT)_BRAKE／vJoy-Key12(RT)_ACCEL</code></a></td><td>映射；LT／RT及BRAKE／ACCEL可组合，依赖遥测</td></tr>
+<tr><td><a href="#forza-keys"><code>vJoy-Key12(RT)_ACCEL[INIT=100,THR=7]</code></a></td><td>映射；INIT整数0～255，THR为0.00001～1000、最多5位小数</td></tr>
+</tbody></table></section>
+</article>
+<article id="shortcuts" data-title="快捷键与操作速查"><header><p class="eyebrow">按操作位置查 · 不要混成全局热键</p><h1>快捷键与操作速查</h1><p class="lead">软件热键、表格编辑键、录制控制键和网页阅读键各有作用范围。输入框、单元格正在编辑或程序处于映射运行状态时，处理可能不同。</p></header>
+<section id="shortcut-safety" data-search="快捷键大全 L-Ctrl+F6 L-Ctrl+` 停止映射 显示切换 无法点击 F11 F12">
+<h2>先记住开始／停止与显示切换</h2><table><thead><tr><th>默认键</th><th>用途</th><th>注意</th></tr></thead><tbody><tr><td><code>L-Ctrl+F6</code></td><td>开始／停止映射</td><td>只用左Ctrl；同键复用，停止后别反复按。改过热键时以当前配置为准。</td></tr><tr><td><code>L-Ctrl+`</code></td><td>显示切换</td><td>反引号通常在数字1左侧；在“通用设定”核对实际热键。显示窗口不等于停止映射。</td></tr><tr><td><code>F11</code>／<code>F12</code></td><td>录制窗开始／停止录制</td><td>不是整个映射的开始／停止键。</td></tr></tbody></table><p>系统、其他软件或游戏可能占用热键；先在普通桌面练习。模态框应先正常确认／取消。<a href="#emergency">鼠标不能点击时的处理</a>不等于驱动故障恢复。</p></section>
+<section id="shortcut-table" data-search="Ctrl+S F5 Ctrl+N Ctrl+D Ctrl+C Ctrl+V Ctrl+Shift+V Ctrl+Up Ctrl+Down Ctrl+Home Ctrl+End Shift Enter Delete">
+<h2>主窗口与映射表</h2><table><thead><tr><th>操作</th><th>按键／方式</th><th>作用范围</th></tr></thead><tbody>
+<tr><td>保存配置</td><td>Ctrl+S</td><td>空闲状态；原始按键捕获框获得焦点时会避让录入。失败需看提示，不等于自动保存。</td></tr>
+<tr><td>刷新进程／设备信息</td><td>F5</td><td>主窗口空闲状态，不是重装驱动。</td></tr>
+<tr><td>新增空白Tab／复制当前Tab</td><td>Ctrl+N／Ctrl+D</td><td>主窗口空闲状态；在按键捕获区域可能作为录入。</td></tr>
+<tr><td>复制／粘贴映射</td><td>Ctrl+C／Ctrl+V</td><td>映射表已有选区与焦点；在普通输入框是文本剪贴板操作。</td></tr>
+<tr><td>使用相反插入方向粘贴</td><td>Ctrl+Shift+V</td><td>相对于当前插入模式，不固定等于“上方”或“下方”。</td></tr>
+<tr><td>上移／下移条目</td><td>Ctrl+Up／Ctrl+Down</td><td>在映射表选择条目后；筛选与共通追加限制见表格教程。</td></tr>
+<tr><td>移到顶部／底部</td><td>Ctrl+Home／Ctrl+End；Ctrl+Shift+Up／Down</td><td>在表格选择条目后；保存设定才长期保留。</td></tr>
+<tr><td>连续多选</td><td>Shift配合行选择／连续拖选</td><td>非连续条目可分批操作；先确认高亮范围。</td></tr>
+<tr><td>打开当前映射项／删除选中项</td><td>Enter／Delete</td><td>表格焦点下的可见有效选区；直接双击方式取决于通用高级设置。</td></tr>
+
+</tbody></table><p><a href="#tables">映射表完整操作</a>、<a href="#table-copy">复制与插入模式</a>、<a href="#table-order">排序与保存</a>。运行中或控件禁用时，不应当通过模拟按键强行触发编辑。</p></section>
+<section id="shortcut-editors" data-search="序列编辑 快捷键 宏列表 Ctrl+Z Ctrl+Y Ctrl+F Ctrl+Shift+F F2 Home End Backspace Space 取消选区">
+<h2>序列编辑与宏列表</h2><ul><li>序列表：Ctrl+Z撤销、Ctrl+Y恢复；正在编辑单元格时由文本编辑器处理，不能当作整张主映射表的全局撤销。</li><li>序列／宏表中的Ctrl+Up／Down调整位置，Ctrl+Home／End及Ctrl+Shift+Up／Down移到首尾；Home／End选择首尾，Delete删除，Enter载入当前条目，F2进入可编辑单元格。</li><li>这些表中，Backspace／Space在非单元格编辑状态可清除高亮；不是删除映射的通用快捷键。</li><li>序列表Ctrl+C复制，Ctrl+V粘贴；Ctrl+Shift+V反向插入。Ctrl+F使用复制列表执行插入，不是打开网页式搜索；Ctrl+Shift+F使用相反插入方向。</li><li>宏列表的同名更新、内存改动及保存仍遵守<a href="#macros">宏教程</a>，不要套用普通文本编辑器的全部习惯。</li></ul></section>
+<section id="shortcut-mouse" data-search="左Ctrl左键 左Alt左键 坐标拾取 Ctrl双击 进程名 悬浮按钮 Ctrl拖动 Alt拖动">
+<h2>鼠标操作与坐标采集</h2><ul><li>屏幕点采集：按住左Ctrl，再点鼠标左键；窗口点采集：左Alt＋左键，需要正确的目标窗口。先读<a href="#mouse-picker">拾取步骤及取消</a>，不要在真实游戏中盲试。</li><li>进程列表双击读取信息；Ctrl配合双击的区别见<a href="#window-process-list">进程列表</a>。</li><li>悬浮窗口的Ctrl拖动、悬浮按钮的Ctrl／Alt拖动有各自条件，见<a href="#floating-window">悬浮窗口</a>及<a href="#floating-buttons">悬浮按钮</a>，不能当作所有窗口通用操作。</li><li>物理手柄下拉列表展开并高亮某台设备时，F2可切换该设备陀螺仪启用状态；不会把F2变成全局录制键，设备也必须支持传感器。</li></ul></section>
+<section id="shortcut-manual" data-search="手册搜索 / Escape Esc 图片放大 Tab 浏览器 后退 打印 离线">
+<h2>这本手册怎么操作？</h2><p>按<code>/</code>聚焦搜索，输入功能、界面名称、常见别称或完整命令。点击结果跳转。输入框外的普通阅读状态下使用该入口；Esc可清空搜索或关闭图片查看器。Tab在链接和按钮间移动，Enter激活，图片查看器支持Esc关闭并回到打开它的按钮。</p><p>右下角“返回”回到上一次内部跳转前的阅读位置；没有上一处时按钮不可用，不会主动退到手册外。浏览器前进／后退也可用于手册历史。图片可点击查看原图，窄窗口先放大确认小字；阅读主题不改变软件截图。可用浏览器打印当前章节，完整离线查阅仍以HTML为准；外部工具和网站需要联网。</p></section></article>
+<article id="troubleshooting" data-title="常见问题与排错"><header><p class="eyebrow">从症状找到最短排查路径</p><h1>常见问题与排错</h1><p class="lead">先停止映射，保留当前配置与备份，再每次只改变一个条件。普通改键优先在空白记事本或测试工具中验证，不用安装驱动来排查所有问题。</p></header>
+<section id="faq-first" data-search="映射没用 不生效 按A还是A 发错键 反了 游戏无效 找不到原因 权限 无反应">
+<h2>没有按预期输出</h2><table><thead><tr><th>现象</th><th>先检查</th><th>继续阅读</th></tr></thead><tbody>
+<tr><td>按A想得到B，却没有效果</td><td>左边是A、右边是B；已添加到当前表、未禁用、确已开始。先英文输入状态在空白记事本试。</td><td><a href="#first-direction">核对映射方向</a></td></tr>
+<tr><td>只有游戏没反应，记事本正常</td><td>核对目标焦点、权限、实际匹配配置及发送方式；SendMessage与FakerInput各有条件，不保证任何游戏／反作弊环境都接受。</td><td><a href="#item-other-options">发送方式与限制</a></td></tr>
+<tr><td>A和B都出现</td><td>检查原始按键穿透；手柄还要考虑物理／虚拟双重输入，不能套用键鼠屏蔽。</td><td><a href="#double-input">手柄双重输入</a></td></tr>
+<tr><td>找不到新加的条目</td><td>核对当前配置、Tab、分类筛选和显示禁用行，不要先判断数据已删除。</td><td><a href="#table-filter-reset">恢复全部显示</a></td></tr>
+<tr><td>条目看不到但还在触发</td><td>分类筛选只改变可见行；真正不运行需禁用／删除条目或停止映射。</td><td><a href="#table-filter-boundaries">隐藏与禁用区别</a></td></tr>
+<tr><td>运行一会儿突然换表／换配置</td><td>检查自动前台匹配、Tab快捷键、SwitchTab命令与共通映射；先关闭复杂条件单独练习。</td><td><a href="#window-auto">自动匹配流程</a></td></tr>
+<tr><td>序列或宏没有执行</td><td>先查格式、真实宏名／作用域、发送时机、循环与暂停状态；格式通过不证明引用存在。</td><td><a href="#macro-call">检查宏调用</a></td></tr>
+</tbody></table></section><section id="faq-save" data-search="没保存 数据丢失 映射消失 保存失败 保存取消 切换配置丢失 自动匹配丢失 INI损坏 备份">
+<h2>保存、切换与配置丢失</h2><div class="callout warning"><strong>先停止继续覆盖，保留现有INI和备份。</strong><p>添加、映射更新、开始映射都不代表已经保存。切换配置或自动匹配载入另一配置后，未保存草稿可能已被替换，切回来不会自动找回。</p></div><ul><li>仍停在编辑配置：确认内容正确，点击“保存设定”，核对取消／失败提示及未保存标记。</li><li>保存失败：检查目标文件可写、磁盘空间、占用或同步软件限制；取消或失败不能当作已经落盘，不要靠反复点开始按钮解决。</li><li>已经丢失：从最近的完整配置备份恢复；只有单表导出时，按单表方式导入核对，不假定它也包含通用设定、宏及外部图片。</li><li>怀疑INI异常：先复制原文件，不直接删除、覆盖或用来源不明的整份INI替换；恢复前核对版本和配置名称。软件不提供找回所有未保存草稿的保证。</li></ul><p><a href="#save-before-switch">保存为什么重要</a> · <a href="#profile-backup">正确备份</a> · <a href="#profile-import">导入与覆盖</a></p></section>
+<section id="faq-stop" data-search="鼠标不能点击 左键失效 停不下来 松手仍按住 连发 锁定 隐藏托盘 窗口找不到">
+<h2>无法点击、松手还在发送或窗口看不到</h2><ol class="steps"><li>软件仍可正常接收键盘时，用当前停止快捷键；默认是左Ctrl＋F6。确认停止后不要反复按。</li><li>停止后检查是否映射了Mouse-L，是否启用了锁定、连发、保持最后按键、强制按下前缀或大段循环。先恢复简单一条A → B。</li><li>窗口隐藏不等于已停止。使用当前“显示切换”热键或托盘显示窗口，正常处理已有模态框；别同时启动许多副本。</li><li>若键鼠在软件退出后或系统启动阶段也完全无响应，转到下方驱动风险，而不是继续依赖软件热键。</li></ol><p><a href="#emergency">应急停止</a> · <a href="#lock-options">锁定</a> · <a href="#command-prefixes">释放配对</a> · <a href="#startup-tray">托盘与显示切换</a></p></section>
+<section id="faq-devices" data-search="设备编号改变 多键鼠失效 手柄没输入 两份输入 虚拟手柄不存在 陀螺仪不动 键鼠全部失效 蓝屏 驱动">
+<h2>设备与驱动相关问题</h2><ul><li>多键鼠重连后映射到错误设备：只查看设备列表，重新核对后缀与设备描述；固定后面板USB接口能减少变化，不能保证编号永久不变。不要禁用唯一输入设备。</li><li>物理手柄无输入：先检查Windows／测试工具、连接与SDL2支持，再看玩家编号；不为普通手柄读取安装Interception。</li><li>虚拟手柄不存在：先核对ViGEmBus支持条件、虚拟设备启用状态及目标编号；创建虚拟输出不等于隐藏物理输入。</li><li>陀螺仪／触摸板不工作：设备与连接协议要报告对应数据，再检查专用原始项、设备启用与Hold／Move或触摸板开关。</li><li>游戏收到两份输入：看<a href="#double-input">物理输入隐藏与白名单</a>，不要再叠加反向映射试图抵消。</li></ul><div class="callout danger"><strong>Interception安装后曾出现键盘、鼠标全部失效，安全模式也未恢复、最终重装Windows的严重案例。</strong><p>这不是软件停止键能保证解决的故障。不要在唯一工作环境中反复安装／卸载或禁用输入设备；应依据事先准备的系统恢复方案处理，无法操作时求助能提供恢复条件的人。手册不保证重启、卸载或电源设置一定修复。</p><p><a href="#interception-risk">先阅读完整风险</a>及<a href="#interception-power">电源兼容建议</a>。</p></div></section>
+<section id="faq-report" data-search="反馈问题 求助 Bug 复现 日志 隐私 截图 版本 Qt5 Qt6 Windows">
+<h2>求助前准备什么？</h2><p>提供软件版本与Qt5／Qt6／x86／x64、Windows版本、最小复现步骤、当前配置／Tab、实际按键、预期与实际结果。说明是否仅游戏内失败、是否开启自动匹配、相关驱动与设备条件。必要时附一条已去除隐私的映射码或最小示例。</p><p>截图和日志先检查进程窗口标题、路径、设备信息、聊天及文本发送内容；不要公开整份含隐私的配置。普通Release用于日常使用与性能观察，diagnostic日志只作开发调查，不能用写盘版本代表普通版性能。</p></section></article>
 <article id="glossary" data-title="术语速查">
-<header><p class="eyebrow">随时查阅 · 把名字变成操作</p><h1>术语速查</h1><p class="lead">先看一句话解释，再回到对应教程。这里区分容易混淆的概念，完整按键与参数清单将在全册补齐。</p></header>
+<header><p class="eyebrow">随时查阅 · 把名字变成操作</p><h1>术语速查</h1><p class="lead">先看一句话解释，再回到对应教程。这里区分容易混淆的概念，完整名称见<a href="#keynames">按键速查</a>，语法见<a href="#parameters">参数索引</a>。</p></header>
 <section id="terms-input" data-search="原始按键 触发按键 映射按键 输出 透传 穿透 屏蔽 抬起映射 组合键 序列 长按 双击">
 <h2>输入、触发与输出</h2><table><thead><tr><th>名称</th><th>通俗解释</th></tr></thead><tbody>
 <tr id="term-original"><td>原始按键／触发按键</td><td>自己实际按下、用来触发映射的输入。A → B中的A。<a href="#first-direction">看方向示例</a></td></tr>
 <tr id="term-mapped"><td>映射按键／输出</td><td>希望目标软件收到的内容。A → B中的B。</td></tr>
+<tr><td>特殊原始按键</td><td>事件、按钮或转换入口，不一定是实体键；例如开始映射事件和VButton。<a href="#keys-special">查看左右侧分类</a></td></tr>
 <tr><td>抬起映射</td><td>按指定发送时机，在原始输入释放阶段发送的内容；不是“释放物理键”的同义词。<a href="#timing-options">查看发送时机</a></td></tr>
 <tr><td>组合键</td><td>同一步共同按下的多个键，以“+”连接，如L-Ctrl+C。</td></tr>
 <tr><td>按键序列</td><td>按先后顺序执行多个步骤，以“»”分隔；可包含等待等步骤。<a href="#add-combination">与组合键对比</a></td></tr>
@@ -834,6 +1058,8 @@
 <tr><td>原始按键穿透／透传</td><td>执行映射的同时保留原始输入；目标可能既收到A又收到B。</td></tr>
 <tr><td>屏蔽／拦截</td><td>阻止原始输入继续按通常路径到达目标；手柄检测不具备同样的直接屏蔽能力。<a href="#gamepad-boundary">查看手柄限制</a></td></tr>
 <tr><td>发送时机</td><td>决定在输入的按下、释放等阶段怎样发送。不是触发类型。</td></tr>
+<tr><td>发送方式／后端</td><td>通过SendInput、SendMessage或FakerInput等路径发送；与“按下／抬起何时发”是不同维度，取决于目标支持及驱动条件。<a href="#item-other-options">查看边界</a></td></tr>
+<tr><td>映射开始／停止快捷键</td><td>控制整个映射流程的热键，默认左Ctrl＋F6；不要与录制开始／停止或Tab切换热键混淆。<a href="#shortcut-safety">查看默认键</a></td></tr>
 <tr><td>延时／保持时间</td><td>发送步骤的等待／保持节奏；具体释放取决于发送设置。用NONE⏱200可表达纯等待。<a href="#sequence-basics">区分延时与触发长按</a></td></tr>
 <tr><td>等待／NONE</td><td>序列中可用空步骤表达等待；NONE不是要发送的实体键。</td></tr>
 </tbody></table></section>
@@ -866,9 +1092,21 @@
 </article>
 
 <article id="roadmap" data-title="全册目录与覆盖范围">
-<header><p class="eyebrow">样章状态 · 阅读边界</p><h1>这本手册已完成哪些内容？</h1><p class="lead">样章形式已确认；本版已提供日常映射、配置与窗口匹配，并补充录制、序列、宏、鼠标坐标、界面辅助及设备／驱动教程，按六阶段逐批交付Review。未展开的章节仍标记规划中。</p></header>
-<section id="whole-outline" data-search="全部功能 目录 未完成 规划中 全册 覆盖范围">
-<h2>完整拟定目录</h2><table><thead><tr><th>顺序</th><th>功能分组</th><th>本版状态</th></tr></thead><tbody><tr><td>01</td><td><a href="#quickstart">快速上手与安全练习</a></td><td>完整样章</td></tr><tr><td>02</td><td><a href="#add-mapping">添加映射</a>、<a href="#item-settings">映射项设定</a></td><td>完整样章</td></tr><tr><td>03</td><td><a href="#tables">映射表、筛选、排序、Tab、共通映射</a></td><td>阶段1已提供</td></tr><tr><td>04</td><td><a href="#profiles">配置切换、保存、备份及导入／导出</a></td><td>阶段1已提供</td></tr><tr><td>05</td><td><a href="#windows">进程、窗口信息、自动匹配</a>与<a href="#regex">正则速查</a></td><td>阶段2已提供；忽略规则为高阶技巧</td></tr><tr><td>06</td><td><a href="#sequences">录制／序列</a>、<a href="#macros">宏</a>、<a href="#commands">文本与常用命令</a></td><td>阶段3已提供；悬浮及设备参数在所属教程说明，完整统一索引待阶段6</td></tr><tr><td>07</td><td><a href="#mouse">鼠标点击／移动／坐标拾取</a></td><td>阶段3已提供</td></tr><tr><td>08</td><td><a href="#gamepad">物理输入</a>、<a href="#virtual-gamepad">虚拟输出</a>、<a href="#motion">陀螺仪与触摸板</a></td><td>阶段5已提供；真实硬件效果未因此获得验收</td></tr><tr><td>09</td><td><a href="#interface">界面／启动／托盘</a>、<a href="#advanced">高级设定／提示</a>、<a href="#overlays">准星／悬浮／面板</a></td><td>阶段4已提供</td></tr><tr><td>10</td><td><a href="#drivers">驱动选择</a>与<a href="#interception">多键鼠</a></td><td>阶段5已提供；严重风险始终先于步骤</td></tr><tr><td>11</td><td><a href="#forza">极限竞速专项</a></td><td>阶段5已提供；未运行游戏遥测</td></tr><tr><td>12</td><td>排错、快捷键、按键名称与参数速查</td><td><a href="#emergency">应急停止</a>、<a href="#glossary">术语速查</a>已提供；其余规划中</td></tr></tbody></table></section>
-<section id="sample-limits" data-search="截图 版本 Qt5 Win7 浏览器 Firefox 覆盖 限制 离线">
-<h2>版本、图片与未验证范围</h2><ul><li>手册版本：v{{MANUAL_VERSION}}（{{MANUAL_STATUS}}）。内容核对基线：软件{{SOFTWARE_BASELINE}}；核对日期：{{REVIEW_DATE}}。手册独立更新，不代表已核对后续软件版本。图片使用Qt6中文深色界面、软件默认比例、系统2560×1440／100%。部分未受影响的局部配图沿用已核对的20261016版本；主窗口、映射项及新章配图已更新。Qt5及不同系统外观可能略有差异。</li><li>截图使用独立配置和私有Windows桌面的真实窗口，未使用真实工作文档或游戏画面。专用截图副本为普通权限UI用途，不代表管理员或驱动行为已验证。</li><li>样章核对了配置录入、编辑和专用文件保存；没有为制作手册新增实际游戏、驱动安装／卸载、硬件输入或系统级映射验收。练习中的运行结果属于操作预期。</li><li>手册正文和图片离线可用；外部资料、测试网页及QQ群文件获取仍需要对应服务。</li><li>Win7、旧浏览器、Firefox和第三方测试工具／设备未因此获得兼容验收通过。没有条件实测的项目不作通用保证。</li></ul><p class="small">本版更新：{{REVIEW_DATE}}。操作名称以当前软件实际界面为准；版本变化后需重新核对受影响说明。</p></section>
-</article>
+<header><p class="eyebrow">按功能查找 · 随时回到需要的说明</p><h1>全册目录与覆盖范围</h1><p class="lead">从最常用的添加映射、调整条目和保存开始，再查窗口匹配、序列、辅助功能与设备。专项功能后置；遇到问题可以直接打开排错或速查。</p></header>
+<section id="whole-outline" data-search="全部功能 目录 全册 覆盖范围 完整手册 索引">
+<h2>按功能查找</h2><table><thead><tr><th>顺序</th><th>功能分组</th><th>快速入口</th></tr></thead><tbody>
+<tr><td>01</td><td>快速上手与安全练习</td><td><a href="#quickstart">第一条A → B</a> · <a href="#emergency">应急停止</a> · <a href="#tools">新手测试工具</a></td></tr>
+<tr><td>02</td><td>添加与编辑</td><td><a href="#add-mapping">添加映射</a> · <a href="#item-settings">映射项、连发、锁定与发送</a></td></tr>
+<tr><td>03</td><td>整理映射表</td><td><a href="#tables">选择、复制、排序、Tab与共通</a> · <a href="#table-filter">分类筛选</a></td></tr>
+<tr><td>04</td><td>配置与保存</td><td><a href="#save-before-switch">切换前保存</a> · <a href="#profiles">新建、保存、备份及导入导出</a></td></tr>
+<tr><td>05</td><td>限定应用窗口</td><td><a href="#windows">进程／窗口与自动匹配</a> · <a href="#regex">正则速查</a> · <a href="#window-ignore">高阶忽略规则</a></td></tr>
+<tr><td>06</td><td>进阶映射</td><td><a href="#sequences">录制与序列</a> · <a href="#macros">宏</a> · <a href="#commands">文本、特殊控制与系统命令</a></td></tr>
+<tr><td>07</td><td>鼠标与坐标</td><td><a href="#mouse">点击、移动、拾取与后台发送</a></td></tr>
+<tr><td>08</td><td>界面与辅助</td><td><a href="#interface">主题、缩放、托盘与显示切换</a> · <a href="#advanced">高级设定与提示</a> · <a href="#overlays">准星、悬浮与面板</a></td></tr>
+<tr><td>09</td><td>手柄与传感器</td><td><a href="#gamepad">物理输入</a> · <a href="#virtual-gamepad">虚拟输出</a> · <a href="#motion">陀螺仪与触摸板</a></td></tr>
+<tr><td>10</td><td>驱动与多键鼠</td><td><a href="#drivers">选择与安装入口</a> · <a href="#interception">Interception、设备编号及严重风险</a></td></tr>
+<tr><td>11</td><td>专项功能</td><td><a href="#forza">极限竞速遥测与自动扳机</a></td></tr>
+<tr><td>12</td><td>排错与速查</td><td><a href="#troubleshooting">症状排查</a> · <a href="#shortcuts">快捷键</a> · <a href="#keynames">按键名称</a> · <a href="#parameters">参数格式</a> · <a href="#glossary">术语</a></td></tr>
+</tbody></table><p>常用名词、按键名称、参数及正则说明已按用途整合到本册。可通过搜索或上面的分类入口查阅，无需另找按键、参数或正则说明文档。</p></section>
+<section id="sample-limits" data-search="截图 版本 Qt5 Qt6 Win7 Win10 Win11 浏览器 Firefox 覆盖 限制 离线 发布 打包">
+<h2>版本与阅读说明</h2><ul><li>手册版本：v{{MANUAL_VERSION}}。说明对应软件{{SOFTWARE_BASELINE}}；更新日期：{{REVIEW_DATE}}。手册与软件分别维护版本号。</li><li>配图以Qt6中文深色界面为例。Qt5、其他主题或不同Windows版本的外观可能略有不同；操作名称以实际界面为准。图中的配置名称、路径和设备编号是示例，请按自己的环境填写。</li><li>双击本HTML即可离线查阅正文、图片、目录和搜索，无需安装额外运行环境。外部资料、测试网页及QQ群文件需要联网。</li><li>驱动与外部工具各有系统和版本要求，安装前请查阅对应说明。软件支持某个Windows版本，不代表所有配套驱动也支持；不同游戏对模拟输入的支持也可能不同。</li></ul></section></article>

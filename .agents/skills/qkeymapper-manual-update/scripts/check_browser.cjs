@@ -39,6 +39,8 @@ async function run(opt) {
       page.on('pageerror', e => errors.push(e.message));
       page.on('request', r => { if (!/^(file:|data:)/.test(r.url())) external.push(r.url()); });
       await page.goto(pathToFileURL(file).href);
+      const back = page.locator('#reader-back');
+      if (await back.count()) assert(await back.isDisabled(), 'A direct open must not go outside the manual');
       for (const theme of ['dark', 'light']) {
         await page.locator(`[data-theme-choice="${theme}"]`).click();
         assert.strictEqual(await page.locator('html').getAttribute('data-theme'), theme);
@@ -77,9 +79,35 @@ async function run(opt) {
         assert(await page.locator('#lightbox').isHidden());
         imageChecked = true;
       }
+      let copyChecked = false;
+      const copy = page.locator('article:visible .copy-code').first();
+      if (await copy.count()) {
+        const expected = (await copy.getAttribute('aria-label')).slice(3), hash = await page.evaluate(() => location.hash);
+        // Keep the user's clipboard unchanged; verify the requested payload instead.
+        await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {configurable: true, value: {writeText(value) { window.manualCopyCheck = value; return Promise.resolve(); }}}));
+        await copy.click();
+        await page.waitForFunction(value => window.manualCopyCheck === value, expected);
+        assert.strictEqual(await page.evaluate(() => location.hash), hash, 'Copy must not navigate');
+        copyChecked = true;
+      }
+      let backChecked = false;
+      if (await back.count()) {
+        const link = page.locator('article:visible a[href^="#"]').first();
+        if (await link.count()) {
+          await link.scrollIntoViewIfNeeded();
+          const origin = await page.evaluate(() => ({hash: location.hash, y: scrollY}));
+          if (await link.getAttribute('href') !== origin.hash) {
+            await link.click();
+            await page.waitForFunction(hash => location.hash !== hash, origin.hash);
+            await back.click();
+            await page.waitForFunction(o => location.hash === o.hash && Math.abs(scrollY - o.y) < 3, origin);
+            backChecked = true;
+          }
+        }
+      }
       assert.deepStrictEqual(errors, []);
       assert.deepStrictEqual(external, []);
-      reports.push({channel, browser: browser.version(), chapters: opt.chapters, queries: opt.queries, imageChecked, errors, external});
+      reports.push({channel, browser: browser.version(), chapters: opt.chapters, queries: opt.queries, imageChecked, copyChecked, backChecked, errors, external});
       await context.close();
     } finally { await browser.close(); }
   }

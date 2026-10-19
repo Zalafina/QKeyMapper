@@ -14,7 +14,9 @@ python readme/manual/build.py
 node "$skill/scripts/check_browser.cjs" --chapters quickstart,gamepad --query 原始按键 --query 双重输入
 ```
 
-`--chapters`接受逗号分隔的article／section ID，`--query`可重复。检查只在忽略目录生成独立HTML副本、结果和页面截图；成功不等于所有搜索结果语义正确，仍需审阅对应结果及截图。脚本检查两种阅读主题、PNG解码、离线资源、窄窗口和首章图片放大／Escape；不取代按改动追加的键盘、主题存储或历史导航检查。
+`--chapters`接受逗号分隔的article／section ID，`--query`可重复。检查只在忽略目录生成独立HTML副本、结果和页面截图；成功不等于所有搜索结果语义正确，仍需审阅对应结果及截图。脚本检查两种阅读主题、PNG解码、离线资源、窄窗口、首章图片放大／Escape，以及存在“返回”按钮时的直接打开边界和代表链接返回位置；不取代按改动追加的键盘、主题存储或连续历史导航检查。搜索按article直接子section索引，预期结果应核对section ID，而不是文章ID。
+
+首个被检查章节有复制按钮时，还会用隔离的剪贴板接口替身检查请求文字及“不跳转”，不读取／改写系统剪贴板。这不证明所有浏览器权限环境均能自动写剪贴板；修改复制功能时另补拒绝／缺失API的手动回退、并列示例和Unicode名称。
 
 ## 构建和启动观察助手
 

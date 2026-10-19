@@ -24,7 +24,8 @@
     <span>阅读主题</span><button type="button" data-theme-choice="dark" aria-pressed="true">深色</button><button type="button" data-theme-choice="light" aria-pressed="false">浅色</button>
   </div>
   <label class="search-label" for="search">查找功能或问题</label>
-  <div class="search-box"><input id="search" type="search" autocomplete="off" placeholder="试试：鼠标不能点击"><kbd>/</kbd></div>
+  <div class="search-box"><input id="search" type="search" autocomplete="off" placeholder="试试：鼠标不能点击" aria-describedby="search-shortcut"></div>
+  <p id="search-shortcut" class="search-hint">快捷键：按 <kbd>/</kbd> 聚焦搜索</p>
   <div class="quick-nav" aria-label="常用查阅入口"><a href="#emergency">应急停止</a><a href="#glossary">术语速查</a><a href="#tools">新手练习</a></div>
   <div id="search-status" class="sr-only" role="status" aria-live="polite"></div>
   <div id="search-results" hidden></div>
@@ -56,18 +57,24 @@
     <a href="#interception"><span>19</span>多键鼠与Interception</a>
     <p class="nav-heading">专项功能</p>
     <a href="#forza"><span>20</span>极限竞速专项</a>
+    <p class="nav-heading">排错与速查</p>
+    <a href="#troubleshooting"><span>21</span>常见问题与排错</a>
+    <a href="#shortcuts"><span>22</span>快捷键与操作</a>
+    <a href="#keynames"><span>23</span>按键名称速查</a>
+    <a href="#parameters"><span>24</span>参数与格式索引</a>
     <p class="nav-heading">随时查阅</p>
     <a href="#interception-risk">多键鼠 · 严重风险</a>
     <a href="#gamepad-boundary">手柄 · 能力边界</a>
     <a href="#roadmap">全册目录与覆盖范围</a>
   </nav>
-  <p class="sidebar-note">离线可读 · 无需安装<br>图片可点击放大<br>本版编写中，部分章节待补。</p>
+  <p class="sidebar-note">离线可读 · 无需安装<br>图片可点击放大</p>
 </aside>
 <main id="content" tabindex="-1">
-  <div class="topline"><span id="location">快速上手</span><a href="#emergency" class="stop-link">停止映射：左 Ctrl + F6 <small>默认</small></a></div>
+  <div class="topline"><button id="reader-back" class="reader-back" type="button" disabled title="暂无上一处阅读位置" aria-label="返回上一处阅读位置">← 返回</button><span id="location">快速上手</span><a href="#emergency" class="stop-link">停止映射：左 Ctrl + F6 <small>默认</small></a></div>
   <div class="reader">{{CONTENTS}}</div>
   <footer>QKeyMapper 中文使用手册 · v{{MANUAL_VERSION}} {{MANUAL_STATUS}} <a href="#roadmap">查看覆盖与限制</a></footer>
 </main>
+<div id="copy-status" class="sr-only" role="status" aria-live="polite"></div>
 <div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="查看界面原图">
   <div class="lightbox-toolbar"><span id="image-title"></span><button id="image-fit" type="button">原尺寸</button><button id="image-close" type="button">关闭 <kbd>Esc</kbd></button></div>
   <div class="lightbox-viewport"><img id="image-full" alt=""></div>

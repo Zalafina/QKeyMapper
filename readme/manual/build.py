@@ -6,8 +6,8 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parent
-MANUAL_VERSION = '0.7'
-MANUAL_STATUS = '编写中'
+MANUAL_VERSION = '1.0'
+MANUAL_STATUS = '正式版'
 SOFTWARE_BASELINE = 'v1.5.0.20261018'
 REVIEW_DATE = '2026-10-19'
 

@@ -6,6 +6,27 @@
   var full = document.getElementById('image-full'), viewport = lightbox.querySelector('.lightbox-viewport');
   var closeButton = document.getElementById('image-close'), fitButton = document.getElementById('image-fit');
   var previousFocus = null, index = [], timer;
+  var backButton = document.getElementById('reader-back'), depth = 0, routed = false, scrollTimer;
+  var historyReady = !!(window.history && history.replaceState && history.back);
+  function readingPosition() {
+    var state = historyReady ? history.state : null;
+    return state && state.manualPath === location.pathname && state.hash === location.hash &&
+      typeof state.depth === 'number' && state.depth >= 0 && isFinite(state.depth) &&
+      typeof state.y === 'number' && state.y >= 0 && isFinite(state.y) ? state : null;
+  }
+  function updateBack() {
+    backButton.disabled = !historyReady || depth === 0;
+    backButton.title = !historyReady ? '浏览器限制手册历史，可使用浏览器返回' : (backButton.disabled ? '暂无上一处阅读位置' : '返回跳转前的阅读位置');
+  }
+  function rememberPosition() {
+    clearTimeout(scrollTimer);
+    if (historyReady) {
+      try { history.replaceState({manualPath: location.pathname, hash: location.hash, depth: depth, y: window.pageYOffset || 0}, '', location.href); }
+      catch (e) { historyReady = false; }
+    }
+    updateBack();
+  }
+  try { if (historyReady && 'scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) { /* Older browsers may manage restoration themselves. */ }
   var themeButtons = document.querySelectorAll('[data-theme-choice]');
   function showTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
@@ -24,8 +45,11 @@
     for (i = 0; i < images.length; i++) if (!images[i].getAttribute('src')) images[i].setAttribute('src', images[i].getAttribute('data-src'));
   }
   function route() {
+    clearTimeout(scrollTimer);
+    var saved = readingPosition();
+    depth = saved ? saved.depth : (routed ? depth + 1 : 0);
     var id; try { id = decodeURIComponent(location.hash.slice(1)); } catch (e) { id = ''; }
-    if (id === 'content') { document.getElementById('content').focus(); return; }
+    if (id === 'content') { document.getElementById('content').focus(); id = 'quickstart'; }
     var target = document.getElementById(id || 'quickstart'), article = target, i;
     while (article && article.tagName !== 'ARTICLE') article = article.parentNode;
     if (!article) { article = document.getElementById('quickstart'); target = article; }
@@ -35,7 +59,10 @@
     document.title = article.getAttribute('data-title') + ' · QKeyMapper 使用手册';
     var links = document.querySelectorAll('.sidebar a');
     for (i = 0; i < links.length; i++) { if (links[i].getAttribute('href') === '#' + article.id) links[i].setAttribute('aria-current', 'page'); else links[i].removeAttribute('aria-current'); }
-    if (target !== article) target.scrollIntoView(); else window.scrollTo(0, 0);
+    if (saved) window.scrollTo(0, saved.y);
+    else if (target !== article) target.scrollIntoView(); else window.scrollTo(0, 0);
+    routed = true;
+    rememberPosition();
   }
   var sections = document.querySelectorAll('article > section'), i;
   for (i = 0; i < sections.length; i++) {
@@ -87,6 +114,44 @@
     if ((key === '/' || key === 191) && !event.ctrlKey && !event.altKey && !event.metaKey && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) {event.preventDefault(); search.focus();}
   });
   window.addEventListener('hashchange', route);
+  window.addEventListener('popstate', route);
+  document.addEventListener('click', function (event) {
+    var node = event.target;
+    while (node && node.tagName !== 'A') node = node.parentNode;
+    if (node && node.getAttribute('href') === '#content') { event.preventDefault(); document.getElementById('content').focus(); return; }
+    if (node && (node.getAttribute('href') || '').charAt(0) === '#' && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) rememberPosition();
+  }, true);
+  window.addEventListener('scroll', function () { clearTimeout(scrollTimer); scrollTimer = setTimeout(rememberPosition, 150); });
+  backButton.addEventListener('click', function () { if (!backButton.disabled) { rememberPosition(); history.back(); } });
+  function addCopy(link, value, destination) {
+    var entry = document.createElement('span'), button = document.createElement('button');
+    var name = link.cloneNode(false), code = document.createElement('code');
+    entry.className = 'copy-entry'; code.textContent = value; name.appendChild(code); entry.appendChild(name);
+    button.type = 'button'; button.className = 'copy-code'; button.textContent = '复制';
+    button.setAttribute('aria-label', '复制 ' + value); button.title = '只复制文字，不跳转';
+    button.addEventListener('click', function () {
+      function manualCopy() { window.prompt('请复制下面的文字（Ctrl+C），然后关闭：', value); }
+      function copied() {
+        button.textContent = '已复制'; document.getElementById('copy-status').textContent = '已复制：' + value;
+        setTimeout(function () { button.textContent = '复制'; }, 1500);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try { navigator.clipboard.writeText(value).then(copied, manualCopy); } catch (e) { manualCopy(); }
+      } else manualCopy();
+    });
+    entry.appendChild(button); destination.appendChild(entry);
+  }
+  var copyLinks = document.querySelectorAll('#keynames a, #parameters table a');
+  for (var c = 0; c < copyLinks.length; c++) {
+    var link = copyLinks[c];
+    if (link.children.length !== 1 || link.firstElementChild.tagName !== 'CODE') continue;
+    var values = text(link.firstElementChild).split('／'), fragment = document.createDocumentFragment();
+    for (var v = 0; v < values.length; v++) {
+      if (v) fragment.appendChild(document.createTextNode('／'));
+      addCopy(link, values[v], fragment);
+    }
+    link.parentNode.replaceChild(fragment, link);
+  }
   window.addEventListener('beforeprint', function () { for (var j = 0; j < articles.length; j++) loadImages(articles[j]); });
   route();
 }());
