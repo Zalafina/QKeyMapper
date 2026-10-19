@@ -10,12 +10,18 @@
 | `F:\work\code\mygit_hub\release\temp\release_packages` | 日常运行位置，四个文件放在这里，与三个配套目录并列；双击这里的 BAT |
 | 各仓库的 `out`，以及旧 `out\release-script-development` | 可重新生成的构建/开发临时目录，不作为脚本长期保存位置；清理后不影响正式脚本的保存 |
 
-仓库中的副本用于维护和备份；其目录没有打包所需的三个配套目录，不能直接作为正式 Release 运行目录。修改仓库副本后，先提交并推送源码，再把上述四个文件同步到运行位置。示例：在仓库根目录执行：
+仓库中的副本用于维护和备份；其目录没有打包所需的三个配套目录，不能直接作为正式 Release 运行目录。修改仓库副本并通过自检后，先备份运行目录中的四个旧文件，再将上述四个文件同步到运行位置并逐文件核对。同步本身不要求先推送，但正式运行前仍需提交并推送源码、清理未提交改动；同步脚本不会绕过仓库状态检查。示例：在仓库根目录执行：
 
 ```powershell
 $releaseRuntime = 'F:\work\code\mygit_hub\release\temp\release_packages'
+$scriptBackup = Join-Path $releaseRuntime ('script_backups/' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
+New-Item -ItemType Directory -Path $scriptBackup -ErrorAction Stop | Out-Null
 foreach ($name in @('build_release.bat', 'build_release.ps1', 'test_build_release.ps1', 'Release使用说明.md')) {
-    Copy-Item -LiteralPath (Join-Path '.\scripts\release' $name) -Destination (Join-Path $releaseRuntime $name) -Force
+    $sourceScript = Join-Path '.\scripts\release' $name
+    $runtimeScript = Join-Path $releaseRuntime $name
+    Copy-Item -LiteralPath $runtimeScript -Destination (Join-Path $scriptBackup $name) -ErrorAction Stop
+    Copy-Item -LiteralPath $sourceScript -Destination $runtimeScript -Force -ErrorAction Stop
+    if ((Get-FileHash -LiteralPath $sourceScript).Hash -ne (Get-FileHash -LiteralPath $runtimeScript).Hash) { throw "脚本同步不一致：$name" }
 }
 ```
 
@@ -64,12 +70,13 @@ pwsh -NoProfile -File .\build_release.ps1
 
 - 全部仓库必须干净、位于 `master`、使用相同的 `origin`。暂存、未暂存、未忽略的未跟踪文件都会阻止运行。无法可靠检查 Git 状态时也中止。
 - 分别执行 `git pull --ff-only origin master`；拒绝自动合并。随后要求三个 HEAD 一致且等于各自的 `origin/master`，防止发布本地领先提交或不同源码。
+- 拉取并确认源码一致后、构建前，检查三个仓库各自的 `readme\QKeyMapper使用手册.html`；缺少则中止。拉取前不要求旧仓库已经具有新手册，避免阻止正常更新。
 - 版本自动读取拉取后 `QKeyMapper\QKeyMapper.rc` 的 `ProductVersion`，例如 `v1.5.0.20261016`，不再修改旧 BAT 中的版本。版本的八位日期必须有效。
 - 每个仓库均在 **`out\release_package_build`** 完整重建。每次删除并重建这个固定目录，包括 CrashReporter 中间产物，不复用上次的对象文件。原 QtCreator 构建目录不变。
 - 检查命令退出码、构建警告、主程序版本、两个 EXE 的架构及 EXE/PDB 配对。普通 Release 不启用诊断或 ASan。仅接受官方 Qt 5.15.2 的 `msvc2019_64` 和 `msvc2019` 套件中 `qtmain.lib(qtmain_win.obj)` 缺失厂商 PDB 的 LNK4099 精确例外；x64 沿用项目既有授权，x86 为用户于 2026-10-16 对本脚本明确批准的扩展。仍核对实际链接库路径，保留全部原始诊断，其余警告阻止发布。
 - 构建后和发布前再次检查源码，拒绝运行期间被修改的源码。
 
-`-CheckOnly` 只检查本地已有的远端跟踪信息，不代表已经获取远端最新提交。正常运行会实际联网拉取；遇到认证或网络错误就中止。
+`-CheckOnly` 只检查本地已有的远端跟踪信息及手册文件，不代表已经获取远端最新提交；本地旧仓库没有手册时会报告缺少文件，不会联网补齐。正常运行会实际联网拉取；遇到认证或网络错误就中止。
 
 ## 配套目录与打包内容
 
@@ -79,11 +86,13 @@ pwsh -NoProfile -File .\build_release.ps1
 
 - 覆盖本次 `QKeyMapper.exe` 和 `QKeyMapperCrashReporter.exe`。
 - 完整替换 `utils\script`，同步 `utils\readme.txt`，防止旧 AHK 脚本残留。
-- 从对应源码仓库更新 `QKeyMapper按键名称说明.pdf` 和 `QKeyMapper映射键参数速查表.pdf`。
+- 从对应源码仓库的 `readme\QKeyMapper使用手册.html` 更新包根目录同名离线手册；直接使用已提交的发布HTML，不在Release时运行手册生成器。
+- 从对应源码仓库的 `QKeyMapper_Keyname.pdf` 更新并保留 `QKeyMapper按键名称说明.pdf`；不再要求或复制参数速查PDF。
+- 仅从临时包根目录排除四个废弃文档：`QKeyMapper使用说明.pdf`、`QKeyMapper映射键参数速查表.pdf`、`QKeyMapper正则匹配规则说明.pdf`、`组合键支持按键列表.pdf`。即使长期配套目录仍有旧副本，也不会带进ZIP；长期配套目录及仓库参考文档不受影响。
 - 删除包根目录的 INI、WAV、LOG、DMP、PDB，以及明确的 `log`、`crash_dumps` 运行目录；排除包内所有 PDB。**保留“映射表模版”中的 INI。**
 - 其他配套内容原样保留。
 
-ZIP 保持一个 `QKeyMapper_Qt*` 根目录。发布前检查 ZIP 文件清单、长度和主程序/CrashReporter 内容哈希，并用当前更新器的文件名正则校验：
+ZIP 保持一个 `QKeyMapper_Qt*` 根目录，HTML位于该根目录内。发布前检查 ZIP 文件清单、长度和主程序/CrashReporter/HTML手册内容哈希，并用当前更新器的文件名正则校验：
 
 ```text
 QKeyMapper_v1.5.0.20261016_Qt6_x64.zip

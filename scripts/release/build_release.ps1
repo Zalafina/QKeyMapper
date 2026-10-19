@@ -157,6 +157,7 @@ function Assert-SynchronizedSources($Variants, [string]$ExpectedCommit = '') {
     if (@($commits | Select-Object -Unique).Count -ne 1) { throw '三个仓库提交不一致，请检查远端变化后重新运行。' }
     if (@($versions | Select-Object -Unique).Count -ne 1) { throw "三个仓库版本不一致：$($versions -join ', ')" }
     if ($ExpectedCommit -and $commits[0] -cne $ExpectedCommit) { throw '构建期间源码提交发生变化，停止发布。' }
+    foreach ($variant in $Variants) { Assert-File (Join-Path $variant.Repository 'readme/QKeyMapper使用手册.html') }
     [pscustomobject]@{ Commit = $commits[0]; Version = $versions[0] }
 }
 
@@ -182,7 +183,7 @@ function Assert-Environment($Variants, [string]$PackageRoot, [string]$Jom) {
         $state = Assert-Repository $variant
         if ($null -eq $origin) { $origin = $state.Origin }
         if ($state.Origin -cne $origin) { throw "origin 不一致：$($variant.Repository)；$($state.Origin)" }
-        foreach ($relative in @('QKeyMapper/QKeyMapper.pro', 'QKeyMapper/diagnostics/diagnostic_artifacts.ps1', 'QKeyMapper/ahk_utils/readme.txt', 'QKeyMapper_Keyname.pdf', 'QKeyMapper_Parameter_Format_Quick_Reference.pdf')) {
+        foreach ($relative in @('QKeyMapper/QKeyMapper.pro', 'QKeyMapper/diagnostics/diagnostic_artifacts.ps1', 'QKeyMapper/ahk_utils/readme.txt', 'QKeyMapper_Keyname.pdf')) {
             Assert-File (Join-Path $variant.Repository $relative)
         }
         . (Join-Path $variant.Repository 'QKeyMapper/diagnostics/diagnostic_artifacts.ps1')
@@ -244,10 +245,15 @@ function Build-Variant($Variant, [string]$Jom, [int]$JobCount) {
 }
 
 function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Repository, [string]$ReleasePath, [string]$WorkRoot) {
+    $manual = Join-Path $Repository 'readme/QKeyMapper使用手册.html'
+    Assert-File $manual
     Assert-SafeTree $Baseline (Split-Path -Parent $Baseline)
     Reset-WorkDirectory $StagePath $WorkRoot
     Get-ChildItem -LiteralPath $Baseline -Force | Copy-Item -Destination $StagePath -Recurse -Force
     Get-ChildItem -LiteralPath $StagePath -File -Force | Where-Object { $_.Extension -in @('.ini', '.wav', '.log', '.dmp', '.pdb') } | Remove-Item -Force
+    Get-ChildItem -LiteralPath $StagePath -File -Force | Where-Object { $_.Name -in @(
+        'QKeyMapper使用说明.pdf', 'QKeyMapper映射键参数速查表.pdf', 'QKeyMapper正则匹配规则说明.pdf', '组合键支持按键列表.pdf'
+    ) } | Remove-Item -Force
     foreach ($name in @('log', 'crash_dumps')) {
         $runtime = Join-Path $StagePath $name
         if (Test-Path -LiteralPath $runtime) { Assert-SafeTree $runtime $WorkRoot; Remove-Item -LiteralPath $runtime -Recurse -Force }
@@ -258,12 +264,13 @@ function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Reposit
     Get-ChildItem -LiteralPath (Join-Path $Repository 'QKeyMapper/ahk_utils/script') -Force | Copy-Item -Destination $scripts -Recurse -Force
     Copy-Item -LiteralPath (Join-Path $Repository 'QKeyMapper/ahk_utils/readme.txt') -Destination (Join-Path $StagePath 'utils/readme.txt') -Force
     Copy-Item -LiteralPath (Join-Path $Repository 'QKeyMapper_Keyname.pdf') -Destination (Join-Path $StagePath 'QKeyMapper按键名称说明.pdf') -Force
-    Copy-Item -LiteralPath (Join-Path $Repository 'QKeyMapper_Parameter_Format_Quick_Reference.pdf') -Destination (Join-Path $StagePath 'QKeyMapper映射键参数速查表.pdf') -Force
+    Copy-Item -LiteralPath $manual -Destination (Join-Path $StagePath 'QKeyMapper使用手册.html') -Force
     Get-ChildItem -LiteralPath $StagePath -Recurse -Force -File -Filter '*.pdb' | Remove-Item -Force
 }
 
 function Assert-PackageZip([string]$ZipPath, [string]$StagePath) {
     if ([IO.Path]::GetFileName($ZipPath) -cnotmatch $script:AssetPattern) { throw "文件名不符合更新器规则：$ZipPath" }
+    Assert-File (Join-Path $StagePath 'QKeyMapper使用手册.html')
     $rootName = Split-Path -Leaf $StagePath
     $zip = [IO.Compression.ZipFile]::OpenRead($ZipPath)
     try {
@@ -274,10 +281,10 @@ function Assert-PackageZip([string]$ZipPath, [string]$StagePath) {
             $relative = [IO.Path]::GetRelativePath($StagePath, $file.FullName).Replace('\', '/')
             $entry = $zip.GetEntry("$rootName/$relative")
             if ($null -eq $entry -or $entry.Length -ne $file.Length) { throw "ZIP 文件缺失或长度不符：$relative" }
-            if ($relative -in @('QKeyMapper.exe', 'QKeyMapperCrashReporter.exe')) {
+            if ($relative -in @('QKeyMapper.exe', 'QKeyMapperCrashReporter.exe', 'QKeyMapper使用手册.html')) {
                 $stream = $entry.Open()
                 try { $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)) } finally { $stream.Dispose() }
-                if ($hash -ne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash) { throw "ZIP 内 EXE 与本次产物不一致：$relative" }
+                if ($hash -ne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash) { throw "ZIP 内文件与本次产物不一致：$relative" }
             }
         }
     } finally { $zip.Dispose() }

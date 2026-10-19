@@ -51,7 +51,13 @@ foreach ($name in @('Qt6_x64', 'Qt5_x64', 'Qt5_x86')) {
     Git $repo @('config', 'core.excludesfile', (Join-Path $testRoot 'fixture-ignore'))
     $variants += [pscustomobject]@{ Name = $name; Repository = $repo }
 }
+Expect-Failure { Assert-SynchronizedSources $variants } '缺少必需文件.*QKeyMapper使用手册.html' 'missing manual blocks synchronized sources before building'
+Put "$seed/readme/QKeyMapper使用手册.html" '<!doctype html><title>发布手册</title>'
+Git $seed @('add', 'readme/QKeyMapper使用手册.html')
+Git $seed @('commit', '-m', 'add published manual')
+foreach ($variant in $variants) { Git $variant.Repository @('pull', '--ff-only', 'origin', 'master') }
 $source = Assert-SynchronizedSources $variants
+Check (Test-Path -LiteralPath "$($variants[2].Repository)/readme/QKeyMapper使用手册.html") 'manual arrives through fast-forward pull in old checkout'
 Check ($source.Version -ceq 'v1.5.0.20261016') 'clean synchronized sources'
 $repo = $variants[0].Repository
 Put "$repo/untracked.txt" 'untracked'
@@ -118,13 +124,46 @@ Put "$baseline/log/old.dmp" 'runtime crash'
 Put "$baseline/utils/script/deleted.ahk" 'removed script'
 Put "$baseline/utils/ahk.exe" 'maintained dependency'
 Put "$baseline/old.pdb" 'symbols'
+Put "$baseline/QKeyMapper使用手册.html" 'old manual'
+Put "$baseline/QKeyMapper按键名称说明.pdf" 'old keys'
+Put "$baseline/other.pdf" 'unrelated document'
+$obsoleteDocuments = @('QKeyMapper使用说明.pdf', 'QKeyMapper映射键参数速查表.pdf', 'QKeyMapper正则匹配规则说明.pdf', '组合键支持按键列表.pdf')
+foreach ($name in $obsoleteDocuments) { Put (Join-Path $baseline $name) 'obsolete document' }
 Put "$release/QKeyMapper.exe" 'new main'
 Put "$release/QKeyMapperCrashReporter.exe" 'new helper'
-Put "$repo/QKeyMapper/ahk_utils/script/current.ahk" 'new script'
-Put "$repo/QKeyMapper/ahk_utils/readme.txt" 'readme'
-Put "$repo/QKeyMapper_Keyname.pdf" 'keys'
-Put "$repo/QKeyMapper_Parameter_Format_Quick_Reference.pdf" 'parameters'
-Prepare-Package $baseline $stage $repo $release $work
+foreach ($variant in $variants) {
+    $variantRepo = $variant.Repository
+    $variantStage = Join-Path $work "staging/QKeyMapper_$($variant.Name)"
+    $manualContent = "<!doctype html><title>$($variant.Name) 手册</title><p>current</p>"
+    Put "$variantRepo/QKeyMapper/ahk_utils/script/current.ahk" 'new script'
+    Put "$variantRepo/QKeyMapper/ahk_utils/readme.txt" 'readme'
+    Put "$variantRepo/QKeyMapper_Keyname.pdf" "keys-$($variant.Name)"
+    Put "$variantRepo/readme/QKeyMapper使用手册.html" $manualContent
+    Prepare-Package $baseline $variantStage $variantRepo $release $work
+    Check ([IO.File]::ReadAllText("$variantStage/QKeyMapper使用手册.html") -ceq $manualContent) "$($variant.Name) deploys current manual from its own repository"
+    Check ([IO.File]::ReadAllText("$variantStage/QKeyMapper按键名称说明.pdf") -ceq "keys-$($variant.Name)") "$($variant.Name) keeps and refreshes keyname PDF"
+    foreach ($name in $obsoleteDocuments) { Check (-not (Test-Path -LiteralPath (Join-Path $variantStage $name))) "$($variant.Name) excludes $name" }
+    Check (Test-Path -LiteralPath "$variantStage/other.pdf") "$($variant.Name) preserves unrelated PDF"
+    $variantZip = Join-Path $work "QKeyMapper_v1.5.0.20261016_$($variant.Name).zip"
+    [IO.Compression.ZipFile]::CreateFromDirectory($variantStage, $variantZip, [IO.Compression.CompressionLevel]::Optimal, $true)
+    Assert-PackageZip $variantZip $variantStage
+    $archive = [IO.Compression.ZipFile]::OpenRead($variantZip)
+    try {
+        $entry = $archive.GetEntry("QKeyMapper_$($variant.Name)/QKeyMapper使用手册.html")
+        Check ($null -ne $entry) "$($variant.Name) ZIP contains manual under expected root"
+        $reader = [IO.StreamReader]::new($entry.Open(), [Text.Encoding]::UTF8)
+        try { Check ($reader.ReadToEnd() -ceq $manualContent) "$($variant.Name) ZIP manual matches its repository" } finally { $reader.Dispose() }
+        Check ($null -ne $archive.GetEntry("QKeyMapper_$($variant.Name)/QKeyMapper按键名称说明.pdf")) "$($variant.Name) ZIP retains keyname PDF"
+        foreach ($name in $obsoleteDocuments) { Check ($null -eq $archive.GetEntry("QKeyMapper_$($variant.Name)/$name")) "$($variant.Name) ZIP excludes $name" }
+    } finally { $archive.Dispose() }
+}
+Check ([IO.File]::ReadAllText("$baseline/QKeyMapper使用手册.html") -ceq 'old manual') 'baseline manual is not overwritten'
+foreach ($name in $obsoleteDocuments) { Check (Test-Path -LiteralPath (Join-Path $baseline $name)) "baseline $name is not deleted" }
+$originalManual = [IO.File]::ReadAllText("$repo/readme/QKeyMapper使用手册.html")
+Remove-Item -LiteralPath "$repo/readme/QKeyMapper使用手册.html"
+Expect-Failure { Prepare-Package $baseline $stage $repo $release $work } '缺少必需文件.*QKeyMapper使用手册.html' 'missing manual stops deployment'
+Check ([IO.File]::ReadAllText("$stage/QKeyMapper使用手册.html") -ceq $originalManual) 'missing source manual does not reset existing stage'
+Put "$repo/readme/QKeyMapper使用手册.html" $originalManual
 Check (Test-Path -LiteralPath "$stage/映射表模版/keep.ini") 'mapping template preserved'
 Check (-not (Test-Path -LiteralPath "$stage/keymapdata.ini")) 'runtime INI removed'
 Check (-not (Test-Path -LiteralPath "$stage/sound.wav")) 'runtime WAV removed'
@@ -134,10 +173,15 @@ Check ((Get-Content -LiteralPath "$stage/utils/script/current.ahk") -ceq 'new sc
 Check (Test-Path -LiteralPath "$baseline/keymapdata.ini") 'maintained baseline untouched'
 Check (-not (Test-Path -LiteralPath "$stage/old.pdb")) 'PDB excluded'
 $zip = Join-Path $work 'QKeyMapper_v1.5.0.20261016_Qt6_x64.zip'
-[IO.Compression.ZipFile]::CreateFromDirectory($stage, $zip, [IO.Compression.CompressionLevel]::Optimal, $true)
 Assert-PackageZip $zip $stage
-Check $true 'ZIP root, contents, EXE hashes and updater name checked'
+Check $true 'ZIP root, contents, EXE and manual hashes and updater name checked'
 Expect-Failure { Assert-PackageZip "$work/invalid.zip" $stage } '文件名不符合' 'invalid updater filename rejected'
+Put "$stage/QKeyMapper使用手册.html" ($originalManual.Replace('current', 'changed'))
+Expect-Failure { Assert-PackageZip $zip $stage } '不一致.*QKeyMapper使用手册.html' 'same-length stale ZIP manual rejected by hash'
+Put "$stage/QKeyMapper使用手册.html" $originalManual
+Remove-Item -LiteralPath "$stage/QKeyMapper使用手册.html"
+Expect-Failure { Assert-PackageZip $zip $stage } '缺少必需文件.*QKeyMapper使用手册.html' 'ZIP check requires manual in stage'
+Put "$stage/QKeyMapper使用手册.html" $originalManual
 Put "$stage/QKeyMapper.exe" 'bad main'
 Expect-Failure { Assert-PackageZip $zip $stage } '不一致' 'same-length stale ZIP EXE rejected by hash'
 
