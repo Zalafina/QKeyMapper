@@ -22,7 +22,10 @@ python readme/manual/build.py
 
 发布时只复制生成的HTML，不需要随包附带本目录、Python、图片文件夹或Web服务器。正文、样式、JavaScript、PNG和手柄SVG图示均已内嵌。外部参考链接仍需联网，不属于离线资源。
 
-在线查阅支持：仓库已配置 GitHub Pages 自动部署工作流（`.github/workflows/deploy-manual.yml`），`master` 分支更新时自动发布，可通过在线地址 `https://zalafina.github.io/QKeyMapper/` 直接在浏览器中打开使用。离线场景直接双击该单文件 HTML 即可。
+在线查阅支持：
+- 官方在线站点（GitHub Pages）：`https://zalafina.github.io/QKeyMapper/`（由 `.github/workflows/deploy-manual.yml` 在推送 master 分支时自动发布）。
+- 国内免翻墙镜像（Cloudflare Pages）：`https://qkeymapper.pages.dev/`（关联 master 分支自动同步发布，国内直连高速免翻墙）。
+- 离线场景：直接在本地电脑双击 `readme/QKeyMapper使用手册.html` 单文件即可在任意浏览器中离线打开使用。
 
 ## 文件与更新
 
