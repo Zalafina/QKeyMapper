@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>QKeyMapper 使用手册 · v{{MANUAL_VERSION}} {{MANUAL_STATUS}}</title>
+<link rel="icon" type="image/png" href="{{FAVICON}}">
+<script>
+(function () {
+  try {
+    if (window.localStorage.getItem('qkm-manual-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  } catch (e) { /* Local file storage may be unavailable. */ }
+}());
+</script>
+<style>{{STYLE}}</style>
+</head>
+<body>
+<a class="skip" href="#content">跳到正文</a>
+<aside class="sidebar" aria-label="手册导航">
+  <div class="brand"><img class="brand-icon" src="images/QKeyMapper_icon_128px.png" alt="QKeyMapper软件标识" width="44" height="44"><div><strong>QKeyMapper</strong><small>中文使用手册</small></div></div>
+  <div class="edition">手册 v{{MANUAL_VERSION}} <span>{{MANUAL_STATUS}}</span></div>
+  <div class="theme-picker" role="group" aria-label="阅读主题">
+    <span>阅读主题</span><button type="button" data-theme-choice="dark" aria-pressed="true">深色</button><button type="button" data-theme-choice="light" aria-pressed="false">浅色</button>
+  </div>
+  <label class="search-label" for="search">查找功能或问题</label>
+  <div class="search-box"><input id="search" type="search" autocomplete="off" placeholder="试试：鼠标不能点击"><kbd>/</kbd></div>
+  <div class="quick-nav" aria-label="常用查阅入口"><a href="#emergency">应急停止</a><a href="#glossary">术语速查</a><a href="#tools">新手练习</a></div>
+  <div id="search-status" class="sr-only" role="status" aria-live="polite"></div>
+  <div id="search-results" hidden></div>
+  <nav id="nav">
+    <p class="nav-heading">从这里开始</p>
+    <a href="#quickstart"><span>01</span>快速上手</a>
+    <a href="#add-mapping"><span>02</span>添加映射</a>
+    <a href="#item-settings"><span>03</span>映射项设定</a>
+    <p class="nav-heading">整理与保存</p>
+    <a href="#tables"><span>04</span>映射表与Tab</a>
+    <a href="#profiles"><span>05</span>配置与备份</a>
+    <p class="nav-heading">限定目标窗口</p>
+    <a href="#windows"><span>06</span>进程与窗口匹配</a>
+    <a href="#regex"><span>07</span>正则入门与速查</a>
+    <p class="nav-heading">进阶映射</p>
+    <a href="#sequences"><span>08</span>录制与按键序列</a>
+    <a href="#macros"><span>09</span>宏与通用宏</a>
+    <a href="#commands"><span>10</span>文本与常用命令</a>
+    <a href="#mouse"><span>11</span>鼠标与坐标</a>
+    <p class="nav-heading">界面辅助</p>
+    <a href="#interface"><span>12</span>界面、启动与托盘</a>
+    <a href="#advanced"><span>13</span>高级设定与提示</a>
+    <a href="#overlays"><span>14</span>准星、悬浮与面板</a>
+    <p class="nav-heading">设备与驱动</p>
+    <a href="#gamepad"><span>15</span>物理手柄与输入</a>
+    <a href="#virtual-gamepad"><span>16</span>虚拟手柄与参数</a>
+    <a href="#motion"><span>17</span>陀螺仪与触摸板</a>
+    <a href="#drivers"><span>18</span>驱动选择与安装入口</a>
+    <a href="#interception"><span>19</span>多键鼠与Interception</a>
+    <p class="nav-heading">专项功能</p>
+    <a href="#forza"><span>20</span>极限竞速专项</a>
+    <p class="nav-heading">随时查阅</p>
+    <a href="#interception-risk">多键鼠 · 严重风险</a>
+    <a href="#gamepad-boundary">手柄 · 能力边界</a>
+    <a href="#roadmap">全册目录与覆盖范围</a>
+  </nav>
+  <p class="sidebar-note">离线可读 · 无需安装<br>图片可点击放大<br>本版编写中，部分章节待补。</p>
+</aside>
+<main id="content" tabindex="-1">
+  <div class="topline"><span id="location">快速上手</span><a href="#emergency" class="stop-link">停止映射：左 Ctrl + F6 <small>默认</small></a></div>
+  <div class="reader">{{CONTENTS}}</div>
+  <footer>QKeyMapper 中文使用手册 · v{{MANUAL_VERSION}} {{MANUAL_STATUS}} <a href="#roadmap">查看覆盖与限制</a></footer>
+</main>
+<div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="查看界面原图">
+  <div class="lightbox-toolbar"><span id="image-title"></span><button id="image-fit" type="button">原尺寸</button><button id="image-close" type="button">关闭 <kbd>Esc</kbd></button></div>
+  <div class="lightbox-viewport"><img id="image-full" alt=""></div>
+</div>
+<noscript><div class="noscript">请允许浏览器运行本地 JavaScript，以启用搜索、章节导航和内嵌图片。手册无需联网。</div></noscript>
+<script>{{SCRIPT}}</script>
+</body>
+</html>

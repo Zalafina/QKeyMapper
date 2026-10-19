@@ -1,0 +1,4 @@
+interface:
+  display_name: "QKeyMapper 手册维护"
+  short_description: "按当前源码更新离线中文手册、真实截图与检索索引，并按改动范围验证交付"
+  default_prompt: "使用 $qkeymapper-manual-update 更新QKeyMapper使用手册，按我的要求修订内容及必要配图，完成相关检查后供我审阅。"
