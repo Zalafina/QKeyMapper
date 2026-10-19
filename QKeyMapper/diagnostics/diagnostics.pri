@@ -13,6 +13,7 @@ QKM_DEPLOY_DIRECTORY = $$OUT_PWD/$$QKM_OUTPUT_CONFIG
 !isEmpty(DESTDIR): QKM_DEPLOY_DIRECTORY = $$absolute_path($$DESTDIR, $$OUT_PWD)
 qkm_crash_reporter.target = qkm_crash_reporter
 qkm_crash_reporter.depends = FORCE
-qkm_crash_reporter.commands = powershell.exe -NoProfile -ExecutionPolicy Bypass -File $$shell_quote($$system_path($$PWD/build_crash_reporter.ps1)) -QMakePath $$shell_quote($$system_path($$QMAKE_QMAKE)) -MakePath \"$(MAKE)\" -BuildDirectory $$shell_quote($$system_path($$OUT_PWD/crash-reporter)) -DeployDirectory $$shell_quote($$system_path($$QKM_DEPLOY_DIRECTORY))
+# MAKE may already quote its executable path; normalize before passing it to PowerShell.
+qkm_crash_reporter.commands = powershell.exe -NoProfile -ExecutionPolicy Bypass -File $$shell_quote($$system_path($$PWD/build_crash_reporter.ps1)) -QMakePath $$shell_quote($$system_path($$QMAKE_QMAKE)) -MakePath \"$(MAKE:\"=)\" -BuildDirectory $$shell_quote($$system_path($$OUT_PWD/crash-reporter)) -DeployDirectory $$shell_quote($$system_path($$QKM_DEPLOY_DIRECTORY))
 QMAKE_EXTRA_TARGETS += qkm_crash_reporter
 PRE_TARGETDEPS += qkm_crash_reporter
