@@ -160,6 +160,7 @@ Release 压缩包内附有 **QKeyMapper使用手册.html**，双击即可在浏�
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
 * v1.5.0(Build 20261024)
+    * 修复宏映射的序列循环次数不生效问题，包括宏自身循环次数叠加与“无上限”循环。
     * 压缩包加入新制作的 **QKeyMapper使用手册.html** 离线HTML手册，在线版本网址如下：
       - https://zalafina.github.io/QKeyMapper/  (Github在线版)
       - https://qkeymapper.pages.dev/           (Cloudflare免翻墙镜像版)
