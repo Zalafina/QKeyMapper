@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parent
 MANUAL_VERSION = '1.0'
 MANUAL_STATUS = '正式版'
 SOFTWARE_BASELINE = 'v1.5.0.20261018'
-REVIEW_DATE = '2026-10-19'
+REVIEW_DATE = '2026-10-20'
 
 def favicon():
     data = (ROOT / 'images/QKeyMapper_icon_128px.png').read_bytes()

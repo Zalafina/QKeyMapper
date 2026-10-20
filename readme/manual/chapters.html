@@ -1,5 +1,6 @@
 <article id="quickstart" data-title="快速上手">
 <header><p class="eyebrow">从第一条映射开始</p><h1>按下 A，让软件收到 B</h1><p class="lead">先用一条最简单的键盘映射熟悉操作。暂时不安装驱动、不映射鼠标左键，也不设置游戏窗口匹配。</p><span class="tag green">新手入门</span><span class="tag">配图：中文／深色</span></header>
+<p>使用前请阅读<a href="#usage-notice">软件使用须知</a>与<a href="#disclaimer">免责声明</a>；需要视频演示或咨询时，查看<a href="#support">教学视频与QQ群</a>。</p>
 <section id="first-direction" data-search="A映射为B 原始按键 映射按键 左右搞反 按A发送B 改键">
 <h2>先记住这个方向</h2>
 <div class="direction"><div><small>左边 · 原始按键</small><strong>自己实际按 A</strong></div><span class="arrow" aria-hidden="true">→</span><div><small>右边 · 映射按键</small><strong>希望软件收到 B</strong></div></div>
@@ -41,6 +42,21 @@
 <p>看到“保存设定”的未保存标记时，表示还有改动没有保存。若只想试用，先理解开始方式，避免无意覆盖原配置。遇到保存失败，不要把它当成已经保存成功。</p>
 <p class="small">图中的驱动可用状态来自截图机器，不是基础键盘映射的安装要求。第一次练习无需照图安装驱动。</p>
 <div class="related"><a href="#add-mapping">下一步：添加映射 →</a><a href="#tools">新手练习与测试工具</a><a href="#interception">使用多键鼠前先读风险</a></div>
+</section>
+<section id="usage-notice" data-search="软件使用须知 使用前必读 版本选择 Qt6 Qt5 Win7 Win10 Win11 运行库 Visual C++ Redistributable VC++ VCRUNTIME MSVCP DLL x64 x86">
+<h2>软件使用须知：版本、运行库与驱动</h2>
+<ul><li><strong>选择版本：</strong>Win10／Win11推荐Qt6_x64发布包；Win7无法运行Qt6时使用Qt5版本。完整解压后运行，不要只复制EXE；软件与配套驱动的系统要求分别核对。</li><li><strong>缺少运行库：</strong>若启动提示缺少VCRUNTIME／MSVCP等组件，按程序位数安装微软Visual C++运行库：x64程序用<a href="https://aka.ms/vs/17/release/vc_redist.x64.exe" target="_blank" rel="noopener noreferrer">x64安装包</a>，x86程序用<a href="https://aka.ms/vs/17/release/vc_redist.x86.exe" target="_blank" rel="noopener noreferrer">x86安装包</a>。即使Windows是64位，运行x86程序仍需x86运行库。旧系统先核对安装包支持范围，不要从第三方网站单独下载DLL补齐；参阅<a href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170" target="_blank" rel="noopener noreferrer">微软运行库说明</a>（需联网）。</li><li><strong>多键鼠：</strong>Interception有设备槽位及重连／睡眠恢复风险，严重时可能失去全部键鼠输入；只在确有需要时安装。先阅读<a href="#interception-risk">严重风险提示</a>、<a href="#interception-devices">编号与固定接口</a>及<a href="#interception-power">电源兼容建议</a>；不能保证重启或卸载一定恢复。</li><li><strong>虚拟手柄：</strong>ViGEmBus与vJoy是不同驱动，项目不建议同时安装。已有vJoy且出现异常时，按<a href="#driver-vigem">驱动兼容说明</a>排查；Win7还需单独准备兼容的ViGEmBus版本。</li></ul>
+</section>
+<section id="usage-advice" data-search="软件使用建议 先运行QKeyMapper 再运行游戏 Hook 输入被拦截 开启Windows筛选键 长按重复">
+<h2>软件使用建议：先启动工具，再启动目标程序</h2>
+<p>通常先运行QKeyMapper，再启动需要改键的游戏或软件，以减少其他软件先拦截按键、导致工具检测不到输入的情况。这是排查顺序，不保证所有目标程序都接受模拟输入。</p>
+<p>项目建议使用Windows系统筛选键，抑制物理键长按时的系统重复输入。先了解它对输入的影响，再通过<a href="#system-filterkeys">“系统筛选键”设置与手动入口</a>启用；它与映射项“连发”和多键鼠页“筛选键”不同。开始映射前保存配置，测试后确认已停止。</p>
+</section>
+<section id="disclaimer" data-search="免责声明 GPLv3 开源许可 使用责任 安全提醒 合规使用 商业使用 无担保 免责 法律">
+<h2>免责声明与开源许可</h2>
+<p>QKeyMapper基于GPLv3发布。使用前请阅读以下责任与安全提示；许可权利和义务以软件附带的LICENSE及<a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener noreferrer">GPLv3完整条款</a>（需联网）为准，本节不替代许可文本。</p>
+<ul><li><strong>无担保与责任：</strong>在适用法律允许的范围内，除另有书面约定外，本软件按“现状”提供，不提供明示或暗示担保；使用者自行承担软件质量、性能及使用风险。除适用法律要求或另有书面约定外，开发者不对使用或无法使用本软件造成的直接或间接损失承担责任。</li><li><strong>安全：</strong>软件涉及底层输入、系统操作与驱动。使用前备份重要数据，在可控环境中测试；理解相关风险后再授权需要管理员权限的操作。退出软件不等于卸载驱动，停止快捷键也不能保证处理驱动层失效。</li><li><strong>合规：</strong>项目面向学习、研究和合法使用。请遵守当地法律法规，不用于非法、恶意或侵犯他人权益的目的；使用游戏或其他服务时，也应了解其使用规则。</li><li><strong>商业使用：</strong>项目以开源分享为目的，不鼓励商业使用，建议企业及商业用户评估其他替代方案。这是项目立场，不改变GPLv3授予的权利；GPLv3允许商业使用。复制、修改或分发时须遵守其适用条款，包括许可与声明保留、分发时的对应源代码提供，以及受GPLv3约束的衍生作品的许可要求；不得以闭源分发规避这些义务。</li></ul>
+<p>请在理解上述风险后决定是否使用；有关复制、修改和分发的授权条件，请直接查阅GPLv3。</p>
 </section>
 </article>
 
@@ -508,6 +524,7 @@
 <section id="system-filterkeys" data-search="系统筛选键 按键声音 长按重复 Windows筛选键 启用系统筛选键 关闭按键声">
 <h2>系统筛选键：抑制系统长按重复</h2>
 <p>入口：“映射设定”→“系统筛选键”。弹出选项可设置“启用系统筛选键”及“启用筛选键时关闭按键声”。它针对物理键一直按住时Windows产生的重复输入，不等同于映射项的连发开关。</p>
+<p>也可在Windows中手动设置：Win10为“设置 → 轻松使用 → 键盘 → 筛选键”；Win11为“设置 → 辅助功能 → 键盘 → 筛选键”。记录原值，按需要调整；系统版本不同，文字可能略有差异。</p>
 <div class="warning"><strong>这会影响Windows输入行为，请先理解再调整。</strong><p>启用后，软件在实际映射期间按配置管理系统筛选键；正常停止等流程会尝试恢复此前状态。运行期间手动改变系统筛选键时，软件也会尊重相关手动状态。异常终止时不要把恢复视为保证，应回Windows辅助功能检查。</p></div>
 <p>此功能与多键鼠页的驱动筛选不是同一项。不要为了解决Interception设备失效而反复切换系统筛选键；先阅读<a href="#interception">驱动风险</a>。</p>
 </section>
@@ -603,7 +620,7 @@
 <tr><td>Keyboard Test Utility</td><td>键盘按下／抬起、修饰键和组合。</td><td>可从项目QQ群文件获取。本手册不捆绑该工具。</td></tr>
 <tr><td><a href="https://gobing.cn/experiment/key" target="_blank" rel="noopener noreferrer">Go柄网手柄测试</a></td><td>物理或虚拟手柄的按钮、摇杆等输入。</td><td>外部网页，需要联网。实际识别取决于浏览器、设备和权限；可能需要先操作手柄激活检测。</td></tr>
 <tr><td>DirectXGamepadViewer</td><td>手柄按钮、摇杆和扳机。</td><td>可从项目QQ群文件获取。不是键盘输入测试工具。</td></tr>
-</tbody></table></div><p class="small">项目QQ群：906963961。请按完整工具名查找群文件。这里不提供未经核实的下载站，也不声称已对所有工具版本、浏览器和设备做过兼容测试。</p></section>
+</tbody></table></div><p class="small">请通过<a href="#support-qq">项目QQ群（906963961）与二维码</a>查找群文件，按完整工具名搜索。这里不提供未经核实的下载站，也不声称已对所有工具版本、浏览器和设备做过兼容测试。</p></section>
 <section id="test-results" data-search="测试有反应 游戏没反应 两个手柄 双重输入 无法屏蔽">
 <h2>怎样理解检测结果</h2><p>测试工具有响应，说明该工具看到了输入，不等于游戏一定接受。游戏无响应时再查窗口匹配、发送方式和游戏自身条件；不要立即安装更多驱动。</p><p>物理手柄转虚拟手柄时，测试工具可能同时显示两台设备。这不一定是QKeyMapper重复添加，可能是物理与虚拟设备都可见。先看<a href="#gamepad">手柄能力边界</a>，不要误把物理输入当成已被屏蔽。</p></section>
 </article>
@@ -764,6 +781,8 @@
 <h2>ViGEmBus：只在需要虚拟手柄时安装</h2>
 <ol class="steps"><li>保存并备份配置，停止映射，关闭正在使用虚拟手柄的游戏／测试工具。确认自己需要虚拟输出，而不是普通手柄转键鼠。</li><li>完整解压与系统兼容的发布包，保留 <code>ViGEmBusDriver</code> 等附带目录；只复制QKeyMapper.exe会缺少安装资源。</li><li>在“虚拟手柄”页使用“安装ViGEm”。已经显示“卸载ViGEm”时不要再点它来尝试安装；按钮含义随当前状态变化。</li><li>阅读UAC和安装结果；要求重启时先结束工作并按提示重启。返回软件确认可用状态，再<a href="#virtual-setup">启用一台虚拟手柄</a>测试。</li></ol>
 <p>卸载使用同一页的卸载入口，先停用依赖它的虚拟输出；其他软件也可能使用ViGEmBus，移除会影响它们。异常时记录提示和版本，不反复安装／卸载碰运气。</p>
+<p><strong>Win7专用入口：</strong>项目README要求Win7使用虚拟手柄时自行安装ViGEmBus v1.16.116，安装文件与说明见<a href="https://github.com/Zalafina/ViGEmBus_v1.16.116_Win7_InstallFiles" target="_blank" rel="noopener noreferrer">项目Win7驱动文件页</a>（需联网）。先确认系统与版本，不把新版驱动直接套用到Win7。</p>
+<p><strong>与vJoy共存：</strong>项目不建议同时安装ViGEmBus和vJoy。若之前安装过vJoy并出现虚拟手柄异常，先停止相关软件，确认其他应用不再依赖vJoy后，再按其卸载说明移除并复测；这不是所有用户的必做步骤，也不保证解决所有故障。<code>vJoy-</code>是QKeyMapper的虚拟输出键名前缀，不代表需要另装vJoy驱动。</p>
 <div class="callout"><strong>驱动支持与维护状态需要单独核对。</strong><p>ViGEm项目已退休／归档。上游说明1.16及以前面向Win7／8.1／10，1.17及以后面向Win10／11；这不是建议旧系统随意降级安装，安装前应查阅对应版本的系统要求。</p></div>
 <p class="small"><a href="https://github.com/nefarius/ViGEmBus#supported-systems" target="_blank" rel="noopener noreferrer">上游支持系统说明</a>、<a href="https://docs.nefarius.at/projects/ViGEm/End-of-Life/" target="_blank" rel="noopener noreferrer">退休及旧更新组件说明</a>（需联网）。按你实际包内的驱动版本核对，不从名称相似的网站下载替换组件。</p>
 </section>
@@ -1177,6 +1196,10 @@
 <h2>无法点击、松手还在发送或窗口看不到</h2><ol class="steps"><li>软件仍可正常接收键盘时，用当前停止快捷键；默认是左Ctrl＋F6。确认停止后不要反复按。</li><li>停止后检查是否映射了Mouse-L，是否启用了锁定、连发、保持最后按键、强制按下前缀或大段循环。先恢复简单一条A → B。</li><li>窗口隐藏不等于已停止。使用当前“显示切换”热键或托盘显示窗口，正常处理已有模态框；别同时启动许多副本。</li><li>若键鼠在软件退出后或系统启动阶段也完全无响应，转到下方驱动风险，而不是继续依赖软件热键。</li></ol><p><a href="#emergency">应急停止</a> · <a href="#lock-options">锁定</a> · <a href="#command-prefixes">释放配对</a> · <a href="#startup-tray">托盘与显示切换</a></p></section>
 <section id="faq-devices" data-search="设备编号改变 多键鼠失效 手柄没输入 两份输入 虚拟手柄不存在 陀螺仪不动 键鼠全部失效 蓝屏 驱动">
 <h2>设备与驱动相关问题</h2><ul><li>多键鼠重连后映射到错误设备：只查看设备列表，重新核对后缀与设备描述；固定后面板USB接口能减少变化，不能保证编号永久不变。不要禁用唯一输入设备。</li><li>物理手柄无输入：先检查Windows／测试工具、连接与SDL2支持，再看玩家编号；不为普通手柄读取安装Interception。</li><li>虚拟手柄不存在：先核对ViGEmBus支持条件、虚拟设备启用状态及目标编号；创建虚拟输出不等于隐藏物理输入。</li><li>陀螺仪／触摸板不工作：设备与连接协议要报告对应数据，再检查专用原始项、设备启用与Hold／Move或触摸板开关。</li><li>游戏收到两份输入：看<a href="#double-input">物理输入隐藏与白名单</a>，不要再叠加反向映射试图抵消。</li></ul><div class="callout danger"><strong>Interception安装后曾出现键盘、鼠标全部失效，安全模式也未恢复、最终重装Windows的严重案例。</strong><p>这不是软件停止键能保证解决的故障。不要在唯一工作环境中反复安装／卸载或禁用输入设备；应依据事先准备的系统恢复方案处理，无法操作时求助能提供恢复条件的人。手册不保证重启、卸载或电源设置一定修复。</p><p><a href="#interception-risk">先阅读完整风险</a>及<a href="#interception-power">电源兼容建议</a>。</p></div></section>
+<section id="faq-known-issues" data-search="已知问题 手柄鼠标左键 标题栏 关闭 最小化 最大化 卡住 卡死 Win+D">
+<h2>已知问题：手柄左键操作标题栏后卡住</h2>
+<p>将物理手柄原始键映射为鼠标左键时，避免用该输入点击QKeyMapper标题栏的关闭、最小化、最大化区域。已知现象与切换前台的处理提示集中在<a href="#gamepad-stick-mouse">手柄转鼠标说明</a>；不要把它当作所有界面卡死的原因或恢复保证。</p>
+</section>
 <section id="faq-report" data-search="反馈问题 求助 Bug 复现 日志 隐私 截图 版本 Qt5 Qt6 Windows">
 <h2>求助前准备什么？</h2><p>提供软件版本与Qt5／Qt6／x86／x64、Windows版本、最小复现步骤、当前配置／Tab、实际按键、预期与实际结果。说明是否仅游戏内失败、是否开启自动匹配、相关驱动与设备条件。必要时附一条已去除隐私的映射码或最小示例。</p><p>截图和日志先检查进程窗口标题、路径、设备信息、聊天及文本发送内容；不要公开整份含隐私的配置。普通Release用于日常使用与性能观察，diagnostic日志只作开发调查，不能用写盘版本代表普通版性能。</p></section></article>
 <article id="glossary" data-title="术语速查">
@@ -1227,6 +1250,20 @@
 <h2>设备、坐标与界面</h2><table><thead><tr><th>名称</th><th>通俗解释</th></tr></thead><tbody><tr><td>物理手柄／虚拟手柄</td><td>真实连接的硬件／软件及驱动提供给系统的手柄设备。<a href="#gamepad">查看能力边界</a></td></tr><tr><td>设备后缀</td><td>用于限定输入设备的编号标记；重连后需要核对，不保证永久不变。</td></tr><tr><td>驱动</td><td>参与系统设备处理的软件组件；退出映射软件不等于卸载驱动。<a href="#interception">查看风险</a></td></tr><tr><td>屏幕坐标</td><td>相对桌面／屏幕位置的坐标，不一定从当前应用窗口左上角起算。</td></tr><tr><td>窗口坐标</td><td>相对目标窗口约定区域的坐标；需按具体坐标功能确认参考范围。</td></tr><tr><td>系统缩放</td><td>Windows显示设置中的比例，例如100%、150%。</td></tr><tr><td>软件缩放／默认比例</td><td>QKeyMapper自己的界面比例选择；与系统缩放不同。“默认”和“100%”是独立选项，即使当前外观相同。</td></tr><tr><td>托盘／显示切换</td><td>通知区域的程序图标／通过快捷键或入口召回、隐藏主窗口的功能，不等于停止映射。</td></tr></tbody></table></section>
 </article>
 
+<article id="support" data-title="教学视频与咨询">
+<header><p class="eyebrow">视频演示与使用交流</p><h1>教学视频与咨询</h1><p class="lead">需要操作演示可查看B站合集；手册和排错仍未解答的问题，可通过项目QQ群咨询。以下外部服务需要联网。</p></header>
+<section id="support-videos" data-search="B站 哔哩哔哩 bilibili 教学视频 使用教学 视频合集">
+<h2>B站使用教学视频合集</h2>
+<p><a href="https://space.bilibili.com/4572027/channel/collectiondetail?sid=2468700" target="_blank" rel="noopener noreferrer">打开QKeyMapper使用教学视频合集（B站）</a>。视频中的版本和界面可能与当前软件不同；操作名称及功能限制以实际版本和本手册对应说明为准。</p>
+</section>
+<section id="support-qq" data-search="QQ Q群 QQ群 用户群 咨询 交流群 906963961 二维码 群文件 加群">
+<h2>QQ群咨询：906963961</h2>
+<p>在QQ中搜索群号<strong>906963961</strong>（QKeyMapper用户群），或使用QQ扫描下方二维码。群号与二维码可离线查看，申请加群和交流需要联网。</p>
+<figure><button type="button" class="image-button"><img data-src="images/QKeyMapper_QGroup_Number.png" alt="QKeyMapper用户群二维码，群号906963961" width="357" height="375"></button><figcaption>QKeyMapper用户群：906963961。图片可点击放大；二维码不可用时，改用群号搜索。</figcaption></figure>
+<p>求助时先按<a href="#faq-report">问题反馈清单</a>提供软件／系统版本、实际按键、预期与实际结果，以及最小复现步骤。截图、日志与配置先去除隐私；查找测试工具时使用<a href="#testing-tools">完整工具名</a>。</p>
+</section>
+</article>
+
 <article id="roadmap" data-title="全册目录与覆盖范围">
 <header><p class="eyebrow">按功能查找 · 随时回到需要的说明</p><h1>全册目录与覆盖范围</h1><p class="lead">从最常用的添加映射、调整条目和保存开始，再查窗口匹配、序列、辅助功能与设备。专项功能后置；遇到问题可以直接打开排错或速查。</p></header>
 <section id="whole-outline" data-search="全部功能 目录 全册 覆盖范围 完整手册 索引">
@@ -1243,6 +1280,7 @@
 <tr><td>10</td><td>驱动与多键鼠</td><td><a href="#drivers">选择与安装入口</a> · <a href="#interception">Interception、设备编号及严重风险</a></td></tr>
 <tr><td>11</td><td>专项功能</td><td><a href="#forza">极限竞速遥测与自动扳机</a></td></tr>
 <tr><td>12</td><td>排错与速查</td><td><a href="#troubleshooting">症状排查</a> · <a href="#shortcuts">快捷键</a> · <a href="#keynames">按键名称</a> · <a href="#parameters">参数格式</a> · <a href="#glossary">术语</a></td></tr>
+<tr><td>13</td><td>使用前必读与咨询</td><td><a href="#usage-notice">软件使用须知</a> · <a href="#usage-advice">使用建议</a> · <a href="#disclaimer">免责声明</a> · <a href="#support">教学视频与QQ群</a></td></tr>
 </tbody></table><p>常用名词、按键名称、参数及正则说明已按用途整合到本册。可通过搜索或上面的分类入口查阅，无需另找按键、参数或正则说明文档。</p></section>
 <section id="sample-limits" data-search="截图 版本 Qt5 Qt6 Win7 Win10 Win11 浏览器 Firefox 覆盖 限制 离线 发布 打包">
 <h2>版本与阅读说明</h2><ul><li>手册版本：v{{MANUAL_VERSION}}。说明对应软件{{SOFTWARE_BASELINE}}；更新日期：{{REVIEW_DATE}}。手册与软件分别维护版本号。</li><li>配图以Qt6中文深色界面为例。Qt5、其他主题或不同Windows版本的外观可能略有不同；操作名称以实际界面为准。图中的配置名称、路径和设备编号是示例，请按自己的环境填写。</li><li>双击本HTML即可离线查阅正文、图片、目录和搜索，无需安装额外运行环境。外部资料、测试网页及QQ群文件需要联网。</li><li>驱动与外部工具各有系统和版本要求，安装前请查阅对应说明。软件支持某个Windows版本，不代表所有配套驱动也支持；不同游戏对模拟输入的支持也可能不同。</li></ul></section></article>
