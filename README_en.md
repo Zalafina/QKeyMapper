@@ -146,6 +146,7 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 ---
 ### 🎯 New features list (sorted in descending order of update time)
 * v1.5.0 (Build 20261024)
+    * Fixed sequence repeat counts for macro mappings, including combined macro and sequence repeats and unlimited repeats.
     * Added **QKeyMapper使用手册.html**, an offline HTML user manual in Chinese, to the release ZIP package. Online versions:
       - [GitHub Pages](https://zalafina.github.io/QKeyMapper/)
       - [Cloudflare Pages mirror](https://qkeymapper.pages.dev/)
