@@ -719,12 +719,8 @@ void cleanupKeySequenceRuntimeState(const QString &originalKey, QList<MAP_KEYDAT
                 QKeyMapper_Worker::resendRealKeyCodeOnStop(findindex, false, targetKeyMappingDataList);
             }
 
-            const int repeat_mode = targetKeyMappingDataList->at(findindex).RepeatMode;
-            const QStringList repeat_mappingKeyList = targetKeyMappingDataList->at(findindex).Mapping_Keys;
             const QString repeat_original_key = targetKeyMappingDataList->at(findindex).Original_Key;
-            if (repeat_mappingKeyList.size() > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
-                QKeyMapper_Worker::s_KeySequenceRepeatCount.remove(repeat_original_key);
-            }
+            QKeyMapper_Worker::s_KeySequenceRepeatCount.remove(repeat_original_key);
             return;
         }
     }
@@ -2961,25 +2957,37 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     qDebug("[sendInputKeys] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
 
+    const bool repeatCycle = sendmode == SENDMODE_KEYSEQ_REPEAT;
+    const bool repeatSequence = !original_key.contains(":" + QString(KEYSEQUENCE_STR))
+        && (repeatCycle || (isKeySequence(inputKeys) && keyMappingDataList != Q_NULLPTR
+            && rowindex >= 0 && rowindex < keyMappingDataList->size()
+            && keyMappingDataList->at(rowindex).RepeatMode != REPEAT_MODE_NONE));
+
     // Expand Macro(...) and UniversalMacro(...) patterns first
     // Note: expandMacroKeys internally calls expandRepeatKeys for macro content
-    inputKeys = expandMacroKeys(inputKeys);
+    inputKeys = expandMacroKeys(inputKeys, 0, nullptr, repeatCycle);
 
     // Expand Repeat{...}x... patterns
     // This handles any top-level Repeat patterns that weren't inside macros
-    inputKeys = expandRepeatKeys(inputKeys);
+    inputKeys = expandRepeatKeys(inputKeys, 0, repeatCycle);
 
     int key_sequence_count = inputKeys.size();
     if (key_sequence_count <= 0) {
 #ifdef DEBUG_LOGOUT_ON
         qWarning("sendInputKeys(): Input key count error(%d), skip sendInputKeys!!!", key_sequence_count);
 #endif
+        if (repeatSequence) {
+            cleanupKeySequenceRuntimeState(original_key, keyMappingDataList, false);
+        }
         return;
     }
     else if (key_sequence_count > KEY_SEQUENCE_MAX) {
 #ifdef DEBUG_LOGOUT_ON
         qWarning("sendInputKeys(): Key sequence is too long(%d)!!!", key_sequence_count);
 #endif
+        if (repeatSequence) {
+            cleanupKeySequenceRuntimeState(original_key, keyMappingDataList, false);
+        }
         return;
     }
 
@@ -3087,7 +3095,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     }
 
     if (KEY_UP == keyupdown) {
-        if (key_sequence_count > 1) {
+        if (key_sequence_count > 1 || repeatSequence) {
             /* Add for KeySequenceHoldDown >>> */
             if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN) {
                 QString original_key_holddown = original_key + ":" + KEYSEQUENCE_STR + HOLDDOWN_STR;
@@ -3787,10 +3795,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 int repeat_mode = keyMappingDataList->at(findindex).RepeatMode;
                 QStringList repeat_mappingKeyList = keyMappingDataList->at(findindex).Mapping_Keys;
                 QString repeat_original_key = keyMappingDataList->at(findindex).Original_Key;
-                int repeat_mappingkeylist_size = repeat_mappingKeyList.size();
+                const bool repeat_iskeysequence = isKeySequence(repeat_mappingKeyList);
                 QStringList repeat_mappingKeyList_filtered = repeat_mappingKeyList;
 
-                if (repeat_mappingkeylist_size > 1) {
+                if (repeat_iskeysequence) {
                     static QRegularExpression onlyonce_regex(REGEX_PATTERN_ONLYONCE);
 
                     const QString cacheKey = repeat_original_key;
@@ -3809,7 +3817,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                 }
 
-                if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYKEY == repeat_mode) {
+                if (repeat_iskeysequence && REPEAT_MODE_BYKEY == repeat_mode) {
                     bool isKeyPressed = false;
                     if (orikey_str.contains(SEPARATOR_LONGPRESS)) {
                         if (pressedLongPressKeysList.contains(orikey_str)) {
@@ -3856,7 +3864,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                     }
                 }
-                else if (repeat_mappingkeylist_size > 1 && REPEAT_MODE_BYTIMES == repeat_mode) {
+                else if (repeat_iskeysequence && REPEAT_MODE_BYTIMES == repeat_mode) {
                     int repeat_times = keyMappingDataList->at(findindex).RepeatTimes;
                     if (s_KeySequenceRepeatCount.contains(repeat_original_key)) {
                         if (repeat_mappingKeyList_filtered.isEmpty()) {
@@ -3867,9 +3875,12 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                             // Nothing left to repeat after filtering OnlyOnce
                         }
                         else {
-                            ++s_KeySequenceRepeatCount[repeat_original_key];
+                            // Unlimited repetition only needs a running marker.
+                            if (repeat_times > 0) {
+                                ++s_KeySequenceRepeatCount[repeat_original_key];
+                            }
 #ifdef DEBUG_LOGOUT_ON
-                            qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times count++ -> OriginalKey:" << repeat_original_key << ", RepeatCount:" << s_KeySequenceRepeatCount.value(repeat_original_key) << "\033[0m";
+                            qDebug().nospace().noquote() << "\033[1;34m[sendInputKeys] Repeat KeySequence by times cycle completed -> OriginalKey:" << repeat_original_key << ", RepeatCount:" << s_KeySequenceRepeatCount.value(repeat_original_key) << "\033[0m";
 #endif
                             // A value of 0 means unlimited repeats, so only positive values stop at a fixed count.
                             if (repeat_times > 0
@@ -3895,7 +3906,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         }
     }
     else {
-        if (1 == key_sequence_count) {
+        if (1 == key_sequence_count && !repeatSequence) {
             if (*controller.task_stop_flag) {
                 bool skip = true;
                 if (keyseq_finished) {
@@ -21143,7 +21154,7 @@ QString getRealOriginalKey(const QString &original_key)
     return original_key.left(original_key.indexOf(":"));
 }
 
-QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
+QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level, bool skipOnlyOnce)
 {
     // Check nesting level limit
     if (nesting_level > WRAPPER_NESTING_LEVEL_MAX) {
@@ -21180,7 +21191,7 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
 
             // Recursively expand any nested Repeat in the inner content
             // Note: Macro expansion should be done before calling expandRepeatKeys
-            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1);
+            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1, skipOnlyOnce);
 
             // Append the expanded inner keys repeat_count times
             for (int i = 0; i < repeat_count; ++i) {
@@ -21193,6 +21204,9 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
 #endif
         }
         else if (onlyonce_match.hasMatch()) {
+            if (skipOnlyOnce) {
+                continue;
+            }
             // This is an OnlyOnce{...}x... instruction
             QString onlyonce_content = onlyonce_match.captured(1);
             QString onlyonce_count_str = onlyonce_match.captured(2);
@@ -21214,7 +21228,7 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
             QStringList innerKeys = splitMappingKeyString(onlyonce_content, SPLIT_WITH_NEXT);
 
             // Recursively expand any nested Repeat/OnlyOnce in the inner content
-            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1);
+            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1, skipOnlyOnce);
 
             // Append the expanded inner keys only for the first cycle
             for (int i = 0; i < onlyonce_count; ++i) {
@@ -21235,7 +21249,7 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level)
     return result;
 }
 
-QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level, QSet<QString> *expandingMacros)
+QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level, QSet<QString> *expandingMacros, bool skipOnlyOnce)
 {
     // Check nesting level limit to prevent deeply nested recursion
     if (nesting_level > WRAPPER_NESTING_LEVEL_MAX) {
@@ -21323,13 +21337,13 @@ QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level, QSe
             QStringList macroKeys = splitMappingKeyString(macroContent, SPLIT_WITH_NEXT);
 
             // Recursively expand any nested Macro in the macro content
-            QStringList expandedMacroKeys = expandMacroKeys(macroKeys, nesting_level + 1, expandingMacros);
+            QStringList expandedMacroKeys = expandMacroKeys(macroKeys, nesting_level + 1, expandingMacros, skipOnlyOnce);
 
             // Remove current macro from the expanding set after recursion completes
             expandingMacros->remove(macroIdentifier);
 
             // Also expand any Repeat{...}x... patterns in the expanded macro keys
-            expandedMacroKeys = expandRepeatKeys(expandedMacroKeys);
+            expandedMacroKeys = expandRepeatKeys(expandedMacroKeys, 0, skipOnlyOnce);
 
             // Append the expanded macro keys repeatCount times
             for (int i = 0; i < repeatCount; ++i) {

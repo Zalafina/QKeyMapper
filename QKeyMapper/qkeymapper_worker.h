@@ -118,8 +118,8 @@ bool isKeySequence(const QStringList &mappingkeyslist);
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
 QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys = false);
 QString getRealOriginalKey(const QString &original_key);
-QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level = 0);
-QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level = 0, QSet<QString> *expandingMacros = nullptr);
+QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level = 0, bool skipOnlyOnce = false);
+QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level = 0, QSet<QString> *expandingMacros = nullptr, bool skipOnlyOnce = false);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 typedef char16_t* Utf16Pointer;
