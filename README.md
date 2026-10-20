@@ -101,6 +101,14 @@
 #### ※ QKeyMapper_vX.Y.Z_x64/x86开头的ZIP包是编译好的可执行文件压缩包Build_YYYYMMDD代表编译日期，较新的编译日期有相应的新增功能说明。Win10及Win11系统推荐使用 Qt6_x64 版本release包，只有无法使用Qt6版本的Win7系统需要使用Qt5版本release包。
 
 ---
+## 📚 使用手册
+
+Release 压缩包内附有 **QKeyMapper使用手册.html**，双击即可在浏览器中离线阅读，也可访问在线版本：
+
+- [GitHub 在线版](https://zalafina.github.io/QKeyMapper/)
+- [Cloudflare 免翻墙镜像版](https://qkeymapper.pages.dev/)
+
+---
 ## ⭐ Star 趋势图
 
 如果 **QKeyMapper** 按键映射软件对您有帮助，请给个 ⭐ Star 支持一下，让更多的人看到 **QKeyMapper**
@@ -143,9 +151,6 @@
 #### ※使用物理游戏手柄原始按键映射为鼠标左键的情况下，请避免使用此方式点击QKeyMapper窗口标题栏右上角的关闭、最小化、最大化按钮区域，会发生界面卡住的现象。如果进行上面操作发生界面卡住问题可以通过按下键盘Win键或者Win+D组合键等通过键盘切换前台窗口的方式解除卡住状态。
 
 ---------------
-## 📚 按键映射工具使用技巧等参考Wiki页面：
-* [QKeyMapper使用技巧等Wiki](https://github.com/Zalafina/QKeyMapper/wiki)
----------------
 ## 📺 使用教学视频合集请点击下方图片
 [<div align="center"><img src="https://raw.githubusercontent.com/Zalafina/QKeyMapper/master/screenshot/show_video.png" width="572" height="auto"/></div>](https://space.bilibili.com/4572027/channel/collectiondetail?sid=2468700)
 ---------------
@@ -154,6 +159,10 @@
 
 ---------------
 ### 🎯 新添加功能列表(根据更新时间降序排列)
+* v1.5.0(Build 20261024)
+    * 压缩包加入新制作的 **QKeyMapper使用手册.html** 离线HTML手册，在线版本网址如下：
+      - https://zalafina.github.io/QKeyMapper/  (Github在线版)
+      - https://qkeymapper.pages.dev/           (Cloudflare免翻墙镜像版)
 * v1.5.0(Build 20261018)
     * UI界面优化：主窗口上半部分添加可拖拽移动的分隔栏，分隔进程列表和映射列表。
     * UI界面优化：界面缩放比例调整变为即时缩放效果。(系统100%以外缩放比例下的软件界面显示效果可能发生变化，介意的话请继续使用旧版)。

@@ -91,6 +91,14 @@ QKeyMapper is an open-source key mapping tool compatible with Win7/Win10/Win11, 
 ### ※ The ZIP packages starting with QKeyMapper_vX.Y.Z_x64/x86 are compiled executable file zip packages. Build_YYYYMMDD represents the compilation date, and the newer compilation date has corresponding new feature descriptions. For Windows 10 and Windows 11, the Qt6_x64 release package is recommended; only Windows 7 systems that cannot run the Qt 6 version need to use the Qt 5 release package.
 
 ---
+## 📚 User Manual
+
+The Release ZIP package includes **QKeyMapper使用手册.html**, a Chinese-language HTML user manual. Double-click it to read offline in a browser, or access it online:
+
+- [GitHub Pages](https://zalafina.github.io/QKeyMapper/)
+- [Cloudflare Pages mirror](https://qkeymapper.pages.dev/)
+
+---
 ## ⭐ Star Trend
 
 If the **QKeyMapper** key mapping software has been helpful to you, please give it a ⭐ Star to support the project and help more people discover **QKeyMapper**.
@@ -137,6 +145,10 @@ If the **QKeyMapper** key mapping software has been helpful to you, please give 
 
 ---
 ### 🎯 New features list (sorted in descending order of update time)
+* v1.5.0 (Build 20261024)
+    * Added **QKeyMapper使用手册.html**, an offline HTML user manual in Chinese, to the release ZIP package. Online versions:
+      - [GitHub Pages](https://zalafina.github.io/QKeyMapper/)
+      - [Cloudflare Pages mirror](https://qkeymapper.pages.dev/)
 * v1.5.0 (Build 20261018)
     * Added a draggable splitter between the process list and mapping table in the upper part of the main window.
     * Changes to the "Scaling Ratio" setting now take effect immediately. The UI may look different at Windows scaling settings other than 100%; continue using an older version if you prefer the previous appearance.
