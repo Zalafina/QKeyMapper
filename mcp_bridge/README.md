@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。当前支持连接状态、申请 GUI 配对、使用既有凭据连接、断开和认证后的能力查询。**尚未提供映射、设置、启停或输入测试操作**；能力响应的 `stage` 是 `transport_only`，`business_capabilities` 为空。
+官方 Python MCP SDK 的 stdio 适配层。当前支持连接状态、申请 GUI 配对、使用既有凭据连接、断开、认证后的能力查询和只读状态摘要。**尚未提供映射编辑、设置变更、启停或输入测试操作**。支持摘要的产品返回 `stage=business` 及 `state.read`；未接入业务处理器的维护服务仍返回 `transport_only` 和空业务能力列表，以实际响应为准。
 
 桥接面向 Win10／11。当前维护验收为 Win10 x64、Python 3.11、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
@@ -28,9 +28,10 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip install -r mcp_bridge/requirements
 2. 首次连接调用 `qkm_request_pairing`，随后用户在 QKeyMapper 核对系统验证的程序路径、PID 和权限并批准。客户端名称仅为自报信息，不能批准自身请求。
 3. 上述调用立即返回，`accepted` 仅表示已接受连接作业。通过 `qkm_get_connection_state` 等待 `busy=false` 和 `status=connected`；失败检查 `error`。待批准期间 SDK 查询仍可响应。
 4. `qkm_get_capabilities` 经正式认证管道重新查询实际能力。响应含 `ok`；`ok=false` 是业务请求失败，不能把 SDK 已收到工具回复当成操作成功。
-5. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
+5. 能力包含 `state.read` 时，`qkm_get_state` 读取本次 GUI 线程快照：真实配置组／类型、dirty、当前 Tab、GUI 监视状态、Worker 原子状态采样和实际停止快捷键。`schema_version=1`；不可用的 `business_revision=null`，`stop_completion=unobserved`。Tab index 只作观察值，不能用作稳定编辑目标；GUI idle 或 Worker stopped 也不能证明停止清理完成。
+6. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
 
-状态是最近一次核验结果，不能作为映射引擎的实时状态。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
+连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前六个工具均无参数，schema 声明 `additionalProperties=false`，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
 
 ## 安全与失败语义
 
@@ -65,6 +66,6 @@ Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际�
 
 已获用户授权管理员测试且能确认 UAC 时，加 `--elevated-server`。它仅用 gsudo 启动固定的短生命周期助手和自有维护 EXE；控制器、正式 SDK／stdio 桥接及全部断言仍为普通权限。记录双方实际完整性、原始 AuthenticationId 是否相同、系统互指关联和目标实际桌面，不记录 SID／登录 ID。此模式不修改 manifest、不改变 gsudo 配置，启动等待超时不自动重启。维护进程由固定退出事件关闭并核对 exit 0，保留原有 180 秒看门狗。
 
-测试通过官方 `Client`／stdio 执行 initialize、list、工具调用；维护 EXE 中的 `--interop-fixture` 只提供固定 Qt 界面事件及失败夹具，产品 EXE 不含此入口。12 个短场景覆盖 GUI 批准前不 ready、跨语言证明、密钥重连、错误 DPAPI 上下文、启用／关闭状态撤销及旧 key 拒绝、GUI 拒绝、取消、stdio 退出、错误预期 EXE、私有但被篡改／过期的提示和服务器保存失败；加 `--approval-timeout` 时共 13 场景。退出清理自有窗口和测试凭据。原始日志、状态和结果在 out，随 Git 同步的是测试源码；各轮实际执行及复用范围见验证记录。
+测试通过官方 `Client`／stdio 执行 initialize、list、工具调用；维护 EXE 中的 `--interop-fixture` 只提供固定 Qt 界面事件及失败夹具，产品 EXE 不含此入口。12 个短场景覆盖六工具的未知字段拒绝、GUI 批准前不 ready、跨语言证明、密钥重连、错误 DPAPI 上下文、无业务处理器时的状态请求拒绝、启用／关闭状态撤销及旧 key 拒绝、GUI 拒绝、取消、stdio 退出、错误预期 EXE、私有但被篡改／过期的提示和服务器保存失败；加 `--approval-timeout` 时共 13 场景。退出清理自有窗口和测试凭据。原始日志、状态和结果在 out，随 Git 同步的是测试源码；各轮实际执行及复用范围见验证记录。
 
 此切片是本地开发检查点，完整进度见 [主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。SDK API 依据 [官方 Python SDK](https://github.com/modelcontextprotocol/python-sdk) 及本环境固定版本的已安装源码核对。

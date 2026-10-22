@@ -586,3 +586,51 @@ SDK 的 sdk-desktop-fix-qt6 首次短回归在 disable 分项前维护进程已�
 两产品的普通 PrintWindow 仍失败，results.json 的 stock_product_snapshots=false；未提权截图，静态视觉只按 IPC-21／TOOL-25 同源维护证据引用。CPP UTF-8／diff、Python 语法及 PowerShell 解析按本切片核对；未重建产品、未重跑无关 IPC／ASan／严格分析，原结果仅按 IPC-22／23 范围复用。SDK Qt5 普通 12 场景复用 IPC-27；实际 Qt5 管理员产品是本轮新验。
 
 结束后普通实际用户 CIM 核对自有产品助手数 0，四个 closed.json 均 exit 0，原用户 PID 5420／启动时间未变。原始材料均在 out，不随 Git；测试脚本、模板及精简记录形成可同步的本地开发检查点。托盘、实际异用户／Win11、性能、打包和业务等价性仍未验；business_capabilities 仍为空。
+
+## STATE-20261022-32：首批只读摘要实现、局部检查与用户暂停
+
+PC-W10，HEAD `3511deae` 加工作区 10 个实现／测试文件及本轮跟踪文档；2026-10-22 21:24（UTC+8）按用户请求在已启动构建结束后暂停，以便关闭 fast 模式。本轮没有启动新产品、副本或 GUI 助手，没有 UAC／gsudo／真实输入／驱动操作。未创建新的提交、未推送；源码和记录均已保存，但未提交部分不能假定已同步到另一 PC。
+
+产品接入固定 Read 请求 `qkm_get_state` 和相应 state.read 能力声明：真实配置组／类型、当前 Tab、dirty、GUI 监视状态、Worker 原子采样和实际停止快捷键；不是控件请求值回显。修订号为 null、停止完成为 unobserved，不把 IDLE／STOPPED 当作清理完成或允许写入的证明。会话共用能力响应仍保留无业务处理器的 transport_only 后备；引擎、驱动、manifest 和 TS 未改。桥接增加固定无参数工具并复用已有有界请求执行，不提供任意方法透传。
+
+当前检查：out/mcp_product/state-protocol-unit.log 记录 14 tests／OK（0.106 秒），覆盖固定 RPC／空参数、非法响应、应用错误保留连接及忙状态；它不证明正式 SDK 对未知参数的处理或 C++ 业务路径。Qt6.8.3 x64 Release 使用 scripts/build_qt6.ps1 -Jobs 4，out/mcp_product/build_state_qt6.log 有 Build succeeded，out/build_qt6/release/QKeyMapper.exe 于 21:20:12 生成；日志扫描无 C／LNK 编译链接警告及 fatal error。原工具会话已结束，最终退出码未能恢复，故不补写原生 exit 0。暂停时未见 jom／cl／link／msbuild；该 EXE 未部署、未启动。此前 UTF-8／LF 与 git diff --check 通过，暂停文档补记后再次检查差异。
+
+已写入但未运行的验收扩展：正式 SDK 工具列表／未知参数拒绝，真正产品状态与独立 GUI 停止快捷键／按钮对照、重复读取不改变状态。OpenAdvanced 中只增加读取观察，没有新增高权限写动作；停止快捷键在隐藏 Mapping 页，是否能通过现有 UIA 读取尚未知，若失败先调查实际可访问性，不静默删去独立对照。后端未知参数／加载中／超限、相关共享会话回归、Qt5 构建与产品运行全部未执行。新能力不能据此标记支持或 M1 完成；IPC-31 的旧两套产品结果仍仅用于原通信功能。
+
+接续先检查正式 SDK 是否严格拒绝未知字段（新断言尚未运行）；再完成选定 Qt5／核心检查、新隔离运行副本及产品 GUI／MCP 对照。源数据查询、修订号／稳定引用、纯预览提交、保存及停止完成继续按原计划实施。SDK 维护夹具先前一次提前退出的未知原因、High 产品截图／托盘、实际异用户／Win11 等既有缺口不变。
+
+## TOOL-20261022-33：私有空桌面窗口查找误判的独立修正
+
+PC-W10；基线 `3511deae`，本节对应 scripts/test_process.ps1、scripts/test_test_process.ps1 的局部修正。M1.2a-1 产品／桥接实现仍在工作区另行验收，不混入本工具修正的已验证范围。
+
+out/mcp_product/accept-state-validated-qt5 在创建窗口前遇到 MainWindow 异常“操作成功完成”，该轮 script exit 1；closed.json 确认自有产品 PID 30520 正常 exit 0，普通 CIM 核实没有遗留自有产品，因此不是已经证实的 Qt5 产品崩溃。独立空桌面断言先运行：helper-empty-red.log，native exit 1，未启动产品／GUI 夹具就复现相同异常。
+
+本机空桌面 EnumDesktopWindows 返回 FALSE、GetLastError 为 0。按 [Windows API 返回语义](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-enumdesktopwindows) 及实际复现，查找前清零线程错误；未找到窗口且错误为 0 时返回空句柄，让调用者原有有界等待决定是否超时，非零错误继续抛出，已找到窗口的回调终止保持成功。没有扩大桌面权限、切换输入桌面或弱化 EXE／PID／启动时间守卫。影响调用者包括私有桌面产品生命周期／GUI 助手、截图窗口查找及关闭工具；产品 C++、manifest、驱动和输入逻辑均未改。
+
+修正后 pwsh -NoProfile -File scripts/test_test_process.ps1 -OutputDirectory out/mcp_product/helper-empty-green，native exit 0，helper-empty-green.log 与同目录 state with spaces.json 保留。本轮普通权限覆盖空桌面未找到、实际 WinForms 私有桌面／PID、中文日文／shell 字面环境值、错误启动时间拒绝关闭、正常退出 0 以及不存在桌面拒绝启动。没有 gsudo／UAC、真实输入或驱动操作。Qt6 已通过的产品正向路径没有改动其有效输入，按原范围复用；Qt5 正在使用修正工具重新验收，结果另记。Win11／PowerShell 5.1 未执行，不将本机观察表述为双系统验证。
+
+## STATE-20261022-34：首批状态摘要与双 Qt 正式产品停止态验收
+
+PC-W10；产品源码为 `3511deae` 加本检查点的主窗口只读快照与共用能力响应；空桌面工具为 `1a64eade`，正式桥接／回归为本检查点。没有修改引擎、驱动、manifest、INI 格式或 TS。当前只开放 state.read 的实际摘要：schema_version=1，配置组／类型／dirty、当前 Tab、GUI 状态、Worker 原子采样及实际停止快捷键。业务修订号仍为 null、停止清理仍为 unobserved；不提供编辑目标引用、配置写入或停止完成承诺。
+
+在固定 mcp 2.3.0 中实际复现了额外字段被默认忽略：state-sdk-unknown-red.log，script exit 1，qkm_get_state(unknown=true) 进入函数后返回 not_connected，SDK 并未拒绝参数。随后仅在注册的参数模型设 extra=forbid、重建并同步发布 schema；没有修改依赖或绕过 SDK。state-sdk-unknown-green.log，exit 0，六工具的 additionalProperties=false、实际额外字段拒绝及拒绝后仍 disconnected 通过；永久 SDK 回归中保留对应六个调用。
+
+| 当前检查 | 结果／证据（均在本机 out，不随 Git） |
+|---|---|
+| Qt6／Qt5 x64 普通 Release | scripts/build_qt6.ps1／build_qt5.ps1 -Jobs 4；build_state_qt6.log／build_state_qt5.log 初轮有成功标记，但中断后工具退出码丢失。恢复后 build_state_qt6_finish.log／build_state_qt5_finish.log 的增量完成命令均 native exit 0；Qt6 无编译链接警告，Qt5 只有既有官方 qtmain LNK4099 例外，无新增警告 |
+| 维护／IPC 目标 | out/tests/mcp_control/{qt6-release,qt5-release} 与 out/tests/mcp_ipc/{qt6-release,qt5-release} 的 build_state.log，四个增量构建 native exit 0、无编译链接警告 |
+| Python 协议／工作线程 | state-protocol-final.log，14 tests／OK，0.108 秒，native exit 0；固定 RPC、空参数、畸形响应／应用错误、忙状态等 |
+| 两套正式 SDK | sdk-state-qt6.log／sdk-state-qt5.log，同名目录内 results.json／topology.json／fixture.log；各 12 个短场景、native exit 0，含六工具严格参数及维护端未接业务时 get_state 拒绝。GUI 服务、控制器及桥接均 Medium；60 秒批准超时本轮未重跑，仍仅复用 IPC-22 原范围 |
+| 两套相关原生会话 | out/tests/mcp_ipc/{qt6-release,qt5-release}/state-session.txt；sessionPairAndReconnect、sessionTransportCapabilities、sessionHandlerLifecycle 三组均通过，含 init／cleanup 各 5 passed／0 failed，native exit 0。只选与能力响应、权限及处理器生命周期相关的范围，未重跑全套故障／ASan／严格分析 |
+| 正式 Qt6 产品 | accept-state-validated-qt6.log 与同名目录 results.json，8 分项／native exit 0；runtime-state-qt6/QKeyMapperMcpAcceptance_state_qt6.exe 与本机产品字节一致，部署时 SHA256 98A81F7BD22549363B40AD73EC23EC2227BC51BB0BFFE9B67B4A244186F88ADF |
+| 正式 Qt5 产品 | accept-state-window-qt5.log 与同名目录 results.json，8 分项／native exit 0；runtime-state-qt5/QKeyMapperMcpAcceptance_state_qt5.exe 与本机产品字节一致，部署时 SHA256 185AFF3E6D74B56519B3EB2C075554EC00915671749988459331B5480A0CAEB3 |
+
+产品八分项包括：真实高级／MCP 入口与发现；独立 GUI 停止快捷键／按钮与正式 MCP 状态对照；只读批准／保护凭据及关闭窗口保持接口；经已认证原生负请求独立核对 C++ 拒绝 get_state／capabilities 的未知参数且会话／状态不变；新 stdio 凭据重连；GUI 撤销断线／旧 key 拒绝；关闭清理发现；完整产品退出／冷启动保持关闭及撤销持久化。正向摘要始终通过正式 MCP，原生负例不替代正向路径或 GUI 基线。
+
+GUI 助手在私有桌面选中映射设定页后，通过 UIA 读取 L-Ctrl+F6 和实际中文“映射开始”，再选通用页打开高级窗口；未使用 MCP／业务函数驱动 GUI 基线。合成空白 INI 的配置应为 group 空／kind draft／dirty false、当前 Tab1／index 0／is_common false，MCP 均符合。Qt5 本轮直接运行新增完整默认值断言；Qt6 同轮 state_summary.json 在该断言加入后再次独立核对，未为只新增结果断言重复产品运行。重复查询及非法原生参数后摘要不变。Worker stopped 是单次采样，未作为无在途任务的证据。
+
+Qt6 首轮 accept-state-qt6 因隐藏页控件不可访问而 exit 1，自有 PID 30144 正常 exit 0；调整助手先选映射页。下一轮 accept-state-visible-qt6 读到状态和快捷键，但测试误写按钮预期“开始映射”，实际／源码翻译为“映射开始”，该轮仍保留 exit 1，PID 30080 正常 exit 0。其唯一自有配对通过 cleanup-state-qt6-pair.log 固定 GUI 离线撤销，pair_count=0／enabled=false，清理进程正常退出后才运行通过轮。Qt5 先前一次空桌面助手失败和独立修正详见 TOOL-33，不将这些失败轮追认为通过。
+
+最终产品拓扑均 High／RID 12288，控制器／SDK／桥接 Medium／RID 8192，same_login=true。Qt6 实际桌面 QkmProduct_d81f18a0af21447780662acb4c959e4b／冷启动 QkmProduct_07a2e71596b0482ca9173743f9ea58bc，PID 32284／4320；Qt5 为 QkmProduct_cc0f43bd737f4dc2b7120f347daa289e／QkmProduct_c71cf4118b2641f6aca891be7bb2f5d7，PID 29204／31580。四个 closed.json 均 exit 0。原用户 PID 5420／10:17:55 实例保持运行。除原已授权产品启动／关闭和固定 GUI 助手外未提权；无 Default 场景、真实输入、映射启动或驱动安装。
+
+两套产品普通 PrintWindow 仍失败，stock_product_snapshots=false，截图未提权；新接口不改布局／翻译，静态视觉仍仅按 IPC-21 的同源原范围引用。当前只证明空白配置／停止态子切片；全局／保存配置、运行态、加载／初始化忙与超大摘要错误、稳定引用、写操作、停止清理及实际效果尚未验证或尚未实现。异用户／Win11、性能、打包和 SDK 旧一次维护退出原因仍待后续。编码／LF、差异及相关 Markdown 链接在本检查点核对，不把源码审阅或省略检查记为产品通过。

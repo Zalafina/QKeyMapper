@@ -25,6 +25,7 @@
 #include <QPointer>
 
 class QkmUiScale;
+class QJsonObject;
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtWin>
@@ -97,7 +98,7 @@ class QkmUiScale;
 #include "qmappingsequenceedit.h"
 #include "qpointpickerdialog.h"
 
-namespace QkmAutomation { class ControlDialog; }
+namespace QkmAutomation { class ControlDialog; struct AutomationRequest; }
 
 namespace Ui {
 class QKeyMapper;
@@ -2086,6 +2087,8 @@ public:
     void requestSaveSettingDirty(void);
 private:
     void refreshAllKeyMappingTabWidget(void);
+    QJsonObject collectAutomationState(void) const;
+    void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
     void updateMousePointsList(void);
     void reloadUILanguage(void);
     void setUILanguage(int languageindex);

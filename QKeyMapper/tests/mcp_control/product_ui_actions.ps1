@@ -162,6 +162,12 @@ function Select-Control {
 }
 
 if ($Action -eq 'OpenAdvanced') {
+    $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')
+    Select-Control $mappingTab
+    $stopKey = Find-Control $mainRoot ([Windows.Automation.ControlType]::Edit) 'mappingStopKeyLineEdit' @()
+    $stopShortcut = $stopKey.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
+    $startButton = Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'keymapButton' @()
+    $mappingButtonText = $startButton.Current.Name
     $tab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('通用设定','General','一般設定')
     Select-Control $tab
     Invoke-Button $mainRoot 'generalAdvancedButton' @('通用高级设定','General Advanced','一般高度設定')
@@ -210,6 +216,10 @@ if ($Action -eq 'OpenAdvanced') {
     }
 }
 $result = @{ success = $true; action = $Action; desktop = [QkmProductUiDesktop]::Name($main); window = $main.ToInt64() }
+if ($Action -eq 'OpenAdvanced') {
+    $result.stop_shortcut_edit = $stopShortcut
+    $result.mapping_button_text = $mappingButtonText
+}
 if ($Action -notin 'OpenAdvanced','CloseMcp') {
     $dialog = Find-OwnedWindow $mcpNames
     $result.dialog_window = $dialog.Current.NativeWindowHandle

@@ -23,6 +23,7 @@ import win32service
 from mcp import Client
 
 from test_sdk_interop import ROOT, call, close_desktop, connection, elevation, integrity, parameters
+from qkeymapper_mcp.bridge import Bridge
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.windows import identity
 
@@ -150,7 +151,7 @@ async def run(args):
     try:
         await product.started()
         await product.capture(product.window, "main")
-        await product.action("OpenAdvanced")
+        baseline = await product.action("OpenAdvanced")
         initial = await product.action("OpenMcp")
         assert initial["enabled"] is False and initial["discovery"] == "" and initial["pair_count"] == 0, "use an unused product namespace; interface must default to disabled"
         mcp_window = initial["dialog_window"]
@@ -177,12 +178,47 @@ async def run(args):
             state = await connection(client, "connected")
             assert state["scopes"] == 1 and store.load() is not None
             result = await call(client, "qkm_get_capabilities")
-            assert result["ok"] and result["result"]["stage"] == "transport_only"
-            assert result["result"]["business_capabilities"] == []
+            assert result["ok"] and result["result"]["stage"] == "business"
+            capabilities = result["result"]["business_capabilities"]
+            assert len(capabilities) == 1 and capabilities[0]["id"] == "state.read"
+            assert capabilities[0]["method"] == "qkm_get_state" and capabilities[0]["read_only"] is True
+            assert capabilities[0]["arguments_schema"]["additionalProperties"] is False
+            summary = (await call(client, "qkm_get_state"))["result"]
+            (args.output / "state_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+            assert (await client.call_tool("qkm_get_state", {"unknown": True})).is_error
+            assert summary["schema_version"] == 1 and summary["instance"] == state["instance"]
+            assert summary["business_revision"] is None
+            assert summary["configuration"] == {"group": "", "kind": "draft", "has_unsaved_changes": False}
+            assert summary["current_tab"] == {"name": "Tab1", "index": 0, "is_common": False}
+            assert summary["run"]["gui_state"] == "idle" and summary["run"]["monitoring_enabled"] is False
+            assert summary["run"]["worker_state_sample"] == "stopped"
+            assert summary["run"]["stop_completion"] == "unobserved"
+            assert summary["run"]["actual_stop_shortcut"] == baseline["stop_shortcut_edit"]
+            assert baseline["mapping_button_text"] == "映射开始"
+            assert (await call(client, "qkm_get_state"))["result"] == summary
+            passed("read-only business state matches independent GUI stop shortcut and idle button; cleanup remains unobserved")
             await product.capture(mcp_window, "paired")
             await product.action("CloseMcp")
             assert (await call(client, "qkm_get_capabilities"))["ok"]
             passed("GUI read-only approval, protected credential, formal RPC and close-window keeps interface")
+        probe = Bridge(discovery, args.executable)
+        try:
+            assert probe.connect()["accepted"]
+            await product.wait(lambda: probe.state()["status"] == "connected" and not probe.state()["busy"])
+            # Negative native requests supplement the formal MCP path; they cannot bypass product validation.
+            def invalid_arguments(method):
+                request_id = uuid.uuid4().hex
+                deadline = time.monotonic() + 5
+                probe._pipe.send({"id": request_id, "method": method, "arguments": {"unknown": True}}, deadline)
+                return request_id, probe._pipe.receive(deadline)
+            for method in ("qkm_get_state", "qkm_get_capabilities"):
+                request_id, response = await asyncio.wrap_future(probe._submit(lambda: invalid_arguments(method)))
+                assert response["id"] == request_id and response["ok"] is False
+                assert response["error"]["code"] == "invalid_arguments"
+            assert (await probe.get_state())["result"] == summary
+            passed("authenticated product rejects unknown native arguments without changing state or closing the session")
+        finally:
+            await asyncio.to_thread(probe.close)
         async with Client(config) as client:
             await call(client, "qkm_connect")
             await connection(client, "connected")

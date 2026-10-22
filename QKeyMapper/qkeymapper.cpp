@@ -3802,6 +3802,9 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_CustomNotificationSetupDialog = new QNotificationSetupDialog(this);
     m_GeneralAdvancedDialog = new QGeneralAdvancedDialog(this);
     m_McpControlDialog = new QkmAutomation::ControlDialog(this);
+    m_McpControlDialog->server().setRequestHandler([this](QkmAutomation::AutomationRequest request) {
+        handleAutomationRequest(request);
+    });
     connect(m_GeneralAdvancedDialog, &QGeneralAdvancedDialog::mcpControlRequested, this, [this]() {
         m_McpControlDialog->show();
         m_McpControlDialog->raise();
@@ -37097,6 +37100,87 @@ void QKeyMapper::setUITheme(int themeindex)
         }
     }
 
+}
+
+QJsonObject QKeyMapper::collectAutomationState(void) const
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    if (loadSetting_flag || !isInitialized() || ui == Q_NULLPTR || ui->settingselectComboBox->currentIndex() < 0
+        || ui->settingselectComboBox->currentIndex() >= m_SettingSelectListWithoutDescription.size()
+        || s_KeyMappingTabWidgetCurrentIndex < 0
+        || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()) return {};
+
+    const KeyMappingTab_Info &tab = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex);
+    const QString group = currentSettingSelectGroupName();
+    const char *guiState = "unknown";
+    switch (m_KeyMapStatus) {
+    case KEYMAP_IDLE: guiState = "idle"; break;
+    case KEYMAP_CHECKING: guiState = "checking"; break;
+    case KEYMAP_MAPPING_GLOBAL: guiState = "mapping_global"; break;
+    case KEYMAP_MAPPING_MATCHED: guiState = "mapping_matched"; break;
+    }
+    const int workerSample = QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire();
+    const char *workerState = "unknown";
+    switch (workerSample) {
+    case HOOKPROC_STATE_STOPPED: workerState = "stopped"; break;
+    case HOOKPROC_STATE_STARTED: workerState = "started"; break;
+    case HOOKPROC_STATE_STOPPING: workerState = "stopping"; break;
+    case HOOKPROC_STATE_STARTING: workerState = "starting"; break;
+    }
+    return {{QStringLiteral("schema_version"), 1},
+        {QStringLiteral("instance"), m_McpControlDialog->server().instanceId()},
+        {QStringLiteral("business_revision"), QJsonValue(QJsonValue::Null)},
+        {QStringLiteral("configuration"), QJsonObject{{QStringLiteral("group"), group},
+            {QStringLiteral("kind"), group.isEmpty() ? QStringLiteral("draft")
+                : group == QLatin1String(GROUPNAME_GLOBALSETTING) ? QStringLiteral("global") : QStringLiteral("saved_profile")},
+            {QStringLiteral("has_unsaved_changes"), hasUnsavedSettingChanges()}}},
+        {QStringLiteral("current_tab"), QJsonObject{{QStringLiteral("name"), tab.TabName},
+            {QStringLiteral("index"), s_KeyMappingTabWidgetCurrentIndex},
+            {QStringLiteral("is_common"), isCommonMappingTab(tab)}}},
+        {QStringLiteral("run"), QJsonObject{{QStringLiteral("gui_state"), QString::fromLatin1(guiState)},
+            {QStringLiteral("monitoring_enabled"), m_KeyMapStatus != KEYMAP_IDLE},
+            {QStringLiteral("worker_state_sample"), QString::fromLatin1(workerState)},
+            {QStringLiteral("stop_completion"), QStringLiteral("unobserved")},
+            {QStringLiteral("actual_stop_shortcut"), s_MappingStopKeyString}}}};
+}
+
+void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest &request)
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    auto &server = m_McpControlDialog->server();
+    const bool capabilities = request.method == QStringLiteral("qkm_get_capabilities");
+    if (!capabilities && request.method != QStringLiteral("qkm_get_state")) {
+        server.replyError(request.connectionId, request.requestId, QStringLiteral("unsupported_capability"),
+                          QStringLiteral("Business capability is not connected."));
+        return;
+    }
+    if (!request.arguments.isEmpty()) {
+        server.replyError(request.connectionId, request.requestId, QStringLiteral("invalid_arguments"),
+                          QStringLiteral("No arguments are accepted."));
+        return;
+    }
+    if (capabilities) {
+        server.replyCapabilities(request.connectionId, request.requestId, QJsonArray{QJsonObject{
+            {QStringLiteral("id"), QStringLiteral("state.read")},
+            {QStringLiteral("method"), QStringLiteral("qkm_get_state")},
+            {QStringLiteral("required_scopes"), int(QkmAutomation::Read)},
+            {QStringLiteral("read_only"), true},
+            {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+                {QStringLiteral("properties"), QJsonObject()}, {QStringLiteral("additionalProperties"), false}}},
+            {QStringLiteral("limitations"), QJsonArray{QStringLiteral("business_revision_unavailable"),
+                QStringLiteral("stop_completion_unobserved"), QStringLiteral("tab_index_is_not_a_stable_target")}}}});
+        return;
+    }
+    const QJsonObject state = collectAutomationState();
+    if (state.isEmpty()) {
+        server.replyError(request.connectionId, request.requestId, QStringLiteral("context_busy"),
+                          QStringLiteral("Configuration is loading or the application is not available."));
+    } else if (QJsonDocument(state).toJson(QJsonDocument::Compact).size() > QkmAutomation::MaxFramePayload - 256) {
+        server.replyError(request.connectionId, request.requestId, QStringLiteral("result_too_large"),
+                          QStringLiteral("State exceeds the response limit."));
+    } else {
+        server.reply(request.connectionId, request.requestId, state);
+    }
 }
 
 void QKeyMapper::connectSettingDirtySignals(void)

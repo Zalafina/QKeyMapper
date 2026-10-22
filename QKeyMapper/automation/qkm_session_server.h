@@ -7,6 +7,7 @@
 #include "qkm_private_storage.h"
 
 #include <functional>
+#include <QJsonArray>
 
 namespace QkmAutomation {
 
@@ -56,6 +57,8 @@ public:
     bool updatePermissions(const QString &pairId, quint32 scopes);
     void setRequestHandler(std::function<void(AutomationRequest)> handler);
     bool reply(const QString &connectionId, const QString &requestId, const QJsonObject &result);
+    bool replyCapabilities(const QString &connectionId, const QString &requestId,
+                           const QJsonArray &businessCapabilities);
     bool replyError(const QString &connectionId, const QString &requestId,
                     const QString &code, const QString &message);
 

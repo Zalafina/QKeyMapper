@@ -1,3 +1,4 @@
+import asyncio
 import os
 import threading
 import time
@@ -139,6 +140,7 @@ class NativeTests(unittest.TestCase):
             future = bridge._submit(operation)
             self.assertTrue(entered.wait(1))
             self.assertFalse(bridge.connect()["accepted"])
+            self.assertEqual(asyncio.run(bridge.get_state()), {"ok": False, "error": "busy_or_closed"})
             bridge.disconnect()
             bridge.disconnect()
             self.assertFalse(bridge.connect()["accepted"])
@@ -154,6 +156,49 @@ class NativeTests(unittest.TestCase):
             bridge.close()
         bridge.close()
         self.assertFalse(bridge.connect()["accepted"])
+
+    def test_fixed_read_rpc_dispatch(self):
+        from qkeymapper_mcp.bridge import Bridge
+        for entry, method in (("get_capabilities", "qkm_get_capabilities"), ("get_state", "qkm_get_state")):
+            with self.subTest(entry=entry):
+                bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+                pipe = Mock()
+                pipe.discovery.instance = "a" * 32
+                pipe.receive.side_effect = lambda _deadline: {"id": pipe.send.call_args.args[0]["id"],
+                    "ok": True, "result": {"native": "value"}}
+                bridge._pipe = pipe
+                bridge._credential = Credential("b" * 32, 1, 1, b"k" * 32)
+                try:
+                    result = asyncio.run(getattr(bridge, entry)())
+                    self.assertTrue(result["ok"])
+                    self.assertEqual(result["result"], {"native": "value"})
+                    self.assertEqual(pipe.send.call_args.args[0]["method"], method)
+                    self.assertEqual(pipe.send.call_args.args[0]["arguments"], {})
+                    self.assertEqual(bridge.state()["status"], "connected")
+                    self.assertNotIn("business_capabilities", bridge.state())
+                finally:
+                    bridge.close()
+
+    def test_read_rpc_errors_keep_application_failures_distinct(self):
+        from qkeymapper_mcp.bridge import Bridge
+        cases = (({"ok": True, "result": []}, "invalid_message", "failed"),
+                 ({"ok": True, "result": {}, "extra": True}, "invalid_message", "failed"),
+                 ({"ok": "true", "result": {}}, "invalid_message", "failed"),
+                 ({"ok": False, "error": {"code": "context_busy", "message": "Not ready."}},
+                  "context_busy", "connected"))
+        for response, error, status in cases:
+            with self.subTest(response=response):
+                bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+                pipe = Mock()
+                pipe.discovery.instance = "a" * 32
+                pipe.receive.side_effect = lambda _deadline: {"id": pipe.send.call_args.args[0]["id"], **response}
+                bridge._pipe = pipe
+                bridge._credential = Credential("b" * 32, 1, 1, b"k" * 32)
+                try:
+                    self.assertEqual(asyncio.run(bridge.get_state()), {"ok": False, "error": error})
+                    self.assertEqual(bridge.state()["status"], status)
+                finally:
+                    bridge.close()
 
     def test_impersonated_worker_is_rejected(self):
         from concurrent.futures import ThreadPoolExecutor

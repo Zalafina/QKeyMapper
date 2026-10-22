@@ -4,37 +4,45 @@
 
 ## 当前状态与填写规则
 
-日期：2026-10-22；源码基线：`d49a9f57`。**已建立逐控件入口清单，并追踪首个闭环及代表性设置的关键链路；正式 SDK 通信／配对已接，MCP 产品业务能力全部未接入，业务等价性全部未执行。** 入口清单包含只读显示、编辑暂存和多个入口，不能把条目数当成业务能力数或全量链路完成数。
+日期：2026-10-22；初始源码基线：`d49a9f57`。**逐控件入口及 68 条关键链路已盘点，通信／配对已接；只读状态摘要完成两套产品的选定停止态验证（STATE-34）。配置／映射写操作及实际输入效果的 GUI／MCP 业务等价性尚未执行。** 入口清单包含只读显示、编辑暂存和多个入口，不能把条目数当成业务能力数或全量链路完成数。
 
 M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维护稳定 ID、作用范围、类型／单位／约束、GUI 事件入口、共用业务操作、实际有效状态／缓存／通知、持久化／生效时机、依赖与风险、阶段、用例及结果。模块行中列出的文件用于导航；未逐项追踪的处理链路明确标为待核对。
 
 同一功能存在多个 GUI 入口时，需要列出每个入口及其调用关系。测试必须比较实际数据、派生状态、联动、保存恢复及适用最终效果；不能只核对控件或将请求值原样回显。完成判据以主计划为准。
 
+### 当前只读能力：M1.2a-1
+
+`state.read`／`qkm_get_state` 为固定无参数、Read 权限的只读摘要；从 GUI 线程读取实际配置组、当前 Tab、dirty、GUI 监视状态、Worker 原子状态采样和实际停止快捷键。业务修订号为 null、停止清理明确为 unobserved；Tab index 不能充当稳定编辑目标。加载／初始化未就绪返回 context_busy，未知参数拒绝，超大结果拒绝。
+
+STATE-34：14 项桥接单测，两套正式 SDK 各 12、相关会话各 3 组，Qt6／Qt5 产品各 8 分项通过。独立 GUI 基线先选择可见映射页，读到实际停止快捷键 L-Ctrl+F6 和“映射开始”按钮；正式 MCP 核对空白配置／Tab1／dirty、停止态及重复读取不变，原生负例独立核对 C++ 参数拒绝。未以 MCP 或业务函数替代 GUI 基线。
+
+当前证明范围为隔离空白配置／停止态摘要；全局／保存配置、运行态、加载／初始化忙及超大摘要错误仍待对应场景验证，不将其记为已通过。业务修订号、源数据查询、稳定引用、写操作及停止完成等待未实现；下文历史通信记录只适用于其原版本／范围。
+
 ## 内部通信基础（M1.1a／b／c）
 
-以下是内部组件及正式 SDK 通信检查，不是完整用户业务能力。产品已链接基础组件并接入默认关闭的管理窗口；正式 SDK 仅提供连接／配对和通信能力发现，业务仍未开放、等价性仍未执行。结果见验证记录 `IPC-20261022-07` 至 `23` 及 `27`。
+以下为内部组件及通信检查，不代表完整用户业务能力。默认关闭的管理窗口和正式 SDK 已接；旧记录的 transport_only 范围保留，当前另有上述 state.read。历史结果见 `IPC-20261022-07` 至 `31`，本轮见 `STATE-34`。
 
 | ID | 实现及源码 | 已证明范围 | 未证明范围 |
 |---|---|---|---|
 | INF-FRAME | [qkm_ipc_frame.cpp](../../QKeyMapper/automation/qkm_ipc_frame.cpp)：大端长度、分段读取、有界 UTF-8 JSON 对象、深度与失败终止 | Qt6.8.3／Qt5.15.2 指定边界用例通过；实际往返保留中文／日文／emoji、转义 NUL，错误不回显旧消息，超限头不分配大载荷 | 首包 schema／版本、读缓存和慢连接见 INF-LISTENER；认证后读写限额、鉴权、速率和业务原子提交由后续层实现 |
 | INF-IDENTITY | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：进程创建时间、主 Token SID／登录／会话及实际管道对端身份 | 两套 Qt 下同机独立进程双方查询通过；IPC-22 验证 High／Medium 系统 UAC 互指登录，保留进程／请求原 AuthenticationId 严格检查；不采信自报 PID | 请求上下文组件见 INF-REQUEST-CONTEXT；完整集成／异常恢复、真正异用户／会话、管理员产品与普通桥接、配对／授权及撤销尚未验收；主 Token 快照不等于完整授权 |
-| INF-LISTENER | [qkm_local_listener.cpp](../../QKeyMapper/automation/qkm_local_listener.cpp)：默认关闭的原生单实例管道、Qt 接管与清理、严格首包、绝对期限及请求 Token 门禁 | PC-W10 两套 Qt 普通配置各 59 通过；Qt6 故障配置 64 通过；匿名请求不得进入握手入口，在途检查全 listener 限一项，挂起检查超时／恢复失败关闭端点，旧结果不放行重启实例；见 IPC-20261022-11／13 | listener 单独不授权；产品管理窗口、内部控制器和正式 SDK 已接入，产品业务尚未开放；不等于业务能力或 GUI 等价性 |
+| INF-LISTENER | [qkm_local_listener.cpp](../../QKeyMapper/automation/qkm_local_listener.cpp)：默认关闭的原生单实例管道、Qt 接管与清理、严格首包、绝对期限及请求 Token 门禁 | PC-W10 两套 Qt 普通配置各 59 通过；Qt6 故障配置 64 通过；匿名请求不得进入握手入口，在途检查全 listener 限一项，挂起检查超时／恢复失败关闭端点，旧结果不放行重启实例；见 IPC-20261022-11／13 | listener 单独不授权；产品管理窗口、控制器和 SDK 已接入，只读摘要见 STATE-34；本行组件结果不等于业务能力或 GUI 等价性 |
 | INF-REQUEST-CONTEXT | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：独立原生线程检查已读管道请求 Token，退出后回所属 Qt 线程报告 | 普通／匿名 SQOS、进程／会话绑定、析构回收通过；已接 listener；专用配置故障注入证明恢复失败、长期挂起及关闭交错不会认证或累积替代线程；见 IPC-20261022-12／13 | 故障注入不等于真实 OS API 故障；真正异用户／会话、管理员产品／普通桥接及完整鉴权尚未验收；不能当作业务权限 |
 | INF-AUTH-PROOF | [qkm_auth_proof.cpp](../../QKeyMapper/automation/qkm_auth_proof.cpp)：系统随机、固定格式双向 HMAC-SHA256 和一次性挑战 | 三个方向／用途的固定输入及 MAC 与独立 Python 结果一致；绑定字段逐项变化、版本／类型／长度、32 个错误字节位置、反射／重放／旧 nonce／取消及随机源失败通过；见 IPC-20261022-14 | 已在 INF-SESSION／SDK 接握手及 GUI 授权；本行仅证明组件语义，不单独作为认证或业务权限证据；未测侧信道时序 |
 | INF-PAIR-STORE | [qkm_pair_store.cpp](../../QKeyMapper/automation/qkm_pair_store.cpp)：类型化权限／凭据、机器与应用绑定、当前用户 DPAPI、私有 ACL、原子保存 | PC-W10 非提权运行，普通 Qt6／Qt5 各 71、故障 Qt6 77 通过；独立进程读取、错误上下文／损坏／非法权限拒绝、只读失败保留原文件、私有目录与硬链接拒绝，见 IPC-20261022-15 | 已接内部控制器与管理窗口；IPC-22 已证明 High 维护服务写盘、普通桥接配对／重连；真实异用户／跨机器及完整产品未测，不能算业务授权或完整安全边界；默认执行沙箱不具备可用 DPAPI 环境，运行测试使用获准非提权沙箱外上下文 |
-| INF-SESSION | [qkm_session_server.cpp](../../QKeyMapper/automation/qkm_session_server.cpp)：连接代次、GUI 权威批准入口、证明及保存后 ready、最小权限、代次更新／撤销、分阶段限额 | IPC-22 普通 Qt6／Qt5 各 88、故障 94、High 维护／Medium SDK 各 13；IPC-31 真正两套管理员产品／普通 SDK 各六分项通过，transport_only 无业务 | 当前只有通信后端，不能当作业务等价性；异用户／Win11、业务权限与业务效果仍待对应场景验证 |
+| INF-SESSION | [qkm_session_server.cpp](../../QKeyMapper/automation/qkm_session_server.cpp)：连接代次、GUI 权威批准入口、证明及保存后 ready、最小权限、代次更新／撤销、分阶段限额 | IPC-22 原完整范围、IPC-31 原 transport_only 产品各六分项；STATE-34 共用能力响应变更后两套相关会话各三组通过、正式产品各八分项 | 当前另接 state.read 的停止态子集；不能把通信结果当作业务等价性，异用户／Win11、写权限和业务效果待对应场景验证 |
 | INF-GUI | [ControlDialog](../../QKeyMapper/automation/qkm_control_dialog.cpp)、[通用高级设置](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[托盘入口](../../QKeyMapper/qkeymapper.cpp)：本次运行启用、只读默认、实际程序／PID、权限批准、拒绝／撤销、窗口关闭与 Escape | IPC-23 修正后两套 GUI 各 18；IPC-31 两套真正产品六分项完整通过，含默认关闭、只读批准／RPC、重连、撤销及冷启动拒绝旧 key | 实际托盘／High 静态截图未验，普通 PrintWindow 失败；三语言同源静态图复用 IPC-21。固定助手 Qt5 选择模式兼容仅属测试工具，无业务等价性结论 |
 | INF-DISCOVERY | [实例发现](../../QKeyMapper/automation/qkm_instance_discovery.cpp)、[共享私有存储](../../QKeyMapper/automation/qkm_private_storage.cpp)、[会话启停](../../QKeyMapper/automation/qkm_session_server.cpp)：私有原子 JSON、活跃文件租约、真实进程／登录／预期 EXE、按句柄清理 | IPC-19 组件与 IPC-27 两套 SDK 原结果；IPC-31 两套正式管理员产品默认绑定／发现、关闭清理及冷启动重新启用通过 | 只是连接提示，实际管道身份／新证明仍必需；实际异用户及 Win11 未测，不算业务能力 |
-| INF-SDK | [桥接入口](../../mcp_bridge/src/qkeymapper_mcp/__main__.py)、[连接与证明](../../mcp_bridge/src/qkeymapper_mcp/bridge.py)、[Windows I/O](../../mcp_bridge/src/qkeymapper_mcp/windows.py)、[客户端凭据](../../mcp_bridge/src/qkeymapper_mcp/credentials.py) | 官方 mcp 2.3.0；IPC-31 两套正式产品各六分项，Qt6 维护短场景单轮及带诊断三轮各 12；Qt5 普通各 12 复用 IPC-27，High 维护各 13 含 60 秒及 Python 单测 12 复用 IPC-22 | 当前只有连接／配对／通信能力；首次维护进程退出原因未知、带诊断未重现，保留 IPC-31 失败索引。打包、异用户、Win11、性能及业务等价性未验 |
+| INF-SDK | [桥接入口](../../mcp_bridge/src/qkeymapper_mcp/__main__.py)、[连接与证明](../../mcp_bridge/src/qkeymapper_mcp/bridge.py)、[Windows I/O](../../mcp_bridge/src/qkeymapper_mcp/windows.py)、[客户端凭据](../../mcp_bridge/src/qkeymapper_mcp/credentials.py) | 官方 mcp 2.3.0；STATE-34 六工具严格参数、14 单测，两套正式 SDK 各 12、产品各 8；原 High 维护／60 秒范围仅复用 IPC-22 | 只读摘要之外的业务仍未接入。历史一次维护进程退出原因未知，保留 IPC-31 失败索引；打包、异用户、Win11、性能及写操作业务等价性未验 |
 | INF-OFFLINE | [共享私有存储](../../QKeyMapper/automation/qkm_private_storage.cpp)、[会话](../../QKeyMapper/automation/qkm_session_server.cpp)、[窗口](../../QKeyMapper/automation/qkm_control_dialog.cpp)：关闭接口查看／撤销，原生目录及 control.lock 租约 | IPC-21 占用拒绝／只读／损坏／冷启动及 ASan 原范围；IPC-22 High 维护离线撤销，IPC-30 实际产品离线撤销持久化观察，IPC-31 两套产品默认关闭／零配对／冷启动旧 key 拒绝通过 | 不承诺无租约旧原型兼容；实际异用户／Win11 未测，无业务等价性结论 |
 
 ## 初始模块索引
 
-下表是模块范围导航；各模块的 MCP 实现和等价性验收统一为 **未实现／未执行**。本轮已追踪的部分见后续关键链路表，其余逐项契约仍待核对。拟定用例 ID 是后续测试目标，不表示已存在测试脚本。
+下表是模块范围导航；除 CAP-001 的状态摘要子集外，各模块 MCP 业务实现／等价性验收仍为 **未实现／未执行**。已追踪的部分见后续关键链路表，其余逐项契约仍待核对。拟定用例 ID 是后续测试目标，不表示已存在测试脚本。
 
 | ID | 能力范围 | GUI／源码导航 | 共用链路与有效状态重点 | 阶段／拟定用例 |
 |---|---|---|---|---|
-| CAP-001 | 能力、实例、运行状态及帮助 | [主窗口头文件](../../QKeyMapper/qkeymapper.h)、[主程序入口](../../QKeyMapper/main.cpp) | 当前配置、真实运行状态、停止快捷键、依赖与端点身份；接口待设计 | M1／API-STATUS-001 |
+| CAP-001 | 能力、实例、运行状态及帮助 | [主窗口头文件](../../QKeyMapper/qkeymapper.h)、[主程序入口](../../QKeyMapper/main.cpp) | 已接实际状态摘要，停止态／空白配置见 STATE-34；其他配置／运行态／加载与超限待验，帮助和源查询待接 | M1／API-STATUS-001 |
 | MAP-001 | 普通映射新增／修改／删除 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`on_addmapdataButton_clicked()`；[映射项窗口](../../QKeyMapper/qitemsetupdialog.cpp) | 校验、数据来源、派生字段、冲突、刷新和 dirty；按操作拆行 | M1／EQ-MAP-001 |
 | MAP-002 | 连发、锁定、长按／双击、时机、发送方式、抬起键 | [映射项窗口](../../QKeyMapper/qitemsetupdialog.cpp)、[映射引擎](../../QKeyMapper/qkeymapper_worker.cpp) | 所有参数与相互限制、实际有效数据、Worker 消费值、释放与保存 | M2-A／EQ-ITEM-001 |
 | MAP-003 | 映射码、浮动按钮样式码 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`applyMappingCodeToSourceRow()` | 解析不等于完整业务提交；运行状态、禁用保留、冲突及忽略字段 | M2-A／EQ-CODE-001 |

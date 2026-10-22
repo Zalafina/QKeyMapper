@@ -29,7 +29,7 @@ from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.protocol import BridgeError
 from qkeymapper_mcp.windows import identity
 
-TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect", "qkm_get_capabilities"}
+TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state"}
 
 
 def elevation(process) -> int:
@@ -200,7 +200,12 @@ async def run(args):
         print("PASS", name, flush=True)
 
     async with Client(parameters(args.output / "absent" / "instance.json", args.test_exe, args.output)) as client:
-        assert {tool.name for tool in (await client.list_tools()).tools} == TOOLS
+        tools = (await client.list_tools()).tools
+        assert {tool.name for tool in tools} == TOOLS
+        for tool in tools:
+            assert tool.input_schema["additionalProperties"] is False
+            rejected = await client.call_tool(tool.name, {"unknown": True})
+            assert rejected.is_error, "Unknown arguments must not be silently ignored: " + tool.name
         assert (await call(client, "qkm_get_connection_state"))["status"] == "disconnected"
         assert (await call(client, "qkm_connect"))["accepted"]
         assert (await connection(client, "failed"))["error"] == "application_unavailable"
@@ -238,6 +243,7 @@ async def run(args):
             assert response["ok"] and response["result"]["stage"] == "transport_only"
             assert response["result"]["business_capabilities"] == []
             assert response["result"]["scopes"] == 1 and response["result"]["instance"] == connected["instance"]
+            assert (await call(client, "qkm_get_state"))["error"] == "unsupported_capability"
             saved = store.load()
             assert saved is not None and saved.secret.hex() not in json.dumps({"state": connected, "response": response})
             wrong_context = CredentialStore(discovery.with_name("different-instance.json"), args.test_exe, own.session)

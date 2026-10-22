@@ -30,7 +30,7 @@ class Bridge:
         self._closing = False
         self._pipe = None
         self._credential = None
-        self._state = {"status": "disconnected", "business_capabilities": []}
+        self._state = {"status": "disconnected"}
 
     def state(self) -> dict:
         with self._lock:
@@ -38,7 +38,7 @@ class Bridge:
 
     def _set(self, status: str, **extra) -> None:
         with self._lock:
-            self._state = {"status": status, "business_capabilities": [], **extra}
+            self._state = {"status": status, **extra}
 
     def _disconnect(self) -> None:
         if self._pipe is not None:
@@ -133,7 +133,13 @@ class Bridge:
         return self.state()
 
     async def get_capabilities(self) -> dict:
-        future = self._submit(self._get_capabilities)
+        return await self._call("qkm_get_capabilities")
+
+    async def get_state(self) -> dict:
+        return await self._call("qkm_get_state")
+
+    async def _call(self, method: str) -> dict:
+        future = self._submit(lambda: self._request(method))
         if future is None:
             return {"ok": False, "error": "busy_or_closed"}
         try:
@@ -142,11 +148,11 @@ class Bridge:
             win32event.SetEvent(self._cancel)
             raise
 
-    def _get_capabilities(self) -> dict:
+    def _request(self, method: str) -> dict:
         require(self._pipe is not None and self._credential is not None, "not_connected")
         request_id = uuid.uuid4().hex
         deadline = time.monotonic() + 10
-        self._pipe.send({"id": request_id, "method": "qkm_get_capabilities", "arguments": {}}, deadline)
+        self._pipe.send({"id": request_id, "method": method, "arguments": {}}, deadline)
         response = self._pipe.receive(deadline)
         require(type(response.get("ok")) is bool and response.get("id") == request_id)
         if response["ok"]:

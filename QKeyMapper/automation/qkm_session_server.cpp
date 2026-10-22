@@ -310,11 +310,7 @@ void AutomationSessionServer::onMessage(const QString &connectionId, const QJson
                 replyError(connectionId, requestId, QStringLiteral("invalid_arguments"), QStringLiteral("No arguments are accepted."));
                 return;
             }
-            reply(connectionId, requestId, {{QStringLiteral("interface_version"), HandshakeVersion},
-                {QStringLiteral("instance"), m_listener.instanceId()}, {QStringLiteral("scopes"), int(m_pair.scopes)},
-                {QStringLiteral("stage"), QStringLiteral("transport_only")},
-                {QStringLiteral("business_capabilities"), QJsonArray()},
-                {QStringLiteral("max_frame_bytes"), MaxFramePayload}});
+            replyCapabilities(connectionId, requestId, {});
             return;
         }
         replyError(connectionId, requestId, QStringLiteral("unsupported_capability"), QStringLiteral("Business capability is not connected."));
@@ -371,6 +367,16 @@ bool AutomationSessionServer::sendReply(const QString &connectionId, const QStri
 bool AutomationSessionServer::reply(const QString &connectionId, const QString &requestId, const QJsonObject &result)
 {
     return sendReply(connectionId, requestId, {{QStringLiteral("ok"), true}, {QStringLiteral("result"), result}});
+}
+
+bool AutomationSessionServer::replyCapabilities(const QString &connectionId, const QString &requestId,
+                                               const QJsonArray &businessCapabilities)
+{
+    return reply(connectionId, requestId, {{QStringLiteral("interface_version"), HandshakeVersion},
+        {QStringLiteral("instance"), m_listener.instanceId()}, {QStringLiteral("scopes"), int(m_pair.scopes)},
+        {QStringLiteral("stage"), businessCapabilities.isEmpty() ? QStringLiteral("transport_only") : QStringLiteral("business")},
+        {QStringLiteral("business_capabilities"), businessCapabilities},
+        {QStringLiteral("max_frame_bytes"), MaxFramePayload}});
 }
 
 bool AutomationSessionServer::replyError(const QString &connectionId, const QString &requestId,
