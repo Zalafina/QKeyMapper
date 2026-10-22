@@ -16,6 +16,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QCryptographicHash>
 #include <QPainterPath>
 #include <QScrollBar>
 #include <QSet>
@@ -37111,6 +37112,7 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()) return {};
 
     const KeyMappingTab_Info &tab = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex);
+    // shortcut: This group follows GUI selection; verify source ownership before enabling edits.
     const QString group = currentSettingSelectGroupName();
     const char *guiState = "unknown";
     switch (m_KeyMapStatus) {
@@ -37126,6 +37128,8 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     case HOOKPROC_STATE_STARTED: workerState = "started"; break;
     case HOOKPROC_STATE_STOPPING: workerState = "stopping"; break;
     case HOOKPROC_STATE_STARTING: workerState = "starting"; break;
+    case HOOKPROC_STATE_RESTART_STOPPING: workerState = "restart_stopping"; break;
+    case HOOKPROC_STATE_RESTART_STARTING: workerState = "restart_starting"; break;
     }
     return {{QStringLiteral("schema_version"), 1},
         {QStringLiteral("instance"), m_McpControlDialog->server().instanceId()},
@@ -37144,9 +37148,148 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             {QStringLiteral("actual_stop_shortcut"), s_MappingStopKeyString}}}};
 }
 
+QJsonObject QKeyMapper::collectAutomationCatalog(void) const
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    const QJsonObject state = collectAutomationState();
+    if (state.isEmpty() || ui->settingselectComboBox->count() != m_SettingSelectListWithoutDescription.size()) return {};
+    const QString selectedGroup = state.value(QStringLiteral("configuration")).toObject().value(QStringLiteral("group")).toString();
+    QJsonArray configurations;
+    for (int index = 0; index < m_SettingSelectListWithoutDescription.size(); ++index) {
+        const QString &group = m_SettingSelectListWithoutDescription.at(index);
+        configurations.append(QJsonObject{{QStringLiteral("group"), group},
+            {QStringLiteral("display_name"), ui->settingselectComboBox->itemText(index)},
+            {QStringLiteral("kind"), group.isEmpty() ? QStringLiteral("draft")
+                : group == QLatin1String(GROUPNAME_GLOBALSETTING) ? QStringLiteral("global") : QStringLiteral("saved_profile")},
+            {QStringLiteral("is_selected"), group == selectedGroup}});
+    }
+    QJsonArray tabs;
+    bool commonAttached = false;
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        const KeyMappingTab_Info &tab = s_KeyMappingTabInfoList.at(index);
+        const bool common = isCommonMappingTab(tab);
+        commonAttached = commonAttached || common;
+        tabs.append(QJsonObject{{QStringLiteral("name"), tab.TabName},
+            {QStringLiteral("internal_name"), tab.TabInternalName}, {QStringLiteral("index"), index},
+            {QStringLiteral("hotkey"), tab.TabHotkey}, {QStringLiteral("is_common"), common},
+            {QStringLiteral("include_common"), tab.IncludeCommonMappingTable},
+            {QStringLiteral("common_collapsed"), tab.CommonMappingCollapsed},
+            {QStringLiteral("is_current"), index == s_KeyMappingTabWidgetCurrentIndex},
+            {QStringLiteral("attached_to_ui"), true}});
+    }
+    if (!commonAttached) {
+        tabs.append(QJsonObject{{QStringLiteral("name"), getCommonMappingTableDisplayText()},
+            {QStringLiteral("internal_name"), getCommonMappingTableInternalName()},
+            {QStringLiteral("index"), QJsonValue(QJsonValue::Null)},
+            {QStringLiteral("is_common"), true}, {QStringLiteral("is_current"), false},
+            {QStringLiteral("attached_to_ui"), false}});
+    }
+    return {{QStringLiteral("selected_configuration"), state.value(QStringLiteral("configuration"))},
+        {QStringLiteral("common_feature_enabled"), isCommonMappingFeatureEnabled()},
+        {QStringLiteral("configurations"), configurations}, {QStringLiteral("tabs"), tabs}};
+}
+
+void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request)
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    auto &server = m_McpControlDialog->server();
+    const auto fail = [&](const QString &code, const QString &message) {
+        server.replyError(request.connectionId, request.requestId, code, message);
+    };
+    const QSet<QString> allowed{QStringLiteral("entity"), QStringLiteral("catalog_revision"),
+        QStringLiteral("offset"), QStringLiteral("limit")};
+    for (auto it = request.arguments.constBegin(); it != request.arguments.constEnd(); ++it) {
+        if (!allowed.contains(it.key())) {
+            fail(QStringLiteral("invalid_arguments"), QStringLiteral("Unknown query argument."));
+            return;
+        }
+    }
+    const QJsonValue entityValue = request.arguments.value(QStringLiteral("entity"));
+    const QString entity = entityValue.toString();
+    const QJsonValue revisionValue = request.arguments.value(QStringLiteral("catalog_revision"));
+    const bool fresh = revisionValue.isUndefined();
+    const auto integer = [&](const QString &name, int fallback, int minimum, int maximum, int &output) {
+        const QJsonValue value = request.arguments.value(name);
+        if (value.isUndefined()) { output = fallback; return true; }
+        if (!value.isDouble()) return false;
+        const double number = value.toDouble();
+        if (!(number >= minimum && number <= maximum)) return false;
+        output = static_cast<int>(number);
+        return number == output;
+    };
+    int offset = 0, limit = 50;
+    if (!entityValue.isString()
+        || (!fresh && (!revisionValue.isString() || !QkmAutomation::isLowerHex(revisionValue.toString(), 64)))
+        || !integer(QStringLiteral("offset"), 0, 0, 2147483647, offset)
+        || !integer(QStringLiteral("limit"), 50, 1, 100, limit) || (fresh && offset != 0)) {
+        fail(QStringLiteral("invalid_arguments"), QStringLiteral("Query arguments have invalid types, ranges or pagination context."));
+        return;
+    }
+    if (entity != QStringLiteral("configurations") && entity != QStringLiteral("tabs")) {
+        fail(QStringLiteral("unsupported_query"), QStringLiteral("Only configuration and Tab catalogs are connected."));
+        return;
+    }
+    const QJsonObject catalog = collectAutomationCatalog();
+    if (catalog.isEmpty()) {
+        fail(QStringLiteral("context_busy"), QStringLiteral("Configuration is loading or not available."));
+        return;
+    }
+    const QJsonObject revisionContext{{QStringLiteral("instance"), server.instanceId()},
+        {QStringLiteral("pair_id"), request.pairId},
+        {QStringLiteral("permission_epoch"), QString::number(request.permissionEpoch)},
+        {QStringLiteral("catalog"), catalog}};
+    const QString revision = QString::fromLatin1(QCryptographicHash::hash(
+        QJsonDocument(revisionContext).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
+    if (!fresh && revisionValue.toString() != revision) {
+        fail(QStringLiteral("stale_catalog"), QStringLiteral("Catalog or authorization context changed; query again."));
+        return;
+    }
+    const QJsonArray rows = catalog.value(entity).toArray();
+    if (offset > rows.size()) {
+        fail(QStringLiteral("invalid_arguments"), QStringLiteral("Offset exceeds the catalog size."));
+        return;
+    }
+    QJsonObject result{{QStringLiteral("schema_version"), 1}, {QStringLiteral("entity"), entity},
+        {QStringLiteral("catalog"), QJsonObject{{QStringLiteral("revision"), revision},
+            {QStringLiteral("instance"), server.instanceId()},
+            {QStringLiteral("reference_scope"), QStringLiteral("catalog_only")},
+            {QStringLiteral("selected_configuration"), catalog.value(QStringLiteral("selected_configuration"))},
+            {QStringLiteral("common_feature_enabled"), catalog.value(QStringLiteral("common_feature_enabled"))}}},
+        {QStringLiteral("offset"), offset}, {QStringLiteral("total"), int(rows.size())},
+        {QStringLiteral("items"), QJsonArray()}, {QStringLiteral("next_offset"), QJsonValue(QJsonValue::Null)}};
+    qsizetype bytes = QJsonDocument(result).toJson(QJsonDocument::Compact).size();
+    if (bytes > QkmAutomation::MaxFramePayload - 256) {
+        fail(QStringLiteral("result_too_large"), QStringLiteral("Catalog metadata exceeds the response limit."));
+        return;
+    }
+    QJsonArray items;
+    int next = offset;
+    for (; next < rows.size() && items.size() < limit; ++next) {
+        QJsonObject item = rows.at(next).toObject();
+        item.insert(QStringLiteral("catalog_ref"), revision + QLatin1Char(':') + entity + QLatin1Char(':') + QString::number(next));
+        const qsizetype itemBytes = QJsonDocument(item).toJson(QJsonDocument::Compact).size() + 1;
+        if (bytes + itemBytes > QkmAutomation::MaxFramePayload - 256) {
+            if (items.isEmpty()) {
+                fail(QStringLiteral("item_too_large"), QStringLiteral("One catalog item exceeds the response limit."));
+                return;
+            }
+            break;
+        }
+        items.append(item);
+        bytes += itemBytes;
+    }
+    result.insert(QStringLiteral("items"), items);
+    if (next < rows.size()) result.insert(QStringLiteral("next_offset"), next);
+    server.reply(request.connectionId, request.requestId, result);
+}
+
 void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
+    if (request.method == QStringLiteral("qkm_query")) {
+        handleAutomationCatalogQuery(request);
+        return;
+    }
     auto &server = m_McpControlDialog->server();
     const bool capabilities = request.method == QStringLiteral("qkm_get_capabilities");
     if (!capabilities && request.method != QStringLiteral("qkm_get_state")) {
@@ -37168,7 +37311,27 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
             {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
                 {QStringLiteral("properties"), QJsonObject()}, {QStringLiteral("additionalProperties"), false}}},
             {QStringLiteral("limitations"), QJsonArray{QStringLiteral("business_revision_unavailable"),
-                QStringLiteral("stop_completion_unobserved"), QStringLiteral("tab_index_is_not_a_stable_target")}}}});
+                QStringLiteral("stop_completion_unobserved"), QStringLiteral("tab_index_is_not_a_stable_target"),
+                QStringLiteral("configuration_group_is_ui_selection")}}},
+            QJsonObject{{QStringLiteral("id"), QStringLiteral("catalog.read")},
+            {QStringLiteral("method"), QStringLiteral("qkm_query")},
+            {QStringLiteral("required_scopes"), int(QkmAutomation::Read)},
+            {QStringLiteral("read_only"), true},
+            {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+                {QStringLiteral("additionalProperties"), false}, {QStringLiteral("required"), QJsonArray{QStringLiteral("entity")}},
+                {QStringLiteral("properties"), QJsonObject{
+                    {QStringLiteral("entity"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                        {QStringLiteral("enum"), QJsonArray{QStringLiteral("configurations"), QStringLiteral("tabs")}}}},
+                    {QStringLiteral("catalog_revision"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                        {QStringLiteral("pattern"), QStringLiteral("^[0-9a-f]{64}$")}}},
+                    {QStringLiteral("offset"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                        {QStringLiteral("minimum"), 0}, {QStringLiteral("maximum"), 2147483647}}},
+                    {QStringLiteral("limit"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                        {QStringLiteral("minimum"), 1}, {QStringLiteral("maximum"), 100}}}}}}},
+            {QStringLiteral("limitations"), QJsonArray{QStringLiteral("catalog_references_are_not_edit_targets"),
+                QStringLiteral("mapping_rows_not_connected"), QStringLiteral("saved_profile_contents_not_loaded"),
+                QStringLiteral("catalog_revision_is_not_a_business_revision"),
+                QStringLiteral("pagination_requires_catalog_revision")}}}});
         return;
     }
     const QJsonObject state = collectAutomationState();

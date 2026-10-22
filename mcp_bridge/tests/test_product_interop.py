@@ -180,9 +180,11 @@ async def run(args):
             result = await call(client, "qkm_get_capabilities")
             assert result["ok"] and result["result"]["stage"] == "business"
             capabilities = result["result"]["business_capabilities"]
-            assert len(capabilities) == 1 and capabilities[0]["id"] == "state.read"
-            assert capabilities[0]["method"] == "qkm_get_state" and capabilities[0]["read_only"] is True
-            assert capabilities[0]["arguments_schema"]["additionalProperties"] is False
+            by_id = {item["id"]: item for item in capabilities}
+            assert set(by_id) == {"state.read", "catalog.read"}
+            assert by_id["state.read"]["method"] == "qkm_get_state" and by_id["state.read"]["read_only"] is True
+            assert by_id["state.read"]["arguments_schema"]["additionalProperties"] is False
+            assert by_id["catalog.read"]["method"] == "qkm_query" and by_id["catalog.read"]["read_only"] is True
             summary = (await call(client, "qkm_get_state"))["result"]
             (args.output / "state_summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
             assert (await client.call_tool("qkm_get_state", {"unknown": True})).is_error
@@ -190,6 +192,7 @@ async def run(args):
             assert summary["business_revision"] is None
             assert summary["configuration"] == {"group": "", "kind": "draft", "has_unsaved_changes": False}
             assert summary["current_tab"] == {"name": "Tab1", "index": 0, "is_common": False}
+            assert summary["current_tab"]["name"] == baseline["mapping_tab_name"]
             assert summary["run"]["gui_state"] == "idle" and summary["run"]["monitoring_enabled"] is False
             assert summary["run"]["worker_state_sample"] == "stopped"
             assert summary["run"]["stop_completion"] == "unobserved"
@@ -197,6 +200,34 @@ async def run(args):
             assert baseline["mapping_button_text"] == "映射开始"
             assert (await call(client, "qkm_get_state"))["result"] == summary
             passed("read-only business state matches independent GUI stop shortcut and idle button; cleanup remains unobserved")
+            catalog = (await call(client, "qkm_query", {"entity": "tabs", "limit": 1}))["result"]
+            assert catalog["schema_version"] == 1 and catalog["entity"] == "tabs"
+            assert catalog["catalog"]["reference_scope"] == "catalog_only"
+            assert catalog["catalog"]["selected_configuration"] == summary["configuration"]
+            assert catalog["total"] == 2 and catalog["next_offset"] == 1 and len(catalog["items"]) == 1
+            assert catalog["items"][0]["name"] == baseline["mapping_tab_name"]
+            assert catalog["items"][0]["is_current"] and not catalog["items"][0]["is_common"]
+            catalog_revision = catalog["catalog"]["revision"]
+            last = (await call(client, "qkm_query", {"entity": "tabs", "catalog_revision": catalog_revision,
+                "offset": 1, "limit": 1}))["result"]
+            assert last["next_offset"] is None and len(last["items"]) == 1
+            assert last["items"][0]["is_common"] and not last["items"][0]["attached_to_ui"]
+            assert last["items"][0]["index"] is None
+            whole = (await call(client, "qkm_query", {"entity": "tabs", "catalog_revision": catalog_revision}))["result"]
+            assert whole["items"] == catalog["items"] + last["items"]
+            configs = (await call(client, "qkm_query", {"entity": "configurations", "catalog_revision": catalog_revision}))["result"]
+            assert configs["total"] == 2 and configs["next_offset"] is None
+            assert configs["items"][0]["is_selected"] and configs["items"][0]["kind"] == "draft"
+            assert configs["items"][0]["display_name"] == baseline["configuration_display"]
+            assert configs["items"][1]["kind"] == "global" and not configs["items"][1]["is_selected"]
+            fresh = (await call(client, "qkm_query", {"entity": "tabs"}))["result"]
+            assert fresh["catalog"]["revision"] == catalog_revision and fresh["items"] == whole["items"]
+            wrong_revision = ("0" if catalog_revision[0] != "0" else "1") + catalog_revision[1:]
+            assert (await call(client, "qkm_query", {"entity": "tabs", "catalog_revision": wrong_revision}))["error"] == "stale_catalog"
+            assert (await call(client, "qkm_query", {"entity": "tabs", "offset": 1}))["error"] == "invalid_arguments"
+            assert (await call(client, "qkm_get_state"))["result"] == summary
+            (args.output / "catalog.json").write_text(json.dumps({"tabs": whole, "configurations": configs}, ensure_ascii=False, indent=2), encoding="utf-8")
+            passed("formal catalog pagination matches independent GUI names, separates detached common metadata and validates stable revisions")
             await product.capture(mcp_window, "paired")
             await product.action("CloseMcp")
             assert (await call(client, "qkm_get_capabilities"))["ok"]
@@ -206,16 +237,27 @@ async def run(args):
             assert probe.connect()["accepted"]
             await product.wait(lambda: probe.state()["status"] == "connected" and not probe.state()["busy"])
             # Negative native requests supplement the formal MCP path; they cannot bypass product validation.
-            def invalid_arguments(method):
+            def invalid_arguments(method, arguments):
                 request_id = uuid.uuid4().hex
                 deadline = time.monotonic() + 5
-                probe._pipe.send({"id": request_id, "method": method, "arguments": {"unknown": True}}, deadline)
+                probe._pipe.send({"id": request_id, "method": method, "arguments": arguments}, deadline)
                 return request_id, probe._pipe.receive(deadline)
-            for method in ("qkm_get_state", "qkm_get_capabilities"):
-                request_id, response = await asyncio.wrap_future(probe._submit(lambda: invalid_arguments(method)))
+            for method, arguments, expected in (("qkm_get_state", {"unknown": True}, "invalid_arguments"),
+                    ("qkm_get_capabilities", {"unknown": True}, "invalid_arguments"),
+                    ("qkm_query", {"entity": "tabs", "unknown": True}, "invalid_arguments"),
+                    ("qkm_query", {"entity": "tabs", "limit": True}, "invalid_arguments"),
+                    ("qkm_query", {"entity": "tabs", "limit": 1.5}, "invalid_arguments"),
+                    ("qkm_query", {"entity": "tabs", "offset": 1}, "invalid_arguments"),
+                    ("qkm_query", {"entity": "mappings"}, "unsupported_query"),
+                    ("qkm_query", {"entity": "tabs", "catalog_revision": wrong_revision}, "stale_catalog")):
+                raw = await asyncio.wrap_future(probe._submit(lambda: invalid_arguments(method, arguments)))
+                assert isinstance(raw, tuple), raw
+                request_id, response = raw
                 assert response["id"] == request_id and response["ok"] is False
-                assert response["error"]["code"] == "invalid_arguments"
+                assert response["error"]["code"] == expected
             assert (await probe.get_state())["result"] == summary
+            native_catalog = await probe.query("tabs", catalog_revision=catalog_revision)
+            assert native_catalog["ok"] and native_catalog["result"]["items"] == whole["items"]
             passed("authenticated product rejects unknown native arguments without changing state or closing the session")
         finally:
             await asyncio.to_thread(probe.close)
@@ -223,6 +265,7 @@ async def run(args):
             await call(client, "qkm_connect")
             await connection(client, "connected")
             passed("new ordinary stdio bridge reconnects to actual product using its saved credential")
+            assert (await call(client, "qkm_query", {"entity": "tabs", "catalog_revision": catalog_revision}))["ok"]
             await product.action("OpenAdvanced")
             await product.action("OpenMcp")
             await product.action("Revoke")
@@ -230,6 +273,18 @@ async def run(args):
             await call(client, "qkm_connect")
             await connection(client, "failed")
             passed("actual GUI revocation disconnects and rejects the old key")
+            await call(client, "qkm_request_pairing")
+            await connection_pending(client)
+            await product.action("ApproveRead", own.executable)
+            await connection(client, "connected")
+            assert (await call(client, "qkm_query", {"entity": "tabs", "catalog_revision": catalog_revision}))["error"] == "stale_catalog"
+            new_revision = (await call(client, "qkm_query", {"entity": "tabs"}))["result"]["catalog"]["revision"]
+            assert new_revision != catalog_revision
+            assert (await call(client, "qkm_get_state"))["result"] == summary
+            passed("old catalog revision cannot cross an explicit new GUI pairing approval")
+            await product.action("Revoke")
+            await call(client, "qkm_connect")
+            await connection(client, "failed")
             await product.action("Disable")
             await product.wait(lambda: not discovery.exists())
             await product.capture(mcp_window, "revoked_disabled")

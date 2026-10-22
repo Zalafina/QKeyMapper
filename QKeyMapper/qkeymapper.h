@@ -2088,7 +2088,9 @@ public:
 private:
     void refreshAllKeyMappingTabWidget(void);
     QJsonObject collectAutomationState(void) const;
+    QJsonObject collectAutomationCatalog(void) const;
     void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
+    void handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request);
     void updateMousePointsList(void);
     void reloadUILanguage(void);
     void setUILanguage(int languageindex);

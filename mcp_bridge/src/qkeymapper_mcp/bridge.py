@@ -138,8 +138,14 @@ class Bridge:
     async def get_state(self) -> dict:
         return await self._call("qkm_get_state")
 
-    async def _call(self, method: str) -> dict:
-        future = self._submit(lambda: self._request(method))
+    async def query(self, entity: str, *, catalog_revision: str | None = None, offset: int = 0, limit: int = 50) -> dict:
+        arguments = {"entity": entity, "offset": offset, "limit": limit}
+        if catalog_revision is not None:
+            arguments["catalog_revision"] = catalog_revision
+        return await self._call("qkm_query", arguments)
+
+    async def _call(self, method: str, arguments: dict | None = None) -> dict:
+        future = self._submit(lambda: self._request(method, arguments if arguments is not None else {}))
         if future is None:
             return {"ok": False, "error": "busy_or_closed"}
         try:
@@ -148,11 +154,11 @@ class Bridge:
             win32event.SetEvent(self._cancel)
             raise
 
-    def _request(self, method: str) -> dict:
+    def _request(self, method: str, arguments: dict) -> dict:
         require(self._pipe is not None and self._credential is not None, "not_connected")
         request_id = uuid.uuid4().hex
         deadline = time.monotonic() + 10
-        self._pipe.send({"id": request_id, "method": method, "arguments": {}}, deadline)
+        self._pipe.send({"id": request_id, "method": method, "arguments": arguments}, deadline)
         response = self._pipe.receive(deadline)
         require(type(response.get("ok")) is bool and response.get("id") == request_id)
         if response["ok"]:

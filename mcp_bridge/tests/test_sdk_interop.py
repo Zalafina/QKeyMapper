@@ -29,7 +29,7 @@ from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.protocol import BridgeError
 from qkeymapper_mcp.windows import identity
 
-TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state"}
+TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state", "qkm_query"}
 
 
 def elevation(process) -> int:
@@ -164,8 +164,8 @@ def parameters(discovery: Path, executable: Path, output: Path) -> StdioServerPa
         cwd=str(output))
 
 
-async def call(client, name: str) -> dict:
-    result = await client.call_tool(name)
+async def call(client, name: str, arguments: dict | None = None) -> dict:
+    result = await client.call_tool(name, arguments)
     assert not result.is_error, "SDK tool error: " + name
     assert type(result.structured_content) is dict
     return result.structured_content
@@ -204,9 +204,14 @@ async def run(args):
         assert {tool.name for tool in tools} == TOOLS
         for tool in tools:
             assert tool.input_schema["additionalProperties"] is False
-            rejected = await client.call_tool(tool.name, {"unknown": True})
+            valid = {"entity": "tabs"} if tool.name == "qkm_query" else {}
+            rejected = await client.call_tool(tool.name, {**valid, "unknown": True})
             assert rejected.is_error, "Unknown arguments must not be silently ignored: " + tool.name
+        for invalid in ({"offset": True}, {"offset": "1"}, {"offset": -1}, {"limit": 0},
+                {"limit": 101}, {"limit": 1.5}, {"catalog_revision": "bad"}, {"entity": "mappings"}):
+            assert (await client.call_tool("qkm_query", {"entity": "tabs", **invalid})).is_error
         assert (await call(client, "qkm_get_connection_state"))["status"] == "disconnected"
+        assert (await call(client, "qkm_query", {"entity": "tabs"}))["error"] == "not_connected"
         assert (await call(client, "qkm_connect"))["accepted"]
         assert (await connection(client, "failed"))["error"] == "application_unavailable"
         passed("SDK initialize/list/call with application absent")
@@ -244,6 +249,7 @@ async def run(args):
             assert response["result"]["business_capabilities"] == []
             assert response["result"]["scopes"] == 1 and response["result"]["instance"] == connected["instance"]
             assert (await call(client, "qkm_get_state"))["error"] == "unsupported_capability"
+            assert (await call(client, "qkm_query", {"entity": "tabs"}))["error"] == "unsupported_capability"
             saved = store.load()
             assert saved is not None and saved.secret.hex() not in json.dumps({"state": connected, "response": response})
             wrong_context = CredentialStore(discovery.with_name("different-instance.json"), args.test_exe, own.session)

@@ -634,3 +634,35 @@ Qt6 首轮 accept-state-qt6 因隐藏页控件不可访问而 exit 1，自有 PI
 最终产品拓扑均 High／RID 12288，控制器／SDK／桥接 Medium／RID 8192，same_login=true。Qt6 实际桌面 QkmProduct_d81f18a0af21447780662acb4c959e4b／冷启动 QkmProduct_07a2e71596b0482ca9173743f9ea58bc，PID 32284／4320；Qt5 为 QkmProduct_cc0f43bd737f4dc2b7120f347daa289e／QkmProduct_c71cf4118b2641f6aca891be7bb2f5d7，PID 29204／31580。四个 closed.json 均 exit 0。原用户 PID 5420／10:17:55 实例保持运行。除原已授权产品启动／关闭和固定 GUI 助手外未提权；无 Default 场景、真实输入、映射启动或驱动安装。
 
 两套产品普通 PrintWindow 仍失败，stock_product_snapshots=false，截图未提权；新接口不改布局／翻译，静态视觉仍仅按 IPC-21 的同源原范围引用。当前只证明空白配置／停止态子切片；全局／保存配置、运行态、加载／初始化忙与超大摘要错误、稳定引用、写操作、停止清理及实际效果尚未验证或尚未实现。异用户／Win11、性能、打包和 SDK 旧一次维护退出原因仍待后续。编码／LF、差异及相关 Markdown 链接在本检查点核对，不把源码审阅或省略检查记为产品通过。
+
+## SRC-20261022-35：目录查询与映射行快照的实现边界
+
+PC-W10，基线 `95d9ed46`；本节为 M1.2a-2a 工作区实现前／实现中的源审阅，产品验收另记，不算完整源查询通过。buildActiveKeyMappingDataList 使用正常／共通源表构建独立运行列表；Worker 停止／重启会恢复指针并通过 syncRuntimeKeyMappingStatesToCurrentTab 写回 Burst／Lock／LockState，不能直接复制运行指针或假定所有源数据只由 GUI 修改。映射码已有六类显式字段白名单，后续映射行投影应复用该注册表；分页缓存也不能因共享可变运行数据而改变引擎的复制行为。
+
+先实现 configurations／tabs 目录：只读取实际配置选择列表、Tab 元数据和共通附着状态，不读映射行、运行有效映射或未加载配置内容。使用绑定实例／配对／权限代次和目录内容的修订号，每页重新核对；不保留缓存或定时器，相同目录与授权上下文重复查询保持引用稳定，目录／授权变化返回 stale_catalog。attached_to_ui 表示是否附着到 Tab 控件，不承诺屏幕可见。catalog_ref 不是编辑目标，目录修订不是完整业务修订；完整映射源、相关修订及停止完成仍为后续实现。
+
+currentSettingSelectGroupName 读取选择框索引对应的实际组名；当前类没有独立“已加载源配置”身份字段。因此目录使用 selected_configuration／is_selected，状态能力增加 configuration_group_is_ui_selection 限制及源码注释，不把选择当作运行或编辑数据的来源证明。该来源身份需要在映射行／共用操作切片中建立并验证。另补齐两个已有 Worker 重启状态的名称（restart_stopping／restart_starting），没有更改 Worker 状态转换；其真实运行场景仍待启停切片验收。
+
+初期局部证据：catalog-protocol.log 15 tests／OK／native exit 0；catalog-sdk-boundaries-green.log 的早期快照参数草案，七工具未知字段／八类目录参数类型范围及未连接错误语义通过。首次 catalog-sdk-boundaries.log 的额外状态断言失败：有效未连接业务请求按既有逻辑将连接状态标为 failed／not_connected；修正测试顺序／预期，未改变桥接失败语义。sdk-catalog-qt6.log／sdk-catalog-qt5.log 的早期适配各 12 通过。最终收敛为无状态 catalog_revision，以减少缓存／定时器和读取之间的相互失效；这些草案检查不作为最终协议或产品结果，最终参数与产品必须重新验证。写入预览的 120 秒上限按原计划保留。
+
+## CAT-20261022-36：无状态目录修订与两套正式产品读流
+
+PC-W10，基线 `95d9ed46` 加本检查点。C++ 在 GUI 线程读取配置选择目录和当前 Tab 元数据；不读取映射行／运行数据列表，不改 Worker、驱动、manifest、INI 格式或 TS。配置目录使用实际组名和下拉框条目文本；空白项 display_name 是空字符串，通过 kind=draft 识别。selected_configuration／is_selected 不承诺已加载数据身份，attached_to_ui 不承诺屏幕可见性。状态能力补充配置选择限制及两个已有重启状态名称，不改变引擎转换。
+
+最终接口为 qkm_query(entity=configurations|tabs, catalog_revision?, offset=0, limit=50)，limit 1–100，offset 为非负整数，非首页必须携带 64 个小写十六进制字符的修订号。C++ 从实例、配对、权限代次和完整目录 JSON 生成 SHA256 修订，每页重核；不保存缓存、快照或定时器。目录引用不构成授权或编辑目标，仍须原认证／逐请求权限检查，完整业务修订仍未实现。没有每个输入事件的配置哈希。早期 32 位快照／两分钟过期设计未交付，其日志不作为最终验证；预览的 120 秒上限保留给写操作阶段。
+
+| 当前检查 | 结果与本机证据 |
+|---|---|
+| Qt6／Qt5 x64 普通 Release | build_catalog_revision_qt6.log／build_catalog_revision_qt5.log，均 native exit 0；Qt6 无编译链接警告，Qt5 唯一官方 qtmain LNK4099 例外，无新增警告 |
+| Python 协议／有界线程 | catalog-revision-protocol.log，15 tests／OK，0.194 秒，native exit 0；增加固定 query 分发、默认／分页参数保留和忙状态 |
+| 两套正式 SDK | sdk-catalog-revision-qt6.log／sdk-catalog-revision-qt5.log，同名目录 results.json／topology.json；各 12 短场景／native exit 0，含七工具未知字段、八类目录参数类型范围拒绝、未连接查询语义、维护端未接业务时 query 拒绝；均非提权私有桌面 |
+| Qt6 正式产品 | accept-catalog-revision-qt6.log 与同名目录 results.json／catalog.json／state_summary.json／topology.json；10 分项、native exit 0。runtime-catalog-qt6/QKeyMapperMcpAcceptance_catalog_qt6.exe；部署字节与本机构建一致，SHA256 0B09111591CAAC2EE35AA3882B9E00E8DEAE28D0FB0A7DFD92FB4339F601D291 |
+| Qt5 正式产品 | accept-catalog-revision-qt5.log 与同名目录同类证据；10 分项、native exit 0。runtime-catalog-qt5/QKeyMapperMcpAcceptance_catalog_qt5.exe；部署字节一致，SHA256 B5CF0E5436046D5A87B512D63F2437B331AA02F597D761DE50B5F9BB0DDD5D62 |
+
+十个产品分项在原状态／连接／撤销／冷启动流程上增加目录和跨配对上下文检查。GUI 助手从真实控件读 Tab1、空白配置显示和 L-Ctrl+F6／“映射开始”；正式 MCP 查询对应值。Tab 目录第一页 1 项、次页未附着共通表，合并与整页相同；配置目录为当前空白项和未选的全局项。多次新查询和同配对新 stdio 重连保持修订及引用稳定。改动一位的修订拒绝，明确重新配对后旧配对的修订拒绝而新修订可读，状态／dirty 不变。
+
+正式 MCP 的 typed 参数拒绝 bool／字符串 offset、负 offset、0／101／小数 limit、非法修订和不支持 entity；原生负例独立验证 C++ 拒绝 state／capabilities 额外参数，以及 query 的未知字段、bool／小数 limit、缺少分页修订、不支持的 mappings 和错误修订。后续有效状态／目录请求仍成功，未把业务失败当作连接授权丢失。正向目录仍从正式 SDK 读取，没有使用原生负例或同一业务函数替代 GUI 基线。
+
+实际拓扑：产品 High／RID 12288，控制器／SDK／桥接 Medium／RID 8192，same_login=true。Qt6 私有桌面 QkmProduct_c776a3cfd0e7491d97fb1467dc524383／冷启动 QkmProduct_7bb7af84453a425983612b244991facf，PID 4080／15680；Qt5 为 QkmProduct_b4ac578346b2426da0352aefb44554fe／QkmProduct_307f76b4b8a64e02a1717273f0076508，PID 31640／30140。四个 closed.json 均 exit 0；普通 CIM 最终核对自有测试进程 0，原用户 PID 5420／10:17:55 保持运行。gsudo 仅原批准启动／关闭及固定 GUI 助手；无 Default 场景、真实输入、映射启动、驱动安装或配置业务变更。
+
+普通 PrintWindow 仍失败，stock_product_snapshots=false，未提权截图；不据此宣称 High 产品静态视觉通过。当前只验空白配置／停止态读流，GUI 实际目录变更引起失效、多个普通 Tab／用户配置、加载忙／超大响应及运行／重启状态仍待后续相应用例。映射行、实际源身份、业务修订、编辑／保存和停止完成尚未实现；Win11／异用户、性能、打包及旧 SDK 一次维护退出原因缺口保留。共享会话／控制器 C++ 未变，原生会话三组和管理窗口旧证据仅按 STATE-34 原范围复用，未重复全量 IPC、严格分析或 ASan。

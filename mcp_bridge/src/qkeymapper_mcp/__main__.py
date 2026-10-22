@@ -3,11 +3,12 @@ import asyncio
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any, Literal
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver.tools import Tool
 from mcp.types import ToolAnnotations
+from pydantic import Field, StrictInt
 
 from . import __version__
 from .bridge import Bridge
@@ -77,8 +78,16 @@ def main() -> None:
 
     @tool(read)
     async def qkm_get_state() -> dict[str, Any]:
-        """读取已认证产品的当前配置、GUI 状态、Worker 状态采样与实际停止快捷键；不改变设置。未观测的停止清理和不可用的修订号会明确报告。"""
+        """读取已认证产品的配置选择、GUI 状态、Worker 状态采样与实际停止快捷键；配置选择不是运行数据来源证明。未观测的停止清理和不可用的修订号会明确报告。"""
         return await bridge.get_state()
+
+    @tool(read)
+    async def qkm_query(entity: Literal["configurations", "tabs"],
+            catalog_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
+            offset: Annotated[StrictInt, Field(ge=0, le=2147483647)] = 0,
+            limit: Annotated[StrictInt, Field(ge=1, le=100)] = 50) -> dict[str, Any]:
+        """只读分页查询配置目录或当前 Tab 目录。首轮 offset=0、不传 catalog_revision；后续页携带返回的目录修订号，目录或授权上下文变化后须重新查询。catalog_ref 仅供目录引用，不能作为映射编辑目标；映射行和未加载配置的内容尚未接入。"""
+        return await bridge.query(entity, catalog_revision=catalog_revision, offset=offset, limit=limit)
 
     server = MCPServer("QKeyMapper", version=__version__, lifespan=lifespan, log_level="ERROR", tools=tools,
         instructions="连接本机 QKeyMapper。首次配对必须由用户在 QKeyMapper 窗口批准。按能力发现读取实际支持的状态；尚未开放映射或设置变更。连接状态是上次核验结果，业务状态须重新查询。IDLE 或 Worker STOPPED 均不代表停止清理已完成。")

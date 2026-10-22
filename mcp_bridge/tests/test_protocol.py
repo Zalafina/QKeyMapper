@@ -141,6 +141,7 @@ class NativeTests(unittest.TestCase):
             self.assertTrue(entered.wait(1))
             self.assertFalse(bridge.connect()["accepted"])
             self.assertEqual(asyncio.run(bridge.get_state()), {"ok": False, "error": "busy_or_closed"})
+            self.assertEqual(asyncio.run(bridge.query("tabs")), {"ok": False, "error": "busy_or_closed"})
             bridge.disconnect()
             bridge.disconnect()
             self.assertFalse(bridge.connect()["accepted"])
@@ -178,6 +179,26 @@ class NativeTests(unittest.TestCase):
                     self.assertNotIn("business_capabilities", bridge.state())
                 finally:
                     bridge.close()
+
+    def test_catalog_query_rpc_and_pagination_arguments(self):
+        from qkeymapper_mcp.bridge import Bridge
+        bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+        pipe = Mock()
+        pipe.discovery.instance = "a" * 32
+        pipe.receive.side_effect = lambda _deadline: {"id": pipe.send.call_args.args[0]["id"],
+            "ok": True, "result": {"items": []}}
+        bridge._pipe = pipe
+        bridge._credential = Credential("b" * 32, 1, 1, b"k" * 32)
+        try:
+            for arguments, expected in (({}, {"entity": "tabs", "offset": 0, "limit": 50}),
+                    ({"catalog_revision": "c" * 64, "offset": 1, "limit": 1},
+                     {"entity": "tabs", "catalog_revision": "c" * 64, "offset": 1, "limit": 1})):
+                self.assertTrue(asyncio.run(bridge.query("tabs", **arguments))["ok"])
+                request = pipe.send.call_args.args[0]
+                self.assertEqual(request["method"], "qkm_query")
+                self.assertEqual(request["arguments"], expected)
+        finally:
+            bridge.close()
 
     def test_read_rpc_errors_keep_application_failures_distinct(self):
         from qkeymapper_mcp.bridge import Bridge
