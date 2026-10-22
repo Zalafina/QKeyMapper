@@ -555,3 +555,34 @@ PC-W10，源码 `3fd3deb3`，产品 C++ 仍为 `2b9215ef` 构建的同字节隔�
 原截图脚本保持非提权，在 High 产品 PrintWindow 失败，日志明确 UNVERIFIED，未保存图、未改权限；不能以同源维护图替代本轮静态视觉。两份 PowerShell 及 Python 语法检查通过；产品未重建，普通 Qt6／Qt5 SDK／GUI 仍按 IPC-23／27 原范围引用。
 
 用户随后要求在合适位置暂停以关闭 fast。收尾核对：上述两产品 closed.json 均为 exit 0；没有 QKeyMapperMcpAcceptance_* 进程。普通实际用户 CIM 核对相关 product_lifecycle／product_ui_actions／test_product_interop／observe_product_pair 助手数为 0，原用户 PID 5420／启动时间 2026-10-22 10:17:55 未变。默认沙箱 CIM 访问被拒绝后只切换普通 Medium 只读查询，没有新 gsudo／UAC。三份正式产品测试脚本仍未提交，暂停卡片记录恢复动作；本轮只形成文档本地开发检查点，不推送。
+
+## IPC-20261022-31：桌面句柄修正及两套正式产品六分项
+
+PC-W10，起点 `26ecb9e5` 加本记录所在测试切片；产品 C++ 仍为 `2b9215ef`，未改 manifest、引擎、驱动或业务接口。用户通知继续后恢复原固定 GUI／UAC 范围。产品启动按既有逻辑连接已安装 FakerInput；无映射启动、系统输入、驱动安装、Default 或焦点占用。
+
+### 冷启动助手根因与修正
+
+普通权限真实探针复现：PyHDESK.CloseDesktop 后对象仍持有旧非零值，新的 CreateDesktop 复用该值，释放旧对象后新桌面原生名称查询失败。与 [pywin32 桌面绑定](https://github.com/mhammond/pywin32/blob/main/win32/src/win32service.i) 的显式关闭／析构及 [Detach 实现](https://github.com/mhammond/pywin32/blob/main/win32/src/PyHANDLE.cpp) 一致；不是产品冷启动失败。SDK／产品测试共用 close_desktop，在成功 CloseDesktop 后 Detach，保留失败异常，防止析构重复关闭。
+
+新增 test_desktop_lifecycle.py：普通权限先失败（desktop-lifecycle-red.log，保留句柄值断言失败／exit 1），修正后 desktop-lifecycle-green-final.log，1 条真实桌面用例内连续 8 轮通过，0.205 s／exit 0。初版观察误用空桌面 EnumDesktopWindows，其错误不证明句柄失效；已用原生 GetUserObjectInformation 名称／身份查询替代。只创建／关闭自有桌面，无产品或 UAC。
+
+### 真正产品及正式 SDK
+
+| 当前检查 | 结果／原始索引 |
+|---|---|
+| Qt6 正式产品 | 六分项／script native exit 0；out/mcp_product/accepted-stock-qt6-desktop.log 及目录 results.json、两轮 topology.json／closed.json。首次 PID 15448、冷启动 PID 5964，两者 exit 0；实际桌面 QkmProduct_2d7013d2ee7a4f4a8773287032ca3df5／QkmProduct_907eb1a4762e4482b30537797c2da4af |
+| Qt5 正式产品 | 六分项／script native exit 0；accepted-stock-qt5-patterns.log 及同名结果目录。首次 PID 12008、冷启动 PID 31488，两者 exit 0；实际桌面 QkmProduct_a3cb4ea7824a4d1eb21ed83fdb425035／QkmProduct_ff52b2c73bfb438bb83054a9f5acde49 |
+| SDK 普通 Qt6 | sdk-desktop-fix-native-qt6.log 各 12 短场景通过／exit 0；随后带夹具诊断的 sdk-native-diag-qt6-1／2／3 各 12 通过／exit 0，当前三个完整序列未重现下述首次失败。结果／fixture.log／topology.json 位于同名目录 |
+| 维护诊断构建 | out/tests/mcp_control/qt6-release/build_desktop_diagnostics.log，native exit 0、无编译／链接警告。只给 interop 维护入口的主动失败加固定原因及 SDK 原生退出码，不改产品行为 |
+
+六分项分别验证真实高级设置／MCP 入口和默认私有绑定、GUI 只读批准及凭据／真实 transport_only RPC、关闭管理窗保持接口及新 stdio 重连、撤销导致断线／旧 key 拒绝、关闭接口移除发现，以及产品完整退出后重新启动仍默认关闭、零配对并拒绝保留的旧客户端 key。每项经官方 mcp 2.3.0 Client／五工具，C++ 产品为 High／RID 12288，控制器／SDK／桥接为 Medium／8192，同登录关联。退出只清理自身客户端凭据。
+
+Qt6 实际 EXE 仍为 runtime-b1f3ddf7-qt6/QKeyMapperMcpAcceptance_b1f3ddf7.exe（名称保留旧基线，内容为选择修正后的产品）；Qt5 为 runtime-selection-qt5/QKeyMapperMcpAcceptance_selection_qt5.exe。两者源自 IPC-23 已核实的当前产品副本，不复用另一 PC 产物。跨机准备步骤和合成 INI 模板已放入 tests/mcp_control，不复制个人 INI。
+
+Qt5 首次 accepted-stock-qt5-desktop 在 OpenAdvanced 因“不支持的模式”退出，产品 exit 0。固定 GUI 助手选择操作现按实际支持的 SelectionItem／Invoke 模式处理，目标／权限／动作范围不变，修正后完整流程通过。Qt6 已通过轮使用原 SelectionItem；该正向路径与新助手的可用 SelectionItem 分支等价，复用其结果，没有为了无影响的 fallback 增补重复 UAC。
+
+SDK 的 sdk-desktop-fix-qt6 首次短回归在 disable 分项前维护进程已终止，整轮 exit 1；当时 fixture.log 为空且未打印原生退出码，**原生退出原因仍未知，不能追认该轮通过**。新增主动失败诊断并完成上述有界三轮后未重现；保留失败原始记录，如再次发生先根据原生码／夹具原因调查，不盲目重启。此处不将未重现当作已修复的产品故障。
+
+两产品的普通 PrintWindow 仍失败，results.json 的 stock_product_snapshots=false；未提权截图，静态视觉只按 IPC-21／TOOL-25 同源维护证据引用。CPP UTF-8／diff、Python 语法及 PowerShell 解析按本切片核对；未重建产品、未重跑无关 IPC／ASan／严格分析，原结果仅按 IPC-22／23 范围复用。SDK Qt5 普通 12 场景复用 IPC-27；实际 Qt5 管理员产品是本轮新验。
+
+结束后普通实际用户 CIM 核对自有产品助手数 0，四个 closed.json 均 exit 0，原用户 PID 5420／启动时间未变。原始材料均在 out，不随 Git；测试脚本、模板及精简记录形成可同步的本地开发检查点。托盘、实际异用户／Win11、性能、打包和业务等价性仍未验；business_capabilities 仍为空。

@@ -1,0 +1,12 @@
+[General]
+LanguageIndex=0
+StartupAutoMonitoring=false
+StartupMinimized=false
+VirtualGamepadEnable=false
+MultiInputEnable=false
+CloseToSystemtray=false
+CloseToSystemtray_Decided=true
+NotShow_FilterKeysDisabled=true
+NotShow_VersionUnmatched=true
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false

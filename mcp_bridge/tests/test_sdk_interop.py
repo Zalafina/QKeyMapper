@@ -43,6 +43,12 @@ def integrity(process) -> int:
         return int(win32security.ConvertSidToStringSid(sid).rsplit("-", 1)[1])
 
 
+def close_desktop(desktop) -> None:
+    desktop.CloseDesktop()
+    # PyHDESK.CloseDesktop leaves its value attached; its destructor must not close a reused handle.
+    desktop.Detach()
+
+
 def start_fixture(exe: Path, qt: Path, output: Path, desktop_name: str):
     env = os.environ.copy()
     env["PATH"] = str(qt) + os.pathsep + env["PATH"]
@@ -97,7 +103,7 @@ class Fixture:
                         print("Owned fixture cleanup pending, pid", self.pid, file=sys.stderr)
                 finally:
                     self.process.Close()
-            self.desktop.CloseDesktop()
+            close_desktop(self.desktop)
             raise
 
     def state(self) -> dict:
@@ -145,10 +151,11 @@ class Fixture:
                     win32process.TerminateProcess(self.process, 99)
                     win32event.WaitForSingleObject(self.process, 5000)
                 raise AssertionError("owned fixture did not close")
-            assert win32process.GetExitCodeProcess(self.process) == 0, "fixture failed"
+            code = win32process.GetExitCodeProcess(self.process)
+            assert code == 0, f"fixture failed with native exit {code} ({code:#x})"
         finally:
             self.process.Close()
-            self.desktop.CloseDesktop()
+            close_desktop(self.desktop)
 
 
 def parameters(discovery: Path, executable: Path, output: Path) -> StdioServerParameters:

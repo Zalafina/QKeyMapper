@@ -406,12 +406,15 @@ int runInteropFixture(QApplication &app, const QString &statePath)
                     QFile store(root.path() + QStringLiteral("/server/pairings.dat"));
                     if (!store.open(QIODevice::WriteOnly) || store.write("invalid") != 7) { app.exit(29); return; }
                 } else if (action == QStringLiteral("quit")) app.quit();
-                else { app.exit(26); return; }
+                else { qWarning("Unexpected interop fixture command"); app.exit(26); return; }
             }
         }
         wchar_t desktop[256]{};
         DWORD needed = 0;
-        if (!GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), &needed)) { app.exit(27); return; }
+        if (!GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), &needed)) {
+            qWarning("Interop fixture desktop query failed: %lu", GetLastError());
+            app.exit(27); return;
+        }
         const QJsonObject state{{QStringLiteral("pid"), int(GetCurrentProcessId())},
             {QStringLiteral("desktop"), QString::fromWCharArray(desktop)},
             {QStringLiteral("sequence"), sequence}, {QStringLiteral("authenticated"), authenticated},
@@ -424,7 +427,10 @@ int runInteropFixture(QApplication &app, const QString &statePath)
         if (bytes == previous) return;
         QSaveFile output(statePath);
         output.setDirectWriteFallback(false);
-        if (!output.open(QIODevice::WriteOnly) || output.write(bytes) != bytes.size() || !output.commit()) { app.exit(28); return; }
+        if (!output.open(QIODevice::WriteOnly) || output.write(bytes) != bytes.size() || !output.commit()) {
+            qWarning("Interop fixture state write failed: %s", qPrintable(output.errorString()));
+            app.exit(28); return;
+        }
         previous = bytes;
     });
     poll.start(50);

@@ -10,7 +10,7 @@
 
 `--preview <language:0|1|2> <off|pending|paired-off|busy-off> <absolute-state-json>` 仅用于维护目标的静态截图：真实显示同一控件，原子报告 PID／HWND／实际桌面、原生可见性、Qt／原生 DPI、样式／字体及接口／配对状态；20 秒后自动退出，也可从该私有桌面发送 WM_CLOSE。pending 含 `<b>` 和实际自身进程身份，用于检查纯文本；paired-off 使用假配对记录，busy-off 再取得真实租约并点击撤销制造占用提示。四种预览均不启用接口、批准或认证客户端，截图不能证明配对安全。使用仓库 `scripts/capture_ui_snapshots.ps1 -ProcessId ... -WindowHandle ... -PrintWindow` 后自主审阅。
 
-当前验证覆盖独立窗口、产品 Qt6／Qt5 编译及同源维护窗口的正式 SDK 配对；真正 Qt6 管理员产品的高级设置／MCP、只读批准／RPC／重连、撤销和关闭接口五分项已实测。整轮测试在冷启动桌面句柄阶段失败，旧 key 冷启动拒绝及 Qt5 产品验收仍待补齐。普通截图无法捕获 High 产品，该部分未算视觉通过。具体已验证、历史复用与未验证范围见[验证记录](../../../handoff/qkeymapper_mcp_control/validation.md) IPC-23／30；没有 Default 桌面、真实输入、驱动或性能结论。
+当前验证覆盖独立窗口、产品 Qt6／Qt5 编译、同源维护窗口 SDK 配对，以及两套真正管理员产品各六分项：高级设置／MCP 入口、默认应用绑定、只读批准／RPC、重连、撤销／关闭、冷启动拒绝旧 key。普通截图无法捕获 High 产品，该部分未算视觉通过。具体当前、历史复用及未验证范围见[验证记录](../../../handoff/qkeymapper_mcp_control/validation.md) IPC-23／30／31；没有 Default 桌面、真实输入、驱动输出、托盘或性能结论。
 
 ## 可移植执行入口
 
@@ -32,3 +32,43 @@ Qt5 改用对应 Qt5 的两个 EXE、Qt bin 和独立 output。省略 `--screens
 维护 EXE 的 `--interop-fixture <state-file>` 创建真实管理窗口、启用同源服务，通过固定 Qt 事件批准／拒绝／撤销及注入测试保存失败；状态与事件文件仅在维护进程自有 out 路径使用，产品 EXE 不包含此入口。有限生命周期 180 秒，关闭清理服务；不安装驱动，不发送系统输入。
 
 [桥接回归说明](../../../mcp_bridge/README.md) 中的独立官方 SDK 客户端启动 stdio 桥接，核对实际 native pipe peer／EXE、双向 HMAC、凭据持久化、撤销、拒绝、取消、退出、篡改发现、真实 60 秒批准超时和保存失败。GUI 批准前不得 ready，客户端保存了 key 也不代表服务器授权成功。默认检查全部非提权；经授权加 --elevated-server 可仅通过 gsudo 启动管理员维护服务，桥接／控制器仍为普通权限。两种模式使用真实私有桌面；该结果不能替代真正产品入口与完整业务验收。
+
+## 正式产品入口与管理员／普通桥接
+
+已获本轮管理员启动／关闭及受限 GUI 助手授权、用户可以确认 UAC 时运行。开发工具、控制器、SDK、桥接和截图保持普通权限；不修改产品 manifest。`product_lifecycle.ps1` 只管理自有隔离产品，`product_ui_actions.ps1` 只允许高级设置／MCP、启用、只读批准、撤销、关闭的固定 GUI 动作，核对 EXE／PID／启动时间及实际私有桌面，不启动映射或发送系统输入。正常产品启动仍包含对已安装 FakerInput 的连接尝试。
+
+先构建对应 x64 Release 产品，并按本机 Qt kit 部署到全新目录。从仓库根目录执行，Qt5 改用其产品构建目录、Qt bin 和不同名称；不复制个人 INI 或另一台 PC 的产物／凭据：
+
+```powershell
+$qkmProductBuild = 'out/build_qt6/release'
+$qkmKitBin = '<本机 Qt6 bin 绝对路径>'
+$qkmRuntime = 'out/mcp_product/runtime-qt6'
+New-Item -ItemType Directory -Path $qkmRuntime -ErrorAction Stop | Out-Null
+$qkmProductExe = Join-Path $qkmRuntime 'QKeyMapperMcpAcceptance_qt6.exe'
+Copy-Item -LiteralPath (Join-Path $qkmProductBuild 'QKeyMapper.exe') -Destination $qkmProductExe
+Copy-Item -LiteralPath (Join-Path $qkmProductBuild 'QKeyMapperCrashReporter.exe') -Destination $qkmRuntime
+foreach ($qkmLibrary in @('QKeyMapper/QJoysticks/lib/SDL/lib/x64/SDL2.dll',
+    'QKeyMapper/Interception/lib/x64/interception.dll', 'QKeyMapper/FakerInput/lib/x64/FakerInputDll.dll',
+    'QKeyMapper/libusb/lib/x64/libusb-1.0.dll', 'QKeyMapper/ViGEm/lib/x64/ViGEmClient.dll')) {
+    Copy-Item -LiteralPath $qkmLibrary -Destination $qkmRuntime
+}
+& (Join-Path $qkmKitBin 'windeployqt.exe') --release --no-compiler-runtime --no-translations $qkmProductExe
+if ($LASTEXITCODE -ne 0) { throw 'windeployqt failed.' }
+Copy-Item -LiteralPath 'QKeyMapper/tests/mcp_control/product_fixture.ini.example' -Destination (Join-Path $qkmRuntime 'keymapdata.ini')
+out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/tests/test_product_interop.py --executable $qkmProductExe --output out/mcp_product/accept-product-qt6
+if ($LASTEXITCODE -ne 0) { throw 'Product acceptance failed; inspect its logs before retrying.' }
+```
+
+运行依赖桥接的固定 Windows requirements、PowerShell 7 和 gsudo；具体安装见桥接说明，不自动安装驱动。启动未改正式 EXE 的同字节副本，用独立路径／文件名隔离 SingleApplication 和应用绑定。输出目录必须全新且在 out/mcp_product 下。产品初始化为接口关闭、自动监视／多键鼠／虚拟手柄关闭；脚本仍独立验证实际状态，不能只依赖模板。
+
+正式 SDK 通过五个公开工具验证未批准时不可用、只读权限、实际能力、凭据重连、撤销断线／拒绝旧 key；完整退出后再启动同一产品，核对默认关闭及撤销持久化。两次均要求正常退出 0，仅清理自身客户端凭据。Qt5 按控件实际支持的 SelectionItem／Invoke 无障碍模式选择固定目标；没有任意控件或命令入口。服务有 240 秒自有产品看门狗，控制器超时不自动重启。
+
+普通 PrintWindow 无法捕获 High 产品时明确记录未验证，不提升截图权限；功能断言继续独立检查。失败时先看日志、closed.json 和实际进程／配对状态，再决定接续动作；不得盲目重复配对或撤销。
+
+桌面清理单独回归（普通权限，仅创建／关闭自有桌面，不启动产品）：
+
+```powershell
+out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/tests/test_desktop_lifecycle.py -v
+```
+
+该回归检查显式关闭后必须解除 Python 对象对原生句柄的持有，旧对象释放不能误关新建桌面；正式 SDK 与产品脚本使用同一清理函数。
