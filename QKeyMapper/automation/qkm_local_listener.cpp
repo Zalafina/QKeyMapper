@@ -62,7 +62,7 @@ LocalPipeListener::LocalPipeListener(QObject *parent) : QObject(parent)
             endClient(ListenerError::IdentityRejected);
             return;
         }
-        if (m_elapsed.hasExpired(PreauthTimeoutMs)) {
+        if (m_elapsed.hasExpired(m_deadlineMs)) {
             endClient(ListenerError::Timeout);
             return;
         }
@@ -78,8 +78,13 @@ LocalPipeListener::LocalPipeListener(QObject *parent) : QObject(parent)
         const QJsonObject message = m_handshake;
         m_handshake = {};
         const ProcessIdentity peer = m_peer;
-        // Identity verification is complete; pairing proof is still required for authorization.
-        emit handshakeReceived(message, peer);
+        if (m_firstMessage) {
+            m_firstMessage = false;
+            emit handshakeReceived(message, peer);
+        } else {
+            const QString connection = m_connectionId;
+            emit messageReceived(connection, message);
+        }
     });
 }
 
@@ -159,6 +164,7 @@ void LocalPipeListener::stop()
     m_handshake = {};
     m_closing.reset();
     m_disposingSocket = false;
+    m_connectionId.clear();
 }
 
 bool LocalPipeListener::armAccept()
@@ -205,6 +211,11 @@ void LocalPipeListener::acceptClient()
     m_peer = peer.identity;
     m_reader = FrameReader(MaxHandshakePayload);
     m_received = false;
+    m_connectionId = QUuid::createUuid().toString(QUuid::Id128);
+    m_firstMessage = true;
+    m_frameStarted = true;
+    m_deadlineMs = PreauthTimeoutMs;
+    m_payloadLimit = MaxHandshakePayload;
     connect(m_socket, &QLocalSocket::readyRead, this, [this]() { readClient(); });
     connect(m_socket, &QLocalSocket::disconnected, this, [this]() {
         endClient(ListenerError::Disconnected);
@@ -226,7 +237,13 @@ void LocalPipeListener::acceptClient()
 void LocalPipeListener::readClient()
 {
     if (!m_socket) return;
-    if (m_elapsed.hasExpired(PreauthTimeoutMs)) {
+    if (!m_frameStarted) {
+        if (!m_socket->bytesAvailable()) return;
+        m_frameStarted = true;
+        m_elapsed.restart();
+        m_timeout.start(m_deadlineMs);
+    }
+    if (m_elapsed.hasExpired(m_deadlineMs)) {
         endClient(ListenerError::Timeout);
         return;
     }
@@ -241,7 +258,7 @@ void LocalPipeListener::readClient()
         return;
     }
     if (result == FrameReadResult::Incomplete) return;
-    if (!validHello(message, m_instanceId)) {
+    if (m_firstMessage && !validHello(message, m_instanceId)) {
         endClient(ListenerError::InvalidHandshake);
         return;
     }
@@ -270,6 +287,7 @@ void LocalPipeListener::disposeSocket()
     m_peer = {};
     m_reader = FrameReader(MaxHandshakePayload);
     m_received = false;
+    m_connectionId.clear();
 }
 
 void LocalPipeListener::endClient(ListenerError reason)
@@ -331,6 +349,54 @@ void LocalPipeListener::fail()
 {
     stop();
     emit failed();
+}
+
+bool LocalPipeListener::matchesConnection(const QString &connectionId) const
+{
+    if (!isListening() || !m_socket || m_closing || connectionId.isEmpty()
+        || connectionId != m_connectionId || m_socket->state() != QLocalSocket::ConnectedState) return false;
+    const IdentityResult current = queryPipePeerIdentity(m_pipe, PipeSide::Server);
+    return current.ok() && sameProcess(current.identity, m_peer);
+}
+
+bool LocalPipeListener::prepareMessage(const QString &connectionId, bool authorized,
+                                      int timeoutMs, bool allowInput)
+{
+    if (!matchesConnection(connectionId) || m_verifier.isRunning()) return false;
+    if (m_frameStarted && m_elapsed.hasExpired(m_deadlineMs)) {
+        endClient(ListenerError::Timeout);
+        return false;
+    }
+    if (m_socket->bytesAvailable()) {
+        endClient(ListenerError::InvalidHandshake);
+        return false;
+    }
+    m_payloadLimit = authorized ? MaxFramePayload : MaxHandshakePayload;
+    m_socket->setReadBufferSize(m_payloadLimit + 4);
+    m_reader = FrameReader(m_payloadLimit);
+    m_received = !allowInput;
+    m_deadlineMs = authorized ? AuthorizedFrameTimeoutMs : timeoutMs;
+    m_frameStarted = !authorized;
+    m_timeout.stop();
+    if (m_frameStarted) {
+        m_elapsed.restart();
+        m_timeout.start(m_deadlineMs);
+    }
+    return true;
+}
+
+bool LocalPipeListener::sendMessage(const QString &connectionId, const QJsonObject &message)
+{
+    if (!matchesConnection(connectionId)) return false;
+    FrameError error;
+    const QByteArray frame = encodeFrame(message, m_payloadLimit, error);
+    if (error != FrameError::None || m_socket->bytesToWrite() + frame.size() > 2 * (m_payloadLimit + 4)
+        || m_socket->write(frame) != frame.size()) {
+        endClient(ListenerError::InvalidFrame);
+        return false;
+    }
+    m_socket->flush();
+    return true;
 }
 
 } // namespace QkmAutomation

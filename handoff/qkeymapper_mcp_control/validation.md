@@ -264,3 +264,31 @@ EXE 沿用 `out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/QKeyM
 依据：[DPAPI 保护](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)、[DPAPI 解密及完整性注意](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptunprotectdata)；本机 Qt6 的 QFileDevice::handle 文档及 QFSFileEnginePrivate::nativeHandle 确认 Win32 句柄须由 CRT descriptor 经 `_get_osfhandle` 取得，Qt5／Qt6 均已实际编译运行验证。没有更改全局 ACL、用户个人设置或系统驱动。
 
 边界：Qt JSON／HMAC／调用方可能保留短期内存副本，只清零本组件自有明文与 DPAPI 解密缓冲，不承诺全进程零残留。没有真实异用户／跨机器拒绝、管理员产品／普通桥接、真实资源耗尽、产品、ASan、GUI／MCP 等价性或性能验收。没有创建窗口／占焦点或发送输入；凭据还未接入 GUI 批准、正式证明消息、授权或撤销控制器，不能记为可用 MCP 能力。
+
+## IPC-20261022-16：M1.1c-4b 配对、认证与权限会话
+
+基线 `f52cad39` 加 `qkm_session_server.*`、listener 分阶段收发、证明用途选择及维护测试；未链接产品。默认关闭，批准只接受当前连接的 GUI 请求 ID；客户端批准布尔值、未知方法、错误／反射证明不能取得业务入口。用途 3 配对回证且 DPAPI 保存完成后才 ready；重连用用途 2 新挑战。权限更新递增代次／撤销先保存再断开，失败关闭接口并报告未保存。
+
+每帧核对真实对端／请求 Token；认证前 4 KiB、3 秒，GUI 批准等待 60 秒；认证后 256 KiB、空闲无固定断开、首字节起 10 秒期限；输出最多两个最大帧，一个在途请求，回包绑定连接／请求 ID。无产品配置修改、映射执行或业务去重保证。
+
+| 配置 | 最终构建／运行 | 结果 |
+|---|---|---|
+| Qt6.8.3 普通 | Community MSVC 14.44.35207，x64 Release／asInvoker | 80 通过，0 失败／跳过，38,740 ms |
+| Qt5.15.2 普通 | 同上 | 80 通过，0 失败／跳过，39,310 ms |
+| Qt6.8.3 故障 | 同上，仅故障目标含测试钩子 | 86 通过，0 失败／跳过，45,813 ms |
+
+三版 qmake／JOM exit 0、编译／链接零警告；运行在获准沙箱外且 TokenElevation=0，exit 0、stdout／stderr 空。EXE 在 `out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/QKeyMapperMcpIpcTest.exe`；各目录 `build_session.log`、`results_session_final.txt`、`test_session_final.log` 为本机原始证据，不随 Git 同步。
+
+独立进程覆盖配对／重连、只读拒绝 apply、授权代次更新、撤销活跃连接和旧 key、谎报批准、GUI 拒绝、错误／缺失确认、迟到批准不能作用于新连接、保存失败无 ready、8 KiB 双向收发、认证空闲超过 3 秒仍可用、实际 10 秒慢帧，以及处理器禁用／deleteLater 控制器。key 不进 CLI／日志；撤销测试等待客户端已收业务回包标志，避免把调度延迟当成断线通过。
+
+定向分析证明、listener、session server、测试四个 cpp，普通／故障共八次目标编译、十六次工具调用 native exit 0。初次测试有两处 Clazy detaching-temporary，改 `.first()` 为 `.at(0)` 后仅重跑已改测试两配置，最终项目诊断 0；未变三组件沿用本次逐文件零诊断。原报告 `out/tests/mcp_ipc/static-analysis-session/`，最终 `static-analysis-session-final-test/`。库存回归确认两真实 qmake 目标各七个 cpp，通过 `static_analysis_session_regression.log`，明细 `out/tests/static_analysis/15193f9c3f0a41f6875c904720bb3c1c/`。
+
+未验收产品 GUI／正式 SDK、60 秒 GUI 超时、真实高低权限／异用户／Win11、业务等价性、真实输入和性能。无窗口、Default 焦点或驱动操作。
+
+## IPC-20261022-17：会话与原生验证生命周期 ASan
+
+同 IPC-16 源码，维护目标 `CONFIG+=asan CONFIG+=mcp_fault_injection`。Community 14.44 链接 LNK1104，缺 ASan import library，未安装／修改系统工具链；改用已有 BuildTools 14.40.33807，在新 `out/tests/mcp_ipc/qt6-asan-1440/` 重建避免混用对象，qmake／JOM exit 0、零警告。失败日志保留 `qt6-asan/`，不算通过。
+
+确认 EXE 导入 `clang_rt.asan_dynamic-x86_64.dll`，PATH 仅进程内加入对应 kit。实际非提权运行完整故障测试：**86 通过、0 失败／跳过，53,820 ms，exit 0，stderr 空，无 ASan 报告**。证据为该目录 `build_session.log`、`results_session_final.txt`、`test_session_final.log`。包含原生验证滞留／恢复故障、对象销毁、listener 重启、会话关闭／处理器销毁及 DPAPI／ACL 负例。
+
+插桩仅本目标 first-party 组件／测试，Qt DLL 未插桩；`detect_leaks=0`，无泄漏检测结论；OS 恢复故障为受控注入。未覆盖产品 GUI、映射引擎、高低权限或 Win11。构建／编辑／分析未提权，无 UAC 或驱动操作。

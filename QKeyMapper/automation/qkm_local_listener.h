@@ -16,6 +16,9 @@ class QLocalSocket;
 namespace QkmAutomation {
 
 constexpr int PreauthTimeoutMs = 3000;
+constexpr int AuthorizedFrameTimeoutMs = 10000;
+
+class AutomationSessionServer;
 
 enum class ListenerError {
     IdentityRejected, InvalidFrame, InvalidHandshake,
@@ -34,13 +37,19 @@ public:
     bool isListening() const { return m_pipe != INVALID_HANDLE_VALUE; }
     QString pipeName() const { return m_pipeName; }
     QString instanceId() const { return m_instanceId; }
+    QString connectionId() const { return m_connectionId; }
 
 signals:
     void handshakeReceived(const QJsonObject &message, const QkmAutomation::ProcessIdentity &peer);
     void clientClosed(QkmAutomation::ListenerError reason);
     void failed();
+    void messageReceived(const QString &connectionId, const QJsonObject &message);
 
 private:
+    friend class AutomationSessionServer;
+    bool matchesConnection(const QString &connectionId) const;
+    bool prepareMessage(const QString &connectionId, bool authorized, int timeoutMs, bool allowInput);
+    bool sendMessage(const QString &connectionId, const QJsonObject &message);
     bool armAccept();
     void acceptClient();
     void readClient();
@@ -68,6 +77,11 @@ private:
     std::optional<ListenerError> m_closing;
     QJsonObject m_handshake;
     PipeRequestVerifier m_verifier;
+    QString m_connectionId;
+    bool m_firstMessage = true;
+    bool m_frameStarted = true;
+    int m_deadlineMs = PreauthTimeoutMs;
+    int m_payloadLimit = MaxHandshakePayload;
 };
 
 } // namespace QkmAutomation

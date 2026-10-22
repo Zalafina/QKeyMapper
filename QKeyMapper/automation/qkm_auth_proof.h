@@ -34,7 +34,7 @@ class ServerChallenge {
 public:
     ServerChallenge() = default;
     ~ServerChallenge();
-    bool begin(const AuthBinding &binding, const QByteArray &key);
+    bool begin(const AuthBinding &binding, const QByteArray &key, ProofRole expectedRole = ProofRole::Client);
     bool acceptClient(const QByteArray &proof);
     void cancel();
     bool isPending() const { return m_pending; }

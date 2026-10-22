@@ -2,6 +2,7 @@
 #include "../../automation/qkm_local_identity.h"
 #include "../../automation/qkm_local_listener.h"
 #include "../../automation/qkm_pair_store.h"
+#include "../../automation/qkm_session_server.h"
 
 #include <QBuffer>
 #include <QCoreApplication>
@@ -13,6 +14,7 @@
 #include <QJsonDocument>
 #include <QLocalSocket>
 #include <QProcess>
+#include <QPointer>
 #include <QScopeGuard>
 #include <QTest>
 #include <QTimer>
@@ -42,7 +44,7 @@ FrameReadResult feed(FrameReader &reader, QByteArray bytes, QJsonObject &message
     return reader.read(buffer, message);
 }
 
-bool receiveMessage(QLocalSocket &socket, FrameReader &reader, QJsonObject &message)
+bool receiveMessage(QLocalSocket &socket, FrameReader &reader, QJsonObject &message, int timeoutMs = 3000)
 {
     QEventLoop loop;
     QTimer timer;
@@ -59,7 +61,7 @@ bool receiveMessage(QLocalSocket &socket, FrameReader &reader, QJsonObject &mess
     consume();
     if (result == FrameReadResult::Incomplete
         && socket.state() != QLocalSocket::UnconnectedState) {
-        timer.start(3000);
+        timer.start(timeoutMs);
         loop.exec();
     }
     return result == FrameReadResult::Message;
@@ -164,6 +166,165 @@ int runStoreReader(const QStringList &arguments)
         && actual.permissionEpoch == expected.permissionEpoch && actual.scopes == expected.scopes
         && actual.secret == expected.secret ? 0 : 42;
 }
+
+int runSessionClient(const QStringList &arguments)
+{
+    if (arguments.size() != 8) return 60;
+    const QString mode = arguments.at(7);
+    const bool pairing = mode.startsWith(QStringLiteral("pair"));
+    const DWORD access = FILE_READ_DATA | FILE_WRITE_DATA | FILE_READ_EA | FILE_WRITE_EA
+        | FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE;
+    HANDLE handle = CreateFileW(reinterpret_cast<LPCWSTR>(arguments.at(2).utf16()), access,
+        0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, nullptr);
+    if (handle == INVALID_HANDLE_VALUE) return 61;
+    auto closeHandle = qScopeGuard([handle]() { CloseHandle(handle); });
+    const IdentityResult server = queryPipePeerIdentity(handle, PipeSide::Client);
+    const IdentityResult own = queryProcessIdentity(GetCurrentProcessId());
+    if (!server.ok() || !own.ok() || !sameLogonSession(server.identity, own.identity)
+        || server.identity.processId != arguments.at(4).toUInt()
+        || server.identity.creationTime != arguments.at(5).toULongLong()) return 62;
+    QLocalSocket socket;
+    socket.setReadBufferSize(MaxHandshakePayload + 4);
+    if (!socket.setSocketDescriptor(reinterpret_cast<qintptr>(handle))) return 63;
+    closeHandle.dismiss();
+    PairCredentialStore clientStore(arguments.at(6), "test-session-client");
+    PairCredential credential;
+    PairStoreError storeError;
+    if (!pairing) {
+        QList<PairCredential> records;
+        if (!clientStore.load(records, storeError) || records.size() != 1) return 64;
+        credential = records.first();
+    }
+    const QByteArray clientNonce = secureRandomSecret();
+    if (clientNonce.size() != AuthSecretBytes) return 65;
+    QJsonObject hello = helloMessage(arguments.at(3), pairing);
+    hello.insert(QStringLiteral("client_nonce"), QString::fromLatin1(clientNonce.toHex()));
+    if (!pairing) hello.insert(QStringLiteral("pair_id"), credential.pairId);
+    if (mode == QStringLiteral("pair-claimed-approval")) hello.insert(QStringLiteral("confirmed"), true);
+    const auto send = [&](const QJsonObject &message) {
+        FrameError error;
+        const QByteArray bytes = encodeFrame(message, MaxFramePayload, error);
+        if (error != FrameError::None || socket.write(bytes) != bytes.size()) return false;
+        socket.flush();
+        return true;
+    };
+    if (!send(hello)) return 66;
+    FrameReader reader(MaxHandshakePayload);
+    QJsonObject challenge;
+    const bool initialReject = mode == QStringLiteral("revoked") || mode == QStringLiteral("pair-claimed-approval")
+        || mode == QStringLiteral("pair-rejected");
+    if (!receiveMessage(socket, reader, challenge))
+        return initialReject && socket.state() == QLocalSocket::UnconnectedState ? 0 : 67;
+    if (initialReject) return 68;
+    const QString expectedType = pairing ? QStringLiteral("pair.grant") : QStringLiteral("challenge");
+    if (challenge.size() != (pairing ? 13 : 11)
+        || challenge.value(QStringLiteral("type")) != QJsonValue(expectedType)
+        || challenge.value(QStringLiteral("version")) != QJsonValue(HandshakeVersion)
+        || challenge.value(QStringLiteral("instance")) != QJsonValue(arguments.at(3))
+        || challenge.value(QStringLiteral("client_pid")) != QJsonValue(QString::number(own.identity.processId))
+        || challenge.value(QStringLiteral("client_created")) != QJsonValue(QString::number(own.identity.creationTime))
+        || challenge.value(QStringLiteral("server_pid")) != QJsonValue(QString::number(server.identity.processId))
+        || challenge.value(QStringLiteral("server_created")) != QJsonValue(QString::number(server.identity.creationTime))) return 69;
+    bool epochOk = false;
+    const QString epoch = challenge.value(QStringLiteral("epoch")).toString();
+    const quint64 number = epoch.toULongLong(&epochOk);
+    const QString pairId = challenge.value(QStringLiteral("pair_id")).toString();
+    const QString nonceHex = challenge.value(QStringLiteral("server_nonce")).toString();
+    const QString proofHex = challenge.value(QStringLiteral("server_proof")).toString();
+    if (!epochOk || !number || QString::number(number) != epoch || !isLowerHex(pairId, 32)
+        || !isLowerHex(nonceHex, 64) || !isLowerHex(proofHex, 64)) return 70;
+    if (pairing) {
+        const QString secret = challenge.value(QStringLiteral("secret")).toString();
+        if (!isLowerHex(secret, 64)) return 71;
+        credential = {pairId, QStringLiteral("测试客户端 日本語"), number,
+            static_cast<quint32>(challenge.value(QStringLiteral("scopes")).toInt()), QByteArray::fromHex(secret.toLatin1())};
+        if (!validPairCredential(credential)) return 72;
+    } else if (pairId != credential.pairId) return 73;
+    AuthBinding binding;
+    binding.instanceId = arguments.at(3); binding.pairId = pairId; binding.permissionEpoch = number;
+    binding.client = own.identity; binding.server = server.identity; binding.clientNonce = clientNonce;
+    const QByteArray nonce = QByteArray::fromHex(nonceHex.toLatin1());
+    if (!equalAuthenticationProof(QByteArray::fromHex(proofHex.toLatin1()),
+        authenticationProof(binding, nonce, ProofRole::Server, credential.secret))) return 74;
+    if (mode == QStringLiteral("pair-no-confirm")) return 0;
+    if (pairing && !clientStore.save({credential}, storeError)) return 75;
+    const ProofRole role = pairing ? ProofRole::PairingConfirmation : ProofRole::Client;
+    QByteArray proof = authenticationProof(binding, nonce, role, credential.secret);
+    if (mode == QStringLiteral("bad-proof")) proof[0] = static_cast<char>(proof.at(0) ^ 1);
+    if (mode == QStringLiteral("reflection")) proof = QByteArray::fromHex(proofHex.toLatin1());
+    if (mode == QStringLiteral("pair-bad-confirm"))
+        proof = authenticationProof(binding, nonce, ProofRole::Client, credential.secret);
+    if (!send({{QStringLiteral("type"), pairing ? QStringLiteral("pair.confirm") : QStringLiteral("proof")},
+               {QStringLiteral("proof"), QString::fromLatin1(proof.toHex())}})) return 76;
+    QJsonObject ready;
+    const bool rejectProof = mode == QStringLiteral("bad-proof") || mode == QStringLiteral("reflection")
+        || mode == QStringLiteral("pair-bad-confirm") || mode == QStringLiteral("pair-store-failure");
+    if (!receiveMessage(socket, reader, ready))
+        return rejectProof && socket.state() == QLocalSocket::UnconnectedState ? 0 : 77;
+    if (rejectProof) return 78;
+    if (ready.size() != 6 || ready.value(QStringLiteral("type")) != QJsonValue(QStringLiteral("ready"))
+        || ready.value(QStringLiteral("version")) != QJsonValue(HandshakeVersion)
+        || ready.value(QStringLiteral("instance")) != QJsonValue(arguments.at(3))
+        || ready.value(QStringLiteral("pair_id")) != QJsonValue(pairId)
+        || ready.value(QStringLiteral("epoch")) != QJsonValue(epoch)) return 79;
+    credential.permissionEpoch = number;
+    credential.scopes = static_cast<quint32>(ready.value(QStringLiteral("scopes")).toInt());
+    if (!validPairCredential(credential) || !clientStore.save({credential}, storeError)) return 80;
+    reader = FrameReader(MaxFramePayload);
+    socket.setReadBufferSize(MaxFramePayload + 4);
+    if (mode == QStringLiteral("slow-frame")) {
+        QElapsedTimer elapsed; elapsed.start();
+        socket.write(QByteArray::fromHex("0004")); socket.flush();
+        QJsonObject ignored;
+        const bool received = receiveMessage(socket, reader, ignored, AuthorizedFrameTimeoutMs + 2000);
+        return !received && socket.state() == QLocalSocket::UnconnectedState
+            && elapsed.elapsed() >= AuthorizedFrameTimeoutMs ? 0 : 88;
+    }
+    if (mode == QStringLiteral("auth-idle")) QTest::qWait(PreauthTimeoutMs + 250);
+    const QString requestId = QUuid::createUuid().toString(QUuid::Id128);
+    QString method = QStringLiteral("qkm_get_state");
+    if (mode == QStringLiteral("write-denied") || mode == QStringLiteral("write-allowed")) method = QStringLiteral("qkm_apply_changes");
+    if (mode == QStringLiteral("unknown-method")) method = QStringLiteral("setProperty");
+    QJsonObject args;
+    if (mode == QStringLiteral("large")) args.insert(QStringLiteral("blob"), QString(8192, QLatin1Char('x')));
+    if (!send({{QStringLiteral("id"), requestId}, {QStringLiteral("method"), method}, {QStringLiteral("arguments"), args}})) return 81;
+    QJsonObject response;
+    if (!receiveMessage(socket, reader, response))
+        return mode == QStringLiteral("disabled-in-handler") && socket.state() == QLocalSocket::UnconnectedState ? 0 : 82;
+    if (response.value(QStringLiteral("id")) != QJsonValue(requestId)) return 82;
+    if (mode == QStringLiteral("write-denied") || mode == QStringLiteral("unknown-method")) {
+        const QString code = mode == QStringLiteral("write-denied") ? QStringLiteral("permission_denied") : QStringLiteral("unsupported_method");
+        return response.value(QStringLiteral("ok")) == QJsonValue(false)
+            && response.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")) == QJsonValue(code) ? 0 : 83;
+    }
+    if (response.value(QStringLiteral("ok")) != QJsonValue(true)
+        || response.value(QStringLiteral("result")).toObject().value(QStringLiteral("fixture")) != QJsonValue(true)) return 84;
+    if (mode == QStringLiteral("large")
+        && response.value(QStringLiteral("result")).toObject().value(QStringLiteral("blob")).toString().size() != 8192) return 85;
+    if (mode == QStringLiteral("hold")) {
+        QFile output;
+        if (!output.open(stdout, QIODevice::WriteOnly) || output.write("holding\n") != 8 || !output.flush()) return 87;
+        QJsonObject ignored;
+        if (receiveMessage(socket, reader, ignored)) return 86;
+    }
+    return 0;
+}
+
+class SessionChild : public QProcess {
+public:
+    bool launch(const AutomationSessionServer &server, const QString &clientDirectory, const QString &mode)
+    {
+        const IdentityResult own = queryProcessIdentity(GetCurrentProcessId());
+        if (!own.ok()) return false;
+        start(QCoreApplication::applicationFilePath(), {QStringLiteral("--session-client"), server.pipeName(),
+            server.instanceId(), QString::number(GetCurrentProcessId()), QString::number(own.identity.creationTime), clientDirectory, mode});
+        return waitForStarted(3000);
+    }
+    ~SessionChild() override
+    {
+        if (state() != NotRunning) { kill(); waitForFinished(3000); }
+    }
+};
 
 int runListenerClient(const QStringList &arguments)
 {
@@ -318,6 +479,13 @@ private slots:
     void storeCorruptionAndContext();
     void storeAtomicFailure();
     void storeUnsafePaths();
+    void sessionPairAndReconnect();
+    void sessionRejectedPairing_data();
+    void sessionRejectedPairing();
+    void sessionStaleApproval();
+    void sessionStoreFailure();
+    void sessionSlowFrame();
+    void sessionHandlerLifecycle();
 #ifdef QKM_AUTOMATION_TESTING
     void storeMalformedProtectedData();
     void listenerVerifierStopAndRestart();
@@ -1153,6 +1321,12 @@ void McpIpcTest::challengeLifecycle()
     QVERIFY(!challenge.isPending());
     QVERIFY(challenge.serverNonce().isEmpty());
     QVERIFY(!challenge.begin(binding, {}));
+    QVERIFY(!challenge.begin(binding, key, ProofRole::Invalid));
+    QVERIFY(!challenge.begin(binding, key, ProofRole::Server));
+    QVERIFY(challenge.begin(binding, key, ProofRole::PairingConfirmation));
+    QVERIFY(!challenge.acceptClient(authenticationProof(binding, challenge.serverNonce(), ProofRole::Client, key)));
+    QVERIFY(challenge.begin(binding, key, ProofRole::PairingConfirmation));
+    QVERIFY(challenge.acceptClient(authenticationProof(binding, challenge.serverNonce(), ProofRole::PairingConfirmation, key)));
 #ifdef QKM_AUTOMATION_TESTING
     setAuthRandomTestFailure(true);
     const auto resetRandom = qScopeGuard([]() { setAuthRandomTestFailure(false); });
@@ -1325,6 +1499,259 @@ void McpIpcTest::storeUnsafePaths()
     QVERIFY(DeleteFileW(reinterpret_cast<LPCWSTR>(link.utf16())));
     QVERIFY(store.load(records, error));
     QCOMPARE(records.size(), 1);
+}
+
+void McpIpcTest::sessionPairAndReconnect()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString serverDirectory = temporary.path() + QStringLiteral("/server");
+    const QString clientDirectory = temporary.path() + QStringLiteral("/client");
+    AutomationSessionServer server(serverDirectory, "test-session-server");
+    QVERIFY(!server.isEnabled());
+    QVERIFY(server.pipeName().isEmpty());
+    int authenticated = 0, paired = 0, handled = 0;
+    connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
+        QVERIFY(request.peer.processId != GetCurrentProcessId());
+        QVERIFY(server.approvePairing(request.requestId, Read));
+    });
+    connect(&server, &AutomationSessionServer::pairingFinished, this,
+        [&](const QString &, bool success, const QString &) { if (success) ++paired; });
+    connect(&server, &AutomationSessionServer::authenticated, this, [&]() { ++authenticated; });
+    server.setRequestHandler([&](AutomationRequest request) {
+        ++handled;
+        QJsonObject result{{QStringLiteral("fixture"), true}};
+        if (request.arguments.contains(QStringLiteral("blob"))) result.insert(QStringLiteral("blob"), request.arguments.value(QStringLiteral("blob")));
+        QVERIFY(server.reply(request.connectionId, request.requestId, result));
+    });
+    QVERIFY(server.enable());
+    QVERIFY(server.acceptingConnections());
+    const auto run = [&](const QString &mode) {
+        SessionChild child;
+        if (!child.launch(server, clientDirectory, mode)) return false;
+        QElapsedTimer timer; timer.start();
+        while (child.state() != QProcess::NotRunning && timer.elapsed() < 7000) QTest::qWait(20);
+        const bool ok = child.state() == QProcess::NotRunning && child.exitStatus() == QProcess::NormalExit
+            && child.exitCode() == 0 && child.readAllStandardError().isEmpty();
+        if (!ok) qWarning("Session client failed in mode %s, exit %d", qPrintable(mode), child.exitCode());
+        return ok;
+    };
+    QVERIFY(run(QStringLiteral("pair")));
+    QTRY_COMPARE_WITH_TIMEOUT(paired, 1, 3000);
+    QCOMPARE(authenticated, 1);
+    QCOMPARE(handled, 1);
+    QCOMPARE(server.pairings().size(), 1);
+    const QString pairId = server.pairings().at(0).pairId;
+    const auto ready = [&]() { QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000); };
+    ready();
+    QVERIFY(run(QStringLiteral("write-denied")));
+    QCOMPARE(handled, 1);
+    ready();
+    QVERIFY(run(QStringLiteral("unknown-method")));
+    QCOMPARE(handled, 1);
+    ready();
+    const int beforeBadProof = authenticated;
+    QVERIFY(run(QStringLiteral("bad-proof")));
+    QCOMPARE(authenticated, beforeBadProof);
+    ready();
+    QVERIFY(run(QStringLiteral("reflection")));
+    QCOMPARE(authenticated, beforeBadProof);
+    ready();
+    QVERIFY(run(QStringLiteral("large")));
+    QCOMPARE(handled, 2);
+    ready();
+    QVERIFY(run(QStringLiteral("auth-idle")));
+    QCOMPARE(handled, 3);
+    ready();
+    QVERIFY(server.updatePermissions(pairId, Read | Configure));
+    QCOMPARE(server.pairings().at(0).permissionEpoch, quint64(2));
+    QVERIFY(run(QStringLiteral("write-allowed")));
+    QCOMPARE(handled, 4);
+    ready();
+    server.disable();
+    QVERIFY(!server.isEnabled());
+    QVERIFY(server.pipeName().isEmpty());
+    QVERIFY(server.enable());
+    QCOMPARE(server.pairings().size(), 1);
+    QVERIFY(run(QStringLiteral("auth")));
+    QCOMPARE(handled, 5);
+    ready();
+    SessionChild held;
+    QVERIFY(held.launch(server, clientDirectory, QStringLiteral("hold")));
+    QTRY_COMPARE_WITH_TIMEOUT(handled, 6, 3000);
+    QTRY_VERIFY_WITH_TIMEOUT(held.canReadLine(), 3000);
+    QCOMPARE(held.readLine().trimmed(), QByteArray("holding"));
+    QVERIFY(server.revoke(pairId));
+    QTRY_COMPARE_WITH_TIMEOUT(held.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(held.exitCode(), 0);
+    QCOMPARE(server.pairings().size(), 0);
+    ready();
+    const int afterRevoke = authenticated;
+    QVERIFY(run(QStringLiteral("revoked")));
+    QCOMPARE(authenticated, afterRevoke);
+    ready();
+    QVERIFY(!server.reply(QString(32, QLatin1Char('x')), QString(32, QLatin1Char('a')), {}));
+    server.disable();
+    PairCredentialStore store(serverDirectory, "test-session-server");
+    QList<PairCredential> records;
+    PairStoreError error;
+    QVERIFY(store.load(records, error));
+    QVERIFY(records.isEmpty());
+}
+
+void McpIpcTest::sessionRejectedPairing_data()
+{
+    QTest::addColumn<QString>("mode");
+    for (const char *mode : {"pair-claimed-approval", "pair-rejected", "pair-bad-confirm", "pair-no-confirm"})
+        QTest::newRow(mode) << QString::fromLatin1(mode);
+}
+
+void McpIpcTest::sessionRejectedPairing()
+{
+    QFETCH(QString, mode);
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString directory = temporary.path() + QStringLiteral("/server");
+    AutomationSessionServer server(directory, "test-session-server");
+    int prompted = 0, authenticated = 0;
+    connect(&server, &AutomationSessionServer::authenticated, this, [&]() { ++authenticated; });
+    connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
+        ++prompted;
+        QVERIFY(!server.approvePairing(QString(32, QLatin1Char('x')), Read));
+        QVERIFY(!server.approvePairing(request.requestId, Read | 128));
+        if (mode == QStringLiteral("pair-rejected")) QVERIFY(server.rejectPairing(request.requestId));
+        else QVERIFY(server.approvePairing(request.requestId, Read));
+    });
+    QVERIFY(server.enable());
+    SessionChild child;
+    QVERIFY(child.launch(server, temporary.path() + QStringLiteral("/client"), mode));
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(child.exitCode(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    QCOMPARE(authenticated, 0);
+    QCOMPARE(prompted, mode == QStringLiteral("pair-claimed-approval") ? 0 : 1);
+    QVERIFY(server.pairings().isEmpty());
+    QVERIFY(!QFileInfo::exists(QDir(directory).filePath(QStringLiteral("pairings.dat"))));
+}
+
+void McpIpcTest::sessionStaleApproval()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    AutomationSessionServer server(temporary.path() + QStringLiteral("/server"), "test-session-server");
+    PairingRequest old;
+    auto capture = connect(&server, &AutomationSessionServer::pairingRequested, this,
+        [&](const PairingRequest &request) { old = request; });
+    QVERIFY(server.enable());
+    SessionChild first;
+    QVERIFY(first.launch(server, temporary.path() + QStringLiteral("/client"), QStringLiteral("pair")));
+    QTRY_VERIFY_WITH_TIMEOUT(!old.requestId.isEmpty(), 3000);
+    first.kill(); QVERIFY(first.waitForFinished(3000));
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    QVERIFY(!server.approvePairing(old.requestId, Read));
+    disconnect(capture);
+    QTest::qWait(1000);
+    connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
+        QVERIFY(request.connectionId != old.connectionId);
+        QVERIFY(!server.approvePairing(old.requestId, Read));
+        QVERIFY(server.approvePairing(request.requestId, Read));
+    });
+    server.setRequestHandler([&](AutomationRequest request) {
+        QVERIFY(server.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+    });
+    SessionChild next;
+    QVERIFY(next.launch(server, temporary.path() + QStringLiteral("/client"), QStringLiteral("pair")));
+    QTRY_COMPARE_WITH_TIMEOUT(next.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(next.exitCode(), 0);
+    QCOMPARE(server.pairings().size(), 1);
+}
+
+void McpIpcTest::sessionStoreFailure()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString directory = temporary.path() + QStringLiteral("/server");
+    AutomationSessionServer server(directory, "test-session-server");
+    int authenticated = 0, failed = 0;
+    connect(&server, &AutomationSessionServer::authenticated, this, [&]() { ++authenticated; });
+    connect(&server, &AutomationSessionServer::failed, this, [&]() { ++failed; });
+    connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
+        // Make the destination unsafe after enable's empty read, before confirmation/save.
+        QVERIFY(QDir().mkdir(directory));
+        QVERIFY(server.approvePairing(request.requestId, Read));
+    });
+    QVERIFY(server.enable());
+    SessionChild child;
+    QVERIFY(child.launch(server, temporary.path() + QStringLiteral("/client"), QStringLiteral("pair-store-failure")));
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(child.exitCode(), 0);
+    QTRY_COMPARE_WITH_TIMEOUT(failed, 1, 3000);
+    QCOMPARE(authenticated, 0);
+    QVERIFY(server.pairings().isEmpty());
+    QVERIFY(!QFileInfo::exists(QDir(directory).filePath(QStringLiteral("pairings.dat"))));
+}
+
+void McpIpcTest::sessionSlowFrame()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString clientDirectory = temporary.path() + QStringLiteral("/client");
+    AutomationSessionServer server(temporary.path() + QStringLiteral("/server"), "test-session-server");
+    connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
+        QVERIFY(server.approvePairing(request.requestId, Read));
+    });
+    int handled = 0;
+    server.setRequestHandler([&](AutomationRequest request) {
+        ++handled;
+        QVERIFY(server.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+    });
+    QVERIFY(server.enable());
+    SessionChild pair;
+    QVERIFY(pair.launch(server, clientDirectory, QStringLiteral("pair")));
+    QTRY_COMPARE_WITH_TIMEOUT(pair.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(pair.exitCode(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    SessionChild slow;
+    QVERIFY(slow.launch(server, clientDirectory, QStringLiteral("slow-frame")));
+    QTRY_COMPARE_WITH_TIMEOUT(slow.state(), QProcess::NotRunning, AuthorizedFrameTimeoutMs + 4000);
+    QCOMPARE(slow.exitCode(), 0);
+    QCOMPARE(handled, 1);
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+}
+
+void McpIpcTest::sessionHandlerLifecycle()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString directory = temporary.path() + QStringLiteral("/server");
+    const QString clientDirectory = temporary.path() + QStringLiteral("/client");
+    QPointer<AutomationSessionServer> server = new AutomationSessionServer(directory, "test-session-server");
+    const auto cleanup = qScopeGuard([&]() { if (server) delete server.data(); });
+    connect(server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
+        QVERIFY(server->approvePairing(request.requestId, Read));
+    });
+    server->setRequestHandler([&](AutomationRequest request) {
+        QVERIFY(server->reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+    });
+    QVERIFY(server->enable());
+    SessionChild pair;
+    QVERIFY(pair.launch(*server, clientDirectory, QStringLiteral("pair")));
+    QTRY_COMPARE_WITH_TIMEOUT(pair.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(pair.exitCode(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(server->acceptingConnections(), 3000);
+    server->setRequestHandler([&](AutomationRequest) { server->disable(); });
+    SessionChild disabled;
+    QVERIFY(disabled.launch(*server, clientDirectory, QStringLiteral("disabled-in-handler")));
+    QTRY_COMPARE_WITH_TIMEOUT(disabled.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(disabled.exitCode(), 0);
+    QVERIFY(!server->isEnabled());
+    QVERIFY(server->enable());
+    server->setRequestHandler([&](AutomationRequest) { server->deleteLater(); });
+    SessionChild deleted;
+    QVERIFY(deleted.launch(*server, clientDirectory, QStringLiteral("disabled-in-handler")));
+    QTRY_COMPARE_WITH_TIMEOUT(deleted.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(deleted.exitCode(), 0);
+    QTRY_VERIFY_WITH_TIMEOUT(server.isNull(), 3000);
 }
 
 #ifdef QKM_AUTOMATION_TESTING
@@ -1509,6 +1936,8 @@ int main(int argc, char **argv)
         return runListenerClient(app.arguments());
     if (app.arguments().value(1) == QStringLiteral("--store-reader"))
         return runStoreReader(app.arguments());
+    if (app.arguments().value(1) == QStringLiteral("--session-client"))
+        return runSessionClient(app.arguments());
     McpIpcTest test;
     return QTest::qExec(&test, argc, argv);
 }

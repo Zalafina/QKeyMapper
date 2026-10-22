@@ -100,14 +100,15 @@ ServerChallenge::~ServerChallenge()
     cancel();
 }
 
-bool ServerChallenge::begin(const AuthBinding &binding, const QByteArray &key)
+bool ServerChallenge::begin(const AuthBinding &binding, const QByteArray &key, ProofRole expectedRole)
 {
     cancel();
-    if (key.size() != AuthSecretBytes) return false;
+    if (key.size() != AuthSecretBytes
+        || (expectedRole != ProofRole::Client && expectedRole != ProofRole::PairingConfirmation)) return false;
     m_nonce = secureRandomSecret();
     if (m_nonce.isEmpty()) return false;
     m_proof = authenticationProof(binding, m_nonce, ProofRole::Server, key);
-    m_expected = authenticationProof(binding, m_nonce, ProofRole::Client, key);
+    m_expected = authenticationProof(binding, m_nonce, expectedRole, key);
     if (m_proof.isEmpty() || m_expected.isEmpty()) {
         cancel();
         return false;

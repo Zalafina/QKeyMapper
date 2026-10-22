@@ -1,6 +1,6 @@
 # MCP 本机 IPC 基础测试
 
-当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*`、`automation/qkm_local_listener.*`、`automation/qkm_auth_proof.*` 和 `automation/qkm_pair_store.*`。这些基础代码由本测试目标编译，尚未加入产品工程或建立产品监听；MCP 配对、授权、桥接与业务操作仍按主计划接入。
+当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*`、`automation/qkm_local_listener.*`、`automation/qkm_auth_proof.*` 、`automation/qkm_pair_store.*` 和 `automation/qkm_session_server.*`。这些基础代码由本测试目标编译，尚未加入产品工程或建立产品监听；产品 GUI、正式 MCP 桥接与业务操作仍按主计划接入。
 
 ## 覆盖与边界
 
@@ -103,3 +103,17 @@ DPAPI 测试必须以可用的当前 Windows 用户配置运行；普通 Codex �
 DPAPI 原生解密缓冲及本组件自有明文 QByteArray 在使用后清零；Qt JSON／HMAC 和调用方仍可能持有临时副本，不保证全内存无残留。同一 Windows 用户及管理员具备的文件／进程访问能力不属于进程间恶意软件隔离保证。真正异用户、跨机器、管理员到普通桥接的实际拒绝及 GUI 配对仍待系统验收。
 
 实际结果按源码、Qt、机器和构建配置记录在[任务验证记录](../../../handoff/qkeymapper_mcp_control/validation.md)。不同系统的结论分别验收。
+
+## 配对及授权会话
+
+`AutomationSessionServer` 默认关闭；真实身份和请求 Token 门禁后，显式 `pair.request` 产生只交给本地 GUI 的请求 ID。只有本地 `approvePairing` 才生成 secret；客户端自报批准值拒绝。批准绑定原连接／实际进程，等待最长 60 秒，期间不得发送其他消息。证明阶段限 3 秒；GUI 提示每秒最多一次，凭据上限 32 条。
+
+`pair.grant` 含新 key、权限、代次、实例、双方 PID／创建时间、nonce 和 server proof；客户端先核对实际服务进程再验证 proof，以用途 3 的 `pair.confirm` 回证。服务器成功落盘才 ready。重连使用 hello／challenge／用途 2 的 proof，key 不再发送；uint64 为十进制字符串。错误／反射／重放证明、已撤销 pair、旧批准、保存失败均不得 ready。
+
+认证后请求仅 `{id, method, arguments}`；ID 为 32 个小写十六进制字符，arguments 为对象。命令白名单与最低权限在 C++ 校验；未接业务回调返回 unsupported_capability；未知命令、任意 Qt 属性写入不分发。权限变化先保存并递增代次，再关原连接；撤销保存失败时关闭接口，不能声称撤销成功。
+
+认证前载荷／读缓存 4 KiB／4100 字节，认证后 256 KiB／262148 字节；输出待写最多两个最大帧。每次一个完整请求，逐帧核对真实进程和请求 Token；认证后空闲不因 3 秒断开，但首字节起 10 秒须完整并完成身份核验。回复绑定连接／请求 ID；处理器可禁用或 deleteLater 会话。业务重试／去重保证尚未实现，须在实际写能力前完成。
+
+独立子进程 key 只通过管道／私有 DPAPI 文件传递，不进入 CLI／日志。覆盖完整配对／重连、权限更新、撤销旧 key、迟到批准、新连接、8 KiB 双向收发、慢帧、保存失败、处理器销毁。60 秒 GUI 超时、真实 GUI／高低权限、正式 SDK 和业务效果尚未验收。
+
+目标支持 `CONFIG+=asan CONFIG+=mcp_fault_injection`，须使用带 ASan runtime／import library 的 MSVC kit，在独立目录构建；核对 EXE 导入、实际退出与报告。当前用 BuildTools 14.40，Qt DLL 未重新插桩，不宣称泄漏检测；结果见 IPC-20261022-16／17。
