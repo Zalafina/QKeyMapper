@@ -487,3 +487,15 @@ PC-W10，起点 `b1f3ddf7`。本记录对应的产品修改仅在 ControlDialog 
 主计划据此细化最小共用校验／纯分析／提交职责，并约束外部文件在普通桥接权限下读写，管理员业务端处理有界内容及受控内部目标。未开放接口、未增加新权限或改变现有格式。
 
 `out/mcp_product/audit_m0_2b.py`／同名 .log：检查 30 个链路 ID 唯一、14 个新增 ID、四份 cpp 中 20 个函数锚点、本任务三份文档的本地链接与 256 KiB 限制，exit 0；`git diff --check` 通过。新增链路的 GUI／MCP 对照、冷启动、真实输入和系统效果仍未执行。产品构建／GUI 结果复用 IPC-23，通信／ASan 等复用 IPC-22 的原范围，本轮文档检查不替代任何运行证明。
+
+## TOOL-20261022-25：可复用的私有桌面进程工具
+
+源码 `3e5274b9` 加本记录所在检查点，PC-W10。用户外出后本轮只执行普通权限测试，未运行 gsudo 或发起 UAC。
+
+scripts/test_process.ps1 新增可选 DesktopName，未指定时保持现有 Process.Start／EnumWindows 路径。指定时先确认桌面存在，以 CreateProcess 的 lpDesktop 启动；环境按 Windows 规则排序并拒绝 NUL；在释放创建句柄前取得托管进程句柄，避免 PID 被复用后误认目标。按指定桌面枚举主窗口；关闭在新原生线程绑定该桌面发送 WM_CLOSE，再恢复线程桌面。保留原来的精确 EXE／启动时间检查、gsudo 只启动／关闭及正常等待退出约束，不改 manifest，也没有 SwitchDesktop。
+
+新增 scripts/test_test_process.ps1 以自有 WinForms 窗体核对实际桌面／PID、带空格参数、中文日文及 shell 元字符的字面环境值、错误启动时间拒绝关闭、恢复正确身份后 exit 0、不存在桌面拒绝启动。最终命令 `pwsh -NoProfile -File scripts/test_test_process.ps1 -OutputDirectory out/mcp_product/helper-private-retained-handle`，退出 0；日志在同名 .log，状态在目录内 state with spaces.json；实际桌面 QkmProcess_2625704add0c4daf83a13103d5138ddc，自有 PID 13412 已退出。仅验证 GUI 测试进程，未声明极短命令的启动语义或 PowerShell 5.1 兼容通过。
+
+同时验证原截图调用者：out/mcp_product/check_capture_helper.ps1 经当前工具在私有桌面启动 Qt6 同源维护预览（paired-off），使用原 scripts/capture_ui_snapshots.ps1，经现有 capture_mcp_control.ps1 捕获／关闭。控制器、预览及截图均非管理员；exit 0，实际桌面 QkmCapture_25cb1ceaf158477b9a7fea953f634e6e，预览 PID 31120，native DPI 144／Qt DPR 1.5／Qt logical DPI 96，Fusion／Microsoft YaHei UI 9pt，接口关闭、假配对 1。自主审阅 capture-helper-current/paired-off.png：中文说明、列表、撤销及关闭按钮可见无截断。这只证明当前普通权限截图调用兼容和单张同源控件静态效果，不能代替 High 产品截图或运行配对证明。
+
+PowerShell 解析、C# 实际编译运行、git diff --check 通过。未改产品源码；Qt6／Qt5 产品及 GUI 结果复用 IPC-23。当前托管句柄保留改动未重跑管理员启动／关闭，新增 UAC 验收继续等待用户返回；更早实际 High 产品的私有桌面启动和正常关闭记录仍仅按 IPC-23 的原工具版本引用。product_lifecycle.ps1／product_ui_actions.ps1／test_product_interop.py 仍待完整验收、尚未提交。本切片只提交基础进程工具、独立自检及跟踪文档，不推送。
