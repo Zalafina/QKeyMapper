@@ -6,12 +6,18 @@
 
 ## 启动与使用
 
-从仓库根目录创建隔离环境；已有环境不必重复创建：
+开发／跨机接续统一使用本轮实测的 **Windows x64 CPython 3.11.9**（包含补丁版本），pip 24.0、setuptools 65.5.0；29 项运行依赖及其传递依赖已在 [requirements-windows.txt](requirements-windows.txt) 精确固定，开发工具由 [requirements-dev-windows.txt](requirements-dev-windows.txt) 补齐。使用明确的解释器路径，在每台 PC 仓库内各自创建环境：
 
 ```powershell
-python -m venv out/mcp_bridge/venv
-out/mcp_bridge/venv/Scripts/python.exe -m pip install -r mcp_bridge/requirements-windows.txt
+& '<本机已核验的 CPython 3.11.9 x64 python.exe 绝对路径>' -m venv out/mcp_bridge/venv
+out/mcp_bridge/venv/Scripts/python.exe -m pip install --only-binary=:all: --no-deps -r mcp_bridge/requirements-dev-windows.txt
+out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/check_environment.py
+out/mcp_bridge/venv/Scripts/python.exe -m pip check
 ```
+
+每条命令都须 exit 0。已有环境先校验，通过则复用；失败时在本机重建或修复后重验，不能忽略差异后继续验收。`check_environment.py` 只读检查解释器／平台／隔离状态和全部安装包，拒绝缺失、版本变化、重复或额外依赖；对应反向用例为 `tests/test_environment.py`。使用 venv 内解释器的绝对路径启动 SDK、回归及桥接，不依赖 PATH 或激活脚本。venv、个人凭据和 out 产物不随 Git 复制到另一台 PC；虚拟环境应在目标路径重新创建，见 [Python venv 说明](https://docs.python.org/3/library/venv.html)。
+
+上述版本是当前已验证基线，升级须在同一检查点更新锁和校验入口并重跑相关验收。**包文件哈希锁、Python 安装文件身份及打包工具版本尚未补齐**：首次 PC-W11 接续前须落实安装文件校验及 Windows x64 wheel 哈希锁／安装校验；M3-B 打包前固定打包器与相关构建工具，并在独立环境离线重建／启动验收。采用 pip 的[精确版本及哈希锁机制](https://pip.pypa.io/en/stable/topics/repeatable-installs/)，不引入新的环境管理框架。版本校验通过不能替代两系统业务、设备及实际输入验收。
 
 在 QKeyMapper 的 MCP 管理窗口启用接口，复制显示的 `instance.json` 路径。MCP 宿主以以下参数启动 stdio 进程；具体宿主配置格式按其要求填写：
 
@@ -28,8 +34,8 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip install -r mcp_bridge/requirements
 2. 首次连接调用 `qkm_request_pairing`，随后用户在 QKeyMapper 核对系统验证的程序路径、PID 和权限并批准。客户端名称仅为自报信息，不能批准自身请求。
 3. 上述调用立即返回，`accepted` 仅表示已接受连接作业。通过 `qkm_get_connection_state` 等待 `busy=false` 和 `status=connected`；失败检查 `error`。待批准期间 SDK 查询仍可响应。
 4. `qkm_get_capabilities` 经正式认证管道重新查询实际能力。响应含 `ok`；`ok=false` 是业务请求失败，不能把 SDK 已收到工具回复当成操作成功。
-5. 能力包含 `state.read` 时，`qkm_get_state` 读取本次 GUI 线程快照：界面选择对应的实际配置组／类型、dirty、当前 Tab、GUI 监视状态、Worker 原子状态采样和实际停止快捷键。配置选择不充当运行／编辑数据来源证明。`schema_version=1`；不可用的 `business_revision=null`，`stop_completion=unobserved`。Tab index 只作观察值，不能用作稳定编辑目标；GUI idle 或 Worker stopped 也不能证明停止清理完成。
-6. 能力包含 `catalog.read` 时，`qkm_query` 的 entity 只接受 configurations／tabs。首轮 offset=0，limit 为 1–100（默认 50），后续页携带 catalog.revision 为 catalog_revision，并使用实际返回的 next_offset；next_offset=null 表示结束。相关目录或授权上下文变化返回 stale_catalog，应从首轮重新查询。相同目录／上下文的重复读取及同配对重连保持修订号稳定；不保留目录缓存或过期定时器。
+5. 能力包含 `state.read` 时，`qkm_get_state` 读取本次 GUI 线程快照：界面选择对应的配置组／类型、dirty、当前 Tab、GUI 监视状态、Worker 原子状态采样和实际停止快捷键。另含 `mapping_load_context`：最近映射加载／空白重置的代次（十进制字符串）、结果和实际解析的配置组；加载未完成时 context_busy，非法映射导致加载失败时 outcome=invalid_mapping_data、group=null，不沿用旧来源。它记录最后一次加载，不能证明后续编辑未变、全部数据来自同一磁盘组或已保存；configuration 仍只表示界面选择。`schema_version=1`；不可用的 `business_revision=null`，`stop_completion=unobserved`。Tab index 只作观察值，不能用作稳定编辑目标；GUI idle 或 Worker stopped 也不能证明停止清理完成。
+6. 能力包含 `catalog.read` 时，`qkm_query` 的 entity 只接受 configurations／tabs。首轮 offset=0，limit 为 1–100（默认 50），后续页携带 catalog.revision 为 catalog_revision，并使用实际返回的 next_offset；next_offset=null 表示结束。相关目录、映射加载代次／结果或授权上下文变化返回 stale_catalog，应从首轮重新查询。相同目录／上下文的重复读取及同配对重连保持修订号稳定；不保留目录缓存或过期定时器。
 7. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
 
 目录只提供配置名称和当前 Tab 元数据；display_name 来自下拉框条目文本，空白项可为空字符串，通过 kind=draft 区分，不能仅按显示名定位。saved_profile 的内容未加载查询，未附着共通表也有 attached_to_ui=false 的目录记录，这不表示屏幕可见性。selected_configuration／is_selected 只表示界面选择。catalog_ref 和目录修订号不是映射编辑目标或完整业务修订，不能据此提交变更；权限仍由认证与逐请求检查决定。

@@ -171,7 +171,7 @@ if ($Action -eq 'OpenAdvanced') {
     $sourceTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('Tab1')
     $sourceTabName = $sourceTab.Current.Name
     $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
-    $configurationDisplay = $configuration.Current.Name
+    $configurationDisplay = $configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
     $tab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('通用设定','General','一般設定')
     Select-Control $tab
     Invoke-Button $mainRoot 'generalAdvancedButton' @('通用高级设定','General Advanced','一般高度設定')
@@ -225,6 +225,7 @@ if ($Action -eq 'OpenAdvanced') {
     $result.mapping_button_text = $mappingButtonText
     $result.mapping_tab_name = $sourceTabName
     $result.configuration_display = $configurationDisplay
+    $result.configuration_read_method = 'ValuePattern'
 }
 if ($Action -notin 'OpenAdvanced','CloseMcp') {
     $dialog = Find-OwnedWindow $mcpNames

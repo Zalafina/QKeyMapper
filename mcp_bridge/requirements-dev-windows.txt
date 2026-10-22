@@ -1,0 +1,3 @@
+-r requirements-windows.txt
+pip==24.0
+setuptools==65.5.0

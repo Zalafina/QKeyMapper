@@ -23041,6 +23041,10 @@ bool QKeyMapper::removeSettingByName(const QString &settingName)
 
 QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all, bool preserveVButtonPanelVisibility)
 {
+    QScopedValueRollback<bool> sourceLoadGuard(m_MappingSourceLoading, true);
+    ++m_MappingLoadGeneration;
+    m_MappingSourceLoadAccepted = false;
+    m_LoadedMappingSettingGroup.clear();
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
     closeSetupDialog_OnDataChanged();
 #endif
@@ -27763,6 +27767,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         applyLiveScaleCompensation(m_targetScaleFactor / s_StartupGlobalScaleFactor);
     }
 
+    m_LoadedMappingSettingGroup = settingSelectStr;
+    if (m_LoadedMappingSettingGroup.endsWith(QLatin1Char('/'))) m_LoadedMappingSettingGroup.chop(1);
     QString loadedSettingString;
     if (false == datavalidflag){
         showFailurePopup(tr("Invalid mapping data : ") + settingtext);
@@ -27833,12 +27839,17 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             applySystemFilterKeysForCurrentSetting();
         }
 
+        m_MappingSourceLoadAccepted = true;
         return loadedSettingString;
     }
 }
 
 void QKeyMapper::loadEmptyMapSetting()
 {
+    QScopedValueRollback<bool> sourceLoadGuard(m_MappingSourceLoading, true);
+    ++m_MappingLoadGeneration;
+    m_MappingSourceLoadAccepted = false;
+    m_LoadedMappingSettingGroup.clear();
     clearKeyMappingTabWidget();
     KeyMappingDataList->clear();
     loadMacroListFromINI(QString());
@@ -27937,6 +27948,7 @@ void QKeyMapper::loadEmptyMapSetting()
     }
 
     refreshAllKeyMappingTabWidget();
+    m_MappingSourceLoadAccepted = true;
 }
 
 void QKeyMapper::loadGeneralSetting()
@@ -37106,13 +37118,12 @@ void QKeyMapper::setUITheme(int themeindex)
 QJsonObject QKeyMapper::collectAutomationState(void) const
 {
     Q_ASSERT(QThread::currentThread() == thread());
-    if (loadSetting_flag || !isInitialized() || ui == Q_NULLPTR || ui->settingselectComboBox->currentIndex() < 0
+    if (loadSetting_flag || m_MappingSourceLoading || !isInitialized() || ui == Q_NULLPTR || ui->settingselectComboBox->currentIndex() < 0
         || ui->settingselectComboBox->currentIndex() >= m_SettingSelectListWithoutDescription.size()
         || s_KeyMappingTabWidgetCurrentIndex < 0
         || s_KeyMappingTabWidgetCurrentIndex >= s_KeyMappingTabInfoList.size()) return {};
 
     const KeyMappingTab_Info &tab = s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex);
-    // shortcut: This group follows GUI selection; verify source ownership before enabling edits.
     const QString group = currentSettingSelectGroupName();
     const char *guiState = "unknown";
     switch (m_KeyMapStatus) {
@@ -37138,6 +37149,14 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             {QStringLiteral("kind"), group.isEmpty() ? QStringLiteral("draft")
                 : group == QLatin1String(GROUPNAME_GLOBALSETTING) ? QStringLiteral("global") : QStringLiteral("saved_profile")},
             {QStringLiteral("has_unsaved_changes"), hasUnsavedSettingChanges()}}},
+        // shortcut: Load provenance does not track later edits; bind source row revisions before writes.
+        {QStringLiteral("mapping_load_context"), QJsonObject{
+            {QStringLiteral("generation"), QString::number(m_MappingLoadGeneration)},
+            {QStringLiteral("scope"), QStringLiteral("last_mapping_load")},
+            {QStringLiteral("outcome"), m_MappingSourceLoadAccepted ? QStringLiteral("accepted")
+                : m_MappingLoadGeneration == 0 ? QStringLiteral("uninitialized") : QStringLiteral("invalid_mapping_data")},
+            {QStringLiteral("group"), m_MappingSourceLoadAccepted ? QJsonValue(m_LoadedMappingSettingGroup)
+                : QJsonValue(QJsonValue::Null)}}},
         {QStringLiteral("current_tab"), QJsonObject{{QStringLiteral("name"), tab.TabName},
             {QStringLiteral("index"), s_KeyMappingTabWidgetCurrentIndex},
             {QStringLiteral("is_common"), isCommonMappingTab(tab)}}},
@@ -37185,6 +37204,7 @@ QJsonObject QKeyMapper::collectAutomationCatalog(void) const
             {QStringLiteral("attached_to_ui"), false}});
     }
     return {{QStringLiteral("selected_configuration"), state.value(QStringLiteral("configuration"))},
+        {QStringLiteral("mapping_load_context"), state.value(QStringLiteral("mapping_load_context"))},
         {QStringLiteral("common_feature_enabled"), isCommonMappingFeatureEnabled()},
         {QStringLiteral("configurations"), configurations}, {QStringLiteral("tabs"), tabs}};
 }
@@ -37254,6 +37274,7 @@ void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationReq
             {QStringLiteral("instance"), server.instanceId()},
             {QStringLiteral("reference_scope"), QStringLiteral("catalog_only")},
             {QStringLiteral("selected_configuration"), catalog.value(QStringLiteral("selected_configuration"))},
+            {QStringLiteral("mapping_load_context"), catalog.value(QStringLiteral("mapping_load_context"))},
             {QStringLiteral("common_feature_enabled"), catalog.value(QStringLiteral("common_feature_enabled"))}}},
         {QStringLiteral("offset"), offset}, {QStringLiteral("total"), int(rows.size())},
         {QStringLiteral("items"), QJsonArray()}, {QStringLiteral("next_offset"), QJsonValue(QJsonValue::Null)}};
@@ -37312,7 +37333,8 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                 {QStringLiteral("properties"), QJsonObject()}, {QStringLiteral("additionalProperties"), false}}},
             {QStringLiteral("limitations"), QJsonArray{QStringLiteral("business_revision_unavailable"),
                 QStringLiteral("stop_completion_unobserved"), QStringLiteral("tab_index_is_not_a_stable_target"),
-                QStringLiteral("configuration_group_is_ui_selection")}}},
+                QStringLiteral("configuration_group_is_ui_selection"),
+                QStringLiteral("load_context_is_not_a_business_revision_or_disk_proof")}}},
             QJsonObject{{QStringLiteral("id"), QStringLiteral("catalog.read")},
             {QStringLiteral("method"), QStringLiteral("qkm_query")},
             {QStringLiteral("required_scopes"), int(QkmAutomation::Read)},

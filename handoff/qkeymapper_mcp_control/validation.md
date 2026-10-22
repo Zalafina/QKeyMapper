@@ -666,3 +666,51 @@ PC-W10，基线 `95d9ed46` 加本检查点。C++ 在 GUI 线程读取配置选�
 实际拓扑：产品 High／RID 12288，控制器／SDK／桥接 Medium／RID 8192，same_login=true。Qt6 私有桌面 QkmProduct_c776a3cfd0e7491d97fb1467dc524383／冷启动 QkmProduct_7bb7af84453a425983612b244991facf，PID 4080／15680；Qt5 为 QkmProduct_b4ac578346b2426da0352aefb44554fe／QkmProduct_307f76b4b8a64e02a1717273f0076508，PID 31640／30140。四个 closed.json 均 exit 0；普通 CIM 最终核对自有测试进程 0，原用户 PID 5420／10:17:55 保持运行。gsudo 仅原批准启动／关闭及固定 GUI 助手；无 Default 场景、真实输入、映射启动、驱动安装或配置业务变更。
 
 普通 PrintWindow 仍失败，stock_product_snapshots=false，未提权截图；不据此宣称 High 产品静态视觉通过。当前只验空白配置／停止态读流，GUI 实际目录变更引起失效、多个普通 Tab／用户配置、加载忙／超大响应及运行／重启状态仍待后续相应用例。映射行、实际源身份、业务修订、编辑／保存和停止完成尚未实现；Win11／异用户、性能、打包及旧 SDK 一次维护退出原因缺口保留。共享会话／控制器 C++ 未变，原生会话三组和管理窗口旧证据仅按 STATE-34 原范围复用，未重复全量 IPC、严格分析或 ASan。
+
+## LOAD-20261023-37：映射加载记录、GUI 取值修正及启动场景
+
+PC-W10，2026-10-22 至 23 日；源码 `d2c29852` 加本检查点的主窗口加载记录、只读响应及测试差异。本轮选定启动场景完成，形成暂停用本地开发检查点；完整源行身份、温切换／清理／写入尚未验收。
+
+源审阅：loadKeyMapSetting 在部分失败返回前已经清空／重建映射表，不能沿用旧来源。新增 GUI 线程加载守卫、代次、最近一次既有加载器接受结果及实际解析的配置组；只移除组路径末尾分隔符，不从请求名称或 ComboBox 选择猜来源。loadEmptyMapSetting 也推进代次；loadGeneralSetting 本身不代表重新载入映射表。保存失败在 reload 前回滚 QSettings 待写缓存，不能因此将旧内存表标作新来源；该失败链路本轮仅静态追踪。
+
+mapping_load_context 的 scope 固定为 last_mapping_load；generation 用十进制字符串，失败为 invalid_mapping_data／group=null。它不证明全量源字段、共通备份、后续编辑、实际运行或磁盘内容一致，也不是业务修订／编辑授权。尤其现有 m_CommonMappingData 在配置缺少／空 CommonMappingData 时不会总被清空，当前只记录加载器上下文，不能将其当作每条源行的磁盘归属；本轮未改该既有行为。目录将加载代次／结果一起纳入修订，源行引用和实际所有权仍须下一切片闭环。
+
+首次 accept-load-blank-qt6.log 的 11 分项通过仍使用旧 Name 基线，不作为实际 ComboBox 值证明。随后 accept-load-saved-qt6.log native exit 1，在三个分项后于配置显示比较失败；state_summary.json 已记录 accepted／McpSaved／generation=1，GUI 助手误把空的可访问 Name 当选中内容。产品 closed.json exit 0，留下的一个自有配对经 cleanup-load-saved-qt6-pair 启动观察后在接口关闭状态明确撤销，exit 0；ValuePattern 实际读出 McpSaved。修正只读助手并保留读取方法证据，未改产品选择／加载行为；旧失败不改记为通过。
+
+最终普通 x64 Release 构建 build_load_context_final_qt6.log／build_load_context_final_qt5.log，native exit 0；Qt6 无编译／链接警告，Qt5 仅官方 5.15.2 msvc2019_64 kit 的 qtmain.lib(qtmain_win.obj) 缺 PDB LNK4099，符合既有例外，原始日志保留。部署与各自 out/build_qt6/release/QKeyMapper.exe／out/build_qt5_5152/release/QKeyMapper.exe 字节相同，Qt6 SHA256 49F6C6791BD7BE34E2731D111235601258347A857036E695207672ED704DD038，Qt5 8E8D49E54D479746D218A17334D30550ABA34B6CB3DCE6726BEDBE93D22E5B9C。前序 build_load_context_qt6／qt5 为尚未精确保留组路径的构建，不作为最终产物证据。
+
+下表 EXE 和结果目录均在 out/mcp_product/，每组日志为结果目录同名 .log；六组各 11 分项、native exit 0。首次和冷启动的 started／closed／topology、界面动作、state_summary、catalog 和 results 在对应结果目录，原始材料仅 PC-W10 本机。
+
+| Qt／启动夹具 | 实际 EXE | 结果目录 | 首次／冷启动 PID |
+|---|---|---|---|
+| Qt6 空白 | runtime-load-blank-qt6-verified/QKeyMapperMcpAcceptance_load_blank_qt6_verified.exe | accept-load-blank-qt6-verified | 26676／32784 |
+| Qt6 已保存 | runtime-load-saved-qt6-verified/QKeyMapperMcpAcceptance_load_saved_qt6_verified.exe | accept-load-saved-qt6-verified | 3320／32208 |
+| Qt6 非法映射 | runtime-load-invalid-qt6/QKeyMapperMcpAcceptance_load_invalid_qt6.exe | accept-load-invalid-qt6 | 26668／33260 |
+| Qt6 缺失配置 | runtime-load-missing-qt6/QKeyMapperMcpAcceptance_load_missing_qt6.exe | accept-load-missing-qt6 | 31524／33412 |
+| Qt5 已保存 | runtime-load-saved-qt5/QKeyMapperMcpAcceptance_load_saved_qt5.exe | accept-load-saved-qt5 | 3980／33428 |
+| Qt5 非法映射 | runtime-load-invalid-qt5/QKeyMapperMcpAcceptance_load_invalid_qt5.exe | accept-load-invalid-qt5 | 15288／32016 |
+
+六组首次／冷启动的实际私有桌面，依上表顺序：
+
+- QkmProduct_b5dcc1c3ecaa4e05bea29c39bb27a3eb／QkmProduct_7efd8384d51048d7b1189958649bcc4a。
+- QkmProduct_90cb0282743d43399b0d0760d57e451c／QkmProduct_bad93edd2d2e47f0a655402b48fb121c。
+- QkmProduct_46c67652816e40918da173b4a73a7d6a／QkmProduct_977f7284b01c4fb2b75c2828be071a5e。
+- QkmProduct_816fff7221c44da5a7f6c3395caaaf3e／QkmProduct_88cabbeefa554f54bfad326f5353ea9b。
+- QkmProduct_14741f8498b54d158febcbe8e837884a／QkmProduct_5b53dc364d424a948103b3198fc0ecbf。
+- QkmProduct_85377dbfbdb94969a68b5a71f6c1a14a／QkmProduct_94028c7221d146cd98e6fd29cab3bff0。
+
+正式 MCP 的加载记录在六组首次认证后均 generation=1：空白／缺失配置为 accepted／空组，缺失请求未被错误当作来源；已保存为 accepted／McpSaved；非法映射为 invalid_mapping_data／null。独立 GUI 实际 Value 与选中配置目录一致；两套助手均使用 ValuePattern。读取前后状态／dirty／运行采样不变，目录携带相同加载记录；原分页、错误参数、同配对重连及新配对拒绝旧修订分项仍通过。每组冷启动阶段只验默认关闭、撤销持久化和旧 key 拒绝，不当作保存了映射或完整业务恢复的证明。
+
+12 个产品 closed.json 均 exit 0，产品 High RID 12288、控制器／SDK／桥接 Medium RID 8192、same_login=true。普通 CIM 收尾自有产品／生命周期／GUI／回归进程 0，原用户 PID 5420／2026-10-22 10:17:55 未变。除既有产品启动时 FakerInput 连接尝试外，没有映射启动、系统输入、驱动安装、Default 场景或用户配置修改；gsudo 仅原获准的自有产品启动／关闭及固定 GUI 动作。
+
+全部 stock_product_snapshots=false，普通 High 截图仍未验证，未提高截图权限。温切换、同内容重载及旧目录失效、空白重置、保存失败、全局配置、多个普通 Tab／筛选／共通来源、加载忙／大结果及运行／重启仍待对应场景；映射行、稳定编辑引用、业务修订、写入／保存、真正停止完成和实际输入效果未接。Win11／异用户、性能、打包及旧 SDK 维护退出原因缺口保留。共享 IPC／会话、映射引擎和所有权路径未变，CAT-36 的协议／SDK及 STATE-34 的会话检查仅按原范围复用，不重复全量 IPC、严格分析或 ASan。本轮结束按用户要求暂停，不标记完整 M1 或整个目标完成。
+
+## ENV-20261022-38：统一 Python 开发基线与拒绝漂移校验
+
+PC-W10；`d2c29852` 加本检查点的 [开发依赖锁](../../mcp_bridge/requirements-dev-windows.txt)、[只读校验](../../mcp_bridge/check_environment.py)、[用例](../../mcp_bridge/tests/test_environment.py) 与计划／说明修订。实际解释器为 CPython 3.11.9、Windows win-amd64、64 bit、独立 venv；29 项运行依赖与原 requirements-windows.txt 一致，另固定当前已安装的 pip 24.0／setuptools 65.5.0。未安装新依赖、改变全局 Python、替换解释器或新增环境管理框架。
+
+out/mcp_bridge/environment-check-20261022.log：实际基线检查 PASS／native exit 0。environment-tests-final-20261022.log：5 tests，0.203 s／OK／exit 0；正向读取真实环境，反向用例通过 mock 核对补丁版本、ARM64 平台、非 venv，以及缺失／错误／额外／重复包拒绝。反向用例不表示真的安装或运行了其他解释器／架构。该轮实际 pip check 输出 No broken requirements found，native exit 0。源码、Git、校验与这些用例均为非提权；没有 UAC、产品启动、系统输入或驱动操作。
+
+两机统一重建步骤及版本升级规则已纳入主计划和桥接说明；不复制 venv、凭据或构建产物。首次 PC-W11 接续前仍须补齐 Python 安装文件身份与 wheel SHA-256 锁／实际哈希安装；M3-B 前锁定打包工具、独立打包环境并验收内嵌运行时。当前未做另一台 PC 的环境恢复、全新环境重建、包字节一致性证明或打包验收，版本校验不是跨系统业务效果相同的证明。原始环境日志在本机 out，不随 Git 同步。
+
+本检查点的 Qt/C++ UTF-8 无 BOM／LF、改动 Python 的语法、GUI 助手 PowerShell 语法、相关 Markdown 本地链接／文件大小及 git diff --check 通过；这些文档／语法检查不代替上述实际构建或产品结果。

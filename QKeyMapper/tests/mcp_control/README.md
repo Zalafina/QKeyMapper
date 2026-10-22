@@ -10,11 +10,11 @@
 
 `--preview <language:0|1|2> <off|pending|paired-off|busy-off> <absolute-state-json>` 仅用于维护目标的静态截图：真实显示同一控件，原子报告 PID／HWND／实际桌面、原生可见性、Qt／原生 DPI、样式／字体及接口／配对状态；20 秒后自动退出，也可从该私有桌面发送 WM_CLOSE。pending 含 `<b>` 和实际自身进程身份，用于检查纯文本；paired-off 使用假配对记录，busy-off 再取得真实租约并点击撤销制造占用提示。四种预览均不启用接口、批准或认证客户端，截图不能证明配对安全。使用仓库 `scripts/capture_ui_snapshots.ps1 -ProcessId ... -WindowHandle ... -PrintWindow` 后自主审阅。
 
-当前验证覆盖独立窗口、产品 Qt6／Qt5 编译、同源维护窗口 SDK 配对，以及两套真正管理员产品各六分项：高级设置／MCP 入口、默认应用绑定、只读批准／RPC、重连、撤销／关闭、冷启动拒绝旧 key。普通截图无法捕获 High 产品，该部分未算视觉通过。具体当前、历史复用及未验证范围见[验证记录](../../../handoff/qkeymapper_mcp_control/validation.md) IPC-23／30／31；没有 Default 桌面、真实输入、驱动输出、托盘或性能结论。
+已验证范围包括独立窗口、产品 Qt6／Qt5 编译、同源维护窗口 SDK 配对，以及真正管理员产品的入口／默认绑定、只读批准／RPC、重连、撤销／关闭和冷启动拒绝旧 key。状态／目录与加载上下文的新增场景按[验证记录](../../../handoff/qkeymapper_mcp_control/validation.md)逐轮列明，不能将旧通信结果当作全部业务验收。普通截图无法捕获 High 产品，该部分未算视觉通过；没有 Default 桌面、真实输入、驱动输出、托盘或性能结论。
 
 ## 可移植执行入口
 
-`test_mcp_control.py` 只依赖 Python 3.10+ 标准库；不切换输入桌面，检查父／子进程均未提权，报告目标自身实际桌面。输出必须位于本仓库 `out/`。`capture_mcp_control.ps1` 复用仓库截图脚本，在同一私有桌面核对 HWND 所有者并关闭自有预览窗口。不要用 `python -O`；脚本拒绝关闭断言的优化模式。
+`test_mcp_control.py` 的语言／标准库要求为 Python 3.10+；本任务的统一开发／跨机验收基线为 CPython 3.11.9 x64，环境锁和校验见[桥接说明](../../../mcp_bridge/README.md)。它不切换输入桌面，检查父／子进程均未提权，报告目标自身实际桌面。输出必须位于本仓库 `out/`。`capture_mcp_control.ps1` 复用仓库截图脚本，在同一私有桌面核对 HWND 所有者并关闭自有预览窗口。不要用 `python -O`；脚本拒绝关闭断言的优化模式。
 
 构建两个维护目标后，从仓库根目录执行（Qt 路径按本机调整）：
 
@@ -35,7 +35,7 @@ Qt5 改用对应 Qt5 的两个 EXE、Qt bin 和独立 output。省略 `--screens
 
 ## 正式产品入口与管理员／普通桥接
 
-已获本轮管理员启动／关闭及受限 GUI 助手授权、用户可以确认 UAC 时运行。开发工具、控制器、SDK、桥接和截图保持普通权限；不修改产品 manifest。`product_lifecycle.ps1` 只管理自有隔离产品，`product_ui_actions.ps1` 只允许高级设置／MCP、启用、只读批准、撤销、关闭的固定 GUI 动作，核对 EXE／PID／启动时间及实际私有桌面。OpenAdvanced 先选映射页读取实际停止快捷键／开始按钮、Tab1 和配置选择显示，再选通用页打开高级设置，避免读取隐藏控件；不更改配置、不启动映射或发送系统输入。正常产品启动仍包含对已安装 FakerInput 的连接尝试。
+已获本轮管理员启动／关闭及受限 GUI 助手授权、用户可以确认 UAC 时运行。开发工具、控制器、SDK、桥接和截图保持普通权限；不修改产品 manifest。`product_lifecycle.ps1` 只管理自有隔离产品，`product_ui_actions.ps1` 只允许高级设置／MCP、启用、只读批准、撤销、关闭的固定 GUI 动作，核对 EXE／PID／启动时间及实际私有桌面。OpenAdvanced 先选映射页读取实际停止快捷键／开始按钮、Tab1 和配置选择显示，再选通用页打开高级设置，避免读取隐藏控件；配置选择使用 UIA ValuePattern，Name 是可访问名称，不能当作当前选中内容。不更改配置、不启动映射或发送系统输入。正常产品启动仍包含对已安装 FakerInput 的连接尝试。
 
 先构建对应 x64 Release 产品，并按本机 Qt kit 部署到全新目录。从仓库根目录执行，Qt5 改用其产品构建目录、Qt bin 和不同名称；不复制个人 INI 或另一台 PC 的产物／凭据：
 
@@ -61,7 +61,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Product acceptance failed; inspect its logs be
 
 运行依赖桥接的固定 Windows requirements、PowerShell 7 和 gsudo；具体安装见桥接说明，不自动安装驱动。启动未改正式 EXE 的同字节副本，用独立路径／文件名隔离 SingleApplication 和应用绑定。输出目录必须全新且在 out/mcp_product 下。产品初始化为接口关闭、自动监视／多键鼠／虚拟手柄关闭；脚本仍独立验证实际状态，不能只依赖模板。
 
-正式 SDK 通过五个公开工具验证未批准时不可用、只读权限、实际能力、凭据重连、撤销断线／拒绝旧 key；完整退出后再启动同一产品，核对默认关闭及撤销持久化。两次均要求正常退出 0，仅清理自身客户端凭据。Qt5 按控件实际支持的 SelectionItem／Invoke 无障碍模式选择固定目标；没有任意控件或命令入口。服务有 240 秒自有产品看门狗，控制器超时不自动重启。
+正式 SDK 通过固定公开工具验证未批准时不可用、只读权限、实际能力、状态／目录查询、凭据重连、撤销断线／拒绝旧 key；完整退出后再启动同一产品，核对默认关闭及撤销持久化。两次均要求正常退出 0，仅清理自身客户端凭据。Qt5 按控件实际支持的 SelectionItem／Invoke 无障碍模式选择固定目标；没有任意控件或命令入口。服务有 240 秒自有产品看门狗，控制器超时不自动重启。
+
+可用 `--load-fixture blank|saved|invalid|missing` 验证启动映射加载记录。blank 为默认模板；其余要求全新运行目录且 INI 与仓库合成模板完全相同，再由普通控制器在启动前写入测试配置。saved 为一个 A→B 源映射，invalid 含固定非法原始键，missing 指向不存在的配置组；均核对实际加载结果／代次、GUI 选择的实际值、只读不变性和目录分页。这里不启动映射，不证明 A→B 输入效果、温切换／空白重置或运行时清理完成。
 
 普通 PrintWindow 无法捕获 High 产品时明确记录未验证，不提升截图权限；功能断言继续独立检查。失败时先看日志、closed.json 和实际进程／配对状态，再决定接续动作；不得盲目重复配对或撤销。
 

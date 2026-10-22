@@ -2554,6 +2554,10 @@ private:
     bool m_CustomNotificationStyleInitialized = false;
     QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
     QkmAutomation::ControlDialog *m_McpControlDialog = Q_NULLPTR;
+    quint64 m_MappingLoadGeneration = 0;
+    QString m_LoadedMappingSettingGroup;
+    bool m_MappingSourceLoading = false;
+    bool m_MappingSourceLoadAccepted = false;
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QList<MAP_KEYDATA> m_CommonMappingData;  // dedicated common mapping data (survives detach)

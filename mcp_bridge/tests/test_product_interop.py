@@ -146,6 +146,8 @@ async def run(args):
     def passed(name):
         checks.append(name)
         print("PASS", name, flush=True)
+    expected_group = "McpSaved" if args.load_fixture == "saved" else ""
+    expected_outcome = "invalid_mapping_data" if args.load_fixture == "invalid" else "accepted"
     product, store = Product(args.executable, args.output), None
     first_desktop = product.desktop_name
     try:
@@ -190,7 +192,10 @@ async def run(args):
             assert (await client.call_tool("qkm_get_state", {"unknown": True})).is_error
             assert summary["schema_version"] == 1 and summary["instance"] == state["instance"]
             assert summary["business_revision"] is None
-            assert summary["configuration"] == {"group": "", "kind": "draft", "has_unsaved_changes": False}
+            assert summary["configuration"] == {"group": expected_group,
+                "kind": "saved_profile" if expected_group else "draft", "has_unsaved_changes": False}
+            assert summary["mapping_load_context"] == {"generation": "1", "scope": "last_mapping_load",
+                "outcome": expected_outcome, "group": None if args.load_fixture == "invalid" else expected_group}
             assert summary["current_tab"] == {"name": "Tab1", "index": 0, "is_common": False}
             assert summary["current_tab"]["name"] == baseline["mapping_tab_name"]
             assert summary["run"]["gui_state"] == "idle" and summary["run"]["monitoring_enabled"] is False
@@ -200,10 +205,12 @@ async def run(args):
             assert baseline["mapping_button_text"] == "映射开始"
             assert (await call(client, "qkm_get_state"))["result"] == summary
             passed("read-only business state matches independent GUI stop shortcut and idle button; cleanup remains unobserved")
+            passed("mapping load context records the resolved load outcome independently of GUI selection: " + args.load_fixture)
             catalog = (await call(client, "qkm_query", {"entity": "tabs", "limit": 1}))["result"]
             assert catalog["schema_version"] == 1 and catalog["entity"] == "tabs"
             assert catalog["catalog"]["reference_scope"] == "catalog_only"
             assert catalog["catalog"]["selected_configuration"] == summary["configuration"]
+            assert catalog["catalog"]["mapping_load_context"] == summary["mapping_load_context"]
             assert catalog["total"] == 2 and catalog["next_offset"] == 1 and len(catalog["items"]) == 1
             assert catalog["items"][0]["name"] == baseline["mapping_tab_name"]
             assert catalog["items"][0]["is_current"] and not catalog["items"][0]["is_common"]
@@ -216,9 +223,16 @@ async def run(args):
             whole = (await call(client, "qkm_query", {"entity": "tabs", "catalog_revision": catalog_revision}))["result"]
             assert whole["items"] == catalog["items"] + last["items"]
             configs = (await call(client, "qkm_query", {"entity": "configurations", "catalog_revision": catalog_revision}))["result"]
-            assert configs["total"] == 2 and configs["next_offset"] is None
-            assert configs["items"][0]["is_selected"] and configs["items"][0]["kind"] == "draft"
-            assert configs["items"][0]["display_name"] == baseline["configuration_display"]
+            expected_groups = ["", "QKeyMapperGlobalSetting"]
+            if args.load_fixture in ("saved", "invalid"):
+                expected_groups.append("McpSaved" if args.load_fixture == "saved" else "McpInvalid")
+            assert configs["total"] == len(expected_groups) and configs["next_offset"] is None
+            assert [item["group"] for item in configs["items"]] == expected_groups
+            assert configs["items"][0]["kind"] == "draft"
+            selected = [item for item in configs["items"] if item["is_selected"]]
+            assert len(selected) == 1 and selected[0]["group"] == expected_group
+            assert baseline["configuration_read_method"] == "ValuePattern"
+            assert selected[0]["display_name"] == baseline["configuration_display"]
             assert configs["items"][1]["kind"] == "global" and not configs["items"][1]["is_selected"]
             fresh = (await call(client, "qkm_query", {"entity": "tabs"}))["result"]
             assert fresh["catalog"]["revision"] == catalog_revision and fresh["items"] == whole["items"]
@@ -315,6 +329,7 @@ async def run(args):
             await product.close()
     (args.output / "results.json").write_text(json.dumps({"checks": checks, "desktop": first_desktop,
         "restart_desktop": product.desktop_name,
+        "load_fixture": args.load_fixture,
         "executable": str(args.executable), "server_elevated": 1, "controller_elevated": 0,
         "stock_product_snapshots": snapshots_available}, indent=2), encoding="utf-8")
 
@@ -333,6 +348,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--executable", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--load-fixture", choices=("blank", "saved", "invalid", "missing"), default="blank",
+                        help="Prepare a synthetic startup configuration before launching the owned product.")
     args = parser.parse_args()
     args.executable, args.output = args.executable.resolve(), args.output.resolve()
     base = (ROOT.parent / "out/mcp_product").resolve()
@@ -342,4 +359,15 @@ if __name__ == "__main__":
     if not args.output.is_relative_to(base) or args.output == base or not shutil.which("gsudo.exe") or not shutil.which("pwsh.exe"):
         parser.error("Select a new output directory under out/mcp_product; gsudo and PowerShell 7 are required.")
     args.output.mkdir(parents=True, exist_ok=False)
+    if args.load_fixture != "blank":
+        ini = args.executable.parent / "keymapdata.ini"
+        template = (ROOT.parent / "QKeyMapper/tests/mcp_control/product_fixture.ini.example").read_text(encoding="utf-8")
+        assert ini.read_text(encoding="utf-8") == template, "load fixtures require a fresh runtime with the unchanged synthetic INI"
+        group = {"saved": "McpSaved", "invalid": "McpInvalid", "missing": "McpMissing"}[args.load_fixture]
+        contents = template.replace("[General]\n", "[General]\nSettingSelect=" + group + "\n", 1)
+        if args.load_fixture != "missing":
+            original = "A" if args.load_fixture == "saved" else "MCP_INVALID_ORIGINAL"
+            contents += ("\n[" + group + "]\nMappingTable_TabNameList=Tab1\nKeyMapData_OriginalKeys=" + original
+                + "\nKeyMapData_MappingKeys=B\nEnableSystemFilterKeyChecked=false\nDisableFilterKeyClickSoundChecked=false\n")
+        ini.write_text(contents, encoding="utf-8")
     asyncio.run(run(args))

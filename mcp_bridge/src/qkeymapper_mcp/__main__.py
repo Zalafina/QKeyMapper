@@ -78,7 +78,7 @@ def main() -> None:
 
     @tool(read)
     async def qkm_get_state() -> dict[str, Any]:
-        """读取已认证产品的配置选择、GUI 状态、Worker 状态采样与实际停止快捷键；配置选择不是运行数据来源证明。未观测的停止清理和不可用的修订号会明确报告。"""
+        """读取已认证产品的配置选择、最近映射加载的实际结果／代次、GUI 状态、Worker 状态采样与实际停止快捷键。加载记录不证明磁盘已保存或后续数据未变；未观测的停止清理和不可用的业务修订号会明确报告。"""
         return await bridge.get_state()
 
     @tool(read)
