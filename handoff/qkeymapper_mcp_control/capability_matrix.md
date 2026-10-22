@@ -23,7 +23,7 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 | INF-AUTH-PROOF | [qkm_auth_proof.cpp](../../QKeyMapper/automation/qkm_auth_proof.cpp)：系统随机、固定格式双向 HMAC-SHA256 和一次性挑战 | 三个方向／用途的固定输入及 MAC 与独立 Python 结果一致；绑定字段逐项变化、版本／类型／长度、32 个错误字节位置、反射／重放／旧 nonce／取消及随机源失败通过；见 IPC-20261022-14 | 已在 INF-SESSION／SDK 接握手及 GUI 授权；本行仅证明组件语义，不单独作为认证或业务权限证据；未测侧信道时序 |
 | INF-PAIR-STORE | [qkm_pair_store.cpp](../../QKeyMapper/automation/qkm_pair_store.cpp)：类型化权限／凭据、机器与应用绑定、当前用户 DPAPI、私有 ACL、原子保存 | PC-W10 非提权运行，普通 Qt6／Qt5 各 71、故障 Qt6 77 通过；独立进程读取、错误上下文／损坏／非法权限拒绝、只读失败保留原文件、私有目录与硬链接拒绝，见 IPC-20261022-15 | 已接内部控制器与管理窗口；IPC-22 已证明 High 维护服务写盘、普通桥接配对／重连；真实异用户／跨机器及完整产品未测，不能算业务授权或完整安全边界；默认执行沙箱不具备可用 DPAPI 环境，运行测试使用获准非提权沙箱外上下文 |
 | INF-SESSION | [qkm_session_server.cpp](../../QKeyMapper/automation/qkm_session_server.cpp)：连接代次、GUI 权威批准入口、证明及保存后 ready、最小权限、代次更新／撤销、分阶段限额 | IPC-16／17 原组件用例；IPC-22 普通 Qt6／Qt5 各 88、故障 94；High 服务／Medium SDK 各 13 场景含 60 秒通过，离线撤销和失败边界仍通过；transport_only 无业务 | 真正 Qt6 产品入口／只读批准及重连部分通过，见 INF-GUI；完整实际产品高低权限流程仍待验收，无业务后端，不算业务等价性 |
-| INF-GUI | [ControlDialog](../../QKeyMapper/automation/qkm_control_dialog.cpp)、[通用高级设置](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[托盘入口](../../QKeyMapper/qkeymapper.cpp)：本次运行启用、只读默认、实际程序／PID、权限批准、拒绝／撤销、窗口关闭与 Escape | IPC-23 选择／当前项不同及无选择两条回归先失败，修正后 Qt6／Qt5 GUI 各 18 通过，持久化检查正确选中客户端；真正 Qt6 产品默认关闭／高级设置入口／只读批准、RPC 和重连部分通过 | 实际产品撤销完成、Qt5 高低权限、托盘／缩放主题仍待验收；普通截图 High 产品失败不算视觉通过，三语言同源静态图复用 IPC-21。UAC 剩余按用户要求延后；无业务等价性结论 |
+| INF-GUI | [ControlDialog](../../QKeyMapper/automation/qkm_control_dialog.cpp)、[通用高级设置](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[托盘入口](../../QKeyMapper/qkeymapper.cpp)：本次运行启用、只读默认、实际程序／PID、权限批准、拒绝／撤销、窗口关闭与 Escape | IPC-23 选择／当前项不同及无选择两条回归先失败，修正后 Qt6／Qt5 GUI 各 18 通过，持久化检查正确选中客户端；真正 Qt6 产品默认关闭／高级设置入口／只读批准、RPC 和重连部分通过 | 实际产品撤销完成、Qt5 高低权限、托盘／缩放主题仍待验收；普通截图 High 产品失败不算视觉通过，三语言同源静态图复用 IPC-21。用户已返回，剩余 UAC 验收恢复待执行；无业务等价性结论 |
 | INF-DISCOVERY | [实例发现](../../QKeyMapper/automation/qkm_instance_discovery.cpp)、[共享私有存储](../../QKeyMapper/automation/qkm_private_storage.cpp)、[会话启停](../../QKeyMapper/automation/qkm_session_server.cpp)：私有原子 JSON、活跃文件租约、真实进程／登录／预期 EXE、按句柄清理 | IPC-19 普通 82／82、故障 88、GUI 11／11、定向 ASan 8；IPC-27 普通 SDK 两套各 12，含真实发现／EXE／进程及私有篡改拒绝；IPC-23 管理员 Qt6 产品默认应用绑定／发现部分通过 | 只是连接提示，实际管道身份／新证明仍必需；完整管理员产品流程、实际异用户及 Win11 未测，不算业务能力 |
 | INF-SDK | [桥接入口](../../mcp_bridge/src/qkeymapper_mcp/__main__.py)、[连接与证明](../../mcp_bridge/src/qkeymapper_mcp/bridge.py)、[Windows I/O](../../mcp_bridge/src/qkeymapper_mcp/windows.py)、[客户端凭据](../../mcp_bridge/src/qkeymapper_mcp/credentials.py) | 官方 mcp 2.3.0 stdio initialize／list／正式工具往返；IPC-27 选择修正后普通 Qt6／Qt5 各 12 短场景；IPC-22 High 服务／Medium 桥接各 13 场景含真实 60 秒、Python 单测 12；IPC-23 真正 Qt6 产品部分路径见 INF-GUI | 当前仅连接状态／配对／重连／断开／真实通信能力查询，业务能力空；打包、完整管理员产品流程、异用户、Win11、性能和业务等价性未通过 |
 | INF-OFFLINE | [共享私有存储](../../QKeyMapper/automation/qkm_private_storage.cpp)、[会话](../../QKeyMapper/automation/qkm_session_server.cpp)、[窗口](../../QKeyMapper/automation/qkm_control_dialog.cpp)：关闭接口查看／撤销，原生目录及 control.lock 租约 | IPC-21：真实 GUI 控件／DPAPI 持久化、另一活跃实例占用拒绝、只读／损坏保留、重启旧 key 拒绝、子进程退出自动释放；定向 ASan 12 | 当前版本租约不承诺兼容无租约旧原型；实际产品高低权限／异用户／Win11 未测；IPC-22 已通过 High 维护服务离线撤销，无业务等价性结论 |
@@ -160,6 +160,32 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 
 这一批设置进一步确认：若现有有效值本来存于控件，共用业务操作仍须负责校验、dirty／初始化、派生联动、加载区别及生效时机，再将控件作为现有存储／回显使用；“数据存于控件”不能成为只调用 setter 就返回成功的例外。不在本轮重写整个设置模型，Worker 读取一致性按接入项处理。
 
+### M0.2b 第三批补充：配置、窗口匹配和忽略规则（源码 `f73f0db0`）
+
+新增 17 条静态链路，累计 68 条；没有新增 MCP 业务能力。此处特别区分编辑草稿、MAP_PROCESSINFO、自动匹配读取的磁盘配置和实际 HWND／Worker 状态。拟定用例仍未运行；下列静态差异不能当作已复现故障或已完成修正。
+
+| ID／阶段 | GUI 入口与实际处理 | 状态、持久化及已知边界 | 共用操作及独立验收要求 |
+|---|---|---|---|
+| CFG-LOAD／M2-B | 配置组合框及自定义弹出列表 applyPopupSelection → 设置索引 → on_settingselectComboBox_textActivated → loadSetting_flag → loadKeyMapSetting → 名称／flushPendingCommonPriorityRepairAfterLoad。Qt6.8.3／Qt5.15.2 均使用 textActivated，非旧 currentTextChanged 分支 | 显示描述与实际组名列表／item role 分开；仅 setCurrentIndex 不执行用户加载链路。加载会关闭相关编辑窗、重建 Tab／源表／宏、更新进程缓存及有效设置，可能执行排队界面尾部；load_all 另包含全局项。返回字符串须核对真实目标，失败前可能已改变部分状态，不能假定事务回滚 | 共用明确组名、草稿处理选择、加载作用域、停止／清理守卫及完成报告；GUI 只采集索引。EQ-CFG-LOAD 覆盖描述相同、同组重载、非法数据、未保存草稿、打开编辑窗、源引用失效、保存后的同路径重载及 GUI 尾部 |
+| CFG-EMPTY／M2-B | 用户选择空白配置 → 组合框槽的空文本分支 → loadEmptyMapSetting | 清理／重建当前 Tab、宏／同步组备注、MAP_PROCESSINFO 和窗口条件，重置列出的映射参数／快捷键；不是把当前 INI 所有组删除，也不是所有全局设置恢复默认。已有初始参数和后续重置函数覆盖范围需逐项保持 | 共用明确“新建空白草稿”，保护现有草稿意图；EQ-CFG-EMPTY 比较内存源、宏、停止快捷键、共通备份及配置范围，不将其当作软件全量恢复出厂；不借空字符串隐式删除 |
+| CFG-REMOVE／M2-B | 配置弹出列表删除 → removeSettingByName → removeSettingByIndex → 确认 | name 包装有 IDLE 守卫；空白／GlobalSetting 受保护。删除真实配置组、顺序项及必要 SettingSelect，sync／status 成功后才改列表并加载后继配置。sync 失败时没有该路径的显式缓存回滚；不能把返回 false 解释为磁盘必然不变 | 共用明确组名、确认决策和保存失败语义，保留固定配置目标；EQ-CFG-REMOVE 覆盖当前／非当前、保护组、取消、失败缓存／冷启动、后继选择及源引用失效，禁止静默丢弃其他草稿 |
+| CFG-ORDER／M2-B | 弹出列表拖动 → movePopupSelectionToUserIndex → moveSettingSelectOrderEntry | IDLE、真实普通组守卫；targetUserIndex 当前会 qBound。写根 SettingSelect_OrderList，屏蔽组合框信号移项、同步实际组名列表／role 并按原组恢复当前选择；没有在返回 true 前显式 sync／status。此显示顺序不被 matchAutoStartSaveSettings 用作匹配优先级 | 共用顺序规划／提交及完成检查，正式参数不静默夹紧；EQ-CFG-ORDER 比较显示与真实组顺序、保留当前草稿／选择、边界／幂等／写盘失败及冷启动，不能顺带加载或改变匹配优先级 |
+| CFG-EXPORT／M2-A | 导出按钮 → SettingTransferDialog::ExportMode 采集组／文件 → exportSelectedGroups | 数据来自固定磁盘 CONFIG_FILENAME，未保存草稿不在导出中；只拷选择组，General 仅显式选择时包含。通过 QSettings childKeys 逐组复制，未知组跳过；目标已有多余键不清除。sync 后未检查 status 就报告完成，不能直接复用为可靠提交结果 | 共用规范格式／范围与结果检查，普通桥接负责外部文件权限；EQ-CFG-EXPORT 比较磁盘与草稿差异、General／GlobalSetting／普通组、已有目标文件、未知组、无法写入、Qt5 Unicode 和独立新进程读回。未支持数据不得借导出宣称完整覆盖 |
+| CFG-IMPORT／M2-A | 导入窗口采集组／文件 → importSelectedGroups → 同名组确认 → 写固定 CONFIG_FILENAME → 重载及界面／设备状态刷新 | 逐组 childKeys 合并，目标未在源中出现的键保留，不是整个组替换；General 包含全部所选根键，缺少 LanguageIndex 时其存在判定与选择窗口按任意 root key 判定不同。sync 未检查 status 即报告成功；顺序规范化代码现位于 copied==0 失败分支内，成功路径不执行该块。后续 load_all 可改变全局设置／有效状态并刷新设备相关状态 | 提取同一格式校验、覆盖／保留规则、跨能力影响预览和可靠写盘／重载结果；外部内容由普通桥接读，不能把未支持或未经风险许可的根项当任意 INI 写入口。EQ-CFG-IMPORT 覆盖取消、部分忽略、General 判定、顺序、未知／旧格式、写盘失败及冷启动；先复现上述静态差异，再在共同路径修正 |
+| WIN-CRITERIA／M2-B | 主窗进程／标题／类名文本 textEdited 与三种模式 currentIndexChanged → dirty；confirmProcess／WindowTitle／ClassNameLineEdit 对 RegexMatch 的非法表达式仅提示 | 模式 Ignore／Equals／Contains／StartsWith／EndsWith／RegexMatch=0…5。实际 matchForegroundWindow／updateHWNDListProc 使用 MAP_PROCESSINFO 缓存串与当前模式；手工编辑框不直接写缓存，saveKeyMapSetting 写组内字符串／模式后重载。大小写按现有 QString 默认，不能套用全屏白名单的不区分大小写规则；非法 regex 不匹配 | 共用草稿编辑及相同校验／提示，保存／加载再更新有效缓存；若改即时生效，两入口必须共同调整。EQ-WIN-CRITERIA 分别检查草稿、缓存、磁盘及实际目标，覆盖六模式、空值／全忽略、正则、大小写、非法值及运行限制 |
+| WIN-DISPLAY／M2-B | checkDisplayModeComboBox currentIndexChanged → dirty；Ignore=0／Fullscreen=1／Windowed=2 | 配置组 PROCESSINFO_DISPLAYMODE_MATCH_INDEX；displayModeMatches 用实际前台窗口的 isWindowFullscreen 结果判断；当前匹配、自动选配置及进程表双击选择都涉及此条件，后两者的候选规则不同。不是只按窗口大小文本或控件值判断全屏 | 共用模式校验及既有消费者；EQ-WIN-DISPLAY 比较实际 HWND 变化、显式条件与 Ignore、其他条件为空、候选并列及保存恢复。受控实际前台目标需要 Default，私有桌面静态显示不能替代 |
+| WIN-PROCESS-SELECT／M2-B | 进程表真实双击 → on_processinfoTable_doubleClicked，IDLE／表格启用守卫；从行取 PID、HWND、标题、类名，查询实际路径和显示模式 | 未按物理左 Ctrl 时先 matchSavedSettings，可能加载已有配置；没有匹配时设置空白选择及默认条件，再 setMapProcessInfo、图标及文本／tooltip；dirty 由既有控件信号决定，setText 本身不发 textEdited。空标题另把编辑串转为空串正则并切 RegexMatch，此时缓存原值和编辑串仍不同。必要时既有逻辑临时尝试 SeDebugPrivilege，不能据旧行直接信任已复用 PID／HWND；全函数不是单纯设置文本 | 共用经核实的目标进程／窗口快照和“尝试加载已有配置”明确意图，GUI 采集 Ctrl，MCP 不伪造键态。EQ-WIN-PROCESS-SELECT 覆盖失效行／进程退出、同 PID 新进程、无路径、空标题、已匹配及未匹配、草稿保护与实际缓存／图标；扩大权限或前台操作另按既定规则 |
+| WIN-RESTORE-PATH／M2-B | restoreProcessPathButton → on_restoreProcessPathButton_clicked → 路径非空且与编辑串不同 → 确认后 setText | 使用 m_MapProcessInfo.FilePath 恢复进程条件编辑框；没有直接更新 FileName 缓存或持久化。此 setText 不发主窗 dirty 所监听的 textEdited；显示、缓存和未保存状态应独立断言 | 将明确恢复目标／确认与共同草稿提交相连，核对是否需共同修正 dirty；EQ-WIN-RESTORE-PATH 覆盖空／相同路径、取消、与当前匹配串不同、dirty、保存及实际匹配。当前只读发现信号差异，未作产品运行缺陷复现 |
+| WIN-AUTOSTART／M2-B | autoStartMappingCheckBox stateChanged → 联动禁用／启用“发送到相同窗口”，另 toggled → dirty；此 UI 文案为“自动匹配前台” | 配置组 AUTOSTARTMAPPING_CHECKED 存 CheckState；matchAutoStartSaveSettings 从磁盘读取且只认 Qt::Checked，按三条件具体程度优先、并列偏显式显示模式，再受现有组遍历顺序影响。全局自动回退另读 s_GlobalSettingAutoStart；并非此开关一勾就启动引擎，也不是进程启动自动运行开关 | 共用明确语义、check state／范围、联动与缓存更新时机；EQ-WIN-AUTOSTART 比较只改草稿／保存后磁盘、同优先级、无条件组跳过、全局回退、部分选中旧值及冷启动；启动动作仍由明确接口执行 |
+| WIN-SAME-WINDOWS／M2-B | sendToSameTitleWindowsCheckBox toggled → dirty；autoStartMappingCheckBox 勾选或全局配置下界面禁用，底层勾选值可保留 | 配置组 SENDTOSAMEWINDOWS_CHECKED；getSendToSameTitleWindowsStatus 同时要求“未自动匹配”且本项勾选。updateHWNDListProc 按实际条件枚举 s_last_HWNDList／当前目标；Worker 相应后台键鼠发送路径遍历该列表，不等于所有输入后端都广播 | 共用联动、原始值／有效值和状态守卫；EQ-WIN-SAME-WINDOWS 比较禁用后保留与实际 false、两个受控目标、窗口退出／匹配变化、不同发送方式、释放清理及冷启动。真实目标效果不能由列表数量替代 |
+| WIN-LAST-MATCH／M2-B | 自动匹配 recordLastAutoMatchedSetting；进入全局回退时 startLastAutoMatchedSettingTimer；停止可 switchBackToLastMatchedSetting | 临时内存组名及 timer；不记录空白／GlobalSetting，恢复前先清记录以免递归，按真实列表找组并完整 load／flush；超时清除。停止可能切换配置，故“停止完成后继续编辑原目标”仍须重新核对配置／修订 | 复用既有恢复而非新增另一套记录；EQ-WIN-LAST-MATCH 覆盖计时有效／过期、配置删除、停止恢复、重复停止不重复恢复、重连及旧目标提交拒绝。完成边界与 RUN-STOP／SRC-26 联验 |
+| IGNORE-UPSERT／M2-B | 忽略规则“添加／更新” → on_saveRuleButton_clicked；trim 非空名称、进程／标题／类名／描述、三模式 0…5 及 disabled → s_IgnoreWindowInfoMap[ruleName] | 按名称覆盖保持 OrderedMap 位置，内容变化才 dirty；编辑其他名称会新增，非自动重命名。名称之外该入口不阻止无条件或非法 regex；isWindowInIgnoreList 跳过 disabled／全空条件，启用条件 AND、各规则 OR，区分大小写，非法 regex 不匹配。保存到根 IGNOREWINDOWINFO_RULES 的九字段列表，完整配置保存时写盘 | 共用明确规则值、作用域、已有校验／诊断和 dirty；EQ-IGNORE-UPSERT 比较新增／同名／无变化、禁用、无有效条件、六模式及非法 regex、规则顺序、当前与已保存状态及实际忽略效果，不只检查列表文字 |
+| IGNORE-DELETE／M2-B | 删除按钮从 currentItem 取名称 → 确认 → OrderedMap.remove → 刷新／dirty；若编辑框正在显示该名则清编辑草稿 | 不存在／无 currentItem 不修改；未直接持久化。currentItem 与可见选择可能不同，显式 MCP 目标须核对相同业务名称，GUI 选择一致性另列回归，不能照搬此前 MCP 管理窗选择逻辑就宣称此处通过 | 共用明确名称／确认及结果；EQ-IGNORE-DELETE 覆盖当前与选中项不同、取消、最后一条、编辑草稿保持／清理、实际忽略恢复及冷启动 |
+| IGNORE-DEFAULTS／M2-B | 恢复默认按钮 → 全量替换确认 → initIgnoreWindowInfoList → 列表／编辑区刷新及 dirty | 清掉全部现有规则并重建九条内建项，不是仅补缺失；内建描述还随 updateIgnoreWindowInfoListDescriptionTranslation 语言刷新。缺失／无法转换的根规则值加载时走默认，合法空列表则保留空；部分非法元素跳过 | 共用明确全量替换及影响预览，保存仍由意图决定；EQ-IGNORE-DEFAULTS 比较取消、自定义项删除、九条默认／禁用状态、空列表与缺失区别、三语言、有效忽略及冷启动 |
+| IGNORE-EDITOR／M2-B | 规则双击 → loadRuleToUI；清空按钮可确认后 initRuleWindowInfoArea | 仅编辑区草稿，不改变 OrderedMap 或磁盘。默认模式为进程／标题 Contains、类名 Ignore，清除五段文本并取消 disabled；名称 textChanged 只改变“添加／更新”文案 | 仅在必要 UI 会话能力中暴露明确选中／清草稿；业务 upsert 不依赖用户当前编辑框。EQ-IGNORE-EDITOR 比较清空确认、未提交内容、列表源未变、关闭再打开及与 MCP 业务更新并发 |
+
+配置迁移、组级导入及恢复不能绕过能力覆盖／停止守卫：General 或普通组可能包含驱动、输入、通知、窗口和全局项，必须先通过共用解析形成已声明能力的完整变更清单，拒绝或明确报告尚未支持的内容，不能将现有 INI 复制函数直接变成高权限远程写任意键的入口。
+
 ### 动态菜单与事件入口补充
 
 对主窗口、宏列表、序列编辑、Tab 设定、VButton 面板及忽略规则源码进行 `addAction` 静态搜索得到 136 处匹配，其中包含重复入口、动作组、注释或辅助加入操作；**不是 136 个独立能力**。以下按用户意图归并，全部尚待逐操作完整链路核对；不能只扫描 `.ui` 就声明全覆盖。
@@ -287,20 +313,20 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 
 | 稳定定位 ID | 控件类型／原始文案 | 绑定线索（该 cpp 的基线行号） | UI 声明线索 |
 |---|---|---|---|
-| `U-ignore_rules/ruleNameLineEdit` | QLineEdit | `on_ruleNameLineEdit_textChanged @358` | 运行约束待核 |
-| `U-ignore_rules/saveRuleButton` | QPushButton；Add | `on_saveRuleButton_clicked @188` | 运行约束待核 |
-| `U-ignore_rules/ruleProcessNameMatchTypeComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-ignore_rules/ruleProcessNameLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-ignore_rules/ruleWindowTitleMatchTypeComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-ignore_rules/ruleWindowTitleLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-ignore_rules/clearRuleButton` | QPushButton；Clear | `on_clearRuleButton_clicked @257` | 运行约束待核 |
-| `U-ignore_rules/ruleClassNameMatchTypeComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-ignore_rules/ruleClassNameLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-ignore_rules/ruleDescriptionLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-ignore_rules/ruleDisabledCheckBox` | QCheckBox；Disabled | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-ignore_rules/ruleListWidget` | QListWidget | `on_ruleListWidget_itemDoubleClicked @365` | 运行约束待核 |
-| `U-ignore_rules/deleteRuleButton` | QPushButton；Delete | `on_deleteRuleButton_clicked @286` | 运行约束待核 |
-| `U-ignore_rules/restoreDefaultRulesButton` | QPushButton；RestoreDefault | `on_restoreDefaultRulesButton_clicked @333` | 运行约束待核 |
+| `U-ignore_rules/ruleNameLineEdit` | QLineEdit | `on_ruleNameLineEdit_textChanged @358` | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/saveRuleButton` | QPushButton；Add | `on_saveRuleButton_clicked @188` | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/ruleProcessNameMatchTypeComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/ruleProcessNameLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/ruleWindowTitleMatchTypeComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/ruleWindowTitleLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/clearRuleButton` | QPushButton；Clear | `on_clearRuleButton_clicked @257` | 静态见 IGNORE-EDITOR；业务／运行未验 |
+| `U-ignore_rules/ruleClassNameMatchTypeComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/ruleClassNameLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/ruleDescriptionLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/ruleDisabledCheckBox` | QCheckBox；Disabled | 手动／间接绑定待逐项定位 | 静态见 IGNORE-UPSERT；业务／运行未验 |
+| `U-ignore_rules/ruleListWidget` | QListWidget | `on_ruleListWidget_itemDoubleClicked @365` | 静态见 IGNORE-EDITOR；业务／运行未验 |
+| `U-ignore_rules/deleteRuleButton` | QPushButton；Delete | `on_deleteRuleButton_clicked @286` | 静态见 IGNORE-DELETE；业务／运行未验 |
+| `U-ignore_rules/restoreDefaultRulesButton` | QPushButton；RestoreDefault | `on_restoreDefaultRulesButton_clicked @333` | 静态见 IGNORE-DEFAULTS；业务／运行未验 |
 
 ### devices（4 项）
 
@@ -376,17 +402,17 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 | `U-main/keyMappingTabWidget` | KeyMappingTabWidget | `connect currentChanged @3978`<br>`connect tabOrderChanged @3980` | 运行约束待核 |
 | `U-main/settingNameLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
 | `U-main/backupSettingButton` | QPushButton；Backup | `on_backupSettingButton_clicked @49945` | 运行约束待核 |
-| `U-main/settingselectComboBox` | SettingSelectComboBox | `on_settingselectComboBox_textActivated @43446`<br>`on_settingselectComboBox_currentTextChanged @46050` | 运行约束待核 |
+| `U-main/settingselectComboBox` | SettingSelectComboBox | `on_settingselectComboBox_textActivated @43446`<br>`on_settingselectComboBox_currentTextChanged @46050` | 静态见 CFG-LOAD；业务／运行未验 |
 | `U-main/savemaplistButton` | QPushButton；SaveSetting | `on_savemaplistButton_clicked @31908` | 运行约束待核 |
 | `U-main/settingTabWidget` | QTabWidget | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-main/checkProcessComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-main/processLineEdit` | QLineEdit | `connect returnPressed @4034` | 运行约束待核 |
-| `U-main/restoreProcessPathButton` | QPushButton；Restore | `on_restoreProcessPathButton_clicked @49702` | 运行约束待核 |
-| `U-main/checkWindowTitleComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-main/windowTitleLineEdit` | QLineEdit | `connect returnPressed @4035` | 运行约束待核 |
-| `U-main/checkClassNameComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-main/classNameLineEdit` | QLineEdit | `connect returnPressed @4036` | 运行约束待核 |
-| `U-main/checkDisplayModeComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
+| `U-main/checkProcessComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 静态见 WIN-CRITERIA；业务／运行未验 |
+| `U-main/processLineEdit` | QLineEdit | `connect returnPressed @4034` | 静态见 WIN-CRITERIA；业务／运行未验 |
+| `U-main/restoreProcessPathButton` | QPushButton；Restore | `on_restoreProcessPathButton_clicked @49702` | 静态见 WIN-RESTORE-PATH；业务／运行未验 |
+| `U-main/checkWindowTitleComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 静态见 WIN-CRITERIA；业务／运行未验 |
+| `U-main/windowTitleLineEdit` | QLineEdit | `connect returnPressed @4035` | 静态见 WIN-CRITERIA；业务／运行未验 |
+| `U-main/checkClassNameComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 静态见 WIN-CRITERIA；业务／运行未验 |
+| `U-main/classNameLineEdit` | QLineEdit | `connect returnPressed @4036` | 静态见 WIN-CRITERIA；业务／运行未验 |
+| `U-main/checkDisplayModeComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 静态见 WIN-DISPLAY；业务／运行未验 |
 | `U-main/descriptionLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
 | `U-main/selectSettingCustomIconButton` | QPushButton；Select Custom Icon | `on_selectSettingCustomIconButton_clicked @50032`<br>`connect customContextMenuRequested @3375` | 运行约束待核 |
 | `U-main/ignoreRulesListButton` | QPushButton；Ignore Rules List | `on_ignoreRulesListButton_clicked @50001` | 运行约束待核 |
@@ -405,11 +431,11 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 | `U-main/closeToSystemTrayCheckBox` | QCheckBox；Minimize to tray on close | `connect clicked @37182` | 运行约束待核 |
 | `U-main/themeComboBox` | QComboBox | `on_themeComboBox_currentIndexChanged @49896` | 运行约束待核 |
 | `U-main/mappingStartKeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-main/autoStartMappingCheckBox` | QCheckBox；Auto Match Foreground | `on_autoStartMappingCheckBox_stateChanged @49333` | 运行约束待核 |
+| `U-main/autoStartMappingCheckBox` | QCheckBox；Auto Match Foreground | `on_autoStartMappingCheckBox_stateChanged @49333` | 静态见 WIN-AUTOSTART；业务／运行未验 |
 | `U-main/mappingStopKeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
 | `U-main/enableSystemFilterKeyButton` | QPushButton；SystemFilterKey | `connect clicked @34357` | 运行约束待核 |
 | `U-main/mappingAdvancedSettingButton` | QPushButton；Mapping Advanced | `on_mappingAdvancedSettingButton_clicked @49940` | 运行约束待核 |
-| `U-main/sendToSameTitleWindowsCheckBox` | QCheckBox；Send To Same Windows | 手动／间接绑定待逐项定位 | 运行约束待核 |
+| `U-main/sendToSameTitleWindowsCheckBox` | QCheckBox；Send To Same Windows | 手动／间接绑定待逐项定位 | 静态见 WIN-SAME-WINDOWS；业务／运行未验 |
 | `U-main/mappingMacroListButton` | QPushButton；Mapping MacroList | `on_mappingMacroListButton_clicked @50083` | 运行约束待核 |
 | `U-main/vButtonPanelSetupButton` | QPushButton；VButton Panel | `on_vButtonPanelSetupButton_clicked @30502` | 运行约束待核 |
 | `U-main/installFakerInputButton` | QPushButton；Install FakerInput | `on_installFakerInputButton_clicked @46493` | 运行约束待核 |
