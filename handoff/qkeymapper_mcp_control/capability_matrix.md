@@ -105,6 +105,29 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 | UI-FLOAT／M2-B | C++ 构造控件；`onAnyControlChanged`／Apply／Revert 更新目标映射项并发 `settingsApplied`；主窗排队接收 `onFloatingButtonSettingsApplied`（47117） | 依源 Tab／行同步运行数据、刷新表格／浮动列、实际显示及 dirty；同步组偏移为增量操作，可影响其他 Tab 的行，不能逐字段机械调用导致重复累计 | 先追踪应用与组移动的完整路径，再提取明确目标设置；完成需要等待必要排队回调。`EQ-UI-FLOAT` 比较组成员／增量、源表及真实窗口；静态图不能替代拖动验证 |
 | UI-TRAY／M2-B | 四个图标组合框只在 `activated` 手动通知 dirty；外部 ICO 导入／删除为额外动作 | 程序化 index setter 不等价于用户选择；图标文件来源、实际系统托盘刷新与保存时机仍待细化；不得把只读图标列表当已应用 | 复用完整选择动作，并对外部文件作显式授权和错误报告。`EQ-UI-TRAY` 比较当前真实状态图标、默认恢复、文件失败及新进程恢复；需 Default 桌面时另记范围 |
 
+### M0.2b 第一批补充：Tab、插入及宏（源码 `2b9215ef`）
+
+以下 14 条只完成静态链路核对，连同上表共 30 条；不是 30 项已开放能力。具体约束、GUI／MCP 独立运行和所有后续动态动作仍待逐项补齐。`prepare`、`sync` 或 bool 返回值不自动代表只读／写盘完成。
+
+| ID／阶段 | GUI 入口与已确认链路 | 有效状态、持久化与风险 | 最小共用操作及独立验收要求 |
+|---|---|---|---|
+| MAP-INSERT-PLAN／M1、M2-A | 粘贴及单表导入 → `prepareMappingDataForInsertion`；目标 Tab、候选行及 `allowCommonConflictPrompt` | **并非纯预览**：目标为共通表时会直接禁用其他普通 Tab 冲突行并发通知；false 只跳过询问，仍执行修改。还逐候选维护已启用互斥组、自动禁用重复／共通冲突新行，返回修复摘要 | 先分离纯分析与实际提交，GUI 询问后与 MCP 提交调用同一操作；不得把现函数或 false 当 dry-run。`EQ-INSERT-PREVIEW` 断言预览前后所有源表、Disabled、dirty、通知／派生状态及磁盘不变；取消／过期后同样不改 |
+| TAB-ADD／M2-A | 菜单 Ctrl+N／表格入口 → `addTabToKeyMappingTabWidget(customName, activate)` | 有默认名及重名后缀搜索上限；在共通表之前插入新的源 QList 和真实表格，初始化 Tab 默认字段，维护当前／上一表索引、布局、刷新及 dirty。只有 activate=true 的入口显式守卫 IDLE，加载也使用该函数 | 共用明确新增操作，区分用户新增与加载；预览返回规范名和源位置，不临时切换 UI。`EQ-TAB-ADD` 比较源列表独立性、共通位置、全部默认值、可选激活、索引失效及保存恢复 |
+| TAB-COPY／M2-A | Ctrl+D／菜单 → `copyCurrentTabToKeyMappingTabWidget` | IDLE 限制；拒绝共通源；自动命名，新 QList 值拷贝映射及 Tab 属性，复制快捷键／共通包含与折叠／图片及浮窗设定，清空内部名，保持普通类型；刷新显示／索引及 dirty。不是只复制表格文字 | 提取明确源 Tab 的复制操作，保持 GUI 命名和所有复制字段；不得以改变当前表确定源。`EQ-TAB-COPY` 比较全部行／备注／同步组、属性、快捷键重复语义、新旧源隔离及冷启动；运行临时字段的预期另行验证 |
+| TAB-REMOVE／M2-A | 菜单／Tab 设置删除 → `deleteMappingTableByTabIndex` 确认 → `removeTabFromKeyMappingTabWidget` | 外层先按索引取名称，内层才验证索引；保护共通及最后一普通表；关闭相关编辑窗，删除实际 QList／表格，调整当前索引、切表／重连事件及 dirty。菜单状态不能替代业务守卫 | 先解析并核实源引用，再由共用操作检查状态／保护项，提交不弹模态框；GUI 另收集确认。`EQ-TAB-REMOVE` 覆盖非当前表、取消、过期目标、共通／最后一表、打开编辑窗、热键缓存及保存恢复 |
+| TAB-ORDER／M2-A | `QTabBar::tabMoved` → `KeyMappingTabWidget::onTabMoved`／顺序恢复检查 → `onKeyMappingTabWidgetTabOrderChanged` → `moveTabInKeyMappingTabWidget(from,to)` | 回调时 Qt 页序已经移动；末端函数处理数据侧 IDLE／索引／共通检查、移动 TabInfo、当前／上一表跟踪、切表／重连、热键缓存及 dirty。直接调用末端函数并不包含 Qt 页序移动 | 共用完整的明确源／目标顺序操作及结构修订，避免回调重复提交；`EQ-TAB-ORDER` 比较实际页序与源信息、逻辑当前表保持、源引用失效、热键实际切表、共通固定位置及冷启动顺序 |
+| TAB-CLEAR／M2-A | 菜单清空 → `clearCurrentMappingTable` 确认 | 清空当前实际源表、刷新依赖显示、清除 Screen／WindowMousePointsList 并 dirty；存在编辑窗关闭分支。不能仅清空可见行或遗漏被筛选／禁用行 | 共用明确源表清空，GUI 另确认；`EQ-TAB-CLEAR` 覆盖筛选、共通表、空表、坐标缓存、未保存草稿、取消及冷启动；状态守卫随共享入口补齐 |
+| TAB-NAME／M2-A | Tab 设置文本编辑／更新 → `on_tabNameUpdateButton_clicked` → `updateKeyMappingTabWidgetTabName` | 校验非空、重复及保留共通显示名；写 TabInfo.TabName、更新真实 Tab 显示并 dirty；不以显示文字作为永久身份 | 复用校验／提交，输入框只采集参数；`EQ-TAB-NAME` 检查重复／保留名拒绝、非当前源、提示和图片组合显示、名称变化后源身份及保存恢复 |
+| TAB-HOTKEY／M2-A | Tab 快捷键更新 → 规范空白／提取包装内组合键 → `validateCombinationKey` → `updateKeyMappingTabInfoHotkey` | 保存原规范串、更新显示并调用 `collectMappingTableTabHotkeys`，Worker `detectMappingTableTabHotkeys` 消费该缓存和各 Tab 字段。多个 Tab 的同一快捷键对应有序索引列表，不能自行改成唯一限制 | 共用解析、清除、校验、赋值及重建缓存；`EQ-TAB-HOTKEY` 比较显示串与有效键、相同键多目标、清空／非法值、排序后实际切换及冷启动；不只核对 LineEdit |
+| TABLE-EXPORT／M2-A | 菜单／Tab 设置 → `exportMappingTableByTabIndex` 文件选择 → `exportKeyMappingDataToFile` | 从指定 Tab 的**内存源行**序列化映射、备注／分类／逐段备注和浮动字段；不导出整个配置／宏定义。现函数 setValue 后直接 true，未显式 sync/status；调用方据此提示成功，不能当写盘证据 | 共用序列化及写盘完成检查，导出明确草稿来源和宏引用依赖；`EQ-TABLE-EXPORT` 用新进程读取实际文件、测试无法写入／覆盖及 Qt5 Unicode。外部路径采用普通权限文件层，不把管理员保存函数变成任意路径写入口 |
+| TABLE-IMPORT／M2-A | 菜单／Tab 设置 → `importMappingTableByTabIndex` → `importKeyMappingDataFromFile` → MAP-INSERT-PLAN | 读取旧格式、默认值及字段边界；检查原始／主映射，跳过无效行，空／无效抬起键回退主映射；构造派生字段后追加，冲突可影响其他 Tab。外层才刷新相关表、dirty 和摘要；不等于磁盘配置已保存 | 共用解析、规范化和计划／提交，报告接收／跳过／回退／冲突及依赖，不用弹窗等待 Agent。`EQ-TABLE-IMPORT` 覆盖全无效／部分有效、非当前表、旧格式、同批互斥、共通连动、失败草稿及后续保存恢复 |
+| MACRO-UPSERT／M2-A | 按钮／快捷键 → `addMacroToListInternal(allowInsertBySelection)` | 目标取普通／通用 OrderedMap；去首尾空白及换行、非空／名称不含右括号、完整映射串校验，同名需确认。新项可按 Shift／全局插入模式插入；同名更新保持位置。消费待提交逐段备注或按段对齐旧备注，再刷新／dirty；改变输入名称不自动重写旧引用 | 共用明确 scope／名称／内容／备注／插入位置／覆盖选择；预览不能消费编辑暂存。`EQ-MACRO-UPSERT` 比较两种作用域、顺序、同名取消、备注对齐／暂存、嵌套引用与运行依赖；普通宏保存于配置组，通用宏在根设置 |
+| MACRO-DELETE／M2-A | Delete／菜单 → `deleteMacroSelectedItems` | 从当前宏表首个连续选区的名称删除相应 OrderedMap 键，刷新／重选并 dirty；未在该路径重写引用该名称的映射／其他宏 | 共用明确作用域和名称集合；`EQ-MACRO-DELETE` 比较筛选下目标、两个命名空间同名隔离、无选择、引用失效及实际展开结果／保存恢复。引用风险预览应说明现有行为，不静默删除关联映射 |
+| MACRO-EXPORT／M2-A | `exportMacroListToFile` 从选区或全部构造有序列表，再选择文件 | 来源为内存普通／通用宏；现导出字段为名称／内容／分类／备注，**未含 MacroComments**；调用 sync 后不检查 status 即提示成功。完整配置保存包含逐段备注，不能把两种格式视为相同覆盖 | 两种入口共用规范序列化／完成检查，逐段备注差异在接入时统一修正并保持旧文件兼容。`EQ-MACRO-EXPORT` 比较选区／筛选／顺序、逐段备注往返、无法写入、Qt5 Unicode 和真正新进程读回 |
+| MACRO-IMPORT／M2-A | `importMacroListFromFile` 读取 MacroList_Export → QVariantList／Map → OrderedMap → 同名覆盖选择 | 跳过非 Map／空名称；按当前 scope 导入。与手工添加的名称／DSL 校验不同；同名覆盖使用 insert 移到末尾，保留同名时跳过；只解析四个导出字段，刷新／dirty 后仍未保存配置。导入中重复名称也受 OrderedMap 规则影响 | 复用同一文件解析与覆盖／顺序计划，区分旧格式容错与正式 typed 参数拒绝未知字段；不能只给 MCP 另写严格逻辑形成隐性差异。`EQ-MACRO-IMPORT` 覆盖部分忽略、重名保留／替换顺序、空／非法内容、作用域、备注格式和保存恢复 |
+
+后续接口接入必须额外核对：这些内部函数有的依赖当前表／当前编辑框，有的只靠 GUI 启用状态限制运行中操作；不能直接按函数名透传。列表操作会改变源引用，源 Tab、配置修订和编辑会话须在提交前再次核实。
+
 ### 动态菜单与事件入口补充
 
 对主窗口、宏列表、序列编辑、Tab 设定、VButton 面板及忽略规则源码进行 `addAction` 静态搜索得到 136 处匹配，其中包含重复入口、动作组、注释或辅助加入操作；**不是 136 个独立能力**。以下按用户意图归并，全部尚待逐操作完整链路核对；不能只扫描 `.ui` 就声明全覆盖。
