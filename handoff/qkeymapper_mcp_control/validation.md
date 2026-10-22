@@ -216,3 +216,25 @@ Qt6.8.3／Qt5.15.2 x64 console Release／asInvoker，原 EXE 路径不变，已�
 分析工具分别读取普通／故障两个真实 qmake 目标，生成各自 `.moc` 和编译参数；维护回归断言每个目标四个源文件及测试宏只出现在故障配置。回归通过，`out/tests/mcp_ipc/static_analysis_context_regression.log`，明细 `out/tests/static_analysis/c2c30dba225a4ef8987cc3babb40bb03/`。实际定向分析三个改动 C++ 文件、两个配置共六次目标编译／十二次 Clang-Tidy／Clazy，全部 native exit 0、项目诊断 0；`out/tests/mcp_ipc/static-analysis-context/`。未重跑无关产品分析。
 
 故障注入验证指定分支，未制造真实系统 `RevertToSelf`／线程分配／内存分配故障，不能称为全部 OS 异常验收。仍未接配对、挑战证明、撤销、GUI 权限、MCP SDK 或业务；未运行产品、ASan、Win11、高低权限连接、真实异用户／会话和 GUI／MCP 等价性。当前信号只代表首包语法及 OS 身份门禁，不能进入业务权限。
+
+## IPC-20261022-14：M1.1c-3 双向证明基础组件
+
+- 基线 `67aaf9fc` 加 `qkm_auth_proof.*`、listener 的共用十六进制／版本常量、维护工程／测试、分析库存断言和记录。新组件仍未链接产品；没有配对、`ready`、凭据收发或业务授权。
+- 随机源使用 Windows [BCryptGenRandom](https://learn.microsoft.com/en-us/windows/win32/api/bcrypt/nf-bcrypt-bcryptgenrandom) 的系统首选提供者并检查返回值，失败不使用弱随机后备；没有将 Worker 的普通随机逻辑改作秘密来源。HMAC 使用现有 [Qt QMessageAuthenticationCode](https://doc.qt.io/qt-6/qmessageauthenticationcode.html) 的 SHA256；本机 Qt5.15.2 头文件与两套实际构建确认共用 API。算法背景见 [RFC 4231](https://www.rfc-editor.org/rfc/rfc4231)。
+- 固定证明输入为 153 字节，精确格式见[维护测试说明](../../QKeyMapper/tests/mcp_ipc/README.md#挑战证明-v1)。绑定版本、实例、pair、非零授权代次、双方实际 PID／创建时间、两个 32 字节 nonce 与用途；不使用 JSON 成员顺序或浮点数。server／client／pairing confirmation 分别使用 1／2／3，Invalid=0 明确拒绝。
+- 独立 Python `struct.pack('>I', version)`、原始 ID 字节、`struct.pack('>QIQIQ', epoch, clientPid, clientCreated, serverPid, serverCreated)` 与 `hmac.new(key, transcript, hashlib.sha256)` 计算三个完整输入／MAC；C++ 固定断言这些字节及摘要，样例包括最大 uint64 和高位 PID。逐项改变绑定、方向、key、nonce 后拒绝；逐个改变 32 个 MAC 位置均拒绝。不能把两端同一个实现自比当成通过。
+- 一次性挑战不可复制；生成新 nonce 后，成功／失败都会消耗一次尝试，反射 server 证明、旧 nonce、重放、取消和无效重建均拒绝。私有预期证明清零后释放，不长存 key；Qt HMAC 内部和调用方的临时副本未作全内存残留保证。固定长度比较无按首个差异早退，未进行时序／侧信道测试。
+
+| 配置 | 最终构建 | 最终运行 |
+|---|---|---|
+| Qt6.8.3，普通 | qmake／JOM exit 0，零 warning／error | 66 通过、0 失败／跳过，19,954 ms |
+| Qt5.15.2，普通 | 同上 | 66 通过、0 失败／跳过，20,530 ms |
+| Qt6.8.3，故障 | 同上 | 71 通过、0 失败／跳过，27,089 ms；额外验证随机源失败不产生秘密／待证明状态 |
+
+EXE 沿用 `out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/QKeyMapperMcpIpcTest.exe`，x64 console Release／asInvoker、Community MSVC 14.44.35207。三个进程均 exit 0、stderr 空，外部看门狗 50 秒；当前 `build_proof.log`、`results_proof.txt`、`test_proof.log` 留在各目录，不随 Git 同步。
+
+初始定向分析在测试故意把整数 0 转成未命名 ProofRole 时报告枚举越界。已命名 `Invalid=0` 并继续断言拒绝，没有删除负例或加规则豁免；全部相关配置重新构建并运行。两个不变的 listener 逐配置分析沿用初始 native exit 0／无诊断结果；证明组件和测试在两个配置重跑，四次目标编译／八次工具运行均 native exit 0、项目诊断 0。原分析 `static-analysis-proof/`，最终 `static-analysis-proof-final/`，均在 `out/tests/mcp_ipc/`。
+
+工具库存回归更新为普通／故障目标各五个源文件，验证实际参数和测试宏隔离，通过记录 `static_analysis_proof_regression.log`，明细 `out/tests/static_analysis/587cc59b967a4e6aa3b5b91d5a844ce7/`。后续仅枚举命名及负例表达变化，目标及脚本不变，未重复回归。
+
+未运行产品、ASan、Win11、完整握手／配对／持久化／撤销、高低权限或 GUI／MCP 等价性。无窗口、真实输入、驱动、个人配置或 Default 操作。本组件证明格式和验证行为，不表示正式连接已认证。

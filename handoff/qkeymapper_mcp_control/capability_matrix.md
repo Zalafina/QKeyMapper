@@ -20,6 +20,7 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 | INF-IDENTITY | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：进程创建时间、主 Token SID／登录／会话及实际管道对端身份 | 两套 Qt 下同机独立进程双方查询通过；请求自报 PID 未被当作身份；合成字段变化及不可读取身份被拒绝 | 请求上下文组件见 INF-REQUEST-CONTEXT；完整集成／异常恢复、真正异用户／会话、管理员产品与普通桥接、配对／授权及撤销尚未验收；主 Token 快照不等于完整授权 |
 | INF-LISTENER | [qkm_local_listener.cpp](../../QKeyMapper/automation/qkm_local_listener.cpp)：默认关闭的原生单实例管道、Qt 接管与清理、严格首包、绝对期限及请求 Token 门禁 | PC-W10 两套 Qt 普通配置各 59 通过；Qt6 故障配置 64 通过；匿名请求不得进入握手入口，在途检查全 listener 限一项，挂起检查超时／恢复失败关闭端点，旧结果不放行重启实例；见 IPC-20261022-11／13 | 无产品监听／凭据／ready／业务分发；配对／证明／撤销及认证后限额待 M1.1c；不等于 MCP 业务能力或 GUI 等价性 |
 | INF-REQUEST-CONTEXT | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：独立原生线程检查已读管道请求 Token，退出后回所属 Qt 线程报告 | 普通／匿名 SQOS、进程／会话绑定、析构回收通过；已接 listener；专用配置故障注入证明恢复失败、长期挂起及关闭交错不会认证或累积替代线程；见 IPC-20261022-12／13 | 故障注入不等于真实 OS API 故障；真正异用户／会话、管理员产品／普通桥接及完整鉴权尚未验收；不能当作业务权限 |
+| INF-AUTH-PROOF | [qkm_auth_proof.cpp](../../QKeyMapper/automation/qkm_auth_proof.cpp)：系统随机、固定格式双向 HMAC-SHA256 和一次性挑战 | 三个方向／用途的固定输入及 MAC 与独立 Python 结果一致；绑定字段逐项变化、版本／类型／长度、32 个错误字节位置、反射／重放／旧 nonce／取消及随机源失败通过；见 IPC-20261022-14 | 证明组件尚未接握手收发、配对凭据或 GUI 授权；不能作为已认证连接或业务权限；没有声称侧信道时序测量通过 |
 
 ## 初始模块索引
 

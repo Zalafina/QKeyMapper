@@ -1,6 +1,6 @@
 # MCP 本机 IPC 基础测试
 
-当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*` 和 `automation/qkm_local_listener.*`。这些基础代码由本测试目标编译，尚未加入产品工程或建立产品监听；MCP 配对、授权、桥接与业务操作仍按主计划接入。
+当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*`、`automation/qkm_local_listener.*` 和 `automation/qkm_auth_proof.*`。这些基础代码由本测试目标编译，尚未加入产品工程或建立产品监听；MCP 配对、授权、桥接与业务操作仍按主计划接入。
 
 ## 覆盖与边界
 
@@ -56,5 +56,34 @@ finally { $env:PATH = $qkmOriginalPath; Pop-Location }
 测试钩子只在测试 Qt 线程中设置，分别在下一次检查复制一个等待门事件，或跳过恢复调用来模拟失败，并计算原生工作线程数。故障测试故意留下识别级模拟身份至专用线程退出，确认 Qt 线程未改变、失败后不认证／不继续业务。钩子不进入普通构建，不作为 IPC 参数；测试结束释放门事件、恢复钩子并回收自有进程。它证明指定异常路径，不代表真实系统 `RevertToSelf` 已返回失败或已覆盖所有系统故障。
 
 分析工具分别读取普通和故障配置的实际 qmake 参数，回归断言两者源清单、meta-object 输入及测试宏隔离，避免只分析其中一个分支。
+
+## 挑战证明 v1
+
+证明组件复用 Qt 的 HMAC-SHA256；密钥、nonce、MAC 均为 32 字节。随机数直接调用 `BCryptGenRandom` 的系统首选提供者，失败返回空值，不降级到伪随机数。全部 ID 在校验后从 32 个小写十六进制字符解码为 16 字节。
+
+规范化输入固定为 153 字节，所有整数使用无符号大端表示，不经过 JSON 数字或字符串拼接：
+
+| 偏移 | 字节数 | 内容 |
+|---:|---:|---|
+| 0 | 20 | ASCII `QKeyMapper-MCP-AUTH` 加一个 NUL |
+| 20 | 1 | 方向／用途：server=1、client=2、pairing confirmation=3 |
+| 21 | 4 | 接口版本 1 |
+| 25 | 16 | instance ID |
+| 41 | 16 | pair ID |
+| 57 | 8 | 非零授权代次 |
+| 65 | 4 | 实际 client PID |
+| 69 | 8 | 实际 client 创建时间 |
+| 77 | 4 | 实际 server PID |
+| 81 | 8 | 实际 server 创建时间 |
+| 89 | 32 | client nonce |
+| 121 | 32 | server nonce |
+
+身份参数必须来自已核对的本机实际进程；辅助函数还检查双方用户／登录／会话相同及身份完整。SID／登录元数据由 OS 门禁校验，未复制进此固定证明格式。未来 JSON 传输使用十六进制 nonce／MAC 和十进制字符串形式的 64 位值，不能使用 JSON 浮点数承载这些整数。
+
+三个用途的完整输入和 MAC 与 Python `struct.pack`、`hmac`、`hashlib.sha256` 独立计算结果比较，固定样例含高于 2^53 的值及最大 uint64。测试逐项改变实例、pair、代次、双方 PID／时间、双 nonce、密钥及方向，验证不再匹配；还拒绝无效／跨登录身份、错误版本／字段长度。固定 32 字节比较逐字节累积差异且不因首个错误早退；语义测试不等于运行时间／侧信道测量。
+
+`ServerChallenge` 不可复制，每次 begin 产生新 server nonce，不保存密钥；只允许一次 client 证明尝试，失败也消耗本次挑战，重放／反射／旧 nonce／取消均拒绝。私有预期证明在完成、重建、取消及析构时清零后释放；Qt HMAC 和调用方可能存在临时内存副本，不能承诺全进程零残留。此处未实现凭据落盘或证明消息收发；密钥不进入此输入格式、日志、命令行或测试证据。
+
+故障配置额外模拟随机源失败，确认不能生成秘密或进入待证明状态。普通配置没有该测试钩子。
 
 实际结果按源码、Qt、机器和构建配置记录在[任务验证记录](../../../handoff/qkeymapper_mcp_control/validation.md)。不同系统的结论分别验收。

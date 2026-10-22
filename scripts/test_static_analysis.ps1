@@ -59,9 +59,9 @@ Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'ui-scale-test' -an
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'sendinput-lifecycle-test' -and $_.Source -like '*qkm_sendinput_lifecycle_test.cpp' }).Count -eq 1) 'SendInput lifecycle test was omitted.'
 foreach ($mcpTarget in @('mcp-ipc-test', 'mcp-ipc-fault-test')) {
     $mcpRuns = @($runs.Runs | Where-Object { $_.Target -eq $mcpTarget })
-    Assert-Analysis ($mcpRuns.Count -eq 4) 'MCP IPC sources need both production and test-hook configurations.'
+    Assert-Analysis ($mcpRuns.Count -eq 5) 'MCP IPC sources need both production and test-hook configurations.'
     Assert-Analysis (Test-Path -LiteralPath (Join-Path $report ($mcpTarget + '-qmake\test_mcp_ipc.moc'))) 'MCP IPC meta-object input was not generated.'
-    foreach ($source in @('qkm_ipc_frame.cpp', 'qkm_local_identity.cpp', 'qkm_local_listener.cpp', 'test_mcp_ipc.cpp')) {
+    foreach ($source in @('qkm_ipc_frame.cpp', 'qkm_local_identity.cpp', 'qkm_local_listener.cpp', 'qkm_auth_proof.cpp', 'test_mcp_ipc.cpp')) {
         Assert-Analysis (@($mcpRuns | Where-Object { [IO.Path]::GetFileName($_.Source) -eq $source }).Count -eq 1) "MCP IPC source omitted: $source"
     }
     $mcpDb = Get-Content -Raw -LiteralPath (Join-Path $report ($mcpTarget + '\compile_commands.json')) | ConvertFrom-Json

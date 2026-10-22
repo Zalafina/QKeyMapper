@@ -10,14 +10,7 @@ namespace {
 
 bool hexString(const QJsonValue &value, int length)
 {
-    if (!value.isString()) return false;
-    const QString text = value.toString();
-    if (text.size() != length) return false;
-    for (const QChar c : text) {
-        if (!((c >= QLatin1Char('0') && c <= QLatin1Char('9'))
-              || (c >= QLatin1Char('a') && c <= QLatin1Char('f')))) return false;
-    }
-    return true;
+    return value.isString() && isLowerHex(value.toString(), length);
 }
 
 bool validHello(const QJsonObject &message, const QString &instance)

@@ -3,6 +3,7 @@
 
 #include "qkm_ipc_frame.h"
 #include "qkm_local_identity.h"
+#include "qkm_auth_proof.h"
 
 #include <QElapsedTimer>
 #include <QObject>
@@ -15,7 +16,6 @@ class QLocalSocket;
 namespace QkmAutomation {
 
 constexpr int PreauthTimeoutMs = 3000;
-constexpr int HandshakeVersion = 1;
 
 enum class ListenerError {
     IdentityRejected, InvalidFrame, InvalidHandshake,

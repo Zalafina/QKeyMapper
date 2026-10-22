@@ -108,6 +108,23 @@ QJsonObject helloMessage(const QString &instance, bool pairing)
     return message;
 }
 
+AuthBinding proofBinding()
+{
+    AuthBinding binding;
+    const IdentityResult own = queryProcessIdentity(GetCurrentProcessId());
+    binding.instanceId = QStringLiteral("00112233445566778899aabbccddeeff");
+    binding.pairId = QStringLiteral("ffeeddccbbaa99887766554433221100");
+    binding.permissionEpoch = (std::numeric_limits<quint64>::max)();
+    binding.client = own.identity;
+    binding.server = own.identity;
+    binding.client.processId = 0x12345678;
+    binding.client.creationTime = Q_UINT64_C(0xfedcba9876543210);
+    binding.server.processId = 0x87654321;
+    binding.server.creationTime = Q_UINT64_C(0x0123456789abcdef);
+    binding.clientNonce = QByteArray::fromHex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
+    return binding;
+}
+
 int runListenerClient(const QStringList &arguments)
 {
     if (arguments.size() != 7) return 20;
@@ -250,6 +267,12 @@ private slots:
     void requestContext_data();
     void requestContext();
     void requestContextDisposal();
+    void proofVectors_data();
+    void proofVectors();
+    void proofBindingChanges();
+    void proofRejectsInvalidBinding();
+    void proofComparison();
+    void challengeLifecycle();
 #ifdef QKM_AUTOMATION_TESTING
     void listenerVerifierStopAndRestart();
     void listenerVerifierTimeout_data();
@@ -951,6 +974,148 @@ void McpIpcTest::requestContextDisposal()
     };
     QTRY_VERIFY_WITH_TIMEOUT(gone(), 3000);
     QCOMPARE(callbacks, 0);
+}
+
+void McpIpcTest::proofVectors_data()
+{
+    QTest::addColumn<int>("role");
+    QTest::addColumn<QByteArray>("expected");
+    QTest::newRow("server") << 1 << QByteArray("707f9b7b991818ffac75ed543bf43e5bbc13beaa56a821a496207772369ca8b0");
+    QTest::newRow("client") << 2 << QByteArray("832a59307600f9ca81e2a58f282f54ecd6f492e8c149662a15371ac05e359f38");
+    QTest::newRow("pairing") << 3 << QByteArray("d0846e2424fc8034f6723ac5d5e7bdc951af20a7de76f1f3a42485fa9a3b824b");
+}
+
+void McpIpcTest::proofVectors()
+{
+    QFETCH(int, role);
+    QFETCH(QByteArray, expected);
+    const AuthBinding binding = proofBinding();
+    const QByteArray nonce = QByteArray::fromHex("202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f");
+    const QByteArray key = QByteArray::fromHex("0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
+    // These fixed bytes and MACs were independently produced with Python struct/hmac/hashlib.
+    QByteArray transcript = QByteArray::fromHex(
+        "514b65794d61707065722d4d43502d4155544800010000000100112233445566778899aabbccddeeff"
+        "ffeeddccbbaa99887766554433221100ffffffffffffffff12345678fedcba987654321087654321"
+        "0123456789abcdef000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
+        "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f");
+    transcript[20] = static_cast<char>(role);
+    QCOMPARE(authTranscript(binding, nonce, static_cast<ProofRole>(role)), transcript);
+    QCOMPARE(authenticationProof(binding, nonce, static_cast<ProofRole>(role), key).toHex(), expected);
+}
+
+void McpIpcTest::proofBindingChanges()
+{
+    const AuthBinding original = proofBinding();
+    const QByteArray key(AuthSecretBytes, 'k'), nonce(AuthSecretBytes, 'n');
+    const QByteArray expected = authenticationProof(original, nonce, ProofRole::Client, key);
+    QCOMPARE(expected.size(), AuthSecretBytes);
+    QList<AuthBinding> changed;
+    AuthBinding value = original; value.instanceId[0] = QLatin1Char('f'); changed.append(value);
+    value = original; value.pairId[0] = QLatin1Char('0'); changed.append(value);
+    value = original; --value.permissionEpoch; changed.append(value);
+    value = original; ++value.client.processId; changed.append(value);
+    value = original; ++value.client.creationTime; changed.append(value);
+    value = original; ++value.server.processId; changed.append(value);
+    value = original; ++value.server.creationTime; changed.append(value);
+    value = original; value.clientNonce[0] = 'x'; changed.append(value);
+    for (const AuthBinding &binding : changed)
+        QVERIFY(!equalAuthenticationProof(expected, authenticationProof(binding, nonce, ProofRole::Client, key)));
+    QByteArray otherNonce = nonce; otherNonce[0] = 'x';
+    QVERIFY(!equalAuthenticationProof(expected, authenticationProof(original, otherNonce, ProofRole::Client, key)));
+    QVERIFY(!equalAuthenticationProof(expected, authenticationProof(original, nonce, ProofRole::Server, key)));
+    QVERIFY(!equalAuthenticationProof(expected, authenticationProof(original, nonce, ProofRole::PairingConfirmation, key)));
+    QVERIFY(!equalAuthenticationProof(expected, authenticationProof(original, nonce, ProofRole::Client, QByteArray(AuthSecretBytes, 'x'))));
+}
+
+void McpIpcTest::proofRejectsInvalidBinding()
+{
+    const AuthBinding original = proofBinding();
+    const QByteArray key(AuthSecretBytes, 'k'), nonce(AuthSecretBytes, 'n');
+    QList<AuthBinding> invalid;
+    AuthBinding value = original; value.version = 2; invalid.append(value);
+    value = original; value.permissionEpoch = 0; invalid.append(value);
+    value = original; value.instanceId.clear(); invalid.append(value);
+    value = original; value.instanceId[0] = QLatin1Char('A'); invalid.append(value);
+    value = original; value.pairId[0] = QLatin1Char('g'); invalid.append(value);
+    value = original; value.client = {}; invalid.append(value);
+    value = original; value.server = {}; invalid.append(value);
+    value = original; ++value.server.sessionId; invalid.append(value);
+    value = original; ++value.server.authenticationId; invalid.append(value);
+    value = original; value.clientNonce.chop(1); invalid.append(value);
+    for (const AuthBinding &binding : invalid) {
+        QVERIFY(authTranscript(binding, nonce, ProofRole::Client).isEmpty());
+        QVERIFY(authenticationProof(binding, nonce, ProofRole::Client, key).isEmpty());
+    }
+    for (int size : {0, AuthSecretBytes - 1, AuthSecretBytes + 1}) {
+        QVERIFY(authenticationProof(original, nonce, ProofRole::Client, QByteArray(size, 'k')).isEmpty());
+        QVERIFY(authTranscript(original, QByteArray(size, 'n'), ProofRole::Client).isEmpty());
+    }
+    QVERIFY(authTranscript(original, nonce, ProofRole::Invalid).isEmpty());
+    QVERIFY(!isLowerHex(QStringLiteral("a"), -1));
+    QVERIFY(!isLowerHex(QStringLiteral("a"), 0));
+}
+
+void McpIpcTest::proofComparison()
+{
+    const QByteArray expected(AuthSecretBytes, 'p');
+    QVERIFY(equalAuthenticationProof(expected, expected));
+    for (int i = 0; i < AuthSecretBytes; ++i) {
+        QByteArray changed = expected;
+        changed[i] = 'x';
+        QVERIFY(!equalAuthenticationProof(expected, changed));
+    }
+    QVERIFY(!equalAuthenticationProof({}, {}));
+    QVERIFY(!equalAuthenticationProof(expected, expected.left(AuthSecretBytes - 1)));
+    QVERIFY(!equalAuthenticationProof(expected, expected + 'x'));
+}
+
+void McpIpcTest::challengeLifecycle()
+{
+    const AuthBinding binding = proofBinding();
+    const QByteArray key = secureRandomSecret();
+    QCOMPARE(key.size(), AuthSecretBytes);
+    const QByteArray secondKey = secureRandomSecret();
+    QCOMPARE(secondKey.size(), AuthSecretBytes);
+    QVERIFY(key != secondKey);
+    ServerChallenge challenge;
+    QVERIFY(!challenge.isPending());
+    QVERIFY(!challenge.acceptClient(QByteArray(AuthSecretBytes, 'x')));
+    QVERIFY(challenge.begin(binding, key));
+    QVERIFY(challenge.isPending());
+    const QByteArray nonce = challenge.serverNonce();
+    QCOMPARE(nonce.size(), AuthSecretBytes);
+    QCOMPARE(challenge.serverProof(), authenticationProof(binding, nonce, ProofRole::Server, key));
+    QVERIFY(!challenge.acceptClient(challenge.serverProof()));
+    QVERIFY(!challenge.isPending());
+    const QByteArray oldProof = authenticationProof(binding, nonce, ProofRole::Client, key);
+    QVERIFY(!challenge.acceptClient(oldProof));
+    QVERIFY(challenge.begin(binding, key));
+    QVERIFY(challenge.serverNonce() != nonce);
+    QVERIFY(!challenge.acceptClient(oldProof));
+    QVERIFY(challenge.begin(binding, key));
+    const QByteArray proof = authenticationProof(binding, challenge.serverNonce(), ProofRole::Client, key);
+    QVERIFY(challenge.acceptClient(proof));
+    QVERIFY(!challenge.acceptClient(proof));
+    QVERIFY(challenge.begin(binding, key));
+    challenge.cancel();
+    QVERIFY(!challenge.isPending());
+    QVERIFY(challenge.serverNonce().isEmpty());
+    QVERIFY(challenge.serverProof().isEmpty());
+    QVERIFY(!challenge.acceptClient(proof));
+    QVERIFY(challenge.begin(binding, key));
+    QVERIFY(!challenge.begin({}, key));
+    QVERIFY(!challenge.isPending());
+    QVERIFY(challenge.serverNonce().isEmpty());
+    QVERIFY(!challenge.begin(binding, {}));
+#ifdef QKM_AUTOMATION_TESTING
+    setAuthRandomTestFailure(true);
+    const auto resetRandom = qScopeGuard([]() { setAuthRandomTestFailure(false); });
+    QVERIFY(secureRandomSecret().isEmpty());
+    QVERIFY(!challenge.begin(binding, key));
+    QVERIFY(!challenge.isPending());
+    QVERIFY(challenge.serverNonce().isEmpty());
+    QVERIFY(challenge.serverProof().isEmpty());
+#endif
 }
 
 #ifdef QKM_AUTOMATION_TESTING
