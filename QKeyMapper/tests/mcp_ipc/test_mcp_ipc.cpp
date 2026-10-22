@@ -25,6 +25,7 @@
 #include <aclapi.h>
 #include <sddl.h>
 #include <limits>
+#include <utility>
 
 using namespace QkmAutomation;
 
@@ -479,6 +480,8 @@ private slots:
     void storeCorruptionAndContext();
     void storeAtomicFailure();
     void storeUnsafePaths();
+    void discoveryLifecycle();
+    void discoveryRejectsMetadata();
     void sessionPairAndReconnect();
     void sessionRejectedPairing_data();
     void sessionRejectedPairing();
@@ -1501,6 +1504,124 @@ void McpIpcTest::storeUnsafePaths()
     QCOMPARE(records.size(), 1);
 }
 
+void McpIpcTest::discoveryLifecycle()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/discovery-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString directory = temporary.path() + QStringLiteral("/server");
+    AutomationSessionServer server(directory, "test-discovery");
+    QVERIFY(!QFileInfo::exists(server.discoveryPath()));
+    QVERIFY(server.enable());
+    InstanceDescriptor descriptor;
+    DiscoveryError error;
+    QVERIFY(readInstanceDiscovery(directory, QCoreApplication::applicationFilePath(), descriptor, error));
+    QCOMPARE(error, DiscoveryError::None);
+    QCOMPARE(descriptor.instanceId, server.instanceId());
+    QCOMPARE(descriptor.pipeName, server.pipeName());
+    QCOMPARE(descriptor.processId, quint32(GetCurrentProcessId()));
+    const QString alias = QCoreApplication::applicationDirPath() + QStringLiteral("/./")
+        + QFileInfo(QCoreApplication::applicationFilePath()).fileName();
+    QVERIFY(readInstanceDiscovery(directory, alias, descriptor, error));
+    QVERIFY(!readInstanceDiscovery(directory, temporary.path() + QStringLiteral("/another.exe"), descriptor, error));
+    QCOMPARE(error, DiscoveryError::IdentityRejected);
+    QVERIFY(descriptor.instanceId.isEmpty());
+    const QByteArray raw = readTestFile(server.discoveryPath());
+    const QJsonObject data = QJsonDocument::fromJson(raw).object();
+    QCOMPARE(data.size(), 7);
+    QVERIFY(!data.contains(QStringLiteral("secret")));
+    const QString old = server.instanceId();
+    AutomationSessionServer competing(directory, "test-discovery");
+    QVERIFY(!competing.enable());
+    QVERIFY(server.isEnabled());
+    QVERIFY(readInstanceDiscovery(directory, QCoreApplication::applicationFilePath(), descriptor, error));
+    QCOMPARE(descriptor.instanceId, old);
+    server.disable();
+    QVERIFY(!QFileInfo::exists(server.discoveryPath()));
+    QVERIFY(server.enable());
+    QVERIFY(server.instanceId() != old);
+    QVERIFY(removeInstanceDiscovery(directory, old, error));
+    QVERIFY(QFileInfo::exists(server.discoveryPath()));
+    const QString current = server.instanceId();
+    QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(QDir::toNativeSeparators(server.discoveryPath()).utf16()), FILE_ATTRIBUTE_READONLY));
+    server.disable();
+    QVERIFY(!server.isEnabled());
+    QCOMPARE(server.lastDiscoveryError(), DiscoveryError::IoError);
+    QVERIFY(QFileInfo::exists(server.discoveryPath()));
+    QVERIFY(!server.enable());
+    QVERIFY(!server.isEnabled());
+    QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(QDir::toNativeSeparators(server.discoveryPath()).utf16()), FILE_ATTRIBUTE_NORMAL));
+    QVERIFY(removeInstanceDiscovery(directory, current, error));
+    QVERIFY(!QFileInfo::exists(server.discoveryPath()));
+}
+
+void McpIpcTest::discoveryRejectsMetadata()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/discovery-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString directory = temporary.path() + QStringLiteral("/private");
+    const QString id = QUuid::createUuid().toString(QUuid::Id128);
+    const QString pipe = QString::fromLatin1(PipeNamePrefix) + id;
+    DiscoveryError error;
+    QVERIFY(publishInstanceDiscovery(directory, id, pipe, error));
+    const QString path = instanceDiscoveryPath(directory);
+    const QByteArray original = readTestFile(path);
+    const QJsonObject object = QJsonDocument::fromJson(original).object();
+    QList<QJsonObject> invalid;
+    auto changed = object; changed.insert(QStringLiteral("version"), QStringLiteral("1")); invalid << changed;
+    changed = object; changed.insert(QStringLiteral("extra"), true); invalid << changed;
+    changed = object; changed.insert(QStringLiteral("pid"), 1); invalid << changed;
+    changed = object; changed.insert(QStringLiteral("created"), QStringLiteral("01")); invalid << changed;
+    changed = object; changed.insert(QStringLiteral("session"), QStringLiteral("4294967296")); invalid << changed;
+    changed = object; changed.insert(QStringLiteral("pipe"), QStringLiteral("\\\\remote\\pipe\\bad")); invalid << changed;
+    changed = object; changed.insert(QStringLiteral("created"), QStringLiteral("1")); invalid << changed;
+    changed = object; changed.insert(QStringLiteral("executable"), QStringLiteral("\\\\remote\\share\\do-not-open.exe")); invalid << changed;
+    for (const QJsonObject &value : std::as_const(invalid)) {
+        QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        const QByteArray bytes = QJsonDocument(value).toJson(QJsonDocument::Compact);
+        QCOMPARE(file.write(bytes), qint64(bytes.size())); file.close();
+        InstanceDescriptor descriptor; descriptor.instanceId = id;
+        QVERIFY(!readInstanceDiscovery(directory, QCoreApplication::applicationFilePath(), descriptor, error));
+        QVERIFY(descriptor.instanceId.isEmpty());
+    }
+    for (const QByteArray &bytes : {QByteArray(), QByteArray(128 * 1024 + 1, 'x'), QByteArray("{\"x\":\"") + char(0xff) + "\"}"}) {
+        QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        QCOMPARE(file.write(bytes), qint64(bytes.size())); file.close();
+        InstanceDescriptor descriptor;
+        QVERIFY(!readInstanceDiscovery(directory, QCoreApplication::applicationFilePath(), descriptor, error));
+        QVERIFY(!publishInstanceDiscovery(directory, id, pipe, error));
+        QCOMPARE(readTestFile(path), bytes);
+    }
+    {
+        QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        QCOMPARE(file.write(original), qint64(original.size()));
+    }
+    LocalPipeListener listener;
+    int received = 0;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this, [&]() { ++received; });
+    QVERIFY(listener.start());
+    ListenerChild child;
+    QVERIFY(child.launch(listener, QStringLiteral("hello")));
+    QTRY_COMPARE_WITH_TIMEOUT(received, 1, 3000);
+    const auto peer = queryProcessIdentity(static_cast<quint32>(child.processId()));
+    QVERIFY(peer.ok());
+    changed = object;
+    changed.insert(QStringLiteral("pid"), QString::number(peer.identity.processId));
+    changed.insert(QStringLiteral("created"), QString::number(peer.identity.creationTime));
+    const QByteArray occupied = QJsonDocument(changed).toJson(QJsonDocument::Compact);
+    {
+        QFile file(path); QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+        QCOMPARE(file.write(occupied), qint64(occupied.size()));
+    }
+    QVERIFY(!publishInstanceDiscovery(directory, id, pipe, error));
+    QCOMPARE(error, DiscoveryError::Busy);
+    QCOMPARE(readTestFile(path), occupied);
+    listener.closeClient();
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+    // PID reuse / a dead publisher does not keep a stale hint authoritative.
+    QVERIFY(publishInstanceDiscovery(directory, id, pipe, error));
+    QVERIFY(removeInstanceDiscovery(directory, id, error));
+}
+
 void McpIpcTest::sessionPairAndReconnect()
 {
     QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
@@ -1676,8 +1797,11 @@ void McpIpcTest::sessionStoreFailure()
     connect(&server, &AutomationSessionServer::authenticated, this, [&]() { ++authenticated; });
     connect(&server, &AutomationSessionServer::failed, this, [&]() { ++failed; });
     connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
-        // Make the destination unsafe after enable's empty read, before confirmation/save.
-        QVERIFY(QDir().mkdir(directory));
+        // Corrupt credentials after enable; confirmation must not overwrite them or become ready.
+        QFile corrupt(QDir(directory).filePath(QStringLiteral("pairings.dat")));
+        QVERIFY(corrupt.open(QIODevice::WriteOnly));
+        QCOMPARE(corrupt.write("corrupt-store"), qint64(13));
+        corrupt.close();
         QVERIFY(server.approvePairing(request.requestId, Read));
     });
     QVERIFY(server.enable());
@@ -1688,7 +1812,7 @@ void McpIpcTest::sessionStoreFailure()
     QTRY_COMPARE_WITH_TIMEOUT(failed, 1, 3000);
     QCOMPARE(authenticated, 0);
     QVERIFY(server.pairings().isEmpty());
-    QVERIFY(!QFileInfo::exists(QDir(directory).filePath(QStringLiteral("pairings.dat"))));
+    QCOMPARE(readTestFile(QDir(directory).filePath(QStringLiteral("pairings.dat"))), QByteArray("corrupt-store"));
 }
 
 void McpIpcTest::sessionSlowFrame()

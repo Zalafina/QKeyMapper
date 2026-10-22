@@ -59,9 +59,9 @@ Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'ui-scale-test' -an
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'sendinput-lifecycle-test' -and $_.Source -like '*qkm_sendinput_lifecycle_test.cpp' }).Count -eq 1) 'SendInput lifecycle test was omitted.'
 foreach ($mcpTarget in @('mcp-ipc-test', 'mcp-ipc-fault-test')) {
     $mcpRuns = @($runs.Runs | Where-Object { $_.Target -eq $mcpTarget })
-    Assert-Analysis ($mcpRuns.Count -eq 7) 'MCP IPC sources need both production and test-hook configurations.'
+    Assert-Analysis ($mcpRuns.Count -eq 9) 'MCP IPC sources need both production and test-hook configurations.'
     Assert-Analysis (Test-Path -LiteralPath (Join-Path $report ($mcpTarget + '-qmake\test_mcp_ipc.moc'))) 'MCP IPC meta-object input was not generated.'
-    foreach ($source in @('qkm_ipc_frame.cpp', 'qkm_local_identity.cpp', 'qkm_local_listener.cpp', 'qkm_auth_proof.cpp', 'qkm_pair_store.cpp', 'qkm_session_server.cpp', 'test_mcp_ipc.cpp')) {
+    foreach ($source in @('qkm_ipc_frame.cpp', 'qkm_local_identity.cpp', 'qkm_local_listener.cpp', 'qkm_auth_proof.cpp', 'qkm_pair_store.cpp', 'qkm_session_server.cpp', 'qkm_private_storage.cpp', 'qkm_instance_discovery.cpp', 'test_mcp_ipc.cpp')) {
         Assert-Analysis (@($mcpRuns | Where-Object { [IO.Path]::GetFileName($_.Source) -eq $source }).Count -eq 1) "MCP IPC source omitted: $source"
     }
     $mcpDb = Get-Content -Raw -LiteralPath (Join-Path $report ($mcpTarget + '\compile_commands.json')) | ConvertFrom-Json
@@ -71,7 +71,7 @@ foreach ($mcpTarget in @('mcp-ipc-test', 'mcp-ipc-fault-test')) {
 }
 
 $controlRuns = @($runs.Runs | Where-Object { $_.Target -eq 'mcp-control-test' })
-Assert-Analysis ($controlRuns.Count -eq 8) 'MCP control test source inventory is incomplete.'
+Assert-Analysis ($controlRuns.Count -eq 10) 'MCP control test source inventory is incomplete.'
 Assert-Analysis (@($controlRuns | Where-Object { $_.Source -like '*test_mcp_control.cpp' }).Count -eq 1) 'MCP control test was omitted.'
 Assert-Analysis (Test-Path -LiteralPath (Join-Path $report 'mcp-control-test-qmake\test_mcp_control.moc')) 'MCP control meta-object input was not generated.'
 $controlDb = Get-Content -Raw -LiteralPath (Join-Path $report 'mcp-control-test\compile_commands.json') | ConvertFrom-Json

@@ -10,10 +10,13 @@ SOURCES += test_mcp_ipc.cpp \
     ../../automation/qkm_local_listener.cpp \
     ../../automation/qkm_auth_proof.cpp \
     ../../automation/qkm_pair_store.cpp \
-    ../../automation/qkm_session_server.cpp
+    ../../automation/qkm_session_server.cpp \
+    ../../automation/qkm_private_storage.cpp \
+    ../../automation/qkm_instance_discovery.cpp
 HEADERS += ../../automation/qkm_ipc_frame.h ../../automation/qkm_local_identity.h \
     ../../automation/qkm_local_listener.h ../../automation/qkm_auth_proof.h \
-    ../../automation/qkm_pair_store.h ../../automation/qkm_session_server.h
+    ../../automation/qkm_pair_store.h ../../automation/qkm_session_server.h \
+    ../../automation/qkm_private_storage.h ../../automation/qkm_instance_discovery.h
 DEFINES += UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00
 QMAKE_CXXFLAGS += /utf-8
 QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'asInvoker\' uiAccess=\'false\'\"

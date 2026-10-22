@@ -112,7 +112,7 @@ bool LocalPipeListener::start()
     const auto freeDescriptor = qScopeGuard([descriptor]() { LocalFree(descriptor); });
     SECURITY_ATTRIBUTES attributes{sizeof(SECURITY_ATTRIBUTES), descriptor, FALSE};
     m_instanceId = QUuid::createUuid().toString(QUuid::Id128);
-    m_pipeName = QStringLiteral("\\\\.\\pipe\\QKeyMapper.Automation.") + m_instanceId;
+    m_pipeName = QString::fromLatin1(PipeNamePrefix) + m_instanceId;
     // shortcut: one client at a time; revisit only when bridge concurrency is required.
     m_pipe = CreateNamedPipeW(reinterpret_cast<LPCWSTR>(m_pipeName.utf16()),
         PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED | FILE_FLAG_FIRST_PIPE_INSTANCE,

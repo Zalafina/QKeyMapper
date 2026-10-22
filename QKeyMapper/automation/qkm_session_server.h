@@ -3,6 +3,7 @@
 
 #include "qkm_local_listener.h"
 #include "qkm_pair_store.h"
+#include "qkm_instance_discovery.h"
 
 #include <functional>
 
@@ -42,6 +43,8 @@ public:
     bool isEnabled() const { return m_enabled; }
     QString pipeName() const { return m_listener.pipeName(); }
     QString instanceId() const { return m_listener.instanceId(); }
+    QString discoveryPath() const { return instanceDiscoveryPath(m_directory); }
+    DiscoveryError lastDiscoveryError() const { return m_discoveryError; }
     bool acceptingConnections() const { return m_enabled && m_listener.m_notifier.isEnabled(); }
     PairStoreError lastStoreError() const { return m_storeError; }
     QList<PairingInfo> pairings() const;
@@ -74,6 +77,10 @@ private:
     int findPair(const QString &pairId) const;
 
     LocalPipeListener m_listener;
+    QString m_directory;
+    QString m_discoveryInstance;
+    HANDLE m_discoveryLease = INVALID_HANDLE_VALUE;
+    DiscoveryError m_discoveryError = DiscoveryError::None;
     PairCredentialStore m_store;
     QList<PairCredential> m_credentials;
     PairStoreError m_storeError = PairStoreError::None;

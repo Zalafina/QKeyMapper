@@ -24,6 +24,7 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 | INF-PAIR-STORE | [qkm_pair_store.cpp](../../QKeyMapper/automation/qkm_pair_store.cpp)：类型化权限／凭据、机器与应用绑定、当前用户 DPAPI、私有 ACL、原子保存 | PC-W10 非提权运行，普通 Qt6／Qt5 各 71、故障 Qt6 77 通过；独立进程读取、错误上下文／损坏／非法权限拒绝、只读失败保留原文件、私有目录与硬链接拒绝，见 IPC-20261022-15 | 已接内部控制器与管理窗口；真实异用户／跨机器／高低权限未测，不能算业务授权或完整安全边界；默认执行沙箱不具备可用 DPAPI 环境，运行测试使用获准非提权沙箱外上下文 |
 | INF-SESSION | [qkm_session_server.cpp](../../QKeyMapper/automation/qkm_session_server.cpp)：连接代次、GUI 权威批准入口、证明及保存后 ready、最小权限、代次更新／撤销、分阶段限额 | PC-W10 Qt6／Qt5 各 80，故障 Qt6 与 ASan 各 86；独立进程配对／重连／撤销、迟到批准、错误／反射证明、保存失败、慢帧、处理器禁用／销毁；见 IPC-20261022-16／17 | 仅维护测试调用的内部控制器；产品管理窗口已接；发现、正式 SDK、高低权限待接／待测，不算业务能力或 GUI／MCP 等价性 |
 | INF-GUI | [ControlDialog](../../QKeyMapper/automation/qkm_control_dialog.cpp)、[通用高级设置](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[托盘入口](../../QKeyMapper/qkeymapper.cpp)：本次运行启用、只读默认、实际程序／PID、权限批准、拒绝／撤销、窗口关闭与 Escape | 产品 Qt6／Qt5 构建；私有桌面直接控件事件＋独立认证子进程通过，实际状态／凭据断言；三语言静态图已审阅，详见 IPC-20261022-18 | 维护目标使用同一窗口，不代表实际产品入口／缩放主题／管理员到普通桥接已经验收；发现与 SDK、60 秒 GUI 超时、全部业务等价性仍待验证 |
+| INF-DISCOVERY | [实例发现](../../QKeyMapper/automation/qkm_instance_discovery.cpp)、[共享私有存储](../../QKeyMapper/automation/qkm_private_storage.cpp)、[会话启停](../../QKeyMapper/automation/qkm_session_server.cpp)：私有原子 JSON、活跃文件租约、真实进程／登录／预期 EXE、按句柄清理 | 普通 Qt6／Qt5 各 82、故障 Qt6 88；GUI 各 11；定向 ASan 8 通过；旧／错误／并发／只读及原存储回归，见 IPC-20261022-19 | 只是连接提示，实际管道身份／新证明仍必需；管理员产品与普通桥接、实际异用户、正式 SDK 与 Win11 未测，不算业务能力 |
 
 ## 初始模块索引
 

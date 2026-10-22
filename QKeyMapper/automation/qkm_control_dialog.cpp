@@ -185,6 +185,10 @@ void ControlDialog::setUILanguage(int language)
         "Only this user and logon session may connect. Approve pairing here. Closing this window keeps MCP enabled; restarting QKeyMapper disables it.",
         "同じユーザーのログオンセッションのみ接続できます。ここでペアリングを承認してください。画面を閉じても有効のままです。再起動すると無効になります。"));
     m_connection->setPlaceholderText(text("接口已关闭", "MCP is disabled", "MCP は無効です"));
+    m_connection->setAccessibleName(text("连接信息文件路径", "Connection information file", "接続情報ファイルのパス"));
+    m_connection->setToolTip(text("可复制此路径配置 MCP 桥接。文件不含配对密钥。",
+        "Copy this path when configuring the MCP bridge. It contains no pairing key.",
+        "MCP ブリッジの設定にこのパスをコピーできます。ペアリングキーは含まれません。"));
     m_pairings->setAccessibleName(text("已配对客户端及权限", "Paired clients and permissions", "ペアリング済みクライアントと権限"));
     m_revoke->setText(text("撤销选中客户端的配对", "Revoke selected pairing", "選択したペアリングを解除"));
     m_approval->setTitle(text("批准新的客户端（60 秒内）", "Approve a new client (within 60 seconds)", "新しいクライアントを承認（60 秒以内）"));
@@ -222,7 +226,7 @@ void ControlDialog::refresh()
         "; the last operation failed. A revocation that was not saved did not succeed.",
         "。前の操作に失敗しました。保存されなかった解除は完了していません。");
     m_status->setText(status);
-    m_connection->setText(m_server.isEnabled() ? m_server.pipeName() : QString());
+    m_connection->setText(m_server.isEnabled() ? m_server.discoveryPath() : QString());
     const QString selected = m_pairings->currentItem() ? m_pairings->currentItem()->data(Qt::UserRole).toString() : QString();
     m_pairings->clear();
     const auto pairs = m_server.pairings();

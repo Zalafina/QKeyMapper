@@ -1,4 +1,5 @@
 #include "qkm_session_server.h"
+#include "qkm_private_storage.h"
 
 #include <QUuid>
 #include <QTimer>
@@ -36,7 +37,7 @@ PairingInfo info(const PairCredential &pair)
 
 AutomationSessionServer::AutomationSessionServer(QString storeDirectory, QByteArray applicationBinding,
                                                  QObject *parent)
-    : QObject(parent), m_store(std::move(storeDirectory), std::move(applicationBinding))
+    : QObject(parent), m_directory(std::move(storeDirectory)), m_store(m_directory, std::move(applicationBinding))
 {
     connect(&m_listener, &LocalPipeListener::handshakeReceived, this, &AutomationSessionServer::onHello);
     connect(&m_listener, &LocalPipeListener::messageReceived, this, &AutomationSessionServer::onMessage);
@@ -61,6 +62,21 @@ bool AutomationSessionServer::enable()
         disable();
         return false;
     }
+    if (!publishInstanceDiscovery(m_directory, m_listener.instanceId(), m_listener.pipeName(), m_discoveryError)) {
+        disable();
+        return false;
+    }
+    m_discoveryInstance = m_listener.instanceId();
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    m_discoveryLease = own.ok() ? Storage::privateFile(discoveryPath(), own.identity.userSid) : INVALID_HANDLE_VALUE;
+    InstanceDescriptor published;
+    if (m_discoveryLease == INVALID_HANDLE_VALUE
+        || !readInstanceDiscovery(m_directory, queryProcessExecutable(own.identity), published, m_discoveryError)
+        || published.instanceId != m_discoveryInstance || published.processId != GetCurrentProcessId()) {
+        disable();
+        m_discoveryError = DiscoveryError::IdentityRejected;
+        return false;
+    }
     m_enabled = true;
     emit enabledChanged(true);
     return true;
@@ -74,7 +90,15 @@ void AutomationSessionServer::disable()
     clearSession();
     for (PairCredential &credential : m_credentials) eraseSecret(credential.secret);
     m_credentials.clear();
+    if (m_discoveryLease != INVALID_HANDLE_VALUE) {
+        CloseHandle(m_discoveryLease);
+        m_discoveryLease = INVALID_HANDLE_VALUE;
+    }
+    const QString discoveryInstance = std::exchange(m_discoveryInstance, {});
+    const bool removed = discoveryInstance.isEmpty()
+        || removeInstanceDiscovery(m_directory, discoveryInstance, m_discoveryError);
     if (wasEnabled) emit enabledChanged(false);
+    if (!removed) emit failed(QStringLiteral("discovery_cleanup_failed"));
 }
 
 QList<PairingInfo> AutomationSessionServer::pairings() const

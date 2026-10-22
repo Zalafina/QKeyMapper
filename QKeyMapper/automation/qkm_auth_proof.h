@@ -8,6 +8,7 @@
 namespace QkmAutomation {
 
 constexpr int HandshakeVersion = 1;
+constexpr char PipeNamePrefix[] = "\\\\.\\pipe\\QKeyMapper.Automation.";
 constexpr int AuthSecretBytes = 32;
 
 enum class ProofRole : quint8 { Invalid = 0, Server = 1, Client = 2, PairingConfirmation = 3 };

@@ -320,3 +320,32 @@ EXE 沿用 `out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/QKeyM
 定向分析 identity、ControlDialog、维护测试：初始三个文件共九个真实目标编译（main、sendinput-lifecycle、IPC 普通／故障、control），工具 native exit 0，只有测试的模块包含及遗漏 emit 两项诊断；改用 QtTest/QTest 与显式 emit 后修复。后续按实际变化只重跑 ControlDialog 的三个配置和测试配置；最终 `static-analysis-portable/`、`static-analysis-metadata-test/` 均 native exit 0、项目诊断 0，identity 沿用本次初始四配置零诊断。库存／报告回归通过，`static_analysis_regression.log`，明细 `out/tests/static_analysis/30e8d0c123b14d57905a189d03b1ee20/`，确认 control 目标八个 cpp、真实 Widgets 参数且无故障宏。
 
 边界：没有启动正式产品、验证实际入口／主题／动态缩放、管理员产品与普通桥接、60 秒 GUI 批准超时、Win11、真实键鼠、业务等价性或性能；本切片未选 ASan，IPC-17 仅覆盖当时不变的会话／原生验证组件。所有日志／EXE／JSON／截图仅本机 out，不随 Git 同步；可移植测试源码／命令随仓库同步，另一台 PC 需重建并重新验证。
+
+## IPC-20261022-19：私有实例发现、活跃租约与关闭清理
+
+基线 `6acbc7b7` 加 qkm_instance_discovery.*／qkm_private_storage.*、会话启停／GUI 路径接入及维护用例。私有目录、文件与 QSaveFile 临时安全处理从凭据存储原样提取供两者共用；文件打开仅增加显式 DELETE 访问选项供安全清理，原 owner／DACL／reparse／硬链接校验未减。统一 PipeNamePrefix，证明格式及业务无变化。
+
+发现文件为严格七字段、无 BOM UTF-8 JSON，最多 128 KiB；不含 key。整数 PID／创建时间／session 为规范十进制字符串。读取先检查私有目录／文件／大小／完整 schema，再核对实际进程、登录会话、OS 程序路径和调用者预期 EXE 的 volume serial／file index；不打开提示中尚未与 OS 比较的远程路径。提示不授权，实际连接仍须核对管道 peer 并完成新证明。
+
+活跃服务器保留已核实发现文件的只读句柄，拒绝写／删除共享；发布后再核对自身实例／PID，防止并发覆盖后同时开始服务。其他活跃发布者拒绝替换，已退出／PID 复用的提示可替换；损坏／不安全数据不正常覆盖。禁用先关闭端点并释放租约，再校验 ID／自身 PID／创建时间，以带 DELETE 权限的验证句柄清理；旧 ID 不能删新文件，失败保留并报告。
+
+| 检查 | 当前结果 |
+|---|---|
+| IPC Qt6.8.3 普通 | 82 通过，0 失败／跳过，39,258 ms，exit 0 |
+| IPC Qt5.15.2 普通 | 82 通过，0 失败／跳过，39,967 ms，exit 0 |
+| IPC Qt6 故障 | 88 通过，0 失败／跳过，46,795 ms，exit 0 |
+| GUI Qt6／Qt5 | 各 11 通过，0 失败／跳过，1,350／8,559 ms，exit 0；实际私有桌面 |
+| 产品 Qt6／Qt5 | 两套构建 exit 0；Qt6 零 warning／error，Qt5 仅既定官方 qtmain 缺 PDB LNK4099 例外；产品未启动 |
+| 定向 ASan | 8 通过，0 失败／跳过，1,771 ms，exit 0、stderr 空、无报告；已确认导入 ASan runtime |
+
+维护普通／故障 EXE 沿用 out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/；构建日志 build_discovery_final.log，运行 results_discovery.txt／test_discovery.log，stdout／stderr 空、TokenElevation=0，Community 14.44.35207。GUI 在 out/tests/mcp_control/{qt6-release,qt5-release}/release/，证据 discovery-qt6／discovery-qt5，实际桌面分别 QkmMcp_173001727fd6490d842e3a943b2ebe40／QkmMcp_27903aca9aa5464f9947ebe48972b04d。产品日志 product_qt{6,5}_discovery.log，实际 EXE 仍在标准 out/build_qt6、out/build_qt5_5152 的 release/。
+
+回归核对发布／读取／无 secret、路径别名及错误预期 EXE、禁用清理／重启新 ID、旧清理不删新文件、同进程第二服务器不能覆盖活跃租约、只读清理／重新发布失败保留；字段类型／额外字段／代次／远程管道／假程序路径、空文件／过大／非法 UTF-8 拒绝且不返回旧 descriptor。独立活跃子进程占用提示时发布 Busy，退出后才替换。凭据原子写盘／私有 ACL／损坏拒绝等原用例全部回归；会话保存失败用例改为启用后放入损坏凭据，断言不覆盖且不 ready，因为启用现在会创建私有发现目录。
+
+七个改动 cpp 共 26 个实际目标编译、52 次 Clang-Tidy／Clazy，native exit 全部 0；初始仅测试 invalid QList 遍历有 range-loop-detach，改为 std::as_const 并包含 utility 后，两测试配置重跑 native exit 0、诊断 0。生产／GUI 其余配置源未变，沿用本轮各文件零诊断；报告 static-analysis-discovery/ 和 static-analysis-discovery-final-test/。全量运行在该测试 const 遍历修正前；修正不改变测试输入／生产路径，定向 ASan 使用修正后的源码。库存／报告回归通过 static_analysis_discovery_regression.log，明细 out/tests/static_analysis/2f297fca94fd4f8db6c17eba7a92339f/，确认普通／故障各九个 cpp、GUI 十个。
+
+ASan 使用既有 BuildTools 14.40.33807 完整 kit，Qt6 故障＋asan，EXE out/tests/mcp_ipc/qt6-asan-1440/release/QKeyMapperMcpIpcTest.exe；configure_discovery.log／build_discovery.log／results_discovery_asan.txt／test_discovery_asan.log。覆盖 discoveryLifecycle、discoveryRejectsMetadata、storeRoundTrip、storeAtomicFailure、storeUnsafePaths、sessionHandlerLifecycle 加 init／cleanup。Qt DLL 未重插桩，detect_leaks=0；不把八项定向结果写成全量 88 项 ASan 通过。
+
+全部运行在获准普通用户上下文、未提权；编辑／构建／分析仍在默认开发沙箱。只读查询确认开发沙箱与交互用户是不同账号，但不把这当成异用户连接拒绝已经实测，不记录账号／SID。交互用户当前 Medium、gsudo 缓存不可用，未启动 UAC；值需下次重新核对。Windows MIC 独立于 DACL，实际管理员产品与普通桥接仍须验收：[Microsoft 文档](https://learn.microsoft.com/en-us/windows/win32/secauthz/mandatory-integrity-control)。本轮未改管道完整性标签。
+
+GUI 只有连接框内容／提示变化，控件布局／字体／三语言呈现沿用 IPC-18 已审阅图；本轮私有桌面断言增加实际发现文件与进程核实，无 Default／真实输入／驱动操作。没有正式 SDK 往返、产品运行、真实高低权限／异用户／Win11、60 秒批准超时、业务／性能结论。关闭状态的配对查看／撤销需在业务开放前补齐。原始材料仅在 out，不随 Git 同步；当前为本地开发检查点，完整 M1 尚未完成。

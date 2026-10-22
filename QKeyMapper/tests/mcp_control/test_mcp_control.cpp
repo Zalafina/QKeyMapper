@@ -137,6 +137,12 @@ void McpControlTest::pairingFromWidgets()
     fixture(dialog.server());
     clickCheckBox(dialog, "mcpEnabled");
     QVERIFY(dialog.server().isEnabled());
+    QVERIFY(QFileInfo::exists(dialog.server().discoveryPath()));
+    InstanceDescriptor descriptor;
+    DiscoveryError discoveryError;
+    QVERIFY(readInstanceDiscovery(QFileInfo(dialog.server().discoveryPath()).absolutePath(),
+        QCoreApplication::applicationFilePath(), descriptor, discoveryError));
+    QCOMPARE(descriptor.processId, quint32(GetCurrentProcessId()));
     Client child;
     QVERIFY(child.launch(dialog.server(), root.path() + QStringLiteral("/client"), QStringLiteral("pair")));
     QTRY_VERIFY_WITH_TIMEOUT(!widget<QLabel>(dialog, "mcpPairRequest")->text().isEmpty(), 3000);
@@ -166,6 +172,7 @@ void McpControlTest::pairingFromWidgets()
     QCOMPARE(list->count(), 0);
     clickCheckBox(dialog, "mcpEnabled");
     QVERIFY(!dialog.server().isEnabled());
+    QVERIFY(!QFileInfo::exists(dialog.server().discoveryPath()));
 }
 
 void McpControlTest::rejectAndClose_data()
