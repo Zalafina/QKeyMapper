@@ -4,6 +4,8 @@ import argparse
 import asyncio
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 import time
@@ -12,6 +14,7 @@ from contextlib import closing
 from pathlib import Path
 
 import win32api
+import pywintypes
 import win32con
 import win32event
 import win32file
@@ -34,39 +37,88 @@ def elevation(process) -> int:
         return win32security.GetTokenInformation(token, win32security.TokenElevation)
 
 
+def integrity(process) -> int:
+    with closing(win32security.OpenProcessToken(process, win32con.TOKEN_QUERY)) as token:
+        sid = win32security.GetTokenInformation(token, 25)[0]
+        return int(win32security.ConvertSidToStringSid(sid).rsplit("-", 1)[1])
+
+
+def start_fixture(exe: Path, qt: Path, output: Path, desktop_name: str):
+    env = os.environ.copy()
+    env["PATH"] = str(qt) + os.pathsep + env["PATH"]
+    startup = win32process.STARTUPINFO()
+    startup.lpDesktop = "winsta0\\" + desktop_name
+    startup.dwFlags = win32process.STARTF_USESTDHANDLES
+    sa = win32security.SECURITY_ATTRIBUTES()
+    sa.bInheritHandle = True
+    with closing(win32file.CreateFile(str(output / "fixture.log"), win32con.GENERIC_WRITE, 1, sa, 2, 0, None)) as log:
+        with closing(win32file.CreateFile("NUL", win32con.GENERIC_READ, 3, sa, 3, 0, None)) as nul:
+            startup.hStdInput, startup.hStdOutput, startup.hStdError = nul, log, log
+            command = subprocess.list2cmdline([str(exe), "--interop-fixture", str(output / "fixture.json")])
+            process, thread, pid, _ = win32process.CreateProcess(None, command, None, None, True,
+                subprocess.CREATE_NO_WINDOW | win32con.CREATE_UNICODE_ENVIRONMENT, env, str(output), startup)
+            thread.Close()
+            return process, pid
+
+
 class Fixture:
-    def __init__(self, exe: Path, qt: Path, output: Path):
+    def __init__(self, exe: Path, qt: Path, output: Path, elevated=False):
         self.exe, self.output = exe, output
+        self.elevated = elevated
         self.state_path = output / "fixture.json"
         self.sequence = 0
         self.desktop_name = "QkmSdk_" + uuid.uuid4().hex
         self.desktop = win32service.CreateDesktop(self.desktop_name, 0, 511, None)
-        env = os.environ.copy()
-        env["PATH"] = str(qt) + os.pathsep + env["PATH"]
-        startup = win32process.STARTUPINFO()
-        startup.lpDesktop = "winsta0\\" + self.desktop_name
-        startup.dwFlags = win32process.STARTF_USESTDHANDLES
-        sa = win32security.SECURITY_ATTRIBUTES()
-        sa.bInheritHandle = True
         try:
-            with closing(win32file.CreateFile(str(output / "fixture.log"), win32con.GENERIC_WRITE, 1, sa, 2, 0, None)) as log:
-                with closing(win32file.CreateFile("NUL", win32con.GENERIC_READ, 3, sa, 3, 0, None)) as nul:
-                    startup.hStdInput, startup.hStdOutput, startup.hStdError = nul, log, log
-                    command = subprocess.list2cmdline([str(exe), "--interop-fixture", str(self.state_path)])
-                    self.process, thread, self.pid, _ = win32process.CreateProcess(None, command, None, None, True,
-                        subprocess.CREATE_NO_WINDOW | win32con.CREATE_UNICODE_ENVIRONMENT, env, str(output), startup)
-                    thread.Close()
-            assert elevation(self.process) == 0
+            if elevated:
+                gsudo = shutil.which("gsudo.exe")
+                assert gsudo, "gsudo.exe is required for the authorized elevated-server test"
+                with (output / "launch.log").open("wb") as log:
+                    launcher = subprocess.Popen([gsudo, "--direct", sys.executable, str(Path(__file__).resolve()),
+                        "--test-exe", str(exe), "--qt-bin", str(qt), "--output", str(output),
+                        "--launch-fixture", self.desktop_name], stdout=log, stderr=log,
+                        creationflags=subprocess.CREATE_NO_WINDOW)
+                    # A timeout leaves the known launcher running; never start a replacement automatically.
+                    assert launcher.wait(timeout=60) == 0, "elevated launch failed; see launch.log"
+                started = json.loads((output / "launched.json").read_text(encoding="utf-8"))
+                self.pid = started["pid"]
+                self.process = win32api.OpenProcess(0x1000 | win32con.SYNCHRONIZE, False, self.pid)
+                assert identity(self.pid).created == int(started["created"]), "launched process identity changed"
+            else:
+                self.process, self.pid = start_fixture(exe, qt, output, self.desktop_name)
+            assert elevation(self.process) == int(elevated)
+            self.integrity = integrity(self.process)
+            assert self.integrity == (0x3000 if elevated else 0x2000)
         except BaseException:
+            if hasattr(self, "process"):
+                try:
+                    self.command("quit")
+                    if win32event.WaitForSingleObject(self.process, 5000) != win32event.WAIT_OBJECT_0:
+                        print("Owned fixture cleanup pending, pid", self.pid, file=sys.stderr)
+                finally:
+                    self.process.Close()
             self.desktop.CloseDesktop()
             raise
 
     def state(self) -> dict:
-        if self.state_path.is_file():
-            state = json.loads(self.state_path.read_text(encoding="utf-8"))
-            assert state["desktop"] == self.desktop_name and state["pid"] == self.pid
-            return state
-        return {}
+        deadline = time.monotonic() + 0.5
+        while True:
+            try:
+                # Allow QSaveFile to replace the snapshot while this reader retains the previous file.
+                with closing(win32file.CreateFile(str(self.state_path), win32con.GENERIC_READ, 7,
+                                                  None, win32con.OPEN_EXISTING, 0, None)) as handle:
+                    size = win32file.GetFileSize(handle)
+                    assert 0 < size <= 128 * 1024
+                    _, raw = win32file.ReadFile(handle, size)
+                state = json.loads(raw.decode("utf-8"))
+                assert state["desktop"] == self.desktop_name and state["pid"] == self.pid
+                return state
+            except pywintypes.error as error:
+                if error.winerror in (2, 3):
+                    return {}
+                if error.winerror not in (5, 32) or time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.01)
 
     def command(self, command: str) -> None:
         self.sequence += 1
@@ -89,8 +141,9 @@ class Fixture:
         self.command("quit")
         try:
             if win32event.WaitForSingleObject(self.process, 5000) != win32event.WAIT_OBJECT_0:
-                win32process.TerminateProcess(self.process, 99)
-                win32event.WaitForSingleObject(self.process, 5000)
+                if not self.elevated:
+                    win32process.TerminateProcess(self.process, 99)
+                    win32event.WaitForSingleObject(self.process, 5000)
                 raise AssertionError("owned fixture did not close")
             assert win32process.GetExitCodeProcess(self.process) == 0, "fixture failed"
         finally:
@@ -146,12 +199,20 @@ async def run(args):
         assert (await connection(client, "failed"))["error"] == "application_unavailable"
         passed("SDK initialize/list/call with application absent")
 
-    fixture = Fixture(args.test_exe, args.qt_bin, args.output)
+    fixture = Fixture(args.test_exe, args.qt_bin, args.output, args.elevated_server)
     store = None
     try:
         state = await fixture.wait(lambda state: bool(state.get("enabled")))
         discovery = Path(state["discovery"])
         own = identity(os.getpid())
+        server = identity(fixture.pid)
+        topology = {"controller_elevated": 0, "controller_integrity": integrity(win32api.GetCurrentProcess()),
+            "server_elevated": int(fixture.elevated), "server_integrity": fixture.integrity,
+            "same_user": own.user == server.user, "same_logon": own.logon == server.logon,
+            "same_authentication": own.authentication == server.authentication, "same_session": own.session == server.session,
+            "reciprocal_authentication_link": own.linked_authentication == server.authentication
+                and server.linked_authentication == own.authentication, "same_login": own.same_login(server)}
+        (args.output / "topology.json").write_text(json.dumps(topology, indent=2), encoding="utf-8")
         store = CredentialStore(discovery, args.test_exe, own.session)
         assert store.load() is None, "fixture credential target must be unique"
         config = parameters(discovery, args.test_exe, args.output)
@@ -293,6 +354,7 @@ async def run(args):
         finally:
             fixture.close()
     (args.output / "results.json").write_text(json.dumps({"checks": checks, "elevated": 0,
+        "server_elevated": int(fixture.elevated), "server_integrity": fixture.integrity,
         "desktop": fixture.desktop_name, "test_exe": str(args.test_exe), "sdk": "mcp 2.3.0"}, indent=2), encoding="utf-8")
 
 
@@ -302,6 +364,8 @@ if __name__ == "__main__":
     parser.add_argument("--qt-bin", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--approval-timeout", action="store_true")
+    parser.add_argument("--elevated-server", action="store_true", help="Authorized gsudo startup only; the bridge stays non-elevated.")
+    parser.add_argument("--launch-fixture", metavar="DESKTOP", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if not __debug__:
         parser.error("Run without Python -O.")
@@ -310,5 +374,15 @@ if __name__ == "__main__":
         parser.error("Select the built maintenance MCP control executable.")
     if not args.qt_bin.is_dir() or not args.output.is_relative_to((ROOT.parent / "out").resolve()):
         parser.error("Select the matching Qt bin and an output directory under this checkout out/.")
-    args.output.mkdir(parents=True, exist_ok=False)
-    asyncio.run(run(args))
+    if args.launch_fixture:
+        assert elevation(win32api.GetCurrentProcess()) == 1
+        assert re.fullmatch(r"QkmSdk_[0-9a-f]{32}", args.launch_fixture) and args.output.is_dir()
+        process, pid = start_fixture(args.test_exe, args.qt_bin, args.output, args.launch_fixture)
+        try:
+            started = {"pid": pid, "created": str(identity(pid).created)}
+            (args.output / "launched.json").write_text(json.dumps(started), encoding="utf-8")
+        finally:
+            process.Close()
+    else:
+        args.output.mkdir(parents=True, exist_ok=False)
+        asyncio.run(run(args))

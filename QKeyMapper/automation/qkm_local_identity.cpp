@@ -64,6 +64,7 @@ bool validSid(const QByteArray &bytes)
 
 bool readTokenIdentity(HANDLE token, ProcessIdentity &identity)
 {
+    identity.linkedAuthenticationId = 0;
     const QByteArray userData = tokenInformation(token, TokenUser);
     const QByteArray groupData = tokenInformation(token, TokenGroups);
     const QByteArray statisticsData = tokenInformation(token, TokenStatistics);
@@ -90,6 +91,25 @@ bool readTokenIdentity(HANDLE token, ProcessIdentity &identity)
         }
     }
     return identity.isValid();
+}
+
+quint64 linkedAuthentication(HANDLE token, const ProcessIdentity &identity)
+{
+    TOKEN_ELEVATION_TYPE type{};
+    DWORD size = 0;
+    if (!GetTokenInformation(token, TokenElevationType, &type, sizeof(type), &size)
+        || (type != TokenElevationTypeFull && type != TokenElevationTypeLimited)) return 0;
+    TOKEN_LINKED_TOKEN linked{};
+    if (!GetTokenInformation(token, TokenLinkedToken, &linked, sizeof(linked), &size)) return 0;
+    const auto closeLinked = qScopeGuard([&]() { CloseHandle(linked.LinkedToken); });
+    TOKEN_ELEVATION_TYPE linkedType{};
+    ProcessIdentity other = identity;
+    if (!GetTokenInformation(linked.LinkedToken, TokenElevationType, &linkedType, sizeof(linkedType), &size)
+        || linkedType != (type == TokenElevationTypeFull ? TokenElevationTypeLimited : TokenElevationTypeFull)
+        || !readTokenIdentity(linked.LinkedToken, other)
+        || other.userSid != identity.userSid || other.logonSid != identity.logonSid
+        || other.sessionId != identity.sessionId) return 0;
+    return other.authenticationId;
 }
 
 IdentityResult inspectRequest(const RequestIdentityState &state)
@@ -194,6 +214,7 @@ IdentityResult queryProcessIdentity(quint32 processId)
     identity.processId = processId;
     identity.creationTime = (quint64(created.dwHighDateTime) << 32) | created.dwLowDateTime;
     if (!readTokenIdentity(token, identity)) return {{}, IdentityError::InvalidToken};
+    identity.linkedAuthenticationId = linkedAuthentication(token, identity);
     if (WaitForSingleObject(process, 0) != WAIT_TIMEOUT)
         return {{}, IdentityError::ProcessUnavailable};
     return {identity, IdentityError::None};
@@ -237,13 +258,15 @@ IdentityResult queryPipePeerIdentity(HANDLE pipe, PipeSide side)
 bool sameLogonSession(const ProcessIdentity &a, const ProcessIdentity &b)
 {
     return a.isValid() && b.isValid() && a.sessionId == b.sessionId
-        && a.authenticationId == b.authenticationId
-        && a.userSid == b.userSid && a.logonSid == b.logonSid;
+        && a.userSid == b.userSid && a.logonSid == b.logonSid
+        && (a.authenticationId == b.authenticationId
+            // Only OS-verified reciprocal UAC links can bridge distinct authentication IDs.
+            || (a.linkedAuthenticationId == b.authenticationId && b.linkedAuthenticationId == a.authenticationId));
 }
 
 bool sameProcess(const ProcessIdentity &a, const ProcessIdentity &b)
 {
-    return sameLogonSession(a, b) && a.processId == b.processId
+    return sameLogonSession(a, b) && a.authenticationId == b.authenticationId && a.processId == b.processId
         && a.creationTime == b.creationTime;
 }
 

@@ -34,7 +34,7 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip install -r mcp_bridge/requirements
 
 ## 安全与失败语义
 
-先检查私有目录／文件 owner、单用户 DACL、目录保护／继承、reparse 和硬链接，再按严格 UTF-8 JSON schema 读取有界发现信息。核对原生进程创建时间、主 Token 用户／登录身份／桌面会话、实际 OS 程序路径和显式预期 EXE 的 Windows 文件身份；在打开提示中的路径前先与 OS 路径比较。打开管道后再次验证实际 Server PID／会话和活跃进程，随后使用与 C++ 一致的固定 HMAC-SHA256 transcript 双向证明。发现文件本身不能授权。
+先检查私有目录／文件 owner、单用户 DACL、目录保护／继承、reparse 和硬链接，再按严格 UTF-8 JSON schema 读取有界发现信息。核对原生进程创建时间、主 Token 用户／登录身份／桌面会话、实际 OS 程序路径和显式预期 EXE 的 Windows 文件身份；在打开提示中的路径前先与 OS 路径比较。登录默认要求 AuthenticationId 相同；UAC full／limited 仅接受系统 TokenLinkedToken 核实的互指 AuthenticationId，用户／logon SID／SessionId 仍须全部相同，查询失败不降级。打开管道后再次验证实际 Server PID／会话和活跃进程，随后使用与 C++ 一致的固定 HMAC-SHA256 transcript 双向证明。发现文件本身不能授权。
 
 每次工作检查线程未冒用其他 Token。管道采用最小访问掩码和 Identification SQOS。分帧、认证与请求使用绝对截止时间；取消在发起 I/O 的同一工作线程调用 CancelIo，并在释放 OVERLAPPED／缓冲区前排空完成结果。没有常驻查询轮询。
 
@@ -44,7 +44,7 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip install -r mcp_bridge/requirements
 
 同一配对目录由一个当前版本的活跃服务器独占。关闭状态的撤销先取得同一租约，重新读取后原子保存；另一实例占用时显示原因并拒绝修改，避免活跃实例保留已撤销权限。查看不创建监听或存储目录。只读／损坏存储保存失败时仍保留原记录，不能视为撤销成功；进程退出后 Windows 自动释放租约。
 
-真实管理员产品与普通桥接、其他用户连接拒绝、Win11、完整产品入口及业务等价性尚未验收；当前证据不覆盖这些结论。
+管理员维护服务与普通桥接的同用户 UAC 路径已在 Win10 两套 Qt 实测；真实产品入口、高权限产品完整行为、实际其他用户连接拒绝、Win11 及业务等价性仍须分别验收。维护组件结果不能代替产品结论。使用另一个管理员账号提权不属于同用户 UAC 关联路径，不会因此放宽异用户边界。
 
 ## 回归验证
 
@@ -61,8 +61,10 @@ out/mcp_bridge/venv/Scripts/python.exe -m unittest discover -s mcp_bridge/tests 
 out/mcp_bridge/venv/Scripts/python.exe mcp_bridge/tests/test_sdk_interop.py --test-exe out/tests/mcp_control/qt6-release/release/QKeyMapperMcpControlTest.exe --qt-bin <Qt6-bin> --output out/mcp_bridge/interop-qt6 --approval-timeout
 ```
 
-Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际等待一次 60 秒；省略则只运行较短场景。脚本拒绝 Python `-O`，检查父进程、GUI 进程及待批准桥接进程非提权。创建私有 Windows 桌面，始终不调用 SwitchDesktop、不占用 Default 焦点、不发送系统键鼠、不操作驱动。
+Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际等待一次 60 秒；省略则只运行较短场景。脚本拒绝 Python `-O`，默认检查父进程、GUI 和待批准桥接进程非提权。创建私有 Windows 桌面，始终不调用 SwitchDesktop、不占用 Default 焦点、不发送系统键鼠、不操作驱动。
 
-测试通过官方 `Client`／stdio 执行 initialize、list、工具调用；维护 EXE 中的 `--interop-fixture` 只提供固定 Qt 界面事件及失败夹具，产品 EXE 不含此入口。12 个短场景覆盖 GUI 批准前不 ready、跨语言证明、密钥重连、错误 DPAPI 上下文、启用／关闭状态撤销及旧 key 拒绝、GUI 拒绝、取消、stdio 退出、错误预期 EXE、私有但被篡改／过期的提示和服务器保存失败；加 `--approval-timeout` 时共 13 场景。退出清理自有窗口和测试凭据。原始日志、状态和结果在 out，随 Git 同步的是测试源码。当前切片未重跑 60 秒计时，沿用 IPC-20 的实际等待证据，详见验证记录。
+已获用户授权管理员测试且能确认 UAC 时，加 `--elevated-server`。它仅用 gsudo 启动固定的短生命周期助手和自有维护 EXE；控制器、正式 SDK／stdio 桥接及全部断言仍为普通权限。记录双方实际完整性、原始 AuthenticationId 是否相同、系统互指关联和目标实际桌面，不记录 SID／登录 ID。此模式不修改 manifest、不改变 gsudo 配置，启动等待超时不自动重启。维护进程由固定退出事件关闭并核对 exit 0，保留原有 180 秒看门狗。
+
+测试通过官方 `Client`／stdio 执行 initialize、list、工具调用；维护 EXE 中的 `--interop-fixture` 只提供固定 Qt 界面事件及失败夹具，产品 EXE 不含此入口。12 个短场景覆盖 GUI 批准前不 ready、跨语言证明、密钥重连、错误 DPAPI 上下文、启用／关闭状态撤销及旧 key 拒绝、GUI 拒绝、取消、stdio 退出、错误预期 EXE、私有但被篡改／过期的提示和服务器保存失败；加 `--approval-timeout` 时共 13 场景。退出清理自有窗口和测试凭据。原始日志、状态和结果在 out，随 Git 同步的是测试源码；各轮实际执行及复用范围见验证记录。
 
 此切片是本地开发检查点，完整进度见 [主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。SDK API 依据 [官方 Python SDK](https://github.com/modelcontextprotocol/python-sdk) 及本环境固定版本的已安装源码核对。

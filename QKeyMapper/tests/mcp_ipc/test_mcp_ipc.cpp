@@ -471,6 +471,7 @@ private slots:
     void ioFailure();
     void currentIdentity();
     void identityMismatch();
+    void linkedLogonSession();
     void unavailableIdentity();
     void crossProcessPipe();
     void listenerLifecycle();
@@ -765,6 +766,31 @@ void McpIpcTest::identityMismatch()
     QVERIFY(!changed.isValid());
     QVERIFY(!sameLogonSession({}, {}));
     QVERIFY(!sameProcess(own, {}));
+}
+
+void McpIpcTest::linkedLogonSession()
+{
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    QVERIFY(own.ok());
+    ProcessIdentity first = own.identity;
+    first.authenticationId = 1;
+    first.linkedAuthenticationId = 0;
+    ProcessIdentity second = first;
+    second.authenticationId = 2;
+    QVERIFY(!sameLogonSession(first, second));
+    first.linkedAuthenticationId = 2;
+    QVERIFY(!sameLogonSession(first, second));
+    second.linkedAuthenticationId = 1;
+    QVERIFY(sameLogonSession(first, second));
+    QVERIFY(sameLogonSession(second, first));
+    QVERIFY(!sameProcess(first, second));
+    for (int changed = 0; changed < 3; ++changed) {
+        ProcessIdentity invalid = second;
+        if (changed == 0) ++invalid.sessionId;
+        else if (changed == 1) invalid.userSid[invalid.userSid.size() - 1] = static_cast<char>(invalid.userSid.back() ^ 1);
+        else invalid.logonSid[invalid.logonSid.size() - 1] = static_cast<char>(invalid.logonSid.back() ^ 1);
+        QVERIFY(!sameLogonSession(first, invalid));
+    }
 }
 
 void McpIpcTest::unavailableIdentity()

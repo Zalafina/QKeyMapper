@@ -408,3 +408,34 @@ SDK 使用正式 mcp 2.3.0 Client／stdio／固定五项工具，桥接生产源
 编辑／Git／构建／分析均非提权；需真实用户 DPAPI 的运行仍使用已授权沙箱外普通用户。未切换输入桌面、占用 Default 焦点、发送系统键鼠或安装驱动。用户返回后已批准仅测试启动／关闭的 gsudo 管理员维护验收，随后要求为开启 fast 在当前检查点暂停；**本轮尚未启动任何管理员进程**，不把批准当作通过。恢复后无需重复请求同范围批准，UAC 仍可能需要用户确认。
 
 实际产品高级设置／托盘入口、管理员产品到普通桥接／MIC、真实异用户、Win11、打包／性能、业务操作及 GUI／MCP 等价性均未验证。当前形成本地开发检查点并按用户指令提交、不推送；原始证据不随 Git 同步，精简记录及可移植测试随源码同步。
+
+## IPC-20261022-22：同用户 UAC 关联与管理员维护服务互操作
+
+PC-W10，源码 `199b5e37` 加本记录所在提交。实际用户已批准所需 UAC，只有固定启动助手及自有维护服务提权；控制器、官方 SDK／stdio 桥接、源码／Git／构建／分析仍未提权。未改正式 manifest、协议／文件格式、管道 DACL／MIC、Worker／驱动或个人 INI。
+
+首次高权限实测 out/mcp_bridge/elevated-first-qt6.log 在发现核验阶段返回 identity_rejected：双方为同用户、同 logon SID、同 SessionId，原始 AuthenticationId 不同。普通用户只读系统 TokenLinkedToken 探针确认 full／limited 互相关联。依据 [TOKEN_LINKED_TOKEN](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-token_linked_token)、[提升类型](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ne-winnt-token_elevation_type) 及 [GetTokenInformation](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-gettokeninformation)，双端只增加 OS 核实的关联 AuthenticationId；须同用户／logon SID／SessionId、相反 full／limited 类型且双方关联互指。缺失／查询失败不降级为仅比较 SID／SessionId，原始 ID 保留。sameProcess 仍严格比较原 AuthenticationId；实际请求 Token 读取先清除关联字段，不能从主 Token 继承或经 UAC 关联绕过请求上下文检查。关联信息不由 IPC 输入提供。
+
+| 检查 | 当前结果及原始索引 |
+|---|---|
+| SDK High 服务／Medium 桥接 Qt6 | 13 场景通过，native exit 0；out/mcp_bridge/accepted-high-qt6.log、同名目录 results.json／topology.json／fixture.log／launch.log |
+| SDK High 服务／Medium 桥接 Qt5 | 同 13 场景通过，native exit 0；accepted-high-qt5.log 及同名目录；两套均真正等待 60 秒未批准并拒绝 |
+| SDK 全普通权限 Qt6／Qt5 | 各 12 短场景通过，exit 0；accepted-linked-medium-qt6.log／accepted-linked-medium-qt5.log 与同名目录；本轮普通模式不含 60 秒等待 |
+| Python 单测 | 12 通过，0 失败，0.097 s，exit 0；out/mcp_bridge/unit_linked_final.log；新增互指／单边／错误用户／logon／SessionId 拒绝和关联查询失败无关联结果 |
+| IPC Qt6／Qt5 普通 | 各 88 通过，0 失败／跳过，40,433／42,305 ms，exit 0；新增 linkedLogonSession 证明关联只允许同登录，不允许变成同进程 |
+| IPC Qt6 故障 | 94 通过，0 失败／跳过，48,360 ms，exit 0；逐帧请求／冒用恢复及既有故障回归 |
+| GUI Qt6／Qt5 | 各 16 通过，0 失败／跳过，1,773／18,816 ms，exit 0；linked-gui-qt6／linked-gui-qt5/results.txt、run_private.json |
+| 定向 ASan＋故障 Qt6 | 13 通过，0 失败／跳过，10,074 ms，exit 0、stderr 空，无 ASan 日志；out/mcp_bridge/linked_asan.log 及下述实际 EXE／原始文件 |
+| 产品构建 Qt6／Qt5 | 两套 native exit 0，Qt6 无编译／链接警告，Qt5 仅既定官方 qtmain 缺 PDB LNK4099；out/mcp_bridge/product_qt6_linked.log／product_qt5_linked.log；正式产品未启动 |
+| 定向静态分析 | 两个 cpp、七个实际目标编译、14 次 Clang-Tidy／Clazy，全部 native exit 0、项目诊断 0；out/mcp_bridge/static-analysis-linked/summary.txt，无新增忽略 |
+
+SDK actual High 服务完整性 RID 12288／TokenElevation=1，控制器为 Medium 8192／0；每次待批准桥接也检查 TokenElevation=0。两端原 AuthenticationId 不同、系统关联互指、same_login=true，身份摘要只记录这些布尔值，不存账号／SID／登录 ID。实际私有桌面 High Qt6 为 QkmSdk_357f9db78235423bb0811fe70d985ed8，High Qt5 为 QkmSdk_993452d26c224c5d819db9bb36bfc5d9；普通 Qt6／Qt5 为 QkmSdk_65addfc3f0754ac485c21fc1495b7d16／QkmSdk_bf60ada823094cbf85361cb07a6a9540。High 目标仍为同源维护 EXE out/tests/mcp_control/{qt6-release,qt5-release}/release/QKeyMapperMcpControlTest.exe，不能当作真正 QKeyMapper.exe 验收。
+
+高权限场景通过正式 SDK initialize／list／固定五工具：批准前不 ready、只读批准、跨语言双向证明、服务器高权限 DPAPI／私有存储保存、真实能力 RPC、新 stdio 凭据重连、启用／关闭撤销和旧 key 拒绝、GUI 拒绝、取消、stdio 退出、错误预期 EXE、篡改私有发现、实际 60 秒超时以及客户端已存 key 但服务器保存失败不 ready。未给桥接或测试断言提权，也未放宽对象安全标签。所有自有维护进程关闭并等待 exit 0，清理仅自身随机凭据；不安装驱动、不切换输入桌面、不发送系统键鼠、不占用 Default 焦点。
+
+第二轮 out/mcp_bridge/elevated-linked-qt6.log 已完成配对／RPC／重连／撤销，但读测试 fixture.json 遇到与 QSaveFile 原子替换竞争的 PermissionError。测试读取改为 Windows 共享读／写／删除句柄、128 KiB 上限；仅对短暂共享／访问竞争有界重试，PID／实际桌面仍须匹配，异常不当作成功。之后 elevated-reader-qt6 12 短场景及最终 accepted-high 两套完整场景通过。失败记录未覆盖，不把该测试观察竞争记为产品配对失败。
+
+IPC 实际 EXE 为 out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/QKeyMapperMcpIpcTest.exe，各 build_linked.log／results_linked.txt／test_linked.log，汇总 out/mcp_bridge/linked_cpp.log；stdout／stderr 空、父进程未提权。ASan 为 out/tests/mcp_ipc/qt6-asan-1440/release/QKeyMapperMcpIpcTest.exe，BuildTools MSVC 14.40.33807，实际导入 clang_rt.asan_dynamic-x86_64.dll；build_linked.log／results_linked_asan.txt／test_linked_asan.log。覆盖 IPC-21 十个方法及新增 linkedLogonSession，另含 init／cleanup；Qt DLL 未重插桩、detect_leaks=0，不等于 94 项全量 ASan。
+
+GUI 普通维护目标实际桌面分别为 QkmMcp_333dcc99037848219b549e008027a6df／QkmMcp_901bf4e91264487f8a36a36cc6d53222，无 UI 布局／文字变更，三语言静态效果复用 IPC-21，未重拍。所有构建和分析在原开发沙箱，实际用户 DPAPI 运行按既有授权；测试 gsudo 不更改缓存／系统策略。产品 EXE 仍为 out/build_qt6／out/build_qt5_5152 下 release/QKeyMapper.exe，原始材料只在忽略的 out，未随 Git 同步。
+
+本切片形成身份兼容性的本地开发检查点；M1.1c-4e-b 的真正产品入口、默认应用绑定／存储及实际产品高低权限流程仍待验收。真实异用户／异登录／Win11、业务等价性、性能和打包没有当前结论，未计完成。

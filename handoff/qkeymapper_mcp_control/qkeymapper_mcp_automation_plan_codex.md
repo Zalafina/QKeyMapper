@@ -8,21 +8,21 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | M1.1c-4e-a 关闭状态配对管理与目录租约完成；检查点为本卡片所在提交（父 `af1fd2ea`） |
-| 状态 | 整体进行中；当前选定通信组件切片已验证，按用户要求在本地提交后暂停，待开启 fast 后继续；产品业务未开放 |
+| 当前切片 | M1.1c-4e-b 的管理员维护服务／普通桥接子切片完成；本卡片所在本地提交（父 `199b5e37`），正式产品入口待验证 |
+| 状态 | 用户已要求恢复持续推进；当前身份兼容性修正及选定检查完成，下一步继续产品入口；整体 M0／M1 仍进行中，产品业务未开放 |
 | 执行机器 | PC-W10（当前 Win10 PC）；PC-W11 尚未接入核验 |
 | 任务分支 | `codex/qkeymapper-mcp-control` |
-| 源码基线 | 本切片起点 `af1fd2ea`；修改共享私有存储、会话控制器、管理窗口及维护测试；桥接生产源码、Worker／驱动／个人 INI／TS／正式 manifest 未改 |
-| 当前已完成 | 关闭接口可查看／撤销配对；活跃服务全程持有同目录独占租约，离线撤销重新加载后原子保存，另一实例占用时拒绝；只读／损坏失败保留原记录。IPC 87／87／93、GUI 16／16、SDK 两套 Qt 各 12 个短场景、定向 ASan 12、三语言新状态截图及定向分析通过，见 IPC-21 |
-| 当前未验证 | 实际产品高级设置／托盘入口、管理员产品到普通桥接、真实异用户、全业务与 PC-W11。维护窗口／SDK 不计产品业务等价性；本轮未重跑 60 秒批准超时，计时实现未改，沿用 IPC-20 实测 |
-| 构建与 EXE | 产品 out/build_qt6 和 out/build_qt5_5152 下 release/QKeyMapper.exe 本轮构建通过，仍未启动；维护 EXE 在 out/tests/mcp_ipc 和 out/tests/mcp_control 对应目录，详见 IPC-21；当前运行全部非提权、无 Default 输入 |
-| 提交与同步 | 已有本地提交至 `af1fd2ea`；本卡片与离线管理切片同提交，精确 SHA 用 git log 核对。未推送，仍由用户手工同步；无关 .claude/settings.local.json 保留不提交 |
-| 本机独有材料 | SDK venv、原始日志／状态／截图在忽略的 out/mcp_bridge/；C++ EXE／日志在 out/tests 下，不随 Git 同步。另一 PC 按源码重建、独立配对，不复制凭据或沿用 Win10 系统结论 |
-| 授权边界 | 用户已授权自主本地提交、不推送；已明确允许 gsudo 启动管理员维护进程验证高权限服务端与普通桥接，必要时确认 UAC；只在私有桌面，不用系统键鼠、不安装驱动，源码／Git／构建／分析／截图不提权。随后用户要求为开启 fast 在合适检查点暂停；尚未执行该管理员测试，授权保留，恢复后不重复询问 |
-| 下一项动作 | 用户开启 fast 并要求继续后，开始 M1.1c-4e-b：复用现有测试进程工具，先完成管理员维护服务与普通正式 SDK 桥接的私有桌面实测，再核对真正产品入口／权限；不改正式 manifest，不把维护 EXE 结果冒充产品验收 |
-| 下一项完成标准 | 记录真实 TokenElevation／完整性、登录绑定及管道／私有文件行为，证明批准前拒绝、批准后配对／RPC／重连、撤销后拒绝和清理；真实产品入口单独取证。失败先调查，不放宽身份或存储边界；业务开放前补齐该门槛 |
-| 实耗与剩余 | 上检查点累计约 345 分钟；本切片约 17:44–18:20（UTC+8），有效投入约 35 分钟，含实现／失败调查、两套 Qt、SDK／ASan／分析／截图和记录，累计约 380 分钟，均为工程估计。M0 余约 3–5 小时、M1 余约 7–13 小时，首个产品业务闭环后校准；暂停及等待不计有效投入 |
-| 当前未决与阻碍 | 用户外出连续执行期已因用户返回结束，项目整体未完成；本次因用户切换 fast 主动暂停，不是权限拒绝或测试失败。管理员启动已有用户授权，但 UAC 仍可能需要交互确认；PC-W11 待接续，无产品业务回调 |
+| 源码基线 | 本切片起点 `199b5e37`；仅共享 C++／Python 原生身份核验、维护测试及文档；新增互指 UAC 关联信息，保留原 AuthenticationId；未改协议／持久化格式、管道权限／MIC、Worker／驱动／TS／正式 manifest |
+| 当前已完成 | 高权限维护服务（High 12288）与普通控制器／桥接（Medium 8192）两套 Qt 各 13 SDK 场景，含实际 60 秒批准超时；普通 SDK 各 12 短场景；IPC 88／88／94、GUI 16／16、定向 ASan 13、Python 单测 12、产品两套构建及定向分析通过。首轮 UAC AuthenticationId 不同导致拒绝已修正，见 IPC-22 |
+| 当前未验证 | 真正产品启动、高级设置／托盘入口及产品高低权限流程；真实异用户、Win11、业务和全部 GUI／MCP 等价性。维护 EXE 不代表真正产品；本轮无新增 UI 布局，三语言视觉结论复用 IPC-21，未重拍 |
+| 构建与 EXE | 产品 out/build_qt6 和 out/build_qt5_5152 下 release/QKeyMapper.exe 本轮构建通过，仍未启动；维护 EXE 在 out/tests/mcp_ipc 和 out/tests/mcp_control 对应目录。日志及原始证据见 IPC-22 |
+| 提交与同步 | 已有本地提交至 `199b5e37`；当前修正、测试及本卡片同提交，精确 SHA 用 git log 核对；不推送。无关 .claude/settings.local.json 保留不提交 |
+| 本机独有材料 | out/mcp_bridge 下 SDK venv、accepted-high／accepted-linked-medium 结果及失败探针，out/tests 下 C++ EXE／日志，不随 Git 同步。脚本、依赖及摘要随源码同步，另一 PC 重新构建和配对 |
+| 授权边界 | 用户已明确恢复持续作业、自主本地提交、不推送，并允许所需 UAC。管理员维护验收已按授权执行，只让固定启动助手和自有服务提权；SDK／桥接／开发／截图保持普通权限，无真实键鼠、驱动安装或 Default 焦点操作。后续新增测试作用范围按计划说明 |
+| 下一项动作 | 继续 M1.1c-4e-b 真正产品入口验收：准备隔离的正式产品运行目录与可关闭的私有桌面实例，核对默认关闭、产品真实管理入口／应用绑定及普通桥接配对。遇到 UIPI 操作限制先确定必要范围，不提升整个开发工作流 |
+| 下一项完成标准 | 使用实际产品及未改 manifest，记录源码／EXE、实际权限／桌面、GUI 入口及存储路径、批准前／后状态、认证 RPC／重连／撤销和退出清理；不能以同源维护 EXE 替代。通过后才开放首个产品业务闭环 |
+| 实耗与剩余 | 上检查点累计约 380 分钟；本切片自 18:33（UTC+8）开始，有效投入暂计约 20 分钟，含真实 UAC 复现、双端修正、两套回归／构建、分析和记录，累计约 400 分钟，均为工程估计。M0 余约 3–5 小时、M1 余约 7–13 小时，首个产品业务闭环后校准；等待不计有效投入 |
+| 当前未决与阻碍 | 无当前检查失败或重复外部阻碍；真正产品入口及 PC-W11 仍待实测。仅同用户、同登录会话且系统可核实的 UAC full／limited 关联受支持；使用另一管理员账号提权不属于该路径，未放宽异用户边界 |
 
 ## 1. 目标、架构与固定原则
 
@@ -165,7 +165,7 @@ Windows 身份与权限实现参考 [命名管道权限](https://learn.microsoft
 | 已配对握手 | `hello` 携实例／pair ID／client nonce；服务端返回 server nonce 和服务端证明；客户端验证后返回客户端证明；服务端验证后发送 `ready` | 未知／撤销配对、旧 nonce、旧实例或授权代次、错误证明与超时拒绝；服务端／客户端证明使用不同方向标签 |
 | 已认证 | 每个命令仍按当前 GUI 授权、风险、配置修订和运行状态检查；实例及请求去重按既定契约处理 | 撤销／禁用后拒绝新命令并关闭连接，已接受的必要清理继续；不能因认证成功跳过业务守卫 |
 
-身份绑定包括 **用户 SID、logon SID、AuthenticationId、SessionId、PID、进程创建时间**。前四项判断同一登录／会话，后两项识别实际进程并避免只按 PID 复用。主 Token 查询使用 `TOKEN_QUERY`，不更改进程、Token 或系统权限；读取失败明确拒绝。依据 [GetTokenInformation](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-gettokeninformation)、[AuthenticationId 定义](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-token_statistics) 和 [进程创建时间](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocesstimes)。
+身份绑定包括 **用户 SID、logon SID、AuthenticationId、SessionId、PID、进程创建时间**。默认前四项严格相等；UAC 仅在双方通过系统 TokenLinkedToken 核实互指的 AuthenticationId，且用户／logon SID／SessionId 相同时允许关联的 full／limited 登录。关联查询失败不降级为仅比较 SID／SessionId。实际进程／请求 Token 比较仍要求原 AuthenticationId 严格相等，后两项识别进程并避免 PID 复用。该 UAC 修正在 M1.1c-4e-b 的本机维护目标已实测通过（IPC-22），真正产品仍待验收。主 Token 查询使用 `TOKEN_QUERY`，不更改进程、Token 或系统权限；读取失败明确拒绝。依据 [GetTokenInformation](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-gettokeninformation)、[AuthenticationId 定义](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-token_statistics) 和 [进程创建时间](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocesstimes)。
 
 基础身份组件当前返回对端**进程主 Token**，不是完整授权器。正式 listener 必须设置 logon SID DACL、`PIPE_REJECT_REMOTE_CLIENTS`、首实例保护及明确客户端读写权限；认证层还须核对当前管道请求的安全上下文，处理线程模拟与主 Token 不一致的情形。若采用管道客户端模拟读取安全上下文，必须在全部失败路径恢复原线程上下文，不在模拟期间处理 Qt 事件或业务操作，并维护恢复验证。高权限产品与普通权限桥接的实际连接能力尚待专门验证，不能从当前 asInvoker 测试推导。
 
@@ -280,7 +280,7 @@ GUI 基线不得调用 MCP 或直接调用共用业务函数替代界面操作�
 | M1.1c-4d | 私有实例发现与关闭清理 | 完成选定切片；IPC-19，正式 SDK 后续 IPC-20 已通过；高低权限仍须产品验收 |
 | M1.1c-4e | 关闭状态的配对查看／撤销及实际权限验收 | 进行中；e-a 已完成，e-b 待验收；必须先于业务开放 |
 | M1.1c-4e-a | 离线配对管理与同目录独占租约 | 完成选定组件切片；IPC-21，IPC 87／87／93、GUI 16／16、SDK 两套各 12 短场景、定向 ASan 12、三语言新状态及定向分析通过 |
-| M1.1c-4e-b | 管理员服务与普通桥接、真正产品入口／权限 | 待验证；用户已批准管理员维护测试，在当前本地提交后按用户要求暂停，恢复后执行；不从普通维护运行推断 |
+| M1.1c-4e-b | 管理员服务与普通桥接、真正产品入口／权限 | 进行中；IPC-22 管理员维护／普通正式 SDK 两套 Qt 各 13 场景通过，修复双端 UAC 登录绑定；真正产品入口／默认路径仍待验收 |
 | M1.1d | 官方 Python MCP SDK 桥接与跨语言互操作 | 完成选定通信组件切片；IPC-20：SDK initialize／list／正式工具往返、真实 GUI 批准／撤销／60 秒超时、取消及失败通过；无产品业务 |
 | M1.2 及以后 | 查询、普通映射共用操作、预览提交、保存和明确启停／等待；后续全能力阶段 | 未开始；先补齐具体切片的调用者／链路及独立验收条件，M0.2b 的后续模块继续按项核对 |
 

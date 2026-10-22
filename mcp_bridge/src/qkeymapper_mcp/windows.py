@@ -43,10 +43,32 @@ class Identity:
     logon: str = field(repr=False)
     authentication: int = field(repr=False)
     executable: str
+    linked_authentication: int = field(default=0, repr=False)
 
     def same_login(self, other) -> bool:
-        return (self.user, self.logon, self.authentication, self.session) == (
-            other.user, other.logon, other.authentication, other.session)
+        return bool(self.authentication and other.authentication) and (
+            self.user, self.logon, self.session) == (other.user, other.logon, other.session) and (
+            self.authentication == other.authentication or
+            self.linked_authentication == other.authentication and other.linked_authentication == self.authentication)
+
+
+def _linked_authentication(token, user, logon, session) -> int:
+    try:
+        kind = win32security.GetTokenInformation(token, win32security.TokenElevationType)
+        if kind not in (2, 3):
+            return 0
+        with closing(win32security.GetTokenInformation(token, win32security.TokenLinkedToken)) as linked:
+            if win32security.GetTokenInformation(linked, win32security.TokenElevationType) != (3 if kind == 2 else 2):
+                return 0
+            groups = win32security.GetTokenInformation(linked, win32security.TokenGroups)
+            logons = [sid for sid, flags in groups if flags & 0xC0000000 == 0xC0000000]
+            if (len(logons) != 1 or win32security.ConvertSidToStringSid(logons[0]) != logon or
+                win32security.ConvertSidToStringSid(win32security.GetTokenInformation(linked, win32security.TokenUser)[0]) != user or
+                win32security.GetTokenInformation(linked, win32security.TokenSessionId) != session):
+                return 0
+            return win32security.GetTokenInformation(linked, win32security.TokenStatistics)["AuthenticationId"]
+    except pywintypes.error:
+        return 0
 
 
 def pristine_thread() -> None:
@@ -76,8 +98,9 @@ def identity(pid: int) -> Identity:
             require(len(logons) == 1, "identity_rejected")
             session = win32security.GetTokenInformation(token, win32security.TokenSessionId)
             authentication = win32security.GetTokenInformation(token, win32security.TokenStatistics)["AuthenticationId"]
-            result = Identity(pid, created, session, win32security.ConvertSidToStringSid(user),
-                              win32security.ConvertSidToStringSid(logons[0]), authentication, path.value)
+            user_text, logon_text = win32security.ConvertSidToStringSid(user), win32security.ConvertSidToStringSid(logons[0])
+            result = Identity(pid, created, session, user_text, logon_text, authentication, path.value,
+                              _linked_authentication(token, user_text, logon_text, session))
         require(win32event.WaitForSingleObject(process, 0) == win32event.WAIT_TIMEOUT, "identity_rejected")
         return result
 

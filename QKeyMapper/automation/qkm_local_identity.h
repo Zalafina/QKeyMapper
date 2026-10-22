@@ -17,6 +17,7 @@ struct ProcessIdentity {
     quint64 authenticationId = 0;
     QByteArray userSid;
     QByteArray logonSid;
+    quint64 linkedAuthenticationId = 0;
     bool isValid() const;
 };
 

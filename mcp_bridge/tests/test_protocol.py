@@ -2,6 +2,7 @@ import os
 import threading
 import time
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -66,6 +67,26 @@ class ProtocolTests(unittest.TestCase):
 
 @unittest.skipUnless(os.name == "nt", "Windows native APIs")
 class NativeTests(unittest.TestCase):
+    def test_linked_token_query_failure_never_supplies_a_link(self):
+        import pywintypes
+        from qkeymapper_mcp import windows
+        with patch.object(windows.win32security, "GetTokenInformation", side_effect=pywintypes.error(5, "test", "denied")):
+            self.assertEqual(windows._linked_authentication(object(), "user", "logon", 1), 0)
+
+    def test_linked_login_requires_reciprocal_os_identity(self):
+        from qkeymapper_mcp.windows import Identity
+        first = Identity(10, 100, 1, "user", "logon", 1, "client.exe")
+        second = replace(first, authentication=2)
+        self.assertFalse(first.same_login(second))
+        first = replace(first, linked_authentication=2)
+        self.assertFalse(first.same_login(second))
+        second = replace(second, linked_authentication=1)
+        self.assertTrue(first.same_login(second))
+        self.assertTrue(second.same_login(first))
+        for changed in (replace(second, user="other"), replace(second, logon="other"),
+                        replace(second, session=2), replace(second, linked_authentication=3)):
+            self.assertFalse(first.same_login(changed))
+
     def test_challenge_identity_schema_and_role_rejection(self):
         from qkeymapper_mcp import bridge as module
         from qkeymapper_mcp.windows import Discovery, Identity
