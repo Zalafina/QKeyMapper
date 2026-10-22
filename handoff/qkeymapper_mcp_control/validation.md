@@ -499,3 +499,23 @@ scripts/test_process.ps1 新增可选 DesktopName，未指定时保持现有 Pro
 同时验证原截图调用者：out/mcp_product/check_capture_helper.ps1 经当前工具在私有桌面启动 Qt6 同源维护预览（paired-off），使用原 scripts/capture_ui_snapshots.ps1，经现有 capture_mcp_control.ps1 捕获／关闭。控制器、预览及截图均非管理员；exit 0，实际桌面 QkmCapture_25cb1ceaf158477b9a7fea953f634e6e，预览 PID 31120，native DPI 144／Qt DPR 1.5／Qt logical DPI 96，Fusion／Microsoft YaHei UI 9pt，接口关闭、假配对 1。自主审阅 capture-helper-current/paired-off.png：中文说明、列表、撤销及关闭按钮可见无截断。这只证明当前普通权限截图调用兼容和单张同源控件静态效果，不能代替 High 产品截图或运行配对证明。
 
 PowerShell 解析、C# 实际编译运行、git diff --check 通过。未改产品源码；Qt6／Qt5 产品及 GUI 结果复用 IPC-23。当前托管句柄保留改动未重跑管理员启动／关闭，新增 UAC 验收继续等待用户返回；更早实际 High 产品的私有桌面启动和正常关闭记录仍仅按 IPC-23 的原工具版本引用。product_lifecycle.ps1／product_ui_actions.ps1／test_product_interop.py 仍待完整验收、尚未提交。本切片只提交基础进程工具、独立自检及跟踪文档，不推送。
+
+## SRC-20261022-26：停止完成边界的调用链核对
+
+源码 `d38cf8dc`，只读核对 qkeymapper.cpp 的 setKeyUnHook／MappingSwitch、qkeymapper_worker.cpp 的停止／任务控制器／信号连接，以及现有 sendinput_lifecycle 维护目标。未启动产品、未发送输入、未运行 UAC 或改引擎代码。
+
+核对结果写入主计划“明确启停与清理完成”：区分请求停止、真正等待池排空、停止中新任务、KEY_UP 记账与 native 发送、永久关闭发送入口的退出函数、常驻 Hook 回调及 GUI／配置尾部。尤其停止动作经排队信号可在 STOPPED 后建任务；把完成信号放在该状态赋值旁边仍不足以证明清理完成。复用了已有架构作为提取位置，没有将其当作新增运行证明。
+
+另外确认键串校验族在多处通过当前 KeyMappingDataList 的 size／at 取源字段，部分 matched 参数仍受当前表行数限制；单独传候选键还不足以支持非当前源表。共同提取应贯穿原始键／单键／映射键和必要递归路径，不能临时切表或换全局指针。只读提取时 Python 控制台曾因默认 GBK 无法输出源码的时钟符号而中断，改用 -X utf8 后完整输出；这是工具输出编码问题，无产品变化。
+
+本轮验证仅为源锚点／调用者阅读和跟踪文档一致性；新增完成代次／栅栏、独立 GUI／MCP 对照、线程／按键释放、超时及性能全部待实现／验证。用户要求延后 UAC 仍生效，未把该等待记为整个计划受阻。
+
+## IPC-20261022-27：选择修正后普通权限正式 SDK 再验
+
+源码 `d38cf8dc`；产品 C++ 最近变更为 `2b9215ef`，此后只改文档和基础测试工具。PC-W10；普通控制器与同源维护服务均为 Medium／TokenElevation=0，未运行 gsudo、UAC、真实输入或驱动操作。
+
+以 out/mcp_bridge/venv/Scripts/python.exe 执行 mcp_bridge/tests/test_sdk_interop.py，指定两套 out/tests/mcp_control/{qt6-release,qt5-release}/release/QKeyMapperMcpControlTest.exe 和对应 Qt bin。Qt6／Qt5 各 12 个短场景通过，脚本 native exit 0；日志为 out/mcp_product/sdk-selection-qt6.log／sdk-selection-qt5.log，同名目录内 results.json／topology.json／fixture.log。实际私有桌面分别为 QkmSdk_44a4b09aee4645e6844f5e3c69fae6e8／QkmSdk_08169c2a691e4a55b5cb0bc1ffedd0ab；两端完整性 RID 8192，同用户／登录／AuthenticationId／SessionId。官方 SDK mcp 2.3.0，五个正式工具。
+
+覆盖无应用、GUI 批准／双向证明／凭据保存／真实 RPC、新 stdio 凭据重连、断开幂等、撤销断线且不静默重配对、GUI 拒绝、取消读及 stdio 退出、关闭接口时撤销及重新启用后旧 key 拒绝、错误预期 EXE、私有发现篡改、服务器持久化失败不 ready。所有自有维护进程正常退出 0，仅清理自身随机凭据。该短场景集合不含 60 秒等待，后者复用 IPC-22。
+
+这是正式 SDK 到同源普通维护服务的当前集成证明，不能替代 IPC-23 尚未完成的实际管理员产品验收，也不证明任何映射业务等价性。UAC 后续仍按用户要求延后；没有重跑无关 IPC／ASan／产品构建。
