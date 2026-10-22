@@ -154,6 +154,21 @@ $lifecycleExitCode = $LASTEXITCODE
 $lifecycleOutput | Set-Content -LiteralPath (Join-Path $reportDirectory 'qmake-sendinput-lifecycle-test.txt') -Encoding utf8
 if ($lifecycleExitCode -ne 0) { throw 'Cannot generate SendInput lifecycle test compilation parameters.' }
 $targets += @{ Name = 'sendinput-lifecycle-test'; Makefile = (Join-Path $lifecycleBuildDirectory 'Makefile.Release') }
+$mcpBuildDirectory = Join-Path $reportDirectory 'mcp-ipc-test-qmake'
+New-Item -ItemType Directory -Force -Path $mcpBuildDirectory | Out-Null
+$mcpMakefile = Join-Path $mcpBuildDirectory 'Makefile'
+$mcpProject = Join-Path $sourceRoot 'tests\mcp_ipc\mcp_ipc_test.pro'
+$mcpCommand = 'call "{0}" >nul && "{1}" -o "{2}" "{3}" -spec win32-msvc' -f $vcvars, $qmake, $mcpMakefile, $mcpProject
+$mcpOutput = @(& $env:ComSpec /d /s /c $mcpCommand 2>&1)
+$mcpExitCode = $LASTEXITCODE
+$mcpOutput | Set-Content -LiteralPath (Join-Path $reportDirectory 'qmake-mcp-ipc-test.txt') -Encoding utf8
+if ($mcpExitCode -ne 0) { throw 'Cannot generate MCP IPC test compilation parameters.' }
+$mcpMocCommand = 'call "{0}" >nul && cd /d "{1}" && nmake /NOLOGO /f Makefile test_mcp_ipc.moc' -f $vcvars, $mcpBuildDirectory
+$mcpMocOutput = @(& $env:ComSpec /d /s /c $mcpMocCommand 2>&1)
+$mcpMocExitCode = $LASTEXITCODE
+$mcpMocOutput | Set-Content -LiteralPath (Join-Path $reportDirectory 'moc-mcp-ipc-test.txt') -Encoding utf8
+if ($mcpMocExitCode -ne 0) { throw 'Cannot generate MCP IPC test meta-object input.' }
+$targets += @{ Name = 'mcp-ipc-test'; Makefile = $mcpMakefile }
 $sourceFiles = if ($Files -and $Files.Count -gt 0) {
     @($Files | ForEach-Object {
         $resolved = (Resolve-Path -LiteralPath $_ -ErrorAction Stop).Path

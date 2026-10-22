@@ -113,3 +113,44 @@ Git 状态和忽略规则检查会提示无法读取当前沙箱账户下的用�
 - 拟提交范围：`AGENTS.md`、`handoff/README.md` 及本任务三份 Markdown；提交前核对索引文件集合、编码、链接、空白与大小限制。
 - 提交消息：`docs(mcp): establish automation plan and handoff baseline`；实际提交号在提交后由主计划接续卡片记录，不在提交内容中递归写入自身哈希。
 - 历史文档／探针检查按原记录复用；本提交不新增产品、GUI、输入或 Win11 验收结论。既有 `.claude/settings.local.json` 不进入索引。
+- 实际结果：已提交 `c6ca3388a2de3141539cca2621f45a93e3636ab6`，五份 Markdown、1,180 行新增；未推送。提交后继续 M0.3b／M1.1a。
+
+## IPC-20261022-07：M1.1a 消息帧与真实进程身份
+
+- 机器：PC-W10，Windows 10 19045 x64；PC-W11 未运行。
+- 源码：以文档基线 `c6ca3388a2de3141539cca2621f45a93e3636ab6` 为起点，新增 `QKeyMapper/automation/qkm_ipc_frame.*`、`qkm_local_identity.*`、`tests/mcp_ipc/`，补充测试导航和任务记录；未改产品 `.pro`、主窗、配置、Worker、驱动或 `.ts`。
+- 构建：同一维护测试目标 `QKeyMapper/tests/mcp_ipc/mcp_ipc_test.pro`，x64 console Release＋调试符号、asInvoker，MSVC 2022 工具链；分别链接 Qt6.8.3／Qt5.15.2。
+- 实际 EXE：`out/tests/mcp_ipc/qt6-release/release/QKeyMapperMcpIpcTest.exe` 与 `out/tests/mcp_ipc/qt5-release/release/QKeyMapperMcpIpcTest.exe`。
+- 桌面／权限：QCoreApplication 无界面测试及自有子进程，未提权；没有 GUI 窗口、Default 焦点、Hook、键鼠或驱动操作，未加载个人 INI。
+- 原始证据：上述两个构建目录中的 `configure.log`、`build.log`、`test.log`、`results.txt`；仅在 PC-W10 的忽略目录，不随 Git 同步。维护源码、测试及说明随 Git 同步，接收 PC 可按说明重新验证。
+
+| 检查 | Qt6.8.3 | Qt5.15.2 | 结论范围 |
+|---|---|---|---|
+| qmake／JOM | 退出 0；最终构建日志零 warning／error | 同左 | 两个新组件及测试目标可编译链接；不是产品构建 |
+| 完整 QtTest | **30 passed，0 failed，0 skipped**；退出 0、stderr 空 | 同左 | 含 init／cleanup；数据行数不等于业务能力数 |
+| 消息结构 | 半包所有切点、逐字节、连续帧、4 KiB／256 KiB 精确边界、无效／超大头、32 层边界通过 | 同左 | 长度核对后才分配当前帧，错误后不重新同步；socket 本身和请求队列仍需限额 |
+| 数据正确性及失败 | UTF-8、多语／emoji、转义 NUL、畸形 JSON／代理字符／BOM／非有限数值、读失败、截断、旧输出清除通过 | 同左 | 合法内容不被隐式截断／转换；不能代替具体命令参数校验 |
+| 真实管道对端 | 两个独立进程通过本机随机管道连接，双向核对 PID／创建时间及登录／会话 | 同左 | 报文故意自报父 PID，而 Windows 读取的真实对端仍为子进程 |
+| 拒绝／比较 | 空身份、不可用 PID／管道、合成 SID／AuthId／SessionId／PID／创建时间变化、已退出子进程通过 | 同左 | 比较逻辑和所测 API 失败路径通过，不等于真实异用户／异会话验收 |
+
+Qt5 首次完整运行是 **28 通过、1 失败**：合法字符串中内嵌 NUL 被 Unicode 往返校验误拒绝。已核对两套本机 `qstring.h`：Qt5 的 QByteArray 重载使用 `qstrnlen`，Qt6 不同。修复为共用的指针＋显式长度重载，并在映射对象之外直接断言键和值中 NUL 前后的内容。原 Qt5 失败保留于 `qt5-release/results_before_qt5_nul_fix.txt`；当前两版结果是修复后重新编译并运行所得。没有修改 Qt 或将缺失测试计为通过。
+
+风险及未覆盖：这些代码尚未加入产品，不产生新的产品入口；正式 listener、管道请求安全上下文、配对／授权／撤销、普通与高权限连接、慢连接／队列、MCP SDK、业务操作、GUI 对照、真实输入、Win11 和完整产品兼容均未完成。初始选择两套 Qt 的边界／跨进程测试与源码审查，后因新增测试目标需要登记工具链，追加了工具回归及三个新增 C++ 文件的定向分析，见 TOOLS-20261022-10。未运行产品构建、ASan 或性能验收；不能证明完整接口安全或零开销。
+
+## DOC-20261022-08／GIT-20261022-09：M1.1a 独立切点
+
+- 当前切片共 13 个源码／工程／说明／工具／交接文件；UTF-8 无 BOM、LF、结尾换行及无尾随空白检查通过。相关 7 份 Markdown 共 118 个本地链接／引用存在；handoff 文档单文件及目录大小符合上限。
+- 代码审查重点：长度先验后分配、固定大小头的部分读取、错误状态不恢复／不返回旧消息、Unicode 与数值不隐式转换、32 层递归边界、SID 长度及 TokenGroups 容量校验、失败路径空身份、只读进程／Token 权限、句柄所有权与子进程清理。具体命令 schema 和权限检查留给下一层，不能由帧结构校验代替。
+- `git diff --check` 通过；产品 `.pro`、主窗口、Worker、驱动和翻译均未改变。当前新增源文件只由测试工程显式编译；Git 索引仅加入本切片的 13 个文件，不含 `.claude/settings.local.json` 或 `out/`。
+- 判断：有明确边界的基础组件、两套 Qt 实际维护测试及相应记录构成独立提交切点。依照用户授权创建 `feat(mcp): add bounded IPC frames and local peer identity` 本地提交；提交结果由 Git 核对，未推送。
+- 验证基线为 `c6ca3388` 加本切片相关变化；最终 Qt 运行后，C++ 仅补充身份头文件的前置条件注释，不改变有效测试输入；两份 PowerShell 工具的登记与准备步骤另外通过 TOOLS-10 验证。文档更新不误记为产品构建或额外运行验收。
+
+## TOOLS-20261022-10：新测试目标登记与定向分析
+
+- 新增第一方 `.cpp` 后，现有工具的全量源文件清单会发现它们；必须把独立 MCP 测试目标登记到 `scripts/run_static_analysis.ps1`，使用它自己的 QtCore／QtNetwork／QtTest、asInvoker 和 CRT 参数。未将新组件冒充产品主目标，也未让测试继承 QWidget／SDL 参数。
+- 同步 `scripts/test_static_analysis.ps1`：检查三个新增源文件各自被覆盖、目标参数独立、meta-object 输入已生成，并继续验证 vendor 提示排除、第一方提示拒绝和 native 工具非零退出拒绝。
+- 首次真实定向分析：两个基础组件的 Clang-Tidy／Clazy 均退出 0、无第一方诊断；测试文件因影子目录未生成 `test_mcp_ipc.moc` 失败。修复为在分析影子目录仅生成该输入（qmake／MSVC nmake／moc），没有编译或运行产品；维护回归加入文件存在断言。
+- 修复后工具链回归通过：`out/tests/mcp_ipc/static_analysis_regression_final.log`，明细在 `out/tests/static_analysis/c28c83d5dd084f7e9be05167c1cf50c4/`。回归中的提示和非零退出是故意注入的报告门禁用例，不能据此宣称全产品 C++ 分析通过。
+- 实际定向分析共三个新增 C++ 文件、各 Clang-Tidy／Clazy 检查。两个未变的基础组件沿用首次逐文件通过结果；修复后仅重跑受影响测试文件，双方工具退出 0、第一方诊断 0。原记录在 `out/tests/mcp_ipc/static-analysis-before-moc/`，最终测试文件结果在 `static-analysis-final-test/`，均未随 Git 同步。
+- 工具：LLVM 22.1.8、Clazy 1.16，Clang-Tidy 使用现有 `-*,clang-*`，Clazy 保留现有 52 项检查；分析环境按现有脚本选择 MSVC BuildTools 14.40.33807，普通维护测试构建使用 Community 14.44.35207，均为 x64 MSVC 2022。没有更改产品编译标志或诊断规则。
+- Git 安全目录仅对工具进程及其子进程配置，不改全局 Git 设置。首次工具回归的历史日志包含未设置该进程配置时的 qmake Git 元数据读取报错；最终回归和实际分析使用受控仓库路径成功取到 `c6ca3388`。用户级 ignore 文件读权限提示仍属既有沙箱边界，仓库与新文件状态另外核对。
