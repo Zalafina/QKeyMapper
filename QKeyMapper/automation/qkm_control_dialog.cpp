@@ -117,11 +117,14 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
     for (QPushButton *button : {m_approve, m_reject, m_revoke, m_close}) button->setAutoDefault(false);
     connect(m_enabled, &QCheckBox::toggled, this, &ControlDialog::setEnabledByUser);
     connect(m_close, &QPushButton::clicked, this, &QDialog::close);
-    connect(m_pairings, &QListWidget::currentRowChanged, this, [this]() {
-        m_revoke->setEnabled(m_pairings->currentItem());
+    connect(m_pairings, &QListWidget::itemSelectionChanged, this, [this]() {
+        m_revoke->setEnabled(m_pairings->selectedItems().size() == 1);
     });
     connect(m_revoke, &QPushButton::clicked, this, [this]() {
-        if (const auto *item = m_pairings->currentItem()) {
+        // Accessibility selection can differ from the current keyboard-navigation row.
+        const auto selected = m_pairings->selectedItems();
+        if (selected.size() == 1) {
+            const auto *item = selected.first();
             m_failed = !m_server.revoke(item->data(Qt::UserRole).toString());
             refresh();
         }
@@ -232,7 +235,8 @@ void ControlDialog::refresh()
             " 別のインスタンスが保存先を使用中です。その画面で管理するか、先に接続を無効にしてください。");
     m_status->setText(status);
     m_connection->setText(m_server.isEnabled() ? m_server.discoveryPath() : QString());
-    const QString selected = m_pairings->currentItem() ? m_pairings->currentItem()->data(Qt::UserRole).toString() : QString();
+    const auto selectedItems = m_pairings->selectedItems();
+    const QString selected = selectedItems.size() == 1 ? selectedItems.first()->data(Qt::UserRole).toString() : QString();
     m_pairings->clear();
     const auto pairs = m_server.pairings();
     for (const PairingInfo &pair : pairs) {
@@ -248,7 +252,7 @@ void ControlDialog::refresh()
         item->setToolTip(pair.pairId);
         if (pair.pairId == selected) m_pairings->setCurrentItem(item);
     }
-    m_revoke->setEnabled(m_pairings->currentItem());
+    m_revoke->setEnabled(m_pairings->selectedItems().size() == 1);
 }
 
 void ControlDialog::showEvent(QShowEvent *event)

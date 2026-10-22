@@ -8,6 +8,7 @@
 #include <QSaveFile>
 #include <QScopeGuard>
 #include <QJsonDocument>
+#include <QItemSelectionModel>
 #include <QLabel>
 #include <QListWidget>
 #include <QLineEdit>
@@ -79,6 +80,8 @@ private slots:
     void offlinePairings();
     void offlineFailure_data();
     void offlineFailure();
+    void selectedPairing_data();
+    void selectedPairing();
 };
 
 void McpControlTest::initTestCase()
@@ -264,6 +267,56 @@ void McpControlTest::offlinePairings()
     QVERIFY(QTest::qWaitForWindowExposed(&reopened));
     QCOMPARE(widget<QListWidget>(reopened, "mcpPairings")->count(), 0);
     QVERIFY(!reopened.server().isEnabled());
+}
+
+void McpControlTest::selectedPairing_data()
+{
+    QTest::addColumn<bool>("hasSelection");
+    QTest::newRow("no-selection") << false;
+    QTest::newRow("selection-differs-from-current") << true;
+}
+
+void McpControlTest::selectedPairing()
+{
+    QFETCH(bool, hasSelection);
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/selection-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString directory = root.path() + QStringLiteral("/server");
+    PairCredentialStore store(directory, "test-selection");
+    const PairCredential first{QString(32, QLatin1Char('a')), QStringLiteral("First client"),
+        1, Read, QByteArray(AuthSecretBytes, 'k')};
+    const PairCredential second{QString(32, QLatin1Char('b')), QStringLiteral("Second client"),
+        1, Read, QByteArray(AuthSecretBytes, 'l')};
+    PairStoreError error;
+    QVERIFY(store.save({first, second}, error));
+    ControlDialog dialog(directory, "test-selection");
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    auto *list = widget<QListWidget>(dialog, "mcpPairings");
+    auto *revoke = widget<QPushButton>(dialog, "mcpRevoke");
+    list->setCurrentRow(0);
+    if (hasSelection) {
+        list->selectionModel()->select(list->model()->index(1, 0), QItemSelectionModel::ClearAndSelect);
+        QCOMPARE(list->currentRow(), 0);
+        QCOMPARE(list->selectedItems().size(), 1);
+        QCOMPARE(list->selectedItems().first()->data(Qt::UserRole).toString(), second.pairId);
+        QVERIFY(revoke->isEnabled());
+        QTest::mouseClick(revoke, Qt::LeftButton);
+        QCOMPARE(list->count(), 1);
+        QCOMPARE(list->item(0)->data(Qt::UserRole).toString(), first.pairId);
+    } else {
+        list->clearSelection();
+        QCOMPARE(list->currentRow(), 0);
+        QVERIFY(!revoke->isEnabled());
+        QTest::mouseClick(revoke, Qt::LeftButton);
+        QCOMPARE(list->count(), 2);
+    }
+    QList<PairCredential> records;
+    QVERIFY(store.load(records, error));
+    QCOMPARE(records.size(), hasSelection ? 1 : 2);
+    QCOMPARE(records.first().pairId, first.pairId);
+    QVERIFY(!dialog.server().isEnabled());
+    QVERIFY(!QFileInfo::exists(dialog.server().discoveryPath()));
 }
 
 void McpControlTest::offlineFailure_data()

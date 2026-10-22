@@ -439,3 +439,39 @@ IPC 实际 EXE 为 out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/releas
 GUI 普通维护目标实际桌面分别为 QkmMcp_333dcc99037848219b549e008027a6df／QkmMcp_901bf4e91264487f8a36a36cc6d53222，无 UI 布局／文字变更，三语言静态效果复用 IPC-21，未重拍。所有构建和分析在原开发沙箱，实际用户 DPAPI 运行按既有授权；测试 gsudo 不更改缓存／系统策略。产品 EXE 仍为 out/build_qt6／out/build_qt5_5152 下 release/QKeyMapper.exe，原始材料只在忽略的 out，未随 Git 同步。
 
 本切片形成身份兼容性的本地开发检查点；M1.1c-4e-b 的真正产品入口、默认应用绑定／存储及实际产品高低权限流程仍待验收。真实异用户／异登录／Win11、业务等价性、性能和打包没有当前结论，未计完成。
+
+## IPC-20261022-23：实际产品入口初验与配对选中项修正
+
+PC-W10，起点 `b1f3ddf7`。本记录对应的产品修改仅在 ControlDialog 的选择／撤销目标，不改通信、凭据格式、Worker、驱动、TS 或 manifest。用户明确批准固定管理员 GUI 助手；随后外出用餐，要求其返回前延后新的 UAC 作业。所有已启动的自有产品均已正常关闭，最后固定名称进程清查为空，原用户 PID 5420／启动时间未变；无 Default 场景、真实输入或驱动安装。
+
+### 选择修正的独立提交切点
+
+实际 Qt6 产品 UIAutomation 的 SelectionItemPattern 已报告列表项 selected=true，撤销按钮仍禁用。进一步增加两个普通 Qt GUI 回归：清除选中而保留 currentRow，以及可见选中第二项而 currentRow 仍为第一项。旧实现分别允许无选中撤销、错误撤销第一客户端；不能用视觉一致替代实际目标检查。
+
+窗口改为按 selectedItems 恰为一项启用／执行撤销，并按同一选择保留刷新状态；复用原服务器撤销及私有原子持久化路径。无选中不修改；选中第二项时保留第一项，并独立从真实存储解密读取剩余 pair ID。
+
+| 当前检查 | 结果／原始索引 |
+|---|---|
+| Qt6 修正前回归 | 16 通过、2 失败、0 跳过，native exit 2，2,035 ms；out/mcp_product/selection-red-qt6/results.txt／run_private.json，实际桌面 QkmMcp_7f812f12b9a84daebbe3be64f5beecbc |
+| Qt6 修正后 GUI | 18 通过、0 失败／跳过，native exit 0，1,872 ms；selection-green-qt6 同名文件，实际桌面 QkmMcp_86070b4f4037443ab84b90cf4d690c3a |
+| Qt5 修正后 GUI | 18 通过、0 失败／跳过，native exit 0，23,039 ms；selection-green-qt5 同名文件，实际桌面 QkmMcp_a497b0d1c9324eada33455e8eb907d0a |
+| 维护目标增量构建 | 两套 native exit 0、无编译／链接诊断；out/tests/mcp_control/{qt6-release,qt5-release}/build_selection.log，实际 EXE 为各 release/QKeyMapperMcpControlTest.exe |
+| 产品增量构建 | 两套 native exit 0；out/mcp_product/build_qt6_selection_verified.log／build_qt5_selection_verified.log；Qt6 无编译／链接警告，Qt5 仅既有官方 qtmain 缺 PDB 例外；实际 EXE 为 out/build_qt6／out/build_qt5_5152 下 release/QKeyMapper.exe |
+
+首轮产品构建曾遇 qmake 的 Git 元数据读取被沙箱所有权拒绝；保留 build_qt6_selection.log／build_qt5_selection.log，不作为最终构建身份凭据。随后仅对构建进程传入 safe.directory，重新构建成功。最终日志保留沙箱不能读取个人 Git ignore 的警告；这是 Git 环境诊断，不是编译／链接诊断，未改变全局 Git 或忽略配置。共享通信／原生身份／ASan／SDK 故障套件代码未改，IPC-22 结果按原范围复用；本次未重跑整个 IPC、ASan 或严格静态分析。
+
+### 真正产品初验：已验证部分与待验证部分
+
+以正式 Release EXE 的同字节副本运行，不改 manifest。入口实际按主界面的“通用设定 → 通用高级设定 → Agent / MCP 控制”驱动；辅助脚本只允许固定动作，验证 PID／EXE／精确启动时间、目标及助手的实际私有桌面。普通控制器／桥接为 Medium 8192／TokenElevation=0，产品为 High 12288／1，同用户系统 UAC 登录关联通过。产品启动按原逻辑尝试连接本机 FakerInput；本次授权已包含该启动影响，不启动映射或安装驱动。
+
+源码 b1f3ddf7 对应 out/mcp_product/stock-qt6-owned-dialogs：实际桌面 QkmProduct_bd213665897348a8915eb3f8c766fb6e。已通过默认关闭／连接框为空、GUI 启用、默认应用绑定与私有发现、普通官方 SDK 配对前不 ready、只读批准、凭据写入、真实 transport_only RPC、新 stdio 凭据重连及关闭管理窗口保留接口。`business_capabilities=[]`，没有产品业务。随后重开入口的助手流程未完成，完整测试返回非零；该轮只证明日志中的三个已完成分项，**不是整轮通过**。
+
+后续 stock-qt6-offline-revoke／focus／selection 从同一隔离产品路径冷启动，接口关闭且实际读到先前一个配对，证明此产品默认应用绑定可恢复记录；其中 selection 记录 selected=true 但按钮禁用，促成本节修正。修正后的 stock-qt6-offline-revoke-fixed 使用重新构建的同字节正式 EXE，实际桌面 QkmProduct_22ebcc4969d5428b9932adf0730012aa；GUI 撤销按钮已能调用，但助手紧接的界面观察仍见一项，脚本因此失败。**最终撤销／持久化结果待冷启动核实，不能当作已成功，也不能盲目重试**。助手现已补有界完成观察，未再执行 UAC。
+
+运行目录 out/mcp_product/runtime-b1f3ddf7-qt6（文件名保留基线，内容已更新至本节修正），EXE 为 QKeyMapperMcpAcceptance_b1f3ddf7.exe。Qt5 的 runtime-selection-qt5 已部署同字节产品、对应 Qt 依赖和隔离 INI，尚未启动。独立路径／文件名用于隔离 SingleApplication；main.cpp 会按 argv[0] 设置 applicationName，日志模式也保留目录差异，不能只假定相同文件名副本一定独立。
+
+私有桌面启动／关闭复用 scripts/test_process.ps1 的新待提交扩展：CreateProcess 指定 lpDesktop；关闭在新原生线程绑定该桌面后发送 WM_CLOSE。PowerShell 已使用的线程上 SetThreadDesktop 返回资源在使用中，现改为创建时选桌面；GUI 对话框按同桌面原生 HWND／PID／标题定位，不能假定属于 UIAutomation RootElement 的直接子项。首轮 stock-qt6-first 遗留的自有 PID 27900 已经原身份核验后正常关闭，exit 0；后续 closed.json 均记录 0。普通窗体自检 helper-private-close-thread 已验证参数／Unicode 环境、实际桌面、错误启动时间拒绝关闭、正常退出 0 和不存在桌面拒绝启动；该测试不等于完整高权限产品验收。
+
+普通权限 scripts/capture_ui_snapshots.ps1 在目标实际私有桌面附着 High 产品时 PrintWindow 失败，未保存截图；见 stock-qt6-accessibility／stock-qt6-owned-dialogs/main.log。未给截图提权、不切换输入桌面；实际产品静态视觉仍未验证。ControlDialog 布局／文本未改，中英日同源维护窗口视觉只复用 IPC-21。
+
+本节仅提交已通过的产品选择修正、两个回归及跟踪记录；新测试进程工具、product_lifecycle.ps1／product_ui_actions.ps1／test_product_interop.py 仍在工作区，待完整验收再形成检查点。原始日志、截图、INI／EXE 和保护存储均不随 Git 同步，不记录密钥。实际产品完整撤销／旧 key 冷启动拒绝、Qt5 产品高低权限、托盘、Win11、业务等价性及性能仍待验收；用户离开期间只推进不需要 UAC 的工作。
