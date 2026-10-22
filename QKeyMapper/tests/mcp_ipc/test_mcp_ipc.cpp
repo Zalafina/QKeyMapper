@@ -506,6 +506,10 @@ private slots:
     void sessionSlowFrame();
     void sessionHandlerLifecycle();
     void sessionTransportCapabilities();
+    void directoryLease();
+    void directoryLeaseProcessExit();
+    void sessionOfflineManagement();
+    void sessionOfflineFailure();
 #ifdef QKM_AUTOMATION_TESTING
     void storeMalformedProtectedData();
     void listenerVerifierStopAndRestart();
@@ -1860,6 +1864,146 @@ void McpIpcTest::sessionSlowFrame()
     QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
 }
 
+void McpIpcTest::directoryLease()
+{
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/lease-XXXXXX"));
+    QVERIFY(root.isValid());
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    QVERIFY(own.ok());
+    const QString directory = root.path() + QStringLiteral("/private");
+    Storage::DirectoryLease lease;
+    QVERIFY(!lease.acquire(directory, own.identity.userSid, false));
+    QVERIFY(!QFileInfo::exists(directory));
+    QVERIFY(lease.acquire(directory, own.identity.userSid, true));
+    Storage::DirectoryLease other;
+    QVERIFY(!other.acquire(directory, own.identity.userSid, false));
+    QCOMPARE(other.lastError(), DWORD(ERROR_SHARING_VIOLATION));
+    QVERIFY(!QDir().rename(directory, directory + QStringLiteral("-moved")));
+    const QString file = directory + QStringLiteral("/control.lock");
+    QVERIFY(!QFile::remove(file));
+    lease.release();
+    lease.release();
+    QVERIFY(other.acquire(directory, own.identity.userSid, false));
+    other.release();
+    QFile marker(file);
+    QVERIFY(marker.open(QIODevice::WriteOnly));
+    QCOMPARE(marker.write("preserve"), qint64(8));
+    marker.close();
+    QVERIFY(lease.acquire(directory, own.identity.userSid, false));
+    lease.release();
+    QCOMPARE(readTestFile(file), QByteArray("preserve"));
+    const QString link = directory + QStringLiteral("/alias.lock");
+    QVERIFY(CreateHardLinkW(reinterpret_cast<LPCWSTR>(QDir::toNativeSeparators(link).utf16()),
+        reinterpret_cast<LPCWSTR>(QDir::toNativeSeparators(file).utf16()), nullptr));
+    QVERIFY(!lease.acquire(directory, own.identity.userSid, false));
+    QCOMPARE(lease.lastError(), DWORD(ERROR_ACCESS_DENIED));
+    QCOMPARE(readTestFile(file), QByteArray("preserve"));
+}
+
+void McpIpcTest::directoryLeaseProcessExit()
+{
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/lease-XXXXXX"));
+    QVERIFY(root.isValid());
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    QVERIFY(own.ok());
+    QProcess child;
+    const auto closeChild = qScopeGuard([&]() { if (child.state() != QProcess::NotRunning) { child.kill(); child.waitForFinished(3000); } });
+    const QString directory = root.path() + QStringLiteral("/private");
+    child.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--lease-holder"), directory});
+    QVERIFY(child.waitForStarted(3000));
+    QTRY_VERIFY_WITH_TIMEOUT(child.canReadLine(), 3000);
+    QCOMPARE(child.readLine().trimmed(), QByteArray("held"));
+    Storage::DirectoryLease lease;
+    QVERIFY(!lease.acquire(directory, own.identity.userSid, false));
+    QCOMPARE(lease.lastError(), DWORD(ERROR_SHARING_VIOLATION));
+    child.kill();
+    QVERIFY(child.waitForFinished(3000));
+    QVERIFY(lease.acquire(directory, own.identity.userSid, false));
+}
+
+void McpIpcTest::sessionOfflineManagement()
+{
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/offline-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString directory = root.path() + QStringLiteral("/server");
+    AutomationSessionServer manager(directory, "test-session-server");
+    QVERIFY(manager.refreshPairings());
+    QVERIFY(manager.pairings().isEmpty());
+    QVERIFY(!QFileInfo::exists(directory));
+    const PairCredential credential = storeCredential();
+    PairCredentialStore store(directory, "test-session-server");
+    PairStoreError error;
+    QVERIFY(store.save({credential}, error));
+    const QString clientDirectory = root.path() + QStringLiteral("/client");
+    PairCredentialStore clientStore(clientDirectory, "test-session-client");
+    QVERIFY(clientStore.save({credential}, error));
+    QVERIFY(manager.refreshPairings());
+    QCOMPARE(manager.pairings().size(), 1);
+    QVERIFY(!manager.isEnabled());
+    QVERIFY(manager.pipeName().isEmpty());
+    QVERIFY(!QFileInfo::exists(manager.discoveryPath()));
+    AutomationSessionServer active(directory, "test-session-server");
+    active.setRequestHandler([&](const AutomationRequest &request) {
+        active.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}});
+    });
+    QVERIFY(active.enable());
+    QVERIFY(!manager.revoke(credential.pairId));
+    QCOMPARE(manager.lastStoreError(), PairStoreError::Busy);
+    QCOMPARE(active.pairings().size(), 1);
+    SessionChild known;
+    QVERIFY(known.launch(active, clientDirectory, QStringLiteral("auth")));
+    QTRY_COMPARE_WITH_TIMEOUT(known.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(known.exitCode(), 0);
+    active.disable();
+    QCOMPARE(active.pairings().size(), 1);
+    QVERIFY(manager.revoke(credential.pairId));
+    QVERIFY(!manager.isEnabled());
+    QVERIFY(manager.pipeName().isEmpty());
+    QVERIFY(!QFileInfo::exists(manager.discoveryPath()));
+    QVERIFY(manager.pairings().isEmpty());
+    QList<PairCredential> records;
+    QVERIFY(store.load(records, error));
+    QVERIFY(records.isEmpty());
+    QVERIFY(active.refreshPairings());
+    QVERIFY(active.pairings().isEmpty());
+    QVERIFY(active.enable());
+    SessionChild revoked;
+    QVERIFY(revoked.launch(active, clientDirectory, QStringLiteral("revoked")));
+    QTRY_COMPARE_WITH_TIMEOUT(revoked.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(revoked.exitCode(), 0);
+}
+
+void McpIpcTest::sessionOfflineFailure()
+{
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/offline-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString directory = root.path() + QStringLiteral("/server");
+    const PairCredential credential = storeCredential();
+    PairCredentialStore store(directory, "test-session-server");
+    PairStoreError error;
+    QVERIFY(store.save({credential}, error));
+    AutomationSessionServer manager(directory, "test-session-server");
+    QVERIFY(manager.refreshPairings());
+    const QByteArray before = readTestFile(store.filePath());
+    const QString native = QDir::toNativeSeparators(store.filePath());
+    QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16()), FILE_ATTRIBUTE_READONLY));
+    const auto restore = qScopeGuard([&]() { SetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16()), FILE_ATTRIBUTE_NORMAL); });
+    QVERIFY(!manager.revoke(credential.pairId));
+    QVERIFY(!manager.isEnabled());
+    QCOMPARE(manager.pairings().size(), 1);
+    QCOMPARE(readTestFile(store.filePath()), before);
+    QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16()), FILE_ATTRIBUTE_NORMAL));
+    QFile damaged(store.filePath());
+    QVERIFY(damaged.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QCOMPARE(damaged.write("bad"), qint64(3));
+    damaged.close();
+    QVERIFY(!manager.refreshPairings());
+    QVERIFY(manager.pairings().isEmpty());
+    QVERIFY(!manager.revoke(credential.pairId));
+    QCOMPARE(readTestFile(store.filePath()), QByteArray("bad"));
+    QVERIFY(manager.pipeName().isEmpty());
+}
+
 void McpIpcTest::sessionTransportCapabilities()
 {
     QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
@@ -2107,6 +2251,15 @@ int main(int argc, char **argv)
         return runStoreReader(app.arguments());
     if (app.arguments().value(1) == QStringLiteral("--session-client"))
         return runSessionClient(app.arguments());
+    if (app.arguments().value(1) == QStringLiteral("--lease-holder") && app.arguments().size() == 3) {
+        const auto own = queryProcessIdentity(GetCurrentProcessId());
+        Storage::DirectoryLease lease;
+        if (!own.ok() || !lease.acquire(app.arguments().at(2), own.identity.userSid, true)) return 91;
+        QFile output;
+        if (!output.open(stdout, QIODevice::WriteOnly) || output.write("held\n") != 5 || !output.flush()) return 92;
+        Sleep(5000);
+        return 0;
+    }
     McpIpcTest test;
     return QTest::qExec(&test, argc, argv);
 }

@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QSaveFile>
+#include <QScopeGuard>
 #include <QJsonDocument>
 #include <QLabel>
 #include <QListWidget>
@@ -74,6 +75,10 @@ private slots:
     void rejectAndClose_data();
     void rejectAndClose();
     void enableFailure();
+    void offlinePairings_data();
+    void offlinePairings();
+    void offlineFailure_data();
+    void offlineFailure();
 };
 
 void McpControlTest::initTestCase()
@@ -215,6 +220,103 @@ void McpControlTest::enableFailure()
     QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(QStringLiteral("失败")));
 }
 
+void McpControlTest::offlinePairings_data()
+{
+    QTest::addColumn<int>("language");
+    QTest::newRow("Chinese") << 0;
+    QTest::newRow("English") << 1;
+    QTest::newRow("Japanese") << 2;
+}
+
+void McpControlTest::offlinePairings()
+{
+    QFETCH(int, language);
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/offline-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString directory = root.path() + QStringLiteral("/server");
+    PairCredentialStore store(directory, "test-offline-control");
+    const PairCredential credential{QString(32, QLatin1Char('a')), QStringLiteral("测试配对 Test 日本語"),
+        1, Read | Configure | RunMapping, QByteArray(AuthSecretBytes, 'k')};
+    PairStoreError error;
+    QVERIFY(store.save({credential}, error));
+    ControlDialog dialog(directory, "test-offline-control");
+    dialog.setUILanguage(language);
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    QVERIFY(!dialog.server().isEnabled());
+    QVERIFY(dialog.server().pipeName().isEmpty());
+    QVERIFY(!QFileInfo::exists(dialog.server().discoveryPath()));
+    auto *list = widget<QListWidget>(dialog, "mcpPairings");
+    QCOMPARE(list->count(), 1);
+    QCOMPARE(list->item(0)->data(Qt::UserRole).toString(), credential.pairId);
+    list->setCurrentRow(0);
+    QVERIFY(widget<QPushButton>(dialog, "mcpRevoke")->isEnabled());
+    QTest::mouseClick(widget<QPushButton>(dialog, "mcpRevoke"), Qt::LeftButton);
+    QCOMPARE(list->count(), 0);
+    QVERIFY(!dialog.server().isEnabled());
+    QVERIFY(dialog.server().pipeName().isEmpty());
+    QVERIFY(!QFileInfo::exists(dialog.server().discoveryPath()));
+    QList<PairCredential> records;
+    QVERIFY(store.load(records, error));
+    QVERIFY(records.isEmpty());
+    ControlDialog reopened(directory, "test-offline-control");
+    reopened.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&reopened));
+    QCOMPARE(widget<QListWidget>(reopened, "mcpPairings")->count(), 0);
+    QVERIFY(!reopened.server().isEnabled());
+}
+
+void McpControlTest::offlineFailure_data()
+{
+    QTest::addColumn<bool>("competing");
+    QTest::newRow("read-only") << false;
+    QTest::newRow("active-owner") << true;
+}
+
+void McpControlTest::offlineFailure()
+{
+    QFETCH(bool, competing);
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/offline-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString directory = root.path() + QStringLiteral("/server");
+    PairCredentialStore store(directory, "test-offline-control");
+    const PairCredential credential{QString(32, QLatin1Char('a')), QStringLiteral("Stored client"),
+        1, Read, QByteArray(AuthSecretBytes, 'k')};
+    PairStoreError error;
+    QVERIFY(store.save({credential}, error));
+    AutomationSessionServer active(directory, "test-offline-control");
+    if (competing) QVERIFY(active.enable());
+    const QString native = QDir::toNativeSeparators(store.filePath());
+    const auto restore = qScopeGuard([&]() { SetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16()), FILE_ATTRIBUTE_NORMAL); });
+    if (!competing) QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16()), FILE_ATTRIBUTE_READONLY));
+    ControlDialog dialog(directory, "test-offline-control");
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    auto *list = widget<QListWidget>(dialog, "mcpPairings");
+    QCOMPARE(list->count(), 1);
+    list->setCurrentRow(0);
+    QTest::mouseClick(widget<QPushButton>(dialog, "mcpRevoke"), Qt::LeftButton);
+    QVERIFY(!dialog.server().isEnabled());
+    QCOMPARE(list->count(), 1);
+    QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(QStringLiteral("失败")));
+    QList<PairCredential> records;
+    QVERIFY(store.load(records, error));
+    QCOMPARE(records.size(), 1);
+    if (competing) {
+        QCOMPARE(dialog.server().lastStoreError(), PairStoreError::Busy);
+        QVERIFY(active.isEnabled());
+        QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(QStringLiteral("另一实例")));
+        active.disable();
+    } else {
+        QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16()), FILE_ATTRIBUTE_NORMAL));
+    }
+    QTest::mouseClick(widget<QPushButton>(dialog, "mcpRevoke"), Qt::LeftButton);
+    QCOMPARE(list->count(), 0);
+    QVERIFY(!dialog.server().isEnabled());
+    QVERIFY(!QFileInfo::exists(dialog.server().discoveryPath()));
+    QVERIFY(!widget<QLabel>(dialog, "mcpStatus")->text().contains(QStringLiteral("失败")));
+}
+
 int runInteropFixture(QApplication &app, const QString &statePath)
 {
     QTemporaryDir root(QDir::currentPath() + QStringLiteral("/interop-XXXXXX"));
@@ -291,9 +393,20 @@ int main(int argc, char **argv)
     if (app.arguments().value(1) == QStringLiteral("--preview") && app.arguments().size() == 5) {
         QTemporaryDir root(QDir::currentPath() + QStringLiteral("/preview-XXXXXX"));
         if (!root.isValid()) return 20;
+        const QString mode = app.arguments().at(3);
+        if (mode != QStringLiteral("off") && mode != QStringLiteral("pending")
+            && mode != QStringLiteral("paired-off") && mode != QStringLiteral("busy-off")) return 24;
+        Storage::DirectoryLease previewLease;
+        if (mode == QStringLiteral("paired-off") || mode == QStringLiteral("busy-off")) {
+            PairCredentialStore store(root.path() + QStringLiteral("/server"), "test-preview");
+            const PairCredential pair{QString(32, QLatin1Char('a')), QStringLiteral("预览客户端 Preview 日本語"),
+                1, Read | Configure | RunMapping, QByteArray(AuthSecretBytes, 'k')};
+            PairStoreError error;
+            if (!store.save({pair}, error)) return 25;
+        }
         ControlDialog dialog(root.path() + QStringLiteral("/server"), "test-preview");
         dialog.setUILanguage(app.arguments().at(2).toInt());
-        if (app.arguments().at(3) == QStringLiteral("pending")) {
+        if (mode == QStringLiteral("pending")) {
             const auto own = queryProcessIdentity(GetCurrentProcessId());
             if (!own.ok()) return 21;
             // A UI-only fixture deliberately includes markup; no client is approved or authenticated.
@@ -301,6 +414,14 @@ int main(int argc, char **argv)
                 QStringLiteral("<b>测试客户端</b> 日本語"), own.identity});
         }
         dialog.show();
+        if (mode == QStringLiteral("paired-off") || mode == QStringLiteral("busy-off")) {
+            widget<QListWidget>(dialog, "mcpPairings")->setCurrentRow(0);
+            if (mode == QStringLiteral("busy-off")) {
+                const auto own = queryProcessIdentity(GetCurrentProcessId());
+                if (!own.ok() || !previewLease.acquire(root.path() + QStringLiteral("/server"), own.identity.userSid, false)) return 26;
+                QTest::mouseClick(widget<QPushButton>(dialog, "mcpRevoke"), Qt::LeftButton);
+            }
+        }
         QObject::connect(&dialog, &QDialog::finished, &app, &QCoreApplication::quit);
         QTimer::singleShot(300, &dialog, [&]() {
             wchar_t desktop[256]{};
@@ -315,6 +436,10 @@ int main(int argc, char **argv)
                 {QStringLiteral("style"), dialog.style()->objectName()},
                 {QStringLiteral("font"), dialog.font().family()},
                 {QStringLiteral("font_points"), dialog.font().pointSizeF()},
+                {QStringLiteral("interface_enabled"), dialog.server().isEnabled()},
+                {QStringLiteral("pair_count"), dialog.server().pairings().size()},
+                {QStringLiteral("revoke_enabled"), widget<QPushButton>(dialog, "mcpRevoke")->isEnabled()},
+                {QStringLiteral("store_busy"), dialog.server().lastStoreError() == PairStoreError::Busy},
                 {QStringLiteral("desktop"), QString::fromWCharArray(desktop)}};
             QSaveFile output(app.arguments().at(4));
             output.setDirectWriteFallback(false);

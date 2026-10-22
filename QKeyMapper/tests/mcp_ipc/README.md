@@ -1,6 +1,6 @@
 # MCP 本机 IPC 基础测试
 
-当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*`、`automation/qkm_local_listener.*`、`automation/qkm_auth_proof.*`、`automation/qkm_pair_store.*` 和 `automation/qkm_session_server.*`。这些基础代码由本维护目标及产品共用。产品已接入默认关闭的管理窗口；正式 MCP 桥接与业务操作仍按主计划接入。管理窗口用例见 [mcp_control](../mcp_control/README.md)。
+当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*`、`automation/qkm_local_listener.*`、`automation/qkm_auth_proof.*`、`automation/qkm_pair_store.*`、`automation/qkm_private_storage.*`、实例发现和会话控制器。这些基础代码由本维护目标及产品共用。产品已接入默认关闭的管理窗口，正式 MCP 桥接已完成通信切片；业务操作仍按主计划接入。管理窗口用例见 [mcp_control](../mcp_control/README.md)。
 
 ## 覆盖与边界
 
@@ -45,13 +45,13 @@ try {
 finally { $env:PATH = $qkmOriginalPath; Pop-Location }
 ```
 
-完整运行正常约 20 秒（包含四个各 3 秒的绝对期限用例）；自动执行端另设 40 秒外部看门狗。测试中的连接／普通收发／子进程等待各限 3 秒，listener 子进程断线看门狗为 6 秒；失败路径清理自有子进程和管道，不操作用户实例。`--pipe-client` 和 `--listener-client` 是测试内部子进程入口，不是产品接口。
+当前完整普通配置约 40–45 秒，执行端建议预留至少 90 秒外部看门狗。测试中的连接／普通收发／子进程等待各限 3 秒，listener 子进程断线看门狗为 6 秒；失败路径清理自有子进程和管道，不操作用户实例。`--pipe-client` 和 `--listener-client` 是测试内部子进程入口，不是产品接口。
 
 静态分析工具已登记此独立目标并在影子目录生成所需 `.moc`；`scripts/test_static_analysis.ps1` 维护覆盖及报告门禁。真实分析按 `scripts/run_static_analysis.ps1 -Files` 选择新增文件，沿用现有普通 Release 构建参数入口；报告门禁测试不等于 C++ 分析通过。
 
 ## 专用故障配置
 
-默认工程不编译测试钩子，使用实际生产分支。只有显式给 qmake 传入 `CONFIG+=mcp_fault_injection`，才定义 `QKM_AUTOMATION_TESTING`；使用独立目录 `out/tests/mcp_ipc/qt6-faults`，不把这个定义加到产品工程。该配置完整运行约 27 秒，外部看门狗为 50 秒。
+默认工程不编译测试钩子，使用实际生产分支。只有显式给 qmake 传入 `CONFIG+=mcp_fault_injection`，才定义 `QKM_AUTOMATION_TESTING`；使用独立目录 `out/tests/mcp_ipc/qt6-faults`，不把这个定义加到产品工程。该配置当前完整运行约 50 秒，执行端建议预留至少 90 秒外部看门狗。
 
 测试钩子只在测试 Qt 线程中设置，分别在下一次检查复制一个等待门事件，或跳过恢复调用来模拟失败，并计算原生工作线程数。故障测试故意留下识别级模拟身份至专用线程退出，确认 Qt 线程未改变、失败后不认证／不继续业务。钩子不进入普通构建，不作为 IPC 参数；测试结束释放门事件、恢复钩子并回收自有进程。它证明指定异常路径，不代表真实系统 `RevertToSelf` 已返回失败或已覆盖所有系统故障。
 
@@ -129,3 +129,11 @@ DPAPI 原生解密缓冲及本组件自有明文 QByteArray 在使用后清零�
 当前回归包括发布／读取、预期 EXE、字段／UTF-8／大小拒绝、活跃发布者／同进程第二服务器拒绝、退出后的替换、旧 ID 清理、只读失败保留与原存储用例。GUI 连接框现在是可复制的发现文件路径；正式 SDK 集成见 [桥接说明](../../../mcp_bridge/README.md)。高低权限、实际异用户、产品业务及 Win11 仍需后续验收。详情见 IPC-20261022-19／20。
 
 未安装业务处理器时，`qkm_get_capabilities` 只接受空参数，返回 `stage=transport_only`、空 `business_capabilities`、当前权限与帧上限；其余业务仍 `unsupported_capability`。`sessionTransportCapabilities` 独立子进程验证该响应、未知参数拒绝及业务未接拒绝。后续正式业务处理器负责真实完整能力表，不能把内部方法白名单当成已支持业务。
+
+## 关闭状态管理与目录租约
+
+当前版本的活跃服务器从读取配对到关闭端点及清理发现文件，全程持有 `Storage::DirectoryLease`。它保留私有目录句柄及 share=0 的 `control.lock` 文件句柄；先验证 owner、DACL、非 reparse、单硬链接，不写锁文件载荷。Windows 在进程退出后释放句柄，无需按 PID 猜测过期锁。该约束不声称兼容未实现租约的旧原型版本。
+
+关闭接口时仅缓存配对元数据。查看从 DPAPI 文件加载后清除临时密钥，不创建目录／端点；撤销须先独占同一目录，重新读取最新记录并原子保存，保存成功才更新列表。另一活跃实例占用时返回 Busy，不让该实例继续使用内存中的旧授权。只读／损坏失败保留原文件，不为管理而临时开放接口。
+
+`directoryLease` 检查独占、根目录／锁文件不可替换、释放后复用、锁文件原内容和多硬链接拒绝；`directoryLeaseProcessExit` 启动有五秒上限的自有 `--lease-holder` 子进程，确认退出后 OS 释放租约。`sessionOfflineManagement` 检查无目录读取、占用拒绝、关闭后撤销、持久化及重启拒绝旧 key；`sessionOfflineFailure` 检查只读／损坏存储保留和接口始终关闭。正式 SDK 的关闭状态 GUI 撤销与三语言界面验证见 IPC-21。

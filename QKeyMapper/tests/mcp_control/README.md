@@ -6,9 +6,9 @@
 
 测试窗口需要真实显示；优先在私有 Windows 桌面运行，**不调用 SwitchDesktop**。可以设置 `QKM_TEST_DESKTOP`，测试将检查自身线程实际桌面名。Qt 事件直接投递目标控件，不发送系统键鼠输入。关闭并清理自有窗口和子进程，不关闭用户实例。
 
-覆盖默认关闭／不创建凭据目录、启用时发布并核实发现文件、中英日标题及明文标签、Enter 不默认批准、只读默认值、额外配置／启停授权、配对批准、拒绝、撤销、关闭窗口保留接口、关闭／Escape 时拒绝待批准请求和启用失败回显。`queryProcessExecutable` 还检查真实自身路径、错误创建时间及无效身份拒绝。
+覆盖默认关闭／不创建凭据目录、启用时发布并核实发现文件、中英日标题及明文标签、Enter 不默认批准、只读默认值、额外配置／启停授权、配对批准、拒绝、撤销、关闭窗口保留接口、关闭／Escape 时拒绝待批准请求和启用失败回显。关闭接口时通过真实控件查看／撤销，核对实际持久化和重新打开结果；只读保存失败与另一活跃实例占用不得假报成功。`queryProcessExecutable` 还检查真实自身路径、错误创建时间及无效身份拒绝。
 
-`--preview <language:0|1|2> <off|pending> <absolute-state-json>` 仅用于维护目标的静态截图：真实显示同一控件，原子报告 PID／HWND／实际桌面、原生可见性、Qt／原生 DPI 和基线样式／字体；20 秒后自动退出，也可从该私有桌面发送 WM_CLOSE。pending 是明确的 UI fixture，包含 `<b>` 和实际自身进程身份，用于检查文本不被解释为富文本；没有启用接口、批准或认证客户端，不能用这张图证明配对安全。使用仓库 `scripts/capture_ui_snapshots.ps1 -ProcessId ... -WindowHandle ... -PrintWindow` 后自主审阅。
+`--preview <language:0|1|2> <off|pending|paired-off|busy-off> <absolute-state-json>` 仅用于维护目标的静态截图：真实显示同一控件，原子报告 PID／HWND／实际桌面、原生可见性、Qt／原生 DPI、样式／字体及接口／配对状态；20 秒后自动退出，也可从该私有桌面发送 WM_CLOSE。pending 含 `<b>` 和实际自身进程身份，用于检查纯文本；paired-off 使用假配对记录，busy-off 再取得真实租约并点击撤销制造占用提示。四种预览均不启用接口、批准或认证客户端，截图不能证明配对安全。使用仓库 `scripts/capture_ui_snapshots.ps1 -ProcessId ... -WindowHandle ... -PrintWindow` 后自主审阅。
 
 当前验证覆盖独立窗口、产品 Qt6／Qt5 编译及同源维护窗口的正式 SDK 配对；产品启动、通用高级设置／托盘入口的实际操作、管理员产品到普通桥接及业务等价性仍须后续集成验收。没有 Default 桌面、真实输入、驱动或性能结论。
 
@@ -25,7 +25,7 @@ python QKeyMapper/tests/mcp_control/test_mcp_control.py --test-exe out/tests/mcp
 
 Qt5 改用对应 Qt5 的两个 EXE、Qt bin 和独立 output。省略 `--screenshots` 只运行控件／配对测试；截图需要 PowerShell，自动查找 pwsh／powershell，也可显式传 `--powershell`。脚本运行失败返回非零；结果、运行身份及截图为本机材料，不进入 Git。
 
-管理窗口连接框为 `instance.json` 的可复制路径，文件不含配对 key。启用失败或发现信息无法验证时，复选框回到关闭；关闭后实际文件清理也由 IPC 维护用例核对。权限管理当前依赖启用接口，关闭状态下查看／撤销既有配对仍须在开放业务前补齐。
+管理窗口连接框为 `instance.json` 的可复制路径，文件不含配对 key。启用失败或发现信息无法验证时，复选框回到关闭；关闭后实际文件清理也由 IPC 维护用例核对。关闭状态可查看／撤销既有配对；撤销失败保留实际记录及原因，不为撤销临时开启接口。`--screenshots` 每个 Qt kit 生成中英日四种状态共 12 张图；实际审阅范围以验证记录为准。
 
 ## 正式 SDK 互操作
 

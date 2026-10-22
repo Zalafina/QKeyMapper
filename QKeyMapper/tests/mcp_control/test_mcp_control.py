@@ -134,7 +134,7 @@ try:
         raise RuntimeError('Control tests failed; see results.txt and runtime.log.')
     if args.screenshots:
         for lang in (0, 1, 2):
-            for state in ('off', 'pending'):
+            for state in ('off', 'pending', 'paired-off', 'busy-off'):
                 label = f'mcp_control_{lang}_{state}_{uuid.uuid4().hex[:6]}'
                 statefile = BASE / (label + '.json')
                 pi = start([args.test_exe, '--preview', lang, state, statefile], BASE, env, BASE / (label + '.log'))
@@ -147,6 +147,10 @@ try:
                     record = json.loads(statefile.read_text(encoding='utf-8'))
                     assert record['desktop'] == name and record['pid'] == pi.dwProcessId
                     assert record['native_visible'] and record['native_dpi'] > 0 and record['qt_dpr'] > 0
+                    assert not record['interface_enabled']
+                    if state in ('paired-off', 'busy-off'):
+                        assert record['pair_count'] == 1 and record['revoke_enabled']
+                        assert record['store_busy'] == (state == 'busy-off')
                     # The capture process checks HWND ownership and closes it on that private desktop.
                     cap = start([args.powershell, '-NoProfile', '-File', pathlib.Path(__file__).with_name('capture_mcp_control.ps1'), '-TestPid', pi.dwProcessId, '-WindowHandle', record['hwnd'], '-Label', label], ROOT, env, BASE / (label + '_capture.log'))
                     assert finish(cap, 15000) == 0

@@ -24,6 +24,7 @@ public:
 
 protected:
     void done(int result) override;
+    void showEvent(QShowEvent *event) override;
 
 private:
     QString text(const char *chinese, const char *english, const char *japanese) const;

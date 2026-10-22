@@ -378,3 +378,33 @@ IPC 普通／故障 EXE 位于 out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-fa
 所有编辑／构建／分析保持默认开发沙箱；需要真实用户 DPAPI 的运行在已授权普通用户上下文且未提权。没有切换输入桌面、Default 焦点、系统键鼠、驱动、个人配置或已有用户凭据操作。UI 本轮无产品布局变化，三语言静态图复用 IPC-18；此项复用不是本轮截图。当前未增加 ASan，IPC-19 仅可用于不变的原生基础；不把它记为新增 Python 桥接的 ASan 验收。
 
 未验证真正产品启动及高级设置／托盘入口、管理员产品到普通桥接／对象 MIC、实际异用户、Win11、打包、性能、映射／设置业务与 GUI／MCP 等价性。M1.1d 只形成通信组件的本地开发检查点，完整 M1 未完成；关闭时配对管理仍须在业务开放前补齐。原始材料均在忽略的 out，本轮随 Git 同步桥接源码、依赖锁、维护夹具及命令；接收 PC 须按本机环境重建并重新配对。
+
+## IPC-20261022-21：关闭状态配对管理与目录独占租约
+
+PC-W10，源码基线 `af1fd2ea` 加本记录所在提交：共享私有存储／会话／管理窗口及对应维护测试。桥接生产源码、Worker／驱动／个人 INI／TS／正式 manifest 未改。选定切片 M1.1c-4e-a 完成，完整 M1 及产品业务未完成。
+
+接口关闭时打开管理窗口只加载 DPAPI 配对元数据，临时 key 清除，不创建目录／端点。撤销先取得私有目录和 share=0 的 control.lock 租约，再读取最新记录并原子保存；当前版本活跃服务器从加载到关闭清理全程持有同一租约，另一实例占用时返回 Busy，避免已撤销记录仍被活跃内存授权使用。根目录及锁文件不可替换，锁文件不写载荷、拒绝多硬链接，OS 在进程退出时释放；不承诺与未实现租约的旧原型兼容。
+
+| 检查 | 本轮结果与证据 |
+|---|---|
+| IPC Qt6.8.3 普通 | 87 通过，0 失败／跳过，40,463 ms，native exit 0 |
+| IPC Qt5.15.2 普通 | 87 通过，0 失败／跳过，41,990 ms，native exit 0 |
+| IPC Qt6 故障 | 93 通过，0 失败／跳过，48,130 ms，native exit 0 |
+| 定向 Qt6 ASan＋故障 | 12 通过，0 失败／跳过，8,858 ms，exit 0、stderr 空，无 ASan 报告；实际导入 clang_rt.asan_dynamic-x86_64.dll |
+| GUI Qt6／Qt5 | 各 16 通过，0 失败／跳过，2,022／19,920 ms，exit 0；out/mcp_bridge/offline-visual-qt6／offline-visual-qt5/results.txt、run_private.json |
+| 正式 SDK Qt6／Qt5 | 各 12 个短场景通过，exit 0；out/mcp_bridge/offline-sdk-qt6.log／offline-sdk-qt5.log 和各同名目录 results.json；新增关闭接口 GUI 撤销、重新启用旧 key 拒绝及不自动配对 |
+| 静态界面 | 每 kit 捕获三语言四状态共 12 张；本轮自主审阅新增 paired-off／busy-off 共 12 张，无截断／重叠、内容与按钮可读。原 off／pending 状态也重新捕获，其视觉结论复用 IPC-18，未声称本轮逐张审阅 |
+| 产品 Qt6／Qt5 | out/build_qt6、out/build_qt5_5152 下 release/QKeyMapper.exe 本轮增量构建 exit 0；out/mcp_bridge/product_qt6_offline.log／product_qt5_offline.log；Qt6 无编译／链接警告，Qt5 仅既定官方 qtmain 缺 PDB LNK4099；产品未启动 |
+| 定向静态分析 | 五个改动 cpp／16 个实际目标编译，32 次 Clang-Tidy／Clazy，全部 native exit 0、项目诊断 0；out/mcp_bridge/static-analysis-offline/summary.txt，未新增忽略 |
+
+IPC EXE 为 out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/QKeyMapperMcpIpcTest.exe；各 build_offline_final.log、results_offline.txt、test_offline.log 和 out/mcp_bridge/offline_cpp.log。新用例 directoryLease／directoryLeaseProcessExit／sessionOfflineManagement／sessionOfflineFailure 覆盖独占及根目录保护、子进程被结束后 OS 释放、无目录查看、不监听／不发布提示、活跃占用拒绝且原会话仍有效、关闭撤销／重启旧 key 拒绝、只读／损坏保存失败保留。初次子进程 stdout 探针因 Windows 文本模式 CRLF 与预期 LF 不同失败，改为比较 trimmed 内容后全量普通／故障及 ASan 通过；失败原件 results_offline_probe.txt／test_offline_probe.log、out/mcp_bridge/offline_probe.log 保留，不将其列为通过。
+
+ASan EXE 为 out/tests/mcp_ipc/qt6-asan-1440/release/QKeyMapperMcpIpcTest.exe；MSVC BuildTools 14.40.33807，build_offline_final.log／results_offline_asan.txt／test_offline_asan.log 及 out/mcp_bridge/offline_asan.log。十个方法为四项新增、discoveryLifecycle、storeRoundTrip、storeAtomicFailure、storeUnsafePaths、sessionHandlerLifecycle、sessionPairAndReconnect，另含 init／cleanup。Qt DLL 未重插桩、detect_leaks=0；不把 12 项定向结果当作 93 项全量 ASan。
+
+GUI EXE 为 out/tests/mcp_control/{qt6-release,qt5-release}/release/QKeyMapperMcpControlTest.exe，各 build_offline_final.log；新用例通过 Qt 真实控件事件验证关闭状态三语言查看／撤销、实际 DPAPI 结果、重新打开为空、无端点和提示；只读保存失败及另一活跃实例占用显示失败，条件解除后成功并清除错误。普通构建／运行无编译警告，父／子 TokenElevation=0。最终截图运行实际私有桌面 Qt6 为 QkmMcp_77eeb1d465b04056927c2ce467be6acb，Qt5 为 QkmMcp_7d1a6c65542d4076b9d8a01f0b0633d9。使用 capture_ui_snapshots.ps1／PrintWindow，Fusion、Microsoft YaHei UI 9 pt、原生 DPI 144、Qt DPR 1.5；静态预览始终接口关闭，假记录不能证明认证。截图、状态及捕获日志仅在上述 offline-visual 目录。
+
+SDK 使用正式 mcp 2.3.0 Client／stdio／固定五项工具，桥接生产源码未改；Qt6 实际私有桌面 QkmSdk_4949af6ea0de42a1a8a69d06d53b60d6，Qt5 为 QkmSdk_131939cae95a4539a44e3e37c0d1d3ed。父、GUI 及待批准桥接均 TokenElevation=0，只清理自有随机凭据及夹具。本轮省略 --approval-timeout，12 短场景不含实际 60 秒等待；计时未改，复用 IPC-20 两套 Qt 实际 60 秒通过证据。Python 单测 10 与依赖检查同样沿用 IPC-20，不写为本轮重跑。
+
+编辑／Git／构建／分析均非提权；需真实用户 DPAPI 的运行仍使用已授权沙箱外普通用户。未切换输入桌面、占用 Default 焦点、发送系统键鼠或安装驱动。用户返回后已批准仅测试启动／关闭的 gsudo 管理员维护验收，随后要求为开启 fast 在当前检查点暂停；**本轮尚未启动任何管理员进程**，不把批准当作通过。恢复后无需重复请求同范围批准，UAC 仍可能需要用户确认。
+
+实际产品高级设置／托盘入口、管理员产品到普通桥接／MIC、真实异用户、Win11、打包／性能、业务操作及 GUI／MCP 等价性均未验证。当前形成本地开发检查点并按用户指令提交、不推送；原始证据不随 Git 同步，精简记录及可移植测试随源码同步。

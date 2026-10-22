@@ -12,6 +12,7 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QSignalBlocker>
+#include <QShowEvent>
 #include <QStandardPaths>
 #include <QVBoxLayout>
 #include <utility>
@@ -117,11 +118,11 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
     connect(m_enabled, &QCheckBox::toggled, this, &ControlDialog::setEnabledByUser);
     connect(m_close, &QPushButton::clicked, this, &QDialog::close);
     connect(m_pairings, &QListWidget::currentRowChanged, this, [this]() {
-        m_revoke->setEnabled(m_server.isEnabled() && m_pairings->currentItem());
+        m_revoke->setEnabled(m_pairings->currentItem());
     });
     connect(m_revoke, &QPushButton::clicked, this, [this]() {
         if (const auto *item = m_pairings->currentItem()) {
-            if (!m_server.revoke(item->data(Qt::UserRole).toString())) m_failed = true;
+            m_failed = !m_server.revoke(item->data(Qt::UserRole).toString());
             refresh();
         }
     });
@@ -225,6 +226,10 @@ void ControlDialog::refresh()
     if (m_failed) status += text("；上次操作失败。未保存的撤销不能视为成功。",
         "; the last operation failed. A revocation that was not saved did not succeed.",
         "。前の操作に失敗しました。保存されなかった解除は完了していません。");
+    if (m_failed && m_server.lastStoreError() == PairStoreError::Busy)
+        status += text(" 配对存储正由另一实例使用，请在该实例中管理或先关闭其接口。",
+            " Another instance owns this pairing store; manage it there or disable its interface first.",
+            " 別のインスタンスが保存先を使用中です。その画面で管理するか、先に接続を無効にしてください。");
     m_status->setText(status);
     m_connection->setText(m_server.isEnabled() ? m_server.discoveryPath() : QString());
     const QString selected = m_pairings->currentItem() ? m_pairings->currentItem()->data(Qt::UserRole).toString() : QString();
@@ -243,7 +248,14 @@ void ControlDialog::refresh()
         item->setToolTip(pair.pairId);
         if (pair.pairId == selected) m_pairings->setCurrentItem(item);
     }
-    m_revoke->setEnabled(m_server.isEnabled() && m_pairings->currentItem());
+    m_revoke->setEnabled(m_pairings->currentItem());
+}
+
+void ControlDialog::showEvent(QShowEvent *event)
+{
+    if (!m_server.refreshPairings()) m_failed = true;
+    refresh();
+    QDialog::showEvent(event);
 }
 
 void ControlDialog::showPending()

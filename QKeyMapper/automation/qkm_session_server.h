@@ -4,6 +4,7 @@
 #include "qkm_local_listener.h"
 #include "qkm_pair_store.h"
 #include "qkm_instance_discovery.h"
+#include "qkm_private_storage.h"
 
 #include <functional>
 
@@ -48,6 +49,7 @@ public:
     bool acceptingConnections() const { return m_enabled && m_listener.m_notifier.isEnabled(); }
     PairStoreError lastStoreError() const { return m_storeError; }
     QList<PairingInfo> pairings() const;
+    bool refreshPairings();
     bool approvePairing(const QString &requestId, quint32 scopes);
     bool rejectPairing(const QString &requestId);
     bool revoke(const QString &pairId);
@@ -82,7 +84,9 @@ private:
     HANDLE m_discoveryLease = INVALID_HANDLE_VALUE;
     DiscoveryError m_discoveryError = DiscoveryError::None;
     PairCredentialStore m_store;
+    Storage::DirectoryLease m_storeLease;
     QList<PairCredential> m_credentials;
+    QList<PairingInfo> m_offlinePairings;
     PairStoreError m_storeError = PairStoreError::None;
     ServerChallenge m_challenge;
     AuthBinding m_binding;

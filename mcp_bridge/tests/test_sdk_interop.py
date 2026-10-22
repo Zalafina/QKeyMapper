@@ -213,6 +213,25 @@ async def run(args):
             assert time.monotonic() - started < 3
             passed("cancel pending native read drains and disconnects within 3 seconds")
 
+            await asyncio.sleep(1.05)
+            await pending(client, fixture)
+            fixture.command("approve")
+            await connection(client, "connected")
+            await fixture.wait(lambda state: state.get("authenticated") == 3)
+            fixture.command("disable")
+            await fixture.wait(lambda state: state.get("enabled") is False and state.get("pair_count") == 1)
+            assert not discovery.exists()
+            assert not (await call(client, "qkm_get_capabilities"))["ok"]
+            fixture.command("revoke")
+            await fixture.wait(lambda state: state.get("enabled") is False and state.get("pair_count") == 0)
+            assert not discovery.exists()
+            fixture.command("enable")
+            await fixture.wait(lambda state: state.get("enabled") is True)
+            await call(client, "qkm_connect")
+            await connection(client, "failed")
+            assert not fixture.state()["pending"]
+            passed("GUI revokes while disabled; old key rejected after re-enable without opening access to revoke")
+
         await asyncio.sleep(1.05)
         started = time.monotonic()
         async with Client(config) as client:
@@ -263,7 +282,7 @@ async def run(args):
             fixture.command("approve")
             await connection(client, "failed")
             assert store.load() is not None
-            assert fixture.state()["pair_count"] == 0 and fixture.state()["authenticated"] == 2
+            assert fixture.state()["pair_count"] == 0 and fixture.state()["authenticated"] == 3
             assert discovery.with_name("pairings.dat").read_bytes() == b"invalid"
             passed("server persistence failure cannot become ready despite a saved client key")
     finally:

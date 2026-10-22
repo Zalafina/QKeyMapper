@@ -4,6 +4,7 @@
 #include <QUuid>
 #include <QTimer>
 #include <QJsonArray>
+#include <QScopeGuard>
 #include <limits>
 #include <utility>
 
@@ -34,6 +35,18 @@ PairingInfo info(const PairCredential &pair)
     return {pair.pairId, pair.clientName, pair.permissionEpoch, pair.scopes};
 }
 
+PairStoreError leaseError(DWORD error)
+{
+    return error == ERROR_SHARING_VIOLATION || error == ERROR_LOCK_VIOLATION || error == ERROR_BUSY
+        ? PairStoreError::Busy : PairStoreError::UnsafeStorage;
+}
+
+void eraseCredentials(QList<PairCredential> &credentials)
+{
+    for (PairCredential &credential : credentials) eraseSecret(credential.secret);
+    credentials.clear();
+}
+
 } // namespace
 
 AutomationSessionServer::AutomationSessionServer(QString storeDirectory, QByteArray applicationBinding,
@@ -58,7 +71,19 @@ AutomationSessionServer::~AutomationSessionServer()
 bool AutomationSessionServer::enable()
 {
     if (m_enabled) return true;
-    if (!m_store.load(m_credentials, m_storeError)) return false;
+    const auto owner = queryProcessIdentity(GetCurrentProcessId());
+    m_storeError = PairStoreError::InvalidContext;
+    if (!owner.ok()) return false;
+    if (!m_storeLease.acquire(m_directory, owner.identity.userSid, true)) {
+        m_storeError = leaseError(m_storeLease.lastError());
+        return false;
+    }
+    if (!m_store.load(m_credentials, m_storeError)) {
+        eraseCredentials(m_credentials);
+        m_offlinePairings.clear();
+        m_storeLease.release();
+        return false;
+    }
     if (!m_listener.start()) {
         disable();
         return false;
@@ -89,8 +114,11 @@ void AutomationSessionServer::disable()
     m_enabled = false;
     m_listener.stop();
     clearSession();
-    for (PairCredential &credential : m_credentials) eraseSecret(credential.secret);
-    m_credentials.clear();
+    if (wasEnabled || !m_credentials.isEmpty()) {
+        m_offlinePairings.clear();
+        for (const PairCredential &credential : std::as_const(m_credentials)) m_offlinePairings.append(info(credential));
+    }
+    eraseCredentials(m_credentials);
     if (m_discoveryLease != INVALID_HANDLE_VALUE) {
         CloseHandle(m_discoveryLease);
         m_discoveryLease = INVALID_HANDLE_VALUE;
@@ -98,15 +126,28 @@ void AutomationSessionServer::disable()
     const QString discoveryInstance = std::exchange(m_discoveryInstance, {});
     const bool removed = discoveryInstance.isEmpty()
         || removeInstanceDiscovery(m_directory, discoveryInstance, m_discoveryError);
+    m_storeLease.release();
     if (wasEnabled) emit enabledChanged(false);
     if (!removed) emit failed(QStringLiteral("discovery_cleanup_failed"));
 }
 
 QList<PairingInfo> AutomationSessionServer::pairings() const
 {
+    if (!m_enabled) return m_offlinePairings;
     QList<PairingInfo> result;
     for (const PairCredential &pair : m_credentials) result.append(info(pair));
     return result;
+}
+
+bool AutomationSessionServer::refreshPairings()
+{
+    if (m_enabled) return true;
+    QList<PairCredential> credentials;
+    const auto erase = qScopeGuard([&]() { eraseCredentials(credentials); });
+    m_offlinePairings.clear();
+    if (!m_store.load(credentials, m_storeError)) return false;
+    for (const PairCredential &credential : std::as_const(credentials)) m_offlinePairings.append(info(credential));
+    return true;
 }
 
 int AutomationSessionServer::findPair(const QString &pairId) const
@@ -341,16 +382,38 @@ bool AutomationSessionServer::replyError(const QString &connectionId, const QStr
 
 bool AutomationSessionServer::revoke(const QString &pairId)
 {
-    const int index = findPair(pairId);
+    Storage::DirectoryLease offlineLease;
+    QList<PairCredential> updated;
+    const auto erase = qScopeGuard([&]() { eraseCredentials(updated); });
+    if (m_enabled) {
+        updated = m_credentials;
+    } else {
+        const auto owner = queryProcessIdentity(GetCurrentProcessId());
+        m_storeError = PairStoreError::InvalidContext;
+        if (!owner.ok()) return false;
+        if (!offlineLease.acquire(m_directory, owner.identity.userSid, false)) {
+            m_storeError = leaseError(offlineLease.lastError());
+            return false;
+        }
+        if (!m_store.load(updated, m_storeError)) return false;
+        m_offlinePairings.clear();
+        for (const PairCredential &credential : std::as_const(updated)) m_offlinePairings.append(info(credential));
+    }
+    int index = -1;
+    for (int i = 0; i < updated.size(); ++i) if (updated.at(i).pairId == pairId) { index = i; break; }
     if (index < 0) return false;
-    QList<PairCredential> updated = m_credentials;
     updated.removeAt(index);
     if (!m_store.save(updated, m_storeError)) {
-        disable();
+        if (m_enabled) disable();
         emit failed(QStringLiteral("revocation_not_saved"));
         return false;
     }
-    m_credentials = updated;
+    if (m_enabled) m_credentials = updated;
+    else {
+        m_offlinePairings.clear();
+        for (const PairCredential &credential : std::as_const(updated)) m_offlinePairings.append(info(credential));
+    }
+    offlineLease.release();
     if (m_pair.pairId == pairId) closeSession();
     return true;
 }
