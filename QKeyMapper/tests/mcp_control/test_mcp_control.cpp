@@ -215,6 +215,68 @@ void McpControlTest::enableFailure()
     QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(QStringLiteral("失败")));
 }
 
+int runInteropFixture(QApplication &app, const QString &statePath)
+{
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/interop-XXXXXX"));
+    if (!root.isValid()) return 24;
+    ControlDialog dialog(root.path() + QStringLiteral("/server"), "test-stdio-interop");
+    dialog.show();
+    clickCheckBox(dialog, "mcpEnabled");
+    if (!dialog.server().isEnabled()) return 25;
+    int sequence = 0;
+    int authenticated = 0;
+    quint32 clientPid = 0;
+    QObject::connect(&dialog.server(), &AutomationSessionServer::authenticated, &dialog, [&]() { ++authenticated; });
+    QObject::connect(&dialog.server(), &AutomationSessionServer::pairingRequested, &dialog,
+        [&](const PairingRequest &request) { clientPid = request.peer.processId; });
+    QByteArray previous;
+    QTimer poll;
+    QObject::connect(&poll, &QTimer::timeout, &dialog, [&]() {
+        QFile command(statePath + QStringLiteral(".command"));
+        if (command.open(QIODevice::ReadOnly)) {
+            const QJsonObject message = QJsonDocument::fromJson(command.read(257)).object();
+            if (message.value(QStringLiteral("sequence")).toInt() > sequence) {
+                sequence = message.value(QStringLiteral("sequence")).toInt();
+                const QString action = message.value(QStringLiteral("command")).toString();
+                // Maintenance-only fixed GUI events; this mode is absent from the product executable.
+                if (action == QStringLiteral("approve")) QTest::mouseClick(widget<QPushButton>(dialog, "mcpApprove"), Qt::LeftButton);
+                else if (action == QStringLiteral("reject")) QTest::mouseClick(widget<QPushButton>(dialog, "mcpReject"), Qt::LeftButton);
+                else if (action == QStringLiteral("revoke")) {
+                    widget<QListWidget>(dialog, "mcpPairings")->setCurrentRow(0);
+                    QTest::mouseClick(widget<QPushButton>(dialog, "mcpRevoke"), Qt::LeftButton);
+                } else if (action == QStringLiteral("disable") || action == QStringLiteral("enable")) {
+                    const bool wanted = action == QStringLiteral("enable");
+                    if (dialog.server().isEnabled() != wanted) clickCheckBox(dialog, "mcpEnabled");
+                } else if (action == QStringLiteral("corrupt-store")) {
+                    QFile store(root.path() + QStringLiteral("/server/pairings.dat"));
+                    if (!store.open(QIODevice::WriteOnly) || store.write("invalid") != 7) { app.exit(29); return; }
+                } else if (action == QStringLiteral("quit")) app.quit();
+                else { app.exit(26); return; }
+            }
+        }
+        wchar_t desktop[256]{};
+        DWORD needed = 0;
+        if (!GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), &needed)) { app.exit(27); return; }
+        const QJsonObject state{{QStringLiteral("pid"), int(GetCurrentProcessId())},
+            {QStringLiteral("desktop"), QString::fromWCharArray(desktop)},
+            {QStringLiteral("sequence"), sequence}, {QStringLiteral("authenticated"), authenticated},
+            {QStringLiteral("client_pid"), int(clientPid)},
+            {QStringLiteral("pending"), !widget<QLabel>(dialog, "mcpPairRequest")->text().isEmpty()},
+            {QStringLiteral("pair_count"), dialog.server().pairings().size()},
+            {QStringLiteral("enabled"), dialog.server().isEnabled()},
+            {QStringLiteral("discovery"), dialog.server().discoveryPath()}};
+        const QByteArray bytes = QJsonDocument(state).toJson();
+        if (bytes == previous) return;
+        QSaveFile output(statePath);
+        output.setDirectWriteFallback(false);
+        if (!output.open(QIODevice::WriteOnly) || output.write(bytes) != bytes.size() || !output.commit()) { app.exit(28); return; }
+        previous = bytes;
+    });
+    poll.start(50);
+    QTimer::singleShot(180000, &app, &QCoreApplication::quit);
+    return app.exec();
+}
+
 int main(int argc, char **argv)
 {
     // Match the product's baseline DPI, style and font without loading a personal INI.
@@ -224,6 +286,8 @@ int main(int argc, char **argv)
     QApplication::setStyle(QStringLiteral("Fusion"));
     QApplication::setFont(QFont(QString::fromLatin1(QKeyMapperConstants::FONTNAME_ENGLISH), 9));
     app.setQuitOnLastWindowClosed(false);
+    if (app.arguments().value(1) == QStringLiteral("--interop-fixture") && app.arguments().size() == 3)
+        return runInteropFixture(app, app.arguments().at(2));
     if (app.arguments().value(1) == QStringLiteral("--preview") && app.arguments().size() == 5) {
         QTemporaryDir root(QDir::currentPath() + QStringLiteral("/preview-XXXXXX"));
         if (!root.isValid()) return 20;

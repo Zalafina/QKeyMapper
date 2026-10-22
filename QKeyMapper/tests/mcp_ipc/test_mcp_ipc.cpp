@@ -284,15 +284,31 @@ int runSessionClient(const QStringList &arguments)
     if (mode == QStringLiteral("auth-idle")) QTest::qWait(PreauthTimeoutMs + 250);
     const QString requestId = QUuid::createUuid().toString(QUuid::Id128);
     QString method = QStringLiteral("qkm_get_state");
+    if (mode.startsWith(QStringLiteral("transport-caps"))) method = QStringLiteral("qkm_get_capabilities");
     if (mode == QStringLiteral("write-denied") || mode == QStringLiteral("write-allowed")) method = QStringLiteral("qkm_apply_changes");
     if (mode == QStringLiteral("unknown-method")) method = QStringLiteral("setProperty");
     QJsonObject args;
+    if (mode == QStringLiteral("transport-caps-badargs")) args.insert(QStringLiteral("unknown"), true);
     if (mode == QStringLiteral("large")) args.insert(QStringLiteral("blob"), QString(8192, QLatin1Char('x')));
     if (!send({{QStringLiteral("id"), requestId}, {QStringLiteral("method"), method}, {QStringLiteral("arguments"), args}})) return 81;
     QJsonObject response;
     if (!receiveMessage(socket, reader, response))
         return mode == QStringLiteral("disabled-in-handler") && socket.state() == QLocalSocket::UnconnectedState ? 0 : 82;
     if (response.value(QStringLiteral("id")) != QJsonValue(requestId)) return 82;
+    if (mode == QStringLiteral("transport-caps")) {
+        const auto result = response.value(QStringLiteral("result")).toObject();
+        return response.value(QStringLiteral("ok")) == QJsonValue(true)
+            && result.value(QStringLiteral("stage")) == QJsonValue(QStringLiteral("transport_only"))
+            && result.value(QStringLiteral("instance")) == QJsonValue(arguments.at(3))
+            && result.value(QStringLiteral("scopes")) == QJsonValue(int(Read))
+            && result.value(QStringLiteral("business_capabilities")) == QJsonValue(QJsonArray()) ? 0 : 89;
+    }
+    if (mode == QStringLiteral("transport-caps-badargs") || mode == QStringLiteral("transport-unsupported")) {
+        const QString code = mode == QStringLiteral("transport-caps-badargs")
+            ? QStringLiteral("invalid_arguments") : QStringLiteral("unsupported_capability");
+        return response.value(QStringLiteral("ok")) == QJsonValue(false)
+            && response.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")) == QJsonValue(code) ? 0 : 90;
+    }
     if (mode == QStringLiteral("write-denied") || mode == QStringLiteral("unknown-method")) {
         const QString code = mode == QStringLiteral("write-denied") ? QStringLiteral("permission_denied") : QStringLiteral("unsupported_method");
         return response.value(QStringLiteral("ok")) == QJsonValue(false)
@@ -489,6 +505,7 @@ private slots:
     void sessionStoreFailure();
     void sessionSlowFrame();
     void sessionHandlerLifecycle();
+    void sessionTransportCapabilities();
 #ifdef QKM_AUTOMATION_TESTING
     void storeMalformedProtectedData();
     void listenerVerifierStopAndRestart();
@@ -1841,6 +1858,34 @@ void McpIpcTest::sessionSlowFrame()
     QCOMPARE(slow.exitCode(), 0);
     QCOMPARE(handled, 1);
     QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+}
+
+void McpIpcTest::sessionTransportCapabilities()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    AutomationSessionServer server(temporary.path() + QStringLiteral("/server"), "test-session-server");
+    connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
+        QVERIFY(server.approvePairing(request.requestId, Read));
+    });
+    server.setRequestHandler([&](const AutomationRequest &request) {
+        QVERIFY(server.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+    });
+    QVERIFY(server.enable());
+    const QString clientDirectory = temporary.path() + QStringLiteral("/client");
+    SessionChild pair;
+    QVERIFY(pair.launch(server, clientDirectory, QStringLiteral("pair")));
+    QTRY_COMPARE_WITH_TIMEOUT(pair.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(pair.exitCode(), 0);
+    server.setRequestHandler({});
+    for (const char *mode : {"transport-caps", "transport-caps-badargs", "transport-unsupported"}) {
+        QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+        SessionChild client;
+        QVERIFY(client.launch(server, clientDirectory, QLatin1String(mode)));
+        QTRY_COMPARE_WITH_TIMEOUT(client.state(), QProcess::NotRunning, 5000);
+        QCOMPARE(client.exitCode(), 0);
+    }
+    QVERIFY(server.isEnabled());
 }
 
 void McpIpcTest::sessionHandlerLifecycle()

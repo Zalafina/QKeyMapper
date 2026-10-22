@@ -10,7 +10,7 @@
 
 `--preview <language:0|1|2> <off|pending> <absolute-state-json>` 仅用于维护目标的静态截图：真实显示同一控件，原子报告 PID／HWND／实际桌面、原生可见性、Qt／原生 DPI 和基线样式／字体；20 秒后自动退出，也可从该私有桌面发送 WM_CLOSE。pending 是明确的 UI fixture，包含 `<b>` 和实际自身进程身份，用于检查文本不被解释为富文本；没有启用接口、批准或认证客户端，不能用这张图证明配对安全。使用仓库 `scripts/capture_ui_snapshots.ps1 -ProcessId ... -WindowHandle ... -PrintWindow` 后自主审阅。
 
-当前验证覆盖独立窗口及产品 Qt6／Qt5 编译；产品启动、通用高级设置／托盘入口的实际操作、管理员产品到普通桥接、正式 MCP SDK 及业务等价性仍须后续集成验收。没有 Default 桌面、真实输入、驱动或性能结论。
+当前验证覆盖独立窗口、产品 Qt6／Qt5 编译及同源维护窗口的正式 SDK 配对；产品启动、通用高级设置／托盘入口的实际操作、管理员产品到普通桥接及业务等价性仍须后续集成验收。没有 Default 桌面、真实输入、驱动或性能结论。
 
 ## 可移植执行入口
 
@@ -26,3 +26,9 @@ python QKeyMapper/tests/mcp_control/test_mcp_control.py --test-exe out/tests/mcp
 Qt5 改用对应 Qt5 的两个 EXE、Qt bin 和独立 output。省略 `--screenshots` 只运行控件／配对测试；截图需要 PowerShell，自动查找 pwsh／powershell，也可显式传 `--powershell`。脚本运行失败返回非零；结果、运行身份及截图为本机材料，不进入 Git。
 
 管理窗口连接框为 `instance.json` 的可复制路径，文件不含配对 key。启用失败或发现信息无法验证时，复选框回到关闭；关闭后实际文件清理也由 IPC 维护用例核对。权限管理当前依赖启用接口，关闭状态下查看／撤销既有配对仍须在开放业务前补齐。
+
+## 正式 SDK 互操作
+
+维护 EXE 的 `--interop-fixture <state-file>` 创建真实管理窗口、启用同源服务，通过固定 Qt 事件批准／拒绝／撤销及注入测试保存失败；状态与事件文件仅在维护进程自有 out 路径使用，产品 EXE 不包含此入口。有限生命周期 180 秒，关闭清理服务；不安装驱动，不发送系统输入。
+
+[桥接回归说明](../../../mcp_bridge/README.md) 中的独立官方 SDK 客户端启动 stdio 桥接，核对实际 native pipe peer／EXE、双向 HMAC、凭据持久化、撤销、拒绝、取消、退出、篡改发现、真实 60 秒批准超时和保存失败。GUI 批准前不得 ready，客户端保存了 key 也不代表服务器授权成功。脚本使用真实私有桌面并核对非提权；该结果不能替代真正管理员产品与普通桥接验收。

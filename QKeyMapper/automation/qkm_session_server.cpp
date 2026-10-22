@@ -3,6 +3,7 @@
 
 #include <QUuid>
 #include <QTimer>
+#include <QJsonArray>
 #include <limits>
 #include <utility>
 
@@ -263,6 +264,18 @@ void AutomationSessionServer::onMessage(const QString &connectionId, const QJson
         return;
     }
     if (!m_handler) {
+        if (method.toString() == QStringLiteral("qkm_get_capabilities")) {
+            if (!message.value(QStringLiteral("arguments")).toObject().isEmpty()) {
+                replyError(connectionId, requestId, QStringLiteral("invalid_arguments"), QStringLiteral("No arguments are accepted."));
+                return;
+            }
+            reply(connectionId, requestId, {{QStringLiteral("interface_version"), HandshakeVersion},
+                {QStringLiteral("instance"), m_listener.instanceId()}, {QStringLiteral("scopes"), int(m_pair.scopes)},
+                {QStringLiteral("stage"), QStringLiteral("transport_only")},
+                {QStringLiteral("business_capabilities"), QJsonArray()},
+                {QStringLiteral("max_frame_bytes"), MaxFramePayload}});
+            return;
+        }
         replyError(connectionId, requestId, QStringLiteral("unsupported_capability"), QStringLiteral("Business capability is not connected."));
         return;
     }

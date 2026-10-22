@@ -4,7 +4,7 @@
 
 ## 当前状态与填写规则
 
-日期：2026-10-22；源码基线：`d49a9f57`。**已建立逐控件入口清单，并追踪首个闭环及代表性设置的关键链路；MCP 能力全部未接入，等价性全部未执行。** 入口清单包含只读显示、编辑暂存和多个入口，不能把条目数当成业务能力数或全量链路完成数。
+日期：2026-10-22；源码基线：`d49a9f57`。**已建立逐控件入口清单，并追踪首个闭环及代表性设置的关键链路；正式 SDK 通信／配对已接，MCP 产品业务能力全部未接入，业务等价性全部未执行。** 入口清单包含只读显示、编辑暂存和多个入口，不能把条目数当成业务能力数或全量链路完成数。
 
 M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维护稳定 ID、作用范围、类型／单位／约束、GUI 事件入口、共用业务操作、实际有效状态／缓存／通知、持久化／生效时机、依赖与风险、阶段、用例及结果。模块行中列出的文件用于导航；未逐项追踪的处理链路明确标为待核对。
 
@@ -12,7 +12,7 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 
 ## 内部通信基础（M1.1a／b／c）
 
-以下是内部组件检查，不是已对外开放的 MCP 能力。产品已链接基础组件并接入默认关闭的管理窗口；正式 SDK／业务尚未开放，业务等价性仍未执行。结果见验证记录 `IPC-20261022-07`／`11`／`12`。
+以下是内部组件及正式 SDK 通信检查，不是完整用户业务能力。产品已链接基础组件并接入默认关闭的管理窗口；正式 SDK 仅提供连接／配对和通信能力发现，业务仍未开放、等价性仍未执行。结果见验证记录 `IPC-20261022-07` 至 `20`。
 
 | ID | 实现及源码 | 已证明范围 | 未证明范围 |
 |---|---|---|---|
@@ -22,9 +22,10 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 | INF-REQUEST-CONTEXT | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：独立原生线程检查已读管道请求 Token，退出后回所属 Qt 线程报告 | 普通／匿名 SQOS、进程／会话绑定、析构回收通过；已接 listener；专用配置故障注入证明恢复失败、长期挂起及关闭交错不会认证或累积替代线程；见 IPC-20261022-12／13 | 故障注入不等于真实 OS API 故障；真正异用户／会话、管理员产品／普通桥接及完整鉴权尚未验收；不能当作业务权限 |
 | INF-AUTH-PROOF | [qkm_auth_proof.cpp](../../QKeyMapper/automation/qkm_auth_proof.cpp)：系统随机、固定格式双向 HMAC-SHA256 和一次性挑战 | 三个方向／用途的固定输入及 MAC 与独立 Python 结果一致；绑定字段逐项变化、版本／类型／长度、32 个错误字节位置、反射／重放／旧 nonce／取消及随机源失败通过；见 IPC-20261022-14 | 证明组件尚未接握手收发、配对凭据或 GUI 授权；不能作为已认证连接或业务权限；没有声称侧信道时序测量通过 |
 | INF-PAIR-STORE | [qkm_pair_store.cpp](../../QKeyMapper/automation/qkm_pair_store.cpp)：类型化权限／凭据、机器与应用绑定、当前用户 DPAPI、私有 ACL、原子保存 | PC-W10 非提权运行，普通 Qt6／Qt5 各 71、故障 Qt6 77 通过；独立进程读取、错误上下文／损坏／非法权限拒绝、只读失败保留原文件、私有目录与硬链接拒绝，见 IPC-20261022-15 | 已接内部控制器与管理窗口；真实异用户／跨机器／高低权限未测，不能算业务授权或完整安全边界；默认执行沙箱不具备可用 DPAPI 环境，运行测试使用获准非提权沙箱外上下文 |
-| INF-SESSION | [qkm_session_server.cpp](../../QKeyMapper/automation/qkm_session_server.cpp)：连接代次、GUI 权威批准入口、证明及保存后 ready、最小权限、代次更新／撤销、分阶段限额 | PC-W10 Qt6／Qt5 各 80，故障 Qt6 与 ASan 各 86；独立进程配对／重连／撤销、迟到批准、错误／反射证明、保存失败、慢帧、处理器禁用／销毁；见 IPC-20261022-16／17 | 仅维护测试调用的内部控制器；产品管理窗口已接；发现、正式 SDK、高低权限待接／待测，不算业务能力或 GUI／MCP 等价性 |
-| INF-GUI | [ControlDialog](../../QKeyMapper/automation/qkm_control_dialog.cpp)、[通用高级设置](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[托盘入口](../../QKeyMapper/qkeymapper.cpp)：本次运行启用、只读默认、实际程序／PID、权限批准、拒绝／撤销、窗口关闭与 Escape | 产品 Qt6／Qt5 构建；私有桌面直接控件事件＋独立认证子进程通过，实际状态／凭据断言；三语言静态图已审阅，详见 IPC-20261022-18 | 维护目标使用同一窗口，不代表实际产品入口／缩放主题／管理员到普通桥接已经验收；发现与 SDK、60 秒 GUI 超时、全部业务等价性仍待验证 |
-| INF-DISCOVERY | [实例发现](../../QKeyMapper/automation/qkm_instance_discovery.cpp)、[共享私有存储](../../QKeyMapper/automation/qkm_private_storage.cpp)、[会话启停](../../QKeyMapper/automation/qkm_session_server.cpp)：私有原子 JSON、活跃文件租约、真实进程／登录／预期 EXE、按句柄清理 | 普通 Qt6／Qt5 各 82、故障 Qt6 88；GUI 各 11；定向 ASan 8 通过；旧／错误／并发／只读及原存储回归，见 IPC-20261022-19 | 只是连接提示，实际管道身份／新证明仍必需；管理员产品与普通桥接、实际异用户、正式 SDK 与 Win11 未测，不算业务能力 |
+| INF-SESSION | [qkm_session_server.cpp](../../QKeyMapper/automation/qkm_session_server.cpp)：连接代次、GUI 权威批准入口、证明及保存后 ready、最小权限、代次更新／撤销、分阶段限额 | IPC-16／17 原组件用例；IPC-20 现普通 Qt6／Qt5 各 83、故障 89；新增 transport_only 能力／参数拒绝／业务未接拒绝 | 产品管理窗口、发现与正式 SDK 已接；实际产品入口／高低权限仍待测，无业务后端，不算业务等价性 |
+| INF-GUI | [ControlDialog](../../QKeyMapper/automation/qkm_control_dialog.cpp)、[通用高级设置](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[托盘入口](../../QKeyMapper/qkeymapper.cpp)：本次运行启用、只读默认、实际程序／PID、权限批准、拒绝／撤销、窗口关闭与 Escape | Qt6／Qt5 产品构建、GUI 各 11；三语言静态图见 IPC-18；正式 SDK 经同源维护窗口事件批准／撤销／60 秒等待见 IPC-20 | 维护目标使用同一窗口，不代表实际产品入口／缩放主题／管理员到普通桥接或全部业务等价性已通过；关闭时管理待补 |
+| INF-DISCOVERY | [实例发现](../../QKeyMapper/automation/qkm_instance_discovery.cpp)、[共享私有存储](../../QKeyMapper/automation/qkm_private_storage.cpp)、[会话启停](../../QKeyMapper/automation/qkm_session_server.cpp)：私有原子 JSON、活跃文件租约、真实进程／登录／预期 EXE、按句柄清理 | IPC-19 普通 82／82、故障 88、GUI 11／11、定向 ASan 8；IPC-20 正式 SDK 再验实际发现／EXE／进程及私有篡改提示拒绝 | 只是连接提示，实际管道身份／新证明仍必需；管理员产品与普通桥接、实际异用户及 Win11 未测，不算业务能力 |
+| INF-SDK | [桥接入口](../../mcp_bridge/src/qkeymapper_mcp/__main__.py)、[连接与证明](../../mcp_bridge/src/qkeymapper_mcp/bridge.py)、[Windows I/O](../../mcp_bridge/src/qkeymapper_mcp/windows.py)、[客户端凭据](../../mcp_bridge/src/qkeymapper_mcp/credentials.py) | 官方 mcp 2.3.0 stdio initialize／list／正式工具往返；Qt6／Qt5 各 12 场景、Python 单测 10，见 IPC-20 和 [运行说明](../../mcp_bridge/README.md) | 当前仅连接状态／配对／重连／断开／真实通信能力查询，业务能力空；打包、管理员产品、异用户、Win11、性能和业务等价性未测 |
 
 ## 初始模块索引
 

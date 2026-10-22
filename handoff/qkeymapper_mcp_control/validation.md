@@ -349,3 +349,32 @@ ASan 使用既有 BuildTools 14.40.33807 完整 kit，Qt6 故障＋asan，EXE ou
 全部运行在获准普通用户上下文、未提权；编辑／构建／分析仍在默认开发沙箱。只读查询确认开发沙箱与交互用户是不同账号，但不把这当成异用户连接拒绝已经实测，不记录账号／SID。交互用户当前 Medium、gsudo 缓存不可用，未启动 UAC；值需下次重新核对。Windows MIC 独立于 DACL，实际管理员产品与普通桥接仍须验收：[Microsoft 文档](https://learn.microsoft.com/en-us/windows/win32/secauthz/mandatory-integrity-control)。本轮未改管道完整性标签。
 
 GUI 只有连接框内容／提示变化，控件布局／字体／三语言呈现沿用 IPC-18 已审阅图；本轮私有桌面断言增加实际发现文件与进程核实，无 Default／真实输入／驱动操作。没有正式 SDK 往返、产品运行、真实高低权限／异用户／Win11、60 秒批准超时、业务／性能结论。关闭状态的配对查看／撤销需在业务开放前补齐。原始材料仅在 out，不随 Git 同步；当前为本地开发检查点，完整 M1 尚未完成。
+
+## IPC-20261022-20：官方 SDK stdio 桥接与原生跨语言配对
+
+源码基线 `6124b35e` 加本切片同提交变更：mcp_bridge 开发入口、固定依赖、严格协议／Windows 发现及实际 peer、精确 FILETIME 身份、可取消原生管道、客户端 DPAPI／Windows 凭据管理器与官方 MCPServer。C++ 只增加无业务回调时的真实通信能力响应，及对应维护 IPC／GUI 夹具。Worker／驱动／个人 INI／TS／正式 manifest 未变。
+
+正式 SDK 初始化／工具枚举在应用不可用时仍可完成；配对调用立即返回等待状态，真实 GUI 事件批准后才握手并 ready。正式工具只有连接状态、连接、申请配对、断开和能力查询；当前 C++ 明确返回 `stage=transport_only`、空业务能力、当前权限及帧限额，不接受未知参数。其他业务未接时拒绝，不开放通用方法／属性／INI／命令入口。
+
+| 检查 | 本轮结果与证据 |
+|---|---|
+| Python 协议／原生单测 | 10 通过，0 失败，0.072 s，exit 0；out/mcp_bridge/unit_tests.log；固定独立 MAC 向量含 uint64 最大值、JSON／NUL 往返与错误 Unicode／重复键／深度／非有限值、规范整数、凭据字段、线程冒用拒绝、有界作业／重复关闭、挑战错误身份／schema／角色反射拒绝 |
+| 正式 SDK＋Qt6 | 12 场景通过，exit 0；out/mcp_bridge/accepted-qt6.log 与 accepted-qt6/results.json；实际私有桌面 ID 在 JSON／fixture.json，父、GUI 及待批准桥接进程 TokenElevation=0 |
+| 正式 SDK＋Qt5 | 同 12 场景通过，exit 0；accepted-qt5.log 与 accepted-qt5/results.json；与 Qt6 相同真实配对及 60 秒场景，独立维护 EXE／私有桌面／凭据目标 |
+| IPC Qt6.8.3 普通 | 83 通过，0 失败／跳过，40,385 ms，exit 0 |
+| IPC Qt5.15.2 普通 | 83 通过，0 失败／跳过，41,270 ms，exit 0 |
+| IPC Qt6 故障 | 89 通过，0 失败／跳过，47,612 ms，exit 0 |
+| GUI Qt6／Qt5 原有控件回归 | 各 11 通过，0 失败／跳过，1,402／8,403 ms，exit 0；out/mcp_bridge/gui-qt6-current／gui-qt5-current/results.txt 及 run_private.json |
+| 产品 Qt6／Qt5 | 标准 out/build_qt6、out/build_qt5_5152 下 release/QKeyMapper.exe 本轮增量构建 exit 0；确实重新编译 qkm_session_server.cpp；Qt6 无编译／链接警告，Qt5 仅既定官方 qtmain 缺 PDB LNK4099；产品未启动 |
+| 定向静态分析 | 三个改动 cpp／八个实际目标编译，16 次 Clang-Tidy／Clazy，所有 native exit 0、项目诊断 0；out/mcp_bridge/static-analysis/summary.txt。覆盖 main、sendinput-lifecycle、IPC 普通／故障和 GUI 的真实 qmake 参数，无新忽略 |
+| 依赖／语法 | Python compileall exit 0；隔离 venv pip check 无损坏依赖；完整冻结 requirements-windows.txt，官方 SDK 2.3.0／pywin32 312，实际运行 Python 3.11.9 |
+
+SDK 场景包括：无应用 initialize／list／call；无凭据时要求配对；GUI 批准前不认证且忙时拒绝能力作业；跨语言 Server／Client MAC 与配对确认；保存客户端 key／新 stdio 进程重连；错误 DPAPI 绑定拒绝且原凭据仍可读；撤销后现有会话断开、旧 key 拒绝且不自动重新配对；GUI 拒绝；待批准取消三秒内完成；stdio 退出五秒内清除待批准；错误预期 EXE；私有但创建时间／远程程序路径／NUL／额外字段被篡改的发现信息，均在申请 GUI 配对前拒绝；真正等待 60 秒仍未批准时失败；服务器存储被故意损坏时，客户端虽已保存 key 仍不能 ready，原损坏服务器文件保留、未增加授权。测试最后只删除自身随机凭据目标、关闭并等待自有私有桌面进程退出。
+
+客户端使用 Windows 凭据管理器本机持久化，再用禁止 UI 的当前用户 DPAPI 加用途／机器／显式发现与 EXE 路径／SessionId 绑定。调查发现 pywin32 CredWrite 要求 Unicode，最初传 bytes 的 TypeError 在客户端保存前触发，服务器未 ready；改为仅把 DPAPI 密文十六进制转成文本。正式 SDK v2 的工具枚举／结构化输出也按固定 SDK 源码修正，不以内部函数或探针结果冒充正式调用成功。初次失败原始记录留在 out/mcp_bridge/interop-qt*-first 等目录／日志；最终通过版本是 accepted-qt6／accepted-qt5，不覆盖失败证据。
+
+IPC 普通／故障 EXE 位于 out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/QKeyMapperMcpIpcTest.exe；构建 build_bridge.log，运行 results_bridge.txt／test_bridge.log，stdout／stderr 空且未提权。新增 sessionTransportCapabilities 通过独立 native 子进程验证空业务能力、未知参数拒绝及未接业务拒绝；原生命周期／安全测试全量回归。GUI EXE 为 out/tests/mcp_control/{qt6-release,qt5-release}/release/QKeyMapperMcpControlTest.exe，构建 build_bridge_final.log；维护固定事件／保存失败夹具不进入产品。产品日志 out/mcp_bridge/product_qt6.log／product_qt5.log，环境 Git ignore 的权限提示不是编译器诊断，未更改个人 Git 配置。编译器、Qt、分析工具沿用 IPC-19 环境。
+
+所有编辑／构建／分析保持默认开发沙箱；需要真实用户 DPAPI 的运行在已授权普通用户上下文且未提权。没有切换输入桌面、Default 焦点、系统键鼠、驱动、个人配置或已有用户凭据操作。UI 本轮无产品布局变化，三语言静态图复用 IPC-18；此项复用不是本轮截图。当前未增加 ASan，IPC-19 仅可用于不变的原生基础；不把它记为新增 Python 桥接的 ASan 验收。
+
+未验证真正产品启动及高级设置／托盘入口、管理员产品到普通桥接／对象 MIC、实际异用户、Win11、打包、性能、映射／设置业务与 GUI／MCP 等价性。M1.1d 只形成通信组件的本地开发检查点，完整 M1 未完成；关闭时配对管理仍须在业务开放前补齐。原始材料均在忽略的 out，本轮随 Git 同步桥接源码、依赖锁、维护夹具及命令；接收 PC 须按本机环境重建并重新配对。
