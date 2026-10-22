@@ -10,15 +10,16 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 
 同一功能存在多个 GUI 入口时，需要列出每个入口及其调用关系。测试必须比较实际数据、派生状态、联动、保存恢复及适用最终效果；不能只核对控件或将请求值原样回显。完成判据以主计划为准。
 
-## 内部通信基础（M1.1a）
+## 内部通信基础（M1.1a／b／c-1）
 
-以下是内部组件检查，不是已对外开放的 MCP 能力。产品尚未链接这些文件；业务能力的 GUI／MCP 等价性状态仍为未执行。结果见验证记录 `IPC-20261022-07`。
+以下是内部组件检查，不是已对外开放的 MCP 能力。产品尚未链接这些文件；业务能力的 GUI／MCP 等价性状态仍为未执行。结果见验证记录 `IPC-20261022-07`／`11`／`12`。
 
 | ID | 实现及源码 | 已证明范围 | 未证明范围 |
 |---|---|---|---|
 | INF-FRAME | [qkm_ipc_frame.cpp](../../QKeyMapper/automation/qkm_ipc_frame.cpp)：大端长度、分段读取、有界 UTF-8 JSON 对象、深度与失败终止 | Qt6.8.3／Qt5.15.2 指定边界用例通过；实际往返保留中文／日文／emoji、转义 NUL，错误不回显旧消息，超限头不分配大载荷 | 首包 schema／版本、读缓存和慢连接见 INF-LISTENER；认证后读写限额、鉴权、速率和业务原子提交由后续层实现 |
-| INF-IDENTITY | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：进程创建时间、主 Token SID／登录／会话及实际管道对端身份 | 两套 Qt 下同机独立进程双方查询通过；请求自报 PID 未被当作身份；合成字段变化及不可读取身份被拒绝 | 管道请求安全上下文／模拟恢复、真正异用户／会话、管理员产品与普通桥接、配对／授权及撤销尚未验证；主 Token 快照不等于完整授权 |
+| INF-IDENTITY | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：进程创建时间、主 Token SID／登录／会话及实际管道对端身份 | 两套 Qt 下同机独立进程双方查询通过；请求自报 PID 未被当作身份；合成字段变化及不可读取身份被拒绝 | 请求上下文组件见 INF-REQUEST-CONTEXT；完整集成／异常恢复、真正异用户／会话、管理员产品与普通桥接、配对／授权及撤销尚未验收；主 Token 快照不等于完整授权 |
 | INF-LISTENER | [qkm_local_listener.cpp](../../QKeyMapper/automation/qkm_local_listener.cpp)：默认关闭的原生单实例管道、Qt 接管与清理、严格首包、绝对期限 | PC-W10 两套 Qt 实测启停／挂起 accept 取消／重连／异常退出／重启交错；实际 DACL 与 4100 字节读缓存、3000 ms 非延长期限、错误版本／实例／字段及未认证业务请求拒绝；见 IPC-20261022-11 | 仅内部预认证入口，无产品监听／凭据／ready／业务分发；完整请求 Token、配对／证明／撤销及认证后限额待 M1.1c；不等于 MCP 业务能力或 GUI 等价性 |
+| INF-REQUEST-CONTEXT | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：独立原生线程检查已读管道请求 Token，退出后回所属 Qt 线程报告 | PC-W10 两套 Qt 下普通请求、匿名 SQOS 拒绝、过期进程／会话、重复／复用、调用线程 Token 不变、检查对象提前析构及句柄回收用例通过；见 IPC-20261022-12 | 组件尚未接入 listener；集成必须限定总在途数／期限及关闭回调，恢复 API 自身失败、真正异用户／会话和完整鉴权尚未验收；不能当作业务权限 |
 
 ## 初始模块索引
 

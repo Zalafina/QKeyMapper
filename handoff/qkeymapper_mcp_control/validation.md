@@ -175,3 +175,24 @@ Qt5 首次完整运行是 **28 通过、1 失败**：合法字符串中内嵌 NU
 定向分析：`qkm_local_listener.cpp` 和受影响维护测试各执行 Clang-Tidy／Clazy（LLVM 22.1.8、Clazy 1.16、原有规则），最终全部 native exit 0、项目诊断 0，记录在 `out/tests/mcp_ipc/static-analysis-listener-final/`。初始测试中通过 `QVERIFY(pointer)` 后的解引用被分析器报告潜在空指针，改为显式空分支 `QFAIL`，保留实际失败断言，不添加规则豁免；初始记录在 `static-analysis-listener/`。工具库存断言从三个改为四个真实源文件，报告门禁回归通过：`static_analysis_listener_regression.log`，明细 `out/tests/static_analysis/7c8cbbdff4204bec8352617011e45dd1/`；其中的故意非零／诊断不算真实 C++ 分析失败。
 
 本切片不创建窗口、不占用 Default／焦点或键鼠、不加载个人配置、不触发驱动。未执行产品构建、ASan、Win11、真实异用户／会话／远程客户端、普通桥接到管理员产品、请求线程 Token／模拟恢复、配对／证明／撤销、MCP SDK、GUI 等价性或性能验收。`handshakeReceived` 仅表示首包和进程主 Token 初检，不能记为身份认证成功或可用 MCP 能力；后续桥接还须对接受连接准备期间的忙／断线进行有界重试。
+
+## IPC-20261022-12：M1.1c-1 隔离线程的请求安全上下文检查
+
+- 基线：`0deeea86` 加 `qkm_local_identity.*`、维护测试和本切片说明。组件仍只由维护测试编译；产品工程、GUI、Worker、驱动、翻译和个人配置未改。共用 Token 字段提取从原进程查询中局部抽出，原进程身份及 listener 回归继续在同一目标执行。
+- `PipeRequestVerifier` 在读取消息之后，复制管道 HANDLE，使用 `_beginthreadex` 的独立短线程。核对真实对端 PID／创建时间／主 Token，确认该工作线程原本没有模拟身份；调用 `ImpersonateNamedPipeClient`，仅查询请求 Token 的用户 SID、logon SID、AuthenticationId、SessionId；全部读取路径由作用域守卫执行 `RevertToSelf`，正常返回前再次确认没有线程 Token、实际对端未变。Token 提取先清空原 logon SID，不能把缺失请求组信息误当成进程旧值。
+- 工作线程不运行 QObject、事件循环、信号或业务回调；失败返回空身份。恢复失败返回 `ContextRestoreFailed`，不继续查询或执行应用动作；结果只有在 Windows 线程退出后才发布。线程隔离旨在防止异常恢复影响 GUI 线程，并不将恢复 API 自身失败写成已测；这是依据 Windows 线程身份范围作出的实现选择，集成时该错误还须关闭认证入口，不能忽略错误继续。
+- 依据：[ImpersonateNamedPipeClient](https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-impersonatenamedpipeclient) 读取最近已读消息的安全上下文；[RevertToSelf](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-reverttoself) 的失败不得继续以客户端身份工作；[线程句柄生命周期](https://learn.microsoft.com/en-us/windows/win32/procthread/creating-threads)。析构仅注销 notifier／关闭线程 HANDLE，工作线程通过独立共享数据保留复制管道，结束时自行释放，不等待／强杀线程，不访问已销毁 QObject。
+
+| 用例 | 实测 |
+|---|---|
+| 普通独立进程的请求 Token | 每套 Qt 三次复用检查均通过；结果与真实客户端进程一致，回调在调用 Qt 线程，调用线程没有获得客户端 Token |
+| 匿名 SQOS | 对端主 Token 仍可查询，但请求 Token 不可识别时返回 `RequestUnavailable` 和空身份；读取失败后的恢复检查通过 |
+| 过期进程／会话预期 | 分别改变创建时间、SessionId，明确拒绝；没有实际创建异登录会话或另一个用户 |
+| 无效／重复调用 | 空／无效管道、空预期身份不启动；每对象已有检查时不启动第二个；完成后可复用 |
+| 提前销毁 | 32 次启动后立即析构检查对象，客户端退出、listener 停止后，等待原管道不再存在；无晚到回调，无遗留管道引用或子进程 |
+
+Qt6.8.3／Qt5.15.2 x64 console Release／asInvoker，原 EXE 路径不变，已重新 qmake 和编译新增 meta-object 输入。最终构建均 native exit 0、零编译／链接警告；两套维护测试 **各 59 通过、0 失败、0 跳过**，退出 0、stderr 空；Qt6 18,035 ms、Qt5 19,056 ms。证据分别为 `out/tests/mcp_ipc/{qt6-release,qt5-release}/{configure_request.log,build_request.log,results_request.txt,test_request.log}`。40 秒外部看门狗。
+
+实际定向 Clang-Tidy／Clazy 对受影响 `qkm_local_identity.cpp` 和测试执行，全部 native exit 0、项目诊断 0，见 `out/tests/mcp_ipc/static-analysis-request/`；新增代码没有增加源文件／目标数量，前一切片的工具库存及报告回归未变化，复用 IPC-11 的维护回归证据。最终运行后仅补身份头文件的线程使用约束注释和文档，不改变有效测试输入。
+
+边界：组件尚未在 listener 内强制调用；下一步须将它纳入认证状态机，限制整个 listener 的在途检查数量和期限，处理停止／断开／重启时尚未完成的检查及过期回调，再接配对证明。没有注入 `RevertToSelf` 失败、内存／线程创建失败或检查长期不返回；这些分支只完成安全路径审查，不能作为已运行恢复验收。未执行产品／ASan／Win11／管理员连接、配对、MCP SDK、业务或 GUI／MCP 等价性测试；不创建窗口，不操作键鼠、驱动或 Default 焦点。

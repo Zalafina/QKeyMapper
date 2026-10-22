@@ -115,7 +115,8 @@ int runListenerClient(const QStringList &arguments)
         | FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE;
     HANDLE handle = CreateFileW(reinterpret_cast<LPCWSTR>(arguments.at(2).utf16()), access,
         0, nullptr, OPEN_EXISTING,
-        FILE_FLAG_OVERLAPPED | SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, nullptr);
+        FILE_FLAG_OVERLAPPED | SECURITY_SQOS_PRESENT
+            | (arguments.at(6) == QStringLiteral("anonymous") ? SECURITY_ANONYMOUS : SECURITY_IDENTIFICATION), nullptr);
     if (handle == INVALID_HANDLE_VALUE) return 21;
     auto close = qScopeGuard([handle]() { CloseHandle(handle); });
     const IdentityResult peer = queryPipePeerIdentity(handle, PipeSide::Client);
@@ -246,6 +247,9 @@ private slots:
     void listenerDeadline();
     void listenerDisconnectAndReentry();
     void listenerSecondMessage();
+    void requestContext_data();
+    void requestContext();
+    void requestContextDisposal();
 };
 
 void McpIpcTest::roundTrip_data()
@@ -837,6 +841,102 @@ void McpIpcTest::listenerSecondMessage()
     QCOMPARE(received, 1);
     QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
     QCOMPARE(child.exitCode(), 0);
+}
+
+void McpIpcTest::requestContext_data()
+{
+    QTest::addColumn<QString>("kind");
+    for (const char *kind : {"normal", "anonymous", "changed-process", "changed-session"})
+        QTest::newRow(kind) << QString::fromLatin1(kind);
+}
+
+void McpIpcTest::requestContext()
+{
+    QFETCH(QString, kind);
+    LocalPipeListener listener;
+    ProcessIdentity peer;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this,
+        [&](const QJsonObject &, const ProcessIdentity &identity) { peer = identity; });
+    QVERIFY(listener.start());
+    ListenerChild child;
+    QVERIFY(child.launch(listener, kind == QStringLiteral("anonymous") ? kind : QStringLiteral("hello")));
+    QTRY_VERIFY_WITH_TIMEOUT(peer.isValid(), 3000);
+    const auto sockets = listener.findChildren<QLocalSocket *>();
+    QCOMPARE(sockets.size(), 1);
+    const HANDLE pipe = reinterpret_cast<HANDLE>(sockets.first()->socketDescriptor());
+    ProcessIdentity expected = peer;
+    if (kind == QStringLiteral("changed-process")) ++expected.creationTime;
+    if (kind == QStringLiteral("changed-session")) ++expected.sessionId;
+    PipeRequestVerifier verifier;
+    QVERIFY(!verifier.isRunning());
+    QVERIFY(!verifier.start(INVALID_HANDLE_VALUE, expected));
+    QVERIFY(!verifier.start(nullptr, expected));
+    QVERIFY(!verifier.start(pipe, {}));
+    int done = 0;
+    DWORD callbackThread = 0;
+    IdentityResult result;
+    connect(&verifier, &PipeRequestVerifier::finished, this, [&](const IdentityResult &identity) {
+        ++done;
+        callbackThread = GetCurrentThreadId();
+        result = identity;
+    });
+    HANDLE originalToken = nullptr;
+    QVERIFY(!OpenThreadToken(GetCurrentThread(), TOKEN_QUERY, TRUE, &originalToken));
+    QCOMPARE(GetLastError(), DWORD(ERROR_NO_TOKEN));
+    for (int i = 0; i < 3; ++i) {
+        QVERIFY(verifier.start(pipe, expected));
+        QVERIFY(verifier.isRunning());
+        QVERIFY(!verifier.start(pipe, expected));
+        QTRY_COMPARE_WITH_TIMEOUT(done, i + 1, 3000);
+        QVERIFY(!verifier.isRunning());
+        QCOMPARE(callbackThread, GetCurrentThreadId());
+        if (kind == QStringLiteral("normal")) {
+            QCOMPARE(result.error, IdentityError::None);
+            QVERIFY(result.ok());
+            QVERIFY(sameProcess(result.identity, peer));
+        } else {
+            QVERIFY(!result.ok());
+            QVERIFY(!result.identity.isValid());
+            QCOMPARE(result.error, kind == QStringLiteral("anonymous")
+                ? IdentityError::RequestUnavailable : IdentityError::RequestMismatch);
+        }
+        QVERIFY(!OpenThreadToken(GetCurrentThread(), TOKEN_QUERY, TRUE, &originalToken));
+        QCOMPARE(GetLastError(), DWORD(ERROR_NO_TOKEN));
+    }
+    listener.closeClient();
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(child.exitCode(), 0);
+}
+
+void McpIpcTest::requestContextDisposal()
+{
+    LocalPipeListener listener;
+    ProcessIdentity peer;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this,
+        [&](const QJsonObject &, const ProcessIdentity &identity) { peer = identity; });
+    QVERIFY(listener.start());
+    const QString name = listener.pipeName();
+    ListenerChild child;
+    QVERIFY(child.launch(listener, QStringLiteral("hello")));
+    QTRY_VERIFY_WITH_TIMEOUT(peer.isValid(), 3000);
+    const auto sockets = listener.findChildren<QLocalSocket *>();
+    QCOMPARE(sockets.size(), 1);
+    const HANDLE pipe = reinterpret_cast<HANDLE>(sockets.first()->socketDescriptor());
+    int callbacks = 0;
+    for (int i = 0; i < 32; ++i) {
+        PipeRequestVerifier verifier;
+        connect(&verifier, &PipeRequestVerifier::finished, this, [&]() { ++callbacks; });
+        QVERIFY(verifier.start(pipe, peer));
+    }
+    listener.stop();
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(child.exitCode(), 0);
+    const auto gone = [&]() {
+        return !WaitNamedPipeW(reinterpret_cast<LPCWSTR>(name.utf16()), NMPWAIT_NOWAIT)
+            && GetLastError() == ERROR_FILE_NOT_FOUND;
+    };
+    QTRY_VERIFY_WITH_TIMEOUT(gone(), 3000);
+    QCOMPARE(callbacks, 0);
 }
 
 int main(int argc, char **argv)
