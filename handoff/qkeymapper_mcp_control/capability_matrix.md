@@ -16,8 +16,9 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 
 | ID | 实现及源码 | 已证明范围 | 未证明范围 |
 |---|---|---|---|
-| INF-FRAME | [qkm_ipc_frame.cpp](../../QKeyMapper/automation/qkm_ipc_frame.cpp)：大端长度、分段读取、有界 UTF-8 JSON 对象、深度与失败终止 | Qt6.8.3／Qt5.15.2 指定边界用例通过；实际往返保留中文／日文／emoji、转义 NUL，错误不回显旧消息，超限头不分配大载荷 | 正式 socket 读写缓存限额、慢连接、命令 schema、版本、鉴权、速率和业务原子提交由后续层实现 |
+| INF-FRAME | [qkm_ipc_frame.cpp](../../QKeyMapper/automation/qkm_ipc_frame.cpp)：大端长度、分段读取、有界 UTF-8 JSON 对象、深度与失败终止 | Qt6.8.3／Qt5.15.2 指定边界用例通过；实际往返保留中文／日文／emoji、转义 NUL，错误不回显旧消息，超限头不分配大载荷 | 首包 schema／版本、读缓存和慢连接见 INF-LISTENER；认证后读写限额、鉴权、速率和业务原子提交由后续层实现 |
 | INF-IDENTITY | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：进程创建时间、主 Token SID／登录／会话及实际管道对端身份 | 两套 Qt 下同机独立进程双方查询通过；请求自报 PID 未被当作身份；合成字段变化及不可读取身份被拒绝 | 管道请求安全上下文／模拟恢复、真正异用户／会话、管理员产品与普通桥接、配对／授权及撤销尚未验证；主 Token 快照不等于完整授权 |
+| INF-LISTENER | [qkm_local_listener.cpp](../../QKeyMapper/automation/qkm_local_listener.cpp)：默认关闭的原生单实例管道、Qt 接管与清理、严格首包、绝对期限 | PC-W10 两套 Qt 实测启停／挂起 accept 取消／重连／异常退出／重启交错；实际 DACL 与 4100 字节读缓存、3000 ms 非延长期限、错误版本／实例／字段及未认证业务请求拒绝；见 IPC-20261022-11 | 仅内部预认证入口，无产品监听／凭据／ready／业务分发；完整请求 Token、配对／证明／撤销及认证后限额待 M1.1c；不等于 MCP 业务能力或 GUI 等价性 |
 
 ## 初始模块索引
 

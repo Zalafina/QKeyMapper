@@ -1,5 +1,6 @@
 #include "../../automation/qkm_ipc_frame.h"
 #include "../../automation/qkm_local_identity.h"
+#include "../../automation/qkm_local_listener.h"
 
 #include <QBuffer>
 #include <QCoreApplication>
@@ -13,6 +14,7 @@
 #include <QTimer>
 #include <QUuid>
 #include <QtEndian>
+#include <aclapi.h>
 #include <sddl.h>
 #include <limits>
 
@@ -91,6 +93,121 @@ int runPipeClient(const QStringList &arguments)
     return 0;
 }
 
+QJsonObject helloMessage(const QString &instance, bool pairing)
+{
+    QJsonObject message{{QStringLiteral("version"), HandshakeVersion},
+                        {QStringLiteral("instance"), instance},
+                        {QStringLiteral("client_nonce"), QString(64, QLatin1Char('a'))}};
+    if (pairing) {
+        message.insert(QStringLiteral("type"), QStringLiteral("pair.request"));
+        message.insert(QStringLiteral("client_name"), QStringLiteral("测试客户端 日本語"));
+    } else {
+        message.insert(QStringLiteral("type"), QStringLiteral("hello"));
+        message.insert(QStringLiteral("pair_id"), QString(32, QLatin1Char('b')));
+    }
+    return message;
+}
+
+int runListenerClient(const QStringList &arguments)
+{
+    if (arguments.size() != 7) return 20;
+    const DWORD access = FILE_READ_DATA | FILE_WRITE_DATA | FILE_READ_EA | FILE_WRITE_EA
+        | FILE_READ_ATTRIBUTES | FILE_WRITE_ATTRIBUTES | READ_CONTROL | SYNCHRONIZE;
+    HANDLE handle = CreateFileW(reinterpret_cast<LPCWSTR>(arguments.at(2).utf16()), access,
+        0, nullptr, OPEN_EXISTING,
+        FILE_FLAG_OVERLAPPED | SECURITY_SQOS_PRESENT | SECURITY_IDENTIFICATION, nullptr);
+    if (handle == INVALID_HANDLE_VALUE) return 21;
+    auto close = qScopeGuard([handle]() { CloseHandle(handle); });
+    const IdentityResult peer = queryPipePeerIdentity(handle, PipeSide::Client);
+    const IdentityResult own = queryProcessIdentity(GetCurrentProcessId());
+    if (!peer.ok() || !own.ok() || !sameLogonSession(peer.identity, own.identity)
+        || peer.identity.processId != arguments.at(4).toUInt()
+        || peer.identity.creationTime != arguments.at(5).toULongLong()) return 22;
+    QLocalSocket socket;
+    socket.setReadBufferSize(MaxHandshakePayload + 4);
+    if (!socket.setSocketDescriptor(reinterpret_cast<qintptr>(handle))) return 23;
+    close.dismiss();
+    const QString kind = arguments.at(6);
+    QJsonObject message = helloMessage(arguments.at(3), kind == QStringLiteral("pair"));
+    if (kind == QStringLiteral("version")) message.insert(QStringLiteral("version"), 2);
+    if (kind == QStringLiteral("version-string")) message.insert(QStringLiteral("version"), QStringLiteral("1"));
+    if (kind == QStringLiteral("instance")) message.insert(QStringLiteral("instance"), QString(32, QLatin1Char('0')));
+    if (kind == QStringLiteral("unknown")) message.insert(QStringLiteral("confirmed"), true);
+    if (kind == QStringLiteral("missing")) message.remove(QStringLiteral("client_nonce"));
+    if (kind == QStringLiteral("nonce")) message.insert(QStringLiteral("client_nonce"), QString(64, QLatin1Char('A')));
+    if (kind == QStringLiteral("pair-id")) message.insert(QStringLiteral("pair_id"), 1);
+    if (kind == QStringLiteral("business")) message.insert(QStringLiteral("type"), QStringLiteral("qkm_apply_changes"));
+    if (kind == QStringLiteral("name-control") || kind == QStringLiteral("name-long")) {
+        message = helloMessage(arguments.at(3), true);
+        message.insert(QStringLiteral("client_name"), kind == QStringLiteral("name-control")
+            ? QString::fromUtf8("x\0y", 3) : QString(81, QLatin1Char('x')));
+    }
+    FrameError error;
+    QByteArray bytes = encodeFrame(message, MaxHandshakePayload, error);
+    if (error != FrameError::None) return 24;
+    if (kind == QStringLiteral("oversize")) bytes = QByteArray::fromHex("00001001");
+    if (kind == QStringLiteral("invalid-json")) bytes = rawFrame("{\"x\":}");
+    if (kind == QStringLiteral("invalid-utf8")) bytes = rawFrame(QByteArray::fromHex("ff"));
+    if (kind == QStringLiteral("truncated")) bytes = bytes.left(2);
+    if (kind == QStringLiteral("coalesced")) bytes += rawFrame("{\"type\":\"qkm_apply_changes\"}");
+    if (kind == QStringLiteral("flood")) bytes = QByteArray::fromHex("00001001") + QByteArray(65536, 'x');
+    if (kind == QStringLiteral("idle") || kind == QStringLiteral("trickle")) bytes.clear();
+    if (!bytes.isEmpty()) {
+        if (socket.write(bytes) != bytes.size()) return 25;
+        socket.flush();
+    }
+    QTimer trickle;
+    QTimer extraMessage;
+    extraMessage.setSingleShot(true);
+    if (kind == QStringLiteral("second-message")) {
+        QObject::connect(&extraMessage, &QTimer::timeout, &socket, [&socket]() {
+            socket.write(rawFrame("{\"type\":\"qkm_apply_changes\"}"));
+            socket.flush();
+        });
+        extraMessage.start(250);
+    }
+    if (kind == QStringLiteral("trickle")) {
+        QObject::connect(&trickle, &QTimer::timeout, &socket, [&socket]() {
+            socket.write("\0", 1);
+            socket.flush();
+        });
+        // A valid incomplete 4096-byte frame: periodic traffic must not extend the deadline.
+        socket.write(QByteArray::fromHex("00001000"));
+        socket.flush();
+        trickle.start(200);
+    }
+    QEventLoop loop;
+    QTimer watchdog;
+    watchdog.setSingleShot(true);
+    QObject::connect(&socket, &QLocalSocket::disconnected, &loop, &QEventLoop::quit);
+    QObject::connect(&watchdog, &QTimer::timeout, &loop, &QEventLoop::quit);
+    if (socket.state() != QLocalSocket::UnconnectedState) {
+        watchdog.start(6000);
+        loop.exec();
+    }
+    return socket.state() == QLocalSocket::UnconnectedState && socket.bytesAvailable() == 0 ? 0 : 26;
+}
+
+class ListenerChild : public QProcess {
+public:
+    bool launch(const LocalPipeListener &listener, const QString &kind)
+    {
+        const IdentityResult own = queryProcessIdentity(GetCurrentProcessId());
+        if (!own.ok()) return false;
+        start(QCoreApplication::applicationFilePath(), {QStringLiteral("--listener-client"),
+            listener.pipeName(), listener.instanceId(), QString::number(GetCurrentProcessId()),
+            QString::number(own.identity.creationTime), kind});
+        return waitForStarted(3000);
+    }
+    ~ListenerChild() override
+    {
+        if (state() != NotRunning) {
+            kill();
+            waitForFinished(3000);
+        }
+    }
+};
+
 class FailingDevice : public QIODevice {
 public:
     FailingDevice() { open(QIODevice::ReadOnly | QIODevice::Unbuffered); }
@@ -120,6 +237,15 @@ private slots:
     void identityMismatch();
     void unavailableIdentity();
     void crossProcessPipe();
+    void listenerLifecycle();
+    void listenerHandshake_data();
+    void listenerHandshake();
+    void listenerReject_data();
+    void listenerReject();
+    void listenerDeadline_data();
+    void listenerDeadline();
+    void listenerDisconnectAndReentry();
+    void listenerSecondMessage();
 };
 
 void McpIpcTest::roundTrip_data()
@@ -245,10 +371,10 @@ void McpIpcTest::payloadLimits()
         tooLarge.insert(QStringLiteral("x"), QString(limit - 7, QLatin1Char('x')));
         QVERIFY(encodeFrame(tooLarge, limit, error).isEmpty());
         QCOMPARE(error, FrameError::TooLarge);
-        FrameReader small(limit);
+        FrameReader limitedReader(limit);
         const QByteArray header = rawFrame(QByteArray(limit + 1, ' ')).left(4);
-        QCOMPARE(feed(small, header, decoded), FrameReadResult::Failed);
-        QCOMPARE(small.error(), FrameError::TooLarge);
+        QCOMPARE(feed(limitedReader, header, decoded), FrameReadResult::Failed);
+        QCOMPARE(limitedReader.error(), FrameError::TooLarge);
     }
     for (int limit : {-1, 0, MaxFramePayload + 1}) {
         FrameReader reader(limit);
@@ -467,11 +593,259 @@ void McpIpcTest::crossProcessPipe()
     QVERIFY(!queryProcessIdentity(childPid).ok());
 }
 
+void McpIpcTest::listenerLifecycle()
+{
+    LocalPipeListener listener;
+    QVERIFY(!listener.isListening());
+    QVERIFY(listener.pipeName().isEmpty());
+    QVERIFY(listener.instanceId().isEmpty());
+    listener.stop();
+    QString previous;
+    for (int i = 0; i < 20; ++i) {
+        QVERIFY(listener.start());
+        QVERIFY(listener.isListening());
+        QVERIFY(listener.instanceId() != previous);
+        previous = listener.instanceId();
+        const QString name = listener.pipeName();
+        QVERIFY(listener.start());
+        QCOMPARE(listener.pipeName(), name);
+        listener.stop();
+        QVERIFY(!listener.isListening());
+        QVERIFY(listener.pipeName().isEmpty());
+        HANDLE gone = CreateFileW(reinterpret_cast<LPCWSTR>(name.utf16()), FILE_READ_DATA,
+                                   0, nullptr, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, nullptr);
+        const DWORD error = GetLastError();
+        if (gone != INVALID_HANDLE_VALUE) CloseHandle(gone);
+        QCOMPARE(gone, INVALID_HANDLE_VALUE);
+        QCOMPARE(error, DWORD(ERROR_FILE_NOT_FOUND));
+        QCoreApplication::processEvents();
+    }
+    { LocalPipeListener pending; QVERIFY(pending.start()); }
+    QCoreApplication::processEvents();
+}
+
+void McpIpcTest::listenerHandshake_data()
+{
+    QTest::addColumn<QString>("kind");
+    QTest::newRow("hello") << QStringLiteral("hello");
+    QTest::newRow("pair") << QStringLiteral("pair");
+}
+
+void McpIpcTest::listenerHandshake()
+{
+    QFETCH(QString, kind);
+    LocalPipeListener listener;
+    int received = 0, failures = 0;
+    ProcessIdentity peer;
+    QJsonObject hello;
+    connect(&listener, &LocalPipeListener::failed, this, [&]() { ++failures; });
+    connect(&listener, &LocalPipeListener::handshakeReceived, this,
+        [&](const QJsonObject &message, const ProcessIdentity &identity) {
+            ++received;
+            hello = message;
+            peer = identity;
+        });
+    QVERIFY(listener.start());
+    const QString name = listener.pipeName();
+    for (int i = 0; i < 4; ++i) {
+        ListenerChild child;
+        QVERIFY(child.launch(listener, kind));
+        QTRY_COMPARE_WITH_TIMEOUT(received, i + 1, 3000);
+        QCOMPARE(hello, helloMessage(listener.instanceId(), kind == QStringLiteral("pair")));
+        const IdentityResult actual = queryProcessIdentity(static_cast<quint32>(child.processId()));
+        QVERIFY(actual.ok());
+        QVERIFY(sameProcess(peer, actual.identity));
+        const auto sockets = listener.findChildren<QLocalSocket *>();
+        QLocalSocket *active = nullptr;
+        for (QLocalSocket *socket : sockets) {
+            if (socket->state() == QLocalSocket::ConnectedState) active = socket;
+        }
+        if (!active) QFAIL("No connected server socket");
+        QCOMPARE(active->readBufferSize(), qint64(MaxHandshakePayload + 4));
+        QCOMPARE(active->bytesToWrite(), qint64(0));
+        PSECURITY_DESCRIPTOR security = nullptr;
+        PACL dacl = nullptr;
+        QCOMPARE(GetSecurityInfo(reinterpret_cast<HANDLE>(active->socketDescriptor()),
+            SE_FILE_OBJECT, DACL_SECURITY_INFORMATION, nullptr, nullptr, &dacl, nullptr,
+            &security), DWORD(ERROR_SUCCESS));
+        const auto freeSecurity = qScopeGuard([security]() { LocalFree(security); });
+        SECURITY_DESCRIPTOR_CONTROL control = 0;
+        DWORD revision = 0;
+        QVERIFY(GetSecurityDescriptorControl(security, &control, &revision));
+        QVERIFY(control & SE_DACL_PROTECTED);
+        QVERIFY(dacl && dacl->AceCount == 1);
+        void *rawAce = nullptr;
+        QVERIFY(GetAce(dacl, 0, &rawAce));
+        const auto *ace = static_cast<const ACCESS_ALLOWED_ACE *>(rawAce);
+        QCOMPARE(ace->Header.AceType, BYTE(ACCESS_ALLOWED_ACE_TYPE));
+        QCOMPARE(ace->Mask, DWORD(0x0012019b));
+        const auto own = queryProcessIdentity(GetCurrentProcessId());
+        QVERIFY(own.ok());
+        QVERIFY(EqualSid(const_cast<DWORD *>(&ace->SidStart), const_cast<char *>(own.identity.logonSid.constData())));
+        listener.closeClient();
+        QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+        QCOMPARE(child.exitStatus(), QProcess::NormalExit);
+        QCOMPARE(child.exitCode(), 0);
+        QVERIFY(child.readAllStandardError().isEmpty());
+        QCOMPARE(listener.pipeName(), name);
+        HANDLE takeover = CreateNamedPipeW(reinterpret_cast<LPCWSTR>(name.utf16()),
+            PIPE_ACCESS_DUPLEX | FILE_FLAG_FIRST_PIPE_INSTANCE, PIPE_TYPE_BYTE, 1, 4096,
+            4096, 1000, nullptr);
+        const DWORD error = GetLastError();
+        if (takeover != INVALID_HANDLE_VALUE) CloseHandle(takeover);
+        QCOMPARE(takeover, INVALID_HANDLE_VALUE);
+        QCOMPARE(error, DWORD(ERROR_ACCESS_DENIED));
+    }
+    QCOMPARE(failures, 0);
+}
+
+void McpIpcTest::listenerReject_data()
+{
+    QTest::addColumn<QString>("kind");
+    QTest::addColumn<int>("reason");
+    for (const char *kind : {"version", "version-string", "instance", "unknown", "missing",
+                            "nonce", "pair-id", "business", "name-control", "name-long", "coalesced"})
+        QTest::newRow(kind) << QString::fromLatin1(kind) << int(ListenerError::InvalidHandshake);
+    for (const char *kind : {"oversize", "invalid-json", "invalid-utf8", "flood"})
+        QTest::newRow(kind) << QString::fromLatin1(kind) << int(ListenerError::InvalidFrame);
+}
+
+void McpIpcTest::listenerReject()
+{
+    QFETCH(QString, kind);
+    QFETCH(int, reason);
+    LocalPipeListener listener;
+    int received = 0, failures = 0;
+    QList<ListenerError> closed;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this, [&]() { ++received; });
+    connect(&listener, &LocalPipeListener::clientClosed, this, [&](ListenerError e) { closed.append(e); });
+    connect(&listener, &LocalPipeListener::failed, this, [&]() { ++failures; });
+    QVERIFY(listener.start());
+    ListenerChild child;
+    QVERIFY(child.launch(listener, kind));
+    QTRY_COMPARE_WITH_TIMEOUT(closed.size(), 1, 3000);
+    QCOMPARE(int(closed.first()), reason);
+    // A byte stream may deliver the valid first frame before the coalesced second frame.
+    if (kind == QStringLiteral("coalesced")) QVERIFY(received <= 1);
+    else QCOMPARE(received, 0);
+    QCOMPARE(failures, 0);
+    QVERIFY(listener.isListening());
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(child.exitStatus(), QProcess::NormalExit);
+    QCOMPARE(child.exitCode(), 0);
+    QVERIFY(child.readAllStandardError().isEmpty());
+    ListenerChild reconnect;
+    const int before = received;
+    QVERIFY(reconnect.launch(listener, QStringLiteral("hello")));
+    QTRY_COMPARE_WITH_TIMEOUT(received, before + 1, 3000);
+    listener.closeClient();
+    QTRY_COMPARE_WITH_TIMEOUT(reconnect.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(reconnect.exitCode(), 0);
+}
+
+void McpIpcTest::listenerDeadline_data()
+{
+    QTest::addColumn<QString>("kind");
+    for (const char *kind : {"idle", "trickle", "truncated", "hello"})
+        QTest::newRow(kind) << QString::fromLatin1(kind);
+}
+
+void McpIpcTest::listenerDeadline()
+{
+    QFETCH(QString, kind);
+    LocalPipeListener listener;
+    QList<ListenerError> closed;
+    int received = 0;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this, [&]() { ++received; });
+    connect(&listener, &LocalPipeListener::clientClosed, this, [&](ListenerError e) { closed.append(e); });
+    QVERIFY(listener.start());
+    ListenerChild child;
+    QElapsedTimer elapsed;
+    elapsed.start();
+    QVERIFY(child.launch(listener, kind));
+    QTRY_COMPARE_WITH_TIMEOUT(closed.size(), 1, PreauthTimeoutMs + 1500);
+    QCOMPARE(closed.first(), ListenerError::Timeout);
+    QVERIFY(elapsed.elapsed() >= PreauthTimeoutMs);
+    QVERIFY(elapsed.elapsed() < PreauthTimeoutMs + 1500);
+    QCOMPARE(received, kind == QStringLiteral("hello") ? 1 : 0);
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(child.exitCode(), 0);
+}
+
+void McpIpcTest::listenerDisconnectAndReentry()
+{
+    LocalPipeListener listener;
+    int received = 0, closed = 0, failures = 0;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this, [&]() { ++received; });
+    connect(&listener, &LocalPipeListener::clientClosed, this, [&]() { ++closed; });
+    connect(&listener, &LocalPipeListener::failed, this, [&]() { ++failures; });
+    QVERIFY(listener.start());
+    {
+        ListenerChild child;
+        QVERIFY(child.launch(listener, QStringLiteral("hello")));
+        QTRY_COMPARE_WITH_TIMEOUT(received, 1, 3000);
+        child.kill();
+        QVERIFY(child.waitForFinished(3000));
+        QTRY_COMPARE_WITH_TIMEOUT(closed, 1, 3000);
+    }
+    const auto stopOnHello = connect(&listener, &LocalPipeListener::handshakeReceived,
+        this, [&]() { listener.stop(); });
+    {
+        ListenerChild child;
+        QVERIFY(child.launch(listener, QStringLiteral("pair")));
+        QTRY_COMPARE_WITH_TIMEOUT(received, 2, 3000);
+        QVERIFY(!listener.isListening());
+        QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+        QCOMPARE(child.exitCode(), 0);
+    }
+    disconnect(stopOnHello);
+    QVERIFY(listener.start());
+    {
+        ListenerChild child;
+        QVERIFY(child.launch(listener, QStringLiteral("hello")));
+        QTRY_COMPARE_WITH_TIMEOUT(received, 3, 3000);
+        listener.closeClient();
+        listener.stop();
+        QVERIFY(listener.start());
+        QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+        QCOMPARE(child.exitCode(), 0);
+    }
+    {
+        ListenerChild child;
+        QVERIFY(child.launch(listener, QStringLiteral("hello")));
+        QTRY_COMPARE_WITH_TIMEOUT(received, 4, 3000);
+        listener.closeClient();
+        QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+        QCOMPARE(child.exitCode(), 0);
+    }
+    QCOMPARE(failures, 0);
+}
+
+void McpIpcTest::listenerSecondMessage()
+{
+    LocalPipeListener listener;
+    int received = 0;
+    QList<ListenerError> closed;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this, [&]() { ++received; });
+    connect(&listener, &LocalPipeListener::clientClosed, this, [&](ListenerError e) { closed.append(e); });
+    QVERIFY(listener.start());
+    ListenerChild child;
+    QVERIFY(child.launch(listener, QStringLiteral("second-message")));
+    QTRY_COMPARE_WITH_TIMEOUT(received, 1, 3000);
+    QTRY_COMPARE_WITH_TIMEOUT(closed.size(), 1, 3000);
+    QCOMPARE(closed.first(), ListenerError::InvalidHandshake);
+    QCOMPARE(received, 1);
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(child.exitCode(), 0);
+}
+
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
     if (app.arguments().value(1) == QStringLiteral("--pipe-client"))
         return runPipeClient(app.arguments());
+    if (app.arguments().value(1) == QStringLiteral("--listener-client"))
+        return runListenerClient(app.arguments());
     McpIpcTest test;
     return QTest::qExec(&test, argc, argv);
 }

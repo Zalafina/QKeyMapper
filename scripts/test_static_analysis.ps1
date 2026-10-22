@@ -58,9 +58,9 @@ Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'diagnostics-test' 
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'ui-scale-test' -and $_.Source -like '*qkm_ui_scale_test.cpp' }).Count -eq 1) 'UI scale test was omitted.'
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'sendinput-lifecycle-test' -and $_.Source -like '*qkm_sendinput_lifecycle_test.cpp' }).Count -eq 1) 'SendInput lifecycle test was omitted.'
 $mcpRuns = @($runs.Runs | Where-Object { $_.Target -eq 'mcp-ipc-test' })
-Assert-Analysis ($mcpRuns.Count -eq 3) 'MCP IPC sources need their own test-target configuration.'
+Assert-Analysis ($mcpRuns.Count -eq 4) 'MCP IPC sources need their own test-target configuration.'
 Assert-Analysis (Test-Path -LiteralPath (Join-Path $report 'mcp-ipc-test-qmake\test_mcp_ipc.moc')) 'MCP IPC meta-object input was not generated.'
-foreach ($source in @('qkm_ipc_frame.cpp', 'qkm_local_identity.cpp', 'test_mcp_ipc.cpp')) {
+foreach ($source in @('qkm_ipc_frame.cpp', 'qkm_local_identity.cpp', 'qkm_local_listener.cpp', 'test_mcp_ipc.cpp')) {
     Assert-Analysis (@($mcpRuns | Where-Object { [IO.Path]::GetFileName($_.Source) -eq $source }).Count -eq 1) "MCP IPC source omitted: $source"
 }
 $mcpEntry = $db | Where-Object { $_.file -like '*qkm_ipc_frame.cpp' }

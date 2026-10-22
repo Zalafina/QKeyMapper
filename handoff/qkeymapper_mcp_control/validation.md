@@ -154,3 +154,24 @@ Qt5 首次完整运行是 **28 通过、1 失败**：合法字符串中内嵌 NU
 - 实际定向分析共三个新增 C++ 文件、各 Clang-Tidy／Clazy 检查。两个未变的基础组件沿用首次逐文件通过结果；修复后仅重跑受影响测试文件，双方工具退出 0、第一方诊断 0。原记录在 `out/tests/mcp_ipc/static-analysis-before-moc/`，最终测试文件结果在 `static-analysis-final-test/`，均未随 Git 同步。
 - 工具：LLVM 22.1.8、Clazy 1.16，Clang-Tidy 使用现有 `-*,clang-*`，Clazy 保留现有 52 项检查；分析环境按现有脚本选择 MSVC BuildTools 14.40.33807，普通维护测试构建使用 Community 14.44.35207，均为 x64 MSVC 2022。没有更改产品编译标志或诊断规则。
 - Git 安全目录仅对工具进程及其子进程配置，不改全局 Git 设置。首次工具回归的历史日志包含未设置该进程配置时的 qmake Git 元数据读取报错；最终回归和实际分析使用受控仓库路径成功取到 `c6ca3388`。用户级 ignore 文件读权限提示仍属既有沙箱边界，仓库与新文件状态另外核对。
+
+## IPC-20261022-11：M1.1b listener 与认证前边界
+
+- 基线：本地 `6aee2a39` 加本切片 `qkm_local_listener.*`、维护测试／工程、分析工具覆盖断言及说明／交接变化。PC-W10，非提权，x64 console Release／asInvoker；组件仍只由维护测试编译，产品工程、主窗口、Worker、驱动和个人配置未改。
+- EXE：`out/tests/mcp_ipc/{qt6-release,qt5-release}/release/QKeyMapperMcpIpcTest.exe`。沿用各自 Qt6.8.3／Qt5.15.2 kit，Community MSVC 14.44.35207。qmake 与最终 JOM 均退出 0，最终 `configure_listener.log`／`build_listener.log` 无编译／链接警告和错误。
+- 最终运行：两套 Qt **各 54 通过、0 失败、0 跳过**，进程退出 0，stderr 空；Qt6 19,283 ms，Qt5 19,106 ms。原始 `results_listener.txt`、`test_listener.log` 在各构建目录，不随 Git 同步；外部看门狗 40 秒。
+
+| 验证项 | 当前结果及边界 |
+|---|---|
+| 默认关闭／显式启停 | 未启用没有端点；20 次启停、挂起 accept 的取消及析构均通过；重复 start 保持原实例，停止后新 start 使用新实例 |
+| 真实独立进程与重连 | `hello`／`pair.request` 首包字段及真实 PID／创建时间对照；两种各四轮同名端点重连；非法请求拒绝后再连接正常首包；未认证首包不发送 `ready` 或任何输出 |
+| OS／Qt 边界 | 实际 pipe 的单条允许 ACE、logon SID、明确读写掩码 `0x0012019b`、protected DACL 和接管后的 Qt 4100 字节读缓存断言通过；重连期间保留首实例，额外同名首实例创建被拒绝 |
+| 首包拒绝 | 错误数值／字符串版本、实例、未知／缺失字段、nonce／pair ID 类型、名称控制字符／长度、未认证业务请求、连续额外数据、超大长度、非法 JSON／UTF-8 与 64 KiB 流量请求通过拒绝用例；失败不分发业务 |
+| 非延长期限 | 静默、持续 200 ms 碎片、截断头、有效首包后等待均在固定 3000 ms 期限关闭（测试允许调度容差）；没有通过每收到一字节重置计时器 |
+| 关闭及回调 | 杀死自有客户端、首包回调内停止、关闭后立即重启、旧清理回调不影响新实例、新连接继续成功；最终没有遗留自有测试进程 |
+
+发现并修复两个明确问题：首次编译因新 Windows ACL 头定义 `small` 宏与旧测试变量同名，已只重命名该测试变量；初始 Qt6 54 通过，但 Qt5 异常退出后重连失败（53 通过、1 失败）。根因为 Qt5 在释放管道之前发出 `disconnected`，立即重新接受连接会被旧 socket 后续清理破坏。现等待旧 socket 完整析构后的排队回调再重新接受连接，并将清理回调绑定启用实例，避免关闭／重启交错影响新实例。依据 [Qt5.15.2 源码](https://raw.githubusercontent.com/qt/qtbase/v5.15.2/src/network/socket/qlocalsocket_win.cpp) 与本机 Qt6.8.3 源码；复用原生实例遵循 [ConnectNamedPipe](https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-connectnamedpipe)／[DisconnectNamedPipe](https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-disconnectnamedpipe) 生命周期。失败报告保留于各目录 `*_before_qt5_cleanup_fix.*`，首次宏冲突日志为 Qt6 的 `build_listener_before_rpc_name_fix.log`。
+
+定向分析：`qkm_local_listener.cpp` 和受影响维护测试各执行 Clang-Tidy／Clazy（LLVM 22.1.8、Clazy 1.16、原有规则），最终全部 native exit 0、项目诊断 0，记录在 `out/tests/mcp_ipc/static-analysis-listener-final/`。初始测试中通过 `QVERIFY(pointer)` 后的解引用被分析器报告潜在空指针，改为显式空分支 `QFAIL`，保留实际失败断言，不添加规则豁免；初始记录在 `static-analysis-listener/`。工具库存断言从三个改为四个真实源文件，报告门禁回归通过：`static_analysis_listener_regression.log`，明细 `out/tests/static_analysis/7c8cbbdff4204bec8352617011e45dd1/`；其中的故意非零／诊断不算真实 C++ 分析失败。
+
+本切片不创建窗口、不占用 Default／焦点或键鼠、不加载个人配置、不触发驱动。未执行产品构建、ASan、Win11、真实异用户／会话／远程客户端、普通桥接到管理员产品、请求线程 Token／模拟恢复、配对／证明／撤销、MCP SDK、GUI 等价性或性能验收。`handshakeReceived` 仅表示首包和进程主 Token 初检，不能记为身份认证成功或可用 MCP 能力；后续桥接还须对接受连接准备期间的忙／断线进行有界重试。
