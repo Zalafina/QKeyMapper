@@ -128,6 +128,38 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 
 后续接口接入必须额外核对：这些内部函数有的依赖当前表／当前编辑框，有的只靠 GUI 启用状态限制运行中操作；不能直接按函数名透传。列表操作会改变源引用，源 Tab、配置修订和编辑会话须在提交前再次核实。
 
+### M0.2b 第二批补充：通用高级与映射高级（源码 `d8e435f4`）
+
+新增 21 条静态链路，连同前两表共 51 条。各行尚未实现 MCP／运行等价性；多轴、四组阈值等共享同一规则的字段在行内逐一列明。GUI 构造及加载默认值不是接口允许静默夹紧参数的理由。
+
+通用高级字段在 `saveKeyMapSetting` 写根设置，由 `loadKeyMapSetting` 的初始／load_all 分支及 `loadGeneralSetting` 读取；普通配置组加载不能一概当作全局重载。映射高级字段则写入当前配置组。两类均须通过现有保存结果检查及独立冷启动确认；关闭这两个窗口不会撤销已经编辑的内存值。
+
+| ID／阶段 | GUI 入口、参数及现有处理 | 实际有效状态／生效／持久化 | 共用操作与独立验收要求 |
+|---|---|---|---|
+| GEN-STARTUP-MODE／M2-B | 通用高级 startupPositionComboBox 的 currentIndexChanged → updateStartupSpecifyPositionState／dirty；枚举 Default=0、LastSaved=1、Specify=2，缺省 LastSaved | getter 为当前索引；指定坐标控件启用联动。根 StartupPosition_Index；只改模式不会立即移动当前主窗，首次 loadKeyMapSetting 的空 settingtext 分支才选择启动坐标并做屏幕相交检查／回退 | 共用明确枚举校验、联动及 dirty，不借改变模式执行移动。EQ-GEN-STARTUP-MODE 比较三模式、当前窗口不意外移动、冷启动落点、屏幕外回退和全局重载差异 |
+| GEN-STARTUP-POINT／M2-B | X／Y valueChanged → dirty；各轴整数 -50000…50000，默认 (0,0)，仅 Specify 时界面可编辑 | getSpecifyStartupPosition 读 QPoint；根 StartupPosition_SpecifyPoint。模式切换保留值；加载非法点整体回退默认，启动时还有可见屏幕回退 | 明确模式及坐标更新策略，拒绝正式参数越界；不可按控件禁用就丢失已有坐标。EQ-GEN-STARTUP-POINT 比较负坐标、两轴边界、切换保留、加载兼容及实际启动位置 |
+| GEN-SAVE-SIZE／M2-B | saveWindowSizeCheckBox toggled → dirty；bool | 根 SaveWindowSize；保存仍写 LastWindowSize 的 m_normalWindowBaseSize，即逻辑基准尺寸而非当前物理 size。该开关控制加载恢复，取消勾选不删除旧尺寸；resizeEvent 只在实际用户调整且非 live scale／加载／最大化时更新基准 | 共用开关与原尺寸保存／恢复链路，不能把开关 setter 当作 resize。EQ-GEN-SAVE-SIZE 比较勾选／取消、真实调整与缩放、最大化、冷启动和 DPI 换算；无真实 DPI 输入时只记已覆盖部分 |
+| GEN-SAVE-SPLITTER／M2-B | saveSplitterPositionCheckBox toggled → dirty；bool | 根 SaveSplitterPosition；仅开关开启、进程表可见且两分区正数时写 LastSplitterPosition。加载解析两正整数并 setSizes；关闭开关不清除旧比例，也不立即重排 | 共用保存条件及恢复；EQ-GEN-SAVE-SPLITTER 覆盖进程表隐藏、无效／旧值、开关切换、有效实际分区尺寸和冷启动，不只比复选框 |
+| GEN-EDIT-TRIGGER／M2-B | tableEditModeTriggerComboBox currentIndexChanged → dirty；右双击=0／左双击=1，默认右双击 | 根 EditModeTrigger（实际键以 EDITMODE_TRIGGER 常量为准）。主表 keyMappingTableItemDoubleClicked、序列编辑通过 getTableEditModeTriggerIndex 读取，另有列／Alt／鼠标键规则，不是全表双击直接调用一个编辑动作 | 共用枚举设置；独立界面事件验证主表及序列编辑的两种触发、列规则与 Alt，再比保存恢复；MCP 的“打开编辑”操作另有明确目标，不能伪造鼠标修饰状态 |
+| GEN-INSERT-MODE／M2-B | tableInsertModeComboBox currentIndexChanged → dirty；Above=0／Below=1，默认 Above | 根 TABLE_INSERTMODE；主表 insertNewMappingData、宏及序列编辑在各自插入／Shift／选区分支读取 getTableInsertModeIndex。没有选区或未请求相应插入模式的路径仍可追加 | 共用全局枚举；具体新增操作先从 GUI 意图解析为明确位置。EQ-GEN-INSERT-MODE 覆盖各调用者、上下界、无选择、筛选／共通来源及冷启动，不将该开关强加到所有 MCP 新增请求 |
+| GEN-SOUND／M2-B | soundEffectCheckBox toggled → dirty；bool，默认 true | 根 PlaySoundEffect；isSoundEffectEnabled 被 playStartSound／playStopSound 在事件时读取，控制对应 WAV 的异步 PlaySound；修改开关本身不播放预览，不代表所有系统声音 | 共用设置及 dirty；EQ-GEN-SOUND 比较下次开始／停止声音入口、关闭开关和缺失声音文件、保存恢复；自动脚本检查调用不能冒充实际音频输出验收 |
+| GEN-GLOBAL-SWITCH／M2-B | globalSettingSwitchTimerSpinBox valueChanged → dirty；整数毫秒 0…999999999，默认 2000 | 根 GlobalSettingSwitchTimeout；加载同时 setInterval。scheduleGlobalSettingSwitchCheck 停掉旧计时并重新读值，0 为 queued invoke，非阻塞立即重入；界面编辑信号本身只 dirty，不重排已经等待的 timer。全屏拦截重试另用 500 ms | 共用值和既有调度语义，不凭名称宣称即时重置。EQ-GEN-GLOBAL-SWITCH 覆盖 0、边界、已有等待、CHECKING／非 CHECKING、全屏重试及冷启动；最终状态需检查实际配置匹配 |
+| GEN-FULLSCREEN／M2-B | disableGlobalMappingInFullscreenCheckBox toggled → updateGlobalMappingFullscreenState／dirty；bool，默认 false | 根 GlobalMappingDisableInFullscreen；联动白名单编辑框。shouldBlockGlobalMappingForFullscreen 读取开关，结合实际 HWND／进程判断；handleGlobalMappingBlockedByFullscreen 可发停止、转 CHECKING、隐藏浮窗／提示，仍需等待真正清理 | 共用设置与联动，实际副作用沿现有匹配入口发生；EQ-GEN-FULLSCREEN 比较普通／全屏目标、允许进程、已全局映射及停止完成，不能只验开关／计时器 |
+| GEN-FULLSCREEN-PROCESSES／M2-B | fullscreenGlobalMappingProcessLineEdit textEdited → dirty；QString，分号分隔；setGlobalMappingFullscreenAllowedProcesses 仅 setText | 根 GlobalMappingFullscreenAllowedProcesses；isGlobalMappingFullscreenProcessAllowed 跳过空段、trim，按进程文件名 contains／CaseInsensitive 比较，不是正则、通配符或严格全名。程序 setText 不发 textEdited，会漏掉用户编辑的 dirty 语义 | 共用明确文本设置、dirty 和同一匹配解析；加载路径保留非用户编辑语义。EQ-GEN-FULLSCREEN-PROCESSES 检查多段／空白／大小写／子串及不匹配、开关关闭后保留、保存恢复与实际目标匹配 |
+| ADV-MOUSE-SPEED／M2-B | 映射高级 mouseXSpeed／mouseYSpeedSpinBox valueChanged → dirty；两轴整数 1…99，默认 3 | 配置组 KEY2MOUSE_X_SPEED／Y_SPEED；主窗口 getter 直读对话框，Worker 的摇杆／按键转鼠标周期用两轴速度计算位移。不是 OS 鼠标速度设置；无单独 setter 通知刷新缓存 | 共用双轴校验及设置，停止后提交；EQ-ADV-MOUSE-SPEED 对比两轴独立值、边界、受控轨迹最终位移与保存恢复。Worker 跨线程读取边界随实现确认，不能以直读视为线程安全证明 |
+| ADV-MOUSE-POLL／M2-B | mousePollingIntervalSpinBox valueChanged → dirty；整数毫秒 1…99，默认 2 | 配置组 KEY2MOUSE_POLLING_INTERVAL；Worker setWorkerKeyHook／setKeyMappingRestart 在有相关映射时用 getMouseMovePollingInterval 启动 PreciseTimer。当前编辑路径不对活动 timer setInterval | 共用值及生效时机，停止后提交、下次开始使用；EQ-ADV-MOUSE-POLL 检查实际 timer interval、未使用相关映射不误启动、重启及冷启动，不能只比 getter |
+| ADV-TOUCHPAD-SPEED／M3-A | gamepadTouchpadXSpeed／YSpeedSpinBox valueChanged → dirty；各轴 0…200，2 位小数、步进 0.10、默认 0.5 | 配置组 GAMEPAD_TOUCHPAD_X_SPEED／Y_SPEED；gamepadTouchpad2MouseMoveProc 读取速度，以归一化触点差 × 屏幕尺寸换算并保留小数余量；0 清该轴余量。需要实际触摸板与对应映射状态 | 共用参数精度／范围及提交，预览注明规范值；EQ-ADV-TOUCHPAD-SPEED 覆盖零、两轴、余量、屏幕维度、有效输出及冷启动；模拟轨迹与真实设备分记 |
+| ADV-TOUCHPAD-INVERT／M3-A | gamepadTouchpadInvertX／InvertYCheckBox toggled → dirty；两轴 bool | 配置组 GAMEPAD_TOUCHPAD_INVERT_X／Y；同一触摸板处理在位移计算前按轴取反，保留速度及小数余量逻辑 | 共用两轴设置；EQ-ADV-TOUCHPAD-INVERT 同轨迹比较方向／幅度、单轴／双轴、停止重启及冷启动，不把 UI 选中当作鼠标实际反向 |
+| ADV-VIRTUAL-INPUT／M3-A | acceptVirtualGamepadInputCheckBox toggled → dirty；bool，加载缺省 false | 配置组 ACCEPTVIRTUALGAMEPADINPUT_CHECKED，现存键名含 Gamdpad 拼写，接入不能顺手改格式；Worker POV／Axis／Button／Sensor／Touchpad 事件对 blacklisted 设备按该值决定是否继续处理。此项不安装或创建虚拟手柄；接受本软件输出设备可能带来反馈影响 | 共用值、风险说明及停止限制；EQ-ADV-VIRTUAL-INPUT 按五类事件验证实体／虚拟过滤、已有设备与保存恢复，硬件缺失不能记为真实设备通过 |
+| ADV-PROCESS-TRAY／M2-B | ProcessIconAsTrayIconCheckBox toggled → dirty；bool。全局配置加载分支强制 false 并禁用，普通配置恢复可编辑 | 配置组 PROCESSICON_AS_TRAYICON_CHECKED；updateSystemTrayDisplay 在实际映射时按有效 Tab 图片优先、随后可用进程图标、再状态图标选择。setter 本身不直接刷新系统托盘 | 共用范围守卫与既有刷新链路；EQ-ADV-PROCESS-TRAY 检查全局／普通配置、图标缺失与 Tab 图片优先、实际托盘和冷启动。托盘最终效果须在 Default，现未执行 |
+| ADV-POINT-KEYS／M2-B | showWindowPointKey／showScreenPointKeyComboBox currentIndexChanged → dirty；各为 None 或 MultiKeyboardInputList 中键名；两个 getter 返回 currentText | 配置组 SHOW_WINDOW_POINT_KEY／SHOW_SCREEN_POINT_KEY；两个键盘处理入口对 down／up 分别维护坐标显示标记并发显示／隐藏信号。None 的界面翻译不应作为公共枚举；旧 setter 对非法串回退默认键，不能将此作为正式请求成功 | 共用规范键名／none、dirty 和既有显示处理；EQ-ADV-POINT-KEYS 检查三语言 None、非法串、两个键相同优先级、按住／释放与叠加显示清理及冷启动；真实输入范围按计划执行 |
+| ADV-THRESHOLDS／M3-A | LT／RT 的 Release≤LightPress≤Press；LS／RS 的 Release≤LightPush≤Push。12 个整数百分比 0…100；initGamepadThresholdSpinBoxes 为四组三项建立动态 min／max 及 valueChanged／dirty | 配置组各 GAMEPAD_*_THRESHOLD_*；Worker joystickLTRTButtonProc 和四个摇杆轴处理读取三阈值，按当前已按状态判断轻／重／释放，触发器还按事件轴范围换算。setValue 会被当时 min／max 夹紧；约束连接在首次 loadKeyMapSetting 后才安装，后续配置切换的应用顺序必须专门检查 | 共用完整三元组校验／应用次序，预览报告连带值，不逐字段盲目 setValue。EQ-ADV-THRESHOLDS 覆盖四组、相等及 0／100、跨配置不同三元组、迟滞状态、实际 down／up 和冷启动；静态顺序风险尚未作为运行缺陷复现 |
+| ADV-COMMON／M2-A | enableCommonMappingTableCheckBox toggled → commonMappingFeatureEnabledChanged／dirty；bool | 配置组 MAPPINGTABLE_COMMON_ENABLED；主窗口启用时 reconcileCommonPriorityConflicts 会禁用各相关普通源表冲突行并发通知，再 updateCommonMappingTabVisibility 执行 attach／detach、必要切表、全表刷新及 Tab 设置联动。加载临时屏蔽对话框信号，尾部另修复／刷新并保护共通备份 | 共用纯冲突预览＋明确提交，保留加载区别；EQ-ADV-COMMON 比较实际 Disabled、源表／共通备份、当前索引／缓存、提示／dirty、取消、关闭再开启和冷启动；仅隐藏页签不算关闭功能 |
+| ADV-NOTIFY-ENABLE／M2-B | customNotificationEnableCheckBox toggled → updateCustomNotificationState → customNotificationEnabledChanged → onCustomNotificationEnabledChanged；bool | 配置组 CUSTOM_NOTIFICATION_ENABLED；主窗口 dirty，关闭时关闭专属编辑窗；首次启用可从全局拷贝位置及完整样式并设初始化标记。getCurrentMappingNotificationStyleSettings 根据开关选择实际样式；load 的信号屏蔽路径另载持久化样式 | 共用启用及初始化／关闭链路，不能只设置 bool；EQ-ADV-NOTIFY-ENABLE 比较首次／再次启用、已有自定义样式保留、编辑窗状态、实际通知和保存恢复；不把未启用的首次复制误记为用户显式样式 |
+| ADV-NOTIFY-POSITION／M2-B | customNotificationPositionComboBox currentIndexChanged → dirty；None=0，左／中／右的上、下共六位置=1…6；disabled 时保留值 | 配置组 CUSTOM_NOTIFICATION_POSITION；通知使用自定义样式时取此位置，None 不显示；未启用自定义则使用全局位置。加载缺失／非法值按全局通知位置处理，setter 非法值另回退默认，正式参数应先拒绝 | 共用明确位置枚举及作用范围；EQ-ADV-NOTIFY-POSITION 比较全部位置／None、全局回退、专属启用状态、实际通知窗口及冷启动 |
+
+这一批设置进一步确认：若现有有效值本来存于控件，共用业务操作仍须负责校验、dirty／初始化、派生联动、加载区别及生效时机，再将控件作为现有存储／回显使用；“数据存于控件”不能成为只调用 setter 就返回成功的例外。不在本轮重写整个设置模型，Worker 读取一致性按接入项处理。
+
 ### 动态菜单与事件入口补充
 
 对主窗口、宏列表、序列编辑、Tab 设定、VButton 面板及忽略规则源码进行 `addAction` 静态搜索得到 136 处匹配，其中包含重复入口、动作组、注释或辅助加入操作；**不是 136 个独立能力**。以下按用户意图归并，全部尚待逐操作完整链路核对；不能只扫描 `.ui` 就声明全覆盖。
@@ -226,17 +258,17 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 
 | 稳定定位 ID | 控件类型／原始文案 | 绑定线索（该 cpp 的基线行号） | UI 声明线索 |
 |---|---|---|---|
-| `U-general/startupPositionComboBox` | QComboBox | `connect currentIndexChanged @75` | 运行约束待核 |
-| `U-general/startupSpecifyPositionXSpinBox` | QSpinBox | `connect valueChanged @85` | 运行约束待核 |
-| `U-general/startupSpecifyPositionYSpinBox` | QSpinBox | `connect valueChanged @87` | 运行约束待核 |
-| `U-general/saveWindowSizeCheckBox` | QCheckBox；Save Window Size | `connect toggled @95` | 运行约束待核 |
-| `U-general/saveSplitterPositionCheckBox` | QCheckBox；Save Window Splitter Position | `connect toggled @97` | 运行约束待核 |
-| `U-general/tableEditModeTriggerComboBox` | QComboBox | `connect currentIndexChanged @89` | 运行约束待核 |
-| `U-general/tableInsertModeComboBox` | QComboBox | `connect currentIndexChanged @91` | 运行约束待核 |
-| `U-general/disableGlobalMappingInFullscreenCheckBox` | QCheckBox；Disable GlobalKeyMapping in Fullscreen | `connect toggled @80` | 运行约束待核 |
-| `U-general/fullscreenGlobalMappingProcessLineEdit` | QLineEdit | `connect textEdited @93` | 运行约束待核 |
-| `U-general/soundEffectCheckBox` | QCheckBox；Notification Sound | `connect toggled @99` | 运行约束待核 |
-| `U-general/globalSettingSwitchTimerSpinBox` | QSpinBox | `connect valueChanged @101` | 运行约束待核 |
+| `U-general/startupPositionComboBox` | QComboBox | `connect currentIndexChanged @75` | 静态见 GEN-STARTUP-MODE；业务／运行未验 |
+| `U-general/startupSpecifyPositionXSpinBox` | QSpinBox | `connect valueChanged @85` | 静态见 GEN-STARTUP-POINT；业务／运行未验 |
+| `U-general/startupSpecifyPositionYSpinBox` | QSpinBox | `connect valueChanged @87` | 静态见 GEN-STARTUP-POINT；业务／运行未验 |
+| `U-general/saveWindowSizeCheckBox` | QCheckBox；Save Window Size | `connect toggled @95` | 静态见 GEN-SAVE-SIZE；业务／运行未验 |
+| `U-general/saveSplitterPositionCheckBox` | QCheckBox；Save Window Splitter Position | `connect toggled @97` | 静态见 GEN-SAVE-SPLITTER；业务／运行未验 |
+| `U-general/tableEditModeTriggerComboBox` | QComboBox | `connect currentIndexChanged @89` | 静态见 GEN-EDIT-TRIGGER；业务／运行未验 |
+| `U-general/tableInsertModeComboBox` | QComboBox | `connect currentIndexChanged @91` | 静态见 GEN-INSERT-MODE；业务／运行未验 |
+| `U-general/disableGlobalMappingInFullscreenCheckBox` | QCheckBox；Disable GlobalKeyMapping in Fullscreen | `connect toggled @80` | 静态见 GEN-FULLSCREEN；业务／运行未验 |
+| `U-general/fullscreenGlobalMappingProcessLineEdit` | QLineEdit | `connect textEdited @93` | 静态见 GEN-FULLSCREEN-PROCESSES；业务／运行未验 |
+| `U-general/soundEffectCheckBox` | QCheckBox；Notification Sound | `connect toggled @99` | 静态见 GEN-SOUND；业务／运行未验 |
+| `U-general/globalSettingSwitchTimerSpinBox` | QSpinBox | `connect valueChanged @101` | 静态见 GEN-GLOBAL-SWITCH；业务／运行未验 |
 
 ### gyro（4 项）
 
@@ -473,33 +505,33 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 
 | 稳定定位 ID | 控件类型／原始文案 | 绑定线索（该 cpp 的基线行号） | UI 声明线索 |
 |---|---|---|---|
-| `U-mapping_advanced/mouseXSpeedSpinBox` | QSpinBox | `connect valueChanged @121` | 运行约束待核 |
-| `U-mapping_advanced/mouseYSpeedSpinBox` | QSpinBox | `connect valueChanged @123` | 运行约束待核 |
-| `U-mapping_advanced/mousePollingIntervalSpinBox` | QSpinBox | `connect valueChanged @125` | 运行约束待核 |
-| `U-mapping_advanced/ProcessIconAsTrayIconCheckBox` | QCheckBox；ProcessIcon as TrayIcon | `connect toggled @135` | 运行约束待核 |
-| `U-mapping_advanced/acceptVirtualGamepadInputCheckBox` | QCheckBox；Accept Virtual Gamepad Input | `connect toggled @137` | 运行约束待核 |
-| `U-mapping_advanced/enableCommonMappingTableCheckBox` | QCheckBox；Enable Common Mapping Table | `connect toggled @139` | 运行约束待核 |
-| `U-mapping_advanced/showWindowPointKeyComboBox` | QComboBox | `connect currentIndexChanged @144` | 运行约束待核 |
-| `U-mapping_advanced/showScreenPointKeyComboBox` | QComboBox | `connect currentIndexChanged @146` | 运行约束待核 |
-| `U-mapping_advanced/customNotificationEnableCheckBox` | QCheckBox；Enable Custom Notification | `connect toggled @114` | 运行约束待核 |
-| `U-mapping_advanced/customNotificationPositionComboBox` | QComboBox | `connect currentIndexChanged @148` | 运行约束待核 |
-| `U-mapping_advanced/customNotificationSetupButton` | QPushButton；Custom Notification Setup | `connect clicked @119` | 运行约束待核 |
-| `U-mapping_advanced/LT_Threshold_PressSpinBox` | QSpinBox | `connect valueChanged @256` | 运行约束待核 |
-| `U-mapping_advanced/LT_Threshold_LightPressSpinBox` | QSpinBox | `connect valueChanged @247`<br>`connect valueChanged @251` | 运行约束待核 |
-| `U-mapping_advanced/LT_Threshold_ReleaseSpinBox` | QSpinBox | `connect valueChanged @239` | 运行约束待核 |
-| `U-mapping_advanced/RT_Threshold_PressSpinBox` | QSpinBox | `connect valueChanged @283` | 运行约束待核 |
-| `U-mapping_advanced/RT_Threshold_LightPressSpinBox` | QSpinBox | `connect valueChanged @274`<br>`connect valueChanged @278` | 运行约束待核 |
-| `U-mapping_advanced/RT_Threshold_ReleaseSpinBox` | QSpinBox | `connect valueChanged @266` | 运行约束待核 |
-| `U-mapping_advanced/LS_Threshold_PushSpinBox` | QSpinBox | `connect valueChanged @310` | 运行约束待核 |
-| `U-mapping_advanced/LS_Threshold_LightPushSpinBox` | QSpinBox | `connect valueChanged @301`<br>`connect valueChanged @305` | 运行约束待核 |
-| `U-mapping_advanced/LS_Threshold_ReleaseSpinBox` | QSpinBox | `connect valueChanged @293` | 运行约束待核 |
-| `U-mapping_advanced/RS_Threshold_PushSpinBox` | QSpinBox | `connect valueChanged @337` | 运行约束待核 |
-| `U-mapping_advanced/RS_Threshold_LightPushSpinBox` | QSpinBox | `connect valueChanged @328`<br>`connect valueChanged @332` | 运行约束待核 |
-| `U-mapping_advanced/RS_Threshold_ReleaseSpinBox` | QSpinBox | `connect valueChanged @320` | 运行约束待核 |
-| `U-mapping_advanced/gamepadTouchpadXSpeedSpinBox` | QDoubleSpinBox | `connect valueChanged @127` | decimals=2 |
-| `U-mapping_advanced/gamepadTouchpadYSpeedSpinBox` | QDoubleSpinBox | `connect valueChanged @129` | decimals=2 |
-| `U-mapping_advanced/gamepadTouchpadInvertXCheckBox` | QCheckBox；Invert X | `connect toggled @131` | 运行约束待核 |
-| `U-mapping_advanced/gamepadTouchpadInvertYCheckBox` | QCheckBox；Invert Y | `connect toggled @133` | 运行约束待核 |
+| `U-mapping_advanced/mouseXSpeedSpinBox` | QSpinBox | `connect valueChanged @121` | 静态见 ADV-MOUSE-SPEED；业务／运行未验 |
+| `U-mapping_advanced/mouseYSpeedSpinBox` | QSpinBox | `connect valueChanged @123` | 静态见 ADV-MOUSE-SPEED；业务／运行未验 |
+| `U-mapping_advanced/mousePollingIntervalSpinBox` | QSpinBox | `connect valueChanged @125` | 静态见 ADV-MOUSE-POLL；业务／运行未验 |
+| `U-mapping_advanced/ProcessIconAsTrayIconCheckBox` | QCheckBox；ProcessIcon as TrayIcon | `connect toggled @135` | 静态见 ADV-PROCESS-TRAY；业务／运行未验 |
+| `U-mapping_advanced/acceptVirtualGamepadInputCheckBox` | QCheckBox；Accept Virtual Gamepad Input | `connect toggled @137` | 静态见 ADV-VIRTUAL-INPUT；业务／运行未验 |
+| `U-mapping_advanced/enableCommonMappingTableCheckBox` | QCheckBox；Enable Common Mapping Table | `connect toggled @139` | 静态见 ADV-COMMON；业务／运行未验 |
+| `U-mapping_advanced/showWindowPointKeyComboBox` | QComboBox | `connect currentIndexChanged @144` | 静态见 ADV-POINT-KEYS；业务／运行未验 |
+| `U-mapping_advanced/showScreenPointKeyComboBox` | QComboBox | `connect currentIndexChanged @146` | 静态见 ADV-POINT-KEYS；业务／运行未验 |
+| `U-mapping_advanced/customNotificationEnableCheckBox` | QCheckBox；Enable Custom Notification | `connect toggled @114` | 静态见 ADV-NOTIFY-ENABLE；业务／运行未验 |
+| `U-mapping_advanced/customNotificationPositionComboBox` | QComboBox | `connect currentIndexChanged @148` | 静态见 ADV-NOTIFY-POSITION；业务／运行未验 |
+| `U-mapping_advanced/customNotificationSetupButton` | QPushButton；Custom Notification Setup | `connect clicked @119` | 静态见 ADV-NOTIFY-ENABLE；业务／运行未验 |
+| `U-mapping_advanced/LT_Threshold_PressSpinBox` | QSpinBox | `connect valueChanged @256` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/LT_Threshold_LightPressSpinBox` | QSpinBox | `connect valueChanged @247`<br>`connect valueChanged @251` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/LT_Threshold_ReleaseSpinBox` | QSpinBox | `connect valueChanged @239` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/RT_Threshold_PressSpinBox` | QSpinBox | `connect valueChanged @283` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/RT_Threshold_LightPressSpinBox` | QSpinBox | `connect valueChanged @274`<br>`connect valueChanged @278` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/RT_Threshold_ReleaseSpinBox` | QSpinBox | `connect valueChanged @266` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/LS_Threshold_PushSpinBox` | QSpinBox | `connect valueChanged @310` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/LS_Threshold_LightPushSpinBox` | QSpinBox | `connect valueChanged @301`<br>`connect valueChanged @305` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/LS_Threshold_ReleaseSpinBox` | QSpinBox | `connect valueChanged @293` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/RS_Threshold_PushSpinBox` | QSpinBox | `connect valueChanged @337` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/RS_Threshold_LightPushSpinBox` | QSpinBox | `connect valueChanged @328`<br>`connect valueChanged @332` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/RS_Threshold_ReleaseSpinBox` | QSpinBox | `connect valueChanged @320` | 静态见 ADV-THRESHOLDS；业务／运行未验 |
+| `U-mapping_advanced/gamepadTouchpadXSpeedSpinBox` | QDoubleSpinBox | `connect valueChanged @127` | 静态见 ADV-TOUCHPAD-SPEED；业务／运行未验 |
+| `U-mapping_advanced/gamepadTouchpadYSpeedSpinBox` | QDoubleSpinBox | `connect valueChanged @129` | 静态见 ADV-TOUCHPAD-SPEED；业务／运行未验 |
+| `U-mapping_advanced/gamepadTouchpadInvertXCheckBox` | QCheckBox；Invert X | `connect toggled @131` | 静态见 ADV-TOUCHPAD-INVERT；业务／运行未验 |
+| `U-mapping_advanced/gamepadTouchpadInvertYCheckBox` | QCheckBox；Invert Y | `connect toggled @133` | 静态见 ADV-TOUCHPAD-INVERT；业务／运行未验 |
 
 ### sequence（13 项）
 
