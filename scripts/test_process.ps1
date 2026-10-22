@@ -18,6 +18,7 @@ public static class QkmTestWindows {
     [DllImport("user32.dll", SetLastError=true)] private static extern bool SetThreadDesktop(IntPtr desktop);
     [DllImport("user32.dll")] private static extern IntPtr GetThreadDesktop(uint thread);
     [DllImport("kernel32.dll")] private static extern uint GetCurrentThreadId();
+    [DllImport("kernel32.dll")] private static extern void SetLastError(uint error);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int length);
     [DllImport("user32.dll")] private static extern int GetWindowLong(IntPtr window, int index);
@@ -40,8 +41,11 @@ public static class QkmTestWindows {
             IntPtr handle = OpenDesktop(desktop, 0, false, 1);
             if (handle == IntPtr.Zero) throw new Win32Exception(Marshal.GetLastWin32Error());
             try {
-                if (!EnumDesktopWindows(handle, callback, IntPtr.Zero) && result == IntPtr.Zero)
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                SetLastError(0);
+                bool enumerated = EnumDesktopWindows(handle, callback, IntPtr.Zero);
+                int error = Marshal.GetLastWin32Error();
+                // An empty desktop can return FALSE without an error before the first window appears.
+                if (!enumerated && result == IntPtr.Zero && error != 0) throw new Win32Exception(error);
             } finally { CloseDesktop(handle); }
         }
         return result;

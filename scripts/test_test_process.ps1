@@ -57,6 +57,9 @@ $desktop = [QkmProcessFixture]::CreateDesktop($desktopName, [IntPtr]::Zero, [Int
 if ($desktop -eq [IntPtr]::Zero) { throw 'CreateDesktop failed.' }
 $testProcess = $null
 try {
+    if ((Get-QkmMainWindowHandle -ProcessId $PID -DesktopName $desktopName) -ne [IntPtr]::Zero) {
+        throw 'An empty private desktop unexpectedly contained a matching main window.'
+    }
     $shell = (Get-Process -Id $PID).Path
     $state = Join-Path $output 'state with spaces.json'
     $arguments = '-NoProfile -STA -File "' + $PSCommandPath + '" -Fixture -StatePath "' + $state + '"'
@@ -83,7 +86,7 @@ try {
     try { Start-QkmTestProcess -ExecutablePath $shell -DesktopName ($desktopName + '_missing') | Out-Null }
     catch { $rejected = $true }
     if (-not $rejected) { throw 'Missing desktop unexpectedly started a process.' }
-    Write-Output 'PASS: private startup, actual desktop, literal arguments/environment, identity guard, graceful exit 0, missing desktop rejection.'
+    Write-Output 'PASS: empty desktop, private startup, actual desktop, literal arguments/environment, identity guard, graceful exit 0, missing desktop rejection.'
 } finally {
     if ($null -ne $testProcess) { Close-QkmTestProcess $testProcess | Out-Null }
     [QkmProcessFixture]::CloseDesktop($desktop) | Out-Null
