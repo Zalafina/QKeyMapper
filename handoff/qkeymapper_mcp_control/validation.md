@@ -541,3 +541,17 @@ PowerShell 解析、C# 实际编译运行、git diff --check 通过。未改产�
 `out/mcp_product/audit_m0_context.py`／同名 .log：68 个唯一链路、17 个新增、四份实际 UI XML 的 63 个关联、两份 cpp 中 47 个函数定义、九条默认规则、本地链接／文档大小，native exit 0；git diff --check 通过。原始审计在 out，不随 Git 同步。
 
 没有产品构建／启动、UAC／gsudo、真实输入、设备或系统设置操作；实际 GUI／MCP、写盘失败、冷启动、前台／后台目标效果全部待后续按项验证。此前 GUI／SDK 结果仍按 IPC-23／27 原范围引用。本切片结束时用户通知已返回，可恢复原获准的受限 UAC 产品验收；新通知不改变本节只读检查范围。
+
+## IPC-20261022-30：实际 Qt6 撤销核实、五分项通过及冷启动助手失败
+
+PC-W10，源码 `3fd3deb3`，产品 C++ 仍为 `2b9215ef` 构建的同字节隔离副本 out/mcp_product/runtime-b1f3ddf7-qt6/QKeyMapperMcpAcceptance_b1f3ddf7.exe。用户返回后明确恢复原受限 UAC 范围，未修改产品或 manifest；管理员仅自有产品启动／关闭及固定 GUI 动作，官方 SDK／桥接／截图／断言为普通权限。未启动映射、发送真实输入或安装驱动，无 Default 场景。
+
+首先 out/mcp_product/observe_product_pair.py 只启动并打开管理窗口观察；stock-qt6-revoke-observation.log／同名目录 observation.json：cold_start_pair_count=0、接口关闭、连接框为空，证明 IPC-23 那次撤销已持久化，**没有再次执行撤销**。真实桌面 QkmProduct_8be4cac9d45d4ca498c69546e6801ae8，产品 PID 30832、High RID 12288，普通控制器 Medium 8192／同登录，产品正常关闭 exit 0。
+
+随后正式 test_product_interop.py 指定上述 EXE 及新输出 out/mcp_product/accepted-stock-qt6。日志 accepted-stock-qt6.log 的五个已完成分项：实际高级设置／MCP 入口及默认绑定／发现；只读 GUI 批准／真实凭据／正式 RPC 且关闭窗口保留接口；新 stdio 保存凭据重连；实际 GUI 撤销断线及旧 key 拒绝；关闭接口移除发现。08_Revoke.json 记录 enabled=true、pair_count=0，正式 MCP 另核对权限已失效。实际桌面 QkmProduct_14fccdffee044bdc943bd1ff8517aba3，PID 7920，High 12288；普通控制器／SDK Medium 8192／同登录。产品随后正常关闭 exit 0，客户端自身凭据 finally 已清理。
+
+该轮 **native exit 1，未生成完整 results.json**：冷启动的新生命周期助手调用 StartPrivate 返回系统找不到指定文件，未产生 started.json；关闭阶段 PyHDESK.CloseDesktop 又报 Win32 6 无效句柄。桌面对象显式关闭／析构／句柄复用是待用普通权限最小复现核对的假设，尚未确定根因，不当作产品冷启动故障或已通过。冷启动后保留旧 key 拒绝、Qt5 正式产品仍未执行通过。
+
+原截图脚本保持非提权，在 High 产品 PrintWindow 失败，日志明确 UNVERIFIED，未保存图、未改权限；不能以同源维护图替代本轮静态视觉。两份 PowerShell 及 Python 语法检查通过；产品未重建，普通 Qt6／Qt5 SDK／GUI 仍按 IPC-23／27 原范围引用。
+
+用户随后要求在合适位置暂停以关闭 fast。收尾核对：上述两产品 closed.json 均为 exit 0；没有 QKeyMapperMcpAcceptance_* 进程。普通实际用户 CIM 核对相关 product_lifecycle／product_ui_actions／test_product_interop／observe_product_pair 助手数为 0，原用户 PID 5420／启动时间 2026-10-22 10:17:55 未变。默认沙箱 CIM 访问被拒绝后只切换普通 Medium 只读查询，没有新 gsudo／UAC。三份正式产品测试脚本仍未提交，暂停卡片记录恢复动作；本轮只形成文档本地开发检查点，不推送。

@@ -10,7 +10,7 @@
 
 `--preview <language:0|1|2> <off|pending|paired-off|busy-off> <absolute-state-json>` 仅用于维护目标的静态截图：真实显示同一控件，原子报告 PID／HWND／实际桌面、原生可见性、Qt／原生 DPI、样式／字体及接口／配对状态；20 秒后自动退出，也可从该私有桌面发送 WM_CLOSE。pending 含 `<b>` 和实际自身进程身份，用于检查纯文本；paired-off 使用假配对记录，busy-off 再取得真实租约并点击撤销制造占用提示。四种预览均不启用接口、批准或认证客户端，截图不能证明配对安全。使用仓库 `scripts/capture_ui_snapshots.ps1 -ProcessId ... -WindowHandle ... -PrintWindow` 后自主审阅。
 
-当前验证覆盖独立窗口、产品 Qt6／Qt5 编译及同源维护窗口的正式 SDK 配对；真正 Qt6 管理员产品的高级设置／MCP、只读批准／RPC／重连已部分实测，完整撤销及 Qt5 产品验收仍待补齐。普通截图无法捕获 High 产品，该部分未算视觉通过。具体已验证、历史复用与未验证范围见[验证记录](../../../handoff/qkeymapper_mcp_control/validation.md) IPC-23；没有 Default 桌面、真实输入、驱动或性能结论。
+当前验证覆盖独立窗口、产品 Qt6／Qt5 编译及同源维护窗口的正式 SDK 配对；真正 Qt6 管理员产品的高级设置／MCP、只读批准／RPC／重连、撤销和关闭接口五分项已实测。整轮测试在冷启动桌面句柄阶段失败，旧 key 冷启动拒绝及 Qt5 产品验收仍待补齐。普通截图无法捕获 High 产品，该部分未算视觉通过。具体已验证、历史复用与未验证范围见[验证记录](../../../handoff/qkeymapper_mcp_control/validation.md) IPC-23／30；没有 Default 桌面、真实输入、驱动或性能结论。
 
 ## 可移植执行入口
 
