@@ -238,3 +238,29 @@ EXE 沿用 `out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/QKeyM
 工具库存回归更新为普通／故障目标各五个源文件，验证实际参数和测试宏隔离，通过记录 `static_analysis_proof_regression.log`，明细 `out/tests/static_analysis/587cc59b967a4e6aa3b5b91d5a844ce7/`。后续仅枚举命名及负例表达变化，目标及脚本不变，未重复回归。
 
 未运行产品、ASan、Win11、完整握手／配对／持久化／撤销、高低权限或 GUI／MCP 等价性。无窗口、真实输入、驱动、个人配置或 Default 操作。本组件证明格式和验证行为，不表示正式连接已认证。
+
+## IPC-20261022-15：M1.1c-4a 配对凭据存储
+
+- 基线 `f5f74284` 加 `qkm_pair_store.*`、共用 client name 校验、维护工程／测试／库存和文档。尚未链接产品、GUI 或握手控制器。
+- 类型化记录保护 pair ID、client name、非零 uint64 授权代次、已知权限位与 32 字节 secret；最多 32 条、ID 不重复、Read 必需。64 位值为规范十进制字符串。当前权限只是类型定义，不声明产品执行支持。
+- 全部记录一起装入有界帧，附魔数／版本及 SHA256 后调用当前用户 DPAPI，使用 UI_FORBIDDEN、不使用 LOCAL_MACHINE。附加上下文绑定固定用途、本机 64 位视图 MachineGuid 和应用绑定。读取检查原生结果、封套完整性、帧、字段类型、权限及全部记录后才返回；错误时输出为空。
+- 最终目录与文件 owner 为实际当前用户 SID、DACL 仅该 SID 的 FA；目录 protected／可继承，文件替换前显式设置 protected DACL 与 owner。读取通过原生句柄拒绝最终 reparse point／目录／多硬链接，并检查 ACL、owner 与大小；持有目录句柄阻止该目录在操作中被重命名。只读目标保存失败、错误上下文／损坏既有文件都保留原数据，正常保存不静默覆盖这些异常。使用 QSaveFile 禁用 direct-write fallback，不另写自制原子替换框架。
+- 初始默认沙箱的五个 store 用例失败在 DPAPI，独立 Python ctypes 的最小 CryptProtectData（有／无附加 entropy）均返回 Win32 2、输出为空。未因此降级保护或将产品判错。同一 asInvoker 测试获准在沙箱外运行，明确查询 TokenElevation=0，五个 store 用例／独立子进程读盘均通过；没有 UAC／gsudo。仅这些无界面运行及随后完整运行在该上下文，源编辑／构建／分析始终非提权且留在原沙箱。记录 `qt6-release/store_smoke.txt`（默认沙箱失败）和 `store_smoke_user.txt`（普通用户通过）。不推断失败对应哪个未观测到的用户配置文件。
+
+| 配置 | 构建／运行上下文 | 最终运行 |
+|---|---|---|
+| Qt6.8.3 普通 | 构建在原沙箱；运行在获准沙箱外、TokenElevation=0 | 71 通过，0 失败／跳过，20,091 ms |
+| Qt5.15.2 普通 | 同上 | 71 通过，0 失败／跳过，20,489 ms |
+| Qt6.8.3 故障 | 同上；测试宏只在故障配置 | 77 通过，0 失败／跳过，27,876 ms |
+
+均为 x64 console Release／asInvoker、Community MSVC 14.44.35207，qmake／JOM exit 0、零编译／链接警告，三个运行 exit 0／stderr 空；外部看门狗 60 秒。EXE 在既有 `out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/`。各自 `configure_store.log`、`build_store.log`、`results_store.txt`、`test_store.log` 是本机原始记录，最后一个记录未提权标志；没有把默认沙箱运行算作通过。
+
+当前用例：不创建未使用目录、有效记录与最大 uint64、文件不含明文 key／标签／pair ID、新对象及独立子进程读取、空集持久化；非法 ID／名称／secret／权限／代次、重复或过多记录拒绝且文件不变；错误应用上下文、零长／损坏／截断／过大文件拒绝且不能正常覆盖；只读目标保存失败后原记录仍可读，再解除只读可成功清空；不安全目录和实际 NTFS 硬链接拒绝。
+
+专用故障配置以测试专用 DPAPI 包装器构造“有效加密但非法内容”：未知格式／字段、JSON 数字或非规范／溢出 uint64、越界／非整数权限、错误 key 长度、重复 pair 和错误内层校验和，全部拒绝且不返回部分凭据。该入口不编译进普通配置。真实密钥不进入日志／命令行；固定 dummy key 属于公开测试样例，子进程命令只含测试路径与非秘密应用绑定。
+
+四个改动 C++ 文件、普通／故障两配置共八次目标编译／十六次 Clang-Tidy／Clazy，全部 native exit 0、项目诊断 0：`out/tests/mcp_ipc/static-analysis-store/`。工具库存断言每目标六个源码，报告回归通过：`static_analysis_store_regression.log`，明细 `out/tests/static_analysis/93a24c3851234507866403f090b16573/`。新 helper 已由真实 qmake 参数覆盖，不冒充产品目标。
+
+依据：[DPAPI 保护](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata)、[DPAPI 解密及完整性注意](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptunprotectdata)；本机 Qt6 的 QFileDevice::handle 文档及 QFSFileEnginePrivate::nativeHandle 确认 Win32 句柄须由 CRT descriptor 经 `_get_osfhandle` 取得，Qt5／Qt6 均已实际编译运行验证。没有更改全局 ACL、用户个人设置或系统驱动。
+
+边界：Qt JSON／HMAC／调用方可能保留短期内存副本，只清零本组件自有明文与 DPAPI 解密缓冲，不承诺全进程零残留。没有真实异用户／跨机器拒绝、管理员产品／普通桥接、真实资源耗尽、产品、ASan、GUI／MCP 等价性或性能验收。没有创建窗口／占焦点或发送输入；凭据还未接入 GUI 批准、正式证明消息、授权或撤销控制器，不能记为可用 MCP 能力。

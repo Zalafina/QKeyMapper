@@ -1,6 +1,6 @@
 # MCP 本机 IPC 基础测试
 
-当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*`、`automation/qkm_local_listener.*` 和 `automation/qkm_auth_proof.*`。这些基础代码由本测试目标编译，尚未加入产品工程或建立产品监听；MCP 配对、授权、桥接与业务操作仍按主计划接入。
+当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*`、`automation/qkm_local_listener.*`、`automation/qkm_auth_proof.*` 和 `automation/qkm_pair_store.*`。这些基础代码由本测试目标编译，尚未加入产品工程或建立产品监听；MCP 配对、授权、桥接与业务操作仍按主计划接入。
 
 ## 覆盖与边界
 
@@ -85,5 +85,21 @@ finally { $env:PATH = $qkmOriginalPath; Pop-Location }
 `ServerChallenge` 不可复制，每次 begin 产生新 server nonce，不保存密钥；只允许一次 client 证明尝试，失败也消耗本次挑战，重放／反射／旧 nonce／取消均拒绝。私有预期证明在完成、重建、取消及析构时清零后释放；Qt HMAC 和调用方可能存在临时内存副本，不能承诺全进程零残留。此处未实现凭据落盘或证明消息收发；密钥不进入此输入格式、日志、命令行或测试证据。
 
 故障配置额外模拟随机源失败，确认不能生成秘密或进入待证明状态。普通配置没有该测试钩子。
+
+## 配对凭据文件
+
+`PairCredentialStore` 只接受最多 32 条完整记录。每条包含唯一的 32 个小写十六进制字符的 pair ID、合规 client name、非零 uint64 授权代次、已知权限位和 32 字节 secret。Read 为必需权限；其余为 Configure、RunMapping、Observe、TestInput、ManageDevices、ExecuteCommands，当前只是后续业务权限的类型定义，尚未授权任何产品操作。
+
+记录及权限元数据一起序列化为有界帧，64 位代次使用规范十进制字符串。明文封套为含 NUL 的 `QKM-PAIR-STORE-1`、32 字节 SHA256 与帧；随后以当前用户 DPAPI、`CRYPTPROTECT_UI_FORBIDDEN` 加密，不使用 machine-wide 解密标志。附加上下文为固定用途标签、本机 64 位注册表视图 MachineGuid 的 RFC4122 字节和调用方应用绑定的 SHA256，避免漫游用户凭据使跨机器文件自动成为本机授权。读取缺失机器标识或应用上下文时失败，不降级。
+
+存储目录须为显式绝对路径；父目录由调用方准备。仅首次成功保存才创建最终私有目录，读取不存在的存储不会写文件。目录和文件 owner 为当前用户 SID，DACL 只允许该 SID 的完全访问；拒绝公开／异常 ACL、reparse point、目录冒充文件及多个硬链接。读取持有原生句柄并限制文件 64 KiB／明文载荷 32 KiB，不跟随最终文件链接；不静默修复不安全的既有目录。
+
+写入复用 `QSaveFile`，禁止直接写回后备；临时文件在替换前设置并验证 owner／DACL，适用于默认 owner 可能不同的管理员进程，但当前实测仍为非管理员。已有文件须先在相同上下文成功读取；上下文错误、损坏或不安全文件不会被正常保存覆盖。空记录集也采用原子加密保存，可作为撤销全部配对的持久化结果。保存失败不得被调用方当作授权已落地／已撤销。
+
+测试验证无明文 key／标签／pair ID 落盘、独立子进程读取、最大 uint64、权限和重复 ID 拒绝、错误上下文、损坏／过大文件、只读目标保存失败保留原文件、私有目录及硬链接检查。故障配置还提供仅测试可见的 DPAPI 封套生成入口，构造有效加密但格式、代次、权限、key、校验和错误的文件，验证全部拒绝而不返回部分凭据。它不编译进普通配置。
+
+DPAPI 测试必须以可用的当前 Windows 用户配置运行；普通 Codex 执行沙箱的最小 `CryptProtectData` 在本机返回 `ERROR_FILE_NOT_FOUND`，同一 asInvoker 测试在沙箱外且 `TokenElevation=0` 时通过。因此仅无界面运行测试使用获准的非提权沙箱外执行；编辑、构建、分析继续在原沙箱。没有 UAC／gsudo 或产品启动。不能把沙箱失败写成产品 DPAPI 失败，也不能用弱保护替代。
+
+DPAPI 原生解密缓冲及本组件自有明文 QByteArray 在使用后清零；Qt JSON／HMAC 和调用方仍可能持有临时副本，不保证全内存无残留。同一 Windows 用户及管理员具备的文件／进程访问能力不属于进程间恶意软件隔离保证。真正异用户、跨机器、管理员到普通桥接的实际拒绝及 GUI 配对仍待系统验收。
 
 实际结果按源码、Qt、机器和构建配置记录在[任务验证记录](../../../handoff/qkeymapper_mcp_control/validation.md)。不同系统的结论分别验收。

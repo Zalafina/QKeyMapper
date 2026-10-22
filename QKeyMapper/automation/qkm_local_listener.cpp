@@ -28,12 +28,7 @@ bool validHello(const QJsonObject &message, const QString &instance)
         fields.append(QStringLiteral("client_name"));
         const QJsonValue value = message.value(QStringLiteral("client_name"));
         if (!value.isString()) return false;
-        const QString name = value.toString();
-        if (name.trimmed().isEmpty() || name.toUtf8().size() > 80) return false;
-        for (const QChar c : name) {
-            if (c.category() == QChar::Other_Control || c.category() == QChar::Other_Format)
-                return false;
-        }
+        if (!validClientName(value.toString())) return false;
     } else {
         return false;
     }

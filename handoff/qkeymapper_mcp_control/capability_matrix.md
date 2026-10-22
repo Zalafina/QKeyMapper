@@ -21,6 +21,7 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 | INF-LISTENER | [qkm_local_listener.cpp](../../QKeyMapper/automation/qkm_local_listener.cpp)：默认关闭的原生单实例管道、Qt 接管与清理、严格首包、绝对期限及请求 Token 门禁 | PC-W10 两套 Qt 普通配置各 59 通过；Qt6 故障配置 64 通过；匿名请求不得进入握手入口，在途检查全 listener 限一项，挂起检查超时／恢复失败关闭端点，旧结果不放行重启实例；见 IPC-20261022-11／13 | 无产品监听／凭据／ready／业务分发；配对／证明／撤销及认证后限额待 M1.1c；不等于 MCP 业务能力或 GUI 等价性 |
 | INF-REQUEST-CONTEXT | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：独立原生线程检查已读管道请求 Token，退出后回所属 Qt 线程报告 | 普通／匿名 SQOS、进程／会话绑定、析构回收通过；已接 listener；专用配置故障注入证明恢复失败、长期挂起及关闭交错不会认证或累积替代线程；见 IPC-20261022-12／13 | 故障注入不等于真实 OS API 故障；真正异用户／会话、管理员产品／普通桥接及完整鉴权尚未验收；不能当作业务权限 |
 | INF-AUTH-PROOF | [qkm_auth_proof.cpp](../../QKeyMapper/automation/qkm_auth_proof.cpp)：系统随机、固定格式双向 HMAC-SHA256 和一次性挑战 | 三个方向／用途的固定输入及 MAC 与独立 Python 结果一致；绑定字段逐项变化、版本／类型／长度、32 个错误字节位置、反射／重放／旧 nonce／取消及随机源失败通过；见 IPC-20261022-14 | 证明组件尚未接握手收发、配对凭据或 GUI 授权；不能作为已认证连接或业务权限；没有声称侧信道时序测量通过 |
+| INF-PAIR-STORE | [qkm_pair_store.cpp](../../QKeyMapper/automation/qkm_pair_store.cpp)：类型化权限／凭据、机器与应用绑定、当前用户 DPAPI、私有 ACL、原子保存 | PC-W10 非提权运行，普通 Qt6／Qt5 各 71、故障 Qt6 77 通过；独立进程读取、错误上下文／损坏／非法权限拒绝、只读失败保留原文件、私有目录与硬链接拒绝，见 IPC-20261022-15 | 未接配对／撤销控制器或产品 GUI；真实异用户／跨机器／高低权限未测，不能算业务授权或完整安全边界；默认执行沙箱不具备可用 DPAPI 环境，运行测试使用获准非提权沙箱外上下文 |
 
 ## 初始模块索引
 

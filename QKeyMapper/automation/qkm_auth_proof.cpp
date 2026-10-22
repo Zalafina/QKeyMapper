@@ -42,6 +42,16 @@ QByteArray secureRandomSecret()
     return bytes;
 }
 
+bool validClientName(const QString &name)
+{
+    if (name.trimmed().isEmpty() || name.toUtf8().size() > 80) return false;
+    for (const QChar c : name) {
+        if (c.category() == QChar::Other_Control || c.category() == QChar::Other_Format)
+            return false;
+    }
+    return true;
+}
+
 QByteArray authTranscript(const AuthBinding &binding, const QByteArray &serverNonce, ProofRole role)
 {
     if (binding.version != HandshakeVersion || !isLowerHex(binding.instanceId, 32)

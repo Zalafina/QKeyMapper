@@ -1,10 +1,14 @@
 #include "../../automation/qkm_ipc_frame.h"
 #include "../../automation/qkm_local_identity.h"
 #include "../../automation/qkm_local_listener.h"
+#include "../../automation/qkm_pair_store.h"
 
 #include <QBuffer>
 #include <QCoreApplication>
 #include <QEventLoop>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QLocalSocket>
@@ -12,6 +16,8 @@
 #include <QScopeGuard>
 #include <QTest>
 #include <QTimer>
+#include <QTemporaryDir>
+#include <QCryptographicHash>
 #include <QUuid>
 #include <QtEndian>
 #include <aclapi.h>
@@ -123,6 +129,40 @@ AuthBinding proofBinding()
     binding.server.creationTime = Q_UINT64_C(0x0123456789abcdef);
     binding.clientNonce = QByteArray::fromHex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
     return binding;
+}
+
+PairCredential storeCredential()
+{
+    return {QString(32, QLatin1Char('a')), QStringLiteral("测试 Agent 日本語"),
+            (std::numeric_limits<quint64>::max)(), KnownScopes, QByteArray(AuthSecretBytes, 'k')};
+}
+
+QByteArray readTestFile(const QString &path)
+{
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    return file.readAll();
+}
+
+bool replaceTestFile(const QString &path, const QByteArray &bytes)
+{
+    QFile file(path);
+    return file.open(QIODevice::WriteOnly | QIODevice::Truncate) && file.write(bytes) == bytes.size();
+}
+
+int runStoreReader(const QStringList &arguments)
+{
+    if (arguments.size() != 4) return 40;
+    PairCredentialStore store(arguments.at(2), arguments.at(3).toUtf8());
+    QList<PairCredential> records;
+    PairStoreError error;
+    if (!store.load(records, error)) return 50 + static_cast<int>(error);
+    const PairCredential expected = storeCredential();
+    if (records.size() != 1) return 41;
+    const PairCredential &actual = records.first();
+    return actual.pairId == expected.pairId && actual.clientName == expected.clientName
+        && actual.permissionEpoch == expected.permissionEpoch && actual.scopes == expected.scopes
+        && actual.secret == expected.secret ? 0 : 42;
 }
 
 int runListenerClient(const QStringList &arguments)
@@ -273,7 +313,13 @@ private slots:
     void proofRejectsInvalidBinding();
     void proofComparison();
     void challengeLifecycle();
+    void storeRoundTrip();
+    void storeInvalidInput();
+    void storeCorruptionAndContext();
+    void storeAtomicFailure();
+    void storeUnsafePaths();
 #ifdef QKM_AUTOMATION_TESTING
+    void storeMalformedProtectedData();
     void listenerVerifierStopAndRestart();
     void listenerVerifierTimeout_data();
     void listenerVerifierTimeout();
@@ -1118,7 +1164,223 @@ void McpIpcTest::challengeLifecycle()
 #endif
 }
 
+void McpIpcTest::storeRoundTrip()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/pairs-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString directory = temporary.path() + QStringLiteral("/private");
+    const QByteArray binding("test-application");
+    PairCredentialStore store(directory, binding);
+    QList<PairCredential> records{storeCredential()};
+    PairStoreError error;
+    QVERIFY(store.load(records, error));
+    QCOMPARE(error, PairStoreError::None);
+    QVERIFY(records.isEmpty());
+    QVERIFY(!QFileInfo::exists(directory));
+    const PairCredential expected = storeCredential();
+    QVERIFY2(store.save({expected}, error), qPrintable(QStringLiteral("save error %1").arg(int(error))));
+    QCOMPARE(error, PairStoreError::None);
+    const QByteArray encrypted = readTestFile(store.filePath());
+    QVERIFY(!encrypted.isEmpty());
+    QVERIFY(!encrypted.contains(expected.secret));
+    QVERIFY(!encrypted.contains(expected.secret.toHex()));
+    QVERIFY(!encrypted.contains(expected.clientName.toUtf8()));
+    QVERIFY(!encrypted.contains(expected.pairId.toLatin1()));
+    PairCredentialStore reopened(directory, binding);
+    QVERIFY(reopened.load(records, error));
+    QCOMPARE(records.size(), 1);
+    QCOMPARE(records.first().pairId, expected.pairId);
+    QCOMPARE(records.first().clientName, expected.clientName);
+    QCOMPARE(records.first().permissionEpoch, expected.permissionEpoch);
+    QCOMPARE(records.first().scopes, expected.scopes);
+    QVERIFY(records.first().secret == expected.secret);
+    QProcess child;
+    child.start(QCoreApplication::applicationFilePath(),
+        {QStringLiteral("--store-reader"), directory, QString::fromUtf8(binding)});
+    QVERIFY(child.waitForStarted(3000));
+    if (!child.waitForFinished(5000)) {
+        child.kill(); child.waitForFinished(3000); QFAIL("Store reader did not exit");
+    }
+    QCOMPARE(child.exitStatus(), QProcess::NormalExit);
+    QCOMPARE(child.exitCode(), 0);
+    QVERIFY(child.readAllStandardError().isEmpty());
+    QVERIFY(store.save({}, error));
+    QVERIFY(reopened.load(records, error));
+    QVERIFY(records.isEmpty());
+}
+
+void McpIpcTest::storeInvalidInput()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/pairs-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    PairCredentialStore store(temporary.path() + QStringLiteral("/private"), "test-application");
+    PairStoreError error;
+    const PairCredential original = storeCredential();
+    QVERIFY(store.save({original}, error));
+    const QByteArray before = readTestFile(store.filePath());
+    QList<PairCredential> invalid;
+    PairCredential value = original; value.pairId[0] = QLatin1Char('A'); invalid.append(value);
+    value = original; value.clientName.clear(); invalid.append(value);
+    value = original; value.clientName = QString::fromUtf8("x\0y", 3); invalid.append(value);
+    value = original; value.permissionEpoch = 0; invalid.append(value);
+    value = original; value.scopes = Configure; invalid.append(value);
+    value = original; value.scopes = Read | 128; invalid.append(value);
+    value = original; value.secret.chop(1); invalid.append(value);
+    for (const PairCredential &credential : invalid) {
+        QVERIFY(!validPairCredential(credential));
+        QVERIFY(!store.save({credential}, error));
+        QCOMPARE(error, PairStoreError::InvalidData);
+        QCOMPARE(readTestFile(store.filePath()), before);
+    }
+    QVERIFY(!store.save({original, original}, error));
+    QList<PairCredential> tooMany;
+    for (int i = 0; i <= MaxPairCredentials; ++i) {
+        value = original; value.pairId = QString::number(i, 16).rightJustified(32, QLatin1Char('0'));
+        tooMany.append(value);
+    }
+    QVERIFY(!store.save(tooMany, error));
+    QCOMPARE(readTestFile(store.filePath()), before);
+    PairCredentialStore noContext(temporary.path() + QStringLiteral("/other"), {});
+    QVERIFY(!noContext.save({original}, error));
+    QCOMPARE(error, PairStoreError::InvalidContext);
+    QVERIFY(!QFileInfo::exists(temporary.path() + QStringLiteral("/other")));
+}
+
+void McpIpcTest::storeCorruptionAndContext()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/pairs-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString directory = temporary.path() + QStringLiteral("/private");
+    PairCredentialStore store(directory, "test-application");
+    PairStoreError error;
+    QVERIFY(store.save({storeCredential()}, error));
+    const QByteArray original = readTestFile(store.filePath());
+    QList<PairCredential> records{storeCredential()};
+    PairCredentialStore wrong(directory, "other-application");
+    QVERIFY(!wrong.load(records, error));
+    QVERIFY(records.isEmpty());
+    QCOMPARE(error, PairStoreError::ProtectionFailed);
+    QVERIFY(!wrong.save({storeCredential()}, error));
+    QCOMPARE(readTestFile(store.filePath()), original);
+    QList<QByteArray> corrupt{QByteArray(), QByteArray("bad"), original.left(16), QByteArray(65537, '\0')};
+    QByteArray changed = original; changed[0] = static_cast<char>(changed.at(0) ^ 1); corrupt.append(changed);
+    for (const QByteArray &bytes : corrupt) {
+        QVERIFY(replaceTestFile(store.filePath(), bytes));
+        records = {storeCredential()};
+        QVERIFY(!store.load(records, error));
+        QVERIFY(records.isEmpty());
+        QVERIFY(!store.save({storeCredential()}, error));
+        QCOMPARE(readTestFile(store.filePath()), bytes);
+    }
+    QVERIFY(replaceTestFile(store.filePath(), original));
+    QVERIFY(store.load(records, error));
+    QCOMPARE(records.size(), 1);
+}
+
+void McpIpcTest::storeAtomicFailure()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/pairs-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    PairCredentialStore store(temporary.path() + QStringLiteral("/private"), "test-application");
+    PairStoreError error;
+    QVERIFY(store.save({storeCredential()}, error));
+    const QByteArray original = readTestFile(store.filePath());
+    const QString path = QDir::toNativeSeparators(store.filePath());
+    QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(path.utf16()), FILE_ATTRIBUTE_READONLY));
+    const auto restore = qScopeGuard([path]() { SetFileAttributesW(reinterpret_cast<LPCWSTR>(path.utf16()), FILE_ATTRIBUTE_NORMAL); });
+    QVERIFY(!store.save({}, error));
+    QVERIFY(error != PairStoreError::None);
+    QCOMPARE(readTestFile(store.filePath()), original);
+    QList<PairCredential> records;
+    QVERIFY(store.load(records, error));
+    QCOMPARE(records.size(), 1);
+    QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(path.utf16()), FILE_ATTRIBUTE_NORMAL));
+    QVERIFY(store.save({}, error));
+    QVERIFY(store.load(records, error));
+    QVERIFY(records.isEmpty());
+}
+
+void McpIpcTest::storeUnsafePaths()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/pairs-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString publicDirectory = temporary.path() + QStringLiteral("/public");
+    QVERIFY(QDir().mkdir(publicDirectory));
+    PairCredentialStore publicStore(publicDirectory, "test-application");
+    PairStoreError error;
+    QVERIFY(!publicStore.save({storeCredential()}, error));
+    QCOMPARE(error, PairStoreError::UnsafeStorage);
+    QVERIFY(!QFileInfo::exists(publicStore.filePath()));
+    PairCredentialStore store(temporary.path() + QStringLiteral("/private"), "test-application");
+    QVERIFY(store.save({storeCredential()}, error));
+    const QString link = QDir::toNativeSeparators(temporary.path() + QStringLiteral("/alias.dat"));
+    const QString file = QDir::toNativeSeparators(store.filePath());
+    QVERIFY(CreateHardLinkW(reinterpret_cast<LPCWSTR>(link.utf16()), reinterpret_cast<LPCWSTR>(file.utf16()), nullptr));
+    const auto deleteLink = qScopeGuard([link]() { DeleteFileW(reinterpret_cast<LPCWSTR>(link.utf16())); });
+    QList<PairCredential> records{storeCredential()};
+    QVERIFY(!store.load(records, error));
+    QVERIFY(records.isEmpty());
+    QCOMPARE(error, PairStoreError::UnsafeStorage);
+    QVERIFY(!store.save({}, error));
+    QVERIFY(DeleteFileW(reinterpret_cast<LPCWSTR>(link.utf16())));
+    QVERIFY(store.load(records, error));
+    QCOMPARE(records.size(), 1);
+}
+
 #ifdef QKM_AUTOMATION_TESTING
+void McpIpcTest::storeMalformedProtectedData()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/pairs-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QByteArray binding("test-application");
+    PairCredentialStore store(temporary.path() + QStringLiteral("/private"), binding);
+    PairStoreError error;
+    const PairCredential credential = storeCredential();
+    QVERIFY(store.save({credential}, error));
+    const QJsonObject record{{QStringLiteral("pair_id"), credential.pairId},
+        {QStringLiteral("client_name"), credential.clientName},
+        {QStringLiteral("epoch"), QString::number(credential.permissionEpoch)},
+        {QStringLiteral("scopes"), int(credential.scopes)},
+        {QStringLiteral("secret"), QString::fromLatin1(credential.secret.toHex())}};
+    const auto writeRoot = [&](const QJsonObject &root, bool badChecksum = false) {
+        FrameError frameError;
+        const QByteArray frame = encodeFrame(root, 32768, frameError);
+        QByteArray plain("QKM-PAIR-STORE-1", sizeof("QKM-PAIR-STORE-1"));
+        plain.append(badChecksum ? QByteArray(32, 'x') : QCryptographicHash::hash(frame, QCryptographicHash::Sha256));
+        plain.append(frame);
+        const QByteArray encrypted = protectPairStoreTestPlain(plain, binding);
+        return frameError == FrameError::None && !encrypted.isEmpty() && replaceTestFile(store.filePath(), encrypted);
+    };
+    const QJsonObject root{{QStringLiteral("format"), 1}, {QStringLiteral("pairs"), QJsonArray{record}}};
+    QVERIFY(writeRoot(root));
+    QList<PairCredential> records;
+    QVERIFY(store.load(records, error));
+    QCOMPARE(records.size(), 1);
+    QList<QJsonObject> badRecords;
+    QJsonObject changed = record; changed.insert(QStringLiteral("epoch"), 1); badRecords.append(changed);
+    changed = record; changed.insert(QStringLiteral("epoch"), QStringLiteral("01")); badRecords.append(changed);
+    changed = record; changed.insert(QStringLiteral("epoch"), QStringLiteral("18446744073709551616")); badRecords.append(changed);
+    changed = record; changed.insert(QStringLiteral("scopes"), 128); badRecords.append(changed);
+    changed = record; changed.insert(QStringLiteral("scopes"), 1.5); badRecords.append(changed);
+    changed = record; changed.insert(QStringLiteral("secret"), QString(63, QLatin1Char('a'))); badRecords.append(changed);
+    changed = record; changed.insert(QStringLiteral("unknown"), true); badRecords.append(changed);
+    QList<QJsonObject> invalid;
+    for (const QJsonObject &item : badRecords)
+        invalid.append({{QStringLiteral("format"), 1}, {QStringLiteral("pairs"), QJsonArray{item}}});
+    invalid.append({{QStringLiteral("format"), 2}, {QStringLiteral("pairs"), QJsonArray{record}}});
+    invalid.append({{QStringLiteral("format"), 1}, {QStringLiteral("pairs"), QJsonArray{record, record}}});
+    for (const QJsonObject &value : invalid) {
+        QVERIFY(writeRoot(value));
+        records = {credential};
+        QVERIFY(!store.load(records, error));
+        QVERIFY(records.isEmpty());
+        QCOMPARE(error, PairStoreError::InvalidData);
+    }
+    QVERIFY(writeRoot(root, true));
+    QVERIFY(!store.load(records, error));
+    QCOMPARE(error, PairStoreError::InvalidData);
+}
+
 void McpIpcTest::listenerVerifierStopAndRestart()
 {
     HANDLE gate = CreateEventW(nullptr, TRUE, FALSE, nullptr);
@@ -1245,6 +1507,8 @@ int main(int argc, char **argv)
         return runPipeClient(app.arguments());
     if (app.arguments().value(1) == QStringLiteral("--listener-client"))
         return runListenerClient(app.arguments());
+    if (app.arguments().value(1) == QStringLiteral("--store-reader"))
+        return runStoreReader(app.arguments());
     McpIpcTest test;
     return QTest::qExec(&test, argc, argv);
 }

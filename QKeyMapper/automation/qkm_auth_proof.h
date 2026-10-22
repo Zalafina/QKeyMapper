@@ -23,6 +23,7 @@ struct AuthBinding {
 };
 
 bool isLowerHex(const QString &text, int length);
+bool validClientName(const QString &name);
 QByteArray secureRandomSecret();
 QByteArray authTranscript(const AuthBinding &binding, const QByteArray &serverNonce, ProofRole role);
 QByteArray authenticationProof(const AuthBinding &binding, const QByteArray &serverNonce,
