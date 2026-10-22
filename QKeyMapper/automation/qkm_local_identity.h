@@ -59,5 +59,11 @@ private:
     std::shared_ptr<RequestIdentityState> m_state;
 };
 
+#ifdef QKM_AUTOMATION_TESTING
+// Test-target only: the gate is duplicated by start(), so its caller retains ownership.
+void setRequestIdentityTestHooks(HANDLE gate, bool failRestore);
+int requestIdentityTestWorkerCount();
+#endif
+
 } // namespace QkmAutomation
 #endif

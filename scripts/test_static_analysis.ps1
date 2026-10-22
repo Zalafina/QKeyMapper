@@ -57,14 +57,18 @@ Assert-Analysis ($sharedTargets.Count -eq 3 -and $sharedTargets -contains 'main'
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'diagnostics-test' -and $_.Source -like '*diagnostics_test.cpp' }).Count -eq 1) 'Diagnostics test was omitted.'
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'ui-scale-test' -and $_.Source -like '*qkm_ui_scale_test.cpp' }).Count -eq 1) 'UI scale test was omitted.'
 Assert-Analysis (@($runs.Runs | Where-Object { $_.Target -eq 'sendinput-lifecycle-test' -and $_.Source -like '*qkm_sendinput_lifecycle_test.cpp' }).Count -eq 1) 'SendInput lifecycle test was omitted.'
-$mcpRuns = @($runs.Runs | Where-Object { $_.Target -eq 'mcp-ipc-test' })
-Assert-Analysis ($mcpRuns.Count -eq 4) 'MCP IPC sources need their own test-target configuration.'
-Assert-Analysis (Test-Path -LiteralPath (Join-Path $report 'mcp-ipc-test-qmake\test_mcp_ipc.moc')) 'MCP IPC meta-object input was not generated.'
-foreach ($source in @('qkm_ipc_frame.cpp', 'qkm_local_identity.cpp', 'qkm_local_listener.cpp', 'test_mcp_ipc.cpp')) {
-    Assert-Analysis (@($mcpRuns | Where-Object { [IO.Path]::GetFileName($_.Source) -eq $source }).Count -eq 1) "MCP IPC source omitted: $source"
+foreach ($mcpTarget in @('mcp-ipc-test', 'mcp-ipc-fault-test')) {
+    $mcpRuns = @($runs.Runs | Where-Object { $_.Target -eq $mcpTarget })
+    Assert-Analysis ($mcpRuns.Count -eq 4) 'MCP IPC sources need both production and test-hook configurations.'
+    Assert-Analysis (Test-Path -LiteralPath (Join-Path $report ($mcpTarget + '-qmake\test_mcp_ipc.moc'))) 'MCP IPC meta-object input was not generated.'
+    foreach ($source in @('qkm_ipc_frame.cpp', 'qkm_local_identity.cpp', 'qkm_local_listener.cpp', 'test_mcp_ipc.cpp')) {
+        Assert-Analysis (@($mcpRuns | Where-Object { [IO.Path]::GetFileName($_.Source) -eq $source }).Count -eq 1) "MCP IPC source omitted: $source"
+    }
+    $mcpDb = Get-Content -Raw -LiteralPath (Join-Path $report ($mcpTarget + '\compile_commands.json')) | ConvertFrom-Json
+    $mcpEntry = $mcpDb | Where-Object { $_.file -like '*qkm_ipc_frame.cpp' }
+    Assert-Analysis ($mcpEntry.arguments -contains '-DQT_NETWORK_LIB' -and $mcpEntry.arguments -contains '-DQT_TESTLIB_LIB' -and $mcpEntry.arguments -notcontains '-DQT_WIDGETS_LIB') 'MCP IPC target inherited unrelated GUI flags.'
+    Assert-Analysis (($mcpEntry.arguments -contains '-DQKM_AUTOMATION_TESTING') -eq ($mcpTarget -eq 'mcp-ipc-fault-test')) 'MCP test hooks leaked into production-source configuration.'
 }
-$mcpEntry = $db | Where-Object { $_.file -like '*qkm_ipc_frame.cpp' }
-Assert-Analysis ($mcpEntry.arguments -contains '-DQT_NETWORK_LIB' -and $mcpEntry.arguments -contains '-DQT_TESTLIB_LIB' -and $mcpEntry.arguments -notcontains '-DQT_WIDGETS_LIB') 'MCP IPC target inherited unrelated GUI flags.'
 
 $failureReport = Join-Path $testDirectory 'fail'
 $failed = $false

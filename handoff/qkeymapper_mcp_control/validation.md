@@ -196,3 +196,23 @@ Qt6.8.3／Qt5.15.2 x64 console Release／asInvoker，原 EXE 路径不变，已�
 实际定向 Clang-Tidy／Clazy 对受影响 `qkm_local_identity.cpp` 和测试执行，全部 native exit 0、项目诊断 0，见 `out/tests/mcp_ipc/static-analysis-request/`；新增代码没有增加源文件／目标数量，前一切片的工具库存及报告回归未变化，复用 IPC-11 的维护回归证据。最终运行后仅补身份头文件的线程使用约束注释和文档，不改变有效测试输入。
 
 边界：组件尚未在 listener 内强制调用；下一步须将它纳入认证状态机，限制整个 listener 的在途检查数量和期限，处理停止／断开／重启时尚未完成的检查及过期回调，再接配对证明。没有注入 `RevertToSelf` 失败、内存／线程创建失败或检查长期不返回；这些分支只完成安全路径审查，不能作为已运行恢复验收。未执行产品／ASan／Win11／管理员连接、配对、MCP SDK、业务或 GUI／MCP 等价性测试；不创建窗口，不操作键鼠、驱动或 Default 焦点。
+
+## IPC-20261022-13：M1.1c-2 请求 Token 门禁、单在途与故障恢复
+
+- 基线 `f9a47bb0` 加 listener／identity、维护测试／工程、双配置分析登记及文档变化。产品工程／GUI／Worker／驱动／翻译仍未改；PC-W10，全部非提权、无窗口／Default／真实输入。
+- listener 的首包语法和真实进程初检通过后，必须完成请求 Token 检查才发出握手入口信号；匿名 SQOS 现在由 listener 拒绝。每个 listener 生命周期只保留一个 verifier；断开后等待 socket 完整析构及原生检查退出才重新接受连接。关闭接口立即释放 Qt／原生监听资源，不等待／强杀检查；存续检查期间 `start()` 返回失败。检查长期不退出而达到原绝对期限时关闭整个端点，恢复异常也关闭端点，迟到结果不会自动重新启用或发出握手信号。
+- 故障控制仅在独立 `CONFIG+=mcp_fault_injection` 构建定义 `QKM_AUTOMATION_TESTING` 时存在，普通 Qt6／Qt5 编译不含钩子。测试门事件由检查独立复制；测试结束释放门，模拟恢复失败时故意不执行恢复，验证识别级模拟身份随原生线程退出消失，Qt 调用线程未被模拟。没有提供 IPC 参数或产品配置去启用这些钩子。
+
+| 配置／EXE | 构建 | 最终运行 |
+|---|---|---|
+| Qt6.8.3 普通分支，`out/tests/mcp_ipc/qt6-release/release/QKeyMapperMcpIpcTest.exe` | qmake／JOM 退出 0，零警告／错误 | 59 通过、0 失败／跳过，19,732 ms |
+| Qt5.15.2 普通分支，`out/tests/mcp_ipc/qt5-release/release/QKeyMapperMcpIpcTest.exe` | 同上 | 59 通过、0 失败／跳过，20,618 ms |
+| Qt6.8.3 故障分支，`out/tests/mcp_ipc/qt6-faults/release/QKeyMapperMcpIpcTest.exe` | 同上，独立构建，测试宏显式开启 | 64 通过、0 失败／跳过，27,047 ms |
+
+三个最终进程均 exit 0、stderr 空，x64 console Release／asInvoker，Community MSVC 14.44.35207；外部看门狗 50 秒。原始 `configure_context.log`、`build_context.log`、`results_context.txt`、`test_context.log` 在各自构建目录，不随 Git 同步。
+
+故障用例独立断言：恢复失败组件返回 `ContextRestoreFailed` 和空身份；listener 恢复失败关闭端点、不发送握手；工作线程被门事件保持时确有一个原生线程，关闭在 1 秒容差内返回且不能重启；连接仍在／客户端已异常退出两种挂起状态均到原期限关闭接口；释放门后旧结果不会通过，显式再次启用才产生新实例；普通新客户端可再次通过身份门禁。没有用“未发生崩溃”替代这些状态与回调断言。
+
+分析工具分别读取普通／故障两个真实 qmake 目标，生成各自 `.moc` 和编译参数；维护回归断言每个目标四个源文件及测试宏只出现在故障配置。回归通过，`out/tests/mcp_ipc/static_analysis_context_regression.log`，明细 `out/tests/static_analysis/c2c30dba225a4ef8987cc3babb40bb03/`。实际定向分析三个改动 C++ 文件、两个配置共六次目标编译／十二次 Clang-Tidy／Clazy，全部 native exit 0、项目诊断 0；`out/tests/mcp_ipc/static-analysis-context/`。未重跑无关产品分析。
+
+故障注入验证指定分支，未制造真实系统 `RevertToSelf`／线程分配／内存分配故障，不能称为全部 OS 异常验收。仍未接配对、挑战证明、撤销、GUI 权限、MCP SDK 或业务；未运行产品、ASan、Win11、高低权限连接、真实异用户／会话和 GUI／MCP 等价性。当前信号只代表首包语法及 OS 身份门禁，不能进入业务权限。

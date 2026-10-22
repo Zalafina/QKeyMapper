@@ -14,3 +14,4 @@ DEFINES += UNICODE _UNICODE NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00
 QMAKE_CXXFLAGS += /utf-8
 QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'asInvoker\' uiAccess=\'false\'\"
 LIBS += -ladvapi32
+contains(CONFIG, mcp_fault_injection): DEFINES += QKM_AUTOMATION_TESTING

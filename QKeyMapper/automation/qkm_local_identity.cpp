@@ -4,9 +4,36 @@
 #include <cstddef>
 #include <limits>
 #include <process.h>
+#ifdef QKM_AUTOMATION_TESTING
+#include <atomic>
+#endif
 
 namespace QkmAutomation {
+
+struct RequestIdentityState {
+    HANDLE pipe = INVALID_HANDLE_VALUE;
+    ProcessIdentity expected;
+    IdentityResult result{{}, IdentityError::RequestUnavailable};
+#ifdef QKM_AUTOMATION_TESTING
+    HANDLE gate = nullptr;
+    bool failRestore = false;
+#endif
+    ~RequestIdentityState()
+    {
+        if (pipe != INVALID_HANDLE_VALUE) CloseHandle(pipe);
+#ifdef QKM_AUTOMATION_TESTING
+        if (gate) CloseHandle(gate);
+#endif
+    }
+};
+
 namespace {
+
+#ifdef QKM_AUTOMATION_TESTING
+HANDLE requestTestGate = nullptr;
+bool requestTestRestoreFailure = false;
+std::atomic<int> requestTestWorkers{0};
+#endif
 
 QByteArray tokenInformation(HANDLE token, TOKEN_INFORMATION_CLASS kind)
 {
@@ -65,8 +92,10 @@ bool readTokenIdentity(HANDLE token, ProcessIdentity &identity)
     return identity.isValid();
 }
 
-IdentityResult inspectRequest(HANDLE pipe, const ProcessIdentity &expected)
+IdentityResult inspectRequest(const RequestIdentityState &state)
 {
+    const HANDLE pipe = state.pipe;
+    const ProcessIdentity &expected = state.expected;
     const IdentityResult peer = queryPipePeerIdentity(pipe, PipeSide::Server);
     if (!peer.ok() || !sameProcess(peer.identity, expected))
         return {{}, IdentityError::RequestMismatch};
@@ -80,7 +109,12 @@ IdentityResult inspectRequest(HANDLE pipe, const ProcessIdentity &expected)
     bool restored = false;
     IdentityResult result{{}, IdentityError::RequestUnavailable};
     {
-        const auto revert = qScopeGuard([&]() { restored = RevertToSelf(); });
+        const auto revert = qScopeGuard([&]() {
+#ifdef QKM_AUTOMATION_TESTING
+            if (state.failRestore) return;
+#endif
+            restored = RevertToSelf();
+        });
         if (OpenThreadToken(GetCurrentThread(), TOKEN_QUERY, TRUE, &token)) {
             const auto closeToken = qScopeGuard([token]() { CloseHandle(token); });
             ProcessIdentity request = peer.identity;
@@ -107,13 +141,6 @@ IdentityResult inspectRequest(HANDLE pipe, const ProcessIdentity &expected)
 
 } // namespace
 
-struct RequestIdentityState {
-    HANDLE pipe = INVALID_HANDLE_VALUE;
-    ProcessIdentity expected;
-    IdentityResult result{{}, IdentityError::RequestUnavailable};
-    ~RequestIdentityState() { if (pipe != INVALID_HANDLE_VALUE) CloseHandle(pipe); }
-};
-
 namespace {
 
 unsigned __stdcall inspectRequestThread(void *argument)
@@ -122,8 +149,17 @@ unsigned __stdcall inspectRequestThread(void *argument)
         static_cast<std::shared_ptr<RequestIdentityState> *>(argument));
     const std::shared_ptr<RequestIdentityState> state = *holder;
     holder.reset();
+#ifdef QKM_AUTOMATION_TESTING
+    requestTestWorkers.fetch_add(1, std::memory_order_relaxed);
+    const auto finished = qScopeGuard([]() {
+        requestTestWorkers.fetch_sub(1, std::memory_order_relaxed);
+    });
+#endif
     try {
-        state->result = inspectRequest(state->pipe, state->expected);
+#ifdef QKM_AUTOMATION_TESTING
+        if (state->gate) WaitForSingleObject(state->gate, INFINITE);
+#endif
+        state->result = inspectRequest(*state);
     } catch (...) {
         state->result = {{}, IdentityError::RequestUnavailable};
     }
@@ -223,6 +259,11 @@ bool PipeRequestVerifier::start(HANDLE pipe, const ProcessIdentity &expected)
     if (!DuplicateHandle(GetCurrentProcess(), pipe, GetCurrentProcess(), &state->pipe,
                          0, FALSE, DUPLICATE_SAME_ACCESS)) return false;
     state->expected = expected;
+#ifdef QKM_AUTOMATION_TESTING
+    state->failRestore = requestTestRestoreFailure;
+    if (requestTestGate && !DuplicateHandle(GetCurrentProcess(), requestTestGate,
+        GetCurrentProcess(), &state->gate, 0, FALSE, DUPLICATE_SAME_ACCESS)) return false;
+#endif
     auto holder = std::make_unique<std::shared_ptr<RequestIdentityState>>(state);
     m_thread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, inspectRequestThread,
                                                       holder.get(), 0, nullptr));
@@ -233,5 +274,18 @@ bool PipeRequestVerifier::start(HANDLE pipe, const ProcessIdentity &expected)
     m_done.setEnabled(true);
     return true;
 }
+
+#ifdef QKM_AUTOMATION_TESTING
+void setRequestIdentityTestHooks(HANDLE gate, bool failRestore)
+{
+    requestTestGate = gate;
+    requestTestRestoreFailure = failRestore;
+}
+
+int requestIdentityTestWorkerCount()
+{
+    return requestTestWorkers.load(std::memory_order_relaxed);
+}
+#endif
 
 } // namespace QkmAutomation

@@ -59,6 +59,40 @@ LocalPipeListener::LocalPipeListener(QObject *parent) : QObject(parent)
     m_timeout.setTimerType(Qt::PreciseTimer);
     connect(&m_timeout, &QTimer::timeout, this, [this]() { endClient(ListenerError::Timeout); });
     connect(&m_notifier, &QWinEventNotifier::activated, this, [this]() { acceptClient(); });
+    connect(&m_verifier, &PipeRequestVerifier::finished, this, [this](const IdentityResult &result) {
+        if (!isListening()) return;
+        if (result.error == IdentityError::ContextRestoreFailed
+            || result.error == IdentityError::WorkerContextNotEmpty) {
+            fail();
+            return;
+        }
+        if (m_closing) {
+            tryFinishClient();
+            return;
+        }
+        if (!result.ok() || !sameProcess(result.identity, m_peer)) {
+            endClient(ListenerError::IdentityRejected);
+            return;
+        }
+        if (m_elapsed.hasExpired(PreauthTimeoutMs)) {
+            endClient(ListenerError::Timeout);
+            return;
+        }
+        const IdentityResult current = queryPipePeerIdentity(m_pipe, PipeSide::Server);
+        if (!current.ok() || !sameProcess(current.identity, m_peer)) {
+            endClient(ListenerError::IdentityRejected);
+            return;
+        }
+        if (!m_socket || m_socket->bytesAvailable()) {
+            endClient(ListenerError::InvalidHandshake);
+            return;
+        }
+        const QJsonObject message = m_handshake;
+        m_handshake = {};
+        const ProcessIdentity peer = m_peer;
+        // Identity verification is complete; pairing proof is still required for authorization.
+        emit handshakeReceived(message, peer);
+    });
 }
 
 LocalPipeListener::~LocalPipeListener()
@@ -69,6 +103,7 @@ LocalPipeListener::~LocalPipeListener()
 bool LocalPipeListener::start()
 {
     if (isListening()) return true;
+    if (m_verifier.isRunning()) return false;
     const IdentityResult own = queryProcessIdentity(GetCurrentProcessId());
     if (!own.ok()) return false;
     LPWSTR sid = nullptr;
@@ -133,6 +168,9 @@ void LocalPipeListener::stop()
     m_own = {};
     m_pipeName.clear();
     m_instanceId.clear();
+    m_handshake = {};
+    m_closing.reset();
+    m_disposingSocket = false;
 }
 
 bool LocalPipeListener::armAccept()
@@ -229,9 +267,8 @@ void LocalPipeListener::readClient()
         endClient(ListenerError::InvalidHandshake);
         return;
     }
-    // The authentication layer must verify the request token and pairing proof before dispatch.
-    const ProcessIdentity peer = m_peer;
-    emit handshakeReceived(message, peer);
+    m_handshake = message;
+    if (!m_verifier.start(m_pipe, m_peer)) fail();
 }
 
 void LocalPipeListener::disposeSocket()
@@ -250,18 +287,38 @@ void LocalPipeListener::disposeSocket()
 void LocalPipeListener::endClient(ListenerError reason)
 {
     if (!isListening()) return;
-    m_timeout.stop();
+    if (reason == ListenerError::Timeout && m_verifier.isRunning()) {
+        // A stuck native check disables the endpoint; never spawn replacements or wait in Qt.
+        fail();
+        return;
+    }
+    if (m_closing) return;
+    m_closing = reason;
+    m_handshake = {};
+    if (!m_verifier.isRunning()) m_timeout.stop();
     if (m_socket) {
         const QString instance = m_instanceId;
         QLocalSocket *socket = m_socket;
+        m_disposingSocket = true;
         disposeSocket();
         // Qt5 emits disconnected before releasing its pipe; rearm only after destruction.
-        connect(socket, &QObject::destroyed, this, [this, instance, reason]() {
-            if (isListening() && m_instanceId == instance) finishClient(reason);
+        connect(socket, &QObject::destroyed, this, [this, instance]() {
+            if (isListening() && m_instanceId == instance) {
+                m_disposingSocket = false;
+                tryFinishClient();
+            }
         }, Qt::QueuedConnection);
-    } else {
-        finishClient(reason);
     }
+    tryFinishClient();
+}
+
+void LocalPipeListener::tryFinishClient()
+{
+    if (!isListening() || !m_closing || m_disposingSocket || m_verifier.isRunning()) return;
+    const ListenerError reason = *m_closing;
+    m_closing.reset();
+    m_timeout.stop();
+    finishClient(reason);
 }
 
 void LocalPipeListener::finishClient(ListenerError reason)

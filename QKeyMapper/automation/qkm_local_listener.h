@@ -8,6 +8,7 @@
 #include <QObject>
 #include <QTimer>
 #include <QWinEventNotifier>
+#include <optional>
 
 class QLocalSocket;
 
@@ -45,6 +46,7 @@ private:
     void readClient();
     void endClient(ListenerError reason);
     void finishClient(ListenerError reason);
+    void tryFinishClient();
     void disposeSocket();
     void fail();
 
@@ -62,6 +64,10 @@ private:
     QString m_pipeName;
     QString m_instanceId;
     bool m_received = false;
+    bool m_disposingSocket = false;
+    std::optional<ListenerError> m_closing;
+    QJsonObject m_handshake;
+    PipeRequestVerifier m_verifier;
 };
 
 } // namespace QkmAutomation

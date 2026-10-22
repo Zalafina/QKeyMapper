@@ -250,6 +250,12 @@ private slots:
     void requestContext_data();
     void requestContext();
     void requestContextDisposal();
+#ifdef QKM_AUTOMATION_TESTING
+    void listenerVerifierStopAndRestart();
+    void listenerVerifierTimeout_data();
+    void listenerVerifierTimeout();
+    void listenerRestoreFailure();
+#endif
 };
 
 void McpIpcTest::roundTrip_data()
@@ -712,6 +718,7 @@ void McpIpcTest::listenerReject_data()
         QTest::newRow(kind) << QString::fromLatin1(kind) << int(ListenerError::InvalidHandshake);
     for (const char *kind : {"oversize", "invalid-json", "invalid-utf8", "flood"})
         QTest::newRow(kind) << QString::fromLatin1(kind) << int(ListenerError::InvalidFrame);
+    QTest::newRow("anonymous") << QStringLiteral("anonymous") << int(ListenerError::IdentityRejected);
 }
 
 void McpIpcTest::listenerReject()
@@ -846,8 +853,11 @@ void McpIpcTest::listenerSecondMessage()
 void McpIpcTest::requestContext_data()
 {
     QTest::addColumn<QString>("kind");
-    for (const char *kind : {"normal", "anonymous", "changed-process", "changed-session"})
+    for (const char *kind : {"normal", "changed-process", "changed-session"})
         QTest::newRow(kind) << QString::fromLatin1(kind);
+#ifdef QKM_AUTOMATION_TESTING
+    QTest::newRow("restore-failure") << QStringLiteral("restore-failure");
+#endif
 }
 
 void McpIpcTest::requestContext()
@@ -864,6 +874,10 @@ void McpIpcTest::requestContext()
     const auto sockets = listener.findChildren<QLocalSocket *>();
     QCOMPARE(sockets.size(), 1);
     const HANDLE pipe = reinterpret_cast<HANDLE>(sockets.first()->socketDescriptor());
+#ifdef QKM_AUTOMATION_TESTING
+    setRequestIdentityTestHooks(nullptr, kind == QStringLiteral("restore-failure"));
+    const auto resetHooks = qScopeGuard([]() { setRequestIdentityTestHooks(nullptr, false); });
+#endif
     ProcessIdentity expected = peer;
     if (kind == QStringLiteral("changed-process")) ++expected.creationTime;
     if (kind == QStringLiteral("changed-session")) ++expected.sessionId;
@@ -897,8 +911,8 @@ void McpIpcTest::requestContext()
         } else {
             QVERIFY(!result.ok());
             QVERIFY(!result.identity.isValid());
-            QCOMPARE(result.error, kind == QStringLiteral("anonymous")
-                ? IdentityError::RequestUnavailable : IdentityError::RequestMismatch);
+            QCOMPARE(result.error, kind == QStringLiteral("restore-failure")
+                ? IdentityError::ContextRestoreFailed : IdentityError::RequestMismatch);
         }
         QVERIFY(!OpenThreadToken(GetCurrentThread(), TOKEN_QUERY, TRUE, &originalToken));
         QCOMPARE(GetLastError(), DWORD(ERROR_NO_TOKEN));
@@ -938,6 +952,126 @@ void McpIpcTest::requestContextDisposal()
     QTRY_VERIFY_WITH_TIMEOUT(gone(), 3000);
     QCOMPARE(callbacks, 0);
 }
+
+#ifdef QKM_AUTOMATION_TESTING
+void McpIpcTest::listenerVerifierStopAndRestart()
+{
+    HANDLE gate = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    QVERIFY(gate);
+    const auto cleanup = qScopeGuard([gate]() {
+        setRequestIdentityTestHooks(nullptr, false);
+        SetEvent(gate);
+        CloseHandle(gate);
+    });
+    setRequestIdentityTestHooks(gate, false);
+    LocalPipeListener listener;
+    int received = 0;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this, [&]() { ++received; });
+    QVERIFY(listener.start());
+    const QString oldInstance = listener.instanceId();
+    ListenerChild child;
+    QVERIFY(child.launch(listener, QStringLiteral("hello")));
+    QTRY_COMPARE_WITH_TIMEOUT(requestIdentityTestWorkerCount(), 1, 1000);
+    QCOMPARE(received, 0);
+    QElapsedTimer elapsed;
+    elapsed.start();
+    listener.stop();
+    QVERIFY(elapsed.elapsed() < 1000);
+    QVERIFY(!listener.start());
+    QCOMPARE(requestIdentityTestWorkerCount(), 1);
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(child.exitCode(), 0);
+    setRequestIdentityTestHooks(nullptr, false);
+    QVERIFY(SetEvent(gate));
+    QTRY_VERIFY_WITH_TIMEOUT(listener.start(), 3000);
+    QVERIFY(listener.instanceId() != oldInstance);
+    QCOMPARE(received, 0);
+    ListenerChild next;
+    QVERIFY(next.launch(listener, QStringLiteral("hello")));
+    QTRY_COMPARE_WITH_TIMEOUT(received, 1, 3000);
+    listener.closeClient();
+    QTRY_COMPARE_WITH_TIMEOUT(next.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(next.exitCode(), 0);
+    QCOMPARE(requestIdentityTestWorkerCount(), 0);
+}
+
+void McpIpcTest::listenerVerifierTimeout_data()
+{
+    QTest::addColumn<bool>("disconnect");
+    QTest::newRow("connected-held") << false;
+    QTest::newRow("disconnected-held") << true;
+}
+
+void McpIpcTest::listenerVerifierTimeout()
+{
+    QFETCH(bool, disconnect);
+    HANDLE gate = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+    QVERIFY(gate);
+    const auto cleanup = qScopeGuard([gate]() {
+        setRequestIdentityTestHooks(nullptr, false);
+        SetEvent(gate);
+        CloseHandle(gate);
+    });
+    setRequestIdentityTestHooks(gate, false);
+    LocalPipeListener listener;
+    int received = 0, failures = 0;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this, [&]() { ++received; });
+    connect(&listener, &LocalPipeListener::failed, this, [&]() { ++failures; });
+    QVERIFY(listener.start());
+    ListenerChild child;
+    QVERIFY(child.launch(listener, QStringLiteral("hello")));
+    QTRY_COMPARE_WITH_TIMEOUT(requestIdentityTestWorkerCount(), 1, 1000);
+    if (disconnect) {
+        child.kill();
+        QVERIFY(child.waitForFinished(3000));
+    }
+    QTRY_COMPARE_WITH_TIMEOUT(failures, 1, PreauthTimeoutMs + 1500);
+    QVERIFY(!listener.isListening());
+    QVERIFY(!listener.start());
+    QCOMPARE(received, 0);
+    QCOMPARE(requestIdentityTestWorkerCount(), 1);
+    if (!disconnect) {
+        QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+        QCOMPARE(child.exitCode(), 0);
+    }
+    setRequestIdentityTestHooks(nullptr, false);
+    QVERIFY(SetEvent(gate));
+    QTRY_VERIFY_WITH_TIMEOUT(listener.start(), 3000);
+    QCOMPARE(received, 0);
+    QCOMPARE(failures, 1);
+    QCOMPARE(requestIdentityTestWorkerCount(), 0);
+}
+
+void McpIpcTest::listenerRestoreFailure()
+{
+    setRequestIdentityTestHooks(nullptr, true);
+    const auto resetHooks = qScopeGuard([]() { setRequestIdentityTestHooks(nullptr, false); });
+    LocalPipeListener listener;
+    int received = 0, failures = 0;
+    connect(&listener, &LocalPipeListener::handshakeReceived, this, [&]() { ++received; });
+    connect(&listener, &LocalPipeListener::failed, this, [&]() { ++failures; });
+    QVERIFY(listener.start());
+    ListenerChild child;
+    QVERIFY(child.launch(listener, QStringLiteral("hello")));
+    QTRY_COMPARE_WITH_TIMEOUT(failures, 1, 3000);
+    QVERIFY(!listener.isListening());
+    QCOMPARE(received, 0);
+    QCOMPARE(requestIdentityTestWorkerCount(), 0);
+    HANDLE token = nullptr;
+    QVERIFY(!OpenThreadToken(GetCurrentThread(), TOKEN_QUERY, TRUE, &token));
+    QCOMPARE(GetLastError(), DWORD(ERROR_NO_TOKEN));
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(child.exitCode(), 0);
+    setRequestIdentityTestHooks(nullptr, false);
+    QVERIFY(listener.start());
+    ListenerChild next;
+    QVERIFY(next.launch(listener, QStringLiteral("hello")));
+    QTRY_COMPARE_WITH_TIMEOUT(received, 1, 3000);
+    listener.closeClient();
+    QTRY_COMPARE_WITH_TIMEOUT(next.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(next.exitCode(), 0);
+}
+#endif
 
 int main(int argc, char **argv)
 {
