@@ -45,6 +45,9 @@ public:
     bool getSaveSplitterPosition(void) const;
     void setSaveSplitterPosition(bool save);
 
+signals:
+    void mcpControlRequested();
+
 protected:
     bool event(QEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;

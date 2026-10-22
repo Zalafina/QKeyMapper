@@ -12,17 +12,18 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 
 ## 内部通信基础（M1.1a／b／c）
 
-以下是内部组件检查，不是已对外开放的 MCP 能力。产品尚未链接这些文件；业务能力的 GUI／MCP 等价性状态仍为未执行。结果见验证记录 `IPC-20261022-07`／`11`／`12`。
+以下是内部组件检查，不是已对外开放的 MCP 能力。产品已链接基础组件并接入默认关闭的管理窗口；正式 SDK／业务尚未开放，业务等价性仍未执行。结果见验证记录 `IPC-20261022-07`／`11`／`12`。
 
 | ID | 实现及源码 | 已证明范围 | 未证明范围 |
 |---|---|---|---|
 | INF-FRAME | [qkm_ipc_frame.cpp](../../QKeyMapper/automation/qkm_ipc_frame.cpp)：大端长度、分段读取、有界 UTF-8 JSON 对象、深度与失败终止 | Qt6.8.3／Qt5.15.2 指定边界用例通过；实际往返保留中文／日文／emoji、转义 NUL，错误不回显旧消息，超限头不分配大载荷 | 首包 schema／版本、读缓存和慢连接见 INF-LISTENER；认证后读写限额、鉴权、速率和业务原子提交由后续层实现 |
 | INF-IDENTITY | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：进程创建时间、主 Token SID／登录／会话及实际管道对端身份 | 两套 Qt 下同机独立进程双方查询通过；请求自报 PID 未被当作身份；合成字段变化及不可读取身份被拒绝 | 请求上下文组件见 INF-REQUEST-CONTEXT；完整集成／异常恢复、真正异用户／会话、管理员产品与普通桥接、配对／授权及撤销尚未验收；主 Token 快照不等于完整授权 |
-| INF-LISTENER | [qkm_local_listener.cpp](../../QKeyMapper/automation/qkm_local_listener.cpp)：默认关闭的原生单实例管道、Qt 接管与清理、严格首包、绝对期限及请求 Token 门禁 | PC-W10 两套 Qt 普通配置各 59 通过；Qt6 故障配置 64 通过；匿名请求不得进入握手入口，在途检查全 listener 限一项，挂起检查超时／恢复失败关闭端点，旧结果不放行重启实例；见 IPC-20261022-11／13 | 无产品监听／凭据／ready／业务分发；配对／证明／撤销及认证后限额待 M1.1c；不等于 MCP 业务能力或 GUI 等价性 |
+| INF-LISTENER | [qkm_local_listener.cpp](../../QKeyMapper/automation/qkm_local_listener.cpp)：默认关闭的原生单实例管道、Qt 接管与清理、严格首包、绝对期限及请求 Token 门禁 | PC-W10 两套 Qt 普通配置各 59 通过；Qt6 故障配置 64 通过；匿名请求不得进入握手入口，在途检查全 listener 限一项，挂起检查超时／恢复失败关闭端点，旧结果不放行重启实例；见 IPC-20261022-11／13 | listener 单独不授权；产品管理窗口和内部控制器已接入，正式 SDK／业务尚未开放；不等于业务能力或 GUI 等价性 |
 | INF-REQUEST-CONTEXT | [qkm_local_identity.cpp](../../QKeyMapper/automation/qkm_local_identity.cpp)：独立原生线程检查已读管道请求 Token，退出后回所属 Qt 线程报告 | 普通／匿名 SQOS、进程／会话绑定、析构回收通过；已接 listener；专用配置故障注入证明恢复失败、长期挂起及关闭交错不会认证或累积替代线程；见 IPC-20261022-12／13 | 故障注入不等于真实 OS API 故障；真正异用户／会话、管理员产品／普通桥接及完整鉴权尚未验收；不能当作业务权限 |
 | INF-AUTH-PROOF | [qkm_auth_proof.cpp](../../QKeyMapper/automation/qkm_auth_proof.cpp)：系统随机、固定格式双向 HMAC-SHA256 和一次性挑战 | 三个方向／用途的固定输入及 MAC 与独立 Python 结果一致；绑定字段逐项变化、版本／类型／长度、32 个错误字节位置、反射／重放／旧 nonce／取消及随机源失败通过；见 IPC-20261022-14 | 证明组件尚未接握手收发、配对凭据或 GUI 授权；不能作为已认证连接或业务权限；没有声称侧信道时序测量通过 |
-| INF-PAIR-STORE | [qkm_pair_store.cpp](../../QKeyMapper/automation/qkm_pair_store.cpp)：类型化权限／凭据、机器与应用绑定、当前用户 DPAPI、私有 ACL、原子保存 | PC-W10 非提权运行，普通 Qt6／Qt5 各 71、故障 Qt6 77 通过；独立进程读取、错误上下文／损坏／非法权限拒绝、只读失败保留原文件、私有目录与硬链接拒绝，见 IPC-20261022-15 | 未接配对／撤销控制器或产品 GUI；真实异用户／跨机器／高低权限未测，不能算业务授权或完整安全边界；默认执行沙箱不具备可用 DPAPI 环境，运行测试使用获准非提权沙箱外上下文 |
-| INF-SESSION | [qkm_session_server.cpp](../../QKeyMapper/automation/qkm_session_server.cpp)：连接代次、GUI 权威批准入口、证明及保存后 ready、最小权限、代次更新／撤销、分阶段限额 | PC-W10 Qt6／Qt5 各 80，故障 Qt6 与 ASan 各 86；独立进程配对／重连／撤销、迟到批准、错误／反射证明、保存失败、慢帧、处理器禁用／销毁；见 IPC-20261022-16／17 | 仅维护测试调用的内部控制器；产品 GUI、发现、正式 SDK、高低权限待接／待测，不算业务能力或 GUI／MCP 等价性 |
+| INF-PAIR-STORE | [qkm_pair_store.cpp](../../QKeyMapper/automation/qkm_pair_store.cpp)：类型化权限／凭据、机器与应用绑定、当前用户 DPAPI、私有 ACL、原子保存 | PC-W10 非提权运行，普通 Qt6／Qt5 各 71、故障 Qt6 77 通过；独立进程读取、错误上下文／损坏／非法权限拒绝、只读失败保留原文件、私有目录与硬链接拒绝，见 IPC-20261022-15 | 已接内部控制器与管理窗口；真实异用户／跨机器／高低权限未测，不能算业务授权或完整安全边界；默认执行沙箱不具备可用 DPAPI 环境，运行测试使用获准非提权沙箱外上下文 |
+| INF-SESSION | [qkm_session_server.cpp](../../QKeyMapper/automation/qkm_session_server.cpp)：连接代次、GUI 权威批准入口、证明及保存后 ready、最小权限、代次更新／撤销、分阶段限额 | PC-W10 Qt6／Qt5 各 80，故障 Qt6 与 ASan 各 86；独立进程配对／重连／撤销、迟到批准、错误／反射证明、保存失败、慢帧、处理器禁用／销毁；见 IPC-20261022-16／17 | 仅维护测试调用的内部控制器；产品管理窗口已接；发现、正式 SDK、高低权限待接／待测，不算业务能力或 GUI／MCP 等价性 |
+| INF-GUI | [ControlDialog](../../QKeyMapper/automation/qkm_control_dialog.cpp)、[通用高级设置](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[托盘入口](../../QKeyMapper/qkeymapper.cpp)：本次运行启用、只读默认、实际程序／PID、权限批准、拒绝／撤销、窗口关闭与 Escape | 产品 Qt6／Qt5 构建；私有桌面直接控件事件＋独立认证子进程通过，实际状态／凭据断言；三语言静态图已审阅，详见 IPC-20261022-18 | 维护目标使用同一窗口，不代表实际产品入口／缩放主题／管理员到普通桥接已经验收；发现与 SDK、60 秒 GUI 超时、全部业务等价性仍待验证 |
 
 ## 初始模块索引
 

@@ -292,3 +292,31 @@ EXE 沿用 `out/tests/mcp_ipc/{qt6-release,qt5-release,qt6-faults}/release/QKeyM
 确认 EXE 导入 `clang_rt.asan_dynamic-x86_64.dll`，PATH 仅进程内加入对应 kit。实际非提权运行完整故障测试：**86 通过、0 失败／跳过，53,820 ms，exit 0，stderr 空，无 ASan 报告**。证据为该目录 `build_session.log`、`results_session_final.txt`、`test_session_final.log`。包含原生验证滞留／恢复故障、对象销毁、listener 重启、会话关闭／处理器销毁及 DPAPI／ACL 负例。
 
 插桩仅本目标 first-party 组件／测试，Qt DLL 未插桩；`detect_leaks=0`，无泄漏检测结论；OS 恢复故障为受控注入。未覆盖产品 GUI、映射引擎、高低权限或 Win11。构建／编辑／分析未提权，无 UAC 或驱动操作。
+
+## IPC-20261022-18：产品管理窗口与可移植私有桌面验证
+
+基线 `001bf61d` 加 `ControlDialog`／automation.pri、真实进程路径读取、通用高级设置和独立托盘入口、语言／退出清理及现有 editor UI scale 注册。Worker／驱动／TS／产品 manifest 未改。端点仍默认关闭且只在 GUI 明确启用后监听；当前没有产品业务回调，正式 MCP SDK 也尚未连接，不能算普通映射／软件设置能力完成。
+
+管理窗口默认读取权限，配置及启停须另选；所有已存权限位均展示。程序路径由真实 PID／创建时间核实并用只读单行框显示；自报 client name 明文显示，不解释富文本。Enter 不默认批准／撤销。关闭窗口保留已经启用的接口；待批准请求在拒绝、X 关闭或 Escape 时拒绝，统一使用 QDialog 的 done 边界，避免 Escape 绕过 closeEvent。
+
+| 目标／检查 | 当前结果 |
+|---|---|
+| 产品 Qt6.8.3 x64 Release | qmake／JOM exit 0，零编译／链接警告；EXE `out/build_qt6/release/QKeyMapper.exe` |
+| 产品 Qt5.15.2 x64 Release | exit 0；官方 msvc2019_64 的既定 qtmain.lib(qtmain_win.obj) 缺 PDB LNK4099 例外，其余无警告；EXE `out/build_qt5_5152/release/QKeyMapper.exe` |
+| 管理窗口 Qt6 Release／asInvoker | 最终 `final-qt6/results.txt`：11 通过、0 失败／跳过，1,085 ms，无运行告警，native exit 0 |
+| 管理窗口 Qt5 Release／asInvoker | `baseline-qt5/results.txt`：11 通过、0 失败／跳过，7,893 ms，无运行告警，native exit 0；此后只改预览元数据分支，普通用例有效输入未变，最终 EXE 另跑了中文预览元数据 |
+| 可移植脚本 | 两 Qt 的真实私有桌面运行通过；原生可见性／DPI 与所属 PID 核对，截图后关闭自有窗口。缺参数、output 越出 out、Python -O 三种入口均 exit 2 拒绝 |
+
+产品最终日志 `out/tests/mcp_control/product_qt{6,5}_baseline.log`。维护 EXE 是 `out/tests/mcp_control/{qt6-release,qt5-release}/release/QKeyMapperMcpControlTest.exe`，Community 14.44.35207 编译零警告；产品使用原构建脚本选择的 BuildTools kit。运行在获准沙箱外以使用真实用户 DPAPI，父／子 TokenElevation=0；编辑、构建和分析在原沙箱且未提权，无 UAC／gsudo。
+
+维护目标使用产品同一 ControlDialog，经 Qt 真实控件事件驱动，并由独立 `QKeyMapperMcpIpcTest --session-client` 子进程完成真实管道及证明。断言核对默认不监听／不创建目录、真实 EXE 路径与 PID、只读及附加权限的真实凭据、批准／拒绝、撤销、关闭保留接口、X／Escape 取消待批准请求、失败回显；业务响应是明确测试 fixture，不代替实际 QKeyMapper 业务或正式 MCP 调用。
+
+初次驱动未显示窗口／点击复选框空白中心，未触发完整用户操作；修正为显示窗口、等待暴露、点击 style 提供的实际指示区，并断言按钮效果。Qt5 初始测试还因未采用产品 DPI／字体／Fusion 基线而有几何告警；对照 main.cpp，测试设置相同的高 DPI 启用、PassThrough、Fusion 与 FONTNAME_ENGLISH 9pt 后，最终 Qt5／Qt6 均无运行告警。没有修改产品 DPI／几何逻辑或屏蔽告警；旧记录留在 portable-*／initial_*，不算最终验收。
+
+三语言静态审阅：`out/tests/mcp_control/baseline-qt6/` 和 `baseline-qt5/` 各关闭／待批准六图，共十二图已逐张审阅；文字／按钮／权限控件完整，路径可水平滚动，`<b>` 仍是文字。最终 Qt6 元数据／脚本补充运行与六图在 `final-qt6/`，样式和控件呈现未变；Qt5 中文最终预览在 `mcp_qt5-release_0_pending_fff6c2.*`。pending 图是 UI fixture，未启用接口或批准客户端，不作为安全证明。
+
+实际桌面：最终 Qt6 `QkmMcp_21a01079e6854afb850499b13948c2d9`，Qt5 控件 `QkmMcp_77b14cf5726e4d07b2d93f7ff737b13d`；目标自身报告并与 launcher 比较。元数据中两 Qt 均 Qt DPR 1.5／logical DPI 96、原生 DPI 144、IsWindowVisible=true、Fusion／Microsoft YaHei UI 9pt，详情在本机 JSON。通过 capture_ui_snapshots.ps1 的 PrintWindow 抓图，截图程序也在相同私有桌面核对 HWND／PID 后关闭窗口；未切换输入桌面，无 Default、SendInput、驱动或个人 INI 操作。
+
+定向分析 identity、ControlDialog、维护测试：初始三个文件共九个真实目标编译（main、sendinput-lifecycle、IPC 普通／故障、control），工具 native exit 0，只有测试的模块包含及遗漏 emit 两项诊断；改用 QtTest/QTest 与显式 emit 后修复。后续按实际变化只重跑 ControlDialog 的三个配置和测试配置；最终 `static-analysis-portable/`、`static-analysis-metadata-test/` 均 native exit 0、项目诊断 0，identity 沿用本次初始四配置零诊断。库存／报告回归通过，`static_analysis_regression.log`，明细 `out/tests/static_analysis/30e8d0c123b14d57905a189d03b1ee20/`，确认 control 目标八个 cpp、真实 Widgets 参数且无故障宏。
+
+边界：没有启动正式产品、验证实际入口／主题／动态缩放、管理员产品与普通桥接、60 秒 GUI 批准超时、Win11、真实键鼠、业务等价性或性能；本切片未选 ASan，IPC-17 仅覆盖当时不变的会话／原生验证组件。所有日志／EXE／JSON／截图仅本机 out，不随 Git 同步；可移植测试源码／命令随仓库同步，另一台 PC 需重建并重新验证。

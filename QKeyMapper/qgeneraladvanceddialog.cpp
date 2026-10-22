@@ -3,6 +3,7 @@
 #include "qkeymapper.h"
 #include "qkeymapper_constants.h"
 #include "qstyle_singletons.h"
+#include "automation/qkm_control_dialog.h"
 
 #include <QApplication>
 
@@ -101,6 +102,7 @@ QGeneralAdvancedDialog::QGeneralAdvancedDialog(QWidget *parent)
     QObject::connect(ui->globalSettingSwitchTimerSpinBox, QOverload<int>::of(&QSpinBox::valueChanged),
                      this, [notifyDirty](int) { notifyDirty(); });
 
+    connect(ui->mcpControlButton, &QPushButton::clicked, this, &QGeneralAdvancedDialog::mcpControlRequested);
     setUILanguage(0);
     updateStartupSpecifyPositionState();
     updateGlobalMappingFullscreenState();
@@ -113,8 +115,8 @@ QGeneralAdvancedDialog::~QGeneralAdvancedDialog()
 
 void QGeneralAdvancedDialog::setUILanguage(int languageindex)
 {
-    Q_UNUSED(languageindex);
     setWindowTitle(tr("General Advanced Setting"));
+    ui->mcpControlButton->setText(QkmAutomation::ControlDialog::title(languageindex));
 
     ui->startupPositionGroupBox->setTitle(tr("Startup Position"));
     ui->startupPositionLabel->setText(tr("Startup Position"));

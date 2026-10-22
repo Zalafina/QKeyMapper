@@ -199,6 +199,23 @@ IdentityResult queryProcessIdentity(quint32 processId)
     return {identity, IdentityError::None};
 }
 
+QString queryProcessExecutable(const ProcessIdentity &expected)
+{
+    if (!expected.isValid()) return {};
+    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION | SYNCHRONIZE, FALSE, expected.processId);
+    if (!process) return {};
+    const auto closeProcess = qScopeGuard([process]() { CloseHandle(process); });
+    FILETIME created{}, exited{}, kernel{}, user{};
+    if (WaitForSingleObject(process, 0) != WAIT_TIMEOUT
+        || !GetProcessTimes(process, &created, &exited, &kernel, &user)
+        || ((quint64(created.dwHighDateTime) << 32) | created.dwLowDateTime) != expected.creationTime) return {};
+    wchar_t path[32768]{};
+    DWORD size = 32768;
+    if (!QueryFullProcessImageNameW(process, 0, path, &size)
+        || WaitForSingleObject(process, 0) != WAIT_TIMEOUT) return {};
+    return QString::fromWCharArray(path, static_cast<int>(size));
+}
+
 IdentityResult queryPipePeerIdentity(HANDLE pipe, PipeSide side)
 {
     ULONG processId = 0, sessionId = 0;

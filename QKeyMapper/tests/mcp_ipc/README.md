@@ -1,6 +1,6 @@
 # MCP 本机 IPC 基础测试
 
-当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*`、`automation/qkm_local_listener.*`、`automation/qkm_auth_proof.*` 、`automation/qkm_pair_store.*` 和 `automation/qkm_session_server.*`。这些基础代码由本测试目标编译，尚未加入产品工程或建立产品监听；产品 GUI、正式 MCP 桥接与业务操作仍按主计划接入。
+当前覆盖 `automation/qkm_ipc_frame.*`、`automation/qkm_local_identity.*`、`automation/qkm_local_listener.*`、`automation/qkm_auth_proof.*`、`automation/qkm_pair_store.*` 和 `automation/qkm_session_server.*`。这些基础代码由本维护目标及产品共用。产品已接入默认关闭的管理窗口；正式 MCP 桥接与业务操作仍按主计划接入。管理窗口用例见 [mcp_control](../mcp_control/README.md)。
 
 ## 覆盖与边界
 
@@ -9,9 +9,9 @@
 - 从 Windows 进程和 Token 读取 PID、进程创建时间、用户 SID、logon SID、登录 AuthenticationId 及 SessionId；按真实数据比较进程／登录会话。身份读取失败返回空身份，不能使用请求自报字段作为后备值。
 - 独立子进程通过随机本机命名管道连接；管道设置 logon SID DACL、远程拒绝及首实例限制。两端分别查询真实对端，测试报文故意自报另一个 PID，断言身份仍来自 Windows。
 - listener 构造时关闭，显式启用生成新的实例／管道名；关闭可取消挂起 accept，重新启用不沿用旧实例。保留一个原生管道实例并复制句柄给 Qt，旧 socket 完整析构后才重新接受连接，避免 Qt5 断开信号早于底层清理造成重连破坏；关闭／重启交错时丢弃旧实例的清理回调。
-- 初始限制一个连接，握手载荷 4096 字节，Qt 接管前读缓存限制为 4100 字节。接入起的绝对 3000 ms 期限不随碎片、有效首包或额外消息延长；未来 GUI 配对等待另行实现。当前没有输出接口或业务队列，输出字节数为零。
+- 初始限制一个连接，握手载荷 4096 字节，Qt 接管前读缓存限制为 4100 字节。接入起的绝对 3000 ms 期限不随碎片、有效首包或额外消息延长；独立 listener 在该阶段不发输出；装配会话控制器后采用下文的配对等待／认证后限制。
 - 严格首包仅允许 `hello` 或 `pair.request`：共同字段为数值 `version: 1`、当前 `instance`、64 个小写十六进制字符的 `client_nonce`（32 字节）；`hello` 另须 32 个小写十六进制字符的 `pair_id`，`pair.request` 另须非空 `client_name`（UTF-8 最多 80 字节，无控制／格式字符）。未知／缺失字段、错误类型、版本／实例不匹配、业务请求、畸形／超大帧及额外数据均关闭。
-- `handshakeReceived` **只代表首包语法、进程主 Token 与实际管道请求 Token 检查，不代表配对、密钥证明或业务授权**。当前有效首包后仍处于未认证状态，到期关闭，不发送凭据／`ready`，不接受第二条请求。挑战证明和配对状态机在下一切片接入。
+- `handshakeReceived` **只代表首包语法、进程主 Token 与实际管道请求 Token 检查，不代表配对、密钥证明或业务授权**。独立 listener 不发送凭据／`ready` 或放行业务；下文会话控制器在此后执行证明、GUI 批准及逐帧授权。
 - listener 通过唯一的异步 `PipeRequestVerifier` 检查已读取的请求：专用原生线程核对实际请求 Token 的用户／登录／会话与真实对端进程，检查前后核对 PID／创建时间。只有线程退出后才向所属 Qt 线程报告结果，GUI 线程不模拟客户端。断开后既要等 socket 完整析构，也要等检查退出，才重新接受连接；超时但检查未退出时关闭整个接口，不等待或强杀线程，禁止在存续检查期间重新启用。
 - 请求上下文测试覆盖普通／匿名 SQOS、过期进程／会话预期、无效启动、重复／复用、调用线程 Token 不变及回调线程；32 次启动后立即销毁检查对象，再断开客户端，验证无晚到回调且管道引用全部释放。专用故障配置还覆盖保持原生线程挂起、关闭／超时／客户端异常退出、恢复失败关闭入口及迟到结果不得放行新实例。
 - 覆盖实际跨进程正常／异常退出、失败后重连、半包／静默／持续慢发期限、首包后业务请求、同名首实例抢占拒绝，以及实际管道 DACL、非继承 ACL 与 socket 读缓存／无输出检查。
@@ -82,7 +82,7 @@ finally { $env:PATH = $qkmOriginalPath; Pop-Location }
 
 三个用途的完整输入和 MAC 与 Python `struct.pack`、`hmac`、`hashlib.sha256` 独立计算结果比较，固定样例含高于 2^53 的值及最大 uint64。测试逐项改变实例、pair、代次、双方 PID／时间、双 nonce、密钥及方向，验证不再匹配；还拒绝无效／跨登录身份、错误版本／字段长度。固定 32 字节比较逐字节累积差异且不因首个错误早退；语义测试不等于运行时间／侧信道测量。
 
-`ServerChallenge` 不可复制，每次 begin 产生新 server nonce，不保存密钥；只允许一次 client 证明尝试，失败也消耗本次挑战，重放／反射／旧 nonce／取消均拒绝。私有预期证明在完成、重建、取消及析构时清零后释放；Qt HMAC 和调用方可能存在临时内存副本，不能承诺全进程零残留。此处未实现凭据落盘或证明消息收发；密钥不进入此输入格式、日志、命令行或测试证据。
+`ServerChallenge` 不可复制，每次 begin 产生新 server nonce，不保存密钥；只允许一次 client 证明尝试，失败也消耗本次挑战，重放／反射／旧 nonce／取消均拒绝。私有预期证明在完成、重建、取消及析构时清零后释放；Qt HMAC 和调用方可能存在临时内存副本，不能承诺全进程零残留。证明组件本身不负责凭据落盘或消息收发，由会话／存储层承担；密钥不进入此输入格式、日志、命令行或测试证据。
 
 故障配置额外模拟随机源失败，确认不能生成秘密或进入待证明状态。普通配置没有该测试钩子。
 

@@ -155,19 +155,20 @@ $lifecycleOutput | Set-Content -LiteralPath (Join-Path $reportDirectory 'qmake-s
 if ($lifecycleExitCode -ne 0) { throw 'Cannot generate SendInput lifecycle test compilation parameters.' }
 $targets += @{ Name = 'sendinput-lifecycle-test'; Makefile = (Join-Path $lifecycleBuildDirectory 'Makefile.Release') }
 foreach ($mcpVariant in @(
-    @{ Name = 'mcp-ipc-test'; Arguments = '' },
-    @{ Name = 'mcp-ipc-fault-test'; Arguments = ' CONFIG+=mcp_fault_injection' }
+    @{ Name = 'mcp-ipc-test'; Arguments = ''; Project = 'tests\mcp_ipc\mcp_ipc_test.pro'; Moc = 'test_mcp_ipc.moc' },
+    @{ Name = 'mcp-ipc-fault-test'; Arguments = ' CONFIG+=mcp_fault_injection'; Project = 'tests\mcp_ipc\mcp_ipc_test.pro'; Moc = 'test_mcp_ipc.moc' },
+    @{ Name = 'mcp-control-test'; Arguments = ''; Project = 'tests\mcp_control\mcp_control_test.pro'; Moc = 'test_mcp_control.moc' }
 )) {
     $mcpBuildDirectory = Join-Path $reportDirectory ($mcpVariant.Name + '-qmake')
     New-Item -ItemType Directory -Force -Path $mcpBuildDirectory | Out-Null
     $mcpMakefile = Join-Path $mcpBuildDirectory 'Makefile'
-    $mcpProject = Join-Path $sourceRoot 'tests\mcp_ipc\mcp_ipc_test.pro'
+    $mcpProject = Join-Path $sourceRoot $mcpVariant.Project
     $mcpCommand = ('call "{0}" >nul && "{1}" -o "{2}" "{3}" -spec win32-msvc' -f $vcvars, $qmake, $mcpMakefile, $mcpProject) + $mcpVariant.Arguments
     $mcpOutput = @(& $env:ComSpec /d /s /c $mcpCommand 2>&1)
     $mcpExitCode = $LASTEXITCODE
     $mcpOutput | Set-Content -LiteralPath (Join-Path $reportDirectory ('qmake-' + $mcpVariant.Name + '.txt')) -Encoding utf8
     if ($mcpExitCode -ne 0) { throw 'Cannot generate MCP IPC test compilation parameters.' }
-    $mcpMocCommand = 'call "{0}" >nul && cd /d "{1}" && nmake /NOLOGO /f Makefile test_mcp_ipc.moc' -f $vcvars, $mcpBuildDirectory
+    $mcpMocCommand = 'call "{0}" >nul && cd /d "{1}" && nmake /NOLOGO /f Makefile {2}' -f $vcvars, $mcpBuildDirectory, $mcpVariant.Moc
     $mcpMocOutput = @(& $env:ComSpec /d /s /c $mcpMocCommand 2>&1)
     $mcpMocExitCode = $LASTEXITCODE
     $mcpMocOutput | Set-Content -LiteralPath (Join-Path $reportDirectory ('moc-' + $mcpVariant.Name + '.txt')) -Encoding utf8

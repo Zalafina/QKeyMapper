@@ -97,6 +97,8 @@ class QkmUiScale;
 #include "qmappingsequenceedit.h"
 #include "qpointpickerdialog.h"
 
+namespace QkmAutomation { class ControlDialog; }
+
 namespace Ui {
 class QKeyMapper;
 }
@@ -2459,6 +2461,7 @@ public:
     QAction *m_TrayIconMenu_MappingSwitchAction;
     QAction *m_TrayIconMenu_ShowHideAction;
     QAction *m_TrayIconMenu_QuitAction;
+    QAction *m_TrayIconMenu_McpAction = Q_NULLPTR;
 private:
     enum DisplaySwitchMode {
         DISPLAYSWITCHMODE_TRAY = 0U,
@@ -2545,6 +2548,7 @@ private:
     QNotificationSetupDialog *m_CustomNotificationSetupDialog = Q_NULLPTR;
     bool m_CustomNotificationStyleInitialized = false;
     QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
+    QkmAutomation::ControlDialog *m_McpControlDialog = Q_NULLPTR;
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QList<MAP_KEYDATA> m_CommonMappingData;  // dedicated common mapping data (survives detach)

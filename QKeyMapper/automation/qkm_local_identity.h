@@ -3,6 +3,7 @@
 
 #include <QByteArray>
 #include <QObject>
+#include <QString>
 #include <QWinEventNotifier>
 #include <QtCore/qt_windows.h>
 #include <memory>
@@ -34,6 +35,7 @@ struct IdentityResult {
 enum class PipeSide { Server, Client };
 
 IdentityResult queryProcessIdentity(quint32 processId);
+QString queryProcessExecutable(const ProcessIdentity &expected);
 // Requires a local-only pipe with a logon-SID DACL; returns the peer process's primary-token identity.
 IdentityResult queryPipePeerIdentity(HANDLE pipe, PipeSide side);
 bool sameLogonSession(const ProcessIdentity &a, const ProcessIdentity &b);

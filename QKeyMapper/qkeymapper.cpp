@@ -1,4 +1,5 @@
 #include "qkm_message_box.h"
+#include "automation/qkm_control_dialog.h"
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
 #include "interception_worker.h"
@@ -3800,6 +3801,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
     m_CustomNotificationSetupDialog = new QNotificationSetupDialog(this);
     m_GeneralAdvancedDialog = new QGeneralAdvancedDialog(this);
+    m_McpControlDialog = new QkmAutomation::ControlDialog(this);
+    connect(m_GeneralAdvancedDialog, &QGeneralAdvancedDialog::mcpControlRequested, this, [this]() {
+        m_McpControlDialog->show();
+        m_McpControlDialog->raise();
+        m_McpControlDialog->activateWindow();
+    });
     m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
     m_MacroListDialog = new QMacroListDialog(this);
@@ -4068,7 +4075,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         m_ItemSetupDialog->findChild<QFloatingButtonSetupDialog *>(),
         m_TableSetupDialog->findChild<QFloatingWindowSetupDialog *>(),
         m_MacroListDialog, m_MappingSequenceEdit,
-        m_GeneralAdvancedDialog, m_MappingAdvancedDialog, m_VButtonPanelSetupDialog,
+        m_GeneralAdvancedDialog, m_McpControlDialog, m_MappingAdvancedDialog, m_VButtonPanelSetupDialog,
         m_Gyro2MouseOptionDialog, m_TrayIconSelectDialog, m_NotificationSetupDialog,
         m_CustomNotificationSetupDialog, m_IgnoreRulesListDialog
     };
@@ -4201,6 +4208,7 @@ void QKeyMapper::registerEditorUiScale(QWidget *root)
 
 QKeyMapper::~QKeyMapper()
 {
+    if (m_McpControlDialog) m_McpControlDialog->server().disable();
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "~QKeyMapper() called.";
 
@@ -31957,6 +31965,14 @@ void QKeyMapper::initSysTrayIcon()
     m_TrayIconMenu_MappingSwitchAction = new QAction(this);
     m_TrayIconMenu_ShowHideAction = new QAction(this);
     m_TrayIconMenu_QuitAction = new QAction(this);
+    m_TrayIconMenu_McpAction = new QAction(this);
+    connect(m_TrayIconMenu_McpAction, &QAction::triggered, this, [this]() {
+        if (m_McpControlDialog) {
+            m_McpControlDialog->show();
+            m_McpControlDialog->raise();
+            m_McpControlDialog->activateWindow();
+        }
+    });
 
     connect(m_TrayIconMenu_MappingSwitchAction, &QAction::triggered, this, &QKeyMapper::onTrayIconMenuMappingSwitchAction);
     // When the Show/Hide menu item is clicked, toggle the visibility of the window
@@ -31969,6 +31985,7 @@ void QKeyMapper::initSysTrayIcon()
     m_SysTrayIconMenu->addAction(m_TrayIconMenu_MappingSwitchAction);
     m_SysTrayIconMenu->addSeparator(); // Add a separator horizontal line
     m_SysTrayIconMenu->addAction(m_TrayIconMenu_ShowHideAction);
+    m_SysTrayIconMenu->addAction(m_TrayIconMenu_McpAction);
     m_SysTrayIconMenu->addSeparator(); // Add a separator horizontal line
     m_SysTrayIconMenu->addAction(m_TrayIconMenu_QuitAction);
 
@@ -32090,6 +32107,9 @@ void QKeyMapper::updateSysTrayIconMenuText()
         m_TrayIconMenu_ShowHideAction->setText(showActionText);
     }
     m_TrayIconMenu_QuitAction->setText(quitActionText);
+    if (m_TrayIconMenu_McpAction) {
+        m_TrayIconMenu_McpAction->setText(QkmAutomation::ControlDialog::title(ui->languageComboBox->currentIndex()));
+    }
 
     // QFont customFont = m_TrayIconMenu_ShowHideAction->font();
     // if (UI_SCALE_4K_PERCENT_150 == m_UI_Scale
@@ -36258,6 +36278,9 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     if (m_GeneralAdvancedDialog != Q_NULLPTR) {
         m_GeneralAdvancedDialog->setUILanguage(languageindex);
+    }
+    if (m_McpControlDialog) {
+        m_McpControlDialog->setUILanguage(languageindex);
     }
 
     if (m_IgnoreRulesListDialog != Q_NULLPTR) {

@@ -70,6 +70,14 @@ foreach ($mcpTarget in @('mcp-ipc-test', 'mcp-ipc-fault-test')) {
     Assert-Analysis (($mcpEntry.arguments -contains '-DQKM_AUTOMATION_TESTING') -eq ($mcpTarget -eq 'mcp-ipc-fault-test')) 'MCP test hooks leaked into production-source configuration.'
 }
 
+$controlRuns = @($runs.Runs | Where-Object { $_.Target -eq 'mcp-control-test' })
+Assert-Analysis ($controlRuns.Count -eq 8) 'MCP control test source inventory is incomplete.'
+Assert-Analysis (@($controlRuns | Where-Object { $_.Source -like '*test_mcp_control.cpp' }).Count -eq 1) 'MCP control test was omitted.'
+Assert-Analysis (Test-Path -LiteralPath (Join-Path $report 'mcp-control-test-qmake\test_mcp_control.moc')) 'MCP control meta-object input was not generated.'
+$controlDb = Get-Content -Raw -LiteralPath (Join-Path $report 'mcp-control-test\compile_commands.json') | ConvertFrom-Json
+$controlEntry = $controlDb | Where-Object { $_.file -like '*qkm_control_dialog.cpp' }
+Assert-Analysis ($controlEntry.arguments -contains '-DQT_WIDGETS_LIB' -and $controlEntry.arguments -notcontains '-DQKM_AUTOMATION_TESTING') 'MCP control target needs actual widget flags without test hooks.'
+
 $failureReport = Join-Path $testDirectory 'fail'
 $failed = $false
 try {

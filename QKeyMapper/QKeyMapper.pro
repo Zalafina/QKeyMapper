@@ -310,6 +310,7 @@ RC_FILE     += \
     QKeyMapper.rc
 
 include(diagnostics/diagnostics.pri)
+include(automation/automation.pri)
 
 DISTFILES   += \
     QKeyMapper.rc \
