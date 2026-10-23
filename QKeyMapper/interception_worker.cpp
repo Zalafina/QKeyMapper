@@ -2,6 +2,7 @@
 
 #include "qkeymapper_constants.h"
 #include "qkeymapper_qt_compat.h"
+#include "qkm_input_producer_work.h"
 
 #include <QByteArray>
 #include <QCoreApplication>
@@ -12,6 +13,7 @@
 #include <QTextStream>
 #include <QThread>
 #include <libusb.h>
+#include <optional>
 #include <windows.h>
 #include <setupapi.h>
 
@@ -79,6 +81,11 @@ void Interception_Worker::InterceptionThreadStarted()
     while(s_InterceptLoopbreak == false)
     {
         int receive_ret = interception_receive(s_InterceptionContext, device = interception_wait_with_timeout(s_InterceptionContext, 1), &stroke, 1);
+        // A received stroke survives processEvents() and its eventual native forwarding.
+        std::optional<InputProducerWorkItem> receivedStroke;
+        if (receive_ret > 0) {
+            receivedStroke.emplace();
+        }
 
         if (s_InterceptLoopbreak) {
 #ifdef DEBUG_LOGOUT_ON

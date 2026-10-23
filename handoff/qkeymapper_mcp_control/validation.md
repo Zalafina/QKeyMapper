@@ -968,3 +968,23 @@ lifecycle_dispatch／lifecycle_discard 已加入既有真实生命周期维护�
 ASan 四项按上述参数实跑，无 asan.* 报告且 native exit 0；detect_leaks=0，不声称泄漏、全部内存路径或性能已验。没有 Default 切换、系统键鼠、GUI 映射启动、驱动安装、正式 MCP 业务或独立 GUI 基线；原 main 启动／退出的设备 API 不证明物理输入／设备释放效果。
 
 本切片选定验收完成，形成新的本地证据检查点并继续 2b-3，不执行阶段收尾／暂停。会话锁定的排队请求、所有在途输入生产者、同步发送、池排空、停止代次与 GUI 尾部尚未封闭；stop_completion 仍为 unobserved，源查询仍只允许 pristine_idle，零计数和 STOPPED 均不重新开放或授权编辑。ENV-48 与 PC-W11 历史结果只按各自范围保留。
+
+## STOP-20261023-50：输入生产者与同步发送作用域
+
+PC-W10，Win10 19045 x64，基线 8d0b0350 加本切片六个源码／测试文件（含新 qkm_input_producer_work.h）。独立 InputProducerWorkItem 仅用原子计数记录嵌套同步作用域：四种键鼠回调在初始化／HC_ACTION 守卫后、sendInputKeys 与其包装在空输入守卫后持有。Interception 循环仅 receive_ret>0 时 emplace，在 processEvents 前建立并保持到原转发／continue／break 完成，不为空接收加标记。没有更改原始输入参数、转发／释放顺序、驱动 API、业务决定、manifest、个人 INI 或 TS；异步 SendInputWorkItem 保持独立，未接新的对外放行条件。
+
+扩展既有真实生命周期维护目标：idle_input_tracking 通过 IDLE 的真实 GUI 记账信号 DirectConnection 观察回调内计数 1/1，每次返回为 0，IDLE／CHECKING 的两对设备／原始／去设备 DOWN 与 UP 均保持；queued_stop_action／queued_admission／discard_dispatch 在真实发送信号处各观察包装作用域两次，前者在真实 NoOp 发送体等待时观察同步计数 1，两个负例为 0。既有 queued_button 回归保持预期。新字段仅在对应分支采样，不能用其他分支默认 0 充当覆盖。
+
+沿用本机 MSVC 14.40.33807 与同 kit 的 STOP-49 构建树进行增量构建，Qt6／Qt5 Release、Qt6 Release+ASan 均 native exit 0；Qt6 两套无编译／链接警告，Qt5 仅官方 qtmain 缺 PDB LNK4099 例外。日志 out/mcp_lifecycle/resume-w10-20261023/build-{qt6,qt5,qt6-asan}-50.log。新隔离目录 runtime50-* 的 EXE 与对应构建字节一致，依赖沿用已核实的同 kit 部署（含匹配 14.40 ASan DLL），INI 从仓库固定模板重新复制。
+
+| 配置／实际 EXE（均在上述 resume 目录下） | SHA256 | 实际私有桌面 |
+|---|---|---|
+| runtime50-qt6/QKeyMapperStop50Lifecycle_qt6.exe | 10627f398cc6d1589b43d15a9dbc3f242058042420dd068a11cbf24ca04f8114 | QkmLifecycle_69670e8115e54dfcbd4bbcdcdc83d96b |
+| runtime50-qt5/QKeyMapperStop50Lifecycle_qt5.exe | 944a0fbe555b3b7799320e9957b481813f85b53d8f9abbffe4de7748c0203fc7 | QkmLifecycle_963b1a5d41d34c258f64764f022ad7ae |
+| runtime50-qt6-asan/QKeyMapperStop50Lifecycle_qt6_asan.exe | efc2a7d2d810133ce50d87c89f613208540957848dd28f3fcc0dcf651d66302f | QkmLifecycle_d8b930c06a1b43dfb1851b1f3d54765a |
+
+各配置 5 项，共 15 项 passed=true、native exit 0，workAtExit／producersAtExit 均 0；ASan 5 项 halt_on_error=1、abort_on_error=1、detect_leaks=0 实跑无报告。结果 accept50-{kit}/{case}/result.json，启动／关闭及错误输出同目录；stop50-results.json 为精简身份／PID／退出索引，原始日志和材料仅本机 out，不随 Git。
+
+遵照用户最新批准的 CACHE-40：独立普通控制器 PID 10400、Medium RID 8192，开始核对 CacheAvailable 不可用后仅为本 PID 申请 00:05:00；产品逐进程核实 High RID 12288、same_login 与实际 EXE／桌面。finally 执行 cache off -p 10400，随后 CacheAvailable 返回不可用，记录 run-stop50.log／stop50-cache.json。没有 PID 0、无限缓存、全局 -k、CacheMode 修改或开发工具提权。十五个自有 PID 的普通只读查询均不存在，未强杀或操作用户实例。
+
+本轮没有 Default、系统键鼠、映射启动、驱动安装、独立 GUI／MCP 等价性、正式 SDK 新覆盖、截图或性能测量。直接回调不是实际驱动接收／转发，鼠标／低层 Hook 的运行与物理输入效果仍须其场景；计数增加的热路径开销尚未量化。ASan 不证明泄漏或全部内存路径。既有设备 main 启动／退出未改，API 返回不等于物理释放验证。源读取仍为 pristine_idle，stop_completion=unobserved；继续完整代次／生产者／队列／池／GUI 协调，不因本地检查点暂停。

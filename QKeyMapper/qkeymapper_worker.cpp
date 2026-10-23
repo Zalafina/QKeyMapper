@@ -5,6 +5,7 @@
 #include "interception_worker.h"
 #include "qkeymapper_worker.h"
 #include "qkeymapper_qt_compat.h"
+#include "qkm_input_producer_work.h"
 #include <QJoysticks/SDL_Joysticks.h>
 
 using namespace QKeyMapperConstants;
@@ -2960,6 +2961,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     if (inputKeys.isEmpty()) {
         return;
     }
+    const InputProducerWorkItem inputWork;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[sendInputKeys] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
@@ -5304,6 +5306,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
     if (inputKeys.isEmpty()) {
         return;
     }
+    const InputProducerWorkItem inputWork;
 
     bool skip_emitsignal = false;
     SendInputTaskController *controller = Q_NULLPTR;
@@ -13626,6 +13629,7 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
     if (!QKeyMapper::isInitialized()) {
         return INTERCEPTION_RETURN_NORMALSEND;
     }
+    const InputProducerWorkItem inputWork;
 
     Q_UNUSED(scan_code);
     Q_UNUSED(ExtenedFlag_e1);
@@ -14011,6 +14015,7 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
     if (!QKeyMapper::isInitialized()) {
         return INTERCEPTION_RETURN_NORMALSEND;
     }
+    const InputProducerWorkItem inputWork;
 
     Q_UNUSED(flags);
 
@@ -14554,6 +14559,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
+    const InputProducerWorkItem inputWork;
     KBDLLHOOKSTRUCT *pKeyBoard = (KBDLLHOOKSTRUCT *)lParam;
     ULONG_PTR extraInfo_nochanged = pKeyBoard->dwExtraInfo;
 #ifdef DEBUG_LOGOUT_ON
@@ -15199,6 +15205,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
     }
 
+    const InputProducerWorkItem inputWork;
     MSLLHOOKSTRUCT *pMouse = (MSLLHOOKSTRUCT *)lParam;
 #ifdef DEBUG_LOGOUT_ON
     const ULONG_PTR rawExtraInfo = pMouse->dwExtraInfo;

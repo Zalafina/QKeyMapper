@@ -8,6 +8,7 @@
 #include <QTimer>
 #include "../../qkeymapper_worker.h"
 #include "../../qkeymapper.h"
+#include "../../qkm_input_producer_work.h"
 
 namespace {
 using namespace QKeyMapperConstants;
@@ -38,6 +39,9 @@ struct LifecycleResult {
     int idleStatesChecked = 0;
     int callbackDownsTracked = 0;
     int callbackUpsTracked = 0;
+    QStringList inputProducerTrace;
+    int producerSubmissions = 0;
+    quint64 producersWhileTaskWaiting = 0;
     int buttonLockAfterDispatch = 0;
     bool observeRepeats = false;
     bool observeSingleRoot = false;
@@ -124,6 +128,7 @@ void installQueuedStopActionTest(QKeyMapper_Worker *worker, const QString &mode)
         [](int, const QStringList &, int direction, const QString &, int, int, QList<MAP_KEYDATA> *) {
             if (direction == KEY_DOWN) { ++result->stopDownQueued; }
             else { ++result->stopUpQueued; }
+            if (InputProducerWorkItem::outstanding() > 0) { ++result->producerSubmissions; }
         }, Qt::DirectConnection);
     // Use the real stop-action submissions without invoking Hook or native device cleanup.
     worker->emit_sendInputKeysSignal_Wrapper(0, row.Mapping_Keys, KEY_DOWN, row.Original_Key,
@@ -139,11 +144,21 @@ void installQueuedStopActionTest(QKeyMapper_Worker *worker, const QString &mode)
         result->pendingAfterDispatch = found != SendInputTask::s_SendInputTaskControllerMap.cend()
             && !found->task_threadpool->waitForDone(0);
         result->workAtBarrier = SendInputWorkItem::outstanding();
+        if (!reject && !discard) {
+            QElapsedTimer started;
+            started.start();
+            while (InputProducerWorkItem::outstanding() == 0 && started.elapsed() < 1000) {
+                QThread::msleep(1);
+            }
+        }
+        result->producersWhileTaskWaiting = InputProducerWorkItem::outstanding();
         result->passed = result->passed && result->stoppedBeforeSubmission && result->controllersEmptyBeforeDispatch
             && result->workAtSubmission == 2
             && ((reject || discard) ? (!result->pendingAfterDispatch && result->workAtBarrier == 0)
                                     : (result->pendingAfterDispatch && result->workAtBarrier > 0))
             && result->stopDownQueued == 1 && result->stopUpQueued == 1
+            && result->producerSubmissions == 2
+            && result->producersWhileTaskWaiting == ((reject || discard) ? 0 : 1)
             && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED;
         QElapsedTimer elapsed;
         elapsed.start();
@@ -496,17 +511,25 @@ void installLifecycleTest()
                         finish(false);
                         return;
                     }
+                    const auto observation = QObject::connect(mapper,
+                        &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, mapper,
+                        [pureKey](const QString &key, int) {
+                            result->passed = result->passed && key == pureKey;
+                            result->inputProducerTrace.append(QString::number(InputProducerWorkItem::outstanding()));
+                        }, Qt::DirectConnection);
                     // Run on the GUI owner lane so the synthetic missing Tab cannot leak into UI work.
                     for (auto status : {QKeyMapper::KEYMAP_IDLE, QKeyMapper::KEYMAP_CHECKING}) {
                         mapper->m_KeyMapStatus = status;
                         QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = -1;
                         const int down = QKeyMapper_Worker::InterceptionKeyboardHookProc(0x1e, KEY_DOWN, 0, false, false, 0);
+                        result->passed = result->passed && InputProducerWorkItem::outstanding() == 0;
                         if (QKeyMapper_Worker::pressedRealKeysList.contains(rawKey)
                             && QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.contains(pureKey)
                             && QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList[0].contains(0x41)) {
                             ++result->callbackDownsTracked;
                         }
                         const int up = QKeyMapper_Worker::InterceptionKeyboardHookProc(0x1e, KEY_UP, 0, false, false, 0);
+                        result->passed = result->passed && InputProducerWorkItem::outstanding() == 0;
                         if (!QKeyMapper_Worker::pressedRealKeysList.contains(rawKey)
                             && !QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.contains(pureKey)
                             && !QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList[0].contains(0x41)) {
@@ -518,8 +541,10 @@ void installLifecycleTest()
                     }
                     QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = previousTab;
                     mapper->m_KeyMapStatus = previousStatus;
+                    QObject::disconnect(observation);
                     finish(result->passed && result->idleStatesChecked == 2
                         && result->callbackDownsTracked == 2 && result->callbackUpsTracked == 2
+                        && result->inputProducerTrace == QStringList{QStringLiteral("1"), QStringLiteral("1")}
                         && SendInputWorkItem::outstanding() == 0);
                 }, Qt::QueuedConnection);
                 return;
@@ -689,6 +714,7 @@ int main(int argc, char *argv[])
     result = new LifecycleResult;
     const int code = qkmProductMain(argc, argv);
     const bool passed = code == 0 && result->passed && SendInputTask::s_SendInputTaskControllerMap.isEmpty()
+        && InputProducerWorkItem::outstanding() == 0
         && result->downStarted.loadAcquire() == result->downFinished.loadAcquire();
     QJsonObject evidence{{QStringLiteral("case"), mode}, {QStringLiteral("passed"), passed},
         {QStringLiteral("activeAtCleanup"), result->activeAtCleanup}, {QStringLiteral("pauseAtCleanup"), result->pauseAtCleanup},
@@ -713,6 +739,10 @@ int main(int argc, char *argv[])
         {QStringLiteral("idleStatesChecked"), result->idleStatesChecked},
         {QStringLiteral("callbackDownsTracked"), result->callbackDownsTracked},
         {QStringLiteral("callbackUpsTracked"), result->callbackUpsTracked},
+        {QStringLiteral("inputProducerTrace"), QJsonArray::fromStringList(result->inputProducerTrace)},
+        {QStringLiteral("producerSubmissions"), result->producerSubmissions},
+        {QStringLiteral("producersWhileTaskWaiting"), QString::number(result->producersWhileTaskWaiting)},
+        {QStringLiteral("producersAtExit"), QString::number(InputProducerWorkItem::outstanding())},
         {QStringLiteral("buttonLockAfterDispatch"), result->buttonLockAfterDispatch},
         {QStringLiteral("lifecycleDispatchTrace"), QJsonArray::fromStringList(result->lifecycleDispatchTrace)},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},

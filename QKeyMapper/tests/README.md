@@ -61,7 +61,9 @@ finally { Pop-Location }
 
 `lifecycle_dispatch`／`lifecycle_discard` 验证 Worker 和 Hook 所有者的六种启停／重启信号；每对同类请求共享一个存续标记，三对排队时计数为 3。用例临时将原接收槽换成同一 Worker 线程中两个接收器的观察槽，前者确认最后一个相关事件处理前标记持续存在、全部派发后归零；后者确认只销毁其中一个接收器仍保持计数 3，再销毁另一个才归零，随后恢复原连接。`lifecycleDispatchTrace` 在这些分支采样，`workAfterQueueClear` 在此丢弃分支表示只删除首个接收器后的计数。这是实际 Qt 信号封装／丢弃验证，主体不执行启停业务或 Hook／设备操作，不是独立 GUI 基线、停止代次或完整清理完成证明；真实产品 main 正常退出仍保留原清理。
 
-`idle_input_tracking` 在 GUI 所有者线程临时设置合成 IDLE／CHECKING 和缺失 Tab，直接调用 Interception 键盘处理函数回放一对 A DOWN／UP，核对设备、原始及去设备记账均正确添加／清除，并立即恢复索引和状态。它不经 Interception 驱动转发、不发送系统输入，合成状态不是 GUI 监视或真实硬件基线；只证明此停止态分支不提前读取不存在的当前 Tab，同时仍保留输入记账。
+`idle_input_tracking` 在 GUI 所有者线程临时设置合成 IDLE／CHECKING 和缺失 Tab，直接调用 Interception 键盘处理函数回放一对 A DOWN／UP，核对设备、原始及去设备记账均正确添加／清除，并立即恢复索引和状态。IDLE 的真实记账信号直接观察 `inputProducerTrace=1/1`，每次回调返回后计数为 0；CHECKING 不发该信号。`queued_stop_action`／`queued_admission`／`discard_dispatch` 也在真实发送信号处核对包装函数的在途作用域（`producerSubmissions=2`），前者在 NoOp 发送任务等待期间观察 `producersWhileTaskWaiting=1`，两个负例为 0。`producersAtExit` 是所有分支实际退出后计数，其他新字段仅在上述分支采样；嵌套同步作用域计数不等于线程数或停止完成。
+
+这些用例不经 Interception 驱动接收／转发、不发送系统输入；合成状态不是 GUI 监视或真实硬件基线。Interception 接收循环的作用域位置及空接收不计数通过源码核对，鼠标／低层 Hook 回调及实际驱动转发仍须相应输入场景验证，不能由此直接记为运行通过。
 
 性能基准使用非 diagnostic 的普通 Release。生命周期测试的普通版保留原等待与 cleanup 耗时门槛；diagnostic 写盘和 ASan 用于完成／销毁及内存安全检查，不用于判断日常性能。运行器须保留每项30秒看门狗；diagnostic 的 `borrowers` 在内部等待全部调用完成。
 

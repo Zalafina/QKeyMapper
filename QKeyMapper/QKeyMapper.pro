@@ -262,6 +262,7 @@ HEADERS     += \
     qkeymapper_input_device_types.h \
     qkeymapper_worker.h \
     qkm_send_input_work.h \
+    qkm_input_producer_work.h \
     qkeymapper_constants.h \
     qkeymapper_qt_compat.h \
     qfloatingbuttonsetupdialog.h
