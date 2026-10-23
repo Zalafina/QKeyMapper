@@ -9,6 +9,8 @@
 #include "qkeymapper_qt_compat.h"
 #include "qstyle_singletons.h"
 #include "qkm_ui_scale.h"
+#include "qkm_input_owner_fence.h"
+#include "qkm_input_producer_work.h"
 #include "qfloatingbuttonsetupdialog.h"
 #include <QScopedValueRollback>
 #include <QGroupBox>
@@ -4672,7 +4674,7 @@ void QKeyMapper::cycleCheckProcessProc(void)
 
 void QKeyMapper::matchForegroundWindow()
 {
-    if (KEYMAP_IDLE != m_KeyMapStatus) {
+    if (KEYMAP_IDLE != m_KeyMapStatus && KEYMAP_STOPPING != m_KeyMapStatus) {
         enum class MatchResult {
             NoMatch = 0,            // NoMatch,              same as checkresult = 0
             ProcessMatched = 1,     // ProcessMatched,      same as checkresult = 1
@@ -5363,6 +5365,7 @@ void QKeyMapper::changeLanguage(const QString &langCode)
 
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
     const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
     // updateShortcutsMap();
 
@@ -5398,6 +5401,7 @@ void QKeyMapper::setKeyUnHook(void)
 
 void QKeyMapper::setKeyMappingRestart()
 {
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
     const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal(lifecycleWork);
     emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal(lifecycleWork);
@@ -16667,6 +16671,7 @@ void QKeyMapper::initMappingStartActionMenu(void)
 
 bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode startmode, bool preferPhysicalCtrlState)
 {
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
     if (KEYMAP_IDLE == m_KeyMapStatus
         && MAPPINGSTART_LOADSETTING != startmode
         && isCommonMappingTabIndex(s_KeyMappingTabWidgetCurrentIndex)) {
@@ -16731,136 +16736,216 @@ bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode s
     return true;
 }
 
+void QKeyMapper::beginMappingStop()
+{
+    const bool wasMatched = m_KeyMapStatus == KEYMAP_MAPPING_MATCHED;
+    m_mappingStopRestoreSetting.clear();
+    if (ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX
+        && checkGlobalSettingAutoStart() && m_LastAutoMatchedSettingTimer.isActive()) {
+        m_mappingStopRestoreSetting = m_LastAutoMatchedSetting;
+    }
+    clearLastAutoMatchedSetting();
+    m_KeyMapStatus = KEYMAP_STOPPING;
+    QKeyMapper_Worker::s_MappingInputClosed.storeRelease(true);
+    m_mappingStopTimedOut = false;
+    m_mappingStopButtonWasEnabled = ui->keymapButton->isEnabled();
+    m_mappingStopButtonTooltip = ui->keymapButton->toolTip();
+    ui->keymapButton->setEnabled(false);
+    const int language = getLanguageIndex();
+    ui->keymapButton->setToolTip(language == LANGUAGE_CHINESE
+        ? QStringLiteral("正在清理映射任务，完成后才能编辑或重新开始。")
+        : language == LANGUAGE_JAPANESE
+        ? QStringLiteral("マッピング処理を終了しています。完了まで編集と再開はできません。")
+        : QStringLiteral("Mapping cleanup is pending. Editing and restarting remain disabled."));
+    changeControlEnableStatus(false);
+#ifdef CYCLECHECKTIMER_ENABLED
+    m_CycleCheckTimer.stop();
+#endif
+    stopWinEventHook();
+    m_CheckGlobalSettingSwitchTimer.stop();
+    restoreSystemFilterKeysBaseline();
+    clearSystemFilterKeysSession();
+    resetGlobalMappingBlockedByFullscreenState();
+    if (wasMatched) { playStopSound(); }
+
+    // Reset session-only UI before stop actions can deliberately show or hide it.
+    clearFloatingButtonManualHiddenForAllSettings();
+    m_FloatingButtonDragging = false;
+    m_FloatingButtonDraggingKey = static_cast<quint64>(-1);
+    m_FloatingButtonSyncGroupMoveArmedKey = static_cast<quint64>(-1);
+    m_FloatingButtonGroupDragStartOffsets.clear();
+    m_FloatingButtonGroupDragStartPositions.clear();
+    if (m_FloatingButtonDragCoordinateLabel != Q_NULLPTR) {
+        m_FloatingButtonDragCoordinateLabel->hide();
+    }
+
+    for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
+        if (it.value() != Q_NULLPTR) {
+            it.value()->setDown(false);
+            it.value()->hide();
+        }
+    }
+    updateSysTrayIconMenuText();
+    if (!m_mappingStopFence) {
+        m_mappingStopFence = new InputOwnerFence(this);
+        connect(m_mappingStopFence, &InputOwnerFence::reached, this, &QKeyMapper::onMappingStopOwnersReached);
+        connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::sendInputDrainObserved_Signal,
+            this, &QKeyMapper::onMappingStopSendDrain, Qt::QueuedConnection);
+        m_mappingStopDeadline = new QTimer(this);
+        m_mappingStopDeadline->setObjectName(QStringLiteral("mappingStopDeadline"));
+        m_mappingStopDeadline->setSingleShot(true);
+        m_mappingStopDeadline->setInterval(30000);
+        connect(m_mappingStopDeadline, &QTimer::timeout, this, &QKeyMapper::noteMappingStopTimeout);
+        connect(qApp, &QCoreApplication::aboutToQuit, this, [this] {
+            m_mappingStopPhase = MappingStopPhase::None;
+            m_mappingStopFence->cancel();
+            m_mappingStopDeadline->stop();
+        });
+    }
+    requestMappingStopFence(MappingStopPhase::BeforeWorker);
+    m_mappingStopOperation = m_mappingStopFenceGeneration;
+    m_mappingStopDeadline->start();
+}
+
+void QKeyMapper::requestMappingStopFence(MappingStopPhase phase)
+{
+    m_mappingStopPhase = phase;
+    m_mappingStopFenceGeneration = m_mappingStopFence->request();
+    if (m_mappingStopFenceGeneration == 0) { noteMappingStopTimeout(); }
+}
+
+void QKeyMapper::onMappingStopOwnersReached(quint64 generation)
+{
+    if (generation != m_mappingStopFenceGeneration || m_KeyMapStatus != KEYMAP_STOPPING) { return; }
+    if (m_mappingStopPhase == MappingStopPhase::BeforeWorker) {
+        // Old input callbacks must finish before Worker cleanup changes their data.
+        setKeyUnHook();
+        requestMappingStopFence(MappingStopPhase::AfterWorker);
+    }
+    else if (m_mappingStopPhase == MappingStopPhase::AfterWorker) {
+        m_mappingStopPhase = MappingStopPhase::Sends;
+        auto *worker = QKeyMapper_Worker::getInstance();
+        QMetaObject::invokeMethod(worker, [worker, generation] {
+            worker->observeSendInputDrain(generation, 30000);
+        }, Qt::QueuedConnection);
+    }
+    else if (m_mappingStopPhase == MappingStopPhase::FinalOwners) {
+        m_mappingStopPhase = MappingStopPhase::GuiTail;
+        const quint64 operation = m_mappingStopOperation;
+        QMetaObject::invokeMethod(this, [this, operation, generation] {
+            finishMappingStop(operation, generation);
+        }, Qt::QueuedConnection);
+    }
+}
+
+void QKeyMapper::onMappingStopSendDrain(quint64 generation, const QString &outcome)
+{
+    if (m_mappingStopPhase != MappingStopPhase::Sends || generation != m_mappingStopFenceGeneration) { return; }
+    if (outcome == QLatin1String("drained")) {
+        requestMappingStopFence(MappingStopPhase::FinalOwners);
+    }
+    else if (outcome == QLatin1String("timeout") || outcome == QLatin1String("superseded")) {
+        noteMappingStopTimeout();
+        // Continue observing the same stop; never submit its stop actions twice.
+        if (m_mappingStopPhase == MappingStopPhase::Sends) {
+            requestMappingStopFence(MappingStopPhase::AfterWorker);
+        }
+    }
+}
+
+void QKeyMapper::noteMappingStopTimeout()
+{
+    if (m_mappingStopPhase == MappingStopPhase::None || m_mappingStopTimedOut) { return; }
+    m_mappingStopTimedOut = true;
+    const int language = getLanguageIndex();
+    ui->keymapButton->setToolTip(language == LANGUAGE_CHINESE
+        ? QStringLiteral("停止等待已超时，仍在清理任务；编辑和重新开始继续禁用。")
+        : language == LANGUAGE_JAPANESE
+        ? QStringLiteral("停止待機がタイムアウトしました。処理終了まで編集と再開はできません。")
+        : QStringLiteral("Stop wait timed out. Cleanup continues; editing and restarting remain disabled."));
+    emit mappingCleanupTimedOut_Signal(m_mappingStopOperation);
+}
+
+void QKeyMapper::finishMappingStop(quint64 operation, quint64 generation)
+{
+    if (m_mappingStopPhase != MappingStopPhase::GuiTail || operation != m_mappingStopOperation
+        || generation != m_mappingStopFenceGeneration) { return; }
+    if (SendInputWorkItem::outstanding() != 0 || InputProducerWorkItem::outstanding() != 0
+        || !SendInputTask::poolsFinished()
+        || QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() != HOOKPROC_STATE_STOPPED) {
+        requestMappingStopFence(MappingStopPhase::AfterWorker);
+        return;
+    }
+    if (!m_mappingStopRestoreSetting.isEmpty()) {
+        switchBackToLastMatchedSetting(m_mappingStopRestoreSetting);
+        m_mappingStopRestoreSetting.clear();
+    }
+    m_mappingStopDeadline->stop();
+    m_mappingStopPhase = MappingStopPhase::None;
+    m_KeyMapStatus = KEYMAP_IDLE;
+    QKeyMapper_Worker::s_MappingInputClosed.storeRelease(false);
+    changeControlEnableStatus(true);
+    ui->keymapButton->setToolTip(m_mappingStopButtonTooltip);
+    ui->keymapButton->setEnabled(m_mappingStopButtonWasEnabled);
+    updateMappingStartButtonText();
+    updateSysTrayIconMenuText();
+    emit updateLockStatus_Signal();
+    emit updateFakerInputStatus_Signal();
+#ifdef VIGEM_CLIENT_SUPPORT
+    emit updateViGEmBusStatus_Signal();
+#endif
+    mappingStopNotification();
+    emit mappingCleanupCompleted_Signal(operation, m_mappingStopTimedOut);
+}
+
 void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
 {
-    QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
-    QMetaEnum mappingstartmodeEnum = QMetaEnum::fromType<QKeyMapper::MappingStartMode>();
-    bool startKeyMap = false;
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
+    if (KEYMAP_IDLE != m_KeyMapStatus) {
+        beginMappingStop();
+        return;
+    }
     Q_UNUSED(startmode);
-    Q_UNUSED(keymapstatusEnum);
-    Q_UNUSED(mappingstartmodeEnum);
-
-    if (KEYMAP_IDLE == m_KeyMapStatus){
-        beginSystemFilterKeysSession();
+    beginSystemFilterKeysSession();
 #ifdef CYCLECHECKTIMER_ENABLED
-        m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
+    m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
 #endif
-        m_KeyMapStatus = KEYMAP_CHECKING;
-        updateMappingStartButtonText();
-        resetGlobalMappingBlockedByFullscreenState();
-        startWinEventHook();
-        scheduleGlobalSettingSwitchCheck();
-        updateSystemTrayDisplay();
-        emit updateLockStatus_Signal();
-        startKeyMap = true;
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[MappingStart]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") -> " << mappingstartmodeEnum.valueToKey(startmode);
-#endif
-    }
-    else{
-#ifdef CYCLECHECKTIMER_ENABLED
-        m_CycleCheckTimer.stop();
-#endif
-
-        if (KEYMAP_MAPPING_MATCHED == m_KeyMapStatus) {
-            playStopSound();
-        }
-        stopWinEventHook();
-        setKeyUnHook();
-        m_KeyMapStatus = KEYMAP_IDLE;
-        clearSystemFilterKeysSession();
-        updateMappingStartButtonText();
-        resetGlobalMappingBlockedByFullscreenState();
-        mappingStopNotification();
-        m_CheckGlobalSettingSwitchTimer.stop();
-
-        // Check if we should switch back to last matched setting
-        // This only applies when current setting is GlobalSetting and auto start is enabled
-        int currentSettingIndex = ui->settingselectComboBox->currentIndex();
-        if (currentSettingIndex == GLOBALSETTING_INDEX
-            && checkGlobalSettingAutoStart()
-            && m_LastAutoMatchedSettingTimer.isActive()) {
-            if (switchBackToLastMatchedSetting()) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[MappingSwitch]" << "Successfully switched back to last matched setting after stopping mapping";
-#endif
-            }
-        }
-        else {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug() << "[MappingSwitch]" << "currentSettingIndex =" << currentSettingIndex << ", AutoStart =" << checkGlobalSettingAutoStart() << ", LastAutoMatchedSettingTimer Active =" << m_LastAutoMatchedSettingTimer.isActive();
-#endif
-        }
-
-        emit updateLockStatus_Signal();
-
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[MappingStart]" << " KeyMapStatus change (" << keymapstatusEnum.valueToKey(m_KeyMapStatus) << ") -> " << mappingstartmodeEnum.valueToKey(startmode);
-#endif
-    }
-
+    m_KeyMapStatus = KEYMAP_CHECKING;
+    updateMappingStartButtonText();
+    resetGlobalMappingBlockedByFullscreenState();
+    startWinEventHook();
+    scheduleGlobalSettingSwitchCheck();
+    updateSystemTrayDisplay();
+    emit updateLockStatus_Signal();
     updateSysTrayIconMenuText();
+    closeSelectColorDialog();
+    closeTableSetupDialog();
+    closeFloatingWindowSetupDialog();
+    closeMacroListDialog();
+    closeItemSetupDialog();
+    closeIgnoreRulesListDialog();
+    closeMappingAdvancedDialog();
+    closeVButtonPanelSetupDialog();
+    closeFloatingButtonSetupDialog();
+    closeCrosshairSetupDialog();
+    closeGyro2MouseAdvancedSettingDialog();
+    closeTrayIconSelectDialog();
+    closeNotificationSetupDialog();
+    closeCustomNotificationSetupDialog();
+    closeGeneralAdvancedDialog();
+    closeSettingTransferDialog();
+    changeControlEnableStatus(false);
 
-    if (m_KeyMapStatus != KEYMAP_IDLE){
-        closeSelectColorDialog();
-        closeTableSetupDialog();
-        closeFloatingWindowSetupDialog();
-        closeMacroListDialog();
-        closeItemSetupDialog();
-        closeIgnoreRulesListDialog();
-        closeMappingAdvancedDialog();
-        closeVButtonPanelSetupDialog();
-        closeFloatingButtonSetupDialog();
-        closeCrosshairSetupDialog();
-        closeGyro2MouseAdvancedSettingDialog();
-        closeTrayIconSelectDialog();
-        closeNotificationSetupDialog();
-        closeCustomNotificationSetupDialog();
-        closeGeneralAdvancedDialog();
-        closeSettingTransferDialog();
-        changeControlEnableStatus(false);
-
-        QString curSettingSelectStr;
-        int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
-        if (GLOBALSETTING_INDEX < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
-            curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
-            if (ui->settingNameLineEdit->text() != curSettingSelectStr) {
-                ui->settingNameLineEdit->setText(curSettingSelectStr);
-            }
+    QString curSettingSelectStr;
+    int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+    if (GLOBALSETTING_INDEX < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+        curSettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+        if (ui->settingNameLineEdit->text() != curSettingSelectStr) {
+            ui->settingNameLineEdit->setText(curSettingSelectStr);
         }
-
     }
-    else{
-        clearFloatingButtonManualHiddenForAllSettings();
-        m_FloatingButtonDragging = false;
-        m_FloatingButtonDraggingKey = static_cast<quint64>(-1);
-        m_FloatingButtonSyncGroupMoveArmedKey = static_cast<quint64>(-1);
-        m_FloatingButtonGroupDragStartOffsets.clear();
-        m_FloatingButtonGroupDragStartPositions.clear();
-        if (m_FloatingButtonDragCoordinateLabel != Q_NULLPTR) {
-            m_FloatingButtonDragCoordinateLabel->hide();
-        }
-
-        for (auto it = m_FloatingButtonMap.begin(); it != m_FloatingButtonMap.end(); ++it) {
-            if (it.value() != Q_NULLPTR) {
-                it.value()->setDown(false);
-                it.value()->hide();
-            }
-        }
-
-        changeControlEnableStatus(true);
-        emit updateFakerInputStatus_Signal();
-#ifdef VIGEM_CLIENT_SUPPORT
-        emit updateViGEmBusStatus_Signal();
-#endif
-    }
-
     clearLastAutoMatchedSetting();
-
-    if (true == startKeyMap) {
-        matchForegroundWindow();
-    }
+    matchForegroundWindow();
 }
 
 #if 0
@@ -17058,6 +17143,7 @@ void QKeyMapper::HotKeyMappingStop(const QString &hotkey_string)
 
 void QKeyMapper::HotKeyMappingTableSwitchTab(const QString &hotkey_string)
 {
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[HotKeyMappingTableSwitchTab] TabHotkey:" << hotkey_string << "->" << s_MappingTableTabHotkeyMap.value(hotkey_string) << ", LastTabIndex:" << s_KeyMappingTabWidgetCurrentIndex;
 #endif
@@ -21074,6 +21160,7 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
 
 bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
     // Create RAII guard to automatically save and restore category filter state
     CategoryFilterStateGuard filterGuard(this);
 
@@ -23042,6 +23129,7 @@ bool QKeyMapper::removeSettingByName(const QString &settingName)
 
 QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all, bool preserveVButtonPanelVisibility)
 {
+    if (KEYMAP_STOPPING == m_KeyMapStatus && m_mappingStopPhase != MappingStopPhase::GuiTail) { return {}; }
     QScopedValueRollback<bool> sourceLoadGuard(m_MappingSourceLoading, true);
     ++m_MappingLoadGeneration;
     m_MappingSourceLoadAccepted = false;
@@ -27847,6 +27935,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
 void QKeyMapper::loadEmptyMapSetting()
 {
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
     QScopedValueRollback<bool> sourceLoadGuard(m_MappingSourceLoading, true);
     ++m_MappingLoadGeneration;
     m_MappingSourceLoadAccepted = false;
@@ -37135,6 +37224,7 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     case KEYMAP_CHECKING: guiState = "checking"; break;
     case KEYMAP_MAPPING_GLOBAL: guiState = "mapping_global"; break;
     case KEYMAP_MAPPING_MATCHED: guiState = "mapping_matched"; break;
+    case KEYMAP_STOPPING: guiState = "stopping"; break;
     }
     const int workerSample = QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire();
     const char *workerState = "unknown";
@@ -37165,7 +37255,7 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             {QStringLiteral("index"), s_KeyMappingTabWidgetCurrentIndex},
             {QStringLiteral("is_common"), isCommonMappingTab(tab)}}},
         {QStringLiteral("run"), QJsonObject{{QStringLiteral("gui_state"), QString::fromLatin1(guiState)},
-            {QStringLiteral("monitoring_enabled"), m_KeyMapStatus != KEYMAP_IDLE},
+            {QStringLiteral("monitoring_enabled"), m_KeyMapStatus != KEYMAP_IDLE && m_KeyMapStatus != KEYMAP_STOPPING},
             {QStringLiteral("worker_state_sample"), QString::fromLatin1(workerState)},
             {QStringLiteral("stop_completion"), QStringLiteral("unobserved")},
             {QStringLiteral("actual_stop_shortcut"), s_MappingStopKeyString}}}};
@@ -45816,7 +45906,7 @@ void QFloatingIconWindow::onWindowMousePassThroughChanged(bool enabled)
 
 void QFloatingIconWindow::onSwitchFloatingWindowMousePassThrough()
 {
-    QKeyMapper::KeyMapStatus keymap_status = QKeyMapper::getInstance()->m_KeyMapStatus;
+    const int keymap_status = QKeyMapper::getInstance()->m_KeyMapStatus.loadAcquire();
     if (keymap_status != QKeyMapper::KEYMAP_MAPPING_MATCHED
         && keymap_status != QKeyMapper::KEYMAP_MAPPING_GLOBAL) {
         return;
@@ -46479,6 +46569,7 @@ void QKeyMapper::on_settingselectComboBox_textActivated(const QString &text)
 void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text)
 #endif
 {
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
     if (loadSetting_flag) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_settingselectComboBox_textActivated/textChanged] Loading Setting not finished!";
@@ -51237,9 +51328,8 @@ void QKeyMapper::clearLastAutoMatchedSetting()
 #endif
 }
 
-bool QKeyMapper::switchBackToLastMatchedSetting()
+bool QKeyMapper::switchBackToLastMatchedSetting(const QString &settingToRestore)
 {
-    QString settingToRestore = m_LastAutoMatchedSetting;
 
     // Clear the record first to avoid recursion
     clearLastAutoMatchedSetting();

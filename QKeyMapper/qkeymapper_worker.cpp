@@ -143,6 +143,7 @@ ULONG_PTR QKeyMapper_Worker::VIRTUAL_RESEND_REALKEY = 0;
 bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 QAtomicInt QKeyMapper_Worker::s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
 MappingSourceAccess QKeyMapper_Worker::s_SourceReadAccess;
+QAtomicBool QKeyMapper_Worker::s_MappingInputClosed{false};
 QAtomicBool QKeyMapper_Worker::s_BlockKeyboard;
 QAtomicBool QKeyMapper_Worker::s_BlockMouse;
 QAtomicInt QKeyMapper_Worker::s_BlockKeyboardMask;
@@ -2817,6 +2818,7 @@ POINT QKeyMapper_Worker::mousePositionAfterSetMouseToScreenBottomRight()
 
 void QKeyMapper_Worker::onMouseMove(int delta_x, int delta_y, int mouse_index)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
     // Q_UNUSED(delta_x);
     // Q_UNUSED(delta_y);
 
@@ -2883,6 +2885,7 @@ void QKeyMapper_Worker::stopMouse2vJoyResetTimerMap()
 
 void QKeyMapper_Worker::onMouse2vJoyResetTimeoutForMap(int mouse_index)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onMouse2vJoyResetTimeoutForMap]" << "Mouse Index =" << mouse_index;
 #endif
@@ -2906,6 +2909,7 @@ void QKeyMapper_Worker::onMouse2vJoyResetTimeoutForMap(int mouse_index)
 
 void QKeyMapper_Worker::onKey2MouseCycleTimeout()
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
     if (false == s_Joy2Mouse_EnableStateMap.isEmpty()) {
         bool joy2mouse_update = false;
         int player_index = s_LastJoyAxisPlayerIndex;
@@ -9778,6 +9782,7 @@ void QKeyMapper_Worker::finishSendInputDrain(const QString &outcome)
 void QKeyMapper_Worker::setWorkerKeyHook()
 {
     s_SourceReadAccess.observeRuntimeLifecycle();
+    if (s_MappingInputClosed.loadAcquire()) { return; }
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setWorkerKeyHook] WorkerThread Hookproc Start.\033[0m");
 #endif
@@ -10211,6 +10216,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 void QKeyMapper_Worker::setKeyMappingRestart()
 {
     s_SourceReadAccess.observeRuntimeLifecycle();
+    if (s_MappingInputClosed.loadAcquire()) { return; }
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart Start.>>>\033[0m");
     qDebug().nospace().noquote() << "[QKeyMapper_Worker::setKeyMappingRestart] begin"
@@ -10766,6 +10772,7 @@ void QKeyMapper_Worker::processUdpPendingDatagrams()
 
 void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
     qsizetype data_length = forzadata.size();
     bool extra_data = false;
     qsizetype buffer_offset = 0;
@@ -11648,6 +11655,9 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
         Joy2vJoy_EnableState = s_Joy2vJoy_EnableStateMap.value(player_index);
         gamepad_index = Joy2vJoy_EnableState.gamepad_index;
     }
+    if (s_MappingInputClosed.loadAcquire()) {
+        Joy2vJoy_EnableState = Joy2vJoyState();
+    }
 
     if (e.joystick->blacklisted) {
         s_JoyAxisStateMap[INITIAL_PLAYER_INDEX].isvirtual = true;
@@ -11730,6 +11740,7 @@ void QKeyMapper_Worker::checkJoystickAxis(const QJoystickAxisEvent &e)
 
 void QKeyMapper_Worker::checkJoystickSensor(const QJoystickSensorEvent &e)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
     if (e.joystick == Q_NULLPTR)
         return;
 
@@ -11747,6 +11758,7 @@ void QKeyMapper_Worker::checkJoystickSensor(const QJoystickSensorEvent &e)
 
 void QKeyMapper_Worker::checkJoystickTouchpad(const QJoystickTouchpadEvent &e)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
     if (e.joystick == Q_NULLPTR) {
         return;
     }
@@ -11772,6 +11784,7 @@ void QKeyMapper_Worker::checkJoystickTouchpad(const QJoystickTouchpadEvent &e)
 
 void QKeyMapper_Worker::startMouse2vJoyResetTimer(const QString &mouse2joy_keystr, int mouse_index_param)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
     Q_UNUSED(mouse_index_param);
     Q_UNUSED(mouse2joy_keystr);
 
@@ -13862,7 +13875,7 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
         }
 
         int findindex = -1;
-        if (HOOKPROC_STATE_STARTED == s_AtomicHookProcState) {
+        if (mappingInputEnabled()) {
             returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
             findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
         }
@@ -13870,7 +13883,7 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
         int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
         bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
         bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
-        if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+        if (!mappingInputEnabled()) {
             if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                 return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
@@ -14165,7 +14178,7 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
         }
 
         int findindex = -1;
-        if (HOOKPROC_STATE_STARTED == s_AtomicHookProcState) {
+        if (mappingInputEnabled()) {
             returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
             findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
         }
@@ -14173,7 +14186,7 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
         int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
         bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
         bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
-        if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+        if (!mappingInputEnabled()) {
             if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                 return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
@@ -14411,12 +14424,12 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
         bool block = false;
         if (s_KeyRecording) {
             bool recorded = updateRecordKeyList(keycodeString, input_type);
-            if (recorded && HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+            if (recorded && !mappingInputEnabled()) {
                 block = true;
             }
         }
 
-        if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+        if (!mappingInputEnabled()) {
             if (block) {
                 return INTERCEPTION_RETURN_BLOCKEDBY_INTERCEPTION;
             }
@@ -14565,7 +14578,7 @@ int QKeyMapper_Worker::InterceptionMouseHookProc(MouseEvent mouse_event, int del
         }
     }
     else if (mouse_event == EVENT_MOUSEMOVE) {
-        if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+        if (!mappingInputEnabled()) {
             return INTERCEPTION_RETURN_NORMALSEND;
         }
 
@@ -14809,7 +14822,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             Q_UNUSED(multi_input);
 
             int findindex = -1;
-            if (HOOKPROC_STATE_STARTED == s_AtomicHookProcState) {
+            if (mappingInputEnabled()) {
                 returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
                 findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
             }
@@ -14817,7 +14830,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
             bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
             bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
-            if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+            if (!mappingInputEnabled()) {
                 if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                     return (LRESULT)TRUE;
                 }
@@ -15037,7 +15050,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
 
             if (KEY_DOWN == keyupdown){
-                if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+                if (!mappingInputEnabled()) {
                     return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                 }
 
@@ -15075,7 +15088,7 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
             }
             /* KEY_UP == keyupdown */
             else {
-                if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState
+                if (!mappingInputEnabled()
                     && SENDVIRTUALKEY_STATE_BURST_STOP != sendVirtualKeyState
                     && SENDVIRTUALKEY_STATE_FORCE != sendVirtualKeyState
                     && SENDVIRTUALKEY_STATE_FORCE_KEYUP_BYPASS_REALKEY != sendVirtualKeyState) {
@@ -15362,7 +15375,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 }
 
                 if (KEY_DOWN == keyupdown) {
-                    if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+                    if (!mappingInputEnabled()) {
                         return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
                     }
 
@@ -15399,7 +15412,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                     }
                 }
                 else {
-                    if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState
+                    if (!mappingInputEnabled()
                         && SENDVIRTUALKEY_STATE_BURST_STOP != sendVirtualKeyState
                         && SENDVIRTUALKEY_STATE_FORCE != sendVirtualKeyState
                         && SENDVIRTUALKEY_STATE_FORCE_KEYUP_BYPASS_REALKEY != sendVirtualKeyState) {
@@ -15552,7 +15565,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 Q_UNUSED(multi_input);
 
                 int findindex = -1;
-                if (HOOKPROC_STATE_STARTED == s_AtomicHookProcState) {
+                if (mappingInputEnabled()) {
                     returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
                     findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
                 }
@@ -15560,7 +15573,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                 int intercept = updatePressedRealKeysList(keycodeString, keyupdown);
                 bool mappingswitch_detected = detectMappingSwitchKey(keycodeString_nochanged, keyupdown);
                 bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
-                if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+                if (!mappingInputEnabled()) {
                     if ((mappingswitch_detected || displayswitch_detected) && KEY_DOWN == keyupdown) {
                         return (LRESULT)TRUE;
                     }
@@ -15765,7 +15778,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
 #endif // FAKERINPUT_SUPPORT && FAKERINPUT_EXTRAINFO
 
         if (VIRTUAL_MOUSE_WHEEL == extraInfo) {
-            if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+            if (!mappingInputEnabled()) {
                 return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
             }
 
@@ -15858,12 +15871,12 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
             bool block = false;
             if (s_KeyRecording) {
                 bool recorded = updateRecordKeyList(keycodeString, input_type);
-                if (recorded && HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+                if (recorded && !mappingInputEnabled()) {
                     block = true;
                 }
             }
 
-            if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+            if (!mappingInputEnabled()) {
                 if (block) {
                     return (LRESULT)TRUE;
                 }
@@ -16026,7 +16039,7 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
     }
 #ifdef VIGEM_CLIENT_SUPPORT
     else if (wParam == WM_MOUSEMOVE) {
-        if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+        if (!mappingInputEnabled()) {
             return CallNextHookEx(Q_NULLPTR, nCode, wParam, lParam);
         }
 
@@ -17316,6 +17329,7 @@ bool QKeyMapper_Worker::releaseKeyboardModifiersDirect(const Qt::KeyboardModifie
 
 void QKeyMapper_Worker::startBurstKeyTimer(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
     if (mappingIndex < 0 || keyMappingDataList == Q_NULLPTR || mappingIndex >= keyMappingDataList->size()) {
         return;
     }
@@ -17621,6 +17635,7 @@ void QKeyMapper_Worker::collectLongPressOriginalKeysMap()
 
 void QKeyMapper_Worker::sendLongPressTimers(const QString &keycodeString)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
     QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
 
     if (longPressOriginalKeysMap.contains(keycodeString)) {
@@ -17727,7 +17742,7 @@ int QKeyMapper_Worker::longPressKeyProc(const QString &keycodeString, int keyupd
 {
     int intercept = KEY_INTERCEPT_NONE;
 
-    if (HOOKPROC_STATE_STARTED != s_AtomicHookProcState) {
+    if (!mappingInputEnabled()) {
         return intercept;
     }
 
@@ -18000,6 +18015,7 @@ QHash<QString, int> QKeyMapper_Worker::currentDoublePressOriginalKeysMap()
 
 int QKeyMapper_Worker::sendDoublePressTimers(const QString &keycodeString)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return KEY_INTERCEPT_NONE; }
     int intercept = KEY_INTERCEPT_NONE;
     int timeout = 0;
     QString keycodeString_RemoveMultiInput = QKeyMapper_Worker::getKeycodeStringRemoveMultiInput(keycodeString);
@@ -18158,6 +18174,7 @@ void QKeyMapper_Worker::clearAllDoublePressTimers()
 
 int QKeyMapper_Worker::doublePressKeyProc(const QString &keycodeString, int keyupdown)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return KEY_INTERCEPT_NONE; }
     int intercept = KEY_INTERCEPT_NONE;
 
     if (KEY_DOWN == keyupdown) {
@@ -18831,10 +18848,11 @@ void QKeyMapper_Worker::onBurstKeyTimeOut(const QString burstKey, int mappingInd
 bool QKeyMapper_Worker::queueVButtonKey(const QString &keyName, bool isKeyDown)
 {
     auto work = QSharedPointer<SendInputWorkItem>::create();
+    if (s_MappingInputClosed.loadAcquire()) { return false; }
     s_SourceReadAccess.observeRuntimeLifecycle();
     return QMetaObject::invokeMethod(this, [this, keyName, isKeyDown, work] {
         Q_UNUSED(work);
-        if (!m_sendInputTasksStopping) {
+        if (!m_sendInputTasksStopping && !s_MappingInputClosed.loadAcquire()) {
             triggerVButtonKey(keyName, isKeyDown);
         }
     }, Qt::QueuedConnection);
@@ -18843,6 +18861,7 @@ bool QKeyMapper_Worker::queueVButtonKey(const QString &keyName, bool isKeyDown)
 // Process one queued VButton edge on the Worker thread.
 void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown)
 {
+    if (s_MappingInputClosed.loadAcquire()) { return; }
     s_SourceReadAccess.observeRuntimeLifecycle();
     if (!QKeyMapper::KeyMappingDataList) {
         return;
@@ -19046,7 +19065,7 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
     bool returnFlag = false;
     int findindex = -1;
 
-    if (m_JoystickCapture) {
+    if (m_JoystickCapture && !s_MappingInputClosed.loadAcquire()) {
         returnFlag = (hookBurstAndLockProc(keycodeString, keyupdown) != KEY_PROC_NONE);
         findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
     }
@@ -19056,7 +19075,7 @@ bool QKeyMapper_Worker::JoyStickKeysProc(QString keycodeString, int keyupdown, c
     bool displayswitch_detected = detectDisplaySwitchKey(keycodeString_nochanged, keyupdown);
     Q_UNUSED(mappingswitch_detected);
     Q_UNUSED(displayswitch_detected);
-    if (!m_JoystickCapture) {
+    if (!m_JoystickCapture || s_MappingInputClosed.loadAcquire()) {
         if (intercept == KEY_INTERCEPT_BLOCK_KEY_RECORD) {
             return true;
         }

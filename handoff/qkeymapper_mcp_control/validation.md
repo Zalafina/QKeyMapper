@@ -1049,3 +1049,23 @@ PC-W10，基线 43cd348e 加 Worker 头／实现、既有生命周期测试和�
 独立普通控制器 PID 17380、Medium RID 8192，仅申请自己的五分钟 PID 缓存，finally cache off -p 17380 并确认不可用；各产品核实 High RID 12288、same_login、EXE／桌面身份，十二个自有 PID 普通只读查询均不存在。原始结果 accept53-{kit}/{case}/result.json，启动／关闭／日志同目录，stop53-results.json 为精简 PID／身份索引，run-stop53.log／stop53-cache.json 保留缓存边界；均仅本机 out，不随 Git。
 
 本观察不能抢占 Worker 原有阻塞调用，不能独立证明原子全局静止、输入准入、源数据安全或完整停止；总超时和 GUI 放行仍待协调器。没有 Default、真实键鼠、映射启动、驱动安装、新 MCP／SDK 业务、独立 GUI 基线、截图、严格静态分析、性能或泄漏覆盖；原 main 清理及历史证据维持原范围。source.read=pristine_idle、stop_completion=unobserved 不变，提交后继续，不做阶段收尾／暂停。
+
+## STOP-20261024-54：GUI 停止协调与准入关闭
+
+PC-W10，源码 350c972e 加本切片。GUI 新增原子 KEYMAP_STOPPING：先关闭映射输入，前置所有者确认后仅提交一次原 Hook／Worker 停止；再确认所有者、等待实际发送／池排空、末尾所有者和 GUI 尾部，才恢复编辑和重启。30 秒 GUI 总期限独立于 Worker；超时保持关闭，观察继续，完成通知保留 timedOut。捕获原自动回切目标后延后加载；开始／重启、普通切表热键、加载和保存设有停止期守卫。原始输入仍 DOWN／UP 记账；映射键、定时器、按钮、UDP 和手柄映射处理受新准入约束。保留停止动作自身的发送、SwitchTab 等业务路径，不加入通用执行接口。
+
+首轮 Qt6 编译因一个原枚举变量无法从 QAtomicInt 初始化报 C2440，改为 loadAcquire 整数快照；后续三套完整维护目标编译通过。首次 gui_stop_wait 的合成行未填写 MappingKeys_KeyUp，启动时现有 checkGyro2MouseMoveActiveState 对空列表 constFirst()，Qt6 PID 22076 实际退出 C0000005，用户观察到系统错误框。相同用例的 ASan PID 24924 退出 3，栈指向 worker.cpp:12041／setWorkerKeyHook:9913，证明崩溃发生于启动检查、尚未进入新停止流程。仅修正测试夹具：补齐按下／抬起派生数据，并经已有公开单 Tab 刷新入口建立真实表格项；没有以产品空值容错掩盖夹具问题。中间误用私有全表刷新导致 C2248，已改公开入口。失败构建、运行和 ASan 栈全部保留，不称为通过。
+
+最终 build-{qt6,qt5,qt6-asan}-54-fixture2.log 均 native build exit 0，Qt6 两套零警告，Qt5 仅既有官方 qtmain 缺 PDB LNK4099 例外；MSVC 14.40.33807、Qt 6.8.3／5.15.2 x64、同 kit *-resume49 构建树。当前 EXE 包含真实 main、原 requireAdministrator manifest；依赖沿用同 kit 既有部署，每项启动前重新复制固定 product_fixture.ini.example 到 keymapdata.ini，不使用个人配置。结果位于 out/mcp_lifecycle/resume-w10-20261023：
+
+| 该目录下实际 EXE | SHA256 | 实际私有桌面 |
+|---|---|---|
+| runtime54b-qt6/QKeyMapperStop54Lifecycle_qt6.exe | bb06f659599890b4881a7548f782af7867093aea37a75ea43fb6a02ec91a114c | QkmLifecycle_8f635d4b4a1747e0868c921c1e263b84 |
+| runtime54b-qt5/QKeyMapperStop54Lifecycle_qt5.exe | ee536e152f44934e4868a35a236c17058e6e32563a928c8c86805701fe919b19 | QkmLifecycle_fd9bb2a2238b44e488073000643d3e0c |
+| runtime54b-qt6-asan/QKeyMapperStop54Lifecycle_qt6_asan.exe | e4ae9c85c35f664ea37a33d7a0998759d5f780c94177508ea2679a8551c1372e | QkmLifecycle_92c95d79e09d491c89d9a32e09ac7c0d |
+
+每配置 8 项，共 24 项 passed=true、native exit 0、workAtExit／producersAtExit=0：gui_stop_wait、gui_stop_timeout、gui_stop_exit、closed_input_tracking，加 queued_button、drain_timeout、burst_timer_missing_source、lifecycle_dispatch。前两项经 Qt 鼠标事件点击实际按钮，Hook 回调延后时不发原停止、编辑及重启禁用；释放后原停止提交一次、停止动作 DOWN／UP 各一次、真实池及两类计数排空。GUI 心跳分别 Qt6 65／63、Qt5 65／63、ASan 66／65；30ms 测试期限超时后同一根作业最后 completed:1，未被误报为无超时成功。重复停止意图未重发；按钮准入立即拒收。closed_input_tracking 合成 Worker STARTED／GUI STOPPING、关闭准入且 Tab=-1，A DOWN／UP 原始及多设备记账正常返回，不触发映射读取。退出例不等待 GUI 完成，原 main 仍发送一对停止动作并完成原清理，GUI UnHook 信号 0、完成通知 0、计数归零；它不是正常 GUI 停止完成。
+
+ASan 最终 8 项以 halt_on_error=1／abort_on_error=1、detect_leaks=0 实跑，runtime54b-qt6-asan 无报告文件。初轮 runtime54-qt6-asan/asan.24924 是应保留的失败证据，不混入最终通过或删除。初轮／诊断控制器 PID 13508／4528 与最终普通控制器 4868 均仅用自己的 00:05:00 PID 缓存，finally cache off 并确认不可用；所有产品核实 High RID 12288、控制器 Medium RID 8192、same_login、EXE 和实际桌面，最终 24 个及先前失败 2 个自有 PID 均由普通只读查询确认不存在。原始 result／started／closed／launch 位于 accept54b-{kit}/{case}，身份索引 stop54b-results.json，缓存 stop54b-cache.json，主日志 run-stop54b.log；初轮 accept54-*／accept54-diagnose-* 和相应日志独立保留。以上原始材料仅本机 out，不随 Git。
+
+本轮范围已获用户明确扩展：私有桌面 NoOp GUI 启停、超时和退出，已说明原产品驱动连接／复位／FakerInput ReleaseAll 副作用；未使用 Default、系统键鼠注入、驱动安装或用户实例。没有独立的真实 GUI 添加／正式 MCP 停止对照、真实驱动输入输出、自动配置回切、循环启停、三语言显示／截图、严格静态分析、性能或泄漏验收。界面事件只证明本停止入口，不充当完整 GUI／MCP 业务等价性；各连续输入／自定义虚拟标签、序列派生上下文及设备效果仍需后续对应用例。source.read=pristine_idle、stop_completion=unobserved 维持，尚不授予运行后源读取或 MCP 编辑。此为本地开发检查点，提交后继续 STOP-55，不做阶段收尾／暂停。

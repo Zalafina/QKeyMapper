@@ -1210,6 +1210,11 @@ public:
     void restoreMousePosition(int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
     // Track pending UI input before the Worker can inspect its source.
     bool queueVButtonKey(const QString &keyName, bool isKeyDown);
+    static bool mappingInputEnabled()
+    {
+        return !s_MappingInputClosed.loadAcquire()
+            && s_AtomicHookProcState.loadAcquire() == QKeyMapperConstants::HOOKPROC_STATE_STARTED;
+    }
 
     void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = QKeyMapperConstants::SENDVIRTUALKEY_STATE_NORMAL, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
 
@@ -1606,6 +1611,7 @@ public:
     static bool s_isWorkerDestructing;
     static QAtomicInt s_AtomicHookProcState;
     static MappingSourceAccess s_SourceReadAccess;
+    static QAtomicBool s_MappingInputClosed;
     static QAtomicBool s_BlockKeyboard;
     static QAtomicBool s_BlockMouse;
     static QAtomicInt s_BlockKeyboardMask;  // bit 0~9 → keyboard device 0~9

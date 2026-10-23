@@ -26,6 +26,7 @@
 
 class QkmUiScale;
 class QJsonObject;
+class InputOwnerFence;
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtWin>
@@ -1226,7 +1227,8 @@ public:
         KEYMAP_IDLE = 0U,
         KEYMAP_CHECKING,
         KEYMAP_MAPPING_GLOBAL,
-        KEYMAP_MAPPING_MATCHED
+        KEYMAP_MAPPING_MATCHED,
+        KEYMAP_STOPPING
     };
     Q_ENUM(KeyMapStatus)
 
@@ -1494,6 +1496,8 @@ public:
 
 signals:
     void HotKeyDisplaySwitchActivated_Signal(const QString &hotkey_string);
+    void mappingCleanupTimedOut_Signal(quint64 operation);
+    void mappingCleanupCompleted_Signal(quint64 operation, bool timedOut);
     // void HotKeyMappingSwitchActivated_Signal(const QString &hotkey_string);
     void HotKeyMappingStart_Signal(const QString &hotkey_string);
     void HotKeyMappingStop_Signal(const QString &hotkey_string);
@@ -1887,7 +1891,7 @@ private:
     void recordLastAutoMatchedSetting(const QString &settingName);
     void startLastAutoMatchedSettingTimer();
     void clearLastAutoMatchedSetting();
-    bool switchBackToLastMatchedSetting();
+    bool switchBackToLastMatchedSetting(const QString &settingToRestore);
     bool removeSettingByIndex(int targetSettingIndex);
     QStringList getCurrentCategoryFilters() const;
     bool isCategoryFilterVisible() const;
@@ -2317,7 +2321,7 @@ public:
     static int s_TransParentWindowInitialY;
     static int s_TransParentWindowInitialWidth;
     static int s_TransParentWindowInitialHeight;
-    KeyMapStatus m_KeyMapStatus;
+    QAtomicInt m_KeyMapStatus;
 
 private:
     QMenu *m_MappingStartActionMenu = Q_NULLPTR;
@@ -2561,6 +2565,22 @@ private:
     QString m_LoadedMappingSettingGroup;
     bool m_MappingSourceLoading = false;
     bool m_MappingSourceLoadAccepted = false;
+    enum class MappingStopPhase { None, BeforeWorker, AfterWorker, Sends, FinalOwners, GuiTail };
+    void beginMappingStop();
+    void requestMappingStopFence(MappingStopPhase phase);
+    void onMappingStopOwnersReached(quint64 generation);
+    void onMappingStopSendDrain(quint64 generation, const QString &outcome);
+    void finishMappingStop(quint64 operation, quint64 generation);
+    void noteMappingStopTimeout();
+    InputOwnerFence *m_mappingStopFence = nullptr;
+    QTimer *m_mappingStopDeadline = nullptr;
+    MappingStopPhase m_mappingStopPhase = MappingStopPhase::None;
+    quint64 m_mappingStopOperation = 0;
+    quint64 m_mappingStopFenceGeneration = 0;
+    bool m_mappingStopTimedOut = false;
+    bool m_mappingStopButtonWasEnabled = true;
+    QString m_mappingStopButtonTooltip;
+    QString m_mappingStopRestoreSetting;
     QIgnoreWindowInfoListDialog *m_IgnoreRulesListDialog = Q_NULLPTR;
     QMappingAdvancedDialog *m_MappingAdvancedDialog = Q_NULLPTR;
     QList<MAP_KEYDATA> m_CommonMappingData;  // dedicated common mapping data (survives detach)
