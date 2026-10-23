@@ -23,6 +23,11 @@ struct LifecycleResult {
     int activeAtCleanup = 0;
     int pauseAtCleanup = 0;
     qint64 cleanupMs = 0;
+    bool stoppedBeforeSubmission = false;
+    bool controllersEmptyBeforeDispatch = false;
+    bool pendingAfterDispatch = false;
+    int stopDownQueued = 0;
+    int stopUpQueued = 0;
     bool observeRepeats = false;
     bool observeSingleRoot = false;
     QMutex traceMutex;
@@ -79,6 +84,46 @@ void finish(bool passed)
     result->passed = result->passed && passed;
     QMetaObject::invokeMethod(QCoreApplication::instance(), []() {
         QCoreApplication::exit(result->passed ? 0 : 2);
+    }, Qt::QueuedConnection);
+}
+
+void installQueuedStopActionTest(QKeyMapper_Worker *worker)
+{
+    auto *previousData = QKeyMapper::KeyMappingDataList;
+    auto *data = new QList<MAP_KEYDATA>{MAP_KEYDATA()};
+    auto &row = data->first();
+    row.Original_Key = SENDON_MAPPINGSTOP_STR;
+    row.Mapping_Keys = QStringList{QStringLiteral("QkmProbeNoOp⏱5000")};
+    row.Pure_OriginalKeys = QStringList{row.Original_Key};
+    QKeyMapper::KeyMappingDataList = data;
+    result->stoppedBeforeSubmission = QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED;
+    const auto observation = QObject::connect(worker, &QKeyMapper_Worker::sendInputKeys_Signal, worker,
+        [](int, const QStringList &, int direction, const QString &, int, int, QList<MAP_KEYDATA> *) {
+            if (direction == KEY_DOWN) { ++result->stopDownQueued; }
+            else { ++result->stopUpQueued; }
+        }, Qt::DirectConnection);
+    // Use the real stop-action submissions without invoking Hook or native device cleanup.
+    worker->emit_sendInputKeysSignal_Wrapper(0, row.Mapping_Keys, KEY_DOWN, row.Original_Key,
+        SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, data);
+    worker->emit_sendInputKeysSignal_Wrapper(0, row.Mapping_Keys, KEY_UP, row.Original_Key,
+        SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, data);
+    QObject::disconnect(observation);
+    result->controllersEmptyBeforeDispatch = SendInputTask::s_SendInputTaskControllerMap.isEmpty();
+    QMetaObject::invokeMethod(worker, [data, previousData]() {
+        const auto found = SendInputTask::s_SendInputTaskControllerMap.constFind(SENDON_MAPPINGSTOP_STR);
+        result->pendingAfterDispatch = found != SendInputTask::s_SendInputTaskControllerMap.cend()
+            && !found->task_threadpool->waitForDone(0);
+        result->passed = result->stoppedBeforeSubmission && result->controllersEmptyBeforeDispatch
+            && result->pendingAfterDispatch && result->stopDownQueued == 1 && result->stopUpQueued == 1
+            && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED;
+        QElapsedTimer elapsed;
+        elapsed.start();
+        SendInputTask::clearSendInputTaskControllerMap();
+        result->cleanupMs = elapsed.elapsed();
+        result->passed = result->passed && SendInputTask::s_SendInputTaskControllerMap.isEmpty();
+        QKeyMapper::KeyMappingDataList = previousData;
+        delete data;
+        finish(result->passed);
     }, Qt::QueuedConnection);
 }
 
@@ -281,6 +326,10 @@ void installLifecycleTest()
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+            if (mode == QStringLiteral("queued_stop_action")) {
+                installQueuedStopActionTest(worker);
+                return;
+            }
             if (mode.startsWith(QStringLiteral("repeat_"))) {
                 installRepeatTest(worker, mode);
                 return;
@@ -404,10 +453,14 @@ int main(int argc, char *argv[])
     const QStringList cases{QStringLiteral("wait_clear"), QStringLiteral("pause_clear"), QStringLiteral("queue_keyup"),
         QStringLiteral("cancel_reset"), QStringLiteral("pause_continue"), QStringLiteral("break_one"),
         QStringLiteral("break_all"), QStringLiteral("stop"), QStringLiteral("restart"), QStringLiteral("admission"),
-        QStringLiteral("exit_wait"), QStringLiteral("exit_pause"), QStringLiteral("borrowers")};
+        QStringLiteral("exit_wait"), QStringLiteral("exit_pause"), QStringLiteral("borrowers"),
+        QStringLiteral("queued_stop_action")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
+    wchar_t desktop[256]{};
+    const bool desktopObserved = GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()),
+        UOI_NAME, desktop, sizeof(desktop), nullptr);
     result = new LifecycleResult;
     const int code = qkmProductMain(argc, argv);
     const bool passed = code == 0 && result->passed && SendInputTask::s_SendInputTaskControllerMap.isEmpty()
@@ -418,6 +471,12 @@ int main(int argc, char *argv[])
         {QStringLiteral("downFinished"), result->downFinished.loadAcquire()}, {QStringLiteral("upStarted"), result->upStarted.loadAcquire()},
         {QStringLiteral("upFinished"), result->upFinished.loadAcquire()}, {QStringLiteral("cancelledDown"), result->cancelledDown.loadAcquire()},
         {QStringLiteral("borrowerCalls"), result->borrowerCalls.loadAcquire()},
+        {QStringLiteral("desktop"), desktopObserved ? QString::fromWCharArray(desktop) : QString()},
+        {QStringLiteral("stoppedBeforeSubmission"), result->stoppedBeforeSubmission},
+        {QStringLiteral("controllersEmptyBeforeDispatch"), result->controllersEmptyBeforeDispatch},
+        {QStringLiteral("pendingAfterDispatch"), result->pendingAfterDispatch},
+        {QStringLiteral("stopDownQueued"), result->stopDownQueued},
+        {QStringLiteral("stopUpQueued"), result->stopUpQueued},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};

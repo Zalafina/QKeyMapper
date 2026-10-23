@@ -809,3 +809,21 @@ PowerShell／嵌入 C#／Python 语法、固定键／无效 HWND 拒绝、五种
 - accept-w11-source-final-qt5-4 的 gsudo cache on 被用户取消，PID 33536／返回 999，缓存未启用、没有 started.json；Qt6 后续轮次也未启动。取得用户明确“允许，重新发起一次”后才运行最终两轮。取消记录保留，不记为产品失败或通过。各失败后的自有单配对均先观察数量再撤销，未盲目重配／撤销。
 
 本轮无 Default 场景、映射启动、系统 SendInput 或驱动安装；配置选择和表格重排仅用核实目标的窗口事件／真实 GUI 菜单，不设控件值或直调加载／移动函数。普通 High 截图限制沿用 LOAD-41，本轮未提升截图或取得新的视觉证据。未重跑未受影响的全量 IPC、LOAD-41 全轮、严格分析或 ASan；七个相关产品源文件 UTF-8 无 BOM／LF 和局部 diff 检查通过。PC-W10 新源查询、英日源 GUI、筛选／空白与共通组合、产品大结果／性能、运行后拒绝、真正停止清理、编辑／保存及最终输入效果仍未验；业务修订仍 null、stop_completion 仍 unobserved。本切片是独立只读提交切点，不表示完整 M1 完成。
+
+## STOP-20261023-43：STOPPED 与排队停止动作的真实缺口
+
+PC-W11，Windows 11 企业版 10.0.26200 x64。源码基线 35902062，仅修改既有 sendinput_lifecycle 维护目标及其说明，未改变产品发送、Hook、驱动或 GUI 行为。新增 queued_stop_action 使用与 emitSendOnMappingStopKeys 相同的真实 wrapper DOWN／UP 提交及原排队 onSendInputKeys 接收，不直接调用私有停止发送函数或整个 Unhook；合成源只有 QkmProbeNoOp⏱5000，无有效输出键，源指针在所有实际任务 join 后才恢复／释放。
+
+Qt6.8.3 msvc2022_64 x64 普通 Release、MSVC 19.44.35228.0；维护目标 out/tests/sendinput_lifecycle/qt6-stop43-release，native exit 0、无编译／链接警告，完整日志 out/mcp_lifecycle/build-stop43-qt6.log。本机部署 EXE 为 out/mcp_lifecycle/runtime-stop43-qt6/QKeyMapperStop43Lifecycle.exe，与该构建字节一致；一次身份与 windeployqt 日志在运行目录。
+
+三项均 native exit 0／passed=true，实际产品主线程桌面 QkmLifecycle_ba4d48fe8ea343daa285af2c02ebe1aa，材料在 out/mcp_lifecycle/accept-stop43-qt6 和 run-stop43-qt6.log：
+
+| 用例／PID | 当前观测 |
+|---|---|
+| queued_stop_action／3128 | stoppedBeforeSubmission=true、controllersEmptyBeforeDispatch=true；确有一对 DOWN／UP 排队；Worker 队列栅栏后 pendingAfterDispatch=true，waitForDone(0) 为 false，Hook 状态仍 STOPPED。之后沿既有 clearMap 真实 join，cleanupMs=1 |
+| wait_clear／18232 | 清理时 activeAtCleanup=1，真实 ObservedTask DOWN 开始／完成各 1；回收后表空，cleanupMs=0 |
+| queue_keyup／25316 | 清理时活动任务 1；DOWN 开始／完成各 2，其中排队 DOWN 取消 1，KEY_UP 开始／完成各 1；回收后表空，cleanupMs=0 |
+
+新用例保留原 onSendInputKeys，所以其 ObservedTask 计数为零；不把这组零值当“未执行”或按键释放证明。pendingAfterDispatch 证明排队或活动工作尚未排空，没有据此声称 DOWN 已进入 native 调用。三项使用原产品 main、正式 manifest，产品 High RID 12288，普通控制器 Medium RID 8192、same_login=true；未切 Default、不发系统输入、不启动 GUI 映射、不安装驱动。仅必要自有启动／关闭使用 gsudo，开发／构建／控制器均普通令牌。控制器 PID 28264 的五分钟缓存 finally 关闭，普通收尾复核会话为 0、不可用、Explicit；三个自有产品均退出 0。
+
+本切片是完成条件的反例及既有回收路径的聚焦证据，不是清理协调修复、GUI／MCP 启停等价、实际 Hook／设备释放或运行后源读取验收。未改资源所有权或生产生命周期，未为此维护测试单独执行 Qt5、产品 Release、严格分析或 ASan；这些按后续真实协调差异选择。PC-W10 无本切片新证据。
