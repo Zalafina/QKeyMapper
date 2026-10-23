@@ -1107,6 +1107,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_GamepadTouchpadStateMap()
 {
     qRegisterMetaType<HWND>("HWND");
+    qRegisterMetaType<QSharedPointer<SendInputWorkItem>>("QSharedPointer<SendInputWorkItem>");
     qRegisterMetaType<V_KEYCODE>("V_KEYCODE");
     qRegisterMetaType<V_MOUSECODE>("V_MOUSECODE");
     qRegisterMetaType<QJoystickPOVEvent>("QJoystickPOVEvent");
@@ -5545,7 +5546,8 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
     }
 
     if (false == skip_emitsignal) {
-        emit sendInputKeys_Signal(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state, keyMappingDataList);
+        emit sendInputKeys_Signal(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state, keyMappingDataList,
+            QSharedPointer<SendInputWorkItem>::create());
 #ifdef DEBUG_LOGOUT_ON
         QAtomicInt task_stop_flag(INPUTSTOP_NONE);
         if (controller != Q_NULLPTR) {
@@ -21386,6 +21388,10 @@ SendInputTask::SendInputTask(int rowindex, const QStringList &inputKeys, int key
     m_sendmode(sendmode),
     m_sendvirtualkey_state(sendvirtualkey_state)
 {
+    if (!QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved()) {
+        QKeyMapper_Worker::s_SourceReadAccess.observeRuntimeLifecycle();
+    }
+
     // Set the real original key
     m_real_originalkey = getRealOriginalKey(original_key);
 

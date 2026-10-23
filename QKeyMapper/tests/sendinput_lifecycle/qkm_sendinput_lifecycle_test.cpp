@@ -28,6 +28,12 @@ struct LifecycleResult {
     bool pendingAfterDispatch = false;
     int stopDownQueued = 0;
     int stopUpQueued = 0;
+    quint64 workAtSubmission = 0;
+    quint64 workAtBarrier = 0;
+    quint64 workAfterQueueClear = 0;
+    quint64 workAfterJoin = 0;
+    bool sourceGateBefore = false;
+    bool sourceGateAfter = false;
     bool observeRepeats = false;
     bool observeSingleRoot = false;
     QMutex traceMutex;
@@ -87,8 +93,19 @@ void finish(bool passed)
     }, Qt::QueuedConnection);
 }
 
-void installQueuedStopActionTest(QKeyMapper_Worker *worker)
+void installQueuedStopActionTest(QKeyMapper_Worker *worker, const QString &mode)
 {
+    const bool reject = mode == QStringLiteral("queued_admission");
+    const bool discard = mode == QStringLiteral("discard_dispatch");
+    if (reject) {
+        result->passed = QMetaObject::invokeMethod(worker, "shutdownSendInputTasks", Qt::DirectConnection);
+    }
+    QObject *receiver = nullptr;
+    if (discard) {
+        QObject::disconnect(worker, &QKeyMapper_Worker::sendInputKeys_Signal, worker, &QKeyMapper_Worker::onSendInputKeys);
+        receiver = new QObject(worker);
+        QObject::connect(worker, &QKeyMapper_Worker::sendInputKeys_Signal, receiver, [] {}, Qt::QueuedConnection);
+    }
     auto *previousData = QKeyMapper::KeyMappingDataList;
     auto *data = new QList<MAP_KEYDATA>{MAP_KEYDATA()};
     auto &row = data->first();
@@ -108,19 +125,27 @@ void installQueuedStopActionTest(QKeyMapper_Worker *worker)
     worker->emit_sendInputKeysSignal_Wrapper(0, row.Mapping_Keys, KEY_UP, row.Original_Key,
         SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, data);
     QObject::disconnect(observation);
+    result->workAtSubmission = SendInputWorkItem::outstanding();
     result->controllersEmptyBeforeDispatch = SendInputTask::s_SendInputTaskControllerMap.isEmpty();
-    QMetaObject::invokeMethod(worker, [data, previousData]() {
+    delete receiver;
+    QMetaObject::invokeMethod(worker, [data, previousData, reject, discard]() {
         const auto found = SendInputTask::s_SendInputTaskControllerMap.constFind(SENDON_MAPPINGSTOP_STR);
         result->pendingAfterDispatch = found != SendInputTask::s_SendInputTaskControllerMap.cend()
             && !found->task_threadpool->waitForDone(0);
-        result->passed = result->stoppedBeforeSubmission && result->controllersEmptyBeforeDispatch
-            && result->pendingAfterDispatch && result->stopDownQueued == 1 && result->stopUpQueued == 1
+        result->workAtBarrier = SendInputWorkItem::outstanding();
+        result->passed = result->passed && result->stoppedBeforeSubmission && result->controllersEmptyBeforeDispatch
+            && result->workAtSubmission == 2
+            && ((reject || discard) ? (!result->pendingAfterDispatch && result->workAtBarrier == 0)
+                                    : (result->pendingAfterDispatch && result->workAtBarrier > 0))
+            && result->stopDownQueued == 1 && result->stopUpQueued == 1
             && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED;
         QElapsedTimer elapsed;
         elapsed.start();
         SendInputTask::clearSendInputTaskControllerMap();
         result->cleanupMs = elapsed.elapsed();
-        result->passed = result->passed && SendInputTask::s_SendInputTaskControllerMap.isEmpty();
+        result->workAfterJoin = SendInputWorkItem::outstanding();
+        result->passed = result->passed && SendInputTask::s_SendInputTaskControllerMap.isEmpty()
+            && result->workAfterJoin == 0;
         QKeyMapper::KeyMappingDataList = previousData;
         delete data;
         finish(result->passed);
@@ -326,12 +351,26 @@ void installLifecycleTest()
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
-            if (mode == QStringLiteral("queued_stop_action")) {
-                installQueuedStopActionTest(worker);
+            if (mode == QStringLiteral("queued_stop_action") || mode == QStringLiteral("queued_admission")
+                || mode == QStringLiteral("discard_dispatch")) {
+                installQueuedStopActionTest(worker, mode);
                 return;
             }
             if (mode.startsWith(QStringLiteral("repeat_"))) {
                 installRepeatTest(worker, mode);
+                return;
+            }
+            if (mode == QStringLiteral("direct_task_gate")) {
+                result->sourceGateBefore = QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved();
+                auto *task = new SendInputTask(-1, {QStringLiteral("QkmProbeNoOp")}, KEY_DOWN,
+                    QStringLiteral("QkmDirect"), SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL);
+                result->workAtSubmission = SendInputWorkItem::outstanding();
+                result->sourceGateAfter = QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved();
+                delete task;
+                SendInputTask::clearSendInputTaskControllerMap();
+                result->workAfterJoin = SendInputWorkItem::outstanding();
+                finish(!result->sourceGateBefore && result->sourceGateAfter && result->workAtSubmission == 1
+                    && result->workAfterJoin == 0 && QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved());
                 return;
             }
             const bool paused = mode.startsWith(QStringLiteral("pause"))
@@ -387,6 +426,16 @@ void installLifecycleTest()
                     SendInputTask::clearSendInputTaskControllerMap();
                     result->passed = result->passed && borrowers.waitForDone(joinTimeout)
                         && result->borrowerCalls.loadAcquire() == 500;
+                } else if (mode == QStringLiteral("clear_queue")) {
+                    submit({QStringLiteral("QkmProbeQueuedNoOp")}, KEY_DOWN, original);
+                    result->workAtSubmission = SendInputWorkItem::outstanding();
+                    current.task_threadpool->clear();
+                    result->workAfterQueueClear = SendInputWorkItem::outstanding();
+                    result->passed = result->passed && result->workAtSubmission == 2
+                        && result->workAfterQueueClear == 1;
+                    SendInputTask::clearSendInputTaskControllerMap();
+                    result->workAfterJoin = SendInputWorkItem::outstanding();
+                    result->passed = result->passed && result->workAfterJoin == 0;
                 } else if (mode == QStringLiteral("queue_keyup")) {
                     submit({QStringLiteral("QkmProbeQueuedNoOp")}, KEY_DOWN, original);
                     submit(keys, KEY_UP, original);
@@ -454,7 +503,8 @@ int main(int argc, char *argv[])
         QStringLiteral("cancel_reset"), QStringLiteral("pause_continue"), QStringLiteral("break_one"),
         QStringLiteral("break_all"), QStringLiteral("stop"), QStringLiteral("restart"), QStringLiteral("admission"),
         QStringLiteral("exit_wait"), QStringLiteral("exit_pause"), QStringLiteral("borrowers"),
-        QStringLiteral("queued_stop_action")};
+        QStringLiteral("queued_stop_action"), QStringLiteral("queued_admission"),
+        QStringLiteral("discard_dispatch"), QStringLiteral("clear_queue"), QStringLiteral("direct_task_gate")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -477,6 +527,13 @@ int main(int argc, char *argv[])
         {QStringLiteral("pendingAfterDispatch"), result->pendingAfterDispatch},
         {QStringLiteral("stopDownQueued"), result->stopDownQueued},
         {QStringLiteral("stopUpQueued"), result->stopUpQueued},
+        {QStringLiteral("workAtSubmission"), QString::number(result->workAtSubmission)},
+        {QStringLiteral("workAtBarrier"), QString::number(result->workAtBarrier)},
+        {QStringLiteral("workAfterQueueClear"), QString::number(result->workAfterQueueClear)},
+        {QStringLiteral("workAfterJoin"), QString::number(result->workAfterJoin)},
+        {QStringLiteral("workAtExit"), QString::number(SendInputWorkItem::outstanding())},
+        {QStringLiteral("sourceGateBefore"), result->sourceGateBefore},
+        {QStringLiteral("sourceGateAfter"), result->sourceGateAfter},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};

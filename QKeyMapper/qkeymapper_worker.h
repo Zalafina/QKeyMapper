@@ -39,6 +39,7 @@ using QAtomicBool = QAtomicInteger<bool>;
 #include "volumecontroller.h"
 #include "qkeymapper_constants.h"
 #include "qkm_mapping_source_access.h"
+#include "qkm_send_input_work.h"
 
 #ifdef FAKERINPUT_SUPPORT
 #ifdef FAKERINPUT_EXTRAINFO
@@ -818,6 +819,9 @@ int sign(T val) {
 }
 class SendInputTask : public QRunnable
 {
+private:
+    SendInputWorkItem m_work;
+
 public:
     SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
 
@@ -1318,7 +1322,7 @@ signals:
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick_Signal(V_MOUSECODE vmousecode, int keyupdown);
 #endif
-    void sendInputKeys_Signal(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList);
+    void sendInputKeys_Signal(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList, QSharedPointer<SendInputWorkItem> work);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove_Signal(int delta_x, int delta_y, int mouse_index);
 #endif

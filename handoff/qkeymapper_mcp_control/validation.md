@@ -827,3 +827,38 @@ Qt6.8.3 msvc2022_64 x64 普通 Release、MSVC 19.44.35228.0；维护目标 out/t
 新用例保留原 onSendInputKeys，所以其 ObservedTask 计数为零；不把这组零值当“未执行”或按键释放证明。pendingAfterDispatch 证明排队或活动工作尚未排空，没有据此声称 DOWN 已进入 native 调用。三项使用原产品 main、正式 manifest，产品 High RID 12288，普通控制器 Medium RID 8192、same_login=true；未切 Default、不发系统输入、不启动 GUI 映射、不安装驱动。仅必要自有启动／关闭使用 gsudo，开发／构建／控制器均普通令牌。控制器 PID 28264 的五分钟缓存 finally 关闭，普通收尾复核会话为 0、不可用、Explicit；三个自有产品均退出 0。
 
 本切片是完成条件的反例及既有回收路径的聚焦证据，不是清理协调修复、GUI／MCP 启停等价、实际 Hook／设备释放或运行后源读取验收。未改资源所有权或生产生命周期，未为此维护测试单独执行 Qt5、产品 Release、严格分析或 ASan；这些按后续真实协调差异选择。PC-W10 无本切片新证据。
+
+## STOP-20261023-44：排队提交与真实任务的连续存续计数
+
+PC-W11，Windows 11 企业版 10.0.26200 x64。源码基线 76484d02，加 qkm_send_input_work.h、Worker 内部信号元类型／附加共享标记、SendInputTask 首声明成员标记及构造前首次活动门禁、维护用例和说明。发送信号前创建共享标记，Qt 排队事件保留它到派发／销毁；即使原七参数接收器忽略新增参数也保留。每个真实 runnable 从构造到析构另持标记，排队转任务和派生提交时二者重叠；未运行任务被删除也退还。原输入参数、QueuedConnection、控制器资源所有权及清理顺序未改。标记只含原子计数，不持 GUI／Worker／源表指针，未引入线程、计时器或对外能力。
+
+发送任务构造在任何运行数据访问前，同首次源复制互斥关闭读取门禁；门禁已关闭时不重复等待，删除任务也不重开。它覆盖未经过 Hook／VButton 入口的直接任务构造；不据计数零重新开放源查询，stop_completion 仍为 unobserved。
+
+三套既有生命周期维护目标均 native build exit 0：Qt6.8.3 msvc2022_64 Release、Qt5.15.2 msvc2019_64 Release、Qt6 Release + ASan；MSVC 19.44.35228.0 x64。Qt6 两套无警告，Qt5 仅官方 qtmain.lib(qtmain_win.obj) 缺 PDB 的 standing exception。构建目录 out/tests/sendinput_lifecycle/{qt6-stop44-release,qt5-stop44-release,qt6-stop44-asan}；完整日志 out/mcp_lifecycle/build-stop44-*.log。各自本机部署字节一致，EXE／一次身份和 windeployqt 日志见下列 runtime 目录；未复制另一台 PC 的产物。
+
+| 配置／实际 EXE（均在 out/mcp_lifecycle） | 原始结果目录 | 产品主线程实际桌面 |
+|---|---|---|
+| runtime-stop44-qt6-release/QKeyMapperStop44Lifecycle_qt6_release.exe | accept-stop44-qt6-release | QkmLifecycle_26a20ece15c4483883c1b546a87e605a |
+| runtime-stop44-qt5-release/QKeyMapperStop44Lifecycle_qt5_release.exe | accept-stop44-qt5-release | QkmLifecycle_362e850a1a914e5191ff7e123494dca2 |
+| runtime-stop44-qt6-asan/QKeyMapperStop44Lifecycle_qt6_asan.exe | accept-stop44-qt6-asan | QkmLifecycle_017e3c7bb05441b08f09442fc22a2b37 |
+
+每套九项均 native exit 0／passed=true，三套相同预期全部通过：
+
+| 用例 | 当前观测及边界 |
+|---|---|
+| queued_stop_action | STOPPED 且派发前控制器表空；工作计数在提交后为 2，Worker 队列栅栏后仍为 2，waitForDone(0) 为 false；实际 join 后归 0 |
+| queued_admission | 退出专用拒收开启后排队一对真实请求，计数 2→0，没有创建控制器／runnable；不是日常可重启停止实现 |
+| discard_dispatch | 删除测试接收器，两个待派发事件随之退还标记，计数 2→0；仅此用例临时替换接收器，不作为实际发送效果证明 |
+| clear_queue | 活动等待任务及未运行 DOWN 共 2；线程池 clear 删除排队任务后为 1，实际回收／join 后为 0 |
+| direct_task_gate | 直接构造但不运行 NoOp 任务，计数 1；首次活动门禁 false→true；删除及回收后计数为 0，门禁保持关闭 |
+| wait_clear／queue_keyup | 原真实活动等待回收和取消排队 DOWN／保留 KEY_UP 的断言通过；本次均退出 0、工作计数归 0 |
+| repeat_direct | 沿原真实派生序列／重复机制执行 3 轮、准确 9 个步骤，工作计数最终归 0；测试使用合成 STARTED 状态，不是 GUI 启动、硬件 Hook 或实际输出基线 |
+| exit_wait | 活动任务保持到真实产品 main 退出，原退出回收后控制器表为空、ObservedTask 开始／完成匹配、存续计数为 0；不证明全部退出资源路径 |
+
+所有工作／门禁中间值仅在对应分支采样，其他分支的默认零／false 不解释为实际观测。workAtExit 是每项产品 main 返回后的实际值。全部 27 个自有 PID／EXE／创建时间／实际桌面及正常退出在各 started／closed 结果，精简提取 stop44-evidence-summary.log；一次性汇总器曾因默认 GBK 读取 UTF-8 的重复序列结果失败，明确使用 UTF-8 后只重新汇总，没有重复测试或更改通过结果。
+
+ASan 生成的 Makefile.Release 含 -fsanitize=address、QKM_ENABLE_ASAN；已核对真实运行 EXE 导入官方 MSVC clang_rt.asan_dynamic-x86_64.dll 和 __asan_*（stop44-asan-imports.log），该运行库随本机副本部署。九项实跑 native exit 0，halt_on_error／abort_on_error 开启，所选路径没有 ASan 报告；detect_leaks=0，不声称泄漏检查、全部内存路径或性能通过。不是普通 Release 代替 ASan，也不是仅启动／关闭烟测。
+
+两套运行的普通控制器 PID 4692／17652 分别申请五分钟缓存并 finally 关闭；普通收尾会话 0、不可用，CacheMode 仍 Explicit。产品 High RID 12288、普通控制器 Medium RID 8192，same_login=true；Git／编辑／构建／部署／证据汇总均普通权限，只有必要自有启动／关闭助手提权。无 Default、系统输入、GUI 映射启动、有效按键或驱动安装，未操作用户实例。
+
+本切片为内部完成条件的必要组成和首次读取门禁补强，不是完整清理完成协调。尚未封闭全部生产者／同步发送、确认设备及 GUI 尾部、停止代次／超时／快速重启，运行后源查询仍禁用；未跑新的正式 MCP／真实 GUI 启停对照、设备／物理释放、英日 GUI、PC-W10 或性能。SOURCE-42 正式源只读及先前协议／SDK 按原有效范围保留，不冒充本次实跑；本次未选择严格 Clang-Tidy／Clazy，原生参数／控制器所有权未改，以局部调用审阅、两版实际任务和针对性 ASan 检查新增的标记生命周期。

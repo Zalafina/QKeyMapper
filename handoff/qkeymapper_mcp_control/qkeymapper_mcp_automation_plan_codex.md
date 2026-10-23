@@ -8,19 +8,19 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | M1.2a-2b-3／STOP-43 停止动作队列缺口复现已核实；生命周期协调进行中。SOURCE-42 已本地提交 35902062，LOAD-41 为 7d78eacb，环境恢复为 7f78a579 |
-| 状态 | STOP-43 的 Qt6 实际维护目标三项通过：STOPPED／空表后仍有排队任务、等待中回收、排队 KEY_UP 保留。该切片只增加测试及证据，未实现清理完成。SOURCE-42 两套最终产品各 9 分项及对应组件检查按原范围保留；完整 M1 编辑／保存／真正停止闭环仍未完成 |
+| 当前切片 | M1.2a-2b-3／STOP-44 队列／runnable 连续存续计数完成选定验证；接续生产者及停止代次协调。STOP-43 为 76484d02，SOURCE-42 为 35902062，LOAD-41 为 7d78eacb，环境恢复为 7f78a579 |
+| 状态 | Qt6／Qt5 普通 Release 与 Qt6 ASan 生命周期目标各 9 项、共 27 次执行通过，退出时存续计数均为 0。已覆盖排队转任务、拒收、事件／任务销毁、KEY_UP 保留、派生序列和退出；计数尚不是清理完成接口。SOURCE-42 正式产品原范围保留；完整 M1 编辑／保存／真正停止闭环仍未完成 |
 | 执行机器 | PC-W11，Windows 11 企业版 10.0.26200 x64；当前唯一写入机器。PC-W10 记录均保留为历史，缺少原始材料不作为本机已核实证据 |
 | 任务分支 | `codex/qkeymapper-mcp-control` |
-| 源码基线 | STOP-43 基线 35902062，加既有 sendinput_lifecycle 维护目标的 queued_stop_action／实际主线程桌面结果及说明；产品行为未改。SOURCE-42 的首次活动门禁只允许首次运行前静止读取，不作为清理完成证明 |
+| 源码基线 | STOP-44 基线 76484d02，加 SendInputWorkItem、信号附带排队存续标记、任务析构标记及首次任务构造源读取门禁，另有对应维护测试／说明。原输入参数、排队连接类型、控制器所有权／清理顺序未改；门禁仍不重开，不作为清理完成证明 |
 | 当前已完成 | ENV-39 环境锁／恢复、CACHE-40 PID 缓存无缓存对照，LOAD-41 两套真实 GUI 七步／正式 MCP 各 18 项。SOURCE-42 在 PC-W11 两套最终产物完成非当前普通源、共通显示去重与独立备份来源范围、完整重复读取不变性、真实重排及相同内容往返、重载／切配置／失败恢复和新配对拒绝旧引用。Win10 历史独立保留 |
 | 当前未验证 | 稳定编辑授权、完整业务修订、编辑／保存、停止清理完成及实际输入效果未实现。保存失败／缓存恢复、全局配置、筛选／空白与共通组合、产品加载忙／大结果、运行后源查询与变更／重启仍待对应用例。High 截图／托盘、异用户、性能、打包和旧一次 SDK 维护退出原因缺口保留；PC-W10 未按新锁重装或验证新源路径，英日源 GUI 未验 |
-| 构建与 EXE | 本机 Qt6.8.3 msvc2022_64／Qt5.15.2 msvc2019_64，x64 普通 Release，MSVC 19.44.35228.0；最终两套产品及源维护目标 native exit 0，Qt6 无警告，Qt5 产品仅官方 qtmain 例外。当前最终 EXE 为 out/mcp_product/runtime-w11-source-final-{qt6,qt5}/QKeyMapperMcpAcceptance_w11_source_final_{qt6,qt5}.exe；构建日志在 out/mcp_source，部署及一次产物身份在运行目录。ENV-39 材料按原范围保留 |
-| 提交与同步 | 用户明确授权按可验证切片自主本地 commit；环境切片 7f78a579、LOAD-41 为 7d78eacb、SOURCE-42 为 35902062；STOP-43 形成独立测试切片，身份见 Git 历史。不 push，远端最后核对仍为 b3c6f277；本机 out、venv、测试配对及原始材料不提交、不跨机复制 |
+| 构建与 EXE | 本机 Qt6.8.3 msvc2022_64／Qt5.15.2 msvc2019_64 x64，MSVC 19.44.35228.0。当前维护 EXE 为 out/mcp_lifecycle/runtime-stop44-{qt6-release,qt5-release,qt6-asan}/QKeyMapperStop44Lifecycle_{qt6_release,qt5_release,qt6_asan}.exe；三套 native build exit 0，Qt6 两套无警告，Qt5 仅官方 qtmain 例外。ASan 编译标志／运行库导入及实际运行已核实，日志在 out/mcp_lifecycle。SOURCE-42 正式产品及 ENV-39 旧材料按原范围保留 |
+| 提交与同步 | 用户明确授权按可验证切片自主本地 commit；环境 7f78a579、LOAD-41 为 7d78eacb、SOURCE-42 为 35902062、STOP-43 为 76484d02；STOP-44 形成聚焦提交切片，身份见 Git 历史。不 push，远端最后核对仍为 b3c6f277；本机 out、venv、测试配对及原始材料不提交、不跨机复制 |
 | 本机独有材料 | out/mcp_bridge 的新 venv／wheel 缓存／安装文件／检查日志，以及 out/mcp_product 的运行副本、私有桌面、动作／状态／失败证据；不随 Git 同步。PC-W10 原始 out 缺失，不冒充已复核 |
 | 授权边界 | 本机开发已恢复，持续推进到用户明确暂停，可自主聚焦本地提交，push 另行授权。当前固定助手在自有私有桌面使用局部窗口事件切配置、重选／空白、查看 Tab 和重排合成源行；不切 Default、不发系统输入、不启动映射或安装驱动。独立控制器 PID 缓存已获准，5 分钟空闲失效、finally 关闭；CACHE-40 已对照无缓存，不改全局配置。一次取消后获用户明确允许才重发；Git／编辑／构建／控制器／SDK／桥接／截图均普通权限 |
-| 收尾与本机状态 | STOP-43 的自有 PID 3128／18232／25316 均正常退出 0，实际桌面 QkmLifecycle_ba4d48fe8ea343daa285af2c02ebe1aa，控制器 28264 缓存 finally 关闭；普通令牌复核缓存会话 0、不可用、Explicit。未操作用户实例。SOURCE-42 的 13 个自有进程及配对／接口收尾按原记录保留 |
-| 下一项动作 | 继续 2b-3：先补齐排队提交与真实 runnable 的连续存续计数（队列转任务、派生任务、取消／拒收／销毁均纳入），再接入直接按钮、Hook／Worker、相关设备与 GUI 尾部的带代次停止协调。零任务计数仍不代表生产者／GUI 完成，不据此重开源查询。复用生命周期维护目标；不得只在 UnHook 末尾发完成，新增运行／输入测试按权限与桌面边界明确范围 |
+| 收尾与本机状态 | STOP-44 的 27 个自有进程均正常退出 0，PID／EXE／实际桌面见 out/mcp_lifecycle/accept-stop44-* 与 stop44-evidence-summary.log。普通控制器 4692／17652 的缓存均 finally 关闭，收尾缓存会话 0、不可用；未操作用户实例。STOP-43／SOURCE-42 早前收尾按原记录保留 |
+| 下一项动作 | 继续 2b-3：核对 Hook／Interception 的在途回调与物理 KEY_UP 记账、Worker／直接按钮及相关设备队列，接入同代次的 GUI 延迟开放／回切及异步停止协调。复用已验证的连续计数，但零计数不代表生产者／线程池／设备／GUI 完成，不据此重开源查询。停止期间不能一律丢弃回调而遗留物理按键状态；新增运行／输入测试按权限与桌面边界明确范围 |
 | 下一项完成标准 | 同代次的生产者／排队／Worker／发送与释放任务及 GUI 尾部真正结束后才能报告清理完成，迟到旧通知不能完成新请求。超时保持禁止修改，不强杀或释放仍被借用资源；运行后源读取须有对应证明。Worker STOPPED／空记账均不单独放行，源引用仍不授予编辑权限；保持原 GUI／MCP 业务效果与必要恢复语义 |
 | 实耗与剩余 | PC-W10 原估计累计约 705 分钟；PC-W11 本轮有效投入未独立计时，不把含人工 UAC 等待的日志跨度冒充开发工时。沿用 M0／M1 及完整目标的校准区间，不以环境或部分读流通过缩减剩余业务目标 |
 | 当前未决与阻碍 | 当前源切片无阻碍。Qt5 隐藏表／单元格模式差异及重排后弹窗不可用通过固定实际矩形、普通窗口鼠标事件及唯一目标校验收敛；原始失败、未知窗口角色和一次 UAC 取消如实保留，见 SOURCE-42。历史 High 截图／托盘及 SDK 一次无原生码退出缺口保留；完整清理边界尚未实现 |
@@ -164,10 +164,12 @@ catalog_ref 只表示对应目录修订中的条目，**不是映射编辑目标
 |---|---|
 | GUI 停止入口 | setKeyUnHook 在 GUI 线程恢复 FilterKeys 基线并排队发送 Hook／Worker 信号；MappingSwitch 随即置 IDLE、允许控件并可能回切配置。GUI 方法返回与业务可安全写入分开记录 |
 | Hook 回调 | onSetHookProcKeyUnHook 当前正文只有诊断，不是 UnhookWindowsHookEx 的成功回执。应核对常驻 Hook 的停止旁路和在途生产者，不能把此槽调用当“所有输入回调结束” |
+| 停止态输入旁路 | InterceptionKeyboardHookProc 在映射状态判断前仍读取当前 Tab 的悬浮窗透传热键；不能假定非 STARTED 就完全不触源。LowLevelKeyboardHookProc 对应读取已有映射状态短路。该静态差异尚未修正或运行复现；生产者协调还须保留物理 KEY_UP 的真实状态记账 |
 | 直接按钮生产者 | 浮动按钮通过 QMetaObject::invokeMethod、面板通过排队信号进入 triggerVButtonKey；该入口可以在未经过 Hook 开始时写 LockState／建立发送或连发任务。停止协调还须覆盖这些队列与派生任务。SOURCE-42 只在该 Worker 入口先关闭只读门禁，不改变发送行为，不代表完成日常停止协调 |
 | 旧发送任务停止 | stopSendInputTaskController 设置 task_stopping／停止旗标、清暂停并唤醒等待；名称含 ThreadPool 的两种 clear 函数只请求停止。待执行 KEY_DOWN 在 run 的 admission 处退出，KEY_UP 仍须允许完成 |
 | 池排空／资源释放 | clearSendInputTaskControllerMap 与全局 reset／clear 才实际 waitForDone，再释放／重置；其等待没有本业务超时，不能在 GUI 线程调用或从超时路径强行删资源。只取空闲线程数也不是排空证明 |
 | 停止动作中新任务 | emitSendOnMappingStopKeys 在置 HOOKPROC_STATE_STOPPED 之前发出 DOWN／UP；sendInputKeys_Signal 使用排队连接，onSendInputKeys 可稍后建立新任务。完成条件须包含这些预期任务和它们派生的后续任务 |
+| 排队／任务标记 | STOP-44 的共享标记随排队事件保留，真实 SendInputTask 从构造到析构另持标记，交接和派生提交无计数空窗；拒收、事件销毁及未运行任务删除会退还。它仅覆盖这些提交及 runnable 存续，不包含全部同步发送、在途输入生产者、设备和 GUI；仍需原池 waitForDone 及其他完成边界 |
 | 按键记账与真实释放 | KEY_UP 会先移除 pressedMappingKeysMap、排队 allMappingKeysReleased，再继续逐键发送；空记账表或该信号到达不能单独证明 native 释放及所有 runnable 已结束 |
 | 退出专用入口 | shutdownSendInputTasks 把 m_sendInputTasksStopping 永久设 true，该旗标使后续 onSendInputKeys 返回；现有启动路径不复位。该函数保留退出语义，不能直接复用作可再次开始的日常停止 |
 | 配置与界面尾部 | 映射指针恢复、浮窗／面板隐藏等有跨线程回调，GUI 也可能回切配置；写入前再次解析源引用、修订和必要显示／运行缓存，旧停止通知不能完成新一轮操作 |
@@ -343,7 +345,7 @@ GUI 基线不得调用 MCP 或直接调用共用业务函数替代界面操作�
 | M1.2a-2b | 实际源身份、映射行快照及稳定引用 | 进行中；2b-1 加载记录与 2b-2 初始静止只读源快照完成选定范围，稳定编辑授权、运行后读取及 Worker 写回／清理协调仍未闭环 |
 | M1.2a-2b-1 | 最近映射加载记录、失败／缺失解析及初始目录上下文 | LOAD-37 首批启动六组各 11 项、LOAD-41 两套独立 GUI 七步及正式 MCP 各 18 项通过；温切换／空白重置、旧目录失效和只读不变性完成选定范围，不表示 2b 或 M1 完成 |
 | M1.2a-2b-2 | 实际普通／共通源快照及只读引用 | SOURCE-42：PC-W11 两套最终产品各 9 项、源维护各 3 组、协议 15／SDK 各 12 通过；首次活动门禁只保护初始静止读取，引用不是稳定编辑授权 |
-| M1.2a-2b-3 | 真实生命周期完成边界及运行后源读取 | 进行中：STOP-43 用真实队列／任务复现 STOPPED 和空表仍有待执行停止动作，三项维护验证通过；完成协调尚未实现，继续排队／任务连续计数与生产者／GUI 边界 |
+| M1.2a-2b-3 | 真实生命周期完成边界及运行后源读取 | 进行中：STOP-43 复现队列缺口；STOP-44 连续存续计数与首次直接任务门禁通过 Qt6／Qt5 Release、Qt6 ASan 各 9 项。完整完成协调尚未实现，接续生产者、停止代次与 GUI 尾部边界 |
 
 ## 4. Git 跟踪的交接目录与管理规则
 

@@ -55,6 +55,8 @@ finally { Pop-Location }
 
 `queued_stop_action` 在 STOPPED 状态通过停止动作使用的真实 wrapper／排队接收入口提交一对无输出 DOWN／UP；先确认派发前控制器表为空，再用 `waitForDone(0)` 确认队列派发后仍有未完成任务，最后沿原回收路径等待后释放合成源数据。它证明 STOPPED／空表不能作为清理完成条件，不调用 Hook 启停或原生设备清理，也不代替 GUI 停止、实际释放及完整生命周期协调验收。结果同时记录产品主线程实际桌面。
 
+连续存续计数通过同一目标验证：`queued_stop_action` 观察排队到 runnable 的标记交接；`queued_admission` 覆盖退出专用入口拒收已排队请求；`discard_dispatch` 覆盖接收器销毁时丢弃排队事件；`clear_queue` 覆盖未运行任务被线程池删除；`direct_task_gate` 验证直接构造任务也会关闭首次静止源读取门禁，删除任务后不重开。`workAtSubmission`／`workAtBarrier`／`workAfterQueueClear`／`workAfterJoin` 只在对应分支采样，`sourceGateBefore`／`sourceGateAfter` 仅在 direct_task_gate 采样，其他分支的初始值不代表相应事实；`workAtExit` 是所有用例退出后的实际计数。计数不是完整停止完成条件，仍需生产者封闭、线程池排空、设备及 GUI 尾部证明。
+
 性能基准使用非 diagnostic 的普通 Release。生命周期测试的普通版保留原等待与 cleanup 耗时门槛；diagnostic 写盘和 ASan 用于完成／销毁及内存安全检查，不用于判断日常性能。运行器须保留每项30秒看门狗；diagnostic 的 `borrowers` 在内部等待全部调用完成。
 
 源码、Git、构建和分析保持非管理员。只有保留正式 manifest 的必要测试启动／关闭使用已授权 gsudo，并由用户确认 UAC。无输出生命周期用例不证明硬件、Hook 或驱动释放。窗口测试和完整阶段门禁按仓库工作流另行验收。
