@@ -62,7 +62,7 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 
 目录只提供配置名称和当前 Tab 元数据；display_name 来自下拉框条目文本，空白项可为空字符串，通过 kind=draft 区分，不能仅按显示名定位。saved_profile 的内容未加载查询，未附着共通表也有 attached_to_ui=false 的目录记录，这不表示屏幕可见性。selected_configuration／is_selected 只表示界面选择。catalog_ref 和目录修订号不是映射编辑目标或完整业务修订，不能据此提交变更；权限仍由认证与逐请求检查决定。
 
-源查询当前要求本进程尚未收到映射启停／重启请求、排队浮动／虚拟按钮事件或构造发送任务，且 GUI idle、Worker stopped、最近加载成功；否则 context_busy，不主动停止映射。首次生命周期请求、按钮排队及发送任务构造均在相关写入前关闭读取门禁，门禁和在途复制互斥，运行后不会仅凭 STOPPED 或存续计数零重新开放。read_basis=pristine_idle 不代表已经实现停止清理完成协调。source_snapshot 的配置选择和最近加载记录不能证明每行磁盘来源；未附着的共通备份可能保留自之前的配置，origin=source_memory 只证明当前内存来源。源修订仍不是完整业务修订。
+源查询当前要求本进程尚未收到映射启停／重启请求、排队浮动／虚拟按钮事件、构造／执行发送任务或进入同步发送／序列控制包装，且 GUI idle、Worker stopped、最近加载成功；否则 context_busy，不主动停止映射。生命周期请求、按钮排队、发送任务构造及同步／包装入口均在相关处理前关闭读取门禁，门禁和在途复制互斥，运行后不会仅凭 STOPPED 或存续计数零重新开放。read_basis=pristine_idle 不代表已经实现停止清理完成协调。source_snapshot 的配置选择和最近加载记录不能证明每行磁盘来源；未附着的共通备份可能保留自之前的配置，origin=source_memory 只证明当前内存来源。源修订仍不是完整业务修订。
 
 连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前七个工具的 schema 均声明 `additionalProperties=false`，目录参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
 

@@ -65,6 +65,7 @@ struct LifecycleResult {
     quint64 workAtSecondBarrier = 0;
     quint64 workAfterQueueClear = 0;
     quint64 workAfterJoin = 0;
+    QStringList sourceRevisionTrace;
     bool sourceGateBefore = false;
     bool sourceGateAfter = false;
     int idleStatesChecked = 0;
@@ -399,6 +400,7 @@ void installGuiStopTest(QKeyMapper_Worker *worker, const QString &mode, int cycl
         mapper->refreshKeyMappingDataTableByTabIndex(tab);
         auto *table = QKeyMapper::s_KeyMappingTabInfoList.at(tab).KeyMappingDataTable;
         if (!table || !table->item(0, LOCK_COLUMN)) { *source = *backup; finish(false); return; }
+        const QPointer<QTableWidget> sourceTable = table;
         auto *context = new QObject(mapper);
         const auto hold = QSharedPointer<QSemaphore>::create();
         const auto entered = QSharedPointer<QSemaphore>::create();
@@ -469,14 +471,14 @@ void installGuiStopTest(QKeyMapper_Worker *worker, const QString &mode, int cycl
         clickMappingButton(button);
         auto *poll = new QTimer(context);
         QObject::connect(poll, &QTimer::timeout, context,
-            [worker, mapper, button, editor, context, hold, entered, stage, source, backup, mode, cycle, restore, expectTimeout, loadGeneration, deadline] {
+            [worker, mapper, button, editor, context, hold, entered, stage, source, sourceTable, backup, mode, cycle, restore, expectTimeout, loadGeneration, deadline] {
                 ++result->guiStopTurns;
                 if (deadline->elapsed() > 5000) { hold->release(); finish(false); return; }
                 if (restore && *stage == 2 && SendInputWorkItem::outstanding() > 0) {
                     ++result->guiStopBusySourceChecks;
                     result->passed = result->passed && QkmMappingStopTestAccess::loadGeneration(mapper) == loadGeneration
                         && QkmMappingStopTestAccess::loadedGroup(mapper) == QLatin1String(GROUPNAME_GLOBALSETTING)
-                        && QKeyMapper::KeyMappingDataList && !QKeyMapper::KeyMappingDataList->isEmpty();
+                        && sourceTable && sourceTable->rowCount() > 0;
                 }
                 if (*stage == 0) {
                     if (QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() != HOOKPROC_STATE_STARTED) { return; }
@@ -527,6 +529,46 @@ void installGuiStopTest(QKeyMapper_Worker *worker, const QString &mode, int cycl
                 else { QTimer::singleShot(50, context, [hold] { hold->release(); }); }
             });
         poll->start(5);
+    }, Qt::QueuedConnection);
+}
+
+void installRuntimeRevisionTest(QKeyMapper_Worker *worker)
+{
+    auto &access = QKeyMapper_Worker::s_SourceReadAccess;
+    const auto record = [&access] { result->sourceRevisionTrace.append(QString::number(access.runtimeRevision())); };
+    result->passed = !access.runtimeObserved() && access.runtimeRevision() == 0;
+    record();
+    const QString original = QStringLiteral("QkmRuntimeRevision");
+    const QStringList keys{QStringLiteral("QkmProbeNoOp")};
+    for (int i = 0; i < 2; ++i) {
+        auto *task = new SendInputTask(-1, keys, KEY_DOWN, original, SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL);
+        record();
+        delete task;
+    }
+    worker->sendInputKeys(-1, keys, KEY_DOWN, original, SENDMODE_NORMAL, SendInputTask::s_GlobalSendInputTaskController);
+    record();
+    worker->sendInputKeys(-1, keys, KEY_UP, original, SENDMODE_NORMAL, SendInputTask::s_GlobalSendInputTaskController);
+    record();
+    QString queuedOriginal = QStringLiteral("QkmQueuedRevision");
+    QStringList queuedKeys = keys;
+    worker->emit_sendInputKeysSignal_Wrapper(-1, queuedKeys, KEY_DOWN, queuedOriginal, SENDMODE_NORMAL);
+    record();
+    worker->emit_sendInputKeysSignal_Wrapper(-1, queuedKeys, KEY_UP, queuedOriginal, SENDMODE_NORMAL);
+    record();
+    result->workAtSubmission = SendInputWorkItem::outstanding();
+    QMetaObject::invokeMethod(worker, [] {
+        for (const auto &controller : std::as_const(SendInputTask::s_SendInputTaskControllerMap)) {
+            controller.task_threadpool->waitForDone();
+        }
+        result->sourceRevisionTrace.append(QString::number(QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision()));
+        for (int i = 1; i < result->sourceRevisionTrace.size(); ++i) {
+            result->passed = result->passed && result->sourceRevisionTrace.at(i).toULongLong()
+                > result->sourceRevisionTrace.at(i - 1).toULongLong();
+        }
+        SendInputTask::clearSendInputTaskControllerMap();
+        finish(result->passed && result->sourceRevisionTrace.size() == 8 && result->workAtSubmission == 2
+            && SendInputWorkItem::outstanding() == 0 && InputProducerWorkItem::outstanding() == 0
+            && QKeyMapper_Worker::pressedMappingKeysMap.isEmpty());
     }, Qt::QueuedConnection);
 }
 
@@ -956,6 +998,10 @@ void installLifecycleTest()
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+            if (mode == QStringLiteral("runtime_revision")) {
+                installRuntimeRevisionTest(worker);
+                return;
+            }
             if (mode.startsWith(QStringLiteral("gui_stop_"))) {
                 installGuiStopTest(worker, mode);
                 return;
@@ -1211,7 +1257,7 @@ int main(int argc, char *argv[])
         QStringLiteral("gui_stop_wait"), QStringLiteral("gui_stop_timeout"),
         QStringLiteral("gui_stop_exit"), QStringLiteral("closed_input_tracking"),
         QStringLiteral("gui_stop_repeat"), QStringLiteral("gui_stop_after_timeout"),
-        QStringLiteral("gui_stop_restore"), QStringLiteral("gui_stop_restore_timeout")};
+        QStringLiteral("gui_stop_restore"), QStringLiteral("gui_stop_restore_timeout"), QStringLiteral("runtime_revision")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -1244,6 +1290,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("workAfterJoin"), QString::number(result->workAfterJoin)},
         {QStringLiteral("workAtExit"), QString::number(SendInputWorkItem::outstanding())},
         {QStringLiteral("sourceGateBefore"), result->sourceGateBefore},
+        {QStringLiteral("sourceRevisionTrace"), QJsonArray::fromStringList(result->sourceRevisionTrace)},
         {QStringLiteral("sourceGateAfter"), result->sourceGateAfter},
         {QStringLiteral("idleStatesChecked"), result->idleStatesChecked},
         {QStringLiteral("callbackDownsTracked"), result->callbackDownsTracked},

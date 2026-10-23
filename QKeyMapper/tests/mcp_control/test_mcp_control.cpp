@@ -99,6 +99,7 @@ void McpControlTest::sourceReadAdmission()
     MappingSourceAccess access;
     QMutexLocker reader(&access.mutex());
     QVERIFY(!access.runtimeObserved());
+    QCOMPARE(access.runtimeRevision(), quint64(0));
     QSemaphore entered;
     std::thread producer([&] {
         entered.release();
@@ -110,9 +111,23 @@ void McpControlTest::sourceReadAdmission()
     });
     QVERIFY(entered.tryAcquire(1, 3000));
     QVERIFY(!access.runtimeObserved());
+    QCOMPARE(access.runtimeRevision(), quint64(0));
     reader.unlock();
     producer.join();
     QVERIFY(access.runtimeObserved());
+    QCOMPARE(access.runtimeRevision(), quint64(1));
+    access.observeRuntimeLifecycle();
+    QCOMPARE(access.runtimeRevision(), quint64(2));
+    reader.relock();
+    producer = std::thread([&] {
+        entered.release();
+        access.observeRuntimeLifecycle();
+    });
+    QVERIFY(entered.tryAcquire(1, 3000));
+    QCOMPARE(access.runtimeRevision(), quint64(2));
+    reader.unlock();
+    producer.join();
+    QCOMPARE(access.runtimeRevision(), quint64(3));
 
     MappingSourceAccess queuedAccess;
     QPushButton request;
@@ -123,6 +138,12 @@ void McpControlTest::sourceReadAdmission()
         [&] { queuedWriterRan = true; }, Qt::QueuedConnection);
     request.click();
     QVERIFY(queuedAccess.runtimeObserved());
+    QCOMPARE(queuedAccess.runtimeRevision(), quint64(1));
+    QVERIFY(!queuedWriterRan);
+    QTRY_VERIFY(queuedWriterRan);
+    queuedWriterRan = false;
+    request.click();
+    QCOMPARE(queuedAccess.runtimeRevision(), quint64(2));
     QVERIFY(!queuedWriterRan);
     QTRY_VERIFY(queuedWriterRan);
 }

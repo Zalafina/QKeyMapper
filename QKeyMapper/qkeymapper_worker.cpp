@@ -2968,6 +2968,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     }
     const InputProducerWorkItem inputWork;
 
+    s_SourceReadAccess.observeRuntimeLifecycle();
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[sendInputKeys] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
@@ -5312,6 +5314,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
         return;
     }
     const InputProducerWorkItem inputWork;
+    s_SourceReadAccess.observeRuntimeLifecycle();
 
     bool skip_emitsignal = false;
     SendInputTaskController *controller = Q_NULLPTR;
@@ -21481,9 +21484,7 @@ SendInputTask::SendInputTask(int rowindex, const QStringList &inputKeys, int key
     m_sendmode(sendmode),
     m_sendvirtualkey_state(sendvirtualkey_state)
 {
-    if (!QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved()) {
-        QKeyMapper_Worker::s_SourceReadAccess.observeRuntimeLifecycle();
-    }
+    QKeyMapper_Worker::s_SourceReadAccess.observeRuntimeLifecycle();
 
     // Set the real original key
     m_real_originalkey = getRealOriginalKey(original_key);

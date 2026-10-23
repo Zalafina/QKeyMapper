@@ -1089,3 +1089,27 @@ PC-W10，基线 f074a645。产品停止行为不变；既有完整生命周期�
 每次启动前重新复制固定基础 INI，回切用例在测试 main 前由 QSettings 生成上述两组，兼容结果按 Qt kit 分别实跑。ASan 五项按原 halt_on_error／abort_on_error、detect_leaks=0 实跑，无报告文件。普通控制器 PID 30688、Medium RID 8192，仅用其自己的五分钟 gsudo PID 缓存；产品逐一核对 High RID 12288、same_login、实际 EXE 与桌面，finally 关闭缓存且确认不可用，十五个自有 PID 普通查询均不存在。accept55-{kit}/{case} 保存 result／started／closed／launch；stop55-results.json 为身份索引，run-stop55.log／stop55-cache.json 保存缓存与执行记录，均仅本机 out。
 
 授权仍为已批准私有桌面 NoOp 启停；没有 Default、系统键鼠注入、驱动安装或用户实例。原启动／停止／退出的设备连接与复位副作用不作为物理设备释放／执行效果的证明。无正式 MCP 新对照、真实前台自动匹配、GUI 添加／保存／冷启动等价、三语言视觉／截图、严格静态分析、性能或泄漏验收。运行后源读取、稳定编辑授权及完整 M1 尚未完成；source.read=pristine_idle、stop_completion=unobserved 不变。本切片为本地开发检查点，继续 STOP-56 的来源安全盘点与后续实现，不做阶段收尾或暂停。
+
+## STOP-20261024-56：每次活动的修订与快照互斥
+
+PC-W10，基线 37e72e8d。MappingSourceAccess 用互斥内递增、不回绕的 64 位运行活动修订代替冗余历史布尔值，runtimeObserved 仍表示修订非零。SendInputTask 每次构造都记录，不再因为已观察运行而跳过；所有非空同步 sendInputKeys 和发送包装也在解析／控制分支前记录，覆盖没有 runnable 的修饰键清理及序列控制。记录仍与源快照使用同一互斥；修订是活动观察，不是逻辑作业数、完整业务修订或停止／编辑授权。没有新原生输入／驱动调用，未解除 pristine_idle 门禁。
+
+核对全部同步发送调用点：任务 run、退出／虚拟键释放、修饰键处理均汇入同一同步入口；包装在直接执行序列控制或排队前标记。源行写入仍主要在发送 Unlock、Hook／虚拟按钮锁状态、生命周期清理及 Worker→源表写回；新修订不单独证明所有这些路径已结束。新增快照互斥检查会在同步／包装入口和构造处执行，尚无普通 Release 性能测量，不承诺零开销。
+
+普通 asInvoker 组件在 out/tests/mcp_control/{qt6,qt5}-resume56，build-control56-{kit}-fixed.log 两套 native build exit 0、无编译警告。普通控制器明确检查未提权，QT_QPA_PLATFORM=offscreen；实际线程桌面 Default，所选数据／互斥用例未显示或激活原生窗口，也没有系统输入或 UAC。每套 sourceReadAdmission、sourceSnapshotReferences、sourceSnapshotBoundaries 三项通过，加 init／cleanup 日志为 5 passed、0 failed；日志 control56-{kit}-final.txt。初次 control56-qt6.txt 因漏设测试框架 QKM_IPC_TEST_EXE 前提而 init 失败，补同 kit 既有 IPC EXE 路径后重跑；这些选定用例只检查前提存在，没有运行该 IPC EXE，不冒充 IPC 88 项复验。临时 PATH／平台／框架环境均 finally 恢复。
+
+互斥用例验证：持有读锁时首次观察不越过，解锁后修订 1；已观察后第二次为 2，再持读锁时新观察仍不能越过，释放后为 3。两次真实 Qt 信号的直接准入分别在排队写者执行前更新修订。源快照引用和有界分页的原单测保持。完整引擎第一次构建遇 Win32 max 宏污染，记录 build-qt6-56.log 的 C4003／C2589 等失败；仅改用括号保护 numeric_limits::max 调用，不修改全局 Win32 宏。build-{kit}-56-fixed.log 和最终 build-{kit}-56-final.log 三套均 native build exit 0，Qt6 两套零警告，Qt5 仅原官方 qtmain LNK4099 例外。
+
+另收窄上一轮忙期测试：不再读取 Worker 正切换的全局活动源指针，改读 GUI 所有者的加载组／代次和 QPointer 保护的原表格；实际源表仍在清理完成后核对。STOP-55 原计数属于其历史版本，不作为跨线程读安全证明。当前回切用例忙期检查 Qt6／Qt5 各 50 次、ASan 55 次，结束后实际 McpReturn／ReturnTab／空源和加载记录通过；避免测试自身引入并发活动指针采样。
+
+三配置各四项，共 12 项 passed=true、native exit 0、work／producer 退出均零：runtime_revision、gui_stop_restore、gui_stop_after_timeout、queued_stop_action。实际修订序列三套均为 0/1/2/3/4/5/6/10：两次未派发任务构造、直接 NoOp DOWN／UP、包装 DOWN／UP 的排队前标记，以及最后两个真实构造／执行；后段实际池排空完成，无假接收器替代。正常回切、旧通知忽略、首轮超时后新轮恢复及排队停止动作结果保持。ASan 四项按原 halt_on_error／abort_on_error、detect_leaks=0 实跑，无报告文件。实际 EXE 与原始记录位于 out/mcp_lifecycle/resume-w10-20261023：
+
+| 该目录下实际 EXE | SHA256 | 实际私有桌面 |
+|---|---|---|
+| runtime56-qt6/QKeyMapperStop56Lifecycle_qt6.exe | c7d9cddbc86f19f56807add18c53a15a1f72df9ad6a580ed343e748cefe06538 | QkmLifecycle_cf617d09f1df41b791045095cd2a43db |
+| runtime56-qt5/QKeyMapperStop56Lifecycle_qt5.exe | b78d2840d9a6400d997b9b143a38924ba7ca6c16b2f9601bf12e3a1188e37e5d | QkmLifecycle_3198f53512884c2384fc103f58b09054 |
+| runtime56-qt6-asan/QKeyMapperStop56Lifecycle_qt6_asan.exe | ad5560277e67131873f86d6324d1c1a74a5740be6efd39311689e7b4bb98aac7 | QkmLifecycle_1aa5e7c3b4c145e392c8edf3ad91286b |
+
+普通控制器 PID 9620，Medium RID 8192，只为自身申请五分钟 gsudo PID 缓存；产品逐一确认 High RID 12288、same_login、实际 EXE／私有桌面。finally 关闭且 CacheAvailable 不可用，十二个自有 PID 普通查询均不存在；同 PID 在旧记录出现时由创建时间／EXE 区分，不凭旧 PID 归属操作进程。accept56-{kit}/{case}、stop56-results.json、run-stop56.log／stop56-cache.json 保留原始结果和精简身份索引，均仅本机 out。
+
+原设备 API 的启动／停止／清理调用保留，无系统键鼠注入、驱动安装、用户实例操作或真实 Default GUI 场景。组件的 Default/offscreen 与产品实际私有桌面分别记录。没有新的正式 MCP／SDK 对照、真实驱动效果、三语言视觉／截图、严格静态分析、性能、泄漏或 Win11 本轮验收。源读取仍只支持 pristine_idle；内部修订饱和后不能作为新读取许可，后续许可必须拒绝耗尽，不能重用数值。stop_completion=unobserved、业务修订 null、MCP 编辑／保存／明确启停未开放；本地开发检查点后继续 STOP-57，不做阶段收尾或暂停。

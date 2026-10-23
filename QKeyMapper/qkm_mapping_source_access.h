@@ -3,21 +3,27 @@
 
 #include <QAtomicInteger>
 #include <QMutex>
+#include <limits>
 
 class MappingSourceAccess {
 public:
     QMutex &mutex() { return m_mutex; }
-    bool runtimeObserved() const { return m_runtimeObserved.loadAcquire(); }
+    bool runtimeObserved() const { return runtimeRevision() != 0; }
+    quint64 runtimeRevision() const { return m_runtimeRevision.loadAcquire(); }
 
     void observeRuntimeLifecycle()
     {
         QMutexLocker locker(&m_mutex);
-        m_runtimeObserved.storeRelease(true);
+        const quint64 previous = m_runtimeRevision.loadRelaxed();
+        // Never reuse a revision if the counter is exhausted.
+        if (previous != (std::numeric_limits<quint64>::max)()) {
+            m_runtimeRevision.storeRelease(previous + 1);
+        }
     }
 
 private:
     QMutex m_mutex;
-    QAtomicInteger<bool> m_runtimeObserved{false};
+    QAtomicInteger<quint64> m_runtimeRevision{0};
 };
 
 #endif
