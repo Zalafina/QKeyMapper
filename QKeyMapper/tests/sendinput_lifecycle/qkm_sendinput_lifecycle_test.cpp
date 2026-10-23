@@ -45,6 +45,7 @@ struct LifecycleResult {
     QStringList repeatTrace;
     QAtomicInt repeatRounds{0};
     int repeatRuns = 0;
+    QStringList lifecycleDispatchTrace;
 };
 LifecycleResult *result = nullptr;
 
@@ -201,6 +202,73 @@ void installQueuedButtonTest(QKeyMapper_Worker *worker, bool reject)
             delete data;
             finish(result->passed);
         }, Qt::QueuedConnection);
+    }, Qt::QueuedConnection);
+}
+
+void installQueuedLifecycleWorkTest(QKeyMapper_Worker *worker, bool discard)
+{
+    auto *hook = QKeyMapper_Hook_Proc::getInstance();
+    auto *workerReceiver = new QObject(worker);
+    auto *hookReceiver = new QObject(worker);
+    result->sourceGateBefore = QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved();
+    result->passed = !result->sourceGateBefore && SendInputWorkItem::outstanding() == 0;
+    // Exercise the real signal envelopes without executing native start/stop actions.
+    const auto replace = [](auto *sender, auto signal, auto slot, QObject *receiver) {
+        result->passed = QObject::disconnect(sender, signal, sender, slot) && result->passed;
+        QObject::connect(sender, signal, receiver, [] {
+            result->lifecycleDispatchTrace.append(QString::number(SendInputWorkItem::outstanding()));
+        }, Qt::QueuedConnection);
+    };
+    replace(worker, &QKeyMapper_Worker::setKeyHook_Signal, &QKeyMapper_Worker::setWorkerKeyHook, workerReceiver);
+    replace(worker, &QKeyMapper_Worker::setKeyUnHook_Signal, &QKeyMapper_Worker::setWorkerKeyUnHook, workerReceiver);
+    replace(worker, &QKeyMapper_Worker::setKeyMappingRestart_Signal, &QKeyMapper_Worker::setKeyMappingRestart, workerReceiver);
+    replace(hook, &QKeyMapper_Hook_Proc::setKeyHook_Signal, &QKeyMapper_Hook_Proc::onSetHookProcKeyHook, hookReceiver);
+    replace(hook, &QKeyMapper_Hook_Proc::setKeyUnHook_Signal, &QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook, hookReceiver);
+    replace(hook, &QKeyMapper_Hook_Proc::setKeyMappingRestart_Signal, &QKeyMapper_Hook_Proc::onSetHookProcKeyMappingRestart, hookReceiver);
+    {
+        const auto work = QSharedPointer<SendInputWorkItem>::create();
+        emit worker->setKeyHook_Signal(work);
+        emit hook->setKeyHook_Signal(work);
+    }
+    {
+        const auto work = QSharedPointer<SendInputWorkItem>::create();
+        emit worker->setKeyUnHook_Signal(work);
+        emit hook->setKeyUnHook_Signal(work);
+    }
+    {
+        const auto work = QSharedPointer<SendInputWorkItem>::create();
+        emit worker->setKeyMappingRestart_Signal(work);
+        emit hook->setKeyMappingRestart_Signal(work);
+    }
+    result->workAtSubmission = SendInputWorkItem::outstanding();
+    result->sourceGateAfter = QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved();
+    result->passed = result->passed && result->workAtSubmission == 3 && result->sourceGateAfter
+        && SendInputTask::s_SendInputTaskControllerMap.isEmpty();
+    if (discard) {
+        delete workerReceiver;
+        workerReceiver = nullptr;
+        result->workAfterQueueClear = SendInputWorkItem::outstanding();
+        result->passed = result->passed && result->workAfterQueueClear == 3;
+        delete hookReceiver;
+        hookReceiver = nullptr;
+        result->passed = result->passed && SendInputWorkItem::outstanding() == 0;
+    }
+    QMetaObject::invokeMethod(worker, [worker, hook, workerReceiver, hookReceiver, discard] {
+        result->workAtBarrier = SendInputWorkItem::outstanding();
+        const QStringList expected{QStringLiteral("3"), QStringLiteral("3"), QStringLiteral("2"),
+            QStringLiteral("2"), QStringLiteral("1"), QStringLiteral("1")};
+        result->passed = result->passed && result->workAtBarrier == 0
+            && result->lifecycleDispatchTrace == (discard ? QStringList{} : expected)
+            && SendInputTask::s_SendInputTaskControllerMap.isEmpty();
+        delete workerReceiver;
+        delete hookReceiver;
+        QObject::connect(worker, &QKeyMapper_Worker::setKeyHook_Signal, worker, &QKeyMapper_Worker::setWorkerKeyHook, Qt::QueuedConnection);
+        QObject::connect(worker, &QKeyMapper_Worker::setKeyUnHook_Signal, worker, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
+        QObject::connect(worker, &QKeyMapper_Worker::setKeyMappingRestart_Signal, worker, &QKeyMapper_Worker::setKeyMappingRestart, Qt::QueuedConnection);
+        QObject::connect(hook, &QKeyMapper_Hook_Proc::setKeyHook_Signal, hook, &QKeyMapper_Hook_Proc::onSetHookProcKeyHook, Qt::QueuedConnection);
+        QObject::connect(hook, &QKeyMapper_Hook_Proc::setKeyUnHook_Signal, hook, &QKeyMapper_Hook_Proc::onSetHookProcKeyUnHook, Qt::QueuedConnection);
+        QObject::connect(hook, &QKeyMapper_Hook_Proc::setKeyMappingRestart_Signal, hook, &QKeyMapper_Hook_Proc::onSetHookProcKeyMappingRestart, Qt::QueuedConnection);
+        finish(result->passed);
     }, Qt::QueuedConnection);
 }
 
@@ -407,6 +475,10 @@ void installLifecycleTest()
                 installQueuedButtonTest(worker, mode == QStringLiteral("button_admission"));
                 return;
             }
+            if (mode == QStringLiteral("lifecycle_dispatch") || mode == QStringLiteral("lifecycle_discard")) {
+                installQueuedLifecycleWorkTest(worker, mode == QStringLiteral("lifecycle_discard"));
+                return;
+            }
             if (mode == QStringLiteral("idle_input_tracking")) {
                 QMetaObject::invokeMethod(QCoreApplication::instance(), [] {
                     auto *mapper = QKeyMapper::getInstance();
@@ -606,7 +678,8 @@ int main(int argc, char *argv[])
         QStringLiteral("exit_wait"), QStringLiteral("exit_pause"), QStringLiteral("borrowers"),
         QStringLiteral("queued_stop_action"), QStringLiteral("queued_admission"),
         QStringLiteral("discard_dispatch"), QStringLiteral("clear_queue"), QStringLiteral("direct_task_gate"),
-        QStringLiteral("idle_input_tracking"), QStringLiteral("queued_button"), QStringLiteral("button_admission")};
+        QStringLiteral("idle_input_tracking"), QStringLiteral("queued_button"), QStringLiteral("button_admission"),
+        QStringLiteral("lifecycle_dispatch"), QStringLiteral("lifecycle_discard")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -641,6 +714,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("callbackDownsTracked"), result->callbackDownsTracked},
         {QStringLiteral("callbackUpsTracked"), result->callbackUpsTracked},
         {QStringLiteral("buttonLockAfterDispatch"), result->buttonLockAfterDispatch},
+        {QStringLiteral("lifecycleDispatchTrace"), QJsonArray::fromStringList(result->lifecycleDispatchTrace)},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};

@@ -5,7 +5,7 @@
 #include <QMetaType>
 #include <QSharedPointer>
 
-// Includes queued delivery and runnable destruction; zero alone is not a stop fence.
+// Includes lifecycle/send queues and runnable destruction; zero alone is not a stop fence.
 class SendInputWorkItem final {
 public:
     SendInputWorkItem() { s_outstanding.fetchAndAddRelaxed(1); }

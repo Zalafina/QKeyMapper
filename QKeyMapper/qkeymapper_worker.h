@@ -1312,9 +1312,9 @@ public:
 #endif
 
 signals:
-    void setKeyHook_Signal(void);
-    void setKeyUnHook_Signal(void);
-    void setKeyMappingRestart_Signal(void);
+    void setKeyHook_Signal(QSharedPointer<SendInputWorkItem> work);
+    void setKeyUnHook_Signal(QSharedPointer<SendInputWorkItem> work);
+    void setKeyMappingRestart_Signal(QSharedPointer<SendInputWorkItem> work);
     void allMappingKeysReleased_Signal(void);
     void sessionLockStateChanged_Signal(bool locked);
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
@@ -1810,9 +1810,9 @@ public:
     }
 
 signals:
-    void setKeyHook_Signal(void);
-    void setKeyUnHook_Signal(void);
-    void setKeyMappingRestart_Signal(void);
+    void setKeyHook_Signal(QSharedPointer<SendInputWorkItem> work);
+    void setKeyUnHook_Signal(QSharedPointer<SendInputWorkItem> work);
+    void setKeyMappingRestart_Signal(QSharedPointer<SendInputWorkItem> work);
 
 public slots:
     void HookProcThreadStarted(void);

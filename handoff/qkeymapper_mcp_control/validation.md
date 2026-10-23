@@ -934,3 +934,25 @@ PC-W10，Win10 10.0.19045 x64。已检查本地改动、获取 origin 并切换�
 正式官方 SDK 的普通模式 12 项全部通过，SDK 2.3.0，未加 --approval-timeout 或 --elevated-server。结果／拓扑／夹具日志在 out/mcp_bridge/resume-w10-20261023/sdk-qt6；实际桌面 QkmSdk_2b8ff8da88c54e0e8d48290b380c4135，控制器与维护服务均非提权、Medium RID 8192，同登录／用户／会话。正式 stdio 桥接往返覆盖批准、持久化重连、撤销、取消、关闭、错误 EXE／发现信息及保存失败；finally 清理自身凭据并正常关闭服务。它不是正式产品、源行业务或真实 GUI 操作等价性验证。
 
 用户吃饭期间未调用 gsudo、申请缓存、启动管理员 EXE 或触发 UAC；无 Default 切换、系统键鼠、映射启动、驱动安装或用户实例操作。管理员产品、Win10 新源路径、STOP-49 生命周期运行、Qt5 SDK、真实批准超时、High 截图、托盘和性能本轮未验；Win11／历史各项仅保留原范围。此记录是本地开发检查点，后续继续主计划指定的停止生命周期切片。
+
+## STOP-20261023-49：两所有者生命周期排队存续（运行待验证）
+
+PC-W10，Win10 19045 x64；基线 639dc4bb，加 qkeymapper.cpp 三个生命周期入口、Worker／Hook 六个信号声明、存续类注释、维护用例和说明。每个 GUI 入口先持有一个现有 SendInputWorkItem 的共享指针，将同一个标记交给 Hook 与 Worker 两个排队信号，直到调用返回和两端事件都处理／丢弃才退还；子发送／runnable 仍使用原 STOP-44 标记。保留接收槽、QueuedConnection、参数和原业务顺序，没有新增定时器、线程、对外能力或停止完成声明。Worker 原有 DirectConnection 首次门禁仍保留。
+
+lifecycle_dispatch／lifecycle_discard 已加入既有真实生命周期维护目标，暂将六个原接收槽替换为同一 Worker 线程内两个观察接收器，再恢复原连接；主体不执行原生启停业务。三对共享请求的预期提交计数为 3，正例六次实际派发预期为 3/3/2/2/1/1，尾部归零；反例先销毁一端接收器仍应为 3，再销毁另一端才归零。此为 Qt 信号封装／存续组件验证设计，不是独立 GUI 基线或跨所有者完整栅栏证明。真实产品 main 正常退出仍保留原 UnHook／shutdown／设备关闭，启动仍可能尝试 FakerInput 连接；API 返回不代表真实设备效果已验。
+
+本机 MSVC BuildTools 14.40.33807 x64；Qt6.8.3 msvc2022_64／Qt5.15.2 msvc2019_64 Release、Qt6 Release+ASan 的最终构建均 native exit 0。Qt6 两套编译／链接无警告；Qt5 仅官方 Qt 5.15.2 qtmain.lib(qtmain_win.obj) 缺 PDB 的既有 LNK4099 例外。构建树 out/tests/sendinput_lifecycle/{qt6,qt5,qt6-asan}-resume49；日志 out/mcp_lifecycle/resume-w10-20261023/build-*-final.log。此前 build-*.log 仅为同切片第一版六独立标记的准备构建，最终改成三对共享标记后重编相关输入；不混用先前未执行副本作运行证据。
+
+三个最终隔离副本均在 out/mcp_lifecycle/resume-w10-20261023，复制自对应本机构建并核对字节身份，未启动：
+
+| 配置／实际准备 EXE | 最终 SHA256 |
+|---|---|
+| runtime-qt6/QKeyMapperStop49Lifecycle_qt6.exe | 9c83e70b8887ae331dab8d37bf02a54f81069cd7aa5ff3dbf65d14ab0e923c50 |
+| runtime-qt5/QKeyMapperStop49Lifecycle_qt5.exe | 2db4390a195db11b316df910bc4b1ebee132c75ebe98db5571a254182deb7f04 |
+| runtime-qt6-asan/QKeyMapperStop49Lifecycle_qt6_asan.exe | 35ab0334ba95ac4b1777f498f3e001ef1a8c84b98fff547035abaaf663124b01 |
+
+各 runtime 的依赖部署命令 exit 0、合成 INI 为仓库固定模板；部署日志 deploy.log 不表示运行通过。最终 ASan Makefile.Release 含 fsanitize=address／QKM_ENABLE_ASAN，最终 EXE 导入 clang_rt.asan_dynamic-x86_64.dll 及 __asan_*（asan-imports-final.log），已部署匹配 14.40 运行库；尚无 ASan 实跑或无报告结论。源代码检查 UTF-8 无 BOM／LF、git diff --check 通过；未选额外普通产品、严格静态分析、截图或性能门禁。
+
+用户吃饭期间明确不能确认 UAC，故没有启动以上管理员 EXE、调用 gsudo、启用缓存或触发提示；实际测试桌面／PID／退出结果尚不存在。待用户返回后，使用既有 scripts/test_process.ps1 在新建私有 QkmLifecycle_* 桌面启动自有副本，每套运行 lifecycle_dispatch、lifecycle_discard 和相关 queued_stop_action、queued_button（共 12 项，预计 3–6 分钟另加人工审批）。控制器／构建／Git／证据保持普通权限，只有原 manifest 所需启动／关闭按既有授权提权；无 Default、真实系统输入、GUI 映射启动或驱动安装，30 秒用例看门狗，超时不强杀。ASan 届时使用 halt_on_error=1、abort_on_error=1、detect_leaks=0，不能事先记为通过。
+
+这是可恢复的本地构建检查点，STOP-49 运行状态为待验证，完整 2b-3 仍进行中。会话锁定的排队请求、所有在途输入生产者、同步发送、池排空、停止代次与 GUI 尾部尚未封闭；stop_completion 仍为 unobserved，源查询仍只允许 pristine_idle，零计数和 STOPPED 均不重新开放或授权编辑。ENV-48 与 PC-W11 历史结果只按各自范围保留。

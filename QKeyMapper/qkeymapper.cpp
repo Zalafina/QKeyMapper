@@ -5363,6 +5363,7 @@ void QKeyMapper::changeLanguage(const QString &langCode)
 
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
+    const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
     // updateShortcutsMap();
 
     applySystemFilterKeysForCurrentSetting();
@@ -5376,12 +5377,13 @@ void QKeyMapper::setKeyHook(HWND hWnd)
     else {
         s_CurrentMappingHWND = hWnd;
     }
-    emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal();
-    emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal();
+    emit QKeyMapper_Hook_Proc::getInstance()->setKeyHook_Signal(lifecycleWork);
+    emit QKeyMapper_Worker::getInstance()->setKeyHook_Signal(lifecycleWork);
 }
 
 void QKeyMapper::setKeyUnHook(void)
 {
+    const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
     // freeShortcuts();
 
     restoreSystemFilterKeysBaseline();
@@ -5390,14 +5392,15 @@ void QKeyMapper::setKeyUnHook(void)
         || s_last_HWNDList.contains(s_CurrentMappingHWND) == false) {
         s_CurrentMappingHWND = NULL;
     }
-    emit QKeyMapper_Hook_Proc::getInstance()->setKeyUnHook_Signal();
-    emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal();
+    emit QKeyMapper_Hook_Proc::getInstance()->setKeyUnHook_Signal(lifecycleWork);
+    emit QKeyMapper_Worker::getInstance()->setKeyUnHook_Signal(lifecycleWork);
 }
 
 void QKeyMapper::setKeyMappingRestart()
 {
-    emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal();
-    emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal();
+    const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
+    emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal(lifecycleWork);
+    emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal(lifecycleWork);
 }
 
 void QKeyMapper::startWinEventHook()
