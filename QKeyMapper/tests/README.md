@@ -65,6 +65,8 @@ finally { Pop-Location }
 
 InputOwnerFence 只确认各队列到达对应位置；Interception 接收循环中的确认延到当次迭代退出、收到的 stroke 作用域释放及原转发调用返回后。未运行该路径时仅为源码／构建证据。确认不包括子队列、发送池、GUI 尾部或输入准入封闭，不能当完整停止完成。`session_lock_queue` 在 GUI IDLE／Worker STOPPED 下排队一对合成锁定／解锁通知，检查提交计数 2、处理后 0、原始输入记账清除及首次源读取门禁关闭；不锁定 Windows、不验证映射中的锁屏恢复或 FilterKeys 系统效果。
 
+`burst_timer_cleanup`／`burst_timer_missing_source`／`burst_timer_removed_source` 创建一对真实连发定时器，分别保留原表、改用其他表、清空原表，再经原 Worker 停止入口核对两个 QPointer 均已失效且两个定时器表为空。`burst*` 字段仅在这三项采样；索引为空不算销毁证明。采用无系统输出的 NoOp 映射、长于用例的定时器间隔；失败基线也主动回收孤立定时器，排空真实发送任务并补测例 KEY_UP 后才释放合成数据。它不是实际 GUI 切表／删行或物理连发释放基线；Worker 停止主体和真实 main 退出仍保留原有设备清理。
+
 `idle_input_tracking` 在 GUI 所有者线程临时设置合成 IDLE／CHECKING 和缺失 Tab，直接调用 Interception 键盘处理函数回放一对 A DOWN／UP，核对设备、原始及去设备记账均正确添加／清除，并立即恢复索引和状态。IDLE 的真实记账信号直接观察 `inputProducerTrace=1/1`，每次回调返回后计数为 0；CHECKING 不发该信号。`queued_stop_action`／`queued_admission`／`discard_dispatch` 也在真实发送信号处核对包装函数的在途作用域（`producerSubmissions=2`），前者在 NoOp 发送任务等待期间观察 `producersWhileTaskWaiting=1`，两个负例为 0。`producersAtExit` 是所有分支实际退出后计数，其他新字段仅在上述分支采样；嵌套同步作用域计数不等于线程数或停止完成。
 
 这些用例不经 Interception 驱动接收／转发、不发送系统输入；合成状态不是 GUI 监视或真实硬件基线。Interception 接收循环的作用域位置及空接收不计数通过源码核对，鼠标／低层 Hook 回调及实际驱动转发仍须相应输入场景验证，不能由此直接记为运行通过。

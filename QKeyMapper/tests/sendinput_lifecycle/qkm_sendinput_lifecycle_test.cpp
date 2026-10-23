@@ -4,6 +4,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QPointer>
 #include <QSemaphore>
 #include <QTimer>
 #include "../../qkeymapper_worker.h"
@@ -54,6 +55,9 @@ struct LifecycleResult {
     bool fenceCancelledHookIgnored = false;
     bool fenceInterceptionContextAvailable = false;
     QStringList ownerFenceTrace;
+    bool burstCycleTimerDestroyed = false;
+    bool burstPressTimerDestroyed = false;
+    bool burstSourceContainsKeyAtCleanup = false;
     int buttonLockAfterDispatch = 0;
     bool observeRepeats = false;
     bool observeSingleRoot = false;
@@ -195,6 +199,49 @@ void installSessionLockQueueTest(QKeyMapper_Worker *worker)
             && QKeyMapper_Worker::pressedRealKeysList.isEmpty()
             && QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.isEmpty()
             && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED);
+    }, Qt::QueuedConnection);
+}
+
+void installBurstTimerCleanupTest(QKeyMapper_Worker *worker, const QString &mode)
+{
+    if (!QKeyMapper_Worker::s_BurstKeyTimerMap.isEmpty() || !QKeyMapper_Worker::s_BurstKeyPressTimerMap.isEmpty()
+        || QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() != HOOKPROC_STATE_STOPPED) { finish(false); return; }
+    auto *previousData = QKeyMapper::KeyMappingDataList;
+    auto *data = new QList<MAP_KEYDATA>{MAP_KEYDATA()};
+    auto *otherData = new QList<MAP_KEYDATA>;
+    const QString original = QStringLiteral("VButton1");
+    const QStringList keys{QStringLiteral("QkmProbeNoOp")};
+    auto &row = data->first();
+    row.Original_Key = original;
+    row.Mapping_Keys = keys;
+    row.Pure_OriginalKeys = QStringList{original};
+    row.BurstPressTime = 10000;
+    row.BurstReleaseTime = 10000;
+    QKeyMapper::KeyMappingDataList = data;
+    worker->startBurstKeyTimer(original, 0, data);
+    QPointer<QTimer> cycleTimer = QKeyMapper_Worker::s_BurstKeyTimerMap.value(original);
+    QPointer<QTimer> pressTimer = QKeyMapper_Worker::s_BurstKeyPressTimerMap.value(original);
+    result->passed = cycleTimer && pressTimer && cycleTimer->isActive() && pressTimer->isActive();
+    if (mode == QStringLiteral("burst_timer_missing_source")) { QKeyMapper::KeyMappingDataList = otherData; }
+    if (mode == QStringLiteral("burst_timer_removed_source")) { data->clear(); }
+    result->burstSourceContainsKeyAtCleanup = QKeyMapper::findOriKeyInKeyMappingDataList(original) >= 0;
+    worker->setWorkerKeyUnHook();
+    result->burstCycleTimerDestroyed = cycleTimer.isNull();
+    result->burstPressTimerDestroyed = pressTimer.isNull();
+    result->passed = result->passed && result->burstCycleTimerDestroyed && result->burstPressTimerDestroyed
+        && QKeyMapper_Worker::s_BurstKeyTimerMap.isEmpty() && QKeyMapper_Worker::s_BurstKeyPressTimerMap.isEmpty();
+    // Reclaim a failing baseline's orphan before any timeout can touch the synthetic source.
+    if (cycleTimer) { cycleTimer->stop(); delete cycleTimer.data(); }
+    if (pressTimer) { pressTimer->stop(); delete pressTimer.data(); }
+    QMetaObject::invokeMethod(worker, [worker, previousData, data, otherData, original, keys] {
+        SendInputTask::clearSendInputTaskControllerMap();
+        worker->sendInputKeys(-1, keys, KEY_UP, original, SENDMODE_FORCE_STOP,
+            SendInputTask::s_GlobalSendInputTaskController);
+        QKeyMapper::KeyMappingDataList = previousData;
+        delete data;
+        delete otherData;
+        finish(result->passed && SendInputWorkItem::outstanding() == 0
+            && QKeyMapper_Worker::pressedMappingKeysMap.isEmpty());
     }, Qt::QueuedConnection);
 }
 
@@ -581,6 +628,10 @@ void installLifecycleTest()
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+            if (mode.startsWith(QStringLiteral("burst_timer_"))) {
+                installBurstTimerCleanupTest(worker, mode);
+                return;
+            }
             if (mode == QStringLiteral("owner_fence") || mode == QStringLiteral("owner_fence_cancel")) {
                 installOwnerFenceTest(mode == QStringLiteral("owner_fence_cancel"));
                 return;
@@ -808,7 +859,9 @@ int main(int argc, char *argv[])
         QStringLiteral("discard_dispatch"), QStringLiteral("clear_queue"), QStringLiteral("direct_task_gate"),
         QStringLiteral("idle_input_tracking"), QStringLiteral("queued_button"), QStringLiteral("button_admission"),
         QStringLiteral("lifecycle_dispatch"), QStringLiteral("lifecycle_discard"),
-        QStringLiteral("owner_fence"), QStringLiteral("owner_fence_cancel"), QStringLiteral("session_lock_queue")};
+        QStringLiteral("owner_fence"), QStringLiteral("owner_fence_cancel"), QStringLiteral("session_lock_queue"),
+        QStringLiteral("burst_timer_cleanup"), QStringLiteral("burst_timer_missing_source"),
+        QStringLiteral("burst_timer_removed_source")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -857,6 +910,9 @@ int main(int argc, char *argv[])
         {QStringLiteral("fenceCancelledHookIgnored"), result->fenceCancelledHookIgnored},
         {QStringLiteral("fenceInterceptionContextAvailable"), result->fenceInterceptionContextAvailable},
         {QStringLiteral("ownerFenceTrace"), QJsonArray::fromStringList(result->ownerFenceTrace)},
+        {QStringLiteral("burstCycleTimerDestroyed"), result->burstCycleTimerDestroyed},
+        {QStringLiteral("burstPressTimerDestroyed"), result->burstPressTimerDestroyed},
+        {QStringLiteral("burstSourceContainsKeyAtCleanup"), result->burstSourceContainsKeyAtCleanup},
         {QStringLiteral("buttonLockAfterDispatch"), result->buttonLockAfterDispatch},
         {QStringLiteral("lifecycleDispatchTrace"), QJsonArray::fromStringList(result->lifecycleDispatchTrace)},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},

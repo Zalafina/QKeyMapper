@@ -1010,3 +1010,24 @@ PC-W10，Win10 19045 x64；基线 ea60867a 加本切片十个源码／测试文�
 独立普通控制器 PID 24164、Medium RID 8192，仅为自身申请五分钟 PID 缓存，先核对不可用、启用后核对可用，finally cache off -p 24164 后确认不可用；run-stop51.log／stop51-cache.json 保留。产品逐次核实 High RID 12288、same_login、实际 EXE 和桌面；15 个自有 PID 普通只读查询均不存在。未使用 PID 0、无限缓存、全局 -k、CacheMode 修改、开发工具提权或强杀用户实例。
 
 没有 Default、真实键鼠／锁屏、GUI 映射启动、驱动安装、新正式 SDK／MCP 业务或独立 GUI 基线、截图、性能或泄漏覆盖；实际收到 stroke 后转发及设备效果仍待验证。完整停止、超时禁写、GUI 快速重启／编辑和配置回切尚未接入；source.read=pristine_idle、stop_completion=unobserved 不变。此为独立组件提交切点，提交后继续既定任务，不做阶段收尾或暂停。
+
+## STOP-20261023-52：源表变更后连发循环定时器残留
+
+PC-W10，基线 d2e07d7b。接入停止协调时发现 clearAllBurstKeyTimersAndLockKeys 由开始、停止和重启三条路径共用，逐键停止依赖当前源表能找到原始键；否则按压定时器被销毁，循环定时器却只从索引移除，仍保留旧源指针。本修复在清空循环索引前 qDeleteAll 剩余项，保留已找到源行的原 KEY_UP／释放流程，没有新的原生 API 或 manifest／INI／TS 变化；未建立 MCP 专用清理分支。
+
+既有维护目标增加三个用例：创建真实的循环／按压定时器、使用无系统输出 NoOp 映射，分别保持原表、切到另一空表、清空原表，经公共 setWorkerKeyUnHook 进入真实原清理，再用 QPointer 检查实际销毁。测试初次编译因直接访问私有清理函数报 C2248（build-qt6-52-baseline.log）；改经已有公共停止入口后构建通过，无须扩大产品可见性。失败基线会在定时器触发前主动回收孤立对象，排空真实发送任务、补测试 KEY_UP、恢复指针后才删除合成表。
+
+Qt6 最终未修复基线的异表用例实际退出 2、passed=false，burstCycleTimerDestroyed=false、burstPressTimerDestroyed=true、源表不含键，退出 work／producer 均 0；这是预期失败证据，不能称为产品通过。修复后 Qt6／Qt5 Release、Qt6 Release+ASan 各三项均 passed=true、native exit 0、两个定时器 QPointer 均为空，索引为空且退出计数 0。ASan 三项按 halt_on_error／abort_on_error、detect_leaks=0 实跑无报告，不证明泄漏或物理输入释放。
+
+构建均为本机 MSVC 14.40.33807、既有 *-resume49 树；最终基线日志 build-qt6-52-baseline-final.log，修复构建 build-{kit}-52-fixed.log，均位于 out/mcp_lifecycle/resume-w10-20261023。最终各 native build exit 0，Qt6 两套无警告，Qt5 只有官方 qtmain 缺 PDB LNK4099 例外。部署复用同 kit 依赖并重新复制固定 INI，实际 EXE 与构建字节一致：
+
+| 相对上述 resume 目录的 EXE | SHA256 | 实际私有桌面 |
+|---|---|---|
+| runtime52-baseline-qt6/QKeyMapperStop52Baseline_qt6.exe | 3878f4b218ff538043c21f4fc54e07d7e071a4308a14fa01f41fcfc843b6e475 | QkmLifecycle_fd4faca3a53d4d799b63ddbd242eb5f6 |
+| runtime52-qt6/QKeyMapperStop52Lifecycle_qt6.exe | 8d2d3ad6258c8063452b066fc270daa66eb9ddaef2eb391c6fa0fab32fa836b8 | QkmLifecycle_a6cd0fadd02846bca8947909deee5d61 |
+| runtime52-qt5/QKeyMapperStop52Lifecycle_qt5.exe | 6dacb682b716045f07c77ada362f570be72dd52eb8886fb6fbcc195ea15a8451 | QkmLifecycle_b5a1c076ec984a73b62a6774e5a48f10 |
+| runtime52-qt6-asan/QKeyMapperStop52Lifecycle_qt6_asan.exe | 479107e7580c615479c5f00ee991b9bf8a5df39ae05f20582f9d9563f9ec2fa7 | QkmLifecycle_7dfc963d98544d36b8a7aa171e1c86e5 |
+
+一个普通控制器 PID 4164 先运行基线，期间只等待普通构建／部署标记，再执行修复后九项；仅为该 PID 申请 00:05:00 缓存，finally cache off -p 4164 并核实不可用。各产品核对 High RID 12288、普通控制器 Medium RID 8192、same_login、实际 EXE／桌面；没有将构建或开发工具放进提权进程。十个自有 PID 的普通只读查询均已不存在。原始结果在 accept52-baseline-qt6／accept52-{kit}，stop52-{baseline,fixed}-results.json 为精简身份／PID 索引，run-stop52.log／stop52-cache.json 保留审批与关闭结果，均仅本机 out，不随 Git。
+
+没有 Default、系统键鼠、GUI 映射启动、驱动安装、GUI 切表／删行独立基线、正式 MCP／SDK 新覆盖、截图或性能测量。Worker 停止主体及 main 原清理仍调用既有设备 API，不以返回值证明设备效果。完整停止协调、超时禁写与 GUI 放行尚未实现，source.read=pristine_idle、stop_completion=unobserved 不变；提交本切点后继续实际停止整合。

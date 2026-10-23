@@ -20216,6 +20216,8 @@ void QKeyMapper_Worker::clearAllBurstKeyTimersAndLockKeys()
     }
 
     s_BurstKeyPressTimerMap.clear();
+    // A late timer can outlive its source selection; its missing row must not keep it alive.
+    qDeleteAll(s_BurstKeyTimerMap);
     s_BurstKeyTimerMap.clear();
     }
 
