@@ -55,7 +55,9 @@ finally { Pop-Location }
 
 `queued_stop_action` 在 STOPPED 状态通过停止动作使用的真实 wrapper／排队接收入口提交一对无输出 DOWN／UP；先确认派发前控制器表为空，再用 `waitForDone(0)` 确认队列派发后仍有未完成任务，最后沿原回收路径等待后释放合成源数据。它证明 STOPPED／空表不能作为清理完成条件；用例主体不调用 Hook 启停或原生设备清理，真实产品 main 正常退出仍保留原 UnHook／shutdown 路径。不以此代替 GUI 停止、实际设备释放及完整生命周期协调验收。结果同时记录产品主线程实际桌面。
 
-连续存续计数通过同一目标验证：`queued_stop_action` 观察排队到 runnable 的标记交接；`queued_admission` 覆盖退出专用入口拒收已排队请求；`discard_dispatch` 覆盖接收器销毁时丢弃排队事件；`clear_queue` 覆盖未运行任务被线程池删除；`direct_task_gate` 验证直接构造任务也会关闭首次静止源读取门禁，删除任务后不重开。`workAtSubmission`／`workAtBarrier`／`workAfterQueueClear`／`workAfterJoin` 只在对应分支采样，`sourceGateBefore`／`sourceGateAfter` 仅在 direct_task_gate 采样，其他分支的初始值不代表相应事实；`workAtExit` 是所有用例退出后的实际计数。计数不是完整停止完成条件，仍需生产者封闭、线程池排空、设备及 GUI 尾部证明。
+连续存续计数通过同一目标验证：`queued_stop_action` 观察排队到 runnable 的标记交接；`queued_admission` 覆盖退出专用入口拒收已排队请求；`discard_dispatch` 覆盖接收器销毁时丢弃排队事件；`clear_queue` 覆盖未运行任务被线程池删除；`direct_task_gate` 验证直接构造任务也会关闭首次静止源读取门禁，删除任务后不重开。`workAtSubmission`／`workAtBarrier`／`workAtSecondBarrier`／`workAfterQueueClear`／`workAfterJoin` 只在对应分支采样，`sourceGateBefore`／`sourceGateAfter` 在 direct_task_gate 和两个按钮排队用例采样，其他分支的初始值不代表相应事实；`workAtExit` 是所有用例退出后的实际计数。计数不是完整停止完成条件，仍需生产者封闭、线程池排空、设备及 GUI 尾部证明。
+
+`queued_button` 从 queueVButtonKey 排队一对无输出按钮事件，入队即关闭首次源读取门禁并持两个存续标记；第一 Worker 栅栏观察按钮处理产生的待派发发送，第二栅栏观察真实未完成发送任务，沿原路径 join 后才释放合成源表。`button_admission` 先开启退出专用拒收，再排队带 Lock 的按钮，确认两个栅栏均无发送、LockState 保持关闭、标记归还。`buttonLockAfterDispatch` 仅在这两个用例采样；组件调用不是独立 GUI 点击／实际输出基线，也不证明日常停止或快速重启已安全。
 
 `idle_input_tracking` 在 GUI 所有者线程临时设置合成 IDLE／CHECKING 和缺失 Tab，直接调用 Interception 键盘处理函数回放一对 A DOWN／UP，核对设备、原始及去设备记账均正确添加／清除，并立即恢复索引和状态。它不经 Interception 驱动转发、不发送系统输入，合成状态不是 GUI 监视或真实硬件基线；只证明此停止态分支不提前读取不存在的当前 Tab，同时仍保留输入记账。
 

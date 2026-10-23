@@ -18771,8 +18771,19 @@ void QKeyMapper_Worker::onBurstKeyTimeOut(const QString burstKey, int mappingInd
     }
 }
 
-// Trigger a VButton entry by key name: sends KEY_DOWN + KEY_UP (or manages Lock state) for the matching row.
-// This is called from the VButton panel via a Qt::QueuedConnection signal invocation.
+bool QKeyMapper_Worker::queueVButtonKey(const QString &keyName, bool isKeyDown)
+{
+    auto work = QSharedPointer<SendInputWorkItem>::create();
+    s_SourceReadAccess.observeRuntimeLifecycle();
+    return QMetaObject::invokeMethod(this, [this, keyName, isKeyDown, work] {
+        Q_UNUSED(work);
+        if (!m_sendInputTasksStopping) {
+            triggerVButtonKey(keyName, isKeyDown);
+        }
+    }, Qt::QueuedConnection);
+}
+
+// Process one queued VButton edge on the Worker thread.
 void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown)
 {
     s_SourceReadAccess.observeRuntimeLifecycle();

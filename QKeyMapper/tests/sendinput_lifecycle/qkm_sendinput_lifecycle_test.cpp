@@ -30,6 +30,7 @@ struct LifecycleResult {
     int stopUpQueued = 0;
     quint64 workAtSubmission = 0;
     quint64 workAtBarrier = 0;
+    quint64 workAtSecondBarrier = 0;
     quint64 workAfterQueueClear = 0;
     quint64 workAfterJoin = 0;
     bool sourceGateBefore = false;
@@ -37,6 +38,7 @@ struct LifecycleResult {
     int idleStatesChecked = 0;
     int callbackDownsTracked = 0;
     int callbackUpsTracked = 0;
+    int buttonLockAfterDispatch = 0;
     bool observeRepeats = false;
     bool observeSingleRoot = false;
     QMutex traceMutex;
@@ -152,6 +154,53 @@ void installQueuedStopActionTest(QKeyMapper_Worker *worker, const QString &mode)
         QKeyMapper::KeyMappingDataList = previousData;
         delete data;
         finish(result->passed);
+    }, Qt::QueuedConnection);
+}
+
+void installQueuedButtonTest(QKeyMapper_Worker *worker, bool reject)
+{
+    result->sourceGateBefore = QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved();
+    result->passed = !result->sourceGateBefore && SendInputWorkItem::outstanding() == 0;
+    if (reject) {
+        result->passed = result->passed && QMetaObject::invokeMethod(worker, "shutdownSendInputTasks", Qt::DirectConnection);
+    }
+    auto *previousData = QKeyMapper::KeyMappingDataList;
+    auto *data = new QList<MAP_KEYDATA>{MAP_KEYDATA()};
+    auto &row = data->first();
+    row.Original_Key = QStringLiteral("VButton1");
+    row.Mapping_Keys = QStringList{QStringLiteral("QkmProbeNoOp⏱5000")};
+    row.Pure_OriginalKeys = QStringList{row.Original_Key};
+    row.Lock = reject;
+    QKeyMapper::KeyMappingDataList = data;
+    const bool downQueued = worker->queueVButtonKey(row.Original_Key, true);
+    const bool upQueued = worker->queueVButtonKey(row.Original_Key, false);
+    result->sourceGateAfter = QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved();
+    result->workAtSubmission = SendInputWorkItem::outstanding();
+    result->passed = result->passed && downQueued && upQueued && result->sourceGateAfter
+        && result->workAtSubmission == 2 && SendInputTask::s_SendInputTaskControllerMap.isEmpty();
+    QMetaObject::invokeMethod(worker, [worker, data, previousData, reject] {
+        result->workAtBarrier = SendInputWorkItem::outstanding();
+        result->buttonLockAfterDispatch = data->first().LockState;
+        result->passed = result->passed && result->workAtBarrier == (reject ? 0 : 2)
+            && SendInputTask::s_SendInputTaskControllerMap.isEmpty()
+            && result->buttonLockAfterDispatch == LOCK_STATE_LOCKOFF;
+        // The button callbacks post sends behind this first queue barrier.
+        QMetaObject::invokeMethod(worker, [data, previousData, reject] {
+            const auto found = SendInputTask::s_SendInputTaskControllerMap.constFind(data->first().Original_Key);
+            result->pendingAfterDispatch = found != SendInputTask::s_SendInputTaskControllerMap.cend()
+                && !found->task_threadpool->waitForDone(0);
+            result->workAtSecondBarrier = SendInputWorkItem::outstanding();
+            result->passed = result->passed && (reject ? (!result->pendingAfterDispatch && result->workAtSecondBarrier == 0)
+                : (result->pendingAfterDispatch && result->workAtSecondBarrier > 0));
+            SendInputTask::clearSendInputTaskControllerMap();
+            result->workAfterJoin = SendInputWorkItem::outstanding();
+            result->passed = result->passed && result->workAfterJoin == 0
+                && QKeyMapper_Worker::pressedVButtonKeysList.isEmpty()
+                && QKeyMapper_Worker::pressedMappingKeysMap.isEmpty();
+            QKeyMapper::KeyMappingDataList = previousData;
+            delete data;
+            finish(result->passed);
+        }, Qt::QueuedConnection);
     }, Qt::QueuedConnection);
 }
 
@@ -354,6 +403,10 @@ void installLifecycleTest()
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+            if (mode == QStringLiteral("queued_button") || mode == QStringLiteral("button_admission")) {
+                installQueuedButtonTest(worker, mode == QStringLiteral("button_admission"));
+                return;
+            }
             if (mode == QStringLiteral("idle_input_tracking")) {
                 QMetaObject::invokeMethod(QCoreApplication::instance(), [] {
                     auto *mapper = QKeyMapper::getInstance();
@@ -553,7 +606,7 @@ int main(int argc, char *argv[])
         QStringLiteral("exit_wait"), QStringLiteral("exit_pause"), QStringLiteral("borrowers"),
         QStringLiteral("queued_stop_action"), QStringLiteral("queued_admission"),
         QStringLiteral("discard_dispatch"), QStringLiteral("clear_queue"), QStringLiteral("direct_task_gate"),
-        QStringLiteral("idle_input_tracking")};
+        QStringLiteral("idle_input_tracking"), QStringLiteral("queued_button"), QStringLiteral("button_admission")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -578,6 +631,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("stopUpQueued"), result->stopUpQueued},
         {QStringLiteral("workAtSubmission"), QString::number(result->workAtSubmission)},
         {QStringLiteral("workAtBarrier"), QString::number(result->workAtBarrier)},
+        {QStringLiteral("workAtSecondBarrier"), QString::number(result->workAtSecondBarrier)},
         {QStringLiteral("workAfterQueueClear"), QString::number(result->workAfterQueueClear)},
         {QStringLiteral("workAfterJoin"), QString::number(result->workAfterJoin)},
         {QStringLiteral("workAtExit"), QString::number(SendInputWorkItem::outstanding())},
@@ -586,6 +640,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("idleStatesChecked"), result->idleStatesChecked},
         {QStringLiteral("callbackDownsTracked"), result->callbackDownsTracked},
         {QStringLiteral("callbackUpsTracked"), result->callbackUpsTracked},
+        {QStringLiteral("buttonLockAfterDispatch"), result->buttonLockAfterDispatch},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};

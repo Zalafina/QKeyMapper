@@ -3921,7 +3921,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::syncFloatingButtonsOnMappingStart_Signal,
                      this, &QKeyMapper::onSyncFloatingButtonsOnMappingStart, Qt::QueuedConnection);
     QObject::connect(m_VButtonPanel, &QVButtonPanel::triggerVButtonKey_Signal,
-                     QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::triggerVButtonKey, Qt::QueuedConnection);
+                     QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::queueVButtonKey, Qt::DirectConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonLockStateChanged_Signal,
                      m_VButtonPanel, &QVButtonPanel::onVButtonLockStateChanged, Qt::QueuedConnection);
     QObject::connect(QKeyMapper_Worker::getInstance(), &QKeyMapper_Worker::vbuttonClearAllLockStates_Signal,
@@ -16151,11 +16151,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                                                      false,
                                                      pressed, locked);
                     refreshFloatingButtonWidget(floatingButton, sourceKey, displayRowindex, keymapdata, pressed, locked);
-                    QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),
-                                              "triggerVButtonKey",
-                                              Qt::QueuedConnection,
-                                              Q_ARG(QString, keymapdata.Original_Key),
-                                              Q_ARG(bool, true));
+                    QKeyMapper_Worker::getInstance()->queueVButtonKey(keymapdata.Original_Key, true);
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[FloatingButtonClick]" << " KEY_DOWN Row[" << displayRowindex << "] OriKey[" << keymapdata.Original_Key << "]";
 #if defined(FBUTTON_VERBOSE_LOG)
@@ -16304,11 +16300,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                                                      false,
                                                      pressed, locked);
                     refreshFloatingButtonWidget(floatingButton, sourceKey, displayRowindex, keymapdata, pressed, locked);
-                    QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),
-                                              "triggerVButtonKey",
-                                              Qt::QueuedConnection,
-                                              Q_ARG(QString, keymapdata.Original_Key),
-                                              Q_ARG(bool, false));
+                    QKeyMapper_Worker::getInstance()->queueVButtonKey(keymapdata.Original_Key, false);
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[FloatingButtonClick]" << " KEY_UP Row[" << displayRowindex << "] OriKey[" << keymapdata.Original_Key << "]";
 #endif

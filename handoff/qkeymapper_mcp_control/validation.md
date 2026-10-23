@@ -882,3 +882,27 @@ PC-W11，源码基线 76df7f19。InterceptionKeyboardHookProc 原先在判断 GU
 补充收窄 STOP-43／44 的范围表述：用例主体不调用日常 Hook 启停或原生设备清理，但真实产品 main 的正常退出始终保留 Worker UnHook／shutdownSendInputTasks 及原设备关闭路径。相关 API 返回不等于真实设备释放效果已验证；历史正常退出记录保留，不能用其代替硬件释放验收。
 
 本切片只修复一个停止态提前读取并保留跟踪，不证明全部停止态无源访问、线程同步、全部生产者／设备清理、GUI／MCP 启停等价或完整协调完成。门禁／计数机制本次未变，STOP-44 的 27 项不重复；未新增普通产品、正式 SDK、真实 GUI／物理输入、PC-W10 或严格静态分析范围。后续协调仍须覆盖原所有者队列、在途回调、派生任务、GUI 回切与退出差异，不能凭 STOPPED、空表或零计数单独完成。
+
+## STOP-20261023-46：按钮排队前存续与退出拒收
+
+PC-W11，Windows 11 企业版 10.0.26200 x64；源码基线 b5a00653，加 Worker 的 queueVButtonKey、三处现有 GUI 调用迁移、两项维护用例及说明。共同入口先创建 STOP-44 的共享存续标记并关闭首次静止源读取门禁，再将原 triggerVButtonKey 排队到 Worker。面板的 DirectConnection 只执行该入队包装，按钮业务仍在 Worker 执行；浮动按钮 DOWN／UP 复用同一入口，原生输入参数未变。Worker 内检查已有退出专用 m_sendInputTasksStopping，拒收发生在 LockState／发送处理前；未把永久退出旗标复用为日常停止，也未改变池所有权或设备清理顺序。
+
+同一本机 x64 MSVC 19.44.35228.0，Qt6.8.3 msvc2022_64 Release、Qt5.15.2 msvc2019_64 Release、Qt6 Release + ASan 三套 native build exit 0；Qt6 两套无警告，Qt5 仅官方 qtmain.lib(qtmain_win.obj) 缺 PDB 例外。沿本机匹配 STOP-44 构建树增量构建，旧部署产物不覆盖。当前日志为 out/mcp_lifecycle/build-stop46-*.log；新运行副本与对应构建 EXE 字节一致，一次身份／部署日志在各 runtime-stop46-*。新 ASan EXE 导入 clang_rt.asan_dynamic-x86_64.dll／__asan_* 已核对（stop46-asan-imports.log），实际使用保留 -fsanitize=address／QKM_ENABLE_ASAN 的配置和匹配运行库。
+
+| 配置／EXE（均在 out/mcp_lifecycle） | queued_button／button_admission PID | 产品主线程实际桌面 |
+|---|---|---|
+| runtime-stop46-qt6-release/QKeyMapperStop46Lifecycle_qt6_release.exe | 9400／2428 | QkmLifecycle_6bd791f6fadc4257ac093b8ff315e84d |
+| runtime-stop46-qt5-release/QKeyMapperStop46Lifecycle_qt5_release.exe | 31700／4768 | QkmLifecycle_e4b969dc157248b6ad90155001df836b |
+| runtime-stop46-qt6-asan/QKeyMapperStop46Lifecycle_qt6_asan.exe | 25140／10776 | QkmLifecycle_eac7aaf86bfc4ff79141e9f95867e04e |
+
+每套两项均 passed=true、native exit 0，三套实际采样一致：
+
+- queued_button：在 Worker 所有者线程准备合成源行，经共同入口排队无输出按钮 DOWN／UP。提交后 workAtSubmission=2，首个 Worker 栅栏 workAtBarrier=2 且控制器表仍空，第二栅栏 workAtSecondBarrier=2 且真实发送池 waitForDone(0)=false；原路径实际 join 后 workAfterJoin=0，最后 workAtExit=0，按钮／映射记账均空。
+- button_admission：先开启原退出专用拒收，再排队带 Lock 的合成行 DOWN／UP；提交计数 2，两个 Worker 栅栏计数均为 0，未建立发送控制器，buttonLockAfterDispatch=0（LOCKOFF），join／退出计数均为 0。它证明拒收早于按钮锁定状态修改，不证明可重启的日常停止已实现。
+- 两项均 sourceGateBefore=false、sourceGateAfter=true，门禁在排队前关闭。这些字段只按对应分支解读，未把其他用例默认值当成实测。
+
+原始结果、PID／EXE／创建时间与完整身份在 accept-stop46-{qt6-release,qt5-release,qt6-asan}；运行日志 run-stop46.log，六项精简提取 stop46-evidence-summary.log。产品 High RID 12288，普通控制器 Medium RID 8192，same_login=true。控制器 15720 只申请本轮五分钟 PID 缓存，finally 关闭成功；普通收尾查询缓存会话 0、不可用、CacheMode 仍 Explicit，未残留本轮产品进程。所有构建、部署、Git、控制器及证据汇总均普通权限，仅必要自有进程启动／关闭经已授权 gsudo。
+
+ASan 两项实跑无报告，halt_on_error／abort_on_error 开启、detect_leaks=0；不声称泄漏、所有内存路径或性能已验。无 Default 切换、系统输入、GUI 映射启动或驱动安装，未操作用户实例；真实产品 main 正常退出保留原 UnHook／shutdown／设备关闭，不以 API 返回证明真实设备效果。组件直接调用共同入口，不是独立 GUI 点击或 GUI／MCP 业务等价基线，未新增正式 MCP／SDK、物理输入、英日 GUI、PC-W10 或严格静态分析覆盖。SOURCE-42 及先前结果只按原有效范围复用。
+
+本切片仅补按钮提交的计数空窗和退出迟到事件副作用，完整停止代次、全部生产者／同步发送、设备与 GUI 尾部及超时协调尚未完成；stop_completion 仍为 unobserved，源查询不因 STOPPED 或零计数重开。用户指定 2026-10-23 18:10（北京时间）截止交接；完成本切片后停止扩展，更新主计划／交接卡并提交，已明确授权正常推送 origin/codex/qkeymapper-mcp-control。原始 out 仅在 PC-W11 保留、不随 Git 传输，接收 PC 不冒充已复核。
