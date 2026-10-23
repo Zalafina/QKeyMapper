@@ -920,3 +920,17 @@ PC-W11，2026-10-23；文档／产品基线均为 STOP-46 的 309133b5568921a942
 未恢复开发环境，未构建、部署、启动产品、申请 UAC／gsudo 缓存或进行任何运行测试，也未操作 Default／私有桌面。本轮 tested EXE 不适用，没有新增运行日志或截图。未来 Default 前台／托盘与人工确认每系统预计 15–20 分钟，当前全部待验证，不把截图激活造成的前台变化当作显示能力成功。
 
 主计划交接卡已更新：本次为独立文档提交切点，产品仍停在 STOP-46；接收 PC 下一步继续 M1.2a-2b-3 生命周期协调，目标选择留给后续 M1 连接／会话切片，交付打包归 M3-B。原始运行证据仅在来源 PC 的忽略 out 中，本轮不复验、不跨机复制；缺少材料不能称为已核实。用户已明确授权普通推送任务分支，完成后本机再次停止写入。
+
+## ENV-20261023-48：PC-W10 哈希锁恢复与无 UAC 接续
+
+PC-W10，Win10 10.0.19045 x64。已检查本地改动、获取 origin 并切换／核对任务分支，仅允许快进；本机与远端均为 1c3dc6d7，无新增提交。无关 .claude/settings.local.json 保留。本记录的环境、IPC 和 SDK 路径均未受同轮未提交 STOP-49 产品信号／生命周期测试差异影响；不冒充 Win11 原始材料复核或新产品源查询验收。
+
+复用既有 C:/Python/Python311 的 CPython 3.11.9 x64，python.exe／python311.dll 均为有效 PSF Authenticode 签名；没有更改全局 Python、下载或执行安装器，也不追溯证明既有安装的全部字节。依据 ENV-39 已提交的 31 项 SHA256 锁，从指定 PyPI 索引执行 --require-hashes／--only-binary=:all:／--no-deps 下载，再对本机已有隔离 out/mcp_bridge/venv 做 --no-index／--force-reinstall 哈希重装（包括 pip／setuptools），各 native exit 0。不是复制另一台 PC 的 venv，也不是仅 already satisfied。原始下载／安装日志在 out/mcp_bridge/resume-w10-20261023/{download,install}.log，wheel 在本机 out/mcp_bridge/wheels-cp311-win_amd64，不随 Git。
+
+选定检查：check_environment.py 通过，pip check 无破损依赖；test_environment.py 6 项、test_protocol.py 15 项均通过。环境／协议命令的 stdout 计数如上；未另造全源码哈希或额外结果收据。
+
+本机 Qt6.8.3 msvc2022_64 的两个维护目标增量构建 exit 0、无编译／链接警告：out/tests/mcp_ipc/qt6-release/release/QKeyMapperMcpIpcTest.exe 和 out/tests/mcp_control/qt6-release/release/QKeyMapperMcpControlTest.exe。构建日志 build-ipc.log／build-control.log 位于上述 resume 目录。原生 IPC 首轮在受限沙箱为 74 通过／14 失败，其中 storeRoundTrip 报 save error 5，相关配对子进程退出 75；保留 native-ipc.txt。没有修改 IPC 源码或换 EXE，在普通用户会话复验为 88 通过／0 失败，native exit 0（native-ipc-user.txt）。这表明本轮差异取决于执行上下文，不将其描述为产品故障已修复。
+
+正式官方 SDK 的普通模式 12 项全部通过，SDK 2.3.0，未加 --approval-timeout 或 --elevated-server。结果／拓扑／夹具日志在 out/mcp_bridge/resume-w10-20261023/sdk-qt6；实际桌面 QkmSdk_2b8ff8da88c54e0e8d48290b380c4135，控制器与维护服务均非提权、Medium RID 8192，同登录／用户／会话。正式 stdio 桥接往返覆盖批准、持久化重连、撤销、取消、关闭、错误 EXE／发现信息及保存失败；finally 清理自身凭据并正常关闭服务。它不是正式产品、源行业务或真实 GUI 操作等价性验证。
+
+用户吃饭期间未调用 gsudo、申请缓存、启动管理员 EXE 或触发 UAC；无 Default 切换、系统键鼠、映射启动、驱动安装或用户实例操作。管理员产品、Win10 新源路径、STOP-49 生命周期运行、Qt5 SDK、真实批准超时、High 截图、托盘和性能本轮未验；Win11／历史各项仅保留原范围。此记录是本地开发检查点，后续继续主计划指定的停止生命周期切片。
