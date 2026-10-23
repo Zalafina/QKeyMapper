@@ -1316,7 +1316,8 @@ signals:
     void setKeyUnHook_Signal(QSharedPointer<SendInputWorkItem> work);
     void setKeyMappingRestart_Signal(QSharedPointer<SendInputWorkItem> work);
     void allMappingKeysReleased_Signal(void);
-    void sessionLockStateChanged_Signal(bool locked);
+    void sessionLockStateChanged_Signal(bool locked, QSharedPointer<SendInputWorkItem> work);
+    void inputFenceReached_Signal(quint64 generation);
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     // void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     void startBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
@@ -1391,6 +1392,7 @@ public slots:
     void setKeyMappingRestart(void);
     void allMappingKeysReleased(void);
     void sessionLockStateChanged(bool locked);
+    void reachInputFence(quint64 generation);
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
     // void HotKeyHookProc(const QString &keycodeString, int keyupdown);
@@ -1813,6 +1815,7 @@ signals:
     void setKeyHook_Signal(QSharedPointer<SendInputWorkItem> work);
     void setKeyUnHook_Signal(QSharedPointer<SendInputWorkItem> work);
     void setKeyMappingRestart_Signal(QSharedPointer<SendInputWorkItem> work);
+    void inputFenceReached_Signal(quint64 generation);
 
 public slots:
     void HookProcThreadStarted(void);
@@ -1820,6 +1823,7 @@ public slots:
     void onSetHookProcKeyHook();
     void onSetHookProcKeyUnHook(void);
     void onSetHookProcKeyMappingRestart(void);
+    void reachInputFence(quint64 generation);
 
 #ifdef JOYSTICK_EVENTS_TO_HOOKPROC
     void onJoystickPOVEvent(const QJoystickPOVEvent &e);

@@ -36,9 +36,11 @@ public:
     Q_ENUM(Interception_State)
 
 signals:
+    void inputFenceReached_Signal(quint64 generation);
 
 public slots:
     void InterceptionThreadStarted(void);
+    void requestInputFence(quint64 generation);
 
 public:
     static bool doLoadInterception(void);
@@ -82,6 +84,11 @@ public:
     static QHash<QString, USBDeviceInfo> s_USBIDsMap;
     static QStringList disabledKeyboardList;
     static QStringList disabledMouseList;
+
+private:
+    void acknowledgeInputFences();
+    bool m_receiveLoopActive = false;
+    QList<quint64> m_pendingInputFences;
 };
 
 #endif // INTERCEPTION_WORKER_H

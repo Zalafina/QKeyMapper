@@ -1140,6 +1140,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyMappingRestart_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
+    QObject::connect(this, &QKeyMapper_Worker::sessionLockStateChanged_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
 
     QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyHook, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
@@ -10449,6 +10450,11 @@ void QKeyMapper_Worker::allMappingKeysReleased()
             resetGlobalSendInputTaskController();
         }
     }
+}
+
+void QKeyMapper_Worker::reachInputFence(quint64 generation)
+{
+    if (generation != 0) { emit inputFenceReached_Signal(generation); }
 }
 
 void QKeyMapper_Worker::sessionLockStateChanged(bool locked)
@@ -20874,6 +20880,11 @@ void QKeyMapper_Hook_Proc::HookProcThreadFinished()
 #ifdef DEBUG_LOGOUT_ON
     qInfo("[SetHookProc] HookProcThreadFinished() Keyboard Hook & Mouse Hook Stopped.");
 #endif
+}
+
+void QKeyMapper_Hook_Proc::reachInputFence(quint64 generation)
+{
+    if (generation != 0) { emit inputFenceReached_Signal(generation); }
 }
 
 void QKeyMapper_Hook_Proc::onSetHookProcKeyHook()

@@ -36612,6 +36612,7 @@ void QKeyMapper::onScaleComboBoxActivated(int index)
 
 void QKeyMapper::sessionLockStateChanged(bool locked)
 {
+    const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
     if (locked) {
         restoreSystemFilterKeysBaseline();
     }
@@ -36620,7 +36621,7 @@ void QKeyMapper::sessionLockStateChanged(bool locked)
         applySystemFilterKeysForCurrentSetting();
     }
 
-    emit QKeyMapper_Worker::getInstance()->sessionLockStateChanged_Signal(locked);
+    emit QKeyMapper_Worker::getInstance()->sessionLockStateChanged_Signal(locked, lifecycleWork);
 }
 
 void QKeyMapper::setUITheme(int themeindex)

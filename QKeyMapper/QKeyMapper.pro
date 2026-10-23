@@ -225,6 +225,7 @@ HEADERS     += \
 QMAKE_LFLAGS += /MANIFESTUAC:\"level=\'requireAdministrator\' uiAccess=\'false\'\"
 
 SOURCES     += \
+    qkm_input_owner_fence.cpp \
     colorpickerwidget.cpp \
     interception_worker.cpp \
     main.cpp \
@@ -263,6 +264,7 @@ HEADERS     += \
     qkeymapper_worker.h \
     qkm_send_input_work.h \
     qkm_input_producer_work.h \
+    qkm_input_owner_fence.h \
     qkeymapper_constants.h \
     qkeymapper_qt_compat.h \
     qfloatingbuttonsetupdialog.h

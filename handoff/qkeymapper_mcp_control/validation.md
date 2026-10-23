@@ -988,3 +988,25 @@ PC-W10，Win10 19045 x64，基线 8d0b0350 加本切片六个源码／测试文�
 遵照用户最新批准的 CACHE-40：独立普通控制器 PID 10400、Medium RID 8192，开始核对 CacheAvailable 不可用后仅为本 PID 申请 00:05:00；产品逐进程核实 High RID 12288、same_login 与实际 EXE／桌面。finally 执行 cache off -p 10400，随后 CacheAvailable 返回不可用，记录 run-stop50.log／stop50-cache.json。没有 PID 0、无限缓存、全局 -k、CacheMode 修改或开发工具提权。十五个自有 PID 的普通只读查询均不存在，未强杀或操作用户实例。
 
 本轮没有 Default、系统键鼠、映射启动、驱动安装、独立 GUI／MCP 等价性、正式 SDK 新覆盖、截图或性能测量。直接回调不是实际驱动接收／转发，鼠标／低层 Hook 的运行与物理输入效果仍须其场景；计数增加的热路径开销尚未量化。ASan 不证明泄漏或全部内存路径。既有设备 main 启动／退出未改，API 返回不等于物理释放验证。源读取仍为 pristine_idle，stop_completion=unobserved；继续完整代次／生产者／队列／池／GUI 协调，不因本地检查点暂停。
+
+## STOP-20261023-51：三所有者代次栅栏与会话通知存续
+
+PC-W10，Win10 19045 x64；基线 ea60867a 加本切片十个源码／测试文件。内部 InputOwnerFence 请求真实 Worker／Hook／Interception 的排队确认，使用进程内不回退的独立代次，忽略过期、取消和重复确认，重入回调后再次核对代次。Interception 接收循环用现有 Qt qScopeGuard 在每次迭代退出时确认，作用域顺序保证收到的 stroke 先释放并完成原转发；没有接收循环时按普通所有者槽确认。确认只到达队列位置，不包含子队列、发送池、准入封闭或 GUI 尾部，目前尚未接成产品停止完成／编辑放行。
+
+会话锁定 GUI 入口及其原排队信号持有现有 SendInputWorkItem，接收槽保留 bool 参数和原逻辑，额外共享参数随 Qt 排队事件保存；DirectConnection 在通知提交时关闭首次源读取门禁。未改变系统锁屏、FilterKeys、输入／设备 API、原生参数和顺序、manifest、INI 或 TS。该门禁更保守，不因锁定／解锁后的 STOPPED 或零计数重新开放。
+
+新增 owner_fence／owner_fence_cancel 维护用例在实际所有者线程运行：延后 Hook 队列，连续请求 1、2 代，Worker／Interception 确认掩码为 5 时仍 pending、未完成且 GUI 定时器可推进，释放 Hook 后只有第 2 代完成一次。取消分支先取消 2 代，晚到 Hook 确认不完成旧作业，再请求 3 代，只有 3 代完成一次。各实际掩码／代次轨迹保存在 JSON；context 均实际非空，但这不证明收到真实 stroke 或转发效果。session_lock_queue 合成两条通知提交计数 2、处理后 0，原始／去设备记账清除、门禁 false→true、Worker 保持 STOPPED。没有真正锁定 Windows。lifecycle_dispatch／queued_stop_action 两项回归保持原预期。
+
+同一 MSVC 14.40.33807、本机 Qt6／Qt5 Release 与 Qt6 Release+ASan 的增量构建均 native exit 0；Qt6 两套无编译／链接警告，Qt5 只有官方 qtmain 缺 PDB LNK4099 例外。日志 out/mcp_lifecycle/resume-w10-20261023/build-{kit}-51.log，仍使用各 *-resume49 构建树；新 runtime51-* 的 EXE 与对应构建字节一致，依赖来自同 kit 的既有部署，重新复制仓库固定 INI。
+
+| 实际 EXE（均在上述 resume 目录下） | SHA256 | 实际私有桌面 |
+|---|---|---|
+| runtime51-qt6/QKeyMapperStop51Lifecycle_qt6.exe | a451ee9506221ed36076d40e79fba380af250d4a008028dd932ff29b5a1d33c1 | QkmLifecycle_ae33e43c776748baab21ce5ea871b8ea |
+| runtime51-qt5/QKeyMapperStop51Lifecycle_qt5.exe | ddab792a983649b9dc883e98348cc8ab7fbf9a35e06d35086ca8c9d0dbf41041 | QkmLifecycle_3793785f75dd4acbb98500be12f9aab1 |
+| runtime51-qt6-asan/QKeyMapperStop51Lifecycle_qt6_asan.exe | eda6b47e1b8286c87cbf1e7a7148cfd9d01554e2e8fc21ba60b4511dc9a1f80d | QkmLifecycle_f7ee36c9a62144c8b0a309cfbf837fe8 |
+
+三配置各 5 项，共 15 项 passed=true、native exit 0、workAtExit／producersAtExit=0；ASan 5 项按 halt_on_error／abort_on_error、detect_leaks=0 实跑无报告。证据 accept51-{kit}/{case}/result.json 及启动／关闭／日志，stop51-results.json 为 PID／EXE／创建时间／桌面／退出索引，均仅本机 out，不随 Git。
+
+独立普通控制器 PID 24164、Medium RID 8192，仅为自身申请五分钟 PID 缓存，先核对不可用、启用后核对可用，finally cache off -p 24164 后确认不可用；run-stop51.log／stop51-cache.json 保留。产品逐次核实 High RID 12288、same_login、实际 EXE 和桌面；15 个自有 PID 普通只读查询均不存在。未使用 PID 0、无限缓存、全局 -k、CacheMode 修改、开发工具提权或强杀用户实例。
+
+没有 Default、真实键鼠／锁屏、GUI 映射启动、驱动安装、新正式 SDK／MCP 业务或独立 GUI 基线、截图、性能或泄漏覆盖；实际收到 stroke 后转发及设备效果仍待验证。完整停止、超时禁写、GUI 快速重启／编辑和配置回切尚未接入；source.read=pristine_idle、stop_completion=unobserved 不变。此为独立组件提交切点，提交后继续既定任务，不做阶段收尾或暂停。

@@ -9,6 +9,8 @@
 #include "../../qkeymapper_worker.h"
 #include "../../qkeymapper.h"
 #include "../../qkm_input_producer_work.h"
+#include "../../qkm_input_owner_fence.h"
+#include "../../interception_worker.h"
 
 namespace {
 using namespace QKeyMapperConstants;
@@ -42,6 +44,16 @@ struct LifecycleResult {
     QStringList inputProducerTrace;
     int producerSubmissions = 0;
     quint64 producersWhileTaskWaiting = 0;
+    quint64 fenceFirstGeneration = 0;
+    quint64 fenceLastGeneration = 0;
+    quint64 fenceCancelledGeneration = 0;
+    int fenceReachedCount = 0;
+    int fenceGuiTurns = 0;
+    int fenceOwnersAtRelease = 0;
+    bool fencePendingAtRelease = false;
+    bool fenceCancelledHookIgnored = false;
+    bool fenceInterceptionContextAvailable = false;
+    QStringList ownerFenceTrace;
     int buttonLockAfterDispatch = 0;
     bool observeRepeats = false;
     bool observeSingleRoot = false;
@@ -100,6 +112,89 @@ void finish(bool passed)
     result->passed = result->passed && passed;
     QMetaObject::invokeMethod(QCoreApplication::instance(), []() {
         QCoreApplication::exit(result->passed ? 0 : 2);
+    }, Qt::QueuedConnection);
+}
+
+void installOwnerFenceTest(bool cancel)
+{
+    QMetaObject::invokeMethod(QCoreApplication::instance(), [cancel] {
+        auto *fence = new InputOwnerFence(QCoreApplication::instance());
+        auto *hook = QKeyMapper_Hook_Proc::getInstance();
+        const auto entered = QSharedPointer<QSemaphore>::create();
+        const auto blocked = QSharedPointer<QSemaphore>::create();
+        result->fenceInterceptionContextAvailable = Interception_Worker::getInterceptionContext() != nullptr;
+        QObject::connect(fence, &InputOwnerFence::ownerObserved, fence, [](quint64 generation, int owners) {
+            result->ownerFenceTrace.append(QStringLiteral("%1:%2").arg(generation).arg(owners));
+        });
+        QObject::connect(fence, &InputOwnerFence::reached, fence, [fence, cancel](quint64 generation) {
+            ++result->fenceReachedCount;
+            const bool passed = generation == result->fenceLastGeneration && !fence->pending()
+                && fence->observedOwners() == InputOwnerFence::All && result->fenceReachedCount == 1
+                && result->fenceLastGeneration > result->fenceFirstGeneration && result->fenceGuiTurns > 0
+                && result->fencePendingAtRelease
+                && (!cancel || (result->fenceCancelledHookIgnored
+                    && generation > result->fenceCancelledGeneration));
+            fence->deleteLater();
+            finish(passed);
+        });
+        if (cancel) {
+            QObject::connect(hook, &QKeyMapper_Hook_Proc::inputFenceReached_Signal, fence,
+                [fence](quint64 generation) {
+                    if (generation == result->fenceCancelledGeneration) {
+                        result->fenceCancelledHookIgnored = !fence->pending() && result->fenceReachedCount == 0;
+                        result->fenceLastGeneration = fence->request();
+                    }
+                }, Qt::QueuedConnection);
+        }
+        QMetaObject::invokeMethod(hook, [entered, blocked] {
+            entered->release();
+            blocked->acquire();
+        }, Qt::QueuedConnection);
+        result->fenceFirstGeneration = fence->request();
+        result->fenceLastGeneration = fence->request();
+        auto *poll = new QTimer(fence);
+        QObject::connect(poll, &QTimer::timeout, fence, [fence, poll, entered, blocked, cancel] {
+            ++result->fenceGuiTurns;
+            if (entered->available() == 0
+                || fence->observedOwners() != (InputOwnerFence::Worker | InputOwnerFence::Interception)) { return; }
+            poll->stop();
+            result->fenceOwnersAtRelease = fence->observedOwners();
+            result->fencePendingAtRelease = fence->pending() && result->fenceReachedCount == 0;
+            if (cancel) {
+                result->fenceCancelledGeneration = result->fenceLastGeneration;
+                fence->cancel();
+            }
+            blocked->release();
+        });
+        poll->start(1);
+        QTimer::singleShot(3000, fence, [fence, blocked] {
+            fence->cancel();
+            blocked->release();
+            finish(false);
+        });
+    }, Qt::QueuedConnection);
+}
+
+void installSessionLockQueueTest(QKeyMapper_Worker *worker)
+{
+    result->sourceGateBefore = QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved();
+    result->passed = !result->sourceGateBefore && SendInputWorkItem::outstanding() == 0
+        && QKeyMapper::getInstance()->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE
+        && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED
+        && QKeyMapper_Worker::pressedRealKeysList.isEmpty();
+    if (!result->passed) { finish(false); return; }
+    QKeyMapper_Worker::pressedRealKeysList.append(QStringLiteral("QkmSessionProbe"));
+    QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.append(QStringLiteral("QkmSessionProbe"));
+    emit worker->sessionLockStateChanged_Signal(true, QSharedPointer<SendInputWorkItem>::create());
+    emit worker->sessionLockStateChanged_Signal(false, QSharedPointer<SendInputWorkItem>::create());
+    result->workAtSubmission = SendInputWorkItem::outstanding();
+    result->sourceGateAfter = QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved();
+    QMetaObject::invokeMethod(worker, [] {
+        result->workAtBarrier = SendInputWorkItem::outstanding();
+        finish(result->workAtSubmission == 2 && result->workAtBarrier == 0 && result->sourceGateAfter
+            && QKeyMapper_Worker::pressedRealKeysList.isEmpty()
+            && QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.isEmpty()
+            && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED);
     }, Qt::QueuedConnection);
 }
 
@@ -486,6 +581,14 @@ void installLifecycleTest()
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+            if (mode == QStringLiteral("owner_fence") || mode == QStringLiteral("owner_fence_cancel")) {
+                installOwnerFenceTest(mode == QStringLiteral("owner_fence_cancel"));
+                return;
+            }
+            if (mode == QStringLiteral("session_lock_queue")) {
+                installSessionLockQueueTest(worker);
+                return;
+            }
             if (mode == QStringLiteral("queued_button") || mode == QStringLiteral("button_admission")) {
                 installQueuedButtonTest(worker, mode == QStringLiteral("button_admission"));
                 return;
@@ -704,7 +807,8 @@ int main(int argc, char *argv[])
         QStringLiteral("queued_stop_action"), QStringLiteral("queued_admission"),
         QStringLiteral("discard_dispatch"), QStringLiteral("clear_queue"), QStringLiteral("direct_task_gate"),
         QStringLiteral("idle_input_tracking"), QStringLiteral("queued_button"), QStringLiteral("button_admission"),
-        QStringLiteral("lifecycle_dispatch"), QStringLiteral("lifecycle_discard")};
+        QStringLiteral("lifecycle_dispatch"), QStringLiteral("lifecycle_discard"),
+        QStringLiteral("owner_fence"), QStringLiteral("owner_fence_cancel"), QStringLiteral("session_lock_queue")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -743,6 +847,16 @@ int main(int argc, char *argv[])
         {QStringLiteral("producerSubmissions"), result->producerSubmissions},
         {QStringLiteral("producersWhileTaskWaiting"), QString::number(result->producersWhileTaskWaiting)},
         {QStringLiteral("producersAtExit"), QString::number(InputProducerWorkItem::outstanding())},
+        {QStringLiteral("fenceFirstGeneration"), QString::number(result->fenceFirstGeneration)},
+        {QStringLiteral("fenceLastGeneration"), QString::number(result->fenceLastGeneration)},
+        {QStringLiteral("fenceCancelledGeneration"), QString::number(result->fenceCancelledGeneration)},
+        {QStringLiteral("fenceReachedCount"), result->fenceReachedCount},
+        {QStringLiteral("fenceGuiTurns"), result->fenceGuiTurns},
+        {QStringLiteral("fenceOwnersAtRelease"), result->fenceOwnersAtRelease},
+        {QStringLiteral("fencePendingAtRelease"), result->fencePendingAtRelease},
+        {QStringLiteral("fenceCancelledHookIgnored"), result->fenceCancelledHookIgnored},
+        {QStringLiteral("fenceInterceptionContextAvailable"), result->fenceInterceptionContextAvailable},
+        {QStringLiteral("ownerFenceTrace"), QJsonArray::fromStringList(result->ownerFenceTrace)},
         {QStringLiteral("buttonLockAfterDispatch"), result->buttonLockAfterDispatch},
         {QStringLiteral("lifecycleDispatchTrace"), QJsonArray::fromStringList(result->lifecycleDispatchTrace)},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},

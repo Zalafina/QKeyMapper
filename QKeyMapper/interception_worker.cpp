@@ -10,6 +10,7 @@
 #include <QFile>
 #include <QRegularExpression>
 #include <QSettings>
+#include <QScopeGuard>
 #include <QTextStream>
 #include <QThread>
 #include <libusb.h>
@@ -77,9 +78,16 @@ void Interception_Worker::InterceptionThreadStarted()
 
     InterceptionDevice device;
     InterceptionStroke stroke;
+    m_receiveLoopActive = true;
+    const auto finishLoop = qScopeGuard([this] {
+        m_receiveLoopActive = false;
+        acknowledgeInputFences();
+    });
 
     while(s_InterceptLoopbreak == false)
     {
+        // Declared before receivedStroke so acknowledgements follow its release and forwarding.
+        const auto finishIteration = qScopeGuard([this] { acknowledgeInputFences(); });
         int receive_ret = interception_receive(s_InterceptionContext, device = interception_wait_with_timeout(s_InterceptionContext, 1), &stroke, 1);
         // A received stroke survives processEvents() and its eventual native forwarding.
         std::optional<InputProducerWorkItem> receivedStroke;
@@ -269,6 +277,21 @@ void Interception_Worker::InterceptionThreadStarted()
     qDebug().nospace() << "[KeyInterceptionWorker] Call stopInterception after interception_receive while loop breaked.";
 #endif
     stopInterception();
+}
+
+void Interception_Worker::requestInputFence(quint64 generation)
+{
+    if (generation == 0) { return; }
+    m_pendingInputFences.append(generation);
+    if (!m_receiveLoopActive) { acknowledgeInputFences(); }
+}
+
+void Interception_Worker::acknowledgeInputFences()
+{
+    if (m_pendingInputFences.isEmpty()) { return; }
+    QList<quint64> pending;
+    pending.swap(m_pendingInputFences);
+    for (quint64 generation : pending) { emit inputFenceReached_Signal(generation); }
 }
 
 bool Interception_Worker::doLoadInterception()
