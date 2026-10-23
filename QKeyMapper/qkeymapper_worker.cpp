@@ -9715,6 +9715,7 @@ void QKeyMapper_Worker::threadFinished()
 void QKeyMapper_Worker::shutdownSendInputTasks()
 {
     m_sendInputTasksStopping = true;
+    finishSendInputDrain(QStringLiteral("shutdown"));
     SendInputTask::clearSendInputTaskControllerMap();
 
     QHash<QString, QStringList> remainingKeys;
@@ -9729,6 +9730,49 @@ void QKeyMapper_Worker::shutdownSendInputTasks()
     clearAllPressedVirtualKeys();
     pressedVirtualKeysList.clear();
     resetGlobalSendInputTaskController();
+}
+
+void QKeyMapper_Worker::observeSendInputDrain(quint64 generation, int timeoutMs)
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    if (m_sendInputTasksStopping || generation == 0 || generation <= m_lastSendInputDrainGeneration
+        || timeoutMs <= 0) { return; }
+    if (!m_sendInputDrainTimer) {
+        m_sendInputDrainTimer = new QTimer(this);
+        connect(m_sendInputDrainTimer, &QTimer::timeout, this, &QKeyMapper_Worker::pollSendInputDrain);
+    }
+    const quint64 previous = m_sendInputDrainGeneration;
+    m_lastSendInputDrainGeneration = generation;
+    m_sendInputDrainGeneration = generation;
+    m_sendInputDrainTimeoutMs = timeoutMs;
+    m_sendInputDrainElapsed.start();
+    if (previous != 0) { emit sendInputDrainObserved_Signal(previous, QStringLiteral("superseded")); }
+    if (m_sendInputDrainGeneration != generation) { return; }
+    pollSendInputDrain();
+    if (m_sendInputDrainGeneration == generation) { m_sendInputDrainTimer->start(10); }
+}
+
+void QKeyMapper_Worker::pollSendInputDrain()
+{
+    if (m_sendInputDrainGeneration == 0) { return; }
+    if (m_sendInputDrainElapsed.elapsed() >= m_sendInputDrainTimeoutMs) {
+        finishSendInputDrain(QStringLiteral("timeout"));
+        return;
+    }
+    // Admission and owner/GUI fences belong to the stop coordinator, not this observation.
+    if (SendInputWorkItem::outstanding() == 0 && InputProducerWorkItem::outstanding() == 0
+        && SendInputTask::poolsFinished()
+        && SendInputWorkItem::outstanding() == 0 && InputProducerWorkItem::outstanding() == 0) {
+        finishSendInputDrain(QStringLiteral("drained"));
+    }
+}
+
+void QKeyMapper_Worker::finishSendInputDrain(const QString &outcome)
+{
+    const quint64 generation = m_sendInputDrainGeneration;
+    m_sendInputDrainGeneration = 0;
+    if (m_sendInputDrainTimer) { m_sendInputDrainTimer->stop(); }
+    if (generation != 0) { emit sendInputDrainObserved_Signal(generation, outcome); }
 }
 
 void QKeyMapper_Worker::setWorkerKeyHook()
@@ -21549,6 +21593,16 @@ void SendInputTask::initSendInputTaskControllerMap()
             s_SendInputTaskControllerMap.insert(originalKey, controller);
         }
     }
+}
+
+bool SendInputTask::poolsFinished()
+{
+    QMutexLocker mapLocker(&s_SendInputTaskControllerMapMutex);
+    for (const SendInputTaskController &controller : std::as_const(s_SendInputTaskControllerMap)) {
+        if (!controller.task_threadpool || !controller.task_threadpool->waitForDone(0)) { return false; }
+    }
+    return s_GlobalSendInputTaskController.task_threadpool
+        && s_GlobalSendInputTaskController.task_threadpool->waitForDone(0);
 }
 
 void SendInputTask::clearSendInputTaskControllerMap()

@@ -1031,3 +1031,21 @@ Qt6 最终未修复基线的异表用例实际退出 2、passed=false，burstCyc
 一个普通控制器 PID 4164 先运行基线，期间只等待普通构建／部署标记，再执行修复后九项；仅为该 PID 申请 00:05:00 缓存，finally cache off -p 4164 并核实不可用。各产品核对 High RID 12288、普通控制器 Medium RID 8192、same_login、实际 EXE／桌面；没有将构建或开发工具放进提权进程。十个自有 PID 的普通只读查询均已不存在。原始结果在 accept52-baseline-qt6／accept52-{kit}，stop52-{baseline,fixed}-results.json 为精简身份／PID 索引，run-stop52.log／stop52-cache.json 保留审批与关闭结果，均仅本机 out，不随 Git。
 
 没有 Default、系统键鼠、GUI 映射启动、驱动安装、GUI 切表／删行独立基线、正式 MCP／SDK 新覆盖、截图或性能测量。Worker 停止主体及 main 原清理仍调用既有设备 API，不以返回值证明设备效果。完整停止协调、超时禁写与 GUI 放行尚未实现，source.read=pristine_idle、stop_completion=unobserved 不变；提交本切点后继续实际停止整合。
+
+## STOP-20261023-53：有界异步发送排空观察
+
+PC-W10，基线 43cd348e 加 Worker 头／实现、既有生命周期测试和说明。observeSendInputDrain 仅活动请求期间使用 Worker 子 QTimer：在期限内同时检查 SendInputWorkItem／InputProducerWorkItem 为零、所有单键及全局池 waitForDone(0) 成功，再次核对计数后报告 drained；不停止、删除或重置资源。单调代次阻止旧请求重开期限，新请求替代旧请求；timeout／superseded／shutdown 分开通知。先清空活动观察和停表再发结果，允许超时回调中启动新代而不被旧回调关掉；shutdown 先拒绝新任务、关闭观察，再保留原释放顺序，不等待 GUI。
+
+维护用例实际排队 250 ms NoOp DOWN／UP：drain_wait 为 1:drained；drain_timeout 在 25 ms 观察期后为 1:timeout、2:drained；drain_supersede 为 1:superseded、2:drained，并忽略再来的旧请求 1；drain_shutdown 为 1:shutdown，随后原关闭完成。三个非成功通知时检查原任务标记、控制器、未设置停止旗标及未排空池仍在，证明观察没有抢先释放；正常完成时实际检查池和计数。前三类 GUI 心跳分别为 Qt6 50／51／51、Qt5 49／51／51、ASan 37／36／38；shutdown 不要求心跳或 drained，也不把其默认 pools=false 当作失败／成功证明。
+
+三配置各 4 项，共 12 项 passed=true、native exit 0、workAtExit／producersAtExit=0；Qt6 ASan 四项按 halt_on_error／abort_on_error、detect_leaks=0 实跑无报告。最初 build-{kit}-53.log 为准备构建，随后修订测试中同步关闭调用与断言的先后，最终 build-{kit}-53-final.log 增量构建全部 native exit 0；Qt6 两套无警告，Qt5 仅官方 qtmain 缺 PDB LNK4099 例外。MSVC 14.40.33807、同 kit *-resume49 树、依赖和固定 INI 与前轮策略相同，最终实际 EXE 与对应构建字节一致：
+
+| 相对 out/mcp_lifecycle/resume-w10-20261023 的 EXE | SHA256 | 实际私有桌面 |
+|---|---|---|
+| runtime53-qt6/QKeyMapperStop53Lifecycle_qt6.exe | b17d69379ee0dedf03acb282517a52f912742e4a67b7fc6f47514537c4f066b5 | QkmLifecycle_b3782d63e43742adb62074ed60987ca1 |
+| runtime53-qt5/QKeyMapperStop53Lifecycle_qt5.exe | 123df8ba3db293d5276929e0b8e12aaf3138aa2a0e50a6bb8301716896d1b2a2 | QkmLifecycle_252bf3d4dc0948eaa3b10ef602c2303c |
+| runtime53-qt6-asan/QKeyMapperStop53Lifecycle_qt6_asan.exe | 0a3c336268d47c1cca45c674e3d9c4c5acd756d11ce53df221f8293644e57a94 | QkmLifecycle_6b347e69f9834362bb19b9afc1ab0939 |
+
+独立普通控制器 PID 17380、Medium RID 8192，仅申请自己的五分钟 PID 缓存，finally cache off -p 17380 并确认不可用；各产品核实 High RID 12288、same_login、EXE／桌面身份，十二个自有 PID 普通只读查询均不存在。原始结果 accept53-{kit}/{case}/result.json，启动／关闭／日志同目录，stop53-results.json 为精简 PID／身份索引，run-stop53.log／stop53-cache.json 保留缓存边界；均仅本机 out，不随 Git。
+
+本观察不能抢占 Worker 原有阻塞调用，不能独立证明原子全局静止、输入准入、源数据安全或完整停止；总超时和 GUI 放行仍待协调器。没有 Default、真实键鼠、映射启动、驱动安装、新 MCP／SDK 业务、独立 GUI 基线、截图、严格静态分析、性能或泄漏覆盖；原 main 清理及历史证据维持原范围。source.read=pristine_idle、stop_completion=unobserved 不变，提交后继续，不做阶段收尾／暂停。

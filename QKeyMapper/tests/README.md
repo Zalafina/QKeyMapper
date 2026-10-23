@@ -67,6 +67,10 @@ InputOwnerFence 只确认各队列到达对应位置；Interception 接收循环
 
 `burst_timer_cleanup`／`burst_timer_missing_source`／`burst_timer_removed_source` 创建一对真实连发定时器，分别保留原表、改用其他表、清空原表，再经原 Worker 停止入口核对两个 QPointer 均已失效且两个定时器表为空。`burst*` 字段仅在这三项采样；索引为空不算销毁证明。采用无系统输出的 NoOp 映射、长于用例的定时器间隔；失败基线也主动回收孤立定时器，排空真实发送任务并补测例 KEY_UP 后才释放合成数据。它不是实际 GUI 切表／删行或物理连发释放基线；Worker 停止主体和真实 main 退出仍保留原有设备清理。
 
+`drain_wait`／`drain_timeout`／`drain_supersede`／`drain_shutdown` 使用真实排队的 250 ms NoOp DOWN／UP 测试异步发送排空观察：完成须同时看到两类作用域为零、所有单键和全局池 waitForDone(0) 成功；等待时 GUI 心跳继续。25 ms 超时不停止或删除任务／控制器，随后新代继续观察到排空；替代请求报告旧代 superseded、忽略旧请求，退出专用关闭先报告 shutdown 再按原逻辑释放资源。`drainTrace` 是实际代次／结果轨迹，`drainResourcesIntact` 只在三个非成功通知时采样，`drainFinalPoolsFinished` 只在 drained 通知时采样；shutdown 不把默认值当作 drained 通过。观察本身不封闭新输入、不修改资源，也不包含所有者／GUI 边界，不能独立作为业务停止完成或编辑授权。
+
+观察期限在 Worker 事件循环中检查，不抢占原有阻塞调用；整体停止作业仍需 GUI 协调器独立计时并保持超时禁写。
+
 `idle_input_tracking` 在 GUI 所有者线程临时设置合成 IDLE／CHECKING 和缺失 Tab，直接调用 Interception 键盘处理函数回放一对 A DOWN／UP，核对设备、原始及去设备记账均正确添加／清除，并立即恢复索引和状态。IDLE 的真实记账信号直接观察 `inputProducerTrace=1/1`，每次回调返回后计数为 0；CHECKING 不发该信号。`queued_stop_action`／`queued_admission`／`discard_dispatch` 也在真实发送信号处核对包装函数的在途作用域（`producerSubmissions=2`），前者在 NoOp 发送任务等待期间观察 `producersWhileTaskWaiting=1`，两个负例为 0。`producersAtExit` 是所有分支实际退出后计数，其他新字段仅在上述分支采样；嵌套同步作用域计数不等于线程数或停止完成。
 
 这些用例不经 Interception 驱动接收／转发、不发送系统输入；合成状态不是 GUI 监视或真实硬件基线。Interception 接收循环的作用域位置及空接收不计数通过源码核对，鼠标／低层 Hook 回调及实际驱动转发仍须相应输入场景验证，不能由此直接记为运行通过。

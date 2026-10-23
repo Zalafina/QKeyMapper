@@ -58,6 +58,10 @@ struct LifecycleResult {
     bool burstCycleTimerDestroyed = false;
     bool burstPressTimerDestroyed = false;
     bool burstSourceContainsKeyAtCleanup = false;
+    QAtomicInt drainGuiTurns{0};
+    QStringList drainTrace;
+    bool drainResourcesIntact = false;
+    bool drainFinalPoolsFinished = false;
     int buttonLockAfterDispatch = 0;
     bool observeRepeats = false;
     bool observeSingleRoot = false;
@@ -199,6 +203,91 @@ void installSessionLockQueueTest(QKeyMapper_Worker *worker)
             && QKeyMapper_Worker::pressedRealKeysList.isEmpty()
             && QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.isEmpty()
             && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED);
+    }, Qt::QueuedConnection);
+}
+
+void installSendInputDrainTest(QKeyMapper_Worker *worker, const QString &mode)
+{
+    QMetaObject::invokeMethod(QCoreApplication::instance(), [worker, mode] {
+        auto *heartbeat = new QTimer(QCoreApplication::instance());
+        QObject::connect(heartbeat, &QTimer::timeout, heartbeat, [] { result->drainGuiTurns.fetchAndAddRelaxed(1); });
+        heartbeat->start(5);
+        QMetaObject::invokeMethod(worker, [worker, mode, heartbeat] {
+            auto *previousData = QKeyMapper::KeyMappingDataList;
+            auto *data = new QList<MAP_KEYDATA>{MAP_KEYDATA()};
+            auto &row = data->first();
+            row.Original_Key = SENDON_MAPPINGSTOP_STR;
+            row.Mapping_Keys = QStringList{QStringLiteral("QkmProbeNoOp⏱250")};
+            row.Pure_OriginalKeys = QStringList{row.Original_Key};
+            QKeyMapper::KeyMappingDataList = data;
+            const auto finished = QSharedPointer<bool>::create(false);
+            const auto finishTest = [worker, previousData, data, heartbeat, finished] {
+                if (*finished) { return; }
+                *finished = true;
+                QMetaObject::invokeMethod(worker, [previousData, data, heartbeat] {
+                    SendInputTask::clearSendInputTaskControllerMap();
+                    QKeyMapper::KeyMappingDataList = previousData;
+                    delete data;
+                    QMetaObject::invokeMethod(heartbeat, [heartbeat] {
+                        heartbeat->stop();
+                        heartbeat->deleteLater();
+                        finish(result->passed && SendInputWorkItem::outstanding() == 0);
+                    }, Qt::QueuedConnection);
+                }, Qt::QueuedConnection);
+            };
+            QObject::connect(worker, &QKeyMapper_Worker::sendInputDrainObserved_Signal, worker,
+                [worker, mode, finishTest](quint64 generation, const QString &outcome) {
+                    result->drainTrace.append(QStringLiteral("%1:%2").arg(generation).arg(outcome));
+                    if (outcome == QStringLiteral("timeout") || outcome == QStringLiteral("superseded")
+                        || outcome == QStringLiteral("shutdown")) {
+                        const auto controller = SendInputTask::s_SendInputTaskControllerMap.constFind(SENDON_MAPPINGSTOP_STR);
+                        result->drainResourcesIntact = SendInputWorkItem::outstanding() > 0
+                            && controller != SendInputTask::s_SendInputTaskControllerMap.cend()
+                            && !controller->task_stopping.loadAcquire() && !SendInputTask::poolsFinished();
+                        result->passed = result->passed && result->drainResourcesIntact;
+                        if (mode == QStringLiteral("drain_timeout") && generation == 1
+                            && outcome == QStringLiteral("timeout")) {
+                            worker->observeSendInputDrain(2, 2000);
+                            return;
+                        }
+                        if ((mode == QStringLiteral("drain_supersede") && generation == 1
+                                && outcome == QStringLiteral("superseded"))
+                            || (mode == QStringLiteral("drain_shutdown") && generation == 1
+                                && outcome == QStringLiteral("shutdown"))) { return; }
+                        result->passed = false;
+                        finishTest();
+                        return;
+                    }
+                    const QStringList expected = mode == QStringLiteral("drain_wait")
+                        ? QStringList{QStringLiteral("1:drained")}
+                        : mode == QStringLiteral("drain_timeout")
+                        ? QStringList{QStringLiteral("1:timeout"), QStringLiteral("2:drained")}
+                        : QStringList{QStringLiteral("1:superseded"), QStringLiteral("2:drained")};
+                    result->drainFinalPoolsFinished = SendInputTask::poolsFinished();
+                    result->passed = result->passed && outcome == QStringLiteral("drained")
+                        && result->drainTrace == expected && result->drainFinalPoolsFinished
+                        && SendInputWorkItem::outstanding() == 0 && InputProducerWorkItem::outstanding() == 0
+                        && result->drainGuiTurns.loadAcquire() > 0;
+                    finishTest();
+                }, Qt::DirectConnection);
+            worker->emit_sendInputKeysSignal_Wrapper(0, row.Mapping_Keys, KEY_DOWN, row.Original_Key,
+                SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, data);
+            worker->emit_sendInputKeysSignal_Wrapper(0, row.Mapping_Keys, KEY_UP, row.Original_Key,
+                SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, data);
+            QMetaObject::invokeMethod(worker, [worker, mode, finishTest] {
+                worker->observeSendInputDrain(1, mode == QStringLiteral("drain_timeout") ? 25 : 2000);
+                if (mode == QStringLiteral("drain_supersede")) {
+                    worker->observeSendInputDrain(2, 2000);
+                    worker->observeSendInputDrain(1, 2000);
+                }
+                if (mode == QStringLiteral("drain_shutdown")) {
+                    const bool invoked = QMetaObject::invokeMethod(worker, "shutdownSendInputTasks", Qt::DirectConnection);
+                    result->passed = result->passed && invoked
+                        && result->drainTrace == QStringList{QStringLiteral("1:shutdown")};
+                    finishTest();
+                }
+            }, Qt::QueuedConnection);
+        }, Qt::QueuedConnection);
     }, Qt::QueuedConnection);
 }
 
@@ -628,6 +717,10 @@ void installLifecycleTest()
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+            if (mode.startsWith(QStringLiteral("drain_"))) {
+                installSendInputDrainTest(worker, mode);
+                return;
+            }
             if (mode.startsWith(QStringLiteral("burst_timer_"))) {
                 installBurstTimerCleanupTest(worker, mode);
                 return;
@@ -861,7 +954,8 @@ int main(int argc, char *argv[])
         QStringLiteral("lifecycle_dispatch"), QStringLiteral("lifecycle_discard"),
         QStringLiteral("owner_fence"), QStringLiteral("owner_fence_cancel"), QStringLiteral("session_lock_queue"),
         QStringLiteral("burst_timer_cleanup"), QStringLiteral("burst_timer_missing_source"),
-        QStringLiteral("burst_timer_removed_source")};
+        QStringLiteral("burst_timer_removed_source"), QStringLiteral("drain_wait"), QStringLiteral("drain_timeout"),
+        QStringLiteral("drain_supersede"), QStringLiteral("drain_shutdown")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -913,6 +1007,10 @@ int main(int argc, char *argv[])
         {QStringLiteral("burstCycleTimerDestroyed"), result->burstCycleTimerDestroyed},
         {QStringLiteral("burstPressTimerDestroyed"), result->burstPressTimerDestroyed},
         {QStringLiteral("burstSourceContainsKeyAtCleanup"), result->burstSourceContainsKeyAtCleanup},
+        {QStringLiteral("drainGuiTurns"), result->drainGuiTurns.loadAcquire()},
+        {QStringLiteral("drainTrace"), QJsonArray::fromStringList(result->drainTrace)},
+        {QStringLiteral("drainResourcesIntact"), result->drainResourcesIntact},
+        {QStringLiteral("drainFinalPoolsFinished"), result->drainFinalPoolsFinished},
         {QStringLiteral("buttonLockAfterDispatch"), result->buttonLockAfterDispatch},
         {QStringLiteral("lifecycleDispatchTrace"), QJsonArray::fromStringList(result->lifecycleDispatchTrace)},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},

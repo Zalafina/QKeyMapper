@@ -12,6 +12,7 @@
 #include <QThreadPool>
 #include <QWaitCondition>
 #include <QDeadlineTimer>
+#include <QElapsedTimer>
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #ifdef VIGEM_CLIENT_SUPPORT
@@ -831,6 +832,7 @@ public:
     static void initSendInputTaskControllerMap(void);
     static void clearSendInputTaskControllerMap(void);
     static void clearSendInputTaskControllerThreadPool(void);
+    static bool poolsFinished();
 
 public:
     static QMutex s_SendInputTaskControllerMapMutex;
@@ -1318,6 +1320,7 @@ signals:
     void allMappingKeysReleased_Signal(void);
     void sessionLockStateChanged_Signal(bool locked, QSharedPointer<SendInputWorkItem> work);
     void inputFenceReached_Signal(quint64 generation);
+    void sendInputDrainObserved_Signal(quint64 generation, const QString &outcome);
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     // void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     void startBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
@@ -1393,6 +1396,7 @@ public slots:
     void allMappingKeysReleased(void);
     void sessionLockStateChanged(bool locked);
     void reachInputFence(quint64 generation);
+    void observeSendInputDrain(quint64 generation, int timeoutMs);
     void setWorkerJoystickCaptureStart(void);
     void setWorkerJoystickCaptureStop(void);
     // void HotKeyHookProc(const QString &keycodeString, int keyupdown);
@@ -1539,6 +1543,8 @@ private slots:
 
 private:
     bool JoyStickKeysProc(QString keycodeString, int keyupdown, const QJoystickDevice *joystick);
+    void pollSendInputDrain();
+    void finishSendInputDrain(const QString &outcome);
 #ifdef DINPUT_TEST
     static void* HookVTableFunction(void* pVTable, void* fnHookFunc, int nOffset);
     static HRESULT WINAPI hookGetDeviceState(IDirectInputDevice8* pThis, DWORD cbData, LPVOID lpvData);
@@ -1793,6 +1799,11 @@ private:
     QHash<int, GameControllerTouchpadTapHistory> m_GamepadTouchpadTapHistoryMap;
     bool m_ComInitialized = false;
     bool m_sendInputTasksStopping = false;
+    QTimer *m_sendInputDrainTimer = nullptr;
+    QElapsedTimer m_sendInputDrainElapsed;
+    quint64 m_sendInputDrainGeneration = 0;
+    quint64 m_lastSendInputDrainGeneration = 0;
+    int m_sendInputDrainTimeoutMs = 0;
 
     // Volume control instance
     VolumeController m_volumeController;
