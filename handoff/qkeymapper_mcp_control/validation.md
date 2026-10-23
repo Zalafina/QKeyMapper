@@ -862,3 +862,23 @@ ASan 生成的 Makefile.Release 含 -fsanitize=address、QKM_ENABLE_ASAN；已�
 两套运行的普通控制器 PID 4692／17652 分别申请五分钟缓存并 finally 关闭；普通收尾会话 0、不可用，CacheMode 仍 Explicit。产品 High RID 12288、普通控制器 Medium RID 8192，same_login=true；Git／编辑／构建／部署／证据汇总均普通权限，只有必要自有启动／关闭助手提权。无 Default、系统输入、GUI 映射启动、有效按键或驱动安装，未操作用户实例。
 
 本切片为内部完成条件的必要组成和首次读取门禁补强，不是完整清理完成协调。尚未封闭全部生产者／同步发送、确认设备及 GUI 尾部、停止代次／超时／快速重启，运行后源查询仍禁用；未跑新的正式 MCP／真实 GUI 启停对照、设备／物理释放、英日 GUI、PC-W10 或性能。SOURCE-42 正式源只读及先前协议／SDK 按原有效范围保留，不冒充本次实跑；本次未选择严格 Clang-Tidy／Clazy，原生参数／控制器所有权未改，以局部调用审阅、两版实际任务和针对性 ASan 检查新增的标记生命周期。
+
+## STOP-20261023-45：停止态 Interception 当前 Tab 读取短路
+
+PC-W11，源码基线 76df7f19。InterceptionKeyboardHookProc 原先在判断 GUI 映射状态前就取 s_KeyMappingTabInfoList.at(currentIndex) 的悬浮窗透传热键；对应低层 Hook 已用映射状态条件短路。单处修改对齐该已有写法：IDLE／CHECKING 不提前取当前 Tab，实际映射态仍使用原字段、比较与信号。未改驱动 API、过滤／发送参数或按键记账。没有运行旧版故意崩溃用例，原缺口依据源码确认，不冒充旧版运行复现。
+
+新增 idle_input_tracking 沿既有产品 main，在 GUI 所有者线程暂设合成 IDLE／CHECKING、currentIndex=-1，直接回放 InterceptionKeyboardHookProc 的 scan 0x1e、设备索引 0 的一对 DOWN／UP。前置确认实际已初始化、Hook STOPPED、测试记账为空及 A 不命中测试热键；两轮均核对正常返回、A@0 原始记账、A 去设备记账及设备 VKey 的添加／清除，立即恢复原状态及 Tab。未经 interception_send、未注入系统输入，也不是 GUI 启动监视、实际输入线程或驱动基线。对应设备列表索引始终有效，没有用设备 -1 代替当前 Tab 缺失。
+
+在本机 STOP-44 的匹配构建树增量重构 Worker 和维护源码，Qt6／Qt5 Release、Qt6 ASan 均 native build exit 0；Qt6 两套无警告，Qt5 仅原官方 qtmain 例外，日志 out/mcp_lifecycle/build-stop45-*.log。保留 STOP-44 已部署 EXE 与原日志，未覆盖其运行副本。各新 EXE 字节与本次对应构建一致，部署／一次身份记录在 runtime-stop45-*。新 ASan EXE 已核对 clang_rt.asan_dynamic-x86_64.dll／__asan_* 导入（stop45-asan-imports.log），保留原 -fsanitize=address 配置，实际执行无报告，未做泄漏／性能结论。
+
+| 配置／EXE（均在 out/mcp_lifecycle） | PID／实际桌面 | 当前结果 |
+|---|---|---|
+| runtime-stop45-qt6-release/QKeyMapperStop45Lifecycle_qt6_release.exe | 2848／QkmLifecycle_2e04a2a1e112426a83e2c7b69c66cb0e | 两个状态各 DOWN／UP 正常且记账正确，workAtExit=0，native exit 0 |
+| runtime-stop45-qt5-release/QKeyMapperStop45Lifecycle_qt5_release.exe | 20976／QkmLifecycle_b86afff3ca29472abb4dcde53a43d353 | 同预期，native exit 0 |
+| runtime-stop45-qt6-asan/QKeyMapperStop45Lifecycle_qt6_asan.exe | 27368／QkmLifecycle_fecfee7b00ae49d48fa9e7d9e8269392 | 同预期，native exit 0，无 ASan 报告 |
+
+原始结果在 accept-stop45-*、run-stop45.log；idleStatesChecked／callbackDownsTracked／callbackUpsTracked 各为 2，退出后存续计数均为 0。产品 High、普通控制器 Medium、same_login=true；控制器 26760 的五分钟缓存 finally 关闭。没有 Default、GUI 映射启动、驱动安装或用户进程操作。一次性助手最初的复杂命令引号在 PowerShell 解析阶段失败，未执行 Python／测试；改用保存的脚本后完成部署与三次运行，没有把解析失败记为通过。
+
+补充收窄 STOP-43／44 的范围表述：用例主体不调用日常 Hook 启停或原生设备清理，但真实产品 main 的正常退出始终保留 Worker UnHook／shutdownSendInputTasks 及原设备关闭路径。相关 API 返回不等于真实设备释放效果已验证；历史正常退出记录保留，不能用其代替硬件释放验收。
+
+本切片只修复一个停止态提前读取并保留跟踪，不证明全部停止态无源访问、线程同步、全部生产者／设备清理、GUI／MCP 启停等价或完整协调完成。门禁／计数机制本次未变，STOP-44 的 27 项不重复；未新增普通产品、正式 SDK、真实 GUI／物理输入、PC-W10 或严格静态分析范围。后续协调仍须覆盖原所有者队列、在途回调、派生任务、GUI 回切与退出差异，不能凭 STOPPED、空表或零计数单独完成。

@@ -13750,10 +13750,9 @@ int QKeyMapper_Worker::InterceptionKeyboardHookProc(UINT scan_code, int keyupdow
             }
 #endif
 
-            QString mousePassThroughSwitchKey = QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThroughSwitchKey;
             if ((QKeyMapper::KEYMAP_MAPPING_GLOBAL == QKeyMapper::getInstance()->m_KeyMapStatus
                 || QKeyMapper::KEYMAP_MAPPING_MATCHED == QKeyMapper::getInstance()->m_KeyMapStatus)
-                && (keycodeString == mousePassThroughSwitchKey)) {
+                && (keycodeString == QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).FloatingWindow_MousePassThroughSwitchKey)) {
                 emit QKeyMapper::getInstance()->switchMousePassThroughUnderCursor_Signal();
             }
             else if (keycodeString == QKeyMapper::getShowScreenPointKey()) {

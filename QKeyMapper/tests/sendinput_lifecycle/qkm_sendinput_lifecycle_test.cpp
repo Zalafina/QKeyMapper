@@ -34,6 +34,9 @@ struct LifecycleResult {
     quint64 workAfterJoin = 0;
     bool sourceGateBefore = false;
     bool sourceGateAfter = false;
+    int idleStatesChecked = 0;
+    int callbackDownsTracked = 0;
+    int callbackUpsTracked = 0;
     bool observeRepeats = false;
     bool observeSingleRoot = false;
     QMutex traceMutex;
@@ -351,6 +354,51 @@ void installLifecycleTest()
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+            if (mode == QStringLiteral("idle_input_tracking")) {
+                QMetaObject::invokeMethod(QCoreApplication::instance(), [] {
+                    auto *mapper = QKeyMapper::getInstance();
+                    const auto previousStatus = mapper->m_KeyMapStatus;
+                    const int previousTab = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+                    const QString rawKey = QStringLiteral("A@0");
+                    const QString pureKey = QStringLiteral("A");
+                    if (!QKeyMapper::isInitialized() || previousStatus != QKeyMapper::KEYMAP_IDLE
+                        || QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() != HOOKPROC_STATE_STOPPED
+                        || !QKeyMapper_Worker::pressedRealKeysList.isEmpty()
+                        || !QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList[0].isEmpty()
+                        || QKeyMapper::s_MappingStartKeyString.contains(pureKey)
+                        || QKeyMapper::s_MappingStopKeyString.contains(pureKey)
+                        || QKeyMapper::s_WindowSwitchKeyString.contains(pureKey)) {
+                        finish(false);
+                        return;
+                    }
+                    // Run on the GUI owner lane so the synthetic missing Tab cannot leak into UI work.
+                    for (auto status : {QKeyMapper::KEYMAP_IDLE, QKeyMapper::KEYMAP_CHECKING}) {
+                        mapper->m_KeyMapStatus = status;
+                        QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = -1;
+                        const int down = QKeyMapper_Worker::InterceptionKeyboardHookProc(0x1e, KEY_DOWN, 0, false, false, 0);
+                        if (QKeyMapper_Worker::pressedRealKeysList.contains(rawKey)
+                            && QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.contains(pureKey)
+                            && QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList[0].contains(0x41)) {
+                            ++result->callbackDownsTracked;
+                        }
+                        const int up = QKeyMapper_Worker::InterceptionKeyboardHookProc(0x1e, KEY_UP, 0, false, false, 0);
+                        if (!QKeyMapper_Worker::pressedRealKeysList.contains(rawKey)
+                            && !QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.contains(pureKey)
+                            && !QKeyMapper_Worker::pressedMultiKeyboardVKeyCodeList[0].contains(0x41)) {
+                            ++result->callbackUpsTracked;
+                        }
+                        result->passed = result->passed && down == INTERCEPTION_RETURN_NORMALSEND
+                            && up == INTERCEPTION_RETURN_NORMALSEND;
+                        ++result->idleStatesChecked;
+                    }
+                    QKeyMapper::s_KeyMappingTabWidgetCurrentIndex = previousTab;
+                    mapper->m_KeyMapStatus = previousStatus;
+                    finish(result->passed && result->idleStatesChecked == 2
+                        && result->callbackDownsTracked == 2 && result->callbackUpsTracked == 2
+                        && SendInputWorkItem::outstanding() == 0);
+                }, Qt::QueuedConnection);
+                return;
+            }
             if (mode == QStringLiteral("queued_stop_action") || mode == QStringLiteral("queued_admission")
                 || mode == QStringLiteral("discard_dispatch")) {
                 installQueuedStopActionTest(worker, mode);
@@ -504,7 +552,8 @@ int main(int argc, char *argv[])
         QStringLiteral("break_all"), QStringLiteral("stop"), QStringLiteral("restart"), QStringLiteral("admission"),
         QStringLiteral("exit_wait"), QStringLiteral("exit_pause"), QStringLiteral("borrowers"),
         QStringLiteral("queued_stop_action"), QStringLiteral("queued_admission"),
-        QStringLiteral("discard_dispatch"), QStringLiteral("clear_queue"), QStringLiteral("direct_task_gate")};
+        QStringLiteral("discard_dispatch"), QStringLiteral("clear_queue"), QStringLiteral("direct_task_gate"),
+        QStringLiteral("idle_input_tracking")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -534,6 +583,9 @@ int main(int argc, char *argv[])
         {QStringLiteral("workAtExit"), QString::number(SendInputWorkItem::outstanding())},
         {QStringLiteral("sourceGateBefore"), result->sourceGateBefore},
         {QStringLiteral("sourceGateAfter"), result->sourceGateAfter},
+        {QStringLiteral("idleStatesChecked"), result->idleStatesChecked},
+        {QStringLiteral("callbackDownsTracked"), result->callbackDownsTracked},
+        {QStringLiteral("callbackUpsTracked"), result->callbackUpsTracked},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};

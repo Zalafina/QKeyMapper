@@ -8,19 +8,19 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | M1.2a-2b-3／STOP-44 队列／runnable 连续存续计数完成选定验证；接续生产者及停止代次协调。STOP-43 为 76484d02，SOURCE-42 为 35902062，LOAD-41 为 7d78eacb，环境恢复为 7f78a579 |
-| 状态 | Qt6／Qt5 普通 Release 与 Qt6 ASan 生命周期目标各 9 项、共 27 次执行通过，退出时存续计数均为 0。已覆盖排队转任务、拒收、事件／任务销毁、KEY_UP 保留、派生序列和退出；计数尚不是清理完成接口。SOURCE-42 正式产品原范围保留；完整 M1 编辑／保存／真正停止闭环仍未完成 |
+| 当前切片 | M1.2a-2b-3／STOP-45 停止态 Interception 提前读取修复完成选定组件验证；继续生产者及停止代次协调。STOP-44 为 76df7f19、STOP-43 为 76484d02、SOURCE-42 为 35902062；LOAD-41／ENV-39 按原记录保留 |
+| 状态 | STOP-45 的 Qt6／Qt5 Release 与 Qt6 ASan 各一次组件回放通过，IDLE／CHECKING 缺失 Tab 均正常返回并保留 DOWN／UP 记账；不经驱动转发或系统输入。STOP-44 的连续存续计数 27 次按原范围保留，完整停止协调及 M1 编辑／保存／实际输入闭环仍未完成 |
 | 执行机器 | PC-W11，Windows 11 企业版 10.0.26200 x64；当前唯一写入机器。PC-W10 记录均保留为历史，缺少原始材料不作为本机已核实证据 |
 | 任务分支 | `codex/qkeymapper-mcp-control` |
-| 源码基线 | STOP-44 基线 76484d02，加 SendInputWorkItem、信号附带排队存续标记、任务析构标记及首次任务构造源读取门禁，另有对应维护测试／说明。原输入参数、排队连接类型、控制器所有权／清理顺序未改；门禁仍不重开，不作为清理完成证明 |
+| 源码基线 | STOP-45 基线 76df7f19，仅在 InterceptionKeyboardHookProc 复用低层 Hook 已有的映射状态短路，将当前 Tab 读取移至适用分支；另有停止态合成回调测试／说明。未改变驱动 API、实际映射参数、物理键记账或设备清理顺序；源读取门禁仍不重开 |
 | 当前已完成 | ENV-39 环境锁／恢复、CACHE-40 PID 缓存无缓存对照，LOAD-41 两套真实 GUI 七步／正式 MCP 各 18 项。SOURCE-42 在 PC-W11 两套最终产物完成非当前普通源、共通显示去重与独立备份来源范围、完整重复读取不变性、真实重排及相同内容往返、重载／切配置／失败恢复和新配对拒绝旧引用。Win10 历史独立保留 |
 | 当前未验证 | 稳定编辑授权、完整业务修订、编辑／保存、停止清理完成及实际输入效果未实现。保存失败／缓存恢复、全局配置、筛选／空白与共通组合、产品加载忙／大结果、运行后源查询与变更／重启仍待对应用例。High 截图／托盘、异用户、性能、打包和旧一次 SDK 维护退出原因缺口保留；PC-W10 未按新锁重装或验证新源路径，英日源 GUI 未验 |
-| 构建与 EXE | 本机 Qt6.8.3 msvc2022_64／Qt5.15.2 msvc2019_64 x64，MSVC 19.44.35228.0。当前维护 EXE 为 out/mcp_lifecycle/runtime-stop44-{qt6-release,qt5-release,qt6-asan}/QKeyMapperStop44Lifecycle_{qt6_release,qt5_release,qt6_asan}.exe；三套 native build exit 0，Qt6 两套无警告，Qt5 仅官方 qtmain 例外。ASan 编译标志／运行库导入及实际运行已核实，日志在 out/mcp_lifecycle。SOURCE-42 正式产品及 ENV-39 旧材料按原范围保留 |
-| 提交与同步 | 用户明确授权按可验证切片自主本地 commit；环境 7f78a579、LOAD-41 为 7d78eacb、SOURCE-42 为 35902062、STOP-43 为 76484d02；STOP-44 形成聚焦提交切片，身份见 Git 历史。不 push，远端最后核对仍为 b3c6f277；本机 out、venv、测试配对及原始材料不提交、不跨机复制 |
+| 构建与 EXE | 同一本机工具链，在匹配 STOP-44 构建树增量构建当前差异，三套 native build exit 0，Qt6 两套无警告，Qt5 仅官方 qtmain 例外。当前维护 EXE 为 out/mcp_lifecycle/runtime-stop45-{qt6-release,qt5-release,qt6-asan}/QKeyMapperStop45Lifecycle_{qt6_release,qt5_release,qt6_asan}.exe；日志 build-stop45-*、新 ASan EXE 导入及实际执行均已核对。STOP-44 部署产物／日志与 SOURCE-42 正式产品按原范围保留 |
+| 提交与同步 | 用户明确授权按可验证切片自主本地 commit；环境 7f78a579、LOAD-41 为 7d78eacb、SOURCE-42 为 35902062、STOP-43 为 76484d02、STOP-44 为 76df7f19；STOP-45 提交身份见 Git 历史。不 push，远端最后核对仍为 b3c6f277；本机 out、venv、测试配对及原始材料不提交、不跨机复制 |
 | 本机独有材料 | out/mcp_bridge 的新 venv／wheel 缓存／安装文件／检查日志，以及 out/mcp_product 的运行副本、私有桌面、动作／状态／失败证据；不随 Git 同步。PC-W10 原始 out 缺失，不冒充已复核 |
 | 授权边界 | 本机开发已恢复，持续推进到用户明确暂停，可自主聚焦本地提交，push 另行授权。当前固定助手在自有私有桌面使用局部窗口事件切配置、重选／空白、查看 Tab 和重排合成源行；不切 Default、不发系统输入、不启动映射或安装驱动。独立控制器 PID 缓存已获准，5 分钟空闲失效、finally 关闭；CACHE-40 已对照无缓存，不改全局配置。一次取消后获用户明确允许才重发；Git／编辑／构建／控制器／SDK／桥接／截图均普通权限 |
-| 收尾与本机状态 | STOP-44 的 27 个自有进程均正常退出 0，PID／EXE／实际桌面见 out/mcp_lifecycle/accept-stop44-* 与 stop44-evidence-summary.log。普通控制器 4692／17652 的缓存均 finally 关闭，收尾缓存会话 0、不可用；未操作用户实例。STOP-43／SOURCE-42 早前收尾按原记录保留 |
-| 下一项动作 | 继续 2b-3：核对 Hook／Interception 的在途回调与物理 KEY_UP 记账、Worker／直接按钮及相关设备队列，接入同代次的 GUI 延迟开放／回切及异步停止协调。复用已验证的连续计数，但零计数不代表生产者／线程池／设备／GUI 完成，不据此重开源查询。停止期间不能一律丢弃回调而遗留物理按键状态；新增运行／输入测试按权限与桌面边界明确范围 |
+| 收尾与本机状态 | STOP-45 的 Qt6 PID 2848、Qt5 20976、Qt6 ASan 27368 均正常退出 0，实际桌面／身份在 out/mcp_lifecycle/accept-stop45-*。控制器 26760 缓存 finally 关闭；未操作用户实例。STOP-44／43／SOURCE-42 早前收尾按原记录保留；用例主体与真实 main 的正常退出清理分别说明，不将设备结果记为已验 |
+| 下一项动作 | 继续 2b-3：沿既有 UnHook 处理增加所有者队列栅栏、在途输入范围、任务／池排空与同代次 GUI 尾部回执，延迟开放／回切。直接按钮须在排队前纳入活动，重复停止不重复发停止动作，迟到通知不放行新一轮。正常退出沿原 drain 顺序走退出专用包装，不能等 app.exec 已退出的 GUI 回执。零计数不能独立重开源查询；保留物理 KEY_UP 记账，新增运行／输入测试明确桌面／系统范围 |
 | 下一项完成标准 | 同代次的生产者／排队／Worker／发送与释放任务及 GUI 尾部真正结束后才能报告清理完成，迟到旧通知不能完成新请求。超时保持禁止修改，不强杀或释放仍被借用资源；运行后源读取须有对应证明。Worker STOPPED／空记账均不单独放行，源引用仍不授予编辑权限；保持原 GUI／MCP 业务效果与必要恢复语义 |
 | 实耗与剩余 | PC-W10 原估计累计约 705 分钟；PC-W11 本轮有效投入未独立计时，不把含人工 UAC 等待的日志跨度冒充开发工时。沿用 M0／M1 及完整目标的校准区间，不以环境或部分读流通过缩减剩余业务目标 |
 | 当前未决与阻碍 | 当前源切片无阻碍。Qt5 隐藏表／单元格模式差异及重排后弹窗不可用通过固定实际矩形、普通窗口鼠标事件及唯一目标校验收敛；原始失败、未知窗口角色和一次 UAC 取消如实保留，见 SOURCE-42。历史 High 截图／托盘及 SDK 一次无原生码退出缺口保留；完整清理边界尚未实现 |
@@ -164,7 +164,7 @@ catalog_ref 只表示对应目录修订中的条目，**不是映射编辑目标
 |---|---|
 | GUI 停止入口 | setKeyUnHook 在 GUI 线程恢复 FilterKeys 基线并排队发送 Hook／Worker 信号；MappingSwitch 随即置 IDLE、允许控件并可能回切配置。GUI 方法返回与业务可安全写入分开记录 |
 | Hook 回调 | onSetHookProcKeyUnHook 当前正文只有诊断，不是 UnhookWindowsHookEx 的成功回执。应核对常驻 Hook 的停止旁路和在途生产者，不能把此槽调用当“所有输入回调结束” |
-| 停止态输入旁路 | InterceptionKeyboardHookProc 在映射状态判断前仍读取当前 Tab 的悬浮窗透传热键；不能假定非 STARTED 就完全不触源。LowLevelKeyboardHookProc 对应读取已有映射状态短路。该静态差异尚未修正或运行复现；生产者协调还须保留物理 KEY_UP 的真实状态记账 |
+| 停止态输入旁路 | STOP-45 已将 InterceptionKeyboardHookProc 的当前 Tab 透传热键读取移至映射状态短路后，与低层 Hook 对齐。Qt6／Qt5 Release、Qt6 ASan 的 IDLE／CHECKING 缺失 Tab 合成回放均返回正常并保留 DOWN／UP 记账；不证明真实输入线程并发或驱动效果。不能一律丢弃停止态回调 |
 | 直接按钮生产者 | 浮动按钮通过 QMetaObject::invokeMethod、面板通过排队信号进入 triggerVButtonKey；该入口可以在未经过 Hook 开始时写 LockState／建立发送或连发任务。停止协调还须覆盖这些队列与派生任务。SOURCE-42 只在该 Worker 入口先关闭只读门禁，不改变发送行为，不代表完成日常停止协调 |
 | 旧发送任务停止 | stopSendInputTaskController 设置 task_stopping／停止旗标、清暂停并唤醒等待；名称含 ThreadPool 的两种 clear 函数只请求停止。待执行 KEY_DOWN 在 run 的 admission 处退出，KEY_UP 仍须允许完成 |
 | 池排空／资源释放 | clearSendInputTaskControllerMap 与全局 reset／clear 才实际 waitForDone，再释放／重置；其等待没有本业务超时，不能在 GUI 线程调用或从超时路径强行删资源。只取空闲线程数也不是排空证明 |
@@ -172,6 +172,7 @@ catalog_ref 只表示对应目录修订中的条目，**不是映射编辑目标
 | 排队／任务标记 | STOP-44 的共享标记随排队事件保留，真实 SendInputTask 从构造到析构另持标记，交接和派生提交无计数空窗；拒收、事件销毁及未运行任务删除会退还。它仅覆盖这些提交及 runnable 存续，不包含全部同步发送、在途输入生产者、设备和 GUI；仍需原池 waitForDone 及其他完成边界 |
 | 按键记账与真实释放 | KEY_UP 会先移除 pressedMappingKeysMap、排队 allMappingKeysReleased，再继续逐键发送；空记账表或该信号到达不能单独证明 native 释放及所有 runnable 已结束 |
 | 退出专用入口 | shutdownSendInputTasks 把 m_sendInputTasksStopping 永久设 true，该旗标使后续 onSendInputKeys 返回；现有启动路径不复位。该函数保留退出语义，不能直接复用作可再次开始的日常停止 |
+| 真实 main 退出 | app.exec 返回后先停止并 join Interception／Hook 线程，再 BlockingQueued 调用 Worker UnHook／shutdownSendInputTasks，最后 join Worker。此时 GUI 事件循环不再处理回执；新增协调不能在该路径等待 GUI，须先取消其观察定时器并保留原排队释放／drain 次序。此前维护用例的正常退出也保留原设备清理，未验证实际设备结果 |
 | 配置与界面尾部 | 映射指针恢复、浮窗／面板隐藏等有跨线程回调，GUI 也可能回切配置；写入前再次解析源引用、修订和必要显示／运行缓存，旧停止通知不能完成新一轮操作 |
 
 优先沿用现有停止／释放流程，增加带运行／停止代次的有界异步协调：先停止普通生产者，保留正确 KEY_UP 及已授权停止动作；观察 Worker／相关队列与任务池的最终排空，再确认 GUI 尾部并发完成通知。GUI 保持可响应；只有存在停止作业时才做必要条件观察，不在每个输入事件上增加常驻轮询。确切计数／队列栅栏位置需结合实际提交路径验证，不能只在 setWorkerKeyUnHook 末尾发一个“完成”信号。
