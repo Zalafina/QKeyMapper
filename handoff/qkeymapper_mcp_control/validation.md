@@ -714,3 +714,29 @@ out/mcp_bridge/environment-check-20261022.log：实际基线检查 PASS／native
 两机统一重建步骤及版本升级规则已纳入主计划和桥接说明；不复制 venv、凭据或构建产物。首次 PC-W11 接续前仍须补齐 Python 安装文件身份与 wheel SHA-256 锁／实际哈希安装；M3-B 前锁定打包工具、独立打包环境并验收内嵌运行时。当前未做另一台 PC 的环境恢复、全新环境重建、包字节一致性证明或打包验收，版本校验不是跨系统业务效果相同的证明。原始环境日志在本机 out，不随 Git 同步。
 
 本检查点的 Qt/C++ UTF-8 无 BOM／LF、改动 Python 的语法、GUI 助手 PowerShell 语法、相关 Markdown 本地链接／文件大小及 git diff --check 通过；这些文档／语法检查不代替上述实际构建或产品结果。
+
+## ENV-20261023-39：PC-W11 首次恢复、安装文件身份与 wheel 哈希锁
+
+PC-W11，Windows 11 企业版 10.0.26200 x64；基线 b3c6f277（产品 C++ 检查点 a92c80fd）加本轮 requirements／校验器／用例及测试缓存选项差异。干净 master 上核对 origin 后 fetch 指定分支，并创建本地跟踪分支；远端为用户指定完整检查点，未 reset／clean／覆盖已有文件，不 push。Win10 的 LOAD-37／ENV-38 等仍只是原版本／范围的历史记录，本机没有其原始 out。
+
+解释器为本机 C:/Python/Python311/python.exe，CPython 3.11.9／win-amd64／64 bit；python.exe 和 python311.dll 的有效签名发布者均为 PSF。重新从官方 URL 获取 python-3.11.9-amd64.exe，26,216,840 字节，SHA256 `5ee42c4eee1e6b4464bb23722f90b45303f79442df63083f05322f1785f5fdde`，与官方 .sigstore bundle 的 messageDigest 一致，Authenticode Valid／Python Software Foundation；未安装额外 Sigstore 验证器，不能称为完成 Sigstore 签名链验证。复用已核实解释器，未重装或修改全局 Python；此检查不追溯证明已有安装的全部文件来源。
+
+两份 requirements 固定原有全部 29 运行包及 pip 24.0／setuptools 65.5.0 的单个兼容 wheel SHA256，未升级版本。元数据取自对应 PyPI 发布 JSON；实际 `pip download --require-hashes --only-binary=:all: --no-deps` 成功获取 31 个 wheel。本机独立新建 out/mcp_bridge/venv，从本机 wheel 缓存 `--no-index --require-hashes --only-binary=:all: --no-deps --force-reinstall` 安装，包含实际卸载／重装同版本 seed pip／setuptools，native exit 0。没有复制源 PC 的 venv、构建产物、凭据或个人 INI。
+
+原始安装文件／wheel 元数据和日志在 out/mcp_bridge/bootstrap-w11-20261023，wheel 缓存在 out/mcp_bridge/wheels-cp311-win_amd64；均仅本机、不同步。hash-install.log／environment-check.log／pip-check.log／environment-tests.log／protocol-tests.log／desktop-tests.log 分别证明实际哈希安装、基线检查 PASS、No broken requirements、6 环境用例、15 协议用例和 1 个真实私有桌面生命周期用例，native exit 均 0。环境反向用例含缺失／非法 SHA256 格式；另把一个 wheel 副本改动一字节，实际 pip 返回非零并明确 HASHES 不匹配，没有下载／安装该副本，见 hash-rejection.log 和同名目录。未改原 wheel 或正式 venv。
+
+本机工具为 Qt6.8.3 msvc2022_64／Qt5.15.2 msvc2019_64 x86_64，MSVC cl 19.44.35228.0。普通 Release 产品及两套 mcp_ipc／mcp_control 四个维护目标均 native exit 0；最终日志为 build-qt6-outside-sandbox.log、build-qt5.log、build-mcp_{ipc,control}-{qt6,qt5}-native.log。Qt6 无编译／链接警告；Qt5 产品只有官方 5.15.2 msvc2019_64 qtmain.lib(qtmain_win.obj) 缺 vendor PDB 的 LNK4099，原始日志保留。最初沙箱构建 C1902 失败，改用普通权限沙箱外构建后通过；临时维护命令一次 cmd 引号错误也保留，修正为仓库已有 ProcessStartInfo 方式后通过。未改变产品编译选项或提权开发工具。
+
+两套原生 sessionPairAndReconnect／sessionHandlerLifecycle／sessionTransportCapabilities 各三组通过（含 init／cleanup 共各 5 项）。正式官方 SDK 为 Qt6 13、Qt5 12 分项通过；Qt6 含一次实际 60 秒批准超时。证据为 session-{qt6,qt5}.txt、sdk-{qt6,qt5}.log 和 out/mcp_bridge/sdk-w11-baseline-{qt6,qt5}/。维护测试保持普通权限，窗口实际私有桌面；它们不证明产品业务等价性。
+
+Qt6 已保存配置正式产品无缓存／缓存对照见 CACHE-40。Qt5 最初 accept-w11-baseline-qt5 在新配对后的第二次撤销返回 “The operation was canceled by the user”，产品 closed.json exit 0，保留失败，不改记通过；一次清理启动提权失败 999，未产生产品启动回执。随后 cleanup-w11-baseline-qt5-cached 观察接口关闭且恰有一项自有配对，固定 GUI 撤销后为零，产品 exit 0，缓存关闭。全新 runtime-w11-baseline-qt5-verified/QKeyMapperMcpAcceptance_w11_baseline_qt5_verified.exe 的本机构建字节核对一致；accept-w11-baseline-qt5-verified 在 PID 缓存下完整 11 分项、首次及冷启动均 exit 0。未关闭用户原有产品／报告器。该启动验收不证明映射输入效果、温切换或真正停止完成。
+
+## CACHE-20261023-40：同产品 gsudo PID 缓存对照及权限边界
+
+用户因办公打字可能误拒绝 UAC，明确批准仅本轮独立普通测试控制器的临时缓存，并要求验证结果等价、纳入计划。已核对本机 gsudo 帮助及[官方缓存说明](https://github.com/gerardog/gsudo#credentials-cache)／[工作机制](https://gerardog.github.io/gsudo/docs/how-it-works)。新增正式产品回归选项 --gsudo-cache，默认关闭；只调用 `cache on -p <os.getpid()> -d 00:05:00`，确认可用，finally 中 `cache off -p <同 PID>` 并确认不可用。未使用 PID 0、无限期缓存或全局 -k，CacheMode 前后仍为 Explicit。
+
+PC-W11、同一 Qt6 正式产品 EXE runtime-w11-baseline-qt6/QKeyMapperMcpAcceptance_w11_baseline_qt6.exe；无缓存结果在 accept-w11-baseline-qt6，缓存结果在 accept-w11-cache-qt6。旧自有产品退出后保存其最终合成 INI，再用同一仓库模板重置本轮自有测试 INI；两轮使用相同 saved 夹具。产品源码／EXE 未改变，GUI 固定助手未改变，只有测试控制器缓存分支和结果模式记录新增。两轮各 11 正式分项完全相同，实际 state_summary 去除新实例身份后相等，配置／Tab 目录业务条目去除实例／配对绑定 catalog_ref 后相等。排除项只有有理由的实例及引用身份，不排除业务状态；对照脚本及结果见 bootstrap-w11-20261023/cache-ab-comparison.log。
+
+两轮均检查实际产品 High RID 12288、普通控制器／SDK／桥接 Medium RID 8192、系统核实 same_login=true，以及目标窗口实际私有桌面。两轮首次／冷启动共四次正常退出 0；缓存启用／关闭及检查在 product-qt6-cache.log。Qt5 新运行的活动缓存期间，独立开发进程探测该控制器仍存活、关闭尚未发生，但自身 CacheAvailable=false 且未提权，见 cache-scope-active.json；Qt5 结束同样关闭缓存。缓存允许测试控制器的子进程，开发／Git／构建／截图未在提权进程中执行。
+
+结论只覆盖本轮已保存配置／停止态读流、正式认证／重连／撤销和冷启动分项；缓存没有改变这些业务预期与实际结果。缓存改变 UAC 弹窗数量、焦点／安全桌面打断和人工等待，不能证明逐次 UAC 提示／拒绝行为、全部未来业务或性能相同。UAC 交互场景须不用缓存另验；同用户系统 Token 关联、身份、权限、路径及桌面检查仍保留，不以缓存放宽鉴权。两轮普通 PrintWindow 均不能捕获 High 产品，未提高截图权限，High 视觉验收仍未完成。无映射启动、系统输入、驱动安装或新增 Default 场景。

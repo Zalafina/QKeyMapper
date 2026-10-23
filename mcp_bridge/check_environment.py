@@ -35,9 +35,9 @@ def check():
             line = line.strip()
             if not line or line.startswith("#") or line == "-r requirements-windows.txt":
                 continue
-            match = re.fullmatch(r"([A-Za-z0-9_.-]+)==([^\s]+)", line)
+            match = re.fullmatch(r"([A-Za-z0-9_.-]+)==([^\s]+) --hash=sha256:[0-9a-f]{64}", line)
             if not match:
-                raise ValueError("Unpinned requirement in " + filename)
+                raise ValueError("Unpinned or unhashed requirement in " + filename)
             name, version = normalized(match[1]), match[2]
             if name in expected and expected[name] != version:
                 raise ValueError("Conflicting pinned requirement: " + name)

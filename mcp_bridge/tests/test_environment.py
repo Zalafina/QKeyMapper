@@ -1,6 +1,7 @@
 """Check that the development gate catches interpreter and package drift."""
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -25,6 +26,18 @@ class EnvironmentTests(unittest.TestCase):
     def test_requires_venv(self):
         with patch.object(check_environment.sys, "prefix", check_environment.sys.base_prefix):
             self.assertIn("Use a venv isolated from system site-packages.", check_environment.check())
+
+    def test_requires_sha256_pinned_requirements(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "requirements-dev-windows.txt").write_text("-r requirements-windows.txt\n", encoding="utf-8")
+            for requirement in ("mcp==2.3.0", "mcp>=2.3.0 --hash=sha256:" + "0" * 64,
+                    "mcp==2.3.0 --hash=sha256:1234", "mcp==2.3.0 --hash=sha256:" + "g" * 64,
+                    "mcp==2.3.0 --hash=md5:" + "0" * 64):
+                with self.subTest(requirement=requirement), patch.object(check_environment, "ROOT", root):
+                    (root / "requirements-windows.txt").write_text(requirement + "\n", encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, "Unpinned or unhashed"):
+                        check_environment.check()
 
     def test_package_drift(self):
         distributions = list(check_environment.importlib.metadata.distributions())

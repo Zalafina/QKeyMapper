@@ -6,18 +6,39 @@
 
 ## 启动与使用
 
-开发／跨机接续统一使用本轮实测的 **Windows x64 CPython 3.11.9**（包含补丁版本），pip 24.0、setuptools 65.5.0；29 项运行依赖及其传递依赖已在 [requirements-windows.txt](requirements-windows.txt) 精确固定，开发工具由 [requirements-dev-windows.txt](requirements-dev-windows.txt) 补齐。使用明确的解释器路径，在每台 PC 仓库内各自创建环境：
+开发／跨机接续统一使用本轮实测的 **Windows x64 CPython 3.11.9**（包含补丁版本），pip 24.0、setuptools 65.5.0；29 项运行依赖及其传递依赖已在 [requirements-windows.txt](requirements-windows.txt) 精确固定，开发工具由 [requirements-dev-windows.txt](requirements-dev-windows.txt) 补齐。两个 requirements 同时锁定选定 Windows x64／通用 wheel 的 SHA256，不接受源码包或其他平台 wheel。
+
+先从 [Python 官方 3.11.9 发布页](https://www.python.org/downloads/release/python-3119/) 下载 Windows installer (64-bit)，不使用 install manager、x86 或 ARM64 文件。本轮核实的文件身份为：
+
+| 项目 | 固定身份 |
+|---|---|
+| 文件 | [python-3.11.9-amd64.exe](https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe)，26,216,840 字节 |
+| SHA256 | `5ee42c4eee1e6b4464bb23722f90b45303f79442df63083f05322f1785f5fdde` |
+| 发布者 | Authenticode 状态必须为 Valid，签名发布者为 Python Software Foundation |
+
+下载后先检查身份；文件保留在 Git 外。不能只对下载结果重新计算哈希就把该结果当作可信基准：
 
 ```powershell
-& '<本机已核验的 CPython 3.11.9 x64 python.exe 绝对路径>' -m venv out/mcp_bridge/venv
-out/mcp_bridge/venv/Scripts/python.exe -m pip install --only-binary=:all: --no-deps -r mcp_bridge/requirements-dev-windows.txt
+$qkmInstaller = '<本机下载的 python-3.11.9-amd64.exe 绝对路径>'
+$qkmSignature = Get-AuthenticodeSignature -LiteralPath $qkmInstaller
+if ($qkmSignature.Status -ne 'Valid' -or $qkmSignature.SignerCertificate.Subject -notmatch 'O=Python Software Foundation') { throw 'Python installer signature mismatch.' }
+if ((Get-FileHash -LiteralPath $qkmInstaller -Algorithm SHA256).Hash -ine '5ee42c4eee1e6b4464bb23722f90b45303f79442df63083f05322f1785f5fdde') { throw 'Python installer SHA256 mismatch.' }
+```
+
+已有解释器须核对实际版本、x64 架构、`python.exe` 与 `python311.dll` 的有效 PSF 签名；本机可复用符合要求的安装，不为重建 venv 改动全局 Python。安装文件校验不追溯证明已有安装的全部文件来自该安装包。使用明确的解释器路径，在每台 PC 仓库内各自创建环境：
+
+```powershell
+$qkmPython = '<本机已核验的 CPython 3.11.9 x64 python.exe 绝对路径>'
+& $qkmPython -m pip --isolated download --index-url https://pypi.org/simple --no-cache-dir --require-hashes --only-binary=:all: --no-deps -r mcp_bridge/requirements-dev-windows.txt --dest out/mcp_bridge/wheels-cp311-win_amd64
+& $qkmPython -m venv out/mcp_bridge/venv
+out/mcp_bridge/venv/Scripts/python.exe -m pip --isolated install --no-index --find-links out/mcp_bridge/wheels-cp311-win_amd64 --require-hashes --only-binary=:all: --no-deps --force-reinstall -r mcp_bridge/requirements-dev-windows.txt
 out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/check_environment.py
 out/mcp_bridge/venv/Scripts/python.exe -m pip check
 ```
 
-每条命令都须 exit 0。已有环境先校验，通过则复用；失败时在本机重建或修复后重验，不能忽略差异后继续验收。`check_environment.py` 只读检查解释器／平台／隔离状态和全部安装包，拒绝缺失、版本变化、重复或额外依赖；对应反向用例为 `tests/test_environment.py`。使用 venv 内解释器的绝对路径启动 SDK、回归及桥接，不依赖 PATH 或激活脚本。venv、个人凭据和 out 产物不随 Git 复制到另一台 PC；虚拟环境应在目标路径重新创建，见 [Python venv 说明](https://docs.python.org/3/library/venv.html)。
+每条命令都须 exit 0。新建环境须使用尚不存在的 venv 目录；已有环境先校验，只有已有哈希安装证据且校验通过才复用，否则在本机重建或修复后重验，不覆盖不明目录。`--force-reinstall` 确保 venv 自带的同版本 pip／setuptools 也实际经过哈希安装，而非以 already satisfied 跳过。`check_environment.py` 只读检查解释器／平台／隔离状态和全部安装包，并拒绝缺失／非法哈希的锁条目；它不替代 pip 对下载字节的验证。对应反向用例为 `tests/test_environment.py`。使用 venv 内解释器的绝对路径启动 SDK、回归及桥接，不依赖 PATH 或激活脚本。venv、个人凭据和 out 产物不随 Git 复制到另一台 PC；虚拟环境应在目标路径重新创建，见 [Python venv 说明](https://docs.python.org/3/library/venv.html)。
 
-上述版本是当前已验证基线，升级须在同一检查点更新锁和校验入口并重跑相关验收。**包文件哈希锁、Python 安装文件身份及打包工具版本尚未补齐**：首次 PC-W11 接续前须落实安装文件校验及 Windows x64 wheel 哈希锁／安装校验；M3-B 打包前固定打包器与相关构建工具，并在独立环境离线重建／启动验收。采用 pip 的[精确版本及哈希锁机制](https://pip.pypa.io/en/stable/topics/repeatable-installs/)，不引入新的环境管理框架。版本校验通过不能替代两系统业务、设备及实际输入验收。
+上述版本是当前已验证基线，升级须在同一检查点更新锁、哈希和校验入口并重跑相关验收。wheel 哈希来自对应 PyPI 发布文件元数据，再由实际 hash-checking 下载／安装核对；原始文件和日志留在本机 out，不提交包文件。M3-B 打包工具锁及交付尚未完成，打包前固定打包器与相关构建工具，并在独立环境离线重建／启动验收。采用 pip 的[精确版本及哈希锁机制](https://pip.pypa.io/en/stable/topics/repeatable-installs/)，不引入新的环境管理框架。环境及文件身份通过不能替代两系统业务、设备及实际输入验收。
 
 在 QKeyMapper 的 MCP 管理窗口启用接口，复制显示的 `instance.json` 路径。MCP 宿主以以下参数启动 stdio 进程；具体宿主配置格式按其要求填写：
 

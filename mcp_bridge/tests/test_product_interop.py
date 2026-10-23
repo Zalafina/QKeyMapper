@@ -330,6 +330,7 @@ async def run(args):
     (args.output / "results.json").write_text(json.dumps({"checks": checks, "desktop": first_desktop,
         "restart_desktop": product.desktop_name,
         "load_fixture": args.load_fixture,
+        "gsudo_cache": args.gsudo_cache,
         "executable": str(args.executable), "server_elevated": 1, "controller_elevated": 0,
         "stock_product_snapshots": snapshots_available}, indent=2), encoding="utf-8")
 
@@ -350,6 +351,8 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--load-fixture", choices=("blank", "saved", "invalid", "missing"), default="blank",
                         help="Prepare a synthetic startup configuration before launching the owned product.")
+    parser.add_argument("--gsudo-cache", action="store_true",
+                        help="Authorized test-controller PID cache only; five-minute idle timeout, closed in finally.")
     args = parser.parse_args()
     args.executable, args.output = args.executable.resolve(), args.output.resolve()
     base = (ROOT.parent / "out/mcp_product").resolve()
@@ -370,4 +373,18 @@ if __name__ == "__main__":
             contents += ("\n[" + group + "]\nMappingTable_TabNameList=Tab1\nKeyMapData_OriginalKeys=" + original
                 + "\nKeyMapData_MappingKeys=B\nEnableSystemFilterKeyChecked=false\nDisableFilterKeyClickSoundChecked=false\n")
         ini.write_text(contents, encoding="utf-8")
-    asyncio.run(run(args))
+    cache_pid = str(os.getpid())
+    gsudo = shutil.which("gsudo.exe")
+    try:
+        if args.gsudo_cache:
+            assert elevation(win32api.GetCurrentProcess()) == 0
+            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
+            subprocess.run([gsudo, "cache", "on", "-p", cache_pid, "-d", "00:05:00"], check=True)
+            subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"], check=True)
+            print("PASS gsudo cache available for ordinary test controller PID " + cache_pid, flush=True)
+        asyncio.run(run(args))
+    finally:
+        if args.gsudo_cache:
+            subprocess.run([gsudo, "cache", "off", "-p", cache_pid], check=True)
+            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
+            print("PASS this test controller gsudo cache is closed", flush=True)
