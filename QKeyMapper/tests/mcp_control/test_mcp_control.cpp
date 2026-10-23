@@ -1,4 +1,7 @@
 #include "../../automation/qkm_control_dialog.h"
+#include "../../automation/qkm_source_snapshot.h"
+#include "../../qkm_mapping_source_access.h"
+#include "../../qkeymapper_qt_compat.h"
 #include "../../qkeymapper_constants.h"
 
 #include <QApplication>
@@ -7,7 +10,10 @@
 #include <QFileInfo>
 #include <QSaveFile>
 #include <QScopeGuard>
+#include <QSemaphore>
+#include <QSettings>
 #include <QJsonDocument>
+#include <QJsonArray>
 #include <QItemSelectionModel>
 #include <QLabel>
 #include <QListWidget>
@@ -18,6 +24,7 @@
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QtTest/QTest>
+#include <thread>
 
 using namespace QkmAutomation;
 
@@ -82,7 +89,181 @@ private slots:
     void offlineFailure();
     void selectedPairing_data();
     void selectedPairing();
+    void sourceSnapshotReferences();
+    void sourceSnapshotBoundaries();
+    void sourceReadAdmission();
 };
+
+void McpControlTest::sourceReadAdmission()
+{
+    MappingSourceAccess access;
+    QMutexLocker reader(&access.mutex());
+    QVERIFY(!access.runtimeObserved());
+    QSemaphore entered;
+    std::thread producer([&] {
+        entered.release();
+        access.observeRuntimeLifecycle();
+    });
+    const auto cleanup = qScopeGuard([&] {
+        reader.unlock();
+        if (producer.joinable()) producer.join();
+    });
+    QVERIFY(entered.tryAcquire(1, 3000));
+    QVERIFY(!access.runtimeObserved());
+    reader.unlock();
+    producer.join();
+    QVERIFY(access.runtimeObserved());
+
+    MappingSourceAccess queuedAccess;
+    QPushButton request;
+    bool queuedWriterRan = false;
+    QObject::connect(&request, &QPushButton::clicked, &request,
+        [&] { queuedAccess.observeRuntimeLifecycle(); }, Qt::DirectConnection);
+    QObject::connect(&request, &QPushButton::clicked, &request,
+        [&] { queuedWriterRan = true; }, Qt::QueuedConnection);
+    request.click();
+    QVERIFY(queuedAccess.runtimeObserved());
+    QVERIFY(!queuedWriterRan);
+    QTRY_VERIFY(queuedWriterRan);
+}
+
+void McpControlTest::sourceSnapshotReferences()
+{
+    const QJsonObject firstRow{{QStringLiteral("fields"), QJsonObject{
+        {QStringLiteral("original_key"), QStringLiteral("A")},
+        {QStringLiteral("mapping_keys"), QJsonArray{QStringLiteral("B")}},
+        {QStringLiteral("note"), QStringLiteral("中文 日本語 😀")}}}};
+    QJsonObject snapshot{{QStringLiteral("source_epoch"), QStringLiteral("1")},
+        {QStringLiteral("read_basis"), QStringLiteral("pristine_idle")},
+        {QStringLiteral("mapping_load_context"), QJsonObject{{QStringLiteral("generation"), QStringLiteral("1")}}},
+        {QStringLiteral("sources"), QJsonArray{
+            QJsonObject{{QStringLiteral("name"), QStringLiteral("Tab1")}, {QStringLiteral("kind"), QStringLiteral("normal")},
+                {QStringLiteral("rows"), QJsonArray{firstRow, firstRow}}},
+            QJsonObject{{QStringLiteral("name"), QStringLiteral("Tab2")}, {QStringLiteral("kind"), QStringLiteral("normal")},
+                {QStringLiteral("rows"), QJsonArray{QJsonObject{{QStringLiteral("fields"), QJsonObject{
+                    {QStringLiteral("original_key"), QStringLiteral("C")}}}}}}},
+            QJsonObject{{QStringLiteral("name"), QStringLiteral("Common")}, {QStringLiteral("kind"), QStringLiteral("common")},
+                {QStringLiteral("attached_to_ui"), false}, {QStringLiteral("rows"), QJsonArray{firstRow}}}}}};
+    const QJsonObject original = snapshot;
+    const QJsonObject list{{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("limit"), 1}};
+    const auto query = [&](const QJsonObject &arguments) { return querySourceSnapshot(snapshot, "instance", "pair", 1, arguments); };
+    const auto first = query(list);
+    QVERIFY(first.ok());
+    QCOMPARE(first.page.value(QStringLiteral("total")).toInt(), 3);
+    QCOMPARE(first.page.value(QStringLiteral("next_offset")).toInt(), 1);
+    const QString revision = first.page.value(QStringLiteral("source_snapshot")).toObject().value(QStringLiteral("revision")).toString();
+    QVERIFY(isLowerHex(revision, 64));
+    QCOMPARE(query(list).page, first.page);
+    QJsonObject rest = list;
+    rest.insert(QStringLiteral("source_revision"), revision);
+    rest.insert(QStringLiteral("offset"), 1);
+    rest.insert(QStringLiteral("limit"), 100);
+    const auto tail = query(rest);
+    QVERIFY(tail.ok());
+    const QJsonArray sources = tail.page.value(QStringLiteral("items")).toArray();
+    QCOMPARE(sources.size(), 2);
+    QVERIFY(tail.page.value(QStringLiteral("next_offset")).isNull());
+    QCOMPARE(sources.at(1).toObject().value(QStringLiteral("kind")).toString(), QStringLiteral("common"));
+    QCOMPARE(sources.at(1).toObject().value(QStringLiteral("row_count")).toInt(), 1);
+    QJsonObject rows{{QStringLiteral("entity"), QStringLiteral("mappings")}, {QStringLiteral("source_revision"), revision},
+        {QStringLiteral("source_tab_ref"), sources.first().toObject().value(QStringLiteral("source_tab_ref"))}};
+    const auto nonCurrent = query(rows);
+    QVERIFY(nonCurrent.ok());
+    QCOMPARE(nonCurrent.page.value(QStringLiteral("items")).toArray().first().toObject()
+        .value(QStringLiteral("fields")).toObject().value(QStringLiteral("original_key")).toString(), QStringLiteral("C"));
+    rows.insert(QStringLiteral("source_tab_ref"), first.page.value(QStringLiteral("items")).toArray().first().toObject().value(QStringLiteral("source_tab_ref")));
+    const auto duplicates = query(rows);
+    QVERIFY(duplicates.ok());
+    const QJsonArray items = duplicates.page.value(QStringLiteral("items")).toArray();
+    QCOMPARE(items.size(), 2);
+    QCOMPARE(items.first().toObject().value(QStringLiteral("fields")), items.last().toObject().value(QStringLiteral("fields")));
+    QVERIFY(items.first().toObject().value(QStringLiteral("source_ref")) != items.last().toObject().value(QStringLiteral("source_ref")));
+    QVERIFY(querySourceSnapshot(snapshot, "new-instance", "pair", 1, rows).errorCode == QStringLiteral("stale_source"));
+    QVERIFY(querySourceSnapshot(snapshot, "instance", "new-pair", 1, rows).errorCode == QStringLiteral("stale_source"));
+    QVERIFY(querySourceSnapshot(snapshot, "instance", "pair", 2, rows).errorCode == QStringLiteral("stale_source"));
+    snapshot.insert(QStringLiteral("source_epoch"), QStringLiteral("2"));
+    QCOMPARE(query(rows).errorCode, QStringLiteral("stale_source"));
+    snapshot = original;
+    snapshot.insert(QStringLiteral("mapping_load_context"), QJsonObject{{QStringLiteral("generation"), QStringLiteral("2")}});
+    QCOMPARE(query(rows).errorCode, QStringLiteral("stale_source"));
+    snapshot = original;
+    QJsonArray changedSources = snapshot.value(QStringLiteral("sources")).toArray();
+    QJsonObject changedSource = changedSources.first().toObject();
+    changedSource.insert(QStringLiteral("rows"), QJsonArray{QJsonObject{{QStringLiteral("fields"), QJsonObject{
+        {QStringLiteral("original_key"), QStringLiteral("Z")}}}}});
+    changedSources.replace(0, changedSource);
+    snapshot.insert(QStringLiteral("sources"), changedSources);
+    QCOMPARE(query(rows).errorCode, QStringLiteral("stale_source"));
+    snapshot = original;
+    QCOMPARE(query(rows).page, duplicates.page);
+    QCOMPARE(snapshot, original);
+}
+
+void McpControlTest::sourceSnapshotBoundaries()
+{
+    QJsonObject snapshot{{QStringLiteral("sources"), QJsonArray{QJsonObject{{QStringLiteral("rows"), QJsonArray{QJsonObject{}}}}}}};
+    const auto query = [&](const QJsonObject &arguments) { return querySourceSnapshot(snapshot, "instance", "pair", 1, arguments); };
+    QJsonObject list{{QStringLiteral("entity"), QStringLiteral("mapping_sources")}};
+    const auto first = query(list);
+    QVERIFY(first.ok());
+    const QString revision = first.page.value(QStringLiteral("source_snapshot")).toObject().value(QStringLiteral("revision")).toString();
+    const QString source = first.page.value(QStringLiteral("items")).toArray().first().toObject().value(QStringLiteral("source_tab_ref")).toString();
+    const QList<QJsonObject> invalid{
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("unknown"), true}},
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("offset"), 1}},
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("limit"), true}},
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("offset"), 0.5}},
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("offset"), -1}},
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("offset"), 2147483648.0}},
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("limit"), 0}},
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("limit"), 101}},
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), QStringLiteral("bad")}},
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_tab_ref"), source}},
+        {{QStringLiteral("entity"), QStringLiteral("mappings")}},
+        {{QStringLiteral("entity"), QStringLiteral("mappings")}, {QStringLiteral("source_revision"), revision}}};
+    for (const QJsonObject &arguments : invalid) QCOMPARE(query(arguments).errorCode, QStringLiteral("invalid_arguments"));
+    QJsonObject rows{{QStringLiteral("entity"), QStringLiteral("mappings")}, {QStringLiteral("source_revision"), revision}};
+    for (const QString &suffix : {QStringLiteral("-1"), QStringLiteral("01"), QStringLiteral("2147483648"), QStringLiteral("x")}) {
+        rows.insert(QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:") + suffix);
+        QCOMPARE(query(rows).errorCode, QStringLiteral("invalid_arguments"));
+    }
+    rows.insert(QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:9"));
+    QCOMPARE(query(rows).errorCode, QStringLiteral("invalid_arguments"));
+    rows.insert(QStringLiteral("source_tab_ref"), source);
+    rows.insert(QStringLiteral("offset"), 2);
+    QCOMPARE(query(rows).errorCode, QStringLiteral("invalid_arguments"));
+    rows.insert(QStringLiteral("offset"), 1);
+    QVERIFY(query(rows).ok());
+    QVERIFY(query(rows).page.value(QStringLiteral("items")).toArray().isEmpty());
+    QCOMPARE(querySourceSnapshot({}, "instance", "pair", 1, list).errorCode, QStringLiteral("context_busy"));
+    snapshot.insert(QStringLiteral("oversized"), QString(MaxSourceSnapshotBytes, QLatin1Char('x')));
+    QCOMPARE(query(list).errorCode, QStringLiteral("result_too_large"));
+    snapshot.remove(QStringLiteral("oversized"));
+    snapshot.insert(QStringLiteral("sources"), QJsonArray{QJsonObject{{QStringLiteral("rows"), QJsonArray{
+        QJsonObject{{QStringLiteral("note"), QString(MaxFramePayload, QLatin1Char('x'))}}}}}});
+    const auto largeList = query(list);
+    QVERIFY(largeList.ok());
+    rows.insert(QStringLiteral("offset"), 0);
+    rows.insert(QStringLiteral("source_revision"), largeList.page.value(QStringLiteral("source_snapshot")).toObject().value(QStringLiteral("revision")));
+    rows.insert(QStringLiteral("source_tab_ref"), largeList.page.value(QStringLiteral("items")).toArray().first().toObject().value(QStringLiteral("source_tab_ref")));
+    QCOMPARE(query(rows).errorCode, QStringLiteral("item_too_large"));
+    const QJsonObject halfFrame{{QStringLiteral("note"), QString(MaxFramePayload / 2, QLatin1Char('x'))}};
+    snapshot.insert(QStringLiteral("sources"), QJsonArray{QJsonObject{
+        {QStringLiteral("rows"), QJsonArray{halfFrame, halfFrame, halfFrame}}}});
+    const auto boundedList = query(list);
+    QVERIFY(boundedList.ok());
+    rows.insert(QStringLiteral("source_revision"), boundedList.page.value(QStringLiteral("source_snapshot")).toObject().value(QStringLiteral("revision")));
+    rows.insert(QStringLiteral("source_tab_ref"), boundedList.page.value(QStringLiteral("items")).toArray().first().toObject().value(QStringLiteral("source_tab_ref")));
+    for (int offset = 0; offset < 3; ++offset) {
+        rows.insert(QStringLiteral("offset"), offset);
+        const auto page = query(rows);
+        QVERIFY(page.ok());
+        QCOMPARE(page.page.value(QStringLiteral("items")).toArray().size(), 1);
+        QVERIFY(QJsonDocument(page.page).toJson(QJsonDocument::Compact).size() <= MaxFramePayload - 256);
+        if (offset < 2) QCOMPARE(page.page.value(QStringLiteral("next_offset")).toInt(), offset + 1);
+        else QVERIFY(page.page.value(QStringLiteral("next_offset")).isNull());
+    }
+}
 
 void McpControlTest::initTestCase()
 {
@@ -438,6 +619,26 @@ int runInteropFixture(QApplication &app, const QString &statePath)
     return app.exec();
 }
 
+int writeSourceFixture(const QString &path)
+{
+    const QFileInfo file(path);
+    const QString root = QDir::cleanPath(QDir::current().absoluteFilePath(QStringLiteral("out/mcp_product"))) + QLatin1Char('/');
+    const QString canonical = file.canonicalFilePath();
+    if (canonical.isEmpty() || !canonical.startsWith(root, Qt::CaseInsensitive)
+        || file.fileName() != QStringLiteral("keymapdata.ini")) return 31;
+    QSettings settings(canonical, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(settings);
+    if (settings.value(QStringLiteral("McpSaved/KeyMapData_OriginalKeys")).toString() != QStringLiteral("A#G|C|E")
+        || settings.contains(QStringLiteral("McpSaved/CommonMappingData"))) return 32;
+    const QVariantMap common{{QString::fromLatin1(QKeyMapperConstants::KEYMAPDATA_ORIGINALKEYS), QStringLiteral("E")},
+        {QString::fromLatin1(QKeyMapperConstants::KEYMAPDATA_MAPPINGKEYS), QStringList{QStringLiteral("F")}},
+        {QString::fromLatin1(QKeyMapperConstants::KEYMAPDATA_MAPPINGKEYS_KEYUP), QStringList{QStringLiteral("F")}},
+        {QString::fromLatin1(QKeyMapperConstants::KEYMAPDATA_NOTE), QStringLiteral("共通保留")}};
+    settings.setValue(QStringLiteral("McpSaved/CommonMappingData"), QVariantList{common});
+    settings.sync();
+    return settings.status() == QSettings::NoError ? 0 : 33;
+}
+
 int main(int argc, char **argv)
 {
     // Match the product's baseline DPI, style and font without loading a personal INI.
@@ -447,6 +648,8 @@ int main(int argc, char **argv)
     QApplication::setStyle(QStringLiteral("Fusion"));
     QApplication::setFont(QFont(QString::fromLatin1(QKeyMapperConstants::FONTNAME_ENGLISH), 9));
     app.setQuitOnLastWindowClosed(false);
+    if (app.arguments().value(1) == QStringLiteral("--source-fixture") && app.arguments().size() == 3)
+        return writeSourceFixture(app.arguments().at(2));
     if (app.arguments().value(1) == QStringLiteral("--interop-fixture") && app.arguments().size() == 3)
         return runInteropFixture(app, app.arguments().at(2));
     if (app.arguments().value(1) == QStringLiteral("--preview") && app.arguments().size() == 5) {

@@ -1,8 +1,8 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。当前支持连接状态、申请 GUI 配对、使用既有凭据连接、断开、能力查询、只读状态摘要和配置／Tab 目录分页。**尚未提供映射行查询、映射编辑、设置变更、启停或输入测试操作**。当前产品返回 `stage=business`、`state.read` 与 `catalog.read`；未接入业务处理器的维护服务仍返回 `transport_only` 和空业务能力列表，以实际响应为准。
+官方 Python MCP SDK 的 stdio 适配层。当前支持连接／GUI 配对、能力查询、只读状态、配置／Tab 目录以及初始静止内存源表／源行分页。**尚未提供映射编辑、设置变更、启停或输入测试操作**。当前产品返回 `stage=business`、`state.read`、`catalog.read` 与 `source.read`；未接入业务处理器的维护服务仍返回 `transport_only` 和空业务能力列表，以实际响应为准。各机器实际通过范围见[验证记录](../handoff/qkeymapper_mcp_control/validation.md)。
 
-桥接面向 Win10／11。当前维护验收为 Win10 x64、Python 3.11、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
+桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
 ## 启动与使用
 
@@ -56,10 +56,13 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 3. 上述调用立即返回，`accepted` 仅表示已接受连接作业。通过 `qkm_get_connection_state` 等待 `busy=false` 和 `status=connected`；失败检查 `error`。待批准期间 SDK 查询仍可响应。
 4. `qkm_get_capabilities` 经正式认证管道重新查询实际能力。响应含 `ok`；`ok=false` 是业务请求失败，不能把 SDK 已收到工具回复当成操作成功。
 5. 能力包含 `state.read` 时，`qkm_get_state` 读取本次 GUI 线程快照：界面选择对应的配置组／类型、dirty、当前 Tab、GUI 监视状态、Worker 原子状态采样和实际停止快捷键。另含 `mapping_load_context`：最近映射加载／空白重置的代次（十进制字符串）、结果和实际解析的配置组；加载未完成时 context_busy，非法映射导致加载失败时 outcome=invalid_mapping_data、group=null，不沿用旧来源。它记录最后一次加载，不能证明后续编辑未变、全部数据来自同一磁盘组或已保存；configuration 仍只表示界面选择。`schema_version=1`；不可用的 `business_revision=null`，`stop_completion=unobserved`。Tab index 只作观察值，不能用作稳定编辑目标；GUI idle 或 Worker stopped 也不能证明停止清理完成。
-6. 能力包含 `catalog.read` 时，`qkm_query` 的 entity 只接受 configurations／tabs。首轮 offset=0，limit 为 1–100（默认 50），后续页携带 catalog.revision 为 catalog_revision，并使用实际返回的 next_offset；next_offset=null 表示结束。相关目录、映射加载代次／结果或授权上下文变化返回 stale_catalog，应从首轮重新查询。相同目录／上下文的重复读取及同配对重连保持修订号稳定；不保留目录缓存或过期定时器。
-7. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
+6. 能力包含 `catalog.read` 时，`qkm_query` 的 configurations／tabs 使用目录分页。首轮 offset=0，limit 为 1–100（默认 50），后续页携带 catalog.revision 为 catalog_revision，并使用实际返回的 next_offset；next_offset=null 表示结束。相关目录、映射加载代次／结果或授权上下文变化返回 stale_catalog，应从首轮重新查询。相同目录／上下文的重复读取及同配对重连保持修订号稳定；不保留目录缓存或过期定时器。
+7. 能力包含 `source.read` 时，先查询 mapping_sources，后续页传返回的 source_snapshot.revision 为 source_revision；查询 mappings 必须同时传该 source_revision 和所选 source_tab_ref。源表来自实际普通／共通内存表，包含非当前 Tab，附加显示的共通行不会重复列为普通源行。每个源行含 source_ref、source_row、fields、derived 和 lock_state_sample；fields 沿用现有映射码字段名及类型，派生字段只采样，不重新计算或回写。引用属于本次源快照，不能解析为写入授权；源内容、加载／结构代次、实例或配对权限改变时返回 stale_source，须重新查询。完整快照上限 4 MiB，单页还受现有通信帧限制，使用实际 next_offset 分页；单项超限明确拒绝。
+8. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
 
 目录只提供配置名称和当前 Tab 元数据；display_name 来自下拉框条目文本，空白项可为空字符串，通过 kind=draft 区分，不能仅按显示名定位。saved_profile 的内容未加载查询，未附着共通表也有 attached_to_ui=false 的目录记录，这不表示屏幕可见性。selected_configuration／is_selected 只表示界面选择。catalog_ref 和目录修订号不是映射编辑目标或完整业务修订，不能据此提交变更；权限仍由认证与逐请求检查决定。
+
+源查询当前要求本进程尚未收到映射启停／重启请求或进入浮动／虚拟按钮发送入口、GUI idle、Worker stopped 且最近加载成功；否则 context_busy，不主动停止映射。首次生命周期请求先关闭读取门禁；直接按钮发送也在 Worker 入口先关闭，门禁和在途复制互斥，运行后不会仅凭 STOPPED 重新开放。read_basis=pristine_idle 不代表已经实现停止清理完成协调。source_snapshot 的配置选择和最近加载记录不能证明每行磁盘来源；未附着的共通备份可能保留自之前的配置，origin=source_memory 只证明当前内存来源。源修订仍不是完整业务修订。
 
 连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前七个工具的 schema 均声明 `additionalProperties=false`，目录参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
 

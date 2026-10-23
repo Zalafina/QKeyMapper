@@ -38,6 +38,7 @@ using QAtomicBool = QAtomicInteger<bool>;
 
 #include "volumecontroller.h"
 #include "qkeymapper_constants.h"
+#include "qkm_mapping_source_access.h"
 
 #ifdef FAKERINPUT_SUPPORT
 #ifdef FAKERINPUT_EXTRAINFO
@@ -1589,6 +1590,7 @@ public:
     static ULONG_PTR VIRTUAL_RESEND_REALKEY;
     static bool s_isWorkerDestructing;
     static QAtomicInt s_AtomicHookProcState;
+    static MappingSourceAccess s_SourceReadAccess;
     static QAtomicBool s_BlockKeyboard;
     static QAtomicBool s_BlockMouse;
     static QAtomicInt s_BlockKeyboardMask;  // bit 0~9 → keyboard device 0~9

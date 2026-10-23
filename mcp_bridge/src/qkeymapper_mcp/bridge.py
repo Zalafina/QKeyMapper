@@ -138,10 +138,16 @@ class Bridge:
     async def get_state(self) -> dict:
         return await self._call("qkm_get_state")
 
-    async def query(self, entity: str, *, catalog_revision: str | None = None, offset: int = 0, limit: int = 50) -> dict:
+    async def query(self, entity: str, *, catalog_revision: str | None = None,
+                    source_revision: str | None = None, source_tab_ref: str | None = None,
+                    offset: int = 0, limit: int = 50) -> dict:
         arguments = {"entity": entity, "offset": offset, "limit": limit}
         if catalog_revision is not None:
             arguments["catalog_revision"] = catalog_revision
+        if source_revision is not None:
+            arguments["source_revision"] = source_revision
+        if source_tab_ref is not None:
+            arguments["source_tab_ref"] = source_tab_ref
         return await self._call("qkm_query", arguments)
 
     async def _call(self, method: str, arguments: dict | None = None) -> dict:

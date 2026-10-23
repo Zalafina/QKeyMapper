@@ -1,5 +1,7 @@
 #include "qkm_message_box.h"
 #include "automation/qkm_control_dialog.h"
+#include "automation/qkm_source_snapshot.h"
+#include <QtMath>
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
 #include "interception_worker.h"
@@ -17169,6 +17171,7 @@ int QKeyMapper::normalMappingTabInsertIndex(void) const
 
 void QKeyMapper::syncTrackedTabIndexesAfterTabStructureChange(QWidget *currentWidget, QWidget *lastWidget)
 {
+    ++m_AutomationSourceEpoch;
     if (!ui || !ui->keyMappingTabWidget) {
         return;
     }
@@ -18066,6 +18069,7 @@ void QKeyMapper::refreshTabsForSourceTabChange(int sourceTabIndex, bool structur
     if (sourceTabIndex < 0 || sourceTabIndex >= s_KeyMappingTabInfoList.size()) {
         return;
     }
+    ++m_AutomationSourceEpoch;
 
     if (isCommonMappingTabIndex(sourceTabIndex)) {
         for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
@@ -18297,6 +18301,7 @@ int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
         delete s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
     }
     s_KeyMappingTabInfoList.removeAt(tabindex);
+    ++m_AutomationSourceEpoch;
 
     if (s_KeyMappingTabWidgetCurrentIndex > s_KeyMappingTabInfoList.size() - 1) {
         s_KeyMappingTabWidgetCurrentIndex = s_KeyMappingTabInfoList.size() - 1;
@@ -18361,6 +18366,7 @@ void QKeyMapper::moveTabInKeyMappingTabWidget(int from, int to)
     // Move the tab info data
     KeyMappingTab_Info tabInfo = s_KeyMappingTabInfoList.takeAt(from);
     s_KeyMappingTabInfoList.insert(to, tabInfo);
+    ++m_AutomationSourceEpoch;
 
     // Update current and last index trackers
     if (s_KeyMappingTabWidgetCurrentIndex == from) {
@@ -33649,6 +33655,7 @@ void QKeyMapper::initKeyMappingTabWidget(void)
 
 void QKeyMapper::clearKeyMappingTabWidget()
 {
+    ++m_AutomationSourceEpoch;
     ui->keyMappingTabWidget->blockSignals(true);
     disconnectKeyMappingDataTableConnection();
 
@@ -35881,6 +35888,7 @@ void QKeyMapper::updateTableWidgetItem(int tabindex, int row, int column)
 
 void QKeyMapper::refreshAllKeyMappingTabWidget()
 {
+    ++m_AutomationSourceEpoch;
     for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
         refreshKeyMappingDataTableByTabIndex(index);
     }
@@ -37167,6 +37175,114 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             {QStringLiteral("actual_stop_shortcut"), s_MappingStopKeyString}}}};
 }
 
+static QJsonObject automationSourceRow(const MAP_KEYDATA &data)
+{
+    QJsonObject fields;
+#define QKM_SOURCE_VALUE(key, field) fields.insert(QString::fromLatin1(key), data.field);
+#define QKM_SOURCE_LIST(key, field) fields.insert(QString::fromLatin1(key), QJsonArray::fromStringList(data.field));
+#define QKM_SOURCE_DOUBLE(key, field) \
+    if (!qIsFinite(data.field)) return {}; \
+    fields.insert(QString::fromLatin1(key), data.field);
+#define QKM_SOURCE_COLOR(key, field, defaultColor) \
+    fields.insert(QString::fromLatin1(key), data.field.isValid() \
+        ? QJsonValue(data.field.name(QColor::HexArgb)) : QJsonValue(QJsonValue::Null));
+    MAPPINGCODE_STRING_FIELDS(QKM_SOURCE_VALUE)
+    MAPPINGCODE_STRINGLIST_FIELDS(QKM_SOURCE_LIST)
+    MAPPINGCODE_BOOL_FIELDS(QKM_SOURCE_VALUE)
+    MAPPINGCODE_INT_FIELDS(QKM_SOURCE_VALUE)
+    MAPPINGCODE_DOUBLE_FIELDS(QKM_SOURCE_DOUBLE)
+    MAPPINGCODE_COLOR_FIELDS(QKM_SOURCE_COLOR)
+#undef QKM_SOURCE_COLOR
+#undef QKM_SOURCE_DOUBLE
+#undef QKM_SOURCE_LIST
+#undef QKM_SOURCE_VALUE
+    return {{QStringLiteral("fields"), fields},
+        {QStringLiteral("derived"), QJsonObject{
+            {QStringLiteral("pure_original_keys"), QJsonArray::fromStringList(data.Pure_OriginalKeys)},
+            {QStringLiteral("pure_mapping_keys"), QJsonArray::fromStringList(data.Pure_MappingKeys)},
+            {QStringLiteral("pure_key_up_mapping_keys"), QJsonArray::fromStringList(data.Pure_MappingKeys_KeyUp)}}},
+        {QStringLiteral("lock_state_sample"), double(data.LockState)}};
+}
+
+QJsonObject QKeyMapper::collectAutomationSourceSnapshot(QString &errorCode) const
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    errorCode = QStringLiteral("context_busy");
+    QMutexLocker readAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+    // shortcut: Source reads require pristine idle, extend after generation-bound cleanup acknowledgements exist.
+    if (m_KeyMapStatus != KEYMAP_IDLE || QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved()
+        || QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() != HOOKPROC_STATE_STOPPED
+        || !m_MappingSourceLoadAccepted) return {};
+    const QJsonObject state = collectAutomationState();
+    if (state.isEmpty()) return {};
+    QJsonArray sources;
+    qsizetype bytes = 0;
+    const auto appendSource = [&](QJsonObject metadata, const QList<MAP_KEYDATA> *data) {
+        if (data == Q_NULLPTR) return false;
+        bytes += QJsonDocument(metadata).toJson(QJsonDocument::Compact).size();
+        if (bytes > QkmAutomation::MaxSourceSnapshotBytes) {
+            errorCode = QStringLiteral("result_too_large");
+            return false;
+        }
+        QJsonArray rows;
+        for (const MAP_KEYDATA &entry : *data) {
+            const QJsonObject row = automationSourceRow(entry);
+            if (row.isEmpty()) { errorCode = QStringLiteral("invalid_source_data"); return false; }
+            bytes += QJsonDocument(row).toJson(QJsonDocument::Compact).size() + 1;
+            if (bytes > QkmAutomation::MaxSourceSnapshotBytes) {
+                errorCode = QStringLiteral("result_too_large");
+                return false;
+            }
+            rows.append(row);
+        }
+        metadata.insert(QStringLiteral("rows"), rows);
+        sources.append(metadata);
+        return true;
+    };
+    bool commonAttached = false;
+    for (int index = 0; index < s_KeyMappingTabInfoList.size(); ++index) {
+        const KeyMappingTab_Info &tab = s_KeyMappingTabInfoList.at(index);
+        const bool common = isCommonMappingTab(tab);
+        commonAttached = commonAttached || common;
+        if (!appendSource({{QStringLiteral("name"), tab.TabName}, {QStringLiteral("internal_name"), tab.TabInternalName},
+            {QStringLiteral("ui_index"), index}, {QStringLiteral("kind"), common ? QStringLiteral("common") : QStringLiteral("normal")},
+            {QStringLiteral("attached_to_ui"), true}, {QStringLiteral("include_common"), tab.IncludeCommonMappingTable},
+            {QStringLiteral("common_collapsed"), tab.CommonMappingCollapsed},
+            {QStringLiteral("origin"), QStringLiteral("source_memory")}}, tab.KeyMappingData)) return {};
+    }
+    if (!commonAttached && !appendSource({{QStringLiteral("name"), getCommonMappingTableDisplayText()},
+        {QStringLiteral("internal_name"), getCommonMappingTableInternalName()},
+        {QStringLiteral("ui_index"), QJsonValue(QJsonValue::Null)}, {QStringLiteral("kind"), QStringLiteral("common")},
+        {QStringLiteral("attached_to_ui"), false}, {QStringLiteral("include_common"), false},
+        {QStringLiteral("common_collapsed"), false}, {QStringLiteral("origin"), QStringLiteral("source_memory")}},
+        &m_CommonMappingData)) return {};
+    errorCode.clear();
+    return {{QStringLiteral("source_epoch"), QString::number(m_AutomationSourceEpoch)},
+        {QStringLiteral("read_basis"), QStringLiteral("pristine_idle")},
+        {QStringLiteral("configuration_selection"), state.value(QStringLiteral("configuration"))},
+        {QStringLiteral("mapping_load_context"), state.value(QStringLiteral("mapping_load_context"))},
+        {QStringLiteral("common_feature_enabled"), isCommonMappingFeatureEnabled()}, {QStringLiteral("sources"), sources}};
+}
+
+void QKeyMapper::handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request)
+{
+    auto &server = m_McpControlDialog->server();
+    QString sourceError;
+    const QJsonObject snapshot = collectAutomationSourceSnapshot(sourceError);
+    const auto result = QkmAutomation::querySourceSnapshot(snapshot, server.instanceId(), request.pairId,
+        request.permissionEpoch, request.arguments);
+    if (result.ok()) {
+        server.reply(request.connectionId, request.requestId, result.page);
+    } else if (result.errorCode == QStringLiteral("context_busy") && !sourceError.isEmpty()) {
+        server.replyError(request.connectionId, request.requestId, sourceError,
+            sourceError == QStringLiteral("context_busy")
+                ? QStringLiteral("Source query requires an accepted load and pristine idle memory; cleanup after runtime lifecycle requests is unobserved.")
+                : QStringLiteral("Source memory is invalid or exceeds the declared snapshot limits."));
+    } else {
+        server.replyError(request.connectionId, request.requestId, result.errorCode, result.message);
+    }
+}
+
 QJsonObject QKeyMapper::collectAutomationCatalog(void) const
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -37308,7 +37424,11 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
 {
     Q_ASSERT(QThread::currentThread() == thread());
     if (request.method == QStringLiteral("qkm_query")) {
-        handleAutomationCatalogQuery(request);
+        const QString entity = request.arguments.value(QStringLiteral("entity")).toString();
+        if (entity == QStringLiteral("mapping_sources") || entity == QStringLiteral("mappings"))
+            handleAutomationSourceQuery(request);
+        else
+            handleAutomationCatalogQuery(request);
         return;
     }
     auto &server = m_McpControlDialog->server();
@@ -37351,9 +37471,30 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                     {QStringLiteral("limit"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
                         {QStringLiteral("minimum"), 1}, {QStringLiteral("maximum"), 100}}}}}}},
             {QStringLiteral("limitations"), QJsonArray{QStringLiteral("catalog_references_are_not_edit_targets"),
-                QStringLiteral("mapping_rows_not_connected"), QStringLiteral("saved_profile_contents_not_loaded"),
+                QStringLiteral("mapping_rows_use_source_snapshot_query"), QStringLiteral("saved_profile_contents_not_loaded"),
                 QStringLiteral("catalog_revision_is_not_a_business_revision"),
-                QStringLiteral("pagination_requires_catalog_revision")}}}});
+                QStringLiteral("pagination_requires_catalog_revision")}}},
+            QJsonObject{{QStringLiteral("id"), QStringLiteral("source.read")},
+                {QStringLiteral("method"), QStringLiteral("qkm_query")},
+                {QStringLiteral("required_scopes"), int(QkmAutomation::Read)}, {QStringLiteral("read_only"), true},
+                {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+                    {QStringLiteral("additionalProperties"), false}, {QStringLiteral("required"), QJsonArray{QStringLiteral("entity")}},
+                    {QStringLiteral("properties"), QJsonObject{
+                        {QStringLiteral("entity"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                            {QStringLiteral("enum"), QJsonArray{QStringLiteral("mapping_sources"), QStringLiteral("mappings")}}}},
+                        {QStringLiteral("source_revision"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                            {QStringLiteral("pattern"), QStringLiteral("^[0-9a-f]{64}$")}}},
+                        {QStringLiteral("source_tab_ref"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                            {QStringLiteral("maxLength"), 128}}},
+                        {QStringLiteral("offset"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                            {QStringLiteral("minimum"), 0}, {QStringLiteral("maximum"), 2147483647}}},
+                        {QStringLiteral("limit"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                            {QStringLiteral("minimum"), 1}, {QStringLiteral("maximum"), 100}}}}}}},
+                {QStringLiteral("max_snapshot_bytes"), QkmAutomation::MaxSourceSnapshotBytes},
+                {QStringLiteral("limitations"), QJsonArray{QStringLiteral("pristine_idle_only_until_cleanup_coordination"),
+                    QStringLiteral("mapping_rows_require_source_revision_and_source_tab_ref"),
+                    QStringLiteral("memory_provenance_only_not_disk_origin"), QStringLiteral("source_revision_is_not_a_business_revision"),
+                    QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}}});
         return;
     }
     const QJsonObject state = collectAutomationState();

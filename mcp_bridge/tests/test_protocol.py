@@ -190,10 +190,12 @@ class NativeTests(unittest.TestCase):
         bridge._pipe = pipe
         bridge._credential = Credential("b" * 32, 1, 1, b"k" * 32)
         try:
-            for arguments, expected in (({}, {"entity": "tabs", "offset": 0, "limit": 50}),
-                    ({"catalog_revision": "c" * 64, "offset": 1, "limit": 1},
-                     {"entity": "tabs", "catalog_revision": "c" * 64, "offset": 1, "limit": 1})):
-                self.assertTrue(asyncio.run(bridge.query("tabs", **arguments))["ok"])
+            for entity, arguments, expected in (("tabs", {}, {"entity": "tabs", "offset": 0, "limit": 50}),
+                    ("tabs", {"catalog_revision": "c" * 64, "offset": 1, "limit": 1},
+                     {"entity": "tabs", "catalog_revision": "c" * 64, "offset": 1, "limit": 1}),
+                    ("mappings", {"source_revision": "d" * 64, "source_tab_ref": "d" * 64 + ":source:1", "offset": 2},
+                     {"entity": "mappings", "source_revision": "d" * 64, "source_tab_ref": "d" * 64 + ":source:1", "offset": 2, "limit": 50})):
+                self.assertTrue(asyncio.run(bridge.query(entity, **arguments))["ok"])
                 request = pipe.send.call_args.args[0]
                 self.assertEqual(request["method"], "qkm_query")
                 self.assertEqual(request["arguments"], expected)

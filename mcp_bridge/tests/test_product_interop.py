@@ -207,7 +207,7 @@ async def warm_loads(product, client, summary, catalog_revision, passed):
         assert [item["group"] for item in configs["items"]] == ["", "QKeyMapperGlobalSetting", "McpInvalid", "McpSaved", "McpSecond"]
         assert [item["display_name"] for item in configs["items"] if item["is_selected"]] == [gui["configuration_display"]]
         if index:
-            assert gui["gui_event_method"] in ("owned_UIA_expand_Up_Down_Return", "owned_UIA_invoke_Up_Down_Return")
+            assert gui["gui_event_method"] in ("owned_UIA_expand_Up_Down_Return", "owned_window_combo_left_click_Up_Down_Return")
             assert gui["requested_configuration"] == ("McpInvalid" if action == "SelectInvalid" else selected_group)
             assert revision != catalog_revision
             assert all(result["ok"] is False and result["error"] == "stale_catalog" for result in stale.values())
@@ -266,7 +266,7 @@ async def run(args):
             assert result["ok"] and result["result"]["stage"] == "business"
             capabilities = result["result"]["business_capabilities"]
             by_id = {item["id"]: item for item in capabilities}
-            assert set(by_id) == {"state.read", "catalog.read"}
+            assert set(by_id) == {"state.read", "catalog.read", "source.read"}
             assert by_id["state.read"]["method"] == "qkm_get_state" and by_id["state.read"]["read_only"] is True
             assert by_id["state.read"]["arguments_schema"]["additionalProperties"] is False
             assert by_id["catalog.read"]["method"] == "qkm_query" and by_id["catalog.read"]["read_only"] is True
@@ -347,7 +347,7 @@ async def run(args):
                     ("qkm_query", {"entity": "tabs", "limit": True}, "invalid_arguments"),
                     ("qkm_query", {"entity": "tabs", "limit": 1.5}, "invalid_arguments"),
                     ("qkm_query", {"entity": "tabs", "offset": 1}, "invalid_arguments"),
-                    ("qkm_query", {"entity": "mappings"}, "unsupported_query"),
+                    ("qkm_query", {"entity": "mappings"}, "invalid_arguments"),
                     ("qkm_query", {"entity": "tabs", "catalog_revision": wrong_revision}, "stale_catalog")):
                 raw = await asyncio.wrap_future(probe._submit(lambda: invalid_arguments(method, arguments)))
                 assert isinstance(raw, tuple), raw

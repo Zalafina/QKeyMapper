@@ -82,12 +82,15 @@ def main() -> None:
         return await bridge.get_state()
 
     @tool(read)
-    async def qkm_query(entity: Literal["configurations", "tabs"],
+    async def qkm_query(entity: Literal["configurations", "tabs", "mapping_sources", "mappings"],
             catalog_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
+            source_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
+            source_tab_ref: Annotated[str | None, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")] = None,
             offset: Annotated[StrictInt, Field(ge=0, le=2147483647)] = 0,
             limit: Annotated[StrictInt, Field(ge=1, le=100)] = 50) -> dict[str, Any]:
-        """只读分页查询配置目录或当前 Tab 目录。首轮 offset=0、不传 catalog_revision；后续页携带返回的目录修订号，目录或授权上下文变化后须重新查询。catalog_ref 仅供目录引用，不能作为映射编辑目标；映射行和未加载配置的内容尚未接入。"""
-        return await bridge.query(entity, catalog_revision=catalog_revision, offset=offset, limit=limit)
+        """只读分页查询。configurations/tabs 使用 catalog_revision，catalog_ref 不能作为编辑目标。mapping_sources 返回当前实际普通/共通源表的不透明引用；mappings 必须同时传该 source_revision 和 source_tab_ref，返回源行及完整字段。源查询当前仅允许本进程尚无映射启停、重启或浮动/虚拟按钮发送活动的初始空闲状态；运行后清理尚未核实则拒绝，不主动停止。来源只证明当前内存源，不证明磁盘保存或共通备份加载自哪组。源修订不是完整业务修订，引用不授予写入权限；变化后重新查询。未加载配置内容尚未接入。"""
+        return await bridge.query(entity, catalog_revision=catalog_revision, source_revision=source_revision,
+                                  source_tab_ref=source_tab_ref, offset=offset, limit=limit)
 
     server = MCPServer("QKeyMapper", version=__version__, lifespan=lifespan, log_level="ERROR", tools=tools,
         instructions="连接本机 QKeyMapper。首次配对必须由用户在 QKeyMapper 窗口批准。按能力发现读取实际支持的状态；尚未开放映射或设置变更。连接状态是上次核验结果，业务状态须重新查询。IDLE 或 Worker STOPPED 均不代表停止清理已完成。")

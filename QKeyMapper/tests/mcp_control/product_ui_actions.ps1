@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','ApproveRead','Revoke','Disable','CloseMcp',
-        'ReadMapping','SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')][string]$Action,
+        'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows',
+        'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')][string]$Action,
     [Parameter(Mandatory)][int]$TargetProcessId,
     [Parameter(Mandatory)][string]$ExecutablePath,
     [Parameter(Mandatory)][long]$StartTicks,
@@ -77,6 +78,12 @@ public static class QkmProductUiDesktop {
     [DllImport("user32.dll", SetLastError=true)]
     private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, UIntPtr wparam, IntPtr lparam,
         uint flags, uint timeout, out UIntPtr result);
+    [DllImport("user32.dll", SetLastError=true)]
+    private static extern bool PostMessage(IntPtr window, uint message, UIntPtr wparam, IntPtr lparam);
+    [StructLayout(LayoutKind.Sequential)] private struct Rect { public int Left, Top, Right, Bottom; }
+    [DllImport("user32.dll", SetLastError=true)] private static extern bool GetWindowRect(IntPtr window, out Rect rect);
+    [StructLayout(LayoutKind.Sequential)] private struct Point { public int X, Y; }
+    [DllImport("user32.dll", SetLastError=true)] private static extern bool ScreenToClient(IntPtr window, ref Point point);
     [DllImport("user32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
     private static extern bool GetUserObjectInformation(IntPtr handle, int index, StringBuilder text, uint size, out uint needed);
     public static string Name(IntPtr window) {
@@ -124,6 +131,30 @@ public static class QkmProductUiDesktop {
                 Message(window, 0x0101, key, data | 0xC0000000L);
             }
         }
+    }
+    private static void ClickControl(IntPtr window, uint process, string desktop, int x, int y, bool right) {
+        ValidateWindow(window, process, desktop);
+        Rect bounds;
+        if (!GetWindowRect(window, out bounds) || x < bounds.Left || x >= bounds.Right || y < bounds.Top || y >= bounds.Bottom
+            || x < short.MinValue || x > short.MaxValue || y < short.MinValue || y > short.MaxValue)
+            throw new InvalidOperationException("The fixed GUI control lies outside the owned window.");
+        var cell = new Point { X = x, Y = y };
+        if (!ScreenToClient(window, ref cell)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        uint point = (uint)(ushort)cell.X | ((uint)(ushort)cell.Y << 16);
+        try {
+            if (!PostMessage(window, right ? 0x0204u : 0x0201u, new UIntPtr(right ? 2u : 1u), new IntPtr(point)))
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        } finally {
+            ValidateWindow(window, process, desktop);
+            if (!PostMessage(window, right ? 0x0205u : 0x0202u, UIntPtr.Zero, new IntPtr(point)))
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        }
+    }
+    public static void OpenMappingMenu(IntPtr window, uint process, string desktop, int x, int y) {
+        ClickControl(window, process, desktop, x, y, true);
+    }
+    public static void OpenConfigurationPopup(IntPtr window, uint process, string desktop, int x, int y) {
+        ClickControl(window, process, desktop, x, y, false);
     }
 }
 '@
@@ -192,28 +223,49 @@ function Select-Control {
     }
 }
 
-$mappingActions = @('ReadMapping','SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')
-function Read-MappingView {
-    $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
+$viewActions = @('ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows')
+$mappingActions = $viewActions + @('SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')
+function Get-MappingGrid {
     $condition = [Windows.Automation.OrCondition]::new(
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::DataGrid),
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Table))
     $tables = @($mainRoot.FindAll([Windows.Automation.TreeScope]::Descendants, $condition) | Where-Object {
         $grid = $null
+        $bounds = $_.Current.BoundingRectangle
         $_.Current.ProcessId -eq $TargetProcessId -and -not $_.Current.IsOffscreen -and
+            $bounds.Width -gt 0 -and $bounds.Height -gt 0 -and
             $_.TryGetCurrentPattern([Windows.Automation.GridPattern]::Pattern, [ref]$grid) -and $grid.Current.ColumnCount -eq 7
     })
-    if ($tables.Count -ne 1) { throw "Expected one visible mapping grid, found $($tables.Count)." }
-    $grid = $tables[0].GetCurrentPattern([Windows.Automation.GridPattern]::Pattern)
+    if ($tables.Count -ne 1) {
+        $candidates = @($mainRoot.FindAll([Windows.Automation.TreeScope]::Descendants, $condition) | ForEach-Object {
+            "$($_.Current.AutomationId)/$($_.Current.Name)/offscreen=$($_.Current.IsOffscreen)/$($_.Current.BoundingRectangle)"
+        }) -join '; '
+        throw "Expected one visible mapping grid, found $($tables.Count); candidates=$candidates."
+    }
+    return $tables[0]
+}
+
+function Read-MappingView {
+    $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
+    $grid = (Get-MappingGrid).GetCurrentPattern([Windows.Automation.GridPattern]::Pattern)
     if ($grid.Current.RowCount -gt 8) { throw 'The fixed synthetic fixture has too many rows.' }
     $rows = @()
+    $separators = @()
     for ($row = 0; $row -lt $grid.Current.RowCount; ++$row) {
-        $rows += @{ original = $grid.GetItem($row, 0).Current.Name; mapping = $grid.GetItem($row, 1).Current.Name }
+        $cell = $grid.GetItem($row, 0)
+        $span = $cell.GetCurrentPattern([Windows.Automation.GridItemPattern]::Pattern).Current.ColumnSpan
+        # Qt's UIA grid can report a merged separator as one column.
+        $separator = $span -gt 1 -or @('以下是共通映射项 — 点击左侧「－」可折叠隐藏',
+            'Common mapping items — click left 「－」 to collapse',
+            '以下は共通マッピング項目です — 左側の「－」をクリックで折りたたみ') -ccontains $cell.Current.Name
+        if ($separator) { $separators += $row }
+        $rows += @{ original = $cell.Current.Name; mapping = if ($separator) { '' } else { $grid.GetItem($row, 1).Current.Name } }
     }
     $stopKey = Find-Control $mainRoot ([Windows.Automation.ControlType]::Edit) 'mappingStopKeyLineEdit' @()
     $startButton = Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'keymapButton' @()
     return @{ configuration_display = $configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value;
         configuration_read_method = 'ValuePattern'; mapping_rows = $rows; mapping_row_count = $rows.Count;
+        separator_rows = $separators;
         mapping_table_read_method = 'GridPattern.Item.Name'; mapping_button_text = $startButton.Current.Name;
         stop_shortcut_edit = $stopKey.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value }
 }
@@ -222,7 +274,64 @@ $mappingObservation = $null
 if ($Action -in $mappingActions) {
     $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')
     Select-Control $mappingTab
-    if ($Action -ne 'ReadMapping') {
+    if ($Action -in 'ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows') {
+        $names = switch ($Action) {
+            'ReadTab2' { @('Tab2') }
+            'ReadCommon' { @('共通','Common') }
+            default { @('Tab1') }
+        }
+        Select-Control (Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' $names)
+    }
+    if ($Action -in 'MoveSecondUp','RestoreFirstRows') {
+        $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
+        if ($configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne 'McpSaved') {
+            throw 'Reordering requires the fixed McpSaved source fixture.'
+        }
+        $table = Get-MappingGrid
+        $grid = $table.GetCurrentPattern([Windows.Automation.GridPattern]::Pattern)
+        $first = if ($Action -eq 'MoveSecondUp') { 'A' } else { 'G' }
+        $second = if ($Action -eq 'MoveSecondUp') { 'G' } else { 'A' }
+        if ($grid.Current.RowCount -gt 8 -or $grid.Current.RowCount -lt 2 -or
+            $grid.GetItem(0,0).Current.Name -cne $first -or $grid.GetItem(1,0).Current.Name -cne $second) {
+            throw 'The fixed source rows changed; refusing reordering.'
+        }
+        $cell = $grid.GetItem(1,0)
+        $selection = $null
+        if ($cell.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern, [ref]$selection)) { $selection.Select() }
+        $bounds = $cell.Current.BoundingRectangle
+        $before = @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null))
+        $menuWindow = [IntPtr]::Zero
+        [QkmProductUiDesktop]::OpenMappingMenu($main, $TargetProcessId, $DesktopName,
+            [int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
+        try {
+            $deadline = [DateTime]::UtcNow.AddSeconds(3)
+            do {
+                $actions = @()
+                $menuCandidates = @()
+                foreach ($handle in @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null) | Where-Object { $before -notcontains $_ })) {
+                    $root = [Windows.Automation.AutomationElement]::FromHandle($handle)
+                    $menuCandidates += "$handle/$($root.Current.NativeWindowHandle)/$($root.Current.Name)"
+                    if ($root.Current.NativeWindowHandle -ne $handle.ToInt64() -or $root.Current.ProcessId -ne $TargetProcessId) { continue }
+                    $items = $root.FindAll([Windows.Automation.TreeScope]::Descendants,
+                        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::MenuItem))
+                    foreach ($item in $items) {
+                        if ($item.Current.ProcessId -eq $TargetProcessId -and @('上移','Move Up','上へ移動') -ccontains $item.Current.Name) {
+                            $actions += @{ window = $handle; item = $item }
+                        }
+                    }
+                }
+                if ($actions.Count) { break }
+                Start-Sleep -Milliseconds 30
+            } while ([DateTime]::UtcNow -lt $deadline)
+            if ($actions.Count -ne 1) { throw "Expected one fixed Move Up GUI menu action; matches=$($actions.Count); windows=$($menuCandidates -join '; ')." }
+            $menuWindow = $actions[0].window
+            $actions[0].item.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+        } finally {
+            if ($menuWindow -ne [IntPtr]::Zero -and @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null)) -contains $menuWindow) {
+                [QkmProductUiDesktop]::Key($menuWindow, $TargetProcessId, $DesktopName, 0x1B)
+            }
+        }
+    } elseif ($Action -notin $viewActions) {
         $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
         if (-not $configuration.Current.IsEnabled) { throw 'Configuration selection is not enabled.' }
         $wanted = switch ($Action) {
@@ -243,12 +352,15 @@ if ($Action -in $mappingActions) {
             $expand.Expand()
             $openMethod = 'owned_UIA_expand_Up_Down_Return'
         } elseif ($configuration.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
-            $invoke.Invoke()
-            $openMethod = 'owned_UIA_invoke_Up_Down_Return'
+            $openMethod = 'owned_window_combo_left_click_Up_Down_Return'
+            $bounds = $configuration.Current.BoundingRectangle
+            [QkmProductUiDesktop]::OpenConfigurationPopup($main, $TargetProcessId, $DesktopName,
+                [int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
         } else {
             throw 'The fixed configuration combo has no supported GUI opening action.'
         }
         $popup = [IntPtr]::Zero
+        $popupObservationErrors = @()
         try {
             $deadline = [DateTime]::UtcNow.AddSeconds(3)
             do {
@@ -256,19 +368,28 @@ if ($Action -in $mappingActions) {
                 $candidates = @()
                 $popupDetails = @()
                 foreach ($handle in $popups) {
-                    $root = [Windows.Automation.AutomationElement]::FromHandle($handle)
-                    $listItems = $root.FindAll([Windows.Automation.TreeScope]::Descendants,
-                        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem))
-                    $popupDetails += @{ window = $handle.ToInt64(); item_count = $listItems.Count;
-                        native_window = $root.Current.NativeWindowHandle; control_type = $root.Current.ControlType.ProgrammaticName }
-                    if ($root.Current.ProcessId -eq $TargetProcessId -and $root.Current.NativeWindowHandle -eq $handle.ToInt64() -and $listItems.Count -eq 5) {
-                        $candidates += @{ window = $handle; items = $listItems }
+                    try {
+                        $root = [Windows.Automation.AutomationElement]::FromHandle($handle)
+                        $listItems = $root.FindAll([Windows.Automation.TreeScope]::Descendants,
+                            [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem))
+                        $popupDetails += @{ window = $handle.ToInt64(); item_count = $listItems.Count;
+                            native_window = $root.Current.NativeWindowHandle; control_type = $root.Current.ControlType.ProgrammaticName }
+                        if ($root.Current.ProcessId -eq $TargetProcessId -and $root.Current.NativeWindowHandle -eq $handle.ToInt64() -and $listItems.Count -eq 5) {
+                            $candidates += @{ window = $handle; items = $listItems }
+                        }
+                    } catch {
+                        # Observation can race popup/helper-window creation; no input is sent to a failed candidate.
+                        if ($popupObservationErrors.Count -lt 16) {
+                            $failure = $_.Exception.GetBaseException()
+                            $popupObservationErrors += @{ window = $handle.ToInt64(); error = $failure.Message;
+                                exception_type = $failure.GetType().FullName; hresult = $failure.HResult.ToString('X8') }
+                        }
                     }
                 }
                 if ($candidates.Count) { break }
                 Start-Sleep -Milliseconds 30
             } while ([DateTime]::UtcNow -lt $deadline)
-            if ($candidates.Count -ne 1) { throw "Expected one owned five-item configuration popup: $($popupDetails | ConvertTo-Json -Compress)." }
+            if ($candidates.Count -ne 1) { throw "Expected one owned five-item configuration popup: $($popupDetails | ConvertTo-Json -Compress); observation errors: $($popupObservationErrors | ConvertTo-Json -Compress)." }
             $popup = $candidates[0].window
             $items = $candidates[0].items
             $wantedNames = if ($wanted -eq '') { @('(空白设定)','(Empty Setting)','(空白設定)') } else { @($wanted) }
@@ -291,10 +412,14 @@ if ($Action -in $mappingActions) {
         }
     }
     $mappingObservation = Read-MappingView
-    $mappingObservation.gui_event_method = if ($Action -eq 'ReadMapping') { 'read_only' } else { $openMethod }
-    if ($Action -ne 'ReadMapping') {
+    $mappingObservation.gui_event_method = if ($Action -in 'MoveSecondUp','RestoreFirstRows') {
+        'owned_cell_right_click_UIA_MoveUp'
+    } elseif ($Action -in 'ReadTab1','ReadTab2','ReadCommon') { 'owned_UIA_tab_select' }
+    elseif ($Action -eq 'ReadMapping') { 'read_only' } else { $openMethod }
+    if ($Action -notin $viewActions) {
         $mappingObservation.requested_configuration = $wanted
         $mappingObservation.popup_candidates = $popupDetails
+        $mappingObservation.popup_observation_errors = $popupObservationErrors
     }
 } elseif ($Action -eq 'OpenAdvanced') {
     $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')

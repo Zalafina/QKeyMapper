@@ -35,7 +35,7 @@ Qt5 改用对应 Qt5 的两个 EXE、Qt bin 和独立 output。省略 `--screens
 
 ## 正式产品入口与管理员／普通桥接
 
-已获本轮管理员启动／关闭及受限 GUI 助手授权、用户可以确认 UAC 时运行。开发工具、控制器、SDK、桥接和截图保持普通权限；不修改产品 manifest。`product_lifecycle.ps1` 只管理自有隔离产品，`product_ui_actions.ps1` 只允许高级设置／MCP、启用、只读批准、撤销、关闭的固定 GUI 动作，核对 EXE／PID／启动时间及实际私有桌面。OpenAdvanced 先选映射页读取实际停止快捷键／开始按钮、Tab1 和配置选择显示，再选通用页打开高级设置，避免读取隐藏控件；配置选择使用 UIA ValuePattern，Name 是可访问名称，不能当作当前选中内容。不更改配置、不启动映射或发送系统输入。正常产品启动仍包含对已安装 FakerInput 的连接尝试。
+已获本轮管理员启动／关闭及受限 GUI 助手授权、用户可以确认 UAC 时运行。开发工具、控制器、SDK、桥接和截图保持普通权限；不修改产品 manifest。`product_lifecycle.ps1` 只管理自有隔离产品，`product_ui_actions.ps1` 提供固定管理窗口动作及下述合成配置的加载／源表操作，核对 EXE／PID／启动时间及实际私有桌面。OpenAdvanced 先选映射页读取实际停止快捷键／开始按钮、Tab1 和配置选择显示，再选通用页打开高级设置，避免读取隐藏控件；配置选择使用 UIA ValuePattern，Name 是可访问名称，不能当作当前选中内容。不启动映射或发送系统输入。正常产品启动仍包含对已安装 FakerInput 的连接尝试。
 
 先构建对应 x64 Release 产品，并按本机 Qt kit 部署到全新目录。从仓库根目录执行，Qt5 改用其产品构建目录、Qt bin 和不同名称；不复制个人 INI 或另一台 PC 的产物／凭据：
 
@@ -67,9 +67,24 @@ if ($LASTEXITCODE -ne 0) { throw 'Product acceptance failed; inspect its logs be
 
 可用 `--load-fixture blank|saved|invalid|missing` 验证启动映射加载记录。blank 为默认模板；其余要求全新运行目录且 INI 与仓库合成模板完全相同，再由普通控制器在启动前写入测试配置。saved 为一个 A→B 源映射，invalid 含固定非法原始键，missing 指向不存在的配置组；均核对实际加载结果／代次、GUI 选择的实际值、只读不变性和目录分页。
 
-`--load-fixture warm` 额外准备 McpSaved（A→B）、McpSecond（C→D）和 McpInvalid。固定助手只在已核实的自有私有桌面窗口使用配置控件实际提供的 UIA ExpandCollapse.Expand 或 InvokePattern.Invoke 展开菜单，再向其真实弹窗发送 Up／Down／Enter／Escape，激活配置条目；不设置配置值或调用加载函数。展开后按本进程实际五项配置列表定位唯一弹窗，记录并排除没有该列表的 Qt 辅助窗口；不移动系统光标或修改产品焦点策略。先读取原配置，再温切换、空白重置、加载成功→失败→恢复及同项重载。每步独立读取 GUI 表格与配置实际值，正式 SDK 检查加载代次／结果／来源、旧目录失效与新分页，并比较只读请求前后的 GUI、状态、dirty 和整个 INI 字节。每步原始结果为 load_*.json；实际通过范围以主计划／验证记录为准，脚本或语法检查本身不表示运行通过。这里不启动映射，不证明 A→B 输入效果或运行时清理完成。
+`--load-fixture warm` 额外准备 McpSaved（A→B）、McpSecond（C→D）和 McpInvalid。固定助手只在已核实的自有私有桌面窗口操作：Qt6 使用 UIA ExpandCollapse.Expand；Qt5 组合框内投递普通左键按下／抬起窗口事件，再向其真实弹窗发送 Up／Down／Enter／Escape，激活配置条目，不设置配置值或调用加载函数。LOAD-41 当时使用 Qt5 Invoke，SOURCE-42 校准了经过表格菜单后的左键路径。展开后按本进程实际五项配置列表定位唯一弹窗，记录辅助窗口及有界只读枚举错误；找不到唯一目标则拒绝投递选择按键。不移动系统光标或修改产品焦点策略。先读取原配置，再温切换、空白重置、加载成功→失败→恢复及同项重载。每步独立读取 GUI 表格与配置实际值，正式 SDK 检查加载代次／结果／来源、旧目录失效与新分页，并比较只读请求前后的 GUI、状态、dirty 和整个 INI 字节。每步原始结果为 load_*.json；实际通过范围以主计划／验证记录为准，脚本或语法检查本身不表示运行通过。这里不启动映射，不证明 A→B 输入效果或运行时清理完成。
 
 普通 PrintWindow 无法捕获 High 产品时明确记录未验证，不提升截图权限；功能断言继续独立检查。失败时先看日志、closed.json 和实际进程／配对状态，再决定接续动作；不得盲目重复配对或撤销。
+
+## 实际源表与只读引用
+
+`test_source_interop.py` 使用全新部署、未经改动的合成 INI，准备两张普通源表 A→B／G→H、C→D 和一张共通源表 E→F。先独立从真实 GUI 读取三个 Tab 的实际行，之后才启用 MCP 并通过正式 SDK 分页读取非当前源表及每个源行；区分共通源与普通 Tab 中附加的共通显示行。表格 UIA 可能把合并分隔行的 ColumnSpan 报为 1，固定助手还核对分隔行的明确中英日文字，不把任意空行当成分隔行。
+
+维护目标的 `--source-fixture <absolute-keymapdata.ini>` 只允许仓库 out/mcp_product 下已存在的固定源夹具，通过对应 Qt 的 QSettings 写入合成 CommonMappingData QVariantList。该普通权限准备发生在产品启动之前，保留跨配置切换后的未附着共通内存场景；不写个人配置或提供产品加载入口。
+
+```powershell
+out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/tests/test_source_interop.py --executable $qkmProductExe --output out/mcp_product/accept-source-qt6 --test-exe out/tests/mcp_control/qt6-release/release/QKeyMapperMcpControlTest.exe --qt-bin $qkmKitBin --gsudo-cache
+if ($LASTEXITCODE -ne 0) { throw 'Source acceptance failed; inspect logs and owned pairing state.' }
+```
+
+`--gsudo-cache` 仅在已有明确授权时使用，默认省略。Qt5 使用其匹配的产品、维护 EXE、Qt bin 和全新 output。固定助手通过 UIA 选择 Tab／行，在已核实单元格内投递成对右键窗口消息、调用真实菜单“上移”，再以实际 GUI 行及正式 MCP 源行验证效果；不调用业务函数或设置配置值。单纯查看其他 Tab 不应改变源引用；重排往返、重载、配置切换／失败／恢复及重新配对必须拒绝旧引用。读取批次核对 GUI、实际源内容、dirty／运行摘要与整个 INI 字节不变。
+
+本用例无需 Default 桌面，不移动系统光标、不发送系统输入；实际目标及助手桌面由现有身份检查记录。源读取仅允许首次启停／重启请求前的初始静止阶段，覆盖在途读取与首次请求互斥的组件测试；这不是运行后清理完成或稳定编辑授权的验收。未启动映射，不证明实际 A→B 输出、停止动作完成或 GUI 写操作与 MCP 写操作等价。
 
 桌面清理单独回归（普通权限，仅创建／关闭自有桌面，不启动产品）：
 

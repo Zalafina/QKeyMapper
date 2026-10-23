@@ -141,6 +141,7 @@ ULONG_PTR QKeyMapper_Worker::VIRTUAL_KEY_OVERLAY = 0;
 ULONG_PTR QKeyMapper_Worker::VIRTUAL_RESEND_REALKEY = 0;
 bool QKeyMapper_Worker::s_isWorkerDestructing = false;
 QAtomicInt QKeyMapper_Worker::s_AtomicHookProcState = HOOKPROC_STATE_STOPPED;
+MappingSourceAccess QKeyMapper_Worker::s_SourceReadAccess;
 QAtomicBool QKeyMapper_Worker::s_BlockKeyboard;
 QAtomicBool QKeyMapper_Worker::s_BlockMouse;
 QAtomicInt QKeyMapper_Worker::s_BlockKeyboardMask;
@@ -1131,6 +1132,12 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     // for (int i = 0; i < INTERCEPTION_MAX_MOUSE; ++i) {
     //     s_Mouse2vJoy_delta_List.append(QPoint());
     // }
+
+    // Mark requests before their queued writers, including a start/stop that has not run yet.
+    const auto observeRuntimeLifecycle = [] { s_SourceReadAccess.observeRuntimeLifecycle(); };
+    QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
+    QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
+    QObject::connect(this, &QKeyMapper_Worker::setKeyMappingRestart_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
 
     QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyHook, Qt::QueuedConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, &QKeyMapper_Worker::setWorkerKeyUnHook, Qt::QueuedConnection);
@@ -9720,6 +9727,7 @@ void QKeyMapper_Worker::shutdownSendInputTasks()
 
 void QKeyMapper_Worker::setWorkerKeyHook()
 {
+    s_SourceReadAccess.observeRuntimeLifecycle();
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setWorkerKeyHook] WorkerThread Hookproc Start.\033[0m");
 #endif
@@ -9941,6 +9949,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
 void QKeyMapper_Worker::setWorkerKeyUnHook()
 {
+    s_SourceReadAccess.observeRuntimeLifecycle();
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc Start.\033[0m");
 #endif
@@ -10151,6 +10160,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
 void QKeyMapper_Worker::setKeyMappingRestart()
 {
+    s_SourceReadAccess.observeRuntimeLifecycle();
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart Start.>>>\033[0m");
     qDebug().nospace().noquote() << "[QKeyMapper_Worker::setKeyMappingRestart] begin"
@@ -18764,6 +18774,7 @@ void QKeyMapper_Worker::onBurstKeyTimeOut(const QString burstKey, int mappingInd
 // This is called from the VButton panel via a Qt::QueuedConnection signal invocation.
 void QKeyMapper_Worker::triggerVButtonKey(const QString &keyName, bool isKeyDown)
 {
+    s_SourceReadAccess.observeRuntimeLifecycle();
     if (!QKeyMapper::KeyMappingDataList) {
         return;
     }

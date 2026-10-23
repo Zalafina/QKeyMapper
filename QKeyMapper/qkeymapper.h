@@ -2089,6 +2089,8 @@ private:
     void refreshAllKeyMappingTabWidget(void);
     QJsonObject collectAutomationState(void) const;
     QJsonObject collectAutomationCatalog(void) const;
+    QJsonObject collectAutomationSourceSnapshot(QString &errorCode) const;
+    void handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request);
     void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
     void handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request);
     void updateMousePointsList(void);
@@ -2555,6 +2557,7 @@ private:
     QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
     QkmAutomation::ControlDialog *m_McpControlDialog = Q_NULLPTR;
     quint64 m_MappingLoadGeneration = 0;
+    quint64 m_AutomationSourceEpoch = 0;
     QString m_LoadedMappingSettingGroup;
     bool m_MappingSourceLoading = false;
     bool m_MappingSourceLoadAccepted = false;

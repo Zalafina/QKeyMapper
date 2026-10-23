@@ -773,3 +773,39 @@ PC-W11，Windows 11 企业版 10.0.26200 x64。源码 7f78a579 加本切片 [固
 正式两轮首次／冷启动四个 closed.json 均 exit 0，界面关闭／撤销／冷启动拒绝旧 key 通过，最终仅清理本轮客户端凭据。产品 High RID 12288，普通控制器／SDK／桥接 Medium RID 8192，系统核实 same_login=true，目标及事件助手实际私有桌面一致。每个控制器 PID 缓存均在 finally 中关闭；阶段收尾 gsudo CacheMode=Explicit、CacheAvailable=false、CacheSessionsCount=0，普通开发进程仍未提权。普通 CIM 仅见原用户产品 2928／报告器 17980、创建时间与 host.json 相同，没有遗留自有产品。原始材料均仅本机 out，不随 Git 同步；PC-W10 的 LOAD-37 不冒充本次原始证据。
 
 PowerShell／嵌入 C#／Python 语法、固定键／无效 HWND 拒绝、五种夹具及禁止覆盖检查通过。共享 C++／IPC／引擎路径未改，ENV-39 构建／协议／SDK 基础检查按原范围复用，不重复编译、全量 IPC、严格分析或 ASan。所有 stock_product_snapshots=false，普通 High 截图仍未验证，未提升截图权限；不证明布局／托盘、实际映射输入、停止任务清理、源行稳定引用、编辑／保存、保存失败／缓存恢复、多个普通 Tab／共通来源或运行时并发。没有 Default 测试、映射启动、系统输入或驱动安装。
+
+## SOURCE-20261023-42：PC-W11 实际源表／源行只读快照
+
+源码基线 7d78eacb，加本切片的 source snapshot 模块、GUI 源收集／结构代次、Worker 首次活动门禁、桥接参数及维护用例差异；提交身份见 Git 历史。Windows 11 企业版 10.0.26200 x64，沿用 ENV-39 的本机工具链和哈希锁环境。Qt5 QTest 自报 windows 10 是旧 Qt 的系统命名，不能把该日志归为 PC-W10 实测。
+
+新增 Read 权限的 source.read：mapping_sources 从真实普通／共通源表取元数据，mappings 必须带本快照 source_revision 和 source_tab_ref，返回源行引用及现有映射码字段、派生缓存与 LockState 采样。未加载配置内容仍不查询。引用绑定实例、配对／权限、实际内存快照、结构代次及最近加载记录，仅属于 source_snapshot_only，不是编辑授权或完整业务修订。每页重核，无目录缓存或轮询；快照序列化上限 4 MiB，分页另受原通信帧预算约束，单项超限明确失败。
+
+源复制在 GUI 线程与首次 Worker 写入标记互斥，只允许首次运行前 idle／stopped、最近加载成功的内存。Hook／Unhook／Restart 信号在原排队连接之前直接关闭门禁，各 Worker 入口也先标记；浮动／面板按钮可独立派发的 triggerVButtonKey 同样先标记。没有改变原发送参数／顺序或驱动调用。门禁不在 STOPPED 时重开，不是停止完成协调；实际运行后的拒绝尚未做产品验收。
+
+### 构建、组件及正式路径
+
+原始材料在本机 out/mcp_source、out/mcp_product。最终普通 Release 构建 build-product-qt6-final.log／build-product-qt5-final.log 均 native exit 0；Qt6 无编译／链接警告，Qt5 仅官方 Qt5.15.2 qtmain 的既有 LNK4099 例外。更早 pristine／vbutton 构建作为过程材料保留，不替代最终产物。两套部署日志及一次 EXE 字节身份在 runtime-w11-source-final-* 的 deployment.log／deployment.json。
+
+两套维护目标 build-control-*-admission.log 构建成功；source-tests-qt6.txt／qt5.txt 各 3 组通过（QTest 含初始化／收尾共 5 passed），native exit 0。覆盖非当前源、同内容不同行的不同引用、实例／配对／权限／内容／结构／加载失效，严格参数与 4 MiB／单项／帧预算分页边界，以及同一 MappingSourceAccess 的在途复制与首次写入互斥、直接观察先于排队回调。实际维护桌面分别为 QkmSource_7747692840f9440f88d1445d2df33770、QkmSource_a36a17a85b6e4ca5bbfba6bfd2183f62。protocol-tests.log 的 15 项和 sdk-qt6.log／sdk-qt5.log 各 12 项通过；SDK 维护服务只证明适配／参数／通信，其 fixture 不证明产品源语义。
+
+以下最终产品由 [test_source_interop.py](../../mcp_bridge/tests/test_source_interop.py) 使用官方 Client 连接普通 stdio 桥接，经真实 GUI Read 批准后验证，各 9 分项通过、native exit 0：
+
+| 最终 EXE（out/mcp_product 下） | 证据目录／控制器日志 | 产品 PID／实际私有桌面 |
+|---|---|---|
+| runtime-w11-source-final-qt6/QKeyMapperMcpAcceptance_w11_source_final_qt6.exe | accept-w11-source-final-qt6；out/mcp_source/source-final-qt6.log | 20308／QkmProduct_be74a226019b4083af41495acc50a44d |
+| runtime-w11-source-final-qt5/QKeyMapperMcpAcceptance_w11_source_final_qt5.exe | accept-w11-source-final-qt5-5；out/mcp_source/source-final-qt5-5.log | 25736／QkmProduct_df315124036447b582f6e87c47295fe6 |
+
+批准 MCP 前独立 GUI 读取两张普通表 A→B／G→H、C→D，以及共通 E→F；普通表还实际显示共通分隔和 E→F。源分页只返回四个自有源行，不重复普通表的附加共通显示；GUI 当前 Tab1 时能明确读取 Tab2。完整重复源读取、GUI、dirty／运行摘要及整个 INI 字节不变，纯 Tab 查看不改变源引用。真实菜单“上移”改变源行并使旧列表／行目标 stale_source；恢复后再次上移，即使内容相同且 dirty 已为 true，旧引用仍失效。
+
+真实同项重载、切换 McpSecond、非法配置失败及恢复均核对实际 GUI 和源查询结果：切换后普通源为 C→D，未附着共通备份仍有 E→F、ui_index=null；mapping_load_context.group=McpSecond 不被当作共通行的磁盘来源，origin 仅为 source_memory。失败加载返回 context_busy，状态保留 invalid_mapping_data／group=null；恢复取得新源，旧引用拒绝。重新 GUI 配对后数据不变而旧源引用拒绝。每阶段原始参数、响应、实际 GUI 和断言结果在 *_sources_*.json、*_rows_*.json、*_stale_*.json、readonly.json 和编号动作 JSON 中。
+
+真实产品 High RID 12288，控制器／SDK／桥接 Medium RID 8192，系统核实 same_login=true；目标及固定事件助手的实际桌面检查一致。控制器 10916／33088 的临时 PID 缓存在 finally 中关闭；收尾普通令牌 gsudo 状态 IsElevated=false、CacheSessionsCount=0、CacheAvailable=false、CacheMode=Explicit。两套最终产品正常退出 0，Read 配对已实际撤销、接口关闭；包含校准在内的 13 个自有产品均有 closed.json／exit_code=0。只对这些核实身份的自有目标执行关闭；未操作用户实例。
+
+### 校准、取消与证明边界
+
+- accept-w11-source-qt6：UIA 把合并分隔行 ColumnSpan 报为 1；明确分隔文字补足识别。accept-w11-source-qt6-2：表格 UIA SetFocus 被拒绝。gui-probe-w11-source-qt6-3：直接 WM_CONTEXTMENU 未找到菜单；按 [Qt 6.8.3 事件分发源码](https://raw.githubusercontent.com/qt/qtbase/v6.8.3/src/widgets/kernel/qwidgetwindow.cpp) 改为单元格内成对右键窗口消息后，gui-probe-w11-source-qt6-4 的真实移动／恢复通过。accept-w11-source-qt6-5 的早期 9 项也通过，但其产品未含最后的按钮入口／元数据限额补充，不用它替代上表最终产物。
+- accept-w11-source-qt5：三张表都被 UIA 报为非 offscreen，实际矩形过滤后可区分当前表。accept-w11-source-qt5-2：单元格不支持 SelectionItem；按实际模式选择，普通右键事件完成真实选行／菜单，gui-probe-w11-source-qt5-3 的移动／恢复通过。
+- accept-w11-source-final-qt5：重排后的重载在 FromHandle 枚举处失败，原始通用错误未提供窗口角色。gui-probe-w11-source-final-qt5-2 补充诊断捕获 ElementNotAvailable／80040201；有界观察仍找不到唯一五项配置弹窗，因此未发送选择按键。不能据此断言具体是哪个辅助窗口或产品加载故障。Qt5 改用组合框内普通左键窗口事件后，gui-probe-w11-source-final-qt5-3 的移动／恢复／再次移动／重载独立通过，随后完成上表正式对照；未修改产品加载逻辑或焦点策略。
+- accept-w11-source-final-qt5-4 的 gsudo cache on 被用户取消，PID 33536／返回 999，缓存未启用、没有 started.json；Qt6 后续轮次也未启动。取得用户明确“允许，重新发起一次”后才运行最终两轮。取消记录保留，不记为产品失败或通过。各失败后的自有单配对均先观察数量再撤销，未盲目重配／撤销。
+
+本轮无 Default 场景、映射启动、系统 SendInput 或驱动安装；配置选择和表格重排仅用核实目标的窗口事件／真实 GUI 菜单，不设控件值或直调加载／移动函数。普通 High 截图限制沿用 LOAD-41，本轮未提升截图或取得新的视觉证据。未重跑未受影响的全量 IPC、LOAD-41 全轮、严格分析或 ASan；七个相关产品源文件 UTF-8 无 BOM／LF 和局部 diff 检查通过。PC-W10 新源查询、英日源 GUI、筛选／空白与共通组合、产品大结果／性能、运行后拒绝、真正停止清理、编辑／保存及最终输入效果仍未验；业务修订仍 null、stop_completion 仍 unobserved。本切片是独立只读提交切点，不表示完整 M1 完成。

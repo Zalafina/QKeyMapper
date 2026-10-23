@@ -208,7 +208,8 @@ async def run(args):
             rejected = await client.call_tool(tool.name, {**valid, "unknown": True})
             assert rejected.is_error, "Unknown arguments must not be silently ignored: " + tool.name
         for invalid in ({"offset": True}, {"offset": "1"}, {"offset": -1}, {"limit": 0},
-                {"limit": 101}, {"limit": 1.5}, {"catalog_revision": "bad"}, {"entity": "mappings"}):
+                {"limit": 101}, {"limit": 1.5}, {"catalog_revision": "bad"}, {"entity": "unknown"},
+                {"source_revision": "bad"}, {"source_tab_ref": "x"}, {"source_tab_ref": "a" * 64 + ":source:01"}):
             assert (await client.call_tool("qkm_query", {"entity": "tabs", **invalid})).is_error
         assert (await call(client, "qkm_get_connection_state"))["status"] == "disconnected"
         assert (await call(client, "qkm_query", {"entity": "tabs"}))["error"] == "not_connected"
