@@ -1180,6 +1180,9 @@ private:
 class QKeyMapper : public QMainWindow
 {
     Q_OBJECT
+#ifdef QKM_LIFECYCLE_TESTING
+    friend class QkmMappingStopTestAccess;
+#endif
 
     friend class KeyListComboBox;
     friend class KeyListComboBoxPopup;

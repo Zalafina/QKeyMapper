@@ -1,6 +1,7 @@
 QKM_PRODUCT_ROOT = $$clean_path($$PWD/../..)
 include($$QKM_PRODUCT_ROOT/QKeyMapper.pro)
 TARGET = QKeyMapperSendInputLifecycleTest
+DEFINES += QKM_LIFECYCLE_TESTING
 SOURCES -= main.cpp
 
 # Resolve inherited product files before adding this test's own source.

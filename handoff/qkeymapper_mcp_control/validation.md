@@ -1069,3 +1069,23 @@ PC-W10，源码 350c972e 加本切片。GUI 新增原子 KEYMAP_STOPPING：先�
 ASan 最终 8 项以 halt_on_error=1／abort_on_error=1、detect_leaks=0 实跑，runtime54b-qt6-asan 无报告文件。初轮 runtime54-qt6-asan/asan.24924 是应保留的失败证据，不混入最终通过或删除。初轮／诊断控制器 PID 13508／4528 与最终普通控制器 4868 均仅用自己的 00:05:00 PID 缓存，finally cache off 并确认不可用；所有产品核实 High RID 12288、控制器 Medium RID 8192、same_login、EXE 和实际桌面，最终 24 个及先前失败 2 个自有 PID 均由普通只读查询确认不存在。原始 result／started／closed／launch 位于 accept54b-{kit}/{case}，身份索引 stop54b-results.json，缓存 stop54b-cache.json，主日志 run-stop54b.log；初轮 accept54-*／accept54-diagnose-* 和相应日志独立保留。以上原始材料仅本机 out，不随 Git。
 
 本轮范围已获用户明确扩展：私有桌面 NoOp GUI 启停、超时和退出，已说明原产品驱动连接／复位／FakerInput ReleaseAll 副作用；未使用 Default、系统键鼠注入、驱动安装或用户实例。没有独立的真实 GUI 添加／正式 MCP 停止对照、真实驱动输入输出、自动配置回切、循环启停、三语言显示／截图、严格静态分析、性能或泄漏验收。界面事件只证明本停止入口，不充当完整 GUI／MCP 业务等价性；各连续输入／自定义虚拟标签、序列派生上下文及设备效果仍需后续对应用例。source.read=pristine_idle、stop_completion=unobserved 维持，尚不授予运行后源读取或 MCP 编辑。此为本地开发检查点，提交后继续 STOP-55，不做阶段收尾／暂停。
+
+## STOP-20261024-55：循环启停、晚到通知与延后回切
+
+PC-W10，基线 f074a645。产品停止行为不变；既有完整生命周期维护目标增加 QKM_LIFECYCLE_TESTING 条件 friend，仅由测试构造／观察自动回切记录和协调器代次，没有普通产品入口、Qt invokable 或 MCP 通用属性写入。夹具写入两套空白已保存配置：全局和 McpReturn，关闭系统筛选键／虚拟设备相关功能；当前内存仅放上一轮完整派生字段的 NoOp 停止动作，经真实 GUI 按钮事件启停，不产生系统键鼠输出。它不是完整真实前台自动匹配或 GUI 添加映射基线。
+
+最终三配置各 5 项，共 15 项 passed=true、native exit 0，退出 work／producer 计数 0：gui_stop_repeat 连续两轮；gui_stop_after_timeout 首轮超时后再次启动／停止；gui_stop_restore、gui_stop_restore_timeout；原 gui_stop_wait 回归。两轮根作业实际为 1、4，分别只有一对停止动作；向第二轮送达第一轮旧 GUI 尾部和旧 Worker drained 通知后，仍保持 STOPPING／准入关闭、编辑禁用且不提前提交新 UnHook。超时轨迹为 1:timeout、1:completed:1、4:completed:0，证明第二轮不沿用旧超时结果。Qt6／Qt5／ASan 两轮 GUI 心跳分别 130/125、127/126、132/131。
+
+回切记录期限缩为 10ms，停止前明确构造原全局回切条件；GUI 捕获目标后记录计时器关闭，NoOp 发送期间持续核对原全局源表非空、加载代次／实际组保持不变：正常／超时回切各检查 Qt6 50/53 次、Qt5 50/50 次、ASan 52/52 次。任务和池完成后，原加载器实际接受 McpReturn，加载代次增加、真实源表为空、当前 Tab 为 ReturnTab、名称一致；超时后完成仍保留 timedOut。没有将下拉框显示当作实际加载证明，也没有在配置重载后访问已销毁的旧源指针。
+
+初次 build-{kit}-55.log 和补充在途源不变断言后的 build-{kit}-55-final.log 均 native build exit 0；Qt6 两套无警告，Qt5 只有既有官方 qtmain LNK4099 例外。同 MSVC／Qt kit 与 *-resume49 树，正式 manifest 不变，测试 flag 仅维护目标。实际 EXE 和原始材料仍在 out/mcp_lifecycle/resume-w10-20261023：
+
+| 该目录下实际 EXE | SHA256 | 实际私有桌面 |
+|---|---|---|
+| runtime55-qt6/QKeyMapperStop55Lifecycle_qt6.exe | 4450747cb20741f0d944bc94521c41eacb34cf1501f684ec422b4bbda674a9cd | QkmLifecycle_111390b50b7b4596a553791b6f0eb80e |
+| runtime55-qt5/QKeyMapperStop55Lifecycle_qt5.exe | 7e72dc642bfab908c0da9a3fa531ebebee639476095926538449e23f4e6a45b5 | QkmLifecycle_e7330878de4f4632b9956641f60b5bb7 |
+| runtime55-qt6-asan/QKeyMapperStop55Lifecycle_qt6_asan.exe | 354af9702717f36a17ebe1e877f74bef1c70ddf2cc8a9f09f94e67e6be3193b3 | QkmLifecycle_0ca4f7219e1449fd8a9309afc737b2d1 |
+
+每次启动前重新复制固定基础 INI，回切用例在测试 main 前由 QSettings 生成上述两组，兼容结果按 Qt kit 分别实跑。ASan 五项按原 halt_on_error／abort_on_error、detect_leaks=0 实跑，无报告文件。普通控制器 PID 30688、Medium RID 8192，仅用其自己的五分钟 gsudo PID 缓存；产品逐一核对 High RID 12288、same_login、实际 EXE 与桌面，finally 关闭缓存且确认不可用，十五个自有 PID 普通查询均不存在。accept55-{kit}/{case} 保存 result／started／closed／launch；stop55-results.json 为身份索引，run-stop55.log／stop55-cache.json 保存缓存与执行记录，均仅本机 out。
+
+授权仍为已批准私有桌面 NoOp 启停；没有 Default、系统键鼠注入、驱动安装或用户实例。原启动／停止／退出的设备连接与复位副作用不作为物理设备释放／执行效果的证明。无正式 MCP 新对照、真实前台自动匹配、GUI 添加／保存／冷启动等价、三语言视觉／截图、严格静态分析、性能或泄漏验收。运行后源读取、稳定编辑授权及完整 M1 尚未完成；source.read=pristine_idle、stop_completion=unobserved 不变。本切片为本地开发检查点，继续 STOP-56 的来源安全盘点与后续实现，不做阶段收尾或暂停。

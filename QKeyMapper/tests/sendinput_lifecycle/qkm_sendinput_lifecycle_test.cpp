@@ -9,11 +9,37 @@
 #include <QTimer>
 #include <QToolButton>
 #include <QMouseEvent>
+#include <QSettings>
+#include <QLineEdit>
 #include "../../qkeymapper_worker.h"
 #include "../../qkeymapper.h"
 #include "../../qkm_input_producer_work.h"
 #include "../../qkm_input_owner_fence.h"
 #include "../../interception_worker.h"
+
+// Test fixtures observe coordinator state without adding a product control entry.
+class QkmMappingStopTestAccess {
+public:
+    static void armReturn(QKeyMapper *mapper)
+    {
+        mapper->recordLastAutoMatchedSetting(QStringLiteral("McpReturn"));
+        mapper->m_LastAutoMatchedSettingTimer.setInterval(10);
+        mapper->startLastAutoMatchedSettingTimer();
+    }
+    static bool returnCaptured(QKeyMapper *mapper)
+    {
+        return mapper->m_mappingStopRestoreSetting == QStringLiteral("McpReturn")
+            && !mapper->m_LastAutoMatchedSettingTimer.isActive();
+    }
+    static quint64 loadGeneration(QKeyMapper *mapper) { return mapper->m_MappingLoadGeneration; }
+    static QString loadedGroup(QKeyMapper *mapper) { return mapper->m_LoadedMappingSettingGroup; }
+    static bool loadAccepted(QKeyMapper *mapper) { return mapper->m_MappingSourceLoadAccepted; }
+    static quint64 fenceGeneration(QKeyMapper *mapper) { return mapper->m_mappingStopFenceGeneration; }
+    static void deliverOldTail(QKeyMapper *mapper, quint64 operation, quint64 generation)
+    {
+        mapper->finishMappingStop(operation, generation);
+    }
+};
 
 namespace {
 using namespace QKeyMapperConstants;
@@ -72,6 +98,12 @@ struct LifecycleResult {
     bool guiStopBlockedAtTimeout = false;
     bool guiStopAdmissionRejected = false;
     QStringList guiStopTrace;
+    quint64 guiStopLastOperation = 0;
+    quint64 guiStopLastFence = 0;
+    bool guiStopStaleIgnored = false;
+    bool guiStopReturnCaptured = false;
+    bool guiStopReturnLoaded = false;
+    int guiStopBusySourceChecks = 0;
     bool drainResourcesIntact = false;
     bool drainFinalPoolsFinished = false;
     int buttonLockAfterDispatch = 0;
@@ -316,16 +348,43 @@ void clickMappingButton(QToolButton *button)
     QCoreApplication::sendEvent(button, &release);
 }
 
-void installGuiStopTest(QKeyMapper_Worker *worker, const QString &mode)
+bool prepareGuiStopReturnFixture()
 {
-    QMetaObject::invokeMethod(QCoreApplication::instance(), [worker, mode] {
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    ini.setValue(QString::fromLatin1(SETTINGSELECT), QString::fromLatin1(GROUPNAME_GLOBALSETTING));
+    for (const QString &group : {QString::fromLatin1(GROUPNAME_GLOBALSETTING), QStringLiteral("McpReturn")}) {
+        ini.beginGroup(group);
+        ini.setValue(QString::fromLatin1(KEYMAPDATA_ORIGINALKEYS), QString());
+        ini.setValue(QString::fromLatin1(KEYMAPDATA_MAPPINGKEYS), QString());
+        ini.setValue(QStringLiteral("MappingTable_TabNameList"),
+            QStringList{group == QLatin1String(GROUPNAME_GLOBALSETTING) ? QStringLiteral("GlobalTab") : QStringLiteral("ReturnTab")});
+        ini.setValue(QString::fromLatin1(AUTOSTARTMAPPING_CHECKED),
+            group == QLatin1String(GROUPNAME_GLOBALSETTING) ? int(Qt::Checked) : int(Qt::Unchecked));
+        ini.setValue(QStringLiteral("EnableSystemFilterKeyChecked"), false);
+        ini.setValue(QStringLiteral("DisableFilterKeyClickSoundChecked"), false);
+        ini.endGroup();
+    }
+    ini.sync();
+    return ini.status() == QSettings::NoError;
+}
+
+void installGuiStopTest(QKeyMapper_Worker *worker, const QString &mode, int cycle = 1)
+{
+    QMetaObject::invokeMethod(QCoreApplication::instance(), [worker, mode, cycle] {
         auto *mapper = QKeyMapper::getInstance();
         auto *button = mapper->findChild<QToolButton *>(QStringLiteral("keymapButton"));
-        auto *editor = mapper->findChild<QWidget *>(QStringLiteral("settingNameLineEdit"));
+        auto *editor = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+        const bool restore = mode == QStringLiteral("gui_stop_restore") || mode == QStringLiteral("gui_stop_restore_timeout");
+        const bool expectTimeout = mode == QStringLiteral("gui_stop_timeout")
+            || ((mode == QStringLiteral("gui_stop_after_timeout") || mode == QStringLiteral("gui_stop_restore_timeout")) && cycle == 1);
+        const quint64 loadGeneration = QkmMappingStopTestAccess::loadGeneration(mapper);
         const int tab = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
         if (!button || !editor || !button->isEnabled() || mapper->m_KeyMapStatus != QKeyMapper::KEYMAP_IDLE
             || tab < 0 || tab >= QKeyMapper::s_KeyMappingTabInfoList.size()
-            || QKeyMapper::isCommonMappingTabIndex(tab)) { finish(false); return; }
+            || QKeyMapper::isCommonMappingTabIndex(tab)
+            || (restore && (!QKeyMapper::checkGlobalSettingAutoStart()
+                || QkmMappingStopTestAccess::loadedGroup(mapper) != QLatin1String(GROUPNAME_GLOBALSETTING)))) { finish(false); return; }
+        if (auto *timer = mapper->findChild<QTimer *>(QStringLiteral("mappingStopDeadline"))) { timer->setInterval(30000); }
         auto *source = QKeyMapper::s_KeyMappingTabInfoList.at(tab).KeyMappingData;
         const auto backup = QSharedPointer<QList<MAP_KEYDATA>>::create(*source);
         MAP_KEYDATA row;
@@ -343,6 +402,7 @@ void installGuiStopTest(QKeyMapper_Worker *worker, const QString &mode)
         auto *context = new QObject(mapper);
         const auto hold = QSharedPointer<QSemaphore>::create();
         const auto entered = QSharedPointer<QSemaphore>::create();
+        const auto stage = QSharedPointer<int>::create(0);
         const auto deadline = QSharedPointer<QElapsedTimer>::create();
         deadline->start();
         QObject::connect(worker, &QKeyMapper_Worker::sendInputKeys_Signal, context,
@@ -354,48 +414,74 @@ void installGuiStopTest(QKeyMapper_Worker *worker, const QString &mode)
         QObject::connect(worker, &QKeyMapper_Worker::setKeyUnHook_Signal, context,
             [] { ++result->guiStopUnhooks; }, Qt::DirectConnection);
         QObject::connect(mapper, &QKeyMapper::mappingCleanupTimedOut_Signal, context,
-            [mapper, button, editor, hold](quint64 operation) {
+            [mapper, button, editor, hold, cycle, restore, loadGeneration](quint64 operation) {
                 ++result->guiStopTimeouts;
                 result->guiStopTrace.append(QStringLiteral("%1:timeout").arg(operation));
                 result->guiStopBlockedAtTimeout = mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_STOPPING
                     && QKeyMapper_Worker::s_MappingInputClosed.loadAcquire()
-                    && !button->isEnabled() && !editor->isEnabled() && result->guiStopUnhooks == 0
-                    && result->guiStopCompletions == 0;
+                    && !button->isEnabled() && !editor->isEnabled() && result->guiStopUnhooks == cycle - 1
+                    && result->guiStopCompletions == cycle - 1
+                    && (!restore || (QkmMappingStopTestAccess::returnCaptured(mapper)
+                        && QkmMappingStopTestAccess::loadGeneration(mapper) == loadGeneration));
                 result->passed = result->passed && result->guiStopBlockedAtTimeout;
                 QTimer::singleShot(20, mapper, [hold] { hold->release(); });
             });
         QObject::connect(mapper, &QKeyMapper::mappingCleanupCompleted_Signal, context,
-            [mapper, button, editor, context, source, backup, mode](quint64 operation, bool timedOut) {
+            [worker, mapper, button, editor, context, source, backup, mode, cycle, restore, expectTimeout, loadGeneration]
+            (quint64 operation, bool timedOut) {
                 ++result->guiStopCompletions;
                 result->guiStopTrace.append(QStringLiteral("%1:completed:%2").arg(operation).arg(timedOut));
                 result->passed = result->passed && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE
                     && !QKeyMapper_Worker::s_MappingInputClosed.loadAcquire() && button->isEnabled() && editor->isEnabled()
-                    && result->guiStopUnhooks == 1 && result->guiStopDowns.loadAcquire() == 1
-                    && result->guiStopUps.loadAcquire() == 1 && result->guiStopCompletions == 1
+                    && result->guiStopUnhooks == cycle && result->guiStopDowns.loadAcquire() == cycle
+                    && result->guiStopUps.loadAcquire() == cycle && result->guiStopCompletions == cycle
                     && result->guiStopBlockedBeforeUnhook && result->guiStopAdmissionRejected
-                    && result->guiStopTimeouts == (mode == QStringLiteral("gui_stop_timeout") ? 1 : 0)
-                    && timedOut == (mode == QStringLiteral("gui_stop_timeout"))
+                    && result->guiStopTimeouts == ((expectTimeout || mode == QStringLiteral("gui_stop_after_timeout")) ? 1 : 0)
+                    && timedOut == expectTimeout && operation > result->guiStopLastOperation
+                    && (cycle == 1 || result->guiStopStaleIgnored)
                     && SendInputWorkItem::outstanding() == 0 && InputProducerWorkItem::outstanding() == 0
                     && SendInputTask::poolsFinished() && result->guiStopTurns > 1;
-                *source = *backup;
-                QKeyMapper::restoreKeyMappingDataListPointer();
+                result->guiStopLastOperation = operation;
+                result->guiStopLastFence = QkmMappingStopTestAccess::fenceGeneration(mapper);
+                if (restore) {
+                    const int restoredTab = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+                    result->guiStopReturnLoaded = QkmMappingStopTestAccess::loadAccepted(mapper)
+                        && QkmMappingStopTestAccess::loadedGroup(mapper) == QStringLiteral("McpReturn")
+                        && QkmMappingStopTestAccess::loadGeneration(mapper) > loadGeneration
+                        && editor->text() == QStringLiteral("McpReturn") && QKeyMapper::KeyMappingDataList->isEmpty()
+                        && restoredTab >= 0 && restoredTab < QKeyMapper::s_KeyMappingTabInfoList.size()
+                        && QKeyMapper::s_KeyMappingTabInfoList.at(restoredTab).TabName == QStringLiteral("ReturnTab");
+                    result->passed = result->passed && result->guiStopReturnCaptured && result->guiStopReturnLoaded
+                        && result->guiStopBusySourceChecks > 0;
+                }
+                else {
+                    *source = *backup;
+                    QKeyMapper::restoreKeyMappingDataListPointer();
+                }
                 context->deleteLater();
-                finish(result->passed);
+                if (result->passed && cycle == 1
+                    && (mode == QStringLiteral("gui_stop_repeat") || mode == QStringLiteral("gui_stop_after_timeout"))) {
+                    QTimer::singleShot(0, mapper, [worker, mode] { installGuiStopTest(worker, mode, 2); });
+                }
+                else { finish(result->passed); }
             });
         // Use widget mouse events for the normal GUI entry, without injecting system input.
         clickMappingButton(button);
         auto *poll = new QTimer(context);
         QObject::connect(poll, &QTimer::timeout, context,
-            [worker, mapper, button, editor, context, hold, entered, source, backup, mode, deadline] {
+            [worker, mapper, button, editor, context, hold, entered, stage, source, backup, mode, cycle, restore, expectTimeout, loadGeneration, deadline] {
                 ++result->guiStopTurns;
-                if (deadline->elapsed() > 5000) {
-                    hold->release();
-                    finish(false);
-                    return;
+                if (deadline->elapsed() > 5000) { hold->release(); finish(false); return; }
+                if (restore && *stage == 2 && SendInputWorkItem::outstanding() > 0) {
+                    ++result->guiStopBusySourceChecks;
+                    result->passed = result->passed && QkmMappingStopTestAccess::loadGeneration(mapper) == loadGeneration
+                        && QkmMappingStopTestAccess::loadedGroup(mapper) == QLatin1String(GROUPNAME_GLOBALSETTING)
+                        && QKeyMapper::KeyMappingDataList && !QKeyMapper::KeyMappingDataList->isEmpty();
                 }
-                if (result->guiStopTrace.isEmpty()) {
+                if (*stage == 0) {
                     if (QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() != HOOKPROC_STATE_STARTED) { return; }
-                    result->guiStopTrace.append(QStringLiteral("started"));
+                    *stage = 1;
+                    result->guiStopTrace.append(QStringLiteral("started:%1").arg(cycle));
                     QMetaObject::invokeMethod(QKeyMapper_Hook_Proc::getInstance(), [hold, entered] {
                         const InputProducerWorkItem inputWork;
                         entered->release();
@@ -403,15 +489,28 @@ void installGuiStopTest(QKeyMapper_Worker *worker, const QString &mode)
                     }, Qt::QueuedConnection);
                     return;
                 }
-                if (result->guiStopTrace.size() != 1 || entered->available() == 0) { return; }
-                result->guiStopTrace.append(QStringLiteral("stopping"));
+                if (*stage != 1 || entered->available() == 0) { return; }
+                *stage = 2;
+                result->guiStopTrace.append(QStringLiteral("stopping:%1").arg(cycle));
+                if (restore) { QkmMappingStopTestAccess::armReturn(mapper); }
                 clickMappingButton(button);
                 result->guiStopBlockedBeforeUnhook = mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_STOPPING
                     && QKeyMapper_Worker::s_MappingInputClosed.loadAcquire()
-                    && !button->isEnabled() && !editor->isEnabled() && result->guiStopUnhooks == 0;
+                    && !button->isEnabled() && !editor->isEnabled() && result->guiStopUnhooks == cycle - 1;
+                if (restore) {
+                    result->guiStopReturnCaptured = QkmMappingStopTestAccess::returnCaptured(mapper)
+                        && QkmMappingStopTestAccess::loadGeneration(mapper) == loadGeneration;
+                }
                 // A queued repeat request must neither restart mapping nor duplicate stop actions.
                 mapper->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK);
                 result->guiStopAdmissionRejected = !worker->queueVButtonKey(QStringLiteral("VButton1"), true);
+                if (cycle > 1) {
+                    QkmMappingStopTestAccess::deliverOldTail(mapper, result->guiStopLastOperation, result->guiStopLastFence);
+                    emit worker->sendInputDrainObserved_Signal(result->guiStopLastFence, QStringLiteral("drained"));
+                    result->guiStopStaleIgnored = mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_STOPPING
+                        && QKeyMapper_Worker::s_MappingInputClosed.loadAcquire() && !button->isEnabled()
+                        && result->guiStopCompletions == cycle - 1 && result->guiStopUnhooks == cycle - 1;
+                }
                 if (mode == QStringLiteral("gui_stop_exit")) {
                     result->passed = result->passed && result->guiStopBlockedBeforeUnhook
                         && result->guiStopAdmissionRejected && result->guiStopCompletions == 0;
@@ -420,14 +519,12 @@ void installGuiStopTest(QKeyMapper_Worker *worker, const QString &mode)
                     hold->release();
                     finish(result->passed);
                 }
-                else if (mode == QStringLiteral("gui_stop_timeout")) {
+                else if (expectTimeout) {
                     auto *timer = mapper->findChild<QTimer *>(QStringLiteral("mappingStopDeadline"));
                     if (!timer) { hold->release(); finish(false); return; }
                     timer->start(30);
                 }
-                else {
-                    QTimer::singleShot(50, context, [hold] { hold->release(); });
-                }
+                else { QTimer::singleShot(50, context, [hold] { hold->release(); }); }
             });
         poll->start(5);
     }, Qt::QueuedConnection);
@@ -1112,7 +1209,9 @@ int main(int argc, char *argv[])
         QStringLiteral("burst_timer_removed_source"), QStringLiteral("drain_wait"), QStringLiteral("drain_timeout"),
         QStringLiteral("drain_supersede"), QStringLiteral("drain_shutdown"),
         QStringLiteral("gui_stop_wait"), QStringLiteral("gui_stop_timeout"),
-        QStringLiteral("gui_stop_exit"), QStringLiteral("closed_input_tracking")};
+        QStringLiteral("gui_stop_exit"), QStringLiteral("closed_input_tracking"),
+        QStringLiteral("gui_stop_repeat"), QStringLiteral("gui_stop_after_timeout"),
+        QStringLiteral("gui_stop_restore"), QStringLiteral("gui_stop_restore_timeout")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -1120,6 +1219,8 @@ int main(int argc, char *argv[])
     const bool desktopObserved = GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()),
         UOI_NAME, desktop, sizeof(desktop), nullptr);
     result = new LifecycleResult;
+    if ((mode == QStringLiteral("gui_stop_restore") || mode == QStringLiteral("gui_stop_restore_timeout"))
+        && !prepareGuiStopReturnFixture()) { return 2; }
     const int code = qkmProductMain(argc, argv);
     const bool passed = code == 0 && result->passed && SendInputTask::s_SendInputTaskControllerMap.isEmpty()
         && InputProducerWorkItem::outstanding() == 0
@@ -1176,6 +1277,12 @@ int main(int argc, char *argv[])
         {QStringLiteral("guiStopBlockedAtTimeout"), result->guiStopBlockedAtTimeout},
         {QStringLiteral("guiStopAdmissionRejected"), result->guiStopAdmissionRejected},
         {QStringLiteral("guiStopTrace"), QJsonArray::fromStringList(result->guiStopTrace)},
+        {QStringLiteral("guiStopLastOperation"), QString::number(result->guiStopLastOperation)},
+        {QStringLiteral("guiStopLastFence"), QString::number(result->guiStopLastFence)},
+        {QStringLiteral("guiStopStaleIgnored"), result->guiStopStaleIgnored},
+        {QStringLiteral("guiStopReturnCaptured"), result->guiStopReturnCaptured},
+        {QStringLiteral("guiStopReturnLoaded"), result->guiStopReturnLoaded},
+        {QStringLiteral("guiStopBusySourceChecks"), result->guiStopBusySourceChecks},
         {QStringLiteral("drainResourcesIntact"), result->drainResourcesIntact},
         {QStringLiteral("drainFinalPoolsFinished"), result->drainFinalPoolsFinished},
         {QStringLiteral("buttonLockAfterDispatch"), result->buttonLockAfterDispatch},
