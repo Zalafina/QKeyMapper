@@ -935,7 +935,7 @@ PC-W10，Win10 10.0.19045 x64。已检查本地改动、获取 origin 并切换�
 
 用户吃饭期间未调用 gsudo、申请缓存、启动管理员 EXE 或触发 UAC；无 Default 切换、系统键鼠、映射启动、驱动安装或用户实例操作。管理员产品、Win10 新源路径、STOP-49 生命周期运行、Qt5 SDK、真实批准超时、High 截图、托盘和性能本轮未验；Win11／历史各项仅保留原范围。此记录是本地开发检查点，后续继续主计划指定的停止生命周期切片。
 
-## STOP-20261023-49：两所有者生命周期排队存续（运行待验证）
+## STOP-20261023-49：两所有者生命周期排队存续
 
 PC-W10，Win10 19045 x64；基线 639dc4bb，加 qkeymapper.cpp 三个生命周期入口、Worker／Hook 六个信号声明、存续类注释、维护用例和说明。每个 GUI 入口先持有一个现有 SendInputWorkItem 的共享指针，将同一个标记交给 Hook 与 Worker 两个排队信号，直到调用返回和两端事件都处理／丢弃才退还；子发送／runnable 仍使用原 STOP-44 标记。保留接收槽、QueuedConnection、参数和原业务顺序，没有新增定时器、线程、对外能力或停止完成声明。Worker 原有 DirectConnection 首次门禁仍保留。
 
@@ -955,4 +955,16 @@ lifecycle_dispatch／lifecycle_discard 已加入既有真实生命周期维护�
 
 用户吃饭期间明确不能确认 UAC，故没有启动以上管理员 EXE、调用 gsudo、启用缓存或触发提示；实际测试桌面／PID／退出结果尚不存在。待用户返回后，使用既有 scripts/test_process.ps1 在新建私有 QkmLifecycle_* 桌面启动自有副本，每套运行 lifecycle_dispatch、lifecycle_discard 和相关 queued_stop_action、queued_button（共 12 项，预计 3–6 分钟另加人工审批）。控制器／构建／Git／证据保持普通权限，只有原 manifest 所需启动／关闭按既有授权提权；无 Default、真实系统输入、GUI 映射启动或驱动安装，30 秒用例看门狗，超时不强杀。ASan 届时使用 halt_on_error=1、abort_on_error=1、detect_leaks=0，不能事先记为通过。
 
-这是可恢复的本地构建检查点，STOP-49 运行状态为待验证，完整 2b-3 仍进行中。会话锁定的排队请求、所有在途输入生产者、同步发送、池排空、停止代次与 GUI 尾部尚未封闭；stop_completion 仍为 unobserved，源查询仍只允许 pristine_idle，零计数和 STOPPED 均不重新开放或授权编辑。ENV-48 与 PC-W11 历史结果只按各自范围保留。
+以上为 174ae16c 构建检查点时的准备状态。用户随后返回并批准 UAC，已完成上述最终三个 EXE 各四项，共 12 项，全部 passed=true、native exit 0、workAtExit=0。lifecycle_dispatch 的实测轨迹为 3/3/2/2/1/1，尾部为 0；lifecycle_discard 先销毁一端仍为 3、另一端销毁后为 0。queued_stop_action／queued_button 的提交及首个屏障仍为 2，真实 NoOp 发送池等待未完成状态被观察到，原有等待归零预期保持。各项实际结果在 out/mcp_lifecycle/resume-w10-20261023/accept49-{qt6,qt5,qt6-asan}/{case}/result.json；总索引 stop49-results.json 含 PID／创建时间／实际 EXE／桌面和退出结果，启动／关闭记录与日志同目录，不随 Git。
+
+| 配置 | 实际私有桌面 | 自有 PID（派发／丢弃／停止动作／按钮） |
+|---|---|---|
+| Qt6 Release | QkmLifecycle_cc8eaff377544b1695df8446d0496f64 | 27916／22392／8240／26776 |
+| Qt5 Release | QkmLifecycle_fd63728377ae4466984f57effe2e7aca | 26732／24880／26000／20660 |
+| Qt6 ASan | QkmLifecycle_34b5ff7438cd49e6bb99f390eb80c792 | 10424／15408／24200／27588 |
+
+每次均由既有 scripts/test_process.ps1 必要提权启动，实际产品 High RID 12288、控制器 Medium RID 8192，逐进程核实 same_login、实际 EXE 和桌面；本次控制器没有请求 PID 缓存，不推断实际 UAC 提示次数。随后用户再次明确批准 CACHE-40 的五分钟独立控制器 PID 缓存，后续批次按该规则执行。本轮没有更改 CacheMode、全局缓存或提升开发工具。十二个自有 PID 的普通用户只读收尾查询均已不存在，没有强杀或操作用户实例。
+
+ASan 四项按上述参数实跑，无 asan.* 报告且 native exit 0；detect_leaks=0，不声称泄漏、全部内存路径或性能已验。没有 Default 切换、系统键鼠、GUI 映射启动、驱动安装、正式 MCP 业务或独立 GUI 基线；原 main 启动／退出的设备 API 不证明物理输入／设备释放效果。
+
+本切片选定验收完成，形成新的本地证据检查点并继续 2b-3，不执行阶段收尾／暂停。会话锁定的排队请求、所有在途输入生产者、同步发送、池排空、停止代次与 GUI 尾部尚未封闭；stop_completion 仍为 unobserved，源查询仍只允许 pristine_idle，零计数和 STOPPED 均不重新开放或授权编辑。ENV-48 与 PC-W11 历史结果只按各自范围保留。
