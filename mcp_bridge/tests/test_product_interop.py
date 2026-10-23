@@ -140,13 +140,96 @@ class Product:
             close_desktop(self.desktop)
 
 
+async def warm_loads(product, client, summary, catalog_revision, passed):
+    await product.action("CloseMcp")
+    stages = (("ReadMapping", "McpSaved", "accepted", "McpSaved", "A", "B"),
+        ("SelectSecond", "McpSecond", "accepted", "McpSecond", "C", "D"),
+        ("SelectBlank", "", "accepted", "", None, None),
+        ("SelectSaved", "McpSaved", "accepted", "McpSaved", "A", "B"),
+        ("SelectInvalid", "", "invalid_mapping_data", None, None, None),
+        ("SelectSaved", "McpSaved", "accepted", "McpSaved", "A", "B"),
+        ("ReloadCurrent", "McpSaved", "accepted", "McpSaved", "A", "B"))
+    generation = int(summary["mapping_load_context"]["generation"])
+    previous_state = summary
+    for index, (action, selected_group, outcome, loaded_group, original, mapping) in enumerate(stages):
+        gui = await product.action(action)
+        if index:
+            generation += 1
+        ini = product.executable.parent / "keymapdata.ini"
+        before_read = ini.read_bytes()
+        state = (await call(client, "qkm_get_state"))["result"]
+        tabs = (await call(client, "qkm_query", {"entity": "tabs", "limit": 1}))["result"]
+        revision = tabs["catalog"]["revision"]
+        configs = (await call(client, "qkm_query", {"entity": "configurations",
+            "catalog_revision": revision}))["result"]
+        stale = {}
+        if index:
+            for entity in ("tabs", "configurations"):
+                stale[entity] = await call(client, "qkm_query", {"entity": entity,
+                    "catalog_revision": catalog_revision, "offset": 1, "limit": 1})
+        last = (await call(client, "qkm_query", {"entity": "tabs", "catalog_revision": revision,
+            "offset": 1, "limit": 1}))["result"]
+        repeated = (await call(client, "qkm_get_state"))["result"]
+        gui_after = await product.action("ReadMapping")
+        after_read = ini.read_bytes()
+        record = {"gui": gui, "state": state, "tabs": tabs, "configurations": configs,
+            "stale_requests": stale, "last_page": last, "repeated_state": repeated,
+            "gui_after_reads": gui_after, "ini_unchanged_by_reads": before_read == after_read}
+        (product.output / ("load_" + str(index) + "_" + action + ".json")).write_text(
+            json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+        assert state["instance"] == summary["instance"] and state["business_revision"] is None
+        assert state["mapping_load_context"] == {"generation": str(generation), "scope": "last_mapping_load",
+            "outcome": outcome, "group": loaded_group}
+        if action == "ReloadCurrent":
+            unchanged = dict(state)
+            unchanged["mapping_load_context"] = dict(state["mapping_load_context"],
+                generation=previous_state["mapping_load_context"]["generation"])
+            assert unchanged == previous_state, "Same-content reload changed other business summary fields"
+        assert state["configuration"]["group"] == selected_group
+        assert state["configuration"]["kind"] == ("saved_profile" if selected_group else "draft")
+        assert type(state["configuration"]["has_unsaved_changes"]) is bool
+        assert gui["configuration_display"] == selected_group and gui["configuration_read_method"] == "ValuePattern"
+        expected_rows = [] if original is None else [{"original": original, "mapping": mapping}]
+        assert gui["mapping_rows"] == expected_rows and gui["mapping_row_count"] == len(expected_rows)
+        assert gui["mapping_table_read_method"] == "GridPattern.Item.Name"
+        assert gui["mapping_button_text"] == "映射开始"
+        assert state["run"] == {"gui_state": "idle", "monitoring_enabled": False,
+            "worker_state_sample": "stopped", "stop_completion": "unobserved",
+            "actual_stop_shortcut": gui["stop_shortcut_edit"]}
+        assert state["current_tab"] == {"name": "Tab1", "index": 0, "is_common": False}
+        for catalog in (tabs, configs):
+            assert catalog["catalog"]["selected_configuration"] == state["configuration"]
+            assert catalog["catalog"]["mapping_load_context"] == state["mapping_load_context"]
+        assert tabs["total"] == 2 and tabs["next_offset"] == 1
+        assert tabs["items"][0]["name"] == "Tab1" and tabs["items"][0]["is_current"]
+        assert last["next_offset"] is None and last["items"][0]["is_common"]
+        assert not last["items"][0]["attached_to_ui"] and last["items"][0]["index"] is None
+        assert [item["group"] for item in configs["items"]] == ["", "QKeyMapperGlobalSetting", "McpInvalid", "McpSaved", "McpSecond"]
+        assert [item["display_name"] for item in configs["items"] if item["is_selected"]] == [gui["configuration_display"]]
+        if index:
+            assert gui["gui_event_method"] in ("owned_UIA_expand_Up_Down_Return", "owned_UIA_invoke_Up_Down_Return")
+            assert gui["requested_configuration"] == ("McpInvalid" if action == "SelectInvalid" else selected_group)
+            assert revision != catalog_revision
+            assert all(result["ok"] is False and result["error"] == "stale_catalog" for result in stale.values())
+        else:
+            assert state == summary and revision == catalog_revision
+        assert repeated == state and before_read == after_read
+        for field in ("configuration_display", "mapping_rows", "mapping_row_count", "mapping_button_text", "stop_shortcut_edit"):
+            assert gui_after[field] == gui[field], field + " changed after read-only MCP requests"
+        passed("warm GUI " + str(index) + " " + action + ": actual rows, load context, catalog validity and read-only invariance")
+        catalog_revision = revision
+        previous_state = state
+    await product.action("OpenAdvanced")
+    await product.action("OpenMcp")
+
+
 async def run(args):
     assert elevation(win32api.GetCurrentProcess()) == 0 and integrity(win32api.GetCurrentProcess()) == 0x2000
     checks = []
     def passed(name):
         checks.append(name)
         print("PASS", name, flush=True)
-    expected_group = "McpSaved" if args.load_fixture == "saved" else ""
+    expected_group = "McpSaved" if args.load_fixture in ("saved", "warm") else ""
     expected_outcome = "invalid_mapping_data" if args.load_fixture == "invalid" else "accepted"
     product, store = Product(args.executable, args.output), None
     first_desktop = product.desktop_name
@@ -224,7 +307,9 @@ async def run(args):
             assert whole["items"] == catalog["items"] + last["items"]
             configs = (await call(client, "qkm_query", {"entity": "configurations", "catalog_revision": catalog_revision}))["result"]
             expected_groups = ["", "QKeyMapperGlobalSetting"]
-            if args.load_fixture in ("saved", "invalid"):
+            if args.load_fixture == "warm":
+                expected_groups += ["McpInvalid", "McpSaved", "McpSecond"]
+            elif args.load_fixture in ("saved", "invalid"):
                 expected_groups.append("McpSaved" if args.load_fixture == "saved" else "McpInvalid")
             assert configs["total"] == len(expected_groups) and configs["next_offset"] is None
             assert [item["group"] for item in configs["items"]] == expected_groups
@@ -296,6 +381,8 @@ async def run(args):
             assert new_revision != catalog_revision
             assert (await call(client, "qkm_get_state"))["result"] == summary
             passed("old catalog revision cannot cross an explicit new GUI pairing approval")
+            if args.load_fixture == "warm":
+                await warm_loads(product, client, summary, new_revision, passed)
             await product.action("Revoke")
             await call(client, "qkm_connect")
             await connection(client, "failed")
@@ -349,7 +436,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--executable", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--load-fixture", choices=("blank", "saved", "invalid", "missing"), default="blank",
+    parser.add_argument("--load-fixture", choices=("blank", "saved", "invalid", "missing", "warm"), default="blank",
                         help="Prepare a synthetic startup configuration before launching the owned product.")
     parser.add_argument("--gsudo-cache", action="store_true",
                         help="Authorized test-controller PID cache only; five-minute idle timeout, closed in finally.")
@@ -366,12 +453,16 @@ if __name__ == "__main__":
         ini = args.executable.parent / "keymapdata.ini"
         template = (ROOT.parent / "QKeyMapper/tests/mcp_control/product_fixture.ini.example").read_text(encoding="utf-8")
         assert ini.read_text(encoding="utf-8") == template, "load fixtures require a fresh runtime with the unchanged synthetic INI"
-        group = {"saved": "McpSaved", "invalid": "McpInvalid", "missing": "McpMissing"}[args.load_fixture]
+        group = {"saved": "McpSaved", "invalid": "McpInvalid", "missing": "McpMissing", "warm": "McpSaved"}[args.load_fixture]
         contents = template.replace("[General]\n", "[General]\nSettingSelect=" + group + "\n", 1)
         if args.load_fixture != "missing":
-            original = "A" if args.load_fixture == "saved" else "MCP_INVALID_ORIGINAL"
+            original = "A" if args.load_fixture in ("saved", "warm") else "MCP_INVALID_ORIGINAL"
             contents += ("\n[" + group + "]\nMappingTable_TabNameList=Tab1\nKeyMapData_OriginalKeys=" + original
                 + "\nKeyMapData_MappingKeys=B\nEnableSystemFilterKeyChecked=false\nDisableFilterKeyClickSoundChecked=false\n")
+        if args.load_fixture == "warm":
+            for group, original, mapping in (("McpSecond", "C", "D"), ("McpInvalid", "MCP_INVALID_ORIGINAL", "B")):
+                contents += ("\n[" + group + "]\nMappingTable_TabNameList=Tab1\nKeyMapData_OriginalKeys=" + original
+                    + "\nKeyMapData_MappingKeys=" + mapping + "\nEnableSystemFilterKeyChecked=false\nDisableFilterKeyClickSoundChecked=false\n")
         ini.write_text(contents, encoding="utf-8")
     cache_pid = str(os.getpid())
     gsudo = shutil.which("gsudo.exe")

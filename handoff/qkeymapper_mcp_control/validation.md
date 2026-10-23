@@ -740,3 +740,36 @@ PC-W11、同一 Qt6 正式产品 EXE runtime-w11-baseline-qt6/QKeyMapperMcpAccep
 两轮均检查实际产品 High RID 12288、普通控制器／SDK／桥接 Medium RID 8192、系统核实 same_login=true，以及目标窗口实际私有桌面。两轮首次／冷启动共四次正常退出 0；缓存启用／关闭及检查在 product-qt6-cache.log。Qt5 新运行的活动缓存期间，独立开发进程探测该控制器仍存活、关闭尚未发生，但自身 CacheAvailable=false 且未提权，见 cache-scope-active.json；Qt5 结束同样关闭缓存。缓存允许测试控制器的子进程，开发／Git／构建／截图未在提权进程中执行。
 
 结论只覆盖本轮已保存配置／停止态读流、正式认证／重连／撤销和冷启动分项；缓存没有改变这些业务预期与实际结果。缓存改变 UAC 弹窗数量、焦点／安全桌面打断和人工等待，不能证明逐次 UAC 提示／拒绝行为、全部未来业务或性能相同。UAC 交互场景须不用缓存另验；同用户系统 Token 关联、身份、权限、路径及桌面检查仍保留，不以缓存放宽鉴权。两轮普通 PrintWindow 均不能捕获 High 产品，未提高截图权限，High 视觉验收仍未完成。无映射启动、系统输入、驱动安装或新增 Default 场景。
+
+## LOAD-20261023-41：PC-W11 真实 GUI 温切换与正式 MCP 加载迁移
+
+PC-W11，Windows 11 企业版 10.0.26200 x64。源码 7f78a579 加本切片 [固定 GUI 助手](../../QKeyMapper/tests/mcp_control/product_ui_actions.ps1)、[正式 SDK 回归](../../mcp_bridge/tests/test_product_interop.py) 及说明差异；产品 C++ 仍为 a92c80fd，复用 ENV-39 本机 Qt6.8.3／Qt5.15.2 x64 普通 Release，未复制另一台 PC 的产物，也未改变产品加载器或正式 manifest。两套全新运行目录由对应本机构建及本机 Qt kit 部署，EXE 字节与本机构建一致；部署日志及一次身份记录在各 runtime-w11-warm-* 内。
+
+新增 warm 夹具仅在普通权限启动前从未修改的合成模板生成 McpSaved（A→B）、McpSecond（C→D）和 McpInvalid（非法原始键）。固定助手从已核实 PID／EXE／启动时间／实际私有桌面定位控件；Qt6 用 UIA ExpandCollapse.Expand、Qt5 用实际提供的 InvokePattern.Invoke 展开菜单，再向唯一五项列表的真实弹窗发送窗口 Up／Down／Enter，必要时 Escape 收尾。只允许这四个导航键，逐条核对所属 PID／桌面并配对 key-up；不修改控件值、不直接调用加载函数、不改变 NoFocus 或产品行为，不发送系统输入。独立 GUI 用 ValuePattern 读配置实际值、GridPattern.Item.Name 读原始／映射列，再由正式 SDK 查询产品；GUI 目标来自固定夹具，不由 MCP 返回值决定。
+
+独立 GUI 七步先分别通过，原始结果在 out/mcp_product/gui-probe-w11-warm-qt6-5/gui_probe 与 cleanup-w11-warm-qt5/gui_probe。正式 MCP 两轮均 native exit 0、18 分项通过：
+
+| kit／运行目录（均在 out/mcp_product） | 正式结果 | 首次 PID／实际桌面 | 冷启动 PID／实际桌面 |
+|---|---|---|---|
+| Qt6 runtime-w11-warm-qt6/QKeyMapperMcpAcceptance_w11_warm_qt6.exe | accept-w11-warm-qt6-3；warm-qt6-3.log | 9436／QkmProduct_dfae27813ed04977a0a95948ee0a1f61 | 25760／QkmProduct_091985d2eb654ef6854701592711d29e |
+| Qt5 runtime-w11-warm-qt5/QKeyMapperMcpAcceptance_w11_warm_qt5.exe | accept-w11-warm-qt5-2；warm-qt5-2.log | 3136／QkmProduct_dd2e410c1954402f99803ab86f97faea | 16672／QkmProduct_e586c5305b1e4a48870a30b39320d660 |
+
+每轮 load_0…6.json 保存 GUI 前后观测、正式 state／目录分页、旧修订错误及 INI 读取前后相等结果。两套实际记录一致：
+
+| GUI 步骤／实际表格 | generation | outcome／实际加载 group | GUI 选择／dirty |
+|---|---|---|---|
+| 启动 McpSaved，A→B | 1 | accepted／McpSaved | McpSaved／false |
+| 激活 McpSecond，C→D | 2 | accepted／McpSecond | McpSecond／false |
+| 激活空白，空表 | 3 | accepted／空字符串 | 空白／true |
+| 激活 McpSaved，A→B | 4 | accepted／McpSaved | McpSaved／true |
+| 激活 McpInvalid，空表 | 5 | invalid_mapping_data／null | 空白／true |
+| 激活 McpSaved 恢复，A→B | 6 | accepted／McpSaved | McpSaved／true |
+| 同项重选 McpSaved，A→B | 7 | accepted／McpSaved | McpSaved／true |
+
+各步的旧 tabs／configurations 分页都返回 stale_catalog，新查询及后续页恢复；最近加载失败没有沿用上次成功来源。请求前后整个 INI 字节、GUI 表格／实际配置／按钮／停止键、正式摘要／dirty／运行采样不变。空白重置产生 dirty=true 属于原 GUI setter 链，后续普通加载未清除；不将此值归因于只读 MCP。最后同内容重载的摘要除 generation 外完全相同，目录仍失效。该额外摘要比较在 Qt6 已保存真实响应上补验通过，随后纳入 Qt5 正式运行断言，没有为测试文本变化重复 Qt6 整轮。精简提取见 warm-evidence-summary.log。
+
+助手校准失败按原结果保留：Qt6 accept-w11-warm-qt6 多余 CloseAdvanced 失败（源码证实高级窗失焦即关闭）；accept-w11-warm-qt6-2 对 NoFocus 控件 SetFocus 失败。cleanup-w11-warm-qt6-2 的 C# 坐标打包 CS0675 被修正；曾因没有先截断语法失败后的后续命令而产生一次无效启动，产品仍正常退出。cleanup-w11-warm-qt6-3/gui_probe 的局部点击未得到唯一弹窗；其记录没有新增窗口数，不能据此认定点击无效。gui-probe-w11-warm-qt6-4 证实 UIA 展开后有两个窗口，改为按五项真实列表筛选后通过，未把 Qt 辅助 Pane 当业务目标。Qt5 accept-w11-warm-qt5 在控件不提供 ExpandCollapse 时拒绝；新增实际 Invoke 兼容分支后 GUI／正式两轮通过。相关固定单配对清理均先观察数量、撤销唯一自有配对并正常关闭，不盲目重试批准或撤销。
+
+正式两轮首次／冷启动四个 closed.json 均 exit 0，界面关闭／撤销／冷启动拒绝旧 key 通过，最终仅清理本轮客户端凭据。产品 High RID 12288，普通控制器／SDK／桥接 Medium RID 8192，系统核实 same_login=true，目标及事件助手实际私有桌面一致。每个控制器 PID 缓存均在 finally 中关闭；阶段收尾 gsudo CacheMode=Explicit、CacheAvailable=false、CacheSessionsCount=0，普通开发进程仍未提权。普通 CIM 仅见原用户产品 2928／报告器 17980、创建时间与 host.json 相同，没有遗留自有产品。原始材料均仅本机 out，不随 Git 同步；PC-W10 的 LOAD-37 不冒充本次原始证据。
+
+PowerShell／嵌入 C#／Python 语法、固定键／无效 HWND 拒绝、五种夹具及禁止覆盖检查通过。共享 C++／IPC／引擎路径未改，ENV-39 构建／协议／SDK 基础检查按原范围复用，不重复编译、全量 IPC、严格分析或 ASan。所有 stock_product_snapshots=false，普通 High 截图仍未验证，未提升截图权限；不证明布局／托盘、实际映射输入、停止任务清理、源行稳定引用、编辑／保存、保存失败／缓存恢复、多个普通 Tab／共通来源或运行时并发。没有 Default 测试、映射启动、系统输入或驱动安装。

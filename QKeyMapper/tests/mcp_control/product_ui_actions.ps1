@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','ApproveRead','Revoke','Disable','CloseMcp')][string]$Action,
+    [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','ApproveRead','Revoke','Disable','CloseMcp',
+        'ReadMapping','SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')][string]$Action,
     [Parameter(Mandatory)][int]$TargetProcessId,
     [Parameter(Mandatory)][string]$ExecutablePath,
     [Parameter(Mandatory)][long]$StartTicks,
@@ -71,6 +72,11 @@ public static class QkmProductUiDesktop {
     [DllImport("user32.dll", SetLastError=true)] private static extern bool EnumDesktopWindows(IntPtr desktop, WindowCallback callback, IntPtr data);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int length);
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
+    [DllImport("user32.dll")] private static extern uint MapVirtualKey(uint key, uint type);
+    [DllImport("user32.dll", SetLastError=true)]
+    private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, UIntPtr wparam, IntPtr lparam,
+        uint flags, uint timeout, out UIntPtr result);
     [DllImport("user32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
     private static extern bool GetUserObjectInformation(IntPtr handle, int index, StringBuilder text, uint size, out uint needed);
     public static string Name(IntPtr window) {
@@ -87,12 +93,37 @@ public static class QkmProductUiDesktop {
             uint owner; GetWindowThreadProcessId(window, out owner);
             if (owner != process || !IsWindowVisible(window)) return true;
             var text = new StringBuilder(512); GetWindowText(window, text, text.Capacity);
-            if (Array.IndexOf(names, text.ToString()) >= 0) result.Add(window);
+            if (names == null || Array.IndexOf(names, text.ToString()) >= 0) result.Add(window);
             return true;
         };
         if (!EnumDesktopWindows(GetThreadDesktop(GetCurrentThreadId()), callback, IntPtr.Zero))
             throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
         return result.ToArray();
+    }
+    private static void ValidateWindow(IntPtr window, uint expectedProcess, string desktop) {
+        uint process;
+        if (window == IntPtr.Zero || GetWindowThreadProcessId(window, out process) == 0 || process != expectedProcess
+            || Name(window) != desktop || Name(IntPtr.Zero) != desktop)
+            throw new InvalidOperationException("Owned private-desktop window identity changed.");
+    }
+    private static void Message(IntPtr window, uint message, uint key, long data) {
+        UIntPtr result;
+        if (SendMessageTimeout(window, message, new UIntPtr(key), new IntPtr(data), 3, 5000, out result) == IntPtr.Zero)
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+    }
+    public static void Key(IntPtr window, uint process, string desktop, uint key) {
+        if (key != 0x26 && key != 0x28 && key != 0x0D && key != 0x1B)
+            throw new InvalidOperationException("Only fixed combo-box navigation keys are allowed.");
+        ValidateWindow(window, process, desktop);
+        long data = 1 | ((long)MapVirtualKey(key, 0) << 16);
+        if (key == 0x26 || key == 0x28) data |= 1L << 24;
+        try { Message(window, 0x0100, key, data); }
+        finally {
+            if (IsWindow(window)) {
+                ValidateWindow(window, process, desktop);
+                Message(window, 0x0101, key, data | 0xC0000000L);
+            }
+        }
     }
 }
 '@
@@ -161,7 +192,111 @@ function Select-Control {
     }
 }
 
-if ($Action -eq 'OpenAdvanced') {
+$mappingActions = @('ReadMapping','SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')
+function Read-MappingView {
+    $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
+    $condition = [Windows.Automation.OrCondition]::new(
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::DataGrid),
+        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Table))
+    $tables = @($mainRoot.FindAll([Windows.Automation.TreeScope]::Descendants, $condition) | Where-Object {
+        $grid = $null
+        $_.Current.ProcessId -eq $TargetProcessId -and -not $_.Current.IsOffscreen -and
+            $_.TryGetCurrentPattern([Windows.Automation.GridPattern]::Pattern, [ref]$grid) -and $grid.Current.ColumnCount -eq 7
+    })
+    if ($tables.Count -ne 1) { throw "Expected one visible mapping grid, found $($tables.Count)." }
+    $grid = $tables[0].GetCurrentPattern([Windows.Automation.GridPattern]::Pattern)
+    if ($grid.Current.RowCount -gt 8) { throw 'The fixed synthetic fixture has too many rows.' }
+    $rows = @()
+    for ($row = 0; $row -lt $grid.Current.RowCount; ++$row) {
+        $rows += @{ original = $grid.GetItem($row, 0).Current.Name; mapping = $grid.GetItem($row, 1).Current.Name }
+    }
+    $stopKey = Find-Control $mainRoot ([Windows.Automation.ControlType]::Edit) 'mappingStopKeyLineEdit' @()
+    $startButton = Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'keymapButton' @()
+    return @{ configuration_display = $configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value;
+        configuration_read_method = 'ValuePattern'; mapping_rows = $rows; mapping_row_count = $rows.Count;
+        mapping_table_read_method = 'GridPattern.Item.Name'; mapping_button_text = $startButton.Current.Name;
+        stop_shortcut_edit = $stopKey.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value }
+}
+
+$mappingObservation = $null
+if ($Action -in $mappingActions) {
+    $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')
+    Select-Control $mappingTab
+    if ($Action -ne 'ReadMapping') {
+        $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
+        if (-not $configuration.Current.IsEnabled) { throw 'Configuration selection is not enabled.' }
+        $wanted = switch ($Action) {
+            'SelectSaved' { 'McpSaved' }
+            'SelectSecond' { 'McpSecond' }
+            'SelectInvalid' { 'McpInvalid' }
+            'SelectBlank' { '' }
+            'ReloadCurrent' {
+                $value = $configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
+                if ($value -cne 'McpSaved') { throw 'ReloadCurrent requires the fixed McpSaved fixture.' }
+                $value
+            }
+        }
+        $before = @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null))
+        $expand = $null
+        $invoke = $null
+        if ($configuration.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$expand)) {
+            $expand.Expand()
+            $openMethod = 'owned_UIA_expand_Up_Down_Return'
+        } elseif ($configuration.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
+            $invoke.Invoke()
+            $openMethod = 'owned_UIA_invoke_Up_Down_Return'
+        } else {
+            throw 'The fixed configuration combo has no supported GUI opening action.'
+        }
+        $popup = [IntPtr]::Zero
+        try {
+            $deadline = [DateTime]::UtcNow.AddSeconds(3)
+            do {
+                $popups = @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null) | Where-Object { $before -notcontains $_ })
+                $candidates = @()
+                $popupDetails = @()
+                foreach ($handle in $popups) {
+                    $root = [Windows.Automation.AutomationElement]::FromHandle($handle)
+                    $listItems = $root.FindAll([Windows.Automation.TreeScope]::Descendants,
+                        [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem))
+                    $popupDetails += @{ window = $handle.ToInt64(); item_count = $listItems.Count;
+                        native_window = $root.Current.NativeWindowHandle; control_type = $root.Current.ControlType.ProgrammaticName }
+                    if ($root.Current.ProcessId -eq $TargetProcessId -and $root.Current.NativeWindowHandle -eq $handle.ToInt64() -and $listItems.Count -eq 5) {
+                        $candidates += @{ window = $handle; items = $listItems }
+                    }
+                }
+                if ($candidates.Count) { break }
+                Start-Sleep -Milliseconds 30
+            } while ([DateTime]::UtcNow -lt $deadline)
+            if ($candidates.Count -ne 1) { throw "Expected one owned five-item configuration popup: $($popupDetails | ConvertTo-Json -Compress)." }
+            $popup = $candidates[0].window
+            $items = $candidates[0].items
+            $wantedNames = if ($wanted -eq '') { @('(空白设定)','(Empty Setting)','(空白設定)') } else { @($wanted) }
+            $indices = @(for ($index = 0; $index -lt $items.Count; ++$index) {
+                if ($items[$index].Current.ProcessId -eq $TargetProcessId -and $wantedNames -ccontains $items[$index].Current.Name) { $index }
+            })
+            if ($indices.Count -ne 1) { throw "Expected one fixed configuration popup item '$wanted'." }
+            # The custom popup focuses its search edit; Up clamps the highlighted list row, Home only moves the caret.
+            for ($index = 0; $index -lt $items.Count; ++$index) {
+                [QkmProductUiDesktop]::Key($popup, $TargetProcessId, $DesktopName, 0x26)
+            }
+            for ($index = 0; $index -lt $indices[0]; ++$index) {
+                [QkmProductUiDesktop]::Key($popup, $TargetProcessId, $DesktopName, 0x28)
+            }
+            [QkmProductUiDesktop]::Key($popup, $TargetProcessId, $DesktopName, 0x0D)
+        } finally {
+            if ($popup -ne [IntPtr]::Zero -and @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null)) -contains $popup) {
+                [QkmProductUiDesktop]::Key($popup, $TargetProcessId, $DesktopName, 0x1B)
+            }
+        }
+    }
+    $mappingObservation = Read-MappingView
+    $mappingObservation.gui_event_method = if ($Action -eq 'ReadMapping') { 'read_only' } else { $openMethod }
+    if ($Action -ne 'ReadMapping') {
+        $mappingObservation.requested_configuration = $wanted
+        $mappingObservation.popup_candidates = $popupDetails
+    }
+} elseif ($Action -eq 'OpenAdvanced') {
     $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')
     Select-Control $mappingTab
     $stopKey = Find-Control $mainRoot ([Windows.Automation.ControlType]::Edit) 'mappingStopKeyLineEdit' @()
@@ -220,6 +355,9 @@ if ($Action -eq 'OpenAdvanced') {
     }
 }
 $result = @{ success = $true; action = $Action; desktop = [QkmProductUiDesktop]::Name($main); window = $main.ToInt64() }
+if ($null -ne $mappingObservation) {
+    foreach ($entry in $mappingObservation.GetEnumerator()) { $result[$entry.Key] = $entry.Value }
+}
 if ($Action -eq 'OpenAdvanced') {
     $result.stop_shortcut_edit = $stopShortcut
     $result.mapping_button_text = $mappingButtonText
@@ -227,7 +365,7 @@ if ($Action -eq 'OpenAdvanced') {
     $result.configuration_display = $configurationDisplay
     $result.configuration_read_method = 'ValuePattern'
 }
-if ($Action -notin 'OpenAdvanced','CloseMcp') {
+if ($Action -in 'OpenMcp','Enable','ApproveRead','Revoke','Disable') {
     $dialog = Find-OwnedWindow $mcpNames
     $result.dialog_window = $dialog.Current.NativeWindowHandle
     $field = Find-Control $dialog ([Windows.Automation.ControlType]::Edit) 'mcpConnection' @('连接信息文件路径','Connection information file','接続情報ファイルのパス')
@@ -238,4 +376,4 @@ if ($Action -notin 'OpenAdvanced','CloseMcp') {
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem)).Count
 }
 # A successful UI call is only an observation; the controller checks IPC and persistence separately.
-[IO.File]::WriteAllText($resultPath, ($result | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText($resultPath, ($result | ConvertTo-Json -Depth 6 -Compress), [Text.UTF8Encoding]::new($false))

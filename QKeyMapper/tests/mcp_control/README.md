@@ -65,7 +65,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Product acceptance failed; inspect its logs be
 
 正式 SDK 通过固定公开工具验证未批准时不可用、只读权限、实际能力、状态／目录查询、凭据重连、撤销断线／拒绝旧 key；完整退出后再启动同一产品，核对默认关闭及撤销持久化。两次均要求正常退出 0，仅清理自身客户端凭据。Qt5 按控件实际支持的 SelectionItem／Invoke 无障碍模式选择固定目标；没有任意控件或命令入口。服务有 240 秒自有产品看门狗，控制器超时不自动重启。
 
-可用 `--load-fixture blank|saved|invalid|missing` 验证启动映射加载记录。blank 为默认模板；其余要求全新运行目录且 INI 与仓库合成模板完全相同，再由普通控制器在启动前写入测试配置。saved 为一个 A→B 源映射，invalid 含固定非法原始键，missing 指向不存在的配置组；均核对实际加载结果／代次、GUI 选择的实际值、只读不变性和目录分页。这里不启动映射，不证明 A→B 输入效果、温切换／空白重置或运行时清理完成。
+可用 `--load-fixture blank|saved|invalid|missing` 验证启动映射加载记录。blank 为默认模板；其余要求全新运行目录且 INI 与仓库合成模板完全相同，再由普通控制器在启动前写入测试配置。saved 为一个 A→B 源映射，invalid 含固定非法原始键，missing 指向不存在的配置组；均核对实际加载结果／代次、GUI 选择的实际值、只读不变性和目录分页。
+
+`--load-fixture warm` 额外准备 McpSaved（A→B）、McpSecond（C→D）和 McpInvalid。固定助手只在已核实的自有私有桌面窗口使用配置控件实际提供的 UIA ExpandCollapse.Expand 或 InvokePattern.Invoke 展开菜单，再向其真实弹窗发送 Up／Down／Enter／Escape，激活配置条目；不设置配置值或调用加载函数。展开后按本进程实际五项配置列表定位唯一弹窗，记录并排除没有该列表的 Qt 辅助窗口；不移动系统光标或修改产品焦点策略。先读取原配置，再温切换、空白重置、加载成功→失败→恢复及同项重载。每步独立读取 GUI 表格与配置实际值，正式 SDK 检查加载代次／结果／来源、旧目录失效与新分页，并比较只读请求前后的 GUI、状态、dirty 和整个 INI 字节。每步原始结果为 load_*.json；实际通过范围以主计划／验证记录为准，脚本或语法检查本身不表示运行通过。这里不启动映射，不证明 A→B 输入效果或运行时清理完成。
 
 普通 PrintWindow 无法捕获 High 产品时明确记录未验证，不提升截图权限；功能断言继续独立检查。失败时先看日志、closed.json 和实际进程／配对状态，再决定接续动作；不得盲目重复配对或撤销。
 
