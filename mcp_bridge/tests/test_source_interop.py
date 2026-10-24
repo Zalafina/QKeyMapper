@@ -128,7 +128,7 @@ async def run(args):
             assert connected["scopes"] == 1
             capabilities = (await call(client, "qkm_get_capabilities"))["result"]
             by_id = {item["id"]: item for item in capabilities["business_capabilities"]}
-            assert set(by_id) == {"state.read", "catalog.read", "source.read"}
+            assert set(by_id) == {"state.read", "catalog.read", "source.read", "help.read"}
             assert by_id["source.read"]["read_only"] is True
             await product.action("CloseMcp")
             before = await product.action("ReadTab1")

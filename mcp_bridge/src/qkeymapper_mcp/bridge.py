@@ -153,6 +153,9 @@ class Bridge:
     async def get_state(self) -> dict:
         return await self._call("qkm_get_state")
 
+    async def get_help(self, topic: str, *, offset: int = 0, limit: int = 50) -> dict:
+        return await self._call("qkm_get_help", {"topic": topic, "offset": offset, "limit": limit})
+
     async def query(self, entity: str, *, catalog_revision: str | None = None,
                     source_revision: str | None = None, source_tab_ref: str | None = None,
                     offset: int = 0, limit: int = 50) -> dict:

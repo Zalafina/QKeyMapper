@@ -29,7 +29,7 @@ from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.protocol import BridgeError
 from qkeymapper_mcp.windows import identity
 
-TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state", "qkm_query"}
+TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state", "qkm_get_help", "qkm_query"}
 
 
 def elevation(process) -> int:
@@ -221,7 +221,7 @@ async def run(args):
         assert {tool.name for tool in tools} == TOOLS
         for tool in tools:
             assert tool.input_schema["additionalProperties"] is False
-            valid = {"entity": "tabs"} if tool.name == "qkm_query" else {}
+            valid = {"entity": "tabs"} if tool.name == "qkm_query" else {"topic": "basic_mapping"} if tool.name == "qkm_get_help" else {}
             rejected = await client.call_tool(tool.name, {**valid, "unknown": True})
             assert rejected.is_error, "Unknown arguments must not be silently ignored: " + tool.name
         for invalid in ({"offset": True}, {"offset": "1"}, {"offset": -1}, {"limit": 0},
@@ -229,6 +229,10 @@ async def run(args):
                 {"source_revision": "bad"}, {"source_tab_ref": "x"}, {"source_tab_ref": "a" * 64 + ":source:01"}):
             assert (await client.call_tool("qkm_query", {"entity": "tabs", **invalid})).is_error
         assert (await call(client, "qkm_get_connection_state"))["status"] == "disconnected"
+        for invalid in ({}, {"topic": "unknown"}, {"topic": True}, {"topic": "basic_mapping", "offset": True},
+                {"topic": "original_keys", "limit": 101}, {"topic": "mapping_keys", "offset": -1}):
+            assert (await client.call_tool("qkm_get_help", invalid)).is_error
+        await call(client, "qkm_get_help", {"topic": "basic_mapping"}, error="not_connected")
         await call(client, "qkm_query", {"entity": "tabs"}, error="not_connected")
         assert (await call(client, "qkm_connect"))["accepted"]
         assert (await connection(client, "failed"))["error"] == "application_unavailable"
@@ -268,6 +272,7 @@ async def run(args):
             assert response["result"]["business_capabilities"] == []
             assert response["result"]["scopes"] == 1 and response["result"]["instance"] == connected["instance"]
             await call(client, "qkm_get_state", error="unsupported_capability")
+            await call(client, "qkm_get_help", {"topic": "basic_mapping"}, error="unsupported_capability")
             await call(client, "qkm_query", {"entity": "tabs"}, error="unsupported_capability")
             saved = store.load()
             assert saved is not None and saved.secret.hex() not in json.dumps({"state": connected, "response": response})

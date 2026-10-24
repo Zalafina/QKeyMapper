@@ -1299,3 +1299,21 @@ PC-W10，HEAD f867ab5c／产品父提交 a8b8a6fa。候选仅将父源参数传�
 job-059～062：基线／候选的实际序列完成分别为 C↓↑ D↓↑，停止取消分别仅 C↓↑ 且原等待期限后无迟到 D；四组均通过，原键恢复、停止及四产品／四接收器清理正常。055～058 另四产品／四接收器也均 exit 0，启用的配对／接口均撤销关闭。仅复用原授权 Default 输入／焦点范围与 PID 6816 固定入口。
 
 本机证据不随 Git：out/mcp_bridge/source64-build-qt6.txt／qt5.txt、source64-static-worker.txt；out/static-analysis 当前双目标报告；out/mcp_lifecycle/resume-w10-20261023/build-*-write64-*.log、source64-* runtime／identity、run-source64.py、launch-case64.ps1；out/mcp_product/engine61/deployment-source64.json、source64-basic-analysis.json、job-055～062。16 项普通探针自测通过，新增 forced-UP 输入未执行。候选尚未形成独立公共修复提交切点；三项新 NoOp 红绿例、ASan 运行、尾延迟复核、晚到探针及写入闭环继续保留，Qt5／Win11 真实输入与设备门槛不变。
+
+## HELP-20261024-66：首闭环基础帮助与真实解析器键名
+
+PC-W10，基于 11e3f44d／产品 a8b8a6fa；新增 qkm_get_help／help.read，当前八工具、四项 Read 能力。qkm_mapping_help 复用现有常量和 GUI 校验器的有效键名列表，独立验证 topic／offset／limit、空目录和帧预算；基础示例及单位不另造解析器。Python 仅适配协议，没有依赖／锁文件／身份认证／作用域／manifest 或 TS 修改。帮助不读取可变映射源，不授权编辑或证明设备可用。
+
+| 当前选定检查 | 结果 |
+|---|---|
+| 双 Qt 普通产品／维护构建 | 原生 exit 0；Qt6 零编译链接警告，Qt5 兼容通过。产品沿 BuildTools 14.40，组件沿既有 Community 14.44 |
+| 双 Qt 私有桌面组件 | 各 mappingHelpReference／Boundaries 两组、含 init／cleanup 各 4 passed；A→B、单位／真实范围、大小写／Unicode／去空去重／分角色分页、末页／越界、未知字段／类型／数值、未初始化及超帧 |
+| 普通 Python／正式 SDK | 协议 20／结果 6 项通过；两套 asInvoker 维护服务各 12 场景，包含八工具严格参数、帮助未连接／未支持错误及既有认证／撤销／取消／退出 |
+| Qt6 正式产品 job-067 | 私有桌面 QkmProduct_62bbe23e6fe940b49030fd2de0ccf351，12 场景通过；三主题、原始 233／映射 244 键名全量分页、示例／单位／范围／下一页与原生负例、读取前后状态／整份 INI 不变；既有目录、撤销、重连及冷启动仍通过 |
+| Qt6 源查询 job-068 | 私有桌面 QkmProduct_4ad2fd79b6ff49179843df188fe09cb6，原 10 场景通过，能力集合新增 help.read；真实 GUI／非当前及共通源、只读不变性、陈旧引用／失败恢复和新配对绑定保持 |
+
+实际 EXE 为 out/mcp_product/engine61/unattended-20261024/job-067/runtime/QKeyMapperMcpAcceptance_engine61_current.exe，SHA-256 e14bbb168978144afe76d001a5a2b1eaefacd8d466c57e7620836d766d2fb1f3；068 同版。该验收版本含未提交 WRITE-64 派生源候选，帮助路径不调用派生发送；本条不验证或依赖该候选，不据此解除其公共输入门槛。067 含冷启动、068 共三产品 exit 0，High／Medium 及系统登录关联核实；接口／配对清理，父缓存 PID 6816 仍按 TEMP-CACHE-61 保留，未启动新缓存。
+
+普通 PrintWindow 不能捕获本轮 High 窗口，记录 UNVERIFIED、没有提升截图；界面布局未修改，不拿 UIA 或组件图替代像素证据。没有 Default 输入、映射启动、运行中帮助、Qt5 High 正式产品／Win11、完整 DSL／设备依赖、ASan 或全源静态分析；异源借用与 ENGINE-61 CPU 等门槛继续保留。帮助只操作不可变列表副本／JSON，选择双 Qt 边界和正式 Qt6 产品读取验证，不重复输入／性能验收。
+
+本机证据不随 Git：out/mcp_bridge/help66-build-qt*-final.txt／help66-sdk-qt*.txt；out/tests/mcp_control/{qt6-release,qt5-release}/build-help66-final.log、help66-components-final、help66-sdk-*；out/mcp_product/engine61/deployment-help66.json 与 job-067／068 的帮助／GUI／原生响应／topology／closed。首次维护启动器路径和 Makefile 选择未进入编译，校正后构建通过，原日志保留。独立只读帮助提交切点，公共候选／晚到探针另行保留。

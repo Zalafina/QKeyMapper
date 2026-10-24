@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。当前支持连接／GUI 配对、能力查询、只读状态、配置／Tab 目录以及初始静止内存源表／源行分页。**尚未提供映射编辑、设置变更、启停或输入测试操作**。当前产品返回 `stage=business`、`state.read`、`catalog.read` 与 `source.read`；未接入业务处理器的维护服务仍返回 `transport_only` 和空业务能力列表，以实际响应为准。各机器实际通过范围见[验证记录](../handoff/qkeymapper_mcp_control/validation.md)。
+官方 Python MCP SDK 的 stdio 适配层。当前支持连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、初始静止或当前完整清理后的源表／源行分页，以及基础映射语法和解析器键名帮助。**尚未提供映射编辑、设置变更、启停或输入测试操作**。当前产品返回 `stage=business`、`state.read`、`catalog.read`、`source.read` 与 `help.read`；未接入业务处理器的维护服务仍返回 `transport_only` 和空业务能力列表，以实际响应为准。各机器实际通过范围见[验证记录](../handoff/qkeymapper_mcp_control/validation.md)。
 
 桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
@@ -58,13 +58,14 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 5. 能力包含 `state.read` 时，`qkm_get_state` 读取本次 GUI 线程快照：界面选择对应的配置组／类型、dirty、当前 Tab、GUI 监视状态、Worker 原子状态采样和实际停止快捷键。另含 `mapping_load_context`：最近映射加载／空白重置的代次（十进制字符串）、结果和实际解析的配置组；加载未完成时 context_busy，非法映射导致加载失败时 outcome=invalid_mapping_data、group=null，不沿用旧来源。它记录最后一次加载，不能证明后续编辑未变、全部数据来自同一磁盘组或已保存；configuration 仍只表示界面选择。`schema_version=1`；不可用的 `business_revision=null`。初始静止或当前清理读取许可无效时 `stop_completion=unobserved`；仅在 IDLE／STOPPED、加载成功且清理代次与当前活动修订匹配时报告 observed，它是当前只读清理上下文，不是异步操作结果或编辑权限。Tab index 只作观察值，不能用作稳定编辑目标；GUI idle 或 Worker stopped 也不能证明停止清理完成。 GUI 停止协调期间摘要可报告 gui_state=stopping、monitoring_enabled=false；这表示前台窗口监视已停止，不表示 Worker／发送任务已经排空，stop_completion 仍为 unobserved。
 6. 能力包含 `catalog.read` 时，`qkm_query` 的 configurations／tabs 使用目录分页。首轮 offset=0，limit 为 1–100（默认 50），后续页携带 catalog.revision 为 catalog_revision，并使用实际返回的 next_offset；next_offset=null 表示结束。相关目录、映射加载代次／结果或授权上下文变化返回 stale_catalog，应从首轮重新查询。相同目录／上下文的重复读取及同配对重连保持修订号稳定；不保留目录缓存或过期定时器。
 7. 能力包含 `source.read` 时，先查询 mapping_sources，后续页传返回的 source_snapshot.revision 为 source_revision；查询 mappings 必须同时传该 source_revision 和所选 source_tab_ref。源表来自实际普通／共通内存表，包含非当前 Tab，附加显示的共通行不会重复列为普通源行。每个源行含 source_ref、source_row、fields、derived 和 lock_state_sample；fields 沿用现有映射码字段名及类型，派生字段只采样，不重新计算或回写。引用属于本次源快照，不能解析为写入授权；源内容、加载／结构代次、实例或配对权限改变时返回 stale_source，须重新查询。完整快照上限 4 MiB，单页还受现有通信帧限制，使用实际 next_offset 分页；单项超限明确拒绝。
-8. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
+8. 能力包含 `help.read` 时，`qkm_get_help` 的 topic 为 `basic_mapping`、`original_keys` 或 `mapping_keys`。基础帮助给出 A→B 语法示例、组合／序列分隔符、等待及连发的毫秒范围／默认值、映射项重复模式及次数含义（与宏 xN 的约束分开）；等待控件的 0 表示不追加后缀，字面 ⏱0 非法。键名直接来自产品解析器的有效列表，去空／去重并按大小写敏感顺序分页；offset 从 0 开始，limit 为 1–100、默认 50，使用 next_offset 续页。返回 reference_scope=parser_help_only，不校验完整映射或设备是否可用，不授予编辑权限；实际可调用操作以能力发现为准。此帮助不读取可变映射源，也不停止映射。
+9. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
 
 目录只提供配置名称和当前 Tab 元数据；display_name 来自下拉框条目文本，空白项可为空字符串，通过 kind=draft 区分，不能仅按显示名定位。saved_profile 的内容未加载查询，未附着共通表也有 attached_to_ui=false 的目录记录，这不表示屏幕可见性。selected_configuration／is_selected 只表示界面选择。catalog_ref 和目录修订号不是映射编辑目标或完整业务修订，不能据此提交变更；权限仍由认证与逐请求检查决定。
 
 源查询要求 GUI idle、Worker stopped、最近加载成功，且读取基准为初始静止（read_basis=pristine_idle，cleanup_generation=null）或仍有效的完整清理许可（read_basis=completed_cleanup，cleanup_generation 为本实例清理代次字符串）；否则 context_busy，不主动停止映射。生命周期请求、按钮排队、任务构造和同步／包装在相关处理前记录活动修订，与在途复制互斥。只有完整停止协调、所有者／发送池及 GUI 尾部完成后，才在互斥内记录清理对应修订；任何后续活动或饱和值均拒绝该许可，不能仅凭 IDLE／STOPPED 或零计数恢复。相同映射跨启停后也必须重新查询引用。此许可只用于复制源数据，不能授权删除／修改源表或替代正式启停操作结果。source_snapshot 的配置选择和最近加载记录不能证明每行磁盘来源；未附着的共通备份可能保留自之前的配置，origin=source_memory 只证明当前内存来源。源修订仍不是完整业务修订。
 
-连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前七个工具的 schema 均声明 `additionalProperties=false`，目录参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
+连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前八个工具的 schema 均声明 `additionalProperties=false`，目录及帮助参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
 
 ## 安全与失败语义
 
@@ -105,6 +106,6 @@ Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际�
 
 已获用户授权管理员测试且能确认 UAC 时，加 `--elevated-server`。它仅用 gsudo 启动固定的短生命周期助手和自有维护 EXE；控制器、正式 SDK／stdio 桥接及全部断言仍为普通权限。记录双方实际完整性、原始 AuthenticationId 是否相同、系统互指关联和目标实际桌面，不记录 SID／登录 ID。此模式不修改 manifest、不改变 gsudo 配置，启动等待超时不自动重启。维护进程由固定退出事件关闭并核对 exit 0，保留原有 180 秒看门狗。
 
-测试通过官方 `Client`／stdio 执行 initialize、list、工具调用；维护 EXE 中的 `--interop-fixture` 只提供固定 Qt 界面事件及失败夹具，产品 EXE 不含此入口。12 个短场景覆盖七工具未知字段／目录参数拒绝、GUI 批准前不 ready、跨语言证明、密钥重连、错误 DPAPI 上下文、无业务处理器时状态／目录请求拒绝、启用／关闭状态撤销及旧 key 拒绝、GUI 拒绝、取消、stdio 退出、错误预期 EXE、私有但被篡改／过期的提示和服务器保存失败；加 `--approval-timeout` 时共 13 场景。退出清理自有窗口和测试凭据。原始日志、状态和结果在 out，随 Git 同步的是测试源码；各轮实际执行及复用范围见验证记录。
+测试通过官方 `Client`／stdio 执行 initialize、list、工具调用；维护 EXE 中的 `--interop-fixture` 只提供固定 Qt 界面事件及失败夹具，产品 EXE 不含此入口。12 个短场景覆盖八工具未知字段／目录及帮助参数拒绝、GUI 批准前不 ready、跨语言证明、密钥重连、错误 DPAPI 上下文、无业务处理器时状态／目录／帮助请求拒绝、启用／关闭状态撤销及旧 key 拒绝、GUI 拒绝、取消、stdio 退出、错误预期 EXE、私有但被篡改／过期的提示和服务器保存失败；加 `--approval-timeout` 时共 13 场景。退出清理自有窗口和测试凭据。原始日志、状态和结果在 out，随 Git 同步的是测试源码；各轮实际执行及复用范围见验证记录。
 
 此切片是本地开发检查点，完整进度见 [主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。SDK API 依据 [官方 Python SDK](https://github.com/modelcontextprotocol/python-sdk) 及本环境固定版本的已安装源码核对。

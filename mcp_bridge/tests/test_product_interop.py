@@ -276,7 +276,7 @@ async def run(args):
             assert result["ok"] and result["result"]["stage"] == "business"
             capabilities = result["result"]["business_capabilities"]
             by_id = {item["id"]: item for item in capabilities}
-            assert set(by_id) == {"state.read", "catalog.read", "source.read"}
+            assert set(by_id) == {"state.read", "catalog.read", "source.read", "help.read"}
             assert by_id["state.read"]["method"] == "qkm_get_state" and by_id["state.read"]["read_only"] is True
             assert by_id["state.read"]["arguments_schema"]["additionalProperties"] is False
             assert by_id["catalog.read"]["method"] == "qkm_query" and by_id["catalog.read"]["read_only"] is True
@@ -298,6 +298,31 @@ async def run(args):
             assert baseline["mapping_button_text"] == "映射开始"
             assert (await call(client, "qkm_get_state"))["result"] == summary
             passed("read-only business state matches independent GUI stop shortcut and idle button; cleanup remains unobserved")
+            ini_path = args.executable.parent / "keymapdata.ini"
+            before_help_ini = ini_path.read_bytes()
+            help_result = (await call(client, "qkm_get_help", {"topic": "basic_mapping"}))["result"]
+            reference = help_result["items"][0]
+            assert reference["example_syntax"] == {"original_key": "A", "mapping_key": "B"}
+            assert reference["mcp_edit_requires"] == ["idle", "no_pending_input_cleanup", "current_target_validation", "configure_permission"]
+            assert reference["wait"] == {"unit": "ms", "minimum": 0, "maximum": 999999,
+                "suffix": "⏱", "zero_omits_suffix": True, "literal_suffix_minimum": 1}
+            key_help = {}
+            for topic in ("original_keys", "mapping_keys"):
+                names, offset = [], 0
+                while offset is not None:
+                    page = (await call(client, "qkm_get_help", {"topic": topic, "offset": offset, "limit": 100}))["result"]
+                    assert page["reference_scope"] == "parser_help_only" and page["offset"] == offset
+                    names.extend(page["items"])
+                    offset = page["next_offset"]
+                assert len(names) == page["total"] and names == sorted(set(names))
+                assert {"A", "B", "L-Ctrl", "Mouse-L"}.issubset(names) and "" not in names
+                if topic == "mapping_keys":
+                    assert "⏱" not in names and "»" not in names
+                await call(client, "qkm_get_help", {"topic": topic, "offset": len(names) + 1}, error="invalid_arguments")
+                key_help[topic] = names
+            assert (await call(client, "qkm_get_state"))["result"] == summary and ini_path.read_bytes() == before_help_ini
+            (args.output / "mapping_help.json").write_text(json.dumps({"basic": help_result, **key_help}, ensure_ascii=False, indent=2), encoding="utf-8")
+            passed("formal read-only help returns parser names, units and example without changing state or INI")
             passed("mapping load context records the resolved load outcome independently of GUI selection: " + args.load_fixture)
             catalog = (await call(client, "qkm_query", {"entity": "tabs", "limit": 1}))["result"]
             assert catalog["schema_version"] == 1 and catalog["entity"] == "tabs"
@@ -353,6 +378,9 @@ async def run(args):
                 return request_id, probe._pipe.receive(deadline)
             for method, arguments, expected in (("qkm_get_state", {"unknown": True}, "invalid_arguments"),
                     ("qkm_get_capabilities", {"unknown": True}, "invalid_arguments"),
+                    ("qkm_get_help", {"topic": "basic_mapping", "unknown": True}, "invalid_arguments"),
+                    ("qkm_get_help", {"topic": "unknown"}, "unsupported_query"),
+                    ("qkm_get_help", {"topic": "original_keys", "limit": True}, "invalid_arguments"),
                     ("qkm_query", {"entity": "tabs", "unknown": True}, "invalid_arguments"),
                     ("qkm_query", {"entity": "tabs", "limit": True}, "invalid_arguments"),
                     ("qkm_query", {"entity": "tabs", "limit": 1.5}, "invalid_arguments"),

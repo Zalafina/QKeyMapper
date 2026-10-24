@@ -1,5 +1,6 @@
 #include "../../automation/qkm_control_dialog.h"
 #include "../../automation/qkm_source_snapshot.h"
+#include "../../automation/qkm_mapping_help.h"
 #include "../../qkm_mapping_source_access.h"
 #include "../../qkeymapper_qt_compat.h"
 #include "../../qkeymapper_constants.h"
@@ -96,7 +97,77 @@ private slots:
     void sourceSnapshotQueryCost_data();
     void sourceSnapshotQueryCost();
     void sourceReadAdmission();
+    void mappingHelpReference();
+    void mappingHelpBoundaries();
 };
+
+void McpControlTest::mappingHelpReference()
+{
+    const auto capability = mappingHelpCapability();
+    QCOMPARE(capability.value(QStringLiteral("id")).toString(), QStringLiteral("help.read"));
+    QCOMPARE(capability.value(QStringLiteral("required_scopes")).toInt(), 1);
+    QVERIFY(capability.value(QStringLiteral("read_only")).toBool());
+    const auto help = queryMappingHelp({{QStringLiteral("topic"), QStringLiteral("basic_mapping")}}, {}, {});
+    QVERIFY(help.ok());
+    QCOMPARE(help.page.value(QStringLiteral("reference_scope")).toString(), QStringLiteral("parser_help_only"));
+    QVERIFY(help.page.value(QStringLiteral("next_offset")).isNull());
+    const auto item = help.page.value(QStringLiteral("items")).toArray().first().toObject();
+    QCOMPARE(item.value(QStringLiteral("example_syntax")).toObject(), (QJsonObject{
+        {QStringLiteral("original_key"), QStringLiteral("A")}, {QStringLiteral("mapping_key"), QStringLiteral("B")}}));
+    QCOMPARE(item.value(QStringLiteral("sequence_separator")).toString(), QStringLiteral("»"));
+    QCOMPARE(item.value(QStringLiteral("sequence_max_items_exclusive")).toInt(), 1000000);
+    QVERIFY(item.value(QStringLiteral("mcp_edit_requires")).toArray().contains(QStringLiteral("no_pending_input_cleanup")));
+    const auto wait = item.value(QStringLiteral("wait")).toObject();
+    QCOMPARE(wait.value(QStringLiteral("unit")).toString(), QStringLiteral("ms"));
+    QCOMPARE(wait.value(QStringLiteral("maximum")).toInt(), 999999);
+    QCOMPARE(wait.value(QStringLiteral("literal_suffix_minimum")).toInt(), 1);
+    QVERIFY(wait.value(QStringLiteral("zero_omits_suffix")).toBool());
+    const auto burst = item.value(QStringLiteral("burst")).toObject();
+    QCOMPARE(burst.value(QStringLiteral("press_default")).toInt(), 40);
+    QCOMPARE(burst.value(QStringLiteral("release_default")).toInt(), 20);
+    QCOMPARE(item.value(QStringLiteral("repeat")).toObject().value(QStringLiteral("count_maximum")).toInt(), 99999999);
+}
+
+void McpControlTest::mappingHelpBoundaries()
+{
+    const QStringList originals{QStringLiteral("B"), QStringLiteral("A"), QString(), QStringLiteral("A"),
+        QStringLiteral("中"), QStringLiteral("a")};
+    const QStringList mappings{QStringLiteral("Mouse-L"), QStringLiteral("B")};
+    const auto originalCopy = originals;
+    const QJsonObject query{{QStringLiteral("topic"), QStringLiteral("original_keys")}, {QStringLiteral("limit"), 2}};
+    const auto first = queryMappingHelp(query, originals, mappings);
+    QVERIFY(first.ok());
+    QCOMPARE(first.page.value(QStringLiteral("total")).toInt(), 4);
+    QCOMPARE(first.page.value(QStringLiteral("next_offset")).toInt(), 2);
+    QCOMPARE(first.page.value(QStringLiteral("items")).toArray(), (QJsonArray{QStringLiteral("A"), QStringLiteral("B")}));
+    auto next = query;
+    next.insert(QStringLiteral("offset"), 2);
+    const auto last = queryMappingHelp(next, originals, mappings);
+    QVERIFY(last.ok());
+    QCOMPARE(last.page.value(QStringLiteral("items")).toArray(), (QJsonArray{QStringLiteral("a"), QStringLiteral("中")}));
+    QVERIFY(last.page.value(QStringLiteral("next_offset")).isNull());
+    next.insert(QStringLiteral("offset"), 4);
+    QVERIFY(queryMappingHelp(next, originals, mappings).page.value(QStringLiteral("items")).toArray().isEmpty());
+    const auto mapping = queryMappingHelp({{QStringLiteral("topic"), QStringLiteral("mapping_keys")}}, originals, mappings);
+    QCOMPARE(mapping.page.value(QStringLiteral("items")).toArray(), (QJsonArray{QStringLiteral("B"), QStringLiteral("Mouse-L")}));
+    QCOMPARE(originals, originalCopy);
+    for (const QJsonObject &bad : QList<QJsonObject>{
+        {{QStringLiteral("unknown"), true}}, {{QStringLiteral("topic"), true}},
+        {{QStringLiteral("offset"), true}}, {{QStringLiteral("offset"), 0.5}},
+        {{QStringLiteral("offset"), -1}}, {{QStringLiteral("offset"), 2147483648.0}},
+        {{QStringLiteral("offset"), 5}}, {{QStringLiteral("limit"), 0}}, {{QStringLiteral("limit"), 101}},
+        {{QStringLiteral("limit"), QStringLiteral("1")}}, {{QStringLiteral("limit"), QJsonValue(QJsonValue::Null)}}}) {
+        auto arguments = query;
+        for (auto it = bad.constBegin(); it != bad.constEnd(); ++it) arguments.insert(it.key(), it.value());
+        QCOMPARE(queryMappingHelp(arguments, originals, mappings).errorCode, QStringLiteral("invalid_arguments"));
+    }
+    QCOMPARE(queryMappingHelp({}, originals, mappings).errorCode, QStringLiteral("invalid_arguments"));
+    QCOMPARE(queryMappingHelp({{QStringLiteral("topic"), QStringLiteral("unknown")}}, originals, mappings).errorCode,
+        QStringLiteral("unsupported_query"));
+    QCOMPARE(queryMappingHelp(query, {}, mappings).errorCode, QStringLiteral("context_busy"));
+    QCOMPARE(queryMappingHelp(query, {QString(MaxFramePayload, QLatin1Char('X'))}, {}).errorCode,
+        QStringLiteral("result_too_large"));
+}
 
 void McpControlTest::sourceReadAdmission()
 {

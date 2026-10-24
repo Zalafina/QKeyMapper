@@ -37,7 +37,7 @@ class ToolResultTests(unittest.TestCase):
                 args=["-B", "-c", "from test_tool_results import stdio_error_fixture; stdio_error_fixture()"],
                 env={"PYTHONPATH": os.pathsep.join((str(root / "src"), str(root / "tests")))}, cwd=directory)
             async with Client(config) as client:
-                self.assertEqual(len((await client.list_tools()).tools), 7)
+                self.assertEqual(len((await client.list_tools()).tools), 8)
                 for entity, code in (("configurations", "permission_denied"), ("tabs", "stale_catalog"),
                                      ("mapping_sources", "stale_source"), ("mappings", "context_busy")):
                     arguments = {"entity": entity}

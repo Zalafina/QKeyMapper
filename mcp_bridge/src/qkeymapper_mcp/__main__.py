@@ -122,6 +122,13 @@ def main() -> None:
         return tool_result(await bridge.get_state())
 
     @tool(read)
+    async def qkm_get_help(topic: Literal["basic_mapping", "original_keys", "mapping_keys"],
+            offset: Annotated[StrictInt, Field(ge=0, le=2147483647)] = 0,
+            limit: Annotated[StrictInt, Field(ge=1, le=100)] = 50) -> ToolResult:
+        """读取基础映射语法、毫秒单位／范围／默认值和 A→B 示例，或分页查询产品解析器的真实按键名称。repeat 指映射项的重复设置，宏的 xN 语法另行校验。名称区分大小写；列表不证明设备可用，帮助不代替完整校验或编辑授权，实际可用操作仍以能力查询为准。offset 从 0 开始，limit 为 1–100；使用 next_offset 续页。只读，不停止映射。"""
+        return tool_result(await bridge.get_help(topic, offset=offset, limit=limit))
+
+    @tool(read)
     async def qkm_query(entity: Literal["configurations", "tabs", "mapping_sources", "mappings"],
             catalog_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
             source_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,

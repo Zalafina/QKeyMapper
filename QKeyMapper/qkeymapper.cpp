@@ -1,6 +1,7 @@
 #include "qkm_message_box.h"
 #include "automation/qkm_control_dialog.h"
 #include "automation/qkm_source_snapshot.h"
+#include "automation/qkm_mapping_help.h"
 #include <QtMath>
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
@@ -37544,6 +37545,14 @@ void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationReq
 void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
+    if (request.method == QStringLiteral("qkm_get_help")) {
+        const auto help = QkmAutomation::queryMappingHelp(request.arguments,
+            QItemSetupDialog::s_valiedOriginalKeyList, QItemSetupDialog::s_valiedMappingKeyList);
+        auto &server = m_McpControlDialog->server();
+        if (help.ok()) server.reply(request.connectionId, request.requestId, help.page);
+        else server.replyError(request.connectionId, request.requestId, help.errorCode, help.message);
+        return;
+    }
     if (request.method == QStringLiteral("qkm_query")) {
         const QString entity = request.arguments.value(QStringLiteral("entity")).toString();
         if (entity == QStringLiteral("mapping_sources") || entity == QStringLiteral("mappings"))
@@ -37615,7 +37624,8 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                 {QStringLiteral("limitations"), QJsonArray{QStringLiteral("requires_pristine_idle_or_current_completed_cleanup"),
                     QStringLiteral("mapping_rows_require_source_revision_and_source_tab_ref"),
                     QStringLiteral("memory_provenance_only_not_disk_origin"), QStringLiteral("source_revision_is_not_a_business_revision"),
-                    QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}}});
+                    QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}},
+            QkmAutomation::mappingHelpCapability()});
         return;
     }
     const QJsonObject state = collectAutomationState();
