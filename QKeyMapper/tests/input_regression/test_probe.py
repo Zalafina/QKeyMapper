@@ -1,6 +1,7 @@
 """Harness checks: private-window messages only; no SendInput, mapping or UAC."""
 
 import asyncio
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -19,7 +20,7 @@ import win32gui
 import win32process
 import win32service
 
-from probe import SOURCE_TAG, Sender, focus_click, keyboard_input, plain_latencies, process_sample
+from probe import SOURCE_TAG, Sender, _thread_sample, focus_click, keyboard_input, plain_latencies, process_sample
 from receiver import CLOSE, COUNT, FLUSH, RESET, RESULT_ROOT
 from run_acceptance import Receiver, late_force_release
 
@@ -104,6 +105,34 @@ class ProbeTests(unittest.TestCase):
         result = subprocess.run([sys.executable, "-O", str(script), "--help"], capture_output=True, timeout=10)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(b"Run without -O", result.stderr)
+
+    def test_thread_cpu_reads_current_owner_and_rejects_reuse(self):
+        first = _thread_sample(win32api.GetCurrentThreadId(), os.getpid())
+        second = _thread_sample(win32api.GetCurrentThreadId(), os.getpid())
+        self.assertGreater(first["creation_100ns"], 0)
+        self.assertEqual(first["creation_100ns"], second["creation_100ns"])
+        self.assertGreaterEqual(second["cpu_100ns"], first["cpu_100ns"])
+        self.assertEqual(second["cpu_100ns"], second["kernel_100ns"] + second["user_100ns"])
+        changed = _thread_sample(win32api.GetCurrentThreadId(), os.getpid() + 1)
+        self.assertTrue(changed["owner_changed"])
+        self.assertNotIn("cpu_100ns", changed)
+
+    def test_thread_cpu_permission_failure_is_not_zero_cpu(self):
+        with patch("probe.kernel32.OpenThread", return_value=None):
+            ctypes.set_last_error(5)
+            result = _thread_sample(123, os.getpid())
+        self.assertEqual(result["read_error"], 5)
+        self.assertNotIn("cpu_100ns", result)
+
+    def test_thread_description_accepts_positive_hresult_success(self):
+        name = ctypes.create_unicode_buffer("Qkm thread sampler")
+        def description(_thread, target):
+            ctypes.cast(target, ctypes.POINTER(ctypes.c_wchar_p))[0] = ctypes.cast(name, ctypes.c_wchar_p)
+            return 0x10000000
+        with patch("probe.thread_description", side_effect=description), patch("probe.kernel32.LocalFree") as free:
+            result = _thread_sample(win32api.GetCurrentThreadId(), os.getpid())
+        self.assertEqual(result["name"], "Qkm thread sampler")
+        free.assert_called_once()
 
     def test_timeout_result_uses_message_payload(self):
         receiver = Receiver()

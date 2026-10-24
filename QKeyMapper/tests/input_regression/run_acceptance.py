@@ -162,9 +162,9 @@ SendToSameWindowsChecked=0
 """
 
 
-async def measurements(product, stop, samples):
+async def measurements(product, stop, samples, *, thread_cpu=False):
     while not stop.is_set():
-        samples.append(process_sample(product.process, product.pid, product.window))
+        samples.append(process_sample(product.process, product.pid, product.window, thread_cpu=thread_cpu))
         try:
             await asyncio.wait_for(stop.wait(), 1)
         except asyncio.TimeoutError:
@@ -226,7 +226,7 @@ async def run_state(args, state, executable):
             sender = Sender(receiver.window, receiver.pid, allow_default=args.allow_default)
             warmup = await plain(receiver, sender, 10, 0x42)
             save(output / "warmup.json", warmup)
-            tasks.append(asyncio.create_task(measurements(product, stop, samples)))
+            tasks.append(asyncio.create_task(measurements(product, stop, samples, thread_cpu=args.thread_cpu)))
             if state == "query":
                 tasks.append(asyncio.create_task(queries(client, stop, requests)))
             rounds = []
@@ -241,7 +241,7 @@ async def run_state(args, state, executable):
             stop.set()
             await asyncio.gather(*tasks)
             tasks.clear()
-            samples.append(process_sample(product.process, product.pid, product.window))
+            samples.append(process_sample(product.process, product.pid, product.window, thread_cpu=args.thread_cpu))
             sender.release()
             receiver.reset()
             try:
@@ -264,6 +264,8 @@ async def run_state(args, state, executable):
                 "query_latency_ms": distribution([r["ms"] for r in requests]) if requests else None,
                 "executable": str(executable), "exe_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
                 "controller_pid": os.getpid(), "pairs_per_round": args.pairs,
+                "thread_cpu_enabled": args.thread_cpu,
+                "gui_thread_id": win32process.GetWindowThreadProcessId(product.window)[0],
                 "scope": "ordinary Release, real SendInput A->B, owned ordinary receiver, Default; not engine-only latency"}
             save(output / "result.json", result)
             if state in ("idle", "query"):
@@ -465,6 +467,8 @@ if __name__ == "__main__":
                         help="Fixed original-function cases; use --states baseline off")
     parser.add_argument("--allow-default", action="store_true")
     parser.add_argument("--allow-focus-click", action="store_true")
+    parser.add_argument("--thread-cpu", action="store_true",
+                        help="Read per-thread CPU/name with ordinary query rights; does not measure wakeups")
     parser.add_argument("--allow-late-forced-up", action="store_true",
                         help="Explicitly authorized product-tagged A release probe; requires --cases hold_stop")
     parser.add_argument("--gsudo-cache", action="store_true")

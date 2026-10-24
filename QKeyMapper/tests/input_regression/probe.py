@@ -50,6 +50,18 @@ kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
 kernel32.Thread32First.argtypes = [wintypes.HANDLE, ctypes.POINTER(THREADENTRY32)]
 kernel32.Thread32Next.argtypes = kernel32.Thread32First.argtypes
 kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+kernel32.OpenThread.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+kernel32.OpenThread.restype = wintypes.HANDLE
+kernel32.GetProcessIdOfThread.argtypes = [wintypes.HANDLE]
+kernel32.GetProcessIdOfThread.restype = wintypes.DWORD
+kernel32.GetThreadTimes.argtypes = [wintypes.HANDLE, *([ctypes.POINTER(wintypes.FILETIME)] * 4)]
+kernel32.GetThreadTimes.restype = wintypes.BOOL
+thread_description = getattr(kernel32, "GetThreadDescription", None)
+if thread_description is not None:
+    thread_description.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.LPWSTR)]
+    thread_description.restype = ctypes.c_long
+kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+kernel32.LocalFree.restype = ctypes.c_void_p
 assert ctypes.sizeof(INPUT) == 40 and ctypes.sizeof(KEYBDINPUT) == 24, "Use the pinned x64 runtime"
 SOURCE_KEYS = frozenset((0x41, *range(0x7C, 0x82), 0x87))  # A, F13-F18, F24.
 SOURCE_TAG = 0x514B4D6100000000
@@ -156,19 +168,57 @@ def plain_latencies(sent, received, output_key):
     return distribution(delays)
 
 
-def process_sample(process, pid, window):
+def _thread_sample(thread_id, pid):
+    result = {"thread_id": thread_id}
+    thread = kernel32.OpenThread(0x0800, False, thread_id)  # THREAD_QUERY_LIMITED_INFORMATION.
+    if not thread:
+        return {**result, "read_error": ctypes.get_last_error()}
+    try:
+        owner = kernel32.GetProcessIdOfThread(thread)
+        if not owner:
+            return {**result, "read_error": ctypes.get_last_error()}
+        if owner != pid:
+            return {**result, "owner_changed": True}
+        created, exited, kernel, user = (wintypes.FILETIME() for _ in range(4))
+        if not kernel32.GetThreadTimes(thread, ctypes.byref(created), ctypes.byref(exited),
+                                      ctypes.byref(kernel), ctypes.byref(user)):
+            return {**result, "read_error": ctypes.get_last_error()}
+        def ticks(value):
+            return value.dwLowDateTime | (value.dwHighDateTime << 32)
+        result.update(creation_100ns=ticks(created), cpu_100ns=ticks(kernel) + ticks(user),
+                      kernel_100ns=ticks(kernel), user_100ns=ticks(user), exited=bool(ticks(exited)))
+        if thread_description is not None:
+            name = wintypes.LPWSTR()
+            try:
+                status = thread_description(thread, ctypes.byref(name))
+                if status >= 0 and name:
+                    result["name"] = name.value[:128]
+                elif status < 0:
+                    result["name_error"] = status
+            finally:
+                if name:
+                    kernel32.LocalFree(ctypes.cast(name, ctypes.c_void_p))
+        return result
+    finally:
+        kernel32.CloseHandle(thread)
+
+
+def process_sample(process, pid, window, *, thread_cpu=False):
     times = win32process.GetProcessTimes(process)
     memory = win32process.GetProcessMemoryInfo(process)
     snapshot = kernel32.CreateToolhelp32Snapshot(4, 0)  # TH32CS_SNAPTHREAD.
     if snapshot == ctypes.c_void_p(-1).value:
         raise ctypes.WinError(ctypes.get_last_error())
-    threads = 0
+    threads, details = 0, []
     try:
         entry = THREADENTRY32()
         entry.dwSize = ctypes.sizeof(entry)
         more = kernel32.Thread32First(snapshot, ctypes.byref(entry))
         while more:
-            threads += entry.th32OwnerProcessID == pid
+            if entry.th32OwnerProcessID == pid:
+                threads += 1
+                if thread_cpu:
+                    details.append(_thread_sample(entry.th32ThreadID, pid))
             more = kernel32.Thread32Next(snapshot, ctypes.byref(entry))
         assert ctypes.get_last_error() == 18, "Thread snapshot failed"  # ERROR_NO_MORE_FILES.
     finally:
@@ -179,6 +229,7 @@ def process_sample(process, pid, window):
         gui = {"wm_null_ms": (time.perf_counter_ns() - started) / 1_000_000}
     except Exception:
         gui = {"wm_null_unavailable": True}  # UIPI failure is not a latency sample.
+    detail = {"thread_cpu": details, "kernel_100ns": times["KernelTime"], "user_100ns": times["UserTime"]} if thread_cpu else {}
     return {"qpc_ns": time.perf_counter_ns(), "cpu_100ns": times["KernelTime"] + times["UserTime"],
             "working_set": memory["WorkingSetSize"], "private_commit": memory["PagefileUsage"],
-            "threads": threads, **gui}
+            "threads": threads, **gui, **detail}
