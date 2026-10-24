@@ -242,15 +242,31 @@ void McpControlTest::sourceSnapshotBoundaries()
         {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_tab_ref"), source}},
         {{QStringLiteral("entity"), QStringLiteral("mappings")}},
         {{QStringLiteral("entity"), QStringLiteral("mappings")}, {QStringLiteral("source_revision"), revision}}};
-    for (const QJsonObject &arguments : invalid) QCOMPARE(query(arguments).errorCode, QStringLiteral("invalid_arguments"));
+    QVERIFY(validateSourceQueryArguments(list).ok());
+    for (const QJsonObject &arguments : invalid) {
+        const auto validation = validateSourceQueryArguments(arguments);
+        QCOMPARE(validation.errorCode, QStringLiteral("invalid_arguments"));
+        QCOMPARE(query(arguments).errorCode, validation.errorCode);
+        const auto unavailable = querySourceSnapshot({}, "instance", "pair", 1, arguments);
+        QCOMPARE(unavailable.errorCode, validation.errorCode);
+        QCOMPARE(unavailable.message, validation.message);
+    }
+    QCOMPARE(validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("unsupported")}}).errorCode,
+        QStringLiteral("unsupported_query"));
     QJsonObject rows{{QStringLiteral("entity"), QStringLiteral("mappings")}, {QStringLiteral("source_revision"), revision}};
     for (const QString &suffix : {QStringLiteral("-1"), QStringLiteral("01"), QStringLiteral("2147483648"), QStringLiteral("x")}) {
         rows.insert(QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:") + suffix);
+        QCOMPARE(validateSourceQueryArguments(rows).errorCode, QStringLiteral("invalid_arguments"));
         QCOMPARE(query(rows).errorCode, QStringLiteral("invalid_arguments"));
     }
     rows.insert(QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:9"));
+    QVERIFY(validateSourceQueryArguments(rows).ok()); // The index bound requires the real snapshot.
     QCOMPARE(query(rows).errorCode, QStringLiteral("invalid_arguments"));
     rows.insert(QStringLiteral("source_tab_ref"), source);
+    QVERIFY(validateSourceQueryArguments(rows).ok());
+    QJsonObject mismatch = rows;
+    mismatch.insert(QStringLiteral("source_revision"), QString(64, QLatin1Char('0')));
+    QCOMPARE(validateSourceQueryArguments(mismatch).errorCode, QStringLiteral("stale_source"));
     rows.insert(QStringLiteral("offset"), 2);
     QCOMPARE(query(rows).errorCode, QStringLiteral("invalid_arguments"));
     rows.insert(QStringLiteral("offset"), 1);

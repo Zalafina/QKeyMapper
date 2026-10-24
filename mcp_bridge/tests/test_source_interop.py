@@ -146,6 +146,15 @@ async def run(args):
             assert first["snapshot"]["configuration_selection"] == state["configuration"]
             assert first["snapshot"]["mapping_load_context"] == state["mapping_load_context"]
             assert state["run"]["stop_completion"] == "unobserved" and state["business_revision"] is None
+            for label, arguments, expected in (
+                    ("fresh_offset", {"entity": "mapping_sources", "offset": 1}, "invalid_arguments"),
+                    ("listing_target", {"entity": "mapping_sources", "source_tab_ref": first["sources"][0]["source_tab_ref"]}, "invalid_arguments"),
+                    ("missing_revision", {"entity": "mappings"}, "invalid_arguments"),
+                    ("missing_target", {"entity": "mappings", "source_revision": first["snapshot"]["revision"]}, "invalid_arguments"),
+                    ("reference_mismatch", {"entity": "mappings", "source_revision": "0" * 64,
+                        "source_tab_ref": first["sources"][0]["source_tab_ref"]}, "stale_source")):
+                await query(client, args.output, "arguments_" + label, arguments, expected)
+            passed("source argument dependencies and mismatched revision return formal tool errors")
             assert await sources(client, args.output, "repeated") == first
             assert (await call(client, "qkm_get_state"))["result"] == state and ini.read_bytes() == disk
             after = await product.action("ReadMapping")
@@ -192,6 +201,7 @@ async def run(args):
             invalid_gui = await product.action("SelectInvalid")
             assert visible_rows(invalid_gui) == []
             await query(client, args.output, "failed_load", {"entity": "mapping_sources"}, "context_busy")
+            await query(client, args.output, "failed_load_invalid_arguments", {"entity": "mapping_sources", "offset": 1}, "invalid_arguments")
             invalid_state = (await call(client, "qkm_get_state"))["result"]
             assert invalid_state["mapping_load_context"]["outcome"] == "invalid_mapping_data"
             assert invalid_state["mapping_load_context"]["group"] is None

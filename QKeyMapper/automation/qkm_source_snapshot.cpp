@@ -9,8 +9,7 @@
 
 namespace QkmAutomation {
 
-SourceQueryResult querySourceSnapshot(const QJsonObject &snapshot, const QString &instance,
-    const QString &pairId, quint64 permissionEpoch, const QJsonObject &arguments)
+SourceQueryResult validateSourceQueryArguments(const QJsonObject &arguments)
 {
     const auto fail = [](const char *code, const char *message) {
         return SourceQueryResult{{}, QString::fromLatin1(code), QString::fromLatin1(message)};
@@ -64,6 +63,24 @@ SourceQueryResult querySourceSnapshot(const QJsonObject &snapshot, const QString
             return fail("stale_source", "Source reference and revision differ; query again.");
         }
     }
+    return {};
+}
+
+SourceQueryResult querySourceSnapshot(const QJsonObject &snapshot, const QString &instance,
+    const QString &pairId, quint64 permissionEpoch, const QJsonObject &arguments)
+{
+    const auto validation = validateSourceQueryArguments(arguments);
+    if (!validation.ok()) return validation;
+    const auto fail = [](const char *code, const char *message) {
+        return SourceQueryResult{{}, QString::fromLatin1(code), QString::fromLatin1(message)};
+    };
+    const QString entity = arguments.value(QStringLiteral("entity")).toString();
+    const QJsonValue revisionValue = arguments.value(QStringLiteral("source_revision"));
+    const bool fresh = revisionValue.isUndefined();
+    const int offset = arguments.value(QStringLiteral("offset")).toInt(0);
+    const int limit = arguments.value(QStringLiteral("limit")).toInt(50);
+    const int sourceIndex = entity == QStringLiteral("mappings")
+        ? arguments.value(QStringLiteral("source_tab_ref")).toString().section(QLatin1Char(':'), 2, 2).toInt() : -1;
     if (snapshot.isEmpty() || !snapshot.value(QStringLiteral("sources")).isArray()) {
         return fail("context_busy", "A safe source snapshot is not available.");
     }

@@ -1220,3 +1220,17 @@ PC-W10／Win10 19045／Default，测试从 b9a0bb4f 扩展；C++ 仍为 9af1b260
 本机原始证据不随 Git 同步：out/mcp_product/engine61/features-b2-unit.txt；unattended-20261024/job-015～023 的请求／result、run.log、accept/<state>_<case> 的 feature-events、warmup／stopped、GUI、topology、closed 与接收器事件；features-b2-analysis.json 汇总完整轨迹及失败。9 个 High 产品／9 个普通接收器均正常退出，测试键清理完成；最后 job-023 exit 0，真实父缓存仍有意保留至用户返回或 19:30，不冒称已关。
 
 这是包含已知红色产品断言的独立测试提交切点，不是引擎修复提交或完整 ENGINE-61 通过。退出严格断言、唤醒及系统／设备／Qt5／Win11 缺口仍保留；后续纯参数前置校验不改输入热路径，可独立推进，不能以它绕过新增公共引擎改动门槛。未重跑输入不变的 B1／A 全矩阵，未将历史性能结果记为本切片新测。
+
+## QUERY-20261024-62A：采集前的共用纯参数校验
+
+PC-W10／Win10 19045，基于 758262dd；新增 validateSourceQueryArguments，产品 handleAutomationSourceQuery 先调用它再采集源表，querySourceSnapshot 也使用同一校验。没有读取锁、内存许可、全量快照／完整修订、实例／pair／权限绑定、公共输入／停止、依赖锁、SDK 或 manifest 变化。有效请求仍重复全量编码／哈希，只减少已知错误请求的无用源采集，不声明有效请求耗时改善。
+
+普通 Qt6 产品增量构建 exit 0、零编译／链接警告；双 Qt 维护目标构建通过、无本轮最终编译／链接诊断。Qt5 首次 JOM 自动更新 Makefile 后仍沿旧对象列表链接，缺少源快照符号，第二次基于新 Makefile 构建成功，原失败日志保留，没有改产品绕过链接。产品沿既有构建入口（PE linker 14.40），维护增量调用本机默认 MSVC 14.44；不把维护构建当成新的普通产品性能对照。两套私有桌面分别执行 sourceSnapshotReferences／sourceSnapshotBoundaries／sourceReadAdmission，各三组通过（含 init／cleanup，QtTest 各 5 passed），进程未提权并正常退出，桌面关闭；未运行无关控件／截图矩阵。一次性私有启动器初次常量名错误在创建子进程前失败，桌面已清理，修正 Win32 常量后重跑成功，不计为产品失败。
+
+维护断言覆盖 12 组现有参数负例在纯校验／真实快照／空快照下错误码及解释一致、错误 entity、规范索引格式、合法但超出快照的索引必须留到快照后拒绝、修订／引用前缀不一致。原引用组继续验证内容／代次／实例／pair／权限变化拒绝陈旧引用，读取准入组不放宽初始静止限制。代码审阅核对产品纯参数拒绝的 return 位于 collectAutomationSourceSnapshot 之前，不用外部时延推断没有采集，也未新增产品探针。
+
+正式产品 job-024 使用新 EXE 和原合成源夹具，在实际私有桌面验证 10 分项：独立 GUI 基线、参数依赖／修订不一致的正式 MCP 错误、完整源分页及只读不变性、非当前 Tab、实际上移、同内容往返、重载／切配置与未附着共通源、失败加载／恢复、新配对失效、撤销／关闭。新增 5 个参数负例与失败加载时的参数优先级都经正式 stdio／SDK 检查 isError 和结构化错误；有效请求仍返回原源字段及绑定。High 产品／Medium 控制器／登录关联／Session／实际桌面／EXE 身份已核实，最后撤销、关闭及产品退出 0；没有系统输入、Default 窗口交互或驱动安装。
+
+实际 EXE：out/mcp_product/engine61/unattended-20261024/job-024/runtime/QKeyMapperMcpAcceptance_engine61_current.exe，SHA-256 8e284731292ecc3ba0638c73feb0dd867a09071c1e09e8361f33438a49828076，来自 out/build_qt6/release/QKeyMapper.exe。维护 EXE 在 out/tests/mcp_control/qt6-release 和 qt5-release/release/QKeyMapperMcpControlTest.exe；正式源准备使用同 Qt6 维护副本 QkmControlQuery62.exe。证据均本机不随 Git：out/mcp_bridge/query62-build-qt6.txt；两维护目录 build-query62*.log；out/tests/mcp_control/query62-components-02 的结果／实际桌面记录；out/mcp_product/engine61/deployment-query62.json 与 unattended-20261024/job-024 的完整动作／响应／topology／results／closed。父缓存 PID 6816 按 TEMP-CACHE-61 继续保留，子测试未另开缓存，不冒称真实缓存已关。
+
+本切片为独立产品／测试提交切点；无公共引擎修复。复用输入未变的 BRIDGE-60 和 ENGINE-61 原范围；未重跑完整 Qt5 High 产品、Win11、性能、ASan、严格静态分析或多语言视觉。当前改动不引入源数据指针或生命周期变化，选择双 Qt 参数／引用／准入与正式 Qt6 产品验证，不以源码类型自动扩大门禁。退出重复抬起、有效查询开销及后续写入／启停闭环继续保留。

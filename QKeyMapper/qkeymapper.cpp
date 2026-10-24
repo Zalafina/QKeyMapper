@@ -37353,6 +37353,11 @@ QJsonObject QKeyMapper::collectAutomationSourceSnapshot(QString &errorCode) cons
 void QKeyMapper::handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request)
 {
     auto &server = m_McpControlDialog->server();
+    const auto validation = QkmAutomation::validateSourceQueryArguments(request.arguments);
+    if (!validation.ok()) {
+        server.replyError(request.connectionId, request.requestId, validation.errorCode, validation.message);
+        return;
+    }
     QString sourceError;
     const QJsonObject snapshot = collectAutomationSourceSnapshot(sourceError);
     const auto result = QkmAutomation::querySourceSnapshot(snapshot, server.instanceId(), request.pairId,

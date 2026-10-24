@@ -15,6 +15,7 @@ struct SourceQueryResult {
     bool ok() const { return errorCode.isEmpty(); }
 };
 
+SourceQueryResult validateSourceQueryArguments(const QJsonObject &arguments);
 SourceQueryResult querySourceSnapshot(const QJsonObject &snapshot, const QString &instance,
     const QString &pairId, quint64 permissionEpoch, const QJsonObject &arguments);
 
