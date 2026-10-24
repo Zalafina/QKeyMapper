@@ -128,7 +128,7 @@ def main() -> None:
             source_tab_ref: Annotated[str | None, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")] = None,
             offset: Annotated[StrictInt, Field(ge=0, le=2147483647)] = 0,
             limit: Annotated[StrictInt, Field(ge=1, le=100)] = 50) -> ToolResult:
-        """只读分页查询。configurations/tabs 使用 catalog_revision，catalog_ref 不能作为编辑目标。mapping_sources 返回当前实际普通/共通源表的不透明引用；mappings 必须同时传该 source_revision 和 source_tab_ref，返回源行及完整字段。源查询当前仅允许本进程尚无映射启停、重启或浮动/虚拟按钮发送活动的初始空闲状态；运行后清理尚未核实则拒绝，不主动停止。来源只证明当前内存源，不证明磁盘保存或共通备份加载自哪组。源修订不是完整业务修订，引用不授予写入权限；变化后重新查询。未加载配置内容尚未接入。"""
+        """只读分页查询。configurations/tabs 使用 catalog_revision，catalog_ref 不能作为编辑目标。mapping_sources 返回当前实际普通/共通源表的不透明引用；mappings 必须同时传该 source_revision 和 source_tab_ref，返回源行及完整字段。源查询要求加载成功、GUI 空闲且 Worker 停止，并且是初始静止或已有仍有效的完整清理读取许可；新运行活动使许可失效，运行中和停止清理中拒绝，不主动停止。completed_cleanup 及清理代次仅证明只读上下文，不授予编辑权限或替代异步操作结果。来源只证明当前内存源，不证明磁盘保存或共通备份加载自哪组。源修订不是完整业务修订，引用不授予写入权限；变化后重新查询。未加载配置内容尚未接入。"""
         return tool_result(await bridge.query(entity, catalog_revision=catalog_revision, source_revision=source_revision,
                                              source_tab_ref=source_tab_ref, offset=offset, limit=limit))
 

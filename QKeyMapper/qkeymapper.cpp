@@ -16880,6 +16880,21 @@ void QKeyMapper::finishMappingStop(quint64 operation, quint64 generation)
         switchBackToLastMatchedSetting(m_mappingStopRestoreSetting);
         m_mappingStopRestoreSetting.clear();
     }
+    if (m_mappingStopPhase != MappingStopPhase::GuiTail || operation != m_mappingStopOperation
+        || generation != m_mappingStopFenceGeneration || m_KeyMapStatus != KEYMAP_STOPPING) { return; }
+    bool sourceActivityPending = false;
+    {
+        QMutexLocker readAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+        sourceActivityPending = SendInputWorkItem::outstanding() != 0 || InputProducerWorkItem::outstanding() != 0;
+        if (!sourceActivityPending) {
+            m_AutomationSourceCleanupRevision = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
+            m_AutomationSourceCleanupGeneration = operation;
+        }
+    }
+    if (sourceActivityPending) {
+        requestMappingStopFence(MappingStopPhase::AfterWorker);
+        return;
+    }
     m_mappingStopDeadline->stop();
     m_mappingStopPhase = MappingStopPhase::None;
     m_KeyMapStatus = KEYMAP_IDLE;
@@ -37208,6 +37223,20 @@ void QKeyMapper::setUITheme(int themeindex)
 
 }
 
+QString QKeyMapper::automationSourceReadBasis(void) const
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    if (m_KeyMapStatus != KEYMAP_IDLE || !m_MappingSourceLoadAccepted
+        || QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() != HOOKPROC_STATE_STOPPED) return {};
+    switch (QKeyMapper_Worker::s_SourceReadAccess.readBasis(m_AutomationSourceCleanupRevision)) {
+    case MappingSourceAccess::ReadBasis::PristineIdle: return QStringLiteral("pristine_idle");
+    case MappingSourceAccess::ReadBasis::CompletedCleanup:
+        return m_AutomationSourceCleanupGeneration != 0 ? QStringLiteral("completed_cleanup") : QString();
+    case MappingSourceAccess::ReadBasis::Unavailable: return {};
+    }
+    return {};
+}
+
 QJsonObject QKeyMapper::collectAutomationState(void) const
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -37257,7 +37286,8 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         {QStringLiteral("run"), QJsonObject{{QStringLiteral("gui_state"), QString::fromLatin1(guiState)},
             {QStringLiteral("monitoring_enabled"), m_KeyMapStatus != KEYMAP_IDLE && m_KeyMapStatus != KEYMAP_STOPPING},
             {QStringLiteral("worker_state_sample"), QString::fromLatin1(workerState)},
-            {QStringLiteral("stop_completion"), QStringLiteral("unobserved")},
+            {QStringLiteral("stop_completion"), automationSourceReadBasis() == QStringLiteral("completed_cleanup")
+                ? QStringLiteral("observed") : QStringLiteral("unobserved")},
             {QStringLiteral("actual_stop_shortcut"), s_MappingStopKeyString}}}};
 }
 
@@ -37295,10 +37325,8 @@ QJsonObject QKeyMapper::collectAutomationSourceSnapshot(QString &errorCode) cons
     Q_ASSERT(QThread::currentThread() == thread());
     errorCode = QStringLiteral("context_busy");
     QMutexLocker readAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
-    // shortcut: Source reads require pristine idle, extend after generation-bound cleanup acknowledgements exist.
-    if (m_KeyMapStatus != KEYMAP_IDLE || QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved()
-        || QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() != HOOKPROC_STATE_STOPPED
-        || !m_MappingSourceLoadAccepted) return {};
+    const QString readBasis = automationSourceReadBasis();
+    if (readBasis.isEmpty()) return {};
     const QJsonObject state = collectAutomationState();
     if (state.isEmpty()) return {};
     QJsonArray sources;
@@ -37344,7 +37372,9 @@ QJsonObject QKeyMapper::collectAutomationSourceSnapshot(QString &errorCode) cons
         &m_CommonMappingData)) return {};
     errorCode.clear();
     return {{QStringLiteral("source_epoch"), QString::number(m_AutomationSourceEpoch)},
-        {QStringLiteral("read_basis"), QStringLiteral("pristine_idle")},
+        {QStringLiteral("read_basis"), readBasis},
+        {QStringLiteral("cleanup_generation"), readBasis == QStringLiteral("completed_cleanup")
+            ? QJsonValue(QString::number(m_AutomationSourceCleanupGeneration)) : QJsonValue(QJsonValue::Null)},
         {QStringLiteral("configuration_selection"), state.value(QStringLiteral("configuration"))},
         {QStringLiteral("mapping_load_context"), state.value(QStringLiteral("mapping_load_context"))},
         {QStringLiteral("common_feature_enabled"), isCommonMappingFeatureEnabled()}, {QStringLiteral("sources"), sources}};
@@ -37367,7 +37397,7 @@ void QKeyMapper::handleAutomationSourceQuery(const QkmAutomation::AutomationRequ
     } else if (result.errorCode == QStringLiteral("context_busy") && !sourceError.isEmpty()) {
         server.replyError(request.connectionId, request.requestId, sourceError,
             sourceError == QStringLiteral("context_busy")
-                ? QStringLiteral("Source query requires an accepted load and pristine idle memory; cleanup after runtime lifecycle requests is unobserved.")
+                ? QStringLiteral("Source query requires an accepted load and idle stopped owners, either pristine memory or the current completed-cleanup read revision; new runtime work invalidates it.")
                 : QStringLiteral("Source memory is invalid or exceeds the declared snapshot limits."));
     } else {
         server.replyError(request.connectionId, request.requestId, result.errorCode, result.message);
@@ -37543,7 +37573,7 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
             {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
                 {QStringLiteral("properties"), QJsonObject()}, {QStringLiteral("additionalProperties"), false}}},
             {QStringLiteral("limitations"), QJsonArray{QStringLiteral("business_revision_unavailable"),
-                QStringLiteral("stop_completion_unobserved"), QStringLiteral("tab_index_is_not_a_stable_target"),
+                QStringLiteral("stop_completion_is_not_an_operation_result"), QStringLiteral("tab_index_is_not_a_stable_target"),
                 QStringLiteral("configuration_group_is_ui_selection"),
                 QStringLiteral("load_context_is_not_a_business_revision_or_disk_proof")}}},
             QJsonObject{{QStringLiteral("id"), QStringLiteral("catalog.read")},
@@ -37582,7 +37612,7 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                         {QStringLiteral("limit"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
                             {QStringLiteral("minimum"), 1}, {QStringLiteral("maximum"), 100}}}}}}},
                 {QStringLiteral("max_snapshot_bytes"), QkmAutomation::MaxSourceSnapshotBytes},
-                {QStringLiteral("limitations"), QJsonArray{QStringLiteral("pristine_idle_only_until_cleanup_coordination"),
+                {QStringLiteral("limitations"), QJsonArray{QStringLiteral("requires_pristine_idle_or_current_completed_cleanup"),
                     QStringLiteral("mapping_rows_require_source_revision_and_source_tab_ref"),
                     QStringLiteral("memory_provenance_only_not_disk_origin"), QStringLiteral("source_revision_is_not_a_business_revision"),
                     QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}}});

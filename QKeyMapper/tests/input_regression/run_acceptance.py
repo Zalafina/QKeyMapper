@@ -27,6 +27,7 @@ REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "mcp_bridge/tests"))
 from test_product_interop import Product, connection_pending
 from test_sdk_interop import call, connection, elevation, integrity, parameters
+from test_source_interop import source_rows
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.windows import identity
 
@@ -290,6 +291,75 @@ async def run_state(args, state, executable):
                             store.forget()
 
 
+async def sources_after_stop(product):
+    own, store, approved = identity(os.getpid()), None, False
+    try:
+        await product.action("OpenAdvanced")
+        await product.action("OpenMcp")
+        enabled = await product.action("Enable")
+        discovery = Path(enabled["discovery"])
+        await product.wait(discovery.is_file)
+        store = CredentialStore(discovery, product.executable, own.session)
+        assert store.load() is None
+        async with Client(parameters(discovery, product.executable, product.output)) as client:
+            try:
+                await call(client, "qkm_connect")
+                await connection(client, "pairing_required")
+                await call(client, "qkm_request_pairing")
+                await connection_pending(client)
+                await product.action("ApproveRead", own.executable)
+                approved = True
+                await connection(client, "connected")
+                await product.action("CloseMcp")
+                gui = await product.action("ReadMapping")
+                assert gui["mapping_rows"] == [{"original": "A", "mapping": "B"}]
+                ini = product.executable.parent / "keymapdata.ini"
+                disk = ini.read_bytes()
+                before = (await call(client, "qkm_get_state"))["result"]
+                first = (await call(client, "qkm_query", {"entity": "mapping_sources"}))["result"]
+                assert first["source_snapshot"]["read_basis"] == "completed_cleanup"
+                assert before["run"]["stop_completion"] == "observed" and before["business_revision"] is None
+                source = next(item for item in first["items"] if item["kind"] == "normal")
+                target = {"entity": "mappings", "source_revision": first["source_snapshot"]["revision"],
+                          "source_tab_ref": source["source_tab_ref"]}
+                rows = (await call(client, "qkm_query", target))["result"]
+                assert source_rows(rows) == [("A", ["B"])]
+                assert (await call(client, "qkm_query", {"entity": "mapping_sources"}))["result"] == first
+                assert (await call(client, "qkm_get_state"))["result"] == before and ini.read_bytes() == disk
+                await product.action("StartMapping")
+                running = (await call(client, "qkm_get_state"))["result"]
+                assert running["run"]["monitoring_enabled"] and running["run"]["stop_completion"] == "unobserved"
+                await call(client, "qkm_query", target, error="context_busy")
+                assert (await call(client, "qkm_get_state"))["result"]["run"]["monitoring_enabled"], "Read rejection stopped mapping"
+                await product.action("StopMapping")
+                second_disk = ini.read_bytes()
+                second_state = (await call(client, "qkm_get_state"))["result"]
+                second = (await call(client, "qkm_query", {"entity": "mapping_sources"}))["result"]
+                assert second["source_snapshot"]["read_basis"] == "completed_cleanup"
+                assert int(second["source_snapshot"]["cleanup_generation"]) > int(first["source_snapshot"]["cleanup_generation"])
+                await call(client, "qkm_query", target, error="stale_source")
+                new_source = next(item for item in second["items"] if item["kind"] == "normal")
+                new_target = {"entity": "mappings", "source_revision": second["source_snapshot"]["revision"],
+                              "source_tab_ref": new_source["source_tab_ref"]}
+                fresh = (await call(client, "qkm_query", new_target))["result"]
+                assert source_rows(fresh) == source_rows(rows)
+                assert fresh["items"][0]["fields"] == rows["items"][0]["fields"]
+                assert ini.read_bytes() == second_disk and (await call(client, "qkm_get_state"))["result"] == second_state
+                save(product.output / "sources-after-stop.json", {"before": before, "first": first,
+                    "rows": rows, "running": running, "second_state": second_state, "second": second, "fresh": fresh,
+                    "read_batches_ini_unchanged": True, "gui_cycle_ini_unchanged": second_disk == disk})
+            finally:
+                if approved:
+                    await call(client, "qkm_disconnect")
+                    await product.action("OpenAdvanced")
+                    await product.action("OpenMcp")
+                    await product.action("Revoke")
+                    await product.action("Disable")
+    finally:
+        if store is not None:
+            store.forget()
+
+
 async def run_feature(args, state, executable, case):
     output = args.output / (state + "_" + case)
     output.mkdir()
@@ -319,6 +389,8 @@ async def run_feature(args, state, executable, case):
                 restored = await product.action("ReadMapping")
                 assert restored["configuration_display"] == "Engine61" and restored["mapping_rows"] == rows, \
                     "Stop did not restore the last matched configuration"
+            if case in ("quick_restart", "profile_return") and state == "off":
+                await sources_after_stop(product)
         result.update(state=state, executable=str(executable),
                       exe_sha256=hashlib.sha256(executable.read_bytes()).hexdigest(), controller_pid=os.getpid())
         save(output / "result.json", result)

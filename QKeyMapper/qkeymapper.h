@@ -2094,6 +2094,7 @@ public:
     void requestSaveSettingDirty(void);
 private:
     void refreshAllKeyMappingTabWidget(void);
+    QString automationSourceReadBasis(void) const;
     QJsonObject collectAutomationState(void) const;
     QJsonObject collectAutomationCatalog(void) const;
     QJsonObject collectAutomationSourceSnapshot(QString &errorCode) const;
@@ -2565,6 +2566,8 @@ private:
     QkmAutomation::ControlDialog *m_McpControlDialog = Q_NULLPTR;
     quint64 m_MappingLoadGeneration = 0;
     quint64 m_AutomationSourceEpoch = 0;
+    quint64 m_AutomationSourceCleanupRevision = 0;
+    quint64 m_AutomationSourceCleanupGeneration = 0;
     QString m_LoadedMappingSettingGroup;
     bool m_MappingSourceLoading = false;
     bool m_MappingSourceLoadAccepted = false;

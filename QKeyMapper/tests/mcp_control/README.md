@@ -73,7 +73,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Product acceptance failed; inspect its logs be
 
 ## 实际源表与只读引用
 
-`validateSourceQueryArguments` 是共用纯参数校验：产品必须先校验再采集源表，`querySourceSnapshot` 也独立调用它保护直接调用方。维护目标的 `sourceSnapshotBoundaries` 验证空快照时同样保留参数错误／解释、字段依赖、引用与修订不一致，以及只能拿到真实快照后才能检查的索引／分页边界；`sourceSnapshotReferences` 和 `sourceReadAdmission` 继续验证内容／身份／授权失效及读取准入。参数通过不代表内存安全许可；完整快照、pristine_idle 和完整内容哈希不变。
+`validateSourceQueryArguments` 是共用纯参数校验：产品必须先校验再采集源表，`querySourceSnapshot` 也独立调用它保护直接调用方。维护目标的 `sourceSnapshotBoundaries` 验证空快照时同样保留参数错误／解释、字段依赖、引用与修订不一致，以及只能拿到真实快照后才能检查的索引／分页边界；`sourceSnapshotReferences` 和 `sourceReadAdmission` 继续验证内容／身份／授权失效及读取准入。参数通过不代表内存安全许可；完整快照和完整内容哈希保留。读取基准包括初始静止与仍匹配当前活动修订的完整清理；sourceReadAdmission 覆盖已完成修订、后续／排队活动失效及复制互斥，sourceSnapshotReferences 覆盖相同内容改变清理代次也拒绝旧引用。完整运行后正式 SDK 用例见 input_regression 的 quick_restart 后置阶段，不把组件或无输入静止检查当成实际输入验收。
 
 `test_source_interop.py` 使用全新部署、未经改动的合成 INI，准备两张普通源表 A→B／G→H、C→D 和一张共通源表 E→F。先独立从真实 GUI 读取三个 Tab 的实际行，之后才启用 MCP 并通过正式 SDK 分页读取非当前源表及每个源行；区分共通源与普通 Tab 中附加的共通显示行。表格 UIA 可能把合并分隔行的 ColumnSpan 报为 1，固定助手还核对分隔行的明确中英日文字，不把任意空行当成分隔行。
 

@@ -98,6 +98,9 @@ void McpControlTest::sourceReadAdmission()
 {
     MappingSourceAccess access;
     QMutexLocker reader(&access.mutex());
+    using ReadBasis = MappingSourceAccess::ReadBasis;
+    QVERIFY(access.readBasis(0) == ReadBasis::PristineIdle);
+    QVERIFY(access.readBasis(1) == ReadBasis::Unavailable);
     QVERIFY(!access.runtimeObserved());
     QCOMPARE(access.runtimeRevision(), quint64(0));
     QSemaphore entered;
@@ -116,8 +119,12 @@ void McpControlTest::sourceReadAdmission()
     producer.join();
     QVERIFY(access.runtimeObserved());
     QCOMPARE(access.runtimeRevision(), quint64(1));
+    QVERIFY(access.readBasis(0) == ReadBasis::Unavailable);
+    QVERIFY(access.readBasis(1) == ReadBasis::CompletedCleanup);
     access.observeRuntimeLifecycle();
     QCOMPARE(access.runtimeRevision(), quint64(2));
+    QVERIFY(access.readBasis(1) == ReadBasis::Unavailable);
+    QVERIFY(access.readBasis(2) == ReadBasis::CompletedCleanup);
     reader.relock();
     producer = std::thread([&] {
         entered.release();
@@ -125,9 +132,11 @@ void McpControlTest::sourceReadAdmission()
     });
     QVERIFY(entered.tryAcquire(1, 3000));
     QCOMPARE(access.runtimeRevision(), quint64(2));
+    QVERIFY(access.readBasis(2) == ReadBasis::CompletedCleanup);
     reader.unlock();
     producer.join();
     QCOMPARE(access.runtimeRevision(), quint64(3));
+    QVERIFY(access.readBasis(2) == ReadBasis::Unavailable);
 
     MappingSourceAccess queuedAccess;
     QPushButton request;
@@ -138,12 +147,14 @@ void McpControlTest::sourceReadAdmission()
         [&] { queuedWriterRan = true; }, Qt::QueuedConnection);
     request.click();
     QVERIFY(queuedAccess.runtimeObserved());
+    QVERIFY(queuedAccess.readBasis(0) == ReadBasis::Unavailable);
     QCOMPARE(queuedAccess.runtimeRevision(), quint64(1));
     QVERIFY(!queuedWriterRan);
     QTRY_VERIFY(queuedWriterRan);
     queuedWriterRan = false;
     request.click();
     QCOMPARE(queuedAccess.runtimeRevision(), quint64(2));
+    QVERIFY(queuedAccess.readBasis(1) == ReadBasis::Unavailable);
     QVERIFY(!queuedWriterRan);
     QTRY_VERIFY(queuedWriterRan);
 }
@@ -218,6 +229,18 @@ void McpControlTest::sourceSnapshotReferences()
     snapshot = original;
     QCOMPARE(query(rows).page, duplicates.page);
     QCOMPARE(snapshot, original);
+    snapshot.insert(QStringLiteral("read_basis"), QStringLiteral("completed_cleanup"));
+    snapshot.insert(QStringLiteral("cleanup_generation"), QStringLiteral("1"));
+    const auto cleaned = query(list);
+    QVERIFY(cleaned.ok());
+    QCOMPARE(cleaned.page.value(QStringLiteral("source_snapshot")).toObject()
+        .value(QStringLiteral("cleanup_generation")).toString(), QStringLiteral("1"));
+    QCOMPARE(query(rows).errorCode, QStringLiteral("stale_source"));
+    rows.insert(QStringLiteral("source_revision"), cleaned.page.value(QStringLiteral("source_snapshot")).toObject().value(QStringLiteral("revision")));
+    rows.insert(QStringLiteral("source_tab_ref"), cleaned.page.value(QStringLiteral("items")).toArray().first().toObject().value(QStringLiteral("source_tab_ref")));
+    QVERIFY(query(rows).ok());
+    snapshot.insert(QStringLiteral("cleanup_generation"), QStringLiteral("2"));
+    QCOMPARE(query(rows).errorCode, QStringLiteral("stale_source"));
 }
 
 void McpControlTest::sourceSnapshotBoundaries()

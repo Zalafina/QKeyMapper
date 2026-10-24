@@ -1266,3 +1266,24 @@ Qt6 普通 Release／诊断构建 native 0、零编译链接警告；最终 Qt5 
 证据均本机、不随 Git：out/mcp_bridge/exit63-build*.txt；out/mcp_product/engine61/deployment-exit63-*.json；unattended-20261024/job-025～047 的原始动作／响应／事件／topology／closed，exit63-performance-both.json、exit63-bracket-analysis.json，039 的 offline-pairing-cleanup.json。最终普通 Qt6 EXE 位于 job-047/accept/off_exit_wait/runtime/QKeyMapperMcpAcceptance_engine61_current.exe，SHA-256 ecfb893bfcc59d84ad644e839366ed57ec2b7ab6f3698a11c90172359dfd3c6b；模板已恢复同一普通版本。026～047 共 22 产品／接收器均正常退出，其中 21 作业完整成功、039 单列失败；父 PID 6816 缓存仍按 TEMP-CACHE-61 有意保留，未声称关闭。
 
 这是独立公共基础修复提交切点，选定范围完成后继续只读许可。未覆盖强制调度、多键／复杂配置、高频、设备／驱动、真实唤醒、全机／SDK 成本、Qt5／Win11 输入、ASan 或全源静态分析；这些按相关接入／发布保留门槛，不宣称整个 ENGINE-61 或源写入安全已通过。
+
+## STOP-20261024-57：当前完整清理后的安全只读许可
+
+PC-W10／Win10 19045，父提交 81070b6a。既有停止流程在所有者／发送／池／GUI 尾部及配置回切后，于 SourceAccess 互斥内重核在途作业并捕获当前活动修订／根代次；状态或操作变化拒绝该次捕获。在加载成功、IDLE／STOPPED 条件下允许初始静止或当前完整清理的源复制，新活动失效、饱和拒绝。没有新输入热路径逻辑、依赖、SDK、manifest 或 MCP 写入／启停能力。快照新增 cleanup_generation，参与原完整修订；state 的 observed 仅表述当前只读上下文，不是正式 operation 或编辑许可。
+
+| 当前检查 | 结果与证据范围 |
+|---|---|
+| 双 Qt 普通产品／维护构建 | Qt6 零编译链接警告；Qt5 兼容通过。产品沿现有构建工具链，维护沿本机默认 MSVC；不当成性能对照 |
+| 双 Qt 私有桌面组件 | 各 sourceReadAdmission／sourceSnapshotReferences／sourceSnapshotBoundaries 三组通过（含 init／cleanup 各 5 passed）；初始／完成许可、新活动失效、复制互斥、排队先失效、完整内容／清理代次／身份／授权引用及参数边界 |
+| job-048 红例 | 旧普通产品 81070b6a 在四轮真实启停后仍不能通过正式源读取成功断言；输入阶段及清理正常。原错误断言未保存具体错误码，不将源码推断冒充捕获响应 |
+| job-049 绿例 | 新产品四轮真实按住／停止／重启、停止后 A 直通及 GUI 空闲通过；正式 SDK 查询 A→B、同批读取不改状态／dirty／INI，再 GUI 启动时 context_busy 且仍运行，再停止后旧引用 stale_source；清理代次 10→13，完整源字段一致 |
+| job-050 源查询回归 | 实际私有桌面 QkmProduct_3432971109b343f6919aa178a4b609c4，正式 MCP 10 场景通过：GUI 基线、分页／非当前 Tab／共通去重、只读不变、GUI 上移／同内容往返、重载／切配置、失败恢复及新配对旧引用拒绝。此进程没有启动映射，不冒称运行后测试 |
+| job-051／052 原功能 | 真实源键仍按住时停止释放 B，等待序列取消释放 C 且超过原期限无 E；停止后 A、GUI 空闲、全局按键释放及进程退出通过 |
+| job-053 实际配置回切 | Engine61→通用 A→C→F24 恢复 Engine61／A→B 后只读成功；load generation=3，后置正式 SDK 同 049，清理代次 1→4。两批读取各自不改状态／INI，GUI 往返的 INI 也相同（观察，不承诺任意 GUI 操作不落盘） |
+| 普通工具检查 | 15 项输入工具／业务断言自测、受影响 Python 语法／UTF-8、差异格式通过；未更改工具名／参数或七工具 Read 范围 |
+
+实际普通 Qt6 EXE：out/mcp_product/engine61/unattended-20261024/job-049/accept/off_quick_restart/runtime/QKeyMapperMcpAcceptance_engine61_current.exe，SHA-256 9827e300716c66f763546da29baf1355cd014d84af998664baa5949121fddf98，050～053 复用该部署版本。私有与 Default 实际桌面分别记录；High 产品／Medium 控制器、SDK、注入及接收器身份按原守卫核对。048～053 六产品、五接收器均正常退出；048 预期红例和 049～053 五成功作业分列，已启用的配对／接口全部撤销关闭。父缓存 PID 6816 仍按 TEMP-CACHE-61 保留到用户返回或 19:30，未声称已关；没有新增输入或 UAC 范围。
+
+本机证据不随 Git：out/mcp_bridge/stop57-build-qt6.txt／stop57-build-qt5.txt；out/tests/mcp_control/{qt6-release,qt5-release}/build-stop57.log 与 stop57-components；out/mcp_product/engine61/deployment-stop57.json、stop57-tool-unit.txt、unattended-20261024/job-048～053 的请求／响应／GUI／sources-after-stop／事件／topology／closed。正式源准备使用同 Qt6 维护副本 QkmControlStop57.exe；读取没有为测试触发同步回写。
+
+这是独立只读接入提交切点。未新跑 STOPPING 延后／总超时的正式 MCP 对照，既有 STOP-54～56 NoOp、BRIDGE-60 和 EXIT-63 性能证据仅按原版本／不变路径复用；未做新性能、ASan、全源静态分析、Qt5／Win11 实际输入或运行后正式源读取。修改没有新增可变源指针／异步借用，选择双 Qt 边界与正式 Qt6 真实启停验收；写入前的晚到元数据／派生源上下文问题与其他 ENGINE-61／发布门槛继续保留。

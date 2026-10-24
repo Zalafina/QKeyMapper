@@ -122,6 +122,7 @@ SourceQueryResult querySourceSnapshot(const QJsonObject &snapshot, const QString
             {QStringLiteral("instance"), instance}, {QStringLiteral("reference_scope"), QStringLiteral("source_snapshot_only")},
             {QStringLiteral("scope"), QStringLiteral("current_memory_sources")},
             {QStringLiteral("read_basis"), snapshot.value(QStringLiteral("read_basis"))},
+            {QStringLiteral("cleanup_generation"), snapshot.value(QStringLiteral("cleanup_generation"))},
             {QStringLiteral("configuration_selection"), snapshot.value(QStringLiteral("configuration_selection"))},
             {QStringLiteral("mapping_load_context"), snapshot.value(QStringLiteral("mapping_load_context"))},
             {QStringLiteral("common_feature_enabled"), snapshot.value(QStringLiteral("common_feature_enabled"))}}},
