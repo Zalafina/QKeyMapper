@@ -1592,7 +1592,7 @@ public:
 #if 0
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
 #endif
-    void sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state);
+    void sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList);
 
 public:
     static ULONG_PTR VIRTUAL_KEY_SEND;

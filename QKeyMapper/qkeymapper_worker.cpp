@@ -3129,7 +3129,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
 #endif
                     QStringList mappingKeyList = QStringList() << inputKeys.last();
-                    emit_sendInputKeysSignal_Wrapper(rowindex, mappingKeyList, KEY_UP, original_key_holddown, SENDMODE_NORMAL);
+                    emit_sendInputKeysSignal_Wrapper(rowindex, mappingKeyList, KEY_UP, original_key_holddown, SENDMODE_NORMAL,
+                        SENDVIRTUALKEY_STATE_NORMAL, keyMappingDataList);
                 }
             }
             /* Add for KeySequenceHoldDown <<< */
@@ -3876,8 +3877,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         qDebug().nospace().noquote() << "[sendInputKeys] Repeat KeySequence by key -> OriginalKey:" << orikey_str << ", Index:" << findindex;
 #endif
                             real_finished = false;
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
-                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT, keyMappingDataList);
+                            QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT, keyMappingDataList);
                         }
                     }
                 }
@@ -3909,8 +3910,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                             }
                             else {
                                 real_finished = false;
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
-                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT);
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_DOWN, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT, keyMappingDataList);
+                                QKeyMapper_Worker::getInstance()->emit_sendInputKeysSignal_Wrapper(findindex, repeat_mappingKeyList_filtered, KEY_UP, repeat_original_key, SENDMODE_KEYSEQ_REPEAT, SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT, keyMappingDataList);
                             }
                         }
                     }
@@ -4262,9 +4263,10 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 #endif
                             }
                             else if (lock) {
-                                QStringList mappingKeyList = QKeyMapper::KeyMappingDataList->at(locked_rowindex).Mapping_Keys;
-                                QString original_key = QKeyMapper::KeyMappingDataList->at(locked_rowindex).Original_Key;
-                                emit_sendInputKeysSignal_Wrapper(locked_rowindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL);
+                                QStringList mappingKeyList = keyMappingDataList->at(locked_rowindex).Mapping_Keys;
+                                QString original_key = keyMappingDataList->at(locked_rowindex).Original_Key;
+                                emit_sendInputKeysSignal_Wrapper(locked_rowindex, mappingKeyList, KEY_UP, original_key, SENDMODE_NORMAL,
+                                    SENDVIRTUALKEY_STATE_NORMAL, keyMappingDataList);
                             }
 
                             // Notify VButton panel if the unlocked key is a VButton key
@@ -5019,7 +5021,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         }
         /* key_sequence_count > 1 */
         else {
-            sendKeySequenceList(inputKeys, original_key, sendmode, sendvirtualkey_state);
+            sendKeySequenceList(inputKeys, original_key, sendmode, sendvirtualkey_state, keyMappingDataList);
         }
     }
 }
@@ -20783,16 +20785,17 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
 }
 #endif
 
-void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state)
+void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[sendKeySequenceList]" << " original_key(" << original_key << "), sendmode(" << sendmode << ")";
 #endif
 
-    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
+    if (keyMappingDataList == Q_NULLPTR) { keyMappingDataList = QKeyMapper::KeyMappingDataList; }
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key, keyMappingDataList);
     if (sendmode == SENDMODE_NORMAL) {
         if (findindex >= 0) {
-            int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
+            int repeat_mode = keyMappingDataList->at(findindex).RepeatMode;
             if (repeat_mode != REPEAT_MODE_NONE) {
                 sendvirtualkey_state = SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT;
 #ifdef DEBUG_LOGOUT_ON
@@ -20814,8 +20817,8 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
         /* Add for KeySequenceHoldDown >>> */
         if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN && index == size) {
             QString original_key_forKeySeq = original_key + ":" + KEYSEQUENCE_STR + HOLDDOWN_STR;
-            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
-            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state, keyMappingDataList);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state, keyMappingDataList);
         }
         else {
             QStringList runningKeysSnapshot;
@@ -20839,8 +20842,8 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
             //     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
             //     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
             // }
-            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
-            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state, keyMappingDataList);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state, keyMappingDataList);
         }
         /* Add for KeySequenceHoldDown <<< */
 
