@@ -610,6 +610,7 @@ int main(int argc, char *argv[])
 
     int ret = app.exec();
     QkmDiagnostics::markPhase(QkmDiagnostics::Stopping);
+    QKeyMapper_Worker::s_MappingInputClosed.storeRelease(true);
 
     Interception_Worker::interceptionLoopBreak();
     interceptionThread->quit();
@@ -617,14 +618,20 @@ int main(int argc, char *argv[])
     delete interceptionThread;
     QkmDiagnostics::markProgress();
 
+    // Finish callbacks admitted before shutdown while retaining Hook release bookkeeping.
+    if (hookprocThread->isRunning()) {
+        QMetaObject::invokeMethod(keymapper_hook_proc, [] {}, Qt::BlockingQueuedConnection);
+    }
+
+    // Drain accepted KEY_UP tasks while the GUI, mapping data and worker loop are alive.
+    QMetaObject::invokeMethod(keymapper_worker, "setWorkerKeyUnHook", Qt::BlockingQueuedConnection);
+    QMetaObject::invokeMethod(keymapper_worker, "shutdownSendInputTasks", Qt::BlockingQueuedConnection);
+
     hookprocThread->quit();
     hookprocThread->wait();
     delete hookprocThread;
     QkmDiagnostics::markProgress();
 
-    // Drain accepted KEY_UP tasks while the GUI, mapping data and worker loop are alive.
-    QMetaObject::invokeMethod(keymapper_worker, "setWorkerKeyUnHook", Qt::BlockingQueuedConnection);
-    QMetaObject::invokeMethod(keymapper_worker, "shutdownSendInputTasks", Qt::BlockingQueuedConnection);
     workerThread->quit();
     workerThread->wait();
     delete workerThread;

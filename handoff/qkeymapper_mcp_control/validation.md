@@ -1234,3 +1234,35 @@ PC-W10／Win10 19045，基于 758262dd；新增 validateSourceQueryArguments，�
 实际 EXE：out/mcp_product/engine61/unattended-20261024/job-024/runtime/QKeyMapperMcpAcceptance_engine61_current.exe，SHA-256 8e284731292ecc3ba0638c73feb0dd867a09071c1e09e8361f33438a49828076，来自 out/build_qt6/release/QKeyMapper.exe。维护 EXE 在 out/tests/mcp_control/qt6-release 和 qt5-release/release/QKeyMapperMcpControlTest.exe；正式源准备使用同 Qt6 维护副本 QkmControlQuery62.exe。证据均本机不随 Git：out/mcp_bridge/query62-build-qt6.txt；两维护目录 build-query62*.log；out/tests/mcp_control/query62-components-02 的结果／实际桌面记录；out/mcp_product/engine61/deployment-query62.json 与 unattended-20261024/job-024 的完整动作／响应／topology／results／closed。父缓存 PID 6816 按 TEMP-CACHE-61 继续保留，子测试未另开缓存，不冒称真实缓存已关。
 
 本切片为独立产品／测试提交切点；无公共引擎修复。复用输入未变的 BRIDGE-60 和 ENGINE-61 原范围；未重跑完整 Qt5 High 产品、Win11、性能、ASan、严格静态分析或多语言视觉。当前改动不引入源数据指针或生命周期变化，选择双 Qt 参数／引用／准入与正式 Qt6 产品验证，不以源码类型自动扩大门禁。退出重复抬起、有效查询开销及后续写入／启停闭环继续保留。
+
+## EXIT-20261024-63：保留 Hook 到退出发送排空与性能复查
+
+PC-W10／Win10 19045，基于 c4abed8f，仅改 main.cpp。原诊断 job-025 明确先卸载 Hook，再取消等待序列／直接清理，既有标签释放记账已无法工作；该次仅一次 C 抬起，不能把偶发未复现当修复。修复在 app.exec 返回后关闭既有映射准入，存活 Hook 的队列边界后执行原 Worker 取消／排空，再结束 Hook／Worker；GUI／源数据保持到排空结束。Hook 未运行时跳过阻塞边界。没有正常映射热路径、GUI 正常启停、MCP 开关、解析／配置、依赖或 SDK 变化；自审核对线程／数据存续、准入和原 KEY_UP 顺序，没有另造停止语义。
+
+Qt6 普通 Release／诊断构建 native 0、零编译链接警告；最终 Qt5 普通产品构建通过，仅既定官方 qtmain.lib(qtmain_win.obj) LNK4099 例外，实际链接 C:/Qt/Qt6/5.15.2/msvc2019_64/lib/qtmain.lib，原日志保留。普通候选 026～030 五次 exit_wait、031 按住停止、032 等待取消、033 四轮快速启停全部通过；补 Hook 未运行保护后最终 047 再过一例退出。六次退出均验证 C 已真实按下、只一次抬起、源 F16 释放、超过原等待无 E、退出后 A 直通及产品 exit 0。正常按住、取消、重启实际轨迹沿 B1／B2 断言，不只看 GUI。
+
+046 为修复主体的诊断复核：日志 1628 起取消／清理，1647／1651 排空完成，1652 才进入 HookProcThreadFinished，目标 C 仅一次抬起、退出 0。诊断不用于性能；普通采样六例均走直接清理标签，本轮未人为强制所有取消任务获胜的调度或多键组合，故不宣称所有清理竞态已穷尽。新增 Hook 未运行分支经源码和双 Qt 编译检查，未做线程启动失败注入。
+
+性能为同源主体候选 e207f936dd26cef2699a91a85646afaa649d6069c154d7176140318ea179e883，普通 Qt6／同一模板，基线仍 d49a9f57。最终保护仅在 app.exec 之后，不改变已测运行段，故复用该段证据并对最终 EXE 单独退出复核。正序 034～037、反序 038／040～042，每态三轮 250 对真实 A→B；在反序最后基线出现波动后，预先固定且仅追加一次 043 基线→044 当前关闭→045 基线，不继续追求有利数字。11 组完整测量共 16,500 个 B 事件，计数、顺序、释放、实际 F24 停止、A 恢复均通过；无测量与构建重叠。
+
+| 批次／状态 | p50／p95／p99 ms | 产品单核 CPU % |
+|---|---|---:|
+| 正序基线 | 1.0284／3.5034／4.9788 | 2.275 |
+| 正序关闭 | 1.0409／3.4474／5.3228 | 2.744 |
+| 正序启用空闲 | 1.0307／3.6180／5.1737 | 2.465 |
+| 正序持续查询 | 1.0526／3.8336／6.0999 | 4.415 |
+| 反序基线 | 1.8975／7.0930／8.9737 | 2.413 |
+| 反序关闭 | 1.0140／3.6083／5.3289 | 2.738 |
+| 反序启用空闲 | 1.0182／3.6985／5.7431 | 2.475 |
+| 反序持续查询 | 1.0226／3.7456／5.8401 | 3.750 |
+| 夹持基线前 | 0.9936／3.3747／5.0992 | 2.371 |
+| 夹持关闭 | 1.0210／3.6459／5.3726 | 2.588 |
+| 夹持基线后 | 1.0048／3.5187／5.1010 | 3.243 |
+
+数据没有证明当前关闭状态持续恶化，也不能证明零成本；基线自身跨轮波动明显，保留反序高延迟样本，不据其宣称当前变快。持续查询实际约 21.04 Hz，产品 CPU 比同轮关闭高约 1.0–1.7 个单核百分点；启用组工作集约 176–177 MiB，基线／关闭约 172–173 MiB，线程均 25–33。WM_NULL 中位约 0.10 ms，但正序基线／查询分别有 19.44／18.93 ms 最大样本，不作为完整 GUI 交互或线程唤醒结论。原 61-A 仍按原版本保留，不混合当成本轮复跑。
+
+039 完成测量和停止后，gsudo 在 OpenAdvanced 助手启动前报 Setting token failed／Failed to substitute token，未生成该动作结果，故停止队列。产品 exit 0、接收器正常、测试键释放，不能记 GUI 撤销通过；确认独有 EXE／Session 派生目录、原进程已退出、无发现文件及独占 control.lock 后，普通权限只清理该测试命名空间的 pairings.dat／control.lock。未读取密钥或操作用户实例，未重试原命令；原失败和离线清理记录保留，新实例 040 起完整通过。039 不计入上述 11 组完整结果，不将其配对清理失败当成映射失败或被修复后的成功。
+
+证据均本机、不随 Git：out/mcp_bridge/exit63-build*.txt；out/mcp_product/engine61/deployment-exit63-*.json；unattended-20261024/job-025～047 的原始动作／响应／事件／topology／closed，exit63-performance-both.json、exit63-bracket-analysis.json，039 的 offline-pairing-cleanup.json。最终普通 Qt6 EXE 位于 job-047/accept/off_exit_wait/runtime/QKeyMapperMcpAcceptance_engine61_current.exe，SHA-256 ecfb893bfcc59d84ad644e839366ed57ec2b7ab6f3698a11c90172359dfd3c6b；模板已恢复同一普通版本。026～047 共 22 产品／接收器均正常退出，其中 21 作业完整成功、039 单列失败；父 PID 6816 缓存仍按 TEMP-CACHE-61 有意保留，未声称关闭。
+
+这是独立公共基础修复提交切点，选定范围完成后继续只读许可。未覆盖强制调度、多键／复杂配置、高频、设备／驱动、真实唤醒、全机／SDK 成本、Qt5／Win11 输入、ASan 或全源静态分析；这些按相关接入／发布保留门槛，不宣称整个 ENGINE-61 或源写入安全已通过。
