@@ -20,10 +20,19 @@ class FeatureTests(unittest.TestCase):
             section = ini["Engine61"]
             self.assertEqual(section["ProcessInfo_ClassName"], "QkmEngine61Receiver_123")
             self.assertEqual(section["ProcessInfo_ClassNameMatchIndex"], "1")
-            self.assertEqual(section["KeyMapData_OriginalKeys"].split("#"), [r["original"] for r in rows])
-            methods = section["KeyMapData_SendMappingKeyMethod"].split("#")
+            self.assertEqual(section["KeyMapData_OriginalKeys"].split("|")[0].split("#"), [r["original"] for r in rows])
+            methods = section["KeyMapData_SendMappingKeyMethod"].split("|")[0].split("#")
             self.assertEqual(len(methods), len(rows))
             self.assertEqual(methods[-1], "1" if case == "stop_message" else "0")
+
+    def test_return_and_restart_cannot_keep_the_previous_output(self):
+        for case, keys in (("tab_return", [(0x43, True), (0x43, False), (0x42, True), (0x42, False)]),
+                           ("profile_return", [(0x43, True), (0x43, False)]),
+                           ("quick_restart", [(0x42, True), (0x42, False)] * 4)):
+            check_effects(case, events(keys))
+            for bad in (keys[:-1], [(0x42, down) for _, down in keys] if case != "quick_restart" else keys + keys[:2]):
+                with self.assertRaises(AssertionError):
+                    check_effects(case, events(bad))
 
     def test_held_output_requires_exact_release(self):
         good = events([(0x42, True), (0x42, False)])
@@ -34,10 +43,11 @@ class FeatureTests(unittest.TestCase):
 
     def test_cancel_rejects_late_tail_and_wrong_source(self):
         good = events([(0x43, True), (0x43, False)])
-        check_effects("sequence_cancel", good)
-        for bad in (good + events([(0x45, True), (0x45, False)]), good + events([(0x41, True)])):
-            with self.assertRaises(AssertionError):
-                check_effects("sequence_cancel", bad)
+        for case in ("sequence_cancel", "exit_wait"):
+            check_effects(case, good)
+            for bad in (good + events([(0x45, True), (0x45, False)]), good + events([(0x41, True)]), good + good[1:]):
+                with self.assertRaises(AssertionError):
+                    check_effects(case, bad)
 
     def test_sequence_and_stop_wait_cannot_be_skipped(self):
         sequence = events([(0x43, True), (0x43, False), (0x44, True), (0x44, False)])

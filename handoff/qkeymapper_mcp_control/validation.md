@@ -1203,3 +1203,20 @@ PC-W10／Default，产品仍为普通 Qt6 Release 的基线 d49a9f57 与当前 9
 本机证据不随 Git 同步：out/mcp_product/engine61/features-unit-final.txt；unattended-20261024/job-001～014 的请求／result、run.log、各 accept/<state>_<case> 下 feature-events.json／stop-tail.json／warmup／stopped／GUI／topology／closed；features-analysis.json 汇总轨迹比对。14 组进程来源与 EXE SHA 与 61-A 一致，测试代码在 c9001626 之后扩展。此处父缓存按当天用户明确授权 TEMP-CACHE-61：普通控制器 PID 6816＋测试子进程，截止 19:30，19:15 后不收新测试；未改全局五分钟或 CacheMode，不用于开发／构建／Git。初始 UAC 后 job-000 验证普通子进程可复用缓存；B1 未新增 UAC，子测试不传 --gsudo-cache、不提前关闭父缓存，仍独立清理进程与输入。到期／提前返回关闭仅模拟验证过，真实关闭待实际发生后补记，不冒称当前已关。
 
 本切片为独立测试提交切点，不推送。Tab／配置回切、快速重启、退出中等待／释放等 B2 尚待验；实际线程唤醒、系统／SDK 总成本、物理硬件／其他后端、Win11／Qt5 实际效果及 High 截图等缺口继续保留。未把 B1 或 Source 输入计数归零记为完整 ENGINE-61、正式 MCP 停止完成接口、编辑／保存或 GUI／MCP 编辑等价性完成。
+
+## ENGINE-20261024-61B2：回切、快速启停与退出等待差异
+
+PC-W10／Win10 19045／Default，测试从 b9a0bb4f 扩展；C++ 仍为 9af1b260，基线 d49a9f57，普通 Qt6 Release EXE／模板及哈希沿 61-A 未变。本切片只改维护测试和文档，没有产品、依赖或 manifest 修改。每次新建独立 runtime／实际唯一接收窗口类，沿既有已批准 High 固定助手＋Medium 控制／SendInput／接收器，父缓存 PID 6816 沿 TEMP-CACHE-61；未额外申请 UAC，未操作用户实例或安装驱动。
+
+| 场景 | 当前实际结果 |
+|---|---|
+| tab_return，job-015／016 | F18 切入 Tab2 后 A 实际收到 C，再 F17 回 Tab1 实际收到 B，停止尾部无新按下，10 对停止后 A 与 GUI 空闲通过；两版完整 key/down 轨迹相同 |
+| quick_restart，017／018 | F17 为夹具实际开始键，F24 停止；连续四轮源 A 保持时 B 按下、停止后 B 抬起、原 A 恢复，短间隔重启后下一轮 B 正常；两版完整轨迹一致，无多余／旧会话抬起 |
+| profile_return，022／023 | Engine61 自动匹配的预热 A→B；仅改自有接收窗口标题，100 ms 既有通用回切超时后实际 A→C，F24 停止，独立 GUI 读取确认为 Engine61／A→B，停止后 A 直通；两版完整轨迹一致 |
+| exit_wait，019／020／021 | F16 的 C⏱2000»E 在 C 实际按住时正常退出，继续观察超过原等待；基线 019 一次 C 抬起通过，当前 020 与基线复核 021 均为 C down/up/up，严格断言失败。三次均无 E、源 F16 释放、产品 exit 0／接收器正常退出；不因基线也失败而放宽断言 |
+
+退出问题尚未归因或修复。代码跟踪确认退出阶段先结束 Hook 线程，再 Worker 取消／清理／最终排空；序列任务强制释放与 Worker 直接清理是待核实的竞态方向，不能仅凭标签推断已证实根因，也不能把当前一次失败归为 MCP 特有退化。020 失败停止后续队列，确认正常清理后另起 021 基线复核；022／023 为独立不受此结论替代的回切验收。15 项工具自测通过；新增断言拒绝回切仍发送旧键、少一轮／多一轮重启、退出重复抬起和迟到 E。
+
+本机原始证据不随 Git 同步：out/mcp_product/engine61/features-b2-unit.txt；unattended-20261024/job-015～023 的请求／result、run.log、accept/<state>_<case> 的 feature-events、warmup／stopped、GUI、topology、closed 与接收器事件；features-b2-analysis.json 汇总完整轨迹及失败。9 个 High 产品／9 个普通接收器均正常退出，测试键清理完成；最后 job-023 exit 0，真实父缓存仍有意保留至用户返回或 19:30，不冒称已关。
+
+这是包含已知红色产品断言的独立测试提交切点，不是引擎修复提交或完整 ENGINE-61 通过。退出严格断言、唤醒及系统／设备／Qt5／Win11 缺口仍保留；后续纯参数前置校验不改输入热路径，可独立推进，不能以它绕过新增公共引擎改动门槛。未重跑输入不变的 B1／A 全矩阵，未将历史性能结果记为本切片新测。

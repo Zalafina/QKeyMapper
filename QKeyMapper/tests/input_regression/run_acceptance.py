@@ -312,12 +312,17 @@ async def run_feature(args, state, executable, case):
         save(output / "warmup.json", await plain(receiver, sender, 10, 0x42))
         result = await exercise(case, product, receiver, sender)
         save(output / "stopped.json", await plain(receiver, sender, 10, 0x41))
-        observed = await product.action("StopMapping")
-        assert observed["mapping_action"]["before"] == "映射开始", "Feature stop did not reach GUI idle"
+        if not product.closed:
+            observed = await product.action("StopMapping")
+            assert observed["mapping_action"]["before"] == "映射开始", "Feature stop did not reach GUI idle"
+            if case == "profile_return":
+                restored = await product.action("ReadMapping")
+                assert restored["configuration_display"] == "Engine61" and restored["mapping_rows"] == rows, \
+                    "Stop did not restore the last matched configuration"
         result.update(state=state, executable=str(executable),
                       exe_sha256=hashlib.sha256(executable.read_bytes()).hexdigest(), controller_pid=os.getpid())
         save(output / "result.json", result)
-        print("PASS", state, case, "real output, release, stopped A and GUI idle", flush=True)
+        print("PASS", state, case, "real output, release, stopped A and", "normal exit" if product.closed else "GUI idle", flush=True)
         return result
     finally:
         try:
