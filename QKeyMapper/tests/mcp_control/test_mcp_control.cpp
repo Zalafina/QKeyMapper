@@ -1,6 +1,7 @@
 #include "../../automation/qkm_control_dialog.h"
 #include "../../automation/qkm_source_snapshot.h"
 #include "../../automation/qkm_mapping_help.h"
+#include "../../automation/qkm_mapping_changes.h"
 #include "../../qkm_mapping_source_access.h"
 #include "../../qkeymapper_qt_compat.h"
 #include "../../qkeymapper_constants.h"
@@ -74,6 +75,18 @@ void clickCheckBox(ControlDialog &dialog, const char *name)
 
 } // namespace
 
+namespace QkmAutomation {
+class MappingChangeStoreTestAccess {
+public:
+    static int previews(const MappingChangeStore &store) { return store.m_previews.size(); }
+    static int results(const MappingChangeStore &store) { return store.m_results.size(); }
+    static void expirePreview(MappingChangeStore &store, const QString &id)
+    { store.m_previews[id].created -= MappingChangeStore::PreviewTtlMs + 1; }
+    static void expireResult(MappingChangeStore &store, const QString &id)
+    { store.m_results[id].created -= MappingChangeStore::ResultTtlMs + 1; }
+};
+}
+
 class McpControlTest : public QObject {
     Q_OBJECT
 private slots:
@@ -99,7 +112,140 @@ private slots:
     void sourceReadAdmission();
     void mappingHelpReference();
     void mappingHelpBoundaries();
+    void mappingChangeArguments();
+    void mappingChangeLifecycle();
+    void mappingChangeLimits();
 };
+
+void McpControlTest::mappingChangeArguments()
+{
+    const QString revision(64, QLatin1Char('a'));
+    const QJsonObject input{{QStringLiteral("source_revision"), revision},
+        {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")},
+        {QStringLiteral("original_key"), QStringLiteral("A")}, {QStringLiteral("mapping_key"), QStringLiteral("B")}};
+    const auto request = validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), input);
+    QVERIFY(request.ok());
+    QCOMPARE(request.addition.originalKey, QStringLiteral("A"));
+    QCOMPARE(request.addition.mappingKey, QStringLiteral("B"));
+    QCOMPARE(request.addition.insertRow, -1);
+    for (const QJsonValue &row : {QJsonValue(QJsonValue::Null), QJsonValue(0), QJsonValue(2147483647)}) {
+        auto changed = input; changed.insert(QStringLiteral("insert_row"), row);
+        QVERIFY(validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+    }
+    for (const QJsonValue &row : {QJsonValue(-1), QJsonValue(.5), QJsonValue(2147483648.0), QJsonValue(true), QJsonValue(QStringLiteral("1"))}) {
+        auto changed = input; changed.insert(QStringLiteral("insert_row"), row);
+        QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+    }
+    for (const QString &field : {QStringLiteral("original_key"), QStringLiteral("mapping_key")}) {
+        for (const QJsonValue &key : {QJsonValue(QString()), QJsonValue(QStringLiteral("a")), QJsonValue(QStringLiteral("A+B")),
+            QJsonValue(QStringLiteral("Func-Test")), QJsonValue(QStringLiteral("Ａ")), QJsonValue(1), QJsonValue(false)}) {
+            auto changed = input; changed.insert(field, key);
+            QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+        }
+    }
+    auto changed = input; changed.insert(QStringLiteral("unknown"), true);
+    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+    changed = input; changed.remove(QStringLiteral("source_revision"));
+    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+    changed = input; changed.insert(QStringLiteral("source_tab_ref"), QString(64, QLatin1Char('b')) + QStringLiteral(":source:0"));
+    QCOMPARE(validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).errorCode, QStringLiteral("stale_source"));
+    const QString id(32, QLatin1Char('a'));
+    for (const QString &method : {QStringLiteral("qkm_apply_changes"), QStringLiteral("qkm_cancel_changes"), QStringLiteral("qkm_get_operation")}) {
+        const QString field = method == QStringLiteral("qkm_get_operation") ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
+        QVERIFY(validateMappingChangeRequest(method, {{field, id}}).ok());
+        QVERIFY(!validateMappingChangeRequest(method, {{field, QString(32, QLatin1Char('A'))}}).ok());
+        QVERIFY(!validateMappingChangeRequest(method, {{field, id}, {QStringLiteral("extra"), true}}).ok());
+    }
+    QVERIFY(validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
+        {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), true}}).ok());
+    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
+        {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
+    const auto capabilities = mappingChangeCapabilities();
+    QCOMPARE(capabilities.size(), 4);
+    QCOMPARE(capabilities.first().toObject().value(QStringLiteral("preview_ttl_ms")).toInt(), 120000);
+    QCOMPARE(capabilities.first().toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    const auto operation = capabilities.last().toObject();
+    QCOMPARE(operation.value(QStringLiteral("required_scopes")).toInt(), int(Read));
+    QVERIFY(!operation.value(QStringLiteral("limitations")).toArray().contains(QStringLiteral("idle_after_cleanup")));
+}
+
+void McpControlTest::mappingChangeLifecycle()
+{
+    MappingChangeStore store;
+    const MappingChangeOwner owner{QString(32, QLatin1Char('a')), QString(32, QLatin1Char('b')), 1};
+    const MappingChangeOwner other{owner.instance, QString(32, QLatin1Char('c')), 1};
+    const MappingChangeOwner nextEpoch{owner.instance, owner.pairId, 2};
+    MappingAdditionArguments arguments; arguments.originalKey = QStringLiteral("A"); arguments.mappingKey = QStringLiteral("B");
+    const auto preview = store.create(owner, arguments, {{QStringLiteral("marker"), QStringLiteral("private-fixture")}});
+    QVERIFY(preview.has_value());
+    QVERIFY(isLowerHex(preview->id, 32));
+    QVERIFY(!store.expired(*preview));
+    auto oldPreview = *preview;
+    oldPreview.created -= MappingChangeStore::PreviewTtlMs + 1;
+    QVERIFY(store.expired(oldPreview));
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("previewed"));
+    QVERIFY(!store.begin(other, preview->id));
+    QVERIFY(!store.cancel(nextEpoch, preview->id));
+    QCOMPARE(store.operation(other, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("unknown"));
+    const auto begun = store.begin(owner, preview->id);
+    QVERIFY(begun.has_value());
+    QCOMPARE(begun->arguments.mappingKey, QStringLiteral("B"));
+    QVERIFY(!store.begin(owner, preview->id));
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("applying"));
+    const QJsonObject result{{QStringLiteral("row"), 0}, {QStringLiteral("saved"), false}};
+    store.finish(owner, preview->id, QStringLiteral("applied"), result);
+    const auto completed = store.operation(owner, preview->id);
+    QCOMPARE(completed.value(QStringLiteral("status")).toString(), QStringLiteral("applied"));
+    QCOMPARE(completed.value(QStringLiteral("result")).toObject(), result);
+    QVERIFY(completed.value(QStringLiteral("historical_result")).toBool());
+    QVERIFY(!completed.value(QStringLiteral("query_sampled_at_utc")).toString().isEmpty());
+    QVERIFY(!store.begin(owner, preview->id) && !store.cancel(owner, preview->id));
+    store.finish(owner, preview->id, QStringLiteral("rejected"), {}, QStringLiteral("bad"), QStringLiteral("must not overwrite"));
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("applied"));
+    QCOMPARE(store.operation(nextEpoch, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("unknown"));
+    const auto cancel = store.create(owner, arguments, {}); QVERIFY(cancel);
+    QVERIFY(store.cancel(owner, cancel->id));
+    QCOMPARE(store.operation(owner, cancel->id).value(QStringLiteral("status")).toString(), QStringLiteral("cancelled"));
+    QVERIFY(!store.begin(owner, cancel->id));
+    const auto old = store.create(owner, arguments, {}); QVERIFY(old);
+    const auto replacement = store.create(owner, arguments, {}); QVERIFY(replacement);
+    QCOMPARE(MappingChangeStoreTestAccess::previews(store), 1);
+    QCOMPARE(store.operation(owner, old->id).value(QStringLiteral("error")).toObject().value(QStringLiteral("code")).toString(), QStringLiteral("preview_superseded"));
+    QVERIFY(store.begin(owner, replacement->id));
+    store.finish(owner, replacement->id, QStringLiteral("rejected"), {}, QStringLiteral("stale_source"), QStringLiteral("fixed rejection"));
+    QCOMPARE(store.operation(owner, replacement->id).value(QStringLiteral("error")).toObject().value(QStringLiteral("code")).toString(), QStringLiteral("stale_source"));
+    store.clear();
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("unknown"));
+    QVERIFY(!store.begin(owner, preview->id));
+}
+
+void McpControlTest::mappingChangeLimits()
+{
+    MappingChangeStore store;
+    const MappingChangeOwner owner{QStringLiteral("instance"), QStringLiteral("pair"), 1};
+    const auto expired = store.create(owner, {}, {}); QVERIFY(expired);
+    MappingChangeStoreTestAccess::expirePreview(store, expired->id);
+    const auto result = store.operation(owner, expired->id);
+    QCOMPARE(result.value(QStringLiteral("status")).toString(), QStringLiteral("cancelled"));
+    QCOMPARE(result.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")).toString(), QStringLiteral("preview_expired"));
+    QVERIFY(!store.begin(owner, expired->id));
+    MappingChangeStoreTestAccess::expireResult(store, expired->id);
+    QCOMPARE(store.operation(owner, expired->id).value(QStringLiteral("status")).toString(), QStringLiteral("unknown"));
+    for (int index = 0; index < MappingChangeStore::MaxResults + 5; ++index) {
+        const auto preview = store.create(owner, {}, {}); QVERIFY(preview);
+        QVERIFY(store.begin(owner, preview->id));
+        store.finish(owner, preview->id, QStringLiteral("applied"), {});
+        QVERIFY(MappingChangeStoreTestAccess::results(store) <= MappingChangeStore::MaxResults);
+    }
+    store.clear();
+    for (int index = 0; index < MappingChangeStore::MaxPreviews; ++index) {
+        QVERIFY(store.create({owner.instance, QString::number(index), 1}, {}, {}));
+    }
+    QVERIFY(!store.create(owner, {}, {}));
+    QCOMPARE(MappingChangeStoreTestAccess::previews(store), MappingChangeStore::MaxPreviews);
+    QVERIFY(store.create({owner.instance, QStringLiteral("0"), 2}, {}, {}));
+    QCOMPARE(MappingChangeStoreTestAccess::previews(store), MappingChangeStore::MaxPreviews);
+}
 
 void McpControlTest::mappingHelpReference()
 {
@@ -239,6 +385,7 @@ void McpControlTest::sourceSnapshotReferences()
     const QJsonObject firstRow{{QStringLiteral("fields"), QJsonObject{
         {QStringLiteral("original_key"), QStringLiteral("A")},
         {QStringLiteral("mapping_keys"), QJsonArray{QStringLiteral("B")}},
+        {QStringLiteral("KeyMapData_FloatingButton_SyncGroupId"), 7},
         {QStringLiteral("note"), QStringLiteral("中文 日本語 😀")}}}};
     QJsonObject snapshot{{QStringLiteral("source_epoch"), QStringLiteral("1")},
         {QStringLiteral("read_basis"), QStringLiteral("pristine_idle")},
@@ -261,6 +408,20 @@ void McpControlTest::sourceSnapshotReferences()
     const QString revision = first.page.value(QStringLiteral("source_snapshot")).toObject().value(QStringLiteral("revision")).toString();
     QVERIFY(isLowerHex(revision, 64));
     QCOMPARE(query(list).page, first.page);
+    auto groupOnly = snapshot;
+    auto groupSources = groupOnly.value(QStringLiteral("sources")).toArray();
+    auto groupSource = groupSources.first().toObject();
+    auto groupRows = groupSource.value(QStringLiteral("rows")).toArray();
+    auto groupRow = groupRows.first().toObject();
+    auto groupFields = groupRow.value(QStringLiteral("fields")).toObject();
+    groupFields.insert(QStringLiteral("KeyMapData_FloatingButton_SyncGroupId"), 8);
+    groupRow.insert(QStringLiteral("fields"), groupFields); groupRows[0] = groupRow;
+    groupSource.insert(QStringLiteral("rows"), groupRows); groupSources[0] = groupSource;
+    groupOnly.insert(QStringLiteral("sources"), groupSources);
+    QCOMPARE(querySourceSnapshot(groupOnly, "instance", "pair", 1,
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), revision}}).errorCode,
+        QStringLiteral("stale_source"));
+    QCOMPARE(snapshot, original);
     QJsonObject rest = list;
     rest.insert(QStringLiteral("source_revision"), revision);
     rest.insert(QStringLiteral("offset"), 1);

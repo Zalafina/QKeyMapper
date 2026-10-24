@@ -1312,3 +1312,11 @@ Qt6 修复前仅两项同步组／Qt 列表比较预期失败，产品 exit 2；
 实际 EXE：out/mcp_lifecycle/resume-w10-20261023/equality68-{qt6-before-final,qt6-after-final,qt5-after-final}/QKeyMapperEquality68_{qt6,qt5}.exe，身份见 equality68-artifacts.json。实际随机私有桌面／PID、High 产品／Medium 控制器、同系统登录、退出和零尾部作业均在 equality68-{before,after}-final-results.json；30708／26760 五分钟 PID 缓存关闭，pilot 29152 也已关闭。原始 build-equality68-*、accept-equality68-*、field-audit／cache 仅本机 out，不随 Git 同步。
 
 MCP 实际复用仍为原 automationSourceRow 的完整字段编码／哈希，已覆盖同步组及派生／运行采样，无强行增加相等判断。operator== 可作单条配置检测的共用基础，不与 QColor／double 的 JSON 规范化等同；实例／会话／权限、到期、状态、目标代次及全依赖修订仍由外层负责。正式预览后仅改组号的陈旧拒绝及零部分修改尚未接入，待验，不将本夹具称为 MCP 等价或持久化通过。
+
+## MAP-20261024-67-B0：未接线的预览基础检查点
+
+PC-W10／014ef2eb＋qkm_mapping_changes 纯模块、工程／组件测试。严格参数、120 秒预览、实例／pair／权限代次隔离、消费／取消／替换、10 分钟／64 条结果、容量／到期／清空 unknown 及同步组单改的完整源哈希陈旧拒绝通过。后者是源助手负例，不是正式预览／提交；认证、业务状态和原子写入仍由外层负责。
+
+双 Qt 普通 Release 构建 exit 0、零编译链接诊断；out/tests/mcp_control/{qt6-release,qt5-release}/release/QKeyMapperMcpControlTest.exe 定向四函数，含 init／cleanup 各 6 passed，5／8 ms，native 0。普通权限 offscreen，实际线程 Default，无窗口／输入／UAC，不称私有桌面。初期 schema 名称误用编译失败已修；早期无 stdout 运行不计通过，本轮用 QtTest -o 文件核验。
+
+证据仅本机 out/mcp_bridge/map67b-checkpoint-{qt6,qt5}-{build,native}.txt 及 qtest.txt。未验证产品／SDK 接线存本机草稿 patch 并撤回，仍八工具／四只读；无新产品、GUI、输入、性能或 Win11 结论。本地开发检查点，下一步和换机规则见主计划。
