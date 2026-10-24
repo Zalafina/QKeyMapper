@@ -15105,8 +15105,9 @@ LRESULT QKeyMapper_Worker::LowLevelKeyboardHookProc(int nCode, WPARAM wParam, LP
                         || SENDVIRTUALKEY_STATE_BURST_STOP == sendVirtualKeyState
                         || SENDVIRTUALKEY_STATE_FORCE == sendVirtualKeyState)) {
                     if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && !blockedKeysList.contains(keycodeString)){
-                        int findindex = QKeyMapper::findOriKeyInKeyMappingDataList_RemoveMultiInput(keycodeString);
-                        if (findindex < 0) {
+                        // Cleanup still needs the frozen source after the Worker has stopped.
+                        if ((s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED && !s_MappingInputClosed.loadAcquire())
+                            || QKeyMapper::findOriKeyInKeyMappingDataList_RemoveMultiInput(keycodeString) < 0) {
 #ifdef DEBUG_LOGOUT_ON
                             QString debugmessage = QString("[LowLevelKeyboardHookProc] RealKey \"%1\" is pressed down on keyboard, skip send mapping VirtualKey \"%2\" KEY_UP! sendVirtualKeyState = %3").arg(keycodeString, keycodeString).arg(sendVirtualKeyState);
                             qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";
@@ -15428,8 +15429,9 @@ LRESULT QKeyMapper_Worker::LowLevelMouseHookProc(int nCode, WPARAM wParam, LPARA
                         || SENDVIRTUALKEY_STATE_BURST_STOP == sendVirtualKeyState
                         || SENDVIRTUALKEY_STATE_FORCE == sendVirtualKeyState) {
                         if (pressedRealKeysListRemoveMultiInput.contains(keycodeString) && !blockedKeysList.contains(keycodeString)){
-                            int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString);
-                            if (findindex < 0) {
+                            // Cleanup still needs the frozen source after the Worker has stopped.
+                            if ((s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED && !s_MappingInputClosed.loadAcquire())
+                                || QKeyMapper::findOriKeyInKeyMappingDataList(keycodeString) < 0) {
 #ifdef DEBUG_LOGOUT_ON
                                 QString debugmessage = QString("[LowLevelMouseHookProc] RealKey \"%1\" is pressed down on mouse, skip send mapping VirtualKey \"%2\" KEYUP! sendVirtualKeyState = %3").arg(keycodeString, keycodeString).arg(sendVirtualKeyState);
                                 qDebug().nospace().noquote() << "\033[1;34m" << debugmessage << "\033[0m";

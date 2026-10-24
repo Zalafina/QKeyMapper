@@ -10,6 +10,7 @@
 #include <QToolButton>
 #include <QMouseEvent>
 #include <QSettings>
+#include <QScopeGuard>
 #include <QLineEdit>
 #include "../../qkeymapper_worker.h"
 #include "../../qkeymapper.h"
@@ -116,6 +117,7 @@ struct LifecycleResult {
     int repeatRuns = 0;
     QStringList lifecycleDispatchTrace;
     QStringList sourceContextTrace;
+    QStringList virtualReleaseTrace;
 };
 LifecycleResult *result = nullptr;
 
@@ -1061,12 +1063,76 @@ void installSourceContextTest(QKeyMapper_Worker *worker, bool holdSequence)
         && SendInputWorkItem::outstanding() == 0 && InputProducerWorkItem::outstanding() == 0);
 }
 
+void installInactiveVirtualReleaseTest()
+{
+    auto *mapper = QKeyMapper::getInstance();
+    auto *previousSource = QKeyMapper::KeyMappingDataList;
+    const auto previousStatus = mapper->m_KeyMapStatus;
+    const int previousHook = QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire();
+    const bool previousClosed = QKeyMapper_Worker::s_MappingInputClosed.loadAcquire();
+    const auto previousReal = QKeyMapper_Worker::pressedRealKeysList;
+    const auto previousPure = QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
+    const auto previousVirtual = QKeyMapper_Worker::pressedVirtualKeysList;
+    const auto previousBlocked = QKeyMapper_Worker::blockedKeysList;
+    QList<MAP_KEYDATA> source{MAP_KEYDATA(), MAP_KEYDATA()}, empty;
+    const auto restore = qScopeGuard([=] {
+        QKeyMapper::KeyMappingDataList = previousSource;
+        mapper->m_KeyMapStatus = previousStatus;
+        QKeyMapper_Worker::s_AtomicHookProcState.storeRelease(previousHook);
+        QKeyMapper_Worker::s_MappingInputClosed.storeRelease(previousClosed);
+        QKeyMapper_Worker::pressedRealKeysList = previousReal;
+        QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput = previousPure;
+        QKeyMapper_Worker::pressedVirtualKeysList = previousVirtual;
+        QKeyMapper_Worker::blockedKeysList = previousBlocked;
+    });
+    source[0].Original_Key = QStringLiteral("A");
+    source[1].Original_Key = QStringLiteral("Mouse-L");
+    QKeyMapper_Worker::pressedRealKeysList = QStringList{QStringLiteral("A"), QStringLiteral("Mouse-L")};
+    QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput = QKeyMapper_Worker::pressedRealKeysList;
+    QKeyMapper_Worker::blockedKeysList.clear();
+    // Replay both callbacks without injecting system input, including the late cleanup tail.
+    for (int phase : {0, 1, 2}) {
+        const bool stopped = phase == 0;
+        mapper->m_KeyMapStatus = stopped ? QKeyMapper::KEYMAP_IDLE : QKeyMapper::KEYMAP_STOPPING;
+        QKeyMapper_Worker::s_AtomicHookProcState.storeRelease(phase == 1 ? HOOKPROC_STATE_STARTED : HOOKPROC_STATE_STOPPED);
+        QKeyMapper_Worker::s_MappingInputClosed.storeRelease(!stopped);
+        for (bool present : {true, false}) {
+            QKeyMapper::KeyMappingDataList = present ? &source : &empty;
+            for (int state : {SENDVIRTUALKEY_STATE_FORCE, SENDVIRTUALKEY_STATE_BURST_STOP,
+                SENDVIRTUALKEY_STATE_FORCE_KEYUP_BYPASS_REALKEY}) {
+                QKeyMapper_Worker::pressedVirtualKeysList = QKeyMapper_Worker::pressedRealKeysList;
+                KBDLLHOOKSTRUCT key{};
+                key.vkCode = 0x41;
+                key.scanCode = 0x1e;
+                key.flags = LLKHF_INJECTED | LLKHF_UP;
+                key.dwExtraInfo = QKeyMapper_Worker::VIRTUAL_KEY_SEND | ULONG_PTR(state);
+                MSLLHOOKSTRUCT mouse{};
+                mouse.flags = LLMHF_INJECTED;
+                mouse.dwExtraInfo = key.dwExtraInfo;
+                const LRESULT keyboardResult = QKeyMapper_Worker::LowLevelKeyboardHookProc(HC_ACTION, WM_KEYUP, LPARAM(&key));
+                const LRESULT mouseResult = QKeyMapper_Worker::LowLevelMouseHookProc(HC_ACTION, WM_LBUTTONUP, LPARAM(&mouse));
+                const bool block = state != SENDVIRTUALKEY_STATE_FORCE_KEYUP_BYPASS_REALKEY && (stopped || !present);
+                result->virtualReleaseTrace.append(QStringLiteral("%1:%2:%3:%4:%5")
+                    .arg(phase).arg(present).arg(state).arg(keyboardResult).arg(mouseResult));
+                result->passed = result->passed && (keyboardResult != 0) == block && (mouseResult != 0) == block
+                    && QKeyMapper_Worker::pressedVirtualKeysList.isEmpty()
+                    && InputProducerWorkItem::outstanding() == 0 && SendInputWorkItem::outstanding() == 0;
+            }
+        }
+    }
+    finish(result->passed && result->virtualReleaseTrace.size() == 18);
+}
+
 void installLifecycleTest()
 {
     QTimer::singleShot(0, QCoreApplication::instance(), []() {
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+            if (mode == QStringLiteral("inactive_virtual_release")) {
+                QMetaObject::invokeMethod(QCoreApplication::instance(), installInactiveVirtualReleaseTest, Qt::QueuedConnection);
+                return;
+            }
             if (mode == QStringLiteral("hold_source_context") || mode == QStringLiteral("unlock_source_context")) {
                 installSourceContextTest(worker, mode == QStringLiteral("hold_source_context"));
                 return;
@@ -1331,7 +1397,7 @@ int main(int argc, char *argv[])
         QStringLiteral("gui_stop_exit"), QStringLiteral("closed_input_tracking"),
         QStringLiteral("gui_stop_repeat"), QStringLiteral("gui_stop_after_timeout"),
         QStringLiteral("gui_stop_restore"), QStringLiteral("gui_stop_restore_timeout"), QStringLiteral("runtime_revision"),
-        QStringLiteral("hold_source_context"), QStringLiteral("unlock_source_context")};
+        QStringLiteral("hold_source_context"), QStringLiteral("unlock_source_context"), QStringLiteral("inactive_virtual_release")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -1409,6 +1475,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("buttonLockAfterDispatch"), result->buttonLockAfterDispatch},
         {QStringLiteral("lifecycleDispatchTrace"), QJsonArray::fromStringList(result->lifecycleDispatchTrace)},
         {QStringLiteral("sourceContextTrace"), QJsonArray::fromStringList(result->sourceContextTrace)},
+        {QStringLiteral("virtualReleaseTrace"), QJsonArray::fromStringList(result->virtualReleaseTrace)},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};

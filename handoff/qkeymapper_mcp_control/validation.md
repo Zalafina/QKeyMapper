@@ -1259,9 +1259,9 @@ PC-W10，静态基线 a8b8a6fa；WRITE-64 候选只改 Worker 来源传递，不
 
 ## WRITE-20261024-64：派生父源独立修复与停止态待验边界
 
-PC-W10，HEAD f867ab5c／产品父提交 a8b8a6fa。候选仅将父源参数传入序列子任务、重复、保持尾键和 Unlock；后者从同一源读取实际抬起内容。原有借用生命周期及排空规则不变，不新增全局配置模型、MCP 语义开关或编辑许可。custom-tag 正常态的非运行守卫已有，不重复修补；forced-UP 非运行路径的源查询另待受限真实标签探针，尚未执行或修复。
+PC-W10，初始 HEAD f867ab5c／产品父提交 a8b8a6fa；下列按实际版本保留。父源修复只涉及序列子任务、重复、保持尾键及 Unlock，原借用／排空不变，无全局模型重写或 MCP 开关。普通 custom-tag 已有非运行守卫；forced-UP 另列 B 的真实红绿证据。
 
-普通 Qt6／Qt5 产品、Qt6／Qt5／Qt6 ASan NoOp 维护构建通过。Qt6 零编译链接警告，Qt5 沿既有例外；Worker 在主产品和生命周期目标两份编译下的 Clang-Tidy／Clazy 四工具 exit 0、零项目诊断。新建 repeat／hold／unlock_source_context 三项维护用例，包含不同全局表的反例及父源断言；修复前 Qt6 与候选三配置隔离 runtime、18 项固定私有桌面启动器已准备，未启动。ASan 构建不等于运行安全通过。
+A 构建：双 Qt 普通产品及双 Qt／Qt6 ASan NoOp 通过；Qt6 零警告、Qt5 既有例外。Worker 的主产品／生命周期两目标 Clang-Tidy／Clazy 四工具 exit 0、零项目诊断。新增 repeat／hold／unlock_source_context，异全局 decoy 与父源断言；运行结果见 19:28 补充。
 
 普通 Qt6 候选 EXE SHA-256 370328dafb58a596f77812bad5001f86e066994c29b486a9f36776def15ea029，位于 out/mcp_product/engine61/runtime-current；job-054 保留原 a8b8a6fa 版本。job-055～058 四态各三轮 250 对，共 6,000 个实际 B 事件、F24 后 A 直通、GUI 空闲与清理通过。
 
@@ -1278,7 +1278,7 @@ PC-W10，HEAD f867ab5c／产品父提交 a8b8a6fa。候选仅将父源参数传�
 
 job-059～062：基线／候选的实际序列完成分别为 C↓↑ D↓↑，停止取消分别仅 C↓↑ 且原等待期限后无迟到 D；四组均通过，原键恢复、停止及四产品／四接收器清理正常。055～058 另四产品／四接收器也均 exit 0，启用的配对／接口均撤销关闭。仅复用原授权 Default 输入／焦点范围与 PID 6816 固定入口。
 
-本机证据不随 Git：out/mcp_bridge/source64-build-qt6.txt／qt5.txt、source64-static-worker.txt；out/static-analysis 当前双目标报告；out/mcp_lifecycle/resume-w10-20261023/build-*-write64-*.log、source64-* runtime／identity、run-source64.py、launch-case64.ps1；out/mcp_product/engine61/deployment-source64.json、source64-basic-analysis.json、job-055～062。16 项普通探针自测通过，新增 forced-UP 输入未执行。候选尚未形成独立公共修复提交切点；三项新 NoOp 红绿例、ASan 运行、尾延迟复核、晚到探针及写入闭环继续保留，Qt5／Win11 真实输入与设备门槛不变。
+A 原始证据不随 Git：out/mcp_bridge/source64-build-qt6.txt／qt5.txt、source64-static-worker.txt；out/static-analysis 双目标报告；out/mcp_lifecycle/resume-w10-20261023/build-*-write64-*.log、source64-* runtime／identity、run-source64.py、launch-case64.ps1；out/mcp_product/engine61/deployment-source64.json、source64-basic-analysis.json、job-055～062。初版探针 16 项自测通过；后续红绿、线程归因及独立切点以下文为准，Qt5／Win11 真实输入与设备缺口保留。
 
 **19:28 后续：** 私有 19 项完成，源上下文修复前 Qt6 三项均以 sourceContextTrace 的错误来源及 exit 2 复现；Qt6／Qt5／Qt6 ASan 各三项修复验证及 repeat_macro_3／gui_stop_after_timeout 均 exit 0，共 15 绿例。ASan runtime 未产生报告；原 instrumentation／原 manifest 保持。新增 inactive_virtual_release 的 Qt6 修复前夹具正常 exit 2，12 组直接回调同时验证键盘／鼠标：停止态源存在时 Force／BurstStop 错误放行，源不存在时拦截；STOPPING 冻结源及明确 bypass 对照保留。没有系统输入注入，源／按键状态在退出前恢复；结果及真实桌面在 source64-results.json，13152 五分钟缓存已核实关闭。
 
@@ -1295,6 +1295,14 @@ job-059～062：基线／候选的实际序列完成分别为 C↓↑ D↓↑，
 证据：out/mcp_product/engine61/source64-threadcpu、-named、-split-retry 的 result／analysis／cache；线程名称修正前数据只用于累计 CPU，不冒称已知线程角色。split 的首次 UAC 返回取消，未启产品／输入，9484 缓存不可用；经用户明确允许在新目录重试。27840／24308／20804 五分钟缓存均已关闭，控制器会话均 exit 0；没有 global -k 或超时延长。维护诊断为本地检查点，公共源上下文及后续停止态修复保留独立提交边界。
 
 **WRITE-64-A 独立切点：** 在 d15fc4b7 上仅暂存 Worker 父源传递、三项来源维护用例及运行说明；停止态释放夹具另留工作区，不把尚未修复的红例混入本提交。上列三配置功能／ASan、定向静态检查及实际输入／普通 Release 归因共同支持这一局部修复；不是完整 ENGINE-61 或稳定源编辑许可。运行说明位于 QKeyMapper/tests/sendinput_lifecycle/README.md，既有证据的 EXE／桌面／来源与缺口不变。接续 WRITE-64-B 先补 STOPPED＋admission closed 阶段，保留清理冻结源，再修复空闲源读取及实际误释放。
+
+**WRITE-64-B 独立切点（父提交 7b188d5c）：** 只改键盘／鼠标虚拟抬起的原有保护分支。Worker STOPPED 且 admission 已重新开放时，保护仍按住且未屏蔽的原键并短路源表查找；读取 Worker 状态后再读 admission，不能把 STOPPED 单独当成清理完成。STOPPING 的两个 Worker 阶段保留冻结源判断，明确 bypass、键盘 FakerInput 例外和虚拟键记账保持原样，无新锁／计数或 MCP 开关。
+
+双 Qt 普通产品和双 Qt／Qt6 ASan 生命周期目标构建通过；Qt6 零警告，Qt5 既有官方库例外。Qt5／ASan 第一次维护链接因旧 Makefile 缺 HELP-66 对象失败，显式 qmake 后通过，原失败日志保留。三阶段夹具每次 18 组键鼠直接回调：修复前 Qt6 为特定业务预期红 exit 2，修复后三配置各回调、gui_stop_wait、gui_stop_after_timeout 均 exit 0，共九绿；ASan 无报告，均无系统输入。实际四个私有桌面、EXE／PID／High 与 Medium、同登录关联及零尾部作业记录见 late64-3phase-{before,after}-results.json；28820／27264 五分钟缓存关闭、控制器各 exit 0。
+
+Default 普通 Qt6 原 manifest 版本为 out/mcp_product/engine61/late64-green/tagged/off_hold_stop/runtime/QKeyMapperMcpAcceptance_engine61_current.exe，SHA-256 35f8beda18f15cea819b7e5a6ec89852bf04fba3cb1d0f1e38a5179f7b9e4b83。已批准真实标签绿例保护按住 A，只接收控制器自身 A↓↑，产品强制抬起被拦；连发停止、停止发送、等待序列取消、退出等待四回归均通过，末尾无迟到输出、A 恢复。五产品 exit 0、五接收器未中止，拓扑逐例核实 Default／High／Medium／同登录；父 29488 缓存关闭、会话 exit 0。没有新鼠标映射／按键范围／驱动安装。
+
+本机证据：out/mcp_bridge/late64-product-qt*.txt；out/mcp_lifecycle/resume-w10-20261023/build-late64-*、late64-* runtime／identity／结果／缓存；out/mcp_product/engine61/deployment-late64.json、late64-green-controller.log、late64-green。A 的分析／性能只按原版本及不变路径复用；B 未新跑普通性能或静态分析，不把两次原子读取的源码检查当性能结论。真实鼠标／FakerInput／Interception／其他设备、Qt5／Win11 输入、强制竞态调度及全 R3 仍待验，不授编辑许可。B 为独立公共修复提交切点，接续共用映射新增业务操作。
 
 ## HELP-20261024-66：首闭环基础帮助与真实解析器键名
 
