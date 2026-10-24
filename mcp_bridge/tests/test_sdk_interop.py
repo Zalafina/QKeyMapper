@@ -131,7 +131,16 @@ class Fixture:
         path = self.state_path.with_name(self.state_path.name + ".command")
         temporary = path.with_name(path.name + ".new")
         temporary.write_text(json.dumps({"sequence": self.sequence, "command": command}), encoding="utf-8")
-        os.replace(temporary, path)
+        deadline = time.monotonic() + 0.5
+        while True:
+            try:
+                os.replace(temporary, path)
+                return
+            except PermissionError as error:
+                # The Qt fixture can still hold the previous command open during its poll.
+                if error.winerror not in (5, 32) or time.monotonic() >= deadline:
+                    raise
+                time.sleep(0.01)
 
     async def wait(self, predicate, timeout=5) -> dict:
         deadline = time.monotonic() + timeout

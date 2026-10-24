@@ -158,6 +158,142 @@ class NativeTests(unittest.TestCase):
         bridge.close()
         self.assertFalse(bridge.connect()["accepted"])
 
+    def test_cancel_before_worker_starts_recovers_admission(self):
+        from qkeymapper_mcp.bridge import Bridge
+        bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+        entered, release = threading.Event(), threading.Event()
+        def block_worker():
+            entered.set()
+            release.wait(5)
+        blocker = bridge._worker.submit(block_worker)
+        try:
+            self.assertTrue(entered.wait(1))
+            async def exercise():
+                with patch.object(bridge, "_request", return_value={"ok": True}) as request:
+                    task = asyncio.create_task(bridge.get_state())
+                    await asyncio.sleep(0)
+                    self.assertTrue(bridge.state()["busy"])
+                    task.cancel()
+                    with self.assertRaises(asyncio.CancelledError):
+                        await task
+                    await asyncio.sleep(0)
+                    self.assertFalse(bridge.state()["busy"])
+                    request.assert_not_called()
+                    release.set()
+                    blocker.result(1)
+                    self.assertEqual(await bridge.get_state(), {"ok": True})
+                    self.assertEqual(request.call_count, 1)
+            asyncio.run(exercise())
+        finally:
+            release.set()
+            bridge.close()
+
+    def test_running_cancel_stays_busy_until_cleanup(self):
+        import win32event
+        from qkeymapper_mcp.bridge import Bridge
+        bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+        entered, cancelled, drained = threading.Event(), threading.Event(), threading.Event()
+        def request(*_args):
+            entered.set()
+            self.assertEqual(win32event.WaitForSingleObject(bridge._cancel, 3000), win32event.WAIT_OBJECT_0)
+            cancelled.set()
+            drained.wait(5)
+            raise BridgeError("cancelled")
+        try:
+            async def exercise():
+                with patch.object(bridge, "_request", side_effect=request) as native:
+                    task = asyncio.create_task(bridge.get_state())
+                    await asyncio.sleep(0)
+                    self.assertTrue(entered.wait(1))
+                    task.cancel()
+                    with self.assertRaises(asyncio.CancelledError):
+                        await task
+                    self.assertTrue(cancelled.wait(1))
+                    self.assertTrue(bridge.state()["busy"])
+                    self.assertEqual(await bridge.get_state(), {"ok": False, "error": "busy_or_closed"})
+                    self.assertEqual(native.call_count, 1)
+                    bridge.disconnect()
+                    bridge.disconnect()
+                    self.assertFalse(bridge.connect()["accepted"])
+                    drained.set()
+                    bridge._worker.submit(lambda: None).result(2)
+                    self.assertFalse(bridge.state()["busy"])
+                    self.assertEqual(bridge.state()["status"], "disconnected")
+                    with patch.object(bridge, "_connect", return_value={"status": "connected"}):
+                        self.assertTrue(bridge.connect()["accepted"])
+                        bridge._worker.submit(lambda: None).result(1)
+            asyncio.run(exercise())
+        finally:
+            drained.set()
+            bridge.close()
+        bridge.close()
+
+    def test_late_coroutine_cancel_does_not_cancel_next_job(self):
+        import win32event
+        from qkeymapper_mcp.bridge import Bridge
+        bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+        entered, release = threading.Event(), threading.Event()
+        def next_job():
+            entered.set()
+            release.wait(5)
+        try:
+            async def exercise():
+                delayed_delivery = asyncio.get_running_loop().create_future()
+                with patch.object(bridge, "_request", return_value={"ok": True}), \
+                     patch("qkeymapper_mcp.bridge.asyncio.wrap_future", return_value=delayed_delivery) as wrap:
+                    task = asyncio.create_task(bridge.get_state())
+                    await asyncio.sleep(0)
+                    wrap.call_args.args[0].result(1)
+                    bridge._worker.submit(lambda: None).result(1)
+                    next_future = bridge._submit(next_job)
+                    self.assertIsNotNone(next_future)
+                    self.assertTrue(entered.wait(1))
+                    task.cancel()
+                    with self.assertRaises(asyncio.CancelledError):
+                        await task
+                    self.assertEqual(win32event.WaitForSingleObject(bridge._cancel, 0), win32event.WAIT_TIMEOUT)
+                    self.assertTrue(bridge.state()["busy"])
+                    release.set()
+                    next_future.result(1)
+            asyncio.run(exercise())
+        finally:
+            release.set()
+            bridge.close()
+
+    def test_submit_failure_restores_admission(self):
+        from qkeymapper_mcp.bridge import Bridge
+        bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+        try:
+            with patch.object(bridge._worker, "submit", side_effect=RuntimeError("fixture submit failure")):
+                with self.assertRaisesRegex(RuntimeError, "fixture submit failure"):
+                    bridge._submit(lambda: None)
+            self.assertFalse(bridge.state()["busy"])
+            future = bridge._submit(lambda: "next")
+            self.assertIsNotNone(future)
+            self.assertEqual(future.result(1), "next")
+        finally:
+            bridge.close()
+
+    def test_already_done_callback_is_registered_outside_lock(self):
+        from concurrent.futures import Future
+        from qkeymapper_mcp.bridge import Bridge
+        bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+        completed = Future()
+        completed.set_result("done")
+        add_callback = completed.add_done_callback
+        def register(callback):
+            self.assertTrue(bridge._lock.acquire(blocking=False))
+            bridge._lock.release()
+            add_callback(callback)
+        try:
+            with patch.object(bridge._worker, "submit", return_value=completed), \
+                 patch.object(completed, "add_done_callback", side_effect=register) as callback:
+                self.assertIs(bridge._submit(lambda: None), completed)
+                callback.assert_called_once()
+            self.assertFalse(bridge.state()["busy"])
+        finally:
+            bridge.close()
+
     def test_fixed_read_rpc_dispatch(self):
         from qkeymapper_mcp.bridge import Bridge
         for entry, method in (("get_capabilities", "qkm_get_capabilities"), ("get_state", "qkm_get_state")):

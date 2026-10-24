@@ -26,6 +26,7 @@ class Bridge:
         self._lock = threading.Lock()
         self._cancel = win32event.CreateEvent(None, True, False, None)
         self._busy = False
+        self._active = None
         self._closed = False
         self._closing = False
         self._pipe = None
@@ -59,15 +60,25 @@ class Bridge:
                 self._disconnect()
                 self._set("failed", error="internal_error")
                 return {"ok": False, "error": "internal_error"}
-            finally:
-                with self._lock:
+        def finished(done):
+            with self._lock:
+                if self._active is done:
+                    self._active = None
                     self._busy = False
         with self._lock:
             if self._closed or self._busy or self._closing:
                 return None
             self._busy = True
-            win32event.ResetEvent(self._cancel)
-            return self._worker.submit(run)
+            try:
+                win32event.ResetEvent(self._cancel)
+                future = self._worker.submit(run)
+            except BaseException:
+                self._busy = False
+                raise
+            self._active = future
+        # An already completed or cancelled Future invokes this callback immediately.
+        future.add_done_callback(finished)
+        return future
 
     def connect(self, *, pair: bool = False) -> dict:
         future = self._submit(lambda: self._connect(pair))
@@ -157,7 +168,9 @@ class Bridge:
         try:
             return await asyncio.wrap_future(future)
         except asyncio.CancelledError:
-            win32event.SetEvent(self._cancel)
+            with self._lock:
+                if self._active is future:
+                    win32event.SetEvent(self._cancel)
             raise
 
     def _request(self, method: str, arguments: dict) -> dict:
