@@ -18,6 +18,8 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 
 BRIDGE-60：现有调用失败和 accepted=false 使用 isError=true，保留 ok／error 并提供受控 message／next_steps；成功查询失败状态或失败 operation 数据不误标错。SDK schema 错误仍由 SDK 拒绝，产品业务错误保留有界解释（UTF-8 ≤1024 字节，错误码 1–64 个限定字符），原生／未知错误不泄漏异常文本；七工具与输出字典 schema 不变。真实 Qt6 产品验证 stale_catalog、stale_source、invalid_arguments、context_busy 等；permission_denied 和失败 operation 数据仅由正式 stdio 固定端点证明封装语义，未新增 operation 工具或实际产品权限覆盖。
 
+ENGINE-61-A：Win10 普通 Qt6 Release 四状态各三轮 A→B、6,000 个正式事件、F24 停止后 A 恢复及 GUI 空闲／清理通过，9 项维护工具保护自测通过，见 ENGINE-20261024-61A。仅新增原功能基础证据，不新增 MCP Run／Configure 能力；source.read=pristine_idle 不变。连发／锁定／序列等 ENGINE-61-B 及唤醒、其他系统／设备等缺口继续作为相关接入／发布门槛。新工具复用固定 UIA／原进程管理，Default 仅显式允许且受 engine61 路径／EXE 名限制，不扩展任意窗口控制接口。
+
 ### 逐项操作状态与拒绝保护：DESIGN-58（待实现／待验证）
 
 GUI／MCP 采用同一逐项状态限制。现有 GUI 要求空闲的配置及映射编辑，须 IDLE 且相关停止清理完成；运行中 Agent 说明停止及修改内容，由用户选择，获同意才停止、等待清理、重校验和提交，修改后保持停止。拒绝／取消、停止失败或超时不修改，迟到完成也不擅自继续原请求。实际提交复用业务校验，不能只检查 GUI 控件；预览后运行／STOPPING／配置或目标变化、批量拒绝均须保证无部分映射、派生值、dirty 或磁盘修改。

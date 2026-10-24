@@ -1,0 +1,332 @@
+"""Authorized Default-desktop A->B Release comparison; never installs drivers."""
+
+import argparse
+import asyncio
+from contextlib import AsyncExitStack, closing
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import time
+
+import win32api
+import win32con
+import win32gui
+import win32process
+import pywintypes
+from mcp import Client
+
+from probe import Sender, distribution, focus_click, plain_latencies, process_sample
+from receiver import CLOSE, COUNT, FLUSH, RESET, RESULT_ROOT, input_desktop_name
+
+REPO = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO / "mcp_bridge/tests"))
+from test_product_interop import Product, connection_pending
+from test_sdk_interop import call, connection, elevation, integrity, parameters
+from qkeymapper_mcp.credentials import CredentialStore
+from qkeymapper_mcp.windows import identity
+
+
+def save(path, value):
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+async def wait_file(path, child):
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+        assert child.returncode is None, "Receiver exited; see receiver.log"
+        await asyncio.sleep(.02)
+    raise AssertionError("Receiver response timed out")
+
+
+class Receiver:
+    async def start(self, output, *, allow_focus_click=False):
+        self.output, self.sequence, self.allow_focus_click = output, 0, allow_focus_click
+        self.log = output.parent.joinpath("receiver.log").open("wb")
+        self.child = await asyncio.create_subprocess_exec(sys.executable, "-B", str(Path(__file__).with_name("receiver.py")),
+            "--output", str(output), "--desktop", "Default", "--allow-default",
+            stdout=self.log, stderr=self.log, creationflags=subprocess.CREATE_NO_WINDOW)
+        self.window = None
+        data = await wait_file(output / "started.json", self.child)
+        self.window, self.pid, self.focus_window = data["window"], data["pid"], data["focus_window"]
+        assert data["desktop"] == "Default" and win32process.GetWindowThreadProcessId(self.window)[1] == self.pid
+        with closing(win32api.OpenProcess(0x1000, False, self.pid)) as handle:
+            assert elevation(handle) == 0 and integrity(handle) == 0x2000
+        assert identity(os.getpid()).same_login(identity(self.pid))
+        await self.focus()
+        await asyncio.sleep(1)
+        assert win32gui.GetForegroundWindow() == self.window, "Receiver could not acquire foreground"
+
+    async def focus(self):
+        assert win32process.GetWindowThreadProcessId(self.window)[1] == self.pid
+        assert win32process.GetWindowThreadProcessId(self.focus_window)[1] == self.pid
+        for _ in range(100):
+            if input_desktop_name() == "Default":
+                break
+            await asyncio.sleep(.05)
+        assert input_desktop_name() == "Default", "Input desktop is not Default; focus and input refused"
+        foreground = win32gui.GetForegroundWindow()
+        with (self.output / "focus.jsonl").open("a", encoding="utf-8") as log:
+            log.write(json.dumps({"visible": bool(win32gui.IsWindowVisible(self.window)),
+                "enabled": bool(win32gui.IsWindowEnabled(self.focus_window)),
+                "foreground": foreground, "foreground_pid": win32process.GetWindowThreadProcessId(foreground)[1]
+                if foreground else None}) + "\n")
+        if not win32gui.IsWindowVisible(self.window):
+            win32gui.ShowWindow(self.window, win32con.SW_SHOWNORMAL)
+        if win32gui.GetForegroundWindow() != self.window:
+            try:
+                win32gui.SetForegroundWindow(self.window)
+            except pywintypes.error:
+                pass
+        if win32gui.GetForegroundWindow() != self.window:
+            focus_click(self.window, self.focus_window, self.pid, allowed=self.allow_focus_click)
+            for _ in range(20):
+                if win32gui.GetForegroundWindow() == self.window:
+                    break
+                await asyncio.sleep(.05)
+        assert win32gui.GetForegroundWindow() == self.window, "Receiver could not acquire foreground"
+
+    def reset(self):
+        self.sequence += 1
+        win32gui.SendMessageTimeout(self.window, RESET, self.sequence, 0, 2, 1000)
+
+    def count(self):
+        return win32gui.SendMessageTimeout(self.window, COUNT, 0, 0, 2, 1000)[1]
+
+    async def flush(self):
+        win32gui.PostMessage(self.window, FLUSH, self.sequence, 0)
+        return (await wait_file(self.output / ("events-" + str(self.sequence) + ".json"), self.child))["events"]
+
+    async def close(self):
+        try:
+            if self.window and win32gui.IsWindow(self.window):
+                win32gui.PostMessage(self.window, CLOSE, 0, 0)
+            assert await asyncio.wait_for(self.child.wait(), 10) == 0, "Receiver cleanup failed"
+        finally:
+            self.log.close()
+
+
+async def plain(receiver, sender, pairs, expected_key):
+    receiver.reset()
+    sent = []
+    try:
+        for index in range(pairs):
+            sent.append(sender.send(0x41, True))
+            await asyncio.sleep(.02)
+            sent.append(sender.send(0x41, False))
+            await asyncio.sleep(.02)
+            deadline = time.monotonic() + .5
+            while receiver.count() < 2 * (index + 1) and time.monotonic() < deadline:
+                await asyncio.sleep(.002)
+            assert receiver.count() == 2 * (index + 1), "Lost or extra mapped input; stop before the next pair"
+    finally:
+        sender.release()
+    received = await receiver.flush()
+    return {"latency_ms": plain_latencies(sent, received, expected_key), "sent": sent, "received": received}
+
+
+def fixture():
+    text = (REPO / "QKeyMapper/tests/mcp_control/product_fixture.ini.example").read_text(encoding="utf-8")
+    return text + """SettingSelect=Engine61
+
+[Engine61]
+MappingTable_TabNameList=Tab1
+MappingTable_LastTabName=Tab1
+KeyMapData_OriginalKeys=A
+KeyMapData_MappingKeys=B
+KeyMapData_SendMappingKeyMethod=0
+ProcessInfo_FileName=python.exe
+ProcessInfo_FileNameMatchIndex=4
+ProcessInfo_WindowTitle=QKeyMapper ENGINE-61 键盘接收窗口
+ProcessInfo_WindowTitleMatchIndex=1
+ProcessInfo_ClassNameMatchIndex=0
+MappingStartKey=F23
+MappingStopKey=F24
+MappingStartActionMode=0
+AutoStartMappingChecked=0
+SendToSameWindowsChecked=0
+"""
+
+
+async def measurements(product, stop, samples):
+    while not stop.is_set():
+        samples.append(process_sample(product.process, product.pid, product.window))
+        try:
+            await asyncio.wait_for(stop.wait(), 1)
+        except asyncio.TimeoutError:
+            pass
+
+
+async def queries(client, stop, records):
+    index = 0
+    while not stop.is_set():
+        started = time.perf_counter_ns()
+        name = "qkm_get_state" if index % 2 == 0 else "qkm_query"
+        await call(client, name, None if name == "qkm_get_state" else {"entity": "tabs", "limit": 1})
+        records.append({"qpc_ns": started, "method": name, "ms": (time.perf_counter_ns() - started) / 1_000_000})
+        index += 1
+        try:
+            await asyncio.wait_for(stop.wait(), max(0, .05 - (time.perf_counter_ns() - started) / 1e9))
+        except asyncio.TimeoutError:
+            pass
+
+
+async def run_state(args, state, executable):
+    output = args.output / state
+    output.mkdir()
+    # A failed earlier run must not leave pairings in this run's application namespace.
+    runtime = output / "runtime"
+    shutil.copytree(executable.parent, runtime, ignore=shutil.ignore_patterns("keymapdata.ini", "*.log"))
+    executable = runtime / executable.name
+    ini = executable.parent / "keymapdata.ini"
+    ini.write_text(fixture(), encoding="utf-8")
+    product = Product(executable, output, default_desktop=True)
+    receiver, sender, store = None, None, None
+    stop, tasks, samples, requests = asyncio.Event(), [], [], []
+    try:
+        async with AsyncExitStack() as stack:
+            await product.started()
+            gui = await product.action("ReadMapping")
+            assert gui["mapping_rows"] == [{"original": "A", "mapping": "B"}]
+            assert gui["configuration_display"] == "Engine61" and gui["stop_shortcut_edit"] == "F24"
+            await product.action("OpenAdvanced")
+            if state in ("idle", "query"):
+                await product.action("OpenMcp")
+                enabled = await product.action("Enable")
+                discovery = Path(enabled["discovery"])
+                await product.wait(discovery.is_file)
+                own = identity(os.getpid())
+                store = CredentialStore(discovery, executable, own.session)
+                assert store.load() is None, "Use an unpaired test runtime"
+                client = await stack.enter_async_context(Client(parameters(discovery, executable, output)))
+                await call(client, "qkm_connect")
+                await connection(client, "pairing_required")
+                await call(client, "qkm_request_pairing")
+                await connection_pending(client)
+                await product.action("ApproveRead", own.executable)
+                await connection(client, "connected")
+                await product.action("CloseMcp")
+            await product.action("StartMapping")
+            receiver = Receiver()
+            await receiver.start(output / "receiver", allow_focus_click=args.allow_focus_click)
+            sender = Sender(receiver.window, receiver.pid, allow_default=args.allow_default)
+            warmup = await plain(receiver, sender, 10, 0x42)
+            save(output / "warmup.json", warmup)
+            tasks.append(asyncio.create_task(measurements(product, stop, samples)))
+            if state == "query":
+                tasks.append(asyncio.create_task(queries(client, stop, requests)))
+            rounds = []
+            for index in range(args.rounds):
+                for task in tasks:
+                    if task.done():
+                        task.result()
+                result = await plain(receiver, sender, args.pairs, 0x42)
+                save(output / ("round-" + str(index + 1) + ".json"), result)
+                rounds.append(result["latency_ms"])
+                print("PASS", state, "round", index + 1, result["latency_ms"], flush=True)
+            stop.set()
+            await asyncio.gather(*tasks)
+            tasks.clear()
+            samples.append(process_sample(product.process, product.pid, product.window))
+            sender.release()
+            receiver.reset()
+            try:
+                stop_input = [sender.send(0x87, True)]
+                await asyncio.sleep(.02)
+                stop_input.append(sender.send(0x87, False))
+            finally:
+                sender.release()
+            await asyncio.sleep(1)
+            save(output / "stop-shortcut.json", {"sent": stop_input, "received": await receiver.flush()})
+            save(output / "stopped.json", await plain(receiver, sender, 10, 0x41))
+            stopped = await product.action("StopMapping")
+            assert stopped["mapping_action"]["before"] == "映射开始", "F24 did not reach GUI idle"
+            assert len(samples) >= 2
+            cpu = (samples[-1]["cpu_100ns"] - samples[0]["cpu_100ns"]) / 1e7
+            elapsed = (samples[-1]["qpc_ns"] - samples[0]["qpc_ns"]) / 1e9
+            result = {"state": state, "rounds": rounds, "samples": samples, "requests": requests,
+                "cpu_core_percent": cpu / elapsed * 100, "elapsed_s": elapsed,
+                "wakeups": "unmeasured; thread counts are not wakeup counts",
+                "query_latency_ms": distribution([r["ms"] for r in requests]) if requests else None,
+                "executable": str(executable), "exe_sha256": hashlib.sha256(executable.read_bytes()).hexdigest(),
+                "controller_pid": os.getpid(), "pairs_per_round": args.pairs,
+                "scope": "ordinary Release, real SendInput A->B, owned ordinary receiver, Default; not engine-only latency"}
+            save(output / "result.json", result)
+            if state in ("idle", "query"):
+                await call(client, "qkm_disconnect")
+                await product.action("OpenAdvanced")
+                await product.action("OpenMcp")
+                await product.action("Revoke")
+                await product.action("Disable")
+            return result
+    finally:
+        stop.set()
+        try:
+            if tasks:
+                await asyncio.gather(*tasks)
+        finally:
+            try:
+                if sender is not None:
+                    sender.release()
+            finally:
+                try:
+                    await product.close()
+                finally:
+                    try:
+                        if receiver is not None:
+                            await receiver.close()
+                    finally:
+                        if store is not None:
+                            store.forget()
+
+
+async def run(args):
+    results = []
+    for state in args.states:
+        result = await run_state(args, state, args.baseline if state == "baseline" else args.current)
+        results.append(result)
+        save(args.output / "results.json", {"results": results, "complete": len(results) == len(args.states)})
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--baseline", type=Path, required=True)
+    parser.add_argument("--current", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--states", nargs="+", choices=("baseline", "off", "idle", "query"),
+                        default=["baseline", "off", "idle", "query"])
+    parser.add_argument("--pairs", type=int, default=250)
+    parser.add_argument("--rounds", type=int, default=3)
+    parser.add_argument("--allow-default", action="store_true")
+    parser.add_argument("--allow-focus-click", action="store_true")
+    parser.add_argument("--gsudo-cache", action="store_true")
+    args = parser.parse_args()
+    args.baseline, args.current, args.output = args.baseline.resolve(), args.current.resolve(), args.output.resolve()
+    for name, executable in (("baseline", args.baseline), ("current", args.current)):
+        assert executable.is_relative_to(RESULT_ROOT.resolve()) and executable.is_file()
+        assert executable.name == "QKeyMapperMcpAcceptance_engine61_" + name + ".exe"
+        assert not args.output.is_relative_to(executable.parent), "Output must be outside the runtime template"
+    assert args.output.is_relative_to(RESULT_ROOT.resolve()) and args.output != RESULT_ROOT.resolve()
+    assert args.allow_default and 10 <= args.pairs <= 500 and 1 <= args.rounds <= 3
+    assert len(set(args.states)) == len(args.states)
+    assert elevation(win32api.GetCurrentProcess()) == 0 and integrity(win32api.GetCurrentProcess()) == 0x2000
+    args.output.mkdir(parents=True, exist_ok=False)
+    gsudo, cache_pid = shutil.which("gsudo.exe"), str(os.getpid())
+    assert gsudo and shutil.which("pwsh.exe")
+    try:
+        if args.gsudo_cache:
+            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
+            subprocess.run([gsudo, "cache", "on", "-p", cache_pid, "-d", "00:05:00"], check=True)
+            subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"], check=True)
+            print("PID cache:", cache_pid, flush=True)
+        asyncio.run(run(args))
+    finally:
+        if args.gsudo_cache:
+            subprocess.run([gsudo, "cache", "off", "-p", cache_pid], check=True)
+            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
+            print("PASS controller PID cache closed:", cache_pid, flush=True)

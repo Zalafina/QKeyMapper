@@ -2,7 +2,8 @@
 param(
     [Parameter(Mandatory)][string]$ExecutablePath,
     [Parameter(Mandatory)][string]$DesktopName,
-    [Parameter(Mandatory)][string]$OutputDirectory
+    [Parameter(Mandatory)][string]$OutputDirectory,
+    [switch]$AllowDefaultDesktop
 )
 
 $ErrorActionPreference = 'Stop'
@@ -10,10 +11,16 @@ $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
 $root = [IO.Path]::GetFullPath((Join-Path $repo 'out/mcp_product')) + [IO.Path]::DirectorySeparatorChar
 $executable = (Resolve-Path -LiteralPath $ExecutablePath).Path
 $output = (Resolve-Path -LiteralPath $OutputDirectory).Path
+$engineRoot = [IO.Path]::GetFullPath((Join-Path $repo 'out/mcp_product/engine61')) + [IO.Path]::DirectorySeparatorChar
+$engineDefault = $AllowDefaultDesktop -and $DesktopName -eq 'Default' -and
+    $executable.StartsWith($engineRoot, [StringComparison]::OrdinalIgnoreCase) -and
+    ($output + [IO.Path]::DirectorySeparatorChar).StartsWith($engineRoot, [StringComparison]::OrdinalIgnoreCase) -and
+    [IO.Path]::GetFileName($executable) -match '^QKeyMapperMcpAcceptance_engine61_(baseline|current)\.exe$'
 if (-not $executable.StartsWith($root, [StringComparison]::OrdinalIgnoreCase) -or
     -not ($output + [IO.Path]::DirectorySeparatorChar).StartsWith($root, [StringComparison]::OrdinalIgnoreCase) -or
     [IO.Path]::GetFileName($executable) -notmatch '^QKeyMapperMcpAcceptance_[a-zA-Z0-9_]+\.exe$' -or
-    $DesktopName -notmatch '^QkmProduct_[a-f0-9]{32}$') { throw 'Select an owned product runtime and private desktop.' }
+    ($DesktopName -notmatch '^QkmProduct_[a-f0-9]{32}$' -and -not $engineDefault) -or
+    ($AllowDefaultDesktop -and -not $engineDefault)) { throw 'Select an owned product runtime and authorized desktop.' }
 . (Join-Path $repo 'scripts/test_process.ps1')
 
 function Write-State {

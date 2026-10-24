@@ -1158,3 +1158,28 @@ Qt6／Qt5 正式 SDK 各 12 场景通过、native exit 0；r2-sdk-{qt6,qt5}.txt 
 一个普通测试控制器 PID 12896（完整性 8192）串行执行两组实际脚本，原脚本准备逻辑在本机 out 控制器中复用；缓存仅绑定该 PID、00:05:00，finally cache off -p 12896 后同控制器 CacheAvailable 返回 1，r2-product-cache.json／r2-product.txt 保留证据。产品身份／same_login／High 及真实私有桌面由原助手逐次核验，普通桥接、构建和截图不提权；没有映射启动、Default 焦点、系统键鼠、驱动安装或用户实例操作。普通 PrintWindow 对 High 产品仍失败，明确 UNVERIFIED，未提权截图，也不以 GUI 读数代替视觉证明。
 
 最终普通查询确认产品 PID 10644／25684／24740、SDK 夹具 PID 15144／18696 及缓存控制器 PID 12896 均不存在；没有按旧 PID 终止进程。相关 Python 语法、UTF-8 无 BOM／LF、Markdown 表列、167 个本地相对链接、文件／目录大小与 git diff --check 通过；git 差异核对 C++ 目录相对 9af1b260 无变更。以上为独立提交切点，R2 本地提交后下一项 ENGINE-61，不推送。无本轮 Win11、Qt5 High 正式产品、60 秒配对超时、真实输入、设备效果、三语言视觉、严格 C++ 静态分析、ASan 或普通 Release 性能对照；按本次 Python 边界变更选择验证，并保留相应后续门槛。source.read=pristine_idle、业务修订 null、stop_completion=unobserved 及未开放写入／启停工具不变，ENGINE-61／QUERY-62／STOP-57 和完整 M1 未完成。
+
+## ENGINE-20261024-61A：普通 Release 真实键盘基础对照
+
+PC-W10，Win10 19045 x64；C++ 当前仍为 9af1b260，桥接 a0ee90be，本切片只改维护测试／文档。固定主基线 d49a9f57 通过 git archive 导出后，用 Qt 6.8.3／MSVC 14.40 x64 普通 Release 构建，native 0、零编译链接警告；当前 EXE 复用 BRIDGE-60 同源码未变的普通 Release。保留原 manifest；正式每态 High 产品、同登录关联／Session、EXE／创建时间、Default 桌面及 Medium 控制器均核对。开发、SDK、采样、注入和截图未提权。
+
+新增工具位于 QKeyMapper/tests/input_regression，复用既有 Product／test_process／固定 UIA 助手。9 项自测通过，包含 x64 INPUT 布局、固定键允许范围、错误输出／顺序／时间拒绝、失焦无注入、仅释放自有按下键、点击授权／遮挡保护、超时消息计数及 PowerShell Default 拒绝守卫、真实私有接收窗口消息与正常退出。私有截图 test_snapshots/snapshot_engine61_receiver.png 已自主审阅，中文提示、接收区及 Esc 说明可见；不是 High 产品截图，也不证明物理输入。语法与差异检查通过，不据此冒称 Qt5 或 ASan 验收。
+
+用户明确扩展批准本轮 Default 固定键盘／前台／High 启停及只读配对，另批准必要时对自有接收区一次真实左键点击。固定 High 助手用 UIA WindowPattern 调用 Qt 自身最小化／恢复；普通控制器在每次发送前核对接收 PID／HWND／前台／输入桌面与修饰键。点击前另查实际命中及所有键未按住，恢复光标；运行中失焦不抢回。接收器只记固定键、QPC 及标签，不采集其他文本。未安装驱动、未操作用户实例。
+
+正式 accept-01：同一合成 INI，进程路径 python.exe 后缀＋精确自有窗口标题，SendInput A→B；每态三轮各 250 对按下／释放。四态共 6,000 个测量 B 事件，数量、值、顺序及按下／释放均正确；每态预热另计。结束以实际 F24 停止，独立收到 10 对未映射 A，再检查 GUI 已空闲，均通过。MCP 启用组实际 Read 配对，query 组仅交替正式 SDK 状态／Tab 查询，不调用被 pristine_idle 限制的源查询。每态新复制隔离 runtime，避免复用失败测试的配对；撤销／禁用均成功。
+
+| 状态 | 合并 1,500 事件 p50／p95／p99（ms） | 产品单核 CPU（%） | 工作集（MiB） | 线程范围 |
+|---|---|---:|---|---|
+| d49a9f57 基线 | 0.9412／2.6644／4.5376 | 2.750 | 162.49–162.68 | 23–31 |
+| 当前 MCP 关闭 | 0.9061／2.3164／3.9797 | 2.707 | 163.21–163.40 | 23–31 |
+| 启用且配对、无查询 | 0.9180／2.2608／3.8540 | 2.460 | 167.37–167.66 | 23–31 |
+| 持续状态／Tab 查询 | 0.9202／2.3023／4.4937 | 3.312 | 167.60–167.86 | 23–31 |
+
+延迟为发送前 QPC 至普通目标窗口实际消息处理，包含系统／Hook／引擎／接收调度，混合按下和释放；分开分布保留于 analysis.json（down p99 四态约 4.54／3.94／3.95／4.20 ms，up 约 4.64／4.21／3.85／4.96 ms）。每态测量段约 33.5 秒；查询组共 700 次，实际约 20.93 次／秒。WM_NULL 仅为最小化主窗口消息泵代理，各态中位约 0.10 ms；启用空闲组有一次 16.62 ms 样本，其余该组 p95 0.51 ms，不能把单次极值当稳定退化或完整 GUI 交互证明。本次未观察到该 A→B 场景持续延迟恶化；query 产品 CPU 比 off 约高 0.61 个单核百分点，不宣称零开销、统计显著改善或全部原功能无退化。
+
+证据均为本机、不随 Git 同步：out/engine_acceptance/20261024/build-baseline-qt6.txt 与基线导出；out/mcp_product/engine61/deployment.json；unit.txt、accept-01.log、accept-01/results.json／analysis.json、各态 round-*.json／stop-shortcut.json／stopped.json、GUI 动作、topology／started／closed 记录。模板 baseline EXE SHA-256 a0f3780ef26a60d448d285a24c781b856c3e060086a8a6c091bcb75f3d249cab，current 为 ba43c9d14fc399e3f79221c462eb64881250bb38d7e0d7b766985e8a1175ba54；各态实际 EXE 在 accept-01/<state>/runtime，结果核对同哈希。普通控制器 PID 19972 的五分钟 gsudo PID 缓存 finally 关闭，CacheAvailable 返回 1（不可用）；四个产品 exit 0、四个接收器正常退出，正式进程清理通过。
+
+前置失败保留 pilot-01～12／selftest 原始证据，不计为正式通过：venv 启动器与接收进程 PID 不同、跨桌面窗口句柄不可直接替代同桌面检查；进程“等于”比较完整路径，夹具改后缀匹配；前台／普通鼠标 API 拒绝时中止并清理，改用真实 Qt UIA 状态处理后完整 query 预检及正式四态成功。pilot-08 出现一次 gsudo 令牌句柄失败，未自动重试不明动作；pilot-09 因旧配对残留被原撤销守卫拒绝，改为每态新 runtime，未放宽守卫。相关产品正常退出，缓存均按各自控制器关闭；不据这些测试工具／环境失败声称产品映射故障。
+
+边界：这是 ENGINE-61-A 独立测试提交切点。连发／锁定／等待序列、停止时仍有按住输出、Tab／配置回切、快速启停／退出、设备／驱动、Win11／Qt5 实际效果仍待后续。实际线程唤醒、全机及 SDK／桥接进程成本未测；线程数、产品 CPU 和 WM_NULL 不能替代这些指标。完整 ENGINE-61 门槛保留，不扩大公共输入路径、不将首个 MCP 编辑／保存／启停闭环或 DESIGN-58 标成完成。

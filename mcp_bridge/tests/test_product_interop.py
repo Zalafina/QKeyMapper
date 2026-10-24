@@ -29,17 +29,24 @@ from qkeymapper_mcp.windows import identity
 
 
 class Product:
-    def __init__(self, executable: Path, output: Path):
+    def __init__(self, executable: Path, output: Path, *, default_desktop=False):
         self.executable, self.output = executable, output
         self.sequence = 0
         self.snapshots_available = True
         self.closed = False
-        self.desktop_name = "QkmProduct_" + uuid.uuid4().hex
-        self.desktop = win32service.CreateDesktop(self.desktop_name, 0, 511, None)
+        self.default_desktop = default_desktop
+        if default_desktop:
+            base = (ROOT.parent / "out/mcp_product/engine61").resolve()
+            assert executable.is_relative_to(base) and output.is_relative_to(base)
+            assert executable.name in ("QKeyMapperMcpAcceptance_engine61_baseline.exe",
+                                       "QKeyMapperMcpAcceptance_engine61_current.exe")
+        self.desktop_name = "Default" if default_desktop else "QkmProduct_" + uuid.uuid4().hex
+        self.desktop = None if default_desktop else win32service.CreateDesktop(self.desktop_name, 0, 511, None)
         self.log = (output / "lifecycle.log").open("wb")
         self.guardian = subprocess.Popen([shutil.which("pwsh.exe"), "-NoProfile", "-File",
             str(ROOT.parent / "QKeyMapper/tests/mcp_control/product_lifecycle.ps1"),
-            "-ExecutablePath", str(executable), "-DesktopName", self.desktop_name, "-OutputDirectory", str(output)],
+            "-ExecutablePath", str(executable), "-DesktopName", self.desktop_name, "-OutputDirectory", str(output)] +
+            (["-AllowDefaultDesktop"] if default_desktop else []),
             stdout=self.log, stderr=self.log, creationflags=subprocess.CREATE_NO_WINDOW)
         self.process = None
 
@@ -79,6 +86,8 @@ class Product:
             "-ResultFile", str(self.output / (prefix + ".json"))]
         if client_executable:
             command += ["-ClientExecutable", client_executable]
+        if self.default_desktop:
+            command += ["-AllowDefaultDesktop"]
         with (self.output / (prefix + ".log")).open("wb") as log:
             process = await asyncio.create_subprocess_exec(*command, stdout=log, stderr=log,
                                                          creationflags=subprocess.CREATE_NO_WINDOW)
@@ -137,7 +146,8 @@ class Product:
             if self.process is not None:
                 self.process.Close()
             self.log.close()
-            close_desktop(self.desktop)
+            if self.desktop is not None:
+                close_desktop(self.desktop)
 
 
 async def warm_loads(product, client, summary, catalog_revision, passed):

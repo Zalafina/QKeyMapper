@@ -2,14 +2,16 @@
 param(
     [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','ApproveRead','Revoke','Disable','CloseMcp',
         'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows',
-        'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')][string]$Action,
+        'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent',
+        'StartMapping','StopMapping')][string]$Action,
     [Parameter(Mandatory)][int]$TargetProcessId,
     [Parameter(Mandatory)][string]$ExecutablePath,
     [Parameter(Mandatory)][long]$StartTicks,
     [Parameter(Mandatory)][string]$DesktopName,
     [Parameter(Mandatory)][string]$ResultFile,
     [string]$ClientExecutable,
-    [switch]$OnDesktop
+    [switch]$OnDesktop,
+    [switch]$AllowDefaultDesktop
 )
 
 # Maintenance-only, explicitly authorized UI actions; never an MCP or product entry point.
@@ -18,11 +20,18 @@ $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../..'))
 $runtimeRoot = [IO.Path]::GetFullPath((Join-Path $repo 'out/mcp_product')) + [IO.Path]::DirectorySeparatorChar
 $expected = [IO.Path]::GetFullPath($ExecutablePath)
 $resultPath = [IO.Path]::GetFullPath($ResultFile)
+$engineRoot = [IO.Path]::GetFullPath((Join-Path $repo 'out/mcp_product/engine61')) + [IO.Path]::DirectorySeparatorChar
+$engineDefault = $AllowDefaultDesktop -and $DesktopName -eq 'Default' -and
+    $expected.StartsWith($engineRoot, [StringComparison]::OrdinalIgnoreCase) -and
+    $resultPath.StartsWith($engineRoot, [StringComparison]::OrdinalIgnoreCase) -and
+    [IO.Path]::GetFileName($expected) -match '^QKeyMapperMcpAcceptance_engine61_(baseline|current)\.exe$'
 if (-not $expected.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     -not $resultPath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     [IO.Path]::GetExtension($resultPath) -ine '.json' -or
     [IO.Path]::GetFileName($expected) -notmatch '^QKeyMapperMcpAcceptance_[a-zA-Z0-9_]+\.exe$' -or
-    $DesktopName -notmatch '^QkmProduct_[a-f0-9]{32}$') { throw 'Select an owned, isolated product fixture.' }
+    ($DesktopName -notmatch '^QkmProduct_[a-f0-9]{32}$' -and -not $engineDefault) -or
+    ($AllowDefaultDesktop -and -not $engineDefault) -or
+    ($Action -in 'StartMapping','StopMapping' -and -not $engineDefault)) { throw 'Select an owned, isolated product fixture.' }
 if (-not (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'This authorized UI helper requires elevation.' }
 $target = Get-Process -Id $TargetProcessId -ErrorAction Stop
@@ -45,6 +54,7 @@ if (-not $OnDesktop) {
         '-TargetProcessId',[string]$TargetProcessId,'-ExecutablePath',$expected,'-StartTicks',[string]$StartTicks,
         '-DesktopName',$DesktopName,'-ResultFile',$resultPath)
     if ($ClientExecutable) { $arguments += @('-ClientExecutable',[IO.Path]::GetFullPath($ClientExecutable)) }
+    if ($AllowDefaultDesktop) { $arguments += '-AllowDefaultDesktop' }
     $info.Arguments = ($arguments | ForEach-Object { '"' + $_ + '"' }) -join ' '
     $info.WorkingDirectory = $repo
     $info.UseShellExecute = $false
@@ -163,6 +173,12 @@ $main = Get-QkmMainWindowHandle -ProcessId $TargetProcessId -DesktopName $Deskto
 if ($main -eq [IntPtr]::Zero -or [QkmProductUiDesktop]::Name($main) -cne $DesktopName -or
     [QkmProductUiDesktop]::Name([IntPtr]::Zero) -cne $DesktopName) { throw 'Actual target/helper desktop mismatch.' }
 $mainRoot = [Windows.Automation.AutomationElement]::FromHandle($main)
+if ($engineDefault) {
+    $windowPattern = $mainRoot.GetCurrentPattern([Windows.Automation.WindowPattern]::Pattern)
+    if ($windowPattern.Current.WindowVisualState -eq [Windows.Automation.WindowVisualState]::Minimized) {
+        $windowPattern.SetWindowVisualState([Windows.Automation.WindowVisualState]::Normal)
+    }
+}
 $mcpNames = @('Agent / MCP 控制','Agent / MCP Control','Agent / MCP 操作')
 
 function Find-OwnedWindow {
@@ -421,6 +437,26 @@ if ($Action -in $mappingActions) {
         $mappingObservation.popup_candidates = $popupDetails
         $mappingObservation.popup_observation_errors = $popupObservationErrors
     }
+} elseif ($Action -in 'StartMapping','StopMapping') {
+    $button = Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'keymapButton' @()
+    $before = $button.Current.Name
+    if ($before -notin '映射开始','映射停止') { throw 'Unexpected mapping button state; refusing to toggle.' }
+    $wanted = if ($Action -eq 'StartMapping') { '映射停止' } else { '映射开始' }
+    if ($before -ne $wanted -and $button.Current.IsEnabled) {
+        $button.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
+    }
+    $deadline = [DateTime]::UtcNow.AddSeconds(30)
+    do {
+        $button = Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'keymapButton' @()
+        if ($button.Current.Name -eq $wanted -and $button.Current.IsEnabled) { break }
+        Start-Sleep -Milliseconds 50
+    } while ([DateTime]::UtcNow -lt $deadline)
+    if ($button.Current.Name -ne $wanted -or -not $button.Current.IsEnabled) { throw 'Mapping button did not reach the requested state.' }
+    # A button observation is not proof that all input or worker cleanup is complete.
+    $mappingActionObservation = @{ before = $before; after = $button.Current.Name; button_enabled = $button.Current.IsEnabled }
+    $windowPattern.SetWindowVisualState([Windows.Automation.WindowVisualState]::Minimized)
+    $mappingActionObservation.minimized_for_receiver = $windowPattern.Current.WindowVisualState -eq [Windows.Automation.WindowVisualState]::Minimized
+    if (-not $mappingActionObservation.minimized_for_receiver) { throw 'Owned product did not minimize for ordinary receiver focus.' }
 } elseif ($Action -eq 'OpenAdvanced') {
     $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')
     Select-Control $mappingTab
@@ -480,6 +516,7 @@ if ($Action -in $mappingActions) {
     }
 }
 $result = @{ success = $true; action = $Action; desktop = [QkmProductUiDesktop]::Name($main); window = $main.ToInt64() }
+if ($null -ne $mappingActionObservation) { $result.mapping_action = $mappingActionObservation }
 if ($null -ne $mappingObservation) {
     foreach ($entry in $mappingObservation.GetEnumerator()) { $result[$entry.Key] = $entry.Value }
 }
