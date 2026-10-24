@@ -173,11 +173,19 @@ def parameters(discovery: Path, executable: Path, output: Path) -> StdioServerPa
         cwd=str(output))
 
 
-async def call(client, name: str, arguments: dict | None = None) -> dict:
+async def call(client, name: str, arguments: dict | None = None, *, error: str | tuple[str, ...] | None = None) -> dict:
     result = await client.call_tool(name, arguments)
-    assert not result.is_error, "SDK tool error: " + name
+    assert result.is_error is (error is not None), "Unexpected SDK error flag: " + name
     assert type(result.structured_content) is dict
-    return result.structured_content
+    value = result.structured_content
+    if error is not None:
+        expected = (error,) if isinstance(error, str) else error
+        assert value["ok"] is False and value["error"] in expected, value
+        assert type(value["message"]) is str and value["message"], value
+        assert type(value["next_steps"]) is list and value["next_steps"], value
+        assert all(type(step) is str and step for step in value["next_steps"]), value
+        assert json.loads(result.content[0].text) == value
+    return value
 
 
 async def connection(client, status: str, timeout=5) -> dict:
@@ -221,7 +229,7 @@ async def run(args):
                 {"source_revision": "bad"}, {"source_tab_ref": "x"}, {"source_tab_ref": "a" * 64 + ":source:01"}):
             assert (await client.call_tool("qkm_query", {"entity": "tabs", **invalid})).is_error
         assert (await call(client, "qkm_get_connection_state"))["status"] == "disconnected"
-        assert (await call(client, "qkm_query", {"entity": "tabs"}))["error"] == "not_connected"
+        await call(client, "qkm_query", {"entity": "tabs"}, error="not_connected")
         assert (await call(client, "qkm_connect"))["accepted"]
         assert (await connection(client, "failed"))["error"] == "application_unavailable"
         passed("SDK initialize/list/call with application absent")
@@ -249,7 +257,8 @@ async def run(args):
             assert not fixture.state()["pending"]
             await pending(client, fixture)
             assert fixture.state()["authenticated"] == 0 and fixture.state()["pair_count"] == 0
-            assert (await call(client, "qkm_get_capabilities"))["error"] == "busy_or_closed"
+            await call(client, "qkm_get_capabilities", error="busy_or_closed")
+            await call(client, "qkm_connect", error="busy_or_closed")
             fixture.command("approve")
             connected = await connection(client, "connected")
             assert connected["scopes"] == 1
@@ -258,8 +267,8 @@ async def run(args):
             assert response["ok"] and response["result"]["stage"] == "transport_only"
             assert response["result"]["business_capabilities"] == []
             assert response["result"]["scopes"] == 1 and response["result"]["instance"] == connected["instance"]
-            assert (await call(client, "qkm_get_state"))["error"] == "unsupported_capability"
-            assert (await call(client, "qkm_query", {"entity": "tabs"}))["error"] == "unsupported_capability"
+            await call(client, "qkm_get_state", error="unsupported_capability")
+            await call(client, "qkm_query", {"entity": "tabs"}, error="unsupported_capability")
             saved = store.load()
             assert saved is not None and saved.secret.hex() not in json.dumps({"state": connected, "response": response})
             wrong_context = CredentialStore(discovery.with_name("different-instance.json"), args.test_exe, own.session)
@@ -284,7 +293,7 @@ async def run(args):
             passed("new stdio bridge authenticates from protected stored credential")
             fixture.command("revoke")
             await fixture.wait(lambda state: state.get("pair_count") == 0)
-            assert not (await call(client, "qkm_get_capabilities"))["ok"]
+            await call(client, "qkm_get_capabilities", error=("connection_closed", "native_operation_failed", "not_connected"))
             await call(client, "qkm_connect")
             await connection(client, "failed")
             assert not fixture.state()["pending"]
@@ -311,7 +320,7 @@ async def run(args):
             fixture.command("disable")
             await fixture.wait(lambda state: state.get("enabled") is False and state.get("pair_count") == 1)
             assert not discovery.exists()
-            assert not (await call(client, "qkm_get_capabilities"))["ok"]
+            await call(client, "qkm_get_capabilities", error=("connection_closed", "native_operation_failed", "not_connected"))
             fixture.command("revoke")
             await fixture.wait(lambda state: state.get("enabled") is False and state.get("pair_count") == 0)
             assert not discovery.exists()

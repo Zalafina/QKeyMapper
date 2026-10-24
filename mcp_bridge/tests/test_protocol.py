@@ -343,7 +343,14 @@ class NativeTests(unittest.TestCase):
         cases = (({"ok": True, "result": []}, "invalid_message", "failed"),
                  ({"ok": True, "result": {}, "extra": True}, "invalid_message", "failed"),
                  ({"ok": "true", "result": {}}, "invalid_message", "failed"),
+                 ({"ok": False, "error": {"code": "bad code", "message": "Rejected."}}, "invalid_message", "failed"),
+                 ({"ok": False, "error": {"code": "x" * 65, "message": "Rejected."}}, "invalid_message", "failed"),
+                 ({"ok": False, "error": {"code": "context_busy", "message": []}}, "invalid_message", "failed"),
+                 ({"ok": False, "error": {"code": "context_busy", "message": "x" * 1025}}, "invalid_message", "failed"),
+                 ({"ok": False, "error": {"code": "context_busy", "message": "键" * 342}}, "invalid_message", "failed"),
                  ({"ok": False, "error": {"code": "context_busy", "message": "Not ready."}},
+                  "context_busy", "connected"),
+                 ({"ok": False, "error": {"code": "context_busy", "message": "x" * 1024}},
                   "context_busy", "connected"))
         for response, error, status in cases:
             with self.subTest(response=response):
@@ -354,7 +361,10 @@ class NativeTests(unittest.TestCase):
                 bridge._pipe = pipe
                 bridge._credential = Credential("b" * 32, 1, 1, b"k" * 32)
                 try:
-                    self.assertEqual(asyncio.run(bridge.get_state()), {"ok": False, "error": error})
+                    expected = {"ok": False, "error": error}
+                    if status == "connected":
+                        expected["message"] = response["error"]["message"]
+                    self.assertEqual(asyncio.run(bridge.get_state()), expected)
                     self.assertEqual(bridge.state()["status"], status)
                 finally:
                     bridge.close()

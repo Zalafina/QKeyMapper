@@ -1142,3 +1142,19 @@ PC-W10，基线 0eb525f4，C++／SDK／依赖锁不变。Bridge 以当前原生 
 最终正式 SDK／stdio 的 12 场景全部通过、退出 0：包括真实维护 GUI 配对／拒绝／撤销、原生读取取消小于既有 3 秒门槛、重连、stdio 退出、身份／发现拒绝及保存失败。复用 out/tests/mcp_control/qt6-resume56/release/QKeyMapperMcpControlTest.exe（Qt6.8.3，未重建）；普通控制器／服务端均未提权，服务端完整性 8192，实际私有桌面 QkmSdk_446a46f05ee4430c8b5eeca18af4331e，自有 PID 9212 退出后查询不存在。r1-sdk-qt6-final.txt 与对应目录 results.json／fixture.log 为本机证据；不使用 Default 焦点、系统键鼠、驱动或 UAC，无新增 gsudo 缓存。
 
 本切片独立本地提交后继续 BRIDGE-60，不推送。未运行 Qt5／High 正式产品、60 秒配对超时或性能／真实输入；R2 尚未修复，七工具及 C++ 业务能力未增加，ENGINE-61／QUERY-62／STOP-57 均未完成。旧 15 项本轮因桥接实现改变纳入实际 20 项重跑，不把评审历史结果当本轮通过。
+
+## BRIDGE-20261024-60：标准 MCP 业务错误与正式产品负例
+
+PC-W10，桥接基线 86f662fa，C++ 仍为 9af1b260；依赖锁／mcp 2.3.0／CPython 3.11.9 不变。Bridge 校验产品 error.code 的 1–64 个限定字符及 error.message 字符串／UTF-8 1024 字节上限，保留消息；拒绝连接申请显式 ok=false／busy_or_closed。现有七工具用 SDK 原生 CallToolResult 和 Annotated 字典输出模型，调用失败 isError=true，结构化及 JSON 文本一致，增加受控说明和按码 next_steps；已审阅业务错误才保留端点解释。成功查询失败状态／失败 operation 数据仍为成功，原生／未知错误用固定文本，不自动执行下一步。SDK 参数 schema 原标准错误通道保持，产品业务 invalid_arguments 提供结构化内容。
+
+证据根为本机 out/mcp_bridge/reliability-20261024（不随 Git）：r2-before-sdk.txt 在未改封装时经正式 SDK／stdio 于 not_connected 负例失败，尚未启动 Qt 夹具；不是复用旧探针冒称本轮执行。修复后协议／线程完整 20 项通过（r2-unit.txt，含错误码／消息类型、ASCII／UTF-8 超限、1024 字节边界及 R1 回归）；工具结果最终 6 项通过（r2-tool-results.txt）。后者含一个正式 Client／stdio 子进程，仅在测试子进程固定替换 Bridge 端点响应，验证 permission_denied／stale_catalog／stale_source／context_busy 和失败 operation 数据；产品代码、注册工具及协议输送真实，端点拒绝本身为固定夹具，不是实际产品权限／operation 能力证明。
+
+Qt6／Qt5 正式 SDK 各 12 场景通过、native exit 0；r2-sdk-{qt6,qt5}.txt 及对应目录 results.json／fixture.log。复用 out/tests/mcp_control/{qt6,qt5}-resume56/release/QKeyMapperMcpControlTest.exe，未重建夹具，实际私有桌面分别 QkmSdk_a4fde2ebfbd24c229b9c8fda4ff2d9ae／QkmSdk_0c53662e390642c5aa4a2b98ae8d03cd，PID 15144／18696；控制器及夹具普通权限，服务端完整性 8192。负例助手要求预期错误码、isError、非空说明／下一步及 JSON 文本一致；成功默认拒绝 isError，更新产品及源查询全部受影响调用点，未统一忽略失败。
+
+由于旧正式产品 EXE 早于当前 C++ 检查点，本轮以 scripts/build_qt6.ps1 -Jobs 3 普通权限增量构建当前 Qt6.8.3 x64 Release，native exit 0、零编译链接警告，非 diagnostic／非 ASan，原 requireAdministrator manifest 保持。r2-build-qt6.txt 保存原日志，部署到 out/mcp_product/runtime-bridge60-qt6/QKeyMapperMcpAcceptance_bridge60_qt6.exe；实际部署与构建 EXE SHA256 一致：ba43c9d14fc399e3f79221c462eb64881250bb38d7e0d7b766985e8a1175ba54（r2-product-exe.json）。复用相同 Qt6 运行依赖，只生成隔离合成 INI，不操作个人配置；此构建不是性能对照或 C++ 功能修复。
+
+固定原产品脚本完成 11 场景（out/mcp_product/accept-bridge60-qt6/results.json），实际管理员产品及冷启动各自私有桌面 QkmProduct_0768a03e2aee466a99614f2505005ced／QkmProduct_86345fca84e044f9911b86139e5ea7fd，PID 10644／25684，均退出 0。源查询脚本完成 9 场景（out/mcp_product/accept-source60-qt6/results.json），私有桌面 QkmProduct_8029751a7d2a4f8386711c68940a88d3，PID 24740，退出 0；覆盖独立 GUI 源表／重排／同内容往返、重载／切配置、失败加载后的 context_busy、重新配对授权绑定，陈旧引用拒绝与成功状态不变。正式 SDK／stdio 真实产品错误包括 stale_catalog／stale_source／invalid_arguments／context_busy。权限拒绝仅按上述固定端点覆盖，当前七工具无对应实际产品负例，不虚构。
+
+一个普通测试控制器 PID 12896（完整性 8192）串行执行两组实际脚本，原脚本准备逻辑在本机 out 控制器中复用；缓存仅绑定该 PID、00:05:00，finally cache off -p 12896 后同控制器 CacheAvailable 返回 1，r2-product-cache.json／r2-product.txt 保留证据。产品身份／same_login／High 及真实私有桌面由原助手逐次核验，普通桥接、构建和截图不提权；没有映射启动、Default 焦点、系统键鼠、驱动安装或用户实例操作。普通 PrintWindow 对 High 产品仍失败，明确 UNVERIFIED，未提权截图，也不以 GUI 读数代替视觉证明。
+
+最终普通查询确认产品 PID 10644／25684／24740、SDK 夹具 PID 15144／18696 及缓存控制器 PID 12896 均不存在；没有按旧 PID 终止进程。相关 Python 语法、UTF-8 无 BOM／LF、Markdown 表列、167 个本地相对链接、文件／目录大小与 git diff --check 通过；git 差异核对 C++ 目录相对 9af1b260 无变更。以上为独立提交切点，R2 本地提交后下一项 ENGINE-61，不推送。无本轮 Win11、Qt5 High 正式产品、60 秒配对超时、真实输入、设备效果、三语言视觉、严格 C++ 静态分析、ASan 或普通 Release 性能对照；按本次 Python 边界变更选择验证，并保留相应后续门槛。source.read=pristine_idle、业务修订 null、stop_completion=unobserved 及未开放写入／启停工具不变，ENGINE-61／QUERY-62／STOP-57 和完整 M1 未完成。

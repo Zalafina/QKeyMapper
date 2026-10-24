@@ -3,6 +3,7 @@
 import asyncio
 import hmac
 import os
+import re
 import secrets
 import threading
 import time
@@ -82,7 +83,10 @@ class Bridge:
 
     def connect(self, *, pair: bool = False) -> dict:
         future = self._submit(lambda: self._connect(pair))
-        return {"accepted": future is not None, **self.state()}
+        result = {"accepted": future is not None, **self.state()}
+        if future is None:
+            result.update(ok=False, error="busy_or_closed")
+        return result
 
     def _connect(self, pair: bool) -> dict:
         self._disconnect()
@@ -186,8 +190,10 @@ class Bridge:
         else:
             fields(response, "id ok error")
             fields(response["error"], "code message")
-            require(type(response["error"]["code"]) is str and len(response["error"]["code"]) <= 64)
-            response = {"ok": False, "error": response["error"]["code"]}
+            code, message = response["error"]["code"], response["error"]["message"]
+            require(type(code) is str and re.fullmatch(r"[a-z][a-z0-9_]{0,63}", code) is not None)
+            require(type(message) is str and len(message.encode("utf-8")) <= 1024)
+            response = {"ok": False, "error": code, "message": message}
         self._set("connected", instance=self._pipe.discovery.instance,
                   scopes=self._credential.scopes, last_verified_unix=time.time())
         return response

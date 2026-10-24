@@ -34,7 +34,7 @@ def source_rows(page):
 
 
 async def query(client, output, name, arguments, error=None):
-    result = await call(client, "qkm_query", arguments)
+    result = await call(client, "qkm_query", arguments, error=error)
     record(output, name, {"arguments": arguments, "response": result})
     if error:
         assert result["ok"] is False and result["error"] == error, result

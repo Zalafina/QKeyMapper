@@ -12,9 +12,11 @@ M0.2 必须把每个模块拆到实际设置和操作粒度，为每项能力维
 
 ### 评审接续：REVIEW-59
 
-唯一主计划记录[评审附件](review_and_improvement_recommendations.md)的采纳决定与进度。BRIDGE-59 已修复 R1 取消恢复：五个新增调度测试在旧实现四失败，修复后完整 20 项、夹具 3 项及 Qt6 正式 SDK 12 场景通过；R2 MCP 错误语义继续 BRIDGE-60。公共停止及输入路径在接口关闭时仍受新增逻辑影响，ENGINE-61 原功能回归与普通 Release 四状态性能对照尚未完成，不得扩大公共引擎改动或据 NoOp 宣称无退化。QUERY-62 保留完整源内容／身份／权限修订与陈旧引用拒绝，先做参数前置校验，目录拆分／缓存待独立契约和测量。
+唯一主计划记录[评审附件](review_and_improvement_recommendations.md)的采纳决定与进度。BRIDGE-59 已修复 R1 取消恢复；BRIDGE-60 已修复 R2 MCP 错误语义，协议／线程 20 项、工具结果 6 项、双 Qt SDK 各 12、当前 Qt6 正式产品 11／源查询 9 场景通过，具体范围见验证记录。公共停止及输入路径在接口关闭时仍受新增逻辑影响，ENGINE-61 原功能回归与普通 Release 四状态性能对照尚未完成，不得扩大公共引擎改动或据 NoOp 宣称无退化。QUERY-62 保留完整源内容／身份／权限修订与陈旧引用拒绝，先做参数前置校验，目录拆分／缓存待独立契约和测量。
 
 首个写入能力同时交付去重、取消／失败和断线结果查询，并区分编辑／已保存／运行配置与采样状态；保存范围不能连带吞入其他草稿。按键名称、参数范围／单位／默认值、依赖、示例、当前允许操作和错误下一步须随能力接入，不能只提供字段名或依赖 Skill。当前七工具／Read 范围及 source.read=pristine_idle 不变。
+
+BRIDGE-60：现有调用失败和 accepted=false 使用 isError=true，保留 ok／error 并提供受控 message／next_steps；成功查询失败状态或失败 operation 数据不误标错。SDK schema 错误仍由 SDK 拒绝，产品业务错误保留有界解释（UTF-8 ≤1024 字节，错误码 1–64 个限定字符），原生／未知错误不泄漏异常文本；七工具与输出字典 schema 不变。真实 Qt6 产品验证 stale_catalog、stale_source、invalid_arguments、context_busy 等；permission_denied 和失败 operation 数据仅由正式 stdio 固定端点证明封装语义，未新增 operation 工具或实际产品权限覆盖。
 
 ### 逐项操作状态与拒绝保护：DESIGN-58（待实现／待验证）
 
