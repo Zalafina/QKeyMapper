@@ -16,6 +16,9 @@
 #include <QPushButton>
 #include <QTabWidget>
 #include <QScopedValueRollback>
+#include <QDialogButtonBox>
+#include <QSpinBox>
+#include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
 #include "../../qitemsetupdialog.h"
 #include "../../qkeymapper_worker.h"
@@ -51,6 +54,7 @@ public:
 class QkmMappingAdditionTestAccess {
 public:
     static QJsonObject run(QKeyMapper *mapper, const QString &mode);
+    static QJsonObject equality(QKeyMapper *mapper);
 };
 
 namespace {
@@ -130,6 +134,7 @@ struct LifecycleResult {
     QStringList sourceContextTrace;
     QStringList virtualReleaseTrace;
     QJsonObject mappingAdditionEvidence;
+    QJsonObject mappingEqualityEvidence;
 };
 LifecycleResult *result = nullptr;
 
@@ -1139,6 +1144,11 @@ void installLifecycleTest()
 {
     QTimer::singleShot(0, QCoreApplication::instance(), []() {
         const QString guiMode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+        if (guiMode == QStringLiteral("mapping_config_equality")) {
+            result->mappingEqualityEvidence = QkmMappingAdditionTestAccess::equality(QKeyMapper::getInstance());
+            finish(result->mappingEqualityEvidence.value(QStringLiteral("passed")).toBool());
+            return;
+        }
         if (guiMode.startsWith(QStringLiteral("mapping_add_"))) {
             result->mappingAdditionEvidence = QkmMappingAdditionTestAccess::run(QKeyMapper::getInstance(), guiMode);
             finish(result->mappingAdditionEvidence.value(QStringLiteral("passed")).toBool());
@@ -1611,6 +1621,92 @@ QJsonObject QkmMappingAdditionTestAccess::run(QKeyMapper *mapper, const QString 
         {QStringLiteral("formal_mcp"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::equality(QKeyMapper *mapper)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    MAP_KEYDATA base = mapper->createDefaultKeyMappingData(QStringLiteral("A"), QStringLiteral("B"), false);
+    base.FloatingButton_SyncGroupId = 7;
+    auto changed = base;
+    changed.FloatingButton_SyncGroupId = 8;
+    check(!(base == changed) && !(changed == base), "sync-group-only configuration change is unequal");
+    check(!(QList<MAP_KEYDATA>{base} == QList<MAP_KEYDATA>{changed}), "Qt list equality includes the row sync group");
+    check(QKeyMapper::generateMappingCode(base) != QKeyMapper::generateMappingCode(changed),
+        "existing mapping serialization includes the sync group independently of equality");
+    changed = base; changed.Pure_OriginalKeys.append(QStringLiteral("C"));
+    check(base == changed && changed == base, "pure original list stays outside configuration equality");
+    changed = base; changed.Pure_MappingKeys.append(QStringLiteral("D"));
+    check(base == changed && changed == base, "pure mapping list stays outside configuration equality");
+    changed = base; changed.Pure_MappingKeys_KeyUp.append(QStringLiteral("E"));
+    check(base == changed && changed == base, "pure key-up list stays outside configuration equality");
+    changed = base; changed.LockState = LOCK_STATE_LOCKON;
+    check(base == changed && changed == base, "runtime lock state stays outside configuration equality");
+    changed = base; changed.Note = QStringLiteral("configuration change");
+    check(!(base == changed), "existing note configuration change is still unequal");
+    changed = base; changed.Mapping_Keys = QStringList{QStringLiteral("C")};
+    check(!(base == changed), "existing mapping configuration change is still unequal");
+    const int normal = QKeyMapper::firstNormalMappingTabIndex();
+    if (normal < 0) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    mapper->forceSwitchKeyMappingTabWidgetIndex(normal);
+    *QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>{base};
+    mapper->refreshTabsForSourceTabChange(normal);
+    mapper->clearSaveSettingDirty();
+    mapper->showItemSetupDialog(normal, 0);
+    mapper->m_ItemSetupDialog->refreshFromCurrentItem();
+    check(QKeyMapper::KeyMappingDataList->first() == base && !mapper->m_SaveSettingDirty,
+        "opening and refreshing the item editor does not dirty an unchanged valid row");
+    auto *floating = mapper->m_ItemSetupDialog->findChild<QFloatingButtonSetupDialog *>();
+    if (!floating) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    floating->setItemRow(0);
+    floating->show();
+    floating->refreshFromCurrentItem();
+    check(QKeyMapper::KeyMappingDataList->first() == base && !mapper->m_SaveSettingDirty,
+        "opening and refreshing floating settings preserves the configuration");
+    QSpinBox *group = nullptr;
+    int matches = 0;
+    for (auto *spin : floating->findChildren<QSpinBox *>()) {
+        if (spin->minimum() == FLOATINGBUTTON_SYNCGROUPID_MIN && spin->maximum() == FLOATINGBUTTON_SYNCGROUPID_MAX
+            && !spin->specialValueText().isEmpty()) { group = spin; ++matches; }
+    }
+    auto *buttons = floating->findChild<QDialogButtonBox *>();
+    QAbstractButton *apply = nullptr, *revert = nullptr;
+    if (buttons) {
+        for (auto *button : buttons->buttons()) {
+            if (buttons->buttonRole(button) == QDialogButtonBox::ApplyRole) apply = button;
+            if (buttons->buttonRole(button) == QDialogButtonBox::ResetRole) revert = button;
+        }
+    }
+    check(matches == 1 && group && apply && revert, "sync group and Apply/Revert controls are identified unambiguously");
+    if (matches == 1 && group && apply && revert) {
+        group->stepUp();
+        QCoreApplication::sendPostedEvents(mapper, QEvent::MetaCall);
+        check(QKeyMapper::KeyMappingDataList->first().FloatingButton_SyncGroupId == 8 && mapper->m_SaveSettingDirty,
+            "group editing reaches actual configuration and dirty handling");
+        clickMappingButton(apply);
+        const MAP_KEYDATA applied = QKeyMapper::KeyMappingDataList->first();
+        group->stepUp();
+        check(QKeyMapper::KeyMappingDataList->first().FloatingButton_SyncGroupId == 9,
+            "subsequent group edit remains live before revert");
+        clickMappingButton(revert);
+        QCoreApplication::sendPostedEvents(mapper, QEvent::MetaCall);
+        check(group->value() == 8 && QKeyMapper::KeyMappingDataList->first() == applied,
+            "Revert restores the last Apply snapshot including its sync group");
+    }
+    floating->close();
+    mapper->clearSaveSettingDirty();
+    mapper->m_ItemSetupDialog->refreshFromCurrentItem();
+    check(!mapper->m_SaveSettingDirty, "refreshing after group Apply/Revert does not invent another edit");
+    mapper->closeItemSetupDialog();
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+        {QStringLiteral("saved_fault_reproduced"), false}, {QStringLiteral("formal_mcp"), false},
+        {QStringLiteral("system_input"), false}};
+}
+
 Q_COREAPP_STARTUP_FUNCTION(installLifecycleTest)
 #define main qkmProductMain
 #include "../../main.cpp"
@@ -1638,7 +1734,7 @@ int main(int argc, char *argv[])
         QStringLiteral("gui_stop_restore"), QStringLiteral("gui_stop_restore_timeout"), QStringLiteral("runtime_revision"),
         QStringLiteral("hold_source_context"), QStringLiteral("unlock_source_context"), QStringLiteral("inactive_virtual_release"),
         QStringLiteral("mapping_add_plain"), QStringLiteral("mapping_add_conflicts"), QStringLiteral("mapping_add_guards"),
-        QStringLiteral("mapping_add_stale"), QStringLiteral("mapping_add_setup")};
+        QStringLiteral("mapping_add_stale"), QStringLiteral("mapping_add_setup"), QStringLiteral("mapping_config_equality")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -1718,6 +1814,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("sourceContextTrace"), QJsonArray::fromStringList(result->sourceContextTrace)},
         {QStringLiteral("virtualReleaseTrace"), QJsonArray::fromStringList(result->virtualReleaseTrace)},
         {QStringLiteral("mappingAddition"), result->mappingAdditionEvidence},
+        {QStringLiteral("mappingEquality"), result->mappingEqualityEvidence},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};

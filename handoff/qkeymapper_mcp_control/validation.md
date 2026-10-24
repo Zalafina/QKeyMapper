@@ -6,7 +6,7 @@
 
 本文件仅记录当前实际检查与必要证据索引；进度和下一步只在主计划维护。实际结果按来源机器、源码、构建及场景区分，不将 Win10 结果当成 Win11 结果。
 
-2026-10-24 接近 256 KiB 建议上限，精简早期重复文档叙述；原 ID／版本／失败与结果边界保留，完整旧文可用 Git 检查点 a8b8a6fa 查看。此整理不新增验收。
+2026-10-24 接近 256 KiB 建议上限，精简早期重复文档叙述；原 ID／版本／失败与结果边界保留，完整旧文可用 Git 检查点 a8b8a6fa／755aee4a 查看。此整理不新增验收。
 
 运行记录包含实际 EXE、相关源码与差异、配置、操作桌面／输入方法和完成范围。原始日志、PNG、转储等留在本机 `out/`，未随 Git 传输时明确注明。日志摘录先脱敏；证据缺失不写“通过”。
 
@@ -26,48 +26,19 @@ PC-W10／2026-10-22，基线 d49a9f57，任务分支 codex/qkeymapper-mcp-contro
 
 ## SRC-20261022-02：M0.2 首轮源码盘点
 
-- 机器／基线：PC-W10，`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`；产品源码未修改。
-- 方法：Python 标准库 ElementTree 读取根目录 16 个 `.ui`，按常见输入、颜色与交互容器分类；搜索手动连接、自动槽、C++ 构造、动态菜单，再针对关键函数阅读校验／写入／派生值／保存和 Worker 消费路径。
-- 结果：316 个 UI 定义定位项（294 个常见控件、12 个颜色控件、10 个交互容器），71 个 C++ 构造／按钮定位项，合计 **387 个唯一定位 ID**。其中包含只读项、暂存编辑和重复创建入口，不等于 387 项业务能力。
-- 在所选菜单相关源码的 136 处 `addAction` 匹配中，归并记录 **38 行动态动作族／入口**；重复位置、动作组、注释与多个同意图入口不能相加为能力数。
-- 记录 **16 条关键链路**：普通映射添加／编辑／删除、映射码、保存、开始、停止、数据来源、缩放、通用高级、陀螺仪来源、阈值联动、通知、面板、浮动按钮和托盘。详见能力矩阵；未追踪部分保留待办。
-- 关键发现：输入采集对 Shift／Ctrl／焦点及当前 Tab 的依赖；`activated`／`textEdited` 与程序赋值差异；原始／主／抬起键及备注的派生维护；GUI IDLE、Worker STOPPED 和真正清理完成的区别；保存后的表重建及共享 QSettings 缓存。
-- 边界：入口候选和静态链路检查通过；**完整逐项业务盘点未完成，任何 MCP 接入及 GUI／MCP 运行等价性均未执行**。未启动 QKeyMapper、未修改个人 INI、未使用真实输入或驱动。
+PC-W10／d49a9f57，源码未改。ElementTree 盘点根目录 16 个 UI，并追踪连接、槽、构造及菜单：316 个 UI 定位（294 常见控件／12 颜色／10 容器）＋71 个动态定位＝387 唯一候选，不等于业务能力数；136 处 addAction 归并为 38 动作族，不能累加重复入口。记录普通增改删、映射码、保存／启停／来源、缩放、高级、陀螺仪、阈值、通知、面板／浮动／托盘等 16 条链路，见矩阵。发现 Shift／Ctrl／焦点／当前 Tab、activated／textEdited 与赋值差异、三类键及备注派生、IDLE／STOPPED／清理完成差异和 QSettings 缓存。仅静态候选／关键链路通过，完整盘点及 MCP／GUI 等价未完成；无产品、个人 INI、真实输入或驱动操作。
 
 ## ENV-20261022-03：PC-W10 基础环境核对
 
-| 项目 | 实际结果 | 边界 |
-|---|---|---|
-| OS／架构 | Windows 10 10.0.19045，AMD64 | 本机实测；不能代替 Win11 |
-| Qt6 | `C:/Qt/Qt6/6.8.3/msvc2022_64/bin/qmake.exe -query QT_VERSION` → 6.8.3，退出 0 | 后续隔离探针已实际编译运行，未构建产品 |
-| Qt5 | `C:/Qt/Qt6/5.15.2/msvc2019_64/bin/qmake.exe -query QT_VERSION` → 5.15.2，退出 0 | 同上；共享源兼容不等于完整产品兼容验收 |
-| MSVC | vswhere 定位 Community 2022 17.14.36811.4；后续通过 `vcvars64.bat` 构建探针 | 两套 Qt 使用本机 x64 MSVC；路径只作本机证据，接收 PC 重新定位 |
-| Python | 当前命令的 Python 3.11.9；该解释器未装 MCP、Pydantic、AnyIO、PyInstaller、pytest | 未安装或修改全局依赖；不代表其他解释器或机器没有这些包 |
-| PC-W11／设备／权限 | 尚未探测 | 未操作驱动和真实输入，未检查实际映射条件 |
-
-基础环境读取为非提权操作。Windows 工具本地化输出用其 UTF-8 选项读取；定位成功不代表全部产品构建、MCP 打包和开发权限已就绪。
+2026-10-22，PC-W10 Windows 10.0.19045 AMD64；普通权限探测。C:/Qt/Qt6/{6.8.3/msvc2022_64,5.15.2/msvc2019_64}/bin/qmake.exe -query QT_VERSION 分别为 6.8.3／5.15.2，exit 0。vswhere 定位 Community 2022 17.14.36811.4；后续 vcvars64 构建探针，两 kit 同机 x64 MSVC。命令 Python 3.11.9 未装 MCP／Pydantic／AnyIO／PyInstaller／pytest，不代表其他解释器无包；未改全局环境。仅环境及后续隔离探针，不是产品／打包／完整兼容结论；当时 PC-W11／设备／权限／实际映射条件未探测。工具本地化输出按 UTF-8 读取，跨机重新定位依赖。
 
 ## IPC-PROBE-20261022-04：本机 Windows 管道接管可行性
 
-- 目的：验证 `CreateNamedPipeW` 配合 Qt `QLocalSocket::setSocketDescriptor` 的最小路线，避免在 `QLocalServer::listen(qintptr)` 不支持 Windows 的情况下开始错误集成。
-- 源码：本机一次性探针 `out/mcp_m0_20261022/ipc_probe.cpp` 和 `.pro`，**未随 Git 同步**。它们不引用或启动产品，不算维护中的 MCP 实现；接续验收应使用后续正式传输组件及维护测试，不能把此本机原始材料当成已到达另一台 PC。
-- 产物：`out/mcp_m0_20261022/qt6/release/qkm_ipc_probe.exe`、`out/mcp_m0_20261022/qt5/release/qkm_ipc_probe.exe`；均为 x64 console Release，QtCore＋QtNetwork、Win32＋Advapi32，未提权。
-- 操作范围：随机命名的单个本机管道；logon SID DACL；`PIPE_REJECT_REMOTE_CLIENTS` 与 `FILE_FLAG_FIRST_PIPE_INSTANCE`；明确最小读写权限的原生客户端，随后将双方已连接 HANDLE 交由 Qt 接管。均在同一测试进程、同一当前用户／会话内完成，无产品 Hook、GUI 窗口、焦点／键鼠或驱动操作。
-- 看门狗：每个接收等待最多 2 秒，外部进程最长 10 秒，失败返回非零；当前两次最终运行均正常返回。
+PC-W10，一次性 out/mcp_m0_20261022/ipc_probe.cpp／.pro，未随 Git 同步，不引用或启动产品。验证 Windows 不支持 QLocalServer::listen(qintptr) 时，CreateNamedPipeW＋QLocalSocket::setSocketDescriptor 路线；Qt6.8.3／Qt5.15.2 的 qt6／qt5/release/qkm_ipc_probe.exe 均 x64 console Release、QtCore／Network／Win32／Advapi32、普通权限。
 
-| 检查 | Qt6.8.3 | Qt5.15.2 | 能证明的范围 |
-|---|---|---|---|
-| qmake／JOM 构建 | 退出 0，最终构建日志无 warning／error | 退出 0，构建日志无 warning／error | 此独立探针在两套指定 Qt 下可编译链接 |
-| logon SID 描述符及客户端连接 | 通过 | 通过 | 当前 logon 授予的明确访问掩码可建立测试连接；未执行其他用户或会话拒绝测试 |
-| 首实例冲突 | 第二次同名创建被拒绝 | 同左 | 当前管道存在时不接受同名首实例创建；不等于已证明完整抗冒名服务端能力 |
-| Qt 接管＋双方身份 API | 通过 | 通过 | 两端可读取实际 PID／会话，且等于本测试进程和会话；未测试跨进程 Token 身份或认证 |
-| 大于管道缓冲的往返 | 65,537 字节精确接收；回复精确匹配 | 同左 | Qt 异步字节传输在该条件下可行，不代表 MCP 帧／鉴权／业务协议实现 |
-| 关闭与同名重建 | 双端 abort／析构后可重新创建首实例 | 同左 | 本次正常路径释放了阻止重建的管道引用；未覆盖慢连接／半包／异常关闭矩阵 |
-| 最终进程结果 | 退出 0，stdout PASS，stderr 空 | 同左 | 本机探针通过；产品／Win11／完整安全边界未验收 |
+随机单管道、logon SID DACL、明确最小读写权限、PIPE_REJECT_REMOTE_CLIENTS 和 FIRST_PIPE_INSTANCE；同进程／用户／会话两 HANDLE 交 Qt。两 kit 最终 qmake／JOM、运行均 exit 0、零警告错误、stdout PASS／stderr 空；SID 访问、第二首实例拒绝、Qt 接管／两端实际 PID 及会话、65,537 字节准确往返、abort／析构后同名重建通过。单接收 2 秒／外部 10 秒看门狗，无 Hook／GUI／焦点／输入／驱动／个人 INI。
 
-原始证据位于各 Qt 子目录的 `configure.log`、`build.log`、`run.log`，只在 PC-W10 的忽略目录中。Qt6 初次构建出现探针自带 `/W4` 被 qmake 的 `/W3` 覆盖告警，已移除重复警告参数并重新编译；初次运行把 `flush()` 返回值误当作传输成功条件而失败，已改用实际接收字节断言。原始失败分别保留在 `qt6/build_initial.log`、`qt6/run_initial.log`；最终结果记录在新日志，未覆盖成历史通过。
-
-**未证明项**：远程客户端实际连接拒绝、其他用户／登录会话拒绝、Token／创建时间身份校验、配对／撤销、凭据保护、长度帧与请求限额、慢连接、跨进程故障、产品 GUI／Worker 生命周期、普通映射及任何实际输入效果。`PIPE_REJECT_REMOTE_CLIENTS` 已用于创建探针，但不能把设置该标志写成已完成远程攻击场景验收。
+各 kit configure.log／build.log／run.log 仅本机。Qt6 初次 /W4 被 /W3 覆盖，移除重复参数；初次将 flush 返回值误作成功而失败，改成实际字节断言。build_initial.log／run_initial.log 保留失败，不覆盖历史。未证明远程或其他登录拒绝、跨进程 Token／创建时间／认证、配对撤销／凭据、MCP 帧／限额／慢连接半包、异常关闭、产品 GUI／Worker／映射／输入或 Win11；创建标志不是远程攻击验收。后续接续使用正式组件，不能依赖未同步探针。
 
 ## DOC-20261022-05：本轮检查点一致性
 
@@ -1331,3 +1302,13 @@ PC-W10／801313c4 上改 Main cpp／h 及维护 cpp：普通添加和固定 A→
 本机证据不随 Git：out/mcp_bridge/map67-product-qt*.txt；out/mcp_lifecycle/resume-w10-20261023 下 build-map67-*、map67-{qt6-final,qt5,qt6-stale,qt5-stale}/QKeyMapperMap67_{qt6,qt5}.exe、map67-identity-final.json／map67-stale-identity.json、map67-{final,stale}-results.json 及对应 controller／cache。实际桌面／PID／High／Medium／同登录及退出在结果，29232／28408 五分钟缓存关闭，控制器 exit 0；早期 Qt6 五例也通过、5680 缓存关闭。
 
 独立提交切点仅为共用 GUI 业务基础。无 Default、真实键鼠或映射启动；无本轮静态分析／ASan／性能、英文日文视觉、编辑会话、正式 MCP 等价、冷启动保存及实际执行效果通过，仍是后续接入／发布门槛。
+
+## EQ-20261024-68：补齐单条配置的同步组比较
+
+PC-W10／Win10 19045，755aee4a 上 worker.h 仅加 FloatingButton_SyncGroupId 比较，四处直接调用均在 Item 编辑变化检测。字段核对为 74 个配置字段，与映射码宏集合一致；三个 Pure 列表及 LockState 继续排除。引擎、序列化、分组、撤销及 MCP 哈希未改，无已复现保存故障。B 的未提交纯模块参与维护链接但未接入产品／本用例调用，不混入本修复提交。
+
+Qt6 修复前仅两项同步组／Qt 列表比较预期失败，产品 exit 2；其余 14 项通过。首次夹具另因未等 queued settingsApplied 而过早检查 dirty，修正夹具等待后重跑，保留 pilot 失败。修复后 Qt6.8.3／Qt5.15.2 各 16 项通过、产品／普通控制器 exit 0，检查原配置差异、四项排除、编辑打开／刷新无新增 dirty、组 7→8 Apply→9 Revert 回 8；无系统输入或映射启动。维护 Release 构建均 exit 0，Qt6 零诊断、Qt5 仅既有官方 qtmain PDB 例外。未另做普通产品、ASan／静态分析／性能或语言视觉测试；本一行无 UI／输入逻辑变更。
+
+实际 EXE：out/mcp_lifecycle/resume-w10-20261023/equality68-{qt6-before-final,qt6-after-final,qt5-after-final}/QKeyMapperEquality68_{qt6,qt5}.exe，身份见 equality68-artifacts.json。实际随机私有桌面／PID、High 产品／Medium 控制器、同系统登录、退出和零尾部作业均在 equality68-{before,after}-final-results.json；30708／26760 五分钟 PID 缓存关闭，pilot 29152 也已关闭。原始 build-equality68-*、accept-equality68-*、field-audit／cache 仅本机 out，不随 Git 同步。
+
+MCP 实际复用仍为原 automationSourceRow 的完整字段编码／哈希，已覆盖同步组及派生／运行采样，无强行增加相等判断。operator== 可作单条配置检测的共用基础，不与 QColor／double 的 JSON 规范化等同；实例／会话／权限、到期、状态、目标代次及全依赖修订仍由外层负责。正式预览后仅改组号的陈旧拒绝及零部分修改尚未接入，待验，不将本夹具称为 MCP 等价或持久化通过。

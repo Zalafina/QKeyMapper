@@ -461,6 +461,7 @@ typedef struct MAP_KEYDATA
                 && (FloatingButton_ShowOnMappingStart == other.FloatingButton_ShowOnMappingStart)
                 && (FloatingButton_ShowToolTip == other.FloatingButton_ShowToolTip)
                 && (FloatingButton_SyncPressedLockedState == other.FloatingButton_SyncPressedLockedState)
+                && (FloatingButton_SyncGroupId == other.FloatingButton_SyncGroupId)
                 && (FloatingButton_AlwaysOnTop == other.FloatingButton_AlwaysOnTop)
                 && (FloatingButton_MousePassThrough == other.FloatingButton_MousePassThrough)
                 && (FloatingButton_ReferencePoint == other.FloatingButton_ReferencePoint)
