@@ -1,6 +1,6 @@
 # ENGINE-61 原功能及 Release 对照
 
-唯一进度与授权范围见 [主计划](../../../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。本目录是维护测试，不是产品控制接口；不修改产品或 manifest，不安装驱动。使用仓库锁定的 x64 Python 3.11.9／venv。
+唯一进度与授权范围见 [主计划](../../../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。本目录是维护测试，不是产品控制接口；不修改产品或 manifest，不安装驱动。使用仓库锁定的 x64 Python 3.11.9／venv，不使用 `-O`；正式入口会在解析参数和启动任何测试前拒绝优化模式，以免安全断言被移除。
 
 自测（私有桌面，仅窗口消息，不注入系统输入、不启动产品或 UAC）：
 
@@ -40,6 +40,8 @@
 每个用例使用新的产品和接收窗口：先验证 A→B，再检查固定功能的实际输出及停止后 A 恢复。连发核对 400 ms 按住／100 ms 释放的实际时序；锁定核对原键释放后仍按住、再次切换及停止释放；序列检查 200 ms 等待，取消后观察超过原 2 秒期限。停止发送仅用 SendMessage E⏱250，按实际接收进程独有的窗口类精确匹配，检查没有重复停止输出。仍按住原键的既有恢复事件全部保留，不能过滤掉后冒称没有输出差异。
 
 `feature-events.json` 留存原始输入、清理释放的源键和全部接收事件，`stop-tail.json` 单列完成用例后的停止清理。开始前要求测试源键和 B–E 均未按住；每个接收窗口至多一次获批的焦点点击。若通过主计划当天批准的普通父控制器继承 PID 缓存，子测试不传 `--gsudo-cache`，不自行创建或关闭父缓存；其进程、输入与窗口清理仍照常执行。
+
+`hold_stop` 默认不执行新增标签输入。仅在另获 WRITE-64 明确授权后传 `--cases hold_stop --allow-late-forced-up`：正常停止并核实 GUI 空闲后，重新按住自有测试 A，发送一次带该实例实际 B 输出标签的 A 强制抬起，要求 A 仍保持按住；最后释放 A 并核对事件。标签必须来自该轮 warmup，失焦中止、不增加焦点点击额度；结果无论成功或失败均保存于 `late-force-release.json`。该标志只允许配合单个 hold_stop 用例，函数入口也默认拒绝；普通原功能回归和仅批准 Default 输入不能替代此新增标签授权。
 
 `--cases tab_return profile_return quick_restart exit_wait` 补充回切与生命周期：F18／F17 逐次切入 A→C／A→B 的两个 Tab；仅改变自有接收窗口标题，验证自动匹配配置进入通用 A→C 后 F24 恢复 Engine61；F17／F24 连续四轮按住、停止和重启，逐轮核对实际 B 释放。`exit_wait` 在 F16 的 C⏱2000»E 已按下 C 时正常关闭产品，接收器继续观察超过 2 秒，要求一次抬起、无 E、进程正常退出及退出后 A 直通。F17 是这些夹具明确配置的开始／Tab 快捷键，不注入基础夹具的 F23。
 

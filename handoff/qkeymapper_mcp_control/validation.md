@@ -1300,6 +1300,14 @@ job-059～062：基线／候选的实际序列完成分别为 C↓↑ D↓↑，
 
 本机证据不随 Git：out/mcp_bridge/source64-build-qt6.txt／qt5.txt、source64-static-worker.txt；out/static-analysis 当前双目标报告；out/mcp_lifecycle/resume-w10-20261023/build-*-write64-*.log、source64-* runtime／identity、run-source64.py、launch-case64.ps1；out/mcp_product/engine61/deployment-source64.json、source64-basic-analysis.json、job-055～062。16 项普通探针自测通过，新增 forced-UP 输入未执行。候选尚未形成独立公共修复提交切点；三项新 NoOp 红绿例、ASan 运行、尾延迟复核、晚到探针及写入闭环继续保留，Qt5／Win11 真实输入与设备门槛不变。
 
+**19:28 后续：** 私有 19 项完成，源上下文修复前 Qt6 三项均以 sourceContextTrace 的错误来源及 exit 2 复现；Qt6／Qt5／Qt6 ASan 各三项修复验证及 repeat_macro_3／gui_stop_after_timeout 均 exit 0，共 15 绿例。ASan runtime 未产生报告；原 instrumentation／原 manifest 保持。新增 inactive_virtual_release 的 Qt6 修复前夹具正常 exit 2，12 组直接回调同时验证键盘／鼠标：停止态源存在时 Force／BurstStop 错误放行，源不存在时拦截；STOPPING 冻结源及明确 bypass 对照保留。没有系统输入注入，源／按键状态在退出前恢复；结果及真实桌面在 source64-results.json，13152 五分钟缓存已核实关闭。
+
+分支内固定 job-069（a8b8a6fa）／070（派生源候选）各三轮 250 对、各 1,500 个 B 事件通过并正常清理；p50／p95／p99 为 1.019／3.830／5.940 与 1.034／3.697／5.859 ms，CPU 3.432／3.909%。未与构建重叠，模板随后恢复 HELP-66。延迟接近不能消除 CPU 差异，继续线程级归因；见 source64-isolated-analysis.json，不标记性能无退化。
+
+用户返回并明确批准新增标签范围后，当前 HELP-66／主分支基线各一次 hold_stop 真实测试均复现 A 被带本轮 B 标签的强制抬起放开；记录含实际相同标签的接收 A_UP，避免将其他失败误记红例。两个子测试 exit 1 为预期业务断言，产品 exit 0、接收器正常、A 已释放。证据 out/mcp_product/engine61/late64-red，父 3044 五分钟缓存已关。探针默认不启用，新增 --allow-late-forced-up 只可用于单个 hold_stop，入口默认拒绝；随后又补 -O 提前拒绝，未改变已验的普通模式输入路径。控制器原生退出码未直接捕获，仅核实完成末尾记录／进程不存在。6816 长缓存也已关闭、会话 exit 0，不再沿用。
+
+保护及业务断言最终普通自测共 18 项通过（私有窗口／mock），包含默认不允许标签、输入边界／焦点及 -O 在导入依赖、解析参数或启动测试前拒绝。日志 write64-tool-unit-gated-final.txt；这是复现工具检查点，公共 Worker 候选与 NoOp 维护源码另行保留，尚无停止态修复绿例。
+
 ## HELP-20261024-66：首闭环基础帮助与真实解析器键名
 
 PC-W10，基于 11e3f44d／产品 a8b8a6fa；新增 qkm_get_help／help.read，当前八工具、四项 Read 能力。qkm_mapping_help 复用现有常量和 GUI 校验器的有效键名列表，独立验证 topic／offset／limit、空目录和帧预算；基础示例及单位不另造解析器。Python 仅适配协议，没有依赖／锁文件／身份认证／作用域／manifest 或 TS 修改。帮助不读取可变映射源，不授权编辑或证明设备可用。

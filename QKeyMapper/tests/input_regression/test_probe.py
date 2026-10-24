@@ -1,5 +1,6 @@
 """Harness checks: private-window messages only; no SendInput, mapping or UAC."""
 
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -18,9 +19,9 @@ import win32gui
 import win32process
 import win32service
 
-from probe import Sender, focus_click, keyboard_input, plain_latencies, process_sample
+from probe import SOURCE_TAG, Sender, focus_click, keyboard_input, plain_latencies, process_sample
 from receiver import CLOSE, COUNT, FLUSH, RESET, RESULT_ROOT
-from run_acceptance import Receiver
+from run_acceptance import Receiver, late_force_release
 
 
 def wait_file(path, process):
@@ -68,6 +69,41 @@ class ProbeTests(unittest.TestCase):
             sender.release()
             self.assertEqual(native.call_count, 1)
         self.assertFalse(sender.held)
+
+    def test_late_release_only_targets_owned_a_and_keeps_source_held(self):
+        sender = Sender.__new__(Sender)
+        sender.held = {0x41}
+        with patch.object(sender, "check_target"), patch("probe.user32.SendInput", return_value=1) as native:
+            result = sender.force_original_up(0x123400)
+            self.assertEqual(result["extra_info"], 0x123401)
+            self.assertEqual(sender.held, {0x41})
+            self.assertEqual(native.call_count, 1)
+            for tag in (0, -1, 2**64, True, SOURCE_TAG, 0x123401):
+                with self.assertRaises(AssertionError):
+                    sender.force_original_up(tag)
+            for held in (set(), {0x41, 0x7C}, {0x42}):
+                sender.held = held
+                with self.assertRaises(AssertionError):
+                    sender.force_original_up(0x123400)
+            self.assertEqual(native.call_count, 1)
+        sender.held = {0x41}
+        with patch.object(sender, "check_target", side_effect=AssertionError("focus")), \
+                patch("probe.user32.SendInput") as native:
+            with self.assertRaises(AssertionError):
+                sender.force_original_up(0x123400)
+            native.assert_not_called()
+
+    def test_late_probe_requires_explicit_authorization_before_observation(self):
+        with patch("probe.user32.SendInput") as native:
+            with self.assertRaisesRegex(AssertionError, "explicit authorization"):
+                asyncio.run(late_force_release(None, None, None, None))
+            native.assert_not_called()
+
+    def test_optimized_execution_is_refused_before_arguments_or_input(self):
+        script = Path(__file__).with_name("run_acceptance.py")
+        result = subprocess.run([sys.executable, "-O", str(script), "--help"], capture_output=True, timeout=10)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b"Run without -O", result.stderr)
 
     def test_timeout_result_uses_message_payload(self):
         receiver = Receiver()

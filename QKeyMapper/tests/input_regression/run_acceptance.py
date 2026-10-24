@@ -1,5 +1,8 @@
 """Authorized Default-desktop A->B Release comparison; never installs drivers."""
 
+if not __debug__:
+    raise RuntimeError("Run without -O; input scope and validation assertions must stay enabled.")
+
 import argparse
 import asyncio
 from contextlib import AsyncExitStack, closing
@@ -21,7 +24,7 @@ from mcp import Client
 
 from probe import Sender, distribution, focus_click, plain_latencies, process_sample
 from receiver import CLOSE, COUNT, FLUSH, RESET, RESULT_ROOT, input_desktop_name
-from features import CASES, configuration, exercise
+from features import CASES, configuration, exercise, pressed, wait_for
 
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "mcp_bridge/tests"))
@@ -360,6 +363,32 @@ async def sources_after_stop(product):
             store.forget()
 
 
+async def late_force_release(product, receiver, sender, warmup, *, allowed=False):
+    assert allowed is True, "Tagged late-release input requires its explicit authorization"
+    tags = {event["extra_info"] for event in warmup["received"] if event["key"] == 0x42}
+    assert len(tags) == 1, "Mapped B did not provide one product tag"
+    receiver.reset()
+    sent, protected, cleanup = [], False, []
+    try:
+        sent.append(sender.send(0x41, True))
+        await wait_for(receiver, sender, lambda: receiver.count(0x41) == 1 and pressed(0x41))
+        sent.append(sender.force_original_up(tags.pop()))
+        await asyncio.sleep(.15)
+        sender.check_target()
+        protected = pressed(0x41) and receiver.count(0x41) == 1
+        assert protected, "A late forced release escaped after stop and released the held original A"
+        sent.append(sender.send(0x41, False))
+        await wait_for(receiver, sender, lambda: receiver.count(0x41) == 2 and not pressed(0x41))
+    finally:
+        cleanup = sorted(sender.held)
+        sender.release()
+        await asyncio.sleep(.1)
+        events = await receiver.flush()
+        save(product.output / "late-force-release.json", {"sent": sent, "received": events,
+            "held_original_protected": protected, "released_in_cleanup": cleanup})
+    assert [(event["key"], event["down"]) for event in events] == [(0x41, True), (0x41, False)]
+
+
 async def run_feature(args, state, executable, case):
     output = args.output / (state + "_" + case)
     output.mkdir()
@@ -379,12 +408,16 @@ async def run_feature(args, state, executable, case):
         await receiver.focus()
         await asyncio.sleep(1)
         sender = Sender(receiver.window, receiver.pid, allow_default=args.allow_default)
-        save(output / "warmup.json", await plain(receiver, sender, 10, 0x42))
+        warmup = await plain(receiver, sender, 10, 0x42)
+        save(output / "warmup.json", warmup)
         result = await exercise(case, product, receiver, sender)
         save(output / "stopped.json", await plain(receiver, sender, 10, 0x41))
         if not product.closed:
             observed = await product.action("StopMapping")
             assert observed["mapping_action"]["before"] == "映射开始", "Feature stop did not reach GUI idle"
+            if case == "hold_stop" and args.allow_late_forced_up:
+                await receiver.focus()
+                await late_force_release(product, receiver, sender, warmup, allowed=args.allow_late_forced_up)
             if case == "profile_return":
                 restored = await product.action("ReadMapping")
                 assert restored["configuration_display"] == "Engine61" and restored["mapping_rows"] == rows, \
@@ -432,6 +465,8 @@ if __name__ == "__main__":
                         help="Fixed original-function cases; use --states baseline off")
     parser.add_argument("--allow-default", action="store_true")
     parser.add_argument("--allow-focus-click", action="store_true")
+    parser.add_argument("--allow-late-forced-up", action="store_true",
+                        help="Explicitly authorized product-tagged A release probe; requires --cases hold_stop")
     parser.add_argument("--gsudo-cache", action="store_true")
     args = parser.parse_args()
     args.baseline, args.current, args.output = args.baseline.resolve(), args.current.resolve(), args.output.resolve()
@@ -444,6 +479,8 @@ if __name__ == "__main__":
     assert len(set(args.states)) == len(args.states)
     if args.cases:
         assert len(set(args.cases)) == len(args.cases) and set(args.states) <= {"baseline", "off"}
+    if args.allow_late_forced_up:
+        assert args.cases == ["hold_stop"], "Tagged input must be isolated to hold_stop"
     assert elevation(win32api.GetCurrentProcess()) == 0 and integrity(win32api.GetCurrentProcess()) == 0x2000
     args.output.mkdir(parents=True, exist_ok=False)
     gsudo, cache_pid = shutil.which("gsudo.exe"), str(os.getpid())

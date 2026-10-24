@@ -123,6 +123,17 @@ class Sender:
                 self.held.remove(key)
         assert not self.held, "Test-owned keys could not be released"
 
+    def force_original_up(self, mapped_tag):
+        self.check_target()
+        assert self.held == {0x41}, "Only the test-held A may receive the late-release probe"
+        assert type(mapped_tag) is int and 0 < mapped_tag < 2**64 and mapped_tag & 0xF == 0
+        assert mapped_tag != SOURCE_TAG, "Use the tag observed from this product's mapped B"
+        event = keyboard_input(0x41, False)
+        event.payload.ki.dwExtraInfo = mapped_tag | 1  # SENDVIRTUALKEY_STATE_FORCE.
+        sent_at = time.perf_counter_ns()
+        assert user32.SendInput(1, ctypes.byref(event), ctypes.sizeof(INPUT)) == 1, "Late-release probe rejected"
+        return {"key": 0x41, "down": False, "qpc_ns": sent_at, "extra_info": mapped_tag | 1}
+
 
 def distribution(values):
     assert values and all(math.isfinite(value) and value >= 0 for value in values)
