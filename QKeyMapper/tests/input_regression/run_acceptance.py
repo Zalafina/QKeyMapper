@@ -21,6 +21,7 @@ from mcp import Client
 
 from probe import Sender, distribution, focus_click, plain_latencies, process_sample
 from receiver import CLOSE, COUNT, FLUSH, RESET, RESULT_ROOT, input_desktop_name
+from features import CASES, configuration, exercise
 
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "mcp_bridge/tests"))
@@ -45,8 +46,9 @@ async def wait_file(path, child):
 
 
 class Receiver:
-    async def start(self, output, *, allow_focus_click=False):
+    async def start(self, output, *, allow_focus_click=False, activate=True):
         self.output, self.sequence, self.allow_focus_click = output, 0, allow_focus_click
+        self.clicked = False
         self.log = output.parent.joinpath("receiver.log").open("wb")
         self.child = await asyncio.create_subprocess_exec(sys.executable, "-B", str(Path(__file__).with_name("receiver.py")),
             "--output", str(output), "--desktop", "Default", "--allow-default",
@@ -58,9 +60,10 @@ class Receiver:
         with closing(win32api.OpenProcess(0x1000, False, self.pid)) as handle:
             assert elevation(handle) == 0 and integrity(handle) == 0x2000
         assert identity(os.getpid()).same_login(identity(self.pid))
-        await self.focus()
-        await asyncio.sleep(1)
-        assert win32gui.GetForegroundWindow() == self.window, "Receiver could not acquire foreground"
+        if activate:
+            await self.focus()
+            await asyncio.sleep(1)
+            assert win32gui.GetForegroundWindow() == self.window, "Receiver could not acquire foreground"
 
     async def focus(self):
         assert win32process.GetWindowThreadProcessId(self.window)[1] == self.pid
@@ -84,7 +87,9 @@ class Receiver:
             except pywintypes.error:
                 pass
         if win32gui.GetForegroundWindow() != self.window:
+            assert not self.clicked, "Only one authorized focus click per receiver is allowed"
             focus_click(self.window, self.focus_window, self.pid, allowed=self.allow_focus_click)
+            self.clicked = True
             for _ in range(20):
                 if win32gui.GetForegroundWindow() == self.window:
                     break
@@ -95,8 +100,8 @@ class Receiver:
         self.sequence += 1
         win32gui.SendMessageTimeout(self.window, RESET, self.sequence, 0, 2, 1000)
 
-    def count(self):
-        return win32gui.SendMessageTimeout(self.window, COUNT, 0, 0, 2, 1000)[1]
+    def count(self, key=0):
+        return win32gui.SendMessageTimeout(self.window, COUNT, key, 0, 2, 1000)[1]
 
     async def flush(self):
         win32gui.PostMessage(self.window, FLUSH, self.sequence, 0)
@@ -285,12 +290,56 @@ async def run_state(args, state, executable):
                             store.forget()
 
 
+async def run_feature(args, state, executable, case):
+    output = args.output / (state + "_" + case)
+    output.mkdir()
+    runtime = output / "runtime"
+    shutil.copytree(executable.parent, runtime, ignore=shutil.ignore_patterns("keymapdata.ini", "*.log"))
+    executable = runtime / executable.name
+    receiver, product, sender = Receiver(), None, None
+    try:
+        await receiver.start(output / "receiver", allow_focus_click=args.allow_focus_click, activate=False)
+        text, rows = configuration(fixture(), case, win32gui.GetClassName(receiver.window))
+        (runtime / "keymapdata.ini").write_text(text, encoding="utf-8")
+        product = Product(executable, output, default_desktop=True)
+        await product.started()
+        gui = await product.action("ReadMapping")
+        assert gui["mapping_rows"] == rows and gui["stop_shortcut_edit"] == "F24", "Feature fixture did not load"
+        await product.action("StartMapping")
+        await receiver.focus()
+        await asyncio.sleep(1)
+        sender = Sender(receiver.window, receiver.pid, allow_default=args.allow_default)
+        save(output / "warmup.json", await plain(receiver, sender, 10, 0x42))
+        result = await exercise(case, product, receiver, sender)
+        save(output / "stopped.json", await plain(receiver, sender, 10, 0x41))
+        observed = await product.action("StopMapping")
+        assert observed["mapping_action"]["before"] == "映射开始", "Feature stop did not reach GUI idle"
+        result.update(state=state, executable=str(executable),
+                      exe_sha256=hashlib.sha256(executable.read_bytes()).hexdigest(), controller_pid=os.getpid())
+        save(output / "result.json", result)
+        print("PASS", state, case, "real output, release, stopped A and GUI idle", flush=True)
+        return result
+    finally:
+        try:
+            if sender is not None:
+                sender.release()
+        finally:
+            try:
+                if product is not None:
+                    await product.close()
+            finally:
+                await receiver.close()
+
+
 async def run(args):
     results = []
     for state in args.states:
-        result = await run_state(args, state, args.baseline if state == "baseline" else args.current)
-        results.append(result)
-        save(args.output / "results.json", {"results": results, "complete": len(results) == len(args.states)})
+        executable = args.baseline if state == "baseline" else args.current
+        for case in args.cases or [None]:
+            result = await run_feature(args, state, executable, case) if case else await run_state(args, state, executable)
+            results.append(result)
+            expected = len(args.states) * len(args.cases or [None])
+            save(args.output / "results.json", {"results": results, "complete": len(results) == expected})
 
 
 if __name__ == "__main__":
@@ -302,6 +351,8 @@ if __name__ == "__main__":
                         default=["baseline", "off", "idle", "query"])
     parser.add_argument("--pairs", type=int, default=250)
     parser.add_argument("--rounds", type=int, default=3)
+    parser.add_argument("--cases", nargs="+", choices=CASES,
+                        help="Fixed original-function cases; use --states baseline off")
     parser.add_argument("--allow-default", action="store_true")
     parser.add_argument("--allow-focus-click", action="store_true")
     parser.add_argument("--gsudo-cache", action="store_true")
@@ -314,6 +365,8 @@ if __name__ == "__main__":
     assert args.output.is_relative_to(RESULT_ROOT.resolve()) and args.output != RESULT_ROOT.resolve()
     assert args.allow_default and 10 <= args.pairs <= 500 and 1 <= args.rounds <= 3
     assert len(set(args.states)) == len(args.states)
+    if args.cases:
+        assert len(set(args.cases)) == len(args.cases) and set(args.states) <= {"baseline", "off"}
     assert elevation(win32api.GetCurrentProcess()) == 0 and integrity(win32api.GetCurrentProcess()) == 0x2000
     args.output.mkdir(parents=True, exist_ok=False)
     gsudo, cache_pid = shutil.which("gsudo.exe"), str(os.getpid())

@@ -150,6 +150,8 @@ class ProbeTests(unittest.TestCase):
             result = wait_file(output / "events-1.json", process)
             self.assertEqual([(e["key"], e["down"]) for e in result["events"]], [(0x42, True), (0x42, False)])
             self.assertEqual(win32gui.SendMessage(window, COUNT, 0, 0), 2)
+            self.assertEqual(win32gui.SendMessage(window, COUNT, 0x42, 0), 2)
+            self.assertEqual(win32gui.SendMessage(window, COUNT, 0x43, 0), 0)
             sample = process_sample(win32api.GetCurrentProcess(), os.getpid(), window)
             self.assertGreater(sample["threads"], 0)
             self.assertGreater(sample["working_set"], 0)

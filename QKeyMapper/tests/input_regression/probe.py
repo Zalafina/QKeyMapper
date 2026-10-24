@@ -91,7 +91,7 @@ class Sender:
         assert allow_default and desktop_name() == "Default"
         assert not ctypes.windll.shell32.IsUserAnAdmin(), "Input controller must remain ordinary"
         self.window, self.pid, self.held = window, pid, set()
-        assert not any(win32api.GetAsyncKeyState(key) & 0x8000 for key in SOURCE_KEYS)
+        assert not any(win32api.GetAsyncKeyState(key) & 0x8000 for key in SOURCE_KEYS | frozenset(range(0x42, 0x46)))
         self.check_target()
 
     def check_target(self):

@@ -88,7 +88,8 @@ def run(args):
                            {"sequence": sequence, "events": events, "desktop": actual_desktop})
                 return 0
             if message == COUNT:
-                return len(events)
+                assert key == 0 or key in ALLOWED_KEYS
+                return sum(event["key"] == key for event in events) if key else len(events)
             if message in (CLOSE, win32con.WM_CLOSE):
                 aborted = message == win32con.WM_CLOSE
                 win32gui.DestroyWindow(window)
