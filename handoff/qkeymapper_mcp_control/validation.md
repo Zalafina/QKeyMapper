@@ -1268,3 +1268,34 @@ PC-W10／Win10 19045，父提交 f43e5e3c。仅源查询助手复用完整绑定
 本机证据不随 Git：out/tests/mcp_control/{qt6-release,qt5-release}/build-query62b-{before,after}.log；query62b-before-02／query62b-after 下私有桌面／EXE／结果、query62b-comparison.json；out/mcp_bridge/query62b-build-qt6.txt／query62b-build-qt5.txt；out/mcp_product/engine61/deployment-query62b.json 与 job-054 全部动作／源响应／closed。首次 query62b-before 启动器漏设既有 QKM_IPC_TEST_EXE，在 init 失败后正常退出、桌面关闭，未进入测量；更正并在新目录通过，原失败保留。
 
 这是独立局部优化提交切点。读取与输入边界沿 f43e5e3c／EXIT-63 复用，不重跑真实键盘、性能四态或运行后源许可；未做 Qt5 High 产品正式 SDK、Win11、产品大配置锁占用／GUI 延迟、ASan 或全源静态分析。只处理不可变 JSON 编码，双 Qt 精确预算／原哈希及正式源查询为选定检查；后续更大优化暂缓，继续编辑上下文与首个业务闭环。
+
+## SRC-20261024-65：首闭环键串／时序参数事实补充
+
+PC-W10，静态基线 a8b8a6fa；WRITE-64 候选只改 Worker 来源传递，不改本次读取的 GUI／解析函数。按 validateOriginalKeyString／SingleOriginalKeyWithoutTimeSuffix／MappingKeyString／SingleMappingKey、QItemSetupDialog 有效键名初始化、添加槽和 insertNewMappingData、相关 SpinBox 与常量交叉核对，补充 MAP-ADD／EDIT 的参数单位、边界、正规化及实际提交副作用；不增加关键链路计数或已支持能力。
+
+确认等待控件 0 不生成后缀、字面 ⏱0 却非法，序列校验为严格小于 KEY_SEQUENCE_MAX，宏语法不证明存在，物理 Shift／选区影响插入。VButton 设备后缀则发现外层锚点与辅助拆后缀校验可能不一致的静态路径，单列待复现，未按注释写成已拒绝；本轮不修解析器或扩大普通键闭环范围。具体参数及拟定用例见能力矩阵 SRC-65。
+
+只核对当前源码与文档，不新增构建、GUI／MCP、输入、UAC 或运行效果通过。同期 WRITE-64 构建／静态分析属于另一候选的准备证据，不作为本条等价性验收；原始运行记录和最终完成状态仍按对应切片维护。
+
+## WRITE-20261024-64：派生发送来源候选与当前待验边界
+
+PC-W10，HEAD f867ab5c／产品父提交 a8b8a6fa。候选仅将父源参数传入序列子任务、重复、保持尾键和 Unlock；后者从同一源读取实际抬起内容。原有借用生命周期及排空规则不变，不新增全局配置模型、MCP 语义开关或编辑许可。custom-tag 正常态的非运行守卫已有，不重复修补；forced-UP 非运行路径的源查询另待受限真实标签探针，尚未执行或修复。
+
+普通 Qt6／Qt5 产品、Qt6／Qt5／Qt6 ASan NoOp 维护构建通过。Qt6 零编译链接警告，Qt5 沿既有例外；Worker 在主产品和生命周期目标两份编译下的 Clang-Tidy／Clazy 四工具 exit 0、零项目诊断。新建 repeat／hold／unlock_source_context 三项维护用例，包含不同全局表的反例及父源断言；修复前 Qt6 与候选三配置隔离 runtime、18 项固定私有桌面启动器已准备，未启动。ASan 构建不等于运行安全通过。
+
+普通 Qt6 候选 EXE SHA-256 370328dafb58a596f77812bad5001f86e066994c29b486a9f36776def15ea029，位于 out/mcp_product/engine61/runtime-current；job-054 保留原 a8b8a6fa 版本。job-055～058 四态各三轮 250 对，共 6,000 个实际 B 事件、F24 后 A 直通、GUI 空闲与清理通过。
+
+| 本批状态 | 延迟 p50／p95／p99 ms | 产品单核 CPU % | 工作集最大 MiB | WM_NULL 最大 ms |
+|---|---|---|---|---|
+| d49a9f57 基线 | 0.980／2.227／3.949 | 2.575 | 171.84 | 0.624 |
+| 候选接口关闭 | 1.025／3.775／5.819 | 2.831 | 172.95 | 18.058 |
+| 启用空闲 | 1.035／3.766／5.584 | 2.605 | 177.38 | 0.358 |
+| 持续查询 | 1.081／3.771／6.007 | 4.282 | 176.66 | 0.887 |
+
+延迟从各轮实际事件合并计算，不是分位数平均；查询 711 次／33.94 秒，p50 3.657、p99 54.434 ms。接口关闭的尾部也高于基线，不能仅归因于查询或宣称无稳定退化；预先固定补一次候选 off→基线→候选 off，各三轮 250 对，结果另追加。本批不采集唤醒，GUI 最大值不替代分布，单键不覆盖派生源边界。
+
+反序补验 job-063／064／066 的 p50／p95／p99 分别为 1.022／3.901／5.683、0.999／3.533／5.610、1.008／3.329／5.449 ms，CPU 2.741／2.052／2.804%。本批尾部差异没有保持原方向，但 CPU 差异仍在，不据此宣称原功能性能无退化。063／066 完整通过；064 三轮及停止断言完成后关闭助手 gsudo exit 999、无响应，产品 17092 仍停止态，故该作业失败。接收器正常退出；普通 WM_CLOSE 被 UIPI 拒绝，原生身份仍匹配，随后普通 UIA WindowPattern.Close 观察产品退出、按键均释放，退出码不可得。保留失败及部分测量，不改记完整通过。065 仅父缓存只读探测成功，没有产品动作；后续才执行已固定的 066。证据见 source64-bracket-analysis.json 及 064 的 lifecycle／ordinary-*-close 记录。
+
+job-059～062：基线／候选的实际序列完成分别为 C↓↑ D↓↑，停止取消分别仅 C↓↑ 且原等待期限后无迟到 D；四组均通过，原键恢复、停止及四产品／四接收器清理正常。055～058 另四产品／四接收器也均 exit 0，启用的配对／接口均撤销关闭。仅复用原授权 Default 输入／焦点范围与 PID 6816 固定入口。
+
+本机证据不随 Git：out/mcp_bridge/source64-build-qt6.txt／qt5.txt、source64-static-worker.txt；out/static-analysis 当前双目标报告；out/mcp_lifecycle/resume-w10-20261023/build-*-write64-*.log、source64-* runtime／identity、run-source64.py、launch-case64.ps1；out/mcp_product/engine61/deployment-source64.json、source64-basic-analysis.json、job-055～062。16 项普通探针自测通过，新增 forced-UP 输入未执行。候选尚未形成独立公共修复提交切点；三项新 NoOp 红绿例、ASan 运行、尾延迟复核、晚到探针及写入闭环继续保留，Qt5／Win11 真实输入与设备门槛不变。
