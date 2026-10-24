@@ -6,6 +6,7 @@
 
 #include <QApplication>
 #include <QCheckBox>
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFileInfo>
 #include <QSaveFile>
@@ -91,6 +92,9 @@ private slots:
     void selectedPairing();
     void sourceSnapshotReferences();
     void sourceSnapshotBoundaries();
+    void sourceSnapshotEncodingBoundaries();
+    void sourceSnapshotQueryCost_data();
+    void sourceSnapshotQueryCost();
     void sourceReadAdmission();
 };
 
@@ -323,6 +327,71 @@ void McpControlTest::sourceSnapshotBoundaries()
         if (offset < 2) QCOMPARE(page.page.value(QStringLiteral("next_offset")).toInt(), offset + 1);
         else QVERIFY(page.page.value(QStringLiteral("next_offset")).isNull());
     }
+}
+
+void McpControlTest::sourceSnapshotEncodingBoundaries()
+{
+    QJsonObject snapshot{{QStringLiteral("sources"), QJsonArray{QJsonObject{{QStringLiteral("rows"), QJsonArray()}}}},
+        {QStringLiteral("padding"), QString()}};
+    const int emptySize = QJsonDocument(snapshot).toJson(QJsonDocument::Compact).size();
+    const QJsonObject arguments{{QStringLiteral("entity"), QStringLiteral("mapping_sources")}};
+    for (int delta : {-1, 0, 1}) {
+        snapshot.insert(QStringLiteral("padding"), QString(MaxSourceSnapshotBytes - emptySize + delta, QLatin1Char('x')));
+        QCOMPARE(QJsonDocument(snapshot).toJson(QJsonDocument::Compact).size(), MaxSourceSnapshotBytes + delta);
+        for (const QString &instance : {QStringLiteral("instance"), QStringLiteral("中文 日本語 😀 \"\\\n")}) {
+            const QString pair = QStringLiteral("pair \"\\\n");
+            const auto result = querySourceSnapshot(snapshot, instance, pair, 42, arguments);
+            if (delta > 0) {
+                QCOMPARE(result.errorCode, QStringLiteral("result_too_large"));
+            } else {
+                QVERIFY(result.ok());
+                const QJsonObject binding{{QStringLiteral("instance"), instance}, {QStringLiteral("pair_id"), pair},
+                    {QStringLiteral("permission_epoch"), QStringLiteral("42")}, {QStringLiteral("snapshot"), snapshot}};
+                const QString expected = QString::fromLatin1(QCryptographicHash::hash(
+                    QJsonDocument(binding).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
+                QCOMPARE(result.page.value(QStringLiteral("source_snapshot")).toObject()
+                    .value(QStringLiteral("revision")).toString(), expected);
+            }
+        }
+    }
+}
+
+void McpControlTest::sourceSnapshotQueryCost_data()
+{
+    QTest::addColumn<int>("rowCount");
+    QTest::addColumn<bool>("mappingPage");
+    for (int count : {1, 100, 1000}) {
+        for (bool page : {false, true}) {
+            QTest::newRow(qPrintable(QStringLiteral("%1_%2").arg(count).arg(page ? "mapping" : "sources"))) << count << page;
+        }
+    }
+}
+
+void McpControlTest::sourceSnapshotQueryCost()
+{
+    QFETCH(int, rowCount);
+    QFETCH(bool, mappingPage);
+    QJsonObject fields{{QStringLiteral("original_key"), QStringLiteral("A")},
+        {QStringLiteral("mapping_keys"), QJsonArray{QStringLiteral("B")}},
+        {QStringLiteral("note"), QString(512, QChar(0x4e2d))}};
+    for (int index = 0; index < 48; ++index) fields.insert(QStringLiteral("parameter_%1").arg(index), index);
+    const QJsonObject row{{QStringLiteral("fields"), fields}};
+    QJsonArray rows;
+    for (int index = 0; index < rowCount; ++index) rows.append(row);
+    const QJsonObject snapshot{{QStringLiteral("sources"), QJsonArray{QJsonObject{{QStringLiteral("rows"), rows}}}}};
+    qInfo() << "Query helper snapshot bytes:" << QJsonDocument(snapshot).toJson(QJsonDocument::Compact).size();
+    QJsonObject arguments{{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("limit"), 1}};
+    const auto first = querySourceSnapshot(snapshot, "instance", "pair", 1, arguments);
+    QVERIFY(first.ok());
+    if (mappingPage) {
+        arguments.insert(QStringLiteral("entity"), QStringLiteral("mappings"));
+        arguments.insert(QStringLiteral("source_revision"), first.page.value(QStringLiteral("source_snapshot")).toObject().value(QStringLiteral("revision")));
+        arguments.insert(QStringLiteral("source_tab_ref"), first.page.value(QStringLiteral("items")).toArray().first().toObject().value(QStringLiteral("source_tab_ref")));
+    }
+    SourceQueryResult result;
+    QBENCHMARK { result = querySourceSnapshot(snapshot, "instance", "pair", 1, arguments); }
+    QVERIFY(result.ok());
+    QCOMPARE(result.page.value(QStringLiteral("items")).toArray().size(), 1);
 }
 
 void McpControlTest::initTestCase()

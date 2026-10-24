@@ -6,6 +6,8 @@
 
 测试窗口需要真实显示；优先在私有 Windows 桌面运行，**不调用 SwitchDesktop**。可以设置 `QKM_TEST_DESKTOP`，测试将检查自身线程实际桌面名。Qt 事件直接投递目标控件，不发送系统键鼠输入。关闭并清理自有窗口和子进程，不关闭用户实例。
 
+`sourceSnapshotEncodingBoundaries` 核对精确 4 MiB 前后边界及完整绑定的原修订字节，包含中日文、emoji、引号／反斜杠／换行。`sourceSnapshotQueryCost` 用 1／100／1,000 行合成不可变快照分别测目录和单行助手，QtTest 可用 `-iterations 32 -median 3` 固定比较。该数值不含产品源复制、锁占用、IPC／SDK 或 GUI 响应，不能当作完整查询或输入性能。
+
 覆盖默认关闭／不创建凭据目录、启用时发布并核实发现文件、中英日标题及明文标签、Enter 不默认批准、只读默认值、额外配置／启停授权、配对批准、拒绝、撤销、关闭窗口保留接口、关闭／Escape 时拒绝待批准请求和启用失败回显。关闭接口时通过真实控件查看／撤销，核对实际持久化和重新打开结果；只读保存失败与另一活跃实例占用不得假报成功。可见选中项与键盘导航 currentRow 不同时须撤销选中客户端，无选中不得撤销；通过独立读取存储核对剩余 pair ID。`queryProcessExecutable` 还检查真实自身路径、错误创建时间及无效身份拒绝。
 
 `--preview <language:0|1|2> <off|pending|paired-off|busy-off> <absolute-state-json>` 仅用于维护目标的静态截图：真实显示同一控件，原子报告 PID／HWND／实际桌面、原生可见性、Qt／原生 DPI、样式／字体及接口／配对状态；20 秒后自动退出，也可从该私有桌面发送 WM_CLOSE。pending 含 `<b>` 和实际自身进程身份，用于检查纯文本；paired-off 使用假配对记录，busy-off 再取得真实租约并点击撤销制造占用提示。四种预览均不启用接口、批准或认证客户端，截图不能证明配对安全。使用仓库 `scripts/capture_ui_snapshots.ps1 -ProcessId ... -WindowHandle ... -PrintWindow` 后自主审阅。

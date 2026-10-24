@@ -84,15 +84,18 @@ SourceQueryResult querySourceSnapshot(const QJsonObject &snapshot, const QString
     if (snapshot.isEmpty() || !snapshot.value(QStringLiteral("sources")).isArray()) {
         return fail("context_busy", "A safe source snapshot is not available.");
     }
-    const QByteArray bytes = QJsonDocument(snapshot).toJson(QJsonDocument::Compact);
-    if (bytes.size() > MaxSourceSnapshotBytes) {
+    QJsonObject binding{{QStringLiteral("instance"), instance}, {QStringLiteral("pair_id"), pairId},
+        {QStringLiteral("permission_epoch"), QString::number(permissionEpoch)},
+        {QStringLiteral("snapshot"), QJsonObject()}};
+    // An empty compact snapshot is two bytes; the limit excludes only the binding metadata.
+    const qsizetype bindingOverhead = QJsonDocument(binding).toJson(QJsonDocument::Compact).size() - 2;
+    binding.insert(QStringLiteral("snapshot"), snapshot);
+    const QByteArray bytes = QJsonDocument(binding).toJson(QJsonDocument::Compact);
+    if (bytes.size() - bindingOverhead > MaxSourceSnapshotBytes) {
         return fail("result_too_large", "Source snapshot exceeds its bounded size.");
     }
-    const QJsonObject binding{{QStringLiteral("instance"), instance}, {QStringLiteral("pair_id"), pairId},
-        {QStringLiteral("permission_epoch"), QString::number(permissionEpoch)},
-        {QStringLiteral("snapshot"), snapshot}};
     const QString revision = QString::fromLatin1(QCryptographicHash::hash(
-        QJsonDocument(binding).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
+        bytes, QCryptographicHash::Sha256).toHex());
     if (!fresh && revisionValue.toString() != revision) {
         return fail("stale_source", "Source data, identity or authorization changed; query again.");
     }

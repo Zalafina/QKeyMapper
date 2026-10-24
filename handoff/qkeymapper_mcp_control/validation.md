@@ -1287,3 +1287,24 @@ PC-W10／Win10 19045，父提交 81070b6a。既有停止流程在所有者／发
 本机证据不随 Git：out/mcp_bridge/stop57-build-qt6.txt／stop57-build-qt5.txt；out/tests/mcp_control/{qt6-release,qt5-release}/build-stop57.log 与 stop57-components；out/mcp_product/engine61/deployment-stop57.json、stop57-tool-unit.txt、unattended-20261024/job-048～053 的请求／响应／GUI／sources-after-stop／事件／topology／closed。正式源准备使用同 Qt6 维护副本 QkmControlStop57.exe；读取没有为测试触发同步回写。
 
 这是独立只读接入提交切点。未新跑 STOPPING 延后／总超时的正式 MCP 对照，既有 STOP-54～56 NoOp、BRIDGE-60 和 EXIT-63 性能证据仅按原版本／不变路径复用；未做新性能、ASan、全源静态分析、Qt5／Win11 实际输入或运行后正式源读取。修改没有新增可变源指针／异步借用，选择双 Qt 边界与正式 Qt6 真实启停验收；写入前的晚到元数据／派生源上下文问题与其他 ENGINE-61／发布门槛继续保留。
+
+## QUERY-20261024-62B：一次完整编码与原修订／预算保持
+
+PC-W10／Win10 19045，父提交 f43e5e3c。仅源查询助手复用完整绑定编码用于精确快照大小检查与原 SHA-256；小型空快照绑定大小减去两个字节，得出不计入 4 MiB 上限的绑定元数据大小。没有源复制锁、输入／停止、缓存、权限、依赖或 SDK 变化。Qt6 普通产品零警告、Qt5 兼容产品及双 Qt 维护构建通过。
+
+新增精确上限前一字节／恰好上限／后一字节测试，用普通及中日文／emoji／引号／反斜杠／换行身份对比原完整绑定哈希。双 Qt 优化前后各四组功能边界和六组合成基准均通过（各次含 init／cleanup 为 12 passed）；原参数、分页帧、内容／代次／身份／授权及陈旧引用负例保留。未将只读源修订授予编辑能力。
+
+| 合成快照／助手 | Qt6 前→后 ms | Qt5 前→后 ms |
+|---|---|---|
+| 100 行目录 | 6.15→3.75 | 7.56→4.59 |
+| 100 行单行页 | 6.21→3.81 | 7.28→4.90 |
+| 1,000 行目录（2,443,024 字节） | 62.90→37.15 | 82.71→49.46 |
+| 1,000 行单行页 | 63.84→36.34 | 76.28→48.81 |
+
+同机／同配置保存优化前后维护 EXE，串行真实私有桌面运行、无构建或产品压力重叠，QtTest 固定每组 32 次、取三组中位；表中为每次调用的组内平均耗时，不是分位数。1 行组也通过，约 0.03–0.10 ms，计时粒度不足以作可靠收益结论。大快照助手减少约 36%–43%，但不含产品遍历／安全复制／锁内逐行编码、IPC／SDK／GUI 或输入路径；完整采集与每请求完整内容哈希仍在，不能宣称整个 R4 已解决或全链路同比改善。
+
+正式 Qt6 job-054 在私有桌面 QkmProduct_63eb410e958847c59e0c2574a52f53d2 的源查询 10 场景通过，含独立 GUI、分页及不变性、移动／同内容往返、重载／失败恢复、新配对旧引用拒绝；High 产品／普通 SDK 身份核实，撤销／关闭及 exit 0。EXE 为 out/mcp_product/engine61/unattended-20261024/job-054/runtime/QKeyMapperMcpAcceptance_engine61_current.exe，SHA-256 fe4bfc8b5b6ada54fe297ddb3cb61fe56301672329260219d5baa24845f390f1。没有 Default 输入，本轮只使用已批准父缓存 PID 6816 的固定私有 GUI 助手，缓存仍保持至用户返回或 19:30。
+
+本机证据不随 Git：out/tests/mcp_control/{qt6-release,qt5-release}/build-query62b-{before,after}.log；query62b-before-02／query62b-after 下私有桌面／EXE／结果、query62b-comparison.json；out/mcp_bridge/query62b-build-qt6.txt／query62b-build-qt5.txt；out/mcp_product/engine61/deployment-query62b.json 与 job-054 全部动作／源响应／closed。首次 query62b-before 启动器漏设既有 QKM_IPC_TEST_EXE，在 init 失败后正常退出、桌面关闭，未进入测量；更正并在新目录通过，原失败保留。
+
+这是独立局部优化提交切点。读取与输入边界沿 f43e5e3c／EXIT-63 复用，不重跑真实键盘、性能四态或运行后源许可；未做 Qt5 High 产品正式 SDK、Win11、产品大配置锁占用／GUI 延迟、ASan 或全源静态分析。只处理不可变 JSON 编码，双 Qt 精确预算／原哈希及正式源查询为选定检查；后续更大优化暂缓，继续编辑上下文与首个业务闭环。
