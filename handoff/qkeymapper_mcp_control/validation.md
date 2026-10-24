@@ -1320,3 +1320,7 @@ PC-W10／014ef2eb＋qkm_mapping_changes 纯模块、工程／组件测试。严�
 双 Qt 普通 Release 构建 exit 0、零编译链接诊断；out/tests/mcp_control/{qt6-release,qt5-release}/release/QKeyMapperMcpControlTest.exe 定向四函数，含 init／cleanup 各 6 passed，5／8 ms，native 0。普通权限 offscreen，实际线程 Default，无窗口／输入／UAC，不称私有桌面。初期 schema 名称误用编译失败已修；早期无 stdout 运行不计通过，本轮用 QtTest -o 文件核验。
 
 证据仅本机 out/mcp_bridge/map67b-checkpoint-{qt6,qt5}-{build,native}.txt 及 qtest.txt。未验证接线当时存本机草稿并撤回，后续 Git 归档见主计划，仍八工具／四只读；无新产品、GUI、输入、性能或 Win11 结论。本地开发检查点，下一步和换机规则见主计划。
+
+## CACHE-SKILL-20261025-69
+
+PC-W10：26项单测及原生缓存核心／取消重试通过，误点负例保留；范围、失败、待验及接续见[补验记录](gsudo_cache_pending_validation.md)。未运行产品或输入，本地开发检查点，不作全面验收。

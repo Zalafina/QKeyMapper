@@ -1,0 +1,4 @@
+interface:
+  display_name: "QKeyMapper 临时UAC缓存"
+  short_description: "查看或调整本工作区测试控制器缓存窗口，最长24小时，到期关闭并恢复五分钟默认策略"
+  default_prompt: "使用 $qkeymapper-gsudo-cache 查看当前控制器、缓存截止时间及已批准的测试范围。"

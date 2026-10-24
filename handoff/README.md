@@ -10,6 +10,8 @@
 
 本表只提供导航；具体状态和下一步只在各任务主计划中维护。
 
+工作区工具：[临时 gsudo PID 缓存技能](../.agents/skills/qkeymapper-gsudo-cache/SKILL.md)。该技能的实施状态仍在上述唯一主计划维护；[待补验收与接续提示词](qkeymapper_mcp_control/gsudo_cache_pending_validation.md)只记录验收范围和证据索引。
+
 ## 目录与文件规则
 
 - 每项任务使用一个稳定的功能子目录，例如 `qkeymapper_mcp_control/`。默认只放 Markdown。
