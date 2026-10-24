@@ -1288,7 +1288,7 @@ A 原始证据不随 Git：out/mcp_bridge/source64-build-qt6.txt／qt5.txt、sou
 
 保护及业务断言最终普通自测共 18 项通过（私有窗口／mock），包含默认不允许标签、输入边界／焦点及 -O 在导入依赖、解析参数或启动测试前拒绝。日志 write64-tool-unit-gated-final.txt；这是复现工具检查点，公共 Worker 候选与 NoOp 维护源码另行保留，尚无停止态修复绿例。
 
-**线程归因补充：** 维护脚本新增默认关闭的 --thread-cpu，用普通 THREAD_QUERY_LIMITED_INFORMATION 读取 TID＋创建时间、累计用户／内核 CPU 和有界名称，不调亲和性／优先级；错误不当零，线程数仍非唤醒。21 项自测通过，覆盖归属变化、拒绝访问和正 HRESULT 成功码／LocalFree；初版错误按 ==0 判断漏记名称，CPU 读取不受影响，按本机 SDK 的 SUCCEEDED>=0 修正。
+**线程归因补充：** --thread-cpu 默认关闭，以普通 THREAD_QUERY_LIMITED_INFORMATION 核对 TID／创建时间并读用户／内核 CPU／有界名称；不调优先级／亲和性，读失败不记零，线程数非唤醒。21 项自测通过。初版按 ==0 漏记非零成功 HRESULT 的名称，CPU 不受影响；按本机 SDK SUCCEEDED>=0 修正并验证 LocalFree。
 
 固定各三轮 250 对、接口关闭的完整采样对照依次为：前→后 1.887／2.613%，名称修正后反序后→前 2.832／2.573%，用户／内核细分反序后→前 2.501／2.838%。全部真实输入、停止／恢复和清理通过，原始较高数值保留；没有构建重叠。最终发送池用户 CPU 后／前为 0.03125／0.078125 秒，内核为 0.390625／0.28125 秒；主要开销在内核，GUI／Hook／Worker 也有计时量子波动。普通 Release 标志均 O2／NDEBUG、无诊断或 ASan，单键路径不新增系统调用；当前未形成稳定可归因的延迟／C++ 用户态退化证据，但不能据此宣称整个 R3 或全系统成本通过。原始读取缺口分别保留，最后两版各 2 个线程读取失败未记零。
 
@@ -1321,3 +1321,13 @@ PC-W10，基于 11e3f44d／产品 a8b8a6fa；新增 qkm_get_help／help.read，�
 普通 PrintWindow 不能捕获本轮 High 窗口，记录 UNVERIFIED、没有提升截图；界面布局未修改，不拿 UIA 或组件图替代像素证据。没有 Default 输入、映射启动、运行中帮助、Qt5 High 正式产品／Win11、完整 DSL／设备依赖、ASan 或全源静态分析；异源借用与 ENGINE-61 CPU 等门槛继续保留。帮助只操作不可变列表副本／JSON，选择双 Qt 边界和正式 Qt6 产品读取验证，不重复输入／性能验收。
 
 本机证据不随 Git：out/mcp_bridge/help66-build-qt*-final.txt／help66-sdk-qt*.txt；out/tests/mcp_control/{qt6-release,qt5-release}/build-help66-final.log、help66-components-final、help66-sdk-*；out/mcp_product/engine61/deployment-help66.json 与 job-067／068 的帮助／GUI／原生响应／topology／closed。首次维护启动器路径和 Makefile 选择未进入编译，校正后构建通过，原日志保留。独立只读帮助提交切点，公共候选／晚到探针另行保留。
+
+## MAP-20261024-67-A：普通新增的共用准备／提交
+
+PC-W10／801313c4 上改 Main cpp／h 及维护 cpp：普通添加和固定 A→A 适配器共用纯分析、提交及显式插入位置。保留默认构造／刷新／dirty／冲突通知，拒绝先于任何修改；内部戳无源指针，也不是完整修订或写许可。MCP 仍八工具／四只读。
+
+双 Qt 普通产品／维护构建 exit 0，Qt6 零警告、Qt5 既有例外。两个私有桌面各五例／55 个具名检查通过：Qt 鼠标添加与共用提交的完整映射码／派生值／选区相同；两普通源冲突的 No／Yes、无副作用分析／拒绝、注入非空闲／清理／加载、陈旧决策、设定窗本地行、四组解析边界，INI 未改。正式 MCP 未执行。陈旧用例后两条原受旧 epoch 兜底，随后隔离前提、双 Qt 各九项定向通过；其他八例按不变路径复用，未冒称全套复跑。
+
+本机证据不随 Git：out/mcp_bridge/map67-product-qt*.txt；out/mcp_lifecycle/resume-w10-20261023 下 build-map67-*、map67-{qt6-final,qt5,qt6-stale,qt5-stale}/QKeyMapperMap67_{qt6,qt5}.exe、map67-identity-final.json／map67-stale-identity.json、map67-{final,stale}-results.json 及对应 controller／cache。实际桌面／PID／High／Medium／同登录及退出在结果，29232／28408 五分钟缓存关闭，控制器 exit 0；早期 Qt6 五例也通过、5680 缓存关闭。
+
+独立提交切点仅为共用 GUI 业务基础。无 Default、真实键鼠或映射启动；无本轮静态分析／ASan／性能、英文日文视觉、编辑会话、正式 MCP 等价、冷启动保存及实际执行效果通过，仍是后续接入／发布门槛。

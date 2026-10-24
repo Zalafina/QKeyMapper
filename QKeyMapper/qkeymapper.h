@@ -1182,6 +1182,7 @@ class QKeyMapper : public QMainWindow
     Q_OBJECT
 #ifdef QKM_LIFECYCLE_TESTING
     friend class QkmMappingStopTestAccess;
+    friend class QkmMappingAdditionTestAccess;
 #endif
 
     friend class KeyListComboBox;
@@ -2181,8 +2182,33 @@ private:
     void setKeyPressTypeComboBoxItems(const QString &normalText, const QString &longPressText, const QString &doublePressText);
     void updatePressTimeSpinBoxEnabledState();
     void changeControlEnableStatus(bool status);
+    struct MappingAdditionPlan {
+        int tabIndex = -1;
+        QString tabInternalName;
+        QPointer<KeyMappingDataTableWidget> table;
+        quint64 sourceEpoch = 0;
+        quint64 loadGeneration = 0;
+        quint64 runtimeRevision = 0;
+        qsizetype sourceSize = 0;
+        int insertRow = -1;
+        QString originalKey;
+        QString mappingKey;
+        bool disabled = false;
+        QList<QPair<int, int>> disableRows;
+        QString confirmationMessage;
+        QString warningMessage;
+        QString errorCode;
+        QString errorMessage;
+        bool ok() const { return errorCode.isEmpty() && tabIndex >= 0; }
+    };
+    bool mappingAdditionAllowed(int tabIndex) const;
+    MappingAdditionPlan prepareMappingAddition(int tabIndex, int insertRow,
+        const QString &originalKey, const QString &mappingKey) const;
+    ValidationResult commitMappingAddition(const MappingAdditionPlan &plan, bool confirmCommonConflict,
+        bool openSetupDialog = false);
+    void addMappingFromGui(const QString &originalKey, const QString &mappingKey, bool openSetupDialog = false);
     MAP_KEYDATA createDefaultKeyMappingData(const QString &originalKey, const QString &mappingKey, bool disabled) const;
-    void insertNewMappingData(const MAP_KEYDATA &newKeyMappingData, bool openSetupDialog = false);
+    void insertNewMappingData(const MAP_KEYDATA &newKeyMappingData, int insertRow, bool openSetupDialog);
 public:
     void addFixedDefaultMappingAndOpenSetup(void);
 private:

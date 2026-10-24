@@ -30,3 +30,15 @@ WRITE-64 停止态释放回归 `inactive_virtual_release`：直接回放键盘 A
 - phase 2：GUI STOPPING、Worker STOPPED、准入仍关闭；同样保留冻结源，不能只按 Worker 状态当成清理完成。
 
 三个阶段中明确 bypass 均放行，虚拟按键记账均清空、作业计数归零；用 `gui_stop_wait`／`gui_stop_after_timeout` 复核实际停止任务协调。ASan 副本须包含本次编译的测试 EXE，不能用普通版本替代。
+
+MAP-67 共用新增操作维护用例（不代表正式 MCP 验收）：
+
+| 用例 | 检查 |
+|---|---|
+| `mapping_add_plain` | 预选 Combo 值作为前置条件，再以 Qt 鼠标事件添加 A→B；对照共用提交的完整映射码、派生值、dirty、表格与选区；显式插入、解析负例及组合／长按／双击／序列／停止动作键 |
+| `mapping_add_conflicts` | 两个普通源与共通新增冲突；纯分析无修改，GUI 的 No／Yes 按钮独立驱动，取消和拒绝确认均无部分修改；提交结果与通知一致 |
+| `mapping_add_guards` | 注入 CHECKING／运行／STOPPING，关闭准入、在途生产者和加载；GUI 事件及共用操作均拒绝且不产生部分修改 |
+| `mapping_add_stale` | 分别改变加载代次、结构、冲突、当前目标和运行活动；各测试独立保留其他前提，不让旧 epoch 掩盖实际断言 |
+| `mapping_add_setup` | 固定 A→A 输入适配器打开新增本地行，避免误指向追加的共通行；这是适配器检查，不是该入口的完整 GUI 事件基线 |
+
+结果在 `mappingAddition.checks`，所有检查、进程退出及零尾部作业均须通过。用例核对 INI 未变化，拒绝分析／提交时全源字段、派生值、dirty 及通知无修改。正式 MCP 两条独立路径、冷启动、Default 实际输入、打开编辑会话和保存范围仍须在业务接入时验证；源引用与内部决策戳不能作为编辑许可。

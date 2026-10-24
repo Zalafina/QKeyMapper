@@ -12,6 +12,12 @@
 #include <QSettings>
 #include <QScopeGuard>
 #include <QLineEdit>
+#include <QComboBox>
+#include <QPushButton>
+#include <QTabWidget>
+#include <QScopedValueRollback>
+#include "../../qmappingadvanceddialog.h"
+#include "../../qitemsetupdialog.h"
 #include "../../qkeymapper_worker.h"
 #include "../../qkeymapper.h"
 #include "../../qkm_input_producer_work.h"
@@ -40,6 +46,11 @@ public:
     {
         mapper->finishMappingStop(operation, generation);
     }
+};
+
+class QkmMappingAdditionTestAccess {
+public:
+    static QJsonObject run(QKeyMapper *mapper, const QString &mode);
 };
 
 namespace {
@@ -118,6 +129,7 @@ struct LifecycleResult {
     QStringList lifecycleDispatchTrace;
     QStringList sourceContextTrace;
     QStringList virtualReleaseTrace;
+    QJsonObject mappingAdditionEvidence;
 };
 LifecycleResult *result = nullptr;
 
@@ -339,7 +351,7 @@ void installSendInputDrainTest(QKeyMapper_Worker *worker, const QString &mode)
     }, Qt::QueuedConnection);
 }
 
-void clickMappingButton(QToolButton *button)
+void clickMappingButton(QAbstractButton *button)
 {
     const QPoint local(8, button->height() / 2);
     const QPointF window = button->mapTo(button->window(), local);
@@ -1126,6 +1138,12 @@ void installInactiveVirtualReleaseTest()
 void installLifecycleTest()
 {
     QTimer::singleShot(0, QCoreApplication::instance(), []() {
+        const QString guiMode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+        if (guiMode.startsWith(QStringLiteral("mapping_add_"))) {
+            result->mappingAdditionEvidence = QkmMappingAdditionTestAccess::run(QKeyMapper::getInstance(), guiMode);
+            finish(result->mappingAdditionEvidence.value(QStringLiteral("passed")).toBool());
+            return;
+        }
         auto *worker = QKeyMapper_Worker::getInstance();
         QMetaObject::invokeMethod(worker, [worker]() {
             const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
@@ -1372,6 +1390,227 @@ void installLifecycleTest()
 }
 }
 
+QJsonObject QkmMappingAdditionTestAccess::run(QKeyMapper *mapper, const QString &mode)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    auto *tabs = mapper->findChild<QTabWidget *>(QStringLiteral("keyMappingTabWidget"));
+    auto *original = mapper->findChild<QComboBox *>(QStringLiteral("orikeyComboBox"));
+    auto *mapping = mapper->findChild<QComboBox *>(QStringLiteral("mapkeyComboBox"));
+    auto *record = mapper->findChild<QLineEdit *>(QStringLiteral("originalKeyRecordLineEdit"));
+    auto *add = mapper->findChild<QPushButton *>(QStringLiteral("addmapdataButton"));
+    if (!tabs || !original || !mapping || !record || !add || !mapper->m_MappingAdvancedDialog) {
+        return {{QStringLiteral("passed"), false}, {QStringLiteral("reason"), QStringLiteral("Missing GUI fixture controls")}};
+    }
+    const bool plain = mode == QStringLiteral("mapping_add_plain");
+    const bool setup = mode == QStringLiteral("mapping_add_setup");
+    mapper->m_MappingAdvancedDialog->setCommonMappingTableEnabled(!plain);
+    mapper->updateCommonMappingTabVisibility();
+    if (!plain && !mapper->addTabToKeyMappingTabWidget(QStringLiteral("Map67Other"), false)) {
+        return {{QStringLiteral("passed"), false}, {QStringLiteral("reason"), QStringLiteral("Cannot create second fixture Tab")}};
+    }
+    const int normalIndex = QKeyMapper::firstNormalMappingTabIndex();
+    const int commonIndex = QKeyMapper::findCommonMappingTabIndex();
+    if (normalIndex < 0 || (!plain && commonIndex < 0)) {
+        return {{QStringLiteral("passed"), false}, {QStringLiteral("reason"), QStringLiteral("Missing fixture source")}};
+    }
+    QList<QList<MAP_KEYDATA>> seed;
+    for (int index = 0; index < QKeyMapper::s_KeyMappingTabInfoList.size(); ++index) {
+        auto &tab = QKeyMapper::s_KeyMappingTabInfoList[index];
+        tab.KeyMappingData->clear();
+        if (!QKeyMapper::isCommonMappingTabIndex(index)) {
+            tab.IncludeCommonMappingTable = !plain;
+            tab.CommonMappingCollapsed = false;
+            tab.KeyMappingData->append(mapper->createDefaultKeyMappingData(
+                plain || setup ? QStringLiteral("C") : QStringLiteral("A"), QStringLiteral("D"), false));
+        } else if (setup) {
+            tab.KeyMappingData->append(mapper->createDefaultKeyMappingData(QStringLiteral("Z"), QStringLiteral("E"), false));
+        }
+        seed.append(*tab.KeyMappingData);
+    }
+    const int target = plain || setup ? normalIndex : commonIndex;
+    const auto reset = [&] {
+        mapper->closeItemSetupDialog();
+        for (int index = 0; index < seed.size(); ++index) { *QKeyMapper::s_KeyMappingTabInfoList.at(index).KeyMappingData = seed.at(index); }
+        mapper->forceSwitchKeyMappingTabWidgetIndex(target);
+        mapper->refreshTabsForSourceTabChange(target);
+        mapper->clearSaveSettingDirty();
+    };
+    reset();
+    const auto snapshot = [&] {
+        QJsonArray sources;
+        for (const auto &tab : std::as_const(QKeyMapper::s_KeyMappingTabInfoList)) {
+            QJsonArray rows;
+            for (const auto &entry : *tab.KeyMappingData) {
+                rows.append(QJsonObject{{QStringLiteral("code"), QKeyMapper::generateMappingCode(entry)},
+                    {QStringLiteral("pure_original"), QJsonArray::fromStringList(entry.Pure_OriginalKeys)},
+                    {QStringLiteral("pure_mapping"), QJsonArray::fromStringList(entry.Pure_MappingKeys)},
+                    {QStringLiteral("pure_key_up"), QJsonArray::fromStringList(entry.Pure_MappingKeys_KeyUp)},
+                    {QStringLiteral("lock"), int(entry.LockState)}});
+            }
+            sources.append(QJsonObject{{QStringLiteral("name"), tab.TabInternalName}, {QStringLiteral("rows"), rows}});
+        }
+        return QJsonObject{{QStringLiteral("sources"), sources}, {QStringLiteral("dirty"), mapper->m_SaveSettingDirty},
+            {QStringLiteral("display_rows"), mapper->m_KeyMappingDataTable->rowCount()},
+            {QStringLiteral("current_row"), mapper->m_KeyMappingDataTable->currentRow()}};
+    };
+    QFile ini(QString::fromLatin1(CONFIG_FILENAME));
+    const auto disk = [&] { if (!ini.open(QIODevice::ReadOnly)) return QByteArray(); const auto bytes = ini.readAll(); ini.close(); return bytes; };
+    const auto beforeDisk = disk();
+    check(!beforeDisk.isEmpty(), "owned fixture INI is readable");
+    check(mapper->mappingAdditionAllowed(target), "GUI lane is idle and cleanup complete");
+    int notifications = 0;
+    const auto observer = QObject::connect(mapper, &QKeyMapper::keyMappingTableItemCheckStateChanged_Signal,
+        mapper, [&](int, int, bool) { ++notifications; });
+    const auto disconnect = qScopeGuard([=] { QObject::disconnect(observer); });
+    const auto prepare = [&] { return mapper->prepareMappingAddition(target, QKeyMapper::KeyMappingDataList->size(),
+        QStringLiteral("A"), QStringLiteral("B")); };
+    const auto before = snapshot();
+    const auto plan = prepare();
+    check(plan.ok() && snapshot() == before && notifications == 0 && disk() == beforeDisk,
+        "pure analysis leaves all source fields, derived values, dirty, view, notifications and disk unchanged");
+    // Combo values are fixture preconditions; adding is driven only by Qt mouse events.
+    original->setCurrentText(QStringLiteral("A"));
+    mapping->setCurrentText(QStringLiteral("B"));
+    record->clear();
+    if (plain) {
+        clickMappingButton(add);
+        check(QKeyMapper::KeyMappingDataList->size() == 2 && mapper->m_SaveSettingDirty, "GUI added one dirty row");
+        if (QKeyMapper::KeyMappingDataList->size() == 2) {
+            const auto row = QKeyMapper::KeyMappingDataList->last();
+            check(row.Original_Key == QStringLiteral("A") && row.Mapping_Keys == QStringList{QStringLiteral("B")}
+                && row.MappingKeys_KeyUp == row.Mapping_Keys && row.Pure_OriginalKeys == QStringList{QStringLiteral("A")}
+                && row.Pure_MappingKeys == row.Mapping_Keys && row.Pure_MappingKeys_KeyUp == row.Mapping_Keys
+                && !row.Disabled && !row.Burst && !row.Lock && row.RepeatMode == REPEAT_MODE_NONE
+                && row.SendTiming == SENDTIMING_NORMAL, "independent ordinary-row and derived-state expectations");
+        }
+        const auto gui = snapshot();
+        reset();
+        check(mapper->commitMappingAddition(prepare(), true).isValid && snapshot() == gui,
+            "shared commit matches independent GUI-event result including full serialized and derived fields");
+        reset();
+        const auto insertion = mapper->prepareMappingAddition(target, 0, QStringLiteral("A"), QStringLiteral("B"));
+        check(insertion.ok() && mapper->commitMappingAddition(insertion, true).isValid
+            && QKeyMapper::KeyMappingDataList->first().Original_Key == QStringLiteral("A")
+            && QKeyMapper::KeyMappingDataList->last().Original_Key == QStringLiteral("C")
+            && mapper->m_KeyMappingDataTable->currentRow() == 0, "explicit insertion ignores ambient selection");
+        reset();
+        check(!mapper->prepareMappingAddition(target, 0, QStringLiteral("QkmInvalidOriginal"), QStringLiteral("B")).ok()
+            && !mapper->prepareMappingAddition(target, 0, QStringLiteral("A"), QStringLiteral("B»")).ok()
+            && !mapper->prepareMappingAddition(target, -1, QStringLiteral("A"), QStringLiteral("B")).ok()
+            && snapshot() == before, "invalid keys, empty sequence segment and insertion bounds do not change data");
+        for (const auto &keys : {qMakePair(QStringLiteral("A+B"), QStringLiteral("C+D")),
+            qMakePair(QStringLiteral("A⏲200"), QStringLiteral("B⏱20")),
+            qMakePair(QStringLiteral("A✖300"), QStringLiteral("B»C")),
+            qMakePair(QStringLiteral("SendOnMappingStop"), QStringLiteral("E"))}) {
+            reset();
+            const auto parsed = mapper->prepareMappingAddition(target, 1, keys.first, keys.second);
+            check(parsed.ok() && mapper->commitMappingAddition(parsed, true).isValid
+                && QKeyMapper::KeyMappingDataList->last().Original_Key == keys.first
+                && QKeyMapper::KeyMappingDataList->last().Mapping_Keys.join(QStringLiteral("»")) == keys.second,
+                "shared parser retains combinations, time suffixes, sequences and stop-action keys");
+        }
+    } else if (mode == QStringLiteral("mapping_add_conflicts")) {
+        check(plan.disableRows.size() == 2 && !plan.confirmationMessage.isEmpty(), "two normal-source conflicts are explicit");
+        const auto guiChoice = [&](QMessageBox::StandardButton choice) {
+            int replies = 0;
+            QTimer answer;
+            QObject::connect(&answer, &QTimer::timeout, mapper, [&] {
+                auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+                if (!box || !box->button(choice)) return;
+                answer.stop();
+                ++replies;
+                clickMappingButton(box->button(choice));
+            });
+            answer.start(10);
+            clickMappingButton(add);
+            answer.stop();
+            return replies == 1;
+        };
+        check(guiChoice(QMessageBox::No) && snapshot() == before && notifications == 0, "GUI conflict cancellation is a zero-change operation");
+        check(!mapper->commitMappingAddition(plan, false).isValid && snapshot() == before && notifications == 0,
+            "shared commit refuses unconfirmed conflicts without partial disables");
+        check(guiChoice(QMessageBox::Yes), "GUI conflict confirmation is handled through its modal button");
+        const auto gui = snapshot();
+        check(QKeyMapper::KeyMappingDataList->size() == 1 && !QKeyMapper::KeyMappingDataList->first().Disabled
+            && notifications == 2 && mapper->m_SaveSettingDirty, "GUI common addition applies both conflict disables");
+        for (const auto &row : plan.disableRows) {
+            check(QKeyMapper::s_KeyMappingTabInfoList.at(row.first).KeyMappingData->at(row.second).Disabled,
+                "conflicting normal row is disabled");
+        }
+        reset(); notifications = 0;
+        check(mapper->commitMappingAddition(prepare(), true).isValid && snapshot() == gui && notifications == 2,
+            "shared conflict commit matches full GUI result and notifications");
+    } else if (mode == QStringLiteral("mapping_add_guards")) {
+        for (auto state : {QKeyMapper::KEYMAP_CHECKING, QKeyMapper::KEYMAP_MAPPING_GLOBAL,
+            QKeyMapper::KEYMAP_MAPPING_MATCHED, QKeyMapper::KEYMAP_STOPPING}) {
+            const QScopedValueRollback<decltype(mapper->m_KeyMapStatus)> status(mapper->m_KeyMapStatus, state);
+            check(!prepare().ok() && !mapper->commitMappingAddition(plan, true).isValid
+                && snapshot() == before && notifications == 0, "non-idle state rejects analysis and commit without partial changes");
+            clickMappingButton(add);
+            check(snapshot() == before && notifications == 0, "GUI events cannot bypass the shared non-idle guard");
+        }
+        QKeyMapper_Worker::s_MappingInputClosed.storeRelease(true);
+        check(!prepare().ok() && !mapper->commitMappingAddition(plan, true).isValid && snapshot() == before,
+            "Worker stopped alone does not bypass cleanup admission");
+        QKeyMapper_Worker::s_MappingInputClosed.storeRelease(false);
+        {
+            InputProducerWorkItem producer;
+            check(!prepare().ok() && !mapper->commitMappingAddition(plan, true).isValid && snapshot() == before,
+                "active producer prevents partial source modification");
+        }
+        {
+            const QScopedValueRollback<bool> loading(mapper->m_MappingSourceLoading, true);
+            check(!prepare().ok() && !mapper->commitMappingAddition(plan, true).isValid && snapshot() == before,
+                "load in progress refuses edits");
+        }
+        check(mapper->mappingAdditionAllowed(target), "guard is restored after temporary blocking conditions");
+    } else if (mode == QStringLiteral("mapping_add_stale")) {
+        {
+            const QScopedValueRollback<quint64> generation(mapper->m_MappingLoadGeneration, mapper->m_MappingLoadGeneration + 1);
+            check(!mapper->commitMappingAddition(plan, true).isValid && snapshot() == before, "changed load generation rejects the old decision");
+        }
+        {
+            const QScopedValueRollback<quint64> epoch(mapper->m_AutomationSourceEpoch, mapper->m_AutomationSourceEpoch + 1);
+            check(!mapper->commitMappingAddition(plan, true).isValid && snapshot() == before, "changed source structure rejects the old decision");
+        }
+        // Keep the epoch unchanged so recomputed conflict decisions must reject this edit themselves.
+        QKeyMapper::s_KeyMappingTabInfoList[normalIndex].KeyMappingData->first().Original_Key = QStringLiteral("F1");
+        const auto changed = snapshot();
+        check(!mapper->commitMappingAddition(plan, true).isValid && snapshot() == changed && notifications == 0,
+            "changed conflicts are refused before disabling any remaining row");
+        reset();
+        const auto tabPlan = prepare();
+        mapper->forceSwitchKeyMappingTabWidgetIndex(normalIndex);
+        const auto otherTab = snapshot();
+        check(tabPlan.ok() && !mapper->commitMappingAddition(tabPlan, true).isValid && snapshot() == otherTab,
+            "changing the current GUI target rejects the old decision without modifying either source");
+        reset();
+        const auto runtimePlan = prepare();
+        QKeyMapper_Worker::s_SourceReadAccess.observeRuntimeLifecycle();
+        check(runtimePlan.ok() && !mapper->commitMappingAddition(runtimePlan, true).isValid && snapshot() == before,
+            "runtime activity invalidates the old decision even when GUI is idle again");
+    } else if (setup) {
+        mapper->addFixedDefaultMappingAndOpenSetup();
+        check(QKeyMapper::KeyMappingDataList->size() == 2 && mapper->m_ItemSetupDialog->isVisible()
+            && mapper->m_ItemSetupDialog->getTabIndex() == normalIndex && mapper->m_ItemSetupDialog->getItemRow() == 1
+            && QKeyMapper::KeyMappingDataList->at(1).Original_Key == QStringLiteral("A")
+            && QKeyMapper::KeyMappingDataList->at(1).Mapping_Keys == QStringList{QStringLiteral("A")}
+            && mapper->m_KeyMappingDataTable->rowCount() > QKeyMapper::KeyMappingDataList->size(),
+            "fixed GUI adapter opens the new local A row, not the appended Common row");
+        mapper->closeItemSetupDialog();
+    }
+    check(disk() == beforeDisk, "no analysis or memory commit silently persists other drafts");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+        {QStringLiteral("notifications"), notifications}, {QStringLiteral("desktop_input"), false},
+        {QStringLiteral("formal_mcp"), false}};
+}
+
 Q_COREAPP_STARTUP_FUNCTION(installLifecycleTest)
 #define main qkmProductMain
 #include "../../main.cpp"
@@ -1397,7 +1636,9 @@ int main(int argc, char *argv[])
         QStringLiteral("gui_stop_exit"), QStringLiteral("closed_input_tracking"),
         QStringLiteral("gui_stop_repeat"), QStringLiteral("gui_stop_after_timeout"),
         QStringLiteral("gui_stop_restore"), QStringLiteral("gui_stop_restore_timeout"), QStringLiteral("runtime_revision"),
-        QStringLiteral("hold_source_context"), QStringLiteral("unlock_source_context"), QStringLiteral("inactive_virtual_release")};
+        QStringLiteral("hold_source_context"), QStringLiteral("unlock_source_context"), QStringLiteral("inactive_virtual_release"),
+        QStringLiteral("mapping_add_plain"), QStringLiteral("mapping_add_conflicts"), QStringLiteral("mapping_add_guards"),
+        QStringLiteral("mapping_add_stale"), QStringLiteral("mapping_add_setup")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -1476,6 +1717,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("lifecycleDispatchTrace"), QJsonArray::fromStringList(result->lifecycleDispatchTrace)},
         {QStringLiteral("sourceContextTrace"), QJsonArray::fromStringList(result->sourceContextTrace)},
         {QStringLiteral("virtualReleaseTrace"), QJsonArray::fromStringList(result->virtualReleaseTrace)},
+        {QStringLiteral("mappingAddition"), result->mappingAdditionEvidence},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};
