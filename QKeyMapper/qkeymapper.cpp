@@ -22608,6 +22608,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
             m[KEYMAPDATA_ORIGINALKEYS] = d.Original_Key;
             m[KEYMAPDATA_MAPPINGKEYS] = d.Mapping_Keys;
             m[KEYMAPDATA_MAPPINGKEYS_KEYUP] = d.MappingKeys_KeyUp;
+            m[KEYMAPDATA_MAPPINGKEYS_COMMENTS] = d.MappingKeys_Comments;
+            m[KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS] = d.MappingKeys_KeyUp_Comments;
             m[KEYMAPDATA_NOTE] = d.Note;
             m[KEYMAPDATA_CATEGORY] = d.Category;
             m[KEYMAPDATA_DISABLED] = d.Disabled;
@@ -27647,6 +27649,8 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 d.Original_Key = m.value(KEYMAPDATA_ORIGINALKEYS).toString();
                 d.Mapping_Keys = m.value(KEYMAPDATA_MAPPINGKEYS).toStringList();
                 d.MappingKeys_KeyUp = m.value(KEYMAPDATA_MAPPINGKEYS_KEYUP).toStringList();
+                d.MappingKeys_Comments = m.value(KEYMAPDATA_MAPPINGKEYS_COMMENTS).toStringList();
+                d.MappingKeys_KeyUp_Comments = m.value(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS).toStringList();
                 d.Note = m.value(KEYMAPDATA_NOTE).toString();
                 d.Category = m.value(KEYMAPDATA_CATEGORY).toString();
                 d.Disabled = m.value(KEYMAPDATA_DISABLED).toBool();

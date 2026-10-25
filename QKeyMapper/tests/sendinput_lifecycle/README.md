@@ -54,3 +54,7 @@ MAP-67-C1-A辅助保存用例：先在同一自有runtime运行`settings_seriali
 C1-B1的`settings_general_save`在自有runtime准备合法A→B、四种按键收藏／历史及固定窗口位置，再通过Qt鼠标事件点击真实“保存设定”按钮。检查共用内容生成不写盘／dirty／加载或映射，语言采样的中英日／回退语义，以及实际保存、重载、dirty和几何基线。可用合成INI的SaveWindowSize／SaveSplitterPosition覆盖开启／关闭条件。
 
 提取前先用旧生产保存代码生成基线INI；提取后通过`QKM_LIFECYCLE_SAVE_BASELINE`传入同一out任务目录下的baseline-*.ini。两份磁盘图像用独立QSettings解析后比较完整键集合／值，避免同路径共享缓存中的QStringList与磁盘解析表示造成假失败；原始INI字节也由控制器核对。不得用新共用函数代替旧GUI基线，不把本用例当作正式MCP保存或完整冷启动验收。
+
+SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准备含按下／抬起序列备注的共通行，关闭共通表后用真实GUI保存；保留INI再独立运行`common_comments_cold`。`common_comments_attached`覆盖共通表开启时的源行和备份；`common_comments_legacy`读取修复前、没有两个可选备注字段的合成旧文件，应保持空备注且不重写文件。冷读需保留对应INI，不能重新复制空模板。
+
+结果位于`commonComments.checks`。修复前只接受两条备注保存／加载检查为预期红例，其他配置、加载完成、停止态和零尾部作业必须通过；修复后全部通过。单行其他配置比较复用MAP_KEYDATA::operator==，其Pure／LockState排除语义不变；不能据单行比较替代MCP的完整修订、身份、权限、状态及到期校验。临时普通副本不证明High／输入效果，也不是GUI备注编辑与MCP编辑的完整对照。

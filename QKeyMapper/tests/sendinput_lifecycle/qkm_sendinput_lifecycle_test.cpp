@@ -60,6 +60,7 @@ public:
     static QJsonObject equality(QKeyMapper *mapper);
     static QJsonObject serialization(QKeyMapper *mapper, bool cold);
     static QJsonObject generalSave(QKeyMapper *mapper);
+    static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
 };
 
 namespace {
@@ -142,6 +143,7 @@ struct LifecycleResult {
     QJsonObject mappingEqualityEvidence;
     QJsonObject settingsSerializationEvidence;
     QJsonObject settingsGeneralEvidence;
+    QJsonObject commonCommentsEvidence;
 };
 LifecycleResult *result = nullptr;
 
@@ -1151,6 +1153,13 @@ void installLifecycleTest()
 {
     QTimer::singleShot(0, QCoreApplication::instance(), []() {
         const QString guiMode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+        if (guiMode.startsWith(QStringLiteral("common_comments"))) {
+            result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
         if (guiMode == QStringLiteral("settings_general_save")) {
             result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::generalSave(QKeyMapper::getInstance());
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
@@ -2011,6 +2020,84 @@ QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper)
         {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::commonComments(QKeyMapper *mapper, const QString &mode)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    if (!QDir::currentPath().contains(QStringLiteral("/out/")) || QDir::currentPath() != QCoreApplication::applicationDirPath()) {
+        return {{QStringLiteral("passed"), false}};
+    }
+    const bool cold = mode.endsWith(QStringLiteral("_cold")) || mode.endsWith(QStringLiteral("_legacy"));
+    const bool legacy = mode.endsWith(QStringLiteral("_legacy"));
+    const bool attached = mode.endsWith(QStringLiteral("_attached"));
+    MAP_KEYDATA expected = mapper->createDefaultKeyMappingData(QStringLiteral("F13"), QStringLiteral("A»B"), false);
+    expected.MappingKeys_KeyUp = QStringList{QStringLiteral("C"), QStringLiteral("D")};
+    expected.Pure_MappingKeys_KeyUp = expected.MappingKeys_KeyUp;
+    expected.MappingKeys_Comments = QStringList{QStringLiteral("中文😀\npress"), QString()};
+    expected.MappingKeys_KeyUp_Comments = QStringList{QStringLiteral("release\\0"), QStringLiteral("日本語")};
+    expected.Note = QStringLiteral("Common note");
+    expected.FloatingButton_SyncGroupId = 17;
+    if (!cold) {
+        auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+        auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+        if (!name || !save || mapper->m_KeyMapStatus != QKeyMapper::KEYMAP_IDLE || !save->isEnabled()) {
+            return {{QStringLiteral("passed"), false}};
+        }
+        mapper->m_MappingAdvancedDialog->setCommonMappingTableEnabled(true);
+        mapper->updateCommonMappingTabVisibility();
+        const int common = QKeyMapper::findCommonMappingTabIndex();
+        const int normal = QKeyMapper::firstNormalMappingTabIndex();
+        if (common < 0 || normal < 0) return {{QStringLiteral("passed"), false}};
+        *QKeyMapper::s_KeyMappingTabInfoList.at(common).KeyMappingData = QList<MAP_KEYDATA>{expected};
+        *QKeyMapper::s_KeyMappingTabInfoList.at(normal).KeyMappingData = QList<MAP_KEYDATA>{
+            mapper->createDefaultKeyMappingData(QStringLiteral("G"), QStringLiteral("H"), false)};
+        mapper->forceSwitchKeyMappingTabWidgetIndex(normal);
+        mapper->refreshTabsForSourceTabChange(normal);
+        if (!attached) {
+            mapper->m_MappingAdvancedDialog->setCommonMappingTableEnabled(false);
+            mapper->updateCommonMappingTabVisibility();
+        }
+        name->setText(QStringLiteral("Common71"));
+        mapper->markSaveSettingDirty();
+        clickMappingButton(save);
+    }
+    check(mapper->m_LoadedMappingSettingGroup == QStringLiteral("Common71") && !mapper->m_SaveSettingDirty
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED,
+        "GUI save or cold load completes while mapping remains stopped");
+    check((QKeyMapper::findCommonMappingTabIndex() >= 0) == attached, "common source attachment matches the selected fixture");
+    if (mapper->m_CommonMappingData.size() != 1) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    const auto actual = mapper->m_CommonMappingData.first();
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    const auto stored = ini.value(QStringLiteral("Common71/") + COMMONMAPPINGDATA).toList();
+    if (stored.size() != 1) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    const auto fields = stored.first().toMap();
+    if (legacy) { expected.MappingKeys_Comments.clear(); expected.MappingKeys_KeyUp_Comments.clear(); }
+    check(actual.MappingKeys_Comments == expected.MappingKeys_Comments
+        && fields.value(KEYMAPDATA_MAPPINGKEYS_COMMENTS).toStringList() == expected.MappingKeys_Comments,
+        "common down-sequence comments survive standalone saving and loading");
+    check(actual.MappingKeys_KeyUp_Comments == expected.MappingKeys_KeyUp_Comments
+        && fields.value(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS).toStringList() == expected.MappingKeys_KeyUp_Comments,
+        "common up-sequence comments survive standalone saving and loading");
+    auto otherFields = actual;
+    otherFields.MappingKeys_Comments = expected.MappingKeys_Comments;
+    otherFields.MappingKeys_KeyUp_Comments = expected.MappingKeys_KeyUp_Comments;
+    check(otherFields == expected, "all other existing common configuration fields retain their values");
+    if (attached) {
+        const auto *source = QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::findCommonMappingTabIndex()).KeyMappingData;
+        check(source && source->size() == 1 && source->first() == expected, "attached common source retains the same configuration");
+    }
+    if (legacy) check(!fields.contains(KEYMAPDATA_MAPPINGKEYS_COMMENTS) && !fields.contains(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS),
+        "old files without optional comment fields keep empty comments");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
 Q_COREAPP_STARTUP_FUNCTION(installLifecycleTest)
 #define main qkmProductMain
 #include "../../main.cpp"
@@ -2039,7 +2126,9 @@ int main(int argc, char *argv[])
         QStringLiteral("hold_source_context"), QStringLiteral("unlock_source_context"), QStringLiteral("inactive_virtual_release"),
         QStringLiteral("mapping_add_plain"), QStringLiteral("mapping_add_conflicts"), QStringLiteral("mapping_add_guards"),
         QStringLiteral("mapping_add_stale"), QStringLiteral("mapping_add_setup"), QStringLiteral("mapping_config_equality"),
-        QStringLiteral("settings_serialization"), QStringLiteral("settings_serialization_cold"), QStringLiteral("settings_general_save")};
+        QStringLiteral("settings_serialization"), QStringLiteral("settings_serialization_cold"), QStringLiteral("settings_general_save"),
+        QStringLiteral("common_comments"), QStringLiteral("common_comments_cold"), QStringLiteral("common_comments_legacy"),
+        QStringLiteral("common_comments_attached")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -2122,6 +2211,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("mappingEquality"), result->mappingEqualityEvidence},
         {QStringLiteral("settingsSerialization"), result->settingsSerializationEvidence},
         {QStringLiteral("settingsGeneral"), result->settingsGeneralEvidence},
+        {QStringLiteral("commonComments"), result->commonCommentsEvidence},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};
