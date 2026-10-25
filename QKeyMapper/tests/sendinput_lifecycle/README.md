@@ -50,3 +50,7 @@ EQ-68 `mapping_config_equality`：`mappingEquality.checks` 覆盖同步组单独
 MAP-67-C1-A辅助保存用例：先在同一自有runtime运行`settings_serialization`，正常退出后保留该合成INI，再启动独立进程运行`settings_serialization_cold`。runtime必须在out且为EXE所在目录；不复用个人INI。结果位于`settingsSerialization.checks`，要求实际私有桌面、进程身份／权限、exit0及零尾部作业。此数据／文件检查可用明确记录的临时asInvoker维护副本，正式manifest不变；不能据此证明High／驱动或权限通信行为。
 
 用例核对忽略规则的全部字段／枚举及顺序，普通／通用宏的作用域、Unicode、备注和含空项的QVariantList注释，同步组说明忽略空值及保留ID；纯序列化不写盘／dirty且不保留可变数据别名。复用原保存／加载入口验证精确内容、空组名无操作、空列表清除旧值、无关配置／全局键不变及独立冷进程读回。主进程为身份核对短暂保留两秒；没有系统输入、映射启动或正式MCP保存请求，不能把辅助字段读回当成完整保存闭环或原保存失败路径已重新通过。
+
+C1-B1的`settings_general_save`在自有runtime准备合法A→B、四种按键收藏／历史及固定窗口位置，再通过Qt鼠标事件点击真实“保存设定”按钮。检查共用内容生成不写盘／dirty／加载或映射，语言采样的中英日／回退语义，以及实际保存、重载、dirty和几何基线。可用合成INI的SaveWindowSize／SaveSplitterPosition覆盖开启／关闭条件。
+
+提取前先用旧生产保存代码生成基线INI；提取后通过`QKM_LIFECYCLE_SAVE_BASELINE`传入同一out任务目录下的baseline-*.ini。两份磁盘图像用独立QSettings解析后比较完整键集合／值，避免同路径共享缓存中的QStringList与磁盘解析表示造成假失败；原始INI字节也由控制器核对。不得用新共用函数代替旧GUI基线，不把本用例当作正式MCP保存或完整冷启动验收。

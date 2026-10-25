@@ -10488,14 +10488,6 @@ bool QKeyMapper::clearKeyListRecentItems(KeyListCollectionType collectionType)
     return true;
 }
 
-void QKeyMapper::saveKeyListSharedCollectionsToINI(QSettings &settingFile) const
-{
-    settingFile.setValue(KEYLISTCOMBOBOX_FAVORITE_ORIGINAL_KEYS, m_FavoriteOriginalKeys);
-    settingFile.setValue(KEYLISTCOMBOBOX_RECENT_ORIGINAL_KEYS, m_RecentOriginalKeys);
-    settingFile.setValue(KEYLISTCOMBOBOX_FAVORITE_MAPPING_KEYS, m_FavoriteMappingKeys);
-    settingFile.setValue(KEYLISTCOMBOBOX_RECENT_MAPPING_KEYS, m_RecentMappingKeys);
-}
-
 void QKeyMapper::loadKeyListSharedCollectionsFromINI(QSettings &settingFile)
 {
     const auto normalizeItems = [](QStringList &items, int maxCount = -1) {
@@ -21169,6 +21161,120 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
     refreshAllKeyMappingTabWidget();
 }
 
+OrderedMap<QString, QVariant> QKeyMapper::collectGeneralSettingSaveValues(int languageIndex) const
+{
+    OrderedMap<QString, QVariant> values;
+    values.insert(LAST_WINDOWPOSITION, pos());
+    values.insert(LAST_WINDOW_SIZE, m_normalWindowBaseSize);
+    values.insert(SAVE_WINDOW_SIZE, m_GeneralAdvancedDialog->getSaveWindowSize());
+    bool saveSplitter = m_GeneralAdvancedDialog->getSaveSplitterPosition();
+    values.insert(SAVE_SPLITTER_POSITION, saveSplitter);
+    if (saveSplitter && ui->mainTableSplitter && m_ProcessListVisible) {
+        QList<int> sizes = ui->mainTableSplitter->sizes();
+        if (sizes.size() == 2 && sizes[0] > 0 && sizes[1] > 0) {
+            values.insert(LAST_SPLITTER_POSITION, QString("%1,%2").arg(sizes[0]).arg(sizes[1]));
+        }
+    }
+
+    QString productVersion = getExeProductVersion();
+    QString platformString = getPlatformString();
+    if (!productVersion.isEmpty()) {
+        values.insert(PROGRAM_VERSION, productVersion);
+    }
+    if (!platformString.isEmpty()) {
+        values.insert(PROGRAM_PLATFORM, platformString);
+    }
+
+    if (LANGUAGE_ENGLISH == languageIndex) {
+        values.insert(LANGUAGE_INDEX , LANGUAGE_ENGLISH);
+    }
+    else if (LANGUAGE_JAPANESE == languageIndex) {
+        values.insert(LANGUAGE_INDEX , LANGUAGE_JAPANESE);
+    }
+    else {
+        values.insert(LANGUAGE_INDEX , LANGUAGE_CHINESE);
+    }
+
+    values.insert(PLAY_SOUNDEFFECT, isSoundEffectEnabled());
+    values.insert(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
+    values.insert(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
+    values.insert(CLOSETO_SYSTEMTRAY, ui->closeToSystemTrayCheckBox->isChecked());
+    values.insert(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
+    values.insert(SHOW_PROCESSLIST, m_ProcessListVisible);
+    values.insert(SHOW_NOTES, m_ShowNotes);
+    values.insert(HIDE_DISABLED, m_HideDisabled);
+    values.insert(SHOW_FLOATING, m_ShowFloating);
+    values.insert(SHOW_CATEGORYS, m_ShowCategory);
+    values.insert(FLOATINGBUTTON_SHOW_DRAG_COORDINATE, m_FloatingButton_ShowDragCoordinate);
+    values.insert(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
+    int display_scale = ui->scaleComboBox->currentData().toInt();
+    values.insert(DISPLAY_SCALE , display_scale);
+    values.insert(THEME_COLOR , ui->themeComboBox->currentIndex());
+    if (m_GeneralAdvancedDialog) {
+        values.insert(EDITMODE_TRIGGER, m_GeneralAdvancedDialog->getTableEditModeTrigger());
+        values.insert(TABLE_INSERTMODE, m_GeneralAdvancedDialog->getTableInsertMode());
+        values.insert(GLOBALMAPPING_DISABLE_IN_FULLSCREEN, m_GeneralAdvancedDialog->getDisableGlobalMappingInFullscreen());
+        values.insert(GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES, m_GeneralAdvancedDialog->getGlobalMappingFullscreenAllowedProcesses());
+    }
+
+    QColor notification_fontcolor;
+    QString notification_fontcolor_name;
+    notification_fontcolor = m_NotificationSetupDialog->getNotification_FontColor();
+    if (notification_fontcolor.isValid()) {
+        notification_fontcolor_name = notification_fontcolor.name();
+    }
+    QColor notification_bgcolor;
+    QString notification_bgcolor_name;
+    notification_bgcolor = m_NotificationSetupDialog->getNotification_BackgroundColor();
+    if (notification_bgcolor.isValid()) {
+        notification_bgcolor_name = notification_bgcolor.name(QColor::HexArgb);
+    }
+    values.insert(NOTIFICATION_FONTCOLOR,        notification_fontcolor_name);
+    values.insert(NOTIFICATION_BACKGROUNDCOLOR,  notification_bgcolor_name);
+    values.insert(NOTIFICATION_FONTSIZE,         m_NotificationSetupDialog->getNotification_FontSize());
+    values.insert(NOTIFICATION_FONTWEIGHT,       m_NotificationSetupDialog->getNotification_FontWeight());
+    values.insert(NOTIFICATION_FONTITALIC,       m_NotificationSetupDialog->getNotification_FontIsItalic());
+    values.insert(NOTIFICATION_FONTFAMILY,       m_NotificationSetupDialog->getNotification_FontFamily());
+    values.insert(NOTIFICATION_DISPLAYDURATION,  m_NotificationSetupDialog->getNotification_DisplayDuration());
+    values.insert(NOTIFICATION_FADEINDURATION,   m_NotificationSetupDialog->getNotification_FadeInDuration());
+    values.insert(NOTIFICATION_FADEOUTDURATION,  m_NotificationSetupDialog->getNotification_FadeOutDuration());
+    values.insert(NOTIFICATION_BORDERRADIUS,     m_NotificationSetupDialog->getNotification_BorderRadius());
+    values.insert(NOTIFICATION_PADDING,          m_NotificationSetupDialog->getNotification_Padding());
+    values.insert(NOTIFICATION_OPACITY,          m_NotificationSetupDialog->getNotification_Opacity());
+    values.insert(NOTIFICATION_X_OFFSET,         m_NotificationSetupDialog->getNotification_X_Offset());
+    values.insert(NOTIFICATION_Y_OFFSET,         m_NotificationSetupDialog->getNotification_Y_Offset());
+
+    if (m_GeneralAdvancedDialog) {
+        values.insert(STARTUP_POSITION_INDEX,        m_GeneralAdvancedDialog->getStartupPosition());
+        values.insert(STARTUP_POSITION_SPECIFYPOINT, m_GeneralAdvancedDialog->getSpecifyStartupPosition());
+        values.insert(GLOBALSETTING_SWITCH_TIMEOUT, static_cast<int>(m_GeneralAdvancedDialog->getGlobalSettingSwitchTimeout()));
+    }
+    if (m_ItemSetupDialog != Q_NULLPTR
+        && m_ItemSetupDialog->m_FloatingButtonSetupDialog != Q_NULLPTR) {
+        values.insert(FLOATINGBUTTON_SETUP_LAYOUT_MODE,
+                             m_ItemSetupDialog->m_FloatingButtonSetupDialog->getPreferredLayoutMode());
+    }
+
+    values.insert(TRAYICON_IDLE , m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon());
+    values.insert(TRAYICON_MONITORING , m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon());
+    values.insert(TRAYICON_GLOBAL , m_TrayIconSelectDialog->getTrayIcon_GlobalStateIcon());
+    values.insert(TRAYICON_MATCHED , m_TrayIconSelectDialog->getTrayIcon_MatchedStateIcon());
+    if (UPDATE_SITE_GITEE == ui->updateSiteComboBox->currentIndex()) {
+        values.insert(UPDATE_SITE, UPDATE_SITE_GITEE);
+    }
+    else {
+        values.insert(UPDATE_SITE, UPDATE_SITE_GITHUB);
+    }
+    values.insert(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
+    values.insert(VIRTUAL_GAMEPADLIST, QKeyMapper_Worker::s_VirtualGamepadList);
+
+    values.insert(KEYLISTCOMBOBOX_FAVORITE_ORIGINAL_KEYS, m_FavoriteOriginalKeys);
+    values.insert(KEYLISTCOMBOBOX_RECENT_ORIGINAL_KEYS, m_RecentOriginalKeys);
+    values.insert(KEYLISTCOMBOBOX_FAVORITE_MAPPING_KEYS, m_FavoriteMappingKeys);
+    values.insert(KEYLISTCOMBOBOX_RECENT_MAPPING_KEYS, m_RecentMappingKeys);
+    return values;
+}
+
 bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
@@ -21313,118 +21419,15 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(SETTINGSELECT, saveSettingSelectStr);
     saveSettingSelectStr += "/";
 
-    // m_LastWindowPosition = pos();
-    settingFile.setValue(LAST_WINDOWPOSITION, pos());
-    settingFile.setValue(LAST_WINDOW_SIZE, m_normalWindowBaseSize);
+    const auto generalValues = collectGeneralSettingSaveValues(languageIndex);
+    for (auto it = generalValues.begin(); it != generalValues.end(); ++it) {
+        settingFile.setValue(it.key(), it.value());
+    }
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[UI_SCALE] SAVE seq=" << m_uiScaleDiagnosticSequence
              << "base=" << m_normalWindowBaseSize << "size=" << size()
              << "R=" << m_runtimeScaleCompensation;
 #endif
-    settingFile.setValue(SAVE_WINDOW_SIZE, m_GeneralAdvancedDialog->getSaveWindowSize());
-    bool saveSplitter = m_GeneralAdvancedDialog->getSaveSplitterPosition();
-    settingFile.setValue(SAVE_SPLITTER_POSITION, saveSplitter);
-    if (saveSplitter && ui->mainTableSplitter && m_ProcessListVisible) {
-        QList<int> sizes = ui->mainTableSplitter->sizes();
-        if (sizes.size() == 2 && sizes[0] > 0 && sizes[1] > 0) {
-            settingFile.setValue(LAST_SPLITTER_POSITION, QString("%1,%2").arg(sizes[0]).arg(sizes[1]));
-        }
-    }
-
-    QString productVersion = getExeProductVersion();
-    QString platformString = getPlatformString();
-    if (!productVersion.isEmpty()) {
-        settingFile.setValue(PROGRAM_VERSION, productVersion);
-    }
-    if (!platformString.isEmpty()) {
-        settingFile.setValue(PROGRAM_PLATFORM, platformString);
-    }
-
-    if (LANGUAGE_ENGLISH == languageIndex) {
-        settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_ENGLISH);
-    }
-    else if (LANGUAGE_JAPANESE == languageIndex) {
-        settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_JAPANESE);
-    }
-    else {
-        settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
-    }
-
-    settingFile.setValue(PLAY_SOUNDEFFECT, isSoundEffectEnabled());
-    settingFile.setValue(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
-    settingFile.setValue(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
-    settingFile.setValue(CLOSETO_SYSTEMTRAY, ui->closeToSystemTrayCheckBox->isChecked());
-    settingFile.setValue(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
-    settingFile.setValue(SHOW_PROCESSLIST, m_ProcessListVisible);
-    settingFile.setValue(SHOW_NOTES, m_ShowNotes);
-    settingFile.setValue(HIDE_DISABLED, m_HideDisabled);
-    settingFile.setValue(SHOW_FLOATING, m_ShowFloating);
-    settingFile.setValue(SHOW_CATEGORYS, m_ShowCategory);
-    settingFile.setValue(FLOATINGBUTTON_SHOW_DRAG_COORDINATE, m_FloatingButton_ShowDragCoordinate);
-    settingFile.setValue(NOTIFICATION_POSITION , ui->notificationComboBox->currentIndex());
-    int display_scale = ui->scaleComboBox->currentData().toInt();
-    settingFile.setValue(DISPLAY_SCALE , display_scale);
-    settingFile.setValue(THEME_COLOR , ui->themeComboBox->currentIndex());
-    if (m_GeneralAdvancedDialog) {
-        settingFile.setValue(EDITMODE_TRIGGER, m_GeneralAdvancedDialog->getTableEditModeTrigger());
-        settingFile.setValue(TABLE_INSERTMODE, m_GeneralAdvancedDialog->getTableInsertMode());
-        settingFile.setValue(GLOBALMAPPING_DISABLE_IN_FULLSCREEN, m_GeneralAdvancedDialog->getDisableGlobalMappingInFullscreen());
-        settingFile.setValue(GLOBALMAPPING_FULLSCREEN_ALLOWED_PROCESSES, m_GeneralAdvancedDialog->getGlobalMappingFullscreenAllowedProcesses());
-    }
-
-    QColor notification_fontcolor;
-    QString notification_fontcolor_name;
-    notification_fontcolor = m_NotificationSetupDialog->getNotification_FontColor();
-    if (notification_fontcolor.isValid()) {
-        notification_fontcolor_name = notification_fontcolor.name();
-    }
-    QColor notification_bgcolor;
-    QString notification_bgcolor_name;
-    notification_bgcolor = m_NotificationSetupDialog->getNotification_BackgroundColor();
-    if (notification_bgcolor.isValid()) {
-        notification_bgcolor_name = notification_bgcolor.name(QColor::HexArgb);
-    }
-    settingFile.setValue(NOTIFICATION_FONTCOLOR,        notification_fontcolor_name);
-    settingFile.setValue(NOTIFICATION_BACKGROUNDCOLOR,  notification_bgcolor_name);
-    // settingFile.setValue(NOTIFICATION_FONTCOLOR,        m_NotificationSetupDialog->getNotification_FontColor());
-    // settingFile.setValue(NOTIFICATION_BACKGROUNDCOLOR,  m_NotificationSetupDialog->getNotification_BackgroundColor());
-    settingFile.setValue(NOTIFICATION_FONTSIZE,         m_NotificationSetupDialog->getNotification_FontSize());
-    settingFile.setValue(NOTIFICATION_FONTWEIGHT,       m_NotificationSetupDialog->getNotification_FontWeight());
-    settingFile.setValue(NOTIFICATION_FONTITALIC,       m_NotificationSetupDialog->getNotification_FontIsItalic());
-    settingFile.setValue(NOTIFICATION_FONTFAMILY,       m_NotificationSetupDialog->getNotification_FontFamily());
-    settingFile.setValue(NOTIFICATION_DISPLAYDURATION,  m_NotificationSetupDialog->getNotification_DisplayDuration());
-    settingFile.setValue(NOTIFICATION_FADEINDURATION,   m_NotificationSetupDialog->getNotification_FadeInDuration());
-    settingFile.setValue(NOTIFICATION_FADEOUTDURATION,  m_NotificationSetupDialog->getNotification_FadeOutDuration());
-    settingFile.setValue(NOTIFICATION_BORDERRADIUS,     m_NotificationSetupDialog->getNotification_BorderRadius());
-    settingFile.setValue(NOTIFICATION_PADDING,          m_NotificationSetupDialog->getNotification_Padding());
-    settingFile.setValue(NOTIFICATION_OPACITY,          m_NotificationSetupDialog->getNotification_Opacity());
-    settingFile.setValue(NOTIFICATION_X_OFFSET,         m_NotificationSetupDialog->getNotification_X_Offset());
-    settingFile.setValue(NOTIFICATION_Y_OFFSET,         m_NotificationSetupDialog->getNotification_Y_Offset());
-
-    if (m_GeneralAdvancedDialog) {
-        settingFile.setValue(STARTUP_POSITION_INDEX,        m_GeneralAdvancedDialog->getStartupPosition());
-        settingFile.setValue(STARTUP_POSITION_SPECIFYPOINT, m_GeneralAdvancedDialog->getSpecifyStartupPosition());
-        settingFile.setValue(GLOBALSETTING_SWITCH_TIMEOUT, static_cast<int>(m_GeneralAdvancedDialog->getGlobalSettingSwitchTimeout()));
-    }
-    if (m_ItemSetupDialog != Q_NULLPTR
-        && m_ItemSetupDialog->m_FloatingButtonSetupDialog != Q_NULLPTR) {
-        settingFile.setValue(FLOATINGBUTTON_SETUP_LAYOUT_MODE,
-                             m_ItemSetupDialog->m_FloatingButtonSetupDialog->getPreferredLayoutMode());
-    }
-
-    settingFile.setValue(TRAYICON_IDLE , m_TrayIconSelectDialog->getTrayIcon_IdleStateIcon());
-    settingFile.setValue(TRAYICON_MONITORING , m_TrayIconSelectDialog->getTrayIcon_MonitoringStateIcon());
-    settingFile.setValue(TRAYICON_GLOBAL , m_TrayIconSelectDialog->getTrayIcon_GlobalStateIcon());
-    settingFile.setValue(TRAYICON_MATCHED , m_TrayIconSelectDialog->getTrayIcon_MatchedStateIcon());
-    if (UPDATE_SITE_GITEE == ui->updateSiteComboBox->currentIndex()) {
-        settingFile.setValue(UPDATE_SITE, UPDATE_SITE_GITEE);
-    }
-    else {
-        settingFile.setValue(UPDATE_SITE, UPDATE_SITE_GITHUB);
-    }
-    settingFile.setValue(VIRTUALGAMEPAD_TYPE , ui->virtualGamepadTypeComboBox->currentText());
-    settingFile.setValue(VIRTUAL_GAMEPADLIST, QKeyMapper_Worker::s_VirtualGamepadList);
-    saveKeyListSharedCollectionsToINI(settingFile);
 
 //         if (m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
 //             if (m_windowswitchKeySeqEdit->lastKeySequence().isEmpty()) {

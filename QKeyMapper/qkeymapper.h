@@ -2171,7 +2171,7 @@ private:
     void setCurrentSettingSelectByGroupName(const QString &settingName);
     bool moveSettingSelectOrderEntry(const QString &settingName, int targetUserIndex);
     bool removeSettingByName(const QString &settingName);
-    void saveKeyListSharedCollectionsToINI(QSettings &settingFile) const;
+    OrderedMap<QString, QVariant> collectGeneralSettingSaveValues(int languageIndex) const;
     void loadKeyListSharedCollectionsFromINI(QSettings &settingFile);
     QStringList *getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType);
     const QStringList *getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType) const;

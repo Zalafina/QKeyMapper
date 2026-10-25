@@ -1,6 +1,7 @@
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QTemporaryFile>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
@@ -58,6 +59,7 @@ public:
     static QJsonObject run(QKeyMapper *mapper, const QString &mode);
     static QJsonObject equality(QKeyMapper *mapper);
     static QJsonObject serialization(QKeyMapper *mapper, bool cold);
+    static QJsonObject generalSave(QKeyMapper *mapper);
 };
 
 namespace {
@@ -139,6 +141,7 @@ struct LifecycleResult {
     QJsonObject mappingAdditionEvidence;
     QJsonObject mappingEqualityEvidence;
     QJsonObject settingsSerializationEvidence;
+    QJsonObject settingsGeneralEvidence;
 };
 LifecycleResult *result = nullptr;
 
@@ -1148,6 +1151,13 @@ void installLifecycleTest()
 {
     QTimer::singleShot(0, QCoreApplication::instance(), []() {
         const QString guiMode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+        if (guiMode == QStringLiteral("settings_general_save")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::generalSave(QKeyMapper::getInstance());
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
         if (guiMode.startsWith(QStringLiteral("settings_serialization"))) {
             result->settingsSerializationEvidence = QkmMappingAdditionTestAccess::serialization(
                 QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
@@ -1875,6 +1885,132 @@ QJsonObject QkmMappingAdditionTestAccess::serialization(QKeyMapper *mapper, bool
         {QStringLiteral("cold"), cold}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    if (!QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath()) {
+        return {{QStringLiteral("passed"), false}, {QStringLiteral("reason"), QStringLiteral("An owned out runtime is required")}};
+    }
+    auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+    auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+    auto *language = mapper->findChild<QComboBox *>(QStringLiteral("languageComboBox"));
+    auto *startup = mapper->findChild<QCheckBox *>(QStringLiteral("startupAutoMonitoringCheckBox"));
+    const int target = QKeyMapper::firstNormalMappingTabIndex();
+    if (!name || !save || !language || !startup || target < 0) return {{QStringLiteral("passed"), false}};
+    mapper->forceSwitchKeyMappingTabWidgetIndex(target);
+    *QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>{mapper->createDefaultKeyMappingData(QStringLiteral("A"), QStringLiteral("B"), false)};
+    mapper->refreshTabsForSourceTabChange(target);
+    mapper->m_FavoriteOriginalKeys = QStringList{QStringLiteral("A")};
+    mapper->m_RecentOriginalKeys = QStringList{QStringLiteral("A")};
+    mapper->m_FavoriteMappingKeys = QStringList{QStringLiteral("B")};
+    mapper->m_RecentMappingKeys = QStringList{QStringLiteral("B")};
+    mapper->move(64, 96);
+    name->setText(QStringLiteral("Map67General"));
+    mapper->markSaveSettingDirty();
+    check(mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && save->isEnabled() && !startup->isChecked()
+        && language->currentIndex() == LANGUAGE_CHINESE, "owned Chinese GUI fixture is idle with automatic mapping disabled");
+    const QPoint beforePosition = mapper->pos();
+    const QSize beforeBase = mapper->m_normalWindowBaseSize;
+    QFile beforeFile(QString::fromLatin1(CONFIG_FILENAME));
+    if (!beforeFile.open(QIODevice::ReadOnly)) return {{QStringLiteral("passed"), false}};
+    const auto beforeBytes = beforeFile.readAll();
+    beforeFile.close();
+    const quint64 beforeLoad = mapper->m_MappingLoadGeneration;
+    const auto generalValues = mapper->collectGeneralSettingSaveValues(language->currentIndex());
+    const auto repeatValues = mapper->collectGeneralSettingSaveValues(language->currentIndex());
+    const auto sameValues = [](const auto &left, const auto &right) {
+        if (left.keys() != right.keys()) return false;
+        for (auto it = left.begin(); it != left.end(); ++it) if (it.value() != right.value(it.key())) return false;
+        return true;
+    };
+    if (!beforeFile.open(QIODevice::ReadOnly)) return {{QStringLiteral("passed"), false}};
+    check(sameValues(generalValues, repeatValues) && beforeFile.readAll() == beforeBytes && mapper->m_SaveSettingDirty
+        && mapper->m_MappingLoadGeneration == beforeLoad && QKeyMapper::KeyMappingDataList->first().Original_Key == QStringLiteral("A"),
+        "general value collection is repeatable without disk, dirty, load or mapping mutation");
+    beforeFile.close();
+    bool languagesMatch = true;
+    for (int value : {LANGUAGE_CHINESE, LANGUAGE_ENGLISH, LANGUAGE_JAPANESE, -1}) {
+        auto expected = generalValues;
+        expected[QString::fromLatin1(LANGUAGE_INDEX)] = value == LANGUAGE_ENGLISH || value == LANGUAGE_JAPANESE ? value : LANGUAGE_CHINESE;
+        languagesMatch = languagesMatch && sameValues(mapper->collectGeneralSettingSaveValues(value), expected);
+    }
+    check(languagesMatch, "captured language follows the existing three-language and fallback save semantics");
+    // The baseline is driven through the real Save button, not the serialization helper.
+    clickMappingButton(save);
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    ini.sync();
+    bool valuesPersisted = true;
+    for (auto it = generalValues.begin(); it != generalValues.end(); ++it) {
+        valuesPersisted = valuesPersisted && ini.contains(it.key()) && ini.value(it.key()) == it.value();
+    }
+    check(valuesPersisted, "GUI Save persists every collected general value without type or content changes");
+    check(ini.status() == QSettings::NoError && ini.value(SETTINGSELECT).toString() == QStringLiteral("Map67General")
+        && mapper->m_LoadedMappingSettingGroup == QStringLiteral("Map67General") && !mapper->m_SaveSettingDirty,
+        "GUI Save flushes the named profile and completes existing reload and dirty clearing");
+    check(ini.value(LANGUAGE_INDEX).toInt() == LANGUAGE_CHINESE && !ini.value(STARTUP_AUTOMONITORING).toBool()
+        && ini.value(LAST_WINDOWPOSITION).toPoint() == beforePosition && ini.value(LAST_WINDOW_SIZE).toSize() == beforeBase,
+        "GUI preserves language, startup safety and original geometry base semantics");
+    check(ini.value(KEYLISTCOMBOBOX_FAVORITE_ORIGINAL_KEYS).toStringList() == QStringList{QStringLiteral("A")}
+        && ini.value(KEYLISTCOMBOBOX_RECENT_ORIGINAL_KEYS).toStringList() == QStringList{QStringLiteral("A")}
+        && ini.value(KEYLISTCOMBOBOX_FAVORITE_MAPPING_KEYS).toStringList() == QStringList{QStringLiteral("B")}
+        && ini.value(KEYLISTCOMBOBOX_RECENT_MAPPING_KEYS).toStringList() == QStringList{QStringLiteral("B")},
+        "all four existing key collections are persisted with the GUI save scope");
+    check(QKeyMapper::KeyMappingDataList->size() == 1 && QKeyMapper::KeyMappingDataList->first().Original_Key == QStringLiteral("A")
+        && QKeyMapper::KeyMappingDataList->first().Mapping_Keys == QStringList{QStringLiteral("B")},
+        "GUI save and reload retain the valid mapping");
+    const auto values = [](QSettings &settings) {
+        QVariantMap map;
+        const auto keys = settings.allKeys();
+        for (const auto &key : keys) map.insert(key, settings.value(key));
+        return map;
+    };
+    const QString baseline = qEnvironmentVariable("QKM_LIFECYCLE_SAVE_BASELINE");
+    if (!baseline.isEmpty()) {
+        QDir parent(QCoreApplication::applicationDirPath());
+        parent.cdUp();
+        if (!QFileInfo(baseline).isAbsolute() || QFileInfo(baseline).absolutePath() != parent.absolutePath()
+            || !QFileInfo(baseline).fileName().startsWith(QStringLiteral("baseline-")) || !QFile::exists(baseline)) {
+            return {{QStringLiteral("passed"), false}, {QStringLiteral("reason"), QStringLiteral("Owned baseline path mismatch")}};
+        }
+        QSettings expected(baseline, QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(expected);
+        // Parse both disk images independently of the live writer's shared pending cache.
+        QFile persisted(QString::fromLatin1(CONFIG_FILENAME));
+        QTemporaryFile currentCopy(QDir::currentPath() + QStringLiteral("/general-current-XXXXXX.ini"));
+        if (!persisted.open(QIODevice::ReadOnly) || !currentCopy.open()) return {{QStringLiteral("passed"), false}};
+        const auto bytes = persisted.readAll();
+        if (persisted.error() != QFile::NoError || currentCopy.write(bytes) != bytes.size() || !currentCopy.flush()) {
+            return {{QStringLiteral("passed"), false}};
+        }
+        currentCopy.close();
+        QSettings diskValues(currentCopy.fileName(), QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(diskValues);
+        const auto actualValues = values(diskValues);
+        const auto expectedValues = values(expected);
+        check(diskValues.status() == QSettings::NoError && expected.status() == QSettings::NoError && actualValues == expectedValues,
+            "complete GUI saved key set and typed values match the pre-extraction baseline");
+        QJsonArray differences;
+        QSet<QString> keys;
+        for (auto it = actualValues.cbegin(); it != actualValues.cend(); ++it) keys.insert(it.key());
+        for (auto it = expectedValues.cbegin(); it != expectedValues.cend(); ++it) keys.insert(it.key());
+        for (const auto &key : std::as_const(keys)) if (!actualValues.contains(key) || !expectedValues.contains(key)
+            || actualValues.value(key) != expectedValues.value(key)) differences.append(key);
+        return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+            {QStringLiteral("different_keys"), differences}, {QStringLiteral("saved_key_count"), actualValues.size()},
+            {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+    }
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
 Q_COREAPP_STARTUP_FUNCTION(installLifecycleTest)
 #define main qkmProductMain
 #include "../../main.cpp"
@@ -1903,7 +2039,7 @@ int main(int argc, char *argv[])
         QStringLiteral("hold_source_context"), QStringLiteral("unlock_source_context"), QStringLiteral("inactive_virtual_release"),
         QStringLiteral("mapping_add_plain"), QStringLiteral("mapping_add_conflicts"), QStringLiteral("mapping_add_guards"),
         QStringLiteral("mapping_add_stale"), QStringLiteral("mapping_add_setup"), QStringLiteral("mapping_config_equality"),
-        QStringLiteral("settings_serialization"), QStringLiteral("settings_serialization_cold")};
+        QStringLiteral("settings_serialization"), QStringLiteral("settings_serialization_cold"), QStringLiteral("settings_general_save")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -1985,6 +2121,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("mappingAddition"), result->mappingAdditionEvidence},
         {QStringLiteral("mappingEquality"), result->mappingEqualityEvidence},
         {QStringLiteral("settingsSerialization"), result->settingsSerializationEvidence},
+        {QStringLiteral("settingsGeneral"), result->settingsGeneralEvidence},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};
