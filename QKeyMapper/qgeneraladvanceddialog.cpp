@@ -113,10 +113,10 @@ QGeneralAdvancedDialog::~QGeneralAdvancedDialog()
     delete ui;
 }
 
-void QGeneralAdvancedDialog::setUILanguage(int languageindex)
+void QGeneralAdvancedDialog::setUILanguage(int)
 {
     setWindowTitle(tr("General Advanced Setting"));
-    ui->mcpControlButton->setText(QkmAutomation::ControlDialog::title(languageindex));
+    ui->mcpControlButton->setText(QkmAutomation::ControlDialog::title());
 
     ui->startupPositionGroupBox->setTitle(tr("Startup Position"));
     ui->startupPositionLabel->setText(tr("Startup Position"));

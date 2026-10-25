@@ -23,6 +23,16 @@ WRITE-64 源上下文回归：
 
 NoOp 和 ASan 结果用于指定生命周期／来源边界，不能替代 Default 真实输入效果、普通 Release 性能或其他系统／设备验收。
 
+## UI-73 正式翻译与实际入口
+
+`ui_localization` 仅验证实际QKeyMapper类的UI和嵌入资源，不开始映射或停止流程。额外环境变量：`QKM_UI_LANGUAGE`为0／1／2（中文／英文／日文），`QKM_UI_QM_DIRECTORY`指向本次正式QM目录（独立读回作为期望，不安装以遮蔽产品资源），`QKM_UI_CAPTURE_STATE`为自有out下的ready JSON路径。
+
+用例通过实际语言选择刷新高级设定入口、托盘及控制窗口，检查4项新增提示、NoFocus／非默认按钮和Qt鼠标打开／关闭。停止与超时仅临时设置显示状态并立即还原，核对源代次、清理阶段和准入未改变；这不证明真实停止、超时清理或输入效果。结果在`uiLocalization`，包含逐项断言和`mapping_started=false`。
+
+高级设定在MCP窗口激活后按现有逻辑自动关闭，因此截图分两阶段：先读取ready并捕获可见的control_hwnd，再由普通控制器写同路径`.request`文件；用例关闭MCP并重新显示高级设定，发布`.advanced` JSON后捕获可见的advanced_hwnd。保留PID／桌面／可见性／HWND所有权检查，不截图已经关闭的窗口。ready发布20秒后正常退出；未完成的截图不能据逻辑断言通过而记为视觉通过。
+
+保留正式产品及构建EXE的requireAdministrator manifest。按workflow可仅为本UI用例使用out内临时asInvoker副本和普通私有桌面PrintWindow，实际检查资源与界面，不把它当作管理员权限／驱动验收；不得用该副本运行映射或其他驱动用例。所有编辑、构建、截图仍为普通权限，原始运行材料留out，不构成跨机依赖。
+
 WRITE-64 停止态释放回归 `inactive_virtual_release`：直接回放键盘 A／鼠标左键的虚拟抬起结构体，不注入系统输入。`virtualReleaseTrace` 共 18 条，格式为 `phase:source_present:virtual_state:keyboard_result:mouse_result`：
 
 - phase 0：GUI 空闲、Worker STOPPED、停止清理已结束；Force／BurstStop 均保护仍按住的原键，不依赖源中是否存在该键。

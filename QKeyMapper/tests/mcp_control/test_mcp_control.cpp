@@ -5,6 +5,7 @@
 #include "../../qkm_mapping_source_access.h"
 #include "../../qkeymapper_qt_compat.h"
 #include "../../qkeymapper_constants.h"
+#include "ui_qgeneraladvanceddialog.h"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -15,6 +16,7 @@
 #include <QScopeGuard>
 #include <QSemaphore>
 #include <QSettings>
+#include <QSignalSpy>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QItemSelectionModel>
@@ -26,12 +28,24 @@
 #include <QStyleOptionButton>
 #include <QTemporaryDir>
 #include <QTimer>
+#include <QTranslator>
 #include <QtTest/QTest>
 #include <thread>
 
 using namespace QkmAutomation;
 
 namespace {
+
+bool installUiTranslation(QTranslator &translator, int language)
+{
+    QCoreApplication::removeTranslator(&translator);
+    const QStringList locales{QStringLiteral("zh_CN"), QStringLiteral("en_US"), QStringLiteral("ja_JP")};
+    if (language < 0 || language >= locales.size()) return false;
+    const QString directory = qEnvironmentVariable("QKM_TEST_TRANSLATIONS_DIR");
+    return !directory.isEmpty()
+        && translator.load(QDir(directory).filePath(QStringLiteral("QKeyMapper_%1.qm").arg(locales.at(language))))
+        && QCoreApplication::installTranslator(&translator);
+}
 
 class Client : public QProcess {
 public:
@@ -107,6 +121,9 @@ private slots:
     void initTestCase();
     void defaultOffAndLanguage_data();
     void defaultOffAndLanguage();
+    void advancedEntryKeyboard();
+    void controlFocusPolicy();
+    void languageRefreshPreservesState();
     void pairingFromWidgets_data();
     void pairingFromWidgets();
     void rejectAndClose_data();
@@ -669,18 +686,157 @@ void McpControlTest::defaultOffAndLanguage_data()
 void McpControlTest::defaultOffAndLanguage()
 {
     QFETCH(int, language);
+    QTranslator translator;
+    QVERIFY(installUiTranslation(translator, language));
     QTemporaryDir root(QDir::currentPath() + QStringLiteral("/control-XXXXXX"));
     QVERIFY(root.isValid());
     ControlDialog dialog(root.path() + QStringLiteral("/private"), "test-control");
-    dialog.setUILanguage(language);
+    dialog.retranslateUi();
     QVERIFY(!dialog.server().isEnabled());
     QVERIFY(!QFileInfo::exists(root.path() + QStringLiteral("/private")));
-    QCOMPARE(dialog.windowTitle(), ControlDialog::title(language));
+    const QString source = QStringLiteral("Agent / MCP Control");
+    const QString translated = translator.translate("QkmAutomation::ControlDialog", "Agent / MCP Control");
+    if (language != 1) QVERIFY2(!translated.isEmpty(), "The selected QM does not contain the MCP title.");
+    QCOMPARE(dialog.windowTitle(), translated.isEmpty() ? source : translated);
+    QCOMPARE(ControlDialog::title(), dialog.windowTitle());
     QVERIFY(!widget<QCheckBox>(dialog, "mcpEnabled")->isChecked());
     QVERIFY(!widget<QPushButton>(dialog, "mcpApprove")->autoDefault());
     QVERIFY(!widget<QPushButton>(dialog, "mcpApprove")->isDefault());
     const auto labels = dialog.findChildren<QLabel *>();
     for (const QLabel *label : labels) QCOMPARE(label->textFormat(), Qt::PlainText);
+}
+
+void McpControlTest::advancedEntryKeyboard()
+{
+    QDialog dialog;
+    Ui::QGeneralAdvancedDialog form;
+    form.setupUi(&dialog);
+    QSignalSpy clicked(form.mcpControlButton, &QPushButton::clicked);
+    QCOMPARE(form.mcpControlButton->focusPolicy(), Qt::NoFocus);
+    QVERIFY(!form.mcpControlButton->autoDefault());
+    QVERIFY(!form.mcpControlButton->isDefault());
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    auto *edit = form.fullscreenGlobalMappingProcessLineEdit;
+    edit->setFocus();
+    QCOMPARE(dialog.focusWidget(), edit);
+    QTest::keyClick(edit, Qt::Key_Return);
+    QTest::keyClick(edit, Qt::Key_Space);
+    QCOMPARE(clicked.count(), 0);
+    // The existing form uses ClickFocus/NoFocus, so provide an independent Tab stop.
+    QLineEdit tabTarget(&dialog);
+    tabTarget.show();
+    QWidget *previous = dialog.focusWidget();
+    bool focusMoved = false;
+    for (int index = 0; index < 20; ++index) {
+        QTest::keyClick(&dialog, Qt::Key_Tab);
+        QVERIFY(dialog.focusWidget() != form.mcpControlButton);
+        focusMoved |= dialog.focusWidget() != previous;
+        previous = dialog.focusWidget();
+    }
+    QVERIFY(focusMoved);
+    QTest::mouseClick(form.mcpControlButton, Qt::LeftButton);
+    QCOMPARE(clicked.count(), 1);
+    QVERIFY(dialog.focusWidget() != form.mcpControlButton);
+    QTest::keyClick(&dialog, Qt::Key_Space);
+    QTest::keyClick(&dialog, Qt::Key_Return);
+    QCOMPARE(clicked.count(), 1);
+}
+
+void McpControlTest::controlFocusPolicy()
+{
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/focus-XXXXXX"));
+    QVERIFY(root.isValid());
+    ControlDialog dialog(root.path() + QStringLiteral("/server"), "test-focus");
+    for (const auto *button : dialog.findChildren<QPushButton *>()) {
+        QCOMPARE(button->focusPolicy(), Qt::NoFocus);
+        QVERIFY(!button->autoDefault());
+        QVERIFY(!button->isDefault());
+    }
+    for (const auto *check : dialog.findChildren<QCheckBox *>()) QCOMPARE(check->focusPolicy(), Qt::NoFocus);
+    for (const auto *label : dialog.findChildren<QLabel *>()) QCOMPARE(label->focusPolicy(), Qt::ClickFocus);
+    for (const auto *edit : dialog.findChildren<QLineEdit *>()) QCOMPARE(edit->focusPolicy(), Qt::ClickFocus);
+    QCOMPARE(widget<QListWidget>(dialog, "mcpPairings")->focusPolicy(), Qt::ClickFocus);
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    auto *connection = widget<QLineEdit>(dialog, "mcpConnection");
+    const QString value = QStringLiteral("Copyable connection path");
+    connection->setText(value);
+    QTest::mouseClick(connection, Qt::LeftButton);
+    QCOMPARE(dialog.focusWidget(), connection);
+    QVERIFY(connection->isReadOnly());
+    QTest::keyClick(connection, Qt::Key_A, Qt::ControlModifier);
+    QCOMPARE(connection->selectedText(), value);
+    auto *enabled = widget<QCheckBox>(dialog, "mcpEnabled");
+    QSignalSpy toggled(enabled, &QCheckBox::toggled);
+    clickCheckBox(dialog, "mcpEnabled");
+    QVERIFY(dialog.server().isEnabled());
+    QCOMPARE(dialog.focusWidget(), connection);
+    QTest::keyClick(connection, Qt::Key_Space);
+    QTest::keyClick(connection, Qt::Key_Return);
+    QCOMPARE(toggled.count(), 1);
+    // A separate Tab stop proves navigation works without changing any product control.
+    QLineEdit tabTarget(&dialog);
+    tabTarget.show();
+    QTest::keyClick(connection, Qt::Key_Tab);
+    QCOMPARE(dialog.focusWidget(), &tabTarget);
+    for (int index = 0; index < 5; ++index) {
+        QTest::keyClick(&tabTarget, Qt::Key_Tab);
+        QCOMPARE(dialog.focusWidget(), &tabTarget);
+    }
+    QSignalSpy closed(&dialog, &QDialog::finished);
+    QTest::mouseClick(widget<QPushButton>(dialog, "mcpClose"), Qt::LeftButton);
+    QCOMPARE(closed.count(), 1);
+    QVERIFY(!dialog.isVisible());
+    QVERIFY(dialog.server().isEnabled());
+}
+
+void McpControlTest::languageRefreshPreservesState()
+{
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/language-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString directory = root.path() + QStringLiteral("/server");
+    PairCredentialStore store(directory, "test-language");
+    const PairCredential credential{QString(32, QLatin1Char('a')), QStringLiteral("Existing client"),
+        1, Read | Configure, QByteArray(AuthSecretBytes, 'k')};
+    PairStoreError error;
+    QVERIFY(store.save({credential}, error));
+    QTranslator translator;
+    ControlDialog dialog(directory, "test-language");
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    auto *list = widget<QListWidget>(dialog, "mcpPairings");
+    list->setCurrentRow(0);
+    clickCheckBox(dialog, "mcpEnabled");
+    Client child;
+    QVERIFY(child.launch(dialog.server(), root.path() + QStringLiteral("/client"), QStringLiteral("pair-rejected")));
+    QTRY_VERIFY_WITH_TIMEOUT(!widget<QLabel>(dialog, "mcpPairRequest")->text().isEmpty(), 3000);
+    clickCheckBox(dialog, "mcpConfigure");
+    clickCheckBox(dialog, "mcpRunMapping");
+    const QString executable = widget<QLineEdit>(dialog, "mcpClientExecutable")->text();
+    const QString discovery = dialog.server().discoveryPath();
+    QSignalSpy enabledChanged(&dialog.server(), &AutomationSessionServer::enabledChanged);
+    for (int language : {0, 2, 1}) {
+        QVERIFY(installUiTranslation(translator, language));
+        dialog.retranslateUi();
+        QVERIFY(dialog.server().isEnabled());
+        QCOMPARE(enabledChanged.count(), 0);
+        QCOMPARE(dialog.server().discoveryPath(), discovery);
+        QCOMPARE(dialog.server().pairings().size(), 1);
+        QCOMPARE(dialog.server().pairings().first().scopes, quint32(Read | Configure));
+        QCOMPARE(list->selectedItems().size(), 1);
+        QCOMPARE(list->selectedItems().first()->data(Qt::UserRole).toString(), credential.pairId);
+        QVERIFY(widget<QCheckBox>(dialog, "mcpConfigure")->isChecked());
+        QVERIFY(widget<QCheckBox>(dialog, "mcpRunMapping")->isChecked());
+        QVERIFY(widget<QPushButton>(dialog, "mcpApprove")->isEnabled());
+        QCOMPARE(widget<QLineEdit>(dialog, "mcpClientExecutable")->text(), executable);
+        QVERIFY(widget<QLabel>(dialog, "mcpPairRequest")->text().contains(QString::number(child.processId())));
+        QCOMPARE(child.state(), QProcess::Running);
+    }
+    QTest::mouseClick(widget<QPushButton>(dialog, "mcpReject"), Qt::LeftButton);
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 3000);
+    QCOMPARE(child.exitCode(), 0);
+    QVERIFY(widget<QLabel>(dialog, "mcpPairRequest")->text().isEmpty());
 }
 
 void McpControlTest::pairingFromWidgets_data()
@@ -776,7 +932,7 @@ void McpControlTest::enableFailure()
     clickCheckBox(dialog, "mcpEnabled");
     QVERIFY(!dialog.server().isEnabled());
     QVERIFY(!widget<QCheckBox>(dialog, "mcpEnabled")->isChecked());
-    QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(QStringLiteral("失败")));
+    QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(ControlDialog::tr("; the last operation failed. A revocation that was not saved did not succeed.")));
 }
 
 void McpControlTest::offlinePairings_data()
@@ -790,6 +946,8 @@ void McpControlTest::offlinePairings_data()
 void McpControlTest::offlinePairings()
 {
     QFETCH(int, language);
+    QTranslator translator;
+    QVERIFY(installUiTranslation(translator, language));
     QTemporaryDir root(QDir::currentPath() + QStringLiteral("/offline-XXXXXX"));
     QVERIFY(root.isValid());
     const QString directory = root.path() + QStringLiteral("/server");
@@ -799,7 +957,7 @@ void McpControlTest::offlinePairings()
     PairStoreError error;
     QVERIFY(store.save({credential}, error));
     ControlDialog dialog(directory, "test-offline-control");
-    dialog.setUILanguage(language);
+    dialog.retranslateUi();
     dialog.show();
     QVERIFY(QTest::qWaitForWindowExposed(&dialog));
     QVERIFY(!dialog.server().isEnabled());
@@ -907,14 +1065,14 @@ void McpControlTest::offlineFailure()
     QTest::mouseClick(widget<QPushButton>(dialog, "mcpRevoke"), Qt::LeftButton);
     QVERIFY(!dialog.server().isEnabled());
     QCOMPARE(list->count(), 1);
-    QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(QStringLiteral("失败")));
+    QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(ControlDialog::tr("; the last operation failed. A revocation that was not saved did not succeed.")));
     QList<PairCredential> records;
     QVERIFY(store.load(records, error));
     QCOMPARE(records.size(), 1);
     if (competing) {
         QCOMPARE(dialog.server().lastStoreError(), PairStoreError::Busy);
         QVERIFY(active.isEnabled());
-        QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(QStringLiteral("另一实例")));
+        QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(ControlDialog::tr(" Another instance owns this pairing store; manage it there or disable its interface first.")));
         active.disable();
     } else {
         QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16()), FILE_ATTRIBUTE_NORMAL));
@@ -923,7 +1081,7 @@ void McpControlTest::offlineFailure()
     QCOMPARE(list->count(), 0);
     QVERIFY(!dialog.server().isEnabled());
     QVERIFY(!QFileInfo::exists(dialog.server().discoveryPath()));
-    QVERIFY(!widget<QLabel>(dialog, "mcpStatus")->text().contains(QStringLiteral("失败")));
+    QVERIFY(!widget<QLabel>(dialog, "mcpStatus")->text().contains(ControlDialog::tr("; the last operation failed. A revocation that was not saved did not succeed.")));
 }
 
 int runInteropFixture(QApplication &app, const QString &statePath)
@@ -1041,8 +1199,9 @@ int main(int argc, char **argv)
             PairStoreError error;
             if (!store.save({pair}, error)) return 25;
         }
+        QTranslator translator;
+        if (!installUiTranslation(translator, app.arguments().at(2).toInt())) return 27;
         ControlDialog dialog(root.path() + QStringLiteral("/server"), "test-preview");
-        dialog.setUILanguage(app.arguments().at(2).toInt());
         if (mode == QStringLiteral("pending")) {
             const auto own = queryProcessIdentity(GetCurrentProcessId());
             if (!own.ok()) return 21;

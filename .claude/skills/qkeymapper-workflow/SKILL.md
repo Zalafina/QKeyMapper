@@ -1,7 +1,6 @@
 ---
 name: qkeymapper-workflow
-description: QKeyMapper playbook for planning, implementation, debugging, and validation in this repo.
-when_to_use: When planning a change, implementing a feature, debugging an issue, or validating a fix in this project. Also when the user asks about floating button behavior, key mapping logic, Forza mode, dialog UI changes, serialization, or mentions QKeyMapper.
+description: QKeyMapper playbook for planning, implementation, debugging, and validation in this repo. Use for QKeyMapper dialog UI, localization, floating buttons, key mapping logic, Forza mode, settings serialization, and related fixes.
 ---
 
 # QKeyMapper Workflow
@@ -27,6 +26,7 @@ Use this skill for repo-specific work in QKeyMapper. Keep scope narrow, reuse ex
 
 ## Module guidelines
 - Dialog/UI: review affected load/apply/save/restore contracts and change only the necessary paths; if generated UI members are involved, check for a source-tree ui_*.h shadow file first.
+- Dialog focus/buttons: set `autoDefault=false` for ordinary buttons in `.ui` or code unless a default action is intentional. Follow the owning window's convention; prefer `NoFocus` for buttons/check boxes and `ClickFocus` for controls needing selection, editing or copying. Do not enable Tab navigation without a specific need. The General Advanced MCP entry and MCP dialog follow this convention, not blanket NoFocus for all controls. Retain standard keyboard actions after intentional focus; do not add broad key interception.
 - Floating Button: treat constants, worker state, dialog load/apply, runtime visuals, and save/restore as one pipeline; watch resize loops; validate the smallest slice.
 - Forza/runtime mapping: keep legacy and new syntax on the same runtime path; verify press/release ordering and per-player state transitions; add DEBUG_LOGOUT_ON only at the exact transition point.
 - Serialization/settings: keep keymapdata.ini and Save Setting paths in sync; check load/apply/save/recover paths together.
@@ -155,6 +155,8 @@ Detailed preparation, commands and diagnostic pitfalls: [Autonomous validation t
 - For an accepted exception, record the affected language, page, triggering conditions, remaining impact and the user's decision in the task's acceptance record. Do not claim that all three languages fully passed.
 
 ### Translation strings
+- Use English source literals in `tr(...)` for user-visible Qt text, including titles, status, errors, tooltips, placeholders and accessibility names. Use the owning class's `tr(...)` or an explicit Qt translation context outside its members; do not select hardcoded Chinese/English/Japanese strings by language index. `.ui` display text must be translatable or be replaced through the existing runtime `tr(...)` refresh path.
+- Refresh dynamic text through the existing application language-switch path while preserving business state. Protocol keys/error codes, object names, paths and user data are not UI translation sources. Check affected callers/tests and actual lupdate context; a language-index test without an installed QTranslator does not prove localization.
 - When adding or modifying `tr(...)` strings, provide Chinese and Japanese translation recommendations alongside the English original. Present each string as a three-row table for readability: `| English | <original> |` / `| 中文 | <translation> |` / `| 日本語 | <translation> |`.
 
 ## Continuous improvement

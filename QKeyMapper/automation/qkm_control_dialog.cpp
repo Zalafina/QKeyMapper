@@ -45,6 +45,7 @@ QLabel *plainLabel(QWidget *parent)
     label->setTextFormat(Qt::PlainText);
     label->setWordWrap(true);
     label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    label->setFocusPolicy(Qt::ClickFocus);
     return label;
 }
 
@@ -112,9 +113,16 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
     approvalLayout->addLayout(buttons);
     layout->addWidget(m_approval);
     m_close = new QPushButton(this);
+    m_close->setObjectName(QStringLiteral("mcpClose"));
     layout->addWidget(m_close, 0, Qt::AlignRight);
-    // Enter must never approve a client or revoke a pairing accidentally.
-    for (QPushButton *button : {m_approve, m_reject, m_revoke, m_close}) button->setAutoDefault(false);
+    // Use mouse-driven actions; keep selection and copying available by click.
+    for (QPushButton *button : {m_approve, m_reject, m_revoke, m_close}) {
+        button->setAutoDefault(false);
+        button->setFocusPolicy(Qt::NoFocus);
+    }
+    for (QCheckBox *check : {m_enabled, m_read, m_configure, m_run}) check->setFocusPolicy(Qt::NoFocus);
+    for (QLineEdit *edit : {m_connection, m_executable}) edit->setFocusPolicy(Qt::ClickFocus);
+    m_pairings->setFocusPolicy(Qt::ClickFocus);
     connect(m_enabled, &QCheckBox::toggled, this, &ControlDialog::setEnabledByUser);
     connect(m_close, &QPushButton::clicked, this, &QDialog::close);
     connect(m_pairings, &QListWidget::itemSelectionChanged, this, [this]() {
@@ -166,43 +174,33 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
         });
     connect(&m_server, &AutomationSessionServer::enabledChanged, this, [this]() { refresh(); });
     connect(&m_server, &AutomationSessionServer::failed, this, [this]() { m_failed = true; refresh(); });
-    setUILanguage(0);
+    retranslateUi();
     finishPending();
 }
 
-QString ControlDialog::text(const char *chinese, const char *english, const char *japanese) const
+QString ControlDialog::title()
 {
-    return QString::fromUtf8(m_language == 1 ? english : m_language == 2 ? japanese : chinese);
+    return tr("Agent / MCP Control");
 }
 
-QString ControlDialog::title(int language)
+void ControlDialog::retranslateUi()
 {
-    return QString::fromUtf8(language == 1 ? "Agent / MCP Control" : language == 2 ? "Agent / MCP 操作" : "Agent / MCP 控制");
-}
-
-void ControlDialog::setUILanguage(int language)
-{
-    m_language = language;
-    setWindowTitle(title(language));
-    m_enabled->setText(text("启用本次运行的 MCP 接口", "Enable MCP for this run", "今回の実行で MCP を有効にする"));
-    m_notice->setText(text("仅允许同一用户登录会话。请在此批准配对；关闭窗口不会关闭接口。重启软件后接口关闭。",
-        "Only this user and logon session may connect. Approve pairing here. Closing this window keeps MCP enabled; restarting QKeyMapper disables it.",
-        "同じユーザーのログオンセッションのみ接続できます。ここでペアリングを承認してください。画面を閉じても有効のままです。再起動すると無効になります。"));
-    m_connection->setPlaceholderText(text("接口已关闭", "MCP is disabled", "MCP は無効です"));
-    m_connection->setAccessibleName(text("连接信息文件路径", "Connection information file", "接続情報ファイルのパス"));
-    m_connection->setToolTip(text("可复制此路径配置 MCP 桥接。文件不含配对密钥。",
-        "Copy this path when configuring the MCP bridge. It contains no pairing key.",
-        "MCP ブリッジの設定にこのパスをコピーできます。ペアリングキーは含まれません。"));
-    m_pairings->setAccessibleName(text("已配对客户端及权限", "Paired clients and permissions", "ペアリング済みクライアントと権限"));
-    m_revoke->setText(text("撤销选中客户端的配对", "Revoke selected pairing", "選択したペアリングを解除"));
-    m_approval->setTitle(text("批准新的客户端（60 秒内）", "Approve a new client (within 60 seconds)", "新しいクライアントを承認（60 秒以内）"));
-    m_executable->setAccessibleName(text("系统核实的客户端程序路径", "Verified client executable path", "確認済みクライアントのパス"));
-    m_read->setText(text("读取状态与设定（必需）", "Read state and configuration (required)", "状態と設定の読み取り（必須）"));
-    m_configure->setText(text("更改映射与软件设定", "Change mappings and settings", "マッピングと設定の変更"));
-    m_run->setText(text("开始与停止映射（可能发送输入）", "Start and stop mapping (may send input)", "マッピングの開始と停止（入力を送信する場合あり）"));
-    m_approve->setText(text("批准选定权限", "Approve selected permissions", "選択した権限で承認"));
-    m_reject->setText(text("拒绝", "Reject", "拒否"));
-    m_close->setText(text("关闭窗口", "Close window", "画面を閉じる"));
+    setWindowTitle(title());
+    m_enabled->setText(tr("Enable MCP for this run"));
+    m_notice->setText(tr("Only this user and logon session may connect. Approve pairing here. Closing this window keeps MCP enabled; restarting QKeyMapper disables it."));
+    m_connection->setPlaceholderText(tr("MCP is disabled"));
+    m_connection->setAccessibleName(tr("Connection information file"));
+    m_connection->setToolTip(tr("Copy this path when configuring the MCP bridge. It contains no pairing key."));
+    m_pairings->setAccessibleName(tr("Paired clients and permissions"));
+    m_revoke->setText(tr("Revoke selected pairing"));
+    m_approval->setTitle(tr("Approve a new client (within 60 seconds)"));
+    m_executable->setAccessibleName(tr("Verified client executable path"));
+    m_read->setText(tr("Read state and configuration (required)"));
+    m_configure->setText(tr("Change mappings and settings"));
+    m_run->setText(tr("Start and stop mapping (may send input)"));
+    m_approve->setText(tr("Approve selected permissions"));
+    m_reject->setText(tr("Reject"));
+    m_close->setText(tr("Close"));
     showPending();
     refresh();
 }
@@ -224,15 +222,11 @@ void ControlDialog::refresh()
 {
     const QSignalBlocker block(m_enabled);
     m_enabled->setChecked(m_server.isEnabled());
-    QString status = m_server.isEnabled() ? text("接口已启用", "MCP is enabled", "MCP は有効です")
-                                         : text("接口已关闭", "MCP is disabled", "MCP は無効です");
-    if (m_failed) status += text("；上次操作失败。未保存的撤销不能视为成功。",
-        "; the last operation failed. A revocation that was not saved did not succeed.",
-        "。前の操作に失敗しました。保存されなかった解除は完了していません。");
+    QString status = m_server.isEnabled() ? tr("MCP is enabled")
+                                         : tr("MCP is disabled");
+    if (m_failed) status += tr("; the last operation failed. A revocation that was not saved did not succeed.");
     if (m_failed && m_server.lastStoreError() == PairStoreError::Busy)
-        status += text(" 配对存储正由另一实例使用，请在该实例中管理或先关闭其接口。",
-            " Another instance owns this pairing store; manage it there or disable its interface first.",
-            " 別のインスタンスが保存先を使用中です。その画面で管理するか、先に接続を無効にしてください。");
+        status += tr(" Another instance owns this pairing store; manage it there or disable its interface first.");
     m_status->setText(status);
     m_connection->setText(m_server.isEnabled() ? m_server.discoveryPath() : QString());
     const auto selectedItems = m_pairings->selectedItems();
@@ -240,13 +234,13 @@ void ControlDialog::refresh()
     m_pairings->clear();
     const auto pairs = m_server.pairings();
     for (const PairingInfo &pair : pairs) {
-        QStringList scopes{text("读取", "Read", "読取")};
-        if (pair.scopes & Configure) scopes << text("设定", "Configure", "設定");
-        if (pair.scopes & RunMapping) scopes << text("启停", "Run mapping", "開始・停止");
-        if (pair.scopes & Observe) scopes << text("诊断", "Observe", "診断");
-        if (pair.scopes & TestInput) scopes << text("真实输入测试", "Test input", "実入力テスト");
-        if (pair.scopes & ManageDevices) scopes << text("设备管理", "Manage devices", "デバイス管理");
-        if (pair.scopes & ExecuteCommands) scopes << text("执行命令", "Execute commands", "コマンド実行");
+        QStringList scopes{tr("Read")};
+        if (pair.scopes & Configure) scopes << tr("Configure");
+        if (pair.scopes & RunMapping) scopes << tr("Run mapping");
+        if (pair.scopes & Observe) scopes << tr("Observe");
+        if (pair.scopes & TestInput) scopes << tr("Test input");
+        if (pair.scopes & ManageDevices) scopes << tr("Manage devices");
+        if (pair.scopes & ExecuteCommands) scopes << tr("Execute commands");
         auto *item = new QListWidgetItem(pair.clientName + QStringLiteral("\n") + scopes.join(QStringLiteral(", ")), m_pairings);
         item->setData(Qt::UserRole, pair.pairId);
         item->setToolTip(pair.pairId);
@@ -266,9 +260,7 @@ void ControlDialog::showPending()
 {
     m_approval->setVisible(!m_pending.requestId.isEmpty());
     if (m_pending.requestId.isEmpty()) { m_request->clear(); m_executable->clear(); return; }
-    m_request->setText(text("客户端名称（自报）：%1\nPID：%2；创建时间：%3\n系统核实的程序：",
-        "Client name (self-reported): %1\nPID: %2; creation time: %3\nVerified executable:",
-        "クライアント名（自己申告）：%1\nPID：%2；作成時刻：%3\n確認済みプログラム：")
+    m_request->setText(tr("Client name (self-reported): %1\nPID: %2; creation time: %3\nVerified executable:")
         .arg(m_pending.clientName, QString::number(m_pending.peer.processId), QString::number(m_pending.peer.creationTime)));
     // Keep even a long executable path selectable without pushing approval controls off screen.
     m_executable->setText(m_peerExecutable);

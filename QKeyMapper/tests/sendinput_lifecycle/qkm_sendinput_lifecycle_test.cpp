@@ -1,6 +1,7 @@
 #include <QCoreApplication>
 #include <QElapsedTimer>
 #include <QFile>
+#include <QSaveFile>
 #include <QTemporaryFile>
 #include <QJsonDocument>
 #include <QJsonArray>
@@ -20,6 +21,11 @@
 #include <QDialogButtonBox>
 #include <QSpinBox>
 #include <QDir>
+#include <QAction>
+#include <QMenu>
+#include <QTranslator>
+#include "../../automation/qkm_control_dialog.h"
+#include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
 #include "../../qitemsetupdialog.h"
@@ -62,6 +68,21 @@ public:
     static QJsonObject generalSave(QKeyMapper *mapper, bool rich = false);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
+    static QJsonObject uiLocalization(QKeyMapper *mapper);
+    static void uiLocalizationWindows(QKeyMapper *mapper, QJsonObject &evidence)
+    {
+        evidence.insert(QStringLiteral("advanced_hwnd"), QString::number(quintptr(mapper->m_GeneralAdvancedDialog->winId())));
+        evidence.insert(QStringLiteral("control_hwnd"), QString::number(quintptr(mapper->m_McpControlDialog->winId())));
+        evidence.insert(QStringLiteral("advanced_visible"), mapper->m_GeneralAdvancedDialog->isVisible());
+        evidence.insert(QStringLiteral("control_visible"), mapper->m_McpControlDialog->isVisible());
+    }
+    static void uiLocalizationAdvanced(QKeyMapper *mapper)
+    {
+        mapper->m_McpControlDialog->close();
+        mapper->m_GeneralAdvancedDialog->show();
+        mapper->m_GeneralAdvancedDialog->raise();
+        mapper->m_GeneralAdvancedDialog->activateWindow();
+    }
 };
 
 namespace {
@@ -145,6 +166,7 @@ struct LifecycleResult {
     QJsonObject settingsSerializationEvidence;
     QJsonObject settingsGeneralEvidence;
     QJsonObject commonCommentsEvidence;
+    QJsonObject uiLocalizationEvidence;
 };
 LifecycleResult *result = nullptr;
 
@@ -1154,6 +1176,38 @@ void installLifecycleTest()
 {
     QTimer::singleShot(0, QCoreApplication::instance(), []() {
         const QString guiMode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+        if (guiMode == QStringLiteral("ui_localization")) {
+            // Capture separately: the advanced dialog closes on deactivation when MCP opens.
+            QTimer::singleShot(1000, QCoreApplication::instance(), [] {
+                result->uiLocalizationEvidence = QkmMappingAdditionTestAccess::uiLocalization(QKeyMapper::getInstance());
+                QTimer::singleShot(500, QCoreApplication::instance(), [] {
+                    auto *mapper = QKeyMapper::getInstance();
+                    QkmMappingAdditionTestAccess::uiLocalizationWindows(mapper, result->uiLocalizationEvidence);
+                    QSaveFile ready(qEnvironmentVariable("QKM_UI_CAPTURE_STATE"));
+                    const QByteArray payload = QJsonDocument(result->uiLocalizationEvidence).toJson();
+                    const bool written = ready.open(QIODevice::WriteOnly) && ready.write(payload) == payload.size() && ready.commit();
+                    if (!written) { finish(false); return; }
+                    auto *stage = new QTimer(QCoreApplication::instance());
+                    QObject::connect(stage, &QTimer::timeout, stage, [stage] {
+                        const QString path = qEnvironmentVariable("QKM_UI_CAPTURE_STATE");
+                        if (!QFileInfo::exists(path + QStringLiteral(".request"))) return;
+                        stage->stop();
+                        QkmMappingAdditionTestAccess::uiLocalizationAdvanced(QKeyMapper::getInstance());
+                        QTimer::singleShot(500, QCoreApplication::instance(), [path] {
+                            QkmMappingAdditionTestAccess::uiLocalizationWindows(QKeyMapper::getInstance(), result->uiLocalizationEvidence);
+                            QSaveFile advanced(path + QStringLiteral(".advanced"));
+                            const QByteArray data = QJsonDocument(result->uiLocalizationEvidence).toJson();
+                            if (!advanced.open(QIODevice::WriteOnly) || advanced.write(data) != data.size() || !advanced.commit()) finish(false);
+                        });
+                    });
+                    stage->start(50);
+                    QTimer::singleShot(20000, QCoreApplication::instance(), [] {
+                        finish(result->uiLocalizationEvidence.value(QStringLiteral("passed")).toBool());
+                    });
+                });
+            });
+            return;
+        }
         if (guiMode.startsWith(QStringLiteral("common_comments"))) {
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
@@ -1898,6 +1952,85 @@ QJsonObject QkmMappingAdditionTestAccess::serialization(QKeyMapper *mapper, bool
         {QStringLiteral("cold"), cold}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::uiLocalization(QKeyMapper *mapper)
+{
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const int language = qEnvironmentVariableIntValue("QKM_UI_LANGUAGE");
+    if (language < 0 || language > 2 || mapper->m_KeyMapStatus != QKeyMapper::KEYMAP_IDLE
+        || !QDir::currentPath().contains(QStringLiteral("/out/"))) return {{QStringLiteral("passed"), false}};
+    const QStringList locales{QStringLiteral("zh_CN"), QStringLiteral("en_US"), QStringLiteral("ja_JP")};
+    QTranslator expected;
+    if (!expected.load(QDir(qEnvironmentVariable("QKM_UI_QM_DIRECTORY")).filePath(
+            QStringLiteral("QKeyMapper_%1.qm").arg(locales.at(language))))) return {{QStringLiteral("passed"), false}};
+    const auto translation = [&](const char *context, const char *source) {
+        const QString text = expected.translate(context, source);
+        return text.isEmpty() ? QString::fromUtf8(source) : text;
+    };
+    auto *selector = mapper->findChild<QComboBox *>(QStringLiteral("languageComboBox"));
+    auto *entry = mapper->m_GeneralAdvancedDialog->findChild<QPushButton *>(QStringLiteral("mcpControlButton"));
+    auto *button = mapper->findChild<QToolButton *>(QStringLiteral("keymapButton"));
+    if (!selector || !entry || !button) return {{QStringLiteral("passed"), false}};
+    if (selector->currentIndex() == language) mapper->reloadUILanguage();
+    else selector->setCurrentIndex(language);
+    const QString title = translation("QkmAutomation::ControlDialog", "Agent / MCP Control");
+    check(entry->text() == title && mapper->m_McpControlDialog->windowTitle() == title,
+        "actual advanced entry and control title use the embedded formal QM");
+    // Tray captions are refreshed lazily by the existing context-menu activation handler.
+    emit mapper->m_SysTrayIcon->activated(QSystemTrayIcon::Context);
+    check(mapper->m_TrayIconMenu_McpAction && mapper->m_TrayIconMenu_McpAction->text() == title,
+        "actual tray action uses the same formal translation");
+    mapper->m_SysTrayIconMenu->hide();
+    check(entry->focusPolicy() == Qt::NoFocus && !entry->autoDefault() && !entry->isDefault(),
+        "actual advanced entry has the selected focus and default policy");
+    const quint64 sourceEpoch = mapper->m_AutomationSourceEpoch;
+    const auto phase = mapper->m_mappingStopPhase;
+    const bool inputClosed = QKeyMapper_Worker::s_MappingInputClosed.loadAcquire();
+    const quint64 work = SendInputWorkItem::outstanding();
+    const QString tooltip = button->toolTip();
+    {
+        QScopedValueRollback<decltype(mapper->m_KeyMapStatus)> state(mapper->m_KeyMapStatus, QKeyMapper::KEYMAP_STOPPING);
+        QScopedValueRollback<bool> timeout(mapper->m_mappingStopTimedOut, false);
+        mapper->updateMappingStopButtonTooltip();
+        check(button->toolTip() == translation("QKeyMapper", "Mapping cleanup is pending. Editing and restarting remain disabled."),
+            "pending stop display uses the formal QM without beginning a stop");
+        const auto busy = mapper->prepareMappingAddition(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex, 0, QStringLiteral("A"), QStringLiteral("B"));
+        check(busy.errorCode == QStringLiteral("context_busy") && busy.errorMessage == translation("QKeyMapper",
+            "Mapping edits require idle state and completed stop cleanup. Close the current modal dialog and try again."),
+            "existing busy guard reports its formal translation without an edit");
+        mapper->m_mappingStopTimedOut = true;
+        mapper->setUILanguage(language);
+        check(button->toolTip() == translation("QKeyMapper", "Stop wait timed out. Cleanup continues; editing and restarting remain disabled."),
+            "language refresh retains the timeout display state");
+    }
+    button->setToolTip(tooltip);
+    check(mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && mapper->m_mappingStopPhase == phase
+        && mapper->m_AutomationSourceEpoch == sourceEpoch && SendInputWorkItem::outstanding() == work
+        && QKeyMapper_Worker::s_MappingInputClosed.loadAcquire() == inputClosed,
+        "display checks restore state and do not alter source or work admission");
+    const auto stale = mapper->prepareMappingAddition(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex, -1, QStringLiteral("A"), QStringLiteral("B"));
+    check(stale.errorCode == QStringLiteral("invalid_arguments") && stale.errorMessage == translation("QKeyMapper",
+        "The mapping target or conflicts changed. Review the operation again."), "stale-context explanation uses its formal QM");
+    mapper->m_GeneralAdvancedDialog->show();
+    clickMappingButton(entry);
+    check(mapper->m_McpControlDialog->isVisible() && !mapper->m_McpControlDialog->server().isEnabled(),
+        "actual advanced entry opens the disabled control window by Qt mouse events");
+    auto *close = mapper->m_McpControlDialog->findChild<QPushButton *>(QStringLiteral("mcpClose"));
+    check(close && close->text() == translation("QkmAutomation::ControlDialog", "Close"), "actual Close caption uses its formal QM");
+    if (close) clickMappingButton(close);
+    check(!mapper->m_McpControlDialog->isVisible() && !mapper->m_McpControlDialog->server().isEnabled(),
+        "actual Close button closes the window without toggling the interface");
+    clickMappingButton(entry);
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("language"), language},
+        {QStringLiteral("pid"), int(GetCurrentProcessId())}, {QStringLiteral("advanced_hwnd"), QString::number(quintptr(mapper->m_GeneralAdvancedDialog->winId()))},
+        {QStringLiteral("control_hwnd"), QString::number(quintptr(mapper->m_McpControlDialog->winId()))},
+        {QStringLiteral("mapping_started"), false}, {QStringLiteral("system_input"), false}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper, bool rich)
 {
     using namespace QKeyMapperConstants;
@@ -2300,7 +2433,8 @@ int main(int argc, char *argv[])
         QStringLiteral("mapping_add_stale"), QStringLiteral("mapping_add_setup"), QStringLiteral("mapping_config_equality"),
         QStringLiteral("settings_serialization"), QStringLiteral("settings_serialization_cold"), QStringLiteral("settings_general_save"),
         QStringLiteral("common_comments"), QStringLiteral("common_comments_cold"), QStringLiteral("common_comments_legacy"),
-        QStringLiteral("common_comments_attached"), QStringLiteral("settings_table_save"), QStringLiteral("settings_table_cold")};
+        QStringLiteral("common_comments_attached"), QStringLiteral("settings_table_save"), QStringLiteral("settings_table_cold"),
+        QStringLiteral("ui_localization")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -2384,6 +2518,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("settingsSerialization"), result->settingsSerializationEvidence},
         {QStringLiteral("settingsGeneral"), result->settingsGeneralEvidence},
         {QStringLiteral("commonComments"), result->commonCommentsEvidence},
+        {QStringLiteral("uiLocalization"), result->uiLocalizationEvidence},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};

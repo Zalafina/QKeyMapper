@@ -16,6 +16,7 @@ parser.add_argument('--qt-bin', type=pathlib.Path, required=True)
 parser.add_argument('--output', type=pathlib.Path, required=True)
 parser.add_argument('--powershell', default=shutil.which('pwsh') or shutil.which('powershell'))
 parser.add_argument('--screenshots', action='store_true')
+parser.add_argument('--translations-dir', type=pathlib.Path, default=ROOT / 'QKeyMapper/translations')
 args = parser.parse_args()
 if os.name != 'nt':
     parser.error('Windows is required.')
@@ -24,6 +25,7 @@ if not __debug__:
 args.test_exe = args.test_exe.resolve()
 args.ipc_exe = args.ipc_exe.resolve()
 args.qt_bin = args.qt_bin.resolve()
+args.translations_dir = args.translations_dir.resolve()
 BASE = args.output.resolve()
 if not BASE.is_relative_to((ROOT / 'out').resolve()):
     parser.error('--output must be inside this checkout out/.')
@@ -32,6 +34,8 @@ for exe, name in ((args.test_exe, 'QKeyMapperMcpControlTest.exe'), (args.ipc_exe
         parser.error('Build and select the intended ' + name)
 if not args.qt_bin.is_dir():
     parser.error('--qt-bin is not a directory.')
+if not all((args.translations_dir / ('QKeyMapper_' + language + '.qm')).is_file() for language in ('zh_CN', 'en_US', 'ja_JP')):
+    parser.error('--translations-dir must contain the three intended QKeyMapper QM files.')
 if args.screenshots and (not args.powershell):
     parser.error('PowerShell is required for screenshots.')
 BASE.mkdir(parents=True, exist_ok=True)
@@ -121,6 +125,7 @@ def environment():
     env['PATH'] = str(args.qt_bin) + os.pathsep + env['PATH']
     env['QKM_TEST_DESKTOP'] = name
     env['QKM_IPC_TEST_EXE'] = str(args.ipc_exe)
+    env['QKM_TEST_TRANSLATIONS_DIR'] = str(args.translations_dir)
     return env
 try:
     env = environment()

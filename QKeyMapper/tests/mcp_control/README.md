@@ -6,6 +6,10 @@
 
 测试窗口需要真实显示；优先在私有 Windows 桌面运行，**不调用 SwitchDesktop**。可以设置 `QKM_TEST_DESKTOP`，测试将检查自身线程实际桌面名。Qt 事件直接投递目标控件，不发送系统键鼠输入。关闭并清理自有窗口和子进程，不关闭用户实例。
 
+语言用例实际安装 `QTranslator`，不再以整数切换硬编码文本。设置 `QKM_TEST_TRANSLATIONS_DIR` 指向三份本次 `.qm` 的目录；Python 入口支持 `--translations-dir`，默认使用仓库正式 translations。正式资源未补齐时可明确传入 out 中的临时译文，结果必须记为临时接线验证。`languageRefreshPreservesState` 核对语言刷新保留接口、配对选中项、待批准进程及权限选择；`advancedEntryKeyboard` 使用真实 `.ui` 生成代码验证 NoFocus、非默认按钮、Tab 跳过及鼠标点击，不发送系统输入。
+
+`controlFocusPolicy` 核对MCP窗口按钮／复选框NoFocus，标签、路径输入框和客户端列表ClickFocus。使用独立Tab参照验证不进入产品控件；鼠标启用和关闭仍有效，路径可点击选择文字，Space／Enter不误切换开关。不写系统剪贴板，不把Qt直接事件等同于系统键鼠输入。
+
 `sourceSnapshotEncodingBoundaries` 核对精确 4 MiB 前后边界及完整绑定的原修订字节，包含中日文、emoji、引号／反斜杠／换行。`sourceSnapshotQueryCost` 用 1／100／1,000 行合成不可变快照分别测目录和单行助手，QtTest 可用 `-iterations 32 -median 3` 固定比较。该数值不含产品源复制、锁占用、IPC／SDK 或 GUI 响应，不能当作完整查询或输入性能。
 
 `mappingChangeArguments`／`mappingChangeLifecycle`／`mappingChangeLimits` 验证基本新增预览基础：严格参数、单字母／数字与源引用、有界120秒预览、实例／配对／权限代次归属、消费／取消／替换、10分钟／64条结果、未知结果及重置。存储本身不授权或修改映射；产品实际提交另外检查完整源、业务状态、当前请求／权限和到期。`sourceSnapshotReferences`验证同步组单改的完整修订；正式B1业务证据见[独立记录](../../../handoff/qkeymapper_mcp_control/map67b1_validation.md)。

@@ -427,8 +427,14 @@
    </item>
    <item>
     <widget class="QPushButton" name="mcpControlButton">
+     <property name="focusPolicy">
+      <enum>Qt::FocusPolicy::NoFocus</enum>
+     </property>
      <property name="text">
       <string notr="true">Agent / MCP</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
      </property>
     </widget>
    </item>

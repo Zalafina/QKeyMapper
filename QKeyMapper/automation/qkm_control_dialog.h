@@ -18,8 +18,8 @@ class ControlDialog : public QDialog {
 public:
     explicit ControlDialog(QWidget *parent = nullptr);
     ControlDialog(QString storeDirectory, QByteArray applicationBinding, QWidget *parent = nullptr);
-    void setUILanguage(int language);
-    static QString title(int language);
+    void retranslateUi();
+    static QString title();
     AutomationSessionServer &server() { return m_server; }
 
 protected:
@@ -27,7 +27,6 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 private:
-    QString text(const char *chinese, const char *english, const char *japanese) const;
     void refresh();
     void showPending();
     void finishPending();
@@ -37,7 +36,6 @@ private:
     AutomationSessionServer m_server;
     PairingRequest m_pending;
     QString m_peerExecutable;
-    int m_language = 0;
     bool m_failed = false;
     QCheckBox *m_enabled;
     QLabel *m_notice;

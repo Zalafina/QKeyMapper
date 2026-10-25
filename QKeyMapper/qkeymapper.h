@@ -2611,6 +2611,7 @@ private:
     void onMappingStopSendDrain(quint64 generation, const QString &outcome);
     void finishMappingStop(quint64 operation, quint64 generation);
     void noteMappingStopTimeout();
+    void updateMappingStopButtonTooltip();
     InputOwnerFence *m_mappingStopFence = nullptr;
     QTimer *m_mappingStopDeadline = nullptr;
     MappingStopPhase m_mappingStopPhase = MappingStopPhase::None;

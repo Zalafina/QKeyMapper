@@ -649,7 +649,7 @@ if ($Action -eq 'AddBasicMapping') {
             } while ([DateTime]::UtcNow -lt $deadline)
             if ($remaining) { throw 'Revocation completion was not observed; inspect state before retrying.' }
         }
-        'CloseMcp' { Invoke-Button $dialog '' @('关闭窗口','Close window','画面を閉じる') }
+        'CloseMcp' { Invoke-Button $dialog 'mcpClose' @('关闭','Close','閉じる') }
     }
 }
 $result = @{ success = $true; action = $Action; desktop = [QkmProductUiDesktop]::Name($main); window = $main.ToInt64() }

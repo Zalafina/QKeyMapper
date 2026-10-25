@@ -16750,12 +16750,7 @@ void QKeyMapper::beginMappingStop()
     m_mappingStopButtonWasEnabled = ui->keymapButton->isEnabled();
     m_mappingStopButtonTooltip = ui->keymapButton->toolTip();
     ui->keymapButton->setEnabled(false);
-    const int language = getLanguageIndex();
-    ui->keymapButton->setToolTip(language == LANGUAGE_CHINESE
-        ? QStringLiteral("正在清理映射任务，完成后才能编辑或重新开始。")
-        : language == LANGUAGE_JAPANESE
-        ? QStringLiteral("マッピング処理を終了しています。完了まで編集と再開はできません。")
-        : QStringLiteral("Mapping cleanup is pending. Editing and restarting remain disabled."));
+    updateMappingStopButtonTooltip();
     changeControlEnableStatus(false);
 #ifdef CYCLECHECKTIMER_ENABLED
     m_CycleCheckTimer.stop();
@@ -16852,16 +16847,19 @@ void QKeyMapper::onMappingStopSendDrain(quint64 generation, const QString &outco
     }
 }
 
+void QKeyMapper::updateMappingStopButtonTooltip()
+{
+    if (m_KeyMapStatus != KEYMAP_STOPPING) { return; }
+    ui->keymapButton->setToolTip(m_mappingStopTimedOut
+        ? tr("Stop wait timed out. Cleanup continues; editing and restarting remain disabled.")
+        : tr("Mapping cleanup is pending. Editing and restarting remain disabled."));
+}
+
 void QKeyMapper::noteMappingStopTimeout()
 {
     if (m_mappingStopPhase == MappingStopPhase::None || m_mappingStopTimedOut) { return; }
     m_mappingStopTimedOut = true;
-    const int language = getLanguageIndex();
-    ui->keymapButton->setToolTip(language == LANGUAGE_CHINESE
-        ? QStringLiteral("停止等待已超时，仍在清理任务；编辑和重新开始继续禁用。")
-        : language == LANGUAGE_JAPANESE
-        ? QStringLiteral("停止待機がタイムアウトしました。処理終了まで編集と再開はできません。")
-        : QStringLiteral("Stop wait timed out. Cleanup continues; editing and restarting remain disabled."));
+    updateMappingStopButtonTooltip();
     emit mappingCleanupTimedOut_Signal(m_mappingStopOperation);
 }
 
@@ -32243,7 +32241,7 @@ void QKeyMapper::updateSysTrayIconMenuText()
     }
     m_TrayIconMenu_QuitAction->setText(quitActionText);
     if (m_TrayIconMenu_McpAction) {
-        m_TrayIconMenu_McpAction->setText(QkmAutomation::ControlDialog::title(ui->languageComboBox->currentIndex()));
+        m_TrayIconMenu_McpAction->setText(QkmAutomation::ControlDialog::title());
     }
 
     // QFont customFont = m_TrayIconMenu_ShowHideAction->font();
@@ -36120,6 +36118,7 @@ void QKeyMapper::reloadUILanguage()
 void QKeyMapper::setUILanguage(int languageindex)
 {
     updateMappingStartActionTexts();
+    updateMappingStopButtonTooltip();
 
     // ui->refreshButton->setText(REFRESHBUTTON_CHINESE);
     ui->savemaplistButton->setText(tr("SaveSetting"));
@@ -36417,7 +36416,7 @@ void QKeyMapper::setUILanguage(int languageindex)
         m_GeneralAdvancedDialog->setUILanguage(languageindex);
     }
     if (m_McpControlDialog) {
-        m_McpControlDialog->setUILanguage(languageindex);
+        m_McpControlDialog->retranslateUi();
     }
 
     if (m_IgnoreRulesListDialog != Q_NULLPTR) {
@@ -40296,19 +40295,9 @@ void QKeyMapper::on_addmapdataButton_clicked()
 namespace {
 QString mappingAdditionContextError(bool stale)
 {
-    const int language = QKeyMapper::getLanguageIndex();
-    if (stale) {
-        return QString::fromUtf8(language == LANGUAGE_ENGLISH
-            ? "The mapping target or conflicts changed. Review the operation again."
-            : language == LANGUAGE_JAPANESE
-                ? "対象のマッピングまたは競合が変更されました。操作内容を再確認してください。"
-                : "映射目标或冲突已变化，请重新核对本次操作。");
-    }
-    return QString::fromUtf8(language == LANGUAGE_ENGLISH
-        ? "Mapping edits require idle state and completed stop cleanup. Close the current modal dialog and try again."
-        : language == LANGUAGE_JAPANESE
-            ? "マッピングの編集には待機状態と停止処理の完了が必要です。現在のモーダルダイアログを閉じて再試行してください。"
-            : "修改映射需要空闲且停止清理已完成，请关闭当前模态窗口后重试。");
+    return stale
+        ? QKeyMapper::tr("The mapping target or conflicts changed. Review the operation again.")
+        : QKeyMapper::tr("Mapping edits require idle state and completed stop cleanup. Close the current modal dialog and try again.");
 }
 } // namespace
 
