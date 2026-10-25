@@ -46,3 +46,7 @@ MAP-67 共用新增操作维护用例（不代表正式 MCP 验收）：
 EQ-68 `mapping_config_equality`：`mappingEquality.checks` 覆盖同步组单独变化及 Qt 列表不等、三个 Pure 列表及 LockState 分别仍等、既有备注／映射差异、编辑窗刷新不新增 dirty，以及同步组 Apply／Revert。等待主窗口的 queued `settingsApplied` 后检查 dirty，不把即时赋值误当通知完成。修复前仅两项同步组比较失败（exit 2），修复后全部 16 项通过（exit 0）；同时检查实际私有桌面及退出作业清理。
 
 本用例不复现同步组保存故障、不发送系统输入、不启动映射，不代表正式 MCP 陈旧预览通过。MCP 继续使用含同步组／派生／运行采样的完整源快照及外层身份、权限、状态和到期守卫，不能用配置行相等替代完整修订。
+
+MAP-67-C1-A辅助保存用例：先在同一自有runtime运行`settings_serialization`，正常退出后保留该合成INI，再启动独立进程运行`settings_serialization_cold`。runtime必须在out且为EXE所在目录；不复用个人INI。结果位于`settingsSerialization.checks`，要求实际私有桌面、进程身份／权限、exit0及零尾部作业。此数据／文件检查可用明确记录的临时asInvoker维护副本，正式manifest不变；不能据此证明High／驱动或权限通信行为。
+
+用例核对忽略规则的全部字段／枚举及顺序，普通／通用宏的作用域、Unicode、备注和含空项的QVariantList注释，同步组说明忽略空值及保留ID；纯序列化不写盘／dirty且不保留可变数据别名。复用原保存／加载入口验证精确内容、空组名无操作、空列表清除旧值、无关配置／全局键不变及独立冷进程读回。主进程为身份核对短暂保留两秒；没有系统输入、映射启动或正式MCP保存请求，不能把辅助字段读回当成完整保存闭环或原保存失败路径已重新通过。

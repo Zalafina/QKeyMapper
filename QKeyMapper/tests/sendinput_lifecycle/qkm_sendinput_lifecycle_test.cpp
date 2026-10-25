@@ -18,11 +18,13 @@
 #include <QScopedValueRollback>
 #include <QDialogButtonBox>
 #include <QSpinBox>
+#include <QDir>
 #include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
 #include "../../qitemsetupdialog.h"
 #include "../../qkeymapper_worker.h"
 #include "../../qkeymapper.h"
+#include "../../qkeymapper_qt_compat.h"
 #include "../../qkm_input_producer_work.h"
 #include "../../qkm_input_owner_fence.h"
 #include "../../interception_worker.h"
@@ -55,6 +57,7 @@ class QkmMappingAdditionTestAccess {
 public:
     static QJsonObject run(QKeyMapper *mapper, const QString &mode);
     static QJsonObject equality(QKeyMapper *mapper);
+    static QJsonObject serialization(QKeyMapper *mapper, bool cold);
 };
 
 namespace {
@@ -135,6 +138,7 @@ struct LifecycleResult {
     QStringList virtualReleaseTrace;
     QJsonObject mappingAdditionEvidence;
     QJsonObject mappingEqualityEvidence;
+    QJsonObject settingsSerializationEvidence;
 };
 LifecycleResult *result = nullptr;
 
@@ -1144,6 +1148,15 @@ void installLifecycleTest()
 {
     QTimer::singleShot(0, QCoreApplication::instance(), []() {
         const QString guiMode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+        if (guiMode.startsWith(QStringLiteral("settings_serialization"))) {
+            result->settingsSerializationEvidence = QkmMappingAdditionTestAccess::serialization(
+                QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            // Keep the process observable by the owned launcher before normal exit.
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsSerializationEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
         if (guiMode == QStringLiteral("mapping_config_equality")) {
             result->mappingEqualityEvidence = QkmMappingAdditionTestAccess::equality(QKeyMapper::getInstance());
             finish(result->mappingEqualityEvidence.value(QStringLiteral("passed")).toBool());
@@ -1707,6 +1720,161 @@ QJsonObject QkmMappingAdditionTestAccess::equality(QKeyMapper *mapper)
         {QStringLiteral("system_input"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::serialization(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    if (!QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath()) {
+        return {{QStringLiteral("passed"), false}, {QStringLiteral("reason"), QStringLiteral("An owned out runtime is required")}};
+    }
+    const QString group = QStringLiteral("Map67Save");
+    const QString macroKey = group + QLatin1Char('/') + QLatin1String(MACROLIST);
+    const QString notesKey = group + QLatin1Char('/') + QLatin1String(SYNCGROUPNOTES);
+    const auto disk = [] {
+        QFile ini(QString::fromLatin1(CONFIG_FILENAME));
+        return ini.open(QIODevice::ReadOnly) ? ini.readAll() : QByteArray();
+    };
+    const auto beforeDisk = disk();
+    check(!beforeDisk.isEmpty(), "owned INI exists before serialization");
+    const bool beforeDirty = mapper->m_SaveSettingDirty;
+    const auto keepRules = qScopeGuard([rules = QKeyMapper::s_IgnoreWindowInfoMap] { QKeyMapper::s_IgnoreWindowInfoMap = rules; });
+    const auto keepMacros = qScopeGuard([macros = QKeyMapper::s_MappingMacroList] { QKeyMapper::s_MappingMacroList = macros; });
+    const auto keepUniversal = qScopeGuard([macros = QKeyMapper::s_UniversalMappingMacroList] { QKeyMapper::s_UniversalMappingMacroList = macros; });
+    const auto keepNotes = qScopeGuard([mapper, notes = mapper->m_FloatingButtonSyncGroupNotes] { mapper->m_FloatingButtonSyncGroupNotes = notes; });
+    IgnoreWindowInfo rule;
+    rule.ruleName = QStringLiteral("Z-规则😀");
+    rule.processName = QStringLiteral("example.exe");
+    rule.windowTitle = QStringLiteral("日本語\n\"窗口\"");
+    rule.className = QStringLiteral("TestClass");
+    rule.description = QStringLiteral("note\\path");
+    rule.processNameMatchType = WindowInfoMatchType::RegexMatch;
+    rule.windowTitleMatchType = WindowInfoMatchType::Equals;
+    rule.classNameMatchType = WindowInfoMatchType::EndsWith;
+    rule.disabled = true;
+    OrderedMap<QString, IgnoreWindowInfo> rules;
+    rules.insert(rule.ruleName, rule);
+    IgnoreWindowInfo second;
+    second.ruleName = QStringLiteral("A-second");
+    rules.insert(second.ruleName, second);
+    const QVariantList expectedRules{
+        QVariantMap{{"ruleName", QStringLiteral("Z-规则😀")}, {"processName", "example.exe"},
+            {"windowTitle", QStringLiteral("日本語\n\"窗口\"")}, {"className", "TestClass"},
+            {"description", "note\\path"}, {"processNameMatchType", 5}, {"windowTitleMatchType", 1},
+            {"classNameMatchType", 4}, {"disabled", true}},
+        QVariantMap{{"ruleName", "A-second"}, {"processName", ""}, {"windowTitle", ""}, {"className", ""},
+            {"description", ""}, {"processNameMatchType", 2}, {"windowTitleMatchType", 2},
+            {"classNameMatchType", 0}, {"disabled", false}}};
+    MappingMacroData macro;
+    macro.MappingMacro = QStringLiteral("B⏱25»C");
+    macro.Category = QStringLiteral("分类／Category");
+    macro.Note = QStringLiteral("日本語😀\n\"note\"");
+    macro.MacroComments = QStringList{QStringLiteral("前"), QString(), QStringLiteral("後\\tail")};
+    OrderedMap<QString, MappingMacroData> macros;
+    macros.insert(QStringLiteral("Z-宏"), macro);
+    macros.insert(QStringLiteral("A-empty"), MappingMacroData());
+    const QVariantList expectedMacros{
+        QVariantMap{{MACROLIST_FIELD_MACRONAME, QStringLiteral("Z-宏")}, {MACROLIST_FIELD_MACROCONTENT, QStringLiteral("B⏱25»C")},
+            {MACROLIST_FIELD_MACROCATEGORY, QStringLiteral("分类／Category")}, {MACROLIST_FIELD_MACRONOTE, QStringLiteral("日本語😀\n\"note\"")},
+            {MACROLIST_FIELD_MACROCOMMENTS, QVariantList{QStringLiteral("前"), QString(), QStringLiteral("後\\tail")}}},
+        QVariantMap{{MACROLIST_FIELD_MACRONAME, "A-empty"}, {MACROLIST_FIELD_MACROCONTENT, ""},
+            {MACROLIST_FIELD_MACROCATEGORY, ""}, {MACROLIST_FIELD_MACRONOTE, ""}, {MACROLIST_FIELD_MACROCOMMENTS, QVariantList()}}};
+    OrderedMap<QString, MappingMacroData> universal;
+    universal.insert(QStringLiteral("A-empty"), MappingMacroData());
+    const QVariantList expectedUniversal{expectedMacros.last()};
+    const QHash<int, QString> notes{{7, QStringLiteral("联动😀\n日本語")}, {999, QStringLiteral("末尾\\\"")}, {8, QString()}};
+    const auto expectedNotes = [](const QVariantList &values) {
+        QHash<int, QString> actual;
+        for (const auto &value : values) {
+            const auto map = value.toMap();
+            if (map.size() != 2 || map.value(SYNCGROUPNOTES_FIELD_NOTE).toString().isEmpty()) return false;
+            actual.insert(map.value(SYNCGROUPNOTES_FIELD_GROUPID).toInt(), map.value(SYNCGROUPNOTES_FIELD_NOTE).toString());
+        }
+        return values.size() == 2 && actual == QHash<int, QString>{{7, QStringLiteral("联动😀\n日本語")}, {999, QStringLiteral("末尾\\\"")}};
+    };
+    check(mapper->serializeIgnoreRules(rules) == expectedRules, "ignore rules preserve every field, enum, Unicode and insertion order");
+    const auto capturedMacros = mapper->serializeMappingMacros(macros);
+    check(capturedMacros == expectedMacros
+        && capturedMacros.first().toMap().value(MACROLIST_FIELD_MACROCOMMENTS).userType() == QMetaType::QVariantList,
+        "macro fields, insertion order and QVariantList comments retain empty entries");
+    check(expectedNotes(mapper->serializeSyncGroupNotes(notes)), "notes preserve group IDs and omit only empty notes");
+    macros[QStringLiteral("Z-宏")].MacroComments[0] = QStringLiteral("changed");
+    check(capturedMacros == expectedMacros, "serialized values do not retain mutable source aliases");
+    macros[QStringLiteral("Z-宏")] = macro;
+    check(disk() == beforeDisk && mapper->m_SaveSettingDirty == beforeDirty, "pure serialization does not change disk or dirty");
+    const auto seed = [&] {
+        QKeyMapper::s_IgnoreWindowInfoMap = rules;
+        QKeyMapper::s_MappingMacroList = macros;
+        QKeyMapper::s_UniversalMappingMacroList = universal;
+        mapper->m_FloatingButtonSyncGroupNotes = notes;
+    };
+    const auto save = [&] {
+        mapper->saveIgnoreRulesToINI();
+        mapper->saveMacroListToINI(group);
+        mapper->saveUniversalMacroListToINI();
+        mapper->saveSyncGroupNotesToINI(group);
+    };
+    const auto load = [&] {
+        mapper->loadIgnoreRulesFromINI();
+        mapper->loadMacroListFromINI(group);
+        mapper->loadUniversalMacroListFromINI();
+        mapper->loadSyncGroupNotesFromINI(group);
+    };
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    const auto otherValues = [&] {
+        const QSet<QString> ownKeys{QString::fromLatin1(IGNOREWINDOWINFO_RULES), macroKey,
+            QString::fromLatin1(MACROLIST_UNIVERSAL), notesKey};
+        QVariantMap values;
+        const auto keys = ini.allKeys();
+        for (const auto &key : keys) if (!ownKeys.contains(key)) values.insert(key, ini.value(key));
+        return values;
+    };
+    const auto beforeOtherValues = otherValues();
+    if (!cold) { seed(); save(); }
+    ini.sync();
+    check(ini.status() == QSettings::NoError && ini.value(IGNOREWINDOWINFO_RULES).toList() == expectedRules
+        && ini.value(macroKey).toList() == expectedMacros && ini.value(MACROLIST_UNIVERSAL).toList() == expectedUniversal
+        && expectedNotes(ini.value(notesKey).toList()), cold ? "cold process reads actual persisted payloads" : "existing save wrappers write exact expected payloads");
+    QKeyMapper::s_IgnoreWindowInfoMap.clear(); QKeyMapper::s_MappingMacroList.clear();
+    QKeyMapper::s_UniversalMappingMacroList.clear(); mapper->m_FloatingButtonSyncGroupNotes.clear();
+    load();
+    check(mapper->serializeIgnoreRules(QKeyMapper::s_IgnoreWindowInfoMap) == expectedRules
+        && mapper->serializeMappingMacros(QKeyMapper::s_MappingMacroList) == expectedMacros
+        && mapper->serializeMappingMacros(QKeyMapper::s_UniversalMappingMacroList) == expectedUniversal
+        && expectedNotes(mapper->serializeSyncGroupNotes(mapper->m_FloatingButtonSyncGroupNotes)),
+        "existing loaders restore rules, both macro scopes and group notes");
+    if (!cold) {
+        const auto savedDisk = disk();
+        mapper->saveMacroListToINI(QString()); mapper->saveSyncGroupNotesToINI(QString());
+        ini.sync();
+        check(disk() == savedDisk, "empty profile names remain no-ops");
+        QKeyMapper::s_IgnoreWindowInfoMap.clear(); QKeyMapper::s_MappingMacroList.clear();
+        QKeyMapper::s_UniversalMappingMacroList.clear(); mapper->m_FloatingButtonSyncGroupNotes.clear();
+        save(); ini.sync();
+        check(ini.status() == QSettings::NoError && ini.contains(IGNOREWINDOWINFO_RULES) && ini.contains(macroKey)
+            && ini.contains(MACROLIST_UNIVERSAL) && ini.contains(notesKey)
+            && ini.value(IGNOREWINDOWINFO_RULES).toList().isEmpty() && ini.value(macroKey).toList().isEmpty()
+            && ini.value(MACROLIST_UNIVERSAL).toList().isEmpty() && ini.value(notesKey).toList().isEmpty(),
+            "empty lists overwrite stale data in all four save paths");
+        load();
+        check(QKeyMapper::s_IgnoreWindowInfoMap.isEmpty() && QKeyMapper::s_MappingMacroList.isEmpty()
+            && QKeyMapper::s_UniversalMappingMacroList.isEmpty() && mapper->m_FloatingButtonSyncGroupNotes.isEmpty(),
+            "empty payloads restore as empty, without default rules or stale rows");
+        seed(); save(); ini.sync();
+        check(ini.status() == QSettings::NoError, "final payload is flushed for an independent cold process");
+    } else check(disk() == beforeDisk, "cold verification does not rewrite the INI");
+    check(otherValues() == beforeOtherValues, "auxiliary saving changes no unrelated profile or global key");
+    check(mapper->m_SaveSettingDirty == beforeDirty, "auxiliary persistence retains the existing dirty behavior");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+        {QStringLiteral("cold"), cold}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
 Q_COREAPP_STARTUP_FUNCTION(installLifecycleTest)
 #define main qkmProductMain
 #include "../../main.cpp"
@@ -1734,7 +1902,8 @@ int main(int argc, char *argv[])
         QStringLiteral("gui_stop_restore"), QStringLiteral("gui_stop_restore_timeout"), QStringLiteral("runtime_revision"),
         QStringLiteral("hold_source_context"), QStringLiteral("unlock_source_context"), QStringLiteral("inactive_virtual_release"),
         QStringLiteral("mapping_add_plain"), QStringLiteral("mapping_add_conflicts"), QStringLiteral("mapping_add_guards"),
-        QStringLiteral("mapping_add_stale"), QStringLiteral("mapping_add_setup"), QStringLiteral("mapping_config_equality")};
+        QStringLiteral("mapping_add_stale"), QStringLiteral("mapping_add_setup"), QStringLiteral("mapping_config_equality"),
+        QStringLiteral("settings_serialization"), QStringLiteral("settings_serialization_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
@@ -1815,6 +1984,7 @@ int main(int argc, char *argv[])
         {QStringLiteral("virtualReleaseTrace"), QJsonArray::fromStringList(result->virtualReleaseTrace)},
         {QStringLiteral("mappingAddition"), result->mappingAdditionEvidence},
         {QStringLiteral("mappingEquality"), result->mappingEqualityEvidence},
+        {QStringLiteral("settingsSerialization"), result->settingsSerializationEvidence},
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};

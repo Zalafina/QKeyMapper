@@ -20604,14 +20604,10 @@ void QKeyMapper::updateIgnoreWindowInfoListDescriptionTranslation()
     }
 }
 
-void QKeyMapper::saveIgnoreRulesToINI()
+QVariantList QKeyMapper::serializeIgnoreRules(const OrderedMap<QString, IgnoreWindowInfo> &rules)
 {
-    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
-
-    // Convert OrderedMap to QVariantList for INI storage
     QVariantList rulesList;
-    for (const IgnoreWindowInfo &info : std::as_const(s_IgnoreWindowInfoMap)) {
+    for (const IgnoreWindowInfo &info : rules) {
         QVariantMap ruleMap;
         ruleMap["ruleName"] = info.ruleName;
         ruleMap["processName"] = info.processName;
@@ -20626,8 +20622,14 @@ void QKeyMapper::saveIgnoreRulesToINI()
         rulesList.append(ruleMap);
     }
 
-    // Save to INI file under General section
-    settingFile.setValue(IGNOREWINDOWINFO_RULES, rulesList);
+    return rulesList;
+}
+
+void QKeyMapper::saveIgnoreRulesToINI()
+{
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
+    settingFile.setValue(IGNOREWINDOWINFO_RULES, serializeIgnoreRules(s_IgnoreWindowInfoMap));
 }
 
 void QKeyMapper::loadIgnoreRulesFromINI()
@@ -20676,18 +20678,10 @@ void QKeyMapper::loadIgnoreRulesFromINI()
     }
 }
 
-void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
+QVariantList QKeyMapper::serializeMappingMacros(const OrderedMap<QString, MappingMacroData> &macros)
 {
-    if (setting_groupname.isEmpty()) {
-        return;
-    }
-
-    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
-
-    // Convert OrderedMap to QVariantList for INI storage
     QVariantList macroList;
-    for (auto it = s_MappingMacroList.begin(); it != s_MappingMacroList.end(); ++it) {
+    for (auto it = macros.begin(); it != macros.end(); ++it) {
         QVariantMap macroMap;
         macroMap[MACROLIST_FIELD_MACRONAME] = it.key();
         macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
@@ -20703,9 +20697,19 @@ void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
         macroList.append(macroMap);
     }
 
-    // Save to INI file under the specific setting group
+    return macroList;
+}
+
+void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
+{
+    if (setting_groupname.isEmpty()) {
+        return;
+    }
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     QString settingKey = setting_groupname + "/" + MACROLIST;
-    settingFile.setValue(settingKey, macroList);
+    settingFile.setValue(settingKey, serializeMappingMacros(s_MappingMacroList));
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[saveMacroListToINI] Saved " << s_MappingMacroList.size() << " macros to [" << settingKey << "]";
@@ -20776,18 +20780,10 @@ void QKeyMapper::loadMacroListFromINI(const QString &setting_groupname)
 
 // --- SyncGroupNotes save/load (follows saveMacroListToINI pattern) ---
 
-void QKeyMapper::saveSyncGroupNotesToINI(const QString &setting_groupname)
+QVariantList QKeyMapper::serializeSyncGroupNotes(const QHash<int, QString> &notes)
 {
-    if (setting_groupname.isEmpty()) {
-        return;
-    }
-
-    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
-
     QVariantList notesList;
-    for (auto it = m_FloatingButtonSyncGroupNotes.constBegin();
-         it != m_FloatingButtonSyncGroupNotes.constEnd(); ++it) {
+    for (auto it = notes.constBegin(); it != notes.constEnd(); ++it) {
         if (it.value().isEmpty()) {
             continue;
         }
@@ -20797,8 +20793,19 @@ void QKeyMapper::saveSyncGroupNotesToINI(const QString &setting_groupname)
         notesList.append(noteMap);
     }
 
+    return notesList;
+}
+
+void QKeyMapper::saveSyncGroupNotesToINI(const QString &setting_groupname)
+{
+    if (setting_groupname.isEmpty()) {
+        return;
+    }
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     QString settingKey = setting_groupname + "/" + SYNCGROUPNOTES;
-    settingFile.setValue(settingKey, notesList);
+    settingFile.setValue(settingKey, serializeSyncGroupNotes(m_FloatingButtonSyncGroupNotes));
 }
 
 void QKeyMapper::loadSyncGroupNotesFromINI(const QString &setting_groupname)
@@ -20840,26 +20847,8 @@ void QKeyMapper::saveUniversalMacroListToINI()
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
-    // Convert OrderedMap to QVariantList for INI storage
-    QVariantList macroList;
-    for (auto it = s_UniversalMappingMacroList.begin(); it != s_UniversalMappingMacroList.end(); ++it) {
-        QVariantMap macroMap;
-        macroMap[MACROLIST_FIELD_MACRONAME] = it.key();
-        macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
-        macroMap[MACROLIST_FIELD_MACROCATEGORY] = it.value().Category;
-        macroMap[MACROLIST_FIELD_MACRONOTE] = it.value().Note;
-
-        // Save comments as QVariantList
-        QVariantList commentsList;
-        for (const QString &c : std::as_const(it.value().MacroComments)) {
-            commentsList << c;
-        }
-        macroMap[MACROLIST_FIELD_MACROCOMMENTS] = commentsList;
-        macroList.append(macroMap);
-    }
-
     // Save to INI file under General (root) section
-    settingFile.setValue(MACROLIST_UNIVERSAL, macroList);
+    settingFile.setValue(MACROLIST_UNIVERSAL, serializeMappingMacros(s_UniversalMappingMacroList));
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[saveUniversalMacroListToINI] Saved " << s_UniversalMappingMacroList.size() << " universal macros to [" << MACROLIST_UNIVERSAL << "]";

@@ -2155,6 +2155,9 @@ public:
     static void saveUniversalMacroListToINI(void);
     static void loadUniversalMacroListFromINI(void);
 private:
+    static QVariantList serializeIgnoreRules(const OrderedMap<QString, IgnoreWindowInfo> &rules);
+    static QVariantList serializeMappingMacros(const OrderedMap<QString, MappingMacroData> &macros);
+    static QVariantList serializeSyncGroupNotes(const QHash<int, QString> &notes);
     QString loadKeyMapSetting(const QString &settingtext, bool load_all = false, bool preserveVButtonPanelVisibility = false);
     void loadEmptyMapSetting(void);
     void loadGeneralSetting(void);
