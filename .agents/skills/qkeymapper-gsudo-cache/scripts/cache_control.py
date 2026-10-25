@@ -73,7 +73,16 @@ def runtime_safe():
 def native_status(gsudo):
     result = subprocess.run([gsudo, "status", "--json"], capture_output=True, timeout=5, creationflags=NO_WINDOW)
     require(result.returncode == 0, "无法读取 gsudo 状态。", "native_status_failed")
-    return json.loads(result.stdout.decode("utf-8-sig"))
+    try:
+        status = json.loads(result.stdout.decode("utf-8-sig"))
+    except (ValueError, UnicodeError) as error:
+        raise CacheError("native_status_failed", "gsudo 状态不是有效的 UTF-8 JSON。") from error
+    require(type(status) is dict and type(status.get("CacheAvailable")) is bool
+        and type(status.get("CacheSessionsCount")) is int and status["CacheSessionsCount"] >= 0
+        and type(status.get("CacheSessions")) is list and len(status["CacheSessions"]) == status["CacheSessionsCount"]
+        and all(type(pipe) is str and pipe for pipe in status["CacheSessions"]),
+        "gsudo 状态字段缺失、类型错误或缓存数量不一致。", "native_status_failed")
+    return status
 
 
 class NativeBackend:
@@ -196,6 +205,8 @@ class Controller:
         require(len(self.seen) < 4096 or request.get("op") in ("status", "off"), "控制器请求记录已满，请关闭后重新创建。", "request_limit")
         if len(self.seen) < 4096:
             self.seen.add(request_id)
+        if self.window.expire(self.tick(), self.window.generation):
+            self.closing, self.close_reason = True, self.close_reason or "deadline_expired"
         try:
             operation = request.get("op")
             fields = {"status": set(), "off": set(), "set": {"deadline", "restore"},
@@ -212,7 +223,7 @@ class Controller:
                 self.scope = validate_scope(request.get("scope"))
                 self.answer(request_id, {**self.snapshot(), "action": "scope_registered"})
             elif operation == "off":
-                self.closing, self.close_reason = True, "user_off"
+                self.closing, self.close_reason = True, self.close_reason or "user_off"
                 self.answer(request_id, {**self.snapshot(), "action": "closing"})
             elif operation == "run":
                 require(self.pending is None and self.job is None and not self.closing, "有缓存调整或固定测试正在执行。", "busy")
@@ -258,10 +269,11 @@ class Controller:
                     self.window.install(self.tick(), left, pending["until"])
                     self.answer(pending["id"], {**self.snapshot(), "action": pending["action"], "previous_deadline": pending["old_until"]})
                 else:
-                    self.answer(pending["id"], error_result(CacheError("needs_uac" if code == 999 else "cache_update_failed",
-                        "UAC 已取消，未应用新窗口。" if code == 999 else "缓存调整未确认成功，未扩大原窗口。")))
+                    self.answer(pending["id"], {**error_result(CacheError("needs_uac" if code == 999 else "cache_update_failed",
+                        "UAC 已取消，未应用新窗口。" if code == 999 else "缓存调整未确认成功，未扩大原窗口。")),
+                        "native_exit_code": code, "requested_window_expired": left <= 0})
                     if not self.window.deadline:
-                        self.closing, self.close_reason = True, "cache_start_failed"
+                        self.closing, self.close_reason = True, self.close_reason or "cache_start_failed"
         if self.job:
             job = self.job
             code = job["process"].poll()
@@ -270,7 +282,8 @@ class Controller:
                 job["log"].close()
                 self.job = None
                 self.answer(job["id"], {"ok": code == 0, "action": "job_finished", "kind": job["kind"],
-                    "exit_code": code, "log": job["log_path"], "deadline_expired": self.closing})
+                    "exit_code": code, "log": job["log_path"],
+                    "deadline_expired": self.window.expire(self.tick(), self.window.generation), "close_reason": self.close_reason})
             elif self.tick() - job["started"] > job["budget"]:
                 self.closing, self.close_reason = True, "job_needs_attention"
         if not self.window.deadline and not self.pending and self.tick() - self.started > 30:
@@ -326,7 +339,7 @@ class Controller:
 def verified_controller(runtime=RUNTIME):
     try:
         state = read_json(runtime / "state.json")
-        require(state.get("workspace") == str(ROOT) and state.get("backend") == "native" and state.get("format_version") == 1,
+        require(type(state) is dict and state.get("workspace") == str(ROOT) and state.get("backend") == "native" and state.get("format_version") == 1,
                 "记录不属于本工作区或当前版本。")
         require(HEX_ID.fullmatch(state["instance"]) is not None, "记录代次不合法。")
         recorded, actual, own = Identity(**state["identity"]), identity(state["identity"]["pid"]), identity(os.getpid())
@@ -472,7 +485,9 @@ def main():
     parser.add_argument("--identity-probe", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.identity_probe:
-        print(json.dumps({**token_info(), "identity": asdict(identity(os.getpid()))}))
+        print(json.dumps({**token_info(), "identity": asdict(identity(os.getpid()))}), flush=True)
+        # Keep this fixed read-only fixture observable during cache expiry/off acceptance.
+        time.sleep(5)
         return 0
     if args.serve:
         serve()

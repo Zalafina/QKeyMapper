@@ -1323,4 +1323,4 @@ PC-W10／014ef2eb＋qkm_mapping_changes 纯模块、工程／组件测试。严�
 
 ## CACHE-SKILL-20261025-69
 
-PC-W10：26项单测及原生缓存核心／取消重试通过，误点负例保留；范围、失败、待验及接续见[补验记录](gsudo_cache_pending_validation.md)。未运行产品或输入，本地开发检查点，不作全面验收。
+PC-W10：51项单测、原生生命周期／共存及三固定入口通过，助手a5097898；旧失败保留，证据及接续见[补验记录](gsudo_cache_pending_validation.md)。Win11／休眠／长时待验，独立提交切点，不推送。

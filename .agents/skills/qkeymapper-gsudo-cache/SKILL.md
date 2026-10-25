@@ -36,6 +36,8 @@ description: 在 QKeyMapper 工作区查看、创建或调整专用普通测试�
 
 只查询状态不会保活或延长窗口。gsudo 的原生 duration 是空闲超时，实际最终限制由控制器单调时钟截止监视完成，到期关闭本 PID 全部缓存；持续执行命令也不延长授权。缩短不假定原生 cache on 覆盖了旧服务。
 
+控制器处理新请求前也核对硬截止；已经到期的旧窗口不能由轮询间隙中的调整请求复活。先确认其关闭，再按用户明确的新请求创建窗口；结果未知仍只查询原请求。失败中的 native_exit_code／requested_window_expired 用于区分原生批准、取消和实际到期，原生exit 0不等于窗口已应用。
+
 长命令使用可返回会话 ID 的工具执行并持续报告进展，不让工具等待阻塞沟通。请求超时会返回 request_id；用 `result <request_id>` 查询保存结果，不重发变更。结果为历史事实，当前有效状态须另查 status；控制器退出／结果淘汰后未知，不假定操作未发生。UAC 取消（999）不自动重试或替用户批准。
 
 ## 让后续测试复用该控制器
@@ -48,6 +50,8 @@ description: 在 QKeyMapper 工作区查看、创建或调整专用普通测试�
 - `run --job-file <JSON>`：内容仅为 kind 与 arguments。kind 对应已登记入口；固定适配器组装现有脚本参数，禁止任意命令／shell／脚本。产品及源查询参数沿现有 CLI，输入回归使用显式授权标志，不自动追加。
 - `identity_probe` 的 arguments 必须为空，只读取固定进程令牌，供本技能验收。其他固定入口复用现有正式产品、源查询和输入回归；单次预算含清理分别为630／630／1230秒，窗口不足明确拒绝，不自行延长。
 
+身份探针输出后固定等待5秒退出，仅供观察活动任务关闭边界。补验脚本 accept_cache.py 的缓存场景不启动产品；source_cleanup 例外，必须已有私有桌面源测试授权，并提供固定 --job-file 和 --scope-file，不能从时间调整推导这项授权。
+
 已授权测试应经本控制器运行，子脚本不加 `--gsudo-cache`，以继承父控制器的缓存；不要每个短命令另建 PID 缓存。开发、Git、构建、SDK、桥接、注入、采样及截图始终普通权限，仅原有必要启动／关闭及获准固定 GUI 动作经 gsudo。scope 不能用于运行这些开发命令提权。
 
 ## 生命周期与交接
@@ -58,4 +62,4 @@ description: 在 QKeyMapper 工作区查看、创建或调整专用普通测试�
 
 更新进度／验收到本任务唯一主计划，不在技能内维护任务进度。MCP 主计划入口：`handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md`，缓存边界见 CACHE-40。不要恢复 `out` 中已经结束的旧临时控制器，不修改全局 CacheMode／CacheDuration，不使用 PID 0、无限期或全局 -k。
 
-本轮实测为Win10／gsudo2.6.1，仅完成基础检查点；三个固定入口的真实复用、Win11、长期驻留及更多异常待补，见 `handoff/qkeymapper_mcp_control/gsudo_cache_pending_validation.md`。换PC或gsudo版本变化后先核对环境并补短时原生场景，不直接沿用本机结果。
+环境及覆盖按实际OS／gsudo／Python版本分别记录，证据和未验边界见 `handoff/qkeymapper_mcp_control/gsudo_cache_pending_validation.md`。换PC或gsudo版本变化后先核对依赖和身份、补选定短时原生场景，再使用已有授权的固定入口；不沿用另一PC的PID或把模拟／短测当作真实休眠及长期验收。
