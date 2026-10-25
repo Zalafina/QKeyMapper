@@ -1,11 +1,13 @@
 ---
 name: qkeymapper-gsudo-cache
-description: 在 QKeyMapper 工作区查看、创建或调整专用普通测试控制器的 gsudo PID 缓存窗口，支持中英文时长、截止时间及恢复五分钟；用于临时离开电脑时减少已授权测试的重复 UAC。
+description: 在 QKeyMapper 工作区查看、创建或调整普通测试控制器的 gsudo PID 缓存窗口，支持中英文时长、截止时间及恢复五分钟，并按本机日志只读复查运行状况；用于减少已授权测试的重复 UAC。
 ---
 
 # QKeyMapper 临时缓存
 
 使用本技能处理缓存状态、时长、截止时间、恢复默认及关闭。缓存指令不恢复暂停的开发，也不新增真实输入、驱动或 GUI 授权。技能被加载、用户引用用法或只问格式时，不执行缓存变更。
+
+详细用法、日志字段及可复制的只读复查提示词见[使用与运行复查说明](references/usage.md)。用户要求运行状况复查时先读该说明，只读分析已有记录，不将“复查”转成缓存变更或自动重跑验收。
 
 ## 使用入口
 
@@ -62,4 +64,14 @@ description: 在 QKeyMapper 工作区查看、创建或调整专用普通测试�
 
 更新进度／验收到本任务唯一主计划，不在技能内维护任务进度。MCP 主计划入口：`handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md`，缓存边界见 CACHE-40。不要恢复 `out` 中已经结束的旧临时控制器，不修改全局 CacheMode／CacheDuration，不使用 PID 0、无限期或全局 -k。
 
-环境及覆盖按实际OS／gsudo／Python版本分别记录，证据和未验边界见 `handoff/qkeymapper_mcp_control/gsudo_cache_pending_validation.md`。换PC或gsudo版本变化后先核对依赖和身份、补选定短时原生场景，再使用已有授权的固定入口；不沿用另一PC的PID或把模拟／短测当作真实休眠及长期验收。
+环境及覆盖按实际OS／gsudo／Python版本分别记录，证据和未验边界见 `handoff/qkeymapper_mcp_control/gsudo_cache_pending_validation.md`。换PC或gsudo版本变化后先核对依赖和身份，再按下述日常观察策略使用与复查；不沿用另一PC的PID或把模拟／短测当作真实休眠及长期验收。
+
+## 日常记录与复查
+
+受管控制器自动向本机 `out/gsudo_cache/history/events-YYYYMMDD-NNNN.jsonl` 追加精简历史：关键请求／结果、窗口和任务变化、关闭核实，以及最多每60秒一次的自身存活／资源摘要。心跳不调用gsudo、不执行提权探针、不续期；cache_available必须连同native_checked_at理解，旧观测不是当前事实。正常status不逐条写历史，无控制器的查询也不创建记录进程。
+
+记录采用字段白名单，不写凭据、SID／用户名、完整私人路径、配置／映射、完整命令或授权reason。每文件约1 MiB，写入时按30天／总20 MiB先到上限轮转，只清理自身摘要文件；原有原生／任务日志不受此轮转管理。
+
+日志失败不改变缓存操作结果或阻止清理；status／closed中的history描述最近写入和missed_events，恢复写入不抹去缺口。发现记录失败时说明诊断不完整，不谎报缓存操作失败或自动重建缓存。没有结尾、日志轮转、损坏行及只有心跳都不能证明此前任务／清理成功。
+
+其他PC／长时／自然休眠改为日常使用中积累证据后复查，不单独等待凑样本。只有异常或关键证据不足影响使用时补最小必要测试，不要求每次换机完整复跑。结论只覆盖实际发生的系统、代码版本、会话和窗口；不恢复暂停的MCP开发。

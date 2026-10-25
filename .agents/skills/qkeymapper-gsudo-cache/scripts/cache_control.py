@@ -19,6 +19,7 @@ import uuid
 
 from cache_core import (CHINA, DEFAULT_SECONDS, CacheError, Window, build_job,
                         parse_command, require, seconds_ok, validate_scope)
+from cache_history import HEARTBEAT_SECONDS, History, environment
 
 SCRIPT = Path(__file__).resolve()
 ROOT = next(p for p in SCRIPT.parents if (p / "QKeyMapper/QKeyMapper.pro").is_file())
@@ -30,6 +31,7 @@ import win32api
 import win32con
 import win32event
 import win32file
+import win32process
 import win32security
 
 RUNTIME = ROOT / "out/gsudo_cache"
@@ -95,6 +97,24 @@ class NativeBackend:
         self.gsudo = shutil.which("gsudo.exe")
         require(self.gsudo is not None, "未找到本机 gsudo。", "gsudo_missing")
         require(not self.info()["cache_available"], "控制器意外继承其他祖先进程的缓存，未将其接管。", "unexpected_inherited_cache")
+        try:
+            self.history_context = {**environment(SCRIPT.parent), "integrity": 8192,
+                "windows_session_id": self.owner.session,
+                "login_tag": hashlib.sha256((self.owner.user + self.owner.logon + str(self.owner.authentication)).encode()).hexdigest()[:12]}
+        except Exception:
+            self.history_context = {"integrity": 8192}
+        try:
+            version = win32api.GetFileVersionInfo(self.gsudo, "\\")
+            high, low = version["FileVersionMS"], version["FileVersionLS"]
+            self.history_context["gsudo_version"] = ".".join(str(x) for x in (high >> 16, high & 65535, low >> 16, low & 65535))
+        except Exception:
+            self.history_context["gsudo_version"] = "unavailable"
+
+    def resources(self):
+        process = win32api.GetCurrentProcess()
+        memory, times = win32process.GetProcessMemoryInfo(process), win32process.GetProcessTimes(process)
+        return {"working_set_bytes": memory["WorkingSetSize"],
+                "cpu_seconds": (times["KernelTime"] + times["UserTime"]) / 10_000_000}
 
     def info(self):
         status = native_status(self.gsudo)
@@ -143,6 +163,24 @@ class Controller:
         self.runtime.mkdir(parents=True, exist_ok=True)
         for folder in ("requests", "results", "logs"):
             (runtime / folder).mkdir(exist_ok=True)
+        self.history = History(runtime, self.instance, backend.owner.pid, backend.owner.created, tick, wall,
+            {**getattr(backend, "history_context", {}), "backend": backend.name})
+        self.next_heartbeat = tick() + HEARTBEAT_SECONDS
+
+    def record(self, event, **fields):
+        try:
+            data = {"generation": self.window.generation, "deadline": self.window.until,
+                "remaining_seconds": round(self.window.remaining(self.tick()), 3), "closing": self.closing,
+                "close_reason": self.close_reason, "job_kind": self.job["kind"] if self.job else None,
+                "pending_request": self.pending["id"] if self.pending else None,
+                "cache_available": self.native.get("cache_available") if self.native.get("checked_at") else None,
+                "native_checked_at": self.native.get("checked_at"), "scope": list(self.scope),
+                "input_flags": [key for key in ("allow_default", "allow_focus_click", "allow_late_forced_up")
+                    if self.scope.get("input_regression", {}).get(key) is True]}
+            self.history.emit(event, **{**data, **fields})
+        except Exception:
+            self.history.sequence += 1
+            self.history.failed("history_record_failed")
 
     def snapshot(self, refresh=False):
         if refresh:
@@ -155,18 +193,24 @@ class Controller:
             "generation": self.window.generation, "default_seconds": DEFAULT_SECONDS,
             "scope": self.scope, "current_job": self.job["kind"] if self.job else None,
             "pending_request": self.pending["id"] if self.pending else None,
-            "close_reason": self.close_reason, "last_error": self.last_error, **self.native}
+            "close_reason": self.close_reason, "last_error": self.last_error,
+            "history": self.history.status(), **self.native}
 
     def publish(self):
         write_json(self.runtime / "state.json", self.snapshot())
 
-    def answer(self, request_id, value):
+    def answer(self, request_id, value, operation=None):
         value = {**value, "request_id": request_id, "instance": self.instance}
         write_json(self.runtime / "results" / (request_id + ".json"), value)
         self.results[request_id] = value
         while len(self.results) > 64:
             old, _ = self.results.popitem(last=False)
             (self.runtime / "results" / (old + ".json")).unlink(missing_ok=True)
+        if operation is not None and (operation != "status" or not value.get("ok")):
+            self.record("request_result", request_id=request_id, operation=operation,
+                job_kind=value.get("kind", self.job["kind"] if self.job else None),
+                **{key: value[key] for key in ("ok", "action", "error", "previous_deadline", "native_exit_code",
+                    "requested_window_expired", "deadline_expired", "exit_code") if key in value})
 
     def set_window(self, request_id, request):
         require(self.pending is None and not self.closing, "缓存调整正在执行或关闭，请先查询结果。", "busy")
@@ -182,7 +226,7 @@ class Controller:
         action = "restored" if request.get("restore") is True else "extended" if old_remaining and remaining > old_remaining else "shortened" if old_remaining else "created"
         if self.native["cache_available"] and old_remaining and remaining <= old_remaining:
             self.window.install(self.tick(), remaining, until.isoformat())
-            self.answer(request_id, {**self.snapshot(), "action": action, "previous_deadline": old_until})
+            self.answer(request_id, {**self.snapshot(), "action": action, "previous_deadline": old_until}, "set")
             return
         log = (self.runtime / "logs" / (request_id + "-cache.log")).open("wb")
         try:
@@ -193,6 +237,7 @@ class Controller:
         self.pending = {"id": request_id, "process": process, "log": log, "started": self.tick(),
             "deadline_tick": self.tick() + remaining, "until": until.isoformat(), "old_until": old_until,
             "action": "reenabled" if old_remaining and not self.native["cache_available"] else action}
+        self.record("cache_request", request_id=request_id, requested_deadline=until.isoformat(), previous_deadline=old_until)
 
     def handle(self, request):
         require(type(request) is dict, "请求须为对象。")
@@ -200,31 +245,35 @@ class Controller:
         require(type(request_id) is str and HEX_ID.fullmatch(request_id), "请求 ID 不合法。")
         if request_id in self.seen:
             if request_id not in self.results and not (self.pending and self.pending["id"] == request_id) and not (self.job and self.job["id"] == request_id):
-                self.answer(request_id, error_result(CacheError("result_evicted", "该请求已经处理，结果已淘汰；未重新执行。")))
+                self.answer(request_id, error_result(CacheError("result_evicted", "该请求已经处理，结果已淘汰；未重新执行。")), "duplicate")
             return
         require(len(self.seen) < 4096 or request.get("op") in ("status", "off"), "控制器请求记录已满，请关闭后重新创建。", "request_limit")
         if len(self.seen) < 4096:
             self.seen.add(request_id)
         if self.window.expire(self.tick(), self.window.generation):
             self.closing, self.close_reason = True, self.close_reason or "deadline_expired"
+        operation = request.get("op")
+        history_op = operation if type(operation) is str and operation in ("status", "off", "set", "authorize", "run") else "invalid"
+        if history_op != "status":
+            self.record("request", request_id=request_id, operation=history_op,
+                requested_deadline=request.get("deadline"), restore=request.get("restore") is True)
         try:
-            operation = request.get("op")
             fields = {"status": set(), "off": set(), "set": {"deadline", "restore"},
                 "authorize": {"scope"}, "run": {"kind", "arguments"}}
             require(type(operation) is str and operation in fields and set(request) <= {"id", "instance", "op"} | fields[operation], "请求字段不合法。")
             require("restore" not in request or type(request["restore"]) is bool, "恢复标志须为布尔值。")
             require(request.get("instance") == self.instance, "请求属于其他或已经结束的控制器。", "stale_controller")
             if operation == "status":
-                self.answer(request_id, self.snapshot(refresh=True))
+                self.answer(request_id, self.snapshot(refresh=True), "status")
             elif operation == "set":
                 self.set_window(request_id, request)
             elif operation == "authorize":
                 require(not self.closing, "控制器正在关闭。", "busy")
                 self.scope = validate_scope(request.get("scope"))
-                self.answer(request_id, {**self.snapshot(), "action": "scope_registered"})
+                self.answer(request_id, {**self.snapshot(), "action": "scope_registered"}, "authorize")
             elif operation == "off":
                 self.closing, self.close_reason = True, self.close_reason or "user_off"
-                self.answer(request_id, {**self.snapshot(), "action": "closing"})
+                self.answer(request_id, {**self.snapshot(), "action": "closing"}, "off")
             elif operation == "run":
                 require(self.pending is None and self.job is None and not self.closing, "有缓存调整或固定测试正在执行。", "busy")
                 command, budget = build_job(self.root, sys.executable, request.get("kind"), request.get("arguments"), self.scope)
@@ -242,10 +291,11 @@ class Controller:
                     raise
                 self.job = {"id": request_id, "process": process, "log": log, "kind": request["kind"],
                     "started": self.tick(), "budget": budget, "log_path": str(log_path)}
+                self.record("job_start", request_id=request_id, budget_seconds=budget)
             else:
                 raise CacheError("invalid_arguments", "不支持该控制操作。")
         except Exception as error:
-            self.answer(request_id, error_result(error))
+            self.answer(request_id, error_result(error), history_op)
         self.publish()
 
     def advance(self):
@@ -267,11 +317,11 @@ class Controller:
                 left = pending["deadline_tick"] - self.tick()
                 if code == 0 and self.native["cache_available"] and left > 0 and not self.closing:
                     self.window.install(self.tick(), left, pending["until"])
-                    self.answer(pending["id"], {**self.snapshot(), "action": pending["action"], "previous_deadline": pending["old_until"]})
+                    self.answer(pending["id"], {**self.snapshot(), "action": pending["action"], "previous_deadline": pending["old_until"]}, "set")
                 else:
                     self.answer(pending["id"], {**error_result(CacheError("needs_uac" if code == 999 else "cache_update_failed",
                         "UAC 已取消，未应用新窗口。" if code == 999 else "缓存调整未确认成功，未扩大原窗口。")),
-                        "native_exit_code": code, "requested_window_expired": left <= 0})
+                        "native_exit_code": code, "requested_window_expired": left <= 0}, "set")
                     if not self.window.deadline:
                         self.closing, self.close_reason = True, self.close_reason or "cache_start_failed"
         if self.job:
@@ -283,27 +333,38 @@ class Controller:
                 self.job = None
                 self.answer(job["id"], {"ok": code == 0, "action": "job_finished", "kind": job["kind"],
                     "exit_code": code, "log": job["log_path"],
-                    "deadline_expired": self.window.expire(self.tick(), self.window.generation), "close_reason": self.close_reason})
+                    "deadline_expired": self.window.expire(self.tick(), self.window.generation), "close_reason": self.close_reason}, "run")
             elif self.tick() - job["started"] > job["budget"]:
                 self.closing, self.close_reason = True, "job_needs_attention"
         if not self.window.deadline and not self.pending and self.tick() - self.started > 30:
             self.closing, self.close_reason = True, self.close_reason or "unused_controller"
         if self.closing:
             # A late cache-on may complete after expiry; keep the owner alive until it is reaped.
+            first_close = not self.cache_closed
             if not self.cache_closed:
                 self.backend.off()
                 self.cache_closed = True
             self.native = self.backend.info()
+            if first_close:
+                self.record("cache_off_checked", ok=self.native.get("cache_available") is False)
             if self.pending is None and self.job is None:
                 self.window.clear()
                 self.publish()
                 return False
         if changed:
             self.publish()
+        if self.tick() >= self.next_heartbeat:
+            self.next_heartbeat = self.tick() + HEARTBEAT_SECONDS
+            try:
+                resources = self.backend.resources() if hasattr(self.backend, "resources") else {}
+            except Exception:
+                resources = {"resource_error": "resource_unavailable"}
+            self.record("heartbeat", **resources)
         return True
 
     def serve(self):
         self.publish()
+        self.record("controller_start")
         try:
             while True:
                 paths = sorted((self.runtime / "requests").glob("*.json"), key=lambda p: p.stat().st_mtime_ns)
@@ -316,7 +377,7 @@ class Controller:
                         self.handle(request)
                     except Exception as error:
                         if HEX_ID.fullmatch(path.stem):
-                            self.answer(path.stem, error_result(error))
+                            self.answer(path.stem, error_result(error), "invalid")
                     finally:
                         path.unlink(missing_ok=True)
                 if not self.advance():
@@ -326,13 +387,20 @@ class Controller:
             self.last_error = error_result(error) if isinstance(error, Exception) else {"error": "interrupted"}
             raise
         finally:
-            if self.pending:
-                self.pending["process"].terminate()
-                self.pending["process"].wait(timeout=5)
-                self.pending["log"].close()
-            self.backend.off()
-            self.native = self.backend.info()
-            self.closing = True
+            try:
+                if self.pending:
+                    self.pending["process"].terminate()
+                    self.pending["process"].wait(timeout=5)
+                    self.pending["log"].close()
+                self.backend.off()
+                self.native = self.backend.info()
+                self.closing = True
+            except Exception as error:
+                self.record("cleanup_failed", error=error_result(error)["error"])
+                raise
+            self.record("controller_finish", cleanup_complete=self.native.get("cache_available") is False
+                and self.pending is None and self.job is None and self.last_error is None,
+                error=self.last_error.get("error") if self.last_error else None)
             write_json(self.runtime / "closed.json", {**self.snapshot(), "status": "closed"})
 
 

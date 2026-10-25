@@ -1321,6 +1321,6 @@ PC-W10／014ef2eb＋qkm_mapping_changes 纯模块、工程／组件测试。严�
 
 证据仅本机 out/mcp_bridge/map67b-checkpoint-{qt6,qt5}-{build,native}.txt 及 qtest.txt。未验证接线当时存本机草稿并撤回，后续 Git 归档见主计划，仍八工具／四只读；无新产品、GUI、输入、性能或 Win11 结论。本地开发检查点，下一步和换机规则见主计划。
 
-## CACHE-SKILL-20261025-69
+## CACHE-SKILL-20261025-69／70
 
-PC-W10：51项单测、原生生命周期／共存及三固定入口通过，助手a5097898；旧失败保留，证据及接续见[补验记录](gsudo_cache_pending_validation.md)。Win11／休眠／长时待验，独立提交切点，不推送。
+PC-W10：69的51项／原生场景及70的67项／普通日志验证见[记录](gsudo_cache_pending_validation.md)；助手a5097898，旧失败保留。跨PC／长时改日常观察，未覆盖不算通过；MCP暂停。
