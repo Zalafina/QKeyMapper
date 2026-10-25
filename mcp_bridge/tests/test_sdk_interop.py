@@ -10,6 +10,7 @@ import subprocess
 import sys
 import time
 import uuid
+from datetime import datetime, timedelta
 from contextlib import closing
 from pathlib import Path
 
@@ -29,7 +30,17 @@ from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.protocol import BridgeError
 from qkeymapper_mcp.windows import identity
 
-TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state", "qkm_get_help", "qkm_query"}
+TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state", "qkm_get_help", "qkm_query",
+         "qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes", "qkm_get_operation"}
+BUSINESS_CAPABILITIES = {"state.read", "catalog.read", "source.read", "help.read", "mapping.add.preview",
+                         "mapping.add.apply", "mapping.preview.cancel", "operation.read"}
+
+
+def business_state(state):
+    run = dict(state["run"])
+    sampled = datetime.fromisoformat(run.pop("sampled_at_utc").replace("Z", "+00:00"))
+    assert sampled.utcoffset() == timedelta(0), "Run status must carry a UTC sample time"
+    return dict(state, run=run)
 
 
 def elevation(process) -> int:
@@ -234,6 +245,18 @@ async def run(args):
             assert (await client.call_tool("qkm_get_help", invalid)).is_error
         await call(client, "qkm_get_help", {"topic": "basic_mapping"}, error="not_connected")
         await call(client, "qkm_query", {"entity": "tabs"}, error="not_connected")
+        change = {"source_revision": "a" * 64, "source_tab_ref": "a" * 64 + ":source:0",
+                  "original_key": "A", "mapping_key": "B"}
+        for name, arguments in (("qkm_preview_changes", change),
+                ("qkm_apply_changes", {"preview_id": "b" * 32}),
+                ("qkm_cancel_changes", {"preview_id": "b" * 32}),
+                ("qkm_get_operation", {"operation_id": "b" * 32})):
+            await call(client, name, arguments, error="not_connected")
+        for invalid in ({"original_key": "a"}, {"mapping_key": "A+B"}, {"insert_row": True},
+                        {"insert_row": -1}, {"source_tab_ref": "a" * 64 + ":source:01"}):
+            assert (await client.call_tool("qkm_preview_changes", dict(change, **invalid))).is_error
+        for invalid in ({"preview_id": "bad"}, {"confirm_conflicts": 1}, {"confirm_conflicts": "true"}):
+            assert (await client.call_tool("qkm_apply_changes", {"preview_id": "b" * 32, **invalid})).is_error
         assert (await call(client, "qkm_connect"))["accepted"]
         assert (await connection(client, "failed"))["error"] == "application_unavailable"
         passed("SDK initialize/list/call with application absent")

@@ -168,6 +168,20 @@ class Bridge:
             arguments["source_tab_ref"] = source_tab_ref
         return await self._call("qkm_query", arguments)
 
+    async def preview_changes(self, source_revision: str, source_tab_ref: str,
+                              original_key: str, mapping_key: str, insert_row: int | None = None) -> dict:
+        return await self._call("qkm_preview_changes", dict(source_revision=source_revision,
+            source_tab_ref=source_tab_ref, original_key=original_key, mapping_key=mapping_key, insert_row=insert_row))
+
+    async def apply_changes(self, preview_id: str, confirm_conflicts: bool = False) -> dict:
+        return await self._call("qkm_apply_changes", dict(preview_id=preview_id, confirm_conflicts=confirm_conflicts))
+
+    async def cancel_changes(self, preview_id: str) -> dict:
+        return await self._call("qkm_cancel_changes", dict(preview_id=preview_id))
+
+    async def get_operation(self, operation_id: str) -> dict:
+        return await self._call("qkm_get_operation", dict(operation_id=operation_id))
+
     async def _call(self, method: str, arguments: dict | None = None) -> dict:
         future = self._submit(lambda: self._request(method, arguments if arguments is not None else {}))
         if future is None:

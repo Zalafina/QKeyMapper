@@ -1,9 +1,10 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','ApproveRead','Revoke','Disable','CloseMcp',
+    [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','ApproveRead','ApproveConfigure','Revoke','Disable','CloseMcp',
         'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows',
         'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent',
-        'StartMapping','StopMapping')][string]$Action,
+        'AddBasicMapping','ClearBasicMapping','ShowForCapture','OpenFloatingSetup','CloseFloatingSetup',
+        'SyncGroupOne','SyncGroupZero','StartMapping','StopMapping')][string]$Action,
     [Parameter(Mandatory)][int]$TargetProcessId,
     [Parameter(Mandatory)][string]$ExecutablePath,
     [Parameter(Mandatory)][long]$StartTicks,
@@ -31,7 +32,9 @@ if (-not $expected.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCas
     [IO.Path]::GetFileName($expected) -notmatch '^QKeyMapperMcpAcceptance_[a-zA-Z0-9_]+\.exe$' -or
     ($DesktopName -notmatch '^QkmProduct_[a-f0-9]{32}$' -and -not $engineDefault) -or
     ($AllowDefaultDesktop -and -not $engineDefault) -or
-    ($Action -in 'StartMapping','StopMapping' -and -not $engineDefault)) { throw 'Select an owned, isolated product fixture.' }
+    ($Action -in 'StartMapping','StopMapping','ClearBasicMapping','ShowForCapture','OpenFloatingSetup',
+        'CloseFloatingSetup','SyncGroupOne','SyncGroupZero' -and -not $engineDefault) -or
+    ($Action -eq 'AddBasicMapping' -and $engineDefault)) { throw 'Select an owned, isolated product fixture.' }
 if (-not (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)) { throw 'This authorized UI helper requires elevation.' }
 $target = Get-Process -Id $TargetProcessId -ErrorAction Stop
@@ -84,6 +87,8 @@ public static class QkmProductUiDesktop {
     [DllImport("user32.dll", CharSet=CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, StringBuilder text, int length);
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
     [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
+    [DllImport("user32.dll", SetLastError=true)] private static extern bool SetWindowPos(IntPtr window,
+        IntPtr insertAfter, int x, int y, int width, int height, uint flags);
     [DllImport("user32.dll")] private static extern uint MapVirtualKey(uint key, uint type);
     [DllImport("user32.dll", SetLastError=true)]
     private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, UIntPtr wparam, IntPtr lparam,
@@ -166,6 +171,11 @@ public static class QkmProductUiDesktop {
     public static void OpenConfigurationPopup(IntPtr window, uint process, string desktop, int x, int y) {
         ClickControl(window, process, desktop, x, y, false);
     }
+    public static void RaiseForSnapshot(IntPtr window, uint process, string desktop) {
+        ValidateWindow(window, process, desktop);
+        if (desktop != "Default" || !SetWindowPos(window, IntPtr.Zero, 0, 0, 0, 0, 0x53))
+            throw new InvalidOperationException("Cannot show the owned Default window for capture.");
+    }
 }
 '@
 Add-Type -AssemblyName UIAutomationClient
@@ -180,6 +190,7 @@ if ($engineDefault) {
     }
 }
 $mcpNames = @('Agent / MCP 控制','Agent / MCP Control','Agent / MCP 操作')
+$floatingNames = @('悬浮按钮设定','悬浮按钮设置','Floating Button Setup','フローティングボタン設定')
 
 function Find-OwnedWindow {
     param([string[]]$Names)
@@ -239,7 +250,7 @@ function Select-Control {
     }
 }
 
-$viewActions = @('ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows')
+$viewActions = @('ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup')
 $mappingActions = $viewActions + @('SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')
 function Get-MappingGrid {
     $condition = [Windows.Automation.OrCondition]::new(
@@ -283,14 +294,85 @@ function Read-MappingView {
         configuration_read_method = 'ValuePattern'; mapping_rows = $rows; mapping_row_count = $rows.Count;
         separator_rows = $separators;
         mapping_table_read_method = 'GridPattern.Item.Name'; mapping_button_text = $startButton.Current.Name;
-        stop_shortcut_edit = $stopKey.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value }
+        stop_shortcut_edit = $stopKey.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value;
+        add_button_enabled = (Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'addmapdataButton' @()).Current.IsEnabled }
+}
+
+function Select-BasicKey {
+    param([string]$Id, [ValidateSet('A','B')][string]$Key)
+    $combo = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) $Id @()
+    if (-not $combo.Current.IsEnabled) { throw 'The basic key selector is not enabled.' }
+    $before = @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null))
+    $bounds = $combo.Current.BoundingRectangle
+    [QkmProductUiDesktop]::OpenConfigurationPopup($main, $TargetProcessId, $DesktopName,
+        [int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
+    $popup = [IntPtr]::Zero
+    try {
+        $deadline = [DateTime]::UtcNow.AddSeconds(3)
+        do {
+            $candidates = @()
+            foreach ($handle in @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null) | Where-Object { $before -notcontains $_ })) {
+                $candidate = [Windows.Automation.AutomationElement]::FromHandle($handle)
+                $editsCondition = [Windows.Automation.PropertyCondition]::new(
+                    [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Edit)
+                $listCondition = [Windows.Automation.PropertyCondition]::new(
+                    [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::List)
+                $edits = @($candidate.FindAll([Windows.Automation.TreeScope]::Descendants, $editsCondition) | Where-Object { -not $_.Current.IsOffscreen })
+                $lists = @($candidate.FindAll([Windows.Automation.TreeScope]::Descendants, $listCondition) | Where-Object { -not $_.Current.IsOffscreen })
+                if ($candidate.Current.ProcessId -eq $TargetProcessId -and $edits.Count -eq 1 -and $lists.Count -eq 1) {
+                    $candidates += $handle
+                }
+            }
+            if ($candidates.Count -eq 1) { break }
+            Start-Sleep -Milliseconds 30
+        } while ([DateTime]::UtcNow -lt $deadline)
+        if ($candidates.Count -ne 1) { throw 'Expected one owned key-selector popup.' }
+        $popup = $candidates[0]
+        $root = [Windows.Automation.AutomationElement]::FromHandle($popup)
+        $condition = [Windows.Automation.PropertyCondition]::new(
+            [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Edit)
+        $edits = @($root.FindAll([Windows.Automation.TreeScope]::Descendants, $condition) | Where-Object { -not $_.Current.IsOffscreen })
+        if ($edits.Count -ne 1 -or $edits[0].Current.ProcessId -ne $TargetProcessId) { throw 'Expected one owned key search edit.' }
+        $edits[0].GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).SetValue($Key)
+        $item = Find-Control $root ([Windows.Automation.ControlType]::ListItem) '' @($Key)
+        $bounds = $item.Current.BoundingRectangle
+        [QkmProductUiDesktop]::OpenConfigurationPopup($popup, $TargetProcessId, $DesktopName,
+            [int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
+        $deadline = [DateTime]::UtcNow.AddSeconds(3)
+        do {
+            $value = $combo.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
+            if ($value -ceq $Key) { break }
+            Start-Sleep -Milliseconds 30
+        } while ([DateTime]::UtcNow -lt $deadline)
+        if ($value -cne $Key) { throw 'The key-selector GUI event did not select the requested key.' }
+    } finally {
+        if ($popup -ne [IntPtr]::Zero -and @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null)) -contains $popup) {
+            [QkmProductUiDesktop]::Key($popup, $TargetProcessId, $DesktopName, 0x1B)
+        }
+    }
 }
 
 $mappingObservation = $null
-if ($Action -in $mappingActions) {
+if ($Action -eq 'AddBasicMapping') {
+    Select-Control (Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定'))
+    $before = Read-MappingView
+    if ($before.configuration_display -cne '' -or $before.mapping_button_text -cne '映射开始' -or
+        $before.mapping_row_count -gt 1) { throw 'Basic addition requires the bounded blank, idle fixture.' }
+    Select-BasicKey 'orikeyComboBox' 'A'
+    Select-BasicKey 'mapkeyComboBox' 'B'
+    Invoke-Button $mainRoot 'addmapdataButton' @()
+    $deadline = [DateTime]::UtcNow.AddSeconds(3)
+    do {
+        $mappingObservation = Read-MappingView
+        if ($mappingObservation.mapping_row_count -eq $before.mapping_row_count + 1) { break }
+        Start-Sleep -Milliseconds 30
+    } while ([DateTime]::UtcNow -lt $deadline)
+    if ($mappingObservation.mapping_row_count -ne $before.mapping_row_count + 1) { throw 'GUI addition was not observed.' }
+    $mappingObservation.gui_event_method = 'owned_key_popup_search_and_mouse_selection_UIA_add_button'
+} elseif ($Action -in $mappingActions) {
     $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')
     Select-Control $mappingTab
-    if ($Action -in 'ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows') {
+    if ($Action -in 'ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
         $names = switch ($Action) {
             'ReadTab2' { @('Tab2') }
             'ReadCommon' { @('共通','Common') }
@@ -298,20 +380,27 @@ if ($Action -in $mappingActions) {
         }
         Select-Control (Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' $names)
     }
-    if ($Action -in 'MoveSecondUp','RestoreFirstRows') {
+    if ($Action -in 'MoveSecondUp','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
         $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
-        if ($configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne 'McpSaved') {
-            throw 'Reordering requires the fixed McpSaved source fixture.'
+        $fixedBasic = $Action -in 'ClearBasicMapping','OpenFloatingSetup'
+        $expectedGroup = if ($fixedBasic) { 'Engine61' } else { 'McpSaved' }
+        if ($configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne $expectedGroup) {
+            throw 'The fixed source fixture is not selected.'
         }
         $table = Get-MappingGrid
         $grid = $table.GetCurrentPattern([Windows.Automation.GridPattern]::Pattern)
         $first = if ($Action -eq 'MoveSecondUp') { 'A' } else { 'G' }
         $second = if ($Action -eq 'MoveSecondUp') { 'G' } else { 'A' }
-        if ($grid.Current.RowCount -gt 8 -or $grid.Current.RowCount -lt 2 -or
+        if ($fixedBasic) {
+            if ($grid.Current.RowCount -ne 1 -or $grid.GetItem(0,0).Current.Name -cne 'A' -or
+                $grid.GetItem(0,1).Current.Name -cne 'B' -or (Read-MappingView).mapping_button_text -cne '映射开始') {
+                throw 'The fixed GUI action requires exactly the owned idle A to B row.'
+            }
+        } elseif ($grid.Current.RowCount -gt 8 -or $grid.Current.RowCount -lt 2 -or
             $grid.GetItem(0,0).Current.Name -cne $first -or $grid.GetItem(1,0).Current.Name -cne $second) {
             throw 'The fixed source rows changed; refusing reordering.'
         }
-        $cell = $grid.GetItem(1,0)
+        $cell = $grid.GetItem($(if ($fixedBasic) { 0 } else { 1 }),0)
         $selection = $null
         if ($cell.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern, [ref]$selection)) { $selection.Select() }
         $bounds = $cell.Current.BoundingRectangle
@@ -331,7 +420,12 @@ if ($Action -in $mappingActions) {
                     $items = $root.FindAll([Windows.Automation.TreeScope]::Descendants,
                         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::MenuItem))
                     foreach ($item in $items) {
-                        if ($item.Current.ProcessId -eq $TargetProcessId -and @('上移','Move Up','上へ移動') -ccontains $item.Current.Name) {
+                        $wantedNames = switch ($Action) {
+                            'ClearBasicMapping' { @('删除','Delete','削除') }
+                            'OpenFloatingSetup' { $floatingNames }
+                            default { @('上移','Move Up','上へ移動') }
+                        }
+                        if ($item.Current.ProcessId -eq $TargetProcessId -and $wantedNames -ccontains $item.Current.Name) {
                             $actions += @{ window = $handle; item = $item }
                         }
                     }
@@ -339,7 +433,7 @@ if ($Action -in $mappingActions) {
                 if ($actions.Count) { break }
                 Start-Sleep -Milliseconds 30
             } while ([DateTime]::UtcNow -lt $deadline)
-            if ($actions.Count -ne 1) { throw "Expected one fixed Move Up GUI menu action; matches=$($actions.Count); windows=$($menuCandidates -join '; ')." }
+            if ($actions.Count -ne 1) { throw "Expected one fixed mapping GUI menu action; matches=$($actions.Count); windows=$($menuCandidates -join '; ')." }
             $menuWindow = $actions[0].window
             $actions[0].item.GetCurrentPattern([Windows.Automation.InvokePattern]::Pattern).Invoke()
         } finally {
@@ -419,16 +513,58 @@ if ($Action -in $mappingActions) {
             }
         }
     }
+    if ($Action -eq 'ClearBasicMapping') {
+        $deadline = [DateTime]::UtcNow.AddSeconds(3)
+        do {
+            $observation = Read-MappingView
+            if ($observation.mapping_row_count -eq 0) { break }
+            Start-Sleep -Milliseconds 30
+        } while ([DateTime]::UtcNow -lt $deadline)
+        if ($observation.mapping_row_count -ne 0) { throw 'The fixed Delete GUI action did not clear the row.' }
+    }
+    if ($Action -eq 'OpenFloatingSetup') { $null = Find-OwnedWindow $floatingNames }
     $mappingObservation = Read-MappingView
     $mappingObservation.gui_event_method = if ($Action -in 'MoveSecondUp','RestoreFirstRows') {
         'owned_cell_right_click_UIA_MoveUp'
-    } elseif ($Action -in 'ReadTab1','ReadTab2','ReadCommon') { 'owned_UIA_tab_select' }
+    } elseif ($Action -eq 'ClearBasicMapping') { 'owned_cell_right_click_UIA_Delete' }
+    elseif ($Action -in 'ReadTab1','ReadTab2','ReadCommon') { 'owned_UIA_tab_select' }
     elseif ($Action -eq 'ReadMapping') { 'read_only' } else { $openMethod }
     if ($Action -notin $viewActions) {
         $mappingObservation.requested_configuration = $wanted
         $mappingObservation.popup_candidates = $popupDetails
         $mappingObservation.popup_observation_errors = $popupObservationErrors
     }
+} elseif ($Action -in 'SyncGroupOne','SyncGroupZero','CloseFloatingSetup') {
+    $dialog = Find-OwnedWindow $floatingNames
+    if ($Action -eq 'CloseFloatingSetup') {
+        $dialog.GetCurrentPattern([Windows.Automation.WindowPattern]::Pattern).Close()
+    } else {
+        $condition = [Windows.Automation.PropertyCondition]::new(
+            [Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::Spinner)
+        $groups = @()
+        foreach ($box in $dialog.FindAll([Windows.Automation.TreeScope]::Descendants, $condition)) {
+            $pattern = $null
+            if ($box.Current.ProcessId -eq $TargetProcessId -and $box.Current.IsEnabled -and
+                $box.TryGetCurrentPattern([Windows.Automation.RangeValuePattern]::Pattern, [ref]$pattern) -and
+                $pattern.Current.Minimum -eq 0 -and $pattern.Current.Maximum -eq 999 -and -not $pattern.Current.IsReadOnly) {
+                $groups += $pattern
+            }
+        }
+        if ($groups.Count -ne 1) { throw 'Expected the unique writable Group ID range 0 to 999.' }
+        $wanted = if ($Action -eq 'SyncGroupOne') { 1 } else { 0 }
+        if ($groups[0].Current.Value -ne (1 - $wanted)) { throw 'The fixed Group ID source value changed.' }
+        $groups[0].SetValue($wanted)
+        Invoke-Button $dialog '' @('应用','Apply','適用')
+        if ($groups[0].Current.Value -ne $wanted) { throw 'The fixed Group ID GUI value was not observed.' }
+    }
+} elseif ($Action -eq 'ShowForCapture') {
+    foreach ($handle in @([QkmProductUiDesktop]::NamedWindows($TargetProcessId,
+        @('通用高级设定','General Advanced Setting','一般高度設定') + $mcpNames))) {
+        [Windows.Automation.AutomationElement]::FromHandle($handle).GetCurrentPattern([Windows.Automation.WindowPattern]::Pattern).Close()
+    }
+    Select-Control (Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定'))
+    [QkmProductUiDesktop]::RaiseForSnapshot($main, $TargetProcessId, $DesktopName)
+    $mappingObservation = Read-MappingView
 } elseif ($Action -in 'StartMapping','StopMapping') {
     $button = Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'keymapButton' @()
     $before = $button.Current.Name
@@ -445,7 +581,8 @@ if ($Action -in $mappingActions) {
     } while ([DateTime]::UtcNow -lt $deadline)
     if ($button.Current.Name -ne $wanted -or -not $button.Current.IsEnabled) { throw 'Mapping button did not reach the requested state.' }
     # A button observation is not proof that all input or worker cleanup is complete.
-    $mappingActionObservation = @{ before = $before; after = $button.Current.Name; button_enabled = $button.Current.IsEnabled }
+    $mappingActionObservation = @{ before = $before; after = $button.Current.Name; button_enabled = $button.Current.IsEnabled;
+        add_button_enabled = (Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'addmapdataButton' @()).Current.IsEnabled }
     $windowPattern.SetWindowVisualState([Windows.Automation.WindowVisualState]::Minimized)
     $mappingActionObservation.minimized_for_receiver = $windowPattern.Current.WindowVisualState -eq [Windows.Automation.WindowVisualState]::Minimized
     if (-not $mappingActionObservation.minimized_for_receiver) { throw 'Owned product did not minimize for ordinary receiver focus.' }
@@ -476,7 +613,7 @@ if ($Action -in $mappingActions) {
             $wanted = if ($Action -eq 'Enable') { [Windows.Automation.ToggleState]::On } else { [Windows.Automation.ToggleState]::Off }
             if ($pattern.Current.ToggleState -ne $wanted) { $pattern.Toggle() }
         }
-        'ApproveRead' {
+        { $_ -in 'ApproveRead','ApproveConfigure' } {
             if (-not $ClientExecutable) { throw 'A trusted client executable is required.' }
             $field = Find-Control $dialog ([Windows.Automation.ControlType]::Edit) 'mcpClientExecutable' @('系统核实的客户端程序路径','Verified client executable path','確認済みクライアントのパス')
             $actual = $field.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
@@ -486,6 +623,14 @@ if ($Action -in $mappingActions) {
             $run = Check-State $dialog 'mcpRunMapping' @('开始与停止映射（可能发送输入）','Start and stop mapping (may send input)','マッピングの開始と停止（入力を送信する場合あり）')
             if ($read -ne [Windows.Automation.ToggleState]::On -or $configure -ne [Windows.Automation.ToggleState]::Off -or
                 $run -ne [Windows.Automation.ToggleState]::Off) { throw 'Only read permission may be approved by this test helper.' }
+            if ($Action -eq 'ApproveConfigure') {
+                $box = Find-Control $dialog ([Windows.Automation.ControlType]::CheckBox) 'mcpConfigure' @('更改映射与软件设定','Change mappings and settings','マッピングと設定の変更')
+                $box.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle()
+                if ((Check-State $dialog 'mcpConfigure' @('更改映射与软件设定','Change mappings and settings','マッピングと設定の変更')) -ne [Windows.Automation.ToggleState]::On -or
+                    (Check-State $dialog 'mcpRunMapping' @('开始与停止映射（可能发送输入）','Start and stop mapping (may send input)','マッピングの開始と停止（入力を送信する場合あり）')) -ne [Windows.Automation.ToggleState]::Off) {
+                    throw 'Expected Configure only, without RunMapping.'
+                }
+            }
             Invoke-Button $dialog 'mcpApprove' @('批准选定权限','Approve selected permissions','選択した権限で承認')
         }
         'Revoke' {
@@ -519,7 +664,7 @@ if ($Action -eq 'OpenAdvanced') {
     $result.configuration_display = $configurationDisplay
     $result.configuration_read_method = 'ValuePattern'
 }
-if ($Action -in 'OpenMcp','Enable','ApproveRead','Revoke','Disable') {
+if ($Action -in 'OpenMcp','Enable','ApproveRead','ApproveConfigure','Revoke','Disable') {
     $dialog = Find-OwnedWindow $mcpNames
     $result.dialog_window = $dialog.Current.NativeWindowHandle
     $field = Find-Control $dialog ([Windows.Automation.ControlType]::Edit) 'mcpConnection' @('连接信息文件路径','Connection information file','接続情報ファイルのパス')

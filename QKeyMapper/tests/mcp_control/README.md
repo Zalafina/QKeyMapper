@@ -8,7 +8,7 @@
 
 `sourceSnapshotEncodingBoundaries` 核对精确 4 MiB 前后边界及完整绑定的原修订字节，包含中日文、emoji、引号／反斜杠／换行。`sourceSnapshotQueryCost` 用 1／100／1,000 行合成不可变快照分别测目录和单行助手，QtTest 可用 `-iterations 32 -median 3` 固定比较。该数值不含产品源复制、锁占用、IPC／SDK 或 GUI 响应，不能当作完整查询或输入性能。
 
-`mappingChangeArguments`／`mappingChangeLifecycle`／`mappingChangeLimits` 验证尚未接入产品的基本新增预览基础：严格参数、单字母／数字与源引用、有界 120 秒预览、实例／配对／权限代次归属、消费／取消／替换、10 分钟／64 条结果、未知结果及重置。调用方仍须在实际提交前检查完整源、业务状态、权限和到期；此存储本身不授权或修改映射。`sourceSnapshotReferences` 另外验证仅同步组变化会使完整源修订失效，不代表正式 MCP 预览／提交已经接入。
+`mappingChangeArguments`／`mappingChangeLifecycle`／`mappingChangeLimits` 验证基本新增预览基础：严格参数、单字母／数字与源引用、有界120秒预览、实例／配对／权限代次归属、消费／取消／替换、10分钟／64条结果、未知结果及重置。存储本身不授权或修改映射；产品实际提交另外检查完整源、业务状态、当前请求／权限和到期。`sourceSnapshotReferences`验证同步组单改的完整修订；正式B1业务证据见[独立记录](../../../handoff/qkeymapper_mcp_control/map67b1_validation.md)。
 
 上述纯边界可用普通权限 `QT_QPA_PLATFORM=offscreen` 运行，并通过 QtTest `-o <绝对结果文件>,txt` 保存报告；这不是私有 Windows 桌面或 GUI 验收。不得以没有 stdout 当作通过。产品／正式 SDK 接线和两条独立 GUI／MCP 路径另行验收。
 
@@ -16,7 +16,7 @@
 
 `--preview <language:0|1|2> <off|pending|paired-off|busy-off> <absolute-state-json>` 仅用于维护目标的静态截图：真实显示同一控件，原子报告 PID／HWND／实际桌面、原生可见性、Qt／原生 DPI、样式／字体及接口／配对状态；20 秒后自动退出，也可从该私有桌面发送 WM_CLOSE。pending 含 `<b>` 和实际自身进程身份，用于检查纯文本；paired-off 使用假配对记录，busy-off 再取得真实租约并点击撤销制造占用提示。四种预览均不启用接口、批准或认证客户端，截图不能证明配对安全。使用仓库 `scripts/capture_ui_snapshots.ps1 -ProcessId ... -WindowHandle ... -PrintWindow` 后自主审阅。
 
-已验证范围包括独立窗口、产品 Qt6／Qt5 编译、同源维护窗口 SDK 配对，以及真正管理员产品的入口／默认绑定、只读批准／RPC、重连、撤销／关闭和冷启动拒绝旧 key。状态／目录与加载上下文的新增场景按[验证记录](../../../handoff/qkeymapper_mcp_control/validation.md)逐轮列明，不能将旧通信结果当作全部业务验收。普通截图无法捕获 High 产品，该部分未算视觉通过；没有 Default 桌面、真实输入、驱动输出、托盘或性能结论。
+已验证范围按[验证记录](../../../handoff/qkeymapper_mcp_control/validation.md)的版本／场景分别列明，不能将旧通信结果当作全部业务验收。B1另覆盖Read+Configure及基本内存添加；Default实际输入和性能由独立input_regression入口验证。本目录私有High产品的普通PrintWindow未算视觉通过，不能拿Default屏幕复制替代这一缺口。
 
 ## 可移植执行入口
 
@@ -73,7 +73,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Product acceptance failed; inspect its logs be
 
 可用 `--load-fixture blank|saved|invalid|missing` 验证启动映射加载记录。blank 为默认模板；其余要求全新运行目录且 INI 与仓库合成模板完全相同，再由普通控制器在启动前写入测试配置。saved 为一个 A→B 源映射，invalid 含固定非法原始键，missing 指向不存在的配置组；均核对实际加载结果／代次、GUI 选择的实际值、只读不变性和目录分页。
 
-`--load-fixture warm` 额外准备 McpSaved（A→B）、McpSecond（C→D）和 McpInvalid。固定助手只在已核实的自有私有桌面窗口操作：Qt6 使用 UIA ExpandCollapse.Expand；Qt5 组合框内投递普通左键按下／抬起窗口事件，再向其真实弹窗发送 Up／Down／Enter／Escape，激活配置条目，不设置配置值或调用加载函数。LOAD-41 当时使用 Qt5 Invoke，SOURCE-42 校准了经过表格菜单后的左键路径。展开后按本进程实际五项配置列表定位唯一弹窗，记录辅助窗口及有界只读枚举错误；找不到唯一目标则拒绝投递选择按键。不移动系统光标或修改产品焦点策略。先读取原配置，再温切换、空白重置、加载成功→失败→恢复及同项重载。每步独立读取 GUI 表格与配置实际值，正式 SDK 检查加载代次／结果／来源、旧目录失效与新分页，并比较只读请求前后的 GUI、状态、dirty 和整个 INI 字节。每步原始结果为 load_*.json；实际通过范围以主计划／验证记录为准，脚本或语法检查本身不表示运行通过。这里不启动映射，不证明 A→B 输入效果或运行时清理完成。
+`--load-fixture warm`准备McpSaved（A→B）、McpSecond（C→D）和McpInvalid。固定助手仅操作自有私有桌面：Qt6使用UIA ExpandCollapse，Qt5在配置控件投递成对窗口消息，再向经身份核对的唯一弹窗投递Up／Down／Enter／Escape，激活真实条目；不调用加载函数或移动系统光标。独立GUI读取实际行／选择，SDK核对温切换、空白重置、失败／恢复、同项重载及旧引用失效，只读批次检查dirty及整个INI不变。原始load_*.json保留。
+
+warm随后调用mapping_changes_acceptance.py，**需要Read+Configure配对及固定GUI添加授权**：键选择弹窗／搜索／选中后点击真实添加按钮，最多两条A→B；RunMapping保持未授予。两条独立路径比较完整字段、派生值、dirty及未保存INI；覆盖权限、取消／替换、单次提交／重放、重连查结果、GUI编辑／切配置陈旧、新配对隔离及实际120秒到期。该产品阶段有420秒自有看门狗；不启动映射，不证明保存冷启动或实际输入效果。仅获只读授权时不要运行warm全套。
 
 普通 PrintWindow 无法捕获 High 产品时明确记录未验证，不提升截图权限；功能断言继续独立检查。失败时先看日志、closed.json 和实际进程／配对状态，再决定接续动作；不得盲目重复配对或撤销。
 
@@ -92,7 +94,9 @@ if ($LASTEXITCODE -ne 0) { throw 'Source acceptance failed; inspect logs and own
 
 `--gsudo-cache` 仅在已有明确授权时使用，默认省略。Qt5 使用其匹配的产品、维护 EXE、Qt bin 和全新 output。固定助手通过 UIA 选择 Tab／行，在已核实单元格内投递成对右键窗口消息、调用真实菜单“上移”，再以实际 GUI 行及正式 MCP 源行验证效果；不调用业务函数或设置配置值。单纯查看其他 Tab 不应改变源引用；重排往返、重载、配置切换／失败／恢复及重新配对必须拒绝旧引用。读取批次核对 GUI、实际源内容、dirty／运行摘要与整个 INI 字节不变。
 
-本用例无需 Default 桌面，不移动系统光标、不发送系统输入；实际目标及助手桌面由现有身份检查记录。源读取仅允许首次启停／重启请求前的初始静止阶段，覆盖在途读取与首次请求互斥的组件测试；这不是运行后清理完成或稳定编辑授权的验收。未启动映射，不证明实际 A→B 输出、停止动作完成或 GUI 写操作与 MCP 写操作等价。
+本套件末段现在需要私有桌面Read+Configure及固定共通变更授权：再次配对后预览共通C→B及禁用普通C的联动，先不确认并验证零部分修改，再确认、重放并从GUI读取实际结果；非当前源提交须拒绝且不切Tab。前面的只读批次仍检查dirty／INI不变，新增写批次单独核对预期dirty和INI未写，不能统一声称全程只读。
+
+不使用Default、不移动系统光标或发送系统输入，目标及助手实际桌面写入身份记录；本套件未启动映射，源查询始于初始静止。运行后清理、实际A→B、正式MCP启停及保存冷启动另验。
 
 桌面清理单独回归（普通权限，仅创建／关闭自有桌面，不启动产品）：
 

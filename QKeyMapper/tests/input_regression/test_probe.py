@@ -20,9 +20,9 @@ import win32gui
 import win32process
 import win32service
 
-from probe import SOURCE_TAG, Sender, _thread_sample, focus_click, keyboard_input, plain_latencies, process_sample
+from probe import SOURCE_TAG, Sender, _thread_sample, display_sample, focus_click, keyboard_input, plain_latencies, process_sample
 from receiver import CLOSE, COUNT, FLUSH, RESET, RESULT_ROOT
-from run_acceptance import Receiver, late_force_release
+from run_acceptance import Receiver, late_force_release, save_display
 
 
 def wait_file(path, process):
@@ -36,6 +36,20 @@ def wait_file(path, process):
 
 
 class ProbeTests(unittest.TestCase):
+    def test_display_sample_is_readonly_and_does_not_claim_physical_power(self):
+        with patch("probe.input_desktop_name", return_value="Default"), \
+                patch("probe.win32api.EnumDisplayMonitors", return_value=[]), \
+                patch("probe.user32.SendInput") as native:
+            sample = display_sample()
+            self.assertEqual(sample["physical_power_state"], "not_observed")
+            self.assertEqual(sample["input_desktop"], "Default")
+            native.assert_not_called()
+
+    def test_display_log_failure_does_not_escape_to_skip_cleanup(self):
+        with patch("run_acceptance.display_sample", return_value={}), \
+                patch("run_acceptance.save", side_effect=PermissionError("fixture")):
+            save_display(Path("unused"))
+
     def test_input_allowlist_and_layout(self):
         event = keyboard_input(0x41, False)
         self.assertEqual((event.type, event.payload.ki.wVk, event.payload.ki.dwFlags), (1, 0x41, 2))
@@ -61,6 +75,15 @@ class ProbeTests(unittest.TestCase):
                 patch("probe.user32.SendInput") as native:
             with self.assertRaises(AssertionError):
                 sender.send(0x41, True)
+            native.assert_not_called()
+
+    def test_escape_aborts_before_input(self):
+        sender = Sender.__new__(Sender)
+        with patch("probe.input_desktop_name", return_value="Default"), \
+                patch("probe.win32api.GetAsyncKeyState", return_value=0x8000), \
+                patch("probe.user32.SendInput") as native:
+            with self.assertRaisesRegex(AssertionError, "Escape pressed"):
+                sender.check_target()
             native.assert_not_called()
 
     def test_cleanup_only_releases_accepted_source_keys(self):

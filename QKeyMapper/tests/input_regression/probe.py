@@ -4,11 +4,13 @@ import ctypes
 from ctypes import wintypes
 import math
 import time
+from datetime import datetime, timezone
 
 import win32api
 import win32con
 import win32gui
 import win32process
+import pywintypes
 
 from receiver import desktop_name, input_desktop_name
 
@@ -44,6 +46,8 @@ class THREADENTRY32(ctypes.Structure):
 user32 = ctypes.WinDLL("user32", use_last_error=True)
 user32.SendInput.argtypes = [wintypes.UINT, ctypes.POINTER(INPUT), ctypes.c_int]
 user32.SendInput.restype = wintypes.UINT
+user32.GetDpiForWindow.argtypes = [wintypes.HWND]
+user32.GetDpiForWindow.restype = wintypes.UINT
 kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 kernel32.CreateToolhelp32Snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
 kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
@@ -98,6 +102,32 @@ def focus_click(window, focus_window, pid, *, allowed):
             win32api.SetCursorPos(previous)
 
 
+def display_sample(window=None):
+    result = {"sampled_at_utc": datetime.now(timezone.utc).isoformat(), "physical_power_state": "not_observed",
+              "coordinate_scope": "controller_win32_view"}
+    try:
+        result["input_desktop"] = input_desktop_name()
+        result["monitor_count"] = win32api.GetSystemMetrics(win32con.SM_CMONITORS)
+        result["virtual_bounds"] = [win32api.GetSystemMetrics(metric) for metric in
+            (win32con.SM_XVIRTUALSCREEN, win32con.SM_YVIRTUALSCREEN, win32con.SM_CXVIRTUALSCREEN, win32con.SM_CYVIRTUALSCREEN)]
+        result["monitors"] = []
+        mode = win32api.EnumDisplaySettings(None, win32con.ENUM_CURRENT_SETTINGS)
+        if mode is not None:
+            result["primary_mode_reported"] = {"width": mode.PelsWidth, "height": mode.PelsHeight,
+                "refresh_hz": mode.DisplayFrequency, "orientation": mode.DisplayOrientation}
+        for monitor, _, rect in win32api.EnumDisplayMonitors():
+            info = win32api.GetMonitorInfo(monitor)
+            result["monitors"].append({"bounds": list(rect), "work": list(info["Work"]), "primary": bool(info["Flags"] & 1)})
+        if window and win32gui.IsWindow(window):
+            result["window_bounds"] = list(win32gui.GetWindowRect(window))
+            result["window_dpi"] = user32.GetDpiForWindow(window)
+            result["window_minimized"] = bool(win32gui.IsIconic(window))
+            result["foreground_matches"] = win32gui.GetForegroundWindow() == window
+    except (OSError, pywintypes.error) as error:
+        result["observation_error"] = type(error).__name__
+    return result
+
+
 class Sender:
     def __init__(self, window, pid, *, allow_default):
         assert allow_default and desktop_name() == "Default"
@@ -108,6 +138,7 @@ class Sender:
 
     def check_target(self):
         assert input_desktop_name() == "Default", "Input desktop changed; input stopped"
+        assert not win32api.GetAsyncKeyState(win32con.VK_ESCAPE) & 0x8000, "Escape pressed; input stopped"
         assert win32gui.IsWindow(self.window), "Owned receiver closed"
         assert win32process.GetWindowThreadProcessId(self.window)[1] == self.pid, "Receiver identity changed"
         assert win32gui.GetForegroundWindow() == self.window, "Focus left the owned receiver; input stopped"

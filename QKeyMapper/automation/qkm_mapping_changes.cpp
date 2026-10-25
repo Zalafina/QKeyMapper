@@ -113,6 +113,7 @@ QJsonArray mappingChangeCapabilities()
     QJsonObject previewCapability = capability("mapping.add.preview", "qkm_preview_changes", Read | Configure, true, preview);
     previewCapability.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
     previewCapability.insert(QStringLiteral("max_previews"), MappingChangeStore::MaxPreviews);
+    previewCapability.insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
     QJsonObject operation = capability("operation.read", "qkm_get_operation", Read, true,
         schema({{QStringLiteral("operation_id"), identifierSchema}}, {QStringLiteral("operation_id")}));
     operation.insert(QStringLiteral("result_ttl_ms"), double(MappingChangeStore::ResultTtlMs));

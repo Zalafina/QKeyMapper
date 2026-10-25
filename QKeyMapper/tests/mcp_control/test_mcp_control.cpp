@@ -59,7 +59,21 @@ template<class T> T *widget(ControlDialog &dialog, const char *name)
 void fixture(AutomationSessionServer &server)
 {
     server.setRequestHandler([&server](const AutomationRequest &request) {
-        server.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}});
+        QVERIFY(server.isRequestCurrent(request));
+        auto stale = request;
+        stale.permissionEpoch += 1;
+        QVERIFY(!server.isRequestCurrent(stale));
+        stale = request;
+        stale.requestId = QString(32, QLatin1Char('0'));
+        QVERIFY(!server.isRequestCurrent(stale));
+        stale = request;
+        stale.connectionId.clear();
+        QVERIFY(!server.isRequestCurrent(stale));
+        stale = request;
+        stale.scopes ^= Configure;
+        QVERIFY(!server.isRequestCurrent(stale));
+        QVERIFY(server.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+        QVERIFY(!server.isRequestCurrent(request));
     });
 }
 

@@ -9,6 +9,8 @@
 
 namespace QkmAutomation {
 
+constexpr int MappingChangeBudgetMs = 5000;
+
 struct MappingAdditionArguments {
     QString sourceRevision;
     QString sourceTabRef;

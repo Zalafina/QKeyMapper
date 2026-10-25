@@ -1,4 +1,4 @@
-"""Owned stock GUI sources -> official SDK -> ordinary bridge acceptance."""
+"""Owned stock GUI sources and bounded common additions through the official SDK."""
 
 import argparse
 import asyncio
@@ -14,7 +14,7 @@ import win32api
 from mcp import Client
 
 from test_product_interop import Product, connection_pending
-from test_sdk_interop import ROOT, call, connection, elevation, integrity, parameters
+from test_sdk_interop import BUSINESS_CAPABILITIES, ROOT, business_state, call, connection, elevation, integrity, parameters
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.windows import identity
 
@@ -128,7 +128,7 @@ async def run(args):
             assert connected["scopes"] == 1
             capabilities = (await call(client, "qkm_get_capabilities"))["result"]
             by_id = {item["id"]: item for item in capabilities["business_capabilities"]}
-            assert set(by_id) == {"state.read", "catalog.read", "source.read", "help.read"}
+            assert set(by_id) == BUSINESS_CAPABILITIES
             assert by_id["source.read"]["read_only"] is True
             await product.action("CloseMcp")
             before = await product.action("ReadTab1")
@@ -156,7 +156,7 @@ async def run(args):
                 await query(client, args.output, "arguments_" + label, arguments, expected)
             passed("source argument dependencies and mismatched revision return formal tool errors")
             assert await sources(client, args.output, "repeated") == first
-            assert (await call(client, "qkm_get_state"))["result"] == state and ini.read_bytes() == disk
+            assert business_state((await call(client, "qkm_get_state"))["result"]) == business_state(state) and ini.read_bytes() == disk
             after = await product.action("ReadMapping")
             for field in ("configuration_display", "mapping_rows", "separator_rows", "mapping_button_text", "stop_shortcut_edit"):
                 assert before[field] == after[field], field
@@ -224,6 +224,61 @@ async def run(args):
             repaired = await sources(client, args.output, "new_pair")
             assert [source_rows(page) for page in repaired["rows"]] == [source_rows(page) for page in recovered["rows"]]
             passed("new GUI pairing changes reference authorization binding without changing source data")
+            await product.action("Revoke")
+            await call(client, "qkm_request_pairing")
+            await connection_pending(client)
+            await product.action("ApproveConfigure", own.executable)
+            assert (await connection(client, "connected"))["scopes"] == 3
+            await product.action("CloseMcp")
+            await product.action("ReadCommon")
+            common_before = await sources(client, args.output, "common_before")
+            common_source = next(item for item in common_before["sources"] if item["kind"] == "common")
+            change = {"source_revision": common_before["snapshot"]["revision"],
+                "source_tab_ref": common_source["source_tab_ref"], "original_key": "C", "mapping_key": "B"}
+            disk = ini.read_bytes()
+            planned = (await call(client, "qkm_preview_changes", change))["result"]
+            assert planned["description"]["confirmation_required"] is True
+            conflicts = [item for item in planned["description"]["changes"] if item["kind"] == "disable_mapping"]
+            assert conflicts and all(item["original_key"] == "C" for item in conflicts)
+            await call(client, "qkm_apply_changes", {"preview_id": planned["preview_id"]}, error="confirmation_required")
+            refused = await sources(client, args.output, "common_unconfirmed")
+            assert refused == common_before and ini.read_bytes() == disk
+            rejected = (await call(client, "qkm_get_operation", {"operation_id": planned["preview_id"]}))["result"]
+            assert rejected["status"] == "rejected" and rejected["result"]["modified"] is False
+            planned = (await call(client, "qkm_preview_changes", change))["result"]
+            applied = (await call(client, "qkm_apply_changes", {"preview_id": planned["preview_id"],
+                "confirm_conflicts": True}))["result"]
+            assert applied["status"] == "applied" and applied["result"]["saved"] is False
+            common_after = await sources(client, args.output, "common_applied")
+            disabled = {(item["source_tab_ref"], item["source_row"]) for item in conflicts}
+            for before_page, after_page in zip(common_before["rows"], common_after["rows"]):
+                expected = [dict(row["fields"]) for row in before_page["items"]]
+                for row, fields in zip(before_page["items"], expected):
+                    if (row["source_tab_ref"], row["source_row"]) in disabled:
+                        fields["KeyMapData_Disabled"] = True
+                actual = [row["fields"] for row in after_page["items"]]
+                if before_page["source"]["kind"] == "common":
+                    assert actual[:-1] == expected
+                    assert actual[-1]["KeyMapData_OriginalKeys"] == "C" and actual[-1]["KeyMapData_MappingKeys"] == ["B"]
+                    assert actual[-1]["KeyMapData_Disabled"] is False
+                else:
+                    assert actual == expected
+            replay = (await call(client, "qkm_apply_changes", {"preview_id": planned["preview_id"],
+                "confirm_conflicts": True}))["result"]
+            assert replay["replayed"] is True and ini.read_bytes() == disk
+            gui_common = await product.action("ReadMapping")
+            assert visible_rows(gui_common) == [("E", "F"), ("C", "B")]
+            record(args.output, "common_change", {"preview": planned, "rejected": rejected,
+                "applied": applied, "replayed": replay, "gui": gui_common, "ini_unchanged": True})
+            passed("common addition previews all disabling effects, refuses missing confirmation without partial writes and applies exactly once")
+            await product.action("ReadTab1")
+            target = next(item for item in common_after["sources"] if item["kind"] == "common")
+            await call(client, "qkm_preview_changes", {"source_revision": common_after["snapshot"]["revision"],
+                "source_tab_ref": target["source_tab_ref"], "original_key": "D", "mapping_key": "E"}, error="context_busy")
+            assert ini.read_bytes() == disk
+            passed("a noncurrent common target is refused without an automatic Tab switch")
+            await product.action("OpenAdvanced")
+            await product.action("OpenMcp")
             await product.action("Revoke")
             await product.action("Disable")
             await product.wait(lambda: not discovery.exists())

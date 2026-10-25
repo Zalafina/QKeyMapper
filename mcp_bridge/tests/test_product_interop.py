@@ -22,14 +22,15 @@ import win32security
 import win32service
 from mcp import Client
 
-from test_sdk_interop import ROOT, call, close_desktop, connection, elevation, integrity, parameters
+from test_sdk_interop import (BUSINESS_CAPABILITIES, ROOT, business_state, call, close_desktop,
+                             connection, elevation, integrity, parameters)
 from qkeymapper_mcp.bridge import Bridge
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.windows import identity
 
 
 class Product:
-    def __init__(self, executable: Path, output: Path, *, default_desktop=False):
+    def __init__(self, executable: Path, output: Path, *, default_desktop=False, lifetime_seconds=240):
         self.executable, self.output = executable, output
         self.sequence = 0
         self.snapshots_available = True
@@ -45,7 +46,8 @@ class Product:
         self.log = (output / "lifecycle.log").open("wb")
         self.guardian = subprocess.Popen([shutil.which("pwsh.exe"), "-NoProfile", "-File",
             str(ROOT.parent / "QKeyMapper/tests/mcp_control/product_lifecycle.ps1"),
-            "-ExecutablePath", str(executable), "-DesktopName", self.desktop_name, "-OutputDirectory", str(output)] +
+            "-ExecutablePath", str(executable), "-DesktopName", self.desktop_name, "-OutputDirectory", str(output),
+            "-MaximumSeconds", str(lifetime_seconds)] +
             (["-AllowDefaultDesktop"] if default_desktop else []),
             stdout=self.log, stderr=self.log, creationflags=subprocess.CREATE_NO_WINDOW)
         self.process = None
@@ -108,7 +110,9 @@ class Product:
         attributes.bInheritHandle = True
         command = [shutil.which("pwsh.exe"), "-NoProfile", "-STA", "-File",
             str(ROOT.parent / "scripts/capture_ui_snapshots.ps1"), "-ProcessId", str(self.pid),
-            "-WindowHandle", str(window), "-PrintWindow", "-Label", self.desktop_name + "_" + label]
+            "-WindowHandle", str(window), "-Label", self.desktop_name + "_" + label]
+        if not self.default_desktop:
+            command.append("-PrintWindow")
         with closing(win32file.CreateFile(str(self.output / (label + ".log")), win32con.GENERIC_WRITE, 1,
                                          attributes, win32con.CREATE_ALWAYS, 0, None)) as log:
             with closing(win32file.CreateFile("NUL", win32con.GENERIC_READ, 3, attributes, 3, 0, None)) as nul:
@@ -194,7 +198,7 @@ async def warm_loads(product, client, summary, catalog_revision, passed):
             unchanged = dict(state)
             unchanged["mapping_load_context"] = dict(state["mapping_load_context"],
                 generation=previous_state["mapping_load_context"]["generation"])
-            assert unchanged == previous_state, "Same-content reload changed other business summary fields"
+            assert business_state(unchanged) == business_state(previous_state), "Same-content reload changed other business summary fields"
         assert state["configuration"]["group"] == selected_group
         assert state["configuration"]["kind"] == ("saved_profile" if selected_group else "draft")
         assert type(state["configuration"]["has_unsaved_changes"]) is bool
@@ -203,7 +207,7 @@ async def warm_loads(product, client, summary, catalog_revision, passed):
         assert gui["mapping_rows"] == expected_rows and gui["mapping_row_count"] == len(expected_rows)
         assert gui["mapping_table_read_method"] == "GridPattern.Item.Name"
         assert gui["mapping_button_text"] == "映射开始"
-        assert state["run"] == {"gui_state": "idle", "monitoring_enabled": False,
+        assert business_state(state)["run"] == {"gui_state": "idle", "monitoring_enabled": False,
             "worker_state_sample": "stopped", "stop_completion": "unobserved",
             "actual_stop_shortcut": gui["stop_shortcut_edit"]}
         assert state["current_tab"] == {"name": "Tab1", "index": 0, "is_common": False}
@@ -222,8 +226,8 @@ async def warm_loads(product, client, summary, catalog_revision, passed):
             assert revision != catalog_revision
             assert all(result["ok"] is False and result["error"] == "stale_catalog" for result in stale.values())
         else:
-            assert state == summary and revision == catalog_revision
-        assert repeated == state and before_read == after_read
+            assert business_state(state) == business_state(summary) and revision == catalog_revision
+        assert business_state(repeated) == business_state(state) and before_read == after_read
         for field in ("configuration_display", "mapping_rows", "mapping_row_count", "mapping_button_text", "stop_shortcut_edit"):
             assert gui_after[field] == gui[field], field + " changed after read-only MCP requests"
         passed("warm GUI " + str(index) + " " + action + ": actual rows, load context, catalog validity and read-only invariance")
@@ -276,7 +280,7 @@ async def run(args):
             assert result["ok"] and result["result"]["stage"] == "business"
             capabilities = result["result"]["business_capabilities"]
             by_id = {item["id"]: item for item in capabilities}
-            assert set(by_id) == {"state.read", "catalog.read", "source.read", "help.read"}
+            assert set(by_id) == BUSINESS_CAPABILITIES
             assert by_id["state.read"]["method"] == "qkm_get_state" and by_id["state.read"]["read_only"] is True
             assert by_id["state.read"]["arguments_schema"]["additionalProperties"] is False
             assert by_id["catalog.read"]["method"] == "qkm_query" and by_id["catalog.read"]["read_only"] is True
@@ -296,7 +300,7 @@ async def run(args):
             assert summary["run"]["stop_completion"] == "unobserved"
             assert summary["run"]["actual_stop_shortcut"] == baseline["stop_shortcut_edit"]
             assert baseline["mapping_button_text"] == "映射开始"
-            assert (await call(client, "qkm_get_state"))["result"] == summary
+            assert business_state((await call(client, "qkm_get_state"))["result"]) == business_state(summary)
             passed("read-only business state matches independent GUI stop shortcut and idle button; cleanup remains unobserved")
             ini_path = args.executable.parent / "keymapdata.ini"
             before_help_ini = ini_path.read_bytes()
@@ -320,7 +324,7 @@ async def run(args):
                     assert "⏱" not in names and "»" not in names
                 await call(client, "qkm_get_help", {"topic": topic, "offset": len(names) + 1}, error="invalid_arguments")
                 key_help[topic] = names
-            assert (await call(client, "qkm_get_state"))["result"] == summary and ini_path.read_bytes() == before_help_ini
+            assert business_state((await call(client, "qkm_get_state"))["result"]) == business_state(summary) and ini_path.read_bytes() == before_help_ini
             (args.output / "mapping_help.json").write_text(json.dumps({"basic": help_result, **key_help}, ensure_ascii=False, indent=2), encoding="utf-8")
             passed("formal read-only help returns parser names, units and example without changing state or INI")
             passed("mapping load context records the resolved load outcome independently of GUI selection: " + args.load_fixture)
@@ -359,7 +363,7 @@ async def run(args):
             wrong_revision = ("0" if catalog_revision[0] != "0" else "1") + catalog_revision[1:]
             await call(client, "qkm_query", {"entity": "tabs", "catalog_revision": wrong_revision}, error="stale_catalog")
             await call(client, "qkm_query", {"entity": "tabs", "offset": 1}, error="invalid_arguments")
-            assert (await call(client, "qkm_get_state"))["result"] == summary
+            assert business_state((await call(client, "qkm_get_state"))["result"]) == business_state(summary)
             (args.output / "catalog.json").write_text(json.dumps({"tabs": whole, "configurations": configs}, ensure_ascii=False, indent=2), encoding="utf-8")
             passed("formal catalog pagination matches independent GUI names, separates detached common metadata and validates stable revisions")
             await product.capture(mcp_window, "paired")
@@ -392,7 +396,7 @@ async def run(args):
                 request_id, response = raw
                 assert response["id"] == request_id and response["ok"] is False
                 assert response["error"]["code"] == expected
-            assert (await probe.get_state())["result"] == summary
+            assert business_state((await probe.get_state())["result"]) == business_state(summary)
             native_catalog = await probe.query("tabs", catalog_revision=catalog_revision)
             assert native_catalog["ok"] and native_catalog["result"]["items"] == whole["items"]
             passed("authenticated product rejects unknown native arguments without changing state or closing the session")
@@ -417,7 +421,7 @@ async def run(args):
             await call(client, "qkm_query", {"entity": "tabs", "catalog_revision": catalog_revision}, error="stale_catalog")
             new_revision = (await call(client, "qkm_query", {"entity": "tabs"}))["result"]["catalog"]["revision"]
             assert new_revision != catalog_revision
-            assert (await call(client, "qkm_get_state"))["result"] == summary
+            assert business_state((await call(client, "qkm_get_state"))["result"]) == business_state(summary)
             passed("old catalog revision cannot cross an explicit new GUI pairing approval")
             if args.load_fixture == "warm":
                 await warm_loads(product, client, summary, new_revision, passed)
@@ -445,6 +449,11 @@ async def run(args):
         await product.action("Disable")
         await product.wait(lambda: not discovery.exists())
         passed("cold product restart stays disabled, restores revocation and rejects the retained old client key")
+        if args.load_fixture == "warm":
+            await product.close()
+            store.forget()
+            from mapping_changes_acceptance import exercise
+            await exercise(args, own, store, discovery, passed)
     finally:
         try:
             if store is not None:
@@ -475,7 +484,7 @@ if __name__ == "__main__":
     parser.add_argument("--executable", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--load-fixture", choices=("blank", "saved", "invalid", "missing", "warm"), default="blank",
-                        help="Prepare a synthetic startup configuration before launching the owned product.")
+                        help="Prepare a synthetic startup configuration. Warm also tests fixed GUI additions and Configure pairing; requires that explicit private-desktop scope.")
     parser.add_argument("--gsudo-cache", action="store_true",
                         help="Authorized test-controller PID cache only; five-minute idle timeout, closed in finally.")
     args = parser.parse_args()

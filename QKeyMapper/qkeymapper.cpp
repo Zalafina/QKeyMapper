@@ -2,6 +2,7 @@
 #include "automation/qkm_control_dialog.h"
 #include "automation/qkm_source_snapshot.h"
 #include "automation/qkm_mapping_help.h"
+#include "automation/qkm_mapping_changes.h"
 #include <QtMath>
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
@@ -3812,6 +3813,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_McpControlDialog->server().setRequestHandler([this](QkmAutomation::AutomationRequest request) {
         handleAutomationRequest(request);
     });
+    connect(&m_McpControlDialog->server(), &QkmAutomation::AutomationSessionServer::enabledChanged,
+        this, [this](bool enabled) {
+            if (!enabled && isInitialized() && m_AutomationMappingChanges) m_AutomationMappingChanges->clear();
+        });
     connect(m_GeneralAdvancedDialog, &QGeneralAdvancedDialog::mcpControlRequested, this, [this]() {
         m_McpControlDialog->show();
         m_McpControlDialog->raise();
@@ -37285,7 +37290,8 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         {QStringLiteral("current_tab"), QJsonObject{{QStringLiteral("name"), tab.TabName},
             {QStringLiteral("index"), s_KeyMappingTabWidgetCurrentIndex},
             {QStringLiteral("is_common"), isCommonMappingTab(tab)}}},
-        {QStringLiteral("run"), QJsonObject{{QStringLiteral("gui_state"), QString::fromLatin1(guiState)},
+        {QStringLiteral("run"), QJsonObject{{QStringLiteral("sampled_at_utc"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)},
+            {QStringLiteral("gui_state"), QString::fromLatin1(guiState)},
             {QStringLiteral("monitoring_enabled"), m_KeyMapStatus != KEYMAP_IDLE && m_KeyMapStatus != KEYMAP_STOPPING},
             {QStringLiteral("worker_state_sample"), QString::fromLatin1(workerState)},
             {QStringLiteral("stop_completion"), automationSourceReadBasis() == QStringLiteral("completed_cleanup")
@@ -37543,9 +37549,184 @@ void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationReq
     server.reply(request.connectionId, request.requestId, result);
 }
 
+void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRequest &request)
+{
+    using namespace QkmAutomation;
+    QElapsedTimer validationBudget;
+    validationBudget.start();
+    auto &server = m_McpControlDialog->server();
+    const auto validation = validateMappingChangeRequest(request.method, request.arguments);
+    const auto fail = [&](const QString &code, const QString &message) {
+        server.replyError(request.connectionId, request.requestId, code, message);
+    };
+    if (!validation.ok()) { fail(validation.errorCode, validation.message); return; }
+    if (!isInitialized() || !server.isEnabled()) {
+        fail(QStringLiteral("context_busy"), QStringLiteral("The application is not available."));
+        return;
+    }
+    const MappingChangeOwner owner{server.instanceId(), request.pairId, request.permissionEpoch};
+    if (!m_AutomationMappingChanges) m_AutomationMappingChanges = std::make_unique<MappingChangeStore>();
+    auto &store = *m_AutomationMappingChanges;
+    if (validation.method == MappingChangeMethod::Operation) {
+        server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
+        return;
+    }
+    if (validation.method == MappingChangeMethod::Cancel) {
+        const bool cancelled = store.cancel(owner, validation.id);
+        const auto operation = store.operation(owner, validation.id);
+        if (cancelled || operation.value(QStringLiteral("status")) == QStringLiteral("cancelled"))
+            server.reply(request.connectionId, request.requestId, operation);
+        else fail(QStringLiteral("stale_preview"), QStringLiteral("No pending preview can be cancelled; query the operation before retrying."));
+        return;
+    }
+    const bool applying = validation.method == MappingChangeMethod::Apply;
+    MappingAdditionArguments arguments = validation.addition;
+    std::optional<MappingChangePreview> applyingPreview;
+    if (applying) {
+        const auto preview = store.begin(owner, validation.id);
+        if (!preview) {
+            auto operation = store.operation(owner, validation.id);
+            if (operation.value(QStringLiteral("status")) == QStringLiteral("applied")) {
+                operation.insert(QStringLiteral("replayed"), true);
+                server.reply(request.connectionId, request.requestId, operation);
+            } else {
+                const auto error = operation.value(QStringLiteral("error")).toObject();
+                fail(error.value(QStringLiteral("code")).toString(QStringLiteral("stale_preview")),
+                    error.value(QStringLiteral("message")).toString(QStringLiteral("The preview is unavailable or already consumed; query the operation and obtain a fresh preview.")));
+            }
+            return;
+        }
+        applyingPreview = preview;
+        arguments = preview->arguments;
+    }
+    const auto reject = [&](const QString &code, const QString &message) {
+        if (applying) store.finish(owner, validation.id, QStringLiteral("rejected"),
+            {{QStringLiteral("modified"), false}, {QStringLiteral("saved"), false},
+                {QStringLiteral("started_by_operation"), false}}, code, message);
+        fail(code, message);
+    };
+    const int targetIndex = arguments.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt();
+    if (!mappingAdditionAllowed(targetIndex)
+        || (m_ItemSetupDialog && m_ItemSetupDialog->isVisible())
+        || (m_ItemSetupDialog && m_ItemSetupDialog->m_FloatingButtonSetupDialog
+            && m_ItemSetupDialog->m_FloatingButtonSetupDialog->isVisible())
+        || (m_ItemSetupDialog && m_ItemSetupDialog->m_CrosshairSetupDialog
+            && m_ItemSetupDialog->m_CrosshairSetupDialog->isVisible())
+        || (m_TableSetupDialog && m_TableSetupDialog->isVisible())
+        || (m_MacroListDialog && m_MacroListDialog->isVisible())
+        || (m_MappingSequenceEdit && m_MappingSequenceEdit->isVisible())
+        || (m_MappingAdvancedDialog && m_MappingAdvancedDialog->isVisible())) {
+        reject(QStringLiteral("context_busy"), QStringLiteral("Mapping addition requires the current attached source, idle completed cleanup, and no open mapping editor. No stop, Tab switch or editor close is performed automatically."));
+        return;
+    }
+    const quint64 snapshotRuntimeRevision = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
+    QString sourceError;
+    const QJsonObject snapshot = collectAutomationSourceSnapshot(sourceError);
+    const auto target = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")},
+            {QStringLiteral("source_revision"), arguments.sourceRevision},
+            {QStringLiteral("offset"), targetIndex}, {QStringLiteral("limit"), 1}});
+    if (!target.ok()) {
+        reject(sourceError.isEmpty() ? target.errorCode : sourceError,
+            sourceError.isEmpty() ? target.message : QStringLiteral("A safe complete source snapshot is unavailable; query state before creating a new preview."));
+        return;
+    }
+    // Fence runtime admission through planning and commit; the snapshot contains no live pointers.
+    QMutexLocker writeAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+    const auto commitContextValid = [&]() {
+        return !automationSourceReadBasis().isEmpty()
+            && QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() == snapshotRuntimeRevision;
+    };
+    if (!commitContextValid()) {
+        reject(QStringLiteral("context_busy"), QStringLiteral("The runtime lifecycle changed during source validation; no mapping was modified."));
+        return;
+    }
+    const auto items = target.page.value(QStringLiteral("items")).toArray();
+    const auto metadata = items.isEmpty() ? QJsonObject() : items.first().toObject();
+    if (metadata.value(QStringLiteral("source_tab_ref")) != arguments.sourceTabRef
+        || !metadata.value(QStringLiteral("attached_to_ui")).toBool()
+        || metadata.value(QStringLiteral("ui_index")).toInt(-1) != targetIndex) {
+        reject(QStringLiteral("stale_source"), QStringLiteral("The selected source is no longer the current attached editing target."));
+        return;
+    }
+    const auto plan = prepareMappingAddition(targetIndex, arguments.insertRow < 0 ? KeyMappingDataList->size() : arguments.insertRow,
+        arguments.originalKey, arguments.mappingKey);
+    if (!plan.ok()) { reject(plan.errorCode, plan.errorMessage); return; }
+    const auto row = automationSourceRow(createDefaultKeyMappingData(plan.originalKey, plan.mappingKey, plan.disabled));
+    // The only source growth is this row; conflict patches change false to the shorter true.
+    if (QJsonDocument(snapshot).toJson(QJsonDocument::Compact).size()
+        + QJsonDocument(row).toJson(QJsonDocument::Compact).size() + 64 > MaxSourceSnapshotBytes) {
+        reject(QStringLiteral("result_too_large"), QStringLiteral("Adding the row would exceed the complete source snapshot limit."));
+        return;
+    }
+    if (!applying) {
+        QJsonArray changes{QJsonObject{{QStringLiteral("kind"), QStringLiteral("insert_mapping")},
+            {QStringLiteral("source_tab_ref"), arguments.sourceTabRef}, {QStringLiteral("source_row"), plan.insertRow},
+            {QStringLiteral("mapping"), row}}};
+        for (const auto &conflict : plan.disableRows) {
+            const auto &data = s_KeyMappingTabInfoList.at(conflict.first).KeyMappingData->at(conflict.second);
+            changes.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("disable_mapping")},
+                {QStringLiteral("source_tab_ref"), arguments.sourceRevision + QStringLiteral(":source:") + QString::number(conflict.first)},
+                {QStringLiteral("source_row"), conflict.second}, {QStringLiteral("original_key"), data.Original_Key},
+                {QStringLiteral("mapping_keys"), QJsonArray::fromStringList(data.Mapping_Keys)},
+                {QStringLiteral("disabled_before"), false}, {QStringLiteral("disabled_after"), true}});
+        }
+        const QJsonObject description{{QStringLiteral("action"), QStringLiteral("mapping.add")},
+            {QStringLiteral("target"), metadata}, {QStringLiteral("changes"), changes},
+            {QStringLiteral("confirmation_required"), !plan.disableRows.isEmpty()},
+            {QStringLiteral("warning"), plan.warningMessage}, {QStringLiteral("modified"), false},
+            {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+        if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
+            reject(QStringLiteral("result_too_large"), QStringLiteral("The complete change description exceeds the response limit."));
+            return;
+        }
+        if (!server.isRequestCurrent(request) || validationBudget.hasExpired(MappingChangeBudgetMs)) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("The request is no longer authorized or exceeded its validation budget; obtain a fresh preview."));
+            return;
+        }
+        const auto preview = store.create(owner, arguments, description);
+        if (!preview) {
+            reject(QStringLiteral("preview_limit"), QStringLiteral("The bounded preview store is full; cancel your pending preview or wait for expiry."));
+            return;
+        }
+        server.reply(request.connectionId, request.requestId,
+            {{QStringLiteral("preview_id"), preview->id}, {QStringLiteral("operation_id"), preview->id},
+                {QStringLiteral("expires_in_ms"), double(MappingChangeStore::PreviewTtlMs)},
+                {QStringLiteral("description"), description}});
+        return;
+    }
+    if (!plan.disableRows.isEmpty() && !validation.confirmConflicts) {
+        reject(QStringLiteral("confirmation_required"), QStringLiteral("This addition disables the previewed conflicting rows. Review and explicitly confirm a fresh preview."));
+        return;
+    }
+    if (store.expired(*applyingPreview)) {
+        reject(QStringLiteral("preview_expired"), QStringLiteral("The preview expired before commit; query the source and obtain a fresh preview."));
+        return;
+    }
+    if (!server.isRequestCurrent(request) || !commitContextValid()
+        || validationBudget.hasExpired(MappingChangeBudgetMs)) {
+        reject(QStringLiteral("context_busy"), QStringLiteral("The request, permissions or runtime changed, or validation exceeded its budget; no mapping was modified."));
+        return;
+    }
+    const auto committed = commitMappingAddition(plan, validation.confirmConflicts, false);
+    if (!committed.isValid) { reject(QStringLiteral("stale_preview"), committed.errorMessage); return; }
+    store.finish(owner, validation.id, QStringLiteral("applied"),
+        {{QStringLiteral("modified"), true}, {QStringLiteral("saved"), false},
+            {QStringLiteral("started_by_operation"), false}, {QStringLiteral("source_revision_before"), arguments.sourceRevision},
+            {QStringLiteral("source_tab_ref_before"), arguments.sourceTabRef}, {QStringLiteral("source_row"), plan.insertRow},
+            {QStringLiteral("query_source_again"), true}, {QStringLiteral("warning"), plan.warningMessage}});
+    auto operation = store.operation(owner, validation.id);
+    operation.insert(QStringLiteral("replayed"), false);
+    server.reply(request.connectionId, request.requestId, operation);
+}
+
 void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
+    if (QkmAutomation::isMappingChangeMethod(request.method)) {
+        handleAutomationMappingChange(request);
+        return;
+    }
     if (request.method == QStringLiteral("qkm_get_help")) {
         const auto help = QkmAutomation::queryMappingHelp(request.arguments,
             QItemSetupDialog::s_valiedOriginalKeyList, QItemSetupDialog::s_valiedMappingKeyList);
@@ -37575,7 +37756,7 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
         return;
     }
     if (capabilities) {
-        server.replyCapabilities(request.connectionId, request.requestId, QJsonArray{QJsonObject{
+        QJsonArray businessCapabilities{QJsonObject{
             {QStringLiteral("id"), QStringLiteral("state.read")},
             {QStringLiteral("method"), QStringLiteral("qkm_get_state")},
             {QStringLiteral("required_scopes"), int(QkmAutomation::Read)},
@@ -37626,7 +37807,10 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                     QStringLiteral("mapping_rows_require_source_revision_and_source_tab_ref"),
                     QStringLiteral("memory_provenance_only_not_disk_origin"), QStringLiteral("source_revision_is_not_a_business_revision"),
                     QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}},
-            QkmAutomation::mappingHelpCapability()});
+            QkmAutomation::mappingHelpCapability()};
+        const QJsonArray mappingCapabilities = QkmAutomation::mappingChangeCapabilities();
+        for (const auto &capability : mappingCapabilities) businessCapabilities.append(capability);
+        server.replyCapabilities(request.connectionId, request.requestId, businessCapabilities);
         return;
     }
     const QJsonObject state = collectAutomationState();

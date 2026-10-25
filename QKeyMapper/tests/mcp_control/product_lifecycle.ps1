@@ -3,6 +3,7 @@ param(
     [Parameter(Mandatory)][string]$ExecutablePath,
     [Parameter(Mandatory)][string]$DesktopName,
     [Parameter(Mandatory)][string]$OutputDirectory,
+    [ValidateRange(60,600)][int]$MaximumSeconds = 240,
     [switch]$AllowDefaultDesktop
 )
 
@@ -45,7 +46,7 @@ try {
         start_ticks = [string]$testProcess.StartTicks;
         created = [string]$testProcess.Process.StartTime.ToUniversalTime().ToFileTimeUtc(); window = $window.ToInt64() }
     # A lost controller must not leave this owned administrator product running indefinitely.
-    $deadline = [DateTime]::UtcNow.AddSeconds(240)
+    $deadline = [DateTime]::UtcNow.AddSeconds($MaximumSeconds)
     while (-not (Test-Path -LiteralPath (Join-Path $output 'stop')) -and [DateTime]::UtcNow -lt $deadline) {
         if ($testProcess.Process.HasExited) { throw 'Product exited unexpectedly.' }
         Start-Sleep -Milliseconds 100

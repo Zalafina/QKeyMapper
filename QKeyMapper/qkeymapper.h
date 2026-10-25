@@ -23,6 +23,7 @@
 #include <QScrollArea>
 #include <QColor>
 #include <QPointer>
+#include <memory>
 
 class QkmUiScale;
 class QJsonObject;
@@ -99,7 +100,7 @@ class InputOwnerFence;
 #include "qmappingsequenceedit.h"
 #include "qpointpickerdialog.h"
 
-namespace QkmAutomation { class ControlDialog; struct AutomationRequest; }
+namespace QkmAutomation { class ControlDialog; class MappingChangeStore; struct AutomationRequest; }
 
 namespace Ui {
 class QKeyMapper;
@@ -2100,6 +2101,7 @@ private:
     QJsonObject collectAutomationCatalog(void) const;
     QJsonObject collectAutomationSourceSnapshot(QString &errorCode) const;
     void handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request);
+    void handleAutomationMappingChange(const QkmAutomation::AutomationRequest &request);
     void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
     void handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request);
     void updateMousePointsList(void);
@@ -2590,6 +2592,7 @@ private:
     bool m_CustomNotificationStyleInitialized = false;
     QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
     QkmAutomation::ControlDialog *m_McpControlDialog = Q_NULLPTR;
+    std::unique_ptr<QkmAutomation::MappingChangeStore> m_AutomationMappingChanges;
     quint64 m_MappingLoadGeneration = 0;
     quint64 m_AutomationSourceEpoch = 0;
     quint64 m_AutomationSourceCleanupRevision = 0;

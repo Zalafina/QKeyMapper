@@ -13,7 +13,8 @@ namespace {
 
 quint32 minimumScopes(const QString &method)
 {
-    if (method == QStringLiteral("qkm_preview_changes") || method == QStringLiteral("qkm_apply_changes"))
+    if (method == QStringLiteral("qkm_preview_changes") || method == QStringLiteral("qkm_apply_changes")
+        || method == QStringLiteral("qkm_cancel_changes"))
         return Read | Configure;
     if (method == QStringLiteral("qkm_start_mapping") || method == QStringLiteral("qkm_stop_mapping"))
         return Read | RunMapping;
@@ -351,6 +352,18 @@ bool AutomationSessionServer::becomeReady(bool pairing)
 void AutomationSessionServer::setRequestHandler(std::function<void(AutomationRequest)> handler)
 {
     m_handler = std::move(handler);
+}
+
+bool AutomationSessionServer::isRequestCurrent(const AutomationRequest &request) const
+{
+    const int index = findPair(request.pairId);
+    const quint32 required = minimumScopes(request.method);
+    return m_enabled && m_stage == Stage::Ready && !request.requestId.isEmpty()
+        && request.connectionId == m_connection && request.requestId == m_request
+        && request.pairId == m_pair.pairId && request.permissionEpoch == m_pair.permissionEpoch
+        && request.scopes == m_pair.scopes && required != 0 && (m_pair.scopes & required) == required
+        && index >= 0 && m_credentials.at(index).permissionEpoch == request.permissionEpoch
+        && m_credentials.at(index).scopes == request.scopes && m_listener.matchesConnection(request.connectionId);
 }
 
 bool AutomationSessionServer::sendReply(const QString &connectionId, const QString &requestId, QJsonObject response)

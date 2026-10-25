@@ -19,8 +19,10 @@ def stdio_error_fixture():
     codes = {"configurations": "permission_denied", "tabs": "stale_catalog",
              "mapping_sources": "stale_source", "mappings": "context_busy"}
     def request(method, arguments):
-        if method == "qkm_get_state":
+        if method in ("qkm_get_state", "qkm_get_operation"):
             return {"ok": True, "result": {"outcome": "failed", "error": "save_failed"}}
+        if method in ("qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes"):
+            return {"ok": False, "error": "stale_preview", "message": "Fixed fixture rejection."}
         return {"ok": False, "error": codes[arguments["entity"]], "message": "Fixed fixture rejection."}
     # Only this test child replaces the endpoint; the registered tools and SDK transport are real.
     with patch.object(Bridge, "_request", side_effect=request), \
@@ -29,15 +31,28 @@ def stdio_error_fixture():
 
 
 class ToolResultTests(unittest.TestCase):
+    def test_state_comparison_excludes_only_the_validated_sample_time(self):
+        from test_sdk_interop import business_state
+        before = {"configuration": {"has_unsaved_changes": False},
+                  "run": {"gui_state": "idle", "sampled_at_utc": "2026-10-25T08:00:00.000Z"}}
+        after = dict(before, run=dict(before["run"], sampled_at_utc="2026-10-25T08:00:01.000Z"))
+        self.assertEqual(business_state(before), business_state(after))
+        self.assertNotEqual(business_state(before), business_state(dict(after,
+            configuration={"has_unsaved_changes": True})))
+        self.assertNotEqual(business_state(before), business_state(dict(after,
+            run=dict(after["run"], gui_state="stopping"))))
+        with self.assertRaises((ValueError, AssertionError)):
+            business_state(dict(after, run=dict(after["run"], sampled_at_utc="not a sample time")))
+
     def test_stdio_business_errors_and_failed_operation_data(self):
-        from test_sdk_interop import call
+        from test_sdk_interop import TOOLS, call
         async def exercise(directory):
             root = Path(__file__).resolve().parents[1]
             config = StdioServerParameters(command=sys.executable,
                 args=["-B", "-c", "from test_tool_results import stdio_error_fixture; stdio_error_fixture()"],
                 env={"PYTHONPATH": os.pathsep.join((str(root / "src"), str(root / "tests")))}, cwd=directory)
             async with Client(config) as client:
-                self.assertEqual(len((await client.list_tools()).tools), 8)
+                self.assertEqual({tool.name for tool in (await client.list_tools()).tools}, TOOLS)
                 for entity, code in (("configurations", "permission_denied"), ("tabs", "stale_catalog"),
                                      ("mapping_sources", "stale_source"), ("mappings", "context_busy")):
                     arguments = {"entity": entity}
@@ -46,6 +61,14 @@ class ToolResultTests(unittest.TestCase):
                     value = await call(client, "qkm_query", arguments, error=code)
                     self.assertEqual(value["message"], "Fixed fixture rejection.")
                 value = await call(client, "qkm_get_state")
+                self.assertEqual(value["result"]["outcome"], "failed")
+                change = {"source_revision": "a" * 64, "source_tab_ref": "a" * 64 + ":source:0",
+                          "original_key": "A", "mapping_key": "B"}
+                for name, arguments in (("qkm_preview_changes", change),
+                        ("qkm_apply_changes", {"preview_id": "b" * 32}),
+                        ("qkm_cancel_changes", {"preview_id": "b" * 32})):
+                    await call(client, name, arguments, error="stale_preview")
+                value = await call(client, "qkm_get_operation", {"operation_id": "b" * 32})
                 self.assertEqual(value["result"]["outcome"], "failed")
         with tempfile.TemporaryDirectory() as directory:
             asyncio.run(exercise(directory))

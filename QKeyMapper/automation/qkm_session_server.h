@@ -56,6 +56,7 @@ public:
     bool revoke(const QString &pairId);
     bool updatePermissions(const QString &pairId, quint32 scopes);
     void setRequestHandler(std::function<void(AutomationRequest)> handler);
+    bool isRequestCurrent(const AutomationRequest &request) const;
     bool reply(const QString &connectionId, const QString &requestId, const QJsonObject &result);
     bool replyCapabilities(const QString &connectionId, const QString &requestId,
                            const QJsonArray &businessCapabilities);

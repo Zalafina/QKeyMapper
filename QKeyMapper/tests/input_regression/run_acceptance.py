@@ -22,14 +22,14 @@ import win32process
 import pywintypes
 from mcp import Client
 
-from probe import Sender, distribution, focus_click, plain_latencies, process_sample
+from probe import Sender, display_sample, distribution, focus_click, plain_latencies, process_sample
 from receiver import CLOSE, COUNT, FLUSH, RESET, RESULT_ROOT, input_desktop_name
 from features import CASES, configuration, exercise, pressed, wait_for
 
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "mcp_bridge/tests"))
 from test_product_interop import Product, connection_pending
-from test_sdk_interop import call, connection, elevation, integrity, parameters
+from test_sdk_interop import business_state, call, connection, elevation, integrity, parameters
 from test_source_interop import source_rows
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.windows import identity
@@ -37,6 +37,13 @@ from qkeymapper_mcp.windows import identity
 
 def save(path, value):
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def save_display(path, window=None):
+    try:
+        save(path, display_sample(window))
+    except Exception as error:
+        print("UNVERIFIED display observation:", type(error).__name__, flush=True)
 
 
 async def wait_file(path, child):
@@ -185,9 +192,81 @@ async def queries(client, stop, records):
             pass
 
 
+async def editor_invalidation(product, client, current):
+    from mapping_changes_acceptance import contents, operation, preview, snapshot
+    pending = await preview(client, current)
+    await product.action("OpenFloatingSetup")
+    await call(client, "qkm_preview_changes", {"source_revision": current["revision"],
+        "source_tab_ref": current["target"]["source_tab_ref"], "original_key": "A", "mapping_key": "B"}, error="context_busy")
+    cancelled = (await call(client, "qkm_cancel_changes", {"preview_id": pending["preview_id"]}))["result"]
+    assert cancelled["status"] == "cancelled"
+    await product.action("CloseFloatingSetup")
+    unchanged = await snapshot(client)
+    assert contents(unchanged) == contents(current), "Opening/closing an editor changed mapping content"
+    pending = await preview(client, unchanged)
+    await product.action("OpenFloatingSetup")
+    await call(client, "qkm_apply_changes", {"preview_id": pending["preview_id"]}, error="context_busy")
+    assert (await operation(client, pending["preview_id"]))["result"]["modified"] is False
+    await product.action("CloseFloatingSetup")
+    current = await snapshot(client)
+    pending = await preview(client, current)
+    await product.action("OpenFloatingSetup")
+    await product.action("SyncGroupOne")
+    await product.action("CloseFloatingSetup")
+    group = await snapshot(client)
+    group_field = "KeyMapData_FloatingButton_SyncGroupId"
+    changed = contents(group)
+    expected = contents(current)
+    assert expected[0]["fields"][group_field] == 0 and changed[0]["fields"][group_field] == 1
+    expected[0]["fields"] = dict(expected[0]["fields"], **{group_field: 1})
+    assert changed == expected, "The GUI fixture must change only SyncGroupId"
+    await call(client, "qkm_apply_changes", {"preview_id": pending["preview_id"]}, error="stale_source")
+    after = await snapshot(client)
+    assert after["revision"] == group["revision"] and contents(after) == changed
+    rejected = await operation(client, pending["preview_id"])
+    assert rejected["status"] == "rejected" and rejected["result"]["modified"] is False
+    save(product.output / "sync-group-stale.json", {"before": current, "group": group,
+        "after_rejection": after, "operation": rejected, "only_changed_field": group_field})
+    await product.action("OpenFloatingSetup")
+    await product.action("SyncGroupZero")
+    await product.action("CloseFloatingSetup")
+    restored = await snapshot(client)
+    assert contents(restored) == contents(current)
+    return restored
+
+
+async def prepare_mcp_mapping(product, client):
+    from mapping_changes_acceptance import contents, operation, preview, snapshot
+    before = await snapshot(client)
+    assert len(before["rows"]) == 1 and source_rows({"items": before["rows"]}) == [("A", ["B"])]
+    ini = product.executable.parent / "keymapdata.ini"
+    disk = ini.read_bytes()
+    cleared = await product.action("ClearBasicMapping")
+    empty = await snapshot(client)
+    assert cleared["mapping_rows"] == [] and contents(empty) == []
+    planned = await preview(client, empty)
+    applied = (await call(client, "qkm_apply_changes", {"preview_id": planned["preview_id"]}))["result"]
+    actual = await snapshot(client)
+    save(product.output / "mcp-rebuilt-fields.json", {"before": before, "actual": actual})
+    assert applied["status"] == "applied" and applied["result"]["saved"] is False
+    assert contents(actual) == contents(before), "Performance comparison requires identical effective mapping fields"
+    actual = await editor_invalidation(product, client, actual)
+    assert ini.read_bytes() == disk
+    gui = await product.action("ShowForCapture")
+    assert gui["mapping_rows"] == [{"original": "A", "mapping": "B"}] and gui["add_button_enabled"]
+    save_display(product.output / "display-before-capture.json", product.window)
+    await product.capture(product.window, "map67_mcp_added")
+    pending = await preview(client, actual)
+    save(product.output / "mcp-added.json", {"before": before, "empty": empty, "actual": actual,
+        "operation": applied, "gui": gui, "ini_unchanged": True,
+        "known_operation": await operation(client, planned["preview_id"])})
+    return actual, pending["preview_id"]
+
+
 async def run_state(args, state, executable):
     output = args.output / state
     output.mkdir()
+    save_display(output / "display-before.json")
     # A failed earlier run must not leave pairings in this run's application namespace.
     runtime = output / "runtime"
     shutil.copytree(executable.parent, runtime, ignore=shutil.ignore_patterns("keymapdata.ini", "*.log"))
@@ -200,6 +279,7 @@ async def run_state(args, state, executable):
     try:
         async with AsyncExitStack() as stack:
             await product.started()
+            save_display(output / "display-product.json", product.window)
             gui = await product.action("ReadMapping")
             assert gui["mapping_rows"] == [{"original": "A", "mapping": "B"}]
             assert gui["configuration_display"] == "Engine61" and gui["stop_shortcut_edit"] == "F24"
@@ -217,15 +297,30 @@ async def run_state(args, state, executable):
                 await connection(client, "pairing_required")
                 await call(client, "qkm_request_pairing")
                 await connection_pending(client)
-                await product.action("ApproveRead", own.executable)
-                await connection(client, "connected")
+                await product.action("ApproveConfigure" if state == "query" else "ApproveRead", own.executable)
+                connected = await connection(client, "connected")
+                assert connected["scopes"] == (3 if state == "query" else 1)
                 await product.action("CloseMcp")
-            await product.action("StartMapping")
+            mcp_source, pending_preview = None, None
+            if state == "query":
+                mcp_source, pending_preview = await prepare_mcp_mapping(product, client)
+            started = await product.action("StartMapping")
+            if state == "query":
+                assert not started["mapping_action"]["add_button_enabled"], "GUI addition was enabled while running"
             receiver = Receiver()
             await receiver.start(output / "receiver", allow_focus_click=args.allow_focus_click)
             sender = Sender(receiver.window, receiver.pid, allow_default=args.allow_default)
             warmup = await plain(receiver, sender, 10, 0x42)
             save(output / "warmup.json", warmup)
+            if state == "query":
+                running = (await call(client, "qkm_get_state"))["result"]
+                assert running["run"]["worker_state_sample"] == "started" and running["run"]["monitoring_enabled"]
+                await call(client, "qkm_apply_changes", {"preview_id": pending_preview}, error="context_busy")
+                await call(client, "qkm_preview_changes", {"source_revision": mcp_source["revision"],
+                    "source_tab_ref": mcp_source["target"]["source_tab_ref"], "original_key": "A", "mapping_key": "B"}, error="context_busy")
+                rejected = (await call(client, "qkm_get_operation", {"operation_id": pending_preview}))["result"]
+                assert rejected["status"] == "rejected" and rejected["result"]["modified"] is False
+                save(output / "running-edit-rejection.json", {"gui": started, "state": running, "operation": rejected})
             tasks.append(asyncio.create_task(measurements(product, stop, samples, thread_cpu=args.thread_cpu)))
             if state == "query":
                 tasks.append(asyncio.create_task(queries(client, stop, requests)))
@@ -255,6 +350,12 @@ async def run_state(args, state, executable):
             save(output / "stopped.json", await plain(receiver, sender, 10, 0x41))
             stopped = await product.action("StopMapping")
             assert stopped["mapping_action"]["before"] == "映射开始", "F24 did not reach GUI idle"
+            if state == "query":
+                from mapping_changes_acceptance import contents, snapshot
+                after_stop = await snapshot(client)
+                assert contents(after_stop) == contents(mcp_source)
+                assert after_stop["listing"]["source_snapshot"]["read_basis"] == "completed_cleanup"
+                save(output / "mcp-after-stop.json", after_stop)
             assert len(samples) >= 2
             cpu = (samples[-1]["cpu_100ns"] - samples[0]["cpu_100ns"]) / 1e7
             elapsed = (samples[-1]["qpc_ns"] - samples[0]["qpc_ns"]) / 1e9
@@ -276,6 +377,7 @@ async def run_state(args, state, executable):
                 await product.action("Disable")
             return result
     finally:
+        save_display(output / "display-after.json", getattr(product, "window", None))
         stop.set()
         try:
             if tasks:
@@ -330,7 +432,7 @@ async def sources_after_stop(product):
                 rows = (await call(client, "qkm_query", target))["result"]
                 assert source_rows(rows) == [("A", ["B"])]
                 assert (await call(client, "qkm_query", {"entity": "mapping_sources"}))["result"] == first
-                assert (await call(client, "qkm_get_state"))["result"] == before and ini.read_bytes() == disk
+                assert business_state((await call(client, "qkm_get_state"))["result"]) == business_state(before) and ini.read_bytes() == disk
                 await product.action("StartMapping")
                 running = (await call(client, "qkm_get_state"))["result"]
                 assert running["run"]["monitoring_enabled"] and running["run"]["stop_completion"] == "unobserved"
@@ -349,7 +451,7 @@ async def sources_after_stop(product):
                 fresh = (await call(client, "qkm_query", new_target))["result"]
                 assert source_rows(fresh) == source_rows(rows)
                 assert fresh["items"][0]["fields"] == rows["items"][0]["fields"]
-                assert ini.read_bytes() == second_disk and (await call(client, "qkm_get_state"))["result"] == second_state
+                assert ini.read_bytes() == second_disk and business_state((await call(client, "qkm_get_state"))["result"]) == business_state(second_state)
                 save(product.output / "sources-after-stop.json", {"before": before, "first": first,
                     "rows": rows, "running": running, "second_state": second_state, "second": second, "fresh": fresh,
                     "read_batches_ini_unchanged": True, "gui_cycle_ini_unchanged": second_disk == disk})
