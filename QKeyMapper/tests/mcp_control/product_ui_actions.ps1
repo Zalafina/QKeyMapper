@@ -362,19 +362,11 @@ if ($Action -in $mappingActions) {
             }
         }
         $before = @([QkmProductUiDesktop]::NamedWindows($TargetProcessId, $null))
-        $expand = $null
-        $invoke = $null
-        if ($configuration.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$expand)) {
-            $expand.Expand()
-            $openMethod = 'owned_UIA_expand_Up_Down_Return'
-        } elseif ($configuration.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$invoke)) {
-            $openMethod = 'owned_window_combo_left_click_Up_Down_Return'
-            $bounds = $configuration.Current.BoundingRectangle
-            [QkmProductUiDesktop]::OpenConfigurationPopup($main, $TargetProcessId, $DesktopName,
-                [int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
-        } else {
-            throw 'The fixed configuration combo has no supported GUI opening action.'
-        }
+        # Qt's custom popup is not the standard combo view described by UIA ExpandCollapse.
+        $openMethod = 'owned_window_combo_left_click_Up_Down_Return'
+        $bounds = $configuration.Current.BoundingRectangle
+        [QkmProductUiDesktop]::OpenConfigurationPopup($main, $TargetProcessId, $DesktopName,
+            [int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
         $popup = [IntPtr]::Zero
         $popupObservationErrors = @()
         try {
