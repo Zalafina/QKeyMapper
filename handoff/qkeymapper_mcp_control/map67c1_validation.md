@@ -61,3 +61,30 @@ GUI在原位置采样语言并传入，不因共用提取改到覆盖确认之�
 实际EXE：out/mcp_lifecycle/common71-20261025/runtime-{qt6,qt5}/QKeyMapperCommon71_{qt6,qt5}.exe，均为明确记录的临时asInvoker维护副本；控制器／目标Medium、系统登录关联及实际QkmLifecycle_*私有桌面已核实。before*／after*的逐项结果、closed.json、旧格式legacy-qt*.ini与原始日志仅在本机out。旧副本随后由修复后副本同路径替换，不冒称当前文件仍是修复前EXE。
 
 MCP生产仍使用已有完整源快照／哈希及外层守卫，未新增operator==调用，也未开放保存或备注编辑工具。正式MCP保存等价性、High／真实输入、性能和Win11未在此片运行；本片只证明所选共通备注保存与恢复，不扩大为整个C1完成。用户随后要求在此提交检查点插入CACHE-SKILL-72，之后回到C1-B2。
+
+## C1-B2-TABLE：Tab／映射载荷提取与双Qt对照（2026-10-25，PC-W10）
+
+基于75d5a5e6＋本片生产／维护变化。生产仅QKeyMapper的私有collectMappingTableSaveValues与原GUI写回：97个唯一相对键，保留原表达式、循环、清洗及插入顺序，原位置仍用同一QSettings和配置前缀写盘。tabIndexBeforeSaveReload、保存范围／时机、清理、失败回滚、重载和dirty处理均留在原流程；未改Worker、manifest、依赖锁、协议或MCP工具。完整文件逆变换审阅确认除本片提取外qkeymapper.cpp与75d5a5e6一致，97项表达式及顺序一致，证据scope-review.json／extraction.json。
+
+现有维护夹具新增settings_table_save／settings_table_cold，仍由真实Qt鼠标事件点击GUI Save，经原槽函数保存。三普通Tab含非当前／空Tab，分别覆盖附着及脱离共通表；包含按下／抬起序列、中文／emoji／日文／空备注、分类、非默认颜色／尺寸／透明度、同步组和禁用行。按钮／浮动图片保持不显示，不启动映射、不注入系统键鼠、不用Default桌面；原manifest启动／退出仍有已授权的FakerInput连接及复位等原有副作用。
+
+| 验证 | Qt6.8.3 x64 | Qt5.15.2官方msvc2019_64 kit |
+|---|---|---|
+| 提取前Release构建及基线 | exit0；零编译警告 | exit0；仅既有qtmain缺PDB例外 |
+| 提取前GUI保存／冷读 | 两种共通状态各17＋9，合计52项 | 同52项 |
+| 提取后Release构建 | exit0；零编译警告 | exit0；同既有例外 |
+| 提取后GUI保存／冷读 | 两种状态各21＋9，合计60项，四个进程exit0 | 同60项／四进程exit0 |
+| 完整写盘对照 | 两对完整252键、Qt类型和值相同，INI字节精确一致 | 同两对 |
+| 独立冷启动 | 两组恢复预期字段，冷读前后INI字节不变 | 同两组 |
+
+额外断言97项有序载荷可重复生成；不改主数据、三个派生键列表、LockState、dirty、加载代次或磁盘；QPoint／QSize保持Qt类型，GUI逐项写入值等于收集值。保存前指定无图片的托盘像素24×24仍按旧编码写盘，重载后依现有规则清为空；这项既有规范化明确保留，不能把编辑值、已保存值和有效值混为一谈。
+
+首次旧GUI基线仅图标尺寸聚合预期失败（其余16项通过），定位为无有效图片时加载器主动清空像素选择；未修改产品迁就夹具，校准预期后才建立有效基线。保留before.log、failed-initial-qt6-detached.ini。重试准备时遇到已有wav文件不可覆盖及读取内部state快照过旧的断言，均在启动产品前失败；普通脚本改为复用未变部署并通过正式status刷新，未创建额外控制器或提权开发工具。成功基线为before-r2-final.log／before-r2-results.json，前述尝试不计通过。
+
+实际EXE为out/mcp_lifecycle/map67c1-tables-20261025/runtime-{qt6,qt5}-{attached,detached}/QKeyMapperTables67_{qt6,qt5}.exe；原requireAdministrator，未修改manifest。全部由普通父控制器6920、经已登记公共入口启动，测试主体／构建／Git普通权限；每个独立QkmTables桌面、创建时间、EXE内容身份、High／同关联登录、原生退出及检查记录在各save／cold下closed.json和before-r2／after-definitions.json。新目标／case只新增定义，未改缓存核心，未另建控制器。
+
+原始材料本机out/mcp_lifecycle/map67c1-tables-20261025；Release日志out/mcp_bridge/map67c1-tables-20261025/build-qt*-{before-r2,after}.log。完整252键对照及基线INI仅本机out，不随Git。脚本和机器路径为本机取证材料，另一PC按现有维护pro、case环境及公共登记规则恢复，不复制out或假设已有二进制。
+
+本次仅GUI保存与只读载荷基础的独立提交切点。MCP未消费此载荷，仍12工具／8能力；该载荷不能代替完整内容修订、目标身份、其他草稿范围或提交授权。剩余配置／高级设置／面板等编码、完整保存预览与提交、失败回滚及正式MCP保存／冷启动／启停闭环仍待接续。未新增普通产品构建、ASan、严格静态分析、Win11、真实输入／设备、三语言布局或性能结论；按本片纯序列化影响选择双Qt Release维护及完整文件对照，没有越过原R3门槛。
+
+用户要求本片通过后收尾。曾按明确3小时请求把6920延长至23:46:49；本轮原生用例已实际跨过旧21:07截止，但不代表三小时驻留完整通过。正式收尾已off并核实closed、cache_available=false、零拥有／未定记录及last_error=null，见cache-closed.json；不跨PC继承窗口、PID或拥有关系。

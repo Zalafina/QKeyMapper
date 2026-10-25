@@ -21275,301 +21275,12 @@ OrderedMap<QString, QVariant> QKeyMapper::collectGeneralSettingSaveValues(int la
     return values;
 }
 
-bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
+OrderedMap<QString, QVariant> QKeyMapper::collectMappingTableSaveValues() const
 {
-    if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
-    // Create RAII guard to automatically save and restore category filter state
-    CategoryFilterStateGuard filterGuard(this);
-
-    syncRuntimeKeyMappingStatesToCurrentTab();
-
-    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
-    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
-    // int burstpressTime = ui->burstpressSpinBox->value();
-    // int burstreleaseTime = ui->burstreleaseSpinBox->value();
-
-    QString saveSettingSelectStr;
-    // QString cursettingSelectStr = ui->settingselectComboBox->currentText();
-    QString cursettingSelectStr;
-    int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
-    if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
-        cursettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().noquote().nospace() << "[saveKeyMapSetting]" << "Current setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
-#endif
-    }
-    int languageIndex = ui->languageComboBox->currentIndex();
-    bool saveGlobalSetting = false;
-    bool createNewSetting = false;
-
-
-    if (ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX) {
-        saveGlobalSetting = true;
-        saveSettingSelectStr = GROUPNAME_GLOBALSETTING;
-    }
-    else {
-        QString settingNameString = ui->settingNameLineEdit->text().trimmed();
-        QStringList groups = settingFile.childGroups();
-
-        // Check if setting name is empty
-        if (settingNameString.isEmpty()) {
-            showFailurePopup(tr("Setting name cannot be empty. Please enter a valid setting name."));
-            return false;
-        }
-
-        // Check for invalid characters in INI group names
-        // INI format doesn't allow certain characters in section names
-        const QString invalidChars = "[]=/\\";
-        QString foundInvalidChars;
-        for (int i = 0; i < invalidChars.length(); i++) {
-            if (settingNameString.contains(invalidChars.at(i))) {
-                if (!foundInvalidChars.isEmpty()) {
-                    foundInvalidChars += " ";
-                }
-                foundInvalidChars += invalidChars.at(i);
-            }
-        }
-        // Also check for newline characters (though they're unlikely in QLineEdit)
-        if (settingNameString.contains('\n') || settingNameString.contains('\r')) {
-            if (!foundInvalidChars.isEmpty()) {
-                foundInvalidChars += " ";
-            }
-            foundInvalidChars += tr("newline characters");
-        }
-        if (!foundInvalidChars.isEmpty()) {
-            showFailurePopup(tr("Setting name cannot contain the following characters: %1").arg(foundInvalidChars));
-            return false;
-        }
-
-        // Get current selected setting name from combobox (if any)
-        QString currentSelectedSetting;
-        if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
-            currentSelectedSetting = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
-        }
-
-        // Check if the setting name matches current selection
-        if ((settingNameString == GROUPNAME_GLOBALSETTING || settingNameString == tr(DISPLAYNAME_GLOBALSETTING))
-            && ui->settingselectComboBox->currentIndex() != GLOBALSETTING_INDEX) {
-            showFailurePopup(tr("Please select \"%1\", if you want to modify the global keymapping setting.").arg(tr(DISPLAYNAME_GLOBALSETTING)));
-            return false;
-        }
-        else if (currentSelectedSetting == settingNameString) {
-            // Case 5: Overwrite existing selected setting
-            saveSettingSelectStr = settingNameString;
-        }
-        else if (groups.contains(settingNameString)) {
-            // Case 7: Setting name exists but not currently selected - ask for confirmation
-            QString message = tr("Setting \"%1\" already exists. Do you want to overwrite it?").arg(settingNameString);
-            QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
-                                                                       QMessageBox::Yes | QMessageBox::No,
-                                                                       QMessageBox::No);
-            if (reply == QMessageBox::Yes) {
-                saveSettingSelectStr = settingNameString;
-            } else {
-                // User cancelled, don't save
-                return false;
-            }
-        }
-        else {
-            // Case 6: New setting name - create new setting
-            createNewSetting = true;
-            saveSettingSelectStr = settingNameString;
-        }
-    }
-
-    // A fresh snapshot catches format errors consumed by earlier QSettings readers.
-    const auto validateConfigFile = []() {
-        QFile source(CONFIG_FILENAME);
-        if (!source.exists()) {
-            return true;
-        }
-        QTemporaryFile snapshot(QDir::tempPath() + QStringLiteral("/QKeyMapper-config-XXXXXX.ini"));
-        if (!source.open(QIODevice::ReadOnly) || !snapshot.open()) {
-            return false;
-        }
-        const QByteArray data = source.readAll();
-        if (source.error() != QFile::NoError || snapshot.write(data) != data.size() || !snapshot.flush()) {
-            return false;
-        }
-        snapshot.close();
-        QSettings validation(snapshot.fileName(), QSettings::IniFormat);
-        QKeyMapperQtCompat::setIniCodecUtf8(validation);
-        (void)validation.allKeys();
-        return validation.status() == QSettings::NoError;
-    };
-    if (!validateConfigFile()) {
-        showFailurePopup(tr("Save failure : ") + saveSettingSelectStr);
-        return false;
-    }
-
-    QVariantMap valuesBeforeSave;
-    const QStringList keysBeforeSave = settingFile.allKeys();
-    for (const QString &key : keysBeforeSave) {
-        valuesBeforeSave.insert(key, settingFile.value(key));
-    }
-
-    if (settingFile.status() != QSettings::NoError) {
-        showFailurePopup(tr("Save failure : ") + saveSettingSelectStr);
-        return false;
-    }
-    saveIgnoreRulesToINI();
-
-    settingFile.setValue(SETTINGSELECT, saveSettingSelectStr);
-    saveSettingSelectStr += "/";
-
-    const auto generalValues = collectGeneralSettingSaveValues(languageIndex);
-    for (auto it = generalValues.begin(); it != generalValues.end(); ++it) {
-        settingFile.setValue(it.key(), it.value());
-    }
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[UI_SCALE] SAVE seq=" << m_uiScaleDiagnosticSequence
-             << "base=" << m_normalWindowBaseSize << "size=" << size()
-             << "R=" << m_runtimeScaleCompensation;
-#endif
-
-//         if (m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
-//             if (m_windowswitchKeySeqEdit->lastKeySequence().isEmpty()) {
-//                 m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->defaultKeySequence()));
-//             }
-//             else {
-//                 m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->lastKeySequence()));
-//             }
-//         }
-//         m_windowswitchKeySeqEdit->clearFocus();
-//         if (false == m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
-//             updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
-//             settingFile.setValue(WINDOWSWITCH_KEYSEQ, m_windowswitchKeySeqEdit->keySequence().toString());
-// #ifdef DEBUG_LOGOUT_ON
-//             qDebug() << "[saveKeyMapSetting]" << "Save & Set Window Switch KeySequence ->" << m_windowswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
-// #endif
-//         }
-
-    if (s_WindowSwitchKeyString.isEmpty()) {
-        s_WindowSwitchKeyString = DISPLAYSWITCH_KEY_DEFAULT;
-    }
-    ui->windowswitchkeyLineEdit->clearFocus();
-    if (false == s_WindowSwitchKeyString.isEmpty()) {
-        settingFile.setValue(WINDOWSWITCH_KEYSEQ, s_WindowSwitchKeyString);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[saveKeyMapSetting]" << "Save & Set Window Switch Key ->" << s_WindowSwitchKeyString;
-#endif
-    }
-
-
-#if 0
-    if (cursettingSelectStr == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX) {
-        saveGlobalSetting = true;
-        saveSettingSelectStr = cursettingSelectStr;
-        settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
-        saveSettingSelectStr = saveSettingSelectStr + "/";
-    }
-    else if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
-            && cursettingSelectStr.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
-        saveSettingSelectStr = cursettingSelectStr;
-        settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
-        saveSettingSelectStr = saveSettingSelectStr + "/";
-    }
-    else {
-        QStringList groups = settingFile.childGroups();
-        QStringList validgroups_customsetting;
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[saveKeyMapSetting]" << "childGroups >>" << groups;
-#endif
-
-        for (const QString &group : std::as_const(groups)){
-            if (group.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
-                    && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
-                validgroups_customsetting.append(group);
-            }
-        }
-
-        int customGlobalSettingIndex;
-        if (validgroups_customsetting.size() > 0) {
-            QString lastgroup = validgroups_customsetting.last();
-            QString lastNumberStr = lastgroup.remove(GROUPNAME_CUSTOMGLOBALSETTING);
-
-            if (lastNumberStr.toInt() >= CUSTOMSETTING_INDEX_MAX) {
-                QString message = "There is already " + lastNumberStr + " CustomGlobalSettings, please remove some CustomGlobalSettings!";
-                showFailurePopup(message);
-                return;
-            }
-            else {
-                customGlobalSettingIndex = lastNumberStr.toInt() + 1;
-            }
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[saveKeyMapSetting] Last custom setting index ->" << lastNumberStr.toInt();
-            qDebug() << "[saveKeyMapSetting] Save current custom setting to ->" << customGlobalSettingIndex;
-#endif
-        }
-        else {
-            customGlobalSettingIndex = 1;
-        }
-
-        if ((false == ui->processLineEdit->text().isEmpty())
-                 && (false == ui->windowTitleLineEdit->text().isEmpty())
-                 && (true == ui->processCheckBox->isChecked())
-                 && (true == ui->titleCheckBox->isChecked())
-                 && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)
-                 && (!m_MapProcessInfo.FilePath.isEmpty())){
-            QStringList groups = settingFile.childGroups();
-            int index = -1;
-            for (index = 1; index <= TITLESETTING_INDEX_MAX; index++) {
-                QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(index);
-
-                if (groups.contains(subgroup)) {
-                    QVariant windowTitle_Var;
-                    if (readSaveSettingData(subgroup, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
-                        QString titleStr = windowTitle_Var.toString();
-                        if (titleStr == ui->windowTitleLineEdit->text()) {
-                            break;
-                        }
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            if (0 < index && index <= TITLESETTING_INDEX_MAX) {
-                QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(index);
-                settingFile.setValue(SETTINGSELECT , subgroup);
-                saveSettingSelectStr = subgroup + "/";
-            }
-            else {
-                QString message = "There is already " + QString::number(TITLESETTING_INDEX_MAX) + " settings of [" + m_MapProcessInfo.FileName + "], please remove some settings of [" + m_MapProcessInfo.FileName + "] first!";
-                showFailurePopup(message);
-                return;
-            }
-        }
-        else if ((false == ui->processLineEdit->text().isEmpty())
-            && (true == ui->processCheckBox->isChecked())
-            && (false == ui->titleCheckBox->isChecked())
-            && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)
-            && (!m_MapProcessInfo.FilePath.isEmpty())){
-            QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
-            settingFile.setValue(SETTINGSELECT , subgroup);
-            saveSettingSelectStr = subgroup + "/";
-        }
-        else {
-            if (customGlobalSettingIndex < 10) {
-                saveSettingSelectStr = QString(GROUPNAME_CUSTOMGLOBALSETTING) + " " + QString::number(customGlobalSettingIndex);
-            }
-            else {
-                saveSettingSelectStr = QString(GROUPNAME_CUSTOMGLOBALSETTING) + QString::number(customGlobalSettingIndex);
-            }
-            settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
-            saveSettingSelectStr = saveSettingSelectStr + "/";
-        }
-    }
-#endif
-
-    const int tabIndexBeforeSaveReload = s_KeyMappingTabWidgetCurrentIndex;
-
-    // settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABINDEX, s_KeyMappingTabWidgetCurrentIndex);
+    OrderedMap<QString, QVariant> values;
+    // Preserve the existing last-normal-tab-name persistence rule.
     if (!isCommonMappingTabIndex(s_KeyMappingTabWidgetCurrentIndex)) {
-        settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_LASTTABNAME, s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName);
+        values.insert(QString::fromLatin1(MAPPINGTABLE_LASTTABNAME), s_KeyMappingTabInfoList.at(s_KeyMappingTabWidgetCurrentIndex).TabName);
     }
 
     QStringList tabnamelist;
@@ -22408,103 +22119,403 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         floatingbutton_syncgroupidList_forsave.append(floatingbutton_syncgroupidList_str);
     }
 
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABNAMELIST, tabnamelist);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABINTERNALNAMELIST, tabinternalnamelist);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABINCLUDECOMMONLIST, tabincludecommonlist);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCOMMONCOLLAPSEDLIST, tabcommoncollapsedlist);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHOTKEYLIST, tabhotkeylist);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABFONTCOLORLIST, tabfontcolorlist);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABBGCOLORLIST, tabbgcolorlist);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABHIDENOTIFICATIONLIST, tabhidenotificationList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST, tabcustomimage_pathList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST, tabcustomimage_showpositionList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST, tabcustomimage_paddingList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST, tabcustomimage_showastrayiconList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOWLIST, tabcustomimage_showasfloatingwindowList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST, tabcustomimage_trayiconpixelList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_REFERENCEPOINTLIST, floatingwindow_referencepointList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST, floatingwindow_positionList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_SIZELIST, floatingwindow_sizeList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST, floatingwindow_bgcolorList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_RADIUSLIST, floatingwindow_radiusList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST, floatingwindow_opacityList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST, floatingwindow_mousepassthroughList);
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHSWITCHKEYLIST, floatingwindow_mousepassthroughswitchkeyList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABNAMELIST), tabnamelist);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABINTERNALNAMELIST), tabinternalnamelist);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABINCLUDECOMMONLIST), tabincludecommonlist);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABCOMMONCOLLAPSEDLIST), tabcommoncollapsedlist);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABHOTKEYLIST), tabhotkeylist);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABFONTCOLORLIST), tabfontcolorlist);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABBGCOLORLIST), tabbgcolorlist);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABHIDENOTIFICATIONLIST), tabhidenotificationList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST), tabcustomimage_pathList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABCUSTOMIMAGE_SHOWPOSITIONLIST), tabcustomimage_showpositionList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABCUSTOMIMAGE_PADDINGLIST), tabcustomimage_paddingList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASTRAYICONLIST), tabcustomimage_showastrayiconList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABCUSTOMIMAGE_SHOWASFLOATINGWINDOWLIST), tabcustomimage_showasfloatingwindowList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST), tabcustomimage_trayiconpixelList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_REFERENCEPOINTLIST), floatingwindow_referencepointList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST), floatingwindow_positionList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_SIZELIST), floatingwindow_sizeList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_BGCOLORLIST), floatingwindow_bgcolorList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_RADIUSLIST), floatingwindow_radiusList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_OPACITYLIST), floatingwindow_opacityList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHLIST), floatingwindow_mousepassthroughList);
+    values.insert(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_MOUSEPASSTHROUGHSWITCHKEYLIST), floatingwindow_mousepassthroughswitchkeyList);
 
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_ORIGINALKEYS, original_keys_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS , mapping_keysList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS_KEYUP , mappingkeys_keyupList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS_COMMENTS , mappingKeysCommentsList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS , mappingKeysKeyUpCommentsList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_NOTE , notesList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CATEGORY, categorysList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DISABLED, disabledList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURST , burstList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTPRESS_TIME , burstpresstimeList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_LOCK , lockList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_MAPPINGKEYUNLOCK , mappingkeyunlockList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DISABLEORIGINALKEYUNLOCK , disableoriginalkeyunlockList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_DISABLEFNKEYSWITCH, disablefnkeyswitchList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_SENDMAPPINGKEYMETHOD, sendmappingkeymethodList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FIXEDVKEYCODE , fixedvkeycodeList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CHECKCOMBKEYORDER , checkcombkeyorderList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_UNBREAKABLE , unbreakableList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASSTHROUGH , passthroughList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_SENDTIMING , sendtimingList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_PASTETEXTMODE, pastetextmodeList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_KEYSEQHOLDDOWN , keyseqholddownList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_REPEATMODE, repeatmodeList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_REPEATIMES, repeattimesList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CENTERCOLOR, crosshair_centercolorList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CENTERSIZE, crosshair_centersizeList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CENTEROPACITY, crosshair_centeropacityList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR, crosshair_crosshaircolorList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH, crosshair_crosshairwidthList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH, crosshair_crosshairlengthList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY, crosshair_crosshairopacityList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWCENTER, crosshair_showcenterList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWTOP, crosshair_showtopList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWBOTTOM, crosshair_showbottomList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWLEFT, crosshair_showleftList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_SHOWRIGHT, crosshair_showrightList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_X_OFFSET, crosshair_x_offsetList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_CROSSHAIR_Y_OFFSET, crosshair_y_offsetList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ENABLE, floatingbutton_enableList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_LABEL, floatingbutton_labelList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR, floatingbutton_buttoncolorList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR, floatingbutton_pressedcolorList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR, floatingbutton_lockedcolorList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR, floatingbutton_textcolorList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR, floatingbutton_bordercolorList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH, floatingbutton_borderwidthList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_WIDTH, floatingbutton_widthList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HEIGHT, floatingbutton_heightList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTSIZE, floatingbutton_fontsizeList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT, floatingbutton_fontweightList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY, floatingbutton_fontfamilyList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_RADIUS, floatingbutton_radiusList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY, floatingbutton_normalopacityList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY, floatingbutton_pressedopacityList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY, floatingbutton_lockedopacityList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_OPACITY, floatingbutton_opacityList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART, floatingbutton_showonmappingstartList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP, floatingbutton_showtooltipList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE, floatingbutton_syncpressedlockedstateList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP, floatingbutton_alwaysontopList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH, floatingbutton_mousepassthroughList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL, floatingbutton_enablegradientfillList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION, floatingbutton_enablehoveranimationList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH, floatingbutton_hovereffectstrengthList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH, floatingbutton_hoverglowstrengthList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE, floatingbutton_hovercontrastmodeList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION, floatingbutton_hoveranimationdurationList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR, floatingbutton_hovercustomcolorList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, floatingbutton_referencepointList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, floatingbutton_y_offsetList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE, floatingbutton_dragtomoveList_forsave);
-    settingFile.setValue(saveSettingSelectStr+KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID, floatingbutton_syncgroupidList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_ORIGINALKEYS), original_keys_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_MAPPINGKEYS), mapping_keysList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_MAPPINGKEYS_KEYUP), mappingkeys_keyupList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_MAPPINGKEYS_COMMENTS), mappingKeysCommentsList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS), mappingKeysKeyUpCommentsList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_NOTE), notesList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CATEGORY), categorysList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_DISABLED), disabledList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_BURST), burstList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_BURSTPRESS_TIME), burstpresstimeList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_BURSTRELEASE_TIME), burstreleasetimeList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_LOCK), lockList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_MAPPINGKEYUNLOCK), mappingkeyunlockList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_DISABLEORIGINALKEYUNLOCK), disableoriginalkeyunlockList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_DISABLEFNKEYSWITCH), disablefnkeyswitchList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_SENDMAPPINGKEYMETHOD), sendmappingkeymethodList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FIXEDVKEYCODE), fixedvkeycodeList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CHECKCOMBKEYORDER), checkcombkeyorderList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_UNBREAKABLE), unbreakableList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_PASSTHROUGH), passthroughList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_SENDTIMING), sendtimingList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_PASTETEXTMODE), pastetextmodeList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_KEYSEQHOLDDOWN), keyseqholddownList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_REPEATMODE), repeatmodeList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_REPEATIMES), repeattimesList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_CENTERCOLOR), crosshair_centercolorList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_CENTERSIZE), crosshair_centersizeList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_CENTEROPACITY), crosshair_centeropacityList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR), crosshair_crosshaircolorList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH), crosshair_crosshairwidthList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH), crosshair_crosshairlengthList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY), crosshair_crosshairopacityList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_SHOWCENTER), crosshair_showcenterList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_SHOWTOP), crosshair_showtopList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_SHOWBOTTOM), crosshair_showbottomList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_SHOWLEFT), crosshair_showleftList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_SHOWRIGHT), crosshair_showrightList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_X_OFFSET), crosshair_x_offsetList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_CROSSHAIR_Y_OFFSET), crosshair_y_offsetList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_ENABLE), floatingbutton_enableList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_LABEL), floatingbutton_labelList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR), floatingbutton_buttoncolorList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR), floatingbutton_pressedcolorList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR), floatingbutton_lockedcolorList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR), floatingbutton_textcolorList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR), floatingbutton_bordercolorList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH), floatingbutton_borderwidthList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_WIDTH), floatingbutton_widthList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_HEIGHT), floatingbutton_heightList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE), floatingbutton_fontsizeList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT), floatingbutton_fontweightList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY), floatingbutton_fontfamilyList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_RADIUS), floatingbutton_radiusList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY), floatingbutton_normalopacityList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY), floatingbutton_pressedopacityList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY), floatingbutton_lockedopacityList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_OPACITY), floatingbutton_opacityList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART), floatingbutton_showonmappingstartList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP), floatingbutton_showtooltipList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE), floatingbutton_syncpressedlockedstateList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP), floatingbutton_alwaysontopList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH), floatingbutton_mousepassthroughList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL), floatingbutton_enablegradientfillList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION), floatingbutton_enablehoveranimationList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH), floatingbutton_hovereffectstrengthList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH), floatingbutton_hoverglowstrengthList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE), floatingbutton_hovercontrastmodeList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION), floatingbutton_hoveranimationdurationList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR), floatingbutton_hovercustomcolorList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT), floatingbutton_referencepointList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET), floatingbutton_x_offsetList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET), floatingbutton_y_offsetList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE), floatingbutton_dragtomoveList_forsave);
+    values.insert(QString::fromLatin1(KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID), floatingbutton_syncgroupidList_forsave);
+
+    return values;
+}
+
+bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
+{
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
+    // Create RAII guard to automatically save and restore category filter state
+    CategoryFilterStateGuard filterGuard(this);
+
+    syncRuntimeKeyMappingStatesToCurrentTab();
+
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
+    // int burstpressTime = ui->burstpressSpinBox->value();
+    // int burstreleaseTime = ui->burstreleaseSpinBox->value();
+
+    QString saveSettingSelectStr;
+    // QString cursettingSelectStr = ui->settingselectComboBox->currentText();
+    QString cursettingSelectStr;
+    int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
+    if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+        cursettingSelectStr = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().noquote().nospace() << "[saveKeyMapSetting]" << "Current setting select index is invalid("<< curSettingSelectIndex << "), m_SettingSelectListWithoutDescription ->" << m_SettingSelectListWithoutDescription;
+#endif
+    }
+    int languageIndex = ui->languageComboBox->currentIndex();
+    bool saveGlobalSetting = false;
+    bool createNewSetting = false;
+
+
+    if (ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX) {
+        saveGlobalSetting = true;
+        saveSettingSelectStr = GROUPNAME_GLOBALSETTING;
+    }
+    else {
+        QString settingNameString = ui->settingNameLineEdit->text().trimmed();
+        QStringList groups = settingFile.childGroups();
+
+        // Check if setting name is empty
+        if (settingNameString.isEmpty()) {
+            showFailurePopup(tr("Setting name cannot be empty. Please enter a valid setting name."));
+            return false;
+        }
+
+        // Check for invalid characters in INI group names
+        // INI format doesn't allow certain characters in section names
+        const QString invalidChars = "[]=/\\";
+        QString foundInvalidChars;
+        for (int i = 0; i < invalidChars.length(); i++) {
+            if (settingNameString.contains(invalidChars.at(i))) {
+                if (!foundInvalidChars.isEmpty()) {
+                    foundInvalidChars += " ";
+                }
+                foundInvalidChars += invalidChars.at(i);
+            }
+        }
+        // Also check for newline characters (though they're unlikely in QLineEdit)
+        if (settingNameString.contains('\n') || settingNameString.contains('\r')) {
+            if (!foundInvalidChars.isEmpty()) {
+                foundInvalidChars += " ";
+            }
+            foundInvalidChars += tr("newline characters");
+        }
+        if (!foundInvalidChars.isEmpty()) {
+            showFailurePopup(tr("Setting name cannot contain the following characters: %1").arg(foundInvalidChars));
+            return false;
+        }
+
+        // Get current selected setting name from combobox (if any)
+        QString currentSelectedSetting;
+        if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
+            currentSelectedSetting = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
+        }
+
+        // Check if the setting name matches current selection
+        if ((settingNameString == GROUPNAME_GLOBALSETTING || settingNameString == tr(DISPLAYNAME_GLOBALSETTING))
+            && ui->settingselectComboBox->currentIndex() != GLOBALSETTING_INDEX) {
+            showFailurePopup(tr("Please select \"%1\", if you want to modify the global keymapping setting.").arg(tr(DISPLAYNAME_GLOBALSETTING)));
+            return false;
+        }
+        else if (currentSelectedSetting == settingNameString) {
+            // Case 5: Overwrite existing selected setting
+            saveSettingSelectStr = settingNameString;
+        }
+        else if (groups.contains(settingNameString)) {
+            // Case 7: Setting name exists but not currently selected - ask for confirmation
+            QString message = tr("Setting \"%1\" already exists. Do you want to overwrite it?").arg(settingNameString);
+            QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
+                                                                       QMessageBox::Yes | QMessageBox::No,
+                                                                       QMessageBox::No);
+            if (reply == QMessageBox::Yes) {
+                saveSettingSelectStr = settingNameString;
+            } else {
+                // User cancelled, don't save
+                return false;
+            }
+        }
+        else {
+            // Case 6: New setting name - create new setting
+            createNewSetting = true;
+            saveSettingSelectStr = settingNameString;
+        }
+    }
+
+    // A fresh snapshot catches format errors consumed by earlier QSettings readers.
+    const auto validateConfigFile = []() {
+        QFile source(CONFIG_FILENAME);
+        if (!source.exists()) {
+            return true;
+        }
+        QTemporaryFile snapshot(QDir::tempPath() + QStringLiteral("/QKeyMapper-config-XXXXXX.ini"));
+        if (!source.open(QIODevice::ReadOnly) || !snapshot.open()) {
+            return false;
+        }
+        const QByteArray data = source.readAll();
+        if (source.error() != QFile::NoError || snapshot.write(data) != data.size() || !snapshot.flush()) {
+            return false;
+        }
+        snapshot.close();
+        QSettings validation(snapshot.fileName(), QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(validation);
+        (void)validation.allKeys();
+        return validation.status() == QSettings::NoError;
+    };
+    if (!validateConfigFile()) {
+        showFailurePopup(tr("Save failure : ") + saveSettingSelectStr);
+        return false;
+    }
+
+    QVariantMap valuesBeforeSave;
+    const QStringList keysBeforeSave = settingFile.allKeys();
+    for (const QString &key : keysBeforeSave) {
+        valuesBeforeSave.insert(key, settingFile.value(key));
+    }
+
+    if (settingFile.status() != QSettings::NoError) {
+        showFailurePopup(tr("Save failure : ") + saveSettingSelectStr);
+        return false;
+    }
+    saveIgnoreRulesToINI();
+
+    settingFile.setValue(SETTINGSELECT, saveSettingSelectStr);
+    saveSettingSelectStr += "/";
+
+    const auto generalValues = collectGeneralSettingSaveValues(languageIndex);
+    for (auto it = generalValues.begin(); it != generalValues.end(); ++it) {
+        settingFile.setValue(it.key(), it.value());
+    }
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[UI_SCALE] SAVE seq=" << m_uiScaleDiagnosticSequence
+             << "base=" << m_normalWindowBaseSize << "size=" << size()
+             << "R=" << m_runtimeScaleCompensation;
+#endif
+
+//         if (m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
+//             if (m_windowswitchKeySeqEdit->lastKeySequence().isEmpty()) {
+//                 m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->defaultKeySequence()));
+//             }
+//             else {
+//                 m_windowswitchKeySeqEdit->setKeySequence(QKeySequence(m_windowswitchKeySeqEdit->lastKeySequence()));
+//             }
+//         }
+//         m_windowswitchKeySeqEdit->clearFocus();
+//         if (false == m_windowswitchKeySeqEdit->keySequence().isEmpty()) {
+//             updateWindowSwitchKeySeq(m_windowswitchKeySeqEdit->keySequence());
+//             settingFile.setValue(WINDOWSWITCH_KEYSEQ, m_windowswitchKeySeqEdit->keySequence().toString());
+// #ifdef DEBUG_LOGOUT_ON
+//             qDebug() << "[saveKeyMapSetting]" << "Save & Set Window Switch KeySequence ->" << m_windowswitchKeySeqEdit->keySequence().toString(QKeySequence::NativeText);
+// #endif
+//         }
+
+    if (s_WindowSwitchKeyString.isEmpty()) {
+        s_WindowSwitchKeyString = DISPLAYSWITCH_KEY_DEFAULT;
+    }
+    ui->windowswitchkeyLineEdit->clearFocus();
+    if (false == s_WindowSwitchKeyString.isEmpty()) {
+        settingFile.setValue(WINDOWSWITCH_KEYSEQ, s_WindowSwitchKeyString);
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[saveKeyMapSetting]" << "Save & Set Window Switch Key ->" << s_WindowSwitchKeyString;
+#endif
+    }
+
+
+#if 0
+    if (cursettingSelectStr == GROUPNAME_GLOBALSETTING && ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX) {
+        saveGlobalSetting = true;
+        saveSettingSelectStr = cursettingSelectStr;
+        settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
+        saveSettingSelectStr = saveSettingSelectStr + "/";
+    }
+    else if (cursettingSelectStr.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
+            && cursettingSelectStr.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
+        saveSettingSelectStr = cursettingSelectStr;
+        settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
+        saveSettingSelectStr = saveSettingSelectStr + "/";
+    }
+    else {
+        QStringList groups = settingFile.childGroups();
+        QStringList validgroups_customsetting;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[saveKeyMapSetting]" << "childGroups >>" << groups;
+#endif
+
+        for (const QString &group : std::as_const(groups)){
+            if (group.startsWith(GROUPNAME_CUSTOMGLOBALSETTING, Qt::CaseInsensitive)
+                    && group.endsWith(GROUPNAME_EXECUTABLE_SUFFIX, Qt::CaseInsensitive) != true) {
+                validgroups_customsetting.append(group);
+            }
+        }
+
+        int customGlobalSettingIndex;
+        if (validgroups_customsetting.size() > 0) {
+            QString lastgroup = validgroups_customsetting.last();
+            QString lastNumberStr = lastgroup.remove(GROUPNAME_CUSTOMGLOBALSETTING);
+
+            if (lastNumberStr.toInt() >= CUSTOMSETTING_INDEX_MAX) {
+                QString message = "There is already " + lastNumberStr + " CustomGlobalSettings, please remove some CustomGlobalSettings!";
+                showFailurePopup(message);
+                return;
+            }
+            else {
+                customGlobalSettingIndex = lastNumberStr.toInt() + 1;
+            }
+#ifdef DEBUG_LOGOUT_ON
+            qDebug() << "[saveKeyMapSetting] Last custom setting index ->" << lastNumberStr.toInt();
+            qDebug() << "[saveKeyMapSetting] Save current custom setting to ->" << customGlobalSettingIndex;
+#endif
+        }
+        else {
+            customGlobalSettingIndex = 1;
+        }
+
+        if ((false == ui->processLineEdit->text().isEmpty())
+                 && (false == ui->windowTitleLineEdit->text().isEmpty())
+                 && (true == ui->processCheckBox->isChecked())
+                 && (true == ui->titleCheckBox->isChecked())
+                 && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)
+                 && (!m_MapProcessInfo.FilePath.isEmpty())){
+            QStringList groups = settingFile.childGroups();
+            int index = -1;
+            for (index = 1; index <= TITLESETTING_INDEX_MAX; index++) {
+                QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(index);
+
+                if (groups.contains(subgroup)) {
+                    QVariant windowTitle_Var;
+                    if (readSaveSettingData(subgroup, PROCESSINFO_WINDOWTITLE, windowTitle_Var)) {
+                        QString titleStr = windowTitle_Var.toString();
+                        if (titleStr == ui->windowTitleLineEdit->text()) {
+                            break;
+                        }
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+
+            if (0 < index && index <= TITLESETTING_INDEX_MAX) {
+                QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(WINDOWTITLE_STRING) + QString::number(index);
+                settingFile.setValue(SETTINGSELECT , subgroup);
+                saveSettingSelectStr = subgroup + "/";
+            }
+            else {
+                QString message = "There is already " + QString::number(TITLESETTING_INDEX_MAX) + " settings of [" + m_MapProcessInfo.FileName + "], please remove some settings of [" + m_MapProcessInfo.FileName + "] first!";
+                showFailurePopup(message);
+                return;
+            }
+        }
+        else if ((false == ui->processLineEdit->text().isEmpty())
+            && (true == ui->processCheckBox->isChecked())
+            && (false == ui->titleCheckBox->isChecked())
+            && (ui->processLineEdit->text() == m_MapProcessInfo.FileName)
+            && (!m_MapProcessInfo.FilePath.isEmpty())){
+            QString subgroup = m_MapProcessInfo.FileName + SEPARATOR_TITLESETTING + QString(ANYWINDOWTITLE_STRING);
+            settingFile.setValue(SETTINGSELECT , subgroup);
+            saveSettingSelectStr = subgroup + "/";
+        }
+        else {
+            if (customGlobalSettingIndex < 10) {
+                saveSettingSelectStr = QString(GROUPNAME_CUSTOMGLOBALSETTING) + " " + QString::number(customGlobalSettingIndex);
+            }
+            else {
+                saveSettingSelectStr = QString(GROUPNAME_CUSTOMGLOBALSETTING) + QString::number(customGlobalSettingIndex);
+            }
+            settingFile.setValue(SETTINGSELECT , saveSettingSelectStr);
+            saveSettingSelectStr = saveSettingSelectStr + "/";
+        }
+    }
+#endif
+
+    const int tabIndexBeforeSaveReload = s_KeyMappingTabWidgetCurrentIndex;
+
+    const auto mappingValues = collectMappingTableSaveValues();
+    for (auto it = mappingValues.begin(); it != mappingValues.end(); ++it) {
+        settingFile.setValue(saveSettingSelectStr + it.key(), it.value());
+    }
 
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED,            m_MappingAdvancedDialog->getMouseXSpeed());
     settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED,            m_MappingAdvancedDialog->getMouseYSpeed());

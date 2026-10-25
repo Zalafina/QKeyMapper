@@ -59,7 +59,8 @@ public:
     static QJsonObject run(QKeyMapper *mapper, const QString &mode);
     static QJsonObject equality(QKeyMapper *mapper);
     static QJsonObject serialization(QKeyMapper *mapper, bool cold);
-    static QJsonObject generalSave(QKeyMapper *mapper);
+    static QJsonObject generalSave(QKeyMapper *mapper, bool rich = false);
+    static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
 };
 
@@ -1160,8 +1161,11 @@ void installLifecycleTest()
             });
             return;
         }
-        if (guiMode == QStringLiteral("settings_general_save")) {
-            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::generalSave(QKeyMapper::getInstance());
+        if (guiMode == QStringLiteral("settings_general_save") || guiMode == QStringLiteral("settings_table_save")
+            || guiMode == QStringLiteral("settings_table_cold")) {
+            result->settingsGeneralEvidence = guiMode == QStringLiteral("settings_table_cold")
+                ? QkmMappingAdditionTestAccess::tableState(QKeyMapper::getInstance())
+                : QkmMappingAdditionTestAccess::generalSave(QKeyMapper::getInstance(), guiMode == QStringLiteral("settings_table_save"));
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
@@ -1894,7 +1898,7 @@ QJsonObject QkmMappingAdditionTestAccess::serialization(QKeyMapper *mapper, bool
         {QStringLiteral("cold"), cold}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
-QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper)
+QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper, bool rich)
 {
     using namespace QKeyMapperConstants;
     bool passed = true;
@@ -1911,10 +1915,76 @@ QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper)
     auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
     auto *language = mapper->findChild<QComboBox *>(QStringLiteral("languageComboBox"));
     auto *startup = mapper->findChild<QCheckBox *>(QStringLiteral("startupAutoMonitoringCheckBox"));
-    const int target = QKeyMapper::firstNormalMappingTabIndex();
+    int target = QKeyMapper::firstNormalMappingTabIndex();
     if (!name || !save || !language || !startup || target < 0) return {{QStringLiteral("passed"), false}};
     mapper->forceSwitchKeyMappingTabWidgetIndex(target);
     *QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>{mapper->createDefaultKeyMappingData(QStringLiteral("A"), QStringLiteral("B"), false)};
+    if (rich) {
+        const bool attached = qEnvironmentVariableIntValue("QKM_LIFECYCLE_COMMON_ATTACHED") == 1;
+        mapper->m_MappingAdvancedDialog->setCommonMappingTableEnabled(attached);
+        mapper->updateCommonMappingTabVisibility();
+        target = QKeyMapper::firstNormalMappingTabIndex();
+        if (target < 0) return {{QStringLiteral("passed"), false}};
+        mapper->forceSwitchKeyMappingTabWidgetIndex(target);
+        *QKeyMapper::KeyMappingDataList = QList<MAP_KEYDATA>{mapper->createDefaultKeyMappingData(QStringLiteral("A"), QStringLiteral("B"), false)};
+        if (!mapper->addTabToKeyMappingTabWidget(QStringLiteral("Map67序列"), false)
+            || !mapper->addTabToKeyMappingTabWidget(QStringLiteral("Map67空"), false)) return {{QStringLiteral("passed"), false}};
+        MAP_KEYDATA sequence = mapper->createDefaultKeyMappingData(QStringLiteral("F13"), QStringLiteral("C»D"), false);
+        sequence.MappingKeys_KeyUp = QStringList{QStringLiteral("E"), QStringLiteral("F")};
+        sequence.Pure_MappingKeys_KeyUp = sequence.MappingKeys_KeyUp;
+        sequence.MappingKeys_Comments = QStringList{QStringLiteral("中文😀\npress"), QString()};
+        sequence.MappingKeys_KeyUp_Comments = QStringList{QStringLiteral("release\\0"), QStringLiteral("日本語")};
+        sequence.Note = QStringLiteral("note\n第二行");
+        sequence.Category = QStringLiteral("类别α");
+        sequence.FloatingButton_Label = QStringLiteral("labelα");
+        sequence.FloatingButton_ButtonColor = QColor(QStringLiteral("#123456"));
+        sequence.FloatingButton_BorderWidth = 3;
+        sequence.FloatingButton_Width = 180;
+        sequence.FloatingButton_Height = 48;
+        sequence.FloatingButton_FontFamily = QStringLiteral("Segoe UI");
+        sequence.FloatingButton_NormalOpacity = 0.25;
+        sequence.FloatingButton_Opacity = 0.25;
+        sequence.FloatingButton_PressedOpacity = 0.5;
+        sequence.FloatingButton_LockedOpacity = 0.75;
+        sequence.FloatingButton_SyncGroupId = 23;
+        sequence.Crosshair_CenterSize = 7;
+        sequence.Crosshair_CenterColor = QColor(QStringLiteral("#11aa55"));
+        sequence.FloatingButton_Enable = false;
+        auto &first = QKeyMapper::s_KeyMappingTabInfoList[target];
+        first.KeyMappingData->append(sequence);
+        first.TabFontColor = QColor(QStringLiteral("#234567"));
+        first.TabBackgroundColor = QColor(QStringLiteral("#80345678"));
+        first.TabHotkey = QStringLiteral("F17");
+        first.IncludeCommonMappingTable = attached;
+        first.CommonMappingCollapsed = attached;
+        first.FloatingWindow_Position = QPoint(-27, 96);
+        first.FloatingWindow_Size = QSize(288, 144);
+        first.FloatingWindow_BackgroundColor = QColor(QStringLiteral("#a0112233"));
+        first.FloatingWindow_Opacity = 0.75;
+        first.FloatingWindow_Radius = 13;
+        first.TabCustomImage_Padding = 7;
+        first.TabCustomImage_TrayIconPixel = QSize(24, 24);
+        first.TabCustomImage_ShowAsTrayIcon = false;
+        first.TabCustomImage_ShowAsFloatingWindow = false;
+        MAP_KEYDATA common = mapper->createDefaultKeyMappingData(QStringLiteral("G"), QStringLiteral("H"), false);
+        common.MappingKeys_Comments = QStringList{QStringLiteral("common备注")};
+        common.FloatingButton_SyncGroupId = 17;
+        if (attached) {
+            const int commonIndex = QKeyMapper::findCommonMappingTabIndex();
+            if (commonIndex < 0) return {{QStringLiteral("passed"), false}};
+            *QKeyMapper::s_KeyMappingTabInfoList.at(commonIndex).KeyMappingData = QList<MAP_KEYDATA>{common};
+        }
+        else mapper->m_CommonMappingData = QList<MAP_KEYDATA>{common};
+        for (auto &tab : QKeyMapper::s_KeyMappingTabInfoList) {
+            if (tab.TabName == QStringLiteral("Map67序列")) {
+                auto row = mapper->createDefaultKeyMappingData(QStringLiteral("X"), QStringLiteral("Y"), false);
+                row.Disabled = true;
+                *tab.KeyMappingData = QList<MAP_KEYDATA>{row};
+            }
+            if (tab.TabName == QStringLiteral("Map67空")) tab.KeyMappingData->clear();
+        }
+        mapper->forceSwitchKeyMappingTabWidgetIndex(target);
+    }
     mapper->refreshTabsForSourceTabChange(target);
     mapper->m_FavoriteOriginalKeys = QStringList{QStringLiteral("A")};
     mapper->m_RecentOriginalKeys = QStringList{QStringLiteral("A")};
@@ -1932,6 +2002,24 @@ QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper)
     const auto beforeBytes = beforeFile.readAll();
     beforeFile.close();
     const quint64 beforeLoad = mapper->m_MappingLoadGeneration;
+    const auto sourceState = [&] {
+        QJsonArray tabs;
+        for (const auto &tab : std::as_const(QKeyMapper::s_KeyMappingTabInfoList)) {
+            QJsonArray rows;
+            for (const auto &row : *tab.KeyMappingData) {
+                rows.append(QJsonObject{{QStringLiteral("configuration"), QKeyMapper::generateMappingCode(row)},
+                    {QStringLiteral("original"), QJsonArray::fromStringList(row.Pure_OriginalKeys)},
+                    {QStringLiteral("mapping"), QJsonArray::fromStringList(row.Pure_MappingKeys)},
+                    {QStringLiteral("key_up"), QJsonArray::fromStringList(row.Pure_MappingKeys_KeyUp)},
+                    {QStringLiteral("lock"), int(row.LockState)}});
+            }
+            tabs.append(QJsonObject{{QStringLiteral("name"), tab.TabName}, {QStringLiteral("rows"), rows}});
+        }
+        return tabs;
+    };
+    const auto beforeSources = sourceState();
+    const auto mappingValues = mapper->collectMappingTableSaveValues();
+    const auto repeatedMappingValues = mapper->collectMappingTableSaveValues();
     const auto generalValues = mapper->collectGeneralSettingSaveValues(language->currentIndex());
     const auto repeatValues = mapper->collectGeneralSettingSaveValues(language->currentIndex());
     const auto sameValues = [](const auto &left, const auto &right) {
@@ -1951,6 +2039,15 @@ QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper)
         languagesMatch = languagesMatch && sameValues(mapper->collectGeneralSettingSaveValues(value), expected);
     }
     check(languagesMatch, "captured language follows the existing three-language and fallback save semantics");
+    check(mappingValues.size() == 97 && sameValues(mappingValues, repeatedMappingValues)
+        && sourceState() == beforeSources && mapper->m_SaveSettingDirty && mapper->m_MappingLoadGeneration == beforeLoad,
+        "mapping payload has all ordered fields without changing source, derived lists, lock, dirty or load state");
+    if (rich) {
+        check(mappingValues.value(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_POSITIONLIST)).toList().first().toPoint() == QPoint(-27, 96)
+            && mappingValues.value(QString::fromLatin1(MAPPINGTABLE_FLOATINGWINDOW_SIZELIST)).toList().first().toSize() == QSize(288, 144)
+            && mappingValues.value(QString::fromLatin1(MAPPINGTABLE_TABCUSTOMIMAGE_TRAYICON_PIXELLIST)).toList().first().toSize() == QSize(24, 24),
+            "mapping payload preserves Qt point and size types before the existing reload normalization");
+    }
     // The baseline is driven through the real Save button, not the serialization helper.
     clickMappingButton(save);
     QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
@@ -1961,6 +2058,12 @@ QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper)
         valuesPersisted = valuesPersisted && ini.contains(it.key()) && ini.value(it.key()) == it.value();
     }
     check(valuesPersisted, "GUI Save persists every collected general value without type or content changes");
+    bool mappingValuesPersisted = true;
+    for (auto it = mappingValues.begin(); it != mappingValues.end(); ++it) {
+        mappingValuesPersisted = mappingValuesPersisted && ini.contains(QStringLiteral("Map67General/") + it.key())
+            && ini.value(QStringLiteral("Map67General/") + it.key()) == it.value();
+    }
+    check(mappingValuesPersisted, "GUI Save persists every collected mapping value with original Qt types and content");
     check(ini.status() == QSettings::NoError && ini.value(SETTINGSELECT).toString() == QStringLiteral("Map67General")
         && mapper->m_LoadedMappingSettingGroup == QStringLiteral("Map67General") && !mapper->m_SaveSettingDirty,
         "GUI Save flushes the named profile and completes existing reload and dirty clearing");
@@ -1972,9 +2075,14 @@ QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper)
         && ini.value(KEYLISTCOMBOBOX_FAVORITE_MAPPING_KEYS).toStringList() == QStringList{QStringLiteral("B")}
         && ini.value(KEYLISTCOMBOBOX_RECENT_MAPPING_KEYS).toStringList() == QStringList{QStringLiteral("B")},
         "all four existing key collections are persisted with the GUI save scope");
-    check(QKeyMapper::KeyMappingDataList->size() == 1 && QKeyMapper::KeyMappingDataList->first().Original_Key == QStringLiteral("A")
+    check(QKeyMapper::KeyMappingDataList->size() == (rich ? 2 : 1) && QKeyMapper::KeyMappingDataList->first().Original_Key == QStringLiteral("A")
         && QKeyMapper::KeyMappingDataList->first().Mapping_Keys == QStringList{QStringLiteral("B")},
         "GUI save and reload retain the valid mapping");
+    if (rich) {
+        const auto state = tableState(mapper);
+        passed = passed && state.value(QStringLiteral("passed")).toBool();
+        for (const auto &entry : state.value(QStringLiteral("checks")).toArray()) checks.append(entry);
+    }
     const auto values = [](QSettings &settings) {
         QVariantMap map;
         const auto keys = settings.allKeys();
@@ -2018,6 +2126,70 @@ QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper)
     }
     return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
         {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
+QJsonObject QkmMappingAdditionTestAccess::tableState(QKeyMapper *mapper)
+{
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    QFile file(QString::fromLatin1(CONFIG_FILENAME));
+    if (!file.open(QIODevice::ReadOnly)) return {{QStringLiteral("passed"), false}};
+    const auto before = file.readAll(); file.close();
+    const bool attached = qEnvironmentVariableIntValue("QKM_LIFECYCLE_COMMON_ATTACHED") == 1;
+    const int firstIndex = QKeyMapper::firstNormalMappingTabIndex();
+    const int commonIndex = QKeyMapper::findCommonMappingTabIndex();
+    check(firstIndex >= 0 && QKeyMapper::s_KeyMappingTabInfoList.size() == (attached ? 4 : 3)
+        && (commonIndex >= 0) == attached && mapper->m_LoadedMappingSettingGroup == QStringLiteral("Map67General")
+        && !mapper->m_SaveSettingDirty, "three normal tabs, common attachment, profile and clean state restore");
+    if (firstIndex < 0 || (attached && commonIndex < 0)) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    const auto &first = QKeyMapper::s_KeyMappingTabInfoList.at(firstIndex);
+    check(first.TabHotkey == QStringLiteral("F17") && first.IncludeCommonMappingTable == attached
+        && first.CommonMappingCollapsed == attached && first.TabFontColor == QColor(QStringLiteral("#234567"))
+        && first.TabBackgroundColor == QColor(QStringLiteral("#80345678")), "tab metadata, include and collapsed rules retain their values");
+    check(first.FloatingWindow_Position == QPoint(-27, 96) && first.FloatingWindow_Size == QSize(288, 144)
+        && first.FloatingWindow_BackgroundColor == QColor(QStringLiteral("#a0112233"))
+        && first.FloatingWindow_Opacity == 0.75 && first.FloatingWindow_Radius == 13
+        && first.TabCustomImage_Padding == 7 && first.TabCustomImage_TrayIconPixel.isEmpty()
+        && !first.TabCustomImage_ShowAsTrayIcon && !first.TabCustomImage_ShowAsFloatingWindow,
+        "typed tab geometry and color restore; missing icon clears its unavailable pixel size");
+    check(first.KeyMappingData->size() == 2 && first.KeyMappingData->first().Original_Key == QStringLiteral("A")
+        && first.KeyMappingData->first().Mapping_Keys == QStringList{QStringLiteral("B")}, "first row and row ordering restore");
+    if (first.KeyMappingData->size() == 2) {
+        const auto &row = first.KeyMappingData->at(1);
+        check(row.Original_Key == QStringLiteral("F13") && row.Mapping_Keys == QStringList{QStringLiteral("C"), QStringLiteral("D")}
+            && row.MappingKeys_KeyUp == QStringList{QStringLiteral("E"), QStringLiteral("F")}
+            && row.MappingKeys_Comments == QStringList{QStringLiteral("中文😀\npress"), QString()}
+            && row.MappingKeys_KeyUp_Comments == QStringList{QStringLiteral("release\\0"), QStringLiteral("日本語")}
+            && row.Note == QStringLiteral("note\n第二行") && row.Category == QStringLiteral("类别α"),
+            "both sequences, Unicode comments, blank segments, note and category restore");
+        check(row.FloatingButton_Label == QStringLiteral("labelα") && row.FloatingButton_ButtonColor == QColor(QStringLiteral("#123456"))
+            && row.FloatingButton_BorderWidth == 3 && row.FloatingButton_Width == 180 && row.FloatingButton_Height == 48
+            && row.FloatingButton_FontFamily == QStringLiteral("Segoe UI") && row.FloatingButton_NormalOpacity == 0.25
+            && row.FloatingButton_PressedOpacity == 0.5 && row.FloatingButton_LockedOpacity == 0.75
+            && row.FloatingButton_SyncGroupId == 23 && row.Crosshair_CenterSize == 7
+            && row.Crosshair_CenterColor == QColor(QStringLiteral("#11aa55")) && !row.FloatingButton_Enable,
+            "mapping visual parameters and sync group retain configuration without displaying a button");
+    }
+    bool second = false, empty = false;
+    for (const auto &tab : std::as_const(QKeyMapper::s_KeyMappingTabInfoList)) {
+        if (tab.TabName == QStringLiteral("Map67序列")) second = tab.KeyMappingData->size() == 1
+            && tab.KeyMappingData->first().Original_Key == QStringLiteral("X") && tab.KeyMappingData->first().Disabled;
+        if (tab.TabName == QStringLiteral("Map67空")) empty = tab.KeyMappingData->isEmpty();
+    }
+    check(second && empty, "non-current and empty tabs survive the saved table lists");
+    const auto &common = attached ? *QKeyMapper::s_KeyMappingTabInfoList.at(commonIndex).KeyMappingData : mapper->m_CommonMappingData;
+    check(common.size() == 1 && common.first().Original_Key == QStringLiteral("G")
+        && common.first().Mapping_Keys == QStringList{QStringLiteral("H")}
+        && common.first().MappingKeys_Comments == QStringList{QStringLiteral("common备注")}
+        && common.first().FloatingButton_SyncGroupId == 17, "attached or detached common content retains comments and sync group");
+    if (!file.open(QIODevice::ReadOnly)) return {{QStringLiteral("passed"), false}};
+    check(file.readAll() == before, "inspection does not write the persisted profile");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
 QJsonObject QkmMappingAdditionTestAccess::commonComments(QKeyMapper *mapper, const QString &mode)
@@ -2128,7 +2300,7 @@ int main(int argc, char *argv[])
         QStringLiteral("mapping_add_stale"), QStringLiteral("mapping_add_setup"), QStringLiteral("mapping_config_equality"),
         QStringLiteral("settings_serialization"), QStringLiteral("settings_serialization_cold"), QStringLiteral("settings_general_save"),
         QStringLiteral("common_comments"), QStringLiteral("common_comments_cold"), QStringLiteral("common_comments_legacy"),
-        QStringLiteral("common_comments_attached")};
+        QStringLiteral("common_comments_attached"), QStringLiteral("settings_table_save"), QStringLiteral("settings_table_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
