@@ -589,7 +589,7 @@ class SupplementClientTests(unittest.TestCase):
             runtime = Path(directory)
             state = {"workspace": str(app.ROOT), "backend": "native", "instance": "a" * 32,
                 "identity": asdict(owner), "interpreter": app.sys.executable, "format_version": 1}
-            for change in ({"workspace": "another-workspace"}, {"backend": "other"}, {"format_version": 2},
+            for change in ({"workspace": "another-workspace"}, {"backend": "other"}, {"format_version": 3},
                            {"interpreter": "another-python.exe"}, {"instance": "invalid"}):
                 with self.subTest(change=change), patch.object(app, "identity", return_value=owner), \
                         patch.object(app, "token_info", return_value={"elevated": False, "integrity": 8192}):

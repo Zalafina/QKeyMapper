@@ -26,6 +26,8 @@ from mcp import Client, StdioServerParameters
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT.parent / "scripts"))
+from managed_test import perform as managed_action
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.protocol import BridgeError
 from qkeymapper_mcp.windows import identity
@@ -88,19 +90,14 @@ class Fixture:
         self.desktop = win32service.CreateDesktop(self.desktop_name, 0, 511, None)
         try:
             if elevated:
-                gsudo = shutil.which("gsudo.exe")
-                assert gsudo, "gsudo.exe is required for the authorized elevated-server test"
-                with (output / "launch.log").open("wb") as log:
-                    launcher = subprocess.Popen([gsudo, "--direct", sys.executable, str(Path(__file__).resolve()),
-                        "--test-exe", str(exe), "--qt-bin", str(qt), "--output", str(output),
-                        "--launch-fixture", self.desktop_name], stdout=log, stderr=log,
-                        creationflags=subprocess.CREATE_NO_WINDOW)
-                    # A timeout leaves the known launcher running; never start a replacement automatically.
-                    assert launcher.wait(timeout=60) == 0, "elevated launch failed; see launch.log"
-                started = json.loads((output / "launched.json").read_text(encoding="utf-8"))
-                self.pid = started["pid"]
+                response = managed_action({"Action": "Start", "Executable": str(exe),
+                    "Arguments": subprocess.list2cmdline(["--interop-fixture", str(self.state_path)]),
+                    "Environment": {"PATH": str(qt) + os.pathsep + os.environ["PATH"]}, "DesktopName": self.desktop_name})
+                self.pid = response["ProcessId"]
                 self.process = win32api.OpenProcess(0x1000 | win32con.SYNCHRONIZE, False, self.pid)
-                assert identity(self.pid).created == int(started["created"]), "launched process identity changed"
+                assert identity(self.pid).created == int(response["StartTicks"]) - 504911232000000000, "launched process identity changed"
+                (output / "launched.json").write_text(json.dumps({"pid": self.pid,
+                    "created": str(identity(self.pid).created), "managed": True}), encoding="utf-8")
             else:
                 self.process, self.pid = start_fixture(exe, qt, output, self.desktop_name)
             assert elevation(self.process) == int(elevated)
@@ -431,7 +428,6 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--approval-timeout", action="store_true")
     parser.add_argument("--elevated-server", action="store_true", help="Authorized gsudo startup only; the bridge stays non-elevated.")
-    parser.add_argument("--launch-fixture", metavar="DESKTOP", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if not __debug__:
         parser.error("Run without Python -O.")
@@ -440,15 +436,5 @@ if __name__ == "__main__":
         parser.error("Select the built maintenance MCP control executable.")
     if not args.qt_bin.is_dir() or not args.output.is_relative_to((ROOT.parent / "out").resolve()):
         parser.error("Select the matching Qt bin and an output directory under this checkout out/.")
-    if args.launch_fixture:
-        assert elevation(win32api.GetCurrentProcess()) == 1
-        assert re.fullmatch(r"QkmSdk_[0-9a-f]{32}", args.launch_fixture) and args.output.is_dir()
-        process, pid = start_fixture(args.test_exe, args.qt_bin, args.output, args.launch_fixture)
-        try:
-            started = {"pid": pid, "created": str(identity(pid).created)}
-            (args.output / "launched.json").write_text(json.dumps(started), encoding="utf-8")
-        finally:
-            process.Close()
-    else:
-        args.output.mkdir(parents=True, exist_ok=False)
-        asyncio.run(run(args))
+    args.output.mkdir(parents=True, exist_ok=False)
+    asyncio.run(run(args))

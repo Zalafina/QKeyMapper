@@ -26,14 +26,14 @@ public static class QkmTestWindows {
     public static uint Owner(IntPtr window) {
         uint process; GetWindowThreadProcessId(window, out process); return process;
     }
-    public static IntPtr MainWindow(int process, string desktop) {
+    public static IntPtr MainWindow(int process, string desktop, string titlePrefix = "QKeyMapper v") {
         IntPtr result = IntPtr.Zero;
         WindowCallback callback = (window, data) => {
             uint owner; GetWindowThreadProcessId(window, out owner);
             if (owner != process) return true;
             if ((GetWindowLong(window, -16) & 0x00C00000) != 0x00C00000) return true;
             var title = new StringBuilder(512); GetWindowText(window, title, title.Capacity);
-            if (!title.ToString().StartsWith("QKeyMapper v", StringComparison.OrdinalIgnoreCase)) return true;
+            if (!title.ToString().StartsWith(titlePrefix, StringComparison.OrdinalIgnoreCase)) return true;
             result = window; return false;
         };
         if (String.IsNullOrEmpty(desktop)) EnumWindows(callback, IntPtr.Zero);
@@ -50,7 +50,7 @@ public static class QkmTestWindows {
         }
         return result;
     }
-    public static bool ClosePrivate(int process, string desktop) {
+    public static bool ClosePrivate(int process, string desktop, bool anyOwnedWindow = false) {
         bool result = false; Exception failure = null;
         var thread = new Thread(() => {
             IntPtr original = GetThreadDesktop(GetCurrentThreadId());
@@ -59,6 +59,7 @@ public static class QkmTestWindows {
             try {
                 if (!SetThreadDesktop(handle)) throw new Win32Exception(Marshal.GetLastWin32Error());
                 IntPtr window = MainWindow(process, desktop);
+                if (window == IntPtr.Zero && anyOwnedWindow) window = MainWindow(process, desktop, "");
                 result = window != IntPtr.Zero && PostMessage(window, 0x10, IntPtr.Zero, IntPtr.Zero);
             } catch (Exception error) { failure = error; }
             finally {
@@ -138,10 +139,10 @@ function Start-QkmProcessInfo {
 }
 
 function Request-QkmTestProcessClose {
-    param($Process, [string]$DesktopName = '')
+    param($Process, [string]$DesktopName = '', [switch]$AnyOwnedWindow)
     if ($DesktopName) {
         Initialize-QkmTestWindows
-        return [QkmTestWindows]::ClosePrivate($Process.Id, $DesktopName)
+        return [QkmTestWindows]::ClosePrivate($Process.Id, $DesktopName, [bool]$AnyOwnedWindow)
     }
     $window = Get-QkmMainWindowHandle -ProcessId $Process.Id -DesktopName $DesktopName
     if ($window -ne [IntPtr]::Zero) {
@@ -174,7 +175,7 @@ if ($LaunchRequest) {
             }
             # Retain a process handle before exit; a Get-Process wrapper alone can lose ExitCode.
             $null = $child.Handle
-            if (-not (Request-QkmTestProcessClose $child -DesktopName $request.DesktopName) -or -not $child.WaitForExit(10000)) {
+            if (-not (Request-QkmTestProcessClose $child -DesktopName $request.DesktopName -AnyOwnedWindow:([bool]$request.AnyOwnedWindow)) -or -not $child.WaitForExit(10000)) {
                 throw 'Test process did not close gracefully; it has been left running.'
             }
         } else {
@@ -194,7 +195,23 @@ if ($LaunchRequest) {
 $script:qkmTestProcessHelperPath = $PSCommandPath
 
 function Invoke-QkmGsudoRequest {
-    param([hashtable]$Request)
+    param([hashtable]$Request, [switch]$UncachedGsudo)
+    if (-not $UncachedGsudo) {
+        $repo = Split-Path -Parent $PSScriptRoot
+        $python = Join-Path $repo 'out/mcp_bridge/venv/Scripts/python.exe'
+        if (-not (Test-Path -LiteralPath $python)) { throw 'Restore the ordinary workspace Python environment before managed tests.' }
+        $runDirectory = Join-Path $repo ('out/test_process/' + [Guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Path $runDirectory | Out-Null
+        $requestFile = Join-Path $runDirectory 'request.json'
+        $responseFile = Join-Path $runDirectory 'response.json'
+        [IO.File]::WriteAllText($requestFile, ($Request | ConvertTo-Json -Depth 5), [Text.UTF8Encoding]::new($false))
+        & $python -B -X utf8 (Join-Path $repo 'scripts/managed_test.py') --request $requestFile --response $responseFile
+        $code = $LASTEXITCODE
+        if (-not (Test-Path -LiteralPath $responseFile)) { throw "Managed action result unknown; inspect $runDirectory. Do not retry automatically." }
+        $response = Get-Content -LiteralPath $responseFile -Raw | ConvertFrom-Json
+        if ($code -ne 0 -or -not $response.Success) { throw "$($response.error): $($response.message)" }
+        return $response
+    }
     $gsudoCommand = Get-Command gsudo.exe -CommandType Application -ErrorAction SilentlyContinue
     $gsudoPath = if ($gsudoCommand) { $gsudoCommand.Source } else { $null }
     if (-not $gsudoPath) {
@@ -202,6 +219,10 @@ function Invoke-QkmGsudoRequest {
             Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
     }
     if (-not $gsudoPath) { throw 'gsudo.exe was not found. Use -ProcessId to attach an already running test.' }
+    $nativeStatus = & $gsudoPath status --json | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0 -or $nativeStatus.CacheAvailable) {
+        throw 'Uncached UAC validation requires an independent process without inherited cache; no cache was disabled.'
+    }
     $runDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) ('out\test_process\' + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Force -Path $runDirectory | Out-Null
     $requestFile = Join-Path $runDirectory 'request.json'
@@ -233,11 +254,14 @@ function Invoke-QkmGsudoRequest {
 }
 
 function Start-QkmTestProcess {
-    param([string]$ExecutablePath, [string]$Arguments = '', [switch]$UseGsudo, [hashtable]$EnvironmentOverrides = @{}, [string]$DesktopName = '')
+    param([string]$ExecutablePath, [string]$Arguments = '', [switch]$UseGsudo, [hashtable]$EnvironmentOverrides = @{}, [string]$DesktopName = '', [switch]$UncachedGsudo)
+    if ($UncachedGsudo -and -not $UseGsudo) { throw '-UncachedGsudo requires -UseGsudo and explicit uncached-test authorization.' }
     $executable = (Resolve-Path -LiteralPath $ExecutablePath -ErrorAction Stop).Path
     if ($UseGsudo) {
-        $response = Invoke-QkmGsudoRequest @{ Action = 'Start'; Executable = $executable; Arguments = $Arguments; Environment = $EnvironmentOverrides; DesktopName = $DesktopName }
+        if (-not $DesktopName) { $DesktopName = 'Default' }
+        $response = Invoke-QkmGsudoRequest @{ Action = 'Start'; Executable = $executable; Arguments = $Arguments; Environment = $EnvironmentOverrides; DesktopName = $DesktopName } -UncachedGsudo:$UncachedGsudo
         $process = Get-Process -Id $response.ProcessId -ErrorAction Stop
+        $null = $process.Handle
         $startTicks = $response.StartTicks
     } else {
         $info = New-Object Diagnostics.ProcessStartInfo
@@ -255,7 +279,7 @@ function Start-QkmTestProcess {
         }
         $startTicks = $process.StartTime.ToUniversalTime().Ticks
     }
-    return [pscustomobject]@{ Process = $process; Executable = $executable; StartTicks = $startTicks; UseGsudo = [bool]$UseGsudo; DesktopName = $DesktopName }
+    return [pscustomobject]@{ Process = $process; Executable = $executable; StartTicks = $startTicks; UseGsudo = [bool]$UseGsudo; DesktopName = $DesktopName; UncachedGsudo = [bool]$UncachedGsudo }
 }
 
 function Close-QkmTestProcess {
@@ -264,7 +288,7 @@ function Close-QkmTestProcess {
     $process.Refresh()
     if ($process.HasExited) { return $process.ExitCode }
     if ($TestProcess.UseGsudo) {
-        $response = Invoke-QkmGsudoRequest @{ Action = 'Close'; Executable = $TestProcess.Executable; ProcessId = $process.Id; StartTicks = $TestProcess.StartTicks; DesktopName = $TestProcess.DesktopName }
+        $response = Invoke-QkmGsudoRequest @{ Action = 'Close'; Executable = $TestProcess.Executable; ProcessId = $process.Id; StartTicks = $TestProcess.StartTicks; DesktopName = $TestProcess.DesktopName } -UncachedGsudo:([bool]$TestProcess.UncachedGsudo)
         return $response.ExitCode
     } else {
         if ($process.StartTime.ToUniversalTime().Ticks -ne $TestProcess.StartTicks -or $process.Path -ne $TestProcess.Executable) {

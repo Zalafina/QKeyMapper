@@ -67,7 +67,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Product acceptance failed; inspect its logs be
 
 运行依赖桥接的固定 Windows requirements、PowerShell 7 和 gsudo；具体安装见桥接说明，不自动安装驱动。启动未改正式 EXE 的同字节副本，用独立路径／文件名隔离 SingleApplication 和应用绑定。输出目录必须全新且在 out/mcp_product 下。产品初始化为接口关闭、自动监视／多键鼠／虚拟手柄关闭；脚本仍独立验证实际状态，不能只依赖模板。
 
-已明确获得临时缓存授权时，连续固定动作推荐在命令末尾加 `--gsudo-cache`，避免十多次逐条 UAC。它只允许当前普通测试控制器 PID 及其子进程使用缓存，空闲 5 分钟失效，并在 `finally` 中关闭及核对不可用；不改变全局 CacheMode，不提升 SDK／桥接／截图。默认不启用。结果及原始日志分别记录缓存模式、启用与关闭，真实产品仍独立核对 High／Medium、系统关联登录及实际私有桌面。PC-W11 的同 EXE／同合成 INI 无缓存与缓存 11 分项、状态／目录业务字段对照见 CACHE-40；这不证明逐次 UAC 提示／拒绝、焦点或等待耗时相同，UAC 交互场景须不使用缓存另验。
+连续固定动作使用[工作区缓存技能](../../../.agents/skills/qkeymapper-gsudo-cache/SKILL.md)及[公共测试接入](../../../.agents/skills/qkeymapper-gsudo-cache/references/test-actions.md)。通过受管run执行原产品／源参数，或先审核登记定义后直接普通运行；启动、关闭及固定GUI由同一缓存控制器派发。子脚本省略旧--gsudo-cache，该选项已明确拒绝，不创建独立或嵌套PID缓存。默认窗口五分钟、最长24小时及硬截止由技能管理，SDK／桥接／截图保持Medium。历史CACHE-40无缓存对照仅按原版本保留，不能替代真实UAC提示／拒绝、焦点及等待耗时验收。
 
 正式 SDK 通过固定公开工具验证未批准时不可用、只读权限、实际能力、状态／目录查询、凭据重连、撤销断线／拒绝旧 key；完整退出后再启动同一产品，核对默认关闭及撤销持久化。两次均要求正常退出 0，仅清理自身客户端凭据。Qt5 按控件实际支持的 SelectionItem／Invoke 无障碍模式选择固定目标；没有任意控件或命令入口。服务有 240 秒自有产品看门狗，控制器超时不自动重启。
 
@@ -88,11 +88,11 @@ warm随后调用mapping_changes_acceptance.py，**需要Read+Configure配对及�
 维护目标的 `--source-fixture <absolute-keymapdata.ini>` 只允许仓库 out/mcp_product 下已存在的固定源夹具，通过对应 Qt 的 QSettings 写入合成 CommonMappingData QVariantList。该普通权限准备发生在产品启动之前，保留跨配置切换后的未附着共通内存场景；不写个人配置或提供产品加载入口。
 
 ```powershell
-out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/tests/test_source_interop.py --executable $qkmProductExe --output out/mcp_product/accept-source-qt6 --test-exe out/tests/mcp_control/qt6-release/release/QKeyMapperMcpControlTest.exe --qt-bin $qkmKitBin --gsudo-cache
+out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/tests/test_source_interop.py --executable $qkmProductExe --output out/mcp_product/accept-source-qt6 --test-exe out/tests/mcp_control/qt6-release/release/QKeyMapperMcpControlTest.exe --qt-bin $qkmKitBin
 if ($LASTEXITCODE -ne 0) { throw 'Source acceptance failed; inspect logs and owned pairing state.' }
 ```
 
-`--gsudo-cache` 仅在已有明确授权时使用，默认省略。Qt5 使用其匹配的产品、维护 EXE、Qt bin 和全新 output。固定助手通过 UIA 选择 Tab／行，在已核实单元格内投递成对右键窗口消息、调用真实菜单“上移”，再以实际 GUI 行及正式 MCP 源行验证效果；不调用业务函数或设置配置值。单纯查看其他 Tab 不应改变源引用；重排往返、重载、配置切换／失败／恢复及重新配对必须拒绝旧引用。读取批次核对 GUI、实际源内容、dirty／运行摘要与整个 INI 字节不变。
+先经受管run或按公共接入说明登记已有授权，省略旧`--gsudo-cache`。Qt5 使用其匹配的产品、维护 EXE、Qt bin 和全新 output。固定助手通过 UIA 选择 Tab／行，在已核实单元格内投递成对右键窗口消息、调用真实菜单“上移”，再以实际 GUI 行及正式 MCP 源行验证效果；不调用业务函数或设置配置值。单纯查看其他 Tab 不应改变源引用；重排往返、重载、配置切换／失败／恢复及重新配对必须拒绝旧引用。读取批次核对 GUI、实际源内容、dirty／运行摘要与整个 INI 字节不变。
 
 本套件末段现在需要私有桌面Read+Configure及固定共通变更授权：再次配对后预览共通C→B及禁用普通C的联动，先不确认并验证零部分修改，再确认、重放并从GUI读取实际结果；非当前源提交须拒绝且不切Tab。前面的只读批次仍检查dirty／INI不变，新增写批次单独核对预期dirty和INI未写，不能统一声称全程只读。
 

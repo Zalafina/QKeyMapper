@@ -14,6 +14,7 @@ import win32api
 from mcp import Client
 
 from test_product_interop import Product, connection_pending
+from managed_test import reject_nested_cache
 from test_sdk_interop import BUSINESS_CAPABILITIES, ROOT, business_state, call, connection, elevation, integrity, parameters
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.windows import identity
@@ -302,6 +303,7 @@ if __name__ == "__main__":
     parser.add_argument("--qt-bin", type=Path, required=True)
     parser.add_argument("--gsudo-cache", action="store_true")
     args = parser.parse_args()
+    reject_nested_cache(args.gsudo_cache)
     for name in ("executable", "output", "test_exe", "qt_bin"):
         setattr(args, name, getattr(args, name).resolve())
     base = (ROOT.parent / "out/mcp_product").resolve()
@@ -328,17 +330,4 @@ if __name__ == "__main__":
     with (args.output / "fixture_writer.log").open("wb") as log:
         subprocess.run([str(args.test_exe), "--source-fixture", str(ini)], cwd=ROOT.parent, env=env,
                        stdout=log, stderr=log, creationflags=subprocess.CREATE_NO_WINDOW, check=True, timeout=20)
-    gsudo, cache_pid = shutil.which("gsudo.exe"), str(os.getpid())
-    assert gsudo and shutil.which("pwsh.exe")
-    try:
-        if args.gsudo_cache:
-            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
-            subprocess.run([gsudo, "cache", "on", "-p", cache_pid, "-d", "00:05:00"], check=True)
-            subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"], check=True)
-            print("PASS gsudo cache available for ordinary controller PID " + cache_pid, flush=True)
-        asyncio.run(run(args))
-    finally:
-        if args.gsudo_cache:
-            subprocess.run([gsudo, "cache", "off", "-p", cache_pid], check=True)
-            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
-            print("PASS this controller gsudo cache is closed", flush=True)
+    asyncio.run(run(args))

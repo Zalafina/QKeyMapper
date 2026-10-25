@@ -1,6 +1,6 @@
 ---
 name: qkeymapper-gsudo-cache
-description: 在 QKeyMapper 工作区查看、创建或调整普通测试控制器的 gsudo PID 缓存窗口，支持中英文时长、截止时间及恢复五分钟，并按本机日志只读复查运行状况；用于减少已授权测试的重复 UAC。
+description: 在 QKeyMapper 工作区查看、创建或调整普通测试控制器的 gsudo PID 缓存窗口，支持中英文时长、截止时间及恢复五分钟，让产品／维护／SDK等已登记测试复用同一控制器，并按本机日志只读复查；时长不增加测试授权。
 ---
 
 # QKeyMapper 临时缓存
@@ -44,17 +44,31 @@ description: 在 QKeyMapper 工作区查看、创建或调整普通测试控制�
 
 ## 让后续测试复用该控制器
 
-调整时间只保留原范围，新控制器默认范围为空。Agent 根据会话中已经批准的具体作业登记范围；授权依据不足时询问缺少的范围，而不是要求用户重复已经批准的事项。reason 是授权证据说明，不是创造授权的手段。
+优先读[公共测试接入与完整示例](references/test-actions.md)。新测试先判断是否确实需要管理员：普通 Qt 维护、开发、SDK主体、桥接、采样和截图继续普通权限。必要的原生目标启动／关闭和固定GUI助手才走受管控制器；不要先另开临时缓存。
 
-内部管理接口（非时间指令）：
+`scripts/test_process.ps1` 的 `Start-QkmTestProcess -UseGsudo`／`Close-QkmTestProcess` 已接入；Python使用 `scripts/managed_test.py` 的 `perform`。SDK高权限夹具及Product固定GUI动作也走此入口。实际gsudo由缓存所属普通控制器派发；传PID或环境变量不能代替该调用链。
 
-- `authorize --scope-file <JSON>`：以完整范围对象替换已登记的固定入口。键为 product、source、input_regression 或 identity_probe，值含明确的 reason；输入回归还可含已批准的布尔项 allow_default、allow_focus_click、allow_late_forced_up。普通产品／源查询不得包含真实输入权限。状态会显示该范围。
-- `run --job-file <JSON>`：内容仅为 kind 与 arguments。kind 对应已登记入口；固定适配器组装现有脚本参数，禁止任意命令／shell／脚本。产品及源查询参数沿现有 CLI，输入回归使用显式授权标志，不自动追加。
-- `identity_probe` 的 arguments 必须为空，只读取固定进程令牌，供本技能验收。其他固定入口复用现有正式产品、源查询和输入回归；单次预算含清理分别为630／630／1230秒，窗口不足明确拒绝，不自行延长。
+新控制器默认范围为空。Agent按已经批准的作业检查原生EXE的构建来源、内容身份、精确参数／环境、桌面、输出、固定助手代码及清理预算，生成结构化定义；另在 `authorize` 的 `test_actions.definitions` 登记完整定义SHA-256，再 `register --definition-file`。元数据不能自授权。只按路径／文件名信任目标、把Python／PowerShell／cmd等解释器登记为任意脚本启动器、任意命令／Qt属性均不允许。
 
-身份探针输出后固定等待5秒退出，仅供观察活动任务关闭边界。补验脚本 accept_cache.py 的缓存场景不启动产品；source_cleanup 例外，必须已有私有桌面源测试授权，并提供固定 --job-file 和 --scope-file，不能从时间调整推导这项授权。
+同一目标增加普通用例只更新cases；同类新目标另登记定义，不改缓存核心。不因新文件名／case ID重问已批准的范围；真正新增输入、驱动、GUI或其他系统副作用仍先说明并获得所需授权。固定GUI动作沿用已有受限助手；新增动作在该助手实现并独立验证，定义绑定实际助手摘要。无自有进程时可重新审核登记助手更新，不重启控制器。
 
-已授权测试应经本控制器运行，子脚本不加 `--gsudo-cache`，以继承父控制器的缓存；不要每个短命令另建 PID 缓存。开发、Git、构建、SDK、桥接、注入、采样及截图始终普通权限，仅原有必要启动／关闭及获准固定 GUI 动作经 gsudo。scope 不能用于运行这些开发命令提权。
+内部接口：
+
+- `authorize --scope-file <JSON>`：完整替换范围，保留已有允许项。旧product／source／input_regression／identity_probe范围仍有效；test_actions须有reason及最多32个定义摘要。
+- `register --definition-file <JSON>`：登记已获独立范围许可的目标／用例。字段及示例见引用页；活跃目标不能被覆盖。
+- `test-action --action-file <JSON>`：仅Start／Close／Gui三类结构化动作。关闭及GUI核对本控制器拥有的PID、创建时间、EXE和桌面；PID复用拒绝。
+- `run --job-file <JSON>`：保留整套product／source／input_regression和固定身份探针。控制器从这些既定参数生成受限定义；普通子脚本不加旧的 `--gsudo-cache`。该旧选项现在明确拒绝，不再创建嵌套／临时缓存。
+- `result <request_id>`：查询原结果。超时／结果未知不得通过新ID盲目重放。
+
+整套run占用期间，控制器继续串行处理该作业的内部公共请求。临时作业令牌仅区分归属，调用方还要核对实际Medium／登录身份；它不是授权凭据或缓存继承机制。无关请求返回busy，不另建控制器。
+
+登记不延长期限。启动前预留整个用例及清理预算；到清理保留时间尝试关闭自有目标。off先停止新测试并在原硬截止内清理；已到期、缓存丢失或身份无法核实时不擅自提权／强杀，报告遗留及结果未知。活动目标不能把窗口缩到不足20秒；可先off完成清理，再设置更短窗口。
+
+旧控制器首次升级须空闲且无自有进程：运行 `upgrade`，核实旧缓存关闭，再以原截止及剩余上限启动新版，可能需要一次UAC。不静默重算时长；失败保留原请求ID及旧截止，先查明原因，未经确认不重试。升级不迁移进程拥有关系，定义需重新登记。
+
+专门验证UAC提示／拒绝必须使用独立、无继承缓存的普通调用链，公共助手显式 `-UncachedGsudo`；若实际仍有缓存则拒绝，不全局清除。首次开启、失效恢复、系统独立RunAs／安装器等入口及原生服务在检查后的异常失效仍可能要求审批，不承诺所有UAC免审批。入口未登记或缓存缺失明确报因，不默认回退直接gsudo。
+
+身份探针及accept_cache.py仍按既有固定边界使用；source_cleanup须已有私有桌面源测试授权，不能从时长命令推导。真实输入不因run或登记而自动获得许可。
 
 ## 生命周期与交接
 

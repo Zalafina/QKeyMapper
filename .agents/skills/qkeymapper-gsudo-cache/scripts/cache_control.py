@@ -20,6 +20,7 @@ import uuid
 from cache_core import (CHINA, DEFAULT_SECONDS, CacheError, Window, build_job,
                         parse_command, require, seconds_ok, validate_scope)
 from cache_history import HEARTBEAT_SECONDS, History, environment
+from cache_actions import Actions, action_command, TICKS_TO_FILETIME, file_hash
 
 SCRIPT = Path(__file__).resolve()
 ROOT = next(p for p in SCRIPT.parents if (p / "QKeyMapper/QKeyMapper.pro").is_file())
@@ -140,6 +141,53 @@ class NativeBackend:
     def spawn(self, command, log):
         return subprocess.Popen(command, cwd=ROOT, stdout=log, stderr=log, creationflags=NO_WINDOW)
 
+    def spawn_job(self, command, log, token):
+        env = os.environ.copy()
+        env["QKM_CACHE_JOB"] = token
+        return subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=log, creationflags=NO_WINDOW)
+
+    def verify_actor(self, value):
+        actual = identity(value["pid"])
+        require(asdict(actual) == value and actual.same_login(self.owner)
+            and token_info(actual.pid) == {"elevated": False, "integrity": 8192},
+            "动作调用方身份或登录会话不符。", "identity_rejected")
+
+    def owned_alive(self, value):
+        try:
+            with closing(win32api.OpenProcess(0x1000 | win32con.SYNCHRONIZE, False, value["pid"])) as process:
+                if win32event.WaitForSingleObject(process, 0) == win32event.WAIT_OBJECT_0:
+                    return False
+                return asdict(identity(value["pid"])) == value
+        except pywintypes.error as error:
+            return False if error.winerror in (87, 1168) else None
+        except (OSError, BridgeError):
+            return None
+
+    def started_identity(self, response):
+        actual = identity(response["ProcessId"])
+        require(actual.created == int(response["StartTicks"]) - TICKS_TO_FILETIME
+            and actual.same_login(self.owner) and token_info(actual.pid) == {"elevated": True, "integrity": 12288},
+            "新测试进程身份或实际权限不符。", "identity_rejected")
+        return asdict(actual)
+
+    def start_action(self, payload, request_path, log, expected_files):
+        shell = shutil.which("pwsh.exe")
+        require(shell is not None, "未找到 PowerShell 7。", "shell_missing")
+        pins = []
+        try:
+            for path, expected in expected_files.items():
+                pins.append(win32file.CreateFile(str(path), win32con.GENERIC_READ, win32con.FILE_SHARE_READ,
+                    None, win32con.OPEN_EXISTING, 0, None))
+                require(file_hash(path) == expected, "提权前文件身份已改变。", "artifact_changed")
+            require(self.info()["cache_available"], "动作派发前缓存失效，未启动提权。", "needs_uac")
+            process = self.spawn([self.gsudo, "--direct", *action_command(ROOT, shell, payload, request_path)], log)
+            process.qkm_pins = pins
+            return process
+        except BaseException:
+            for handle in pins:
+                handle.Close()
+            raise
+
     def probe_command(self):
         return [self.gsudo, "--direct", sys.executable, "-B", "-X", "utf8", str(SCRIPT), "--identity-probe"]
 
@@ -166,6 +214,7 @@ class Controller:
         self.history = History(runtime, self.instance, backend.owner.pid, backend.owner.created, tick, wall,
             {**getattr(backend, "history_context", {}), "backend": backend.name})
         self.next_heartbeat = tick() + HEARTBEAT_SECONDS
+        self.actions = Actions(self)
 
     def record(self, event, **fields):
         try:
@@ -186,12 +235,16 @@ class Controller:
         if refresh:
             self.native = self.backend.info()
         return {"ok": True, "workspace": str(self.root), "instance": self.instance,
-            "format_version": 1,
+            "format_version": 2,
             "identity": asdict(self.backend.owner), "interpreter": sys.executable, "backend": self.backend.name,
             "status": "closing" if self.closing else "awaiting_cache" if self.pending else "active" if self.window.deadline else "idle",
             "deadline": self.window.until, "remaining_seconds": round(self.window.remaining(self.tick()), 2),
             "generation": self.window.generation, "default_seconds": DEFAULT_SECONDS,
-            "scope": self.scope, "current_job": self.job["kind"] if self.job else None,
+            "scope": self.scope, "registered_targets": sorted(self.actions.definitions),
+            "owned_targets": [{"pid": pid, "target_id": item["definition"]["id"]} for pid, item in self.actions.owned.items()],
+            "unresolved_starts": sorted(self.actions.unknown_starts),
+            "current_action": self.actions.pending["request"]["Action"] if self.actions.pending else None,
+            "current_job": self.job["kind"] if self.job else None,
             "pending_request": self.pending["id"] if self.pending else None,
             "close_reason": self.close_reason, "last_error": self.last_error,
             "history": self.history.status(), **self.native}
@@ -213,7 +266,7 @@ class Controller:
                     "requested_window_expired", "deadline_expired", "exit_code") if key in value})
 
     def set_window(self, request_id, request):
-        require(self.pending is None and not self.closing, "缓存调整正在执行或关闭，请先查询结果。", "busy")
+        require(self.pending is None and self.actions.pending is None and not self.closing, "缓存调整／动作正在执行或关闭，请先查询结果。", "busy")
         try:
             until = datetime.fromisoformat(request["deadline"])
             require(until.tzinfo is not None, "截止时间须带时区。")
@@ -221,11 +274,15 @@ class Controller:
         except (ValueError, KeyError, TypeError) as error:
             raise CacheError("invalid_arguments", "截止时间不合法。") from error
         remaining = seconds_ok((until - self.wall()).total_seconds())
+        if "remaining_cap" in request:
+            remaining = min(remaining, seconds_ok(request["remaining_cap"]))
+        require(not self.actions.owned or remaining >= 20, "自有测试尚未清理；先 off 完成清理，再设置短窗口。", "insufficient_window")
+        deadline_tick = self.tick() + remaining
         old_remaining, old_until = self.window.remaining(self.tick()), self.window.until
         self.native = self.backend.info()
         action = "restored" if request.get("restore") is True else "extended" if old_remaining and remaining > old_remaining else "shortened" if old_remaining else "created"
         if self.native["cache_available"] and old_remaining and remaining <= old_remaining:
-            self.window.install(self.tick(), remaining, until.isoformat())
+            self.window.install(self.tick(), max(0, deadline_tick - self.tick()), until.isoformat())
             self.answer(request_id, {**self.snapshot(), "action": action, "previous_deadline": old_until}, "set")
             return
         log = (self.runtime / "logs" / (request_id + "-cache.log")).open("wb")
@@ -235,7 +292,7 @@ class Controller:
             log.close()
             raise
         self.pending = {"id": request_id, "process": process, "log": log, "started": self.tick(),
-            "deadline_tick": self.tick() + remaining, "until": until.isoformat(), "old_until": old_until,
+            "deadline_tick": deadline_tick, "until": until.isoformat(), "old_until": old_until,
             "action": "reenabled" if old_remaining and not self.native["cache_available"] else action}
         self.record("cache_request", request_id=request_id, requested_deadline=until.isoformat(), previous_deadline=old_until)
 
@@ -244,7 +301,7 @@ class Controller:
         request_id = request.get("id")
         require(type(request_id) is str and HEX_ID.fullmatch(request_id), "请求 ID 不合法。")
         if request_id in self.seen:
-            if request_id not in self.results and not (self.pending and self.pending["id"] == request_id) and not (self.job and self.job["id"] == request_id):
+            if request_id not in self.results and not (self.pending and self.pending["id"] == request_id) and not (self.job and self.job["id"] == request_id) and not (self.actions.pending and self.actions.pending["id"] == request_id):
                 self.answer(request_id, error_result(CacheError("result_evicted", "该请求已经处理，结果已淘汰；未重新执行。")), "duplicate")
             return
         require(len(self.seen) < 4096 or request.get("op") in ("status", "off"), "控制器请求记录已满，请关闭后重新创建。", "request_limit")
@@ -253,14 +310,14 @@ class Controller:
         if self.window.expire(self.tick(), self.window.generation):
             self.closing, self.close_reason = True, self.close_reason or "deadline_expired"
         operation = request.get("op")
-        history_op = operation if type(operation) is str and operation in ("status", "off", "set", "authorize", "run") else "invalid"
+        history_op = operation if type(operation) is str and operation in ("status", "off", "set", "authorize", "run", "register", "test_action") else "invalid"
         if history_op != "status":
             self.record("request", request_id=request_id, operation=history_op,
                 requested_deadline=request.get("deadline"), restore=request.get("restore") is True)
         try:
-            fields = {"status": set(), "off": set(), "set": {"deadline", "restore"},
-                "authorize": {"scope"}, "run": {"kind", "arguments"}}
-            require(type(operation) is str and operation in fields and set(request) <= {"id", "instance", "op"} | fields[operation], "请求字段不合法。")
+            fields = {"status": set(), "off": set(), "set": {"deadline", "restore", "remaining_cap"},
+                "authorize": {"scope"}, "run": {"kind", "arguments"}, "register": {"definition"}, "test_action": {"request", "job_token"}}
+            require(type(operation) is str and operation in fields and set(request) <= {"id", "instance", "op", "actor"} | fields[operation], "请求字段不合法。")
             require("restore" not in request or type(request["restore"]) is bool, "恢复标志须为布尔值。")
             require(request.get("instance") == self.instance, "请求属于其他或已经结束的控制器。", "stale_controller")
             if operation == "status":
@@ -271,11 +328,23 @@ class Controller:
                 require(not self.closing, "控制器正在关闭。", "busy")
                 self.scope = validate_scope(request.get("scope"))
                 self.answer(request_id, {**self.snapshot(), "action": "scope_registered"}, "authorize")
+            elif operation == "register":
+                require(not self.job and not self.pending and not self.actions.pending and not self.closing, "测试或调整执行中不能变更定义。", "busy")
+                self.backend.verify_actor(request.get("actor"))
+                target = self.actions.register(request.get("definition"), self.scope.get("test_actions", {}).get("definitions", []))
+                self.answer(request_id, {"ok": True, "action": "target_registered", "target_id": target}, "register")
+            elif operation == "test_action":
+                self.backend.verify_actor(request.get("actor"))
+                raw = request.get("request")
+                entry = raw.get("Action") if type(raw) is dict else None
+                self.record("test_action_request", request_id=request_id,
+                    entry_type=entry.lower() if entry in ("Start", "Close", "Gui") else "invalid")
+                self.actions.begin(request_id, request.get("request"), request.get("job_token"))
             elif operation == "off":
                 self.closing, self.close_reason = True, self.close_reason or "user_off"
                 self.answer(request_id, {**self.snapshot(), "action": "closing"}, "off")
             elif operation == "run":
-                require(self.pending is None and self.job is None and not self.closing, "有缓存调整或固定测试正在执行。", "busy")
+                require(self.pending is None and self.job is None and self.actions.pending is None and not self.actions.owned and not self.closing, "有缓存调整、固定动作或自有测试尚未清理。", "busy")
                 command, budget = build_job(self.root, sys.executable, request.get("kind"), request.get("arguments"), self.scope)
                 require(self.window.remaining(self.tick()) >= budget, "当前窗口不足以完成该测试及清理；请明确设置更长窗口。", "insufficient_window")
                 self.native = self.backend.info()
@@ -285,7 +354,8 @@ class Controller:
                 log_path = self.runtime / "logs" / (request_id + "-job.log")
                 log = log_path.open("wb")
                 try:
-                    process = self.backend.spawn(command, log)
+                    self.actions.register_job(request["kind"], request["arguments"])
+                    process = self.backend.spawn_job(command, log, self.actions.job_token) if hasattr(self.backend, "spawn_job") else self.backend.spawn(command, log)
                 except BaseException:
                     log.close()
                     raise
@@ -324,6 +394,10 @@ class Controller:
                         "native_exit_code": code, "requested_window_expired": left <= 0}, "set")
                     if not self.window.deadline:
                         self.closing, self.close_reason = True, self.close_reason or "cache_start_failed"
+        if self.actions.pending:
+            self.actions.advance()
+            changed = True
+        self.actions.refresh_owned()
         if self.job:
             job = self.job
             code = job["process"].poll()
@@ -338,7 +412,18 @@ class Controller:
                 self.closing, self.close_reason = True, "job_needs_attention"
         if not self.window.deadline and not self.pending and self.tick() - self.started > 30:
             self.closing, self.close_reason = True, self.close_reason or "unused_controller"
+        try:
+            if self.window.remaining(self.tick()) >= 15:
+                self.actions.cleanup()
+        except Exception as error:
+            self.last_error = error_result(error)
+            self.record("owned_cleanup_failed", error=self.last_error["error"], cleanup_complete=False)
         if self.closing:
+            # Complete bounded owned cleanup before cache off, without crossing the hard deadline.
+            if self.window.remaining(self.tick()) > 0 and self.actions.pending:
+                if changed:
+                    self.publish()
+                return True
             # A late cache-on may complete after expiry; keep the owner alive until it is reaped.
             first_close = not self.cache_closed
             if not self.cache_closed:
@@ -347,7 +432,9 @@ class Controller:
             self.native = self.backend.info()
             if first_close:
                 self.record("cache_off_checked", ok=self.native.get("cache_available") is False)
-            if self.pending is None and self.job is None:
+            if self.pending is None and self.job is None and self.actions.pending is None:
+                if self.actions.owned:
+                    self.last_error = {"error": "owned_cleanup_pending"}
                 self.window.clear()
                 self.publish()
                 return False
@@ -372,7 +459,7 @@ class Controller:
                 for path in paths:
                     try:
                         require(HEX_ID.fullmatch(path.stem) is not None, "请求文件名不合法。")
-                        request = read_json(path, 8192)
+                        request = read_json(path, 65536)
                         require(type(request) is dict and request.get("id") == path.stem, "请求记录不一致。")
                         self.handle(request)
                     except Exception as error:
@@ -399,7 +486,7 @@ class Controller:
                 self.record("cleanup_failed", error=error_result(error)["error"])
                 raise
             self.record("controller_finish", cleanup_complete=self.native.get("cache_available") is False
-                and self.pending is None and self.job is None and self.last_error is None,
+                and self.pending is None and self.job is None and self.actions.pending is None and not self.actions.owned and not self.actions.unknown_starts and self.last_error is None,
                 error=self.last_error.get("error") if self.last_error else None)
             write_json(self.runtime / "closed.json", {**self.snapshot(), "status": "closed"})
 
@@ -407,7 +494,7 @@ class Controller:
 def verified_controller(runtime=RUNTIME):
     try:
         state = read_json(runtime / "state.json")
-        require(type(state) is dict and state.get("workspace") == str(ROOT) and state.get("backend") == "native" and state.get("format_version") == 1,
+        require(type(state) is dict and state.get("workspace") == str(ROOT) and state.get("backend") == "native" and state.get("format_version") in (1, 2),
                 "记录不属于本工作区或当前版本。")
         require(HEX_ID.fullmatch(state["instance"]) is not None, "记录代次不合法。")
         recorded, actual, own = Identity(**state["identity"]), identity(state["identity"]["pid"]), identity(os.getpid())
@@ -473,7 +560,8 @@ def send(state, arguments, timeout=100, request_id=None):
     path = RUNTIME / "requests" / (request_id + ".json")
     result_path = RUNTIME / "results" / (request_id + ".json")
     if not result_path.exists() and not path.exists():
-        write_json(path, {"id": request_id, "instance": state["instance"], **arguments})
+        write_json(path, {"id": request_id, "instance": state["instance"], **arguments,
+            **({"actor": asdict(identity(os.getpid()))} if state.get("format_version") == 2 else {})})
     end = time.monotonic() + timeout
     while time.monotonic() < end:
         if result_path.exists():
@@ -493,7 +581,36 @@ def public(value):
     return value
 
 
-def client(words, scope_file=None, job_file=None, request_id=None):
+def upgrade_controller():
+    state = verified_controller()
+    require(state is not None, "没有可升级的活动控制器。", "controller_absent")
+    observed = time.monotonic()
+    state = send(state, {"op": "status"}, timeout=10)
+    require(state.get("ok") and state.get("status") == "active" and not any(state.get(key) for key in
+        ("current_job", "current_action", "pending_request", "owned_targets")), "控制器须先完成作业和自有进程清理。", "busy")
+    old_pid, deadline, scope = state["identity"]["pid"], state["deadline"], state["scope"]
+    remaining = state["remaining_seconds"]
+    require(remaining > 15, "旧窗口即将到期，未自动续期。", "insufficient_window")
+    send(state, {"op": "off"}, timeout=10)
+    for _ in range(100):
+        current = verified_controller()
+        if current is None:
+            break
+        time.sleep(.1)
+    else:
+        raise CacheError("controller_upgrade_failed", "旧控制器尚未退出，未启动替代控制器。")
+    closed = read_json(RUNTIME / "closed.json")
+    require(closed.get("instance") == state["instance"] and closed.get("cache_available") is False,
+        "旧缓存未核实关闭。", "controller_upgrade_failed")
+    current, _ = ensure_controller()
+    send(current, {"op": "authorize", "scope": scope})
+    cap = remaining - (time.monotonic() - observed)
+    require(cap > 0, "升级期间原窗口已到期，未重新开启。", "insufficient_window")
+    result = send(current, {"op": "set", "deadline": deadline, "remaining_cap": cap, "restore": False})
+    return {**result, "previous_controller_pid": old_pid, "previous_deadline": deadline, "upgrade": True}
+
+
+def client(words, scope_file=None, job_file=None, request_id=None, definition_file=None, action_file=None):
     require(token_info() == {"elevated": False, "integrity": 8192}, "客户端必须是普通 Medium 权限。", "integrity_rejected")
     runtime_safe()
     text = " ".join(words)
@@ -502,6 +619,18 @@ def client(words, scope_file=None, job_file=None, request_id=None):
         path = RUNTIME / "results" / (words[1] + ".json")
         require(path.is_file(), "结果未知或已经淘汰；先查询当前状态，勿重发变更。", "result_unknown")
         return {**read_json(path), "historical_result": True}
+    if text == "upgrade":
+        return upgrade_controller()
+    if text in ("register", "test-action"):
+        state = verified_controller()
+        require(state is not None, "没有受管控制器；先设置缓存或明确选择不缓存 UAC 验收。", "controller_absent")
+        require(state.get("format_version") == 2, "现有控制器需在空闲时升级；不会另建控制器。", "controller_upgrade_required")
+        path = definition_file if text == "register" else action_file
+        require(path is not None, "须提供测试定义或固定动作文件。")
+        value = read_json(path)
+        args = {"op": "register", "definition": value} if text == "register" else {
+            "op": "test_action", "request": value, "job_token": os.environ.get("QKM_CACHE_JOB")}
+        return send(state, args, timeout=80, request_id=request_id)
     if text in ("authorize", "run"):
         require((scope_file is not None if text == "authorize" else job_file is not None), "须提供对应的范围／固定测试 JSON。")
         state = verified_controller()
@@ -549,6 +678,8 @@ def main():
     parser.add_argument("--scope-file", type=Path)
     parser.add_argument("--job-file", type=Path)
     parser.add_argument("--request-id")
+    parser.add_argument("--definition-file", type=Path)
+    parser.add_argument("--action-file", type=Path)
     parser.add_argument("--serve", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--identity-probe", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
@@ -561,7 +692,7 @@ def main():
         serve()
         return 0
     try:
-        value = public(client(args.command, args.scope_file, args.job_file, args.request_id))
+        value = public(client(args.command, args.scope_file, args.job_file, args.request_id, args.definition_file, args.action_file))
     except Exception as error:
         value = error_result(error)
     print(json.dumps(value, ensure_ascii=False, indent=2))

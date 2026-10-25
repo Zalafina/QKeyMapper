@@ -26,6 +26,12 @@
 
 开发、Git、构建、SDK、桥接、注入和截图保持普通权限。只有已有明确授权的必要测试启动／关闭及固定GUI动作使用gsudo。新控制器默认测试范围为空；时间调整不自动登记真实输入、驱动或GUI授权。
 
+## 新增测试如何复用缓存
+
+参见[公共测试接入示例](test-actions.md)。必要提权经受管控制器派发，普通公共Start／Close、Product GUI及SDK高权限夹具已接入；旧 `--gsudo-cache` 不再创建自己的控制器。新目标与用例通过已审核的结构化定义登记，不用每次修改技能核心。定义不创造授权，任意脚本／shell及无限制参数不接收。
+
+如果提示controller_upgrade_required，先完成现有作业和清理，使用内部upgrade；旧缓存核实关闭后才申请新PID缓存，并保留原截止。若UAC取消或结果未知，先查原因和原请求；不要再开一套临时控制器。当前status中的registered_targets／owned_targets／current_action／unresolved_starts分别是登记、归属、执行及未定启动；均不能替代实际结果。
+
 ## 日志在哪里、何时记录
 
 每台PC在其当前仓库根目录下独立保存：
@@ -64,7 +70,7 @@ out/gsudo_cache/
 | `instance`、`pid`、`process_created`、`sequence` | 区分会话及PID复用，序号仅在同一instance中比较 |
 | `machine_id`、`login_tag` | 机器名／登录身份的摘要标记，辅助分组；不是授权凭据或全局硬件身份，合并日志还应保留来源PC说明 |
 | `os_version`、`python_version`、`gsudo_version` | 实际系统／Python及gsudo文件版本；缺失时不能猜测环境相同 |
-| `code_version` | 三个实现脚本cache_control／cache_core／cache_history的内容SHA-256，仅在启动时读取；不代表整个仓库或Agent行为版本 |
+| `code_version` | 四个控制器实现脚本cache_control／cache_core／cache_history／cache_actions的内容SHA-256，仅在启动时读取；不代表整个仓库或Agent行为版本 |
 | `timestamp`、`elapsed_seconds` | 北京时间记录时间与单调时钟会话经过秒数，避免仅凭系统时间判断长时覆盖 |
 | `generation`、`deadline`、`previous_deadline`、`remaining_seconds` | 实际窗口代次和截止；requested_deadline只是请求，不等于生效 |
 | `cache_available`、`native_checked_at` | 最近原生观测及其时间；没有观测时为null，旧观测不得冒充当前事实 |
@@ -77,6 +83,8 @@ out/gsudo_cache/
 日志写入失败不会改变缓存准入、时限或清理逻辑；`status`／关闭记录中的 `history.available`、`missed_events`、`last_error` 显示可观察到的记录失败。后续写入恢复会保留累计missed_events和事件序号，不能因此把此前缺口算完整。available只表示最近写入状态，最初尚未尝试时为null。整段无法写入、进程骤停及轮转可能没有完整记录，零missed_events也不证明全部历史完整。
 
 客户端在参数解析阶段拒绝、未送达Agent的文本、客户端等待超时及UAC弹窗次数不由这份控制器摘要完整观测；需要时结合原请求ID、CLI结果和已有证据。摘要不是授权来源、去重数据库或自动补执行依据。
+
+新增target_registered、test_action_request／start和request_result按request_id关联；entry_type区分启动／关闭／GUI，控制器instance／pid确定缓存归属，definition_hash定位精确定义版本。未登记、越权、busy、失效和结果未知分别记录错误码；仍必须连同native_checked_at理解缓存可用性，不推断弹窗次数。定义摘要不含原文参数；定义／请求材料只留本机out，禁止凭据或私人配置进入其中。控制器code_version只在启动时取样，助手更新由新definition_hash反映。
 
 ## 日常观察替代独立长时排期
 

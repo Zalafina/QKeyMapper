@@ -23,7 +23,8 @@ import win32service
 from mcp import Client
 
 from test_sdk_interop import (BUSINESS_CAPABILITIES, ROOT, business_state, call, close_desktop,
-                             connection, elevation, integrity, parameters)
+                             connection, elevation, integrity, parameters, managed_action)
+from managed_test import reject_nested_cache
 from qkeymapper_mcp.bridge import Bridge
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.windows import identity
@@ -81,19 +82,12 @@ class Product:
     async def action(self, name, client_executable=None):
         self.sequence += 1
         prefix = str(self.sequence).zfill(2) + "_" + name
-        command = [shutil.which("gsudo.exe"), "--direct", shutil.which("pwsh.exe"), "-NoProfile", "-STA", "-File",
-            str(ROOT.parent / "QKeyMapper/tests/mcp_control/product_ui_actions.ps1"), "-Action", name,
-            "-TargetProcessId", str(self.pid), "-ExecutablePath", str(self.executable),
-            "-StartTicks", self.started_record["start_ticks"], "-DesktopName", self.desktop_name,
-            "-ResultFile", str(self.output / (prefix + ".json"))]
+        request = {"Action": "Gui", "Name": name, "ProcessId": self.pid, "Executable": str(self.executable),
+            "StartTicks": self.started_record["start_ticks"], "DesktopName": self.desktop_name,
+            "ResultFile": str(self.output / (prefix + ".json"))}
         if client_executable:
-            command += ["-ClientExecutable", client_executable]
-        if self.default_desktop:
-            command += ["-AllowDefaultDesktop"]
-        with (self.output / (prefix + ".log")).open("wb") as log:
-            process = await asyncio.create_subprocess_exec(*command, stdout=log, stderr=log,
-                                                         creationflags=subprocess.CREATE_NO_WINDOW)
-            assert await asyncio.wait_for(process.wait(), 60) == 0, name + " failed; see action log"
+            request["ClientExecutable"] = client_executable
+        await asyncio.to_thread(managed_action, request)
         data = json.loads((self.output / (prefix + ".json")).read_text(encoding="utf-8"))
         assert data["success"] is True and data["action"] == name
         assert data["desktop"] == self.desktop_name and data["window"] == self.window
@@ -486,8 +480,9 @@ if __name__ == "__main__":
     parser.add_argument("--load-fixture", choices=("blank", "saved", "invalid", "missing", "warm"), default="blank",
                         help="Prepare a synthetic startup configuration. Warm also tests fixed GUI additions and Configure pairing; requires that explicit private-desktop scope.")
     parser.add_argument("--gsudo-cache", action="store_true",
-                        help="Authorized test-controller PID cache only; five-minute idle timeout, closed in finally.")
+                        help="Deprecated; use the workspace cache skill and omit this option.")
     args = parser.parse_args()
+    reject_nested_cache(args.gsudo_cache)
     args.executable, args.output = args.executable.resolve(), args.output.resolve()
     base = (ROOT.parent / "out/mcp_product").resolve()
     if not __debug__ or not args.executable.is_relative_to(base) or not args.executable.is_file() or not re.fullmatch(
@@ -511,18 +506,4 @@ if __name__ == "__main__":
                 contents += ("\n[" + group + "]\nMappingTable_TabNameList=Tab1\nKeyMapData_OriginalKeys=" + original
                     + "\nKeyMapData_MappingKeys=" + mapping + "\nEnableSystemFilterKeyChecked=false\nDisableFilterKeyClickSoundChecked=false\n")
         ini.write_text(contents, encoding="utf-8")
-    cache_pid = str(os.getpid())
-    gsudo = shutil.which("gsudo.exe")
-    try:
-        if args.gsudo_cache:
-            assert elevation(win32api.GetCurrentProcess()) == 0
-            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
-            subprocess.run([gsudo, "cache", "on", "-p", cache_pid, "-d", "00:05:00"], check=True)
-            subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"], check=True)
-            print("PASS gsudo cache available for ordinary test controller PID " + cache_pid, flush=True)
-        asyncio.run(run(args))
-    finally:
-        if args.gsudo_cache:
-            subprocess.run([gsudo, "cache", "off", "-p", cache_pid], check=True)
-            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
-            print("PASS this test controller gsudo cache is closed", flush=True)
+    asyncio.run(run(args))

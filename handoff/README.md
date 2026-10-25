@@ -10,7 +10,7 @@
 
 本表只提供导航；具体状态和下一步只在各任务主计划中维护。
 
-工作区工具：[临时 gsudo PID 缓存技能](../.agents/skills/qkeymapper-gsudo-cache/SKILL.md)、[使用与日常运行复查说明](../.agents/skills/qkeymapper-gsudo-cache/references/usage.md)。实施状态仍在上述唯一主计划维护；[验证与观察边界](qkeymapper_mcp_control/gsudo_cache_pending_validation.md)只记录证据索引和实际覆盖。
+工作区工具：[临时 gsudo PID 缓存技能](../.agents/skills/qkeymapper-gsudo-cache/SKILL.md)、[使用与日常运行复查说明](../.agents/skills/qkeymapper-gsudo-cache/references/usage.md)。[公共测试接入](../.agents/skills/qkeymapper-gsudo-cache/references/test-actions.md)。实施状态仍在上述唯一主计划维护；[验证与观察边界](qkeymapper_mcp_control/gsudo_cache_pending_validation.md)只记录证据索引和实际覆盖。
 
 ## 目录与文件规则
 

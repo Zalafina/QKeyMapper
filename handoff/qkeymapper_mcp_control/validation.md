@@ -1330,3 +1330,5 @@ PC-W10／014ef2eb＋qkm_mapping_changes 纯模块、工程／组件测试。严�
 ## CACHE-SKILL-20261025-69／70
 
 PC-W10：69的51项／原生场景及70的67项／普通日志验证见[记录](gsudo_cache_pending_validation.md)；助手a5097898，旧失败保留。跨PC／长时改日常观察，未覆盖不算通过；MCP暂停。
+
+CACHE72：[公共测试入口](cache72_validation.md)。

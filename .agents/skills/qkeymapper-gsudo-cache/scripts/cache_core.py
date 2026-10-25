@@ -10,7 +10,7 @@ from pathlib import Path
 CHINA = timezone(timedelta(hours=8), "Asia/Shanghai")
 DEFAULT_SECONDS = 300
 MAX_SECONDS = 86400
-PROFILES = {"product", "source", "input_regression", "identity_probe"}
+PROFILES = {"product", "source", "input_regression", "identity_probe", "test_actions"}
 ENGINE_CASES = {"hold_stop", "burst_release", "burst_stop", "lock_toggle_stop", "sequence_complete",
                 "sequence_cancel", "stop_message", "tab_return", "profile_return", "quick_restart", "exit_wait"}
 
@@ -100,9 +100,15 @@ def validate_scope(value):
     require(type(value) is dict and set(value) <= PROFILES, "范围只允许三个固定测试入口及只读身份探针。")
     result = {}
     for kind, entry in value.items():
-        require(type(entry) is dict and set(entry) <= {"reason", "allow_default", "allow_focus_click", "allow_late_forced_up"},
+        require(type(entry) is dict and set(entry) <= {"reason", "allow_default", "allow_focus_click", "allow_late_forced_up", "definitions"},
                 "范围字段不合法。")
         require(type(entry.get("reason")) is str and 1 <= len(entry["reason"]) <= 1000, "须记录已有授权的来源和具体范围。")
+        if kind == "test_actions":
+            definitions = entry.get("definitions")
+            require(type(definitions) is list and len(definitions) <= 32 and all(type(x) is str
+                and re.fullmatch(r"[0-9a-f]{64}", x) for x in definitions), "须明确批准测试定义的完整摘要。")
+        else:
+            require("definitions" not in entry, "该入口不接受测试定义。")
         for key in ("allow_default", "allow_focus_click", "allow_late_forced_up"):
             require(key not in entry or type(entry[key]) is bool, "输入授权标志须为布尔值。")
             require(kind == "input_regression" or not entry.get(key), "普通产品及源查询范围不得包含真实输入。")
@@ -113,7 +119,7 @@ def validate_scope(value):
 
 
 def build_job(root, python, kind, args, scope):
-    require(type(kind) is str and kind in PROFILES and kind in scope, "该固定测试入口尚未登记已有授权。", "scope_not_authorized")
+    require(type(kind) is str and kind in PROFILES - {"test_actions"} and kind in scope, "该固定测试入口尚未登记已有授权。", "scope_not_authorized")
     require(type(args) is dict, "测试参数须为对象。")
     root = Path(root).resolve()
 

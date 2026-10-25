@@ -196,7 +196,7 @@ class HistoryTests(ControllerFixture):
     def test_environment_hash_changes_with_the_implementation_without_paths(self):
         directory = self.root / "code"
         directory.mkdir()
-        for name in ("cache_control.py", "cache_core.py", "cache_history.py"):
+        for name in ("cache_control.py", "cache_core.py", "cache_history.py", "cache_actions.py"):
             (directory / name).write_text("first", encoding="utf-8")
         with patch.object(journal.platform, "node", return_value="PRIVATE_HOST"):
             first = journal.environment(directory)

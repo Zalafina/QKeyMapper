@@ -29,6 +29,7 @@ from features import CASES, configuration, exercise, pressed, wait_for
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO / "mcp_bridge/tests"))
 from test_product_interop import Product, connection_pending
+from managed_test import reject_nested_cache
 from test_sdk_interop import business_state, call, connection, elevation, integrity, parameters
 from test_source_interop import source_rows
 from qkeymapper_mcp.credentials import CredentialStore
@@ -575,6 +576,7 @@ if __name__ == "__main__":
                         help="Explicitly authorized product-tagged A release probe; requires --cases hold_stop")
     parser.add_argument("--gsudo-cache", action="store_true")
     args = parser.parse_args()
+    reject_nested_cache(args.gsudo_cache)
     args.baseline, args.current, args.output = args.baseline.resolve(), args.current.resolve(), args.output.resolve()
     for name, executable in (("baseline", args.baseline), ("current", args.current)):
         assert executable.is_relative_to(RESULT_ROOT.resolve()) and executable.is_file()
@@ -589,17 +591,4 @@ if __name__ == "__main__":
         assert args.cases == ["hold_stop"], "Tagged input must be isolated to hold_stop"
     assert elevation(win32api.GetCurrentProcess()) == 0 and integrity(win32api.GetCurrentProcess()) == 0x2000
     args.output.mkdir(parents=True, exist_ok=False)
-    gsudo, cache_pid = shutil.which("gsudo.exe"), str(os.getpid())
-    assert gsudo and shutil.which("pwsh.exe")
-    try:
-        if args.gsudo_cache:
-            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
-            subprocess.run([gsudo, "cache", "on", "-p", cache_pid, "-d", "00:05:00"], check=True)
-            subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"], check=True)
-            print("PID cache:", cache_pid, flush=True)
-        asyncio.run(run(args))
-    finally:
-        if args.gsudo_cache:
-            subprocess.run([gsudo, "cache", "off", "-p", cache_pid], check=True)
-            assert subprocess.run([gsudo, "status", "CacheAvailable", "--no-output"]).returncode == 1
-            print("PASS controller PID cache closed:", cache_pid, flush=True)
+    asyncio.run(run(args))

@@ -32,14 +32,14 @@ def safe_time(value):
 def safe_fields(fields):
     result = {}
     for key, value in fields.items():
-        if key in {"operation", "action", "error", "close_reason", "job_kind", "resource_error", "backend"}:
-            if type(value) is str and TOKEN.fullmatch(value):
+        if key in {"operation", "action", "error", "close_reason", "job_kind", "resource_error", "backend", "entry_type", "target_id"}:
+            if type(value) is str and (re.fullmatch(r"[a-zA-Z][a-zA-Z0-9_-]{0,63}", value) if key == "target_id" else TOKEN.fullmatch(value)):
                 result[key] = value
         elif key in {"generation", "remaining_seconds", "budget_seconds", "native_exit_code", "exit_code",
-                     "working_set_bytes", "cpu_seconds", "windows_session_id", "integrity"}:
+                     "working_set_bytes", "cpu_seconds", "windows_session_id", "integrity", "target_pid"}:
             if type(value) in (int, float) and -2**32 <= value <= 10**18 and math.isfinite(value):
                 result[key] = value
-        elif key in {"ok", "restore", "cache_available", "deadline_expired", "requested_window_expired", "closing", "cleanup_complete"}:
+        elif key in {"ok", "restore", "cache_available", "deadline_expired", "requested_window_expired", "closing", "cleanup_complete", "cleanup"}:
             if type(value) is bool or value is None:
                 result[key] = value
         elif key in {"request_id", "pending_request"}:
@@ -47,7 +47,7 @@ def safe_fields(fields):
                 result[key] = value
         elif key in {"deadline", "previous_deadline", "requested_deadline", "native_checked_at"}:
             result[key] = safe_time(value)
-        elif key in {"machine_id", "login_tag", "code_version"}:
+        elif key in {"machine_id", "login_tag", "code_version", "definition_hash"}:
             if type(value) is str and re.fullmatch(r"[0-9a-f]{12}|[0-9a-f]{64}", value):
                 result[key] = value
         elif key in {"os_version", "python_version", "gsudo_version"}:
@@ -65,7 +65,7 @@ def environment(directory):
                "os_version": platform.version(), "python_version": platform.python_version()}
     try:
         digest = hashlib.sha256()
-        for name in ("cache_control.py", "cache_core.py", "cache_history.py"):
+        for name in ("cache_control.py", "cache_core.py", "cache_history.py", "cache_actions.py"):
             digest.update(name.encode("ascii") + b"\0" + (directory / name).read_bytes())
         context["code_version"] = digest.hexdigest()
     except OSError:
