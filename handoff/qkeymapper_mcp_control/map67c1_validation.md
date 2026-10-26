@@ -341,3 +341,19 @@ rich使用产品现有过滤显示入口准备已加载的自有面板，确认�
 本机out同一目录保留QtCore准备器源码／构建及生成前后INI、产品前／后四份构建、两份成功运行日志、十份baseline、各case／身份、旧EXE、聚合patch／review／预期字节及evidence-summary.json，不随Git。维护夹具及中文步骤随源码；PC-W10原证据仅按原版本范围保留。
 
 本片为独立本地提交切点，不推送。组合仅覆盖已盘点Qt写入值和原顺序意图，仍须完整磁盘／业务修订、其他编辑窗草稿、目标／会话／权限／状态／到期及实际执行重检，之后C1-C处理真实保存、重载／备份和失败恢复。工具12／业务能力8，C1-B2／M1未整体完成；未新增普通产品全构建、严格静态分析、ASan、VIGEM关闭配置、Default／真实输入／设备、性能或三语言布局覆盖。
+
+## SAVE-83：编辑窗拒绝与显式依赖候选指纹（2026-10-26，PC-W11）
+
+基于本地8f65976d。hasOpenMappingEditor原样提取B1已有表达式，保留mappingAdditionAllowed短路、拒绝位置及错误。保存组合另拒绝活动模态和已列配置编辑窗，返回EditorBusy／空载荷／无顺序动作，不自动关闭或提交草稿。GUI Save及调用者、运行同步、Worker、manifest、协议、依赖和缓存核心不改。
+
+私有指纹以Qt_5_15 QDataStream框定Qt QVariant类型、有序键值、目标名／全局／新建／覆盖决定、原顺序意图、显式配置路径／存在／完整字节SHA256及源修订，沿既有4MiB上限。非法／忙碌／空载荷、无路径／源、缺失却有字节或超限均不给指纹。不采集文件、不证明来源或授权，不是完整saveRevision，不承诺跨Qt指纹相同；真实实例／配对／权限和执行前复核仍待接线。
+
+旧Qt6用settings_save_dependencies正常启动加载full_save_fixture.ini.example，经真实mappingAdvancedSettingButton Qt事件打开高级映射窗：五项中仅open-editor save preparation is rejected without a partial payload失败，native exit2，保留为缺口复现。最终双Qt各21项通过、native exit0：打开拒绝，Qt Escape正常关闭后恢复；改变数值相同的Qt类型、值、顺序动作、目标四字段、路径、全文换行、存在或源修订均区分，非法及超限拒绝。源修订合成64字符，仅组件检查；其余编辑窗仅静态核对。INI全64键原始字节、dirty、加载／源代次不变；未保存、未开始映射、未发系统输入。
+
+同机既有锁环境、Qt6.8.3／Qt5.15.2官方x64和MSVC19.44。旧Qt6及最终双Qt普通Release维护构建exit0，Qt6零警告、Qt5仅原qtmain例外。新测试最初因OrderedMap显式构造的聚合初始化及缺少上限头文件，两Qt编译exit2；只修测试，保留build-qt*-after-test-compile-failed.log后重建。一次Qt5构建自动审批超时、未创建进程，重试一次成功；工具沙箱HRESULT 0x80070020期间使用沙箱外普通Medium，未提升开发工具。
+
+EXE在out/mcp_save_dependencies_w11_20261026/{qt6,qt5}-runtime/QKeyMapperDependencies83_*_runtime.exe，原requireAdministrator，旧Qt6 EXE保留。公共审核／登记／perform启动：父Medium8192、产品High12288、same_login=true，实际QkmDependencies83_<UUID>私有桌面；PID／创建时间／退出在各case start／closed.json。零workAtExit／producersAtExit不证明完整清理或设备效果；无需Default。
+
+用户把现控制器32464截止由15:44延至18:44，status核实同PID、generation2、Medium、active／cache_available=true且零拥有／未决；时间调整不扩大测试范围，SAVE-79／81历史未知启动不因此解决。本机原目录保留三份原始用例（1复现＋2通过）、构建、原INI／旧EXE、精确生产补丁／完整逆变换／实际预期字节及evidence-summary.json，不随Git。
+
+独立本地提交切点，不推送；继续一致磁盘／真实上下文、其他草稿、权限／状态／到期／提交复核和C1-C分段保存／重载／备份与失败恢复。工具12／能力8，C1-B2／M1未完成。不新增普通产品全构建、严格静态分析、ASan、VIGEM关闭、Default／输入／设备、性能或三语言布局；PC-W10历史按原范围保留。

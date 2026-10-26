@@ -162,3 +162,9 @@ Qt名称编辑输入空格、非法字符、全局保留名、现有或新名称
 先运行原GUI基线，再组合既有Qt值函数。名称、Save、覆盖Yes与pending快捷键均通过Qt事件；pending沿既有activateWindow建立私有Qt焦点，实际Save仍按原规则处理F17。只读组合在输入文本与后台快捷键不一致时明确返回HotKeyInputNotSettled和空载荷，不猜Qt私有edited标志、不提交编辑；这是内部生成约束，MCP草稿守卫尚未接线。
 
 有效载荷保留Qt类型和绝对键，声明是否还需原appendSettingSelectOrderIfMissing操作，不临时写INI模拟其结果。GUI保持原实现；检查每项生成值实际保存、所有变化／删除键均属于载荷或明确的顺序操作、全文件字节等于旧基线、独立冷读不改盘。组合不改映射、旧备份、规则／宏／说明、文本／焦点、dirty及代次，非法目标不产生部分载荷。完整磁盘／业务修订、其他编辑窗草稿、权限／状态／到期和真正提交／失败恢复仍属后续，不因组合成功开放保存工具。
+
+## 保存候选编辑窗与依赖指纹
+
+`settings_save_dependencies`正常启动加载[full_save_fixture.ini.example](sendinput_lifecycle/full_save_fixture.ini.example)，真实Qt按钮打开高级映射窗，应返回EditorBusy且无部分载荷；Qt Escape正常关闭后恢复。旧实现保留一项失败复现；只读INI，不调用加载／保存、不启动映射或发系统输入。按原manifest、公共登记、自有私有桌面执行。
+
+用显式路径、存在、完整字节和合成64字符源修订检查指纹：改变Qt类型、值、目标、顺序、磁盘描述或源应区分；非法／超4MiB拒绝。核对INI原始字节、dirty、加载／源代次不变，记录实际桌面、身份及native退出。真实文件一致性、授权／身份接线、跨Qt指纹一致性、其余编辑窗动态分支和正式MCP提交不在该组件用例证明范围；无需Default。

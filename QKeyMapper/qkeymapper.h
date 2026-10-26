@@ -2183,11 +2183,14 @@ private:
         bool ok() const { return error == Error::None; }
     };
     struct SettingSaveValues {
-        enum class Error { None, InvalidTarget, HotKeyInputNotSettled };
+        enum class Error { None, InvalidTarget, HotKeyInputNotSettled, EditorBusy };
         OrderedMap<QString, QVariant> values;
         Error error = Error::None;
         bool appendSettingOrder = false;
     };
+    bool hasOpenMappingEditor() const;
+    static QString settingSaveValuesFingerprint(const SettingSaveTarget &target, const SettingSaveValues &values,
+        const QString &configurationPath, bool configurationExists, const QByteArray &configurationData, const QString &sourceRevision);
     SettingSaveValues collectSettingSaveValues(const SettingSaveTarget &target, const QSettings &settingFile, int languageIndex) const;
     static QPair<QString, ValidationResult> analyzeHotKeyLineEditText(const QString &text);
     SettingSaveTarget analyzeSettingSaveTarget(const QString &requestedName, const QString &currentSelectedSetting,

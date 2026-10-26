@@ -23,6 +23,7 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QCryptographicHash>
+#include <QDataStream>
 #include <QPainterPath>
 #include <QScrollBar>
 #include <QSet>
@@ -22499,12 +22500,59 @@ OrderedMap<QString, QVariant> QKeyMapper::collectVButtonPanelSaveValues() const
     return values;
 }
 
+bool QKeyMapper::hasOpenMappingEditor() const
+{
+    return (m_ItemSetupDialog && m_ItemSetupDialog->isVisible())
+        || (m_ItemSetupDialog && m_ItemSetupDialog->m_FloatingButtonSetupDialog
+            && m_ItemSetupDialog->m_FloatingButtonSetupDialog->isVisible())
+        || (m_ItemSetupDialog && m_ItemSetupDialog->m_CrosshairSetupDialog
+            && m_ItemSetupDialog->m_CrosshairSetupDialog->isVisible())
+        || (m_TableSetupDialog && m_TableSetupDialog->isVisible())
+        || (m_MacroListDialog && m_MacroListDialog->isVisible())
+        || (m_MappingSequenceEdit && m_MappingSequenceEdit->isVisible())
+        || (m_MappingAdvancedDialog && m_MappingAdvancedDialog->isVisible());
+}
+
+QString QKeyMapper::settingSaveValuesFingerprint(const SettingSaveTarget &target, const SettingSaveValues &values,
+    const QString &configurationPath, bool configurationExists, const QByteArray &configurationData, const QString &sourceRevision)
+{
+    if (!target.ok() || target.settingName.isEmpty() || values.error != SettingSaveValues::Error::None
+        || values.values.isEmpty() || configurationPath.isEmpty() || sourceRevision.size() != 64
+        || (!configurationExists && !configurationData.isEmpty())) return {};
+    QByteArray encoded;
+    QDataStream stream(&encoded, QIODevice::WriteOnly);
+    stream.setVersion(QDataStream::Qt_5_15);
+    stream << QStringLiteral("QKeyMapper-setting-save-values/1") << sourceRevision
+        << configurationPath << configurationExists << quint64(configurationData.size())
+        << QCryptographicHash::hash(configurationData, QCryptographicHash::Sha256)
+        << target.settingName << target.saveGlobalSetting << target.createNewSetting << target.requiresOverwriteConfirmation
+        << values.appendSettingOrder << quint32(values.values.size());
+    for (auto it = values.values.begin(); it != values.values.end(); ++it) {
+        stream << it.key() << it.value();
+        if (stream.status() != QDataStream::Ok || encoded.size() > QkmAutomation::MaxSourceSnapshotBytes) return {};
+    }
+    return QString::fromLatin1(QCryptographicHash::hash(encoded, QCryptographicHash::Sha256).toHex());
+}
+
 QKeyMapper::SettingSaveValues QKeyMapper::collectSettingSaveValues(const SettingSaveTarget &target,
     const QSettings &settingFile, int languageIndex) const
 {
     SettingSaveValues result;
     if (!target.ok() || target.settingName.isEmpty()) {
         result.error = SettingSaveValues::Error::InvalidTarget;
+        return result;
+    }
+    if (hasOpenMappingEditor() || QApplication::activeModalWidget()
+        || (m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->isVisible())
+        || (m_IgnoreRulesListDialog && m_IgnoreRulesListDialog->isVisible())
+        || (m_NotificationSetupDialog && m_NotificationSetupDialog->isVisible())
+        || (m_CustomNotificationSetupDialog && m_CustomNotificationSetupDialog->isVisible())
+        || (m_VButtonPanelSetupDialog && m_VButtonPanelSetupDialog->isVisible())
+        || (m_Gyro2MouseOptionDialog && m_Gyro2MouseOptionDialog->isVisible())
+        || (m_TrayIconSelectDialog && m_TrayIconSelectDialog->isVisible())
+        || (m_PointPickerDialog && m_PointPickerDialog->isVisible())
+        || (m_SettingTransferDialog && m_SettingTransferDialog->isVisible())) {
+        result.error = SettingSaveValues::Error::EditorBusy;
         return result;
     }
     // Unsettled editor text cannot be predicted from Qt's public focus/modified flags.
@@ -37761,16 +37809,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         fail(code, message);
     };
     const int targetIndex = arguments.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt();
-    if (!mappingAdditionAllowed(targetIndex)
-        || (m_ItemSetupDialog && m_ItemSetupDialog->isVisible())
-        || (m_ItemSetupDialog && m_ItemSetupDialog->m_FloatingButtonSetupDialog
-            && m_ItemSetupDialog->m_FloatingButtonSetupDialog->isVisible())
-        || (m_ItemSetupDialog && m_ItemSetupDialog->m_CrosshairSetupDialog
-            && m_ItemSetupDialog->m_CrosshairSetupDialog->isVisible())
-        || (m_TableSetupDialog && m_TableSetupDialog->isVisible())
-        || (m_MacroListDialog && m_MacroListDialog->isVisible())
-        || (m_MappingSequenceEdit && m_MappingSequenceEdit->isVisible())
-        || (m_MappingAdvancedDialog && m_MappingAdvancedDialog->isVisible())) {
+    if (!mappingAdditionAllowed(targetIndex) || hasOpenMappingEditor()) {
         reject(QStringLiteral("context_busy"), QStringLiteral("Mapping addition requires the current attached source, idle completed cleanup, and no open mapping editor. No stop, Tab switch or editor close is performed automatically."));
         return;
     }

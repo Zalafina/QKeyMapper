@@ -27,6 +27,7 @@
 #include <QMenu>
 #include <QTranslator>
 #include "../../automation/qkm_control_dialog.h"
+#include "../../automation/qkm_source_snapshot.h"
 #include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
@@ -79,6 +80,7 @@ public:
     static QJsonObject mappingPreparation(QKeyMapper *mapper, bool cold);
     static QJsonObject hotKeyPreparation(QKeyMapper *mapper, bool cold);
     static QJsonObject fullSavePayload(QKeyMapper *mapper, bool cold);
+    static QJsonObject saveDependencies(QKeyMapper *mapper);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1225,6 +1227,13 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_save_dependencies")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::saveDependencies(QKeyMapper::getInstance());
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -3001,6 +3010,86 @@ QJsonObject QkmMappingAdditionTestAccess::profileOptionSave(QKeyMapper *mapper, 
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("panel_key_signals"), buttonSignals}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::saveDependencies(QKeyMapper *mapper)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    if (!QDir::currentPath().contains(QStringLiteral("/out/")) || QDir::currentPath() != QCoreApplication::applicationDirPath()) return {{QStringLiteral("passed"), false}};
+    QFile file(QString::fromLatin1(CONFIG_FILENAME));
+    if (!file.open(QIODevice::ReadOnly)) return {{QStringLiteral("passed"), false}};
+    const auto bytes = file.readAll(); file.close();
+    const bool dirty = mapper->m_SaveSettingDirty;
+    const quint64 load = mapper->m_MappingLoadGeneration, epoch = mapper->m_AutomationSourceEpoch;
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat); QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    const auto target = mapper->analyzeSettingSaveTarget(QStringLiteral("Payload82Seed"), QStringLiteral("Payload82Seed"), false, ini.childGroups());
+    const auto ready = mapper->collectSettingSaveValues(target, ini, LANGUAGE_CHINESE);
+    check(ready.error == QKeyMapper::SettingSaveValues::Error::None && !ready.values.isEmpty()
+        && mapper->m_LoadedMappingSettingGroup == QStringLiteral("Payload82Seed"), "closed-editor aggregate is available in the independent loaded fixture");
+    auto *entry = mapper->findChild<QPushButton *>(QStringLiteral("mappingAdvancedSettingButton"));
+    if (!entry || !mapper->m_MappingAdvancedDialog) return {{QStringLiteral("passed"), false}};
+    clickMappingButton(entry);
+    check(mapper->m_MappingAdvancedDialog->isVisible(), "real GUI entry opens the owned mapping editor");
+    const auto blocked = mapper->collectSettingSaveValues(target, ini, LANGUAGE_CHINESE);
+    check(blocked.error != QKeyMapper::SettingSaveValues::Error::None && blocked.values.isEmpty() && !blocked.appendSettingOrder,
+        "open-editor save preparation is rejected without a partial payload");
+    QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), escaped(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+    QCoreApplication::sendEvent(mapper->m_MappingAdvancedDialog, &escape); QCoreApplication::sendEvent(mapper->m_MappingAdvancedDialog, &escaped);
+    const auto restored = mapper->collectSettingSaveValues(target, ini, LANGUAGE_CHINESE);
+    check(!mapper->m_MappingAdvancedDialog->isVisible() && restored.error == QKeyMapper::SettingSaveValues::Error::None
+        && restored.values.keys() == ready.values.keys(), "normal GUI close restores preparation without saving or discarding configuration data");
+    check(blocked.error == QKeyMapper::SettingSaveValues::Error::EditorBusy,
+        "owned editor rejection has the explicit busy reason");
+    const auto hash = &QKeyMapper::settingSaveValuesFingerprint;
+    const auto path = QFileInfo(QString::fromLatin1(CONFIG_FILENAME)).absoluteFilePath();
+    const QString source(64, QLatin1Char('a'));
+    const auto revision = hash(target, ready, path, true, bytes, source);
+    check(revision.size() == 64 && revision == hash(target, restored, path, true, bytes, source),
+        "unchanged explicit candidate dependencies retain the same typed fingerprint after editor close");
+    auto changed = ready;
+    changed.values.insert(QStringLiteral("__save83_type_probe"), 1);
+    const auto integer = hash(target, changed, path, true, bytes, source);
+    changed.values.insert(QStringLiteral("__save83_type_probe"), QVariant::fromValue(qint64(1)));
+    check(integer != hash(target, changed, path, true, bytes, source), "Qt variant type participates even when scalar values are numerically equal");
+    changed = ready;
+    changed.values.insert(LANGUAGE_INDEX, LANGUAGE_ENGLISH);
+    check(revision != hash(target, changed, path, true, bytes, source), "changed prepared save value invalidates the candidate fingerprint");
+    changed = ready; changed.appendSettingOrder = !ready.appendSettingOrder;
+    check(revision != hash(target, changed, path, true, bytes, source), "setting-order action participates without simulating a QSettings write");
+    auto other = target; other.settingName += QStringLiteral("Other");
+    check(revision != hash(other, ready, path, true, bytes, source), "target group is bound to the candidate");
+    other = target; other.saveGlobalSetting = !target.saveGlobalSetting;
+    check(revision != hash(other, ready, path, true, bytes, source), "global save scope is bound to the candidate");
+    other = target; other.createNewSetting = !target.createNewSetting;
+    check(revision != hash(other, ready, path, true, bytes, source), "new-group operation is bound to the candidate");
+    other = target; other.requiresOverwriteConfirmation = !target.requiresOverwriteConfirmation;
+    check(revision != hash(other, ready, path, true, bytes, source), "overwrite decision is bound to the candidate");
+    check(revision != hash(target, ready, path + QStringLiteral(".other"), true, bytes, source), "configuration path participates in the candidate fingerprint");
+    check(revision != hash(target, ready, path, true, bytes + '\n', source), "complete disk bytes participate including an otherwise irrelevant newline");
+    check(hash(target, ready, path, true, {}, source) != hash(target, ready, path, false, {}, source), "missing file and existing empty file are distinct dependencies");
+    check(revision != hash(target, ready, path, true, bytes, QString(64, QLatin1Char('b'))), "source revision participates in the candidate fingerprint");
+    check(hash(target, ready, path, false, bytes, source).isEmpty()
+        && hash(target, ready, {}, true, bytes, source).isEmpty()
+        && hash(target, ready, path, true, bytes, {}).isEmpty(), "inconsistent disk description or missing path/source cannot produce a candidate fingerprint");
+    other = target; other.settingName.clear();
+    changed = ready; changed.values.clear();
+    check(hash(other, ready, path, true, bytes, source).isEmpty()
+        && hash(target, blocked, path, true, bytes, source).isEmpty()
+        && hash(target, changed, path, true, bytes, source).isEmpty(), "invalid target, busy preparation and empty values remain unusable");
+    changed = ready;
+    changed.values.insert(QStringLiteral("__save83_limit_probe"), QString(QkmAutomation::MaxSourceSnapshotBytes + 1, QLatin1Char('x')));
+    check(hash(target, changed, path, true, bytes, source).isEmpty(), "oversized typed candidate fails closed at the existing source size limit");
+    check(file.open(QIODevice::ReadOnly) && file.readAll() == bytes && mapper->m_SaveSettingDirty == dirty
+        && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch,
+        "editor observation and rejected preparation change no disk, dirty or load/source generation");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("saved_key_count"), ini.allKeys().size()},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("saved"), false}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::fullSavePayload(QKeyMapper *mapper, bool cold)
 {
     using namespace QKeyMapperConstants;
@@ -3732,7 +3821,8 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_target_save"), QStringLiteral("settings_target_cold"),
         QStringLiteral("settings_prepare_save"), QStringLiteral("settings_prepare_cold"),
         QStringLiteral("settings_hotkey_save"), QStringLiteral("settings_hotkey_cold"),
-        QStringLiteral("settings_payload_save"), QStringLiteral("settings_payload_cold")};
+        QStringLiteral("settings_payload_save"), QStringLiteral("settings_payload_cold"),
+        QStringLiteral("settings_save_dependencies")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }
