@@ -104,3 +104,11 @@ InputOwnerFence 只确认各队列到达对应位置；Interception 接收循环
 | missing_icon | 只删除Profile75Seed的FilePath；另加与keep_path相同的Map75Profile。用例在正常加载后仅删除自有incoming75.png，覆盖保存保留目标旧路径与图标 |
 
 每个warm用例通过Qt事件输入名称并点击真实Save；已存在目标时点击真实模态Yes按钮。cold必须在保存进程正常退出后，用同一EXE／INI启动另一进程，禁止再次准备INI或图片。两种Qt分别建立未提取的GUI基线；提取后同路径重建初始夹具，设置 `QKM_LIFECYCLE_SAVE_BASELINE` 比较完整INI字节，并验证窗口匹配收集的重复性、Qt类型、条件键数量和磁盘／dirty／代次不变。这里不启用映射、不发送系统输入，不证明正式MCP保存或设备释放完成。
+
+## 共通备份保存与空表清除
+
+`settings_common_save`／`settings_common_cold` 使用 [common_save_fixture.ini.example](sendinput_lifecycle/common_save_fixture.ini.example)。这是Qt自身编码的完整INI，正常启动加载Common76Seed：普通A→B及两条共通源行，备份故意是不同的F20→Z。备注嵌套列表、空注释位置、中／日／emoji、QColor和同步组已由两个Qt kit实际读回；复制时保留其转义和列表结构。
+
+在自有out副本设置 `QKM_LIFECYCLE_COMMON_VARIANT` 为attached／detached／empty。attached直接另存Map76Common；detached经真实高级设定按钮和共通复选框关闭共通表；empty经Qt Tab点击、表格Ctrl+A及Delete删除全部共通行。名称编辑和Save均经Qt事件，不直接同步备份或调用保存／加载函数，不发送系统输入。所有组独立重建样例；保存进程退出后，用原INI和同一EXE运行cold，不重新复制初始夹具。
+
+先保留未提取实现的完整GUI保存基线，再在同路径新EXE上设置父目录下的 `QKM_LIFECYCLE_SAVE_BASELINE` 对照。新纯序列化直接接收源列表，保留74字段和行顺序；用例检查Qt类型、重复性、disk／dirty／代次及保存前旧备份不变，再核对GUI实际备份全值或空列表。GUI自己的同步仍在原保存位置；此局部序列化不替代全部保存修订及其他草稿范围，结果和权限／桌面／退出核验沿用上述settingsGeneral约定。

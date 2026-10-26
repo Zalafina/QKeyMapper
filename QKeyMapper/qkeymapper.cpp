@@ -22301,6 +22301,92 @@ OrderedMap<QString, QVariant> QKeyMapper::collectWindowMatchSaveValues(const QSt
     return values;
 }
 
+QVariantList QKeyMapper::serializeCommonMappingData(const QList<MAP_KEYDATA> &data)
+{
+    QVariantList commonList;
+    if (!data.isEmpty()) {
+        for (const MAP_KEYDATA &d : data) {
+            QVariantMap m;
+            m[KEYMAPDATA_ORIGINALKEYS] = d.Original_Key;
+            m[KEYMAPDATA_MAPPINGKEYS] = d.Mapping_Keys;
+            m[KEYMAPDATA_MAPPINGKEYS_KEYUP] = d.MappingKeys_KeyUp;
+            m[KEYMAPDATA_MAPPINGKEYS_COMMENTS] = d.MappingKeys_Comments;
+            m[KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS] = d.MappingKeys_KeyUp_Comments;
+            m[KEYMAPDATA_NOTE] = d.Note;
+            m[KEYMAPDATA_CATEGORY] = d.Category;
+            m[KEYMAPDATA_DISABLED] = d.Disabled;
+            m[KEYMAPDATA_BURST] = d.Burst;
+            m[KEYMAPDATA_BURSTPRESS_TIME] = d.BurstPressTime;
+            m[KEYMAPDATA_BURSTRELEASE_TIME] = d.BurstReleaseTime;
+            m[KEYMAPDATA_LOCK] = d.Lock;
+            m[KEYMAPDATA_MAPPINGKEYUNLOCK] = d.MappingKeyUnlock;
+            m[KEYMAPDATA_DISABLEORIGINALKEYUNLOCK] = d.DisableOriginalKeyUnlock;
+            m[KEYMAPDATA_DISABLEFNKEYSWITCH] = d.DisableFnKeySwitch;
+            m[KEYMAPDATA_SENDMAPPINGKEYMETHOD] = d.SendMappingKeyMethod;
+            m[KEYMAPDATA_FIXEDVKEYCODE] = d.FixedVKeyCode;
+            m[KEYMAPDATA_CHECKCOMBKEYORDER] = d.CheckCombKeyOrder;
+            m[KEYMAPDATA_UNBREAKABLE] = d.Unbreakable;
+            m[KEYMAPDATA_PASSTHROUGH] = d.PassThrough;
+            m[KEYMAPDATA_SENDTIMING] = d.SendTiming;
+            m[KEYMAPDATA_PASTETEXTMODE] = d.PasteTextMode;
+            m[KEYMAPDATA_KEYSEQHOLDDOWN] = d.KeySeqHoldDown;
+            m[KEYMAPDATA_REPEATMODE] = d.RepeatMode;
+            m[KEYMAPDATA_REPEATIMES] = d.RepeatTimes;
+            m[KEYMAPDATA_CROSSHAIR_CENTERCOLOR] = d.Crosshair_CenterColor;
+            m[KEYMAPDATA_CROSSHAIR_CENTERSIZE] = d.Crosshair_CenterSize;
+            m[KEYMAPDATA_CROSSHAIR_CENTEROPACITY] = d.Crosshair_CenterOpacity;
+            m[KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR] = d.Crosshair_CrosshairColor;
+            m[KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH] = d.Crosshair_CrosshairWidth;
+            m[KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH] = d.Crosshair_CrosshairLength;
+            m[KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY] = d.Crosshair_CrosshairOpacity;
+            m[KEYMAPDATA_CROSSHAIR_SHOWCENTER] = d.Crosshair_ShowCenter;
+            m[KEYMAPDATA_CROSSHAIR_SHOWTOP] = d.Crosshair_ShowTop;
+            m[KEYMAPDATA_CROSSHAIR_SHOWBOTTOM] = d.Crosshair_ShowBottom;
+            m[KEYMAPDATA_CROSSHAIR_SHOWLEFT] = d.Crosshair_ShowLeft;
+            m[KEYMAPDATA_CROSSHAIR_SHOWRIGHT] = d.Crosshair_ShowRight;
+            m[KEYMAPDATA_CROSSHAIR_X_OFFSET] = d.Crosshair_X_Offset;
+            m[KEYMAPDATA_CROSSHAIR_Y_OFFSET] = d.Crosshair_Y_Offset;
+            m[KEYMAPDATA_FLOATINGBUTTON_ENABLE] = d.FloatingButton_Enable;
+            m[KEYMAPDATA_FLOATINGBUTTON_LABEL] = d.FloatingButton_Label;
+            m[KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR] = d.FloatingButton_ButtonColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR] = d.FloatingButton_PressedColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR] = d.FloatingButton_LockedColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR] = d.FloatingButton_TextColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR] = d.FloatingButton_BorderColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH] = d.FloatingButton_BorderWidth;
+            m[KEYMAPDATA_FLOATINGBUTTON_WIDTH] = d.FloatingButton_Width;
+            m[KEYMAPDATA_FLOATINGBUTTON_HEIGHT] = d.FloatingButton_Height;
+            m[KEYMAPDATA_FLOATINGBUTTON_FONTSIZE] = d.FloatingButton_FontSize;
+            m[KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT] = d.FloatingButton_FontWeight;
+            m[KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY] = d.FloatingButton_FontFamily;
+            m[KEYMAPDATA_FLOATINGBUTTON_RADIUS] = d.FloatingButton_Radius;
+            m[KEYMAPDATA_FLOATINGBUTTON_OPACITY] = d.FloatingButton_Opacity;
+            m[KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY] = d.FloatingButton_NormalOpacity;
+            m[KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY] = d.FloatingButton_PressedOpacity;
+            m[KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY] = d.FloatingButton_LockedOpacity;
+            m[KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART] = d.FloatingButton_ShowOnMappingStart;
+            m[KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP] = d.FloatingButton_ShowToolTip;
+            m[KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE] = d.FloatingButton_SyncPressedLockedState;
+            m[KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP] = d.FloatingButton_AlwaysOnTop;
+            m[KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH] = d.FloatingButton_MousePassThrough;
+            m[KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL] = d.FloatingButton_EnableGradientFill;
+            m[KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION] = d.FloatingButton_EnableHoverAnimation;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH] = d.FloatingButton_HoverEffectStrength;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH] = d.FloatingButton_HoverGlowStrength;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE] = d.FloatingButton_HoverContrastMode;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR] = d.FloatingButton_HoverCustomColor;
+            m[KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION] = d.FloatingButton_HoverAnimationDuration;
+            m[KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT] = d.FloatingButton_ReferencePoint;
+            m[KEYMAPDATA_FLOATINGBUTTON_X_OFFSET] = d.FloatingButton_X_Offset;
+            m[KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET] = d.FloatingButton_Y_Offset;
+            m[KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE] = d.FloatingButton_DragToMove;
+            m[KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID] = d.FloatingButton_SyncGroupId;
+            commonList.append(m);
+        }
+    }
+    return commonList;
+}
+
 bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
@@ -22631,88 +22717,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     // Uses QVariantMap per entry → QVariantList, same pattern as macro export.
     // Always write the list (even empty) to clear stale data from previous saves.
     syncCommonMappingDataForSave();
-    QVariantList commonList;
-    if (!m_CommonMappingData.isEmpty()) {
-        for (const MAP_KEYDATA &d : std::as_const(m_CommonMappingData)) {
-            QVariantMap m;
-            m[KEYMAPDATA_ORIGINALKEYS] = d.Original_Key;
-            m[KEYMAPDATA_MAPPINGKEYS] = d.Mapping_Keys;
-            m[KEYMAPDATA_MAPPINGKEYS_KEYUP] = d.MappingKeys_KeyUp;
-            m[KEYMAPDATA_MAPPINGKEYS_COMMENTS] = d.MappingKeys_Comments;
-            m[KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS] = d.MappingKeys_KeyUp_Comments;
-            m[KEYMAPDATA_NOTE] = d.Note;
-            m[KEYMAPDATA_CATEGORY] = d.Category;
-            m[KEYMAPDATA_DISABLED] = d.Disabled;
-            m[KEYMAPDATA_BURST] = d.Burst;
-            m[KEYMAPDATA_BURSTPRESS_TIME] = d.BurstPressTime;
-            m[KEYMAPDATA_BURSTRELEASE_TIME] = d.BurstReleaseTime;
-            m[KEYMAPDATA_LOCK] = d.Lock;
-            m[KEYMAPDATA_MAPPINGKEYUNLOCK] = d.MappingKeyUnlock;
-            m[KEYMAPDATA_DISABLEORIGINALKEYUNLOCK] = d.DisableOriginalKeyUnlock;
-            m[KEYMAPDATA_DISABLEFNKEYSWITCH] = d.DisableFnKeySwitch;
-            m[KEYMAPDATA_SENDMAPPINGKEYMETHOD] = d.SendMappingKeyMethod;
-            m[KEYMAPDATA_FIXEDVKEYCODE] = d.FixedVKeyCode;
-            m[KEYMAPDATA_CHECKCOMBKEYORDER] = d.CheckCombKeyOrder;
-            m[KEYMAPDATA_UNBREAKABLE] = d.Unbreakable;
-            m[KEYMAPDATA_PASSTHROUGH] = d.PassThrough;
-            m[KEYMAPDATA_SENDTIMING] = d.SendTiming;
-            m[KEYMAPDATA_PASTETEXTMODE] = d.PasteTextMode;
-            m[KEYMAPDATA_KEYSEQHOLDDOWN] = d.KeySeqHoldDown;
-            m[KEYMAPDATA_REPEATMODE] = d.RepeatMode;
-            m[KEYMAPDATA_REPEATIMES] = d.RepeatTimes;
-            m[KEYMAPDATA_CROSSHAIR_CENTERCOLOR] = d.Crosshair_CenterColor;
-            m[KEYMAPDATA_CROSSHAIR_CENTERSIZE] = d.Crosshair_CenterSize;
-            m[KEYMAPDATA_CROSSHAIR_CENTEROPACITY] = d.Crosshair_CenterOpacity;
-            m[KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR] = d.Crosshair_CrosshairColor;
-            m[KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH] = d.Crosshair_CrosshairWidth;
-            m[KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH] = d.Crosshair_CrosshairLength;
-            m[KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY] = d.Crosshair_CrosshairOpacity;
-            m[KEYMAPDATA_CROSSHAIR_SHOWCENTER] = d.Crosshair_ShowCenter;
-            m[KEYMAPDATA_CROSSHAIR_SHOWTOP] = d.Crosshair_ShowTop;
-            m[KEYMAPDATA_CROSSHAIR_SHOWBOTTOM] = d.Crosshair_ShowBottom;
-            m[KEYMAPDATA_CROSSHAIR_SHOWLEFT] = d.Crosshair_ShowLeft;
-            m[KEYMAPDATA_CROSSHAIR_SHOWRIGHT] = d.Crosshair_ShowRight;
-            m[KEYMAPDATA_CROSSHAIR_X_OFFSET] = d.Crosshair_X_Offset;
-            m[KEYMAPDATA_CROSSHAIR_Y_OFFSET] = d.Crosshair_Y_Offset;
-            m[KEYMAPDATA_FLOATINGBUTTON_ENABLE] = d.FloatingButton_Enable;
-            m[KEYMAPDATA_FLOATINGBUTTON_LABEL] = d.FloatingButton_Label;
-            m[KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR] = d.FloatingButton_ButtonColor;
-            m[KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR] = d.FloatingButton_PressedColor;
-            m[KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR] = d.FloatingButton_LockedColor;
-            m[KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR] = d.FloatingButton_TextColor;
-            m[KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR] = d.FloatingButton_BorderColor;
-            m[KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH] = d.FloatingButton_BorderWidth;
-            m[KEYMAPDATA_FLOATINGBUTTON_WIDTH] = d.FloatingButton_Width;
-            m[KEYMAPDATA_FLOATINGBUTTON_HEIGHT] = d.FloatingButton_Height;
-            m[KEYMAPDATA_FLOATINGBUTTON_FONTSIZE] = d.FloatingButton_FontSize;
-            m[KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT] = d.FloatingButton_FontWeight;
-            m[KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY] = d.FloatingButton_FontFamily;
-            m[KEYMAPDATA_FLOATINGBUTTON_RADIUS] = d.FloatingButton_Radius;
-            m[KEYMAPDATA_FLOATINGBUTTON_OPACITY] = d.FloatingButton_Opacity;
-            m[KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY] = d.FloatingButton_NormalOpacity;
-            m[KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY] = d.FloatingButton_PressedOpacity;
-            m[KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY] = d.FloatingButton_LockedOpacity;
-            m[KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART] = d.FloatingButton_ShowOnMappingStart;
-            m[KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP] = d.FloatingButton_ShowToolTip;
-            m[KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE] = d.FloatingButton_SyncPressedLockedState;
-            m[KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP] = d.FloatingButton_AlwaysOnTop;
-            m[KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH] = d.FloatingButton_MousePassThrough;
-            m[KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL] = d.FloatingButton_EnableGradientFill;
-            m[KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION] = d.FloatingButton_EnableHoverAnimation;
-            m[KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH] = d.FloatingButton_HoverEffectStrength;
-            m[KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH] = d.FloatingButton_HoverGlowStrength;
-            m[KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE] = d.FloatingButton_HoverContrastMode;
-            m[KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR] = d.FloatingButton_HoverCustomColor;
-            m[KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION] = d.FloatingButton_HoverAnimationDuration;
-            m[KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT] = d.FloatingButton_ReferencePoint;
-            m[KEYMAPDATA_FLOATINGBUTTON_X_OFFSET] = d.FloatingButton_X_Offset;
-            m[KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET] = d.FloatingButton_Y_Offset;
-            m[KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE] = d.FloatingButton_DragToMove;
-            m[KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID] = d.FloatingButton_SyncGroupId;
-            commonList.append(m);
-        }
-    }
-    settingFile.setValue(saveSettingSelectStr + COMMONMAPPINGDATA, commonList);
+    settingFile.setValue(saveSettingSelectStr + COMMONMAPPINGDATA, serializeCommonMappingData(m_CommonMappingData));
 
     settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_ENABLED, m_MappingAdvancedDialog->getCustomNotificationEnabled());
     settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_POSITION, m_MappingAdvancedDialog->getCustomNotificationPosition());

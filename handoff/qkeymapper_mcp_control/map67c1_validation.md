@@ -145,3 +145,27 @@ Qt6.8.3 msvc2022_64／Qt5.15.2官方msvc2019_64，两者qconfig的QT_ARCH=x86_64
 本机原始材料在out/mcp_save_match_w11_20261026：build-qt*-before／after.log、run-before／after.log、十份baseline INI、identity-before／after、源变换patch／review、40组case与身份／退出记录及汇总。cache-after.json确认active／cache_available=true、零owned／unresolved、current_action=null、last_error=null，保留用户6小时窗口至15:44:30继续后续开发，不延长或另建缓存。这些out不随Git，PC-W10证据仍仅按原版本／范围保留。
 
 本片是独立本地提交切点，不推送，继续共通备份／通知／面板和完整保存范围。MCP仍12工具／8业务能力，窗口匹配局部载荷不是完整保存修订、目标／权限／状态或执行前重检的替代。未重新全验TABLE／UI-73、普通产品构建、ASan、严格静态分析、三语言布局、性能、Default或真实输入／设备；新增MCP保存、失败恢复、其他草稿和启停闭环仍待实现／验证。
+
+## SAVE-76：共通备份74字段纯编码（2026-10-26，PC-W11）
+
+基线为SAVE-75本地7dd63fc6d729bd7ee62d3bd0ee04324adaaac644，当前未推送。在生产保存实现未变时添加settings_common_save／settings_common_cold和完整INI夹具，先通过旧GUI基线；再把74项QVariantMap字段／QVariantList行序提为私有静态serializeCommonMappingData(const QList<MAP_KEYDATA>&)。syncCommonMappingDataForSave仍在原位置执行，编码之后的QSettings总写保留，包括空列表清除旧值；未改加载器或已吸收的SAVE-71修复。
+
+唯一锚点、74个唯一字段／表达式、完整逆变换、dry run／numstat及应用后源码／私有声明逐字核对通过。初始difflib对长文件给出扩大上下文的补丁未应用，改用两处局部hunk后为cpp87增／82删、header一项私有声明；未改其他提取、Worker、manifest、MCP或依赖。
+
+同机环境沿SAVE-74，Qt6.8.3／Qt5.15.2官方x64、MSVC19.44；提取前／后四次普通Release维护构建native exit0，Qt6零警告，Qt5仅原qtmain例外。仍使用out/tests/sendinput_lifecycle/{qt6,qt5}-profile74-release；测试EXE为out/mcp_save_common_w11_20261026/{qt6,qt5}-{attached,detached,empty}/QKeyMapperCommon76_*.exe，前／后同路径，保留旧二进制及identity记录，原requireAdministrator manifest不变。
+
+完整初始INI由本机普通权限QtCore-only准备器以Qt自己的QSettings编码嵌套列表，准备器没有启动产品或申请UAC；成品common_save_fixture.ini.example随维护测试保存，Qt5与Qt6都独立读取同一夹具。包含A→B普通表、两条F13／F14共通源行、上下序列备注／空项／中日emoji、非默认QColor／偏移／宽度／同步组，以及不同的旧F20→Z备份。准备器首次cmd引号错误发生在编译／生成前，保留build-fixture-failed1.log，改用既有ProcessStartInfo方式后成功；不计为产品运行通过或失败。
+
+| variant | 独立GUI效果 | 每Qt旧GUI保存／冷读 | 每Qt提取后保存／冷读 | 完整INI键 |
+|---|---|---|---|---|
+| attached | 正常启动显示两条源，与单条旧备份不同，GUI另存时按原同步写回两行 | 7＋7 | 11＋8 | 277 |
+| detached | 真实高级设定入口、共通复选框及Escape关闭窗口，GUI脱离后保存两行备份 | 9＋7 | 13＋8 | 277 |
+| empty | 实际Tab点击、表格Ctrl+A／Delete删除全部共通行，GUI保存空列表清除旧备份 | 6＋4 | 10＋5 | 276 |
+
+每Qt旧40项／6进程、提取后55项／6进程；总24进程passed=true、native exit0，workAtExit／producersAtExit均为0。六对完整INI字节与旧GUI相同，独立冷进程全程不改盘。新编码74字段Qt类型／重复行序相等，disk／dirty／加载代次／源epoch及编码前旧备份不变；原Save同步后的全部备份值与只读源编码相同（含空表）。额外明确期待序列行序、上下备注、空位置、转义、分类、颜色、宽度、同步组与其他字段；不以单行operator==替代完整MCP修订。
+
+正常产品启动加载样例；GUI名称编辑、保存、脱离和删除均通过Qt控件事件，不直接调用加载／保存／同步。全部产品主线程实际桌面为独立QkmCommon76_<UUID>、非Default；产品High12288、普通控制器8192、same_login=true，PID／创建时间／实际桌面与退出保留在各case的start／closed.json和evidence-summary.json。仍是原产品初始化／退出设备清理；未启动映射或发系统输入，不能据此判定完整停止或设备效果。
+
+原始材料为本机out/mcp_save_common_w11_20261026的before／after、六份baseline INI、identity、old-executables、四份build-qt*-*.log、运行日志、局部patch／review、实际内容校对及汇总；不随Git。公共登记仍由本机Medium控制器23316，登记前只移除内容已被新EXE替代的旧定义摘要，保留有效目标及历史；缓存核心与期限不变。cache-after.json为active／cache_available=true、零owned／unresolved、current_action=null、last_error=null，保持用户窗口至15:44:30继续开发。
+
+本片为独立本地提交切点，不推送；继续条件通知样式、面板、剩余开关和完整保存范围。未来预览必须只读选择实际附着源或脱离备份并绑定完整依赖，不能提前执行同步。MCP仍12工具／8能力，完整保存／失败恢复／其他草稿／正式MCP与启停闭环未完成；未新增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、三语言布局或性能结论，原PC-W10证据不冒充本机复验。

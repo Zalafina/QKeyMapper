@@ -18,6 +18,7 @@
 #include <QComboBox>
 #include <QPushButton>
 #include <QTabWidget>
+#include <QTabBar>
 #include <QScopedValueRollback>
 #include <QDialogButtonBox>
 #include <QSpinBox>
@@ -69,6 +70,7 @@ public:
     static QJsonObject generalSave(QKeyMapper *mapper, bool rich = false);
     static QJsonObject profileSave(QKeyMapper *mapper, bool cold);
     static QJsonObject windowMatchSave(QKeyMapper *mapper, bool cold);
+    static QJsonObject commonSave(QKeyMapper *mapper, bool cold);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1215,6 +1217,14 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_common_save") || guiMode == QStringLiteral("settings_common_cold")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::commonSave(
+                QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2558,6 +2568,132 @@ QJsonObject QkmMappingAdditionTestAccess::windowMatchSave(QKeyMapper *mapper, bo
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::commonSave(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_LIFECYCLE_COMMON_VARIANT");
+    const bool detached = variant == QStringLiteral("detached");
+    const bool empty = variant == QStringLiteral("empty");
+    if ((!detached && !empty && variant != QStringLiteral("attached")) || !QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath()) return {{QStringLiteral("passed"), false}};
+    const auto disk = [] { QFile file(QString::fromLatin1(CONFIG_FILENAME)); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray before = disk();
+    const QString target = QStringLiteral("Map76Common");
+    check(!before.isEmpty() && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE
+        && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED
+        && mapper->m_LoadedMappingSettingGroup == (cold ? target : QStringLiteral("Common76Seed")),
+        "common fixture is independently loaded by normal startup while idle");
+    const auto key = [](QObject *object, int code, Qt::KeyboardModifiers modifiers = Qt::NoModifier, const QString &text = QString()) {
+        QKeyEvent press(QEvent::KeyPress, code, modifiers, text);
+        QKeyEvent release(QEvent::KeyRelease, code, modifiers, text);
+        QCoreApplication::sendEvent(object, &press); QCoreApplication::sendEvent(object, &release);
+    };
+    QVariantList encoded;
+    if (!cold) {
+        int common = QKeyMapper::findCommonMappingTabIndex();
+        if (common < 0) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+        const auto *source = QKeyMapper::s_KeyMappingTabInfoList.at(common).KeyMappingData;
+        check(source && source->size() == 2 && source->first().Original_Key == QStringLiteral("F13")
+            && source->last().Original_Key == QStringLiteral("F14") && mapper->m_CommonMappingData.size() == 1
+            && mapper->m_CommonMappingData.first().Original_Key == QStringLiteral("F20"),
+            "attached two-row source and deliberately stale standalone backup remain distinct before Save");
+        if (detached) {
+            auto *entry = mapper->findChild<QPushButton *>(QStringLiteral("mappingAdvancedSettingButton"));
+            auto *enabled = mapper->m_MappingAdvancedDialog->findChild<QCheckBox *>(QStringLiteral("enableCommonMappingTableCheckBox"));
+            if (!entry || !enabled || !enabled->isChecked()) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+            clickMappingButton(entry);
+            check(mapper->m_MappingAdvancedDialog->isVisible(), "real mapping-advanced entry displays the common feature control");
+            clickMappingButton(enabled);
+            key(mapper->m_MappingAdvancedDialog, Qt::Key_Escape);
+            check(!enabled->isChecked() && QKeyMapper::findCommonMappingTabIndex() < 0 && mapper->m_CommonMappingData.size() == 2,
+                "GUI checkbox detaches the common source and retains its full backup");
+        } else if (empty) {
+            auto *tabs = mapper->findChild<QTabWidget *>(QStringLiteral("keyMappingTabWidget"));
+            if (!tabs) return {{QStringLiteral("passed"), false}};
+            auto *bar = tabs->tabBar();
+            const QPoint local = bar->tabRect(tabs->indexOf(QKeyMapper::s_KeyMappingTabInfoList.at(common).KeyMappingDataTable)).center();
+            QMouseEvent press(QEvent::MouseButtonPress, local, bar->mapTo(bar->window(), local), bar->mapToGlobal(local), Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            QMouseEvent release(QEvent::MouseButtonRelease, local, bar->mapTo(bar->window(), local), bar->mapToGlobal(local), Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+            QCoreApplication::sendEvent(bar, &press); QCoreApplication::sendEvent(bar, &release);
+            check(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex == common && QKeyMapper::KeyMappingDataList->size() == 2,
+                "Qt tab click selects the actual common source");
+            key(mapper->m_KeyMappingDataTable, Qt::Key_A, Qt::ControlModifier);
+            key(mapper->m_KeyMappingDataTable, Qt::Key_Delete);
+            check(QKeyMapper::KeyMappingDataList->isEmpty(), "ordinary table selection and Delete remove all common rows");
+        }
+        auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+        auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+        if (!name || !save || !save->isEnabled()) return {{QStringLiteral("passed"), false}};
+        name->setFocus();
+        key(name, Qt::Key_A, Qt::ControlModifier);
+        for (const QChar character : target) key(name, 0, Qt::NoModifier, QString(character));
+        common = QKeyMapper::findCommonMappingTabIndex();
+        const auto data = common >= 0 ? *QKeyMapper::s_KeyMappingTabInfoList.at(common).KeyMappingData : mapper->m_CommonMappingData;
+        const QByteArray beforeCollection = disk();
+        const bool dirty = mapper->m_SaveSettingDirty;
+        const quint64 load = mapper->m_MappingLoadGeneration, sourceEpoch = mapper->m_AutomationSourceEpoch;
+        const auto backup = mapper->m_CommonMappingData;
+        encoded = mapper->serializeCommonMappingData(data);
+        const auto repeated = mapper->serializeCommonMappingData(data);
+        bool typed = encoded == repeated && encoded.size() == data.size();
+        for (int i = 0; i < encoded.size(); ++i) {
+            const auto fields = encoded.at(i).toMap(), repeatedFields = repeated.at(i).toMap();
+            typed = typed && fields.size() == 74;
+            for (auto it = fields.cbegin(); it != fields.cend(); ++it) typed = typed && it.value().userType() == repeatedFields.value(it.key()).userType();
+        }
+        check(typed, "common serialization retains all 74 typed fields and repeated row order");
+        check(disk() == beforeCollection && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load
+            && mapper->m_AutomationSourceEpoch == sourceEpoch && mapper->m_CommonMappingData == backup,
+            "pure common serialization leaves disk, dirty, generations and the pre-sync backup unchanged");
+        clickMappingButton(save);
+    }
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    const auto stored = ini.value(target + QLatin1Char('/') + COMMONMAPPINGDATA).toList();
+    check(ini.status() == QSettings::NoError && ini.contains(target + QLatin1Char('/') + COMMONMAPPINGDATA)
+        && stored.size() == (empty ? 0 : 2) && mapper->m_CommonMappingData.size() == stored.size(),
+        "standalone backup is always written, including an empty list that clears stale data");
+    check(mapper->m_LoadedMappingSettingGroup == target && !mapper->m_SaveSettingDirty
+        && ini.value(SETTINGSELECT).toString() == target && (QKeyMapper::findCommonMappingTabIndex() < 0) == detached,
+        "saved or cold-loaded profile retains the intended common attachment");
+    if (!cold) check(stored == encoded, "ordinary GUI Save writes the exact full common payload, including empty lists");
+    if (!empty && stored.size() == 2) {
+        const auto first = stored.first().toMap(), second = stored.last().toMap();
+        const auto &loaded = mapper->m_CommonMappingData.first();
+        check(first.value(KEYMAPDATA_ORIGINALKEYS).toString() == QStringLiteral("F13")
+            && second.value(KEYMAPDATA_ORIGINALKEYS).toString() == QStringLiteral("F14")
+            && first.value(KEYMAPDATA_MAPPINGKEYS).toStringList() == QStringList{QStringLiteral("C"), QStringLiteral("D")}
+            && first.value(KEYMAPDATA_MAPPINGKEYS_KEYUP).toStringList() == QStringList{QStringLiteral("E"), QStringLiteral("F")},
+            "row and down/up sequence order survives common serialization and reload");
+        check(loaded.MappingKeys_Comments == QStringList{QStringLiteral("中文😀\npress"), QString()}
+            && loaded.MappingKeys_KeyUp_Comments == QStringList{QStringLiteral("release\\0"), QStringLiteral("日本語")}
+            && first.value(KEYMAPDATA_MAPPINGKEYS_COMMENTS).toStringList() == loaded.MappingKeys_Comments
+            && first.value(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS).toStringList() == loaded.MappingKeys_KeyUp_Comments,
+            "optional sequence comments retain Unicode, empty positions and escaped text");
+        check(loaded.Note == QStringLiteral("Common note") && loaded.Category == QStringLiteral("分类")
+            && loaded.FloatingButton_SyncGroupId == 17 && loaded.FloatingButton_Width == 93
+            && loaded.Crosshair_CenterColor == QColor(QStringLiteral("#123456")) && loaded.Crosshair_X_Offset == -7,
+            "independently seeded notes, category, sync group and typed styles survive");
+    }
+    if (cold) check(disk() == before, "independent common cold read does not rewrite the INI");
+    const QString baseline = qEnvironmentVariable("QKM_LIFECYCLE_SAVE_BASELINE");
+    if (!baseline.isEmpty()) {
+        QDir parent(QCoreApplication::applicationDirPath()); parent.cdUp();
+        if (QFileInfo(baseline).absolutePath() != parent.absolutePath() || !QFileInfo(baseline).fileName().startsWith(QStringLiteral("baseline-"))) return {{QStringLiteral("passed"), false}};
+        QFile original(baseline);
+        check(original.open(QIODevice::ReadOnly) && original.readAll() == disk(), "complete common save INI matches the independent old GUI baseline");
+    }
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::tableState(QKeyMapper *mapper)
 {
     bool passed = true;
@@ -2732,7 +2868,8 @@ int main(int argc, char *argv[])
         QStringLiteral("common_comments"), QStringLiteral("common_comments_cold"), QStringLiteral("common_comments_legacy"),
         QStringLiteral("common_comments_attached"), QStringLiteral("settings_table_save"), QStringLiteral("settings_table_cold"),
         QStringLiteral("ui_localization"), QStringLiteral("settings_profile_save"), QStringLiteral("settings_profile_cold"),
-        QStringLiteral("settings_match_save"), QStringLiteral("settings_match_cold")};
+        QStringLiteral("settings_match_save"), QStringLiteral("settings_match_cold"),
+        QStringLiteral("settings_common_save"), QStringLiteral("settings_common_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

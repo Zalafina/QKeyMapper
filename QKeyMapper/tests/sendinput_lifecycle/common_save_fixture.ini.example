@@ -1,0 +1,43 @@
+[General]
+SettingSelect=Common76Seed
+LastWindowPosition=@Point(64 96)
+LanguageIndex=0
+StartupAutoMonitoring=false
+StartupMinimized=false
+VirtualGamepadEnable=false
+MultiInputEnable=false
+CloseToSystemtray=false
+CloseToSystemtray_Decided=true
+NotShow_FilterKeysDisabled=true
+NotShow_VersionUnmatched=true
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false
+
+[Common76Seed]
+MappingTable_TabNameList=Tab1, Common
+MappingTable_TabInternalNameList=Normal76, __QKM_COMMON__
+MappingTable_TabIncludeCommonList=OFF, OFF
+MappingTable_Common_Enabled=true
+MappingTable_LastTabName=Tab1
+KeyMapData_OriginalKeys=A|F13#F14
+KeyMapData_MappingKeys=B|C»D#G
+KeyMapData_MappingKeys_KeyUp=B|E»F#H
+KeyMapData_FloatingButton_SyncGroupId=0|17#21
+KeyMapData_FloatingButton_Enable=OFF|OFF#OFF
+KeyMapData_Crosshair_CenterColor=FFFFFFFF|FF123456#FF654321
+KeyMapData_Crosshair_X_Offset=0|-7#11
+KeyMapData_FloatingButton_Width=80|93#81
+AutoStartMappingChecked=0
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false
+KeyMapData_Note=@Variant(\0\0\0\v\0\0\0\x1\0\0\0\f\0n\0o\0r\0m\0\x61\0l), @Variant(\0\0\0\v\0\0\0\x2\0\0\0\x16\0\x43\0o\0m\0m\0o\0n\0 \0n\0o\0t\0\x65\0\0\0\x14\0s\0\x65\0\x63\0o\0n\0\x64\0 \0r\0o\0w)
+KeyMapData_Category=@Variant(\0\0\0\v\0\0\0\x1\0\0\0\f\0n\0o\0r\0m\0\x61\0l), @Variant(\0\0\0\v\0\0\0\x2\0\0\0\x4R\x6|{\0\0\0\n\0o\0t\0h\0\x65\0r)
+KeyMapData_MappingKeys_Comments=@Variant(\0\0\0\t\0\0\0\x1\0\0\0\n\0\0\0\f\0n\0o\0r\0m\0\x61\0l), "@Variant(\0\0\0\t\0\0\0\x2\0\0\0\t\0\0\0\x2\0\0\0\n\0\0\0\x14N-e\x87\xd8=\xde\0\0\n\0p\0r\0\x65\0s\0s\0\0\0\n\xff\xff\xff\xff\0\0\0\t\0\0\0\x1\0\0\0\n\0\0\0\f\0s\0\x65\0\x63\0o\0n\0\x64)"
+KeyMapData_MappingKeys_KeyUp_Comments=@Variant(\0\0\0\t\0\0\0\x1\0\0\0\n\xff\xff\xff\xff), "@Variant(\0\0\0\t\0\0\0\x2\0\0\0\t\0\0\0\x2\0\0\0\n\0\0\0\x12\0r\0\x65\0l\0\x65\0\x61\0s\0\x65\0\\\0\x30\0\0\0\n\0\0\0\x6\x65\xe5g,\x8a\x9e\0\0\0\t\0\0\0\x1\0\0\0\n\0\0\0\x4\0u\0p)"
+CommonMappingData="@Variant(\0\0\0\t\0\0\0\x1\0\0\0\b\0\0\0\x4\0\0\0,\0K\0\x65\0y\0M\0\x61\0p\0\x44\0\x61\0t\0\x61\0_\0M\0\x61\0p\0p\0i\0n\0g\0K\0\x65\0y\0s\0\0\0\v\0\0\0\x1\0\0\0\x2\0Z\0\0\0\x38\0K\0\x65\0y\0M\0\x61\0p\0\x44\0\x61\0t\0\x61\0_\0M\0\x61\0p\0p\0i\0n\0g\0K\0\x65\0y\0s\0_\0K\0\x65\0y\0U\0p\0\0\0\v\0\0\0\x1\0\0\0\x2\0Z\0\0\0\x1e\0K\0\x65\0y\0M\0\x61\0p\0\x44\0\x61\0t\0\x61\0_\0N\0o\0t\0\x65\0\0\0\n\0\0\0\x18\0s\0t\0\x61\0l\0\x65\0 \0\x62\0\x61\0\x63\0k\0u\0p\0\0\0.\0K\0\x65\0y\0M\0\x61\0p\0\x44\0\x61\0t\0\x61\0_\0O\0r\0i\0g\0i\0n\0\x61\0l\0K\0\x65\0y\0s\0\0\0\n\0\0\0\x6\0\x46\0\x32\0\x30)"
+
+[Keep76]
+MappingTable_TabNameList=Tab1
+KeyMapData_OriginalKeys=Q
+KeyMapData_MappingKeys=R
+ProcessInfo_Description=preserved other profile
