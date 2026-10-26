@@ -68,6 +68,7 @@ public:
     static QJsonObject serialization(QKeyMapper *mapper, bool cold);
     static QJsonObject generalSave(QKeyMapper *mapper, bool rich = false);
     static QJsonObject profileSave(QKeyMapper *mapper, bool cold);
+    static QJsonObject windowMatchSave(QKeyMapper *mapper, bool cold);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1214,6 +1215,14 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_match_save") || guiMode == QStringLiteral("settings_match_cold")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::windowMatchSave(
+                QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2406,6 +2415,149 @@ QJsonObject QkmMappingAdditionTestAccess::profileSave(QKeyMapper *mapper, bool c
         {QStringLiteral("nondefault"), nondefault}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::windowMatchSave(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_LIFECYCLE_MATCH_VARIANT");
+    const QStringList variants{QStringLiteral("metadata"), QStringLiteral("keep_path"), QStringLiteral("draft_fallback"),
+        QStringLiteral("global"), QStringLiteral("missing_icon")};
+    if (!variants.contains(variant) || !QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath()) return {{QStringLiteral("passed"), false}};
+    const bool global = variant == QStringLiteral("global");
+    const bool overwrite = variant == QStringLiteral("keep_path") || variant == QStringLiteral("missing_icon");
+    const QString target = global ? QString::fromLatin1(GROUPNAME_GLOBALSETTING) : QStringLiteral("Map75Profile");
+    const auto disk = [] { QFile file(QString::fromLatin1(CONFIG_FILENAME)); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray before = disk();
+    auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+    auto *process = mapper->findChild<QLineEdit *>(QStringLiteral("processLineEdit"));
+    auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+    auto *selector = mapper->findChild<QComboBox *>(QStringLiteral("settingselectComboBox"));
+    if (!name || !process || !save || !selector) return {{QStringLiteral("passed"), false}};
+    check(!before.isEmpty() && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE
+        && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED,
+        "window-match fixture uses an owned loaded idle product");
+    const auto enterText = [](QLineEdit *editor, const QString &text) {
+        editor->setFocus();
+        QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier);
+        QKeyEvent selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+        QCoreApplication::sendEvent(editor, &select);
+        QCoreApplication::sendEvent(editor, &selected);
+        for (const QChar character : text) {
+            QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character));
+            QKeyEvent release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+            QCoreApplication::sendEvent(editor, &press);
+            QCoreApplication::sendEvent(editor, &release);
+        }
+    };
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    const QString prefix = target + QStringLiteral("/");
+    const QString oldPath = ini.value(prefix + PROCESSINFO_FILEPATH).toString();
+    const QString oldIcon = ini.value(prefix + PROCESSINFO_CUSTOMICONPATH).toString();
+    const QString incomingIcon = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("incoming75.png"));
+    const QString keptIcon = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("kept75.png"));
+    QVariantMap expected;
+    const QList<QPair<const char *, const char *>> textFields{{PROCESSINFO_FILENAME, "processLineEdit"},
+        {PROCESSINFO_WINDOWTITLE, "windowTitleLineEdit"}, {PROCESSINFO_CLASSNAME, "classNameLineEdit"}, {PROCESSINFO_DESCRIPTION, "descriptionLineEdit"}};
+    const QList<QPair<const char *, const char *>> indexFields{{PROCESSINFO_FILENAME_MATCH_INDEX, "checkProcessComboBox"},
+        {PROCESSINFO_WINDOWTITLE_MATCH_INDEX, "checkWindowTitleComboBox"}, {PROCESSINFO_CLASSNAME_MATCH_INDEX, "checkClassNameComboBox"},
+        {PROCESSINFO_DISPLAYMODE_MATCH_INDEX, "checkDisplayModeComboBox"}};
+    if (!cold) {
+        if (variant == QStringLiteral("draft_fallback")) {
+            QKeyEvent home(QEvent::KeyPress, Qt::Key_Home, Qt::NoModifier);
+            QKeyEvent homeReleased(QEvent::KeyRelease, Qt::Key_Home, Qt::NoModifier);
+            QCoreApplication::sendEvent(selector, &home);
+            QCoreApplication::sendEvent(selector, &homeReleased);
+            check(selector->currentIndex() == EMPTYSETTING_INDEX && mapper->m_MapProcessInfo.FilePath.isEmpty(),
+                "GUI combo keyboard activation resets to a blank draft without a synthetic load call");
+            enterText(process, QStringLiteral("  fixture75.exe  "));
+        }
+        if (variant == QStringLiteral("missing_icon")) {
+            check(mapper->m_MapProcessInfo.CustomIconPath == incomingIcon && QFile::exists(incomingIcon)
+                && QFile::remove(incomingIcon), "only the owned incoming icon disappears after normal startup loaded it");
+        }
+        if (!global) enterText(name, target);
+    }
+    for (const auto &field : textFields) {
+        auto *editor = mapper->findChild<QLineEdit *>(QLatin1String(field.second));
+        if (!editor) return {{QStringLiteral("passed"), false}};
+        expected.insert(QString::fromLatin1(field.first), global ? ini.value(prefix + field.first) : QVariant(editor->text()));
+    }
+    for (const auto &field : indexFields) {
+        auto *combo = mapper->findChild<QComboBox *>(QLatin1String(field.second));
+        if (!combo) return {{QStringLiteral("passed"), false}};
+        expected.insert(QString::fromLatin1(field.first), global ? ini.value(prefix + field.first) : QVariant(combo->currentIndex()));
+    }
+    OrderedMap<QString, QVariant> matchValues;
+    if (!cold) {
+        const bool dirty = mapper->m_SaveSettingDirty;
+        const quint64 load = mapper->m_MappingLoadGeneration;
+        const quint64 source = mapper->m_AutomationSourceEpoch;
+        if (!global) matchValues = mapper->collectWindowMatchSaveValues(oldPath);
+        const auto repeatedValues = global ? OrderedMap<QString, QVariant>() : mapper->collectWindowMatchSaveValues(oldPath);
+        bool repeated = matchValues.keys() == repeatedValues.keys();
+        for (auto it = matchValues.begin(); it != matchValues.end(); ++it) {
+            repeated = repeated && it.value() == repeatedValues.value(it.key())
+                && it.value().userType() == repeatedValues.value(it.key()).userType();
+        }
+        const int count = global ? 0 : (variant == QStringLiteral("missing_icon") ? 8
+            : (variant == QStringLiteral("keep_path") ? 9 : 10));
+        check(matchValues.size() == count && repeated,
+            "window-match collection retains conditional key presence, order and Qt value types");
+        check(disk() == before && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load
+            && mapper->m_AutomationSourceEpoch == source,
+            "window-match collection changes no disk, dirty, load generation or source epoch");
+        int replies = 0;
+        QTimer answer;
+        QObject::connect(&answer, &QTimer::timeout, mapper, [&] {
+            auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+            if (box && box->button(QMessageBox::Yes)) { answer.stop(); ++replies; clickMappingButton(box->button(QMessageBox::Yes)); }
+        });
+        answer.start(10);
+        clickMappingButton(save);
+        answer.stop();
+        check(replies == (overwrite ? 1 : 0), "existing-profile overwrite uses the real modal confirmation only when needed");
+    }
+    ini.sync();
+    bool fieldsMatch = true;
+    for (auto it = expected.cbegin(); it != expected.cend(); ++it) fieldsMatch = fieldsMatch && ini.value(prefix + it.key()) == it.value();
+    check(fieldsMatch, "all window matching text and index fields follow the GUI or global no-write scope");
+    check(ini.status() == QSettings::NoError && ini.value(SETTINGSELECT).toString() == target
+        && mapper->m_LoadedMappingSettingGroup == target && !mapper->m_SaveSettingDirty,
+        "GUI save or independent cold startup completes the exact target profile");
+    const QString expectedPath = global ? oldPath : (overwrite ? QStringLiteral("C:/QkmProfile75/keep.exe")
+        : (variant == QStringLiteral("draft_fallback") ? QStringLiteral("fixture75.exe") : QStringLiteral("C:/QkmProfile75/current.exe")));
+    const QString expectedIcon = global ? oldIcon : (variant == QStringLiteral("metadata") ? incomingIcon
+        : (variant == QStringLiteral("missing_icon") ? keptIcon : QString()));
+    check(ini.value(prefix + PROCESSINFO_FILEPATH).toString() == expectedPath, "absolute path, preserved old path or trimmed draft fallback follows the original GUI rule");
+    check(ini.contains(prefix + PROCESSINFO_CUSTOMICONPATH) && ini.value(prefix + PROCESSINFO_CUSTOMICONPATH).toString() == expectedIcon,
+        "existing, empty and disappeared custom icon paths preserve their distinct write rules");
+    if (!cold) {
+        bool persisted = true;
+        for (auto it = matchValues.begin(); it != matchValues.end(); ++it) {
+            persisted = persisted && ini.contains(prefix + it.key()) && ini.value(prefix + it.key()) == it.value();
+        }
+        check(persisted, "ordinary GUI Save persists every collected window-match value");
+    }
+    if (cold) check(disk() == before, "cold metadata verification does not rewrite the INI");
+    const QString baseline = qEnvironmentVariable("QKM_LIFECYCLE_SAVE_BASELINE");
+    if (!baseline.isEmpty()) {
+        QDir parent(QCoreApplication::applicationDirPath()); parent.cdUp();
+        if (QFileInfo(baseline).absolutePath() != parent.absolutePath() || !QFileInfo(baseline).fileName().startsWith(QStringLiteral("baseline-"))) return {{QStringLiteral("passed"), false}};
+        QFile original(baseline);
+        check(original.open(QIODevice::ReadOnly) && original.readAll() == disk(), "complete metadata GUI save bytes match the independent old baseline");
+    }
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::tableState(QKeyMapper *mapper)
 {
     bool passed = true;
@@ -2579,7 +2731,8 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_serialization"), QStringLiteral("settings_serialization_cold"), QStringLiteral("settings_general_save"),
         QStringLiteral("common_comments"), QStringLiteral("common_comments_cold"), QStringLiteral("common_comments_legacy"),
         QStringLiteral("common_comments_attached"), QStringLiteral("settings_table_save"), QStringLiteral("settings_table_cold"),
-        QStringLiteral("ui_localization"), QStringLiteral("settings_profile_save"), QStringLiteral("settings_profile_cold")};
+        QStringLiteral("ui_localization"), QStringLiteral("settings_profile_save"), QStringLiteral("settings_profile_cold"),
+        QStringLiteral("settings_match_save"), QStringLiteral("settings_match_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

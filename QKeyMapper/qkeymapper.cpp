@@ -22265,6 +22265,42 @@ OrderedMap<QString, QVariant> QKeyMapper::collectProfileParameterSaveValues() co
     return values;
 }
 
+OrderedMap<QString, QVariant> QKeyMapper::collectWindowMatchSaveValues(const QString &savedFilePathString) const
+{
+    OrderedMap<QString, QVariant> values;
+    if (!m_MapProcessInfo.FilePath.isEmpty()){
+        values[QString::fromLatin1(PROCESSINFO_FILEPATH)] = m_MapProcessInfo.FilePath;
+    }
+    else {
+        QString processName = ui->processLineEdit->text();
+        processName = processName.trimmed();
+        if (savedFilePathString.isEmpty()
+            && EMPTYSETTING_INDEX == ui->settingselectComboBox->currentIndex()
+            && !processName.isEmpty()){
+            values[QString::fromLatin1(PROCESSINFO_FILEPATH)] = processName;
+        }
+    }
+
+    if (m_MapProcessInfo.CustomIconPath.isEmpty()) {
+        values[QString::fromLatin1(PROCESSINFO_CUSTOMICONPATH)] = m_MapProcessInfo.CustomIconPath;
+    }
+    else if ((false == m_MapProcessInfo.CustomIconPath.isEmpty())
+        && (true == QFileInfo::exists(m_MapProcessInfo.CustomIconPath))){
+        values[QString::fromLatin1(PROCESSINFO_CUSTOMICONPATH)] = m_MapProcessInfo.CustomIconPath;
+    }
+
+    values[QString::fromLatin1(PROCESSINFO_FILENAME)] = ui->processLineEdit->text();
+    values[QString::fromLatin1(PROCESSINFO_WINDOWTITLE)] = ui->windowTitleLineEdit->text();
+    values[QString::fromLatin1(PROCESSINFO_CLASSNAME)] = ui->classNameLineEdit->text();
+    values[QString::fromLatin1(PROCESSINFO_FILENAME_MATCH_INDEX)] = ui->checkProcessComboBox->currentIndex();
+    values[QString::fromLatin1(PROCESSINFO_WINDOWTITLE_MATCH_INDEX)] = ui->checkWindowTitleComboBox->currentIndex();
+    values[QString::fromLatin1(PROCESSINFO_CLASSNAME_MATCH_INDEX)] = ui->checkClassNameComboBox->currentIndex();
+    values[QString::fromLatin1(PROCESSINFO_DISPLAYMODE_MATCH_INDEX)] = ui->checkDisplayModeComboBox->currentIndex();
+
+    values[QString::fromLatin1(PROCESSINFO_DESCRIPTION)] = ui->descriptionLineEdit->text();
+    return values;
+}
+
 bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
@@ -22573,37 +22609,12 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 #endif
     }
     else {
-        if (!m_MapProcessInfo.FilePath.isEmpty()){
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, m_MapProcessInfo.FilePath);
+        const QString savedFilePathString = m_MapProcessInfo.FilePath.isEmpty()
+            ? settingFile.value(saveSettingSelectStr+PROCESSINFO_FILEPATH).toString() : QString();
+        const auto matchValues = collectWindowMatchSaveValues(savedFilePathString);
+        for (auto it = matchValues.begin(); it != matchValues.end(); ++it) {
+            settingFile.setValue(saveSettingSelectStr + it.key(), it.value());
         }
-        else {
-            QString savedFilePathString = settingFile.value(saveSettingSelectStr+PROCESSINFO_FILEPATH).toString();
-            QString processName = ui->processLineEdit->text();
-            processName = processName.trimmed();
-            if (savedFilePathString.isEmpty()
-                && EMPTYSETTING_INDEX == ui->settingselectComboBox->currentIndex()
-                && !processName.isEmpty()){
-                settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILEPATH, processName);
-            }
-        }
-
-        if (m_MapProcessInfo.CustomIconPath.isEmpty()) {
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CUSTOMICONPATH, m_MapProcessInfo.CustomIconPath);
-        }
-        else if ((false == m_MapProcessInfo.CustomIconPath.isEmpty())
-            && (true == QFileInfo::exists(m_MapProcessInfo.CustomIconPath))){
-            settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CUSTOMICONPATH, m_MapProcessInfo.CustomIconPath);
-        }
-
-        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME, ui->processLineEdit->text());
-        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE, ui->windowTitleLineEdit->text());
-        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CLASSNAME, ui->classNameLineEdit->text());
-        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_FILENAME_MATCH_INDEX, ui->checkProcessComboBox->currentIndex());
-        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_WINDOWTITLE_MATCH_INDEX, ui->checkWindowTitleComboBox->currentIndex());
-        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_CLASSNAME_MATCH_INDEX, ui->checkClassNameComboBox->currentIndex());
-        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_DISPLAYMODE_MATCH_INDEX, ui->checkDisplayModeComboBox->currentIndex());
-
-        settingFile.setValue(saveSettingSelectStr+PROCESSINFO_DESCRIPTION, ui->descriptionLineEdit->text());
     }
 
     settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());

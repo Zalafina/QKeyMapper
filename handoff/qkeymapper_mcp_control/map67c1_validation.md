@@ -121,3 +121,27 @@ Qt6.8.3 msvc2022_64／Qt5.15.2官方msvc2019_64，两者qconfig的QT_ARCH=x86_64
 用户明确要求6小时，普通Medium控制器23316于本轮创建，截止2026-10-26 15:44:30北京时间。目标内容及精确环境经技能公共authorize／register登记；仅必要自有原生启动／收尾提权，产品High RID12288、父Medium8192、same_login=true。当前全部目标已退出，status为active／cache_available=true、零owned／unresolved及current_action=null；保持用户所定窗口继续下一切片，不另建缓存或延长。原manifest正常退出仍有原有设备清理，不等于设备释放验收。
 
 本片为独立本地提交切点，继续工作、不推送。剩余窗口匹配的旧路径／图标条件、通知样式是否写入、共通备份同步、面板和保存前后副作用已在唯一主计划盘点，不能用36项或当前源修订代替全部保存范围。MCP仍12工具／8业务能力，完整保存／其他草稿／失败回滚／正式MCP及启停闭环未完成。未新增普通产品全构建、严格静态分析、ASan、真实输入／设备、Default／三语言布局或性能覆盖；已完成UI-73／TABLE及PC-W10材料只按原版本范围复用，不冒充本次Win11结果。
+
+## SAVE-75：窗口匹配条件载荷（2026-10-26，PC-W11）
+
+基线为本机SAVE-74提交e7b73960005c83721d946918e3c6aba9b54954c4。先增加settings_match_save／settings_match_cold，在未改生产保存实现时记录五组真实GUI结果；再提取12处写入、10个条件字段为私有collectWindowMatchSaveValues。全局组跳过分支不动，旧FilePath仍在原GUI位置且仅当前路径为空时读取，图标空值写空／文件存在写入／消失保留旧键等规则不动。唯一锚点、完整逆变换及逆向补丁检查通过；未改此前36项、97项、Worker、manifest、MCP协议、依赖或翻译。
+
+环境复用本机SAVE-74已核实的CPython3.11.9 x64、锁依赖、Qt6.8.3／Qt5.15.2官方x64与MSVC19.44。双Qt前／后四次Release维护构建均native exit0；Qt6零警告，Qt5仅原官方qtmain例外。构建树仍为out/tests/sendinput_lifecycle/{qt6,qt5}-profile74-release，没有从其他PC复制out或再次执行无关环境门禁。
+
+| variant | 独立GUI及磁盘期待 | 每Qt旧GUI保存／冷读 | 每Qt提取后保存／冷读 | 全部INI键 |
+|---|---|---|---|---|
+| metadata | 正常启动载入路径、图标及中／日／希腊文字段，另存新配置 | 6＋6 | 10＋7 | 276 |
+| keep_path | 覆盖已有目标，保留旧FilePath、显式清空图标 | 6＋6 | 10＋7 | 273 |
+| draft_fallback | Qt ComboBox键盘激活回到空白草稿、输入带空格进程名，仅路径回退trim | 7＋6 | 11＋7 | 274 |
+| global | 保存全局组，原窗口匹配键完全不写 | 6＋6 | 10＋7 | 259 |
+| missing_icon | 加载自有图标后删除该文件，真实覆盖确认，保留目标旧路径／图标键 | 7＋6 | 11＋7 | 274 |
+
+每Qt旧GUI62项／10进程，提取后87项／10进程；两Qt总40进程，passed=true、native exit0、workAtExit／producersAtExit均为0。十对完整INI字节与旧基线相同；冷启动由另一进程恢复，启动至退出不改INI。仅warm收集使用原旧路径依赖，检查重复键顺序／Qt类型、条件数量10／9／10／0／8、磁盘／dirty／加载代次／源epoch不变，并逐项核对GUI实际保存值。全局不调用收集器，明确保留其原不写语义。
+
+自有目录在启动前准备夹具，通过产品正常启动加载；名称／空白重置／保存／模态Yes均使用Qt编辑和点击事件，不直接调用加载或保存函数。原requireAdministrator manifest保持；实际EXE为out/mcp_save_match_w11_20261026/{qt6,qt5}-{metadata,keep_path,draft_fallback,global,missing_icon}/QKeyMapperMatch75_*.exe，前／后同路径同名称，旧EXE另存old-executables。可复用样例与五组准备规则在tests/README.md及window_match_save_fixture.ini.example，样例与实际旧基线生成器相等检查通过。
+
+全部目标由同一普通Medium控制器23316经公共authorize／register／perform启动，产品High12288、父8192、same_login=true。各组实际桌面为独立QkmProfile74_<UUID>（沿用本轮控制脚本名称），不是Default；PID／创建时间／实际桌面、native退出在before／after各case的start／closed.json及evidence-summary.json。正式manifest的原设备初始化／退出清理仍执行，本片不启动映射或发系统输入，不据此证明设备效果或清理闭环。
+
+本机原始材料在out/mcp_save_match_w11_20261026：build-qt*-before／after.log、run-before／after.log、十份baseline INI、identity-before／after、源变换patch／review、40组case与身份／退出记录及汇总。cache-after.json确认active／cache_available=true、零owned／unresolved、current_action=null、last_error=null，保留用户6小时窗口至15:44:30继续后续开发，不延长或另建缓存。这些out不随Git，PC-W10证据仍仅按原版本／范围保留。
+
+本片是独立本地提交切点，不推送，继续共通备份／通知／面板和完整保存范围。MCP仍12工具／8业务能力，窗口匹配局部载荷不是完整保存修订、目标／权限／状态或执行前重检的替代。未重新全验TABLE／UI-73、普通产品构建、ASan、严格静态分析、三语言布局、性能、Default或真实输入／设备；新增MCP保存、失败恢复、其他草稿和启停闭环仍待实现／验证。

@@ -90,3 +90,17 @@ InputOwnerFence 只确认各队列到达对应位置；Interception 接收循环
 每次设置 `QKM_LIFECYCLE_CASE` 为对应case，`QKM_LIFECYCLE_RESULT` 为新的绝对JSON路径；结果在既有 `settingsGeneral` 容器，不是正式MCP结果。另检查主结果passed、实际桌面、PID／EXE／创建时间、High／同登录关联、原生exit0、workAtExit／producersAtExit为0，并在冷启动前后从进程外比较INI字节。没有映射启动或系统输入，正常main退出仍保留既有设备清理，不证明实际驱动释放。
 
 为提取前／后对照，先在未改GUI保存实现的二进制上建立基线，保存其INI为运行目录父级下的 `baseline-*.ini`。提取后在同路径／同名称运行副本重新从相同样例开始，设置 `QKM_LIFECYCLE_SAVE_BASELINE` 为该已有绝对路径；用例独立解析完整键值、比较INI字节，并验证36项收集的类型／顺序／重复性及disk／dirty／加载／源代次不变。默认与非默认、两个Qt kit分别保留证据，不用其他PC的out代替本机基线。选定执行及未覆盖范围见主计划与C1验证记录。
+
+## 窗口匹配保存及条件键保留
+
+`settings_match_save`／`settings_match_cold` 复用上述目标、正式manifest、私有桌面和公共缓存入口。使用 [window_match_save_fixture.ini.example](sendinput_lifecycle/window_match_save_fixture.ini.example)，先把 `__RUNTIME__` 替换为自有运行目录的正斜杠绝对路径，并将仓库 `QKeyMapper/image/button_image/gamepad_32px.png` 复制为该目录的 `incoming75.png`、`kept75.png`。在产品未启动时按下表准备每个独立运行目录的INI，设置 `QKM_LIFECYCLE_MATCH_VARIANT`；不修改个人文件。
+
+| variant | 样例调整与期望 |
+|---|---|
+| metadata | 原样加载；保存为Map75Profile，写入当前完整路径与存在的图标 |
+| keep_path | 删除Profile75Seed的FilePath及CustomIconPath；另加Map75Profile，保留同样的六项映射／安全键，FilePath设为C:/QkmProfile75/keep.exe，CustomIconPath设为运行目录的kept75.png。GUI覆盖确认后保留旧FilePath，显式清空图标 |
+| draft_fallback | 只删除Profile75Seed的FilePath及CustomIconPath；用例以真实ComboBox键盘激活回到空白草稿，再输入带首尾空格的fixture75.exe，验证仅回退路径去空格 |
+| global | SettingSelect及Profile75Seed节名都改为QKeyMapperGlobalSetting；保存全局配置，原窗口匹配键保持 |
+| missing_icon | 只删除Profile75Seed的FilePath；另加与keep_path相同的Map75Profile。用例在正常加载后仅删除自有incoming75.png，覆盖保存保留目标旧路径与图标 |
+
+每个warm用例通过Qt事件输入名称并点击真实Save；已存在目标时点击真实模态Yes按钮。cold必须在保存进程正常退出后，用同一EXE／INI启动另一进程，禁止再次准备INI或图片。两种Qt分别建立未提取的GUI基线；提取后同路径重建初始夹具，设置 `QKM_LIFECYCLE_SAVE_BASELINE` 比较完整INI字节，并验证窗口匹配收集的重复性、Qt类型、条件键数量和磁盘／dirty／代次不变。这里不启用映射、不发送系统输入，不证明正式MCP保存或设备释放完成。
