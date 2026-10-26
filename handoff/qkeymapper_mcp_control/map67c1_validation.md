@@ -277,3 +277,37 @@ rich使用产品现有过滤显示入口准备已加载的自有面板，确认�
 原始build-qt*-before／after.log、沙箱失败日志、run-before／after.log、前／后case、六份baseline、部署身份／旧EXE、局部patch／projection-review／预期字节及evidence-summary.json都在本机同一out目录，不随Git。cache-after.json确认25608仍active／cache_available=true、零owned／unresolved、current_action=null、last_error=null，截止15:44不变；SAVE-79旧控制器的未知启动不因此改记成功或已清理。
 
 本片为独立本地提交切点，不推送，继续快捷键焦点提交、通知模式、顺序、其他草稿和完整Qt磁盘／业务修订，再进C1-C。C1-B2／M1未整体完成，工具12／业务能力8。未新增普通产品全构建、严格静态分析、ASan、Default／真实输入／设备、性能或三语言布局验收；PC-W10历史只按原版本范围保留。
+
+## SAVE-81：快捷键只读输入分析与GUI复用（2026-10-26，PC-W11）
+
+基线为SAVE-80本地d461d783。生产仅将onHotKeyLineEditEditingFinished原空白清理、美元前缀分离和validateCombinationKey调用提为私有静态analyzeHotKeyLineEditText，返回规范化字符串及原ValidationResult；原slot复用结果。三组后台字符串更新、成功／失败popup、setText和dirty逻辑，以及Save空值默认化、clearFocus、写入和重载时序均不动。CPP局部20增／13删、header一项声明，唯一锚点、dry run、完整逆变换及实际字节校对通过；未改Worker、manifest、协议、依赖、翻译或缓存核心。
+
+[Qt6.8.3源码](https://github.com/qt/qtbase/blob/v6.8.3/src/widgets/widgets/qlineedit.cpp)和[Qt5.15.2源码](https://github.com/qt/qtbase/blob/v5.15.2/src/widgets/widgets/qlineedit.cpp)均由内部edited标志决定离焦完成，isModified和hasFocus不能完整代替。这里只共享输入分析，没有新增猜测Qt私有状态的收集器，也未依赖Qt私有头文件。后续完整保存准备仍须捕获待提交编辑与其他草稿，按既定editor_busy等明确拒绝不安全状态；未把局部输入分析当成完整保存许可。
+
+环境沿同机SAVE-74的锁依赖、Qt6.8.3／Qt5.15.2官方x64与MSVC19.44；全部构建和普通控制脚本为Medium、沙箱外。最初Qt5构建的工具自动审批审查超时、进程未创建，按允许对原命令重试一次后成功，非UAC取消。试用测试前置QApplication::setActiveWindow时Qt6出现C4996弃用警告；保留build-qt*-before-deprecated-activation.log，该中间版本未启动产品且EXE未单独归档。改为项目已有QWidget::activateWindow后，有效前／后四次普通Release维护构建native exit0，Qt6零警告，Qt5仅原qtmain例外；构建树仍为out/tests/sendinput_lifecycle/{qt6,qt5}-profile74-release。
+
+夹具复用profile_save_fixture.ini.example，启动前仅替换源／保留组为Hotkey81Seed／Keep81。原GUI基线使用正常启动、Qt名称／快捷键编辑事件及真实Save，目标Map81Hotkey；不直接调用输入完成slot、加载或保存函数，不设置控件值代替基线。待编辑组先用activateWindow建立私有桌面Qt应用内激活并核实实际hasFocus；没有切换输入桌面或发送系统按键，不代替Default物理／前台焦点验收。
+
+| variant | 独立原GUI期待 | 每Qt旧GUI保存／冷读 | 每Qt提取后保存／冷读 |
+|---|---|---|---|
+| default | 三项原默认，不模拟未提交文本 | 4＋4 | 8＋5 |
+| window | 带空格美元前缀待编辑，Save离焦后$L-Ctrl+F17 | 4＋4 | 7＋5 |
+| start | 带空格待编辑，Save后F18 | 4＋4 | 7＋5 |
+| stop | 带空格待编辑，Save后F19 | 4＋4 | 7＋5 |
+| invalid | stop无效键，原校验恢复原默认并继续原保存 | 4＋4 | 7＋5 |
+| committed | 合法window编辑后先离焦回名称，Save前已规范化 | 5＋4 | 8＋5 |
+| empty | 仅人工清空三项后台字符串，检查原Save默认回退 | 4＋4 | 7＋5 |
+
+每Qt旧57项／14进程、提取后86项／14进程；两Qt56个选定进程passed=true、native exit0、workAtExit／producersAtExit为0。14对完整262键INI字节相等，独立冷读不改盘。只读分析可重复、原错误和美元前缀不变；不改disk、dirty、加载／源代次、后台字符串、编辑器文本／焦点／modified／光标／选区，也不发editingFinished／textChanged。额外空白及带换行前缀为组件边界；empty后台空值也仅组件准备，不冒充正常GUI可达到路径。
+
+初次无Qt应用内激活时Qt6 default保存／冷读通过，window保存exit2：未取得hasFocus，预期离焦提交未发生。保存失败case、实际INI及原EXE／identity在before-failed-focus、initial-focus-executables和run-before-focus-inactive.log，不计通过。只在测试前置改用现有activateWindow后补其余26个基线进程，生产未变；最初两个default进程的有效输入／分支未改变，按原版本复用，不重复运行。旧基线由原default记录及run-before-focus-ready.log组合，根run-before.log仍保留整体exit1，不改记成功。
+
+提取后先完成Qt6十四项及Qt5十项。下一Qt5 committed保存的Start请求a52555646051469cadbd82abd54fa254缺少响应，原生gsudo日志为Setting token failed／Failed to substitute token，旧控制器25608以start_result_unknown关闭并保留该unresolved。原结果查询仍invalid_record；定点只读进程审计无本轮两项测试EXE存活，隔离INI仅CRLF与仓库LF不同，规范化后等于启动准备夹具，未发现结果JSON。保存cache-native-closed.json、unknown-start-action／result及unknown-start-qt5.ini；不能据这些当前观察证明请求从未启动或旧清理已经核实，此请求不计通过。
+
+用户获告知后批准恢复UAC，请求34baa0cdb16949a886876d3beb146bef创建新Medium控制器32464、创建时间134374683000215513，截止15:44不延长。新空scope仅登记剩余四项，独立结果目录after/qt5-{committed,empty}-independent，保留原目录且不重放原请求。四个独立产品进程均exit0，run-after-recovered-qt5.log的普通脚本exit0；run-after.log仍保留原整体exit1。evidence-summary.json显式映射独立目录，核对有效前114／后172检查、56进程和14对INI，不混用历史未知结果。
+
+实际原requireAdministrator EXE为out/mcp_save_hotkey_w11_20261026/{qt6,qt5}-runtime/QKeyMapperHotkey81_*_runtime.exe，前后同路径，原始及有效旧EXE、identity与定义分别保留。经普通控制器25608／恢复后的32464公共登记，父8192、产品High12288、same_login=true；主线程实际独立QkmHotkey81_<UUID>私有桌面，PID／创建时间／退出在各case的start／closed.json。原设备初始化／退出清理仍执行，但无映射启动、系统输入或Default，不以零计数证明完整停止或设备释放。
+
+所有原始构建、前／后case、14份baseline、失败／未知材料、部署／旧EXE、patch／analysis-review／预期字节和汇总均在同一本机out目录，不随Git。cache-after.json确认新32464 active／cache_available=true、零owned／unresolved、current_action=null、last_error=null；不消除SAVE-79／81旧控制器的历史未知。缓存原生可靠性故障已记录，未扩大到缓存核心或系统配置修改。
+
+本片为独立本地提交切点，不推送，继续完整Qt保存范围、通知模式、顺序、全部辅助集合、其他草稿及磁盘／业务修订，再进C1-C。工具12／业务能力8，C1-B2／M1未整体完成。未新增普通产品全构建、严格静态分析、ASan、Default物理焦点／真实输入／设备、性能或三语言布局覆盖；PC-W10历史仅按原版本范围保留。

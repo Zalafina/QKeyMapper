@@ -77,6 +77,7 @@ public:
     static QJsonObject profileOptionSave(QKeyMapper *mapper, bool cold);
     static QJsonObject saveTarget(QKeyMapper *mapper, bool cold);
     static QJsonObject mappingPreparation(QKeyMapper *mapper, bool cold);
+    static QJsonObject hotKeyPreparation(QKeyMapper *mapper, bool cold);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1223,6 +1224,14 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_hotkey_save") || guiMode == QStringLiteral("settings_hotkey_cold")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::hotKeyPreparation(
+                QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2983,6 +2992,128 @@ QJsonObject QkmMappingAdditionTestAccess::profileOptionSave(QKeyMapper *mapper, 
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("panel_key_signals"), buttonSignals}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::hotKeyPreparation(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_LIFECYCLE_HOTKEY_VARIANT");
+    const QStringList variants{QStringLiteral("default"), QStringLiteral("window"), QStringLiteral("start"), QStringLiteral("stop"),
+        QStringLiteral("invalid"), QStringLiteral("committed"), QStringLiteral("empty")};
+    if (!variants.contains(variant) || !QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath()) return {{QStringLiteral("passed"), false}};
+    const QString target = QStringLiteral("Map81Hotkey"), prefix = target + QLatin1Char('/');
+    const auto disk = [] { QFile file(QString::fromLatin1(CONFIG_FILENAME)); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray before = disk();
+    auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+    auto *window = mapper->findChild<QLineEdit *>(QStringLiteral("windowswitchkeyLineEdit"));
+    auto *start = mapper->findChild<QLineEdit *>(QStringLiteral("mappingStartKeyLineEdit"));
+    auto *stop = mapper->findChild<QLineEdit *>(QStringLiteral("mappingStopKeyLineEdit"));
+    auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+    if (!name || !window || !start || !stop || !save) return {{QStringLiteral("passed"), false}};
+    const QString expectedWindow = variant == QStringLiteral("window") || variant == QStringLiteral("committed")
+        ? QStringLiteral("$L-Ctrl+F17") : QString::fromLatin1(DISPLAYSWITCH_KEY_DEFAULT);
+    const QString expectedStart = variant == QStringLiteral("start") ? QStringLiteral("F18") : QString::fromLatin1(MAPPINGSWITCH_KEY_DEFAULT);
+    const QString expectedStop = variant == QStringLiteral("stop") ? QStringLiteral("F19") : QString::fromLatin1(MAPPINGSWITCH_KEY_DEFAULT);
+    check(!before.isEmpty() && mapper->m_LoadedMappingSettingGroup == (cold ? target : QStringLiteral("Hotkey81Seed"))
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED,
+        "normal startup loads the owned shortcut fixture while idle");
+    if (!cold) {
+        const auto enter = [](QLineEdit *editor, const QString &text) {
+            editor->setFocus();
+            QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+            QCoreApplication::sendEvent(editor, &select); QCoreApplication::sendEvent(editor, &selected);
+            for (const QChar character : text) {
+                QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+                QCoreApplication::sendEvent(editor, &press); QCoreApplication::sendEvent(editor, &release);
+            }
+        };
+        enter(name, target);
+        QCoreApplication::sendPostedEvents(mapper, QEvent::MetaCall);
+        if (variant != QStringLiteral("default") && variant != QStringLiteral("empty")) {
+            mapper->activateWindow();
+            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        }
+        QLineEdit *pending = Q_NULLPTR;
+        if (variant == QStringLiteral("window") || variant == QStringLiteral("committed")) { pending = window; enter(window, QStringLiteral(" $ L-Ctrl + F17 ")); }
+        else if (variant == QStringLiteral("start")) { pending = start; enter(start, QStringLiteral(" F18 ")); }
+        else if (variant == QStringLiteral("stop")) { pending = stop; enter(stop, QStringLiteral(" F19 ")); }
+        else if (variant == QStringLiteral("invalid")) { pending = stop; enter(stop, QStringLiteral("not-a-key81")); }
+        if (variant == QStringLiteral("committed")) {
+            name->setFocus(); pending = Q_NULLPTR;
+            check(QKeyMapper::s_WindowSwitchKeyString == expectedWindow && window->text() == expectedWindow,
+                "real focus departure commits and normalizes the prior valid shortcut edit");
+        }
+        if (variant == QStringLiteral("empty")) {
+            // Artificial empty backing values cover the legacy fallback without inventing a GUI input path.
+            QKeyMapper::s_WindowSwitchKeyString.clear(); QKeyMapper::s_MappingStartKeyString.clear(); QKeyMapper::s_MappingStopKeyString.clear();
+        }
+        check(save->isEnabled() && name->text() == target && (!pending || pending->hasFocus())
+            && (variant == QStringLiteral("committed") || QKeyMapper::s_WindowSwitchKeyString != expectedWindow || !pending || pending != window)
+            && (!pending || pending != start || QKeyMapper::s_MappingStartKeyString != expectedStart)
+            && (!pending || pending != stop || variant == QStringLiteral("invalid") || QKeyMapper::s_MappingStopKeyString != expectedStop),
+            "actual Qt focus retains the pending edit until the original Save clearFocus stage");
+        const auto state = [&] {
+            return QVariantList{QKeyMapper::s_WindowSwitchKeyString, QKeyMapper::s_MappingStartKeyString, QKeyMapper::s_MappingStopKeyString,
+                window->text(), start->text(), stop->text(), window->hasFocus(), start->hasFocus(), stop->hasFocus(),
+                window->isModified(), start->isModified(), stop->isModified(), window->cursorPosition(), start->cursorPosition(), stop->cursorPosition(),
+                window->selectionStart(), start->selectionStart(), stop->selectionStart(), window->selectedText(), start->selectedText(), stop->selectedText()};
+        };
+        const auto beforeAnalysis = state();
+        const bool dirty = mapper->m_SaveSettingDirty;
+        const quint64 load = mapper->m_MappingLoadGeneration, epoch = mapper->m_AutomationSourceEpoch;
+        QWidget *focus = QApplication::focusWidget();
+        int finishes = 0, changes = 0;
+        QObject watcher;
+        for (QLineEdit *editor : {window, start, stop}) {
+            QObject::connect(editor, &QLineEdit::editingFinished, &watcher, [&] { ++finishes; });
+            QObject::connect(editor, &QLineEdit::textChanged, &watcher, [&] { ++changes; });
+        }
+        const QString inputText = pending ? pending->text() : window->text();
+        const auto analyzed = mapper->analyzeHotKeyLineEditText(inputText), repeated = mapper->analyzeHotKeyLineEditText(inputText);
+        const QString normalized = variant == QStringLiteral("start") ? expectedStart : (variant == QStringLiteral("stop") ? expectedStop
+            : (variant == QStringLiteral("invalid") ? QStringLiteral("not-a-key81") : expectedWindow));
+        check(analyzed.first == normalized && analyzed.second.isValid == (variant != QStringLiteral("invalid"))
+            && analyzed.first == repeated.first && analyzed.second.isValid == repeated.second.isValid
+            && analyzed.second.errorMessage == repeated.second.errorMessage,
+            "shared shortcut input analysis preserves normalization, dollar prefix and validation without committing the editor");
+        if (variant == QStringLiteral("default")) {
+            const auto emptyInput = mapper->analyzeHotKeyLineEditText(QStringLiteral(" \t "));
+            const auto prefixed = mapper->analyzeHotKeyLineEditText(QStringLiteral(" \t $ L-Ctrl + F17 \n "));
+            check(!emptyInput.second.isValid && prefixed.second.isValid && prefixed.first == QStringLiteral("$L-Ctrl+F17"),
+                "component-only whitespace and prefixed input boundaries reuse the original validator");
+        }
+        check(disk() == before && state() == beforeAnalysis && QApplication::focusWidget() == focus && finishes == 0 && changes == 0
+            && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch,
+            "analysis changes no disk, dirty, generations, backing strings, editor text, focus, selection or completion signals");
+        clickMappingButton(save);
+    }
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini); ini.sync();
+    check(ini.status() == QSettings::NoError && ini.value(SETTINGSELECT).toString() == target
+        && mapper->m_LoadedMappingSettingGroup == target && !mapper->m_SaveSettingDirty,
+        "actual GUI Save or independent cold load completes the intended profile");
+    check(ini.value(WINDOWSWITCH_KEYSEQ).toString() == expectedWindow && ini.value(prefix + MAPPINGSTART_KEY).toString() == expectedStart
+        && ini.value(prefix + MAPPINGSTOP_KEY).toString() == expectedStop && QKeyMapper::s_WindowSwitchKeyString == expectedWindow
+        && QKeyMapper::s_MappingStartKeyString == expectedStart && QKeyMapper::s_MappingStopKeyString == expectedStop,
+        "GUI clearFocus validation, normalization and empty defaulting produce all three independently expected persisted shortcuts");
+    if (cold) check(disk() == before, "independent shortcut cold read does not rewrite INI");
+    const QString baseline = qEnvironmentVariable("QKM_LIFECYCLE_SAVE_BASELINE");
+    if (!baseline.isEmpty()) {
+        QDir parent(QCoreApplication::applicationDirPath()); parent.cdUp();
+        if (QFileInfo(baseline).absolutePath() != parent.absolutePath() || !QFileInfo(baseline).fileName().startsWith(QStringLiteral("baseline-"))) return {{QStringLiteral("passed"), false}};
+        QFile original(baseline);
+        check(original.open(QIODevice::ReadOnly) && original.readAll() == disk(), "complete shortcut INI matches independent old GUI baseline");
+    }
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("artificial_empty_backing_values"), variant == QStringLiteral("empty")}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::mappingPreparation(QKeyMapper *mapper, bool cold)
 {
     using namespace QKeyMapperConstants;
@@ -3433,7 +3564,8 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_notification_save"), QStringLiteral("settings_notification_cold"),
         QStringLiteral("settings_options_save"), QStringLiteral("settings_options_cold"),
         QStringLiteral("settings_target_save"), QStringLiteral("settings_target_cold"),
-        QStringLiteral("settings_prepare_save"), QStringLiteral("settings_prepare_cold")};
+        QStringLiteral("settings_prepare_save"), QStringLiteral("settings_prepare_cold"),
+        QStringLiteral("settings_hotkey_save"), QStringLiteral("settings_hotkey_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

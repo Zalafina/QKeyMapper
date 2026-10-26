@@ -146,3 +146,11 @@ Qt名称编辑输入空格、非法字符、全局保留名、现有或新名称
 这组测试在IDLE人工准备Active／LastActive数据及源索引依赖，不启动映射或发送系统输入，不冒充真实运行态端到端验收。覆盖不同当前指针、另一未选列表、普通／共通源、重复绑定最后项、原键不符但绑定有效、空原键、负／越界Tab或行，以及行数与绑定数不等的原行为。旧GUI基线先运行；只读准备后比较同路径完整INI及全部97项Qt值和共通74字段，另核对LockState及派生列表，准备不改源／运行列表／备份／指针／磁盘／dirty／代次。
 
 无效Tab及临时缺失共通源仅作组件边界，缺失时回退旧备份；不冒充GUI自然产生的空指针或真实脱离流程。GUI默认仍用原行编码，原运行同步与共通同步均未改，预览使用显式只读副本；不重复提取Tab／映射字段，也不构成完整保存修订或执行许可。
+
+## 保存快捷键输入分析
+
+`settings_hotkey_save`／`settings_hotkey_cold`复用[profile_save_fixture.ini.example](sendinput_lifecycle/profile_save_fixture.ini.example)，启动前把Profile74Seed／Keep74替换为Hotkey81Seed／Keep81。`QKM_LIFECYCLE_HOTKEY_VARIANT`为default／window／start／stop／invalid／committed／empty，目标Map81Hotkey。名称及快捷键均用Qt编辑事件；window输入带空格的$L-Ctrl+F17，start／stop为F18／F19，invalid为无效键，committed先移回名称编辑框触发真实离焦。empty只人工清空三个后台字符串检验原默认回退，不冒充普通GUI可到达状态。
+
+待编辑组先用项目现有QWidget::activateWindow建立自有私有桌面的Qt应用内激活，并断言实际编辑框hasFocus；不切换输入桌面、不发送系统按键、不验证Default前台或物理焦点。Save真实clearFocus触发现有editingFinished，成功后另进程冷读三项键及完整INI。最初没有应用内激活的失败另存，不能计通过；Qt6已弃用的setActiveWindow试编译警告也另存，正式选定版本只用activateWindow。
+
+提取前先保存原GUI基线，提取后同路径核对完整字节。共享analyzeHotKeyLineEditText仅返回规范化字符串和原validateCombinationKey结果，保留美元前缀、空白清理、错误及翻译context；不改后台字符串、编辑器文本／焦点／选区／modified、dirty／代次／磁盘，也不发完成／文本信号。空白及带换行输入只作组件边界。该函数不预测Qt内部edited标志，不把hasFocus／isModified当成保存许可；完整保存准备仍须处理未提交编辑依赖与其他草稿。

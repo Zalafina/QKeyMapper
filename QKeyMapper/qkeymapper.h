@@ -2182,6 +2182,7 @@ private:
         bool requiresOverwriteConfirmation = false;
         bool ok() const { return error == Error::None; }
     };
+    static QPair<QString, ValidationResult> analyzeHotKeyLineEditText(const QString &text);
     SettingSaveTarget analyzeSettingSaveTarget(const QString &requestedName, const QString &currentSelectedSetting,
         bool globalSelected, const QStringList &groups) const;
     OrderedMap<QString, QVariant> collectGeneralSettingSaveValues(int languageIndex) const;

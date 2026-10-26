@@ -18892,25 +18892,32 @@ void QKeyMapper::systemFilterKeysSettingChanged()
 #endif
 }
 
+QPair<QString, ValidationResult> QKeyMapper::analyzeHotKeyLineEditText(const QString &text)
+{
+    static QRegularExpression whitespace_reg(R"(\s+)");
+    QString ori_hotkeystring = text.simplified();
+    ori_hotkeystring.remove(whitespace_reg);
+    QString hotkeystring = ori_hotkeystring;
+
+    // Extract the hotkey using REGEX_PATTERN_NORMALHOTKEY
+    static QRegularExpression normalhotkey_regex(REGEX_PATTERN_NORMALHOTKEY);
+    QRegularExpressionMatch normalhotkey_match = normalhotkey_regex.match(hotkeystring);
+    if (normalhotkey_match.hasMatch()) {
+        hotkeystring = normalhotkey_match.captured(2); // Extract the actual hotkey part
+    }
+
+    return qMakePair(ori_hotkeystring, validateCombinationKey(hotkeystring));
+}
+
 void QKeyMapper::onHotKeyLineEditEditingFinished()
 {
     QLineEdit* lineEdit = qobject_cast<QLineEdit*>(sender());
     if (lineEdit)
     {
         bool hotkeyChanged = false;
-        static QRegularExpression whitespace_reg(R"(\s+)");
-        QString ori_hotkeystring = lineEdit->text().simplified();
-        ori_hotkeystring.remove(whitespace_reg);
-        QString hotkeystring = ori_hotkeystring;
-
-        // Extract the hotkey using REGEX_PATTERN_NORMALHOTKEY
-        static QRegularExpression normalhotkey_regex(REGEX_PATTERN_NORMALHOTKEY);
-        QRegularExpressionMatch normalhotkey_match = normalhotkey_regex.match(hotkeystring);
-        if (normalhotkey_match.hasMatch()) {
-            hotkeystring = normalhotkey_match.captured(2); // Extract the actual hotkey part
-        }
-
-        ValidationResult validationResult = validateCombinationKey(hotkeystring);
+        const auto hotkeyInput = analyzeHotKeyLineEditText(lineEdit->text());
+        QString ori_hotkeystring = hotkeyInput.first;
+        ValidationResult validationResult = hotkeyInput.second;
         if (validationResult.isValid)
         {
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
