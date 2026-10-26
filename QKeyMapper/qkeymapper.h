@@ -2172,6 +2172,17 @@ private:
     void setCurrentSettingSelectByGroupName(const QString &settingName);
     bool moveSettingSelectOrderEntry(const QString &settingName, int targetUserIndex);
     bool removeSettingByName(const QString &settingName);
+    struct SettingSaveResult {
+        enum class Failure { None, StateRejected, InvalidTarget, OverwriteCancelled,
+            ConfigurationUnavailable, WriteFailed, ReloadFailed };
+        QString settingName;
+        Failure failure = Failure::None;
+        bool diskSaved = false;
+        bool reloaded = false;
+        bool backupAttempted = false;
+        bool backupSucceeded = false;
+    };
+    SettingSaveResult saveKeyMapSettingWithResult(bool showSuccessPopup);
     struct SettingSaveTarget {
         enum class Error { None, EmptyName, InvalidCharacters, GlobalSelectionRequired };
         QString settingName;

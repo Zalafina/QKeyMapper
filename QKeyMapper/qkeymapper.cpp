@@ -22696,7 +22696,15 @@ QKeyMapper::SettingSaveTarget QKeyMapper::analyzeSettingSaveTarget(const QString
 
 bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
-    if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
+    return saveKeyMapSettingWithResult(showSuccessPopup).reloaded;
+}
+
+QKeyMapper::SettingSaveResult QKeyMapper::saveKeyMapSettingWithResult(bool showSuccessPopup)
+{
+    SettingSaveResult result;
+    using Failure = SettingSaveResult::Failure;
+    const auto fail = [&](Failure failure) { result.failure = failure; return result; };
+    if (KEYMAP_STOPPING == m_KeyMapStatus) { return fail(Failure::StateRejected); }
     // Create RAII guard to automatically save and restore category filter state
     CategoryFilterStateGuard filterGuard(this);
 
@@ -22730,13 +22738,14 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     const auto target = analyzeSettingSaveTarget(requestedName, cursettingSelectStr, globalSelected, groups);
     if (!target.ok()) {
         showFailurePopup(target.errorMessage);
-        return false;
+        return fail(Failure::InvalidTarget);
     }
+    result.settingName = target.settingName;
     if (target.requiresOverwriteConfirmation) {
         const QString message = tr("Setting \"%1\" already exists. Do you want to overwrite it?").arg(target.settingName);
         const auto reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                   QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
-        if (reply != QMessageBox::Yes) return false;
+        if (reply != QMessageBox::Yes) return fail(Failure::OverwriteCancelled);
     }
     saveSettingSelectStr = target.settingName;
     saveGlobalSetting = target.saveGlobalSetting;
@@ -22764,7 +22773,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     };
     if (!validateConfigFile()) {
         showFailurePopup(tr("Save failure : ") + saveSettingSelectStr);
-        return false;
+        return fail(Failure::ConfigurationUnavailable);
     }
 
     QVariantMap valuesBeforeSave;
@@ -22775,7 +22784,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 
     if (settingFile.status() != QSettings::NoError) {
         showFailurePopup(tr("Save failure : ") + saveSettingSelectStr);
-        return false;
+        return fail(Failure::ConfigurationUnavailable);
     }
     saveIgnoreRulesToINI();
 
@@ -23060,8 +23069,9 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
             }
         }
         showFailurePopup(tr("Save failure : ") + savedSettingName);
-        return false;
+        return fail(Failure::WriteFailed);
     }
+    result.diskSaved = true;
 
     const bool preserveVButtonPanelVisibility = (m_VButtonPanel != Q_NULLPTR && m_VButtonPanel->isVisible());
 
@@ -23087,6 +23097,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
     const bool saveSucceeded = (loadresult == savedSettingName);
+    result.reloaded = saveSucceeded;
+    if (!saveSucceeded) result.failure = Failure::ReloadFailed;
     if (saveSucceeded) {
         // Restore scroll positions on the next event loop iteration,
         // after the CategoryFilterStateGuard destructor has re-applied
@@ -23125,7 +23137,9 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         clearSaveSettingDirty();
         popupMessage = tr("Save success : ") + displaySettingName;
         popupMessageColor = SUCCESS_COLOR;
+        result.backupAttempted = true;
         bool backupRet = backupFile(CONFIG_FILENAME, CONFIG_LATEST_FILENAME);
+        result.backupSucceeded = backupRet;
         if (backupRet) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[saveKeyMapSetting]" << "Save setting success ->" << displaySettingName;
@@ -23145,7 +23159,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         showPopupMessage(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
 
-    return saveSucceeded;
+    return result;
 }
 
 void QKeyMapper::saveCurrentSettingLastTabName(const QString &tabName)

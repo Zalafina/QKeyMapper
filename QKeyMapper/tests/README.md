@@ -174,3 +174,9 @@ Qt名称编辑输入空格、非法字符、全局保留名、现有或新名称
 `settings_save_snapshot`正常加载[full_save_fixture.ini.example](sendinput_lifecycle/full_save_fixture.ini.example)，在自有私有桌面运行。以合成源修订检查当前／新建／覆盖、非法目标和源缺失；原目标路径通过载荷省略保留，不期待重复写入。临时同路径QSettings待写组不能成为磁盘覆盖目标，准备不冲刷或修改其缓存。
 
 测试只在本用例out INI放置换行、坏格式、超4MiB、缺失及目录等负向夹具，再恢复原始字节；这是组件依赖输入，不冒充GUI保存基线。高级映射窗由真实Qt按钮打开／Escape关闭，准备拒绝后恢复；核对最终INI、dirty、加载／源代次及载入组不变。记录原manifest、身份、实际私有桌面及native退出；不启动映射或发系统输入，无需Default。调用中并发写盘、文件身份／权限／事务和正式MCP预览／提交另验。
+
+## 保存阶段结果与失败恢复
+
+`settings_result_save`／`settings_result_cold`正常启动加载[full_save_fixture.ini.example](sendinput_lifecycle/full_save_fixture.ini.example)，`QKM_LIFECYCLE_RESULT_VARIANT`为current／new／no／invalid／format／write_current／write_new／reload／backup。旧基线先用Qt名称输入、真实Save按钮及实际No保存；结果版再调用内部结果入口对照，不能用它自造GUI基线。冷读仅current／new／write_current／write_new／backup，保留前次INI另进程正常启动。
+
+format只改本用例INI；write分支用只读共享句柄短时阻止自有INI写入／替换，返回后释放，再由读者sync及冷启动核对无失败缓存补写。reload人工注入非法源键，仅证明内部阶段分离，非普通GUI可输入；backup只在自有latest路径建空目录并及时移除。所有目标在out内，原manifest／公共登记／私有桌面，无Default、映射或系统输入。结果按磁盘同步、重载和备份分别核对，并比较完整旧GUI基线字节；内部方法仍读GUI目标，不等于MCP保存已交付或并发／权限安全已验。

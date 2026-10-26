@@ -26,6 +26,7 @@
 #include <QAction>
 #include <QMenu>
 #include <QTranslator>
+#include <qt_windows.h>
 #include "../../automation/qkm_control_dialog.h"
 #include "../../automation/qkm_source_snapshot.h"
 #include "../../qgeneraladvanceddialog.h"
@@ -82,6 +83,7 @@ public:
     static QJsonObject fullSavePayload(QKeyMapper *mapper, bool cold);
     static QJsonObject saveDependencies(QKeyMapper *mapper);
     static QJsonObject saveSnapshot(QKeyMapper *mapper);
+    static QJsonObject saveResult(QKeyMapper *mapper, bool cold);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1228,6 +1230,13 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_result_save") || guiMode == QStringLiteral("settings_result_cold")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::saveResult(QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -3018,6 +3027,126 @@ QJsonObject QkmMappingAdditionTestAccess::profileOptionSave(QKeyMapper *mapper, 
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("panel_key_signals"), buttonSignals}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::saveResult(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    QJsonObject execution;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_LIFECYCLE_RESULT_VARIANT");
+    const QStringList variants{QStringLiteral("current"), QStringLiteral("new"), QStringLiteral("no"), QStringLiteral("invalid"),
+        QStringLiteral("format"), QStringLiteral("write_current"), QStringLiteral("write_new"), QStringLiteral("reload"), QStringLiteral("backup")};
+    if (!variants.contains(variant) || !QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath()) return {{QStringLiteral("passed"), false}};
+    const bool writeFailure = variant.startsWith(QStringLiteral("write_"));
+    const bool reloaded = variant == QStringLiteral("current") || variant == QStringLiteral("new") || variant == QStringLiteral("backup");
+    const bool saved = reloaded || variant == QStringLiteral("reload");
+    const QString source = QStringLiteral("Payload82Seed");
+    const QString target = variant == QStringLiteral("current") || variant == QStringLiteral("write_current") ? source
+        : (variant == QStringLiteral("no") ? QStringLiteral("Existing82") : QStringLiteral("A86Saved"));
+    const QString path = QFileInfo(QString::fromLatin1(CONFIG_FILENAME)).absoluteFilePath();
+    const auto disk = [&]() { QFile file(path); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const auto original = disk();
+    const auto dirty = mapper->m_SaveSettingDirty;
+    const auto load = mapper->m_MappingLoadGeneration;
+    QVariantMap originalValues;
+    {
+        QSettings ini(path, QSettings::IniFormat); QKeyMapperQtCompat::setIniCodecUtf8(ini);
+        for (const auto &key : ini.allKeys()) originalValues.insert(key, ini.value(key));
+    }
+    check(!original.isEmpty() && mapper->m_LoadedMappingSettingGroup == (cold && saved ? target : source)
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE, "independent result fixture is loaded and idle");
+    if (!cold) {
+        auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+        auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+        if (!name || !save) return {{QStringLiteral("passed"), false}};
+        const QString requested = variant == QStringLiteral("invalid") ? QStringLiteral("bad[]") : target;
+        name->setFocus();
+        QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+        QCoreApplication::sendEvent(name, &select); QCoreApplication::sendEvent(name, &selected);
+        for (const QChar character : requested) {
+            QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+            QCoreApplication::sendEvent(name, &press); QCoreApplication::sendEvent(name, &release);
+        }
+        check(name->text() == requested, "Qt input enters the independent save target");
+        if (variant == QStringLiteral("reload")) {
+            if (!QKeyMapper::KeyMappingDataList || QKeyMapper::KeyMappingDataList->isEmpty()) return {{QStringLiteral("passed"), false}};
+            // Component fault injection; ordinary GUI editors reject this source value.
+            QKeyMapper::KeyMappingDataList->first().Original_Key = QStringLiteral("INVALID_RELOAD86");
+        }
+        const QString backup = QString::fromLatin1(CONFIG_LATEST_FILENAME);
+        if (variant == QStringLiteral("backup") && !QDir().mkdir(backup)) return {{QStringLiteral("passed"), false}};
+        const auto removeBackupDirectory = qScopeGuard([&]() { if (variant == QStringLiteral("backup")) QDir().rmdir(backup); });
+        QByteArray beforeSave = original;
+        if (variant == QStringLiteral("format")) {
+            beforeSave = QByteArray("[Broken\nvalue=1\n");
+            QSaveFile malformed(path);
+            if (!malformed.open(QIODevice::WriteOnly) || malformed.write(beforeSave) != beforeSave.size() || !malformed.commit()) return {{QStringLiteral("passed"), false}};
+        }
+        HANDLE blocker = INVALID_HANDLE_VALUE;
+        const auto releaseBlocker = qScopeGuard([&]() { if (blocker != INVALID_HANDLE_VALUE) CloseHandle(blocker); });
+        if (writeFailure) {
+            blocker = CreateFileW(reinterpret_cast<LPCWSTR>(path.utf16()), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            if (blocker == INVALID_HANDLE_VALUE) return {{QStringLiteral("passed"), false}};
+        }
+        int replies = 0;
+        QTimer answer;
+        QObject::connect(&answer, &QTimer::timeout, mapper, [&]() {
+            auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+            if (box && box->button(QMessageBox::No)) { answer.stop(); ++replies; clickMappingButton(box->button(QMessageBox::No)); }
+        });
+        answer.start(10);
+        const auto outcome = mapper->saveKeyMapSettingWithResult(true);
+        using Failure = QKeyMapper::SettingSaveResult::Failure;
+        const Failure expected = variant == QStringLiteral("no") ? Failure::OverwriteCancelled
+            : (variant == QStringLiteral("invalid") ? Failure::InvalidTarget
+            : (variant == QStringLiteral("format") ? Failure::ConfigurationUnavailable
+            : (writeFailure ? Failure::WriteFailed : (variant == QStringLiteral("reload") ? Failure::ReloadFailed : Failure::None))));
+        check(outcome.failure == expected && outcome.settingName == (variant == QStringLiteral("invalid") ? QString() : target),
+            "structured save outcome retains the precise phase and accepted target");
+        check(outcome.diskSaved == saved && outcome.reloaded == reloaded
+            && outcome.backupAttempted == reloaded && outcome.backupSucceeded == (reloaded && variant != QStringLiteral("backup")),
+            "disk sync, reload and backup results are independent and match actual outcomes");
+        execution = {{QStringLiteral("failure"), int(outcome.failure)}, {QStringLiteral("setting_name"), outcome.settingName},
+            {QStringLiteral("disk_saved"), outcome.diskSaved}, {QStringLiteral("reloaded"), outcome.reloaded},
+            {QStringLiteral("backup_attempted"), outcome.backupAttempted}, {QStringLiteral("backup_succeeded"), outcome.backupSucceeded}};
+        answer.stop();
+        check(replies == (variant == QStringLiteral("no") ? 1 : 0), "real overwrite refusal remains independent of the save result representation");
+        if (!saved) check(disk() == beforeSave && mapper->m_MappingLoadGeneration == load && mapper->m_LoadedMappingSettingGroup == source,
+            "refusal or write failure does not reload or change the original file");
+        if (blocker != INVALID_HANDLE_VALUE) { CloseHandle(blocker); blocker = INVALID_HANDLE_VALUE; }
+        if (writeFailure) {
+            QSettings reader(path, QSettings::IniFormat); QKeyMapperQtCompat::setIniCodecUtf8(reader); reader.sync();
+            QVariantMap afterUnlock;
+            for (const auto &key : reader.allKeys()) afterUnlock.insert(key, reader.value(key));
+            check(reader.status() == QSettings::NoError && afterUnlock == originalValues, "unlock and a later reader do not commit a failed save from shared pending cache");
+        }
+        if (variant == QStringLiteral("format")) check(disk() == beforeSave, "malformed source bytes remain intact on refusal");
+    }
+    QSettings ini(path, QSettings::IniFormat); QKeyMapperQtCompat::setIniCodecUtf8(ini); ini.sync();
+    if (saved) {
+        check(ini.status() == QSettings::NoError && ini.value(SETTINGSELECT).toString() == target
+            && ini.value(target + QLatin1Char('/') + KEYMAPDATA_ORIGINALKEYS).toString().startsWith(variant == QStringLiteral("reload")
+                ? QStringLiteral("INVALID_RELOAD86") : QStringLiteral("A")), "disk contains the accepted target even when reload cannot accept its injected invalid data");
+        check(mapper->m_MappingSourceLoadAccepted == reloaded && (reloaded ? !mapper->m_SaveSettingDirty : true), "reload acceptance and dirty clearing remain separate from disk save");
+    }
+    else if (variant != QStringLiteral("format")) check(ini.status() == QSettings::NoError && ini.value(SETTINGSELECT).toString() == source,
+        "refused saves preserve the original disk selection");
+    if (reloaded && variant != QStringLiteral("backup") && !cold) {
+        QFile latest(QString::fromLatin1(CONFIG_LATEST_FILENAME));
+        check(latest.open(QIODevice::ReadOnly) && latest.readAll() == disk(), "successful reload still creates the exact latest backup");
+    }
+    if (cold) check(disk() == original, "independent result cold read does not rewrite the INI");
+    Q_UNUSED(dirty);
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("shared_execution"), !cold}, {QStringLiteral("save_result"), execution}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::saveSnapshot(QKeyMapper *mapper)
 {
     using namespace QKeyMapperConstants;
@@ -3940,7 +4069,8 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_prepare_save"), QStringLiteral("settings_prepare_cold"),
         QStringLiteral("settings_hotkey_save"), QStringLiteral("settings_hotkey_cold"),
         QStringLiteral("settings_payload_save"), QStringLiteral("settings_payload_cold"),
-        QStringLiteral("settings_save_dependencies"), QStringLiteral("settings_save_snapshot")};
+        QStringLiteral("settings_save_dependencies"), QStringLiteral("settings_save_snapshot"),
+        QStringLiteral("settings_result_save"), QStringLiteral("settings_result_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

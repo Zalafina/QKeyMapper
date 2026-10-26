@@ -373,3 +373,28 @@ settings_save_snapshot正常启动加载full_save_fixture.ini.example，双Qt各
 cache-after.json核实10520仍active／cache_available=true，零owned／unresolved／current_action，18:50截止不变；首轮正常失败退出的目标已核实退出，旧控制器23316／25608的未知请求不因此解决。本机out/mcp_save_snapshot_w11_20261026含三份原运行结果、四份构建、旧EXE、INI、精确补丁／逆变换／预期字节和evidence-summary.json，均不随Git。
 
 本片为独立本地提交切点，不推送。调用过程中恰好并发写盘的DiskChanged分支仅静态核对，未测真实锁定拒绝、文件身份替换或跨进程事务；重读比较不承诺原子执行。4MiB为内部有界候选限制，公开前须说明并按实际规模校准。真实实例／配对／权限／状态／到期及源修订、其他草稿范围与实际提交、保存／重载／备份分段和失败恢复仍待接续。工具12／能力8、C1-B2／M1未完成；未新增普通产品全构建、严格静态分析、ASan、VIGEM关闭、Default／输入／设备、性能或三语言布局，PC-W10按原范围保留。
+
+## SAVE-86：保存、重载与备份的内部结果（2026-10-26，PC-W11）
+
+基于edd55101。保留bool saveKeyMapSetting接口及所有旧调用者，薄包装仍返回reloaded，与原saveSucceeded定义相同。原函数体移至私有saveKeyMapSettingWithResult，仅新增SettingSaveResult：Failure在原拒绝／取消／配置不可用／sync失败／重载失败返回点赋值；接受目标名、diskSaved、reloaded、backupAttempted、backupSucceeded按原实际阶段记录。diskSaved在sync/status成功后设置，重载失败仍保留true；备份失败保留原GUI成功及bool true，并单独记录false。未移动任何原写入／缓存回滚／重载／界面恢复／popup动作；完整逆变换、唯一锚点及实际预期字节通过。未改Worker、manifest、协议、依赖或缓存核心。
+
+新增settings_result_save／settings_result_cold，正常加载full_save_fixture.ini.example。提取前先编译真实原GUI版本，通过Qt名称输入、原Save按钮和实际覆盖No建立独立基线；结果版使用同样Qt输入及实际No，再由测试调用同一原函数体的新结果入口并断言阶段，不用该内部调用替代旧GUI基线。两版前后同EXE路径；冷读是独立正常启动的进程，不直接调用加载函数或设置控件值。
+
+| variant | 期待实际行为与结果 | 完整INI键 |
+|---|---|---|
+| current／new | 同步、重载及latest备份成功，全部true | 275／314 |
+| no／invalid | 实际No取消／非法名称拒绝，三个阶段未执行 | 64／64 |
+| format | 正常加载后仅自有INI改为坏格式，原新鲜校验拒绝且原坏字节保留 | 1 |
+| write_current／write_new | 仅自有INI用CreateFileW的FILE_SHARE_READ阻止写入／替换，sync失败；三个阶段false | 64／64 |
+| reload | 仅组件人工将首行原键置为INVALID_RELOAD86；实际保存后原加载校验失败，diskSaved=true、reloaded=false、未备份 | 314 |
+| backup | 仅在自有latest路径创建空目录；实际写盘及重载成功，backupAttempted=true、backupSucceeded=false，原bool语义不变 | 314 |
+
+每Qt旧GUI67项／14进程、结果版85项／14进程，共56个选定进程passed=true／native exit0；18对完整INI字节一致，current／new／write_current／write_new／backup各有独立冷读并且不改盘。两个写锁分支在返回后关闭自有句柄，再用同路径新读者sync核对全部旧键值，退出及冷启动也没有意外补写失败目标。正常保存的latest完整字节等于INI；备份负向目录在finally范围移除。人工无效源是结果阶段故障注入，普通GUI编辑器不接受，不冒充正式MCP该故障路径或普通可到达输入。StateRejected只保留原STOPPING早退并静态核对，本片未启动映射或实际停止。
+
+结果版九组阶段／接受目标均单独核对；reload失败Failure为ReloadFailed且diskSaved仍true，backup失败主Failure保持None但备份字段false，不能把这些组合压成saved=false或推断所有内存准备均未发生。结果方法仍采集GUI目标及执行原CategoryFilterStateGuard／运行同步等准备，不是显式MCP目标执行入口或身份／权限许可。下一层仍须真实完整源修订、实例／配对／权限／状态／到期、目标与其他草稿范围、执行重检和去重／结果查询。
+
+既有同机锁环境、Qt6.8.3／Qt5.15.2官方x64及MSVC19.44；前／后四份普通Release维护增量构建native exit0，Qt6零警告、Qt5仅原qtmain例外；本片无意外编译或产品失败，九组负向是预期。EXE为out/mcp_save_result_w11_20261026/{qt6,qt5}-runtime/QKeyMapperSaveResult86_*_runtime.exe，原requireAdministrator、前后同路径，old-executables保留旧EXE／身份。普通Medium控制器10520经公共审核／登记／perform启动，父8192、产品High12288、same_login=true，实际QkmSaveResult86_<UUID>私有桌面；PID／创建时间／退出在各case start／closed.json。零workAtExit／producersAtExit不是完整清理或设备证明；无Default、系统输入或映射启动。
+
+cache-after.json核实10520仍active／cache_available=true、零owned／unresolved／current_action，用户最新18:30截止未改；旧23316／25608未知请求不因此解决。本机out/mcp_save_result_w11_20261026保留18份基线、56份原case与身份、四份构建、旧EXE、局部patch／逆变换／预期字节、运行日志及evidence-summary.json，均不随Git。PC-W10结果按历史范围保留，不冒充本机复验。
+
+独立本地提交切点，不推送。未开放MCP保存工具，12工具／8能力不变，C1-B2／M1未整体完成；未新增普通产品全构建、严格静态分析、ASan、VIGEM关闭、Default／真实输入／设备、性能或三语言布局。SAVE-85的调用内并发磁盘变化／文件身份／跨进程事务及真实业务授权缺口仍保留，选定写锁回滚不能代替所有失败和并发场景。
