@@ -1,0 +1,36 @@
+[General]
+SettingSelect=Target79Seed
+LastWindowPosition=@Point(64 96)
+LanguageIndex=0
+StartupAutoMonitoring=false
+StartupMinimized=false
+VirtualGamepadEnable=false
+MultiInputEnable=false
+CloseToSystemtray=false
+CloseToSystemtray_Decided=true
+NotShow_FilterKeysDisabled=true
+NotShow_VersionUnmatched=true
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false
+
+[Target79Seed]
+MappingTable_TabNameList=Tab1
+KeyMapData_OriginalKeys=A
+KeyMapData_MappingKeys=B
+AutoStartMappingChecked=0
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false
+
+[Keep79]
+MappingTable_TabNameList=保留
+KeyMapData_OriginalKeys=C
+KeyMapData_MappingKeys=D
+ProcessInfo_Description=日本語 preserved
+
+[Existing79]
+MappingTable_TabNameList=Old
+KeyMapData_OriginalKeys=Q
+KeyMapData_MappingKeys=R
+AutoStartMappingChecked=0
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false

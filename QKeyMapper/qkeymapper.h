@@ -2172,6 +2172,18 @@ private:
     void setCurrentSettingSelectByGroupName(const QString &settingName);
     bool moveSettingSelectOrderEntry(const QString &settingName, int targetUserIndex);
     bool removeSettingByName(const QString &settingName);
+    struct SettingSaveTarget {
+        enum class Error { None, EmptyName, InvalidCharacters, GlobalSelectionRequired };
+        QString settingName;
+        QString errorMessage;
+        Error error = Error::None;
+        bool saveGlobalSetting = false;
+        bool createNewSetting = false;
+        bool requiresOverwriteConfirmation = false;
+        bool ok() const { return error == Error::None; }
+    };
+    SettingSaveTarget analyzeSettingSaveTarget(const QString &requestedName, const QString &currentSelectedSetting,
+        bool globalSelected, const QStringList &groups) const;
     OrderedMap<QString, QVariant> collectGeneralSettingSaveValues(int languageIndex) const;
     OrderedMap<QString, QVariant> collectMappingTableSaveValues() const;
     OrderedMap<QString, QVariant> collectProfileParameterSaveValues() const;

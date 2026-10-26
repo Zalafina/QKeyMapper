@@ -219,3 +219,35 @@ rich使用产品现有过滤显示入口准备已加载的自有面板，确认�
 本机原始材料在同一out目录的before／after、四份baseline INI、有效／失败EXE、构建／运行与登记失败日志、局部patch／review、预期内容及汇总，不随Git。cache-after.json为active／cache_available=true、零owned／unresolved、current_action=null、last_error=null；32登记槽／32定义，保留用户6小时截止15:44:30继续开发。后续复用空闲目标或固定case并先正式status，不因容量重启／延长缓存，不恢复旧scope。
 
 本片为独立本地提交切点，不推送。下一项是完整范围／修订和只读准备收口，再按C1-C接入保存预览／提交；两项通知模式、快捷键／目标／顺序／全部辅助集合、其他草稿及保存尾部仍须纳入。MCP仍12工具／8能力，C1-B2及M1未整体完成。未新增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、性能或三语言布局结论；PC-W10原证据只按原版本范围保留。
+
+## SAVE-79：保存名称与目标只读分析（2026-10-26，PC-W11）
+
+基线为SAVE-78本地bc393e6cb8a12809b4a5c841385f62f7c097534a。在生产保存未变时增加settings_target_save／settings_target_cold，先建立九组独立旧GUI基线，再提取私有SettingSaveTarget／analyzeSettingSaveTarget。请求名称、当前名称、全局选择及已存组显式传入；保留trim、空值、非法字符／换行、规范／翻译后全局保留名、当前组优先、新建及覆盖决定。原QKeyMapper翻译context和消息不变；QMessageBox、STOPPING守卫、分类恢复／运行同步、格式检查、所有写盘和尾部留在原GUI。唯一锚点、完整逆变换、dry run／numstat、实际CPP／header与预期字节校对通过；未改Worker、manifest、协议、依赖或缓存核心。
+
+同机环境和构建树沿SAVE-74，Qt6.8.3／Qt5.15.2官方x64、MSVC19.44。双Qt前／后四次普通Release维护构建native exit0，Qt6零警告，Qt5仅原qtmain例外。实际原requireAdministrator EXE在out/mcp_save_target_w11_20261026/{qt6,qt5}-runtime/QKeyMapperTargets79_*_runtime.exe，前／后同路径同名称，identity-before／after及old-executables保留来源和旧二进制。没有使用另一PC的out或个人INI。
+
+| variant | 原GUI行为／独立期待 | 每Qt旧GUI保存／冷读 | 每Qt提取后保存／冷读 | 完整INI键 |
+|---|---|---|---|---|
+| empty | 名称仅空格，拒绝、不写盘 | 6＋4 | 9＋5 | 29 |
+| invalid | 实际输入全部五个非法字符，拒绝 | 6＋4 | 10＋5 | 29 |
+| reserved | 非全局选择输入规范全局名，拒绝 | 6＋4 | 9＋5 | 29 |
+| no | 另一个已存目标，实际模态No | 6＋4 | 9＋5 | 29 |
+| cancel | 同一覆盖模态实际Escape取消 | 6＋4 | 9＋5 | 29 |
+| yes | 实际模态Yes，覆盖目标Q→R为当前A→B | 5＋4 | 8＋5 | 261 |
+| current | 同名当前组，无额外覆盖确认 | 5＋4 | 8＋5 | 261 |
+| new | 带首尾空格新名称，trim后另存 | 5＋4 | 8＋5 | 268 |
+| global | 全局选择直接保存规范全局组 | 4＋4 | 7＋5 | 252 |
+
+每Qt旧85项／18进程、提取后122项／18进程；总72个选定进程passed=true、native exit0、workAtExit／producersAtExit为0。18对完整INI字节相同；独立冷读全程不改盘。拒绝／取消保持原文件、已有不同目标Q→R、当前组、dirty、加载代次和源epoch，成功实际保存及冷进程恢复目标A→B。分析重复错误／结果一致且无上述状态变化。中间换行、本地化全局名、当前组从显式组列表消失仅组件边界，不冒充GUI可输入／可复现基线。该分析不是完整修订或执行许可。
+
+夹具save_target_fixture.ini.example在启动前准备；global只在准备时替换源节和SettingSelect。正常产品启动加载，名称、Save及模态回复通过Qt编辑／点击事件，不直接调用加载或保存函数、不用控件赋值代替旧GUI基线。各目标主线程实际桌面为独立QkmTarget79_<UUID>，父Medium8192、产品High12288、same_login=true，PID／创建时间／桌面／native退出见各case的start／closed.json。未用Default、系统输入或映射启动；原main设备初始化／清理仍执行，零计数不证明完整停止或设备效果。
+
+旧基线首次控制脚本完成Qt6后在Qt5启动前状态门禁失败，未保存该次具体状态，因此原因不补造；正式状态随后健康，只补未启动的Qt5。提取后Qt6全部完成，Qt5前状态门禁捕获最后一个已由句柄确认exit0的目标仍短暂列在owned，cache仍可用。普通控制脚本增加最多五次、间隔0.5秒的只读状态等待，不改缓存核心或清理权限，保留原门禁日志。根run-before／after.log的整体失败不改为0，选定产品退出由独立记录核对。
+
+12:50左右，Qt5已完成empty保存／冷读和invalid保存；下一invalid冷读的公共Start请求5a52d237b3234b0b8f9d04738bd70ca6缺少响应，原生日志为Setting token failed／Failed to tighten security descriptor／Failed to substitute token。原Medium控制器23316以start_result_unknown保护性关闭，历史unresolved_starts保留；只读实际进程审计未发现两个精确测试EXE存活，不能据此证明该请求未启动或完整清理。保存cache-error-closed.json、unknown-start-action.log及unknown-start-result.json，此未知尝试不计入72个通过进程。
+
+第一次按原窗口恢复请求d8731dc037e140b5a0f4e7b3dbf7421b未确认成功、native_exit_code=1，控制器以cache_result_unknown关闭；其原生日志为空，不能推断为用户拒绝或批准。用户午休返回后明确有空审批，再次恢复请求3224df5631944c55b8aa676aa470fdd4获UAC并生效：新Medium控制器25608、创建时间134374652141697846，截止15:44，早于原15:44:30。只在新空scope登记剩余固定Qt5十五项，不迁移旧PID、凭据或拥有关系，不重放原请求。再次审计无存活测试目标且保留的invalid INI等于旧基线后，执行一次独立冷读与其余十四项；它们有自己的Start／退出记录，原未知结果仍未知。
+
+有效证据组合为before各case、run-before-partial-r1／run-before-qt5-r2、after各case、run-after-partial-r1／run-after-qt5-r2及run-after-recovered-qt5.log；最后补十五项的普通脚本exit0。evidence-summary.json核对全部72个有效产品进程、前170／后244检查及18对INI。cache-after.json确认新控制器active／cache_available=true、零owned／unresolved、current_action=null、last_error=null；该当前事实不消除旧控制器的历史未知启动。继续用户已授权开发，不延长截止、不修改全局gsudo配置。
+
+本机原始材料为同一out目录中的构建、前／后结果、18份baseline、身份／旧EXE、局部patch／review／预期字节、状态门禁、未知原生请求与恢复及汇总，不随Git；PC-W10旧结果只按原版本／范围保留。本片为独立本地提交切点，不推送，继续完整范围／修订和只读准备，再进C1-C。MCP仍12工具／8能力，C1-B2／M1未整体完成；未新增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、性能或三语言布局覆盖，原日文旧标签观察保留。

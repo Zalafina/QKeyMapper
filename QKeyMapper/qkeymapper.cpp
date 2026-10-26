@@ -22453,6 +22453,51 @@ OrderedMap<QString, QVariant> QKeyMapper::collectVButtonPanelSaveValues() const
     return values;
 }
 
+QKeyMapper::SettingSaveTarget QKeyMapper::analyzeSettingSaveTarget(const QString &requestedName,
+    const QString &currentSelectedSetting, bool globalSelected, const QStringList &groups) const
+{
+    SettingSaveTarget target;
+    target.saveGlobalSetting = globalSelected;
+    if (globalSelected) {
+        target.settingName = QString::fromLatin1(GROUPNAME_GLOBALSETTING);
+        return target;
+    }
+    const QString settingNameString = requestedName.trimmed();
+    if (settingNameString.isEmpty()) {
+        target.error = SettingSaveTarget::Error::EmptyName;
+        target.errorMessage = tr("Setting name cannot be empty. Please enter a valid setting name.");
+        return target;
+    }
+    const QString invalidChars = "[]=/\\";
+    QString foundInvalidChars;
+    for (int i = 0; i < invalidChars.length(); ++i) {
+        if (settingNameString.contains(invalidChars.at(i))) {
+            if (!foundInvalidChars.isEmpty()) foundInvalidChars += " ";
+            foundInvalidChars += invalidChars.at(i);
+        }
+    }
+    if (settingNameString.contains('\n') || settingNameString.contains('\r')) {
+        if (!foundInvalidChars.isEmpty()) foundInvalidChars += " ";
+        foundInvalidChars += tr("newline characters");
+    }
+    if (!foundInvalidChars.isEmpty()) {
+        target.error = SettingSaveTarget::Error::InvalidCharacters;
+        target.errorMessage = tr("Setting name cannot contain the following characters: %1").arg(foundInvalidChars);
+        return target;
+    }
+    if (settingNameString == GROUPNAME_GLOBALSETTING || settingNameString == tr(DISPLAYNAME_GLOBALSETTING)) {
+        target.error = SettingSaveTarget::Error::GlobalSelectionRequired;
+        target.errorMessage = tr("Please select \"%1\", if you want to modify the global keymapping setting.").arg(tr(DISPLAYNAME_GLOBALSETTING));
+        return target;
+    }
+    target.settingName = settingNameString;
+    if (currentSelectedSetting != settingNameString) {
+        target.requiresOverwriteConfirmation = groups.contains(settingNameString);
+        target.createNewSetting = !target.requiresOverwriteConfirmation;
+    }
+    return target;
+}
+
 bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
@@ -22483,79 +22528,23 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     bool createNewSetting = false;
 
 
-    if (ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX) {
-        saveGlobalSetting = true;
-        saveSettingSelectStr = GROUPNAME_GLOBALSETTING;
+    const bool globalSelected = ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX;
+    const QString requestedName = globalSelected ? QString() : ui->settingNameLineEdit->text();
+    const QStringList groups = globalSelected ? QStringList() : settingFile.childGroups();
+    const auto target = analyzeSettingSaveTarget(requestedName, cursettingSelectStr, globalSelected, groups);
+    if (!target.ok()) {
+        showFailurePopup(target.errorMessage);
+        return false;
     }
-    else {
-        QString settingNameString = ui->settingNameLineEdit->text().trimmed();
-        QStringList groups = settingFile.childGroups();
-
-        // Check if setting name is empty
-        if (settingNameString.isEmpty()) {
-            showFailurePopup(tr("Setting name cannot be empty. Please enter a valid setting name."));
-            return false;
-        }
-
-        // Check for invalid characters in INI group names
-        // INI format doesn't allow certain characters in section names
-        const QString invalidChars = "[]=/\\";
-        QString foundInvalidChars;
-        for (int i = 0; i < invalidChars.length(); i++) {
-            if (settingNameString.contains(invalidChars.at(i))) {
-                if (!foundInvalidChars.isEmpty()) {
-                    foundInvalidChars += " ";
-                }
-                foundInvalidChars += invalidChars.at(i);
-            }
-        }
-        // Also check for newline characters (though they're unlikely in QLineEdit)
-        if (settingNameString.contains('\n') || settingNameString.contains('\r')) {
-            if (!foundInvalidChars.isEmpty()) {
-                foundInvalidChars += " ";
-            }
-            foundInvalidChars += tr("newline characters");
-        }
-        if (!foundInvalidChars.isEmpty()) {
-            showFailurePopup(tr("Setting name cannot contain the following characters: %1").arg(foundInvalidChars));
-            return false;
-        }
-
-        // Get current selected setting name from combobox (if any)
-        QString currentSelectedSetting;
-        if (0 < curSettingSelectIndex && curSettingSelectIndex < m_SettingSelectListWithoutDescription.size()) {
-            currentSelectedSetting = m_SettingSelectListWithoutDescription.at(curSettingSelectIndex);
-        }
-
-        // Check if the setting name matches current selection
-        if ((settingNameString == GROUPNAME_GLOBALSETTING || settingNameString == tr(DISPLAYNAME_GLOBALSETTING))
-            && ui->settingselectComboBox->currentIndex() != GLOBALSETTING_INDEX) {
-            showFailurePopup(tr("Please select \"%1\", if you want to modify the global keymapping setting.").arg(tr(DISPLAYNAME_GLOBALSETTING)));
-            return false;
-        }
-        else if (currentSelectedSetting == settingNameString) {
-            // Case 5: Overwrite existing selected setting
-            saveSettingSelectStr = settingNameString;
-        }
-        else if (groups.contains(settingNameString)) {
-            // Case 7: Setting name exists but not currently selected - ask for confirmation
-            QString message = tr("Setting \"%1\" already exists. Do you want to overwrite it?").arg(settingNameString);
-            QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
-                                                                       QMessageBox::Yes | QMessageBox::No,
-                                                                       QMessageBox::No);
-            if (reply == QMessageBox::Yes) {
-                saveSettingSelectStr = settingNameString;
-            } else {
-                // User cancelled, don't save
-                return false;
-            }
-        }
-        else {
-            // Case 6: New setting name - create new setting
-            createNewSetting = true;
-            saveSettingSelectStr = settingNameString;
-        }
+    if (target.requiresOverwriteConfirmation) {
+        const QString message = tr("Setting \"%1\" already exists. Do you want to overwrite it?").arg(target.settingName);
+        const auto reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
+                                                  QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+        if (reply != QMessageBox::Yes) return false;
     }
+    saveSettingSelectStr = target.settingName;
+    saveGlobalSetting = target.saveGlobalSetting;
+    createNewSetting = target.createNewSetting;
 
     // A fresh snapshot catches format errors consumed by earlier QSettings readers.
     const auto validateConfigFile = []() {

@@ -75,6 +75,7 @@ public:
     static QJsonObject commonSave(QKeyMapper *mapper, bool cold);
     static QJsonObject notificationSave(QKeyMapper *mapper, bool cold);
     static QJsonObject profileOptionSave(QKeyMapper *mapper, bool cold);
+    static QJsonObject saveTarget(QKeyMapper *mapper, bool cold);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1221,6 +1222,14 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_target_save") || guiMode == QStringLiteral("settings_target_cold")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::saveTarget(
+                QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2965,6 +2974,119 @@ QJsonObject QkmMappingAdditionTestAccess::profileOptionSave(QKeyMapper *mapper, 
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("panel_key_signals"), buttonSignals}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::saveTarget(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_LIFECYCLE_TARGET_VARIANT");
+    const QStringList variants{QStringLiteral("empty"), QStringLiteral("invalid"), QStringLiteral("reserved"), QStringLiteral("no"),
+        QStringLiteral("cancel"), QStringLiteral("yes"), QStringLiteral("current"), QStringLiteral("new"), QStringLiteral("global")};
+    if (!variants.contains(variant) || !QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath()) return {{QStringLiteral("passed"), false}};
+    const bool global = variant == QStringLiteral("global");
+    const bool overwrite = variant == QStringLiteral("no") || variant == QStringLiteral("cancel") || variant == QStringLiteral("yes");
+    const bool success = global || variant == QStringLiteral("yes") || variant == QStringLiteral("current") || variant == QStringLiteral("new");
+    const QString source = global ? QString::fromLatin1(GROUPNAME_GLOBALSETTING) : QStringLiteral("Target79Seed");
+    const QString group = global ? source : (overwrite ? QStringLiteral("Existing79")
+        : (variant == QStringLiteral("current") ? source : QStringLiteral("Target79Saved")));
+    const QString requested = variant == QStringLiteral("empty") ? QStringLiteral("   ")
+        : (variant == QStringLiteral("invalid") ? QStringLiteral("bad[]=/\\")
+        : (variant == QStringLiteral("reserved") ? QString::fromLatin1(GROUPNAME_GLOBALSETTING)
+        : (variant == QStringLiteral("new") ? QStringLiteral("  Target79Saved  ") : group)));
+    const auto disk = [] { QFile file(QString::fromLatin1(CONFIG_FILENAME)); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray before = disk();
+    auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+    auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+    if (!name || !save) return {{QStringLiteral("passed"), false}};
+    check(!before.isEmpty() && mapper->m_LoadedMappingSettingGroup == (cold && success ? group : source)
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED,
+        "save-target fixture is independently loaded and remains idle");
+    const quint64 load = mapper->m_MappingLoadGeneration, epoch = mapper->m_AutomationSourceEpoch;
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    if (!cold) {
+        if (!global) {
+            name->setFocus();
+            QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+            QCoreApplication::sendEvent(name, &select); QCoreApplication::sendEvent(name, &selected);
+            for (const QChar character : requested) {
+                QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+                QCoreApplication::sendEvent(name, &press); QCoreApplication::sendEvent(name, &release);
+            }
+            check(name->text() == requested, "Qt editor events enter the exact requested save name");
+        }
+        QCoreApplication::sendPostedEvents(mapper, QEvent::MetaCall);
+        const bool dirty = mapper->m_SaveSettingDirty;
+        const auto groups = global ? QStringList() : ini.childGroups();
+        const auto target = mapper->analyzeSettingSaveTarget(requested, source, global, groups);
+        const auto repeated = mapper->analyzeSettingSaveTarget(requested, source, global, groups);
+        using TargetError = QKeyMapper::SettingSaveTarget::Error;
+        const auto error = variant == QStringLiteral("empty") ? TargetError::EmptyName
+            : (variant == QStringLiteral("invalid") ? TargetError::InvalidCharacters
+            : (variant == QStringLiteral("reserved") ? TargetError::GlobalSelectionRequired : TargetError::None));
+        check(target.error == error && target.error == repeated.error && target.errorMessage == repeated.errorMessage
+            && target.settingName == repeated.settingName && target.createNewSetting == repeated.createNewSetting
+            && target.requiresOverwriteConfirmation == repeated.requiresOverwriteConfirmation && target.saveGlobalSetting == repeated.saveGlobalSetting
+            && (error != TargetError::None || (target.ok() && target.settingName == group && target.saveGlobalSetting == global
+                && target.createNewSetting == (variant == QStringLiteral("new")) && target.requiresOverwriteConfirmation == overwrite)),
+            "explicit save-target analysis retains error, normalization and all target decisions without prompting");
+        if (variant == QStringLiteral("invalid")) {
+            const auto newline = mapper->analyzeSettingSaveTarget(QStringLiteral("mid\nline"), source, false, groups);
+            const auto localized = mapper->analyzeSettingSaveTarget(QKeyMapper::tr(DISPLAYNAME_GLOBALSETTING), source, false, groups);
+            const auto missingCurrent = mapper->analyzeSettingSaveTarget(QStringLiteral("Removed79"), QStringLiteral("Removed79"), false, {});
+            check(newline.error == TargetError::InvalidCharacters && localized.error == TargetError::GlobalSelectionRequired
+                && missingCurrent.ok() && !missingCurrent.createNewSetting && !missingCurrent.requiresOverwriteConfirmation,
+                "component name boundaries retain midline newline, localized global and missing-current-group semantics");
+        }
+        check(disk() == before && mapper->m_SaveSettingDirty == dirty && mapper->m_LoadedMappingSettingGroup == source
+            && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch,
+            "target analysis changes no disk, dirty, loaded group or source/load generation");
+        int replies = 0;
+        QTimer answer;
+        QObject::connect(&answer, &QTimer::timeout, mapper, [&] {
+            auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+            if (!box || !box->button(QMessageBox::No)) return;
+            answer.stop(); ++replies;
+            if (variant == QStringLiteral("cancel")) {
+                QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), release(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+                QCoreApplication::sendEvent(box, &press); QCoreApplication::sendEvent(box, &release);
+            } else clickMappingButton(box->button(variant == QStringLiteral("yes") ? QMessageBox::Yes : QMessageBox::No));
+        });
+        answer.start(10);
+        clickMappingButton(save);
+        answer.stop();
+        check(replies == (overwrite ? 1 : 0), "only a different existing target asks for the real overwrite decision");
+        if (!success) check(disk() == before && mapper->m_LoadedMappingSettingGroup == source && mapper->m_SaveSettingDirty == dirty
+            && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch,
+            "invalid name, refusal and cancellation change no disk, loaded target, dirty or source/load generation");
+    }
+    ini.sync();
+    const QString expected = success ? group : source;
+    check(ini.status() == QSettings::NoError && ini.value(SETTINGSELECT).toString() == expected && mapper->m_LoadedMappingSettingGroup == expected,
+        "actual selected disk and loaded groups match the accepted or refused target");
+    if (success) check(!mapper->m_SaveSettingDirty && ini.value(group + QLatin1Char('/') + KEYMAPDATA_ORIGINALKEYS).toString() == QStringLiteral("A")
+        && ini.value(group + QLatin1Char('/') + KEYMAPDATA_MAPPINGKEYS).toString() == QStringLiteral("B"),
+        "successful GUI save or cold load persists and restores the intended mapping");
+    else check(disk() == before && ini.value(QStringLiteral("Existing79/") + KEYMAPDATA_ORIGINALKEYS).toString() == QStringLiteral("Q"),
+        "refused operations preserve both the original file and the different stored profile");
+    if (cold) check(disk() == before, "independent target cold read does not rewrite the INI");
+    const QString baseline = qEnvironmentVariable("QKM_LIFECYCLE_SAVE_BASELINE");
+    if (!baseline.isEmpty()) {
+        QDir parent(QCoreApplication::applicationDirPath()); parent.cdUp();
+        if (QFileInfo(baseline).absolutePath() != parent.absolutePath() || !QFileInfo(baseline).fileName().startsWith(QStringLiteral("baseline-"))) return {{QStringLiteral("passed"), false}};
+        QFile original(baseline);
+        check(original.open(QIODevice::ReadOnly) && original.readAll() == disk(), "complete save-target INI matches the independent old GUI baseline");
+    }
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::tableState(QKeyMapper *mapper)
 {
     bool passed = true;
@@ -3142,7 +3264,8 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_match_save"), QStringLiteral("settings_match_cold"),
         QStringLiteral("settings_common_save"), QStringLiteral("settings_common_cold"),
         QStringLiteral("settings_notification_save"), QStringLiteral("settings_notification_cold"),
-        QStringLiteral("settings_options_save"), QStringLiteral("settings_options_cold")};
+        QStringLiteral("settings_options_save"), QStringLiteral("settings_options_cold"),
+        QStringLiteral("settings_target_save"), QStringLiteral("settings_target_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

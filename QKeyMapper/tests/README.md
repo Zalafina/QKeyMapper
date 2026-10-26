@@ -128,3 +128,13 @@ rich通过产品已有过滤显示入口准备自有面板，仅对背景发送Q
 提取前建立独立旧GUI基线；提取后同路径设置父级baseline-*.ini，通过完整INI字节及逐项写回对照验证9项开关、当前启用ViGEm构建的6项输入标量、21项面板值。检查Qt类型／顺序／重复性和disk／dirty／加载／源代次／可见性／缓存与实际偏移不变；面板缺失的回退另作组件检查。宏关闭时输入仅4项，此构建条件仍需按实际配置另验。两项通知模式、快捷键规范化、配置顺序与保存尾部没有因这组取值而移动，未来完整保存修订仍须包含它们。
 
 公共登记更新范围前须用正式status取得当前scope及拥有关系；verified_controller只核对身份，其内部记录不能代替即时状态。仅移除已被新EXE替代的旧定义摘要，保留有效范围；不因登记容量或旧快照问题重启缓存或延长期限。
+
+## 保存名称与覆盖目标
+
+`settings_target_save`／`settings_target_cold` 使用 [save_target_fixture.ini.example](sendinput_lifecycle/save_target_fixture.ini.example)，在自有out中以正常启动加载Target79Seed。`QKM_LIFECYCLE_TARGET_VARIANT`为empty／invalid／reserved／no／cancel／yes／current／new／global；global另在启动前把SettingSelect和源节Target79Seed改为QKeyMapperGlobalSetting，保留Existing79。其他组原样准备，原始目标A→B、不同已存目标Q→R及其他配置保持独立。
+
+Qt名称编辑输入空格、非法字符、全局保留名、现有或新名称；新名称含首尾空格。真实Save触发原校验，覆盖分别点击实际No／Yes或给实际模态框发送Escape。拒绝保持原INI、当前组、dirty及加载／源代次；成功保存并独立冷读目标A→B。cold不重建INI、不重复选择或保存。结果仍在settingsGeneral，并核对身份／实际私有桌面、High／同登录、native exit0及零尾部任务；无映射启动或系统输入。
+
+提取前先记录每组旧GUI文件，提取后同路径通过父目录下baseline-*.ini核对完整字节。只读目标分析显式传入请求名、当前名称、全局选择及已存组，检查错误类别、trim、新建／覆盖／全局决定、重复性及不变性。中间换行、本地化全局名及当前组外部消失的原判断仅补组件检查，不冒充GUI可输入这些状态的基线，也不构成执行许可；正式MCP仍须校验实例／权限／完整修订／状态／到期。
+
+多个固定case可共用一个已核实空闲原生登记槽；更新前用正式status核对拥有关系和原定义，原精确定义由新固定EXE／参数／环境／桌面／预算摘要取代，保留审计，不增加通用启动权限或改变缓存截止。
