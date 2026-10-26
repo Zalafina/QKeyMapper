@@ -76,6 +76,7 @@ public:
     static QJsonObject notificationSave(QKeyMapper *mapper, bool cold);
     static QJsonObject profileOptionSave(QKeyMapper *mapper, bool cold);
     static QJsonObject saveTarget(QKeyMapper *mapper, bool cold);
+    static QJsonObject mappingPreparation(QKeyMapper *mapper, bool cold);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1222,6 +1223,14 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_prepare_save") || guiMode == QStringLiteral("settings_prepare_cold")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::mappingPreparation(
+                QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2974,6 +2983,164 @@ QJsonObject QkmMappingAdditionTestAccess::profileOptionSave(QKeyMapper *mapper, 
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("panel_key_signals"), buttonSignals}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::mappingPreparation(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_LIFECYCLE_PREPARE_VARIANT");
+    if ((variant != QStringLiteral("direct") && variant != QStringLiteral("active") && variant != QStringLiteral("last"))
+        || !QDir::currentPath().contains(QStringLiteral("/out/")) || QDir::currentPath() != QCoreApplication::applicationDirPath()) return {{QStringLiteral("passed"), false}};
+    const bool projected = variant != QStringLiteral("direct");
+    const QString target = QStringLiteral("Map80Prepared"), prefix = target + QLatin1Char('/');
+    const auto disk = [] { QFile file(QString::fromLatin1(CONFIG_FILENAME)); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray before = disk();
+    const int normal = QKeyMapper::firstNormalMappingTabIndex(), common = QKeyMapper::findCommonMappingTabIndex();
+    if (normal < 0 || common < 0) return {{QStringLiteral("passed"), false}};
+    auto *normalData = QKeyMapper::s_KeyMappingTabInfoList.at(normal).KeyMappingData;
+    auto *commonData = QKeyMapper::s_KeyMappingTabInfoList.at(common).KeyMappingData;
+    if (!normalData || !commonData || normalData->size() != 1 || commonData->size() != 2) return {{QStringLiteral("passed"), false}};
+    check(!before.isEmpty() && mapper->m_LoadedMappingSettingGroup == (cold ? target : QStringLiteral("Prepare80Seed"))
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED,
+        "normal startup loads the owned preparation fixture while idle");
+    OrderedMap<QString, QVariant> preparedValues;
+    QVariantList preparedCommon;
+    if (!cold) {
+        auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+        auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+        if (!name || !save || !save->isEnabled()) return {{QStringLiteral("passed"), false}};
+        name->setFocus();
+        QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+        QCoreApplication::sendEvent(name, &select); QCoreApplication::sendEvent(name, &selected);
+        for (const QChar character : target) {
+            QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+            QCoreApplication::sendEvent(name, &press); QCoreApplication::sendEvent(name, &release);
+        }
+        QCoreApplication::sendPostedEvents(mapper, QEvent::MetaCall);
+        check(name->text() == target && mapper->m_CommonMappingData.size() == 1
+            && mapper->m_CommonMappingData.first().Original_Key == QStringLiteral("F20"),
+            "real name editing retains a deliberately stale standalone backup before Save");
+        // Artificial runtime dependencies exercise projection without starting mapping or sending input.
+        QList<MAP_KEYDATA> runtime;
+        QList<ActiveKeyMappingRowSourceInfo> sources;
+        const auto add = [&](const MAP_KEYDATA &row, int tab, int index, bool burst, bool lock, uint state) {
+            auto copy = row; copy.Burst = burst; copy.Lock = lock; copy.LockState = state;
+            runtime.append(copy); sources.append(ActiveKeyMappingRowSourceInfo{tab, index});
+        };
+        add(normalData->first(), normal, 0, true, true, LOCK_STATE_LOCKON);
+        add(commonData->first(), common, 0, true, false, LOCK_STATE_LOCKON_PLUS);
+        add(commonData->last(), common, 1, false, true, LOCK_STATE_LOCKON);
+        add(normalData->first(), -1, 0, false, false, LOCK_STATE_LOCKOFF);
+        add(normalData->first(), normal, 99, false, false, LOCK_STATE_LOCKOFF);
+        add(normalData->first(), 99, 0, false, false, LOCK_STATE_LOCKOFF);
+        auto empty = normalData->first(); empty.Original_Key.clear();
+        add(empty, normal, 0, false, false, LOCK_STATE_LOCKOFF);
+        auto mismatch = commonData->first(); mismatch.Original_Key = QStringLiteral("F24");
+        add(mismatch, common, 0, false, true, LOCK_STATE_LOCKON_PLUS);
+        runtime.append(normalData->first());
+        QKeyMapper::s_ActiveKeyMappingDataList = runtime;
+        QKeyMapper::s_ActiveKeyMappingRowSourceInfoList = sources;
+        QKeyMapper::s_LastActiveKeyMappingDataList = runtime;
+        QKeyMapper::s_LastActiveKeyMappingRowSourceInfoList = sources;
+        if (variant == QStringLiteral("last")) {
+            for (auto &row : QKeyMapper::s_ActiveKeyMappingDataList) { row.Burst = false; row.Lock = false; row.LockState = LOCK_STATE_LOCKOFF; }
+            QKeyMapper::KeyMappingDataList = &QKeyMapper::s_LastActiveKeyMappingDataList;
+        } else QKeyMapper::KeyMappingDataList = projected ? &QKeyMapper::s_ActiveKeyMappingDataList : normalData;
+        check(!normalData->first().Burst && !normalData->first().Lock && !commonData->first().Burst && !commonData->first().Lock,
+            "component runtime records differ from unmodified source rows before the actual GUI Save");
+        const auto rowState = [&](const QList<MAP_KEYDATA> &rows) {
+            auto values = mapper->serializeCommonMappingData(rows);
+            for (int i = 0; i < rows.size(); ++i) {
+                auto value = values.at(i).toMap();
+                value.insert(QStringLiteral("runtimeLockState"), rows.at(i).LockState);
+                value.insert(QStringLiteral("pureOriginal"), rows.at(i).Pure_OriginalKeys);
+                value.insert(QStringLiteral("pureMapping"), rows.at(i).Pure_MappingKeys);
+                value.insert(QStringLiteral("pureKeyUp"), rows.at(i).Pure_MappingKeys_KeyUp);
+                values[i] = value;
+            }
+            return values;
+        };
+        const auto sourceBefore = rowState(*normalData), commonBefore = rowState(*commonData);
+        const auto backupBefore = rowState(mapper->m_CommonMappingData);
+        const auto activeBefore = rowState(QKeyMapper::s_ActiveKeyMappingDataList), lastBefore = rowState(QKeyMapper::s_LastActiveKeyMappingDataList);
+        const auto pointerBefore = QKeyMapper::KeyMappingDataList;
+        const bool dirty = mapper->m_SaveSettingDirty;
+        const quint64 load = mapper->m_MappingLoadGeneration, epoch = mapper->m_AutomationSourceEpoch;
+        auto expectedNormal = *normalData, expectedCommon = *commonData;
+        if (projected) {
+            expectedNormal[0].Burst = true; expectedNormal[0].Lock = true; expectedNormal[0].LockState = LOCK_STATE_LOCKON;
+            expectedCommon[0].Burst = false; expectedCommon[0].Lock = true; expectedCommon[0].LockState = LOCK_STATE_LOCKON_PLUS;
+            expectedCommon[1].Burst = false; expectedCommon[1].Lock = true; expectedCommon[1].LockState = LOCK_STATE_LOCKON;
+        }
+        const auto normalRows = mapper->collectMappingRowsForSave(normal), commonRows = mapper->collectCommonRowsForSave();
+        check(rowState(normalRows) == rowState(expectedNormal) && rowState(commonRows) == rowState(expectedCommon)
+            && rowState(mapper->collectMappingRowsForSave(normal)) == rowState(normalRows)
+            && rowState(mapper->collectCommonRowsForSave()) == rowState(commonRows),
+            "readonly row copies match independent three-field projection, source priority and repeated values without losing other fields");
+        preparedValues = mapper->collectMappingTableSaveValues(true);
+        const auto repeated = mapper->collectMappingTableSaveValues(true);
+        bool typed = preparedValues.keys() == repeated.keys() && preparedValues.size() == 97;
+        for (auto it = preparedValues.begin(); it != preparedValues.end(); ++it) typed = typed
+            && it.value() == repeated.value(it.key()) && it.value().userType() == repeated.value(it.key()).userType();
+        preparedCommon = mapper->serializeCommonMappingData(commonRows);
+        check(typed && preparedValues.value(QString::fromLatin1(KEYMAPDATA_BURST)).toString()
+            == (projected ? QStringLiteral("ON|OFF#OFF") : QStringLiteral("OFF|OFF#OFF")),
+            "existing 97-field encoder accepts projected copies with unchanged Qt types and ordered keys");
+        check(mapper->collectMappingRowsForSave(-1).isEmpty() && mapper->collectMappingRowsForSave(99).isEmpty(),
+            "invalid tab indices return no prepared rows");
+        if (!projected) {
+            QKeyMapper::s_KeyMappingTabInfoList[common].KeyMappingData = Q_NULLPTR;
+            const auto missing = mapper->collectMappingRowsForSave(common), fallback = mapper->collectCommonRowsForSave();
+            QKeyMapper::s_KeyMappingTabInfoList[common].KeyMappingData = commonData;
+            check(missing.isEmpty() && rowState(fallback) == backupBefore,
+                "component missing common source preserves the prior standalone backup without an implicit synchronization");
+        }
+        check(disk() == before && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load
+            && mapper->m_AutomationSourceEpoch == epoch && QKeyMapper::KeyMappingDataList == pointerBefore
+            && rowState(*normalData) == sourceBefore && rowState(*commonData) == commonBefore
+            && rowState(mapper->m_CommonMappingData) == backupBefore && rowState(QKeyMapper::s_ActiveKeyMappingDataList) == activeBefore
+            && rowState(QKeyMapper::s_LastActiveKeyMappingDataList) == lastBefore,
+            "preparation changes no disk, dirty, generations, pointer, source, runtime or stale backup");
+        clickMappingButton(save);
+    }
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini); ini.sync();
+    check(ini.status() == QSettings::NoError && ini.value(SETTINGSELECT).toString() == target
+        && mapper->m_LoadedMappingSettingGroup == target && !mapper->m_SaveSettingDirty,
+        "actual GUI Save or independent cold load restores the intended profile");
+    check(ini.value(prefix + KEYMAPDATA_BURST).toString() == (projected ? QStringLiteral("ON|OFF#OFF") : QStringLiteral("OFF|OFF#OFF"))
+        && ini.value(prefix + KEYMAPDATA_LOCK).toString() == (projected ? QStringLiteral("ON|ON#ON") : QStringLiteral("OFF|OFF#OFF")),
+        "GUI persists selected runtime projection only, skipping invalid, empty and unmatched records with last binding winning");
+    const auto stored = ini.value(prefix + COMMONMAPPINGDATA).toList();
+    check(stored.size() == 2 && !stored.first().toMap().value(KEYMAPDATA_BURST).toBool()
+        && stored.first().toMap().value(KEYMAPDATA_LOCK).toBool() == projected
+        && stored.last().toMap().value(KEYMAPDATA_LOCK).toBool() == projected
+        && stored.first().toMap().value(KEYMAPDATA_ORIGINALKEYS).toString() == QStringLiteral("F13")
+        && mapper->m_CommonMappingData.size() == 2,
+        "GUI syncs the actual attached common source after runtime projection instead of retaining stale backup");
+    if (!cold) {
+        bool persisted = ini.value(prefix + COMMONMAPPINGDATA).toList() == preparedCommon;
+        for (auto it = preparedValues.begin(); it != preparedValues.end(); ++it) persisted = persisted
+            && ini.contains(prefix + it.key()) && ini.value(prefix + it.key()) == it.value();
+        check(persisted, "original GUI Save writes every prepared mapping and common value without synchronizing during preview");
+    }
+    if (cold) check(disk() == before, "independent preparation cold read does not rewrite INI");
+    const QString baseline = qEnvironmentVariable("QKM_LIFECYCLE_SAVE_BASELINE");
+    if (!baseline.isEmpty()) {
+        QDir parent(QCoreApplication::applicationDirPath()); parent.cdUp();
+        if (QFileInfo(baseline).absolutePath() != parent.absolutePath() || !QFileInfo(baseline).fileName().startsWith(QStringLiteral("baseline-"))) return {{QStringLiteral("passed"), false}};
+        QFile original(baseline);
+        check(original.open(QIODevice::ReadOnly) && original.readAll() == disk(), "complete preparation INI matches independent old GUI baseline");
+    }
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("artificial_runtime_dependencies"), true}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::saveTarget(QKeyMapper *mapper, bool cold)
 {
     using namespace QKeyMapperConstants;
@@ -3265,7 +3432,8 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_common_save"), QStringLiteral("settings_common_cold"),
         QStringLiteral("settings_notification_save"), QStringLiteral("settings_notification_cold"),
         QStringLiteral("settings_options_save"), QStringLiteral("settings_options_cold"),
-        QStringLiteral("settings_target_save"), QStringLiteral("settings_target_cold")};
+        QStringLiteral("settings_target_save"), QStringLiteral("settings_target_cold"),
+        QStringLiteral("settings_prepare_save"), QStringLiteral("settings_prepare_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

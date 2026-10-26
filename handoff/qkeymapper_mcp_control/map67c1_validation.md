@@ -251,3 +251,29 @@ rich使用产品现有过滤显示入口准备已加载的自有面板，确认�
 有效证据组合为before各case、run-before-partial-r1／run-before-qt5-r2、after各case、run-after-partial-r1／run-after-qt5-r2及run-after-recovered-qt5.log；最后补十五项的普通脚本exit0。evidence-summary.json核对全部72个有效产品进程、前170／后244检查及18对INI。cache-after.json确认新控制器active／cache_available=true、零owned／unresolved、current_action=null、last_error=null；该当前事实不消除旧控制器的历史未知启动。继续用户已授权开发，不延长截止、不修改全局gsudo配置。
 
 本机原始材料为同一out目录中的构建、前／后结果、18份baseline、身份／旧EXE、局部patch／review／预期字节、状态门禁、未知原生请求与恢复及汇总，不随Git；PC-W10旧结果只按原版本／范围保留。本片为独立本地提交切点，不推送，继续完整范围／修订和只读准备，再进C1-C。MCP仍12工具／8能力，C1-B2／M1未整体完成；未新增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、性能或三语言布局覆盖，原日文旧标签观察保留。
+
+## SAVE-80：运行态只读投影与共通源选择（2026-10-26，PC-W11）
+
+基线为SAVE-79本地35bdd689。先只增加settings_prepare_save／settings_prepare_cold，保留生产原保存建立独立GUI基线；再增加两个私有const值函数collectMappingRowsForSave／collectCommonRowsForSave。前者只在副本按当前数据指针选择Active或LastActive，保留原qMin、空原键跳过、绑定Tab／行索引及重复绑定最后项覆盖，仅投影Burst／Lock／LockState；后者优先有效附着共通源，否则返回旧备份。既有97字段编码器增加显式projectRuntimeState参数供只读准备，GUI默认false仍取原源行；原运行同步／共通同步及保存前后时机未动，未重新提取Tab字段。
+
+生产CPP两处局部hunk41增／2删，header三处声明／签名3增／1删，唯一锚点、dry run／numstat、完整逆变换及实际源码与预期字节一致。未修改Worker、manifest、MCP协议、依赖、翻译或缓存核心；没有新增MCP保存工具、线程或输入热路径。
+
+环境复用SAVE-74同机锁依赖、Qt6.8.3／Qt5.15.2官方x64、MSVC19.44。最初误在工具沙箱运行两项基线构建，均C1902／native exit2，保留build-qt*-before-sandbox-failed.log，尚未启动产品测试；本机编译器／PDB工具版本匹配，仓库已有同样沙箱限制记录。改回沙箱外普通Medium构建，未改编译选项或工具链。有效前／后四次Release维护构建均exit0，Qt6零警告、Qt5仅原qtmain例外；构建树沿out/tests/sendinput_lifecycle/{qt6,qt5}-profile74-release。
+
+复用common_save_fixture.ini.example，只在启动前替换源节和保留节名为Prepare80Seed／Keep80；正常加载普通A→B、共通F13／F14两行和不同的旧F20备份。Qt编辑名称后，在IDLE人工准备运行列表和源绑定依赖，未开始映射。direct当前指针仍为普通源且忽略人工Active／LastActive；active选Active；last选LastActive且另一Active内容不同。包含负／越界Tab、越界行、空原键、数量不等、同一源重复记录及原键不同但索引绑定有效。人工状态只检验该准备算法与原Save，不冒充实际Hook／停止／运行态端到端验收。
+
+| 组 | 每Qt旧GUI保存／冷读 | 每Qt准备后保存／冷读 | 完整INI |
+|---|---|---|---|
+| direct | 6＋5 | 13＋6 | 277键，字节相同 |
+| active | 6＋5 | 12＋6 | 277键，字节相同 |
+| last | 6＋5 | 12＋6 | 277键，字节相同 |
+
+每Qt旧33项／6进程、准备后55项／6进程；共24个进程passed=true、native exit0、workAtExit／producersAtExit为0，六对完整INI字节相等。原Save通过真实按钮完成原同步／写盘／重载，独立冷进程恢复相同Burst／Lock与共通备份且全程不改INI。原始保存和准备后两个普通脚本都exit0；原运行同步未由测试直接调用，也不直接调用加载／保存或用控件赋值替代GUI基线。
+
+只读准备按独立期待核对普通和共通完整74字段，额外核对LockState及三组Pure派生列表；97字段编码的顺序、Qt类型、重复性和原GUI实际全部写回一致。准备后disk、dirty、加载／源代次、当前数据指针、普通／共通源、Active／LastActive列表及旧备份均不变。负／越界Tab返回空；临时把共通数据指针置空后检查返回旧备份并立即恢复，仅属组件分支，不冒充真实GUI缺失指针或脱离流程。脱离／空表实际GUI结果仍仅按SAVE-76原范围保留，完整保存接入需按相关风险补验。
+
+实际EXE为out/mcp_save_prepare_w11_20261026/{qt6,qt5}-runtime/QKeyMapperPrepared80_*_runtime.exe，原requireAdministrator manifest保持、前后同路径，旧EXE在old-executables。全部经普通控制器25608的公共定义审核／登记／perform启动，父8192、产品High12288、same_login=true；主线程实际QkmPrepare80_<UUID>私有桌面，PID／创建时间及退出见case的start／closed.json。无Default、系统输入、映射启动；原设备初始化／退出清理仍执行，不以零计数证明完整设备释放。
+
+原始build-qt*-before／after.log、沙箱失败日志、run-before／after.log、前／后case、六份baseline、部署身份／旧EXE、局部patch／projection-review／预期字节及evidence-summary.json都在本机同一out目录，不随Git。cache-after.json确认25608仍active／cache_available=true、零owned／unresolved、current_action=null、last_error=null，截止15:44不变；SAVE-79旧控制器的未知启动不因此改记成功或已清理。
+
+本片为独立本地提交切点，不推送，继续快捷键焦点提交、通知模式、顺序、其他草稿和完整Qt磁盘／业务修订，再进C1-C。C1-B2／M1未整体完成，工具12／业务能力8。未新增普通产品全构建、严格静态分析、ASan、Default／真实输入／设备、性能或三语言布局验收；PC-W10历史只按原版本范围保留。

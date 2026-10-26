@@ -21273,7 +21273,45 @@ OrderedMap<QString, QVariant> QKeyMapper::collectGeneralSettingSaveValues(int la
     return values;
 }
 
-OrderedMap<QString, QVariant> QKeyMapper::collectMappingTableSaveValues() const
+QList<MAP_KEYDATA> QKeyMapper::collectMappingRowsForSave(int tabIndex) const
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()
+        || s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData == Q_NULLPTR) return {};
+    QList<MAP_KEYDATA> rows = *s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+    const QList<MAP_KEYDATA> *runtime = Q_NULLPTR;
+    const QList<ActiveKeyMappingRowSourceInfo> *sources = Q_NULLPTR;
+    if (KeyMappingDataList == &s_ActiveKeyMappingDataList) {
+        runtime = &s_ActiveKeyMappingDataList;
+        sources = &s_ActiveKeyMappingRowSourceInfoList;
+    } else if (KeyMappingDataList == &s_LastActiveKeyMappingDataList) {
+        runtime = &s_LastActiveKeyMappingDataList;
+        sources = &s_LastActiveKeyMappingRowSourceInfoList;
+    }
+    if (runtime == Q_NULLPTR) return rows;
+    // Match Save's runtime projection on copies; preview must not synchronize live source rows.
+    const int count = qMin(runtime->size(), sources->size());
+    for (int index = 0; index < count; ++index) {
+        const auto &source = sources->at(index);
+        const auto &data = runtime->at(index);
+        if (data.Original_Key.isEmpty() || source.SourceTabIndex != tabIndex
+            || source.SourceRow < 0 || source.SourceRow >= rows.size()) continue;
+        auto &row = rows[source.SourceRow];
+        row.Burst = data.Burst;
+        row.Lock = data.Lock;
+        row.LockState = data.LockState;
+    }
+    return rows;
+}
+
+QList<MAP_KEYDATA> QKeyMapper::collectCommonRowsForSave() const
+{
+    const int commonIndex = findCommonMappingTabIndex();
+    if (commonIndex >= 0 && commonIndex < s_KeyMappingTabInfoList.size()
+        && s_KeyMappingTabInfoList.at(commonIndex).KeyMappingData != Q_NULLPTR) return collectMappingRowsForSave(commonIndex);
+    return m_CommonMappingData;
+}
+
+OrderedMap<QString, QVariant> QKeyMapper::collectMappingTableSaveValues(bool projectRuntimeState) const
 {
     OrderedMap<QString, QVariant> values;
     // Preserve the existing last-normal-tab-name persistence rule.
@@ -21438,7 +21476,8 @@ OrderedMap<QString, QVariant> QKeyMapper::collectMappingTableSaveValues() const
         floatingwindow_mousepassthroughList.append(floatingWindow_MousePassThrough ? "ON" : "OFF");
         floatingwindow_mousepassthroughswitchkeyList.append(floatingWindow_MousePassThroughSwitchKey);
 
-        QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(index).KeyMappingData;
+        const QList<MAP_KEYDATA> preparedRows = projectRuntimeState ? collectMappingRowsForSave(index) : QList<MAP_KEYDATA>();
+        const QList<MAP_KEYDATA> *mappingDataList = projectRuntimeState ? &preparedRows : s_KeyMappingTabInfoList.at(index).KeyMappingData;
 
         // append SEPARATOR_KEYMAPDATA_LEVEL2 to QString variable forsave if it is not the first index
         if (index > 0) {

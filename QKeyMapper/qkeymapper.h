@@ -2185,7 +2185,9 @@ private:
     SettingSaveTarget analyzeSettingSaveTarget(const QString &requestedName, const QString &currentSelectedSetting,
         bool globalSelected, const QStringList &groups) const;
     OrderedMap<QString, QVariant> collectGeneralSettingSaveValues(int languageIndex) const;
-    OrderedMap<QString, QVariant> collectMappingTableSaveValues() const;
+    QList<MAP_KEYDATA> collectMappingRowsForSave(int tabIndex) const;
+    QList<MAP_KEYDATA> collectCommonRowsForSave() const;
+    OrderedMap<QString, QVariant> collectMappingTableSaveValues(bool projectRuntimeState = false) const;
     OrderedMap<QString, QVariant> collectProfileParameterSaveValues() const;
     OrderedMap<QString, QVariant> collectWindowMatchSaveValues(const QString &savedFilePathString) const;
     OrderedMap<QString, QVariant> collectProfileMappingOptionSaveValues() const;
