@@ -31,6 +31,7 @@
 #include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
 #include "../../qnotificationsetupdialog.h"
+#include "../../qvbuttonpanel.h"
 #include "../../qitemsetupdialog.h"
 #include "../../qkeymapper_worker.h"
 #include "../../qkeymapper.h"
@@ -73,6 +74,7 @@ public:
     static QJsonObject windowMatchSave(QKeyMapper *mapper, bool cold);
     static QJsonObject commonSave(QKeyMapper *mapper, bool cold);
     static QJsonObject notificationSave(QKeyMapper *mapper, bool cold);
+    static QJsonObject profileOptionSave(QKeyMapper *mapper, bool cold);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1219,6 +1221,14 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_options_save") || guiMode == QStringLiteral("settings_options_cold")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::profileOptionSave(
+                QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2810,6 +2820,151 @@ QJsonObject QkmMappingAdditionTestAccess::notificationSave(QKeyMapper *mapper, b
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::profileOptionSave(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_LIFECYCLE_OPTIONS_VARIANT");
+    const bool rich = variant == QStringLiteral("rich");
+    if ((!rich && variant != QStringLiteral("default")) || !QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath() || !mapper->m_VButtonPanel) return {{QStringLiteral("passed"), false}};
+    const auto disk = [] { QFile file(QString::fromLatin1(CONFIG_FILENAME)); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray before = disk();
+    const QString target = QStringLiteral("Map78Profile"), prefix = target + QLatin1Char('/');
+    auto *panel = mapper->m_VButtonPanel;
+    const auto initialOffsets = panel->panelOffsets();
+    const auto initialSettings = mapper->m_VButtonPanelSettings;
+    OrderedMap<QString, QVariant> optionValues, inputValues, panelValues;
+    auto *automatic = mapper->findChild<QCheckBox *>(QStringLiteral("autoStartMappingCheckBox"));
+    check(!before.isEmpty() && mapper->m_LoadedMappingSettingGroup == (cold ? target : QStringLiteral("Profile78Seed"))
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED
+        && automatic && automatic->checkState() == Qt::Unchecked && !mapper->getEnableSystemFilterKeyChecked()
+        && !mapper->getDisableFilterKeyClickSoundOnEnableChecked(),
+        "owned option fixture is loaded normally with mapping and system FilterKeys disabled");
+    if (rich) check(initialSettings.columns == 4 && initialSettings.maxRows == 3 && initialSettings.btnWidth == 91 && initialSettings.btnHeight == 37
+        && qFuzzyCompare(initialSettings.opacity, 0.72) && !initialSettings.alwaysOnTop && !initialSettings.defaultShow
+        && initialSettings.margin == 9 && initialSettings.radius == 11 && initialSettings.dragEnabled && initialSettings.referencePoint == 0
+        && initialSettings.bgColor == QColor(QStringLiteral("#80334455")) && initialSettings.btnColor == QColor(QStringLiteral("#aa223344"))
+        && initialSettings.pressedColor == QColor(QStringLiteral("#bb334455")) && initialSettings.lockedColor == QColor(QStringLiteral("#cc445566"))
+        && initialSettings.textColor == QColor(QStringLiteral("#dd556677")) && initialSettings.btnFontSize == 12
+        && initialSettings.btnFontWeight == 2 && initialSettings.btnFontFamily == QStringLiteral("Arial"),
+        "independent nondefault panel layout, colors, font and behavior restore");
+    int buttonSignals = 0;
+    const auto connection = QObject::connect(panel, &QVButtonPanel::triggerVButtonKey_Signal, panel, [&](const QString &, bool) { ++buttonSignals; });
+    const auto disconnect = qScopeGuard([connection] { QObject::disconnect(connection); });
+    QPoint savedOffsets = initialOffsets;
+    if (!cold) {
+        if (rich) {
+            // Display preparation uses the existing filtered entry; Save remains the independent GUI path.
+            mapper->onShowVButtonPanelRequested(true);
+            check(panel->isVisible() && panel->buttonCount() == 1 && QKeyMapper::s_CurrentMappingHWND == nullptr,
+                "existing filtered show entry displays only the owned VButton panel without mapping");
+            const QPoint local(1, 1), global = panel->mapToGlobal(local), delta(37, 29);
+            QMouseEvent press(QEvent::MouseButtonPress, local, local, global, Qt::LeftButton, Qt::LeftButton, Qt::ControlModifier);
+            QMouseEvent move(QEvent::MouseMove, local + delta, local + delta, global + delta, Qt::NoButton, Qt::LeftButton, Qt::ControlModifier);
+            QMouseEvent release(QEvent::MouseButtonRelease, local + delta, local + delta, global + delta, Qt::LeftButton, Qt::NoButton, Qt::ControlModifier);
+            QCoreApplication::sendEvent(panel, &press); QCoreApplication::sendEvent(panel, &move); QCoreApplication::sendEvent(panel, &release);
+            savedOffsets = panel->panelOffsets();
+            check(savedOffsets == initialOffsets + delta && mapper->m_VButtonPanelSettings.offsetX == initialSettings.offsetX
+                && mapper->m_VButtonPanelSettings.offsetY == initialSettings.offsetY && QWidget::mouseGrabber() != panel && buttonSignals == 0,
+                "Qt background Ctrl-drag changes live offsets without changing cached settings or dispatching virtual buttons");
+        }
+        auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+        auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+        if (!name || !save || !save->isEnabled()) return {{QStringLiteral("passed"), false}};
+        name->setFocus();
+        QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+        QCoreApplication::sendEvent(name, &select); QCoreApplication::sendEvent(name, &selected);
+        for (const QChar character : target) {
+            QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+            QCoreApplication::sendEvent(name, &press); QCoreApplication::sendEvent(name, &release);
+        }
+        const bool dirty = mapper->m_SaveSettingDirty, visible = panel->isVisible();
+        const quint64 load = mapper->m_MappingLoadGeneration, source = mapper->m_AutomationSourceEpoch;
+        const auto same = [](const auto &values, const auto &repeated) {
+            bool equal = values.keys() == repeated.keys();
+            for (auto it = values.begin(); it != values.end(); ++it) {
+                equal = equal && it.value() == repeated.value(it.key()) && it.value().userType() == repeated.value(it.key()).userType();
+            }
+            return equal;
+        };
+        optionValues = mapper->collectProfileMappingOptionSaveValues();
+        inputValues = mapper->collectProfileInputSaveValues();
+        panelValues = mapper->collectVButtonPanelSaveValues();
+        int inputCount = 4;
+#ifdef VIGEM_CLIENT_SUPPORT
+        inputCount = 6;
+#endif
+        check(optionValues.size() == 9 && inputValues.size() == inputCount && panelValues.size() == 21
+            && same(optionValues, mapper->collectProfileMappingOptionSaveValues())
+            && same(inputValues, mapper->collectProfileInputSaveValues()) && same(panelValues, mapper->collectVButtonPanelSaveValues()),
+            "all option, feature-conditional input and panel values retain ordered Qt types and repeatability");
+        if (rich) {
+            const QScopedValueRollback<QVButtonPanel *> noPanel(mapper->m_VButtonPanel, nullptr);
+            const auto fallback = mapper->collectVButtonPanelSaveValues();
+            check(fallback.size() == 21 && fallback.value(VBTNPANEL_OFFSETX).toInt() == initialSettings.offsetX
+                && fallback.value(VBTNPANEL_OFFSETY).toInt() == initialSettings.offsetY,
+                "component-only missing-panel branch reads cached offsets without changing the real panel");
+        }
+        check(disk() == before && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load
+            && mapper->m_AutomationSourceEpoch == source && panel->isVisible() == visible && panel->panelOffsets() == savedOffsets
+            && mapper->m_VButtonPanelSettings.offsetX == initialSettings.offsetX && mapper->m_VButtonPanelSettings.offsetY == initialSettings.offsetY
+            && buttonSignals == 0, "pure collection changes no disk, dirty, generations, cached/live offsets, visibility or panel input");
+        clickMappingButton(save);
+    }
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    check(ini.status() == QSettings::NoError && mapper->m_LoadedMappingSettingGroup == target && !mapper->m_SaveSettingDirty
+        && ini.value(SETTINGSELECT).toString() == target && buttonSignals == 0 && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE,
+        "GUI Save or cold load completes the exact profile without starting mapping or dispatching panel keys");
+    check(ini.value(prefix + VBTNPANEL_OFFSETX).toInt() == savedOffsets.x() && ini.value(prefix + VBTNPANEL_OFFSETY).toInt() == savedOffsets.y()
+        && panel->panelOffsets() == savedOffsets, "actual panel offsets take priority and restore after save or cold load");
+    check(ini.value(prefix + VBTNPANEL_COLUMNS).toInt() == initialSettings.columns
+        && ini.value(prefix + VBTNPANEL_BGCOLOR).toString() == initialSettings.bgColor.name(QColor::HexArgb)
+        && ini.value(prefix + VBTNPANEL_TEXTCOLOR).toString() == initialSettings.textColor.name(QColor::HexArgb)
+        && ini.value(prefix + VBTNPANEL_BTNFONTFAMILY).toString() == initialSettings.btnFontFamily
+        && qFuzzyCompare(ini.value(prefix + VBTNPANEL_OPACITY).toDouble(), initialSettings.opacity),
+        "GUI writes effective panel style values with unchanged ARGB and scalar encodings");
+    if (!cold) {
+        bool persisted = true;
+        for (const auto &values : {optionValues, inputValues, panelValues}) {
+            for (auto it = values.begin(); it != values.end(); ++it) persisted = persisted && ini.value(prefix + it.key()) == it.value();
+        }
+        check(persisted, "ordinary GUI Save persists every collected option, input and panel value");
+    }
+    check(ini.value(prefix + AUTOSTARTMAPPING_CHECKED).toInt() == 0 && !ini.value(prefix + ENABLESYSTEMFILTERKEY_CHECKED).toBool()
+        && !ini.value(prefix + DISABLEFILTERKEYCLICKSOUND_CHECKED).toBool() && ini.value(prefix + FILTER_KEYS).toBool() == !rich
+        && ini.value(prefix + SENDTOSAMEWINDOWS_CHECKED).toBool() == rich
+        && ini.value(prefix + ACCEPTVIRTUALGAMEPADINPUT_CHECKED).toBool() == rich
+        && ini.value(prefix + PROCESSICON_AS_TRAYICON_CHECKED).toBool() == rich
+        && ini.value(prefix + MAPPINGTABLE_COMMON_ENABLED).toBool() == rich,
+        "profile switches preserve independent true/false expectations and disabled system FilterKeys");
+    if (rich) check(ini.value(prefix + DATAPORT_NUMBER).toInt() == 5307
+        && qFuzzyCompare(ini.value(prefix + GRIP_THRESHOLD_BRAKE).toDouble(), 1.23457)
+        && qFuzzyCompare(ini.value(prefix + GRIP_THRESHOLD_ACCEL).toDouble(), 2.98765),
+        "port and threshold values retain the original five-decimal normalization");
+#ifdef VIGEM_CLIENT_SUPPORT
+    check(ini.value(prefix + MOUSE2VJOY_LOCKCURSOR).toBool() == rich && ini.value(prefix + MOUSE2VJOY_DIRECTMODE).toBool() == rich,
+        "enabled ViGEm build retains both per-profile mouse-to-stick flags without starting mapping");
+#endif
+    if (cold) check(disk() == before, "independent option/panel cold read does not rewrite the INI");
+    const QString baseline = qEnvironmentVariable("QKM_LIFECYCLE_SAVE_BASELINE");
+    if (!baseline.isEmpty()) {
+        QDir parent(QCoreApplication::applicationDirPath()); parent.cdUp();
+        if (QFileInfo(baseline).absolutePath() != parent.absolutePath() || !QFileInfo(baseline).fileName().startsWith(QStringLiteral("baseline-"))) return {{QStringLiteral("passed"), false}};
+        QFile original(baseline);
+        check(original.open(QIODevice::ReadOnly) && original.readAll() == disk(), "complete option/panel INI matches the independent old GUI baseline");
+    }
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("panel_key_signals"), buttonSignals}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::tableState(QKeyMapper *mapper)
 {
     bool passed = true;
@@ -2986,7 +3141,8 @@ int main(int argc, char *argv[])
         QStringLiteral("ui_localization"), QStringLiteral("settings_profile_save"), QStringLiteral("settings_profile_cold"),
         QStringLiteral("settings_match_save"), QStringLiteral("settings_match_cold"),
         QStringLiteral("settings_common_save"), QStringLiteral("settings_common_cold"),
-        QStringLiteral("settings_notification_save"), QStringLiteral("settings_notification_cold")};
+        QStringLiteral("settings_notification_save"), QStringLiteral("settings_notification_cold"),
+        QStringLiteral("settings_options_save"), QStringLiteral("settings_options_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

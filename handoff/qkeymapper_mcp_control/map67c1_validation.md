@@ -192,3 +192,30 @@ Qt6.8.3 msvc2022_64／Qt5.15.2官方msvc2019_64，两者qconfig的QT_ARCH=x86_64
 原始材料在同一本机out目录：四份build-qt*-*.log、run-before／after.log、八份baseline INI、case／身份／退出、14字段局部patch／review、应用预期内容及汇总；不随Git。cache-after.json确认active／cache_available=true、零owned／unresolved、current_action=null、last_error=null，沿用用户6小时期限15:44:30，不重启／延长。仅移除已被新EXE替代的旧登记摘要，仍有效范围及历史保留，缓存核心不变。
 
 本片为独立本地提交切点，不推送，继续面板及剩余开关。const QSettings依赖仍须纳入完整目标磁盘／业务修订和执行前重检，不能用局部类型一致开放保存权限。MCP仍12工具／8能力，完整保存／其他草稿／失败恢复和启停闭环仍待实现；未验证通知实际显示、Default、真实输入／设备、性能、ASan、严格静态分析或三语言布局，PC-W10此前证据只按其原版本范围复用。
+
+## SAVE-78：剩余开关、输入标量与面板（2026-10-26，PC-W11）
+
+基线为SAVE-77本地eb684f8961efca0445345fa25a82dd7cd198cdbb。先增加settings_options_save／settings_options_cold与独立INI样例，在生产保存实现未变时建立有效旧GUI基线，再提取私有collectProfileMappingOptionSaveValues／collectProfileInputSaveValues／collectVButtonPanelSaveValues，分别9／6／21有效键，均在原阶段写回。保持Qt checkState／bool、VIGEM条件、两项阈值原round精度、面板实时偏移优先和ARGB。唯一锚点、字段／条件审查、完整逆变换、dry run及应用后实际CPP／header逐字核对通过；通知模式两项、快捷键默认化／焦点、配置顺序、辅助包装器和尾部未移动。没有改Worker、manifest、协议、依赖、翻译或缓存核心。
+
+同机Qt6.8.3／Qt5.15.2官方x64、MSVC19.44和原锁环境；维护构建树沿out/tests/sendinput_lifecycle/{qt6,qt5}-profile74-release。有效旧基线预期校准后及提取后四次Release构建native exit0，Qt6零警告，Qt5仅原qtmain例外；当前日志为这些选定构建。初次未校准构建的日志随后由校准构建覆盖，不能补称仍有独立原始日志；其EXE和失败运行记录另行保留，不计入选定通过。
+
+基础INI由profile_save_fixture派生，正常启动载入VButton{Button1}→B；非默认31项样例含开关、端口／阈值和面板21值，Windows系统过滤键、启动监视、自动匹配、全局虚拟手柄和多设备输入均关闭。内部FilterKeys缺省true、非默认显式false，两者与系统过滤键不同。名称编辑及真实Save另存Map78Profile，不直接调用加载／保存或用控件赋值代替基线。
+
+rich使用产品现有过滤显示入口准备已加载的自有面板，确认只有一按钮且无映射目标HWND；随后Qt背景Ctrl拖动、屏幕参考点0，将实际偏移73／97移到110／126，缓存仍73／97。保存按实际偏移，重载及冷进程恢复相同值；鼠标捕获释放，panel_key_signals始终0。此显示准备不是普通用户完整显示入口验收；没有物理鼠标／系统按键、窗口参考点或外部窗口控制，未开始映射。
+
+| 组 | 每Qt旧GUI保存／冷读 | 每Qt提取后保存／冷读 | 全部INI键／对照 |
+|---|---|---|---|
+| default | 6＋7 | 10＋8 | 262，完整字节相同 |
+| rich | 10＋9 | 15＋10 | 293，完整字节相同 |
+
+每Qt旧32项／4进程、提取后43项／4进程；两Qt共16个选定进程passed=true、native exit0，workAtExit／producersAtExit为0。四对完整INI字节一致，独立冷启动至退出不改INI。新9／6／21项收集保持顺序／Qt类型／重复性，GUI逐项写回相等；disk、dirty、加载代次、源epoch、缓存／实际偏移、可见性和按钮派发不变。非默认布局／字体／5个ARGB色、true／false开关、5307端口及1.23457／2.98765阈值有独立期待。临时空面板指针回退仅组件分支检查，不冒充真实GUI缺失面板；VIGEM关闭时4项路径仅源码核对，未运行该构建。
+
+最初Qt6 default仅一项内部FilterKeys预期失败、exit2，其余保存／重载／停止态及零尾部作业通过；源码确认缺省true后修正测试期待，不改产品。保留failed-initial-before、failed-initial-qt6-default.ini、failed-initial-executables及run-before-failed1.log，不能计为有效基线。随后Qt6两组及Qt5 default成功，最后Qt5 rich在启动前authorize因32摘要上限拒绝；只读核对发现普通脚本从verified_controller的内部旧快照恢复了一个已替换EXE摘要。改为每组先正式status，清理仅该过期摘要，再只补未启动的Qt5 rich两进程；未重跑成功组、重启缓存或重试UAC。
+
+有效旧基线证据由before各case的原生退出与检查汇总、run-before-partial-r2.log（含6个成功进程及最后启动前拒绝）和run-before-complete-r3.log（补2个进程）共同组成。root的run-before.log保留启动前拒绝，不把整次控制脚本exit1改称exit0；16个选定产品native进程均有独立exit0记录。提取后run-after.log整轮成功，汇总evidence-summary.json逐项检查通过。
+
+实际原requireAdministrator EXE为out/mcp_save_options_panel_w11_20261026/{qt6,qt5}-{default,rich}/QKeyMapperOptions78_*.exe，前／后同路径，identity及old-executables保留有效旧二进制。全部经普通Medium控制器23316的公共登记，产品High12288、父8192、same_login=true；主线程实际独立QkmOptions78_<UUID>私有桌面、PID／创建时间／退出在各case的start／closed.json。原main初始化／退出设备清理仍保留，不能据计数认定设备效果或完整停止。
+
+本机原始材料在同一out目录的before／after、四份baseline INI、有效／失败EXE、构建／运行与登记失败日志、局部patch／review、预期内容及汇总，不随Git。cache-after.json为active／cache_available=true、零owned／unresolved、current_action=null、last_error=null；32登记槽／32定义，保留用户6小时截止15:44:30继续开发。后续复用空闲目标或固定case并先正式status，不因容量重启／延长缓存，不恢复旧scope。
+
+本片为独立本地提交切点，不推送。下一项是完整范围／修订和只读准备收口，再按C1-C接入保存预览／提交；两项通知模式、快捷键／目标／顺序／全部辅助集合、其他草稿及保存尾部仍须纳入。MCP仍12工具／8能力，C1-B2及M1未整体完成。未新增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、性能或三语言布局结论；PC-W10原证据只按原版本范围保留。

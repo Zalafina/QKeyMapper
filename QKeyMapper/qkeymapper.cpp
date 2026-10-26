@@ -22387,6 +22387,72 @@ QVariantList QKeyMapper::serializeCommonMappingData(const QList<MAP_KEYDATA> &da
     return commonList;
 }
 
+OrderedMap<QString, QVariant> QKeyMapper::collectProfileMappingOptionSaveValues() const
+{
+    OrderedMap<QString, QVariant> values;
+    values[QString::fromLatin1(AUTOSTARTMAPPING_CHECKED)] = ui->autoStartMappingCheckBox->checkState();
+    values[QString::fromLatin1(ENABLESYSTEMFILTERKEY_CHECKED)] = getEnableSystemFilterKeyChecked();
+    values[QString::fromLatin1(DISABLEFILTERKEYCLICKSOUND_CHECKED)] = getDisableFilterKeyClickSoundOnEnableChecked();
+    values[QString::fromLatin1(SENDTOSAMEWINDOWS_CHECKED)] = ui->sendToSameTitleWindowsCheckBox->isChecked();
+    values[QString::fromLatin1(ACCEPTVIRTUALGAMEPADINPUT_CHECKED)] = m_MappingAdvancedDialog->getAcceptVirtualGamepadInput();
+    values[QString::fromLatin1(PROCESSICON_AS_TRAYICON_CHECKED)] = m_MappingAdvancedDialog->getProcessIconAsTrayIcon();
+    values[QString::fromLatin1(SHOW_WINDOW_POINT_KEY)] = m_MappingAdvancedDialog->getShowWindowPointKey();
+    values[QString::fromLatin1(SHOW_SCREEN_POINT_KEY)] = m_MappingAdvancedDialog->getShowScreenPointKey();
+    values[QString::fromLatin1(MAPPINGTABLE_COMMON_ENABLED)] = m_MappingAdvancedDialog->getCommonMappingTableEnabled();
+    return values;
+}
+
+OrderedMap<QString, QVariant> QKeyMapper::collectProfileInputSaveValues() const
+{
+    OrderedMap<QString, QVariant> values;
+#ifdef VIGEM_CLIENT_SUPPORT
+    values[QString::fromLatin1(MOUSE2VJOY_LOCKCURSOR)] = ui->lockCursorCheckBox->isChecked();
+    values[QString::fromLatin1(MOUSE2VJOY_DIRECTMODE)] = ui->directModeCheckBox->isChecked();
+#endif
+    values[QString::fromLatin1(DATAPORT_NUMBER)] = ui->dataPortSpinBox->value();
+    double gripThresholdBrake = ui->brakeThresholdDoubleSpinBox->value();
+    gripThresholdBrake = round(gripThresholdBrake * pow(10, GRIP_THRESHOLD_DECIMALS)) / pow(10, GRIP_THRESHOLD_DECIMALS);
+    values[QString::fromLatin1(GRIP_THRESHOLD_BRAKE)] = gripThresholdBrake;
+    double gripThresholdAccel = ui->accelThresholdDoubleSpinBox->value();
+    gripThresholdAccel = round(gripThresholdAccel * pow(10, GRIP_THRESHOLD_DECIMALS)) / pow(10, GRIP_THRESHOLD_DECIMALS);
+    values[QString::fromLatin1(GRIP_THRESHOLD_ACCEL)] = gripThresholdAccel;
+
+    values[QString::fromLatin1(FILTER_KEYS)] = ui->filterKeysCheckBox->isChecked();
+    return values;
+}
+
+OrderedMap<QString, QVariant> QKeyMapper::collectVButtonPanelSaveValues() const
+{
+    OrderedMap<QString, QVariant> values;
+    values[QString::fromLatin1(VBTNPANEL_COLUMNS)] = m_VButtonPanelSettings.columns;
+    values[QString::fromLatin1(VBTNPANEL_MAXROWS)] = m_VButtonPanelSettings.maxRows;
+    values[QString::fromLatin1(VBTNPANEL_BTNWIDTH)] = m_VButtonPanelSettings.btnWidth;
+    values[QString::fromLatin1(VBTNPANEL_BTNHEIGHT)] = m_VButtonPanelSettings.btnHeight;
+    values[QString::fromLatin1(VBTNPANEL_OPACITY)] = m_VButtonPanelSettings.opacity;
+    values[QString::fromLatin1(VBTNPANEL_ALWAYSONTOP)] = m_VButtonPanelSettings.alwaysOnTop;
+    values[QString::fromLatin1(VBTNPANEL_DEFAULTSHOW)] = m_VButtonPanelSettings.defaultShow;
+    values[QString::fromLatin1(VBTNPANEL_MARGIN)] = m_VButtonPanelSettings.margin;
+    values[QString::fromLatin1(VBTNPANEL_RADIUS)] = m_VButtonPanelSettings.radius;
+    values[QString::fromLatin1(VBTNPANEL_DRAGENABLED)] = m_VButtonPanelSettings.dragEnabled;
+    values[QString::fromLatin1(VBTNPANEL_REFERENCEPOINT)] = m_VButtonPanelSettings.referencePoint;
+    if (m_VButtonPanel) {
+        values[QString::fromLatin1(VBTNPANEL_OFFSETX)] = m_VButtonPanel->panelOffsets().x();
+        values[QString::fromLatin1(VBTNPANEL_OFFSETY)] = m_VButtonPanel->panelOffsets().y();
+    } else {
+        values[QString::fromLatin1(VBTNPANEL_OFFSETX)] = m_VButtonPanelSettings.offsetX;
+        values[QString::fromLatin1(VBTNPANEL_OFFSETY)] = m_VButtonPanelSettings.offsetY;
+    }
+    values[QString::fromLatin1(VBTNPANEL_BGCOLOR)] = m_VButtonPanelSettings.bgColor.name(QColor::HexArgb);
+    values[QString::fromLatin1(VBTNPANEL_BTNCOLOR)] = m_VButtonPanelSettings.btnColor.name(QColor::HexArgb);
+    values[QString::fromLatin1(VBTNPANEL_PRESSEDCOLOR)] = m_VButtonPanelSettings.pressedColor.name(QColor::HexArgb);
+    values[QString::fromLatin1(VBTNPANEL_LOCKEDCOLOR)] = m_VButtonPanelSettings.lockedColor.name(QColor::HexArgb);
+    values[QString::fromLatin1(VBTNPANEL_TEXTCOLOR)] = m_VButtonPanelSettings.textColor.name(QColor::HexArgb);
+    values[QString::fromLatin1(VBTNPANEL_BTNFONTSIZE)] = m_VButtonPanelSettings.btnFontSize;
+    values[QString::fromLatin1(VBTNPANEL_BTNFONTWEIGHT)] = m_VButtonPanelSettings.btnFontWeight;
+    values[QString::fromLatin1(VBTNPANEL_BTNFONTFAMILY)] = m_VButtonPanelSettings.btnFontFamily;
+    return values;
+}
+
 bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
@@ -22703,15 +22769,10 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         }
     }
 
-    settingFile.setValue(saveSettingSelectStr+AUTOSTARTMAPPING_CHECKED, ui->autoStartMappingCheckBox->checkState());
-    settingFile.setValue(saveSettingSelectStr+ENABLESYSTEMFILTERKEY_CHECKED, getEnableSystemFilterKeyChecked());
-    settingFile.setValue(saveSettingSelectStr+DISABLEFILTERKEYCLICKSOUND_CHECKED, getDisableFilterKeyClickSoundOnEnableChecked());
-    settingFile.setValue(saveSettingSelectStr+SENDTOSAMEWINDOWS_CHECKED, ui->sendToSameTitleWindowsCheckBox->isChecked());
-    settingFile.setValue(saveSettingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED, m_MappingAdvancedDialog->getAcceptVirtualGamepadInput());
-    settingFile.setValue(saveSettingSelectStr+PROCESSICON_AS_TRAYICON_CHECKED, m_MappingAdvancedDialog->getProcessIconAsTrayIcon());
-    settingFile.setValue(saveSettingSelectStr+SHOW_WINDOW_POINT_KEY, m_MappingAdvancedDialog->getShowWindowPointKey());
-    settingFile.setValue(saveSettingSelectStr+SHOW_SCREEN_POINT_KEY, m_MappingAdvancedDialog->getShowScreenPointKey());
-    settingFile.setValue(saveSettingSelectStr+MAPPINGTABLE_COMMON_ENABLED, m_MappingAdvancedDialog->getCommonMappingTableEnabled());
+    const auto optionValues = collectProfileMappingOptionSaveValues();
+    for (auto it = optionValues.begin(); it != optionValues.end(); ++it) {
+        settingFile.setValue(saveSettingSelectStr + it.key(), it.value());
+    }
 
     // Save common mapping data as a standalone backup (survives tab detach).
     // Uses QVariantMap per entry → QVariantList, same pattern as macro export.
@@ -22722,19 +22783,10 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_ENABLED, m_MappingAdvancedDialog->getCustomNotificationEnabled());
     settingFile.setValue(saveSettingSelectStr+CUSTOM_NOTIFICATION_POSITION, m_MappingAdvancedDialog->getCustomNotificationPosition());
     saveCustomNotificationStyleSettings(settingFile, saveSettingSelectStr);
-#ifdef VIGEM_CLIENT_SUPPORT
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_LOCKCURSOR, ui->lockCursorCheckBox->isChecked());
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_DIRECTMODE, ui->directModeCheckBox->isChecked());
-#endif
-    settingFile.setValue(saveSettingSelectStr+DATAPORT_NUMBER, ui->dataPortSpinBox->value());
-    double gripThresholdBrake = ui->brakeThresholdDoubleSpinBox->value();
-    gripThresholdBrake = round(gripThresholdBrake * pow(10, GRIP_THRESHOLD_DECIMALS)) / pow(10, GRIP_THRESHOLD_DECIMALS);
-    settingFile.setValue(saveSettingSelectStr+GRIP_THRESHOLD_BRAKE, gripThresholdBrake);
-    double gripThresholdAccel = ui->accelThresholdDoubleSpinBox->value();
-    gripThresholdAccel = round(gripThresholdAccel * pow(10, GRIP_THRESHOLD_DECIMALS)) / pow(10, GRIP_THRESHOLD_DECIMALS);
-    settingFile.setValue(saveSettingSelectStr+GRIP_THRESHOLD_ACCEL, gripThresholdAccel);
-
-    settingFile.setValue(saveSettingSelectStr+FILTER_KEYS, ui->filterKeysCheckBox->isChecked());
+    const auto inputValues = collectProfileInputSaveValues();
+    for (auto it = inputValues.begin(); it != inputValues.end(); ++it) {
+        settingFile.setValue(saveSettingSelectStr + it.key(), it.value());
+    }
 
 //         if (m_mappingswitchKeySeqEdit->keySequence().isEmpty()) {
 //             if (m_mappingswitchKeySeqEdit->lastKeySequence().isEmpty()) {
@@ -22784,32 +22836,10 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     Q_ASSERT(!savedSettingName.isEmpty());
     {
         const QString vbtnPrefix = QString("%1/").arg(savedSettingName);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_COLUMNS,           m_VButtonPanelSettings.columns);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_MAXROWS,           m_VButtonPanelSettings.maxRows);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNWIDTH,          m_VButtonPanelSettings.btnWidth);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNHEIGHT,         m_VButtonPanelSettings.btnHeight);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_OPACITY,           m_VButtonPanelSettings.opacity);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_ALWAYSONTOP,       m_VButtonPanelSettings.alwaysOnTop);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_DEFAULTSHOW,       m_VButtonPanelSettings.defaultShow);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_MARGIN,            m_VButtonPanelSettings.margin);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_RADIUS,            m_VButtonPanelSettings.radius);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_DRAGENABLED,       m_VButtonPanelSettings.dragEnabled);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_REFERENCEPOINT,    m_VButtonPanelSettings.referencePoint);
-        if (m_VButtonPanel) {
-            settingFile.setValue(vbtnPrefix + VBTNPANEL_OFFSETX, m_VButtonPanel->panelOffsets().x());
-            settingFile.setValue(vbtnPrefix + VBTNPANEL_OFFSETY, m_VButtonPanel->panelOffsets().y());
-        } else {
-            settingFile.setValue(vbtnPrefix + VBTNPANEL_OFFSETX, m_VButtonPanelSettings.offsetX);
-            settingFile.setValue(vbtnPrefix + VBTNPANEL_OFFSETY, m_VButtonPanelSettings.offsetY);
+        const auto panelValues = collectVButtonPanelSaveValues();
+        for (auto it = panelValues.begin(); it != panelValues.end(); ++it) {
+            settingFile.setValue(vbtnPrefix + it.key(), it.value());
         }
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_BGCOLOR,   m_VButtonPanelSettings.bgColor.name(QColor::HexArgb));
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNCOLOR,  m_VButtonPanelSettings.btnColor.name(QColor::HexArgb));
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_PRESSEDCOLOR, m_VButtonPanelSettings.pressedColor.name(QColor::HexArgb));
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_LOCKEDCOLOR,  m_VButtonPanelSettings.lockedColor.name(QColor::HexArgb));
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_TEXTCOLOR, m_VButtonPanelSettings.textColor.name(QColor::HexArgb));
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTSIZE, m_VButtonPanelSettings.btnFontSize);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTWEIGHT, m_VButtonPanelSettings.btnFontWeight);
-        settingFile.setValue(vbtnPrefix + VBTNPANEL_BTNFONTFAMILY, m_VButtonPanelSettings.btnFontFamily);
     }
 
     // Save MacroList to INI file

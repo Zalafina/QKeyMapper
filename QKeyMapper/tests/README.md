@@ -118,3 +118,13 @@ InputOwnerFence 只确认各队列到达对应位置；Interception 接收循环
 `settings_notification_save`／`settings_notification_cold` 仍用正式manifest、自有私有桌面和公共缓存登记。初始INI以profile_save_fixture.ini.example为基础，将Profile74Seed／Keep74改为Notify77Seed／Keep77；在Notify77Seed节添加CustomNotification_Enabled=false和CustomNotification_Position=2。设置 `QKM_LIFECYCLE_NOTIFICATION_VARIANT`：absent保持此样例；enabled只把Enabled改为true；loaded把 [notification_save_style.ini.example](sendinput_lifecycle/notification_save_style.ini.example) 的14项追加到同一节。target则保持源样例，并另加Map77Notify，含合法Tab名／G→H映射、AutoStartMappingChecked=0及单项CustomNotification_FontSize=99，用于验证已有目标样式触发条件，不能预先把它加载为当前配置。
 
 每组由正常启动加载初始源，经Qt名称编辑和真实Save另存Map77Notify；只有target点击实际覆盖确认。保留保存后的INI，正常退出后启动独立cold进程。先建立旧GUI基线，再对提取后的同路径副本设置 `QKM_LIFECYCLE_SAVE_BASELINE` 比较完整INI；结果仍在settingsGeneral。验证无样式组保持14键全缺失，其余完整写入；启用旗标、初始化旗标和目标已有键分别覆盖，loaded另对全部14个非默认值给出独立期待。新收集显式接收const QSettings目标依赖，检查类型／顺序／重复性以及disk／dirty／加载／源代次和初始化旗标不变；这不证明正式MCP保存、运行通知显示或Default桌面效果。
+
+## 剩余配置开关、输入标量与面板保存
+
+`settings_options_save`／`settings_options_cold` 基于profile_save_fixture.ini.example，把Profile74Seed／Keep74改为Profile78Seed／Keep78，仅将源节原始键A改为 `VButton{Button1}`，映射仍为B。`QKM_LIFECYCLE_OPTIONS_VARIANT=default`直接使用；rich在Profile78Seed节、Keep78前添加 [profile_options_panel_nondefault.ini.example](sendinput_lifecycle/profile_options_panel_nondefault.ini.example)。保持StartupAutoMonitoring、VirtualGamepadEnable、MultiInputEnable、自动匹配及Windows系统过滤键关闭，不启动映射。缺省内部FilterKeys为true，rich显式false，它与EnableSystemFilterKeyChecked是不同设置。
+
+rich通过产品已有过滤显示入口准备自有面板，仅对背景发送Qt Ctrl拖动，屏幕参考点从73／97移动到110／126，缓存设置仍73／97；不移动物理鼠标、不点击虚拟按钮，不走窗口参考点／外部窗口分支。Save仍经Qt名称编辑和真实按钮另存Map78Profile；此显示准备不等于普通用户全部显示入口或映射运行验收。记录panel_key_signals=0、鼠标捕获已释放、实际私有桌面及进程退出。冷读必须保留保存INI并用另一进程启动，不再准备或拖动。
+
+提取前建立独立旧GUI基线；提取后同路径设置父级baseline-*.ini，通过完整INI字节及逐项写回对照验证9项开关、当前启用ViGEm构建的6项输入标量、21项面板值。检查Qt类型／顺序／重复性和disk／dirty／加载／源代次／可见性／缓存与实际偏移不变；面板缺失的回退另作组件检查。宏关闭时输入仅4项，此构建条件仍需按实际配置另验。两项通知模式、快捷键规范化、配置顺序与保存尾部没有因这组取值而移动，未来完整保存修订仍须包含它们。
+
+公共登记更新范围前须用正式status取得当前scope及拥有关系；verified_controller只核对身份，其内部记录不能代替即时状态。仅移除已被新EXE替代的旧定义摘要，保留有效范围；不因登记容量或旧快照问题重启缓存或延长期限。

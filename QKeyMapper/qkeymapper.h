@@ -2176,6 +2176,9 @@ private:
     OrderedMap<QString, QVariant> collectMappingTableSaveValues() const;
     OrderedMap<QString, QVariant> collectProfileParameterSaveValues() const;
     OrderedMap<QString, QVariant> collectWindowMatchSaveValues(const QString &savedFilePathString) const;
+    OrderedMap<QString, QVariant> collectProfileMappingOptionSaveValues() const;
+    OrderedMap<QString, QVariant> collectProfileInputSaveValues() const;
+    OrderedMap<QString, QVariant> collectVButtonPanelSaveValues() const;
     void loadKeyListSharedCollectionsFromINI(QSettings &settingFile);
     QStringList *getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType);
     const QStringList *getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType) const;
