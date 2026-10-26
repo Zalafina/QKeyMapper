@@ -30131,35 +30131,43 @@ void QKeyMapper::loadCustomNotificationStyleSettings(const QSettings &settingFil
     m_CustomNotificationStyleInitialized = true;
 }
 
-void QKeyMapper::saveCustomNotificationStyleSettings(QSettings &settingFile, const QString &saveSettingSelectStr)
+OrderedMap<QString, QVariant> QKeyMapper::collectCustomNotificationStyleSaveValues(const QSettings &settingFile, const QString &saveSettingSelectStr) const
 {
+    OrderedMap<QString, QVariant> values;
     if (Q_NULLPTR == m_CustomNotificationSetupDialog || Q_NULLPTR == m_MappingAdvancedDialog) {
-        return;
+        return values;
     }
 
     if (!m_CustomNotificationStyleInitialized
         && !m_MappingAdvancedDialog->getCustomNotificationEnabled()
         && !hasStoredCustomNotificationStyle(settingFile, saveSettingSelectStr)) {
-        return;
+        return values;
     }
 
     const NotificationStyleSettings settings = m_CustomNotificationSetupDialog->getNotificationSettings();
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTCOLOR,
-                         settings.fontColor.isValid() ? settings.fontColor.name() : QString());
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_BACKGROUNDCOLOR,
-                         settings.backgroundColor.isValid() ? settings.backgroundColor.name(QColor::HexArgb) : QString());
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTFAMILY, settings.fontFamily);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTSIZE, settings.fontSize);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTWEIGHT, settings.fontWeight);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FONTITALIC, settings.fontItalic);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_DISPLAYDURATION, settings.displayDuration);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FADEINDURATION, settings.fadeInDuration);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_FADEOUTDURATION, settings.fadeOutDuration);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_BORDERRADIUS, settings.borderRadius);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_PADDING, settings.padding);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_OPACITY, settings.opacity);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_X_OFFSET, settings.xOffset);
-    settingFile.setValue(saveSettingSelectStr + CUSTOM_NOTIFICATION_Y_OFFSET, settings.yOffset);
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_FONTCOLOR)] = settings.fontColor.isValid() ? settings.fontColor.name() : QString();
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_BACKGROUNDCOLOR)] = settings.backgroundColor.isValid() ? settings.backgroundColor.name(QColor::HexArgb) : QString();
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_FONTFAMILY)] = settings.fontFamily;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_FONTSIZE)] = settings.fontSize;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_FONTWEIGHT)] = settings.fontWeight;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_FONTITALIC)] = settings.fontItalic;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_DISPLAYDURATION)] = settings.displayDuration;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_FADEINDURATION)] = settings.fadeInDuration;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_FADEOUTDURATION)] = settings.fadeOutDuration;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_BORDERRADIUS)] = settings.borderRadius;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_PADDING)] = settings.padding;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_OPACITY)] = settings.opacity;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_X_OFFSET)] = settings.xOffset;
+    values[QString::fromLatin1(CUSTOM_NOTIFICATION_Y_OFFSET)] = settings.yOffset;
+    return values;
+}
+
+void QKeyMapper::saveCustomNotificationStyleSettings(QSettings &settingFile, const QString &saveSettingSelectStr)
+{
+    const auto values = collectCustomNotificationStyleSaveValues(settingFile, saveSettingSelectStr);
+    for (auto it = values.begin(); it != values.end(); ++it) {
+        settingFile.setValue(saveSettingSelectStr + it.key(), it.value());
+    }
 }
 
 void QKeyMapper::ensureCustomNotificationStyleInitialized(void)

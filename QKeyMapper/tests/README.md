@@ -112,3 +112,9 @@ InputOwnerFence 只确认各队列到达对应位置；Interception 接收循环
 在自有out副本设置 `QKM_LIFECYCLE_COMMON_VARIANT` 为attached／detached／empty。attached直接另存Map76Common；detached经真实高级设定按钮和共通复选框关闭共通表；empty经Qt Tab点击、表格Ctrl+A及Delete删除全部共通行。名称编辑和Save均经Qt事件，不直接同步备份或调用保存／加载函数，不发送系统输入。所有组独立重建样例；保存进程退出后，用原INI和同一EXE运行cold，不重新复制初始夹具。
 
 先保留未提取实现的完整GUI保存基线，再在同路径新EXE上设置父目录下的 `QKM_LIFECYCLE_SAVE_BASELINE` 对照。新纯序列化直接接收源列表，保留74字段和行顺序；用例检查Qt类型、重复性、disk／dirty／代次及保存前旧备份不变，再核对GUI实际备份全值或空列表。GUI自己的同步仍在原保存位置；此局部序列化不替代全部保存修订及其他草稿范围，结果和权限／桌面／退出核验沿用上述settingsGeneral约定。
+
+## 通知样式条件保存
+
+`settings_notification_save`／`settings_notification_cold` 仍用正式manifest、自有私有桌面和公共缓存登记。初始INI以profile_save_fixture.ini.example为基础，将Profile74Seed／Keep74改为Notify77Seed／Keep77；在Notify77Seed节添加CustomNotification_Enabled=false和CustomNotification_Position=2。设置 `QKM_LIFECYCLE_NOTIFICATION_VARIANT`：absent保持此样例；enabled只把Enabled改为true；loaded把 [notification_save_style.ini.example](sendinput_lifecycle/notification_save_style.ini.example) 的14项追加到同一节。target则保持源样例，并另加Map77Notify，含合法Tab名／G→H映射、AutoStartMappingChecked=0及单项CustomNotification_FontSize=99，用于验证已有目标样式触发条件，不能预先把它加载为当前配置。
+
+每组由正常启动加载初始源，经Qt名称编辑和真实Save另存Map77Notify；只有target点击实际覆盖确认。保留保存后的INI，正常退出后启动独立cold进程。先建立旧GUI基线，再对提取后的同路径副本设置 `QKM_LIFECYCLE_SAVE_BASELINE` 比较完整INI；结果仍在settingsGeneral。验证无样式组保持14键全缺失，其余完整写入；启用旗标、初始化旗标和目标已有键分别覆盖，loaded另对全部14个非默认值给出独立期待。新收集显式接收const QSettings目标依赖，检查类型／顺序／重复性以及disk／dirty／加载／源代次和初始化旗标不变；这不证明正式MCP保存、运行通知显示或Default桌面效果。

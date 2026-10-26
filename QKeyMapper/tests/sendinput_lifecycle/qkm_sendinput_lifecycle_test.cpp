@@ -30,6 +30,7 @@
 #include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
+#include "../../qnotificationsetupdialog.h"
 #include "../../qitemsetupdialog.h"
 #include "../../qkeymapper_worker.h"
 #include "../../qkeymapper.h"
@@ -71,6 +72,7 @@ public:
     static QJsonObject profileSave(QKeyMapper *mapper, bool cold);
     static QJsonObject windowMatchSave(QKeyMapper *mapper, bool cold);
     static QJsonObject commonSave(QKeyMapper *mapper, bool cold);
+    static QJsonObject notificationSave(QKeyMapper *mapper, bool cold);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1217,6 +1219,14 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_notification_save") || guiMode == QStringLiteral("settings_notification_cold")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::notificationSave(
+                QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2694,6 +2704,112 @@ QJsonObject QkmMappingAdditionTestAccess::commonSave(QKeyMapper *mapper, bool co
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::notificationSave(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_LIFECYCLE_NOTIFICATION_VARIANT");
+    const bool enabled = variant == QStringLiteral("enabled"), loaded = variant == QStringLiteral("loaded"), overwrite = variant == QStringLiteral("target");
+    if ((!enabled && !loaded && !overwrite && variant != QStringLiteral("absent")) || !QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath() || !mapper->m_CustomNotificationSetupDialog) return {{QStringLiteral("passed"), false}};
+    const auto disk = [] { QFile file(QString::fromLatin1(CONFIG_FILENAME)); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray before = disk();
+    const QString target = QStringLiteral("Map77Notify"), prefix = target + QLatin1Char('/');
+    const QList<const char *> styleKeys{CUSTOM_NOTIFICATION_FONTCOLOR, CUSTOM_NOTIFICATION_BACKGROUNDCOLOR, CUSTOM_NOTIFICATION_FONTFAMILY,
+        CUSTOM_NOTIFICATION_FONTSIZE, CUSTOM_NOTIFICATION_FONTWEIGHT, CUSTOM_NOTIFICATION_FONTITALIC, CUSTOM_NOTIFICATION_DISPLAYDURATION,
+        CUSTOM_NOTIFICATION_FADEINDURATION, CUSTOM_NOTIFICATION_FADEOUTDURATION, CUSTOM_NOTIFICATION_BORDERRADIUS,
+        CUSTOM_NOTIFICATION_PADDING, CUSTOM_NOTIFICATION_OPACITY, CUSTOM_NOTIFICATION_X_OFFSET, CUSTOM_NOTIFICATION_Y_OFFSET};
+    check(!before.isEmpty() && mapper->m_LoadedMappingSettingGroup == (cold ? target : QStringLiteral("Notify77Seed"))
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED,
+        "notification fixture is independently loaded by ordinary startup while idle");
+    check(mapper->m_MappingAdvancedDialog->getCustomNotificationEnabled() == enabled
+        && mapper->m_CustomNotificationStyleInitialized == (cold ? variant != QStringLiteral("absent") : loaded),
+        "initialization and enabled state follow the independent current profile");
+    OrderedMap<QString, QVariant> styleValues;
+    const auto settings = mapper->m_CustomNotificationSetupDialog->getNotificationSettings();
+    if (loaded) check(settings.fontColor == QColor(QStringLiteral("#123456")) && settings.backgroundColor == QColor(QStringLiteral("#80336699"))
+        && settings.fontFamily == QStringLiteral("Arial") && settings.fontSize == 27 && settings.fontWeight == 2 && settings.fontItalic
+        && settings.displayDuration == 1234 && settings.fadeInDuration == 111 && settings.fadeOutDuration == 222
+        && settings.borderRadius == 13 && settings.padding == 9 && qFuzzyCompare(settings.opacity, 0.63)
+        && settings.xOffset == -17 && settings.yOffset == 23,
+        "all fourteen nondefault notification style fields restore from the independent INI");
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    if (!cold) {
+        check(mapper->hasStoredCustomNotificationStyle(ini, prefix) == overwrite,
+            "target stored-style dependency is distinct from the current profile initialization");
+        auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+        auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+        if (!name || !save || !save->isEnabled()) return {{QStringLiteral("passed"), false}};
+        name->setFocus();
+        QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+        QCoreApplication::sendEvent(name, &select); QCoreApplication::sendEvent(name, &selected);
+        for (const QChar character : target) {
+            QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+            QCoreApplication::sendEvent(name, &press); QCoreApplication::sendEvent(name, &release);
+        }
+        const bool dirty = mapper->m_SaveSettingDirty, initialized = mapper->m_CustomNotificationStyleInitialized;
+        const quint64 load = mapper->m_MappingLoadGeneration, source = mapper->m_AutomationSourceEpoch;
+        styleValues = mapper->collectCustomNotificationStyleSaveValues(ini, prefix);
+        const auto repeated = mapper->collectCustomNotificationStyleSaveValues(ini, prefix);
+        bool same = styleValues.keys() == repeated.keys();
+        for (auto it = styleValues.begin(); it != styleValues.end(); ++it) {
+            same = same && it.value() == repeated.value(it.key()) && it.value().userType() == repeated.value(it.key()).userType();
+        }
+        check(same && styleValues.size() == (variant == QStringLiteral("absent") ? 0 : 14),
+            "notification collection preserves conditional ordered keys and all Qt value types");
+        check(disk() == before && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load
+            && mapper->m_AutomationSourceEpoch == source && mapper->m_CustomNotificationStyleInitialized == initialized
+            && mapper->m_MappingAdvancedDialog->getCustomNotificationEnabled() == enabled,
+            "notification collection changes no disk, dirty, generations, initialization or enabled state");
+        int replies = 0;
+        QTimer answer;
+        QObject::connect(&answer, &QTimer::timeout, mapper, [&] {
+            auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+            if (box && box->button(QMessageBox::Yes)) { answer.stop(); ++replies; clickMappingButton(box->button(QMessageBox::Yes)); }
+        });
+        answer.start(10);
+        clickMappingButton(save);
+        answer.stop();
+        check(replies == (overwrite ? 1 : 0), "only the existing target uses the actual overwrite confirmation");
+    }
+    ini.sync();
+    int count = 0;
+    for (const auto *key : styleKeys) count += ini.contains(prefix + key) ? 1 : 0;
+    check(count == (variant == QStringLiteral("absent") ? 0 : 14),
+        "style omission and all-fourteen-field writing retain the original conditional scope");
+    if (!cold) {
+        bool persisted = true;
+        for (auto it = styleValues.begin(); it != styleValues.end(); ++it) persisted = persisted && ini.value(prefix + it.key()) == it.value();
+        check(persisted, "GUI Save writes every collected notification style value");
+    }
+    check(ini.status() == QSettings::NoError && mapper->m_LoadedMappingSettingGroup == target && !mapper->m_SaveSettingDirty
+        && ini.value(SETTINGSELECT).toString() == target && ini.value(prefix + CUSTOM_NOTIFICATION_ENABLED).toBool() == enabled
+        && ini.value(prefix + CUSTOM_NOTIFICATION_POSITION).toInt() == 2,
+        "GUI Save or cold load completes the exact target, enabled flag and notification position");
+    if (count == 14) check(ini.value(prefix + CUSTOM_NOTIFICATION_FONTFAMILY).toString() == settings.fontFamily
+        && ini.value(prefix + CUSTOM_NOTIFICATION_FONTSIZE).toInt() == settings.fontSize
+        && ini.value(prefix + CUSTOM_NOTIFICATION_BACKGROUNDCOLOR).toString() == settings.backgroundColor.name(QColor::HexArgb)
+        && qFuzzyCompare(ini.value(prefix + CUSTOM_NOTIFICATION_OPACITY).toDouble(), settings.opacity),
+        "stored style uses the current effective values, not an overwritten target's stale style");
+    if (cold) check(disk() == before, "independent notification cold read does not rewrite the INI");
+    const QString baseline = qEnvironmentVariable("QKM_LIFECYCLE_SAVE_BASELINE");
+    if (!baseline.isEmpty()) {
+        QDir parent(QCoreApplication::applicationDirPath()); parent.cdUp();
+        if (QFileInfo(baseline).absolutePath() != parent.absolutePath() || !QFileInfo(baseline).fileName().startsWith(QStringLiteral("baseline-"))) return {{QStringLiteral("passed"), false}};
+        QFile original(baseline);
+        check(original.open(QIODevice::ReadOnly) && original.readAll() == disk(), "complete notification INI matches the independent old GUI baseline");
+    }
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::tableState(QKeyMapper *mapper)
 {
     bool passed = true;
@@ -2869,7 +2985,8 @@ int main(int argc, char *argv[])
         QStringLiteral("common_comments_attached"), QStringLiteral("settings_table_save"), QStringLiteral("settings_table_cold"),
         QStringLiteral("ui_localization"), QStringLiteral("settings_profile_save"), QStringLiteral("settings_profile_cold"),
         QStringLiteral("settings_match_save"), QStringLiteral("settings_match_cold"),
-        QStringLiteral("settings_common_save"), QStringLiteral("settings_common_cold")};
+        QStringLiteral("settings_common_save"), QStringLiteral("settings_common_cold"),
+        QStringLiteral("settings_notification_save"), QStringLiteral("settings_notification_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

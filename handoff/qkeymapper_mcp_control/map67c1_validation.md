@@ -169,3 +169,26 @@ Qt6.8.3 msvc2022_64／Qt5.15.2官方msvc2019_64，两者qconfig的QT_ARCH=x86_64
 原始材料为本机out/mcp_save_common_w11_20261026的before／after、六份baseline INI、identity、old-executables、四份build-qt*-*.log、运行日志、局部patch／review、实际内容校对及汇总；不随Git。公共登记仍由本机Medium控制器23316，登记前只移除内容已被新EXE替代的旧定义摘要，保留有效目标及历史；缓存核心与期限不变。cache-after.json为active／cache_available=true、零owned／unresolved、current_action=null、last_error=null，保持用户窗口至15:44:30继续开发。
 
 本片为独立本地提交切点，不推送；继续条件通知样式、面板、剩余开关和完整保存范围。未来预览必须只读选择实际附着源或脱离备份并绑定完整依赖，不能提前执行同步。MCP仍12工具／8能力，完整保存／失败恢复／其他草稿／正式MCP与启停闭环未完成；未新增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、三语言布局或性能结论，原PC-W10证据不冒充本机复验。
+
+## SAVE-77：通知14项条件样式（2026-10-26，PC-W11）
+
+基线为SAVE-76本地41f40fe7918d5bd4627e889188c346ce45c8c482。先添加settings_notification_save／settings_notification_cold，生产原保存代码未变时建立四组独立GUI基线；再提取私有collectCustomNotificationStyleSaveValues(const QSettings&, const QString&) const。它显式读取目标已存样式，保留原两个对话框空指针、初始化、启用和目标旧键的短路条件；不创建或写QSettings。原saveCustomNotificationStyleSettings包装器在原位置按原顺序写入。14项表达式／颜色格式／类型保持，完整逆变换、dry run及实际源码／私有声明逐字校对通过。
+
+环境与构建树沿SAVE-74：Qt6.8.3／Qt5.15.2官方x64、MSVC19.44，双Qt前／后四次普通Release维护构建native exit0；Qt6零警告，Qt5仅原qtmain例外。没有重做无关环境门禁、TABLE／UI-73或普通产品全量构建，未改Worker、manifest、协议、依赖或翻译。
+
+| variant | 源／目标独立设置与期待 | 每Qt旧GUI保存／冷读 | 每Qt提取后保存／冷读 | 完整INI键 |
+|---|---|---|---|---|
+| absent | 源未启用、未初始化、目标没有样式，保存后14键仍全缺失 | 6＋5 | 10＋6 | 264 |
+| enabled | 源已启用但未初始化、无旧样式，保存全部当前有效样式 | 7＋6 | 11＋7 | 278 |
+| loaded | 源未启用但已载入14项非默认值，保存完整保留 | 8＋7 | 12＋8 | 292 |
+| target | 源未启用／未初始化，已有目标只有FontSize=99，真实覆盖确认后写完整当前有效样式 | 7＋6 | 11＋7 | 277 |
+
+每Qt旧52项／8进程、提取后72项／8进程，两Qt共32进程passed=true、native exit0、workAtExit／producersAtExit为0。八对完整INI字节等于旧GUI基线；另一个进程冷启动至退出不改盘。loaded对RGB字体色、ARGB背景、字体、字号／粗细／斜体、三项时长、圆角／padding、浮点透明度及正负偏移全部14项有独立期待。其他组区分当前初始化旗标与目标旧键，不将禁用误解为必不保存，也不把目标旧值当成当前有效样式。
+
+新收集的条件数量0／14、重复顺序／Qt类型及GUI写回值通过；disk、dirty、加载代次、源epoch、样式初始化和启用旗标不变。源／目标INI只在启动前准备，以正常产品启动加载，名称编辑、保存和target模态Yes均经Qt控件事件，不直接调用加载／保存函数。完整基础准备步骤和14项非默认样例已维护在tests/README.md及notification_save_style.ini.example。保留原空指针分支的源码证明，不把正常已构建对话框的GUI运行当成缺失对话框验收。
+
+原requireAdministrator EXE在out/mcp_save_notification_w11_20261026/{qt6,qt5}-{absent,enabled,loaded,target}/QKeyMapperNotify77_*.exe，同路径前／后身份与旧二进制分别保留identity及old-executables。全部经普通Medium控制器23316公共登记，产品High12288、父8192、same_login=true；主线程实际独立QkmNotify77_<UUID>桌面、PID／创建时间和native退出在before／after各case的start／closed.json及evidence-summary.json。未使用Default、系统输入或映射启动；仍保留原main初始化／退出设备清理，不证明输入或设备效果。
+
+原始材料在同一本机out目录：四份build-qt*-*.log、run-before／after.log、八份baseline INI、case／身份／退出、14字段局部patch／review、应用预期内容及汇总；不随Git。cache-after.json确认active／cache_available=true、零owned／unresolved、current_action=null、last_error=null，沿用用户6小时期限15:44:30，不重启／延长。仅移除已被新EXE替代的旧登记摘要，仍有效范围及历史保留，缓存核心不变。
+
+本片为独立本地提交切点，不推送，继续面板及剩余开关。const QSettings依赖仍须纳入完整目标磁盘／业务修订和执行前重检，不能用局部类型一致开放保存权限。MCP仍12工具／8能力，完整保存／其他草稿／失败恢复和启停闭环仍待实现；未验证通知实际显示、Default、真实输入／设备、性能、ASan、严格静态分析或三语言布局，PC-W10此前证据只按其原版本范围复用。

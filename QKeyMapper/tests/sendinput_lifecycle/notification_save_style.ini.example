@@ -1,0 +1,14 @@
+CustomNotification_FontColor=#123456
+CustomNotification_BackgroundColor=#80336699
+CustomNotification_FontFamily=Arial
+CustomNotification_FontSize=27
+CustomNotification_FontWeight=2
+CustomNotification_FontItalic=true
+CustomNotification_DisplayDuration=1234
+CustomNotification_FadeInDuration=111
+CustomNotification_FadeOutDuration=222
+CustomNotification_BorderRadius=13
+CustomNotification_Padding=9
+CustomNotification_Opacity=0.63
+CustomNotification_X_Offset=-17
+CustomNotification_Y_Offset=23

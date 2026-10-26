@@ -2247,6 +2247,7 @@ private:
     void updateCustomNotificationDialogTitle(void);
     bool hasStoredCustomNotificationStyle(const QSettings &settingFile, const QString &settingSelectStr) const;
     void loadCustomNotificationStyleSettings(const QSettings &settingFile, const QString &settingSelectStr);
+    OrderedMap<QString, QVariant> collectCustomNotificationStyleSaveValues(const QSettings &settingFile, const QString &saveSettingSelectStr) const;
     void saveCustomNotificationStyleSettings(QSettings &settingFile, const QString &saveSettingSelectStr);
     void ensureCustomNotificationStyleInitialized(void);
 
