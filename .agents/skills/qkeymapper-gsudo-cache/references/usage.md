@@ -75,6 +75,11 @@ out/gsudo_cache/
 | `generation`、`deadline`、`previous_deadline`、`remaining_seconds` | 实际窗口代次和截止；requested_deadline只是请求，不等于生效 |
 | `cache_available`、`native_checked_at` | 最近原生观测及其时间；没有观测时为null，旧观测不得冒充当前事实 |
 | `native_exit_code`、`requested_window_expired` | 原生申请结束及是否已错过请求窗口；原生exit 0不等于窗口安装成功，也不能推出出现过几次UAC |
+| 固定动作的 `native_exit_code`、`native_pid`、`reported_target_pid` | 已取得的gsudo子进程退出码／PID及响应自报目标PID；后者不是已核实拥有关系。无法取得明确为null，不从错误文本推算 |
+| `action_seconds`、`timed_out`、`controller_terminated` | 按单调时钟记录动作经过时间、是否触发原有超时及控制器是否终止该动作子进程；不代表目标产品已退出。现固定动作超时不由控制器终止，也不因此重放 |
+| `failure_stage`、`response_state` | 失败发生在dispatch／await_exit／response_read／action_result／identity_check；响应为missing、invalid、valid、unavailable或not_observed。valid只表示已读到JSON对象，不证明业务成功、身份或权限有效 |
+| `os_error_code`、`os_errno` | 仅取实际捕获异常的winerror／errno，缺失为null；不是从gsudo原始日志或文字提取的内部错误码，不据此确定故障根因 |
+| `owned_count`、`unresolved_count`、`pending_count` | 清理摘要中的已知拥有、未知启动、在途数量；pending合计缓存调整、固定动作和整套作业，不含磁盘请求队列。非零不改写原清理判定，零也不能解决其他历史instance的未知请求 |
 | `close_reason`、`deadline_expired` | 关闭／超时原因与实际到期事实分别记录 |
 | `scope`、`input_flags` | 已登记固定入口和布尔权限摘要，不含授权reason的私人文本 |
 
@@ -85,6 +90,8 @@ out/gsudo_cache/
 客户端在参数解析阶段拒绝、未送达Agent的文本、客户端等待超时及UAC弹窗次数不由这份控制器摘要完整观测；需要时结合原请求ID、CLI结果和已有证据。摘要不是授权来源、去重数据库或自动补执行依据。
 
 新增target_registered、test_action_request／start和request_result按request_id关联；entry_type区分启动／关闭／GUI，控制器instance／pid确定缓存归属，definition_hash定位精确定义版本。未登记、越权、busy、失效和结果未知分别记录错误码；仍必须连同native_checked_at理解缓存可用性，不推断弹窗次数。定义摘要不含原文参数；定义／请求材料只留本机out，禁止凭据或私人配置进入其中。控制器code_version只在启动时取样，助手更新由新definition_hash反映。
+
+固定动作失败仍保留原error／message，同时在结果及白名单历史补充已取得的诊断；派发异常另记test_action_diagnostic，沿instance／generation／request_id关联。原生详细输出仍只在本机既有logs/<request_id>-action.log，不把异常原文、响应内容、命令或路径复制到摘要。最终controller_finish／cleanup_failed附数量，pending_request可指向当前缓存调整、动作或作业。诊断写入失败不阻止清理，不改变准入、超时、硬截止、成功失败判定、关闭或重试策略；网络因素仍待结合已有材料关联，不新增联网探测、事件日志采集或常驻监控。
 
 ## 日常观察替代独立长时排期
 

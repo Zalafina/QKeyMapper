@@ -1,6 +1,7 @@
 """Bounded public action tests; no UAC, product, input or driver use."""
 
 from dataclasses import asdict, replace
+import json
 from pathlib import Path
 from unittest.mock import patch
 import unittest
@@ -234,6 +235,152 @@ class ActionTests(ControllerFixture):
         self.assertEqual(len(self.backend.spawned), 1)
         self.finish_action()
         self.assertNotIn(request['id'], self.controller.actions.unknown_starts)
+
+    def action_rows(self, request):
+        return [json.loads(line) for path in (self.controller.runtime / 'history').glob('events-*.jsonl')
+            for line in path.read_text(encoding='utf-8').splitlines()
+            if json.loads(line).get('request_id') == request['id']]
+
+    def test_native_failure_keeps_obtained_diagnostics_without_private_response(self):
+        request = self.action(self.start_request())
+        self.controller.actions.pending['process'].pid = 701
+        self.tick += 2.5
+        self.finish_action({'Success': False, 'ProcessId': 602, 'Error': 'PRIVATE response'}, code=42)
+        result = self.result(request)
+        self.assertEqual(result['error'], 'test_action_failed')
+        for key, value in {'native_exit_code': 42, 'native_pid': 701, 'reported_target_pid': 602,
+                'action_seconds': 2.5, 'timed_out': False, 'controller_terminated': False,
+                'failure_stage': 'action_result', 'response_state': 'valid', 'os_error_code': None, 'os_errno': None}.items():
+            self.assertEqual(result[key], value, key)
+        row = self.action_rows(request)[-1]
+        self.assertEqual(row['native_exit_code'], 42)
+        self.assertEqual(row['instance'], self.controller.instance)
+        self.assertEqual(row['generation'], self.controller.window.generation)
+        self.assertNotIn('PRIVATE', json.dumps(row))
+        self.assertIn(request['id'], self.controller.actions.unknown_starts)
+        self.assertEqual(len(self.backend.spawned), 1)
+
+    def test_missing_response_keeps_native_exit_and_original_error(self):
+        request = self.action(self.start_request())
+        pending = self.controller.actions.pending
+        pending['process'].code = 1
+        self.controller.actions.advance()
+        result = self.result(request)
+        self.assertEqual(result['error'], 'invalid_record')
+        self.assertEqual(result['native_exit_code'], 1)
+        self.assertEqual(result['response_state'], 'missing')
+        self.assertEqual(result['failure_stage'], 'response_read')
+        self.assertIsNone(result['native_pid'])
+        self.assertIsNone(result['os_error_code'])
+        self.assertIn(request['id'], self.controller.actions.unknown_starts)
+        self.assertFalse(pending['process'].terminated)
+
+    def test_damaged_response_is_distinct_from_missing_and_valid(self):
+        request = self.action(self.start_request())
+        pending = self.controller.actions.pending
+        pending['response'].write_text('{PRIVATE broken', encoding='utf-8')
+        pending['process'].code = 7
+        self.controller.actions.advance()
+        result = self.result(request)
+        self.assertEqual(result['error'], 'internal_error')
+        self.assertEqual(result['native_exit_code'], 7)
+        self.assertEqual(result['response_state'], 'invalid')
+        self.assertEqual(result['failure_stage'], 'response_read')
+        self.assertNotIn('PRIVATE', json.dumps(self.action_rows(request)))
+
+    def test_obtained_os_error_codes_are_not_inferred_from_error_text(self):
+        request = self.action(self.start_request())
+        self.controller.actions.pending['process'].code = 3
+        error = OSError(13, 'PRIVATE claims error 999')
+        error.winerror = 5
+        with patch.object(app, 'read_json', side_effect=error):
+            self.controller.actions.advance()
+        result = self.result(request)
+        self.assertEqual(result['os_error_code'], 5)
+        self.assertEqual(result['os_errno'], 13)
+        self.assertEqual(result['error'], 'internal_error')
+        self.assertEqual(result['response_state'], 'unavailable')
+        self.assertNotIn('999', json.dumps(self.action_rows(request)))
+
+    def test_timeout_reports_missing_exit_without_terminating_or_replaying(self):
+        request = self.action(self.start_request())
+        pending = self.controller.actions.pending
+        self.tick += 71
+        self.controller.actions.advance()
+        result = self.result(request)
+        self.assertEqual(result['error'], 'result_unknown')
+        self.assertIsNone(result['native_exit_code'])
+        self.assertTrue(result['timed_out'])
+        self.assertFalse(result['controller_terminated'])
+        self.assertEqual(result['failure_stage'], 'await_exit')
+        self.assertEqual(result['response_state'], 'not_observed')
+        self.assertIs(self.controller.actions.pending, pending)
+        self.assertFalse(pending['process'].terminated)
+        self.controller.handle(request)
+        self.assertEqual(len(self.backend.spawned), 1)
+        self.finish_action()
+        self.assertTrue(self.result(request)['ok'])
+        self.assertTrue(self.result(request)['timed_out'])
+
+    def test_diagnostic_write_failure_does_not_prevent_unknown_start_cleanup(self):
+        request = self.action(self.start_request())
+        self.controller.actions.pending['process'].code = 1
+        with patch.object(self.controller.history, '_append', side_effect=OSError('PRIVATE disk full')):
+            self.controller.actions.advance()
+            self.controller.serve()
+        result = self.result(request)
+        self.assertEqual(result['error'], 'invalid_record')
+        self.assertEqual(result['native_exit_code'], 1)
+        self.assertFalse(self.backend.available)
+        self.assertIn(request['id'], self.controller.actions.unknown_starts)
+        closed = app.read_json(self.controller.runtime / 'closed.json')
+        self.assertFalse(closed['history']['available'])
+        self.assertGreater(closed['history']['missed_events'], 0)
+
+    def test_dispatch_error_diagnostics_do_not_create_owned_or_pending_action(self):
+        with patch.object(self.backend, 'start_action', side_effect=OSError(13, 'PRIVATE error 123')):
+            request = self.action(self.start_request())
+        self.assertEqual(self.result(request)['error'], 'internal_error')
+        row = next(row for row in self.action_rows(request) if row['event'] == 'test_action_diagnostic')
+        self.assertEqual(row['failure_stage'], 'dispatch')
+        self.assertEqual(row['os_errno'], 13)
+        self.assertIsNone(row['os_error_code'])
+        self.assertIsNone(row['native_exit_code'])
+        self.assertIsNone(row['native_pid'])
+        self.assertFalse(self.controller.actions.owned)
+        self.assertIsNone(self.controller.actions.pending)
+
+    def test_gui_diagnostics_use_the_actual_result_path(self):
+        self.start_owned()
+        for index, content in enumerate((None, '{PRIVATE broken')):
+            path = self.root / f'out/test/gui-{index}.json'
+            request = self.action(dict(self.close_request(), Action='Gui', Name='ReadMapping', ResultFile=str(path)))
+            if content is not None:
+                path.write_text(content, encoding='utf-8')
+            self.controller.actions.pending['process'].code = 8
+            self.controller.actions.advance()
+            self.assertEqual(self.result(request)['response_state'], 'missing' if content is None else 'invalid')
+            self.assertEqual(self.result(request)['native_exit_code'], 8)
+            self.assertIn(601, self.controller.actions.owned)
+            self.assertFalse(self.controller.closing)
+
+    def test_final_summary_counts_unresolved_owned_and_pending_without_changing_cleanup(self):
+        self.start_owned()
+        request = self.action(self.start_request())
+        pending = self.controller.actions.pending
+        self.addCleanup(pending['log'].close)
+        self.controller.actions.unknown_starts.add('a' * 32)
+        with patch.object(self.controller, 'advance', side_effect=CacheError('test_interruption', 'PRIVATE')):
+            with self.assertRaises(CacheError):
+                self.controller.serve()
+        rows = [json.loads(line) for path in (self.controller.runtime / 'history').glob('events-*.jsonl')
+            for line in path.read_text(encoding='utf-8').splitlines()]
+        row = next(row for row in rows if row['event'] == 'controller_finish')
+        self.assertEqual((row['owned_count'], row['unresolved_count'], row['pending_count']), (1, 1, 1))
+        self.assertEqual(row['pending_request'], request['id'])
+        self.assertFalse(row['cleanup_complete'])
+        self.assertFalse(self.backend.available)
+        self.assertFalse(pending['process'].terminated)
 
     def test_fixed_command_does_not_accept_shell_or_extra_executable(self):
         command = action_command(self.root, 'pwsh.exe', self.start_request(), Path('fixed.json'))

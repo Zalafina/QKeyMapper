@@ -32,14 +32,18 @@ def safe_time(value):
 def safe_fields(fields):
     result = {}
     for key, value in fields.items():
-        if key in {"operation", "action", "error", "close_reason", "job_kind", "resource_error", "backend", "entry_type", "target_id"}:
+        if key in {"operation", "action", "error", "close_reason", "job_kind", "resource_error", "backend", "entry_type", "target_id", "failure_stage", "response_state"}:
             if type(value) is str and (re.fullmatch(r"[a-zA-Z][a-zA-Z0-9_-]{0,63}", value) if key == "target_id" else TOKEN.fullmatch(value)):
                 result[key] = value
         elif key in {"generation", "remaining_seconds", "budget_seconds", "native_exit_code", "exit_code",
-                     "working_set_bytes", "cpu_seconds", "windows_session_id", "integrity", "target_pid"}:
+                     "working_set_bytes", "cpu_seconds", "windows_session_id", "integrity", "target_pid",
+                     "native_pid", "reported_target_pid", "action_seconds", "os_error_code", "os_errno",
+                     "owned_count", "unresolved_count", "pending_count"}:
             if type(value) in (int, float) and -2**32 <= value <= 10**18 and math.isfinite(value):
                 result[key] = value
-        elif key in {"ok", "restore", "cache_available", "deadline_expired", "requested_window_expired", "closing", "cleanup_complete", "cleanup"}:
+            elif value is None and key in {"native_exit_code", "native_pid", "reported_target_pid", "action_seconds", "os_error_code", "os_errno"}:
+                result[key] = None
+        elif key in {"ok", "restore", "cache_available", "deadline_expired", "requested_window_expired", "closing", "cleanup_complete", "cleanup", "timed_out", "controller_terminated"}:
             if type(value) is bool or value is None:
                 result[key] = value
         elif key in {"request_id", "pending_request"}:

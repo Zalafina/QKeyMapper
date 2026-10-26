@@ -221,7 +221,9 @@ class Controller:
             data = {"generation": self.window.generation, "deadline": self.window.until,
                 "remaining_seconds": round(self.window.remaining(self.tick()), 3), "closing": self.closing,
                 "close_reason": self.close_reason, "job_kind": self.job["kind"] if self.job else None,
-                "pending_request": self.pending["id"] if self.pending else None,
+                "pending_request": (self.pending or self.actions.pending or self.job or {}).get("id"),
+                "owned_count": len(self.actions.owned), "unresolved_count": len(self.actions.unknown_starts),
+                "pending_count": sum(value is not None for value in (self.pending, self.job, self.actions.pending)),
                 "cache_available": self.native.get("cache_available") if self.native.get("checked_at") else None,
                 "native_checked_at": self.native.get("checked_at"), "scope": list(self.scope),
                 "input_flags": [key for key in ("allow_default", "allow_focus_click", "allow_late_forced_up")
@@ -263,7 +265,9 @@ class Controller:
             self.record("request_result", request_id=request_id, operation=operation,
                 job_kind=value.get("kind", self.job["kind"] if self.job else None),
                 **{key: value[key] for key in ("ok", "action", "error", "previous_deadline", "native_exit_code",
-                    "requested_window_expired", "deadline_expired", "exit_code") if key in value})
+                    "requested_window_expired", "deadline_expired", "exit_code", "native_pid", "reported_target_pid",
+                    "action_seconds", "timed_out", "controller_terminated", "failure_stage", "response_state",
+                    "os_error_code", "os_errno") if key in value})
 
     def set_window(self, request_id, request):
         require(self.pending is None and self.actions.pending is None and not self.closing, "缓存调整／动作正在执行或关闭，请先查询结果。", "busy")

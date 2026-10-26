@@ -172,15 +172,42 @@ class Actions:
         write_json(request_path, payload)
         log_path = c.runtime / "logs" / (request_id + "-action.log")
         log = log_path.open("wb")
+        dispatch_started = c.tick()
         try:
             process = c.backend.start_action(payload, request_path, log,
                 {**{c.root / k: v for k, v in target["helpers"].items()}, Path(target["executable"]): target["sha256"], request_path: file_hash(request_path)})
-        except BaseException:
+        except BaseException as error:
             log.close()
+            c.record("test_action_diagnostic", request_id=request_id, entry_type=action.lower(), target_id=target["id"],
+                **self.diagnostics({"process": None, "started": dispatch_started}, None, "dispatch", error=error))
             raise
         self.pending = {"id": request_id, "process": process, "log": log, "request": request,
             "definition": target, "response": response, "started": c.tick(), "cleanup": cleanup, "timed_out": False}
         c.record("test_action_start", request_id=request_id, entry_type=action.lower(), target_id=target["id"], definition_hash=digest(target), cleanup=cleanup)
+
+    def diagnostics(self, pending, code, stage=None, response_state="not_observed", response=None, error=None):
+        result = {"native_exit_code": code, "native_pid": None, "reported_target_pid": None,
+            "action_seconds": None, "timed_out": pending.get("timed_out", False), "controller_terminated": False,
+            "failure_stage": stage, "response_state": response_state, "os_error_code": None, "os_errno": None}
+        try:
+            result["action_seconds"] = round(max(0, self.c.tick() - pending["started"]), 3)
+            pid = getattr(pending["process"], "pid", None)
+            result["native_pid"] = pid if type(pid) is int and pid > 0 else None
+            pid = response.get("ProcessId") if type(response) is dict else None
+            result["reported_target_pid"] = pid if type(pid) is int and pid > 0 else None
+            for key, attribute in (("os_error_code", "winerror"), ("os_errno", "errno")):
+                value = getattr(error, attribute, None)
+                result[key] = value if type(value) is int else None
+            if stage == "response_read" and error is not None:
+                result["response_state"] = "unavailable"
+                if isinstance(error, (ValueError, UnicodeError)):
+                    result["response_state"] = "invalid"
+                elif getattr(error, "code", None) == "invalid_record":
+                    path = Path(pending["request"]["ResultFile"]) if pending["request"]["Action"] == "Gui" else pending["response"]
+                    result["response_state"] = "invalid" if path.is_file() else "missing"
+        except Exception:
+            pass  # Observation failure must not change the action result or cleanup.
+        return result
 
     def advance(self):
         self.refresh_owned()
@@ -194,23 +221,32 @@ class Actions:
                 if p["request"]["Action"] == "Start":
                     self.unknown_starts.add(p["id"])
                 self.c.closing, self.c.close_reason = True, "action_result_unknown"
-                self.c.answer(p["id"], {"ok": False, "error": "result_unknown", "message": "固定动作超时；未重试或启动替代进程。"}, "test_action")
+                self.c.answer(p["id"], {"ok": False, "error": "result_unknown", "message": "固定动作超时；未重试或启动替代进程。",
+                    **self.diagnostics(p, code, "await_exit")}, "test_action")
             return
         p["log"].close()
         for handle in getattr(p["process"], "qkm_pins", []):
             handle.Close()
         self.pending = None
         from cache_control import read_json
+        stage, response_state, observed, failure = "response_read", "not_observed", None, None
         try:
             action = p["request"]["Action"]
             if action == "Gui":
                 value = read_json(Path(p["request"]["ResultFile"]))
+                observed = value
+                response_state = "valid" if type(value) is dict else "invalid"
+                stage = "action_result"
                 require(code == 0 and value.get("success") is True, "固定 GUI 动作失败，查看本机结果。", "test_action_failed")
                 response = {"Success": True, "ExitCode": 0}
             else:
                 response = read_json(p["response"])
+                observed = response
+                response_state = "valid" if type(response) is dict else "invalid"
+                stage = "action_result"
                 require(code == 0 and response.get("Success") is True, "固定启动／关闭未成功，查看本机动作日志。", "test_action_failed")
             if action == "Start":
+                stage = "identity_check"
                 actual = self.c.backend.started_identity(response)
                 require(Path(actual["executable"]).resolve() == Path(p["definition"]["executable"]).resolve(), "启动结果身份不符。", "identity_rejected")
                 self.unknown_starts.discard(p["id"])
@@ -221,12 +257,14 @@ class Actions:
                 self.owned.pop(p["request"]["ProcessId"], None)
             result = {"ok": True, "action": "test_action_finished", "response": response, "exit_code": code}
         except Exception as error:
+            failure = error
             from cache_control import error_result
             result = error_result(error)
             self.c.last_error = result
             if p["request"]["Action"] == "Start":
                 self.unknown_starts.add(p["id"])
                 self.c.closing, self.c.close_reason = True, "start_result_unknown"
+        result.update(self.diagnostics(p, code, stage if failure else None, response_state, observed, failure))
         self.c.answer(p["id"], result, "test_action")
 
     def cleanup(self):
