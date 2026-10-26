@@ -2173,6 +2173,7 @@ private:
     bool removeSettingByName(const QString &settingName);
     OrderedMap<QString, QVariant> collectGeneralSettingSaveValues(int languageIndex) const;
     OrderedMap<QString, QVariant> collectMappingTableSaveValues() const;
+    OrderedMap<QString, QVariant> collectProfileParameterSaveValues() const;
     void loadKeyListSharedCollectionsFromINI(QSettings &settingFile);
     QStringList *getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType);
     const QStringList *getKeyListSharedItemsRef(KeyListCollectionType collectionType, KeyListSharedDataType dataType) const;

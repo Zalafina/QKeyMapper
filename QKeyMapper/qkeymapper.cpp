@@ -22218,6 +22218,53 @@ OrderedMap<QString, QVariant> QKeyMapper::collectMappingTableSaveValues() const
     return values;
 }
 
+OrderedMap<QString, QVariant> QKeyMapper::collectProfileParameterSaveValues() const
+{
+    OrderedMap<QString, QVariant> values;
+    values[QString::fromLatin1(KEY2MOUSE_X_SPEED)] = m_MappingAdvancedDialog->getMouseXSpeed();
+    values[QString::fromLatin1(KEY2MOUSE_Y_SPEED)] = m_MappingAdvancedDialog->getMouseYSpeed();
+    values[QString::fromLatin1(KEY2MOUSE_POLLING_INTERVAL)] = m_MappingAdvancedDialog->getMousePollingInterval();
+
+    values[QString::fromLatin1(GAMEPAD_LT_THRESHOLD_PRESS)] = m_MappingAdvancedDialog->getLeftTriggerPressThreshold();
+    values[QString::fromLatin1(GAMEPAD_LT_THRESHOLD_LIGHTPRESS)] = m_MappingAdvancedDialog->getLeftTriggerLightPressThreshold();
+    values[QString::fromLatin1(GAMEPAD_LT_THRESHOLD_RELEASE)] = m_MappingAdvancedDialog->getLeftTriggerReleaseThreshold();
+    values[QString::fromLatin1(GAMEPAD_RT_THRESHOLD_PRESS)] = m_MappingAdvancedDialog->getRightTriggerPressThreshold();
+    values[QString::fromLatin1(GAMEPAD_RT_THRESHOLD_LIGHTPRESS)] = m_MappingAdvancedDialog->getRightTriggerLightPressThreshold();
+    values[QString::fromLatin1(GAMEPAD_RT_THRESHOLD_RELEASE)] = m_MappingAdvancedDialog->getRightTriggerReleaseThreshold();
+    values[QString::fromLatin1(GAMEPAD_LS_THRESHOLD_PUSH)] = m_MappingAdvancedDialog->getLeftStickPushThreshold();
+    values[QString::fromLatin1(GAMEPAD_LS_THRESHOLD_LIGHTPUSH)] = m_MappingAdvancedDialog->getLeftStickLightPushThreshold();
+    values[QString::fromLatin1(GAMEPAD_LS_THRESHOLD_RELEASE)] = m_MappingAdvancedDialog->getLeftStickReleaseThreshold();
+    values[QString::fromLatin1(GAMEPAD_RS_THRESHOLD_PUSH)] = m_MappingAdvancedDialog->getRightStickPushThreshold();
+    values[QString::fromLatin1(GAMEPAD_RS_THRESHOLD_LIGHTPUSH)] = m_MappingAdvancedDialog->getRightStickLightPushThreshold();
+    values[QString::fromLatin1(GAMEPAD_RS_THRESHOLD_RELEASE)] = m_MappingAdvancedDialog->getRightStickReleaseThreshold();
+
+    values[QString::fromLatin1(GAMEPAD_TOUCHPAD_X_SPEED)] = m_MappingAdvancedDialog->getGamepadTouchpadXSpeed();
+    values[QString::fromLatin1(GAMEPAD_TOUCHPAD_Y_SPEED)] = m_MappingAdvancedDialog->getGamepadTouchpadYSpeed();
+    values[QString::fromLatin1(GAMEPAD_TOUCHPAD_INVERT_X)] = m_MappingAdvancedDialog->getGamepadTouchpadInvertX();
+    values[QString::fromLatin1(GAMEPAD_TOUCHPAD_INVERT_Y)] = m_MappingAdvancedDialog->getGamepadTouchpadInvertY();
+
+    values[QString::fromLatin1(GYRO2MOUSE_X_SPEED)] = ui->Gyro2MouseXSpeedSpinBox->value();
+    values[QString::fromLatin1(GYRO2MOUSE_Y_SPEED)] = ui->Gyro2MouseYSpeedSpinBox->value();
+    values[QString::fromLatin1(GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY)] = ui->Gyro2MouseMinXSensSpinBox->value();
+    values[QString::fromLatin1(GYRO2MOUSE_MIN_GYRO_Y_SENSITIVITY)] = ui->Gyro2MouseMinYSensSpinBox->value();
+    values[QString::fromLatin1(GYRO2MOUSE_MAX_GYRO_X_SENSITIVITY)] = ui->Gyro2MouseMaxXSensSpinBox->value();
+    values[QString::fromLatin1(GYRO2MOUSE_MAX_GYRO_Y_SENSITIVITY)] = ui->Gyro2MouseMaxYSensSpinBox->value();
+    values[QString::fromLatin1(GYRO2MOUSE_MIN_GYRO_THRESHOLD)] = ui->Gyro2MouseMinThresholdSpinBox->value();
+    values[QString::fromLatin1(GYRO2MOUSE_MAX_GYRO_THRESHOLD)] = ui->Gyro2MouseMaxThresholdSpinBox->value();
+
+    values[QString::fromLatin1(GYRO2MOUSE_MOUSE_X_SOURCE)] = m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXSource();
+    values[QString::fromLatin1(GYRO2MOUSE_MOUSE_Y_SOURCE)] = m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYSource();
+    values[QString::fromLatin1(GYRO2MOUSE_MOUSE_X_REVERT)] = m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXRevert();
+    values[QString::fromLatin1(GYRO2MOUSE_MOUSE_Y_REVERT)] = m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYRevert();
+
+    values[QString::fromLatin1(MOUSE2VJOY_X_SENSITIVITY)] = ui->vJoyXSensSpinBox->value();
+    values[QString::fromLatin1(MOUSE2VJOY_Y_SENSITIVITY)] = ui->vJoyYSensSpinBox->value();
+    values[QString::fromLatin1(MOUSE2VJOY_INVERT_X)] = ui->vJoyInvertXCheckBox->isChecked();
+    values[QString::fromLatin1(MOUSE2VJOY_INVERT_Y)] = ui->vJoyInvertYCheckBox->isChecked();
+    values[QString::fromLatin1(MOUSE2VJOY_RECENTER_TIMEOUT)] = ui->vJoyRecenterSpinBox->value();
+    return values;
+}
+
 bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
@@ -22515,47 +22562,10 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         settingFile.setValue(saveSettingSelectStr + it.key(), it.value());
     }
 
-    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_X_SPEED,            m_MappingAdvancedDialog->getMouseXSpeed());
-    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_Y_SPEED,            m_MappingAdvancedDialog->getMouseYSpeed());
-    settingFile.setValue(saveSettingSelectStr+KEY2MOUSE_POLLING_INTERVAL,   m_MappingAdvancedDialog->getMousePollingInterval());
-
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LT_THRESHOLD_PRESS,       m_MappingAdvancedDialog->getLeftTriggerPressThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LT_THRESHOLD_LIGHTPRESS,  m_MappingAdvancedDialog->getLeftTriggerLightPressThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LT_THRESHOLD_RELEASE,     m_MappingAdvancedDialog->getLeftTriggerReleaseThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RT_THRESHOLD_PRESS,       m_MappingAdvancedDialog->getRightTriggerPressThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RT_THRESHOLD_LIGHTPRESS,  m_MappingAdvancedDialog->getRightTriggerLightPressThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RT_THRESHOLD_RELEASE,     m_MappingAdvancedDialog->getRightTriggerReleaseThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LS_THRESHOLD_PUSH,        m_MappingAdvancedDialog->getLeftStickPushThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LS_THRESHOLD_LIGHTPUSH,   m_MappingAdvancedDialog->getLeftStickLightPushThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_LS_THRESHOLD_RELEASE,     m_MappingAdvancedDialog->getLeftStickReleaseThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_PUSH,        m_MappingAdvancedDialog->getRightStickPushThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_LIGHTPUSH,   m_MappingAdvancedDialog->getRightStickLightPushThreshold());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_RS_THRESHOLD_RELEASE,     m_MappingAdvancedDialog->getRightStickReleaseThreshold());
-
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_TOUCHPAD_X_SPEED,         m_MappingAdvancedDialog->getGamepadTouchpadXSpeed());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_TOUCHPAD_Y_SPEED,         m_MappingAdvancedDialog->getGamepadTouchpadYSpeed());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_TOUCHPAD_INVERT_X,        m_MappingAdvancedDialog->getGamepadTouchpadInvertX());
-    settingFile.setValue(saveSettingSelectStr+GAMEPAD_TOUCHPAD_INVERT_Y,        m_MappingAdvancedDialog->getGamepadTouchpadInvertY());
-
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_X_SPEED, ui->Gyro2MouseXSpeedSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_Y_SPEED, ui->Gyro2MouseYSpeedSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY, ui->Gyro2MouseMinXSensSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MIN_GYRO_Y_SENSITIVITY, ui->Gyro2MouseMinYSensSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MAX_GYRO_X_SENSITIVITY, ui->Gyro2MouseMaxXSensSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MAX_GYRO_Y_SENSITIVITY, ui->Gyro2MouseMaxYSensSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MIN_GYRO_THRESHOLD, ui->Gyro2MouseMinThresholdSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MAX_GYRO_THRESHOLD, ui->Gyro2MouseMaxThresholdSpinBox->value());
-
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_X_SOURCE, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXSource());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_Y_SOURCE, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYSource());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_X_REVERT, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXRevert());
-    settingFile.setValue(saveSettingSelectStr+GYRO2MOUSE_MOUSE_Y_REVERT, m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYRevert());
-
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_X_SENSITIVITY, ui->vJoyXSensSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_Y_SENSITIVITY, ui->vJoyYSensSpinBox->value());
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_INVERT_X, ui->vJoyInvertXCheckBox->isChecked());
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_INVERT_Y, ui->vJoyInvertYCheckBox->isChecked());
-    settingFile.setValue(saveSettingSelectStr+MOUSE2VJOY_RECENTER_TIMEOUT, ui->vJoyRecenterSpinBox->value());
+    const auto profileValues = collectProfileParameterSaveValues();
+    for (auto it = profileValues.begin(); it != profileValues.end(); ++it) {
+        settingFile.setValue(saveSettingSelectStr + it.key(), it.value());
+    }
 
     if (saveGlobalSetting) {
 #ifdef DEBUG_LOGOUT_ON

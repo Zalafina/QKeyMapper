@@ -88,3 +88,36 @@ MCP生产仍使用已有完整源快照／哈希及外层守卫，未新增opera
 本次仅GUI保存与只读载荷基础的独立提交切点。MCP未消费此载荷，仍12工具／8能力；该载荷不能代替完整内容修订、目标身份、其他草稿范围或提交授权。剩余配置／高级设置／面板等编码、完整保存预览与提交、失败回滚及正式MCP保存／冷启动／启停闭环仍待接续。未新增普通产品构建、ASan、严格静态分析、Win11、真实输入／设备、三语言布局或性能结论；按本片纯序列化影响选择双Qt Release维护及完整文件对照，没有越过原R3门槛。
 
 用户要求本片通过后收尾。曾按明确3小时请求把6920延长至23:46:49；本轮原生用例已实际跨过旧21:07截止，但不代表三小时驻留完整通过。正式收尾已off并核实closed、cache_available=false、零拥有／未定记录及last_error=null，见cache-closed.json；不跨PC继承窗口、PID或拥有关系。
+
+## SAVE-74：C1-B2-PROFILE依赖盘点与36项纯参数（2026-10-26，PC-W11）
+
+本机接续基线6d33db2758fa5b43194efe87542d21fa76e95ea9（UI-73），获取远端后仍一致，开始时无本地改动。没有重复Tab／映射提取或应用旧B1补丁。先增加独立GUI保存／冷读维护用例，在生产saveKeyMapSetting尚未变化时建立基线，再提取连续36项键转鼠／手柄阈值／触摸板／陀螺仪／鼠标转虚拟摇杆参数为私有collectProfileParameterSaveValues，原位置以同一前缀及QSettings写回。
+
+Windows 11企业版10.0.26200 x64；本机CPython3.11.9 x64、python.exe／python311.dll的有效PSF签名及旧ENV-39哈希安装日志已核对。31项实际锁依赖与旧安装条目／hash一致，环境及pip check、6项环境／20项协议接续通过，复用本机原独立venv，未复制外机环境或变更全局安装。首次整文件比较因说明注释差异拒绝，改为逐条requirement及SHA256核对后确认一致，不把该准备失败记为运行通过。原始环境材料为out/mcp_bridge/bootstrap-w11-20261023，本轮日志另存新目录。
+
+Qt6.8.3 msvc2022_64／Qt5.15.2官方msvc2019_64，两者qconfig的QT_ARCH=x86_64，MSVC19.44 x64。新维护构建树out/tests/sendinput_lifecycle/{qt6,qt5}-profile74-release；提取前、后四次native build均exit0，Qt6零警告，Qt5仅既有官方qtmain缺PDB例外。生产cpp唯一锚点、36项键／表达式／顺序和完整逆变换均通过，除该提取外还原为原cpp；header仅一项私有声明，无Worker、manifest、协议、锁或已完成载荷变更。
+
+基线及当前均用正式requireAdministrator维护目标，不使用asInvoker副本。两个维护case为settings_profile_save／settings_profile_cold，默认及非默认样例随测试源码维护。初始配置只在产品启动前写入独立自有INI；正常产品启动恢复，测试通过Qt键盘事件编辑名称和真实鼠标事件点击Save，不直接调用保存／加载函数。准备一个合法A→B和独立Keep74配置，非默认组设置36项标量；不启动映射、不发系统输入，仍保留原main初始化及退出设备清理，不能据此证明驱动效果。
+
+| 检查 | Qt6 | Qt5 |
+|---|---|---|
+| 提取前旧GUI保存／独立冷读 | 默认5＋5、非默认9＋9，共28项／4进程 | 同28项／4进程 |
+| 提取后保存／冷读 | 默认9＋9、非默认13＋13，共44项／4进程 | 同44项／4进程 |
+| 完整落盘对照 | 默认262键、非默认298键，两对完整键集合／Qt解析值及INI字节相同 | 同两对 |
+| 独立冷启动 | 四个前／后冷进程均恢复预期且全程INI字节不变 | 同四个 |
+| 纯收集 | 36项Qt类型／插入顺序／重复性保留；disk、dirty、加载代次、源epoch不变；实际保存逐项相等 | 同预期 |
+
+所有16进程passed=true、原生exit0、退出workAtExit／producersAtExit均为0。默认／非默认的独立鼠标参数、阈值三元组、浮点／bool期待和其他配置保持均另行断言，不仅比较两个路径彼此一致。当前8个进程的实际桌面／PID：
+
+| 组 | 保存／冷读PID | 产品主线程实际桌面 |
+|---|---|---|
+| Qt6默认 | 2236／35028 | QkmProfile74_a98c93296d0d4cdc8897d11cb4bb89ef |
+| Qt6非默认 | 21532／2192 | QkmProfile74_f44c87febebd4ec29b9163756e125c27 |
+| Qt5默认 | 27240／32448 | QkmProfile74_29410cd747e3408e89c412b46d4c3501 |
+| Qt5非默认 | 9112／28232 | QkmProfile74_144c9e81e59d425089ba578ea0ea34d1 |
+
+实际EXE为out/mcp_save_profile_w11_20261026/{qt6,qt5}-{default,nondefault}/QKeyMapperProfile74_*.exe，同路径前／后字节身份分别在identity-before／after.json，旧二进制保留old-executables。原始before／after的case、start／closed记录、完整基线INI、build-qt*-before／after.log、run-before／after.log、extraction-review.json及evidence-summary在同一本机目录；不随Git或跨PC复制。
+
+用户明确要求6小时，普通Medium控制器23316于本轮创建，截止2026-10-26 15:44:30北京时间。目标内容及精确环境经技能公共authorize／register登记；仅必要自有原生启动／收尾提权，产品High RID12288、父Medium8192、same_login=true。当前全部目标已退出，status为active／cache_available=true、零owned／unresolved及current_action=null；保持用户所定窗口继续下一切片，不另建缓存或延长。原manifest正常退出仍有原有设备清理，不等于设备释放验收。
+
+本片为独立本地提交切点，继续工作、不推送。剩余窗口匹配的旧路径／图标条件、通知样式是否写入、共通备份同步、面板和保存前后副作用已在唯一主计划盘点，不能用36项或当前源修订代替全部保存范围。MCP仍12工具／8业务能力，完整保存／其他草稿／失败回滚／正式MCP及启停闭环未完成。未新增普通产品全构建、严格静态分析、ASan、真实输入／设备、Default／三语言布局或性能覆盖；已完成UI-73／TABLE及PC-W10材料只按原版本范围复用，不冒充本次Win11结果。

@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <QToolButton>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QSettings>
 #include <QScopeGuard>
 #include <QLineEdit>
@@ -66,6 +67,7 @@ public:
     static QJsonObject equality(QKeyMapper *mapper);
     static QJsonObject serialization(QKeyMapper *mapper, bool cold);
     static QJsonObject generalSave(QKeyMapper *mapper, bool rich = false);
+    static QJsonObject profileSave(QKeyMapper *mapper, bool cold);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1215,6 +1217,14 @@ void installLifecycleTest()
             });
             return;
         }
+        if (guiMode == QStringLiteral("settings_profile_save") || guiMode == QStringLiteral("settings_profile_cold")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::profileSave(
+                QKeyMapper::getInstance(), guiMode.endsWith(QStringLiteral("_cold")));
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
         if (guiMode == QStringLiteral("settings_general_save") || guiMode == QStringLiteral("settings_table_save")
             || guiMode == QStringLiteral("settings_table_cold")) {
             result->settingsGeneralEvidence = guiMode == QStringLiteral("settings_table_cold")
@@ -2261,6 +2271,141 @@ QJsonObject QkmMappingAdditionTestAccess::generalSave(QKeyMapper *mapper, bool r
         {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::profileSave(QKeyMapper *mapper, bool cold)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    if (!QDir::currentPath().contains(QStringLiteral("/out/"))
+        || QDir::currentPath() != QCoreApplication::applicationDirPath()) return {{QStringLiteral("passed"), false}};
+    const auto disk = [] {
+        QFile file(QString::fromLatin1(CONFIG_FILENAME));
+        return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray();
+    };
+    const auto allValues = [](QSettings &ini) {
+        QVariantMap values;
+        for (const auto &key : ini.allKeys()) values.insert(key, ini.value(key));
+        return values;
+    };
+    const QByteArray before = disk();
+    const bool nondefault = qEnvironmentVariableIntValue("QKM_LIFECYCLE_PROFILE_NONDEFAULT") == 1;
+    const bool dirtyBefore = mapper->m_SaveSettingDirty;
+    const quint64 loadBefore = mapper->m_MappingLoadGeneration;
+    const quint64 sourceBefore = mapper->m_AutomationSourceEpoch;
+    const auto profileValues = mapper->collectProfileParameterSaveValues();
+    const auto repeatedValues = mapper->collectProfileParameterSaveValues();
+    bool repeated = profileValues.keys() == repeatedValues.keys();
+    for (auto it = profileValues.begin(); it != profileValues.end(); ++it) {
+        repeated = repeated && it.value() == repeatedValues.value(it.key())
+            && it.value().userType() == repeatedValues.value(it.key()).userType();
+    }
+    check(profileValues.size() == 36 && repeated && profileValues.keys().first() == QString::fromLatin1(KEY2MOUSE_X_SPEED)
+        && profileValues.keys().last() == QString::fromLatin1(MOUSE2VJOY_RECENTER_TIMEOUT),
+        "profile parameter collection retains all ordered Qt scalar values and types");
+    check(disk() == before && mapper->m_SaveSettingDirty == dirtyBefore && mapper->m_MappingLoadGeneration == loadBefore
+        && mapper->m_AutomationSourceEpoch == sourceBefore,
+        "pure parameter collection changes no disk, dirty, load generation or source epoch");
+    const QString group = cold ? QStringLiteral("Map74Profile") : QStringLiteral("Profile74Seed");
+    auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+    auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+    auto *startup = mapper->findChild<QCheckBox *>(QStringLiteral("startupAutoMonitoringCheckBox"));
+    check(name && save && startup && !before.isEmpty() && !startup->isChecked()
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && mapper->m_LoadedMappingSettingGroup == group
+        && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED,
+        "owned profile is loaded by product startup and mapping remains stopped");
+    if (!name || !save || !startup) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    check(QKeyMapper::KeyMappingDataList && QKeyMapper::KeyMappingDataList->size() == 1
+        && QKeyMapper::KeyMappingDataList->first().Original_Key == QStringLiteral("A")
+        && QKeyMapper::KeyMappingDataList->first().Mapping_Keys == QStringList{QStringLiteral("B")},
+        "startup restores the independently seeded valid mapping");
+    if (nondefault) {
+        check(mapper->m_MappingAdvancedDialog->getMouseXSpeed() == 13
+            && mapper->m_MappingAdvancedDialog->getMouseYSpeed() == 17
+            && mapper->m_MappingAdvancedDialog->getMousePollingInterval() == 8,
+            "startup restores the nondefault key-to-mouse parameters");
+        check(mapper->m_MappingAdvancedDialog->getLeftTriggerPressThreshold() == 80
+            && mapper->m_MappingAdvancedDialog->getLeftTriggerLightPressThreshold() == 50
+            && mapper->m_MappingAdvancedDialog->getLeftTriggerReleaseThreshold() == 20,
+            "startup restores the ordered trigger threshold triple");
+        check(qFuzzyCompare(mapper->m_MappingAdvancedDialog->getGamepadTouchpadXSpeed(), 1.5)
+            && mapper->m_MappingAdvancedDialog->getGamepadTouchpadInvertX(),
+            "startup restores floating-point and boolean touchpad parameters");
+    }
+    QSettings ini(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(ini);
+    ini.beginGroup(QStringLiteral("Keep74"));
+    const QVariantMap otherProfile = allValues(ini);
+    ini.endGroup();
+    if (!cold) {
+        // Exercise the ordinary name editor and Save button without calling the save operation.
+        name->setFocus();
+        QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier);
+        QKeyEvent selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+        QCoreApplication::sendEvent(name, &select);
+        QCoreApplication::sendEvent(name, &selected);
+        for (const QChar character : QStringLiteral("Map74Profile")) {
+            QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character));
+            QKeyEvent release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+            QCoreApplication::sendEvent(name, &press);
+            QCoreApplication::sendEvent(name, &release);
+        }
+        check(name->text() == QStringLiteral("Map74Profile") && save->isEnabled(),
+            "Qt editor events prepare a distinct profile before GUI Save");
+        clickMappingButton(save);
+    }
+    ini.sync();
+    const QString prefix = QStringLiteral("Map74Profile/");
+    check(ini.status() == QSettings::NoError && ini.value(SETTINGSELECT).toString() == QStringLiteral("Map74Profile")
+        && mapper->m_LoadedMappingSettingGroup == QStringLiteral("Map74Profile") && !mapper->m_SaveSettingDirty,
+        "GUI save or independent startup confirms the selected persisted profile and clean state");
+    bool parametersPersisted = true;
+    for (auto it = profileValues.begin(); it != profileValues.end(); ++it) {
+        parametersPersisted = parametersPersisted && ini.contains(prefix + it.key()) && ini.value(prefix + it.key()) == it.value();
+    }
+    check(parametersPersisted, "GUI save or independent cold read retains every collected profile parameter");
+    if (nondefault) {
+        check(ini.value(prefix + KEY2MOUSE_X_SPEED).toInt() == 13
+            && ini.value(prefix + KEY2MOUSE_Y_SPEED).toInt() == 17
+            && ini.value(prefix + KEY2MOUSE_POLLING_INTERVAL).toInt() == 8
+            && ini.value(prefix + GAMEPAD_LT_THRESHOLD_PRESS).toInt() == 80
+            && ini.value(prefix + GAMEPAD_LT_THRESHOLD_LIGHTPRESS).toInt() == 50
+            && ini.value(prefix + GAMEPAD_LT_THRESHOLD_RELEASE).toInt() == 20
+            && qFuzzyCompare(ini.value(prefix + GAMEPAD_TOUCHPAD_X_SPEED).toDouble(), 1.5)
+            && ini.value(prefix + GAMEPAD_TOUCHPAD_INVERT_X).toBool(),
+            "saved scalar values retain independently specified nondefault expectations");
+    }
+    ini.beginGroup(QStringLiteral("Keep74"));
+    check(!otherProfile.isEmpty() && allValues(ini) == otherProfile, "saving does not modify the other stored profile");
+    ini.endGroup();
+    const QByteArray after = disk();
+    if (cold) check(after == before, "independent cold verification does not write the INI");
+    const QString baseline = qEnvironmentVariable("QKM_LIFECYCLE_SAVE_BASELINE");
+    if (!baseline.isEmpty()) {
+        QDir parent(QCoreApplication::applicationDirPath());
+        parent.cdUp();
+        if (!QFileInfo(baseline).isAbsolute() || QFileInfo(baseline).absolutePath() != parent.absolutePath()
+            || !QFileInfo(baseline).fileName().startsWith(QStringLiteral("baseline-"))) return {{QStringLiteral("passed"), false}};
+        QSettings expected(baseline, QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(expected);
+        QTemporaryFile copy(QDir::currentPath() + QStringLiteral("/profile-current-XXXXXX.ini"));
+        if (!copy.open() || copy.write(after) != after.size() || !copy.flush()) return {{QStringLiteral("passed"), false}};
+        copy.close();
+        QSettings actual(copy.fileName(), QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(actual);
+        QFile original(baseline);
+        check(original.open(QIODevice::ReadOnly) && original.readAll() == after
+            && allValues(actual) == allValues(expected) && actual.status() == QSettings::NoError && expected.status() == QSettings::NoError,
+            "complete key set, Qt values and INI bytes match the independent old GUI baseline");
+    }
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+        {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
+        {QStringLiteral("nondefault"), nondefault}, {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::tableState(QKeyMapper *mapper)
 {
     bool passed = true;
@@ -2434,7 +2579,7 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_serialization"), QStringLiteral("settings_serialization_cold"), QStringLiteral("settings_general_save"),
         QStringLiteral("common_comments"), QStringLiteral("common_comments_cold"), QStringLiteral("common_comments_legacy"),
         QStringLiteral("common_comments_attached"), QStringLiteral("settings_table_save"), QStringLiteral("settings_table_cold"),
-        QStringLiteral("ui_localization")};
+        QStringLiteral("ui_localization"), QStringLiteral("settings_profile_save"), QStringLiteral("settings_profile_cold")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

@@ -80,3 +80,13 @@ InputOwnerFence 只确认各队列到达对应位置；Interception 接收循环
 源码、Git、构建和分析保持非管理员。只有保留正式 manifest 的必要测试启动／关闭使用已授权 gsudo，并由用户确认 UAC。无输出生命周期用例不证明硬件、Hook 或驱动释放。窗口测试和完整阶段门禁按仓库工作流另行验收。
 
 静态报告回归入口仍为 `scripts/test_static_analysis.ps1`，只验证目标发现和报告门禁，不代替真实 Clang-Tidy／Clazy。
+
+## 配置参数保存及独立冷读
+
+`settings_profile_save`／`settings_profile_cold` 使用同一生命周期目标和正式manifest。仅在新建的自有 `out/` 运行目录中部署匹配的EXE／Qt依赖，通过缓存技能公共登记入口启动；不改变正式manifest或调用任意高权限脚本。基础样例为 [profile_save_fixture.ini.example](sendinput_lifecycle/profile_save_fixture.ini.example)，复制为运行目录的keymapdata.ini，首次由正常产品启动加载Profile74Seed，不直接调用加载函数。
+
+非默认组把 [profile_save_nondefault.ini.example](sendinput_lifecycle/profile_save_nondefault.ini.example) 的36项放入该样例的Profile74Seed节末、Keep74节之前，并设置 `QKM_LIFECYCLE_PROFILE_NONDEFAULT=1`；默认组不添加且设为0。准备发生在产品启动前，禁止覆盖个人INI。保存用例通过Qt键盘事件输入新名称、真实鼠标事件点击Save，核对原GUI写盘／重载与其他配置保持；冷读必须在保存进程正常退出后，以同一EXE和已保存INI启动另一进程，省略任何重新准备／覆盖INI步骤。
+
+每次设置 `QKM_LIFECYCLE_CASE` 为对应case，`QKM_LIFECYCLE_RESULT` 为新的绝对JSON路径；结果在既有 `settingsGeneral` 容器，不是正式MCP结果。另检查主结果passed、实际桌面、PID／EXE／创建时间、High／同登录关联、原生exit0、workAtExit／producersAtExit为0，并在冷启动前后从进程外比较INI字节。没有映射启动或系统输入，正常main退出仍保留既有设备清理，不证明实际驱动释放。
+
+为提取前／后对照，先在未改GUI保存实现的二进制上建立基线，保存其INI为运行目录父级下的 `baseline-*.ini`。提取后在同路径／同名称运行副本重新从相同样例开始，设置 `QKM_LIFECYCLE_SAVE_BASELINE` 为该已有绝对路径；用例独立解析完整键值、比较INI字节，并验证36项收集的类型／顺序／重复性及disk／dirty／加载／源代次不变。默认与非默认、两个Qt kit分别保留证据，不用其他PC的out代替本机基线。选定执行及未覆盖范围见主计划与C1验证记录。
