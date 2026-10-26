@@ -2182,6 +2182,13 @@ private:
         bool requiresOverwriteConfirmation = false;
         bool ok() const { return error == Error::None; }
     };
+    struct SettingSaveValues {
+        enum class Error { None, InvalidTarget, HotKeyInputNotSettled };
+        OrderedMap<QString, QVariant> values;
+        Error error = Error::None;
+        bool appendSettingOrder = false;
+    };
+    SettingSaveValues collectSettingSaveValues(const SettingSaveTarget &target, const QSettings &settingFile, int languageIndex) const;
     static QPair<QString, ValidationResult> analyzeHotKeyLineEditText(const QString &text);
     SettingSaveTarget analyzeSettingSaveTarget(const QString &requestedName, const QString &currentSelectedSetting,
         bool globalSelected, const QStringList &groups) const;

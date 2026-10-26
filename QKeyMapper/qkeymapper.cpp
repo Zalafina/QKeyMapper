@@ -22499,6 +22499,56 @@ OrderedMap<QString, QVariant> QKeyMapper::collectVButtonPanelSaveValues() const
     return values;
 }
 
+QKeyMapper::SettingSaveValues QKeyMapper::collectSettingSaveValues(const SettingSaveTarget &target,
+    const QSettings &settingFile, int languageIndex) const
+{
+    SettingSaveValues result;
+    if (!target.ok() || target.settingName.isEmpty()) {
+        result.error = SettingSaveValues::Error::InvalidTarget;
+        return result;
+    }
+    // Unsettled editor text cannot be predicted from Qt's public focus/modified flags.
+    if (ui->windowswitchkeyLineEdit->text() != s_WindowSwitchKeyString
+        || ui->mappingStartKeyLineEdit->text() != s_MappingStartKeyString
+        || ui->mappingStopKeyLineEdit->text() != s_MappingStopKeyString) {
+        result.error = SettingSaveValues::Error::HotKeyInputNotSettled;
+        return result;
+    }
+    const QString prefix = target.settingName + QLatin1Char('/');
+    const auto append = [&](const OrderedMap<QString, QVariant> &values, const QString &groupPrefix) {
+        for (auto it = values.begin(); it != values.end(); ++it) result.values.insert(groupPrefix + it.key(), it.value());
+    };
+    result.values.insert(QString::fromLatin1(IGNOREWINDOWINFO_RULES), serializeIgnoreRules(s_IgnoreWindowInfoMap));
+    result.values.insert(QString::fromLatin1(SETTINGSELECT), target.settingName);
+    append(collectGeneralSettingSaveValues(languageIndex), QString());
+    result.values.insert(QString::fromLatin1(WINDOWSWITCH_KEYSEQ),
+        s_WindowSwitchKeyString.isEmpty() ? QString::fromLatin1(DISPLAYSWITCH_KEY_DEFAULT) : s_WindowSwitchKeyString);
+    append(collectMappingTableSaveValues(true), prefix);
+    append(collectProfileParameterSaveValues(), prefix);
+    if (!target.saveGlobalSetting) {
+        const QString oldPath = m_MapProcessInfo.FilePath.isEmpty()
+            ? settingFile.value(prefix + PROCESSINFO_FILEPATH).toString() : QString();
+        append(collectWindowMatchSaveValues(oldPath), prefix);
+    }
+    append(collectProfileMappingOptionSaveValues(), prefix);
+    result.values.insert(prefix + COMMONMAPPINGDATA, serializeCommonMappingData(collectCommonRowsForSave()));
+    result.values.insert(prefix + CUSTOM_NOTIFICATION_ENABLED, m_MappingAdvancedDialog->getCustomNotificationEnabled());
+    result.values.insert(prefix + CUSTOM_NOTIFICATION_POSITION, m_MappingAdvancedDialog->getCustomNotificationPosition());
+    append(collectCustomNotificationStyleSaveValues(settingFile, prefix), prefix);
+    append(collectProfileInputSaveValues(), prefix);
+    result.values.insert(prefix + MAPPINGSTART_KEY,
+        s_MappingStartKeyString.isEmpty() ? QString::fromLatin1(MAPPINGSWITCH_KEY_DEFAULT) : s_MappingStartKeyString);
+    result.values.insert(prefix + MAPPINGSTOP_KEY,
+        s_MappingStopKeyString.isEmpty() ? QString::fromLatin1(MAPPINGSWITCH_KEY_DEFAULT) : s_MappingStopKeyString);
+    // Apply the existing order operation after the target group exists; do not simulate QSettings writes here.
+    result.appendSettingOrder = !target.saveGlobalSetting && target.createNewSetting;
+    append(collectVButtonPanelSaveValues(), prefix);
+    result.values.insert(prefix + MACROLIST, serializeMappingMacros(s_MappingMacroList));
+    result.values.insert(QString::fromLatin1(MACROLIST_UNIVERSAL), serializeMappingMacros(s_UniversalMappingMacroList));
+    result.values.insert(prefix + SYNCGROUPNOTES, serializeSyncGroupNotes(m_FloatingButtonSyncGroupNotes));
+    return result;
+}
+
 QKeyMapper::SettingSaveTarget QKeyMapper::analyzeSettingSaveTarget(const QString &requestedName,
     const QString &currentSelectedSetting, bool globalSelected, const QStringList &groups) const
 {

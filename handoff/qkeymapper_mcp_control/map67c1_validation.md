@@ -311,3 +311,33 @@ rich使用产品现有过滤显示入口准备已加载的自有面板，确认�
 所有原始构建、前／后case、14份baseline、失败／未知材料、部署／旧EXE、patch／analysis-review／预期字节和汇总均在同一本机out目录，不随Git。cache-after.json确认新32464 active／cache_available=true、零owned／unresolved、current_action=null、last_error=null；不消除SAVE-79／81旧控制器的历史未知。缓存原生可靠性故障已记录，未扩大到缓存核心或系统配置修改。
 
 本片为独立本地提交切点，不推送，继续完整Qt保存范围、通知模式、顺序、全部辅助集合、其他草稿及磁盘／业务修订，再进C1-C。工具12／业务能力8，C1-B2／M1未整体完成。未新增普通产品全构建、严格静态分析、ASan、Default物理焦点／真实输入／设备、性能或三语言布局覆盖；PC-W10历史仅按原版本范围保留。
+
+## SAVE-82：完整Qt载荷组合与顺序意图（2026-10-26，PC-W11）
+
+基线为SAVE-81本地f612bafe。生产只增加私有SettingSaveValues／collectSettingSaveValues：复用C1-A、TABLE及SAVE-74至81的Qt类型生成，组合全局、全部Tab／映射、配置参数、条件窗口匹配、实际共通源、通知两项模式及条件样式、输入、快捷键默认值、面板、规则／普通与通用宏／同步说明。新配置另声明原appendSettingSelectOrderIfMissing动作，保留其依赖实际已写目标组的规则，不写临时INI模拟结果、不重写分组／大小写／排序算法。GUI Save、辅助包装器、所有写盘和焦点／规范化／重载／失败流程完全未变；尚未消费新载荷或新增MCP工具。
+
+非法目标返回InvalidTarget；快捷键编辑文本与当前后台字符串不一致时保守返回HotKeyInputNotSettled，载荷和顺序动作均为空，不靠Qt私有edited、hasFocus或isModified猜测提交。这只是内部只读生成约束，其他草稿／MCP editor_busy守卫和执行许可仍待后续。CPP50行及header7行局部增加，唯一锚点、dry run／numstat、完整逆变换及应用后实际字节一致；未改Worker、manifest、协议、依赖、翻译或缓存核心。
+
+普通QtCore-only准备器复用SAVE-76模式，以Qt原生QSettings编码合成规则、宏和说明到out；没有启动产品、提权或安装依赖。成品full_save_fixture.ini.example保留普通A→B、共通F13／F14、旧F20备份、其他Keep82配置、Existing82覆盖目标旧路径、非默认通知14样式／模式和待规范化顺序。规则／普通宏／通用宏各一项，说明仅17非空、21空项加载时过滤；用单个非空说明避免无关QHash随机遍历顺序干扰，不设置全局或测试QT_HASH_SEED。
+
+同机锁环境、Qt6.8.3／Qt5.15.2官方x64及MSVC19.44沿SAVE-74；普通控制、准备、构建均Medium。双Qt前／后四次Release维护构建native exit0，Qt6零警告，Qt5仅原qtmain例外；构建树继续out/tests/sendinput_lifecycle/{qt6,qt5}-profile74-release，无本片编译／运行失败。
+
+| variant | 原GUI与组合独立期待 | 每Qt旧GUI保存／冷读 | 每Qt组合后保存／冷读 | 完整INI键 |
+|---|---|---|---|---|
+| current | 保存当前组，保留原含重复／失效项的顺序值 | 6＋6 | 12＋7 | 275 |
+| new | 另存A82Saved，原顺序操作过滤旧项并补全组 | 6＋6 | 12＋7 | 314 |
+| overwrite | 真实Yes覆盖Existing82，保留其旧FilePath | 7＋7 | 13＋8 | 310 |
+| global | 启动前替换源节为规范全局组；跳过窗口匹配，顺序值不写 | 6＋6 | 12＋7 | 266 |
+| pending | 私有Qt激活后真实未提交F17，组合拒绝且不动；GUI仍按原Save完成离焦提交 | 7＋6 | 11＋7 | 314 |
+
+每Qt旧63项／10进程、组合后96项／10进程；两Qt40个选定进程passed=true、native exit0、workAtExit／producersAtExit为0，十对完整INI字节相等。每项有效组合值均由原GUI实际保存，全部实际新增／变化／删除键均属于组合或明确的顺序操作；不以单行或只比较数量替代完整值。pending只证明内部生成拒绝／不变性与GUI原行为保持，不冒充该状态的完整MCP等价保存。独立冷进程恢复全部集合作用范围和通知值，全程不改INI。
+
+组合重复键顺序和Qt类型一致；非法目标不产生部分载荷。disk、dirty、样式初始化、加载／源代次、当前指针、原映射载荷、旧共通备份、规则／普通宏／通用宏／说明、文本及焦点不变。新配置实际顺序为Keep82、Payload82Seed、A82Saved、Existing82，过滤Missing82与重复项；当前／覆盖／全局按原分支不重写旧顺序。Keep82未改，覆盖旧FilePath保持C:/QkmPayload82/keep.exe；共通实际两行取代旧备份，附带通知模式2及非默认字号27等值。
+
+所有源夹具在启动前准备并由正常产品启动加载；名称、Save、覆盖Yes及pending编辑通过Qt事件，不直接调用加载／保存／同步函数，不设置控件值代替基线。pending复用既有activateWindow并核实真实hasFocus，仅自有私有桌面Qt应用内焦点，不切换Default或发送系统输入。原requireAdministrator EXE为out/mcp_save_payload_w11_20261026/{qt6,qt5}-runtime/QKeyMapperPayload82_*_runtime.exe，前后同路径，旧EXE在old-executables。主线程实际独立QkmPayload82_<UUID>，父Medium8192、产品High12288、same_login=true，PID／创建时间／退出在case的start／closed.json。
+
+本片均复用普通控制器32464的公共审核登记／perform，定义只替换同一空闲目标的旧摘要并保留其他当前范围。cache-after.json确认active／cache_available=true、零owned／unresolved、current_action=null、last_error=null，15:44截止不变；SAVE-79／81旧控制器未知请求不因此改记成功或清理已核实。原main设备初始化／退出清理保持，但本片未启动映射、未发系统输入，零计数不证明完整停止或设备效果。
+
+本机out同一目录保留QtCore准备器源码／构建及生成前后INI、产品前／后四份构建、两份成功运行日志、十份baseline、各case／身份、旧EXE、聚合patch／review／预期字节及evidence-summary.json，不随Git。维护夹具及中文步骤随源码；PC-W10原证据仅按原版本范围保留。
+
+本片为独立本地提交切点，不推送。组合仅覆盖已盘点Qt写入值和原顺序意图，仍须完整磁盘／业务修订、其他编辑窗草稿、目标／会话／权限／状态／到期及实际执行重检，之后C1-C处理真实保存、重载／备份和失败恢复。工具12／业务能力8，C1-B2／M1未整体完成；未新增普通产品全构建、严格静态分析、ASan、VIGEM关闭配置、Default／真实输入／设备、性能或三语言布局覆盖。

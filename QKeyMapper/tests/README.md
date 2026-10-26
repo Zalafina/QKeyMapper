@@ -154,3 +154,11 @@ Qt名称编辑输入空格、非法字符、全局保留名、现有或新名称
 待编辑组先用项目现有QWidget::activateWindow建立自有私有桌面的Qt应用内激活，并断言实际编辑框hasFocus；不切换输入桌面、不发送系统按键、不验证Default前台或物理焦点。Save真实clearFocus触发现有editingFinished，成功后另进程冷读三项键及完整INI。最初没有应用内激活的失败另存，不能计通过；Qt6已弃用的setActiveWindow试编译警告也另存，正式选定版本只用activateWindow。
 
 提取前先保存原GUI基线，提取后同路径核对完整字节。共享analyzeHotKeyLineEditText仅返回规范化字符串和原validateCombinationKey结果，保留美元前缀、空白清理、错误及翻译context；不改后台字符串、编辑器文本／焦点／选区／modified、dirty／代次／磁盘，也不发完成／文本信号。空白及带换行输入只作组件边界。该函数不预测Qt内部edited标志，不把hasFocus／isModified当成保存许可；完整保存准备仍须处理未提交编辑依赖与其他草稿。
+
+## 完整Qt保存载荷组合
+
+`settings_payload_save`／`settings_payload_cold`使用[full_save_fixture.ini.example](sendinput_lifecycle/full_save_fixture.ini.example)，由普通QtCore-only准备器对合成数据编码，正常启动加载Payload82Seed。包含普通／共通源、不同旧备份、规则、普通／通用宏、非空同步说明、14项非默认通知样式与模式、待规范化配置顺序及其他配置。`QKM_LIFECYCLE_PAYLOAD_VARIANT`为current／new／overwrite／global／pending；global启动前把Payload82Seed全部替换为QKeyMapperGlobalSetting，其他组原样，目标分别当前组／A82Saved／Existing82／全局组／A82Saved。
+
+先运行原GUI基线，再组合既有Qt值函数。名称、Save、覆盖Yes与pending快捷键均通过Qt事件；pending沿既有activateWindow建立私有Qt焦点，实际Save仍按原规则处理F17。只读组合在输入文本与后台快捷键不一致时明确返回HotKeyInputNotSettled和空载荷，不猜Qt私有edited标志、不提交编辑；这是内部生成约束，MCP草稿守卫尚未接线。
+
+有效载荷保留Qt类型和绝对键，声明是否还需原appendSettingSelectOrderIfMissing操作，不临时写INI模拟其结果。GUI保持原实现；检查每项生成值实际保存、所有变化／删除键均属于载荷或明确的顺序操作、全文件字节等于旧基线、独立冷读不改盘。组合不改映射、旧备份、规则／宏／说明、文本／焦点、dirty及代次，非法目标不产生部分载荷。完整磁盘／业务修订、其他编辑窗草稿、权限／状态／到期和真正提交／失败恢复仍属后续，不因组合成功开放保存工具。
