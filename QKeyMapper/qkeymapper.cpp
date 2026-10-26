@@ -22597,6 +22597,58 @@ QKeyMapper::SettingSaveValues QKeyMapper::collectSettingSaveValues(const Setting
     return result;
 }
 
+QKeyMapper::SettingSavePreparation QKeyMapper::prepareSettingSave(const QString &requestedName,
+    const QString &currentSelectedSetting, bool globalSelected, int languageIndex, const QString &sourceRevision) const
+{
+    using Error = SettingSavePreparation::Error;
+    SettingSavePreparation result;
+    result.configurationPath = QFileInfo(QString::fromLatin1(CONFIG_FILENAME)).absoluteFilePath();
+    const auto fail = [&](Error error) {
+        result.error = error;
+        result.values.values.clear();
+        result.values.appendSettingOrder = false;
+        result.revision.clear();
+        return result;
+    };
+    const auto readConfiguration = [&](QByteArray &bytes, bool &exists) {
+        QFile file(result.configurationPath);
+        const QFileInfo info(file);
+        exists = info.exists();
+        if (!exists) { bytes.clear(); return Error::None; }
+        if (!info.isFile() || !file.open(QIODevice::ReadOnly)) return Error::ReadFailed;
+        bytes = file.read(QkmAutomation::MaxSourceSnapshotBytes + 1);
+        if (file.error() != QFile::NoError) return Error::ReadFailed;
+        if (bytes.size() > QkmAutomation::MaxSourceSnapshotBytes || !file.atEnd()) return Error::FileTooLarge;
+        return Error::None;
+    };
+    const auto readError = readConfiguration(result.configurationData, result.configurationExists);
+    if (readError != Error::None) return fail(readError);
+    // Parse one private copy; same-path QSettings readers can share pending writes and consumed errors.
+    QTemporaryFile snapshot(QDir::tempPath() + QStringLiteral("/QKeyMapper-save-XXXXXX.ini"));
+    if (!snapshot.open() || snapshot.write(result.configurationData) != result.configurationData.size() || !snapshot.flush()) {
+        return fail(Error::SnapshotFailed);
+    }
+    snapshot.close();
+    QSettings settings(snapshot.fileName(), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(settings);
+    (void)settings.allKeys();
+    if (settings.status() != QSettings::NoError) return fail(Error::FormatError);
+    result.target = analyzeSettingSaveTarget(requestedName, currentSelectedSetting, globalSelected, settings.childGroups());
+    if (!result.target.ok()) return fail(Error::InvalidTarget);
+    result.values = collectSettingSaveValues(result.target, settings, languageIndex);
+    if (result.values.error != SettingSaveValues::Error::None) return fail(Error::ValuesUnavailable);
+    QByteArray latest;
+    bool latestExists = false;
+    const auto recheckError = readConfiguration(latest, latestExists);
+    if (recheckError != Error::None) return fail(recheckError);
+    if (latestExists != result.configurationExists || latest != result.configurationData) return fail(Error::DiskChanged);
+    result.revision = settingSaveValuesFingerprint(result.target, result.values, result.configurationPath,
+        result.configurationExists, result.configurationData, sourceRevision);
+    if (result.revision.isEmpty()) return fail(Error::FingerprintUnavailable);
+    result.error = Error::None;
+    return result;
+}
+
 QKeyMapper::SettingSaveTarget QKeyMapper::analyzeSettingSaveTarget(const QString &requestedName,
     const QString &currentSelectedSetting, bool globalSelected, const QStringList &groups) const
 {

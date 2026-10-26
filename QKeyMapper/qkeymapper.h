@@ -2188,6 +2188,20 @@ private:
         Error error = Error::None;
         bool appendSettingOrder = false;
     };
+    struct SettingSavePreparation {
+        enum class Error { None, ReadFailed, FileTooLarge, SnapshotFailed, FormatError, InvalidTarget,
+            ValuesUnavailable, DiskChanged, FingerprintUnavailable };
+        Error error = Error::ReadFailed;
+        QString configurationPath;
+        bool configurationExists = false;
+        QByteArray configurationData;
+        SettingSaveTarget target;
+        SettingSaveValues values;
+        QString revision;
+        bool ok() const { return error == Error::None && !revision.isEmpty(); }
+    };
+    SettingSavePreparation prepareSettingSave(const QString &requestedName, const QString &currentSelectedSetting,
+        bool globalSelected, int languageIndex, const QString &sourceRevision) const;
     bool hasOpenMappingEditor() const;
     static QString settingSaveValuesFingerprint(const SettingSaveTarget &target, const SettingSaveValues &values,
         const QString &configurationPath, bool configurationExists, const QByteArray &configurationData, const QString &sourceRevision);

@@ -81,6 +81,7 @@ public:
     static QJsonObject hotKeyPreparation(QKeyMapper *mapper, bool cold);
     static QJsonObject fullSavePayload(QKeyMapper *mapper, bool cold);
     static QJsonObject saveDependencies(QKeyMapper *mapper);
+    static QJsonObject saveSnapshot(QKeyMapper *mapper);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
@@ -1227,6 +1228,13 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_save_snapshot")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::saveSnapshot(QKeyMapper::getInstance());
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -3010,6 +3018,116 @@ QJsonObject QkmMappingAdditionTestAccess::profileOptionSave(QKeyMapper *mapper, 
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("panel_key_signals"), buttonSignals}};
 }
 
+QJsonObject QkmMappingAdditionTestAccess::saveSnapshot(QKeyMapper *mapper)
+{
+    using namespace QKeyMapperConstants;
+    using Error = QKeyMapper::SettingSavePreparation::Error;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    if (!QDir::currentPath().contains(QStringLiteral("/out/")) || QDir::currentPath() != QCoreApplication::applicationDirPath()) return {{QStringLiteral("passed"), false}};
+    const QString path = QFileInfo(QString::fromLatin1(CONFIG_FILENAME)).absoluteFilePath();
+    const auto disk = [&]() { QFile file(path); return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const auto original = disk();
+    if (original.isEmpty()) return {{QStringLiteral("passed"), false}};
+    const auto write = [&](const QByteArray &data) {
+        QSaveFile file(path);
+        return file.open(QIODevice::WriteOnly) && file.write(data) == data.size() && file.commit();
+    };
+    const auto restoreDisk = [&]() {
+        if (QFileInfo(path).isDir()) QDir().rmdir(path);
+        return write(original);
+    };
+    const auto restore = qScopeGuard([&]() { restoreDisk(); });
+    const bool dirty = mapper->m_SaveSettingDirty;
+    const quint64 load = mapper->m_MappingLoadGeneration, epoch = mapper->m_AutomationSourceEpoch;
+    const QString source(64, QLatin1Char('a'));
+    const auto prepare = [&](const QString &name) {
+        return mapper->prepareSettingSave(name, QStringLiteral("Payload82Seed"), false, LANGUAGE_CHINESE, source);
+    };
+    int originalKeys = 0;
+    {
+        QSettings values(path, QSettings::IniFormat); QKeyMapperQtCompat::setIniCodecUtf8(values);
+        originalKeys = values.allKeys().size();
+    }
+    const auto initial = prepare(QStringLiteral("Payload82Seed"));
+    check(initial.ok() && initial.configurationPath == path && initial.configurationExists
+        && initial.configurationData == original && !initial.values.values.isEmpty(), "preparation binds the actual complete disk bytes and loaded profile values");
+    const auto fresh = prepare(QStringLiteral("A85Saved"));
+    check(fresh.ok() && fresh.target.createNewSetting && fresh.values.appendSettingOrder, "fresh snapshot selects the original new-profile and order action");
+    const QString oldPathKey = QStringLiteral("Existing82/") + PROCESSINFO_FILEPATH;
+    const auto existing = prepare(QStringLiteral("Existing82"));
+    check(existing.ok() && existing.target.requiresOverwriteConfirmation
+        && mapper->m_MapProcessInfo.FilePath.isEmpty() && !existing.values.values.contains(oldPathKey)
+        && existing.configurationData.contains("ProcessInfo_FilePath=C:/QkmPayload82/keep.exe"),
+        "overwrite preserves the actual saved target path by omitting its unchanged key");
+    {
+        QSettings pending(path, QSettings::IniFormat); QKeyMapperQtCompat::setIniCodecUtf8(pending);
+        const auto oldPath = pending.value(oldPathKey);
+        const QString pendingKey = QStringLiteral("Pending85/probe");
+        if (pending.contains(pendingKey)) return {{QStringLiteral("passed"), false}};
+        pending.setValue(oldPathKey, QStringLiteral("C:/QkmPending85/uncommitted.exe"));
+        pending.setValue(pendingKey, true);
+        const auto pendingTarget = prepare(QStringLiteral("Pending85"));
+        const auto pendingOverwrite = prepare(QStringLiteral("Existing82"));
+        check(pendingTarget.ok() && pendingTarget.target.createNewSetting && !pendingTarget.target.requiresOverwriteConfirmation,
+            "same-path pending-only group cannot masquerade as a disk overwrite target");
+        check(pendingOverwrite.ok() && pendingOverwrite.values.values.value(oldPathKey) == existing.values.values.value(oldPathKey)
+            && pending.value(oldPathKey).toString() == QStringLiteral("C:/QkmPending85/uncommitted.exe")
+            && disk() == original, "preparation neither consumes pending target values nor flushes or changes the shared cache");
+        pending.setValue(oldPathKey, oldPath); pending.remove(pendingKey); pending.sync();
+        check(pending.status() == QSettings::NoError, "synthetic pending mutations are restored before negative disk fixtures");
+    }
+    if (!restoreDisk()) return {{QStringLiteral("passed"), false}};
+    const auto repeat = prepare(QStringLiteral("Payload82Seed"));
+    check(repeat.ok() && repeat.revision == initial.revision, "restored original bytes and unchanged live dependencies retain the candidate");
+    const auto invalid = prepare(QStringLiteral("Bad/Name"));
+    check(invalid.error == Error::InvalidTarget && invalid.values.values.isEmpty() && invalid.revision.isEmpty(), "invalid target produces no partial preparation");
+    const auto noSource = mapper->prepareSettingSave(QStringLiteral("Payload82Seed"), QStringLiteral("Payload82Seed"), false, LANGUAGE_CHINESE, QString());
+    check(noSource.error == Error::FingerprintUnavailable && noSource.values.values.isEmpty() && noSource.revision.isEmpty(), "unavailable source binding produces no usable preparation");
+    if (!write(original + '\n')) return {{QStringLiteral("passed"), false}};
+    const auto changed = prepare(QStringLiteral("Payload82Seed"));
+    check(changed.ok() && changed.revision != initial.revision && changed.configurationData == original + '\n', "external whole-file byte change invalidates the old candidate even without business edits");
+    const QByteArray malformed("[Broken\nvalue=1\n");
+    if (!write(malformed)) return {{QStringLiteral("passed"), false}};
+    {
+        QSettings consumed(path, QSettings::IniFormat); QKeyMapperQtCompat::setIniCodecUtf8(consumed);
+        (void)consumed.allKeys();
+    }
+    const auto format = prepare(QStringLiteral("Payload82Seed"));
+    check(format.error == Error::FormatError && format.values.values.isEmpty() && format.revision.isEmpty()
+        && disk() == malformed, "private Qt parser rejects malformed disk data even after a same-path reader");
+    if (!write(QByteArray(QkmAutomation::MaxSourceSnapshotBytes + 1, 'x'))) return {{QStringLiteral("passed"), false}};
+    const auto large = prepare(QStringLiteral("Payload82Seed"));
+    check(large.error == Error::FileTooLarge && large.values.values.isEmpty() && large.revision.isEmpty(), "over-limit disk data is rejected without a partial candidate");
+    if (!QFile::remove(path)) return {{QStringLiteral("passed"), false}};
+    const auto missing = prepare(QStringLiteral("A85Saved"));
+    check(missing.ok() && !missing.configurationExists && missing.configurationData.isEmpty() && !QFileInfo::exists(path), "missing disk configuration remains absent during preparation");
+    if (!QDir().mkdir(path)) return {{QStringLiteral("passed"), false}};
+    const auto directory = prepare(QStringLiteral("A85Saved"));
+    check(directory.error == Error::ReadFailed && directory.values.values.isEmpty() && directory.revision.isEmpty()
+        && QFileInfo(path).isDir(), "a directory at the configuration path is not treated as a new file");
+    if (!restoreDisk()) return {{QStringLiteral("passed"), false}};
+    auto *entry = mapper->findChild<QPushButton *>(QStringLiteral("mappingAdvancedSettingButton"));
+    if (!entry || !mapper->m_MappingAdvancedDialog) return {{QStringLiteral("passed"), false}};
+    clickMappingButton(entry);
+    const auto busy = prepare(QStringLiteral("Payload82Seed"));
+    check(mapper->m_MappingAdvancedDialog->isVisible() && busy.error == Error::ValuesUnavailable
+        && busy.values.error == QKeyMapper::SettingSaveValues::Error::EditorBusy && busy.values.values.isEmpty(), "snapshot preparation propagates real editor-busy rejection");
+    QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), escaped(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+    QCoreApplication::sendEvent(mapper->m_MappingAdvancedDialog, &escape); QCoreApplication::sendEvent(mapper->m_MappingAdvancedDialog, &escaped);
+    const auto recovered = prepare(QStringLiteral("Payload82Seed"));
+    check(recovered.ok() && recovered.revision == initial.revision, "normal editor close and restored disk recover the same preparation");
+    check(disk() == original && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load
+        && mapper->m_AutomationSourceEpoch == epoch && mapper->m_LoadedMappingSettingGroup == QStringLiteral("Payload82Seed"),
+        "all preparation calls preserve live dirty, load/source generations and loaded profile; synthetic disk fixtures are restored");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("saved_key_count"), originalKeys},
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("saved"), false}};
+}
+
 QJsonObject QkmMappingAdditionTestAccess::saveDependencies(QKeyMapper *mapper)
 {
     using namespace QKeyMapperConstants;
@@ -3822,7 +3940,7 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_prepare_save"), QStringLiteral("settings_prepare_cold"),
         QStringLiteral("settings_hotkey_save"), QStringLiteral("settings_hotkey_cold"),
         QStringLiteral("settings_payload_save"), QStringLiteral("settings_payload_cold"),
-        QStringLiteral("settings_save_dependencies")};
+        QStringLiteral("settings_save_dependencies"), QStringLiteral("settings_save_snapshot")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

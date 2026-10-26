@@ -168,3 +168,9 @@ Qt名称编辑输入空格、非法字符、全局保留名、现有或新名称
 `settings_save_dependencies`正常启动加载[full_save_fixture.ini.example](sendinput_lifecycle/full_save_fixture.ini.example)，真实Qt按钮打开高级映射窗，应返回EditorBusy且无部分载荷；Qt Escape正常关闭后恢复。旧实现保留一项失败复现；只读INI，不调用加载／保存、不启动映射或发系统输入。按原manifest、公共登记、自有私有桌面执行。
 
 用显式路径、存在、完整字节和合成64字符源修订检查指纹：改变Qt类型、值、目标、顺序、磁盘描述或源应区分；非法／超4MiB拒绝。核对INI原始字节、dirty、加载／源代次不变，记录实际桌面、身份及native退出。真实文件一致性、授权／身份接线、跨Qt指纹一致性、其余编辑窗动态分支和正式MCP提交不在该组件用例证明范围；无需Default。
+
+## 完整磁盘快照保存准备
+
+`settings_save_snapshot`正常加载[full_save_fixture.ini.example](sendinput_lifecycle/full_save_fixture.ini.example)，在自有私有桌面运行。以合成源修订检查当前／新建／覆盖、非法目标和源缺失；原目标路径通过载荷省略保留，不期待重复写入。临时同路径QSettings待写组不能成为磁盘覆盖目标，准备不冲刷或修改其缓存。
+
+测试只在本用例out INI放置换行、坏格式、超4MiB、缺失及目录等负向夹具，再恢复原始字节；这是组件依赖输入，不冒充GUI保存基线。高级映射窗由真实Qt按钮打开／Escape关闭，准备拒绝后恢复；核对最终INI、dirty、加载／源代次及载入组不变。记录原manifest、身份、实际私有桌面及native退出；不启动映射或发系统输入，无需Default。调用中并发写盘、文件身份／权限／事务和正式MCP预览／提交另验。

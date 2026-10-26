@@ -357,3 +357,19 @@ EXE在out/mcp_save_dependencies_w11_20261026/{qt6,qt5}-runtime/QKeyMapperDepende
 用户把现控制器32464截止由15:44延至18:44，status核实同PID、generation2、Medium、active／cache_available=true且零拥有／未决；时间调整不扩大测试范围，SAVE-79／81历史未知启动不因此解决。本机原目录保留三份原始用例（1复现＋2通过）、构建、原INI／旧EXE、精确生产补丁／完整逆变换／实际预期字节及evidence-summary.json，不随Git。
 
 独立本地提交切点，不推送；继续一致磁盘／真实上下文、其他草稿、权限／状态／到期／提交复核和C1-C分段保存／重载／备份与失败恢复。工具12／能力8，C1-B2／M1未完成。不新增普通产品全构建、严格静态分析、ASan、VIGEM关闭、Default／输入／设备、性能或三语言布局；PC-W10历史按原范围保留。
+
+## SAVE-85：私有磁盘副本上的完整候选准备（2026-10-26，PC-W11）
+
+基于b56d736c，产品仍沿SAVE-83。私有SettingSavePreparation／prepareSettingSave仅新增CPP52行、header14行：固定CONFIG_FILENAME绝对路径，区分存在与缺失，拒绝非文件／读取失败及超过既有4MiB界限的数据；显式安全模板的QTemporaryFile仅放磁盘副本，沿Qt codec和allKeys校验格式，目标分析／条件旧值／全部Qt载荷均从同一副本取得。返回前再读原路径，存在或全字节不同拒绝；有效时复用SAVE-83指纹。失败清空载荷、顺序意图和修订，不提供部分候选。完整逆变换及实际预期字节通过；原GUI保存、B1、Worker、manifest、协议、依赖和缓存核心未改。
+
+settings_save_snapshot正常启动加载full_save_fixture.ini.example，双Qt各17项通过，两个最终进程passed=true／native exit0。正常、新建、覆盖、非法目标、无源输入、完整文件换行变化、格式错误（先由同路径读者读取）、超限、缺失及路径为目录均有定向期待；待写缓存临时加入Pending85组仍被私有磁盘副本判新组，旧目标保留键、缓存值和真实字节不被准备冲刷。真实高级映射窗经Qt按钮打开时准备拒绝，正常Escape关闭后恢复同一修订。源输入为合成64字符，仅组件覆盖，不是正式MCP身份或授权证明。
+
+测试的外部行为仅在自有out INI用QSaveFile放置负向夹具，临时待写缓存值由测试恢复并sync；不是GUI保存基线或MCP业务保存。每项准备不写真实INI，最终64键原始字节恢复，dirty、加载／源代次和实际载入组不变。没有通过控件赋值或直接加载／保存函数代替GUI；该内部新接口无需重跑原GUI Save，SAVE-82实际保存／冷读证据只按原版本范围复用，不据此宣布完整业务等价。
+
+首轮Qt6 native exit2，仅“overwrite dependency uses the actual saved target path”断言失败，其余16项通过；错误是期待旧目标路径出现在写入载荷，原语义实际通过省略键保留。只改测试为检查磁盘旧值存在且载荷不写此键，生产实现不变。first-test-expectation-failed、failed-qt6.ini、首轮EXE／身份和构建日志保留；Qt5首轮已部署但未运行，不计失败或通过。修正后双Qt重新增量编译并各跑一个完整组件用例通过，最终两次脚本正常退出。
+
+既有同机锁环境、Qt6.8.3／Qt5.15.2官方x64和MSVC19.44；首轮及修测试后四份普通Release维护构建exit0，Qt6零警告、Qt5仅原qtmain例外。第二轮只用已配置树jom，不重复qmake／环境恢复。EXE为out/mcp_save_snapshot_w11_20261026/{qt6,qt5}-runtime/QKeyMapperSnapshot85_*_runtime.exe，原requireAdministrator、同路径；公共审核／登记／perform经新Medium控制器10520，父8192、产品High12288、same_login=true，实际QkmSnapshot85_<UUID>私有桌面。PID／创建时间／退出在case start／closed.json，零尾部任务不代表完整停止或设备效果；无Default或系统输入。
+
+cache-after.json核实10520仍active／cache_available=true，零owned／unresolved／current_action，18:50截止不变；首轮正常失败退出的目标已核实退出，旧控制器23316／25608的未知请求不因此解决。本机out/mcp_save_snapshot_w11_20261026含三份原运行结果、四份构建、旧EXE、INI、精确补丁／逆变换／预期字节和evidence-summary.json，均不随Git。
+
+本片为独立本地提交切点，不推送。调用过程中恰好并发写盘的DiskChanged分支仅静态核对，未测真实锁定拒绝、文件身份替换或跨进程事务；重读比较不承诺原子执行。4MiB为内部有界候选限制，公开前须说明并按实际规模校准。真实实例／配对／权限／状态／到期及源修订、其他草稿范围与实际提交、保存／重载／备份分段和失败恢复仍待接续。工具12／能力8、C1-B2／M1未完成；未新增普通产品全构建、严格静态分析、ASan、VIGEM关闭、Default／输入／设备、性能或三语言布局，PC-W10按原范围保留。
