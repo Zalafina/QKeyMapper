@@ -180,8 +180,14 @@ class Bridge:
             arguments["action"] = action
         return await self._call("qkm_preview_changes", arguments)
 
-    async def apply_changes(self, preview_id: str, confirm_conflicts: bool = False) -> dict:
-        return await self._call("qkm_apply_changes", dict(preview_id=preview_id, confirm_conflicts=confirm_conflicts))
+    async def apply_changes(self, preview_id: str, confirm_conflicts: bool = False, *,
+                            confirm_scope: bool = False, confirm_overwrite: bool = False) -> dict:
+        arguments = dict(preview_id=preview_id, confirm_conflicts=confirm_conflicts)
+        if confirm_scope is not False:
+            arguments["confirm_scope"] = confirm_scope
+        if confirm_overwrite is not False:
+            arguments["confirm_overwrite"] = confirm_overwrite
+        return await self._call("qkm_apply_changes", arguments)
 
     async def cancel_changes(self, preview_id: str) -> dict:
         return await self._call("qkm_cancel_changes", dict(preview_id=preview_id))

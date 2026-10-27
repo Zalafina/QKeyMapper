@@ -552,3 +552,25 @@ EXE为out/mcp_save_preview_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSavePreview9
 原始材料在out/mcp_save_fence_w11_20261027，含构建／部署、每进程真实认证请求、native case／创建身份／退出、登记及缓存尾状态、源码补丁／预期字节与evidence-summary.json；不随Git。尾状态本轮owned／unresolved／pending／current_action／current_job均零，既有历史未知请求不接管、不重放。
 
 本片仍是私有执行入口，当前12工具／9业务能力，configuration.save预览仍apply_supported=false；正式确认／消费／去重／错误结果、提交后断线超时及完整生命周期闭环尚待。SAVE-92同一持久化／finalize的独立GUI及冷读证据按原范围复用，本片未重复其完整写锁／重载坏值／备份失败矩阵；无新的120秒实等、真实撤权交错、4MiB性能、Default／设备输入、普通产品完整Release、ASan或全量GUI等价通过声明。DEMO可行性仍排在自然切点，本片没有截图／gateway执行。
+
+## SAVE-97：正式保存提交／分段结果与独立冷读（2026-10-27，PC-W11）
+
+基线SAVE-96 `5bbf323954abdf156ea8566bd1d3c26612ddd494`。正式configuration.save.apply复用既有qkm_apply_changes与SAVE-96协调器，新增confirm_scope／confirm_overwrite明确布尔，范围与覆盖独立；保存不能用confirm_conflicts授权，映射也不能混用保存确认。C++独立校验，官方SDK StrictBool；直接Bridge保留错误类型供C++拒绝，不能按Python真值转换成同意。预览apply_supported=true，当前12工具／10业务能力；权限仍Read＋Configure，不扩Read，不自动停止／开始、切表或关闭编辑窗。
+
+预览原截止与实例／配对／权限代次、完整载荷修订／scope／当前源及完整清理准入保持。消费与完成沿原有界存储，成功同ID重放只返回旧结果；失败同ID保持原错误，先query再按明确意图获取新预览。operation保留原实例／组／save_revision，保存后的加载代次及源epoch另记，不把旧引用升级成新源引用。
+
+结果分为saved／reloaded／backup_attempted／backup_succeeded及outcome；写失败为failed／save_write_failed，saved=false但modified=null、in_memory_effects_possible=true，不能声称GUI内存完全没变或全局回滚。重载失败实现failed／save_reload_failed且saved=true，不回滚磁盘；本片该正式分支尚未运行，沿SAVE-92私有证据保留。备份失败仍applied，outcome=saved_backup_failed、主文件与重载成功且备份失败，不把它当主文件未保存。started_by_operation始终false，仅表示不启动映射。查询失败操作本身仍可成功；超时／断线及unknown不能盲目重发。
+
+构建：本机Qt6.8.3／MSVC2022 x64与官方Qt5.15.2／msvc2019_64，控制与生命周期维护Release增量目标均native exit0；Qt6零警告，Qt5兼容通过，原始供应商qtmain LNK4099保留。普通控制／开发／SDK8192，原requireAdministrator产品12288，同登录，实际QkmSaveApply97_<UUID>私有桌面；通过公共固定登记复用24956现有缓存。EXE为out/mcp_save_apply_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveApply97_*_runtime.exe。无Default、系统输入、映射启动或驱动修改；受限维护夹具启用／批准准确SDK peer，不冒充普通Release配对GUI。
+
+普通权限28项Python通过；随后补强直接Bridge错误确认类型保留后，同28项再验通过，不累计成56项。合法bool请求线格式逐字段相同，官方SDK本来拒绝非bool，不因该补强重跑已通过合法调用。双Qt各七控制槽（含init／cleanup各9 passed）覆盖确认类型、能力声明与既有预览存储回归，native exit0。
+
+正式stdio每Qt九个独立维护进程：configure／new／overwrite／global／write_recover／backup／addsave各7项CPP，Read和cold_addsave各8项；各65项，Qt6为221次／Qt5为222次SDK调用（包含实际连接状态轮询）。合计18 native exit0／130项CPP检查／443次SDK调用／14次实际保存，含两个独立产品冷读。完整范围／单独覆盖缺失及类型混用均拒绝且原INI／状态不变；新预览后明确提交成功。同ID成功／失败重放及operation原目标、源旧引用／目录旧修订拒绝；加载代次只增一次，全部独立准备的目标／共享键、名称效果与dirty核对通过。
+
+write_recover由普通控制器对本片INI持有只读分享文件句柄，正式apply返回写失败，query明确saved=false／modified=null、未重载或备份，重复ID不再执行，原INI不变；释放后明确新预览再保存成功。backup由控制器在准确本片latest路径创建空目录，主文件／重载成功、结果明确备份失败，后正常移除自有空目录。addsave经正式映射预览／内存提交建立X→Y、dirty=true且未写盘，再完整保存；另启独立产品＋新正式SDK只读认证，实际源A→B与X→Y、已保存选择和dirty清除均读回。重启实例ID不同，旧operation未知、旧源修订拒绝；冷读完整INI不变，不涉及持久配对复用验收。
+
+复用SAVE-92在8327d7bd未改源码上通过真实Qt名称输入／Save按钮取得的独立GUI基线。双Qt本轮current／new／backup／write_recover（后者对照旧GUI new）共八组，全节／键／编码值相等，当前目标两组275键原字节相等；其余各314键组保留已知MacroList／SyncGroupNotes键序差异，六组不称原字节相等。此比较没有为overwrite／global伪造独立GUI基线，仍列后续补证；不是QSettings缓存互读代替冷进程。
+
+原始材料out/mcp_save_apply_w11_20261027：原构建／部署、两轮Python、控制XML／日志、18份正式SDK调用／schema／准确peer及产品PID创建身份／退出、每场完整INI、独立冷读旧实例引用、八组基线比较与摘要、生产补丁及预期字节。大文件45加／3删，唯一锚点dry-run、单次应用、预期字节／逆向检查通过。最终控制器本轮owned／unresolved／pending／current_action／current_job均零，历史未知请求不接管、不重放。
+
+未完成：正式提交中超时／断线／撤权交错、真实停止后破坏性重载竞态、正式重载失败、全局与覆盖独立GUI基线、4MiB性能、普通完整Release／Default、设备输入或全量GUI等价。M1完整实际运行／停止仍待，不能把本片称C1-C／M1全部完成。DEMO可行性依旧排在自然切点，本片未执行截图、免Python交付或QQ渠道联调。

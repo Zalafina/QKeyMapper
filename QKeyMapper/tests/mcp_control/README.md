@@ -119,3 +119,5 @@ out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/tests/test_desktop_lif
 仅上述纯存储槽可普通权限在私有桌面运行，无需gsudo、产品或IPC子进程；initTestCase仍要求QKM_IPC_TEST_EXE指向匹配Qt的既有EXE并验证当前进程身份。完整UI用例仍遵循本文件的真实窗口规则，不由纯组件通过推定已验。正式保存接线前还须分派动作类型、解释结果槽不足、重新校验真实授权／业务内容并协调生命周期。
 
 SAVE-95另选`savePreviewArguments`，与原映射／保存存储六槽合跑：明确configuration.save／setting_name、类型／未知字段／混合参数、长度及只读能力声明。生产SDK接线见第一方测试README与唯一主计划；组件通过不替代正式产品业务或实际保存。SDK发布的oneOf／原映射兼容由桥接侧固定端点和真实stdio维护接线分别验证。
+
+SAVE-97同槽追加confirm_scope／confirm_overwrite的独立布尔与错误类型拒绝、configuration.save.apply的Configure权限及非只读声明；组件family共6项能力，产品总计10项。正式写盘／分段结果／去重与独立冷读见同一主计划的SDK维护证据，不能从本槽通过推定实际业务已执行。

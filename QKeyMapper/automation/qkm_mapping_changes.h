@@ -29,6 +29,8 @@ struct MappingChangeRequest {
     QString settingName;
     QString id;
     bool confirmConflicts = false;
+    bool confirmScope = false;
+    bool confirmOverwrite = false;
     QString errorCode;
     QString message;
     bool ok() const { return errorCode.isEmpty(); }

@@ -46,7 +46,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")} : preview
         ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("insert_row")}
-        : apply ? QSet<QString>{idField, QStringLiteral("confirm_conflicts")} : QSet<QString>{idField};
+        : apply ? QSet<QString>{idField, QStringLiteral("confirm_conflicts"), QStringLiteral("confirm_scope"), QStringLiteral("confirm_overwrite")}
+            : QSet<QString>{idField};
     for (auto it = arguments.constBegin(); it != arguments.constEnd(); ++it) {
         if (!allowed.contains(it.key())) return fail("Unknown mapping change argument.");
     }
@@ -65,6 +66,12 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         const auto confirmation = arguments.value(QStringLiteral("confirm_conflicts"));
         if (!confirmation.isUndefined() && !confirmation.isBool()) return fail("Conflict confirmation must be a boolean.");
         result.confirmConflicts = confirmation.toBool();
+        const auto scope = arguments.value(QStringLiteral("confirm_scope"));
+        const auto overwrite = arguments.value(QStringLiteral("confirm_overwrite"));
+        if ((!scope.isUndefined() && !scope.isBool()) || (!overwrite.isUndefined() && !overwrite.isBool()))
+            return fail("Save scope and overwrite confirmations must be booleans.");
+        result.confirmScope = scope.toBool();
+        result.confirmOverwrite = overwrite.toBool();
         return result;
     }
     const QJsonObject sourceQuery{{QStringLiteral("entity"), QStringLiteral("mappings")},
@@ -137,17 +144,28 @@ QJsonArray mappingChangeCapabilities()
             {QStringLiteral("minLength"), 1}, {QStringLiteral("maxLength"), 32767}}}},
         {QStringLiteral("action"), QStringLiteral("setting_name")});
     auto saveCapability = capability("configuration.save.preview", "qkm_preview_changes", Read | Configure, true, saveSchema);
-    saveCapability.insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("preview_only_apply_unavailable"),
+    const QJsonArray saveLimits{QStringLiteral("explicit_full_scope_confirmation"), QStringLiteral("separate_overwrite_confirmation"),
         QStringLiteral("full_loaded_and_shared_save_scope"), QStringLiteral("explicit_setting_name"),
-        QStringLiteral("idle_after_cleanup"), QStringLiteral("no_open_editors"), QStringLiteral("bounded_volatile_results")});
+        QStringLiteral("idle_after_cleanup"), QStringLiteral("no_open_editors"), QStringLiteral("no_automatic_stop_or_start"),
+        QStringLiteral("bounded_volatile_results")};
+    saveCapability.insert(QStringLiteral("limitations"), saveLimits);
     saveCapability.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
     saveCapability.insert(QStringLiteral("max_previews"), MappingChangeStore::MaxPreviews);
     saveCapability.insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    const QJsonObject saveApply = schema({{QStringLiteral("preview_id"), identifierSchema},
+        {QStringLiteral("confirm_scope"), QJsonObject{{QStringLiteral("const"), true}}},
+        {QStringLiteral("confirm_overwrite"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}, {QStringLiteral("default"), false}}},
+        {QStringLiteral("confirm_conflicts"), QJsonObject{{QStringLiteral("const"), false}}}},
+        {QStringLiteral("preview_id"), QStringLiteral("confirm_scope")});
+    auto saveApplyCapability = capability("configuration.save.apply", "qkm_apply_changes", Read | Configure, false, saveApply);
+    saveApplyCapability.insert(QStringLiteral("limitations"), saveLimits);
+    saveApplyCapability.insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
     QJsonObject operation = capability("operation.read", "qkm_get_operation", Read, true,
         schema({{QStringLiteral("operation_id"), identifierSchema}}, {QStringLiteral("operation_id")}));
     operation.insert(QStringLiteral("result_ttl_ms"), double(MappingChangeStore::ResultTtlMs));
     operation.insert(QStringLiteral("max_results"), MappingChangeStore::MaxResults);
     return {previewCapability, saveCapability, capability("mapping.add.apply", "qkm_apply_changes", Read | Configure, false, apply),
+        saveApplyCapability,
         capability("mapping.preview.cancel", "qkm_cancel_changes", Read | Configure, false,
             schema({{QStringLiteral("preview_id"), identifierSchema}}, {QStringLiteral("preview_id")})), operation};
 }

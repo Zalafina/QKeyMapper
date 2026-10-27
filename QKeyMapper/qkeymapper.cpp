@@ -38178,9 +38178,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const QJsonObject description{{QStringLiteral("action"), QStringLiteral("configuration.save")},
             {QStringLiteral("target"), target}, {QStringLiteral("scope"), candidate.scope},
             {QStringLiteral("source_snapshot"), candidate.context.value(QStringLiteral("source_snapshot"))},
-            {QStringLiteral("confirmation_required"), true}, {QStringLiteral("apply_supported"), false},
+            {QStringLiteral("confirmation_required"), true}, {QStringLiteral("apply_supported"), true},
             {QStringLiteral("modified"), false}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
-            {QStringLiteral("warning"), QStringLiteral("Preview only: saving is not connected. The described full save includes loaded and shared drafts; precise change attribution is unavailable.")}};
+            {QStringLiteral("warning"), QStringLiteral("The full save includes loaded and shared drafts; precise change attribution is unavailable. Review and confirm the complete scope and any separate overwrite before submitting.")}};
         if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
             fail(QStringLiteral("result_too_large"), QStringLiteral("The complete save description exceeds the response limit."));
             return;
@@ -38206,7 +38206,49 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         return;
     }
     if (applyingPreview && applyingPreview->save) {
-        reject(QStringLiteral("unsupported_capability"), QStringLiteral("Save submission is not connected. This preview was consumed without saving or modifying settings; query its operation result."));
+        if (validation.confirmConflicts) {
+            reject(QStringLiteral("invalid_arguments"), QStringLiteral("Mapping-conflict confirmation cannot authorize a save. Confirm its complete scope and overwrite separately."));
+            return;
+        }
+        QString errorCode;
+        const auto outcome = executeAutomationSettingSave(request, *applyingPreview->save,
+            validation.confirmScope, validation.confirmOverwrite, errorCode);
+        using Failure = SettingSaveResult::Failure;
+        if (!errorCode.isEmpty() || (outcome.failure != Failure::None
+            && outcome.failure != Failure::WriteFailed && outcome.failure != Failure::ReloadFailed)) {
+            if (errorCode == QStringLiteral("not_authorized")) errorCode = QStringLiteral("permission_denied");
+            if (errorCode.isEmpty() || errorCode == QStringLiteral("validation_timeout")
+                || errorCode == QStringLiteral("save_preparation_failed")) errorCode = QStringLiteral("context_busy");
+            reject(errorCode, QStringLiteral("Save admission was refused before persistence. Recheck authorization, the complete preview, confirmations, source, file and cleanup state; obtain a fresh preview."));
+            return;
+        }
+        const bool writeFailed = outcome.failure == Failure::WriteFailed;
+        const bool reloadFailed = outcome.failure == Failure::ReloadFailed;
+        const QJsonObject result{{QStringLiteral("action"), QStringLiteral("configuration.save")},
+            {QStringLiteral("modified"), writeFailed ? QJsonValue(QJsonValue::Null) : QJsonValue(outcome.diskSaved)},
+            {QStringLiteral("saved"), outcome.diskSaved}, {QStringLiteral("reloaded"), outcome.reloaded},
+            {QStringLiteral("backup_attempted"), outcome.backupAttempted}, {QStringLiteral("backup_succeeded"), outcome.backupSucceeded},
+            {QStringLiteral("started_by_operation"), false},
+            {QStringLiteral("in_memory_effects_possible"), true},
+            {QStringLiteral("mapping_load_generation_after"), QString::number(m_MappingLoadGeneration)},
+            {QStringLiteral("source_epoch_after"), QString::number(m_AutomationSourceEpoch)},
+            {QStringLiteral("outcome"), writeFailed ? QStringLiteral("write_failed") : reloadFailed ? QStringLiteral("reload_failed")
+                : outcome.backupSucceeded ? QStringLiteral("saved") : QStringLiteral("saved_backup_failed")}};
+        if (writeFailed || reloadFailed) {
+            const QString code = writeFailed ? QStringLiteral("save_write_failed") : QStringLiteral("save_reload_failed");
+            const QString message = writeFailed
+                ? QStringLiteral("Disk saving failed. In-memory preparation may have changed; only this save's pending values were restored. Query this operation and current state before deciding on any fresh save.")
+                : QStringLiteral("The configuration was written to disk but reload failed; it was not rolled back. Query this operation and current state before recovery; do not blindly repeat the save.");
+            store.finish(owner, validation.id, QStringLiteral("failed"), result, code, message);
+            fail(code, message);
+        } else {
+            store.finish(owner, validation.id, QStringLiteral("applied"), result);
+            server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
+        }
+        return;
+    }
+    if (applying && (validation.confirmScope || validation.confirmOverwrite)) {
+        reject(QStringLiteral("invalid_arguments"), QStringLiteral("Save confirmations cannot be used to submit a mapping preview."));
         return;
     }
     const int targetIndex = arguments.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt();

@@ -23,6 +23,8 @@ def stdio_error_fixture():
             return {"ok": True, "result": {"outcome": "failed", "error": "save_failed"}}
         if method == "qkm_apply_changes" and arguments.get("preview_id") == "f" * 32:
             return {"ok": False, "error": "operation_limit", "message": "Fixed in-flight result capacity rejection."}
+        if method == "qkm_apply_changes" and arguments.get("preview_id") == "e" * 32:
+            return {"ok": False, "error": "save_write_failed", "message": "Fixed save failure; query its operation."}
         if method in ("qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes"):
             return {"ok": False, "error": "stale_preview", "message": "Fixed fixture rejection."}
         return {"ok": False, "error": codes[arguments["entity"]], "message": "Fixed fixture rejection."}
@@ -87,6 +89,9 @@ class ToolResultTests(unittest.TestCase):
                 capacity = await call(client, "qkm_apply_changes", {"preview_id": "f" * 32}, error="operation_limit")
                 self.assertEqual(capacity["message"], "Fixed in-flight result capacity rejection.")
                 self.assertTrue(capacity["next_steps"])
+                failure = await call(client, "qkm_apply_changes", {"preview_id": "e" * 32, "confirm_scope": True,
+                    "confirm_overwrite": True}, error="save_write_failed")
+                self.assertEqual(failure["message"], "Fixed save failure; query its operation.")
                 value = await call(client, "qkm_get_operation", {"operation_id": "b" * 32})
                 self.assertEqual(value["result"]["outcome"], "failed")
         with tempfile.TemporaryDirectory() as directory:

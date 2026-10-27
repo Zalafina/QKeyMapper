@@ -400,6 +400,14 @@ class PreviewForwardingTests(unittest.IsolatedAsyncioTestCase):
             await bridge.preview_changes(original_key="A", action="configuration.save", setting_name="配置95")
             self.assertIn("original_key", call.await_args.args[1])
             self.assertIn("setting_name", call.await_args.args[1])
+            await bridge.apply_changes("a" * 32)
+            call.assert_awaited_with("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_conflicts": False})
+            await bridge.apply_changes("b" * 32, confirm_scope=True, confirm_overwrite=True)
+            call.assert_awaited_with("qkm_apply_changes", {"preview_id": "b" * 32, "confirm_conflicts": False,
+                "confirm_scope": True, "confirm_overwrite": True})
+            await bridge.apply_changes("c" * 32, confirm_scope="false", confirm_overwrite=1)
+            call.assert_awaited_with("qkm_apply_changes", {"preview_id": "c" * 32, "confirm_conflicts": False,
+                "confirm_scope": "false", "confirm_overwrite": 1})
 
 
 if __name__ == "__main__":

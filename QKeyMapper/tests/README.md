@@ -214,3 +214,5 @@ SAVE-93在settings_save_context增加私有重校验：QDeadlineTimer保留原�
 `settings_save_preview`使用隔离ControlDialog／私有存储、实际SDK子进程身份白名单及Read／Read＋Configure配对，随后把请求交给真实handleAutomationRequest。接口启用／配对是维护设置，不替代普通Release用户GUI批准。官方stdio检查当前／新建／覆盖／全局范围、取消／替换、原映射兼容、保存误提交拒绝及最终状态不变；`case.json.done`只让本测试记录SDK完成并正常退出，不能执行产品命令。最终CPP核对完整INI、dirty、加载／源、名称和派生数据。尚无实际保存、运行、截图或QQ回传，不能由该模式推定完整业务验收。
 
 `settings_save_execution`是SAVE-96的固定认证维护模式：QKM_CONTEXT_VARIANT限选configure／new／overwrite／global／read，调用私有执行协调器，验证元数据确认与拒绝、全INI／源不变性，以及实际重载的互斥和分段结果。旧表destroyed回调中的普通QThread仅tryLock，不发输入；末尾观察运行修订使旧许可失效，不能当作实际停止。settings_save_context已改为只交元数据重校验，原载荷注入不进入执行参数；两模式均不是正式MCP保存工具。固定启用／配对与原权限边界不变，结果及未验范围见唯一主计划与同一C1证据。
+
+`settings_save_apply`沿用准确SDK peer白名单和生产handleAutomationRequest，固定本轮普通／新建／覆盖／全局、Read、写失败恢复、备份失败、添加后保存及独立冷读场景。正式保存通过工具执行，维护代码只在预览时独立采集候选供最终全键比较，并核对实际加载代次／源、名称和dirty。完成文件仅记录SDK结果和固定0／1保存计数，不能执行产品命令；冷读使用独立产品进程及新认证，只读检查实际源与旧引用失效。此为正式业务接线验收，仍不等于普通Release配对GUI、完整输入或所有生命周期已验。

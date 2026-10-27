@@ -210,7 +210,7 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
         {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
     const auto capabilities = mappingChangeCapabilities();
-    QCOMPARE(capabilities.size(), 5);
+    QCOMPARE(capabilities.size(), 6);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("preview_ttl_ms")).toInt(), 120000);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     const auto operation = capabilities.last().toObject();
@@ -249,11 +249,24 @@ void McpControlTest::savePreviewArguments()
     QCOMPARE(capability.value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save.preview"));
     QCOMPARE(capability.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     QVERIFY(capability.value(QStringLiteral("read_only")).toBool());
-    QVERIFY(capability.value(QStringLiteral("limitations")).toArray().contains(QStringLiteral("preview_only_apply_unavailable")));
+    QVERIFY(capability.value(QStringLiteral("limitations")).toArray().contains(QStringLiteral("explicit_full_scope_confirmation")));
     const auto schema = capability.value(QStringLiteral("arguments_schema")).toObject();
     QVERIFY(!schema.value(QStringLiteral("additionalProperties")).toBool());
     QCOMPARE(schema.value(QStringLiteral("required")).toArray(), QJsonArray({QStringLiteral("action"), QStringLiteral("setting_name")}));
     QVERIFY(!schema.value(QStringLiteral("properties")).toObject().contains(QStringLiteral("source_revision")));
+    const auto apply = validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
+        {{QStringLiteral("preview_id"), QString(32, QLatin1Char('a'))}, {QStringLiteral("confirm_scope"), true}, {QStringLiteral("confirm_overwrite"), true}});
+    QVERIFY(apply.ok() && apply.confirmScope && apply.confirmOverwrite && !apply.confirmConflicts);
+    for (const QString &flag : {QStringLiteral("confirm_scope"), QStringLiteral("confirm_overwrite")}) {
+        for (const QJsonValue &wrong : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)}) {
+            QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
+                {{QStringLiteral("preview_id"), QString(32, QLatin1Char('a'))}, {flag, wrong}}).ok());
+        }
+    }
+    const auto saveApply = capabilities.at(3).toObject();
+    QCOMPARE(saveApply.value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save.apply"));
+    QVERIFY(!saveApply.value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(saveApply.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
 }
 
 void McpControlTest::mappingChangeLifecycle()

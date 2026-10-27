@@ -28,7 +28,9 @@ _ERROR_FEEDBACK = {
     "preview_superseded": ("较新的预览已替换原预览。", "核对当前预览内容及其 ID，勿提交旧预览。"),
     "preview_limit": ("待处理预览达到有界上限。", "取消自己的待处理预览或等待过期后重新预览。"),
     "operation_limit": ("进行中操作已占满结果存储。", "先查询已接受操作；等待完成后核对原预览是否仍有效，再由明确意图提交。"),
-    "confirmation_required": ("此次新增还会禁用预览中列出的冲突行。", "向用户说明完整连带变化，取得同意后重新预览并显式确认冲突。"),
+    "confirmation_required": ("尚未确认预览要求的完整范围或连带变化。", "向用户说明预览内容，取得同意后重新预览；按操作分别确认映射冲突，或完整保存范围及独立覆盖意图。"),
+    "save_write_failed": ("配置写盘失败，内存准备可能已变化。", "先以同一操作ID查询分段结果及当前状态；不要盲目重发，核对后再决定是否重新预览保存。"),
+    "save_reload_failed": ("配置已经写盘，但重新加载失败。", "查询同一操作结果和当前配置，按实际磁盘／加载结果恢复；不能视为完全回滚或盲目重发。"),
     "permission_denied": ("该操作尚未获授权。", "请用户在 QKeyMapper 管理窗口核对并授予所需权限。"),
     "invalid_arguments": ("请求参数不符合接口约束。", "核对工具参数、范围及示例后修正请求。"),
     "unsupported_capability": ("此实例尚未提供该业务能力。", "查询实际能力，选择已支持的操作。"),
@@ -44,7 +46,7 @@ _ERROR_FEEDBACK = {
 _PRODUCT_ERRORS = frozenset({"context_busy", "stale_catalog", "stale_source", "permission_denied",
     "invalid_arguments", "unsupported_capability", "unsupported_method", "unsupported_query",
     "result_too_large", "item_too_large", "invalid_source_data", "stale_preview", "preview_expired",
-    "preview_superseded", "preview_limit", "operation_limit", "confirmation_required"})
+    "preview_superseded", "preview_limit", "operation_limit", "confirmation_required", "save_write_failed", "save_reload_failed"})
 
 
 def tool_result(value: dict[str, Any]) -> CallToolResult:
@@ -156,7 +158,7 @@ def main() -> None:
             insert_row: Annotated[StrictInt | None, Field(ge=0, le=2147483647)] = None,
             action: Literal["mapping.add", "configuration.save"] = "mapping.add",
             setting_name: Annotated[str | None, Field(min_length=1, max_length=32767)] = None) -> ToolResult:
-        """只读预览，先查询实际能力。默认mapping.add保持基本映射调用：四个源／键字段必填，每键限单个大写字母或数字；先qkm_query(mapping_sources)获取真实源引用，insert_row从0开始、缺省追加。configuration.save仅传action及明确setting_name，要求Read＋Configure、加载成功／空闲且清理许可有效、无打开编辑窗；返回完整加载／共享草稿的保存足迹、名称效果及明确目标，不能理解为只保存一行。保存提交尚未接通，apply_supported=false，qkm_apply_changes会拒绝保存预览；不会自动保存或开始。两种预览最多120秒，新预览替换本客户端旧预览，不改配置、dirty或磁盘，不自动停止、切表或关闭编辑窗。"""
+        """只读预览，先查询实际能力。默认mapping.add保持基本映射调用：四个源／键字段必填，每键限单个大写字母或数字；先qkm_query(mapping_sources)获取真实源引用，insert_row从0开始、缺省追加。configuration.save仅传action及明确setting_name，要求Read＋Configure、加载成功／空闲且清理许可有效、无打开编辑窗；返回完整加载／共享草稿的保存足迹、名称效果及明确目标，不能理解为只保存一行。保存另须qkm_apply_changes明确确认完整范围及独立覆盖；不自动开始映射。两种预览最多120秒，新预览替换本客户端旧预览，不改配置、dirty或磁盘，不自动停止、切表或关闭编辑窗。"""
         return tool_result(await bridge.preview_changes(source_revision, source_tab_ref, original_key, mapping_key, insert_row,
             action=action, setting_name=setting_name))
 
@@ -172,9 +174,11 @@ def main() -> None:
     @tool(write)
     async def qkm_apply_changes(
             preview_id: Annotated[str, Field(min_length=32, max_length=32, pattern="^[0-9a-f]{32}$")],
-            confirm_conflicts: StrictBool = False) -> ToolResult:
-        """只提交已审阅的基本映射预览；保存预览明确拒绝，不执行保存。重新校验身份、权限、完整源、状态及到期；拒绝不产生部分配置修改。只有用户已同意预览列出的禁用冲突行时才传 confirm_conflicts=true。预览单次消费，重复同ID返回已知历史结果而不再添加；失败需重新预览。只改内存并保持停止，不保存或启动。超时／断线后先用同ID查询qkm_get_operation；unknown不代表未发生，不盲目重试。"""
-        return tool_result(await bridge.apply_changes(preview_id, confirm_conflicts))
+            confirm_conflicts: StrictBool = False, confirm_scope: StrictBool = False,
+            confirm_overwrite: StrictBool = False) -> ToolResult:
+        """提交本实例／配对内已审阅的预览，重新校验权限、完整内容、状态及原到期。mapping.add仅改内存；用户同意禁用冲突行后才传confirm_conflicts=true。configuration.save会写入全部预览范围并重新加载，用户同意全部加载／共享草稿和名称效果后才传confirm_scope=true；覆盖另须confirm_overwrite=true，不能用映射冲突确认替代。准入拒绝不写盘；执行中写失败可能有内存准备效果，重载失败可能已写盘，须查询同ID的分段结果。备份失败与主文件保存分别报告。不自动停止或启动映射。预览单次消费，重复成功ID只返回历史结果；失败需新预览，超时／断线先查qkm_get_operation，unknown不证明未发生，不盲目重试。"""
+        return tool_result(await bridge.apply_changes(preview_id, confirm_conflicts,
+            confirm_scope=confirm_scope, confirm_overwrite=confirm_overwrite))
 
     @tool(connection)
     async def qkm_cancel_changes(
@@ -189,7 +193,7 @@ def main() -> None:
         return tool_result(await bridge.get_operation(operation_id))
 
     server = MCPServer("QKeyMapper", version=__version__, lifespan=lifespan, log_level="ERROR", tools=tools,
-        instructions="连接本机 QKeyMapper。首次配对必须由用户在产品窗口批准。先查询实际能力和明确目标；基本映射须先预览完整变化再提交，按授权分别停止、保存和开始，当前工具不自动执行这些动作。连接状态须重新核验，IDLE 或 Worker STOPPED 不代表清理完成。写入超时或断线后先查询操作结果。")
+        instructions="连接本机 QKeyMapper。首次配对必须由用户在产品窗口批准。先查询实际能力和明确目标；修改和完整保存分别预览并按授权确认，映射添加不自动保存，保存不自动停止或开始。完整保存包含全部加载及共享草稿，不能当作单行保存。IDLE或Worker STOPPED不代表清理完成。写入失败、超时或断线先查询同一操作的分段结果。")
     server.run(transport="stdio")
 
 

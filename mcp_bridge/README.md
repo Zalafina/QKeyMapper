@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-95增加完整保存的只读预览，实际验收见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**显式保存提交、其他设置变更、启停及输入测试尚未接入**。当前开发产品返回九项业务能力、十二工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
+官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十项业务能力、十二工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
 桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
@@ -75,13 +75,15 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 
 超时或断线后先按同一ID调用 qkm_get_operation。结果属于实例／配对／权限代次，完成记录是带采样时间的历史事实；最多64条，进行中记录保留，完成后保留10分钟并受容量限制，接口重置或进程退出后丢失。全部结果槽为进行中时operation_limit拒绝消费新预览；先查询原操作和预览，不自动重试。unknown不证明写入未发生。运行状态另含run.sampled_at_utc，变化不代表映射内容修订变化。完整保存／冷启动和实际运行等价性分别验收，不把基础添加称为完整闭环。
 
-## 完整保存的只读预览
+## 完整保存的预览与提交
 
 先核对目标声明`configuration.save.preview`，再调用`qkm_preview_changes`，例如`{"action":"configuration.save","setting_name":"Demo"}`；setting_name是明确配置组名，其他映射字段省略。普通／新建／覆盖目标及当前已选全局组均由产品校验，不切换GUI配置或改名称控件决定目标。须Read＋Configure、成功加载及初始静止或仍有效的完整清理许可、无打开编辑窗或未结算热键输入；Worker STOPPED本身不够。schema以oneOf保留原映射四个必填字段与保存分支，SDK拒绝未知字段，C++另独立校验组合及业务规则。
 
 description返回所属实例／组／save_revision、实际源快照和完整scope：全部目标／共享写入键、其他已加载及共享草稿、新组排序、启动选择，以及成功后GUI名称效果。它是完整写入足迹，`change_attribution=unavailable`，不是精确差异或“只保存刚加的一行”；始终报告全范围确认要求。原单调截止最多120秒，创建存储不会续期；保存与映射预览共用单配对替换／取消及结果归属。
 
-本阶段`apply_supported=false`，**保存提交尚未接通**。把保存预览交给qkm_apply_changes会返回unsupported_capability，按原目标记为rejected／saved=false并单次消费，无配置或INI修改；重复请求仍拒绝。qkm_get_operation查询该失败本身可以成功，target保持原实例、配置组及保存修订。实际写盘／重载／备份、执行生命周期及完整保存闭环另行实现，不把此预览当作保存成功。
+当目标实际声明`configuration.save.apply`且`apply_supported=true`，用户同意完整范围后提交`qkm_apply_changes({"preview_id":"实际预览ID","confirm_scope":true})`；覆盖已有其他组还须独立`confirm_overwrite=true`。默认均false，不代用户批准；`confirm_conflicts`只用于映射，不能代替保存确认。提交重新采集真实内容、权限、原截止及完整清理许可，在写入前最终核对并持有源互斥完成同步／重载，不自动停止或启动。5秒是写入前总验证预算，不中断部分保存或承诺执行必在5秒结束。
+
+操作结果分别报告`saved`、`reloaded`、`backup_attempted`、`backup_succeeded`及`outcome`，target保留原实例／组／save_revision，新的加载代次与源epoch另列。主文件／重载成功但备份失败仍为applied，`outcome=saved_backup_failed`，须向用户说明。写失败返回save_write_failed，query中saved=false、modified=null、in_memory_effects_possible=true，不能视为内存完全未变；save_reload_failed说明磁盘已经保存但重载失败，未做全局回滚。失败后先查询同一ID再决定恢复，重复成功ID只返回历史结果，不再次保存；完整并发／断线和生命周期验收仍按主计划推进。
 
 ## 安全与失败语义
 
