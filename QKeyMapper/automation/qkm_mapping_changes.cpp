@@ -11,6 +11,11 @@
 namespace QkmAutomation {
 namespace {
 QString sampleTime() { return QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs); }
+QJsonObject saveOperationTarget(const MappingChangePreview &preview)
+{
+    return {{QStringLiteral("instance_id"), preview.owner.instance}, {QStringLiteral("group"), preview.save->settingName},
+        {QStringLiteral("save_revision"), preview.save->revision}};
+}
 }
 
 bool isMappingChangeMethod(const QString &method)
@@ -129,32 +134,38 @@ qint64 MappingChangeStore::now()
     return m_clock.elapsed();
 }
 
-void MappingChangeStore::remember(const MappingChangePreview &preview, const QString &status,
+bool MappingChangeStore::remember(const MappingChangePreview &preview, const QString &status,
     const QString &errorCode, const QString &message)
 {
     if (!m_results.contains(preview.id) && m_results.size() >= MaxResults) {
-        auto oldest = m_results.begin();
+        auto oldest = m_results.end();
         for (auto it = m_results.begin(); it != m_results.end(); ++it) {
-            if (it->created < oldest->created) oldest = it;
+            if (it->value.value(QStringLiteral("status")) != QStringLiteral("applying")
+                && (oldest == m_results.end() || it->created < oldest->created)) oldest = it;
         }
+        if (oldest == m_results.end()) return false;
         m_results.erase(oldest);
     }
     QJsonObject value{{QStringLiteral("operation_id"), preview.id}, {QStringLiteral("status"), status},
         {QStringLiteral("sampled_at_utc"), sampleTime()}, {QStringLiteral("result_known"), true},
         {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
+    if (preview.save) value.insert(QStringLiteral("target"), saveOperationTarget(preview));
     if (!errorCode.isEmpty()) value.insert(QStringLiteral("error"), QJsonObject{
         {QStringLiteral("code"), errorCode}, {QStringLiteral("message"), message}});
     m_results.insert(preview.id, {preview.owner, value, now()});
+    return true;
 }
 
 void MappingChangeStore::prune()
 {
     const qint64 tick = now();
     for (auto it = m_results.begin(); it != m_results.end();) {
-        if (tick - it->created >= ResultTtlMs) it = m_results.erase(it); else ++it;
+        if (it->value.value(QStringLiteral("status")) != QStringLiteral("applying") && tick - it->created >= ResultTtlMs)
+            it = m_results.erase(it);
+        else ++it;
     }
     for (auto it = m_previews.begin(); it != m_previews.end();) {
-        if (tick - it->created >= PreviewTtlMs) {
+        if (tick - it->created >= PreviewTtlMs || (it->save && it->save->expiresAt.hasExpired())) {
             remember(it.value(), QStringLiteral("cancelled"), QStringLiteral("preview_expired"),
                 QStringLiteral("Preview expired without applying any changes."));
             it = m_previews.erase(it);
@@ -181,14 +192,29 @@ std::optional<MappingChangePreview> MappingChangeStore::create(const MappingChan
     return preview;
 }
 
+std::optional<MappingChangePreview> MappingChangeStore::createSave(const MappingChangeOwner &owner,
+    const ConfigurationSaveBinding &binding, const QJsonObject &description)
+{
+    if (binding.settingName.isEmpty() || !isLowerHex(binding.revision, 64) || binding.context.isEmpty() || binding.scope.isEmpty()
+        || binding.expiresAt.isForever() || binding.expiresAt.hasExpired() || binding.expiresAt.remainingTime() > PreviewTtlMs)
+        return std::nullopt;
+    auto preview = create(owner, MappingAdditionArguments(), description);
+    if (preview) {
+        preview->save = binding;
+        m_previews[preview->id] = *preview;
+    }
+    return preview;
+}
+
 std::optional<MappingChangePreview> MappingChangeStore::begin(const MappingChangeOwner &owner, const QString &id)
 {
     prune();
     const auto it = m_previews.find(id);
     if (it == m_previews.end() || !(it->owner == owner)) return std::nullopt;
     const auto preview = it.value();
+    // Never accept work without retaining its result slot, or evict an in-flight operation.
+    if (!remember(preview, QStringLiteral("applying"))) return std::nullopt;
     m_previews.erase(it);
-    remember(preview, QStringLiteral("applying"));
     return preview;
 }
 
@@ -202,6 +228,7 @@ void MappingChangeStore::finish(const MappingChangeOwner &owner, const QString &
     it->value.insert(QStringLiteral("sampled_at_utc"), sampleTime());
     if (!errorCode.isEmpty()) it->value.insert(QStringLiteral("error"), QJsonObject{
         {QStringLiteral("code"), errorCode}, {QStringLiteral("message"), message}});
+    it->created = now();
 }
 
 bool MappingChangeStore::cancel(const MappingChangeOwner &owner, const QString &id)
@@ -226,9 +253,13 @@ QJsonObject MappingChangeStore::operation(const MappingChangeOwner &owner, const
     }
     const auto preview = m_previews.constFind(id);
     if (preview != m_previews.constEnd() && preview->owner == owner) {
-        return {{QStringLiteral("operation_id"), id}, {QStringLiteral("status"), QStringLiteral("previewed")},
+        qint64 remaining = PreviewTtlMs - (now() - preview->created);
+        if (preview->save) remaining = qMin(remaining, preview->save->expiresAt.remainingTime());
+        QJsonObject value{{QStringLiteral("operation_id"), id}, {QStringLiteral("status"), QStringLiteral("previewed")},
             {QStringLiteral("result_known"), true}, {QStringLiteral("sampled_at_utc"), sampleTime()},
-            {QStringLiteral("remaining_ms"), double(qMax(qint64(0), PreviewTtlMs - (now() - preview->created)))}};
+            {QStringLiteral("remaining_ms"), double(qMax(qint64(0), remaining))}};
+        if (preview->save) value.insert(QStringLiteral("target"), saveOperationTarget(*preview));
+        return value;
     }
     return {{QStringLiteral("operation_id"), id}, {QStringLiteral("status"), QStringLiteral("unknown")},
         {QStringLiteral("result_known"), false}, {QStringLiteral("sampled_at_utc"), sampleTime()},

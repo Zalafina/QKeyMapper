@@ -504,3 +504,17 @@ after核对实际结果中的diskSaved／reloaded／backupAttempted／backupSucc
 EXE为out/mcp_save_revalidate_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveRevalidate93_*_runtime.exe，原requireAdministrator；同一Medium24956经公共登记／perform，父8192、目标12288、same_login=true，实际QkmSaveRevalidate93_<UUID>私有桌面，各PID／创建时间／native退出见原start／closed.json。无Default、系统输入或映射启动。最后cache-after仍active／cache_available=true，18:30截止不变，零owned／unresolved／pending／current_action／current_job；历史未知请求原样保留。全部原case、构建／失败源码、部署／EXE、补丁／预期字节及evidence-summary在本机out，不随Git。
 
 独立本地提交切点，不推送；校验成功不是执行租约，后续仍须预览消费／取消、去重及结果归属，并在实际提交前协调源写入生命周期及重核权限／身份／状态／磁盘／到期。未验真实120秒等待、校验中撤权／到期、调用中并发、文件身份／跨进程事务或完整运行停止。12工具／8能力及C1-B2／M1未整体完成；SAVE-92未变的保存／冷读44进程不重跑。未增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、性能或三语言布局，PC-W10按原历史范围保留。
+
+## SAVE-94：保存预览绑定与进行中结果保留（2026-10-27，PC-W11）
+
+基于1cb567e6，仅扩展既有MappingChangeStore及控制组件测试：ConfigurationSaveBinding含明确settingName、完整revision、context、scope和原QDeadlineTimer，不保留完整INI／准备载荷或可变源指针。createSave先拒绝缺目标／非规范修订／空上下文或范围／已过期／无限期／超120秒绑定，再复用原create的单instance＋pair替换及32预览／64结果上限。内部save可选字段区分类型；preview／历史operation的target固定为原实例、组、保存修订，内部context／description不序列化。新绑定不续期，remaining_ms取原截止与存储期限较小值，到期进入原preview_expired取消记录。
+
+结果存储同时保护applying：历史期限和满额淘汰只作用于非进行中记录；begin先取得结果槽，容量不足不擦掉原预览、不接受实际操作。完成时重新起算原10分钟结果期，后续finish不可改写既有完成结果。clear仍保留既有显式清空语义；本组件不执行任务，不能把它当实际任务取消或断线／禁用恢复证明。尚未接正式保存生产调用，不能声称旧正式同步B1曾实测丢失进行中结果；本轮针对后续异步保存所需的组件边界。
+
+双Qt各定向跑六个槽：原mappingChangeArguments／Lifecycle／Limits，以及新增configurationSaveLifecycle／Expiry／Limits，各8 passed含init／cleanup、零failed／skipped、native exit0。覆盖保存→映射及映射→保存替换、错误实例／权限代次拒绝、取消、单次消费／不可改写完成结果、原目标保留和clear后unknown；无效新绑定不替换原预览，可控原截止早于存储期限时不续期。64个合成applying记录满额时第65个begin拒绝、旧64项均保留，完成一项后才可取得新槽；历史期限模拟对进行中无效、完成后到期为unknown，另覆盖32预览上限。没有真实保存或异步任务执行，不把合成数据称为业务结果。
+
+首轮双Qt维护编译native exit2，C1083为test_mcp_control.cpp所需ui_qgeneraladvanceddialog.h缺失；旧Makefile中已有uic目标，未证明完全没有生成规则。保留两份失败日志及重生成前Makefile，只在当前mcp_control测试树用同机固定qmake重生成后，双Qt普通Release增量native exit0、无警告，未修改产品、环境或uic规则，也未深入定位首次生成／依赖时序。官方Qt6.8.3／Qt5.15.2 x64、MSVC19.44及锁环境沿用。
+
+EXE为out/tests/mcp_control/{qt6,qt5}-release/release/QKeyMapperMcpControlTest.exe，原asInvoker；普通Python在实际QkmSaveStore94_<UUID>私有桌面直接启动，仅六个存储槽，无SwitchDesktop／窗口输入／Default场景／产品或IPC子进程。父子均Medium8192、same_login=true，原PID／创建时间／实际桌面／native退出及控制器终止=false记录齐全。QKM_IPC_TEST_EXE仅供原init检查匹配文件存在；两份XML确认实际测试及Qt版本。本片不使用gsudo，不重建／延长／关闭原缓存；SAVE-93最后状态仅按原时点保留。
+
+源码差异、原XML／native日志／身份退出、两份C1083日志／原Makefile、最终构建及evidence-summary在本机out/mcp_save_store_w11_20261027，不随Git。六个必要代码／用法／主计划与证据文件形成独立本地提交，不推送。12工具／8能力及C1-B2／M1未整体完成；正式保存预览创建、动作分派／容量业务错误、实际许可及生命周期协调、SDK与完整启停闭环仍待后续。未增普通产品全构建、完整UI／语言套件、ASan、严格静态分析、真实输入／设备或性能；PC-W10保留历史范围。

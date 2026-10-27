@@ -2,6 +2,7 @@
 #define QKM_MAPPING_CHANGES_H
 
 #include <QElapsedTimer>
+#include <QDeadlineTimer>
 #include <QHash>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -42,12 +43,21 @@ struct MappingChangeOwner {
     { return instance == other.instance && pairId == other.pairId && permissionEpoch == other.permissionEpoch; }
 };
 
+struct ConfigurationSaveBinding {
+    QString settingName;
+    QString revision;
+    QJsonObject context;
+    QJsonObject scope;
+    QDeadlineTimer expiresAt;
+};
+
 struct MappingChangePreview {
     MappingChangeOwner owner;
     MappingAdditionArguments arguments;
     QJsonObject description;
     QString id;
     qint64 created = 0;
+    std::optional<ConfigurationSaveBinding> save;
 };
 
 // GUI-thread request state only; no source pointers, worker work, persistence or retries.
@@ -59,9 +69,12 @@ public:
     static constexpr int MaxResults = 64;
     std::optional<MappingChangePreview> create(const MappingChangeOwner &owner,
         const MappingAdditionArguments &arguments, const QJsonObject &description);
+    std::optional<MappingChangePreview> createSave(const MappingChangeOwner &owner,
+        const ConfigurationSaveBinding &binding, const QJsonObject &description);
     // The caller must revalidate live source, permissions and expiry before committing.
     std::optional<MappingChangePreview> begin(const MappingChangeOwner &owner, const QString &id);
-    bool expired(const MappingChangePreview &preview) { return now() - preview.created >= PreviewTtlMs; }
+    bool expired(const MappingChangePreview &preview)
+    { return now() - preview.created >= PreviewTtlMs || (preview.save && preview.save->expiresAt.hasExpired()); }
     void finish(const MappingChangeOwner &owner, const QString &id, const QString &status,
         const QJsonObject &result, const QString &errorCode = {}, const QString &message = {});
     bool cancel(const MappingChangeOwner &owner, const QString &id);
@@ -78,7 +91,7 @@ private:
     };
     qint64 now();
     void prune();
-    void remember(const MappingChangePreview &preview, const QString &status,
+    bool remember(const MappingChangePreview &preview, const QString &status,
         const QString &errorCode = {}, const QString &message = {});
     QElapsedTimer m_clock;
     QHash<QString, MappingChangePreview> m_previews;

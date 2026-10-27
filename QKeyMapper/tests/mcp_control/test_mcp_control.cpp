@@ -29,12 +29,24 @@
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QTranslator>
+#include <QVector>
 #include <QtTest/QTest>
 #include <thread>
 
 using namespace QkmAutomation;
 
 namespace {
+
+ConfigurationSaveBinding saveBinding()
+{
+    ConfigurationSaveBinding binding;
+    binding.settingName = QStringLiteral("Save94");
+    binding.revision = QString(64, QLatin1Char('a'));
+    binding.context = {{QStringLiteral("fixture"), QStringLiteral("private-context94")}};
+    binding.scope = {{QStringLiteral("mode"), QStringLiteral("full_gui_save")}};
+    binding.expiresAt.setRemainingTime(MappingChangeStore::PreviewTtlMs, Qt::PreciseTimer);
+    return binding;
+}
 
 bool installUiTranslation(QTranslator &translator, int language)
 {
@@ -112,6 +124,8 @@ public:
     { store.m_previews[id].created -= MappingChangeStore::PreviewTtlMs + 1; }
     static void expireResult(MappingChangeStore &store, const QString &id)
     { store.m_results[id].created -= MappingChangeStore::ResultTtlMs + 1; }
+    static void expireSave(MappingChangeStore &store, const QString &id)
+    { store.m_previews[id].save->expiresAt = QDeadlineTimer(); }
 };
 }
 
@@ -146,6 +160,9 @@ private slots:
     void mappingChangeArguments();
     void mappingChangeLifecycle();
     void mappingChangeLimits();
+    void configurationSaveLifecycle();
+    void configurationSaveExpiry();
+    void configurationSaveLimits();
 };
 
 void McpControlTest::mappingChangeArguments()
@@ -275,6 +292,122 @@ void McpControlTest::mappingChangeLimits()
     QVERIFY(!store.create(owner, {}, {}));
     QCOMPARE(MappingChangeStoreTestAccess::previews(store), MappingChangeStore::MaxPreviews);
     QVERIFY(store.create({owner.instance, QStringLiteral("0"), 2}, {}, {}));
+    QCOMPARE(MappingChangeStoreTestAccess::previews(store), MappingChangeStore::MaxPreviews);
+}
+
+void McpControlTest::configurationSaveLifecycle()
+{
+    MappingChangeStore store;
+    const MappingChangeOwner owner{QStringLiteral("instance94"), QStringLiteral("pair94"), 1};
+    const MappingChangeOwner other{QStringLiteral("other-instance94"), owner.pairId, owner.permissionEpoch};
+    const MappingChangeOwner nextEpoch{owner.instance, owner.pairId, 2};
+    const auto mapping = store.create(owner, MappingAdditionArguments(), {}); QVERIFY(mapping);
+    const auto binding = saveBinding();
+    const auto preview = store.createSave(owner, binding, {{QStringLiteral("fixture"), QStringLiteral("private-description94")}});
+    QVERIFY(preview && preview->save && preview->arguments.originalKey.isEmpty());
+    QCOMPARE(preview->save->expiresAt, binding.expiresAt);
+    QCOMPARE(store.operation(owner, mapping->id).value(QStringLiteral("error")).toObject().value(QStringLiteral("code")).toString(), QStringLiteral("preview_superseded"));
+    const QJsonObject target{{QStringLiteral("instance_id"), owner.instance}, {QStringLiteral("group"), binding.settingName},
+        {QStringLiteral("save_revision"), binding.revision}};
+    const auto pending = store.operation(owner, preview->id);
+    QCOMPARE(pending.value(QStringLiteral("target")).toObject(), target);
+    QVERIFY(!QJsonDocument(pending).toJson().contains("private-context94"));
+    QVERIFY(!QJsonDocument(pending).toJson().contains("private-description94"));
+    QVERIFY(!store.begin(other, preview->id) && !store.cancel(nextEpoch, preview->id));
+    QCOMPARE(store.operation(other, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("unknown"));
+    const auto begun = store.begin(owner, preview->id); QVERIFY(begun && begun->save);
+    QCOMPARE(begun->save->context, binding.context);
+    QCOMPARE(begun->save->scope, binding.scope);
+    QVERIFY(!store.begin(owner, preview->id));
+    auto nextBinding = binding; nextBinding.settingName = QStringLiteral("Next94");
+    const auto next = store.createSave(owner, nextBinding, {}); QVERIFY(next);
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("applying"));
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("target")).toObject(), target);
+    const auto replacement = store.create(owner, MappingAdditionArguments(), {}); QVERIFY(replacement && !replacement->save);
+    QCOMPARE(store.operation(owner, next->id).value(QStringLiteral("error")).toObject().value(QStringLiteral("code")).toString(), QStringLiteral("preview_superseded"));
+    QVERIFY(store.cancel(owner, replacement->id));
+    const QJsonObject result{{QStringLiteral("disk_saved"), true}, {QStringLiteral("reloaded"), false}};
+    store.finish(owner, preview->id, QStringLiteral("applied"), result);
+    const auto completed = store.operation(owner, preview->id);
+    QCOMPARE(completed.value(QStringLiteral("result")).toObject(), result);
+    QCOMPARE(completed.value(QStringLiteral("target")).toObject(), target);
+    QVERIFY(!store.begin(owner, preview->id) && !store.cancel(owner, preview->id));
+    store.finish(owner, preview->id, QStringLiteral("rejected"), {}, QStringLiteral("stale_source"), QStringLiteral("late result"));
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("applied"));
+    QCOMPARE(store.operation(nextEpoch, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("unknown"));
+    store.clear();
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("unknown"));
+}
+
+void McpControlTest::configurationSaveExpiry()
+{
+    MappingChangeStore store;
+    const MappingChangeOwner owner{QStringLiteral("instance94"), QStringLiteral("pair94"), 1};
+    const auto original = store.create(owner, MappingAdditionArguments(), {}); QVERIFY(original);
+    for (int variant = 0; variant < 7; ++variant) {
+        auto invalid = saveBinding();
+        if (variant == 0) invalid.settingName.clear();
+        if (variant == 1) invalid.revision = QString(64, QLatin1Char('A'));
+        if (variant == 2) invalid.context = {};
+        if (variant == 3) invalid.scope = {};
+        if (variant == 4) invalid.expiresAt = QDeadlineTimer();
+        if (variant == 5) invalid.expiresAt = QDeadlineTimer(QDeadlineTimer::Forever);
+        if (variant == 6) invalid.expiresAt.setRemainingTime(MappingChangeStore::PreviewTtlMs + 1000, Qt::PreciseTimer);
+        QVERIFY(!store.createSave(owner, invalid, {}));
+        QCOMPARE(store.operation(owner, original->id).value(QStringLiteral("status")).toString(), QStringLiteral("previewed"));
+    }
+    auto binding = saveBinding();
+    binding.expiresAt.setRemainingTime(10000, Qt::PreciseTimer);
+    const auto preview = store.createSave(owner, binding, {}); QVERIFY(preview);
+    const auto remaining = store.operation(owner, preview->id).value(QStringLiteral("remaining_ms")).toDouble();
+    QVERIFY(remaining > 0 && remaining <= 10000);
+    QCOMPARE(preview->save->expiresAt, binding.expiresAt);
+    auto expiredCopy = *preview;
+    expiredCopy.save->expiresAt = QDeadlineTimer();
+    QVERIFY(store.expired(expiredCopy));
+    MappingChangeStoreTestAccess::expireSave(store, preview->id);
+    const auto expired = store.operation(owner, preview->id);
+    QCOMPARE(expired.value(QStringLiteral("status")).toString(), QStringLiteral("cancelled"));
+    QCOMPARE(expired.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")).toString(), QStringLiteral("preview_expired"));
+    QCOMPARE(expired.value(QStringLiteral("target")).toObject().value(QStringLiteral("group")).toString(), binding.settingName);
+    QVERIFY(!store.begin(owner, preview->id));
+    const auto active = store.createSave(owner, saveBinding(), {}); QVERIFY(active && store.begin(owner, active->id));
+    MappingChangeStoreTestAccess::expireResult(store, active->id);
+    QCOMPARE(store.operation(owner, active->id).value(QStringLiteral("status")).toString(), QStringLiteral("applying"));
+    store.finish(owner, active->id, QStringLiteral("applied"), {});
+    QCOMPARE(store.operation(owner, active->id).value(QStringLiteral("status")).toString(), QStringLiteral("applied"));
+    MappingChangeStoreTestAccess::expireResult(store, active->id);
+    QCOMPARE(store.operation(owner, active->id).value(QStringLiteral("status")).toString(), QStringLiteral("unknown"));
+}
+
+void McpControlTest::configurationSaveLimits()
+{
+    MappingChangeStore store;
+    QVector<MappingChangePreview> active;
+    for (int index = 0; index < MappingChangeStore::MaxResults; ++index) {
+        const MappingChangeOwner owner{QStringLiteral("instance94"), QString::number(index), 1};
+        const auto preview = store.createSave(owner, saveBinding(), {}); QVERIFY(preview);
+        const auto begun = store.begin(owner, preview->id); QVERIFY(begun);
+        active.append(*begun);
+    }
+    const MappingChangeOwner waiting{QStringLiteral("instance94"), QStringLiteral("waiting94"), 1};
+    const auto pending = store.createSave(waiting, saveBinding(), {}); QVERIFY(pending);
+    QVERIFY(!store.begin(waiting, pending->id));
+    QCOMPARE(store.operation(waiting, pending->id).value(QStringLiteral("status")).toString(), QStringLiteral("previewed"));
+    QCOMPARE(MappingChangeStoreTestAccess::results(store), MappingChangeStore::MaxResults);
+    for (const auto &preview : active)
+        QCOMPARE(store.operation(preview.owner, preview.id).value(QStringLiteral("status")).toString(), QStringLiteral("applying"));
+    store.finish(active.first().owner, active.first().id, QStringLiteral("applied"), {});
+    QVERIFY(store.begin(waiting, pending->id));
+    QCOMPARE(MappingChangeStoreTestAccess::results(store), MappingChangeStore::MaxResults);
+    for (int index = 1; index < active.size(); ++index)
+        QCOMPARE(store.operation(active.at(index).owner, active.at(index).id).value(QStringLiteral("status")).toString(), QStringLiteral("applying"));
+    store.clear();
+    for (int index = 0; index < MappingChangeStore::MaxPreviews; ++index)
+        QVERIFY(store.createSave({waiting.instance, QString::number(index), 1}, saveBinding(), {}));
+    QVERIFY(!store.createSave(waiting, saveBinding(), {}));
+    QCOMPARE(MappingChangeStoreTestAccess::previews(store), MappingChangeStore::MaxPreviews);
+    QVERIFY(store.createSave({waiting.instance, QStringLiteral("0"), 2}, saveBinding(), {}));
     QCOMPARE(MappingChangeStoreTestAccess::previews(store), MappingChangeStore::MaxPreviews);
 }
 

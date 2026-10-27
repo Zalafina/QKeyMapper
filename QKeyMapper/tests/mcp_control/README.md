@@ -109,3 +109,11 @@ out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/tests/test_desktop_lif
 ```
 
 该回归检查显式关闭后必须解除 Python 对象对原生句柄的持有，旧对象释放不能误关新建桌面；正式 SDK 与产品脚本使用同一清理函数。
+
+## 保存预览存储组件（SAVE-94）
+
+定向运行mappingChangeArguments／mappingChangeLifecycle／mappingChangeLimits及configurationSaveLifecycle／configurationSaveExpiry／configurationSaveLimits。后三项验证保存绑定仅存明确组、修订、context／scope及原单调截止，创建无效绑定不替换旧预览；保存／映射共用替换、取消和单次消费，operation只报告所属实例／组／修订，不泄漏内部context／description。到期用测试访问器设置截止，不实等120秒。
+
+容量夹具创建64个合成applying记录，核对无空结果槽时begin拒绝且保留待消费预览，原记录不被淘汰；模拟历史期经过仍保留进行中结果，完成后重新起算结果期限；另核对32预览上限。此为无业务动作的内存组件，不冒充正式保存、断线恢复或实际异步任务。clear仍按既有接口显式重置全部内存，调用方不能把它当任务取消或完成。
+
+仅上述纯存储槽可普通权限在私有桌面运行，无需gsudo、产品或IPC子进程；initTestCase仍要求QKM_IPC_TEST_EXE指向匹配Qt的既有EXE并验证当前进程身份。完整UI用例仍遵循本文件的真实窗口规则，不由纯组件通过推定已验。正式保存接线前还须分派动作类型、解释结果槽不足、重新校验真实授权／业务内容并协调生命周期。
