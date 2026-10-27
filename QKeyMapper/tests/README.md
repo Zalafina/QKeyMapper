@@ -181,6 +181,8 @@ Qt名称编辑输入空格、非法字符、全局保留名、现有或新名称
 
 format只改本用例INI；write分支用只读共享句柄短时阻止自有INI写入／替换，返回后释放，再由读者sync及冷启动核对无失败缓存补写。reload人工注入非法源键，仅证明内部阶段分离，非普通GUI可输入；backup只在自有latest路径建空目录并及时移除。所有目标在out内，原manifest／公共登记／私有桌面，无Default、映射或系统输入。结果按磁盘同步、重载和备份分别核对，并比较完整旧GUI基线字节；内部方法仍读GUI目标，不等于MCP保存已交付或并发／权限安全已验。
 
+保存末段共用切片复用上述维护case：current／new／write_current／write_new／reload／backup，冷读取其原允许五组。若复用SAVE-86独立旧GUI基线，先核对旧GUI case／native退出及归档EXE身份，并证明当前改动前GUI保存体与原基线无业务差异；新结果不得自造为GUI基线。新EXE路径及所复用原始材料分别记录，比较全部INI字节，保留写锁解除后共享缓存与独立冷读、已写但重载失败、备份失败的分段期待。未变的早退／取消与设备场景按原范围复用，不作为本片新增通过。
+
 ## 真实请求绑定的保存候选
 
 `settings_save_context`正常加载同一[完整夹具](sendinput_lifecycle/full_save_fixture.ini.example)。维护目标使用本用例out内的独立私有配对目录；`QKM_CONTEXT_CLIENT_PID`／`QKM_CONTEXT_CLIENT_CREATED`／`QKM_CONTEXT_CLIENT_EXE`必须同时匹配实际桥接进程，测试代码才批准固定权限。普通Python用实际桥接完成认证并发送一次固定`qkm_get_state`，维护handler验证私有候选后只返回fixture标记；没有生产保存方法或新增MCP工具。

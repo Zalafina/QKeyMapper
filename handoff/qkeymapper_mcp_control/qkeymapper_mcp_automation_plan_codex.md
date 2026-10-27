@@ -12,23 +12,23 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | SAVE-88选定验证完成：私有候选按实际载荷描述全部写入范围及共享草稿确认要求；SAVE-87本地提交2957ef49。下一片继续显式执行入口 |
-| 状态 | 持续开发。SAVE-88双Qt各62项、六进程native exit0；SAVE-87各41项及SAVE-86旧GUI／内部结果和18对完整INI按未变范围复用。完整MCP保存／启停闭环仍未完成 |
+| 当前切片 | SAVE-89选定验证完成：原样共用保存同步／回滚／重载／备份末段，为显式候选执行准备；SAVE-88本地提交205a407f |
+| 状态 | 持续开发。SAVE-89双Qt各64项、22进程native exit0、12对旧GUI完整INI一致；SAVE-88各62项／SAVE-87各41项及前序证据保留。完整MCP保存／启停闭环仍未完成 |
 | 执行机器 | PC-W11，Windows 11企业版10.0.26200 x64；本轮唯一写入机器。UI-73及C1-B2-TABLE的PC-W10结果只按其原版本／范围保留，不冒充本机复验 |
 | 任务分支 | `codex/qkeymapper-mcp-control` |
-| 源码基线 | 当前HEAD2957ef49。SAVE-88仅在私有候选增加由实际载荷派生的目标／共享写入键、启动选择、新配置排序动作及全范围确认要求；不按dirty归属其他草稿，不伪造精确差异。未改GUI保存函数、Worker、manifest、协议、依赖或缓存核心 |
+| 源码基线 | 当前HEAD205a407f；SAVE-89将原保存末段116行逐字移至私有finalizeSettingSave，原调用传原QSettings、变更前值／键、已接受结果、当前Tab和popup参数，CategoryFilterStateGuard及QSettings生命周期顺序保持。完整逆变换还原CPP；未改写入准备、目标选择、Worker、manifest、协议、依赖或缓存核心 |
 | 当前已完成 | PC-W11解释器／DLL的PSF签名有效，同机ENV-39哈希安装记录的31项依赖与当前锁一致，环境检查／pip check、6项环境和20项协议检查通过；Qt6.8.3／Qt5.15.2均为x64。PC-W10的UI-73三语言及TABLE97项结果仅按各自原范围保留 |
 | 当前未验证 | 候选及范围为私有组件，非正式MCP保存。实际全范围／覆盖确认守卫、显式提交、执行前复核／到期／去重与结果查询仍待C1-C；其他草稿精确归属明确不可用，不根据dirty猜测。调用中并发变化／预算超时及SAVE-85文件身份／跨进程事务缺口保留 |
-| 构建与 EXE | 同机out/tests/sendinput_lifecycle/{qt6,qt5}-profile74-release；SAVE-88双Qt普通Release维护增量构建native exit0，Qt6零警告、Qt5兼容通过。EXE为out/mcp_save_scope_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveScope88_*_runtime.exe，原manifest；实际QkmSaveScope88_<UUID>私有桌面，无需Default |
-| 提交与同步 | SAVE-87本地提交2957ef49f55d108ceb772707c944eb948e2ea8c5，任务分支codex/qkeymapper-mcp-control；SAVE-88未提交。用户授权自行选择聚焦本地提交，本轮不推送 |
-| 本机独有材料 | SAVE-88在out/mcp_save_scope_w11_20261027：六份原case／身份／退出、真实认证fixture结果、双Qt构建／部署／EXE、精确补丁／逆向检查、摘要和缓存状态。SAVE-87及前序目录保留；均不随Git，历史未知请求不覆盖，PC-W10原始out不在本机 |
+| 构建与 EXE | 同机out/tests/sendinput_lifecycle/{qt6,qt5}-profile74-release；SAVE-89双Qt普通Release维护增量构建native exit0，Qt6零警告、Qt5兼容通过。EXE为out/mcp_save_finish_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveFinish89_*_runtime.exe，原manifest；实际QkmSaveFinish89_<UUID>私有桌面，无需Default |
+| 提交与同步 | SAVE-88本地提交205a407f73803442b6e7d1b4251d62bcb2154971，前一2957ef49；任务分支codex/qkeymapper-mcp-control。SAVE-89未提交，继续按授权选本地切点，本轮不推送 |
+| 本机独有材料 | SAVE-89在out/mcp_save_finish_w11_20261027：22份原case／身份／退出、12份复用旧GUI基线及来源／归档EXE身份索引、双Qt构建／部署／EXE、完整逆变换／预期字节、摘要与缓存状态。SAVE-87／88及前序目录保留，均不随Git；PC-W10原始out不在本机 |
 | 授权边界 | 已明确恢复开发；开发、Git、构建、桥接／SDK及截图仍普通权限。必要原manifest启动／关闭经新缓存技能及公共登记，仅既定自有私有桌面动作，不扩大Default／输入／驱动范围。SAVE-87无需Default |
 | 当前控制器 | 新建普通Medium PID24956，instance4f384b60c3ca43e1a9c2bfd768020809、generation1，2026-10-27 18:30＋08:00硬截止；实际active／cache_available=true，初始零owned／unresolved／pending。10520昨日已关闭，不接管旧PID；23316／25608历史未知请求原样保留，不重放 |
-| 下一项动作 | SAVE-88聚焦本地提交后，提取明确目标与完整候选的共用执行入口，推进C1-C预览／确认／提交复核和结果查询。全范围说明不替代执行层确认守卫；不得向MCP直接暴露仍读GUI及执行可变准备的SAVE-86结果入口 |
+| 下一项动作 | SAVE-89聚焦本地提交后，继续只使用明确候选载荷的写入入口，先核对同路径QSettings待写缓存与磁盘快照的隔离／拒绝边界，以及写盘／重载期间生命周期约束；再接C1-C确认／复核／到期／去重与结果查询。末段共用不等于整个GUI准备可直接从MCP调用 |
 | 下一项完成标准 | 剩余依赖和载荷均有GUI等价证据；完整范围／其他草稿／全部内容及磁盘修订、权限／状态／目标／到期和失败恢复核实前不开MCP保存工具。之后按C1-C推进正式预览／提交；已验97项Tab映射载荷和UI-73不重复搬动或重复全验 |
 | 缓存观察安排 | 不再为Win11／2–5小时驻留单独排期，随日常使用积累；复查以现存日志规模决定工作量，必要靶向测试另估。该决定不代表未覆盖场景已经验证 |
-| 实耗与剩余 | 本机已推进SAVE-74至86（84为插入缓存诊断），未独立扣除构建／等待，不补造有效工时。下一真实上下文／范围首片建议2–4小时，正式MCP及完整闭环另估，整体上界不因局部完成缩减 |
-| 当前未决与阻碍 | SAVE-88本片无构建或原生用例失败，六进程通过且零owned／unresolved／pending。脚本末尾继承的snapshot regression标签不作证据，实际为configure／read／global三组；原日志保留，摘要按实际case计数。SAVE-87失败日志及前序未知请求原样保留 |
+| 实耗与剩余 | 本机已推进SAVE-74至89（84为插入缓存诊断），未独立扣除构建／等待，不补造有效工时。真实上下文／范围组件已有结果；显式写入／授权与生命周期提交门槛及正式MCP完整闭环仍另估，整体上界不因局部完成缩减 |
+| 当前未决与阻碍 | SAVE-89本片无编译或原生用例失败，22进程通过、零owned／unresolved／pending／current_action／current_job。显式写入尚未实现，共享缓存与并发事务不能由这次GUI末段复用推导通过；历史失败及未知请求原样保留 |
 
 
 
@@ -215,6 +215,8 @@ SAVE-86将原保存函数体改为私有结构化结果，原bool入口仍只返
 SAVE-87补私有prepareAutomationSettingSave：从实际在途请求复核Read＋Configure，实例／配对／权限和完整源快照沿现有算法绑定，当前Tab及运行修订进入保存候选；显式目标不读名称输入。源载荷复制与最终生命周期复核沿现有锁，磁盘和图标I/O留在锁外，原GUI保存体逐字不变。双Qt各41项、六个原manifest私有桌面进程native exit0；真实Configure／Read认证、五种陈旧请求、回复后失效、派生源变化、真实编辑窗拒绝／恢复和新运行修订拒绝通过，受影响SAVE-85各17项回归包含在内。没有正式保存工具、全局源动态／调用中并发／超时或其他草稿确认的通过声明，详见同一C1证据。
 
 SAVE-88给同一候选补由实际绑定载荷派生的完整写入范围：源／目标配置、全部目标与共享键、启动选择及新配置排序动作；明确write_footprint_not_diff、草稿归属unavailable和始终需要全范围确认，不用dirty推测仅保存刚才一行。双Qt普通配置30项、Read4项、全局源28项，各62项、六进程native exit0；全局源正常启动及另名拒绝、键精确分割、共享／普通宏及共通备份、排序与覆盖意图分离、清dirty仍要求确认通过。GUI Save体不变，SAVE-85／87未变路径复用；实际用户确认／提交仍待C1-C，不把描述当作执行守卫，详见同一C1记录。
+
+SAVE-89将原保存末段116行逐字共用为finalizeSettingSave，原QSettings、回滚前值／键、接受目标、Tab和popup参数均显式传入；原准备和写入顺序／RAII生命周期不变，完整逆变换通过。复用已核实的SAVE-86独立旧GUI基线，双Qt六组结果／五组冷读各64项、22进程native exit0，12对275／314／64／64／314／314键完整INI一致；写锁解除后无缓存补写，重载失败与备份失败仍分段。公共助手不是显式候选写入或并发安全许可，未重验的共通Tab恢复、全局显示及早退保留边界，详见同一C1记录。
 
 接续在SAVE-82至86基础上绑定真实业务修订和保存范围；已提取字段不再搬动。完整实例／配对／权限、状态／当前源／到期、显式目标与执行重检、其他草稿确认及正式失败结果查询仍待C1-C；分段结果不等于准入或全部保存／回滚安全证明。工具12／业务能力8，C1-B2／M1未整体完成。
 

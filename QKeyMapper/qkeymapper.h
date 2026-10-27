@@ -2183,6 +2183,8 @@ private:
         bool backupSucceeded = false;
     };
     SettingSaveResult saveKeyMapSettingWithResult(bool showSuccessPopup);
+    SettingSaveResult finalizeSettingSave(QSettings &settingFile, const QVariantMap &valuesBeforeSave,
+        const QStringList &keysBeforeSave, SettingSaveResult result, int tabIndexBeforeSaveReload, bool showSuccessPopup);
     struct SettingSaveTarget {
         enum class Error { None, EmptyName, InvalidCharacters, GlobalSelectionRequired };
         QString settingName;

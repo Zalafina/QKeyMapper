@@ -23135,6 +23135,15 @@ QKeyMapper::SettingSaveResult QKeyMapper::saveKeyMapSettingWithResult(bool showS
     // Save SyncGroupNotes to INI file
     saveSyncGroupNotesToINI(savedSettingName);
 
+    return finalizeSettingSave(settingFile, valuesBeforeSave, keysBeforeSave, result, tabIndexBeforeSaveReload, showSuccessPopup);
+}
+
+QKeyMapper::SettingSaveResult QKeyMapper::finalizeSettingSave(QSettings &settingFile, const QVariantMap &valuesBeforeSave,
+    const QStringList &keysBeforeSave, SettingSaveResult result, int tabIndexBeforeSaveReload, bool showSuccessPopup)
+{
+    using Failure = SettingSaveResult::Failure;
+    const auto fail = [&](Failure failure) { result.failure = failure; return result; };
+    const QString &savedSettingName = result.settingName;
     QStringList changedKeys;
     const QStringList keysAfterSave = settingFile.allKeys();
     for (const QString &key : keysAfterSave) {

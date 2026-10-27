@@ -428,3 +428,17 @@ cache-after.json核实10520仍active／cache_available=true、零owned／unresol
 最终缓存仍active／cache_available=true，18:30截止不变、零owned／unresolved／pending／current_action；原始case、真实认证fixture响应、构建／部署／EXE、完整补丁／逆向检查和evidence-summary.json保留在本机out/mcp_save_scope_w11_20261027，不随Git。运行器最后一行继承了snapshot regression文字标签，实际六个原始case为configure／read／global，未执行snapshot；原日志不改写，摘要按实际记录计数，后续本地辅助脚本的末行已改正。
 
 独立本地提交切点，不推送。这是范围描述及确认要求，不是正式预览／同意或执行守卫的验收；不宣称精确字段变化归属、真实映射／停止、并发变化／权限丢失／预算超时、跨进程磁盘事务、到期／去重／结果查询或完整MCP闭环通过。工具12／能力8，C1-B2／M1未完成；未增加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／设备／性能或三语言布局，PC-W10保留历史范围。
+
+## SAVE-89：保存收尾阶段的原样共用（2026-10-27，PC-W11）
+
+基于205a407f，把原saveKeyMapSettingWithResult末段116行逐字提为私有finalizeSettingSave；原调用显式传原QSettings引用、valuesBeforeSave／keysBeforeSave、已接受SettingSaveResult、Tab索引和popup选项。savedSettingName取已通过原名称校验的result.settingName，与原去除斜杠后的名称一致；所有写入前阶段、覆盖确认、原写入顺序及CategoryFilterStateGuard／QSettings析构顺序保持。changed／removed键计算、sync/status、只回滚本保存pending、重载、滚动／共通页恢复、dirty、popup与latest备份代码不改。唯一补丁、完整逆变换和实际预期字节通过；CPP净增9行、header2行，无Worker、manifest、协议、依赖、缓存或测试代码改动。
+
+选择既有settings_result_save／cold的current／new／write_current／write_new／reload／backup六组，冷读保留原五组。复用SAVE-86 before独立旧GUI原生结果及完整基线，逐项核对case passed／native exit0、归档EXE与原identity摘要；本片改动前GUI保存体和SAVE-86逐字相同。原始GUI操作来自当时真实Qt名称输入／Save，不由当前内部结果调用自造；旧EXE在out/mcp_save_result_w11_20261026/old-executables，新EXE路径另记，不声称前后同路径。来源及本机副本在reused-gui-baselines.json及12份baseline-*.ini，未改动原SAVE-86材料。
+
+双Qt各64项、22个当前原生进程全部passed=true／native exit0；12对完整INI字节相等，各Qt依次275／314／64／64／314／314键。独立冷读保持原始字节；两种写锁失败后解除句柄、另一个同路径读者sync及冷读都无失败pending补写。人工非法源仍明确已写盘／重载失败，备份目录负向仍明确已写且重载／备份失败，latest目录按原finally移除。六组的结果阶段、目标与备份按原独立期待核对，不把内部调用当作新的GUI基线、正式MCP保存或真实映射故障。
+
+既有同机锁环境、Qt6.8.3／Qt5.15.2官方x64及MSVC19.44；双Qt普通Release维护增量构建native exit0，Qt6零警告、Qt5仅原qtmain例外，本片无编译或原生用例失败。EXE为out/mcp_save_finish_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveFinish89_*_runtime.exe，原requireAdministrator；经同一Medium24956／公共定义登记及perform，父8192、目标12288、same_login=true，实际QkmSaveFinish89_<UUID>私有桌面。各PID／创建时间／退出见原start／closed.json；无需Default，无映射或系统输入。
+
+最终status仍active／cache_available=true、18:30截止不变，零owned／unresolved／pending／current_action／current_job；历史未知请求不因此解决。22份原case、12份旧基线副本／来源、构建／部署／EXE、原尾段、完整补丁／逆变换／预期字节和evidence-summary.json在本机out/mcp_save_finish_w11_20261027，不随Git。
+
+独立本地提交切点，不推送。本片只共用既有GUI收尾，不提供显式候选写入、配对／范围确认或磁盘与生命周期事务；普通取消／非法／坏格式早退未改，按SAVE-86原范围复用；共通Tab恢复及全局名称显示尾部分支逐字保留、未作本片动态通过声明。实际输入／停止／设备、并发／权限丢失、共享缓存任意pending、超时／到期／去重及正式结果查询仍待后续。工具12／能力8、C1-B2／M1未完成；未增加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／性能或三语言布局，PC-W10保持历史范围。
