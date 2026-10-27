@@ -3185,7 +3185,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         const bool replied = server.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}});
         const auto consumed = mapper->prepareAutomationSettingSave(request, QStringLiteral("Payload82Seed"));
         const bool refused = replied && !consumed.ok() && consumed.errorCode == QStringLiteral("not_authorized")
-            && consumed.context.isEmpty() && consumed.save.values.values.isEmpty() && consumed.save.revision.isEmpty();
+            && consumed.context.isEmpty() && consumed.scope.isEmpty() && consumed.save.values.values.isEmpty() && consumed.save.revision.isEmpty();
         auto checks = evidence.value(QStringLiteral("checks")).toArray();
         checks.append(QJsonObject{{QStringLiteral("check"), QStringLiteral("a completed real request cannot authorize a later candidate")}, {QStringLiteral("passed"), refused}});
         evidence.insert(QStringLiteral("checks"), checks);
@@ -3220,15 +3220,17 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
     const quint64 load = mapper->m_MappingLoadGeneration, epoch = mapper->m_AutomationSourceEpoch;
     const QString name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text();
     const auto prepare = [&](const QString &target) { return mapper->prepareAutomationSettingSave(request, target); };
-    const auto candidate = prepare(QStringLiteral("Payload82Seed"));
+    const bool globalSource = qEnvironmentVariable("QKM_CONTEXT_VARIANT") == QStringLiteral("global");
+    const QString selectedGroup = globalSource ? QString::fromLatin1(GROUPNAME_GLOBALSETTING) : QStringLiteral("Payload82Seed");
+    const auto candidate = prepare(selectedGroup);
     if (qEnvironmentVariable("QKM_CONTEXT_VARIANT") == QStringLiteral("read")) {
         check(mapper->m_McpControlDialog->server().isRequestCurrent(request) && request.scopes == Read,
             "read-only fixture is a live authenticated request");
-        check(!candidate.ok() && candidate.errorCode == QStringLiteral("not_authorized") && candidate.context.isEmpty()
+        check(!candidate.ok() && candidate.errorCode == QStringLiteral("not_authorized") && candidate.context.isEmpty() && candidate.scope.isEmpty()
             && candidate.save.values.values.isEmpty() && candidate.save.revision.isEmpty(),
             "real read-only permission cannot prepare a save or receive its payload");
     } else {
-        check(candidate.ok() && candidate.save.target.settingName == QStringLiteral("Payload82Seed"),
+        check(candidate.ok() && candidate.save.target.settingName == selectedGroup,
             "live authenticated configure request prepares the explicitly selected target");
         QString sourceError;
         const auto source = querySourceSnapshot(mapper->collectAutomationSourceSnapshot(sourceError),
@@ -3240,21 +3242,78 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
             && candidate.context.value(QStringLiteral("permission_epoch")).toString() == QString::number(request.permissionEpoch)
             && candidate.context.value(QStringLiteral("runtime_revision")).toString() == QString::number(QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision()),
             "pair, permission epoch and runtime lifecycle come from the current request and product");
-        const auto repeated = prepare(QStringLiteral("Payload82Seed"));
+        const auto repeated = prepare(selectedGroup);
         check(repeated.ok() && repeated.context == candidate.context && repeated.save.revision == candidate.save.revision,
             "unchanged live context and disk produce a repeatable typed candidate");
         const auto fresh = prepare(QStringLiteral("Context87New"));
-        check(fresh.ok() && fresh.save.target.createNewSetting && fresh.save.values.appendSettingOrder
-            && fresh.save.revision != candidate.save.revision, "explicit new destination changes the candidate without editing the GUI name");
+        check(globalSource ? !fresh.ok() && fresh.errorCode == QStringLiteral("invalid_target")
+            : fresh.ok() && fresh.save.target.createNewSetting && fresh.save.values.appendSettingOrder
+                && fresh.save.revision != candidate.save.revision,
+            "explicit new destination is described for profiles and cannot silently redirect a global source");
         const auto existing = prepare(QStringLiteral("Existing82"));
-        check(existing.ok() && existing.save.target.requiresOverwriteConfirmation && !existing.save.target.createNewSetting,
-            "explicit existing destination retains overwrite confirmation intent without asking or writing");
+        check(globalSource ? !existing.ok() && existing.errorCode == QStringLiteral("invalid_target")
+            : existing.ok() && existing.save.target.requiresOverwriteConfirmation && !existing.save.target.createNewSetting,
+            "explicit existing destination retains overwrite intent or rejects global redirection");
         const auto invalid = prepare(QStringLiteral("Bad/Name"));
-        check(!invalid.ok() && invalid.save.error == QKeyMapper::SettingSavePreparation::Error::InvalidTarget
-            && invalid.save.values.values.isEmpty() && invalid.context.isEmpty(), "invalid explicit destination cannot return a usable candidate");
-        const auto global = prepare(QString::fromLatin1(GROUPNAME_GLOBALSETTING));
-        check(!global.ok() && global.save.error == QKeyMapper::SettingSavePreparation::Error::InvalidTarget,
-            "a profile source cannot silently become a global save");
+        check(!invalid.ok() && (globalSource ? invalid.errorCode == QStringLiteral("invalid_target")
+                : invalid.save.error == QKeyMapper::SettingSavePreparation::Error::InvalidTarget)
+            && invalid.save.values.values.isEmpty() && invalid.context.isEmpty() && invalid.scope.isEmpty(),
+            "invalid explicit destination cannot return a usable candidate or scope");
+        const auto otherKind = prepare(globalSource ? QStringLiteral("Payload82Seed") : QString::fromLatin1(GROUPNAME_GLOBALSETTING));
+        check(!otherKind.ok() && otherKind.scope.isEmpty(), "profile and global sources cannot silently change save kind");
+        const auto scope = candidate.scope;
+        const auto target = scope.value(QStringLiteral("target")).toObject();
+        check(scope.value(QStringLiteral("schema_version")).toInt() == 1 && scope.value(QStringLiteral("mode")) == QStringLiteral("full_gui_save")
+            && scope.value(QStringLiteral("key_semantics")) == QStringLiteral("write_footprint_not_diff"),
+            "scope explicitly reports the original full-save write footprint rather than a fabricated content diff");
+        check(scope.value(QStringLiteral("draft_policy")) == QStringLiteral("all_loaded_configuration_and_shared_drafts")
+            && scope.value(QStringLiteral("change_attribution")) == QStringLiteral("unavailable")
+            && scope.value(QStringLiteral("confirmation_required")).toBool(),
+            "all loaded and shared drafts require scope confirmation without guessing which request changed them");
+        check(scope.value(QStringLiteral("source_configuration")) == candidate.context.value(QStringLiteral("source_snapshot")).toObject().value(QStringLiteral("configuration_selection"))
+            && target.value(QStringLiteral("group")) == selectedGroup
+            && target.value(QStringLiteral("kind")) == (globalSource ? QStringLiteral("global") : QStringLiteral("saved_profile"))
+            && !target.value(QStringLiteral("create_new")).toBool() && !target.value(QStringLiteral("overwrite_confirmation_required")).toBool(),
+            "scope distinguishes the actual loaded source and explicit global or profile destination");
+        const auto targetKeys = scope.value(QStringLiteral("target_write_keys")).toArray();
+        const auto sharedKeys = scope.value(QStringLiteral("shared_write_keys")).toArray();
+        QStringList described, actual;
+        const QString prefix = selectedGroup + QLatin1Char('/');
+        for (const auto &key : targetKeys) described.append(prefix + key.toString());
+        for (const auto &key : sharedKeys) described.append(key.toString());
+        for (auto it = candidate.save.values.values.begin(); it != candidate.save.values.values.end(); ++it) actual.append(it.key());
+        described.sort(); actual.sort();
+        check(described == actual && targetKeys.size() + sharedKeys.size() == candidate.save.values.values.size(),
+            "target and shared key lists exactly partition every prepared write without omissions or duplicates");
+        check(targetKeys.contains(QString::fromLatin1(COMMONMAPPINGDATA)) && targetKeys.contains(QString::fromLatin1(MACROLIST))
+            && targetKeys.contains(QString::fromLatin1(SYNCGROUPNOTES)) && targetKeys.contains(QStringLiteral("MappingTable_TabNameList"))
+            && targetKeys.contains(QStringLiteral("KeyMapData_OriginalKeys")),
+            "target footprint includes all Tab payloads, common backup, profile macros and sync notes");
+        check(sharedKeys.contains(QString::fromLatin1(IGNOREWINDOWINFO_RULES)) && sharedKeys.contains(QString::fromLatin1(MACROLIST_UNIVERSAL))
+            && sharedKeys.contains(QString::fromLatin1(SETTINGSELECT)) && sharedKeys.contains(QString::fromLatin1(LAST_WINDOWPOSITION))
+            && !sharedKeys.contains(QString::fromLatin1(SETTINGSELECT_ORDER_LIST)),
+            "shared footprint includes global values, ignore rules, universal macros and startup selection; deferred order is separate");
+        check(scope.value(QStringLiteral("startup_selection_after")) == selectedGroup
+            && scope.value(QStringLiteral("configuration_order_action")).isNull(),
+            "current profile or global save explicitly describes startup selection and has no new-profile order action");
+        if (!globalSource) {
+            const auto order = fresh.scope.value(QStringLiteral("configuration_order_action")).toObject();
+            check(fresh.scope.value(QStringLiteral("target")).toObject().value(QStringLiteral("create_new")).toBool()
+                && order.value(QStringLiteral("kind")) == QStringLiteral("append_if_missing")
+                && order.value(QStringLiteral("key")) == QString::fromLatin1(SETTINGSELECT_ORDER_LIST)
+                && order.value(QStringLiteral("group")) == QStringLiteral("Context87New"),
+                "new target declares the original order normalization operation without simulating QSettings writes");
+            check(existing.scope.value(QStringLiteral("target")).toObject().value(QStringLiteral("overwrite_confirmation_required")).toBool()
+                && existing.scope.value(QStringLiteral("configuration_order_action")).isNull(),
+                "overwrite consent is separate from full-scope consent and never appends new-profile order");
+        }
+        {
+            QScopedValueRollback<bool> cleanFlag(mapper->m_SaveSettingDirty, false);
+            const auto clean = prepare(selectedGroup);
+            check(clean.ok() && clean.scope.value(QStringLiteral("confirmation_required")).toBool()
+                && clean.scope.value(QStringLiteral("draft_policy")) == scope.value(QStringLiteral("draft_policy")),
+                "a clear dirty flag cannot omit shared draft scope or suppress required confirmation");
+        }
         for (int variant = 0; variant != 5; ++variant) {
             auto stale = request;
             if (variant == 0) stale.connectionId.clear();
@@ -3263,39 +3322,39 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
             if (variant == 3) ++stale.permissionEpoch;
             if (variant == 4) stale.scopes = Read;
             const auto rejected = mapper->prepareAutomationSettingSave(stale, QStringLiteral("Payload82Seed"));
-            check(!rejected.ok() && rejected.errorCode == QStringLiteral("not_authorized") && rejected.context.isEmpty()
+            check(!rejected.ok() && rejected.errorCode == QStringLiteral("not_authorized") && rejected.context.isEmpty() && rejected.scope.isEmpty()
                 && rejected.save.revision.isEmpty() && rejected.save.values.values.isEmpty(), "stale or reduced request identity is rejected without a partial candidate");
         }
         auto *rows = QKeyMapper::s_KeyMappingTabInfoList.first().KeyMappingData;
         if (!rows || rows->isEmpty()) return {{QStringLiteral("passed"), false}};
         const auto pure = rows->first().Pure_OriginalKeys;
         rows->first().Pure_OriginalKeys.append(QStringLiteral("Context87Derived"));
-        const auto changed = prepare(QStringLiteral("Payload82Seed"));
+        const auto changed = prepare(selectedGroup);
         rows->first().Pure_OriginalKeys = pure;
         check(changed.ok() && changed.save.revision != candidate.save.revision
             && changed.context.value(QStringLiteral("source_snapshot")) != candidate.context.value(QStringLiteral("source_snapshot")),
             "derived source content omitted from INI still invalidates the complete source binding");
-        const auto restored = prepare(QStringLiteral("Payload82Seed"));
+        const auto restored = prepare(selectedGroup);
         check(restored.ok() && restored.save.revision == candidate.save.revision, "restoring the synthetic source field recovers the original candidate");
         auto *entry = mapper->findChild<QPushButton *>(QStringLiteral("mappingAdvancedSettingButton"));
         if (!entry) return {{QStringLiteral("passed"), false}};
         clickMappingButton(entry);
-        const auto busy = prepare(QStringLiteral("Payload82Seed"));
+        const auto busy = prepare(selectedGroup);
         check(mapper->m_MappingAdvancedDialog->isVisible() && !busy.ok()
             && busy.save.values.error == QKeyMapper::SettingSaveValues::Error::EditorBusy && busy.save.values.values.isEmpty(),
             "real open mapping editor prevents authenticated candidate preparation");
         QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), escaped(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
         QCoreApplication::sendEvent(mapper->m_MappingAdvancedDialog, &escape); QCoreApplication::sendEvent(mapper->m_MappingAdvancedDialog, &escaped);
-        const auto closed = prepare(QStringLiteral("Payload82Seed"));
+        const auto closed = prepare(selectedGroup);
         check(closed.ok() && closed.save.revision == candidate.save.revision, "normal editor close restores the same authenticated candidate");
         QKeyMapper_Worker::s_SourceReadAccess.observeRuntimeLifecycle();
-        const auto lifecycle = prepare(QStringLiteral("Payload82Seed"));
+        const auto lifecycle = prepare(selectedGroup);
         check(!lifecycle.ok() && lifecycle.errorCode == QStringLiteral("context_busy") && lifecycle.save.values.values.isEmpty()
             && lifecycle.save.revision.isEmpty(), "new runtime lifecycle invalidates pristine access even while the worker sample remains stopped");
     }
     if (!ini.open(QIODevice::ReadOnly)) return {{QStringLiteral("passed"), false}};
     check(ini.readAll() == bytes && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load
-        && mapper->m_AutomationSourceEpoch == epoch && mapper->m_LoadedMappingSettingGroup == QStringLiteral("Payload82Seed")
+        && mapper->m_AutomationSourceEpoch == epoch && mapper->m_LoadedMappingSettingGroup == selectedGroup
         && mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
         "preparation preserves actual INI, dirty, load/source epochs, loaded profile and GUI destination text");
     return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},

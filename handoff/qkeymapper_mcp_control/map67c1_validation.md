@@ -414,3 +414,17 @@ cache-after.json核实10520仍active／cache_available=true、零owned／unresol
 用户新授权至今日18:30，技能创建24956、instance4f384b60c3ca43e1a9c2bfd768020809／generation1，最终status仍active／cache_available=true且零owned／unresolved／pending／current_action／current_job。历史23316／25608未知请求保留、不重放或接管。原始六份case、认证fixture返回、构建／部署、EXE、最终补丁／逆向检查及evidence-summary.json均在本机out/mcp_save_context_w11_20261027，不随Git。
 
 独立本地提交切点，不推送。当前全局源动态分支、调用中并发变化／权限丢失、五秒预算超时、其他草稿范围／确认、实际显式提交／到期／去重及操作查询仍待接续；SAVE-85文件身份／跨进程事务缺口保留。工具12／能力8，C1-B2／M1未完成。未增加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／设备／性能或三语言布局；PC-W10证据保持历史范围。
+
+## SAVE-88：完整候选写入范围与草稿确认声明（2026-10-27，PC-W11）
+
+基于2957ef49，仅在私有AutomationSettingSavePreparation增加scope，按实际OrderedMap载荷分为目标相对键及完整共享键，保留源／目标配置种类、新建／覆盖确认意图、实际SettingSelect值及原appendSettingSelectOrderIfMissing动作／键。排序操作有原规范化语义，不模拟临时INI写入或预测最后值；它与直接值载荷分别声明。范围由已绑定的完整源、目标、载荷和顺序意图确定，不接受调用方自报范围。
+
+明确mode=full_gui_save、key_semantics=write_footprint_not_diff、draft_policy=all_loaded_configuration_and_shared_drafts、change_attribution=unavailable、confirmation_required=true；列全范围不等于已识别每个草稿的来源，也不表示无其他草稿。dirty=false不能免除范围确认。scope在原候选失败路径清空；实际预览同意／覆盖同意和提交前复核须由后续执行层强制，当前没有保存工具或自动写盘。GUI保存体仍与SAVE-87／86逐字相同，未改Worker、权限、manifest、协议、依赖或缓存核心。
+
+沿settings_save_context真实认证维护夹具，双Qt各configure30项／read4项／global28项，六进程均passed=true／native exit0，共124项。global只在本用例INI将Payload82Seed换为QKeyMapperGlobalSetting后正常启动，不直接调用加载函数，验证接受明确全局目标、拒绝新建／覆盖另名；不是普通GUI切换基线。目标／共享键排序后与全部候选键精确相等，包含所有Tab、共通备份、普通宏／同步说明和共享全局／规则／通用宏／启动选择；当前目标无排序，新建排序与覆盖确认分别核对。夹具临时清dirty并恢复，准备仍要求全范围确认；原INI字节、dirty、加载／源代次、载入组及名称文本不变，源派生／真实编辑窗／新运行修订拒绝沿受影响认证用例重验。SAVE-85快照及未变GUI保存按各自原版本范围复用，没有重复其已过验收。
+
+同机既有锁环境、双Qt官方x64／MSVC19.44；两份普通Release维护增量构建native exit0，Qt6零警告、Qt5仅原qtmain例外，本片无编译或原生用例失败。EXE在out/mcp_save_scope_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveScope88_*_runtime.exe，原requireAdministrator，经同一Medium24956和公共定义登记／perform启动；父8192、产品12288、same_login=true，实际QkmSaveScope88_<UUID>私有桌面，退出／创建身份见各start／closed.json，无Default、映射或系统输入。
+
+最终缓存仍active／cache_available=true，18:30截止不变、零owned／unresolved／pending／current_action；原始case、真实认证fixture响应、构建／部署／EXE、完整补丁／逆向检查和evidence-summary.json保留在本机out/mcp_save_scope_w11_20261027，不随Git。运行器最后一行继承了snapshot regression文字标签，实际六个原始case为configure／read／global，未执行snapshot；原日志不改写，摘要按实际记录计数，后续本地辅助脚本的末行已改正。
+
+独立本地提交切点，不推送。这是范围描述及确认要求，不是正式预览／同意或执行守卫的验收；不宣称精确字段变化归属、真实映射／停止、并发变化／权限丢失／预算超时、跨进程磁盘事务、到期／去重／结果查询或完整MCP闭环通过。工具12／能力8，C1-B2／M1未完成；未增加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／设备／性能或三语言布局，PC-W10保留历史范围。

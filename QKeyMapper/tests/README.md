@@ -185,6 +185,8 @@ format只改本用例INI；write分支用只读共享句柄短时阻止自有INI
 
 `settings_save_context`正常加载同一[完整夹具](sendinput_lifecycle/full_save_fixture.ini.example)。维护目标使用本用例out内的独立私有配对目录；`QKM_CONTEXT_CLIENT_PID`／`QKM_CONTEXT_CLIENT_CREATED`／`QKM_CONTEXT_CLIENT_EXE`必须同时匹配实际桥接进程，测试代码才批准固定权限。普通Python用实际桥接完成认证并发送一次固定`qkm_get_state`，维护handler验证私有候选后只返回fixture标记；没有生产保存方法或新增MCP工具。
 
-`QKM_CONTEXT_VARIANT=configure`验证实际Read＋Configure请求、完整源及实例绑定、显式当前／新建／覆盖目标、非法目标、五种陈旧请求、真实编辑窗拒绝及恢复。仅由夹具改变并恢复派生源字段，核对未入INI的内容仍使完整修订失效；最后用既有运行修订观察器模拟新活动，核对Worker STOPPED采样不能单独放行。`read`使用真实Read配对，确认不返回候选载荷；回复完成后的原请求同样失效。外部控制器保持Medium，目标沿原manifest在公共登记的自有私有桌面运行，核对原始INI、dirty、加载／源代次及GUI名称文本不变；无需Default或系统输入。
+`QKM_CONTEXT_VARIANT=configure`验证实际Read＋Configure请求、完整源及实例绑定、显式当前／新建／覆盖目标、非法目标、五种陈旧请求、真实编辑窗拒绝及恢复。`global`仅在本用例INI把Payload82Seed替换为QKeyMapperGlobalSetting，正常启动加载全局源，验证明确全局保存及拒绝另名；不是普通GUI切换基线。仅由夹具改变并恢复派生源字段，核对未入INI的内容仍使完整修订失效；最后用既有运行修订观察器模拟新活动，核对Worker STOPPED采样不能单独放行。`read`使用真实Read配对，确认不返回候选载荷或范围；回复完成后的原请求同样失效。外部控制器保持Medium，目标沿原manifest在公共登记的自有私有桌面运行，核对原始INI、dirty、加载／源代次及GUI名称文本不变；无需Default或系统输入。
 
-这是认证组件接线及只读候选验证；不代替独立GUI保存基线、真正运行／停止验收、全局源动态分支、调用中并发变更、预算超时、保存范围／其他草稿确认或正式MCP提交。按受影响输入回归`settings_save_snapshot`，未变的GUI保存结果沿SAVE-86有效范围复用。
+SAVE-88另核对候选scope为full_gui_save，目标／共享键精确分割全部准备载荷且无重复，包含Tab／共通备份／普通宏／同步说明及全局／忽略规则／通用宏／启动选择；新配置排序动作独立声明，保留原规范化操作，不预测最终QSettings分组写入。完整范围始终要求确认，草稿归属明确unavailable；夹具临时把dirty设false再恢复，核对它不能免除共享范围或确认。描述是写入足迹，不是精确内容diff；实际确认与执行守卫仍由后续实现。
+
+这是认证组件接线及只读候选验证；不代替独立GUI保存基线、真正运行／停止验收、调用中并发变更、预算超时或正式MCP提交。SAVE-87按受影响输入回归settings_save_snapshot；SAVE-88不重跑未变的快照／GUI保存路径，沿各自原版本有效范围复用。

@@ -22672,6 +22672,7 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
         result.save.values.appendSettingOrder = false;
         result.save.revision.clear();
         result.context = {};
+        result.scope = {};
         return result;
     };
     auto &server = m_McpControlDialog->server();
@@ -22705,6 +22706,29 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
     result.save = prepareSettingSave(requestedName, selected, globalSelected,
         ui->languageComboBox->currentIndex(), contextRevision);
     if (!result.save.ok()) return fail(QStringLiteral("save_preparation_failed"));
+    QJsonArray targetKeys, sharedKeys;
+    const QString prefix = result.save.target.settingName + QLatin1Char('/');
+    for (auto it = result.save.values.values.begin(); it != result.save.values.values.end(); ++it) {
+        if (it.key().startsWith(prefix)) targetKeys.append(it.key().mid(prefix.size()));
+        else sharedKeys.append(it.key());
+    }
+    // This is the complete write footprint, not an attribution of changes to a mapping request or dirty flag.
+    result.scope = {{QStringLiteral("schema_version"), 1}, {QStringLiteral("mode"), QStringLiteral("full_gui_save")},
+        {QStringLiteral("source_configuration"), snapshot.value(QStringLiteral("configuration_selection"))},
+        {QStringLiteral("target"), QJsonObject{{QStringLiteral("group"), result.save.target.settingName},
+            {QStringLiteral("kind"), result.save.target.saveGlobalSetting ? QStringLiteral("global") : QStringLiteral("saved_profile")},
+            {QStringLiteral("create_new"), result.save.target.createNewSetting},
+            {QStringLiteral("overwrite_confirmation_required"), result.save.target.requiresOverwriteConfirmation}}},
+        {QStringLiteral("key_semantics"), QStringLiteral("write_footprint_not_diff")},
+        {QStringLiteral("target_write_keys"), targetKeys}, {QStringLiteral("shared_write_keys"), sharedKeys},
+        {QStringLiteral("startup_selection_after"), result.save.values.values.value(QString::fromLatin1(SETTINGSELECT)).toString()},
+        {QStringLiteral("configuration_order_action"), result.save.values.appendSettingOrder
+            ? QJsonValue(QJsonObject{{QStringLiteral("kind"), QStringLiteral("append_if_missing")},
+                {QStringLiteral("key"), QString::fromLatin1(SETTINGSELECT_ORDER_LIST)},
+                {QStringLiteral("group"), result.save.target.settingName}}) : QJsonValue(QJsonValue::Null)},
+        {QStringLiteral("draft_policy"), QStringLiteral("all_loaded_configuration_and_shared_drafts")},
+        {QStringLiteral("change_attribution"), QStringLiteral("unavailable")},
+        {QStringLiteral("confirmation_required"), true}};
     if (!authorized()) return fail(QStringLiteral("not_authorized"));
     // Only source copies and the final lifecycle fence hold this lock; disk work stays outside it.
     QMutexLocker sourceAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());

@@ -2216,6 +2216,7 @@ private:
     struct AutomationSettingSavePreparation {
         SettingSavePreparation save;
         QJsonObject context;
+        QJsonObject scope;
         QString errorCode;
         bool ok() const { return errorCode.isEmpty() && save.ok(); }
     };
