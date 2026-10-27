@@ -83,7 +83,8 @@ public:
     static QJsonObject fullSavePayload(QKeyMapper *mapper, bool cold);
     static QJsonObject saveDependencies(QKeyMapper *mapper);
     static QJsonObject saveSnapshot(QKeyMapper *mapper);
-    static QJsonObject saveResult(QKeyMapper *mapper, bool cold);
+    static QJsonObject saveResult(QKeyMapper *mapper, bool cold, bool guiOnly = false,
+        const QkmAutomation::AutomationRequest *request = nullptr);
     static void startSaveContext(QKeyMapper *mapper);
     static QJsonObject saveContext(QKeyMapper *mapper, const QkmAutomation::AutomationRequest &request);
     static QJsonObject tableState(QKeyMapper *mapper);
@@ -1235,7 +1236,7 @@ void installLifecycleTest()
             });
             return;
         }
-        if (guiMode == QStringLiteral("settings_save_context")) {
+        if (guiMode == QStringLiteral("settings_save_context") || guiMode == QStringLiteral("settings_prepared_save")) {
             QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper::getInstance());
             return;
         }
@@ -3033,7 +3034,8 @@ QJsonObject QkmMappingAdditionTestAccess::profileOptionSave(QKeyMapper *mapper, 
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("panel_key_signals"), buttonSignals}};
 }
 
-QJsonObject QkmMappingAdditionTestAccess::saveResult(QKeyMapper *mapper, bool cold)
+QJsonObject QkmMappingAdditionTestAccess::saveResult(QKeyMapper *mapper, bool cold, bool guiOnly,
+    const QkmAutomation::AutomationRequest *request)
 {
     using namespace QKeyMapperConstants;
     bool passed = true;
@@ -3071,14 +3073,17 @@ QJsonObject QkmMappingAdditionTestAccess::saveResult(QKeyMapper *mapper, bool co
         auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
         if (!name || !save) return {{QStringLiteral("passed"), false}};
         const QString requested = variant == QStringLiteral("invalid") ? QStringLiteral("bad[]") : target;
-        name->setFocus();
-        QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
-        QCoreApplication::sendEvent(name, &select); QCoreApplication::sendEvent(name, &selected);
-        for (const QChar character : requested) {
-            QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
-            QCoreApplication::sendEvent(name, &press); QCoreApplication::sendEvent(name, &release);
+        const QString nameBefore = name->text();
+        if (!request) {
+            name->setFocus();
+            QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+            QCoreApplication::sendEvent(name, &select); QCoreApplication::sendEvent(name, &selected);
+            for (const QChar character : requested) {
+                QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+                QCoreApplication::sendEvent(name, &press); QCoreApplication::sendEvent(name, &release);
+            }
+            check(name->text() == requested, "Qt input enters the independent save target");
         }
-        check(name->text() == requested, "Qt input enters the independent save target");
         if (variant == QStringLiteral("reload")) {
             if (!QKeyMapper::KeyMappingDataList || QKeyMapper::KeyMappingDataList->isEmpty()) return {{QStringLiteral("passed"), false}};
             // Component fault injection; ordinary GUI editors reject this source value.
@@ -3106,20 +3111,66 @@ QJsonObject QkmMappingAdditionTestAccess::saveResult(QKeyMapper *mapper, bool co
             if (box && box->button(QMessageBox::No)) { answer.stop(); ++replies; clickMappingButton(box->button(QMessageBox::No)); }
         });
         answer.start(10);
-        const auto outcome = mapper->saveKeyMapSettingWithResult(true);
+        QKeyMapper::SettingSaveResult outcome;
+        if (request) {
+            const auto candidate = mapper->prepareAutomationSettingSave(*request, requested);
+            check(candidate.ok() && candidate.save.target.settingName == target && name->text() == nameBefore,
+                "real authorized request prepares an explicit target without editing the GUI name");
+            if (!candidate.ok()) { answer.stop(); return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}}; }
+            auto invalid = candidate.save;
+            invalid.revision.clear();
+            const auto refused = mapper->savePreparedSettingWithResult(invalid, true);
+            check(refused.failure == QKeyMapper::SettingSaveResult::Failure::ConfigurationUnavailable
+                && !refused.diskSaved && !refused.reloaded && disk() == beforeSave
+                && mapper->m_MappingLoadGeneration == load && name->text() == nameBefore,
+                "invalid prepared input is refused without disk, GUI-name or load changes");
+            if (variant == QStringLiteral("current")) {
+                invalid = candidate.save;
+                invalid.configurationPath += QStringLiteral(".other");
+                const auto wrongPath = mapper->savePreparedSettingWithResult(invalid, true);
+                check(wrongPath.failure == QKeyMapper::SettingSaveResult::Failure::ConfigurationUnavailable
+                    && disk() == beforeSave && mapper->m_MappingLoadGeneration == load,
+                    "the persistence primitive cannot redirect a prepared payload to another file");
+                const auto statusBefore = mapper->m_KeyMapStatus;
+                mapper->m_KeyMapStatus = QKeyMapper::KEYMAP_STOPPING;
+                const auto stopping = mapper->savePreparedSettingWithResult(candidate.save, true);
+                mapper->m_KeyMapStatus = statusBefore;
+                check(stopping.failure == QKeyMapper::SettingSaveResult::Failure::StateRejected
+                    && disk() == beforeSave && mapper->m_MappingLoadGeneration == load,
+                    "a component stopping-state sample rejects persistence without pretending to exercise actual cleanup");
+                const QByteArray changed = beforeSave + QByteArray("\n; prepared92 external disk revision\n");
+                const auto replaceDisk = [&](const QByteArray &bytes) {
+                    QSaveFile file(path);
+                    return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
+                };
+                if (!replaceDisk(changed)) return {{QStringLiteral("passed"), false}};
+                const auto staleDisk = mapper->savePreparedSettingWithResult(candidate.save, true);
+                const bool rejectedDisk = staleDisk.failure == QKeyMapper::SettingSaveResult::Failure::ConfigurationUnavailable
+                    && disk() == changed && mapper->m_MappingLoadGeneration == load;
+                if (!replaceDisk(beforeSave)) return {{QStringLiteral("passed"), false}};
+                check(rejectedDisk, "changed raw disk bytes reject the prepared payload before a real QSettings is constructed");
+            }
+            outcome = mapper->savePreparedSettingWithResult(candidate.save, true);
+            if (!reloaded) check(name->text() == (saved ? QString() : nameBefore),
+                "write failure preserves the prior GUI name and reload failure retains the shared clear behavior");
+        }
+        else if (guiOnly) clickMappingButton(save);
+        else outcome = mapper->saveKeyMapSettingWithResult(true);
         using Failure = QKeyMapper::SettingSaveResult::Failure;
         const Failure expected = variant == QStringLiteral("no") ? Failure::OverwriteCancelled
             : (variant == QStringLiteral("invalid") ? Failure::InvalidTarget
             : (variant == QStringLiteral("format") ? Failure::ConfigurationUnavailable
             : (writeFailure ? Failure::WriteFailed : (variant == QStringLiteral("reload") ? Failure::ReloadFailed : Failure::None))));
-        check(outcome.failure == expected && outcome.settingName == (variant == QStringLiteral("invalid") ? QString() : target),
-            "structured save outcome retains the precise phase and accepted target");
-        check(outcome.diskSaved == saved && outcome.reloaded == reloaded
-            && outcome.backupAttempted == reloaded && outcome.backupSucceeded == (reloaded && variant != QStringLiteral("backup")),
-            "disk sync, reload and backup results are independent and match actual outcomes");
-        execution = {{QStringLiteral("failure"), int(outcome.failure)}, {QStringLiteral("setting_name"), outcome.settingName},
-            {QStringLiteral("disk_saved"), outcome.diskSaved}, {QStringLiteral("reloaded"), outcome.reloaded},
-            {QStringLiteral("backup_attempted"), outcome.backupAttempted}, {QStringLiteral("backup_succeeded"), outcome.backupSucceeded}};
+        if (!guiOnly) {
+            check(outcome.failure == expected && outcome.settingName == (variant == QStringLiteral("invalid") ? QString() : target),
+                "structured save outcome retains the precise phase and accepted target");
+            check(outcome.diskSaved == saved && outcome.reloaded == reloaded
+                && outcome.backupAttempted == reloaded && outcome.backupSucceeded == (reloaded && variant != QStringLiteral("backup")),
+                "disk sync, reload and backup results are independent and match actual outcomes");
+            execution = {{QStringLiteral("failure"), int(outcome.failure)}, {QStringLiteral("setting_name"), outcome.settingName},
+                {QStringLiteral("disk_saved"), outcome.diskSaved}, {QStringLiteral("reloaded"), outcome.reloaded},
+                {QStringLiteral("backup_attempted"), outcome.backupAttempted}, {QStringLiteral("backup_succeeded"), outcome.backupSucceeded}};
+        }
         answer.stop();
         check(replies == (variant == QStringLiteral("no") ? 1 : 0), "real overwrite refusal remains independent of the save result representation");
         if (!saved) check(disk() == beforeSave && mapper->m_MappingLoadGeneration == load && mapper->m_LoadedMappingSettingGroup == source,
@@ -3150,7 +3201,9 @@ QJsonObject QkmMappingAdditionTestAccess::saveResult(QKeyMapper *mapper, bool co
     Q_UNUSED(dirty);
     return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
         {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
-        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("shared_execution"), !cold}, {QStringLiteral("save_result"), execution}};
+        {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("shared_execution"), !cold && !guiOnly},
+        {QStringLiteral("save_result"), execution}, {QStringLiteral("gui_baseline"), guiOnly},
+        {QStringLiteral("prepared_execution"), request != nullptr}};
 }
 
 void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
@@ -3181,7 +3234,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             server.replyError(request.connectionId, request.requestId, QStringLiteral("invalid_arguments"), QStringLiteral("Fixed save-context fixture only."));
             return;
         }
-        auto evidence = saveContext(mapper, request);
+        auto evidence = qEnvironmentVariable("QKM_LIFECYCLE_CASE") == QStringLiteral("settings_prepared_save")
+            ? saveResult(mapper, false, false, &request) : saveContext(mapper, request);
         const bool replied = server.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}});
         const auto consumed = mapper->prepareAutomationSettingSave(request, QStringLiteral("Payload82Seed"));
         const bool refused = replied && !consumed.ok() && consumed.errorCode == QStringLiteral("not_authorized")
@@ -4431,7 +4485,8 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_hotkey_save"), QStringLiteral("settings_hotkey_cold"),
         QStringLiteral("settings_payload_save"), QStringLiteral("settings_payload_cold"),
         QStringLiteral("settings_save_dependencies"), QStringLiteral("settings_save_snapshot"),
-        QStringLiteral("settings_result_save"), QStringLiteral("settings_result_cold"), QStringLiteral("settings_save_context")};
+        QStringLiteral("settings_result_save"), QStringLiteral("settings_result_cold"), QStringLiteral("settings_save_context"),
+        QStringLiteral("settings_prepared_save")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

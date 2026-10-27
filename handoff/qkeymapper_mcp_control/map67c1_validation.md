@@ -474,3 +474,19 @@ cache-after.json核实10520仍active／cache_available=true、零owned／unresol
 同机既有锁环境及官方Qt6.8.3／Qt5.15.2 x64／MSVC19.44。旧Qt6及最终双Qt普通Release维护增量构建native exit0，Qt6零警告、Qt5仅原qtmain例外。EXE在out/mcp_save_name_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveName91_*_runtime.exe，原requireAdministrator；同一Medium24956及公共登记／perform，父8192、目标12288、same_login=true，实际QkmSaveName91_<UUID>私有桌面，原PID／创建时间／native退出可查，无Default、映射或系统输入。最后status仍active／cache_available=true，18:30截止不变、零owned／unresolved／pending／current_action／current_job。
 
 本机out/mcp_save_name_w11_20261027保留before／after原case、旧EXE、身份、构建／部署、各补丁／逆向检查／预期字节及evidence-summary.json，均不随Git；前序证据不覆盖。原GUI保存／冷读、只读观察器寿命沿SAVE-90当前有效范围复用，不重复其22进程。此片为独立本地提交切点，不推送；没有新增MCP工具，12工具／8能力、C1-B2／M1仍未整体完成。实际显式写入、范围／覆盖确认、执行时生命周期／权限／到期、去重／结果查询及文件事务仍待后续；不把名称依赖补齐当作全部编辑草稿已归属或全部副作用已验。未加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／设备／性能或三语言布局，PC-W10保留历史范围。
+
+## SAVE-92：明确目标／完整准备载荷的私有持久化（2026-10-27，PC-W11）
+
+基于8327d7bd，CPP仅新增51行savePreparedSettingWithResult及一条私有声明，原GUI保存体／共用尾部逐字不变。方法拒绝无效准备、非固定配置路径、不允许的当前编辑／停止状态、变化原始磁盘字节或缓存内容，再写全部准备载荷，执行原新组排序和finalizeSettingSave。默认热键／失焦、运行行同步、共通备份同步及CategoryFilterStateGuard保持既有语义；不会临时设置名称控件或调用加载函数伪造GUI输入。它是生产尚无调用方的持久化原语，不是自动化授权或并发提交许可；无Worker、协议、manifest或gsudo核心变更。大文件唯一锚点补丁、dry-run／numstat、精确预期字节及逆向检查通过。
+
+before在产品8327d7bd未修改时，以实际Qt名称输入及Save按钮分别执行current／new／write_current／write_new／reload／backup；六组中除reload外均有独立冷读，双Qt各58项／11进程，共116项／22个native exit0。旧EXE及identity归档并核对实际SHA。after在相同EXE路径加载新鲜完整夹具，真实桥接认证的固定get_state维护handler只准备显式目标并调用私有方法，不输入目标名称；六组保存及五组冷读各82项，共164项／22个native exit0。两阶段共44进程／280项，formal_mcp=false，不冒充正式MCP保存。
+
+after首轮三个产品进程（Qt6当前warm／cold、新目标warm）均native exit0，控制脚本在新目标完整字节比较时exit1，后续未派发。实际差异仅新组MacroList／SyncGroupNotes从组首移到组末，314个键及编码值相同；不修改产品或EXE，保留失败脚本和当时产物，改为全节／键／原始编码值严格对照，并单记raw_bytes_equal。比较器对改值、缺键和重复键的普通权限自检通过；只忽略排列、空行／注释及换行形式，不忽略任何键值或排序键。三个已完成进程未重跑，继续新目标冷读及剩余固定场景。最终12组275／314／64／64／314／314键全部编码值一致；双Qtnew／reload／backup六组保留两键排列差异，其他六组字节相同。Qt6 current的原字节断言在首次脚本推进到new前已完成，其当时完整文件未单独另存，不能补造原材料。
+
+after核对实际结果中的diskSaved／reloaded／backupAttempted／backupSucceeded；两种写锁返回WriteFailed，原INI／加载代次不变，解锁后新QSettings读者及独立冷读均无失败pending补写。人工INVALID_RELOAD86仍为已写盘但重载失败、不备份，非普通GUI可达输入；备份目录负向仍为已写且重载成功／备份失败，临时目录及时移除。当前目标另检查无效准备、改向路径、组件STOPPING和变化磁盘字节在写入前拒绝；STOPPING只直接设置并恢复本夹具状态，未执行映射启停。写失败保留提交前GUI名称，重载失败沿既有共享尾部清空；成功后名称／dirty及冷读分别检查。
+
+既有同机锁环境、官方Qt6.8.3／Qt5.15.2 x64、MSVC19.44；最终before／after双Qt普通Release维护增量native exit0，Qt6零警告、Qt5仅原qtmain例外。最初after构建期间补了定向测试断言，保留initial日志并在最终部署前重新增量编译测试文件，不混称最初EXE包含后来断言。EXE为out/mcp_save_prepared_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSavePrepared92_*_runtime.exe，原requireAdministrator；普通Medium24956经公共登记／perform，父8192、目标12288、same_login=true，实际QkmSavePrepared92_<UUID>私有桌面。各PID／创建时间／native退出在原start／closed.json，无Default、系统输入或映射启动。
+
+最后cache-after仍active／cache_available=true、18:30截止不变，零owned／unresolved／pending／current_action／current_job；23316／25608历史未知请求不因此解决。before／after原case、旧EXE／身份、INI基线／产物及比较、首次脚本／差异、构建部署、源码补丁／预期字节和evidence-summary.json均在本机out/mcp_save_prepared_w11_20261027，不随Git。原SAVE-86基线元数据另轻量核对18份shared_execution=false、save_result为空且passed，纠正早期ignored助手检查不存在execution字段的弱断言；原实际GUI路径及EXE来源未因此变化，不重跑旧验收。
+
+独立本地提交切点，不推送。实际用户权限／完整范围及覆盖确认、到期／预览消费、源与草稿执行重检、生命周期写入栅栏、文件身份／跨进程事务、去重和结果查询仍待C1-C；私有方法的普通状态／缓存预检不能替代这些门槛。工具12／能力8、C1-B2／M1未整体完成。全局源、共通Tab恢复和缺省热键空输入的本片动态覆盖未增加；原字段等价证据沿原范围复用。未增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、性能或三语言布局；PC-W10保留原历史范围。

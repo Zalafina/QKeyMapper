@@ -2224,6 +2224,7 @@ private:
         QString errorCode;
         bool ok() const { return errorCode.isEmpty() && save.ok(); }
     };
+    SettingSaveResult savePreparedSettingWithResult(const SettingSavePreparation &preparation, bool showSuccessPopup);
     AutomationSettingSavePreparation prepareAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
         const QString &requestedName) const;
     bool hasOpenMappingEditor() const;

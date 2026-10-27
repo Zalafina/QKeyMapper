@@ -22802,6 +22802,57 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
     return result;
 }
 
+QKeyMapper::SettingSaveResult QKeyMapper::savePreparedSettingWithResult(
+    const SettingSavePreparation &preparation, bool showSuccessPopup)
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    SettingSaveResult result;
+    using Failure = SettingSaveResult::Failure;
+    const auto fail = [&](Failure failure) { result.failure = failure; return result; };
+    // Internal persistence primitive; automation authorization and commit fencing remain caller responsibilities.
+    if (!preparation.ok() || !preparation.target.ok() || preparation.target.settingName.isEmpty()
+        || preparation.values.error != SettingSaveValues::Error::None
+        || preparation.configurationPath != QFileInfo(QString::fromLatin1(CONFIG_FILENAME)).absoluteFilePath())
+        return fail(Failure::ConfigurationUnavailable);
+    result.settingName = preparation.target.settingName;
+    if (!mappingAdditionAllowed(s_KeyMappingTabWidgetCurrentIndex) || automationSourceReadBasis().isEmpty())
+        return fail(Failure::StateRejected);
+    QFile source(preparation.configurationPath);
+    if (source.exists() != preparation.configurationExists) return fail(Failure::ConfigurationUnavailable);
+    if (preparation.configurationExists) {
+        if (!source.open(QIODevice::ReadOnly)) return fail(Failure::ConfigurationUnavailable);
+        const QByteArray data = source.read(QkmAutomation::MaxSourceSnapshotBytes + 1);
+        if (source.error() != QFile::NoError || !source.atEnd() || data != preparation.configurationData)
+            return fail(Failure::ConfigurationUnavailable);
+        source.close();
+    }
+    if (!m_AutomationSettingsReader
+        || compareSettingSaveCache(*m_AutomationSettingsReader, preparation) != SettingSavePreparation::Error::None)
+        return fail(Failure::ConfigurationUnavailable);
+
+    CategoryFilterStateGuard filterGuard(this);
+    syncRuntimeKeyMappingStatesToCurrentTab();
+    QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
+    QVariantMap valuesBeforeSave;
+    const QStringList keysBeforeSave = settingFile.allKeys();
+    for (const QString &key : keysBeforeSave) valuesBeforeSave.insert(key, settingFile.value(key));
+    if (settingFile.status() != QSettings::NoError) return fail(Failure::ConfigurationUnavailable);
+    const int tabIndexBeforeSaveReload = s_KeyMappingTabWidgetCurrentIndex;
+
+    if (s_WindowSwitchKeyString.isEmpty()) s_WindowSwitchKeyString = DISPLAYSWITCH_KEY_DEFAULT;
+    ui->windowswitchkeyLineEdit->clearFocus();
+    if (s_MappingStartKeyString.isEmpty()) updateMappingStartKeyString(MAPPINGSWITCH_KEY_DEFAULT);
+    ui->mappingStartKeyLineEdit->clearFocus();
+    if (s_MappingStopKeyString.isEmpty()) updateMappingStopKeyString(MAPPINGSWITCH_KEY_DEFAULT);
+    ui->mappingStopKeyLineEdit->clearFocus();
+    syncCommonMappingDataForSave();
+    for (auto it = preparation.values.values.begin(); it != preparation.values.values.end(); ++it)
+        settingFile.setValue(it.key(), it.value());
+    if (preparation.values.appendSettingOrder) appendSettingSelectOrderIfMissing(settingFile, result.settingName);
+    return finalizeSettingSave(settingFile, valuesBeforeSave, keysBeforeSave, result, tabIndexBeforeSaveReload, showSuccessPopup);
+}
+
 QKeyMapper::SettingSaveTarget QKeyMapper::analyzeSettingSaveTarget(const QString &requestedName,
     const QString &currentSelectedSetting, bool globalSelected, const QStringList &groups) const
 {
