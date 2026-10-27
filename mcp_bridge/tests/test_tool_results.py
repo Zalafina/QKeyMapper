@@ -21,6 +21,8 @@ def stdio_error_fixture():
     def request(method, arguments):
         if method in ("qkm_get_state", "qkm_get_operation"):
             return {"ok": True, "result": {"outcome": "failed", "error": "save_failed"}}
+        if method == "qkm_apply_changes" and arguments.get("preview_id") == "f" * 32:
+            return {"ok": False, "error": "operation_limit", "message": "Fixed in-flight result capacity rejection."}
         if method in ("qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes"):
             return {"ok": False, "error": "stale_preview", "message": "Fixed fixture rejection."}
         return {"ok": False, "error": codes[arguments["entity"]], "message": "Fixed fixture rejection."}
@@ -45,6 +47,7 @@ class ToolResultTests(unittest.TestCase):
             business_state(dict(after, run=dict(after["run"], sampled_at_utc="not a sample time")))
 
     def test_stdio_business_errors_and_failed_operation_data(self):
+        from jsonschema import Draft202012Validator
         from test_sdk_interop import TOOLS, call
         async def exercise(directory):
             root = Path(__file__).resolve().parents[1]
@@ -52,7 +55,19 @@ class ToolResultTests(unittest.TestCase):
                 args=["-B", "-c", "from test_tool_results import stdio_error_fixture; stdio_error_fixture()"],
                 env={"PYTHONPATH": os.pathsep.join((str(root / "src"), str(root / "tests")))}, cwd=directory)
             async with Client(config) as client:
-                self.assertEqual({tool.name for tool in (await client.list_tools()).tools}, TOOLS)
+                tools = (await client.list_tools()).tools
+                self.assertEqual({tool.name for tool in tools}, TOOLS)
+                schema = next(tool for tool in tools if tool.name == "qkm_preview_changes").model_dump(by_alias=True)["inputSchema"]
+                validator = Draft202012Validator(schema)
+                mapping = {"source_revision": "a" * 64, "source_tab_ref": "a" * 64 + ":source:0",
+                           "original_key": "A", "mapping_key": "B"}
+                save = {"action": "configuration.save", "setting_name": "配置95"}
+                for valid in (mapping, dict(mapping, action="mapping.add"), save):
+                    self.assertFalse(list(validator.iter_errors(valid)), valid)
+                for invalid in ({}, {"action": "configuration.save"}, dict(save, setting_name=None),
+                                dict(save, original_key="A"), dict(mapping, mapping_key=None),
+                                dict(mapping, setting_name="extra"), dict(save, unknown=True)):
+                    self.assertTrue(list(validator.iter_errors(invalid)), invalid)
                 for entity, code in (("configurations", "permission_denied"), ("tabs", "stale_catalog"),
                                      ("mapping_sources", "stale_source"), ("mappings", "context_busy")):
                     arguments = {"entity": entity}
@@ -65,9 +80,13 @@ class ToolResultTests(unittest.TestCase):
                 change = {"source_revision": "a" * 64, "source_tab_ref": "a" * 64 + ":source:0",
                           "original_key": "A", "mapping_key": "B"}
                 for name, arguments in (("qkm_preview_changes", change),
+                        ("qkm_preview_changes", {"action": "configuration.save", "setting_name": "配置95"}),
                         ("qkm_apply_changes", {"preview_id": "b" * 32}),
                         ("qkm_cancel_changes", {"preview_id": "b" * 32})):
                     await call(client, name, arguments, error="stale_preview")
+                capacity = await call(client, "qkm_apply_changes", {"preview_id": "f" * 32}, error="operation_limit")
+                self.assertEqual(capacity["message"], "Fixed in-flight result capacity rejection.")
+                self.assertTrue(capacity["next_steps"])
                 value = await call(client, "qkm_get_operation", {"operation_id": "b" * 32})
                 self.assertEqual(value["result"]["outcome"], "failed")
         with tempfile.TemporaryDirectory() as directory:

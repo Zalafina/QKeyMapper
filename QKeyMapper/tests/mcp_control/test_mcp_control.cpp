@@ -158,6 +158,7 @@ private slots:
     void mappingHelpReference();
     void mappingHelpBoundaries();
     void mappingChangeArguments();
+    void savePreviewArguments();
     void mappingChangeLifecycle();
     void mappingChangeLimits();
     void configurationSaveLifecycle();
@@ -209,12 +210,50 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
         {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
     const auto capabilities = mappingChangeCapabilities();
-    QCOMPARE(capabilities.size(), 4);
+    QCOMPARE(capabilities.size(), 5);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("preview_ttl_ms")).toInt(), 120000);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     const auto operation = capabilities.last().toObject();
     QCOMPARE(operation.value(QStringLiteral("required_scopes")).toInt(), int(Read));
     QVERIFY(!operation.value(QStringLiteral("limitations")).toArray().contains(QStringLiteral("idle_after_cleanup")));
+}
+
+void McpControlTest::savePreviewArguments()
+{
+    const QString method = QStringLiteral("qkm_preview_changes");
+    const QJsonObject valid{{QStringLiteral("action"), QStringLiteral("configuration.save")}, {QStringLiteral("setting_name"), QStringLiteral("配置95日本語")}};
+    const auto save = validateMappingChangeRequest(method, valid);
+    QVERIFY(save.ok() && save.action == MappingChangeAction::SaveConfiguration);
+    QCOMPARE(save.settingName, valid.value(QStringLiteral("setting_name")).toString());
+    auto changed = valid; changed.insert(QStringLiteral("setting_name"), QString(32767, QLatin1Char('a')));
+    QVERIFY(validateMappingChangeRequest(method, changed).ok());
+    changed.insert(QStringLiteral("setting_name"), QString(32768, QLatin1Char('a')));
+    QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    for (const QJsonValue &name : {QJsonValue(QString()), QJsonValue(true), QJsonValue(1), QJsonValue(QJsonValue::Null)}) {
+        changed = valid; changed.insert(QStringLiteral("setting_name"), name);
+        QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    }
+    for (const QString &field : {QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"), QStringLiteral("original_key"),
+            QStringLiteral("mapping_key"), QStringLiteral("insert_row"), QStringLiteral("path"), QStringLiteral("confirm_scope")}) {
+        changed = valid; changed.insert(field, QStringLiteral("not allowed"));
+        QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    }
+    changed = valid; changed.remove(QStringLiteral("action"));
+    QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    for (const QJsonValue &action : {QJsonValue(QStringLiteral("configuration.delete")), QJsonValue(true), QJsonValue(QJsonValue::Null)}) {
+        changed = valid; changed.insert(QStringLiteral("action"), action);
+        QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    }
+    const auto capabilities = mappingChangeCapabilities();
+    const auto capability = capabilities.at(1).toObject();
+    QCOMPARE(capability.value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save.preview"));
+    QCOMPARE(capability.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capability.value(QStringLiteral("read_only")).toBool());
+    QVERIFY(capability.value(QStringLiteral("limitations")).toArray().contains(QStringLiteral("preview_only_apply_unavailable")));
+    const auto schema = capability.value(QStringLiteral("arguments_schema")).toObject();
+    QVERIFY(!schema.value(QStringLiteral("additionalProperties")).toBool());
+    QCOMPARE(schema.value(QStringLiteral("required")).toArray(), QJsonArray({QStringLiteral("action"), QStringLiteral("setting_name")}));
+    QVERIFY(!schema.value(QStringLiteral("properties")).toObject().contains(QStringLiteral("source_revision")));
 }
 
 void McpControlTest::mappingChangeLifecycle()

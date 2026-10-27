@@ -1237,7 +1237,8 @@ void installLifecycleTest()
             });
             return;
         }
-        if (guiMode == QStringLiteral("settings_save_context") || guiMode == QStringLiteral("settings_prepared_save")) {
+        if (guiMode == QStringLiteral("settings_save_context") || guiMode == QStringLiteral("settings_prepared_save")
+            || guiMode == QStringLiteral("settings_save_preview")) {
             QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper::getInstance());
             return;
         }
@@ -3212,6 +3213,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     using namespace QkmAutomation;
     const QString output = qEnvironmentVariable("QKM_LIFECYCLE_RESULT");
     const QString directory = QFileInfo(output).absolutePath();
+    const bool publicPreview = qEnvironmentVariable("QKM_LIFECYCLE_CASE") == QStringLiteral("settings_save_preview");
     if (!directory.contains(QStringLiteral("/out/")) || mapper->m_McpControlDialog->server().isEnabled()) {
         finish(false);
         return;
@@ -3220,7 +3222,33 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     mapper->m_McpControlDialog = control;
     auto &server = control->server();
     QObject::connect(&server, &AutomationSessionServer::pairingRequested, mapper,
-        [&server](const PairingRequest &pending) {
+        [&server, mapper, output, publicPreview](const PairingRequest &pending) {
+            if (publicPreview) {
+                const QByteArray peer = QJsonDocument(QJsonObject{{QStringLiteral("pid"), QString::number(pending.peer.processId)},
+                    {QStringLiteral("created"), QString::number(pending.peer.creationTime)},
+                    {QStringLiteral("executable"), queryProcessExecutable(pending.peer)}}).toJson();
+                QSaveFile file(output + QStringLiteral(".peer"));
+                if (!file.open(QIODevice::WriteOnly) || file.write(peer) != peer.size() || !file.commit()) {
+                    server.rejectPairing(pending.requestId);
+                    return;
+                }
+                auto *approval = new QTimer(mapper);
+                QObject::connect(approval, &QTimer::timeout, mapper, [approval, &server, pending, output]() {
+                    QFile file(output + QStringLiteral(".client"));
+                    if (!file.open(QIODevice::ReadOnly)) return;
+                    const auto expected = QJsonDocument::fromJson(file.read(4096)).object();
+                    if (expected.value(QStringLiteral("pid")).toString() != QString::number(pending.peer.processId)
+                        || expected.value(QStringLiteral("created")).toString() != QString::number(pending.peer.creationTime)
+                        || QFileInfo(expected.value(QStringLiteral("executable")).toString()).canonicalFilePath()
+                            != QFileInfo(queryProcessExecutable(pending.peer)).canonicalFilePath()) return;
+                    approval->stop();
+                    approval->deleteLater();
+                    const quint32 scopes = qEnvironmentVariable("QKM_CONTEXT_VARIANT") == QStringLiteral("read") ? Read : Read | Configure;
+                    server.approvePairing(pending.requestId, scopes);
+                });
+                approval->start(20);
+                return;
+            }
             const bool expected = QString::number(pending.peer.processId) == qEnvironmentVariable("QKM_CONTEXT_CLIENT_PID")
                 && QString::number(pending.peer.creationTime) == qEnvironmentVariable("QKM_CONTEXT_CLIENT_CREATED")
                 && QFileInfo(queryProcessExecutable(pending.peer)).canonicalFilePath()
@@ -3255,12 +3283,58 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
         });
     });
+    if (publicPreview) {
+        QFile ini(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+        if (!ini.open(QIODevice::ReadOnly)) { finish(false); return; }
+        const QByteArray diskBefore = ini.readAll();
+        const bool dirty = mapper->m_SaveSettingDirty;
+        const quint64 load = mapper->m_MappingLoadGeneration, epoch = mapper->m_AutomationSourceEpoch;
+        const QString group = mapper->m_LoadedMappingSettingGroup;
+        const QString name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text();
+        QString sourceError;
+        const QJsonObject sourceBefore = mapper->collectAutomationSourceSnapshot(sourceError);
+        if (!sourceError.isEmpty()) { finish(false); return; }
+        auto calls = QSharedPointer<int>::create(0);
+        server.setRequestHandler([mapper, calls](const AutomationRequest &request) {
+            ++*calls;
+            mapper->handleAutomationRequest(request);
+        });
+        auto *completed = new QTimer(mapper);
+        QObject::connect(completed, &QTimer::timeout, mapper, [=]() {
+            QFile done(output + QStringLiteral(".done"));
+            if (!done.open(QIODevice::ReadOnly)) return;
+            completed->stop();
+            bool passed = true;
+            QJsonArray checks;
+            const auto check = [&](bool value, const QString &label) {
+                checks.append(QJsonObject{{QStringLiteral("check"), label}, {QStringLiteral("passed"), value}});
+                passed = passed && value;
+            };
+            check(QJsonDocument::fromJson(done.readAll()).object().value(QStringLiteral("sdk_passed")).toBool(), QStringLiteral("official SDK exercise completed"));
+            check(*calls > 0, QStringLiteral("requests passed through the production business handler"));
+            QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+            check(actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore, QStringLiteral("public preview and rejected submission preserve complete INI bytes"));
+            check(mapper->m_SaveSettingDirty == dirty, QStringLiteral("public preview preserves dirty state"));
+            check(mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch
+                && mapper->m_LoadedMappingSettingGroup == group, QStringLiteral("public preview preserves load and source identity"));
+            check(mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
+                QStringLiteral("explicit preview targets do not change GUI name text"));
+            QString error;
+            check(mapper->collectAutomationSourceSnapshot(error) == sourceBefore && error.isEmpty(),
+                QStringLiteral("public preview preserves complete source and derived state"));
+            result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+                {QStringLiteral("formal_mcp_save_preview"), true}, {QStringLiteral("formal_mcp_save"), false},
+                {QStringLiteral("handler_calls"), *calls}, {QStringLiteral("saved"), false}, {QStringLiteral("system_input"), false}};
+            finish(passed);
+        });
+        completed->start(20);
+    }
     if (!server.enable()) { finish(false); return; }
     QSaveFile ready(output + QStringLiteral(".ready"));
     const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("discovery"), server.discoveryPath()},
         {QStringLiteral("instance"), server.instanceId()}}).toJson();
     if (!ready.open(QIODevice::WriteOnly) || ready.write(bytes) != bytes.size() || !ready.commit()) { finish(false); return; }
-    QTimer::singleShot(45000, QCoreApplication::instance(), [] { finish(false); });
+    QTimer::singleShot(publicPreview ? 90000 : 45000, QCoreApplication::instance(), [] { finish(false); });
 }
 
 QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const QkmAutomation::AutomationRequest &request)
@@ -4579,7 +4653,7 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_payload_save"), QStringLiteral("settings_payload_cold"),
         QStringLiteral("settings_save_dependencies"), QStringLiteral("settings_save_snapshot"),
         QStringLiteral("settings_result_save"), QStringLiteral("settings_result_cold"), QStringLiteral("settings_save_context"),
-        QStringLiteral("settings_prepared_save")};
+        QStringLiteral("settings_prepared_save"), QStringLiteral("settings_save_preview")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

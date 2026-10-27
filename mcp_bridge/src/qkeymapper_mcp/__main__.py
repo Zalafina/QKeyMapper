@@ -27,6 +27,7 @@ _ERROR_FEEDBACK = {
     "preview_expired": ("预览已过期，未执行本次修改。", "重新查询源并预览，核对后提交新的预览。"),
     "preview_superseded": ("较新的预览已替换原预览。", "核对当前预览内容及其 ID，勿提交旧预览。"),
     "preview_limit": ("待处理预览达到有界上限。", "取消自己的待处理预览或等待过期后重新预览。"),
+    "operation_limit": ("进行中操作已占满结果存储。", "先查询已接受操作；等待完成后核对原预览是否仍有效，再由明确意图提交。"),
     "confirmation_required": ("此次新增还会禁用预览中列出的冲突行。", "向用户说明完整连带变化，取得同意后重新预览并显式确认冲突。"),
     "permission_denied": ("该操作尚未获授权。", "请用户在 QKeyMapper 管理窗口核对并授予所需权限。"),
     "invalid_arguments": ("请求参数不符合接口约束。", "核对工具参数、范围及示例后修正请求。"),
@@ -43,7 +44,7 @@ _ERROR_FEEDBACK = {
 _PRODUCT_ERRORS = frozenset({"context_busy", "stale_catalog", "stale_source", "permission_denied",
     "invalid_arguments", "unsupported_capability", "unsupported_method", "unsupported_query",
     "result_too_large", "item_too_large", "invalid_source_data", "stale_preview", "preview_expired",
-    "preview_superseded", "preview_limit", "confirmation_required"})
+    "preview_superseded", "preview_limit", "operation_limit", "confirmation_required"})
 
 
 def tool_result(value: dict[str, Any]) -> CallToolResult:
@@ -148,19 +149,31 @@ def main() -> None:
 
     @tool(read)
     async def qkm_preview_changes(
-            source_revision: Annotated[str, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")],
-            source_tab_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")],
-            original_key: Annotated[str, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")],
-            mapping_key: Annotated[str, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")],
-            insert_row: Annotated[StrictInt | None, Field(ge=0, le=2147483647)] = None) -> ToolResult:
-        """预览一条基本映射，例如 A→B；每个键限单个大写字母或数字。须 Read＋Configure、当前已加载源表、空闲且停止清理完成、无打开的映射编辑窗。先 qkm_query(mapping_sources) 获取完整源修订及目标引用；insert_row 为从 0 开始的源行位置，省略则追加，不受筛选或共通显示行影响。返回全部连带变化、冲突确认要求及 120 秒预览 ID；新预览替换本客户端旧预览。不写配置、dirty 或磁盘，不自动停止、切表、保存或开始。"""
-        return tool_result(await bridge.preview_changes(source_revision, source_tab_ref, original_key, mapping_key, insert_row))
+            source_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
+            source_tab_ref: Annotated[str | None, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")] = None,
+            original_key: Annotated[str | None, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")] = None,
+            mapping_key: Annotated[str | None, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")] = None,
+            insert_row: Annotated[StrictInt | None, Field(ge=0, le=2147483647)] = None,
+            action: Literal["mapping.add", "configuration.save"] = "mapping.add",
+            setting_name: Annotated[str | None, Field(min_length=1, max_length=32767)] = None) -> ToolResult:
+        """只读预览，先查询实际能力。默认mapping.add保持基本映射调用：四个源／键字段必填，每键限单个大写字母或数字；先qkm_query(mapping_sources)获取真实源引用，insert_row从0开始、缺省追加。configuration.save仅传action及明确setting_name，要求Read＋Configure、加载成功／空闲且清理许可有效、无打开编辑窗；返回完整加载／共享草稿的保存足迹、名称效果及明确目标，不能理解为只保存一行。保存提交尚未接通，apply_supported=false，qkm_apply_changes会拒绝保存预览；不会自动保存或开始。两种预览最多120秒，新预览替换本客户端旧预览，不改配置、dirty或磁盘，不自动停止、切表或关闭编辑窗。"""
+        return tool_result(await bridge.preview_changes(source_revision, source_tab_ref, original_key, mapping_key, insert_row,
+            action=action, setting_name=setting_name))
+
+    preview_definition = next(definition for definition in tools if definition.name == "qkm_preview_changes")
+    preview_definition.parameters["oneOf"] = [
+        {"required": ["source_revision", "source_tab_ref", "original_key", "mapping_key"],
+         "properties": {"action": {"const": "mapping.add"}, "setting_name": {"type": "null"},
+            **{name: {"type": "string"} for name in ("source_revision", "source_tab_ref", "original_key", "mapping_key")}}},
+        {"required": ["action", "setting_name"], "properties": {
+            "action": {"const": "configuration.save"}, "setting_name": {"type": "string"}, **{name: {"type": "null"} for name in
+                ("source_revision", "source_tab_ref", "original_key", "mapping_key", "insert_row")}}}]
 
     @tool(write)
     async def qkm_apply_changes(
             preview_id: Annotated[str, Field(min_length=32, max_length=32, pattern="^[0-9a-f]{32}$")],
             confirm_conflicts: StrictBool = False) -> ToolResult:
-        """提交已审阅的基本映射预览，重新校验身份、权限、完整源、状态及到期；拒绝不产生部分配置修改。只有用户已同意预览列出的禁用冲突行时才传 confirm_conflicts=true。预览单次消费，重复同 ID 返回已知历史结果而不再添加；失败需重新预览。只改内存并保持停止，不保存或启动。超时／断线后先用同 ID 查询 qkm_get_operation；unknown 不代表未发生，不盲目重试。"""
+        """只提交已审阅的基本映射预览；保存预览明确拒绝，不执行保存。重新校验身份、权限、完整源、状态及到期；拒绝不产生部分配置修改。只有用户已同意预览列出的禁用冲突行时才传 confirm_conflicts=true。预览单次消费，重复同ID返回已知历史结果而不再添加；失败需重新预览。只改内存并保持停止，不保存或启动。超时／断线后先用同ID查询qkm_get_operation；unknown不代表未发生，不盲目重试。"""
         return tool_result(await bridge.apply_changes(preview_id, confirm_conflicts))
 
     @tool(connection)
@@ -172,7 +185,7 @@ def main() -> None:
     @tool(read)
     async def qkm_get_operation(
             operation_id: Annotated[str, Field(min_length=32, max_length=32, pattern="^[0-9a-f]{32}$")]) -> ToolResult:
-        """查询本实例／本配对及权限代次内的预览或提交结果，失败状态查询本身仍可成功。结果带采样时间，完成记录为历史事实，不代表当前运行／保存状态。结果最多 64 条、保留 10 分钟；接口重置或进程退出后丢失。unknown 时核对当前配置及源，不能假定未修改或盲目重发。"""
+        """查询本实例／本配对及权限代次内的预览或提交结果，失败状态查询本身仍可成功。保存预览另带所属实例／配置组／保存修订。结果带采样时间，完成记录为历史事实，不代表当前运行／保存状态；最多64条，进行中记录保留，完成后保留10分钟并受容量限制，接口重置或进程退出后丢失。unknown时核对当前配置及源，不能假定未修改或盲目重发。"""
         return tool_result(await bridge.get_operation(operation_id))
 
     server = MCPServer("QKeyMapper", version=__version__, lifespan=lifespan, log_level="ERROR", tools=tools,

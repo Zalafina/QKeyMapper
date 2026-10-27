@@ -518,3 +518,21 @@ EXE为out/mcp_save_revalidate_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveReval
 EXE为out/tests/mcp_control/{qt6,qt5}-release/release/QKeyMapperMcpControlTest.exe，原asInvoker；普通Python在实际QkmSaveStore94_<UUID>私有桌面直接启动，仅六个存储槽，无SwitchDesktop／窗口输入／Default场景／产品或IPC子进程。父子均Medium8192、same_login=true，原PID／创建时间／实际桌面／native退出及控制器终止=false记录齐全。QKM_IPC_TEST_EXE仅供原init检查匹配文件存在；两份XML确认实际测试及Qt版本。本片不使用gsudo，不重建／延长／关闭原缓存；SAVE-93最后状态仅按原时点保留。
 
 源码差异、原XML／native日志／身份退出、两份C1083日志／原Makefile、最终构建及evidence-summary在本机out/mcp_save_store_w11_20261027，不随Git。六个必要代码／用法／主计划与证据文件形成独立本地提交，不推送。12工具／8能力及C1-B2／M1未整体完成；正式保存预览创建、动作分派／容量业务错误、实际许可及生命周期协调、SDK与完整启停闭环仍待后续。未增普通产品全构建、完整UI／语言套件、ASan、严格静态分析、真实输入／设备或性能；PC-W10保留历史范围。
+
+## SAVE-95：正式保存只读预览与类型隔离（2026-10-27，PC-W11）
+
+产品基于b18ea1c8，期间4d6b1465仅独立提交新增演示主计划。qkm_preview_changes以action=configuration.save／明确setting_name区分，原映射四必填字段及线格式保留；SDK oneOf与extra=forbid、C++独立类型／组合／长度和目标规则共同校验。生产处理器调用原完整候选，映射受控错误并保留原截止，返回明确instance／group／save_revision、source_snapshot、完整scope和apply_supported=false。全范围含所有目标／共享草稿及名称效果，精确归属unavailable；不返回完整INI载荷。保存误提交在任何映射规划前拒绝并记rejected／saved=false，重复请求不改数据。operation_limit明确结果槽不足、不消费预览；该容量行为先经SAVE-94组件覆盖，新增业务错误由固定SDK端点验证，未制造生产64项真实并发。
+
+Python协议／转发21项和最终工具结果7项通过，另保留schema及operation_limit改变断言后的定向7项复验，不重复计为不同覆盖。实际tools/list schema经已锁定jsonschema验证原映射／显式action／保存合法分支，以及缺失／null／混合／未知参数拒绝；SDK固定错误仍isError=true且解释受控。首个命令未设置进程级PYTHONPATH，两个loader导入失败、未运行实际测试；保留原日志，补当前源码路径后通过，未重装依赖。
+
+双Qt控制组件各七个槽（参数含savePreviewArguments，及原／保存存储生命周期与容量），各9 passed含init／cleanup、native exit0；C++规范Unicode／32767 UTF-16单位边界、动作／字段互斥及新能力schema均检查。双Qt控制及生命周期维护普通Release增量native exit0，Qt6零警告、Qt5仅生命周期目标原qtmain例外。主CPP局部55增1删的预期字节及逆向检查通过；GUI保存体／Worker／manifest／依赖不改，未增加普通产品全构建或严格静态分析。
+
+实际官方Client／initialize／tools/list／tools/call→当前桥接stdio→真实管道认证→QKeyMapper生产handleAutomationRequest：双Qtconfigure／Read／global六个维护进程全部native exit0，共42项C++最终不变性断言。验证12工具／9能力，普通当前／新建／覆盖及全局目标、完整scope／固定原目标、跨映射／保存替换、取消、非法目标、未知／混合字段、保存误提交／重复拒绝及失败operation查询成功；Read配对被真实服务权限门禁拒绝保存预览。正式API调用前后实际状态仅排除已校验sampled_at_utc；CPP核对完整INI、dirty、加载／源代次、载入组、GUI名称及完整源／派生内容不变，退出后INI仍为合成夹具。
+
+接口启动及配对批准是QKM_LIFECYCLE_TESTING受限夹具，不冒充普通Release的GUI批准验收。仅观测锁定SDK启动返回的实际子进程；若venv有直接重定向子进程，再按真实父PID、创建时间、EXE及相同登录会话核验服务端已见peer，写入本测试固定allowlist后才批准Read或Read＋Configure，不按枚举顺序选目标。普通SDK／桥接8192，原manifest产品12288；实际QkmSavePreview95_<UUID>私有桌面，未切桌面／发送系统输入／启动映射。窗口捕获及QQ渠道尚未实现，不由此推定DEMO无干扰或图片送达。
+
+首次仅Qt6 configure尝试在配对批准前因普通助手把PyHANDLE直接当上下文管理器而失败；产品按sdk_passed=false正常native exit2、handler_calls=0，七项中SDK完成／真实handler两项失败，其余五项业务不变性通过。记录不是UAC否决或未知启动；状态核实零owned／unresolved后，保留first-harness-failed和当时日志，修正普通助手用contextlib.closing，产品代码／EXE不变，再完成六场景。首次部署副本重复Save名称在从未启动时仅于自有out目录修正，身份路径同步，未修改二进制。早期助手失败不混入六个成功进程。
+
+EXE为out/mcp_save_preview_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSavePreview95_*_runtime.exe；同一Medium24956／公共登记／perform，原父子身份与退出在各start／closed、SDK spawn／peer核验、定义／EXE SHA及部署记录。最后cache-after仍active／cache_available=true、18:30硬截止不变，零owned／unresolved／pending／current_action／current_job；历史23316／25608未知请求不解决。原材料、控制XML、构建／Python日志、补丁／精确字节和evidence-summary只在本机out，不随Git。
+
+独立本地提交，不推送。新增仅保存预览，C1-B2／M1未整体完成；实际保存提交／生命周期、写盘／重载／备份、全范围及覆盖确认的执行守卫、真实新120秒等待／撤权／断线／接口重建、正式结果饱和及4MiB性能未验。SAVE-92／93／94与原B1未变路径按各自版本复用；本片未重跑完整GUI添加／实际输入、普通Release GUI配对、ASan、设备、Default或三语言布局，PC-W10保持历史范围。DEMO按相关窗口／会话自然检查点安排，未抢占当前保存执行队列。

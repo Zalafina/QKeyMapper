@@ -21,9 +21,12 @@ struct MappingAdditionArguments {
 };
 
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation };
+enum class MappingChangeAction { AddMapping, SaveConfiguration };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
+    MappingChangeAction action = MappingChangeAction::AddMapping;
     MappingAdditionArguments addition;
+    QString settingName;
     QString id;
     bool confirmConflicts = false;
     QString errorCode;

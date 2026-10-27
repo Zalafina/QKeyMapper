@@ -168,10 +168,17 @@ class Bridge:
             arguments["source_tab_ref"] = source_tab_ref
         return await self._call("qkm_query", arguments)
 
-    async def preview_changes(self, source_revision: str, source_tab_ref: str,
-                              original_key: str, mapping_key: str, insert_row: int | None = None) -> dict:
-        return await self._call("qkm_preview_changes", dict(source_revision=source_revision,
-            source_tab_ref=source_tab_ref, original_key=original_key, mapping_key=mapping_key, insert_row=insert_row))
+    async def preview_changes(self, source_revision: str | None = None, source_tab_ref: str | None = None,
+                              original_key: str | None = None, mapping_key: str | None = None,
+                              insert_row: int | None = None, *, action: str = "mapping.add", setting_name: str | None = None) -> dict:
+        arguments = {key: value for key, value in dict(source_revision=source_revision, source_tab_ref=source_tab_ref,
+            original_key=original_key, mapping_key=mapping_key, insert_row=insert_row, setting_name=setting_name).items()
+            if value is not None}
+        if action == "mapping.add":
+            arguments["insert_row"] = insert_row
+        else:
+            arguments["action"] = action
+        return await self._call("qkm_preview_changes", arguments)
 
     async def apply_changes(self, preview_id: str, confirm_conflicts: bool = False) -> dict:
         return await self._call("qkm_apply_changes", dict(preview_id=preview_id, confirm_conflicts=confirm_conflicts))

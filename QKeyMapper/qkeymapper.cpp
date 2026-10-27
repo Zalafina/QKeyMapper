@@ -38102,7 +38102,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const auto preview = store.begin(owner, validation.id);
         if (!preview) {
             auto operation = store.operation(owner, validation.id);
-            if (operation.value(QStringLiteral("status")) == QStringLiteral("applied")) {
+            if (operation.value(QStringLiteral("status")) == QStringLiteral("previewed")) {
+                fail(QStringLiteral("operation_limit"), QStringLiteral("All result slots belong to in-flight operations. This preview remains pending; query the operations before retrying it."));
+            } else if (operation.value(QStringLiteral("status")) == QStringLiteral("applied")) {
                 operation.insert(QStringLiteral("replayed"), true);
                 server.reply(request.connectionId, request.requestId, operation);
             } else {
@@ -38121,6 +38123,58 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("started_by_operation"), false}}, code, message);
         fail(code, message);
     };
+    if (!applying && validation.action == MappingChangeAction::SaveConfiguration) {
+        const auto candidate = prepareAutomationSettingSave(request, validation.settingName);
+        if (!candidate.ok()) {
+            QString code = candidate.errorCode;
+            if (code == QStringLiteral("not_authorized")) code = QStringLiteral("permission_denied");
+            if (code == QStringLiteral("invalid_target")) code = QStringLiteral("invalid_arguments");
+            if (code == QStringLiteral("validation_timeout")) code = QStringLiteral("context_busy");
+            if (code == QStringLiteral("save_preparation_failed")) {
+                using Error = SettingSavePreparation::Error;
+                code = candidate.save.error == Error::InvalidTarget ? QStringLiteral("invalid_arguments")
+                    : candidate.save.error == Error::FileTooLarge ? QStringLiteral("result_too_large")
+                    : candidate.save.error == Error::FormatError ? QStringLiteral("invalid_source_data") : QStringLiteral("context_busy");
+            }
+            fail(code, QStringLiteral("A safe full save preview is unavailable. Check the explicit target, current authorization, editors and pending configuration. No settings were saved."));
+            return;
+        }
+        const QJsonObject target{{QStringLiteral("instance_id"), owner.instance},
+            {QStringLiteral("group"), candidate.save.target.settingName}, {QStringLiteral("save_revision"), candidate.save.revision}};
+        const QJsonObject description{{QStringLiteral("action"), QStringLiteral("configuration.save")},
+            {QStringLiteral("target"), target}, {QStringLiteral("scope"), candidate.scope},
+            {QStringLiteral("source_snapshot"), candidate.context.value(QStringLiteral("source_snapshot"))},
+            {QStringLiteral("confirmation_required"), true}, {QStringLiteral("apply_supported"), false},
+            {QStringLiteral("modified"), false}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
+            {QStringLiteral("warning"), QStringLiteral("Preview only: saving is not connected. The described full save includes loaded and shared drafts; precise change attribution is unavailable.")}};
+        if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
+            fail(QStringLiteral("result_too_large"), QStringLiteral("The complete save description exceeds the response limit."));
+            return;
+        }
+        if (!server.isRequestCurrent(request) || validationBudget.hasExpired(MappingChangeBudgetMs)) {
+            fail(QStringLiteral("context_busy"), QStringLiteral("Authorization changed or preview validation exceeded its budget. No settings were saved."));
+            return;
+        }
+        if (candidate.expiresAt.hasExpired()) {
+            fail(QStringLiteral("preview_expired"), QStringLiteral("The save candidate expired before its preview could be stored."));
+            return;
+        }
+        const ConfigurationSaveBinding binding{candidate.save.target.settingName, candidate.save.revision,
+            candidate.context, candidate.scope, candidate.expiresAt};
+        const auto preview = store.createSave(owner, binding, description);
+        if (!preview) {
+            fail(QStringLiteral("preview_limit"), QStringLiteral("The bounded preview store is unavailable. Cancel your pending preview or obtain a fresh one later."));
+            return;
+        }
+        server.reply(request.connectionId, request.requestId,
+            {{QStringLiteral("preview_id"), preview->id}, {QStringLiteral("operation_id"), preview->id},
+                {QStringLiteral("expires_in_ms"), double(binding.expiresAt.remainingTime())}, {QStringLiteral("description"), description}});
+        return;
+    }
+    if (applyingPreview && applyingPreview->save) {
+        reject(QStringLiteral("unsupported_capability"), QStringLiteral("Save submission is not connected. This preview was consumed without saving or modifying settings; query its operation result."));
+        return;
+    }
     const int targetIndex = arguments.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt();
     if (!mappingAdditionAllowed(targetIndex) || hasOpenMappingEditor()) {
         reject(QStringLiteral("context_busy"), QStringLiteral("Mapping addition requires the current attached source, idle completed cleanup, and no open mapping editor. No stop, Tab switch or editor close is performed automatically."));

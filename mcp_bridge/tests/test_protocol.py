@@ -6,7 +6,7 @@ import unittest
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from qkeymapper_mcp.protocol import BridgeError, Credential, client_name, decimal, decode, encode, proof
 
@@ -383,6 +383,23 @@ class NativeTests(unittest.TestCase):
             pristine_thread()
         with ThreadPoolExecutor(max_workers=1) as worker:
             worker.submit(check).result(2)
+
+
+class PreviewForwardingTests(unittest.IsolatedAsyncioTestCase):
+    async def test_original_mapping_wire_shape_and_explicit_save_branch(self):
+        import sys
+        from qkeymapper_mcp.bridge import Bridge
+        bridge = Bridge(Path("unused/instance.json"), Path(sys.executable))
+        with patch.object(bridge, "_call", new_callable=AsyncMock, return_value={"ok": True}) as call:
+            revision = "a" * 64
+            await bridge.preview_changes(revision, revision + ":source:0", "A", "B")
+            call.assert_awaited_with("qkm_preview_changes", dict(source_revision=revision, source_tab_ref=revision + ":source:0",
+                original_key="A", mapping_key="B", insert_row=None))
+            await bridge.preview_changes(action="configuration.save", setting_name="配置95")
+            call.assert_awaited_with("qkm_preview_changes", {"action": "configuration.save", "setting_name": "配置95"})
+            await bridge.preview_changes(original_key="A", action="configuration.save", setting_name="配置95")
+            self.assertIn("original_key", call.await_args.args[1])
+            self.assertIn("setting_name", call.await_args.args[1])
 
 
 if __name__ == "__main__":

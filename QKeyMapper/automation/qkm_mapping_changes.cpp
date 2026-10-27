@@ -38,13 +38,25 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool query = method == QStringLiteral("qkm_get_operation");
     result.method = preview ? MappingChangeMethod::Preview : apply ? MappingChangeMethod::Apply
         : query ? MappingChangeMethod::Operation : MappingChangeMethod::Cancel;
+    const auto action = arguments.value(QStringLiteral("action"));
+    const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
+    if (preview && !action.isUndefined() && (!action.isString()
+        || (action.toString() != QStringLiteral("mapping.add") && !savePreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
-    const QSet<QString> allowed = preview
-        ? QSet<QString>{QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
+    const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")} : preview
+        ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("insert_row")}
         : apply ? QSet<QString>{idField, QStringLiteral("confirm_conflicts")} : QSet<QString>{idField};
     for (auto it = arguments.constBegin(); it != arguments.constEnd(); ++it) {
         if (!allowed.contains(it.key())) return fail("Unknown mapping change argument.");
+    }
+    if (savePreview) {
+        const auto name = arguments.value(QStringLiteral("setting_name"));
+        if (!name.isString() || name.toString().isEmpty() || name.toString().size() > 32767)
+            return fail("An explicit setting name of 1 to 32767 UTF-16 code units is required.");
+        result.action = MappingChangeAction::SaveConfiguration;
+        result.settingName = name.toString();
+        return result;
     }
     if (!preview) {
         const auto id = arguments.value(idField);
@@ -97,7 +109,8 @@ QJsonArray mappingChangeCapabilities()
             {QStringLiteral("additionalProperties"), false}, {QStringLiteral("properties"), properties},
             {QStringLiteral("required"), required}};
     };
-    const QJsonObject preview = schema({{QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), reference},
+    const QJsonObject preview = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.add")}}},
+        {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), reference},
         {QStringLiteral("original_key"), key}, {QStringLiteral("mapping_key"), key},
         {QStringLiteral("insert_row"), QJsonObject{{QStringLiteral("type"), QJsonArray{QStringLiteral("integer"), QStringLiteral("null")}},
             {QStringLiteral("minimum"), 0}, {QStringLiteral("maximum"), 2147483647}}}},
@@ -119,11 +132,22 @@ QJsonArray mappingChangeCapabilities()
     previewCapability.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
     previewCapability.insert(QStringLiteral("max_previews"), MappingChangeStore::MaxPreviews);
     previewCapability.insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    const QJsonObject saveSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.save")}}},
+        {QStringLiteral("setting_name"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("minLength"), 1}, {QStringLiteral("maxLength"), 32767}}}},
+        {QStringLiteral("action"), QStringLiteral("setting_name")});
+    auto saveCapability = capability("configuration.save.preview", "qkm_preview_changes", Read | Configure, true, saveSchema);
+    saveCapability.insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("preview_only_apply_unavailable"),
+        QStringLiteral("full_loaded_and_shared_save_scope"), QStringLiteral("explicit_setting_name"),
+        QStringLiteral("idle_after_cleanup"), QStringLiteral("no_open_editors"), QStringLiteral("bounded_volatile_results")});
+    saveCapability.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
+    saveCapability.insert(QStringLiteral("max_previews"), MappingChangeStore::MaxPreviews);
+    saveCapability.insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
     QJsonObject operation = capability("operation.read", "qkm_get_operation", Read, true,
         schema({{QStringLiteral("operation_id"), identifierSchema}}, {QStringLiteral("operation_id")}));
     operation.insert(QStringLiteral("result_ttl_ms"), double(MappingChangeStore::ResultTtlMs));
     operation.insert(QStringLiteral("max_results"), MappingChangeStore::MaxResults);
-    return {previewCapability, capability("mapping.add.apply", "qkm_apply_changes", Read | Configure, false, apply),
+    return {previewCapability, saveCapability, capability("mapping.add.apply", "qkm_apply_changes", Read | Configure, false, apply),
         capability("mapping.preview.cancel", "qkm_cancel_changes", Read | Configure, false,
             schema({{QStringLiteral("preview_id"), identifierSchema}}, {QStringLiteral("preview_id")})), operation};
 }
