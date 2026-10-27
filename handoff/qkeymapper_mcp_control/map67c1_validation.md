@@ -606,3 +606,23 @@ Qt6修复前、双Qt修复后生命周期维护增量Release均native exit0，Qt
 为遵守现有32定义上限，普通控制器在owned／unresolved／pending／current_action／current_job全零后，核对相同instance／generation与SAVE-95六个exit0原记录，只将其qt6／qt5两份已完成定义从后续授权集合退役；登记及原始日志保留，不处理历史未知请求，不切换gsudo模式、不建控制器或修改全局设置，截止仍18:30。retired-definitions-qt5.json保留精确摘要，最终本轮所有权及未决数量仍零。
 
 Python／参数存储／保存写盘实现输入未变，复用SAVE-97／98有效证据；本片未重跑完整GUI／失败矩阵、4MiB性能、真实停止后输入竞态、提交中超时／断线、普通完整Release／Default或Win10。当前12工具／10能力，C1-C／M1整体未完成；截图演示、免Python和QQ渠道仍按后续自然切点与独立验收推进。
+
+## SAVE-100：已接受保存后的超时／主动断线结果恢复（2026-10-27，PC-W11）
+
+基于SAVE-99 `c6ba4beaff7a9529c14a9987b9a3eafbd6598d83`。产品保存／有界存储／权限、桥接IO 10秒时限、取消和无自动重试逻辑均不变。维护夹具在实际QSettings同步后、重载销毁旧源表的destroyed回调写accepted-reload标记，先用原始INI字节确认新A86Saved组及启动选择已落盘，再只暂停该自有测试窗口最多15秒；循环不处理GUI事件，普通控制器完成观察后写固定release-reload释放。这个等待不是交付功能，不接受任意动作／时间参数，不中断部分保存，也不作性能结论。
+
+超时场景用正式SDK提交，保留原桥接deadline并实际收到error=timeout；主动断线场景在同一已写盘标记后并发调用正式qkm_disconnect，原调用实际收到cancelled。本端等待已结束，产品继续完成重载／备份并按原实例／配对记录结果。随后显式qkm_connect复用原配对（不申请再次配对），先query原preview/operation同一ID，结果applied／saved=true／reloaded=true／backup_succeeded=true，target仍为原实例／组／修订；再作显式去重验证，同ID返回replayed且INI／加载代次不再变化，dirty清除、实际保持idle／stopped。
+
+双Qt各两独立维护进程，最终4 native exit0／各9项、共36项CPP检查，均首次通过。每场实际pairingRequested计数1；第二次请求会由测试夹具拒绝，不能靠自动重新批准掩盖复用失败。每场都核对完整准备值、实际一次加载、GUI名称效果／dirty、源／派生数据与清理工作归零。原SDK准确peer文件不变，重连仍同一存活产品instance与同一SDK进程；不据此声称客户端换PID、产品重启、跨权限代次或接口禁用后的恢复。
+
+超时／取消码及等待时间只按实际取得记录；waiting-ended.json和Native connection_recovery给出实测桥接等待及窗口hold_ms，不从文本推算Windows或gsudo错误码。客户端MCP read_timeout_seconds=45并关闭客户端可选缓存，只为允许观察原生10秒桥接行为，未改产品或桥接时限。每次普通控制器调用只运行一个指定场景，保留逐场登记／缓存尾状态，避免自动派发下一批影响临时暂停。
+
+Qt6.8.3／MSVC2022 x64及官方Qt5.15.2／msvc2019_64生命周期维护增量Release构建native exit0，Qt6零警告、Qt5兼容通过，原已接受qtmain LNK4099保留。7项工具结果检查通过；未变的21项协议、存储组件和完整保存成功／失败矩阵按SAVE-97至99原范围复用。仅更新取消反馈和qkm_disconnect描述，明确“结束本端等待，已接受变更仍可能完成”，断开不等于撤销、回滚或停止；协议与执行判定不变。
+
+EXE为out/mcp_save_recovery_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveRecovery100_*_runtime.exe，保持requireAdministrator。实际QkmSaveRecovery100_<UUID>私有桌面，普通控制器／SDK8192、产品12288，同登录，公共固定登记复用24956缓存；没有Default、系统输入、映射启动或驱动更改。配对仍为受限维护夹具，不替代普通Release用户批准。
+
+为了保持32定义上限，添加Qt5时在本控制器owned／unresolved／pending／current_action／current_job全零，核对同instance／generation的SAVE-96各七场／共14份exit0后，仅将其两份已完成固定定义从后续授权集合退役，原日志／定义不删，历史未知不接管、不重放，缓存截止仍18:30。逐场尾状态五项均零。
+
+原件out/mcp_save_recovery_w11_20261027含四场正式SDK调用、准确peer／产品创建身份／退出、accepted／release标记、waiting-ended、重连操作结果、完整INI、逐场登记／缓存快照、退役记录、构建／部署、7项工具结果及evidence-summary.json；不随Git。后续仍需真实清理后的源写入与回调生命周期、撤权／禁用、客户端或产品重启、4MiB性能、普通完整Release／Default／实际输入及M1完整启停。私有桌面及本端等待取消不作为Hook／驱动隔离或业务停止完成证明。截图演示、免Python和QQ联调本片未执行。
+
+当日收尾17:50通过现有缓存技能off，本轮PID24956／instance4f384b60c3ca43e1a9c2bfd768020809返回generation2、closed／user_off、cache_available=false、native_sessions_observed=0，owned／unresolved／pending／current_action／current_job全零；独立status随后确认controller=null、原生会话0。历史未知请求未接管／重放；此处仅证明本轮关闭。收尾只做必要文档检查和本片本地提交，无后续构建／测试，停止位置及明日下一步在唯一主计划。

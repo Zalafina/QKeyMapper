@@ -75,6 +75,8 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 
 超时或断线后先按同一ID调用 qkm_get_operation。结果属于实例／配对／权限代次，完成记录是带采样时间的历史事实；最多64条，进行中记录保留，完成后保留10分钟并受容量限制，接口重置或进程退出后丢失。全部结果槽为进行中时operation_limit拒绝消费新预览；先查询原操作和预览，不自动重试。unknown不证明写入未发生。运行状态另含run.sampled_at_utc，变化不代表映射内容修订变化。完整保存／冷启动和实际运行等价性分别验收，不把基础添加称为完整闭环。
 
+`qkm_disconnect`只结束本端连接及等待，保留已存配对；已经接受的保存仍可能完成，不代表撤销、回滚或停止。超时／断线后显式连接原目标，再query原操作ID，核对分段结果后再决定后续动作。SAVE-100已选验同一存活实例及同一SDK进程重连，不据此保证进程重启或接口重置后仍有历史。
+
 ## 完整保存的预览与提交
 
 先核对目标声明`configuration.save.preview`，再调用`qkm_preview_changes`，例如`{"action":"configuration.save","setting_name":"Demo"}`；setting_name是明确配置组名，其他映射字段省略。普通／新建／覆盖目标及当前已选全局组均由产品校验，不切换GUI配置或改名称控件决定目标。须Read＋Configure、成功加载及初始静止或仍有效的完整清理许可、无打开编辑窗或未结算热键输入；Worker STOPPED本身不够。schema以oneOf保留原映射四个必填字段与保存分支，SDK拒绝未知字段，C++另独立校验组合及业务规则。

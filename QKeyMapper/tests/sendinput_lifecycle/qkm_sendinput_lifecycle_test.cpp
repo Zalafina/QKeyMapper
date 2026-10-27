@@ -3224,6 +3224,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const QString directory = QFileInfo(output).absolutePath();
     const bool publicApply = qEnvironmentVariable("QKM_LIFECYCLE_CASE") == QStringLiteral("settings_save_apply");
     const bool publicPreview = qEnvironmentVariable("QKM_LIFECYCLE_CASE") == QStringLiteral("settings_save_preview") || publicApply;
+    const QString connectionVariant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
+    const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
+        || connectionVariant == QStringLiteral("disconnect_after_accept"));
     if (!directory.contains(QStringLiteral("/out/")) || mapper->m_McpControlDialog->server().isEnabled()) {
         finish(false);
         return;
@@ -3231,8 +3234,11 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     auto *control = new ControlDialog(directory + QStringLiteral("/private_store"), QByteArray("save-context87-fixture"), mapper);
     mapper->m_McpControlDialog = control;
     auto &server = control->server();
+    auto pairingCount = QSharedPointer<int>::create(0);
     QObject::connect(&server, &AutomationSessionServer::pairingRequested, mapper,
-        [&server, mapper, output, publicPreview](const PairingRequest &pending) {
+        [&server, mapper, output, publicPreview, pairingCount, connectionCase](const PairingRequest &pending) {
+            ++*pairingCount;
+            if (connectionCase && *pairingCount != 1) { server.rejectPairing(pending.requestId); return; }
             if (publicPreview) {
                 const QByteArray peer = QJsonDocument(QJsonObject{{QStringLiteral("pid"), QString::number(pending.peer.processId)},
                     {QStringLiteral("created"), QString::number(pending.peer.creationTime)},
@@ -3314,6 +3320,28 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         if (!sourceError.isEmpty()) { finish(false); return; }
         auto calls = QSharedPointer<int>::create(0);
         auto expected = QSharedPointer<QKeyMapper::AutomationSettingSavePreparation>::create();
+        auto connectionEvidence = QSharedPointer<QJsonObject>::create();
+        if (connectionCase) {
+            if (QKeyMapper::s_KeyMappingTabInfoList.size() < 2) { finish(false); return; }
+            auto *oldTable = QKeyMapper::s_KeyMappingTabInfoList.last().KeyMappingDataTable;
+            QObject::connect(oldTable, &QObject::destroyed, mapper, [=]() {
+                QFile ini(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+                const bool opened = ini.open(QIODevice::ReadOnly);
+                const QByteArray saved = opened ? ini.readAll() : QByteArray();
+                const bool diskSaved = saved.contains("[A86Saved]") && saved.contains("SettingSelect=A86Saved");
+                QSaveFile marker(output + QStringLiteral(".accepted-reload"));
+                const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("disk_saved_before_wait"), diskSaved},
+                    {QStringLiteral("stage"), QStringLiteral("reload_after_disk_sync")}}).toJson();
+                if (!marker.open(QIODevice::WriteOnly) || marker.write(bytes) != bytes.size() || !marker.commit()) return;
+                QElapsedTimer hold;
+                hold.start();
+                // Bound this owned test window's reload without pumping GUI events or interrupting persistence.
+                while (!hold.hasExpired(15000) && !QFileInfo::exists(output + QStringLiteral(".release-reload"))) QThread::msleep(10);
+                *connectionEvidence = {{QStringLiteral("disk_saved_before_wait"), diskSaved},
+                    {QStringLiteral("hold_ms"), double(hold.elapsed())},
+                    {QStringLiteral("release_observed"), QFileInfo::exists(output + QStringLiteral(".release-reload"))}};
+            });
+        }
         auto guiChecks = QSharedPointer<QJsonArray>::create();
         auto guiLoads = QSharedPointer<int>::create(0);
         auto guiSource = QSharedPointer<QJsonObject>::create();
@@ -3419,6 +3447,14 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             const auto completion = QJsonDocument::fromJson(done.readAll()).object();
             check(completion.value(QStringLiteral("sdk_passed")).toBool(), QStringLiteral("official SDK exercise completed"));
             check(*calls > 0, QStringLiteral("requests passed through the production business handler"));
+            if (connectionCase) {
+                check(connectionEvidence->value(QStringLiteral("disk_saved_before_wait")).toBool()
+                    && connectionEvidence->value(QStringLiteral("release_observed")).toBool()
+                    && connectionEvidence->value(QStringLiteral("hold_ms")).toDouble() > 0
+                    && connectionEvidence->value(QStringLiteral("hold_ms")).toDouble() < 16000,
+                    QStringLiteral("accepted disk save completes after the bounded controlled reload wait"));
+                check(*pairingCount == 1, QStringLiteral("reconnection reuses the approved pairing without another approval"));
+            }
             if (guiChangeCase) {
                 check(*checkedRejection && guiChecks->size() == 3, QStringLiteral("real GUI change and stale rejection were both observed"));
                 for (const auto &entry : *guiChecks) {
@@ -3476,7 +3512,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
                 {QStringLiteral("formal_mcp_save_preview"), true}, {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},
-                {QStringLiteral("handler_calls"), *calls}, {QStringLiteral("saved"), saves == 1 || reloadFailure}, {QStringLiteral("system_input"), false}};
+                {QStringLiteral("handler_calls"), *calls}, {QStringLiteral("saved"), saves == 1 || reloadFailure},
+                {QStringLiteral("connection_recovery"), *connectionEvidence}, {QStringLiteral("pairing_requests"), *pairingCount},
+                {QStringLiteral("system_input"), false}};
             finish(passed);
         });
         completed->start(20);
