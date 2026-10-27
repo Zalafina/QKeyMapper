@@ -31,6 +31,7 @@
 #include <QStyleOptionMenuItem>
 #include <QStyleOptionToolButton>
 #include <QTemporaryFile>
+#include <QTemporaryDir>
 #include <QToolTip>
 #include <QUrl>
 
@@ -22660,6 +22661,56 @@ QKeyMapper::SettingSavePreparation QKeyMapper::prepareSettingSave(const QString 
     return result;
 }
 
+void QKeyMapper::initializeAutomationSettingsReader()
+{
+    // Call only after the existing GUI reader: a new same-path QSettings can flush shared pending values.
+    if (m_AutomationSettingsReader && m_AutomationSettingsReader->status() == QSettings::NoError) return;
+    auto reader = std::make_unique<QSettings>(CONFIG_FILENAME, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(*reader);
+    m_AutomationSettingsReader = std::move(reader);
+}
+
+QKeyMapper::SettingSavePreparation::Error QKeyMapper::compareSettingSaveCache(
+    const QSettings &cache, const SettingSavePreparation &preparation)
+{
+    using Error = SettingSavePreparation::Error;
+    if (!preparation.ok() || cache.format() != QSettings::IniFormat
+        || QFileInfo(cache.fileName()).absoluteFilePath() != preparation.configurationPath)
+        return Error::InvalidPreparation;
+    QTemporaryFile snapshot(QDir::tempPath() + QStringLiteral("/QKeyMapper-cache-source-XXXXXX.ini"));
+    if (!snapshot.open() || snapshot.write(preparation.configurationData) != preparation.configurationData.size()
+        || !snapshot.flush()) return Error::SnapshotFailed;
+    snapshot.close();
+    QSettings disk(snapshot.fileName(), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(disk);
+    (void)disk.allKeys();
+    if (disk.status() != QSettings::NoError) return Error::FormatError;
+    // Compare Qt's persisted representation; parsed strings and cached native scalars can encode identically.
+    const auto canonical = [](const QSettings &source, QByteArray &bytes) {
+        QTemporaryDir directory(QDir::tempPath() + QStringLiteral("/QKeyMapper-cache-values-XXXXXX"));
+        if (!directory.isValid()) return Error::SnapshotFailed;
+        const QString path = directory.filePath(QStringLiteral("values.ini"));
+        QSettings values(path, QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(values);
+        const auto keys = source.allKeys();
+        if (source.status() != QSettings::NoError) return Error::ReadFailed;
+        for (const auto &key : keys) values.setValue(key, source.value(key));
+        values.sync();
+        QFile encoded(path);
+        if (values.status() != QSettings::NoError || !encoded.open(QIODevice::ReadOnly)) return Error::SnapshotFailed;
+        bytes = encoded.read(QkmAutomation::MaxSourceSnapshotBytes + 1);
+        if (encoded.error() != QFile::NoError) return Error::ReadFailed;
+        if (bytes.size() > QkmAutomation::MaxSourceSnapshotBytes || !encoded.atEnd()) return Error::FileTooLarge;
+        return Error::None;
+    };
+    QByteArray diskBytes, cacheBytes;
+    const auto diskError = canonical(disk, diskBytes);
+    if (diskError != Error::None) return diskError;
+    const auto cacheError = canonical(cache, cacheBytes);
+    if (cacheError != Error::None) return cacheError;
+    return diskBytes == cacheBytes ? Error::None : Error::CacheContentChanged;
+}
+
 QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettingSave(
     const QkmAutomation::AutomationRequest &request, const QString &requestedName) const
 {
@@ -22706,6 +22757,12 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
     result.save = prepareSettingSave(requestedName, selected, globalSelected,
         ui->languageComboBox->currentIndex(), contextRevision);
     if (!result.save.ok()) return fail(QStringLiteral("save_preparation_failed"));
+    if (!m_AutomationSettingsReader) return fail(QStringLiteral("context_busy"));
+    const auto cacheError = compareSettingSaveCache(*m_AutomationSettingsReader, result.save);
+    if (cacheError != SettingSavePreparation::Error::None) {
+        result.save.error = cacheError;
+        return fail(QStringLiteral("save_preparation_failed"));
+    }
     QJsonArray targetKeys, sharedKeys;
     const QString prefix = result.save.target.settingName + QLatin1Char('/');
     for (auto it = result.save.values.values.begin(); it != result.save.values.values.end(); ++it) {
@@ -23525,6 +23582,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
     quint8 datavalidflag = 0xFF;
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
+    initializeAutomationSettingsReader();
 
     if (settingtext.isEmpty() || load_all) {
         // Load ignore rules from INI file
@@ -28430,6 +28488,7 @@ void QKeyMapper::loadGeneralSetting()
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
+    initializeAutomationSettingsReader();
 
     // Load ignore rules from INI file
     loadIgnoreRulesFromINI();

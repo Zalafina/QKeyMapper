@@ -442,3 +442,23 @@ cache-after.json核实10520仍active／cache_available=true、零owned／unresol
 最终status仍active／cache_available=true、18:30截止不变，零owned／unresolved／pending／current_action／current_job；历史未知请求不因此解决。22份原case、12份旧基线副本／来源、构建／部署／EXE、原尾段、完整补丁／逆变换／预期字节和evidence-summary.json在本机out/mcp_save_finish_w11_20261027，不随Git。
 
 独立本地提交切点，不推送。本片只共用既有GUI收尾，不提供显式候选写入、配对／范围确认或磁盘与生命周期事务；普通取消／非法／坏格式早退未改，按SAVE-86原范围复用；共通Tab恢复及全局名称显示尾部分支逐字保留、未作本片动态通过声明。实际输入／停止／设备、并发／权限丢失、共享缓存任意pending、超时／到期／去重及正式结果查询仍待后续。工具12／能力8、C1-B2／M1未完成；未增加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／性能或三语言布局，PC-W10保持历史范围。
+
+## SAVE-90：候选缓存持久化内容预检（2026-10-27，PC-W11）
+
+基于77a55753，私有compareSettingSaveCache接入认证候选准备；从同一磁盘字节副本读取Qt原值，并将磁盘／缓存已有值分别经当前Qt原生INI编码，比较完整持久化表示，拒绝CacheContentChanged。不是QVariant严格类型比较，也不向临时文件写入候选、替换CONFIG_FILENAME／cwd或调用GUI保存模拟预览。投影沿既有4MiB上限，失败清空可用候选及范围；原GUI保存／共用收尾、Worker、协议、manifest与gsudo核心不变。只检查当前快照与缓存内容，不证明没有内部pending标志或持有执行事务。
+
+首轮双Qt维护构建成功，但仅首个Qt6 configure运行即native exit2：正常候选SnapshotFailed，38项中发生连带失败，其余七个预定场景未执行；Qt5当时只有构建／部署，不计运行通过。单个Qt6错误观测版再现candidate_error=3／save_preparation_failed；最小公共API探针QTemporaryFile打开true、QSettings状态1（AccessError）、原file.error=0且文件0字节。未取得底层Windows错误码，不根据错误文字推算。初始和观测进程最终原INI／dirty／源代次不变的断言通过，但不能据此把待写拒绝／正常候选算通过。
+
+修正为QTemporaryDir安全模板下的新values.ini后，首个Qt6正常候选恢复，但五项待写断言仍失败。再用单例阶段探针记录：before_constructor=true、after_constructor=false，原INI在新建同路径QSettings时即变化，随后codec／allKeys／比较／析构均仍为false；这是实际文件字节观测，不依据报错文字归因。目录修正版及阶段探针各native exit2，共四份已知Qt6失败／诊断进程，不能算通过或未知启动。构造冲刷直接阶段观测仅Qt6；Qt5初期只构建／部署，无对应失败运行声明。
+
+最终采用只读const QSettings观察器：在loadKeyMapSetting／loadGeneralSetting的既有原读者之后创建，正常时持续复用，错误时只在同一GUI读边界重建；候选不创建、sync或修改真实INI对象，缺失即context_busy。观察器只保留现有Qt共享缓存的观察入口，不另建配置模型、定时器或工作线程。私有compareSettingSaveCache只向独立临时目录编码已有磁盘／缓存值，类型差异按实际持久化表示判断；4MiB也约束投影编码。GUI Save函数体及共用收尾与77a55753逐字相同，加载入口只增加观察器初始化；对象寿命变化另选原保存回归。完整生产补丁、逆向检查及预期字节通过。
+
+最终observer阶段双Qt各configure41项、read4项、global39项、configure_saved42项，八进程全部passed=true／native exit0，共252项。无关待写组、目标待写值及删除返回CacheContentChanged；等价原生bool被接受且修订不变，超限投影返回FileTooLarge；各步骤原INI字节和原待写对象不被准备冲刷／消耗。临时移走观察器时拒绝且不回退构造；私有坏格式观察器实际产生FormatError，在组件复现的GUI读取边界恢复，非真实GUI加载基线。正常关闭编辑窗、派生源绑定、新运行修订及全范围说明沿受影响用例重验。fixture自己恢复pending并sync／恢复原字节，与只读准备分开；configure_saved先由真实Save按钮完成业务保存，后续观察以其新磁盘和代次为基线，候选不改变它。
+
+由于增加只读对象寿命，regression阶段另跑原current／new／write_current／write_new／reload／backup六组结果和五组冷读，双Qt各64项、22进程native exit0，共128项；12对275／314／64／64／314／314键的完整INI字节与已核实的SAVE-86独立旧GUI基线一致。原始GUI材料经SAVE-89来源索引复用，不把内部结果调用当作新GUI基线。两种写锁解除、后来读者及独立冷读没有失败缓存补写；重载失败与备份失败仍保留各阶段语义。最终两组共30个成功原生进程／380项，四份早期失败单列，不混计。
+
+同机既有锁环境、Qt6.8.3／Qt5.15.2官方x64及MSVC19.44；最终双Qt普通Release维护增量构建native exit0，Qt6零警告、Qt5仅原qtmain例外，前期／探针构建分别保留。EXE为out/mcp_save_cache_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveCache90_*_runtime.exe，原requireAdministrator；同一Medium24956和公共登记／perform，父8192、目标12288、same_login=true，实际QkmSaveCache90_<UUID>私有桌面，PID／创建时间／退出在原start／closed.json，无Default、映射或系统输入。最终status仍active／cache_available=true、18:30截止不变，零owned／unresolved／pending／current_action／current_job。
+
+全部材料仅在本机out/mcp_save_cache_w11_20261027：after／probe／final／stages保留四份失败及诊断，observer／regression保留30份成功结果；first-failed-executables／probe-executable／directory-first-failed-executables／constructor-stage-probe保留相关EXE和identity，另有构建、部署、12份旧GUI基线副本／来源及evidence-summary.json。最终补丁及构造阶段探针源快照可追溯；directory-first-failed-source.patch的测试部分含后来追加的阶段观测，不作为该失败测试的逐字源码证明，生产CPP仍为当时目录方案。原始证据不随Git，历史未知请求保持原记录、不重放或接管。
+
+独立本地提交切点，不推送。当前只有候选预检，未开放MCP保存；执行期仍须在任何真实INI构造前完成权限／状态／范围／目标／到期及缓存复核并协调生命周期，预检不是独占锁或跨进程事务。调用中竞态／预算超时、文件身份替换、显式提交／去重／结果查询、对象新增内存／加载性能及完整映射／停止均未验；错误观察器恢复只作组件覆盖，不冒充GUI成功→失败→恢复全链路。工具12／能力8、C1-B2／M1未完成。未加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／设备／性能或三语言布局，PC-W10保留历史范围。

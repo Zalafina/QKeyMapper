@@ -2203,7 +2203,7 @@ private:
     };
     struct SettingSavePreparation {
         enum class Error { None, ReadFailed, FileTooLarge, SnapshotFailed, FormatError, InvalidTarget,
-            ValuesUnavailable, DiskChanged, FingerprintUnavailable };
+            ValuesUnavailable, DiskChanged, FingerprintUnavailable, InvalidPreparation, CacheContentChanged };
         Error error = Error::ReadFailed;
         QString configurationPath;
         bool configurationExists = false;
@@ -2215,6 +2215,8 @@ private:
     };
     SettingSavePreparation prepareSettingSave(const QString &requestedName, const QString &currentSelectedSetting,
         bool globalSelected, int languageIndex, const QString &sourceRevision) const;
+    static SettingSavePreparation::Error compareSettingSaveCache(const QSettings &cache, const SettingSavePreparation &preparation);
+    void initializeAutomationSettingsReader();
     struct AutomationSettingSavePreparation {
         SettingSavePreparation save;
         QJsonObject context;
@@ -2665,6 +2667,7 @@ private:
     QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
     QkmAutomation::ControlDialog *m_McpControlDialog = Q_NULLPTR;
     std::unique_ptr<QkmAutomation::MappingChangeStore> m_AutomationMappingChanges;
+    std::unique_ptr<const QSettings> m_AutomationSettingsReader;
     quint64 m_MappingLoadGeneration = 0;
     quint64 m_AutomationSourceEpoch = 0;
     quint64 m_AutomationSourceCleanupRevision = 0;

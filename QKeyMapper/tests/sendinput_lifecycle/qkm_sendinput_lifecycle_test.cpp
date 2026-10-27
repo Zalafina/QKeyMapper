@@ -3209,10 +3209,20 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
     using namespace QkmAutomation;
     bool passed = true;
     QJsonArray checks;
+    QJsonArray cacheObservations;
     const auto check = [&](bool value, const char *name) {
         checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
         passed = passed && value;
     };
+    if (qEnvironmentVariable("QKM_CONTEXT_VARIANT") == QStringLiteral("configure_saved")) {
+        auto *save = mapper->findChild<QPushButton *>(QStringLiteral("savemaplistButton"));
+        if (!save || !save->isEnabled()) return {{QStringLiteral("passed"), false}};
+        const auto generation = mapper->m_MappingLoadGeneration;
+        clickMappingButton(save);
+        check(mapper->m_MappingLoadGeneration == generation + 1 && mapper->m_MappingSourceLoadAccepted
+            && !mapper->m_SaveSettingDirty && mapper->m_LoadedMappingSettingGroup == QStringLiteral("Payload82Seed"),
+            "an actual GUI Save establishes the post-save cache case before candidate observation");
+    }
     QFile ini(QString::fromLatin1(CONFIG_FILENAME));
     if (!ini.open(QIODevice::ReadOnly)) return {{QStringLiteral("passed"), false}};
     const QByteArray bytes = ini.readAll(); ini.close();
@@ -3254,6 +3264,98 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
         check(globalSource ? !existing.ok() && existing.errorCode == QStringLiteral("invalid_target")
             : existing.ok() && existing.save.target.requiresOverwriteConfirmation && !existing.save.target.createNewSetting,
             "explicit existing destination retains overwrite intent or rejects global redirection");
+        {
+            using Error = QKeyMapper::SettingSavePreparation::Error;
+            const QString path = QFileInfo(QString::fromLatin1(CONFIG_FILENAME)).absoluteFilePath();
+            const QString other = path + QStringLiteral(".unused-cache90");
+            QSettings unrelated(other, QSettings::IniFormat);
+            QKeyMapperQtCompat::setIniCodecUtf8(unrelated);
+            check(mapper->compareSettingSaveCache(unrelated, candidate.save) == Error::InvalidPreparation
+                && !QFileInfo::exists(other), "cache comparison refuses another file without creating it");
+            const auto unchangedDisk = [&]() { QFile current(path); return current.open(QIODevice::ReadOnly) && current.readAll() == bytes; };
+            {
+                QSettings pending(path, QSettings::IniFormat);
+                QKeyMapperQtCompat::setIniCodecUtf8(pending);
+                const QString extra = QStringLiteral("Unrelated90/pending"), huge = QStringLiteral("Unrelated90/large");
+                const QString rowKey = selectedGroup + QLatin1Char('/') + KEYMAPDATA_ORIGINALKEYS;
+                if (pending.contains(extra) || pending.contains(huge) || !pending.contains(rowKey)
+                    || !pending.contains(STARTUP_MINIMIZED)) return {{QStringLiteral("passed"), false}};
+                const auto originalRow = pending.value(rowKey), originalScalar = pending.value(STARTUP_MINIMIZED);
+                const auto observe = [&](const QString &label, const QKeyMapper::AutomationSettingSavePreparation &value) {
+                    cacheObservations.append(QJsonObject{{QStringLiteral("label"), label},
+                        {QStringLiteral("ok"), value.ok()}, {QStringLiteral("error_code"), value.errorCode},
+                        {QStringLiteral("preparation_error"), int(value.save.error)},
+                        {QStringLiteral("disk_unchanged"), unchangedDisk()}});
+                };
+                pending.setValue(extra, QStringLiteral("uncommitted"));
+                auto retainedReader = std::move(mapper->m_AutomationSettingsReader);
+                const auto unavailable = prepare(selectedGroup);
+                mapper->m_AutomationSettingsReader = std::move(retainedReader);
+                check(!unavailable.ok() && unavailable.errorCode == QStringLiteral("context_busy")
+                    && unavailable.save.values.values.isEmpty() && unavailable.scope.isEmpty() && unchangedDisk(),
+                    "candidate cannot create a real-INI observer when the existing observer is unavailable");
+                const auto extraCandidate = prepare(selectedGroup);
+                observe(QStringLiteral("extra"), extraCandidate);
+                check(!extraCandidate.ok() && extraCandidate.save.error == Error::CacheContentChanged
+                    && extraCandidate.save.values.values.isEmpty() && extraCandidate.scope.isEmpty() && unchangedDisk()
+                    && pending.value(extra).toString() == QStringLiteral("uncommitted"),
+                    "an unrelated pending group is rejected without flushing or consuming the original shared cache");
+                pending.remove(extra);
+                pending.setValue(rowKey, QStringLiteral("PENDING_CACHE90"));
+                const auto rowCandidate = prepare(selectedGroup);
+                observe(QStringLiteral("row"), rowCandidate);
+                check(!rowCandidate.ok() && rowCandidate.save.error == Error::CacheContentChanged
+                    && rowCandidate.save.revision.isEmpty() && rowCandidate.scope.isEmpty() && unchangedDisk(),
+                    "pending target values cannot be silently merged into the disk-bound candidate");
+                pending.setValue(rowKey, originalRow);
+                pending.remove(STARTUP_MINIMIZED);
+                const auto removedCandidate = prepare(selectedGroup);
+                observe(QStringLiteral("removed"), removedCandidate);
+                check(!removedCandidate.ok() && removedCandidate.save.error == Error::CacheContentChanged && unchangedDisk(),
+                    "a pending removal also invalidates the full cache comparison without disk writes");
+                pending.setValue(STARTUP_MINIMIZED, originalScalar.toBool());
+                const auto equivalent = prepare(selectedGroup);
+                observe(QStringLiteral("equivalent_bool"), equivalent);
+                check(pending.value(STARTUP_MINIMIZED).userType() == QVariant(false).userType()
+                    && equivalent.ok() && equivalent.save.revision == candidate.save.revision && unchangedDisk(),
+                    "native cached bool and identical Qt INI representation do not cause a false pending-content refusal");
+                pending.setValue(huge, QString(QkmAutomation::MaxSourceSnapshotBytes + 1, QLatin1Char('x')));
+                const auto oversized = prepare(selectedGroup);
+                observe(QStringLiteral("oversized"), oversized);
+                check(!oversized.ok() && oversized.save.error == Error::FileTooLarge && oversized.scope.isEmpty()
+                    && oversized.save.values.values.isEmpty() && unchangedDisk(),
+                    "oversized canonical cache projection is bounded and cannot write the actual INI");
+                pending.remove(huge);
+                pending.setValue(STARTUP_MINIMIZED, originalScalar);
+                pending.sync();
+                check(pending.status() == QSettings::NoError, "fixture restores and synchronizes only its synthetic pending changes");
+            }
+            QSaveFile restore(path);
+            if (!restore.open(QIODevice::WriteOnly) || restore.write(bytes) != bytes.size() || !restore.commit())
+                return {{QStringLiteral("passed"), false}};
+            const auto recovered = prepare(selectedGroup);
+            check(recovered.ok() && recovered.save.revision == candidate.save.revision && recovered.scope == candidate.scope
+                && unchangedDisk(), "restored original cache and raw bytes recover exactly the prior candidate and scope");
+            QTemporaryFile malformed(QDir::tempPath() + QStringLiteral("/QKeyMapper-reader90-XXXXXX.ini"));
+            if (!malformed.open() || malformed.write("[Broken\nvalue=1\n") != 16 || !malformed.flush())
+                return {{QStringLiteral("passed"), false}};
+            malformed.close();
+            auto invalidReader = std::make_unique<QSettings>(malformed.fileName(), QSettings::IniFormat);
+            QKeyMapperQtCompat::setIniCodecUtf8(*invalidReader);
+            (void)invalidReader->allKeys();
+            check(invalidReader->status() == QSettings::FormatError, "the observer-recovery fixture has an actual Qt format error");
+            mapper->m_AutomationSettingsReader = std::move(invalidReader);
+            {
+                // Component reproduction of the existing GUI-read boundary, not a GUI load baseline.
+                QSettings guiReader(path, QSettings::IniFormat);
+                QKeyMapperQtCompat::setIniCodecUtf8(guiReader);
+                mapper->initializeAutomationSettingsReader();
+            }
+            const auto readerRecovered = prepare(selectedGroup);
+            check(readerRecovered.ok() && readerRecovered.save.revision == candidate.save.revision && unchangedDisk()
+                && mapper->m_AutomationSettingsReader && mapper->m_AutomationSettingsReader->status() == QSettings::NoError,
+                "an errored observer is recreated only at the GUI-read boundary and then recovers normal candidates");
+        }
         const auto invalid = prepare(QStringLiteral("Bad/Name"));
         check(!invalid.ok() && (globalSource ? invalid.errorCode == QStringLiteral("invalid_target")
                 : invalid.save.error == QKeyMapper::SettingSavePreparation::Error::InvalidTarget)
@@ -3359,6 +3461,9 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
         "preparation preserves actual INI, dirty, load/source epochs, loaded profile and GUI destination text");
     return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
         {QStringLiteral("authenticated_fixture"), true}, {QStringLiteral("formal_mcp_save"), false},
+        {QStringLiteral("candidate_error_code"), candidate.errorCode}, {QStringLiteral("cache_observations"), cacheObservations},
+        {QStringLiteral("preparation_error"), candidate.ok() || candidate.errorCode == QStringLiteral("save_preparation_failed")
+            ? QJsonValue(int(candidate.save.error)) : QJsonValue(QJsonValue::Null)},
         {QStringLiteral("saved"), false}, {QStringLiteral("system_input"), false}};
 }
 
