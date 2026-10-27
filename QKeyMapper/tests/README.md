@@ -180,3 +180,11 @@ Qt名称编辑输入空格、非法字符、全局保留名、现有或新名称
 `settings_result_save`／`settings_result_cold`正常启动加载[full_save_fixture.ini.example](sendinput_lifecycle/full_save_fixture.ini.example)，`QKM_LIFECYCLE_RESULT_VARIANT`为current／new／no／invalid／format／write_current／write_new／reload／backup。旧基线先用Qt名称输入、真实Save按钮及实际No保存；结果版再调用内部结果入口对照，不能用它自造GUI基线。冷读仅current／new／write_current／write_new／backup，保留前次INI另进程正常启动。
 
 format只改本用例INI；write分支用只读共享句柄短时阻止自有INI写入／替换，返回后释放，再由读者sync及冷启动核对无失败缓存补写。reload人工注入非法源键，仅证明内部阶段分离，非普通GUI可输入；backup只在自有latest路径建空目录并及时移除。所有目标在out内，原manifest／公共登记／私有桌面，无Default、映射或系统输入。结果按磁盘同步、重载和备份分别核对，并比较完整旧GUI基线字节；内部方法仍读GUI目标，不等于MCP保存已交付或并发／权限安全已验。
+
+## 真实请求绑定的保存候选
+
+`settings_save_context`正常加载同一[完整夹具](sendinput_lifecycle/full_save_fixture.ini.example)。维护目标使用本用例out内的独立私有配对目录；`QKM_CONTEXT_CLIENT_PID`／`QKM_CONTEXT_CLIENT_CREATED`／`QKM_CONTEXT_CLIENT_EXE`必须同时匹配实际桥接进程，测试代码才批准固定权限。普通Python用实际桥接完成认证并发送一次固定`qkm_get_state`，维护handler验证私有候选后只返回fixture标记；没有生产保存方法或新增MCP工具。
+
+`QKM_CONTEXT_VARIANT=configure`验证实际Read＋Configure请求、完整源及实例绑定、显式当前／新建／覆盖目标、非法目标、五种陈旧请求、真实编辑窗拒绝及恢复。仅由夹具改变并恢复派生源字段，核对未入INI的内容仍使完整修订失效；最后用既有运行修订观察器模拟新活动，核对Worker STOPPED采样不能单独放行。`read`使用真实Read配对，确认不返回候选载荷；回复完成后的原请求同样失效。外部控制器保持Medium，目标沿原manifest在公共登记的自有私有桌面运行，核对原始INI、dirty、加载／源代次及GUI名称文本不变；无需Default或系统输入。
+
+这是认证组件接线及只读候选验证；不代替独立GUI保存基线、真正运行／停止验收、全局源动态分支、调用中并发变更、预算超时、保存范围／其他草稿确认或正式MCP提交。按受影响输入回归`settings_save_snapshot`，未变的GUI保存结果沿SAVE-86有效范围复用。

@@ -398,3 +398,19 @@ cache-after.json核实10520仍active／cache_available=true，零owned／unresol
 cache-after.json核实10520仍active／cache_available=true、零owned／unresolved／current_action，用户最新18:30截止未改；旧23316／25608未知请求不因此解决。本机out/mcp_save_result_w11_20261026保留18份基线、56份原case与身份、四份构建、旧EXE、局部patch／逆变换／预期字节、运行日志及evidence-summary.json，均不随Git。PC-W10结果按历史范围保留，不冒充本机复验。
 
 独立本地提交切点，不推送。未开放MCP保存工具，12工具／8能力不变，C1-B2／M1未整体完成；未新增普通产品全构建、严格静态分析、ASan、VIGEM关闭、Default／真实输入／设备、性能或三语言布局。SAVE-85的调用内并发磁盘变化／文件身份／跨进程事务及真实业务授权缺口仍保留，选定写锁回滚不能代替所有失败和并发场景。
+
+## SAVE-87：真实请求与完整源绑定的私有候选（2026-10-27，PC-W11）
+
+基于45dac487，同机明确恢复，沿用既有锁环境／构建与有效证据，不重做环境恢复。新增私有prepareAutomationSettingSave，核对实际在途请求的Read＋Configure及server.isRequestCurrent；源沿现有完整快照／实例／pair／权限修订算法取得，另将当前Tab与运行修订纳入上下文哈希，再复用SAVE-85磁盘候选。显式请求目标不采集名称控件；全局源只接受明确全局目标，不静默忽略另一个名称。返回前重核权限、既有安全读取许可、运行修订及既有五秒验证预算；失败清空可用载荷、顺序意图、修订和上下文。
+
+完整载荷中的映射／共通读取改在已有SourceReadAccess锁内复制／编码，保持OrderedMap插入位置与Qt类型，磁盘／图标存在检查在锁外；没有改Worker或新建同步机制。原saveKeyMapSettingWithResult函数体与SAVE-86逐字相同，生产补丁可完整逆向检查；未改GUI Save、B1、manifest、协议、依赖或缓存核心。候选不是执行许可，尚未开放保存工具。
+
+维护case settings_save_context在自有out创建独立私有配对目录，只对实际普通桥接的PID／创建时间／映像三项匹配批准固定Read或Read＋Configure。普通桥接完成真实认证，固定qkm_get_state由维护handler验证内部候选并仅返回fixture标记；这是组件接线，不是生产MCP保存或完整SDK业务验收。双Qt各Configure20项／Read4项、受影响settings_save_snapshot17项，六进程均passed=true／native exit0，共82项。源／实例／授权上下文来自实际产品及请求；显式当前／新建／覆盖、非法及全局目标拒绝、五种陈旧请求与回复完成后失效通过。
+
+夹具仅人工改变后恢复一个Pure_OriginalKeys派生字段，证明未序列化到INI的完整源内容仍影响候选；不是普通GUI编辑输入。实际Qt按钮打开高级映射窗后拒绝，正常Escape关闭后恢复同一修订；最后调用已有运行观察器模拟新活动，Worker采样仍STOPPED时也拒绝，不把它当作实际启动／停止或清理验收。候选调用不改变原INI完整字节、dirty、加载／源代次、实际载入组或GUI目标文本；SAVE-85负向磁盘夹具自行恢复，受影响回归通过。未变GUI保存结果只按SAVE-86原版本／范围复用，无需重复其56个进程。
+
+同机Qt6.8.3／Qt5.15.2官方x64及MSVC19.44；首轮双Qt新增值成员缺QJsonObject完整包含而编译exit2，日志build-qt*-first-missing-include.log保留，补包含后最终两份普通Release维护增量构建native exit0，Qt6零警告、Qt5仅原qtmain例外。EXE为out/mcp_save_context_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveContext87_*_runtime.exe，原requireAdministrator；公共登记／perform由普通Medium控制器24956启动，父8192、目标High12288、same_login=true，实际QkmSaveContext87_<UUID>私有桌面。PID／创建时间／native退出见各case的start／closed.json；无Default、映射或系统输入。
+
+用户新授权至今日18:30，技能创建24956、instance4f384b60c3ca43e1a9c2bfd768020809／generation1，最终status仍active／cache_available=true且零owned／unresolved／pending／current_action／current_job。历史23316／25608未知请求保留、不重放或接管。原始六份case、认证fixture返回、构建／部署、EXE、最终补丁／逆向检查及evidence-summary.json均在本机out/mcp_save_context_w11_20261027，不随Git。
+
+独立本地提交切点，不推送。当前全局源动态分支、调用中并发变化／权限丢失、五秒预算超时、其他草稿范围／确认、实际显式提交／到期／去重及操作查询仍待接续；SAVE-85文件身份／跨进程事务缺口保留。工具12／能力8，C1-B2／M1未完成。未增加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／设备／性能或三语言布局；PC-W10证据保持历史范围。

@@ -22562,6 +22562,17 @@ QKeyMapper::SettingSaveValues QKeyMapper::collectSettingSaveValues(const Setting
         result.error = SettingSaveValues::Error::HotKeyInputNotSettled;
         return result;
     }
+    OrderedMap<QString, QVariant> mappingValues;
+    QVariantList commonValues;
+    {
+        QMutexLocker sourceAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+        if (automationSourceReadBasis().isEmpty()) {
+            result.error = SettingSaveValues::Error::SourceUnavailable;
+            return result;
+        }
+        mappingValues = collectMappingTableSaveValues(true);
+        commonValues = serializeCommonMappingData(collectCommonRowsForSave());
+    }
     const QString prefix = target.settingName + QLatin1Char('/');
     const auto append = [&](const OrderedMap<QString, QVariant> &values, const QString &groupPrefix) {
         for (auto it = values.begin(); it != values.end(); ++it) result.values.insert(groupPrefix + it.key(), it.value());
@@ -22571,7 +22582,7 @@ QKeyMapper::SettingSaveValues QKeyMapper::collectSettingSaveValues(const Setting
     append(collectGeneralSettingSaveValues(languageIndex), QString());
     result.values.insert(QString::fromLatin1(WINDOWSWITCH_KEYSEQ),
         s_WindowSwitchKeyString.isEmpty() ? QString::fromLatin1(DISPLAYSWITCH_KEY_DEFAULT) : s_WindowSwitchKeyString);
-    append(collectMappingTableSaveValues(true), prefix);
+    append(mappingValues, prefix);
     append(collectProfileParameterSaveValues(), prefix);
     if (!target.saveGlobalSetting) {
         const QString oldPath = m_MapProcessInfo.FilePath.isEmpty()
@@ -22579,7 +22590,7 @@ QKeyMapper::SettingSaveValues QKeyMapper::collectSettingSaveValues(const Setting
         append(collectWindowMatchSaveValues(oldPath), prefix);
     }
     append(collectProfileMappingOptionSaveValues(), prefix);
-    result.values.insert(prefix + COMMONMAPPINGDATA, serializeCommonMappingData(collectCommonRowsForSave()));
+    result.values.insert(prefix + COMMONMAPPINGDATA, commonValues);
     result.values.insert(prefix + CUSTOM_NOTIFICATION_ENABLED, m_MappingAdvancedDialog->getCustomNotificationEnabled());
     result.values.insert(prefix + CUSTOM_NOTIFICATION_POSITION, m_MappingAdvancedDialog->getCustomNotificationPosition());
     append(collectCustomNotificationStyleSaveValues(settingFile, prefix), prefix);
@@ -22646,6 +22657,61 @@ QKeyMapper::SettingSavePreparation QKeyMapper::prepareSettingSave(const QString 
         result.configurationExists, result.configurationData, sourceRevision);
     if (result.revision.isEmpty()) return fail(Error::FingerprintUnavailable);
     result.error = Error::None;
+    return result;
+}
+
+QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettingSave(
+    const QkmAutomation::AutomationRequest &request, const QString &requestedName) const
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    using namespace QkmAutomation;
+    AutomationSettingSavePreparation result;
+    const auto fail = [&](const QString &code) {
+        result.errorCode = code;
+        result.save.values.values.clear();
+        result.save.values.appendSettingOrder = false;
+        result.save.revision.clear();
+        result.context = {};
+        return result;
+    };
+    auto &server = m_McpControlDialog->server();
+    const auto authorized = [&]() {
+        return (request.scopes & (Read | Configure)) == (Read | Configure)
+            && server.isRequestCurrent(request);
+    };
+    if (!isInitialized() || !authorized()) return fail(QStringLiteral("not_authorized"));
+    QElapsedTimer budget;
+    budget.start();
+    const quint64 runtimeRevision = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
+    QString sourceError;
+    const QJsonObject snapshot = collectAutomationSourceSnapshot(sourceError);
+    if (!sourceError.isEmpty()) return fail(sourceError);
+    const auto source = querySourceSnapshot(snapshot, server.instanceId(), request.pairId, request.permissionEpoch,
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("limit"), 1}});
+    if (!source.ok()) return fail(source.errorCode);
+    const QJsonObject state = collectAutomationState();
+    const QString selected = snapshot.value(QStringLiteral("configuration_selection")).toObject()
+        .value(QStringLiteral("group")).toString();
+    const bool globalSelected = selected == QLatin1String(GROUPNAME_GLOBALSETTING);
+    if (globalSelected && requestedName.trimmed() != QLatin1String(GROUPNAME_GLOBALSETTING))
+        return fail(QStringLiteral("invalid_target"));
+    result.context = {{QStringLiteral("source_snapshot"), source.page.value(QStringLiteral("source_snapshot"))},
+        {QStringLiteral("pair_id"), request.pairId},
+        {QStringLiteral("permission_epoch"), QString::number(request.permissionEpoch)},
+        {QStringLiteral("runtime_revision"), QString::number(runtimeRevision)},
+        {QStringLiteral("current_tab"), state.value(QStringLiteral("current_tab"))}};
+    const QString contextRevision = QString::fromLatin1(QCryptographicHash::hash(
+        QJsonDocument(result.context).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
+    result.save = prepareSettingSave(requestedName, selected, globalSelected,
+        ui->languageComboBox->currentIndex(), contextRevision);
+    if (!result.save.ok()) return fail(QStringLiteral("save_preparation_failed"));
+    if (!authorized()) return fail(QStringLiteral("not_authorized"));
+    // Only source copies and the final lifecycle fence hold this lock; disk work stays outside it.
+    QMutexLocker sourceAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+    if (automationSourceReadBasis().isEmpty()
+        || QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() != runtimeRevision)
+        return fail(QStringLiteral("context_busy"));
+    if (budget.hasExpired(MappingChangeBudgetMs)) return fail(QStringLiteral("validation_timeout"));
     return result;
 }
 

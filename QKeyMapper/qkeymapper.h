@@ -23,10 +23,10 @@
 #include <QScrollArea>
 #include <QColor>
 #include <QPointer>
+#include <QJsonObject>
 #include <memory>
 
 class QkmUiScale;
-class QJsonObject;
 class InputOwnerFence;
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
@@ -2194,7 +2194,7 @@ private:
         bool ok() const { return error == Error::None; }
     };
     struct SettingSaveValues {
-        enum class Error { None, InvalidTarget, HotKeyInputNotSettled, EditorBusy };
+        enum class Error { None, InvalidTarget, HotKeyInputNotSettled, EditorBusy, SourceUnavailable };
         OrderedMap<QString, QVariant> values;
         Error error = Error::None;
         bool appendSettingOrder = false;
@@ -2213,6 +2213,14 @@ private:
     };
     SettingSavePreparation prepareSettingSave(const QString &requestedName, const QString &currentSelectedSetting,
         bool globalSelected, int languageIndex, const QString &sourceRevision) const;
+    struct AutomationSettingSavePreparation {
+        SettingSavePreparation save;
+        QJsonObject context;
+        QString errorCode;
+        bool ok() const { return errorCode.isEmpty() && save.ok(); }
+    };
+    AutomationSettingSavePreparation prepareAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
+        const QString &requestedName) const;
     bool hasOpenMappingEditor() const;
     static QString settingSaveValuesFingerprint(const SettingSaveTarget &target, const SettingSaveValues &values,
         const QString &configurationPath, bool configurationExists, const QByteArray &configurationData, const QString &sourceRevision);
