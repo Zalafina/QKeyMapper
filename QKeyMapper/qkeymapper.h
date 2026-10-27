@@ -26,6 +26,7 @@
 #include <QJsonObject>
 #include <QDeadlineTimer>
 #include <memory>
+#include <functional>
 
 class QkmUiScale;
 class InputOwnerFence;
@@ -101,7 +102,7 @@ class InputOwnerFence;
 #include "qmappingsequenceedit.h"
 #include "qpointpickerdialog.h"
 
-namespace QkmAutomation { class ControlDialog; class MappingChangeStore; struct AutomationRequest; }
+namespace QkmAutomation { class ControlDialog; class MappingChangeStore; struct AutomationRequest; struct ConfigurationSaveBinding; }
 
 namespace Ui {
 class QKeyMapper;
@@ -2226,11 +2227,14 @@ private:
         QString errorCode;
         bool ok() const { return errorCode.isEmpty() && save.ok(); }
     };
-    SettingSaveResult savePreparedSettingWithResult(const SettingSavePreparation &preparation, bool showSuccessPopup);
+    SettingSaveResult savePreparedSettingWithResult(const SettingSavePreparation &preparation, bool showSuccessPopup,
+        const std::function<bool()> &admitCommit = {});
     AutomationSettingSavePreparation prepareAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
         const QString &requestedName) const;
     AutomationSettingSavePreparation revalidateAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
-        const AutomationSettingSavePreparation &expected, bool confirmScope, bool confirmOverwrite) const;
+        const QkmAutomation::ConfigurationSaveBinding &expected, bool confirmScope, bool confirmOverwrite) const;
+    SettingSaveResult executeAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
+        const QkmAutomation::ConfigurationSaveBinding &expected, bool confirmScope, bool confirmOverwrite, QString &errorCode);
     bool hasOpenMappingEditor() const;
     static QString settingSaveValuesFingerprint(const SettingSaveTarget &target, const SettingSaveValues &values,
         const QString &configurationPath, bool configurationExists, const QByteArray &configurationData, const QString &sourceRevision);

@@ -536,3 +536,19 @@ Python协议／转发21项和最终工具结果7项通过，另保留schema及op
 EXE为out/mcp_save_preview_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSavePreview95_*_runtime.exe；同一Medium24956／公共登记／perform，原父子身份与退出在各start／closed、SDK spawn／peer核验、定义／EXE SHA及部署记录。最后cache-after仍active／cache_available=true、18:30硬截止不变，零owned／unresolved／pending／current_action／current_job；历史23316／25608未知请求不解决。原材料、控制XML、构建／Python日志、补丁／精确字节和evidence-summary只在本机out，不随Git。
 
 独立本地提交，不推送。新增仅保存预览，C1-B2／M1未整体完成；实际保存提交／生命周期、写盘／重载／备份、全范围及覆盖确认的执行守卫、真实新120秒等待／撤权／断线／接口重建、正式结果饱和及4MiB性能未验。SAVE-92／93／94与原B1未变路径按各自版本复用；本片未重跑完整GUI添加／实际输入、普通Release GUI配对、ASan、设备、Default或三语言布局，PC-W10保持历史范围。DEMO按相关窗口／会话自然检查点安排，未抢占当前保存执行队列。
+
+## SAVE-96：私有保存协调与实际重载源互斥（2026-10-27，PC-W11）
+
+基线：SAVE-95 `6ab88008d44d8860bcbbce5e99a9e91ce22aad5d`。生产大文件只增协调、元数据重校验及写入前准入调用，39加／5删；唯一锚点、补丁dry-run、应用后预期字节和逆向检查通过。首轮准备脚本的锚点断言阻止应用，修正后只应用一次。GUI原Save体、共享finalize、Worker、清理门闩、manifest和依赖不改。
+
+重校验现在只接SAVE-94的ConfigurationSaveBinding：明确目标、完整修订、context、scope和原单调截止；校验结构后重新采集实际载荷，存储不携带旧载荷或源指针。executeAutomationSettingSave先复用范围／独立覆盖确认与完整重校验，再持有既有SourceReadAccess互斥；在原持久化助手的磁盘／共享缓存核对之后、CategoryFilterStateGuard及任何写入准备之前，最终准入一次检查当前请求、原到期、总5秒验证预算、完整清理许可／生产者／任务池、编辑窗和同一运行修订。通过后连续完成同步／重载／备份，不在部分保存后因到期或断线强行中断，也不承诺5秒内执行结束。
+
+源码边界复核：保存显式非空目标使loadKeyMapSetting的load_all／一般启动区不执行；idle分支不应用系统FilterKeys、不启动映射。重载销毁旧Tab／源表，故互斥不能只覆盖内存准备。既有运行信号在投递前观察修订，VButton队列先计工作且只携带名称、实际查源在观察之后；既有完整清理还须work／producer归零、池完成、当前清理代次和运行修订吻合。STOPPED不单独放行。不为保存临时切换InputClosed，避免改变idle按键跟踪；此源码追踪和无输入探针不是私有桌面已隔离Hook／驱动或所有并发路径的证明。
+
+选定验证：本机Qt6.8.3／MSVC2022 x64与官方Qt5.15.2／msvc2019_64，普通权限增量Release生命周期维护构建均native exit0；Qt6零警告，Qt5兼容通过，原日志保留已接受qtmain供应商LNK4099。测试EXE分别为out/mcp_save_fence_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveFence96_*_runtime.exe，保持requireAdministrator；公共固定登记入口复用已授权24956控制器缓存，普通控制器／桥接8192、目标12288，同登录身份，实际QkmSaveFence96_<UUID>私有桌面。均未使用Default、启动映射或发送系统输入，无驱动安装／修改。实际认证与配对使用受限维护夹具，不替代普通Release用户GUI批准。
+
+每Qt五协调器场景：当前17、新建17、覆盖18、全局17、Read4；两项受影响元数据重校验回归为configure68、global58。每Qt199，合计14个native exit0／398项断言，全部首次通过。范围／独立覆盖缺失、到期／无限截止、旧修订／旧权限及在途InputProducer拒绝；最终准入拒绝一次、全INI／完整源及加载身份／名称／dirty不变。四成功场景均实际写盘／重载／精确latest备份；全部准备值及启动目标匹配。旧源Tab真实销毁时运行另一普通QThread的mutex.tryLock，确认锁被持有；完成后实际观察新运行修订可取得锁并使旧读取许可失效。该探针没有执行输入生产，也未模拟完整停止或任意物理事件交错。
+
+原始材料在out/mcp_save_fence_w11_20261027，含构建／部署、每进程真实认证请求、native case／创建身份／退出、登记及缓存尾状态、源码补丁／预期字节与evidence-summary.json；不随Git。尾状态本轮owned／unresolved／pending／current_action／current_job均零，既有历史未知请求不接管、不重放。
+
+本片仍是私有执行入口，当前12工具／9业务能力，configuration.save预览仍apply_supported=false；正式确认／消费／去重／错误结果、提交后断线超时及完整生命周期闭环尚待。SAVE-92同一持久化／finalize的独立GUI及冷读证据按原范围复用，本片未重复其完整写锁／重载坏值／备份失败矩阵；无新的120秒实等、真实撤权交错、4MiB性能、Default／设备输入、普通产品完整Release、ASan或全量GUI等价通过声明。DEMO可行性仍排在自然切点，本片没有截图／gateway执行。

@@ -22805,7 +22805,7 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
 }
 
 QKeyMapper::AutomationSettingSavePreparation QKeyMapper::revalidateAutomationSettingSave(
-    const QkmAutomation::AutomationRequest &request, const AutomationSettingSavePreparation &expected,
+    const QkmAutomation::AutomationRequest &request, const QkmAutomation::ConfigurationSaveBinding &expected,
     bool confirmScope, bool confirmOverwrite) const
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -22818,12 +22818,14 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::revalidateAutomationSet
     auto &server = m_McpControlDialog->server();
     if (!isInitialized() || (request.scopes & (Read | Configure)) != (Read | Configure)
         || !server.isRequestCurrent(request)) return reject(QStringLiteral("not_authorized"));
-    if (!expected.ok() || expected.expiresAt.isForever()) return reject(QStringLiteral("stale_preview"));
+    if (expected.settingName.isEmpty() || expected.settingName.size() > 32767 || !isLowerHex(expected.revision, 64)
+        || expected.context.isEmpty() || expected.scope.isEmpty() || expected.expiresAt.isForever())
+        return reject(QStringLiteral("stale_preview"));
     if (expected.expiresAt.hasExpired()) return reject(QStringLiteral("preview_expired"));
     if (!confirmScope) return reject(QStringLiteral("confirmation_required"));
-    auto current = prepareAutomationSettingSave(request, expected.save.target.settingName);
+    auto current = prepareAutomationSettingSave(request, expected.settingName);
     if (!current.ok()) return current;
-    if (current.save.revision != expected.save.revision || current.context != expected.context || current.scope != expected.scope)
+    if (current.save.revision != expected.revision || current.context != expected.context || current.scope != expected.scope)
         return reject(QStringLiteral("stale_preview"));
     if (current.save.target.requiresOverwriteConfirmation && !confirmOverwrite)
         return reject(QStringLiteral("confirmation_required"));
@@ -22834,8 +22836,39 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::revalidateAutomationSet
     return current;
 }
 
+QKeyMapper::SettingSaveResult QKeyMapper::executeAutomationSettingSave(
+    const QkmAutomation::AutomationRequest &request, const QkmAutomation::ConfigurationSaveBinding &expected,
+    bool confirmScope, bool confirmOverwrite, QString &errorCode)
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    errorCode.clear();
+    QElapsedTimer budget;
+    budget.start();
+    const auto current = revalidateAutomationSettingSave(request, expected, confirmScope, confirmOverwrite);
+    if (!current.ok()) {
+        errorCode = current.errorCode;
+        SettingSaveResult rejected;
+        rejected.failure = SettingSaveResult::Failure::StateRejected;
+        return rejected;
+    }
+    // Keep runtime admission fenced through disk sync and destructive GUI reload; never interrupt a partial save.
+    QMutexLocker sourceAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+    const auto admitCommit = [&]() {
+        auto &server = m_McpControlDialog->server();
+        if (!server.isRequestCurrent(request)) errorCode = QStringLiteral("not_authorized");
+        else if (current.expiresAt.hasExpired()) errorCode = QStringLiteral("preview_expired");
+        else if (budget.hasExpired(QkmAutomation::MappingChangeBudgetMs)) errorCode = QStringLiteral("validation_timeout");
+        else if (!mappingAdditionAllowed(s_KeyMappingTabWidgetCurrentIndex) || hasOpenMappingEditor()
+            || automationSourceReadBasis().isEmpty()
+            || QString::number(QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision())
+                != current.context.value(QStringLiteral("runtime_revision")).toString()) errorCode = QStringLiteral("context_busy");
+        return errorCode.isEmpty();
+    };
+    return savePreparedSettingWithResult(current.save, false, admitCommit);
+}
+
 QKeyMapper::SettingSaveResult QKeyMapper::savePreparedSettingWithResult(
-    const SettingSavePreparation &preparation, bool showSuccessPopup)
+    const SettingSavePreparation &preparation, bool showSuccessPopup, const std::function<bool()> &admitCommit)
 {
     Q_ASSERT(QThread::currentThread() == thread());
     SettingSaveResult result;
@@ -22861,6 +22894,7 @@ QKeyMapper::SettingSaveResult QKeyMapper::savePreparedSettingWithResult(
     if (!m_AutomationSettingsReader
         || compareSettingSaveCache(*m_AutomationSettingsReader, preparation) != SettingSavePreparation::Error::None)
         return fail(Failure::ConfigurationUnavailable);
+    if (admitCommit && !admitCommit()) return fail(Failure::StateRejected);
 
     CategoryFilterStateGuard filterGuard(this);
     syncRuntimeKeyMappingStatesToCurrentTab();
