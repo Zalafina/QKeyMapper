@@ -22751,7 +22751,8 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
         {QStringLiteral("pair_id"), request.pairId},
         {QStringLiteral("permission_epoch"), QString::number(request.permissionEpoch)},
         {QStringLiteral("runtime_revision"), QString::number(runtimeRevision)},
-        {QStringLiteral("current_tab"), state.value(QStringLiteral("current_tab"))}};
+        {QStringLiteral("current_tab"), state.value(QStringLiteral("current_tab"))},
+        {QStringLiteral("gui_save_name"), ui->settingNameLineEdit->text()}};
     const QString contextRevision = QString::fromLatin1(QCryptographicHash::hash(
         QJsonDocument(result.context).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
     result.save = prepareSettingSave(requestedName, selected, globalSelected,
@@ -22769,6 +22770,9 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
         if (it.key().startsWith(prefix)) targetKeys.append(it.key().mid(prefix.size()));
         else sharedKeys.append(it.key());
     }
+    const QString guiName = result.context.value(QStringLiteral("gui_save_name")).toString();
+    const QString targetGuiName = result.save.target.saveGlobalSetting ? tr(DISPLAYNAME_GLOBALSETTING) : result.save.target.settingName;
+    // The GUI name draft can be replaced by reload even when dirty was already true.
     // This is the complete write footprint, not an attribution of changes to a mapping request or dirty flag.
     result.scope = {{QStringLiteral("schema_version"), 1}, {QStringLiteral("mode"), QStringLiteral("full_gui_save")},
         {QStringLiteral("source_configuration"), snapshot.value(QStringLiteral("configuration_selection"))},
@@ -22777,6 +22781,8 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
             {QStringLiteral("create_new"), result.save.target.createNewSetting},
             {QStringLiteral("overwrite_confirmation_required"), result.save.target.requiresOverwriteConfirmation}}},
         {QStringLiteral("key_semantics"), QStringLiteral("write_footprint_not_diff")},
+        {QStringLiteral("gui_save_name"), QJsonObject{{QStringLiteral("before"), guiName},
+            {QStringLiteral("on_success"), targetGuiName}, {QStringLiteral("changes_on_success"), guiName != targetGuiName}}},
         {QStringLiteral("target_write_keys"), targetKeys}, {QStringLiteral("shared_write_keys"), sharedKeys},
         {QStringLiteral("startup_selection_after"), result.save.values.values.value(QString::fromLatin1(SETTINGSELECT)).toString()},
         {QStringLiteral("configuration_order_action"), result.save.values.appendSettingOrder

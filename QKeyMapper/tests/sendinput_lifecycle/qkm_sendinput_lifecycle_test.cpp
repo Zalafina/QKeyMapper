@@ -3356,6 +3356,42 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
                 && mapper->m_AutomationSettingsReader && mapper->m_AutomationSettingsReader->status() == QSettings::NoError,
                 "an errored observer is recreated only at the GUI-read boundary and then recovers normal candidates");
         }
+        if (!globalSource) {
+            auto *editor = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+            const auto enter = [&](const QString &text) {
+                editor->setFocus();
+                QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+                QCoreApplication::sendEvent(editor, &select); QCoreApplication::sendEvent(editor, &selected);
+                for (const auto character : text) {
+                    QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+                    QCoreApplication::sendEvent(editor, &press); QCoreApplication::sendEvent(editor, &release);
+                }
+            };
+            {
+                QScopedValueRollback<bool> sameDirty(mapper->m_SaveSettingDirty, true);
+                enter(QStringLiteral("Draft91甲"));
+                const auto first = prepare(selectedGroup);
+                enter(QStringLiteral("Draft91乙"));
+                const auto second = prepare(selectedGroup);
+                check(first.ok() && second.ok() && editor->text() == QStringLiteral("Draft91乙") && mapper->m_SaveSettingDirty
+                    && first.save.target.settingName == selectedGroup && second.save.target.settingName == selectedGroup
+                    && first.context.value(QStringLiteral("source_snapshot")) == second.context.value(QStringLiteral("source_snapshot")),
+                    "actual Qt name edits retain the same loaded source snapshot and dirty=true");
+                check(first.save.revision != second.save.revision,
+                    "changing an existing GUI name draft while dirty stays true invalidates the save candidate");
+                const auto description = first.scope.value(QStringLiteral("gui_save_name")).toObject();
+                check(first.context.value(QStringLiteral("gui_save_name")) == QStringLiteral("Draft91甲")
+                    && second.context.value(QStringLiteral("gui_save_name")) == QStringLiteral("Draft91乙")
+                    && description.value(QStringLiteral("before")) == QStringLiteral("Draft91甲")
+                    && description.value(QStringLiteral("on_success")) == selectedGroup
+                    && description.value(QStringLiteral("changes_on_success")).toBool(),
+                    "scope describes the GUI name draft that a successful explicit save will replace");
+                enter(name);
+            }
+            const auto nameRestored = prepare(selectedGroup);
+            check(nameRestored.ok() && nameRestored.save.revision == candidate.save.revision && editor->text() == name,
+                "restoring only the GUI name and prior dirty state restores the original candidate");
+        }
         const auto invalid = prepare(QStringLiteral("Bad/Name"));
         check(!invalid.ok() && (globalSource ? invalid.errorCode == QStringLiteral("invalid_target")
                 : invalid.save.error == QKeyMapper::SettingSavePreparation::Error::InvalidTarget)
@@ -3365,6 +3401,11 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
         check(!otherKind.ok() && otherKind.scope.isEmpty(), "profile and global sources cannot silently change save kind");
         const auto scope = candidate.scope;
         const auto target = scope.value(QStringLiteral("target")).toObject();
+        const auto guiName = scope.value(QStringLiteral("gui_save_name")).toObject();
+        check(candidate.context.value(QStringLiteral("gui_save_name")) == name
+            && guiName.value(QStringLiteral("before")) == name && guiName.value(QStringLiteral("on_success")) == name
+            && !guiName.value(QStringLiteral("changes_on_success")).toBool(),
+            "settled profile or translated global GUI name is described separately from the explicit target");
         check(scope.value(QStringLiteral("schema_version")).toInt() == 1 && scope.value(QStringLiteral("mode")) == QStringLiteral("full_gui_save")
             && scope.value(QStringLiteral("key_semantics")) == QStringLiteral("write_footprint_not_diff"),
             "scope explicitly reports the original full-save write footprint rather than a fabricated content diff");

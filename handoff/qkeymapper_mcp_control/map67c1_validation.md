@@ -462,3 +462,15 @@ cache-after.json核实10520仍active／cache_available=true、零owned／unresol
 全部材料仅在本机out/mcp_save_cache_w11_20261027：after／probe／final／stages保留四份失败及诊断，observer／regression保留30份成功结果；first-failed-executables／probe-executable／directory-first-failed-executables／constructor-stage-probe保留相关EXE和identity，另有构建、部署、12份旧GUI基线副本／来源及evidence-summary.json。最终补丁及构造阶段探针源快照可追溯；directory-first-failed-source.patch的测试部分含后来追加的阶段观测，不作为该失败测试的逐字源码证明，生产CPP仍为当时目录方案。原始证据不随Git，历史未知请求保持原记录、不重放或接管。
 
 独立本地提交切点，不推送。当前只有候选预检，未开放MCP保存；执行期仍须在任何真实INI构造前完成权限／状态／范围／目标／到期及缓存复核并协调生命周期，预检不是独占锁或跨进程事务。调用中竞态／预算超时、文件身份替换、显式提交／去重／结果查询、对象新增内存／加载性能及完整映射／停止均未验；错误观察器恢复只作组件覆盖，不冒充GUI成功→失败→恢复全链路。工具12／能力8、C1-B2／M1未完成。未加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／设备／性能或三语言布局，PC-W10保留历史范围。
+
+## SAVE-91：保存重载前的GUI名称依赖（2026-10-27，PC-W11）
+
+基于49e303a7。原成功保存收尾会把settingNameLineEdit改为规范目标名／全局译名，重载失败则保留原清空行为；源快照和dirty不包含名称本身，不能识别dirty已经true时另一个名称草稿。只在私有保存context加入gui_save_name再计算原上下文哈希，scope另报before／on_success／changes_on_success。目标依旧取明确参数，不设置名称控件决定操作；名称效果不混入INI写入键列表，也不据此推断所有草稿归属。GUI保存体、只读观察器、Worker、协议、权限、manifest与依赖不变；CPP净增7行、删1行，精确预期字节及完整生产逆向检查通过。
+
+旧产品Qt6单例经实际Qt Ctrl+A及文本事件输入等长Unicode的Draft91甲、Draft91乙，dirty固定true；两次源快照相同，45项中仅“名称变化使修订失效”和“范围描述将被替换的名称”两项失败，native exit2；其他43项通过。INI原始字节、加载／源代次、载入组及最后恢复的名称不变。原before case／native身份／退出与旧EXE／identity保留，不用直接赋值控件或调用加载函数替代独立GUI基线。此用例只证明候选依赖缺口，不是保存业务／GUI加载验收。
+
+修正后八个实际认证维护进程全部native exit0：各Qt configure46项、read4项、global40项、configure_saved47项，合计274项。两种名称草稿仍共享相同源快照／dirty，候选修订应不同，显式目标仍为传入配置；恢复名称／dirty后恢复原候选。当前配置及全局实际译名报告正确，原只读权限／陈旧请求、缓存pending隔离、观察器缺失／错误恢复、编辑窗／新运行修订、完整范围等受影响检查通过；configure_saved仍由实际Save按钮建立本场景观察基线。红例之后补充了目标／全局译名检查，并将描述规范为changes_on_success，未声称红／绿测试源码逐字相同。
+
+同机既有锁环境及官方Qt6.8.3／Qt5.15.2 x64／MSVC19.44。旧Qt6及最终双Qt普通Release维护增量构建native exit0，Qt6零警告、Qt5仅原qtmain例外。EXE在out/mcp_save_name_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveName91_*_runtime.exe，原requireAdministrator；同一Medium24956及公共登记／perform，父8192、目标12288、same_login=true，实际QkmSaveName91_<UUID>私有桌面，原PID／创建时间／native退出可查，无Default、映射或系统输入。最后status仍active／cache_available=true，18:30截止不变、零owned／unresolved／pending／current_action／current_job。
+
+本机out/mcp_save_name_w11_20261027保留before／after原case、旧EXE、身份、构建／部署、各补丁／逆向检查／预期字节及evidence-summary.json，均不随Git；前序证据不覆盖。原GUI保存／冷读、只读观察器寿命沿SAVE-90当前有效范围复用，不重复其22进程。此片为独立本地提交切点，不推送；没有新增MCP工具，12工具／8能力、C1-B2／M1仍未整体完成。实际显式写入、范围／覆盖确认、执行时生命周期／权限／到期、去重／结果查询及文件事务仍待后续；不把名称依赖补齐当作全部编辑草稿已归属或全部副作用已验。未加普通产品全构建、ASan、严格静态分析、VIGEM关闭、Default／设备／性能或三语言布局，PC-W10保留历史范围。
