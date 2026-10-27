@@ -24,6 +24,7 @@
 #include <QColor>
 #include <QPointer>
 #include <QJsonObject>
+#include <QDeadlineTimer>
 #include <memory>
 
 class QkmUiScale;
@@ -2221,12 +2222,15 @@ private:
         SettingSavePreparation save;
         QJsonObject context;
         QJsonObject scope;
+        QDeadlineTimer expiresAt;
         QString errorCode;
         bool ok() const { return errorCode.isEmpty() && save.ok(); }
     };
     SettingSaveResult savePreparedSettingWithResult(const SettingSavePreparation &preparation, bool showSuccessPopup);
     AutomationSettingSavePreparation prepareAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
         const QString &requestedName) const;
+    AutomationSettingSavePreparation revalidateAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
+        const AutomationSettingSavePreparation &expected, bool confirmScope, bool confirmOverwrite) const;
     bool hasOpenMappingEditor() const;
     static QString settingSaveValuesFingerprint(const SettingSaveTarget &target, const SettingSaveValues &values,
         const QString &configurationPath, bool configurationExists, const QByteArray &configurationData, const QString &sourceRevision);

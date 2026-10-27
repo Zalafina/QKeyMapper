@@ -29,6 +29,7 @@
 #include <qt_windows.h>
 #include "../../automation/qkm_control_dialog.h"
 #include "../../automation/qkm_source_snapshot.h"
+#include "../../automation/qkm_mapping_changes.h"
 #include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
@@ -3240,10 +3241,15 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         const auto consumed = mapper->prepareAutomationSettingSave(request, QStringLiteral("Payload82Seed"));
         const bool refused = replied && !consumed.ok() && consumed.errorCode == QStringLiteral("not_authorized")
             && consumed.context.isEmpty() && consumed.scope.isEmpty() && consumed.save.values.values.isEmpty() && consumed.save.revision.isEmpty();
+        QKeyMapper::AutomationSettingSavePreparation emptyCandidate;
+        const auto consumedRecheck = mapper->revalidateAutomationSettingSave(request, emptyCandidate, true, true);
         auto checks = evidence.value(QStringLiteral("checks")).toArray();
         checks.append(QJsonObject{{QStringLiteral("check"), QStringLiteral("a completed real request cannot authorize a later candidate")}, {QStringLiteral("passed"), refused}});
+        const bool recheckRefused = !consumedRecheck.ok() && consumedRecheck.errorCode == QStringLiteral("not_authorized")
+            && consumedRecheck.save.values.values.isEmpty() && consumedRecheck.context.isEmpty() && consumedRecheck.scope.isEmpty();
+        checks.append(QJsonObject{{QStringLiteral("check"), QStringLiteral("a completed real request cannot authorize save revalidation")}, {QStringLiteral("passed"), recheckRefused}});
         evidence.insert(QStringLiteral("checks"), checks);
-        evidence.insert(QStringLiteral("passed"), evidence.value(QStringLiteral("passed")).toBool() && refused);
+        evidence.insert(QStringLiteral("passed"), evidence.value(QStringLiteral("passed")).toBool() && refused && recheckRefused);
         result->settingsGeneralEvidence = evidence;
         QTimer::singleShot(2000, QCoreApplication::instance(), [] {
             finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
@@ -3293,6 +3299,9 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
         check(!candidate.ok() && candidate.errorCode == QStringLiteral("not_authorized") && candidate.context.isEmpty() && candidate.scope.isEmpty()
             && candidate.save.values.values.isEmpty() && candidate.save.revision.isEmpty(),
             "real read-only permission cannot prepare a save or receive its payload");
+        const auto denied = mapper->revalidateAutomationSettingSave(request, candidate, true, true);
+        check(!denied.ok() && denied.errorCode == QStringLiteral("not_authorized") && denied.context.isEmpty()
+            && denied.scope.isEmpty() && denied.save.values.values.isEmpty(), "read-only permission cannot approve save revalidation");
     } else {
         check(candidate.ok() && candidate.save.target.settingName == selectedGroup,
             "live authenticated configure request prepares the explicitly selected target");
@@ -3318,6 +3327,57 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
         check(globalSource ? !existing.ok() && existing.errorCode == QStringLiteral("invalid_target")
             : existing.ok() && existing.save.target.requiresOverwriteConfirmation && !existing.save.target.createNewSetting,
             "explicit existing destination retains overwrite intent or rejects global redirection");
+        const auto revalidate = [&](const QKeyMapper::AutomationSettingSavePreparation &value, bool scope, bool overwrite) {
+            return mapper->revalidateAutomationSettingSave(request, value, scope, overwrite);
+        };
+        const auto noScope = revalidate(candidate, false, true);
+        check(!noScope.ok() && noScope.errorCode == QStringLiteral("confirmation_required") && noScope.context.isEmpty()
+            && noScope.scope.isEmpty() && noScope.save.values.values.isEmpty(),
+            "full-save scope consent is mandatory even when overwrite was confirmed");
+        const auto accepted = revalidate(candidate, true, false);
+        check(accepted.ok() && accepted.context == candidate.context && accepted.scope == candidate.scope
+            && accepted.save.revision == candidate.save.revision && accepted.expiresAt == candidate.expiresAt
+            && candidate.expiresAt.remainingTime() > 0 && candidate.expiresAt.remainingTime() <= MappingChangeStore::PreviewTtlMs,
+            "unchanged authorized candidate revalidates without renewing its original monotonic expiry");
+        auto altered = candidate;
+        altered.expiresAt = QDeadlineTimer();
+        const auto expired = revalidate(altered, true, true);
+        check(!expired.ok() && expired.errorCode == QStringLiteral("preview_expired") && expired.scope.isEmpty()
+            && expired.save.values.values.isEmpty(), "an expired candidate returns no executable payload");
+        altered.expiresAt = QDeadlineTimer(QDeadlineTimer::Forever);
+        const auto unbounded = revalidate(altered, true, true);
+        check(!unbounded.ok() && unbounded.errorCode == QStringLiteral("stale_preview"), "an unbounded candidate deadline is invalid");
+        altered = candidate;
+        altered.save.revision = QString(64, QLatin1Char('f'));
+        const auto wrongRevision = revalidate(altered, true, true);
+        check(!wrongRevision.ok() && wrongRevision.errorCode == QStringLiteral("stale_preview") && wrongRevision.scope.isEmpty(),
+            "revalidation refuses a candidate with a different complete revision");
+        altered = candidate;
+        altered.scope.insert(QStringLiteral("draft_policy"), QStringLiteral("only_one_row"));
+        const auto wrongScope = revalidate(altered, true, true);
+        check(!wrongScope.ok() && wrongScope.errorCode == QStringLiteral("stale_preview") && wrongScope.save.values.values.isEmpty(),
+            "narrowing the stored full-save scope cannot approve a larger actual save");
+        altered = candidate;
+        altered.save.values.values.insert(QStringLiteral("Injected93/value"), QStringLiteral("untrusted old payload"));
+        const auto recollected = revalidate(altered, true, false);
+        check(recollected.ok() && !recollected.save.values.values.contains(QStringLiteral("Injected93/value"))
+            && recollected.save.revision == candidate.save.revision,
+            "only newly collected typed values are returned, never caller-held old payload values");
+        if (!globalSource) {
+            const auto noOverwrite = revalidate(existing, true, false);
+            const auto overwrite = revalidate(existing, true, true);
+            check(!noOverwrite.ok() && noOverwrite.errorCode == QStringLiteral("confirmation_required") && noOverwrite.scope.isEmpty()
+                && overwrite.ok() && overwrite.expiresAt == existing.expiresAt,
+                "existing destination requires separate overwrite consent after fresh target analysis");
+            altered = existing;
+            altered.save.target.requiresOverwriteConfirmation = false;
+            const auto suppressed = revalidate(altered, true, false);
+            check(!suppressed.ok() && suppressed.errorCode == QStringLiteral("confirmation_required"),
+                "clearing an old overwrite flag cannot suppress the freshly analyzed overwrite requirement");
+            const auto newTarget = revalidate(fresh, true, false);
+            check(newTarget.ok() && newTarget.save.target.settingName == QStringLiteral("Context87New")
+                && newTarget.expiresAt == fresh.expiresAt, "new explicit destination retains its own identity and original expiry");
+        }
         {
             using Error = QKeyMapper::SettingSavePreparation::Error;
             const QString path = QFileInfo(QString::fromLatin1(CONFIG_FILENAME)).absoluteFilePath();
@@ -3354,6 +3414,10 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
                     && extraCandidate.save.values.values.isEmpty() && extraCandidate.scope.isEmpty() && unchangedDisk()
                     && pending.value(extra).toString() == QStringLiteral("uncommitted"),
                     "an unrelated pending group is rejected without flushing or consuming the original shared cache");
+                const auto pendingRecheck = revalidate(candidate, true, true);
+                check(!pendingRecheck.ok() && pendingRecheck.save.error == Error::CacheContentChanged
+                    && pendingRecheck.scope.isEmpty() && pendingRecheck.save.values.values.isEmpty() && unchangedDisk(),
+                    "commit revalidation also refuses shared pending content without flushing the real INI");
                 pending.remove(extra);
                 pending.setValue(rowKey, QStringLiteral("PENDING_CACHE90"));
                 const auto rowCandidate = prepare(selectedGroup);
@@ -3390,6 +3454,20 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
             const auto recovered = prepare(selectedGroup);
             check(recovered.ok() && recovered.save.revision == candidate.save.revision && recovered.scope == candidate.scope
                 && unchangedDisk(), "restored original cache and raw bytes recover exactly the prior candidate and scope");
+            const QByteArray changedBytes = bytes + QByteArray("\n; save93 different raw disk revision\n");
+            QSaveFile changedDisk(path);
+            if (!changedDisk.open(QIODevice::WriteOnly) || changedDisk.write(changedBytes) != changedBytes.size() || !changedDisk.commit())
+                return {{QStringLiteral("passed"), false}};
+            const auto diskRecheck = revalidate(candidate, true, true);
+            QFile observedDisk(path);
+            const bool keptChangedBytes = observedDisk.open(QIODevice::ReadOnly) && observedDisk.readAll() == changedBytes;
+            observedDisk.close();
+            QSaveFile restoreDisk(path);
+            if (!restoreDisk.open(QIODevice::WriteOnly) || restoreDisk.write(bytes) != bytes.size() || !restoreDisk.commit())
+                return {{QStringLiteral("passed"), false}};
+            check(!diskRecheck.ok() && diskRecheck.errorCode == QStringLiteral("stale_preview") && diskRecheck.scope.isEmpty()
+                && diskRecheck.save.values.values.isEmpty() && keptChangedBytes && unchangedDisk(),
+                "a raw disk revision change invalidates confirmation without committing or replacing that file");
             QTemporaryFile malformed(QDir::tempPath() + QStringLiteral("/QKeyMapper-reader90-XXXXXX.ini"));
             if (!malformed.open() || malformed.write("[Broken\nvalue=1\n") != 16 || !malformed.flush())
                 return {{QStringLiteral("passed"), false}};
@@ -3433,6 +3511,9 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
                     "actual Qt name edits retain the same loaded source snapshot and dirty=true");
                 check(first.save.revision != second.save.revision,
                     "changing an existing GUI name draft while dirty stays true invalidates the save candidate");
+                const auto staleName = revalidate(first, true, true);
+                check(!staleName.ok() && staleName.errorCode == QStringLiteral("stale_preview"),
+                    "a changed real GUI name draft invalidates the previous save confirmation");
                 const auto description = first.scope.value(QStringLiteral("gui_save_name")).toObject();
                 check(first.context.value(QStringLiteral("gui_save_name")) == QStringLiteral("Draft91甲")
                     && second.context.value(QStringLiteral("gui_save_name")) == QStringLiteral("Draft91乙")
@@ -3521,33 +3602,45 @@ QJsonObject QkmMappingAdditionTestAccess::saveContext(QKeyMapper *mapper, const 
             const auto rejected = mapper->prepareAutomationSettingSave(stale, QStringLiteral("Payload82Seed"));
             check(!rejected.ok() && rejected.errorCode == QStringLiteral("not_authorized") && rejected.context.isEmpty() && rejected.scope.isEmpty()
                 && rejected.save.revision.isEmpty() && rejected.save.values.values.isEmpty(), "stale or reduced request identity is rejected without a partial candidate");
+            const auto rechecked = mapper->revalidateAutomationSettingSave(stale, candidate, true, true);
+            check(!rechecked.ok() && rechecked.errorCode == QStringLiteral("not_authorized") && rechecked.scope.isEmpty()
+                && rechecked.save.values.values.isEmpty(), "stale request identity cannot authorize save revalidation");
         }
         auto *rows = QKeyMapper::s_KeyMappingTabInfoList.first().KeyMappingData;
         if (!rows || rows->isEmpty()) return {{QStringLiteral("passed"), false}};
         const auto pure = rows->first().Pure_OriginalKeys;
         rows->first().Pure_OriginalKeys.append(QStringLiteral("Context87Derived"));
         const auto changed = prepare(selectedGroup);
+        const auto changedRecheck = revalidate(candidate, true, true);
         rows->first().Pure_OriginalKeys = pure;
         check(changed.ok() && changed.save.revision != candidate.save.revision
             && changed.context.value(QStringLiteral("source_snapshot")) != candidate.context.value(QStringLiteral("source_snapshot")),
             "derived source content omitted from INI still invalidates the complete source binding");
+        check(!changedRecheck.ok() && changedRecheck.errorCode == QStringLiteral("stale_preview") && changedRecheck.scope.isEmpty(),
+            "derived source changes also invalidate execution revalidation before any persistence");
         const auto restored = prepare(selectedGroup);
         check(restored.ok() && restored.save.revision == candidate.save.revision, "restoring the synthetic source field recovers the original candidate");
         auto *entry = mapper->findChild<QPushButton *>(QStringLiteral("mappingAdvancedSettingButton"));
         if (!entry) return {{QStringLiteral("passed"), false}};
         clickMappingButton(entry);
         const auto busy = prepare(selectedGroup);
+        const auto busyRecheck = revalidate(candidate, true, true);
         check(mapper->m_MappingAdvancedDialog->isVisible() && !busy.ok()
             && busy.save.values.error == QKeyMapper::SettingSaveValues::Error::EditorBusy && busy.save.values.values.isEmpty(),
             "real open mapping editor prevents authenticated candidate preparation");
+        check(!busyRecheck.ok() && busyRecheck.save.values.error == QKeyMapper::SettingSaveValues::Error::EditorBusy
+            && busyRecheck.scope.isEmpty(), "a real open editor also blocks save revalidation without closing the editor");
         QKeyEvent escape(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), escaped(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
         QCoreApplication::sendEvent(mapper->m_MappingAdvancedDialog, &escape); QCoreApplication::sendEvent(mapper->m_MappingAdvancedDialog, &escaped);
         const auto closed = prepare(selectedGroup);
         check(closed.ok() && closed.save.revision == candidate.save.revision, "normal editor close restores the same authenticated candidate");
         QKeyMapper_Worker::s_SourceReadAccess.observeRuntimeLifecycle();
         const auto lifecycle = prepare(selectedGroup);
+        const auto lifecycleRecheck = revalidate(candidate, true, true);
         check(!lifecycle.ok() && lifecycle.errorCode == QStringLiteral("context_busy") && lifecycle.save.values.values.isEmpty()
             && lifecycle.save.revision.isEmpty(), "new runtime lifecycle invalidates pristine access even while the worker sample remains stopped");
+        check(!lifecycleRecheck.ok() && lifecycleRecheck.errorCode == QStringLiteral("context_busy") && lifecycleRecheck.scope.isEmpty(),
+            "revalidation cannot treat a stopped Worker sample as a current cleanup permission");
     }
     if (!ini.open(QIODevice::ReadOnly)) return {{QStringLiteral("passed"), false}};
     check(ini.readAll() == bytes && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load

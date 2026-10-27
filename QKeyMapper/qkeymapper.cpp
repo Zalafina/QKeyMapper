@@ -22719,6 +22719,7 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
     AutomationSettingSavePreparation result;
     const auto fail = [&](const QString &code) {
         result.errorCode = code;
+        result.expiresAt = QDeadlineTimer();
         result.save.values.values.clear();
         result.save.values.appendSettingOrder = false;
         result.save.revision.clear();
@@ -22732,6 +22733,7 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
             && server.isRequestCurrent(request);
     };
     if (!isInitialized() || !authorized()) return fail(QStringLiteral("not_authorized"));
+    result.expiresAt.setRemainingTime(MappingChangeStore::PreviewTtlMs, Qt::PreciseTimer);
     QElapsedTimer budget;
     budget.start();
     const quint64 runtimeRevision = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
@@ -22800,6 +22802,36 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
         return fail(QStringLiteral("context_busy"));
     if (budget.hasExpired(MappingChangeBudgetMs)) return fail(QStringLiteral("validation_timeout"));
     return result;
+}
+
+QKeyMapper::AutomationSettingSavePreparation QKeyMapper::revalidateAutomationSettingSave(
+    const QkmAutomation::AutomationRequest &request, const AutomationSettingSavePreparation &expected,
+    bool confirmScope, bool confirmOverwrite) const
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    using namespace QkmAutomation;
+    const auto reject = [](const QString &code) {
+        AutomationSettingSavePreparation result;
+        result.errorCode = code;
+        return result;
+    };
+    auto &server = m_McpControlDialog->server();
+    if (!isInitialized() || (request.scopes & (Read | Configure)) != (Read | Configure)
+        || !server.isRequestCurrent(request)) return reject(QStringLiteral("not_authorized"));
+    if (!expected.ok() || expected.expiresAt.isForever()) return reject(QStringLiteral("stale_preview"));
+    if (expected.expiresAt.hasExpired()) return reject(QStringLiteral("preview_expired"));
+    if (!confirmScope) return reject(QStringLiteral("confirmation_required"));
+    auto current = prepareAutomationSettingSave(request, expected.save.target.settingName);
+    if (!current.ok()) return current;
+    if (current.save.revision != expected.save.revision || current.context != expected.context || current.scope != expected.scope)
+        return reject(QStringLiteral("stale_preview"));
+    if (current.save.target.requiresOverwriteConfirmation && !confirmOverwrite)
+        return reject(QStringLiteral("confirmation_required"));
+    if (!server.isRequestCurrent(request)) return reject(QStringLiteral("not_authorized"));
+    if (expected.expiresAt.hasExpired()) return reject(QStringLiteral("preview_expired"));
+    // Reuse freshly collected values, preserve the original expiry, and leave execution to the commit coordinator.
+    current.expiresAt = expected.expiresAt;
+    return current;
 }
 
 QKeyMapper::SettingSaveResult QKeyMapper::savePreparedSettingWithResult(

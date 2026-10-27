@@ -490,3 +490,17 @@ after核对实际结果中的diskSaved／reloaded／backupAttempted／backupSucc
 最后cache-after仍active／cache_available=true、18:30截止不变，零owned／unresolved／pending／current_action／current_job；23316／25608历史未知请求不因此解决。before／after原case、旧EXE／身份、INI基线／产物及比较、首次脚本／差异、构建部署、源码补丁／预期字节和evidence-summary.json均在本机out/mcp_save_prepared_w11_20261027，不随Git。原SAVE-86基线元数据另轻量核对18份shared_execution=false、save_result为空且passed，纠正早期ignored助手检查不存在execution字段的弱断言；原实际GUI路径及EXE来源未因此变化，不重跑旧验收。
 
 独立本地提交切点，不推送。实际用户权限／完整范围及覆盖确认、到期／预览消费、源与草稿执行重检、生命周期写入栅栏、文件身份／跨进程事务、去重和结果查询仍待C1-C；私有方法的普通状态／缓存预检不能替代这些门槛。工具12／能力8、C1-B2／M1未整体完成。全局源、共通Tab恢复和缺省热键空输入的本片动态覆盖未增加；原字段等价证据沿原范围复用。未增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、性能或三语言布局；PC-W10保留原历史范围。
+
+## SAVE-93：私有提交前重校验与确认（2026-10-27，PC-W11）
+
+基于49cad97a，CPP新增32行、头文件增加Qt自身QDeadlineTimer及私有签名／截止字段。候选准备从原当前授权检查后设置精确单调120秒截止，失败清掉截止；重校验先检查真实Read＋Configure和isRequestCurrent，再拒绝无效／无限期／过期候选或缺少全范围确认，重新prepare并比完整save.revision／context／scope。覆盖需求取新目标分析，不能由旧requiresOverwriteConfirmation位降低；只返回重新采集的值，保留原expiresAt，不续期、不消费或执行预览。完整生产补丁／精确字节／逆向检查通过；GUI、私有持久化组件、Worker、协议、manifest和依赖均不改。
+
+选既有settings_save_context八进程：双Qt各configure68项、Read6项、global58项、configure_saved69项，共402项、全部native exit0；前序同组274项按原输入保留并增加128项。实际Read请求和五种陈旧身份／作用域、回复完成后请求均无法重校验；缺全范围或单独覆盖确认无可用载荷，新／当前／全局正确目标可通过且截止逐位保留。组件把截止设为已过期／Forever，分别拒绝，未等待实际120秒或证明中途到期分支。改旧修订、缩窄scope拒绝；注入旧values只返回新采值、不含注入项，清掉旧覆盖位仍须明确确认新分析的覆盖。
+
+同一实际Qt名称编辑、派生源字段变化、原始磁盘字节变化、待写缓存、实际高级映射窗和新增运行修订均使旧确认失效；新磁盘原字节及pending不被重校验刷写。测试自己恢复自有磁盘／pending及GUI名称，与组件不变性分开；最终INI、dirty、加载／源代次、载入组和名称不变。configure_saved只在开始用原真实Save按钮建立新的观察基线；后续新校验不调用savePreparedSettingWithResult，非正式MCP保存。只读守卫、到期及布尔确认不能代替底层身份或执行期许可。
+
+首轮双Qt维护编译native exit2：测试变量forever与Qt宏冲突、缺MappingChangeStore直接include，以及用{}传空候选触发OrderedMap显式默认构造限制。最初只修正宏名后第二轮双Qt仍native exit2，随后按完整首错一并修正include与显式局部对象。四份失败日志及对应first-failed-source／second-failed-source.patch保留；产品CPP32行两轮间未变，失败期间未部署／启动本片测试产品。最终双Qt普通Release维护增量native exit0，Qt6零警告、Qt5仅原qtmain例外；同机官方Qt6.8.3／Qt5.15.2 x64／MSVC19.44及已有锁环境沿用。
+
+EXE为out/mcp_save_revalidate_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveRevalidate93_*_runtime.exe，原requireAdministrator；同一Medium24956经公共登记／perform，父8192、目标12288、same_login=true，实际QkmSaveRevalidate93_<UUID>私有桌面，各PID／创建时间／native退出见原start／closed.json。无Default、系统输入或映射启动。最后cache-after仍active／cache_available=true，18:30截止不变，零owned／unresolved／pending／current_action／current_job；历史未知请求原样保留。全部原case、构建／失败源码、部署／EXE、补丁／预期字节及evidence-summary在本机out，不随Git。
+
+独立本地提交切点，不推送；校验成功不是执行租约，后续仍须预览消费／取消、去重及结果归属，并在实际提交前协调源写入生命周期及重核权限／身份／状态／磁盘／到期。未验真实120秒等待、校验中撤权／到期、调用中并发、文件身份／跨进程事务或完整运行停止。12工具／8能力及C1-B2／M1未整体完成；SAVE-92未变的保存／冷读44进程不重跑。未增普通产品全构建、ASan、严格静态分析、Default／真实输入／设备、性能或三语言布局，PC-W10按原历史范围保留。
