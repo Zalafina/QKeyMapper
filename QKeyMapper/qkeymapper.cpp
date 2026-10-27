@@ -38217,6 +38217,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (!errorCode.isEmpty() || (outcome.failure != Failure::None
             && outcome.failure != Failure::WriteFailed && outcome.failure != Failure::ReloadFailed)) {
             if (errorCode == QStringLiteral("not_authorized")) errorCode = QStringLiteral("permission_denied");
+            if (errorCode == QStringLiteral("invalid_target")) errorCode = QStringLiteral("stale_preview");
             if (errorCode.isEmpty() || errorCode == QStringLiteral("validation_timeout")
                 || errorCode == QStringLiteral("save_preparation_failed")) errorCode = QStringLiteral("context_busy");
             reject(errorCode, QStringLiteral("Save admission was refused before persistence. Recheck authorization, the complete preview, confirmations, source, file and cleanup state; obtain a fresh preview."));

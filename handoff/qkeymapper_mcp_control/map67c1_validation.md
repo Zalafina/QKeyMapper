@@ -590,3 +590,19 @@ write_recover由普通控制器对本片INI持有只读分享文件句柄，正�
 原始材料out/mcp_save_edges_w11_20261027：双Qt构建／部署、两份正式SDK错误与准确peer／进程创建身份／退出、八份GUI Warm／Cold记录／完整INI、四对比较、固定登记／缓存尾状态和52项摘要，以及首轮助手失败材料；均不随Git。Python／纯参数存储组件与合法保存业务输入未变，复用SAVE-97的28项／双Qt七组件槽／正式成功与写失败恢复，不重复全验。最终缓存本轮owned／unresolved／pending／current_action／current_job均零，历史未知仍保留。
 
 未完成：正式提交中超时／断线／撤权交错、真实清理后源重载竞态、坏源后的显式GUI恢复／完整MCP加载能力、4MiB性能、普通Release配对／Default／实际设备输入和M1完整运行／停止。当前12工具／10能力，无新增能力或阶段整体完成声明。截图演示、免Python交付及QQ渠道不在本片执行范围。
+
+## SAVE-99：真实GUI变更后的旧保存确认与错误归类（2026-10-27，PC-W11）
+
+基于SAVE-98 `37f5894f0bea153a4d19a87f108d473ebaaeb2de`（产品SAVE-97），在独立测试INI增加有效Q→R全局配置。正式SDK先预览A86Saved，再由固定维护触发器发送真实Qt名称输入Draft99甲，或点击配置ComboBox、在原自定义弹窗输入显示名并Enter选择全局。没有setText／setCurrentIndex、直接加载调用或通用Qt属性控制端点；控制文件只触发固定场景，不接受输入参数。完成ack须实际名称／已接受组及加载代次匹配。拒绝后由CPP比较完整源、INI、名称和dirty，随后正式SDK必须新预览并确认完整范围才保存。
+
+修复前Qt6名称场景native exit0／11项；全局场景native exit2，原stderr明确error=invalid_target，CPP核对旧提交已拒绝且GUI后完整源／INI／名称／dirty不变。原因是旧保存目标在预览时有效，GUI已切全局后重新准备返回invalid_target，正式分派未归为旧上下文，桥接只能显示泛化错误。产品仅在保存准入失败分支加一行invalid_target→stale_preview；权限、目标、期限、确认、准入和实际保存不放宽，原GUI／Worker／依赖／manifest不改。
+
+Qt6修复前、双Qt修复后生命周期维护增量Release均native exit0，Qt6零警告，Qt5兼容通过，原供应商qtmain LNK4099保留。修复后只复验受影响Qt6全局，native exit0／11项；Qt5名称／全局各exit0／11项。Qt6名称的合法输入和错误分支不受新增归类命中影响，复用其修复前结果，不重复执行；最终四个有效场景共44项，另完整保留红例exit2，不能把它计通过。
+
+四场均经正式stdio、准确SDK peer配对与生产业务处理器；旧预览被单次拒绝、同ID维持stale_preview和原目标，GUI后完整数据不变；新预览修订不同、名称效果对应实际新GUI状态，明确确认后保存／重载／备份一次，dirty清除，旧源修订失效。全局GUI加载另增一次加载代次，不能将这次GUI加载误记成MCP重复保存。实际保持idle／stopped，无映射启动、系统输入或Default；实际QkmSaveStale99_<UUID>私有桌面，普通控制器／SDK8192、原manifest产品12288，同登录。EXE为out/mcp_save_stale_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveStale99_*_runtime.exe。
+
+原始材料含qt6-before.log、red/qt6-stale_global完整失败／定义／退出、old-executables修复前EXE与身份、四场SDK调用／GUI ack／post-GUI INI／Native JSON／身份退出、修复后日志、单行生产补丁及预期字节、摘要。Qt6名称使用修复前EXE，原路径曾重部署，故必须按归档身份及旧EXE关联，不将当前路径的新SHA套用其证据。大文件dry-run为1加0删，单次应用、精确预期字节／逆向检查通过。
+
+为遵守现有32定义上限，普通控制器在owned／unresolved／pending／current_action／current_job全零后，核对相同instance／generation与SAVE-95六个exit0原记录，只将其qt6／qt5两份已完成定义从后续授权集合退役；登记及原始日志保留，不处理历史未知请求，不切换gsudo模式、不建控制器或修改全局设置，截止仍18:30。retired-definitions-qt5.json保留精确摘要，最终本轮所有权及未决数量仍零。
+
+Python／参数存储／保存写盘实现输入未变，复用SAVE-97／98有效证据；本片未重跑完整GUI／失败矩阵、4MiB性能、真实停止后输入竞态、提交中超时／断线、普通完整Release／Default或Win10。当前12工具／10能力，C1-C／M1整体未完成；截图演示、免Python和QQ渠道仍按后续自然切点与独立验收推进。

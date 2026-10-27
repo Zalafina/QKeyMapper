@@ -411,7 +411,7 @@ void installSendInputDrainTest(QKeyMapper_Worker *worker, const QString &mode)
     }, Qt::QueuedConnection);
 }
 
-void clickMappingButton(QAbstractButton *button)
+void clickMappingButton(QWidget *button)
 {
     const QPoint local(8, button->height() / 2);
     const QPointF window = button->mapTo(button->window(), local);
@@ -3314,7 +3314,71 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         if (!sourceError.isEmpty()) { finish(false); return; }
         auto calls = QSharedPointer<int>::create(0);
         auto expected = QSharedPointer<QKeyMapper::AutomationSettingSavePreparation>::create();
-        server.setRequestHandler([mapper, calls, expected, publicApply](const AutomationRequest &request) {
+        auto guiChecks = QSharedPointer<QJsonArray>::create();
+        auto guiLoads = QSharedPointer<int>::create(0);
+        auto guiSource = QSharedPointer<QJsonObject>::create();
+        auto guiDisk = QSharedPointer<QByteArray>::create();
+        auto guiName = QSharedPointer<QString>::create();
+        auto guiDirty = QSharedPointer<bool>::create(false);
+        auto checkedRejection = QSharedPointer<bool>::create(false);
+        const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
+        const bool guiChangeCase = publicApply && (variant == QStringLiteral("stale_name") || variant == QStringLiteral("stale_global"));
+        if (guiChangeCase) {
+            auto *change = new QTimer(mapper);
+            QObject::connect(change, &QTimer::timeout, mapper, [=]() {
+                if (!QFileInfo::exists(output + QStringLiteral(".gui-change"))) return;
+                change->stop();
+                const auto type = [](QLineEdit *editor, const QString &value) {
+                    editor->setFocus();
+                    QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+                    QCoreApplication::sendEvent(editor, &select); QCoreApplication::sendEvent(editor, &selected);
+                    for (const QChar character : value) {
+                        QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+                        QCoreApplication::sendEvent(editor, &press); QCoreApplication::sendEvent(editor, &release);
+                    }
+                };
+                bool changed = false;
+                if (variant == QStringLiteral("stale_name")) {
+                    auto *editor = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+                    if (editor && editor->isEnabled() && !editor->isReadOnly()) {
+                        type(editor, QStringLiteral("Draft99甲"));
+                        changed = editor->text() == QStringLiteral("Draft99甲");
+                    }
+                } else {
+                    auto *selector = mapper->findChild<QComboBox *>(QStringLiteral("settingselectComboBox"));
+                    const int globalIndex = mapper->m_SettingSelectListWithoutDescription.indexOf(QString::fromLatin1(QKeyMapperConstants::GROUPNAME_GLOBALSETTING));
+                    if (selector && selector->isEnabled() && !selector->isEditable() && globalIndex > 0) {
+                        const QString display = selector->itemText(globalIndex);
+                        clickMappingButton(selector);
+                        auto *search = selector->findChild<QLineEdit *>();
+                        if (search && search->isVisible() && search->window()->windowType() == Qt::Popup) {
+                            type(search, display);
+                            QKeyEvent enter(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier), entered(QEvent::KeyRelease, Qt::Key_Return, Qt::NoModifier);
+                            QCoreApplication::sendEvent(search, &enter); QCoreApplication::sendEvent(search, &entered);
+                            changed = mapper->m_MappingSourceLoadAccepted
+                                && mapper->m_LoadedMappingSettingGroup == QString::fromLatin1(QKeyMapperConstants::GROUPNAME_GLOBALSETTING)
+                                && mapper->m_MappingLoadGeneration == load + 1;
+                            if (changed) *guiLoads = 1;
+                        }
+                    }
+                }
+                QString error;
+                *guiSource = mapper->collectAutomationSourceSnapshot(error);
+                QFile file(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+                changed = changed && error.isEmpty() && !guiSource->isEmpty() && file.open(QIODevice::ReadOnly);
+                if (changed) *guiDisk = file.readAll();
+                *guiName = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text();
+                *guiDirty = mapper->m_SaveSettingDirty;
+                guiChecks->append(QJsonObject{{QStringLiteral("check"), QStringLiteral("fixed GUI input changed the real name or selected configuration")}, {QStringLiteral("passed"), changed}});
+                QSaveFile acknowledged(output + QStringLiteral(".gui-changed"));
+                const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("passed"), changed},
+                    {QStringLiteral("group"), mapper->m_LoadedMappingSettingGroup}, {QStringLiteral("gui_name"), *guiName},
+                    {QStringLiteral("load"), QString::number(mapper->m_MappingLoadGeneration)}}).toJson();
+                if (!acknowledged.open(QIODevice::WriteOnly) || acknowledged.write(bytes) != bytes.size() || !acknowledged.commit()) finish(false);
+            });
+            change->start(20);
+        }
+        server.setRequestHandler([=](const AutomationRequest &request) {
             ++*calls;
             if (publicApply && request.method == QStringLiteral("qkm_preview_changes")
                 && request.arguments.value(QStringLiteral("action")) == QStringLiteral("configuration.save")) {
@@ -3322,6 +3386,24 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 if (candidate.ok()) *expected = candidate;
             }
             mapper->handleAutomationRequest(request);
+            if (guiChangeCase && !*checkedRejection && !guiSource->isEmpty()
+                && request.method == QStringLiteral("qkm_apply_changes") && mapper->m_AutomationMappingChanges) {
+                const auto operation = mapper->m_AutomationMappingChanges->operation(
+                    {mapper->m_McpControlDialog->server().instanceId(), request.pairId, request.permissionEpoch},
+                    request.arguments.value(QStringLiteral("preview_id")).toString());
+                if (operation.value(QStringLiteral("status")) == QStringLiteral("rejected")) {
+                    *checkedRejection = true;
+                    QFile file(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+                    QString error;
+                    const bool unchanged = file.open(QIODevice::ReadOnly) && file.readAll() == *guiDisk
+                        && mapper->collectAutomationSourceSnapshot(error) == *guiSource && error.isEmpty()
+                        && mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == *guiName
+                        && mapper->m_SaveSettingDirty == *guiDirty;
+                    guiChecks->append(QJsonObject{{QStringLiteral("check"), QStringLiteral("stale submission preserves the complete post-GUI source, disk, name and dirty state")}, {QStringLiteral("passed"), unchanged}});
+                    guiChecks->append(QJsonObject{{QStringLiteral("check"), QStringLiteral("changed GUI context reports stale_preview")},
+                        {QStringLiteral("passed"), operation.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")) == QStringLiteral("stale_preview")}});
+                }
+            }
         });
         auto *completed = new QTimer(mapper);
         QObject::connect(completed, &QTimer::timeout, mapper, [=]() {
@@ -3337,6 +3419,13 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             const auto completion = QJsonDocument::fromJson(done.readAll()).object();
             check(completion.value(QStringLiteral("sdk_passed")).toBool(), QStringLiteral("official SDK exercise completed"));
             check(*calls > 0, QStringLiteral("requests passed through the production business handler"));
+            if (guiChangeCase) {
+                check(*checkedRejection && guiChecks->size() == 3, QStringLiteral("real GUI change and stale rejection were both observed"));
+                for (const auto &entry : *guiChecks) {
+                    checks.append(entry);
+                    passed = passed && entry.toObject().value(QStringLiteral("passed")).toBool();
+                }
+            }
             const int saves = publicApply ? completion.value(QStringLiteral("successful_saves")).toInt(-1) : 0;
             check(saves == 0 || saves == 1, QStringLiteral("fixed SDK scenario reports a bounded save count"));
             const bool reloadFailure = publicApply && qEnvironmentVariable("QKM_CONTEXT_VARIANT") == QStringLiteral("reload_failure");
@@ -3373,7 +3462,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 check(expected->ok() && expected->save.target.settingName == target
                     && mapper->m_LoadedMappingSettingGroup == target && mapper->m_MappingSourceLoadAccepted,
                     QStringLiteral("formal save reloads the exact independently prepared explicit target"));
-                check(mapper->m_MappingLoadGeneration == load + 1 && mapper->m_AutomationSourceEpoch > epoch,
+                check(mapper->m_MappingLoadGeneration == load + 1 + *guiLoads && mapper->m_AutomationSourceEpoch > epoch,
                     QStringLiteral("formal save and replay produce exactly one source reload"));
                 check(!mapper->m_SaveSettingDirty && mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text()
                     == expected->scope.value(QStringLiteral("gui_save_name")).toObject().value(QStringLiteral("on_success")).toString(),
