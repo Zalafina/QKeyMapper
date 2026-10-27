@@ -574,3 +574,19 @@ write_recover由普通控制器对本片INI持有只读分享文件句柄，正�
 原始材料out/mcp_save_apply_w11_20261027：原构建／部署、两轮Python、控制XML／日志、18份正式SDK调用／schema／准确peer及产品PID创建身份／退出、每场完整INI、独立冷读旧实例引用、八组基线比较与摘要、生产补丁及预期字节。大文件45加／3删，唯一锚点dry-run、单次应用、预期字节／逆向检查通过。最终控制器本轮owned／unresolved／pending／current_action／current_job均零，历史未知请求不接管、不重放。
 
 未完成：正式提交中超时／断线／撤权交错、真实停止后破坏性重载竞态、正式重载失败、全局与覆盖独立GUI基线、4MiB性能、普通完整Release／Default、设备输入或全量GUI等价。M1完整实际运行／停止仍待，不能把本片称C1-C／M1全部完成。DEMO可行性依旧排在自然切点，本片未执行截图、免Python交付或QQ渠道联调。
+
+## SAVE-98：全局／覆盖独立GUI基线与正式重载失败（2026-10-27，PC-W11）
+
+产品源保持SAVE-97 `43a2a1509b5abaf590546bec8d581e7ed510ce9b`，只改维护夹具／文档。settings_save_gui通过真实Qt名称输入（全局沿已有选择无需改名）、Save按钮及覆盖对话框Yes执行原GUI路径，不设置控件值或直接调用保存／加载函数。两个场景分别在新产品进程settings_result_cold读回；正式结果复用SAVE-97已取得的global／overwrite完整INI，不重跑其已通过业务。
+
+双Qt各GUI global Warm5／Cold4、overwrite Warm6／Cold4，以及正式reload_failure7项；合计最终10个native exit0／52项CPP检查，含四独立冷读。四对GUI／正式MCP完整节、键、编码值相等：全局各266键原字节也相等；覆盖各310键值相等但原字节不等，仍是SAVE-92已披露的MacroList／SyncGroupNotes键序差异。该真实GUI基线补齐SAVE-97当轮列出的global／overwrite缺口，不倒改先前原始结果。
+
+正式重载失败使用与SAVE-86／92相同的受限维护坏源注入：在自有已加载内存将一行Original_Key改为INVALID_RELOAD86后，再经正式stdio预览／完整范围确认／提交。此注入只作组件故障来源，正常GUI编辑会拒绝它，不称独立GUI场景或用户路径。生产准备、写入和重载没有绕过；正式返回save_reload_failed，operation为failed但saved=true／modified=true／reloaded=false／backup_attempted=false。完整已接受载荷仍在自有INI，新加载代次加一、outcome=invalid_mapping_data／group=null、GUI名称清空，源查询和再预览context_busy；同ID重复请求维持原错误且不再重载／写盘。实际保持idle／stopped，不启动映射，不尝试自动恢复或掩盖磁盘已改变。
+
+双Qt生命周期维护Release增量构建native exit0，Qt6零警告、Qt5兼容通过（原始已接受qtmain LNK4099保留）。EXE在out/mcp_save_edges_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveEdges98_*_runtime.exe，原requireAdministrator；普通控制器／SDK8192、产品12288，同登录，实际QkmSaveEdges98_或QkmSaveGui98_<UUID>私有桌面。公共登记同一每Qt定义同时列明SDK及四GUI／冷读固定动作，复用24956现有缓存；没有Default、系统输入、映射启动或驱动更改。Qt GUI事件不等于系统输入，私有桌面不作为Hook／驱动隔离证明。
+
+首个Qt5 global Warm产品已结束、case通过，但普通控制器以str调用要求Path的cache.read_json，在保存closed记录前抛AttributeError。该次native退出码曾在进程内读取但未留存，现明确缺失，不能由case通过反推exit0，也不计入上述10进程通过。first-gui-harness-failed保留其原case／start身份／实际INI及failure.json；核对本控制器零owned／unresolved／pending后修正普通助手，先保存原退出码再读取case，只重跑受影响GUI范围。没有产品源码修复、模式切换、UAC重试、缓存重建或未知请求重放。
+
+原始材料out/mcp_save_edges_w11_20261027：双Qt构建／部署、两份正式SDK错误与准确peer／进程创建身份／退出、八份GUI Warm／Cold记录／完整INI、四对比较、固定登记／缓存尾状态和52项摘要，以及首轮助手失败材料；均不随Git。Python／纯参数存储组件与合法保存业务输入未变，复用SAVE-97的28项／双Qt七组件槽／正式成功与写失败恢复，不重复全验。最终缓存本轮owned／unresolved／pending／current_action／current_job均零，历史未知仍保留。
+
+未完成：正式提交中超时／断线／撤权交错、真实清理后源重载竞态、坏源后的显式GUI恢复／完整MCP加载能力、4MiB性能、普通Release配对／Default／实际设备输入和M1完整运行／停止。当前12工具／10能力，无新增能力或阶段整体完成声明。截图演示、免Python交付及QQ渠道不在本片执行范围。
