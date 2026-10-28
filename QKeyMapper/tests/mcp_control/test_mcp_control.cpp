@@ -25,6 +25,8 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QLineEdit>
+#include <QComboBox>
+#include <QSpinBox>
 #include <QProcess>
 #include <QPushButton>
 #include <QStyleOptionButton>
@@ -149,6 +151,7 @@ private slots:
     void windowCaptureBoundaries();
     void mappingEditorArguments();
     void privateBackgroundDesktopGuard();
+    void editorDraftGuard();
     void rejectAndClose_data();
     void rejectAndClose();
     void enableFailure();
@@ -1338,6 +1341,82 @@ void McpControlTest::mappingEditorArguments()
     const auto capability = mappingEditorCapability();
     QCOMPARE(capability.value(QStringLiteral("required_scopes")).toInt(), int(Read | ShowWindows));
     QCOMPARE(capability.value(QStringLiteral("read_only")), QJsonValue(false));
+    auto closing = valid;
+    closing[QStringLiteral("window_ref")] = QString(64, QLatin1Char('b'));
+    const auto parsedClose = parseMappingEditorCloseArguments(closing);
+    QVERIFY(parsedClose.ok());
+    QCOMPARE(parsedClose.source.sourceReference, parsed.sourceReference);
+    for (const auto &extra : QList<QJsonObject>{
+            {{QStringLiteral("window_ref"), 1}}, {{QStringLiteral("window_ref"), QString(63, QLatin1Char('b'))}},
+            {{QStringLiteral("window_ref"), QString(64, QLatin1Char('B'))}},
+            {{QStringLiteral("discard"), true}}, {{QStringLiteral("pid"), 1}}, {{QStringLiteral("hwnd"), QStringLiteral("1")}}}) {
+        auto changed = closing;
+        for (auto it = extra.begin(); it != extra.end(); ++it) changed.insert(it.key(), it.value());
+        QVERIFY(!parseMappingEditorCloseArguments(changed).ok());
+    }
+    QVERIFY(!parseMappingEditorCloseArguments(valid).ok());
+    const auto closeCapability = mappingEditorCloseCapability();
+    QCOMPARE(closeCapability.value(QStringLiteral("required_scopes")).toInt(), int(Read | ShowWindows));
+    QCOMPARE(closeCapability.value(QStringLiteral("read_only")), QJsonValue(false));
+}
+
+void McpControlTest::editorDraftGuard()
+{
+    QWidget main, item;
+    QLineEdit first(&item), second(&item);
+    first.setObjectName(QStringLiteral("duplicate")); second.setObjectName(QStringLiteral("duplicate"));
+    first.setText(QStringLiteral("B")); second.setText(QStringLiteral("A"));
+    QSpinBox spin(&item);
+    spin.setRange(-100, 100);
+    QComboBox combo(&item);
+    combo.addItems({QStringLiteral("A"), QStringLiteral("B")});
+    QCheckBox check(&item);
+    QCOMPARE(item.internalWinId(), WId(0));
+    const auto original = windowInputFingerprint(&item);
+    QCOMPARE(original.size(), 32);
+    QCOMPARE(item.internalWinId(), WId(0));
+    first.setText(QStringLiteral("C")); QVERIFY(windowInputFingerprint(&item) != original);
+    first.setText(QStringLiteral("B")); QCOMPARE(windowInputFingerprint(&item), original);
+    second.setText(QStringLiteral("C")); QVERIFY(windowInputFingerprint(&item) != original);
+    second.setText(QStringLiteral("A")); QCOMPARE(windowInputFingerprint(&item), original);
+    auto *number = spin.findChild<QLineEdit *>();
+    QVERIFY(number);
+    const QString numberBefore = number->text();
+    number->setText(QStringLiteral("-"));
+    QCOMPARE(spin.value(), 0);
+    QVERIFY(windowInputFingerprint(&item) != original);
+    number->setText(numberBefore); QCOMPARE(windowInputFingerprint(&item), original);
+    combo.setCurrentIndex(1); QVERIFY(windowInputFingerprint(&item) != original);
+    combo.setCurrentIndex(0); QCOMPARE(windowInputFingerprint(&item), original);
+    check.setChecked(true); QVERIFY(windowInputFingerprint(&item) != original);
+    check.setChecked(false); QCOMPARE(windowInputFingerprint(&item), original);
+    QByteArray fromWorker;
+    std::thread worker([&]() { fromWorker = windowInputFingerprint(&item); });
+    worker.join(); QVERIFY(fromWorker.isEmpty());
+    WindowAccess access(&main, &item);
+    item.show(); QVERIFY(QTest::qWaitForWindowExposed(&item));
+    const QString source = QString(64, QLatin1Char('a')) + QStringLiteral(":row:0:0");
+    const auto opened = windowInputFingerprint(&item);
+    QVERIFY(!access.ownsEditor(source));
+    access.rememberEditor(source, opened);
+    QVERIFY(access.ownsEditor(source)); QVERIFY(access.editorDraftMatches(opened));
+    QVERIFY(!access.ownsEditor(source + QLatin1Char('1')));
+    QVERIFY(!access.editorDraftMatches(QByteArray(32, 'x')));
+    QWidget child(&item, Qt::Tool);
+    child.show();
+    QVERIFY(child.isVisible());
+    QVERIFY(windowInputFingerprint(&item).isEmpty());
+    child.close();
+    QVERIFY(access.editorDraftMatches(windowInputFingerprint(&item)));
+    item.resize(item.width() + 20, item.height() + 20);
+    QVERIFY(access.ownsEditor(source)); QVERIFY(access.editorDraftMatches(windowInputFingerprint(&item)));
+    item.hide(); QVERIFY(!access.ownsEditor(source)); QVERIFY(!access.editorDraftMatches(opened));
+    item.show(); QVERIFY(!access.ownsEditor(source));
+    access.rememberEditor(source, windowInputFingerprint(&item));
+    QEvent nativeChange(QEvent::WinIdChange);
+    QCoreApplication::sendEvent(&item, &nativeChange);
+    QVERIFY(!access.ownsEditor(source));
+    item.close();
 }
 
 void McpControlTest::privateBackgroundDesktopGuard()

@@ -203,6 +203,9 @@ class Bridge:
     async def open_mapping_editor(self, source_ref: str, presentation: str) -> dict:
         return await self._call("qkm_open_mapping_editor", dict(source_ref=source_ref, presentation=presentation))
 
+    async def close_mapping_editor(self, source_ref: str, window_ref: str, presentation: str) -> dict:
+        return await self._call("qkm_close_mapping_editor", dict(source_ref=source_ref, window_ref=window_ref, presentation=presentation))
+
     async def _call(self, method: str, arguments: dict | None = None) -> dict:
         future = self._submit(lambda: self._request(method, arguments if arguments is not None else {}))
         if future is None:

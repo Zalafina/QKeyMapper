@@ -768,3 +768,25 @@ EXE为out/mcp_editor_open_w11_20261028/{qt6,qt5}-runtime/QKeyMapperEditor109_*_r
 首正式Qt6场因普通SDK场景脚本遗漏Path导入，在业务建例前NameError退出1；原产品正常收尾但该失败场native exit2，控制器五项零。first-consumer-import保留原case／消费脚本／实际错误及关闭记录；只补一行导入，未修改产品或EXE／定义，随后最终三场通过。首汇总脚本错误读取正常closed没有的sdk_passed字段抛KeyError，未覆盖原记录；最终从sdk-pass读取SDK结果并分别核实真实native_exit／case及cache-after，不按缺失字段猜测。错误与最终结果分别保留。
 
 原件out/mcp_editor_open_w11_20261028不随Git：补丁／字节核对、构建和固定观察前后日志、双Qt组件／实际Default只读／IPC、部署身份及公共登记、精确SDK peer／77次调用与12次schema负例、正式open返回／八张图片和源INI／前台采样／逐场清理、summary／visual-review。Python图片校验及108字节／像素矩阵未受影响，按108原证据复用，不重复计作109当前测试。未专项运行inline／模态、真实其他已填充Tab／共通附加／过滤行、显示期间撤权／退出、普通Default显示确认、HighDPI、实际Win10、其他实例对照、QQ或全量输入／保存验收。当前14工具／13业务能力；正式安全关闭、串行重置、代表高级页、预热／M3-B免Python及渠道仍待，完整P1／C1-C／M1不标完成。
+
+## DEMO-P1-110：正式打开记录及安全关闭（2026-10-28，PC-W11）
+
+源码为P1-109 `560eaea3c8bc07c0384dcaf75fc6e64e43c01fd8` 加本切片WindowAccess摘要／单记录／close参数能力、SessionServer独立Show准入、QItemSetup当前输入及四组pending摘要、产品正式打开记账／安全关闭、原编辑检测可允许当前item及桥接／对应测试。qkeymapper.cpp74增／3删，唯一锚点补丁dry-run／numstat、应用后精确字节和反向核对；hasOpenMappingEditor默认无例外的语义不变。无TS／QM、manifest、原GUI关闭行为、驱动或启动模式变化。
+
+qkm_close_mapping_editor仅source_ref、window_ref、private_background三参数，Read+ShowWindows=129、非只读，不接discard／原生目标／路径。记录只在正式open并实际显示／源核验通过后生成，一个源引用及SHA256摘要，源引用已绑定实例／pair／permissionEpoch。Show／Hide／WinIdChange／Destroy使旧记录无效；Resize仍要求新window_ref，但相同存活窗口／源及输入摘要可继续核对。焦点不进摘要／窗口生命周期。关闭先验实际WinSta0非Default非输入桌面、当前安全完整源／真实Tab行、当前窗口、正式归属、输入及其他编辑；通过原GUI close后再验不可见／源未变，失败不声称回滚或自动重试。
+
+摘要只观察当前窗口现有QLineEdit（含SpinBox／可编辑Combo内部行）、Combo索引／文本、可勾按钮；按控件内存身份区分同名，不向客户端输出指针／原文。QItemSetup另散列四组pending备注／segments、Tab／行和记录模式，捕获记录中不给有效摘要；可见独立子窗也不给摘要。UI盘点为QLineEdit／KeyStringLineEdit、KeyListComboBox／QComboBox、QCheckBox、QSpinBox及按钮／标签；新增草稿输入类型须扩展守卫，代码shortcut说明此边界。语言／控件重建可保守拒绝；不能自动改值／应用／舍弃消除拒绝。按键记录子窗属于实际QObject后代，已补可见子窗保护；原公共编辑窗列表未包含它。
+
+环境沿Win11企业版26200 x64／锁CPython3.11.9 x64／MCP2.3.0、Qt6.8.3 msvc2022_64／官方Qt5.15.2 msvc2019_64／现有MSVC。双Qt受影响mcp_control／mcp_ipc及真实源码生命周期维护Release增量native exit0；最终Qt6零编译／链接警告、Qt5兼容通过。固定轮询为新case延续至GUI基线关闭后的草稿／重开，不改变产品；原构建和pre-continuation日志保留。109实际Default只读拒绝为未变函数的历史复用，本片无Default运行／输入场景，不写作当前Default实测。
+
+最终每Qt mappingEditorArguments／editorDraftGuard共4项，IPC sessionWindowPermissions各3项（均含init／cleanup）。覆盖close严格字段、缺失／坏window_ref／discard／原生参数、同名两个输入互不遮蔽、键文本改变和恢复、SpinBox value保持0而内部未提交文本变化、Combo和勾选、错误线程不读控件、不创建HWND的纯摘要；可见子窗拒绝、Resize记录保持、Hide／Show和模拟WinIdChange清除记录。组件直接赋值只测摘要，非业务GUI基线。IPC无Show（Read+Configure+Capture）拒绝、Read+Show无Configure可进入handler；正式产品含Configure／Capture以建立与检查场景，不冒称High产品纯Read+Show验证。真实pending备注／数值输入和记录捕获／子窗业务交错未单独执行。
+
+最终EXE为out/mcp_editor_close_w11_20261028/{qt6,qt5}-runtime/QKeyMapperClose110_*_runtime.exe，requireAdministrator保持；公共登记close110-qt6／qt5绑定真实EXE哈希／两个固定case／输出根，经原普通控制器9664／instance2ff1d26a17e942ee9688a45261b272c2／generation1、18:30截止，未开新缓存／UAC或接管旧未知请求。普通SDK／bridge8192、产品12288，同登录、实际QkmDemo104_<UUID>私有桌面。无系统输入／映射启动／驱动修改，私有桌面不代表Hook／驱动隔离。
+
+正式SDK最终双Qt demo_mcp_close各36次记录调用／9次close、各5次PID／HWND／path／foreground／discard schema拒绝；另Qt6 demo_mcp_capture无Show场22／1＋5。累计94次记录＋15次schema拒绝，三场各native exit0／6项CPP，共18项，四次成功正式关闭；源／dirty／加载代次／INI不变，逐场owned／unresolved／pending／current_action／current_job全零，工作／生产者零。正式配对387=Read+Configure+Show+Capture，无Run；从空白专用INI经MCP建A→B，先真实GUI双击打开而非formal-open，close返回editor_not_owned且保持窗口，GUI Esc结束独立基线；再正式open，旧GUI窗／旧源拒绝，C草稿editor_draft_changed且窗／引用保持，capture context_busy无图确认C未覆盖，恢复B后close closed=true并核实隐藏。连续两次正式开关、已关闭及新生命周期误用旧引用拒绝。维护轮询在GUI基线关闭后只保留固定C／B事件处理，不替代正式关闭；Qt事件均作用本实例，不setText伪造业务GUI。
+
+共十张原生MCP图已原尺寸查看，中文／A→B清楚，无黑图或错窗；实际DPR1，main1130×722、Qt6／Qt5 51182／50326字节，item820×480、45094／44865字节。两套GUI／正式打开／重开item PNG逐字节一致。最终子窗保护后八张正例与已看子窗前原图逐字节一致，Agent另复看两套最终重开图；无Show两图按其原版本保留。仅Qt客户区，不证明边框、原生子窗／独立弹窗、隐藏滚动内容或高DPI。两正例各六次普通Default前台归属采样均非本产品PID，只记录是否本目标及是否变化，不采集用户标题／业务内容；非全程焦点因果证明。
+
+首双Qt组件恢复数值框文本时假定为0，摘要与真实初始文本不同，各native exit1／3通过1失败；改为实取初始显示文本再恢复，两套通过。first-hidden-spin-text保留实际日志，未记录的原文本不推算。产品／gsudo未因此运行或故障。首轮正式三场均通过后，源码复核补按键记录可见子窗守卫，before-child-window-guard封存成功两正例／组件／定义／登记／summary，old-executables封存实际旧EXE及身份；重建并通过最终双Qt组件和正例。无Show负例由SessionServer在摘要前拒绝，新增分支及其他错误消息不改变该路径有效输入，沿前版22次／1次close／6项CPP原范围复用；不将其称当前EXE重验。最终身份与复用版本明确分开，不覆盖历史原件。
+
+原件out/mcp_editor_close_w11_20261028不随Git：补丁／精确字节、构建与固定轮询前后日志、首隐藏文本断言失败、子窗前成功／旧二进制、最终组件／IPC／部署／公共登记及准确SDK peer、94次调用／15次schema拒绝、十图／字节对照／visual-review、源INI／前台采样／逐场清理及summary。现15工具／14业务能力。未执行真实序列备注、数值输入或记录子窗业务交错、撤权／退出、实际Win10／高DPI／其他实例、普通Default显示确认、QQ；未选普通完整Release／ASan／全量静态或全保存／输入矩阵。正式关闭不清空映射，P2源重置、代表高级页、P3预热／M3-B免Python与P4渠道仍待，完整P1／P2／C1-C／M1未完成。

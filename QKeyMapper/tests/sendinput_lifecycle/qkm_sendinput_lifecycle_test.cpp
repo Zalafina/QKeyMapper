@@ -3230,7 +3230,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
     const bool demoCapture = publicApply && (connectionVariant == QStringLiteral("demo_capture")
-        || connectionVariant == QStringLiteral("demo_mcp_capture") || connectionVariant == QStringLiteral("demo_mcp_editor"));
+        || connectionVariant == QStringLiteral("demo_mcp_capture") || connectionVariant == QStringLiteral("demo_mcp_editor")
+        || connectionVariant == QStringLiteral("demo_mcp_close"));
     const bool cleanupCase = publicApply && (connectionVariant == QStringLiteral("cleanup_stop")
         || connectionVariant == QStringLiteral("cleanup_timeout") || cleanupReturn);
     if (!directory.contains(QStringLiteral("/out/")) || mapper->m_McpControlDialog->server().isEnabled()) {
@@ -3267,8 +3268,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     approval->deleteLater();
                     const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
                     quint32 scopes = variant == QStringLiteral("read") || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
-                    if (variant == QStringLiteral("demo_mcp_capture") || variant == QStringLiteral("demo_mcp_editor")) scopes |= CaptureWindows;
-                    if (variant == QStringLiteral("demo_mcp_editor")) scopes |= ShowWindows;
+                    if (variant == QStringLiteral("demo_mcp_capture") || variant == QStringLiteral("demo_mcp_editor")
+                        || variant == QStringLiteral("demo_mcp_close")) scopes |= CaptureWindows;
+                    if (variant == QStringLiteral("demo_mcp_editor") || variant == QStringLiteral("demo_mcp_close")) scopes |= ShowWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);
@@ -3396,7 +3398,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                             || !frame(dialog, QStringLiteral("item_setup"))) { finish(false); return; }
                         *stage = 2; *waiting = false;
                     });
-                } else if (*stage == 2
+                } else if (*stage >= 2
                     && ((*draftStage == 0 && QFileInfo::exists(output + QStringLiteral(".pending-key-request")))
                         || (*draftStage == 1 && QFileInfo::exists(output + QStringLiteral(".restore-key-request"))))) {
                     auto *edit = mapper->m_ItemSetupDialog->findChild<QLineEdit *>(QStringLiteral("SetupDialog_MappingKeyLineEdit"));
@@ -3445,7 +3447,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     }, Qt::QueuedConnection);
                     *stage = 3;
                 } else if (*stage == 3 && demoThreadCheck->loadAcquire() != 0) {
-                    poll->stop();
+                    if (connectionVariant == QStringLiteral("demo_mcp_close")) *stage = 4;
+                    else poll->stop();
                     QSaveFile file(output + QStringLiteral(".capture-closed"));
                     const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("hidden_rejected"), *demoClosed},
                         {QStringLiteral("wrong_thread_rejected"), demoThreadCheck->loadAcquire() == 1}}).toJson();

@@ -45,6 +45,7 @@ public:
     void refreshFromCurrentItem(void);
     void updateMappingCodeDisplay(void);
     bool matchesSourceKeyText(const QString &original, const QString &mapping, const QString &keyUp) const;
+    QByteArray automationEditorFingerprint() const;
 
     QPushButton* getOriListSelectKeyboardButton(void) const;
     QPushButton* getOriListSelectMouseButton(void) const;

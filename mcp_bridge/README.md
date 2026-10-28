@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109接私有后台源行设定窗打开，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十三项业务能力、十四工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
+官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十四项业务能力、十五工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
 桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
@@ -72,7 +72,7 @@ DEMO-P1-105交付授权基础，107／108新增窗口观察和捕获，109接私
 
 源查询要求 GUI idle、Worker stopped、最近加载成功，且读取基准为初始静止（read_basis=pristine_idle，cleanup_generation=null）或仍有效的完整清理许可（read_basis=completed_cleanup，cleanup_generation 为本实例清理代次字符串）；否则 context_busy，不主动停止映射。生命周期请求、按钮排队、任务构造和同步／包装在相关处理前记录活动修订，与在途复制互斥。只有完整停止协调、所有者／发送池及 GUI 尾部完成后，才在互斥内记录清理对应修订；任何后续活动或饱和值均拒绝该许可，不能仅凭 IDLE／STOPPED 或零计数恢复。相同映射跨启停后也必须重新查询引用。此许可只用于复制源数据，不能授权删除／修改源表或替代正式启停操作结果。source_snapshot 的配置选择和最近加载记录不能证明每行磁盘来源；未附着的共通备份可能保留自之前的配置，origin=source_memory 只证明当前内存来源。源修订仍不是完整业务修订。
 
-连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前十四个工具的 schema 均声明 `additionalProperties=false`，参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
+连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前十五个工具的 schema 均声明 `additionalProperties=false`，参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
 
 ## 基本映射的预览与提交
 
@@ -159,4 +159,14 @@ Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际�
 
 成功结果含target、role=item_setup、presentation、activation_requested=false、源引用／源Tab／完整源上下文及新window对象。用返回的window_ref、source_revision、source_tab_ref即可在另获CaptureWindows后调用 `qkm_capture_window`。失败／超时或断线后先query windows确认是否已打开，勿盲目重复；重复打开会被拒绝，防止覆盖草稿。只处理后台私有实例，不代替普通多实例的Default前台展示／用户确认和绑定。
 
-当前可在已准备的开发实例完成正式MCP建A→B→正式打开单项窗→原生图片，但正式安全关闭、串行场景重置及Release预热／免Python包仍待；不能直接把维护程序或gsudo缓存部署为咨询服务。Win11双Qt正式路径、无Show拒绝及独立GUI对照见唯一主计划；已有Read／Configure／Capture不能自动扩成Show权限，沿管理窗口明确批准后重新连接。
+当前可在已准备的开发实例完成正式MCP建A→B→正式打开单项窗→原生图片，110补正式安全关闭，串行场景重置及Release预热／免Python包仍待；不能直接把维护程序或gsudo缓存部署为咨询服务。Win11双Qt正式路径、无Show拒绝及独立GUI对照见唯一主计划；已有Read／Configure／Capture不能自动扩成Show权限，沿管理窗口明确批准后重新连接。
+
+## 不丢草稿的受限关闭（P1-110）
+
+能力 `mapping.editor.close` 要求 **Read+ShowWindows**，调用 `qkm_close_mapping_editor(source_ref, window_ref, presentation="private_background")`。source_ref来自本owner正式open，window_ref必须是同实例当前角色有效引用；只有这三个参数，不接discard、PID／HWND／路径。仅实际后台私有非输入桌面，继续复用当前源／清理门槛；不提供普通Default关闭、映射清空或保存。
+
+正式open在产品内存中保留当前输入摘要／源记录，关闭只接受源和输入未变、且本owner正式打开的窗口。仅GUI打开的窗口为editor_not_owned；键文本、数值未提交文本、Combo／勾选、待应用备注／segments或记录状态有变化时为editor_draft_changed，存在可见子窗也拒绝。先保留草稿并在原GUI处理；本工具不自动应用、舍弃或刷新控件绕过。语言／控件重建可能保守拒绝；新增草稿控件类型须扩展内部守卫。摘要不含任何对外可读控件地址或草稿原文。
+
+成功含closed=true、目标／源及已核实不可见的window；源和INI保持其既有状态，不代表演示场景已重置。Show／Hide／原生句柄／销毁使旧打开记录失效，实例／pair权限变化由原引用机制拒绝；正常焦点返回Agent不使记录失效。Resize后旧window_ref失效，重新query当前引用且源／摘要仍匹配才可继续；窗口新生命周期不能沿用旧引用。失败／断线后先query实际窗口，不猜测未执行或自动重发。
+
+Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续两轮正式开关及旧引用拒绝；当前无Show负例复用子窗保护前同准入路径结果，原版本与材料分开记录。源行删除／演示初始状态、真实高级子窗交错、Win10／高DPI、预热／免Python与QQ仍待，见唯一主计划。

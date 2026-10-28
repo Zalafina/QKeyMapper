@@ -3,6 +3,10 @@
 #include "ui_qitemsetupdialog.h"
 #include "qkeymapper_qt_compat.h"
 #include "qstyle_singletons.h"
+#include "automation/qkm_window_access.h"
+#include <QCryptographicHash>
+#include <QJsonDocument>
+#include <QJsonArray>
 
 namespace {
 void notifySaveSettingDirty()
@@ -653,6 +657,20 @@ bool QItemSetupDialog::matchesSourceKeyText(const QString &original, const QStri
 {
     return ui->originalKeyLineEdit->text() == original && ui->SetupDialog_MappingKeyLineEdit->text() == mapping
         && ui->SetupDialog_MappingKey_KeyUpLineEdit->text() == keyUp;
+}
+
+QByteArray QItemSetupDialog::automationEditorFingerprint() const
+{
+    const QByteArray controls = QkmAutomation::windowInputFingerprint(this);
+    if (controls.isEmpty() || m_isItemSetupKeyRecordLineEdit_CapturingKey) return {};
+    const QJsonObject pending{{QStringLiteral("controls"), QString::fromLatin1(controls.toHex())},
+        {QStringLiteral("tab"), m_TabIndex}, {QStringLiteral("row"), m_ItemRow},
+        {QStringLiteral("comments"), QJsonArray::fromStringList(m_PendingMappingComments)},
+        {QStringLiteral("key_up_comments"), QJsonArray::fromStringList(m_PendingMappingKeyUpComments)},
+        {QStringLiteral("segments"), QJsonArray::fromStringList(m_PendingMappingKeysSegments)},
+        {QStringLiteral("key_up_segments"), QJsonArray::fromStringList(m_PendingMappingKeyUpSegments)},
+        {QStringLiteral("record_mode"), m_ItemSetupKeyRecordEditMode}};
+    return QCryptographicHash::hash(QJsonDocument(pending).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256);
 }
 
 QString QItemSetupDialog::getOriginalKeyText()

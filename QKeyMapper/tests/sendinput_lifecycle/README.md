@@ -82,3 +82,9 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 `settings_save_apply`／`demo_mcp_editor`沿P0固定演示夹具，配对仅Read+Configure+ShowWindows+CaptureWindows（387），无RunMapping。普通SDK经正式业务MCP建例，再用qkm_open_mapping_editor打开源行；本变体的capture-item标记只观察已经显示的真实单项窗和WA_ShowWithoutActivating已恢复，不再投递双击。`demo_mcp_capture`不授ShowWindows，正式open应拒绝，再按既有Qt真实双击形成独立GUI基线。不得把两条路径混写为正式打开通过。
 
 同实例Qt Ctrl+A／C／B与Esc用于草稿保护／关闭，均沿原固定标记；不得用setText或调用加载函数替代独立GUI基线。图像通过正式MCP ImageContent消费，窗口来源、源／INI／dirty／代次与退出分别核实；普通Default控制器只采样是否本测试PID在前台，不把用户自行换焦点判为产品干扰。正式安全关闭／串行重置和预热仍待，维护退出／Esc不替代产品接口。用法见[桥接说明](../../../mcp_bridge/README.md#私有后台打开源行设定窗p1-109)。
+
+## DEMO-P1-110 安全关闭及连续窗口
+
+`settings_save_apply`／`demo_mcp_close`固定配对387=Read+Configure+ShowWindows+CaptureWindows、无Run。先按旧Qt双击／Esc形成只GUI打开的拒绝基线，然后正式MCP open／close执行两轮；旧window_ref不能关闭新窗口，C草稿需保留，恢复B后才允许关闭，最终由正式query核实不可见／源INI不变。`demo_mcp_capture`缺Show，正式close须permission_denied，再由原GUI回收；不把此GUI回收计为正式关闭。
+
+本变体GUI基线关闭后固定轮询继续处理C／B标记，stage4不再次发出Esc；最终case由SDK明确done和原有清理退出，不因STOPPED或先前关闭标记推断当前窗口已关闭。输入赋值的摘要组件与真实GUI业务基线分开记录。源行删除／演示重置及服务预热仍待；用法见[桥接说明](../../../mcp_bridge/README.md#不丢草稿的受限关闭p1-110)。

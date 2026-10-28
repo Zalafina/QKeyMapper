@@ -5,6 +5,7 @@
 #include <QPointer>
 #include <QWidget>
 #include <QJsonObject>
+#include <QByteArray>
 #include <array>
 
 namespace QkmAutomation {
@@ -25,8 +26,16 @@ struct MappingEditorArguments {
 };
 
 MappingEditorArguments parseMappingEditorArguments(const QJsonObject &arguments);
+struct MappingEditorCloseArguments {
+    MappingEditorArguments source;
+    QString windowReference;
+    bool ok() const { return source.ok() && !windowReference.isEmpty(); }
+};
+MappingEditorCloseArguments parseMappingEditorCloseArguments(const QJsonObject &arguments);
 bool privateBackgroundDesktopAvailable();
 QJsonObject mappingEditorCapability();
+QJsonObject mappingEditorCloseCapability();
+QByteArray windowInputFingerprint(const QWidget *window);
 
 // Tracks only the product's two explicitly supplied window roles.
 class WindowAccess : public QObject {
@@ -36,6 +45,9 @@ public:
         const QJsonObject &arguments) const;
     QWidget *resolve(const QString &role, const QString &reference, const QString &instance,
         const QString &pairId, quint64 permissionEpoch) const;
+    void rememberEditor(const QString &sourceReference, const QByteArray &draftFingerprint);
+    bool ownsEditor(const QString &sourceReference) const;
+    bool editorDraftMatches(const QByteArray &draftFingerprint) const;
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
@@ -44,6 +56,8 @@ private:
     QJsonObject describe(int index, const QString &instance, const QString &pairId, quint64 permissionEpoch) const;
     std::array<QPointer<QWidget>, 2> m_windows;
     std::array<quint64, 2> m_generations{{1, 1}};
+    QString m_editorSourceReference;
+    QByteArray m_editorDraftFingerprint;
 };
 
 QJsonObject windowQueryCapability();

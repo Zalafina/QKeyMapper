@@ -10,6 +10,9 @@
 #include <QJsonDocument>
 #include <QThread>
 #include <QWindowStateChangeEvent>
+#include <QLineEdit>
+#include <QComboBox>
+#include <QAbstractButton>
 #include <QtMath>
 #include <limits>
 
@@ -66,6 +69,36 @@ bool privateBackgroundDesktopAvailable()
     return known && QString::fromWCharArray(current).compare(QString::fromWCharArray(input), Qt::CaseInsensitive) != 0;
 }
 
+MappingEditorCloseArguments parseMappingEditorCloseArguments(const QJsonObject &arguments)
+{
+    if (arguments.size() != 3 || !arguments.value(QStringLiteral("window_ref")).isString()
+        || !isLowerHex(arguments.value(QStringLiteral("window_ref")).toString(), 64)) return {};
+    auto opening = arguments;
+    const QString window = opening.take(QStringLiteral("window_ref")).toString();
+    const auto source = parseMappingEditorArguments(opening);
+    return source.ok() ? MappingEditorCloseArguments{source, window} : MappingEditorCloseArguments{};
+}
+
+QByteArray windowInputFingerprint(const QWidget *window)
+{
+    if (!guiThread() || !window || window->thread() != qApp->thread()) return {};
+    for (const auto *child : window->findChildren<QWidget *>())
+        if (child->isWindow() && child->isVisible()) return {};
+    QJsonObject values;
+    const auto key = [](const char *kind, const QObject *object) {
+        return QString::fromLatin1(kind) + QLatin1Char(':') + QString::number(quintptr(object), 16);
+    };
+    // Internal digests only; include control identity so duplicate Qt object names cannot hide a draft.
+    for (const auto *edit : window->findChildren<QLineEdit *>())
+        values.insert(key("line", edit), edit->text());
+    for (const auto *combo : window->findChildren<QComboBox *>())
+        values.insert(key("combo", combo), QJsonArray{combo->currentIndex(), combo->currentText()});
+    for (const auto *button : window->findChildren<QAbstractButton *>())
+        if (button->isCheckable()) values.insert(key("button", button), button->isChecked());
+    // shortcut: these cover the current item dialog; add guards when a new draft control type is introduced.
+    return QCryptographicHash::hash(QJsonDocument(values).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256);
+}
+
 QJsonObject mappingEditorCapability()
 {
     const QJsonObject properties{
@@ -86,6 +119,27 @@ QJsonObject mappingEditorCapability()
             QStringLiteral("does_not_request_activation_or_change_mapping")}}};
 }
 
+QJsonObject mappingEditorCloseCapability()
+{
+    auto result = mappingEditorCapability();
+    result[QStringLiteral("id")] = QStringLiteral("mapping.editor.close");
+    result[QStringLiteral("method")] = QStringLiteral("qkm_close_mapping_editor");
+    auto schema = result.value(QStringLiteral("arguments_schema")).toObject();
+    auto properties = schema.value(QStringLiteral("properties")).toObject();
+    properties[QStringLiteral("window_ref")] = QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+        {QStringLiteral("pattern"), QStringLiteral("^[0-9a-f]{64}$")}};
+    auto required = schema.value(QStringLiteral("required")).toArray();
+    required.append(QStringLiteral("window_ref"));
+    schema[QStringLiteral("properties")] = properties;
+    schema[QStringLiteral("required")] = required;
+    result[QStringLiteral("arguments_schema")] = schema;
+    auto limitations = result.value(QStringLiteral("limitations")).toArray();
+    limitations.append(QStringLiteral("unchanged_editor_opened_by_this_owner_only"));
+    limitations.append(QStringLiteral("no_draft_discard_or_mapping_reset"));
+    result[QStringLiteral("limitations")] = limitations;
+    return result;
+}
+
 WindowAccess::WindowAccess(QWidget *main, QWidget *itemSetup)
     : QObject(main), m_windows{{main, itemSetup}}
 {
@@ -94,6 +148,11 @@ WindowAccess::WindowAccess(QWidget *main, QWidget *itemSetup)
 
 bool WindowAccess::eventFilter(QObject *watched, QEvent *event)
 {
+    if (watched == m_windows[1].data() && (event->type() == QEvent::Show || event->type() == QEvent::Hide
+        || event->type() == QEvent::Destroy || event->type() == QEvent::WinIdChange)) {
+        m_editorSourceReference.clear();
+        m_editorDraftFingerprint.clear();
+    }
     switch (event->type()) {
     case QEvent::WindowStateChange: {
         const auto *window = qobject_cast<QWidget *>(watched);
@@ -201,6 +260,25 @@ QWidget *WindowAccess::resolve(const QString &role, const QString &reference, co
             return m_windows.at(size_t(index));
     }
     return nullptr;
+}
+
+void WindowAccess::rememberEditor(const QString &sourceReference, const QByteArray &draftFingerprint)
+{
+    if (!guiThread()) return;
+    m_editorSourceReference = sourceReference;
+    m_editorDraftFingerprint = draftFingerprint;
+}
+
+bool WindowAccess::ownsEditor(const QString &sourceReference) const
+{
+    return guiThread() && m_windows[1] && m_windows[1]->isVisible()
+        && !m_editorSourceReference.isEmpty() && m_editorSourceReference == sourceReference;
+}
+
+bool WindowAccess::editorDraftMatches(const QByteArray &draftFingerprint) const
+{
+    return guiThread() && !m_editorSourceReference.isEmpty() && draftFingerprint.size() == 32
+        && m_editorDraftFingerprint == draftFingerprint;
 }
 
 QJsonObject windowQueryCapability()

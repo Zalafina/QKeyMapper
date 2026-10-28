@@ -4,7 +4,7 @@
 
 ## 当前状态与填写规则
 
-日期：2026-10-28；初始源码基线：`d49a9f57`。**逐控件入口及68条关键链路已盘点。通信／配对、选定状态／目录／源查询／帮助已接；MAP-67-B1增加基本映射内存添加预览／提交／取消／结果查询，SAVE-95接保存只读预览、SAVE-97接完整范围／覆盖确认后的正式保存提交与分段结果，当前共14工具、13项业务能力（107增加windows.read，108增加windows.capture，109增加mapping.editor.open）。完整增改删、完整保存生命周期、MCP启停及全量GUI等价性仍未完成。** Python字节锁与PC-W11接续见ENV-39，缓存见CACHE-40／CACHE72；入口和链路数量不等于已支持能力数。
+日期：2026-10-28；初始源码基线：`d49a9f57`。**逐控件入口及68条关键链路已盘点。通信／配对、选定状态／目录／源查询／帮助已接；MAP-67-B1增加基本映射内存添加预览／提交／取消／结果查询，SAVE-95接保存只读预览、SAVE-97接完整范围／覆盖确认后的正式保存提交与分段结果，当前共15工具、14项业务能力（107增加windows.read，108增加windows.capture，109／110增加mapping.editor.open／close）。完整增改删、完整保存生命周期、MCP启停及全量GUI等价性仍未完成。** Python字节锁与PC-W11接续见ENV-39，缓存见CACHE-40／CACHE72；入口和链路数量不等于已支持能力数。
 
 UI-73：新增MCP界面及4项主窗口提示已接英文tr／正式三语言QM，NoFocus／ClickFocus遵循用户选择；双Qt各36项、实际产品类双Qt三语言66项及私有截图见[本片证据](ui_localization_validation.md)。仅UI与资源，不新增工具、业务能力或运行态编辑许可；High／Default／Win11边界另列。
 
@@ -986,3 +986,9 @@ Win11双Qt组件各3、IPC各3及Python图片7项通过；正式原manifest产�
 mapping.editor.open／qkm_open_mapping_editor只接稳定source_ref与private_background，固定本实例单项窗、Read+ShowWindows=129。执行层核验非Default且非输入的实际WinSta0桌面、当前安全源／可见Tab／非隐藏显示行到真实源的对应，复用原showItemSetupDialog；已有编辑窗／草稿、表格编辑或模态／弹窗拒绝，临时禁止激活后恢复原属性，不改映射／INI或切Tab。返回目标／源／新window引用，不收原生目标或路径。
 
 Win11双Qt私有组件各4、Default只读拒绝各3、IPC权限各3通过（含init／cleanup）；三场正式原manifest产品18项CPP、77次记录调用＋12次schema拒绝，八张MCP图由Agent查看，Qt6正式打开／真实GUI双击两角色PNG字节相同。源／dirty／加载／INI不变，重复打开／C草稿守卫及无Show拒绝，逐场清理五项零；两正例各三次Default前台采样非本测试PID，不当作全程因果证明。当前十四工具／十三能力；详见[同一C1证据](map67c1_validation.md#demo-p1-109私有后台正式打开源行窗口2026-10-28pc-w11)。正式安全关闭／串行重置、普通Default显示确认、其他页面、预热／免Python和QQ仍待，完整P1／M1未完。
+
+## DEMO-P1-110：正式打开记录与安全关闭
+
+mapping.editor.close／qkm_close_mapping_editor要求Read+ShowWindows、稳定source_ref／window_ref及private_background；仅本owner正式open记录且完整安全源／全部当前输入与pending备注摘要未变可关闭。固定本实例单项窗，不接discard或原生目标；可见子窗、其他编辑、模态／popup／源或草稿变化拒绝，原GUI close后核实隐藏／源不变，不清空映射。摘要内存单记录，不返回原文／控件指针；默认hasOpenMappingEditor语义保持。
+
+Win11双Qt最终私有组件各4、IPC各3通过（含init／cleanup）；正式双Qt各两轮安全关闭，连同复用无Show负例为18项CPP／94次调用＋15次schema拒绝。GUI未归属窗口、C草稿及旧源／旧窗拒绝，恢复B后关闭，源／dirty／加载／INI保持、逐场清理零。十张图审阅，最终正例与子窗前图字节一致；两套GUI／正式／重开单项图字节相同。详见[同一C1证据](map67c1_validation.md#demo-p1-110正式打开记录及安全关闭2026-10-28pc-w11)。当前十五工具／十四能力；实际备注／数值／子窗业务交错、P2源重置、预热／免Python及QQ仍待，完整P1／M1未完。

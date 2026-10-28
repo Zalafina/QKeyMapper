@@ -288,6 +288,7 @@ int runSessionClient(const QStringList &arguments)
     if (mode == QStringLiteral("write-denied") || mode == QStringLiteral("write-allowed")) method = QStringLiteral("qkm_apply_changes");
     if (mode == QStringLiteral("capture-denied") || mode == QStringLiteral("capture-allowed")) method = QStringLiteral("qkm_capture_window");
     if (mode == QStringLiteral("editor-denied") || mode == QStringLiteral("editor-allowed")) method = QStringLiteral("qkm_open_mapping_editor");
+    if (mode == QStringLiteral("editor-close-denied") || mode == QStringLiteral("editor-close-allowed")) method = QStringLiteral("qkm_close_mapping_editor");
     if (mode == QStringLiteral("unknown-method")) method = QStringLiteral("setProperty");
     QJsonObject args;
     if (mode == QStringLiteral("transport-caps-badargs")) args.insert(QStringLiteral("unknown"), true);
@@ -312,7 +313,7 @@ int runSessionClient(const QStringList &arguments)
             && response.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")) == QJsonValue(code) ? 0 : 90;
     }
     if (mode == QStringLiteral("write-denied") || mode == QStringLiteral("capture-denied")
-        || mode == QStringLiteral("editor-denied") || mode == QStringLiteral("unknown-method")) {
+        || mode == QStringLiteral("editor-denied") || mode == QStringLiteral("editor-close-denied") || mode == QStringLiteral("unknown-method")) {
         const QString code = mode == QStringLiteral("unknown-method") ? QStringLiteral("unsupported_method") : QStringLiteral("permission_denied");
         return response.value(QStringLiteral("ok")) == QJsonValue(false)
             && response.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")) == QJsonValue(code) ? 0 : 83;
@@ -1868,11 +1869,15 @@ void McpIpcTest::sessionWindowPermissions()
     QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
     QVERIFY(run(QStringLiteral("editor-denied")));
     QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    QVERIFY(run(QStringLiteral("editor-close-denied")));
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
     QVERIFY(server.updatePermissions(pairId, Read | ShowWindows));
     QVERIFY(run(QStringLiteral("auth")));
     QCOMPARE(last.permissionEpoch, quint64(5));
     QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
     QVERIFY(run(QStringLiteral("editor-allowed")));
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    QVERIFY(run(QStringLiteral("editor-close-allowed")));
     QCOMPARE(last.scopes, quint32(Read | ShowWindows));
     QCOMPARE(last.permissionEpoch, quint64(5));
     server.disable();

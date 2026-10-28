@@ -30,6 +30,8 @@ _ERROR_FEEDBACK = {
     "capture_failed": ("本次窗口图像未能取得。", "核对已显示的受支持窗口，重新查询窗口和源。"),
     "invalid_image": ("图像结果未通过身份、格式或大小校验。", "未返回图片；核对目标及错误码，保留本次记录后调查。"),
     "unsupported_desktop": ("目标不在可核实的后台私有桌面。", "本接口不打开Default或当前输入桌面窗口。检查已授权专用演示实例；不会自行切换桌面或启动新实例。"),
+    "editor_not_owned": ("此窗口不属于本认证会话的正式打开记录。", "本工具不会关闭仅经GUI打开或已失效的编辑窗。保留内容，通过原GUI处理后再使用正式打开流程。"),
+    "editor_draft_changed": ("窗口输入、待应用内容或子窗状态不能安全关闭，本次未关闭。", "保留草稿，先在原窗口处理未应用内容或已打开子窗；本工具不自动应用或丢弃。处理后重新核对窗口、源和打开记录。"),
     "stale_preview": ("预览已失效、被消费或结果不可用。", "先用 operation_id 查询结果；未知时重新核对实际源，勿盲目重复写入。"),
     "preview_expired": ("预览已过期，未执行本次修改。", "重新查询源并预览，核对后提交新的预览。"),
     "preview_superseded": ("较新的预览已替换原预览。", "核对当前预览内容及其 ID，勿提交旧预览。"),
@@ -54,7 +56,8 @@ _PRODUCT_ERRORS = frozenset({"context_busy", "stale_catalog", "stale_source", "p
     "invalid_arguments", "unsupported_capability", "unsupported_method", "unsupported_query",
     "result_too_large", "item_too_large", "invalid_source_data", "stale_preview", "preview_expired",
     "preview_superseded", "preview_limit", "operation_limit", "confirmation_required", "save_write_failed", "save_reload_failed",
-    "stale_window", "window_unavailable", "capture_timeout", "image_too_large", "capture_failed", "unsupported_desktop"})
+    "stale_window", "window_unavailable", "capture_timeout", "image_too_large", "capture_failed", "unsupported_desktop",
+    "editor_not_owned", "editor_draft_changed"})
 
 
 def tool_result(value: dict[str, Any]) -> CallToolResult:
@@ -223,6 +226,14 @@ def main() -> None:
             source_tab_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")]) -> ToolResult:
         """截取本实例当前已显示、非最小化的受支持Qt窗口，必须另获CaptureWindows；Read、Configure或ShowWindows不能代替。先查询windows取得本角色window_ref，并查询mapping_sources取得当前source_revision及所选source_tab_ref；窗口须正展示该源，不自动切换Tab。绘制等待前后复核请求、窗口、完整源及安全停止上下文；单项窗存在未应用键文本、弹窗、陈旧或超时明确失败。不会显示、恢复、激活、开始映射或注入输入。返回160KiB内PNG原生图片和不含Base64的实例／源／窗口／尺寸元数据；仅Qt客户区，独立弹窗／原生边框不包含，实时UI可能显示其他未提交控件。没有文件路径参数，不落盘；图片不代表已保存，也不代表QQ已发送。"""
         return image_tool_result(await bridge.capture_window(role, window_ref, source_revision, source_tab_ref))
+
+    @tool(connection)
+    async def qkm_close_mapping_editor(
+            source_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$")],
+            window_ref: Annotated[str, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")],
+            presentation: Literal["private_background"]) -> ToolResult:
+        """安全关闭本认证会话通过正式open打开且内容未变的单项设定窗，必须另获ShowWindows。只接受当前source_ref／window_ref及private_background；C++核验实际后台私有非输入桌面、完整安全源／真实源行、打开记录及全部现有输入和待应用备注摘要。不关闭仅GUI打开的窗，不提供discard开关；草稿／来源／权限／窗口变化或其他编辑窗存在时拒绝，不自动应用、丢弃、切Tab、停映射或重试。成功返回已核实隐藏的窗口和目标／源摘要；这不清空映射、不保存，也不构成演示重置。失败或断线后先query windows核对实际结果。"""
+        return tool_result(await bridge.close_mapping_editor(source_ref, window_ref, presentation))
 
     @tool(read)
     async def qkm_get_operation(
