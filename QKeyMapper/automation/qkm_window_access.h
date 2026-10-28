@@ -16,6 +16,18 @@ struct WindowQueryResult {
     bool ok() const { return errorCode.isEmpty(); }
 };
 
+struct MappingEditorArguments {
+    QString sourceReference;
+    QString sourceRevision;
+    int sourceTab = -1;
+    int sourceRow = -1;
+    bool ok() const { return !sourceReference.isEmpty(); }
+};
+
+MappingEditorArguments parseMappingEditorArguments(const QJsonObject &arguments);
+bool privateBackgroundDesktopAvailable();
+QJsonObject mappingEditorCapability();
+
 // Tracks only the product's two explicitly supplied window roles.
 class WindowAccess : public QObject {
 public:

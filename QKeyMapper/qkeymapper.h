@@ -402,6 +402,8 @@ public:
     explicit KeyMappingDataTableWidget(QWidget *parent = Q_NULLPTR)
         : QTableWidget(parent), m_DraggedTopRow(-1), m_DraggedBottomRow(-1) {}
 
+    bool hasActiveEditor() const { return state() == QAbstractItemView::EditingState; }
+
     // Category filtering methods
     // void setCategoryFilter(const QString &category);
     void setCategoryFilters(const QSet<QString> &categories);
@@ -2104,6 +2106,7 @@ private:
     QJsonObject collectAutomationSourceSnapshot(QString &errorCode) const;
     void handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request);
     void handleAutomationWindowCapture(const QkmAutomation::AutomationRequest &request);
+    void handleAutomationMappingEditor(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMappingChange(const QkmAutomation::AutomationRequest &request);
     void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
     void handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request);

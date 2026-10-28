@@ -33,8 +33,8 @@ from qkeymapper_mcp.protocol import BridgeError
 from qkeymapper_mcp.windows import identity
 
 TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state", "qkm_get_help", "qkm_query",
-         "qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes", "qkm_get_operation", "qkm_capture_window"}
-BUSINESS_CAPABILITIES = {"state.read", "catalog.read", "source.read", "help.read", "windows.read", "windows.capture", "mapping.add.preview",
+         "qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes", "qkm_get_operation", "qkm_capture_window", "qkm_open_mapping_editor"}
+BUSINESS_CAPABILITIES = {"state.read", "catalog.read", "source.read", "help.read", "windows.read", "windows.capture", "mapping.editor.open", "mapping.add.preview",
                          "configuration.save.preview", "configuration.save.apply", "mapping.add.apply", "mapping.preview.cancel", "operation.read"}
 
 

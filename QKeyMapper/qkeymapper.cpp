@@ -17,6 +17,7 @@
 #include "qkm_input_producer_work.h"
 #include "qfloatingbuttonsetupdialog.h"
 #include <QScopedValueRollback>
+#include <QScopeGuard>
 #include <QGroupBox>
 
 #include <algorithm>
@@ -38361,6 +38362,80 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     server.reply(request.connectionId, request.requestId, operation);
 }
 
+void QKeyMapper::handleAutomationMappingEditor(const QkmAutomation::AutomationRequest &request)
+{
+    using namespace QkmAutomation;
+    auto &server = m_McpControlDialog->server();
+    if (!server.isRequestCurrent(request)) return;
+    const auto reject = [&](const QString &code) {
+        if (server.isRequestCurrent(request)) server.replyError(request.connectionId, request.requestId, code,
+            QStringLiteral("The editor was not confirmed open. Query windows and the current source before retrying; no existing editor, Tab or desktop is changed automatically."));
+    };
+    if ((request.scopes & (Read | ShowWindows)) != (Read | ShowWindows)) { reject(QStringLiteral("permission_denied")); return; }
+    const auto arguments = parseMappingEditorArguments(request.arguments);
+    if (!arguments.ok()) { reject(QStringLiteral("invalid_arguments")); return; }
+    if (!privateBackgroundDesktopAvailable()) { reject(QStringLiteral("unsupported_desktop")); return; }
+    QString sourceError;
+    const QJsonObject snapshot = collectAutomationSourceSnapshot(sourceError);
+    if (snapshot.isEmpty()) { reject(sourceError.isEmpty() ? QStringLiteral("context_busy") : sourceError); return; }
+    const QJsonObject sourceArguments{{QStringLiteral("entity"), QStringLiteral("mappings")},
+        {QStringLiteral("source_revision"), arguments.sourceRevision},
+        {QStringLiteral("source_tab_ref"), arguments.sourceRevision + QStringLiteral(":source:") + QString::number(arguments.sourceTab)},
+        {QStringLiteral("offset"), arguments.sourceRow}, {QStringLiteral("limit"), 1}};
+    const auto source = querySourceSnapshot(snapshot, server.instanceId(), request.pairId, request.permissionEpoch, sourceArguments);
+    if (!source.ok()) { reject(source.errorCode); return; }
+    const auto rows = source.page.value(QStringLiteral("items")).toArray();
+    if (rows.size() != 1 || rows.first().toObject().value(QStringLiteral("source_ref")) != QJsonValue(arguments.sourceReference)) {
+        reject(QStringLiteral("invalid_arguments")); return;
+    }
+    const auto selected = source.page.value(QStringLiteral("source")).toObject();
+    const int tab = selected.value(QStringLiteral("ui_index")).toInt(-1);
+    if (!selected.value(QStringLiteral("attached_to_ui")).toBool() || tab != s_KeyMappingTabWidgetCurrentIndex) {
+        reject(QStringLiteral("stale_source")); return;
+    }
+    if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
+        || !m_ItemSetupDialog || !m_AutomationWindows || m_KeyMappingDataTable->hasActiveEditor()) {
+        reject(QStringLiteral("context_busy")); return;
+    }
+    if (!isVisible() || isMinimized() || !IsWindowVisible(reinterpret_cast<HWND>(internalWinId()))) {
+        reject(QStringLiteral("window_unavailable")); return;
+    }
+    int sourceTab = -1, sourceRow = -1;
+    QList<MAP_KEYDATA> *data = nullptr;
+    if (arguments.sourceRow >= m_KeyMappingDataTable->rowCount() || m_KeyMappingDataTable->isRowHidden(arguments.sourceRow)
+        || !resolveDisplayRowSource(tab, arguments.sourceRow, &sourceTab, &sourceRow, &data)
+        || sourceTab != tab || sourceRow != arguments.sourceRow || data != KeyMappingDataList) {
+        reject(QStringLiteral("stale_source")); return;
+    }
+    const QPointer<QWidget> editor = m_ItemSetupDialog;
+    const bool previousNoActivate = editor->testAttribute(Qt::WA_ShowWithoutActivating);
+    const auto restoreAttribute = qScopeGuard([editor, previousNoActivate]() {
+        if (editor) editor->setAttribute(Qt::WA_ShowWithoutActivating, previousNoActivate);
+    });
+    editor->setAttribute(Qt::WA_ShowWithoutActivating, true);
+    showItemSetupDialog(tab, arguments.sourceRow);
+    if (!server.isRequestCurrent(request)) return;
+    const auto after = querySourceSnapshot(collectAutomationSourceSnapshot(sourceError), server.instanceId(),
+        request.pairId, request.permissionEpoch, sourceArguments);
+    if (!after.ok()) { reject(after.errorCode); return; }
+    if (!privateBackgroundDesktopAvailable()) { reject(QStringLiteral("unsupported_desktop")); return; }
+    const auto windows = m_AutomationWindows->query(server.instanceId(), request.pairId, request.permissionEpoch,
+        {{QStringLiteral("entity"), QStringLiteral("windows")}});
+    if (!windows.ok()) { reject(windows.errorCode); return; }
+    const auto window = windows.page.value(QStringLiteral("items")).toArray().at(1).toObject();
+    if (!window.value(QStringLiteral("native_visible")).toBool() || !window.value(QStringLiteral("qt_visible")).toBool()
+        || window.value(QStringLiteral("minimized")).toBool() || !window.value(QStringLiteral("window_ref")).isString()
+        || m_ItemSetupDialog->getTabIndex() != tab || m_ItemSetupDialog->getItemRow() != arguments.sourceRow) {
+        reject(QStringLiteral("window_unavailable")); return;
+    }
+    server.reply(request.connectionId, request.requestId, {{QStringLiteral("target"), windows.page.value(QStringLiteral("target"))},
+        {QStringLiteral("presentation"), QStringLiteral("private_background")}, {QStringLiteral("role"), QStringLiteral("item_setup")},
+        {QStringLiteral("activation_requested"), false}, {QStringLiteral("source_ref"), arguments.sourceReference},
+        {QStringLiteral("source_revision"), arguments.sourceRevision},
+        {QStringLiteral("source_tab_ref"), rows.first().toObject().value(QStringLiteral("source_tab_ref"))},
+        {QStringLiteral("source_context"), source.page.value(QStringLiteral("source_snapshot"))}, {QStringLiteral("window"), window}});
+}
+
 void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRequest &request)
 {
     using namespace QkmAutomation;
@@ -38478,6 +38553,10 @@ void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRe
 void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
+    if (request.method == QStringLiteral("qkm_open_mapping_editor")) {
+        handleAutomationMappingEditor(request);
+        return;
+    }
     if (request.method == QStringLiteral("qkm_capture_window")) {
         handleAutomationWindowCapture(request);
         return;
@@ -38573,7 +38652,8 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                     QStringLiteral("mapping_rows_require_source_revision_and_source_tab_ref"),
                     QStringLiteral("memory_provenance_only_not_disk_origin"), QStringLiteral("source_revision_is_not_a_business_revision"),
                     QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}},
-            QkmAutomation::mappingHelpCapability(), QkmAutomation::windowQueryCapability(), QkmAutomation::windowCaptureCapability()};
+            QkmAutomation::mappingHelpCapability(), QkmAutomation::windowQueryCapability(), QkmAutomation::windowCaptureCapability(),
+            QkmAutomation::mappingEditorCapability()};
         const QJsonArray mappingCapabilities = QkmAutomation::mappingChangeCapabilities();
         for (const auto &capability : mappingCapabilities) businessCapabilities.append(capability);
         server.replyCapabilities(request.connectionId, request.requestId, businessCapabilities);

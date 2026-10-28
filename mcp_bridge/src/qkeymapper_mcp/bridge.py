@@ -200,6 +200,9 @@ class Bridge:
         return await self._call("qkm_capture_window", dict(role=role, window_ref=window_ref,
             source_revision=source_revision, source_tab_ref=source_tab_ref))
 
+    async def open_mapping_editor(self, source_ref: str, presentation: str) -> dict:
+        return await self._call("qkm_open_mapping_editor", dict(source_ref=source_ref, presentation=presentation))
+
     async def _call(self, method: str, arguments: dict | None = None) -> dict:
         future = self._submit(lambda: self._request(method, arguments if arguments is not None else {}))
         if future is None:

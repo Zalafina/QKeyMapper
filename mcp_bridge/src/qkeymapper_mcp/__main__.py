@@ -29,6 +29,7 @@ _ERROR_FEEDBACK = {
     "image_too_large": ("窗口图片超过像素或PNG大小上限。", "缩小已核实的目标窗口或选择受支持页面，重新查询；不会自动缩放或截断。"),
     "capture_failed": ("本次窗口图像未能取得。", "核对已显示的受支持窗口，重新查询窗口和源。"),
     "invalid_image": ("图像结果未通过身份、格式或大小校验。", "未返回图片；核对目标及错误码，保留本次记录后调查。"),
+    "unsupported_desktop": ("目标不在可核实的后台私有桌面。", "本接口不打开Default或当前输入桌面窗口。检查已授权专用演示实例；不会自行切换桌面或启动新实例。"),
     "stale_preview": ("预览已失效、被消费或结果不可用。", "先用 operation_id 查询结果；未知时重新核对实际源，勿盲目重复写入。"),
     "preview_expired": ("预览已过期，未执行本次修改。", "重新查询源并预览，核对后提交新的预览。"),
     "preview_superseded": ("较新的预览已替换原预览。", "核对当前预览内容及其 ID，勿提交旧预览。"),
@@ -53,7 +54,7 @@ _PRODUCT_ERRORS = frozenset({"context_busy", "stale_catalog", "stale_source", "p
     "invalid_arguments", "unsupported_capability", "unsupported_method", "unsupported_query",
     "result_too_large", "item_too_large", "invalid_source_data", "stale_preview", "preview_expired",
     "preview_superseded", "preview_limit", "operation_limit", "confirmation_required", "save_write_failed", "save_reload_failed",
-    "stale_window", "window_unavailable", "capture_timeout", "image_too_large", "capture_failed"})
+    "stale_window", "window_unavailable", "capture_timeout", "image_too_large", "capture_failed", "unsupported_desktop"})
 
 
 def tool_result(value: dict[str, Any]) -> CallToolResult:
@@ -206,6 +207,13 @@ def main() -> None:
             preview_id: Annotated[str, Field(min_length=32, max_length=32, pattern="^[0-9a-f]{32}$")]) -> ToolResult:
         """取消本配对尚未提交的预览，不撤销已经应用的修改、不停止映射。允许查询／取消期间状态变化；已消费或未知时先查询操作结果。"""
         return tool_result(await bridge.cancel_changes(preview_id))
+
+    @tool(connection)
+    async def qkm_open_mapping_editor(
+            source_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$")],
+            presentation: Literal["private_background"]) -> ToolResult:
+        """通过原GUI入口打开本实例当前源行的单项设定窗，必须另获ShowWindows；Read、Configure或CaptureWindows不能替代。先查询mappings取得source_ref；仅支持实际WinSta0后台私有桌面，拒绝Default／当前输入桌面或无法核验的桌面。源必须仍安全且属于当前可见Tab／行；不会自动切换Tab、关闭既有编辑窗或覆盖草稿。只显示本实例单项窗，不请求激活、不注入输入、不改映射／保存。返回目标、源和新窗口引用，随后可在获准后capture。失败／断线后先query windows核对是否已经打开，勿盲目重发；本接口不执行演示重置、预热或QQ发送。"""
+        return tool_result(await bridge.open_mapping_editor(source_ref, presentation))
 
     @tool(read)
     async def qkm_capture_window(

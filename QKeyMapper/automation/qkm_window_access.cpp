@@ -35,6 +35,57 @@ WindowQueryResult fail(const char *code, const char *message)
 
 } // namespace
 
+MappingEditorArguments parseMappingEditorArguments(const QJsonObject &arguments)
+{
+    if (arguments.size() != 2 || !arguments.value(QStringLiteral("source_ref")).isString()
+        || arguments.value(QStringLiteral("presentation")) != QJsonValue(QStringLiteral("private_background"))) return {};
+    const QString reference = arguments.value(QStringLiteral("source_ref")).toString();
+    const auto parts = reference.split(QLatin1Char(':'));
+    if (reference.size() > 128 || parts.size() != 4 || !isLowerHex(parts.at(0), 64)
+        || parts.at(1) != QStringLiteral("row")) return {};
+    bool tabOk = false, rowOk = false;
+    const int tab = parts.at(2).toInt(&tabOk), row = parts.at(3).toInt(&rowOk);
+    if (!tabOk || !rowOk || tab < 0 || row < 0 || QString::number(tab) != parts.at(2)
+        || QString::number(row) != parts.at(3)) return {};
+    return {reference, parts.at(0), tab, row};
+}
+
+bool privateBackgroundDesktopAvailable()
+{
+    if (!guiThread()) return false;
+    wchar_t station[256]{}, current[256]{}, input[256]{};
+    DWORD needed = 0;
+    if (!GetUserObjectInformationW(GetProcessWindowStation(), UOI_NAME, station, sizeof(station), &needed)
+        || QString::fromWCharArray(station).compare(QStringLiteral("WinSta0"), Qt::CaseInsensitive) != 0
+        || !GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, current, sizeof(current), &needed)
+        || QString::fromWCharArray(current).compare(QStringLiteral("Default"), Qt::CaseInsensitive) == 0) return false;
+    const HDESK inputDesktop = OpenInputDesktop(0, FALSE, DESKTOP_READOBJECTS);
+    if (!inputDesktop) return false;
+    const bool known = GetUserObjectInformationW(inputDesktop, UOI_NAME, input, sizeof(input), &needed) != FALSE;
+    CloseDesktop(inputDesktop);
+    return known && QString::fromWCharArray(current).compare(QString::fromWCharArray(input), Qt::CaseInsensitive) != 0;
+}
+
+QJsonObject mappingEditorCapability()
+{
+    const QJsonObject properties{
+        {QStringLiteral("source_ref"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("maxLength"), 128},
+            {QStringLiteral("pattern"), QStringLiteral("^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$")}}},
+        {QStringLiteral("presentation"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("const"), QStringLiteral("private_background")}}}};
+    return {{QStringLiteral("id"), QStringLiteral("mapping.editor.open")},
+        {QStringLiteral("method"), QStringLiteral("qkm_open_mapping_editor")},
+        {QStringLiteral("required_scopes"), int(Read | ShowWindows)}, {QStringLiteral("read_only"), false},
+        {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+            {QStringLiteral("additionalProperties"), false},
+            {QStringLiteral("required"), QJsonArray{QStringLiteral("source_ref"), QStringLiteral("presentation")}},
+            {QStringLiteral("properties"), properties}}},
+        {QStringLiteral("limitations"), QJsonArray{QStringLiteral("private_non_input_desktop_only"),
+            QStringLiteral("current_visible_source_tab_only"), QStringLiteral("existing_editor_is_not_replaced"),
+            QStringLiteral("does_not_request_activation_or_change_mapping")}}};
+}
+
 WindowAccess::WindowAccess(QWidget *main, QWidget *itemSetup)
     : QObject(main), m_windows{{main, itemSetup}}
 {

@@ -16,19 +16,19 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | DEMO-P1-108正式有界PNG捕获及原生MCP图片：选定范围完成，本切片提交封存；完整P1仍进行中 |
-| 状态 | 持续开发，不推送。107窗口观察及108正式截图已完成选定双Qt检查；下一受限展示切片先盘点原GUI及窗口／源状态，不接新的启动模式 |
+| 当前切片 | DEMO-P1-109正式私有后台打开源行窗口：选定范围完成，本切片提交封存；P1／P2整体仍未完成 |
+| 状态 | 持续开发，不推送。107窗口观察／108截图／109私有单项打开已选验；下一补安全关闭及串行重置，不接新的启动模式 |
 | 执行机器 | PC-W11，Windows 11企业版10.0.26200 x64；本轮唯一写入机器。UI-73及C1-B2-TABLE的PC-W10结果只按其原版本／范围保留，不冒充本机复验 |
 | 任务分支 | `codex/qkeymapper-mcp-control` |
-| 源码基线 | 基于P1-107 7ae36e13及本切片正式capture／图片校验、单项键文本观察和对应测试；qkeymapper.cpp本片120增／1删。13工具／12业务能力；105三语资源及106新翻译流程沿用，不再改写资源 |
+| 源码基线 | 基于P1-108 bde036b3及本切片私有桌面门槛／稳定源行打开、EditingState观察和对应测试；qkeymapper.cpp81增／1删。14工具／13业务能力；105资源及106翻译新流程沿用 |
 | 当前已完成 | PC-W11解释器／DLL的PSF签名有效，同机ENV-39哈希安装记录的31项依赖与当前锁一致，环境检查／pip check、6项环境和20项协议检查通过；Qt6.8.3／Qt5.15.2均为x64。PC-W10的UI-73三语言及TABLE97项结果仅按各自原范围保留 |
-| 当前未验证 | 正式显示／打开源行窗口尚未接；截图实际超时及等待期间撤权／断线／变更交错、弹窗、HighDPI／Win10、Default因果／其他实例对照、高级页、串行重置／预热／免Python与QQ仍待；纯Read新实体及完整C1-C／M1旧缺口保留 |
-| 构建与 EXE | 双Qt mcp_control／mcp_ipc及真实源码生命周期维护Release增量native exit0；Qt6零编译／链接警告、Qt5兼容通过。out/mcp_window_capture_w11_20261028/{qt6,qt5}-runtime/QKeyMapperCapture108_*_runtime.exe原manifest；实际QkmDemo104_<UUID>私有桌面，普通SDK8192、产品12288，同登录 |
-| 提交与同步 | 108在107 7ae36e13049d80be692a835b43d674bfc53521ee之上形成聚焦本地提交；106 ba15c508已固化翻译新流程，均不推送 |
-| 本机独有材料 | out/mcp_window_capture_w11_20261028含双Qt受影响构建、组件／IPC／Python7项、部署身份／公共登记、最终109次SDK记录＋7次schema拒绝、六张正式MCP图片／元数据、源INI不变及三场清理；三个首轮编译／断言失败分别保留，不随Git |
+| 当前未验证 | 普通Default显示确认、其他角色／高级页、正式关闭及串行重置、真实非当前已填充Tab／过滤行／inline或模态交错、撤权／退出、HighDPI／Win10／其他实例对照、预热／免Python／QQ待；截图超时交错及完整C1-C／M1旧缺口保留 |
+| 构建与 EXE | 双Qt mcp_control／mcp_ipc及真实源码生命周期维护Release增量native exit0；Qt6零编译／链接警告、Qt5兼容通过。out/mcp_editor_open_w11_20261028/{qt6,qt5}-runtime/QKeyMapperEditor109_*_runtime.exe原manifest；实际QkmDemo104_<UUID>私有桌面，普通SDK8192、产品12288，同登录 |
+| 提交与同步 | 109在108 bde036b3之上形成聚焦本地提交；106 ba15c508固化翻译新流程。均不推送 |
+| 本机独有材料 | out/mcp_editor_open_w11_20261028含双Qt构建／组件／Default只读拒绝／IPC、部署身份／公共登记、77次SDK记录＋12次schema拒绝、八张MCP图片／GUI对照、源INI及前台采样、三场清理。首SDK导入失败和汇总字段错误保留说明，不随Git |
 | 授权边界 | 已明确恢复持续开发／聚焦本地提交，不推送。开发、Git、构建、桥接／SDK及截图普通权限，必要原manifest启动／关闭通过已批准缓存与公共登记；只用自有私有桌面和隔离INI，无Default、系统输入、驱动或系统过滤键设置变化 |
 | 当前控制器 | 2026-10-28普通Medium PID9664，创建时间134376318834874371，instance2ff1d26a17e942ee9688a45261b272c2、generation1，截止18:30＋08:00；双Qt各固定定义已公共登记，逐场active／cache_available=true且owned／unresolved／pending／current_action／current_job全零。昨日24956已关闭；旧未知请求不接管 |
-| 下一项动作 | DEMO-P1后续：盘点并实现受限展示／源行单项窗入口，复用原GUI及独立ShowWindows；先明确私有桌面无激活、真实源／状态和引用复核，不扩大为任意窗口控制或预热模式 |
+| 下一项动作 | 继续P1／P2安全关闭及串行重置：先盘点原单项关闭／草稿与预览生命周期，确定独立演示会话可执行的最小清理边界，复用源／窗口引用及业务入口，不自动丢弃普通用户草稿或扩大启动权限 |
 | 下一项完成标准 | 剩余保存／失败恢复及生命周期场景按实际结果逐项验收；已接通能力不等于完整C1-C或M1完成。后续按既定A→B完整路径推进实际运行和停止，缺失系统／GUI范围单列，不重复已验载荷或重置环境 |
 | 缓存观察安排 | 不再为Win11／2–5小时驻留单独排期，随日常使用积累；复查以现存日志规模决定工作量，必要靶向测试另估。该决定不代表未覆盖场景已经验证 |
 | 实耗与剩余 | 本机已推进SAVE-74至103及DEMO-P0-104选定可行性（84为缓存诊断）。P0源码与四张真图可检查，P1至P4和M1整体未完成，剩余仍按阶段依赖推进，不按断言抵扣工时 |
@@ -424,7 +424,7 @@ TARGET-07 的状态／绘制逻辑优先在私有桌面验证；真实前台、�
 
 ### DEMO-SESSION：基于预置 Release 的私有演示与截图会话（2026-10-27 新增实施目标）
 
-用户明确要求追加实现及验收，不是仅补设计。本节正式窗口观察／截图已在107／108完成选定范围，显示及完整会话交付仍**待实现／待验证**；P0内部捕获底层和选定可行性结果见下文，现有测试用私有桌面、截图脚本和开发gsudo控制器不构成已交付服务。保留当前SAVE-95与此前源／权限／保存结果证据，沿当前C1-C保存闭环节奏继续，在保存执行安全及相关窗口／会话工作的自然检查点安排DEMO-P0，不为截图验证临时切换开发队列；不恢复环境、不重置现场，也不因新目标放弃M1完整保存／启停。新增进度只在本计划维护。
+用户明确要求追加实现及验收，不是仅补设计。本节窗口观察／截图／私有单项打开已在107／108／109完成选定范围，其余显示及完整会话交付仍**待实现／待验证**；P0内部捕获底层和选定可行性结果见下文，现有测试用私有桌面、截图脚本和开发gsudo控制器不构成已交付服务。保留当前SAVE-95与此前源／权限／保存结果证据，沿当前C1-C保存闭环节奏继续，在保存执行安全及相关窗口／会话工作的自然检查点安排DEMO-P0，不为截图验证临时切换开发队列；不恢复环境、不重置现场，也不因新目标放弃M1完整保存／启停。新增进度只在本计划维护。
 
 目标是Windows执行端上的专用QKeyMapper演示实例：hermes QQBot的Agent按咨询建立真实示例、展示对应窗口、取得可检查图片及说明，再由gateway按原QQ会话回传。当前PC-W11没有hermes／QQBot gateway环境，在本机实现产品／桥接／本地Agent可消费闭环；**QQ渠道联调另排开发末期PC-W10**。本机图片产生、MCP返回ImageContent或本地文件均不等于QQ已发送／已送达，缺gateway源码、指定测试对象或发送授权时只报告可接线产物和待联调项。
 
@@ -547,6 +547,22 @@ Win11双Qt选定组件各3项、IPC权限各3项（均含init／cleanup）、Pyt
 首次参数schema初始化少一闭括号导致编译失败，修正后双Qt通过，first-schema-brace-build.log保留。首Qt6组件将请求宽度64误当实际原生宽度162，改按真实窗口尺寸断言，first-native-minimum-size保留。首正式Qt6已返回三张MCP图，末尾错误地将关闭后的null窗口引用当有效业务参数，native exit2；原始错误文本当时未留存，不推算原生错误码。first-closed-native-handle封存该场／三图／原EXE身份及零尾状态，修正消费断言并补最小化负例后形成上述最终通过；未为测试放宽产品截图逻辑。
 
 本机out/mcp_window_capture_w11_20261028不随Git，含大文件补丁dry-run／精确字节／反向核对、双Qt构建／组件／IPC、Python7项、部署身份／公共登记、准确SDK peer／调用与schema负例、六图及元数据／Agent看图、逐场清理与summary。当前13工具／12业务能力。五秒实际超时、等待期间真实撤权／断线／源变更、模态／弹窗交错和8M边缘压缩传输未专项运行；完整普通Release、ASan／全量静态、HighDPI、Win10、Default全程焦点因果、其他实例对照及QQ未验。正式受限展示、代表高级页、P2串行重置、P3预热／M3-B免Python交付仍待，未将完整P1／C1-C／M1标完成。
+
+#### DEMO-P1-109：私有后台正式打开源行窗口（选定范围完成）
+
+基于P1-108 bde036b3，qkm_open_mapping_editor(source_ref, presentation=private_background)／mapping.editor.open已接正式C++与桥接，Read+ShowWindows=129；Configure／Capture不能替代，工具标为非只读。固定本实例单项设定窗，不接PID／HWND／路径。源引用含完整owner修订／源Tab／行，复核安全源、真实当前Tab、非隐藏显示行到源的解析；不把附加共通显示行当普通源行，不自动切Tab。复用mappingAdditionAllowed及既有hasOpenMappingEditor，并观察表格EditingState，拒绝已有编辑窗／草稿、模态／弹窗及不安全清理状态，避免原GUI入口关闭旧窗。
+
+C++核验GUI线程的WinSta0桌面非Default且非当前输入桌面，未知身份或输入桌面不可读取时拒绝；客户端参数不是演示授权证明。仅这次显示临时WA_ShowWithoutActivating，作用域结束恢复原值；调用原showItemSetupDialog，不设置业务控件模拟界面、不调用主窗置顶、激活、SwitchDesktop或系统输入。显示后重核请求／完整源／实际角色与源行／Qt和原生可见，返回目标摘要、实际源、window及activation_requested=false；失败／断线先query确认当前窗口，不自动重发、关闭旧窗或换目标。普通GUI入口及配对默认行为保持。
+
+双Qt受影响维护增量构建native exit0，Qt6零编译／链接警告，Qt5兼容通过。每Qt私有参数／桌面组件4项、Default只读门槛3项、IPC权限3项（均含init／cleanup）通过；Default实际桌面名称已核对，只运行查询断言，无显示窗口／截图／输入或焦点操作，单场约1ms测试体。IPC证实Read+Configure+Capture不能替代Show，Read+Show无Configure可路由；正式产品场景仍含Configure以建立A→B，不写作High产品纯Read+Show专项已验。后续维护只改固定观察夹具时仅重编生命周期目标，原构建日志保留。
+
+正式SDK最终Qt6／Qt5两场demo_mcp_editor各28次记录调用／6次open／4次schema拒绝；另Qt6无Show的demo_mcp_capture 21／1／4。累计77次调用＋12次schema拒绝，三场各native exit0／6项CPP，共18项，逐场owned／unresolved／pending／current_action／current_job全零。正例仅Read+Configure+Show+Capture、无Run，MCP建A→B并正式打开源行；固定维护标记只观察已显示窗及属性恢复，不双击、不替代打开。负例Read+Configure+Capture的正式open为permission_denied且窗保持关闭，再用真实GUI双击原入口作独立基线。旧源、越界行及未附加空共通源引用拒绝；重复打开和C草稿期间context_busy，窗口引用保持且草稿未覆盖，恢复B后正式capture成功。Esc关闭仍为维护GUI，正式安全关闭／重置待后续。
+
+八幅正式MCP图片均由Agent原尺寸查看：主窗1130×722，Qt6／Qt5 PNG51182／50326字节；单项820×480、45094／44865字节，DPR1、中文／A→B一致，无黑图或错窗。Qt6正式打开和独立GUI双击的main／item PNG逐字节相同；完整源／dirty／加载代次及INI不变。两正例各三次普通Default控制器前台归属采样均非本测试PID，未观察到采样间前台变化；这只是离散观察，不当作全程因果／长期无干扰证明。所有产品实际在QkmDemo104_<UUID>私有桌面，普通SDK8192、原manifest产品12288，同登录，无Default显示／系统输入／映射启动或驱动修改。
+
+首正式Qt6场在建例前因SDK脚本遗漏Path导入退出1，产品正常回收但该失败场native exit2；first-consumer-import保留case／原消费脚本／实际错误，控制器五项零。只补普通SDK一行导入，同一产品EXE／定义随后通过，不归因为产品或gsudo故障。汇总脚本初次误读正常closed记录不存在的sdk_passed字段，KeyError未改运行原件；最终按sdk-pass／case／closed及逐场cache-after分别核对，不推算缺失字段。
+
+本机out/mcp_editor_open_w11_20261028不随Git，含一式大文件补丁及字节核对、双Qt构建／观察夹具前后日志、组件／实际Default拒绝／IPC、部署身份／公共登记、SDK准确peer／77次记录及12次schema拒绝、八图／源INI及前台采样／逐场清理、summary和Agent看图。当前14工具／13业务能力。实际非当前已填充Tab、共通附加／过滤行、inline编辑／模态交错、显示期间撤权／退出未专项运行；普通Default显示确认、其他角色／高级页、HighDPI、Win10、其他实例对照、P2串行重置、P3预热／M3-B免Python及QQ仍待，完整P1／C1-C／M1不标完成。
 
 #### 复用、隔离及专用目标
 

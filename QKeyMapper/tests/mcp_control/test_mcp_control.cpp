@@ -147,6 +147,8 @@ private slots:
     void windowPermissions();
     void windowObservation();
     void windowCaptureBoundaries();
+    void mappingEditorArguments();
+    void privateBackgroundDesktopGuard();
     void rejectAndClose_data();
     void rejectAndClose();
     void enableFailure();
@@ -1305,6 +1307,56 @@ void McpControlTest::windowObservation()
     std::thread worker([&]() { wrongThread = query(); });
     worker.join();
     QCOMPARE(wrongThread.errorCode, QStringLiteral("context_busy"));
+}
+
+void McpControlTest::mappingEditorArguments()
+{
+    const QString revision(64, QLatin1Char('a'));
+    const QJsonObject valid{{QStringLiteral("source_ref"), revision + QStringLiteral(":row:2:3")},
+        {QStringLiteral("presentation"), QStringLiteral("private_background")}};
+    const auto parsed = parseMappingEditorArguments(valid);
+    QVERIFY(parsed.ok());
+    QCOMPARE(parsed.sourceRevision, revision);
+    QCOMPARE(parsed.sourceTab, 2);
+    QCOMPARE(parsed.sourceRow, 3);
+    for (const auto &extra : QList<QJsonObject>{
+            {{QStringLiteral("source_ref"), 1}}, {{QStringLiteral("source_ref"), revision + QStringLiteral(":row:02:3")}},
+            {{QStringLiteral("source_ref"), revision + QStringLiteral(":row:2:-1")}},
+            {{QStringLiteral("source_ref"), revision + QStringLiteral(":row:2147483648:0")}},
+            {{QStringLiteral("source_ref"), revision + QStringLiteral(":source:2")}},
+            {{QStringLiteral("presentation"), QStringLiteral("foreground")}},
+            {{QStringLiteral("pid"), 1}}, {{QStringLiteral("hwnd"), QStringLiteral("1")}},
+            {{QStringLiteral("path"), QStringLiteral("test.exe")}}}) {
+        auto changed = valid;
+        for (auto it = extra.begin(); it != extra.end(); ++it) changed.insert(it.key(), it.value());
+        QVERIFY(!parseMappingEditorArguments(changed).ok());
+    }
+    for (const auto &key : valid.keys()) {
+        auto changed = valid; changed.remove(key);
+        QVERIFY(!parseMappingEditorArguments(changed).ok());
+    }
+    const auto capability = mappingEditorCapability();
+    QCOMPARE(capability.value(QStringLiteral("required_scopes")).toInt(), int(Read | ShowWindows));
+    QCOMPARE(capability.value(QStringLiteral("read_only")), QJsonValue(false));
+}
+
+void McpControlTest::privateBackgroundDesktopGuard()
+{
+    const QString expected = qEnvironmentVariable("QKM_EXPECT_PRIVATE_BACKGROUND");
+    if (!expected.isEmpty()) {
+        QVERIFY(expected == QStringLiteral("0") || expected == QStringLiteral("1"));
+        QCOMPARE(privateBackgroundDesktopAvailable(), expected == QStringLiteral("1"));
+    } else {
+        wchar_t desktop[256]{};
+        DWORD needed = 0;
+        QVERIFY(GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), &needed));
+        if (QString::fromWCharArray(desktop).compare(QStringLiteral("Default"), Qt::CaseInsensitive) == 0)
+            QVERIFY(!privateBackgroundDesktopAvailable());
+    }
+    bool fromWorker = true;
+    std::thread worker([&]() { fromWorker = privateBackgroundDesktopAvailable(); });
+    worker.join();
+    QVERIFY(!fromWorker);
 }
 
 void McpControlTest::windowCaptureBoundaries()

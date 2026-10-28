@@ -4,7 +4,7 @@
 
 ## 当前状态与填写规则
 
-日期：2026-10-28；初始源码基线：`d49a9f57`。**逐控件入口及68条关键链路已盘点。通信／配对、选定状态／目录／源查询／帮助已接；MAP-67-B1增加基本映射内存添加预览／提交／取消／结果查询，SAVE-95接保存只读预览、SAVE-97接完整范围／覆盖确认后的正式保存提交与分段结果，当前共13工具、12项业务能力（107增加windows.read，108增加windows.capture）。完整增改删、完整保存生命周期、MCP启停及全量GUI等价性仍未完成。** Python字节锁与PC-W11接续见ENV-39，缓存见CACHE-40／CACHE72；入口和链路数量不等于已支持能力数。
+日期：2026-10-28；初始源码基线：`d49a9f57`。**逐控件入口及68条关键链路已盘点。通信／配对、选定状态／目录／源查询／帮助已接；MAP-67-B1增加基本映射内存添加预览／提交／取消／结果查询，SAVE-95接保存只读预览、SAVE-97接完整范围／覆盖确认后的正式保存提交与分段结果，当前共14工具、13项业务能力（107增加windows.read，108增加windows.capture，109增加mapping.editor.open）。完整增改删、完整保存生命周期、MCP启停及全量GUI等价性仍未完成。** Python字节锁与PC-W11接续见ENV-39，缓存见CACHE-40／CACHE72；入口和链路数量不等于已支持能力数。
 
 UI-73：新增MCP界面及4项主窗口提示已接英文tr／正式三语言QM，NoFocus／ClickFocus遵循用户选择；双Qt各36项、实际产品类双Qt三语言66项及私有截图见[本片证据](ui_localization_validation.md)。仅UI与资源，不新增工具、业务能力或运行态编辑许可；High／Default／Win11边界另列。
 
@@ -980,3 +980,9 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 windows.capture／qkm_capture_window固定main／item_setup、window_ref、source_revision及source_tab_ref，Read+CaptureWindows独立准入，不接受原生目标／路径；GUI短绘制等待前后及抓图后复核同一请求／窗口／完整源和实际展示Tab，单项另核对源行与三个键文本。只捕获已显示且恢复的自身Qt客户区，不调用显示／激活，不从Worker STOPPED推定安全源。上限160KiB PNG／8M像素及完整帧，普通桥接核验准确认证对端／请求／PNG结构与CRC并返回原生ImageContent及无重复Base64的元数据／SHA256，无正式文件输出。
 
 Win11双Qt组件各3、IPC各3及Python图片7项通过；正式原manifest产品三场18项CPP，最终109次记录调用＋7次schema拒绝。两套有Capture取得六张MCP图片，Agent原尺寸查看中文／A→B，旧源／旧窗／错Tab、未应用C草稿、最小化／关闭及无Capture拒绝，源／INI保持且清理五项零。当前十三工具／十二能力；详见[同一C1证据](map67c1_validation.md#demo-p1-108正式有界窗口png2026-10-28pc-w11)。仅DPR1私有桌面，单项打开仍经维护真实GUI；正式展示、其他页面、实际超时／撤权交错、串行重置、预热／免Python及QQ仍待，完整P1／M1未完成。
+
+## DEMO-P1-109：私有后台源行设定窗打开
+
+mapping.editor.open／qkm_open_mapping_editor只接稳定source_ref与private_background，固定本实例单项窗、Read+ShowWindows=129。执行层核验非Default且非输入的实际WinSta0桌面、当前安全源／可见Tab／非隐藏显示行到真实源的对应，复用原showItemSetupDialog；已有编辑窗／草稿、表格编辑或模态／弹窗拒绝，临时禁止激活后恢复原属性，不改映射／INI或切Tab。返回目标／源／新window引用，不收原生目标或路径。
+
+Win11双Qt私有组件各4、Default只读拒绝各3、IPC权限各3通过（含init／cleanup）；三场正式原manifest产品18项CPP、77次记录调用＋12次schema拒绝，八张MCP图由Agent查看，Qt6正式打开／真实GUI双击两角色PNG字节相同。源／dirty／加载／INI不变，重复打开／C草稿守卫及无Show拒绝，逐场清理五项零；两正例各三次Default前台采样非本测试PID，不当作全程因果证明。当前十四工具／十三能力；详见[同一C1证据](map67c1_validation.md#demo-p1-109私有后台正式打开源行窗口2026-10-28pc-w11)。正式安全关闭／串行重置、普通Default显示确认、其他页面、预热／免Python和QQ仍待，完整P1／M1未完。

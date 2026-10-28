@@ -13,6 +13,7 @@ namespace {
 
 quint32 minimumScopes(const QString &method)
 {
+    if (method == QStringLiteral("qkm_open_mapping_editor")) return Read | ShowWindows;
     if (method == QStringLiteral("qkm_capture_window")) return Read | CaptureWindows;
     if (method == QStringLiteral("qkm_preview_changes") || method == QStringLiteral("qkm_apply_changes")
         || method == QStringLiteral("qkm_cancel_changes"))

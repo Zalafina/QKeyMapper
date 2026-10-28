@@ -76,3 +76,9 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 新增固定GUI标记仅向本实例单项映射键行发送Qt Ctrl+A／C／B事件，回读实际草稿与源仍B，并恢复；自有主窗固定Qt最小化／恢复标记检验截图拒绝且不自动恢复。没有setText、系统输入、Default、映射启动或驱动变更。公开登记必须绑定实际维护EXE及固定case／输出根，普通SDK消费原生MCP ImageContent并写自有out证据，源／INI／dirty／代次及退出清理分别核对；测试探针PNG不替代正式MCP图片。关闭后Qt5／Qt6可能分别保留／销毁原生句柄，应按实际window_ref可用性检查业务拒绝或SDK schema拒绝，不把null当有效引用。
 
 图片字段／范围与用法见[mcp_bridge说明](../../../mcp_bridge/README.md#受限真实窗口图片p1-108)；具体执行及缺口只在唯一主计划／C1证据记录，不将本用例称完整演示服务或QQ送达。
+
+## DEMO-P1-109 正式打开与独立GUI对照
+
+`settings_save_apply`／`demo_mcp_editor`沿P0固定演示夹具，配对仅Read+Configure+ShowWindows+CaptureWindows（387），无RunMapping。普通SDK经正式业务MCP建例，再用qkm_open_mapping_editor打开源行；本变体的capture-item标记只观察已经显示的真实单项窗和WA_ShowWithoutActivating已恢复，不再投递双击。`demo_mcp_capture`不授ShowWindows，正式open应拒绝，再按既有Qt真实双击形成独立GUI基线。不得把两条路径混写为正式打开通过。
+
+同实例Qt Ctrl+A／C／B与Esc用于草稿保护／关闭，均沿原固定标记；不得用setText或调用加载函数替代独立GUI基线。图像通过正式MCP ImageContent消费，窗口来源、源／INI／dirty／代次与退出分别核实；普通Default控制器只采样是否本测试PID在前台，不把用户自行换焦点判为产品干扰。正式安全关闭／串行重置和预热仍待，维护退出／Esc不替代产品接口。用法见[桥接说明](../../../mcp_bridge/README.md#私有后台打开源行设定窗p1-109)。

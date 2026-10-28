@@ -746,3 +746,25 @@ Qt6／官方Qt5生命周期维护增量Release均native exit0，Qt6零警告、Q
 首编译参数schema少闭括号失败，修正后通过，first-schema-brace-build.log保留。首Qt6边界用例假定请求64即实际宽度，实际Windows最小宽162，修正为实际尺寸，first-native-minimum-size保留。首正式Qt6已返回三幅有效MCP图，末尾将关闭后null引用当有效业务请求，SDK is_error且无结构化dict，native exit2；该轮错误文本未留，不按文字推算错误码。first-closed-native-handle封存原case／图／EXE／登记及五项零状态，校准消费断言并加入最小化负例后最终三场通过，产品捕获检查未放宽。
 
 原件out/mcp_window_capture_w11_20261028不随Git：补丁与字节核对、构建及双Qt组件／IPC原日志、python-images-complete.txt、部署与EXE身份、公共登记／精确SDK peer、最终after三场调用／错误／原图片及元数据、summary和逐场清理；Agent看图另记visual-review.json。未运行五秒真实超时、等待期撤权／断线／源变更／模态弹窗交错、高DPI、Win10、其他实例对照、Default焦点因果、普通完整Release／ASan／全量静态或保存全矩阵。当前13工具／12业务能力，但正式显示／源行打开、代表高级页、P2串行重置、P3预热／M3-B免Python及P4 QQ联调仍待。保持M1／C1-C原未验范围，不将组件或维护GUI当完整可交付演示。
+
+## DEMO-P1-109：私有后台正式打开源行窗口（2026-10-28，PC-W11）
+
+源码为P1-108 `bde036b3` 加本切片WindowAccess参数／桌面门槛／能力、SessionServer独立Show权限、产品源行打开处理、表格EditingState纯观察、桥接工具和对应维护差异。qkeymapper.cpp81增／1删，唯一锚点补丁dry-run／numstat、应用后精确字节及反向核对，新增QScopeGuard头文件有单独补丁和合并最终版；不重放旧切片。TS／QM沿105及用户W7确认，106规则沿用，无新GUI翻译或manifest／驱动改动。
+
+正式qkm_open_mapping_editor(source_ref, presentation=private_background)／mapping.editor.open要求Read+ShowWindows=129，非只读；固定本实例单项窗，不接任意PID／HWND／路径。source_ref解析完整owner修订／源Tab／行；完整安全源只取已接受加载的pristine_idle或有效completed_cleanup，再核对当前实际Tab、原显示行解析、非隐藏及真实数据指针，复用mappingAdditionAllowed／hasOpenMappingEditor，表格EditingState观察避免focus-out提交草稿。已有编辑窗、模态／弹窗、不安全清理拒绝，不关闭或替换旧窗、不切Tab。显示前后核验GUI线程实际WinSta0非Default／非输入桌面，无法取得输入桌面也拒绝；仅临时WA_ShowWithoutActivating后恢复，调用原showItemSetupDialog，原showEvent从真实源填充，不直接设控件模拟界面。显示后重核当前请求／源／实际Tab行／原生可见与窗口引用，返回目标和activation_requested=false，不调用主窗置顶／激活／SwitchDesktop／系统输入或改映射。
+
+环境沿当前Win11企业版26200 x64／CPython3.11.9 x64／MCP2.3.0锁、Qt6.8.3 msvc2022_64及官方Qt5.15.2 msvc2019_64／MSVC工具链。受影响mcp_control、mcp_ipc及真实源码生命周期维护Release双Qt增量native exit0，Qt6零编译／链接警告、Qt5既定兼容通过。为正例避免维护GUI重开，只改固定观察夹具后仅重新构建两套生命周期目标；pre-observer日志与最终版本分别保留。没有普通全量Release、全量静态或ASan重复验收。
+
+每Qt参数／私有桌面组件4项，严格两参数、缺失／错类型／canonical索引／越界int／原生目标字段、权限能力声明；实际QkmMcp_<UUID>私有桌面门槛成功及错误线程拒绝。每Qt另Default只读桌面门槛3项，实际名称Default已在init核验，约1ms测试体，不显示窗口／截图、不调用焦点或输入；不是普通Default显示或激活验收。IPC sessionWindowPermissions各3项，新增Read+Configure+Capture无Show拒绝、Read+Show无Configure允许，沿原pair／secret／permissionEpoch机制；此前108检查按原范围复用。正式产品正例仍含Configure以建立示例，不冒称High产品纯Read+Show专项验证。
+
+EXE为out/mcp_editor_open_w11_20261028/{qt6,qt5}-runtime/QKeyMapperEditor109_*_runtime.exe，保留requireAdministrator。公共登记editor109-qt6／qt5绑定实际维护EXE／两个固定case／输出根，复用普通控制器PID9664、instance2ff1d26a17e942ee9688a45261b272c2／generation1及18:30截止，未重建缓存／申请UAC／接管未知请求。普通SDK／bridge8192、产品12288，同登录；三个产品均实际QkmDemo104_<UUID>私有桌面，独立运行副本和专用INI。未发送系统输入／启动映射／改驱动，私有桌面不作为Hook或驱动隔离证明。
+
+最终正式SDK：Qt6／Qt5 demo_mcp_editor各28次记录调用，其中各6次open，另各4次PID／HWND／path／foreground参数schema拒绝；Qt6 demo_mcp_capture无Show场21次／1次open＋4次schema拒绝。合计77次记录＋12次schema拒绝，三场各native exit0／6项CPP、共18项，sdk-pass／case／closed分别核实；逐场owned／unresolved／pending／current_action／current_job零，工作项／生产者零。正例固定配对387=Read+Configure+Show+Capture，无Run；正式MCP从空白合法INI内存添加A→B并正式打开源行单项窗。维护capture-item标记在此变体只观察已显示窗及无激活属性恢复，不发送双击；另一无Show变体正式open为permission_denied且窗口保持关闭，再按原Qt双击GUI独立基线打开，不把它计为正式打开成功。
+
+正例旧源stale_source、越界行及未附加空共通源invalid_arguments；这不证明真实非当前已填充Tab／共通附加／过滤行专项。重复open及未应用C时context_busy，窗口引用不变，正式capture仍因C草稿无图；固定Qt Ctrl+A／B恢复后正式capture成功。仅本实例Qt事件，不setText或注入系统输入。单项Esc关闭仍通过维护GUI，不是正式关闭或P2重置。完整源行／dirty／加载代次／INI字节保持。两正例普通Default控制器分别在open前／后及草稿恢复后采样，六次前台PID均非本测试产品，采样间未见前台变化；只存是否本目标和是否变化，不采集用户窗口标题／业务内容，不当作持续监控或完整因果证明。
+
+共八张正式MCP ImageContent图片，Agent用view_image原尺寸逐图查看，中文／A→B、Demo当前页和单项来源相符，无黑图或错误窗口。两正例各main／item／恢复后item三张，无Show的GUI基线两张；main1130×722，Qt6／Qt5为51182／50326字节；item820×480、45094／44865字节，DPR1。Qt6正式打开与本轮独立GUI双击的main／item PNG逐字节一致。只含实际Qt客户区，不证明原生边框／独立弹窗／隐藏滚动内容或HighDPI。
+
+首正式Qt6场因普通SDK场景脚本遗漏Path导入，在业务建例前NameError退出1；原产品正常收尾但该失败场native exit2，控制器五项零。first-consumer-import保留原case／消费脚本／实际错误及关闭记录；只补一行导入，未修改产品或EXE／定义，随后最终三场通过。首汇总脚本错误读取正常closed没有的sdk_passed字段抛KeyError，未覆盖原记录；最终从sdk-pass读取SDK结果并分别核实真实native_exit／case及cache-after，不按缺失字段猜测。错误与最终结果分别保留。
+
+原件out/mcp_editor_open_w11_20261028不随Git：补丁／字节核对、构建和固定观察前后日志、双Qt组件／实际Default只读／IPC、部署身份及公共登记、精确SDK peer／77次调用与12次schema负例、正式open返回／八张图片和源INI／前台采样／逐场清理、summary／visual-review。Python图片校验及108字节／像素矩阵未受影响，按108原证据复用，不重复计作109当前测试。未专项运行inline／模态、真实其他已填充Tab／共通附加／过滤行、显示期间撤权／退出、普通Default显示确认、HighDPI、实际Win10、其他实例对照、QQ或全量输入／保存验收。当前14工具／13业务能力；正式安全关闭、串行重置、代表高级页、预热／M3-B免Python及渠道仍待，完整P1／C1-C／M1不标完成。

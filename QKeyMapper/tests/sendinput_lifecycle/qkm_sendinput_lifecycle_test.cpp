@@ -3230,7 +3230,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
     const bool demoCapture = publicApply && (connectionVariant == QStringLiteral("demo_capture")
-        || connectionVariant == QStringLiteral("demo_mcp_capture"));
+        || connectionVariant == QStringLiteral("demo_mcp_capture") || connectionVariant == QStringLiteral("demo_mcp_editor"));
     const bool cleanupCase = publicApply && (connectionVariant == QStringLiteral("cleanup_stop")
         || connectionVariant == QStringLiteral("cleanup_timeout") || cleanupReturn);
     if (!directory.contains(QStringLiteral("/out/")) || mapper->m_McpControlDialog->server().isEnabled()) {
@@ -3267,7 +3267,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     approval->deleteLater();
                     const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
                     quint32 scopes = variant == QStringLiteral("read") || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
-                    if (variant == QStringLiteral("demo_mcp_capture")) scopes |= CaptureWindows;
+                    if (variant == QStringLiteral("demo_mcp_capture") || variant == QStringLiteral("demo_mcp_editor")) scopes |= CaptureWindows;
+                    if (variant == QStringLiteral("demo_mcp_editor")) scopes |= ShowWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);
@@ -3371,15 +3372,20 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                         *stage = 1; *waiting = false;
                     });
                 } else if (*stage == 1 && QFileInfo::exists(output + QStringLiteral(".capture-item"))) {
-                    auto *table = mapper->m_KeyMappingDataTable;
-                    if (!table || table->rowCount() != 1) { finish(false); return; }
-                    auto *view = table->viewport();
-                    const QPoint point = table->visualRect(table->model()->index(0, 0)).center();
-                    const QPointF top = view->mapTo(view->window(), point), screen = view->mapToGlobal(point);
-                    for (const auto type : {QEvent::MouseButtonPress, QEvent::MouseButtonRelease, QEvent::MouseButtonDblClick, QEvent::MouseButtonRelease}) {
-                        QMouseEvent event(type, point, top, screen, Qt::LeftButton,
-                            type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton, Qt::NoModifier);
-                        QCoreApplication::sendEvent(view, &event);
+                    if (connectionVariant != QStringLiteral("demo_mcp_editor")) {
+                        auto *table = mapper->m_KeyMappingDataTable;
+                        if (!table || table->rowCount() != 1) { finish(false); return; }
+                        auto *view = table->viewport();
+                        const QPoint point = table->visualRect(table->model()->index(0, 0)).center();
+                        const QPointF top = view->mapTo(view->window(), point), screen = view->mapToGlobal(point);
+                        for (const auto type : {QEvent::MouseButtonPress, QEvent::MouseButtonRelease, QEvent::MouseButtonDblClick, QEvent::MouseButtonRelease}) {
+                            QMouseEvent event(type, point, top, screen, Qt::LeftButton,
+                                type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton, Qt::NoModifier);
+                            QCoreApplication::sendEvent(view, &event);
+                        }
+                    } else if (!mapper->m_ItemSetupDialog->isVisible()
+                        || mapper->m_ItemSetupDialog->testAttribute(Qt::WA_ShowWithoutActivating)) {
+                        finish(false); return;
                     }
                     *waiting = true;
                     QTimer::singleShot(150, mapper, [=]() {
