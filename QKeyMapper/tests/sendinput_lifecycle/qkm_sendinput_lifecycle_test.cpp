@@ -3540,6 +3540,13 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     QStringLiteral("accepted disk save completes after the bounded controlled reload wait"));
                 check(*pairingCount == 1, QStringLiteral("reconnection reuses the approved pairing without another approval"));
             }
+            if (completion.value(QStringLiteral("added_mapping")).toBool()) {
+                const auto *source = QKeyMapper::KeyMappingDataList;
+                check(source && std::any_of(source->cbegin(), source->cend(), [](const MAP_KEYDATA &row) {
+                    return row.Original_Key == QStringLiteral("X") && row.Mapping_Keys == QStringList{QStringLiteral("Y")};
+                }) && mapper->m_KeyMappingDataTable->rowCount() == source->size(),
+                    QStringLiteral("formal added mapping survives reload or cold read in the actual source and GUI table"));
+            }
             if (guiChangeCase) {
                 check(*checkedRejection && guiChecks->size() == 3, QStringLiteral("real GUI change and stale rejection were both observed"));
                 for (const auto &entry : *guiChecks) {

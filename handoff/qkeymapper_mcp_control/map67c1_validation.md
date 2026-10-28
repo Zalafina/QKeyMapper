@@ -644,3 +644,19 @@ cleanup_stop／cleanup_timeout只在原setKeyUnHook_Signal后，将一个真实H
 EXE：out/mcp_save_cleanup_w11_20261028/{qt6,qt5}-runtime/QKeyMapperSaveCleanup101_*_runtime.exe，原requireAdministrator，实际QkmSaveCleanup101_<UUID>私有桌面。普通控制器／SDK8192、产品12288，同登录。新普通控制器9664／instance2ff1d26a17e942ee9688a45261b272c2／generation1，用户授权至今日18:30；第一次缓存UAC返回999后未自动重试，经用户明确再授权一次才成功，不推断首次取消原因。每次公共登记调用只启动一个固定场景；四场尾owned／unresolved／pending／current_action／current_job全零。历史未知请求不接管／重放。
 
 原件在out/mcp_save_cleanup_w11_20261028，不随Git，含双Qt构建／部署、原生创建／桌面／退出、SDK准确peer与调用、运行／pending标记、清理许可／结果、完整INI、逐场缓存与44项汇总。当前12工具／10业务能力，C1-C和M1未整体完成；真实停止后正式新增再保存／冷读、配置回切、多类迟到回调、撤权／禁用、实际物理输入／设备、Win10补验、4MiB性能与完整普通Release仍待。截图演示未提前执行，免Python与QQ渠道未验。
+
+## SAVE-102：真实清理后新增、保存与独立冷读（2026-10-28，PC-W11）
+
+基于SAVE-101 `42ae1d5c4475640b08b7155dcdfd659832348755`，只补维护断言：SDK完成记录added_mapping=true时，实际源须含X→Y且GUI表行数与当前源相等。产品与正式SDK逻辑均不改；原cleanup_stop夹具、Read冷读入口及GUI按钮／真实清理流程复用，不重新实现生命周期或源模型。
+
+每Qt一条暖流：复用SAVE-101实际GUI启停与有界Hook所有者等待，完整清理后用正式mapping_sources修订／当前Tab引用预览并新增X→Y。结果modified=true／saved=false，GUI dirty=true，加载代次未变、完整INI字节未写；正式源查询确认原A→B与新增X→Y。新增使旧源修订失效。随后新configuration.save预览和范围确认保存至A86Saved，正式结果saved／reloaded／backup=true，重建后重新查询两映射，保存前修订拒绝，dirty清除、代次只加一、最新备份与INI相同；同ID回放不重存。查询旧新增operation仍保留原source_revision_before／source_tab_ref_before及结果，不将其改记为保存后的目标。
+
+每Qt另一个真实新产品／SDK进程启动，Read配对仅取当前实例的实际源和状态，读到A→B／X→Y、A86Saved且无dirty。暖／冷完整INI字节相等，最新备份也保持；旧实例源修订stale_source，旧保存及新增operation均unknown／result_known=false。每夹具独立配对，不据此声明持久化配对跨重启复用；冷读不启动映射或补写INI，不把新进程pristine_idle误报为上一进程的completed_cleanup。
+
+双Qt维护增量Release构建native exit0；Qt6零警告、官方Qt5.15.2 x64兼容通过，原qtmain LNK4099原件保留。最终四个native exit0：暖流各12项、冷读各9项，共42项CPP；正式SDK请求数见本机汇总。原GUI新增、完整保存对照与失败矩阵沿MAP-67、SAVE-92、97至101原范围复用，未新增独立GUI保存基线或重复已验矩阵。
+
+第一场Qt6已正式新增、保存并查询到重建的A→B／X→Y，随后脚本将保存结果专用target字段用于mapping.add历史结果，发生KeyError。现有mapping.add历史按原协议只提供原源修订／引用，产品结果applied正确；仅修改普通脚本断言，复用同EXE／固定登记。原native exit2、完整调用、登记、失败时已保存INI及最新备份、零所有权尾状态保留在first-harness-result-shape，不将其计入通过、不把已写盘误称未写。
+
+EXE：out/mcp_save_after_cleanup_w11_20261028/{qt6,qt5}-runtime/QKeyMapperSaveAfterCleanup102_*_runtime.exe，原requireAdministrator，实际QkmSaveAfterCleanup102_<UUID>私有桌面。普通控制器／SDK8192、产品12288，同登录，经公共登记复用PID9664／instance2ff1d26a17e942ee9688a45261b272c2／generation1及今日18:30硬截止，每次只一个固定场景。四场owned／unresolved／pending／current_action／current_job均零，无Default、系统输入或驱动变化；暖流复用完整FilterKeys前后相等断言。私有桌面不作为驱动隔离证明。
+
+本机原件out/mcp_save_after_cleanup_w11_20261028不随Git，含双Qt构建／部署、准确SDK身份、正式源／操作／配对、GUI清理标记、原生桌面与退出、暖／冷完整INI、最新备份、四场尾状态和evidence-summary.json。当前12工具／10能力；停止时配置回切、迟到设备事件／撤权、实际输入／设备、Win10、4MiB性能与普通完整Release等仍未补验，C1-C和M1不整体标完。演示截图未提前执行，免Python和QQ联调仍待。
