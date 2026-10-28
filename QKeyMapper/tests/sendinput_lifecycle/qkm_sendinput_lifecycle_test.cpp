@@ -30,6 +30,7 @@
 #include "../../automation/qkm_control_dialog.h"
 #include "../../automation/qkm_source_snapshot.h"
 #include "../../automation/qkm_mapping_changes.h"
+#include "../../automation/qkm_window_image.h"
 #include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
@@ -3228,6 +3229,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
+    const bool demoCapture = publicApply && connectionVariant == QStringLiteral("demo_capture");
     const bool cleanupCase = publicApply && (connectionVariant == QStringLiteral("cleanup_stop")
         || connectionVariant == QStringLiteral("cleanup_timeout") || cleanupReturn);
     if (!directory.contains(QStringLiteral("/out/")) || mapper->m_McpControlDialog->server().isEnabled()) {
@@ -3323,6 +3325,88 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         if (!sourceError.isEmpty()) { finish(false); return; }
         auto calls = QSharedPointer<int>::create(0);
         auto expected = QSharedPointer<QKeyMapper::AutomationSettingSavePreparation>::create();
+        auto demoFrames = QSharedPointer<QJsonArray>::create();
+        auto demoSource = QSharedPointer<QJsonObject>::create();
+        auto demoClosed = QSharedPointer<bool>::create(false);
+        auto demoThreadCheck = QSharedPointer<QAtomicInt>::create(0);
+        if (demoCapture) {
+            const auto frame = [=](QWidget *window, const QString &role) {
+                QString error;
+                const auto source = mapper->collectAutomationSourceSnapshot(error);
+                if (!error.isEmpty() || !window) return false;
+                if (demoSource->isEmpty()) *demoSource = source;
+                const auto image = captureOwnWindow(window);
+                if (!image.ok() || source != *demoSource || mapper->collectAutomationSourceSnapshot(error) != source || !error.isEmpty()) return false;
+                wchar_t desktop[256]{};
+                if (!GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), nullptr)) return false;
+                QJsonObject meta{{QStringLiteral("instance"), control->server().instanceId()}, {QStringLiteral("scene"), QStringLiteral("demo104")},
+                    {QStringLiteral("role"), role}, {QStringLiteral("pid"), QString::number(GetCurrentProcessId())},
+                    {QStringLiteral("desktop"), QString::fromWCharArray(desktop)},
+                    {QStringLiteral("hwnd"), QString::number(quintptr(window->winId()))},
+                    {QStringLiteral("source_epoch"), QString::number(mapper->m_AutomationSourceEpoch)},
+                    {QStringLiteral("load_generation"), QString::number(mapper->m_MappingLoadGeneration)},
+                    {QStringLiteral("width"), image.pixelSize.width()}, {QStringLiteral("height"), image.pixelSize.height()},
+                    {QStringLiteral("device_pixel_ratio"), image.devicePixelRatio}, {QStringLiteral("bytes"), image.png.size()},
+                    {QStringLiteral("captured_at_utc"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)},
+                    {QStringLiteral("format"), QStringLiteral("image/png")}};
+                demoFrames->append(meta);
+                meta.insert(QStringLiteral("png_base64"), QString::fromLatin1(image.png.toBase64()));
+                QSaveFile file(output + QStringLiteral(".frame-") + role);
+                const QByteArray bytes = QJsonDocument(meta).toJson();
+                return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
+            };
+            auto *poll = new QTimer(mapper);
+            auto stage = QSharedPointer<int>::create(0);
+            auto waiting = QSharedPointer<bool>::create(false);
+            QObject::connect(poll, &QTimer::timeout, mapper, [=]() {
+                if (*waiting) return;
+                if (*stage == 0 && QFileInfo::exists(output + QStringLiteral(".capture-main"))) {
+                    *waiting = true;
+                    QTimer::singleShot(150, mapper, [=]() {
+                        if (!frame(mapper, QStringLiteral("main"))) { finish(false); return; }
+                        *stage = 1; *waiting = false;
+                    });
+                } else if (*stage == 1 && QFileInfo::exists(output + QStringLiteral(".capture-item"))) {
+                    auto *table = mapper->m_KeyMappingDataTable;
+                    if (!table || table->rowCount() != 1) { finish(false); return; }
+                    auto *view = table->viewport();
+                    const QPoint point = table->visualRect(table->model()->index(0, 0)).center();
+                    const QPointF top = view->mapTo(view->window(), point), screen = view->mapToGlobal(point);
+                    for (const auto type : {QEvent::MouseButtonPress, QEvent::MouseButtonRelease, QEvent::MouseButtonDblClick, QEvent::MouseButtonRelease}) {
+                        QMouseEvent event(type, point, top, screen, Qt::LeftButton,
+                            type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton, Qt::NoModifier);
+                        QCoreApplication::sendEvent(view, &event);
+                    }
+                    *waiting = true;
+                    QTimer::singleShot(150, mapper, [=]() {
+                        auto *dialog = mapper->m_ItemSetupDialog;
+                        auto *original = dialog->findChild<QLineEdit *>(QStringLiteral("originalKeyLineEdit"));
+                        auto *mapping = dialog->findChild<QLineEdit *>(QStringLiteral("SetupDialog_MappingKeyLineEdit"));
+                        if (!original || !mapping || original->text() != QStringLiteral("A") || mapping->text() != QStringLiteral("B")
+                            || !frame(dialog, QStringLiteral("item_setup"))) { finish(false); return; }
+                        *stage = 2; *waiting = false;
+                    });
+                } else if (*stage == 2 && QFileInfo::exists(output + QStringLiteral(".capture-close"))) {
+                    auto *dialog = mapper->m_ItemSetupDialog;
+                    QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), released(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+                    QCoreApplication::sendEvent(dialog, &press); QCoreApplication::sendEvent(dialog, &released);
+                    const auto hidden = captureOwnWindow(dialog);
+                    *demoClosed = !dialog->isVisible() && hidden.errorCode == QStringLiteral("window_unavailable") && hidden.png.isEmpty();
+                    QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(), [=]() {
+                        const auto denied = captureOwnWindow(mapper);
+                        demoThreadCheck->storeRelease(denied.errorCode == QStringLiteral("invalid_window_context") && denied.png.isEmpty() ? 1 : 2);
+                    }, Qt::QueuedConnection);
+                    *stage = 3;
+                } else if (*stage == 3 && demoThreadCheck->loadAcquire() != 0) {
+                    poll->stop();
+                    QSaveFile file(output + QStringLiteral(".capture-closed"));
+                    const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("hidden_rejected"), *demoClosed},
+                        {QStringLiteral("wrong_thread_rejected"), demoThreadCheck->loadAcquire() == 1}}).toJson();
+                    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) finish(false);
+                }
+            });
+            poll->start(10);
+        }
         auto cleanupEvidence = QSharedPointer<QJsonObject>::create();
         auto cleanupHold = QSharedPointer<QAtomicInt>::create(0);
         auto cleanupCount = QSharedPointer<int>::create(0);
@@ -3592,6 +3676,19 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 check(mapper->collectAutomationSourceSnapshot(error).isEmpty() && error == QStringLiteral("context_busy")
                     && !QFileInfo::exists(QString::fromLatin1(QKeyMapperConstants::CONFIG_LATEST_FILENAME)),
                     QStringLiteral("failed load provides no usable source references and does not create a latest backup"));
+            } else if (saves == 0 && demoCapture) {
+                QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+                QString error;
+                check(actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore && mapper->m_SaveSettingDirty
+                    && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch > epoch,
+                    QStringLiteral("demo mapping is memory-only without INI writes or configuration reload"));
+                check(demoFrames->size() == 2 && *demoClosed && demoThreadCheck->loadAcquire() == 1
+                    && mapper->collectAutomationSourceSnapshot(error) == *demoSource && error.isEmpty(),
+                    QStringLiteral("real own-window captures and GUI close preserve the actual scene and reject stale or cross-thread captures"));
+                check(mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE
+                    && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED
+                    && !QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved(),
+                    QStringLiteral("demo capture never starts mapping or observes a runtime input admission"));
             } else if (saves == 0) {
                 QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
                 check(actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore, QStringLiteral("read-only SDK scenario preserves complete INI bytes"));
@@ -3621,10 +3718,12 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 check(valuesMatch, QStringLiteral("formal save persists every independently prepared target and shared value"));
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
-                {QStringLiteral("formal_mcp_save_preview"), true}, {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},
+                {QStringLiteral("formal_mcp_save_preview"), !demoCapture}, {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},
+                {QStringLiteral("formal_mcp_scene_creation"), demoCapture && completion.value(QStringLiteral("sdk_passed")).toBool()},
                 {QStringLiteral("handler_calls"), *calls}, {QStringLiteral("saved"), saves == 1 || reloadFailure},
                 {QStringLiteral("connection_recovery"), *connectionEvidence}, {QStringLiteral("pairing_requests"), *pairingCount},
                 {QStringLiteral("cleanup_save"), *cleanupEvidence},
+                {QStringLiteral("demo_frames"), *demoFrames},
                 {QStringLiteral("system_input"), false}};
             finish(passed);
         });

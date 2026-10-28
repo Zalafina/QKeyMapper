@@ -676,3 +676,21 @@ red-global-target保留原Qt6 native exit2、实际context_busy、完整状态�
 EXE：out/mcp_save_return_w11_20261028/{qt6,qt5}-runtime/QKeyMapperSaveReturn103_*_runtime.exe，原requireAdministrator、实际QkmSaveReturn103_<UUID>私有桌面。普通控制器／SDK8192、产品12288，同登录，经公共登记复用PID9664／instance2ff1d26a17e942ee9688a45261b272c2／generation1及今日18:30截止；每次一个固定场景，最终每场owned／unresolved／pending／current_action／current_job全零，无Default、系统输入或驱动变化。私有桌面不是Hook／驱动隔离证明。
 
 原始构建／部署、三种Qt6 EXE身份、红例／维护失败／最终stdio与准确peer、回切／清理／源与保存结果、完整INI、最新备份、单行补丁与24项汇总在out/mcp_save_return_w11_20261028，不随Git。未改输入或协议路径按原有效证据复用，不重跑完整矩阵；实际自动匹配、设备并发／迟到事件、撤权／禁用、物理输入、Win10、4MiB性能及普通完整Release仍待。C1-C／M1不整体标完，截图演示和QQ渠道未提前验收。
+
+## DEMO-P0-104：私有桌面自身窗口PNG可行性（2026-10-28，PC-W11）
+
+基于SAVE-103 `42e8c8549e6ef90b68c64d37497b8bda6a5fe47d`，在保存相关连续切片完成选定门槛后按主计划窗口／会话自然节点进行。新增内部qkm_window_image GUI线程函数，检查自身顶层窗口、真实Win32窗口PID／线程、可见／非最小化及8M像素／2MiB PNG上界；QWidget::grab编码PNG只返回内存，不做文件I/O、激活或输入。角色白名单、源／窗口代次和权限仍由未来正式调用者强制；本片未暴露MCP截图方法，也未把Read变为截图权限。
+
+空白合法Demo104Seed初始INI，StartupAutoMonitoring／VirtualGamepad／MultiInput／系统过滤键设置关闭。通过正式SDK准确peer身份的Read＋Configure配对，正式mapping.add预览／提交在内存建立A→B，实际映射源与GUI表一行、dirty=true，INI未写。受限维护标记仅触发main捕获或表格真实Qt鼠标双击；原showItemSetupDialog按当前源打开单条设定，原控件实读A／B，未直接设置控件或调用加载函数建立截图。等150ms后续GUI轮次绘制再抓取，固定维护记录传PNG字节和元数据，普通权限SDK核对大小、Base64、PNG签名／IHDR尺寸与CRC和进程身份后落图；C++内部捕获函数不接收文件路径。
+
+实际两套产品窗口均在QkmDemo104_<UUID>私有桌面，普通控制器／SDK8192、原manifest产品12288、同登录。帧记录实例、PID／实际创建时间关联、实际线程桌面、HWND／角色、场景、源修订／源epoch／加载代次、像素、DPR、时间和格式；两角色HWND不同而实例与源一致。原主窗口置顶函数含激活逻辑，本片不调用该入口；新捕获底层无激活API，真实GUI展示只作用自有私有窗口。没有Default截图或系统输入注入，没有映射启动或驱动修改；P0不替代Default全程焦点因果、其他实例对照或服务长期无打扰验收。
+
+Qt6两幅：main 1130×722／51182字节、item_setup 820×480／45094字节；Qt5同尺寸，分别50326／44865字节，实际DPR均1。Agent已用view_image原尺寸逐图查看：中文标签及A／B一致可读，无黑图／错误窗口。仅Qt客户区，原生标题栏／边框与独立弹窗不包含；主表水平滚动与底部单行映射码按其实际可见区域保留，不声称隐藏内容完整。未测实际HighDPI、Win10、原生子窗、代表高级页。
+
+Esc真实Qt事件关闭单项窗后，底层对该隐藏窗口返回window_unavailable且PNG为空，Worker线程调用在访问控件前返回invalid_window_context／空PNG。捕获和关闭前后实际源快照相等，dirty仍为内存新增状态，INI字节及加载代次保持，运行许可未观察到映射准入；正常回收本轮专用进程。最终双Qt各native exit0／6项CPP，共12项；不是完整GUI输入／启停验收，也不是正式MCP图片返回。SDK结果保留formal_capture_interface=false，Agent看图记录单独标记，不将生成文件称为QQ送达。
+
+Qt6／官方Qt5生命周期维护增量Release均native exit0，Qt6零警告、Qt5兼容通过，原qtmain LNK4099保留。新增automation.pri源也影响独立mcp_control消费者，额外Qt6再生Makefile并增量链接native exit0；该消费者原权限／协议代码未改，不重复未变组件运行矩阵。测试／SDK／落图／构建／Git均普通权限，只有原manifest测试启动／关闭经公共登记与PID9664现有缓存，仍18:30硬截止。
+
+第一次Qt6已经生成真实main帧51182字节，约69KB的JSON/Base64维护记录超出误用cache.read_json的默认小记录上限，普通SDK报invalid_record，native exit2；不是缓存TokenSwitch／启动失败。first-consumer-record-limit完整保留帧、调用、原生退出／登记和五项为零尾状态。改普通SDK为自身3MiB有界读取后，复用同EXE两套通过，未改缓存核心或重启控制器。最终两场owned／unresolved／pending／current_action／current_job均零。
+
+原件out/mcp_demo_p0_w11_20261028不随Git，含双Qt构建／部署、独立消费者链接、精确SDK身份与正式建例、创建／实际桌面／退出、原PNG字节及四图元数据、image-artifacts、Agent原尺寸看图记录、逐场缓存尾状态和12项汇总。数据支持P1先选有界单图而无需分块管理；当前256KiB帧的正式上限拟160KiB PNG加有界元数据，尚未实现。P1独立显示／捕获授权及三语UI、绑定生命周期的正式工具和普通桥接产物保留／清理，P2重置会话、P3免PythonRelease与预热、P4 Win10 QQ均待，不把维护程序或开发gsudo缓存当交付。原M1／C1-C未验实际输入、设备、并发与完整业务范围保留。
