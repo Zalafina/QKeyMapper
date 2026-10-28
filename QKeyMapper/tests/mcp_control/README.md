@@ -35,6 +35,10 @@ python QKeyMapper/tests/mcp_control/test_mcp_control.py --test-exe out/tests/mcp
 
 Qt5 改用对应 Qt5 的两个 EXE、Qt bin 和独立 output。省略 `--screenshots` 只运行控件／配对测试；截图需要 PowerShell，自动查找 pwsh／powershell，也可显式传 `--powershell`。脚本运行失败返回非零；结果、运行身份及截图为本机材料，不进入 Git。
 
+窗口权限基础用例另外检查新配对默认无 ShowWindows／CaptureWindows、两者分别或共同批准，以及既有配对追加授权的选中项、保留原权限／密钥、权限代次、取消／无变更不写盘和保存失败关闭接口。追加窗口会实际安装三语言 QM 并刷新，W7 使用与既有多行提示一致的真实 LF；NoFocus／非默认按钮保持。配对和授权结果读真实私有凭据核对，不以勾选状态作为通过依据。
+
+只采样本次受影响界面可用 `--screenshots --preview-states pending window-approval`；每语言两张共六张，window-approval 会在自有维护实例启用接口并打开追加授权窗口，截图后正常关闭。该组件复用产品 ControlDialog，但 fixture 回复不证明产品业务或正式截图工具已交付。
+
 管理窗口连接框为 `instance.json` 的可复制路径，文件不含配对 key。启用失败或发现信息无法验证时，复选框回到关闭；关闭后实际文件清理也由 IPC 维护用例核对。关闭状态可查看／撤销既有配对；撤销失败保留实际记录及原因，不为撤销临时开启接口。`--screenshots` 每个 Qt kit 生成中英日四种状态共 12 张图；实际审阅范围以验证记录为准。
 
 ## 正式 SDK 互操作

@@ -694,3 +694,19 @@ Qt6／官方Qt5生命周期维护增量Release均native exit0，Qt6零警告、Q
 第一次Qt6已经生成真实main帧51182字节，约69KB的JSON/Base64维护记录超出误用cache.read_json的默认小记录上限，普通SDK报invalid_record，native exit2；不是缓存TokenSwitch／启动失败。first-consumer-record-limit完整保留帧、调用、原生退出／登记和五项为零尾状态。改普通SDK为自身3MiB有界读取后，复用同EXE两套通过，未改缓存核心或重启控制器。最终两场owned／unresolved／pending／current_action／current_job均零。
 
 原件out/mcp_demo_p0_w11_20261028不随Git，含双Qt构建／部署、独立消费者链接、精确SDK身份与正式建例、创建／实际桌面／退出、原PNG字节及四图元数据、image-artifacts、Agent原尺寸看图记录、逐场缓存尾状态和12项汇总。数据支持P1先选有界单图而无需分块管理；当前256KiB帧的正式上限拟160KiB PNG加有界元数据，尚未实现。P1独立显示／捕获授权及三语UI、绑定生命周期的正式工具和普通桥接产物保留／清理，P2重置会话、P3免PythonRelease与预热、P4 Win10 QQ均待，不把维护程序或开发gsudo缓存当交付。原M1／C1-C未验实际输入、设备、并发与完整业务范围保留。
+
+## DEMO-P1-105：独立窗口权限及追加授权（2026-10-28，PC-W11）
+
+基于DEMO-P0-104 b545bff5及本提交内ControlDialog／PairStore范围、桥接协议、对应测试和正式资源差异。ShowWindows=128、CaptureWindows=256，KnownScopes=511；原127及原配对／秘密不改写，新配对默认不选窗口权限。窗口追加GUI只用原服务器updatePermissions，不提供远程自助授权；真实选择可不同于currentRow，纯文本名称／pair ID，不解释客户端HTML。提交时重读同pair权限，只合并勾选新增项；保留全部既有位、pair ID及secret，epoch递增且旧连接断开。用户显式qkm_connect重连，旧引用按原epoch失效；取消／无变更不写盘，存储保存失败接口关闭、记录保持。已写新位的存储不保证可被旧二进制读取，部署配套且不自动删档。
+
+双Qt mcp_control／mcp_ipc Release增量构建native exit0，Qt6零警告；实际EXE为out/tests/mcp_control/{qt6,qt5}-release/release/QKeyMapperMcpControlTest.exe和对应mcp_ipc的QKeyMapperMcpIpcTest.exe。Control同产品类、原DPI／Fusion／字体／正式三语QM、asInvoker；普通Medium，实际QkmMcp_36dd7e814f5f48c3b603a47783769f76／QkmMcp_96a90388fb5a4875b3637c6a6bd98921私有桌面，无SwitchDesktop或系统输入。Qt5日志概括windows 10，但宿主实为Win11 26200，不据此增加Win10结果。
+
+两套GUI各51项native exit0，含新配对Read／Configure+Run／只显示／只截图／两者，追加显示／截图／两者／取消／无变更／已有显示追加截图／已授予／写失败，选中项与currentRow不一致、原全部127范围及另一客户端不变。存储回读核对真实权限／epoch／密钥，取消／无变更／失败核对整个密文文件未改；保存失败实际关闭MCP。弹窗运行时三语言刷新，权限选择／代次不被刷新改变，W7纯文本恰一LF、按钮NoFocus／autoDefault=false。夹具没有产品业务回调，不等于产品保存／运行等价性。
+
+两套IPC定向各5项native exit0（含init／cleanup）：DPAPI持久化新旧范围往返、未知位拒绝、同一pair／secret追加后在途旧请求失效、仅显示权限仍拒绝配置提交、重认证至epoch2／3、新位在客户端凭据中保存、只出现一次配对批准。Python7项通过，其中新桥接重连为普通权限Mock协议检查，不冒称正式SDK新增端点接线。
+
+正式TS／QM编辑已获用户明确批准。按项目lupdate-pro提取8项，最终Qt5提取无警告；先前Qt6项目解析winextras警告及cmd PATH导致cl缺失日志保留，不当成功构建。只合并本次8项，旧译文／删除均0；W7用XML实际LF，源和三译各一行断点、%1/%2不变，无字面量反斜杠n，与原Client name多行方式一致。用户在Linguist截图确认正确。lrelease生成QM，Qt6 lconvert往返核对全部非空完成译文1152／1155／1155相等；无关旧位置变动未并入。
+
+双Qt×三语言×pending／window-approval共12幅，由同私有桌面的capture_mcp_control.ps1复用仓库capture_ui_snapshots.ps1／PrintWindow，检查实际HWND所有者后关闭自有窗口；Agent已逐图原尺寸查看，中文／英文／日文两行目标信息、说明、复选框及按钮无截断、无黑图。私有桌面截图不证明Default激活或实际HighDPI；此处不是正式MCP截图工具。全部组件／预览进程及子进程由原入口正常结束，开发／Git／构建／采样普通权限，本片无产品启动、gsudo动作或新UAC。只读缓存status确认原PID9664／instance2ff1d26a17e942ee9688a45261b272c2仍18:30截止，owned／unresolved／pending／current_action／current_job全零；不接管历史未知请求。
+
+首沙箱IPC三方法返回native exit3（DPAPI ProtectionFailed），同EXE在批准的普通Medium上下文全部通过；两份原日志分别保留，未改源码绕过DPAPI或放宽权限。原件out/mcp_demo_p1_w11_20261028含构建、51／5／7结果、实际PID／桌面／退出、12幅截图及抓取日志、项目提取和TS／QM核对，不随Git。未执行High产品授权互操作、Default多实例前台、Win10／高DPI、完整Release／ASan／全量静态或保存矩阵；本片仅权限基础，正式窗口引用／查询／展示／捕获／普通桥接产物及P2–P4仍待。

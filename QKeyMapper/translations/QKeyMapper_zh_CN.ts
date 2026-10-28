@@ -7143,6 +7143,52 @@ Verified executable:</source>
 PID：%2；创建时间：%3
 系统核实的程序：</translation>
     </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="250"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="314"/>
+        <source>Show windows</source>
+        <translation>显示窗口</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="252"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="315"/>
+        <source>Capture windows</source>
+        <translation>截取窗口图像</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="251"/>
+        <source>May restore or focus this instance&apos;s windows. Does not grant mapping execution or system input.</source>
+        <translation>可能恢复或激活本实例窗口；不授予映射运行或系统输入权限。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="253"/>
+        <source>Captures only supported windows in this instance. Images may contain configuration and paths.</source>
+        <translation>仅截取本实例支持的窗口，图像可能包含配置和路径。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="257"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="258"/>
+        <source>Approve window permissions</source>
+        <translation>授权窗口权限</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="259"/>
+        <source>Keep existing permissions and approve additional window access. Reconnect the bridge after approval.</source>
+        <translation>保留现有权限，并授权额外的窗口访问；批准后请重新连接桥接。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="266"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="335"/>
+        <source>Selected pairing: %1
+Pair ID: %2</source>
+        <translation>选定配对：%1
+配对ID：%2</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="296"/>
+        <source>The window permission update did not complete. MCP is disabled if saving failed.</source>
+        <translation>窗口权限更新未完成；保存失败时MCP接口会关闭。</translation>
+    </message>
 </context>
 <context>
     <name>QkmCrashMonitor</name>

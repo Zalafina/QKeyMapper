@@ -75,7 +75,7 @@ public:
     }
 };
 
-template<class T> T *widget(ControlDialog &dialog, const char *name)
+template<class T> T *widget(QWidget &dialog, const char *name)
 {
     T *result = dialog.findChild<T *>(QLatin1String(name));
     Q_ASSERT(result);
@@ -103,7 +103,7 @@ void fixture(AutomationSessionServer &server)
     });
 }
 
-void clickCheckBox(ControlDialog &dialog, const char *name)
+void clickCheckBox(QWidget &dialog, const char *name)
 {
     auto *box = widget<QCheckBox>(dialog, name);
     QStyleOptionButton option;
@@ -140,6 +140,8 @@ private slots:
     void languageRefreshPreservesState();
     void pairingFromWidgets_data();
     void pairingFromWidgets();
+    void windowPermissions_data();
+    void windowPermissions();
     void rejectAndClose_data();
     void rejectAndClose();
     void enableFailure();
@@ -1027,13 +1029,18 @@ void McpControlTest::languageRefreshPreservesState()
 void McpControlTest::pairingFromWidgets_data()
 {
     QTest::addColumn<bool>("writable");
-    QTest::newRow("read-only") << false;
-    QTest::newRow("configure-run") << true;
+    QTest::addColumn<quint32>("windowScopes");
+    QTest::newRow("read-only") << false << quint32(0);
+    QTest::newRow("configure-run") << true << quint32(0);
+    QTest::newRow("show-only") << false << quint32(ShowWindows);
+    QTest::newRow("capture-only") << false << quint32(CaptureWindows);
+    QTest::newRow("both-windows") << false << quint32(ShowWindows | CaptureWindows);
 }
 
 void McpControlTest::pairingFromWidgets()
 {
     QFETCH(bool, writable);
+    QFETCH(quint32, windowScopes);
     QTemporaryDir root(QDir::currentPath() + QStringLiteral("/control-XXXXXX"));
     QVERIFY(root.isValid());
     ControlDialog dialog(root.path() + QStringLiteral("/server"), "test-control");
@@ -1057,6 +1064,10 @@ void McpControlTest::pairingFromWidgets()
     QCOMPARE(QFileInfo(executable->text()).canonicalFilePath(), QFileInfo(qEnvironmentVariable("QKM_IPC_TEST_EXE")).canonicalFilePath());
     QVERIFY(!widget<QCheckBox>(dialog, "mcpConfigure")->isChecked());
     QVERIFY(!widget<QCheckBox>(dialog, "mcpRunMapping")->isChecked());
+    QVERIFY(!widget<QCheckBox>(dialog, "mcpShowWindows")->isChecked());
+    QVERIFY(!widget<QCheckBox>(dialog, "mcpCaptureWindows")->isChecked());
+    if (windowScopes & ShowWindows) clickCheckBox(dialog, "mcpShowWindows");
+    if (windowScopes & CaptureWindows) clickCheckBox(dialog, "mcpCaptureWindows");
     if (writable) {
         clickCheckBox(dialog, "mcpConfigure");
         clickCheckBox(dialog, "mcpRunMapping");
@@ -1067,7 +1078,7 @@ void McpControlTest::pairingFromWidgets()
     QCOMPARE(child.exitCode(), 0);
     QTRY_COMPARE(widget<QListWidget>(dialog, "mcpPairings")->count(), 1);
     const auto pairs = dialog.server().pairings();
-    QCOMPARE(pairs.at(0).scopes, quint32(writable ? Read | Configure | RunMapping : Read));
+    QCOMPARE(pairs.at(0).scopes, quint32(writable ? Read | Configure | RunMapping : Read) | windowScopes);
     QVERIFY(dialog.close());
     QVERIFY(dialog.server().isEnabled());
     auto *list = widget<QListWidget>(dialog, "mcpPairings");
@@ -1078,6 +1089,118 @@ void McpControlTest::pairingFromWidgets()
     clickCheckBox(dialog, "mcpEnabled");
     QVERIFY(!dialog.server().isEnabled());
     QVERIFY(!QFileInfo::exists(dialog.server().discoveryPath()));
+}
+
+void McpControlTest::windowPermissions_data()
+{
+    QTest::addColumn<quint32>("existing");
+    QTest::addColumn<quint32>("additional");
+    QTest::addColumn<bool>("cancel");
+    QTest::addColumn<bool>("failSave");
+    QTest::newRow("show") << quint32(0) << quint32(ShowWindows) << false << false;
+    QTest::newRow("capture") << quint32(0) << quint32(CaptureWindows) << false << false;
+    QTest::newRow("both") << quint32(0) << quint32(ShowWindows | CaptureWindows) << false << false;
+    QTest::newRow("cancel") << quint32(0) << quint32(ShowWindows | CaptureWindows) << true << false;
+    QTest::newRow("unchanged") << quint32(0) << quint32(0) << false << false;
+    QTest::newRow("append-capture") << quint32(ShowWindows) << quint32(CaptureWindows) << false << false;
+    QTest::newRow("already-granted") << quint32(ShowWindows | CaptureWindows) << quint32(0) << false << false;
+    QTest::newRow("save-failed") << quint32(0) << quint32(ShowWindows) << false << true;
+}
+
+void McpControlTest::windowPermissions()
+{
+    QFETCH(quint32, existing);
+    QFETCH(quint32, additional);
+    QFETCH(bool, cancel);
+    QFETCH(bool, failSave);
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/window-permissions-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString directory = root.path() + QStringLiteral("/server");
+    PairCredentialStore store(directory, "test-window-permissions");
+    const PairCredential first{QString(32, QLatin1Char('a')), QStringLiteral("First client"),
+        1, Read, QByteArray(AuthSecretBytes, 'k')};
+    const PairCredential selected{QString(32, QLatin1Char('b')), QStringLiteral("<b>演示客户端</b> 日本語"),
+        7, quint32(127) | existing, QByteArray(AuthSecretBytes, 'l')};
+    PairStoreError error;
+    QVERIFY(store.save({first, selected}, error));
+    QFile saved(store.filePath());
+    QVERIFY(saved.open(QIODevice::ReadOnly));
+    const QByteArray before = saved.readAll();
+    saved.close();
+    const QString nativePath = QDir::toNativeSeparators(store.filePath());
+    const auto restore = qScopeGuard([&]() {
+        SetFileAttributesW(reinterpret_cast<LPCWSTR>(nativePath.utf16()), FILE_ATTRIBUTE_NORMAL);
+    });
+    ControlDialog dialog(directory, "test-window-permissions");
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    auto *list = widget<QListWidget>(dialog, "mcpPairings");
+    auto *button = widget<QPushButton>(dialog, "mcpWindowPermissions");
+    auto *approval = widget<QDialog>(dialog, "mcpWindowApproval");
+    list->setCurrentRow(0);
+    QVERIFY(!button->isEnabled());
+    clickCheckBox(dialog, "mcpEnabled");
+    list->clearSelection();
+    QVERIFY(!button->isEnabled());
+    QTest::mouseClick(button, Qt::LeftButton);
+    QVERIFY(!approval->isVisible());
+    list->setCurrentRow(0);
+    list->selectionModel()->select(list->model()->index(1, 0), QItemSelectionModel::ClearAndSelect);
+    QCOMPARE(list->currentRow(), 0);
+    QVERIFY(button->isEnabled());
+    if (failSave) QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(nativePath.utf16()), FILE_ATTRIBUTE_READONLY));
+    QTranslator translator;
+    QTimer::singleShot(0, &dialog, [&]() {
+        const auto close = qScopeGuard([&]() { approval->reject(); });
+        QVERIFY(approval->isVisible());
+        auto *show = widget<QCheckBox>(*approval, "mcpWindowShow");
+        auto *capture = widget<QCheckBox>(*approval, "mcpWindowCapture");
+        QCOMPARE(show->isChecked(), bool(existing & ShowWindows));
+        QCOMPARE(capture->isChecked(), bool(existing & CaptureWindows));
+        QCOMPARE(show->isEnabled(), !(existing & ShowWindows));
+        QCOMPARE(capture->isEnabled(), !(existing & CaptureWindows));
+        if (additional & ShowWindows) clickCheckBox(*approval, "mcpWindowShow");
+        if (additional & CaptureWindows) clickCheckBox(*approval, "mcpWindowCapture");
+        for (int language : {0, 2, 1}) {
+            QVERIFY(installUiTranslation(translator, language));
+            dialog.retranslateUi();
+            const auto *label = widget<QLabel>(*approval, "mcpWindowPair");
+            QCOMPARE(label->textFormat(), Qt::PlainText);
+            QCOMPARE(label->text(), ControlDialog::tr("Selected pairing: %1\nPair ID: %2").arg(selected.clientName, selected.pairId));
+            QCOMPARE(label->text().count(QLatin1Char('\n')), 1);
+            QCOMPARE(show->isChecked(), bool((existing | additional) & ShowWindows));
+            QCOMPARE(capture->isChecked(), bool((existing | additional) & CaptureWindows));
+            QCOMPARE(dialog.server().pairings().at(1).permissionEpoch, quint64(7));
+            for (const auto *push : approval->findChildren<QPushButton *>()) {
+                QCOMPARE(push->focusPolicy(), Qt::NoFocus);
+                QVERIFY(!push->autoDefault());
+                QVERIFY(!push->isDefault());
+            }
+        }
+        QTest::mouseClick(widget<QPushButton>(*approval, cancel ? "mcpWindowClose" : "mcpWindowApprove"), Qt::LeftButton);
+    });
+    QTest::mouseClick(button, Qt::LeftButton);
+    QVERIFY(!approval->isVisible());
+    QList<PairCredential> records;
+    QVERIFY(store.load(records, error));
+    QCOMPARE(records.size(), 2);
+    QCOMPARE(records.first().pairId, first.pairId);
+    QCOMPARE(records.first().scopes, first.scopes);
+    QCOMPARE(records.first().permissionEpoch, first.permissionEpoch);
+    QVERIFY(records.first().secret == first.secret);
+    const bool changed = additional && !cancel && !failSave;
+    QCOMPARE(records.at(1).pairId, selected.pairId);
+    QCOMPARE(records.at(1).scopes, selected.scopes | (changed ? additional : quint32(0)));
+    QCOMPARE(records.at(1).permissionEpoch, quint64(changed ? 8 : 7));
+    QVERIFY(records.at(1).secret == selected.secret);
+    QCOMPARE(dialog.server().isEnabled(), !failSave);
+    if (!changed) {
+        QVERIFY(saved.open(QIODevice::ReadOnly));
+        QCOMPARE(saved.readAll(), before);
+    }
+    if (failSave) QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(
+        ControlDialog::tr("The window permission update did not complete. MCP is disabled if saving failed.")));
+    dialog.server().disable();
 }
 
 void McpControlTest::rejectAndClose_data()
@@ -1375,9 +1498,10 @@ int main(int argc, char **argv)
         if (!root.isValid()) return 20;
         const QString mode = app.arguments().at(3);
         if (mode != QStringLiteral("off") && mode != QStringLiteral("pending")
-            && mode != QStringLiteral("paired-off") && mode != QStringLiteral("busy-off")) return 24;
+            && mode != QStringLiteral("paired-off") && mode != QStringLiteral("busy-off")
+            && mode != QStringLiteral("window-approval")) return 24;
         Storage::DirectoryLease previewLease;
-        if (mode == QStringLiteral("paired-off") || mode == QStringLiteral("busy-off")) {
+        if (mode == QStringLiteral("paired-off") || mode == QStringLiteral("busy-off") || mode == QStringLiteral("window-approval")) {
             PairCredentialStore store(root.path() + QStringLiteral("/server"), "test-preview");
             const PairCredential pair{QString(32, QLatin1Char('a')), QStringLiteral("预览客户端 Preview 日本語"),
                 1, Read | Configure | RunMapping, QByteArray(AuthSecretBytes, 'k')};
@@ -1395,6 +1519,16 @@ int main(int argc, char **argv)
                 QStringLiteral("<b>测试客户端</b> 日本語"), own.identity});
         }
         dialog.show();
+        if (mode == QStringLiteral("window-approval")) {
+            clickCheckBox(dialog, "mcpEnabled");
+            if (!dialog.server().isEnabled()) return 28;
+            widget<QListWidget>(dialog, "mcpPairings")->setCurrentRow(0);
+            auto *approval = widget<QDialog>(dialog, "mcpWindowApproval");
+            QObject::connect(approval, &QDialog::finished, &app, &QCoreApplication::quit);
+            QTimer::singleShot(0, &dialog, [&]() {
+                QTest::mouseClick(widget<QPushButton>(dialog, "mcpWindowPermissions"), Qt::LeftButton);
+            });
+        }
         if (mode == QStringLiteral("paired-off") || mode == QStringLiteral("busy-off")) {
             widget<QListWidget>(dialog, "mcpPairings")->setCurrentRow(0);
             if (mode == QStringLiteral("busy-off")) {
@@ -1405,15 +1539,17 @@ int main(int argc, char **argv)
         }
         QObject::connect(&dialog, &QDialog::finished, &app, &QCoreApplication::quit);
         QTimer::singleShot(300, &dialog, [&]() {
+            QWidget *target = mode == QStringLiteral("window-approval")
+                ? widget<QDialog>(dialog, "mcpWindowApproval") : &dialog;
             wchar_t desktop[256]{};
             DWORD needed = 0;
             if (!GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), &needed)) { app.exit(22); return; }
             const QJsonObject state{{QStringLiteral("pid"), int(GetCurrentProcessId())},
-                {QStringLiteral("hwnd"), QString::number(quintptr(dialog.winId()))},
-                {QStringLiteral("qt_dpr"), dialog.devicePixelRatioF()},
-                {QStringLiteral("qt_logical_dpi"), dialog.logicalDpiX()},
-                {QStringLiteral("native_dpi"), int(GetDpiForWindow(reinterpret_cast<HWND>(dialog.winId())))},
-                {QStringLiteral("native_visible"), bool(IsWindowVisible(reinterpret_cast<HWND>(dialog.winId())))},
+                {QStringLiteral("hwnd"), QString::number(quintptr(target->winId()))},
+                {QStringLiteral("qt_dpr"), target->devicePixelRatioF()},
+                {QStringLiteral("qt_logical_dpi"), target->logicalDpiX()},
+                {QStringLiteral("native_dpi"), int(GetDpiForWindow(reinterpret_cast<HWND>(target->winId())))},
+                {QStringLiteral("native_visible"), bool(IsWindowVisible(reinterpret_cast<HWND>(target->winId())))},
                 {QStringLiteral("style"), dialog.style()->objectName()},
                 {QStringLiteral("font"), dialog.font().family()},
                 {QStringLiteral("font_points"), dialog.font().pointSizeF()},

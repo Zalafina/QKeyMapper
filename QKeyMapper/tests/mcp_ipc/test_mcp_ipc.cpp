@@ -500,6 +500,7 @@ private slots:
     void discoveryLifecycle();
     void discoveryRejectsMetadata();
     void sessionPairAndReconnect();
+    void sessionWindowPermissions();
     void sessionRejectedPairing_data();
     void sessionRejectedPairing();
     void sessionStaleApproval();
@@ -1428,6 +1429,16 @@ void McpIpcTest::storeRoundTrip()
     QCOMPARE(child.exitStatus(), QProcess::NormalExit);
     QCOMPARE(child.exitCode(), 0);
     QVERIFY(child.readAllStandardError().isEmpty());
+    for (quint32 mask : {quint32(Read), quint32(127), quint32(Read | ShowWindows), quint32(Read | CaptureWindows)}) {
+        PairCredential compatible = expected;
+        compatible.scopes = mask;
+        QVERIFY(store.save({compatible}, error));
+        QVERIFY(reopened.load(records, error));
+        QCOMPARE(records.size(), 1);
+        QCOMPARE(records.first().scopes, mask);
+        QCOMPARE(records.first().permissionEpoch, expected.permissionEpoch);
+        QVERIFY(records.first().secret == expected.secret);
+    }
     QVERIFY(store.save({}, error));
     QVERIFY(reopened.load(records, error));
     QVERIFY(records.isEmpty());
@@ -1448,7 +1459,7 @@ void McpIpcTest::storeInvalidInput()
     value = original; value.clientName = QString::fromUtf8("x\0y", 3); invalid.append(value);
     value = original; value.permissionEpoch = 0; invalid.append(value);
     value = original; value.scopes = Configure; invalid.append(value);
-    value = original; value.scopes = Read | 128; invalid.append(value);
+    value = original; value.scopes = Read | (KnownScopes + 1); invalid.append(value);
     value = original; value.secret.chop(1); invalid.append(value);
     for (const PairCredential &credential : invalid) {
         QVERIFY(!validPairCredential(credential));
@@ -1765,6 +1776,83 @@ void McpIpcTest::sessionPairAndReconnect()
     PairStoreError error;
     QVERIFY(store.load(records, error));
     QVERIFY(records.isEmpty());
+}
+
+void McpIpcTest::sessionWindowPermissions()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/window-scopes-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString serverDirectory = temporary.path() + QStringLiteral("/server");
+    const QString clientDirectory = temporary.path() + QStringLiteral("/client");
+    AutomationSessionServer server(serverDirectory, "test-window-scopes");
+    int prompts = 0;
+    connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
+        ++prompts;
+        QVERIFY(server.approvePairing(request.requestId, Read));
+    });
+    bool changeDuringRequest = false;
+    AutomationRequest last;
+    server.setRequestHandler([&](const AutomationRequest &request) {
+        last = request;
+        QVERIFY(server.isRequestCurrent(request));
+        if (changeDuringRequest) {
+            QVERIFY(server.updatePermissions(request.pairId, Read | ShowWindows));
+            QVERIFY(!server.isRequestCurrent(request));
+        } else {
+            QVERIFY(server.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+        }
+    });
+    QVERIFY(server.enable());
+    const auto run = [&](const QString &mode) {
+        SessionChild child;
+        if (!child.launch(server, clientDirectory, mode)) return false;
+        QElapsedTimer timer; timer.start();
+        while (child.state() != QProcess::NotRunning && timer.elapsed() < 5000) QTest::qWait(10);
+        return child.state() == QProcess::NotRunning && child.exitStatus() == QProcess::NormalExit
+            && child.exitCode() == 0 && child.readAllStandardError().isEmpty();
+    };
+    QVERIFY(run(QStringLiteral("pair")));
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    PairCredentialStore store(serverDirectory, "test-window-scopes");
+    QList<PairCredential> before, after;
+    PairStoreError error;
+    QVERIFY(store.load(before, error));
+    QCOMPARE(before.size(), 1);
+    QCOMPARE(before.first().scopes, quint32(Read));
+    changeDuringRequest = true;
+    QVERIFY(run(QStringLiteral("disabled-in-handler")));
+    QCOMPARE(last.permissionEpoch, quint64(1));
+    QVERIFY(!server.isRequestCurrent(last));
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    changeDuringRequest = false;
+    QVERIFY(run(QStringLiteral("auth")));
+    QCOMPARE(last.scopes, quint32(Read | ShowWindows));
+    QCOMPARE(last.permissionEpoch, quint64(2));
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    QVERIFY(run(QStringLiteral("write-denied")));
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    const QString pairId = before.first().pairId;
+    QVERIFY(!server.updatePermissions(pairId, Read | (KnownScopes + 1)));
+    QVERIFY(server.updatePermissions(pairId, Read | ShowWindows | CaptureWindows));
+    QVERIFY(run(QStringLiteral("auth")));
+    QCOMPARE(last.scopes, quint32(Read | ShowWindows | CaptureWindows));
+    QCOMPARE(last.permissionEpoch, quint64(3));
+    QCOMPARE(prompts, 1);
+    QVERIFY(store.load(after, error));
+    QCOMPARE(after.size(), 1);
+    QCOMPARE(after.first().pairId, before.first().pairId);
+    QCOMPARE(after.first().clientName, before.first().clientName);
+    QCOMPARE(after.first().permissionEpoch, quint64(3));
+    QCOMPARE(after.first().scopes, quint32(Read | ShowWindows | CaptureWindows));
+    QVERIFY(after.first().secret == before.first().secret);
+    PairCredentialStore clientStore(clientDirectory, "test-session-client");
+    QVERIFY(clientStore.load(after, error));
+    QCOMPARE(after.size(), 1);
+    QCOMPARE(after.first().pairId, pairId);
+    QCOMPARE(after.first().permissionEpoch, quint64(3));
+    QCOMPARE(after.first().scopes, quint32(Read | ShowWindows | CaptureWindows));
+    QVERIFY(after.first().secret == before.first().secret);
+    server.disable();
 }
 
 void McpIpcTest::sessionRejectedPairing_data()

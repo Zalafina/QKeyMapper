@@ -9,10 +9,11 @@ namespace QkmAutomation {
 
 enum Scope : quint32 {
     Read = 1, Configure = 2, RunMapping = 4, Observe = 8,
-    TestInput = 16, ManageDevices = 32, ExecuteCommands = 64
+    TestInput = 16, ManageDevices = 32, ExecuteCommands = 64,
+    ShowWindows = 128, CaptureWindows = 256
 };
 constexpr quint32 KnownScopes = Read | Configure | RunMapping | Observe
-    | TestInput | ManageDevices | ExecuteCommands;
+    | TestInput | ManageDevices | ExecuteCommands | ShowWindows | CaptureWindows;
 constexpr int MaxPairCredentials = 32;
 
 struct PairCredential {

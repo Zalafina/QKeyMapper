@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 PIPE_PREFIX = "\\\\.\\pipe\\QKeyMapper.Automation."
 MAX_FRAME = 256 * 1024
 MAX_HANDSHAKE = 4096
-KNOWN_SCOPES = 127
+KNOWN_SCOPES = 511
 
 
 class BridgeError(Exception):

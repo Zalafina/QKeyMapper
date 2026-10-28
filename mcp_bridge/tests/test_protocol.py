@@ -8,7 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 
-from qkeymapper_mcp.protocol import BridgeError, Credential, client_name, decimal, decode, encode, proof
+from qkeymapper_mcp.protocol import KNOWN_SCOPES, BridgeError, Credential, client_name, decimal, decode, encode, proof
 
 
 class ProtocolTests(unittest.TestCase):
@@ -55,7 +55,12 @@ class ProtocolTests(unittest.TestCase):
         credential = Credential.from_json(value)
         self.assertNotIn(value["secret"], repr(credential))
         self.assertEqual(credential.to_json(), value)
-        for key, item in (("scopes", True), ("scopes", 2), ("scopes", 129), ("secret", "FA" * 32), ("extra", 1)):
+        for mask in (1, 127, 1 | 128, 1 | 256, KNOWN_SCOPES):
+            with self.subTest(mask=mask):
+                changed = {**value, "scopes": mask}
+                self.assertEqual(Credential.from_json(changed).to_json(), changed)
+        for key, item in (("scopes", True), ("scopes", 2), ("scopes", 128), ("scopes", 256),
+                          ("scopes", KNOWN_SCOPES + 2), ("secret", "FA" * 32), ("extra", 1)):
             with self.subTest(key=key, item=item), self.assertRaises(BridgeError):
                 Credential.from_json({**value, key: item})
 
@@ -117,6 +122,37 @@ class NativeTests(unittest.TestCase):
                     self.assertEqual(pipe.send.call_count, 1)
                     store.save.assert_not_called()
                     self.assertNotEqual(bridge.state()["status"], "connected")
+                finally:
+                    bridge.close()
+
+    def test_window_permissions_reconnect_keeps_pairing(self):
+        from qkeymapper_mcp import bridge as module
+        from qkeymapper_mcp.windows import Discovery, Identity
+        own = Identity(10, 100, 1, "user", "logon", 1, "client.exe")
+        server = Identity(20, 200, 1, "user", "logon", 1, "server.exe")
+        target = Discovery("a" * 32, "unused", server)
+        original = Credential("b" * 32, 1, 1, b"k" * 32)
+        nonce, remote_nonce = b"c" * 32, b"s" * 32
+        args = (target.instance, original.pair_id, 2, own, server, nonce, remote_nonce, original.secret)
+        challenge = {"type": "challenge", "version": 1, "instance": target.instance,
+            "pair_id": original.pair_id, "epoch": "2", "server_nonce": remote_nonce.hex(),
+            "server_proof": proof(1, *args).hex(), "client_pid": "10", "client_created": "100",
+            "server_pid": "20", "server_created": "200"}
+        for mask in (1 | 128, 1 | 256, 1 | 128 | 256):
+            with self.subTest(mask=mask):
+                store, pipe = Mock(), Mock()
+                store.load.return_value = original
+                pipe.receive.side_effect = [challenge, {"type": "ready", "version": 1,
+                    "instance": target.instance, "pair_id": original.pair_id, "epoch": "2", "scopes": mask}]
+                bridge = module.Bridge(Path("unused/instance.json"), Path("unused.exe"))
+                try:
+                    with patch.object(module, "identity", return_value=own), patch.object(module, "discover", return_value=target), \
+                         patch.object(module, "CredentialStore", return_value=store), patch.object(module, "Pipe", return_value=pipe), \
+                         patch.object(module.secrets, "token_bytes", return_value=nonce):
+                        self.assertEqual(bridge._connect(False)["scopes"], mask)
+                    store.save.assert_called_once_with(Credential(original.pair_id, 2, mask, original.secret))
+                    self.assertEqual(pipe.send.call_args_list[0].args[0]["type"], "hello")
+                    self.assertEqual(pipe.send.call_args_list[1].args[0]["type"], "proof")
                 finally:
                     bridge.close()
 

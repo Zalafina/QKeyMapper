@@ -16,6 +16,8 @@ parser.add_argument('--qt-bin', type=pathlib.Path, required=True)
 parser.add_argument('--output', type=pathlib.Path, required=True)
 parser.add_argument('--powershell', default=shutil.which('pwsh') or shutil.which('powershell'))
 parser.add_argument('--screenshots', action='store_true')
+parser.add_argument('--preview-states', nargs='+', choices=('off', 'pending', 'paired-off', 'busy-off', 'window-approval'),
+                    default=('off', 'pending', 'paired-off', 'busy-off'))
 parser.add_argument('--translations-dir', type=pathlib.Path, default=ROOT / 'QKeyMapper/translations')
 args = parser.parse_args()
 if os.name != 'nt':
@@ -139,7 +141,7 @@ try:
         raise RuntimeError('Control tests failed; see results.txt and runtime.log.')
     if args.screenshots:
         for lang in (0, 1, 2):
-            for state in ('off', 'pending', 'paired-off', 'busy-off'):
+            for state in args.preview_states:
                 label = f'mcp_control_{lang}_{state}_{uuid.uuid4().hex[:6]}'
                 statefile = BASE / (label + '.json')
                 pi = start([args.test_exe, '--preview', lang, state, statefile], BASE, env, BASE / (label + '.log'))
@@ -152,7 +154,7 @@ try:
                     record = json.loads(statefile.read_text(encoding='utf-8'))
                     assert record['desktop'] == name and record['pid'] == pi.dwProcessId
                     assert record['native_visible'] and record['native_dpi'] > 0 and record['qt_dpr'] > 0
-                    assert not record['interface_enabled']
+                    assert record['interface_enabled'] == (state == 'window-approval')
                     if state in ('paired-off', 'busy-off'):
                         assert record['pair_count'] == 1 and record['revoke_enabled']
                         assert record['store_busy'] == (state == 'busy-off')

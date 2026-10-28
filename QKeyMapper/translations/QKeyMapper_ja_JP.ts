@@ -7143,6 +7143,52 @@ Verified executable:</source>
 PID：%2；作成時刻：%3
 確認済みプログラム：</translation>
     </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="250"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="314"/>
+        <source>Show windows</source>
+        <translation>ウィンドウを表示</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="252"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="315"/>
+        <source>Capture windows</source>
+        <translation>ウィンドウを撮影</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="251"/>
+        <source>May restore or focus this instance&apos;s windows. Does not grant mapping execution or system input.</source>
+        <translation>このインスタンスのウィンドウを復元またはアクティブ化する場合があります。マッピング実行やシステム入力は許可しません。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="253"/>
+        <source>Captures only supported windows in this instance. Images may contain configuration and paths.</source>
+        <translation>このインスタンスで対応するウィンドウのみを撮影します。画像には設定やパスが含まれる場合があります。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="257"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="258"/>
+        <source>Approve window permissions</source>
+        <translation>ウィンドウの権限を承認</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="259"/>
+        <source>Keep existing permissions and approve additional window access. Reconnect the bridge after approval.</source>
+        <translation>既存の権限を保持してウィンドウへの追加アクセスを承認します。承認後はブリッジに再接続してください。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="266"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="335"/>
+        <source>Selected pairing: %1
+Pair ID: %2</source>
+        <translation>選択したペアリング: %1
+ペアID: %2</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="296"/>
+        <source>The window permission update did not complete. MCP is disabled if saving failed.</source>
+        <translation>ウィンドウ権限の更新は完了していません。保存に失敗した場合、MCPは無効になります。</translation>
+    </message>
 </context>
 <context>
     <name>QkmCrashMonitor</name>

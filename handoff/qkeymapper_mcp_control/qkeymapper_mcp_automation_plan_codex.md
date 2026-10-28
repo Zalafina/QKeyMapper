@@ -16,23 +16,23 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | DEMO-P0-104选定可行性完成：内部自身Qt窗口PNG捕获底层，正式MCP空白源建立A→B后真实GUI展示／捕获／普通端落图及Agent看图。双Qt两进程12项、四PNG清楚；正式截图接口与服务未交付 |
-| 状态 | 持续开发。双Qt维护构建及私有桌面采样通过，main 1130×722／item_setup 820×480、DPR=1、PNG约45–51KB，Agent已逐图检查中文和A／B；窗口关闭／错误线程返回空失败，场景／INI／代次保持 |
+| 当前切片 | DEMO-P1-105独立窗口权限／既有配对GUI追加授权完成选定检查，形成聚焦本地提交；P1正式窗口工具仍未完成 |
+| 状态 | 持续开发，不推送。双Qt各51项控件／配对、各5项IPC定向和7项Python通过，12幅三语私有桌面截图已由Agent查看；用户另在Linguist确认W7换行 |
 | 执行机器 | PC-W11，Windows 11企业版10.0.26200 x64；本轮唯一写入机器。UI-73及C1-B2-TABLE的PC-W10结果只按其原版本／范围保留，不冒充本机复验 |
 | 任务分支 | `codex/qkeymapper-mcp-control` |
-| 源码基线 | 基于42e8c854；新增内部qkm_window_image（GUI线程／自身顶层／可见且非最小化／8M像素与2MiB PNG界限），无激活／文件I/O。仅维护探针调用，正式MCP方法／配对权限／原GUI和启动模式未改；12工具／10能力不变 |
+| 源码基线 | 基于DEMO-P0-104 b545bff5；P1-105新增ShowWindows=128／CaptureWindows=256和两类GUI明确授权，复用原updatePermissions持久化／权限代次与断线。正式TS／QM各新增8项，旧译文不变；12工具／10业务能力不变 |
 | 当前已完成 | PC-W11解释器／DLL的PSF签名有效，同机ENV-39哈希安装记录的31项依赖与当前锁一致，环境检查／pip check、6项环境和20项协议检查通过；Qt6.8.3／Qt5.15.2均为x64。PC-W10的UI-73三语言及TABLE97项结果仅按各自原范围保留 |
-| 当前未验证 | P0仅Win11双Qt、中文／实际DPR1的main和item_setup客户区；正式窗口API、最小化／过期／身份变化全矩阵、资源边界、其他实例／Default焦点因果、先进设置页、HighDPI／Win10、正式产物保留、免Python预热及QQ均待。C1-C／M1实际输入／设备／完整GUI等旧缺口不变 |
-| 构建与 EXE | 双Qt生命周期维护增量Release native exit0，Qt6零警告、官方Qt5.15.2 x64兼容通过；automation.pri的Qt6独立mcp_control消费者增量链接native exit0。out/mcp_demo_p0_w11_20261028/{qt6,qt5}-runtime/QKeyMapperDemo104_*_runtime.exe原manifest，实际QkmDemo104_<UUID>私有桌面，普通控制器／SDK8192、产品12288，同登录 |
-| 提交与同步 | SAVE-103为42e8c8549e6ef90b68c64d37497b8bda6a5fe47d；DEMO-P0-104经必要差异／文档检查形成本地聚焦提交，SHA以Git为准，不推送 |
-| 本机独有材料 | P0原件out/mcp_demo_p0_w11_20261028：双Qt构建／部署、Qt6独立消费者链接、正式SDK建例／身份、两进程退出／12项及四幅PNG、像素／DPR／时间／窗口／源绑定元数据、Agent原尺寸看图记录、逐场缓存尾状态。first-consumer-record-limit保留首张原始帧与SDK误用缓存小记录读取器导致native exit2；非gsudo故障，原件不随Git |
+| 当前未验证 | P0实际截图仍仅Win11双Qt、中文／DPR1的main与item_setup客户区；P1-105只验授权组件，无正式窗口API、High产品授权互操作、Default前台效果或后台长期无打扰。角色／源窗口绑定、最小化／身份变化、资源上界、其他实例、高级页、HighDPI／Win10、产物保留、免Python预热与QQ仍待；C1-C／M1旧缺口不变 |
+| 构建与 EXE | P1双Qt mcp_control／mcp_ipc增量Release native exit0，Qt6零警告；EXE为out/tests/{mcp_control,mcp_ipc}/{qt6,qt5}-release/release/对应QKeyMapperMcp*Test.exe。普通Medium组件实际QkmMcp_<UUID>私有桌面，仓库PrintWindow截图；无产品启动／gsudo动作。P0原manifest维护运行证据仍按原版本保留 |
+| 提交与同步 | DEMO-P0-104为b545bff5aab9e55076eb049cc1559090a42c3026；P1-105经定向检查形成本地独立提交切点，SHA以Git为准，不推送 |
+| 本机独有材料 | out/mcp_demo_p1_w11_20261028含双Qt构建／51项GUI／5项IPC、7项Python、12幅PNG与PID／实际桌面、TS旧译文／LF及QM往返核对。首沙箱IPC exit3／DPAPI保护失败与同EXE普通Medium exit0分别保留；项目提取环境警告及最终Qt5无警告提取日志不混写。P0原件另保留，不随Git |
 | 授权边界 | 已明确恢复持续开发／聚焦本地提交，不推送。开发、Git、构建、桥接／SDK及截图普通权限，必要原manifest启动／关闭通过已批准缓存与公共登记；只用自有私有桌面和隔离INI，无Default、系统输入、驱动或系统过滤键设置变化 |
 | 当前控制器 | 2026-10-28普通Medium PID9664，创建时间134376318834874371，instance2ff1d26a17e942ee9688a45261b272c2、generation1，截止18:30＋08:00；双Qt各固定定义已公共登记，逐场active／cache_available=true且owned／unresolved／pending／current_action／current_job全零。昨日24956已关闭；旧未知请求不接管 |
-| 下一项动作 | 按P1小片持续实现正式能力：先固化独立显示／捕获权限、既有配对追加GUI批准及必要三语文案草稿，再实现绑定源／窗口代次的受限查询／展示／捕获与普通桥接有界图像产物；不把当前P0原件或开发缓存当交付。P3私有启动／预热具体方案另评审，QQ仍末期Win10 |
+| 下一项动作 | 先按用户新增要求完善AGENTS／qkeymapper-workflow及Claude镜像的翻译审阅→Agent项目提取／TS／QM→核对流程，独立文档提交；随后继续P1的正式角色／源窗口引用与受限查询／展示／捕获、有界普通桥接产物。P3新启动方案单列 |
 | 下一项完成标准 | 剩余保存／失败恢复及生命周期场景按实际结果逐项验收；已接通能力不等于完整C1-C或M1完成。后续按既定A→B完整路径推进实际运行和停止，缺失系统／GUI范围单列，不重复已验载荷或重置环境 |
 | 缓存观察安排 | 不再为Win11／2–5小时驻留单独排期，随日常使用积累；复查以现存日志规模决定工作量，必要靶向测试另估。该决定不代表未覆盖场景已经验证 |
 | 实耗与剩余 | 本机已推进SAVE-74至103及DEMO-P0-104选定可行性（84为缓存诊断）。P0源码与四张真图可检查，P1至P4和M1整体未完成，剩余仍按阶段依赖推进，不按断言抵扣工时 |
-| 当前未决与阻碍 | 首Qt6普通SDK误用默认小容量cache.read_json读取约69KB含图记录，保留native exit2及实际PNG原始帧；改为自有3MiB有界读取后同EXE双Qt通过。捕获底层不做授权／角色选择，P1必须服务端强制且不得扩Read；TS三语资源仍待明确批准。PID9664至18:30，本轮五项清理全零 |
+| 当前未决与阻碍 | 本次8条正式资源已获批准，W7用户Linguist确认及三语实窗检查均完成；无资源批准阻塞。正式窗口／部署尚未交付，PID9664至18:30保持既定测试范围，未知请求保留 |
 
 
 
@@ -435,6 +435,84 @@ DEMO-P0-104实施前选定范围（实际覆盖见后段及同一C1证据）：�
 DEMO-P0-104选定结果：双Qt内部捕获底层／维护构建及真实私有窗口采样通过，正式MCP从空白源只在内存新增A→B，Qt表格事件展示单项窗口，普通SDK落盘四幅真PNG，Agent原尺寸检查中文与A／B清楚。main为1130×722，item_setup为820×480，DPR1、PNG44865–51182字节；当前256KiB协议帧可优先采用有界单图，正式P1拟将PNG限制为160KiB并校验整体帧，不预设分块缓存。内部底层当前2MiB仅用于探针，不代表正式传输承诺。实际INI／源／dirty／代次在捕获与Esc关闭前后保持，未启动映射，隐藏／关闭和错误线程拒绝。首次消费端借用缓存记录读取器的小上限导致exit2，原图和记录保留，改3MiB有界读取后两场exit0／12项；不是gsudo启动故障。新pri源的Qt6独立组件消费者链接也通过，旧协议／权限测试按原范围复用。
 
 捕获范围为Qt客户区内容，原生边框、独立弹窗／原生子窗不包含；主表水平滚动区域与单行映射码只展示实际可见范围。P0未验实际HighDPI／Win10／高级页、最小化和过期全矩阵、其他实例或Default全程焦点因果、长期无打扰与服务部署。维护原件在本机out/mcp_demo_p0_w11_20261028，不随Git。当前无正式截图MCP端点、场景／窗口令牌、独立捕获授权或服务产物清理策略；P1必须在C++／桥接强制权限、角色／生命周期与普通权限有界产物，不能把维护探针作为普通用户功能。配对追加权限UI与TS三语草稿另行明确授权，P3新私有启动／预热方案按既定规则先评审；QQ仍末期Win10另验。
+
+#### DEMO-P1-105：独立窗口权限与既有配对追加授权（选定基础完成；正式窗口工具待实现）
+
+源核对发现AutomationSessionServer已有updatePermissions：保存同一pairId／secret的新scopes，权限代次递增、关闭该活动连接，写失败关闭接口。复用此实现，不新增授权通道。现有KnownScopes占1至64，新增独立ShowWindows=128／CaptureWindows=256；旧权限数据不自动扩展，Python同步识别511上限，新／旧未知位测试按新边界调整。新配对两复选框默认不选；现有配对由用户选定后点“授权窗口权限”，仅追加所选两个窗口位，保留其余权限、不再配对，批准后显式重连。复用原updatePermissions的持久化／代次／失败行为，不新增MCP自助授权工具。
+
+本切片只建立权限和GUI批准基础，正式窗口工具仍留P1后续；只用普通权限组件／私有桌面或已登记自有维护目标，Default无实际输入／显示验收。选定检查：范围编码／未知位与既有凭据兼容、同pair及secret追加后重认证、原权限与代次和旧请求失效、选择／取消／无新增权限不改代次、写失败沿原关闭与未成功规则、新配对默认不授予；双Qt受影响构建，必要GUI三语／焦点在授权TS后按UI-73范围执行，不重跑完整保存矩阵。新启动／UAC／系统输入／服务模式未纳入此授权。
+
+以下为本次8条必要UI文案。2026-10-28用户已明确批准同步TS／QM；沿项目lupdate-pro流程提取，仅保留8条新增词条，既有翻译未改。用户另在Linguist确认W7源文及中英日实际换行正确（用户提供截图，本机原件不入Git）；此确认不替代下述实际窗口验收。已有Approve selected permissions／Close等翻译复用，原词条不重写。状态与解释按实际失败类型刷新，保留原撤销失败文案行为。
+
+**W1**
+
+| 语言 | 建议文案 |
+|---|---|
+| English | Show windows |
+| 中文 | 显示窗口 |
+| 日本語 | ウィンドウを表示 |
+
+**W2**
+
+| 语言 | 建议文案 |
+|---|---|
+| English | Capture windows |
+| 中文 | 截取窗口图像 |
+| 日本語 | ウィンドウを撮影 |
+
+**W3**
+
+| 语言 | 建议文案 |
+|---|---|
+| English | May restore or focus this instance's windows. Does not grant mapping execution or system input. |
+| 中文 | 可能恢复或激活本实例窗口；不授予映射运行或系统输入权限。 |
+| 日本語 | このインスタンスのウィンドウを復元またはアクティブ化する場合があります。マッピング実行やシステム入力は許可しません。 |
+
+**W4**
+
+| 语言 | 建议文案 |
+|---|---|
+| English | Captures only supported windows in this instance. Images may contain configuration and paths. |
+| 中文 | 仅截取本实例支持的窗口，图像可能包含配置和路径。 |
+| 日本語 | このインスタンスで対応するウィンドウのみを撮影します。画像には設定やパスが含まれる場合があります。 |
+
+**W5**
+
+| 语言 | 建议文案 |
+|---|---|
+| English | Approve window permissions |
+| 中文 | 授权窗口权限 |
+| 日本語 | ウィンドウの権限を承認 |
+
+**W6**
+
+| 语言 | 建议文案 |
+|---|---|
+| English | Keep existing permissions and approve additional window access. Reconnect the bridge after approval. |
+| 中文 | 保留现有权限，并授权额外的窗口访问；批准后请重新连接桥接。 |
+| 日本語 | 既存の権限を保持してウィンドウへの追加アクセスを承認します。承認後はブリッジに再接続してください。 |
+
+**W7**
+
+| 语言 | 建议文案 |
+|---|---|
+| English | Selected pairing: %1`\n`Pair ID: %2 |
+| 中文 | 选定配对：%1`\n`配对ID：%2 |
+| 日本語 | 選択したペアリング: %1`\n`ペアID: %2 |
+
+**W8**
+
+| 语言 | 建议文案 |
+|---|---|
+| English | The window permission update did not complete. MCP is disabled if saving failed. |
+| 中文 | 窗口权限更新未完成；保存失败时MCP接口会关闭。 |
+| 日本語 | ウィンドウ権限の更新は完了していません。保存に失敗した場合、MCPは無効になります。 |
+
+P1-105实现结果：新配对Read仍必需，ShowWindows／CaptureWindows各自默认不选；旧配对不自动扩权。GUI只对实际选中项、启用接口及无待批准新客户端时开放追加入口；以纯文本列出名称／pair ID，现有窗口权限已选且禁改，提交时重新取同pair当前权限并只合并新增勾选。复用原updatePermissions保留secret／pair ID、递增epoch并关闭旧连接；无新增和取消不写存储，失败沿既有关闭规则，原权限不误记成功。普通桥接认识新范围；无MCP自助扩权、Read扩大或新启动模式。旧二进制不能理解新增位时拒绝存储，部署保持配套，不删除凭据恢复。
+
+选定验收：双Qt控件／真实配对子进程各51项、配对存储／旧范围／新范围／旧请求失效与同密钥重连各5项IPC，Python协议及桥接重连7项；均native exit0。Win11实际私有桌面，两类界面双Qt三语共12幅PrintWindow截图已逐图查看，中文优先、W7两行、文字／按钮完整，NoFocus及运行时刷新保持状态。用户已在Linguist确认W7。TS各新增8条，既有译文修改／删除0；QM往返核对全部非空完成译文1152／1155／1155项相等。Qt6及官方Qt5受影响组件增量构建通过；当前未运行High产品授权或正式新窗口端点，不把组件fixture当业务交付。
+
+原件及失败边界见[同一C1证据](map67c1_validation.md#demo-p1-105独立窗口权限及追加授权2026-10-28pc-w11)，out/mcp_demo_p1_w11_20261028仅在本机；沙箱DPAPI失败、项目解析警告和最终通过分别留存。无Default、映射启动、系统输入、驱动改动或新UAC。本片不重跑未改保存矩阵、不扩大ASan／全量静态分析／完整Release。下一正式窗口能力仍按P1后续分片；用户新增翻译工作流优化先独立收敛。
 
 #### 复用、隔离及专用目标
 

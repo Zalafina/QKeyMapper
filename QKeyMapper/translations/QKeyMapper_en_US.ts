@@ -7143,6 +7143,52 @@ Verified executable:</source>
 PID: %2; creation time: %3
 Verified executable:</translation>
     </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="250"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="314"/>
+        <source>Show windows</source>
+        <translation>Show windows</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="252"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="315"/>
+        <source>Capture windows</source>
+        <translation>Capture windows</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="251"/>
+        <source>May restore or focus this instance&apos;s windows. Does not grant mapping execution or system input.</source>
+        <translation>May restore or focus this instance's windows. Does not grant mapping execution or system input.</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="253"/>
+        <source>Captures only supported windows in this instance. Images may contain configuration and paths.</source>
+        <translation>Captures only supported windows in this instance. Images may contain configuration and paths.</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="257"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="258"/>
+        <source>Approve window permissions</source>
+        <translation>Approve window permissions</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="259"/>
+        <source>Keep existing permissions and approve additional window access. Reconnect the bridge after approval.</source>
+        <translation>Keep existing permissions and approve additional window access. Reconnect the bridge after approval.</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="266"/>
+        <location filename="../automation/qkm_control_dialog.cpp" line="335"/>
+        <source>Selected pairing: %1
+Pair ID: %2</source>
+        <translation>Selected pairing: %1
+Pair ID: %2</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="296"/>
+        <source>The window permission update did not complete. MCP is disabled if saving failed.</source>
+        <translation>The window permission update did not complete. MCP is disabled if saving failed.</translation>
+    </message>
 </context>
 <context>
     <name>QkmCrashMonitor</name>
