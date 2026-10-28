@@ -15,6 +15,7 @@ import pywintypes
 import win32event
 
 from .credentials import CredentialStore
+from .images import validate_capture
 from .protocol import (BridgeError, Credential, MAX_HANDSHAKE, client_name, decimal,
                        fields, hex_bytes, proof, require, scopes)
 from .windows import Pipe, discover, identity, pristine_thread
@@ -195,6 +196,10 @@ class Bridge:
     async def get_operation(self, operation_id: str) -> dict:
         return await self._call("qkm_get_operation", dict(operation_id=operation_id))
 
+    async def capture_window(self, role: str, window_ref: str, source_revision: str, source_tab_ref: str) -> dict:
+        return await self._call("qkm_capture_window", dict(role=role, window_ref=window_ref,
+            source_revision=source_revision, source_tab_ref=source_tab_ref))
+
     async def _call(self, method: str, arguments: dict | None = None) -> dict:
         future = self._submit(lambda: self._request(method, arguments if arguments is not None else {}))
         if future is None:
@@ -217,6 +222,8 @@ class Bridge:
         if response["ok"]:
             fields(response, "id ok result")
             require(type(response["result"]) is dict)
+            if method == "qkm_capture_window":
+                response["result"] = validate_capture(response["result"], self._pipe.discovery, arguments)
         else:
             fields(response, "id ok error")
             fields(response["error"], "code message")

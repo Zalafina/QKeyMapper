@@ -1,7 +1,32 @@
 """Focused checks using an already authenticated official SDK request function."""
 
 from datetime import datetime
+import base64
+import hashlib
+import json
 import re
+import struct
+
+
+def verify_capture_reply(reply, arguments: dict, *, error: str | None = None):
+    assert reply.is_error is (error is not None)
+    assert type(reply.structured_content) is dict
+    structured = reply.structured_content
+    images = [item for item in reply.content if item.type == "image"]
+    texts = [item for item in reply.content if item.type == "text"]
+    assert len(texts) == 1 and json.loads(texts[0].text) == structured
+    if error is not None:
+        assert not images and structured["ok"] is False and structured["error"] == error
+        return structured, None
+    assert len(images) == 1 and images[0].mime_type == "image/png" and structured["ok"] is True
+    metadata = structured["result"]
+    assert "png_base64" not in metadata and images[0].data not in texts[0].text
+    assert all(metadata[key] == arguments[key] for key in ("role", "window_ref", "source_revision", "source_tab_ref"))
+    png = base64.b64decode(images[0].data, validate=True)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n" and len(png) == metadata["bytes"] <= 160 * 1024
+    assert struct.unpack(">II", png[16:24]) == (metadata["pixel_width"], metadata["pixel_height"])
+    assert metadata["sha256"] == hashlib.sha256(png).hexdigest()
+    return structured, png
 
 
 async def verify_window_query(request, target, instance: str, desktop: str) -> dict:

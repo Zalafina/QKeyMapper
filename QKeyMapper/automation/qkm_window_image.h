@@ -4,6 +4,7 @@
 #include <QByteArray>
 #include <QSize>
 #include <QString>
+#include <QJsonObject>
 
 class QWidget;
 
@@ -11,6 +12,18 @@ namespace QkmAutomation {
 
 constexpr qint64 MaxWindowImagePixels = 8 * 1024 * 1024;
 constexpr int MaxWindowImageBytes = 2 * 1024 * 1024;
+constexpr int MaxTransportWindowImageBytes = 160 * 1024;
+
+struct WindowCaptureArguments {
+    QString role;
+    QString windowReference;
+    QString sourceRevision;
+    QString sourceTabReference;
+    bool ok() const { return !role.isEmpty(); }
+};
+
+WindowCaptureArguments parseWindowCaptureArguments(const QJsonObject &arguments);
+QJsonObject windowCaptureCapability();
 
 struct WindowImage {
     QByteArray png;
@@ -21,7 +34,7 @@ struct WindowImage {
 };
 
 // Internal GUI-thread primitive; callers own role selection, source binding and authorization.
-WindowImage captureOwnWindow(QWidget *window);
+WindowImage captureOwnWindow(QWidget *window, int maxBytes = MaxWindowImageBytes);
 
 } // namespace QkmAutomation
 

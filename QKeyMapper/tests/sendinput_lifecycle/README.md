@@ -68,3 +68,11 @@ C1-B1的`settings_general_save`在自有runtime准备合法A→B、四种按键�
 SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准备含按下／抬起序列备注的共通行，关闭共通表后用真实GUI保存；保留INI再独立运行`common_comments_cold`。`common_comments_attached`覆盖共通表开启时的源行和备份；`common_comments_legacy`读取修复前、没有两个可选备注字段的合成旧文件，应保持空备注且不重写文件。冷读需保留对应INI，不能重新复制空模板。
 
 结果位于`commonComments.checks`。修复前只接受两条备注保存／加载检查为预期红例，其他配置、加载完成、停止态和零尾部作业必须通过；修复后全部通过。单行其他配置比较复用MAP_KEYDATA::operator==，其Pure／LockState排除语义不变；不能据单行比较替代MCP的完整修订、身份、权限、状态及到期校验。临时普通副本不证明High／输入效果，也不是GUI备注编辑与MCP编辑的完整对照。
+
+## DEMO-P1-108 窗口捕获维护范围
+
+`settings_save_apply` 的固定连接变体 `demo_mcp_capture` 沿P0演示夹具，只在空白合法隔离INI／私有桌面上经正式MCP内存新增A→B；固定配对Read+Configure+CaptureWindows，无ShowWindows／RunMapping。`demo_capture`保留Read+Configure，用于正式捕获权限拒绝。维护用例的Qt表格双击／Esc打开关闭真实单项窗，不是正式MCP展示接口。
+
+新增固定GUI标记仅向本实例单项映射键行发送Qt Ctrl+A／C／B事件，回读实际草稿与源仍B，并恢复；自有主窗固定Qt最小化／恢复标记检验截图拒绝且不自动恢复。没有setText、系统输入、Default、映射启动或驱动变更。公开登记必须绑定实际维护EXE及固定case／输出根，普通SDK消费原生MCP ImageContent并写自有out证据，源／INI／dirty／代次及退出清理分别核对；测试探针PNG不替代正式MCP图片。关闭后Qt5／Qt6可能分别保留／销毁原生句柄，应按实际window_ref可用性检查业务拒绝或SDK schema拒绝，不把null当有效引用。
+
+图片字段／范围与用法见[mcp_bridge说明](../../../mcp_bridge/README.md#受限真实窗口图片p1-108)；具体执行及缺口只在唯一主计划／C1证据记录，不将本用例称完整演示服务或QQ送达。

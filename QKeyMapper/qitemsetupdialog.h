@@ -44,6 +44,7 @@ public:
     void syncConnectMappingKeySelectButtons(void);
     void refreshFromCurrentItem(void);
     void updateMappingCodeDisplay(void);
+    bool matchesSourceKeyText(const QString &original, const QString &mapping, const QString &keyUp) const;
 
     QPushButton* getOriListSelectKeyboardButton(void) const;
     QPushButton* getOriListSelectMouseButton(void) const;

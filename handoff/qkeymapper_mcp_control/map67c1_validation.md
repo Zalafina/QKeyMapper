@@ -726,3 +726,23 @@ Qt6／官方Qt5生命周期维护增量Release均native exit0，Qt6零警告、Q
 各独立空白Demo104Seed经正式MCP建立A→B，Qt表格真实双击走原入口打开单项窗；观察main／item_setup可见及引用，Esc关闭后Qt／原生不可见、item引用变化，源／dirty／完整INI及加载代次不变。两场各native exit0／6项CPP，共12项，SDK通过并正常回收，owned／unresolved／pending／current_action／current_job均零。P0采样函数生成四幅客户区PNG仅作GUI状态夹具，非正式截图接口；底层未改，不替代正式图像工具或捕获权限验收。
 
 首轮通过后复核补强WindowStateChange只追踪呈现位，防止仅WindowActive造成陈旧引用；before-activation-guard保留首轮两场通过、EXE／身份及组件。最终版本重新构建并通过上述定向组件／正式SDK；不是现场复现故障，也不将组件事件冒充Default用户确认。原件out/mcp_window_query_w11_20261028不随Git，含一式补丁dry-run／精确字节／反向校验、构建部署与EXE身份、组件、SDK peer／50次记录、分页负例／窗口代次／源INI、四图及逐场缓存尾状态。未跑完整Release／ASan／全量静态、保存矩阵、Win10／高DPI／Default／其他实例或QQ；正式执行／源场景绑定、产物与完整演示闭环继续P1后续。
+
+## DEMO-P1-108：正式有界窗口PNG（2026-10-28，PC-W11）
+
+源码为P1-107 `7ae36e13049d80be692a835b43d674bfc53521ee` 加本切片WindowImage参数／能力、SessionServer权限、产品capture处理、单项纯观察getter、桥接图片校验／MCP结果及对应测试。qkeymapper.cpp120增／1删，一式补丁先dry-run／numstat、应用后精确字节和反向核对；不重复应用107或旧B1。无TS／QM、manifest、启动模式、驱动及普通用户INI改动。
+
+正式qkm_capture_window要求role、window_ref、source_revision、source_tab_ref，Read+CaptureWindows=257。角色仅main／item_setup，不接PID／HWND／路径。主窗展示Tab／单项源Tab须与当前完整源一致；源只在已接受加载且pristine_idle或有效completed_cleanup可读，不只凭STOPPED。100ms异步绘制等待前后／抓图后重新核对当前连接请求、权限epoch、生命周期、完整源及窗口元数据；五秒截止。单项另核对真实行及三个键文本，metadata含源行／源引用及live_qt_client_ui_drafts_may_be_visible，不声称所有控件已提交／磁盘已保存。自身QWidget::grab PNG不显示／恢复／激活、不写文件，上限160KiB／8M像素及256KiB完整帧。
+
+普通桥接绑定实际认证pipe.discovery和四个请求参数，校验身份／元数据、大小、严格Base64、PNG IHDR尺寸／位深／颜色类型、块边界及CRC／IDAT／结束，附SHA256；错误图使本连接失败且无图。仅原生ImageContent承载图片，文本和structured_content只含元数据，不重复Base64。不解压全PNG，当前受信Qt编码、尺寸／字节有界；无正式文件输出／缓存，SDK普通权限写入out仅作证据。
+
+配置：Win11企业版26200 x64，CPython3.11.9 x64／锁定MCP2.3.0，Qt6.8.3 msvc2022_64／Qt5.15.2官方msvc2019_64、现有MSVC工具链。双Qt mcp_control／mcp_ipc及真实源码生命周期维护Release增量native exit0，最终Qt6零编译／链接警告，Qt5既定兼容通过。Qt5库日志windows10／MSVC2019不代表本机Win10执行。组件windowCaptureBoundaries每Qt3项（含init／cleanup），实际PNG字节N−1拒绝／N接受、实际尺寸、超8M像素、隐藏／错误线程及严格四参数；Qt5超尺寸故意触发原生geometry调整QWARN，保留日志、不称零运行诊断。IPC sessionWindowPermissions每Qt3项：Read+Show无Capture拒绝；Read+Show+Capture无Configure允许；既有权限epoch仍按原机制。Pythontest_images最终7项通过，缺失／损坏／身份或请求不符、错误元数据、无图错误通道、原生ImageContent及Base64不重复、invalid_image断开清理均覆盖；2×1合成PNG仅用于格式单测，不冒充软件截图。
+
+实际EXE为out/mcp_window_capture_w11_20261028/{qt6,qt5}-runtime/QKeyMapperCapture108_*_runtime.exe，保留requireAdministrator。普通SDK／bridge8192与原manifest产品12288，同登录；公开登记capture108-qt6／qt5绑定实际EXE哈希／两个固定case／输出根，经原普通控制器PID9664启动／关闭，不新申请UAC或改变缓存模式。桌面实际QkmDemo104_<UUID>，沿P0维护夹具命名，无SwitchDesktop／Default激活／系统输入／映射启动或驱动修改；私有桌面不等于Hook／驱动隔离或Default全过程无干扰证明。
+
+最终场景：Qt6demo_mcp_capture 39次记录调用／9次capture＋3次schema拒绝，Qt5同case40／10＋2次，另Qt6demo_capture（Read+Configure，无Capture）30／2＋2次；三场native exit0、各6项CPP／共18，累计109次记录调用＋7次schema拒绝。正例仅Read+Configure+Capture，无Show／Run。正式MCP从空白合法隔离INI内存添加A→B，实际Qt表格双击走原单项GUI入口；尚非正式MCP打开／展示能力。正式capture各返回main／item／键草稿恢复后item三张。每套旧窗口、旧源／错Tab均无图；向自有行投递固定Qt Ctrl+A／C／B而不setText，源仍B、草稿C时context_busy／无图，恢复B后可拍。固定自有私有主窗Qt最小化夹具得到window_unavailable、窗口仍最小化，工具不自动恢复；旧item引用关闭后stale_window。Qt6关闭后原生句柄销毁，null引用schema拒绝并保留实际SDK错误文本；Qt5句柄仍可引用但不可见，正式capture返回window_unavailable。负例两次permission_denied，无ImageContent。源全快照／dirty／加载代次及完整INI前后保持；每场正常退出、零作业与生产者，owned／unresolved／pending／current_action／current_job全零。
+
+六幅最终原生MCP图由Agent用view_image原尺寸逐图检查：main1130×722，Qt6／Qt5分别51182／50326字节；item820×480，45094／44865字节，各自恢复后图片相同，实际DPR1。中文标签、A／B、当前Demo页和单项来源一致，无黑图或错窗。仅Qt客户区，原生标题栏／边框和独立弹窗不包含；主表水平滚动及底部映射码按实际可见区域，不称隐藏内容完整。普通测试SDK解码落PNG且验证原生content、结构化元数据、大小／SHA及文本不重复，不证明QQ发送。
+
+首编译参数schema少闭括号失败，修正后通过，first-schema-brace-build.log保留。首Qt6边界用例假定请求64即实际宽度，实际Windows最小宽162，修正为实际尺寸，first-native-minimum-size保留。首正式Qt6已返回三幅有效MCP图，末尾将关闭后null引用当有效业务请求，SDK is_error且无结构化dict，native exit2；该轮错误文本未留，不按文字推算错误码。first-closed-native-handle封存原case／图／EXE／登记及五项零状态，校准消费断言并加入最小化负例后最终三场通过，产品捕获检查未放宽。
+
+原件out/mcp_window_capture_w11_20261028不随Git：补丁与字节核对、构建及双Qt组件／IPC原日志、python-images-complete.txt、部署与EXE身份、公共登记／精确SDK peer、最终after三场调用／错误／原图片及元数据、summary和逐场清理；Agent看图另记visual-review.json。未运行五秒真实超时、等待期撤权／断线／源变更／模态弹窗交错、高DPI、Win10、其他实例对照、Default焦点因果、普通完整Release／ASan／全量静态或保存全矩阵。当前13工具／12业务能力，但正式显示／源行打开、代表高级页、P2串行重置、P3预热／M3-B免Python及P4 QQ联调仍待。保持M1／C1-C原未验范围，不将组件或维护GUI当完整可交付演示。

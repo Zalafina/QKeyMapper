@@ -286,6 +286,7 @@ int runSessionClient(const QStringList &arguments)
     QString method = QStringLiteral("qkm_get_state");
     if (mode.startsWith(QStringLiteral("transport-caps"))) method = QStringLiteral("qkm_get_capabilities");
     if (mode == QStringLiteral("write-denied") || mode == QStringLiteral("write-allowed")) method = QStringLiteral("qkm_apply_changes");
+    if (mode == QStringLiteral("capture-denied") || mode == QStringLiteral("capture-allowed")) method = QStringLiteral("qkm_capture_window");
     if (mode == QStringLiteral("unknown-method")) method = QStringLiteral("setProperty");
     QJsonObject args;
     if (mode == QStringLiteral("transport-caps-badargs")) args.insert(QStringLiteral("unknown"), true);
@@ -309,8 +310,8 @@ int runSessionClient(const QStringList &arguments)
         return response.value(QStringLiteral("ok")) == QJsonValue(false)
             && response.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")) == QJsonValue(code) ? 0 : 90;
     }
-    if (mode == QStringLiteral("write-denied") || mode == QStringLiteral("unknown-method")) {
-        const QString code = mode == QStringLiteral("write-denied") ? QStringLiteral("permission_denied") : QStringLiteral("unsupported_method");
+    if (mode == QStringLiteral("write-denied") || mode == QStringLiteral("capture-denied") || mode == QStringLiteral("unknown-method")) {
+        const QString code = mode == QStringLiteral("unknown-method") ? QStringLiteral("unsupported_method") : QStringLiteral("permission_denied");
         return response.value(QStringLiteral("ok")) == QJsonValue(false)
             && response.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")) == QJsonValue(code) ? 0 : 83;
     }
@@ -1832,9 +1833,15 @@ void McpIpcTest::sessionWindowPermissions()
     QVERIFY(run(QStringLiteral("write-denied")));
     QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
     const QString pairId = before.first().pairId;
+    QVERIFY(run(QStringLiteral("capture-denied")));
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
     QVERIFY(!server.updatePermissions(pairId, Read | (KnownScopes + 1)));
     QVERIFY(server.updatePermissions(pairId, Read | ShowWindows | CaptureWindows));
     QVERIFY(run(QStringLiteral("auth")));
+    QCOMPARE(last.scopes, quint32(Read | ShowWindows | CaptureWindows));
+    QCOMPARE(last.permissionEpoch, quint64(3));
+    QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
+    QVERIFY(run(QStringLiteral("capture-allowed")));
     QCOMPARE(last.scopes, quint32(Read | ShowWindows | CaptureWindows));
     QCOMPARE(last.permissionEpoch, quint64(3));
     QCOMPARE(prompts, 1);

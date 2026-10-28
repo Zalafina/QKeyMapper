@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十一项业务能力、十二工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
+官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十二项业务能力、十三工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
 桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
@@ -62,17 +62,17 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 9. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
 10. 能力包含 `windows.read` 时，`qkm_query({"entity":"windows"})` 只观察当前已认证实例的 main／item_setup 两个固定角色；仅接受 entity／offset／limit，offset 为 0–2，limit 为 1–100。返回实际 EXE／PID／创建时间／GUI 线程桌面、Qt／原生可见、最小化、前台精确采样、逻辑尺寸／DPR及不透明 window_ref。未创建原生窗口时引用为 null，不为查询调用 winId 创建或显示窗口。该查询只需 Read，不授予或调用显示／截图，也不读取其他进程窗口。
 
-窗口引用仅属于实例／配对权限代次及本角色窗口生命周期，关闭／隐藏重开、呈现／原生窗口重建、销毁或身份／权限改变后失效；正常返回 Agent 导致的焦点变化不使其失效。`foreground_exact` 和 `foreground_in_instance` 是本次采样，不代表已请求激活或已核实前台显示。引用不证明映射源／场景未变，也不授权操作；未来截图须独立核对业务源。本阶段未提供消费该引用的正式显示／截图方法。
+窗口引用仅属于实例／配对权限代次及本角色窗口生命周期，关闭／隐藏重开、呈现／原生窗口重建、销毁或身份／权限改变后失效；正常返回 Agent 导致的焦点变化不使其失效。`foreground_exact` 和 `foreground_in_instance` 是本次采样，不代表已请求激活或已核实前台显示。引用不证明映射源／场景未变，也不授权操作；截图独立核对业务源及源Tab；当前尚无正式显示／打开窗口工具。
 
 管理窗口的“显示窗口”与“截取窗口图像”是各自独立的权限，默认不授予，也不包含在 Read／Configure／Run mapping 中。新配对可单独勾选；已有配对在接口启用后，选中实际客户端，点击“授权窗口权限”追加批准，已有权限和配对密钥保留。批准实际新增权限后权限代次递增、该客户端的旧连接断开；使用 qkm_connect 明确重连取得新权限，无需重新配对。取消或没有新增项不写盘；保存失败关闭 MCP，原授权未成功改变。旧引用／预览属于原权限代次，应重新查询。
 
-DEMO-P1-105 只交付以上授权基础，当前仍是十二个工具，尚无正式窗口显示或截图方法；不能因获得权限就假设接口存在，后续以实际能力发现为准。写有新权限的配对文件会被不认识这些范围位的旧产品拒绝，升级／部署应使用匹配版本，不自动删存储或降级权限恢复连接。
+DEMO-P1-105交付授权基础，107／108新增窗口观察和捕获；显示入口仍待。不能因获得权限就假设接口存在，须查询实际能力。写有新权限的配对文件会被不认识这些范围位的旧产品拒绝，升级／部署应使用匹配版本，不自动删存储或降级权限恢复连接。
 
 目录只提供配置名称和当前 Tab 元数据；display_name 来自下拉框条目文本，空白项可为空字符串，通过 kind=draft 区分，不能仅按显示名定位。saved_profile 的内容未加载查询，未附着共通表也有 attached_to_ui=false 的目录记录，这不表示屏幕可见性。selected_configuration／is_selected 只表示界面选择。catalog_ref 和目录修订号不是映射编辑目标或完整业务修订，不能据此提交变更；权限仍由认证与逐请求检查决定。
 
 源查询要求 GUI idle、Worker stopped、最近加载成功，且读取基准为初始静止（read_basis=pristine_idle，cleanup_generation=null）或仍有效的完整清理许可（read_basis=completed_cleanup，cleanup_generation 为本实例清理代次字符串）；否则 context_busy，不主动停止映射。生命周期请求、按钮排队、任务构造和同步／包装在相关处理前记录活动修订，与在途复制互斥。只有完整停止协调、所有者／发送池及 GUI 尾部完成后，才在互斥内记录清理对应修订；任何后续活动或饱和值均拒绝该许可，不能仅凭 IDLE／STOPPED 或零计数恢复。相同映射跨启停后也必须重新查询引用。此许可只用于复制源数据，不能授权删除／修改源表或替代正式启停操作结果。source_snapshot 的配置选择和最近加载记录不能证明每行磁盘来源；未附着的共通备份可能保留自之前的配置，origin=source_memory 只证明当前内存来源。源修订仍不是完整业务修订。
 
-连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前十二个工具的 schema 均声明 `additionalProperties=false`，参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
+连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前十三个工具的 schema 均声明 `additionalProperties=false`，参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
 
 ## 基本映射的预览与提交
 
@@ -138,3 +138,15 @@ Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际�
 正式产品的--load-fixture warm现在还运行基本映射等价性套件，需明确授权私有桌面Read+Configure批准与固定GUI添加A→B，不能沿用仅只读助手范围。test_source_interop.py末段同样需要Read+Configure及共通C→B／禁用普通C的固定变更授权；不启动映射、写INI或发送系统输入。完整保存／冷启动和MCP启停尚未接入；Default真实输入使用独立input_regression入口及其授权。
 
 此切片是本地开发检查点，完整进度见 [主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。SDK API 依据 [官方 Python SDK](https://github.com/modelcontextprotocol/python-sdk) 及本环境固定版本的已安装源码核对。
+
+## 受限真实窗口图片（P1-108）
+
+先查询 `mapping_sources`／`mappings` 取得当前 `source_revision`、所选 `source_tab_ref`，再查询 `windows` 取得非空 `window_ref`。能力包含 `windows.capture` 且配对有 **Read+CaptureWindows** 时，调用 `qkm_capture_window(role, window_ref, source_revision, source_tab_ref)`；role仅main／item_setup，四项均必填，无PID／HWND／输出路径。main须显示所选源Tab，单项窗须对应实际源Tab／行；窗口必须已显示且非最小化。工具不打开、恢复或激活窗口，当前单项窗仍由原GUI打开。
+
+成功的 `CallToolResult.content` 含一项原生 `ImageContent(type="image", mime_type="image/png", data=<Base64>)` 及不重复图片Base64的JSON文本；`structured_content.result`为相同元数据。包括准确实例／进程创建身份、实际桌面、角色／窗口引用、源及源Tab／单项行、像素／DPR／PNG字节数、UTC时间和桥接计算的SHA256。Agent可直接查看原生图像；gateway应按其SDK取出image内容或解码成自己的受控附件，再关联QQ会话发送。MCP返回图片不证明QQ发送或送达，本机没有gateway联调环境。
+
+仅实时Qt客户区，最多160KiB PNG／8M像素，整体受通信帧限制；超限拒绝，不缩放／截断。原生边框、独立弹窗／原生子窗及滚动隐藏内容不包含。源修订证明底层内存，`presentation=live_qt_client_ui_drafts_may_be_visible`提醒其他控件草稿可能可见；不证明所有UI已提交或已保存。单项三个键文本未应用变更时明确拒绝，先通过获准业务流程处理草稿。完整专用演示重置仍待P2。
+
+失败返回is_error及文本／结构化错误，无image内容：常见permission_denied、stale_window、stale_source、context_busy、window_unavailable、capture_timeout、image_too_large、invalid_image。关闭导致原生句柄消失时window_ref为null，不可提交；重新观察。显示后焦点转回Agent本身不使引用失效，但生命周期／源／权限变化必须重新查询。接口五秒截止并在短绘制等待前后复核；损坏图片被桥接拒绝且连接关闭，不返回旧图或自动重试。
+
+正式工具只传内存内容，不创建图片文件或历史缓存；若gateway落盘，须由普通权限接线端限制目录、文件名、大小、数量、保留时间及清理归属。开发SDK在out保存的PNG仅是证据，不是已交付文件产物服务。测试入口 `tests/test_images.py`（7项）和 `tests/window_checks.py`；Win11双Qt实际图片及拒绝范围见同一主计划／C1证据。Win10、高DPI、Default因果、代表高级页、正式预热、免Python交付及QQ渠道仍待。

@@ -8,7 +8,7 @@ from typing import Annotated, Any, Literal
 
 from mcp.server import MCPServer
 from mcp.server.mcpserver.tools import Tool
-from mcp.types import CallToolResult, TextContent, ToolAnnotations
+from mcp.types import CallToolResult, ImageContent, TextContent, ToolAnnotations
 from pydantic import Field, StrictBool, StrictInt
 
 from . import __version__
@@ -23,6 +23,12 @@ _ERROR_FEEDBACK = {
     "context_busy": ("当前状态不能安全完成此操作。", "查询产品状态和受阻原因；操作不会自动停止映射。需要空闲的修改须取得停止同意、等待清理后重新预览。"),
     "stale_catalog": ("配置或 Tab 目录已变化。", "重新查询目录，使用新引用核对原操作目标。"),
     "stale_source": ("源数据或其身份／授权上下文已变化。", "重新查询实际源，核对目标后重新预览，勿直接重发旧写入。"),
+    "stale_window": ("窗口引用已失效。", "重新查询本实例窗口，核对角色及当前源后再请求。"),
+    "window_unavailable": ("目标窗口未显示或仍最小化。", "通过获准的显示流程恢复目标，再重新查询窗口；截图不会自动激活。"),
+    "capture_timeout": ("截图未在本次时限内完成。", "核对实例及窗口状态后重新查询；不会返回上一张图片。"),
+    "image_too_large": ("窗口图片超过像素或PNG大小上限。", "缩小已核实的目标窗口或选择受支持页面，重新查询；不会自动缩放或截断。"),
+    "capture_failed": ("本次窗口图像未能取得。", "核对已显示的受支持窗口，重新查询窗口和源。"),
+    "invalid_image": ("图像结果未通过身份、格式或大小校验。", "未返回图片；核对目标及错误码，保留本次记录后调查。"),
     "stale_preview": ("预览已失效、被消费或结果不可用。", "先用 operation_id 查询结果；未知时重新核对实际源，勿盲目重复写入。"),
     "preview_expired": ("预览已过期，未执行本次修改。", "重新查询源并预览，核对后提交新的预览。"),
     "preview_superseded": ("较新的预览已替换原预览。", "核对当前预览内容及其 ID，勿提交旧预览。"),
@@ -46,7 +52,8 @@ _ERROR_FEEDBACK = {
 _PRODUCT_ERRORS = frozenset({"context_busy", "stale_catalog", "stale_source", "permission_denied",
     "invalid_arguments", "unsupported_capability", "unsupported_method", "unsupported_query",
     "result_too_large", "item_too_large", "invalid_source_data", "stale_preview", "preview_expired",
-    "preview_superseded", "preview_limit", "operation_limit", "confirmation_required", "save_write_failed", "save_reload_failed"})
+    "preview_superseded", "preview_limit", "operation_limit", "confirmation_required", "save_write_failed", "save_reload_failed",
+    "stale_window", "window_unavailable", "capture_timeout", "image_too_large", "capture_failed"})
 
 
 def tool_result(value: dict[str, Any]) -> CallToolResult:
@@ -61,6 +68,19 @@ def tool_result(value: dict[str, Any]) -> CallToolResult:
         value = {**value, "ok": False, "error": code, "message": message, "next_steps": [next_step]}
     return CallToolResult(content=[TextContent(type="text", text=json.dumps(value, ensure_ascii=False))],
                           structured_content=value, is_error=failed)
+
+
+def image_tool_result(value: dict[str, Any]) -> CallToolResult:
+    if value.get("ok") is not True:
+        return tool_result(value)
+    payload = value.get("result")
+    if type(payload) is not dict or type(payload.get("png_base64")) is not str:
+        return tool_result({"ok": False, "error": "invalid_image"})
+    metadata = dict(payload)
+    encoded = metadata.pop("png_base64")
+    result = tool_result({**value, "result": metadata})
+    result.content.insert(0, ImageContent(type="image", data=encoded, mime_type="image/png"))
+    return result
 
 
 def main() -> None:
@@ -186,6 +206,15 @@ def main() -> None:
             preview_id: Annotated[str, Field(min_length=32, max_length=32, pattern="^[0-9a-f]{32}$")]) -> ToolResult:
         """取消本配对尚未提交的预览，不撤销已经应用的修改、不停止映射。允许查询／取消期间状态变化；已消费或未知时先查询操作结果。"""
         return tool_result(await bridge.cancel_changes(preview_id))
+
+    @tool(read)
+    async def qkm_capture_window(
+            role: Literal["main", "item_setup"],
+            window_ref: Annotated[str, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")],
+            source_revision: Annotated[str, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")],
+            source_tab_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")]) -> ToolResult:
+        """截取本实例当前已显示、非最小化的受支持Qt窗口，必须另获CaptureWindows；Read、Configure或ShowWindows不能代替。先查询windows取得本角色window_ref，并查询mapping_sources取得当前source_revision及所选source_tab_ref；窗口须正展示该源，不自动切换Tab。绘制等待前后复核请求、窗口、完整源及安全停止上下文；单项窗存在未应用键文本、弹窗、陈旧或超时明确失败。不会显示、恢复、激活、开始映射或注入输入。返回160KiB内PNG原生图片和不含Base64的实例／源／窗口／尺寸元数据；仅Qt客户区，独立弹窗／原生边框不包含，实时UI可能显示其他未提交控件。没有文件路径参数，不落盘；图片不代表已保存，也不代表QQ已发送。"""
+        return image_tool_result(await bridge.capture_window(role, window_ref, source_revision, source_tab_ref))
 
     @tool(read)
     async def qkm_get_operation(

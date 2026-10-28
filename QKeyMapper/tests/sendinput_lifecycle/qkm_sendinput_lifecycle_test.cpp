@@ -3229,7 +3229,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
-    const bool demoCapture = publicApply && connectionVariant == QStringLiteral("demo_capture");
+    const bool demoCapture = publicApply && (connectionVariant == QStringLiteral("demo_capture")
+        || connectionVariant == QStringLiteral("demo_mcp_capture"));
     const bool cleanupCase = publicApply && (connectionVariant == QStringLiteral("cleanup_stop")
         || connectionVariant == QStringLiteral("cleanup_timeout") || cleanupReturn);
     if (!directory.contains(QStringLiteral("/out/")) || mapper->m_McpControlDialog->server().isEnabled()) {
@@ -3265,7 +3266,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     approval->stop();
                     approval->deleteLater();
                     const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
-                    const quint32 scopes = variant == QStringLiteral("read") || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
+                    quint32 scopes = variant == QStringLiteral("read") || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
+                    if (variant == QStringLiteral("demo_mcp_capture")) scopes |= CaptureWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);
@@ -3357,6 +3359,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             };
             auto *poll = new QTimer(mapper);
             auto stage = QSharedPointer<int>::create(0);
+            auto draftStage = QSharedPointer<int>::create(0);
+            auto minimizeStage = QSharedPointer<int>::create(0);
             auto waiting = QSharedPointer<bool>::create(false);
             QObject::connect(poll, &QTimer::timeout, mapper, [=]() {
                 if (*waiting) return;
@@ -3385,6 +3389,43 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                         if (!original || !mapping || original->text() != QStringLiteral("A") || mapping->text() != QStringLiteral("B")
                             || !frame(dialog, QStringLiteral("item_setup"))) { finish(false); return; }
                         *stage = 2; *waiting = false;
+                    });
+                } else if (*stage == 2
+                    && ((*draftStage == 0 && QFileInfo::exists(output + QStringLiteral(".pending-key-request")))
+                        || (*draftStage == 1 && QFileInfo::exists(output + QStringLiteral(".restore-key-request"))))) {
+                    auto *edit = mapper->m_ItemSetupDialog->findChild<QLineEdit *>(QStringLiteral("SetupDialog_MappingKeyLineEdit"));
+                    if (!edit) { finish(false); return; }
+                    const bool restore = *draftStage == 1;
+                    QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier),
+                        selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+                    QCoreApplication::sendEvent(edit, &select); QCoreApplication::sendEvent(edit, &selected);
+                    const QString text = restore ? QStringLiteral("B") : QStringLiteral("C");
+                    QKeyEvent press(QEvent::KeyPress, restore ? Qt::Key_B : Qt::Key_C, Qt::ShiftModifier, text),
+                        released(QEvent::KeyRelease, restore ? Qt::Key_B : Qt::Key_C, Qt::ShiftModifier, text);
+                    QCoreApplication::sendEvent(edit, &press); QCoreApplication::sendEvent(edit, &released);
+                    const bool unchanged = QKeyMapper::KeyMappingDataList && QKeyMapper::KeyMappingDataList->size() == 1
+                        && QKeyMapper::KeyMappingDataList->first().Mapping_Keys == QStringList{QStringLiteral("B")};
+                    if (edit->text() != text || !unchanged) { finish(false); return; }
+                    QSaveFile file(output + (restore ? QStringLiteral(".restored-key-applied") : QStringLiteral(".pending-key-applied")));
+                    const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("text"), edit->text()},
+                        {QStringLiteral("source_unchanged"), unchanged}}).toJson();
+                    if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) { finish(false); return; }
+                    ++*draftStage;
+                } else if (*stage == 2
+                    && ((*minimizeStage == 0 && QFileInfo::exists(output + QStringLiteral(".minimize-main-request")))
+                        || (*minimizeStage == 1 && QFileInfo::exists(output + QStringLiteral(".restore-main-request"))))) {
+                    const bool minimize = *minimizeStage == 0;
+                    if (minimize) mapper->showMinimized();
+                    else mapper->showNormal();
+                    *waiting = true;
+                    QTimer::singleShot(100, mapper, [=]() {
+                        const bool native = IsIconic(reinterpret_cast<HWND>(mapper->internalWinId())) != FALSE;
+                        if (mapper->isMinimized() != minimize || native != minimize) { finish(false); return; }
+                        QSaveFile file(output + (minimize ? QStringLiteral(".main-minimized") : QStringLiteral(".main-restored")));
+                        const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("minimized"), minimize},
+                            {QStringLiteral("native_minimized"), native}}).toJson();
+                        if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) { finish(false); return; }
+                        ++*minimizeStage; *waiting = false;
                     });
                 } else if (*stage == 2 && QFileInfo::exists(output + QStringLiteral(".capture-close"))) {
                     auto *dialog = mapper->m_ItemSetupDialog;

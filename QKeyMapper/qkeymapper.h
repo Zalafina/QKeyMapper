@@ -2103,6 +2103,7 @@ private:
     QJsonObject collectAutomationCatalog(void) const;
     QJsonObject collectAutomationSourceSnapshot(QString &errorCode) const;
     void handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request);
+    void handleAutomationWindowCapture(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMappingChange(const QkmAutomation::AutomationRequest &request);
     void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
     void handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request);

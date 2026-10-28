@@ -649,6 +649,12 @@ QPushButton *QItemSetupDialog::getMapListSelectFunctionButton() const
     return ui->mapList_SelectFunctionButton;
 }
 
+bool QItemSetupDialog::matchesSourceKeyText(const QString &original, const QString &mapping, const QString &keyUp) const
+{
+    return ui->originalKeyLineEdit->text() == original && ui->SetupDialog_MappingKeyLineEdit->text() == mapping
+        && ui->SetupDialog_MappingKey_KeyUpLineEdit->text() == keyUp;
+}
+
 QString QItemSetupDialog::getOriginalKeyText()
 {
     return getInstance()->ui->originalKeyLineEdit->text();

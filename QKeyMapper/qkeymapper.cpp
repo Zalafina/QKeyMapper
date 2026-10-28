@@ -4,6 +4,7 @@
 #include "automation/qkm_mapping_help.h"
 #include "automation/qkm_mapping_changes.h"
 #include "automation/qkm_window_access.h"
+#include "automation/qkm_window_image.h"
 #include <QtMath>
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
@@ -38360,9 +38361,127 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     server.reply(request.connectionId, request.requestId, operation);
 }
 
+void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRequest &request)
+{
+    using namespace QkmAutomation;
+    auto &server = m_McpControlDialog->server();
+    if (!server.isRequestCurrent(request)) return;
+    if ((request.scopes & (Read | CaptureWindows)) != (Read | CaptureWindows)) {
+        server.replyError(request.connectionId, request.requestId, QStringLiteral("permission_denied"),
+            QStringLiteral("CaptureWindows permission is required."));
+        return;
+    }
+    const auto arguments = parseWindowCaptureArguments(request.arguments);
+    if (!arguments.ok()) {
+        server.replyError(request.connectionId, request.requestId, QStringLiteral("invalid_arguments"),
+            QStringLiteral("Use one supported role, window_ref, source_revision and source_tab_ref; no native target or path is accepted."));
+        return;
+    }
+    const QDeadlineTimer deadline(5000, Qt::PreciseTimer);
+    const auto validate = [this, request, arguments](QPointer<QWidget> &window, QJsonObject &metadata) -> QString {
+        auto &current = m_McpControlDialog->server();
+        if (!current.isRequestCurrent(request)) return QStringLiteral("request_not_current");
+        window = m_AutomationWindows ? m_AutomationWindows->resolve(arguments.role, arguments.windowReference,
+            current.instanceId(), request.pairId, request.permissionEpoch) : nullptr;
+        if (!window) return QStringLiteral("stale_window");
+        if (!window->isVisible() || window->isMinimized()
+            || !IsWindowVisible(reinterpret_cast<HWND>(window->internalWinId()))) return QStringLiteral("window_unavailable");
+        if (QApplication::activeModalWidget() || QApplication::activePopupWidget()) return QStringLiteral("context_busy");
+        QString sourceError;
+        const QJsonObject snapshot = collectAutomationSourceSnapshot(sourceError);
+        if (snapshot.isEmpty()) return sourceError.isEmpty() ? QStringLiteral("context_busy") : sourceError;
+        const auto source = querySourceSnapshot(snapshot, current.instanceId(), request.pairId, request.permissionEpoch,
+            {{QStringLiteral("entity"), QStringLiteral("mappings")},
+                {QStringLiteral("source_revision"), arguments.sourceRevision},
+                {QStringLiteral("source_tab_ref"), arguments.sourceTabReference}, {QStringLiteral("limit"), 1}});
+        if (!source.ok()) return source.errorCode;
+        const auto selected = source.page.value(QStringLiteral("source")).toObject();
+        const int sourceTab = selected.value(QStringLiteral("ui_index")).toInt(-1);
+        if (!selected.value(QStringLiteral("attached_to_ui")).toBool() || sourceTab < 0
+            || (arguments.role == QStringLiteral("main") && sourceTab != s_KeyMappingTabWidgetCurrentIndex)
+            || (arguments.role == QStringLiteral("item_setup") && sourceTab != m_ItemSetupDialog->getTabIndex()))
+            return QStringLiteral("stale_source");
+        const auto windows = m_AutomationWindows->query(current.instanceId(), request.pairId, request.permissionEpoch,
+            {{QStringLiteral("entity"), QStringLiteral("windows")}});
+        if (!windows.ok()) return windows.errorCode;
+        metadata = {{QStringLiteral("target"), windows.page.value(QStringLiteral("target"))},
+            {QStringLiteral("role"), arguments.role}, {QStringLiteral("window_ref"), arguments.windowReference},
+            {QStringLiteral("source_revision"), arguments.sourceRevision},
+            {QStringLiteral("source_tab_ref"), arguments.sourceTabReference},
+            {QStringLiteral("source_context"), source.page.value(QStringLiteral("source_snapshot"))},
+            {QStringLiteral("presentation"), QStringLiteral("live_qt_client_ui_drafts_may_be_visible")}};
+        if (arguments.role == QStringLiteral("item_setup")) {
+            const int tab = m_ItemSetupDialog->getTabIndex(), row = m_ItemSetupDialog->getItemRow();
+            const auto sources = snapshot.value(QStringLiteral("sources")).toArray();
+            if (window != m_ItemSetupDialog || tab < 0 || tab >= s_KeyMappingTabInfoList.size()
+                || tab >= sources.size() || row < 0
+                || KeyMappingDataList != s_KeyMappingTabInfoList.at(tab).KeyMappingData) return QStringLiteral("context_busy");
+            const auto rows = sources.at(tab).toObject().value(QStringLiteral("rows")).toArray();
+            if (row >= rows.size()) return QStringLiteral("context_busy");
+            const auto fields = rows.at(row).toObject().value(QStringLiteral("fields")).toObject();
+            const auto keys = [&](const char *name) {
+                QStringList values;
+                for (const auto &value : fields.value(QLatin1String(name)).toArray()) values.append(value.toString());
+                return values.join(SEPARATOR_NEXTARROW);
+            };
+            const QString mapping = keys(KEYMAPDATA_MAPPINGKEYS);
+            QString keyUp = keys(KEYMAPDATA_MAPPINGKEYS_KEYUP);
+            if (keyUp.isEmpty()) keyUp = mapping;
+            if (!m_ItemSetupDialog->matchesSourceKeyText(fields.value(QString::fromLatin1(KEYMAPDATA_ORIGINALKEYS)).toString(),
+                mapping, keyUp)) return QStringLiteral("context_busy");
+            metadata.insert(QStringLiteral("edit_target"), QJsonObject{
+                {QStringLiteral("source_tab_ref"), arguments.sourceRevision + QStringLiteral(":source:") + QString::number(tab)},
+                {QStringLiteral("source_ref"), arguments.sourceRevision + QStringLiteral(":row:") + QString::number(tab) + QLatin1Char(':') + QString::number(row)},
+                {QStringLiteral("source_row"), row}});
+        }
+        return {};
+    };
+    const auto reject = [this, request](const QString &code) {
+        if (m_McpControlDialog->server().isRequestCurrent(request))
+            m_McpControlDialog->server().replyError(request.connectionId, request.requestId, code,
+                QStringLiteral("Capture was not returned. Re-query the visible window and current safe source; apply or cancel pending key edits and close unsupported popups."));
+    };
+    QPointer<QWidget> initialWindow;
+    QJsonObject initialMetadata;
+    const QString initialError = validate(initialWindow, initialMetadata);
+    if (!initialError.isEmpty()) { reject(initialError); return; }
+    QTimer::singleShot(100, this, [this, request, validate, reject, deadline, initialWindow, initialMetadata]() {
+        if (!m_McpControlDialog->server().isRequestCurrent(request)) return;
+        if (deadline.hasExpired()) { reject(QStringLiteral("capture_timeout")); return; }
+        QPointer<QWidget> window;
+        QJsonObject metadata;
+        QString error = validate(window, metadata);
+        if (!error.isEmpty()) { reject(error); return; }
+        if (window != initialWindow || metadata != initialMetadata) { reject(QStringLiteral("stale_window")); return; }
+        const auto image = captureOwnWindow(window.data(), MaxTransportWindowImageBytes);
+        if (!image.ok()) { reject(image.errorCode); return; }
+        QPointer<QWidget> afterWindow;
+        QJsonObject afterMetadata;
+        error = validate(afterWindow, afterMetadata);
+        if (!error.isEmpty()) { reject(error); return; }
+        if (window != afterWindow || metadata != afterMetadata) { reject(QStringLiteral("stale_window")); return; }
+        if (deadline.hasExpired()) { reject(QStringLiteral("capture_timeout")); return; }
+        metadata.insert(QStringLiteral("format"), QStringLiteral("image/png"));
+        metadata.insert(QStringLiteral("pixel_width"), image.pixelSize.width());
+        metadata.insert(QStringLiteral("pixel_height"), image.pixelSize.height());
+        metadata.insert(QStringLiteral("device_pixel_ratio"), image.devicePixelRatio);
+        metadata.insert(QStringLiteral("bytes"), image.png.size());
+        metadata.insert(QStringLiteral("captured_at_utc"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs));
+        metadata.insert(QStringLiteral("png_base64"), QString::fromLatin1(image.png.toBase64()));
+        if (QJsonDocument(metadata).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 1024) {
+            reject(QStringLiteral("result_too_large")); return;
+        }
+        m_McpControlDialog->server().reply(request.connectionId, request.requestId, metadata);
+    });
+}
+
 void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
+    if (request.method == QStringLiteral("qkm_capture_window")) {
+        handleAutomationWindowCapture(request);
+        return;
+    }
     if (QkmAutomation::isMappingChangeMethod(request.method)) {
         handleAutomationMappingChange(request);
         return;
@@ -38454,7 +38573,7 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                     QStringLiteral("mapping_rows_require_source_revision_and_source_tab_ref"),
                     QStringLiteral("memory_provenance_only_not_disk_origin"), QStringLiteral("source_revision_is_not_a_business_revision"),
                     QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}},
-            QkmAutomation::mappingHelpCapability(), QkmAutomation::windowQueryCapability()};
+            QkmAutomation::mappingHelpCapability(), QkmAutomation::windowQueryCapability(), QkmAutomation::windowCaptureCapability()};
         const QJsonArray mappingCapabilities = QkmAutomation::mappingChangeCapabilities();
         for (const auto &capability : mappingCapabilities) businessCapabilities.append(capability);
         server.replyCapabilities(request.connectionId, request.requestId, businessCapabilities);

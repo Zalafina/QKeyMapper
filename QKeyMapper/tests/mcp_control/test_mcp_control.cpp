@@ -3,6 +3,7 @@
 #include "../../automation/qkm_mapping_help.h"
 #include "../../automation/qkm_mapping_changes.h"
 #include "../../automation/qkm_window_access.h"
+#include "../../automation/qkm_window_image.h"
 #include "../../qkm_mapping_source_access.h"
 #include "../../qkeymapper_qt_compat.h"
 #include "../../qkeymapper_constants.h"
@@ -145,6 +146,7 @@ private slots:
     void windowPermissions_data();
     void windowPermissions();
     void windowObservation();
+    void windowCaptureBoundaries();
     void rejectAndClose_data();
     void rejectAndClose();
     void enableFailure();
@@ -1303,6 +1305,57 @@ void McpControlTest::windowObservation()
     std::thread worker([&]() { wrongThread = query(); });
     worker.join();
     QCOMPARE(wrongThread.errorCode, QStringLiteral("context_busy"));
+}
+
+void McpControlTest::windowCaptureBoundaries()
+{
+    const QJsonObject valid{{QStringLiteral("role"), QStringLiteral("main")},
+        {QStringLiteral("window_ref"), QString(64, QLatin1Char('a'))},
+        {QStringLiteral("source_revision"), QString(64, QLatin1Char('b'))},
+        {QStringLiteral("source_tab_ref"), QString(64, QLatin1Char('b')) + QStringLiteral(":source:0")}};
+    QVERIFY(parseWindowCaptureArguments(valid).ok());
+    auto item = valid;
+    item[QStringLiteral("role")] = QStringLiteral("item_setup");
+    QVERIFY(parseWindowCaptureArguments(item).ok());
+    for (const auto &extra : QList<QJsonObject>{
+            {{QStringLiteral("role"), QStringLiteral("other")}}, {{QStringLiteral("role"), true}},
+            {{QStringLiteral("window_ref"), QString(63, QLatin1Char('a'))}},
+            {{QStringLiteral("window_ref"), QString(64, QLatin1Char('A'))}},
+            {{QStringLiteral("source_revision"), 1}}, {{QStringLiteral("pid"), 1}},
+            {{QStringLiteral("hwnd"), QStringLiteral("1")}}, {{QStringLiteral("path"), QStringLiteral("image.png")}}}) {
+        auto invalid = valid;
+        for (auto it = extra.begin(); it != extra.end(); ++it) invalid.insert(it.key(), it.value());
+        QVERIFY(!parseWindowCaptureArguments(invalid).ok());
+    }
+    item.remove(QStringLiteral("source_revision"));
+    QVERIFY(!parseWindowCaptureArguments(item).ok());
+    QWidget window;
+    window.resize(64, 48);
+    window.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&window));
+    const auto image = captureOwnWindow(&window, MaxTransportWindowImageBytes);
+    QVERIFY(image.ok());
+    QVERIFY(image.png.startsWith(QByteArray::fromHex("89504e470d0a1a0a")));
+    QCOMPARE(image.pixelSize, QSize(qRound(window.width() * image.devicePixelRatio), qRound(window.height() * image.devicePixelRatio)));
+    QVERIFY(image.png.size() > 1);
+    const auto limited = captureOwnWindow(&window, int(image.png.size()) - 1);
+    QCOMPARE(limited.errorCode, QStringLiteral("image_too_large"));
+    QVERIFY(limited.png.isEmpty());
+    QVERIFY(captureOwnWindow(&window, int(image.png.size())).ok());
+    QCOMPARE(captureOwnWindow(&window, 0).errorCode, QStringLiteral("invalid_window_context"));
+    QCOMPARE(captureOwnWindow(&window, MaxWindowImageBytes + 1).errorCode, QStringLiteral("invalid_window_context"));
+    window.resize(4096, 2049);
+    QVERIFY(double(window.width()) * window.height() * window.devicePixelRatioF() * window.devicePixelRatioF() > MaxWindowImagePixels);
+    const auto large = captureOwnWindow(&window, MaxTransportWindowImageBytes);
+    QCOMPARE(large.errorCode, QStringLiteral("image_too_large"));
+    QVERIFY(large.png.isEmpty());
+    window.hide();
+    QCOMPARE(captureOwnWindow(&window).errorCode, QStringLiteral("window_unavailable"));
+    WindowImage denied;
+    std::thread worker([&]() { denied = captureOwnWindow(&window); });
+    worker.join();
+    QCOMPARE(denied.errorCode, QStringLiteral("invalid_window_context"));
+    QVERIFY(denied.png.isEmpty());
 }
 
 void McpControlTest::rejectAndClose_data()
