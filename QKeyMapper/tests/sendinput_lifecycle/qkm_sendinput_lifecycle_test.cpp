@@ -91,6 +91,7 @@ public:
     static QJsonObject saveContext(QKeyMapper *mapper, const QkmAutomation::AutomationRequest &request);
     static QJsonObject saveExecution(QKeyMapper *mapper, const QkmAutomation::AutomationRequest &request);
     static QJsonObject tableState(QKeyMapper *mapper);
+    static QJsonObject mappingRemovalGui(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
     static void uiLocalizationWindows(QKeyMapper *mapper, QJsonObject &evidence)
@@ -1236,6 +1237,13 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_remove_gui")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::mappingRemovalGui(QKeyMapper::getInstance());
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2662,6 +2670,73 @@ QJsonObject QkmMappingAdditionTestAccess::windowMatchSave(QKeyMapper *mapper, bo
     return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
         {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
+QJsonObject QkmMappingAdditionTestAccess::mappingRemovalGui(QKeyMapper *mapper)
+{
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
+    const bool common = variant.startsWith(QStringLiteral("common_"));
+    const bool all = variant != QStringLiteral("common_first");
+    if (!mapper || (variant != QStringLiteral("normal_last") && variant != QStringLiteral("common_first")
+        && variant != QStringLiteral("common_all"))) return {{QStringLiteral("passed"), false}};
+    const auto key = [](QObject *target, int code, Qt::KeyboardModifiers modifiers = Qt::NoModifier) {
+        QKeyEvent press(QEvent::KeyPress, code, modifiers), release(QEvent::KeyRelease, code, modifiers);
+        QCoreApplication::sendEvent(target, &press); QCoreApplication::sendEvent(target, &release);
+    };
+    const auto click = [](QWidget *target, const QPoint &point) {
+        const QPointF top = target->mapTo(target->window(), point), screen = target->mapToGlobal(point);
+        QMouseEvent press(QEvent::MouseButtonPress, point, top, screen, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+        QMouseEvent release(QEvent::MouseButtonRelease, point, top, screen, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(target, &press); QCoreApplication::sendEvent(target, &release);
+    };
+    const auto disk = [] { QFile file(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+        return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray ini = disk();
+    const quint64 load = mapper->m_MappingLoadGeneration;
+    const int target = common ? QKeyMapper::findCommonMappingTabIndex() : QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (common) {
+        auto *tabs = mapper->findChild<QTabWidget *>(QStringLiteral("keyMappingTabWidget"));
+        if (!tabs || target < 0) return {{QStringLiteral("passed"), false}};
+        click(tabs->tabBar(), tabs->tabBar()->tabRect(target).center());
+    }
+    check(!ini.isEmpty() && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE
+        && QKeyMapper::s_KeyMappingTabWidgetCurrentIndex == target, "normal startup and actual Qt tab click select the intended idle source");
+    QString error;
+    const auto before = mapper->collectAutomationSourceSnapshot(error);
+    if (!error.isEmpty() || before.isEmpty() || target < 0) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    const auto sources = before.value(QStringLiteral("sources")).toArray();
+    if (target >= sources.size()) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    auto expectedRows = sources.at(target).toObject().value(QStringLiteral("rows")).toArray();
+    check(expectedRows.size() == (common ? 2 : 1), "synthetic normal and common row counts match the fixed fixture");
+    auto *table = mapper->m_KeyMappingDataTable;
+    if (!table || expectedRows.isEmpty()) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    click(table->viewport(), table->visualRect(table->model()->index(0, 0)).center());
+    if (all) key(table, Qt::Key_A, Qt::ControlModifier);
+    check(table->currentRow() == 0 && !table->selectedItems().isEmpty(), "real Qt table events select the deletion target");
+    key(table, Qt::Key_Delete);
+    if (all) expectedRows = QJsonArray(); else expectedRows.removeAt(0);
+    const auto after = mapper->collectAutomationSourceSnapshot(error);
+    const auto afterSources = after.value(QStringLiteral("sources")).toArray();
+    check(error.isEmpty() && afterSources.size() == sources.size()
+        && afterSources.at(target).toObject().value(QStringLiteral("rows")).toArray() == expectedRows,
+        "original GUI Delete removes the intended full source row and retains every remaining field and derived sample");
+    bool others = afterSources.size() == sources.size();
+    for (int i = 0; i < sources.size() && others; ++i) if (i != target) others = afterSources.at(i) == sources.at(i);
+    check(others, "all non-target source tables remain byte-equivalent JSON snapshots");
+    check(mapper->m_SaveSettingDirty && mapper->m_MappingLoadGeneration == load && disk() == ini,
+        "GUI deletion is dirty in memory without a load or INI write");
+    check(table->rowCount() == expectedRows.size() && (expectedRows.isEmpty()
+        ? table->selectedItems().isEmpty() : table->currentRow() == 0), "GUI refresh keeps an empty selection or the nearest remaining row");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("before"), before}, {QStringLiteral("after"), after}, {QStringLiteral("target_source"), target},
+        {QStringLiteral("current_row"), table->currentRow()}, {QStringLiteral("current_column"), table->currentColumn()},
+        {QStringLiteral("load_generation"), QString::number(load)}, {QStringLiteral("formal_mcp_delete"), false}};
 }
 
 QJsonObject QkmMappingAdditionTestAccess::commonSave(QKeyMapper *mapper, bool cold)
@@ -5218,7 +5293,7 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_save_dependencies"), QStringLiteral("settings_save_snapshot"),
         QStringLiteral("settings_result_save"), QStringLiteral("settings_result_cold"), QStringLiteral("settings_save_context"),
         QStringLiteral("settings_prepared_save"), QStringLiteral("settings_save_preview"), QStringLiteral("settings_save_execution"),
-        QStringLiteral("settings_save_apply"), QStringLiteral("settings_save_gui")};
+        QStringLiteral("settings_save_apply"), QStringLiteral("settings_save_gui"), QStringLiteral("settings_remove_gui")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

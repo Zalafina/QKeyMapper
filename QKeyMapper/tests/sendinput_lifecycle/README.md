@@ -88,3 +88,9 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 `settings_save_apply`／`demo_mcp_close`固定配对387=Read+Configure+ShowWindows+CaptureWindows、无Run。先按旧Qt双击／Esc形成只GUI打开的拒绝基线，然后正式MCP open／close执行两轮；旧window_ref不能关闭新窗口，C草稿需保留，恢复B后才允许关闭，最终由正式query核实不可见／源INI不变。`demo_mcp_capture`缺Show，正式close须permission_denied，再由原GUI回收；不把此GUI回收计为正式关闭。
 
 本变体GUI基线关闭后固定轮询继续处理C／B标记，stage4不再次发出Esc；最终case由SDK明确done和原有清理退出，不因STOPPED或先前关闭标记推断当前窗口已关闭。输入赋值的摘要组件与真实GUI业务基线分开记录。源行删除／演示重置及服务预热仍待；用法见[桥接说明](../../../mcp_bridge/README.md#不丢草稿的受限关闭p1-110)。
+
+## DELETE-GUI-111 原GUI删除基线
+
+`settings_remove_gui`配合`QKM_CONTEXT_VARIANT=normal_last／common_first／common_all`，期望普通启动载入固定Common76Seed合成INI：普通A→B及共通F13／F14两行，共通功能启用但普通表不附加共通。每场独立副本／INI，MCP保持默认关闭；不使用个人配置。实际Qt Tab／表格鼠标和Ctrl+A／Delete走原产品删除，禁止设置选中控件值或直接调用删除／加载函数代替基线。
+
+结果在settingsGeneral，记录完整源before／after、目标源、实际current_row／column及加载代次，七项检查包含全剩余行／其他快照源、dirty、选择与INI保持；退出／实际桌面／权限和工作计数仍由原生命周期结果及普通控制器核对。产品删除函数不改，formal_mcp_delete=false；本用例不是MCP删除或串行重置，也不覆盖过滤／附加共通／混合来源完整矩阵。当前具体结果和停止位置只维护在唯一主计划／C1证据。

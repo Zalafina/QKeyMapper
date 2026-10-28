@@ -790,3 +790,17 @@ qkm_close_mapping_editor仅source_ref、window_ref、private_background三参数
 首双Qt组件恢复数值框文本时假定为0，摘要与真实初始文本不同，各native exit1／3通过1失败；改为实取初始显示文本再恢复，两套通过。first-hidden-spin-text保留实际日志，未记录的原文本不推算。产品／gsudo未因此运行或故障。首轮正式三场均通过后，源码复核补按键记录可见子窗守卫，before-child-window-guard封存成功两正例／组件／定义／登记／summary，old-executables封存实际旧EXE及身份；重建并通过最终双Qt组件和正例。无Show负例由SessionServer在摘要前拒绝，新增分支及其他错误消息不改变该路径有效输入，沿前版22次／1次close／6项CPP原范围复用；不将其称当前EXE重验。最终身份与复用版本明确分开，不覆盖历史原件。
 
 原件out/mcp_editor_close_w11_20261028不随Git：补丁／精确字节、构建与固定轮询前后日志、首隐藏文本断言失败、子窗前成功／旧二进制、最终组件／IPC／部署／公共登记及准确SDK peer、94次调用／15次schema拒绝、十图／字节对照／visual-review、源INI／前台采样／逐场清理及summary。现15工具／14业务能力。未执行真实序列备注、数值输入或记录子窗业务交错、撤权／退出、实际Win10／高DPI／其他实例、普通Default显示确认、QQ；未选普通完整Release／ASan／全量静态或全保存／输入矩阵。正式关闭不清空映射，P2源重置、代表高级页、P3预热／M3-B免Python与P4渠道仍待，完整P1／P2／C1-C／M1未完成。
+
+## DELETE-GUI-111：源行删除原GUI基线（2026-10-28，PC-W11）
+
+基于P1-110 `ed936e514c6ec1389937f8b642caafc40ab46e83`，仅生命周期维护测试增加settings_remove_gui固定入口及观测；产品删除函数／qkeymapper.cpp／.h逐字节未改，正式MCP删除或串行重置未实现／未启动。用户要求以此作为今日首选收尾，限定三种可可靠完成的原GUI场景，不为完成完整删除矩阵扩展。
+
+复用本机out/mcp_save_common_w11_20261026/common76-seed.ini的1171字节合成文本夹具，普通权限复制到本轮独立副本、每场重新放入固定INI；不是个人INI或另一PC产物。正常产品启动加载Common76Seed，普通表A→B、共通F13／F14两行、共通功能启用但普通表不附加共通。没有直接加载调用或设置选中控件值；共通场景以实际Qt Tab点击，随后Qt表格鼠标选第一行，普通／共通全删用Ctrl+A，再向本实例表格投递Delete。保持MCP默认关闭，不开映射，不发送系统输入或更改驱动。
+
+Win11企业版26200 x64、现锁CPython3.11.9 x64／pywin32与Qt6.8.3 msvc2022_64／官方Qt5.15.2 msvc2019_64／既有MSVC。仅受影响真实源码生命周期维护Release增量构建，两套native exit0；Qt6零编译／链接警告、Qt5既定兼容通过。EXE为out/mcp_delete_gui_w11_20261028/{qt6,qt5}-runtime/QKeyMapperDeleteGui111_*_runtime.exe，原requireAdministrator保留；公共登记deletegui111-qt6／qt5绑定实际EXE哈希、三固定case／环境及输出根，由既有普通控制器9664启动／必要回收。普通8192、产品12288、同登录、每场实际QkmDeleteGui111_<UUID>私有桌面；未用Default、截图或系统输入，未改缓存模式／核心。
+
+六场各native exit0／7项，共42项：normal_last目标源0普通行1→0，common_first源1共通2→1，common_all源1共通2→0，双Qt结果一致。删除前后完整源快照核对目标与全部剩余fields／derived采样，所有其他快照源对象保持等值；dirty=true，加载代次仍1，安全读取为pristine_idle，INI在动作及正常退出后均与合成原件逐字节一致。删到空表时current_row／column均−1且无选中项；共通首行删除后为0／0并指向最近剩余行。实际退出workAtExit／producersAtExit均0，逐场owned／unresolved／pending／current_action／current_job全零。这里只验证初始空闲许可，不把STOPPED或计数当作运行后清理完成。
+
+首公共register返回ok=false，尚未派发Start；本地公共合同复核case多了id字段，删去后只含arguments／environment，随后登记与六场通过。首具体错误码未保存，不根据文字或源码推算；registration-first-failure.json记录观察范围。未启动新UAC、升级控制器或接管未知请求。测试后17:58:43现技能off确认closed／user_off、generation2、cache_available=false、native_sessions_observed=0及五项零；17:59独立status为controller=null、原生会话0，cache-off／cache-off-checked分别留原结果，不以off本身代替逐场进程退出证据。
+
+本机out/mcp_delete_gui_w11_20261028不随Git，保存构建／部署与EXE身份、合成INI、精确公共定义／登记、六场实际桌面／权限／完整源before／after／7项／选择／加载代次及final INI、正常退出和逐场尾状态、summary及关闭核实。截图／视觉布局不在本基线，未执行过滤／隐藏、附加共通／分隔行、混合来源警告、独立共通备份、鼠标点派生列表、撤权／运行后清理、正式MCP引用／删除、实际Win10／高DPI／其他实例；非完整EQ-MAP-DELETE或GUI／MCP等价性验收。工具15／能力14不变，产品局部删除业务提取和正式MCP删除仍为明日之后的后续动作。按用户要求本片聚焦本地提交，不推送，保留同机环境／out待明日直接继续，无交接包或重复恢复。

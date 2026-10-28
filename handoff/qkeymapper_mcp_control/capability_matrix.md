@@ -992,3 +992,7 @@ Win11双Qt私有组件各4、Default只读拒绝各3、IPC权限各3通过（含
 mapping.editor.close／qkm_close_mapping_editor要求Read+ShowWindows、稳定source_ref／window_ref及private_background；仅本owner正式open记录且完整安全源／全部当前输入与pending备注摘要未变可关闭。固定本实例单项窗，不接discard或原生目标；可见子窗、其他编辑、模态／popup／源或草稿变化拒绝，原GUI close后核实隐藏／源不变，不清空映射。摘要内存单记录，不返回原文／控件指针；默认hasOpenMappingEditor语义保持。
 
 Win11双Qt最终私有组件各4、IPC各3通过（含init／cleanup）；正式双Qt各两轮安全关闭，连同复用无Show负例为18项CPP／94次调用＋15次schema拒绝。GUI未归属窗口、C草稿及旧源／旧窗拒绝，恢复B后关闭，源／dirty／加载／INI保持、逐场清理零。十张图审阅，最终正例与子窗前图字节一致；两套GUI／正式／重开单项图字节相同。详见[同一C1证据](map67c1_validation.md#demo-p1-110正式打开记录及安全关闭2026-10-28pc-w11)。当前十五工具／十四能力；实际备注／数值／子窗业务交错、P2源重置、预热／免Python及QQ仍待，完整P1／M1未完。
+
+## DELETE-GUI-111：删除原GUI基线，尚无正式MCP删除
+
+P1-110之上仅增加固定维护观察，产品deleteSelectedMappingData及头文件未改。Win11双Qt普通最后行／共通首行／共通全行六场，各7项共42项、native exit0，真实Qt选表／选行和Delete／Ctrl+A；完整源剩余fields／derived、其他快照源保持，dirty、加载代次、选择与INI已核对，正常退出及清理五项零。见[同一C1证据](map67c1_validation.md#delete-gui-111源行删除原gui基线2026-10-28pc-w11)。仅原GUI基线，未覆盖过滤／附加共通／分隔行／混合来源、独立备份或正式MCP引用／删除；工具15／能力14不变，完整EQ-MAP-DELETE／M1未完成。
