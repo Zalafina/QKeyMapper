@@ -102,7 +102,7 @@ class InputOwnerFence;
 #include "qmappingsequenceedit.h"
 #include "qpointpickerdialog.h"
 
-namespace QkmAutomation { class ControlDialog; class MappingChangeStore; struct AutomationRequest; struct ConfigurationSaveBinding; }
+namespace QkmAutomation { class ControlDialog; class MappingChangeStore; class WindowAccess; struct AutomationRequest; struct ConfigurationSaveBinding; }
 
 namespace Ui {
 class QKeyMapper;
@@ -2675,6 +2675,7 @@ private:
     bool m_CustomNotificationStyleInitialized = false;
     QGeneralAdvancedDialog *m_GeneralAdvancedDialog = Q_NULLPTR;
     QkmAutomation::ControlDialog *m_McpControlDialog = Q_NULLPTR;
+    QkmAutomation::WindowAccess *m_AutomationWindows = Q_NULLPTR;
     std::unique_ptr<QkmAutomation::MappingChangeStore> m_AutomationMappingChanges;
     std::unique_ptr<const QSettings> m_AutomationSettingsReader;
     quint64 m_MappingLoadGeneration = 0;

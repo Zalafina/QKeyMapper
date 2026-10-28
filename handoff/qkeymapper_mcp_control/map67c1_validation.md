@@ -710,3 +710,19 @@ Qt6／官方Qt5生命周期维护增量Release均native exit0，Qt6零警告、Q
 双Qt×三语言×pending／window-approval共12幅，由同私有桌面的capture_mcp_control.ps1复用仓库capture_ui_snapshots.ps1／PrintWindow，检查实际HWND所有者后关闭自有窗口；Agent已逐图原尺寸查看，中文／英文／日文两行目标信息、说明、复选框及按钮无截断、无黑图。私有桌面截图不证明Default激活或实际HighDPI；此处不是正式MCP截图工具。全部组件／预览进程及子进程由原入口正常结束，开发／Git／构建／采样普通权限，本片无产品启动、gsudo动作或新UAC。只读缓存status确认原PID9664／instance2ff1d26a17e942ee9688a45261b272c2仍18:30截止，owned／unresolved／pending／current_action／current_job全零；不接管历史未知请求。
 
 首沙箱IPC三方法返回native exit3（DPAPI ProtectionFailed），同EXE在批准的普通Medium上下文全部通过；两份原日志分别保留，未改源码绕过DPAPI或放宽权限。原件out/mcp_demo_p1_w11_20261028含构建、51／5／7结果、实际PID／桌面／退出、12幅截图及抓取日志、项目提取和TS／QM核对，不随Git。未执行High产品授权互操作、Default多实例前台、Win10／高DPI、完整Release／ASan／全量静态或保存矩阵；本片仅权限基础，正式窗口引用／查询／展示／捕获／普通桥接产物及P2–P4仍待。
+
+## DEMO-P1-107：正式窗口只读查询及引用（2026-10-28，PC-W11）
+
+基于DOC-L10N-106 ba15c508743e5a134ca31a8ae4c7b14aaed8abc2及本提交WindowAccess、产品11增／2删接线、桥接entity枚举和对应测试。windows.read复用qkm_query，只接受entity／offset／limit，固定main／item_setup，不接收PID／HWND／对象路径；正式认证及Read由原逐方法准入强制。元数据核对自身进程／创建时间／EXE／GUI线程桌面，Qt／原生可见、最小化、前台精确采样及逻辑尺寸／DPR；internalWinId不创建原生窗口。无新显示／捕获、输入、文件或业务写入路径。当前十二工具／十一业务能力。
+
+每实例只追踪两个QPointer及饱和代次，引用哈希含实例、pair／epoch、角色、实际本进程GUI HWND、代次和呈现状态。隐藏／关闭重开、最小化／恢复、尺寸／原生句柄、销毁、身份或权限变化使旧引用不能在内部resolve解析；最大代次拒绝引用、不循环。前台采样排除出引用，WindowActive单独变化不增加代次。窗口引用仅属生命周期，不绑定完整源或场景；本片尚无消费它的正式MCP执行方法。
+
+双Qt mcp_control定向windowObservation最终各native exit0／3项（含init／cleanup），检查未创建对象查询前后internalWinId=0、分页及严格参数、角色与跨实例／pair／epoch拒绝、尺寸／隐藏／最小化／关闭重开／销毁、worker线程拒绝。模拟Qt激活及仅WindowActive事件保持引用，不等同Default物理前台验收。实际QkmMcp_<UUID>私有桌面、普通Medium；原生重建／代次饱和专项未执行，仅作代码边界核对。
+
+双Qt真实源码生命周期维护与mcp_control Release增量native exit0，最终Qt6零警告，官方Qt5.15.2 x64兼容通过且保留匹配qtmain LNK4099。首沙箱产品构建有Git忽略读取告警，原日志保留；普通Medium同配置再生qmake／增量核对后该告警消失。EXE为out/mcp_window_query_w11_20261028/{qt6,qt5}-runtime/QKeyMapperWindow107_*_runtime.exe，原requireAdministrator；配套DLL来自本机既有kit。构建／Git／SDK普通权限，固定维护启动／关闭经公共登记及PID9664原缓存，仍18:30硬截止。
+
+官方SDK initialize／tools/list／tools/call，正式stdio→准确进程身份／HMAC配对→生产handleAutomationRequest；配对Read+Configure且无ShowWindows／CaptureWindows即可观察，不将其写作纯Read客户端专项已验。两套各25次记录调用（共50）及各2次任意PID／HWND字段schema拒绝，每套10次windows查询；含分页0／1／空页、offset3／目录修订／源修订拒绝、windows.read参数／Read／只读声明及实际entity枚举。PID／创建时间／EXE／实际QkmDemo104_<UUID>桌面与可信启动记录一致；桌面名沿P0固定夹具，不是Default或新服务。
+
+各独立空白Demo104Seed经正式MCP建立A→B，Qt表格真实双击走原入口打开单项窗；观察main／item_setup可见及引用，Esc关闭后Qt／原生不可见、item引用变化，源／dirty／完整INI及加载代次不变。两场各native exit0／6项CPP，共12项，SDK通过并正常回收，owned／unresolved／pending／current_action／current_job均零。P0采样函数生成四幅客户区PNG仅作GUI状态夹具，非正式截图接口；底层未改，不替代正式图像工具或捕获权限验收。
+
+首轮通过后复核补强WindowStateChange只追踪呈现位，防止仅WindowActive造成陈旧引用；before-activation-guard保留首轮两场通过、EXE／身份及组件。最终版本重新构建并通过上述定向组件／正式SDK；不是现场复现故障，也不将组件事件冒充Default用户确认。原件out/mcp_window_query_w11_20261028不随Git，含一式补丁dry-run／精确字节／反向校验、构建部署与EXE身份、组件、SDK peer／50次记录、分页负例／窗口代次／源INI、四图及逐场缓存尾状态。未跑完整Release／ASan／全量静态、保存矩阵、Win10／高DPI／Default／其他实例或QQ；正式执行／源场景绑定、产物与完整演示闭环继续P1后续。

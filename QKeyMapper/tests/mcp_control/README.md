@@ -39,6 +39,8 @@ Qt5 改用对应 Qt5 的两个 EXE、Qt bin 和独立 output。省略 `--screens
 
 只采样本次受影响界面可用 `--screenshots --preview-states pending window-approval`；每语言两张共六张，window-approval 会在自有维护实例启用接口并打开追加授权窗口，截图后正常关闭。该组件复用产品 ControlDialog，但 fixture 回复不证明产品业务或正式截图工具已交付。
 
+`--test-functions windowObservation` 只运行窗口观察／引用定向用例及 init／cleanup；不传时保留原完整组件套件。该用例检查未创建窗口不被查询创建，固定角色的原生身份／可见／最小化与分页，关闭／隐藏重开、尺寸／原生生命周期、销毁及跨实例／配对／权限代次失效。模拟 Qt 激活及仅 WindowActive 状态变化保持引用；这是私有桌面组件事件，不能替代 Default 的实际前台确认。查询不显示、恢复、截图或发送系统输入。
+
 管理窗口连接框为 `instance.json` 的可复制路径，文件不含配对 key。启用失败或发现信息无法验证时，复选框回到关闭；关闭后实际文件清理也由 IPC 维护用例核对。关闭状态可查看／撤销既有配对；撤销失败保留实际记录及原因，不为撤销临时开启接口。`--screenshots` 每个 Qt kit 生成中英日四种状态共 12 张图；实际审阅范围以验证记录为准。
 
 ## 正式 SDK 互操作

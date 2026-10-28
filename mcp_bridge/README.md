@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十项业务能力、十二工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
+官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十一项业务能力、十二工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
 桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
@@ -60,6 +60,9 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 7. 能力包含 `source.read` 时，先查询 mapping_sources，后续页传返回的 source_snapshot.revision 为 source_revision；查询 mappings 必须同时传该 source_revision 和所选 source_tab_ref。源表来自实际普通／共通内存表，包含非当前 Tab，附加显示的共通行不会重复列为普通源行。每个源行含 source_ref、source_row、fields、derived 和 lock_state_sample；fields 沿用现有映射码字段名及类型，派生字段只采样，不重新计算或回写。引用属于本次源快照，不能解析为写入授权；源内容、加载／结构代次、实例或配对权限改变时返回 stale_source，须重新查询。完整快照上限 4 MiB，单页还受现有通信帧限制，使用实际 next_offset 分页；单项超限明确拒绝。
 8. 能力包含 `help.read` 时，`qkm_get_help` 的 topic 为 `basic_mapping`、`original_keys` 或 `mapping_keys`。基础帮助给出 A→B 语法示例、组合／序列分隔符、等待及连发的毫秒范围／默认值、映射项重复模式及次数含义（与宏 xN 的约束分开）；等待控件的 0 表示不追加后缀，字面 ⏱0 非法。键名直接来自产品解析器的有效列表，去空／去重并按大小写敏感顺序分页；offset 从 0 开始，limit 为 1–100、默认 50，使用 next_offset 续页。返回 reference_scope=parser_help_only，不校验完整映射或设备是否可用，不授予编辑权限；实际可调用操作以能力发现为准。此帮助不读取可变映射源，也不停止映射。
 9. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
+10. 能力包含 `windows.read` 时，`qkm_query({"entity":"windows"})` 只观察当前已认证实例的 main／item_setup 两个固定角色；仅接受 entity／offset／limit，offset 为 0–2，limit 为 1–100。返回实际 EXE／PID／创建时间／GUI 线程桌面、Qt／原生可见、最小化、前台精确采样、逻辑尺寸／DPR及不透明 window_ref。未创建原生窗口时引用为 null，不为查询调用 winId 创建或显示窗口。该查询只需 Read，不授予或调用显示／截图，也不读取其他进程窗口。
+
+窗口引用仅属于实例／配对权限代次及本角色窗口生命周期，关闭／隐藏重开、呈现／原生窗口重建、销毁或身份／权限改变后失效；正常返回 Agent 导致的焦点变化不使其失效。`foreground_exact` 和 `foreground_in_instance` 是本次采样，不代表已请求激活或已核实前台显示。引用不证明映射源／场景未变，也不授权操作；未来截图须独立核对业务源。本阶段未提供消费该引用的正式显示／截图方法。
 
 管理窗口的“显示窗口”与“截取窗口图像”是各自独立的权限，默认不授予，也不包含在 Read／Configure／Run mapping 中。新配对可单独勾选；已有配对在接口启用后，选中实际客户端，点击“授权窗口权限”追加批准，已有权限和配对密钥保留。批准实际新增权限后权限代次递增、该客户端的旧连接断开；使用 qkm_connect 明确重连取得新权限，无需重新配对。取消或没有新增项不写盘；保存失败关闭 MCP，原授权未成功改变。旧引用／预览属于原权限代次，应重新查询。
 

@@ -16,6 +16,7 @@ parser.add_argument('--qt-bin', type=pathlib.Path, required=True)
 parser.add_argument('--output', type=pathlib.Path, required=True)
 parser.add_argument('--powershell', default=shutil.which('pwsh') or shutil.which('powershell'))
 parser.add_argument('--screenshots', action='store_true')
+parser.add_argument('--test-functions', nargs='+', default=[])
 parser.add_argument('--preview-states', nargs='+', choices=('off', 'pending', 'paired-off', 'busy-off', 'window-approval'),
                     default=('off', 'pending', 'paired-off', 'busy-off'))
 parser.add_argument('--translations-dir', type=pathlib.Path, default=ROOT / 'QKeyMapper/translations')
@@ -131,7 +132,7 @@ def environment():
     return env
 try:
     env = environment()
-    pi = start([args.test_exe, '-o', str(BASE / 'results.txt') + ',txt'], BASE, env, BASE / 'runtime.log')
+    pi = start([args.test_exe, *args.test_functions, '-o', str(BASE / 'results.txt') + ',txt'], BASE, env, BASE / 'runtime.log')
     pid = pi.dwProcessId
     result = finish(pi)
     record = {'desktop': name, 'pid': pid, 'elevated': 0, 'exit': result, 'test_exe': str(args.test_exe), 'ipc_exe': str(args.ipc_exe), 'qt_bin': str(args.qt_bin)}

@@ -3,6 +3,7 @@
 #include "automation/qkm_source_snapshot.h"
 #include "automation/qkm_mapping_help.h"
 #include "automation/qkm_mapping_changes.h"
+#include "automation/qkm_window_access.h"
 #include <QtMath>
 #include "qkeymapper.h"
 #include "ui_qkeymapper.h"
@@ -3811,6 +3812,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
     m_CustomNotificationSetupDialog = new QNotificationSetupDialog(this);
     m_GeneralAdvancedDialog = new QGeneralAdvancedDialog(this);
+    m_AutomationWindows = new QkmAutomation::WindowAccess(this, m_ItemSetupDialog);
     m_McpControlDialog = new QkmAutomation::ControlDialog(this);
     m_McpControlDialog->server().setRequestHandler([this](QkmAutomation::AutomationRequest request) {
         handleAutomationRequest(request);
@@ -38375,7 +38377,14 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
     }
     if (request.method == QStringLiteral("qkm_query")) {
         const QString entity = request.arguments.value(QStringLiteral("entity")).toString();
-        if (entity == QStringLiteral("mapping_sources") || entity == QStringLiteral("mappings"))
+        if (entity == QStringLiteral("windows")) {
+            auto &server = m_McpControlDialog->server();
+            if (!m_AutomationWindows || !server.isRequestCurrent(request)) return;
+            const auto result = m_AutomationWindows->query(server.instanceId(), request.pairId,
+                request.permissionEpoch, request.arguments);
+            if (result.ok()) server.reply(request.connectionId, request.requestId, result.page);
+            else server.replyError(request.connectionId, request.requestId, result.errorCode, result.message);
+        } else if (entity == QStringLiteral("mapping_sources") || entity == QStringLiteral("mappings"))
             handleAutomationSourceQuery(request);
         else
             handleAutomationCatalogQuery(request);
@@ -38445,7 +38454,7 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                     QStringLiteral("mapping_rows_require_source_revision_and_source_tab_ref"),
                     QStringLiteral("memory_provenance_only_not_disk_origin"), QStringLiteral("source_revision_is_not_a_business_revision"),
                     QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}},
-            QkmAutomation::mappingHelpCapability()};
+            QkmAutomation::mappingHelpCapability(), QkmAutomation::windowQueryCapability()};
         const QJsonArray mappingCapabilities = QkmAutomation::mappingChangeCapabilities();
         for (const auto &capability : mappingCapabilities) businessCapabilities.append(capability);
         server.replyCapabilities(request.connectionId, request.requestId, businessCapabilities);

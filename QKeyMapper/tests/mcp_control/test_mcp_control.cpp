@@ -2,6 +2,7 @@
 #include "../../automation/qkm_source_snapshot.h"
 #include "../../automation/qkm_mapping_help.h"
 #include "../../automation/qkm_mapping_changes.h"
+#include "../../automation/qkm_window_access.h"
 #include "../../qkm_mapping_source_access.h"
 #include "../../qkeymapper_qt_compat.h"
 #include "../../qkeymapper_constants.h"
@@ -29,6 +30,7 @@
 #include <QTemporaryDir>
 #include <QTimer>
 #include <QTranslator>
+#include <QWindowStateChangeEvent>
 #include <QVector>
 #include <QtTest/QTest>
 #include <thread>
@@ -142,6 +144,7 @@ private slots:
     void pairingFromWidgets();
     void windowPermissions_data();
     void windowPermissions();
+    void windowObservation();
     void rejectAndClose_data();
     void rejectAndClose();
     void enableFailure();
@@ -1201,6 +1204,105 @@ void McpControlTest::windowPermissions()
     if (failSave) QVERIFY(widget<QLabel>(dialog, "mcpStatus")->text().contains(
         ControlDialog::tr("The window permission update did not complete. MCP is disabled if saving failed.")));
     dialog.server().disable();
+}
+
+void McpControlTest::windowObservation()
+{
+    QWidget main;
+    auto *item = new QDialog(&main);
+    WindowAccess access(&main, item);
+    const QString instance(32, QLatin1Char('a')), pair(32, QLatin1Char('b'));
+    const QJsonObject arguments{{QStringLiteral("entity"), QStringLiteral("windows")}};
+    const auto query = [&]() { return access.query(instance, pair, 1, arguments); };
+    QCOMPARE(main.internalWinId(), WId(0));
+    QCOMPARE(item->internalWinId(), WId(0));
+    auto result = query();
+    QVERIFY(result.ok());
+    QCOMPARE(main.internalWinId(), WId(0));
+    QCOMPARE(item->internalWinId(), WId(0));
+    QCOMPARE(result.page.value(QStringLiteral("total")).toInt(), 2);
+    QVERIFY(result.page.value(QStringLiteral("items")).toArray().at(0).toObject().value(QStringLiteral("window_ref")).isNull());
+    const auto target = result.page.value(QStringLiteral("target")).toObject();
+    QCOMPARE(target.value(QStringLiteral("instance")).toString(), instance);
+    QCOMPARE(target.value(QStringLiteral("pid")).toString(), QString::number(GetCurrentProcessId()));
+    QCOMPARE(QFileInfo(target.value(QStringLiteral("executable")).toString()).canonicalFilePath(),
+        QFileInfo(QCoreApplication::applicationFilePath()).canonicalFilePath());
+    QVERIFY(!target.value(QStringLiteral("desktop")).toString().isEmpty());
+    if (!qEnvironmentVariableIsEmpty("QKM_TEST_DESKTOP"))
+        QCOMPARE(target.value(QStringLiteral("desktop")).toString(), qEnvironmentVariable("QKM_TEST_DESKTOP"));
+    main.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&main));
+    const auto reference = [&](int index) {
+        return query().page.value(QStringLiteral("items")).toArray().at(index).toObject().value(QStringLiteral("window_ref")).toString();
+    };
+    QString mainRef = reference(0);
+    QCOMPARE(mainRef.size(), 64);
+    QCOMPARE(reference(0), mainRef);
+    QEvent activation(QEvent::ActivationChange);
+    QCoreApplication::sendEvent(&main, &activation);
+    QWindowStateChangeEvent activeOnly(main.windowState() ^ Qt::WindowActive);
+    QCoreApplication::sendEvent(&main, &activeOnly);
+    QCOMPARE(reference(0), mainRef);
+    QCOMPARE(access.resolve(QStringLiteral("main"), mainRef, instance, pair, 1), &main);
+    QVERIFY(!access.resolve(QStringLiteral("item_setup"), mainRef, instance, pair, 1));
+    QVERIFY(!access.resolve(QStringLiteral("arbitrary"), mainRef, instance, pair, 1));
+    QVERIFY(!access.resolve(QStringLiteral("main"), mainRef, QString(32, QLatin1Char('c')), pair, 1));
+    QVERIFY(!access.resolve(QStringLiteral("main"), mainRef, instance, QString(32, QLatin1Char('c')), 1));
+    QVERIFY(!access.resolve(QStringLiteral("main"), mainRef, instance, pair, 2));
+    QVERIFY(!access.resolve(QStringLiteral("main"), QString(64, QLatin1Char('F')), instance, pair, 1));
+    main.resize(main.width() + 10, main.height() + 10);
+    QVERIFY(!access.resolve(QStringLiteral("main"), mainRef, instance, pair, 1));
+    mainRef = reference(0);
+    main.hide();
+    QVERIFY(!access.resolve(QStringLiteral("main"), mainRef, instance, pair, 1));
+    main.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&main));
+    QVERIFY(reference(0) != mainRef);
+    mainRef = reference(0);
+    main.showMinimized();
+    QTRY_VERIFY(main.isMinimized());
+    QVERIFY(query().page.value(QStringLiteral("items")).toArray().at(0).toObject().value(QStringLiteral("minimized")).toBool());
+    QVERIFY(!access.resolve(QStringLiteral("main"), mainRef, instance, pair, 1));
+    main.showNormal();
+    QVERIFY(QTest::qWaitForWindowExposed(&main));
+    item->show();
+    QVERIFY(QTest::qWaitForWindowExposed(item));
+    const QString itemRef = reference(1);
+    QCOMPARE(itemRef.size(), 64);
+    QCOMPARE(access.resolve(QStringLiteral("item_setup"), itemRef, instance, pair, 1), item);
+    QVERIFY(item->close());
+    QVERIFY(!access.resolve(QStringLiteral("item_setup"), itemRef, instance, pair, 1));
+    item->show();
+    QVERIFY(QTest::qWaitForWindowExposed(item));
+    QVERIFY(reference(1) != itemRef);
+    const QString reopened = reference(1);
+    delete item;
+    QVERIFY(!query().page.value(QStringLiteral("items")).toArray().at(1).toObject().value(QStringLiteral("exists")).toBool());
+    QVERIFY(!access.resolve(QStringLiteral("item_setup"), reopened, instance, pair, 1));
+    auto page = access.query(instance, pair, 1, {{QStringLiteral("entity"), QStringLiteral("windows")},
+        {QStringLiteral("offset"), 0}, {QStringLiteral("limit"), 1}});
+    QVERIFY(page.ok());
+    QCOMPARE(page.page.value(QStringLiteral("items")).toArray().size(), 1);
+    QCOMPARE(page.page.value(QStringLiteral("next_offset")).toInt(), 1);
+    page = access.query(instance, pair, 1, {{QStringLiteral("entity"), QStringLiteral("windows")},
+        {QStringLiteral("offset"), 2}});
+    QVERIFY(page.ok());
+    QVERIFY(page.page.value(QStringLiteral("items")).toArray().isEmpty());
+    for (const auto &extra : QList<QJsonObject>{
+            {{QStringLiteral("offset"), true}}, {{QStringLiteral("offset"), -1}}, {{QStringLiteral("offset"), 3}},
+            {{QStringLiteral("offset"), 1.5}}, {{QStringLiteral("limit"), 0}}, {{QStringLiteral("limit"), 101}},
+            {{QStringLiteral("limit"), true}}, {{QStringLiteral("pid"), 1}}, {{QStringLiteral("hwnd"), QStringLiteral("1")}},
+            {{QStringLiteral("source_revision"), QString(64, QLatin1Char('a'))}},
+            {{QStringLiteral("catalog_revision"), QString(64, QLatin1Char('a'))}}, {{QStringLiteral("role"), QStringLiteral("main")}}}) {
+        auto invalid = arguments;
+        for (auto it = extra.begin(); it != extra.end(); ++it) invalid.insert(it.key(), it.value());
+        QCOMPARE(access.query(instance, pair, 1, invalid).errorCode, QStringLiteral("invalid_arguments"));
+    }
+    QVERIFY(!access.query(instance, pair, 0, arguments).ok());
+    WindowQueryResult wrongThread;
+    std::thread worker([&]() { wrongThread = query(); });
+    worker.join();
+    QCOMPARE(wrongThread.errorCode, QStringLiteral("context_busy"));
 }
 
 void McpControlTest::rejectAndClose_data()
