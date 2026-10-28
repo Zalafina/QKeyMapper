@@ -141,7 +141,7 @@ Detailed preparation, commands and diagnostic pitfalls: [Autonomous validation t
 - Keep scope narrow.
 - Reuse existing architecture.
 - New comments in English.
-- No .ts edits unless asked.
+- Formal TS/QM edits follow the reviewed translation workflow below; approved text authorizes the Agent to update the corresponding resources.
 - Keep first-party Qt/C++ source files, including tests, UTF-8 without BOM with LF line endings. Create new files as LF and preserve LF when editing existing files.
 - Before committing, verify the working-tree line endings of staged new or edited source files with `git ls-files --eol`; `core.autocrlf=input` can hide working-tree CRLF from `git diff`.
 - Do not normalize third-party or unrelated files as part of this rule.
@@ -158,6 +158,23 @@ Detailed preparation, commands and diagnostic pitfalls: [Autonomous validation t
 - Use English source literals in `tr(...)` for user-visible Qt text, including titles, status, errors, tooltips, placeholders and accessibility names. Use the owning class's `tr(...)` or an explicit Qt translation context outside its members; do not select hardcoded Chinese/English/Japanese strings by language index. `.ui` display text must be translatable or be replaced through the existing runtime `tr(...)` refresh path.
 - Refresh dynamic text through the existing application language-switch path while preserving business state. Protocol keys/error codes, object names, paths and user data are not UI translation sources. Check affected callers/tests and actual lupdate context; a language-index test without an installed QTranslator does not prove localization.
 - When adding or modifying `tr(...)` strings, provide Chinese and Japanese translation recommendations alongside the English original. Present each string as a three-row table for readability: `| English | <original> |` / `| 中文 | <translation> |` / `| 日本語 | <translation> |`.
+
+### Reviewed TS/QM update
+
+1. Present the English source and recommended Chinese/Japanese translations in the three-row format above, identifying the owning context, placeholders and intended line breaks. Wait for approval before changing formal TS/QM. Approval of the proposed text authorizes the Agent to complete that scoped resource update; do not require the user to run Linguist/lupdate/lrelease or ask for the same edit permission again. If wording materially changes after approval, show the changed recommendation first.
+2. Preserve existing work and record the pre-update resource diff. Run the project's supported Qt kit's `lupdate-pro QKeyMapper.pro` from `QKeyMapper/`, with its MSVC environment available. Configure the Qt PATH before loading vcvars; do not overwrite the compiler PATH with a cmd variable expanded before vcvars. Inspect the native exit code and diagnostics: compiler/module failures do not establish a valid project extraction. Use the other supported kit's project extractor if necessary, recording the actual kit and result; do not change the product project to silence a translation-tool problem.
+3. Review the extraction by context/source/comment and apply only the approved entries. Keep unrelated translations, obsolete entries and existing work intact; do not use global cleanup flags or include unrelated location/reordering churn. Preserve UTF-8 without BOM and LF. Keep Qt placeholders and XML escaping intact, and leave no approved entry unfinished.
+4. For multiline text, use actual LF characters inside both the TS `<source>` and `<translation>`, as in existing multiline entries. A C++ `\n` escape becomes a real line break in the TS; do not insert the literal backslash plus n, HTML breaks or visible draft markers into translations. Check the intended break positions and placeholder multiplicity. For example:
+
+   ```xml
+   <source>Selected pairing: %1
+   Pair ID: %2</source>
+   <translation>选定配对：%1
+   配对ID：%2</translation>
+   ```
+
+5. Fill the reviewed English/Chinese/Japanese text, then run the compatible kit's `lrelease` for the three formal TS files to regenerate their corresponding QM. Verify context/source/comment, XML, placeholders, line breaks, completed entries and unchanged existing translations. Check the generated QM against TS through QTranslator or a Linguist-tool round trip; a successful lrelease exit alone does not prove the intended text is loaded. Apply the normal proportional UI checks to affected pages and runtime language refresh, Chinese first, then English/Japanese; no product build or Default desktop interaction is required solely by a resource edit.
+6. Report the scoped resource changes and checks together with their code change. For multiline entries, point to the updated TS fragment/path and the observed rendering for the user's confirmation; distinguish the user's Linguist review from the Agent's actual-window checks, and do not claim unreceived confirmation. Manual resource editing is not a prerequisite. Keep the existing commit/push authorization rules.
 
 ## Continuous improvement
 ### QKeyMapper workspace memory routing

@@ -5,7 +5,8 @@
 - Keep changes small and local; reuse existing QKeyMapper architecture; avoid new frameworks and large refactors.
 - For QKeyMapper work, use `.agents/skills/qkeymapper-workflow/SKILL.md` as the repo playbook.
 - For workspace gsudo PID cache status or temporary duration changes, use [.agents/skills/qkeymapper-gsudo-cache/SKILL.md](.agents/skills/qkeymapper-gsudo-cache/SKILL.md). Cache timing does not grant new test scope or resume paused development; keep development tools non-elevated.
-- Qt/C++ source files use UTF-8 without BOM; new code comments in English; do not edit .ts files unless asked.
+- Qt/C++ source files use UTF-8 without BOM; new code comments in English.
+- Translation resources: The Agent presents English/Chinese/Japanese recommendations for user review. Approval authorizes the Agent to update the corresponding formal TS/QM through the project lupdate-pro/lrelease workflow; the user need not edit or generate them manually. Preserve actual LF line breaks and Qt placeholders in multiline entries, then report their verified rendering for confirmation. Follow the [reviewed TS/QM workflow](.agents/skills/qkeymapper-workflow/SKILL.md#reviewed-tsqm-update); do not change unapproved translations.
 - User-visible Qt text must use English translation sources (`tr(...)` or translatable `.ui` strings), with runtime language refresh. Dialog buttons normally use `autoDefault=false`; prefer NoFocus/ClickFocus unless keyboard Tab navigation is specifically needed. See the playbook's localization and dialog-button rules.
 - Qt compatibility: The shared source targets Qt 6.8.3 and Qt 5.15.2. Check Qt5 for affected version-dependent APIs, styles/layout, serialization differences or a planned compatibility acceptance; do not add it to every local fix.
 - Plans, confirmations, and summaries are in Chinese. When a user decision is needed, ask a clear question and allow a freeform response.
