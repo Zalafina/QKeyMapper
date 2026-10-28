@@ -3227,8 +3227,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const QString connectionVariant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
+    const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
     const bool cleanupCase = publicApply && (connectionVariant == QStringLiteral("cleanup_stop")
-        || connectionVariant == QStringLiteral("cleanup_timeout"));
+        || connectionVariant == QStringLiteral("cleanup_timeout") || cleanupReturn);
     if (!directory.contains(QStringLiteral("/out/")) || mapper->m_McpControlDialog->server().isEnabled()) {
         finish(false);
         return;
@@ -3325,7 +3326,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         auto cleanupEvidence = QSharedPointer<QJsonObject>::create();
         auto cleanupHold = QSharedPointer<QAtomicInt>::create(0);
         auto cleanupCount = QSharedPointer<int>::create(0);
+        auto guiLoads = QSharedPointer<int>::create(0);
         const QPointer<QTableWidget> cleanupTable = QKeyMapper::s_KeyMappingTabInfoList.last().KeyMappingDataTable;
+        auto restoredTable = QSharedPointer<QPointer<QTableWidget>>::create();
         auto filterBefore = QSharedPointer<FILTERKEYS>::create();
         if (cleanupCase) {
             if (mapper->getEnableSystemFilterKeyChecked() || mapper->getDisableFilterKeyClickSoundOnEnableChecked()
@@ -3347,6 +3350,13 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 cleanupEvidence->insert(QStringLiteral("fence"), QString::number(mapper->m_mappingStopFenceGeneration));
                 cleanupEvidence->insert(QStringLiteral("timed_out"), timedOut);
                 cleanupEvidence->insert(QStringLiteral("completed_basis"), mapper->automationSourceReadBasis());
+                if (cleanupReturn) {
+                    cleanupEvidence->insert(QStringLiteral("returned_group"), mapper->m_LoadedMappingSettingGroup);
+                    cleanupEvidence->insert(QStringLiteral("returned_name"), mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text());
+                    cleanupEvidence->insert(QStringLiteral("returned_load"), QString::number(mapper->m_MappingLoadGeneration));
+                    *guiLoads = int(mapper->m_MappingLoadGeneration - load);
+                    *restoredTable = QKeyMapper::s_KeyMappingTabInfoList.last().KeyMappingDataTable;
+                }
             });
             auto *poll = new QTimer(mapper);
             auto stage = QSharedPointer<int>::create(0);
@@ -3361,6 +3371,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     marker = QStringLiteral(".gui-started");
                     *stage = 2;
                 } else if (*stage == 2 && QFileInfo::exists(output + QStringLiteral(".gui-stop"))) {
+                    if (cleanupReturn) QkmMappingStopTestAccess::armReturn(mapper);
                     clickMappingButton(button);
                     if (connectionVariant == QStringLiteral("cleanup_timeout")) mapper->m_mappingStopDeadline->start(30);
                     *stage = 3;
@@ -3405,7 +3416,6 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             });
         }
         auto guiChecks = QSharedPointer<QJsonArray>::create();
-        auto guiLoads = QSharedPointer<int>::create(0);
         auto guiSource = QSharedPointer<QJsonObject>::create();
         auto guiDisk = QSharedPointer<QByteArray>::create();
         auto guiName = QSharedPointer<QString>::create();
@@ -3515,9 +3525,17 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     && cleanupEvidence->value(QStringLiteral("completed_basis")) == QStringLiteral("completed_cleanup")
                     && cleanupEvidence->value(QStringLiteral("timed_out")).toBool() == (connectionVariant == QStringLiteral("cleanup_timeout")),
                     QStringLiteral("actual GUI stop completes once after its held owner and optional timeout"));
-                check(!cleanupTable && mapper->automationSourceReadBasis() == QStringLiteral("completed_cleanup")
+                check(cleanupTable.isNull() && (!cleanupReturn || *restoredTable == mapper->m_KeyMappingDataTable)
+                    && mapper->automationSourceReadBasis() == QStringLiteral("completed_cleanup")
                     && SendInputWorkItem::outstanding() == 0 && InputProducerWorkItem::outstanding() == 0 && SendInputTask::poolsFinished(),
-                    QStringLiteral("save destroys the old source table only after complete cleanup"));
+                    QStringLiteral("source reload follows complete cleanup and preserves the reusable primary table"));
+                if (cleanupReturn) {
+                    check(!cleanupTable && *guiLoads == 1
+                        && cleanupEvidence->value(QStringLiteral("returned_group")) == QStringLiteral("McpReturn")
+                        && cleanupEvidence->value(QStringLiteral("returned_name")) == QStringLiteral("McpReturn")
+                        && cleanupEvidence->value(QStringLiteral("returned_load")).toString().toULongLong() == load + 1,
+                        QStringLiteral("actual stop restores the expected GUI source before granting completed cleanup"));
+                }
                 QString error;
                 const auto beforeTail = mapper->collectAutomationSourceSnapshot(error);
                 mapper->finishMappingStop(cleanupEvidence->value(QStringLiteral("operation")).toString().toULongLong(),

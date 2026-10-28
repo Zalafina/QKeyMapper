@@ -22747,7 +22747,7 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
     const QString selected = snapshot.value(QStringLiteral("configuration_selection")).toObject()
         .value(QStringLiteral("group")).toString();
     const bool globalSelected = selected == QLatin1String(GROUPNAME_GLOBALSETTING);
-    if (globalSelected && requestedName.trimmed() != QLatin1String(GROUPNAME_GLOBALSETTING))
+    if (globalSelected != (requestedName.trimmed() == QLatin1String(GROUPNAME_GLOBALSETTING)))
         return fail(QStringLiteral("invalid_target"));
     result.context = {{QStringLiteral("source_snapshot"), source.page.value(QStringLiteral("source_snapshot"))},
         {QStringLiteral("pair_id"), request.pairId},

@@ -16,23 +16,23 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | SAVE-102选定验证完成：真实清理后正式新增X→Y，确认保存、重建源查询及独立冷读。双Qt四个native exit0／42项CPP；产品逻辑未改，12工具／10能力不变 |
-| 状态 | 持续开发。双Qt维护增量构建及各暖流12项／冷读9项通过；原A→B与新X→Y实际保留，内存新增不写INI，保存只重载一次，旧源引用失效，冷读字节不变。首次SDK结果结构假设失败原件保留 |
+| 当前切片 | SAVE-103选定验证完成：实际GUI停止回切后旧目标拒绝、新确认保存返回源。产品一行对称化Global目标守卫，纠正旧Global预览的context_busy误分类；双Qt24项通过，12工具／10能力不变 |
+| 状态 | 持续开发。双Qt维护构建和各一场12项CPP／正式SDK通过；Global→McpReturn回切后旧预览stale_preview，新建非法Global目标invalid_arguments，新A86Saved只保存Q→R，加载代次分别为回切一次／保存一次 |
 | 执行机器 | PC-W11，Windows 11企业版10.0.26200 x64；本轮唯一写入机器。UI-73及C1-B2-TABLE的PC-W10结果只按其原版本／范围保留，不冒充本机复验 |
 | 任务分支 | `codex/qkeymapper-mcp-control` |
-| 源码基线 | 基于42ae1d5c；只补SDK报告added_mapping时实际源X→Y及GUI表行数断言。复用既有cleanup_stop／cold_addsave维护入口，产品、SDK、权限与停止机制均未修改 |
+| 源码基线 | 基于47307f29；prepareAutomationSettingSave只把Global保留目标检查改为双向一致，原本已拒绝的反向目标更早归invalid_target；SAVE-99原分支归旧预览stale_preview，正式新预览归invalid_arguments。停止、写盘、权限和GUI逻辑不变；维护变体记录真实回切、动态表销毁及主表复用 |
 | 当前已完成 | PC-W11解释器／DLL的PSF签名有效，同机ENV-39哈希安装记录的31项依赖与当前锁一致，环境检查／pip check、6项环境和20项协议检查通过；Qt6.8.3／Qt5.15.2均为x64。PC-W10的UI-73三语言及TABLE97项结果仅按各自原范围保留 |
-| 当前未验证 | SAVE-101仅选验无系统输入的真实GUI启停／普通与观察超时后保存。真实设备／迟到回调／配置回切的源写入生命周期、撤权／禁用交错、客户端或产品重启恢复、物理A→B／4MiB性能及完整GUI等价仍待；C1-C／M1整体未完成，DEMO／免Python／Win10 QQ渠道未执行 |
-| 构建与 EXE | 双Qt生命周期维护增量Release native exit0，Qt6零警告、官方Qt5.15.2 x64兼容通过；out/mcp_save_after_cleanup_w11_20261028/{qt6,qt5}-runtime/QKeyMapperSaveAfterCleanup102_*_runtime.exe原manifest、实际QkmSaveAfterCleanup102_<UUID>私有桌面；普通控制器／SDK8192、产品12288，同登录 |
-| 提交与同步 | SAVE-101为42ae1d5c4475640b08b7155dcdfd659832348755；SAVE-102经必要检查形成本地聚焦提交，SHA以Git为准，不推送 |
-| 本机独有材料 | SAVE-102原件out/mcp_save_after_cleanup_w11_20261028：双Qt构建／部署、四场SDK准确peer／源与操作结果／原生身份退出、暖流和冷读完整INI、最新备份、42项汇总及逐场缓存尾状态。首场已完成保存后SDK读取不存在target字段的KeyError及native exit2、当时INI／备份完整保留，不随Git |
+| 当前未验证 | SAVE-101至103只选验无系统输入的实际GUI清理／超时／回切、正式新增保存及冷读。迟到设备事件／撤权或禁用交错、配对跨重启复用、物理A→B／4MiB性能、完整GUI和普通Release仍待，C1-C／M1整体未完成。DEMO捕获及正式能力、免Python与Win10 QQ渠道未执行 |
+| 构建与 EXE | Qt6修复前、修复后及维护断言修正增量构建均native exit0，最终双Qt维护Release通过，Qt6零警告／官方Qt5兼容通过；out/mcp_save_return_w11_20261028/{qt6,qt5}-runtime/QKeyMapperSaveReturn103_*_runtime.exe，原manifest、实际QkmSaveReturn103_<UUID>私有桌面。普通控制器／SDK8192、产品12288，同登录 |
+| 提交与同步 | SAVE-102为47307f29d7358c8c651bf17f1390d74fd1b8ab6a；SAVE-103经必要检查形成本地聚焦提交，SHA以Git为准，不推送 |
+| 本机独有材料 | SAVE-103在out/mcp_save_return_w11_20261028：单行patch及检查、双Qt构建／部署／SDK／原生身份退出、回切／完整清理和保存／INI／24项汇总。red-global-target保留原context_busy红例exit2及旧EXE；first-fix-primary-table-assumption保留SDK通过但主表复用断言exit2及当时EXE／INI／备份；两场最终通过及五项缓存归零。不随Git |
 | 授权边界 | 已明确恢复持续开发／聚焦本地提交，不推送。开发、Git、构建、桥接／SDK及截图普通权限，必要原manifest启动／关闭通过已批准缓存与公共登记；只用自有私有桌面和隔离INI，无Default、系统输入、驱动或系统过滤键设置变化 |
 | 当前控制器 | 2026-10-28普通Medium PID9664，创建时间134376318834874371，instance2ff1d26a17e942ee9688a45261b272c2、generation1，截止18:30＋08:00；双Qt各固定定义已公共登记，逐场active／cache_available=true且owned／unresolved／pending／current_action／current_job全零。昨日24956已关闭；旧未知请求不接管 |
-| 下一项动作 | 继续C1-C停止时配置回切后的目标重核与保存：复用既有回切初始条件和真实GUI停止，旧Global引用／预览不转用于恢复的普通配置，新预览才保存；不伪造清理许可。随后再选择源生命周期剩余门槛，DEMO-P0仍在后续窗口／会话自然切点 |
+| 下一项动作 | 先盘点本轮SAVE-101至103覆盖与C1-C剩余边界；保存相关生命周期选定门槛已验后，在既定窗口／会话自然切点进入DEMO-P0源码可行性：限定自身窗口捕获、真实GUI展示入口和无激活私有桌面／预热权限方案。不将维护截图当正式交付，不提前实施新的启动或权限模式 |
 | 下一项完成标准 | 剩余保存／失败恢复及生命周期场景按实际结果逐项验收；已接通能力不等于完整C1-C或M1完成。后续按既定A→B完整路径推进实际运行和停止，缺失系统／GUI范围单列，不重复已验载荷或重置环境 |
 | 缓存观察安排 | 不再为Win11／2–5小时驻留单独排期，随日常使用积累；复查以现存日志规模决定工作量，必要靶向测试另估。该决定不代表未覆盖场景已经验证 |
-| 实耗与剩余 | 本机已推进SAVE-74至102（84为缓存诊断）；清理后新增／保存／冷读已选验，C1-C／M1仍未整体完成。物理A→B、设备与更广并发不由此证明，DEMO及末期Win10 QQ渠道另列 |
-| 当前未决与阻碍 | 四场最终通过。首个Qt6脚本错误地把保存专有target字段用于mapping.add历史结果，实际新增／保存／重建查询已完成；仅改为核对既有source_revision_before／source_tab_ref_before和原operation_id，复用同EXE重验。原native exit2材料保留，PID9664仍至18:30、逐场五项清理全零 |
+| 实耗与剩余 | 本机已推进SAVE-74至103（84为缓存诊断）。本轮连续保存生命周期三片选定范围通过，保留C1-C／M1及实际输入／设备缺口；DEMO后续按已列自然切点和依赖推进，Win10 QQ渠道末期另验 |
+| 当前未决与阻碍 | 产品context_busy红例和首次修复后主表复用假设失败两份native exit2原件保留，最终双Qt通过。主表Widget可复用，源／配置引用按修订和加载代次失效，不能用Widget地址判身份。PID9664仍至18:30，逐场owned／unresolved／pending／current_action／current_job全零 |
 
 
 
@@ -251,6 +251,10 @@ SAVE-101选定验证完成：双Qt各真实GUI普通停止／30ms观察超时后
 SAVE-102实施前选定范围（实际结果见下段及同一C1证据）：仅补实际源／GUI表断言，复用SAVE-101真实GUI普通停止夹具，正式SDK在completed_cleanup后新增X→Y、核对内存与dirty和完整INI不变，再全范围确认保存、新源查询及旧引用拒绝；同一EXE另进程只读冷启动确认A→B／X→Y、旧实例引用及操作失效、INI字节保持。每Qt一个暖流／一个冷读；不重跑已通过的普通／超时清理与保存失败矩阵。原manifest、自有私有桌面与隔离INI，系统过滤键选项关闭并复用完整状态断言，无系统输入、Default或驱动变化；单场运行约10秒内，双Qt增量构建另计。不证明物理按键业务或持久化配对跨进程复用。
 
 SAVE-102选定验证完成：双Qt各真实清理后正式X→Y新增／保存与另进程冷读，四个native exit0／42项CPP。新增只改内存和dirty、INI未写；保存经新范围确认，重建后查询A→B／X→Y，旧修订失效，同ID回放不重复；冷读真实保留两映射且INI／最新备份原字节相等，旧实例引用和操作未知。新增历史仍保留原源修订／引用与结果，不误套保存专用target结构。首次SDK KeyError发生在已成功保存之后，保留native exit2和该INI／备份；同EXE修正检查后通过。产品不改，不证明物理键行为／持久化配对跨进程复用或全部生命周期，详见同一C1证据。
+
+SAVE-103实施前选定范围（实际覆盖见下段及同一C1证据）：维护夹具初始INI加载合法Global A→B、全局自动启用且启动监视关闭；另有合法McpReturn Q→R。复用既有armReturn只准备上次匹配记录／计时条件，GUI按钮实际启停、原停止尾部真正回切，不设选择控件或直接调用加载函数。回切前仍用有界Hook所有者5秒等待，验证旧源保留且读取／预览拒绝；实际完成后Global旧引用／预览失效，新的明确目标预览／范围确认保存返回源，实际查询Q→R且不混入A→B。全局回切与保存各一次加载；实际先验发现原全局动态表销毁，但回切后的单Tab主表控件在保存中复用，维护断言按现有行为核对控件复用与逻辑引用失效，不要求产品强制销毁主控件。每Qt一场，原manifest、自有隔离INI／私有桌面、无Default或系统输入／驱动变化，完整FilterKeys保持；运行预计每场10秒内，增量构建另计。初始记录注入不是实际前台自动匹配证明，物理按键和全部迟到事件仍未验。
+
+SAVE-103选定验证完成：双Qt真实GUI停止将Global回切McpReturn，源Q→R、新确认只保存返回源；旧Global预览拒绝、旧修订失效，回切与保存各一次加载，共24项CPP／两个native exit0。原Qt6红例已安全拒绝但归context_busy，产品一行对称化Global保留目标守卫，沿既有分支对旧预览报stale_preview、新非法目标报invalid_arguments；不改接受目标集、权限、停止或写盘。修复后SDK先通过，维护假设主表必须销毁而exit2；改为核对原动态表销毁及主表复用后双Qt通过，两份失败／旧EXE／INI均保留。armReturn只准备既有上次匹配初始条件，不冒充实际前台自动匹配；主表地址不表示源引用有效，详见同一C1证据。
 
 接续在SAVE-82至86基础上绑定真实业务修订和保存范围；已提取字段不再搬动。SAVE-87至97已逐步绑定并选验真实请求、完整候选／范围／到期、明确目标与执行重检、正式保存及失败结果；源安全与完整生命周期等剩余范围仍按C1-C推进。分段结果不等于全部并发或回滚安全证明。当前工具12／业务能力10，C1-B2／M1未整体完成。
 

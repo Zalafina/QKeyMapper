@@ -660,3 +660,19 @@ EXE：out/mcp_save_cleanup_w11_20261028/{qt6,qt5}-runtime/QKeyMapperSaveCleanup1
 EXE：out/mcp_save_after_cleanup_w11_20261028/{qt6,qt5}-runtime/QKeyMapperSaveAfterCleanup102_*_runtime.exe，原requireAdministrator，实际QkmSaveAfterCleanup102_<UUID>私有桌面。普通控制器／SDK8192、产品12288，同登录，经公共登记复用PID9664／instance2ff1d26a17e942ee9688a45261b272c2／generation1及今日18:30硬截止，每次只一个固定场景。四场owned／unresolved／pending／current_action／current_job均零，无Default、系统输入或驱动变化；暖流复用完整FilterKeys前后相等断言。私有桌面不作为驱动隔离证明。
 
 本机原件out/mcp_save_after_cleanup_w11_20261028不随Git，含双Qt构建／部署、准确SDK身份、正式源／操作／配对、GUI清理标记、原生桌面与退出、暖／冷完整INI、最新备份、四场尾状态和evidence-summary.json。当前12工具／10能力；停止时配置回切、迟到设备事件／撤权、实际输入／设备、Win10、4MiB性能与普通完整Release等仍未补验，C1-C和M1不整体标完。演示截图未提前执行，免Python和QQ联调仍待。
+
+## SAVE-103：停止配置回切后的保存目标重核（2026-10-28，PC-W11）
+
+基于SAVE-102 `47307f29d7358c8c651bf17f1390d74fd1b8ab6a`。合法初始INI选中Global A→B，全局自动启用、启动监视关闭，另有McpReturn的ReturnTab Q→R。沿原Qt按钮实际开始／停止；既有armReturn只准备上次匹配记录及计时初始条件，原beginMappingStop捕获并停止记录，实际停止尾部switchBackToLastMatchedSetting才加载McpReturn。测试不设配置选择控件、不直接调用加载函数；不证明真实前台窗口自动匹配。
+
+原Hook所有者有界5秒夹具复用：Worker实际STOPPED但GUI stopping时，源仍Global且加载代次未变，源查询及保存预览context_busy、原INI字节未写。释放后实际完整清理且回切到McpReturn，配置／GUI名称一致，代次从1到2，正清理代次和completed_cleanup许可有效；实际源查询Q→R且无旧A→B。初始Global源修订stale_source，旧Global保存确认应stale_preview且仍不写。新非法Global目标预览invalid_arguments；新A86Saved预览和范围确认才保存返回源，实际Q→R、没有旧A→B，代次到3、dirty清除，备份／INI一致，同ID只回放。
+
+Qt6原红例：回切、完整清理与安全拒绝均已发生，但旧Global目标普通源中准备失败落save_preparation_failed，正式接口归context_busy，误示清理尚忙。prepareAutomationSettingSave原守卫只覆盖Global源指向非Global名；本片一行对称化为“当前源与请求目标是否为Global必须一致”，反向保留名也更早返回invalid_target。既有SAVE-99对存储预览归stale_preview，新建预览沿既有invalid_arguments；原本合法／非法目标集合、权限、停止、持久化及加载体不改。源大文件用唯一锚点patch、git apply --check／numstat一增一删／逐字节／逆向检查，没有直接覆盖。
+
+red-global-target保留原Qt6 native exit2、实际context_busy、完整状态／INI／SDK、登记、构建及原EXE／身份。修复后正式SDK全流先通过，但维护断言误要求返回的单Tab主表控件在保存重载时销毁，native exit2；原全局动态表确已销毁，主表是既有可复用控件，不能据其地址判断源身份。first-fix-primary-table-assumption保留SDK通过、该断言失败、EXE／身份和已保存INI／备份。只改维护断言为“原动态表已销毁、回切主表被复用、完整清理仍有效”，未为测试改变GUI；两份失败不计入最终通过。
+
+最终双Qt各一场native exit0／各12项，共24项CPP，正式SDK请求数在本机汇总。独立准备的全部目标／共享键实际写盘、GUI名称／dirty、旧尾部／排空处理函数组件回放不改新源、完整FilterKeys前后相等均通过。旧尾部是直接处理函数回放，不冒充真实迟到设备事件。Qt6修复前／后及维护断言修正增量Release构建native exit0，最终Qt6零警告；Qt5官方5.15.2 x64兼容维护构建native exit0，原qtmain LNK4099保留。
+
+EXE：out/mcp_save_return_w11_20261028/{qt6,qt5}-runtime/QKeyMapperSaveReturn103_*_runtime.exe，原requireAdministrator、实际QkmSaveReturn103_<UUID>私有桌面。普通控制器／SDK8192、产品12288，同登录，经公共登记复用PID9664／instance2ff1d26a17e942ee9688a45261b272c2／generation1及今日18:30截止；每次一个固定场景，最终每场owned／unresolved／pending／current_action／current_job全零，无Default、系统输入或驱动变化。私有桌面不是Hook／驱动隔离证明。
+
+原始构建／部署、三种Qt6 EXE身份、红例／维护失败／最终stdio与准确peer、回切／清理／源与保存结果、完整INI、最新备份、单行补丁与24项汇总在out/mcp_save_return_w11_20261028，不随Git。未改输入或协议路径按原有效证据复用，不重跑完整矩阵；实际自动匹配、设备并发／迟到事件、撤权／禁用、物理输入、Win10、4MiB性能及普通完整Release仍待。C1-C／M1不整体标完，截图演示和QQ渠道未提前验收。
