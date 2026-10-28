@@ -626,3 +626,21 @@ EXE为out/mcp_save_recovery_w11_20261027/{qt6,qt5}-runtime/QKeyMapperSaveRecover
 原件out/mcp_save_recovery_w11_20261027含四场正式SDK调用、准确peer／产品创建身份／退出、accepted／release标记、waiting-ended、重连操作结果、完整INI、逐场登记／缓存快照、退役记录、构建／部署、7项工具结果及evidence-summary.json；不随Git。后续仍需真实清理后的源写入与回调生命周期、撤权／禁用、客户端或产品重启、4MiB性能、普通完整Release／Default／实际输入及M1完整启停。私有桌面及本端等待取消不作为Hook／驱动隔离或业务停止完成证明。截图演示、免Python和QQ联调本片未执行。
 
 当日收尾17:50通过现有缓存技能off，本轮PID24956／instance4f384b60c3ca43e1a9c2bfd768020809返回generation2、closed／user_off、cache_available=false、native_sessions_observed=0，owned／unresolved／pending／current_action／current_job全零；独立status随后确认controller=null、原生会话0。历史未知请求未接管／重放；此处仅证明本轮关闭。收尾只做必要文档检查和本片本地提交，无后续构建／测试，停止位置及明日下一步在唯一主计划。
+
+## SAVE-101：真实GUI清理完成后的正式保存（2026-10-28，PC-W11）
+
+基线SAVE-100 `563d9680b81c0ad1facf2a01c0994e4e4a43b087`，只改生命周期维护夹具及必要文档，产品保存／停止／桥接／权限逻辑不变。复用已加载合法full_save_fixture.ini.example、原Qt鼠标事件助手实际点击keymapButton开始与停止，不设控件值、不直接调用加载／Hook或完成函数来制造GUI基线。初始监视关闭，虚拟手柄／多输入关闭，系统过滤键和点击声设置关闭；没有发送系统输入，也没有配置停止发送动作。真实物理A→B效果仍未覆盖。
+
+cleanup_stop／cleanup_timeout只在原setKeyUnHook_Signal后，将一个真实Hook队列回调保持为在途InputProducerWorkItem，最多5秒观察固定release-cleanup文件；不泵GUI事件，不借用可删除源指针。超时变体在实际GUI停止后将原观察定时器启动为30ms，验证原超时状态及继续清理；并非真实30秒性能基准。SDK在实际Worker STOPPED且GUI stopping／stop_completion=unobserved时核对正式源查询及保存预览context_busy，普通场另提交当前预览并查原ID：rejected／modified=false／saved=false；INI完整字节保持。
+
+普通权限释放固定回调后，须实际mappingCleanupCompleted仅一次、完整源许可completed_cleanup、正清理代次、生产者／发送计数归零及真实池完成。两场均验证初始旧源修订stale_source；超时场保留未提交原预览直到清理后，实际stale_preview且INI仍不变。普通场已拒绝操作仍按原ID保留结果，不用已消费预览证明新鲜性。随后均由新正式预览和独立完整范围确认保存至A86Saved，实际saved／reloaded／backup=true、未由操作启动映射、dirty清除、源加载代次只加一、最新备份与实际INI一致；同ID回放不再保存。C++另逐键核对全部独立准备值与共享键，QPointer确认旧源表实际销毁。
+
+实际完成后直接调用既有旧代finishMappingStop和onMappingStopSendDrain处理函数，完整新源快照保持、完成次数不增；这是处理函数组件回放，不是实际迟到GUI／设备事件证明。完整FILTERKEYS的flags及四个延迟参数前后相等；私有桌面不视为Hook／驱动隔离证明。
+
+双Qt各两场、最终4 native exit0／每场11项共44项CPP检查通过；正式SDK请求数见本机evidence-summary.json，实际读取配置／来源／状态和操作结果，准确peer身份配对一次，不替代普通Release用户授权。Qt6增量Release维护构建native exit0、零警告；官方Qt5.15.2 x64兼容维护构建native exit0，原Qt qtmain LNK4099保留。原GUI保存对照、协议／存储和未变写入失败矩阵沿SAVE-92、97至100原范围复用，没有重复全量构建或验收。
+
+首个Qt6 SDK脚本创建两个同客户端当前预览，并在清理后误期待第一个返回stale_preview，实际按既有存储契约preview_superseded；脚本异常导致native exit2，未保存。原始stdio、case、closed、登记及缓存尾状态在first-harness-preview-superseded保留。仅修正普通SDK场景：普通场在pending时消费当前预览验证拒绝，超时场保留当前预览至完成后验证陈旧；同一EXE和固定登记不变。修正后四场通过，不把首场计入通过数、不改产品。
+
+EXE：out/mcp_save_cleanup_w11_20261028/{qt6,qt5}-runtime/QKeyMapperSaveCleanup101_*_runtime.exe，原requireAdministrator，实际QkmSaveCleanup101_<UUID>私有桌面。普通控制器／SDK8192、产品12288，同登录。新普通控制器9664／instance2ff1d26a17e942ee9688a45261b272c2／generation1，用户授权至今日18:30；第一次缓存UAC返回999后未自动重试，经用户明确再授权一次才成功，不推断首次取消原因。每次公共登记调用只启动一个固定场景；四场尾owned／unresolved／pending／current_action／current_job全零。历史未知请求不接管／重放。
+
+原件在out/mcp_save_cleanup_w11_20261028，不随Git，含双Qt构建／部署、原生创建／桌面／退出、SDK准确peer与调用、运行／pending标记、清理许可／结果、完整INI、逐场缓存与44项汇总。当前12工具／10业务能力，C1-C和M1未整体完成；真实停止后正式新增再保存／冷读、配置回切、多类迟到回调、撤权／禁用、实际物理输入／设备、Win10补验、4MiB性能与完整普通Release仍待。截图演示未提前执行，免Python与QQ渠道未验。

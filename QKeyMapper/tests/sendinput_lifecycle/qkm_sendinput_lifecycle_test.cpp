@@ -3227,6 +3227,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const QString connectionVariant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
+    const bool cleanupCase = publicApply && (connectionVariant == QStringLiteral("cleanup_stop")
+        || connectionVariant == QStringLiteral("cleanup_timeout"));
     if (!directory.contains(QStringLiteral("/out/")) || mapper->m_McpControlDialog->server().isEnabled()) {
         finish(false);
         return;
@@ -3320,6 +3322,66 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         if (!sourceError.isEmpty()) { finish(false); return; }
         auto calls = QSharedPointer<int>::create(0);
         auto expected = QSharedPointer<QKeyMapper::AutomationSettingSavePreparation>::create();
+        auto cleanupEvidence = QSharedPointer<QJsonObject>::create();
+        auto cleanupHold = QSharedPointer<QAtomicInt>::create(0);
+        auto cleanupCount = QSharedPointer<int>::create(0);
+        const QPointer<QTableWidget> cleanupTable = QKeyMapper::s_KeyMappingTabInfoList.last().KeyMappingDataTable;
+        auto filterBefore = QSharedPointer<FILTERKEYS>::create();
+        if (cleanupCase) {
+            if (mapper->getEnableSystemFilterKeyChecked() || mapper->getDisableFilterKeyClickSoundOnEnableChecked()
+                || !mapper->readWindowsFilterKeys(*filterBefore)) { finish(false); return; }
+            auto *worker = QKeyMapper_Worker::getInstance();
+            QObject::connect(worker, &QKeyMapper_Worker::setKeyUnHook_Signal, QKeyMapper_Hook_Proc::getInstance(), [=]() {
+                if (cleanupHold->loadAcquire() != 0) return;
+                const InputProducerWorkItem owner;
+                cleanupHold->storeRelease(1);
+                QElapsedTimer hold;
+                hold.start();
+                // Keep one real owner queue callback pending after Worker STOPPED, without system input.
+                while (!hold.hasExpired(5000) && !QFileInfo::exists(output + QStringLiteral(".release-cleanup"))) QThread::msleep(10);
+                cleanupHold->storeRelease(2);
+            }, Qt::QueuedConnection);
+            QObject::connect(mapper, &QKeyMapper::mappingCleanupCompleted_Signal, mapper, [=](quint64 operation, bool timedOut) {
+                ++*cleanupCount;
+                cleanupEvidence->insert(QStringLiteral("operation"), QString::number(operation));
+                cleanupEvidence->insert(QStringLiteral("fence"), QString::number(mapper->m_mappingStopFenceGeneration));
+                cleanupEvidence->insert(QStringLiteral("timed_out"), timedOut);
+                cleanupEvidence->insert(QStringLiteral("completed_basis"), mapper->automationSourceReadBasis());
+            });
+            auto *poll = new QTimer(mapper);
+            auto stage = QSharedPointer<int>::create(0);
+            QObject::connect(poll, &QTimer::timeout, mapper, [=]() {
+                auto *button = mapper->findChild<QToolButton *>(QStringLiteral("keymapButton"));
+                QString marker;
+                if (*stage == 0 && QFileInfo::exists(output + QStringLiteral(".gui-run"))) {
+                    if (!button || !button->isEnabled()) { finish(false); return; }
+                    clickMappingButton(button);
+                    *stage = 1;
+                } else if (*stage == 1 && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STARTED) {
+                    marker = QStringLiteral(".gui-started");
+                    *stage = 2;
+                } else if (*stage == 2 && QFileInfo::exists(output + QStringLiteral(".gui-stop"))) {
+                    clickMappingButton(button);
+                    if (connectionVariant == QStringLiteral("cleanup_timeout")) mapper->m_mappingStopDeadline->start(30);
+                    *stage = 3;
+                } else if (*stage == 3 && cleanupHold->loadAcquire() == 1
+                    && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED
+                    && (connectionVariant != QStringLiteral("cleanup_timeout") || mapper->m_mappingStopTimedOut)) {
+                    const bool pending = mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_STOPPING
+                        && mapper->automationSourceReadBasis().isEmpty() && *cleanupCount == 0
+                        && InputProducerWorkItem::outstanding() > 0 && cleanupTable;
+                    cleanupEvidence->insert(QStringLiteral("worker_stopped_but_pending"), pending);
+                    marker = QStringLiteral(".cleanup-held");
+                    *stage = 4;
+                    poll->stop();
+                }
+                if (marker.isEmpty()) return;
+                QSaveFile file(output + marker);
+                const QByteArray bytes = QJsonDocument(mapper->collectAutomationState()).toJson();
+                if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) finish(false);
+            });
+            poll->start(10);
+        }
         auto connectionEvidence = QSharedPointer<QJsonObject>::create();
         if (connectionCase) {
             if (QKeyMapper::s_KeyMappingTabInfoList.size() < 2) { finish(false); return; }
@@ -3447,6 +3509,29 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             const auto completion = QJsonDocument::fromJson(done.readAll()).object();
             check(completion.value(QStringLiteral("sdk_passed")).toBool(), QStringLiteral("official SDK exercise completed"));
             check(*calls > 0, QStringLiteral("requests passed through the production business handler"));
+            if (cleanupCase) {
+                check(cleanupEvidence->value(QStringLiteral("worker_stopped_but_pending")).toBool()
+                    && cleanupHold->loadAcquire() == 2 && *cleanupCount == 1
+                    && cleanupEvidence->value(QStringLiteral("completed_basis")) == QStringLiteral("completed_cleanup")
+                    && cleanupEvidence->value(QStringLiteral("timed_out")).toBool() == (connectionVariant == QStringLiteral("cleanup_timeout")),
+                    QStringLiteral("actual GUI stop completes once after its held owner and optional timeout"));
+                check(!cleanupTable && mapper->automationSourceReadBasis() == QStringLiteral("completed_cleanup")
+                    && SendInputWorkItem::outstanding() == 0 && InputProducerWorkItem::outstanding() == 0 && SendInputTask::poolsFinished(),
+                    QStringLiteral("save destroys the old source table only after complete cleanup"));
+                QString error;
+                const auto beforeTail = mapper->collectAutomationSourceSnapshot(error);
+                mapper->finishMappingStop(cleanupEvidence->value(QStringLiteral("operation")).toString().toULongLong(),
+                    cleanupEvidence->value(QStringLiteral("fence")).toString().toULongLong());
+                mapper->onMappingStopSendDrain(
+                    cleanupEvidence->value(QStringLiteral("fence")).toString().toULongLong(), QStringLiteral("drained"));
+                check(error.isEmpty() && mapper->collectAutomationSourceSnapshot(error) == beforeTail && error.isEmpty() && *cleanupCount == 1,
+                    QStringLiteral("old stop tail and drain callbacks preserve the rebuilt source"));
+                FILTERKEYS filterAfter{};
+                check(mapper->readWindowsFilterKeys(filterAfter) && filterAfter.dwFlags == filterBefore->dwFlags
+                    && filterAfter.iWaitMSec == filterBefore->iWaitMSec && filterAfter.iDelayMSec == filterBefore->iDelayMSec
+                    && filterAfter.iRepeatMSec == filterBefore->iRepeatMSec && filterAfter.iBounceMSec == filterBefore->iBounceMSec,
+                    QStringLiteral("GUI run and stop preserve the complete system FilterKeys state"));
+            }
             if (connectionCase) {
                 check(connectionEvidence->value(QStringLiteral("disk_saved_before_wait")).toBool()
                     && connectionEvidence->value(QStringLiteral("release_observed")).toBool()
@@ -3514,6 +3599,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 {QStringLiteral("formal_mcp_save_preview"), true}, {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},
                 {QStringLiteral("handler_calls"), *calls}, {QStringLiteral("saved"), saves == 1 || reloadFailure},
                 {QStringLiteral("connection_recovery"), *connectionEvidence}, {QStringLiteral("pairing_requests"), *pairingCount},
+                {QStringLiteral("cleanup_save"), *cleanupEvidence},
                 {QStringLiteral("system_input"), false}};
             finish(passed);
         });
