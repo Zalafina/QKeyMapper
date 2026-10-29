@@ -72,6 +72,9 @@ QItemSetupDialog::QItemSetupDialog(QWidget *parent)
 {
     m_instance = this;
     ui->setupUi(this);
+    connect(ui->ibInputSettingsButton,&QPushButton::clicked,this,[this] {
+        QKeyMapper::getInstance()->showIbInputSettings(ui->ibInputSettingsButton);
+    });
 
     m_MappingCodeLabel = ui->mappingCodeLabel;
     m_MappingCodeLineEdit = ui->mappingCodeLineEdit;
@@ -279,6 +282,7 @@ void QItemSetupDialog::setUILanguage(int languageindex)
     if (m_FloatingButtonSetupDialog != Q_NULLPTR) {
         m_FloatingButtonSetupDialog->setUILanguage(languageindex);
     }
+    ui->ibInputSettingsButton->setText(QStringLiteral("IbInput..."));
 }
 
 void QItemSetupDialog::resetFontSize()
@@ -1817,6 +1821,9 @@ void QItemSetupDialog::showEvent(QShowEvent *event)
         else if (SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
             ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_FAKERINPUT);
         }
+        else if (SENDMAPPINGKEY_METHOD_IBINPUT == keymapdata.SendMappingKeyMethod) {
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_IBINPUT);
+        }
         else {
             ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDINPUT);
         }
@@ -2313,6 +2320,9 @@ void QItemSetupDialog::refreshOriginalKeyRelatedUI()
         else if (SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
             ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_FAKERINPUT);
         }
+        else if (SENDMAPPINGKEY_METHOD_IBINPUT == keymapdata.SendMappingKeyMethod) {
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_IBINPUT);
+        }
         else {
             ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDINPUT);
         }
@@ -2676,6 +2686,9 @@ bool QItemSetupDialog::refreshMappingKeyRelatedUI()
         else if (SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
             ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_FAKERINPUT);
         }
+        else if (SENDMAPPINGKEY_METHOD_IBINPUT == keymapdata.SendMappingKeyMethod) {
+            ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_IBINPUT);
+        }
         else {
             ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDINPUT);
         }
@@ -3038,6 +3051,9 @@ void QItemSetupDialog::refreshAllRelatedUI()
     }
     else if (SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
         ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_FAKERINPUT);
+    }
+    else if (SENDMAPPINGKEY_METHOD_IBINPUT == keymapdata.SendMappingKeyMethod) {
+        ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_IBINPUT);
     }
     else {
         ui->sendMappingKeyMethodComboBox->setCurrentIndex(SENDMAPPINGKEY_METHOD_SENDINPUT);

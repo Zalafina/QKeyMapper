@@ -1,0 +1,11 @@
+QT = core gui widgets
+CONFIG += c++17
+CONFIG -= console app_bundle
+TEMPLATE = app
+TARGET = QKeyMapperIbInputGhubProbe
+DEFINES += QKM_IBINPUT_VALIDATION_PROBE IBINPUT_SUPPORT NOMINMAX
+INCLUDEPATH += $$PWD/../.. $$PWD/../../IbInputSimulator/include
+SOURCES += $$PWD/ghub_probe.cpp $$PWD/../../qkm_ibinput_client.cpp
+HEADERS += $$PWD/../../qkm_ibinput_client.h
+LIBS += $$quote($$PWD/../../IbInputSimulator/lib/x64/IbInputSimulator.lib) user32.lib
+QMAKE_CXXFLAGS += /utf-8

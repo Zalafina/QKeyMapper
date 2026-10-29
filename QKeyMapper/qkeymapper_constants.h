@@ -723,6 +723,7 @@ namespace QKeyMapperConstants {
     inline constexpr int SENDMAPPINGKEY_METHOD_SENDINPUT    = 0;
     inline constexpr int SENDMAPPINGKEY_METHOD_SENDMESSAGE  = 1;
     inline constexpr int SENDMAPPINGKEY_METHOD_FAKERINPUT   = 2;
+    inline constexpr int SENDMAPPINGKEY_METHOD_IBINPUT      = 3;
 
     inline constexpr uint LOCK_STATE_LOCKOFF       = 0;
     inline constexpr uint LOCK_STATE_LOCKON        = 1;

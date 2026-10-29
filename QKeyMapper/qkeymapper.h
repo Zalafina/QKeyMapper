@@ -25,6 +25,7 @@
 #include <QPointer>
 
 class QkmUiScale;
+class QkmIbInputPopup;
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtWin>
@@ -1285,6 +1286,8 @@ public:
     static bool isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname);
     static bool isViGEmBusInstalled(void);
     static bool isFakerInputInstalled(void);
+    void showIbInputSettings(QWidget *anchor);
+    void refreshIbInputUi();
     static bool checkForSysDevice(const wchar_t* searchHardwareId);
 
     static void setDisplayScaleValue(double scale);
@@ -2532,6 +2535,9 @@ private:
     QAction *m_ActionHideDisabled = Q_NULLPTR;
     QAction *m_ActionShowCategory = Q_NULLPTR;
     int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_INITIAL;
+    QkmIbInputPopup *m_IbInputPopup = Q_NULLPTR;
+    bool m_IbInputStopPending = false;
+    QString m_IbInputRestoreSetting;
     ActionPopup *m_SettingBackupActionPopup = Q_NULLPTR;
     QFileDialog *m_SelectSettingCustomIconFileDialog = Q_NULLPTR;
     QStringList m_FavoriteOriginalKeys;

@@ -10,6 +10,7 @@
 #include <QSize>
 // #include <QHotkey>
 #include <QThreadPool>
+#include <QSharedPointer>
 #include <QWaitCondition>
 #include <QDeadlineTimer>
 #include <QUdpSocket>
@@ -815,10 +816,12 @@ template <typename T>
 int sign(T val) {
     return (T(0) < val) - (val < T(0));
 }
+quint64 qkmCurrentIbInputGeneration();
+
 class SendInputTask : public QRunnable
 {
 public:
-    SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
+    SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, quint64 ibInputGeneration = qkmCurrentIbInputGeneration());
 
     void run() override;
 
@@ -843,6 +846,8 @@ public:
 
     // Save mapping table pointer to avoid array bounds issues during tab switching
     QList<MAP_KEYDATA> *m_keyMappingDataList = Q_NULLPTR;
+    quint64 m_ibInputGeneration = 0;
+    QSharedPointer<QList<MAP_KEYDATA>> m_ibInputSnapshot;
 };
 
 class QKeyMapper_Worker : public QObject
@@ -1193,9 +1198,9 @@ public:
 public slots:
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
-    void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList);
+    void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration);
 public:
-    void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
+    void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, quint64 ibInputGeneration = qkmCurrentIbInputGeneration());
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
     void sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
@@ -1308,6 +1313,9 @@ signals:
     void setKeyUnHook_Signal(void);
     void setKeyMappingRestart_Signal(void);
     void allMappingKeysReleased_Signal(void);
+    void ibInputFault_Signal(const QString &detail);
+    void ibInputClosed_Signal(bool released, const QString &detail);
+    void ibInputStatusChanged_Signal();
     void sessionLockStateChanged_Signal(bool locked);
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     // void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
@@ -1317,7 +1325,7 @@ signals:
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick_Signal(V_MOUSECODE vmousecode, int keyupdown);
 #endif
-    void sendInputKeys_Signal(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList);
+    void sendInputKeys_Signal(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove_Signal(int delta_x, int delta_y, int mouse_index);
 #endif
@@ -1782,6 +1790,9 @@ private:
     QHash<int, GameControllerTouchpadTapHistory> m_GamepadTouchpadTapHistoryMap;
     bool m_ComInitialized = false;
     bool m_sendInputTasksStopping = false;
+    bool m_ibInputCloseQueued = false;
+    bool prepareIbInputRun();
+    void finishIbInputRun();
 
     // Volume control instance
     VolumeController m_volumeController;

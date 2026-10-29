@@ -1,5 +1,7 @@
 #include "qkm_message_box.h"
 #include "qkeymapper.h"
+#include "qkm_ibinput_client.h"
+#include "qkm_ibinput_popup.h"
 #include "ui_qkeymapper.h"
 #include "interception_worker.h"
 #include "qkeymapper_constants.h"
@@ -3278,7 +3280,27 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     extractSoundFiles();
     initAddKeyComboBoxes();
     initWindowInfoMatchComboBoxes();
+    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputStatusChanged_Signal,this,&QKeyMapper::refreshIbInputUi,Qt::QueuedConnection);
+    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputFault_Signal,this,[this](const QString &detail) {
+        if (m_KeyMapStatus!=KEYMAP_IDLE) MappingSwitch(MAPPINGSTART_BUTTONCLICK);
+        showFailurePopup(detail);
+        refreshIbInputUi();
+    },Qt::QueuedConnection);
+    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputClosed_Signal,this,[this](bool released,const QString &detail) {
+        const bool wasPending=m_IbInputStopPending;
+        m_IbInputStopPending=!released;
+        if (wasPending && released && !m_IbInputRestoreSetting.isEmpty()) {
+            m_LastAutoMatchedSetting=m_IbInputRestoreSetting;
+            switchBackToLastMatchedSetting();
+            clearLastAutoMatchedSetting();
+        }
+        m_IbInputRestoreSetting.clear();
+        if (wasPending && released && m_KeyMapStatus==KEYMAP_IDLE) { ui->keymapButton->setEnabled(true); changeControlEnableStatus(true); }
+        if (wasPending && !released) showFailurePopup(detail);
+        refreshIbInputUi();
+    },Qt::QueuedConnection);
     initSettingBackupActionPopup();
+    connect(ui->ibInputSettingsButton,&QPushButton::clicked,this,[this] { showIbInputSettings(ui->ibInputSettingsButton); });
     initSelectSettingCustomIconFileDialog();
     initWindowSwitchKeyLineEdit();
     initMappingSwitchKeyLineEdit();
@@ -5349,6 +5371,9 @@ void QKeyMapper::changeLanguage(const QString &langCode)
 
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
+    if (m_IbInputStopPending) return;
+    QkmIbInputClient::instance().requestRun();
+
     // updateShortcutsMap();
 
     applySystemFilterKeysForCurrentSetting();
@@ -5368,6 +5393,9 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 
 void QKeyMapper::setKeyUnHook(void)
 {
+    if (QkmIbInputClient::instance().busy() || qkmCurrentIbInputGeneration()) m_IbInputStopPending=true;
+    QkmIbInputClient::instance().cancelRun();
+
     // freeShortcuts();
 
     restoreSystemFilterKeysBaseline();
@@ -5382,6 +5410,12 @@ void QKeyMapper::setKeyUnHook(void)
 
 void QKeyMapper::setKeyMappingRestart()
 {
+    if (qkmCurrentIbInputGeneration()) {
+        m_IbInputStopPending=true;
+        QkmIbInputClient::instance().cancelRun();
+        changeControlEnableStatus(false);
+    }
+
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal();
     emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal();
 }
@@ -13142,7 +13176,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
             disablefnkeyswitchList.append("OFF");
         }
         if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod
-            || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+            || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod
+                    || SENDMAPPINGKEY_METHOD_IBINPUT == keymapdata.SendMappingKeyMethod) {
             sendmappingkeymethodList.append(QString::number(keymapdata.SendMappingKeyMethod));
         }
         else {
@@ -14181,7 +14216,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 const QString &sendmappingkeymethodStr = (i < sendmappingkeymethodStringList.size()) ? sendmappingkeymethodStringList.at(i) : QString::number(SENDMAPPINGKEY_METHOD_SENDINPUT);
                 bool ok;
                 int sendmappingkeymethod = sendmappingkeymethodStr.toInt(&ok);
-                if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT)) {
+                if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_IBINPUT)) {
                     sendmappingkeymethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
                 }
                 sendmappingkeymethodList.append(sendmappingkeymethod);
@@ -16724,6 +16759,14 @@ bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode s
 
 void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
 {
+    if (m_IbInputStopPending && m_KeyMapStatus==KEYMAP_IDLE) { showFailurePopup(tr("Wait for IbInput cleanup before starting or changing mappings.")); return; }
+    if (m_KeyMapStatus==KEYMAP_IDLE && QkmIbInputClient::instance().statusSnapshot().releaseIncomplete) {
+        showFailurePopup(QkmIbInputClient::instance().statusSnapshot().detail); return;
+    }
+    if (m_KeyMapStatus==KEYMAP_IDLE && m_IbInputPopup && m_IbInputPopup->connectionPending()) {
+        showFailurePopup(tr("Wait for the IbInput connection check to finish.")); return;
+    }
+
     QMetaEnum keymapstatusEnum = QMetaEnum::fromType<QKeyMapper::KeyMapStatus>();
     QMetaEnum mappingstartmodeEnum = QMetaEnum::fromType<QKeyMapper::MappingStartMode>();
     bool startKeyMap = false;
@@ -16772,7 +16815,10 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         if (currentSettingIndex == GLOBALSETTING_INDEX
             && checkGlobalSettingAutoStart()
             && m_LastAutoMatchedSettingTimer.isActive()) {
-            if (switchBackToLastMatchedSetting()) {
+            if (m_IbInputStopPending) {
+                m_IbInputRestoreSetting=m_LastAutoMatchedSetting;
+            }
+            else if (switchBackToLastMatchedSetting()) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[MappingSwitch]" << "Successfully switched back to last matched setting after stopping mapping";
 #endif
@@ -21061,6 +21107,8 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
 
 bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
 {
+    if (m_IbInputStopPending) { showFailurePopup(tr("Wait for IbInput cleanup before saving.")); return false; }
+
     // Create RAII guard to automatically save and restore category filter state
     CategoryFilterStateGuard filterGuard(this);
 
@@ -21239,6 +21287,7 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
         settingFile.setValue(LANGUAGE_INDEX , LANGUAGE_CHINESE);
     }
 
+    QkmIbInputClient::writePreferences(settingFile,QkmIbInputClient::instance().preferences());
     settingFile.setValue(PLAY_SOUNDEFFECT, isSoundEffectEnabled());
     settingFile.setValue(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
     settingFile.setValue(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
@@ -21854,7 +21903,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
                     disablefnkeyswitchList.append("OFF");
                 }
                 if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod
-                    || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+                    || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod
+                    || SENDMAPPINGKEY_METHOD_IBINPUT == keymapdata.SendMappingKeyMethod) {
                     sendmappingkeymethodList.append(QString::number(keymapdata.SendMappingKeyMethod));
                 }
                 else {
@@ -23043,6 +23093,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
 
     if (settingtext.isEmpty() || load_all) {
+        QkmIbInputClient::instance().setPreferences(QkmIbInputClient::readPreferences(settingFile));
+        refreshIbInputUi();
+
         // Load ignore rules from INI file
         loadIgnoreRulesFromINI();
 
@@ -25538,7 +25591,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                             const QString &sendmappingkeymethodStr = (i < sendmappingkeymethodStringList.size()) ? sendmappingkeymethodStringList.at(i) : QString::number(SENDMAPPINGKEY_METHOD_SENDINPUT);
                             bool ok;
                             int sendmappingkeymethod = sendmappingkeymethodStr.toInt(&ok);
-                            if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT)) {
+                            if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_IBINPUT)) {
                                 sendmappingkeymethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
                             }
                             sendmappingkeymethodList.append(sendmappingkeymethod);
@@ -27935,6 +27988,11 @@ void QKeyMapper::loadGeneralSetting()
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
+    QString ibDiagnostic;
+    QkmIbInputClient::instance().setPreferences(QkmIbInputClient::readPreferences(settingFile,&ibDiagnostic));
+    if (!ibDiagnostic.isEmpty()) showFailurePopup(ibDiagnostic);
+    refreshIbInputUi();
+
 
     // Load ignore rules from INI file
     loadIgnoreRulesFromINI();
@@ -29291,6 +29349,9 @@ void QKeyMapper::updatePressTimeSpinBoxEnabledState()
 
 void QKeyMapper::changeControlEnableStatus(bool status)
 {
+    if (m_IbInputStopPending) { status=false; ui->keymapButton->setEnabled(false); }
+    if (m_IbInputPopup) m_IbInputPopup->setRunning(m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending);
+
     // if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
     //     ui->processCheckBox->setEnabled(false);
     //     ui->titleCheckBox->setEnabled(false);
@@ -36290,6 +36351,7 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     updateSplitterHandleToolTip();
     updateMinimumWindowSize();
+    refreshIbInputUi();
 }
 
 void QKeyMapper::resetFontSize(double R)
@@ -50854,4 +50916,33 @@ void QKeyMapper::onLastAutoMatchedSettingTimerTimeout()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onLastAutoMatchedSettingTimerTimeout]" << "Timer timeout, cleared last auto matched setting";
 #endif
+}
+
+void QKeyMapper::showIbInputSettings(QWidget *anchor)
+{
+    if (!m_IbInputPopup) {
+        m_IbInputPopup=new QkmIbInputPopup(this);
+        connect(m_IbInputPopup,&QkmIbInputPopup::preferencesChanged,this,[this] { requestSaveSettingDirty(); refreshIbInputUi(); });
+        connect(m_IbInputPopup,&QkmIbInputPopup::connectionCheckRequested,this,[this] {
+            QPointer<QkmIbInputPopup> popup(m_IbInputPopup);
+            if (m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending) { popup->connectionChecked(); return; }
+            QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),[popup] {
+                QkmIbInputClient::instance().checkConnection();
+                QMetaObject::invokeMethod(qApp,[popup] { if (popup) popup->connectionChecked(); },Qt::QueuedConnection);
+            },Qt::QueuedConnection);
+        });
+    }
+    m_IbInputPopup->setRunning(m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending);
+    m_IbInputPopup->showAt(anchor,m_uiScale ? m_uiScale->ratio() : 1.0);
+}
+
+void QKeyMapper::refreshIbInputUi()
+{
+    if (!ui) return;
+    ui->ibInputSettingsButton->setText(tr("IbInput settings..."));
+    ui->ibInputSettingsButton->setFont(ui->installFakerInputButton->font());
+    const auto status=QkmIbInputClient::instance().statusSnapshot();
+    ui->ibInputStatusLabel->setText(QStringLiteral("IbInput: %1").arg(status.fallback ? QStringLiteral("SendInput") : (status.connected ? status.backend : tr("Not connected"))));
+    ui->ibInputStatusLabel->setToolTip(status.detail);
+    if (m_IbInputPopup) { m_IbInputPopup->setRunning(m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending); m_IbInputPopup->retranslate(); }
 }

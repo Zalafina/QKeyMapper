@@ -4862,6 +4862,32 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <source>Window Title</source>
         <translation type="vanished">Window Title</translation>
     </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="16762" />
+        <source>Wait for IbInput cleanup before starting or changing mappings.</source>
+        <translation>Wait for IbInput cleanup before starting or changing mappings.</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="16767" />
+        <source>Wait for the IbInput connection check to finish.</source>
+        <translation>Wait for the IbInput connection check to finish.</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="21110" />
+        <source>Wait for IbInput cleanup before saving.</source>
+        <translation>Wait for IbInput cleanup before saving.</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.ui" line="1197" />
+        <location filename="../qkeymapper.cpp" line="50942" />
+        <source>IbInput settings...</source>
+        <translation>IbInput settings...</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50945" />
+        <source>Not connected</source>
+        <translation>Not connected</translation>
+    </message>
 </context>
 <context>
     <name>QKeyRecord</name>
@@ -7095,6 +7121,302 @@ Right-click to cancel.</translation>
         <location filename="../QSimpleUpdater/src/Updater.cpp" line="724"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+</context>
+<context>
+    <name>QkmIbInputClient</name>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="40" />
+        <source>Invalid IbInput preferences; defaults were used.</source>
+        <translation>Invalid IbInput preferences; defaults were used.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="103" />
+        <source>Previous IbInput cleanup is incomplete.</source>
+        <translation>Previous IbInput cleanup is incomplete.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="109" />
+        <source>The selected IbInput backend does not support this mapping or still awaits validation.</source>
+        <translation>The selected IbInput backend does not support this mapping or still awaits validation.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="111" />
+        <source>IbInput support is not included in this build.</source>
+        <translation>IbInput support is not included in this build.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="115" />
+        <location filename="../qkm_ibinput_client.cpp" line="122" />
+        <source>IbInput startup was cancelled.</source>
+        <translation>IbInput startup was cancelled.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="123" />
+        <source>Connected; input reception has not been verified.</source>
+        <translation>Connected; input reception has not been verified.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="127" />
+        <source>IbInput connection failed: %1</source>
+        <translation>IbInput connection failed: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="129" />
+        <source>SendInput is frozen for this run; configuration is unchanged.</source>
+        <translation>SendInput is frozen for this run; configuration is unchanged.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="154" />
+        <source>This IbInput event was not admitted for the current run.</source>
+        <translation>This IbInput event was not admitted for the current run.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="156" />
+        <source>Unsupported IbInput keyboard event.</source>
+        <translation>Unsupported IbInput keyboard event.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="161" />
+        <source>The IbInput keyboard report is full.</source>
+        <translation>The IbInput keyboard report is full.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="164" />
+        <location filename="../qkm_ibinput_client.cpp" line="187" />
+        <source>IbInput send failed; mapping must stop without retrying another backend.</source>
+        <translation>IbInput send failed; mapping must stop without retrying another backend.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="172" />
+        <source>Unsupported IbInput mouse event.</source>
+        <translation>Unsupported IbInput mouse event.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="176" />
+        <source>Unsupported combined IbInput mouse event.</source>
+        <translation>Unsupported combined IbInput mouse event.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="178" />
+        <source>This IbInput mouse button still awaits backend validation.</source>
+        <translation>This IbInput mouse button still awaits backend validation.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="181" />
+        <source>This IbInput button combination still awaits backend validation.</source>
+        <translation>This IbInput button combination still awaits backend validation.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="186" />
+        <source>IbInput wheel send failed; mapping must stop.</source>
+        <translation>IbInput wheel send failed; mapping must stop.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="189" />
+        <source>Unsupported IbInput event type.</source>
+        <translation>Unsupported IbInput event type.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="198" />
+        <source>IbInput release is incomplete; automatic restart is blocked.</source>
+        <translation>IbInput release is incomplete; automatic restart is blocked.</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="54" />
+        <source>IbInput is mixed with another send method in one mouse movement group: %1</source>
+        <translation>IbInput is mixed with another send method in one mouse movement group: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="55" />
+        <source>This IbInput feedback/blocking combination still awaits validation: %1</source>
+        <translation>This IbInput feedback/blocking combination still awaits validation: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="65" />
+        <source>Complex IbInput combinations, repetition, locking or stop/tab commands still await validation: %1</source>
+        <translation>Complex IbInput combinations, repetition, locking or stop/tab commands still await validation: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="69" />
+        <source>IbInput output can trigger an original key; this feedback path awaits validation: %1</source>
+        <translation>IbInput output can trigger an original key; this feedback path awaits validation: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="82" />
+        <source>This IbInput mouse button still awaits backend validation: %1</source>
+        <translation>This IbInput mouse button still awaits backend validation: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="93" />
+        <source>This IbInput key representation still awaits validation: %1</source>
+        <translation>This IbInput key representation still awaits validation: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="95" />
+        <source>IbInput macro/repeat expansion still awaits validation: %1</source>
+        <translation>IbInput macro/repeat expansion still awaits validation: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="116" />
+        <source>IbInput send failed; mapping must stop.</source>
+        <translation>IbInput send failed; mapping must stop.</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="5204" />
+        <location filename="../qkeymapper_worker.cpp" line="5340" />
+        <location filename="../qkeymapper_worker.cpp" line="5480" />
+        <source>IbInput absolute positioning is not available for this backend.</source>
+        <translation>IbInput absolute positioning is not available for this backend.</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="9931" />
+        <source>Wait for IbInput cleanup before starting.</source>
+        <translation>Wait for IbInput cleanup before starting.</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="10382" />
+        <source>IbInput tab switching is awaiting lifecycle validation; mapping was stopped.</source>
+        <translation>IbInput tab switching is awaiting lifecycle validation; mapping was stopped.</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="21" />
+        <source>Table %1, row %2</source>
+        <translation>Table %1, row %2</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="23" />
+        <source>Row %1</source>
+        <translation>Row %1</translation>
+    </message>
+</context>
+<context>
+    <name>QkmIbInputPopup</name>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="80" />
+        <source>Preferred backend</source>
+        <translation>Preferred backend</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="80" />
+        <source>If unavailable</source>
+        <translation>If unavailable</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="81" />
+        <source>Automatic (recommended)</source>
+        <translation>Automatic (recommended)</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="81" />
+        <source>Logitech legacy</source>
+        <translation>Logitech legacy</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="83" />
+        <source>Do not start mapping</source>
+        <translation>Do not start mapping</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="83" />
+        <source>Use SendInput before start</source>
+        <translation>Use SendInput before start</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="84" />
+        <source>Refresh status</source>
+        <translation>Refresh status</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="84" />
+        <source>Check connection</source>
+        <translation>Check connection</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="85" />
+        <source>May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup.</source>
+        <translation>May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="86" />
+        <source>&lt;a href="https://www.logitechg.com/innovation/g-hub.html"&gt;G HUB&lt;/a&gt; | &lt;a href="https://www.razer.com/synapse"&gt;Razer Synapse&lt;/a&gt;&lt;br&gt;Connection and accepted calls do not prove that an application received input.</source>
+        <translation>&lt;a href="https://www.logitechg.com/innovation/g-hub.html"&gt;G HUB&lt;/a&gt; | &lt;a href="https://www.razer.com/synapse"&gt;Razer Synapse&lt;/a&gt;&lt;br&gt;Connection and accepted calls do not prove that an application received input.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="100" />
+        <source>G HUB version: %1</source>
+        <translation>G HUB version: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="100" />
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>Unknown</source>
+        <translation>Unknown</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="101" />
+        <source>Observed process names: %1</source>
+        <translation>Observed process names: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>G HUB driver registration: %1</source>
+        <translation>G HUB driver registration: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>Observed</source>
+        <translation>Observed</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="103" />
+        <source>Razer installation and driver: Unknown</source>
+        <translation>Razer installation and driver: Unknown</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="104" />
+        <source>Backend: %1; fallback: %2</source>
+        <translation>Backend: %1; fallback: %2</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="104" />
+        <source>Not connected</source>
+        <translation>Not connected</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="104" />
+        <source>Yes</source>
+        <translation>Yes</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="104" />
+        <source>No</source>
+        <translation>No</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="105" />
+        <source>Last result: %1</source>
+        <translation>Last result: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="106" />
+        <source>Sampled: %1</source>
+        <translation>Sampled: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="107" />
+        <source>Stop mapping and wait for cleanup before changing preferences.</source>
+        <translation>Stop mapping and wait for cleanup before changing preferences.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="108" />
+        <source>Status refresh does not initialize a driver.</source>
+        <translation>Status refresh does not initialize a driver.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="109" />
+        <source>This checkpoint enables G HUB relative movement only. Other outputs await validation.</source>
+        <translation>This checkpoint enables G HUB relative movement only. Other outputs await validation.</translation>
     </message>
 </context>
 </TS>

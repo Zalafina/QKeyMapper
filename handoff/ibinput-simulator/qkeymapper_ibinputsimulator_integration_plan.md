@@ -430,7 +430,8 @@ MCP 仓库路径仅为本机参考位置，另一 PC 可不同。需要对齐时
 先阅读本仓库 AGENTS.md、.agents/skills/qkeymapper-workflow/SKILL.md、
 .agents/context/project-memory.md、handoff/README.md 和本计划顶部交接卡。
 核对实际仓库、分支、源码／文档检查点，保留已有改动。
-2026-10-29 用户已明确恢复开发并授权聚焦本地提交。\n从本文 R5 顶部卡和第 11 节实际检查点继续；不能把本地提交当作阶段验收完成。
+2026-10-29 用户已明确恢复开发并授权聚焦本地提交。
+从本文 R5 顶部卡和第 11 节实际检查点继续；不能把本地提交当作阶段验收完成。
 只在独立仓库执行本次授权的 IbInput 切片，不改动原 MCP 工作区。
 到输入生命周期和最终合流检查点时，按第 8 节只读对齐 MCP。
 完成选定验证后更新本计划，准确区分当前、复用和未执行证据。
@@ -455,13 +456,15 @@ Worker 覆盖四类连续移动和相对坐标、键／按钮／滚轮的既有�
 | ID | 当前执行与结果 | 证据／限制 |
 |---|---|---|
 | DEP-P1/P2 | 两架构原版五组问题逐项 exit 2，补丁五组 exit 0；参数非法模式原版 exit 2、补丁 exit 0；配套 DLL、LIB、正式头及许可证核对 | out/ibinput/logs/x64、x86；原版 C4715 和早期配置失败保留，修正版构建未检出警告；无真实设备 |
-| BUILD-Q6 | 最终 Qt6.8.3 x64 Release 增量构建，原生退出 0；零编译／链接错误及警告，正式 EXE 未启动 | out/ibinput/logs/qt6-product-build-checkpoint-final.log；EXE=out/build_qt6/release/QKeyMapper.exe。后续若再改源码／资源须按实际受影响范围更新证据 |
+| BUILD-Q6 | 最终 Qt6.8.3 x64 Release 增量构建，原生退出 0；零编译／链接错误及警告，正式 EXE 未启动 | out/ibinput/logs/qt6-product-build-final-with-translations.log；EXE=out/build_qt6/release/QKeyMapper.exe。后续若再改源码／资源须按实际受影响范围更新证据 |
 | CLIENT | Qt6 x64、Qt5 x64／x86 各 8 组客户端替身：偏好往返、候选、未初始化／代次拒绝、回退冻结、发送／释放失败、槽满、滚轮与停止组合、能力和并发；均原生 0、无编译警告 | out/ibinput/logs/qt*-client-*.log；正式 C API 替身，不是驱动验证；Qt6 单独编译正式能力门控目标并通过 |
 | ABI/UI | Qt5 两架构正式头 C++17 /W4 /WX 链接真实导入库通过；两份修改 UI 的 Qt5 uic 均 0 | out/ibinput/logs/qt5-*-formal-abi-link.log、*-uic.log；未运行 ABI EXE，不代表 Qt5 全产品构建或 UI 通过 |
 | TEXT | Qt5.15.2 x64 lupdate-pro QKeyMapper.pro、三语 lrelease 均 0；仅应用批准的 62 项；Linguist lconvert 从每个正式 QM 回读，与 TS／建议逐项一致；未相关旧条目保持不变 | out/ibinput/logs/translations-*-lrelease.log、*-qm-roundtrip.log、translations-formal-lupdate-qt5.log；Qt6 提取虽退出 0 但报 winextras 模块错误，判无效并保留原件；Qt5 提取无模块／编译器错误。实际产品运行时翻译与视觉仍未执行 |
 | SOURCE | 实际 diff、编码／LF、配置白名单、正式依赖与 Qt5 API 使用检查 | 本轮 staged 与 working tree 分开核对；out、__pycache__、个人 INI 不提交。__pycache__/ 已加入 .gitignore |
 
-模拟只证明受测软件契约。正式产品构建不证明其完整映射路径、目标应用接收或无回归。早期客户端 6／7 组及较早构建只作历史执行记录，不代替最终源码的上述检查。曾有测试启动环境缺少 Qt DLL 路径（0xC0000135），已只修测试 PATH 后重跑正式能力门控为 0，失败原件保留。依赖脚本现为选定测试通过后才部署，并拒绝不明 staged／untracked 来源改动。
+模拟只证明受测软件契约。Qt5 两架构产品 qmake 生成均原生 0，Makefile 已核对匹配架构的导入库与 DLL 复制规则（qt5-*-product-configure.log），未做全产品编译。
+
+正式产品构建不证明其完整映射路径、目标应用接收或无回归。早期客户端 6／7 组及较早构建只作历史执行记录，不代替最终源码的上述检查。曾有测试启动环境缺少 Qt DLL 路径（0xC0000135），已只修测试 PATH 后重跑正式能力门控为 0，失败原件保留。依赖脚本现为选定测试通过后才部署，并拒绝不明 staged／untracked 来源改动。
 
 ### 11.3 Default 桌面的真实 G HUB 最小抽查
 
@@ -513,3 +516,96 @@ IB-03 前及收尾均读取 MCP 稳定提交 20c0ea1f02b8accbc2ca31838c436260ee3
 先提交获批补丁、固定正式依赖、许可、重建脚本、报告／参数替身、Python 缓存忽略和主计划／依赖事实。该依赖提交不包含尚在工作区的产品接线、客户端／Popup、其定向测试或正式翻译，不能将计划描述的工作区进度当作该单个提交的源码内容。
 
 再提交产品、客户端、配置／Popup、Worker／生命周期、固定验证探针、定向测试、批准的 TS/QM 及文案稿，并更新本计划。提交前核对暂存清单／编码／差异；均是本地开发检查点，提交不代表阶段或完整功能验收。完整 SHA 于提交产生后记录，HEAD 自引用由 Git 实际日志和交接回复识别。
+
+2026-10-30 故障收尾复核：释放失败后保持 GUI 清理锁定，客户端 busy／偏好修改同样受 releaseIncomplete 约束；不自动重试或假报清理完成。补充同一客户端 failure 模拟断言，重跑受影响目标和最终 Release 后再提交产品；无新 Default 场景。依赖检查点为 e7f7ab3fd0053ad2bf1eace743916418d9de4370，18 个明确白名单文件；产品代码、正式翻译和文案稿仍是本任务相关工作区差异，随下一检查点。
+
+回退状态的主窗口单行明确显示实际 SendInput，配置值仍为 3；“IbInput: %1”为三语相同固定模板，不新增翻译词条。最后 Release 以全部这些工作区差异及正式 QM 为输入。
+
+### 11.8 可复用的测试方法与环境
+
+这是本轮实际方法的恢复说明，不另建进度。接续先按源码和本机变化选择必要项，不因已有用例就默认重跑完整矩阵。REPO_ROOT 使用 Win11 实际独立检出路径；不复制原 PC 的 out、个人 INI 或 gsudo PID。
+
+| Git 内材料／方法 | 恢复与使用 | 桌面／边界 |
+|---|---|---|
+| 固定依赖、两补丁、许可证和重建脚本 | QKeyMapper/IbInputSimulator、scripts/build_ibinput_dependency.py；版本、两架构命令见 dependency_provenance.md | 普通权限；构建／记录替身，不加载后端 |
+| 客户端固定模拟 | QKeyMapper/tests/ibinput/client_test.pro／.cpp，8 组配置、候选、准入、回退、停止、报告及并发；正式 API 是替身，没有导入真实 IbInput DLL | 控制台，无 GUI／Hook／驱动／真实输入，不需要 Default |
+| 正式能力守卫模拟 | 同一 client_test.pro 加 CONFIG+=ibinput_production_capabilities，确认未开放输出不进入 API | 同上；不能将验证探针宏带入产品 pro |
+| 正式头／导入库 ABI | 两架构使用 C++17、/W4 /WX，取 IbSendInit／IbSendInput／IbSendDestroy 地址链接对应 LIB；PE／导出证据见依赖日志 | 仅编译／链接，不运行 ABI EXE；依赖变化时按需重做 |
+| 固定 G HUB 接收探针 | ghub_probe.pro／.cpp，只链接本客户端、正式 x64 DLL 和 Qt Widgets；必须 --ghub-smoke 及 QKM_IBINPUT_PROBE_LOG | 真实接收必须 Default；自有窗口，核对用户实例／物理保持、实际桌面／前台；普通权限，短时焦点、小幅移动、F24、左键、滚轮 |
+| 截图和正常关闭 | scripts/capture_ui_snapshots.ps1 -ProcessId ... -WindowHandle ... -PrintWindow；scripts/test_process.ps1 的 Start-QkmTestProcess／Close-QkmTestProcess 保存核对 EXE／PID／StartTicks | 自主查看快照；失败也在 finally 中仅正常关闭自有进程；不按名称关闭用户实例 |
+| 后续纯 UI／语言／主题／程序缩放 | 优先实际私有桌面＋PrintWindow及实际线程桌面核对；沿用 qkm_ui_scale、正式 QM 与固定捕获方法 | 私有桌面不切换用户输入桌面。当前独立检出的旧 test_process.ps1 不支持 -DesktopName，不能假称已支持；MCP 稳定 20c0ea1f02b8accbc2ca31838c436260ee340c43 已有 scripts/test_process.ps1、scripts/test_test_process.ps1、mcp_bridge/tests/test_product_interop.py，可复用其中 STARTUPINFO.lpDesktop、身份与捕获方法，先只读对齐，再在独立测试／合流切片接入，不整套搬入产品 |
+| 后续 Default 必要场景 | 厂商真实输入和目标接收、实际前台／焦点、物理拖拽／跨屏 DPI、托盘／遮挡交互 | 在本计划列出原因、范围、自有接收进程、输入／截图方式、可见影响、预计用时和授权；静态布局、翻译、程序移窗本身不要求 Default |
+
+本轮纯软件检查只需要普通 Python 3.11 标准库，不需要 pip、MCP 服务或厂商软件。构建需要 VS C++、SDK 10.0.19041.0、Git，依赖重建另需 CMake。Qt 套件和 JOM 本机位于 C:/Qt/Qt6；接续按实际安装调整，不混用 x86／x64 编译环境。Git 已包含配套 DLL，不要求无条件重建全部依赖。
+
+下面示例在仓库根目录复用已有环境和日志函数，不运行真实探针：
+
+~~~powershell
+$ibChecks = @"
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path("scripts").resolve()))
+from build_ibinput_dependency import ROOT, OUT, environment, run
+qt = Path("C:/Qt/Qt6/6.8.3/msvc2022_64/bin")  # Use this PC's actual kit.
+env = environment("x64")
+for name in list(env):
+    if name.upper() == "PATH":
+        env[name] = str(qt) + ";" + env[name]
+jom = Path("C:/Qt/Qt6/Tools/QtCreator/bin/jom/jom.exe")
+for label, extra in [("qt6-x64", []), ("qt6-production-gates", ["CONFIG+=ibinput_production_capabilities"])]:
+    build = OUT / "client-tests" / label
+    build.mkdir(parents=True, exist_ok=True)
+    run([qt / "qmake.exe", ROOT / "QKeyMapper/tests/ibinput/client_test.pro",
+         "CONFIG-=debug", "CONFIG+=release", *extra],
+        OUT / "logs" / (label + "-client-configure.log"), cwd=build, env=env)
+    run([jom, "-j4"], OUT / "logs" / (label + "-client-build.log"), cwd=build, env=env)
+    run([build / "release/QKeyMapperIbInputClientTest.exe"],
+        OUT / "logs" / (label + "-client-tests.log"), cwd=build, env=env)
+"@
+python -B -X utf8 -c $ibChecks
+~~~
+
+Qt5 按需使用相同工程，分别选择 5.15.2/msvc2019_64＋environment("x64")、5.15.2/msvc2019＋environment("x86")，用独立输出目录。UI 编译使用对应 kit 的 uic；产品 qmake 只生成 Makefile 并核对 IbInputSimulator/lib/x64 或 x86，不代表全产品编译。Qt6 产品沿用 scripts/build_qt6.ps1 -Jobs 4，以外部 PowerShell -File 调用记录真实退出码，零警告门槛不变。
+
+真实探针先在 out/ibinput/ghub-probe 配置 ghub_probe.pro（Qt6 x64、CONFIG-=debug CONFIG+=release），JOM 编译后复制 Git 内 lib/x64 的正式 DLL 至 release，并用同一 kit 的 windeployqt --release --no-translations --no-opengl-sw --no-compiler-runtime 部署 EXE。不启动产品主窗口替代探针，以免初始化旧后端。探针为普通 asInvoker；权限不足时停止，针对确切启动／关闭场景另行授权，不更改产品 manifest 或提权开发工具。
+
+得到新 PC 对应场景授权、公告开始并核对冲突后，可复用如下方法；这会产生真实输入，不作为恢复环境时的自动步骤。新版探针只初始化一次，在同代次顺序执行固定动作；本机旧 02/03 的分动作重连结果不代表新版通过。
+
+~~~powershell
+. .\scripts\test_process.ps1
+if (Get-Process -Name QKeyMapper,QKeyMapperIbInputGhubProbe -ErrorAction SilentlyContinue) {
+    throw 'Conflicting user/test process; no input started.'
+}
+$ibExe = (Resolve-Path 'out/ibinput/ghub-probe/release/QKeyMapperIbInputGhubProbe.exe').Path
+$ibLog = Join-Path (Get-Location) 'out/ibinput/logs/ghub-smoke-this-pc.log'
+$ibOwned = $null
+try {
+    $ibOwned = Start-QkmTestProcess -ExecutablePath $ibExe -Arguments '--ghub-smoke' -EnvironmentOverrides @{QKM_IBINPUT_PROBE_LOG=$ibLog}
+    for ($ibPoll=0; $ibPoll -lt 16; $ibPoll++) {
+        Start-Sleep -Milliseconds 700
+        if ((Test-Path $ibLog) -and (Select-String -LiteralPath $ibLog -Pattern 'Result=' -Quiet)) { break }
+    }
+    $ibOwned.Process.Refresh()
+    $ibWindow = $ibOwned.Process.MainWindowHandle.ToInt64()
+    if (!$ibWindow) { throw 'Owned receiver window missing.' }
+    & .\scripts\capture_ui_snapshots.ps1 -Label 'ibinput_ghub_this_pc' -ProcessId $ibOwned.Process.Id -WindowHandle $ibWindow -PrintWindow
+    Get-Content -LiteralPath $ibLog
+} finally {
+    if ($null -ne $ibOwned) {
+        $ibExit = Close-QkmTestProcess $ibOwned
+        Write-Output ('NativeExitCode=' + $ibExit)
+    }
+}
+~~~
+
+通过须同时满足 Result=PASS、规定接收计数／方向、本轮 released=true／incomplete=false 和正常退出 0；仅 DLL 装载、Prepare 成功、截图或 API 接受都不够。探针核对 Default、前台和实际光标位置；用户允许的助手指针定位只是准备，不算 G HUB 输出证据。复连单独列用例，不混进每类基本动作之间。
+
+### 11.9 与 MCP 的 TS/QM 合流提示
+
+本功能已按批准文本更新 QKeyMapper/translations/QKeyMapper_{en_US,zh_CN,ja_JP}.ts 及各自 QM。MCP 同样修改这些资源，是预期共享面，不能由最后修改者覆盖另一边。
+
+- TS 按 context＋source＋comment 匹配，保留两边新增词条和旧翻译；line／location 变化不构成删除另一功能词条的理由。相同键但译文实质冲突时展示差异审阅，不擅自改批准含义。
+- IbInput、IbInput...、IbInput: %1、Logitech G HUB、Razer Synapse 按用户决定为固定文字／notr；不要合流时重新加入冗余翻译。其余 62 项 context、英文、中／日建议、占位符和 HTML 换行见 translation_review.md。
+- QM 是生成制品，二进制冲突不单选 ours／theirs；先合并三份 TS，再用集成源码的实际可用 kit 重新 lrelease，保留 translations.qrc 三语资源。
+- 合流后执行 lupdate-pro，检查原生退出和模块／编译器诊断；本机 Qt6 工具曾有 winextras 提取错误、Qt5 工具成功，不能只凭 exit 0 判断有效。仅保留相关词条，避免无关重排、位置大改或 obsolete 清理。
+- 核对双方词条、占位符及实际 LF／HTML 语义，再做 QM 回读和集成产品三语页面／语言刷新（中文优先）。双方分别通过不等于合流通过；结果回填两任务各自的唯一计划，不创建第三份进度来源。
