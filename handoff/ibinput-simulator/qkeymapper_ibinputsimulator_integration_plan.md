@@ -11,12 +11,12 @@
 | 当前授权 | 2026-10-29 恢复主要开发及聚焦本地提交；0001／0002 均明确批准。G HUB 最小连接／短移／F24／左键／滚轮已授权，另准一次复测；不 push、不合并 master，不启动／关闭厂商软件、提权、重启或故障设备测试 |
 | 本轮执行机器 | PC-W10，Windows 10 Pro 22H2 19045.6093 x64；G HUB 2026.7.992920，安装／进程观察与实际结果分别记录 |
 | 实施仓库 | F:/work/code/mygit_hub/temp_test/QKeyMapper_temp_debug/QKeyMapper；另一台 PC 以实际检出路径为准 |
-| 分支／起点 | codex/ibinput-simulator；DOC-00=53f80dbdb2b0893289118fb76d6e566bc9beb393，产品基线=d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d；开始时干净；本轮聚焦提交见末尾检查点记录 |
+| 分支／起点 | codex/ibinput-simulator；DOC-00=53f80dbdb2b0893289118fb76d6e566bc9beb393，产品基线=d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d；开始时干净；依赖=e7f7ab3fd0053ad2bf1eace743916418d9de4370，产品=69dc82ecea68e4008992e1c522e5c2362100675c；后续文档封存的 HEAD 以 git rev-parse HEAD 为准 |
 | 唯一计划 | 本文件；双层 handoff 路径不存在，沿用仓库单层入口，未创建第二份进度 |
 | 工具链 | Qt6.8.3 x64／Qt5.15.2 x64、x86，MSVC 19.44.35222.0，SDK 10.0.19041.0，CMake 3.28.6；Qt6 产品 Release 及定向客户端／ABI 检查见第 11 节 |
 | 依赖 | 四个固定提交、完整许可、正式公共头文件、获批两补丁、配套 x64／x86 DLL／导入库均随 Git；重建命令及真实制品身份见 dependency_provenance.md |
 | MCP 只读参考 | F:/work/code/mygit_hub/QKeyMapper，codex/qkeymapper-mcp-control，20c0ea1f02b8accbc2ca31838c436260ee340c43；IB-03 前及收尾再次核对；未修改其源码／计划，无关 .claude/settings.local.json 保留 |
-| 当前范围／实耗 | 依赖、客户端、配置／Popup、四类移动和键／钮／轮、代次及排空释放主要代码；原估算 P1 2–4h、C1/C2 3–5h、C3/C4 4–8h。本轮跨中断累计工时未连续计时，不虚报实耗；构建和探针以原始时间戳为准，收尾切片 23:42 起，预估 30–60min |
+| 当前范围／实耗 | 依赖、客户端、配置／Popup、四类移动和键／钮／轮、代次及排空释放主要代码；原估算 P1 2–4h、C1/C2 3–5h、C3/C4 4–8h。本轮跨中断累计工时未连续计时，不虚报实耗；构建和探针以原始时间戳为准，收尾切片自 23:42 至 00:31 缓存关闭约 49min，预估 30–60min；最终文档封存以提交时间为准 |
 | 权限／桌面 | 编辑／Git／构建／截图均普通权限。三个自有探针在 Default，短时焦点；未接管用户实例，均正常关闭。只有第二个探针发送四次短移；其他动作未发送 |
 | 当前结果／性质 | 当前是本地开发检查点，不能代表功能／阶段验收完成。G HUB 首次短移收到并正常关闭；随后重新初始化及独立一次复测均返回 DeviceCreateFailed(5)，完整抽查失败 |
 | 能力门控 | 正式产品暂开放 G HUB 相对移动；四条产品映射路径仍待实测。键／左键／垂直轮实现保留在固定验证目标，待真实接收及释放证据后开放；其他后端、按钮组合／拖拽／定位／复杂序列保守拒绝且保留配置 |
@@ -509,7 +509,7 @@ IB-03 前及收尾均读取 MCP 稳定提交 20c0ea1f02b8accbc2ca31838c436260ee3
 - 不随 Git：out/ibinput/sources 和所有构建缓存／原始日志、test_snapshots 截图、gsudo 本机记录。固定依赖可按 dependency_provenance.md 两条普通权限命令恢复；选定软件检查及探针可在新 PC 重跑，不复制 CMake 缓存。
 - 若需复核本机失败原件，由用户单独复制上述 02/03 日志及两张自有窗截图；缺少原件时标记历史记录，不能声称新 PC 已复核。个人 INI／凭据／用户设备身份不传。
 - 用户可手工 push 此功能分支，再在 Win11 fetch／只快进同步；或创建 Git bundle 传输。Agent 未 push，也未操作 master。实际完整提交 SHA 和 bundle 基准在最后检查点条目及交接回复给出。
-- 用户请求的 3h gsudo PID 缓存只影响既定测试启动／关闭，未扩大授权。控制器 PID8104（Medium），硬截止 2026-10-30 02:10:13；本轮普通探针未使用提权。正式结束时按技能 off 并只读确认，结果补到本计划；不继承到 Win11。
+- 用户请求的 3h gsudo PID 缓存只影响既定测试启动／关闭，未扩大授权。控制器 PID8104（Medium），硬截止 2026-10-30 02:10:13；本轮普通探针未使用提权。已于 2026-10-30 00:31:22 按技能 off，返回 closed／user_off、generation 2、cache_available=false、native_sessions_observed=0，拥有／未知／在途／当前动作／作业均空；独立 status 确认无受管控制器、原生会话 0。不继承到 Win11。
 
 ### 11.7 聚焦本地提交顺序
 
@@ -517,7 +517,7 @@ IB-03 前及收尾均读取 MCP 稳定提交 20c0ea1f02b8accbc2ca31838c436260ee3
 
 再提交产品、客户端、配置／Popup、Worker／生命周期、固定验证探针、定向测试、批准的 TS/QM 及文案稿，并更新本计划。提交前核对暂存清单／编码／差异；均是本地开发检查点，提交不代表阶段或完整功能验收。完整 SHA 于提交产生后记录，HEAD 自引用由 Git 实际日志和交接回复识别。
 
-2026-10-30 故障收尾复核：释放失败后保持 GUI 清理锁定，客户端 busy／偏好修改同样受 releaseIncomplete 约束；不自动重试或假报清理完成。补充同一客户端 failure 模拟断言，重跑受影响目标和最终 Release 后再提交产品；无新 Default 场景。依赖检查点为 e7f7ab3fd0053ad2bf1eace743916418d9de4370，18 个明确白名单文件；产品代码、正式翻译和文案稿仍是本任务相关工作区差异，随下一检查点。
+2026-10-30 故障收尾复核：释放失败后保持 GUI 清理锁定，客户端 busy／偏好修改同样受 releaseIncomplete 约束；不自动重试或假报清理完成。补充同一客户端 failure 模拟断言，重跑受影响目标和最终 Release 后再提交产品；无新 Default 场景。依赖检查点为 e7f7ab3fd0053ad2bf1eace743916418d9de4370，18 个明确白名单文件；产品代码、正式翻译和文案稿随后已纳入 69dc82ecea68e4008992e1c522e5c2362100675c；受影响的最终 Release 和三配置模拟复查通过。
 
 回退状态的主窗口单行明确显示实际 SendInput，配置值仍为 3；“IbInput: %1”为三语相同固定模板，不新增翻译词条。最后 Release 以全部这些工作区差异及正式 QM 为输入。
 
@@ -609,3 +609,32 @@ try {
 - QM 是生成制品，二进制冲突不单选 ours／theirs；先合并三份 TS，再用集成源码的实际可用 kit 重新 lrelease，保留 translations.qrc 三语资源。
 - 合流后执行 lupdate-pro，检查原生退出和模块／编译器诊断；本机 Qt6 工具曾有 winextras 提取错误、Qt5 工具成功，不能只凭 exit 0 判断有效。仅保留相关词条，避免无关重排、位置大改或 obsolete 清理。
 - 核对双方词条、占位符及实际 LF／HTML 语义，再做 QM 回读和集成产品三语页面／语言刷新（中文优先）。双方分别通过不等于合流通过；结果回填两任务各自的唯一计划，不创建第三份进度来源。
+
+### 11.10 最终本地检查点与手工传输
+
+| 提交 | 包含内容／性质 |
+|---|---|
+| e7f7ab3fd0053ad2bf1eace743916418d9de4370 | 固定获批依赖、许可、0001／0002、两架构正式 DLL／导入库、重建与无驱动报告测试、缓存忽略、主计划／依赖事实；依赖独立提交切点 |
+| 69dc82ecea68e4008992e1c522e5c2362100675c | 方式 3、客户端、全局偏好与 Popup、移动／键钮轮／代次排空释放、定向测试／固定探针、批准的 62 项正式 TS/QM、文案稿及测试方法／合流说明；本地开发检查点，包含未验收／未开放实现 |
+| 本段所在后续文档封存 HEAD | 如实记录上述完整 SHA、最终工作区、缓存关闭和交接方法；用 git rev-parse HEAD 取得实际完整 SHA，避免正文递归自引用 |
+
+当前功能分支 codex/ibinput-simulator，未 push、未合并 master。产品／依赖提交后工作区干净；本次文档封存只修改本计划。MCP 仍为 20c0ea1f02b8accbc2ca31838c436260ee340c43，未修改其源码／主计划，原无关 .claude/settings.local.json 保留。Git／构建保持普通权限；受限沙箱曾无法核实缓存控制器，不能将那个空查询当成已关闭。随后以同一普通登录身份核实原 instance／PID8104，再正常 off 并独立确认原生会话 0；未接管其他缓存或扩大测试。
+
+已在忽略 out/ibinput/handoff/pc-w10-ghub-minimal-evidence-20261030.zip 封存 02/03 两份真实抽查日志和两张已查看的自有窗截图，CRC 检查通过。这四份原件可由用户随 bundle 单独复制；不包含个人 INI、凭据、用户桌面、完整构建日志或缓存。旧探针 EXE 后来被新版构建替换，不能拿当前 EXE 代替旧场次的二进制身份或声称新版通过；接收 PC 需按所选场景重新构建并注明当前／历史证据。
+
+文档封存后，在本机 out/ibinput/handoff/qkeymapper-ibinput-simulator-20261030.bundle 创建仅此功能分支的 Git bundle，并执行 git bundle verify；前置提交为 DOC-00 53f80dbdb2b0893289118fb76d6e566bc9beb393。该 bundle 为本地派生传输物，不随 Git。用户自行复制到 Win11，不自动网络传送或 push。接收步骤：
+
+~~~powershell
+git status --short
+git bundle verify X:\transfer\qkeymapper-ibinput-simulator-20261030.bundle
+git fetch X:\transfer\qkeymapper-ibinput-simulator-20261030.bundle codex/ibinput-simulator
+# Existing feature branch: preserve local work and allow only a fast-forward.
+git switch codex/ibinput-simulator
+git merge --ff-only FETCH_HEAD
+# If the local feature branch does not exist, use instead:
+# git switch -c codex/ibinput-simulator FETCH_HEAD
+~~~
+
+出现本地改动、分叉或 bundle 前置提交缺失时保留现场并核实，不 reset／clean。可改由用户手工推送功能分支再在 Win11 fetch；Agent 如需 push 必须另获授权。bundle 不含 MCP 分支的未推送历史；IB-05 前须确保 Win11 另有实际 MCP 稳定检出，按其自身任务流程传输，不能把参考 SHA 当作已同步。
+
+Win11 接续顺序与完成标准仍见 11.5，测试恢复和桌面选择见 11.8，TS/QM 合流见 11.9。未执行的产品路径、完整 UI、Qt5 全产品、其他后端／系统、ASan／静态分析／发布包与 MCP 合流仍未通过；本地提交不改变这些状态。
