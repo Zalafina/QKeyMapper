@@ -2,7 +2,9 @@
 
 记录日期：2026-10-29。本文保存来源、制品身份和证据边界；设计、进度及下一步只维护在 [主计划](qkeymapper_ibinputsimulator_integration_plan.md)。
 
-## 证据边界
+## DOC-00 历史证据边界
+
+以下至“2026-10-29 PC-W10 当前恢复与配套重建”之前为 DOC-00 历史记录，不是当前工作区或当前重建结果；现行制品身份和恢复命令见末节。
 
 本机已有材料位于 plan/ibinput_simulator/，由用户复制到独立仓库。本次读取原 BUILD_INFO.md、查看接口／相关源码，并核对四份 DLL／LIB 的文件大小及 SHA256；未重建、加载或执行 DLL，未运行导出表／依赖扫描，也未验证厂商软件与驱动。
 
@@ -23,7 +25,7 @@
 
 ## 本机现有制品
 
-来源机器：PC-A（2026-10-29 本次工作所在 PC）；以下路径均相对 plan/ibinput_simulator/。本次大小与哈希与原构建记录一致。路径中的架构是原记录标注，本轮未用 PE 工具重新确认。
+来源机器：PC-A（DOC-00 记录机器）；以下路径均相对 plan/ibinput_simulator/。本次大小与哈希与原构建记录一致。路径中的架构是原记录标注，本轮未用 PE 工具重新确认。
 
 | 文件 | 大小（字节） | SHA256 |
 |---|---:|---|
@@ -67,4 +69,34 @@ IbInputSimulator.dll 是动态库，.lib 为其导入库；/MT 指 C/C++ 运行�
 7. 若由用户显式提供已有制品，则比对表中身份并记录传输来源；一致只表示复用同一文件，仍需完成本机接续所需检查。重建制品可能产生不同哈希，应记录新的真实身份和验证，不要求未知条件下位级一致。
 8. 更新本文的来源事实及主计划中的阶段／能力／验证记录。只提交获授权、经许可核对的必要依赖内容；完整日志、构建缓存和个人配置保留在本机忽略的 out/。
 
-本轮到此为文档交付，不执行上述恢复、重建、软件安装或驱动操作。
+上述停止边界属于 DOC-00；本次恢复及实际重建结果如下。
+
+## 2026-10-29 PC-W10 当前恢复与配套重建
+
+本节是本次真实执行；前文 PC-A 制品表继续作为历史身份记录，本机没有收到其原始制品。四个仓库按前述完整提交重新检出；固定源码及本机 out 不随 Git。
+
+- 实际工具链：VS 2022 Community 17.14.23，MSVC 19.44.35222.0，Windows SDK 10.0.19041.0，CMake 3.28.6，NMake；依赖 Release、BUILD_SHARED_LIBS=ON、上游 /MT，产品保持 C++17。
+- IbInputSimulator／IbWinCppLib／Detours 的原始 MIT 许可及 RapidJSON 的完整许可已保存至 QKeyMapper/IbInputSimulator/licenses。RapidJSON 仅消费 include 下的实际头文件，不使用或分发 bin/jsonchecker；完整声明保留其附加 BSD／JSON 条款，不将整份来源简单改写成单一许可。
+- 用户已分别批准 0001 Logitech 报告安全与 0002 参数返回边界补丁；完整文本在 QKeyMapper/IbInputSimulator/patches，基准与用途见其 README，设计／批准／进度仍以唯一主计划为准。
+- 原版与两补丁版的 x64／x86 DLL 和导入库均已重建；配套修正版部署到 QKeyMapper/IbInputSimulator/lib/x64、lib/x86，固定正式公共头文件在 include/IbInputSimulator。未采用手写 DLL 函数表或修改产品语言标准。
+- dumpbin 已检查 DLL、导入库机器类型、导出／导入／依赖；公开 C 入口与调用约定保持原版形态。Qt6 C++17 客户端替身已通过；Qt5 消费及正式 ABI 链接的当前结果由主计划记录，不以 PE 检查冒充运行。
+- 依赖原版存在 C4715，原始日志保留；修正版消除这两处返回路径警告，未屏蔽 warning。早期路径／安装配置失败保留在 out/ibinput/logs，不通过提权或改系统安装目录解决。
+- 尚未证明 Win7 启动、新依赖与所有历史系统／厂商版本兼容，静态导入不能替代实机验证。厂商驱动连接与实际接收分别记录。
+
+恢复命令（在仓库根目录，普通权限 Python 3.11；需要 VS C++ 工具、SDK 10.0.19041.0、CMake 和 Git）：
+
+~~~powershell
+python scripts/build_ibinput_dependency.py --arch x64 --review-patch --tests --deploy
+python scripts/build_ibinput_dependency.py --arch x86 --review-patch --tests --deploy
+~~~
+
+脚本验证固定提交、保留不明改动，在忽略 out 下重建；--review-patch 在独立生成副本应用补丁，--deploy 显式更新产品依赖目录。依赖 SOURCE 路径可以恢复，不复制另一台 PC 的 CMake 缓存。构建和测试均不初始化驱动或发送真实输入。重建可能产生不同 PE 时间戳／哈希，不要求未知条件下位级一致。
+
+当前纳入 Git 的制品身份：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| lib/x64/IbInputSimulator.dll | 214528 | 3CB142F46AD056862A5C252E035876F74FA8CD98A9D8D7E80686962E2C2C91E7 |
+| lib/x64/IbInputSimulator.lib | 4448 | 02D9BF0199958199CC16A80D66CF0FF6F825CDB40994289EBC44D4FAEEAA6C55 |
+| lib/x86/IbInputSimulator.dll | 168960 | 3E3272FBB9BE70EB908FDE4E3D8A28796C414EDD8CE32ABC1895787DE45390AB |
+| lib/x86/IbInputSimulator.lib | 4656 | D89E6A3BB16DF5D5DBD22601345566F78AA2E166F6637EA7C2FEEACEF308CE72 |
