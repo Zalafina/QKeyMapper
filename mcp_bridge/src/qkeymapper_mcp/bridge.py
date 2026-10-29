@@ -171,9 +171,11 @@ class Bridge:
 
     async def preview_changes(self, source_revision: str | None = None, source_tab_ref: str | None = None,
                               original_key: str | None = None, mapping_key: str | None = None,
-                              insert_row: int | None = None, *, action: str = "mapping.add", setting_name: str | None = None) -> dict:
+                              insert_row: int | None = None, *, action: str = "mapping.add", setting_name: str | None = None,
+                              source_refs: list[str] | None = None) -> dict:
         arguments = {key: value for key, value in dict(source_revision=source_revision, source_tab_ref=source_tab_ref,
-            original_key=original_key, mapping_key=mapping_key, insert_row=insert_row, setting_name=setting_name).items()
+            original_key=original_key, mapping_key=mapping_key, insert_row=insert_row, setting_name=setting_name,
+            source_refs=source_refs).items()
             if value is not None}
         if action == "mapping.add":
             arguments["insert_row"] = insert_row
@@ -182,12 +184,14 @@ class Bridge:
         return await self._call("qkm_preview_changes", arguments)
 
     async def apply_changes(self, preview_id: str, confirm_conflicts: bool = False, *,
-                            confirm_scope: bool = False, confirm_overwrite: bool = False) -> dict:
+                            confirm_scope: bool = False, confirm_overwrite: bool = False, confirm_delete: bool = False) -> dict:
         arguments = dict(preview_id=preview_id, confirm_conflicts=confirm_conflicts)
         if confirm_scope is not False:
             arguments["confirm_scope"] = confirm_scope
         if confirm_overwrite is not False:
             arguments["confirm_overwrite"] = confirm_overwrite
+        if confirm_delete is not False:
+            arguments["confirm_delete"] = confirm_delete
         return await self._call("qkm_apply_changes", arguments)
 
     async def cancel_changes(self, preview_id: str) -> dict:

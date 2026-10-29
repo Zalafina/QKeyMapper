@@ -98,3 +98,9 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 ## DELETE-112 共用单源删除边界
 
 `settings_remove_shared`独立验证私有共用入口，沿同一合成INI启动。无效Tab／空行／负行／越界／有效与越界混合列表、缺失源数据均须拒绝且完整源、dirty、加载、INI及当前单元格不变；逆序重复行只删除一次，保留非目标源，执行原刷新、鼠标点更新、接替选区及dirty。这里直接调用共用函数只证明其参数和效果边界，不能代替`settings_remove_gui`的独立真实GUI基线，也不证明MCP权限、稳定引用、预览提交或串行重置。
+
+## DELETE-113 正式源行删除
+
+`settings_save_apply`配合`delete_normal／delete_common_first／delete_common_all／delete_stale／delete_read／delete_hidden`复用87的真实认证请求夹具，启动同一Common76Seed合成INI；Common及stale变体通过实际Qt Tab点击选择Common。普通SDK调用维护模块 [mapping_deletion_acceptance.py](../../../mcp_bridge/tests/mapping_deletion_acceptance.py)，批准仅Read+Configure（read变体只Read），不授Run。模块的`fixture_bytes()`从既有common_save_fixture.ini.example去除Note、Category、两类Comments和CommonMappingData五个可选键行，精确重建111的1171字节种子，不另复制样例；每场必须将该内容复制到自有隔离runtime/keymapdata.ini，SDK拒绝其他INI。`.client`必须匹配实际SDK peer PID／创建时间／EXE；`.done`明确报SDK结果、successful_saves=0。正常关闭核对exit0及全部尾部工作，不能只看STOPPED。
+
+固定`.delete-open-editor／delete-close-editor`仅真实Qt双击／Esc，`.delete-gui-remove`在stale变体沿原Qt Delete改变实际源，不调用加载／删除函数替代GUI基线。`.delete-table-edit／delete-table-cancel`用原Qt editItem形成未提交Z草稿再Esc取消，`.delete-popup／delete-popup-close`形成受控QMenu，hidden变体的`.delete-hide-row／delete-show-row`注入及恢复表格隐藏状态；三者明确是准入保护组件注入，不是独立GUI删除／筛选基线。SDK应验证这些状态下预览／提交拒绝，恢复后源／dirty／INI不变，并检查正式删除的完整剩余字段、去重／旧引用、取消／确认／历史结果。其他普通Tab附加Common、真实筛选及独立备份等仍另验，串行重置未接通。

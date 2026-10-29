@@ -1000,3 +1000,7 @@ P1-110之上仅增加固定维护观察，产品deleteSelectedMappingData及头�
 ## DELETE-112：共用单源删除，正式MCP删除待接通
 
 111之上提取私有removeMappingRows，GUI仍负责可见选行／混合源限制；共用入口全部预检后倒序去重，原刷新／鼠标点／接替选区／dirty保留。双Qt八场66项通过，其中六场GUI完整记录与111精确相等，另两场共用边界覆盖无效参数零修改及逆序重复行。原manifest／实际私有桌面／正常退出／逐场清理全零。见[同一C1证据](map67c1_validation.md#delete-112单源删除共用业务2026-10-29pc-w11)。15工具／14能力不变；未开放正式MCP删除／重置，过滤／附加Common等扩展矩阵仍待，不标完整EQ-MAP-DELETE／M1完成。
+
+## DELETE-113：稳定源行删除已接通，完整删除／重置矩阵待验
+
+mapping.delete.preview／apply复用现有工具，Read+Configure及独立confirm_delete，完整owner源修订、当前附着可见单源1–100引用、去重／预检、无编辑窗／表格编辑／弹出菜单、完整清理及runtime互斥后调用112原业务。仅改内存／dirty，结果归原实例，旧引用失效、成功重放不再删除；当前15工具／16能力。双Qt十二场96项native、450 handler／471 SDK＋84 schema，八次正式删除，原GUI剩余全字段／派生对照及其他源保持；hidden为组件注入，原GUI基线111独立保留。版本／复用／原件及未验边界见[同一C1证据](map67c1_validation.md#delete-113稳定源行删除2026-10-29pc-w11)。不支持普通Tab间接删除附加Common或隐藏／分隔行，不自动切表／关闭／保存／启停；完整EQ-MAP-DELETE、真实筛选／派生／运行清理／其他实例、Win10及P2重置未标完成。

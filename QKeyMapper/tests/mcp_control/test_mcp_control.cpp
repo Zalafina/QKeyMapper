@@ -171,6 +171,8 @@ private slots:
     void mappingHelpBoundaries();
     void mappingChangeArguments();
     void savePreviewArguments();
+    void mappingRemovalArguments();
+    void mappingRemovalLifecycle();
     void mappingChangeLifecycle();
     void mappingChangeLimits();
     void configurationSaveLifecycle();
@@ -222,7 +224,7 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
         {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
     const auto capabilities = mappingChangeCapabilities();
-    QCOMPARE(capabilities.size(), 6);
+    QCOMPARE(capabilities.size(), 8);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("preview_ttl_ms")).toInt(), 120000);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     const auto operation = capabilities.last().toObject();
@@ -279,6 +281,87 @@ void McpControlTest::savePreviewArguments()
     QCOMPARE(saveApply.value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save.apply"));
     QVERIFY(!saveApply.value(QStringLiteral("read_only")).toBool());
     QCOMPARE(saveApply.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+}
+
+void McpControlTest::mappingRemovalArguments()
+{
+    const QString revision(64, QLatin1Char('a'));
+    const QString reference = revision + QStringLiteral(":row:0:1");
+    const QString method = QStringLiteral("qkm_preview_changes");
+    const QJsonObject input{{QStringLiteral("action"), QStringLiteral("mapping.delete")},
+        {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")},
+        {QStringLiteral("source_refs"), QJsonArray{reference, revision + QStringLiteral(":row:0:0"), reference}}};
+    const auto request = validateMappingChangeRequest(method, input);
+    QVERIFY(request.ok() && request.action == MappingChangeAction::DeleteMapping);
+    QCOMPARE(request.removal.sourceRevision, revision);
+    QCOMPARE(request.removal.sourceTabRef, revision + QStringLiteral(":source:0"));
+    QCOMPARE(request.removal.sourceRows, QList<int>({1, 0}));
+    for (const QString &field : {QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")}) {
+        auto changed = input; changed.remove(field);
+        QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    }
+    for (const QJsonValue &value : {QJsonValue(QJsonValue::Null), QJsonValue(true), QJsonValue(reference), QJsonValue(QJsonArray())}) {
+        auto changed = input; changed.insert(QStringLiteral("source_refs"), value);
+        QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    }
+    for (const QString &suffix : {QStringLiteral("-1"), QStringLiteral("01"), QStringLiteral("2147483648"), QStringLiteral("0:1"), QStringLiteral("x")}) {
+        auto changed = input; changed.insert(QStringLiteral("source_refs"), QJsonArray{revision + QStringLiteral(":row:0:") + suffix});
+        QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    }
+    for (const QJsonValue &referenceValue : {QJsonValue(1), QJsonValue(QString(64, QLatin1Char('b')) + QStringLiteral(":row:0:1")),
+            QJsonValue(revision + QStringLiteral(":row:1:1")), QJsonValue(revision + QStringLiteral(":row:00:1"))}) {
+        auto changed = input; changed.insert(QStringLiteral("source_refs"), QJsonArray{referenceValue});
+        QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    }
+    for (const QString &field : {QStringLiteral("original_key"), QStringLiteral("insert_row"), QStringLiteral("setting_name"), QStringLiteral("pid")}) {
+        auto changed = input; changed.insert(field, 0);
+        QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    }
+    QJsonArray references;
+    for (int i = 0; i < 100; ++i) references.append(reference);
+    auto changed = input; changed.insert(QStringLiteral("source_refs"), references);
+    QVERIFY(validateMappingChangeRequest(method, changed).ok());
+    references.append(reference); changed.insert(QStringLiteral("source_refs"), references);
+    QVERIFY(!validateMappingChangeRequest(method, changed).ok());
+    const QString id(32, QLatin1Char('c'));
+    const auto apply = validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
+        {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_delete"), true}});
+    QVERIFY(apply.ok() && apply.confirmDelete);
+    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
+        {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_delete"), 1}}).ok());
+    const auto capabilities = mappingChangeCapabilities();
+    const auto preview = capabilities.at(4).toObject(), submit = capabilities.at(5).toObject();
+    QCOMPARE(preview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.delete.preview"));
+    QVERIFY(preview.value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(submit.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!submit.value(QStringLiteral("read_only")).toBool());
+    QVERIFY(submit.value(QStringLiteral("limitations")).toArray().contains(QStringLiteral("explicit_delete_confirmation")));
+}
+
+void McpControlTest::mappingRemovalLifecycle()
+{
+    MappingChangeStore store;
+    const MappingChangeOwner owner{QString(32, QLatin1Char('a')), QString(32, QLatin1Char('b')), 1};
+    const MappingRemovalArguments arguments{QString(64, QLatin1Char('c')), QString(64, QLatin1Char('c')) + QStringLiteral(":source:1"), {1, 0}};
+    const auto preview = store.createRemoval(owner, arguments, {}); QVERIFY(preview && preview->removal && !preview->save);
+    const auto target = store.operation(owner, preview->id).value(QStringLiteral("target")).toObject();
+    QCOMPARE(target.value(QStringLiteral("instance_id")).toString(), owner.instance);
+    QCOMPARE(target.value(QStringLiteral("source_tab_ref")).toString(), arguments.sourceTabRef);
+    QVERIFY(!store.begin({owner.instance, owner.pairId, 2}, preview->id));
+    QVERIFY(!store.begin({QString(32, QLatin1Char('d')), owner.pairId, 1}, preview->id));
+    const auto begun = store.begin(owner, preview->id); QVERIFY(begun && begun->removal);
+    QCOMPARE(begun->removal->sourceRows, arguments.sourceRows);
+    store.finish(owner, preview->id, QStringLiteral("applied"), {{QStringLiteral("deleted_count"), 2}});
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("target")).toObject(), target);
+    QVERIFY(!store.begin(owner, preview->id));
+    const auto expired = store.createRemoval(owner, arguments, {}); QVERIFY(expired);
+    MappingChangeStoreTestAccess::expirePreview(store, expired->id);
+    QCOMPARE(store.operation(owner, expired->id).value(QStringLiteral("error")).toObject().value(QStringLiteral("code")).toString(), QStringLiteral("preview_expired"));
+    QCOMPARE(store.operation(owner, expired->id).value(QStringLiteral("target")).toObject(), target);
+    const auto cancelled = store.createRemoval(owner, arguments, {}); QVERIFY(cancelled && store.cancel(owner, cancelled->id));
+    QCOMPARE(store.operation(owner, cancelled->id).value(QStringLiteral("target")).toObject(), target);
+    store.clear();
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("status")).toString(), QStringLiteral("unknown"));
 }
 
 void McpControlTest::mappingChangeLifecycle()

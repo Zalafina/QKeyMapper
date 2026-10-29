@@ -127,3 +127,5 @@ out/mcp_bridge/venv/Scripts/python.exe -X utf8 mcp_bridge/tests/test_desktop_lif
 SAVE-95另选`savePreviewArguments`，与原映射／保存存储六槽合跑：明确configuration.save／setting_name、类型／未知字段／混合参数、长度及只读能力声明。生产SDK接线见第一方测试README与唯一主计划；组件通过不替代正式产品业务或实际保存。SDK发布的oneOf／原映射兼容由桥接侧固定端点和真实stdio维护接线分别验证。
 
 SAVE-97同槽追加confirm_scope／confirm_overwrite的独立布尔与错误类型拒绝、configuration.save.apply的Configure权限及非只读声明；组件family共6项能力，产品总计10项。正式写盘／分段结果／去重与独立冷读见同一主计划的SDK维护证据，不能从本槽通过推定实际业务已执行。
+
+DELETE-113追加`mappingRemovalArguments／mappingRemovalLifecycle`：mapping.delete只接受完整源修订／源Tab和1–100个同源规范行引用，重复去重，拒绝类型、混合源／修订、负数／非规范／越界整数及其他动作字段；confirm_delete独立严格布尔。存储复用既有120秒／有界结果，检查实例／权限代次归属、取消／到期目标和单次消费。mapping change family现8项能力，产品16项；连同原新增／保存九槽定向运行，不代替正式产品源删除、实际撤权／超时或Default验收。

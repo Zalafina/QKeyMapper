@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十四项业务能力、十五工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
+官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十六项业务能力、十五工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
 桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
@@ -169,4 +169,14 @@ Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际�
 
 成功含closed=true、目标／源及已核实不可见的window；源和INI保持其既有状态，不代表演示场景已重置。Show／Hide／原生句柄／销毁使旧打开记录失效，实例／pair权限变化由原引用机制拒绝；正常焦点返回Agent不使记录失效。Resize后旧window_ref失效，重新query当前引用且源／摘要仍匹配才可继续；窗口新生命周期不能沿用旧引用。失败／断线后先query实际窗口，不猜测未执行或自动重发。
 
-Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续两轮正式开关及旧引用拒绝；当前无Show负例复用子窗保护前同准入路径结果，原版本与材料分开记录。源行删除／演示初始状态、真实高级子窗交错、Win10／高DPI、预热／免Python与QQ仍待，见唯一主计划。
+Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续两轮正式开关及旧引用拒绝；当前无Show负例复用子窗保护前同准入路径结果，原版本与材料分开记录。源行删除见下节；演示初始状态、真实高级子窗交错、Win10／高DPI、预热／免Python与QQ仍待，见唯一主计划。
+
+## 稳定源行删除（DELETE-113）
+
+能力包含 `mapping.delete.preview`／`mapping.delete.apply` 且有 **Read+Configure** 时，先查询 `mapping_sources` 和 `mappings`，调用 `qkm_preview_changes(action="mapping.delete", source_revision=..., source_tab_ref=..., source_refs=[...])`。只接受同一当前附着源、同一完整修订的 1–100 个规范源引用；重复引用去重，不接受显示行号、跨源批次、任意 PID／路径或增添／保存字段。目标行不得被表格筛选隐藏，不能是分隔行；不要求窗口占据前台，也不自动切表或显示窗口。
+
+预览逐条返回完整删除字段及派生采样、实例和源摘要，不改映射、dirty或INI。用户审阅并同意删除后，才调用 `qkm_apply_changes(preview_id=..., confirm_delete=true)`；冲突、保存范围或覆盖确认不能替代删除确认。提交再次核验实际认证owner／权限、完整源、当前目标、原120秒到期、无编辑窗／表格编辑／弹出菜单及完整空闲清理许可，再复用GUI共用删除和显示刷新、鼠标点更新、接替选区、dirty流程。
+
+成功只改内存，返回 `modified=true, saved=false, started_by_operation=false`、删除数及 `query_source_again=true`；没有保存、自动停止／启动或演示重置。所有旧源引用／预览须按修订重新查询。取消／拒绝不删除，已消费失败需新预览；成功ID重复提交只返回历史结果，不再次删除。结果绑定原实例／pair权限代次和原源摘要，超时／断线先查同ID的 `qkm_get_operation`，unknown不证明未执行，禁止盲目重试或改连其他实例。
+
+当前仅普通当前源及直接选中的Common源；从普通Tab操作附加Common、隐藏行删除、跨Tab及多源批次尚不支持。Win11双Qt正式stdio的普通最后行、Common首行／全批及重复引用、无确认／错误确认、Read拒绝、编辑窗／表格草稿／菜单保护、GUI删除后的陈旧预览及历史重放已定向核对；完整删除矩阵、实际Win10／高DPI、运行后清理及串行演示重置仍待。维护SDK用例见 [mapping_deletion_acceptance.py](tests/mapping_deletion_acceptance.py)，具体证据仍以唯一主计划／C1记录为准。

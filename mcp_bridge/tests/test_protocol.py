@@ -436,11 +436,16 @@ class PreviewForwardingTests(unittest.IsolatedAsyncioTestCase):
             await bridge.preview_changes(original_key="A", action="configuration.save", setting_name="配置95")
             self.assertIn("original_key", call.await_args.args[1])
             self.assertIn("setting_name", call.await_args.args[1])
+            await bridge.preview_changes(revision, revision + ":source:0", action="mapping.delete", source_refs=[revision + ":row:0:0"])
+            call.assert_awaited_with("qkm_preview_changes", {"action": "mapping.delete", "source_revision": revision,
+                "source_tab_ref": revision + ":source:0", "source_refs": [revision + ":row:0:0"]})
             await bridge.apply_changes("a" * 32)
             call.assert_awaited_with("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_conflicts": False})
             await bridge.apply_changes("b" * 32, confirm_scope=True, confirm_overwrite=True)
             call.assert_awaited_with("qkm_apply_changes", {"preview_id": "b" * 32, "confirm_conflicts": False,
                 "confirm_scope": True, "confirm_overwrite": True})
+            await bridge.apply_changes("d" * 32, confirm_delete=True)
+            call.assert_awaited_with("qkm_apply_changes", {"preview_id": "d" * 32, "confirm_conflicts": False, "confirm_delete": True})
             await bridge.apply_changes("c" * 32, confirm_scope="false", confirm_overwrite=1)
             call.assert_awaited_with("qkm_apply_changes", {"preview_id": "c" * 32, "confirm_conflicts": False,
                 "confirm_scope": "false", "confirm_overwrite": 1})

@@ -16,6 +16,12 @@ QJsonObject saveOperationTarget(const MappingChangePreview &preview)
     return {{QStringLiteral("instance_id"), preview.owner.instance}, {QStringLiteral("group"), preview.save->settingName},
         {QStringLiteral("save_revision"), preview.save->revision}};
 }
+QJsonObject removalOperationTarget(const MappingChangePreview &preview)
+{
+    return {{QStringLiteral("instance_id"), preview.owner.instance},
+        {QStringLiteral("source_revision"), preview.removal->sourceRevision},
+        {QStringLiteral("source_tab_ref"), preview.removal->sourceTabRef}};
+}
 }
 
 bool isMappingChangeMethod(const QString &method)
@@ -40,13 +46,17 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : query ? MappingChangeMethod::Operation : MappingChangeMethod::Cancel;
     const auto action = arguments.value(QStringLiteral("action"));
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
+    const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     if (preview && !action.isUndefined() && (!action.isString()
-        || (action.toString() != QStringLiteral("mapping.add") && !savePreview))) return fail("Unsupported preview action.");
+        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
-    const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")} : preview
+    const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")}
+        : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
+            QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")} : preview
         ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("insert_row")}
-        : apply ? QSet<QString>{idField, QStringLiteral("confirm_conflicts"), QStringLiteral("confirm_scope"), QStringLiteral("confirm_overwrite")}
+        : apply ? QSet<QString>{idField, QStringLiteral("confirm_conflicts"), QStringLiteral("confirm_scope"),
+            QStringLiteral("confirm_overwrite"), QStringLiteral("confirm_delete")}
             : QSet<QString>{idField};
     for (auto it = arguments.constBegin(); it != arguments.constEnd(); ++it) {
         if (!allowed.contains(it.key())) return fail("Unknown mapping change argument.");
@@ -68,10 +78,13 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.confirmConflicts = confirmation.toBool();
         const auto scope = arguments.value(QStringLiteral("confirm_scope"));
         const auto overwrite = arguments.value(QStringLiteral("confirm_overwrite"));
-        if ((!scope.isUndefined() && !scope.isBool()) || (!overwrite.isUndefined() && !overwrite.isBool()))
-            return fail("Save scope and overwrite confirmations must be booleans.");
+        const auto deletion = arguments.value(QStringLiteral("confirm_delete"));
+        if ((!scope.isUndefined() && !scope.isBool()) || (!overwrite.isUndefined() && !overwrite.isBool())
+            || (!deletion.isUndefined() && !deletion.isBool()))
+            return fail("Save and deletion confirmations must be booleans.");
         result.confirmScope = scope.toBool();
         result.confirmOverwrite = overwrite.toBool();
+        result.confirmDelete = deletion.toBool();
         return result;
     }
     const QJsonObject sourceQuery{{QStringLiteral("entity"), QStringLiteral("mappings")},
@@ -79,6 +92,27 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         {QStringLiteral("source_tab_ref"), arguments.value(QStringLiteral("source_tab_ref"))}};
     const auto source = validateSourceQueryArguments(sourceQuery);
     if (!source.ok()) { result.errorCode = source.errorCode; result.message = source.message; return result; }
+    if (deletePreview) {
+        const auto references = arguments.value(QStringLiteral("source_refs"));
+        if (!references.isArray() || references.toArray().isEmpty() || references.toArray().size() > 100)
+            return fail("Deletion requires 1 to 100 source row references.");
+        result.action = MappingChangeAction::DeleteMapping;
+        result.removal.sourceRevision = arguments.value(QStringLiteral("source_revision")).toString();
+        result.removal.sourceTabRef = arguments.value(QStringLiteral("source_tab_ref")).toString();
+        const QString sourceIndex = result.removal.sourceTabRef.section(QLatin1Char(':'), 2, 2);
+        for (const auto &value : references.toArray()) {
+            if (!value.isString() || value.toString().size() > 128) return fail("Malformed deletion source reference.");
+            const QStringList parts = value.toString().split(QLatin1Char(':'));
+            bool valid = false;
+            const int row = parts.size() == 4 ? parts.at(3).toInt(&valid) : -1;
+            if (parts.size() != 4 || !isLowerHex(parts.at(0), 64) || parts.at(1) != QStringLiteral("row")
+                || !valid || row < 0 || QString::number(row) != parts.at(3)) return fail("Malformed deletion source reference.");
+            if (parts.at(0) != result.removal.sourceRevision || parts.at(2) != sourceIndex)
+                return fail("All deletion references must belong to the same source and revision.");
+            if (!result.removal.sourceRows.contains(row)) result.removal.sourceRows.append(row);
+        }
+        return result;
+    }
     const auto basicKey = [](const QJsonValue &value) {
         if (!value.isString()) return false;
         const QString text = value.toString();
@@ -110,6 +144,7 @@ QJsonArray mappingChangeCapabilities()
     const QJsonObject revision = string(QStringLiteral("^[0-9a-f]{64}$"), 64);
     const QJsonObject reference = string(QStringLiteral("^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$"), 128);
     const QJsonObject key = string(QStringLiteral("^[A-Z0-9]$"), 1);
+    const QJsonObject rowReference = string(QStringLiteral("^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$"), 128);
     const QJsonObject identifierSchema = string(QStringLiteral("^[0-9a-f]{32}$"), 32);
     const auto schema = [](const QJsonObject &properties, const QJsonArray &required) {
         return QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
@@ -160,12 +195,33 @@ QJsonArray mappingChangeCapabilities()
     auto saveApplyCapability = capability("configuration.save.apply", "qkm_apply_changes", Read | Configure, false, saveApply);
     saveApplyCapability.insert(QStringLiteral("limitations"), saveLimits);
     saveApplyCapability.insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    const QJsonObject deleteSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.delete")}}},
+        {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), reference},
+        {QStringLiteral("source_refs"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
+            {QStringLiteral("minItems"), 1}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("items"), rowReference}}}},
+        {QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")});
+    const QJsonArray deleteLimits{QStringLiteral("memory_only_no_save_or_start"), QStringLiteral("current_attached_visible_rows_only"),
+        QStringLiteral("single_source_batch"), QStringLiteral("duplicate_references_deduplicated"), QStringLiteral("idle_after_cleanup"),
+        QStringLiteral("no_open_mapping_editor_session"), QStringLiteral("explicit_delete_confirmation"), QStringLiteral("bounded_volatile_results")};
+    auto deleteCapability = capability("mapping.delete.preview", "qkm_preview_changes", Read | Configure, true, deleteSchema);
+    deleteCapability.insert(QStringLiteral("limitations"), deleteLimits);
+    deleteCapability.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
+    deleteCapability.insert(QStringLiteral("max_previews"), MappingChangeStore::MaxPreviews);
+    deleteCapability.insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    auto deleteApply = capability("mapping.delete.apply", "qkm_apply_changes", Read | Configure, false,
+        schema({{QStringLiteral("preview_id"), identifierSchema}, {QStringLiteral("confirm_delete"), QJsonObject{{QStringLiteral("const"), true}}},
+            {QStringLiteral("confirm_conflicts"), QJsonObject{{QStringLiteral("const"), false}}},
+            {QStringLiteral("confirm_scope"), QJsonObject{{QStringLiteral("const"), false}}},
+            {QStringLiteral("confirm_overwrite"), QJsonObject{{QStringLiteral("const"), false}}}},
+            {QStringLiteral("preview_id"), QStringLiteral("confirm_delete")}));
+    deleteApply.insert(QStringLiteral("limitations"), deleteLimits);
+    deleteApply.insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
     QJsonObject operation = capability("operation.read", "qkm_get_operation", Read, true,
         schema({{QStringLiteral("operation_id"), identifierSchema}}, {QStringLiteral("operation_id")}));
     operation.insert(QStringLiteral("result_ttl_ms"), double(MappingChangeStore::ResultTtlMs));
     operation.insert(QStringLiteral("max_results"), MappingChangeStore::MaxResults);
     return {previewCapability, saveCapability, capability("mapping.add.apply", "qkm_apply_changes", Read | Configure, false, apply),
-        saveApplyCapability,
+        saveApplyCapability, deleteCapability, deleteApply,
         capability("mapping.preview.cancel", "qkm_cancel_changes", Read | Configure, false,
             schema({{QStringLiteral("preview_id"), identifierSchema}}, {QStringLiteral("preview_id")})), operation};
 }
@@ -192,6 +248,7 @@ bool MappingChangeStore::remember(const MappingChangePreview &preview, const QSt
         {QStringLiteral("sampled_at_utc"), sampleTime()}, {QStringLiteral("result_known"), true},
         {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
     if (preview.save) value.insert(QStringLiteral("target"), saveOperationTarget(preview));
+    if (preview.removal) value.insert(QStringLiteral("target"), removalOperationTarget(preview));
     if (!errorCode.isEmpty()) value.insert(QStringLiteral("error"), QJsonObject{
         {QStringLiteral("code"), errorCode}, {QStringLiteral("message"), message}});
     m_results.insert(preview.id, {preview.owner, value, now()});
@@ -243,6 +300,17 @@ std::optional<MappingChangePreview> MappingChangeStore::createSave(const Mapping
     auto preview = create(owner, MappingAdditionArguments(), description);
     if (preview) {
         preview->save = binding;
+        m_previews[preview->id] = *preview;
+    }
+    return preview;
+}
+
+std::optional<MappingChangePreview> MappingChangeStore::createRemoval(const MappingChangeOwner &owner,
+    const MappingRemovalArguments &arguments, const QJsonObject &description)
+{
+    auto preview = create(owner, MappingAdditionArguments(), description);
+    if (preview) {
+        preview->removal = arguments;
         m_previews[preview->id] = *preview;
     }
     return preview;
@@ -301,6 +369,7 @@ QJsonObject MappingChangeStore::operation(const MappingChangeOwner &owner, const
             {QStringLiteral("result_known"), true}, {QStringLiteral("sampled_at_utc"), sampleTime()},
             {QStringLiteral("remaining_ms"), double(qMax(qint64(0), remaining))}};
         if (preview->save) value.insert(QStringLiteral("target"), saveOperationTarget(*preview));
+        if (preview->removal) value.insert(QStringLiteral("target"), removalOperationTarget(*preview));
         return value;
     }
     return {{QStringLiteral("operation_id"), id}, {QStringLiteral("status"), QStringLiteral("unknown")},

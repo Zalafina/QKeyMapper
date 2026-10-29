@@ -38210,7 +38210,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         return;
     }
     if (applyingPreview && applyingPreview->save) {
-        if (validation.confirmConflicts) {
+        if (validation.confirmConflicts || validation.confirmDelete) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Mapping-conflict confirmation cannot authorize a save. Confirm its complete scope and overwrite separately."));
             return;
         }
@@ -38252,7 +38252,122 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         return;
     }
-    if (applying && (validation.confirmScope || validation.confirmOverwrite)) {
+    if ((!applying && validation.action == MappingChangeAction::DeleteMapping)
+        || (applyingPreview && applyingPreview->removal)) {
+        const MappingRemovalArguments removal = applying ? *applyingPreview->removal : validation.removal;
+        if (validation.confirmConflicts || validation.confirmScope || validation.confirmOverwrite) {
+            reject(QStringLiteral("invalid_arguments"), QStringLiteral("Only explicit deletion confirmation can authorize this deletion preview."));
+            return;
+        }
+        const int sourceIndex = removal.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt();
+        if (!mappingAdditionAllowed(sourceIndex) || hasOpenMappingEditor()
+            || QApplication::activePopupWidget() || m_KeyMappingDataTable->hasActiveEditor()) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("Deletion requires the current attached source, completed idle cleanup and no open mapping editor. No stop, Tab switch or editor close is automatic."));
+            return;
+        }
+        const quint64 runtimeRevision = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
+        QString error;
+        const auto snapshot = collectAutomationSourceSnapshot(error);
+        const auto target = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
+            {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), removal.sourceRevision},
+                {QStringLiteral("offset"), sourceIndex}, {QStringLiteral("limit"), 1}});
+        if (!error.isEmpty() || !target.ok()) {
+            reject(error.isEmpty() ? target.errorCode : error,
+                error.isEmpty() ? target.message : QStringLiteral("No safe complete source snapshot is available for deletion."));
+            return;
+        }
+        QMutexLocker writeAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+        const auto contextValid = [&] {
+            return !automationSourceReadBasis().isEmpty()
+                && QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() == runtimeRevision;
+        };
+        if (!contextValid()) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("The runtime lifecycle changed during deletion validation."));
+            return;
+        }
+        const auto items = target.page.value(QStringLiteral("items")).toArray();
+        const auto metadata = items.isEmpty() ? QJsonObject() : items.first().toObject();
+        if (metadata.value(QStringLiteral("source_tab_ref")) != removal.sourceTabRef
+            || !metadata.value(QStringLiteral("attached_to_ui")).toBool()
+            || metadata.value(QStringLiteral("ui_index")).toInt(-1) != sourceIndex) {
+            reject(QStringLiteral("stale_source"), QStringLiteral("The deletion source is no longer the current attached editing target."));
+            return;
+        }
+        const auto rows = snapshot.value(QStringLiteral("sources")).toArray().at(sourceIndex).toObject().value(QStringLiteral("rows")).toArray();
+        QJsonArray changes;
+        int topDisplayRow = m_KeyMappingDataTable->rowCount();
+        for (int row : removal.sourceRows) {
+            const int displayRow = displayRowFromSource(s_KeyMappingTabWidgetCurrentIndex, sourceIndex, row);
+            int actualSource = -1, actualRow = -1;
+            QList<MAP_KEYDATA> *actualData = Q_NULLPTR;
+            if (row < 0 || row >= rows.size() || displayRow < 0 || displayRow >= m_KeyMappingDataTable->rowCount()
+                || m_KeyMappingDataTable->isRowHidden(displayRow)
+                || !resolveDisplayRowSource(s_KeyMappingTabWidgetCurrentIndex, displayRow, &actualSource, &actualRow, &actualData)
+                || actualSource != sourceIndex || actualRow != row || actualData != KeyMappingDataList) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("Every deletion reference must still resolve to a visible selectable row of the current source."));
+                return;
+            }
+            topDisplayRow = qMin(topDisplayRow, displayRow);
+            changes.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("delete_mapping")},
+                {QStringLiteral("source_ref"), removal.sourceRevision + QStringLiteral(":row:") + QString::number(sourceIndex) + QLatin1Char(':') + QString::number(row)},
+                {QStringLiteral("source_row"), row}, {QStringLiteral("mapping"), rows.at(row)}});
+        }
+        if (changes.isEmpty()) {
+            reject(QStringLiteral("invalid_arguments"), QStringLiteral("The deletion batch is empty."));
+            return;
+        }
+        if (!applying) {
+            QJsonObject summary = metadata;
+            summary.insert(QStringLiteral("instance_id"), owner.instance);
+            const QJsonObject description{{QStringLiteral("action"), QStringLiteral("mapping.delete")},
+                {QStringLiteral("target"), summary}, {QStringLiteral("changes"), changes},
+                {QStringLiteral("confirmation_required"), true}, {QStringLiteral("modified"), false},
+                {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+            if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
+                reject(QStringLiteral("result_too_large"), QStringLiteral("The complete deletion preview exceeds the response limit."));
+                return;
+            }
+            if (!server.isRequestCurrent(request) || !contextValid() || validationBudget.hasExpired(MappingChangeBudgetMs)) {
+                reject(QStringLiteral("context_busy"), QStringLiteral("Deletion preview authorization or validation budget is no longer valid."));
+                return;
+            }
+            const auto preview = store.createRemoval(owner, removal, description);
+            if (!preview) {
+                reject(QStringLiteral("preview_limit"), QStringLiteral("The bounded preview store is full; cancel your pending preview or wait for expiry."));
+                return;
+            }
+            server.reply(request.connectionId, request.requestId,
+                {{QStringLiteral("preview_id"), preview->id}, {QStringLiteral("operation_id"), preview->id},
+                    {QStringLiteral("expires_in_ms"), double(MappingChangeStore::PreviewTtlMs)}, {QStringLiteral("description"), description}});
+            return;
+        }
+        if (!validation.confirmDelete) {
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the complete deletion preview and explicitly confirm deletion with a fresh preview."));
+            return;
+        }
+        if (store.expired(*applyingPreview)) {
+            reject(QStringLiteral("preview_expired"), QStringLiteral("The deletion preview expired before commit; query the source and obtain a fresh preview."));
+            return;
+        }
+        if (!server.isRequestCurrent(request) || !contextValid() || !mappingAdditionAllowed(sourceIndex)
+            || hasOpenMappingEditor() || QApplication::activePopupWidget() || m_KeyMappingDataTable->hasActiveEditor()
+            || validationBudget.hasExpired(MappingChangeBudgetMs)) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("Deletion authorization, source state or validation budget changed before commit."));
+            return;
+        }
+        if (!removeMappingRows(sourceIndex, removal.sourceRows, topDisplayRow)) {
+            reject(QStringLiteral("stale_preview"), QStringLiteral("Deletion source validation failed before any row was removed."));
+            return;
+        }
+        store.finish(owner, validation.id, QStringLiteral("applied"),
+            {{QStringLiteral("action"), QStringLiteral("mapping.delete")}, {QStringLiteral("modified"), true},
+                {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
+                {QStringLiteral("source_revision_before"), removal.sourceRevision}, {QStringLiteral("source_tab_ref_before"), removal.sourceTabRef},
+                {QStringLiteral("deleted_count"), changes.size()}, {QStringLiteral("query_source_again"), true}});
+        server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
+        return;
+    }
+    if (applying && (validation.confirmScope || validation.confirmOverwrite || validation.confirmDelete)) {
         reject(QStringLiteral("invalid_arguments"), QStringLiteral("Save confirmations cannot be used to submit a mapping preview."));
         return;
     }

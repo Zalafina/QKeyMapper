@@ -819,3 +819,17 @@ Win11企业版26200 x64、现锁CPython3.11.9 x64／pywin32与Qt6.8.3 msvc2022_6
 共八场66项通过；实际QkmDeleteShared112_<UUID>私有桌面、普通控制器8192／产品12288、同登录，退出工作／生产者0，逐场owned／unresolved／pending／current_action／current_job全零。复用111合成1171字节Common76Seed，无个人INI；全过程及退出INI保持。源读取pristine_idle。没有Default、系统输入、映射启动、驱动／FilterKeys设置变化或截图矩阵；直接共用调用只证明参数／效果边界，不代替独立GUI基线。
 
 本机out/mcp_delete_shared_w11_20261029保留产品一式补丁／期望字节与逆向检查、构建首失败／成功、部署、公共登记、八场完整源前后／本机身份／退出INI及尾状态、check_results.py精确对照与summary，不随Git。过滤／附加Common／分隔行／混合源交互、独立备份、鼠标点派生专项、运行后清理、正式MCP引用失效／删除、真实Win10／高DPI未验；普通完整Release／ASan／全量静态未选，完整EQ-MAP-DELETE及M1未完成。
+
+## DELETE-113：稳定源行删除（2026-10-29，PC-W11）
+
+在112 df433862之上接正式mapping.delete，复用现有预览／提交／取消／operation，不增加工具或权限位。Read+Configure、完整source_revision／source_tab_ref及1–100个规范source_refs，仅同一当前附着源、未隐藏可选行，去重且拒绝跨源／修订。预览逐条列全部fields／derived／lock采样和实例／源摘要，不改源／dirty／INI；提交须confirm_delete=true，不能用冲突／保存确认替代。120秒、owner(instance／pair／epoch)、单次消费、结果槽及历史去重沿原Store，取消／到期／应用结果关联原实例及源摘要。
+
+提交重新复制验证完整源、实际当前目标、源行／显示归属、当前请求／权限／到期及完整清理许可，在原源访问互斥内复核runtimeRevision；无编辑窗、表格编辑或弹出菜单后才调用112共用删除。结果明确modified=true／saved=false／started_by_operation=false及删除数，要求重查源；旧引用／旧预览失效。拒绝不部分删除；成功重放只返回原历史，不再修改。普通GUI仍沿112原入口，无自动切表、停止、关闭编辑窗、保存或开启映射。源修订不等于完整全局设定修订，未把删除接线标成完整M1或串行演示重置。
+
+双Qt协议／存储九槽各11项含init／cleanup，相关配对重连及handler生命周期IPC各4项，均native0；Python协议22项通过。原manifest产品私有桌面正式stdio五场各Qt：普通最后行、Common首行／全批逆序重复、GUI Delete后的陈旧预览及Read拒绝；各8项native检查。取消／无确认／错误确认、完整预览不变、跨源／越界、编辑窗拒绝、表格未提交Z草稿／菜单保护、恢复后未改盘、旧引用、结果归属及历史重放均有实际请求记录。SDK剩余行全部fields／derived／lock与111同机原GUI对应结果相等，Native独立验证全部源／非目标metadata、实际GUI选择、dirty、加载代次、INI和恰一次sourceEpoch变化。表格editItem及QMenu是明确组件注入，独立GUI删除基线仍111，未冒称真实用户表格编辑操作已全验。
+
+随后只增加hidden组件用例，产品qkeymapper.cpp及协议代码完全不变；双Qt各一场验证隐藏行时预览／提交invalid_target、恢复后正式删除。隐藏状态由setRowHidden注入，不能替代真实筛选GUI验收。合计十二场／96项native检查、450次handler／471次SDK记录及84次schema拒绝，八次实际MCP删除；stale两场由原GUI删除，Read两场不删除。所有native exit0／pristine_idle，完整INI字节及加载保持，实际QkmDelete113_<UUID>私有桌面，普通SDK8192／产品12288、同登录；所有进程正常退出、工作／生产者0、逐场清理五项零。无Default、系统输入、映射启动、驱动／FilterKeys设置变化或新权限模式。
+
+双Qt受影响维护／协议／IPC增量native0，Qt6零编译／链接警告、Qt5兼容通过。首十场在补表格／菜单保护前也通过，原件在first-passed-before-table-editor-guard；补保护后重验受影响双Qt十场。hidden只扩固定夹具，先前十场按不变产品／有效输入范围复用，实际旧EXE／定义／构建身份留before-hidden-component；当前EXE只新增hidden两场，不把全部十二场误记为同一个二进制。维护SDK断言已纳入mcp_bridge/tests/mapping_deletion_acceptance.py，合成INI由已有common样例去五个可选键精确重建，不复制个人数据或增加进度来源。
+
+本机out/mcp_delete_w11_20261029含两式产品补丁／精确字节、双Qt构建／部署身份、分版EXE与定义、普通组件／IPC、正式SDK调用／schema／peer、十二场源／退出INI／清理和summary，不随Git。过滤的真实GUI、普通Tab附加Common／分隔行、独立Common备份／鼠标点派生专项、运行后清理／实际撤权／过期／断线删除、其他实例及Win10／高DPI未验；存储到期／跨owner仅组件，未选全量静态／ASan／普通完整Release。P2／P3／M3-B免Python与QQ尚未验收。

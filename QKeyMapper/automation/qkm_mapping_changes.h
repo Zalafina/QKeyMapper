@@ -6,6 +6,7 @@
 #include <QHash>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QList>
 #include <optional>
 
 namespace QkmAutomation {
@@ -20,17 +21,25 @@ struct MappingAdditionArguments {
     int insertRow = -1;
 };
 
+struct MappingRemovalArguments {
+    QString sourceRevision;
+    QString sourceTabRef;
+    QList<int> sourceRows;
+};
+
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation };
-enum class MappingChangeAction { AddMapping, SaveConfiguration };
+enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
     MappingChangeAction action = MappingChangeAction::AddMapping;
     MappingAdditionArguments addition;
+    MappingRemovalArguments removal;
     QString settingName;
     QString id;
     bool confirmConflicts = false;
     bool confirmScope = false;
     bool confirmOverwrite = false;
+    bool confirmDelete = false;
     QString errorCode;
     QString message;
     bool ok() const { return errorCode.isEmpty(); }
@@ -63,6 +72,7 @@ struct MappingChangePreview {
     QString id;
     qint64 created = 0;
     std::optional<ConfigurationSaveBinding> save;
+    std::optional<MappingRemovalArguments> removal;
 };
 
 // GUI-thread request state only; no source pointers, worker work, persistence or retries.
@@ -76,6 +86,8 @@ public:
         const MappingAdditionArguments &arguments, const QJsonObject &description);
     std::optional<MappingChangePreview> createSave(const MappingChangeOwner &owner,
         const ConfigurationSaveBinding &binding, const QJsonObject &description);
+    std::optional<MappingChangePreview> createRemoval(const MappingChangeOwner &owner,
+        const MappingRemovalArguments &arguments, const QJsonObject &description);
     // The caller must revalidate live source, permissions and expiry before committing.
     std::optional<MappingChangePreview> begin(const MappingChangeOwner &owner, const QString &id);
     bool expired(const MappingChangePreview &preview)

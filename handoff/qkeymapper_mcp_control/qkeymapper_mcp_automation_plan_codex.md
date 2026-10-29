@@ -20,19 +20,19 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | DELETE-112单源删除共用业务提取完成选定双Qt验收；本卡所在提交封存，继续下一片 |
-| 状态 | 持续开发；聚焦本地提交，不推送。112不开放正式MCP删除；下一片按稳定源引用及预览／提交契约推进 |
+| 当前切片 | DELETE-113正式稳定源行删除完成选定双Qt范围；本卡所在聚焦本地提交封存，继续后续依赖 |
+| 状态 | 持续开发，仅聚焦本地提交，不推送；15工具／16业务能力。完整删除矩阵及P2串行演示重置仍待 |
 | 执行机器 | PC-W11，Windows 11企业版10.0.26200 x64；本轮唯一写入机器。UI-73及C1-B2-TABLE的PC-W10结果只按其原版本／范围保留，不冒充本机复验 |
 | 任务分支 | `codex/qkeymapper-mcp-control` |
-| 源码基线 | DELETE-GUI-111 20c0ea1f之上仅局部删除提取＋定向维护测试；合法GUI语义与111六场完整记录相等。15工具／14能力不变 |
+| 源码基线 | DELETE-112 df433862之上正式mapping.delete、独立删除确认、owner源绑定与复核；最后只扩hidden固定夹具，产品逻辑与此前最终十场相同 |
 | 当前已完成 | PC-W11解释器／DLL的PSF签名有效，同机ENV-39哈希安装记录的31项依赖与当前锁一致，环境检查／pip check、6项环境和20项协议检查通过；Qt6.8.3／Qt5.15.2均为x64。PC-W10的UI-73三语言及TABLE97项结果仅按各自原范围保留 |
-| 当前未验证 | GUI删除过滤／附加共通／分隔行／混合源、独立共通备份和鼠标点派生专项、正式MCP删除／源重置；P1其他页面／普通Default、真实Win10／高DPI、预热／免Python与QQ及完整C1-C／M1旧缺口保留 |
-| 构建与 EXE | 双Qt生命周期维护Release增量native0；Qt6零编译／链接警告、Qt5兼容通过。out/mcp_delete_shared_w11_20261029/{qt6,qt5}-runtime/QKeyMapperDeleteShared112_*_runtime.exe，原manifest／实际QkmDeleteShared112私有桌面 |
-| 提交与同步 | 112在111 20c0ea1f之上形成本卡所在聚焦本地提交，不推送；已有P1-110及此前检查点保留 |
-| 本机独有材料 | out/mcp_delete_shared_w11_20261029：首受限构建C1902及普通权限成功构建、单次产品补丁、部署身份、合成INI、八场66项及与111六场完整GUI记录精确对照、逐场正常退出／五项清理零；不随Git |
+| 当前未验证 | 真实筛选／附加Common／分隔行、独立备份／鼠标点派生、运行后删除／实际撤权／过期／断线及其他实例；完整P1高级页／Default、Win10／高DPI、P2／P3／M3-B与QQ缺口保留 |
+| 构建与 EXE | 双Qt生命周期／协议存储／相关IPC增量native0；Qt6零编译链接警告、Qt5兼容通过。out/mcp_delete_w11_20261029/{qt6,qt5}-runtime/QKeyMapperDelete113_*_runtime.exe，原manifest，当前新增hidden两场；此前最终十场的实际旧EXE保留 |
+| 提交与同步 | 112已本地提交df433862；113在其上形成本卡所在聚焦本地提交，不推送。111及此前证据按原提交／范围保留 |
+| 本机独有材料 | out/mcp_delete_w11_20261029：产品小补丁、双Qt构建／部署身份及分版EXE、协议／IPC、十二场正式SDK／原生96项、450 handler／471 SDK＋84 schema、源INI／peer／逐场清理；不随Git |
 | 授权边界 | 已明确恢复持续开发／聚焦本地提交，不推送。开发、Git、构建、桥接／SDK及截图普通权限，必要原manifest启动／关闭通过已批准缓存与公共登记；只用自有私有桌面和隔离INI，无Default、系统输入、驱动或系统过滤键设置变化 |
 | 当前控制器 | 新普通Medium控制器31176／instance eccdf79e859e4989805774612407354c／generation1，2026-10-29 18:30硬截止；初始范围为空，目标按实际构建及公共入口逐项登记。历史未知请求保持原状 |
-| 下一项动作 | 以112共用删除及111原GUI结果接正式mapping.delete预览／提交：稳定源行绑定、单源批次、全部提交前复核、独立删除确认与结果归属；再接P2重置，不重复环境恢复或已验项目 |
+| 下一项动作 | 先收敛专用初始状态、owner／场景代次、串行协调和不丢草稿重置的最小P2契约，再接正式演示闭环；沿当前环境、缓存和有效证据，不重复已验项目 |
 | 下一项完成标准 | 剩余保存／失败恢复及生命周期场景按实际结果逐项验收；已接通能力不等于完整C1-C或M1完成。后续按既定A→B完整路径推进实际运行和停止，缺失系统／GUI范围单列，不重复已验载荷或重置环境 |
 | 缓存观察安排 | 不再为Win11／2–5小时驻留单独排期，随日常使用积累；复查以现存日志规模决定工作量，必要靶向测试另估。该决定不代表未覆盖场景已经验证 |
 | 实耗与剩余 | 本机已推进SAVE-74至103及DEMO-P0-104选定可行性（84为缓存诊断）。P0源码与四张真图可检查，P1至P4和M1整体未完成，剩余仍按阶段依赖推进，不按断言抵扣工时 |
@@ -607,6 +607,20 @@ Win11双Qt各三场GUI事件与111同机同合成INI的settingsGeneral完整JSON
 两套首受限执行构建均native exit2／C1902，原日志保留；未改工具链或构建配置，退出后在沙箱外先断言非管理员，同一增量构建均native exit0，Qt6零编译／链接警告，Qt5兼容通过。不能据此单独断定C1902底层原因。原manifest隔离目标out/mcp_delete_shared_w11_20261029/{qt6,qt5}-runtime/QKeyMapperDeleteShared112_*_runtime.exe，经公共登记deleteshared112-qt6／qt5，实际QkmDeleteShared112_<UUID>私有桌面、控制器8192／产品12288、同登录。无Default测试需求，无系统输入、映射启动、驱动／FilterKeys变更或截图矩阵重跑。
 
 本机out/mcp_delete_shared_w11_20261029保留一式大文件补丁／期望字节、构建失败及成功日志、部署身份、固定定义／登记、合成INI、八场完整结果／退出／尾状态和精确对照summary，不随Git。过滤／附加Common／分隔行／混合源交互、独立Common备份及鼠标点派生专项、运行后清理、正式MCP引用／删除、实际Win10／高DPI仍未验；未选普通完整Release／全量静态／ASan，不宣称完整EQ-MAP-DELETE／M1完成。下一片接稳定源引用的正式mapping.delete预览／提交及相应定向验收，串行演示重置按依赖后续推进。
+
+#### DELETE-113：稳定源行删除预览／提交（选定范围完成）
+
+在112 df433862之上接正式mapping.delete，复用现有预览／提交／取消／operation，不增加工具或权限位。Read+Configure、完整source_revision／source_tab_ref及1–100个规范source_refs，仅同一当前附着源、未隐藏可选行，去重且拒绝跨源／修订。预览逐条列全部fields／derived／lock采样和实例／源摘要，不改源／dirty／INI；提交须confirm_delete=true，不能用冲突／保存确认替代。120秒、owner(instance／pair／epoch)、单次消费、结果槽及历史去重沿原Store，取消／到期／应用结果关联原实例及源摘要。
+
+提交重新复制验证完整源、实际当前目标、源行／显示归属、当前请求／权限／到期及完整清理许可，在原源访问互斥内复核runtimeRevision；无编辑窗、表格编辑或弹出菜单后才调用112共用删除。结果明确modified=true／saved=false／started_by_operation=false及删除数，要求重查源；旧引用／旧预览失效。拒绝不部分删除；成功重放只返回原历史，不再修改。普通GUI仍沿112原入口，无自动切表、停止、关闭编辑窗、保存或开启映射。源修订不等于完整全局设定修订，未把删除接线标成完整M1或串行演示重置。
+
+双Qt协议／存储九槽各11项含init／cleanup，相关配对重连及handler生命周期IPC各4项，均native0；Python协议22项通过。原manifest产品私有桌面正式stdio五场各Qt：普通最后行、Common首行／全批逆序重复、GUI Delete后的陈旧预览及Read拒绝；各8项native检查。取消／无确认／错误确认、完整预览不变、跨源／越界、编辑窗拒绝、表格未提交Z草稿／菜单保护、恢复后未改盘、旧引用、结果归属及历史重放均有实际请求记录。SDK剩余行全部fields／derived／lock与111同机原GUI对应结果相等，Native独立验证全部源／非目标metadata、实际GUI选择、dirty、加载代次、INI和恰一次sourceEpoch变化。表格editItem及QMenu是明确组件注入，独立GUI删除基线仍111，未冒称真实用户表格编辑操作已全验。
+
+随后只增加hidden组件用例，产品qkeymapper.cpp及协议代码完全不变；双Qt各一场验证隐藏行时预览／提交invalid_target、恢复后正式删除。隐藏状态由setRowHidden注入，不能替代真实筛选GUI验收。合计十二场／96项native检查、450次handler／471次SDK记录及84次schema拒绝，八次实际MCP删除；stale两场由原GUI删除，Read两场不删除。所有native exit0／pristine_idle，完整INI字节及加载保持，实际QkmDelete113_<UUID>私有桌面，普通SDK8192／产品12288、同登录；所有进程正常退出、工作／生产者0、逐场清理五项零。无Default、系统输入、映射启动、驱动／FilterKeys设置变化或新权限模式。
+
+双Qt受影响维护／协议／IPC增量native0，Qt6零编译／链接警告、Qt5兼容通过。首十场在补表格／菜单保护前也通过，原件在first-passed-before-table-editor-guard；补保护后重验受影响双Qt十场。hidden只扩固定夹具，先前十场按不变产品／有效输入范围复用，实际旧EXE／定义／构建身份留before-hidden-component；当前EXE只新增hidden两场，不把全部十二场误记为同一个二进制。维护SDK断言已纳入mcp_bridge/tests/mapping_deletion_acceptance.py，合成INI由已有common样例去五个可选键精确重建，不复制个人数据或增加进度来源。
+
+本机out/mcp_delete_w11_20261029含两式产品补丁／精确字节、双Qt构建／部署身份、分版EXE与定义、普通组件／IPC、正式SDK调用／schema／peer、十二场源／退出INI／清理和summary，不随Git。过滤的真实GUI、普通Tab附加Common／分隔行、独立Common备份／鼠标点派生专项、运行后清理／实际撤权／过期／断线删除、其他实例及Win10／高DPI未验；存储到期／跨owner仅组件，未选全量静态／ASan／普通完整Release。下一项先收敛专用初始状态与串行演示场景归属／重置契约，再按依赖实现正式P2；P3预热／M3-B免Python和QQ仍待。
 
 #### 复用、隔离及专用目标
 

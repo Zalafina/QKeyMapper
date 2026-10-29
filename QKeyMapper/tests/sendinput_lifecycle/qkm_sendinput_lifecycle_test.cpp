@@ -3363,6 +3363,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const bool publicApply = qEnvironmentVariable("QKM_LIFECYCLE_CASE") == QStringLiteral("settings_save_apply");
     const bool publicPreview = qEnvironmentVariable("QKM_LIFECYCLE_CASE") == QStringLiteral("settings_save_preview") || publicApply;
     const QString connectionVariant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
+    const bool deletionCase = publicApply && connectionVariant.startsWith(QStringLiteral("delete_"));
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
@@ -3404,7 +3405,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     approval->stop();
                     approval->deleteLater();
                     const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
-                    quint32 scopes = variant == QStringLiteral("read") || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
+                    quint32 scopes = variant == QStringLiteral("read") || variant == QStringLiteral("delete_read")
+                        || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
                     if (variant == QStringLiteral("demo_mcp_capture") || variant == QStringLiteral("demo_mcp_editor")
                         || variant == QStringLiteral("demo_mcp_close")) scopes |= CaptureWindows;
                     if (variant == QStringLiteral("demo_mcp_editor") || variant == QStringLiteral("demo_mcp_close")) scopes |= ShowWindows;
@@ -3450,6 +3452,19 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         });
     });
     if (publicPreview) {
+        if (deletionCase && (connectionVariant.startsWith(QStringLiteral("delete_common"))
+            || connectionVariant == QStringLiteral("delete_stale"))) {
+            auto *tabs = mapper->findChild<QTabWidget *>(QStringLiteral("keyMappingTabWidget"));
+            const int common = QKeyMapper::findCommonMappingTabIndex();
+            if (!tabs || common < 0) { finish(false); return; }
+            auto *bar = tabs->tabBar();
+            const QPoint point = bar->tabRect(common).center();
+            const QPointF top = bar->mapTo(bar->window(), point), screen = bar->mapToGlobal(point);
+            QMouseEvent press(QEvent::MouseButtonPress, point, top, screen, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+            QMouseEvent release(QEvent::MouseButtonRelease, point, top, screen, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+            QCoreApplication::sendEvent(bar, &press); QCoreApplication::sendEvent(bar, &release);
+            if (QKeyMapper::s_KeyMappingTabWidgetCurrentIndex != common) { finish(false); return; }
+        }
         if (publicApply && qEnvironmentVariable("QKM_CONTEXT_VARIANT") == QStringLiteral("reload_failure")) {
             if (!QKeyMapper::KeyMappingDataList || QKeyMapper::KeyMappingDataList->isEmpty()) { finish(false); return; }
             // Component fault injection; valid GUI editing does not create this legacy-invalid source.
@@ -3465,6 +3480,79 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         QString sourceError;
         const QJsonObject sourceBefore = mapper->collectAutomationSourceSnapshot(sourceError);
         if (!sourceError.isEmpty()) { finish(false); return; }
+        if (deletionCase) {
+            auto *poll = new QTimer(mapper);
+            auto stage = QSharedPointer<int>::create(0);
+            auto *popup = new QMenu(mapper);
+            popup->addAction(QStringLiteral("Deletion guard component"));
+            QObject::connect(poll, &QTimer::timeout, mapper, [=]() {
+                QString marker;
+                if (*stage == 0 && QFileInfo::exists(output + QStringLiteral(".delete-open-editor"))) {
+                    auto *table = mapper->m_KeyMappingDataTable;
+                    auto *view = table->viewport();
+                    const QPoint point = table->visualRect(table->model()->index(0, 0)).center();
+                    const QPointF top = view->mapTo(view->window(), point), screen = view->mapToGlobal(point);
+                    for (const auto type : {QEvent::MouseButtonPress, QEvent::MouseButtonRelease, QEvent::MouseButtonDblClick, QEvent::MouseButtonRelease}) {
+                        QMouseEvent event(type, point, top, screen, Qt::LeftButton,
+                            type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton, Qt::NoModifier);
+                        QCoreApplication::sendEvent(view, &event);
+                    }
+                    if (!mapper->m_ItemSetupDialog->isVisible()) { finish(false); return; }
+                    *stage = 1; marker = QStringLiteral(".delete-editor-opened");
+                } else if (*stage == 1 && QFileInfo::exists(output + QStringLiteral(".delete-close-editor"))) {
+                    QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), release(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+                    QCoreApplication::sendEvent(mapper->m_ItemSetupDialog, &press); QCoreApplication::sendEvent(mapper->m_ItemSetupDialog, &release);
+                    if (mapper->m_ItemSetupDialog->isVisible()) { finish(false); return; }
+                    *stage = 2; marker = QStringLiteral(".delete-editor-closed");
+                } else if (*stage == 2 && QFileInfo::exists(output + QStringLiteral(".delete-table-edit"))) {
+                    auto *table = mapper->m_KeyMappingDataTable;
+                    // Component draft injection, separate from the independent GUI deletion baseline.
+                    table->editItem(table->item(0, QKeyMapperConstants::MAPPING_KEY_COLUMN));
+                    auto *editor = table->findChild<QLineEdit *>();
+                    if (!table->hasActiveEditor() || !editor) { finish(false); return; }
+                    QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+                    QCoreApplication::sendEvent(editor, &select); QCoreApplication::sendEvent(editor, &selected);
+                    QKeyEvent text(QEvent::KeyPress, Qt::Key_Z, Qt::NoModifier, QStringLiteral("Z")), typed(QEvent::KeyRelease, Qt::Key_Z, Qt::NoModifier, QStringLiteral("Z"));
+                    QCoreApplication::sendEvent(editor, &text); QCoreApplication::sendEvent(editor, &typed);
+                    if (editor->text() != QStringLiteral("Z")) { finish(false); return; }
+                    *stage = 3; marker = QStringLiteral(".delete-table-editing");
+                } else if (*stage == 3 && QFileInfo::exists(output + QStringLiteral(".delete-table-cancel"))) {
+                    auto *editor = mapper->m_KeyMappingDataTable->findChild<QLineEdit *>();
+                    if (!editor) { finish(false); return; }
+                    QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), release(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+                    QCoreApplication::sendEvent(editor, &press); QCoreApplication::sendEvent(editor, &release);
+                    if (mapper->m_KeyMappingDataTable->hasActiveEditor()) { finish(false); return; }
+                    *stage = 4; marker = QStringLiteral(".delete-table-cancelled");
+                } else if (*stage == 4 && QFileInfo::exists(output + QStringLiteral(".delete-popup"))) {
+                    popup->popup(mapper->mapToGlobal(QPoint(100, 100)));
+                    if (QApplication::activePopupWidget() != popup) { finish(false); return; }
+                    *stage = 5; marker = QStringLiteral(".delete-popup-opened");
+                } else if (*stage == 5 && QFileInfo::exists(output + QStringLiteral(".delete-popup-close"))) {
+                    popup->close();
+                    if (QApplication::activePopupWidget()) { finish(false); return; }
+                    *stage = 6; marker = QStringLiteral(".delete-popup-closed");
+                } else if (*stage == 6 && QFileInfo::exists(output + QStringLiteral(".delete-hide-row"))) {
+                    // Filter-state component injection; not a GUI filter acceptance baseline.
+                    mapper->m_KeyMappingDataTable->setRowHidden(0, true);
+                    if (!mapper->m_KeyMappingDataTable->isRowHidden(0)) { finish(false); return; }
+                    *stage = 7; marker = QStringLiteral(".delete-row-hidden");
+                } else if (*stage == 7 && QFileInfo::exists(output + QStringLiteral(".delete-show-row"))) {
+                    mapper->m_KeyMappingDataTable->setRowHidden(0, false);
+                    if (mapper->m_KeyMappingDataTable->isRowHidden(0)) { finish(false); return; }
+                    *stage = 8; marker = QStringLiteral(".delete-row-shown");
+                } else if (*stage == 6 && QFileInfo::exists(output + QStringLiteral(".delete-gui-remove"))) {
+                    auto *table = mapper->m_KeyMappingDataTable;
+                    QKeyEvent press(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier), release(QEvent::KeyRelease, Qt::Key_Delete, Qt::NoModifier);
+                    QCoreApplication::sendEvent(table, &press); QCoreApplication::sendEvent(table, &release);
+                    *stage = 9; marker = QStringLiteral(".delete-gui-removed");
+                }
+                if (marker.isEmpty()) return;
+                QSaveFile file(output + marker);
+                const QByteArray bytes("{\"ok\":true}");
+                if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) finish(false);
+            });
+            poll->start(10);
+        }
         auto calls = QSharedPointer<int>::create(0);
         auto expected = QSharedPointer<QKeyMapper::AutomationSettingSavePreparation>::create();
         auto demoFrames = QSharedPointer<QJsonArray>::create();
@@ -3876,6 +3964,31 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED
                     && !QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved(),
                     QStringLiteral("demo capture never starts mapping or observes a runtime input admission"));
+            } else if (saves == 0 && deletionCase && connectionVariant != QStringLiteral("delete_read")) {
+                QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+                QString error;
+                const auto source = mapper->collectAutomationSourceSnapshot(error);
+                auto sources = sourceBefore.value(QStringLiteral("sources")).toArray();
+                const int target = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+                auto expected = sources.at(target).toObject();
+                auto rows = expected.value(QStringLiteral("rows")).toArray();
+                if (connectionVariant == QStringLiteral("delete_common_first") || connectionVariant == QStringLiteral("delete_stale")) rows.removeAt(0);
+                else rows = QJsonArray();
+                expected.insert(QStringLiteral("rows"), rows); sources.replace(target, expected);
+                check(error.isEmpty() && source.value(QStringLiteral("sources")).toArray() == sources,
+                    QStringLiteral("deletion leaves the exact independent full source rows and all other source metadata intact"));
+                check(actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore && mapper->m_SaveSettingDirty
+                    && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch + 1
+                    && mapper->m_LoadedMappingSettingGroup == group,
+                    QStringLiteral("exactly one deletion changes only memory and source epoch without saving or loading"));
+                check(!mapper->m_ItemSetupDialog->isVisible() && mapper->m_KeyMappingDataTable->rowCount() == rows.size()
+                    && (rows.isEmpty() ? mapper->m_KeyMappingDataTable->currentRow() == -1 : mapper->m_KeyMappingDataTable->currentRow() == 0),
+                    QStringLiteral("original GUI refresh has the expected nearest remaining row and no open editor"));
+                check(mapper->automationSourceReadBasis() == QStringLiteral("pristine_idle")
+                    && !QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved(),
+                    QStringLiteral("deletion never starts mapping or accepts runtime input"));
+                check(mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
+                    QStringLiteral("deletion leaves the actual GUI save name unchanged"));
             } else if (saves == 0) {
                 QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
                 check(actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore, QStringLiteral("read-only SDK scenario preserves complete INI bytes"));
@@ -3905,7 +4018,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 check(valuesMatch, QStringLiteral("formal save persists every independently prepared target and shared value"));
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
-                {QStringLiteral("formal_mcp_save_preview"), !demoCapture}, {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},
+                {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase}, {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},
+                {QStringLiteral("formal_mcp_delete"), deletionCase && connectionVariant != QStringLiteral("delete_read")
+                    && connectionVariant != QStringLiteral("delete_stale")},
                 {QStringLiteral("formal_mcp_scene_creation"), demoCapture && completion.value(QStringLiteral("sdk_passed")).toBool()},
                 {QStringLiteral("handler_calls"), *calls}, {QStringLiteral("saved"), saves == 1 || reloadFailure},
                 {QStringLiteral("connection_recovery"), *connectionEvidence}, {QStringLiteral("pairing_requests"), *pairingCount},

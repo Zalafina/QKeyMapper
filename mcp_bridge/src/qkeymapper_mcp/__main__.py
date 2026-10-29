@@ -181,29 +181,36 @@ def main() -> None:
             original_key: Annotated[str | None, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")] = None,
             mapping_key: Annotated[str | None, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")] = None,
             insert_row: Annotated[StrictInt | None, Field(ge=0, le=2147483647)] = None,
-            action: Literal["mapping.add", "configuration.save"] = "mapping.add",
-            setting_name: Annotated[str | None, Field(min_length=1, max_length=32767)] = None) -> ToolResult:
-        """只读预览，先查询实际能力。默认mapping.add保持基本映射调用：四个源／键字段必填，每键限单个大写字母或数字；先qkm_query(mapping_sources)获取真实源引用，insert_row从0开始、缺省追加。configuration.save仅传action及明确setting_name，要求Read＋Configure、加载成功／空闲且清理许可有效、无打开编辑窗；返回完整加载／共享草稿的保存足迹、名称效果及明确目标，不能理解为只保存一行。保存另须qkm_apply_changes明确确认完整范围及独立覆盖；不自动开始映射。两种预览最多120秒，新预览替换本客户端旧预览，不改配置、dirty或磁盘，不自动停止、切表或关闭编辑窗。"""
+            action: Literal["mapping.add", "configuration.save", "mapping.delete"] = "mapping.add",
+            setting_name: Annotated[str | None, Field(min_length=1, max_length=32767)] = None,
+            source_refs: Annotated[list[Annotated[str, Field(max_length=128,
+                pattern="^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$")]] | None,
+                Field(min_length=1, max_length=100)] = None) -> ToolResult:
+        """只读预览，先查询实际能力。mapping.delete传source_revision、source_tab_ref及1–100个同源source_refs，只接受当前附着源的可见行，去重并逐条列完整删除内容；不接受显示行号、跨源批次或任意目标。提交须另传confirm_delete=true。默认mapping.add保持基本映射调用：四个源／键字段必填，每键限单个大写字母或数字；先qkm_query(mapping_sources)获取真实源引用，insert_row从0开始、缺省追加。configuration.save仅传action及明确setting_name，要求Read＋Configure、加载成功／空闲且清理许可有效、无打开编辑窗；返回完整加载／共享草稿的保存足迹、名称效果及明确目标，不能理解为只保存一行。保存另须qkm_apply_changes明确确认完整范围及独立覆盖；不自动开始映射。各类预览最多120秒，新预览替换本客户端旧预览，不改配置、dirty或磁盘，不自动停止、切表或关闭编辑窗。"""
         return tool_result(await bridge.preview_changes(source_revision, source_tab_ref, original_key, mapping_key, insert_row,
-            action=action, setting_name=setting_name))
+            action=action, setting_name=setting_name, source_refs=source_refs))
 
     preview_definition = next(definition for definition in tools if definition.name == "qkm_preview_changes")
     preview_definition.parameters["oneOf"] = [
         {"required": ["source_revision", "source_tab_ref", "original_key", "mapping_key"],
-         "properties": {"action": {"const": "mapping.add"}, "setting_name": {"type": "null"},
+         "properties": {"action": {"const": "mapping.add"}, "setting_name": {"type": "null"}, "source_refs": {"type": "null"},
             **{name: {"type": "string"} for name in ("source_revision", "source_tab_ref", "original_key", "mapping_key")}}},
         {"required": ["action", "setting_name"], "properties": {
             "action": {"const": "configuration.save"}, "setting_name": {"type": "string"}, **{name: {"type": "null"} for name in
-                ("source_revision", "source_tab_ref", "original_key", "mapping_key", "insert_row")}}}]
+                ("source_revision", "source_tab_ref", "original_key", "mapping_key", "insert_row", "source_refs")}}},
+        {"required": ["action", "source_revision", "source_tab_ref", "source_refs"], "properties": {
+            "action": {"const": "mapping.delete"}, "source_refs": {"type": "array"},
+            **{name: {"type": "string"} for name in ("source_revision", "source_tab_ref")},
+            **{name: {"type": "null"} for name in ("setting_name", "original_key", "mapping_key", "insert_row")}}}]
 
     @tool(write)
     async def qkm_apply_changes(
             preview_id: Annotated[str, Field(min_length=32, max_length=32, pattern="^[0-9a-f]{32}$")],
             confirm_conflicts: StrictBool = False, confirm_scope: StrictBool = False,
-            confirm_overwrite: StrictBool = False) -> ToolResult:
-        """提交本实例／配对内已审阅的预览，重新校验权限、完整内容、状态及原到期。mapping.add仅改内存；用户同意禁用冲突行后才传confirm_conflicts=true。configuration.save会写入全部预览范围并重新加载，用户同意全部加载／共享草稿和名称效果后才传confirm_scope=true；覆盖另须confirm_overwrite=true，不能用映射冲突确认替代。准入拒绝不写盘；执行中写失败可能有内存准备效果，重载失败可能已写盘，须查询同ID的分段结果。备份失败与主文件保存分别报告。不自动停止或启动映射。预览单次消费，重复成功ID只返回历史结果；失败需新预览，超时／断线先查qkm_get_operation，unknown不证明未发生，不盲目重试。"""
+            confirm_overwrite: StrictBool = False, confirm_delete: StrictBool = False) -> ToolResult:
+        """提交本实例／配对内已审阅的预览，重新校验权限、完整内容、状态及原到期。mapping.delete仅内存删除预览的同源行，用户审阅并同意删除后才传confirm_delete=true，不得用冲突／保存确认替代。mapping.add仅改内存；用户同意禁用冲突行后才传confirm_conflicts=true。configuration.save会写入全部预览范围并重新加载，用户同意全部加载／共享草稿和名称效果后才传confirm_scope=true；覆盖另须confirm_overwrite=true，不能用映射冲突确认替代。准入拒绝不写盘；执行中写失败可能有内存准备效果，重载失败可能已写盘，须查询同ID的分段结果。备份失败与主文件保存分别报告。不自动停止或启动映射。预览单次消费，重复成功ID只返回历史结果；失败需新预览，超时／断线先查qkm_get_operation，unknown不证明未发生，不盲目重试。"""
         return tool_result(await bridge.apply_changes(preview_id, confirm_conflicts,
-            confirm_scope=confirm_scope, confirm_overwrite=confirm_overwrite))
+            confirm_scope=confirm_scope, confirm_overwrite=confirm_overwrite, confirm_delete=confirm_delete))
 
     @tool(connection)
     async def qkm_cancel_changes(
