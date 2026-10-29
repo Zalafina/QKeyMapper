@@ -189,7 +189,7 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 
 宿主可在原`--discovery-file`／可信`--executable`外显式指定`--demo-record <私有创建记录>`，该桥接才额外提供无参数、只读的`qkm_get_demo_state`；P1-121后普通入口17工具，此参数增加为18工具；115另增下述非行足迹查询，产品当前19项业务能力。此参数不创建进程、申请UAC或配对，不改变正常默认关闭；MCP客户端不能传入记录路径、任意PID或自己选择目标。当前是开发桥接入口，完整Release预热／免Python交付仍待P3／M3-B。
 
-记录是受信启动链的目标约束，最多8KiB，严格包含`version=1`、`executable`绝对路径、十进制字符串`pid/created/session`、32位小写hex的`instance`、`desktop`及初始保存配置组`configuration`；没有密钥。目录和文件须为当前用户的私有ACL、非重解析对象／单链接普通文件。记录自报路径不产生信任：仍沿显式可信EXE、实际进程／创建时间／登录会话、认证管道核验，再与产品报告的实际桌面和实例逐项匹配。现有维护启动链可生成测试记录，正式预热生成和部署流程尚未交付。
+记录是受信启动链的目标约束，最多8KiB，严格包含`version=2`、`startup_purpose=configuration_only_demo`、`executable`绝对路径、十进制字符串`pid/created/session`、32位小写hex的`instance`、`desktop`及初始保存配置组`configuration`；没有密钥。目录和文件须为当前用户的私有ACL、非重解析对象／单链接普通文件。记录自报路径不产生信任：仍沿显式可信EXE、实际进程／创建时间／登录会话、认证管道核验，再与产品报告的实际桌面和实例逐项匹配。旧version1开发记录明确拒绝，不自动迁移；当前维护启动链可生成version2测试记录，正式预热生成和部署流程尚未交付。记录自报用途仍须与已认证state／capabilities的严格只配置策略一致，普通模式、策略缺失／值不符或有效Run均拒绝，不能只凭私有桌面放行。
 
 预检在既有单worker内串行读取，要求已有Read+Configure+ShowWindows+CaptureWindows、后台私有非输入桌面、固定配置加载已接受、完整空闲清理读取基准、唯一附着普通空源及空的未附着Common备份、主窗已恢复／可见、无单项窗口且初始无dirty。产品`windows`观察新增保守布尔`private_background_available`，缺失／无法确认均不放行；不会显示、激活或切换桌面。
 
@@ -274,3 +274,6 @@ Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看�
 已认证模式的state／capabilities附`execution_policy`，明确startup_purpose及四项禁止效果。有效权限上限为Read+Configure+ShowWindows+CaptureWindows（387）；新Run授权拒绝，旧持久配对不自动删权限或重复配对，但当前连接只取允许交集。只配置模式仍需原GUI启用／配对与独立窗口权限，不能将该参数或Skill当授权。
 
 当前完成启动门禁与双Qt私有定向验证，固定预热角色、正式创建记录和部署引导另待接线。不要自行将普通用户多实例Default确认流程用于后台实例，也不要用开发gsudo缓存作为正式服务依赖。一次原生UAC、临时桌面切换／人工配对的验收另行授权；本节不是完整免开发环境部署步骤。
+
+
+P3-125 起上述演示入口仅接受version2和已认证只配置产品；缺少产品策略时返回`demo_configuration_only_required`，在预览、业务写入和窗口显示前失败，普通非演示MCP不受该限制。`false`须为布尔值，不接受0／空值或额外策略字段。旧记录／用途不符为`demo_record_mismatch`；只读预检拒绝后保留当前认证连接，恢复正确记录可重新预检，不自动配对、改连或迁移旧引用。正常串行回收及未知结果隔离规则不变。124之前未加模式的开发证据保留原范围，不视为新版演示准入通过。

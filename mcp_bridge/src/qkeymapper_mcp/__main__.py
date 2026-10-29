@@ -142,7 +142,7 @@ def main() -> None:
     if demo_record is not None:
         @tool(read)
         async def qkm_get_demo_state() -> ToolResult:
-            """只读核对宿主显式配置的专用演示创建记录、实际认证实例／私有桌面、独立窗口权限及固定配置的空源基线。ready只代表本次观察，不是后续写入许可、场景租约或重置证明；失败保留现场，不创建／切换目标、不显示／激活窗口、不配对扩权／提权或修改配置。记录由受信启动链制备，不能用客户端自报身份替代进程／认证／权限核验。宿主另行启用串行演示时，demo_session提供最近阶段／操作ID和内存回收记录的观察；receipt_available不授予下一轮写入许可，实际调用仍会完整核验。正式预热生成及免Python交付仍待。"""
+            """只读核对宿主显式配置的version2专用演示创建记录、实际认证实例／私有桌面与只配置策略、独立窗口权限及固定配置的空源基线。ready只代表本次观察，不是后续写入许可、场景租约或重置证明；失败保留现场，不创建／切换目标、不显示／激活窗口、不配对扩权／提权或修改配置。记录由受信启动链制备，不能用客户端自报身份替代进程／认证／权限核验。宿主另行启用串行演示时，demo_session提供最近阶段／操作ID和内存回收记录的观察；receipt_available不授予下一轮写入许可，实际调用仍会完整核验。正式预热生成及免Python交付仍待。"""
             return tool_result(await bridge.demo_state())
 
     if args.enable_demo_mapping:
@@ -151,7 +151,7 @@ def main() -> None:
                 original_key: Annotated[str, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")],
                 mapping_key: Annotated[str, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")],
                 view: Literal["item_setup", "main", "mapping_advanced"] = "item_setup") -> ToolResult:
-            """仅供宿主显式启用的预授权专用私有实例：建立一个基础映射，按view获取既有主窗(main)、原入口单项窗(item_setup，默认)或固定高级窗(mapping_advanced)的原生图片，安全关闭本轮归属窗并删除本轮创建的行；不请求激活。高级视图只展示当前真实参数，必须取得输入未变标记并通过安全关闭／非行足迹复核，不编辑参数，其图片本身不显示A/B，行归属由正式源核验。不启动映射、不保存、不注入系统输入。需要Read+Configure+ShowWindows+CaptureWindows及当前角色能力合同，首次须已加载无dirty空源；连续轮次只复用同一桥接已证明的回收记录，dirty按原GUI保留。失败可能保留本轮源／窗口并隔离，查询demo_state核对实际阶段和操作ID，勿盲目重试、清空草稿或改连。图片以MCP ImageContent返回，附场景／目标／尺寸及回收元数据；QQ等渠道送达须由gateway另行完成。本工具非幂等、同桥接串行，不能作为全局实例租约。"""
+            """仅供宿主显式启用的预授权专用私有实例，须有version2创建记录及已认证产品只配置策略，普通模式拒绝：建立一个基础映射，按view获取既有主窗(main)、原入口单项窗(item_setup，默认)或固定高级窗(mapping_advanced)的原生图片，安全关闭本轮归属窗并删除本轮创建的行；不请求激活。高级视图只展示当前真实参数，必须取得输入未变标记并通过安全关闭／非行足迹复核，不编辑参数，其图片本身不显示A/B，行归属由正式源核验。不启动映射、不保存、不注入系统输入。需要Read+Configure+ShowWindows+CaptureWindows及当前角色能力合同，首次须已加载无dirty空源；连续轮次只复用同一桥接已证明的回收记录，dirty按原GUI保留。失败可能保留本轮源／窗口并隔离，查询demo_state核对实际阶段和操作ID，勿盲目重试、清空草稿或改连。图片以MCP ImageContent返回，附场景／目标／尺寸及回收元数据；QQ等渠道送达须由gateway另行完成。本工具非幂等、同桥接串行，不能作为全局实例租约。"""
             return image_tool_result(await bridge.demo_mapping(original_key, mapping_key, view))
 
     @tool(connection)

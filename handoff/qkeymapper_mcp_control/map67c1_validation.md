@@ -984,3 +984,16 @@ Agent查看四张正式ImageContent图片：高级770×390显示当前实际3／
 只配置四场另各8项断言：实际私有桌面／387；初始Hook、Interception、libusb、SDL控制器、FakerInput和ViGEm资源未初始化；安全映射／重启／停止／WinEvent及手动入口拒绝；当前相同FilterKeys写入口返回false；Interception加载拒绝；Worker Hook／UnHook／重启／空输入／未知函数／空虚拟按钮及设备分配连接命中显式拒绝；无设备／控制器／尾部工作；源代次／加载／dirty／INI保持。只调用无输入或无目标的安全拒绝探针，不实际执行危险系统动作／安装器作为负例；test-only计数只证实进入拒绝分支，不声称完整API追踪。模式main前后独立读取全部FilterKeys字段相等。原标准模式没有新增执行策略字段，mode能力／状态的策略元数据相等并在SDK核验。
 
 原正例全源及metadata回收、H0／INI／加载／GUI名不变、epoch+4且dirty依原行为保留；Read状态不变。六场native0正常退出，workAtExit／producersAtExit为0、无输入任务开始，逐场owned／unresolved／pending／current_action／current_job五项零。原件根含精确大文件补丁／字节、首失败及成功构建、部署身份、组件、六场peer／调用／八图／INI／退出和summary，不随Git。维护README同步；本轮未重编普通完整Release、跑运行态映射／实际设备／危险INI矩阵、Default／Win10／高DPI／ASan／全静态或QQ。固定预热角色／正式创建记录尚未交付，开发host-record仍版本1夹具；原生一次UAC／人工GUI配对及临时桌面切换另行说明授权，不将本片私有验证计为完整P3／M3-B或部署验收。
+
+
+## DEMO-P3-125：正式演示绑定契约（2026-10-29，PC-W11）
+
+124 7142cf99之上仅桥接demo.py／demo_scene.py、工具说明及定向维护测试：记录严格version2＋startup_purpose=configuration_only_demo；旧version1、缺失／不符用途不迁移。私有ACL、受信EXE／实际PID创建时间／Session／instance／桌面及认证仍复用；记录自报用途不能提升信任。演示预检要求认证state完整已知策略，各禁止位必须严格bool false、无缺失／额外字段及有效Run；串行入口还在capabilities先复核该策略，再观察源／上下文和预览，不触及普通非演示MCP／持久权限／正常工具数量。错误demo_configuration_only_required明确，不自动换实例、提权／配对或回收不明现场。
+
+普通Medium Python test_demo／test_demo_scene／test_images共34项通过。新增覆盖version1／缺失用途拒绝、严格false与0／空值／字符串／true区别、字段／用途变化和Run；caps或state缺失／非法时零preview／apply／capture，已有完成回收记录遇策略变化不再复用且隔离。取消、未知结果、旧引用及高级草稿等原场景随选定测试回归，不用模拟结果充当GUI验收。
+
+双Qt真实制品哈希与124部署记录相等，不重编C++；实际路径out/mcp_demo_binding_w11_20261029/{qt6,qt5}-runtime/QKeyMapperDemoBinding125_<kit>_runtime.exe，源Cpp／manifest／Qt配置沿124范围复用。四场原manifest产品12288／SDK8192、同登录及实际QkmDemoBinding125_<UUID>私有桌面：两场模式demo_sequence先旧version1／错误用途只读拒绝并保留连接，恢复version2后高级A→B及默认单项C→D，完整回收；两场普通demo_ready虽记录声称只配置，认证state／caps无策略，get_demo_state及实际demo_mapping均明确拒绝，零preview／业务修改／窗口图且认证仍连接。共44 Native／174 handler／100 SDK＋16 schema，四张正式PNG与124同Qt同角色已审阅图逐字节相等。
+
+模式正例epoch+4／dirty保留，全源metadata回收、H0／INI／加载／GUI名保持；普通反例源／dirty／代次／INI不变。四场native0正常退出、work／producer0及五项清理零。首Qt6正例exit0且SDK／Native均通过后，缓存status响应读取PermissionError，实际errno13，winerror／status原生退出码未取得；响应文件随后存在且独立新只读status成功、owned／unresolved／pending／current_action／current_job均零。保留request288d287697ff41e0aa95b59b12c8822a、instance eccdf79e859e4989805774612407354c／generation1及本机失败说明，未重放已完成产品、缓存变更或未知请求；不根据错误文字推算其他原生码，原因／网络关联未核实，未做联网探测或额外提权。
+
+原件out/mcp_demo_binding_w11_20261029含34项日志、精确制品复用、四场peer／调用／记录反例及恢复／四图／INI／退出／清理、status读失败与独立复核和summary，仅本机。公共登记沿当前31176控制器，开发／SDK／图像消费普通权限，无新UAC、Default／桌面切换／系统输入／映射启动／驱动。维护模块demo_policy_acceptance.py、主／随包／Native用法同步。正式产品自发记录和固定预热宿主、整包更新／干净Win10／Win11／断网及QQ未实现或未验；旧123包／旧产品与新记录不承诺混用，历史原模式结果保留当时范围，不重算为当前演示准入通过。

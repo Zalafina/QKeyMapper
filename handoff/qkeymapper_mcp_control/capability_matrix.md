@@ -1049,3 +1049,8 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P3-124：只配置启动门禁
 
 固定--demo-configuration-only在QApplication／所有单例前不可变确定，限定实际非Default／非输入桌面。原事件线程及完整关闭保留，设备／Hook／SDL运行初始化、系统输入／映射／任务准入、驱动／外部命令／更新和Windows任务／FilterKeys写入口受产品拒绝；UI禁用不是安全边界。模式会话上限387，新Run拒绝，旧511配对仅运行时交集、持久权限／密钥不变；模式能力／状态提供execution_policy，普通结果及MCP默认关闭保持。双Qt六构建、40组件及六场72 Native／302 handler／122 SDK＋48 schema、八图／源INI和清理通过，见[同一C1证据](map67c1_validation.md#demo-p3-124只配置门禁2026-10-29pc-w11)。仅自有私有与安全初始INI，无Default、实际危险动作／驱动／运行态输入或QQ覆盖；固定预热角色／正式创建证明和一次UAC／人工配对、完整P3／M3-B尚待，不作为完整交付承诺。
+
+
+## DEMO-P3-125：演示用途与认证策略绑定
+
+演示记录严格version2及configuration_only_demo，旧开发记录不自动迁移；认证state／caps须有完整严格false策略，缺失／普通模式／有效Run在preview／修改／显示前拒绝，记录自报或私有桌面不足以放行。普通MCP、权限及17／18／19工具不变。34项Python、复用124精确双Qt制品的四场44 Native／174 handler／100 SDK＋16 schema与四图字节等同、旧记录拒绝／恢复和普通模式拒绝通过，见[同一C1证据](map67c1_validation.md#demo-p3-125正式演示绑定契约2026-10-29pc-w11)。一场exit0后status响应读errno13，独立清理复核通过且未重放，原因未核实。正式自发记录／预热宿主、完整P3／M3-B、Default／Win10／QQ仍待。

@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 import win32event
 
 from qkeymapper_mcp.bridge import Bridge
-from qkeymapper_mcp.demo import DEMO_SCOPES
+from qkeymapper_mcp.demo import DEMO_POLICY, DEMO_SCOPES
 from qkeymapper_mcp.demo_scene import DemoSession
 from qkeymapper_mcp.protocol import BridgeError
 from test_demo import fixture
@@ -65,7 +65,7 @@ class Product:
             if result is not None:
                 return result
         if method == "qkm_get_capabilities":
-            result = dict(business_capabilities=[dict(id=name, source_binding_result="legacy" if self.legacy else "commit_snapshot_or_null")
+            result = dict(execution_policy=dict(DEMO_POLICY), business_capabilities=[dict(id=name, source_binding_result="legacy" if self.legacy else "commit_snapshot_or_null")
                 for name in BUSINESS_CAPABILITIES if name not in self.missing])
             capture = next(item for item in result["business_capabilities"] if item["id"] == "windows.capture")
             capture["arguments_schema"] = dict(properties=dict(role=dict(enum=list(self.roles))))
@@ -154,6 +154,27 @@ class SceneTests(unittest.TestCase):
             self.assertFalse(session.quarantined)
             self.assertFalse(any(method == "qkm_apply_changes" for method, _ in product.calls))
 
+    def test_standard_or_malformed_policy_fails_before_preview_or_mutation(self):
+        for stage in ("qkm_get_capabilities", "qkm_get_state"):
+            for policy in (None, {**DEMO_POLICY, "mapping_allowed": True}, {**DEMO_POLICY, "system_input_allowed": 0}):
+                product = Product()
+                if stage == "qkm_get_capabilities":
+                    original = product.request
+                    def request(method, args):
+                        value = original(method, args)
+                        if method == stage:
+                            value["result"]["execution_policy"] = policy
+                        return value
+                else:
+                    product.state["execution_policy"] = policy
+                    request = product.request
+                session = DemoSession()
+                result = session.run(request, product.record, DEMO_SCOPES, "A", "B")
+                self.assertEqual(result["error"], "demo_configuration_only_required")
+                self.assertFalse(session.quarantined or session.receipt)
+                self.assertFalse(any(method in ("qkm_preview_changes", "qkm_apply_changes", "qkm_capture_window")
+                                     for method, _ in product.calls))
+
     def test_known_capture_failure_recovers_once_and_allows_next_round(self):
         product = Product()
         product.fail = lambda method, args: dict(ok=False, error="capture_failed") if method == "qkm_capture_window" else None
@@ -205,15 +226,17 @@ class SceneTests(unittest.TestCase):
                 self.assertEqual(sum(method == "qkm_apply_changes" for method, _ in product.calls), 1)
 
     def test_changed_completed_receipt_is_not_reused(self):
-        for change in ("source", "context", "target"):
+        for change in ("source", "context", "target", "policy"):
             product = Product(); session, result = self.run_scene(product)
             self.assertTrue(result["ok"])
             if change == "source":
                 product.revision += 1
             elif change == "context":
                 product.context = "e" * 64
-            else:
+            elif change == "target":
                 product.record["created"] = "999"
+            else:
+                product.state["execution_policy"]["mapping_allowed"] = True
             before = sum(method == "qkm_apply_changes" for method, _ in product.calls)
             self.assertFalse(self.run_scene(product, session)[1]["ok"])
             self.assertTrue(session.quarantined)

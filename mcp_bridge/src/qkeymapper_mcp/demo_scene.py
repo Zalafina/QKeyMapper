@@ -3,7 +3,7 @@
 import re
 import uuid
 
-from .demo import readiness
+from .demo import configuration_only, readiness
 
 
 class SceneError(Exception):
@@ -121,7 +121,9 @@ class DemoSession:
                         saved=False, started_by_operation=False, dirty_retained=True)
 
         try:
-            caps = call("capabilities", "qkm_get_capabilities").get("business_capabilities", [])
+            capabilities_reply = call("capabilities", "qkm_get_capabilities")
+            check(configuration_only(capabilities_reply.get("execution_policy")), "demo_configuration_only_required")
+            caps = capabilities_reply.get("business_capabilities", [])
             capabilities = {item.get("id"): item for item in caps if type(item) is dict}
             check(all(name in capabilities for name in ("mapping.add.preview", "mapping.add.apply", "mapping.delete.preview",
                 "mapping.delete.apply", "mapping." + editor_kind + ".open", "mapping." + editor_kind + ".close", "windows.capture", "demo.context.read")),

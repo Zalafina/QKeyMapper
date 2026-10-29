@@ -12,6 +12,15 @@ from .protocol import BridgeError, decimal, decode, fields, hex_bytes, require
 from .windows import _private
 
 DEMO_SCOPES = 1 | 2 | 128 | 256
+DEMO_PURPOSE = "configuration_only_demo"
+DEMO_POLICY = dict(startup_purpose=DEMO_PURPOSE, mapping_allowed=False, system_input_allowed=False,
+                   device_initialization_allowed=False, system_setting_writes_allowed=False)
+
+
+def configuration_only(policy) -> bool:
+    return (type(policy) is dict and policy.keys() == DEMO_POLICY.keys()
+            and all(type(policy[key]) is type(expected) and policy[key] == expected
+                    for key, expected in DEMO_POLICY.items()))
 
 
 def read_binding(path: Path, own) -> dict:
@@ -30,8 +39,9 @@ def read_binding(path: Path, own) -> dict:
 
 def validate_binding(value: dict, target, expected_executable: Path) -> dict:
     try:
-        fields(value, "version executable pid created session instance desktop configuration")
-        require(type(value["version"]) is int and value["version"] == 1)
+        fields(value, "version startup_purpose executable pid created session instance desktop configuration")
+        require(type(value["version"]) is int and value["version"] == 2)
+        require(value["startup_purpose"] == DEMO_PURPOSE)
         hex_bytes(value["instance"], 16)
         require((value["instance"], decimal(value["pid"], 32), decimal(value["created"], 64),
                  decimal(value["session"], 32, zero=True))
@@ -59,6 +69,8 @@ def readiness(binding: dict, windows: dict, state: dict, sources: dict, granted:
         return "demo_record_mismatch"
     if (granted & DEMO_SCOPES) != DEMO_SCOPES:
         return "permission_denied"
+    if granted & ~DEMO_SCOPES or not configuration_only(state.get("execution_policy")):
+        return "demo_configuration_only_required"
     if windows.get("private_background_available") is not True:
         return "unsupported_desktop"
     if state.get("instance") != binding["instance"]:

@@ -148,3 +148,8 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 Native只配置断言核对Hook／Interception／libusb／SDL控制器／FakerInput／ViGEm资源未初始化，安全映射与空输入／未知函数、设备分配及当前FilterKeys值写入口命中拒绝，源代次／加载／dirty／INI保持；不执行安装器、危险系统动作或真实输入作为负例。产品main前后独立读取完整FilterKeys字段，正常退出仍检查尾部工作与生产者，不能仅看Worker STOPPED。普通模式相同场景单独回归；组件测试用`QKM_TEST_CONFIGURATION_ONLY=1`在创建Application前设模式，核验新Run授权拒绝及旧511配对认证时仅387生效、持久权限／secret不降级且无重复配对。
 
 仅自有实际私有桌面与公共受管启动／关闭，普通桥接／SDK／构建不提权。正式固定预热角色、原生一次UAC／人工配对／桌面切换尚非此夹具功能；当前开发记录不能作为正式部署创建证明。实施与结果只记录同一主计划／C1。
+
+
+## DEMO-P3-125 正式演示记录及策略
+
+桥接演示记录从本片起必须version2及startup_purpose=configuration_only_demo；所有上述演示维护用例须使用--demo-configuration-only及新的受信创建记录，旧out脚本和历史原模式结果不自动升级。普通非演示GUI／业务用例仍按原模式执行。SDK模块[demo_policy_acceptance.py](../../../mcp_bridge/tests/demo_policy_acceptance.py)以demo_sequence验证旧记录／错误用途只读拒绝及恢复后正式高级／单项两轮；以普通模式demo_ready验证记录自称演示仍因认证策略缺失而在预览／修改前拒绝。只配置参数不代替配对，记录不赋予可信EXE或Run权限。本片可复用124精确本机制品，仅桥接变化；正式预热宿主／记录生成仍待。

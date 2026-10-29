@@ -13,13 +13,13 @@ import win32file
 import win32security
 
 from qkeymapper_mcp.bridge import Bridge
-from qkeymapper_mcp.demo import DEMO_SCOPES, read_binding, readiness, validate_binding
+from qkeymapper_mcp.demo import DEMO_POLICY, DEMO_PURPOSE, DEMO_SCOPES, read_binding, readiness, validate_binding
 from qkeymapper_mcp.protocol import BridgeError
 from qkeymapper_mcp.windows import identity
 
 
 def fixture():
-    record = dict(version=1, executable=r"C:\QkmDemo\QKeyMapper.exe", pid="100", created="200", session="1",
+    record = dict(version=2, startup_purpose=DEMO_PURPOSE, executable=r"C:\QkmDemo\QKeyMapper.exe", pid="100", created="200", session="1",
                   instance="a" * 32, desktop="QkmDemoUnit", configuration="DemoSeed")
     target = {key: record[key] for key in ("instance", "pid", "created", "executable", "desktop")}
     windows = dict(target=target, private_background_available=True, items=[
@@ -27,7 +27,7 @@ def fixture():
         dict(role="item_setup", qt_visible=False)])
     configuration = dict(group="DemoSeed", kind="saved_profile", has_unsaved_changes=False)
     load = dict(group="DemoSeed", outcome="accepted", generation="1", scope="last_mapping_load")
-    state = dict(instance=record["instance"], configuration=configuration, mapping_load_context=load,
+    state = dict(instance=record["instance"], execution_policy=dict(DEMO_POLICY), configuration=configuration, mapping_load_context=load,
                  run=dict(gui_state="idle", worker_state_sample="stopped"), current_tab=dict(index=0))
     sources = dict(offset=0, total=2, next_offset=None, source_snapshot=dict(instance=record["instance"],
         common_feature_enabled=False, read_basis="pristine_idle", configuration_selection=configuration,
@@ -42,13 +42,38 @@ class DemoBindingTests(unittest.TestCase):
     def test_binding_strict_types_and_identity(self):
         record, _, _, _, target = fixture()
         self.assertEqual(validate_binding(record, target, Path(record["executable"])), record)
-        for change in (dict(version=True), dict(pid=100), dict(pid="0100"), dict(pid="101"),
+        for change in (dict(version=True), dict(version=1), dict(startup_purpose="standard"), dict(pid=100), dict(pid="0100"), dict(pid="101"),
                        dict(created="201"), dict(session="2"), dict(instance="b" * 32),
                        dict(executable=r"C:\Other\QKeyMapper.exe"), dict(desktop="Default"),
                        dict(desktop="winsta0\\QkmDemoUnit"), dict(configuration=""), dict(unexpected=True)):
             with self.subTest(change=change), self.assertRaises(BridgeError) as failure:
                 validate_binding({**record, **change}, target, Path(record["executable"]))
             self.assertEqual(failure.exception.code, "demo_record_mismatch")
+
+    def test_old_record_and_missing_purpose_are_not_migrated(self):
+        record, _, _, _, target = fixture()
+        for version in (1, 2):
+            changed = dict(record, version=version)
+            del changed["startup_purpose"]
+            with self.subTest(version=version), self.assertRaises(BridgeError):
+                validate_binding(changed, target, Path(record["executable"]))
+        self.assertEqual(record["version"], 2)
+
+    def test_authenticated_policy_is_strict_and_run_is_never_allowed(self):
+        record, windows, state, sources, _ = fixture()
+        policies = [None, {}, {**DEMO_POLICY, "extra": False}, {**DEMO_POLICY, "startup_purpose": "standard"}]
+        for key in DEMO_POLICY:
+            if key == "startup_purpose":
+                continue
+            policies.extend({**DEMO_POLICY, key: value} for value in (True, 0, None, "false"))
+            missing = dict(DEMO_POLICY)
+            del missing[key]
+            policies.append(missing)
+        for policy in policies:
+            with self.subTest(policy=policy):
+                changed = dict(state, execution_policy=policy)
+                self.assertEqual(readiness(record, windows, changed, sources, DEMO_SCOPES), "demo_configuration_only_required")
+        self.assertEqual(readiness(record, windows, state, sources, DEMO_SCOPES | 4), "demo_configuration_only_required")
 
     def test_private_file_bounds_corruption_and_hardlink(self):
         root = Path(__file__).resolve().parents[2] / "out"
