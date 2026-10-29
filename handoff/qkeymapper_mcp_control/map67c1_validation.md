@@ -953,3 +953,17 @@ Agent查看四张正式ImageContent图片：高级770×390显示当前实际3／
 实际QkmDemoAdvanced122_<UUID>私有桌面，SDK8192／原manifest产品12288、同登录，四场native0／正常退出、工作／生产者0、逐场owned／unresolved／pending／current_action／current_job零。无Default、请求激活、系统输入、映射启动、驱动／FilterKeys或新提权方式；不据此声明全程跨实例因果或Default前台完整验收。原件out/mcp_demo_advanced_w11_20261029含本机制品复用身份、26项日志、公共登记／SDK peer／逐次调用和原图响应、四图／Agent审阅、INI／退出／清理与summary，不随Git。
 
 正式工具／维护SDK及README同步固定高级view，正常配对／实例选择规则未改。其他参数编辑／子窗、真实退出／身份变化／撤权／断线／超时与其他实例因果、Win10／Default／高DPI、Release预热及免Python包／QQ仍待；117／121不变路径按原范围复用，不标完整P1／P2／M1／M3-B完成。下一步先把P3一次预热具体权限／生命周期方案做成可审阅决策，同时推进不需新增提权的M3-B打包依赖；新启动方式未获批准前不执行。
+
+## PKG-123：固定嵌入运行时桥接组件包（2026-10-29，PC-W11）
+
+122 5dc866a1之后补普通权限桥接组件目录包，执行端不需安装全局Python／venv／pip或取得仓库；未新增产品启动入口。固定PSF CPython3.11.9 Windows x64嵌入归档＋现有29项运行wheel锁，独立3.11.9无pip环境仅用标准库组装；不引入第三方打包器／bootloader或修改原开发venv／依赖锁。运行端直接配置包内runtime/python.exe及-I -B -X utf8 -m qkeymapper_mcp，._pth只导入包内标准库／依赖，保持原私有发现／显式可信EXE／认证／配对／权限，普通17／可选18／演示19工具、19产品能力不变。
+
+归档python-3.11.9-embed-amd64.zip为11249023B，SHA256=009d6bf7e3b2ddca3d784fa09f90fe54336d5b60f0e0f305c37f400bf83cfd3b，官方HTTPS、发布页MD5和.sigstore消息摘要匹配，三个关键Python PE Authenticode Valid／PSF；未执行Sigstore证书链／透明日志全验证。组装重复核对固定归档／逐wheel版本与SHA256／PE签名，不下载依赖；Windows签名核验沿系统策略，不把它描述为强制无网络。严格原始ZIP名（包括ZipInfo在Windows会正规化前的成员名）、穿越／设备／ADS／歧义名／symlink、实际重解析路径、碰撞、全新输出及体积预算；不删除／覆盖旧包，Python／依赖／GPL许可保留，载荷相对路径／大小／SHA256写manifest。
+
+最终独立无pip构建环境内7项定向通过：有效提取及不覆盖、穿越／驱动器／ADS／歧义／设备名、归档symlink／CRC损坏、真实Windows junction拒绝、固定运行时错误写前失败、wheel精确版本／hash和不完整／重复锁。最初两次反斜杠用例被ZipInfo写端正规化，修正原始名称检查及构造原始条目的夹具后通过；受限令牌junction访问拒绝与最终普通Medium结果分开。首次构建因Windows PowerShell5.1继承7的模块路径而签名模块加载失败，保留部分目录／exit1；明确内置安全模块及PSModulePath后成功，不跳过签名或申请UAC。两次成功ZIP、失败目录及全部原始日志均保留。
+
+最终release/QKeyMapper MCP Bridge 中文.zip为26706513B，SHA256=d356f5f124aa1eb8d81fe45b0ab2a4543584c7ed2b5fa6a31f4b4c1064e027d6；1614个载荷文件／62659786B，独立解压后及运行后逐项manifest相等，无额外载荷或缓存文件。普通SDK端在中文／空格路径和无关cwd、仅系统PATH、刻意错误的PYTHONHOME／PYTHONPATH／USERBASE下运行解压后的解释器：prefix／全部sys.path／模块位置均包内，29项metadata精确相等、关键原生依赖可导入、pip缺失；正式初始化／17工具／strict schema、未连接查询及不存在产品的异步application_unavailable通过。首SDK助手把connect受理误当同步失败，保留异常及导入材料、未保存该次connect原JSON；修正为受理后有界状态查询，最终原JSON完整保留，桥接产品代码未变。
+
+再由同一独立解压包的实际客户端17792（当次PID，仅历史证据）／创建时间／完整EXE核验为Medium8192、exact SDK process，与复用121精确本机Qt6原manifest维护目标执行高级A→B后默认单项C→D。一场6 Native／68 handler／23外层SDK＋8 schema，两个原生MCP图片经Agent查看中文／实际参数及C/D/D，与122同角色图字节相等；源／metadata完全回收、非行签名／INI／GUI名／加载保持、dirty保留、epoch恰+4，无编辑窗或runtime输入。实际QkmBundle123_<UUID>私有桌面／产品12288、同登录，native0正常退出／工作和生产者0／五项清理零。仅目标必要启动关闭用现缓存公共登记，开发／打包／SDK／产物消费均普通权限，无Default／系统输入／映射启动／驱动或新提权模式。
+
+原件out/mcp_bundle_w11_20261029含官方归档／摘要／签名材料、独立builder、失败／两次成功包及ZIP、解压载荷／身份、7项和导入／SDK日志、首助手失败、Native复用／公共登记、正式peer／调用／两图审阅、INI／退出／清理和summary，仅本机。源码提供build_windows_bundle.py、test_windows_bundle.py、bundle_acceptance.py与随包BUNDLE_README，开发用法同步README。它是桥接组件包，尚未整合普通QKeyMapper Release发布或正式预热；本机保有全局Python且未断网，不把路径隔离／本地输入构建称干净Win10／Win11或断网验收。Qt5本次包集成、全量真实异常矩阵、P3／M3-B完整验收和QQ仍待；不标完整M1或交付阶段完成。

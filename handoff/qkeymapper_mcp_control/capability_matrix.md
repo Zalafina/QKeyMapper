@@ -1040,3 +1040,7 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P2-122：正式高级串行视图
 
 显式qkm_demo_mapping补固定mapping_advanced，写前能力复核，121后台开窗／安全关闭及原完整提交源／非行足迹和本轮行回收；高级图必须输入未变标记true，否则不交付，未知或草稿失败隔离。普通17／仅记录18／演示19工具及19能力保持。Python26、复用121精确本机Native及双Qt四场28 Native／154 handler／64 SDK＋32 schema，真实高级A→B后默认单项C→D、Read零修改、四张中文图／源INI及清理通过，见[同一C1证据](map67c1_validation.md#demo-p2-122固定高级窗串行视图2026-10-29pc-w11)。高级图展示当前参数、行由正式源证明；设置编辑、实际异常矩阵／其他系统、正式预热／免Python与QQ未完成，不标完整P2／M1。
+
+## PKG-123：免全局Python桥接组件
+
+固定3.11.9 x64嵌入运行时＋29项原锁wheel，标准库离线输入组装，新目录／ZIP与1614项载荷清单、PE签名／hash及提取边界检查；包内-I／._pth隔离，无运行端pip／仓库／全局解释器。独立builder 7项、中文／空格及污染环境的导入／17工具／无产品异步失败、原manifest Qt6私有目标高级／默认单项两轮通过，6 Native／68 handler／23 SDK＋8 schema及两图／源INI与清理保持，见[同一C1证据](map67c1_validation.md#pkg-123固定嵌入运行时桥接组件包2026-10-29pc-w11)。工具／能力不增加。仅组件包，本机未断网／卸载Python，普通Release集成、干净双系统／断网、Qt5包集成、P3／完整M3-B和QQ未完成；开发缓存不随包。

@@ -2,7 +2,7 @@
 
 官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。P1-121后当前开发产品返回十九项业务能力、十七工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
-桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
+桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。PKG-123提供下述免全局Python的桥接组件目录包；完整Release集成及干净双系统交付仍属M3-B，原venv入口继续用于开发和回归。
 
 ## 启动与使用
 
@@ -245,3 +245,23 @@ Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看�
 `qkm_demo_mapping(original_key="A", mapping_key="B", view="mapping_advanced")`在相同专用实例和四项权限下，先正式建例，沿固定高级窗原入口后台显示／捕获，再安全关闭和回收本轮行。写前要求实际mapping.settings.open／close和capture角色能力；捕获须有settings_editor_unchanged=true，随后完整非行足迹与源再次一致才交付图片。未知结果或草稿变化保留隔离，不替用户丢弃；标记缺失／false不返回场景图片，仍按原证明决定是否能安全回收。
 
 高级图片显示当前真实参数，本窗口本身不含A/B，行内容由正式源字段核验并关联demo_scene；不提供高级参数编辑或保存。Win11双Qt连续高级A→B后默认单项C→D、Read负例及四张图片已定向核对；普通工具及配对规则保持。Agent／gateway可直接消费原生ImageContent，QQ发送仍须渠道联调。Release预热／免Python包、Win10／高DPI及实际连接异常矩阵仍待。
+
+## 随包嵌入运行时（PKG-123）
+
+[目录包用法](BUNDLE_README.md)随产物复制为README。Windows x64组件包含专用CPython3.11.9、现有29项哈希锁运行依赖和桥接；用户不需安装Python、venv、pip或源码。客户端直接配置包内runtime/python.exe的绝对路径及`-I -B -X utf8 -m qkeymapper_mcp`，._pth只导入包内标准库／依赖。原私有发现、显式可信EXE、身份核验、配对及权限保持；桥接组件不启动产品或申请UAC，不能代替P3预热。
+
+开发者先取得[PSF 3.11.9发布归档](https://www.python.org/ftp/python/3.11.9/python-3.11.9-embed-amd64.zip)及原requirements哈希选定wheel，使用独立的3.11.9 x64无pip环境离线组装：
+
+```powershell
+& '<已核验的Python3.11.9 x64绝对路径>' -m venv --without-pip out/mcp_bundle_builder
+& out/mcp_bundle_builder/Scripts/python.exe -I -B -X utf8 mcp_bridge/tools/build_windows_bundle.py `
+  --runtime-zip '<python-3.11.9-embed-amd64.zip绝对路径>' `
+  --wheel-directory out/mcp_bridge/wheels-cp311-win_amd64 `
+  --output out/mcp_bundle/QKeyMapperMcpBridge
+```
+
+组装只读本地固定输入、不下载依赖、不调用运行端pip；固定归档SHA256／大小、逐wheel版本与SHA256、关键Python PE有效PSF签名在复制应用前验证，Windows签名核验沿系统信任策略。路径穿越、设备／ADS／歧义名称、归档symlink、文件碰撞、实际Windows重解析路径及超预算拒绝。目标目录及同名ZIP均须全新，失败材料保留；不删除／覆盖旧包。签名检查明确使用Windows内置安全模块，不依赖PowerShell7或用户模块路径。保留Python／依赖／项目许可，产物清单列相对路径、大小及SHA256；目录包和ZIP均含同一载荷，普通产品Release仍沿既有发布脚本。
+
+归档基准11249023B、SHA256 `009d6bf7e3b2ddca3d784fa09f90fe54336d5b60f0e0f305c37f400bf83cfd3b`，来源为官方HTTPS、发布页MD5、.sigstore消息摘要及关键PE Authenticode；未执行Sigstore证书链／透明日志完整验证，不把摘要对照称为签名验证。标准库打包器随3.11.9固定，无新增第三方打包器依赖或bootloader。
+
+维护检查为`tests/test_windows_bundle.py`；官方SDK端可运行`tests/bundle_acceptance.py --bundle <解压目录> --output <全新out目录>`，需要原开发测试环境，仅测试端使用SDK。PKG-123在Win11验证ZIP独立解压、中文／空格路径、与包无关的cwd和被污染的Python环境／仅系统PATH、29项metadata与原生依赖、17工具及异步连接不存在产品的失败。再用包内实际Medium客户端与121原manifest Qt6私有目标完成高级／默认单项两轮，两张正式图片及源／INI／回收保持；运行前后载荷不变。本机未断网，没有把路径隔离当作无全局Python的干净Win10／Win11或断网启动验收；普通Release集成／P3／QQ仍待。
