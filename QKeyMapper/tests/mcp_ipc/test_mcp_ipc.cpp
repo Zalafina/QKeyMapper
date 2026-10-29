@@ -506,6 +506,7 @@ private slots:
     void storeAtomicFailure();
     void storeUnsafePaths();
     void discoveryLifecycle();
+    void demoRecordLifecycle();
     void discoveryRejectsMetadata();
     void sessionPairAndReconnect();
     void sessionWindowPermissions();
@@ -1620,6 +1621,67 @@ void McpIpcTest::discoveryLifecycle()
     QVERIFY(!QFileInfo::exists(server.discoveryPath()));
 }
 
+void McpIpcTest::demoRecordLifecycle()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/demo-record-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString directory = temporary.path() + QStringLiteral("/server");
+    AutomationSessionServer server(directory, "test-demo-record");
+    QVERIFY(server.demoRecordPath().isEmpty());
+    QVERIFY(!server.setDemoConfiguration(QString()));
+    if (!configurationOnlyDemo()) {
+        QVERIFY(!server.setDemoConfiguration(QStringLiteral("Demo126")));
+        QVERIFY(server.enable());
+        QVERIFY(server.demoRecordPath().isEmpty());
+        server.disable();
+        return;
+    }
+    QVERIFY(!server.enable());
+    QCOMPARE(server.lastDiscoveryError(), DiscoveryError::InvalidData);
+    QVERIFY(!QFileInfo::exists(server.discoveryPath()));
+    const QString configuration = QStringLiteral("Demo126中文");
+    QVERIFY(server.setDemoConfiguration(configuration));
+    QVERIFY(!server.setDemoConfiguration(QStringLiteral("Other")));
+    QVERIFY(server.enable());
+    const QString path = server.demoRecordPath();
+    const QByteArray bytes = readTestFile(path);
+    const auto record = QJsonDocument::fromJson(bytes).object();
+    const auto discovery = QJsonDocument::fromJson(readTestFile(server.discoveryPath())).object();
+    QCOMPARE(record.size(), 9);
+    QCOMPARE(discovery.size(), 7);
+    QCOMPARE(record.value(QStringLiteral("version")), QJsonValue(2));
+    QCOMPARE(record.value(QStringLiteral("startup_purpose")), QJsonValue(QStringLiteral("configuration_only_demo")));
+    QCOMPARE(record.value(QStringLiteral("configuration")), QJsonValue(configuration));
+    for (const char *field : {"instance", "pid", "created", "session", "executable"})
+        QCOMPARE(record.value(QLatin1String(field)), discovery.value(QLatin1String(field)));
+    QVERIFY(!record.contains(QStringLiteral("secret")));
+    QFile denied(path);
+    QVERIFY(!denied.open(QIODevice::WriteOnly));
+    QVERIFY(!QFile::remove(path));
+    DiscoveryError error;
+    QByteArray duplicate;
+    QVERIFY(!publishDemoCreationRecord(directory, server.instanceId(), configuration, duplicate, error));
+    QCOMPARE(error, DiscoveryError::Busy);
+    QVERIFY(duplicate.isEmpty());
+    QCOMPARE(readTestFile(path), bytes);
+    server.disable();
+    QVERIFY(server.demoRecordPath().isEmpty());
+    QVERIFY(!QFileInfo::exists(path));
+    QVERIFY(server.enable());
+    QVERIFY(server.demoRecordPath() != path);
+    const QString second = server.demoRecordPath();
+    server.disable();
+    QVERIFY(!QFileInfo::exists(second));
+    const QString instance(32, QLatin1Char('a'));
+    QVERIFY(publishDemoCreationRecord(directory, instance, configuration, duplicate, error));
+    const QString detached = demoCreationRecordPath(directory, instance);
+    QVERIFY(!removeDemoCreationRecord(directory, instance, duplicate + ' ', error));
+    QCOMPARE(readTestFile(detached), duplicate);
+    QVERIFY(removeDemoCreationRecord(directory, instance, duplicate, error));
+    QVERIFY(!QFileInfo::exists(detached));
+    QVERIFY(demoCreationRecordPath(directory, QStringLiteral("../unknown")).isEmpty());
+}
+
 void McpIpcTest::discoveryRejectsMetadata()
 {
     QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/discovery-XXXXXX"));
@@ -1793,6 +1855,7 @@ void McpIpcTest::sessionWindowPermissions()
     const QString serverDirectory = temporary.path() + QStringLiteral("/server");
     const QString clientDirectory = temporary.path() + QStringLiteral("/client");
     AutomationSessionServer server(serverDirectory, "test-window-scopes");
+    if (configurationOnlyDemo()) QVERIFY(server.setDemoConfiguration(QStringLiteral("Demo126Scopes")));
     int prompts = 0;
     connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
         ++prompts;

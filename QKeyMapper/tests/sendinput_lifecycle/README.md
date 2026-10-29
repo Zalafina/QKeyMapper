@@ -153,3 +153,10 @@ Native只配置断言核对Hook／Interception／libusb／SDL控制器／FakerIn
 ## DEMO-P3-125 正式演示记录及策略
 
 桥接演示记录从本片起必须version2及startup_purpose=configuration_only_demo；所有上述演示维护用例须使用--demo-configuration-only及新的受信创建记录，旧out脚本和历史原模式结果不自动升级。普通非演示GUI／业务用例仍按原模式执行。SDK模块[demo_policy_acceptance.py](../../../mcp_bridge/tests/demo_policy_acceptance.py)以demo_sequence验证旧记录／错误用途只读拒绝及恢复后正式高级／单项两轮；以普通模式demo_ready验证记录自称演示仍因认证策略缺失而在预览／修改前拒绝。只配置参数不代替配对，记录不赋予可信EXE或Run权限。本片可复用124精确本机制品，仅桥接变化；正式预热宿主／记录生成仍待。
+
+
+## DEMO-P3-126 产品自身创建记录
+
+只配置产品构造后固定已接受的初始加载组，MCP启用时在原私有目录发布version2记录并持有只读句柄，正常模式／发现七字段不变。现有startSaveContext会以out私有存储替换控制窗口；本片先核验原声明不可改，再将实际已接受组声明给替换服务器。首轮因遗漏后者在ready前native2退出，SDK未启动；失败制品／case与清理原件保留。修正仅维护夹具，不放宽产品的空声明拒绝或改真实加载。
+
+SDK模块[demo_owned_record_acceptance.py](../../../mcp_bridge/tests/demo_owned_record_acceptance.py)从已认证caps取得demo_record，只读消费产品原件，不建host-record；核验version2／实际身份、外部写打开返回已取得Win32码32、正式高级／单项两轮及记录字节保持。外层在目标正常退出后另查原路径消失、native0及全部尾部／公共清理，不将Worker STOPPED当完成。双Qt组件与Qt6正式路径分开，Qt5本片SDK／普通默认存储GUI启用／正式预热、Default／Win10等缺口见唯一主计划。

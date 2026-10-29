@@ -3391,9 +3391,18 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         finish(false);
         return;
     }
+    if (configurationOnlyDemo() && (!mapper->m_MappingSourceLoadAccepted || mapper->m_LoadedMappingSettingGroup.isEmpty()
+        || mapper->m_McpControlDialog->server().setDemoConfiguration(mapper->m_LoadedMappingSettingGroup))) {
+        finish(false);
+        return;
+    }
     auto *control = new ControlDialog(directory + QStringLiteral("/private_store"), QByteArray("save-context87-fixture"), mapper);
     mapper->m_McpControlDialog = control;
     auto &server = control->server();
+    if (configurationOnlyDemo() && !server.setDemoConfiguration(mapper->m_LoadedMappingSettingGroup)) {
+        finish(false);
+        return;
+    }
     auto pairingCount = QSharedPointer<int>::create(0);
     QObject::connect(&server, &AutomationSessionServer::pairingRequested, mapper,
         [&server, mapper, output, publicPreview, pairingCount, connectionCase](const PairingRequest &pending) {

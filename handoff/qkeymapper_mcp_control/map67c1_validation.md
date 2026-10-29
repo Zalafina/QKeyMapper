@@ -997,3 +997,18 @@ Agent查看四张正式ImageContent图片：高级770×390显示当前实际3／
 模式正例epoch+4／dirty保留，全源metadata回收、H0／INI／加载／GUI名保持；普通反例源／dirty／代次／INI不变。四场native0正常退出、work／producer0及五项清理零。首Qt6正例exit0且SDK／Native均通过后，缓存status响应读取PermissionError，实际errno13，winerror／status原生退出码未取得；响应文件随后存在且独立新只读status成功、owned／unresolved／pending／current_action／current_job均零。保留request288d287697ff41e0aa95b59b12c8822a、instance eccdf79e859e4989805774612407354c／generation1及本机失败说明，未重放已完成产品、缓存变更或未知请求；不根据错误文字推算其他原生码，原因／网络关联未核实，未做联网探测或额外提权。
 
 原件out/mcp_demo_binding_w11_20261029含34项日志、精确制品复用、四场peer／调用／记录反例及恢复／四图／INI／退出／清理、status读失败与独立复核和summary，仅本机。公共登记沿当前31176控制器，开发／SDK／图像消费普通权限，无新UAC、Default／桌面切换／系统输入／映射启动／驱动。维护模块demo_policy_acceptance.py、主／随包／Native用法同步。正式产品自发记录和固定预热宿主、整包更新／干净Win10／Win11／断网及QQ未实现或未验；旧123包／旧产品与新记录不承诺混用，历史原模式结果保留当时范围，不重算为当前演示准入通过。
+
+
+## DEMO-P3-126：产品自身私有创建记录（2026-10-29，PC-W11）
+
+源码125 682dc2bd之上：QKeyMapper初始加载成功后向服务器一次性声明启动组，只配置模式无声明不能启用MCP；声明不随之后换组自动改绑。启用时沿已有私有存储／独占目录租约发布demo-<instance>.json，九字段version2取实际EXE／PID创建时间／Session／WinSta0私有桌面及固定用途／初始组，最多8KiB，无密钥、任意客户端路径或进程控制参数。普通模式不发布，MCP默认关闭，原发现七字段保持；已认证Read的capabilities另给demo_record路径。调用QSaveFile及既有私有ACL／非重解析／单链接校验，不覆盖已有记录；持有只读句柄禁止外部写删。关闭释放本次句柄后只打开固定实例路径，核验当前身份及原始字节再按句柄删除，内容不符保留并报告失败，不清理不明记录。
+
+双Qt生命周期／mcp_control／mcp_ipc六目标增量native0，Qt6零编译／链接警告。新增记录组件覆盖空声明拒绝且不创建发现文件、中文初始组／九字段／发现七字段、重复声明／发布拒绝、持有期间写删失败、两轮启用生成不同代次／正常清理、错误发布字节不误删和非法instance路径。普通模式无记录；原发现占用、身份／错误元数据、只读属性清理及窗口权限／旧511交集等边界回归。双Qt各普通control7＋IPC6、模式control7＋IPC4，合计48项（含init／cleanup），Medium实际独立私有桌面，全部通过。
+
+首Qt6原manifest场在ready前native2、SDK未启动：startSaveContext在产品构造后以隔离存储重新创建ControlDialog，未给替换服务器声明配置，产品的新准入正确拒绝。未把失败记成产品验收通过。修正只限维护夹具：先验证原产品声明不能重设，再将实际已接受初始组声明给替换服务器；不调用加载函数代替GUI、设置控件值或放宽空声明。双Qt只重编Native目标通过，前述未变Core组件结果复用。out/after首失败case／closed及old-executables／构建身份保留；独立status已保存五项零，随后摘要误取原始status不含的CLI合并字段pid导致KeyError，该展示错误不改变已取得状态或原生结果，没有重放启动。未创建交接或恢复脚本。
+
+修正后实际EXE为out/mcp_demo_record_w11_20261029/qt6-runtime/QKeyMapperDemoRecord126_qt6_runtime.exe；Qt6原manifest12288／正式SDK8192、同登录，实际QkmDemoRecord126_273185cbcd324b7f8b4f7e5ae9d264e1私有桌面。正式SDK直接用产品caps给出的记录，不建host-record、无普通端重写；私有ACL／字段与实际目标绑定通过，尝试写打开实际Win32码32且不写任何内容。正式高级A→B后默认单项C→D，14 Native／74真实handler／27外层SDK＋8 schema，两张PNG与124同Qt同角色已逐张审阅原图字节相等；记录在会话内完全保持，目标正常退出后原路径确实消失。完整源／H0／INI／GUI名／加载保持，epoch+4、dirty依原GUI保留；native0／work与producer0、五项清理零。原声明已在真实产品构造路径核验，运行服务器仍是明确的维护隔离存储；不把它称为默认存储GUI启用或人工配对的独立验收。
+
+当前控制器登记达到32摘要，本片在确认同一126自有失败目标已退出、五项零后仅替换其过时制品定义；原定义和scope-replacement保留，其余许可／历史未知请求不动，不改期限／模式／技能核心或新申请UAC。原件out/mcp_demo_record_w11_20261029含单次大文件补丁／字节、六目标及夹具修正构建、48组件、首失败／实际制品归档、最终after-fixed的peer／调用／产品记录消费／写拒绝码／两图／INI／退出／清理和summary，仅本机。
+
+本片不执行新一批验收；Qt5仅编译和共享Core实测、未跑新产品SDK；125的34项Python和其他未变证据沿原版本范围复用。首次GUI批准下私有桌面暂成为输入桌面的发布仅源码路径，未实际切换；Default／原生一次UAC／人工配对、真实中断／删除竞争／异常退出全矩阵、普通完整Release／整包重建、Win10／高DPI／ASan／全静态和QQ均未验。固定预热宿主未实现／未启动，未标完整P3／M3-B或M1完成。按用户17时收尾要求，仅文档检查／聚焦本地commit后off本轮缓存并独立核实，随后停止，环境／构建／原始证据保留。

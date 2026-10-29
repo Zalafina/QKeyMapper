@@ -2,12 +2,14 @@
 #include "qkm_auth_proof.h"
 #include "qkm_ipc_frame.h"
 #include "qkm_private_storage.h"
+#include "qkm_demo_mode.h"
 
 #include <QBuffer>
 #include <QDir>
 #include <QJsonDocument>
 #include <QSaveFile>
 #include <QScopeGuard>
+#include <QRegularExpression>
 #include <QtEndian>
 #include <limits>
 
@@ -151,6 +153,104 @@ bool publishInstanceDiscovery(const QString &directory, const QString &instanceI
     if (!Storage::secureTemporaryFile(file, own.identity.userSid)) return false;
     error = DiscoveryError::IoError;
     if (file.write(frame.constData() + 4, frame.size() - 4) != frame.size() - 4 || !file.commit()) return false;
+    error = DiscoveryError::None;
+    return true;
+}
+
+QString demoCreationRecordPath(const QString &directory, const QString &instanceId)
+{
+    return isLowerHex(instanceId, 32) ? QDir(directory).filePath(QStringLiteral("demo-%1.json").arg(instanceId)) : QString();
+}
+
+bool publishDemoCreationRecord(const QString &directory, const QString &instanceId, const QString &configuration,
+                               QByteArray &publishedBytes, DiscoveryError &error)
+{
+    publishedBytes.clear();
+    error = DiscoveryError::InvalidData;
+    if (!configurationOnlyDemo() || !isLowerHex(instanceId, 32) || configuration.isEmpty()
+        || configuration.size() > 1024 || configuration.contains(QChar::Null)) return false;
+    // Initial GUI approval may temporarily make this private desktop the input desktop.
+    wchar_t station[256]{}, desktop[256]{};
+    DWORD needed = 0;
+    if (!GetUserObjectInformationW(GetProcessWindowStation(), UOI_NAME, station, sizeof(station), &needed)
+        || QString::fromWCharArray(station).compare(QStringLiteral("WinSta0"), Qt::CaseInsensitive) != 0
+        || !GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), &needed)) return false;
+    const QString desktopName = QString::fromWCharArray(desktop);
+    if (desktopName.compare(QStringLiteral("Default"), Qt::CaseInsensitive) == 0
+        || !QRegularExpression(QStringLiteral("\\A[A-Za-z0-9_.-]{1,120}\\z")).match(desktopName).hasMatch()) return false;
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    error = DiscoveryError::IdentityRejected;
+    if (!own.ok()) return false;
+    const QString executable = queryProcessExecutable(own.identity);
+    if (executable.isEmpty()) return false;
+    const QJsonObject record{{QStringLiteral("version"), 2},
+        {QStringLiteral("startup_purpose"), QStringLiteral("configuration_only_demo")},
+        {QStringLiteral("instance"), instanceId}, {QStringLiteral("pid"), QString::number(own.identity.processId)},
+        {QStringLiteral("created"), QString::number(own.identity.creationTime)},
+        {QStringLiteral("session"), QString::number(own.identity.sessionId)}, {QStringLiteral("executable"), executable},
+        {QStringLiteral("desktop"), desktopName}, {QStringLiteral("configuration"), configuration}};
+    const QByteArray bytes = QJsonDocument(record).toJson(QJsonDocument::Compact);
+    error = DiscoveryError::InvalidData;
+    if (bytes.size() > 8192) return false;
+    error = DiscoveryError::UnsafeStorage;
+    HANDLE folder = Storage::privateDirectory(directory, own.identity.userSid, false);
+    if (folder == INVALID_HANDLE_VALUE) return false;
+    const auto closeFolder = qScopeGuard([folder]() { CloseHandle(folder); });
+    const QString path = demoCreationRecordPath(directory, instanceId);
+    HANDLE existing = Storage::privateFile(path, own.identity.userSid);
+    if (existing != INVALID_HANDLE_VALUE) {
+        CloseHandle(existing);
+        error = DiscoveryError::Busy;
+        return false;
+    }
+    if (GetLastError() != ERROR_FILE_NOT_FOUND) return false;
+    QSaveFile file(path);
+    file.setDirectWriteFallback(false);
+    error = DiscoveryError::IoError;
+    if (!file.open(QIODevice::WriteOnly)) return false;
+    error = DiscoveryError::UnsafeStorage;
+    if (!Storage::secureTemporaryFile(file, own.identity.userSid)) return false;
+    error = DiscoveryError::IoError;
+    if (file.write(bytes) != bytes.size() || !file.commit()) return false;
+    publishedBytes = bytes;
+    error = DiscoveryError::None;
+    return true;
+}
+
+bool removeDemoCreationRecord(const QString &directory, const QString &instanceId,
+                              const QByteArray &publishedBytes, DiscoveryError &error)
+{
+    error = DiscoveryError::InvalidData;
+    if (!configurationOnlyDemo() || !isLowerHex(instanceId, 32) || publishedBytes.isEmpty() || publishedBytes.size() > 8192) return false;
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    error = DiscoveryError::IdentityRejected;
+    if (!own.ok()) return false;
+    const auto record = QJsonDocument::fromJson(publishedBytes).object();
+    if (record.value(QStringLiteral("instance")) != instanceId
+        || record.value(QStringLiteral("pid")) != QString::number(own.identity.processId)
+        || record.value(QStringLiteral("created")) != QString::number(own.identity.creationTime)
+        || record.value(QStringLiteral("executable")) != queryProcessExecutable(own.identity)) return false;
+    error = DiscoveryError::UnsafeStorage;
+    HANDLE folder = Storage::privateDirectory(directory, own.identity.userSid, false);
+    if (folder == INVALID_HANDLE_VALUE) return false;
+    const auto closeFolder = qScopeGuard([folder]() { CloseHandle(folder); });
+    HANDLE file = Storage::privateFile(demoCreationRecordPath(directory, instanceId), own.identity.userSid, true);
+    if (file == INVALID_HANDLE_VALUE) {
+        if (GetLastError() == ERROR_FILE_NOT_FOUND) { error = DiscoveryError::None; return true; }
+        return false;
+    }
+    const auto closeFile = qScopeGuard([file]() { CloseHandle(file); });
+    LARGE_INTEGER size{};
+    QByteArray current(publishedBytes.size(), '\0');
+    DWORD read = 0;
+    error = DiscoveryError::IoError;
+    if (!GetFileSizeEx(file, &size) || size.QuadPart != publishedBytes.size()
+        || !ReadFile(file, current.data(), DWORD(current.size()), &read, nullptr) || read != DWORD(current.size())) return false;
+    error = DiscoveryError::IdentityRejected;
+    if (current != publishedBytes) return false;
+    FILE_DISPOSITION_INFO disposition{TRUE};
+    error = DiscoveryError::IoError;
+    if (!SetFileInformationByHandle(file, FileDispositionInfo, &disposition, sizeof(disposition))) return false;
     error = DiscoveryError::None;
     return true;
 }

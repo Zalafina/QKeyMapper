@@ -17,6 +17,11 @@ struct InstanceDescriptor {
 };
 
 QString instanceDiscoveryPath(const QString &directory);
+QString demoCreationRecordPath(const QString &directory, const QString &instanceId);
+bool publishDemoCreationRecord(const QString &directory, const QString &instanceId, const QString &configuration,
+                               QByteArray &publishedBytes, DiscoveryError &error);
+bool removeDemoCreationRecord(const QString &directory, const QString &instanceId,
+                              const QByteArray &publishedBytes, DiscoveryError &error);
 bool publishInstanceDiscovery(const QString &directory, const QString &instanceId,
                               const QString &pipeName, DiscoveryError &error);
 // This is a hint: the connecting client must still verify the actual pipe peer and proof.

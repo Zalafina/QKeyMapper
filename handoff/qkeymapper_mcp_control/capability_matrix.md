@@ -1054,3 +1054,8 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P3-125：演示用途与认证策略绑定
 
 演示记录严格version2及configuration_only_demo，旧开发记录不自动迁移；认证state／caps须有完整严格false策略，缺失／普通模式／有效Run在preview／修改／显示前拒绝，记录自报或私有桌面不足以放行。普通MCP、权限及17／18／19工具不变。34项Python、复用124精确双Qt制品的四场44 Native／174 handler／100 SDK＋16 schema与四图字节等同、旧记录拒绝／恢复和普通模式拒绝通过，见[同一C1证据](map67c1_validation.md#demo-p3-125正式演示绑定契约2026-10-29pc-w11)。一场exit0后status响应读errno13，独立清理复核通过且未重放，原因未核实。正式自发记录／预热宿主、完整P3／M3-B、Default／Win10／QQ仍待。
+
+
+## DEMO-P3-126：产品自身私有记录
+
+只配置产品固定初始加载组，启用MCP时在原私有目录／租约发布自身九字段version2记录；普通模式／发现七字段／默认关闭保持。Read认证caps给demo_record位置，读句柄禁止写删，关闭只对本次身份及原始字节一致的记录按句柄删除。双Qt六目标及夹具修正编译、48组件与Qt6正式消费产品记录／写拒绝32／两轮回收通过，14 Native／74 handler／27 SDK＋8 schema，两图等同124已审阅图，正常退出记录消失／清理零，见[同一C1证据](map67c1_validation.md#demo-p3-126产品自身私有创建记录2026-10-29pc-w11)。首Native2是替换测试服务器漏声明，SDK未启动；仅修夹具，产品拒绝不放宽。Qt5本片SDK、默认存储GUI／一次原生UAC／Default／预热宿主／整包／Win10和QQ仍待；今日以本片聚焦本地commit收尾，不推送或启动下一片。

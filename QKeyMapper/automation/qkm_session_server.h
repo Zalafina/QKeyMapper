@@ -46,6 +46,8 @@ public:
     QString pipeName() const { return m_listener.pipeName(); }
     QString instanceId() const { return m_listener.instanceId(); }
     QString discoveryPath() const { return instanceDiscoveryPath(m_directory); }
+    bool setDemoConfiguration(const QString &configuration);
+    QString demoRecordPath() const { return m_demoRecord.isEmpty() ? QString() : demoCreationRecordPath(m_directory, m_discoveryInstance); }
     DiscoveryError lastDiscoveryError() const { return m_discoveryError; }
     bool acceptingConnections() const { return m_enabled && m_listener.m_notifier.isEnabled(); }
     PairStoreError lastStoreError() const { return m_storeError; }
@@ -86,6 +88,9 @@ private:
     QString m_directory;
     QString m_discoveryInstance;
     HANDLE m_discoveryLease = INVALID_HANDLE_VALUE;
+    QString m_demoConfiguration;
+    QByteArray m_demoRecord;
+    HANDLE m_demoRecordLease = INVALID_HANDLE_VALUE;
     DiscoveryError m_discoveryError = DiscoveryError::None;
     PairCredentialStore m_store;
     Storage::DirectoryLease m_storeLease;

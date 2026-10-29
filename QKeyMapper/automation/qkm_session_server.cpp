@@ -77,6 +77,10 @@ AutomationSessionServer::~AutomationSessionServer()
 bool AutomationSessionServer::enable()
 {
     if (m_enabled) return true;
+    if (configurationOnlyDemo() && m_demoConfiguration.isEmpty()) {
+        m_discoveryError = DiscoveryError::InvalidData;
+        return false;
+    }
     const auto owner = queryProcessIdentity(GetCurrentProcessId());
     m_storeError = PairStoreError::InvalidContext;
     if (!owner.ok()) return false;
@@ -109,6 +113,20 @@ bool AutomationSessionServer::enable()
         m_discoveryError = DiscoveryError::IdentityRejected;
         return false;
     }
+    if (configurationOnlyDemo()) {
+        if (!publishDemoCreationRecord(m_directory, m_discoveryInstance, m_demoConfiguration, m_demoRecord, m_discoveryError)) {
+            const auto error = m_discoveryError;
+            disable();
+            m_discoveryError = error;
+            return false;
+        }
+        m_demoRecordLease = Storage::privateFile(demoRecordPath(), own.identity.userSid);
+        if (m_demoRecordLease == INVALID_HANDLE_VALUE) {
+            disable();
+            m_discoveryError = DiscoveryError::UnsafeStorage;
+            return false;
+        }
+    }
     m_enabled = true;
     emit enabledChanged(true);
     return true;
@@ -129,12 +147,29 @@ void AutomationSessionServer::disable()
         CloseHandle(m_discoveryLease);
         m_discoveryLease = INVALID_HANDLE_VALUE;
     }
+    if (m_demoRecordLease != INVALID_HANDLE_VALUE) {
+        CloseHandle(m_demoRecordLease);
+        m_demoRecordLease = INVALID_HANDLE_VALUE;
+    }
+    const QByteArray demoRecord = std::exchange(m_demoRecord, {});
     const QString discoveryInstance = std::exchange(m_discoveryInstance, {});
+    DiscoveryError demoError = DiscoveryError::None;
+    const bool demoRemoved = demoRecord.isEmpty()
+        || removeDemoCreationRecord(m_directory, discoveryInstance, demoRecord, demoError);
     const bool removed = discoveryInstance.isEmpty()
         || removeInstanceDiscovery(m_directory, discoveryInstance, m_discoveryError);
     m_storeLease.release();
     if (wasEnabled) emit enabledChanged(false);
-    if (!removed) emit failed(QStringLiteral("discovery_cleanup_failed"));
+    if (!demoRemoved) m_discoveryError = demoError;
+    if (!removed || !demoRemoved) emit failed(QStringLiteral("discovery_cleanup_failed"));
+}
+
+bool AutomationSessionServer::setDemoConfiguration(const QString &configuration)
+{
+    if (!configurationOnlyDemo() || m_enabled || !m_demoConfiguration.isEmpty() || configuration.isEmpty()
+        || configuration.size() > 1024 || configuration.contains(QChar::Null)) return false;
+    m_demoConfiguration = configuration;
+    return true;
 }
 
 QList<PairingInfo> AutomationSessionServer::pairings() const
@@ -396,7 +431,10 @@ bool AutomationSessionServer::replyCapabilities(const QString &connectionId, con
         {QStringLiteral("stage"), businessCapabilities.isEmpty() ? QStringLiteral("transport_only") : QStringLiteral("business")},
         {QStringLiteral("business_capabilities"), businessCapabilities},
         {QStringLiteral("max_frame_bytes"), MaxFramePayload}};
-    if (configurationOnlyDemo()) result.insert(QStringLiteral("execution_policy"), configurationOnlyPolicy());
+    if (configurationOnlyDemo()) {
+        result.insert(QStringLiteral("execution_policy"), configurationOnlyPolicy());
+        result.insert(QStringLiteral("demo_record"), demoRecordPath());
+    }
     return reply(connectionId, requestId, result);
 }
 

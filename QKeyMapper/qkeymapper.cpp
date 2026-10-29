@@ -3862,6 +3862,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_MappingSequenceEdit = new QMappingSequenceEdit(this);
     m_FloatingIconWindow = new QFloatingIconWindow(Q_NULLPTR);
     QString loadresult = loadKeyMapSetting(QString());
+    if (QkmAutomation::configurationOnlyDemo() && m_MappingSourceLoadAccepted)
+        m_McpControlDialog->server().setDemoConfiguration(m_LoadedMappingSettingGroup);
     int languageIndex = ui->languageComboBox->currentIndex();
     if (LANGUAGE_ENGLISH == languageIndex) {
         changeLanguage(LANGUAGECODE_ENGLISH);
