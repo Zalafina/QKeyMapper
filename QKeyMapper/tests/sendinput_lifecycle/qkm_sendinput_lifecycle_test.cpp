@@ -3369,6 +3369,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const bool demoContextRead = publicApply && connectionVariant == QStringLiteral("demo_context_read");
     const bool postBinding = publicApply && connectionVariant == QStringLiteral("post_binding");
     const bool postBindingRead = publicApply && connectionVariant == QStringLiteral("post_binding_read");
+    const bool demoSequence = publicApply && connectionVariant == QStringLiteral("demo_sequence");
+    const bool demoSequenceRead = publicApply && connectionVariant == QStringLiteral("demo_sequence_read");
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
@@ -3414,6 +3416,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                         || variant == QStringLiteral("demo_ready_read")
                         || variant == QStringLiteral("demo_context_read")
                         || variant == QStringLiteral("post_binding_read")
+                        || variant == QStringLiteral("demo_sequence_read")
                         || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
                     if (variant == QStringLiteral("demo_mcp_capture") || variant == QStringLiteral("demo_mcp_editor")
                         || variant == QStringLiteral("demo_mcp_close") || variant == QStringLiteral("demo_ready")) scopes |= CaptureWindows;
@@ -3423,6 +3426,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                         scopes |= ShowWindows | CaptureWindows;
                     if (variant == QStringLiteral("demo_context")) scopes |= ShowWindows | CaptureWindows;
                     if (variant == QStringLiteral("post_binding")) scopes |= ShowWindows | CaptureWindows;
+                    if (variant == QStringLiteral("demo_sequence")) scopes |= ShowWindows | CaptureWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);
@@ -4147,6 +4151,21 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 for (const auto &entry : *bindingChecks) {
                     checks.append(entry); passed = passed && entry.toObject().value(QStringLiteral("passed")).toBool();
                 }
+            } else if (saves == 0 && demoSequence) {
+                QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+                QString error;
+                const auto source = mapper->collectAutomationSourceSnapshot(error);
+                check(completion.value(QStringLiteral("scenes")).toInt() == 2
+                    && actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore && error.isEmpty()
+                    && source.value(QStringLiteral("sources")) == sourceBefore.value(QStringLiteral("sources")),
+                    QStringLiteral("two formal serial scenes restore every source field and preserve the original INI"));
+                check(mapper->m_SaveSettingDirty && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch + 4
+                    && mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
+                    QStringLiteral("two owned additions and deletions retain dirty, GUI name and the original load"));
+                check(!mapper->m_ItemSetupDialog->isVisible() && mapper->m_KeyMappingDataTable->rowCount() == 0
+                    && mapper->automationSourceReadBasis() == QStringLiteral("pristine_idle")
+                    && !QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved(),
+                    QStringLiteral("serial native captures finish with no editor, mapping start or runtime input admission"));
             } else if (saves == 0 && demoContext) {
                 QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
                 QString error;
@@ -4194,7 +4213,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 check(valuesMatch, QStringLiteral("formal save persists every independently prepared target and shared value"));
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
-                {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness && !demoContext && !demoContextRead && !postBinding && !postBindingRead},
+                {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness && !demoContext && !demoContextRead
+                    && !postBinding && !postBindingRead && !demoSequence && !demoSequenceRead},
+                {QStringLiteral("formal_mcp_serial_demo"), demoSequence || demoSequenceRead},
                 {QStringLiteral("formal_mcp_post_binding"), postBinding || postBindingRead},
                 {QStringLiteral("formal_mcp_demo_preflight"), demoReadiness},
                 {QStringLiteral("formal_mcp_demo_context"), demoContext || demoContextRead},

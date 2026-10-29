@@ -16,6 +16,7 @@ import win32event
 
 from .credentials import CredentialStore
 from .demo import read_binding, readiness, validate_binding
+from .demo_scene import DemoSession
 from .images import validate_capture
 from .protocol import (BridgeError, Credential, MAX_HANDSHAKE, client_name, decimal,
                        fields, hex_bytes, proof, require, scopes)
@@ -23,9 +24,12 @@ from .windows import Pipe, discover, identity, pristine_thread
 
 
 class Bridge:
-    def __init__(self, discovery: Path, executable: Path, demo_record: Path | None = None):
+    def __init__(self, discovery: Path, executable: Path, demo_record: Path | None = None, *, enable_demo_mapping: bool = False):
+        if enable_demo_mapping and demo_record is None:
+            raise ValueError("Demo mapping requires an explicit host record.")
         self.discovery, self.executable = discovery, executable
         self._demo_record = demo_record
+        self._demo_session = DemoSession() if enable_demo_mapping else None
         self._worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="qkm-pipe")
         self._lock = threading.Lock()
         self._cancel = win32event.CreateEvent(None, True, False, None)
@@ -39,7 +43,10 @@ class Bridge:
 
     def state(self) -> dict:
         with self._lock:
-            return {**self._state, "busy": self._busy or self._closing}
+            result = {**self._state, "busy": self._busy or self._closing}
+            if self._demo_session is not None:
+                result["demo_session"] = self._demo_session.status()
+            return result
 
     def _set(self, status: str, **extra) -> None:
         with self._lock:
@@ -215,19 +222,34 @@ class Bridge:
     async def demo_state(self) -> dict:
         return await self._perform(self._demo_state)
 
-    def _demo_state(self) -> dict:
-        result = {"configured": self._demo_record is not None, "ready": False,
-                  "reference_scope": "preflight_observation_only"}
-        if self._demo_record is None:
-            return {"ok": True, "result": {**result, "reason": "demo_not_configured"}}
+    def _verified_demo_binding(self) -> dict:
         require(self._pipe is not None and self._credential is not None, "not_connected")
         target = self._pipe.discovery
         own = identity(os.getpid())
+        binding = validate_binding(read_binding(self._demo_record, own), target, self.executable)
+        live = identity(target.server.pid)
+        require(own.same_login(live) and (live.created, live.session, live.executable)
+                == (target.server.created, target.server.session, target.server.executable), "demo_record_mismatch")
+        return binding
+
+    async def demo_mapping(self, original_key: str, mapping_key: str) -> dict:
+        if self._demo_session is None:
+            return {"ok": False, "error": "demo_not_enabled"}
+        if any(type(key) is not str or re.fullmatch(r"[A-Z0-9]", key) is None for key in (original_key, mapping_key)):
+            return {"ok": False, "error": "invalid_arguments"}
+        return await self._perform(lambda: self._demo_session.run(self._request, self._verified_demo_binding(),
+            self._credential.scopes, original_key, mapping_key))
+
+    def _demo_state(self) -> dict:
+        result = {"configured": self._demo_record is not None, "ready": False,
+                  "reference_scope": "preflight_observation_only"}
+        if self._demo_session is not None:
+            result["demo_session"] = self._demo_session.status()
+        if self._demo_record is None:
+            return {"ok": True, "result": {**result, "reason": "demo_not_configured"}}
+        require(self._pipe is not None and self._credential is not None, "not_connected")
         try:
-            binding = validate_binding(read_binding(self._demo_record, own), target, self.executable)
-            live = identity(target.server.pid)
-            require(own.same_login(live) and (live.created, live.session, live.executable)
-                    == (target.server.created, target.server.session, target.server.executable), "demo_record_mismatch")
+            binding = self._verified_demo_binding()
         except BridgeError as error:
             code = error.code if error.code in ("demo_record_rejected", "demo_record_mismatch") else "demo_record_mismatch"
             return {"ok": True, "result": {**result, "reason": code}}

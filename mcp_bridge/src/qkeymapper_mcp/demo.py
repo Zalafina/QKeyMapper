@@ -50,7 +50,7 @@ def validate_binding(value: dict, target, expected_executable: Path) -> dict:
         raise BridgeError("demo_record_mismatch") from None
 
 
-def readiness(binding: dict, windows: dict, state: dict, sources: dict, granted: int) -> str:
+def readiness(binding: dict, windows: dict, state: dict, sources: dict, granted: int, *, expected_dirty: bool = False) -> str:
     """No business mutation or reset; fail closed when the baseline cannot be proved."""
     if not all(type(value) is dict for value in (windows, state, sources)):
         return "invalid_demo_state"
@@ -70,7 +70,7 @@ def readiness(binding: dict, windows: dict, state: dict, sources: dict, granted:
     if (configuration.get("group") != binding["configuration"] or configuration.get("kind") != "saved_profile"
             or load.get("group") != binding["configuration"] or load.get("outcome") != "accepted"):
         return "demo_configuration_mismatch"
-    if configuration.get("has_unsaved_changes") is not False:
+    if configuration.get("has_unsaved_changes") is not expected_dirty:
         return "demo_baseline_dirty"
     run = state.get("run", {})
     snapshot = sources.get("source_snapshot", {})

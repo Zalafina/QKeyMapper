@@ -159,7 +159,7 @@ Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际�
 
 成功结果含target、role=item_setup、presentation、activation_requested=false、源引用／源Tab／完整源上下文及新window对象。用返回的window_ref、source_revision、source_tab_ref即可在另获CaptureWindows后调用 `qkm_capture_window`。失败／超时或断线后先query windows确认是否已打开，勿盲目重复；重复打开会被拒绝，防止覆盖草稿。只处理后台私有实例，不代替普通多实例的Default前台展示／用户确认和绑定。
 
-当前可在已准备的开发实例完成正式MCP建A→B→正式打开单项窗→原生图片，110补正式安全关闭，串行场景重置及Release预热／免Python包仍待；不能直接把维护程序或gsudo缓存部署为咨询服务。Win11双Qt正式路径、无Show拒绝及独立GUI对照见唯一主计划；已有Read／Configure／Capture不能自动扩成Show权限，沿管理窗口明确批准后重新连接。
+当前可在已准备的开发实例完成正式MCP建A→B→正式打开单项窗→原生图片，110补正式安全关闭，117接下述专用单行串行回收；Release预热／免Python包仍待，不能直接把维护程序或gsudo缓存部署为咨询服务。Win11双Qt正式路径、无Show拒绝及独立GUI对照见唯一主计划；已有Read／Configure／Capture不能自动扩成Show权限，沿管理窗口明确批准后重新连接。
 
 ## 不丢草稿的受限关闭（P1-110）
 
@@ -183,7 +183,7 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 
 成功只改内存，返回 `modified=true, saved=false, started_by_operation=false`、删除数及 `query_source_again=true`；没有保存、自动停止／启动或演示重置。所有旧源引用／预览须按修订重新查询。取消／拒绝不删除，已消费失败需新预览；成功ID重复提交只返回历史结果，不再次删除。结果绑定原实例／pair权限代次和原源摘要，超时／断线先查同ID的 `qkm_get_operation`，unknown不证明未执行，禁止盲目重试或改连其他实例。
 
-当前仅普通当前源及直接选中的Common源；从普通Tab操作附加Common、隐藏行删除、跨Tab及多源批次尚不支持。Win11双Qt正式stdio的普通最后行、Common首行／全批及重复引用、无确认／错误确认、Read拒绝、编辑窗／表格草稿／菜单保护、GUI删除后的陈旧预览及历史重放已定向核对；完整删除矩阵、实际Win10／高DPI、运行后清理及串行演示重置仍待。维护SDK用例见 [mapping_deletion_acceptance.py](tests/mapping_deletion_acceptance.py)，具体证据仍以唯一主计划／C1记录为准。
+当前仅普通当前源及直接选中的Common源；从普通Tab操作附加Common、隐藏行删除、跨Tab及多源批次尚不支持。Win11双Qt正式stdio的普通最后行、Common首行／全批及重复引用、无确认／错误确认、Read拒绝、编辑窗／表格草稿／菜单保护、GUI删除后的陈旧预览及历史重放已定向核对；117仅在专用空源下回收本轮归属行，完整删除矩阵、实际Win10／高DPI及运行后清理仍待。维护SDK用例见 [mapping_deletion_acceptance.py](tests/mapping_deletion_acceptance.py)，具体证据仍以唯一主计划／C1记录为准。
 
 ## 专用演示实例只读预检（P2-114）
 
@@ -193,7 +193,7 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 
 预检在既有单worker内串行读取，要求已有Read+Configure+ShowWindows+CaptureWindows、后台私有非输入桌面、固定配置加载已接受、完整空闲清理读取基准、唯一附着普通空源及空的未附着Common备份、主窗已恢复／可见、无单项窗口且初始无dirty。产品`windows`观察新增保守布尔`private_background_available`，缺失／无法确认均不放行；不会显示、激活或切换桌面。
 
-成功数据含`configured/ready/reason`、已核实目标及`source_snapshot`；`reference_scope=preflight_observation_only`明确它不是写入许可、场景租约或完整重置证明。权限不足、非空／dirty、配置或记录不符、窗口未就绪分别报告；错误记录不改连其他目标、不返回未经核实的目标摘要，不破坏现有配对。当前工具只观察，不建例／截图／关窗／删除；不能仅凭ready=true向QQ宣称服务已准备完毕。跨场景非映射上下文、串行执行和失败回收后续实现，QQ渠道由gateway另联调。
+成功数据含`configured/ready/reason`、已核实目标及`source_snapshot`；`reference_scope=preflight_observation_only`明确它不是写入许可、场景租约或完整重置证明。权限不足、非空／dirty、配置或记录不符、窗口未就绪分别报告；错误记录不改连其他目标、不返回未经核实的目标摘要，不破坏现有配对。当前工具只观察，不建例／截图／关窗／删除；不能仅凭ready=true向QQ宣称服务已准备完毕。非行足迹见115，显式串行例程见117，QQ渠道由gateway另联调。
 
 ## 非行保存足迹观察（P2-115）
 
@@ -201,4 +201,16 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 
 它复用C1完整保存载荷和临时Qt序列化核验，在副本中仅排除74项明确的源行存储键；保留其他Tab元数据、加载与共享草稿、宏、原始INI字节及GUI保存名称，再绑定实例、pair权限代次、加载／runtime代次。返回`context_revision`、`gui_save_name`、完整`source_snapshot`和`write_authority=false`。内部临时解析不等于写入产品INI；只读不表示没有临时序列化文件。
 
-`reference_scope=non_row_save_footprint_only`必须与完整源修订及窗口生命周期分别使用；不覆盖行数据、不授权修改，不是场景租约或完整业务修订。单项或其他设定编辑窗、未稳定快捷键、文件／共享缓存无法核验时拒绝。dirty已true时，GUI保存名或磁盘字节仍能改变该签名；仅新增／删除已知源行时可保持不变，为后续安全串行回收提供依据。当前未实现串行场景、跨退出恢复或QQ交付，不能仅凭两个签名相等宣称所有外部系统行为已复原。
+`reference_scope=non_row_save_footprint_only`必须与完整源修订及窗口生命周期分别使用；不覆盖行数据、不授权修改，不是场景租约或完整业务修订。单项或其他设定编辑窗、未稳定快捷键、文件／共享缓存无法核验时拒绝。dirty已true时，GUI保存名或磁盘字节仍能改变该签名；仅新增／删除已知源行时可保持不变，为117受限回收提供依据。跨退出恢复或QQ交付仍待，不能仅凭两个签名相等宣称所有外部系统行为已复原。
+
+## 专用单行串行演示（P2-117）
+
+部署端已准备独立运行副本／合成初始INI、受信创建记录和实际私有桌面实例时，可在现有桥接参数中同时指定 `--demo-record <私有记录> --enable-demo-mapping`。增加非只读、非幂等工具 `qkm_demo_mapping(original_key="A", mapping_key="B")`，只接收单个大写字母／数字；普通入口仍15工具，仅demo-record为16工具，两个参数同时启用为17工具，产品仍17项业务能力。显式开启不代替原GUI配对与Read+Configure+ShowWindows+CaptureWindows批准，不增加Run权限。
+
+一次调用在原单worker内建立一个内存映射，按真实提交绑定核对完整行／其余空源及非行足迹，复用原后台单项窗入口和有界PNG，安全关闭后只删除本轮创建的行。返回单张原生MCP ImageContent；结构化结果保留实例／窗口／源／尺寸／SHA256及`demo_scene`场景ID、代次、业务键、原操作ID和`cleanup`证明。捕获源修订是历史图片上下文，回收源修订是后续空源，两者不得混用。桥接不写图片文件；Agent／gateway可以直接消费ImageContent的PNG，测试宿主在普通权限out保存供看图。QQ发送由gateway另行完成，`delivery`明确仅MCP图像、渠道送达未验证。
+
+首次必须符合114干净空源基线。回收后dirty按原GUI行为保留，绝不强制清零或保存；只有同一桥接内上一轮完整回收记录的目标、全源修订和非行签名都仍匹配，才允许在已知dirty下继续。只读demo_state因此仍可报告`demo_baseline_dirty`，另含`demo_session`最近阶段／操作ID、`receipt_available`及`quarantined`；这是存储记录观察，实际下一轮仍须完整核验。连接状态查询也提供该摘要，便于在传输失败后查看原操作ID而不自动重连。
+
+已知业务失败时仅在原源／窗口／非行归属仍可证明时尝试一次受限回收；草稿、源／设定变化或未知执行结果保留现场并隔离。超时／取消不猜测未执行、不自动重试或改连；新桥接没有旧内存记录，遇到遗留dirty／场景拒绝，交由部署端处理。正常配对持久化策略保持；本工具不提供清空任意草稿、撤销外部操作或启动映射的接口。
+
+Win11双Qt各两轮A→B／C→D正式stdio完成，四张真实820×480单项窗图片经Agent查看，源／INI／加载及无运行输入已定向核对。模拟测试覆盖已知失败回收和未知／外来变化隔离，不能替代实际进程退出／撤权／超时等矩阵。当前只有基础单行和单项窗视图，主窗／代表高级页的串行场景、其他实例对照、Win10／高DPI、正式预热和免Python包仍待；现有开发命令不作为无开发环境Release部署承诺。详见唯一主计划及 [demo_scene_acceptance.py](tests/demo_scene_acceptance.py)。

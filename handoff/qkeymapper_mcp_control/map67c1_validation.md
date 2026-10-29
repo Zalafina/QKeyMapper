@@ -871,3 +871,19 @@ Python5项新记录／桥接测试与原22协议共27项通过：严格字段／
 首Qt5正例把动态replayed／query_sampled_at_utc也要求恒等，首Read负例误比较run采样时间，各断言失败、native exit2；两个原件分别保留first-attempt-history-assertion与first-attempt-state-sample-assertion，目标正常退出、工作／生产者0，随后实际控制器五项清理零。只修SDK断言（Read复用既有business_state），未改产品／重建；最终四场均native0／正常退出、逐场清理五项零。实际QkmPostBinding116_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录，无Default、系统输入、映射启动或驱动／FilterKeys变化。
 
 原件out/mcp_post_binding_w11_20261029含单次大文件补丁／精确字节、双Qt构建部署身份、公共定义／SDK peer／逐次调用、两个失败原件、四场源／退出INI／清理和summary，不随Git。维护用例纳入mcp_bridge/tests/post_change_binding_acceptance.py，使用说明同步桥接README。普通15工具／17产品能力、demo-record时16工具不变。未实际诱发提交后采样失败／撤权／断线、最大源耗时、其他实例、Win10／Default／高DPI、串行场景／预热／免Python／QQ；既有111／113／114／115结果按未改路径复用，未重复全量静态／ASan／普通完整Release，未标完整P2／M1完成。
+
+## DEMO-P2-117：正式串行单行演示（2026-10-29，PC-W11）
+
+116 b9a39a82之后实现正式桥接串行单行场景。宿主同时显式提供demo-record及--enable-demo-mapping才启用qkm_demo_mapping(original_key,mapping_key)，仅单大写字母／数字、非只读／非幂等，普通15工具／仅记录16工具保持，启用写入17工具、产品仍17能力。原GUI配对及Read+Configure+Show+Capture批准继续强制；不授Run、不创建实例或申请UAC，开发缓存不作为服务依赖。
+
+一个既有Bridge worker贯穿目标／能力／初始空源核验、原mapping.add预览及提交、116提交绑定下全行／其余空源和115非行足迹核对、原正式后台开窗／有界原生PNG、原安全关窗、只删除本轮归属行及空源／非行足迹复核。不生成控件示意或写产品INI，不启动映射。图像用原image_tool_result原生ImageContent，无结构化Base64重复，附实际目标／窗口／尺寸／SHA256和场景UUID／代次、原操作ID及回收证据；捕获修订与回收空源修订分开。图片内存返回，由普通Agent／gateway消费，delivery明确渠道送达未验；未开放任意进程／窗口／路径／属性或文件输出。
+
+首轮须干净固定配置；回收dirty按原GUI保留。只有同一存活桥接已完成回收记录的目标／完整源修订／非行签名仍匹配才允许已知dirty下继续，其他变化不重查认领相似行。demo_state仍按初始干净基线可报demo_baseline_dirty，另给demo_session阶段／操作ID、receipt_available及quarantined观察；连接状态也能在断线后读取该摘要，不自动重连。已知业务失败仅在原所有权仍可核验时尝试一次受限回收；未知传输／取消、草稿／源／非行变化保留现场并隔离，原操作ID可查，不盲目重发或替用户丢弃草稿。桥接重启无旧内存凭据，遇遗留dirty拒绝；无自动恢复／清空接口。
+
+最终普通Medium定向22项Python（场景10／原预检5／图像7）通过；本片稍早协议22／结构化反馈7在其后未改路径按原结果复用，不冒充同一批51项。模拟覆盖宿主开关／参数／旧合同／权限、连续两轮、已知capture_failed回收后恢复、源／非行及已完成记录变化、未知绑定／编辑草稿保留、capture及失败清理中的timeout／cancelled、真实Bridge单worker busy／取消后排空与隔离。模拟图像不能作为软件截图证据。初次沙箱旧预检硬链接操作WinError5，普通Medium下同项通过，未改ACL或依赖。
+
+双Qt受影响维护文件增量native0，Qt6零编译／链接警告、Qt5兼容通过，产品C++业务相对116不变。正式stdio各正例／Read负例共四场28项Native，152次生产handler／62次外层SDK记录＋32次schema拒绝（复合工具内IPC计入handler，不能把62误记为全部内部步骤）。两正例各连续A→B／C→D，两次新增／删除sourceEpoch恰+4，全源及metadata精确恢复、INI／GUI名／加载保持、dirty保留、窗口关闭／pristine_idle且无runtime输入；Read两场零修改。四张实际820×480、44512–45094B原生单项窗PNG由Agent以原尺寸看图，原始键／映射键／抬起映射对应A/B/B和C/D/D，中文清晰，无黑图／错窗／旧场景污染，范围是Qt客户区，非OS标题边框。
+
+首Qt6场的正式错误被测试助手KeyError遮住，未保存该次原始响应；补诊断后第二场明确failed_stage=preview_mapping／invalid_demo_state，定位新增预览事件误写add_mapping，源码与实际预览为insert_mapping，第二场在提交前拒绝。两场native exit2、目标正常退出；失败原件及实际五项清理零分别留first-unexpected-reply／preview-contract-failure。修正桥接和模拟事件后定向22项及四场最终通过，未重建产品／夹具或扩大范围。第一次响应本身未保存，不能把后一次原始响应冒充第一次证据。
+
+最终实际QkmDemoScene117_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录；四场正常退出、工作／生产者0、逐场owned／unresolved／pending／current_action／current_job零。无Default、系统输入、映射启动、驱动／FilterKeys改动或新提权启动模式。原件out/mcp_demo_scene_w11_20261029含构建部署身份、公共定义、合成INI／私有记录、SDK peer／调用／原始图像响应、两失败原件、最终日志／源INI／四图和Agent审阅／summary，不随Git。当前仅基础单行／单项窗；真实进程退出／撤权／断线／超时与跨实例因果、主窗／代表高级页、Win10／高DPI、正式预热／免Python及QQ仍待，未把完整P2／M1或Release可直接部署标完成。

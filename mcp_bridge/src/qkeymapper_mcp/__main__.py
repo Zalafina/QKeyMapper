@@ -19,6 +19,10 @@ ToolResult = Annotated[CallToolResult, dict[str, Any]]
 
 _ERROR_FEEDBACK = {
     "not_connected": ("尚未连接 QKeyMapper。", "查询连接状态，再使用已有配对连接；需要配对时由用户在产品内批准。"),
+    "demo_not_enabled": ("宿主未启用专用演示写入。", "由部署端核对独立演示实例和显式配置；客户端不能自行扩大权限。"),
+    "demo_quarantined": ("演示会话已隔离，自动修改已停止。", "查询demo_state的阶段和操作ID，保留源与窗口；由部署端处理，不盲目重试、清空草稿或更换实例。"),
+    "demo_context_changed": ("演示源或非行设定已变化，无法证明本轮回收范围。", "查询demo_state和原操作结果，保留现场；不要认领相似行、清空配置或自动重试。"),
+    "demo_source_binding_unavailable": ("变更已提交，但未取得可用的提交源绑定。", "按原操作ID核对结果并保留现场；不可推断未修改或自动认领当前行。"),
     "busy_or_closed": ("桥接正在处理或关闭请求。", "查询连接状态，等待当前作业清理；已关闭的桥接需由客户端重新启动。"),
     "context_busy": ("当前状态不能安全完成此操作。", "查询产品状态和受阻原因；操作不会自动停止映射。需要空闲的修改须取得停止同意、等待清理后重新预览。"),
     "stale_catalog": ("配置或 Tab 目录已变化。", "重新查询目录，使用新引用核对原操作目标。"),
@@ -92,6 +96,7 @@ def main() -> None:
     parser.add_argument("--discovery-file", type=Path, required=True)
     parser.add_argument("--executable", type=Path, required=True)
     parser.add_argument("--demo-record", type=Path, help="Explicit host creation record for a dedicated private demo instance.")
+    parser.add_argument("--enable-demo-mapping", action="store_true", help="Enable fixed memory-only demo scenes and owned-row cleanup.")
     args = parser.parse_args()
     if os.name != "nt":
         parser.error("Windows 10 or 11 is required.")
@@ -101,7 +106,9 @@ def main() -> None:
     if discovery.name != "instance.json":
         parser.error("--discovery-file must name instance.json from QKeyMapper's MCP window.")
     demo_record = Path(os.path.abspath(args.demo_record)) if args.demo_record is not None else None
-    bridge = Bridge(discovery, executable, demo_record)
+    if args.enable_demo_mapping and demo_record is None:
+        parser.error("--enable-demo-mapping requires --demo-record.")
+    bridge = Bridge(discovery, executable, demo_record, enable_demo_mapping=args.enable_demo_mapping)
 
     @asynccontextmanager
     async def lifespan(_server):
@@ -135,8 +142,16 @@ def main() -> None:
     if demo_record is not None:
         @tool(read)
         async def qkm_get_demo_state() -> ToolResult:
-            """只读核对宿主显式配置的专用演示创建记录、实际认证实例／私有桌面、独立窗口权限及固定配置的空源基线。ready只代表本次观察，不是后续写入许可、场景租约或重置证明；失败保留现场，不创建／切换目标、不显示／激活窗口、不配对扩权／提权或修改配置。记录由受信启动链制备，不能用客户端自报身份替代进程／认证／权限核验。正式预热生成、串行建例／截图／重置及免Python交付尚未完成。"""
+            """只读核对宿主显式配置的专用演示创建记录、实际认证实例／私有桌面、独立窗口权限及固定配置的空源基线。ready只代表本次观察，不是后续写入许可、场景租约或重置证明；失败保留现场，不创建／切换目标、不显示／激活窗口、不配对扩权／提权或修改配置。记录由受信启动链制备，不能用客户端自报身份替代进程／认证／权限核验。宿主另行启用串行演示时，demo_session提供最近阶段／操作ID和内存回收记录的观察；receipt_available不授予下一轮写入许可，实际调用仍会完整核验。正式预热生成及免Python交付仍待。"""
             return tool_result(await bridge.demo_state())
+
+    if args.enable_demo_mapping:
+        @tool(ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=False))
+        async def qkm_demo_mapping(
+                original_key: Annotated[str, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")],
+                mapping_key: Annotated[str, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")]) -> ToolResult:
+            """仅供宿主显式启用的预授权专用私有实例：建立一个基础映射，打开真实单项设定窗，获取原生图片，安全关窗并删除本轮创建的行；不启动映射、不保存、不注入系统输入。需要Read+Configure+ShowWindows+CaptureWindows及当前能力合同，首次须已加载无dirty空源；连续轮次只复用同一桥接已证明的回收记录，dirty按原GUI保留。失败可能保留本轮源／窗口并隔离，查询demo_state核对实际阶段和操作ID，勿盲目重试、清空草稿或改连。图片以MCP ImageContent返回，附场景／目标／尺寸及回收元数据；QQ等渠道送达须由gateway另行完成。本工具非幂等、同桥接串行，不能作为全局实例租约。"""
+            return image_tool_result(await bridge.demo_mapping(original_key, mapping_key))
 
     @tool(connection)
     def qkm_connect() -> ToolResult:
