@@ -23,6 +23,7 @@ public:
     }
 
     void setUILanguage(int languageindex);
+    QByteArray automationEditorFingerprint() const;
 
     void initGamepadThresholdSpinBoxes(void);
 

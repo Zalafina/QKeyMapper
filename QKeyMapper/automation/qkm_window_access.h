@@ -26,15 +26,18 @@ struct MappingEditorArguments {
 };
 
 MappingEditorArguments parseMappingEditorArguments(const QJsonObject &arguments);
+MappingEditorArguments parseMappingSettingsArguments(const QJsonObject &arguments);
 struct MappingEditorCloseArguments {
     MappingEditorArguments source;
     QString windowReference;
     bool ok() const { return source.ok() && !windowReference.isEmpty(); }
 };
 MappingEditorCloseArguments parseMappingEditorCloseArguments(const QJsonObject &arguments);
+MappingEditorCloseArguments parseMappingSettingsCloseArguments(const QJsonObject &arguments);
 bool privateBackgroundDesktopAvailable();
 QJsonObject mappingEditorCapability();
 QJsonObject mappingEditorCloseCapability();
+QJsonObject mappingSettingsCapability(bool closing);
 QByteArray windowInputFingerprint(const QWidget *window);
 
 // Tracks only explicitly supplied product window roles; extra roles require an explicit query.
@@ -45,8 +48,9 @@ public:
         const QJsonObject &arguments) const;
     QWidget *resolve(const QString &role, const QString &reference, const QString &instance,
         const QString &pairId, quint64 permissionEpoch) const;
-    void rememberEditor(const QString &sourceReference, const QByteArray &draftFingerprint);
-    bool ownsEditor(const QString &sourceReference) const;
+    void rememberEditor(const QString &sourceReference, const QByteArray &draftFingerprint,
+        const QString &role = QStringLiteral("item_setup"));
+    bool ownsEditor(const QString &sourceReference, const QString &role = QStringLiteral("item_setup")) const;
     bool editorDraftMatches(const QByteArray &draftFingerprint) const;
 
 protected:
@@ -58,6 +62,7 @@ private:
     std::array<quint64, 3> m_generations{{1, 1, 1}};
     QString m_editorSourceReference;
     QByteArray m_editorDraftFingerprint;
+    int m_editorIndex = 1;
 };
 
 QJsonObject windowQueryCapability();

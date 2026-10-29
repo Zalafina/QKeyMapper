@@ -4,10 +4,33 @@
 #include "ui_qmappingadvanceddialog.h"
 #include "qkeymapper_constants.h"
 #include "qstyle_singletons.h"
+#include "automation/qkm_window_access.h"
+#include <QApplication>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
+#include <QThread>
 
 using namespace QKeyMapperConstants;
 
 QMappingAdvancedDialog *QMappingAdvancedDialog::m_instance = Q_NULLPTR;
+
+QByteArray QMappingAdvancedDialog::automationEditorFingerprint() const
+{
+    if (!qApp || QThread::currentThread() != qApp->thread() || thread() != qApp->thread()) return {};
+    // shortcut: current advanced spins are decimal without special text; extend this guard for new formats.
+    for (const auto *spin : findChildren<QAbstractSpinBox *>()) {
+        if (!spin->hasAcceptableInput()) return {};
+        bool ok = false;
+        if (const auto *integer = qobject_cast<const QSpinBox *>(spin)) {
+            const int pending = integer->locale().toInt(integer->cleanText(), &ok);
+            if (!ok || pending != integer->value()) return {};
+        } else if (const auto *decimal = qobject_cast<const QDoubleSpinBox *>(spin)) {
+            const double pending = decimal->locale().toDouble(decimal->cleanText(), &ok);
+            if (!ok || (pending != decimal->value() && !qFuzzyCompare(pending, decimal->value()))) return {};
+        } else return {};
+    }
+    return QkmAutomation::windowInputFingerprint(this);
+}
 
 QMappingAdvancedDialog::QMappingAdvancedDialog(QWidget *parent)
     : QDialog(parent)

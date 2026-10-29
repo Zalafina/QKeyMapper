@@ -2110,6 +2110,7 @@ private:
     void handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request);
     void handleAutomationDemoContextQuery(const QkmAutomation::AutomationRequest &request);
     void handleAutomationWindowCapture(const QkmAutomation::AutomationRequest &request);
+    void handleAutomationMappingSettings(const QkmAutomation::AutomationRequest &request, bool closing);
     void handleAutomationMappingEditor(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMappingEditorClose(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMappingChange(const QkmAutomation::AutomationRequest &request);
@@ -2245,7 +2246,7 @@ private:
         const QkmAutomation::ConfigurationSaveBinding &expected, bool confirmScope, bool confirmOverwrite) const;
     SettingSaveResult executeAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
         const QkmAutomation::ConfigurationSaveBinding &expected, bool confirmScope, bool confirmOverwrite, QString &errorCode);
-    bool hasOpenMappingEditor(const QWidget *allowedItemSetup = nullptr) const;
+    bool hasOpenMappingEditor(const QWidget *allowedEditor = nullptr) const;
     static QString settingSaveValuesFingerprint(const SettingSaveTarget &target, const SettingSaveValues &values,
         const QString &configurationPath, bool configurationExists, const QByteArray &configurationData, const QString &sourceRevision);
     SettingSaveValues collectSettingSaveValues(const SettingSaveTarget &target, const QSettings &settingFile, int languageIndex) const;

@@ -13,7 +13,8 @@ namespace {
 
 quint32 minimumScopes(const QString &method)
 {
-    if (method == QStringLiteral("qkm_open_mapping_editor") || method == QStringLiteral("qkm_close_mapping_editor"))
+    if (method == QStringLiteral("qkm_open_mapping_editor") || method == QStringLiteral("qkm_close_mapping_editor")
+        || method == QStringLiteral("qkm_open_mapping_settings") || method == QStringLiteral("qkm_close_mapping_settings"))
         return Read | ShowWindows;
     if (method == QStringLiteral("qkm_capture_window")) return Read | CaptureWindows;
     if (method == QStringLiteral("qkm_preview_changes") || method == QStringLiteral("qkm_apply_changes")

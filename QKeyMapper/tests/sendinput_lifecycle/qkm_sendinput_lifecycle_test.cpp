@@ -27,6 +27,7 @@
 #include <QMenu>
 #include <QTranslator>
 #include <qt_windows.h>
+#include <thread>
 #include "../../automation/qkm_control_dialog.h"
 #include "../../automation/qkm_source_snapshot.h"
 #include "../../automation/qkm_mapping_changes.h"
@@ -3372,8 +3373,10 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const bool postBindingRead = publicApply && connectionVariant == QStringLiteral("post_binding_read");
     const bool demoSequence = publicApply && connectionVariant == QStringLiteral("demo_sequence");
     const bool demoSequenceRead = publicApply && connectionVariant == QStringLiteral("demo_sequence_read");
+    const bool settingsWindow = publicApply && connectionVariant == QStringLiteral("settings_window");
+    const bool settingsNoShow = publicApply && connectionVariant == QStringLiteral("settings_no_show");
     const bool advancedGui = publicApply && (connectionVariant == QStringLiteral("advanced_gui")
-        || connectionVariant == QStringLiteral("advanced_gui_no_capture"));
+        || connectionVariant == QStringLiteral("advanced_gui_no_capture") || settingsWindow);
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
@@ -3432,6 +3435,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     if (variant == QStringLiteral("demo_sequence")) scopes |= ShowWindows | CaptureWindows;
                     if (variant == QStringLiteral("advanced_gui")) scopes |= ShowWindows | CaptureWindows;
                     if (variant == QStringLiteral("advanced_gui_no_capture")) scopes |= ShowWindows;
+                    if (variant == QStringLiteral("settings_window")) scopes |= ShowWindows | CaptureWindows;
+                    if (variant == QStringLiteral("settings_no_show")) scopes |= CaptureWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);
@@ -3616,6 +3621,67 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         auto demoSource = QSharedPointer<QJsonObject>::create();
         auto demoClosed = QSharedPointer<bool>::create(false);
         auto demoThreadCheck = QSharedPointer<QAtomicInt>::create(0);
+        auto settingsChecks = QSharedPointer<QJsonArray>::create();
+        const auto *settingsTabs = mapper->findChild<QTabWidget *>(QStringLiteral("settingTabWidget"));
+        const int settingsPageBefore = settingsTabs ? settingsTabs->currentIndex() : -1;
+        const QByteArray settingsFingerprint = settingsWindow ? mapper->m_MappingAdvancedDialog->automationEditorFingerprint() : QByteArray();
+        const auto typeMouseSpeed = [mapper](const QString &text) {
+            auto *spin = mapper->m_MappingAdvancedDialog->findChild<QSpinBox *>(QStringLiteral("mouseXSpeedSpinBox"));
+            auto *edit = spin ? spin->findChild<QLineEdit *>() : nullptr;
+            if (!edit) return false;
+            if (spin->isVisible()) clickMappingButton(spin);
+            QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+            QCoreApplication::sendEvent(edit, &select); QCoreApplication::sendEvent(edit, &selected);
+            for (const QChar character : text) {
+                QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), released(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+                QCoreApplication::sendEvent(edit, &press); QCoreApplication::sendEvent(edit, &released);
+            }
+            return edit->text() == text;
+        };
+        if (settingsWindow) {
+            auto *dialog = mapper->m_MappingAdvancedDialog;
+            auto *spin = dialog->findChild<QSpinBox *>(QStringLiteral("mouseXSpeedSpinBox"));
+            if (!spin || spin->value() != 3 || settingsPageBefore < 0) { finish(false); return; }
+            const auto check = [&](bool passed, const char *label) {
+                settingsChecks->append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(label)}, {QStringLiteral("passed"), passed}});
+            };
+            check(settingsFingerprint.size() == 32, "settled advanced controls produce a complete input fingerprint");
+            const bool tracking = spin->keyboardTracking();
+            // Component-only deferred numeric draft; the independent GUI baseline does not alter this property.
+            spin->setKeyboardTracking(false);
+            const bool pending = typeMouseSpeed(QStringLiteral("4")) && spin->value() == 3 && dialog->automationEditorFingerprint().isEmpty();
+            check(pending, "deferred numeric text is rejected even when the stored value is unchanged");
+            const bool restored = typeMouseSpeed(QStringLiteral("3"));
+            spin->setKeyboardTracking(tracking);
+            check(restored && spin->value() == 3 && dialog->automationEditorFingerprint() == settingsFingerprint,
+                "restored text and original keyboard tracking reproduce the initial fingerprint");
+            QByteArray denied;
+            std::thread worker([&] { denied = dialog->automationEditorFingerprint(); }); worker.join();
+            check(denied.isEmpty(), "advanced input fingerprint refuses a non-GUI thread");
+            QString error;
+            check(mapper->collectAutomationSourceSnapshot(error) == sourceBefore && error.isEmpty()
+                && mapper->m_SaveSettingDirty == dirty, "numeric component probes preserve the full source and dirty state");
+            auto *poll = new QTimer(mapper);
+            auto stage = QSharedPointer<int>::create(0);
+            QObject::connect(poll, &QTimer::timeout, mapper, [=]() {
+                if (*stage > 1) return;
+                const QString marker = *stage == 0 ? QStringLiteral(".settings-edit") : QStringLiteral(".settings-restore");
+                if (!QFileInfo::exists(output + marker)) return;
+                if (!dialog->isVisible()) { finish(false); return; }
+                const int value = *stage == 0 ? 4 : 3;
+                QString error;
+                const bool changed = typeMouseSpeed(QString::number(value)) && spin->value() == value
+                    && (value == 4 ? dialog->automationEditorFingerprint() != settingsFingerprint
+                                   : dialog->automationEditorFingerprint() == settingsFingerprint)
+                    && mapper->collectAutomationSourceSnapshot(error) == *demoSource && error.isEmpty()
+                    && mapper->findChild<QTabWidget *>(QStringLiteral("settingTabWidget"))->currentIndex() == settingsPageBefore;
+                QSaveFile file(output + (value == 4 ? QStringLiteral(".settings-edited") : QStringLiteral(".settings-restored")));
+                const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("passed"), changed}, {QStringLiteral("mouse_x"), spin->value()}}).toJson();
+                if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) finish(false);
+                ++*stage; if (*stage == 2) poll->stop();
+            });
+            poll->start(10);
+        }
         if (demoCapture || advancedGui) {
             const auto frame = [=](QWidget *window, const QString &role) {
                 QString error;
@@ -4207,7 +4273,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 for (const auto &entry : *bindingChecks) {
                     checks.append(entry); passed = passed && entry.toObject().value(QStringLiteral("passed")).toBool();
                 }
-            } else if (saves == 0 && advancedGui) {
+            } else if (saves == 0 && (advancedGui || settingsNoShow)) {
                 QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
                 QString error;
                 const auto source = mapper->collectAutomationSourceSnapshot(error);
@@ -4217,11 +4283,20 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 check(mapper->m_SaveSettingDirty && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch + 2
                     && mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
                     QStringLiteral("only the formal addition and deletion change source identity; load and GUI name remain"));
-                check(demoFrames->size() == 2 && *demoClosed && !mapper->m_MappingAdvancedDialog->isVisible()
+                check((settingsNoShow ? demoFrames->isEmpty() : demoFrames->size() == 2 && *demoClosed) && !mapper->m_MappingAdvancedDialog->isVisible()
                     && !mapper->m_ItemSetupDialog->isVisible() && mapper->m_KeyMappingDataTable->rowCount() == 0
                     && mapper->automationSourceReadBasis() == QStringLiteral("pristine_idle")
                     && !QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved(),
-                    QStringLiteral("original GUI click, capture, Escape and page restore preserve input values and never start mapping"));
+                    settingsNoShow ? QStringLiteral("denied window requests leave no editor and never start mapping")
+                                   : QStringLiteral("original GUI click, capture, Escape and page restore preserve input values and never start mapping"));
+                if (settingsWindow) {
+                    check(settingsChecks->size() == 5 && mapper->m_MappingAdvancedDialog->automationEditorFingerprint() == settingsFingerprint
+                        && mapper->findChild<QTabWidget *>(QStringLiteral("settingTabWidget"))->currentIndex() == settingsPageBefore,
+                        QStringLiteral("owned settings cycles preserve the complete input baseline and original main settings page"));
+                    for (const auto &entry : *settingsChecks) {
+                        checks.append(entry); passed = passed && entry.toObject().value(QStringLiteral("passed")).toBool();
+                    }
+                }
             } else if (saves == 0 && demoSequence) {
                 QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
                 QString error;
@@ -4285,7 +4360,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
                 {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness && !demoContext && !demoContextRead
-                    && !postBinding && !postBindingRead && !demoSequence && !demoSequenceRead && !advancedGui},
+                    && !postBinding && !postBindingRead && !demoSequence && !demoSequenceRead && !advancedGui && !settingsNoShow},
+                {QStringLiteral("formal_mcp_settings_window"), settingsWindow || settingsNoShow},
                 {QStringLiteral("advanced_gui_baseline"), advancedGui},
                 {QStringLiteral("formal_mcp_serial_demo"), demoSequence || demoSequenceRead},
                 {QStringLiteral("formal_mcp_post_binding"), postBinding || postBindingRead},

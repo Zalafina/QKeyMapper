@@ -22505,9 +22505,9 @@ OrderedMap<QString, QVariant> QKeyMapper::collectVButtonPanelSaveValues() const
     return values;
 }
 
-bool QKeyMapper::hasOpenMappingEditor(const QWidget *allowedItemSetup) const
+bool QKeyMapper::hasOpenMappingEditor(const QWidget *allowedEditor) const
 {
-    return (m_ItemSetupDialog && m_ItemSetupDialog != allowedItemSetup && m_ItemSetupDialog->isVisible())
+    return (m_ItemSetupDialog && m_ItemSetupDialog != allowedEditor && m_ItemSetupDialog->isVisible())
         || (m_ItemSetupDialog && m_ItemSetupDialog->m_FloatingButtonSetupDialog
             && m_ItemSetupDialog->m_FloatingButtonSetupDialog->isVisible())
         || (m_ItemSetupDialog && m_ItemSetupDialog->m_CrosshairSetupDialog
@@ -22515,7 +22515,7 @@ bool QKeyMapper::hasOpenMappingEditor(const QWidget *allowedItemSetup) const
         || (m_TableSetupDialog && m_TableSetupDialog->isVisible())
         || (m_MacroListDialog && m_MacroListDialog->isVisible())
         || (m_MappingSequenceEdit && m_MappingSequenceEdit->isVisible())
-        || (m_MappingAdvancedDialog && m_MappingAdvancedDialog->isVisible());
+        || (m_MappingAdvancedDialog && m_MappingAdvancedDialog != allowedEditor && m_MappingAdvancedDialog->isVisible());
 }
 
 QString QKeyMapper::settingSaveValuesFingerprint(const SettingSaveTarget &target, const SettingSaveValues &values,
@@ -38732,6 +38732,90 @@ void QKeyMapper::handleAutomationMappingEditorClose(const QkmAutomation::Automat
         {QStringLiteral("source_context"), source.page.value(QStringLiteral("source_snapshot"))}, {QStringLiteral("window"), closed}});
 }
 
+void QKeyMapper::handleAutomationMappingSettings(const QkmAutomation::AutomationRequest &request, bool closing)
+{
+    using namespace QkmAutomation;
+    auto &server = m_McpControlDialog->server();
+    if (!server.isRequestCurrent(request)) return;
+    const auto reject = [&](const QString &code) {
+        if (server.isRequestCurrent(request)) server.replyError(request.connectionId, request.requestId, code,
+            QStringLiteral("Mapping settings window state was not confirmed. Query the fixed window and current source; no draft discard or automatic retry is provided."));
+    };
+    if ((request.scopes & (Read | ShowWindows)) != (Read | ShowWindows)) { reject(QStringLiteral("permission_denied")); return; }
+    const auto closeArguments = closing ? parseMappingSettingsCloseArguments(request.arguments) : MappingEditorCloseArguments{};
+    const auto arguments = closing ? closeArguments.source : parseMappingSettingsArguments(request.arguments);
+    if (!arguments.ok()) { reject(QStringLiteral("invalid_arguments")); return; }
+    if (!privateBackgroundDesktopAvailable()) { reject(QStringLiteral("unsupported_desktop")); return; }
+    QString sourceError;
+    const QJsonObject snapshot = collectAutomationSourceSnapshot(sourceError);
+    if (snapshot.isEmpty()) { reject(sourceError.isEmpty() ? QStringLiteral("context_busy") : sourceError); return; }
+    const QJsonObject sourceArguments{{QStringLiteral("entity"), QStringLiteral("mappings")},
+        {QStringLiteral("source_revision"), arguments.sourceRevision},
+        {QStringLiteral("source_tab_ref"), arguments.sourceReference}, {QStringLiteral("limit"), 1}};
+    const auto source = querySourceSnapshot(snapshot, server.instanceId(), request.pairId, request.permissionEpoch, sourceArguments);
+    if (!source.ok()) { reject(source.errorCode); return; }
+    const auto selected = source.page.value(QStringLiteral("source")).toObject();
+    const int tab = selected.value(QStringLiteral("ui_index")).toInt(-1);
+    if (!selected.value(QStringLiteral("attached_to_ui")).toBool() || tab != s_KeyMappingTabWidgetCurrentIndex) {
+        reject(QStringLiteral("stale_source")); return;
+    }
+    if (!m_MappingAdvancedDialog || !m_AutomationWindows || !mappingAdditionAllowed(tab)
+        || hasOpenMappingEditor(closing ? m_MappingAdvancedDialog : nullptr)
+        || QApplication::activeModalWidget() || QApplication::activePopupWidget() || m_KeyMappingDataTable->hasActiveEditor()
+        || (m_CustomNotificationSetupDialog && m_CustomNotificationSetupDialog->isVisible())) {
+        reject(QStringLiteral("context_busy")); return;
+    }
+    const QString role = QStringLiteral("mapping_advanced");
+    if (closing) {
+        QWidget *window = m_AutomationWindows->resolve(role, closeArguments.windowReference,
+            server.instanceId(), request.pairId, request.permissionEpoch);
+        if (window != m_MappingAdvancedDialog) { reject(QStringLiteral("stale_window")); return; }
+        if (!window->isVisible() || window->isMinimized()
+            || !IsWindowVisible(reinterpret_cast<HWND>(window->internalWinId()))) { reject(QStringLiteral("window_unavailable")); return; }
+        if (!m_AutomationWindows->ownsEditor(arguments.sourceReference, role)) { reject(QStringLiteral("editor_not_owned")); return; }
+    } else if (!isVisible() || isMinimized() || !IsWindowVisible(reinterpret_cast<HWND>(internalWinId()))) {
+        reject(QStringLiteral("window_unavailable")); return;
+    }
+    const QByteArray before = m_MappingAdvancedDialog->automationEditorFingerprint();
+    if (before.size() != 32 || (closing && !m_AutomationWindows->editorDraftMatches(before))) {
+        reject(closing ? QStringLiteral("editor_draft_changed") : QStringLiteral("context_busy")); return;
+    }
+    if (!server.isRequestCurrent(request)) return;
+    if (closing) closeMappingAdvancedDialog();
+    else {
+        const QPointer<QWidget> editor = m_MappingAdvancedDialog;
+        const bool previousNoActivate = editor->testAttribute(Qt::WA_ShowWithoutActivating);
+        const auto restoreAttribute = qScopeGuard([editor, previousNoActivate] {
+            if (editor) editor->setAttribute(Qt::WA_ShowWithoutActivating, previousNoActivate);
+        });
+        editor->setAttribute(Qt::WA_ShowWithoutActivating, true);
+        showMappingAdvancedDialog();
+    }
+    if (!server.isRequestCurrent(request)) return;
+    const auto after = querySourceSnapshot(collectAutomationSourceSnapshot(sourceError), server.instanceId(),
+        request.pairId, request.permissionEpoch, sourceArguments);
+    if (!after.ok()) { reject(after.errorCode); return; }
+    if (!privateBackgroundDesktopAvailable()) { reject(QStringLiteral("unsupported_desktop")); return; }
+    const auto windows = m_AutomationWindows->query(server.instanceId(), request.pairId, request.permissionEpoch,
+        {{QStringLiteral("entity"), QStringLiteral("windows")}, {QStringLiteral("window_role"), role}});
+    if (!windows.ok()) { reject(windows.errorCode); return; }
+    const auto window = windows.page.value(QStringLiteral("items")).toArray().first().toObject();
+    const bool visible = window.value(QStringLiteral("qt_visible")).toBool() && window.value(QStringLiteral("native_visible")).toBool();
+    if ((!closing && (!visible || window.value(QStringLiteral("minimized")).toBool()
+            || !window.value(QStringLiteral("window_ref")).isString()))
+        || (closing && (window.value(QStringLiteral("qt_visible")).toBool() || window.value(QStringLiteral("native_visible")).toBool()))) {
+        reject(QStringLiteral("window_unavailable")); return;
+    }
+    const QByteArray fingerprint = m_MappingAdvancedDialog->automationEditorFingerprint();
+    if (fingerprint != before) { reject(QStringLiteral("editor_draft_changed")); return; }
+    if (!closing) m_AutomationWindows->rememberEditor(arguments.sourceReference, fingerprint, role);
+    server.reply(request.connectionId, request.requestId, {{QStringLiteral("target"), windows.page.value(QStringLiteral("target"))},
+        {QStringLiteral("role"), role}, {QStringLiteral("presentation"), QStringLiteral("private_background")},
+        {QStringLiteral("activation_requested"), false}, {closing ? QStringLiteral("closed") : QStringLiteral("opened"), true},
+        {QStringLiteral("source_tab_ref"), arguments.sourceReference}, {QStringLiteral("source_revision"), arguments.sourceRevision},
+        {QStringLiteral("source_context"), source.page.value(QStringLiteral("source_snapshot"))}, {QStringLiteral("window"), window}});
+}
+
 void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRequest &request)
 {
     using namespace QkmAutomation;
@@ -38783,6 +38867,10 @@ void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRe
             {QStringLiteral("presentation"), QStringLiteral("live_qt_client_ui_drafts_may_be_visible")}};
         if (arguments.role == QStringLiteral("mapping_advanced")) {
             metadata.insert(QStringLiteral("settings_scope"), QStringLiteral("live_loaded_settings_not_committed_by_source_revision"));
+            if (m_AutomationWindows->ownsEditor(arguments.sourceTabReference, QStringLiteral("mapping_advanced"))) {
+                metadata.insert(QStringLiteral("settings_editor_unchanged"),
+                    m_AutomationWindows->editorDraftMatches(m_MappingAdvancedDialog->automationEditorFingerprint()));
+            }
         }
         if (arguments.role == QStringLiteral("item_setup")) {
             const int tab = m_ItemSetupDialog->getTabIndex(), row = m_ItemSetupDialog->getItemRow();
@@ -38852,6 +38940,10 @@ void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRe
 void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
+    if (request.method == QStringLiteral("qkm_open_mapping_settings") || request.method == QStringLiteral("qkm_close_mapping_settings")) {
+        handleAutomationMappingSettings(request, request.method == QStringLiteral("qkm_close_mapping_settings"));
+        return;
+    }
     if (request.method == QStringLiteral("qkm_close_mapping_editor")) {
         handleAutomationMappingEditorClose(request);
         return;
@@ -38959,6 +39051,7 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                     QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}},
             QkmAutomation::mappingHelpCapability(), QkmAutomation::windowQueryCapability(), QkmAutomation::windowCaptureCapability(),
             QkmAutomation::mappingEditorCapability(), QkmAutomation::mappingEditorCloseCapability(),
+            QkmAutomation::mappingSettingsCapability(false), QkmAutomation::mappingSettingsCapability(true),
             QJsonObject{{QStringLiteral("id"), QStringLiteral("demo.context.read")}, {QStringLiteral("method"), QStringLiteral("qkm_query")},
                 {QStringLiteral("required_scopes"), int(QkmAutomation::Read | QkmAutomation::Configure)}, {QStringLiteral("read_only"), true},
                 {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},

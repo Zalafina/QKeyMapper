@@ -923,3 +923,19 @@ Python图像8／协议22／结构化反馈7共37项通过，包括新scope缺失
 四场GUI开关期间完整源／非行context／输入指纹、GUI名／INI／加载不变，原页恢复后正式回收本轮行，sourceEpoch各恰+2、dirty保留、所有源空、无编辑窗／runtime输入。实际QkmAdvancedCapture120_<UUID>私有桌面，SDK8192／产品12288、同登录；全部native0／正常退出、工作／生产者0、逐场owned／unresolved／pending／current_action／current_job零。无Default、系统输入、映射启动、驱动或FilterKeys改变；Qt私有激活状态不冒充Default前台因果。
 
 原件out/mcp_advanced_capture_w11_20261029含单次大文件补丁／精确字节、双Qt构建与组件／部署身份、公共定义、37项日志、SDK peer／逐次调用、原GUI帧与两张正式图及Agent审阅、完整源INI／退出／清理及summary，不随Git。桥接／Native README用法同步，无TS／QM更改。高级窗正式私有显示／归属关闭、串行demo view、实际参数编辑／子窗／撤权／超时／断线、Default／Win10／高DPI及其他实例因果、预热／免Python／QQ仍待；不标完整P1／P2／M1完成，不重复既有不变路径全矩阵或全量静态／ASan／普通完整Release。
+
+## DEMO-P1-121：高级窗私有归属开关（2026-10-29，PC-W11）
+
+120 3d43f41c后新增固定qkm_open_mapping_settings／qkm_close_mapping_settings及mapping.settings.open／close能力，仅Read+ShowWindows（129）、当前source_tab_ref和private_background；关闭另需实际window_ref。复用原show／close入口，RAII临时WA_ShowWithoutActivating后恢复，主窗设置页不变，原ActivationChange关闭逻辑保持。完整安全源／附着当前Tab、请求／权限／桌面、其他编辑窗／表格草稿／菜单／通知子窗逐项复核，不收任意目标／属性／路径／discard，不自动停止／保存或丢草稿。
+
+复用原WindowAccess单个归属记录，显式区分item_setup与mapping_advanced，旧单项默认调用兼容。仅本owner打开且全部输入摘要未变才可关闭；隐藏／重开失效。高级数值控件另只读检查text与value一致，避免关闭解释未提交数字；捕获已归属高级窗时附可选settings_editor_unchanged，普通GUI实时捕获保持原语义。正式工具普通17／仅demo-record18／显式演示19，产品19能力；配对位、既有权限和TS／QM均不扩展。
+
+双Qt生命周期／窗口控制／IPC维护增量native0，Qt6零编译／链接警告、Qt5兼容通过；Medium实际私有桌面窗口组件每Qt6项、IPC每Qt3项（各含init／cleanup），共18项，旧item解析及归属、严格Tab引用／无任意参数、角色分隔／隐藏失效和真实认证Show授权门槛通过。本片先前Python图像9／协议22／反馈7共38项在其后未改输入上复用，不冒充另一次执行。
+
+双Qt正式stdio各387正例及259无Show负例，共四场36 Native／96 handler／112 SDK＋56 schema拒绝。先由原Qt Tab／按钮及Escape建立独立GUI基线，其窗不能被正式close接管、open不能替换；原页恢复后正式打开／捕获／关闭两轮，旧源和旧window_ref拒绝。实际Qt键事件将进程内鼠标X倍率3→4，source行修订仍相同但关闭editor_draft_changed且保留窗口，捕获标false；恢复3后标true才安全关闭。未提交数字／跨线程另为明确组件注入，不当作独立GUI基线，原keyboardTracking恢复且源／dirty不变。无Show两场零显示／图片，权限拒绝先于业务处理。
+
+六张正式770×390 PNG已核对：四张直接看图、Qt5恢复图直接看图、另一恢复图按字节等同审阅图核验，中文／实际3或4及默认参数清晰。双Qt首次与恢复图、同次独立GUI帧、P1-120保留GUI图均逐字节相等，排除连续看图时的疑似绘制痕迹；没有为图像改产品或夹具。仅Qt客户区和当前实时非行设定，不能按源行revision宣称完整配置已提交。
+
+原GUI／正式开关后全源及非行context精确保持；仅本轮正式新增／删除令epoch恰+2，INI／GUI名／加载不变，dirty按原GUI保留，所有源空／无编辑窗或runtime输入。实际QkmAdvancedWindow121_<UUID>私有桌面、SDK8192／原manifest产品12288、同登录，四场exit0／正常退出、尾部工作与生产者0、逐场五项清理零。无Default、系统输入、映射启动、驱动／FilterKeys或新提权模式；activation_requested=false与私有桌面不冒充Default全程前台因果。
+
+原件out/mcp_advanced_window_w11_20261029保存单次主文件补丁／精确字节、构建／部署／公共登记、组件与38项Python日志、SDK peer／逐次调用、原GUI帧及六张正式图／Agent审阅、INI／退出／清理和summary，不随Git。维护SDK mapping_settings_acceptance.py及桥接／Native用法同步。高级串行view留下一片；正式设置编辑、通知子窗、真实撤权／断线／超时及跨实例因果、Default／Win10／高DPI、预热／免Python及QQ仍待，不标完整P1／P2／M1完成，不重复无变化全矩阵／静态／ASan／普通完整Release。

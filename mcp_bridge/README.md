@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十七项业务能力、十五工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
+官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。P1-121后当前开发产品返回十九项业务能力、十七工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
 桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
@@ -62,7 +62,7 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 9. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
 10. 能力包含 `windows.read` 时，`qkm_query({"entity":"windows"})` 默认观察当前已认证实例的main／item_setup两个固定角色；120另允许window_role="mapping_advanced"，只返回固定高级窗一项。仅接受entity／offset／limit及此可选角色，默认offset为0–2、显式高级窗0–1，limit为1–100。返回实际 EXE／PID／创建时间／GUI 线程桌面、Qt／原生可见、最小化、前台精确采样、逻辑尺寸／DPR及不透明 window_ref。未创建原生窗口时引用为 null，不为查询调用 winId 创建或显示窗口。该查询只需 Read，不授予或调用显示／截图，也不读取其他进程窗口。
 
-窗口引用仅属于实例／配对权限代次及本角色窗口生命周期，关闭／隐藏重开、呈现／原生窗口重建、销毁或身份／权限改变后失效；正常返回 Agent 导致的焦点变化不使其失效。`foreground_exact` 和 `foreground_in_instance` 是本次采样，不代表已请求激活或已核实前台显示。引用不证明映射源／场景未变，也不授权操作；截图独立核对业务源及源Tab；109提供私有后台单项打开，普通Default显示确认和其他角色的正式展示仍待。
+窗口引用仅属于实例／配对权限代次及本角色窗口生命周期，关闭／隐藏重开、呈现／原生窗口重建、销毁或身份／权限改变后失效；正常返回 Agent 导致的焦点变化不使其失效。`foreground_exact` 和 `foreground_in_instance` 是本次采样，不代表已请求激活或已核实前台显示。引用不证明映射源／场景未变，也不授权操作；截图独立核对业务源及源Tab；109提供私有后台单项打开，121补固定高级窗；普通Default显示确认仍待。
 
 管理窗口的“显示窗口”与“截取窗口图像”是各自独立的权限，默认不授予，也不包含在 Read／Configure／Run mapping 中。新配对可单独勾选；已有配对在接口启用后，选中实际客户端，点击“授权窗口权限”追加批准，已有权限和配对密钥保留。批准实际新增权限后权限代次递增、该客户端的旧连接断开；使用 qkm_connect 明确重连取得新权限，无需重新配对。取消或没有新增项不写盘；保存失败关闭 MCP，原授权未成功改变。旧引用／预览属于原权限代次，应重新查询。
 
@@ -72,7 +72,7 @@ DEMO-P1-105交付授权基础，107／108新增窗口观察和捕获，109接私
 
 源查询要求 GUI idle、Worker stopped、最近加载成功，且读取基准为初始静止（read_basis=pristine_idle，cleanup_generation=null）或仍有效的完整清理许可（read_basis=completed_cleanup，cleanup_generation 为本实例清理代次字符串）；否则 context_busy，不主动停止映射。生命周期请求、按钮排队、任务构造和同步／包装在相关处理前记录活动修订，与在途复制互斥。只有完整停止协调、所有者／发送池及 GUI 尾部完成后，才在互斥内记录清理对应修订；任何后续活动或饱和值均拒绝该许可，不能仅凭 IDLE／STOPPED 或零计数恢复。相同映射跨启停后也必须重新查询引用。此许可只用于复制源数据，不能授权删除／修改源表或替代正式启停操作结果。source_snapshot 的配置选择和最近加载记录不能证明每行磁盘来源；未附着的共通备份可能保留自之前的配置，origin=source_memory 只证明当前内存来源。源修订仍不是完整业务修订。
 
-连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前十五个工具的 schema 均声明 `additionalProperties=false`，参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
+连接状态是最近一次核验结果；产品状态须显式重新查询，Worker 字段是跨线程的单次采样。当前十七个工具的 schema 均声明 `additionalProperties=false`，参数严格检查类型与范围，未知字段在进入工具函数前拒绝；C++ 仍独立检查业务请求参数。应用未启动／接口未启用时，MCP 初始化和工具枚举仍能完成，连接报告不可用；桥接不自行启动应用、提升权限、安装驱动或重新申请被撤销的授权。当前只有一个原生工作线程和一个在途请求，忙时拒绝叠加作业；没有写操作自动重试。
 
 ## 基本映射的预览与提交
 
@@ -187,7 +187,7 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 
 ## 专用演示实例只读预检（P2-114）
 
-宿主可在原`--discovery-file`／可信`--executable`外显式指定`--demo-record <私有创建记录>`，该桥接才额外提供无参数、只读的`qkm_get_demo_state`；普通入口仍15工具；115另增下述非行足迹查询，产品当前17项业务能力。此参数不创建进程、申请UAC或配对，不改变正常默认关闭；MCP客户端不能传入记录路径、任意PID或自己选择目标。当前是开发桥接入口，完整Release预热／免Python交付仍待P3／M3-B。
+宿主可在原`--discovery-file`／可信`--executable`外显式指定`--demo-record <私有创建记录>`，该桥接才额外提供无参数、只读的`qkm_get_demo_state`；P1-121后普通入口17工具，此参数增加为18工具；115另增下述非行足迹查询，产品当前19项业务能力。此参数不创建进程、申请UAC或配对，不改变正常默认关闭；MCP客户端不能传入记录路径、任意PID或自己选择目标。当前是开发桥接入口，完整Release预热／免Python交付仍待P3／M3-B。
 
 记录是受信启动链的目标约束，最多8KiB，严格包含`version=1`、`executable`绝对路径、十进制字符串`pid/created/session`、32位小写hex的`instance`、`desktop`及初始保存配置组`configuration`；没有密钥。目录和文件须为当前用户的私有ACL、非重解析对象／单链接普通文件。记录自报路径不产生信任：仍沿显式可信EXE、实际进程／创建时间／登录会话、认证管道核验，再与产品报告的实际桌面和实例逐项匹配。现有维护启动链可生成测试记录，正式预热生成和部署流程尚未交付。
 
@@ -205,7 +205,7 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 
 ## 专用单行串行演示（P2-117）
 
-部署端已准备独立运行副本／合成初始INI、受信创建记录和实际私有桌面实例时，可在现有桥接参数中同时指定 `--demo-record <私有记录> --enable-demo-mapping`。增加非只读、非幂等工具 `qkm_demo_mapping(original_key="A", mapping_key="B")`，只接收单个大写字母／数字；普通入口仍15工具，仅demo-record为16工具，两个参数同时启用为17工具，产品仍17项业务能力。显式开启不代替原GUI配对与Read+Configure+ShowWindows+CaptureWindows批准，不增加Run权限。
+部署端已准备独立运行副本／合成初始INI、受信创建记录和实际私有桌面实例时，可在现有桥接参数中同时指定 `--demo-record <私有记录> --enable-demo-mapping`。增加非只读、非幂等工具 `qkm_demo_mapping(original_key="A", mapping_key="B")`，只接收单个大写字母／数字；P1-121后普通入口17工具，仅demo-record为18工具，两个参数同时启用为19工具，产品19项业务能力。显式开启不代替原GUI配对与Read+Configure+ShowWindows+CaptureWindows批准，不增加Run权限。
 
 一次调用在原单worker内建立一个内存映射，按真实提交绑定核对完整行／其余空源及非行足迹，复用原后台单项窗入口和有界PNG，安全关闭后只删除本轮创建的行。返回单张原生MCP ImageContent；结构化结果保留实例／窗口／源／尺寸／SHA256及`demo_scene`场景ID、代次、业务键、原操作ID和`cleanup`证明。捕获源修订是历史图片上下文，回收源修订是后续空源，两者不得混用。桥接不写图片文件；Agent／gateway可以直接消费ImageContent的PNG，测试宿主在普通权限out保存供看图。QQ发送由gateway另行完成，`delivery`明确仅MCP图像、渠道送达未验证。
 
@@ -219,7 +219,7 @@ Win11双Qt各两轮A→B／C→D正式stdio完成，四张真实820×480单项�
 
 `qkm_demo_mapping(original_key="A", mapping_key="B", view="main")`使用相同固定部署／权限和归属行回收；view只允许main或item_setup，省略仍走原单项窗。写入前核对实际windows.capture角色声明。main仅查询并捕获已存在、可见／恢复的本实例主窗，不打开单项窗、不切换设定页、不请求显示或激活；未就绪按原失败／回收规则处理，不能自动改选其他窗口。`demo_scene.view`与原图像role对应。
 
-Win11双Qt各实际主窗A→B、随后默认单项C→D及Read负例通过，主窗1130×722 PNG可见真实A/B行，四张图片经Agent查看；复用117完全相同的本机Native二进制，未重编产品或测试夹具。主窗横向滚动表格当前仅可见部分列，不宣称全列内容或高级设定页已覆盖；完整源字段仍由正式业务查询核对。新增视图不改变正常15工具或配对／实例选择规则。
+Win11双Qt各实际主窗A→B、随后默认单项C→D及Read负例通过，主窗1130×722 PNG可见真实A/B行，四张图片经Agent查看；复用117完全相同的本机Native二进制，未重编产品或测试夹具。主窗横向滚动表格当前仅可见部分列，不宣称全列内容或高级设定页已覆盖；完整源字段仍由正式业务查询核对。新增视图不改变正常工具或配对／实例选择规则。
 
 
 ## 映射高级窗只读查询／捕获（P1-120）
@@ -228,4 +228,13 @@ Win11双Qt各实际主窗A→B、随后默认单项C→D及Read负例通过，�
 
 高级窗已经由原GUI显示且源安全可读时，用所查window_ref及当前source_revision／source_tab_ref调用`qkm_capture_window(role="mapping_advanced", ...)`，仍需独立Read+CaptureWindows。高级窗须对应当前源Tab，绘制前后复核与160KiB／8M像素上限保持；返回真实ImageContent。高级控件是实时加载设定，`settings_scope="live_loaded_settings_not_committed_by_source_revision"`明确其值未由源行修订提交，不能据此宣称完整配置已保存或未变化。未显示、旧窗／旧源、模态／popup或权限不足明确失败，不自动打开或切换目标。
 
-Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看；默认两角色兼容、无Capture（Read+Configure+Show）拒绝、开关前后源及非行足迹／INI保持已定向核对。无Capture用例中的固定GUI帧是测试夹具观察材料，MCP未返回图片。高级窗正式显示／归属关闭和串行demo view仍待，`qkm_demo_mapping.view`目前仍仅main／item_setup；不提供高级设置编辑。其他系统／Default／高DPI、独立子窗与完整交付缺口见唯一主计划。
+Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看；默认两角色兼容、无Capture（Read+Configure+Show）拒绝、开关前后源及非行足迹／INI保持已定向核对。无Capture用例中的固定GUI帧是测试夹具观察材料，MCP未返回图片。高级窗正式显示／归属关闭见下述121；串行demo view仍待，`qkm_demo_mapping.view`目前仍仅main／item_setup；不提供高级设置编辑。其他系统／Default／高DPI、独立子窗与完整交付缺口见唯一主计划。
+
+
+## 私有后台高级窗安全开关（P1-121）
+
+先查询实际能力mapping.settings.open／close及当前mapping_sources，使用当前附着源的source_tab_ref调用`qkm_open_mapping_settings(source_tab_ref=..., presentation="private_background")`。仅Read+ShowWindows，在实际非输入私有桌面复用原GUI入口显示固定高级窗，不切主窗设置页或请求激活；不提供任意PID／HWND／role／路径或设置编辑。已有编辑窗／子窗／popup、非空闲或不稳定数字拒绝。普通Default前台显示与人工确认仍属于另一个待交付流程。
+
+成功返回目标／源／窗口摘要；用返回window_ref和同一source_tab_ref调用`qkm_close_mapping_settings(..., presentation="private_background")`。只关闭本owner正式打开、完整源及全部输入摘要未变化的窗；GUI打开的窗为editor_not_owned，数值或未提交数字变化为editor_draft_changed，保留现场，不提供discard。旧源／旧窗及权限／身份变化拒绝；失败／断线先查询实际状态，不能自动重发、清草稿或换目标。
+
+截图仍另需CaptureWindows。已归属高级窗的图片元数据可能包含`settings_editor_unchanged`布尔，表示捕获前后输入摘要是否仍与本次打开记录相同；false的实时图片不能作为该演示已确认的初始场景，缺失也不能推定true。它不代替源／非行足迹核验或安全关闭，普通GUI实时图片仍可能展示草稿。正式串行高级view下一片接线，当前qkm_demo_mapping仍仅main／item_setup。无高级参数编辑、预热、免Python或QQ送达承诺。

@@ -127,3 +127,10 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 ## DEMO-P1-120 高级角色只读捕获
 
 同一SDK模块以capture=True运行advanced_gui／advanced_gui_no_capture，分别批准387／131；沿119原GUI入口取得自身帧，并调用正式显式高级角色查询／PNG捕获，验证默认两角色兼容、旧源／旧窗、非windows实体参数拒绝及无Capture不返回MCP图片。固定GUI证据文件与正式MCP图像分别计数，不把测试观察材料当成权限授予。最后仍核对原GUI恢复／完整设定与源，正式删除归属行、正常退出及公共登记清理。
+
+
+## DEMO-P1-121 高级窗归属与数值草稿
+
+`settings_save_apply`／`settings_window`批准387，`settings_no_show`批准259（无Show）；普通SDK模块[mapping_settings_acceptance.py](../../../mcp_bridge/tests/mapping_settings_acceptance.py)先正式建A→B，原Qt Tab／按钮与Escape形成GUI拒绝接管基线，再正式高级open／capture／close两轮。固定.settings-edit／settings-restore以真实Qt Ctrl+A和字符事件将鼠标X倍率3→4→3，核对草稿关闭拒绝、图片未变化标记、恢复及旧window_ref；不运行映射或系统输入。无Show零GUI／MCP图，正式回收本轮行。
+
+未提交数字另在隐藏高级窗组件中临时关闭原keyboardTracking，以相同Qt事件形成text≠value，检查只读指纹拒绝，再恢复文本和原属性；它是明确的准入组件注入，不替代独立GUI基线。另验非GUI线程拒绝，保留原ActivationChange。最后核对完整源／非行足迹、主窗页、输入指纹、INI／加载／dirty及正常退出和公共登记五项清理；产品启动／关闭才用已有授权缓存，SDK／构建／图片消费保持普通权限。

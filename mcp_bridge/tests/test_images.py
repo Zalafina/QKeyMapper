@@ -46,6 +46,16 @@ class ImageTests(unittest.TestCase):
         with self.assertRaises(BridgeError):
             validate_capture(original, discovery, arguments)
 
+    def test_owned_advanced_capture_match_is_an_optional_strict_boolean(self):
+        original, discovery, arguments, _ = fixture()
+        arguments["role"] = original["role"] = "mapping_advanced"
+        original["settings_scope"] = "live_loaded_settings_not_committed_by_source_revision"
+        for matched in (True, False):
+            self.assertIs(validate_capture({**original, "settings_editor_unchanged": matched}, discovery, arguments)["settings_editor_unchanged"], matched)
+        for invalid in (None, 0, 1, "true"):
+            with self.subTest(value=invalid), self.assertRaises(BridgeError):
+                validate_capture({**original, "settings_editor_unchanged": invalid}, discovery, arguments)
+
     def test_valid_png_and_no_duplicate_base64(self):
         from qkeymapper_mcp.__main__ import image_tool_result
         value, discovery, arguments, png = fixture()

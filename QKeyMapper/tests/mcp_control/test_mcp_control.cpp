@@ -151,6 +151,7 @@ private slots:
     void windowAdvancedObservation();
     void windowCaptureBoundaries();
     void mappingEditorArguments();
+    void mappingSettingsArguments();
     void privateBackgroundDesktopGuard();
     void editorDraftGuard();
     void rejectAndClose_data();
@@ -1446,6 +1447,38 @@ void McpControlTest::mappingEditorArguments()
     QCOMPARE(closeCapability.value(QStringLiteral("read_only")), QJsonValue(false));
 }
 
+void McpControlTest::mappingSettingsArguments()
+{
+    const QString revision(64, QLatin1Char('a'));
+    const QJsonObject valid{{QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:2")},
+        {QStringLiteral("presentation"), QStringLiteral("private_background")}};
+    const auto parsed = parseMappingSettingsArguments(valid);
+    QVERIFY(parsed.ok()); QCOMPARE(parsed.sourceRevision, revision); QCOMPARE(parsed.sourceTab, 2); QCOMPARE(parsed.sourceRow, -1);
+    QVERIFY(!parseMappingEditorArguments(valid).ok());
+    for (const auto &extra : QList<QJsonObject>{
+            {{QStringLiteral("source_tab_ref"), 1}}, {{QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:02")}},
+            {{QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:-1")}},
+            {{QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:2147483648")}},
+            {{QStringLiteral("source_tab_ref"), revision + QStringLiteral(":row:2:0")}},
+            {{QStringLiteral("presentation"), QStringLiteral("foreground")}}, {{QStringLiteral("discard"), true}},
+            {{QStringLiteral("pid"), 1}}, {{QStringLiteral("hwnd"), QStringLiteral("1")}}, {{QStringLiteral("path"), QStringLiteral("test.exe")}}}) {
+        auto invalid = valid;
+        for (auto it = extra.begin(); it != extra.end(); ++it) invalid.insert(it.key(), it.value());
+        QVERIFY(!parseMappingSettingsArguments(invalid).ok());
+    }
+    auto closing = valid; closing.insert(QStringLiteral("window_ref"), QString(64, QLatin1Char('b')));
+    QVERIFY(parseMappingSettingsCloseArguments(closing).ok());
+    QVERIFY(!parseMappingSettingsCloseArguments(valid).ok());
+    closing.insert(QStringLiteral("window_ref"), QString(64, QLatin1Char('B')));
+    QVERIFY(!parseMappingSettingsCloseArguments(closing).ok());
+    for (bool close : {false, true}) {
+        const auto capability = mappingSettingsCapability(close);
+        QCOMPARE(capability.value(QStringLiteral("required_scopes")).toInt(), int(Read | ShowWindows));
+        QCOMPARE(capability.value(QStringLiteral("read_only")), QJsonValue(false));
+        QCOMPARE(capability.value(QStringLiteral("arguments_schema")).toObject().value(QStringLiteral("additionalProperties")), QJsonValue(false));
+    }
+}
+
 void McpControlTest::editorDraftGuard()
 {
     QWidget main, item;
@@ -1479,7 +1512,8 @@ void McpControlTest::editorDraftGuard()
     QByteArray fromWorker;
     std::thread worker([&]() { fromWorker = windowInputFingerprint(&item); });
     worker.join(); QVERIFY(fromWorker.isEmpty());
-    WindowAccess access(&main, &item);
+    QDialog advanced(&main);
+    WindowAccess access(&main, &item, &advanced);
     item.show(); QVERIFY(QTest::qWaitForWindowExposed(&item));
     const QString source = QString(64, QLatin1Char('a')) + QStringLiteral(":row:0:0");
     const auto opened = windowInputFingerprint(&item);
@@ -1503,6 +1537,15 @@ void McpControlTest::editorDraftGuard()
     QCoreApplication::sendEvent(&item, &nativeChange);
     QVERIFY(!access.ownsEditor(source));
     item.close();
+    advanced.show(); QVERIFY(QTest::qWaitForWindowExposed(&advanced));
+    const QString settingsSource = QString(64, QLatin1Char('a')) + QStringLiteral(":source:0");
+    const QString role = QStringLiteral("mapping_advanced");
+    access.rememberEditor(settingsSource, windowInputFingerprint(&advanced), role);
+    QVERIFY(access.ownsEditor(settingsSource, role));
+    QVERIFY(!access.ownsEditor(settingsSource));
+    advanced.hide(); QVERIFY(!access.ownsEditor(settingsSource, role));
+    advanced.show(); QVERIFY(!access.ownsEditor(settingsSource, role));
+    advanced.close();
 }
 
 void McpControlTest::privateBackgroundDesktopGuard()

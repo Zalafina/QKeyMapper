@@ -267,6 +267,21 @@ def main() -> None:
         """安全关闭本认证会话通过正式open打开且内容未变的单项设定窗，必须另获ShowWindows。只接受当前source_ref／window_ref及private_background；C++核验实际后台私有非输入桌面、完整安全源／真实源行、打开记录及全部现有输入和待应用备注摘要。不关闭仅GUI打开的窗，不提供discard开关；草稿／来源／权限／窗口变化或其他编辑窗存在时拒绝，不自动应用、丢弃、切Tab、停映射或重试。成功返回已核实隐藏的窗口和目标／源摘要；这不清空映射、不保存，也不构成演示重置。失败或断线后先query windows核对实际结果。"""
         return tool_result(await bridge.close_mapping_editor(source_ref, window_ref, presentation))
 
+    @tool(connection)
+    async def qkm_open_mapping_settings(
+            source_tab_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")],
+            presentation: Literal["private_background"]) -> ToolResult:
+        """只在已核验后台私有非输入桌面，通过原入口打开本实例固定映射高级设定窗，需要Read+ShowWindows。source_tab_ref须为当前已加载、安全空闲的附着源；不切换主窗设置页、不请求激活、不修改参数或启动映射。已有编辑窗／菜单／通知子窗、表格编辑或未稳定数字拒绝，不替换已有窗口。成功返回实际源／窗口引用并记录本owner的输入摘要；截图另需CaptureWindows。失败或断线先query固定mapping_advanced，勿盲目重发。"""
+        return tool_result(await bridge.open_mapping_settings(source_tab_ref, presentation))
+
+    @tool(connection)
+    async def qkm_close_mapping_settings(
+            source_tab_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")],
+            window_ref: Annotated[str, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")],
+            presentation: Literal["private_background"]) -> ToolResult:
+        """安全关闭本owner正式打开且输入未变的固定映射高级设定窗，需要Read+ShowWindows及当前source_tab_ref／window_ref。实际后台私有桌面、完整安全源、当前Tab／权限和打开记录再次核验；仅GUI打开、参数／待输入数字或子窗变化时拒绝并保留，不提供discard或自动应用。成功核实隐藏、输入和源不变；不保存、不删除映射、不改配对或启动状态。失败或断线先query实际窗口；旧引用、操作结果未知都不能据此自动重试。"""
+        return tool_result(await bridge.close_mapping_settings(source_tab_ref, window_ref, presentation))
+
     @tool(read)
     async def qkm_get_operation(
             operation_id: Annotated[str, Field(min_length=32, max_length=32, pattern="^[0-9a-f]{32}$")]) -> ToolResult:

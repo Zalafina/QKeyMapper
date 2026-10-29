@@ -1032,3 +1032,7 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P1-120：固定高级只读角色
 
 默认windows仍main／item_setup；显式window_role=mapping_advanced观察固定高级窗，Read不创建／显示。Read+Capture可取得已显示高级窗真实PNG，当前源Tab／完整安全源及窗口代次复核，settings_scope明确实时非行设定未由源修订提交。Python37、双Qt组件各5含init／cleanup及四场24 Native／98 handler／112 SDK通过；两张正式图与同次GUI帧字节相等并经Agent查看，无Capture131零MCP图，完整源／设定／INI及退出清理保持。见[同一C1证据](map67c1_validation.md#demo-p1-120高级窗只读角色观察捕获2026-10-29pc-w11)。工具／能力数量不变，正式高级显示／归属关闭／demo view及编辑、系统与交付缺口仍待，完整P1／P2／M1未完成。
+
+## DEMO-P1-121：高级窗受限开关
+
+固定open／close settings工具及两项能力，Read+Show、当前源Tab／实际私有后台及窗口归属、完整源／全部输入稳定性复核；不接任意目标或discard。只关闭本owner正式打开且无草稿窗，原GUI窗不可接管；高级捕获额外可选settings_editor_unchanged不改普通实时图片含义。普通17／仅记录18／显式演示19工具，产品19能力。双Qt组件18、复用本片Python38及四场36 Native／96 handler／112 SDK＋56 schema；六张正式图与实际3→4→3／拒绝恢复、原GUI及120字节对照、源context／INI和退出清理通过。见[同一C1证据](map67c1_validation.md#demo-p1-121高级窗私有归属开关2026-10-29pc-w11)。高级串行view／正式设置编辑、系统及部署缺口仍待，未标完整P1／P2／M1。

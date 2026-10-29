@@ -2,6 +2,7 @@
 #include "qkm_auth_proof.h"
 #include "qkm_local_identity.h"
 #include "qkm_pair_store.h"
+#include "qkm_source_snapshot.h"
 #include <QApplication>
 #include <QCryptographicHash>
 #include <QDateTime>
@@ -79,6 +80,27 @@ MappingEditorCloseArguments parseMappingEditorCloseArguments(const QJsonObject &
     return source.ok() ? MappingEditorCloseArguments{source, window} : MappingEditorCloseArguments{};
 }
 
+MappingEditorArguments parseMappingSettingsArguments(const QJsonObject &arguments)
+{
+    if (arguments.size() != 2 || !arguments.value(QStringLiteral("source_tab_ref")).isString()
+        || arguments.value(QStringLiteral("presentation")) != QJsonValue(QStringLiteral("private_background"))) return {};
+    const QString reference = arguments.value(QStringLiteral("source_tab_ref")).toString();
+    const QString revision = reference.section(QLatin1Char(':'), 0, 0);
+    if (!validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
+        {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), reference}}).ok()) return {};
+    return {reference, revision, reference.section(QLatin1Char(':'), 2, 2).toInt(), -1};
+}
+
+MappingEditorCloseArguments parseMappingSettingsCloseArguments(const QJsonObject &arguments)
+{
+    if (arguments.size() != 3 || !arguments.value(QStringLiteral("window_ref")).isString()
+        || !isLowerHex(arguments.value(QStringLiteral("window_ref")).toString(), 64)) return {};
+    auto opening = arguments;
+    const QString window = opening.take(QStringLiteral("window_ref")).toString();
+    const auto source = parseMappingSettingsArguments(opening);
+    return source.ok() ? MappingEditorCloseArguments{source, window} : MappingEditorCloseArguments{};
+}
+
 QByteArray windowInputFingerprint(const QWidget *window)
 {
     if (!guiThread() || !window || window->thread() != qApp->thread()) return {};
@@ -140,6 +162,31 @@ QJsonObject mappingEditorCloseCapability()
     return result;
 }
 
+QJsonObject mappingSettingsCapability(bool closing)
+{
+    QJsonObject properties{
+        {QStringLiteral("source_tab_ref"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("maxLength"), 128},
+            {QStringLiteral("pattern"), QStringLiteral("^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")}}},
+        {QStringLiteral("presentation"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("const"), QStringLiteral("private_background")}}}};
+    QJsonArray required{QStringLiteral("source_tab_ref"), QStringLiteral("presentation")};
+    if (closing) {
+        properties.insert(QStringLiteral("window_ref"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("pattern"), QStringLiteral("^[0-9a-f]{64}$")}});
+        required.append(QStringLiteral("window_ref"));
+    }
+    return {{QStringLiteral("id"), closing ? QStringLiteral("mapping.settings.close") : QStringLiteral("mapping.settings.open")},
+        {QStringLiteral("method"), closing ? QStringLiteral("qkm_close_mapping_settings") : QStringLiteral("qkm_open_mapping_settings")},
+        {QStringLiteral("required_scopes"), int(Read | ShowWindows)}, {QStringLiteral("read_only"), false},
+        {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+            {QStringLiteral("additionalProperties"), false}, {QStringLiteral("properties"), properties}, {QStringLiteral("required"), required}}},
+        {QStringLiteral("limitations"), QJsonArray{QStringLiteral("fixed_mapping_advanced_private_non_input_desktop"),
+            QStringLiteral("current_safe_source_tab_only_no_setting_edits"),
+            closing ? QStringLiteral("unchanged_window_opened_by_this_owner_only") : QStringLiteral("existing_window_is_not_replaced"),
+            QStringLiteral("does_not_request_activation_or_change_mapping")}}};
+}
+
 WindowAccess::WindowAccess(QWidget *main, QWidget *itemSetup, QWidget *mappingAdvanced)
     : QObject(main), m_windows{{main, itemSetup, mappingAdvanced}}
 {
@@ -148,7 +195,7 @@ WindowAccess::WindowAccess(QWidget *main, QWidget *itemSetup, QWidget *mappingAd
 
 bool WindowAccess::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched == m_windows[1].data() && (event->type() == QEvent::Show || event->type() == QEvent::Hide
+    if (watched == m_windows[size_t(m_editorIndex)].data() && (event->type() == QEvent::Show || event->type() == QEvent::Hide
         || event->type() == QEvent::Destroy || event->type() == QEvent::WinIdChange)) {
         m_editorSourceReference.clear();
         m_editorDraftFingerprint.clear();
@@ -269,16 +316,19 @@ QWidget *WindowAccess::resolve(const QString &role, const QString &reference, co
     return nullptr;
 }
 
-void WindowAccess::rememberEditor(const QString &sourceReference, const QByteArray &draftFingerprint)
+void WindowAccess::rememberEditor(const QString &sourceReference, const QByteArray &draftFingerprint, const QString &role)
 {
-    if (!guiThread()) return;
+    const int index = role == QStringLiteral("item_setup") ? 1 : role == QStringLiteral("mapping_advanced") ? 2 : -1;
+    if (!guiThread() || index < 0) return;
+    m_editorIndex = index;
     m_editorSourceReference = sourceReference;
     m_editorDraftFingerprint = draftFingerprint;
 }
 
-bool WindowAccess::ownsEditor(const QString &sourceReference) const
+bool WindowAccess::ownsEditor(const QString &sourceReference, const QString &role) const
 {
-    return guiThread() && m_windows[1] && m_windows[1]->isVisible()
+    return guiThread() && role == QLatin1String(Roles[m_editorIndex])
+        && m_windows[size_t(m_editorIndex)] && m_windows[size_t(m_editorIndex)]->isVisible()
         && !m_editorSourceReference.isEmpty() && m_editorSourceReference == sourceReference;
 }
 
