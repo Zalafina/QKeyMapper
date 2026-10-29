@@ -4,6 +4,7 @@
 #include "automation/qkm_mapping_help.h"
 #include "automation/qkm_mapping_changes.h"
 #include "automation/qkm_window_access.h"
+#include "automation/qkm_demo_mode.h"
 #include "automation/qkm_window_image.h"
 #include <QtMath>
 #include "qkeymapper.h"
@@ -3679,7 +3680,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug() << "[QKeyMapper()]" << "isFakerInputInstalled() ->" << isFakerInputInstalled();
 #endif
     // Initialize FakerInput client if the driver is installed
-    if (isFakerInputInstalled()) {
+    if (!QkmAutomation::configurationOnlyDemo() && isFakerInputInstalled()) {
         int fakerinput_retval_alloc = QKeyMapper_Worker::FakerInputClient_Alloc();
         int fakerinput_retval_connect = QKeyMapper_Worker::FakerInputClient_Connect();
         Q_UNUSED(fakerinput_retval_alloc);
@@ -3707,7 +3708,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     qDebug() << "[QKeyMapper]" << "isViGEmBusInstalled() ->" << isViGEmBusInstalled();
 #endif
     // Initialize ViGEmBus client if the driver is installed
-    if (isViGEmBusInstalled()) {
+    if (!QkmAutomation::configurationOnlyDemo() && isViGEmBusInstalled()) {
         int retval_alloc = QKeyMapper_Worker::ViGEmClient_Alloc();
         int retval_connect = QKeyMapper_Worker::ViGEmClient_Connect();
         Q_UNUSED(retval_alloc);
@@ -4073,7 +4074,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     applyResizeLayout(0, 0);  // ensure initial layout matches base window size
     // resizeAllKeyMappingTabWidgetColumnWidth();
 #if defined(QT_NO_DEBUG) && defined(AUTO_REFRESH_PROCESSINFOLIST)
-    m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
+    if (!QkmAutomation::configurationOnlyDemo()) m_ProcessInfoTableRefreshTimer.start(CYCLE_REFRESH_PROCESSINFOTABLE_TIMEOUT);
 #endif
 
 //    if (false == loadresult){
@@ -5288,6 +5289,7 @@ void QKeyMapper::cycleRefreshProcessInfoTableProc()
 
 void QKeyMapper::updateHWNDListProc()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     s_hWndList.clear();
     QString processNameString = m_MapProcessInfo.FileName;
     QString windowTitleString = m_MapProcessInfo.WindowTitle;
@@ -5414,6 +5416,7 @@ void QKeyMapper::setKeyUnHook(void)
 
 void QKeyMapper::setKeyMappingRestart()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
     const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal(lifecycleWork);
@@ -5422,6 +5425,7 @@ void QKeyMapper::setKeyMappingRestart()
 
 void QKeyMapper::startWinEventHook()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (s_WinEventHook == Q_NULLPTR) {
         s_WinEventHook = SetWinEventHook(
             EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
@@ -5660,6 +5664,7 @@ bool QKeyMapper::isWindowsFilterKeysEnabled()
 
 bool QKeyMapper::setWindowsFilterKeysEnabled(bool enable, bool clickSoundEnabled)
 {
+    if (QkmAutomation::denyDemoEffect()) return false;
     FILTERKEYS filterKeys;
     if (!readWindowsFilterKeys(filterKeys) || !(filterKeys.dwFlags & FKF_AVAILABLE)) {
         return false;
@@ -15039,6 +15044,7 @@ bool QKeyMapper::validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata)
 ValidationResult QKeyMapper::updateWithZipUpdater(const QString &update_filepath)
 {
     ValidationResult result;
+    if (QkmAutomation::denyDemoEffect()) { result.isValid = false; return result; }
     result.isValid = true;
 
     QFileInfo updateFileInfo(update_filepath);
@@ -16676,6 +16682,7 @@ void QKeyMapper::initMappingStartActionMenu(void)
 
 bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode startmode, bool preferPhysicalCtrlState)
 {
+    if (QkmAutomation::denyDemoEffect()) return false;
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
     if (KEYMAP_IDLE == m_KeyMapStatus
         && MAPPINGSTART_LOADSETTING != startmode
@@ -16743,6 +16750,7 @@ bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode s
 
 void QKeyMapper::beginMappingStop()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     const bool wasMatched = m_KeyMapStatus == KEYMAP_MAPPING_MATCHED;
     m_mappingStopRestoreSetting.clear();
     if (ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX
@@ -16918,6 +16926,7 @@ void QKeyMapper::finishMappingStop(quint64 operation, quint64 generation)
 
 void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
     if (KEYMAP_IDLE != m_KeyMapStatus) {
         beginMappingStop();
@@ -31447,6 +31456,7 @@ void QKeyMapper::closeTableSetupDialog()
 
 int QKeyMapper::installInterceptionDriver()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QString operate_str = QString("runas");
     QString executable_str = QString("InterceptionDriver\\install-interception.exe");
     QString argument_str = QString("/install");
@@ -31481,6 +31491,7 @@ int QKeyMapper::installInterceptionDriver()
 
 int QKeyMapper::uninstallInterceptionDriver()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QString operate_str = QString("runas");
     QString executable_str = QString("InterceptionDriver\\install-interception.exe");
     QString argument_str = QString("/uninstall");
@@ -31515,6 +31526,7 @@ int QKeyMapper::uninstallInterceptionDriver()
 
 int QKeyMapper::installFakerInputDriver()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QString operate_str = QString("runas");
     QString create_devnode_argument_str = QString("--create-device-node --hardware-id root\\FakerInput --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
     QString executable_str;
@@ -31591,6 +31603,7 @@ int QKeyMapper::installFakerInputDriver()
 
 int QKeyMapper::uninstallFakerInputDriver()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QString operate_str = QString("runas");
     QString remove_devnode_argument_str = QString("--remove-device-node --hardware-id root\\FakerInput --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
     QString executable_str;
@@ -31667,6 +31680,7 @@ int QKeyMapper::uninstallFakerInputDriver()
 #ifdef VIGEM_CLIENT_SUPPORT
 int QKeyMapper::installViGEmBusDriver()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QString operate_str = QString("runas");
     QString remove_old_devnode1_argument_str = QString("--remove-device-node --hardware-id Nefarius\\ViGEmBus\\Gen1 --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
     QString remove_old_devnode2_argument_str = QString("--remove-device-node --hardware-id Root\\ViGEmBus --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
@@ -31781,6 +31795,7 @@ int QKeyMapper::installViGEmBusDriver()
 
 int QKeyMapper::uninstallViGEmBusDriver()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QString operate_str = QString("runas");
     QString remove_devnode_argument_str = QString("--remove-device-node --hardware-id Nefarius\\ViGEmBus\\Gen1 --class-name System --class-guid 4D36E97D-E325-11CE-BFC1-08002BE10318");
     QString executable_str;
@@ -31923,6 +31938,7 @@ void QKeyMapper::updateVirtualGamepadListDisplay()
 
 void QKeyMapper::reconnectViGEmClient()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[reconnectViGEmClient()]" << "isViGEmBusInstalled() ->" << isViGEmBusInstalled();
 #endif
@@ -32001,6 +32017,7 @@ void QKeyMapper::updateFakerInputStatus()
 
 void QKeyMapper::reconnectFakerInputClient()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[reconnectFakerInputClient()]" << "isFakerInputInstalled() ->" << isFakerInputInstalled();
 #endif
@@ -32121,7 +32138,7 @@ void QKeyMapper::updateGamepadSelectComboBox(int instance_id)
     QMap<int, Gamepad_Info> GamepadInfoMap;
     QString changed_gamepad_string;
 
-    QList<QJoystickDevice *> joysticklist = QJoysticks::getInstance()->inputDevices();
+    QList<QJoystickDevice *> joysticklist = QkmAutomation::configurationOnlyDemo() ? QList<QJoystickDevice *>() : QJoysticks::getInstance()->inputDevices();
 
     for (const QJoystickDevice *joystick : std::as_const(joysticklist)) {
         int player_index = joystick->playerindex;
@@ -32868,6 +32885,7 @@ void QKeyMapper::resizeProcessInfoTableColumnWidth()
 
 void QKeyMapper::refreshProcessInfoTable(bool resize)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     bool isSelected = false;
     QString selectedProcess;
     QString selectedPID;
@@ -37826,7 +37844,7 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     case HOOKPROC_STATE_RESTART_STOPPING: workerState = "restart_stopping"; break;
     case HOOKPROC_STATE_RESTART_STARTING: workerState = "restart_starting"; break;
     }
-    return {{QStringLiteral("schema_version"), 1},
+    QJsonObject result{{QStringLiteral("schema_version"), 1},
         {QStringLiteral("instance"), m_McpControlDialog->server().instanceId()},
         {QStringLiteral("business_revision"), QJsonValue(QJsonValue::Null)},
         {QStringLiteral("configuration"), QJsonObject{{QStringLiteral("group"), group},
@@ -37851,6 +37869,8 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             {QStringLiteral("stop_completion"), automationSourceReadBasis() == QStringLiteral("completed_cleanup")
                 ? QStringLiteral("observed") : QStringLiteral("unobserved")},
             {QStringLiteral("actual_stop_shortcut"), s_MappingStopKeyString}}}};
+    if (QkmAutomation::configurationOnlyDemo()) result.insert(QStringLiteral("execution_policy"), QkmAutomation::configurationOnlyPolicy());
+    return result;
 }
 
 static QJsonObject automationSourceRow(const MAP_KEYDATA &data)
@@ -48161,6 +48181,7 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
 
 void QKeyMapper::on_autoStartupCheckBox_stateChanged(int state)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[autoStartup] Auto startup state changed ->" << (Qt::CheckState)state;
 #endif
@@ -48254,6 +48275,7 @@ void QKeyMapper::on_languageComboBox_currentIndexChanged(int index)
 
 void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     Q_UNUSED(state);
     bool check_state = ui->enableVirtualJoystickCheckBox->isChecked();
 #ifdef DEBUG_LOGOUT_ON
@@ -48354,6 +48376,7 @@ void QKeyMapper::on_enableVirtualJoystickCheckBox_stateChanged(int state)
 
 void QKeyMapper::on_installViGEmBusButton_clicked()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
 #ifdef VIGEM_CLIENT_SUPPORT
     if (QKeyMapper_Worker::VIGEMCLIENT_CONNECT_SUCCESS == QKeyMapper_Worker::ViGEmClient_getConnectState()) {
 #ifdef DEBUG_LOGOUT_ON
@@ -48439,6 +48462,7 @@ void QKeyMapper::on_installViGEmBusButton_clicked()
 
 void QKeyMapper::on_installFakerInputButton_clicked()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     QKeyMapper_Worker::FakerInputClient_ConnectState connectstate = QKeyMapper_Worker::FakerInputClient_getConnectState();
 
     if (QKeyMapper_Worker::FAKERINPUT_CONNECT_SUCCESS == connectstate) {
@@ -49124,6 +49148,7 @@ void QKeyMapper::onVButtonPanelSetupDialogClosed()
 #if 0
 void QKeyMapper::on_uninstallViGEmBusButton_clicked()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
 #ifdef VIGEM_CLIENT_SUPPORT
 
 #ifdef DEBUG_LOGOUT_ON
@@ -49145,6 +49170,7 @@ void QKeyMapper::on_uninstallViGEmBusButton_clicked()
 
 void QKeyMapper::on_installInterceptionButton_clicked()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     Interception_Worker::Interception_State currentInterceptionState = Interception_Worker::getInterceptionState();
 
     if (Interception_Worker::INTERCEPTION_AVAILABLE == currentInterceptionState) {
@@ -51391,6 +51417,7 @@ bool QKeyMapper::deleteMappingTableByTabIndex(int tabIndex)
 
 void QKeyMapper::on_checkUpdateButton_clicked()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     QString qkeymapper_updates_url;
 
     if (UPDATE_SITE_GITEE == ui->updateSiteComboBox->currentIndex()) {

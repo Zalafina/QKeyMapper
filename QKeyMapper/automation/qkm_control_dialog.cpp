@@ -1,4 +1,5 @@
 #include "qkm_control_dialog.h"
+#include "qkm_demo_mode.h"
 
 #include <QCoreApplication>
 #include <QCheckBox>
@@ -179,7 +180,7 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
     connect(m_approve, &QPushButton::clicked, this, [this]() {
         quint32 scopes = Read;
         if (m_configure->isChecked()) scopes |= Configure;
-        if (m_run->isChecked()) scopes |= RunMapping;
+        if (m_run->isChecked() && !configurationOnlyDemo()) scopes |= RunMapping;
         if (m_showWindows->isChecked()) scopes |= ShowWindows;
         if (m_captureWindows->isChecked()) scopes |= CaptureWindows;
         if (!m_server.approvePairing(m_pending.requestId, scopes)) {
@@ -208,7 +209,7 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
         m_showWindows->setChecked(false);
         m_captureWindows->setChecked(false);
         m_configure->setEnabled(true);
-        m_run->setEnabled(true);
+        m_run->setEnabled(!configurationOnlyDemo());
         m_showWindows->setEnabled(true);
         m_captureWindows->setEnabled(true);
         m_approve->setEnabled(true);

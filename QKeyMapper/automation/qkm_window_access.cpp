@@ -1,4 +1,5 @@
 #include "qkm_window_access.h"
+#include "qkm_demo_mode.h"
 #include "qkm_auth_proof.h"
 #include "qkm_local_identity.h"
 #include "qkm_pair_store.h"
@@ -56,18 +57,7 @@ MappingEditorArguments parseMappingEditorArguments(const QJsonObject &arguments)
 
 bool privateBackgroundDesktopAvailable()
 {
-    if (!guiThread()) return false;
-    wchar_t station[256]{}, current[256]{}, input[256]{};
-    DWORD needed = 0;
-    if (!GetUserObjectInformationW(GetProcessWindowStation(), UOI_NAME, station, sizeof(station), &needed)
-        || QString::fromWCharArray(station).compare(QStringLiteral("WinSta0"), Qt::CaseInsensitive) != 0
-        || !GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, current, sizeof(current), &needed)
-        || QString::fromWCharArray(current).compare(QStringLiteral("Default"), Qt::CaseInsensitive) == 0) return false;
-    const HDESK inputDesktop = OpenInputDesktop(0, FALSE, DESKTOP_READOBJECTS);
-    if (!inputDesktop) return false;
-    const bool known = GetUserObjectInformationW(inputDesktop, UOI_NAME, input, sizeof(input), &needed) != FALSE;
-    CloseDesktop(inputDesktop);
-    return known && QString::fromWCharArray(current).compare(QString::fromWCharArray(input), Qt::CaseInsensitive) != 0;
+    return guiThread() && currentThreadOnPrivateDesktop();
 }
 
 MappingEditorCloseArguments parseMappingEditorCloseArguments(const QJsonObject &arguments)

@@ -1044,3 +1044,8 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## PKG-123：免全局Python桥接组件
 
 固定3.11.9 x64嵌入运行时＋29项原锁wheel，标准库离线输入组装，新目录／ZIP与1614项载荷清单、PE签名／hash及提取边界检查；包内-I／._pth隔离，无运行端pip／仓库／全局解释器。独立builder 7项、中文／空格及污染环境的导入／17工具／无产品异步失败、原manifest Qt6私有目标高级／默认单项两轮通过，6 Native／68 handler／23 SDK＋8 schema及两图／源INI与清理保持，见[同一C1证据](map67c1_validation.md#pkg-123固定嵌入运行时桥接组件包2026-10-29pc-w11)。工具／能力不增加。仅组件包，本机未断网／卸载Python，普通Release集成、干净双系统／断网、Qt5包集成、P3／完整M3-B和QQ未完成；开发缓存不随包。
+
+
+## DEMO-P3-124：只配置启动门禁
+
+固定--demo-configuration-only在QApplication／所有单例前不可变确定，限定实际非Default／非输入桌面。原事件线程及完整关闭保留，设备／Hook／SDL运行初始化、系统输入／映射／任务准入、驱动／外部命令／更新和Windows任务／FilterKeys写入口受产品拒绝；UI禁用不是安全边界。模式会话上限387，新Run拒绝，旧511配对仅运行时交集、持久权限／密钥不变；模式能力／状态提供execution_policy，普通结果及MCP默认关闭保持。双Qt六构建、40组件及六场72 Native／302 handler／122 SDK＋48 schema、八图／源INI和清理通过，见[同一C1证据](map67c1_validation.md#demo-p3-124只配置门禁2026-10-29pc-w11)。仅自有私有与安全初始INI，无Default、实际危险动作／驱动／运行态输入或QQ覆盖；固定预热角色／正式创建证明和一次UAC／人工配对、完整P3／M3-B尚待，不作为完整交付承诺。

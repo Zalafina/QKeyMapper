@@ -2,6 +2,7 @@
 
 #include "qkeymapper_constants.h"
 #include "qkeymapper_qt_compat.h"
+#include "automation/qkm_demo_mode.h"
 #include "qkm_input_producer_work.h"
 
 #include <QByteArray>
@@ -296,6 +297,7 @@ void Interception_Worker::acknowledgeInputFences()
 
 bool Interception_Worker::doLoadInterception()
 {
+    if (QkmAutomation::denyDemoEffect()) return false;
     bool result = false;
     s_InterceptionContext = interception_create_context();
     if (s_InterceptionContext == Q_NULLPTR) {
@@ -437,6 +439,7 @@ void Interception_Worker::setRebootRequiredFlag()
 
 void Interception_Worker::startInterception()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (s_InterceptionContext == Q_NULLPTR) {
         return;
     }
@@ -882,6 +885,7 @@ QString Interception_Worker::getDeviceDescription(InterceptionDevice device)
 
 void Interception_Worker::setInputDeviceDisabled(InterceptionDevice device, bool disabled)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (interception_is_invalid(device)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace() << "[setInputDeviceDisabled] Invalid InputDevice[" << device << "]";

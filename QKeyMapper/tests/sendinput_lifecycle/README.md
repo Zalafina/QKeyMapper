@@ -139,3 +139,12 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 ## DEMO-P2-122 高级串行view
 
 沿demo_sequence／demo_sequence_read及现有demo_scene_acceptance.py，views固定(mapping_advanced,item_setup)，Read负例也明确请求高级view。C++夹具不变，双Qt复用121已验本机制品及安全初始INI，普通SDK正式建例／高级图／归属安全关闭／源行回收后接默认单项。高级图片输入未变标记必须true，SDK另核对固定高级窗已隐藏；Native继续独立核对完整空源／INI／dirty／代次和无runtime输入，实际目标退出及公共登记清理分别留证。原GUI基线119及归属／草稿定向121保留其原范围，不用串行助手冒充独立GUI。
+
+
+## DEMO-P3-124 只配置启动模式
+
+同一原manifest目标增加固定`--demo-configuration-only`参数；模式在QApplication／所有单例之前确定，要求实际WinSta0非Default且非输入桌面，不接受运行中切换。沿`settings_save_apply`／`demo_sequence`或`demo_sequence_read`，安全独立INI与现有正式SDK完成高级A→B后默认单项C→D；不以直接设置控件或加载函数替代业务步骤。
+
+Native只配置断言核对Hook／Interception／libusb／SDL控制器／FakerInput／ViGEm资源未初始化，安全映射与空输入／未知函数、设备分配及当前FilterKeys值写入口命中拒绝，源代次／加载／dirty／INI保持；不执行安装器、危险系统动作或真实输入作为负例。产品main前后独立读取完整FilterKeys字段，正常退出仍检查尾部工作与生产者，不能仅看Worker STOPPED。普通模式相同场景单独回归；组件测试用`QKM_TEST_CONFIGURATION_ONLY=1`在创建Application前设模式，核验新Run授权拒绝及旧511配对认证时仅387生效、持久权限／secret不降级且无重复配对。
+
+仅自有实际私有桌面与公共受管启动／关闭，普通桥接／SDK／构建不提权。正式固定预热角色、原生一次UAC／人工配对／桌面切换尚非此夹具功能；当前开发记录不能作为正式部署创建证明。实施与结果只记录同一主计划／C1。

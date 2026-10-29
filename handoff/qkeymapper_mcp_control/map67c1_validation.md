@@ -967,3 +967,20 @@ Agent查看四张正式ImageContent图片：高级770×390显示当前实际3／
 再由同一独立解压包的实际客户端17792（当次PID，仅历史证据）／创建时间／完整EXE核验为Medium8192、exact SDK process，与复用121精确本机Qt6原manifest维护目标执行高级A→B后默认单项C→D。一场6 Native／68 handler／23外层SDK＋8 schema，两个原生MCP图片经Agent查看中文／实际参数及C/D/D，与122同角色图字节相等；源／metadata完全回收、非行签名／INI／GUI名／加载保持、dirty保留、epoch恰+4，无编辑窗或runtime输入。实际QkmBundle123_<UUID>私有桌面／产品12288、同登录，native0正常退出／工作和生产者0／五项清理零。仅目标必要启动关闭用现缓存公共登记，开发／打包／SDK／产物消费均普通权限，无Default／系统输入／映射启动／驱动或新提权模式。
 
 原件out/mcp_bundle_w11_20261029含官方归档／摘要／签名材料、独立builder、失败／两次成功包及ZIP、解压载荷／身份、7项和导入／SDK日志、首助手失败、Native复用／公共登记、正式peer／调用／两图审阅、INI／退出／清理和summary，仅本机。源码提供build_windows_bundle.py、test_windows_bundle.py、bundle_acceptance.py与随包BUNDLE_README，开发用法同步README。它是桥接组件包，尚未整合普通QKeyMapper Release发布或正式预热；本机保有全局Python且未断网，不把路径隔离／本地输入构建称干净Win10／Win11或断网验收。Qt5本次包集成、全量真实异常矩阵、P3／M3-B完整验收和QQ仍待；不标完整M1或交付阶段完成。
+
+
+## DEMO-P3-124：只配置门禁（2026-10-29，PC-W11）
+
+源码PKG-123 ce4c268a之上本片：新增qkm_demo_mode不可变启动策略，main在任何QApplication／单例之前解析固定--demo-configuration-only；拒绝重复／未知demo参数、运行中初始化和实际Default／输入桌面（后两者本轮为源码边界，未在Default启动）。启动用途固定后，保留原三QThread与关闭顺序，跳过Interception/libusb、低级Hook、Worker的SDL／COM／UDP运行初始化、GUI已安装设备分配及进程轮询。产品门禁还覆盖映射／重启／停止、任务／生产者准入、原生系统输入出口、驱动分配／安装、外部命令／更新、Windows开机任务和FilterKeys写入；不是仅禁用控件或依赖无Run／空INI。正常模式保留原路径和正式manifest，MCP默认关闭，无TS/QM新增。
+
+会话新配对拒绝Run等不在387内的位；旧凭据在认证／请求复核使用storedScopes & 387，旧持久511及secret原样，追加允许窗口权限不自动删除旧Run。模式状态及能力只增加execution_policy，无普通模式结果格式变化。首次配对GUI禁Run，原窗口批准仍独立；没有后台自动配对或全局服务。
+
+六次增量构建：Qt6.8.3 msvc2022_64及Qt5.15.2 msvc2019_64的生命周期／mcp_control／mcp_ipc原目标native0；Qt6全部零编译／链接警告。首轮双Qt测试编译把Hook类公开句柄错误写为Worker类，失败日志完整保留，修正测试所属类后通过；随后源码复核补开机任务、更新与外部命令门禁，不运行失败制品。普通Medium实际私有桌面组件正常／只配置各control7及IPC3（含init／cleanup），双Qt共40项通过，覆盖解析／不可变性、窗口／草稿、认证Show边界、Run拒绝及旧511只387且不重复配对。
+
+实际原manifest目标out/mcp_demo_mode_w11_20261029/{qt6,qt5}-runtime/QKeyMapperDemoMode124_<kit>_runtime.exe；双Qt各普通demo_sequence、只配置demo_sequence和只配置demo_sequence_read，六场72 Native／302真实handler／122外层SDK＋48 schema拒绝。普通SDK8192、产品12288，同登录；实际QkmDemoMode124_<UUID>私有桌面。固定只配置参数独立登记，当前普通控制器31176／instance eccdf79e859e4989805774612407354c／generation1至18:30，仅目标必要启动关闭走公共入口，SDK／编辑／构建／图像消费不提权，没有Default／切桌面／新UAC或gsudo正式依赖。
+
+四场正例均正式高级A→B后默认单项C→D，两场只配置Read零图／零业务修改。八张PNG，Agent逐张看两Qt四张只配置图，另四张普通图与同Qt同角色模式图逐字节相等；高级真实参数3／3及中文清晰，单项C/D/D正确。高级窗不显示A/B，行由正式源及场景关联证明。复用原业务建例／GUI入口／真实QWidget捕获／安全关闭和本轮行删除；未设置控件值伪造截图。
+
+只配置四场另各8项断言：实际私有桌面／387；初始Hook、Interception、libusb、SDL控制器、FakerInput和ViGEm资源未初始化；安全映射／重启／停止／WinEvent及手动入口拒绝；当前相同FilterKeys写入口返回false；Interception加载拒绝；Worker Hook／UnHook／重启／空输入／未知函数／空虚拟按钮及设备分配连接命中显式拒绝；无设备／控制器／尾部工作；源代次／加载／dirty／INI保持。只调用无输入或无目标的安全拒绝探针，不实际执行危险系统动作／安装器作为负例；test-only计数只证实进入拒绝分支，不声称完整API追踪。模式main前后独立读取全部FilterKeys字段相等。原标准模式没有新增执行策略字段，mode能力／状态的策略元数据相等并在SDK核验。
+
+原正例全源及metadata回收、H0／INI／加载／GUI名不变、epoch+4且dirty依原行为保留；Read状态不变。六场native0正常退出，workAtExit／producersAtExit为0、无输入任务开始，逐场owned／unresolved／pending／current_action／current_job五项零。原件根含精确大文件补丁／字节、首失败及成功构建、部署身份、组件、六场peer／调用／八图／INI／退出和summary，不随Git。维护README同步；本轮未重编普通完整Release、跑运行态映射／实际设备／危险INI矩阵、Default／Win10／高DPI／ASan／全静态或QQ。固定预热角色／正式创建记录尚未交付，开发host-record仍版本1夹具；原生一次UAC／人工GUI配对及临时桌面切换另行说明授权，不将本片私有验证计为完整P3／M3-B或部署验收。

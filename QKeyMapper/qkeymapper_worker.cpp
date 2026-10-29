@@ -6,6 +6,7 @@
 #include "qkeymapper_worker.h"
 #include "qkeymapper_qt_compat.h"
 #include "qkm_input_producer_work.h"
+#include "automation/qkm_demo_mode.h"
 #include <QJoysticks/SDL_Joysticks.h>
 
 using namespace QKeyMapperConstants;
@@ -1137,7 +1138,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     // }
 
     // Mark requests before their queued writers, including a start/stop that has not run yet.
-    const auto observeRuntimeLifecycle = [] { s_SourceReadAccess.observeRuntimeLifecycle(); };
+    const auto observeRuntimeLifecycle = [] { if (!QkmAutomation::configurationOnlyDemo()) s_SourceReadAccess.observeRuntimeLifecycle(); };
     QObject::connect(this, &QKeyMapper_Worker::setKeyHook_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyUnHook_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
     QObject::connect(this, &QKeyMapper_Worker::setKeyMappingRestart_Signal, this, observeRuntimeLifecycle, Qt::DirectConnection);
@@ -1180,38 +1181,41 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_Key2MouseCycleTimer.setTimerType(Qt::PreciseTimer);
     QObject::connect(&m_Key2MouseCycleTimer, &QTimer::timeout, this, &QKeyMapper_Worker::onKey2MouseCycleTimeout);
 
-    /* Connect QJoysticks Signals */
-    QJoysticks *instance = QJoysticks::getInstance();
+    if (!QkmAutomation::configurationOnlyDemo()) {
+        /* Connect QJoysticks Signals */
+        QJoysticks *instance = QJoysticks::getInstance();
 
-    /* Register virtual gamepad detector callback — called on main thread before joystickAdded is emitted */
-    instance->sdlJoysticks()->setVirtualGamepadDetector(
-        [](uint16_t vendorId, uint16_t productId, const QString& serial) -> bool {
-            return (vendorId == VIRTUALGAMPAD_VENDORID_X360
-                    && productId == VIRTUALGAMPAD_PRODUCTID_X360)
-                || (serial.startsWith(VIRTUALGAMPAD_SERIAL_PREFIX_DS4)
-                    && vendorId == VIRTUALGAMPAD_VENDORID_DS4
-                    && productId == VIRTUALGAMPAD_PRODUCTID_DS4);
-        });
+        /* Register virtual gamepad detector callback — called on main thread before joystickAdded is emitted */
+        instance->sdlJoysticks()->setVirtualGamepadDetector(
+            [](uint16_t vendorId, uint16_t productId, const QString& serial) -> bool {
+                return (vendorId == VIRTUALGAMPAD_VENDORID_X360
+                        && productId == VIRTUALGAMPAD_PRODUCTID_X360)
+                    || (serial.startsWith(VIRTUALGAMPAD_SERIAL_PREFIX_DS4)
+                        && vendorId == VIRTUALGAMPAD_VENDORID_DS4
+                        && productId == VIRTUALGAMPAD_PRODUCTID_DS4);
+            });
 
-    // QObject::connect(instance, &QJoysticks::countChanged, this, &QKeyMapper_Worker::onJoystickcountChanged, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::joystickAdded, this, &QKeyMapper_Worker::onJoystickAdded, Qt::QueuedConnection);
-    QObject::connect(instance, &QJoysticks::joystickRemoved, this, &QKeyMapper_Worker::onJoystickRemoved, Qt::QueuedConnection);
+        // QObject::connect(instance, &QJoysticks::countChanged, this, &QKeyMapper_Worker::onJoystickcountChanged, Qt::QueuedConnection);
+        QObject::connect(instance, &QJoysticks::joystickAdded, this, &QKeyMapper_Worker::onJoystickAdded, Qt::QueuedConnection);
+        QObject::connect(instance, &QJoysticks::joystickRemoved, this, &QKeyMapper_Worker::onJoystickRemoved, Qt::QueuedConnection);
 
 #ifdef JOYSTICK_EVENTS_TO_HOOKPROC
-    QObject::connect(instance, &QJoysticks::POVEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickPOVEvent);
-    QObject::connect(instance, &QJoysticks::axisEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickAxisEvent);
-    QObject::connect(instance, &QJoysticks::buttonEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickButtonEvent);
-    QObject::connect(instance, &QJoysticks::sensorEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickSensorEvent);
-    QObject::connect(instance, &QJoysticks::touchpadEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickTouchpadEvent);
-    QObject::connect(instance, &QJoysticks::batteryEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickBatteryEvent);
+        QObject::connect(instance, &QJoysticks::POVEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickPOVEvent);
+        QObject::connect(instance, &QJoysticks::axisEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickAxisEvent);
+        QObject::connect(instance, &QJoysticks::buttonEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickButtonEvent);
+        QObject::connect(instance, &QJoysticks::sensorEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickSensorEvent);
+        QObject::connect(instance, &QJoysticks::touchpadEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickTouchpadEvent);
+        QObject::connect(instance, &QJoysticks::batteryEvent, QKeyMapper_Hook_Proc::getInstance(), &QKeyMapper_Hook_Proc::onJoystickBatteryEvent);
 #else
-    QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
-    QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
-    QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
-    QObject::connect(instance, &QJoysticks::sensorEvent, this, &QKeyMapper_Worker::onJoystickSensorEvent);
-    QObject::connect(instance, &QJoysticks::touchpadEvent, this, &QKeyMapper_Worker::onJoystickTouchpadEvent);
-    QObject::connect(instance, &QJoysticks::batteryEvent, this, &QKeyMapper_Worker::onJoystickBatteryEvent);
+        QObject::connect(instance, &QJoysticks::POVEvent, this, &QKeyMapper_Worker::onJoystickPOVEvent);
+        QObject::connect(instance, &QJoysticks::axisEvent, this, &QKeyMapper_Worker::onJoystickAxisEvent);
+        QObject::connect(instance, &QJoysticks::buttonEvent, this, &QKeyMapper_Worker::onJoystickButtonEvent);
+        QObject::connect(instance, &QJoysticks::sensorEvent, this, &QKeyMapper_Worker::onJoystickSensorEvent);
+        QObject::connect(instance, &QJoysticks::touchpadEvent, this, &QKeyMapper_Worker::onJoystickTouchpadEvent);
+        QObject::connect(instance, &QJoysticks::batteryEvent, this, &QKeyMapper_Worker::onJoystickBatteryEvent);
 #endif
+
+    }
 
     initGlobalSendInputTaskController();
 
@@ -1265,6 +1269,7 @@ QKeyMapper_Worker::~QKeyMapper_Worker()
 
 void QKeyMapper_Worker::postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdown)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (keyupdown == KEY_DOWN) {
         SendMessageTimeout(
             hwnd,
@@ -1291,6 +1296,7 @@ void QKeyMapper_Worker::postVirtualKeyCode(HWND hwnd, uint keycode, int keyupdow
 
 void QKeyMapper_Worker::sendUnicodeChar(wchar_t aChar)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     INPUT u_input[2];
 
     u_input[0].type = INPUT_KEYBOARD;
@@ -1527,6 +1533,7 @@ bool QKeyMapper_Worker::restoreClipboardWithVerification(HGLOBAL hOriginalDataCo
 
 void QKeyMapper_Worker::pasteWithShiftIns()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     // Simulate Shift+Insert key combination with proper timing
     // Step 1: Press Shift key
     INPUT shiftDown = { 0 };
@@ -1576,6 +1583,7 @@ void QKeyMapper_Worker::pasteWithShiftIns()
 
 void QKeyMapper_Worker::pasteWithCtrlV()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     // Simulate Ctrl+V key combination with proper timing
     // Step 1: Press Ctrl key
     INPUT ctrlDown = { 0 };
@@ -1679,6 +1687,7 @@ HWND QKeyMapper_Worker::findFocusedEditControl(HWND window_hwnd)
 
 void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (text.isEmpty()) {
         return;
     }
@@ -1749,6 +1758,7 @@ void QKeyMapper_Worker::sendText(HWND window_hwnd, const QString &text)
 
 void QKeyMapper_Worker::pasteText(HWND window_hwnd, const QString &text, int mode)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (text.isEmpty()) {
         return;
     }
@@ -2332,6 +2342,7 @@ void QKeyMapper_Worker::processSetVolumeMapping(const QString& volumeCommand)
 
 void QKeyMapper_Worker::sendWindowMousePointClick(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     // Get the client area rectangle (relative to the window)
     RECT clientRect;
     if (!GetClientRect(hwnd, &clientRect)) {
@@ -2394,6 +2405,7 @@ void QKeyMapper_Worker::sendWindowMousePointClick(HWND hwnd, const QString &mous
 
 void QKeyMapper_Worker::sendWindowMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     // Get the client area rectangle (relative to the window)
     RECT clientRect;
     if (!GetClientRect(hwnd, &clientRect)) {
@@ -2445,6 +2457,7 @@ void QKeyMapper_Worker::sendWindowMouseMoveToPoint(HWND hwnd, const QPoint &mous
 
 void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, int keyupdown, const QPoint &mousepoint)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     UINT messageMouseButton;
     WPARAM wParam = 0;
     int x = 0;
@@ -2518,6 +2531,7 @@ void QKeyMapper_Worker::postMouseButton(HWND hwnd, const QString &mousebutton, i
 
 void QKeyMapper_Worker::postMouseWheel(HWND hwnd, const QString &mousewheel)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     WPARAM wParam = 0;
     LPARAM lParam = 0;
     UINT msg = 0;
@@ -2554,6 +2568,7 @@ void QKeyMapper_Worker::postMouseWheel(HWND hwnd, const QString &mousewheel)
 
 void QKeyMapper_Worker::postMouseMove(HWND hwnd, int delta_x, int delta_y)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
 #if 1
     POINT currentPos;
     if (!GetCursorPos(&currentPos)) {
@@ -2612,6 +2627,7 @@ void QKeyMapper_Worker::postMouseMove(HWND hwnd, int delta_x, int delta_y)
 
 void QKeyMapper_Worker::postMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     POINT newPos;
     newPos.x = mousepoint.x();
     newPos.y = mousepoint.y();
@@ -2630,6 +2646,7 @@ void QKeyMapper_Worker::postMouseMoveToPoint(HWND hwnd, const QPoint &mousepoint
 
 void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     INPUT keyboard_input = { 0 };
     DWORD extenedkeyflag = 0;
     if (true == vkeycode.ExtenedFlag){
@@ -2659,6 +2676,7 @@ void QKeyMapper_Worker::sendKeyboardInput(V_KEYCODE vkeycode, int keyupdown)
 
 void QKeyMapper_Worker::sendMouseClick(V_MOUSECODE vmousecode, int keyupdown)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     INPUT mouse_input = { 0 };
     mouse_input.type = INPUT_MOUSE;
     mouse_input.mi.dx = 0;
@@ -2682,6 +2700,7 @@ void QKeyMapper_Worker::sendMouseClick(V_MOUSECODE vmousecode, int keyupdown)
 
 void QKeyMapper_Worker::sendMouseMove(int delta_x, int delta_y)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     INPUT mouse_input = { 0 };
     mouse_input.type = INPUT_MOUSE;
     mouse_input.mi.dx = delta_x;
@@ -2702,6 +2721,7 @@ void QKeyMapper_Worker::sendMouseMove(int delta_x, int delta_y)
 
 void QKeyMapper_Worker::sendMouseWheel(int wheel_updown)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     INPUT mouse_input = { 0 };
     mouse_input.type = INPUT_MOUSE;
     mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_WHEEL;
@@ -2725,6 +2745,7 @@ void QKeyMapper_Worker::sendMouseWheel(int wheel_updown)
 
 void QKeyMapper_Worker::setMouseToScreenCenter(void)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     // Get screen dimensions
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
     int screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -2754,6 +2775,7 @@ void QKeyMapper_Worker::setMouseToScreenCenter(void)
 
 void QKeyMapper_Worker::setMouseToPoint(POINT point)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     // Get the virtual desktop boundaries
     int virtualLeft   = GetSystemMetrics(SM_XVIRTUALSCREEN);
     int virtualTop    = GetSystemMetrics(SM_YVIRTUALSCREEN);
@@ -2782,6 +2804,7 @@ void QKeyMapper_Worker::setMouseToPoint(POINT point)
 
 void QKeyMapper_Worker::setMouseToScreenBottomRight()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     // Initialize INPUT structure
     INPUT mouse_input = { 0 };
     mouse_input.type = INPUT_MOUSE;
@@ -2946,6 +2969,7 @@ void QKeyMapper_Worker::onMouseWheel(int wheel_updown)
 
 void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (m_sendInputTasksStopping) {
         return;
     }
@@ -2963,6 +2987,7 @@ void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int
 
 void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (inputKeys.isEmpty()) {
         return;
     }
@@ -5028,6 +5053,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
 void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     static QRegularExpression regex(R"((Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?(:BG)?\((-?\d+),(-?\d+)\))");
     QRegularExpressionMatch match = regex.match(mousepoint_str);
 
@@ -5312,6 +5338,7 @@ void QKeyMapper_Worker::restoreMousePosition(int sendmappingkeymethod)
 
 void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     if (inputKeys.isEmpty()) {
         return;
     }
@@ -5574,6 +5601,7 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
 #if 0
 void QKeyMapper_Worker::send_WINplusD()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     INPUT inputs[3] = { 0 };
 
     inputs[0].type = INPUT_KEYBOARD;
@@ -5787,6 +5815,7 @@ void QKeyMapper_Worker::sendSpecialVirtualKeyUp(const QString &virtualKey)
 #ifdef FAKERINPUT_SUPPORT
 int QKeyMapper_Worker::FakerInputClient_Alloc()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QMutexLocker locker(&s_FakerInputClient_Mutex);
 
     if (s_FakerInputClient != Q_NULLPTR) {
@@ -5825,6 +5854,7 @@ int QKeyMapper_Worker::FakerInputClient_Alloc()
 
 int QKeyMapper_Worker::FakerInputClient_Connect()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QMutexLocker locker(&s_FakerInputClient_Mutex);
 
     if (s_FakerInputClient == Q_NULLPTR) {
@@ -6823,6 +6853,7 @@ bool QKeyMapper_Worker::matchFakerInputMouseWheelExtraInfo(WPARAM wParam, short 
 #ifdef VIGEM_CLIENT_SUPPORT
 int QKeyMapper_Worker::ViGEmClient_Alloc()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QMutexLocker locker(&s_ViGEmClient_Mutex);
 
     if (s_ViGEmClient != Q_NULLPTR) {
@@ -6851,6 +6882,7 @@ int QKeyMapper_Worker::ViGEmClient_Alloc()
 
 int QKeyMapper_Worker::ViGEmClient_Connect()
 {
+    if (QkmAutomation::denyDemoEffect()) return -1;
     QMutexLocker locker(&s_ViGEmClient_Mutex);
 
     if (s_ViGEmClient != Q_NULLPTR) {
@@ -6986,6 +7018,7 @@ int QKeyMapper_Worker::ViGEmClient_Add()
 
 PVIGEM_TARGET QKeyMapper_Worker::ViGEmClient_AddTarget_byType(const QString &gamepadtype)
 {
+    if (QkmAutomation::denyDemoEffect()) return Q_NULLPTR;
     PVIGEM_TARGET addedTarget = Q_NULLPTR;
     QMutexLocker locker(&s_ViGEmClient_Mutex);
     if (s_ViGEmClient == Q_NULLPTR) {
@@ -9676,6 +9709,7 @@ void QKeyMapper_Worker::timerEvent(QTimerEvent *event)
 
 void QKeyMapper_Worker::threadStarted()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[QKeyMapper_Worker::threadStarted] Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
@@ -9786,6 +9820,7 @@ void QKeyMapper_Worker::finishSendInputDrain(const QString &outcome)
 
 void QKeyMapper_Worker::setWorkerKeyHook()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     s_SourceReadAccess.observeRuntimeLifecycle();
     if (s_MappingInputClosed.loadAcquire()) { return; }
 #ifdef DEBUG_LOGOUT_ON
@@ -9986,7 +10021,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
     initGamepadMotion();
     if (s_GameControllerSensor_EnableState) {
-        emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(true);
+        if (!QkmAutomation::configurationOnlyDemo()) emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(true);
     }
 
     s_AtomicHookProcState = HOOKPROC_STATE_STARTED;
@@ -10009,6 +10044,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 
 void QKeyMapper_Worker::setWorkerKeyUnHook()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     s_SourceReadAccess.observeRuntimeLifecycle();
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setWorkerKeyUnHook] WorkerThread Unhookproc Start.\033[0m");
@@ -10101,7 +10137,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     stopDataPortListener();
     //    setWorkerDInputKeyUnHook();
     initGamepadMotion();
-    emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(false);
+    if (!QkmAutomation::configurationOnlyDemo()) emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(false);
 
 #ifdef VIGEM_CLIENT_SUPPORT
     // if (s_Mouse2vJoy_EnableState != MOUSE2VJOY_NONE && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
@@ -10220,6 +10256,7 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
 void QKeyMapper_Worker::setKeyMappingRestart()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     s_SourceReadAccess.observeRuntimeLifecycle();
     if (s_MappingInputClosed.loadAcquire()) { return; }
 #ifdef DEBUG_LOGOUT_ON
@@ -10291,7 +10328,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_JoyAxisStateMap.clear();
 
     stopDataPortListener();
-    emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(false);
+    if (!QkmAutomation::configurationOnlyDemo()) emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(false);
 
     if ((!s_Mouse2vJoy_EnableStateMap.isEmpty()) && isCursorAtBottomRight() && m_LastMouseCursorPoint.x >= 0) {
         setMouseToPoint(m_LastMouseCursorPoint);
@@ -10453,7 +10490,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 
     initGamepadMotion();
     if (s_GameControllerSensor_EnableState) {
-        emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(true);
+        if (!QkmAutomation::configurationOnlyDemo()) emit QJoysticks::getInstance()->setGameControllersSensorEnabled_signal(true);
     }
 
     s_AtomicHookProcState = HOOKPROC_STATE_STARTED;
@@ -11521,7 +11558,7 @@ void QKeyMapper_Worker::onGameControllerGyroEnabledSwitch(int gamepadinfo_index)
         bool isvirtual = QKeyMapper::getInstance()->m_GamepadInfoMap.value(gamepadinfo_index).isvirtual;
         if (isvirtual != true) {
             int instance_id = QKeyMapper::getInstance()->m_GamepadInfoMap.value(gamepadinfo_index).instance_id;
-            QJoysticks::getInstance()->switchSensorDisabled(instance_id);
+            if (!QkmAutomation::configurationOnlyDemo()) QJoysticks::getInstance()->switchSensorDisabled(instance_id);
 
             emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(instance_id);
         }
@@ -12063,6 +12100,7 @@ bool QKeyMapper_Worker::checkGyro2MouseMoveActiveState()
 
 void QKeyMapper_Worker::doFunctionMappingProc(const QString &func_keystring)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[doFunctionMappingProc]" << "Function KeyString ->" << func_keystring;
 #endif
@@ -18682,6 +18720,7 @@ bool QKeyMapper_Worker::runCommand(const QString &cmdLine,
                                    int showCmd,
                                    const QString &verb)
 {
+    if (QkmAutomation::denyDemoEffect()) return false;
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote()
         << "[runCommand] cmdLine=\"" << cmdLine
@@ -18854,6 +18893,7 @@ void QKeyMapper_Worker::onBurstKeyTimeOut(const QString burstKey, int mappingInd
 
 bool QKeyMapper_Worker::queueVButtonKey(const QString &keyName, bool isKeyDown)
 {
+    if (QkmAutomation::denyDemoEffect()) return false;
     auto work = QSharedPointer<SendInputWorkItem>::create();
     if (s_MappingInputClosed.loadAcquire()) { return false; }
     s_SourceReadAccess.observeRuntimeLifecycle();
@@ -20880,6 +20920,7 @@ QKeyMapper_Hook_Proc::~QKeyMapper_Hook_Proc()
 
 void QKeyMapper_Hook_Proc::HookProcThreadStarted()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
 #ifdef DEBUG_LOGOUT_ON
     qDebug("[HookProcThreadStarted] currentThread -> Name:%s, ID:0x%08X", QThread::currentThread()->objectName().toLatin1().constData(), QThread::currentThreadId());
 #endif
@@ -21533,6 +21574,7 @@ SendInputTask::SendInputTask(int rowindex, const QStringList &inputKeys, int key
 
 void SendInputTask::run()
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     // Retrieve the controller for m_real_originalkey
     SendInputTaskController *controller = Q_NULLPTR;
     controller = &s_SendInputTaskControllerMap[m_real_originalkey];

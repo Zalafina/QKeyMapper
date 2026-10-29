@@ -3,6 +3,7 @@
 #include "../../automation/qkm_local_listener.h"
 #include "../../automation/qkm_pair_store.h"
 #include "../../automation/qkm_session_server.h"
+#include "../../automation/qkm_demo_mode.h"
 
 #include <QBuffer>
 #include <QCoreApplication>
@@ -1795,6 +1796,7 @@ void McpIpcTest::sessionWindowPermissions()
     int prompts = 0;
     connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
         ++prompts;
+        if (configurationOnlyDemo()) QVERIFY(!server.approvePairing(request.requestId, Read | RunMapping));
         QVERIFY(server.approvePairing(request.requestId, Read));
     });
     bool changeDuringRequest = false;
@@ -1839,6 +1841,7 @@ void McpIpcTest::sessionWindowPermissions()
     QVERIFY(run(QStringLiteral("write-denied")));
     QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
     const QString pairId = before.first().pairId;
+    if (configurationOnlyDemo()) QVERIFY(!server.updatePermissions(pairId, Read | RunMapping));
     QVERIFY(run(QStringLiteral("capture-denied")));
     QTRY_VERIFY_WITH_TIMEOUT(server.acceptingConnections(), 3000);
     QVERIFY(!server.updatePermissions(pairId, Read | (KnownScopes + 1)));
@@ -1892,6 +1895,19 @@ void McpIpcTest::sessionWindowPermissions()
     QCOMPARE(last.scopes, quint32(Read | ShowWindows));
     QCOMPARE(last.permissionEpoch, quint64(5));
     server.disable();
+    if (configurationOnlyDemo()) {
+        QVERIFY(store.load(after, error));
+        after.first().scopes = KnownScopes;
+        QVERIFY(store.save(after, error));
+        QVERIFY(server.enable());
+        QVERIFY(run(QStringLiteral("auth")));
+        QCOMPARE(last.scopes, quint32(Read | Configure | ShowWindows | CaptureWindows));
+        QVERIFY(store.load(after, error));
+        QCOMPARE(after.first().scopes, KnownScopes);
+        QVERIFY(after.first().secret == before.first().secret);
+        QCOMPARE(prompts, 1);
+        server.disable();
+    }
 }
 
 void McpIpcTest::sessionRejectedPairing_data()
@@ -2395,6 +2411,8 @@ void McpIpcTest::listenerRestoreFailure()
 
 int main(int argc, char **argv)
 {
+    if (qEnvironmentVariable("QKM_TEST_CONFIGURATION_ONLY") == QStringLiteral("1")
+        && !initializeStartupPurpose(StartupPurpose::ConfigurationOnly)) return 25;
     QCoreApplication app(argc, argv);
     if (app.arguments().value(1) == QStringLiteral("--pipe-client"))
         return runPipeClient(app.arguments());

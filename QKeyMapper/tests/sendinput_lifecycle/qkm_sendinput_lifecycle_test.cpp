@@ -33,6 +33,8 @@
 #include "../../automation/qkm_mapping_changes.h"
 #include "../../automation/qkm_window_image.h"
 #include "../../automation/qkm_window_access.h"
+#include "../../automation/qkm_demo_mode.h"
+#include <SDL.h>
 #include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
@@ -3517,6 +3519,62 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         const QString group = mapper->m_LoadedMappingSettingGroup;
         const QString name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text();
         auto projectionChecks = QSharedPointer<QJsonArray>::create();
+        auto demoModeChecks = QSharedPointer<QJsonArray>::create();
+        if (QkmAutomation::configurationOnlyDemo()) {
+            auto check = [&](bool ok, const char *message) {
+                demoModeChecks->append(QJsonObject{{QStringLiteral("passed"), ok}, {QStringLiteral("assertion"), QString::fromLatin1(message)}});
+            };
+            auto devicesAbsent = [] {
+                bool absent = !Interception_Worker::getInterceptionContext() && !Interception_Worker::s_libusb_available
+                    && !QKeyMapper_Hook_Proc::s_KeyHook && !QKeyMapper_Hook_Proc::s_MouseHook
+                    && SDL_WasInit(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) == 0;
+#ifdef FAKERINPUT_SUPPORT
+                absent = absent && !QKeyMapper_Worker::s_FakerInputClient;
+#endif
+#ifdef VIGEM_CLIENT_SUPPORT
+                absent = absent && !QKeyMapper_Worker::s_ViGEmClient && QKeyMapper_Worker::s_ViGEmTargetList.isEmpty();
+#endif
+                return absent;
+            };
+            check(QkmAutomation::currentThreadOnPrivateDesktop() && QkmAutomation::startupAllowedScopes() == 387,
+                "immutable configuration-only mode is on the observed private background desktop with no Run scope");
+            check(devicesAbsent(), "startup leaves Hook, Interception, libusb, SDL controller and virtual device resources uninitialized");
+            const quint64 denied = QkmAutomation::demoEffectDenialsForTest();
+            mapper->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK);
+            mapper->setKeyMappingRestart();
+            mapper->beginMappingStop();
+            mapper->startWinEventHook();
+            check(!mapper->handleManualMappingSwitchRequest(QKeyMapper::MAPPINGSTART_BUTTONCLICK), "manual mapping admission is refused");
+            FILTERKEYS filter{};
+            check(mapper->readWindowsFilterKeys(filter)
+                && !mapper->setWindowsFilterKeysEnabled((filter.dwFlags & FKF_FILTERKEYSON) != 0, (filter.dwFlags & FKF_CLICKON) != 0),
+                "system settings write entry refuses even the current unchanged FilterKeys value");
+            check(!Interception_Worker::doLoadInterception(), "Interception initialization entry is refused");
+            bool workerDenied = false;
+            QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(), [&] {
+                auto *worker = QKeyMapper_Worker::getInstance();
+                worker->setWorkerKeyHook(); worker->setWorkerKeyUnHook(); worker->setKeyMappingRestart();
+                worker->onSendInputKeys(-1, {}, 0, {}, 0, 0, nullptr);
+                worker->doFunctionMappingProc(QStringLiteral("UNRECOGNIZED_DEMO_PROBE"));
+                workerDenied = !worker->queueVButtonKey(QString(), false);
+#ifdef FAKERINPUT_SUPPORT
+                workerDenied = workerDenied && worker->FakerInputClient_Alloc() == -1 && worker->FakerInputClient_Connect() == -1;
+#endif
+#ifdef VIGEM_CLIENT_SUPPORT
+                workerDenied = workerDenied && worker->ViGEmClient_Alloc() == -1 && worker->ViGEmClient_Connect() == -1;
+#endif
+            }, Qt::BlockingQueuedConnection);
+            check(workerDenied && QkmAutomation::demoEffectDenialsForTest() >= denied + 13,
+                "worker lifecycle, empty input, unknown function, virtual button and device allocation entries hit explicit denials");
+            check(devicesAbsent() && SendInputTask::s_SendInputTaskControllerMap.isEmpty()
+                && InputProducerWorkItem::outstanding() == 0 && SendInputWorkItem::outstanding() == 0,
+                "denied actions leave no device, input controller or queued producer work");
+            QFile after(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+            check(after.open(QIODevice::ReadOnly) && after.readAll() == diskBefore && mapper->m_SaveSettingDirty == dirty
+                && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch
+                && mapper->m_LoadedMappingSettingGroup == group && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE,
+                "denied actions preserve the source generation, selection, dirty state and disk without starting mapping");
+        }
         if (demoContext) {
             auto *poll = new QTimer(mapper);
             auto stage = QSharedPointer<int>::create(0);
@@ -4357,6 +4415,10 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 for (auto it = expected->save.values.values.begin(); it != expected->save.values.values.end(); ++it)
                     valuesMatch = valuesMatch && ini.contains(it.key()) && ini.value(it.key()) == it.value();
                 check(valuesMatch, QStringLiteral("formal save persists every independently prepared target and shared value"));
+            }
+            for (const auto &entry : *demoModeChecks) {
+                checks.append(entry);
+                passed = passed && entry.toObject().value(QStringLiteral("passed")).toBool();
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
                 {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness && !demoContext && !demoContextRead
@@ -5830,8 +5892,19 @@ int main(int argc, char *argv[])
     result = new LifecycleResult;
     if ((mode == QStringLiteral("gui_stop_restore") || mode == QStringLiteral("gui_stop_restore_timeout"))
         && !prepareGuiStopReturnFixture()) { return 2; }
+    QStringList startupArguments;
+    for (int index = 1; index < argc; ++index) startupArguments.append(QString::fromLocal8Bit(argv[index]));
+    const bool demoMode = QkmAutomation::parseStartupPurpose(startupArguments) == QkmAutomation::StartupPurpose::ConfigurationOnly;
+    FILTERKEYS filterBefore{}, filterAfter{};
+    filterBefore.cbSize = filterAfter.cbSize = sizeof(FILTERKEYS);
+    const bool filterRead = !demoMode || SystemParametersInfoW(SPI_GETFILTERKEYS, sizeof(filterBefore), &filterBefore, 0);
     const int code = qkmProductMain(argc, argv);
-    const bool passed = code == 0 && result->passed && SendInputTask::s_SendInputTaskControllerMap.isEmpty()
+    const bool filterUnchanged = !demoMode || (filterRead
+        && SystemParametersInfoW(SPI_GETFILTERKEYS, sizeof(filterAfter), &filterAfter, 0)
+        && filterBefore.dwFlags == filterAfter.dwFlags && filterBefore.iWaitMSec == filterAfter.iWaitMSec
+        && filterBefore.iDelayMSec == filterAfter.iDelayMSec && filterBefore.iRepeatMSec == filterAfter.iRepeatMSec
+        && filterBefore.iBounceMSec == filterAfter.iBounceMSec);
+    const bool passed = code == 0 && result->passed && filterUnchanged && SendInputTask::s_SendInputTaskControllerMap.isEmpty()
         && InputProducerWorkItem::outstanding() == 0
         && result->downStarted.loadAcquire() == result->downFinished.loadAcquire();
     QJsonObject evidence{{QStringLiteral("case"), mode}, {QStringLiteral("passed"), passed},
@@ -5908,6 +5981,11 @@ int main(int argc, char *argv[])
         {QStringLiteral("repeatRounds"), result->repeatRounds.loadAcquire()},
         {QStringLiteral("repeatRuns"), result->repeatRuns},
         {QStringLiteral("repeatTrace"), QJsonArray::fromStringList(result->repeatTrace)}};
+    if (demoMode) {
+        evidence.insert(QStringLiteral("execution_policy"), QkmAutomation::configurationOnlyPolicy());
+        evidence.insert(QStringLiteral("system_filter_keys_unchanged"), filterUnchanged);
+        evidence.insert(QStringLiteral("effect_denials"), QString::number(QkmAutomation::demoEffectDenialsForTest()));
+    }
     delete result;
     result = nullptr;
     QFile output(path);

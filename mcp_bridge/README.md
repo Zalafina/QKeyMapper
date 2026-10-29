@@ -265,3 +265,12 @@ Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看�
 归档基准11249023B、SHA256 `009d6bf7e3b2ddca3d784fa09f90fe54336d5b60f0e0f305c37f400bf83cfd3b`，来源为官方HTTPS、发布页MD5、.sigstore消息摘要及关键PE Authenticode；未执行Sigstore证书链／透明日志完整验证，不把摘要对照称为签名验证。标准库打包器随3.11.9固定，无新增第三方打包器依赖或bootloader。
 
 维护检查为`tests/test_windows_bundle.py`；官方SDK端可运行`tests/bundle_acceptance.py --bundle <解压目录> --output <全新out目录>`，需要原开发测试环境，仅测试端使用SDK。PKG-123在Win11验证ZIP独立解压、中文／空格路径、与包无关的cwd和被污染的Python环境／仅系统PATH、29项metadata与原生依赖、17工具及异步连接不存在产品的失败。再用包内实际Medium客户端与121原manifest Qt6私有目标完成高级／默认单项两轮，两张正式图片及源／INI／回收保持；运行前后载荷不变。本机未断网，没有把路径隔离当作无全局Python的干净Win10／Win11或断网启动验收；普通Release集成／P3／QQ仍待。
+
+
+### 只配置演示启动策略（P3-124）
+
+新版产品新增固定`--demo-configuration-only`，在Application／所有单例前确定且不能经MCP切换；仅实际WinSta0非Default且非当前输入桌面可启动。它硬拒绝映射／系统输入、Hook／Interception／libusb／SDL控制器和虚拟设备初始化、驱动操作、外部命令／更新、Windows开机任务及FilterKeys写入。真实配置、解析器、窗口和业务共用；普通模式、正式管理员manifest及MCP默认关闭保持。
+
+已认证模式的state／capabilities附`execution_policy`，明确startup_purpose及四项禁止效果。有效权限上限为Read+Configure+ShowWindows+CaptureWindows（387）；新Run授权拒绝，旧持久配对不自动删权限或重复配对，但当前连接只取允许交集。只配置模式仍需原GUI启用／配对与独立窗口权限，不能将该参数或Skill当授权。
+
+当前完成启动门禁与双Qt私有定向验证，固定预热角色、正式创建记录和部署引导另待接线。不要自行将普通用户多实例Default确认流程用于后台实例，也不要用开发gsudo缓存作为正式服务依赖。一次原生UAC、临时桌面切换／人工配对的验收另行授权；本节不是完整免开发环境部署步骤。

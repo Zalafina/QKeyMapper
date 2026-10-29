@@ -3,6 +3,7 @@
 #include "../../automation/qkm_mapping_help.h"
 #include "../../automation/qkm_mapping_changes.h"
 #include "../../automation/qkm_window_access.h"
+#include "../../automation/qkm_demo_mode.h"
 #include "../../automation/qkm_window_image.h"
 #include "../../qkm_mapping_source_access.h"
 #include "../../qkeymapper_qt_compat.h"
@@ -152,6 +153,7 @@ private slots:
     void windowCaptureBoundaries();
     void mappingEditorArguments();
     void mappingSettingsArguments();
+    void startupPurpose();
     void privateBackgroundDesktopGuard();
     void editorDraftGuard();
     void rejectAndClose_data();
@@ -1479,6 +1481,25 @@ void McpControlTest::mappingSettingsArguments()
     }
 }
 
+void McpControlTest::startupPurpose()
+{
+    QCOMPARE(parseStartupPurpose({}), StartupPurpose::Standard);
+    QCOMPARE(parseStartupPurpose({QStringLiteral("--scale=1.0")}), StartupPurpose::Standard);
+    QCOMPARE(parseStartupPurpose({QStringLiteral("--scale=1.0"), QStringLiteral("--demo-configuration-only")}), StartupPurpose::ConfigurationOnly);
+    for (const auto &arguments : QList<QStringList>{
+            {QStringLiteral("--demo-configuration-only"), QStringLiteral("--demo-configuration-only")},
+            {QStringLiteral("--demo-configuration-only=true")}, {QStringLiteral("--demo-unknown")}})
+        QCOMPARE(parseStartupPurpose(arguments), StartupPurpose::Invalid);
+    const bool mode = configurationOnlyDemo();
+    QCOMPARE(startupAllowedScopes(), mode ? quint32(Read | Configure | ShowWindows | CaptureWindows) : KnownScopes);
+    QVERIFY(!initializeStartupPurpose(StartupPurpose::Standard));
+    QCOMPARE(configurationOnlyDemo(), mode);
+    const quint64 before = demoEffectDenialsForTest();
+    QCOMPARE(denyDemoEffect(), mode);
+    QCOMPARE(demoEffectDenialsForTest(), before + (mode ? 1 : 0));
+    if (mode) QCOMPARE(configurationOnlyPolicy().value(QStringLiteral("system_input_allowed")), QJsonValue(false));
+}
+
 void McpControlTest::editorDraftGuard()
 {
     QWidget main, item;
@@ -1934,6 +1955,8 @@ int writeSourceFixture(const QString &path)
 
 int main(int argc, char **argv)
 {
+    if (qEnvironmentVariable("QKM_TEST_CONFIGURATION_ONLY") == QStringLiteral("1")
+        && !initializeStartupPurpose(StartupPurpose::ConfigurationOnly)) return 25;
     // Match the product's baseline DPI, style and font without loading a personal INI.
     qputenv("QT_ENABLE_HIGHDPI_SCALING", "1");
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);

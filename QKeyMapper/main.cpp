@@ -2,6 +2,7 @@
 #include <QDir>
 #include <QTimer>
 #include "qkeymapper_qt_compat.h"
+#include "automation/qkm_demo_mode.h"
 #include "qkeymapper.h"
 #include "diagnostics/crash_monitor.h"
 #include "qkeymapper_worker.h"
@@ -370,6 +371,9 @@ static bool IsProcessRunAsAdmin()
 
 int main(int argc, char *argv[])
 {
+    QStringList startupArguments;
+    for (int index = 1; index < argc; ++index) startupArguments.append(QString::fromLocal8Bit(argv[index]));
+    if (!QkmAutomation::initializeStartupPurpose(QkmAutomation::parseStartupPurpose(startupArguments))) return ERROR_INVALID_PARAMETER;
 #ifdef QKM_REQUIRE_ADMIN
     if (!IsProcessRunAsAdmin()) {
         // Priority 1: Read LanguageIndex from keymapdata.ini (user's saved preference)
@@ -437,7 +441,7 @@ int main(int argc, char *argv[])
         }
     }
     QkmDiagnostics::markProgress();
-    SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+    if (!QkmAutomation::configurationOnlyDemo()) SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
 
     if (QOperatingSystemVersion::current() < QOperatingSystemVersion::Windows10) {
         qputenv("QT_OPENGL", "software");
@@ -573,6 +577,13 @@ int main(int argc, char *argv[])
     QkmDiagnostics::markProgress();
 
     QKeyMapper w;
+    if (QkmAutomation::configurationOnlyDemo()) {
+        for (const char *name : {"keymapButton", "installInterceptionButton", "installFakerInputButton", "installViGEmBusButton",
+                "uninstallViGEmBusButton", "multiInputDeviceListButton", "checkUpdateButton", "autoStartupCheckBox", "startupAutoMonitoringCheckBox",
+                "autoStartMappingCheckBox", "enableVirtualJoystickCheckBox"}) {
+            if (auto *control = w.findChild<QWidget *>(QLatin1String(name))) control->setEnabled(false);
+        }
+    }
     QkmDiagnostics::markProgress();
     QObject::connect(&crashMonitor, &QkmCrashMonitor::diagnosticMessage, &w,
                      [&w](const QString &message) {
@@ -584,9 +595,9 @@ int main(int argc, char *argv[])
         crashMonitor.announce();
     });
     emit QKeyMapper::getInstance()->updateGamepadSelectComboBox_Signal(QKeyMapperConstants::JOYSTICK_INVALID_INSTANCE_ID);
-    emit QKeyMapper::getInstance()->checkOSVersionMatched_Signal();
+    if (!QkmAutomation::configurationOnlyDemo()) emit QKeyMapper::getInstance()->checkOSVersionMatched_Signal();
 #ifndef ENABLE_SYSTEMFILTERKEYS_DEFAULT
-    emit QKeyMapper::getInstance()->checkFilterKeysEnabled_Signal();
+    if (!QkmAutomation::configurationOnlyDemo()) emit QKeyMapper::getInstance()->checkFilterKeysEnabled_Signal();
 #endif
 
 #ifdef SINGLE_APPLICATION
@@ -605,6 +616,7 @@ int main(int argc, char *argv[])
 #endif
     }
     else {
+        if (QkmAutomation::configurationOnlyDemo()) w.setAttribute(Qt::WA_ShowWithoutActivating, true);
         w.show();
     }
 

@@ -1,4 +1,5 @@
 #include "qkm_session_server.h"
+#include "qkm_demo_mode.h"
 #include "qkm_private_storage.h"
 
 #include <QUuid>
@@ -218,13 +219,14 @@ void AutomationSessionServer::onHello(const QJsonObject &message, const ProcessI
         return;
     }
     m_pair = m_credentials.at(index);
+    m_pair.scopes &= startupAllowedScopes();
     if (!beginChallenge(false)) closeSession();
 }
 
 bool AutomationSessionServer::approvePairing(const QString &requestId, quint32 scopes)
 {
     if (m_stage != Stage::Approval || requestId.isEmpty() || requestId != m_pairingRequest
-        || !(scopes & Read) || (scopes & ~KnownScopes) || !m_listener.matchesConnection(m_connection))
+        || !(scopes & Read) || (scopes & ~startupAllowedScopes()) || !m_listener.matchesConnection(m_connection))
         return false;
     m_pair.pairId = QUuid::createUuid().toString(QUuid::Id128);
     m_pair.permissionEpoch = 1;
@@ -367,7 +369,7 @@ bool AutomationSessionServer::isRequestCurrent(const AutomationRequest &request)
         && request.pairId == m_pair.pairId && request.permissionEpoch == m_pair.permissionEpoch
         && request.scopes == m_pair.scopes && required != 0 && (m_pair.scopes & required) == required
         && index >= 0 && m_credentials.at(index).permissionEpoch == request.permissionEpoch
-        && m_credentials.at(index).scopes == request.scopes && m_listener.matchesConnection(request.connectionId);
+        && (m_credentials.at(index).scopes & startupAllowedScopes()) == request.scopes && m_listener.matchesConnection(request.connectionId);
 }
 
 bool AutomationSessionServer::sendReply(const QString &connectionId, const QString &requestId, QJsonObject response)
@@ -389,11 +391,13 @@ bool AutomationSessionServer::reply(const QString &connectionId, const QString &
 bool AutomationSessionServer::replyCapabilities(const QString &connectionId, const QString &requestId,
                                                const QJsonArray &businessCapabilities)
 {
-    return reply(connectionId, requestId, {{QStringLiteral("interface_version"), HandshakeVersion},
+    QJsonObject result{{QStringLiteral("interface_version"), HandshakeVersion},
         {QStringLiteral("instance"), m_listener.instanceId()}, {QStringLiteral("scopes"), int(m_pair.scopes)},
         {QStringLiteral("stage"), businessCapabilities.isEmpty() ? QStringLiteral("transport_only") : QStringLiteral("business")},
         {QStringLiteral("business_capabilities"), businessCapabilities},
-        {QStringLiteral("max_frame_bytes"), MaxFramePayload}});
+        {QStringLiteral("max_frame_bytes"), MaxFramePayload}};
+    if (configurationOnlyDemo()) result.insert(QStringLiteral("execution_policy"), configurationOnlyPolicy());
+    return reply(connectionId, requestId, result);
 }
 
 bool AutomationSessionServer::replyError(const QString &connectionId, const QString &requestId,
@@ -445,6 +449,7 @@ bool AutomationSessionServer::updatePermissions(const QString &pairId, quint32 s
 {
     const int index = findPair(pairId);
     if (index < 0 || !(scopes & Read) || (scopes & ~KnownScopes)
+        || ((scopes & ~m_credentials.at(index).scopes) & ~startupAllowedScopes())
         || m_credentials.at(index).permissionEpoch == (std::numeric_limits<quint64>::max)()) return false;
     QList<PairCredential> updated = m_credentials;
     updated[index].scopes = scopes;
