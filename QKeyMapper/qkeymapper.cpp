@@ -37966,6 +37966,82 @@ void QKeyMapper::handleAutomationSourceQuery(const QkmAutomation::AutomationRequ
     }
 }
 
+QString QKeyMapper::automationDemoContextFingerprint(const AutomationSettingSavePreparation &candidate)
+{
+    if (!candidate.ok() || candidate.save.target.saveGlobalSetting || candidate.save.target.createNewSetting) return {};
+    SettingSaveValues projected = candidate.save.values;
+    const QString prefix = candidate.save.target.settingName + QLatin1Char('/');
+    for (const QString &key : mappingCodeKnownKeys()) {
+        if (projected.values.remove(prefix + key) != 1) return {};
+    }
+    const QString footprint = settingSaveValuesFingerprint(candidate.save.target, projected,
+        candidate.save.configurationPath, candidate.save.configurationExists, candidate.save.configurationData,
+        QString(64, QLatin1Char('0')));
+    if (footprint.isEmpty()) return {};
+    const auto source = candidate.context.value(QStringLiteral("source_snapshot")).toObject();
+    // Row revisions and dirty are checked separately; never exclude other save fields or the GUI name.
+    const QJsonObject binding{{QStringLiteral("instance"), source.value(QStringLiteral("instance"))},
+        {QStringLiteral("pair_id"), candidate.context.value(QStringLiteral("pair_id"))},
+        {QStringLiteral("permission_epoch"), candidate.context.value(QStringLiteral("permission_epoch"))},
+        {QStringLiteral("runtime_revision"), candidate.context.value(QStringLiteral("runtime_revision"))},
+        {QStringLiteral("mapping_load_context"), source.value(QStringLiteral("mapping_load_context"))},
+        {QStringLiteral("current_tab"), candidate.context.value(QStringLiteral("current_tab"))},
+        {QStringLiteral("gui_save_name"), candidate.context.value(QStringLiteral("gui_save_name"))},
+        {QStringLiteral("footprint_revision"), footprint}};
+    return QString::fromLatin1(QCryptographicHash::hash(QJsonDocument(binding).toJson(QJsonDocument::Compact),
+        QCryptographicHash::Sha256).toHex());
+}
+
+void QKeyMapper::handleAutomationDemoContextQuery(const QkmAutomation::AutomationRequest &request)
+{
+    using namespace QkmAutomation;
+    QElapsedTimer budget;
+    budget.start();
+    auto &server = m_McpControlDialog->server();
+    const auto fail = [&](const char *code, const char *message) {
+        server.replyError(request.connectionId, request.requestId, QString::fromLatin1(code), QString::fromLatin1(message));
+    };
+    const QSet<QString> allowed{QStringLiteral("entity"), QStringLiteral("offset"), QStringLiteral("limit")};
+    for (auto it = request.arguments.constBegin(); it != request.arguments.constEnd(); ++it) {
+        if (!allowed.contains(it.key())) { fail("invalid_arguments", "Demo context accepts no source, catalog or path arguments."); return; }
+    }
+    const auto offset = request.arguments.value(QStringLiteral("offset")), limit = request.arguments.value(QStringLiteral("limit"));
+    if ((!offset.isUndefined() && (!offset.isDouble() || offset.toDouble() != 0))
+        || (!limit.isUndefined() && (!limit.isDouble() || limit.toDouble() < 1 || limit.toDouble() > 100
+            || limit.toDouble() != limit.toInt(-1)))) {
+        fail("invalid_arguments", "Demo context is one bounded observation; offset must be zero and limit an integer from 1 to 100."); return;
+    }
+    if ((request.scopes & (Read | Configure)) != (Read | Configure) || !server.isRequestCurrent(request)) {
+        fail("permission_denied", "Demo context requires current Read and Configure authorization."); return;
+    }
+    if (!privateBackgroundDesktopAvailable()) {
+        fail("unsupported_desktop", "Demo context is restricted to a verified private background desktop."); return;
+    }
+    if (!mappingAdditionAllowed(0) || s_KeyMappingTabInfoList.size() != 1 || isCommonMappingFeatureEnabled()
+        || !m_CommonMappingData.isEmpty() || m_KeyMappingDataTable->hasActiveEditor() || QApplication::activePopupWidget()
+        || m_LoadedMappingSettingGroup.isEmpty() || m_LoadedMappingSettingGroup == QLatin1String(GROUPNAME_GLOBALSETTING)) {
+        fail("context_busy", "Demo context requires one current normal source, no common data, completed idle cleanup and no active editor."); return;
+    }
+    const auto candidate = prepareAutomationSettingSave(request, m_LoadedMappingSettingGroup);
+    const QString revision = automationDemoContextFingerprint(candidate);
+    if (!candidate.ok() || revision.isEmpty()) {
+        fail("context_busy", "The complete current-profile save footprint, settled editors, file and shared cache could not be proved."); return;
+    }
+    QMutexLocker sourceAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+    if (!server.isRequestCurrent(request) || automationSourceReadBasis().isEmpty()
+        || QString::number(QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision())
+            != candidate.context.value(QStringLiteral("runtime_revision")).toString()
+        || budget.hasExpired(MappingChangeBudgetMs)) {
+        fail("context_busy", "Demo context authorization or lifecycle changed, or its validation budget expired."); return;
+    }
+    server.reply(request.connectionId, request.requestId,
+        {{QStringLiteral("schema_version"), 1}, {QStringLiteral("entity"), QStringLiteral("demo_context")},
+            {QStringLiteral("context_revision"), revision}, {QStringLiteral("reference_scope"), QStringLiteral("non_row_save_footprint_only")},
+            {QStringLiteral("source_snapshot"), candidate.context.value(QStringLiteral("source_snapshot"))},
+            {QStringLiteral("gui_save_name"), candidate.context.value(QStringLiteral("gui_save_name"))},
+            {QStringLiteral("mapping_rows_excluded"), true}, {QStringLiteral("write_authority"), false}});
+}
+
 QJsonObject QKeyMapper::collectAutomationCatalog(void) const
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -38768,7 +38844,9 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                 request.permissionEpoch, request.arguments);
             if (result.ok()) server.reply(request.connectionId, request.requestId, result.page);
             else server.replyError(request.connectionId, request.requestId, result.errorCode, result.message);
-        } else if (entity == QStringLiteral("mapping_sources") || entity == QStringLiteral("mappings"))
+        } else if (entity == QStringLiteral("demo_context"))
+            handleAutomationDemoContextQuery(request);
+        else if (entity == QStringLiteral("mapping_sources") || entity == QStringLiteral("mappings"))
             handleAutomationSourceQuery(request);
         else
             handleAutomationCatalogQuery(request);
@@ -38839,7 +38917,18 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                     QStringLiteral("memory_provenance_only_not_disk_origin"), QStringLiteral("source_revision_is_not_a_business_revision"),
                     QStringLiteral("source_references_do_not_authorize_writes"), QStringLiteral("fields_use_mapping_code_keys")}}},
             QkmAutomation::mappingHelpCapability(), QkmAutomation::windowQueryCapability(), QkmAutomation::windowCaptureCapability(),
-            QkmAutomation::mappingEditorCapability(), QkmAutomation::mappingEditorCloseCapability()};
+            QkmAutomation::mappingEditorCapability(), QkmAutomation::mappingEditorCloseCapability(),
+            QJsonObject{{QStringLiteral("id"), QStringLiteral("demo.context.read")}, {QStringLiteral("method"), QStringLiteral("qkm_query")},
+                {QStringLiteral("required_scopes"), int(QkmAutomation::Read | QkmAutomation::Configure)}, {QStringLiteral("read_only"), true},
+                {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+                    {QStringLiteral("additionalProperties"), false}, {QStringLiteral("required"), QJsonArray{QStringLiteral("entity")}},
+                    {QStringLiteral("properties"), QJsonObject{{QStringLiteral("entity"), QJsonObject{{QStringLiteral("const"), QStringLiteral("demo_context")}}},
+                        {QStringLiteral("offset"), QJsonObject{{QStringLiteral("const"), 0}}},
+                        {QStringLiteral("limit"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                            {QStringLiteral("minimum"), 1}, {QStringLiteral("maximum"), 100}}}}}}},
+                {QStringLiteral("limitations"), QJsonArray{QStringLiteral("private_background_only"), QStringLiteral("single_current_normal_source"),
+                    QStringLiteral("non_row_save_footprint_only"), QStringLiteral("source_rows_require_separate_validation"),
+                    QStringLiteral("not_write_permission_or_a_scene_lease")}}}};
         const QJsonArray mappingCapabilities = QkmAutomation::mappingChangeCapabilities();
         for (const auto &capability : mappingCapabilities) businessCapabilities.append(capability);
         server.replyCapabilities(request.connectionId, request.requestId, businessCapabilities);

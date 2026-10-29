@@ -3365,6 +3365,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const QString connectionVariant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
     const bool deletionCase = publicApply && connectionVariant.startsWith(QStringLiteral("delete_"));
     const bool demoReadiness = publicApply && connectionVariant.startsWith(QStringLiteral("demo_ready"));
+    const bool demoContext = publicApply && connectionVariant == QStringLiteral("demo_context");
+    const bool demoContextRead = publicApply && connectionVariant == QStringLiteral("demo_context_read");
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
@@ -3408,6 +3410,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
                     quint32 scopes = variant == QStringLiteral("read") || variant == QStringLiteral("delete_read")
                         || variant == QStringLiteral("demo_ready_read")
+                        || variant == QStringLiteral("demo_context_read")
                         || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
                     if (variant == QStringLiteral("demo_mcp_capture") || variant == QStringLiteral("demo_mcp_editor")
                         || variant == QStringLiteral("demo_mcp_close") || variant == QStringLiteral("demo_ready")) scopes |= CaptureWindows;
@@ -3415,6 +3418,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                         || variant == QStringLiteral("demo_ready")) scopes |= ShowWindows;
                     if (variant == QStringLiteral("demo_ready_nonempty") || variant == QStringLiteral("demo_ready_dirty"))
                         scopes |= ShowWindows | CaptureWindows;
+                    if (variant == QStringLiteral("demo_context")) scopes |= ShowWindows | CaptureWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);
@@ -3494,6 +3498,29 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         const quint64 load = mapper->m_MappingLoadGeneration, epoch = mapper->m_AutomationSourceEpoch;
         const QString group = mapper->m_LoadedMappingSettingGroup;
         const QString name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text();
+        auto projectionChecks = QSharedPointer<QJsonArray>::create();
+        if (demoContext) {
+            auto *poll = new QTimer(mapper);
+            auto stage = QSharedPointer<int>::create(0);
+            QObject::connect(poll, &QTimer::timeout, mapper, [=]() {
+                const QString suffix = *stage == 0 ? QStringLiteral(".demo-name-change") : QStringLiteral(".demo-name-restore");
+                if (*stage > 1 || !QFileInfo::exists(output + suffix)) return;
+                auto *editor = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+                const QString text = *stage == 0 ? QStringLiteral("DemoContext115Draft") : name;
+                QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+                QCoreApplication::sendEvent(editor, &select); QCoreApplication::sendEvent(editor, &selected);
+                for (const QChar character : text) {
+                    QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+                    QCoreApplication::sendEvent(editor, &press); QCoreApplication::sendEvent(editor, &release);
+                }
+                const bool changed = editor->text() == text && mapper->m_SaveSettingDirty;
+                QSaveFile file(output + (*stage == 0 ? QStringLiteral(".demo-name-changed") : QStringLiteral(".demo-name-restored")));
+                const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("passed"), changed}}).toJson();
+                ++*stage;
+                if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit() || !changed) finish(false);
+            });
+            poll->start(10);
+        }
         QString sourceError;
         const QJsonObject sourceBefore = mapper->collectAutomationSourceSnapshot(sourceError);
         if (!sourceError.isEmpty()) { finish(false); return; }
@@ -3856,6 +3883,54 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         }
         server.setRequestHandler([=](const AutomationRequest &request) {
             ++*calls;
+            if (demoContext && projectionChecks->isEmpty() && request.method == QStringLiteral("qkm_query")
+                && request.arguments.value(QStringLiteral("entity")) == QStringLiteral("demo_context")
+                && QKeyMapper::KeyMappingDataList->size() == 1 && !mapper->hasOpenMappingEditor()) {
+                const auto check = [&](bool passed, const char *label) {
+                    projectionChecks->append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(label)}, {QStringLiteral("passed"), passed}});
+                };
+                const auto candidate = mapper->prepareAutomationSettingSave(request, group);
+                const QString baseline = mapper->automationDemoContextFingerprint(candidate);
+                check(candidate.ok() && baseline.size() == 64, "live authorized save candidate supplies a non-row context fingerprint");
+                if (candidate.ok()) {
+                    const auto fullHash = [&] { return mapper->settingSaveValuesFingerprint(candidate.save.target, candidate.save.values,
+                        candidate.save.configurationPath, candidate.save.configurationExists, candidate.save.configurationData, QString(64, QLatin1Char('0'))); };
+                    const QString before = fullHash();
+                    QString error;
+                    const auto source = mapper->collectAutomationSourceSnapshot(error);
+                    const auto sources = source.value(QStringLiteral("sources")).toArray();
+                    const auto rows = sources.isEmpty() ? QJsonArray() : sources.first().toObject().value(QStringLiteral("rows")).toArray();
+                    const auto fields = rows.isEmpty() ? QJsonObject() : rows.first().toObject().value(QStringLiteral("fields")).toObject();
+                    const QString prefix = group + QLatin1Char('/');
+                    bool excluded = error.isEmpty() && fields.size() == 74;
+                    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                        auto changed = candidate;
+                        changed.save.values.values.insert(prefix + it.key(), QStringLiteral("component row mutation"));
+                        excluded = excluded && mapper->automationDemoContextFingerprint(changed) == baseline;
+                    }
+                    check(excluded, "all 74 independent source-schema row fields are excluded from the non-row projection");
+                    auto changed = candidate;
+                    changed.save.values.values.insert(prefix + QString::fromLatin1(QKeyMapperConstants::MAPPINGTABLE_TABHOTKEYLIST), QStringLiteral("component tab mutation"));
+                    check(mapper->automationDemoContextFingerprint(changed) != baseline, "Tab metadata is retained in the context");
+                    changed = candidate; changed.context.insert(QStringLiteral("gui_save_name"), QStringLiteral("component name mutation"));
+                    check(mapper->automationDemoContextFingerprint(changed) != baseline, "GUI name changes are detected independently of dirty");
+                    changed = candidate; changed.save.configurationData.append("\n; component disk mutation\n");
+                    check(mapper->automationDemoContextFingerprint(changed) != baseline, "raw disk bytes remain part of the context");
+                    changed = candidate; changed.context.insert(QStringLiteral("pair_id"), QString(32, QLatin1Char('f')));
+                    check(mapper->automationDemoContextFingerprint(changed) != baseline, "context is bound to the authenticated pair");
+                    changed = candidate; changed.context.insert(QStringLiteral("permission_epoch"), QStringLiteral("999999"));
+                    check(mapper->automationDemoContextFingerprint(changed) != baseline, "context is bound to the authorization epoch");
+                    changed = candidate;
+                    auto snapshot = changed.context.value(QStringLiteral("source_snapshot")).toObject();
+                    auto load = snapshot.value(QStringLiteral("mapping_load_context")).toObject();
+                    load.insert(QStringLiteral("generation"), QStringLiteral("999999")); snapshot.insert(QStringLiteral("mapping_load_context"), load);
+                    changed.context.insert(QStringLiteral("source_snapshot"), snapshot);
+                    check(mapper->automationDemoContextFingerprint(changed) != baseline, "load identity remains part of the context");
+                    changed = candidate; changed.save.revision.clear();
+                    check(mapper->automationDemoContextFingerprint(changed).isEmpty(), "invalid candidates have no usable context fingerprint");
+                    check(fullHash() == before, "projection copies never mutate the original full save payload");
+                }
+            }
             if (publicApply && request.method == QStringLiteral("qkm_preview_changes")
                 && request.arguments.value(QStringLiteral("action")) == QStringLiteral("configuration.save")) {
                 const auto candidate = mapper->prepareAutomationSettingSave(request, request.arguments.value(QStringLiteral("setting_name")).toString());
@@ -4006,6 +4081,24 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     QStringLiteral("deletion never starts mapping or accepts runtime input"));
                 check(mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
                     QStringLiteral("deletion leaves the actual GUI save name unchanged"));
+            } else if (saves == 0 && demoContext) {
+                QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+                QString error;
+                const auto source = mapper->collectAutomationSourceSnapshot(error);
+                check(actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore && error.isEmpty()
+                    && source.value(QStringLiteral("sources")) == sourceBefore.value(QStringLiteral("sources")),
+                    QStringLiteral("formal add and delete restore every source field without changing the INI"));
+                check(mapper->m_SaveSettingDirty && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch + 2
+                    && mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
+                    QStringLiteral("only two source mutations occur while GUI name is restored and dirty is retained"));
+                check(!mapper->m_ItemSetupDialog->isVisible() && mapper->m_KeyMappingDataTable->rowCount() == 0
+                    && mapper->automationSourceReadBasis() == QStringLiteral("pristine_idle")
+                    && !QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved(),
+                    QStringLiteral("context checks never start mapping and leave the real editor closed"));
+                check(projectionChecks->size() == 10, QStringLiteral("all independent projection component checks were exercised"));
+                for (const auto &entry : *projectionChecks) {
+                    checks.append(entry); passed = passed && entry.toObject().value(QStringLiteral("passed")).toBool();
+                }
             } else if (saves == 0) {
                 QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
                 check(actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore, QStringLiteral("read-only SDK scenario preserves complete INI bytes"));
@@ -4035,8 +4128,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 check(valuesMatch, QStringLiteral("formal save persists every independently prepared target and shared value"));
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
-                {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness},
+                {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness && !demoContext && !demoContextRead},
                 {QStringLiteral("formal_mcp_demo_preflight"), demoReadiness},
+                {QStringLiteral("formal_mcp_demo_context"), demoContext || demoContextRead},
                 {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},
                 {QStringLiteral("formal_mcp_delete"), deletionCase && connectionVariant != QStringLiteral("delete_read")
                     && connectionVariant != QStringLiteral("delete_stale")},

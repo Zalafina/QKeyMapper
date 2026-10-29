@@ -37,7 +37,7 @@ _ERROR_FEEDBACK = {
     "preview_superseded": ("较新的预览已替换原预览。", "核对当前预览内容及其 ID，勿提交旧预览。"),
     "preview_limit": ("待处理预览达到有界上限。", "取消自己的待处理预览或等待过期后重新预览。"),
     "operation_limit": ("进行中操作已占满结果存储。", "先查询已接受操作；等待完成后核对原预览是否仍有效，再由明确意图提交。"),
-    "confirmation_required": ("尚未确认预览要求的完整范围或连带变化。", "向用户说明预览内容，取得同意后重新预览；按操作分别确认映射冲突，或完整保存范围及独立覆盖意图。"),
+    "confirmation_required": ("尚未确认预览要求的完整范围或连带变化。", "向用户说明预览内容，取得同意后重新预览；按操作分别确认映射冲突、源行删除，或完整保存范围及独立覆盖意图。"),
     "save_write_failed": ("配置写盘失败，内存准备可能已变化。", "先以同一操作ID查询分段结果及当前状态；不要盲目重发，核对后再决定是否重新预览保存。"),
     "save_reload_failed": ("配置已经写盘，但重新加载失败。", "查询同一操作结果和当前配置，按实际磁盘／加载结果恢复；不能视为完全回滚或盲目重发。"),
     "permission_denied": ("该操作尚未获授权。", "请用户在 QKeyMapper 管理窗口核对并授予所需权限。"),
@@ -171,14 +171,14 @@ def main() -> None:
         return tool_result(await bridge.get_help(topic, offset=offset, limit=limit))
 
     @tool(read)
-    async def qkm_query(entity: Literal["configurations", "tabs", "mapping_sources", "mappings", "windows"],
+    async def qkm_query(entity: Literal["configurations", "tabs", "mapping_sources", "mappings", "windows", "demo_context"],
             catalog_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
             source_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
             source_tab_ref: Annotated[str | None, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")] = None,
             offset: Annotated[StrictInt, Field(ge=0, le=2147483647)] = 0,
             limit: Annotated[StrictInt, Field(ge=1, le=100)] = 50) -> ToolResult:
-        """只读分页查询。configurations/tabs 使用 catalog_revision，catalog_ref 不能作为编辑目标。mapping_sources 返回当前实际普通/共通源表的不透明引用；mappings 必须同时传该 source_revision 和 source_tab_ref，返回源行及完整字段。源查询要求加载成功、GUI 空闲且 Worker 停止，并且是初始静止或已有仍有效的完整清理读取许可；新运行活动使许可失效，运行中和停止清理中拒绝，不主动停止。completed_cleanup 及清理代次仅证明只读上下文，不授予编辑权限或替代异步操作结果。来源只证明当前内存源，不证明磁盘保存或共通备份加载自哪组。源修订不是完整业务修订，引用不授予写入权限；变化后重新查询。windows 仅需 Read，观察本实例 main/item_setup 的身份、可见／最小化／前台采样和不透明窗口生命周期引用；不创建、显示或截取窗口，不证明映射源／场景未变。该实体仅接收 entity/offset/limit，目录／源参数须省略。未加载配置内容尚未接入。"""
-        # Window observation shares pagination but accepts no catalog/source parameters.
+        """只读查询，目录／源分页，demo_context为单条观察。configurations/tabs 使用 catalog_revision，catalog_ref 不能作为编辑目标。mapping_sources 返回当前实际普通/共通源表的不透明引用；mappings 必须同时传该 source_revision 和 source_tab_ref，返回源行及完整字段。源查询要求加载成功、GUI 空闲且 Worker 停止，并且是初始静止或已有仍有效的完整清理读取许可；新运行活动使许可失效，运行中和停止清理中拒绝，不主动停止。completed_cleanup 及清理代次仅证明只读上下文，不授予编辑权限或替代异步操作结果。来源只证明当前内存源，不证明磁盘保存或共通备份加载自哪组。源修订不是完整业务修订，引用不授予写入权限；变化后重新查询。windows 仅需 Read，观察本实例 main/item_setup 的身份、可见／最小化／前台采样和不透明窗口生命周期引用；不创建、显示或截取窗口，不证明映射源／场景未变。该实体仅接收 entity/offset/limit，目录／源参数须省略。demo_context另须Read+Configure及实际后台私有桌面，观察当前普通配置的非行保存足迹签名和GUI保存名；仅排除74项源行存储键，须另用完整源修订核验行，不能作写入许可、场景租约或完整重置证明。只接受entity/offset/limit，offset须0；不创建保存预览、不写配置或重载。未加载配置内容尚未接入。"""
+        # Window and demo-context observations accept no catalog/source parameters.
         return tool_result(await bridge.query(entity, catalog_revision=catalog_revision, source_revision=source_revision,
                                              source_tab_ref=source_tab_ref, offset=offset, limit=limit))
 

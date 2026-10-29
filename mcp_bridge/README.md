@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十六项业务能力、十五工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
+官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。当前开发产品返回十七项业务能力、十五工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
 桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。普通用户免安装 Python 的打包交付属于 M3，当前入口用于开发和回归测试。
 
@@ -183,10 +183,18 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 
 ## 专用演示实例只读预检（P2-114）
 
-宿主可在原`--discovery-file`／可信`--executable`外显式指定`--demo-record <私有创建记录>`，该桥接才额外提供无参数、只读的`qkm_get_demo_state`；普通入口仍15工具，产品业务能力仍16项。此参数不创建进程、申请UAC或配对，不改变正常默认关闭；MCP客户端不能传入记录路径、任意PID或自己选择目标。当前是开发桥接入口，完整Release预热／免Python交付仍待P3／M3-B。
+宿主可在原`--discovery-file`／可信`--executable`外显式指定`--demo-record <私有创建记录>`，该桥接才额外提供无参数、只读的`qkm_get_demo_state`；普通入口仍15工具；115另增下述非行足迹查询，产品当前17项业务能力。此参数不创建进程、申请UAC或配对，不改变正常默认关闭；MCP客户端不能传入记录路径、任意PID或自己选择目标。当前是开发桥接入口，完整Release预热／免Python交付仍待P3／M3-B。
 
 记录是受信启动链的目标约束，最多8KiB，严格包含`version=1`、`executable`绝对路径、十进制字符串`pid/created/session`、32位小写hex的`instance`、`desktop`及初始保存配置组`configuration`；没有密钥。目录和文件须为当前用户的私有ACL、非重解析对象／单链接普通文件。记录自报路径不产生信任：仍沿显式可信EXE、实际进程／创建时间／登录会话、认证管道核验，再与产品报告的实际桌面和实例逐项匹配。现有维护启动链可生成测试记录，正式预热生成和部署流程尚未交付。
 
 预检在既有单worker内串行读取，要求已有Read+Configure+ShowWindows+CaptureWindows、后台私有非输入桌面、固定配置加载已接受、完整空闲清理读取基准、唯一附着普通空源及空的未附着Common备份、主窗已恢复／可见、无单项窗口且初始无dirty。产品`windows`观察新增保守布尔`private_background_available`，缺失／无法确认均不放行；不会显示、激活或切换桌面。
 
 成功数据含`configured/ready/reason`、已核实目标及`source_snapshot`；`reference_scope=preflight_observation_only`明确它不是写入许可、场景租约或完整重置证明。权限不足、非空／dirty、配置或记录不符、窗口未就绪分别报告；错误记录不改连其他目标、不返回未经核实的目标摘要，不破坏现有配对。当前工具只观察，不建例／截图／关窗／删除；不能仅凭ready=true向QQ宣称服务已准备完毕。跨场景非映射上下文、串行执行和失败回收后续实现，QQ渠道由gateway另联调。
+
+## 非行保存足迹观察（P2-115）
+
+产品能力`demo.context.read`要求Read+Configure，调用`qkm_query(entity="demo_context")`；只支持实际后台私有桌面的当前单一普通源、无Common数据及完整空闲清理读取基准。只接受entity/offset/limit，offset必须0，不接受目录／源引用或路径。不创建保存预览，不改变现有预览槽，不保存、重载、自动关闭窗口或启动映射。
+
+它复用C1完整保存载荷和临时Qt序列化核验，在副本中仅排除74项明确的源行存储键；保留其他Tab元数据、加载与共享草稿、宏、原始INI字节及GUI保存名称，再绑定实例、pair权限代次、加载／runtime代次。返回`context_revision`、`gui_save_name`、完整`source_snapshot`和`write_authority=false`。内部临时解析不等于写入产品INI；只读不表示没有临时序列化文件。
+
+`reference_scope=non_row_save_footprint_only`必须与完整源修订及窗口生命周期分别使用；不覆盖行数据、不授权修改，不是场景租约或完整业务修订。单项或其他设定编辑窗、未稳定快捷键、文件／共享缓存无法核验时拒绝。dirty已true时，GUI保存名或磁盘字节仍能改变该签名；仅新增／删除已知源行时可保持不变，为后续安全串行回收提供依据。当前未实现串行场景、跨退出恢复或QQ交付，不能仅凭两个签名相等宣称所有外部系统行为已复原。

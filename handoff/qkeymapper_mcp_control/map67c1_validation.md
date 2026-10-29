@@ -845,3 +845,17 @@ Python5项新记录／桥接测试与原22协议共27项通过：严格字段／
 双Qt正式stdio各四场，普通空源ready、Read权限permission_denied、预置A→B源demo_baseline_not_empty及实际Qt名称草稿demo_baseline_dirty；各8项Native、合计八场64项／104次handler／176次SDK记录＋8次schema拒绝。每场另验错误创建时间／实例／Session／EXE／桌面／额外字段和损坏记录，恢复后原因／目标回到原观察，原认证连接仍connected。Native独立完整源／GUI名／dirty／加载／sourceEpoch／INI均不变；dirty准备在观察前完成，不冒称该GUI准备也只读。实际QkmDemoReady114_<UUID>私有桌面，SDK8192／产品12288、同登录；全部正常退出、工作／生产者0、逐场清理五项零。无Default、系统输入、MCP配置写入、映射启动或驱动／FilterKeys变化，无截图／视觉新验收。
 
 原件out/mcp_demo_ready_w11_20261029在本机，含分步构建／部署与身份、双Qt组件、合成INI、受管定义／登记、普通宿主私有记录、准确SDK peer／逐次调用、八场完整源／退出INI／尾状态及summary，不随Git。错误PID复用等身份仅字段反例／当前活进程核验，不冒称真实PID复用／退出／休眠均已验。Default拒绝复用同一未改函数既有证据，不记本轮Default测试。串行场景、非映射上下文一致性／重置、正式预热／免Python、Win10／高DPI、其他实例及QQ未验，完整P2／M1未标完成。
+
+## DEMO-P2-115：非行保存足迹（2026-10-29，PC-W11）
+
+114 59276353之后增加demo.context.read：qkm_query(entity=demo_context)、Read+Configure，实际非Default／非输入桌面、当前唯一普通源且Common关闭／备份空、完整空闲清理／请求仍有效才观察。仅entity/offset/limit，offset0，拒绝来源／目录／路径参数；复用C1 prepareAutomationSettingSave、现有Reader缓存校验及Qt类型序列化，不创建保存预览或改预览槽，无保存／重载／自动关窗／启停。
+
+私有automationDemoContextFingerprint仅复制完整保存载荷并移除mappingCodeKnownKeys已有74项源行键，保留另外23项Tab元数据、全部其余配置／全局／宏／共享足迹和原始INI字节；绑定实例／pair权限代次、GUI保存名称、当前Tab、加载及runtime代次。副本使用已有OrderedMap深拷贝／迭代重建语义，未修改该容器或C1保存函数。返回context_revision、gui_save_name和完整source_snapshot，reference_scope=non_row_save_footprint_only／write_authority=false；源行及窗口须分别核验，签名不是写权限、全业务修订或租约。内部沿C1临时Qt解析／序列化，不冒称零临时落盘或跨进程INI事务。
+
+双Qt受影响生命周期维护Release增量native0，Qt6零编译／链接警告、Qt5兼容通过。正式stdio各正例＋Read负例共四场50项Native（正例17含10项副本组件，Read8），58次handler／70次SDK记录＋2次schema拒绝。A→B正式新增、正式打开／安全关闭单项窗、正式删除前后非行签名保持，源修订按两次修改变化；编辑窗打开时context_busy。dirty已true后实际Qt保存名称改为DemoContext115Draft，完整源修订不变而context_revision变化，恢复名称后签名复原；普通SDK仅给合成INI追加注释也改变签名，恢复原字节后复原。Native独立确认所有源／剩余字段／metadata归原基线、GUI名恢复、INI／加载保持、sourceEpoch恰+2、dirty按原GUI行为保留、窗口关闭及无运行输入活动。
+
+组件从实际完整源schema独立取74项字段，逐项改候选副本均不改变非行签名；改Tab热键元数据／GUI名／原始磁盘字节／pair／epoch／加载均改变，清空候选修订拒绝，原始全保存载荷哈希不变。这些是投影与归属组件，不冒充真实撤权、加载、跨客户端或PID复用场景。原新增／删除／窗口核心未改，不重跑111／113／114矩阵；Python基本映射转发1项通过，Bridge取消／busy复用114未改代码及22项结果。上下文参数、权限和新query枚举由上述真实stdio验证。
+
+四个实际QkmDemoContext115_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录，全部正常退出、工作／生产者0及逐场owned／unresolved／pending／current_action／current_job五项零。无Default、系统输入、映射启动、驱动或过滤键设置变化；合成INI注释修改／恢复为明确受控测试准备，不宣称其全过程字节不变。没有新增截图／视觉验收，不用STOPPED替代清理。普通15工具／17产品能力，--demo-record时仍16工具；删除确认的共同反馈补上源行删除用语，无TS／QM变更。
+
+原件out/mcp_demo_context_w11_20261029在本机，含单次大文件补丁／期望字节、双Qt构建／部署／实际身份、公共登记、合成INI、准确SDK peer／全部调用、组件／名称和磁盘反例、正式窗口／源回收、退出／尾状态和summary，不随Git。签名只证明当前已加载保存足迹的非行投影，运行后／实际撤权或断线、其他实例、Win10／高DPI、代表高级页、真正串行场景归属／失败隔离与预热／免Python／QQ仍待，完整P2／M1未标完成。

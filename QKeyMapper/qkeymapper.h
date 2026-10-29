@@ -2105,6 +2105,7 @@ private:
     QJsonObject collectAutomationCatalog(void) const;
     QJsonObject collectAutomationSourceSnapshot(QString &errorCode) const;
     void handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request);
+    void handleAutomationDemoContextQuery(const QkmAutomation::AutomationRequest &request);
     void handleAutomationWindowCapture(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMappingEditor(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMappingEditorClose(const QkmAutomation::AutomationRequest &request);
@@ -2236,6 +2237,7 @@ private:
         const std::function<bool()> &admitCommit = {});
     AutomationSettingSavePreparation prepareAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
         const QString &requestedName) const;
+    static QString automationDemoContextFingerprint(const AutomationSettingSavePreparation &candidate);
     AutomationSettingSavePreparation revalidateAutomationSettingSave(const QkmAutomation::AutomationRequest &request,
         const QkmAutomation::ConfigurationSaveBinding &expected, bool confirmScope, bool confirmOverwrite) const;
     SettingSaveResult executeAutomationSettingSave(const QkmAutomation::AutomationRequest &request,

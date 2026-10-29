@@ -110,3 +110,9 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 `settings_save_apply`／`demo_ready、demo_ready_read、demo_ready_nonempty、demo_ready_dirty`复用同一真实认证夹具；批准387，read变体只Read。使用P0的安全Demo104Seed单表空源INI，nonempty只在合成INI预置A→B，dirty在建立观察基线前以真实Qt键事件编辑保存名称为DemoReady114Draft，不用setText或直接设置dirty。之后SDK只读预检，Native独立核对完整源、GUI名称、dirty、加载／sourceEpoch和INI均不变，无保存或映射动作。
 
 维护模块 [demo_readiness_acceptance.py](../../../mcp_bridge/tests/demo_readiness_acceptance.py)要求普通宿主依据已核验Start记录／实际PID创建当前用户私有ACL的`host-record/demo.json`，并用显式--demo-record启动正式stdio桥接；不复制配对／缓存PID，不以该测试记录冒充正式预热已交付。验证就绪／权限／非空／dirty、严格无参schema、错误创建时间／实例／Session／EXE／桌面／额外字段、损坏记录、恢复及原连接保持。原manifest启动／必要关闭走公共登记，SDK与记录写入均普通权限，无Default、系统输入或驱动变更。
+
+## DEMO-P2-115 非行保存足迹
+
+`settings_save_apply`／`demo_context、demo_context_read`沿相同安全Demo104Seed空源INI、真实认证和隔离私有桌面，分别批准387／Read。SDK模块 [demo_context_acceptance.py](../../../mcp_bridge/tests/demo_context_acceptance.py)验证上下文只读参数／权限、正式A→B新增后签名稳定、实际Qt保存名称变化／恢复、普通宿主合成INI注释字节变化／恢复、正式单项窗开关及删除后签名稳定。固定`.demo-name-change／demo-name-restore`只向保存名称投递Qt键事件，不设置控件值或dirty；此时dirty已true，源修订保持而非行签名须变化。
+
+第一次单行上下文请求另对真实C1候选副本做10项组件检查：74项源字段排除，Tab元数据／GUI名／磁盘／pair／epoch／加载改变检出，无效候选无签名及原全保存载荷不受副本删除影响。组件副本不是GUI修改基线。Native独立验证源完全复原、原INI／加载保持、只有两次源修改、名称恢复、dirty按原行为保留和窗口已关闭／未启动映射；不把本用例或签名比较记成已交付串行服务。

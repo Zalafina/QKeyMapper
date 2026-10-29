@@ -1008,3 +1008,7 @@ mapping.delete.preview／apply复用现有工具，Read+Configure及独立confir
 ## DEMO-P2-114：可选宿主记录及只读预检
 
 --demo-record仅额外启用无参数qkm_get_demo_state；严格私有记录与固定可信EXE／认证实例／实际进程及桌面匹配，Read+Configure+Show+Capture、固定已加载单一普通空源及空Common备份、完整空闲读取基准、主窗可见／无编辑窗／无dirty才报告ready。返回仅观察，不授权写入／租约／重置或预热；普通15工具／产品16能力保持。双Qt八场64项native、104 handler／176 SDK＋8 schema，27项Python及双Qt各4项窗口组件通过；全部源INI及状态保持、正常退出／五项清理零，见[同一C1证据](map67c1_validation.md#demo-p2-114只读专用实例预检2026-10-29pc-w11)。测试宿主记录不冒充正式预热，非映射上下文／串行回收／免Python和QQ仍待，未标完整P2。
+
+## DEMO-P2-115：非行保存足迹只读查询
+
+demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后台／完整空闲门槛，复用C1完整保存副本，仅排除74项源行键，保留其余Tab／配置／全局／共享／磁盘及GUI名，绑定实例／pair／epoch／加载／runtime；不建保存预览、不写产品INI／重载／自动关窗。双Qt四场50项native、58 handler／70 SDK＋2 schema，已实测dirty为true时名称改变但源修订不变、非行签名仍检出；基本新增／关窗／删除签名稳定、磁盘字节变化检出及投影组件通过，见[同一C1证据](map67c1_validation.md#demo-p2-115非行保存足迹2026-10-29pc-w11)。源行／窗口须另验，不授写权限或租约；普通15工具／17产品能力，可选桥接预检16工具。串行场景、失败隔离、完整P2／M1及预热／交付缺口保留。
