@@ -909,3 +909,17 @@ Agent原尺寸查看两张1130×722主窗PNG（Qt6 51182B／Qt5 50326B）及两�
 实际QkmAdvancedGui119_<UUID>私有桌面，SDK8192／原manifest产品12288、同登录；全部native0／正常退出、工作／生产者0及逐场owned／unresolved／pending／current_action／current_job零。dialog.isActiveWindow在私有Qt线程为true，不代表Default前台归属或其全程因果；后续无激活正式显示须另验。无Default、系统输入、映射启动、驱动／FilterKeys修改，画面显示既有FakerInput可用不证明私有桌面隔离驱动或本片安装了驱动。
 
 原件out/mcp_advanced_gui_w11_20261029含首轮及最终构建、部署／公共定义、SDK peer／逐次调用、GUI开关确认、四个自身帧／普通PNG及Agent审阅、完整源INI／退出／清理和summary，不随Git。维护SDK纳入advanced_gui_acceptance.py及Native README用法；普通15／仅记录16／显式演示17工具、产品17能力保持，高级窗正式观察／捕获／归属开关／串行接线尚未交付。未测参数编辑、通知子窗／撤权／激活失败、实际Default／Win10／高DPI／其他实例因果、预热／免Python和QQ，不把本片标为完整P1／P2／M1完成。
+
+## DEMO-P1-120：高级窗只读角色观察／捕获（2026-10-29，PC-W11）
+
+119 ea5e3a6f后在既有WindowAccess固定注册mapping_advanced；观察器创建移到高级窗实际构造之后，保留原主／单项观察逻辑。默认windows仍两角色，仅显式window_role=mapping_advanced返回高级一项；Read、实际实例／GUI线程桌面及owner窗口引用规则保持，隐藏／重开失效，查询不创建HWND或显示。选择器仅windows接受，错角色／类型／分页拒绝，不引入全局实例服务或任意目标枚举。
+
+既有windows.capture枚举增加该固定角色，Read+Capture、实际附着当前源Tab、完整安全源／当前请求及100ms绘制前后窗口复核、5秒截止／160KiB／8M边界保持；不显示／激活、切Tab或写设置。高级值不属于源行提交内容，结果增加settings_scope=live_loaded_settings_not_committed_by_source_revision，普通桥接严格校验并输出原生ImageContent，无Base64重复。仅扩固定角色及原有目标指针，不改hasOpenMappingEditor、C1保存准入或配对权限；正常15／仅记录16／显式demo17工具、产品17能力不变，demo view仍仅main／item_setup。
+
+Python图像8／协议22／结构化反馈7共37项通过，包括新scope缺失／错值拒绝；原main／item格式保持。双Qt受影响生命周期维护及窗口组件增量native0，Qt6零编译／链接警告、Qt5兼容通过；窗口组件各5项含init／cleanup，共10项，默认两项／显式一项、隐藏窗不创建原生句柄、参数／offset边界、代次／跨role／epoch与原捕获边界通过。普通Medium组件在独立实际私有桌面正常退出，不走gsudo；产品原manifest启动／必要关闭仍公共登记。
+
+正式stdio复用119独立GUI开关，双Qt各正例387／无Capture131四场24项Native、98 handler／112 SDK记录。默认两角色／显式高级一项，源实体误带window_role及显式offset2为invalid_arguments；原GUI已显示时旧源stale_source、正确PNG及隐藏后的旧窗stale_window通过。两张正式770×390高级窗图与同次GUI自身帧逐字节相同，Agent看图确认中文及3／3、2ms、50／30／15%、0.50／0.50等默认参数，无黑图或错窗。131负例只收到permission_denied、零MCP图；它的GUI帧属于已授权测试夹具观察，不等于绕过Capture的正式接口。
+
+四场GUI开关期间完整源／非行context／输入指纹、GUI名／INI／加载不变，原页恢复后正式回收本轮行，sourceEpoch各恰+2、dirty保留、所有源空、无编辑窗／runtime输入。实际QkmAdvancedCapture120_<UUID>私有桌面，SDK8192／产品12288、同登录；全部native0／正常退出、工作／生产者0、逐场owned／unresolved／pending／current_action／current_job零。无Default、系统输入、映射启动、驱动或FilterKeys改变；Qt私有激活状态不冒充Default前台因果。
+
+原件out/mcp_advanced_capture_w11_20261029含单次大文件补丁／精确字节、双Qt构建与组件／部署身份、公共定义、37项日志、SDK peer／逐次调用、原GUI帧与两张正式图及Agent审阅、完整源INI／退出／清理及summary，不随Git。桥接／Native README用法同步，无TS／QM更改。高级窗正式私有显示／归属关闭、串行demo view、实际参数编辑／子窗／撤权／超时／断线、Default／Win10／高DPI及其他实例因果、预热／免Python／QQ仍待；不标完整P1／P2／M1完成，不重复既有不变路径全矩阵或全量静态／ASan／普通完整Release。

@@ -60,9 +60,9 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 7. 能力包含 `source.read` 时，先查询 mapping_sources，后续页传返回的 source_snapshot.revision 为 source_revision；查询 mappings 必须同时传该 source_revision 和所选 source_tab_ref。源表来自实际普通／共通内存表，包含非当前 Tab，附加显示的共通行不会重复列为普通源行。每个源行含 source_ref、source_row、fields、derived 和 lock_state_sample；fields 沿用现有映射码字段名及类型，派生字段只采样，不重新计算或回写。引用属于本次源快照，不能解析为写入授权；源内容、加载／结构代次、实例或配对权限改变时返回 stale_source，须重新查询。完整快照上限 4 MiB，单页还受现有通信帧限制，使用实际 next_offset 分页；单项超限明确拒绝。
 8. 能力包含 `help.read` 时，`qkm_get_help` 的 topic 为 `basic_mapping`、`original_keys` 或 `mapping_keys`。基础帮助给出 A→B 语法示例、组合／序列分隔符、等待及连发的毫秒范围／默认值、映射项重复模式及次数含义（与宏 xN 的约束分开）；等待控件的 0 表示不追加后缀，字面 ⏱0 非法。键名直接来自产品解析器的有效列表，去空／去重并按大小写敏感顺序分页；offset 从 0 开始，limit 为 1–100、默认 50，使用 next_offset 续页。返回 reference_scope=parser_help_only，不校验完整映射或设备是否可用，不授予编辑权限；实际可调用操作以能力发现为准。此帮助不读取可变映射源，也不停止映射。
 9. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
-10. 能力包含 `windows.read` 时，`qkm_query({"entity":"windows"})` 只观察当前已认证实例的 main／item_setup 两个固定角色；仅接受 entity／offset／limit，offset 为 0–2，limit 为 1–100。返回实际 EXE／PID／创建时间／GUI 线程桌面、Qt／原生可见、最小化、前台精确采样、逻辑尺寸／DPR及不透明 window_ref。未创建原生窗口时引用为 null，不为查询调用 winId 创建或显示窗口。该查询只需 Read，不授予或调用显示／截图，也不读取其他进程窗口。
+10. 能力包含 `windows.read` 时，`qkm_query({"entity":"windows"})` 默认观察当前已认证实例的main／item_setup两个固定角色；120另允许window_role="mapping_advanced"，只返回固定高级窗一项。仅接受entity／offset／limit及此可选角色，默认offset为0–2、显式高级窗0–1，limit为1–100。返回实际 EXE／PID／创建时间／GUI 线程桌面、Qt／原生可见、最小化、前台精确采样、逻辑尺寸／DPR及不透明 window_ref。未创建原生窗口时引用为 null，不为查询调用 winId 创建或显示窗口。该查询只需 Read，不授予或调用显示／截图，也不读取其他进程窗口。
 
-窗口引用仅属于实例／配对权限代次及本角色窗口生命周期，关闭／隐藏重开、呈现／原生窗口重建、销毁或身份／权限改变后失效；正常返回 Agent 导致的焦点变化不使其失效。`foreground_exact` 和 `foreground_in_instance` 是本次采样，不代表已请求激活或已核实前台显示。引用不证明映射源／场景未变，也不授权操作；截图独立核对业务源及源Tab；109提供私有后台单项打开，普通Default显示确认和其他角色仍待。
+窗口引用仅属于实例／配对权限代次及本角色窗口生命周期，关闭／隐藏重开、呈现／原生窗口重建、销毁或身份／权限改变后失效；正常返回 Agent 导致的焦点变化不使其失效。`foreground_exact` 和 `foreground_in_instance` 是本次采样，不代表已请求激活或已核实前台显示。引用不证明映射源／场景未变，也不授权操作；截图独立核对业务源及源Tab；109提供私有后台单项打开，普通Default显示确认和其他角色的正式展示仍待。
 
 管理窗口的“显示窗口”与“截取窗口图像”是各自独立的权限，默认不授予，也不包含在 Read／Configure／Run mapping 中。新配对可单独勾选；已有配对在接口启用后，选中实际客户端，点击“授权窗口权限”追加批准，已有权限和配对密钥保留。批准实际新增权限后权限代次递增、该客户端的旧连接断开；使用 qkm_connect 明确重连取得新权限，无需重新配对。取消或没有新增项不写盘；保存失败关闭 MCP，原授权未成功改变。旧引用／预览属于原权限代次，应重新查询。
 
@@ -141,7 +141,7 @@ Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际�
 
 ## 受限真实窗口图片（P1-108）
 
-先查询 `mapping_sources`／`mappings` 取得当前 `source_revision`、所选 `source_tab_ref`，再查询 `windows` 取得非空 `window_ref`。能力包含 `windows.capture` 且配对有 **Read+CaptureWindows** 时，调用 `qkm_capture_window(role, window_ref, source_revision, source_tab_ref)`；role仅main／item_setup，四项均必填，无PID／HWND／输出路径。main须显示所选源Tab，单项窗须对应实际源Tab／行；窗口必须已显示且非最小化。截图工具不打开、恢复或激活窗口；单项窗可由下述私有后台正式入口或原GUI打开。
+先查询 `mapping_sources`／`mappings` 取得当前 `source_revision`、所选 `source_tab_ref`，再查询 `windows` 取得非空 `window_ref`。能力包含 `windows.capture` 且配对有 **Read+CaptureWindows** 时，调用 `qkm_capture_window(role, window_ref, source_revision, source_tab_ref)`；role固定main／item_setup／mapping_advanced，四项均必填，无PID／HWND／输出路径。main须显示所选源Tab，单项窗须对应实际源Tab／行；窗口必须已显示且非最小化。截图工具不打开、恢复或激活窗口；单项窗可由下述私有后台正式入口或原GUI打开。
 
 成功的 `CallToolResult.content` 含一项原生 `ImageContent(type="image", mime_type="image/png", data=<Base64>)` 及不重复图片Base64的JSON文本；`structured_content.result`为相同元数据。包括准确实例／进程创建身份、实际桌面、角色／窗口引用、源及源Tab／单项行、像素／DPR／PNG字节数、UTC时间和桥接计算的SHA256。Agent可直接查看原生图像；gateway应按其SDK取出image内容或解码成自己的受控附件，再关联QQ会话发送。MCP返回图片不证明QQ发送或送达，本机没有gateway联调环境。
 
@@ -220,3 +220,12 @@ Win11双Qt各两轮A→B／C→D正式stdio完成，四张真实820×480单项�
 `qkm_demo_mapping(original_key="A", mapping_key="B", view="main")`使用相同固定部署／权限和归属行回收；view只允许main或item_setup，省略仍走原单项窗。写入前核对实际windows.capture角色声明。main仅查询并捕获已存在、可见／恢复的本实例主窗，不打开单项窗、不切换设定页、不请求显示或激活；未就绪按原失败／回收规则处理，不能自动改选其他窗口。`demo_scene.view`与原图像role对应。
 
 Win11双Qt各实际主窗A→B、随后默认单项C→D及Read负例通过，主窗1130×722 PNG可见真实A/B行，四张图片经Agent查看；复用117完全相同的本机Native二进制，未重编产品或测试夹具。主窗横向滚动表格当前仅可见部分列，不宣称全列内容或高级设定页已覆盖；完整源字段仍由正式业务查询核对。新增视图不改变正常15工具或配对／实例选择规则。
+
+
+## 映射高级窗只读查询／捕获（P1-120）
+
+`qkm_query(entity="windows", window_role="mapping_advanced")`仅观察固定本实例QMappingAdvancedDialog，需Read；默认不带window_role仍返回原main／item_setup两项。其他查询实体不接受该选择器，不扫描或选择任意进程／窗口；查询不创建原生窗口、显示或激活。窗口隐藏／关闭后旧引用失效。
+
+高级窗已经由原GUI显示且源安全可读时，用所查window_ref及当前source_revision／source_tab_ref调用`qkm_capture_window(role="mapping_advanced", ...)`，仍需独立Read+CaptureWindows。高级窗须对应当前源Tab，绘制前后复核与160KiB／8M像素上限保持；返回真实ImageContent。高级控件是实时加载设定，`settings_scope="live_loaded_settings_not_committed_by_source_revision"`明确其值未由源行修订提交，不能据此宣称完整配置已保存或未变化。未显示、旧窗／旧源、模态／popup或权限不足明确失败，不自动打开或切换目标。
+
+Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看；默认两角色兼容、无Capture（Read+Configure+Show）拒绝、开关前后源及非行足迹／INI保持已定向核对。无Capture用例中的固定GUI帧是测试夹具观察材料，MCP未返回图片。高级窗正式显示／归属关闭和串行demo view仍待，`qkm_demo_mapping.view`目前仍仅main／item_setup；不提供高级设置编辑。其他系统／Default／高DPI、独立子窗与完整交付缺口见唯一主计划。

@@ -17,8 +17,8 @@ def read_frame(path):
     return json.loads(data.decode("utf-8"))
 
 
-async def exercise(client, request, variant, output, exe):
-    assert variant == "advanced_gui"
+async def exercise(client, request, variant, output, exe, *, capture=False):
+    assert variant in ("advanced_gui", "advanced_gui_no_capture")
     initial = business_state((await request("qkm_get_state"))["result"])
     sources = (await request("qkm_query", dict(entity="mapping_sources", limit=100)))["result"]
     before = (await request("qkm_query", dict(entity="demo_context")))["result"]
@@ -33,6 +33,14 @@ async def exercise(client, request, variant, output, exe):
     assert len(rows["items"]) == 1 and rows["items"][0]["source_ref"] == owned["source_ref"]
     context = (await request("qkm_query", dict(entity="demo_context")))["result"]
     assert context["context_revision"] == before["context_revision"] and context["source_snapshot"] == owned["source_snapshot"]
+    if capture:
+        capabilities = (await request("qkm_get_capabilities"))["result"]["business_capabilities"]
+        window_cap = next(value for value in capabilities if value["id"] == "windows.read")
+        assert window_cap["arguments_schema"]["properties"]["window_role"]["const"] == "mapping_advanced"
+        hidden = (await request("qkm_query", dict(entity="windows", window_role="mapping_advanced")))["result"]
+        assert hidden["total"] == 1 and hidden["items"][0]["role"] == "mapping_advanced" and not hidden["items"][0]["qt_visible"]
+        await request("qkm_query", dict(entity="mapping_sources", window_role="mapping_advanced"), error="invalid_arguments")
+        await request("qkm_query", dict(entity="windows", window_role="mapping_advanced", offset=2), error="invalid_arguments")
 
     async def marker(start, finish):
         (output / ("case.json." + start)).write_text("{}", encoding="utf-8")
@@ -64,6 +72,26 @@ async def exercise(client, request, variant, output, exe):
         (output / ("gui-" + role + ".png")).write_bytes(png)
         (output / ("gui-" + role + ".json")).write_text(json.dumps(frame, ensure_ascii=False, indent=2), encoding="utf-8")
     assert len(epochs) == 1
+    matched = None
+    if capture:
+        standard = (await request("qkm_query", dict(entity="windows")))["result"]
+        assert [item["role"] for item in standard["items"]] == ["main", "item_setup"]
+        selected = (await request("qkm_query", dict(entity="windows", window_role="mapping_advanced")))["result"]
+        assert selected["total"] == 1 and selected["target"] == standard["target"]
+        visible = selected["items"][0]
+        assert visible["qt_visible"] and visible["native_visible"] and visible["native_ready"] and not visible["minimized"]
+        capture_args = dict(role="mapping_advanced", window_ref=visible["window_ref"],
+            source_revision=owned["source_snapshot"]["revision"], source_tab_ref=owned["source_tab_ref"])
+        if variant == "advanced_gui_no_capture":
+            await request("qkm_capture_window", capture_args, error="permission_denied")
+        else:
+            await request("qkm_capture_window", {**capture_args, "source_revision": sources["source_snapshot"]["revision"],
+                "source_tab_ref": sources["items"][0]["source_tab_ref"]}, error="stale_source")
+            image = (await request("qkm_capture_window", capture_args))["result"]
+            assert image["settings_scope"] == "live_loaded_settings_not_committed_by_source_revision"
+            assert image["source_context"] == owned["source_snapshot"] and "edit_target" not in image
+            actual_png = next(path for path in output.glob("mcp-image-*-mapping_advanced.png"))
+            matched = actual_png.read_bytes() == (output / "gui-mapping_advanced_gui.png").read_bytes()
     assert (await request("qkm_query", row_args))["result"] == rows
     await request("qkm_query", dict(entity="demo_context"), error="context_busy")
     deletion_args = dict(action="mapping.delete", source_revision=owned["source_snapshot"]["revision"],
@@ -71,6 +99,11 @@ async def exercise(client, request, variant, output, exe):
     await request("qkm_preview_changes", deletion_args, error="context_busy")
     closed = await marker("advanced-close", "advanced-closed")
     assert closed["input_fingerprint_unchanged"] and closed["original_page_restored"]
+    if capture:
+        hidden = (await request("qkm_query", dict(entity="windows", window_role="mapping_advanced")))["result"]["items"][0]
+        assert not hidden["qt_visible"] and hidden["window_ref"] != visible["window_ref"]
+        if variant != "advanced_gui_no_capture":
+            await request("qkm_capture_window", capture_args, error="stale_window")
     assert (await request("qkm_query", row_args))["result"] == rows
     after_gui = (await request("qkm_query", dict(entity="demo_context")))["result"]
     assert after_gui == context and (exe.parent / "keymapdata.ini").read_bytes() == disk
@@ -83,4 +116,5 @@ async def exercise(client, request, variant, output, exe):
     assert (await request("qkm_query", dict(entity="demo_context")))["result"]["context_revision"] == before["context_revision"]
     assert (exe.parent / "keymapdata.ini").read_bytes() == disk
     return dict(successful_saves=0, independent_advanced_gui=True, gui_frames=2, schema_errors=0,
-        dialog_active_observed=opened["dialog_active"], full_context_preserved=True)
+        dialog_active_observed=opened["dialog_active"], full_context_preserved=True,
+        formal_advanced_capture=capture and variant != "advanced_gui_no_capture", capture_matches_same_gui_png=matched)

@@ -168,7 +168,7 @@ class Bridge:
 
     async def query(self, entity: str, *, catalog_revision: str | None = None,
                     source_revision: str | None = None, source_tab_ref: str | None = None,
-                    offset: int = 0, limit: int = 50) -> dict:
+                    window_role: str | None = None, offset: int = 0, limit: int = 50) -> dict:
         arguments = {"entity": entity, "offset": offset, "limit": limit}
         if catalog_revision is not None:
             arguments["catalog_revision"] = catalog_revision
@@ -176,6 +176,8 @@ class Bridge:
             arguments["source_revision"] = source_revision
         if source_tab_ref is not None:
             arguments["source_tab_ref"] = source_tab_ref
+        if window_role is not None:
+            arguments["window_role"] = window_role
         return await self._call("qkm_query", arguments)
 
     async def preview_changes(self, source_revision: str | None = None, source_tab_ref: str | None = None,

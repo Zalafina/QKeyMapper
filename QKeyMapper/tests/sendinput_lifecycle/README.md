@@ -122,3 +122,8 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 固定settings_save_apply／advanced_gui沿独立合成INI和真实认证SDK；维护模块[advanced_gui_acceptance.py](../../../mcp_bridge/tests/advanced_gui_acceptance.py)先正式MCP建立A→B，再由实际Qt Tab／原按钮打开高级窗，自身Qt客户区抓图，Escape关闭及真实Tab点击恢复原页，最后正式删除本轮归属行。完整源、非行足迹、输入指纹、INI及生命周期核验保持；不编辑任何设置值、不启动映射、发送系统输入或改变驱动。
 
 这里只形成独立GUI显示证据，尚非正式高级窗MCP接口。仅沿已登记私有桌面／原manifest测试入口执行；SDK、构建及图像解码保持普通权限，原生GUI线程只生成固定out证据。结果与缺口仍只记唯一主计划。
+
+
+## DEMO-P1-120 高级角色只读捕获
+
+同一SDK模块以capture=True运行advanced_gui／advanced_gui_no_capture，分别批准387／131；沿119原GUI入口取得自身帧，并调用正式显式高级角色查询／PNG捕获，验证默认两角色兼容、旧源／旧窗、非windows实体参数拒绝及无Capture不返回MCP图片。固定GUI证据文件与正式MCP图像分别计数，不把测试观察材料当成权限授予。最后仍核对原GUI恢复／完整设定与源，正式删除归属行、正常退出及公共登记清理。

@@ -34,6 +34,18 @@ def fixture():
 
 
 class ImageTests(unittest.TestCase):
+    def test_advanced_scope_is_explicit_and_preserves_existing_roles(self):
+        original, discovery, arguments, _ = fixture()
+        arguments["role"] = original["role"] = "mapping_advanced"
+        original["settings_scope"] = "live_loaded_settings_not_committed_by_source_revision"
+        self.assertEqual(validate_capture(original, discovery, arguments)["settings_scope"], original["settings_scope"])
+        for scope in (None, True, "source_snapshot_only"):
+            with self.subTest(scope=scope), self.assertRaises(BridgeError):
+                validate_capture({**original, "settings_scope": scope}, discovery, arguments)
+        del original["settings_scope"]
+        with self.assertRaises(BridgeError):
+            validate_capture(original, discovery, arguments)
+
     def test_valid_png_and_no_duplicate_base64(self):
         from qkeymapper_mcp.__main__ import image_tool_result
         value, discovery, arguments, png = fixture()

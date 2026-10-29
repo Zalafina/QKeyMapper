@@ -18,9 +18,12 @@ def validate_capture(result: dict, discovery, arguments: dict) -> dict:
     try:
         require(type(result) is dict)
         fields(result, "target role window_ref source_revision source_tab_ref source_context presentation format pixel_width pixel_height "
-                       "device_pixel_ratio bytes captured_at_utc png_base64" + (" edit_target" if result.get("role") == "item_setup" else ""))
+                       "device_pixel_ratio bytes captured_at_utc png_base64" + (" edit_target" if result.get("role") == "item_setup"
+                           else " settings_scope" if result.get("role") == "mapping_advanced" else ""))
         require(all(result[key] == arguments.get(key) for key in ("role", "window_ref", "source_revision", "source_tab_ref")))
-        require(result["role"] in ("main", "item_setup") and result["format"] == "image/png")
+        require(result["role"] in ("main", "item_setup", "mapping_advanced") and result["format"] == "image/png")
+        if result["role"] == "mapping_advanced":
+            require(result["settings_scope"] == "live_loaded_settings_not_committed_by_source_revision")
         hex_bytes(result["window_ref"], 32)
         hex_bytes(result["source_revision"], 32)
         require(type(result["source_tab_ref"]) is str)

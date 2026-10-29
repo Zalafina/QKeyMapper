@@ -19,7 +19,7 @@
 namespace QkmAutomation {
 namespace {
 
-const char *const Roles[] = {"main", "item_setup"};
+const char *const Roles[] = {"main", "item_setup", "mapping_advanced"};
 
 bool guiThread()
 {
@@ -140,8 +140,8 @@ QJsonObject mappingEditorCloseCapability()
     return result;
 }
 
-WindowAccess::WindowAccess(QWidget *main, QWidget *itemSetup)
-    : QObject(main), m_windows{{main, itemSetup}}
+WindowAccess::WindowAccess(QWidget *main, QWidget *itemSetup, QWidget *mappingAdvanced)
+    : QObject(main), m_windows{{main, itemSetup, mappingAdvanced}}
 {
     for (const auto &window : m_windows) if (window) window->installEventFilter(this);
 }
@@ -216,16 +216,22 @@ WindowQueryResult WindowAccess::query(const QString &instance, const QString &pa
     if (arguments.value(QStringLiteral("entity")) != QJsonValue(QStringLiteral("windows")))
         return fail("invalid_arguments", "Use the windows query entity.");
     for (auto it = arguments.begin(); it != arguments.end(); ++it) {
-        if (it.key() != QStringLiteral("entity") && it.key() != QStringLiteral("offset") && it.key() != QStringLiteral("limit"))
-            return fail("invalid_arguments", "Only entity, offset and limit are accepted for windows.");
+        if (it.key() != QStringLiteral("entity") && it.key() != QStringLiteral("offset") && it.key() != QStringLiteral("limit")
+            && it.key() != QStringLiteral("window_role"))
+            return fail("invalid_arguments", "Only entity, offset, limit and the fixed advanced window_role are accepted for windows.");
     }
+    const auto selectedRole = arguments.value(QStringLiteral("window_role"));
+    if (!selectedRole.isUndefined() && selectedRole != QJsonValue(QStringLiteral("mapping_advanced")))
+        return fail("invalid_arguments", "The explicit window_role only supports mapping_advanced.");
+    const bool advanced = !selectedRole.isUndefined();
+    const int total = advanced ? 1 : 2;
     const auto integer = [&](const char *key, int fallback, int low, int high) {
         const auto value = arguments.value(QLatin1String(key));
         if (value.isUndefined()) return fallback;
         return value.isDouble() && qIsFinite(value.toDouble()) && value.toDouble() >= low
             && value.toDouble() <= high && value.toDouble() == value.toInt(-1) ? value.toInt() : -1;
     };
-    const int offset = integer("offset", 0, 0, 2), limit = integer("limit", 50, 1, 100);
+    const int offset = integer("offset", 0, 0, total), limit = integer("limit", 50, 1, 100);
     if (offset < 0 || limit < 0) return fail("invalid_arguments", "Window pagination is outside the supported range.");
     wchar_t desktop[256]{};
     DWORD needed = 0;
@@ -237,7 +243,7 @@ WindowQueryResult WindowAccess::query(const QString &instance, const QString &pa
     GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
     QJsonArray items;
     int next = offset;
-    for (; next < 2 && items.size() < limit; ++next) items.append(describe(next, instance, pairId, permissionEpoch));
+    for (; next < total && items.size() < limit; ++next) items.append(describe(advanced ? 2 : next, instance, pairId, permissionEpoch));
     return {{{QStringLiteral("schema_version"), 1}, {QStringLiteral("entity"), QStringLiteral("windows")},
         {QStringLiteral("sampled_at_utc"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)},
         {QStringLiteral("target"), QJsonObject{{QStringLiteral("instance"), instance},
@@ -247,15 +253,15 @@ WindowQueryResult WindowAccess::query(const QString &instance, const QString &pa
         {QStringLiteral("reference_scope"), QStringLiteral("instance_window_lifetime_only")},
         {QStringLiteral("foreground_in_instance"), foregroundPid == GetCurrentProcessId()},
         {QStringLiteral("private_background_available"), privateBackgroundDesktopAvailable()},
-        {QStringLiteral("offset"), offset}, {QStringLiteral("total"), 2}, {QStringLiteral("items"), items},
-        {QStringLiteral("next_offset"), next < 2 ? QJsonValue(next) : QJsonValue(QJsonValue::Null)}}, {}, {}};
+        {QStringLiteral("offset"), offset}, {QStringLiteral("total"), total}, {QStringLiteral("items"), items},
+        {QStringLiteral("next_offset"), next < total ? QJsonValue(next) : QJsonValue(QJsonValue::Null)}}, {}, {}};
 }
 
 QWidget *WindowAccess::resolve(const QString &role, const QString &reference, const QString &instance,
     const QString &pairId, quint64 permissionEpoch) const
 {
     if (!guiThread() || !validOwner(instance, pairId, permissionEpoch) || !isLowerHex(reference, 64)) return nullptr;
-    for (int index = 0; index < 2; ++index) {
+    for (int index = 0; index < int(m_windows.size()); ++index) {
         if (role == QLatin1String(Roles[index])
             && describe(index, instance, pairId, permissionEpoch).value(QStringLiteral("window_ref")) == QJsonValue(reference))
             return m_windows.at(size_t(index));
@@ -291,11 +297,13 @@ QJsonObject windowQueryCapability()
             {QStringLiteral("properties"), QJsonObject{
                 {QStringLiteral("entity"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
                     {QStringLiteral("const"), QStringLiteral("windows")}}},
+                {QStringLiteral("window_role"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                    {QStringLiteral("const"), QStringLiteral("mapping_advanced")}}},
                 {QStringLiteral("offset"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
                     {QStringLiteral("minimum"), 0}, {QStringLiteral("maximum"), 2}}},
                 {QStringLiteral("limit"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
                     {QStringLiteral("minimum"), 1}, {QStringLiteral("maximum"), 100}}}}}}},
-        {QStringLiteral("limitations"), QJsonArray{QStringLiteral("fixed_main_and_item_setup_roles"),
+        {QStringLiteral("limitations"), QJsonArray{QStringLiteral("default_main_and_item_setup_explicit_mapping_advanced"),
             QStringLiteral("window_reference_is_not_a_source_or_scene_revision"), QStringLiteral("does_not_show_or_capture_windows"),
             QStringLiteral("foreground_exact_is_observation_not_activation_proof")}}};
 }

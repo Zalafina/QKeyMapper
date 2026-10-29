@@ -3372,7 +3372,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const bool postBindingRead = publicApply && connectionVariant == QStringLiteral("post_binding_read");
     const bool demoSequence = publicApply && connectionVariant == QStringLiteral("demo_sequence");
     const bool demoSequenceRead = publicApply && connectionVariant == QStringLiteral("demo_sequence_read");
-    const bool advancedGui = publicApply && connectionVariant == QStringLiteral("advanced_gui");
+    const bool advancedGui = publicApply && (connectionVariant == QStringLiteral("advanced_gui")
+        || connectionVariant == QStringLiteral("advanced_gui_no_capture"));
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
@@ -3430,6 +3431,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     if (variant == QStringLiteral("post_binding")) scopes |= ShowWindows | CaptureWindows;
                     if (variant == QStringLiteral("demo_sequence")) scopes |= ShowWindows | CaptureWindows;
                     if (variant == QStringLiteral("advanced_gui")) scopes |= ShowWindows | CaptureWindows;
+                    if (variant == QStringLiteral("advanced_gui_no_capture")) scopes |= ShowWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);

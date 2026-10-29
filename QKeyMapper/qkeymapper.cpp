@@ -3814,7 +3814,6 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     m_NotificationSetupDialog = new QNotificationSetupDialog(this);
     m_CustomNotificationSetupDialog = new QNotificationSetupDialog(this);
     m_GeneralAdvancedDialog = new QGeneralAdvancedDialog(this);
-    m_AutomationWindows = new QkmAutomation::WindowAccess(this, m_ItemSetupDialog);
     m_McpControlDialog = new QkmAutomation::ControlDialog(this);
     m_McpControlDialog->server().setRequestHandler([this](QkmAutomation::AutomationRequest request) {
         handleAutomationRequest(request);
@@ -3830,6 +3829,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     });
     m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
+    m_AutomationWindows = new QkmAutomation::WindowAccess(this, m_ItemSetupDialog, m_MappingAdvancedDialog);
     m_MacroListDialog = new QMacroListDialog(this);
     m_VButtonPanel = new QVButtonPanel(Q_NULLPTR);
     m_VButtonPanelSetupDialog = new QVButtonPanelSetupDialog(this);
@@ -38769,7 +38769,7 @@ void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRe
         const auto selected = source.page.value(QStringLiteral("source")).toObject();
         const int sourceTab = selected.value(QStringLiteral("ui_index")).toInt(-1);
         if (!selected.value(QStringLiteral("attached_to_ui")).toBool() || sourceTab < 0
-            || (arguments.role == QStringLiteral("main") && sourceTab != s_KeyMappingTabWidgetCurrentIndex)
+            || (arguments.role != QStringLiteral("item_setup") && sourceTab != s_KeyMappingTabWidgetCurrentIndex)
             || (arguments.role == QStringLiteral("item_setup") && sourceTab != m_ItemSetupDialog->getTabIndex()))
             return QStringLiteral("stale_source");
         const auto windows = m_AutomationWindows->query(current.instanceId(), request.pairId, request.permissionEpoch,
@@ -38781,6 +38781,9 @@ void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRe
             {QStringLiteral("source_tab_ref"), arguments.sourceTabReference},
             {QStringLiteral("source_context"), source.page.value(QStringLiteral("source_snapshot"))},
             {QStringLiteral("presentation"), QStringLiteral("live_qt_client_ui_drafts_may_be_visible")}};
+        if (arguments.role == QStringLiteral("mapping_advanced")) {
+            metadata.insert(QStringLiteral("settings_scope"), QStringLiteral("live_loaded_settings_not_committed_by_source_revision"));
+        }
         if (arguments.role == QStringLiteral("item_setup")) {
             const int tab = m_ItemSetupDialog->getTabIndex(), row = m_ItemSetupDialog->getItemRow();
             const auto sources = snapshot.value(QStringLiteral("sources")).toArray();

@@ -148,6 +148,7 @@ private slots:
     void windowPermissions_data();
     void windowPermissions();
     void windowObservation();
+    void windowAdvancedObservation();
     void windowCaptureBoundaries();
     void mappingEditorArguments();
     void privateBackgroundDesktopGuard();
@@ -1523,6 +1524,41 @@ void McpControlTest::privateBackgroundDesktopGuard()
     QVERIFY(!fromWorker);
 }
 
+void McpControlTest::windowAdvancedObservation()
+{
+    QWidget main;
+    QDialog item(&main), advanced(&main);
+    WindowAccess access(&main, &item, &advanced);
+    const QString instance(32, QLatin1Char('a')), pair(32, QLatin1Char('b'));
+    const QJsonObject arguments{{QStringLiteral("entity"), QStringLiteral("windows")},
+        {QStringLiteral("window_role"), QStringLiteral("mapping_advanced")}};
+    const auto query = [&] { return access.query(instance, pair, 1, arguments); };
+    QCOMPARE(access.query(instance, pair, 1, {{QStringLiteral("entity"), QStringLiteral("windows")}}).page.value(QStringLiteral("total")).toInt(), 2);
+    QVERIFY(query().ok());
+    QCOMPARE(advanced.internalWinId(), WId(0));
+    QCOMPARE(query().page.value(QStringLiteral("total")).toInt(), 1);
+    QCOMPARE(query().page.value(QStringLiteral("items")).toArray().first().toObject().value(QStringLiteral("role")).toString(), QStringLiteral("mapping_advanced"));
+    auto invalid = arguments; invalid.insert(QStringLiteral("offset"), 2);
+    QCOMPARE(access.query(instance, pair, 1, invalid).errorCode, QStringLiteral("invalid_arguments"));
+    for (const QJsonValue value : {QJsonValue(QStringLiteral("other")), QJsonValue(QStringLiteral("main")), QJsonValue(true), QJsonValue(QJsonValue::Null)}) {
+        invalid = arguments; invalid.insert(QStringLiteral("window_role"), value);
+        QCOMPARE(access.query(instance, pair, 1, invalid).errorCode, QStringLiteral("invalid_arguments"));
+    }
+    advanced.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&advanced));
+    const auto reference = [&] { return query().page.value(QStringLiteral("items")).toArray().first().toObject().value(QStringLiteral("window_ref")).toString(); };
+    const auto first = reference();
+    QCOMPARE(first.size(), 64);
+    QCOMPARE(access.resolve(QStringLiteral("mapping_advanced"), first, instance, pair, 1), &advanced);
+    QVERIFY(!access.resolve(QStringLiteral("main"), first, instance, pair, 1));
+    QVERIFY(!access.resolve(QStringLiteral("mapping_advanced"), first, instance, pair, 2));
+    advanced.hide();
+    QVERIFY(!access.resolve(QStringLiteral("mapping_advanced"), first, instance, pair, 1));
+    advanced.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&advanced));
+    QVERIFY(reference() != first);
+}
+
 void McpControlTest::windowCaptureBoundaries()
 {
     const QJsonObject valid{{QStringLiteral("role"), QStringLiteral("main")},
@@ -1532,6 +1568,8 @@ void McpControlTest::windowCaptureBoundaries()
     QVERIFY(parseWindowCaptureArguments(valid).ok());
     auto item = valid;
     item[QStringLiteral("role")] = QStringLiteral("item_setup");
+    QVERIFY(parseWindowCaptureArguments(item).ok());
+    item[QStringLiteral("role")] = QStringLiteral("mapping_advanced");
     QVERIFY(parseWindowCaptureArguments(item).ok());
     for (const auto &extra : QList<QJsonObject>{
             {{QStringLiteral("role"), QStringLiteral("other")}}, {{QStringLiteral("role"), true}},

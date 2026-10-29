@@ -25,7 +25,7 @@ WindowCaptureArguments parseWindowCaptureArguments(const QJsonObject &arguments)
     const auto parts = tab.split(QLatin1Char(':'));
     bool validIndex = false;
     const int index = parts.size() == 3 ? parts.at(2).toInt(&validIndex) : -1;
-    if ((role != QStringLiteral("main") && role != QStringLiteral("item_setup"))
+    if ((role != QStringLiteral("main") && role != QStringLiteral("item_setup") && role != QStringLiteral("mapping_advanced"))
         || !isLowerHex(window, 64) || !isLowerHex(source, 64) || tab.size() > 128
         || parts.size() != 3 || !isLowerHex(parts.at(0), 64) || parts.at(1) != QStringLiteral("source")
         || !validIndex || index < 0 || QString::number(index) != parts.at(2)) return {};
@@ -44,7 +44,7 @@ QJsonObject windowCaptureCapability()
             {QStringLiteral("required"), QJsonArray{QStringLiteral("role"), QStringLiteral("window_ref"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref")}},
             {QStringLiteral("properties"), QJsonObject{
                 {QStringLiteral("role"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
-                    {QStringLiteral("enum"), QJsonArray{QStringLiteral("main"), QStringLiteral("item_setup")}}}},
+                    {QStringLiteral("enum"), QJsonArray{QStringLiteral("main"), QStringLiteral("item_setup"), QStringLiteral("mapping_advanced")}}}},
                 {QStringLiteral("window_ref"), revision}, {QStringLiteral("source_revision"), revision},
                 {QStringLiteral("source_tab_ref"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
                     {QStringLiteral("maxLength"), 128},
@@ -52,6 +52,7 @@ QJsonObject windowCaptureCapability()
         {QStringLiteral("max_png_bytes"), MaxTransportWindowImageBytes},
         {QStringLiteral("max_pixels"), double(MaxWindowImagePixels)},
         {QStringLiteral("limitations"), QJsonArray{QStringLiteral("visible_restored_own_qt_client_only"),
+            QStringLiteral("advanced_settings_not_committed_by_source_revision"),
             QStringLiteral("source_revision_does_not_commit_ui_drafts"), QStringLiteral("does_not_show_or_activate"),
             QStringLiteral("requires_current_safe_source_context"), QStringLiteral("independent_popups_not_supported")}}};
 }

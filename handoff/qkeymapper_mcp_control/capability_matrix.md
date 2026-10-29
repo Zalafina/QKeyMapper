@@ -1028,3 +1028,7 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-GUI-119：独立高级窗GUI基线，正式接口仍待
 
 产品／权限不改，MCP A→B后真实Qt Tab／原按钮打开映射高级窗，100ms后自身客户区PNG，Escape关闭及真实Tab恢复。双Qt两场12 Native／32 handler／38 SDK，完整源／非行context／INI／GUI名及高级输入指纹保持，正式回收恰+2源变更、dirty保留，正常退出／清理零；四张主窗mapping页／高级窗中文图已看。首缺声明构建及实际私有Qt激活范围见[同一C1证据](map67c1_validation.md#demo-gui-119映射高级设定原gui基线2026-10-29pc-w11)。仅GUI基线文件，未交付正式高级观察／捕获／开关或编辑；工具／能力数量不变，完整P1／P2／M1、系统及部署缺口保留。
+
+## DEMO-P1-120：固定高级只读角色
+
+默认windows仍main／item_setup；显式window_role=mapping_advanced观察固定高级窗，Read不创建／显示。Read+Capture可取得已显示高级窗真实PNG，当前源Tab／完整安全源及窗口代次复核，settings_scope明确实时非行设定未由源修订提交。Python37、双Qt组件各5含init／cleanup及四场24 Native／98 handler／112 SDK通过；两张正式图与同次GUI帧字节相等并经Agent查看，无Capture131零MCP图，完整源／设定／INI及退出清理保持。见[同一C1证据](map67c1_validation.md#demo-p1-120高级窗只读角色观察捕获2026-10-29pc-w11)。工具／能力数量不变，正式高级显示／归属关闭／demo view及编辑、系统与交付缺口仍待，完整P1／P2／M1未完成。
