@@ -31,6 +31,7 @@
 #include "../../automation/qkm_source_snapshot.h"
 #include "../../automation/qkm_mapping_changes.h"
 #include "../../automation/qkm_window_image.h"
+#include "../../automation/qkm_window_access.h"
 #include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
 #include "../../qmappingadvanceddialog.h"
@@ -3371,6 +3372,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const bool postBindingRead = publicApply && connectionVariant == QStringLiteral("post_binding_read");
     const bool demoSequence = publicApply && connectionVariant == QStringLiteral("demo_sequence");
     const bool demoSequenceRead = publicApply && connectionVariant == QStringLiteral("demo_sequence_read");
+    const bool advancedGui = publicApply && connectionVariant == QStringLiteral("advanced_gui");
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
@@ -3427,6 +3429,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     if (variant == QStringLiteral("demo_context")) scopes |= ShowWindows | CaptureWindows;
                     if (variant == QStringLiteral("post_binding")) scopes |= ShowWindows | CaptureWindows;
                     if (variant == QStringLiteral("demo_sequence")) scopes |= ShowWindows | CaptureWindows;
+                    if (variant == QStringLiteral("advanced_gui")) scopes |= ShowWindows | CaptureWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);
@@ -3611,17 +3614,18 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         auto demoSource = QSharedPointer<QJsonObject>::create();
         auto demoClosed = QSharedPointer<bool>::create(false);
         auto demoThreadCheck = QSharedPointer<QAtomicInt>::create(0);
-        if (demoCapture) {
+        if (demoCapture || advancedGui) {
             const auto frame = [=](QWidget *window, const QString &role) {
                 QString error;
                 const auto source = mapper->collectAutomationSourceSnapshot(error);
                 if (!error.isEmpty() || !window) return false;
                 if (demoSource->isEmpty()) *demoSource = source;
-                const auto image = captureOwnWindow(window);
+                const auto image = captureOwnWindow(window, advancedGui ? MaxTransportWindowImageBytes : MaxWindowImageBytes);
                 if (!image.ok() || source != *demoSource || mapper->collectAutomationSourceSnapshot(error) != source || !error.isEmpty()) return false;
                 wchar_t desktop[256]{};
                 if (!GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), nullptr)) return false;
-                QJsonObject meta{{QStringLiteral("instance"), control->server().instanceId()}, {QStringLiteral("scene"), QStringLiteral("demo104")},
+                QJsonObject meta{{QStringLiteral("instance"), control->server().instanceId()},
+                    {QStringLiteral("scene"), advancedGui ? QStringLiteral("advanced-gui119") : QStringLiteral("demo104")},
                     {QStringLiteral("role"), role}, {QStringLiteral("pid"), QString::number(GetCurrentProcessId())},
                     {QStringLiteral("desktop"), QString::fromWCharArray(desktop)},
                     {QStringLiteral("hwnd"), QString::number(quintptr(window->winId()))},
@@ -3642,8 +3646,58 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             auto draftStage = QSharedPointer<int>::create(0);
             auto minimizeStage = QSharedPointer<int>::create(0);
             auto waiting = QSharedPointer<bool>::create(false);
+            auto originalSettingPage = QSharedPointer<int>::create(-1);
+            const QByteArray advancedInputsBefore = advancedGui ? windowInputFingerprint(mapper->m_MappingAdvancedDialog) : QByteArray();
             QObject::connect(poll, &QTimer::timeout, mapper, [=]() {
                 if (*waiting) return;
+                if (advancedGui) {
+                    auto *tabs = mapper->findChild<QTabWidget *>(QStringLiteral("settingTabWidget"));
+                    auto *dialog = mapper->m_MappingAdvancedDialog;
+                    const auto clickTab = [](QTabWidget *widget, int index) {
+                        auto *bar = widget->tabBar();
+                        const QPoint point = bar->tabRect(index).center();
+                        const QPointF top = bar->mapTo(bar->window(), point), screen = bar->mapToGlobal(point);
+                        QMouseEvent press(QEvent::MouseButtonPress, point, top, screen, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+                        QMouseEvent released(QEvent::MouseButtonRelease, point, top, screen, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+                        QCoreApplication::sendEvent(bar, &press); QCoreApplication::sendEvent(bar, &released);
+                    };
+                    if (*stage == 0 && QFileInfo::exists(output + QStringLiteral(".advanced-open"))) {
+                        auto *page = mapper->findChild<QWidget *>(QStringLiteral("mapping"));
+                        const int mappingPage = tabs && page ? tabs->indexOf(page) : -1;
+                        auto *button = mapper->findChild<QPushButton *>(QStringLiteral("mappingAdvancedSettingButton"));
+                        if (!tabs || mappingPage < 0 || !tabs->isTabEnabled(mappingPage) || !button || !dialog || dialog->isVisible()) { finish(false); return; }
+                        *originalSettingPage = tabs->currentIndex();
+                        clickTab(tabs, mappingPage);
+                        if (tabs->currentIndex() != mappingPage || !button->isVisible() || !button->isEnabled()) { finish(false); return; }
+                        clickMappingButton(button);
+                        *waiting = true;
+                        QTimer::singleShot(100, mapper, [=]() {
+                            if (!dialog->isVisible() || !frame(mapper, QStringLiteral("mapping_main_gui"))
+                                || !frame(dialog, QStringLiteral("mapping_advanced_gui"))) { finish(false); return; }
+                            *stage = 1; *waiting = false;
+                            QSaveFile file(output + QStringLiteral(".advanced-opened"));
+                            const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("passed"), true},
+                                {QStringLiteral("dialog_active"), dialog->isActiveWindow()}, {QStringLiteral("mapping_page"), mappingPage}}).toJson();
+                            if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) finish(false);
+                        });
+                    } else if (*stage == 1 && QFileInfo::exists(output + QStringLiteral(".advanced-close"))) {
+                        QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), released(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+                        QCoreApplication::sendEvent(dialog, &press); QCoreApplication::sendEvent(dialog, &released);
+                        if (!tabs || *originalSettingPage < 0 || dialog->isVisible()) { finish(false); return; }
+                        clickTab(tabs, *originalSettingPage);
+                        QString error;
+                        *demoClosed = tabs->currentIndex() == *originalSettingPage
+                            && windowInputFingerprint(dialog) == advancedInputsBefore
+                            && mapper->collectAutomationSourceSnapshot(error) == *demoSource && error.isEmpty();
+                        *stage = 2; poll->stop();
+                        QSaveFile file(output + QStringLiteral(".advanced-closed"));
+                        const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("passed"), *demoClosed},
+                            {QStringLiteral("original_page_restored"), tabs->currentIndex() == *originalSettingPage},
+                            {QStringLiteral("input_fingerprint_unchanged"), windowInputFingerprint(dialog) == advancedInputsBefore}}).toJson();
+                        if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) finish(false);
+                    }
+                    return;
+                }
                 if (*stage == 0 && QFileInfo::exists(output + QStringLiteral(".capture-main"))) {
                     *waiting = true;
                     QTimer::singleShot(150, mapper, [=]() {
@@ -4151,6 +4205,21 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 for (const auto &entry : *bindingChecks) {
                     checks.append(entry); passed = passed && entry.toObject().value(QStringLiteral("passed")).toBool();
                 }
+            } else if (saves == 0 && advancedGui) {
+                QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+                QString error;
+                const auto source = mapper->collectAutomationSourceSnapshot(error);
+                check(actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore && error.isEmpty()
+                    && source.value(QStringLiteral("sources")) == sourceBefore.value(QStringLiteral("sources")),
+                    QStringLiteral("original advanced GUI display and the owned scene cleanup restore all sources without INI writes"));
+                check(mapper->m_SaveSettingDirty && mapper->m_MappingLoadGeneration == load && mapper->m_AutomationSourceEpoch == epoch + 2
+                    && mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
+                    QStringLiteral("only the formal addition and deletion change source identity; load and GUI name remain"));
+                check(demoFrames->size() == 2 && *demoClosed && !mapper->m_MappingAdvancedDialog->isVisible()
+                    && !mapper->m_ItemSetupDialog->isVisible() && mapper->m_KeyMappingDataTable->rowCount() == 0
+                    && mapper->automationSourceReadBasis() == QStringLiteral("pristine_idle")
+                    && !QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved(),
+                    QStringLiteral("original GUI click, capture, Escape and page restore preserve input values and never start mapping"));
             } else if (saves == 0 && demoSequence) {
                 QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
                 QString error;
@@ -4214,7 +4283,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
                 {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness && !demoContext && !demoContextRead
-                    && !postBinding && !postBindingRead && !demoSequence && !demoSequenceRead},
+                    && !postBinding && !postBindingRead && !demoSequence && !demoSequenceRead && !advancedGui},
+                {QStringLiteral("advanced_gui_baseline"), advancedGui},
                 {QStringLiteral("formal_mcp_serial_demo"), demoSequence || demoSequenceRead},
                 {QStringLiteral("formal_mcp_post_binding"), postBinding || postBindingRead},
                 {QStringLiteral("formal_mcp_demo_preflight"), demoReadiness},

@@ -116,3 +116,9 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 `settings_save_apply`／`demo_context、demo_context_read`沿相同安全Demo104Seed空源INI、真实认证和隔离私有桌面，分别批准387／Read。SDK模块 [demo_context_acceptance.py](../../../mcp_bridge/tests/demo_context_acceptance.py)验证上下文只读参数／权限、正式A→B新增后签名稳定、实际Qt保存名称变化／恢复、普通宿主合成INI注释字节变化／恢复、正式单项窗开关及删除后签名稳定。固定`.demo-name-change／demo-name-restore`只向保存名称投递Qt键事件，不设置控件值或dirty；此时dirty已true，源修订保持而非行签名须变化。
 
 第一次单行上下文请求另对真实C1候选副本做10项组件检查：74项源字段排除，Tab元数据／GUI名／磁盘／pair／epoch／加载改变检出，无效候选无签名及原全保存载荷不受副本删除影响。组件副本不是GUI修改基线。Native独立验证源完全复原、原INI／加载保持、只有两次源修改、名称恢复、dirty按原行为保留和窗口已关闭／未启动映射；不把本用例或签名比较记成已交付串行服务。
+
+## DEMO-GUI-119 映射高级设定原GUI基线
+
+固定settings_save_apply／advanced_gui沿独立合成INI和真实认证SDK；维护模块[advanced_gui_acceptance.py](../../../mcp_bridge/tests/advanced_gui_acceptance.py)先正式MCP建立A→B，再由实际Qt Tab／原按钮打开高级窗，自身Qt客户区抓图，Escape关闭及真实Tab点击恢复原页，最后正式删除本轮归属行。完整源、非行足迹、输入指纹、INI及生命周期核验保持；不编辑任何设置值、不启动映射、发送系统输入或改变驱动。
+
+这里只形成独立GUI显示证据，尚非正式高级窗MCP接口。仅沿已登记私有桌面／原manifest测试入口执行；SDK、构建及图像解码保持普通权限，原生GUI线程只生成固定out证据。结果与缺口仍只记唯一主计划。

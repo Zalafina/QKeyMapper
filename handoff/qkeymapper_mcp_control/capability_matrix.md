@@ -1024,3 +1024,7 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P2-118：固定main串行视图
 
 同一显式演示工具支持view=main或默认item_setup；实际角色合同在写入前核验，main只查询／捕获已有主窗，不开单项窗或切页／激活。原身份／权限／源绑定及回收保持。19项目标测试及双Qt四场28 Native／150 handler／62外层SDK＋32 schema通过，主窗A→B后默认单项C→D，四图经Agent检查、全源／INI及退出清理零；复用117已验相同Native二进制，无构建。主窗仅证明可见列和Qt客户区，高级页／真实失败／其他系统及交付缺口见[同一C1证据](map67c1_validation.md#demo-p2-118主窗口串行视图2026-10-29pc-w11)，完整P2／M1仍未完成。
+
+## DEMO-GUI-119：独立高级窗GUI基线，正式接口仍待
+
+产品／权限不改，MCP A→B后真实Qt Tab／原按钮打开映射高级窗，100ms后自身客户区PNG，Escape关闭及真实Tab恢复。双Qt两场12 Native／32 handler／38 SDK，完整源／非行context／INI／GUI名及高级输入指纹保持，正式回收恰+2源变更、dirty保留，正常退出／清理零；四张主窗mapping页／高级窗中文图已看。首缺声明构建及实际私有Qt激活范围见[同一C1证据](map67c1_validation.md#demo-gui-119映射高级设定原gui基线2026-10-29pc-w11)。仅GUI基线文件，未交付正式高级观察／捕获／开关或编辑；工具／能力数量不变，完整P1／P2／M1、系统及部署缺口保留。

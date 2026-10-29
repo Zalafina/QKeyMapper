@@ -897,3 +897,15 @@ Python5项新记录／桥接测试与原22协议共27项通过：严格字段／
 Agent原尺寸查看两张1130×722主窗PNG（Qt6 51182B／Qt5 50326B）及两张820×480默认单项PNG，主窗真实A/B行、Demo104Seed名称及未启动状态可见，后续单项为C/D/D，中文清晰、无黑图／错窗／旧场景污染。主窗横向滚动表格只显示当前可见列，不以截图代替全字段源核验；范围为原Qt客户区，非OS标题边框。实际QkmDemoViews118_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录，全部native0／正常退出、工作／生产者0及逐场清理五项零；无Default、系统输入、映射启动、驱动／FilterKeys或新提权模式。
 
 原件out/mcp_demo_views_w11_20261029含本机二进制复用身份、公共登记、19项日志、正式SDK／peer／原始图像响应、四图及Agent审阅、源INI／退出／清理和summary，不随Git。README及正式工具描述同步实际view合同；无TS／QM变更。代表高级页、真实退出／撤权／断线／超时及其他实例全程因果、Win10／高DPI、正式预热／免Python和QQ仍待，117失败模拟及既有不变路径按原范围复用，不宣称本片覆盖这些缺口或完整P2／M1。
+
+## DEMO-GUI-119：映射高级设定原GUI基线（2026-10-29，PC-W11）
+
+118 b91fac02后只补QMappingAdvancedDialog原GUI显示基线，产品C++／权限不改。源码盘点showMappingAdvancedDialog仅show，close会先关通知子窗，ActivationChange失去激活自动close；各参数／通知／共通开关实际联动配置，故本片不编辑值或打开通知子窗。先由正式MCP建立A→B，再以真实Qt TabBar点击mapping页和原mappingAdvancedSettingButton、100ms绘制后采样，Escape原关闭后真实点击恢复原页；没有setCurrentIndex、控件赋值或直接调用show代替GUI。
+
+双Qt增量维护构建最终native0，Qt6零编译／链接警告、Qt5兼容通过；首轮都因漏含已有qkm_window_access.h声明而native2，修正该维护include后重编受影响文件，原日志first-missing-header保留，无产品测试在失败构建上启动。正式stdio配合两场原GUI，共12项Native／32 handler／38 SDK记录。GUI开关前后完整源及全部fields／metadata、完整非行context对象／签名、GUI名／INI／加载保持，原设置页和高级窗输入指纹恢复；打开期间demo_context及删除预览context_busy，源行只读查询保持。最后正式删除归属行，两场sourceEpoch各恰+2、dirty按原GUI保留、全部源恢复为空、无编辑窗／runtime输入。
+
+固定原生GUI线程复用captureOwnWindow／QWidget::grab、160KiB上限，记录实际PID／HWND／桌面及源代次；普通SDK解码固定frame证据为PNG，未提权外部截图工具。四图由Agent原尺寸查看：主窗1130×722（Qt6 53741B／Qt5 52729B），mapping页与真实A/B行可见；独立高级窗770×390（34525B／33989B），中文清晰，鼠标速度3／3、轮询2ms、扳机／摇杆50／30／15%、触板0.50／0.50等默认值可读，无黑图或错窗。仅Qt客户区和主窗当前可见列，不代替全字段验证。这些是GUI基线文件，不是正式高级角色ImageContent交付。
+
+实际QkmAdvancedGui119_<UUID>私有桌面，SDK8192／原manifest产品12288、同登录；全部native0／正常退出、工作／生产者0及逐场owned／unresolved／pending／current_action／current_job零。dialog.isActiveWindow在私有Qt线程为true，不代表Default前台归属或其全程因果；后续无激活正式显示须另验。无Default、系统输入、映射启动、驱动／FilterKeys修改，画面显示既有FakerInput可用不证明私有桌面隔离驱动或本片安装了驱动。
+
+原件out/mcp_advanced_gui_w11_20261029含首轮及最终构建、部署／公共定义、SDK peer／逐次调用、GUI开关确认、四个自身帧／普通PNG及Agent审阅、完整源INI／退出／清理和summary，不随Git。维护SDK纳入advanced_gui_acceptance.py及Native README用法；普通15／仅记录16／显式演示17工具、产品17能力保持，高级窗正式观察／捕获／归属开关／串行接线尚未交付。未测参数编辑、通知子窗／撤权／激活失败、实际Default／Win10／高DPI／其他实例因果、预热／免Python和QQ，不把本片标为完整P1／P2／M1完成。
