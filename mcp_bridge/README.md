@@ -175,6 +175,10 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 
 能力包含 `mapping.delete.preview`／`mapping.delete.apply` 且有 **Read+Configure** 时，先查询 `mapping_sources` 和 `mappings`，调用 `qkm_preview_changes(action="mapping.delete", source_revision=..., source_tab_ref=..., source_refs=[...])`。只接受同一当前附着源、同一完整修订的 1–100 个规范源引用；重复引用去重，不接受显示行号、跨源批次、任意 PID／路径或增添／保存字段。目标行不得被表格筛选隐藏，不能是分隔行；不要求窗口占据前台，也不自动切表或显示窗口。
 
+新增／删除 apply 能力声明 `source_binding_result="commit_snapshot_or_null"` 时，成功结果额外含 `source_binding_status` 和 `source_binding_after`。`captured` 绑定真实提交时、原源互斥释放前的完整 owner 源快照；其 `source_snapshot`／`source_tab_ref` 可用于后续查询，新增还含新行 `source_ref`，删除的 `source_ref` 为 null。`reference_scope="commit_snapshot_only"` 表示历史提交事实，后续 GUI 或其他操作仍可立即使引用失效。历史重放／operation 返回原绑定，不重新采样。
+
+后续操作应使用该提交绑定并接受 `stale_source`，不能重查当前源后认领其中的相似行。绑定捕获失败时为 `unavailable`／null，原操作仍如实报告 `applied`／`modified=true`；不能据此推断未修改或盲目重试。旧版没有此能力合同时，不应提供依赖提交归属证明的自动回收。
+
 预览逐条返回完整删除字段及派生采样、实例和源摘要，不改映射、dirty或INI。用户审阅并同意删除后，才调用 `qkm_apply_changes(preview_id=..., confirm_delete=true)`；冲突、保存范围或覆盖确认不能替代删除确认。提交再次核验实际认证owner／权限、完整源、当前目标、原120秒到期、无编辑窗／表格编辑／弹出菜单及完整空闲清理许可，再复用GUI共用删除和显示刷新、鼠标点更新、接替选区、dirty流程。
 
 成功只改内存，返回 `modified=true, saved=false, started_by_operation=false`、删除数及 `query_source_again=true`；没有保存、自动停止／启动或演示重置。所有旧源引用／预览须按修订重新查询。取消／拒绝不删除，已消费失败需新预览；成功ID重复提交只返回历史结果，不再次删除。结果绑定原实例／pair权限代次和原源摘要，超时／断线先查同ID的 `qkm_get_operation`，unknown不证明未执行，禁止盲目重试或改连其他实例。

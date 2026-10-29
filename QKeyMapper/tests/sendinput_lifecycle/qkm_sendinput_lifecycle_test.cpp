@@ -3367,6 +3367,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const bool demoReadiness = publicApply && connectionVariant.startsWith(QStringLiteral("demo_ready"));
     const bool demoContext = publicApply && connectionVariant == QStringLiteral("demo_context");
     const bool demoContextRead = publicApply && connectionVariant == QStringLiteral("demo_context_read");
+    const bool postBinding = publicApply && connectionVariant == QStringLiteral("post_binding");
+    const bool postBindingRead = publicApply && connectionVariant == QStringLiteral("post_binding_read");
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
@@ -3411,6 +3413,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     quint32 scopes = variant == QStringLiteral("read") || variant == QStringLiteral("delete_read")
                         || variant == QStringLiteral("demo_ready_read")
                         || variant == QStringLiteral("demo_context_read")
+                        || variant == QStringLiteral("post_binding_read")
                         || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
                     if (variant == QStringLiteral("demo_mcp_capture") || variant == QStringLiteral("demo_mcp_editor")
                         || variant == QStringLiteral("demo_mcp_close") || variant == QStringLiteral("demo_ready")) scopes |= CaptureWindows;
@@ -3419,6 +3422,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     if (variant == QStringLiteral("demo_ready_nonempty") || variant == QStringLiteral("demo_ready_dirty"))
                         scopes |= ShowWindows | CaptureWindows;
                     if (variant == QStringLiteral("demo_context")) scopes |= ShowWindows | CaptureWindows;
+                    if (variant == QStringLiteral("post_binding")) scopes |= ShowWindows | CaptureWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);
@@ -3824,6 +3828,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         auto guiName = QSharedPointer<QString>::create();
         auto guiDirty = QSharedPointer<bool>::create(false);
         auto checkedRejection = QSharedPointer<bool>::create(false);
+        auto lateGuiDeletion = QSharedPointer<bool>::create(false);
+        auto bindingChecks = QSharedPointer<QJsonArray>::create();
         const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
         const bool guiChangeCase = publicApply && (variant == QStringLiteral("stale_name") || variant == QStringLiteral("stale_global"));
         if (guiChangeCase) {
@@ -3883,6 +3889,25 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         }
         server.setRequestHandler([=](const AutomationRequest &request) {
             ++*calls;
+            if (postBinding && bindingChecks->isEmpty()) {
+                const MappingChangeOwner owner{mapper->m_McpControlDialog->server().instanceId(), request.pairId, request.permissionEpoch};
+                const auto check = [&](bool passed, const char *label) {
+                    bindingChecks->append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(label)}, {QStringLiteral("passed"), passed}});
+                };
+                check(mapper->automationPostChangeSourceBinding({}, owner, 0, -1).isEmpty()
+                    && mapper->automationPostChangeSourceBinding(sourceBefore, owner, -1, -1).isEmpty()
+                    && mapper->automationPostChangeSourceBinding(sourceBefore, owner, 0, -2).isEmpty(),
+                    "invalid snapshots and source indices provide no usable post-change binding");
+                check(mapper->automationPostChangeSourceBinding(sourceBefore, owner, 1, -1).isEmpty()
+                    && mapper->automationPostChangeSourceBinding(sourceBefore, owner, 0, 0).isEmpty(),
+                    "unattached Common backup and absent rows provide no owned-row reference");
+                const auto binding = mapper->automationPostChangeSourceBinding(sourceBefore, owner, 0, -1);
+                const auto queried = querySourceSnapshot(sourceBefore, owner.instance, owner.pairId, owner.permissionEpoch,
+                    {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}});
+                check(queried.ok() && !binding.isEmpty() && binding.value(QStringLiteral("source_ref")).isNull()
+                    && binding.value(QStringLiteral("source_snapshot")) == queried.page.value(QStringLiteral("source_snapshot")),
+                    "empty-source binding uses the existing full owner-bound snapshot without inventing a row");
+            }
             if (demoContext && projectionChecks->isEmpty() && request.method == QStringLiteral("qkm_query")
                 && request.arguments.value(QStringLiteral("entity")) == QStringLiteral("demo_context")
                 && QKeyMapper::KeyMappingDataList->size() == 1 && !mapper->hasOpenMappingEditor()) {
@@ -3937,6 +3962,28 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 if (candidate.ok()) *expected = candidate;
             }
             mapper->handleAutomationRequest(request);
+            if (postBinding && !*lateGuiDeletion && request.method == QStringLiteral("qkm_apply_changes")
+                && QFileInfo::exists(output + QStringLiteral(".mutate-after-apply"))) {
+                const auto operation = mapper->m_AutomationMappingChanges->operation(
+                    {mapper->m_McpControlDialog->server().instanceId(), request.pairId, request.permissionEpoch}, request.arguments.value(QStringLiteral("preview_id")).toString());
+                if (operation.value(QStringLiteral("status")) != QStringLiteral("applied")
+                    || QKeyMapper::KeyMappingDataList->size() != 1) { finish(false); return; }
+                *lateGuiDeletion = true;
+                auto *table = mapper->m_KeyMappingDataTable;
+                auto *view = table->viewport();
+                const QPoint point = table->visualRect(table->model()->index(0, 0)).center();
+                const QPointF top = view->mapTo(view->window(), point), screen = view->mapToGlobal(point);
+                QMouseEvent click(QEvent::MouseButtonPress, point, top, screen, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+                QMouseEvent clicked(QEvent::MouseButtonRelease, point, top, screen, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+                QCoreApplication::sendEvent(view, &click); QCoreApplication::sendEvent(view, &clicked);
+                QKeyEvent press(QEvent::KeyPress, Qt::Key_Delete, Qt::NoModifier), released(QEvent::KeyRelease, Qt::Key_Delete, Qt::NoModifier);
+                QCoreApplication::sendEvent(table, &press); QCoreApplication::sendEvent(table, &released);
+                const bool removed = QKeyMapper::KeyMappingDataList->isEmpty() && table->rowCount() == 0;
+                bindingChecks->append(QJsonObject{{QStringLiteral("check"), QStringLiteral("real Qt click and Delete mutate the source after the production apply reply")}, {QStringLiteral("passed"), removed}});
+                QSaveFile file(output + QStringLiteral(".mutated-after-apply"));
+                const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("passed"), removed}}).toJson();
+                if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) finish(false);
+            }
             if (guiChangeCase && !*checkedRejection && !guiSource->isEmpty()
                 && request.method == QStringLiteral("qkm_apply_changes") && mapper->m_AutomationMappingChanges) {
                 const auto operation = mapper->m_AutomationMappingChanges->operation(
@@ -4081,6 +4128,25 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     QStringLiteral("deletion never starts mapping or accepts runtime input"));
                 check(mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
                     QStringLiteral("deletion leaves the actual GUI save name unchanged"));
+            } else if (saves == 0 && postBinding) {
+                QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+                QString error;
+                const auto source = mapper->collectAutomationSourceSnapshot(error);
+                check(actual.open(QIODevice::ReadOnly) && actual.readAll() == diskBefore && error.isEmpty()
+                    && source.value(QStringLiteral("sources")) == sourceBefore.value(QStringLiteral("sources")),
+                    QStringLiteral("post-change binding scenarios restore every source field and preserve the INI"));
+                check(*lateGuiDeletion && mapper->m_SaveSettingDirty && mapper->m_MappingLoadGeneration == load
+                    && mapper->m_AutomationSourceEpoch == epoch + 4
+                    && mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"))->text() == name,
+                    QStringLiteral("two MCP additions, one MCP deletion and one GUI deletion retain the original load and name"));
+                check(!mapper->m_ItemSetupDialog->isVisible() && mapper->m_KeyMappingDataTable->rowCount() == 0
+                    && mapper->automationSourceReadBasis() == QStringLiteral("pristine_idle")
+                    && !QKeyMapper_Worker::s_SourceReadAccess.runtimeObserved(),
+                    QStringLiteral("binding and stale-reference checks leave the editor closed without mapping input"));
+                check(bindingChecks->size() == 4, QStringLiteral("binding bounds and the post-reply GUI mutation were exercised"));
+                for (const auto &entry : *bindingChecks) {
+                    checks.append(entry); passed = passed && entry.toObject().value(QStringLiteral("passed")).toBool();
+                }
             } else if (saves == 0 && demoContext) {
                 QFile actual(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
                 QString error;
@@ -4128,7 +4194,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 check(valuesMatch, QStringLiteral("formal save persists every independently prepared target and shared value"));
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
-                {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness && !demoContext && !demoContextRead},
+                {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness && !demoContext && !demoContextRead && !postBinding && !postBindingRead},
+                {QStringLiteral("formal_mcp_post_binding"), postBinding || postBindingRead},
                 {QStringLiteral("formal_mcp_demo_preflight"), demoReadiness},
                 {QStringLiteral("formal_mcp_demo_context"), demoContext || demoContextRead},
                 {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},

@@ -1012,3 +1012,7 @@ mapping.delete.preview／apply复用现有工具，Read+Configure及独立confir
 ## DEMO-P2-115：非行保存足迹只读查询
 
 demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后台／完整空闲门槛，复用C1完整保存副本，仅排除74项源行键，保留其余Tab／配置／全局／共享／磁盘及GUI名，绑定实例／pair／epoch／加载／runtime；不建保存预览、不写产品INI／重载／自动关窗。双Qt四场50项native、58 handler／70 SDK＋2 schema，已实测dirty为true时名称改变但源修订不变、非行签名仍检出；基本新增／关窗／删除签名稳定、磁盘字节变化检出及投影组件通过，见[同一C1证据](map67c1_validation.md#demo-p2-115非行保存足迹2026-10-29pc-w11)。源行／窗口须另验，不授写权限或租约；普通15工具／17产品能力，可选桥接预检16工具。串行场景、失败隔离、完整P2／M1及预热／交付缺口保留。
+
+## DEMO-P2-116：提交源绑定结果
+
+新增／删除apply声明commit_snapshot_or_null，在既有源写围栏内完整采样并返回commit_snapshot_only绑定；新增带创建行ref、删除为null，采样不可得仍如实applied／modified=true。历史不漂移，后续只能按该绑定使用，不能重查认领相似行。双Qt四场38项Native、48 handler／65 SDK：正常绑定交叉查询、Read零修改、生产回复后真实GUI Delete使旧引用／开窗stale_source及历史归属通过，全部正常退出／五项清理零；两次纯测试时间字段断言失败原件保留，产品未因此更改。见[同一C1证据](map67c1_validation.md#demo-p2-116提交时源绑定2026-10-29pc-w11)。15工具／17产品能力不变，实际捕获失败／最大源耗时、完整串行回收／P2及其他系统覆盖仍待。

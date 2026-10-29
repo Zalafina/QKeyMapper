@@ -102,7 +102,7 @@ class InputOwnerFence;
 #include "qmappingsequenceedit.h"
 #include "qpointpickerdialog.h"
 
-namespace QkmAutomation { class ControlDialog; class MappingChangeStore; class WindowAccess; struct AutomationRequest; struct ConfigurationSaveBinding; }
+namespace QkmAutomation { class ControlDialog; class MappingChangeStore; class WindowAccess; struct AutomationRequest; struct ConfigurationSaveBinding; struct MappingChangeOwner; }
 
 namespace Ui {
 class QKeyMapper;
@@ -2104,6 +2104,9 @@ private:
     QJsonObject collectAutomationState(void) const;
     QJsonObject collectAutomationCatalog(void) const;
     QJsonObject collectAutomationSourceSnapshot(QString &errorCode) const;
+    QJsonObject collectAutomationSourceSnapshotWithAccess(QString &errorCode) const;
+    static QJsonObject automationPostChangeSourceBinding(const QJsonObject &snapshot,
+        const QkmAutomation::MappingChangeOwner &owner, int sourceTab, int sourceRow);
     void handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request);
     void handleAutomationDemoContextQuery(const QkmAutomation::AutomationRequest &request);
     void handleAutomationWindowCapture(const QkmAutomation::AutomationRequest &request);

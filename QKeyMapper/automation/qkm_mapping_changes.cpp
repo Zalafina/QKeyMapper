@@ -216,11 +216,14 @@ QJsonArray mappingChangeCapabilities()
             {QStringLiteral("preview_id"), QStringLiteral("confirm_delete")}));
     deleteApply.insert(QStringLiteral("limitations"), deleteLimits);
     deleteApply.insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    deleteApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));
+    auto addApply = capability("mapping.add.apply", "qkm_apply_changes", Read | Configure, false, apply);
+    addApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));
     QJsonObject operation = capability("operation.read", "qkm_get_operation", Read, true,
         schema({{QStringLiteral("operation_id"), identifierSchema}}, {QStringLiteral("operation_id")}));
     operation.insert(QStringLiteral("result_ttl_ms"), double(MappingChangeStore::ResultTtlMs));
     operation.insert(QStringLiteral("max_results"), MappingChangeStore::MaxResults);
-    return {previewCapability, saveCapability, capability("mapping.add.apply", "qkm_apply_changes", Read | Configure, false, apply),
+    return {previewCapability, saveCapability, addApply,
         saveApplyCapability, deleteCapability, deleteApply,
         capability("mapping.preview.cancel", "qkm_cancel_changes", Read | Configure, false,
             schema({{QStringLiteral("preview_id"), identifierSchema}}, {QStringLiteral("preview_id")})), operation};

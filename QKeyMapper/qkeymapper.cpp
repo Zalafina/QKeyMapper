@@ -37885,8 +37885,15 @@ static QJsonObject automationSourceRow(const MAP_KEYDATA &data)
 QJsonObject QKeyMapper::collectAutomationSourceSnapshot(QString &errorCode) const
 {
     Q_ASSERT(QThread::currentThread() == thread());
-    errorCode = QStringLiteral("context_busy");
     QMutexLocker readAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+    return collectAutomationSourceSnapshotWithAccess(errorCode);
+}
+
+QJsonObject QKeyMapper::collectAutomationSourceSnapshotWithAccess(QString &errorCode) const
+{
+    // The caller holds the existing non-recursive source mutex through the actual copy.
+    Q_ASSERT(QThread::currentThread() == thread());
+    errorCode = QStringLiteral("context_busy");
     const QString readBasis = automationSourceReadBasis();
     if (readBasis.isEmpty()) return {};
     const QJsonObject state = collectAutomationState();
@@ -37940,6 +37947,27 @@ QJsonObject QKeyMapper::collectAutomationSourceSnapshot(QString &errorCode) cons
         {QStringLiteral("configuration_selection"), state.value(QStringLiteral("configuration"))},
         {QStringLiteral("mapping_load_context"), state.value(QStringLiteral("mapping_load_context"))},
         {QStringLiteral("common_feature_enabled"), isCommonMappingFeatureEnabled()}, {QStringLiteral("sources"), sources}};
+}
+
+QJsonObject QKeyMapper::automationPostChangeSourceBinding(const QJsonObject &snapshot,
+    const QkmAutomation::MappingChangeOwner &owner, int sourceTab, int sourceRow)
+{
+    const auto sources = snapshot.value(QStringLiteral("sources")).toArray();
+    if (sourceTab < 0 || sourceTab >= sources.size() || sourceRow < -1) return {};
+    const auto source = sources.at(sourceTab).toObject();
+    if (!source.value(QStringLiteral("attached_to_ui")).toBool()
+        || source.value(QStringLiteral("ui_index")).toInt(-1) != sourceTab
+        || sourceRow >= source.value(QStringLiteral("rows")).toArray().size()) return {};
+    const auto bound = QkmAutomation::querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
+        {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("limit"), 1}});
+    if (!bound.ok()) return {};
+    const auto metadata = bound.page.value(QStringLiteral("source_snapshot")).toObject();
+    const QString revision = metadata.value(QStringLiteral("revision")).toString();
+    return {{QStringLiteral("reference_scope"), QStringLiteral("commit_snapshot_only")},
+        {QStringLiteral("source_snapshot"), metadata},
+        {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:") + QString::number(sourceTab)},
+        {QStringLiteral("source_ref"), sourceRow < 0 ? QJsonValue(QJsonValue::Null)
+            : QJsonValue(revision + QStringLiteral(":row:") + QString::number(sourceTab) + QLatin1Char(':') + QString::number(sourceRow))}};
 }
 
 void QKeyMapper::handleAutomationSourceQuery(const QkmAutomation::AutomationRequest &request)
@@ -38435,8 +38463,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("stale_preview"), QStringLiteral("Deletion source validation failed before any row was removed."));
             return;
         }
+        QString bindingError;
+        const auto committedSource = collectAutomationSourceSnapshotWithAccess(bindingError);
+        const auto binding = bindingError.isEmpty() ? automationPostChangeSourceBinding(committedSource, owner, sourceIndex, -1) : QJsonObject();
         store.finish(owner, validation.id, QStringLiteral("applied"),
-            {{QStringLiteral("action"), QStringLiteral("mapping.delete")}, {QStringLiteral("modified"), true},
+            {{QStringLiteral("source_binding_status"), binding.isEmpty() ? QStringLiteral("unavailable") : QStringLiteral("captured")},
+                {QStringLiteral("source_binding_after"), binding.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(binding)},
+                {QStringLiteral("action"), QStringLiteral("mapping.delete")}, {QStringLiteral("modified"), true},
                 {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
                 {QStringLiteral("source_revision_before"), removal.sourceRevision}, {QStringLiteral("source_tab_ref_before"), removal.sourceTabRef},
                 {QStringLiteral("deleted_count"), changes.size()}, {QStringLiteral("query_source_again"), true}});
@@ -38543,8 +38576,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     }
     const auto committed = commitMappingAddition(plan, validation.confirmConflicts, false);
     if (!committed.isValid) { reject(QStringLiteral("stale_preview"), committed.errorMessage); return; }
+    QString bindingError;
+    const auto committedSource = collectAutomationSourceSnapshotWithAccess(bindingError);
+    const auto binding = bindingError.isEmpty() ? automationPostChangeSourceBinding(committedSource, owner, targetIndex, plan.insertRow) : QJsonObject();
     store.finish(owner, validation.id, QStringLiteral("applied"),
-        {{QStringLiteral("modified"), true}, {QStringLiteral("saved"), false},
+        {{QStringLiteral("source_binding_status"), binding.isEmpty() ? QStringLiteral("unavailable") : QStringLiteral("captured")},
+            {QStringLiteral("source_binding_after"), binding.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(binding)},
+            {QStringLiteral("modified"), true}, {QStringLiteral("saved"), false},
             {QStringLiteral("started_by_operation"), false}, {QStringLiteral("source_revision_before"), arguments.sourceRevision},
             {QStringLiteral("source_tab_ref_before"), arguments.sourceTabRef}, {QStringLiteral("source_row"), plan.insertRow},
             {QStringLiteral("query_source_again"), true}, {QStringLiteral("warning"), plan.warningMessage}});

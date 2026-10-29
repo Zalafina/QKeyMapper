@@ -859,3 +859,15 @@ Python5项新记录／桥接测试与原22协议共27项通过：严格字段／
 四个实际QkmDemoContext115_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录，全部正常退出、工作／生产者0及逐场owned／unresolved／pending／current_action／current_job五项零。无Default、系统输入、映射启动、驱动或过滤键设置变化；合成INI注释修改／恢复为明确受控测试准备，不宣称其全过程字节不变。没有新增截图／视觉验收，不用STOPPED替代清理。普通15工具／17产品能力，--demo-record时仍16工具；删除确认的共同反馈补上源行删除用语，无TS／QM变更。
 
 原件out/mcp_demo_context_w11_20261029在本机，含单次大文件补丁／期望字节、双Qt构建／部署／实际身份、公共登记、合成INI、准确SDK peer／全部调用、组件／名称和磁盘反例、正式窗口／源回收、退出／尾状态和summary，不随Git。签名只证明当前已加载保存足迹的非行投影，运行后／实际撤权或断线、其他实例、Win10／高DPI、代表高级页、真正串行场景归属／失败隔离与预热／免Python／QQ仍待，完整P2／M1未标完成。
+
+## DEMO-P2-116：提交时源绑定（2026-10-29，PC-W11）
+
+115 a7e7a06d后为mapping.add.apply／mapping.delete.apply补提交时完整源绑定。真实变更后、释放既有非递归source写围栏前复制实际完整源，用既有instance／pair／epoch及全源哈希形成source_binding_after；新增含新行ref，删除仅给源Tab、source_ref=null，不把接替行冒充已创建资源。source_binding_result=commit_snapshot_or_null声明新合同；捕获不了为unavailable／null，原操作仍applied／modified=true，不回滚或冒称未修改。结果重放／operation保留原绑定，不重新采样当前目标。
+
+读取入口仅分离原带锁包装和调用方已持同一锁的私有采样体，完整采样／读取门槛保持；无递归锁、新锁、线程或源增量修订捷径。源绑定为commit_snapshot_only历史事实，未来GUI或其他操作仍可立即使它失效；后续串行回收须用该绑定核验，不能重查后认领相似行。GUI业务、权限、原提交预算及失败处理不变；本片新增一次有界完整源采样／哈希，最大源耗时未验。
+
+双Qt受影响生命周期维护增量native0，Qt6零编译／链接警告、Qt5兼容通过。正式stdio各正例＋Read负例四场38项Native，48次handler／65次SDK记录。新增／删除的提交绑定与正常完整源查询相等，删除不返回行引用；历史重放保留原完整业务结果，仅按既有语义更新查询时间和重放标记。第二次新增的生产回复后，维护夹具立即真实Qt点击行并Delete，旧绑定查询／正式开窗均stale_source；历史operation／重放仍返回原提交绑定，不采样已空的新源。正例每场两次正式新增、一次正式删除、一次原GUI删除，sourceEpoch恰+4；所有源／metadata精确复原，GUI名／加载／INI保持、dirty按原GUI保留、无编辑窗／运行输入。Read两场零修改；纯组件拒绝无快照／错误索引／不存在行／未附着Common备份并与原全源查询交叉核对。
+
+首Qt5正例把动态replayed／query_sampled_at_utc也要求恒等，首Read负例误比较run采样时间，各断言失败、native exit2；两个原件分别保留first-attempt-history-assertion与first-attempt-state-sample-assertion，目标正常退出、工作／生产者0，随后实际控制器五项清理零。只修SDK断言（Read复用既有business_state），未改产品／重建；最终四场均native0／正常退出、逐场清理五项零。实际QkmPostBinding116_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录，无Default、系统输入、映射启动或驱动／FilterKeys变化。
+
+原件out/mcp_post_binding_w11_20261029含单次大文件补丁／精确字节、双Qt构建部署身份、公共定义／SDK peer／逐次调用、两个失败原件、四场源／退出INI／清理和summary，不随Git。维护用例纳入mcp_bridge/tests/post_change_binding_acceptance.py，使用说明同步桥接README。普通15工具／17产品能力、demo-record时16工具不变。未实际诱发提交后采样失败／撤权／断线、最大源耗时、其他实例、Win10／Default／高DPI、串行场景／预热／免Python／QQ；既有111／113／114／115结果按未改路径复用，未重复全量静态／ASan／普通完整Release，未标完整P2／M1完成。
