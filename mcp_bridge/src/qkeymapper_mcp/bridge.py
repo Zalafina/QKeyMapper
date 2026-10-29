@@ -15,6 +15,7 @@ import pywintypes
 import win32event
 
 from .credentials import CredentialStore
+from .demo import read_binding, readiness, validate_binding
 from .images import validate_capture
 from .protocol import (BridgeError, Credential, MAX_HANDSHAKE, client_name, decimal,
                        fields, hex_bytes, proof, require, scopes)
@@ -22,8 +23,9 @@ from .windows import Pipe, discover, identity, pristine_thread
 
 
 class Bridge:
-    def __init__(self, discovery: Path, executable: Path):
+    def __init__(self, discovery: Path, executable: Path, demo_record: Path | None = None):
         self.discovery, self.executable = discovery, executable
+        self._demo_record = demo_record
         self._worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="qkm-pipe")
         self._lock = threading.Lock()
         self._cancel = win32event.CreateEvent(None, True, False, None)
@@ -210,8 +212,46 @@ class Bridge:
     async def close_mapping_editor(self, source_ref: str, window_ref: str, presentation: str) -> dict:
         return await self._call("qkm_close_mapping_editor", dict(source_ref=source_ref, window_ref=window_ref, presentation=presentation))
 
+    async def demo_state(self) -> dict:
+        return await self._perform(self._demo_state)
+
+    def _demo_state(self) -> dict:
+        result = {"configured": self._demo_record is not None, "ready": False,
+                  "reference_scope": "preflight_observation_only"}
+        if self._demo_record is None:
+            return {"ok": True, "result": {**result, "reason": "demo_not_configured"}}
+        require(self._pipe is not None and self._credential is not None, "not_connected")
+        target = self._pipe.discovery
+        own = identity(os.getpid())
+        try:
+            binding = validate_binding(read_binding(self._demo_record, own), target, self.executable)
+            live = identity(target.server.pid)
+            require(own.same_login(live) and (live.created, live.session, live.executable)
+                    == (target.server.created, target.server.session, target.server.executable), "demo_record_mismatch")
+        except BridgeError as error:
+            code = error.code if error.code in ("demo_record_rejected", "demo_record_mismatch") else "demo_record_mismatch"
+            return {"ok": True, "result": {**result, "reason": code}}
+        samples = []
+        for method, arguments in (("qkm_query", {"entity": "windows"}), ("qkm_get_state", {}),
+                                  ("qkm_query", {"entity": "mapping_sources", "limit": 100})):
+            response = self._request(method, arguments)
+            if response.get("ok") is not True:
+                return {"ok": True, "result": {**result, "reason": response.get("error", "invalid_demo_state")}}
+            samples.append(response["result"])
+        windows, state, sources = samples
+        reason = readiness(binding, windows, state, sources, self._credential.scopes)
+        if reason in ("demo_record_mismatch", "invalid_demo_state"):
+            return {"ok": True, "result": {**result, "reason": reason}}
+        summary = {key: binding[key] for key in ("instance", "pid", "created", "executable", "desktop")}
+        return {"ok": True, "result": {**result, "ready": reason == "ready", "reason": reason,
+                "target": summary, "configuration": binding["configuration"],
+                "source_snapshot": sources.get("source_snapshot", {})}}
+
     async def _call(self, method: str, arguments: dict | None = None) -> dict:
-        future = self._submit(lambda: self._request(method, arguments if arguments is not None else {}))
+        return await self._perform(lambda: self._request(method, arguments if arguments is not None else {}))
+
+    async def _perform(self, operation) -> dict:
+        future = self._submit(operation)
         if future is None:
             return {"ok": False, "error": "busy_or_closed"}
         try:

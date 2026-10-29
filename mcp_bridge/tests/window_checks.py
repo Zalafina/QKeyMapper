@@ -37,6 +37,7 @@ async def verify_window_query(request, target, instance: str, desktop: str) -> d
     assert page["target"] == {"instance": instance, "pid": str(target.pid), "created": str(target.created),
                               "executable": target.executable, "desktop": desktop}
     assert type(page["foreground_in_instance"]) is bool
+    assert type(page["private_background_available"]) is bool
     assert page["total"] == 2 and page["offset"] == 0 and page["next_offset"] is None
     assert [item["role"] for item in page["items"]] == ["main", "item_setup"]
     for item in page["items"]:

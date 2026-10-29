@@ -3364,6 +3364,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
     const bool publicPreview = qEnvironmentVariable("QKM_LIFECYCLE_CASE") == QStringLiteral("settings_save_preview") || publicApply;
     const QString connectionVariant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
     const bool deletionCase = publicApply && connectionVariant.startsWith(QStringLiteral("delete_"));
+    const bool demoReadiness = publicApply && connectionVariant.startsWith(QStringLiteral("demo_ready"));
     const bool connectionCase = publicApply && (connectionVariant == QStringLiteral("timeout_after_accept")
         || connectionVariant == QStringLiteral("disconnect_after_accept"));
     const bool cleanupReturn = publicApply && connectionVariant == QStringLiteral("cleanup_return");
@@ -3406,10 +3407,14 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                     approval->deleteLater();
                     const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
                     quint32 scopes = variant == QStringLiteral("read") || variant == QStringLiteral("delete_read")
+                        || variant == QStringLiteral("demo_ready_read")
                         || variant.startsWith(QStringLiteral("cold_")) ? Read : Read | Configure;
                     if (variant == QStringLiteral("demo_mcp_capture") || variant == QStringLiteral("demo_mcp_editor")
-                        || variant == QStringLiteral("demo_mcp_close")) scopes |= CaptureWindows;
-                    if (variant == QStringLiteral("demo_mcp_editor") || variant == QStringLiteral("demo_mcp_close")) scopes |= ShowWindows;
+                        || variant == QStringLiteral("demo_mcp_close") || variant == QStringLiteral("demo_ready")) scopes |= CaptureWindows;
+                    if (variant == QStringLiteral("demo_mcp_editor") || variant == QStringLiteral("demo_mcp_close")
+                        || variant == QStringLiteral("demo_ready")) scopes |= ShowWindows;
+                    if (variant == QStringLiteral("demo_ready_nonempty") || variant == QStringLiteral("demo_ready_dirty"))
+                        scopes |= ShowWindows | CaptureWindows;
                     server.approvePairing(pending.requestId, scopes);
                 });
                 approval->start(20);
@@ -3452,6 +3457,18 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
         });
     });
     if (publicPreview) {
+        if (connectionVariant == QStringLiteral("demo_ready_dirty")) {
+            auto *name = mapper->findChild<QLineEdit *>(QStringLiteral("settingNameLineEdit"));
+            if (!name || !name->isEnabled() || name->isReadOnly()) { finish(false); return; }
+            QKeyEvent select(QEvent::KeyPress, Qt::Key_A, Qt::ControlModifier), selected(QEvent::KeyRelease, Qt::Key_A, Qt::ControlModifier);
+            QCoreApplication::sendEvent(name, &select); QCoreApplication::sendEvent(name, &selected);
+            const QString draft = QStringLiteral("DemoReady114Draft");
+            for (const QChar character : draft) {
+                QKeyEvent press(QEvent::KeyPress, 0, Qt::NoModifier, QString(character)), release(QEvent::KeyRelease, 0, Qt::NoModifier, QString(character));
+                QCoreApplication::sendEvent(name, &press); QCoreApplication::sendEvent(name, &release);
+            }
+            if (name->text() != draft || !mapper->m_SaveSettingDirty) { finish(false); return; }
+        }
         if (deletionCase && (connectionVariant.startsWith(QStringLiteral("delete_common"))
             || connectionVariant == QStringLiteral("delete_stale"))) {
             auto *tabs = mapper->findChild<QTabWidget *>(QStringLiteral("keyMappingTabWidget"));
@@ -4018,7 +4035,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 check(valuesMatch, QStringLiteral("formal save persists every independently prepared target and shared value"));
             }
             result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
-                {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase}, {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},
+                {QStringLiteral("formal_mcp_save_preview"), !demoCapture && !deletionCase && !demoReadiness},
+                {QStringLiteral("formal_mcp_demo_preflight"), demoReadiness},
+                {QStringLiteral("formal_mcp_save"), publicApply && (saves == 1 || reloadFailure)},
                 {QStringLiteral("formal_mcp_delete"), deletionCase && connectionVariant != QStringLiteral("delete_read")
                     && connectionVariant != QStringLiteral("delete_stale")},
                 {QStringLiteral("formal_mcp_scene_creation"), demoCapture && completion.value(QStringLiteral("sdk_passed")).toBool()},

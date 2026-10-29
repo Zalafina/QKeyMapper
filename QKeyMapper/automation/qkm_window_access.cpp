@@ -246,6 +246,7 @@ WindowQueryResult WindowAccess::query(const QString &instance, const QString &pa
             {QStringLiteral("executable"), executable}, {QStringLiteral("desktop"), QString::fromWCharArray(desktop)}}},
         {QStringLiteral("reference_scope"), QStringLiteral("instance_window_lifetime_only")},
         {QStringLiteral("foreground_in_instance"), foregroundPid == GetCurrentProcessId()},
+        {QStringLiteral("private_background_available"), privateBackgroundDesktopAvailable()},
         {QStringLiteral("offset"), offset}, {QStringLiteral("total"), 2}, {QStringLiteral("items"), items},
         {QStringLiteral("next_offset"), next < 2 ? QJsonValue(next) : QJsonValue(QJsonValue::Null)}}, {}, {}};
 }

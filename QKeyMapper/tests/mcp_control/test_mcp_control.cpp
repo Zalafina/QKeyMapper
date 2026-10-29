@@ -1311,6 +1311,8 @@ void McpControlTest::windowObservation()
     QCOMPARE(main.internalWinId(), WId(0));
     QCOMPARE(item->internalWinId(), WId(0));
     QCOMPARE(result.page.value(QStringLiteral("total")).toInt(), 2);
+    QVERIFY(result.page.value(QStringLiteral("private_background_available")).isBool());
+    QCOMPARE(result.page.value(QStringLiteral("private_background_available")).toBool(), privateBackgroundDesktopAvailable());
     QVERIFY(result.page.value(QStringLiteral("items")).toArray().at(0).toObject().value(QStringLiteral("window_ref")).isNull());
     const auto target = result.page.value(QStringLiteral("target")).toObject();
     QCOMPARE(target.value(QStringLiteral("instance")).toString(), instance);

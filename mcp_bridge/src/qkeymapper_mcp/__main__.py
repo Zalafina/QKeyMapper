@@ -91,6 +91,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="QKeyMapper local MCP bridge (stdio).")
     parser.add_argument("--discovery-file", type=Path, required=True)
     parser.add_argument("--executable", type=Path, required=True)
+    parser.add_argument("--demo-record", type=Path, help="Explicit host creation record for a dedicated private demo instance.")
     args = parser.parse_args()
     if os.name != "nt":
         parser.error("Windows 10 or 11 is required.")
@@ -99,7 +100,8 @@ def main() -> None:
     executable = Path(os.path.abspath(args.executable))
     if discovery.name != "instance.json":
         parser.error("--discovery-file must name instance.json from QKeyMapper's MCP window.")
-    bridge = Bridge(discovery, executable)
+    demo_record = Path(os.path.abspath(args.demo_record)) if args.demo_record is not None else None
+    bridge = Bridge(discovery, executable, demo_record)
 
     @asynccontextmanager
     async def lifespan(_server):
@@ -129,6 +131,12 @@ def main() -> None:
     def qkm_get_connection_state() -> ToolResult:
         """返回桥接连接的最近核验状态；不代表映射引擎状态，也不会申请权限。"""
         return tool_result(bridge.state())
+
+    if demo_record is not None:
+        @tool(read)
+        async def qkm_get_demo_state() -> ToolResult:
+            """只读核对宿主显式配置的专用演示创建记录、实际认证实例／私有桌面、独立窗口权限及固定配置的空源基线。ready只代表本次观察，不是后续写入许可、场景租约或重置证明；失败保留现场，不创建／切换目标、不显示／激活窗口、不配对扩权／提权或修改配置。记录由受信启动链制备，不能用客户端自报身份替代进程／认证／权限核验。正式预热生成、串行建例／截图／重置及免Python交付尚未完成。"""
+            return tool_result(await bridge.demo_state())
 
     @tool(connection)
     def qkm_connect() -> ToolResult:

@@ -180,3 +180,13 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 成功只改内存，返回 `modified=true, saved=false, started_by_operation=false`、删除数及 `query_source_again=true`；没有保存、自动停止／启动或演示重置。所有旧源引用／预览须按修订重新查询。取消／拒绝不删除，已消费失败需新预览；成功ID重复提交只返回历史结果，不再次删除。结果绑定原实例／pair权限代次和原源摘要，超时／断线先查同ID的 `qkm_get_operation`，unknown不证明未执行，禁止盲目重试或改连其他实例。
 
 当前仅普通当前源及直接选中的Common源；从普通Tab操作附加Common、隐藏行删除、跨Tab及多源批次尚不支持。Win11双Qt正式stdio的普通最后行、Common首行／全批及重复引用、无确认／错误确认、Read拒绝、编辑窗／表格草稿／菜单保护、GUI删除后的陈旧预览及历史重放已定向核对；完整删除矩阵、实际Win10／高DPI、运行后清理及串行演示重置仍待。维护SDK用例见 [mapping_deletion_acceptance.py](tests/mapping_deletion_acceptance.py)，具体证据仍以唯一主计划／C1记录为准。
+
+## 专用演示实例只读预检（P2-114）
+
+宿主可在原`--discovery-file`／可信`--executable`外显式指定`--demo-record <私有创建记录>`，该桥接才额外提供无参数、只读的`qkm_get_demo_state`；普通入口仍15工具，产品业务能力仍16项。此参数不创建进程、申请UAC或配对，不改变正常默认关闭；MCP客户端不能传入记录路径、任意PID或自己选择目标。当前是开发桥接入口，完整Release预热／免Python交付仍待P3／M3-B。
+
+记录是受信启动链的目标约束，最多8KiB，严格包含`version=1`、`executable`绝对路径、十进制字符串`pid/created/session`、32位小写hex的`instance`、`desktop`及初始保存配置组`configuration`；没有密钥。目录和文件须为当前用户的私有ACL、非重解析对象／单链接普通文件。记录自报路径不产生信任：仍沿显式可信EXE、实际进程／创建时间／登录会话、认证管道核验，再与产品报告的实际桌面和实例逐项匹配。现有维护启动链可生成测试记录，正式预热生成和部署流程尚未交付。
+
+预检在既有单worker内串行读取，要求已有Read+Configure+ShowWindows+CaptureWindows、后台私有非输入桌面、固定配置加载已接受、完整空闲清理读取基准、唯一附着普通空源及空的未附着Common备份、主窗已恢复／可见、无单项窗口且初始无dirty。产品`windows`观察新增保守布尔`private_background_available`，缺失／无法确认均不放行；不会显示、激活或切换桌面。
+
+成功数据含`configured/ready/reason`、已核实目标及`source_snapshot`；`reference_scope=preflight_observation_only`明确它不是写入许可、场景租约或完整重置证明。权限不足、非空／dirty、配置或记录不符、窗口未就绪分别报告；错误记录不改连其他目标、不返回未经核实的目标摘要，不破坏现有配对。当前工具只观察，不建例／截图／关窗／删除；不能仅凭ready=true向QQ宣称服务已准备完毕。跨场景非映射上下文、串行执行和失败回收后续实现，QQ渠道由gateway另联调。

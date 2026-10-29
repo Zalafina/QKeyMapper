@@ -1004,3 +1004,7 @@ P1-110之上仅增加固定维护观察，产品deleteSelectedMappingData及头�
 ## DELETE-113：稳定源行删除已接通，完整删除／重置矩阵待验
 
 mapping.delete.preview／apply复用现有工具，Read+Configure及独立confirm_delete，完整owner源修订、当前附着可见单源1–100引用、去重／预检、无编辑窗／表格编辑／弹出菜单、完整清理及runtime互斥后调用112原业务。仅改内存／dirty，结果归原实例，旧引用失效、成功重放不再删除；当前15工具／16能力。双Qt十二场96项native、450 handler／471 SDK＋84 schema，八次正式删除，原GUI剩余全字段／派生对照及其他源保持；hidden为组件注入，原GUI基线111独立保留。版本／复用／原件及未验边界见[同一C1证据](map67c1_validation.md#delete-113稳定源行删除2026-10-29pc-w11)。不支持普通Tab间接删除附加Common或隐藏／分隔行，不自动切表／关闭／保存／启停；完整EQ-MAP-DELETE、真实筛选／派生／运行清理／其他实例、Win10及P2重置未标完成。
+
+## DEMO-P2-114：可选宿主记录及只读预检
+
+--demo-record仅额外启用无参数qkm_get_demo_state；严格私有记录与固定可信EXE／认证实例／实际进程及桌面匹配，Read+Configure+Show+Capture、固定已加载单一普通空源及空Common备份、完整空闲读取基准、主窗可见／无编辑窗／无dirty才报告ready。返回仅观察，不授权写入／租约／重置或预热；普通15工具／产品16能力保持。双Qt八场64项native、104 handler／176 SDK＋8 schema，27项Python及双Qt各4项窗口组件通过；全部源INI及状态保持、正常退出／五项清理零，见[同一C1证据](map67c1_validation.md#demo-p2-114只读专用实例预检2026-10-29pc-w11)。测试宿主记录不冒充正式预热，非映射上下文／串行回收／免Python和QQ仍待，未标完整P2。

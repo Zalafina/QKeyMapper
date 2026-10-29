@@ -833,3 +833,15 @@ Win11企业版26200 x64、现锁CPython3.11.9 x64／pywin32与Qt6.8.3 msvc2022_6
 双Qt受影响维护／协议／IPC增量native0，Qt6零编译／链接警告、Qt5兼容通过。首十场在补表格／菜单保护前也通过，原件在first-passed-before-table-editor-guard；补保护后重验受影响双Qt十场。hidden只扩固定夹具，先前十场按不变产品／有效输入范围复用，实际旧EXE／定义／构建身份留before-hidden-component；当前EXE只新增hidden两场，不把全部十二场误记为同一个二进制。维护SDK断言已纳入mcp_bridge/tests/mapping_deletion_acceptance.py，合成INI由已有common样例去五个可选键精确重建，不复制个人数据或增加进度来源。
 
 本机out/mcp_delete_w11_20261029含两式产品补丁／精确字节、双Qt构建／部署身份、分版EXE与定义、普通组件／IPC、正式SDK调用／schema／peer、十二场源／退出INI／清理和summary，不随Git。过滤的真实GUI、普通Tab附加Common／分隔行、独立Common备份／鼠标点派生专项、运行后清理／实际撤权／过期／断线删除、其他实例及Win10／高DPI未验；存储到期／跨owner仅组件，未选全量静态／ASan／普通完整Release。P2／P3／M3-B免Python与QQ尚未验收。
+
+## DEMO-P2-114：只读专用实例预检（2026-10-29，PC-W11）
+
+113 ff6ed42b后实现正式桥接预检。宿主显式--demo-record才增加无参数只读qkm_get_demo_state，普通15工具／产品16能力不变；配置该参数时16工具。记录严格8字段／8KiB、当前用户私有ACL目录及文件、非重解析／单链接；保存EXE、PID／创建时间、Session、实例、实际桌面及固定初始配置组，无密钥、不产生授权。先匹配显式可信EXE和已认证固定管道，再复核实际存活进程／登录身份；桌面另与产品实际返回核对，错误或损坏记录不返回未核实目标、不改配对／连接。维护宿主只依据本次受管Start／实际身份生成测试记录，正式预热生成仍待P3，不能凭客户端自报记录宣称专用部署。
+
+产品windows查询仅复用未改privateBackgroundDesktopAvailable并增加保守布尔private_background_available（未知false）；不控制窗口／焦点／桌面。Bridge将原单worker等待代码局部提取_perform，预检在本桥接单作业中连续读取Windows、状态和完整源目录，拒绝同桥接并发；不锁定整个产品或其他客户端，原取消／busy／关闭语义保留。要求Read+Configure+ShowWindows+CaptureWindows、实际非Default且非输入桌面、固定保存配置接受加载、完整空闲清理读取基准、单一附着普通空源及空的未附着Common备份、主窗恢复可见且无单项窗、初始无dirty。返回ready／reason、已核实目标和source_snapshot，reference_scope=preflight_observation_only，不是写许可／租约／完整重置或咨询服务就绪证明；不建例、截图、删除、保存、重载或启动映射。
+
+Python5项新记录／桥接测试与原22协议共27项通过：严格字段／类型／身份、私有ACL、8KiB／损坏／重复键／硬链接／公共目录拒绝、就绪多类边界、三条只读请求及错误记录保持连接。Qt6／Qt5窗口观察＋实际私有桌面守卫各4项含init／cleanup；受影响维护／窗口目标增量native0，Qt6零编译／链接警告、Qt5兼容通过。固定非空／草稿用例补齐后只重编受影响Native维护文件，未重复环境恢复或113产品矩阵。
+
+双Qt正式stdio各四场，普通空源ready、Read权限permission_denied、预置A→B源demo_baseline_not_empty及实际Qt名称草稿demo_baseline_dirty；各8项Native、合计八场64项／104次handler／176次SDK记录＋8次schema拒绝。每场另验错误创建时间／实例／Session／EXE／桌面／额外字段和损坏记录，恢复后原因／目标回到原观察，原认证连接仍connected。Native独立完整源／GUI名／dirty／加载／sourceEpoch／INI均不变；dirty准备在观察前完成，不冒称该GUI准备也只读。实际QkmDemoReady114_<UUID>私有桌面，SDK8192／产品12288、同登录；全部正常退出、工作／生产者0、逐场清理五项零。无Default、系统输入、MCP配置写入、映射启动或驱动／FilterKeys变化，无截图／视觉新验收。
+
+原件out/mcp_demo_ready_w11_20261029在本机，含分步构建／部署与身份、双Qt组件、合成INI、受管定义／登记、普通宿主私有记录、准确SDK peer／逐次调用、八场完整源／退出INI／尾状态及summary，不随Git。错误PID复用等身份仅字段反例／当前活进程核验，不冒称真实PID复用／退出／休眠均已验。Default拒绝复用同一未改函数既有证据，不记本轮Default测试。串行场景、非映射上下文一致性／重置、正式预热／免Python、Win10／高DPI、其他实例及QQ未验，完整P2／M1未标完成。
