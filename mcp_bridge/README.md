@@ -149,7 +149,7 @@ Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际�
 
 失败返回is_error及文本／结构化错误，无image内容：常见permission_denied、stale_window、stale_source、context_busy、window_unavailable、capture_timeout、image_too_large、invalid_image。关闭导致原生句柄消失时window_ref为null，不可提交；重新观察。显示后焦点转回Agent本身不使引用失效，但生命周期／源／权限变化必须重新查询。接口五秒截止并在短绘制等待前后复核；损坏图片被桥接拒绝且连接关闭，不返回旧图或自动重试。
 
-正式工具只传内存内容，不创建图片文件或历史缓存；若gateway落盘，须由普通权限接线端限制目录、文件名、大小、数量、保留时间及清理归属。开发SDK在out保存的PNG仅是证据，不是已交付文件产物服务。测试入口 `tests/test_images.py`（7项）和 `tests/window_checks.py`；Win11双Qt实际图片及拒绝范围见同一主计划／C1证据。Win10、高DPI、Default因果、代表高级页、正式预热、免Python交付及QQ渠道仍待。
+正式工具只传内存内容，不创建图片文件或历史缓存；若gateway落盘，须由普通权限接线端限制目录、文件名、大小、数量、保留时间及清理归属。开发SDK在out保存的PNG仅是证据，不是已交付文件产物服务。测试入口 `tests/test_images.py` 和 `tests/window_checks.py`；Win11双Qt实际图片及拒绝范围见同一主计划／C1证据，代表高级页见120–122。Win10、高DPI、Default因果、正式预热、免Python交付及QQ渠道仍待。
 
 ## 私有后台打开源行设定窗（P1-109）
 
@@ -213,11 +213,11 @@ Win11双Qt已验证GUI窗口拒绝、C草稿保护／恢复B后关闭、连续�
 
 已知业务失败时仅在原源／窗口／非行归属仍可证明时尝试一次受限回收；草稿、源／设定变化或未知执行结果保留现场并隔离。超时／取消不猜测未执行、不自动重试或改连；新桥接没有旧内存记录，遇到遗留dirty／场景拒绝，交由部署端处理。正常配对持久化策略保持；本工具不提供清空任意草稿、撤销外部操作或启动映射的接口。
 
-Win11双Qt各两轮A→B／C→D正式stdio完成，四张真实820×480单项窗图片经Agent查看，源／INI／加载及无运行输入已定向核对。模拟测试覆盖已知失败回收和未知／外来变化隔离，不能替代实际进程退出／撤权／超时等矩阵。118补下述主窗视图；代表高级页、其他实例对照、Win10／高DPI、正式预热和免Python包仍待，现有开发命令不作为无开发环境Release部署承诺。详见唯一主计划及 [demo_scene_acceptance.py](tests/demo_scene_acceptance.py)。
+Win11双Qt各两轮A→B／C→D正式stdio完成，四张真实820×480单项窗图片经Agent查看，源／INI／加载及无运行输入已定向核对。模拟测试覆盖已知失败回收和未知／外来变化隔离，不能替代实际进程退出／撤权／超时等矩阵。118补下述主窗视图，122补代表高级页；其他实例对照、Win10／高DPI、正式预热和免Python包仍待，现有开发命令不作为无开发环境Release部署承诺。详见唯一主计划及 [demo_scene_acceptance.py](tests/demo_scene_acceptance.py)。
 
 ### 主窗口视图（P2-118）
 
-`qkm_demo_mapping(original_key="A", mapping_key="B", view="main")`使用相同固定部署／权限和归属行回收；view只允许main或item_setup，省略仍走原单项窗。写入前核对实际windows.capture角色声明。main仅查询并捕获已存在、可见／恢复的本实例主窗，不打开单项窗、不切换设定页、不请求显示或激活；未就绪按原失败／回收规则处理，不能自动改选其他窗口。`demo_scene.view`与原图像role对应。
+`qkm_demo_mapping(original_key="A", mapping_key="B", view="main")`使用相同固定部署／权限和归属行回收；view允许main、item_setup及122新增的mapping_advanced，省略仍走原单项窗。写入前核对实际windows.capture角色声明。main仅查询并捕获已存在、可见／恢复的本实例主窗，不打开单项窗、不切换设定页、不请求显示或激活；未就绪按原失败／回收规则处理，不能自动改选其他窗口。`demo_scene.view`与原图像role对应。
 
 Win11双Qt各实际主窗A→B、随后默认单项C→D及Read负例通过，主窗1130×722 PNG可见真实A/B行，四张图片经Agent查看；复用117完全相同的本机Native二进制，未重编产品或测试夹具。主窗横向滚动表格当前仅可见部分列，不宣称全列内容或高级设定页已覆盖；完整源字段仍由正式业务查询核对。新增视图不改变正常工具或配对／实例选择规则。
 
@@ -228,7 +228,7 @@ Win11双Qt各实际主窗A→B、随后默认单项C→D及Read负例通过，�
 
 高级窗已经由原GUI显示且源安全可读时，用所查window_ref及当前source_revision／source_tab_ref调用`qkm_capture_window(role="mapping_advanced", ...)`，仍需独立Read+CaptureWindows。高级窗须对应当前源Tab，绘制前后复核与160KiB／8M像素上限保持；返回真实ImageContent。高级控件是实时加载设定，`settings_scope="live_loaded_settings_not_committed_by_source_revision"`明确其值未由源行修订提交，不能据此宣称完整配置已保存或未变化。未显示、旧窗／旧源、模态／popup或权限不足明确失败，不自动打开或切换目标。
 
-Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看；默认两角色兼容、无Capture（Read+Configure+Show）拒绝、开关前后源及非行足迹／INI保持已定向核对。无Capture用例中的固定GUI帧是测试夹具观察材料，MCP未返回图片。高级窗正式显示／归属关闭见下述121；串行demo view仍待，`qkm_demo_mapping.view`目前仍仅main／item_setup；不提供高级设置编辑。其他系统／Default／高DPI、独立子窗与完整交付缺口见唯一主计划。
+Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看；默认两角色兼容、无Capture（Read+Configure+Show）拒绝、开关前后源及非行足迹／INI保持已定向核对。无Capture用例中的固定GUI帧是测试夹具观察材料，MCP未返回图片。高级窗正式显示／归属关闭见下述121；串行高级view见122；不提供高级设置编辑。其他系统／Default／高DPI、独立子窗与完整交付缺口见唯一主计划。
 
 
 ## 私有后台高级窗安全开关（P1-121）
@@ -237,4 +237,11 @@ Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看�
 
 成功返回目标／源／窗口摘要；用返回window_ref和同一source_tab_ref调用`qkm_close_mapping_settings(..., presentation="private_background")`。只关闭本owner正式打开、完整源及全部输入摘要未变化的窗；GUI打开的窗为editor_not_owned，数值或未提交数字变化为editor_draft_changed，保留现场，不提供discard。旧源／旧窗及权限／身份变化拒绝；失败／断线先查询实际状态，不能自动重发、清草稿或换目标。
 
-截图仍另需CaptureWindows。已归属高级窗的图片元数据可能包含`settings_editor_unchanged`布尔，表示捕获前后输入摘要是否仍与本次打开记录相同；false的实时图片不能作为该演示已确认的初始场景，缺失也不能推定true。它不代替源／非行足迹核验或安全关闭，普通GUI实时图片仍可能展示草稿。正式串行高级view下一片接线，当前qkm_demo_mapping仍仅main／item_setup。无高级参数编辑、预热、免Python或QQ送达承诺。
+截图仍另需CaptureWindows。已归属高级窗的图片元数据可能包含`settings_editor_unchanged`布尔，表示捕获前后输入摘要是否仍与本次打开记录相同；false的实时图片不能作为该演示已确认的初始场景，缺失也不能推定true。它不代替源／非行足迹核验或安全关闭，普通GUI实时图片仍可能展示草稿。正式串行高级view见下述122。无高级参数编辑、预热、免Python或QQ送达承诺。
+
+
+### 固定高级串行视图（P2-122）
+
+`qkm_demo_mapping(original_key="A", mapping_key="B", view="mapping_advanced")`在相同专用实例和四项权限下，先正式建例，沿固定高级窗原入口后台显示／捕获，再安全关闭和回收本轮行。写前要求实际mapping.settings.open／close和capture角色能力；捕获须有settings_editor_unchanged=true，随后完整非行足迹与源再次一致才交付图片。未知结果或草稿变化保留隔离，不替用户丢弃；标记缺失／false不返回场景图片，仍按原证明决定是否能安全回收。
+
+高级图片显示当前真实参数，本窗口本身不含A/B，行内容由正式源字段核验并关联demo_scene；不提供高级参数编辑或保存。Win11双Qt连续高级A→B后默认单项C→D、Read负例及四张图片已定向核对；普通工具及配对规则保持。Agent／gateway可直接消费原生ImageContent，QQ发送仍须渠道联调。Release预热／免Python包、Win10／高DPI及实际连接异常矩阵仍待。

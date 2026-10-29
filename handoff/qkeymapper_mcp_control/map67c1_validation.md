@@ -939,3 +939,17 @@ Python图像8／协议22／结构化反馈7共37项通过，包括新scope缺失
 原GUI／正式开关后全源及非行context精确保持；仅本轮正式新增／删除令epoch恰+2，INI／GUI名／加载不变，dirty按原GUI保留，所有源空／无编辑窗或runtime输入。实际QkmAdvancedWindow121_<UUID>私有桌面、SDK8192／原manifest产品12288、同登录，四场exit0／正常退出、尾部工作与生产者0、逐场五项清理零。无Default、系统输入、映射启动、驱动／FilterKeys或新提权模式；activation_requested=false与私有桌面不冒充Default全程前台因果。
 
 原件out/mcp_advanced_window_w11_20261029保存单次主文件补丁／精确字节、构建／部署／公共登记、组件与38项Python日志、SDK peer／逐次调用、原GUI帧及六张正式图／Agent审阅、INI／退出／清理和summary，不随Git。维护SDK mapping_settings_acceptance.py及桥接／Native用法同步。高级串行view留下一片；正式设置编辑、通知子窗、真实撤权／断线／超时及跨实例因果、Default／Win10／高DPI、预热／免Python及QQ仍待，不标完整P1／P2／M1完成，不重复无变化全矩阵／静态／ASan／普通完整Release。
+
+## DEMO-P2-122：固定高级窗串行视图（2026-10-29，PC-W11）
+
+121 9d6fe3f2之后仅扩正式桥接串行工具view=mapping_advanced；普通17／仅记录18／显式演示19工具及19产品能力保持。写前核对实际固定settings.open／close与capture角色合同，原单worker及提交时完整源绑定／非行足迹下，通过121原入口后台开窗、原生PNG、安全归属关闭及仅本轮源行删除，不改高级参数／主设置页，不打开任意目标。图片必须含settings_editor_unchanged=true及原完整源上下文；false／缺失不交付场景图，已知错误仅按原证明尝试一次安全回收，未知执行结果或草稿失败保留并隔离。
+
+普通Medium定向场景17＋图像9共26项通过，新增高级后默认单项的引用字段／回收隔离、缺settings能力写前拒绝、false／缺失／非bool标记不交付图、草稿关闭仅一次且不删除、开窗／捕获／关闭timeout不盲目清理；原主窗／默认单项、已知失败恢复、源／非行变化、取消及busy范围保留。这些是模拟，不冒称真实进程超时／撤权或用户系统输入。
+
+产品C++及Native维护夹具完全未改；逐个匹配121本机已验EXE SHA256后复用，部署后再与所复用身份相等，不重编。双Qt正式stdio各高级A→B后默认单项C→D及显式高级Read负例，四场28 Native／154 handler／64 外层SDK＋32 schema拒绝。两正例各新增／删除两轮，epoch恰+4，完整源／metadata复原为空、非行签名及INI／GUI名／加载保持、dirty保留，无高级／单项编辑窗或runtime输入；Read两场零修改／图片。
+
+Agent查看四张正式ImageContent图片：高级770×390显示当前实际3／3、2ms、扳机／摇杆50／30／15%、触板0.50／0.50及中文，默认单项820×480显示C/D/D；无黑图、错误窗口或旧场景污染。高级窗自身不显示A/B，该业务示例由正式提交绑定／完整行逐字段核验，不把图片参数声称为该行提交或保存的内容。捕获源与后续回收空源修订分别保留，四张图可由Agent／gateway消费，delivery仍明确QQ送达未验证。
+
+实际QkmDemoAdvanced122_<UUID>私有桌面，SDK8192／原manifest产品12288、同登录，四场native0／正常退出、工作／生产者0、逐场owned／unresolved／pending／current_action／current_job零。无Default、请求激活、系统输入、映射启动、驱动／FilterKeys或新提权方式；不据此声明全程跨实例因果或Default前台完整验收。原件out/mcp_demo_advanced_w11_20261029含本机制品复用身份、26项日志、公共登记／SDK peer／逐次调用和原图响应、四图／Agent审阅、INI／退出／清理与summary，不随Git。
+
+正式工具／维护SDK及README同步固定高级view，正常配对／实例选择规则未改。其他参数编辑／子窗、真实退出／身份变化／撤权／断线／超时与其他实例因果、Win10／Default／高DPI、Release预热及免Python包／QQ仍待；117／121不变路径按原范围复用，不标完整P1／P2／M1／M3-B完成。下一步先把P3一次预热具体权限／生命周期方案做成可审阅决策，同时推进不需新增提权的M3-B打包依赖；新启动方式未获批准前不执行。

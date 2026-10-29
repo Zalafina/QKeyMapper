@@ -244,7 +244,7 @@ class Bridge:
         if self._demo_session is None:
             return {"ok": False, "error": "demo_not_enabled"}
         if (any(type(key) is not str or re.fullmatch(r"[A-Z0-9]", key) is None for key in (original_key, mapping_key))
-                or view not in ("item_setup", "main")):
+                or view not in ("item_setup", "main", "mapping_advanced")):
             return {"ok": False, "error": "invalid_arguments"}
         return await self._perform(lambda: self._demo_session.run(self._request, self._verified_demo_binding(),
             self._credential.scopes, original_key, mapping_key, view))

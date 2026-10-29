@@ -13,7 +13,7 @@ async def exercise(client, request, variant, output, exe, *, views=("item_setup"
     assert metadata["annotations"]["idempotentHint"] is False and metadata["inputSchema"]["additionalProperties"] is False
     assert set(metadata["inputSchema"]["properties"]) == {"original_key", "mapping_key", "view"}
     assert metadata["inputSchema"]["properties"]["view"]["default"] == "item_setup"
-    assert set(metadata["inputSchema"]["properties"]["view"]["enum"]) == {"main", "item_setup"}
+    assert set(metadata["inputSchema"]["properties"]["view"]["enum"]) == {"main", "item_setup", "mapping_advanced"}
     caps = (await request("qkm_get_capabilities"))["result"]["business_capabilities"]
     assert {cap["id"] for cap in caps} == BUSINESS_CAPABILITIES
     disk = (exe.parent / "keymapdata.ini").read_bytes()
@@ -24,7 +24,7 @@ async def exercise(client, request, variant, output, exe, *, views=("item_setup"
         reply = await client.call_tool("qkm_demo_mapping", dict(original_key="A", mapping_key="B") | extra)
         assert reply.is_error and not any(item.type == "image" for item in reply.content)
     if variant == "demo_sequence_read":
-        value = await request("qkm_demo_mapping", dict(original_key="A", mapping_key="B"), error="permission_denied")
+        value = await request("qkm_demo_mapping", dict(original_key="A", mapping_key="B", view=views[0]), error="permission_denied")
         assert value["result"]["quarantined"] is False and not value["result"]["receipt_available"]
         assert business_state((await request("qkm_get_state"))["result"]) == initial
         assert (await request("qkm_query", dict(entity="mapping_sources", limit=100)))["result"] == sources
@@ -48,6 +48,13 @@ async def exercise(client, request, variant, output, exe, *, views=("item_setup"
         assert value["target"] == ready["target"] and value["role"] == view and scene["view"] == view
         if view == "item_setup":
             assert value["edit_target"]["source_ref"].startswith(value["source_revision"] + ":row:0:")
+        elif view == "mapping_advanced":
+            assert value["settings_editor_unchanged"] is True
+            assert value["settings_scope"] == "live_loaded_settings_not_committed_by_source_revision"
+            assert value["source_context"]["revision"] == value["source_revision"]
+            assert "edit_target" not in value
+            window = (await request("qkm_query", dict(entity="windows", window_role="mapping_advanced")))["result"]["items"][0]
+            assert not window["qt_visible"] and not window["native_visible"]
         assert scene["cleanup"]["verified"] and scene["cleanup"]["dirty_retained"] and scene["cleanup"]["saved"] is False
         after = (await request("qkm_query", dict(entity="mapping_sources", limit=100)))["result"]
         assert after["items"][0]["row_count"] == after["items"][1]["row_count"] == 0

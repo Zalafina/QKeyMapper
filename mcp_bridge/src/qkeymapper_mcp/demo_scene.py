@@ -32,6 +32,8 @@ class DemoSession:
         mutating = reset_started = reset_verified = False
         owned = opened = None
         operations = {}
+        editor_kind = "settings" if view == "mapping_advanced" else "editor"
+        editor_source_key = "source_tab_ref" if view == "mapping_advanced" else "source_ref"
 
         def check(condition, code="invalid_demo_state"):
             if not condition:
@@ -95,8 +97,9 @@ class DemoSession:
         def reset():
             nonlocal opened, reset_verified
             if opened is not None:
-                closed = call("close_editor", "qkm_close_mapping_editor", dict(source_ref=owned["source_ref"],
-                    window_ref=opened["window"]["window_ref"], presentation="private_background"))
+                closed = call("close_" + editor_kind, "qkm_close_mapping_" + editor_kind,
+                    {editor_source_key: owned[editor_source_key], "window_ref": opened["window"]["window_ref"],
+                     "presentation": "private_background"})
                 check(closed.get("closed") is True and closed.get("target") == target)
                 opened = None
             verify_owned()
@@ -121,7 +124,7 @@ class DemoSession:
             caps = call("capabilities", "qkm_get_capabilities").get("business_capabilities", [])
             capabilities = {item.get("id"): item for item in caps if type(item) is dict}
             check(all(name in capabilities for name in ("mapping.add.preview", "mapping.add.apply", "mapping.delete.preview",
-                "mapping.delete.apply", "mapping.editor.open", "mapping.editor.close", "windows.capture", "demo.context.read")),
+                "mapping.delete.apply", "mapping." + editor_kind + ".open", "mapping." + editor_kind + ".close", "windows.capture", "demo.context.read")),
                 "unsupported_capability")
             check(all(capabilities[name].get("source_binding_result") == "commit_snapshot_or_null"
                       for name in ("mapping.add.apply", "mapping.delete.apply")), "unsupported_capability")
@@ -147,9 +150,14 @@ class DemoSession:
             applied = call("apply_mapping", "qkm_apply_changes", dict(preview_id=preview["preview_id"]))
             owned = post_binding(applied, True)
             verify_owned()
-            if view == "item_setup":
-                opened = call("open_editor", "qkm_open_mapping_editor", dict(source_ref=owned["source_ref"], presentation="private_background"))
+            if view in ("item_setup", "mapping_advanced"):
+                opened = call("open_" + editor_kind, "qkm_open_mapping_" + editor_kind,
+                    {editor_source_key: owned[editor_source_key], "presentation": "private_background"})
                 check(opened.get("target") == target and type(opened.get("window")) is dict)
+                if view == "mapping_advanced":
+                    check(opened.get("opened") is True and opened.get("activation_requested") is False
+                          and opened.get("source_context") == owned["source_snapshot"]
+                          and opened.get("source_tab_ref") == owned["source_tab_ref"])
                 window = opened["window"]
             else:
                 windows = call("observe_capture_window", "qkm_query", dict(entity="windows"))
@@ -157,10 +165,15 @@ class DemoSession:
                 window = next((item for item in windows.get("items", []) if item.get("role") == "main"), {})
                 check(all(window.get(key) is True for key in ("qt_visible", "native_ready", "native_visible"))
                       and window.get("minimized") is False, "window_unavailable")
-            capture = call("capture_editor" if view == "item_setup" else "capture_main", "qkm_capture_window", dict(role=view, window_ref=window["window_ref"],
+            capture = call("capture_main" if view == "main" else "capture_" + editor_kind, "qkm_capture_window", dict(role=view, window_ref=window["window_ref"],
                 source_revision=owned["source_snapshot"]["revision"], source_tab_ref=owned["source_tab_ref"]))
-            check(capture.get("target") == target and capture.get("role") == view
-                  and (view == "main" or capture.get("edit_target", {}).get("source_ref") == owned["source_ref"]))
+            check(capture.get("target") == target and capture.get("role") == view)
+            if view == "item_setup":
+                check(capture.get("edit_target", {}).get("source_ref") == owned["source_ref"])
+            elif view == "mapping_advanced":
+                check(capture.get("settings_editor_unchanged") is True
+                      and capture.get("settings_scope") == "live_loaded_settings_not_committed_by_source_revision"
+                      and capture.get("source_context") == owned["source_snapshot"], "demo_settings_changed")
             reset_started = True
             cleanup = reset()
             self.last = {**self.last, "stage": "completed", "operations": dict(operations), "reset_verified": True}

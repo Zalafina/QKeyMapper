@@ -1036,3 +1036,7 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P1-121：高级窗受限开关
 
 固定open／close settings工具及两项能力，Read+Show、当前源Tab／实际私有后台及窗口归属、完整源／全部输入稳定性复核；不接任意目标或discard。只关闭本owner正式打开且无草稿窗，原GUI窗不可接管；高级捕获额外可选settings_editor_unchanged不改普通实时图片含义。普通17／仅记录18／显式演示19工具，产品19能力。双Qt组件18、复用本片Python38及四场36 Native／96 handler／112 SDK＋56 schema；六张正式图与实际3→4→3／拒绝恢复、原GUI及120字节对照、源context／INI和退出清理通过。见[同一C1证据](map67c1_validation.md#demo-p1-121高级窗私有归属开关2026-10-29pc-w11)。高级串行view／正式设置编辑、系统及部署缺口仍待，未标完整P1／P2／M1。
+
+## DEMO-P2-122：正式高级串行视图
+
+显式qkm_demo_mapping补固定mapping_advanced，写前能力复核，121后台开窗／安全关闭及原完整提交源／非行足迹和本轮行回收；高级图必须输入未变标记true，否则不交付，未知或草稿失败隔离。普通17／仅记录18／演示19工具及19能力保持。Python26、复用121精确本机Native及双Qt四场28 Native／154 handler／64 SDK＋32 schema，真实高级A→B后默认单项C→D、Read零修改、四张中文图／源INI及清理通过，见[同一C1证据](map67c1_validation.md#demo-p2-122固定高级窗串行视图2026-10-29pc-w11)。高级图展示当前参数、行由正式源证明；设置编辑、实际异常矩阵／其他系统、正式预热／免Python与QQ未完成，不标完整P2／M1。

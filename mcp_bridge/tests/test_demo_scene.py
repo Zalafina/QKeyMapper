@@ -31,7 +31,10 @@ class Product:
         self.fail = None
         self.mutate = None
         self.legacy = False
-        self.roles = ("main", "item_setup")
+        self.roles = ("main", "item_setup", "mapping_advanced")
+        self.missing = set()
+        self.advanced = dict(role="mapping_advanced", window_ref="f" * 64, qt_visible=False)
+        self.settings_unchanged = True
         self.dirty = False
 
     def snapshot(self):
@@ -63,7 +66,7 @@ class Product:
                 return result
         if method == "qkm_get_capabilities":
             result = dict(business_capabilities=[dict(id=name, source_binding_result="legacy" if self.legacy else "commit_snapshot_or_null")
-                for name in BUSINESS_CAPABILITIES])
+                for name in BUSINESS_CAPABILITIES if name not in self.missing])
             capture = next(item for item in result["business_capabilities"] if item["id"] == "windows.capture")
             capture["arguments_schema"] = dict(properties=dict(role=dict(enum=list(self.roles))))
         elif method == "qkm_get_state":
@@ -103,10 +106,21 @@ class Product:
         elif method == "qkm_close_mapping_editor":
             self.windows["items"][1]["qt_visible"] = False
             result = dict(target=self.windows["target"], closed=True)
+        elif method == "qkm_open_mapping_settings":
+            self.advanced["qt_visible"] = True
+            result = dict(target=self.windows["target"], window=self.advanced, opened=True, activation_requested=False,
+                source_context=self.snapshot(), source_tab_ref=self.binding(True)["source_tab_ref"])
+        elif method == "qkm_close_mapping_settings":
+            self.advanced["qt_visible"] = False
+            result = dict(target=self.windows["target"], closed=True)
         elif method == "qkm_capture_window":
             result = dict(target=self.windows["target"], role=args["role"], png_base64="simulated")
             if args["role"] == "item_setup":
                 result["edit_target"] = dict(source_ref=self.binding(True)["source_ref"])
+            elif args["role"] == "mapping_advanced":
+                result.update(source_context=self.snapshot(), settings_scope="live_loaded_settings_not_committed_by_source_revision")
+                if self.settings_unchanged is not None:
+                    result["settings_editor_unchanged"] = self.settings_unchanged
         else:
             raise AssertionError(method)
         return dict(ok=True, result=copy.deepcopy(result))
@@ -243,6 +257,68 @@ class SceneTests(unittest.TestCase):
         result = DemoSession().run(product.request, product.record, DEMO_SCOPES, "A", "B", "main")
         self.assertEqual(result["error"], "unsupported_capability")
         self.assertFalse(any(method == "qkm_apply_changes" for method, _ in product.calls))
+
+    def test_advanced_then_default_view_use_their_own_source_contract_and_cleanup(self):
+        product = Product(); session = DemoSession()
+        result = session.run(product.request, product.record, DEMO_SCOPES, "A", "B", "mapping_advanced")
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(result["result"]["demo_scene"]["view"], "mapping_advanced")
+        self.assertTrue(result["result"]["settings_editor_unchanged"])
+        self.assertFalse(product.advanced["qt_visible"])
+        self.assertIsNone(product.row)
+        self.assertTrue(session.receipt)
+        lifecycle = [(method, args) for method, args in product.calls if method in ("qkm_open_mapping_settings", "qkm_close_mapping_settings")]
+        self.assertEqual([method for method, _ in lifecycle], ["qkm_open_mapping_settings", "qkm_close_mapping_settings"])
+        for _, args in lifecycle:
+            self.assertEqual(args["source_tab_ref"], result["result"]["source_context"]["revision"] + ":source:0")
+            self.assertNotIn("source_ref", args)
+        self.assertFalse(any(method in ("qkm_open_mapping_editor", "qkm_close_mapping_editor") for method, _ in product.calls))
+        self.assertTrue(session.run(product.request, product.record, DEMO_SCOPES, "C", "D")["ok"])
+        self.assertFalse(product.windows["items"][1]["qt_visible"])
+        self.assertEqual(session.generation, 2)
+
+    def test_missing_advanced_capability_rejects_before_writing(self):
+        for capability in ("mapping.settings.open", "mapping.settings.close"):
+            product = Product(); product.missing = {capability}
+            result = DemoSession().run(product.request, product.record, DEMO_SCOPES, "A", "B", "mapping_advanced")
+            self.assertEqual(result["error"], "unsupported_capability")
+            self.assertFalse(any(method == "qkm_apply_changes" for method, _ in product.calls))
+
+    def test_unconfirmed_advanced_image_is_not_returned_even_if_safe_cleanup_succeeds(self):
+        for matched in (False, None, 1):
+            product = Product(); product.settings_unchanged = matched
+            session = DemoSession()
+            result = session.run(product.request, product.record, DEMO_SCOPES, "A", "B", "mapping_advanced")
+            self.assertEqual(result["error"], "demo_settings_changed")
+            self.assertNotIn("png_base64", result["result"])
+            self.assertTrue(result["result"]["last"]["reset_verified"])
+            self.assertFalse(session.quarantined or product.advanced["qt_visible"])
+            self.assertIsNone(product.row)
+
+    def test_advanced_draft_failure_preserves_scene_without_close_retry(self):
+        product = Product(); session = DemoSession()
+        product.fail = lambda method, args: dict(ok=False, error="editor_draft_changed") if method == "qkm_close_mapping_settings" else None
+        result = session.run(product.request, product.record, DEMO_SCOPES, "A", "B", "mapping_advanced")
+        self.assertEqual(result["error"], "editor_draft_changed")
+        self.assertTrue(session.quarantined and product.advanced["qt_visible"])
+        self.assertIsNotNone(product.row)
+        self.assertEqual(sum(method == "qkm_close_mapping_settings" for method, _ in product.calls), 1)
+        self.assertEqual(sum(method == "qkm_apply_changes" for method, _ in product.calls), 1)
+
+    def test_unknown_advanced_window_results_do_not_trigger_cleanup_or_retry(self):
+        for stage in ("qkm_open_mapping_settings", "qkm_capture_window", "qkm_close_mapping_settings"):
+            product = Product(); session = DemoSession()
+            def fail(method, args):
+                if method == stage:
+                    raise BridgeError("timeout")
+            product.fail = fail
+            with self.assertRaises(BridgeError):
+                session.run(product.request, product.record, DEMO_SCOPES, "A", "B", "mapping_advanced")
+            self.assertTrue(session.quarantined)
+            self.assertIsNone(session.receipt)
+            self.assertIsNotNone(product.row)
+            self.assertEqual(sum(method == stage for method, _ in product.calls), 1)
+            self.assertEqual(sum(method == "qkm_apply_changes" for method, _ in product.calls), 1)
 
 
 class SceneBridgeTests(unittest.IsolatedAsyncioTestCase):

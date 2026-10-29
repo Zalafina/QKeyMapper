@@ -134,3 +134,8 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 `settings_save_apply`／`settings_window`批准387，`settings_no_show`批准259（无Show）；普通SDK模块[mapping_settings_acceptance.py](../../../mcp_bridge/tests/mapping_settings_acceptance.py)先正式建A→B，原Qt Tab／按钮与Escape形成GUI拒绝接管基线，再正式高级open／capture／close两轮。固定.settings-edit／settings-restore以真实Qt Ctrl+A和字符事件将鼠标X倍率3→4→3，核对草稿关闭拒绝、图片未变化标记、恢复及旧window_ref；不运行映射或系统输入。无Show零GUI／MCP图，正式回收本轮行。
 
 未提交数字另在隐藏高级窗组件中临时关闭原keyboardTracking，以相同Qt事件形成text≠value，检查只读指纹拒绝，再恢复文本和原属性；它是明确的准入组件注入，不替代独立GUI基线。另验非GUI线程拒绝，保留原ActivationChange。最后核对完整源／非行足迹、主窗页、输入指纹、INI／加载／dirty及正常退出和公共登记五项清理；产品启动／关闭才用已有授权缓存，SDK／构建／图片消费保持普通权限。
+
+
+## DEMO-P2-122 高级串行view
+
+沿demo_sequence／demo_sequence_read及现有demo_scene_acceptance.py，views固定(mapping_advanced,item_setup)，Read负例也明确请求高级view。C++夹具不变，双Qt复用121已验本机制品及安全初始INI，普通SDK正式建例／高级图／归属安全关闭／源行回收后接默认单项。高级图片输入未变标记必须true，SDK另核对固定高级窗已隐藏；Native继续独立核对完整空源／INI／dirty／代次和无runtime输入，实际目标退出及公共登记清理分别留证。原GUI基线119及归属／草稿定向121保留其原范围，不用串行助手冒充独立GUI。
