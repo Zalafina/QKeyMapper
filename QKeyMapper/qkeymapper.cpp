@@ -42480,34 +42480,37 @@ void QKeyMapper::deleteSelectedMappingData()
         return;
     }
 
-    QHash<int, QList<int>> rowsBySourceTab;
+    QList<int> sourceRows;
+    sourceRows.reserve(sourceInfos.size());
     for (const DisplayRowSourceInfo &sourceInfo : sourceInfos) {
-        rowsBySourceTab[sourceInfo.SourceTabIndex].append(sourceInfo.SourceRow);
+        sourceRows.append(sourceInfo.SourceRow);
     }
+    removeMappingRows(sourceInfos.constFirst().SourceTabIndex, sourceRows, topRow);
+}
 
-    for (auto it = rowsBySourceTab.begin(); it != rowsBySourceTab.end(); ++it) {
-        QList<MAP_KEYDATA> *sourceMappingDataList = s_KeyMappingTabInfoList.at(it.key()).KeyMappingData;
-        if (sourceMappingDataList == Q_NULLPTR) {
-            continue;
+bool QKeyMapper::removeMappingRows(int sourceTabIndex, QList<int> sourceRows, int topDisplayRow)
+{
+    if (QThread::currentThread() != thread() || m_KeyMappingDataTable == Q_NULLPTR
+        || sourceTabIndex < 0 || sourceTabIndex >= s_KeyMappingTabInfoList.size() || sourceRows.isEmpty()) {
+        return false;
+    }
+    QList<MAP_KEYDATA> *sourceMappingDataList = s_KeyMappingTabInfoList.at(sourceTabIndex).KeyMappingData;
+    if (sourceMappingDataList == Q_NULLPTR) {
+        return false;
+    }
+    for (int sourceRow : std::as_const(sourceRows)) {
+        if (sourceRow < 0 || sourceRow >= sourceMappingDataList->size()) {
+            return false;
         }
-
-        QList<int> sourceRows = it.value();
-        std::sort(sourceRows.begin(), sourceRows.end(), std::greater<int>());
-        sourceRows.erase(std::unique(sourceRows.begin(), sourceRows.end()), sourceRows.end());
-
-        for (int sourceRow : std::as_const(sourceRows)) {
-            if (sourceRow >= 0 && sourceRow < sourceMappingDataList->size()) {
-                sourceMappingDataList->removeAt(sourceRow);
-            }
-        }
+    }
+    std::sort(sourceRows.begin(), sourceRows.end(), std::greater<int>());
+    sourceRows.erase(std::unique(sourceRows.begin(), sourceRows.end()), sourceRows.end());
+    for (int sourceRow : std::as_const(sourceRows)) {
+        sourceMappingDataList->removeAt(sourceRow);
     }
 
     // Refresh affected displays.
-    const int commonTabIndex = findCommonMappingTabIndex();
-    const int refreshSourceTabIndex = rowsBySourceTab.contains(commonTabIndex)
-        ? commonTabIndex
-        : s_KeyMappingTabWidgetCurrentIndex;
-    refreshTabsForSourceTabChange(refreshSourceTabIndex);
+    refreshTabsForSourceTabChange(sourceTabIndex);
     // Update the mouse points list
     updateMousePointsList();
 
@@ -42515,7 +42518,7 @@ void QKeyMapper::deleteSelectedMappingData()
     const int rowCount = m_KeyMappingDataTable->rowCount();
     if (rowCount > 0) {
         const int sepRow = m_KeyMappingDataTable->commonSeparatorDisplayRow();
-        const int startRow = qBound(0, topRow, rowCount - 1);
+        const int startRow = qBound(0, topDisplayRow, rowCount - 1);
         int targetVisibleRow = -1;
 
         // Search downward for the next visible, selectable row
@@ -42560,6 +42563,7 @@ void QKeyMapper::deleteSelectedMappingData()
 #endif
 
     markSaveSettingDirty();
+    return true;
 }
 
 // void QKeyMapper::on_deleteSelectedButton_clicked()

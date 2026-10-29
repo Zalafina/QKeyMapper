@@ -996,3 +996,7 @@ Win11双Qt最终私有组件各4、IPC各3通过（含init／cleanup）；正式
 ## DELETE-GUI-111：删除原GUI基线，尚无正式MCP删除
 
 P1-110之上仅增加固定维护观察，产品deleteSelectedMappingData及头文件未改。Win11双Qt普通最后行／共通首行／共通全行六场，各7项共42项、native exit0，真实Qt选表／选行和Delete／Ctrl+A；完整源剩余fields／derived、其他快照源保持，dirty、加载代次、选择与INI已核对，正常退出及清理五项零。见[同一C1证据](map67c1_validation.md#delete-gui-111源行删除原gui基线2026-10-28pc-w11)。仅原GUI基线，未覆盖过滤／附加共通／分隔行／混合来源、独立备份或正式MCP引用／删除；工具15／能力14不变，完整EQ-MAP-DELETE／M1未完成。
+
+## DELETE-112：共用单源删除，正式MCP删除待接通
+
+111之上提取私有removeMappingRows，GUI仍负责可见选行／混合源限制；共用入口全部预检后倒序去重，原刷新／鼠标点／接替选区／dirty保留。双Qt八场66项通过，其中六场GUI完整记录与111精确相等，另两场共用边界覆盖无效参数零修改及逆序重复行。原manifest／实际私有桌面／正常退出／逐场清理全零。见[同一C1证据](map67c1_validation.md#delete-112单源删除共用业务2026-10-29pc-w11)。15工具／14能力不变；未开放正式MCP删除／重置，过滤／附加Common等扩展矩阵仍待，不标完整EQ-MAP-DELETE／M1完成。

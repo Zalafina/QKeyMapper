@@ -804,3 +804,18 @@ Win11企业版26200 x64、现锁CPython3.11.9 x64／pywin32与Qt6.8.3 msvc2022_6
 首公共register返回ok=false，尚未派发Start；本地公共合同复核case多了id字段，删去后只含arguments／environment，随后登记与六场通过。首具体错误码未保存，不根据文字或源码推算；registration-first-failure.json记录观察范围。未启动新UAC、升级控制器或接管未知请求。测试后17:58:43现技能off确认closed／user_off、generation2、cache_available=false、native_sessions_observed=0及五项零；17:59独立status为controller=null、原生会话0，cache-off／cache-off-checked分别留原结果，不以off本身代替逐场进程退出证据。
 
 本机out/mcp_delete_gui_w11_20261028不随Git，保存构建／部署与EXE身份、合成INI、精确公共定义／登记、六场实际桌面／权限／完整源before／after／7项／选择／加载代次及final INI、正常退出和逐场尾状态、summary及关闭核实。截图／视觉布局不在本基线，未执行过滤／隐藏、附加共通／分隔行、混合来源警告、独立共通备份、鼠标点派生列表、撤权／运行后清理、正式MCP引用／删除、实际Win10／高DPI／其他实例；非完整EQ-MAP-DELETE或GUI／MCP等价性验收。工具15／能力14不变，产品局部删除业务提取和正式MCP删除仍为明日之后的后续动作。按用户要求本片聚焦本地提交，不推送，保留同机环境／out待明日直接继续，无交接包或重复恢复。
+
+## DELETE-112：单源删除共用业务（2026-10-29，PC-W11）
+
+基线DELETE-GUI-111 20c0ea1f；qkeymapper.cpp只将单源行删除、原刷新／鼠标点／接替选区／dirty提取到私有removeMappingRows，头文件仅私有声明。GUI仍先采集可见选区、按原宏关闭编辑器、拒绝混合源；单源索引及全部行验证先于任何修改，倒序去重。GUI的有效源为当前源或Common，显式源刷新保留原选择。没有正式MCP删除、串行重置或工具／权限变化。
+
+双Qt实际源码生命周期维护Release：首受限执行均native2／C1902，保存build-lifecycle-*-sandbox-failure.log；未改工具链／配置，沙箱外普通权限且先断言非管理员，同一增量均native0，Qt6无编译／链接警告、Qt5按既定兼容规则通过。只记录观测，不断言C1902根因。目标out/mcp_delete_shared_w11_20261029/{qt6,qt5}-runtime/QKeyMapperDeleteShared112_*_runtime.exe保持原manifest；新Medium控制器31176截止今日18:30，经公共deleteshared112-qt6／qt5绑定实际构建／精确case／合成INI／输出根及helpers。
+
+| 场景（各Qt6／Qt5） | 结果及范围 |
+|---|---|
+| normal_last／common_first／common_all | 各7项、native0；真实Qt Tab／表格／Ctrl+A／Delete，完整settingsGeneral与111同机原GUI记录相等，未删除任何比较字段 |
+| settings_remove_shared | 各12项、native0：非GUI线程、负／越界Tab、空／负／越界行、有效与越界混合及空数据指针拒绝；拒绝后完整源、dirty、加载、INI、当前单元格不变；{1,0,1}去重删除两行，其他源保持、dirty且不加载／写盘 |
+
+共八场66项通过；实际QkmDeleteShared112_<UUID>私有桌面、普通控制器8192／产品12288、同登录，退出工作／生产者0，逐场owned／unresolved／pending／current_action／current_job全零。复用111合成1171字节Common76Seed，无个人INI；全过程及退出INI保持。源读取pristine_idle。没有Default、系统输入、映射启动、驱动／FilterKeys设置变化或截图矩阵；直接共用调用只证明参数／效果边界，不代替独立GUI基线。
+
+本机out/mcp_delete_shared_w11_20261029保留产品一式补丁／期望字节与逆向检查、构建首失败／成功、部署、公共登记、八场完整源前后／本机身份／退出INI及尾状态、check_results.py精确对照与summary，不随Git。过滤／附加Common／分隔行／混合源交互、独立备份、鼠标点派生专项、运行后清理、正式MCP引用失效／删除、真实Win10／高DPI未验；普通完整Release／ASan／全量静态未选，完整EQ-MAP-DELETE及M1未完成。

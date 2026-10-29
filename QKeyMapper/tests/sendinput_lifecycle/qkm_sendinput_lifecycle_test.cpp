@@ -92,6 +92,7 @@ public:
     static QJsonObject saveExecution(QKeyMapper *mapper, const QkmAutomation::AutomationRequest &request);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject mappingRemovalGui(QKeyMapper *mapper);
+    static QJsonObject mappingRemovalShared(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
     static QJsonObject uiLocalization(QKeyMapper *mapper);
     static void uiLocalizationWindows(QKeyMapper *mapper, QJsonObject &evidence)
@@ -1240,8 +1241,10 @@ void installLifecycleTest()
             });
             return;
         }
-        if (guiMode == QStringLiteral("settings_remove_gui")) {
-            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::mappingRemovalGui(QKeyMapper::getInstance());
+        if (guiMode == QStringLiteral("settings_remove_gui") || guiMode == QStringLiteral("settings_remove_shared")) {
+            result->settingsGeneralEvidence = guiMode == QStringLiteral("settings_remove_gui")
+                ? QkmMappingAdditionTestAccess::mappingRemovalGui(QKeyMapper::getInstance())
+                : QkmMappingAdditionTestAccess::mappingRemovalShared(QKeyMapper::getInstance());
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
@@ -2737,6 +2740,65 @@ QJsonObject QkmMappingAdditionTestAccess::mappingRemovalGui(QKeyMapper *mapper)
         {QStringLiteral("before"), before}, {QStringLiteral("after"), after}, {QStringLiteral("target_source"), target},
         {QStringLiteral("current_row"), table->currentRow()}, {QStringLiteral("current_column"), table->currentColumn()},
         {QStringLiteral("load_generation"), QString::number(load)}, {QStringLiteral("formal_mcp_delete"), false}};
+}
+
+QJsonObject QkmMappingAdditionTestAccess::mappingRemovalShared(QKeyMapper *mapper)
+{
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    if (!mapper) return {{QStringLiteral("passed"), false}};
+    const auto disk = [] { QFile file(QString::fromLatin1(QKeyMapperConstants::CONFIG_FILENAME));
+        return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray ini = disk();
+    QString error;
+    const auto before = mapper->collectAutomationSourceSnapshot(error);
+    const int common = QKeyMapper::findCommonMappingTabIndex();
+    const int current = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (!error.isEmpty() || before.isEmpty() || common < 0 || current < 0 || common == current
+        || QKeyMapper::s_KeyMappingTabInfoList.at(common).KeyMappingData->size() != 2)
+        return {{QStringLiteral("passed"), false}};
+    const bool dirty = mapper->m_SaveSettingDirty;
+    const quint64 load = mapper->m_MappingLoadGeneration;
+    const int row = mapper->m_KeyMappingDataTable->currentRow();
+    const int column = mapper->m_KeyMappingDataTable->currentColumn();
+    bool threadRejected = false;
+    auto *probe = QThread::create([&] { threadRejected = !mapper->removeMappingRows(common, {0}, 0); });
+    probe->start();
+    probe->wait();
+    delete probe;
+    check(threadRejected, "off-GUI-thread call is rejected before model access");
+    check(!mapper->removeMappingRows(-1, {0}, 0), "negative source is rejected");
+    check(!mapper->removeMappingRows(QKeyMapper::s_KeyMappingTabInfoList.size(), {0}, 0), "past-end source is rejected");
+    check(!mapper->removeMappingRows(common, {}, 0), "empty row list is rejected");
+    check(!mapper->removeMappingRows(common, {-1}, 0), "negative row is rejected");
+    check(!mapper->removeMappingRows(common, {2}, 0), "past-end row is rejected");
+    check(!mapper->removeMappingRows(common, {0, 2}, 0), "all rows are checked before any mutation");
+    auto *commonData = QKeyMapper::s_KeyMappingTabInfoList[common].KeyMappingData;
+    QKeyMapper::s_KeyMappingTabInfoList[common].KeyMappingData = Q_NULLPTR;
+    const bool nullRejected = !mapper->removeMappingRows(common, {0}, 0);
+    QKeyMapper::s_KeyMappingTabInfoList[common].KeyMappingData = commonData;
+    check(nullRejected, "missing source data is rejected without refresh");
+    check(mapper->collectAutomationSourceSnapshot(error) == before && error.isEmpty()
+        && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load && disk() == ini
+        && mapper->m_KeyMappingDataTable->currentRow() == row && mapper->m_KeyMappingDataTable->currentColumn() == column,
+        "all rejected calls preserve the full source, dirty, load, disk and current cell");
+    check(mapper->removeMappingRows(common, {1, 0, 1}, 0), "descending duplicate row list removes each intended row once");
+    const auto after = mapper->collectAutomationSourceSnapshot(error);
+    const auto sources = before.value(QStringLiteral("sources")).toArray();
+    const auto afterSources = after.value(QStringLiteral("sources")).toArray();
+    bool others = sources.size() == afterSources.size();
+    for (int i = 0; i < sources.size() && others; ++i) if (i != common) others = sources.at(i) == afterSources.at(i);
+    check(error.isEmpty() && others && afterSources.at(common).toObject().value(QStringLiteral("rows")).toArray().isEmpty(),
+        "only the target common source changes and all other full rows remain intact");
+    check(mapper->m_SaveSettingDirty && mapper->m_MappingLoadGeneration == load && disk() == ini
+        && mapper->m_KeyMappingDataTable->currentRow() == 0 && QKeyMapper::KeyMappingDataList->size() == 1,
+        "shared deletion keeps current normal GUI, marks dirty and never loads or writes the INI");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+        {QStringLiteral("before"), before}, {QStringLiteral("after"), after}, {QStringLiteral("formal_mcp_delete"), false}};
 }
 
 QJsonObject QkmMappingAdditionTestAccess::commonSave(QKeyMapper *mapper, bool cold)
@@ -5293,7 +5355,8 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_save_dependencies"), QStringLiteral("settings_save_snapshot"),
         QStringLiteral("settings_result_save"), QStringLiteral("settings_result_cold"), QStringLiteral("settings_save_context"),
         QStringLiteral("settings_prepared_save"), QStringLiteral("settings_save_preview"), QStringLiteral("settings_save_execution"),
-        QStringLiteral("settings_save_apply"), QStringLiteral("settings_save_gui"), QStringLiteral("settings_remove_gui")};
+        QStringLiteral("settings_save_apply"), QStringLiteral("settings_save_gui"), QStringLiteral("settings_remove_gui"),
+        QStringLiteral("settings_remove_shared")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

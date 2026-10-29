@@ -93,4 +93,8 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 
 `settings_remove_gui`配合`QKM_CONTEXT_VARIANT=normal_last／common_first／common_all`，期望普通启动载入固定Common76Seed合成INI：普通A→B及共通F13／F14两行，共通功能启用但普通表不附加共通。每场独立副本／INI，MCP保持默认关闭；不使用个人配置。实际Qt Tab／表格鼠标和Ctrl+A／Delete走原产品删除，禁止设置选中控件值或直接调用删除／加载函数代替基线。
 
-结果在settingsGeneral，记录完整源before／after、目标源、实际current_row／column及加载代次，七项检查包含全剩余行／其他快照源、dirty、选择与INI保持；退出／实际桌面／权限和工作计数仍由原生命周期结果及普通控制器核对。产品删除函数不改，formal_mcp_delete=false；本用例不是MCP删除或串行重置，也不覆盖过滤／附加共通／混合来源完整矩阵。当前具体结果和停止位置只维护在唯一主计划／C1证据。
+结果在settingsGeneral，记录完整源before／after、目标源、实际current_row／column及加载代次，七项检查包含全剩余行／其他快照源、dirty、选择与INI保持；退出／实际桌面／权限和工作计数仍由原生命周期结果及普通控制器核对。111版本产品删除函数未改，后续提取后的同场GUI事件可与其完整快照及选择精确对照，formal_mcp_delete=false；本用例不是MCP删除或串行重置，也不覆盖过滤／附加共通／混合来源完整矩阵。当前具体结果和停止位置只维护在唯一主计划／C1证据。
+
+## DELETE-112 共用单源删除边界
+
+`settings_remove_shared`独立验证私有共用入口，沿同一合成INI启动。无效Tab／空行／负行／越界／有效与越界混合列表、缺失源数据均须拒绝且完整源、dirty、加载、INI及当前单元格不变；逆序重复行只删除一次，保留非目标源，执行原刷新、鼠标点更新、接替选区及dirty。这里直接调用共用函数只证明其参数和效果边界，不能代替`settings_remove_gui`的独立真实GUI基线，也不证明MCP权限、稳定引用、预览提交或串行重置。

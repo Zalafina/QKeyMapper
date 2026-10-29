@@ -2291,6 +2291,7 @@ private:
         bool ok() const { return errorCode.isEmpty() && tabIndex >= 0; }
     };
     bool mappingAdditionAllowed(int tabIndex) const;
+    bool removeMappingRows(int sourceTabIndex, QList<int> sourceRows, int topDisplayRow);
     MappingAdditionPlan prepareMappingAddition(int tabIndex, int insertRow,
         const QString &originalKey, const QString &mappingKey) const;
     ValidationResult commitMappingAddition(const MappingAdditionPlan &plan, bool confirmCommonConflict,
