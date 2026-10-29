@@ -22,7 +22,7 @@ class DemoSession:
         return dict(receipt_available=self.receipt is not None, quarantined=self.quarantined,
                     generation=self.generation, last=dict(self.last))
 
-    def run(self, request, binding, granted, original, mapped):
+    def run(self, request, binding, granted, original, mapped, view="item_setup"):
         if self.quarantined:
             return dict(ok=False, error="demo_quarantined", result=self.status())
         self.generation += 1
@@ -125,6 +125,8 @@ class DemoSession:
                 "unsupported_capability")
             check(all(capabilities[name].get("source_binding_result") == "commit_snapshot_or_null"
                       for name in ("mapping.add.apply", "mapping.delete.apply")), "unsupported_capability")
+            roles = capabilities["windows.capture"].get("arguments_schema", {}).get("properties", {}).get("role", {}).get("enum", [])
+            check(view in roles, "unsupported_capability")
             initial_sources, context = observe(had_receipt)
             baseline_context = context["context_revision"]
             if had_receipt:
@@ -145,16 +147,25 @@ class DemoSession:
             applied = call("apply_mapping", "qkm_apply_changes", dict(preview_id=preview["preview_id"]))
             owned = post_binding(applied, True)
             verify_owned()
-            opened = call("open_editor", "qkm_open_mapping_editor", dict(source_ref=owned["source_ref"], presentation="private_background"))
-            check(opened.get("target") == target and type(opened.get("window")) is dict)
-            capture = call("capture_editor", "qkm_capture_window", dict(role="item_setup", window_ref=opened["window"]["window_ref"],
+            if view == "item_setup":
+                opened = call("open_editor", "qkm_open_mapping_editor", dict(source_ref=owned["source_ref"], presentation="private_background"))
+                check(opened.get("target") == target and type(opened.get("window")) is dict)
+                window = opened["window"]
+            else:
+                windows = call("observe_capture_window", "qkm_query", dict(entity="windows"))
+                check(windows.get("target") == target and windows.get("private_background_available") is True)
+                window = next((item for item in windows.get("items", []) if item.get("role") == "main"), {})
+                check(all(window.get(key) is True for key in ("qt_visible", "native_ready", "native_visible"))
+                      and window.get("minimized") is False, "window_unavailable")
+            capture = call("capture_editor" if view == "item_setup" else "capture_main", "qkm_capture_window", dict(role=view, window_ref=window["window_ref"],
                 source_revision=owned["source_snapshot"]["revision"], source_tab_ref=owned["source_tab_ref"]))
-            check(capture.get("target") == target and capture.get("edit_target", {}).get("source_ref") == owned["source_ref"])
+            check(capture.get("target") == target and capture.get("role") == view
+                  and (view == "main" or capture.get("edit_target", {}).get("source_ref") == owned["source_ref"]))
             reset_started = True
             cleanup = reset()
             self.last = {**self.last, "stage": "completed", "operations": dict(operations), "reset_verified": True}
             return dict(ok=True, result={**capture, "demo_scene": {**self.last, "original_key": original,
-                "mapping_key": mapped, "cleanup": cleanup, "delivery": "mcp_image_only_gateway_delivery_unverified"}})
+                "mapping_key": mapped, "view": view, "cleanup": cleanup, "delivery": "mcp_image_only_gateway_delivery_unverified"}})
         except SceneError as error:
             failed_stage = self.last["stage"]
             cleanup_error = None

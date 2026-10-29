@@ -5,13 +5,15 @@ import re
 from test_sdk_interop import BUSINESS_CAPABILITIES, business_state
 
 
-async def exercise(client, request, variant, output, exe):
+async def exercise(client, request, variant, output, exe, *, views=("item_setup", "item_setup")):
     assert variant in ("demo_sequence", "demo_sequence_read")
     tool = next(tool for tool in (await client.list_tools()).tools if tool.name == "qkm_demo_mapping")
     metadata = tool.model_dump(by_alias=True)
     assert metadata["annotations"]["readOnlyHint"] is False and metadata["annotations"]["destructiveHint"] is True
     assert metadata["annotations"]["idempotentHint"] is False and metadata["inputSchema"]["additionalProperties"] is False
-    assert set(metadata["inputSchema"]["properties"]) == {"original_key", "mapping_key"}
+    assert set(metadata["inputSchema"]["properties"]) == {"original_key", "mapping_key", "view"}
+    assert metadata["inputSchema"]["properties"]["view"]["default"] == "item_setup"
+    assert set(metadata["inputSchema"]["properties"]["view"]["enum"]) == {"main", "item_setup"}
     caps = (await request("qkm_get_capabilities"))["result"]["business_capabilities"]
     assert {cap["id"] for cap in caps} == BUSINESS_CAPABILITIES
     disk = (exe.parent / "keymapdata.ini").read_bytes()
@@ -33,14 +35,19 @@ async def exercise(client, request, variant, output, exe):
     baseline = (await request("qkm_query", dict(entity="demo_context")))["result"]["context_revision"]
     scene_ids = set()
     for generation, (original, mapped) in enumerate((("A", "B"), ("C", "D")), 1):
-        value = (await request("qkm_demo_mapping", dict(original_key=original, mapping_key=mapped)))["result"]
+        view = views[generation - 1]
+        arguments = dict(original_key=original, mapping_key=mapped)
+        if view != "item_setup":
+            arguments["view"] = view
+        value = (await request("qkm_demo_mapping", arguments))["result"]
         scene = value["demo_scene"]
         assert re.fullmatch(r"[0-9a-f]{32}", scene["scene_id"]) and scene["scene_id"] not in scene_ids
         scene_ids.add(scene["scene_id"])
         assert scene["generation"] == generation and scene["stage"] == "completed" and scene["reset_verified"]
         assert scene["original_key"] == original and scene["mapping_key"] == mapped
-        assert value["target"] == ready["target"] and value["role"] == "item_setup"
-        assert value["edit_target"]["source_ref"].startswith(value["source_revision"] + ":row:0:")
+        assert value["target"] == ready["target"] and value["role"] == view and scene["view"] == view
+        if view == "item_setup":
+            assert value["edit_target"]["source_ref"].startswith(value["source_revision"] + ":row:0:")
         assert scene["cleanup"]["verified"] and scene["cleanup"]["dirty_retained"] and scene["cleanup"]["saved"] is False
         after = (await request("qkm_query", dict(entity="mapping_sources", limit=100)))["result"]
         assert after["items"][0]["row_count"] == after["items"][1]["row_count"] == 0

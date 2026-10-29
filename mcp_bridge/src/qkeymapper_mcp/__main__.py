@@ -149,9 +149,10 @@ def main() -> None:
         @tool(ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=False, openWorldHint=False))
         async def qkm_demo_mapping(
                 original_key: Annotated[str, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")],
-                mapping_key: Annotated[str, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")]) -> ToolResult:
-            """仅供宿主显式启用的预授权专用私有实例：建立一个基础映射，打开真实单项设定窗，获取原生图片，安全关窗并删除本轮创建的行；不启动映射、不保存、不注入系统输入。需要Read+Configure+ShowWindows+CaptureWindows及当前能力合同，首次须已加载无dirty空源；连续轮次只复用同一桥接已证明的回收记录，dirty按原GUI保留。失败可能保留本轮源／窗口并隔离，查询demo_state核对实际阶段和操作ID，勿盲目重试、清空草稿或改连。图片以MCP ImageContent返回，附场景／目标／尺寸及回收元数据；QQ等渠道送达须由gateway另行完成。本工具非幂等、同桥接串行，不能作为全局实例租约。"""
-            return image_tool_result(await bridge.demo_mapping(original_key, mapping_key))
+                mapping_key: Annotated[str, Field(min_length=1, max_length=1, pattern="^[A-Z0-9]$")],
+                view: Literal["item_setup", "main"] = "item_setup") -> ToolResult:
+            """仅供宿主显式启用的预授权专用私有实例：建立一个基础映射，按view获取既有主窗(main)或通过原入口打开单项设定窗(item_setup，默认)的原生图片，安全关闭本轮单项窗并删除本轮创建的行；主窗视图不请求显示或激活。不启动映射、不保存、不注入系统输入。需要Read+Configure+ShowWindows+CaptureWindows及当前角色能力合同，首次须已加载无dirty空源；连续轮次只复用同一桥接已证明的回收记录，dirty按原GUI保留。失败可能保留本轮源／窗口并隔离，查询demo_state核对实际阶段和操作ID，勿盲目重试、清空草稿或改连。图片以MCP ImageContent返回，附场景／目标／尺寸及回收元数据；QQ等渠道送达须由gateway另行完成。本工具非幂等、同桥接串行，不能作为全局实例租约。"""
+            return image_tool_result(await bridge.demo_mapping(original_key, mapping_key, view))
 
     @tool(connection)
     def qkm_connect() -> ToolResult:

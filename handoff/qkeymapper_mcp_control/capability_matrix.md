@@ -1020,3 +1020,7 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P2-117：显式单行串行场景
 
 宿主demo-record＋enable-demo-mapping才提供qkm_demo_mapping，单大写字母／数字，原Read+Configure+Show+Capture及全部身份／源／窗口门槛；单worker执行原新增／开窗／PNG／关窗／本轮归属行删除，联合提交源绑定与非行足迹核验回收。dirty保留，仅同桥接已证回收记录允许连续；未知／外来变化隔离、不清草稿／重试／改连。普通15／仅记录16／显式演示17工具，产品17能力。最终Python22及复用协议／反馈29项，双Qt四场28 Native／152 handler／62外层SDK＋32 schema、四张真实A→B／C→D中文图片经Agent查看，全部正常退出／五项清理零；两次预览合同失败原件及原始证据边界见[同一C1证据](map67c1_validation.md#demo-p2-117正式串行单行演示2026-10-29pc-w11)。主窗／代表高级页、真实失败与跨实例因果、Win10／高DPI、正式预热／免Python及QQ仍待；图像可由gateway消费不等于QQ送达，完整P2／M1未完成。
+
+## DEMO-P2-118：固定main串行视图
+
+同一显式演示工具支持view=main或默认item_setup；实际角色合同在写入前核验，main只查询／捕获已有主窗，不开单项窗或切页／激活。原身份／权限／源绑定及回收保持。19项目标测试及双Qt四场28 Native／150 handler／62外层SDK＋32 schema通过，主窗A→B后默认单项C→D，四图经Agent检查、全源／INI及退出清理零；复用117已验相同Native二进制，无构建。主窗仅证明可见列和Qt客户区，高级页／真实失败／其他系统及交付缺口见[同一C1证据](map67c1_validation.md#demo-p2-118主窗口串行视图2026-10-29pc-w11)，完整P2／M1仍未完成。

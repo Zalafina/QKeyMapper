@@ -21,6 +21,7 @@ from test_sdk_interop import BUSINESS_CAPABILITIES
 class Product:
     def __init__(self):
         self.record, self.windows, self.state, self.sources, _ = fixture()
+        self.windows["items"][0]["window_ref"] = "e" * 64
         self.windows["items"][1]["window_ref"] = "d" * 64
         self.revision = 1
         self.context = "c" * 64
@@ -30,6 +31,7 @@ class Product:
         self.fail = None
         self.mutate = None
         self.legacy = False
+        self.roles = ("main", "item_setup")
         self.dirty = False
 
     def snapshot(self):
@@ -62,6 +64,8 @@ class Product:
         if method == "qkm_get_capabilities":
             result = dict(business_capabilities=[dict(id=name, source_binding_result="legacy" if self.legacy else "commit_snapshot_or_null")
                 for name in BUSINESS_CAPABILITIES])
+            capture = next(item for item in result["business_capabilities"] if item["id"] == "windows.capture")
+            capture["arguments_schema"] = dict(properties=dict(role=dict(enum=list(self.roles))))
         elif method == "qkm_get_state":
             result = copy.deepcopy(self.state)
             result["configuration"]["has_unsaved_changes"] = self.dirty
@@ -100,7 +104,9 @@ class Product:
             self.windows["items"][1]["qt_visible"] = False
             result = dict(target=self.windows["target"], closed=True)
         elif method == "qkm_capture_window":
-            result = dict(target=self.windows["target"], edit_target=dict(source_ref=self.binding(True)["source_ref"]), png_base64="simulated")
+            result = dict(target=self.windows["target"], role=args["role"], png_base64="simulated")
+            if args["role"] == "item_setup":
+                result["edit_target"] = dict(source_ref=self.binding(True)["source_ref"])
         else:
             raise AssertionError(method)
         return dict(ok=True, result=copy.deepcopy(result))
@@ -222,6 +228,22 @@ class SceneTests(unittest.TestCase):
         self.assertEqual(sum(method == "qkm_close_mapping_editor" for method, _ in product.calls), 1)
         self.assertEqual(sum(method == "qkm_apply_changes" for method, _ in product.calls), 1)
 
+    def test_main_view_captures_the_existing_main_window_without_editor_calls(self):
+        product = Product(); session = DemoSession()
+        result = session.run(product.request, product.record, DEMO_SCOPES, "A", "B", "main")
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(result["result"]["role"], "main")
+        self.assertEqual(result["result"]["demo_scene"]["view"], "main")
+        self.assertFalse(any(method in ("qkm_open_mapping_editor", "qkm_close_mapping_editor") for method, _ in product.calls))
+        self.assertIsNone(product.row)
+        self.assertTrue(session.receipt)
+
+    def test_unsupported_view_contract_rejects_before_mutation(self):
+        product = Product(); product.roles = ("item_setup",)
+        result = DemoSession().run(product.request, product.record, DEMO_SCOPES, "A", "B", "main")
+        self.assertEqual(result["error"], "unsupported_capability")
+        self.assertFalse(any(method == "qkm_apply_changes" for method, _ in product.calls))
+
 
 class SceneBridgeTests(unittest.IsolatedAsyncioTestCase):
     async def test_explicit_flag_and_input_boundary(self):
@@ -239,6 +261,8 @@ class SceneBridgeTests(unittest.IsolatedAsyncioTestCase):
             with patch.object(bridge, "_request") as request:
                 for key in ("AA", "a", "CTRL", 1, "\n"):
                     self.assertEqual((await bridge.demo_mapping(key, "B"))["error"], "invalid_arguments")
+                for view in ("other", "Default", 1, None):
+                    self.assertEqual((await bridge.demo_mapping("A", "B", view))["error"], "invalid_arguments")
                 request.assert_not_called()
         finally:
             bridge.close()

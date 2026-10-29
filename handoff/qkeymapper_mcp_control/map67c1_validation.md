@@ -887,3 +887,13 @@ Python5项新记录／桥接测试与原22协议共27项通过：严格字段／
 首Qt6场的正式错误被测试助手KeyError遮住，未保存该次原始响应；补诊断后第二场明确failed_stage=preview_mapping／invalid_demo_state，定位新增预览事件误写add_mapping，源码与实际预览为insert_mapping，第二场在提交前拒绝。两场native exit2、目标正常退出；失败原件及实际五项清理零分别留first-unexpected-reply／preview-contract-failure。修正桥接和模拟事件后定向22项及四场最终通过，未重建产品／夹具或扩大范围。第一次响应本身未保存，不能把后一次原始响应冒充第一次证据。
 
 最终实际QkmDemoScene117_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录；四场正常退出、工作／生产者0、逐场owned／unresolved／pending／current_action／current_job零。无Default、系统输入、映射启动、驱动／FilterKeys改动或新提权启动模式。原件out/mcp_demo_scene_w11_20261029含构建部署身份、公共定义、合成INI／私有记录、SDK peer／调用／原始图像响应、两失败原件、最终日志／源INI／四图和Agent审阅／summary，不随Git。当前仅基础单行／单项窗；真实进程退出／撤权／断线／超时与跨实例因果、主窗／代表高级页、Win10／高DPI、正式预热／免Python及QQ仍待，未把完整P2／M1或Release可直接部署标完成。
+
+## DEMO-P2-118：主窗口串行视图（2026-10-29，PC-W11）
+
+117 e966ea9f后为同一显式qkm_demo_mapping补固定view=main，省略仍item_setup；写入前检查实际windows.capture角色enum，未知角色／原合同不支持在修改前拒绝。main只查询并捕获已有本实例可见／恢复主窗，不打开单项窗、不切换设置页、不请求显示或激活。仍沿原身份／Read+Configure+Show+Capture／私有桌面／提交绑定／非行足迹和本轮归属行回收，结果demo_scene.view与原图像role对应。普通15工具／仅记录16／显式演示17及产品17能力不变。
+
+普通权限场景12＋既有图像7共19项通过，覆盖main不调用开／关单项窗、当前实际窗口引用捕获、回收、原角色合同不支持零写入、非法view及原默认／失败／取消路径。产品C++与维护夹具相对117完全不变；复用原本机双Qt构建制品，部署前逐个匹配117实际已验SHA256并记录native-reuse，不重复环境恢复或编译。双Qt正式stdio各主窗A→B后默认单项C→D及Read负例四场28项Native，150 handler／62外层SDK＋32 schema；全源／metadata精确复原、sourceEpoch各正例恰+4、INI／GUI名／加载保持、dirty保留、无编辑窗或runtime输入，Read零修改。
+
+Agent原尺寸查看两张1130×722主窗PNG（Qt6 51182B／Qt5 50326B）及两张820×480默认单项PNG，主窗真实A/B行、Demo104Seed名称及未启动状态可见，后续单项为C/D/D，中文清晰、无黑图／错窗／旧场景污染。主窗横向滚动表格只显示当前可见列，不以截图代替全字段源核验；范围为原Qt客户区，非OS标题边框。实际QkmDemoViews118_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录，全部native0／正常退出、工作／生产者0及逐场清理五项零；无Default、系统输入、映射启动、驱动／FilterKeys或新提权模式。
+
+原件out/mcp_demo_views_w11_20261029含本机二进制复用身份、公共登记、19项日志、正式SDK／peer／原始图像响应、四图及Agent审阅、源INI／退出／清理和summary，不随Git。README及正式工具描述同步实际view合同；无TS／QM变更。代表高级页、真实退出／撤权／断线／超时及其他实例全程因果、Win10／高DPI、正式预热／免Python和QQ仍待，117失败模拟及既有不变路径按原范围复用，不宣称本片覆盖这些缺口或完整P2／M1。
