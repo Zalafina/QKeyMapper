@@ -122,7 +122,6 @@ DemoSetupResult showPrompt(DemoPairingState &state, const QString &text, bool re
 
 DemoSetupResult runPairing(DemoPairingState &state)
 {
-    const HDESK originalThread = GetThreadDesktop(GetCurrentThreadId());
     const auto actual = queryProcessIdentity(state.target.processId);
     if (!actual.ok() || !sameProcess(actual.identity, state.target)
         || queryProcessExecutable(actual.identity).compare(state.executable, Qt::CaseInsensitive) != 0)
@@ -132,7 +131,6 @@ DemoSetupResult runPairing(DemoPairingState &state)
     if (cancelled == WAIT_OBJECT_0) return failure("setup_cancelled");
     if (!SetThreadDesktop(state.desktop)) return failure("thread_desktop_failed", GetLastError());
     DemoSetupResult result;
-    auto restoreThread = qScopeGuard([originalThread] { SetThreadDesktop(originalThread); });
     bool shown = !state.display;
     bool attempted = false;
     if (state.display) {
@@ -168,8 +166,7 @@ DemoSetupResult runPairing(DemoPairingState &state)
             if (!retry.ok()) { result = restore; break; }
         }
     }
-    if (!SetThreadDesktop(originalThread) && result.ok()) result = failure("thread_restore_failed", GetLastError());
-    restoreThread.dismiss();
+    // This one-shot thread exits next; native prompt resources may prevent another desktop assignment.
     return result;
 }
 

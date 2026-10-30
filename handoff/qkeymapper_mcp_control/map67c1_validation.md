@@ -1016,11 +1016,11 @@ Agent查看四张正式ImageContent图片：高级770×390显示当前实际3／
 
 ## DEMO-P3-127：固定宿主进程归属核心（2026-10-30，PC-W11）
 
-126 15d59215之上新增正式automation/qkm_demo_process：只配置用途内固定创建本次实际EXE的--demo-configuration-only子实例，不接受外部EXE／PID／HWND／桌面／命令。EXE目录既有INI须普通非重解析、单链接、大小1–65536字节，显式McpDemoDeploymentVersion=1、安全启动值和空Demo104Seed；不复制或覆盖个人INI，认证后的完整模型检查仍属原场景预检。复用当前用户私有目录租约，固定EXE目录／Session独占；同名进程先核实实际路径／登录会话，同路径存活或身份不可核实拒绝，不依据枚举顺序选目标或接管。部署标记不是权限或配对凭据。
+基126 15d59215，正式DemoProcess只接受安全演示INI并创建同EXE／固定参数的自有私有子实例；EXE目录／Session租约及实际路径冲突拒绝。信任边界／安全标记与关闭合同详主计划127及正式源码，非授权凭据。
 
-随机当前用户私有WinSta0桌面，创建句柄不请求SWITCHDESKTOP；固定子进程以挂起方式创建、无继承句柄，核实实际登录／Session／EXE／PID创建时间后恢复并公布。启动失败只可终止本次尚未公布的创建进程；运行后正常关闭仅向该私有桌面和子PID的可见所属主窗发一次WM_CLOSE，等待实际进程退出。5秒超时保留同一身份／句柄／租约，不强杀；再次关闭只等待，不重复发消息。退出码／原生和清理错误只填实际取得值，语义拒绝无原生码。析构仍须上层负责未完成关闭的现场处理；本片未交付意外宿主死亡后的恢复。
+挂起创建后核实身份再公布，启动失败仅清理未公布子进程；运行后只正常关闭自有目标，5秒超时保留身份不强杀。只配置用途改QApplication隔离旧实例通知；普通SingleApplication／manifest／MCP默认关闭保持，相关实际回归如下。
 
-启动复核发现旧SingleApplication构造会通知已有实例，有显示旧窗口的潜在影响；仅只配置用途改用QApplication，不进入该通知通道。普通用途仍构造同参数SingleApplication及原showUp连接，没有修改单实例库或普通用户选择规则。双Qt真实模式断言检查实际qApp不是SingleApplication；Qt6普通模式原入口／策略拒绝另验。无正式UI文案／TS/QM变化，产品manifest及MCP默认关闭不变。
+本片无UI／TS/QM变更或Default动作；意外宿主死亡恢复未交付，不拿测试拥有者当正式部署。
 
 Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycle四目标最终增量native0；Qt6零编译／链接警告，Qt5仅Native命中已批准官方qtmain.lib缺PDB例外。首轮加独占／通知隔离之前的构建及20组件另存first-build／component-control；最终component2各普通5／只配置5，合计20项（含init／cleanup），普通Medium8192、实际QkmMcp_<UUID>私有桌面。缺失INI实际原生码、不安全标记／启动值无猜测码、同路径独立存活进程拒绝且其仍存活、租约冲突、重复调用、实际PID创建／子线程桌面、正常关闭原生0、忽略关闭5秒后身份保留及显式恢复均通过，INI逐字节保持。未用mock代替实际进程／窗口。
 
@@ -1037,7 +1037,7 @@ Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycl
 
 ## DEMO-P3-128：正式宿主入口与存活产品关闭（2026-10-30，PC-W11）
 
-基e15d9862：唯一--demo-host于管理员检查后／产品单例前分流，只拥有同EXE私有子实例，不自动启用／批准MCP；正常入口及原manifest不改。状态／按钮／Escape与关闭门禁见下列实测，设计见主计划128。本轮均非输入私有桌面，未验Default／完整预热。
+基e15d9862，固定--demo-host于管理员检查后／产品单例前分流，独占同EXE私有子实例；原生High main路由实测，不以构造对话框代替。无自动启用／批准。
 
 用户批准H1–H8推荐中英日文案后，仅本片实际H1–H5写入正式TS/QM，H6–H8留后续对应源码。Qt5.15.2/MSVC环境的lupdate-pro QKeyMapper.pro原生0／无编译器模块错误，提取1180条（5新增、1175已有）；仅保留新QkmAutomation::DemoHostDialog上下文，原TS各上下文逐项保持，不提交位置／排序噪声。lrelease三语各1180 finished／0 unfinished，lconvert QM往返逐项核对原1175条不变、新5条准确；每语H2／H4／H5为真实LF，Qt占位符完整，没有反斜杠n或HTML换行。用户随后明确确认沿用此换行方式，不冒称新一轮Linguist独立核验。
 
@@ -1054,7 +1054,7 @@ Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycl
 
 ## DEMO-P3-129：父子专用管理窗通道（2026-10-30，PC-W11）
 
-基于c200badf工作区。固定宿主为同EXE子实例只继承两个匿名事件，子在Qt／诊断子进程前核实实际父PID／创建时间／登录／EXE并清除环境及继承位。只配置子实例GUI端点复用原高级／托盘管理窗入口；未启用MCP也可本地显示，但不批准配对／扩大权限，不向MCP开放参数或任意目标。
+基c200badf，仅两个匿名事件及早期父身份／环境清除；只配置GUI端点复用原管理窗，无自动启用／批准。信任及有界合同见主计划129，实际验证如下。
 
 - 双Qt控制／Native四构建通过；Qt6零警告，Qt5仅既有官方qtmain缺PDB例外。首signals宏冲突完整日志保留；第二次kernelbase.lib链接失败只保留当时片段，后命令未执行而完整日志被后续覆盖，不能称原日志已留。
 - 初始20组件通过；新增无确认超时后Qt6在component2／3旧数值句柄探针失败，component3明确DuplicateHandle错误50，不据此声称继承泄漏。修为Qt初始化前GetHandleInformation及实际对象比较，未知仍失败；component4双Qt各5项通过（16373／19191ms），普通模式各5项复用。覆盖父身份不符且事件不被重置、早期环境清除、无关可继承事件排除、两次确认及无确认有界超时／原关闭保留恢复。
@@ -1066,19 +1066,19 @@ Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycl
 
 ## PKG-130：version2契约的组件包刷新（2026-10-30，PC-W11）
 
-129真实提权验证等待共享缓存协调期间，普通权限独立刷新桥接目录包；不依赖129未提交产品改动。桥接行为沿125已验version2／只配置策略；__main__.py只修一处工具说明以准确标明产品记录已实现、完整Release预热／交付仍待，另更新维护用法及bundle_acceptance三工具开关检查。未改锁、打包器、启动机制或运行权限，不恢复环境／重建venv。
+129等待缓存协调时普通刷新桥接目录包；仅工具文案／README及三入口测试，不改锁、打包器、权限或恢复环境。行为沿125的version2契约，未依赖129未提交产品改动。
 
 复用123已存在的无pip构建环境out/mcp_bundle_w11_20261029/builder及PSF3.11.9 x64原归档、29原哈希锁wheel，本地输入组装native0。原归档大小／SHA、选定wheel逐项及三个关键PE的PSF签名Valid按既有工具核验；不下载、升级或将普通组件建包变成提权动作。输出全新out/mcp_bundle_refresh_w11_20261030/release/QKeyMapper MCP Bridge 中文.zip，26706970B，SHA256 854671f5827b8cd89704fbf8f467c9b1f414d62d6933546152b46af405caad60。独立解压后1614项载荷尺寸／hash准确，九个包内Python源码与当前仓库逐字节相等（c200badf之上仅该工具文案修改）；旧123包不覆盖。
 
-普通Medium SDK以包内runtime/python.exe／-I -B运行，中文／空格路径、与包无关cwd、错误PYTHONHOME／PYTHONPATH／PYTHONUSERBASE及仅系统PATH；前缀／所有sys.path／关键原生模块均在包内，固定29项metadata精确、无pip。默认17工具及严格schema、异步不存在产品application_unavailable通过；新两种显式record_only／serial_demo配置分别18／19工具，无认证的demo_state／demo_mapping均not_connected，状态failed且busy=false，无产品启动、配对／UAC、MCP图或业务修改。
+Medium SDK以包内runtime/python.exe／-I -B运行，中文空格／无关cwd、错误Python三变量及仅系统PATH；前缀／sys.path／关键原生模块在包内、29项metadata准确、无pip。17工具严格schema及异步application_unavailable，18／19工具未认证演示not_connected且failed/busy=false通过；无产品／UAC／图／业务写。
 
-首扩展测试对未连接演示后的状态误期望disconnected而失败；Bridge既有_submit将not_connected记录为failed，原错误保持。仅修正测试断言，未改桥接行为或包，以新offline-sdk-fixed目录正式SDK通过，首offline-sdk原件及失败日志保留。包执行前后全部清单载荷和文件数量不变，未生成pyc污染。旧123打包器七项边界测试沿未变工具原范围复用，不重复当成本片新增通过。
+首扩展断言误期望disconnected，既有_submit记录failed/not_connected；仅修测试后offline-sdk-fixed通过，桥接／包未改，首offline-sdk错误保留。运行前后全部清单／数量不变，无pyc；未变打包器七项边界沿123范围复用。
 
-本机原件根含构建／签名及载荷清单、ZIP及独立解压、源码一致性／包身份、首测试失败和修正后imports／SDK调用及summary，不随Git。上述为普通组件范围；真实接续见下，不用123旧版本结果充当当前验收。本机保有全局Python且未断网，不声称干净系统／离线网络实测；完整Release／固定预热、Win10／高DPI及QQ仍待。129已提交5146bf17，130形成独立桥接组件及定向接续检查切点，不推送。
+原件同根含构建／签名／清单、ZIP／独立解压、首失败／修正SDK及summary，仅本机。仍有全局Python且未断网，不冒称干净系统／断网；完整Release／固定预热、Win10／高DPI／QQ待。129为5146bf17，130独立桥接切点，不推送。
 
-同一ZIP独立解压包随后与129已编译Qt6原manifest产品接续：沿127固定demo_process_owner夹具核实High父子／创建时间／同登录／实际不同私有桌面，SDK本身Medium且实际客户端为包内runtime（精确SDK派生PID，不是开发venv重定向）。仅系统PATH／污染Python变量／中文空格无关cwd保持。消费并锁定产品自身version2记录，正式qkm_demo_mapping执行A→B高级页与C→D单条两场景，15 Native／27 SDK＋8结构拒绝、两代场景及操作归属／空源回收／dirty保留通过。
+同ZIP接129 Qt6原manifest产品，127固定拥有者验证High父子／创建时间／登录／不同私有桌面；Medium真实peer为包内runtime，原环境污染／隔离条件保持。消费产品version2，正式高级A→B／单条C→D，15 Native／27 SDK＋8结构拒绝、两代归属／空源回收／dirty保持通过。
 
-两张正式MCP PNG已由Agent查看：高级页中文清晰、无黑图，A→B由同次业务／实例元数据核验；单条窗口实际C→D，非旧场景。未额外重跑未变捕获代码的旧GUI像素对照。产品INI逐字不变、FilterKeys未变、work／producer0，父子原生0退出、创建记录删除、本轮五项清理零。运行后全部1614载荷和文件数不变；SDK／原生／图片／agent-image-review原件在同根after/qt6-demo-owned。固定维护拥有者和配对夹具不是普通用户部署流程；Qt5本包产品、Default／人工配对／无缓存UAC、完整Release、无全局Python干净系统／断网及QQ仍未验。
+Agent看两张MCP图：高级中文清楚且A/B由业务元数据核验，单条C/D无旧场景；未重跑旧GUI像素对照。INI／FilterKeys保持、work／producer0、父子实际0、记录删除、五项零，1614载荷／数量不变。原件after/qt6-demo-owned。维护／配对夹具非部署GUI；Qt5本包产品、Default／人工配对／无缓存UAC、完整Release、干净系统／断网／QQ未验。
 ## DEMO-P3-131：人工配对入口及私有原生提示（2026-10-30，PC-W11）
 
 基5e252c61工作区。H6人工入口先核验Default输入／拥有者身份再走129管理通道；原生线程在自有桌面显示H7，取消／子退出／超时收束。关闭先取消并等返回，不增加MCP工具或自动配对；实际SwitchDesktop／H9重试仍待Default验收。
@@ -1089,4 +1089,18 @@ Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycl
 
 新版双Qt正式--demo-host各17 Native／13 handler／12 SDK，只读ready后正常关闭存活子产品；父子实际0、记录删除、INI／FilterKeys保持、work／producer0及本轮五项零。没有点击正式配对按钮。EXE为out/mcp_demo_pairing_w11_20261030/<kit>-runtime/QKeyMapperDemoPairing131_<kit>_runtime.exe；构建／首失败／组件／九图／三语／谱系／退出原件同根，仅本机。
 
-Qt6普通out/build_qt6/release/QKeyMapper.exe已构建，未启动。Default、无缓存UAC、人工批准、15分钟实等、真实恢复失败／锁屏／宿主意外死亡、Qt5普通Release／Win10／QQ未验，完整P3／M3-B未完成。Qt5日志windows10不是本机Win10验收。
+131当时Qt6普通Release仅构建；随后normal-private烟测父子0／INI保持，真实部署结果见132。Default、无缓存UAC、人工批准、15分钟实等、真实恢复失败／锁屏／宿主意外死亡、Qt5普通Release／Win10／QQ未验，完整P3／M3-B未完成。Qt5日志windows10不是本机Win10验收。
+
+## DEMO-P3-132：真实GUI预热及一次性线程收束（2026-10-30，PC-W11）
+
+基cf56dfad普通Qt6／原manifest，无测试宏；EXE为out/mcp_demo_pairing_w11_20261030/release-qt6-ready/QKeyMapper.exe，包内PKG-130 peer Medium。用户另批原生Shell UAC／Default人工配对及170修复；未用开发缓存／复制凭据，MSVC运行库沿本机前提。normal-private先验父子0、INI保持，无启用／配对。
+
+default132脚本三处pywin32错误在Shell前，无启动；UAC1223由用户确认误点并许可重发。父11416／子11044实际0，SDK在发现撤下后application_unavailable，无业务。default132b父40144／子14432：误批Read=1阻止写；新申请协调中connection_closed，后仅等待的普通观察器中断exit1。父子0／INI保持有实际句柄证明。
+
+default132c父11868／子37864，GUI启用／产品version2／387配对，包内peer15804为8192；实际身份／创建时间／登录／EXE及ACL／管道认证核验。进入自有私有桌面后申请，返回ready；A→B高级、C→D单项，8结构拒绝、103条含轮询、4原操作applied。PNG 770×390／33873B及820×480／43988B经Agent查看，中文清楚无黑／错／旧图；高级A/B由同场源核验。两代回收／空源、非行context／加载／INI保持、dirty保留。末尾重复native_images键使摘要exit1；只读reconcile核完整调用／PNG／原操作，未重放，不称SDK exit0。
+
+用户原图thread_restore_failed170：Default实际已恢复，worker末尾SetThreadDesktop失败；私有未暴露。批准后只移除一次性线程的末尾迁移，保留真实返回／重试、退出后放HDESK。双Qt control＋普通Qt6三构建0／零警告；component132各两模式5，合20含init／cleanup，demo 12875／15486ms，窗销毁／worker退出断言通过。无重复截图／Native构建／业务。
+
+default132d High父36084／子38944，同路径新EXE／新实例认证，包内Medium用原387配对，无新批准／写／图；实际私有→Default、ready／INI保持。High宿主显示由用户确认正常，普通观察器不能可靠读取；父子实际0，发现／创建记录撤下。cf56两图只复用未变业务，新版未重跑。16:10当前2580缓存五项零，ibinput登记／历史未知不接管。
+
+原件同根default132至d、component132、build132、release-identity、用户图／首失败摘录／SDK／PNG／只读重建／退出，仅本机。人工流程超15–20分钟，README补黑背景／启用与配对区别／等待标志；随包自足引导下一片。无Default整屏／映射键／驱动操作；策略及采样非全程系统API或其他实例因果证明。15分钟实等、真实返回失败／锁屏／宿主死亡、Qt5普通Release／Win10／高DPI／QQ待，P3／M3-B未完。

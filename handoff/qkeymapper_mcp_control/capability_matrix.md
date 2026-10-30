@@ -1082,3 +1082,7 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P3-131：固定宿主人工配对显示
 
 已接H6–H9及拥有者原生提示线程，不向MCP开放窗口或切桌面参数。双Qt私有20组件／九图、三语TS/QM旧1180保留＋新4、五构建和正式宿主只读就绪／关闭通过；失败与修正在[同一C1](map67c1_validation.md#demo-p3-131人工配对入口及私有原生提示2026-10-30pc-w11)单列。真实SwitchDesktop／Default返回／人工配对及无缓存UAC未验，H9只验排版；完整预热／交付未完成，工具／权限数量不变。
+
+## DEMO-P3-132：真实GUI预热及返回修正
+
+普通Qt6原生Shell／产品UAC与人工387配对、包内桥接两图及回收已选验；首次Read误批／申请过期／脚本失败保持真实范围。Default暴露thread_restore_failed170，批准后仅删一次性线程结束前多余迁移，双Qt20项及新版Default持久配对重连／无错误返回／父子实际0通过。两图为修前cf56未变业务结果，新版未重复；详[同一C1](map67c1_validation.md#demo-p3-132真实gui预热及一次性线程收束2026-10-30pc-w11)。开发缓存未参与原生启动，未新增工具或权限。私有桌面预热引导／完整Release配置、真实恢复失败／异常宿主死亡／Win10／QQ仍待，P3／M3-B不标完成。

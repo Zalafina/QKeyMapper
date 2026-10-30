@@ -1882,6 +1882,8 @@ void McpControlTest::demoPairingPrompt()
             QVERIFY(PostMessageW(window, WM_CLOSE, 0, 0));
             QVERIFY(waitForPrompt());
             QVERIFY2(session.result().ok(), qPrintable(session.result().failure));
+            QVERIFY(!IsWindow(window));
+            QVERIFY(!session.workerForTest().value(QStringLiteral("running")).toBool());
         }
     }
     QVERIFY(session.startPromptForTest(owner, title, QStringLiteral("target exit fixture"), 10000));
