@@ -1,6 +1,6 @@
 # IbInputSimulator 依赖来源与本机制品
 
-记录日期：2026-10-29。本文保存来源、制品身份和证据边界；设计、进度及下一步只维护在 [主计划](qkeymapper_ibinputsimulator_integration_plan.md)。
+记录日期：2026-10-30。本文保存来源、制品身份和证据边界；设计、进度及下一步只维护在 [主计划](qkeymapper_ibinputsimulator_integration_plan.md)。
 
 ## DOC-00 历史证据边界
 
@@ -71,7 +71,7 @@ IbInputSimulator.dll 是动态库，.lib 为其导入库；/MT 指 C/C++ 运行�
 
 上述停止边界属于 DOC-00；本次恢复及实际重建结果如下。
 
-## 2026-10-29 PC-W10 当前恢复与配套重建
+## 2026-10-29 PC-W10 恢复与配套重建（历史）
 
 本节是本次真实执行；前文 PC-A 制品表继续作为历史身份记录，本机没有收到其原始制品。四个仓库按前述完整提交重新检出；固定源码及本机 out 不随 Git。
 
@@ -100,3 +100,21 @@ python scripts/build_ibinput_dependency.py --arch x86 --review-patch --tests --d
 | lib/x64/IbInputSimulator.lib | 4448 | 02D9BF0199958199CC16A80D66CF0FF6F825CDB40994289EBC44D4FAEEAA6C55 |
 | lib/x86/IbInputSimulator.dll | 168960 | 3E3272FBB9BE70EB908FDE4E3D8A28796C414EDD8CE32ABC1895787DE45390AB |
 | lib/x86/IbInputSimulator.lib | 4656 | D89E6A3BB16DF5D5DBD22601345566F78AA2E166F6637EA7C2FEEACEF308CE72 |
+
+
+## 2026-10-30 PC-W11 当前配套制品
+
+固定四项源码及0001／0002上叠加分别批准的0003／0004，公共头、导出ABI及IOCTL／报告布局不变。0003跨清理保留Windows错误；0004复用所选G HUB虚拟总线下的健康Mouse节点，不按实体型号限定。
+
+实际VS2022 BuildTools、MSVC19.44.35228.0、SDK10.0.19041.0、CMake3.31.12／NMake，Release、BUILD_SHARED_LIBS=ON、上游/MT；两架构独立目录，产品仍C++17。CfgMgr32.dll为0004新增只读系统导入。PE、导入库、原版对照和六组报告／就绪替身、参数边界通过，修正版日志无编译警告。未验证Win7或全部历史系统，不从API最低版本推定产品通过。
+
+当前Git制品身份（路径相对QKeyMapper/IbInputSimulator）：
+
+| 文件 | 大小 | SHA256 |
+|---|---:|---|
+| lib/x64/IbInputSimulator.dll | 218112 | 13BDF841A5B15057A939BC1DC5C41FC1848FDE433DCC5B0941248D16FDB9D548 |
+| lib/x64/IbInputSimulator.lib | 4448 | 5309E2DF6C178DAE5A105C23F2BD8D694CA97DB2082A4384AD573A692EE014C0 |
+| lib/x86/IbInputSimulator.dll | 172032 | 384667923B87DDA042CFAEC9F488869AA3D4BF181B1BA25CCA8A007E52CD89EE |
+| lib/x86/IbInputSimulator.lib | 4656 | 197FC68A76E35E36A9FB3C8728E1DAB9DFBF05BCF3943DFA63200DFB93FAA52D |
+
+恢复命令仍为前述两架构--review-patch --tests --deploy；脚本恢复四个受补丁影响文件后按序应用0001～0004。原0003中间制品仅历史，不替代本表当前配套版本。日志为out/ibinput/logs/w11-dependency-*-0004-driver-free.log、logs/x64及x86/review-*、w11-cmake-version.log。Win11真实连接／关闭／一次复连和最小接收通过；Win10本版本待复验，产品能力限制及环境矩阵以主计划为准。

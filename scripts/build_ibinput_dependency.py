@@ -93,7 +93,7 @@ def main():
     if args.review_patch or args.tests:
         if not reviewed.exists():
             shutil.copytree(original, reviewed)
-        for relative in (LOGITECH, "Simulator/include/IbInputSimulator/SendTypes/usb.hpp", "Simulator/source/API 3.cpp"):
+        for relative in (LOGITECH, "Simulator/include/IbInputSimulator/SendTypes/usb.hpp", "Simulator/source/API 3.cpp", "Simulator/source/dllmain.cpp"):
             (reviewed / relative).write_bytes((original / relative).read_bytes())
         for patch in sorted(PATCH.parent.glob("*.patch")):
             run(["git", "apply", "--unsafe-paths", f"--directory={reviewed.as_posix()}", "--check", patch], logs / f"{patch.stem}-check.log", cwd=ROOT)

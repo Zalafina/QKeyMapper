@@ -1,6 +1,7 @@
 // Tests compile the fixed upstream implementation with recording WinAPI substitutes.
 #define IB_INPUT_STATIC
 #include <Windows.h>
+#include <cfgmgr32.h>
 #include <winternl.h>
 #include <algorithm>
 #include <array>
@@ -19,6 +20,11 @@ BOOL WINAPI QkmTestCloseHandle(HANDLE);
 BOOL WINAPI QkmTestIo(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
 HANDLE WINAPI QkmTestCreateFile(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
 FILE *QkmTestOpen(const wchar_t *, const wchar_t *, int);
+CONFIGRET WINAPI QkmTestLocate(PDEVINST,DEVINSTID_W,ULONG);
+CONFIGRET WINAPI QkmTestChild(PDEVINST,DEVINST,ULONG);
+CONFIGRET WINAPI QkmTestSibling(PDEVINST,DEVINST,ULONG);
+CONFIGRET WINAPI QkmTestStatus(PULONG,PULONG,DEVINST,ULONG);
+CONFIGRET WINAPI QkmTestProperty(DEVINST,ULONG,PULONG,PVOID,PULONG,ULONG);
 #define NtOpenDirectoryObject QkmTestNtOpenDirectoryObject
 #define NtQueryDirectoryObject QkmTestNtQueryDirectoryObject
 #define CloseHandle QkmTestCloseHandle
@@ -28,11 +34,21 @@ FILE *QkmTestOpen(const wchar_t *, const wchar_t *, int);
 #define DeviceIoControl QkmTestIo
 #define CreateFileW QkmTestCreateFile
 #define _wfsopen QkmTestOpen
+#define CM_Locate_DevNodeW QkmTestLocate
+#define CM_Get_Child QkmTestChild
+#define CM_Get_Sibling QkmTestSibling
+#define CM_Get_DevNode_Status QkmTestStatus
+#define CM_Get_DevNode_Registry_PropertyW QkmTestProperty
 #include <IbInputSimulator/SendTypes/Logitech.hpp>
 #undef DeviceIoControl
 #undef CreateFileW
 #undef _wfsopen
 #undef CloseHandle
+#undef CM_Locate_DevNodeW
+#undef CM_Get_Child
+#undef CM_Get_Sibling
+#undef CM_Get_DevNode_Status
+#undef CM_Get_DevNode_Registry_PropertyW
 
 namespace {
 struct Call { DWORD code; std::vector<unsigned char> bytes; };
@@ -41,6 +57,8 @@ int failAt = 0;
 DWORD failCode = 0;
 int closes = 0;
 bool acceleration = false;
+bool mouseExists=false,mouseStarted=true,matchingBus=true,queryFails=false,creationRace=false,mouseProblem=false;
+DWORD activationFailure=ERROR_GEN_FAILURE;
 struct Mouse8 { unsigned char buttons; signed char x, y, wheel; unsigned char unknown; };
 struct Mouse16 { unsigned char buttons; short x, y; signed char wheel; unsigned char unknown; };
 struct Keyboard { unsigned char modifiers, reserved; std::array<unsigned char,6> keys; };
@@ -52,7 +70,7 @@ template<class T> T report(const Call &call) {
     std::memcpy(&result, call.bytes.data(), sizeof result);
     return result;
 }
-void reset() { calls.clear(); failAt=0; failCode=0; closes=0; acceleration=false; }
+void reset() { calls.clear(); failAt=0; failCode=0; closes=0; acceleration=false; mouseExists=false; mouseStarted=true; matchingBus=true; queryFails=false; creationRace=false; mouseProblem=false; activationFailure=ERROR_GEN_FAILURE; }
 MOUSEINPUT mouse(DWORD flags, LONG x=0, LONG y=0, DWORD data=0) { return {x,y,data,flags,0,0}; }
 KEYBDINPUT key(WORD vk, bool up=false) { return {vk,0,up ? KEYEVENTF_KEYUP : DWORD{0},0,0}; }
 void mouseCase() {
@@ -120,7 +138,41 @@ void activationCase() {
     Send::Type::Internal::LogitechGHubNew ghub;
     failCode=0x2A2040;
     check(ghub.create()==Send::Error::DeviceCreateFailed,"activation failure hidden");
+    const DWORD activationError=GetLastError();
     check(closes==2,"failed activation leaked fake device");
+    check(activationError==ERROR_GEN_FAILURE,"activation error was overwritten by cleanup");
+}
+void existingMouseCase() {
+    reset(); mouseExists=true; failCode=0x2A2040; activationFailure=ERROR_INVALID_PARAMETER;
+    {
+        Send::Type::Internal::LogitechGHubNew ghub;
+        check(ghub.create()==Send::Error::Success,"already-started matching mouse was rejected");
+        check(calls.empty(),"existing mouse caused another activation request");
+        ghub.destroy();
+    }
+    for (int condition=0;condition<5;++condition) {
+        reset(); mouseExists=condition!=0; failCode=0x2A2040; activationFailure=ERROR_INVALID_PARAMETER;
+        if (condition==1) mouseStarted=false;
+        if (condition==2) matchingBus=false;
+        if (condition==3) queryFails=true;
+        if (condition==4) mouseProblem=true;
+        Send::Type::Internal::LogitechGHubNew ghub;
+        check(ghub.create()==Send::Error::DeviceCreateFailed,"unproven mouse accepted error87");
+        const DWORD error=GetLastError();
+        check(calls.size()==1 && closes==2 && error==ERROR_INVALID_PARAMETER,"error87 failure or cleanup changed");
+    }
+    reset(); failCode=0x2A2040; activationFailure=ERROR_ACCESS_DENIED; creationRace=true;
+    {
+        Send::Type::Internal::LogitechGHubNew ghub;
+        check(ghub.create()==Send::Error::DeviceCreateFailed,"real activation failure was ignored");
+        check(GetLastError()==ERROR_ACCESS_DENIED,"real activation error changed");
+    }
+    reset(); failCode=0x2A2040; activationFailure=ERROR_INVALID_PARAMETER; creationRace=true;
+    {
+        Send::Type::Internal::LogitechGHubNew ghub;
+        check(ghub.create()==Send::Error::Success && calls.size()==1,"proven creation race was rejected");
+        ghub.destroy();
+    }
 }
 void compensationCase() {
     Send::Type::Internal::Logitech logi;
@@ -140,12 +192,12 @@ extern "C" NTSTATUS WINAPI QkmTestNtQueryDirectoryObject(HANDLE,PVOID buffer,ULO
     info[0].Name.Buffer=name; info[0].Name.Length=static_cast<USHORT>((std::size(name)-1)*sizeof(wchar_t));
     return 0;
 }
-BOOL WINAPI QkmTestCloseHandle(HANDLE) { ++closes; return TRUE; }
+BOOL WINAPI QkmTestCloseHandle(HANDLE) { ++closes; SetLastError(ERROR_INVALID_HANDLE); return TRUE; }
 HANDLE WINAPI QkmTestCreateFile(LPCWSTR,DWORD,DWORD,LPSECURITY_ATTRIBUTES,DWORD,DWORD,HANDLE) { return reinterpret_cast<HANDLE>(2); }
 BOOL WINAPI QkmTestIo(HANDLE,DWORD code,LPVOID data,DWORD size,LPVOID,DWORD,LPDWORD,LPOVERLAPPED) {
     const auto *bytes=static_cast<unsigned char *>(data);
     calls.push_back({code,{bytes,bytes+size}});
-    if ((failAt && calls.size()==static_cast<size_t>(failAt)) || failCode==code) { SetLastError(ERROR_GEN_FAILURE); return FALSE; }
+    if ((failAt && calls.size()==static_cast<size_t>(failAt)) || failCode==code) { SetLastError(activationFailure); return FALSE; }
     return TRUE;
 }
 FILE *QkmTestOpen(const wchar_t *,const wchar_t *,int) {
@@ -154,10 +206,38 @@ FILE *QkmTestOpen(const wchar_t *,const wchar_t *,int) {
     if (tmpfile_s(&file)!=0) return nullptr;
     std::fputs("{\"pointer\":{\"hasAcceleration\":true}}",file); std::rewind(file); return file;
 }
+CONFIGRET WINAPI QkmTestLocate(PDEVINST node,DEVINSTID_W,ULONG) {
+    if (queryFails) return CR_FAILURE;
+    *node=10; return CR_SUCCESS;
+}
+CONFIGRET WINAPI QkmTestChild(PDEVINST child,DEVINST parent,ULONG) {
+    if (queryFails) return CR_FAILURE;
+    if (parent==10 && (mouseExists || (creationRace && !calls.empty()))) { *child=11; return CR_SUCCESS; }
+    if (parent==11) { *child=12; return CR_SUCCESS; }
+    return CR_NO_SUCH_DEVNODE;
+}
+CONFIGRET WINAPI QkmTestSibling(PDEVINST,DEVINST,ULONG) { return CR_NO_SUCH_DEVNODE; }
+CONFIGRET WINAPI QkmTestStatus(PULONG status,PULONG problem,DEVINST node,ULONG) {
+    if (queryFails) return CR_FAILURE;
+    *status=(node!=12 || mouseStarted) ? DN_STARTED : 0;
+    if (node==12 && mouseProblem) *status|=DN_HAS_PROBLEM;
+    *problem=42; return CR_SUCCESS;
+}
+CONFIGRET WINAPI QkmTestProperty(DEVINST node,ULONG property,PULONG type,PVOID buffer,PULONG bytes,ULONG) {
+    if (queryFails) return CR_FAILURE;
+    const wchar_t *value=L"";
+    if (node==10 && property==CM_DRP_HARDWAREID) value=matchingBus ? LR"(root\LGHUBVirtualBus)" : LR"(root\otherbus)";
+    if (node==11 && property==CM_DRP_CLASSGUID) value=L"{745a17a0-74d3-11d0-b6fe-00a0c90f57da}";
+    if (node==12 && property==CM_DRP_CLASSGUID) value=L"{4d36e96f-e325-11ce-bfc1-08002be10318}";
+    const ULONG length=static_cast<ULONG>((std::wcslen(value)+1)*sizeof(wchar_t));
+    if (*bytes<length) { *bytes=length; return CR_BUFFER_SMALL; }
+    std::memcpy(buffer,value,length); *bytes=length;
+    *type=property==CM_DRP_HARDWAREID ? REG_MULTI_SZ : REG_SZ; return CR_SUCCESS;
+}
 int main(int argc,char **argv) {
     const std::string selected=argc>1 ? argv[1] : "all";
     try {
-        const std::array<std::pair<const char *,void(*)()>,5> cases{{{"mouse",mouseCase},{"keyboard",keyboardCase},{"partial",partialCase},{"activation",activationCase},{"compensation",compensationCase}}};
+        const std::array<std::pair<const char *,void(*)()>,6> cases{{{"mouse",mouseCase},{"keyboard",keyboardCase},{"partial",partialCase},{"activation",activationCase},{"compensation",compensationCase},{"existing_mouse",existingMouseCase}}};
         bool ran=false;
         for (const auto &test:cases) if (selected=="all" || selected==test.first) { reset(); test.second(); ran=true; std::cout<<"PASS simulated "<<test.first<<'\n'; }
         check(ran,"unknown case");

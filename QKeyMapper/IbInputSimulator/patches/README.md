@@ -1,8 +1,8 @@
-# Logitech 报告安全修正：独立评审
+# IbInputSimulator 本地配套补丁
 
 设计与进度仅维护在 [唯一主计划](../../../handoff/ibinput-simulator/qkeymapper_ibinputsimulator_integration_plan.md)。本页说明固定补丁及已执行的定向证据，不维护阶段进度。
 
-基准：IbInputSimulator 0aba4f4f2b2053f106cee4c3be0a6201d76ca585。补丁只改 Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp，不改公共头文件、导出函数、调用约定或驱动 IOCTL／报告结构。
+基准：IbInputSimulator 0aba4f4f2b2053f106cee4c3be0a6201d76ca585。0001修改Logitech.hpp，0002修改USB VK查询和API 3.cpp参数边界，0003修改Logitech.hpp与dllmain.cpp错误保留，0004修改Logitech.hpp就绪判据；均不改公共头文件、导出函数、调用约定或驱动IOCTL／报告结构。下文0001／0002为Win10历史，当前事实见末节及依赖记录。
 
 | 问题 | 修正与影响 |
 |---|---|
@@ -49,3 +49,18 @@ python scripts/build_ibinput_dependency.py --arch x64 --tests
 最小替身测试证明：上游非法模式会进入发送替身（exit 2），修正后非法模式不进入发送，合法相对移动仍调用一次（exit 0）。x64 配套修正版 DLL 及报告／参数测试已重建通过，编译日志未检出警告；x86 已完成相同对照及配套重建，两架构均通过。用户已分别批准 0001／0002，修正版依赖已配套部署。
 
 建议一并批准，避免以警告屏蔽掩盖未定义返回路径。它不证明真实驱动行为；其他剩余风险同上。
+
+
+## 已独立批准：0003 原生错误保留
+
+失败点立即保存GetLastError，跨driver.destroy和DLL入口type.reset恢复；仍返回DeviceCreateFailed(5)，不新增设备请求，不把87当成功。两架构替身令清理覆盖错误为6，确认原始31仍保留；本机获批的一次普通权限诊断取得87，没有输入，不是权限不足结论。
+
+## 已独立批准：0004 复用同一总线已有鼠标
+
+记录实际选中接口路径，定位当前总线并要求HardwareID=root\\LGHUBVirtualBus；有界64节点检查Mouse类后代，要求DN_STARTED且无DN_HAS_PROBLEM。问题码仅在故障标志有效时有含义，不据无效问题码拒绝健康节点。不要求罗技实体设备，不按GPW等型号限制。
+
+已有同一总线健康鼠标则复用；否则仍发原激活请求。仅错误87且第二次查询查实健康Mouse已出现的创建竞争可成功；其他错误和未知继续传播失败。新增CfgMgr32只读导入，无设备安装／删除、服务启停或初始化重试。
+
+两架构六组替身和缺失、未启动、故障、错误总线、查询失败、其他原生错误负例通过。Win11只读判据阻断真实驱动打开仍成立；正式DLL随后通过普通权限连接／关闭／一次复连和同代次四向小移、F24、左键、垂直轮接收。不是其他系统、故障恢复或完整产品通过，产品仍仅开放相对移动。
+
+四补丁按编号顺序应用；0003／0004已分别获批并重建，不再处于待应用状态。配套制品／工具链见[依赖来源](../../../handoff/ibinput-simulator/dependency_provenance.md)，真实结果和下一步仅见主计划。
