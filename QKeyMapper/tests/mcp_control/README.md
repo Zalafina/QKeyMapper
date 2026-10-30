@@ -134,3 +134,6 @@ DELETE-113追加`mappingRemovalArguments／mappingRemovalLifecycle`：mapping.de
 ## 固定演示进程核心（P3-127）
 
 定向 `startupPurpose demoProcessLifecycle privateBackgroundDesktopGuard`：普通／`QKM_TEST_CONFIGURATION_ONLY=1` 各自在实际私有桌面运行。将本次控制组件EXE复制到独立out运行目录并把 `QKM_TEST_OWNER_RUNTIME` 指向该目录，Qt DLL沿原测试部署／PATH；初始不得有keymapdata.ini。模式用例创建安全合成INI，核对缺失／不安全标记、同路径已存活进程不被接管、独占冲突、两轮实际身份／不同子桌面、正常关闭和5秒超时后恢复，最后INI字节相等。子窗口仅组件窗口，不初始化产品输入引擎、不切换桌面或发送系统输入，不能替代正式产品运行中关闭／预热GUI验收。
+
+
+P3-128同一组件用例另核对正式宿主QDialog：三语实时刷新／实例不变、按钮焦点、Escape、超时后仍可见与恢复、失败标记保留。`QKM_TEST_TRANSLATIONS_DIR` 指向本次三语QM；可选 `QKM_HOST_CAPTURE_DIR` 为独立out目录，会逐语写host-<0..2>.json并等待同名.json.done，控制器须先核验PID／HWND并在相同实际私有桌面运行普通权限 `scripts/capture_ui_snapshots.ps1 -PrintWindow`，抓图后才写完成标记。Default助手对另一桌面的Owner检查失败不能放宽或当作已截图；Source／QQ及Default验收范围仍只见主计划。

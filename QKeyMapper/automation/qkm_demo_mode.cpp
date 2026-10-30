@@ -15,13 +15,16 @@ std::atomic<quint64> Denials{0};
 
 StartupPurpose parseStartupPurpose(const QStringList &arguments)
 {
-    bool requested = false;
+    StartupPurpose purpose = StartupPurpose::Standard;
     for (const auto &argument : arguments) {
         if (!argument.startsWith(QStringLiteral("--demo-"))) continue;
-        if (argument != QStringLiteral("--demo-configuration-only") || requested) return StartupPurpose::Invalid;
-        requested = true;
+        if (purpose != StartupPurpose::Standard) return StartupPurpose::Invalid;
+        if (argument == QStringLiteral("--demo-configuration-only")) purpose = StartupPurpose::ConfigurationOnly;
+        else if (argument == QStringLiteral("--demo-host")) purpose = StartupPurpose::DemoHost;
+        else return StartupPurpose::Invalid;
     }
-    return requested ? StartupPurpose::ConfigurationOnly : StartupPurpose::Standard;
+    if (purpose == StartupPurpose::DemoHost && arguments.size() != 1) return StartupPurpose::Invalid;
+    return purpose;
 }
 
 bool currentThreadOnPrivateDesktop()
@@ -44,7 +47,7 @@ bool initializeStartupPurpose(StartupPurpose purpose)
     if (QCoreApplication::instance() || purpose == StartupPurpose::Invalid || Initialized.exchange(true)) return false;
     if (purpose == StartupPurpose::ConfigurationOnly && !currentThreadOnPrivateDesktop()) return false;
     // Publish once before any application, worker or device singleton is constructed.
-    ConfigurationOnly.store(purpose == StartupPurpose::ConfigurationOnly);
+    ConfigurationOnly.store(purpose != StartupPurpose::Standard);
     return true;
 }
 

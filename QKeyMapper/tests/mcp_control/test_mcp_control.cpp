@@ -5,6 +5,7 @@
 #include "../../automation/qkm_window_access.h"
 #include "../../automation/qkm_demo_mode.h"
 #include "../../automation/qkm_demo_process.h"
+#include "../../automation/qkm_demo_host.h"
 #include "../../automation/qkm_window_image.h"
 #include "../../qkm_mapping_source_access.h"
 #include "../../qkeymapper_qt_compat.h"
@@ -1490,9 +1491,13 @@ void McpControlTest::startupPurpose()
     QCOMPARE(parseStartupPurpose({}), StartupPurpose::Standard);
     QCOMPARE(parseStartupPurpose({QStringLiteral("--scale=1.0")}), StartupPurpose::Standard);
     QCOMPARE(parseStartupPurpose({QStringLiteral("--scale=1.0"), QStringLiteral("--demo-configuration-only")}), StartupPurpose::ConfigurationOnly);
+    QCOMPARE(parseStartupPurpose({QStringLiteral("--demo-host")}), StartupPurpose::DemoHost);
     for (const auto &arguments : QList<QStringList>{
             {QStringLiteral("--demo-configuration-only"), QStringLiteral("--demo-configuration-only")},
-            {QStringLiteral("--demo-configuration-only=true")}, {QStringLiteral("--demo-unknown")}})
+            {QStringLiteral("--demo-configuration-only=true")}, {QStringLiteral("--demo-unknown")},
+            {QStringLiteral("--demo-host"), QStringLiteral("--demo-configuration-only")},
+            {QStringLiteral("--demo-host"), QStringLiteral("--demo-host")},
+            {QStringLiteral("--demo-host"), QStringLiteral("--scale=1.0")}})
         QCOMPARE(parseStartupPurpose(arguments), StartupPurpose::Invalid);
     const bool mode = configurationOnlyDemo();
     QCOMPARE(startupAllowedScopes(), mode ? quint32(Read | Configure | ShowWindows | CaptureWindows) : KnownScopes);
@@ -1608,6 +1613,72 @@ void McpControlTest::demoProcessLifecycle()
     QFile finalIni(iniPath);
     QVERIFY(finalIni.open(QIODevice::ReadOnly));
     QCOMPARE(finalIni.readAll(), prepared);
+    QVERIFY(QFile::remove(QDir(runtime).filePath(QStringLiteral("release-child"))));
+    for (int round = 0; round != 2; ++round) {
+        qputenv("QKM_TEST_OWNER_IGNORE_CLOSE", round ? "1" : "0");
+        const auto restore = qScopeGuard([] { qunsetenv("QKM_TEST_OWNER_IGNORE_CLOSE"); });
+        DemoHostDialog host;
+        QVERIFY(host.process().running());
+        const auto target = host.process().target();
+        QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(QDir(runtime).filePath(
+            QStringLiteral("child-%1.json").arg(target.processId))), 10000);
+        host.show();
+        QVERIFY(host.isVisible());
+        auto *button = host.findChild<QPushButton *>(QStringLiteral("demoHostClose"));
+        QVERIFY(button && !button->autoDefault() && button->focusPolicy() == Qt::NoFocus);
+        if (round) {
+            QVERIFY(!host.close());
+            QVERIFY(host.isVisible() && host.process().running() && sameProcess(host.process().target(), target));
+            QCOMPARE(host.process().failure(), QStringLiteral("close_timeout"));
+        }
+        if (!qEnvironmentVariableIsEmpty("QKM_TEST_TRANSLATIONS_DIR")) {
+            QTranslator translator;
+            for (int language = 0; language != 3; ++language) {
+                QVERIFY(installUiTranslation(translator, language));
+                QCoreApplication::processEvents();
+                QCOMPARE(host.windowTitle(), DemoHostDialog::tr("QKeyMapper Demo Host"));
+                auto *status = host.findChild<QLabel *>(QStringLiteral("demoHostStatus"));
+                QVERIFY(status && status->text().count(QLatin1Char('\n')) == 1);
+                if (!round) QVERIFY(status->text().contains(QString::number(target.processId)) && status->text().contains(host.process().executable()));
+                else QVERIFY(status->text().contains(QStringLiteral("close_timeout")));
+                QVERIFY(sameProcess(host.process().target(), target) && host.process().running());
+                const QString captures = qEnvironmentVariable("QKM_HOST_CAPTURE_DIR");
+                if (!round && !captures.isEmpty()) {
+                    QVERIFY(QDir::fromNativeSeparators(captures).contains(QStringLiteral("/out/")));
+                    const QString path = QDir(captures).filePath(QStringLiteral("host-%1.json").arg(language));
+                    QSaveFile file(path);
+                    const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("pid"), int(GetCurrentProcessId())},
+                        {QStringLiteral("hwnd"), QString::number(quintptr(host.winId()))}, {QStringLiteral("title"), host.windowTitle()}}).toJson();
+                    QVERIFY(file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit());
+                    QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(path + QStringLiteral(".done")), 15000);
+                }
+            }
+        }
+        if (!round) QTest::keyClick(&host, Qt::Key_Escape);
+        else {
+            QFile release(QDir(runtime).filePath(QStringLiteral("release-child")));
+            QVERIFY(release.open(QIODevice::WriteOnly));
+            release.close();
+        }
+        QTRY_VERIFY_WITH_TIMEOUT(!host.isVisible(), 5000);
+        QVERIFY(!host.process().running() && host.process().exitCode());
+        QCOMPARE(host.process().exitCode().value(), DWORD(0));
+    }
+    QVERIFY(finalIni.seek(0));
+    QCOMPARE(finalIni.readAll(), prepared);
+    finalIni.close();
+    QVERIFY(writeIni(unsafe));
+    {
+        const auto restore = qScopeGuard([&] { writeIni(prepared); });
+        DemoHostDialog failed;
+        failed.show();
+        QVERIFY(!failed.process().running() && !failed.process().target().isValid());
+        QCOMPARE(failed.process().failure(), QStringLiteral("deployment_not_prepared"));
+        auto *status = failed.findChild<QLabel *>(QStringLiteral("demoHostStatus"));
+        QVERIFY(status && status->text().contains(QStringLiteral("deployment_not_prepared")) && status->text().count(QLatin1Char('\n')) == 1);
+        QTest::keyClick(&failed, Qt::Key_Escape);
+        QVERIFY(!failed.isVisible());
+    }
 }
 
 void McpControlTest::editorDraftGuard()

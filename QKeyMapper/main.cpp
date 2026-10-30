@@ -3,6 +3,7 @@
 #include <QTimer>
 #include "qkeymapper_qt_compat.h"
 #include "automation/qkm_demo_mode.h"
+#include "automation/qkm_demo_host.h"
 #include <memory>
 #include "qkeymapper.h"
 #include "diagnostics/crash_monitor.h"
@@ -374,7 +375,8 @@ int main(int argc, char *argv[])
 {
     QStringList startupArguments;
     for (int index = 1; index < argc; ++index) startupArguments.append(QString::fromLocal8Bit(argv[index]));
-    if (!QkmAutomation::initializeStartupPurpose(QkmAutomation::parseStartupPurpose(startupArguments))) return ERROR_INVALID_PARAMETER;
+    const auto startupPurpose = QkmAutomation::parseStartupPurpose(startupArguments);
+    if (!QkmAutomation::initializeStartupPurpose(startupPurpose)) return ERROR_INVALID_PARAMETER;
 #ifdef QKM_REQUIRE_ADMIN
     if (!IsProcessRunAsAdmin()) {
         // Priority 1: Read LanguageIndex from keymapdata.ini (user's saved preference)
@@ -423,6 +425,8 @@ int main(int argc, char *argv[])
         return ERROR_ELEVATION_REQUIRED;
     }
 #endif
+
+    if (startupPurpose == QkmAutomation::StartupPurpose::DemoHost) return QkmAutomation::runDemoHost(argc, argv);
 
 #ifdef LOGOUT_TOFILE
     QkmDiagnostics::Session diagnostics(QT_VERSION_STR, "diagnostic");

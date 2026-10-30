@@ -1064,3 +1064,8 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P3-127：固定同镜像进程归属核心
 
 正式DemoProcess仅创建固定同EXE／只配置子实例及本次随机私有桌面，显式安全部署标记、目录／Session租约、实际进程身份和同路径存活冲突拒绝；运行后仅正常WM_CLOSE／实际退出，超时保留身份不强杀。只配置绕开SingleApplication通知，普通入口保持。双Qt四构建／最终20实际私有组件、双Qt父子及正式两轮四图、Qt6普通入口拒绝通过，三场38 Native／158 handler／70 SDK＋16 schema，实际退出／记录删除／五项清理零；见[同一C1](map67c1_validation.md#demo-p3-127固定宿主进程归属核心2026-10-30pc-w11)。真实产品本轮自行退出；运行中关闭／超时仅Qt组件，正式宿主GUI／人工配对／Default、异常宿主死亡恢复、整包／Win10／QQ仍待。测试父不是交付宿主，工具／能力不增加，P3／M3-B未完。
+
+
+## DEMO-P3-128：正式宿主入口／存活子实例关闭
+
+固定唯一--demo-host在产品／SingleApplication前分流为独立宿主Application，只调用127固定核心；身份状态可选择，Escape／关闭按钮／窗口关闭走同一正常清理，失败保留窗口和拥有关系。批准H1–H5三语TS/QM、真实LF／原1175条不变及三语刷新通过。双Qt四构建／20选定实际私有组件；首跨桌面截图归属拒绝保留，仅把普通助手放同桌面后三语图审阅。双Qt正式入口父无产品单例、只读ready后正常关闭仍存活产品，各17 Native／13 handler／12 SDK，实际父子0退出／记录删除／清理零，见[同一C1](map67c1_validation.md#demo-p3-128正式宿主入口与存活产品关闭2026-10-30pc-w11)。配对显示／返回与完整预热未交付，Default／人工配对／一次原生UAC、带草稿关闭／意外宿主死亡恢复、整包／Win10／QQ仍待；工具／能力不增加。

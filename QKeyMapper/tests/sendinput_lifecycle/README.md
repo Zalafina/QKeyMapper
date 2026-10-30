@@ -166,3 +166,8 @@ SDK模块[demo_owned_record_acceptance.py](../../../mcp_bridge/tests/demo_owned_
 维护入口 `QKM_LIFECYCLE_CASE=demo_process_owner` 在任何 Application／产品单例之前，仅调用正式 `DemoProcess` 核心。独立 EXE 目录须已有带 `McpDemoDeploymentVersion=1` 的安全合成 INI；核心不复制个人配置，只创建固定同镜像 `--demo-configuration-only` 子实例和随机私有桌面，核验实际身份后写维护 `.owner` 观察材料。SDK须独立核实父子创建时间、实际父 PID、同登录／EXE、两个桌面和产品自身记录，不将公共 Start 返回的父 PID 当业务目标。子结果在输出根的 `child/case.json`；沿既有正式 SDK／握手完成两轮后子实例自行退出，父核心核对实际退出并释放桌面／租约。
 
 父进程不构造 QApplication、启用 MCP 或批准配对；它只是受管维护夹具，不能作为正式预热宿主交付。组件 `demoProcessLifecycle` 另用普通权限真实 Qt 窗口验证缺失／不安全部署、同路径存活实例拒绝、租约冲突、两轮关闭及超时后恢复；设置 `QKM_TEST_OWNER_RUNTIME` 为本次 out 内独立测试 EXE 所在目录，初始不得已有 INI。实际产品运行中 WM_CLOSE、宿主意外死亡／孤儿恢复和 Default／人工配对仍待单独验收；不强杀存活演示实例或接管旧 PID。
+
+
+## DEMO-P3-128 正式宿主入口与正常关闭
+
+`demo_host_role` 维护入口要求实际私有后台，原参数仅 `--demo-host`，经正式main进入宿主GUI；独立安全INI／部署标记仍必需。仅测试观察器设置后续子 `settings_save_apply/demo_ready` 固定握手，父不构造产品单例。SDK模块[demo_host_acceptance.py](../../../mcp_bridge/tests/demo_host_acceptance.py)只读消费产品记录／检查ready及源INI不变；子完成后只发布 `case.json.owner-close-ready` 并继续事件循环，宿主真实close向仍存活子主窗请求WM_CLOSE。分别核对宿主入口返回、子／父实际退出、产品记录删除及尾部／公共清理。门闩只在Native测试，不改变产品正常关闭／默认MCP关闭或替代GUI配对。当前正式宿主界面只有状态／关闭；配对显示／返回及普通用户完整预热仍待，不在Default执行本维护用例。

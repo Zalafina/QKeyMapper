@@ -7308,4 +7308,38 @@ Pair ID: %2</translation>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;You are running the latest version of %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
 </context>
+<context>
+    <name>QkmAutomation::DemoHostDialog</name>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="44"/>
+        <source>QKeyMapper Demo Host</source>
+        <translation>QKeyMapper Demo Host</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="45"/>
+        <source>Close Demo</source>
+        <translation>Close Demo</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="47"/>
+        <source>The demo instance has not exited.
+Reason: %1</source>
+        <translation>The demo instance has not exited.
+Reason: %1</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="49"/>
+        <source>The demo instance could not be started.
+Reason: %1</source>
+        <translation>The demo instance could not be started.
+Reason: %1</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="51"/>
+        <source>Private demo instance: %1
+Executable: %2</source>
+        <translation>Private demo instance: %1
+Executable: %2</translation>
+    </message>
+</context>
 </TS>

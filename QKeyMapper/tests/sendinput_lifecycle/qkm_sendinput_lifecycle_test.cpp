@@ -35,6 +35,7 @@
 #include "../../automation/qkm_window_access.h"
 #include "../../automation/qkm_demo_mode.h"
 #include "../../automation/qkm_demo_process.h"
+#include "../../automation/qkm_demo_host.h"
 #include <SDL.h>
 #include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
@@ -75,6 +76,7 @@ public:
 
 class QkmMappingAdditionTestAccess {
 public:
+    static bool hostHasNoProduct() { return QKeyMapper::m_instance == nullptr; }
     static QJsonObject run(QKeyMapper *mapper, const QString &mode);
     static QJsonObject equality(QKeyMapper *mapper);
     static QJsonObject serialization(QKeyMapper *mapper, bool cold);
@@ -200,6 +202,7 @@ struct LifecycleResult {
     QJsonObject uiLocalizationEvidence;
 };
 LifecycleResult *result = nullptr;
+QString demoHostFixturePath;
 
 class ObservedTask : public SendInputTask {
 public:
@@ -246,6 +249,12 @@ void submit(const QStringList &keys, int direction, const QString &original)
 void finish(bool passed)
 {
     result->passed = result->passed && passed;
+    if (qEnvironmentVariable("QKM_LIFECYCLE_OWNER_CLOSE") == QStringLiteral("1")) {
+        QSaveFile ready(qEnvironmentVariable("QKM_LIFECYCLE_RESULT") + QStringLiteral(".owner-close-ready"));
+        const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("passed"), result->passed}}).toJson();
+        if (ready.open(QIODevice::WriteOnly) && ready.write(bytes) == bytes.size() && ready.commit()) return;
+        result->passed = false;
+    }
     QMetaObject::invokeMethod(QCoreApplication::instance(), []() {
         QCoreApplication::exit(result->passed ? 0 : 2);
     }, Qt::QueuedConnection);
@@ -1205,6 +1214,53 @@ void installInactiveVirtualReleaseTest()
 
 void installLifecycleTest()
 {
+    if (!demoHostFixturePath.isEmpty()) {
+        auto *poll = new QTimer(QCoreApplication::instance());
+        QObject::connect(poll, &QTimer::timeout, poll, [poll] {
+            using namespace QkmAutomation;
+            DemoHostDialog *host = nullptr;
+            for (auto *window : QApplication::topLevelWidgets())
+                if ((host = qobject_cast<DemoHostDialog *>(window))) break;
+            if (!host) return;
+            const auto write = [](const QString &path, const QJsonObject &object) {
+                QSaveFile file(path);
+                const QByteArray bytes = QJsonDocument(object).toJson();
+                return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
+            };
+            const auto &owner = host->process();
+            const QString childResult = QFileInfo(demoHostFixturePath).absolutePath() + QStringLiteral("/child/case.json");
+            const QJsonObject target{{QStringLiteral("pid"), QString::number(owner.target().processId)},
+                {QStringLiteral("created"), QString::number(owner.target().creationTime)},
+                {QStringLiteral("session"), QString::number(owner.target().sessionId)},
+                {QStringLiteral("executable"), owner.executable()}, {QStringLiteral("desktop"), owner.desktop()},
+                {QStringLiteral("child_result"), childResult}};
+            if (!QFileInfo::exists(demoHostFixturePath + QStringLiteral(".owner"))) {
+                if (!owner.target().isValid()) {
+                    poll->stop();
+                    write(demoHostFixturePath, {{QStringLiteral("passed"), false}, {QStringLiteral("failure"), owner.failure()}});
+                    host->close();
+                    return;
+                }
+                if (!write(demoHostFixturePath + QStringLiteral(".owner"), target)) { poll->stop(); host->close(); return; }
+            }
+            if (!QFileInfo::exists(childResult + QStringLiteral(".owner-close-ready"))) return;
+            poll->stop();
+            const bool wasRunning = owner.running();
+            const bool noProduct = QkmMappingAdditionTestAccess::hostHasNoProduct();
+            const bool closed = host->close();
+            const bool passed = wasRunning && closed && owner.exitCode() && owner.exitCode().value() == 0 && noProduct;
+            write(demoHostFixturePath, {{QStringLiteral("passed"), passed}, {QStringLiteral("target"), target},
+                {QStringLiteral("owner_parent_pid"), QString::number(GetCurrentProcessId())},
+                {QStringLiteral("child_exit"), owner.exitCode() ? QJsonValue(int(owner.exitCode().value())) : QJsonValue(QJsonValue::Null)},
+                {QStringLiteral("child_exited_before_close"), !wasRunning}, {QStringLiteral("closed"), closed},
+                {QStringLiteral("failure"), owner.failure()}, {QStringLiteral("native_error"), owner.nativeError()
+                    ? QJsonValue(int(owner.nativeError().value())) : QJsonValue(QJsonValue::Null)},
+                {QStringLiteral("parent_application_created"), QCoreApplication::instance() != nullptr},
+                {QStringLiteral("parent_product_absent"), noProduct}});
+        });
+        poll->start(20);
+        return;
+    }
     QTimer::singleShot(0, QCoreApplication::instance(), []() {
         const QString guiMode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
         if (guiMode == QStringLiteral("ui_localization")) {
@@ -5910,6 +5966,26 @@ int main(int argc, char *argv[])
     const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
     const QString path = qEnvironmentVariable("QKM_LIFECYCLE_RESULT");
     if (mode == QStringLiteral("demo_process_owner")) return runDemoProcessOwnerFixture(path);
+    if (mode == QStringLiteral("demo_host_role")) {
+        const QString directory = QDir::cleanPath(QFileInfo(path).absolutePath());
+        if (!directory.contains(QStringLiteral("/out/")) || !QkmAutomation::currentThreadOnPrivateDesktop()
+            || !QDir().mkpath(directory + QStringLiteral("/child"))) return 2;
+        demoHostFixturePath = path;
+        qputenv("QKM_LIFECYCLE_CASE", "settings_save_apply");
+        qputenv("QKM_LIFECYCLE_RESULT", (directory + QStringLiteral("/child/case.json")).toUtf8());
+        qputenv("QKM_CONTEXT_VARIANT", "demo_ready");
+        qputenv("QKM_LIFECYCLE_OWNER_CLOSE", "1");
+        const int code = qkmProductMain(argc, argv);
+        QFile file(path);
+        QJsonObject summary = file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).object() : QJsonObject();
+        file.close();
+        const bool passed = code == 0 && summary.value(QStringLiteral("passed")).toBool();
+        summary.insert(QStringLiteral("host_entry_return"), code);
+        summary.insert(QStringLiteral("passed"), passed);
+        QSaveFile output(path);
+        const QByteArray bytes = QJsonDocument(summary).toJson();
+        return output.open(QIODevice::WriteOnly) && output.write(bytes) == bytes.size() && output.commit() && passed ? 0 : 2;
+    }
     const QStringList cases{QStringLiteral("wait_clear"), QStringLiteral("pause_clear"), QStringLiteral("queue_keyup"),
         QStringLiteral("cancel_reset"), QStringLiteral("pause_continue"), QStringLiteral("break_one"),
         QStringLiteral("break_all"), QStringLiteral("stop"), QStringLiteral("restart"), QStringLiteral("admission"),

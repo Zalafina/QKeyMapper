@@ -7308,4 +7308,38 @@ Pair ID: %2</source>
         <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;您当前已正在使用最新版本的 %1&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;%2 %3&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
 </context>
+<context>
+    <name>QkmAutomation::DemoHostDialog</name>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="44"/>
+        <source>QKeyMapper Demo Host</source>
+        <translation>QKeyMapper 演示宿主</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="45"/>
+        <source>Close Demo</source>
+        <translation>关闭演示</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="47"/>
+        <source>The demo instance has not exited.
+Reason: %1</source>
+        <translation>演示实例尚未退出。
+原因：%1</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="49"/>
+        <source>The demo instance could not be started.
+Reason: %1</source>
+        <translation>无法启动演示实例。
+原因：%1</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="51"/>
+        <source>Private demo instance: %1
+Executable: %2</source>
+        <translation>私有演示实例：%1
+程序路径：%2</translation>
+    </message>
+</context>
 </TS>

@@ -7,7 +7,7 @@
 
 namespace QkmAutomation {
 
-enum class StartupPurpose { Standard, ConfigurationOnly, Invalid };
+enum class StartupPurpose { Standard, ConfigurationOnly, DemoHost, Invalid };
 StartupPurpose parseStartupPurpose(const QStringList &arguments);
 bool initializeStartupPurpose(StartupPurpose purpose);
 bool configurationOnlyDemo();
