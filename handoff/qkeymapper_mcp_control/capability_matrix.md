@@ -1059,3 +1059,8 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P3-126：产品自身私有记录
 
 只配置产品固定初始加载组，启用MCP时在原私有目录／租约发布自身九字段version2记录；普通模式／发现七字段／默认关闭保持。Read认证caps给demo_record位置，读句柄禁止写删，关闭只对本次身份及原始字节一致的记录按句柄删除。双Qt六目标及夹具修正编译、48组件与Qt6正式消费产品记录／写拒绝32／两轮回收通过，14 Native／74 handler／27 SDK＋8 schema，两图等同124已审阅图，正常退出记录消失／清理零，见[同一C1证据](map67c1_validation.md#demo-p3-126产品自身私有创建记录2026-10-29pc-w11)。首Native2是替换测试服务器漏声明，SDK未启动；仅修夹具，产品拒绝不放宽。Qt5本片SDK、默认存储GUI／一次原生UAC／Default／预热宿主／整包／Win10和QQ仍待；今日以本片聚焦本地commit收尾，不推送或启动下一片。
+
+
+## DEMO-P3-127：固定同镜像进程归属核心
+
+正式DemoProcess仅创建固定同EXE／只配置子实例及本次随机私有桌面，显式安全部署标记、目录／Session租约、实际进程身份和同路径存活冲突拒绝；运行后仅正常WM_CLOSE／实际退出，超时保留身份不强杀。只配置绕开SingleApplication通知，普通入口保持。双Qt四构建／最终20实际私有组件、双Qt父子及正式两轮四图、Qt6普通入口拒绝通过，三场38 Native／158 handler／70 SDK＋16 schema，实际退出／记录删除／五项清理零；见[同一C1](map67c1_validation.md#demo-p3-127固定宿主进程归属核心2026-10-30pc-w11)。真实产品本轮自行退出；运行中关闭／超时仅Qt组件，正式宿主GUI／人工配对／Default、异常宿主死亡恢复、整包／Win10／QQ仍待。测试父不是交付宿主，工具／能力不增加，P3／M3-B未完。

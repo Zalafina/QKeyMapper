@@ -1012,3 +1012,24 @@ Agent查看四张正式ImageContent图片：高级770×390显示当前实际3／
 当前控制器登记达到32摘要，本片在确认同一126自有失败目标已退出、五项零后仅替换其过时制品定义；原定义和scope-replacement保留，其余许可／历史未知请求不动，不改期限／模式／技能核心或新申请UAC。原件out/mcp_demo_record_w11_20261029含单次大文件补丁／字节、六目标及夹具修正构建、48组件、首失败／实际制品归档、最终after-fixed的peer／调用／产品记录消费／写拒绝码／两图／INI／退出／清理和summary，仅本机。
 
 本片不执行新一批验收；Qt5仅编译和共享Core实测、未跑新产品SDK；125的34项Python和其他未变证据沿原版本范围复用。首次GUI批准下私有桌面暂成为输入桌面的发布仅源码路径，未实际切换；Default／原生一次UAC／人工配对、真实中断／删除竞争／异常退出全矩阵、普通完整Release／整包重建、Win10／高DPI／ASan／全静态和QQ均未验。固定预热宿主未实现／未启动，未标完整P3／M3-B或M1完成。按用户17时收尾要求，仅文档检查／聚焦本地commit后off本轮缓存并独立核实，随后停止，环境／构建／原始证据保留。
+
+
+## DEMO-P3-127：固定宿主进程归属核心（2026-10-30，PC-W11）
+
+126 15d59215之上新增正式automation/qkm_demo_process：只配置用途内固定创建本次实际EXE的--demo-configuration-only子实例，不接受外部EXE／PID／HWND／桌面／命令。EXE目录既有INI须普通非重解析、单链接、大小1–65536字节，显式McpDemoDeploymentVersion=1、安全启动值和空Demo104Seed；不复制或覆盖个人INI，认证后的完整模型检查仍属原场景预检。复用当前用户私有目录租约，固定EXE目录／Session独占；同名进程先核实实际路径／登录会话，同路径存活或身份不可核实拒绝，不依据枚举顺序选目标或接管。部署标记不是权限或配对凭据。
+
+随机当前用户私有WinSta0桌面，创建句柄不请求SWITCHDESKTOP；固定子进程以挂起方式创建、无继承句柄，核实实际登录／Session／EXE／PID创建时间后恢复并公布。启动失败只可终止本次尚未公布的创建进程；运行后正常关闭仅向该私有桌面和子PID的可见所属主窗发一次WM_CLOSE，等待实际进程退出。5秒超时保留同一身份／句柄／租约，不强杀；再次关闭只等待，不重复发消息。退出码／原生和清理错误只填实际取得值，语义拒绝无原生码。析构仍须上层负责未完成关闭的现场处理；本片未交付意外宿主死亡后的恢复。
+
+启动复核发现旧SingleApplication构造会通知已有实例，有显示旧窗口的潜在影响；仅只配置用途改用QApplication，不进入该通知通道。普通用途仍构造同参数SingleApplication及原showUp连接，没有修改单实例库或普通用户选择规则。双Qt真实模式断言检查实际qApp不是SingleApplication；Qt6普通模式原入口／策略拒绝另验。无正式UI文案／TS/QM变化，产品manifest及MCP默认关闭不变。
+
+Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycle四目标最终增量native0；Qt6零编译／链接警告，Qt5仅Native命中已批准官方qtmain.lib缺PDB例外。首轮加独占／通知隔离之前的构建及20组件另存first-build／component-control；最终component2各普通5／只配置5，合计20项（含init／cleanup），普通Medium8192、实际QkmMcp_<UUID>私有桌面。缺失INI实际原生码、不安全标记／启动值无猜测码、同路径独立存活进程拒绝且其仍存活、租约冲突、重复调用、实际PID创建／子线程桌面、正常关闭原生0、忽略关闭5秒后身份保留及显式恢复均通过，INI逐字节保持。未用mock代替实际进程／窗口。
+
+真实原manifest路径out/mcp_demo_process_w11_20261030/{qt6,qt5}-runtime/QKeyMapperDemoProcess127_<kit>_runtime.exe。公共登记仅启动必要High维护父进程，父在QApplication／所有产品单例之前调用同一正式核心，按固定用途创建真实High产品子实例；父不构造Application，子仍完整原产品／关闭路径。普通SDK8192独立核验Toolhelp实际父PID、父子创建时间／EXE／同登录及12288权限；父实际QkmDemoProcess127_<UUID>，子实际QkmDemoOwned_<UUID>，不把公共Start父PID当业务目标。
+
+双Qt正式SDK直接消费子产品自身126记录、版本／ACL／实例绑定与写打开拒绝码32，正式高级A→B后默认单项C→D，逐场15 Native／74真实handler／27外层SDK＋8 schema，两场均完整业务回收。四张正式PNG由Agent逐张查看：中文清晰，高级实际参数3／3可读，单项C/D/D正确，无黑图／错误窗／旧场景；高级图不显示A/B，真实行由正式源与场景关联证实。原source／metadata／H0／INI／GUI名／加载保持，epoch+4且dirty依原GUI保留。运行服务器仍明确是隔离维护存储及既有固定SDK握手，不冒充默认存储GUI启用或人工配对。
+
+另Qt6普通模式demo_ready沿独立路径／安全INI的原SingleApplication入口，认证state／caps无只配置策略；开发host-record自称version2仍被拒绝，旧记录／错误用途两次拒绝及恢复不影响连接。8 Native／10 handler／16 SDK，零preview／业务写／图。合计三场38 Native／158 handler／70 SDK＋16 schema，不把普通反例的开发host-record当正式产品创建证明。
+
+两场产品子实例SDK结束后自行退出，核心核实其原生0／桌面与租约回收，父实际原生0；普通反例实际原生0，全部workAtExit／producersAtExit为0，记录原路径消失、INI未变、逐场owned／unresolved／pending／current_action／current_job五项零。产品运行中WM_CLOSE／超时尚未实测，相关行为仅本片真实Qt组件窗口证明；父子两套退出句柄与公共摘要分别留证，不拿父清理代替子清理或Worker STOPPED代替退出。新普通控制器25336／instance be7220a8a7174419a81ee7823fd3a5f4／generation1截止18:30，三目标依既有授权分别登记，无新UAC；旧历史未知请求不接管。
+
+原件根out/mcp_demo_process_w11_20261030含首轮／最终构建、20＋20组件各自范围、部署身份／定义、父子lineage／owner、三场peer／逐次调用／四图／INI／原生退出与清理、summary，仅本机不随Git。未重复环境恢复、125 Python或126未变组件；没有Default／桌面切换／输入／驱动动作，不声称全程系统API追踪。正式GUI预热入口、产品运行中关闭／宿主中断恢复、默认存储人工配对、一次原生UAC／Default、普通完整Release／整包、Win10／高DPI／QQ仍待，完整P3／M3-B未完成。

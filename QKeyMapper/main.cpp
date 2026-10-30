@@ -3,6 +3,7 @@
 #include <QTimer>
 #include "qkeymapper_qt_compat.h"
 #include "automation/qkm_demo_mode.h"
+#include <memory>
 #include "qkeymapper.h"
 #include "diagnostics/crash_monitor.h"
 #include "qkeymapper_worker.h"
@@ -519,7 +520,10 @@ int main(int argc, char *argv[])
 #endif
 #ifdef SINGLE_APPLICATION
     QkmDiagnostics::markProgress();
-    SingleApplication app(argc, argv);
+    std::unique_ptr<QApplication> application;
+    if (QkmAutomation::configurationOnlyDemo()) application = std::make_unique<QApplication>(argc, argv);
+    else application = std::make_unique<SingleApplication>(argc, argv);
+    QApplication &app = *application;
 #else
     QApplication app(argc, argv);
 #endif
@@ -601,7 +605,8 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef SINGLE_APPLICATION
-    QObject::connect(&app, &SingleApplication::showUp, &w, &QKeyMapper::otherInstancesStarted);
+    if (auto *single = qobject_cast<SingleApplication *>(&app))
+        QObject::connect(single, &SingleApplication::showUp, &w, &QKeyMapper::otherInstancesStarted);
 #endif
 
     // QMainWindow window flags

@@ -129,3 +129,8 @@ SAVE-95另选`savePreviewArguments`，与原映射／保存存储六槽合跑：
 SAVE-97同槽追加confirm_scope／confirm_overwrite的独立布尔与错误类型拒绝、configuration.save.apply的Configure权限及非只读声明；组件family共6项能力，产品总计10项。正式写盘／分段结果／去重与独立冷读见同一主计划的SDK维护证据，不能从本槽通过推定实际业务已执行。
 
 DELETE-113追加`mappingRemovalArguments／mappingRemovalLifecycle`：mapping.delete只接受完整源修订／源Tab和1–100个同源规范行引用，重复去重，拒绝类型、混合源／修订、负数／非规范／越界整数及其他动作字段；confirm_delete独立严格布尔。存储复用既有120秒／有界结果，检查实例／权限代次归属、取消／到期目标和单次消费。mapping change family现8项能力，产品16项；连同原新增／保存九槽定向运行，不代替正式产品源删除、实际撤权／超时或Default验收。
+
+
+## 固定演示进程核心（P3-127）
+
+定向 `startupPurpose demoProcessLifecycle privateBackgroundDesktopGuard`：普通／`QKM_TEST_CONFIGURATION_ONLY=1` 各自在实际私有桌面运行。将本次控制组件EXE复制到独立out运行目录并把 `QKM_TEST_OWNER_RUNTIME` 指向该目录，Qt DLL沿原测试部署／PATH；初始不得有keymapdata.ini。模式用例创建安全合成INI，核对缺失／不安全标记、同路径已存活进程不被接管、独占冲突、两轮实际身份／不同子桌面、正常关闭和5秒超时后恢复，最后INI字节相等。子窗口仅组件窗口，不初始化产品输入引擎、不切换桌面或发送系统输入，不能替代正式产品运行中关闭／预热GUI验收。

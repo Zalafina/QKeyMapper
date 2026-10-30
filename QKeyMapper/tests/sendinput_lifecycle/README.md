@@ -160,3 +160,9 @@ Native只配置断言核对Hook／Interception／libusb／SDL控制器／FakerIn
 只配置产品构造后固定已接受的初始加载组，MCP启用时在原私有目录发布version2记录并持有只读句柄，正常模式／发现七字段不变。现有startSaveContext会以out私有存储替换控制窗口；本片先核验原声明不可改，再将实际已接受组声明给替换服务器。首轮因遗漏后者在ready前native2退出，SDK未启动；失败制品／case与清理原件保留。修正仅维护夹具，不放宽产品的空声明拒绝或改真实加载。
 
 SDK模块[demo_owned_record_acceptance.py](../../../mcp_bridge/tests/demo_owned_record_acceptance.py)从已认证caps取得demo_record，只读消费产品原件，不建host-record；核验version2／实际身份、外部写打开返回已取得Win32码32、正式高级／单项两轮及记录字节保持。外层在目标正常退出后另查原路径消失、native0及全部尾部／公共清理，不将Worker STOPPED当完成。双Qt组件与Qt6正式路径分开，Qt5本片SDK／普通默认存储GUI启用／正式预热、Default／Win10等缺口见唯一主计划。
+
+## DEMO-P3-127 固定同镜像子实例
+
+维护入口 `QKM_LIFECYCLE_CASE=demo_process_owner` 在任何 Application／产品单例之前，仅调用正式 `DemoProcess` 核心。独立 EXE 目录须已有带 `McpDemoDeploymentVersion=1` 的安全合成 INI；核心不复制个人配置，只创建固定同镜像 `--demo-configuration-only` 子实例和随机私有桌面，核验实际身份后写维护 `.owner` 观察材料。SDK须独立核实父子创建时间、实际父 PID、同登录／EXE、两个桌面和产品自身记录，不将公共 Start 返回的父 PID 当业务目标。子结果在输出根的 `child/case.json`；沿既有正式 SDK／握手完成两轮后子实例自行退出，父核心核对实际退出并释放桌面／租约。
+
+父进程不构造 QApplication、启用 MCP 或批准配对；它只是受管维护夹具，不能作为正式预热宿主交付。组件 `demoProcessLifecycle` 另用普通权限真实 Qt 窗口验证缺失／不安全部署、同路径存活实例拒绝、租约冲突、两轮关闭及超时后恢复；设置 `QKM_TEST_OWNER_RUNTIME` 为本次 out 内独立测试 EXE 所在目录，初始不得已有 INI。实际产品运行中 WM_CLOSE、宿主意外死亡／孤儿恢复和 Default／人工配对仍待单独验收；不强杀存活演示实例或接管旧 PID。

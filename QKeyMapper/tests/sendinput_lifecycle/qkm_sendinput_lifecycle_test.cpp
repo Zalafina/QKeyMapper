@@ -34,6 +34,7 @@
 #include "../../automation/qkm_window_image.h"
 #include "../../automation/qkm_window_access.h"
 #include "../../automation/qkm_demo_mode.h"
+#include "../../automation/qkm_demo_process.h"
 #include <SDL.h>
 #include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
@@ -3547,6 +3548,7 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             };
             check(QkmAutomation::currentThreadOnPrivateDesktop() && QkmAutomation::startupAllowedScopes() == 387,
                 "immutable configuration-only mode is on the observed private background desktop with no Run scope");
+            check(!qApp->inherits("SingleApplication"), "configuration-only child bypasses the legacy instance activation channel");
             check(devicesAbsent(), "startup leaves Hook, Interception, libusb, SDL controller and virtual device resources uninitialized");
             const quint64 denied = QkmAutomation::demoEffectDenialsForTest();
             mapper->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK);
@@ -5852,10 +5854,62 @@ Q_COREAPP_STARTUP_FUNCTION(installLifecycleTest)
 #include "../../main.cpp"
 #undef main
 
+static int runDemoProcessOwnerFixture(const QString &path)
+{
+    using namespace QkmAutomation;
+    const QString directory = QDir::cleanPath(QFileInfo(path).absolutePath());
+    if (!directory.contains(QStringLiteral("/out/"))
+        || !initializeStartupPurpose(StartupPurpose::ConfigurationOnly)) return 2;
+    const QString childDirectory = directory + QStringLiteral("/child");
+    if (!QDir().mkpath(childDirectory)) return 2;
+    const QString childResult = childDirectory + QStringLiteral("/case.json");
+    const QByteArray originalCase = qgetenv("QKM_LIFECYCLE_CASE"), originalResult = qgetenv("QKM_LIFECYCLE_RESULT");
+    const QByteArray originalVariant = qgetenv("QKM_CONTEXT_VARIANT");
+    qputenv("QKM_LIFECYCLE_CASE", "settings_save_apply");
+    qputenv("QKM_LIFECYCLE_RESULT", childResult.toUtf8());
+    qputenv("QKM_CONTEXT_VARIANT", "demo_sequence");
+    DemoProcess owner;
+    const bool started = owner.start();
+    qputenv("QKM_LIFECYCLE_CASE", originalCase); qputenv("QKM_LIFECYCLE_RESULT", originalResult);
+    qputenv("QKM_CONTEXT_VARIANT", originalVariant);
+    const auto write = [](const QString &filePath, const QJsonObject &object) {
+        QSaveFile file(filePath);
+        const QByteArray bytes = QJsonDocument(object).toJson();
+        return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
+    };
+    const auto nativeError = [&]() { return owner.nativeError() ? QJsonValue(int(owner.nativeError().value())) : QJsonValue(QJsonValue::Null); };
+    if (!started) {
+        write(path, {{QStringLiteral("passed"), false}, {QStringLiteral("failure"), owner.failure()},
+            {QStringLiteral("native_error"), nativeError()}});
+        return 2;
+    }
+    const QJsonObject target{{QStringLiteral("pid"), QString::number(owner.target().processId)},
+        {QStringLiteral("created"), QString::number(owner.target().creationTime)},
+        {QStringLiteral("session"), QString::number(owner.target().sessionId)},
+        {QStringLiteral("executable"), owner.executable()}, {QStringLiteral("desktop"), owner.desktop()},
+        {QStringLiteral("child_result"), childResult}};
+    if (!write(path + QStringLiteral(".owner"), target)) return 2;
+    const DWORD wait = WaitForSingleObject(owner.processHandle(), 180000);
+    const bool closed = owner.close();
+    QFile file(childResult);
+    const QJsonObject child = file.open(QIODevice::ReadOnly) ? QJsonDocument::fromJson(file.readAll()).object() : QJsonObject();
+    const bool passed = wait == WAIT_OBJECT_0 && closed && owner.exitCode() && owner.exitCode().value() == 0
+        && child.value(QStringLiteral("passed")).toBool() && child.value(QStringLiteral("desktop")) == owner.desktop()
+        && QCoreApplication::instance() == nullptr;
+    const QJsonObject summary{{QStringLiteral("passed"), passed}, {QStringLiteral("target"), target},
+        {QStringLiteral("owner_parent_pid"), QString::number(GetCurrentProcessId())},
+        {QStringLiteral("child_exit"), owner.exitCode() ? QJsonValue(int(owner.exitCode().value())) : QJsonValue(QJsonValue::Null)},
+        {QStringLiteral("child_exited_before_close"), wait == WAIT_OBJECT_0}, {QStringLiteral("closed"), closed},
+        {QStringLiteral("failure"), owner.failure()}, {QStringLiteral("native_error"), nativeError()},
+        {QStringLiteral("parent_application_created"), QCoreApplication::instance() != nullptr}};
+    return write(path, summary) && passed ? 0 : 2;
+}
+
 int main(int argc, char *argv[])
 {
     const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
     const QString path = qEnvironmentVariable("QKM_LIFECYCLE_RESULT");
+    if (mode == QStringLiteral("demo_process_owner")) return runDemoProcessOwnerFixture(path);
     const QStringList cases{QStringLiteral("wait_clear"), QStringLiteral("pause_clear"), QStringLiteral("queue_keyup"),
         QStringLiteral("cancel_reset"), QStringLiteral("pause_continue"), QStringLiteral("break_one"),
         QStringLiteral("break_all"), QStringLiteral("stop"), QStringLiteral("restart"), QStringLiteral("admission"),
