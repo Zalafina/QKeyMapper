@@ -11,6 +11,7 @@
 #include <QLabel>
 #include <QPalette>
 #include <QPlainTextEdit>
+#include <QRegularExpression>
 #include <QPushButton>
 #include <QScreen>
 #include <QSettings>
@@ -89,7 +90,7 @@ int main(int argc,char **argv) {
                         {"scope",QStringLiteral("Actual Popup component; simulated C API; no product startup, Hook or driver")}});
                     app.exit(0); return;
                 }
-                popup.hide(); popup.setRunning(false);
+                popup.hide(); popup.connectionChecked(); popup.setRunning(false);
                 app.removeTranslator(&translator);
                 const QString language=QString::fromLatin1(scenes[index].language);
                 check(translator.load(translations+QStringLiteral("/QKeyMapper_")+language+QStringLiteral(".qm")),"Formal QM missing");
@@ -107,8 +108,11 @@ int main(int argc,char **argv) {
                 check(QkmIbInputClient::instance().setPreferences({}),"UI preferences remained busy");
                 popup.showAt(anchor,scenes[index].scale);
                 QTest::qWait(100);
-                const auto combos=popup.findChildren<QComboBox *>();
-                const auto buttons=popup.findChildren<QPushButton *>();
+                const QList<QComboBox *> combos{popup.findChild<QComboBox *>(QStringLiteral("ibInputBackendComboBox")),
+                    popup.findChild<QComboBox *>(QStringLiteral("ibInputPolicyComboBox"))};
+                const QList<QPushButton *> buttons{popup.findChild<QPushButton *>(QStringLiteral("ibInputRefreshButton")),
+                    popup.findChild<QPushButton *>(QStringLiteral("ibInputCheckButton"))};
+                check(combos[0] && combos[1] && buttons[0] && buttons[1],"Named Popup controls missing");
                 check(combos.size()==2 && buttons.size()==2,"Unexpected Popup controls");
                 for (auto *button:buttons) check(!button->autoDefault(),"Popup button is an automatic default");
                 const int changedBefore=changed;
@@ -130,15 +134,31 @@ int main(int argc,char **argv) {
                 if (!expectedVersion.isEmpty()) check(popup.findChild<QPlainTextEdit *>()->toPlainText().contains(expectedVersion),"Installed G HUB version string was changed");
                 const auto before=QkmIbInputClient::instance().statusSnapshot();
                 popup.refresh(); buttons[0]->click();
+                auto *feedback=popup.findChild<QLabel *>(QStringLiteral("ibInputFeedbackLabel"));
+                check(feedback,"Operation feedback label missing");
+                const auto expectFeedback=[&](const char *source) {
+                    QString actual=feedback->text();
+                    actual.replace(QRegularExpression(QStringLiteral("[0-9]{2}:[0-9]{2}:[0-9]{2}")),QStringLiteral("%1"));
+                    check(actual==QCoreApplication::translate("QkmIbInputPopup",source),"Operation feedback was not localized or timed");
+                };
+                expectFeedback("Status refreshed at %1.");
+                const QString explicitFeedback=feedback->text();
+                popup.refresh();
+                check(feedback->text()==explicitFeedback,"Passive refresh replaced the manual operation result");
                 check(initCalls==0 && changed==changedBefore+2
                     && QkmIbInputClient::instance().statusSnapshot().sampledAt==before.sampledAt,"Passive refresh changed configuration or connection state");
-                popup.setRunning(true);
+                popup.setRunning(true); popup.showAt(anchor,scenes[index].scale); QTest::qWait(40);
+                check(popup.isVisible(),"Running Popup is not visible");
                 check(!combos[0]->isEnabled() && !combos[1]->isEnabled() && !buttons[1]->isEnabled(),"Running UI did not freeze preferences");
                 popup.setRunning(false);
                 buttons[1]->click();
                 check(popup.connectionPending() && !combos[0]->isEnabled(),"Connection request did not freeze preferences");
-                popup.connectionChecked();
+                expectFeedback("Checking connection...");
+                popup.connectionChecked(true);
+                expectFeedback("Connection check passed at %1. The temporary connection is closed.");
                 check(!popup.connectionPending() && combos[0]->isEnabled(),"Completed connection request stayed locked");
+                buttons[1]->click(); popup.connectionChecked(false);
+                expectFeedback("Connection check failed at %1. See the result below.");
                 combos[0]->showPopup(); QTest::qWait(40);
                 check(popup.isVisible(),"ComboBox hid the parent Popup");
                 combos[0]->hidePopup(); QTest::qWait(40);
@@ -147,7 +167,13 @@ int main(int argc,char **argv) {
                 check(!popup.isVisible(),"Escape did not close the Popup");
                 for (auto *childTimer:popup.findChildren<QTimer *>()) check(!childTimer->isActive(),"Hidden Popup retained its refresh timer");
                 popup.showAt(anchor,scenes[index].scale); QTest::qWait(80);
-                for (auto *widget:QList<QWidget *>{combos[0],combos[1],buttons[0],buttons[1],popup.findChild<QPlainTextEdit *>()}) {
+                if (index==0 || index==4) { buttons[1]->click(); popup.connectionChecked(true); }
+                else if (index==2) buttons[0]->click();
+                else if (index==3) buttons[1]->click();
+                QTest::qWait(80);
+                check(!popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("checkpoint"),Qt::CaseInsensitive)
+                    && !popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("检查点")),"Developer checkpoint text remains visible");
+                for (auto *widget:QList<QWidget *>{combos[0],combos[1],buttons[0],buttons[1],feedback,popup.findChild<QPlainTextEdit *>()}) {
                     check(widget && popup.rect().contains(QRect(widget->mapTo(&popup,QPoint()),widget->size())),"Popup control clipped by its parent");
                 }
                 const QString label=popup.findChildren<QLabel *>().front()->text();
@@ -158,9 +184,10 @@ int main(int argc,char **argv) {
                     {"label",label},{"width",popup.width()},{"height",popup.height()}});
                 awaitingCapture=true; deadline.restart(); timer.start();
             } catch (const std::exception &error) {
+                const bool popupVisible=popup.isVisible();
                 timer.stop(); popup.hide();
                 writeJson(root+QStringLiteral("/result.json"),{{"passed",false},{"scene",index},
-                    {"error",QString::fromUtf8(error.what())},{"init_calls",initCalls},{"send_calls",sendCalls},{"desktop",name}});
+                    {"error",QString::fromUtf8(error.what())},{"popup_visible",popupVisible},{"pending",popup.connectionPending()},{"init_calls",initCalls},{"send_calls",sendCalls},{"desktop",name}});
                 std::cerr<<error.what()<<'\n'; app.exit(2);
             }
         });

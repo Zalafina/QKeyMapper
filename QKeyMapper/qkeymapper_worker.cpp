@@ -5,6 +5,7 @@
 #include "interception_worker.h"
 #include "qkeymapper_worker.h"
 #include "qkm_ibinput_client.h"
+#include "qkm_ibinput_validation.h"
 #include "qkeymapper_qt_compat.h"
 #include <QJoysticks/SDL_Joysticks.h>
 
@@ -23,35 +24,24 @@ QString ibRowLocation(int row) {
     return QCoreApplication::translate("QkmIbInputClient","Row %1").arg(row+1);
 }
 QString pureIbKey(QString key) { key.remove(QRegularExpression(QStringLiteral("@[0-9]+$"))); return key; }
-int ibMoveGroup(const MAP_KEYDATA &row) {
-    for (const QString &key:row.Pure_MappingKeys) if (key.startsWith(QStringLiteral("Key2Mouse-"))) return 0;
-    if (row.Original_Key.startsWith(QStringLiteral("Joy-LS2Mouse")) || row.Original_Key.startsWith(QStringLiteral("Joy-RS2Mouse"))) return 1;
-    if (row.Original_Key.contains(QLatin1String(JOY_GYRO2MOUSE_STR))) return 2;
-    if (row.Original_Key.contains(QLatin1String(JOY_TOUCHPAD2MOUSE_STR))) return 3;
-    return -1;
-}
 QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &rows) {
     QkmIbInputClient::Requirements required;
-    QHash<int,QSet<int>> methods;
-    QHash<int,QStringList> locations;
+    QStringList locations;
     QSet<QString> originalKeys;
     QStringList hazards;
     bool needed=false;
     for (int i=0;i<rows.size();++i) {
+        locations.append(ibRowLocation(i));
         const auto &row=rows.at(i); if (row.Disabled) continue;
         needed=needed || row.SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT;
         for (const QString &key:row.Pure_OriginalKeys) originalKeys.insert(pureIbKey(key));
-        const int group=ibMoveGroup(row);
-        if (group>=0) { methods[group].insert(row.SendMappingKeyMethod); locations[group].append(ibRowLocation(i)); }
         const QString all=row.Original_Key+QLatin1Char(' ')+row.Mapping_Keys.join(QLatin1Char(' '));
         if ((row.Original_Key.startsWith(QStringLiteral("Mouse")) && row.Original_Key.contains(QStringLiteral("2vJoy")))
             || all.contains(QStringLiteral("Mouse2vJoy")) || all.contains(QStringLiteral("Block-Keyboard"))
             || all.contains(QStringLiteral("Block-Mouse"))) hazards.append(ibRowLocation(i));
     }
     if (!needed) return required;
-    for (auto it=methods.cbegin();it!=methods.cend();++it)
-        if (it.value().contains(SENDMAPPINGKEY_METHOD_IBINPUT) && it.value().size()>1)
-            required.rejection=QCoreApplication::translate("QkmIbInputClient","IbInput is mixed with another send method in one mouse movement group: %1").arg(locations.value(it.key()).join(QStringLiteral(", ")));
+    required.rejection=QkmIbInputValidation::mixedMovementError(rows,locations);
     if (!hazards.isEmpty()) required.rejection=QCoreApplication::translate("QkmIbInputClient","This IbInput feedback/blocking combination still awaits validation: %1").arg(hazards.join(QStringLiteral(", ")));
     for (int i=0;i<rows.size();++i) {
         const auto &row=rows.at(i);
@@ -63,7 +53,7 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &rows) {
             || row.Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR)
             || row.Original_Key==QLatin1String(SENDON_SWITCHTAB_STR))
             required.rejection=QCoreApplication::translate("QkmIbInputClient","Complex IbInput combinations, repetition, locking or stop/tab commands still await validation: %1").arg(location);
-        if (ibMoveGroup(row)>=0) required.capabilities|=QkmIbInputClient::RelativeMove;
+        if (QkmIbInputValidation::movementGroup(row)>=0) required.capabilities|=QkmIbInputClient::RelativeMove;
         const QStringList output=row.Pure_MappingKeys+row.Pure_MappingKeys_KeyUp;
         for (const QString &key:output) {
             if (originalKeys.contains(pureIbKey(key))) required.rejection=QCoreApplication::translate("QkmIbInputClient","IbInput output can trigger an original key; this feedback path awaits validation: %1").arg(location);

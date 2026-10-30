@@ -507,3 +507,88 @@
 | English | `Not connected` |
 | 中文 | `未连接` |
 | 日本語 | `未接続` |
+
+
+## W11-UX-01 用户验证反馈文案（已批准并实施，待最终人工验收）
+
+用户已明确批准以下U01～U10，并再次说明将人工验收最终结果。Qt5 lupdate-pro成功提取后，仅合并这些已批准项并重新生成三语QM；反向核对及正式QM的私有Popup实窗检查通过，证据见主计划12.8；不能代替用户人工确认。前述62项历史批准状态保持。文案仅改界面说明和操作反馈，不放宽能力或改变驱动初始化／关闭顺序；另获批准的保存混用校验使用既有错误词条，无新增未批准文字。`%1`为本地操作完成时间，保留Qt占位符；运行时切换语言重新翻译。U08替代检查点提示，实际能力扩大时同步修订。
+
+### U01 — QKeyMapper
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `IbInput settings` |
+| 中文 | `IbInput设置` |
+| 日本語 | `IbInput設定` |
+
+### U02 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Refresh installation, process and driver information without connecting or sending input.` |
+| 中文 | `刷新安装、进程和驱动信息，不连接后端，也不发送输入。` |
+| 日本語 | `インストール、プロセス、ドライバー情報を更新します。接続や入力送信は行いません。` |
+
+### U03 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Temporarily connect to the preferred backend, then disconnect. No test input is sent.` |
+| 中文 | `按首选后端设置短暂连接，随后断开；不发送测试输入。` |
+| 日本語 | `優先バックエンドに一時接続した後、切断します。テスト入力は送信しません。` |
+
+### U04 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Checking connection...` |
+| 中文 | `正在检查连接…` |
+| 日本語 | `接続を確認しています…` |
+
+### U05 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Status refreshed at %1.` |
+| 中文 | `%1 状态已刷新。` |
+| 日本語 | `%1 に状態を更新しました。` |
+
+### U06 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Connection check passed at %1. The temporary connection is closed.` |
+| 中文 | `%1 连接检查通过，临时连接已关闭。` |
+| 日本語 | `%1 に接続を確認できました。一時接続は切断済みです。` |
+
+### U07 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Connection check failed at %1. See the result below.` |
+| 中文 | `%1 连接检查失败，请查看下方结果。` |
+| 日本語 | `%1 の接続確認に失敗しました。下の結果を確認してください。` |
+
+### U08 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Currently supports G HUB relative mouse movement only.` |
+| 中文 | `目前仅支持 G HUB 鼠标相对移动。` |
+| 日本語 | `現在は G HUB によるマウスの相対移動のみに対応しています。` |
+
+### U09 — QKeyMapper
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Stopping...` |
+| 中文 | `正在停止…` |
+| 日本語 | `停止しています…` |
+
+### U10 — QKeyMapper
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Cleanup incomplete` |
+| 中文 | `清理未完成` |
+| 日本語 | `後処理が未完了` |

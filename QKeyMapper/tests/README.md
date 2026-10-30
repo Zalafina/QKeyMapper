@@ -4,7 +4,7 @@
 
 | 主题 | 工程与运行入口 | 用途 |
 |---|---|---|
-| [ibinput](ibinput/) | client_test.pro、ui_test.pro、product_check.pro、ghub_probe.pro | 客户端／能力替身、真实Popup组件、产品配置保存／冷读、显式授权的固定接收；manual_verification.ini无自动映射 |
+| [ibinput](ibinput/) | client_test.pro、validation_test.pro、ui_test.pro、product_check.pro、ghub_probe.pro | 客户端／能力替身、移动组纯规则、真实Popup组件、产品保存拒绝／Common生效上下文／冷读、显式授权的固定接收；manual_verification.ini无自动映射 |
 | [ui_scale](ui_scale/) | `ui_scale_test.pro`、`test_ui_scale.ps1` | 缩放断言与状态恢复 |
 | [sendinput_lifecycle](sendinput_lifecycle/) | `sendinput_lifecycle_test.pro` | 实际 SendInputTask 的等待、暂停、取消和退出 |
 | [diagnostics](diagnostics/) | `diagnostics_test.pro`、`run_checks.ps1`、`measure_overhead.ps1` | 原生诊断策略、符号、故障注入及进程开销采样 |

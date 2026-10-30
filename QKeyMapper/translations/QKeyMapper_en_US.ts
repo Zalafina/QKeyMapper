@@ -4881,12 +4881,28 @@ The &quot;Multi-Input&quot; setting tab contains options for distinguishing and 
         <location filename="../qkeymapper.ui" line="1197" />
         <location filename="../qkeymapper.cpp" line="50942" />
         <source>IbInput settings...</source>
-        <translation>IbInput settings...</translation>
+        <translation type="vanished">IbInput settings...</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="50945" />
         <source>Not connected</source>
         <translation>Not connected</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.ui" line="1197" />
+        <location filename="../qkeymapper.cpp" line="50974" />
+        <source>IbInput settings</source>
+        <translation>IbInput settings</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50981" />
+        <source>Stopping...</source>
+        <translation>Stopping...</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50980" />
+        <source>Cleanup incomplete</source>
+        <translation>Cleanup incomplete</translation>
     </message>
 </context>
 <context>
@@ -7335,7 +7351,7 @@ Right-click to cancel.</translation>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="85" />
         <source>May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup.</source>
-        <translation>May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup.</translation>
+        <translation type="vanished">May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup.</translation>
     </message>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="86" />
@@ -7416,7 +7432,42 @@ Right-click to cancel.</translation>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="109" />
         <source>This checkpoint enables G HUB relative movement only. Other outputs await validation.</source>
-        <translation>This checkpoint enables G HUB relative movement only. Other outputs await validation.</translation>
+        <translation type="vanished">This checkpoint enables G HUB relative movement only. Other outputs await validation.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>Refresh installation, process and driver information without connecting or sending input.</source>
+        <translation>Refresh installation, process and driver information without connecting or sending input.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="103" />
+        <source>Temporarily connect to the preferred backend, then disconnect. No test input is sent.</source>
+        <translation>Temporarily connect to the preferred backend, then disconnect. No test input is sent.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="121" />
+        <source>Checking connection...</source>
+        <translation>Checking connection...</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="120" />
+        <source>Status refreshed at %1.</source>
+        <translation>Status refreshed at %1.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="122" />
+        <source>Connection check passed at %1. The temporary connection is closed.</source>
+        <translation>Connection check passed at %1. The temporary connection is closed.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="123" />
+        <source>Connection check failed at %1. See the result below.</source>
+        <translation>Connection check failed at %1. See the result below.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="144" />
+        <source>Currently supports G HUB relative mouse movement only.</source>
+        <translation>Currently supports G HUB relative mouse movement only.</translation>
     </message>
 </context>
 </TS>

@@ -1,5 +1,5 @@
 SOURCES += $$PWD/qkm_ibinput_client.cpp $$PWD/qkm_ibinput_popup.cpp
-HEADERS += $$PWD/qkm_ibinput_client.h $$PWD/qkm_ibinput_popup.h
+HEADERS += $$PWD/qkm_ibinput_client.h $$PWD/qkm_ibinput_popup.h $$PWD/qkm_ibinput_validation.h
 !contains(CONFIG, ibinput_disabled) {
     DEFINES += IBINPUT_SUPPORT
     INCLUDEPATH += $$PWD/IbInputSimulator/include

@@ -4877,12 +4877,28 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <location filename="../qkeymapper.ui" line="1197" />
         <location filename="../qkeymapper.cpp" line="50942" />
         <source>IbInput settings...</source>
-        <translation>IbInput 設定...</translation>
+        <translation type="vanished">IbInput 設定...</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="50945" />
         <source>Not connected</source>
         <translation>未接続</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.ui" line="1197" />
+        <location filename="../qkeymapper.cpp" line="50974" />
+        <source>IbInput settings</source>
+        <translation>IbInput設定</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50981" />
+        <source>Stopping...</source>
+        <translation>停止しています…</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50980" />
+        <source>Cleanup incomplete</source>
+        <translation>後処理が未完了</translation>
     </message>
 </context>
 <context>
@@ -7335,7 +7351,7 @@ Right-click to cancel.</source>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="85" />
         <source>May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup.</source>
-        <translation>メーカーの仮想デバイスを有効にする場合があります。テスト入力は送信しません。マッピングの後処理完了後のみ使用できます。</translation>
+        <translation type="vanished">メーカーの仮想デバイスを有効にする場合があります。テスト入力は送信しません。マッピングの後処理完了後のみ使用できます。</translation>
     </message>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="86" />
@@ -7416,7 +7432,42 @@ Right-click to cancel.</source>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="109" />
         <source>This checkpoint enables G HUB relative movement only. Other outputs await validation.</source>
-        <translation>このチェックポイントでは G HUB の相対移動のみ有効です。他の出力は検証待ちです。</translation>
+        <translation type="vanished">このチェックポイントでは G HUB の相対移動のみ有効です。他の出力は検証待ちです。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>Refresh installation, process and driver information without connecting or sending input.</source>
+        <translation>インストール、プロセス、ドライバー情報を更新します。接続や入力送信は行いません。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="103" />
+        <source>Temporarily connect to the preferred backend, then disconnect. No test input is sent.</source>
+        <translation>優先バックエンドに一時接続した後、切断します。テスト入力は送信しません。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="121" />
+        <source>Checking connection...</source>
+        <translation>接続を確認しています…</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="120" />
+        <source>Status refreshed at %1.</source>
+        <translation>%1 に状態を更新しました。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="122" />
+        <source>Connection check passed at %1. The temporary connection is closed.</source>
+        <translation>%1 に接続を確認できました。一時接続は切断済みです。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="123" />
+        <source>Connection check failed at %1. See the result below.</source>
+        <translation>%1 の接続確認に失敗しました。下の結果を確認してください。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="144" />
+        <source>Currently supports G HUB relative mouse movement only.</source>
+        <translation>現在は G HUB によるマウスの相対移動のみに対応しています。</translation>
     </message>
 </context>
 </TS>

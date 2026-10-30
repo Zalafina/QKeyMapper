@@ -1194,13 +1194,18 @@
                 </item>
                   <item row="5" column="0">
                    <widget class="QPushButton" name="ibInputSettingsButton">
-                    <property name="text"><string>IbInput settings...</string></property>
+                    <property name="text"><string>IbInput settings</string></property>
+                    <property name="minimumSize"><size><width>141</width><height>22</height></size></property>
+                    <property name="maximumSize"><size><width>141</width><height>22</height></size></property>
                     <property name="focusPolicy"><enum>Qt::NoFocus</enum></property>
                     <property name="autoDefault"><bool>false</bool></property>
                    </widget>
                   </item>
                   <item row="5" column="1">
                    <widget class="QLabel" name="ibInputStatusLabel">
+                    <property name="frameShape"><enum>QFrame::WinPanel</enum></property>
+                    <property name="frameShadow"><enum>QFrame::Sunken</enum></property>
+                    <property name="alignment"><set>Qt::AlignCenter</set></property>
                     <property name="text"><string>IbInput: Not connected</string></property>
                     <property name="wordWrap"><bool>true</bool></property>
                    </widget>

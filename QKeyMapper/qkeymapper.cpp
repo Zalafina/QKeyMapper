@@ -1,6 +1,7 @@
 #include "qkm_message_box.h"
 #include "qkeymapper.h"
 #include "qkm_ibinput_client.h"
+#include "qkm_ibinput_validation.h"
 #include "qkm_ibinput_popup.h"
 #include "ui_qkeymapper.h"
 #include "interception_worker.h"
@@ -2002,7 +2003,8 @@ static QList<MAP_KEYDATA> buildDisplayKeyMappingDataList(int tabIndex)
     return displayDataList;
 }
 
-static void appendActiveKeyMappingRowsFromTab(int tabIndex, QSet<QString> &enabledGroups)
+static void appendActiveKeyMappingRowsFromTab(int tabIndex, QSet<QString> &enabledGroups,
+        QList<MAP_KEYDATA> &rows, QList<ActiveKeyMappingRowSourceInfo> &sources)
 {
     if (tabIndex < 0 || tabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
@@ -2025,13 +2027,33 @@ static void appendActiveKeyMappingRowsFromTab(int tabIndex, QSet<QString> &enabl
         }
 
         enabledGroups.insert(groupKey);
-        QKeyMapper::s_ActiveKeyMappingDataList.append(keymapdata);
+        rows.append(keymapdata);
 
         ActiveKeyMappingRowSourceInfo sourceInfo;
         sourceInfo.SourceTabIndex = tabIndex;
         sourceInfo.SourceRow = rowindex;
-        QKeyMapper::s_ActiveKeyMappingRowSourceInfoList.append(sourceInfo);
+        sources.append(sourceInfo);
     }
+}
+
+static QString ibInputSaveConflict()
+{
+    for (int tab=0;tab<QKeyMapper::s_KeyMappingTabInfoList.size();++tab) {
+        if (QKeyMapper::isCommonMappingTab(QKeyMapper::s_KeyMappingTabInfoList.at(tab))) continue;
+        QList<MAP_KEYDATA> rows;
+        QList<ActiveKeyMappingRowSourceInfo> sources;
+        QSet<QString> enabledGroups;
+        if (shouldAppendCommonMappingRows(tab))
+            appendActiveKeyMappingRowsFromTab(QKeyMapper::findCommonMappingTabIndex(),enabledGroups,rows,sources);
+        appendActiveKeyMappingRowsFromTab(tab,enabledGroups,rows,sources);
+        QStringList locations;
+        for (const auto &source:sources)
+            locations.append(QCoreApplication::translate("QkmIbInputClient","Table %1, row %2")
+                .arg(source.SourceTabIndex+1).arg(source.SourceRow+1));
+        const QString error=QkmIbInputValidation::mixedMovementError(rows,locations);
+        if (!error.isEmpty()) return error;
+    }
+    return {};
 }
 
 static const QList<ActiveKeyMappingRowSourceInfo> *getRuntimeActiveKeyMappingSourceInfoList()
@@ -3231,6 +3253,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->ViGEmBusStatusLabel->setContentsMargins(6, 0, 6, 0);
     ui->multiInputStatusLabel->setContentsMargins(6, 0, 6, 0);
     ui->FakerInputStatusLabel->setContentsMargins(6, 0, 6, 0);
+    ui->ibInputStatusLabel->setContentsMargins(6, 0, 6, 0);
 
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
@@ -10915,11 +10938,11 @@ void QKeyMapper::buildActiveKeyMappingDataList()
         if (commonTabIndex >= 0
             && commonTabIndex < s_KeyMappingTabInfoList.size()
             && commonTabIndex != s_KeyMappingTabWidgetCurrentIndex) {
-            appendActiveKeyMappingRowsFromTab(commonTabIndex, enabledGroups);
+            appendActiveKeyMappingRowsFromTab(commonTabIndex, enabledGroups, s_ActiveKeyMappingDataList, s_ActiveKeyMappingRowSourceInfoList);
         }
     }
 
-    appendActiveKeyMappingRowsFromTab(s_KeyMappingTabWidgetCurrentIndex, enabledGroups);
+    appendActiveKeyMappingRowsFromTab(s_KeyMappingTabWidgetCurrentIndex, enabledGroups, s_ActiveKeyMappingDataList, s_ActiveKeyMappingRowSourceInfoList);
 
     // Point KeyMappingDataList to the active list during mapping
     KeyMappingDataList = &s_ActiveKeyMappingDataList;
@@ -16693,6 +16716,11 @@ void QKeyMapper::initMappingStartActionMenu(void)
 
 bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode startmode, bool preferPhysicalCtrlState)
 {
+    if (m_KeyMapStatus==KEYMAP_IDLE && startmode!=MAPPINGSTART_LOADSETTING
+        && executionMappingStartActionMode(preferPhysicalCtrlState)==MAPPINGSTART_ACTION_SAVEANDSTART) {
+        const QString conflict=ibInputSaveConflict();
+        if (!conflict.isEmpty()) { showFailurePopup(conflict); return false; }
+    }
     if (KEYMAP_IDLE == m_KeyMapStatus
         && MAPPINGSTART_LOADSETTING != startmode
         && isCommonMappingTabIndex(s_KeyMappingTabWidgetCurrentIndex)) {
@@ -21113,6 +21141,8 @@ bool QKeyMapper::saveKeyMapSetting(bool showSuccessPopup)
     CategoryFilterStateGuard filterGuard(this);
 
     syncRuntimeKeyMappingStatesToCurrentTab();
+    const QString conflict=ibInputSaveConflict();
+    if (!conflict.isEmpty()) { showFailurePopup(conflict); return false; }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
@@ -32795,6 +32825,7 @@ void QKeyMapper::scaleMainWindowWidgetMetrics(double r)
     scaleFixed(ui->mappingAdvancedSettingButton, 141, 22, 75, 18);
     scaleFixed(ui->mappingMacroListButton, 141, 22, 75, 18);
     scaleFixed(ui->vButtonPanelSetupButton, 141, 22, 75, 18);
+    scaleFixed(ui->ibInputSettingsButton, 141, 22, 75, 18);
     scaleFixed(ui->installFakerInputButton, 191, 21, 95, 18);
 
     // Left panel: Tab 3 (Virtual Gamepad)
@@ -50927,8 +50958,9 @@ void QKeyMapper::showIbInputSettings(QWidget *anchor)
             QPointer<QkmIbInputPopup> popup(m_IbInputPopup);
             if (m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending) { popup->connectionChecked(); return; }
             QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),[popup] {
-                QkmIbInputClient::instance().checkConnection();
-                QMetaObject::invokeMethod(qApp,[popup] { if (popup) popup->connectionChecked(); },Qt::QueuedConnection);
+                const bool success=QkmIbInputClient::instance().checkConnection();
+                emit QKeyMapper_Worker::getInstance()->ibInputStatusChanged_Signal();
+                QMetaObject::invokeMethod(qApp,[popup,success] { if (popup) popup->connectionChecked(success); },Qt::QueuedConnection);
             },Qt::QueuedConnection);
         });
     }
@@ -50939,10 +50971,22 @@ void QKeyMapper::showIbInputSettings(QWidget *anchor)
 void QKeyMapper::refreshIbInputUi()
 {
     if (!ui) return;
-    ui->ibInputSettingsButton->setText(tr("IbInput settings..."));
-    ui->ibInputSettingsButton->setFont(ui->installFakerInputButton->font());
+    ui->ibInputSettingsButton->setText(tr("IbInput settings"));
+    ui->ibInputSettingsButton->setFont(ui->mappingAdvancedSettingButton->font());
+    ui->ibInputStatusLabel->setFont(ui->FakerInputStatusLabel->font());
     const auto status=QkmIbInputClient::instance().statusSnapshot();
-    ui->ibInputStatusLabel->setText(QStringLiteral("IbInput: %1").arg(status.fallback ? QStringLiteral("SendInput") : (status.connected ? status.backend : tr("Not connected"))));
+    QString text=tr("Not connected");
+    QString style;
+    if (status.releaseIncomplete) { text=tr("Cleanup incomplete"); style=QStringLiteral("color:red;"); }
+    else if (m_IbInputStopPending || status.stopping) { text=tr("Stopping..."); style=QStringLiteral("color:#c08000;"); }
+    else if (status.connected) {
+        text=status.backend==QStringLiteral("logitech_ghub") ? QStringLiteral("Logitech G HUB") : status.backend;
+        style=QStringLiteral("color:green;");
+    } else if (status.fallback && m_KeyMapStatus!=KEYMAP_IDLE) {
+        text=QStringLiteral("SendInput"); style=QStringLiteral("color:#c08000;");
+    }
+    ui->ibInputStatusLabel->setText(QStringLiteral("IbInput: %1").arg(text));
+    ui->ibInputStatusLabel->setStyleSheet(style);
     ui->ibInputStatusLabel->setToolTip(status.detail);
     if (m_IbInputPopup) { m_IbInputPopup->setRunning(m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending); m_IbInputPopup->retranslate(); }
 }

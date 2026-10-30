@@ -1,3 +1,9 @@
+#include <QCheckBox>
+#include <QLabel>
+#include <QMenu>
+#include <QSignalBlocker>
+#include <QToolButton>
+#include "../../qmappingadvanceddialog.h"
 #include <QComboBox>
 #include <QDir>
 #include <QFile>
@@ -32,6 +38,96 @@ void record(const QJsonObject &value) {
     check(file.open(QIODevice::WriteOnly|QIODevice::Truncate),"Cannot write product result");
     check(file.write(QJsonDocument(value).toJson())>0,"Cannot persist product result");
 }
+
+int rejectedSaves=0;
+QByteArray savedIni() {
+    QFile file(QCoreApplication::applicationDirPath()+QStringLiteral("/keymapdata.ini"));
+    check(file.open(QIODevice::ReadOnly),"Cannot read isolated product INI");
+    return file.readAll();
+}
+void saveGuardCases(QKeyMapper *window) {
+    const QString normalName=QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).TabName;
+    const auto normal=[&]() -> KeyMappingTab_Info & {
+        for (auto &tab:QKeyMapper::s_KeyMappingTabInfoList)
+            if (!QKeyMapper::isCommonMappingTab(tab) && tab.TabName==normalName) return tab;
+        throw std::runtime_error("Original normal table is missing");
+    };
+    const QList<MAP_KEYDATA> originalRows=*normal().KeyMappingData;
+    const bool originalInclude=normal().IncludeCommonMappingTable;
+    check(window->saveKeyMapSetting(false),"Clean baseline save failed");
+    auto *start=window->findChild<QToolButton *>(QStringLiteral("keymapButton"));
+    check(start && start->menu() && start->menu()->actions().size()==2,"Mapping start actions are unavailable");
+    const auto actions=start->menu()->actions();
+    QAction *originalAction=actions.at(0)->isChecked() ? actions.at(0) : actions.at(1);
+    actions.at(1)->trigger();
+    const QStringList arrows{QStringLiteral("Up"),QStringLiteral("Down"),QStringLiteral("Left"),QStringLiteral("Right")};
+    for (int index=0;index<4;++index) {
+        auto row=originalRows.at(index); row.Original_Key=arrows.at(index); row.Pure_OriginalKeys=QStringList{arrows.at(index)};
+        row.SendMappingKeyMethod=QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT;
+        normal().KeyMappingData->append(row);
+    }
+    QByteArray before=savedIni();
+    const quint64 generation=QkmIbInputClient::instance().requestedGeneration();
+    start->click();
+    check(savedIni()==before && QKeyMapper::getInstance()->m_KeyMapStatus==QKeyMapper::KEYMAP_IDLE
+        && QkmIbInputClient::instance().requestedGeneration()==generation,"Save-and-start wrote or requested a run for a conflict");
+    ++rejectedSaves;
+    const auto reject=[&]() {
+        const QByteArray bytes=savedIni();
+        auto *mappingPointer=QKeyMapper::KeyMappingDataList;
+        check(!window->saveKeyMapSetting(false),"Conflicting configuration was saved");
+        check(savedIni()==bytes,"Rejected save changed INI bytes");
+        check(QKeyMapper::KeyMappingDataList==mappingPointer && !QkmIbInputClient::instance().busy()
+            && QkmIbInputClient::instance().requestedGeneration()==generation,"Save validation changed runtime state");
+        ++rejectedSaves;
+    };
+    reject();
+    *normal().KeyMappingData=originalRows;
+    originalAction->trigger();
+    check(window->addTabToKeyMappingTabWidget(QStringLiteral("IbSaveOther"),false),"Could not create inactive validation table");
+    int otherIndex=-1;
+    for (int index=0;index<QKeyMapper::s_KeyMappingTabInfoList.size();++index)
+        if (QKeyMapper::s_KeyMappingTabInfoList.at(index).TabName==QStringLiteral("IbSaveOther")) otherIndex=index;
+    check(otherIndex>=0,"Inactive validation table is missing");
+    auto *other=QKeyMapper::s_KeyMappingTabInfoList[otherIndex].KeyMappingData;
+    *other=originalRows; other->last().SendMappingKeyMethod=QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT;
+    reject(); other->clear();
+    auto *advanced=window->findChild<QMappingAdvancedDialog *>();
+    check(advanced,"Mapping advanced dialog is missing");
+    auto *commonBox=advanced->findChild<QCheckBox *>(QStringLiteral("enableCommonMappingTableCheckBox"));
+    check(commonBox,"Common feature control is missing");
+    const bool originalCommon=commonBox->isChecked();
+    const QSignalBlocker commonSignals(commonBox);
+    commonBox->setChecked(true);
+    window->ensureCommonMappingTabExists();
+    const auto common=[]() -> KeyMappingTab_Info & {
+        const int index=QKeyMapper::findCommonMappingTabIndex();
+        check(index>=0,"Common source table is missing");
+        return QKeyMapper::s_KeyMappingTabInfoList[index];
+    };
+    auto shared=originalRows.front(); shared.Original_Key=QStringLiteral("F12");
+    shared.Pure_OriginalKeys=QStringList{QStringLiteral("F12")};
+    shared.SendMappingKeyMethod=QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT;
+    *common().KeyMappingData=QList<MAP_KEYDATA>{shared};
+    normal().IncludeCommonMappingTable=true;
+    reject();
+    common().KeyMappingData->first().Disabled=true;
+    check(window->saveKeyMapSetting(false),"Disabled Common row blocked saving");
+    common().KeyMappingData->first().Disabled=false;
+    normal().IncludeCommonMappingTable=false;
+    check(window->saveKeyMapSetting(false),"Non-appended Common row blocked an independent table");
+    *common().KeyMappingData=QList<MAP_KEYDATA>{originalRows.front()};
+    auto shadowed=originalRows.front(); shadowed.SendMappingKeyMethod=QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT;
+    *normal().KeyMappingData=QList<MAP_KEYDATA>{shadowed};
+    normal().IncludeCommonMappingTable=true;
+    check(window->saveKeyMapSetting(false),"Common-priority shadowed row was incorrectly counted");
+    *normal().KeyMappingData=originalRows;
+    normal().IncludeCommonMappingTable=originalInclude;
+    common().KeyMappingData->clear();
+    commonBox->setChecked(originalCommon);
+    check(window->saveKeyMapSetting(false),"Restored valid configuration was not saved");
+}
+
 void verifyProduct() {
     try {
         if (++polls>180) throw std::runtime_error("Product check exceeded 90 seconds");
@@ -49,7 +145,7 @@ void verifyProduct() {
             QFile observation(output+QStringLiteral("/inspection-complete"));
             check(observation.open(QIODevice::ReadOnly),"Cannot read external capture status");
             const auto capture=QJsonDocument::fromJson(observation.readAll()).object();
-            record({{"passed",true},{"case",selectedCase},{"desktop",currentDesktop()},
+            record({{"passed",true},{"case",selectedCase},{"desktop",currentDesktop()},{"rejected_saves_unchanged",rejectedSaves},
                 {"external_capture",capture.value(QStringLiteral("captured")).toBool()},
                 {"capture_detail",capture.value(QStringLiteral("detail")).toString()},
                 {"scope",QStringLiteral("Real product entry, four method-3 rows, global preferences, save/cold-read and Popup binding; mapping was not started")}});
@@ -67,8 +163,16 @@ void verifyProduct() {
                 && row.SendMappingKeyMethod==QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT,
                 "Method-3 mapping changed during product load");
         }
+        if (selectedCase==QStringLiteral("save")) saveGuardCases(window);
         auto *button=window->findChild<QPushButton *>(QStringLiteral("ibInputSettingsButton"));
         check(button && button->isEnabled(),"Product IbInput settings entry is missing or locked");
+        auto *aligned=window->findChild<QPushButton *>(QStringLiteral("mappingAdvancedSettingButton"));
+        auto *status=window->findChild<QLabel *>(QStringLiteral("ibInputStatusLabel"));
+        auto *faker=window->findChild<QLabel *>(QStringLiteral("FakerInputStatusLabel"));
+        check(aligned && button->width()==aligned->width(),"IbInput button is not aligned with the existing column");
+        check(button->text()==QCoreApplication::translate("QKeyMapper","IbInput settings"),"Product caption was not translated");
+        check(status && faker && status->frameStyle()==faker->frameStyle()
+            && status->alignment()==faker->alignment() && status->contentsMargins()==faker->contentsMargins(),"Status label did not reuse FakerInput presentation");
         button->click();
         auto *popup=window->findChild<QkmIbInputPopup *>();
         check(popup && popup->isVisible(),"Product button did not open its Popup");
@@ -87,7 +191,7 @@ void verifyProduct() {
         settings.sync();
         check(settings.status()==QSettings::NoError,"Saved product INI could not be read");
         check(settings.value(QStringLiteral("QKeyMapperGlobalSetting/KeyMapData_SendMappingKeyMethod")).toString()
-            ==QStringLiteral("3#3#3#3"),"Method 3 did not survive product save/cold-read");
+            .split(QLatin1Char('|')).value(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex)==QStringLiteral("3#3#3#3"),"Method 3 did not survive product save/cold-read");
         const auto preferences=QkmIbInputClient::readPreferences(settings);
         check(preferences.backend==QStringLiteral("logitech_ghub") && preferences.unavailablePolicy==QStringLiteral("block"),
             "Global preferences did not survive product save/cold-read");

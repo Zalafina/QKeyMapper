@@ -4877,12 +4877,28 @@ Do you confirm to continue installing Interception driver?</source>
         <location filename="../qkeymapper.ui" line="1197" />
         <location filename="../qkeymapper.cpp" line="50942" />
         <source>IbInput settings...</source>
-        <translation>IbInput 设置...</translation>
+        <translation type="vanished">IbInput 设置...</translation>
     </message>
     <message>
         <location filename="../qkeymapper.cpp" line="50945" />
         <source>Not connected</source>
         <translation>未连接</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.ui" line="1197" />
+        <location filename="../qkeymapper.cpp" line="50974" />
+        <source>IbInput settings</source>
+        <translation>IbInput设置</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50981" />
+        <source>Stopping...</source>
+        <translation>正在停止…</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50980" />
+        <source>Cleanup incomplete</source>
+        <translation>清理未完成</translation>
     </message>
 </context>
 <context>
@@ -7335,7 +7351,7 @@ Right-click to cancel.</source>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="85" />
         <source>May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup.</source>
-        <translation>可能激活厂商虚拟设备，不发送测试输入。仅在映射清理完成后可用。</translation>
+        <translation type="vanished">可能激活厂商虚拟设备，不发送测试输入。仅在映射清理完成后可用。</translation>
     </message>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="86" />
@@ -7416,7 +7432,42 @@ Right-click to cancel.</source>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="109" />
         <source>This checkpoint enables G HUB relative movement only. Other outputs await validation.</source>
-        <translation>此检查点仅开放 G HUB 相对移动，其他输出尚待验证。</translation>
+        <translation type="vanished">此检查点仅开放 G HUB 相对移动，其他输出尚待验证。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>Refresh installation, process and driver information without connecting or sending input.</source>
+        <translation>刷新安装、进程和驱动信息，不连接后端，也不发送输入。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="103" />
+        <source>Temporarily connect to the preferred backend, then disconnect. No test input is sent.</source>
+        <translation>按首选后端设置短暂连接，随后断开；不发送测试输入。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="121" />
+        <source>Checking connection...</source>
+        <translation>正在检查连接…</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="120" />
+        <source>Status refreshed at %1.</source>
+        <translation>%1 状态已刷新。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="122" />
+        <source>Connection check passed at %1. The temporary connection is closed.</source>
+        <translation>%1 连接检查通过，临时连接已关闭。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="123" />
+        <source>Connection check failed at %1. See the result below.</source>
+        <translation>%1 连接检查失败，请查看下方结果。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="144" />
+        <source>Currently supports G HUB relative mouse movement only.</source>
+        <translation>目前仅支持 G HUB 鼠标相对移动。</translation>
     </message>
 </context>
 </TS>
