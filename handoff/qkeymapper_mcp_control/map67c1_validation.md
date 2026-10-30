@@ -1076,4 +1076,8 @@ Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycl
 
 首扩展测试对未连接演示后的状态误期望disconnected而失败；Bridge既有_submit将not_connected记录为failed，原错误保持。仅修正测试断言，未改桥接行为或包，以新offline-sdk-fixed目录正式SDK通过，首offline-sdk原件及失败日志保留。包执行前后全部清单载荷和文件数量不变，未生成pyc污染。旧123打包器七项边界测试沿未变工具原范围复用，不重复当成本片新增通过。
 
-本机原件根含构建／签名及载荷清单、ZIP及独立解压、源码一致性／包身份、首测试失败和修正后imports／SDK调用及summary，不随Git。当前只完成普通组件选验；新包与真实产品version2记录及两图接续待共享缓存协调，不能复用123旧版本产品结果充当当前验收。本机保有全局Python且未断网，不声称干净系统／离线网络实测；完整Release／固定预热、Win10／高DPI及QQ仍待。129产品源码／定向维护未提交，保留现场；130只形成独立桥接组件检查切点，不推送。
+本机原件根含构建／签名及载荷清单、ZIP及独立解压、源码一致性／包身份、首测试失败和修正后imports／SDK调用及summary，不随Git。上述为普通组件范围；真实接续见下，不用123旧版本结果充当当前验收。本机保有全局Python且未断网，不声称干净系统／离线网络实测；完整Release／固定预热、Win10／高DPI及QQ仍待。129已提交5146bf17，130形成独立桥接组件及定向接续检查切点，不推送。
+
+同一ZIP独立解压包随后与129已编译Qt6原manifest产品接续：沿127固定demo_process_owner夹具核实High父子／创建时间／同登录／实际不同私有桌面，SDK本身Medium且实际客户端为包内runtime（精确SDK派生PID，不是开发venv重定向）。仅系统PATH／污染Python变量／中文空格无关cwd保持。消费并锁定产品自身version2记录，正式qkm_demo_mapping执行A→B高级页与C→D单条两场景，15 Native／27 SDK＋8结构拒绝、两代场景及操作归属／空源回收／dirty保留通过。
+
+两张正式MCP PNG已由Agent查看：高级页中文清晰、无黑图，A→B由同次业务／实例元数据核验；单条窗口实际C→D，非旧场景。未额外重跑未变捕获代码的旧GUI像素对照。产品INI逐字不变、FilterKeys未变、work／producer0，父子原生0退出、创建记录删除、本轮五项清理零。运行后全部1614载荷和文件数不变；SDK／原生／图片／agent-image-review原件在同根after/qt6-demo-owned。固定维护拥有者和配对夹具不是普通用户部署流程；Qt5本包产品、Default／人工配对／无缓存UAC、完整Release、无全局Python干净系统／断网及QQ仍未验。

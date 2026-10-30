@@ -65,7 +65,23 @@ print(json.dumps(dict(python=sys.version, prefix=str(root), paths=sys.path, depe
                 break
             assert time.monotonic() < until, state
             await asyncio.sleep(.01)
-    result = dict(passed=True, tools=len(tools), runtime=str(executable), no_product_start=True, replies=replies)
+    configured_tools = {}
+    for serial in (False, True):
+        arguments = [*parameters.args, "--demo-record", str(output / "absent/demo.json")]
+        if serial:
+            arguments.append("--enable-demo-mapping")
+        configured = StdioServerParameters(command=str(executable), args=arguments, cwd=str(poison), env=environment)
+        async with Client(configured, read_timeout_seconds=15, cache=None) as client:
+            names = {item.name for item in (await client.list_tools()).tools}
+            expected = TOOLS | {"qkm_get_demo_state"} | ({"qkm_demo_mapping"} if serial else set())
+            assert names == expected
+            await call(client, "qkm_get_demo_state", error="not_connected")
+            if serial:
+                await call(client, "qkm_demo_mapping", dict(original_key="A", mapping_key="B"), error="not_connected")
+            state = await call(client, "qkm_get_connection_state")
+            assert state["status"] == "failed" and state["error"] == "not_connected" and not state["busy"], state
+            configured_tools["serial_demo" if serial else "record_only"] = len(names)
+    result = dict(passed=True, tools=len(tools), configured_tools=configured_tools, runtime=str(executable), no_product_start=True, replies=replies)
     (output / "sdk-pass.json").write_text(json.dumps(result, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
     return result
 

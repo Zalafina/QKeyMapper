@@ -142,7 +142,7 @@ def main() -> None:
     if demo_record is not None:
         @tool(read)
         async def qkm_get_demo_state() -> ToolResult:
-            """只读核对宿主显式配置的version2专用演示创建记录、实际认证实例／私有桌面与只配置策略、独立窗口权限及固定配置的空源基线。ready只代表本次观察，不是后续写入许可、场景租约或重置证明；失败保留现场，不创建／切换目标、不显示／激活窗口、不配对扩权／提权或修改配置。记录由受信启动链制备，不能用客户端自报身份替代进程／认证／权限核验。宿主另行启用串行演示时，demo_session提供最近阶段／操作ID和内存回收记录的观察；receipt_available不授予下一轮写入许可，实际调用仍会完整核验。正式预热生成及免Python交付仍待。"""
+            """只读核对宿主显式配置的version2专用演示创建记录、实际认证实例／私有桌面与只配置策略、独立窗口权限及固定配置的空源基线。ready只代表本次观察，不是后续写入许可、场景租约或重置证明；失败保留现场，不创建／切换目标、不显示／激活窗口、不配对扩权／提权或修改配置。记录由受信启动链制备，不能用客户端自报身份替代进程／认证／权限核验。宿主另行启用串行演示时，demo_session提供最近阶段／操作ID和内存回收记录的观察；receipt_available不授予下一轮写入许可，实际调用仍会完整核验。产品自身记录已实现，完整Release预热／交付仍待。"""
             return tool_result(await bridge.demo_state())
 
     if args.enable_demo_mapping:
