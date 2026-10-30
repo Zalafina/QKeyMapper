@@ -118,3 +118,15 @@ python scripts/build_ibinput_dependency.py --arch x86 --review-patch --tests --d
 | lib/x86/IbInputSimulator.lib | 4656 | 197FC68A76E35E36A9FB3C8728E1DAB9DFBF05BCF3943DFA63200DFB93FAA52D |
 
 恢复命令仍为前述两架构--review-patch --tests --deploy；脚本恢复四个受补丁影响文件后按序应用0001～0004。原0003中间制品仅历史，不替代本表当前配套版本。日志为out/ibinput/logs/w11-dependency-*-0004-driver-free.log、logs/x64及x86/review-*、w11-cmake-version.log。Win11真实连接／关闭／一次复连和最小接收通过；Win10本版本待复验，产品能力限制及环境矩阵以主计划为准。
+
+
+## 2026-10-30 运行包新增文件核对与发布要求
+
+对比本IbInput仓库out/ibinput/manual-w11-20261030与MCP仓库plan/bin_release/QKeyMapper_Qt6_x64的实际文件清单后，IbInput专属新增运行文件确认为：
+
+- 根目录IbInputSimulator.dll：来自QKeyMapper/IbInputSimulator/lib/x64，与当前配套DLL一致；本次核对PE机器类型为x64。
+- licenses/IbInputSimulator/下IbInputSimulator-LICENSE.txt、IbWinCppLib-LICENSE.txt、Detours-LICENSE.txt及rapidjson-LICENSE.txt：四份内容均与QKeyMapper/IbInputSimulator/licenses逐字节一致。
+
+运行包不需要开发用.lib、头文件或PDB。正式Qt6 x64／Qt5 x64使用x64配套DLL，Qt5 x86使用x86配套DLL；许可完整保留。G HUB／Synapse本体不随本运行包分发。
+
+测试运行目录含额外验证说明、MCP提示词、INI及Qt部署选项造成的插件／运行库差异，同时未包含原发布目录的全部驱动、PDF、模板与辅助工具；不将测试目录直接作为完整正式发布包，licenses/SDL-LICENSE.txt等也不归为本功能新增组件。完整正式清单、发布脚本接入及缺文件／架构／ZIP检查仍待实施，唯一进度见主计划7.1.1和IB-06。本轮仅文件核对，不是干净系统／三组合发布包运行验收。
