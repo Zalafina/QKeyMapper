@@ -42,6 +42,7 @@
 #include <QVector>
 #include <QtTest/QTest>
 #include <thread>
+#include <cstring>
 
 using namespace QkmAutomation;
 
@@ -1514,14 +1515,40 @@ void McpControlTest::demoProcessLifecycle()
     DemoProcess owner;
     QVERIFY(owner.close());
     if (!configurationOnlyDemo()) {
+        DemoSetupEndpoint endpoint([] { return false; }, qApp);
+        QVERIFY(!endpoint.ready());
         QVERIFY(!owner.start());
         QCOMPARE(owner.failure(), QStringLiteral("configuration_only_required"));
         QVERIFY(!owner.nativeError());
         return;
     }
     const QString runtime = qEnvironmentVariable("QKM_TEST_OWNER_RUNTIME");
+    {
+        HANDLE request = CreateEventW(nullptr, FALSE, TRUE, nullptr), ack = CreateEventW(nullptr, FALSE, TRUE, nullptr);
+        QVERIFY(request && ack);
+        const auto release = qScopeGuard([request, ack] { CloseHandle(request); CloseHandle(ack); });
+        const auto own = queryProcessIdentity(GetCurrentProcessId());
+        QVERIFY(own.ok());
+        qputenv(DemoSetupRequestEnv, QByteArray::number(quintptr(request)));
+        qputenv(DemoSetupAckEnv, QByteArray::number(quintptr(ack)));
+        qputenv(DemoSetupParentEnv, QByteArray::number(own.identity.processId));
+        qputenv(DemoSetupCreatedEnv, QByteArray::number(own.identity.creationTime));
+        prepareInheritedDemoSetup();
+        DemoSetupEndpoint rejected([] { return false; }, qApp);
+        QVERIFY(!rejected.ready());
+        QVERIFY(WaitForSingleObject(request, 0) == WAIT_OBJECT_0 && WaitForSingleObject(ack, 0) == WAIT_OBJECT_0);
+        QVERIFY(qEnvironmentVariableIsEmpty(DemoSetupRequestEnv) && qEnvironmentVariableIsEmpty(DemoSetupAckEnv)
+            && qEnvironmentVariableIsEmpty(DemoSetupParentEnv) && qEnvironmentVariableIsEmpty(DemoSetupCreatedEnv));
+    }
     QVERIFY(QDir::fromNativeSeparators(runtime).contains(QStringLiteral("/out/")));
     QCOMPARE(QDir(runtime).absolutePath(), QCoreApplication::applicationDirPath());
+    const auto releaseFixture = [&](DemoProcess &process) {
+        if (!process.running()) return;
+        QFile release(QDir(runtime).filePath(QStringLiteral("release-child")));
+        if (release.open(QIODevice::WriteOnly)) release.close();
+        if (!process.close()) qWarning() << "Fixture cleanup failed" << process.failure();
+    };
+    const auto finishOwner = qScopeGuard([&] { releaseFixture(owner); });
     const QString iniPath = QDir(runtime).filePath(QStringLiteral("keymapdata.ini"));
     QVERIFY(!QFileInfo::exists(iniPath));
     QVERIFY(!owner.start());
@@ -1573,6 +1600,16 @@ void McpControlTest::demoProcessLifecycle()
         QCOMPARE(peer.exitCode(), 0);
     }
     QString previousDesktop;
+    const QString unrelatedName = QStringLiteral("Local\\QkmDemoUnrelated_%1").arg(QUuid::createUuid().toString(QUuid::Id128));
+    SECURITY_ATTRIBUTES inherited{sizeof(SECURITY_ATTRIBUTES), nullptr, TRUE};
+    HANDLE unrelated = CreateEventW(&inherited, FALSE, FALSE, reinterpret_cast<LPCWSTR>(unrelatedName.utf16()));
+    QVERIFY(unrelated);
+    const auto removeUnrelated = qScopeGuard([unrelated] {
+        CloseHandle(unrelated);
+        qunsetenv("QKM_TEST_UNRELATED_HANDLE"); qunsetenv("QKM_TEST_UNRELATED_EVENT");
+    });
+    qputenv("QKM_TEST_UNRELATED_HANDLE", QByteArray::number(quintptr(unrelated)));
+    qputenv("QKM_TEST_UNRELATED_EVENT", unrelatedName.toUtf8());
     for (int round = 0; round != 2; ++round) {
         qputenv("QKM_TEST_OWNER_IGNORE_CLOSE", round ? "1" : "0");
         const auto restore = qScopeGuard([] { qunsetenv("QKM_TEST_OWNER_IGNORE_CLOSE"); });
@@ -1594,9 +1631,23 @@ void McpControlTest::demoProcessLifecycle()
         QFile file(report);
         QVERIFY(file.open(QIODevice::ReadOnly));
         const auto actual = QJsonDocument::fromJson(file.readAll()).object();
+        file.close();
         QCOMPARE(actual.value(QStringLiteral("desktop")).toString(), desktop);
         QCOMPARE(actual.value(QStringLiteral("created")).toString(), QString::number(target.creationTime));
         QVERIFY(actual.value(QStringLiteral("configuration_only")).toBool());
+        QVERIFY(actual.value(QStringLiteral("setup_ready")).toBool());
+        QVERIFY(actual.value(QStringLiteral("setup_environment_cleared")).toBool());
+        QVERIFY(!actual.value(QStringLiteral("unrelated_inherited")).toBool());
+        QVERIFY2(actual.value(QStringLiteral("unrelated_probe_valid")).toBool(), qPrintable(
+            QString::fromUtf8(QJsonDocument(actual.value(QStringLiteral("unrelated_probe")).toObject()).toJson(QJsonDocument::Compact))));
+        for (int shown = 1; shown != 3; ++shown) {
+            const auto result = owner.requestManagement();
+            QVERIFY2(result.ok(), qPrintable(result.failure));
+            QVERIFY(!result.nativeError && owner.running() && sameProcess(target, owner.target()));
+            QFile changed(report);
+            QVERIFY(changed.open(QIODevice::ReadOnly));
+            QCOMPARE(QJsonDocument::fromJson(changed.readAll()).object().value(QStringLiteral("management_requests")).toInt(), shown);
+        }
         if (round) {
             QVERIFY(!owner.close());
             QCOMPARE(owner.failure(), QStringLiteral("close_timeout"));
@@ -1610,14 +1661,31 @@ void McpControlTest::demoProcessLifecycle()
         QCOMPARE(owner.exitCode().value(), DWORD(0));
         previousDesktop = desktop;
     }
+    {
+        QVERIFY(QFile::remove(QDir(runtime).filePath(QStringLiteral("release-child"))));
+        qputenv("QKM_TEST_OWNER_REJECT_MANAGEMENT", "1");
+        const auto restore = qScopeGuard([] { qunsetenv("QKM_TEST_OWNER_REJECT_MANAGEMENT"); });
+        QVERIFY(owner.start());
+        const auto target = owner.target();
+        const auto request = owner.requestManagement();
+        QCOMPARE(request.failure, QStringLiteral("setup_timeout"));
+        QVERIFY(!request.nativeError && owner.running() && sameProcess(target, owner.target()));
+        QFile report(QDir(runtime).filePath(QStringLiteral("child-%1.json").arg(target.processId)));
+        QVERIFY(report.open(QIODevice::ReadOnly));
+        QCOMPARE(QJsonDocument::fromJson(report.readAll()).object().value(QStringLiteral("management_requests")).toInt(), 1);
+        report.close();
+        QVERIFY(owner.close());
+        QVERIFY(owner.exitCode() && owner.exitCode().value() == 0);
+    }
     QFile finalIni(iniPath);
     QVERIFY(finalIni.open(QIODevice::ReadOnly));
     QCOMPARE(finalIni.readAll(), prepared);
-    QVERIFY(QFile::remove(QDir(runtime).filePath(QStringLiteral("release-child"))));
+    QVERIFY(!QFileInfo::exists(QDir(runtime).filePath(QStringLiteral("release-child"))));
     for (int round = 0; round != 2; ++round) {
         qputenv("QKM_TEST_OWNER_IGNORE_CLOSE", round ? "1" : "0");
         const auto restore = qScopeGuard([] { qunsetenv("QKM_TEST_OWNER_IGNORE_CLOSE"); });
         DemoHostDialog host;
+        const auto finishHost = qScopeGuard([&] { releaseFixture(host.process()); });
         QVERIFY(host.process().running());
         const auto target = host.process().target();
         QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(QDir(runtime).filePath(
@@ -1667,6 +1735,9 @@ void McpControlTest::demoProcessLifecycle()
     QVERIFY(finalIni.seek(0));
     QCOMPARE(finalIni.readAll(), prepared);
     finalIni.close();
+    const auto unavailable = owner.requestManagement();
+    QCOMPARE(unavailable.failure, QStringLiteral("setup_unavailable"));
+    QVERIFY(!unavailable.nativeError);
     QVERIFY(writeIni(unsafe));
     {
         const auto restore = qScopeGuard([&] { writeIni(prepared); });
@@ -2148,8 +2219,42 @@ protected:
 int main(int argc, char **argv)
 {
     const bool ownerChild = argc == 2 && QString::fromLocal8Bit(argv[1]) == QStringLiteral("--demo-configuration-only");
+    bool unrelatedInherited = false, unrelatedProbeValid = true;
+    QJsonObject unrelatedProbe;
+    // Inspect the inherited slot before Qt starts allocating handles or worker threads.
+    const quintptr unrelated = ownerChild ? quintptr(qEnvironmentVariable("QKM_TEST_UNRELATED_HANDLE").toULongLong()) : 0;
+    if (unrelated) {
+        DWORD flags = 0;
+        HANDLE candidate = reinterpret_cast<HANDLE>(unrelated);
+        if (!GetHandleInformation(candidate, &flags)) {
+            const DWORD error = GetLastError();
+            unrelatedProbeValid = error == ERROR_INVALID_HANDLE;
+            unrelatedProbe = {{QStringLiteral("stage"), QStringLiteral("handle_information")}, {QStringLiteral("native_error"), int(error)}};
+        }
+        else {
+            const QString name = qEnvironmentVariable("QKM_TEST_UNRELATED_EVENT");
+            HANDLE expected = OpenEventW(SYNCHRONIZE, FALSE, reinterpret_cast<LPCWSTR>(name.utf16()));
+            const DWORD openError = expected ? ERROR_SUCCESS : GetLastError();
+            const FARPROC address = GetProcAddress(GetModuleHandleW(L"kernelbase.dll"), "CompareObjectHandles");
+            const DWORD resolveError = address ? ERROR_SUCCESS : GetLastError();
+            BOOL (WINAPI *compare)(HANDLE, HANDLE) = nullptr;
+            static_assert(sizeof(compare) == sizeof(address), "Windows function pointer size");
+            std::memcpy(&compare, &address, sizeof(compare));
+            unrelatedProbeValid = expected && compare;
+            if (unrelatedProbeValid) {
+                unrelatedInherited = compare(candidate, expected);
+                const DWORD error = unrelatedInherited ? ERROR_SUCCESS : GetLastError();
+                unrelatedProbeValid = unrelatedInherited || error == ERROR_NOT_SAME_OBJECT;
+                unrelatedProbe = {{QStringLiteral("stage"), QStringLiteral("compare")}, {QStringLiteral("native_error"), int(error)}};
+            }
+            else unrelatedProbe = {{QStringLiteral("stage"), expected ? QStringLiteral("resolve_compare") : QStringLiteral("open_event")},
+                {QStringLiteral("native_error"), int(expected ? resolveError : openError)}};
+            if (expected) CloseHandle(expected);
+        }
+    }
     if ((ownerChild || qEnvironmentVariable("QKM_TEST_CONFIGURATION_ONLY") == QStringLiteral("1"))
         && !initializeStartupPurpose(StartupPurpose::ConfigurationOnly)) return 25;
+    if (ownerChild) prepareInheritedDemoSetup();
     // Match the product's baseline DPI, style and font without loading a personal INI.
     qputenv("QT_ENABLE_HIGHDPI_SCALING", "1");
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
@@ -2168,11 +2273,29 @@ int main(int argc, char **argv)
         DWORD needed = 0;
         if (!own.ok() || !GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME,
                 desktop, sizeof(desktop), &needed)) return 34;
-        QSaveFile file(QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("child-%1.json").arg(GetCurrentProcessId())));
-        const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("desktop"), QString::fromWCharArray(desktop)},
-            {QStringLiteral("created"), QString::number(own.identity.creationTime)},
-            {QStringLiteral("configuration_only"), configurationOnlyDemo()}}).toJson();
-        if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) return 35;
+        int managementRequests = 0;
+        bool setupReady = false;
+        const auto report = [&] {
+            QSaveFile file(QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("child-%1.json").arg(GetCurrentProcessId())));
+            const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("desktop"), QString::fromWCharArray(desktop)},
+                {QStringLiteral("created"), QString::number(own.identity.creationTime)},
+                {QStringLiteral("configuration_only"), configurationOnlyDemo()}, {QStringLiteral("setup_ready"), setupReady},
+                {QStringLiteral("unrelated_inherited"), unrelatedInherited}, {QStringLiteral("management_requests"), managementRequests},
+                {QStringLiteral("unrelated_probe_valid"), unrelatedProbeValid},
+                {QStringLiteral("unrelated_probe"), unrelatedProbe},
+                {QStringLiteral("setup_environment_cleared"), qEnvironmentVariableIsEmpty(DemoSetupRequestEnv)
+                    && qEnvironmentVariableIsEmpty(DemoSetupAckEnv) && qEnvironmentVariableIsEmpty(DemoSetupParentEnv)
+                    && qEnvironmentVariableIsEmpty(DemoSetupCreatedEnv)}}).toJson();
+            return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
+        };
+        DemoSetupEndpoint setup([&] {
+            ++managementRequests;
+            if (qEnvironmentVariable("QKM_TEST_OWNER_REJECT_MANAGEMENT") == QStringLiteral("1")) { report(); return false; }
+            window.show();
+            return report();
+        }, &window);
+        setupReady = setup.ready();
+        if (!report()) return 35;
         QTimer poll;
         QObject::connect(&poll, &QTimer::timeout, &app, [&] {
             if (QFileInfo::exists(QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("release-child")))) window.close();

@@ -1052,3 +1052,28 @@ Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycl
 两场各17 Native／13真实handler／12 SDK，合计34／26／24，零preview／业务修改／MCP图。子测试完成仅发布owner-close-ready并继续事件循环，宿主观察器调用真实窗口close；close前实际子句柄仍存活，正式核心向自有子主窗发WM_CLOSE后取得退出0，宿主入口随后返回0、父实际退出0。原产品关闭／尾部仍完整执行，子FilterKeys全字段不变、workAtExit／producersAtExit0、产品记录确实删除、源INI保持，公共owned／unresolved／pending／current_action／current_job五项零。该门闩只在Native测试源码，不把自行退出当宿主主动关闭。系统API全程跟踪、带草稿／隐藏主窗／产品超时等未覆盖，超时保留仅组件实测。
 
 本机原件根含资源更新前快照／完整提取／QM往返、四构建、首截图失败／修正三图、组件／部署／登记、两场peer／只读调用／父子lineage／存活关闭及实际退出／清理、summary，不随Git。沿今日25336控制器，新增两目标登记／共五定义；无新UAC、Default／SwitchDesktop、系统输入／映射／驱动动作。127两图与普通入口等沿原版本范围复用，未重复环境恢复、Qt5新错误窗截图、普通完整Release／整包／Win10／高DPI／QQ。一次原生UAC／Default人工配对及正式配对显示入口仍待，完整P3／M3-B未完成。
+
+
+## DEMO-P3-129：父子专用管理窗通道（2026-10-30，PC-W11）
+
+基于c200badf工作区。固定宿主为同EXE子实例只继承两个匿名事件，子在Qt／诊断子进程前核实实际父PID／创建时间／登录／EXE并清除环境及继承位。只配置子实例GUI端点复用原高级／托盘管理窗入口；未启用MCP也可本地显示，但不批准配对／扩大权限，不向MCP开放参数或任意目标。
+
+- 双Qt控制／Native四构建通过；Qt6零警告，Qt5仅既有官方qtmain缺PDB例外。首signals宏冲突完整日志保留；第二次kernelbase.lib链接失败只保留当时片段，后命令未执行而完整日志被后续覆盖，不能称原日志已留。
+- 初始20组件通过；新增无确认超时后Qt6在component2／3旧数值句柄探针失败，component3明确DuplicateHandle错误50，不据此声称继承泄漏。修为Qt初始化前GetHandleInformation及实际对象比较，未知仍失败；component4双Qt各5项通过（16373／19191ms），普通模式各5项复用。覆盖父身份不符且事件不被重置、早期环境清除、无关可继承事件排除、两次确认及无确认有界超时／原关闭保留恢复。
+- component2自有40204／134378096787257100经实际EXE与创建时间核实后释放夹具，原生0；component3提前断言由新增守卫正常释放，不把警告或看不到进程当退出证明。材料／旧失败不覆盖。
+- 另一任务改动共享缓存后，首次129驱动在status阶段stale_controller，未登记／派发产品。用户明确授权本任务恢复至18:30后，新Medium2580／02785feb34af4b8799a16c47f8d7bb93／gen1空范围启用；旧他组未知1保留，不接管／重放。after/<kit>-management2才是最终两组原manifest High父子／Medium观察结果。
+- 正式main宿主无产品单例；子实际Qt鼠标事件点击原GeneralAdvanced与MCP按钮建立基线，关闭并回原页面。再两次拥有者匿名请求显示同一管理窗，各6项检查：MCP仍关闭、全源及稳定引用／dirty／加载代次／原页面／完整INI不变。父子实际0，work／producer0、FilterKeys未变，本轮owned／unresolved／pending／current_action／current_job全零。前后台PID采样非本轮进程，未据用户焦点相同假定通过。
+
+原件仅本机out/mcp_demo_setup_w11_20261030，产品身份identity-after.json与部署前构建日志关联，巨大源文件仅原入口局部提取且最终字节与预期补丁一致。H2／H4／H5真实LF获用户确认；H6–H8尚未接线。无需Default，本片无SwitchDesktop、系统输入、配对或原生无缓存UAC；不等于完整预热／其他实例／Win10／QQ通过。
+
+## PKG-130：version2契约的组件包刷新（2026-10-30，PC-W11）
+
+129真实提权验证等待共享缓存协调期间，普通权限独立刷新桥接目录包；不依赖129未提交产品改动。桥接行为沿125已验version2／只配置策略；__main__.py只修一处工具说明以准确标明产品记录已实现、完整Release预热／交付仍待，另更新维护用法及bundle_acceptance三工具开关检查。未改锁、打包器、启动机制或运行权限，不恢复环境／重建venv。
+
+复用123已存在的无pip构建环境out/mcp_bundle_w11_20261029/builder及PSF3.11.9 x64原归档、29原哈希锁wheel，本地输入组装native0。原归档大小／SHA、选定wheel逐项及三个关键PE的PSF签名Valid按既有工具核验；不下载、升级或将普通组件建包变成提权动作。输出全新out/mcp_bundle_refresh_w11_20261030/release/QKeyMapper MCP Bridge 中文.zip，26706970B，SHA256 854671f5827b8cd89704fbf8f467c9b1f414d62d6933546152b46af405caad60。独立解压后1614项载荷尺寸／hash准确，九个包内Python源码与当前仓库逐字节相等（c200badf之上仅该工具文案修改）；旧123包不覆盖。
+
+普通Medium SDK以包内runtime/python.exe／-I -B运行，中文／空格路径、与包无关cwd、错误PYTHONHOME／PYTHONPATH／PYTHONUSERBASE及仅系统PATH；前缀／所有sys.path／关键原生模块均在包内，固定29项metadata精确、无pip。默认17工具及严格schema、异步不存在产品application_unavailable通过；新两种显式record_only／serial_demo配置分别18／19工具，无认证的demo_state／demo_mapping均not_connected，状态failed且busy=false，无产品启动、配对／UAC、MCP图或业务修改。
+
+首扩展测试对未连接演示后的状态误期望disconnected而失败；Bridge既有_submit将not_connected记录为failed，原错误保持。仅修正测试断言，未改桥接行为或包，以新offline-sdk-fixed目录正式SDK通过，首offline-sdk原件及失败日志保留。包执行前后全部清单载荷和文件数量不变，未生成pyc污染。旧123打包器七项边界测试沿未变工具原范围复用，不重复当成本片新增通过。
+
+本机原件根含构建／签名及载荷清单、ZIP及独立解压、源码一致性／包身份、首测试失败和修正后imports／SDK调用及summary，不随Git。当前只完成普通组件选验；新包与真实产品version2记录及两图接续待共享缓存协调，不能复用123旧版本产品结果充当当前验收。本机保有全局Python且未断网，不声称干净系统／离线网络实测；完整Release／固定预热、Win10／高DPI及QQ仍待。129产品源码／定向维护未提交，保留现场；130只形成独立桥接组件检查切点，不推送。

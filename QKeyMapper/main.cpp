@@ -4,6 +4,7 @@
 #include "qkeymapper_qt_compat.h"
 #include "automation/qkm_demo_mode.h"
 #include "automation/qkm_demo_host.h"
+#include "automation/qkm_demo_setup.h"
 #include <memory>
 #include "qkeymapper.h"
 #include "diagnostics/crash_monitor.h"
@@ -377,6 +378,7 @@ int main(int argc, char *argv[])
     for (int index = 1; index < argc; ++index) startupArguments.append(QString::fromLocal8Bit(argv[index]));
     const auto startupPurpose = QkmAutomation::parseStartupPurpose(startupArguments);
     if (!QkmAutomation::initializeStartupPurpose(startupPurpose)) return ERROR_INVALID_PARAMETER;
+    if (startupPurpose == QkmAutomation::StartupPurpose::ConfigurationOnly) QkmAutomation::prepareInheritedDemoSetup();
 #ifdef QKM_REQUIRE_ADMIN
     if (!IsProcessRunAsAdmin()) {
         // Priority 1: Read LanguageIndex from keymapdata.ini (user's saved preference)
@@ -585,6 +587,9 @@ int main(int argc, char *argv[])
     QkmDiagnostics::markProgress();
 
     QKeyMapper w;
+    std::unique_ptr<QkmAutomation::DemoSetupEndpoint> demoSetup;
+    if (QkmAutomation::configurationOnlyDemo())
+        demoSetup = std::make_unique<QkmAutomation::DemoSetupEndpoint>([&w] { return w.showMcpControlDialog(); }, &w);
     if (QkmAutomation::configurationOnlyDemo()) {
         for (const char *name : {"keymapButton", "installInterceptionButton", "installFakerInputButton", "installViGEmBusButton",
                 "uninstallViGEmBusButton", "multiInputDeviceListButton", "checkUpdateButton", "autoStartupCheckBox", "startupAutoMonitoringCheckBox",

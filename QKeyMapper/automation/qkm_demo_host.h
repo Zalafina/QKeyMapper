@@ -14,6 +14,7 @@ class DemoHostDialog : public QDialog {
     Q_OBJECT
 public:
     explicit DemoHostDialog(QWidget *parent = nullptr);
+    DemoProcess &process() { return m_process; }
     const DemoProcess &process() const { return m_process; }
     void reject() override { close(); }
 

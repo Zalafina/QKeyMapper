@@ -1197,6 +1197,7 @@ class QKeyMapper : public QMainWindow
 public:
     explicit QKeyMapper(QWidget *parent = Q_NULLPTR);
     ~QKeyMapper();
+    bool showMcpControlDialog();
 
     static QKeyMapper *getInstance()
     {

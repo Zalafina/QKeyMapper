@@ -5,6 +5,7 @@
 #include <QElapsedTimer>
 #include <QFileInfo>
 #include <QScopeGuard>
+#include <QProcessEnvironment>
 #include <QSettings>
 #include <QUuid>
 #include <sddl.h>
@@ -115,7 +116,7 @@ bool DemoProcess::start()
     if (m_process || m_desktop) return fail("already_started");
     m_failure.clear(); m_nativeError.reset(); m_cleanupError.reset(); m_exitCode.reset();
     m_desktopName.clear(); m_executable.clear();
-    m_target = {}; m_closeRequested = false;
+    m_target = {}; m_closeRequested = false; m_setupReady = false;
     const auto own = queryProcessIdentity(GetCurrentProcessId());
     if (!own.ok()) return fail("identity_unavailable");
     m_executable = queryProcessExecutable(own.identity);
@@ -152,18 +153,52 @@ bool DemoProcess::start()
     std::wstring desktop = (QStringLiteral("winsta0\\") + m_desktopName).toStdWString();
     std::wstring command = (QLatin1Char('"') + m_executable + QStringLiteral("\" --demo-configuration-only")).toStdWString();
     const QString directory = QDir::toNativeSeparators(QFileInfo(m_executable).absolutePath());
-    STARTUPINFOW startup{};
-    startup.cb = sizeof(startup); startup.lpDesktop = desktop.data();
+    SECURITY_ATTRIBUTES inherited = security;
+    inherited.bInheritHandle = TRUE;
+    m_setupRequest = CreateEventW(&inherited, FALSE, FALSE, nullptr);
+    if (!m_setupRequest) { const DWORD error = GetLastError(); releaseHandles(); return fail("setup_creation_failed", error); }
+    m_setupAck = CreateEventW(&inherited, FALSE, FALSE, nullptr);
+    if (!m_setupAck) { const DWORD error = GetLastError(); releaseHandles(); return fail("setup_creation_failed", error); }
+    SIZE_T size = 0;
+    InitializeProcThreadAttributeList(nullptr, 1, 0, &size);
+    if (!size || size > 65536) { releaseHandles(); return fail("setup_creation_failed"); }
+    QByteArray attributeBytes(int(size), '\0');
+    auto *attributes = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(attributeBytes.data());
+    if (!InitializeProcThreadAttributeList(attributes, 1, 0, &size)) {
+        const DWORD error = GetLastError(); releaseHandles(); return fail("setup_creation_failed", error);
+    }
+    const auto deleteAttributes = qScopeGuard([attributes] { DeleteProcThreadAttributeList(attributes); });
+    HANDLE handles[]{m_setupRequest, m_setupAck};
+    if (!UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles, sizeof(handles), nullptr, nullptr)) {
+        const DWORD error = GetLastError(); releaseHandles(); return fail("setup_creation_failed", error);
+    }
+    auto environment = QProcessEnvironment::systemEnvironment();
+    environment.insert(QLatin1String(DemoSetupRequestEnv), QString::number(quintptr(m_setupRequest)));
+    environment.insert(QLatin1String(DemoSetupAckEnv), QString::number(quintptr(m_setupAck)));
+    environment.insert(QLatin1String(DemoSetupParentEnv), QString::number(own.identity.processId));
+    environment.insert(QLatin1String(DemoSetupCreatedEnv), QString::number(own.identity.creationTime));
+    QStringList entries = environment.toStringList();
+    entries.sort(Qt::CaseInsensitive);
+    QString block = entries.join(QChar('\0'));
+    block.append(QChar('\0')); block.append(QChar('\0'));
+    STARTUPINFOEXW startup{};
+    startup.StartupInfo.cb = sizeof(startup); startup.StartupInfo.lpDesktop = desktop.data();
+    startup.lpAttributeList = attributes;
     PROCESS_INFORMATION process{};
-    if (!CreateProcessW(reinterpret_cast<LPCWSTR>(m_executable.utf16()), command.data(), nullptr, nullptr, FALSE,
-            CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW, nullptr,
-            reinterpret_cast<LPCWSTR>(directory.utf16()), &startup, &process)) {
+    if (!CreateProcessW(reinterpret_cast<LPCWSTR>(m_executable.utf16()), command.data(), nullptr, nullptr, TRUE,
+            CREATE_SUSPENDED | CREATE_UNICODE_ENVIRONMENT | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT,
+            const_cast<ushort *>(block.utf16()), reinterpret_cast<LPCWSTR>(directory.utf16()), &startup.StartupInfo, &process)) {
         const DWORD error = GetLastError();
         releaseHandles();
         return fail("process_creation_failed", error);
     }
     m_process = process.hProcess; m_thread = process.hThread; m_starting = true;
     m_target.processId = process.dwProcessId;
+    if (!SetHandleInformation(m_setupRequest, HANDLE_FLAG_INHERIT, 0) || !SetHandleInformation(m_setupAck, HANDLE_FLAG_INHERIT, 0)) {
+        fail("setup_creation_failed", GetLastError());
+        abortStart();
+        return false;
+    }
     const auto child = queryProcessIdentity(process.dwProcessId);
     if (!child.ok() || !sameLogonSession(own.identity, child.identity)
         || queryProcessExecutable(child.identity).compare(m_executable, Qt::CaseInsensitive) != 0) {
@@ -184,6 +219,29 @@ bool DemoProcess::start()
 bool DemoProcess::running() const
 {
     return m_process && WaitForSingleObject(m_process, 0) == WAIT_TIMEOUT;
+}
+
+DemoSetupResult DemoProcess::requestManagement()
+{
+    if (!m_process || !m_setupRequest || !m_setupAck) return {QStringLiteral("setup_unavailable"), {}};
+    const auto actual = queryProcessIdentity(m_target.processId);
+    if (!actual.ok() || !sameProcess(m_target, actual.identity)) return {QStringLiteral("stale_target"), {}};
+    HANDLE waitingHandles[]{m_setupAck, m_process};
+    const auto wait = [&]() -> DemoSetupResult {
+        const DWORD value = WaitForMultipleObjects(2, waitingHandles, FALSE, CloseMilliseconds);
+        if (value == WAIT_OBJECT_0) return {};
+        if (value == WAIT_FAILED) return {QStringLiteral("setup_wait_failed"), GetLastError()};
+        return {value == WAIT_TIMEOUT ? QStringLiteral("setup_timeout") : QStringLiteral("target_exited"), {}};
+    };
+    if (!m_setupReady) {
+        const auto ready = wait();
+        if (!ready.ok()) return ready;
+        m_setupReady = true;
+    }
+    if (!ResetEvent(m_setupAck) || !SetEvent(m_setupRequest)) return {QStringLiteral("setup_request_failed"), GetLastError()};
+    const auto shown = wait();
+    if (!shown.ok()) return shown;
+    return running() ? DemoSetupResult{} : DemoSetupResult{QStringLiteral("target_exited"), {}};
 }
 
 bool DemoProcess::abortStart()
@@ -239,6 +297,8 @@ bool DemoProcess::releaseHandles()
 {
     if (m_thread) { CloseHandle(m_thread); m_thread = nullptr; }
     if (m_process) { CloseHandle(m_process); m_process = nullptr; }
+    if (m_setupRequest) { CloseHandle(m_setupRequest); m_setupRequest = nullptr; }
+    if (m_setupAck) { CloseHandle(m_setupAck); m_setupAck = nullptr; }
     if (m_desktop) {
         if (!CloseDesktop(m_desktop)) { m_cleanupError = GetLastError(); return false; }
         m_desktop = nullptr;

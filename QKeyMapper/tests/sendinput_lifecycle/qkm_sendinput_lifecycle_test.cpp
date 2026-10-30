@@ -95,6 +95,7 @@ public:
     static QJsonObject saveResult(QKeyMapper *mapper, bool cold, bool guiOnly = false,
         const QkmAutomation::AutomationRequest *request = nullptr);
     static void startSaveContext(QKeyMapper *mapper);
+    static void managementProbe(QKeyMapper *mapper);
     static QJsonObject saveContext(QKeyMapper *mapper, const QkmAutomation::AutomationRequest &request);
     static QJsonObject saveExecution(QKeyMapper *mapper, const QkmAutomation::AutomationRequest &request);
     static QJsonObject tableState(QKeyMapper *mapper);
@@ -203,6 +204,7 @@ struct LifecycleResult {
 };
 LifecycleResult *result = nullptr;
 QString demoHostFixturePath;
+bool demoManagementProbe = false;
 
 class ObservedTask : public SendInputTask {
 public:
@@ -1227,7 +1229,7 @@ void installLifecycleTest()
                 const QByteArray bytes = QJsonDocument(object).toJson();
                 return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
             };
-            const auto &owner = host->process();
+            auto &owner = host->process();
             const QString childResult = QFileInfo(demoHostFixturePath).absolutePath() + QStringLiteral("/child/case.json");
             const QJsonObject target{{QStringLiteral("pid"), QString::number(owner.target().processId)},
                 {QStringLiteral("created"), QString::number(owner.target().creationTime)},
@@ -1242,6 +1244,14 @@ void installLifecycleTest()
                     return;
                 }
                 if (!write(demoHostFixturePath + QStringLiteral(".owner"), target)) { poll->stop(); host->close(); return; }
+            }
+            const QString requested = childResult + QStringLiteral(".management-requested");
+            if (demoManagementProbe && !QFileInfo::exists(requested) && QFileInfo::exists(childResult + QStringLiteral(".ready"))
+                && QFileInfo::exists(demoHostFixturePath + QStringLiteral(".controller-ready"))) {
+                const auto first = owner.requestManagement(), second = first.ok() ? owner.requestManagement() : first;
+                write(requested, {{QStringLiteral("passed"), first.ok() && second.ok()},
+                    {QStringLiteral("failure"), first.ok() ? second.failure : first.failure},
+                    {QStringLiteral("native_error"), second.nativeError ? QJsonValue(int(second.nativeError.value())) : QJsonValue(QJsonValue::Null)}});
             }
             if (!QFileInfo::exists(childResult + QStringLiteral(".owner-close-ready"))) return;
             poll->stop();
@@ -1263,6 +1273,10 @@ void installLifecycleTest()
     }
     QTimer::singleShot(0, QCoreApplication::instance(), []() {
         const QString guiMode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
+        if (guiMode == QStringLiteral("demo_management_probe")) {
+            QkmMappingAdditionTestAccess::managementProbe(QKeyMapper::getInstance());
+            return;
+        }
         if (guiMode == QStringLiteral("ui_localization")) {
             // Capture separately: the advanced dialog closes on deactivation when MCP opens.
             QTimer::singleShot(1000, QCoreApplication::instance(), [] {
@@ -3414,6 +3428,82 @@ QJsonObject QkmMappingAdditionTestAccess::saveResult(QKeyMapper *mapper, bool co
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}, {QStringLiteral("shared_execution"), !cold && !guiOnly},
         {QStringLiteral("save_result"), execution}, {QStringLiteral("gui_baseline"), guiOnly},
         {QStringLiteral("prepared_execution"), request != nullptr}};
+}
+
+void QkmMappingAdditionTestAccess::managementProbe(QKeyMapper *mapper)
+{
+    const QString output = qEnvironmentVariable("QKM_LIFECYCLE_RESULT");
+    if (!output.contains(QStringLiteral("/out/")) || !QkmAutomation::currentThreadOnPrivateDesktop()) { finish(false); return; }
+    auto *control = mapper->m_McpControlDialog;
+    auto *advanced = mapper->findChild<QPushButton *>(QStringLiteral("generalAdvancedButton"));
+    auto *button = mapper->m_GeneralAdvancedDialog->findChild<QPushButton *>(QStringLiteral("mcpControlButton"));
+    auto *tabs = mapper->findChild<QTabWidget *>(QStringLiteral("settingTabWidget"));
+    if (!control || !advanced || !button || !tabs || control->server().isEnabled() || control->isVisible()) { finish(false); return; }
+    const auto selectTab = [tabs](int index) {
+        const QPoint point = tabs->tabBar()->tabRect(index).center();
+        const QPointF top = tabs->tabBar()->mapTo(tabs->window(), point), screen = tabs->tabBar()->mapToGlobal(point);
+        QMouseEvent press(QEvent::MouseButtonPress, point, top, screen, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+        QMouseEvent release(QEvent::MouseButtonRelease, point, top, screen, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+        QCoreApplication::sendEvent(tabs->tabBar(), &press); QCoreApplication::sendEvent(tabs->tabBar(), &release);
+    };
+    const int beforeTab = tabs->currentIndex();
+    QWidget *page = advanced;
+    while (page && tabs->indexOf(page) < 0) page = page->parentWidget();
+    if (!page) { finish(false); return; }
+    if (tabs->indexOf(page) != beforeTab) selectTab(tabs->indexOf(page));
+    if (!advanced->isVisible() || !advanced->isEnabled()) { finish(false); return; }
+    clickMappingButton(advanced);
+    if (!button->isVisible() || !button->isEnabled()) { finish(false); return; }
+    clickMappingButton(button);
+    const bool baseline = control->isVisible() && !control->server().isEnabled();
+    QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), release(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+    QCoreApplication::sendEvent(control, &press); QCoreApplication::sendEvent(control, &release);
+    if (mapper->m_GeneralAdvancedDialog->isVisible()) {
+        QKeyEvent close(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier);
+        QCoreApplication::sendEvent(mapper->m_GeneralAdvancedDialog, &close);
+    }
+    if (tabs->currentIndex() != beforeTab) selectTab(beforeTab);
+    if (!baseline || control->isVisible()) { finish(false); return; }
+    QFile ini(QString::fromLatin1(CONFIG_FILENAME));
+    if (!ini.open(QIODevice::ReadOnly)) { finish(false); return; }
+    const QByteArray disk = ini.readAll();
+    const bool dirty = mapper->m_SaveSettingDirty;
+    const quint64 load = mapper->m_MappingLoadGeneration;
+    QString error;
+    const QJsonObject sources = mapper->collectAutomationSourceSnapshot(error);
+    if (!error.isEmpty()) { finish(false); return; }
+    QSaveFile ready(output + QStringLiteral(".ready"));
+    const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("gui_button_baseline"), baseline},
+        {QStringLiteral("mcp_enabled"), false}, {QStringLiteral("management_visible"), false}}).toJson();
+    if (!ready.open(QIODevice::WriteOnly) || ready.write(bytes) != bytes.size() || !ready.commit()) { finish(false); return; }
+    auto *poll = new QTimer(mapper);
+    const auto elapsed = QSharedPointer<QElapsedTimer>::create();
+    elapsed->start();
+    QObject::connect(poll, &QTimer::timeout, mapper, [=] {
+        QFile requested(output + QStringLiteral(".management-requested"));
+        if (!requested.open(QIODevice::ReadOnly)) {
+            if (elapsed->elapsed() < 15000) return;
+            poll->stop(); finish(false); return;
+        }
+        poll->stop();
+        QString failure;
+        QFile after(QString::fromLatin1(CONFIG_FILENAME));
+        const bool accepted = QJsonDocument::fromJson(requested.readAll()).object().value(QStringLiteral("passed")).toBool();
+        const QJsonArray checks{
+            QJsonObject{{QStringLiteral("passed"), baseline}, {QStringLiteral("assertion"), QStringLiteral("real General Advanced and MCP button clicks establish the independent GUI display baseline")}},
+            QJsonObject{{QStringLiteral("passed"), accepted && control->isVisible()}, {QStringLiteral("assertion"), QStringLiteral("two owned anonymous-event requests display the same management window")}},
+            QJsonObject{{QStringLiteral("passed"), !control->server().isEnabled()}, {QStringLiteral("assertion"), QStringLiteral("showing management does not enable MCP or approve pairing")}},
+            QJsonObject{{QStringLiteral("passed"), mapper->collectAutomationSourceSnapshot(failure) == sources && failure.isEmpty()}, {QStringLiteral("assertion"), QStringLiteral("management display preserves every source field and reference")}},
+            QJsonObject{{QStringLiteral("passed"), mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load && tabs->currentIndex() == beforeTab}, {QStringLiteral("assertion"), QStringLiteral("dirty, load and the original settings page are unchanged")}},
+            QJsonObject{{QStringLiteral("passed"), after.open(QIODevice::ReadOnly) && after.readAll() == disk}, {QStringLiteral("assertion"), QStringLiteral("independent GUI and owned management requests preserve the complete INI")}}
+        };
+        bool passed = true;
+        for (const auto &check : checks) passed = passed && check.toObject().value(QStringLiteral("passed")).toBool();
+        result->settingsGeneralEvidence = {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks},
+            {QStringLiteral("system_input"), false}, {QStringLiteral("mcp_enabled"), false}, {QStringLiteral("gui_button_baseline"), baseline}};
+        finish(passed);
+    });
+    poll->start(20);
 }
 
 void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
@@ -5966,12 +6056,13 @@ int main(int argc, char *argv[])
     const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
     const QString path = qEnvironmentVariable("QKM_LIFECYCLE_RESULT");
     if (mode == QStringLiteral("demo_process_owner")) return runDemoProcessOwnerFixture(path);
-    if (mode == QStringLiteral("demo_host_role")) {
+    if (mode == QStringLiteral("demo_host_role") || mode == QStringLiteral("demo_host_manage")) {
         const QString directory = QDir::cleanPath(QFileInfo(path).absolutePath());
         if (!directory.contains(QStringLiteral("/out/")) || !QkmAutomation::currentThreadOnPrivateDesktop()
             || !QDir().mkpath(directory + QStringLiteral("/child"))) return 2;
         demoHostFixturePath = path;
-        qputenv("QKM_LIFECYCLE_CASE", "settings_save_apply");
+        demoManagementProbe = mode == QStringLiteral("demo_host_manage");
+        qputenv("QKM_LIFECYCLE_CASE", demoManagementProbe ? "demo_management_probe" : "settings_save_apply");
         qputenv("QKM_LIFECYCLE_RESULT", (directory + QStringLiteral("/child/case.json")).toUtf8());
         qputenv("QKM_CONTEXT_VARIANT", "demo_ready");
         qputenv("QKM_LIFECYCLE_OWNER_CLOSE", "1");
@@ -6021,7 +6112,7 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_result_save"), QStringLiteral("settings_result_cold"), QStringLiteral("settings_save_context"),
         QStringLiteral("settings_prepared_save"), QStringLiteral("settings_save_preview"), QStringLiteral("settings_save_execution"),
         QStringLiteral("settings_save_apply"), QStringLiteral("settings_save_gui"), QStringLiteral("settings_remove_gui"),
-        QStringLiteral("settings_remove_shared")};
+        QStringLiteral("settings_remove_shared"), QStringLiteral("demo_management_probe")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

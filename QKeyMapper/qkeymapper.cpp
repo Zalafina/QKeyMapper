@@ -3823,11 +3823,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         this, [this](bool enabled) {
             if (!enabled && isInitialized() && m_AutomationMappingChanges) m_AutomationMappingChanges->clear();
         });
-    connect(m_GeneralAdvancedDialog, &QGeneralAdvancedDialog::mcpControlRequested, this, [this]() {
-        m_McpControlDialog->show();
-        m_McpControlDialog->raise();
-        m_McpControlDialog->activateWindow();
-    });
+    connect(m_GeneralAdvancedDialog, &QGeneralAdvancedDialog::mcpControlRequested, this, &QKeyMapper::showMcpControlDialog);
     m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
     m_AutomationWindows = new QkmAutomation::WindowAccess(this, m_ItemSetupDialog, m_MappingAdvancedDialog);
@@ -32655,6 +32651,15 @@ void QKeyMapper::initProcessInfoTable(void)
 #endif
 }
 
+bool QKeyMapper::showMcpControlDialog()
+{
+    if (!m_McpControlDialog) return false;
+    m_McpControlDialog->show();
+    m_McpControlDialog->raise();
+    m_McpControlDialog->activateWindow();
+    return m_McpControlDialog->isVisible();
+}
+
 void QKeyMapper::initSysTrayIcon()
 {
     m_SysTrayIcon = new QSystemTrayIcon(this);
@@ -32666,13 +32671,7 @@ void QKeyMapper::initSysTrayIcon()
     m_TrayIconMenu_ShowHideAction = new QAction(this);
     m_TrayIconMenu_QuitAction = new QAction(this);
     m_TrayIconMenu_McpAction = new QAction(this);
-    connect(m_TrayIconMenu_McpAction, &QAction::triggered, this, [this]() {
-        if (m_McpControlDialog) {
-            m_McpControlDialog->show();
-            m_McpControlDialog->raise();
-            m_McpControlDialog->activateWindow();
-        }
-    });
+    connect(m_TrayIconMenu_McpAction, &QAction::triggered, this, &QKeyMapper::showMcpControlDialog);
 
     connect(m_TrayIconMenu_MappingSwitchAction, &QAction::triggered, this, &QKeyMapper::onTrayIconMenuMappingSwitchAction);
     // When the Show/Hide menu item is clicked, toggle the visibility of the window

@@ -3,6 +3,7 @@
 
 #include "qkm_local_identity.h"
 #include "qkm_private_storage.h"
+#include "qkm_demo_setup.h"
 #include <optional>
 
 namespace QkmAutomation {
@@ -14,6 +15,7 @@ public:
     bool start();
     bool close();
     bool running() const;
+    DemoSetupResult requestManagement();
     const ProcessIdentity &target() const { return m_target; }
     QString executable() const { return m_executable; }
     QString desktop() const { return m_desktopName; }
@@ -35,8 +37,10 @@ private:
     ProcessIdentity m_target;
     QString m_executable, m_desktopName, m_failure;
     HANDLE m_process = nullptr, m_thread = nullptr;
+    HANDLE m_setupRequest = nullptr, m_setupAck = nullptr;
     HDESK m_desktop = nullptr;
     bool m_starting = false, m_closeRequested = false;
+    bool m_setupReady = false;
     std::optional<DWORD> m_nativeError, m_cleanupError, m_exitCode;
     Storage::DirectoryLease m_lease;
 };
