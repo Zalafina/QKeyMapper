@@ -66,8 +66,9 @@ print(json.dumps(dict(python=sys.version, prefix=str(root), paths=sys.path, depe
             assert time.monotonic() < until, state
             await asyncio.sleep(.01)
     configured_tools = {}
-    for serial in (False, True):
-        arguments = [*parameters.args, "--demo-record", str(output / "absent/demo.json")]
+    for mode, serial in (("explicit", False), ("explicit", True), ("product", False), ("product", True)):
+        arguments = [*parameters.args, *(["--demo-record", str(output / "absent/demo.json")]
+                                       if mode == "explicit" else ["--product-demo-record"])]
         if serial:
             arguments.append("--enable-demo-mapping")
         configured = StdioServerParameters(command=str(executable), args=arguments, cwd=str(poison), env=environment)
@@ -80,7 +81,15 @@ print(json.dumps(dict(python=sys.version, prefix=str(root), paths=sys.path, depe
                 await call(client, "qkm_demo_mapping", dict(original_key="A", mapping_key="B"), error="not_connected")
             state = await call(client, "qkm_get_connection_state")
             assert state["status"] == "failed" and state["error"] == "not_connected" and not state["busy"], state
-            configured_tools["serial_demo" if serial else "record_only"] = len(names)
+            label = "serial_demo" if serial else "record_only"
+            configured_tools[("product_" if mode == "product" else "") + label] = len(names)
+    argument_checks = []
+    for extra in (["--enable-demo-mapping"], ["--demo-record", str(output / "absent/demo.json"), "--product-demo-record"]):
+        checked = subprocess.run([str(executable), *parameters.args, *extra], env=environment, cwd=poison,
+            capture_output=True, encoding="utf-8", timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
+        argument_checks.append(dict(arguments=extra, exit=checked.returncode, stderr=checked.stderr))
+        assert checked.returncode == 2 and "error:" in checked.stderr, argument_checks[-1]
+    (output / "cli-arguments.json").write_text(json.dumps(argument_checks, indent=2)+"\n", encoding="utf-8")
     result = dict(passed=True, tools=len(tools), configured_tools=configured_tools, runtime=str(executable), no_product_start=True, replies=replies)
     (output / "sdk-pass.json").write_text(json.dumps(result, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
     return result

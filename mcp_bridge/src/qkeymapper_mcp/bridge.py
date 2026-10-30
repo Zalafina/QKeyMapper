@@ -24,11 +24,15 @@ from .windows import Pipe, discover, identity, pristine_thread
 
 
 class Bridge:
-    def __init__(self, discovery: Path, executable: Path, demo_record: Path | None = None, *, enable_demo_mapping: bool = False):
-        if enable_demo_mapping and demo_record is None:
-            raise ValueError("Demo mapping requires an explicit host record.")
+    def __init__(self, discovery: Path, executable: Path, demo_record: Path | None = None, *,
+                 enable_demo_mapping: bool = False, product_demo_record: bool = False):
+        if product_demo_record and demo_record is not None:
+            raise ValueError("Choose either an explicit or product-owned demo record.")
+        if enable_demo_mapping and demo_record is None and not product_demo_record:
+            raise ValueError("Demo mapping requires explicit record configuration.")
         self.discovery, self.executable = discovery, executable
         self._demo_record = demo_record
+        self._product_demo_record = product_demo_record
         self._demo_session = DemoSession() if enable_demo_mapping else None
         self._worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="qkm-pipe")
         self._lock = threading.Lock()
@@ -234,7 +238,11 @@ class Bridge:
         require(self._pipe is not None and self._credential is not None, "not_connected")
         target = self._pipe.discovery
         own = identity(os.getpid())
-        binding = validate_binding(read_binding(self._demo_record, own), target, self.executable)
+        record = self._demo_record
+        if self._product_demo_record:
+            hex_bytes(target.instance, 16)
+            record = self.discovery.parent / ("demo-" + target.instance + ".json")
+        binding = validate_binding(read_binding(record, own), target, self.executable)
         live = identity(target.server.pid)
         require(own.same_login(live) and (live.created, live.session, live.executable)
                 == (target.server.created, target.server.session, target.server.executable), "demo_record_mismatch")
@@ -250,11 +258,12 @@ class Bridge:
             self._credential.scopes, original_key, mapping_key, view))
 
     def _demo_state(self) -> dict:
-        result = {"configured": self._demo_record is not None, "ready": False,
+        configured = self._demo_record is not None or self._product_demo_record
+        result = {"configured": configured, "ready": False,
                   "reference_scope": "preflight_observation_only"}
         if self._demo_session is not None:
             result["demo_session"] = self._demo_session.status()
-        if self._demo_record is None:
+        if not configured:
             return {"ok": True, "result": {**result, "reason": "demo_not_configured"}}
         require(self._pipe is not None and self._credential is not None, "not_connected")
         try:

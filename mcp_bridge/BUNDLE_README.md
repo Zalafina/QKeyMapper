@@ -21,6 +21,25 @@ Windows 10／11 x64，内含专用 CPython 3.11.9 和固定运行依赖。用户
 
 目标 QKeyMapper 须为匹配版本、由用户明确启用 MCP，并沿产品管理窗口批准客户端配对及所需权限。发现文件和指定 EXE、进程身份与认证仍逐项核验。未启动或未启用时桥接可初始化并枚举工具，但连接明确失败；它不自动启动产品、申请 UAC 或扩大权限。不要复制另一台 PC 的配对凭据。
 
-普通入口提供已实现的连接、查询、预览／提交、保存及受限窗口能力，实际范围以目标能力发现为准。私有后台演示须另有version2可信创建记录和已认证只配置模式专用实例（startup_purpose=configuration_only_demo），旧version1／普通模式拒绝，显式 --demo-record／--enable-demo-mapping 才增加相关工具；main、item_setup、mapping_advanced 返回真实 PNG。新版只配置产品可在MCP启用后自行发布记录，并在已认证capabilities中给出demo_record路径；普通Release预热宿主尚未交付，桥接本身不生成创建记录、不提供自动管理员启动；开发 gsudo 缓存不随包也不是服务依赖。
+普通入口提供已实现的连接、查询、预览／提交、保存及受限窗口能力，实际范围以目标能力发现为准。私有后台演示须有version2可信创建记录和已认证只配置模式（startup_purpose=configuration_only_demo）；旧version1／普通模式拒绝。main、item_setup、mapping_advanced 可返回真实PNG，未支持场景明确拒绝。
 
-图片以原生 MCP ImageContent 交给 Agent／gateway，桥接不创建图片文件。QQ 渠道发送由 gateway 另行负责。此包组件的本机隔离验证不能替代干净 Win10／Win11、完整产品／预热及 QQ 联调；产品默认关闭、正常配对和实例选择规则继续适用。
+专用演示实例的客户端沿用上述固定EXE／instance.json配置，再追加：
+
+```json
+["--product-demo-record", "--enable-demo-mapping"]
+```
+
+此为追加到既有args数组的两个参数，不替换前面的参数。--product-demo-record仅在连接已认证后，以该管道实例ID读取同一私有目录的产品记录；逐次核对ACL、实际进程／创建时间、登录、实例、桌面及只配置策略。它不枚举／改选目标、启动产品或批准配对。旧--demo-record <绝对路径>保留并与新模式互斥；省略--enable-demo-mapping仅增加只读演示就绪查询。正常入口仍不启用演示。产品重启后应结束旧桥接会话、由客户端用同一固定配置重新启动并显式连接／核验新目标；旧场景／预览／结果仍属原实例，不因路径可复用便迁移。
+
+固定配置复用限于同一可信EXE路径和Windows会话；运行目录或Windows会话改变时，应重新复制目标管理窗口的连接路径并核验。不会跨会话／跨PC自动寻找目标或复制配对。
+
+一次预热需要操作者与Agent配合，确认完整独立Release支持--demo-host、安全演示INI及运行库已就绪；不复制个人INI／凭据：
+
+1. Agent先准备此普通桥接；操作者运行QKeyMapper.exe --demo-host并批准产品原生UAC，然后点击“设置配对”。桥接不代启产品，开发gsudo不参与正式部署。
+2. 黑色背景是自有私有桌面，其他办公应用及Agent不在其中。只操作本实例“MCP 控制”和返回提示；提示挡住窗口时可拖到旁边。
+3. 勾选“启用 MCP 接口”，Agent在进入后发起qkm_request_pairing。启用不等于配对；申请到达时会出现客户端名称／PID／已核验EXE和批准区域。核对实际包内runtime/python.exe，额外勾选配置、显示窗口、捕获窗口，读取必选、运行不选，再批准。申请约60秒内需完成；约10秒未见区域时，用返回提示“确定”回Agent排查，不盲等或关闭宿主。
+4. 用提示“确定”返回原桌面，Agent确认认证及387权限、qkm_get_demo_state就绪后才执行咨询。保持宿主运行；正常咨询后台串行，不再次激活Default或逐次UAC。完成后点“关闭演示”，等实际子实例退出。
+
+只批准读取不会自动获得配置权限；已有配对按原策略复用。原生提示的“确定”只用于返回，不表示配对已完成。产品未就绪／身份变化时明确失败，不能盲目改连或重放旧操作；宿主意外退出／恢复窗口不可用时仍可能需要人工Windows桌面恢复。
+
+图片以原生 MCP ImageContent 交给 Agent／gateway，桥接不创建图片文件。QQ发送由gateway负责，取得MCP图片不证明QQ已送达。Win11 Qt6选定真实GUI预热／配对及两图已验证；本组件包不包含完整QKeyMapper产品、个人配置或缓存。干净Win10／Win11／断网、完整Release运行库、异常恢复及QQ联调仍待；产品默认关闭、正常配对和实例选择规则继续适用。

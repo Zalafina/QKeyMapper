@@ -1086,3 +1086,7 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## DEMO-P3-132：真实GUI预热及返回修正
 
 普通Qt6原生Shell／产品UAC与人工387配对、包内桥接两图及回收已选验；首次Read误批／申请过期／脚本失败保持真实范围。Default暴露thread_restore_failed170，批准后仅删一次性线程结束前多余迁移，双Qt20项及新版Default持久配对重连／无错误返回／父子实际0通过。两图为修前cf56未变业务结果，新版未重复；详[同一C1](map67c1_validation.md#demo-p3-132真实gui预热及一次性线程收束2026-10-30pc-w11)。开发缓存未参与原生启动，未新增工具或权限。私有桌面预热引导／完整Release配置、真实恢复失败／异常宿主死亡／Win10／QQ仍待，P3／M3-B不标完成。
+
+## DEMO-P3-133：固定产品记录与随包引导
+
+新增显式--product-demo-record与旧路径互斥，仅从已认证固定实例／私有目录定位；旧引用／回收不迁移，无自动发现／启动／配对。27普通定向、最终包／1614载荷／九源码及五配置工具17／18／19／两CLI拒绝，复用129 Qt6私有产品两图／回收／实际0及五项零通过；失败与范围见[同一C1](map67c1_validation.md#demo-p3-133固定产品记录与随包引导2026-10-30pc-w11)。随包步骤已补，密钥与持久启用尚未改变；跨登录／workspace持久使用接PERSIST-134，不称完整Release／Win10／QQ验收。

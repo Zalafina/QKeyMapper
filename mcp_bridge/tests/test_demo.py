@@ -143,6 +143,44 @@ class DemoBindingTests(unittest.TestCase):
 
 
 class DemoBridgeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_product_record_requires_authentication_and_fixed_instance_name(self):
+        record, windows, state, sources, target = fixture()
+        bridge = Bridge(Path("fixed/instance.json"), Path(record["executable"]), product_demo_record=True)
+        own = SimpleNamespace(same_login=lambda other: True)
+        try:
+            with patch("qkeymapper_mcp.bridge.read_binding") as read, patch.object(bridge, "_request") as request:
+                value = await bridge.demo_state()
+                self.assertEqual(value, {"ok": False, "error": "not_connected"})
+                read.assert_not_called()
+                request.assert_not_called()
+            bridge._pipe = Mock(discovery=target)
+            bridge._credential = SimpleNamespace(scopes=DEMO_SCOPES)
+            with patch("qkeymapper_mcp.bridge.identity", side_effect=lambda pid: own if pid == os.getpid() else target.server), \
+                    patch("qkeymapper_mcp.bridge.read_binding", return_value=record) as read, \
+                    patch.object(bridge, "_request", side_effect=[dict(ok=True, result=value) for value in (windows, state, sources)]):
+                value = await bridge.demo_state()
+                self.assertTrue(value["result"]["ready"])
+                read.assert_called_once_with(Path("fixed") / ("demo-" + target.instance + ".json"), own)
+            for instance in ("b" * 32, "../other"):
+                bridge._pipe.discovery = SimpleNamespace(instance=instance, server=target.server)
+                with self.subTest(instance=instance), patch("qkeymapper_mcp.bridge.identity", return_value=own), \
+                        patch("qkeymapper_mcp.bridge.read_binding", return_value=record) as read, \
+                        patch.object(bridge, "_request") as request:
+                    value = await bridge.demo_state()
+                    self.assertEqual(value["result"]["reason"], "demo_record_mismatch")
+                    request.assert_not_called()
+                    if instance == "../other":
+                        read.assert_not_called()
+                    else:
+                        read.assert_called_once_with(Path("fixed") / ("demo-" + instance + ".json"), own)
+                    self.assertIsNotNone(bridge._pipe)
+        finally:
+            bridge.close()
+
+    async def test_product_and_explicit_records_are_mutually_exclusive(self):
+        with self.assertRaises(ValueError):
+            Bridge(Path("fixed/instance.json"), Path("unused.exe"), Path("explicit.json"), product_demo_record=True)
+
     async def test_no_record_never_connects_or_queries(self):
         bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
         try:

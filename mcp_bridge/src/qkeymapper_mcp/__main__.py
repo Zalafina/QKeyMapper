@@ -95,7 +95,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="QKeyMapper local MCP bridge (stdio).")
     parser.add_argument("--discovery-file", type=Path, required=True)
     parser.add_argument("--executable", type=Path, required=True)
-    parser.add_argument("--demo-record", type=Path, help="Explicit host creation record for a dedicated private demo instance.")
+    records = parser.add_mutually_exclusive_group()
+    records.add_argument("--demo-record", type=Path, help="Explicit host creation record for a dedicated private demo instance.")
+    records.add_argument("--product-demo-record", action="store_true",
+                        help="Use only the authenticated target's product record in its explicit discovery directory.")
     parser.add_argument("--enable-demo-mapping", action="store_true", help="Enable fixed memory-only demo scenes and owned-row cleanup.")
     args = parser.parse_args()
     if os.name != "nt":
@@ -106,9 +109,11 @@ def main() -> None:
     if discovery.name != "instance.json":
         parser.error("--discovery-file must name instance.json from QKeyMapper's MCP window.")
     demo_record = Path(os.path.abspath(args.demo_record)) if args.demo_record is not None else None
-    if args.enable_demo_mapping and demo_record is None:
-        parser.error("--enable-demo-mapping requires --demo-record.")
-    bridge = Bridge(discovery, executable, demo_record, enable_demo_mapping=args.enable_demo_mapping)
+    demo_configured = demo_record is not None or args.product_demo_record
+    if args.enable_demo_mapping and not demo_configured:
+        parser.error("--enable-demo-mapping requires --demo-record or --product-demo-record.")
+    bridge = Bridge(discovery, executable, demo_record, enable_demo_mapping=args.enable_demo_mapping,
+                    product_demo_record=args.product_demo_record)
 
     @asynccontextmanager
     async def lifespan(_server):
@@ -139,7 +144,7 @@ def main() -> None:
         """返回桥接连接的最近核验状态；不代表映射引擎状态，也不会申请权限。"""
         return tool_result(bridge.state())
 
-    if demo_record is not None:
+    if demo_configured:
         @tool(read)
         async def qkm_get_demo_state() -> ToolResult:
             """只读核对宿主显式配置的version2专用演示创建记录、实际认证实例／私有桌面与只配置策略、独立窗口权限及固定配置的空源基线。ready只代表本次观察，不是后续写入许可、场景租约或重置证明；失败保留现场，不创建／切换目标、不显示／激活窗口、不配对扩权／提权或修改配置。记录由受信启动链制备，不能用客户端自报身份替代进程／认证／权限核验。宿主另行启用串行演示时，demo_session提供最近阶段／操作ID和内存回收记录的观察；receipt_available不授予下一轮写入许可，实际调用仍会完整核验。产品自身记录已实现，完整Release预热／交付仍待。"""

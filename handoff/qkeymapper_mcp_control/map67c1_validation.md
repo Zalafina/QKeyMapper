@@ -874,11 +874,11 @@ Python5项新记录／桥接测试与原22协议共27项通过：严格字段／
 
 ## DEMO-P2-117：正式串行单行演示（2026-10-29，PC-W11）
 
-116 b9a39a82之后实现正式桥接串行单行场景。宿主同时显式提供demo-record及--enable-demo-mapping才启用qkm_demo_mapping(original_key,mapping_key)，仅单大写字母／数字、非只读／非幂等，普通15工具／仅记录16工具保持，启用写入17工具、产品仍17能力。原GUI配对及Read+Configure+Show+Capture批准继续强制；不授Run、不创建实例或申请UAC，开发缓存不作为服务依赖。
+基116 b9a39a82，显式record＋enable才启用固定单行串行；当时普通15／记录16／演示17工具及17能力，原GUI／Read+Configure+Show+Capture强制，无Run／创建／UAC。合同详主计划117／正式源码，下列仅记实际验证。
 
-一个既有Bridge worker贯穿目标／能力／初始空源核验、原mapping.add预览及提交、116提交绑定下全行／其余空源和115非行足迹核对、原正式后台开窗／有界原生PNG、原安全关窗、只删除本轮归属行及空源／非行足迹复核。不生成控件示意或写产品INI，不启动映射。图像用原image_tool_result原生ImageContent，无结构化Base64重复，附实际目标／窗口／尺寸／SHA256和场景UUID／代次、原操作ID及回收证据；捕获修订与回收空源修订分开。图片内存返回，由普通Agent／gateway消费，delivery明确渠道送达未验；未开放任意进程／窗口／路径／属性或文件输出。
+同一worker复用原新增／提交绑定、全行及非行核验、真实开窗／PNG／安全关窗与归属行回收，dirty保留；图像修订／回收修订及原操作各归原实例。内存ImageContent由普通Agent／gateway消费，渠道送达未验；无INI保存、映射启动或通用窗口／文件控制。
 
-首轮须干净固定配置；回收dirty按原GUI保留。只有同一存活桥接已完成回收记录的目标／完整源修订／非行签名仍匹配才允许已知dirty下继续，其他变化不重查认领相似行。demo_state仍按初始干净基线可报demo_baseline_dirty，另给demo_session阶段／操作ID、receipt_available及quarantined观察；连接状态也能在断线后读取该摘要，不自动重连。已知业务失败仅在原所有权仍可核验时尝试一次受限回收；未知传输／取消、草稿／源／非行变化保留现场并隔离，原操作ID可查，不盲目重发或替用户丢弃草稿。桥接重启无旧内存凭据，遇遗留dirty拒绝；无自动恢复／清空接口。
+首轮须干净配置；连续轮只复用同桥接精确匹配的回收记录，不认领相似行。已知失败仅归属可证时受限回收一次，未知结果／草稿／源或非行变化保留并隔离，无自动重连／重发／恢复／清草稿。demo_state的dirty与demo_session摘要不授写权。
 
 最终普通Medium定向22项Python（场景10／原预检5／图像7）通过；本片稍早协议22／结构化反馈7在其后未改路径按原结果复用，不冒充同一批51项。模拟覆盖宿主开关／参数／旧合同／权限、连续两轮、已知capture_failed回收后恢复、源／非行及已完成记录变化、未知绑定／编辑草稿保留、capture及失败清理中的timeout／cancelled、真实Bridge单worker busy／取消后排空与隔离。模拟图像不能作为软件截图证据。初次沙箱旧预检硬链接操作WinError5，普通Medium下同项通过，未改ACL或依赖。
 
@@ -890,7 +890,7 @@ Python5项新记录／桥接测试与原22协议共27项通过：严格字段／
 
 ## DEMO-P2-118：主窗口串行视图（2026-10-29，PC-W11）
 
-117 e966ea9f后为同一显式qkm_demo_mapping补固定view=main，省略仍item_setup；写入前检查实际windows.capture角色enum，未知角色／原合同不支持在修改前拒绝。main只查询并捕获已有本实例可见／恢复主窗，不打开单项窗、不切换设置页、不请求显示或激活。仍沿原身份／Read+Configure+Show+Capture／私有桌面／提交绑定／非行足迹和本轮归属行回收，结果demo_scene.view与原图像role对应。普通15工具／仅记录16／显式演示17及产品17能力不变。
+基117 e966ea9f增view=main，默认仍单项；修改前检查实际捕获角色合同。只捕获已有可见／恢复主窗，不开编辑窗、换页或激活；原身份／权限／私有与回收保持。当时15／16／17工具及17能力不变；详主计划118。
 
 普通权限场景12＋既有图像7共19项通过，覆盖main不调用开／关单项窗、当前实际窗口引用捕获、回收、原角色合同不支持零写入、非法view及原默认／失败／取消路径。产品C++与维护夹具相对117完全不变；复用原本机双Qt构建制品，部署前逐个匹配117实际已验SHA256并记录native-reuse，不重复环境恢复或编译。双Qt正式stdio各主窗A→B后默认单项C→D及Read负例四场28项Native，150 handler／62外层SDK＋32 schema；全源／metadata精确复原、sourceEpoch各正例恰+4、INI／GUI名／加载保持、dirty保留、无编辑窗或runtime输入，Read零修改。
 
@@ -926,9 +926,9 @@ Python图像8／协议22／结构化反馈7共37项通过，包括新scope缺失
 
 ## DEMO-P1-121：高级窗私有归属开关（2026-10-29，PC-W11）
 
-120 3d43f41c后新增固定qkm_open_mapping_settings／qkm_close_mapping_settings及mapping.settings.open／close能力，仅Read+ShowWindows（129）、当前source_tab_ref和private_background；关闭另需实际window_ref。复用原show／close入口，RAII临时WA_ShowWithoutActivating后恢复，主窗设置页不变，原ActivationChange关闭逻辑保持。完整安全源／附着当前Tab、请求／权限／桌面、其他编辑窗／表格草稿／菜单／通知子窗逐项复核，不收任意目标／属性／路径／discard，不自动停止／保存或丢草稿。
+基120 3d43f41c，固定settings开／关只接受当前Tab／窗口引用、Read+Show（129）与后台私有；复用原GUI、临时ShowWithoutActivating后恢复，原页面／ActivationChange保持。全部源／权限／草稿／子窗门禁沿原合同，无任意目标或自动停止／保存／丢草稿；详主计划121。
 
-复用原WindowAccess单个归属记录，显式区分item_setup与mapping_advanced，旧单项默认调用兼容。仅本owner打开且全部输入摘要未变才可关闭；隐藏／重开失效。高级数值控件另只读检查text与value一致，避免关闭解释未提交数字；捕获已归属高级窗时附可选settings_editor_unchanged，普通GUI实时捕获保持原语义。正式工具普通17／仅demo-record18／显式演示19，产品19能力；配对位、既有权限和TS／QM均不扩展。
+原单个WindowAccess归属记录区分单项／高级角色，仅本owner且完整输入摘要未变可关闭，隐藏／重开失效。高级text/value未提交一致性及可选settings_editor_unchanged不代替源修订，普通实时捕获保持。普通17／记录18／演示19及19能力，权限位／TS/QM不变。
 
 双Qt生命周期／窗口控制／IPC维护增量native0，Qt6零编译／链接警告、Qt5兼容通过；Medium实际私有桌面窗口组件每Qt6项、IPC每Qt3项（各含init／cleanup），共18项，旧item解析及归属、严格Tab引用／无任意参数、角色分隔／隐藏失效和真实认证Show授权门槛通过。本片先前Python图像9／协议22／反馈7共38项在其后未改输入上复用，不冒充另一次执行。
 
@@ -942,7 +942,7 @@ Python图像8／协议22／结构化反馈7共37项通过，包括新scope缺失
 
 ## DEMO-P2-122：固定高级窗串行视图（2026-10-29，PC-W11）
 
-121 9d6fe3f2之后仅扩正式桥接串行工具view=mapping_advanced；普通17／仅记录18／显式演示19工具及19产品能力保持。写前核对实际固定settings.open／close与capture角色合同，原单worker及提交时完整源绑定／非行足迹下，通过121原入口后台开窗、原生PNG、安全归属关闭及仅本轮源行删除，不改高级参数／主设置页，不打开任意目标。图片必须含settings_editor_unchanged=true及原完整源上下文；false／缺失不交付场景图，已知错误仅按原证明尝试一次安全回收，未知执行结果或草稿失败保留并隔离。
+基121 9d6fe3f2，只增固定高级view，17／18／19工具及19能力保持。沿原单worker／提交绑定／非行足迹及安全归属回收，写前核角色；图须settings_editor_unchanged=true，未知／草稿保留隔离，不编辑参数／主页面／任意目标。详主计划122及实际验证如下。
 
 普通Medium定向场景17＋图像9共26项通过，新增高级后默认单项的引用字段／回收隔离、缺settings能力写前拒绝、false／缺失／非bool标记不交付图、草稿关闭仅一次且不删除、开窗／捕获／关闭timeout不盲目清理；原主窗／默认单项、已知失败恢复、源／非行变化、取消及busy范围保留。这些是模拟，不冒称真实进程超时／撤权或用户系统输入。
 
@@ -988,7 +988,7 @@ Agent查看四张正式ImageContent图片：高级770×390显示当前实际3／
 
 ## DEMO-P3-125：正式演示绑定契约（2026-10-29，PC-W11）
 
-124 7142cf99之上仅桥接demo.py／demo_scene.py、工具说明及定向维护测试：记录严格version2＋startup_purpose=configuration_only_demo；旧version1、缺失／不符用途不迁移。私有ACL、受信EXE／实际PID创建时间／Session／instance／桌面及认证仍复用；记录自报用途不能提升信任。演示预检要求认证state完整已知策略，各禁止位必须严格bool false、无缺失／额外字段及有效Run；串行入口还在capabilities先复核该策略，再观察源／上下文和预览，不触及普通非演示MCP／持久权限／正常工具数量。错误demo_configuration_only_required明确，不自动换实例、提权／配对或回收不明现场。
+基124 7142cf99只改桥接及维护：version2／只配置用途、原ACL／实际身份／认证，以及state／caps严格false策略强制，旧版／缺项／额外项／0等拒绝且不迁移。自报不提升信任，非法策略在预览／业务前demo_configuration_only_required；普通MCP／权限不变，不换目标／提权／配对或认领现场。详主计划125。
 
 普通Medium Python test_demo／test_demo_scene／test_images共34项通过。新增覆盖version1／缺失用途拒绝、严格false与0／空值／字符串／true区别、字段／用途变化和Run；caps或state缺失／非法时零preview／apply／capture，已有完成回收记录遇策略变化不再复用且隔离。取消、未知结果、旧引用及高级草稿等原场景随选定测试回归，不用模拟结果充当GUI验收。
 
@@ -1104,3 +1104,13 @@ default132c父11868／子37864，GUI启用／产品version2／387配对，包内
 default132d High父36084／子38944，同路径新EXE／新实例认证，包内Medium用原387配对，无新批准／写／图；实际私有→Default、ready／INI保持。High宿主显示由用户确认正常，普通观察器不能可靠读取；父子实际0，发现／创建记录撤下。cf56两图只复用未变业务，新版未重跑。16:10当前2580缓存五项零，ibinput登记／历史未知不接管。
 
 原件同根default132至d、component132、build132、release-identity、用户图／首失败摘录／SDK／PNG／只读重建／退出，仅本机。人工流程超15–20分钟，README补黑背景／启用与配对区别／等待标志；随包自足引导下一片。无Default整屏／映射键／驱动操作；策略及采样非全程系统API或其他实例因果证明。15分钟实等、真实返回失败／锁屏／宿主死亡、Qt5普通Release／Win10／高DPI／QQ待，P3／M3-B未完。
+
+## DEMO-P3-133：固定产品记录与随包引导（2026-10-30，PC-W11）
+
+基88861998桥接局部修改，--product-demo-record与显式路径互斥；从认证pipe.discovery实例定位固定私有目录文件，未连接／非法实例不读，旧记录／身份不符在业务前拒绝，原ACL／实际存活／只配置及回收约束不变。27普通定向含实际ACL边界及旧场景变更隔离通过。新增随包预热步骤／同EXE与Windows会话复用边界；原入口兼容，不自动启动／启用／批准。
+
+复用123无pip builder／固定原归档和29哈希锁wheel，不恢复环境。最终release-final/QKeyMapper MCP Bridge 中文.zip为26708370B，SHA256 a992189487b21fef8278acf86ae0b7cd286d19bbd943f3b2eea315798a42bc40；首release只在指南边界补充前，不算最终。独立解压1614载荷／九当前源码／README一致、PSF三PE签名Valid；仅系统PATH／污染Python变量／中文空格／无关cwd下包内导入、29metadata／无pip，17普通及显式／产品模式18／19通过，未连接均not_connected，缺记录配置／模式互斥两次CLI exit2。
+
+Qt6复用out/mcp_demo_setup_w11_20261030/qt6-runtime/QKeyMapperDemoSetup129_qt6_runtime.exe，源码5146bf17未变（132配对线程未调用），不新构建。High父17168／子34532与包内Medium peer／实际私有桌面核验；产品自身version2／拒绝写打开、15 Native／27 SDK＋8 schema、两场景／两图／回收通过，Agent查看高级中文与C/D单项。父子实际0、work／producer0、INI／FilterKeys／载荷保持、记录删除及当前五项零。固定维护／配对夹具非新正式GUI预热；132人工结果仍原版本复用。
+
+首驱动误把内部status.identity.pid当顶层pid，KeyError在authorize／register／Start前；旧日志保留，after-fixed才为通过。核2580／gen1／18:30后只增本片定义，其他登记／未知不接管。原件仅本机out/mcp_product_record_w11_20261030，含unit／两候选包／最终载荷／SDK／两图／失败及实际清理。无C++构建／新Default／UAC／系统输入；产品重启／跨Windows会话真实复用、干净系统／断网／Qt5包／Win10／QQ未验，完整P3／M3-B不标完成。
