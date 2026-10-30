@@ -7189,6 +7189,59 @@ Pair ID: %2</translation>
         <source>The window permission update did not complete. MCP is disabled if saving failed.</source>
         <translation>The window permission update did not complete. MCP is disabled if saving failed.</translation>
     </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="355" />
+        <source>Enable MCP interface</source>
+        <translation>Enable MCP interface</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="356" />
+        <source>Use the switch for this run. Save its current state for this user and executable.
+Normal and demo mode have separate startup choices.
+Closing this window does not disable MCP or change pairing permissions.</source>
+        <translation>Use the switch for this run. Save its current state for this user and executable.
+Normal and demo mode have separate startup choices.
+Closing this window does not disable MCP or change pairing permissions.</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="357" />
+        <source>Save startup choice</source>
+        <translation>Save startup choice</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="446" />
+        <source>Startup choice: not saved (default: disabled).</source>
+        <translation>Startup choice: not saved (default: disabled).</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="447" />
+        <source>Saved startup choice: enabled.</source>
+        <translation>Saved startup choice: enabled.</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="447" />
+        <source>Saved startup choice: disabled.</source>
+        <translation>Saved startup choice: disabled.</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="448" />
+        <source>The startup choice could not be read or saved.
+No stored choice was changed. Reason: %1</source>
+        <translation>The startup choice could not be read or saved.
+No stored choice was changed. Reason: %1</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="450" />
+        <source>MCP could not be restored at startup.
+The saved choice remains enabled. Check the current status.</source>
+        <translation>MCP could not be restored at startup.
+The saved choice remains enabled. Check the current status.</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="358" />
+        <source>Enable MCP before saving an enabled startup choice.</source>
+        <translation>Enable MCP before saving an enabled startup choice.</translation>
+    </message>
 </context>
 <context>
     <name>QkmCrashMonitor</name>

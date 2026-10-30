@@ -33,6 +33,7 @@
 #include <QComboBox>
 #include <QSpinBox>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QPushButton>
 #include <QStyleOptionButton>
 #include <QTemporaryDir>
@@ -154,6 +155,9 @@ private slots:
     void initTestCase();
     void defaultOffAndLanguage_data();
     void defaultOffAndLanguage();
+    void startupChoice_data();
+    void startupChoice();
+    void startupChoiceFailures();
     void advancedEntryKeyboard();
     void controlFocusPolicy();
     void languageRefreshPreservesState();
@@ -1003,6 +1007,149 @@ void McpControlTest::defaultOffAndLanguage()
     QVERIFY(!widget<QPushButton>(dialog, "mcpApprove")->isDefault());
     const auto labels = dialog.findChildren<QLabel *>();
     for (const QLabel *label : labels) QCOMPARE(label->textFormat(), Qt::PlainText);
+}
+
+void McpControlTest::startupChoice_data()
+{
+    defaultOffAndLanguage_data();
+}
+
+void McpControlTest::startupChoice()
+{
+    QFETCH(int, language);
+    QTranslator translator;
+    QVERIFY(installUiTranslation(translator, language));
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/startup-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString server = root.path() + QStringLiteral("/server"), startup = root.path() + QStringLiteral("/choice");
+    const auto prepare = [](ControlDialog &dialog) {
+        if (configurationOnlyDemo()) QVERIFY(dialog.server().setDemoConfiguration(QStringLiteral("Demo136Seed")));
+        fixture(dialog.server());
+        dialog.restoreStartupChoice();
+    };
+    const auto cold = [&](bool enabled, bool wrongMode = false) {
+        QProcess child;
+        auto environment = QProcessEnvironment::systemEnvironment();
+        if (wrongMode) environment.insert(QStringLiteral("QKM_TEST_CONFIGURATION_ONLY"), configurationOnlyDemo() ? QStringLiteral("0") : QStringLiteral("1"));
+        child.setProcessEnvironment(environment);
+        child.setWorkingDirectory(root.path());
+        child.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--startup-choice-probe"), server, startup,
+            enabled ? QStringLiteral("1") : QStringLiteral("0"), wrongMode ? QStringLiteral("1") : QStringLiteral("0")});
+        QVERIFY(child.waitForStarted(3000));
+        QVERIFY(child.waitForFinished(10000));
+        QCOMPARE(child.exitStatus(), QProcess::NormalExit);
+        QCOMPARE(child.exitCode(), 0);
+        const auto result = QJsonDocument::fromJson(child.readAllStandardOutput()).object();
+        QCOMPARE(result.value(QStringLiteral("desktop")).toString(), qEnvironmentVariable("QKM_TEST_DESKTOP"));
+        QCOMPARE(result.value(QStringLiteral("enabled")).toBool(), enabled);
+    };
+    {
+        ControlDialog dialog(server, "startup136", nullptr, startup);
+        prepare(dialog);
+        QVERIFY(!dialog.server().isEnabled());
+        QVERIFY(!QFileInfo::exists(startup));
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        auto *save = widget<QPushButton>(dialog, "mcpSaveStartup");
+        QVERIFY(!save->autoDefault());
+        QCOMPARE(save->focusPolicy(), Qt::NoFocus);
+        QCOMPARE(save->text(), ControlDialog::tr("Save startup choice"));
+        QCOMPARE(widget<QLabel>(dialog, "mcpStartupStatus")->text(), ControlDialog::tr("Startup choice: not saved (default: disabled)."));
+        clickCheckBox(dialog, "mcpEnabled");
+        QVERIFY(dialog.server().isEnabled());
+        QVERIFY(!QFileInfo::exists(startup));
+        QTest::mouseClick(save, Qt::LeftButton);
+        QCOMPARE(widget<QLabel>(dialog, "mcpStartupStatus")->text(), ControlDialog::tr("Saved startup choice: enabled."));
+        clickCheckBox(dialog, "mcpEnabled");
+        QVERIFY(!dialog.server().isEnabled());
+        // An unsaved runtime change cannot alter the remembered startup choice.
+    }
+    cold(true);
+    cold(false, true);
+    {
+        ControlDialog dialog(server, "startup136", nullptr, startup);
+        prepare(dialog);
+        QVERIFY(dialog.server().isEnabled());
+        const QString firstInstance = dialog.server().instanceId();
+        dialog.retranslateUi();
+        dialog.restoreStartupChoice();
+        QCOMPARE(dialog.server().instanceId(), firstInstance);
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        clickCheckBox(dialog, "mcpEnabled");
+        QTest::mouseClick(widget<QPushButton>(dialog, "mcpSaveStartup"), Qt::LeftButton);
+        QCOMPARE(widget<QLabel>(dialog, "mcpStartupStatus")->text(), ControlDialog::tr("Saved startup choice: disabled."));
+    }
+    cold(false);
+}
+
+void McpControlTest::startupChoiceFailures()
+{
+    QTemporaryDir root(QDir::currentPath() + QStringLiteral("/startup-fail-XXXXXX"));
+    QVERIFY(root.isValid());
+    const QString server = root.path() + QStringLiteral("/server"), startup = root.path() + QStringLiteral("/choice");
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    QVERIFY(own.ok());
+    ControlDialog dialog(server, "startup136", nullptr, startup);
+    if (configurationOnlyDemo()) QVERIFY(dialog.server().setDemoConfiguration(QStringLiteral("Demo136Seed")));
+    fixture(dialog.server());
+    dialog.restoreStartupChoice();
+    dialog.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+    clickCheckBox(dialog, "mcpEnabled");
+    QVERIFY(dialog.server().isEnabled());
+    auto *save = widget<QPushButton>(dialog, "mcpSaveStartup");
+    QTest::mouseClick(save, Qt::LeftButton);
+    QFile saved(QDir(startup).filePath(QStringLiteral("startup.json")));
+    QVERIFY(saved.open(QIODevice::ReadOnly));
+    const QByteArray original = saved.readAll();
+    saved.close();
+    clickCheckBox(dialog, "mcpEnabled");
+    {
+        Storage::DirectoryLease held;
+        QVERIFY(held.acquire(startup, own.identity.userSid, false));
+        QTest::mouseClick(save, Qt::LeftButton);
+        QVERIFY(widget<QLabel>(dialog, "mcpStartupStatus")->text().contains(QStringLiteral("busy")));
+    }
+    {
+        HANDLE held = Storage::privateFile(saved.fileName(), own.identity.userSid);
+        QVERIFY(held != INVALID_HANDLE_VALUE);
+        const auto close = qScopeGuard([held]() { CloseHandle(held); });
+        QTest::mouseClick(save, Qt::LeftButton);
+        QVERIFY(widget<QLabel>(dialog, "mcpStartupStatus")->text().contains(QStringLiteral("io_error")));
+    }
+    QVERIFY(saved.open(QIODevice::ReadOnly));
+    QCOMPARE(saved.readAll(), original);
+    saved.close();
+    {
+        AutomationSessionServer blocker(server, "startup136");
+        if (configurationOnlyDemo()) QVERIFY(blocker.setDemoConfiguration(QStringLiteral("Demo136Seed")));
+        QVERIFY(blocker.enable());
+        ControlDialog failed(server, "startup136", nullptr, startup);
+        if (configurationOnlyDemo()) QVERIFY(failed.server().setDemoConfiguration(QStringLiteral("Demo136Seed")));
+        failed.restoreStartupChoice();
+        QVERIFY(!failed.server().isEnabled());
+        QVERIFY(widget<QLabel>(failed, "mcpStartupStatus")->text().contains(ControlDialog::tr("MCP could not be restored at startup.\nThe saved choice remains enabled. Check the current status.")));
+        failed.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&failed));
+        QVERIFY(widget<QLabel>(failed, "mcpStatus")->text().contains(QStringLiteral("pair_store_busy")));
+        QVERIFY(widget<QLabel>(failed, "mcpStatus")->text().contains(ControlDialog::tr(" Another instance owns this pairing store; manage it there or disable its interface first.")));
+        blocker.disable();
+        failed.restoreStartupChoice();
+        QVERIFY(!failed.server().isEnabled());
+    }
+    QVERIFY(saved.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    QCOMPARE(saved.write("{"), qint64(1));
+    saved.close();
+    ControlDialog broken(server, "startup136", nullptr, startup);
+    broken.restoreStartupChoice();
+    QVERIFY(!broken.server().isEnabled());
+    QVERIFY(widget<QLabel>(broken, "mcpStartupStatus")->text().contains(QStringLiteral("invalid_data")));
+    broken.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&broken));
+    QTest::mouseClick(widget<QPushButton>(broken, "mcpSaveStartup"), Qt::LeftButton);
+    QVERIFY(saved.open(QIODevice::ReadOnly));
+    QCOMPARE(saved.readAll(), QByteArray("{"));
 }
 
 void McpControlTest::advancedEntryKeyboard()
@@ -2436,6 +2583,23 @@ int main(int argc, char **argv)
     QApplication::setStyle(QStringLiteral("Fusion"));
     QApplication::setFont(QFont(QString::fromLatin1(QKeyMapperConstants::FONTNAME_ENGLISH), 9));
     app.setQuitOnLastWindowClosed(false);
+    if (app.arguments().size() == 6 && app.arguments().at(1) == QStringLiteral("--startup-choice-probe")) {
+        ControlDialog dialog(app.arguments().at(2), "startup136", nullptr, app.arguments().at(3));
+        if (configurationOnlyDemo() && !dialog.server().setDemoConfiguration(QStringLiteral("Demo136Seed"))) return 40;
+        fixture(dialog.server());
+        dialog.restoreStartupChoice();
+        wchar_t desktop[256]{};
+        DWORD needed = 0;
+        if (!GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), &needed)) return 41;
+        const bool enabled = dialog.server().isEnabled();
+        const bool failed = widget<QLabel>(dialog, "mcpStartupStatus")->text().contains(QStringLiteral("invalid_data"));
+        const QByteArray result = QJsonDocument(QJsonObject{{QStringLiteral("enabled"), enabled},
+            {QStringLiteral("desktop"), QString::fromWCharArray(desktop)}}).toJson(QJsonDocument::Compact);
+        QFile output;
+        if (!output.open(stdout, QIODevice::WriteOnly) || output.write(result) != result.size()) return 42;
+        return enabled == (app.arguments().at(4) == QStringLiteral("1"))
+            && failed == (app.arguments().at(5) == QStringLiteral("1")) ? 0 : 43;
+    }
     if (ownerChild) {
         app.setQuitOnLastWindowClosed(true);
         DemoOwnerTestWindow window;
@@ -2488,7 +2652,11 @@ int main(int argc, char **argv)
         const QString mode = app.arguments().at(3);
         if (mode != QStringLiteral("off") && mode != QStringLiteral("pending")
             && mode != QStringLiteral("paired-off") && mode != QStringLiteral("busy-off")
+            && mode != QStringLiteral("startup-saved") && mode != QStringLiteral("startup-failed")
+            && mode != QStringLiteral("startup-write-failed")
             && mode != QStringLiteral("window-approval")) return 24;
+        const QString startup = mode.startsWith(QStringLiteral("startup-"))
+            ? root.path() + QStringLiteral("/choice") : QString();
         Storage::DirectoryLease previewLease;
         if (mode == QStringLiteral("paired-off") || mode == QStringLiteral("busy-off") || mode == QStringLiteral("window-approval")) {
             PairCredentialStore store(root.path() + QStringLiteral("/server"), "test-preview");
@@ -2499,7 +2667,25 @@ int main(int argc, char **argv)
         }
         QTranslator translator;
         if (!installUiTranslation(translator, app.arguments().at(2).toInt())) return 27;
-        ControlDialog dialog(root.path() + QStringLiteral("/server"), "test-preview");
+        if (!startup.isEmpty()) {
+            ControlDialog initial(root.path() + QStringLiteral("/server"), "test-preview", nullptr, startup);
+            if (configurationOnlyDemo() && !initial.server().setDemoConfiguration(QStringLiteral("Demo136Seed"))) return 29;
+            initial.restoreStartupChoice();
+            initial.show();
+            if (!QTest::qWaitForWindowExposed(&initial)) return 30;
+            clickCheckBox(initial, "mcpEnabled");
+            if (!initial.server().isEnabled()) return 31;
+            QTest::mouseClick(widget<QPushButton>(initial, "mcpSaveStartup"), Qt::LeftButton);
+        }
+        if (mode == QStringLiteral("startup-failed")) {
+            const auto own = queryProcessIdentity(GetCurrentProcessId());
+            if (!own.ok() || !previewLease.acquire(root.path() + QStringLiteral("/server"), own.identity.userSid, false)) return 32;
+        }
+        ControlDialog dialog(root.path() + QStringLiteral("/server"), "test-preview", nullptr, startup);
+        if (!startup.isEmpty()) {
+            if (configurationOnlyDemo() && !dialog.server().setDemoConfiguration(QStringLiteral("Demo136Seed"))) return 33;
+            dialog.restoreStartupChoice();
+        }
         if (mode == QStringLiteral("pending")) {
             const auto own = queryProcessIdentity(GetCurrentProcessId());
             if (!own.ok()) return 21;
@@ -2508,6 +2694,12 @@ int main(int argc, char **argv)
                 QStringLiteral("<b>测试客户端</b> 日本語"), own.identity});
         }
         dialog.show();
+        if (mode == QStringLiteral("startup-write-failed")) {
+            const auto own = queryProcessIdentity(GetCurrentProcessId());
+            if (!own.ok() || !previewLease.acquire(startup, own.identity.userSid, false)) return 34;
+            clickCheckBox(dialog, "mcpEnabled");
+            QTest::mouseClick(widget<QPushButton>(dialog, "mcpSaveStartup"), Qt::LeftButton);
+        }
         if (mode == QStringLiteral("window-approval")) {
             clickCheckBox(dialog, "mcpEnabled");
             if (!dialog.server().isEnabled()) return 28;

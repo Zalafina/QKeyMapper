@@ -3,6 +3,7 @@
 
 #include "qkm_session_server.h"
 #include <QDialog>
+#include <optional>
 
 class QCheckBox;
 class QLabel;
@@ -17,7 +18,9 @@ class ControlDialog : public QDialog {
     Q_OBJECT
 public:
     explicit ControlDialog(QWidget *parent = nullptr);
-    ControlDialog(QString storeDirectory, QByteArray applicationBinding, QWidget *parent = nullptr);
+    ControlDialog(QString storeDirectory, QByteArray applicationBinding, QWidget *parent = nullptr,
+                  QString startupDirectory = {});
+    void restoreStartupChoice();
     void retranslateUi();
     static QString title();
     AutomationSessionServer &server() { return m_server; }
@@ -32,8 +35,16 @@ private:
     void finishPending();
     void setEnabledByUser(bool enabled);
     void approveWindowPermissions();
+    void saveStartupChoice();
 
     QString m_storeDirectory;
+    QString m_startupDirectory;
+    QByteArray m_startupBinding;
+    std::optional<bool> m_savedStartup;
+    QString m_startupError;
+    QString m_failureCode;
+    bool m_startupAttempted = false;
+    bool m_startupRestoreFailed = false;
     AutomationSessionServer m_server;
     PairingRequest m_pending;
     QString m_peerExecutable;
@@ -42,6 +53,8 @@ private:
     bool m_windowFailed = false;
     QCheckBox *m_enabled;
     QLabel *m_notice;
+    QLabel *m_startupStatus;
+    QPushButton *m_saveStartup;
     QLabel *m_status;
     QLineEdit *m_connection;
     QListWidget *m_pairings;

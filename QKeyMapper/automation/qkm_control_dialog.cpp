@@ -1,6 +1,8 @@
 #include "qkm_control_dialog.h"
 #include "qkm_demo_mode.h"
+#include "qkm_ipc_frame.h"
 
+#include <QBuffer>
 #include <QCoreApplication>
 #include <QCheckBox>
 #include <QCryptographicHash>
@@ -12,10 +14,13 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QPushButton>
+#include <QSaveFile>
+#include <QScopeGuard>
 #include <QSignalBlocker>
 #include <QShowEvent>
 #include <QStandardPaths>
 #include <QVBoxLayout>
+#include <QtEndian>
 #include <utility>
 
 namespace QkmAutomation {
@@ -40,6 +45,105 @@ QString defaultStoreDirectory()
         + QString::fromLatin1(binding.toHex()));
 }
 
+QByteArray startupBinding()
+{
+    const QString executable = QFileInfo(QCoreApplication::applicationFilePath()).canonicalFilePath();
+    if (executable.isEmpty()) return {};
+    QByteArray binding("QKeyMapper-MCP-Startup/v1");
+    binding.append('\0').append(executable.toUtf8()).append('\0');
+    binding.append(configurationOnlyDemo() ? "demo" : "normal");
+    return QCryptographicHash::hash(binding, QCryptographicHash::Sha256);
+}
+
+QString defaultStartupDirectory()
+{
+    const QString base = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    const QByteArray binding = startupBinding();
+    if (base.isEmpty() || binding.isEmpty()) return {};
+    return QDir(base).filePath(QStringLiteral("MCP/startup-v1/") + QString::fromLatin1(binding.toHex()));
+}
+
+bool readStartupChoice(const QString &directory, const QByteArray &binding,
+                       std::optional<bool> &choice, QString &error)
+{
+    choice.reset();
+    error = QStringLiteral("invalid_context");
+    if (!QDir::isAbsolutePath(directory) || directory.contains(QChar::Null) || binding.size() != 32) return false;
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    if (!own.ok()) return false;
+    const QString native = QDir::toNativeSeparators(directory);
+    const DWORD attributes = GetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16()));
+    if (attributes == INVALID_FILE_ATTRIBUTES
+        && (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND)) {
+        error.clear();
+        return true;
+    }
+    error = QStringLiteral("unsafe_storage");
+    HANDLE root = Storage::privateDirectory(directory, own.identity.userSid, false);
+    if (root == INVALID_HANDLE_VALUE) return false;
+    const auto closeRoot = qScopeGuard([root]() { CloseHandle(root); });
+    HANDLE file = Storage::privateFile(QDir(directory).filePath(QStringLiteral("startup.json")), own.identity.userSid);
+    if (file == INVALID_HANDLE_VALUE) {
+        if (GetLastError() != ERROR_FILE_NOT_FOUND) return false;
+        error.clear();
+        return true;
+    }
+    const auto closeFile = qScopeGuard([file]() { CloseHandle(file); });
+    error = QStringLiteral("invalid_data");
+    LARGE_INTEGER size{};
+    if (!GetFileSizeEx(file, &size) || size.QuadPart <= 0 || size.QuadPart > 4096) return false;
+    QByteArray bytes(static_cast<int>(size.QuadPart) + 4, '\0');
+    qToBigEndian<quint32>(static_cast<quint32>(size.QuadPart), bytes.data());
+    DWORD read = 0;
+    error = QStringLiteral("io_error");
+    if (!ReadFile(file, bytes.data() + 4, static_cast<DWORD>(size.QuadPart), &read, nullptr)
+        || read != static_cast<DWORD>(size.QuadPart)) return false;
+    QBuffer buffer(&bytes);
+    if (!buffer.open(QIODevice::ReadOnly)) return false;
+    FrameReader reader(4096);
+    QJsonObject value;
+    error = QStringLiteral("invalid_data");
+    if (reader.read(buffer, value) != FrameReadResult::Message || !reader.finish() || !buffer.atEnd()
+        || value.size() != 3 || value.value(QStringLiteral("version")) != QJsonValue(1)
+        || value.value(QStringLiteral("context")) != QString::fromLatin1(binding.toHex())
+        || !value.value(QStringLiteral("enabled")).isBool()) return false;
+    choice = value.value(QStringLiteral("enabled")).toBool();
+    error.clear();
+    return true;
+}
+
+bool writeStartupChoice(const QString &directory, const QByteArray &binding, bool enabled, QString &error)
+{
+    error = QStringLiteral("invalid_context");
+    if (!QDir::isAbsolutePath(directory) || directory.contains(QChar::Null) || binding.size() != 32) return false;
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    if (!own.ok()) return false;
+    error = QStringLiteral("io_error");
+    if (!QDir().mkpath(QFileInfo(directory).absolutePath())) return false;
+    Storage::DirectoryLease lease;
+    if (!lease.acquire(directory, own.identity.userSid, true)) {
+        error = lease.lastError() == ERROR_SHARING_VIOLATION ? QStringLiteral("busy") : QStringLiteral("unsafe_storage");
+        return false;
+    }
+    std::optional<bool> previous;
+    if (!readStartupChoice(directory, binding, previous, error)) return false;
+    FrameError frameError;
+    const QByteArray frame = encodeFrame({{QStringLiteral("version"), 1},
+        {QStringLiteral("context"), QString::fromLatin1(binding.toHex())}, {QStringLiteral("enabled"), enabled}}, 4096, frameError);
+    error = QStringLiteral("invalid_data");
+    if (frame.isEmpty()) return false;
+    QSaveFile file(QDir(directory).filePath(QStringLiteral("startup.json")));
+    file.setDirectWriteFallback(false);
+    error = QStringLiteral("io_error");
+    if (!file.open(QIODevice::WriteOnly)) return false;
+    error = QStringLiteral("unsafe_storage");
+    if (!Storage::secureTemporaryFile(file, own.identity.userSid)) return false;
+    error = QStringLiteral("io_error");
+    if (file.write(frame.constData() + 4, frame.size() - 4) != frame.size() - 4 || !file.commit()) return false;
+    error.clear();
+    return true;
+}
+
 QLabel *plainLabel(QWidget *parent)
 {
     auto *label = new QLabel(parent);
@@ -53,12 +157,13 @@ QLabel *plainLabel(QWidget *parent)
 } // namespace
 
 ControlDialog::ControlDialog(QWidget *parent)
-    : ControlDialog(defaultStoreDirectory(), applicationBinding(), parent)
+    : ControlDialog(defaultStoreDirectory(), applicationBinding(), parent, defaultStartupDirectory())
 {
 }
 
-ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget *parent)
-    : QDialog(parent), m_storeDirectory(std::move(storeDirectory)), m_server(m_storeDirectory, std::move(binding))
+ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget *parent, QString startupDirectory)
+    : QDialog(parent), m_storeDirectory(std::move(storeDirectory)), m_startupDirectory(std::move(startupDirectory)),
+      m_startupBinding(startupBinding()), m_server(m_storeDirectory, std::move(binding))
 {
     setObjectName(QStringLiteral("mcpControlDialog"));
     setMinimumWidth(540);
@@ -74,6 +179,15 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
     m_connection->setReadOnly(true);
     layout->addWidget(m_enabled);
     layout->addWidget(m_notice);
+    auto *startupRow = new QHBoxLayout;
+    m_startupStatus = plainLabel(this);
+    m_startupStatus->setObjectName(QStringLiteral("mcpStartupStatus"));
+    m_saveStartup = new QPushButton(this);
+    m_saveStartup->setObjectName(QStringLiteral("mcpSaveStartup"));
+    m_saveStartup->setEnabled(!m_startupDirectory.isEmpty());
+    startupRow->addWidget(m_startupStatus, 1);
+    startupRow->addWidget(m_saveStartup);
+    layout->addLayout(startupRow);
     layout->addWidget(m_status);
     layout->addWidget(m_connection);
     m_pairings = new QListWidget(this);
@@ -151,7 +265,7 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
     m_close->setObjectName(QStringLiteral("mcpClose"));
     layout->addWidget(m_close, 0, Qt::AlignRight);
     // Use mouse-driven actions; keep selection and copying available by click.
-    for (QPushButton *button : {m_approve, m_reject, m_revoke, m_close, m_windowPermissions, m_windowApprove, m_windowClose}) {
+    for (QPushButton *button : {m_approve, m_reject, m_revoke, m_close, m_saveStartup, m_windowPermissions, m_windowApprove, m_windowClose}) {
         button->setAutoDefault(false);
         button->setFocusPolicy(Qt::NoFocus);
     }
@@ -160,6 +274,7 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
     for (QLineEdit *edit : {m_connection, m_executable}) edit->setFocusPolicy(Qt::ClickFocus);
     m_pairings->setFocusPolicy(Qt::ClickFocus);
     connect(m_enabled, &QCheckBox::toggled, this, &ControlDialog::setEnabledByUser);
+    connect(m_saveStartup, &QPushButton::clicked, this, &ControlDialog::saveStartupChoice);
     connect(m_close, &QPushButton::clicked, this, &QDialog::close);
     connect(m_pairings, &QListWidget::itemSelectionChanged, this, [this]() {
         m_revoke->setEnabled(m_pairings->selectedItems().size() == 1);
@@ -222,7 +337,9 @@ ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget
             refresh();
         });
     connect(&m_server, &AutomationSessionServer::enabledChanged, this, [this]() { refresh(); });
-    connect(&m_server, &AutomationSessionServer::failed, this, [this]() { m_failed = true; refresh(); });
+    connect(&m_server, &AutomationSessionServer::failed, this, [this](const QString &code) {
+        m_failureCode = code; m_failed = true; refresh();
+    });
     retranslateUi();
     finishPending();
 }
@@ -235,8 +352,10 @@ QString ControlDialog::title()
 void ControlDialog::retranslateUi()
 {
     setWindowTitle(title());
-    m_enabled->setText(tr("Enable MCP for this run"));
-    m_notice->setText(tr("Only this user and logon session may connect. Approve pairing here. Closing this window keeps MCP enabled; restarting QKeyMapper disables it."));
+    m_enabled->setText(tr("Enable MCP interface"));
+    m_notice->setText(tr("Use the switch for this run. Save its current state for this user and executable.\nNormal and demo mode have separate startup choices.\nClosing this window does not disable MCP or change pairing permissions."));
+    m_saveStartup->setText(tr("Save startup choice"));
+    m_saveStartup->setToolTip(tr("Enable MCP before saving an enabled startup choice."));
     m_connection->setPlaceholderText(tr("MCP is disabled"));
     m_connection->setAccessibleName(tr("Connection information file"));
     m_connection->setToolTip(tr("Copy this path when configuring the MCP bridge. It contains no pairing key."));
@@ -277,6 +396,7 @@ void ControlDialog::retranslateUi()
 void ControlDialog::setEnabledByUser(bool enabled)
 {
     m_failed = false;
+    m_failureCode.clear();
     m_windowFailed = false;
     if (enabled) {
         if (m_storeDirectory.isEmpty() || !QDir().mkpath(QFileInfo(m_storeDirectory).absolutePath())
@@ -284,6 +404,38 @@ void ControlDialog::setEnabledByUser(bool enabled)
     } else {
         m_server.disable();
         finishPending();
+    }
+    if (m_failed && m_failureCode.isEmpty()) {
+        const auto store = m_server.lastStoreError();
+        const auto discovery = m_server.lastDiscoveryError();
+        if (store == PairStoreError::Busy) m_failureCode = QStringLiteral("pair_store_busy");
+        else if (store != PairStoreError::None) m_failureCode = QStringLiteral("pair_store_error_%1").arg(static_cast<int>(store));
+        else if (discovery != DiscoveryError::None) m_failureCode = QStringLiteral("discovery_error_%1").arg(static_cast<int>(discovery));
+        else m_failureCode = QStringLiteral("enable_failed");
+    }
+    refresh();
+}
+
+void ControlDialog::restoreStartupChoice()
+{
+    // The product calls once after the business handler, initial load and demo policy are ready.
+    if (m_startupAttempted) return;
+    m_startupAttempted = true;
+    if (!m_startupDirectory.isEmpty()
+        && readStartupChoice(m_startupDirectory, m_startupBinding, m_savedStartup, m_startupError)
+        && m_savedStartup.value_or(false)) {
+        setEnabledByUser(true);
+        m_startupRestoreFailed = !m_server.isEnabled();
+    }
+    refresh();
+}
+
+void ControlDialog::saveStartupChoice()
+{
+    const bool enabled = m_server.isEnabled();
+    if (writeStartupChoice(m_startupDirectory, m_startupBinding, enabled, m_startupError)) {
+        m_savedStartup = enabled;
+        m_startupRestoreFailed = false;
     }
     refresh();
 }
@@ -296,8 +448,15 @@ void ControlDialog::refresh()
                                          : tr("MCP is disabled");
     if (m_windowFailed) status += QStringLiteral("\n") + tr("The window permission update did not complete. MCP is disabled if saving failed.");
     else if (m_failed) status += tr("; the last operation failed. A revocation that was not saved did not succeed.");
-    if (m_failed && m_server.lastStoreError() == PairStoreError::Busy)
+    if (m_failed && (m_server.lastStoreError() == PairStoreError::Busy || m_failureCode == QStringLiteral("pair_store_busy")))
         status += tr(" Another instance owns this pairing store; manage it there or disable its interface first.");
+    if (m_failed && !m_failureCode.isEmpty()) status += QStringLiteral(" [%1]").arg(m_failureCode);
+    QString startup = !m_savedStartup.has_value() ? tr("Startup choice: not saved (default: disabled).")
+        : m_savedStartup.value() ? tr("Saved startup choice: enabled.") : tr("Saved startup choice: disabled.");
+    if (!m_startupError.isEmpty()) startup = tr("The startup choice could not be read or saved.\nNo stored choice was changed. Reason: %1").arg(m_startupError);
+    if (m_startupRestoreFailed) startup += QStringLiteral("\n")
+        + tr("MCP could not be restored at startup.\nThe saved choice remains enabled. Check the current status.");
+    m_startupStatus->setText(startup);
     m_status->setText(status);
     m_connection->setText(m_server.isEnabled() ? m_server.discoveryPath() : QString());
     const auto selectedItems = m_pairings->selectedItems();

@@ -1122,3 +1122,15 @@ Qt6复用out/mcp_demo_setup_w11_20261030/qt6-runtime/QKeyMapperDemoSetup129_qt6_
 最终复用131 Qt6原Native（identity-after关联cf56时代产物，未调用H6／170路径），High父12308／子5404实际私有谱系／登录核验；五peer Medium。SDK明确加载两合成workspace：A首次一次夹具批准387，B并发pipe_busy且A不变；断开后B、再A新会话用原凭据认证。错误EXE拒绝、缺失／坏JSON在启动前拒绝，关联与无关项不变；三认证／源空／代次0，无业务写。17 Native通过、父子0／work与producer0／INI与FilterKeys保持、记录撤下、当前2580五项零。
 
 首轮最后扫描误读private_store/control.lock权限失败，SDK false／父子实际2已退出，全部失败原件保留；只扫描自生成客户端白名单后after-fixed通过，不读产品密钥库／放宽ACL。仅清理本轮新命名空间凭据，132人工配对及历史未知不动。原件仅本机out/mcp_workspace_w11_20261030含包／逐调用／peer／样例／两轮日志／Native／退出及cache-after。不证明真实Agent／gateway加载、权限隔离、撤销／写失败、产品或Windows重启、跨用户／机器／路径、Win10／其他实例因果。无C++构建／Default／UAC／新图／映射输入；136／137及完整矩阵待。
+
+## PERSIST-136：用户明确保存启动选择（2026-10-30，PC-W11）
+
+基4ee6b62c＋局部ControlDialog／一行构造收尾／组件及S1–S9 TS/QM。非秘密选择为AppLocalDataLocation/MCP/startup-v1/<canonical EXE＋角色哈希>/startup.json，三个受限字段、4096B／帧JSON、用户私有ACL／反重解析硬链、短DirectoryLease及QSaveFile禁回退；不写映射INI或密钥。实际状态与保存状态分开、恢复只一次；失败保留实际枚举／端点原因，不推算原生码。接口恢复不代授权或绕UAC。
+
+最终out/tests/mcp_control/{qt6,qt5}-release/release/QKeyMapperMcpControlTest.exe及out/build_qt6/release/QKeyMapper.exe三构建native0／零警告，后者仅构建。首沙箱C1902三失败build-first保留，Medium相同工具链重试，无重装／清理PDB／改manifest。普通角色每Qt28、演示每Qt7均通过，含init／cleanup；UI真实按钮／翻译刷新、组件独立冷进程／同路径重开、未保存运行切换／存关、角色不符、坏文件不覆盖、写锁／提交失败旧字节保持、接口Busy失败保存意愿／只尝试一次，及受影响GUI配对／权限。组件实际私有QkmMcp_*、Medium、exit0，非正式High／整包冷启动。
+
+首有效9图发现Busy原因被showEvent刷新覆盖；修正保存实际原因后，双Qt两角色各7定向通过（含init／cleanup），三语再3图。12张均由仓库capture_ui_snapshots.ps1同私有桌面普通助手PrintWindow取得，目标PID／创建时间／EXE／窗口归属／实际桌面核验；目标／助手actual0，Agent逐张查看，96DPI／DPR1，中文优先、三语无黑图或裁剪。S2三行、S7两行、S8两行真实LF；用户批准文案，未称已收到其Linguist效果确认。首visual观察器在Default查询私有HWND失败未截图，待组件寿命结束；未保留退出码，不推算0，原visual／visual-first保留。visual-fixed九图、visual-final三恢复失败图为有效记录。
+
+Qt6 lupdate-pro原生0且提取九目标但报winextras；Qt5项目提取无模块诊断。仅九获批消息合并，旧全部译文／历史条目不变；三语lrelease1193完成、QM往返旧1184＋9／占位符与LF准确。用户明确此确切winextras提示可默认忽略，workflow及Claude镜像同补界限，指定C:/Python/Python311/python.exe -B -X utf8的quick_validate两次通过；只证明技能基本结构。两新资源不因旧消息失效而全局清理。
+
+原件仅本机out/mcp_persist_w11_20261030含首失败／最终构建、TS/QM备份／提取／往返、8组组件、冷进程、12图／观察失败、cache-off／closed。17:55:11 off前当前2580无他组活动／五项零，off回closed/cache_available=false／gen2，随后status无受管控制器／native_sessions_observed0；他组登记／历史未知不接管。未做普通Release启动、真实配置切换／完整冷启、High新偏好存储、PC／Windows登录变更、跨用户／机器／路径实测、Default／Win10／高DPI／QQ或137。无ASan／全静态／驱动输入扩展；136只作选定独立提交切点，完整持久矩阵与M1／P3／M3-B保留。

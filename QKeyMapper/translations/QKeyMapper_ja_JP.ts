@@ -7189,6 +7189,59 @@ Pair ID: %2</source>
         <source>The window permission update did not complete. MCP is disabled if saving failed.</source>
         <translation>ウィンドウ権限の更新は完了していません。保存に失敗した場合、MCPは無効になります。</translation>
     </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="355" />
+        <source>Enable MCP interface</source>
+        <translation>MCP インターフェイスを有効にする</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="356" />
+        <source>Use the switch for this run. Save its current state for this user and executable.
+Normal and demo mode have separate startup choices.
+Closing this window does not disable MCP or change pairing permissions.</source>
+        <translation>スイッチは今回の実行に適用されます。現在のユーザーと実行ファイルに対して状態を保存できます。
+通常モードとデモモードの起動設定は個別に保存されます。
+このウィンドウを閉じても、MCP は無効にならず、ペアリング権限も変わりません。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="357" />
+        <source>Save startup choice</source>
+        <translation>起動設定を保存</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="446" />
+        <source>Startup choice: not saved (default: disabled).</source>
+        <translation>起動設定：未保存（既定では無効）。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="447" />
+        <source>Saved startup choice: enabled.</source>
+        <translation>保存済みの起動設定：有効。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="447" />
+        <source>Saved startup choice: disabled.</source>
+        <translation>保存済みの起動設定：無効。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="448" />
+        <source>The startup choice could not be read or saved.
+No stored choice was changed. Reason: %1</source>
+        <translation>起動設定を読み込み、または保存できませんでした。
+保存済みの設定は変更されていません。理由: %1</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="450" />
+        <source>MCP could not be restored at startup.
+The saved choice remains enabled. Check the current status.</source>
+        <translation>起動時に MCP を復元できませんでした。
+保存済みの設定は有効のままです。現在の状態を確認してください。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="358" />
+        <source>Enable MCP before saving an enabled startup choice.</source>
+        <translation>起動時に有効にする設定を保存するには、先に MCP を有効にしてください。</translation>
+    </message>
 </context>
 <context>
     <name>QkmCrashMonitor</name>

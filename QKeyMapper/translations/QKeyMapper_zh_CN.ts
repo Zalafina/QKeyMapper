@@ -7189,6 +7189,59 @@ Pair ID: %2</source>
         <source>The window permission update did not complete. MCP is disabled if saving failed.</source>
         <translation>窗口权限更新未完成；保存失败时MCP接口会关闭。</translation>
     </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="355" />
+        <source>Enable MCP interface</source>
+        <translation>启用 MCP 接口</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="356" />
+        <source>Use the switch for this run. Save its current state for this user and executable.
+Normal and demo mode have separate startup choices.
+Closing this window does not disable MCP or change pairing permissions.</source>
+        <translation>开关立即作用于本次运行，可为当前用户及程序副本保存其当前状态。
+普通模式与演示模式分别保存启动选择。
+关闭此窗口不会禁用 MCP，也不会改变配对权限。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="357" />
+        <source>Save startup choice</source>
+        <translation>保存启动选择</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="446" />
+        <source>Startup choice: not saved (default: disabled).</source>
+        <translation>启动选择：未保存（默认关闭）。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="447" />
+        <source>Saved startup choice: enabled.</source>
+        <translation>已保存的启动选择：启用。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="447" />
+        <source>Saved startup choice: disabled.</source>
+        <translation>已保存的启动选择：关闭。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="448" />
+        <source>The startup choice could not be read or saved.
+No stored choice was changed. Reason: %1</source>
+        <translation>无法读取或保存启动选择。
+未更改已存选择。原因：%1</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="450" />
+        <source>MCP could not be restored at startup.
+The saved choice remains enabled. Check the current status.</source>
+        <translation>启动时无法恢复 MCP。
+已保存的选择仍为启用，请检查当前状态。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_control_dialog.cpp" line="358" />
+        <source>Enable MCP before saving an enabled startup choice.</source>
+        <translation>如需保存为启动时启用，请先成功启用 MCP。</translation>
+    </message>
 </context>
 <context>
     <name>QkmCrashMonitor</name>

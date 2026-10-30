@@ -4182,6 +4182,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     scheduleScaleDiagnostics(QStringLiteral("startup"), true);
 #endif
     QKEYMAPPER_ATOMIC_STORE_RELAXED(s_AtomicIsInitialized, 1);
+    m_McpControlDialog->restoreStartupChoice();
 }
 void QKeyMapper::registerEditorUiScale(QWidget *root)
 {
