@@ -24,7 +24,21 @@ QString version(const QString &path) {
     if (!size) return {};
     QByteArray bytes(static_cast<int>(size),'\0');
     if (!GetFileVersionInfoW(native,0,size,bytes.data())) return {};
-    VS_FIXEDFILEINFO *info=nullptr; UINT length=0;
+    struct Translation { WORD language; WORD codePage; };
+    Translation *translations=nullptr; UINT length=0;
+    if (VerQueryValueW(bytes.data(),L"\\VarFileInfo\\Translation",reinterpret_cast<LPVOID *>(&translations),&length)) {
+        for (UINT index=0;index<length/sizeof(Translation);++index) {
+            const QString key=QStringLiteral("\\StringFileInfo\\%1%2\\ProductVersion")
+                .arg(translations[index].language,4,16,QLatin1Char('0'))
+                .arg(translations[index].codePage,4,16,QLatin1Char('0'));
+            LPWSTR value=nullptr; UINT characters=0;
+            if (VerQueryValueW(bytes.data(),reinterpret_cast<LPCWSTR>(key.utf16()),reinterpret_cast<LPVOID *>(&value),&characters) && characters>1) {
+                const QString display=QString::fromWCharArray(value).trimmed();
+                if (!display.isEmpty()) return display;
+            }
+        }
+    }
+    VS_FIXEDFILEINFO *info=nullptr;
     if (!VerQueryValueW(bytes.data(),L"\\",reinterpret_cast<LPVOID *>(&info),&length) || length<sizeof(*info)) return {};
     return QStringLiteral("%1.%2.%3.%4").arg(HIWORD(info->dwProductVersionMS)).arg(LOWORD(info->dwProductVersionMS)).arg(HIWORD(info->dwProductVersionLS)).arg(LOWORD(info->dwProductVersionLS));
 }
@@ -83,7 +97,8 @@ void QkmIbInputPopup::retranslate() {
     m_policy->setItemText(0,tr("Do not start mapping")); m_policy->setItemText(1,tr("Use SendInput before start"));
     m_refresh->setText(tr("Refresh status")); m_check->setText(tr("Check connection"));
     m_check->setToolTip(tr("May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup."));
-    m_help->setText(tr("<a href=\"https://www.logitechg.com/innovation/g-hub.html\">G HUB</a> | <a href=\"https://www.razer.com/synapse\">Razer Synapse</a><br>Connection and accepted calls do not prove that an application received input."));
+    const QColor link=palette().color(QPalette::Window).lightness()<128 ? QColor(114,178,255) : palette().color(QPalette::Link);
+    m_help->setText(QStringLiteral("<style>a { color: %1; }</style>").arg(link.name())+tr("<a href=\"https://www.logitechg.com/innovation/g-hub.html\">G HUB</a> | <a href=\"https://www.razer.com/synapse\">Razer Synapse</a><br>Connection and accepted calls do not prove that an application received input."));
     refresh();
 }
 void QkmIbInputPopup::refresh() {
