@@ -1037,9 +1037,7 @@ Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycl
 
 ## DEMO-P3-128：正式宿主入口与存活产品关闭（2026-10-30，PC-W11）
 
-源码127 e15d9862之上：固定唯一参数--demo-host解析为不可变DemoHost用途，重复／混合／附加参数拒绝。正式管理员检查后、诊断及所有产品单例／SingleApplication之前进入runDemoHost；独立QApplication／DemoHostDialog只调用127固定同镜像核心，不构造QKeyMapper／输入引擎或自动启用MCP／配对。宿主用途本身可作为后续显式部署入口在Default运行，子实例仍必须实际私有后台；本轮所有执行均在已核实自有非输入私有桌面，没有运行Default。正常参数仍原主分支，原manifest不改。
-
-宿主固定显示实际子PID／EXE，只提供正常关闭，无外部进程／路径／HWND／命令参数。普通按钮autoDefault=false／NoFocus，状态可选择且纯文本；LanguageChange更新标题／状态／按钮，业务身份不变。Escape覆写reject并走同一closeEvent门禁，避免QDialog默认隐藏绕开关闭；关闭失败保持可见和拥有关系，子进程实际退出后才接受关闭／传播已取得退出码。正常仍无强杀存活实例或全局活动目标。配对显示／返回尚未接线，不把这一入口称为完整预热交付。
+基e15d9862：唯一--demo-host于管理员检查后／产品单例前分流，只拥有同EXE私有子实例，不自动启用／批准MCP；正常入口及原manifest不改。状态／按钮／Escape与关闭门禁见下列实测，设计见主计划128。本轮均非输入私有桌面，未验Default／完整预热。
 
 用户批准H1–H8推荐中英日文案后，仅本片实际H1–H5写入正式TS/QM，H6–H8留后续对应源码。Qt5.15.2/MSVC环境的lupdate-pro QKeyMapper.pro原生0／无编译器模块错误，提取1180条（5新增、1175已有）；仅保留新QkmAutomation::DemoHostDialog上下文，原TS各上下文逐项保持，不提交位置／排序噪声。lrelease三语各1180 finished／0 unfinished，lconvert QM往返逐项核对原1175条不变、新5条准确；每语H2／H4／H5为真实LF，Qt占位符完整，没有反斜杠n或HTML换行。用户随后明确确认沿用此换行方式，不冒称新一轮Linguist独立核验。
 
@@ -1081,3 +1079,14 @@ Qt6.8.3 msvc2022_64与Qt5.15.2 msvc2019_64，各mcp_control／sendinput_lifecycl
 同一ZIP独立解压包随后与129已编译Qt6原manifest产品接续：沿127固定demo_process_owner夹具核实High父子／创建时间／同登录／实际不同私有桌面，SDK本身Medium且实际客户端为包内runtime（精确SDK派生PID，不是开发venv重定向）。仅系统PATH／污染Python变量／中文空格无关cwd保持。消费并锁定产品自身version2记录，正式qkm_demo_mapping执行A→B高级页与C→D单条两场景，15 Native／27 SDK＋8结构拒绝、两代场景及操作归属／空源回收／dirty保留通过。
 
 两张正式MCP PNG已由Agent查看：高级页中文清晰、无黑图，A→B由同次业务／实例元数据核验；单条窗口实际C→D，非旧场景。未额外重跑未变捕获代码的旧GUI像素对照。产品INI逐字不变、FilterKeys未变、work／producer0，父子原生0退出、创建记录删除、本轮五项清理零。运行后全部1614载荷和文件数不变；SDK／原生／图片／agent-image-review原件在同根after/qt6-demo-owned。固定维护拥有者和配对夹具不是普通用户部署流程；Qt5本包产品、Default／人工配对／无缓存UAC、完整Release、无全局Python干净系统／断网及QQ仍未验。
+## DEMO-P3-131：人工配对入口及私有原生提示（2026-10-30，PC-W11）
+
+基5e252c61工作区。H6人工入口先核验Default输入／拥有者身份再走129管理通道；原生线程在自有桌面显示H7，取消／子退出／超时收束。关闭先取消并等返回，不增加MCP工具或自动配对；实际SwitchDesktop／H9重试仍待Default验收。
+
+五构建通过：双Qt control／Native及Qt6普通Release；Qt6零警告，Qt5仅既有qtmain缺PDB。普通／只配置各5、双Qt合计20组件（含init／cleanup）；不切输入的测试入口覆盖250ms真实超时、取消／busy、六次原生三语文本／关闭、子退出、宿主关闭等待、私有宿主拒绝Default，INI保持。Qt6九图由仓库脚本同桌面Medium助手取得并逐张查看：H8两行／H9三行真实LF，H7自动折行；原生OK按钮随Windows界面语言，本机为“确定”。H9合成原因只证排版，不证真实恢复失败。
+
+失败保留：首资源自检误判XML缩进，EN已写入且后续lrelease继续，CN／JA新4项忽略，未用于构建；first-resource-check含当时文件／摘录。修正旧消息逐字节核验后，项目lupdate-pro 1184=1180+4；三语lrelease／QM往返1184完成，旧1180不变。首编译objectName被QObject成员遮蔽，改名通过。首Qt5 runner90s终止自身夹具124；子15168后查OpenProcess87，退出码未取得，不称0。随后两轮父exit1，诊断线程仍活／窗口存在；去掉关闭对子按钮ID的依赖，改为新线程自有模态窗WM_CLOSE，同桌面观察文字后component4双Qt通过（15326／29147ms），正常模式另各5通过。失败未计通过，原生缺失码未推算。
+
+新版双Qt正式--demo-host各17 Native／13 handler／12 SDK，只读ready后正常关闭存活子产品；父子实际0、记录删除、INI／FilterKeys保持、work／producer0及本轮五项零。没有点击正式配对按钮。EXE为out/mcp_demo_pairing_w11_20261030/<kit>-runtime/QKeyMapperDemoPairing131_<kit>_runtime.exe；构建／首失败／组件／九图／三语／谱系／退出原件同根，仅本机。
+
+Qt6普通out/build_qt6/release/QKeyMapper.exe已构建，未启动。Default、无缓存UAC、人工批准、15分钟实等、真实恢复失败／锁屏／宿主意外死亡、Qt5普通Release／Win10／QQ未验，完整P3／M3-B未完成。Qt5日志windows10不是本机Win10验收。

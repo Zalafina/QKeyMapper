@@ -7341,5 +7341,31 @@ Executable: %2</source>
         <translation>プライベートデモインスタンス: %1
 実行ファイル: %2</translation>
     </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="42"/>
+        <source>Finish MCP pairing in the QKeyMapper management window, then click OK to return to your desktop.</source>
+        <translation>QKeyMapper の管理ウィンドウで MCP ペアリングを完了してから、「OK」をクリックして元のデスクトップに戻ってください。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="43"/>
+        <source>The original desktop could not be restored.
+Click OK to try returning again.
+Reason: %1</source>
+        <translation>元のデスクトップに戻れませんでした。
+「OK」をクリックして再試行してください。
+理由: %1</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="64"/>
+        <source>Set Up Pairing</source>
+        <translation>ペアリングを設定</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="71"/>
+        <source>Pairing setup could not be shown.
+Reason: %1</source>
+        <translation>ペアリング設定を表示できませんでした。
+理由: %1</translation>
+    </message>
 </context>
 </TS>

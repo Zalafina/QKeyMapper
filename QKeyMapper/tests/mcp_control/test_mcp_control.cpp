@@ -48,6 +48,14 @@ using namespace QkmAutomation;
 
 namespace {
 
+QByteArray demoDeploymentSeed()
+{
+    return "[General]\nSettingSelect=Demo104Seed\nStartupAutoMonitoring=false\nStartupMinimized=false\n"
+        "VirtualGamepadEnable=false\nMultiInputEnable=false\nEnableSystemFilterKeyChecked=false\nDisableFilterKeyClickSoundChecked=false\n"
+        "CloseToSystemtray=false\nCloseToSystemtray_Decided=true\n[Demo104Seed]\nAutoStartMappingChecked=0\n"
+        "MappingTable_Common_Enabled=false\nKeyMapData_OriginalKeys=\nKeyMapData_MappingKeys=\n";
+}
+
 ConfigurationSaveBinding saveBinding()
 {
     ConfigurationSaveBinding binding;
@@ -160,6 +168,7 @@ private slots:
     void mappingSettingsArguments();
     void startupPurpose();
     void demoProcessLifecycle();
+    void demoPairingPrompt();
     void privateBackgroundDesktopGuard();
     void editorDraftGuard();
     void rejectAndClose_data();
@@ -1554,10 +1563,7 @@ void McpControlTest::demoProcessLifecycle()
     QVERIFY(!owner.start());
     QCOMPARE(owner.failure(), QStringLiteral("deployment_unavailable"));
     QVERIFY(owner.nativeError().has_value());
-    const QByteArray seed("[General]\nSettingSelect=Demo104Seed\nStartupAutoMonitoring=false\nStartupMinimized=false\n"
-        "VirtualGamepadEnable=false\nMultiInputEnable=false\nEnableSystemFilterKeyChecked=false\nDisableFilterKeyClickSoundChecked=false\n"
-        "CloseToSystemtray=false\nCloseToSystemtray_Decided=true\n[Demo104Seed]\nAutoStartMappingChecked=0\n"
-        "MappingTable_Common_Enabled=false\nKeyMapData_OriginalKeys=\nKeyMapData_MappingKeys=\n");
+    const QByteArray seed = demoDeploymentSeed();
     const auto writeIni = [&](const QByteArray &bytes) {
         QSaveFile file(iniPath);
         return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit();
@@ -1750,6 +1756,172 @@ void McpControlTest::demoProcessLifecycle()
         QTest::keyClick(&failed, Qt::Key_Escape);
         QVERIFY(!failed.isVisible());
     }
+}
+
+void McpControlTest::demoPairingPrompt()
+{
+    DemoProcess owner;
+    DemoPairingSession session;
+    const QString title = DemoHostDialog::tr("QKeyMapper Demo Host");
+    if (!configurationOnlyDemo()) {
+        QVERIFY(!session.start(owner, title, QString(), QString()));
+        QCOMPARE(session.result().failure, QStringLiteral("setup_unavailable"));
+        return;
+    }
+    const QString runtime = qEnvironmentVariable("QKM_TEST_OWNER_RUNTIME");
+    QVERIFY(QDir::fromNativeSeparators(runtime).contains(QStringLiteral("/out/")));
+    const QString releasePath = QDir(runtime).filePath(QStringLiteral("release-child"));
+    QFile::remove(releasePath);
+    const auto cleanup = qScopeGuard([&] {
+        session.cancel();
+        if (owner.running()) {
+            QFile release(releasePath);
+            if (release.open(QIODevice::WriteOnly)) release.close();
+            owner.close();
+        }
+        QFile::remove(releasePath);
+    });
+    QByteArray prepared = demoDeploymentSeed();
+    prepared.replace("[General]\n", "[General]\nMcpDemoDeploymentVersion=1\n");
+    QSaveFile ini(QDir(runtime).filePath(QStringLiteral("keymapdata.ini")));
+    QVERIFY(ini.open(QIODevice::WriteOnly) && ini.write(prepared) == prepared.size() && ini.commit());
+    QVERIFY(owner.start());
+    const auto target = owner.target();
+    QVERIFY(!session.start(owner, title, QString(), QString()));
+    QCOMPARE(session.result().failure, QStringLiteral("default_input_required"));
+    QVERIFY(!session.result().nativeError && !session.isRunning() && owner.running() && sameProcess(owner.target(), target));
+    const auto promptWindow = [](const DemoProcess &process) {
+        HDESK desktop = OpenDesktopW(reinterpret_cast<LPCWSTR>(process.desktop().utf16()), 0, FALSE, DESKTOP_ENUMERATE | DESKTOP_READOBJECTS);
+        if (!desktop) return HWND(nullptr);
+        const auto close = qScopeGuard([desktop] { CloseDesktop(desktop); });
+        HWND found = nullptr;
+        EnumDesktopWindows(desktop, [](HWND window, LPARAM argument) -> BOOL {
+            DWORD pid = 0;
+            GetWindowThreadProcessId(window, &pid);
+            wchar_t name[32]{};
+            if (pid != GetCurrentProcessId() || !GetClassNameW(window, name, 32) || QString::fromWCharArray(name) != QStringLiteral("#32770")) return TRUE;
+            *reinterpret_cast<HWND *>(argument) = window;
+            return FALSE;
+        }, reinterpret_cast<LPARAM>(&found));
+        return found;
+    };
+    QSignalSpy completed(&session, &DemoPairingSession::finished);
+    const auto waitForPrompt = [&] {
+        const bool done = !session.isRunning() || completed.wait(5000);
+        if (!done) {
+            QJsonObject observed = session.workerForTest();
+            const HWND window = promptWindow(owner);
+            observed.insert(QStringLiteral("dialog_found"), window != nullptr);
+            observed.insert(QStringLiteral("ok_button_found"), window && GetDlgItem(window, IDOK));
+            QSaveFile file(QDir(runtime).filePath(QStringLiteral("prompt-timeout-observation.json")));
+            const auto bytes = QJsonDocument(observed).toJson();
+            if (file.open(QIODevice::WriteOnly)) { file.write(bytes); file.commit(); }
+            if (window) PostMessageW(window, WM_CLOSE, 0, 0);
+        }
+        return done && !session.isRunning();
+    };
+    const auto capture = [&](HWND window, const QString &desktop, const QString &label) {
+        const QString directory = qEnvironmentVariable("QKM_PAIRING_CAPTURE_DIR");
+        if (directory.isEmpty()) return;
+        QVERIFY(QDir::fromNativeSeparators(directory).contains(QStringLiteral("/out/")));
+        const QString path = QDir(directory).filePath(label + QStringLiteral(".json"));
+        QSaveFile file(path);
+        const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("pid"), int(GetCurrentProcessId())},
+            {QStringLiteral("hwnd"), QString::number(quintptr(window))}, {QStringLiteral("desktop"), desktop}}).toJson();
+        QVERIFY(file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size() && file.commit());
+        QTRY_VERIFY_WITH_TIMEOUT(QFileInfo::exists(path + QStringLiteral(".done")), 15000);
+    };
+    QVERIFY(session.startPromptForTest(owner, title, QStringLiteral("timeout fixture"), 250));
+    QVERIFY(waitForPrompt());
+    QCOMPARE(session.result().failure, QStringLiteral("setup_timeout"));
+    QVERIFY(!session.result().nativeError && owner.running());
+    QVERIFY(session.startPromptForTest(owner, title, QStringLiteral("cancel fixture"), 10000));
+    QTRY_VERIFY_WITH_TIMEOUT(promptWindow(owner) != nullptr, 5000);
+    QVERIFY(!session.startPromptForTest(owner, title, QString(), 250));
+    QCOMPARE(session.result().failure, QStringLiteral("setup_busy"));
+    session.cancel();
+    QVERIFY(waitForPrompt());
+    QCOMPARE(session.result().failure, QStringLiteral("setup_cancelled"));
+    QVERIFY(!session.result().nativeError && owner.running());
+    QTranslator translator;
+    for (int language = 0; language != 3; ++language) {
+        QVERIFY(installUiTranslation(translator, language));
+        for (bool recovery : {false, true}) {
+            const QString text = recovery
+                ? DemoHostDialog::tr("The original desktop could not be restored.\nClick OK to try returning again.\nReason: %1").arg(QStringLiteral("synthetic restore failure"))
+                : DemoHostDialog::tr("Finish MCP pairing in the QKeyMapper management window, then click OK to return to your desktop.");
+            QCOMPARE(text.count(QLatin1Char('\n')), recovery ? 2 : 0);
+            QVERIFY(session.startPromptForTest(owner, DemoHostDialog::tr("QKeyMapper Demo Host"), text, 20000));
+            QTRY_VERIFY_WITH_TIMEOUT(promptWindow(owner) != nullptr, 5000);
+            HWND window = promptWindow(owner);
+            struct Text { QString expected, caption; bool found = false; DWORD error = 0; } observed{text, QString()};
+            const QString desktopName = owner.desktop();
+            std::thread reader([&] {
+                HDESK desktop = OpenDesktopW(reinterpret_cast<LPCWSTR>(desktopName.utf16()), 0, FALSE, DESKTOP_READOBJECTS | DESKTOP_ENUMERATE);
+                if (!desktop) { observed.error = GetLastError(); return; }
+                const auto close = qScopeGuard([desktop] { CloseDesktop(desktop); });
+                const HDESK original = GetThreadDesktop(GetCurrentThreadId());
+                if (!SetThreadDesktop(desktop)) { observed.error = GetLastError(); return; }
+                const auto restore = qScopeGuard([original] { SetThreadDesktop(original); });
+                wchar_t caption[256]{};
+                GetWindowTextW(window, caption, 256);
+                observed.caption = QString::fromWCharArray(caption);
+                EnumChildWindows(window, [](HWND child, LPARAM argument) -> BOOL {
+                    auto &text = *reinterpret_cast<Text *>(argument);
+                    wchar_t value[4096]{};
+                    GetWindowTextW(child, value, 4096);
+                    if (QString::fromWCharArray(value).remove(QLatin1Char('\r')) == text.expected) text.found = true;
+                    return TRUE;
+                }, reinterpret_cast<LPARAM>(&observed));
+            });
+            reader.join();
+            QCOMPARE(observed.error, DWORD(0));
+            QCOMPARE(observed.caption, DemoHostDialog::tr("QKeyMapper Demo Host"));
+            QVERIFY(observed.found);
+            capture(window, owner.desktop(), QStringLiteral("pairing-%1-%2").arg(language).arg(recovery ? QStringLiteral("recovery") : QStringLiteral("prompt")));
+            QVERIFY(PostMessageW(window, WM_CLOSE, 0, 0));
+            QVERIFY(waitForPrompt());
+            QVERIFY2(session.result().ok(), qPrintable(session.result().failure));
+        }
+    }
+    QVERIFY(session.startPromptForTest(owner, title, QStringLiteral("target exit fixture"), 10000));
+    QTRY_VERIFY_WITH_TIMEOUT(promptWindow(owner) != nullptr, 5000);
+    QFile release(releasePath);
+    QVERIFY(release.open(QIODevice::WriteOnly)); release.close();
+    QVERIFY(waitForPrompt());
+    QCOMPARE(session.result().failure, QStringLiteral("target_exited"));
+    QVERIFY(owner.close() && owner.exitCode() && *owner.exitCode() == 0);
+    QVERIFY(QFile::remove(releasePath));
+    QVERIFY(!session.start(owner, title, QString(), QString()));
+    QCOMPARE(session.result().failure, QStringLiteral("setup_unavailable"));
+    DemoHostDialog host;
+    QVERIFY(host.process().running());
+    host.show();
+    auto *setup = host.findChild<QPushButton *>(QStringLiteral("demoHostPairing"));
+    auto *status = host.findChild<QLabel *>(QStringLiteral("demoHostStatus"));
+    QVERIFY(setup && status && !setup->autoDefault() && setup->focusPolicy() == Qt::NoFocus && setup->isEnabled());
+    QTest::mouseClick(setup, Qt::LeftButton);
+    QVERIFY(status->text().contains(QStringLiteral("default_input_required")));
+    const auto hostTarget = host.process().target();
+    for (int language = 0; language != 3; ++language) {
+        QVERIFY(installUiTranslation(translator, language));
+        QCoreApplication::processEvents();
+        QCOMPARE(setup->text(), DemoHostDialog::tr("Set Up Pairing"));
+        QCOMPARE(status->text().count(QLatin1Char('\n')), 1);
+        QCOMPARE(status->text(), DemoHostDialog::tr("Pairing setup could not be shown.\nReason: %1").arg(QStringLiteral("default_input_required")));
+        wchar_t desktop[256]{}; DWORD needed = 0;
+        QVERIFY(GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), &needed));
+        capture(reinterpret_cast<HWND>(host.winId()), QString::fromWCharArray(desktop), QStringLiteral("pairing-%1-host").arg(language));
+        QVERIFY(host.process().running() && sameProcess(hostTarget, host.process().target()));
+    }
+    QVERIFY(host.pairingForTest().startPromptForTest(host.process(), title, QStringLiteral("host close fixture"), 10000));
+    QTRY_VERIFY_WITH_TIMEOUT(promptWindow(host.process()) != nullptr, 5000);
+    QVERIFY(!host.close());
+    QTRY_VERIFY_WITH_TIMEOUT(!host.isVisible(), 10000);
+    QVERIFY(!host.pairingForTest().isRunning() && host.process().exitCode() && *host.process().exitCode() == 0);
+    QFile disk(QDir(runtime).filePath(QStringLiteral("keymapdata.ini")));
+    QVERIFY(disk.open(QIODevice::ReadOnly));
+    QCOMPARE(disk.readAll(), prepared);
 }
 
 void McpControlTest::editorDraftGuard()

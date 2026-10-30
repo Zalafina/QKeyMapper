@@ -7341,5 +7341,31 @@ Executable: %2</source>
         <translation>私有演示实例：%1
 程序路径：%2</translation>
     </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="42"/>
+        <source>Finish MCP pairing in the QKeyMapper management window, then click OK to return to your desktop.</source>
+        <translation>请在 QKeyMapper 管理窗口中完成 MCP 配对，然后点击“确定”返回原桌面。</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="43"/>
+        <source>The original desktop could not be restored.
+Click OK to try returning again.
+Reason: %1</source>
+        <translation>无法返回原桌面。
+请点击“确定”再次尝试返回。
+原因：%1</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="64"/>
+        <source>Set Up Pairing</source>
+        <translation>设置配对</translation>
+    </message>
+    <message>
+        <location filename="../automation/qkm_demo_host.cpp" line="71"/>
+        <source>Pairing setup could not be shown.
+Reason: %1</source>
+        <translation>无法显示配对设置。
+原因：%1</translation>
+    </message>
 </context>
 </TS>
