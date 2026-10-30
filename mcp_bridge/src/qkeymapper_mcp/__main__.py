@@ -18,6 +18,7 @@ from .bridge import Bridge
 ToolResult = Annotated[CallToolResult, dict[str, Any]]
 
 _ERROR_FEEDBACK = {
+    "pipe_busy": ("目标连接端点持续忙碌，尚未建立认证连接。", "若已有会话占用，请等待其主动断开后再显式连接原目标；不会抢占连接或自动更换实例。"),
     "not_connected": ("尚未连接 QKeyMapper。", "查询连接状态，再使用已有配对连接；需要配对时由用户在产品内批准。"),
     "demo_not_enabled": ("宿主未启用专用演示写入。", "由部署端核对独立演示实例和显式配置；客户端不能自行扩大权限。"),
     "demo_quarantined": ("演示会话已隔离，自动修改已停止。", "查询demo_state的阶段和操作ID，保留源与窗口；由部署端处理，不盲目重试、清空草稿或更换实例。"),

@@ -183,14 +183,21 @@ class Pipe:
         self.discovery, self.own, self.cancel = discovery, own, cancel
         self.handle = None
         deadline = time.monotonic() + 3
+        saw_busy = False
         while self.handle is None:
-            self._remaining(deadline)
+            try:
+                self._remaining(deadline)
+            except BridgeError as error:
+                if saw_busy and error.code == "timeout":
+                    raise BridgeError("pipe_busy") from None
+                raise
             try:
                 self.handle = win32file.CreateFile(discovery.pipe, 0x0012019B, 0, None,
                     win32con.OPEN_EXISTING, win32con.FILE_FLAG_OVERLAPPED | 0x00100000 | 0x00010000, None)
             except pywintypes.error as error:
                 if error.winerror != 231:
                     raise BridgeError("pipe_unavailable") from None
+                saw_busy = True
                 try:
                     win32pipe.WaitNamedPipe(discovery.pipe, 100)
                 except pywintypes.error as wait_error:

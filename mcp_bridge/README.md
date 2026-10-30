@@ -51,6 +51,10 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 
 `--executable` 是用户／宿主明确选择的信任目标，不能自动采用发现文件中的 EXE 路径。两台 PC 分别填写本机路径并重新配对，不复制客户端凭据或构建产物。不要把密钥加入参数、环境变量或仓库。
 
+workspace 关联复用客户端已有的 MCP 配置和固定启动参数，参见[随包示例及使用边界](BUNDLE_README.md)。客户端须明确加载其支持的格式；桥接不扫描 workspace，也不提供第二套配置或任意 Windows 凭据访问接口。密钥留在 Windows 凭据管理器（另有 DPAPI 保护），服务端仍用私有 DPAPI 配对库。先后启动的对话／桥接可在同一 Windows 登录会话及同一目标上下文复用有效配对；不同 workspace 显式使用同一参数等于共享配对，不是独立授权。实际 Agent／gateway 的配置加载、跨 Windows 登录／PC 重启复用及保存启用选择仍待后续切片。
+
+当前每实例仅一个客户端连接。既有三秒端点等待期间实际遇到管道忙碌且耗尽等待预算时，连接状态返回 `pipe_busy`；它表示尚未认证的端点忙碌，不证明当前占用者身份。不抢占原客户端，不自动换选；原会话主动断开后再显式调用 `qkm_connect`。取消和其他超时／原生失败保留原有判定。删除关联、删除本机凭据及产品端撤销的语义不同，关联存在不能代替认证成功。
+
 1. `qkm_connect` 使用已有配对。没有凭据时状态变为 `pairing_required`。
 2. 首次连接调用 `qkm_request_pairing`，随后用户在 QKeyMapper 核对系统验证的程序路径、PID 和权限并批准。客户端名称仅为自报信息，不能批准自身请求。
 3. 上述调用立即返回，`accepted` 仅表示已接受连接作业。通过 `qkm_get_connection_state` 等待 `busy=false` 和 `status=connected`；失败检查 `error`。待批准期间 SDK 查询仍可响应。
