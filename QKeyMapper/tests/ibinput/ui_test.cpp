@@ -14,6 +14,7 @@
 #include <QRegularExpression>
 #include <QPushButton>
 #include <QScreen>
+#include <QScrollBar>
 #include <QSettings>
 #include <QTemporaryDir>
 #include <QTest>
@@ -171,6 +172,10 @@ int main(int argc,char **argv) {
                 else if (index==2) buttons[0]->click();
                 else if (index==3) buttons[1]->click();
                 QTest::qWait(80);
+                auto *details=popup.findChild<QPlainTextEdit *>();
+                check(details->toPlainText().contains(QCoreApplication::translate("QkmIbInputPopup",
+                    "Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24).")),"Approved keyboard capability text missing");
+                if (index>=3) details->verticalScrollBar()->setValue(details->verticalScrollBar()->maximum());
                 check(!popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("checkpoint"),Qt::CaseInsensitive)
                     && !popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("检查点")),"Developer checkpoint text remains visible");
                 for (auto *widget:QList<QWidget *>{combos[0],combos[1],buttons[0],buttons[1],feedback,popup.findChild<QPlainTextEdit *>()}) {

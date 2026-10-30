@@ -4,7 +4,7 @@
 
 | 主题 | 工程与运行入口 | 用途 |
 |---|---|---|
-| [ibinput](ibinput/) | client_test.pro、validation_test.pro、ui_test.pro、product_check.pro、ghub_probe.pro | 客户端／能力替身、移动组纯规则、真实Popup组件、产品保存拒绝／Common生效上下文／冷读、显式授权的固定接收；manual_verification.ini无自动映射 |
+| [ibinput](ibinput/) | client_test.pro、validation_test.pro、ui_test.pro、product_check.pro、keyboard_receiver.pro、ghub_probe.pro | 客户端／能力替身、移动组纯规则、真实Popup组件、产品保存拒绝／Common生效上下文／冷读、显式授权的固定接收；manual_verification.ini无自动映射 |
 | [ui_scale](ui_scale/) | `ui_scale_test.pro`、`test_ui_scale.ps1` | 缩放断言与状态恢复 |
 | [sendinput_lifecycle](sendinput_lifecycle/) | `sendinput_lifecycle_test.pro` | 实际 SendInputTask 的等待、暂停、取消和退出 |
 | [diagnostics](diagnostics/) | `diagnostics_test.pro`、`run_checks.ps1`、`measure_overhead.ps1` | 原生诊断策略、符号、故障注入及进程开销采样 |
@@ -58,3 +58,12 @@ finally { Pop-Location }
 源码、Git、构建和分析保持非管理员。只有保留正式 manifest 的必要测试启动／关闭使用已授权 gsudo，并由用户确认 UAC。无输出生命周期用例不证明硬件、Hook 或驱动释放。窗口测试和完整阶段门禁按仓库工作流另行验收。
 
 静态报告回归入口仍为 `scripts/test_static_analysis.ps1`，只验证目标发现和报告门禁，不代替真实 Clang-Tidy／Clazy。
+
+
+## IbInput 基础键盘接收
+
+keyboard_receiver.pro生成普通权限接收窗，只观察W／F、1／2、F13／F24的DOWN／UP，不安装Hook、不调用发送API。--self-check只向组件派发Qt事件；正式接收需QKM_IBINPUT_KEYBOARD_OUTPUT现有输出目录及实际Default桌面，180秒退出保护，receiver-close文件触发正常关闭，Escape中止。合成manual_keyboard_verification.ini不自动开始映射。
+
+product_check.pro的keyboard维护用例继续使用真实main.cpp与正式manifest，QKM_IBINPUT_PRODUCT_CASE=keyboard、QKM_IBINPUT_PRODUCT_DESKTOP=Default，QKM_IBINPUT_PRODUCT_OUTPUT指定输出目录，QKM_IBINPUT_KEYBOARD_HWND／QKM_IBINPUT_KEYBOARD_PID须精确绑定已启动的自有接收进程。只接受三条固定映射W→F、1→2、F13→F24；keyboard-stop／keyboard-restart／keyboard-exit／keyboard-abort文件依次请求真实产品入口，状态写入keyboard-*.json。它本身不生成原始输入；固定输入测试器须另按具体授权执行，并核对前台、实际桌面、按键持有及自有清理，不可仅凭编译成功直接运行。
+
+本机K1已授权的受管启动记录、接收结果与普通截图见handoff/ibinput-simulator主计划12.11；MCP工作区的临时定义和缓存不随Git接续，不作为另一台PC的必备环境。正常运行和人工验证以主计划及独立目录说明为准。

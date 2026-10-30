@@ -7467,7 +7467,12 @@ Right-click to cancel.</translation>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="144" />
         <source>Currently supports G HUB relative mouse movement only.</source>
-        <translation>Currently supports G HUB relative mouse movement only.</translation>
+        <translation type="vanished">Currently supports G HUB relative mouse movement only.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="149" />
+        <source>Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24).</source>
+        <translation>Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24).</translation>
     </message>
 </context>
 </TS>

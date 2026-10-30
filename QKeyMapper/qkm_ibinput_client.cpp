@@ -52,12 +52,17 @@ QStringList QkmIbInputClient::candidates(const QString &preference) {
     return order.contains(preference) ? QStringList{preference} : QStringList{};
 }
 bool QkmIbInputClient::isSupportedKey(quint16 key) {
-    return (key>='0' && key<='9') || (key>='A' && key<='Z') || (key>=VK_F1 && key<=VK_F24)
-        || (key>=VK_NUMPAD0 && key<=VK_DIVIDE && key!=VK_SEPARATOR)
+    const bool basic=(key>='0' && key<='9') || (key>='A' && key<='Z') || (key>=VK_F1 && key<=VK_F24);
+#ifndef QKM_IBINPUT_VALIDATION_PROBE
+    // shortcut: other key representations await product reception and release acceptance.
+    return basic;
+#else
+    return basic || (key>=VK_NUMPAD0 && key<=VK_DIVIDE && key!=VK_SEPARATOR)
         || (key>=VK_LSHIFT && key<=VK_RMENU) || key==VK_LWIN || key==VK_RWIN
         || key==VK_BACK || key==VK_TAB || key==VK_RETURN || key==VK_ESCAPE || key==VK_SPACE
         || (key>=VK_PRIOR && key<=VK_DOWN) || key==VK_INSERT || key==VK_DELETE || key==VK_CAPITAL
         || key==VK_NUMLOCK || key==VK_SCROLL || key==VK_SNAPSHOT;
+#endif
 }
 bool QkmIbInputClient::isSupportedButton(quint16 button) {
     // shortcut: expand after right/middle/X1/X2 reception and release are recorded on a real backend.
@@ -69,8 +74,8 @@ unsigned QkmIbInputClient::capabilities(const QString &backend) {
 #ifdef QKM_IBINPUT_VALIDATION_PROBE
         return RelativeMove|Keyboard|Buttons|VerticalWheel;
 #else
-        // shortcut: open other implemented paths after recorded reception and release on Win11.
-        return RelativeMove;
+        // shortcut: mouse buttons and wheel await product reception and release acceptance.
+        return RelativeMove|Keyboard;
 #endif
     }
     return 0;

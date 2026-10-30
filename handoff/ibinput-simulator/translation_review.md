@@ -592,3 +592,17 @@
 | English | `Cleanup incomplete` |
 | 中文 | `清理未完成` |
 | 日本語 | `後処理が未完了` |
+
+
+## IB-04-K1 U11（已批准并实施；待用户最终确认）
+
+用户于2026-10-30明确批准。Context为QkmIbInputPopup，无占位符，替换U08的仅相对移动说明；不代表完整键盘／FakerInput功能对等。正式资源与已通过能力同步，不在失败时宣称已支持。
+
+| 语言 | 已批准文案 |
+|---|---|
+| English | Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24). |
+| 中文 | 目前支持 G HUB 鼠标相对移动及基础按键输出（A-Z、0-9、F1-F24）。 |
+| 日本語 | 現在は G HUB によるマウスの相対移動と基本キー出力（A-Z、0-9、F1-F24）に対応しています。 |
+
+
+基础键盘固定产品接收及停止／退出释放通过后实施U11。Qt5项目lupdate-pro成功提取，限定更新本项；三语lrelease和QM反向核对通过，旧U08仅保留vanished历史。Qt6私有Popup五场景与运行时语言切换检查通过（主计划12.11、out/ibinput/logs/k1-private-ui-final.log），150%中文／日文已滚动查看说明。用户最终人工确认尚未收到；未把基础输出说明扩展为完整键盘／全部触发方式验收。

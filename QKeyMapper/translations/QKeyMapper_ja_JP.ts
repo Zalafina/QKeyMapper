@@ -7467,7 +7467,12 @@ Right-click to cancel.</source>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="144" />
         <source>Currently supports G HUB relative mouse movement only.</source>
-        <translation>現在は G HUB によるマウスの相対移動のみに対応しています。</translation>
+        <translation type="vanished">現在は G HUB によるマウスの相対移動のみに対応しています。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="149" />
+        <source>Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24).</source>
+        <translation>現在は G HUB によるマウスの相対移動と基本キー出力（A-Z、0-9、F1-F24）に対応しています。</translation>
     </message>
 </context>
 </TS>

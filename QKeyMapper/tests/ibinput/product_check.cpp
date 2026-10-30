@@ -11,6 +11,9 @@
 #include <QJsonObject>
 #include <QPushButton>
 #include <QSettings>
+#include <QSaveFile>
+#include <Windows.h>
+#include <tlhelp32.h>
 #include <QTimer>
 #include <stdexcept>
 #include "../../qkm_ibinput_client.h"
@@ -128,15 +131,94 @@ void saveGuardCases(QKeyMapper *window) {
     check(window->saveKeyMapSetting(false),"Restored valid configuration was not saved");
 }
 
+
+int keyboardPhase=0;
+quint64 keyboardGeneration=0;
+HWND keyboardReceiver=nullptr;
+void keyboardRecord(const QString &name,const QJsonObject &value) {
+    QSaveFile file(output+QLatin1Char('/')+name);
+    check(file.open(QIODevice::WriteOnly),"Cannot open keyboard evidence");
+    check(file.write(QJsonDocument(value).toJson())>0 && file.commit(),"Cannot write keyboard evidence");
+}
+void verifyKeyboardProduct(QKeyMapper *window) {
+    if (keyboardPhase!=6 && QFile::exists(output+QStringLiteral("/keyboard-abort"))) {
+        keyboardPhase=6;
+        check(QMetaObject::invokeMethod(window,"onTrayIconMenuQuitAction",Qt::DirectConnection),"Product abort quit entry is missing");
+        return;
+    }
+    auto &client=QkmIbInputClient::instance();
+    if (!keyboardPhase) {
+        const HANDLE snapshot=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
+        check(snapshot!=INVALID_HANDLE_VALUE,"Cannot check other mapper instances");
+        bool conflict=false;
+        PROCESSENTRY32W entry{}; entry.dwSize=sizeof(entry);
+        if (Process32FirstW(snapshot,&entry)) do {
+            const QString name=QString::fromWCharArray(entry.szExeFile);
+            if (entry.th32ProcessID!=GetCurrentProcessId() && name.startsWith(QStringLiteral("QKeyMapper"),Qt::CaseInsensitive)
+                && name!=QStringLiteral("QKeyMapperIbInputKeyboardReceiver.exe") && name!=QStringLiteral("QKeyMapperCrashReporter.exe")) conflict=true;
+        } while (Process32NextW(snapshot,&entry));
+        CloseHandle(snapshot);
+        check(!conflict,"Another mapper appeared; no mapping started");
+        const auto *rows=QKeyMapper::KeyMappingDataList;
+        check(rows && rows->size()==3,"Keyboard fixture did not load three rows");
+        const QStringList originals{QStringLiteral("W"),QStringLiteral("1"),QStringLiteral("F13")};
+        const QStringList mapped{QStringLiteral("F"),QStringLiteral("2"),QStringLiteral("F24")};
+        for (int index=0;index<3;++index)
+            check(rows->at(index).Original_Key==originals.at(index) && rows->at(index).Mapping_Keys==QStringList{mapped.at(index)}
+                && rows->at(index).SendMappingKeyMethod==QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT,"Keyboard fixture content changed");
+        keyboardReceiver=reinterpret_cast<HWND>(qEnvironmentVariable("QKM_IBINPUT_KEYBOARD_HWND").toULongLong());
+        DWORD owner=0; GetWindowThreadProcessId(keyboardReceiver,&owner);
+        wchar_t title[128]{}; GetWindowTextW(keyboardReceiver,title,128);
+        check(IsWindow(keyboardReceiver) && owner==static_cast<DWORD>(qEnvironmentVariableIntValue("QKM_IBINPUT_KEYBOARD_PID"))
+            && QString::fromWCharArray(title)==QStringLiteral("IbInput basic keyboard receiver"),"Owned receiver identity differs");
+        check(SetForegroundWindow(keyboardReceiver) || GetForegroundWindow()==keyboardReceiver,"Cannot activate owned keyboard receiver");
+        window->hide();
+        window->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK);
+        keyboardPhase=1;
+    }
+    check(IsWindow(keyboardReceiver),"Owned keyboard receiver disappeared");
+    const auto status=client.statusSnapshot();
+    check(!status.releaseIncomplete,"Keyboard release is incomplete");
+    if ((keyboardPhase==1 || keyboardPhase==4) && status.connected
+        && window->m_KeyMapStatus==QKeyMapper::KEYMAP_MAPPING_GLOBAL && qkmCurrentIbInputGeneration()!=0) {
+        check(status.backend==QStringLiteral("logitech_ghub") && !status.fallback,"Keyboard backend differs");
+        if (keyboardPhase==4) check(status.generation>keyboardGeneration,"Restart reused an old generation");
+        keyboardGeneration=status.generation;
+        keyboardRecord(keyboardPhase==1 ? QStringLiteral("keyboard-started.json") : QStringLiteral("keyboard-restarted.json"),
+            {{"generation",static_cast<qint64>(keyboardGeneration)},{"pid",static_cast<int>(GetCurrentProcessId())},{"desktop",currentDesktop()}});
+        keyboardPhase=keyboardPhase==1 ? 2 : 5;
+    }
+    if (keyboardPhase==2 && QFile::exists(output+QStringLiteral("/keyboard-stop"))) {
+        window->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK); keyboardPhase=3;
+    }
+    if (keyboardPhase==3 && window->m_KeyMapStatus==QKeyMapper::KEYMAP_IDLE && !client.busy()
+        && !status.connected && qkmCurrentIbInputGeneration()==0) {
+        keyboardRecord(QStringLiteral("keyboard-stopped.json"),{{"released",true},{"generation",static_cast<qint64>(keyboardGeneration)}});
+        keyboardPhase=7;
+    }
+    if (keyboardPhase==7 && QFile::exists(output+QStringLiteral("/keyboard-restart"))) {
+        check(GetForegroundWindow()==keyboardReceiver,"Owned receiver lost foreground before restart");
+        window->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK); keyboardPhase=4;
+    }
+    if (keyboardPhase==5 && QFile::exists(output+QStringLiteral("/keyboard-exit"))) {
+        keyboardRecord(QStringLiteral("keyboard-exiting.json"),{{"exit_requested",true},{"generation",static_cast<qint64>(keyboardGeneration)}});
+        keyboardPhase=6;
+        check(QMetaObject::invokeMethod(window,"onTrayIconMenuQuitAction",Qt::DirectConnection),"Product quit entry is missing");
+    }
+}
+
 void verifyProduct() {
     try {
-        if (++polls>180) throw std::runtime_error("Product check exceeded 90 seconds");
+        if (++polls>(selectedCase==QStringLiteral("keyboard") ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
         check(currentDesktop()==expectedDesktop,"Product left its selected private desktop");
         QKeyMapper *window=nullptr;
         for (QWidget *widget:QApplication::topLevelWidgets())
             if (auto *candidate=qobject_cast<QKeyMapper *>(widget)) { window=candidate; break; }
         if (!window || !QKeyMapper::s_AtomicIsInitialized.loadAcquire()) {
             QTimer::singleShot(500,verifyProduct); return;
+        }
+        if (selectedCase==QStringLiteral("keyboard")) {
+            verifyKeyboardProduct(window); QTimer::singleShot(100,verifyProduct); return;
         }
         if (checked) {
             if (!QFile::exists(output+QStringLiteral("/inspection-complete"))) {
@@ -217,9 +299,10 @@ int main(int argc,char **argv) {
     output=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_OUTPUT");
     selectedCase=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_CASE");
     expectedDesktop=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_DESKTOP");
-    if (argc!=1 || !QDir(output).exists()
-        || (selectedCase!=QStringLiteral("save") && selectedCase!=QStringLiteral("cold"))
-        || !expectedDesktop.startsWith(QStringLiteral("QkmIbProduct_"))
-        || currentDesktop()!=expectedDesktop) return 2;
+    const bool keyboard=selectedCase==QStringLiteral("keyboard");
+    if (argc!=1 || !QDir(output).exists() || currentDesktop()!=expectedDesktop
+        || (keyboard ? expectedDesktop!=QStringLiteral("Default")
+            : ((selectedCase!=QStringLiteral("save") && selectedCase!=QStringLiteral("cold"))
+                || !expectedDesktop.startsWith(QStringLiteral("QkmIbProduct_"))))) return 2;
     return qkmIbProductMain(argc,argv);
 }

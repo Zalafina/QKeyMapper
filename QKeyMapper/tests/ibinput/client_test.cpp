@@ -156,18 +156,36 @@ int main(int argc,char **argv) {
     QCoreApplication app(argc,argv);
     static_assert(sizeof(INPUT)==(sizeof(void *)==8 ? 40 : 28));
     try {
-        if (!(QkmIbInputClient::capabilities(QStringLiteral("logitech_ghub")) & QkmIbInputClient::Keyboard)) {
+#ifndef QKM_IBINPUT_VALIDATION_PROBE
+        {
+            check(QkmIbInputClient::capabilities(QStringLiteral("logitech_ghub"))==(QkmIbInputClient::RelativeMove|QkmIbInputClient::Keyboard),"product capabilities widened unexpectedly");
+            QSet<quint16> allowed;
+            for (WORD vk='A';vk<='Z';++vk) allowed.insert(vk);
+            for (WORD vk='0';vk<='9';++vk) allowed.insert(vk);
+            for (WORD vk=VK_F1;vk<=VK_F24;++vk) allowed.insert(vk);
+            for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedKey(vk)==allowed.contains(vk),"product key whitelist differs");
+            for (WORD unsupported:{WORD(VK_LCONTROL),WORD(VK_RETURN),WORD(VK_OEM_1),WORD(VK_NUMPAD1),WORD(VK_LEFT)}) {
+                QkmIbInputClient blocked; auto requirements=needs(QkmIbInputClient::Keyboard); requirements.keys.insert(unsupported);
+                const auto token=blocked.requestRun();
+                check(!blocked.prepareRun(token,requirements) && attempts.empty(),"unsupported key reached driver initialization");
+            }
             QkmIbInputClient client;
+            auto keyboard=needs(QkmIbInputClient::Keyboard); keyboard.keys=allowed;
             const auto token=client.requestRun();
-            check(!client.prepareRun(token,needs(QkmIbInputClient::Keyboard)) && attempts.empty(),"unverified product capability reached initialization");
+            check(client.prepareRun(token,keyboard),"basic keyboard preparation failed");
+            for (quint16 vk:allowed) check(client.sendEvent(key(vk),token) && client.sendEvent(key(vk,true),token),"basic key did not round-trip");
+            check(events.size()==120 && client.closeAfterDrain(token),"basic keyboard did not release");
+            reset();
             const auto movement=client.requestRun();
             check(client.prepareRun(movement,needs(QkmIbInputClient::RelativeMove)),"product movement admission failed");
             INPUT move{}; move.type=INPUT_MOUSE; move.mi.dwFlags=MOUSEEVENTF_MOVE; move.mi.dx=1;
             check(client.sendEvent(move,movement) && events.size()==1,"admitted product movement rejected");
             check(!client.sendEvent(key('A'),movement) && events.size()==1,"unadmitted keyboard reached API");
             check(client.closeAfterDrain(movement),"product capability close failed");
-            std::cout<<"PASS simulated production capability gate; no driver or real input.\n"; return 0;
+            reset(); admissionCase(); reset(); failureCase(); reset(); reportCase(); reset(); concurrentCase();
+            std::cout<<"PASS simulated production gate: 60 keys, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
+#endif
         const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"mouse",mouseCase},{"capability",capabilityCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
