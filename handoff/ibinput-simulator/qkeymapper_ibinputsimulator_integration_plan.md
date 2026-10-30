@@ -11,6 +11,7 @@
 | 当前授权 | 用户批准U01～U10三语正式资源更新，并批准保存／保存并开始／开始共用移动组混用规则；失败不落盘、不连接驱动，覆盖所保存各表及附加Common、排除禁用行。继续允许聚焦本地提交和独立目录交付；新版交付后停止修改源码，等人工反馈；不push、不合流 |
 | 执行机器 | PC-W11，Windows 11 企业版 25H2 10.0.26200.9711 x64；G HUB 2026.7.992920，logi_joy_bus_enum／xlcore／vir_hid 只读采样为 Running |
 | 实施仓库／分支 | D:/work/mygithub/QKeyMapper/QKeyMapper_dev_temp/QKeyMapper_dev_temp；codex/ibinput-simulator |
+| 本轮源码检查点 | b0ac332eb2834488829ffbe52402d520a2aa4065；文档封存提交只登记SHA／停止点，不改变源码、QM或实际EXE；完整交付SHA见独立目录build-identity.txt |
 | 接收检查点 | HEAD=4e5c34f1794eda96701a183fa30312238fed496b；依赖=e7f7ab3fd0053ad2bf1eace743916418d9de4370；产品=69dc82ecea68e4008992e1c522e5c2362100675c；DOC-00=53f80dbdb2b0893289118fb76d6e566bc9beb393；bundle 验证通过，接收时工作区干净 |
 | 工具链 | 本机 Qt6.8.3 x64，Qt5.15.2 x64／x86，VS2022 BuildTools 14.44 工具集，SDK 10.0.19041.0；实际配置和编译器版本随本机日志记录 |
 | 当前验证 | 本轮Qt6 Release及产品维护目标零警告；三配置纯移动组校验、Qt5两架构Popup编译、Qt6私有Popup五场、实际产品保存／冷读两次通过；四个拒绝保存场景INI字节不变。High主窗口视觉／Default／真实输入本轮未验；历史依赖／客户端证据见12.5，本轮见12.8 |
@@ -782,7 +783,7 @@ Popup修正后PID34084／QkmIbInputUi_34084的五场再次通过，正式版本�
 
 当前分支codex/ibinput-simulator，本轮均为本地提交，不push、不合并master或MCP。交付性质：本地开发检查点，待用户基本验证；不是完整输入能力或IB-01～04验收。正式EXE SHA256=9722F521437F7439591D08415151FAA62A435BBE83B0EFBC9BBC1C9A2D450EF6；依赖身份见dependency_provenance.md。独立目录out/ibinput/manual-w11-20261030包含实际EXE、当前依赖、合成keymapdata.ini、人工说明及已填完整交付SHA的MCP_RECEIVE_PROMPT.md。后者仅供用户确认通过后发送，不提前触发合流。
 
-缓存最后状态为关闭／native_sessions_observed=0，并保留5cc569f6588d44ad868e75722bf1e814未知启动记录；不是仍生效至14:51的3h窗口。当前无本轮自有产品／CrashReporter进程。不重放原请求、不接管MCP缓存恢复。原MCP线程未被通知、暂停或修改代码。
+W11-02封存时缓存状态为关闭／native_sessions_observed=0，并保留5cc569f6588d44ad868e75722bf1e814未知启动记录；不是仍生效至14:51的3h窗口。本条是历史状态，本轮现有新控制器复用结果见顶部卡和12.8。当前无本轮自有产品／CrashReporter进程。不重放原请求、不接管MCP缓存恢复。原MCP线程未被通知、暂停或修改代码。
 
 
 ### 12.7 W11-UX-01：用户基本验证反馈与已批准修订
@@ -798,7 +799,7 @@ Popup修正后PID34084／QkmIbInputUi_34084的五场再次通过，正式版本�
 
 ### 12.8 W11-UX-01：本轮定向证据与新版交付
 
-源码基线为c98303bb5777124e69bd8a1400383ad366136529；本节随新的源码／资源／测试修订一同提交，后续文档封存登记完整SHA。本轮没有修改0001～0004或依赖制品，继续使用5258b37988f21efe4bdbdb57d7553196bd816350的x64 DLL／LIB。不是IB-01～04全部验收。
+源码基线为c98303bb5777124e69bd8a1400383ad366136529；新的稳定源码／资源／维护测试检查点为b0ac332eb2834488829ffbe52402d520a2aa4065。当前文档封存仅登记该完整SHA与停止点，没有源码／QM或二进制差异；完整交付SHA由git rev-parse HEAD、独立目录build-identity.txt和最终回复给出，避免自引用。本轮没有修改0001～0004或依赖制品，继续使用5258b37988f21efe4bdbdb57d7553196bd816350的x64 DLL／LIB。不是IB-01～04全部验收。
 
 | 当前检查 | 实际范围与结果 |
 |---|---|
@@ -820,3 +821,5 @@ Popup修正后PID34084／QkmIbInputUi_34084的五场再次通过，正式版本�
 新版独立目录：out/ibinput/manual-w11-ux01-20261030，使用新正式EXE、相同依赖和重新复制的合成INI，附README-验证.md／build-identity.txt／MCP_RECEIVE_PROMPT.md。旧out/ibinput/manual-w11-20261030及用户已经编辑的INI完全保留，不覆盖、不迁移其测试状态。新EXE SHA256=00B83EA14E0CE5C82279545DCB422BB5195325ED1E4F3E439B0B679DDD597E8A，x64 IbInputSimulator.dll SHA256=13BDF841A5B15057A939BC1DC5C41FC1848FDE433DCC5B0941248D16FDB9D548。
 
 停止点仍是“待用户基本验证”。按manual_verification.md复验本轮反馈；用户最终人工验收未发生，本线程不自判通过、不发送MCP接纳消息。失败时修复并形成新提交，不amend已交付检查点；明确“基本验证通过，可以合流”后才由原MCP线程接纳。
+
+本轮缓存最终只读快照见out/ibinput/logs/w11-ux01-cache-final.json：PID2580仍active／截止18:30，已无IbInput定义授权及自有目标／未知启动；保留MCP其余范围和原截止。本线程未执行off，未创建／恢复缓存；等待人工验收期间不派发新的测试。该快照只说明本轮时点，不保证另一会话后续缓存状态。
