@@ -4,6 +4,7 @@ build-*/*
 build-*
 *-build-*
 .vscode/
+/.claude/settings.local.json
 .infcode/
 plan/
 *.TMP
