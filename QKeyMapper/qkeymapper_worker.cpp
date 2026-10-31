@@ -229,6 +229,7 @@ struct ForzaAutoMappingSpec {
     bool useGlobalThreshold = false;
 };
 
+// Callers hold s_ViGEmClient_Mutex for spec access; helpers must not lock it again.
 QList<OrderedMap<QString, ForzaAutoMappingSpec>> s_PressedForzaBrakeSpecsList; // clazy:exclude=non-pod-global-static
 QList<OrderedMap<QString, ForzaAutoMappingSpec>> s_PressedForzaAccelSpecsList; // clazy:exclude=non-pod-global-static
 
@@ -291,6 +292,21 @@ bool parseForzaAutoThresholdValue(const QString &valueText, double &value)
     return ok && value >= GRIP_THRESHOLD_BRAKE_MIN && value <= GRIP_THRESHOLD_BRAKE_MAX;
 }
 
+#ifdef QKM_FORZA_AUTO_STATE_TESTING
+double forzaTestGlobalThreshold(bool isBrake);
+void forzaTestThresholdReadCheckpoint(bool isBrake);
+void forzaTestBeforeAutoAdjustSend();
+#endif
+
+double globalForzaAutoThreshold(bool isBrake)
+{
+#ifdef QKM_FORZA_AUTO_STATE_TESTING
+    return forzaTestGlobalThreshold(isBrake);
+#else
+    return isBrake ? QKeyMapper::getBrakeThreshold() : QKeyMapper::getAccelThreshold();
+#endif
+}
+
 bool parseForzaAutoMappingKey(const QString &key, ForzaAutoMappingSpec *outSpec = Q_NULLPTR)
 {
     static QRegularExpression gamepadIndexRegex(R"(@(\d+)$)");
@@ -306,7 +322,7 @@ bool parseForzaAutoMappingKey(const QString &key, ForzaAutoMappingSpec *outSpec 
         if (outSpec != Q_NULLPTR) {
             outSpec->baseKey = keyWithoutIndex;
             outSpec->initValue = AUTO_BRAKE_DEFAULT;
-            outSpec->threshold = QKeyMapper::getBrakeThreshold();
+            outSpec->threshold = globalForzaAutoThreshold(true);
             outSpec->useGlobalThreshold = true;
         }
         return true;
@@ -316,7 +332,7 @@ bool parseForzaAutoMappingKey(const QString &key, ForzaAutoMappingSpec *outSpec 
         if (outSpec != Q_NULLPTR) {
             outSpec->baseKey = keyWithoutIndex;
             outSpec->initValue = AUTO_ACCEL_DEFAULT;
-            outSpec->threshold = QKeyMapper::getAccelThreshold();
+            outSpec->threshold = globalForzaAutoThreshold(false);
             outSpec->useGlobalThreshold = true;
         }
         return true;
@@ -427,13 +443,19 @@ double currentForzaAutoThreshold(int gamepadIndex, bool isBrake)
 {
     OrderedMap<QString, ForzaAutoMappingSpec> *specMap = forzaAutoSpecMap(gamepadIndex, isBrake);
     if (specMap == Q_NULLPTR || specMap->isEmpty()) {
-        return isBrake ? QKeyMapper::getBrakeThreshold() : QKeyMapper::getAccelThreshold();
+        return globalForzaAutoThreshold(isBrake);
     }
 
+#ifdef QKM_FORZA_AUTO_STATE_TESTING
+    forzaTestThresholdReadCheckpoint(isBrake);
+#endif
     const QList<QString> specKeys = specMap->keys();
+    if (specKeys.isEmpty()) {
+        return globalForzaAutoThreshold(isBrake);
+    }
     const ForzaAutoMappingSpec activeSpec = specMap->value(specKeys.constLast());
     if (activeSpec.useGlobalThreshold) {
-        return isBrake ? QKeyMapper::getBrakeThreshold() : QKeyMapper::getAccelThreshold();
+        return globalForzaAutoThreshold(isBrake);
     }
 
     return activeSpec.threshold;
@@ -1124,6 +1146,8 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     for (int i = 0; i < INTERCEPTION_MAX_KEYBOARD; ++i) {
         pressedMultiKeyboardVKeyCodeList.append(QList<quint8>());
     }
+    {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
     for (int i = 0; i < VIRTUAL_GAMEPAD_NUMBER_MAX; ++i) {
         pressedvJoyLStickKeysList.append(OrderedMap<QString, BYTE>());
         pressedvJoyRStickKeysList.append(OrderedMap<QString, BYTE>());
@@ -1133,6 +1157,7 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
         s_vJoyExcludedRStickDirectionsList.append(QStringList());
     }
     resetForzaAutoSpecLists();
+    }
     // for (int i = 0; i < INTERCEPTION_MAX_MOUSE; ++i) {
     //     s_Mouse2vJoy_delta_List.append(QPoint());
     // }
@@ -8055,36 +8080,40 @@ void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, i
 
 void QKeyMapper_Worker::ViGEmClient_PressButton(const QString &joystickButton, int autoAdjust, int gamepad_index, int player_index, const QString &runtimeToken, QJoystickEventType event_type)
 {
+    static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
+    static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
+    QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
+    QRegularExpressionMatch vjoy_radius_keys_match = vjoy_radius_keys_regex.match(joystickButton);
+    ForzaAutoMappingSpec forzaSpec;
+    const bool isForzaAutoMapping = parseForzaAutoMappingKey(joystickButton, &forzaSpec);
+    const bool isForzaBrakeMapping = isForzaAutoMapping
+        && (forzaSpec.baseKey == VJOY_LT_BRAKE_STR || forzaSpec.baseKey == VJOY_RT_BRAKE_STR);
+
+    {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
     int gamepad_count = s_ViGEmTargetList.size();
     int gamepad_report_count = s_ViGEmTarget_ReportList.size();
 
-    if (gamepad_index >= gamepad_count || gamepad_index >= gamepad_report_count) {
+    if (gamepad_index < 0 || gamepad_index >= gamepad_count || gamepad_index >= gamepad_report_count
+        || gamepad_index >= pressedvJoyLStickKeysList.size()
+        || gamepad_index >= pressedvJoyRStickKeysList.size()
+        || gamepad_index >= pressedvJoyButtonsList.size()) {
 #ifdef DEBUG_LOGOUT_ON
         qWarning() << "[ViGEmClient_PressButton]" << "VirtualGamepad Index Error! ->" << gamepad_index;
 #endif
         return;
     }
 
-    static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
-    static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
-    QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
-    QRegularExpressionMatch vjoy_radius_keys_match = vjoy_radius_keys_regex.match(joystickButton);
     PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
     ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
     XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
     OrderedMap<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
     OrderedMap<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
     QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
-    ForzaAutoMappingSpec forzaSpec;
-    const bool isForzaAutoMapping = parseForzaAutoMappingKey(joystickButton, &forzaSpec);
-    const bool isForzaBrakeMapping = isForzaAutoMapping
-        && (forzaSpec.baseKey == VJOY_LT_BRAKE_STR || forzaSpec.baseKey == VJOY_RT_BRAKE_STR);
     OrderedMap<QString, ForzaAutoMappingSpec> *forzaSpecMap = isForzaAutoMapping
         ? forzaAutoSpecMap(gamepad_index, isForzaBrakeMapping)
         : Q_NULLPTR;
 
-    {
-    QMutexLocker locker(&s_ViGEmClient_Mutex);
     if (s_ViGEmClient != Q_NULLPTR && ViGEmTarget != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
         if (autoAdjust) {
@@ -8514,39 +8543,43 @@ void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton,
 
 void QKeyMapper_Worker::ViGEmClient_ReleaseButton(const QString &joystickButton, int gamepad_index, const QString &runtimeToken)
 {
-    int gamepad_count = s_ViGEmTargetList.size();
-    int gamepad_report_count = s_ViGEmTarget_ReportList.size();
-
-    if (gamepad_index >= gamepad_count || gamepad_index >= gamepad_report_count) {
-#ifdef DEBUG_LOGOUT_ON
-        qWarning() << "[ViGEmClient_ReleaseButton]" << "VirtualGamepad Index Error! ->" << gamepad_index;
-#endif
-        return;
-    }
-
     static QRegularExpression vjoy_pushlevel_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_PUSHLEVEL_KEYS);
     static QRegularExpression vjoy_radius_keys_regex(QKeyMapperConstants::REGEX_PATTERN_VJOY_RADIUS_KEYS);
     QRegularExpressionMatch vjoy_pushlevel_keys_match = vjoy_pushlevel_keys_regex.match(joystickButton);
     QRegularExpressionMatch vjoy_radius_keys_match = vjoy_radius_keys_regex.match(joystickButton);
-    PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
-    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
-    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
-    OrderedMap<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
-    OrderedMap<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
-    QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
     ForzaAutoMappingSpec forzaSpec;
     const bool isForzaAutoMapping = parseForzaAutoMappingKey(joystickButton, &forzaSpec);
     const bool isForzaBrakeMapping = isForzaAutoMapping
         && (forzaSpec.baseKey == VJOY_LT_BRAKE_STR || forzaSpec.baseKey == VJOY_RT_BRAKE_STR);
-    OrderedMap<QString, ForzaAutoMappingSpec> *forzaSpecMap = isForzaAutoMapping
-        ? forzaAutoSpecMap(gamepad_index, isForzaBrakeMapping)
-        : Q_NULLPTR;
     bool removeForzaButtonState = false;
     bool resetForzaBrakeState = false;
     bool resetForzaAccelState = false;
 
     {
     QMutexLocker locker(&s_ViGEmClient_Mutex);
+    int gamepad_count = s_ViGEmTargetList.size();
+    int gamepad_report_count = s_ViGEmTarget_ReportList.size();
+
+    if (gamepad_index < 0 || gamepad_index >= gamepad_count || gamepad_index >= gamepad_report_count
+        || gamepad_index >= pressedvJoyLStickKeysList.size()
+        || gamepad_index >= pressedvJoyRStickKeysList.size()
+        || gamepad_index >= pressedvJoyButtonsList.size()) {
+#ifdef DEBUG_LOGOUT_ON
+        qWarning() << "[ViGEmClient_ReleaseButton]" << "VirtualGamepad Index Error! ->" << gamepad_index;
+#endif
+        return;
+    }
+
+    PVIGEM_TARGET ViGEmTarget = s_ViGEmTargetList.at(gamepad_index);
+    ViGEm_ReportData& reportData = s_ViGEmTarget_ReportList[gamepad_index];
+    XUSB_REPORT& ViGEmTarget_Report = reportData.xusb_report;
+    OrderedMap<QString, BYTE>& pressedvJoyLStickKeys_ref = pressedvJoyLStickKeysList[gamepad_index];
+    OrderedMap<QString, BYTE>& pressedvJoyRStickKeys_ref = pressedvJoyRStickKeysList[gamepad_index];
+    QStringList& pressedvJoyButtons_ref = pressedvJoyButtonsList[gamepad_index];
+    OrderedMap<QString, ForzaAutoMappingSpec> *forzaSpecMap = isForzaAutoMapping
+        ? forzaAutoSpecMap(gamepad_index, isForzaBrakeMapping)
+        : Q_NULLPTR;
+
     if (s_ViGEmClient != Q_NULLPTR && ViGEmTarget != Q_NULLPTR) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().noquote().nospace() << "[ViGEmClient]" << " VirtualGamepad Button Release [" << joystickButton << "]";
@@ -9898,6 +9931,8 @@ void QKeyMapper_Worker::setWorkerKeyHook()
 #endif // FAKERINPUT_SUPPORT && FAKERINPUT_EXTRAINFO
 
 #ifdef VIGEM_CLIENT_SUPPORT
+    {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
     s_Auto_Accel = AUTO_ACCEL_DEFAULT;
     s_Auto_Brake_Level = AUTO_BRAKE_DEFAULT;
@@ -9939,6 +9974,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
         s_vJoyExcludedRStickDirectionsList.append(QStringList());
     }
     resetForzaAutoSpecLists();
+    }
     stopMouse2vJoyResetTimerMap();
     // ViGEmClient_GamepadReset();
     ViGEmClient_AllGamepadReset();
@@ -10152,6 +10188,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 #endif
     }
 
+    {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
     s_Auto_Accel = AUTO_ACCEL_DEFAULT;
     s_Auto_Brake_Level = AUTO_BRAKE_DEFAULT;
@@ -10190,6 +10228,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
         s_vJoyExcludedButtonsList.append(QStringList());
         s_vJoyExcludedLStickDirectionsList.append(QStringList());
         s_vJoyExcludedRStickDirectionsList.append(QStringList());
+    }
+    resetForzaAutoSpecLists();
     }
     stopMouse2vJoyResetTimerMap();
     // ViGEmClient_GamepadReset();
@@ -10334,6 +10374,8 @@ void QKeyMapper_Worker::setKeyMappingRestart()
         setMouseToPoint(m_LastMouseCursorPoint);
     }
 
+    {
+    QMutexLocker locker(&s_ViGEmClient_Mutex);
     s_Auto_Brake = AUTO_BRAKE_DEFAULT;
     s_Auto_Accel = AUTO_ACCEL_DEFAULT;
     s_Auto_Brake_Level = AUTO_BRAKE_DEFAULT;
@@ -10365,6 +10407,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
         s_vJoyExcludedRStickDirectionsList.append(QStringList());
     }
     resetForzaAutoSpecLists();
+    }
     stopMouse2vJoyResetTimerMap();
     ViGEmClient_AllGamepadReset();
     s_Mouse2vJoy_EnableStateMap.clear();
@@ -11060,6 +11103,8 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
     brake_slip_metric = qMin(brake_slip_metric, GRIP_THRESHOLD_MAX);
     accel_slip_metric = qMin(accel_slip_metric, GRIP_THRESHOLD_MAX);
 
+    // Keep threshold selection and adjustment atomic with press/release and reset.
+    QMutexLocker forzaStateLocker(&s_ViGEmClient_Mutex);
     int autoadjust = AUTO_ADJUST_NONE;
     int gamepad_index = 0;
     double gripThreshold_Brake = currentForzaAutoThreshold(gamepad_index, true);
@@ -11198,6 +11243,11 @@ void QKeyMapper_Worker::processForzaFormatData(const QByteArray &forzadata)
     if (autoadjust) {
 #ifdef GRIP_VERBOSE_LOG
         qDebug() << "[processForzaFormatData]" << "Current Adjusted Auto Data ->" << "s_Auto_Brake =" << s_Auto_Brake << "s_last_Auto_Brake =" << s_last_Auto_Brake << ", s_Auto_Accel =" << s_Auto_Accel << ", s_last_Auto_Accel =" << s_last_Auto_Accel;
+#endif
+        // PressButton takes the same mutex and rechecks the currently held buttons.
+        forzaStateLocker.unlock();
+#ifdef QKM_FORZA_AUTO_STATE_TESTING
+        forzaTestBeforeAutoAdjustSend();
 #endif
         QString autoadjustEmptyStr;
         ViGEmClient_PressButton(autoadjustEmptyStr, autoadjust, gamepad_index, INITIAL_PLAYER_INDEX);
