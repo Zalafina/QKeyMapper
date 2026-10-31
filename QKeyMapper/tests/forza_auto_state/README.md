@@ -1,7 +1,7 @@
 # Forza 自动油门／刹车状态回归
 
 测试直接编译产品 `qkeymapper_worker.cpp`，运行实际按下、释放和遥测处理路径。
-测试入口为无窗口、普通权限的控制台程序；不调用产品 main，不安装 Hook，不连接虚拟手柄总线，不发送真实输入。
+默认测试入口为无窗口、普通权限的控制台程序；不调用产品 main，不安装 Hook，不连接虚拟手柄总线，不发送真实输入。另有下述私有桌面 Worker 生命周期模式。
 
 测试专用宏只用于该翻译单元：全局阈值由固定的 1.05／10.0 提供，读取检查点由信号量控制。
 三个 ViGEm 输出边界函数由测试实现，报告仅记录在内存中。普通产品构建继续读取原 GUI 阈值并使用原驱动接口。
@@ -72,3 +72,11 @@ if ($test.Process.ExitCode -ne 0) { throw "Test failed: $($test.Process.ExitCode
 修复从 master 独立形成提交。MCP／IbInput 在各自稳定检查点合入同一修复分支或已包含修复的 master，保留共同历史。
 集成时保留 MCP 的停止准入检查，复核启停／切表／退出中的锁顺序；持有虚拟手柄锁时不能等待发送任务，也不能再次调用会取得同一锁的函数。
 对合并后的实际源码重跑本测试和相应生命周期用例；两个分支分别通过的历史结果不等于合流通过。
+
+## Worker 生命周期入口补验
+
+同一目标设置 `QKM_FORZA_TEST_LIFECYCLE=1`，在实际名称以 `QkmForza_` 开头的自有私有桌面运行。须在全新的 `out/` runtime 提供合成 INI，其 General 节包含 `ForzaLifecycleFixture=true`、`StartupAutoMonitoring=false`、`VirtualGamepadEnable=false`；不要部署个人配置。`DataPortNumber` 使用自有测试端口，避免占用游戏配置端口。
+
+测试创建真实 QApplication、QKeyMapper 和两个真实 Tab；直接执行 Worker 的 `setWorkerKeyHook()`、`setWorkerKeyUnHook()`、`setKeyMappingRestart()`，实际构建活动数据／旧表备份，验证停止、再次开始、同表重启、选择另一 Tab 后重启、清理和重新使用。报告仍由三个 ViGEm 输出替身记录；合成原键无系统键码，不安装 Hook、不发送实际输入。操作期间暂时屏蔽当前测试进程的 FakerInput 客户端以免 ReleaseAll，结束恢复。
+
+这是 Worker 入口和真实 Tab 选择的定向维护测试，不是完整 GUI 开始／停止按钮、Hook／Worker 跨线程协调或硬件生命周期验收。没有运行产品 main；构造真实窗口仍沿原逻辑尝试初始化已安装驱动客户端，不能据此宣称所有初始化均为替身。普通权限运行，原有 30 秒进程内看门狗覆盖整个用例；程序正常返回 0 才算通过。

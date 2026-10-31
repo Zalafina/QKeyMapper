@@ -1,4 +1,7 @@
 #include <QCoreApplication>
+#include <QApplication>
+#include <QDir>
+#include <QSettings>
 #include <QSemaphore>
 #include <QtEndian>
 #include <atomic>
@@ -202,9 +205,129 @@ void concurrentTransitions(Worker &worker)
     release(accel, QStringLiteral("W"));
     std::puts("PASS concurrent_press_release_reset_and_reuse");
 }
+
+void lifecycleTransitions(int argc, char *argv[])
+{
+    wchar_t desktop[128]{};
+    DWORD bytes = 0;
+    require(GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME,
+        desktop, sizeof(desktop), &bytes), "cannot identify the actual desktop");
+    require(QString::fromWCharArray(desktop).startsWith(QStringLiteral("QkmForza_")),
+        "lifecycle checks require an owned private desktop");
+    QApplication app(argc, argv);
+    QDir::setCurrent(QCoreApplication::applicationDirPath());
+    QSettings settings(QString::fromLatin1(CONFIG_FILENAME), QSettings::IniFormat);
+    require(settings.value(QStringLiteral("ForzaLifecycleFixture")).toBool()
+        && !settings.value(QString::fromLatin1(STARTUP_AUTOMONITORING), true).toBool()
+        && !settings.value(QString::fromLatin1(VIRTUALGAMEPAD_ENABLE), true).toBool(),
+        "an isolated, non-starting fixture INI is required");
+    auto *worker = Worker::getInstance();
+    worker->threadStarted();
+    {
+        QKeyMapper mapper;
+        require(Worker::s_ViGEmTargetList.isEmpty(), "fixture unexpectedly created a native target");
+        auto *tabs = mapper.findChild<KeyMappingTabWidget *>(QStringLiteral("keyMappingTabWidget"));
+        require(tabs && !QKeyMapper::s_KeyMappingTabInfoList.isEmpty(), "real Tab UI was not initialized");
+        require(mapper.addTabToKeyMappingTabWidget(QStringLiteral("ForzaLifecycleB"), false), "cannot add the second Tab");
+        const int second = QKeyMapper::s_KeyMappingTabInfoList.size() - 1;
+        for (int index : {0, second}) {
+            auto *data = QKeyMapper::s_KeyMappingTabInfoList[index].KeyMappingData;
+            require(data != nullptr, "Tab has no source list");
+            data->clear();
+            for (bool brake : {false, true}) {
+                MAP_KEYDATA row;
+                row.Original_Key = QStringLiteral("QkmForza%1%2").arg(index).arg(brake ? 'B' : 'A');
+                row.Pure_OriginalKeys = QStringList{row.Original_Key};
+                row.Mapping_Keys = QStringList{brake ? VJOY_LT_BRAKE_STR : VJOY_RT_ACCEL_STR};
+                row.Pure_MappingKeys = row.Mapping_Keys;
+                row.MappingKeys_KeyUp = row.Mapping_Keys;
+                row.Pure_MappingKeys_KeyUp = row.Mapping_Keys;
+                data->append(row);
+            }
+        }
+        const auto nativeClient = Worker::s_ViGEmClient;
+        const auto nativeState = Worker::s_ViGEmClient_ConnectState;
+        const auto nativeFaker = Worker::s_FakerInputClient;
+        Worker::s_FakerInputClient = Q_NULLPTR;
+        Worker::s_ViGEmClient = testClient;
+        Worker::s_ViGEmClient_ConnectState = Worker::VIGEMCLIENT_CONNECT_SUCCESS;
+        Worker::s_ViGEmTargetList.append(testTarget);
+        Worker::s_ViGEmTarget_ReportList.append(ViGEm_ReportData());
+        const auto cleared = [] {
+            QMutexLocker locker(&Worker::s_ViGEmClient_Mutex);
+            require(!hasForzaAutoGroupActive(0, false) && !hasForzaAutoGroupActive(0, true), "lifecycle retained Forza groups");
+            require(Worker::s_Auto_Accel == AUTO_ACCEL_DEFAULT && Worker::s_Auto_Brake == AUTO_BRAKE_DEFAULT,
+                "lifecycle retained automatic levels");
+            require(!Worker::s_HasLastForzaTimestamp && Worker::s_LastForzaTimestampMs == 0,
+                "lifecycle retained telemetry timing");
+            require(lastReport.bLeftTrigger == 0 && lastReport.bRightTrigger == 0, "lifecycle left a trigger pressed");
+        };
+        const auto activeTab = [](int index) {
+            require(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex == index, "selected Tab identity changed");
+            require(QKeyMapper::KeyMappingDataList == &QKeyMapper::s_ActiveKeyMappingDataList,
+                "worker did not select the active list");
+            require(QKeyMapper::s_ActiveKeyMappingDataList.size() == 2
+                && QKeyMapper::s_ActiveKeyMappingDataList.first().Original_Key == QStringLiteral("QkmForza%1A").arg(index),
+                "worker used another Tab's rows");
+        };
+        const auto reuse = [worker](int index) {
+            const QString accel = VJOY_RT_ACCEL_STR + (index == 0 ? QStringLiteral("[INIT=190,THR=3.5]") : QStringLiteral("[INIT=110,THR=6.25]"));
+            const QString brake = VJOY_LT_BRAKE_STR + QStringLiteral("[INIT=190,THR=1.2]");
+            press(accel, QStringLiteral("QkmForzaAccel"));
+            press(brake, QStringLiteral("QkmForzaBrake"));
+            checkThreshold(false, index == 0 ? 3.5 : 6.25, true);
+            checkThreshold(true, 1.2, true);
+            worker->processForzaFormatData(telemetry(4321, 20.0f));
+            require(Worker::s_HasLastForzaTimestamp, "lifecycle did not process telemetry");
+            release(accel, QStringLiteral("QkmForzaAccel"));
+            release(brake, QStringLiteral("QkmForzaBrake"));
+            require(lastReport.bLeftTrigger == 0 && lastReport.bRightTrigger == 0, "reused state did not release");
+            press(accel, QStringLiteral("QkmForzaAccel"));
+            press(brake, QStringLiteral("QkmForzaBrake"));
+        };
+        tabs->setCurrentIndex(0);
+        worker->setWorkerKeyHook();
+        activeTab(0);
+        cleared();
+        reuse(0);
+        worker->setWorkerKeyUnHook();
+        require(Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED, "stop did not finish");
+        cleared();
+        require(QKeyMapper::KeyMappingDataList == QKeyMapper::s_KeyMappingTabInfoList[0].KeyMappingData,
+            "stop did not restore the editable source");
+        worker->setWorkerKeyHook();
+        activeTab(0);
+        cleared();
+        reuse(0);
+        worker->setKeyMappingRestart();
+        activeTab(0);
+        cleared();
+        reuse(0);
+        tabs->setCurrentIndex(second);
+        worker->setKeyMappingRestart();
+        activeTab(second);
+        cleared();
+        require(QKeyMapper::s_LastActiveKeyMappingDataList.first().Original_Key == QStringLiteral("QkmForza0A"),
+            "Tab restart lost its previous source");
+        reuse(second);
+        worker->setWorkerKeyUnHook();
+        cleared();
+        require(SendInputTask::s_SendInputTaskControllerMap.isEmpty(), "lifecycle left input controllers");
+        Worker::s_ViGEmTargetList.clear();
+        Worker::s_ViGEmTarget_ReportList.clear();
+        Worker::s_ViGEmClient = nativeClient;
+        Worker::s_ViGEmClient_ConnectState = nativeState;
+        Worker::s_FakerInputClient = nativeFaker;
+        require(QMetaObject::invokeMethod(worker, "shutdownSendInputTasks", Qt::DirectConnection), "worker shutdown failed");
+        std::printf("PASS lifecycle_stop_start_restart_tab_switch desktop=%ls HWND=%llu\n", desktop,
+            static_cast<unsigned long long>(mapper.winId()));
+    }
+    worker->threadFinished();
 }
 
-// Replace only the native output boundary; no bus connection or device is created.
+}
+
+// Replace only report output; the test target never connects to the bus.
 extern "C" BOOL vigem_target_is_attached(PVIGEM_TARGET target)
 {
     return target == testTarget;
@@ -234,12 +357,14 @@ int main(int argc, char *argv[])
             || _dup2(_fileno(stdout), _fileno(stderr)) < 0) { return 4; }
     }
     std::setvbuf(stdout, nullptr, _IONBF, 0);
-    QCoreApplication app(argc, argv);
     QSemaphore finished;
     std::thread watchdog([&] {
         if (!finished.tryAcquire(1, 30000)) { std::_Exit(3); }
     });
-    {
+    if (qEnvironmentVariableIsSet("QKM_FORZA_TEST_LIFECYCLE")) {
+        lifecycleTransitions(argc, argv);
+    } else {
+        QCoreApplication app(argc, argv);
         Worker worker;
         Worker::s_ViGEmClient = testClient;
         Worker::s_ViGEmClient_ConnectState = Worker::VIGEMCLIENT_CONNECT_SUCCESS;
