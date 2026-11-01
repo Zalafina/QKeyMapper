@@ -11,6 +11,7 @@
 | 当前授权 | 2026-11-01用户明确授权仅在IbInput分支保留共同历史合入0d053c17590589f9a2b8492b61ab7e77b915456a，包含85422ea9ce8c646aa8c994a3cfe9c0bee76da3c2；可创建聚焦本地提交，不push，不改master指针或MCP工作区 |
 | 本机实际环境 | PC-W10，Windows 10 Pro 22H2 19045.6093 AMD64；G HUB 2026.7.992920，logi_joy_bus_enum Running；本轮已按单独授权执行普通权限G HUB鼠标客户端实测，不外推其他系统／版本或物理设备组合 |
 | 实施仓库／分支 | F:/work/code/mygit_hub/temp_test/QKeyMapper_temp_debug/QKeyMapper；codex/ibinput-simulator |
+| 本轮已提交检查点 | M1源码8eee434b129dbe7b8382a35fbf82bd0ce0b6026c；私有截图经验723b2695010d2a2efefd3508f4dde84985ebfef8；Forza共同历史合并63bae3d4e62d44f7fdaccb06781aa043f717d9ca；开工记录6fffa10d6abfb851bed61502283b00af13d3eb01。均为本地，不push；包含本卡最终SHA的文档提交由git log定位，不递归自引用 |
 | 接续核实 | 初始HEAD=2487cf2d4d7e0fb7684a8a51559e0ebe35b570d1，工作区干净；人工通过源码39126f15ed64ac6dffc2383308387343817cf085保留；本地master及原origin/master均为d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d，定向fetch后origin/master=0d053c17590589f9a2b8492b61ab7e77b915456a，未更改本地master指针 |
 | 工具链 | Python3.11.9；Qt6.8.3 x64、Qt5.15.2 x64／x86；VS2022工具集14.44.35207、SDK10.0.19041.0、JOM可用；构建和测试普通Medium |
 | 用户实例 | 起始用户PID4340未接管；用户自行退出，M1实测前后核实无其他QKeyMapper。自有私有组件及Default探针均已结束；产品构建使用独立out，不改用户运行目录／INI |
@@ -1009,7 +1010,7 @@ M1验证补充（执行前）：临时提示从tr改为固定英文后，选择�
 
 U12翻译提案经用户意见撤回：临时能力说明改固定英文QStringLiteral，Release前按实际能力复核；不隐藏仍存在的限制，不扩大到其他正式UI文字。正式TS/QM逐字未改，原U11资源保留，不跑无必要的全量lupdate。
 
-本轮源码为Forza合并63bae3d4及M1工作区差异；经验文档独立提交723b2695010d2a2efefd3508f4dde84985ebfef8，不改变构建输入。M1源代码及本记录一并形成聚焦本地检查点，完整SHA在生成后的交接卡记录。
+本轮源码为Forza合并63bae3d4及M1工作区差异；经验文档独立提交723b2695010d2a2efefd3508f4dde84985ebfef8，不改变构建输入。M1源代码及本记录已提交8eee434b129dbe7b8382a35fbf82bd0ce0b6026c；该提交包含已实现、客户端实测但尚待产品映射回归的代码，提交不等于阶段验收。
 
 | 所选检查 | 实际结果／证据 |
 |---|---|
@@ -1034,3 +1035,5 @@ U12翻译提案经用户意见撤回：临时能力说明改固定英文QStringL
 - Win11接续只证明其实际执行的系统、G HUB版本和场景；本轮Win10通过不覆盖其他厂商／版本，K1的Win11人工结果不算合入Forza和M1后的新回归。MCP工作区持续只读，HEAD仍fdf886c30f6af8b12779da3c3ab88ddf95840c43且干净；本地master仍d49a9f57，未合入整套MCP。IB-05继续受完整功能、独立验证、手册预览及用户明确合流同意约束，不提前试合流。
 - 用户请求的8h缓存曾创建Medium控制器15900，截止20:35；本轮实际普通探针未使用它，scope／registered／owned／pending／job始终为空。任务结束13:05按技能执行off，返回closed／cache_available=false／native_sessions=0，独立status确认无受管控制器；没有其他目标需清理，无全局-k。
 - 传到另一PC默认由用户操作，不push。可在本IbInput检出创建增量bundle：git bundle create <传输目录>/ibinput-r11.bundle codex/ibinput-simulator ^2487cf2d4d7e0fb7684a8a51559e0ebe35b570d1。目标IbInput检出先核对实际分支、干净状态及原R10祖先，git bundle verify后fetch到专用临时远端引用，再以--ff-only更新功能分支；若目标已独立开发则先审阅差异，不覆盖或reset。bundle不包含out／个人INI／缓存，正式DLL及许可已在Git；必要原始证据可另复制所选日志和PNG，不能把复制缓存当成新PC验证。
+
+2026-11-01本轮结束核对：M1提交后工作区干净；本次最后只提交交接卡补记，不再改变已测源码。已核对13个M1暂存路径，排除out、截图、个人INI、凭据、TS/QM及无关文件；UTF-8无BOM／LF、diff检查通过，14份所选配置／构建日志均原生0且无错误／警告。Forza指定0d053c17为当前分支祖先，本地master仍d49a9f57。自有UI／接收进程无遗留，缓存已关闭；MCP检出源码、计划、分支未动。交付为本地开发检查点，下一步和未覆盖项见13.5。
