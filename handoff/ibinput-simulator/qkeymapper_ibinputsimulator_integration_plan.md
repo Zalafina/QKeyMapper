@@ -14,13 +14,13 @@
 | 接续核实 | 初始HEAD=2487cf2d4d7e0fb7684a8a51559e0ebe35b570d1，工作区干净；人工通过源码39126f15ed64ac6dffc2383308387343817cf085保留；本地master及原origin/master均为d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d，定向fetch后origin/master=0d053c17590589f9a2b8492b61ab7e77b915456a，未更改本地master指针 |
 | 工具链 | Python3.11.9；Qt6.8.3 x64、Qt5.15.2 x64／x86；VS2022工具集14.44.35207、SDK10.0.19041.0、JOM可用；构建和测试普通Medium |
 | 用户实例 | 只读发现QKeyMapper PID4340，普通权限未取得可核实路径／映射状态；不接管、不关闭。产品构建用本任务独立out目录，避免改写可能在用的EXE |
-| 选定同步验证 | 合入后Qt6 x64 Release（零错误／警告）；Forza确定性交错纯软件模式及受影响IbInput客户端／准入／生命周期检查，先检查测试工程的正式DLL链接与初始化边界 |
+| 选定同步验证 | 按用户补充，Forza同步只以差异／共享锁／启停释放审查及Qt6 x64 Release（零错误／警告）为门槛；补充前已启动的软件批次已安全收尾，不作为后续默认门禁 |
 | 本切片估算／桌面 | Forza同步及软件验证预估30–60分钟；仅文件／Git／编译和无输入检查，无Default／私有GUI场景，不改筛选键。Forza Worker私有生命周期模式会构造窗口并可能初始化旧驱动，当前不将其当纯替身运行 |
 | 后续IB-04 | 依据1.1／1.2审查现有按钮／滚轮、报告保持、单位、错误与释放，再记录所选独立实现／验证切片；可复用但未回归不等于不支持，不增加无依据永久禁令 |
 | 历史证据 | Win11连接／复连、基础移动／键盘及基本长按／双击按12.4／12.11／12.12原版本和范围复用；旧Win10错误5不能替代当前0004结果，Forza历史游戏／ASan不算合入后新验证 |
 | 权限／边界 | 新驱动初始化／真实键鼠／系统设置／UAC／厂商软件操作需按具体范围授权；已批准同范围测试只公告后执行。构建、Git、静态与截图保持普通权限；不创建或恢复缓存 |
 | MCP只读核对 | F:/work/code/mygit_hub/QKeyMapper实际HEAD=fdf886c30f6af8b12779da3c3ab88ddf95840c43，当前干净；不修改源码／计划／分支或发消息，不合入整套MCP |
-| 下一动作／完成标准 | 定向fetch master，核对指定SHA内容和共同祖先；先封存本计划记录，再在功能分支合并、逐块审查锁顺序、执行选定检查并形成同步检查点；之后继续IB-04 |
+| 下一动作／完成标准 | 指定目标已无冲突合入待提交；Qt6 Release及补充前已启动的软件检查完成，先形成同步检查点，再继续IB-04按钮／滚轮切片 |
 | 交付性质 | 本地开发检查点；同步／构建／模拟不等于全部功能或产品路径验收。合流仍须完整功能、独立验证、手册预览、用户明确同意后由MCP原线程执行 |
 
 Win10及Win11各切片历史保留在第11～12节，不重写当时事实。当前状态与停止点以本卡及第13节为准；此前“基本验证后即可合流”的阶段安排由R8的完整功能门槛替代。
@@ -958,3 +958,27 @@ U11来源及三语记录见translation_review.md。先完成真实功能验证�
 Forza同步完成并封存可审阅检查点后，继续IB-04现有FakerInput对齐审查，再据具体调用差异写入下一切片的范围／估算／验证。保留已确认的Win11人工结果及0004连接证据，不要求重复基础人工验收，不把其他版本／系统结果写成当前通过。
 
 2026-11-01 定向fetch核实：FETCH_HEAD和origin/master均为0d053c17590589f9a2b8492b61ab7e77b915456a；共同祖先d49a9f57，待合入仅85422ea9和0d053c17两笔，无额外远端提交。85422ea9是指定目标祖先，目标尚非IbInput祖先，39126f15仍在当前历史中。Forza测试include实际产品pro，因本功能会链接正式IbInput DLL；默认QCoreApplication＋Worker、三个ViGEm边界替身，不调用产品main。QKM_FORZA_TEST_LIFECYCLE是“存在即切换”，纯软件运行须从环境移除该变量，不能设置为0来表示关闭。首次计划记录先独立本地提交，再进行合并。
+
+### 13.2 FZ-SYNC-01 合并审阅与当前软件结果
+
+用户随后补充：master Forza修复已完成必要测试并经实机游戏验证。本分支同步门槛收窄为合并差异、共享锁及启停／释放边界审查与Qt6 x64 Release原生0／零错误／零警告；不默认重跑专项、Qt5、ASan或真实输入。该补充到达前本轮软件构建／检查编排已启动，已按原方式安全收尾，仅保留其真实结果，不把这些变成以后同步的默认要求。后续IbInput新代码按自身风险另选验证。
+
+实际merge --no-ff --no-commit指定0d053c17，自动合并成功、无冲突；新增内容是85422ea9的Forza互斥修正、配套测试及测试导航，共5个文件，没有额外master或MCP功能。未手改Forza算法、阈值或测试以求通过，IbInput运行代次／快照、停止和释放分流保持。
+
+锁顺序核对：
+- setWorkerKeyHook先prepareIbInputRun，再进入独立的s_ViGEmClient_Mutex状态重置块；重置块退出后才调用会自行取锁的ViGEmClient_AllGamepadReset。
+- setWorkerKeyUnHook先取消IbInput新发送准入；Forza状态清理和resetForzaAutoSpecLists均在单独ViGEm锁块中，之后才做其他重置，锁内没有等待发送池或关闭IbInput。
+- finishIbInputRun排空各实际线程池时已释放控制器map锁；它是停止尾部的队列回调，发生在Forza锁块结束后，再调用客户端closeAfterDrain。shutdownSendInputTasks也未持Forza锁等待；客户端m_callMutex与ViGEm锁之间未形成新增相互等待边。
+- 活跃IbInput切表继续沿原停止路径，不在本次同步中改为未经验证的重启。非IbInput重启的Forza重置块结束后才调用AllGamepadReset。
+- processForzaFormatData在同一锁内读取阈值／调节，发送前显式unlock，再进入自行取锁的PressButton；相关阈值／状态表helper不再次取锁。ReleaseButton后续清理不跨该锁块持锁调用。
+
+当前检查使用普通Medium及本任务独立out/ibinput/forza-sync-20261101，保护PID4340用户实例及既有输出：
+| 检查 | 当前结果／边界 |
+|---|---|
+| Qt6.8.3 x64普通Release | 原生0、零编译／链接错误及警告；logs/product-configure.log、product-build.log；EXE=qt6-product/release/QKeyMapper.exe；未启动产品。该独立目录初次配置，后续可增量复用，不拷贝其他PC缓存 |
+| 已启动Forza默认软件批次 | 原生0，5组确定性交错／锁重入／容器复用，30424次断言；logs/forza-run.log及forza-launch.log记录实际EXE／自有PID。只运行默认QCoreApplication＋Worker，不设置生命周期环境变量 |
+| 正式DLL边界 | Forza工程继承实际产品pro，确实导入IbInputSimulator.dll，生成目录DLL与当前Git正式x64逐字节一致；logs/forza-imports.log。默认入口不走产品main、IbInput prepare／输入或实际ViGEm输出；不能称全部依赖均为替身，更不代表真实输入／设备接收通过 |
+| 已启动IbInput软件批次 | Qt6客户端8组、生产60键准入／生命周期及纯移动结构规则均原生0；logs/client-probe-*、client-production-*、validation-*；dumpbin确认这三项目不导入IbInput DLL，C API为替身或无API，未初始化真实后端 |
+| 未运行 | Forza私有Worker生命周期、完整产品启停／输入、Qt5、ASan、游戏及任何真实驱动／键鼠／系统筛选键操作；master历史游戏／ASan与Win11 IbInput人工结果仅按原范围复用 |
+
+本次Forza同步形成保留共同历史的本地合并检查点，不push，不变更本地master（仍d49a9f57）或MCP工作区。源码之外仅更新本唯一计划；暂存清单为5个合并文件＋本计划，不包含out或个人INI。合并完整SHA生成后记录于下一切片／最终交付，本文不递归自引用。
