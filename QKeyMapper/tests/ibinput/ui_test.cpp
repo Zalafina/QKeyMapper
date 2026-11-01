@@ -173,8 +173,8 @@ int main(int argc,char **argv) {
                 else if (index==3) buttons[1]->click();
                 QTest::qWait(80);
                 auto *details=popup.findChild<QPlainTextEdit *>();
-                check(details->toPlainText().contains(QCoreApplication::translate("QkmIbInputPopup",
-                    "Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24).")),"Approved keyboard capability text missing");
+                check(details->toPlainText().contains(QStringLiteral(
+                    "Currently supports G HUB relative mouse movement, basic key output (A-Z, 0-9, F1-F24), five mouse buttons (left, right, middle, X1, X2) and vertical wheel scrolling.")),"Temporary capability notice missing");
                 if (index>=3) details->verticalScrollBar()->setValue(details->verticalScrollBar()->maximum());
                 check(!popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("checkpoint"),Qt::CaseInsensitive)
                     && !popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("检查点")),"Developer checkpoint text remains visible");

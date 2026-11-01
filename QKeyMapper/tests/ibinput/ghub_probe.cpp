@@ -12,8 +12,17 @@
 #include <QWheelEvent>
 #include <QWidget>
 #include <tlhelp32.h>
+#include <array>
 
 namespace {
+struct MouseButton { int vk; DWORD down,up,data; Qt::MouseButton qt; const char *name; };
+const MouseButton buttons[]={
+    {VK_LBUTTON,MOUSEEVENTF_LEFTDOWN,MOUSEEVENTF_LEFTUP,0,Qt::LeftButton,"Left"},
+    {VK_RBUTTON,MOUSEEVENTF_RIGHTDOWN,MOUSEEVENTF_RIGHTUP,0,Qt::RightButton,"Right"},
+    {VK_MBUTTON,MOUSEEVENTF_MIDDLEDOWN,MOUSEEVENTF_MIDDLEUP,0,Qt::MiddleButton,"Middle"},
+    {VK_XBUTTON1,MOUSEEVENTF_XDOWN,MOUSEEVENTF_XUP,XBUTTON1,Qt::XButton1,"X1"},
+    {VK_XBUTTON2,MOUSEEVENTF_XDOWN,MOUSEEVENTF_XUP,XBUTTON2,Qt::XButton2,"X2"}
+};
 QString desktopName(HDESK desktop) {
     wchar_t name[128]{}; DWORD bytes=0;
     return desktop && GetUserObjectInformationW(desktop,UOI_NAME,name,sizeof(name),&bytes) ? QString::fromWCharArray(name) : QString();
@@ -42,10 +51,10 @@ bool otherMapper() {
 }
 class Probe final : public QWidget {
 public:
-    explicit Probe(const QString &logPath,bool connectionCycle):m_log(logPath),m_connectionCycle(connectionCycle) {
+    explicit Probe(const QString &logPath,bool connectionCycle,bool mouseSmoke):m_log(logPath),m_connectionCycle(connectionCycle),m_mouseSmoke(mouseSmoke) {
         setWindowTitle(QStringLiteral("IbInput G HUB basic probe"));
         setWindowFlag(Qt::WindowStaysOnTopHint);
-        setFocusPolicy(Qt::StrongFocus); setMouseTracking(true); resize(460,250);
+        setFocusPolicy(Qt::StrongFocus); setMouseTracking(true); resize(500,320);
         const QPoint cursor=QCursor::pos();
         if (QScreen *screen=QGuiApplication::screenAt(cursor)) {
             const QRect area=screen->availableGeometry();
@@ -62,14 +71,22 @@ protected:
     void paintEvent(QPaintEvent *) override {
         QPainter painter(this); painter.fillRect(rect(),QColor(245,247,250)); painter.setPen(Qt::black);
         painter.drawText(rect().adjusted(18,18,-18,-18),Qt::AlignLeft|Qt::TextWordWrap,
-            QStringLiteral("IbInput G HUB basic probe\nPID %1 | Default desktop required\n%2\n\nMove %3 | F24 %4/%5 | Left %6/%7 | Wheel %8/%9\n\nEsc or focus loss aborts and releases owned input.").arg(GetCurrentProcessId()).arg(m_summary).arg(m_moves).arg(m_keyDown).arg(m_keyUp).arg(m_leftDown).arg(m_leftUp).arg(m_wheelUp).arg(m_wheelDown));
+            QStringLiteral("IbInput G HUB basic probe\nPID %1 | Default desktop required\n%2\n\nMove %3 | F24 %4/%5 | Left %6/%7 | Wheel %8/%9\n\nEsc or focus loss aborts and releases owned input.").arg(GetCurrentProcessId()).arg(m_summary).arg(m_moves).arg(m_keyDown).arg(m_keyUp).arg(m_buttonDown[0]).arg(m_buttonUp[0]).arg(m_wheelUp).arg(m_wheelDown));
     }
-    void mouseMoveEvent(QMouseEvent *) override { ++m_moves; }
-    void mousePressEvent(QMouseEvent *event) override { if (event->button()==Qt::LeftButton) ++m_leftDown; }
-    void mouseReleaseEvent(QMouseEvent *event) override { if (event->button()==Qt::LeftButton) ++m_leftUp; }
+    void mouseMoveEvent(QMouseEvent *event) override { ++m_moves; m_moveButtons=event->buttons(); }
+    void mousePressEvent(QMouseEvent *event) override {
+        for (size_t index=0;index<m_buttonDown.size();++index)
+            if (event->button()==buttons[index].qt) ++m_buttonDown[index];
+    }
+    void mouseReleaseEvent(QMouseEvent *event) override {
+        for (size_t index=0;index<m_buttonUp.size();++index)
+            if (event->button()==buttons[index].qt) ++m_buttonUp[index];
+        m_releaseButtons=event->buttons();
+    }
     void keyPressEvent(QKeyEvent *event) override { if (event->key()==Qt::Key_F24) ++m_keyDown; if (event->key()==Qt::Key_Escape) finish(false,QStringLiteral("Escape")); }
     void keyReleaseEvent(QKeyEvent *event) override { if (event->key()==Qt::Key_F24) ++m_keyUp; }
     void wheelEvent(QWheelEvent *event) override {
+        m_wheelButtons=event->buttons();
         const int delta=event->angleDelta().y();
         if (delta>0) { ++m_wheelUp; m_wheelUpDelta+=delta; }
         if (delta<0) { ++m_wheelDown; m_wheelDownDelta+=delta; }
@@ -98,10 +115,10 @@ private:
         const QString actual=desktopName(GetThreadDesktop(GetCurrentThreadId()));
         write(QStringLiteral("PID=%1 EXE=%2 Desktop=%3 InputDesktop=%4").arg(GetCurrentProcessId()).arg(QCoreApplication::applicationFilePath(),actual,inputName));
         if (!require(m_log.isOpen() && actual==QStringLiteral("Default") && inputName==QStringLiteral("Default"),QStringLiteral("Desktop/log precondition failed"))) return;
-        write(QStringLiteral("Mode=%1 Medium=%2").arg(m_connectionCycle ? QStringLiteral("connect-cycle") : QStringLiteral("smoke")).arg(ordinaryIntegrity()));
+        write(QStringLiteral("Mode=%1 Medium=%2").arg(m_connectionCycle ? QStringLiteral("connect-cycle") : m_mouseSmoke ? QStringLiteral("mouse-smoke") : QStringLiteral("smoke")).arg(ordinaryIntegrity()));
         if (!require(ordinaryIntegrity(),QStringLiteral("Ordinary Medium integrity required"))) return;
         if (!require(!otherMapper(),QStringLiteral("Existing QKeyMapper process; no input attempted"))) return;
-        for (int key:{VK_SHIFT,VK_CONTROL,VK_MENU,VK_LWIN,VK_RWIN,VK_LBUTTON,VK_F24}) if (!require((GetAsyncKeyState(key)&0x8000)==0,QStringLiteral("Physical key/button already held"))) return;
+        for (int key:{VK_SHIFT,VK_CONTROL,VK_MENU,VK_LWIN,VK_RWIN,VK_LBUTTON,VK_RBUTTON,VK_MBUTTON,VK_XBUTTON1,VK_XBUTTON2,VK_F24}) if (!require((GetAsyncKeyState(key)&0x8000)==0,QStringLiteral("Physical key/button already held"))) return;
         QkmIbInputClient::Preferences preferences; preferences.backend=QStringLiteral("logitech_ghub");
         if (!require(m_client.setPreferences(preferences),QStringLiteral("Preference rejected"))) return;
         setFocus(); m_summary=QStringLiteral("Running fixed approved actions"); m_timer.start(); update();
@@ -109,8 +126,13 @@ private:
     bool prepare() {
         QkmIbInputClient::Requirements requirements;
         if (!m_connectionCycle) {
-            requirements.capabilities=QkmIbInputClient::RelativeMove|QkmIbInputClient::Keyboard|QkmIbInputClient::Buttons|QkmIbInputClient::VerticalWheel;
-            requirements.keys.insert(VK_F24); requirements.mouseButtons.insert(VK_LBUTTON);
+            requirements.capabilities=QkmIbInputClient::RelativeMove|QkmIbInputClient::Buttons|QkmIbInputClient::VerticalWheel;
+            if (m_mouseSmoke) {
+                for (const auto &button:buttons) requirements.mouseButtons.insert(button.vk);
+            } else {
+                requirements.capabilities|=QkmIbInputClient::Keyboard;
+                requirements.keys.insert(VK_F24); requirements.mouseButtons.insert(VK_LBUTTON);
+            }
         }
         m_generation=m_client.requestRun();
         ++m_prepareRuns;
@@ -121,12 +143,17 @@ private:
     bool closeRun() {
         m_client.cancelRun(); const bool result=m_client.closeAfterDrain(m_generation);
         write(QStringLiteral("RunClosed generation=%1 released=%2 incomplete=%3").arg(m_generation).arg(result).arg(m_client.statusSnapshot().releaseIncomplete));
-        m_generation=0; return require(result && !m_client.statusSnapshot().releaseIncomplete,QStringLiteral("Owned release incomplete"));
+        m_generation=0; if (result) m_ownedButtons.clear();
+        return require(result && !m_client.statusSnapshot().releaseIncomplete,QStringLiteral("Owned release incomplete"));
     }
     void sendMouse(DWORD flags,LONG x=0,LONG y=0,DWORD data=0) {
         INPUT input{}; input.type=INPUT_MOUSE; input.mi.dwFlags=flags; input.mi.dx=x; input.mi.dy=y; input.mi.mouseData=data;
         write(QStringLiteral("Send mouse flags=%1 dx=%2 dy=%3 data=%4").arg(flags).arg(x).arg(y).arg(data));
-        require(m_client.sendEvent(input,m_generation),QStringLiteral("Mouse call failed"));
+        for (const auto &button:buttons)
+            if ((flags & button.down) && (!button.data || button.data==data)) m_ownedButtons.insert(button.vk);
+        if (!require(m_client.sendEvent(input,m_generation),QStringLiteral("Mouse call failed"))) return;
+        for (const auto &button:buttons)
+            if ((flags & button.up) && (!button.data || button.data==data)) m_ownedButtons.remove(button.vk);
     }
     void sendKey(bool up) {
         INPUT input{}; input.type=INPUT_KEYBOARD; input.ki.wVk=VK_F24; input.ki.dwFlags=up ? KEYEVENTF_KEYUP : DWORD{0};
@@ -147,8 +174,8 @@ private:
         if (!require(inputName==QStringLiteral("Default"),QStringLiteral("Input desktop changed; aborted"))) return;
         if (!require((GetAsyncKeyState(VK_ESCAPE)&0x8000)==0,QStringLiteral("Escape"))) return;
         if (!require(!otherMapper(),QStringLiteral("Conflicting QKeyMapper process appeared"))) return;
-        for (int key:{VK_SHIFT,VK_CONTROL,VK_MENU,VK_LWIN,VK_RWIN,VK_RBUTTON,VK_MBUTTON,VK_XBUTTON1,VK_XBUTTON2})
-            if (!require((GetAsyncKeyState(key)&0x8000)==0,QStringLiteral("Unowned key/button held"))) return;
+        for (int key:{VK_SHIFT,VK_CONTROL,VK_MENU,VK_LWIN,VK_RWIN,VK_LBUTTON,VK_RBUTTON,VK_MBUTTON,VK_XBUTTON1,VK_XBUTTON2})
+            if (!require(m_ownedButtons.contains(key) || (GetAsyncKeyState(key)&0x8000)==0,QStringLiteral("Unowned key/button held"))) return;
         if (m_connectionCycle) {
             switch (m_step++) {
             case 0: prepare(); break;
@@ -166,6 +193,7 @@ private:
             return;
         }
         if (!require(rect().contains(mapFromGlobal(QCursor::pos())),QStringLiteral("Cursor outside owned receiver"))) return;
+        if (m_mouseSmoke) { mouseStep(); update(); return; }
         switch (m_step++) {
         case 0: prepare(); break;
         case 1: m_before=QCursor::pos(); m_beforeMoves=m_moves; sendMouse(MOUSEEVENTF_MOVE,8,0); break;
@@ -177,8 +205,8 @@ private:
         case 7: if (require(m_keyDown==1,QStringLiteral("F24 DOWN not received"))) sendKey(true); break;
         case 8: if (!require(m_keyUp==1 && !(GetAsyncKeyState(VK_F24)&0x8000),QStringLiteral("F24 UP not received"))) return; break;
         case 9: sendMouse(MOUSEEVENTF_LEFTDOWN); break;
-        case 10: if (require(m_leftDown==1,QStringLiteral("Left DOWN not received"))) sendMouse(MOUSEEVENTF_LEFTUP); break;
-        case 11: if (!require(m_leftUp==1 && !(GetAsyncKeyState(VK_LBUTTON)&0x8000),QStringLiteral("Left UP not received"))) return; break;
+        case 10: if (require(m_buttonDown[0]==1,QStringLiteral("Left DOWN not received"))) sendMouse(MOUSEEVENTF_LEFTUP); break;
+        case 11: if (!require(m_buttonUp[0]==1 && !(GetAsyncKeyState(VK_LBUTTON)&0x8000),QStringLiteral("Left UP not received"))) return; break;
         case 12: sendMouse(MOUSEEVENTF_WHEEL,0,0,WHEEL_DELTA); break;
         case 13: if (require(m_wheelUp==1,QStringLiteral("Wheel UP not received"))) sendMouse(MOUSEEVENTF_WHEEL,0,0,static_cast<DWORD>(-WHEEL_DELTA)); break;
         case 14: if (!require(m_wheelDown==1 && m_wheelUpDelta==WHEEL_DELTA && m_wheelDownDelta==-WHEEL_DELTA && m_verifiedMoves==4,QStringLiteral("Wheel units or verified movements differ"))) return; if (closeRun()) finish(true,QStringLiteral("PASS basic G HUB client reception and normal release")); break;
@@ -186,22 +214,77 @@ private:
         }
         update();
     }
+    void mouseStep() {
+        const int step=m_step++;
+        if (step==0) { prepare(); return; }
+        if (step<=15) {
+            const size_t index=static_cast<size_t>((step-1)/3);
+            const auto &button=buttons[index];
+            switch ((step-1)%3) {
+            case 0: sendMouse(button.down,0,0,button.data); break;
+            case 1:
+                if (require(m_buttonDown[index]==1,QStringLiteral("%1 DOWN not received").arg(QLatin1String(button.name))))
+                    sendMouse(button.up,0,0,button.data);
+                break;
+            case 2:
+                require(m_buttonUp[index]==1 && !(GetAsyncKeyState(button.vk)&0x8000),
+                    QStringLiteral("%1 UP not received").arg(QLatin1String(button.name)));
+                break;
+            }
+            return;
+        }
+        switch (step) {
+        case 16: sendMouse(MOUSEEVENTF_LEFTDOWN); break;
+        case 17:
+            if (!require(m_buttonDown[0]==2,QStringLiteral("Held Left DOWN not received"))) return;
+            m_before=QCursor::pos(); m_beforeMoves=m_moves; sendMouse(MOUSEEVENTF_MOVE,8); break;
+        case 18:
+            if (!require(QCursor::pos().x()>m_before.x() && m_moves>m_beforeMoves && m_moveButtons==Qt::LeftButton,
+                QStringLiteral("Held right movement not received"))) return;
+            ++m_verifiedMoves; m_before=QCursor::pos(); m_beforeMoves=m_moves; sendMouse(MOUSEEVENTF_MOVE,-8); break;
+        case 19:
+            if (!require(QCursor::pos().x()<m_before.x() && m_moves>m_beforeMoves && m_moveButtons==Qt::LeftButton,
+                QStringLiteral("Held left movement not received"))) return;
+            ++m_verifiedMoves; sendMouse(MOUSEEVENTF_WHEEL,0,0,WHEEL_DELTA); break;
+        case 20:
+            if (!require(m_wheelUp==1 && m_wheelUpDelta==WHEEL_DELTA && m_wheelButtons==Qt::LeftButton,
+                QStringLiteral("Held wheel UP not received"))) return;
+            sendMouse(MOUSEEVENTF_WHEEL,0,0,static_cast<DWORD>(-WHEEL_DELTA)); break;
+        case 21:
+            if (!require(m_wheelDown==1 && m_wheelDownDelta==-WHEEL_DELTA && m_wheelButtons==Qt::LeftButton,
+                QStringLiteral("Held wheel DOWN not received"))) return;
+            closeRun(); break;
+        case 22:
+            for (size_t index=0;index<m_buttonUp.size();++index)
+                if (!require(m_buttonDown[index]==(index==0 ? 2 : 1) && m_buttonUp[index]==m_buttonDown[index]
+                    && !(GetAsyncKeyState(buttons[index].vk)&0x8000),QStringLiteral("Button counts or stop release differ"))) return;
+            if (!require(m_releaseButtons==Qt::NoButton && m_verifiedMoves==2,
+                QStringLiteral("Held state remains after normal stop"))) return;
+            finish(true,QStringLiteral("PASS five buttons, held relative movement/wheel and stop release; client path only")); break;
+        default: finish(false,QStringLiteral("Unexpected mouse step")); break;
+        }
+    }
     void finish(bool success,const QString &detail) {
         if (m_done) return;
         m_timer.stop(); m_client.cancelRun();
         if (m_generation && !m_client.closeAfterDrain(m_generation)) success=false;
         m_generation=0; m_done=true; m_passed=success; m_summary=detail;
-        write(QStringLiteral("Result=%1 Step=%2 Moves=%3 F24=%4/%5 Left=%6/%7 Wheel=%8/%9 Detail=%10").arg(success ? QStringLiteral("PASS") : QStringLiteral("FAIL")).arg(m_step).arg(m_moves).arg(m_keyDown).arg(m_keyUp).arg(m_leftDown).arg(m_leftUp).arg(m_wheelUp).arg(m_wheelDown).arg(detail));
+        write(QStringLiteral("Result=%1 Step=%2 Moves=%3 F24=%4/%5 Left=%6/%7 Wheel=%8/%9 Detail=%10").arg(success ? QStringLiteral("PASS") : QStringLiteral("FAIL")).arg(m_step).arg(m_moves).arg(m_keyDown).arg(m_keyUp).arg(m_buttonDown[0]).arg(m_buttonUp[0]).arg(m_wheelUp).arg(m_wheelDown).arg(detail));
         write(QStringLiteral("VerifiedMoves=%1 WheelDelta=%2/%3").arg(m_verifiedMoves).arg(m_wheelUpDelta).arg(m_wheelDownDelta));
+        for (size_t index=0;index<m_buttonDown.size();++index)
+            write(QStringLiteral("Button=%1 Received=%2/%3").arg(QLatin1String(buttons[index].name)).arg(m_buttonDown[index]).arg(m_buttonUp[index]));
         update();
     }
     QFile m_log;
     QkmIbInputClient m_client;
     QTimer m_timer;
     quint64 m_generation=0;
-    int m_step=0,m_moves=0,m_keyDown=0,m_keyUp=0,m_leftDown=0,m_leftUp=0,m_wheelUp=0,m_wheelDown=0;
+    std::array<int,5> m_buttonDown{},m_buttonUp{};
+    QSet<int> m_ownedButtons;
+    Qt::MouseButtons m_moveButtons=Qt::NoButton,m_wheelButtons=Qt::NoButton,m_releaseButtons=Qt::NoButton;
+    int m_step=0,m_moves=0,m_keyDown=0,m_keyUp=0,m_wheelUp=0,m_wheelDown=0;
     int m_beforeMoves=0,m_verifiedMoves=0,m_wheelUpDelta=0,m_wheelDownDelta=0,m_prepareRuns=0,m_activationWaits=0;
-    bool m_connectionCycle=false;
+    bool m_connectionCycle=false,m_mouseSmoke=false;
     QPoint m_before;
     bool m_done=false,m_passed=false,m_placementAdjusted=false;
     QString m_summary=QStringLiteral("Waiting for safe preconditions");
@@ -211,10 +294,11 @@ int main(int argc,char **argv) {
     QApplication application(argc,argv);
     const bool smoke=application.arguments().contains(QStringLiteral("--ghub-smoke"));
     const bool connectionCycle=application.arguments().contains(QStringLiteral("--ghub-connect-cycle"));
-    if (smoke==connectionCycle) return 2;
+    const bool mouseSmoke=application.arguments().contains(QStringLiteral("--mouse-smoke"));
+    if (static_cast<int>(smoke)+static_cast<int>(connectionCycle)+static_cast<int>(mouseSmoke)!=1) return 2;
     const QString path=qEnvironmentVariable("QKM_IBINPUT_PROBE_LOG");
     if (path.isEmpty()) return 2;
-    Probe receiver(path,connectionCycle); receiver.show();
+    Probe receiver(path,connectionCycle,mouseSmoke); receiver.show();
     application.exec();
     return receiver.passed() ? 0 : 2;
 }

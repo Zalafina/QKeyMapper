@@ -65,18 +65,13 @@ bool QkmIbInputClient::isSupportedKey(quint16 key) {
 #endif
 }
 bool QkmIbInputClient::isSupportedButton(quint16 button) {
-    // shortcut: expand after right/middle/X1/X2 reception and release are recorded on a real backend.
-    return button==VK_LBUTTON;
+    return button==VK_LBUTTON || button==VK_RBUTTON || button==VK_MBUTTON
+        || button==VK_XBUTTON1 || button==VK_XBUTTON2;
 }
 unsigned QkmIbInputClient::capabilities(const QString &backend) {
     // shortcut: other backend output awaits its recorded acceptance before opening it.
     if (backend==QStringLiteral("logitech_ghub")) {
-#ifdef QKM_IBINPUT_VALIDATION_PROBE
         return RelativeMove|Keyboard|Buttons|VerticalWheel;
-#else
-        // shortcut: mouse buttons and wheel await product reception and release acceptance.
-        return RelativeMove|Keyboard;
-#endif
     }
     return 0;
 }
@@ -97,9 +92,6 @@ bool QkmIbInputClient::candidateSupports(const QString &backend,const Requiremen
     if ((capabilities(backend)&requirements.capabilities)!=requirements.capabilities) return false;
     for (quint16 key:requirements.keys) if (!isSupportedKey(key)) return false;
     for (quint16 button:requirements.mouseButtons) if (!isSupportedButton(button)) return false;
-    // shortcut: button combinations and dragging await recorded real-backend acceptance.
-    if (backend.startsWith(QStringLiteral("logitech")) && (requirements.mouseButtons.size()>1
-        || requirements.buttonStateOverlap)) return false;
     return true;
 }
 bool QkmIbInputClient::prepareRun(quint64 generation,const Requirements &requirements) {
@@ -182,8 +174,6 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation) {
         const quint16 button=buttonId(mouse);
         if (button && !isSupportedButton(button)) return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput mouse button still awaits backend validation."));
         const bool up=isRelease(input);
-        if ((!m_ownedButtons.isEmpty() && (mouse.dwFlags & (MOUSEEVENTF_MOVE|MOUSEEVENTF_WHEEL)))
-            || (button && !up && !m_ownedButtons.isEmpty() && !m_ownedButtons.contains(button))) return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput button combination still awaits backend validation."));
         if (button && !up) m_ownedButtons.insert(button);
         if (mouse.dwFlags & MOUSEEVENTF_WHEEL) {
             const LONG delta=static_cast<LONG>(mouse.mouseData);

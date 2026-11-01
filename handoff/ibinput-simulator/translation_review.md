@@ -606,3 +606,15 @@
 
 
 基础键盘固定产品接收及停止／退出释放通过后实施U11。Qt5项目lupdate-pro成功提取，限定更新本项；三语lrelease和QM反向核对通过，旧U08仅保留vanished历史。Qt6私有Popup五场景与运行时语言切换检查通过（主计划12.11、out/ibinput/logs/k1-private-ui-final.log），150%中文／日文已滚动查看说明。用户后续人工确认结果统一见主计划最新交接卡片；基础功能确认不外推为全部三语／缩放场景或完整键盘／全部触发方式验收。
+
+## IB-04-M1 U12（撤回翻译，改为临时固定英文）
+
+Context：QkmIbInputPopup。替换U11的能力说明；无Qt占位符、无实际换行。品牌、按键和按钮名称保持原样；只在M1实现及所选验证完成后同步界面能力说明，验收状态只维护主计划。
+
+| 语言 | 建议文案 |
+|---|---|
+| English | Currently supports G HUB relative mouse movement, basic key output (A-Z, 0-9, F1-F24), five mouse buttons (left, right, middle, X1, X2) and vertical wheel scrolling. |
+| 中文 | 目前支持 G HUB 鼠标相对移动、基础按键输出（A-Z、0-9、F1-F24）、五个鼠标按钮（左键、右键、中键、X1、X2）及垂直滚轮。 |
+| 日本語 | 現在は G HUB によるマウスの相対移動、基本キー出力（A-Z、0-9、F1-F24）、5つのマウスボタン（左・右・中央・X1・X2）と縦スクロールに対応しています。 |
+
+2026-11-01 用户指出本条仅开发期间使用，建议固定中文或英文、无需三语维护。采用固定英文 QStringLiteral，撤回本条翻译提案，不更新正式 TS/QM；以上三语仅保留审阅历史。Release 前结合实际能力移除或改为必要的正式限制说明，不能在限制仍存在时直接隐藏。其他正式界面文字仍遵循原翻译约定。

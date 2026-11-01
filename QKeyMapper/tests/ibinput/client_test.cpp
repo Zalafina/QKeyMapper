@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QSettings>
 #include <QTemporaryDir>
+#include <algorithm>
 #include <atomic>
 #include <condition_variable>
 #include <functional>
@@ -16,11 +17,24 @@ namespace {
 std::vector<Send::SendType> attempts;
 std::vector<INPUT> events;
 bool initFails=false, sendFails=false;
+int failSendAt=0;
 std::function<void()> duringInit;
 std::function<void()> duringSend;
 void check(bool value,const char *message) { if (!value) throw std::runtime_error(message); }
 INPUT key(WORD vk,bool up=false) { INPUT value{}; value.type=INPUT_KEYBOARD; value.ki.wVk=vk; value.ki.dwFlags=up ? KEYEVENTF_KEYUP : DWORD{0}; return value; }
-void reset() { attempts.clear(); events.clear(); initFails=false; sendFails=false; duringInit={}; duringSend={}; }
+struct MouseButton { WORD vk; DWORD down,up,data; };
+const MouseButton mouseButtons[]={
+    {VK_LBUTTON,MOUSEEVENTF_LEFTDOWN,MOUSEEVENTF_LEFTUP,0},
+    {VK_RBUTTON,MOUSEEVENTF_RIGHTDOWN,MOUSEEVENTF_RIGHTUP,0},
+    {VK_MBUTTON,MOUSEEVENTF_MIDDLEDOWN,MOUSEEVENTF_MIDDLEUP,0},
+    {VK_XBUTTON1,MOUSEEVENTF_XDOWN,MOUSEEVENTF_XUP,XBUTTON1},
+    {VK_XBUTTON2,MOUSEEVENTF_XDOWN,MOUSEEVENTF_XUP,XBUTTON2}
+};
+INPUT mouse(DWORD flags,LONG x=0,LONG y=0,DWORD data=0) {
+    INPUT value{}; value.type=INPUT_MOUSE; value.mi.dwFlags=flags;
+    value.mi.dx=x; value.mi.dy=y; value.mi.mouseData=data; return value;
+}
+void reset() { attempts.clear(); events.clear(); initFails=false; sendFails=false; failSendAt=0; duringInit={}; duringSend={}; }
 void settingsCase() {
     QTemporaryDir temporary(QDir::tempPath()+QStringLiteral("/QKeyMapper-ibinput-XXXXXX"));
     check(temporary.isValid(),"temporary INI failed");
@@ -112,16 +126,96 @@ void capabilityCase() {
     check(checkOnly.closeAfterDrain(connection),"connection-only close failed");
     reset();
     QkmIbInputClient blocked;
-    auto requirements=needs(QkmIbInputClient::Buttons|QkmIbInputClient::RelativeMove);
-    requirements.buttonStateOverlap=true; requirements.mouseButtons.insert(VK_LBUTTON);
+    auto requirements=needs(QkmIbInputClient::HorizontalWheel);
     const auto token=blocked.requestRun();
-    check(!blocked.prepareRun(token,requirements) && attempts.empty(),"button overlap reached initialization");
+    check(!blocked.prepareRun(token,requirements) && attempts.empty(),"unsupported wheel reached initialization");
     reset();
-    QkmIbInputClient sequential;
-    requirements.buttonStateOverlap=false;
-    const auto run=sequential.requestRun();
-    check(sequential.prepareRun(run,requirements),"sequential basic probe rejected");
-    check(sequential.closeAfterDrain(run),"sequential close failed");
+    QkmIbInputClient combined;
+    requirements=needs(QkmIbInputClient::Buttons|QkmIbInputClient::RelativeMove|QkmIbInputClient::VerticalWheel);
+    for (const auto &button:mouseButtons) requirements.mouseButtons.insert(button.vk);
+    const auto run=combined.requestRun();
+    check(combined.prepareRun(run,requirements),"supported mouse primitives rejected");
+    check(combined.closeAfterDrain(run),"combined capability close failed");
+}
+void buttonsCase() {
+    QkmIbInputClient client;
+    auto requirements=needs(QkmIbInputClient::Buttons|QkmIbInputClient::RelativeMove|QkmIbInputClient::VerticalWheel);
+    for (const auto &button:mouseButtons) requirements.mouseButtons.insert(button.vk);
+    const auto generation=client.requestRun();
+    check(client.prepareRun(generation,requirements),"five-button preparation failed");
+    for (const auto &button:mouseButtons) {
+        check(client.sendEvent(mouse(button.down,0,0,button.data),generation),"button DOWN rejected");
+        check(events.back().mi.dwFlags==button.down && events.back().mi.mouseData==button.data,"button identity changed");
+    }
+    check(client.sendEvent(mouse(MOUSEEVENTF_MOVE,2,-3),generation),"held-button movement rejected");
+    check(client.sendEvent(mouse(MOUSEEVENTF_WHEEL,0,0,static_cast<DWORD>(-3*WHEEL_DELTA)),generation),"held-button wheel rejected");
+    check(events.size()==9,"mouse primitive count changed");
+    for (size_t index=6;index<9;++index)
+        check(events[index].mi.dwFlags==MOUSEEVENTF_WHEEL && static_cast<LONG>(events[index].mi.mouseData)==-WHEEL_DELTA,"negative wheel unit changed");
+    client.cancelRun();
+    check(!client.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),generation),"late button DOWN accepted");
+    check(!client.sendEvent(mouse(MOUSEEVENTF_WHEEL,0,0,WHEEL_DELTA),generation),"late wheel accepted");
+    check(!client.sendEvent(mouse(MOUSEEVENTF_RIGHTUP),generation+1),"stale button UP accepted");
+    check(events.size()==9 && client.closeAfterDrain(generation),"owned buttons did not drain");
+    check(events.size()==14 && attempts.size()==1,"close switched backend or omitted button release");
+    for (const auto &button:mouseButtons) {
+        const auto count=std::count_if(events.begin()+9,events.end(),[&button](const INPUT &event) {
+            return event.type==INPUT_MOUSE && event.mi.dwFlags==button.up && event.mi.mouseData==button.data;
+        });
+        check(count==1,"owned button release identity/count changed");
+    }
+}
+void mouseFailureCase() {
+    QkmIbInputClient partial;
+    auto requirements=needs(QkmIbInputClient::Buttons|QkmIbInputClient::VerticalWheel);
+    requirements.mouseButtons.insert(VK_XBUTTON1);
+    const auto token=partial.requestRun();
+    check(partial.prepareRun(token,requirements),"partial wheel preparation failed");
+    check(partial.sendEvent(mouse(MOUSEEVENTF_XDOWN,0,0,XBUTTON1),token),"held X1 failed");
+    failSendAt=3;
+    check(!partial.sendEvent(mouse(MOUSEEVENTF_WHEEL,0,0,4*WHEEL_DELTA),token),"partial wheel failure hidden");
+    check(events.size()==3 && attempts.size()==1,"wheel continued or changed backend after failure");
+    check(partial.closeAfterDrain(token),"partial wheel did not release owned X1");
+    check(events.size()==4 && events.back().mi.dwFlags==MOUSEEVENTF_XUP && events.back().mi.mouseData==XBUTTON1,"partial wheel release changed X identity");
+    reset();
+    QkmIbInputClient uncertain;
+    const auto down=uncertain.requestRun();
+    check(uncertain.prepareRun(down,needs(QkmIbInputClient::Buttons)),"unknown DOWN preparation failed");
+    sendFails=true;
+    check(!uncertain.sendEvent(mouse(MOUSEEVENTF_RIGHTDOWN),down),"failed DOWN hidden");
+    sendFails=false;
+    check(uncertain.closeAfterDrain(down),"unknown DOWN was not released");
+    check(events.size()==2 && events.back().mi.dwFlags==MOUSEEVENTF_RIGHTUP,"unknown DOWN omitted same-button release");
+    reset();
+    QkmIbInputClient failedRelease;
+    const auto release=failedRelease.requestRun();
+    check(failedRelease.prepareRun(release,needs(QkmIbInputClient::Buttons)),"failed release preparation failed");
+    check(failedRelease.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),release),"release test DOWN failed");
+    sendFails=true;
+    check(!failedRelease.closeAfterDrain(release) && failedRelease.statusSnapshot().releaseIncomplete,"mouse release failure hidden");
+    check(failedRelease.busy() && !failedRelease.setPreferences({}),"failed mouse release unlocked preferences");
+    const auto next=failedRelease.requestRun();
+    check(!failedRelease.prepareRun(next,{}) && attempts.size()==1,"failed mouse release restarted backend");
+}
+void mouseBoundsCase() {
+    const INPUT invalid[]={
+        mouse(MOUSEEVENTF_HWHEEL,0,0,WHEEL_DELTA),
+        mouse(MOUSEEVENTF_WHEEL,0,0,1),
+        mouse(MOUSEEVENTF_XDOWN,0,0,0),
+        mouse(MOUSEEVENTF_XUP,0,0,3),
+        mouse(MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_RIGHTDOWN),
+        mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_LEFTUP,1),
+        mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_WHEEL,1,0,WHEEL_DELTA),
+        mouse(MOUSEEVENTF_MOVE,32768),
+        mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE,1,1)
+    };
+    for (const auto &event:invalid) {
+        reset(); QkmIbInputClient client;
+        const auto token=client.requestRun();
+        check(client.prepareRun(token,needs(QkmIbInputClient::Buttons|QkmIbInputClient::RelativeMove|QkmIbInputClient::VerticalWheel)),"bounds preparation failed");
+        check(!client.sendEvent(event,token) && events.empty(),"invalid mouse event reached native API");
+        check(client.closeAfterDrain(token),"invalid mouse event damaged cleanup");
+    }
 }
 void concurrentCase() {
     QkmIbInputClient client;
@@ -150,7 +244,7 @@ DLLAPI Send::Error __stdcall IbSendInit(Send::SendType type,Send::InitFlags flag
 DLLAPI void __stdcall IbSendDestroy() {}
 DLLAPI UINT WINAPI IbSendInput(UINT count,LPINPUT inputs,int size) {
     check(count==1 && size==sizeof(INPUT),"batched or ABI-incompatible input");
-    events.push_back(*inputs); if (duringSend) duringSend(); return sendFails ? 0 : 1;
+    events.push_back(*inputs); if (duringSend) duringSend(); return sendFails || (failSendAt && events.size()==static_cast<size_t>(failSendAt)) ? 0 : 1;
 }
 int main(int argc,char **argv) {
     QCoreApplication app(argc,argv);
@@ -158,7 +252,7 @@ int main(int argc,char **argv) {
     try {
 #ifndef QKM_IBINPUT_VALIDATION_PROBE
         {
-            check(QkmIbInputClient::capabilities(QStringLiteral("logitech_ghub"))==(QkmIbInputClient::RelativeMove|QkmIbInputClient::Keyboard),"product capabilities widened unexpectedly");
+            check(QkmIbInputClient::capabilities(QStringLiteral("logitech_ghub"))==(QkmIbInputClient::RelativeMove|QkmIbInputClient::Keyboard|QkmIbInputClient::Buttons|QkmIbInputClient::VerticalWheel),"product capabilities differ from implemented primitives");
             QSet<quint16> allowed;
             for (WORD vk='A';vk<='Z';++vk) allowed.insert(vk);
             for (WORD vk='0';vk<='9';++vk) allowed.insert(vk);
@@ -182,11 +276,16 @@ int main(int argc,char **argv) {
             check(client.sendEvent(move,movement) && events.size()==1,"admitted product movement rejected");
             check(!client.sendEvent(key('A'),movement) && events.size()==1,"unadmitted keyboard reached API");
             check(client.closeAfterDrain(movement),"product capability close failed");
-            reset(); admissionCase(); reset(); failureCase(); reset(); reportCase(); reset(); concurrentCase();
-            std::cout<<"PASS simulated production gate: 60 keys, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
+            QSet<quint16> supportedButtons;
+            for (const auto &button:mouseButtons) supportedButtons.insert(button.vk);
+            for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedButton(vk)==supportedButtons.contains(vk),"mouse button set differs");
+            reset(); admissionCase(); reset(); failureCase(); reset(); reportCase();
+            reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
+            reset(); concurrentCase();
+            std::cout<<"PASS simulated production gate: 60 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
 #endif
-        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"mouse",mouseCase},{"capability",capabilityCase},{"concurrent",concurrentCase}};
+        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
     } catch (const std::exception &error) { std::cerr<<error.what()<<'\n'; return 2; }

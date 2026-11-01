@@ -104,6 +104,37 @@ void mouseCase() {
     x=0; y=0;
     for (const auto &call:calls) { const auto r=report<Mouse16>(call); check(r.buttons==1,"G HUB split lost button"); x+=r.x; y+=r.y; }
     check(x==40000 && y==-40000 && calls.size()==2,"G HUB split displacement changed");
+    struct Button { DWORD down,up,data; unsigned char bit; };
+    const Button buttons[]={
+        {MOUSEEVENTF_LEFTDOWN,MOUSEEVENTF_LEFTUP,0,1},
+        {MOUSEEVENTF_RIGHTDOWN,MOUSEEVENTF_RIGHTUP,0,2},
+        {MOUSEEVENTF_MIDDLEDOWN,MOUSEEVENTF_MIDDLEUP,0,4},
+        {MOUSEEVENTF_XDOWN,MOUSEEVENTF_XUP,XBUTTON1,8},
+        {MOUSEEVENTF_XDOWN,MOUSEEVENTF_XUP,XBUTTON2,16}
+    };
+    check(ghub.send_mouse_input(mouse(MOUSEEVENTF_LEFTUP)),"G HUB initial release failed");
+    unsigned char held=0;
+    for (const auto &button:buttons) {
+        check(ghub.send_mouse_input(mouse(button.down,0,0,button.data)),"G HUB button DOWN failed");
+        held|=button.bit;
+        check(report<Mouse16>(calls.back()).buttons==held,"G HUB button bit/holding changed");
+    }
+    calls.clear();
+    check(ghub.send_mouse_input(mouse(MOUSEEVENTF_MOVE,-5,7)),"G HUB held movement failed");
+    check(ghub.send_mouse_input(mouse(MOUSEEVENTF_WHEEL,0,0,2*WHEEL_DELTA)),"G HUB positive wheel failed");
+    check(ghub.send_mouse_input(mouse(MOUSEEVENTF_WHEEL,0,0,static_cast<DWORD>(-2*WHEEL_DELTA))),"G HUB negative wheel failed");
+    check(calls.size()==5,"G HUB wheel unit count changed");
+    check(report<Mouse16>(calls[0]).x==-5 && report<Mouse16>(calls[0]).y==7,"G HUB held displacement changed");
+    for (size_t index=0;index<calls.size();++index) {
+        const auto r=report<Mouse16>(calls[index]);
+        check(r.buttons==31,"G HUB move/wheel lost held buttons");
+        check(r.wheel==(index==0 ? 0 : index<3 ? 1 : -1),"G HUB signed wheel unit changed");
+    }
+    for (const auto &button:buttons) {
+        check(ghub.send_mouse_input(mouse(button.up,0,0,button.data)),"G HUB button UP failed");
+        held&=static_cast<unsigned char>(~button.bit);
+        check(report<Mouse16>(calls.back()).buttons==held,"G HUB UP released another button");
+    }
     ghub.destroy();
 }
 void keyboardCase() {
@@ -133,6 +164,18 @@ void partialCase() {
     check(!logi.send_mouse_input(mouse(MOUSEEVENTF_MOVE,LONG_MIN,LONG_MAX)),"extreme displacement failure hidden");
     check(calls.size()==1,"extreme displacement continued after failure");
     logi.destroy();
+    reset();
+    Send::Type::Internal::LogitechGHubNew ghub;
+    check(ghub.create()==Send::Error::Success,"fake G HUB partial create failed");
+    check(ghub.send_mouse_input(mouse(MOUSEEVENTF_XDOWN,0,0,XBUTTON2)),"G HUB held X2 failed");
+    calls.clear(); failAt=2;
+    check(!ghub.send_mouse_input(mouse(MOUSEEVENTF_MOVE,100000)),"G HUB partial split failure hidden");
+    check(calls.size()==2,"G HUB split continued after failure");
+    for (const auto &call:calls) check(report<Mouse16>(call).buttons==16,"G HUB failed split lost held X2");
+    failAt=0;
+    check(ghub.send_mouse_input(mouse(MOUSEEVENTF_XUP,0,0,XBUTTON2)),"G HUB partial failure release failed");
+    check(report<Mouse16>(calls.back()).buttons==0,"G HUB partial failure left X2 held");
+    ghub.destroy();
 }
 void activationCase() {
     Send::Type::Internal::LogitechGHubNew ghub;

@@ -68,3 +68,11 @@ keyboard_receiver.pro生成普通权限接收窗，只观察W／F、1／2、F13�
 product_check.pro的keyboard维护用例继续使用真实main.cpp与正式manifest，QKM_IBINPUT_PRODUCT_CASE=keyboard、QKM_IBINPUT_PRODUCT_DESKTOP=Default，QKM_IBINPUT_PRODUCT_OUTPUT指定输出目录，QKM_IBINPUT_KEYBOARD_HWND／QKM_IBINPUT_KEYBOARD_PID须精确绑定已启动的自有接收进程。只接受三条固定映射W→F、1→2、F13→F24；keyboard-stop／keyboard-restart／keyboard-exit／keyboard-abort文件依次请求真实产品入口，状态写入keyboard-*.json。它本身不生成原始输入；固定输入测试器须另按具体授权执行，并核对前台、实际桌面、按键持有及自有清理，不可仅凭编译成功直接运行。
 
 本机K1已授权的受管启动记录、接收结果与普通截图见handoff/ibinput-simulator主计划12.11；MCP工作区的临时定义和缓存不随Git接续，不作为另一台PC的必备环境。正常运行和人工验证以主计划及独立目录说明为准。
+
+## IbInput 鼠标固定接收与软件检查
+
+client_test.pro默认替换正式C API，生产能力模式使用CONFIG+=ibinput_production_capabilities；两者均不链接IbInput DLL。覆盖五按钮身份、整格滚轮、持有期间移动／滚轮、代次及停止拒绝、部分失败后同后端释放和释放失败禁止重启。logitech_report_test.cpp编译固定上游＋已批准补丁的实际实现，以WinAPI替身检查Mouse8／Mouse16报告位、拆包、正负轮单位和失败传播；这些均不是驱动接收验证。
+
+ghub_probe.pro只链接生产客户端、Qt及正式x64 IbInput DLL，普通权限，不启动产品主窗口。--ghub-connect-cycle仅连接／关闭／复连，--ghub-smoke保留基本移动／F24／左键／滚轮，--mouse-smoke检查五按钮各一次、左键保持的±8相对移动／上下各一格滚轮及停止释放；三种模式必须单选。配置QKM_IBINPUT_PROBE_LOG为可写日志绝对路径，确保正式DLL可加载、G HUB版本和设备／驱动条件已核实。新PC按实际Qt6工具链构建该pro即可，不复制另一PC的out缓存。
+
+固定接收必须另获对应真实输入授权：仅Default自有接收窗，确认无其他QKeyMapper及物理持有，单击标题栏激活后才初始化；焦点／桌面／光标区域／进程冲突或Escape中止并释放同后端的自有状态。不要以连接或API成功代替窗口事件、方向、轮单位和DOWN／UP平衡结果。用项目capture_ui_snapshots.ps1核对自有PID／HWND并截图，正常关闭后确认原生退出码；失败保留日志，不自动重放。测试方法在此，实际系统／版本／结果仅更新唯一主计划。

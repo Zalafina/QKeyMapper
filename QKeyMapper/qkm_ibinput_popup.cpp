@@ -146,7 +146,8 @@ void QkmIbInputPopup::refresh() {
         tr("Sampled: %1").arg(QDateTime::currentDateTime().toString(Qt::ISODate))};
     if (busy) lines.append(tr("Stop mapping and wait for cleanup before changing preferences."));
     lines.append(tr("Status refresh does not initialize a driver."));
-    lines.append(tr("Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24)."));
+    // Temporary capability notice; remove or revise at the release review.
+    lines.append(QStringLiteral("Currently supports G HUB relative mouse movement, basic key output (A-Z, 0-9, F1-F24), five mouse buttons (left, right, middle, X1, X2) and vertical wheel scrolling."));
     m_details->setPlainText(lines.join(QLatin1Char('\n')));
 }
 void QkmIbInputPopup::setRunning(bool running) { if (running && !m_running) m_feedback=Feedback::None; m_running=running; if (isVisible()) refresh(); }

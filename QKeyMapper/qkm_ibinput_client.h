@@ -15,7 +15,7 @@ class QkmIbInputClient
 public:
     enum Capability { RelativeMove=1, Keyboard=2, Buttons=4, VerticalWheel=8, HorizontalWheel=16, AbsoluteMove=32 };
     struct Preferences { QString backend=QStringLiteral("auto"); QString unavailablePolicy=QStringLiteral("block"); };
-    struct Requirements { unsigned capabilities=0; QSet<quint16> keys; QSet<quint16> mouseButtons; bool buttonStateOverlap=false; QString rejection; };
+    struct Requirements { unsigned capabilities=0; QSet<quint16> keys; QSet<quint16> mouseButtons; QString rejection; };
     struct Status {
         bool connected=false;
         bool stopping=false;

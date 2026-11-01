@@ -86,7 +86,6 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &rows) {
             }
         }
     }
-    required.buttonStateOverlap=(required.capabilities & QkmIbInputClient::Buttons) && (required.capabilities & (QkmIbInputClient::RelativeMove|QkmIbInputClient::VerticalWheel));
     return required;
 }
 bool sendIbEvent(const INPUT &input,quint64 generation) {
