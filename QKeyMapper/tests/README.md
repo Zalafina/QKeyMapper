@@ -76,3 +76,15 @@ client_test.pro默认替换正式C API，生产能力模式使用CONFIG+=ibinput
 ghub_probe.pro只链接生产客户端、Qt及正式x64 IbInput DLL，普通权限，不启动产品主窗口。--ghub-connect-cycle仅连接／关闭／复连，--ghub-smoke保留基本移动／F24／左键／滚轮，--mouse-smoke检查五按钮各一次、左键保持的±8相对移动／上下各一格滚轮及停止释放；三种模式必须单选。配置QKM_IBINPUT_PROBE_LOG为可写日志绝对路径，确保正式DLL可加载、G HUB版本和设备／驱动条件已核实。新PC按实际Qt6工具链构建该pro即可，不复制另一PC的out缓存。
 
 固定接收必须另获对应真实输入授权：仅Default自有接收窗，确认无其他QKeyMapper及物理持有，单击标题栏激活后才初始化；焦点／桌面／光标区域／进程冲突或Escape中止并释放同后端的自有状态。不要以连接或API成功代替窗口事件、方向、轮单位和DOWN／UP平衡结果。用项目capture_ui_snapshots.ps1核对自有PID／HWND并截图，正常关闭后确认原生退出码；失败保留日志，不自动重放。测试方法在此，实际系统／版本／结果仅更新唯一主计划。
+
+
+## IbInput 产品鼠标映射维护用例
+
+复用product_check.pro的mouse用例和keyboard_receiver.pro的--mouse模式；保留现有keyboard协议。接收器仍普通权限、无发送API或驱动依赖，--self-check在Qt组件内检查五按钮配对、保持标志、正负轮单位及移动观察，运行时可设置QT_QPA_PLATFORM=offscreen。mouse模式沿用QKM_IBINPUT_KEYBOARD_OUTPUT作为接收输出目录，发布receiver-ready.json／receiver-state.json。
+
+产品环境为QKM_IBINPUT_PRODUCT_CASE=mouse、QKM_IBINPUT_PRODUCT_DESKTOP=Default、QKM_IBINPUT_PRODUCT_OUTPUT；接收窗身份沿用QKM_IBINPUT_KEYBOARD_HWND／PID。manual_mouse_verification.ini提供九条固定原始键映射，不自动开始；产品校验内容后调用既有开始／停止／退出。mouse-started.json、mouse-stopped.json、mouse-restarted.json、mouse-exiting.json为观察点，mouse-stop／mouse-restart／mouse-exit／mouse-abort为外部请求。原始输入仍由另获具体授权的普通固定测试器产生；不以运行维护目标自行获得输入权限。
+
+接收mouse_down／mouse_up以Qt按钮数值1／2／4／8／16分别对应左／右／中／X1／X2；mouse_buttons是当前按钮位，move_buttons／wheel_buttons记录对应接收事件的保持位，wheel_delta记录实际angleDelta.y()。测试器核对真正的接收与系统按住状态、实际后端及代次；不能只看marker文件或API返回。真实执行／未执行范围以唯一主计划第14节记录为准。
+
+
+接收器自检如需显示核对，可显式设置QKM_IBINPUT_RECEIVER_SNAPSHOT为PNG绝对路径；同时输出<PNG>.desktop记录自身线程桌面。offscreen只证明逻辑，字体缺失时不得记为视觉通过；可在普通私有桌面使用windows平台渲染，具体原生STARTUPINFO启动方式沿现有私有截图经验，不通过切换Default或提权解决。该可选渲染不发送系统输入。
