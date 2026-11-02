@@ -47,9 +47,7 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &rows) {
         const auto &row=rows.at(i);
         if (row.Disabled || row.SendMappingKeyMethod!=SENDMAPPINGKEY_METHOD_IBINPUT) continue;
         const QString location=ibRowLocation(i);
-        if (row.Burst || row.Lock || row.KeySeqHoldDown || row.RepeatMode!=REPEAT_MODE_NONE
-            || row.Mapping_Keys.size()>1 || row.MappingKeys_KeyUp.size()>1
-            || row.Pure_MappingKeys.size()>1 || row.Pure_MappingKeys_KeyUp.size()>1
+        if (row.KeySeqHoldDown || row.RepeatMode!=REPEAT_MODE_NONE
             || row.Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR)
             || row.Original_Key==QLatin1String(SENDON_SWITCHTAB_STR))
             required.rejection=QCoreApplication::translate("QkmIbInputClient","Complex IbInput combinations, repetition, locking or stop/tab commands still await validation: %1").arg(location);

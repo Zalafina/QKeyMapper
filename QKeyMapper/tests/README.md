@@ -88,3 +88,10 @@ ghub_probe.pro只链接生产客户端、Qt及正式x64 IbInput DLL，普通权�
 
 
 接收器自检如需显示核对，可显式设置QKM_IBINPUT_RECEIVER_SNAPSHOT为PNG绝对路径；同时输出<PNG>.desktop记录自身线程桌面。offscreen只证明逻辑，字体缺失时不得记为视觉通过；可在普通私有桌面使用windows平台渲染，具体原生STARTUPINFO启动方式沿现有私有截图经验，不通过切换Default或提权解决。该可选渲染不发送系统输入。
+
+
+## IbInput 通用组合／序列／连发／锁定
+
+product_check.pro新增patterns固定用例，沿既有输入状态机及正式manifest，控制文件前缀为patterns-。manual_patterns_verification.ini提供Q→F+G、W→H»I、E→J连发60/60ms、R→K及T→L锁定。维护目标会核对映射、发送方式及连发／锁定标志，再调用真正开始／停止／退出入口；不自行生成原始键。
+
+普通接收器键盘模式观察A-Z、0-9、F1-F24，receiver-state.json新增key_events（vk及up）记录实际按住状态转换，最多128项，events_truncated标记超界；DOWN／UP完整计数不受观察截断影响。观察仅限自有接收窗收到的事件，未安装全局Hook。自检验证重复DOWN不计两次、顺序及128边界后计数继续完整；真实组合顺序／连发／锁定仍须具体授权和实际窗口接收，不以组件自检代替。

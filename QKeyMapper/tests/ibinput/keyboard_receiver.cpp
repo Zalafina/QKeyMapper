@@ -3,6 +3,7 @@
 #include <QCursor>
 #include <QFile>
 #include <QJsonDocument>
+#include <QJsonArray>
 #include <QJsonObject>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -49,17 +50,23 @@ public:
         }
     }
     void observe(quint32 key,bool up) {
-        const QSet<quint32> accepted=m_mouse ? QSet<quint32>{'Q','W','E','R','T','A','S','D','F'}
-            : QSet<quint32>{'W','F','1','2',VK_F13,VK_F24};
-        if (!accepted.contains(key)) return;
+        if (m_mouse) {
+            if (!QSet<quint32>{'Q','W','E','R','T','A','S','D','F'}.contains(key)) return;
+        } else if (!((key>='A' && key<='Z') || (key>='0' && key<='9') || (key>=VK_F1 && key<=VK_F24))) return;
         const QString id=QString::number(key);
-        if (up) { if (m_pressed.remove(key)) m_up[id]=m_up.value(id).toInt()+1; }
-        else if (!m_pressed.contains(key)) { m_pressed.insert(key); m_down[id]=m_down.value(id).toInt()+1; }
+        bool changed=false;
+        if (up) { if (m_pressed.remove(key)) { m_up[id]=m_up.value(id).toInt()+1; changed=true; } }
+        else if (!m_pressed.contains(key)) { m_pressed.insert(key); m_down[id]=m_down.value(id).toInt()+1; changed=true; }
+        if (changed) {
+            if (m_keyEvents.size()<128) m_keyEvents.append(QJsonObject{{"vk",static_cast<int>(key)},{"up",up}});
+            else m_eventsTruncated=true;
+        }
         if (m_live) publish();
         update();
     }
     QJsonObject state() const {
-        QJsonObject value{{"down",m_down},{"up",m_up},{"pressed_count",m_pressed.size()},{"aborted",m_aborted}};
+        QJsonObject value{{"down",m_down},{"up",m_up},{"pressed_count",m_pressed.size()},{"aborted",m_aborted},
+            {"key_events",m_keyEvents},{"events_truncated",m_eventsTruncated}};
         if (m_mouse) {
             value.insert(QStringLiteral("mouse_down"),m_mouseDown); value.insert(QStringLiteral("mouse_up"),m_mouseUp);
             value.insert(QStringLiteral("mouse_buttons"),static_cast<int>(m_mouseButtons));
@@ -75,7 +82,7 @@ protected:
         QPainter painter(this); painter.fillRect(rect(),QColor(245,247,250)); painter.setPen(Qt::black);
         const QString instructions=m_mouse
             ? QStringLiteral("Owned product mouse receiver\nQ/W/E/R/T -> Left/Right/Middle/X1/X2\nA/S -> Wheel Up/Down | D/F -> Move Right/Left")
-            : QStringLiteral("Owned keyboard receiver\nW -> F | 1 -> 2 | F13 -> F24");
+            : QStringLiteral("Owned keyboard receiver\nBasic output: A-Z | 0-9 | F1-F24");
         const auto compact=[](const QJsonObject &value) { return QString::fromUtf8(QJsonDocument(value).toJson(QJsonDocument::Compact)); };
         const QString status=m_mouse
             ? QStringLiteral("Mouse DOWN %1\nMouse UP %2\nHeld buttons %3 | moves %4 | move buttons %5\nWheel up/down %6/%7 | delta %8 | wheel buttons %9\n")
@@ -83,7 +90,8 @@ protected:
                 .arg(static_cast<int>(m_moveButtons)).arg(m_wheelUp).arg(m_wheelDown).arg(m_wheelDelta).arg(static_cast<int>(m_wheelButtons))
                 +QStringLiteral("Original DOWN %1\nOriginal UP %2\nHeld keys %3 | aborted %4")
                     .arg(compact(m_down)).arg(compact(m_up)).arg(m_pressed.size()).arg(m_aborted)
-            : compact(state());
+            : QStringLiteral("Key DOWN %1\nKey UP %2\nHeld keys %3 | events %4\nTrace truncated %5 | aborted %6")
+                .arg(compact(m_down)).arg(compact(m_up)).arg(m_pressed.size()).arg(m_keyEvents.size()).arg(m_eventsTruncated).arg(m_aborted);
         painter.drawText(rect().adjusted(18,18,-18,-18),Qt::AlignLeft|Qt::TextWordWrap,
             instructions+QStringLiteral("\nEscape aborts; keep this window foreground.\n\n")+status);
     }
@@ -134,6 +142,8 @@ private:
     QTimer m_timer;
     QSet<quint32> m_pressed;
     QJsonObject m_down,m_up;
+    QJsonArray m_keyEvents;
+    bool m_eventsTruncated=false;
 };
 }
 int main(int argc,char **argv) {
@@ -143,11 +153,21 @@ int main(int argc,char **argv) {
         QKeyEvent down(QEvent::KeyPress,Qt::Key_F,Qt::NoModifier,0,'F',0);
         QKeyEvent up(QEvent::KeyRelease,Qt::Key_F,Qt::NoModifier,0,'F',0);
         QApplication::sendEvent(&receiver,&down); QApplication::sendEvent(&receiver,&down); QApplication::sendEvent(&receiver,&up);
-        receiver.observe('X',false);
+        receiver.observe(VK_CONTROL,false);
         const auto state=receiver.state();
         if (state.value(QStringLiteral("down")).toObject().value(QStringLiteral("70")).toInt()!=1
             || state.value(QStringLiteral("up")).toObject().value(QStringLiteral("70")).toInt()!=1
             || state.value(QStringLiteral("pressed_count")).toInt()!=0) return 2;
+        const auto events=state.value(QStringLiteral("key_events")).toArray();
+        if (events.size()!=2 || events.at(0).toObject().value(QStringLiteral("up")).toBool()
+            || !events.at(1).toObject().value(QStringLiteral("up")).toBool() || state.value(QStringLiteral("events_truncated")).toBool()) return 2;
+        Receiver bounded(false);
+        for (int index=0;index<65;++index) { bounded.observe('G',false); bounded.observe('G',true); }
+        const auto limited=bounded.state();
+        if (limited.value(QStringLiteral("key_events")).toArray().size()!=128
+            || !limited.value(QStringLiteral("events_truncated")).toBool() || limited.value(QStringLiteral("pressed_count")).toInt()!=0
+            || limited.value(QStringLiteral("down")).toObject().value(QStringLiteral("71")).toInt()!=65
+            || limited.value(QStringLiteral("up")).toObject().value(QStringLiteral("71")).toInt()!=65) return 2;
         Receiver mouse(false,true);
         const QPointF point(40,40);
         for (Qt::MouseButton button:{Qt::LeftButton,Qt::RightButton,Qt::MiddleButton,Qt::XButton1,Qt::XButton2}) {
