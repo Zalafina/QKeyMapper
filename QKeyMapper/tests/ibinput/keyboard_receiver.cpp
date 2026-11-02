@@ -50,9 +50,7 @@ public:
         }
     }
     void observe(quint32 key,bool up) {
-        if (m_mouse) {
-            if (!QSet<quint32>{'Q','W','E','R','T','A','S','D','F'}.contains(key)) return;
-        } else if (!((key>='A' && key<='Z') || (key>='0' && key<='9') || (key>=VK_F1 && key<=VK_F24))) return;
+        if (!((key>='A' && key<='Z') || (key>='0' && key<='9') || (key>=VK_F1 && key<=VK_F24))) return;
         const QString id=QString::number(key);
         bool changed=false;
         if (up) { if (m_pressed.remove(key)) { m_up[id]=m_up.value(id).toInt()+1; changed=true; } }
@@ -81,14 +79,14 @@ protected:
     void paintEvent(QPaintEvent *) override {
         QPainter painter(this); painter.fillRect(rect(),QColor(245,247,250)); painter.setPen(Qt::black);
         const QString instructions=m_mouse
-            ? QStringLiteral("Owned product mouse receiver\nQ/W/E/R/T -> Left/Right/Middle/X1/X2\nA/S -> Wheel Up/Down | D/F -> Move Right/Left")
+            ? QStringLiteral("Owned product keyboard / mouse receiver\nKeys: A-Z | 0-9 | F1-F24\nButtons: 1 Left | 2 Right | 4 Middle | 8 X1 | 16 X2")
             : QStringLiteral("Owned keyboard receiver\nBasic output: A-Z | 0-9 | F1-F24");
-        const auto compact=[](const QJsonObject &value) { return QString::fromUtf8(QJsonDocument(value).toJson(QJsonDocument::Compact)); };
+        const auto compact=[](const QJsonObject &value) { return QString::fromUtf8(QJsonDocument(value).toJson(QJsonDocument::Compact)).remove(QLatin1Char('"')); };
         const QString status=m_mouse
             ? QStringLiteral("Mouse DOWN %1\nMouse UP %2\nHeld buttons %3 | moves %4 | move buttons %5\nWheel up/down %6/%7 | delta %8 | wheel buttons %9\n")
                 .arg(compact(m_mouseDown)).arg(compact(m_mouseUp)).arg(static_cast<int>(m_mouseButtons)).arg(m_moves)
                 .arg(static_cast<int>(m_moveButtons)).arg(m_wheelUp).arg(m_wheelDown).arg(m_wheelDelta).arg(static_cast<int>(m_wheelButtons))
-                +QStringLiteral("Original DOWN %1\nOriginal UP %2\nHeld keys %3 | aborted %4")
+                +QStringLiteral("Key DOWN %1\nKey UP %2\nHeld keys %3 | aborted %4")
                     .arg(compact(m_down)).arg(compact(m_up)).arg(m_pressed.size()).arg(m_aborted)
             : QStringLiteral("Key DOWN %1\nKey UP %2\nHeld keys %3 | events %4\nTrace truncated %5 | aborted %6")
                 .arg(compact(m_down)).arg(compact(m_up)).arg(m_pressed.size()).arg(m_keyEvents.size()).arg(m_eventsTruncated).arg(m_aborted);
@@ -169,6 +167,13 @@ int main(int argc,char **argv) {
             || limited.value(QStringLiteral("down")).toObject().value(QStringLiteral("71")).toInt()!=65
             || limited.value(QStringLiteral("up")).toObject().value(QStringLiteral("71")).toInt()!=65) return 2;
         Receiver mouse(false,true);
+        for (quint32 key:{'F','G','H','I','J','K','L','R','T'}) {
+            mouse.observe(key,false); mouse.observe(key,true);
+            const QString id=QString::number(key);
+            if (mouse.state().value(QStringLiteral("down")).toObject().value(id).toInt()!=1
+                || mouse.state().value(QStringLiteral("up")).toObject().value(id).toInt()!=1) return 2;
+        }
+        if (mouse.state().value(QStringLiteral("pressed_count")).toInt()!=0) return 2;
         const QPointF point(40,40);
         for (Qt::MouseButton button:{Qt::LeftButton,Qt::RightButton,Qt::MiddleButton,Qt::XButton1,Qt::XButton2}) {
             QMouseEvent press(QEvent::MouseButtonPress,point,point,point,button,button,Qt::NoModifier);

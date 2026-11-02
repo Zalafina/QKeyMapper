@@ -63,7 +63,7 @@ finally { Pop-Location }
 
 ## IbInput 基础键盘接收
 
-keyboard_receiver.pro生成普通权限接收窗，只观察W／F、1／2、F13／F24的DOWN／UP，不安装Hook、不调用发送API。--self-check只向组件派发Qt事件；正式接收需QKM_IBINPUT_KEYBOARD_OUTPUT现有输出目录及实际Default桌面，180秒退出保护，receiver-close文件触发正常关闭，Escape中止。合成manual_keyboard_verification.ini不自动开始映射。
+keyboard_receiver.pro生成普通权限接收窗，只观察A-Z、0-9、F1-F24的DOWN／UP，不安装Hook、不调用发送API。--self-check只向组件派发Qt事件；正式接收需QKM_IBINPUT_KEYBOARD_OUTPUT现有输出目录及实际Default桌面，180秒退出保护，receiver-close文件触发正常关闭，Escape中止。合成manual_keyboard_verification.ini不自动开始映射。
 
 product_check.pro的keyboard维护用例继续使用真实main.cpp与正式manifest，QKM_IBINPUT_PRODUCT_CASE=keyboard、QKM_IBINPUT_PRODUCT_DESKTOP=Default，QKM_IBINPUT_PRODUCT_OUTPUT指定输出目录，QKM_IBINPUT_KEYBOARD_HWND／QKM_IBINPUT_KEYBOARD_PID须精确绑定已启动的自有接收进程。只接受三条固定映射W→F、1→2、F13→F24；keyboard-stop／keyboard-restart／keyboard-exit／keyboard-abort文件依次请求真实产品入口，状态写入keyboard-*.json。它本身不生成原始输入；固定输入测试器须另按具体授权执行，并核对前台、实际桌面、按键持有及自有清理，不可仅凭编译成功直接运行。
 
@@ -95,3 +95,10 @@ ghub_probe.pro只链接生产客户端、Qt及正式x64 IbInput DLL，普通权�
 product_check.pro新增patterns固定用例，沿既有输入状态机及正式manifest，控制文件前缀为patterns-。manual_patterns_verification.ini提供Q→F+G、W→H»I、E→J连发60/60ms、R→K及T→L锁定。维护目标会核对映射、发送方式及连发／锁定标志，再调用真正开始／停止／退出入口；不自行生成原始键。
 
 普通接收器键盘模式观察A-Z、0-9、F1-F24，receiver-state.json新增key_events（vk及up）记录实际按住状态转换，最多128项，events_truncated标记超界；DOWN／UP完整计数不受观察截断影响。观察仅限自有接收窗收到的事件，未安装全局Hook。自检验证重复DOWN不计两次、顺序及128边界后计数继续完整；真实组合顺序／连发／锁定仍须具体授权和实际窗口接收，不以组件自检代替。
+
+
+## IbInput 序列保持／循环
+
+product_check.pro的loops固定用例复用既有开始、停止、重启与退出状态机，控制文件前缀loops-；manual_loops_verification.ini包含最后键保持、有限三轮、按住循环及键鼠中途取消场景。普通接收器--mouse同时记录基础键盘集与鼠标事件，仍不调用发送API或驱动；--self-check补验混合模式普通字母的DOWN／UP。按住状态转换轨迹最多128项，超过后完整计数继续，不能将截断轨迹当作完整顺序。
+
+驱动释放修正需验证“中断等待后同代再次触发出现新DOWN”，只看SendInput的UP或停止marker不能证明IbInput持有报告已清空。实际测试仍先获得具体程序、初始化、Default前台／光标、固定输入和清理范围授权；本用例本身不授予输入权限。当前及后续Razer切片的系统、版本、授权和实际结果仅更新唯一主计划。

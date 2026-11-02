@@ -47,8 +47,7 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &rows) {
         const auto &row=rows.at(i);
         if (row.Disabled || row.SendMappingKeyMethod!=SENDMAPPINGKEY_METHOD_IBINPUT) continue;
         const QString location=ibRowLocation(i);
-        if (row.KeySeqHoldDown || row.RepeatMode!=REPEAT_MODE_NONE
-            || row.Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR)
+        if (row.Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR)
             || row.Original_Key==QLatin1String(SENDON_SWITCHTAB_STR))
             required.rejection=QCoreApplication::translate("QkmIbInputClient","Complex IbInput combinations, repetition, locking or stop/tab commands still await validation: %1").arg(location);
         if (QkmIbInputValidation::movementGroup(row)>=0) required.capabilities|=QkmIbInputClient::RelativeMove;
@@ -3945,11 +3944,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
             keyseq_finished = false;
 
+            if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_IBINPUT) {
+                clearPressedVirtualKeysOfMappingKeys(mappingkeys_str, rowindex, controller, keyMappingDataList, ibInputGeneration);
+            }
 #ifdef FAKERINPUT_SUPPORT
             // Release mapping keys from FakerInput HID report on sequence break.
             // The KEY_UP was never sent via FakerInput (break happened before
             // KEY_UP processing), so the HID report still has the keycodes.
-            {
+            else {
                 QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS, true);
                 for (const QString &mappingkey : std::as_const(mappingKeyListToClear)) {
                     if (QKeyMapper_Worker::VirtualKeyCodeMap.contains(mappingkey)) {
@@ -5180,7 +5182,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     && keyMappingDataList->at(rowindex).FloatingButton_Enable) {
                     emit updateFloatingButtonPressedState_Signal(rowindex, false);
                 }
-                clearPressedVirtualKeysOfMappingKeys(mappingkeys_str);
+                clearPressedVirtualKeysOfMappingKeys(mappingkeys_str, rowindex, controller, keyMappingDataList, ibInputGeneration);
 
 #ifdef FAKERINPUT_SUPPORT
                 // Also release mapping keys from FakerInput HID report.
@@ -5188,7 +5190,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 // which does NOT clean the FakerInput driver's HID report keycodes.
                 // Stale keycodes cause subsequent sequence iterations to conflict
                 // ("already in report" -> no new Windows event -> stuck key).
-                {
+                if (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_IBINPUT) {
                     QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS, true);
                     for (const QString &mappingkey : std::as_const(mappingKeyListToClear)) {
                         if (QKeyMapper_Worker::VirtualKeyCodeMap.contains(mappingkey)) {
@@ -20498,9 +20500,22 @@ void QKeyMapper_Worker::clearAllPressedVirtualKeys()
     // }
 }
 
-void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys)
+void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys, int rowindex,
+    SendInputTaskController rowController, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration)
 {
     QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUS, true);
+    if (keyMappingDataList && rowindex >= 0 && rowindex < keyMappingDataList->size()
+        && keyMappingDataList->at(rowindex).SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_IBINPUT) {
+        // A native KEY_UP cannot clear the selected driver's retained report.
+        rowController.sendvirtualkey_state = SENDVIRTUALKEY_STATE_FORCE;
+        for (const QString &key : std::as_const(mappingKeyListToClear)) {
+            if (VirtualKeyCodeMap.contains(key) || VirtualMouseButtonMap.contains(key)) {
+                sendInputKeys(rowindex, QStringList{key}, KEY_UP, QString(CLEAR_VIRTUALKEYS),
+                    SENDMODE_FORCE_STOP, rowController, keyMappingDataList, ibInputGeneration);
+            }
+        }
+        return;
+    }
 
 //     QStringList pressedRealKeysListToCheck = pressedRealKeysListRemoveMultiInput;
 //     for (const QString &blockedKey : blockedKeysList) {

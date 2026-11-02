@@ -1560,7 +1560,8 @@ private:
 #endif
     void clearAllBurstKeyTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
-    void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys);
+    void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys, int rowindex,
+        SendInputTaskController rowController, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration);
     void clearAllNormalPressedMappingKeys(bool restart = false, QList<MAP_KEYDATA> *keyMappingDataListToCheck = Q_NULLPTR);
     void clearCustomKeyFlags(bool restart = false);
     void clearAllPressedRealCombinationKeys(void);
