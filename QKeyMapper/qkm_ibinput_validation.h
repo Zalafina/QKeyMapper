@@ -6,6 +6,28 @@
 #include <QSet>
 
 namespace QkmIbInputValidation {
+// shortcut: output follows FakerInput's VK-only HID; revise source aliases if backend key distinctions change.
+inline quint16 keyboardSourceCode(const V_KEYCODE &key) {
+    if (key.KeyCode==VK_RETURN && key.ExtenedFlag) return VK_RETURN|0x100;
+    if (!key.ExtenedFlag) {
+        switch (key.KeyCode) {
+        case VK_INSERT: return VK_NUMPAD0;
+        case VK_END: return VK_NUMPAD1;
+        case VK_DOWN: return VK_NUMPAD2;
+        case VK_NEXT: return VK_NUMPAD3;
+        case VK_LEFT: return VK_NUMPAD4;
+        case VK_CLEAR: return VK_NUMPAD5;
+        case VK_RIGHT: return VK_NUMPAD6;
+        case VK_HOME: return VK_NUMPAD7;
+        case VK_UP: return VK_NUMPAD8;
+        case VK_PRIOR: return VK_NUMPAD9;
+        case VK_DELETE: return VK_DECIMAL;
+        default: break;
+        }
+    }
+    return key.KeyCode;
+}
+
 QList<MAP_KEYDATA> expandedRows(const QList<MAP_KEYDATA> &source);
 
 inline int movementGroup(const MAP_KEYDATA &row) {

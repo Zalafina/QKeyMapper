@@ -106,6 +106,19 @@ void reportCase() {
     check(!client.sendEvent(key('G'),generation) && events.size()==6,"full report reached API");
     check(client.closeAfterDrain(generation),"full report cleanup failed");
 }
+void modifiersCase() {
+    QkmIbInputClient client;
+    const auto token=client.requestRun();
+    check(client.prepareRun(token,needs(QkmIbInputClient::Keyboard)),"modifier preparation failed");
+    const WORD modifiers[]={VK_LCONTROL,VK_RCONTROL,VK_LSHIFT,VK_RSHIFT,VK_LMENU,VK_RMENU,VK_LWIN,VK_RWIN};
+    for (WORD vk:modifiers) check(client.sendEvent(key(vk),token),"modifier DOWN failed");
+    for (WORD vk='A';vk<='F';++vk) check(client.sendEvent(key(vk),token),"modifiers consumed an ordinary key slot");
+    check(events.size()==14,"modifier report event count changed");
+    check(!client.sendEvent(key('G'),token) && events.size()==14,"seventh ordinary key reached the API");
+    check(client.closeAfterDrain(token) && events.size()==28,"mixed keyboard report did not fully release");
+    for (const auto &event:events)
+        check(event.type==INPUT_KEYBOARD,"keyboard cleanup changed event type");
+}
 void mouseCase() {
     QkmIbInputClient client;
     const auto generation=client.requestRun();
@@ -257,8 +270,18 @@ int main(int argc,char **argv) {
             for (WORD vk='A';vk<='Z';++vk) allowed.insert(vk);
             for (WORD vk='0';vk<='9';++vk) allowed.insert(vk);
             for (WORD vk=VK_F1;vk<=VK_F24;++vk) allowed.insert(vk);
+            for (WORD vk=VK_NUMPAD0;vk<=VK_DIVIDE;++vk) if (vk!=VK_SEPARATOR) allowed.insert(vk);
+            for (WORD vk=VK_LSHIFT;vk<=VK_RMENU;++vk) allowed.insert(vk);
+            for (WORD vk=VK_PRIOR;vk<=VK_DOWN;++vk) allowed.insert(vk);
+            for (WORD vk=VK_OEM_1;vk<=VK_OEM_3;++vk) allowed.insert(vk);
+            for (WORD vk=VK_OEM_4;vk<=VK_OEM_7;++vk) allowed.insert(vk);
+            for (WORD vk:{WORD(VK_BACK),WORD(VK_TAB),WORD(VK_RETURN),WORD(VK_ESCAPE),WORD(VK_SPACE),WORD(VK_CAPITAL),
+                WORD(VK_INSERT),WORD(VK_DELETE),WORD(VK_NUMLOCK),WORD(VK_SCROLL),WORD(VK_SNAPSHOT),WORD(VK_PAUSE),
+                WORD(VK_APPS),WORD(VK_LWIN),WORD(VK_RWIN)}) allowed.insert(vk);
+            check(allowed.size()==115,"FakerInput-equivalent standard key set changed");
             for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedKey(vk)==allowed.contains(vk),"product key whitelist differs");
-            for (WORD unsupported:{WORD(VK_LCONTROL),WORD(VK_RETURN),WORD(VK_OEM_1),WORD(VK_NUMPAD1),WORD(VK_LEFT)}) {
+            for (WORD unsupported:{WORD(VK_SHIFT),WORD(VK_CONTROL),WORD(VK_MENU),WORD(VK_SEPARATOR),WORD(VK_CLEAR),
+                WORD(VK_VOLUME_UP),WORD(VK_PROCESSKEY),WORD(VK_PACKET),WORD(VK_OEM_102)}) {
                 QkmIbInputClient blocked; auto requirements=needs(QkmIbInputClient::Keyboard); requirements.keys.insert(unsupported);
                 const auto token=blocked.requestRun();
                 check(!blocked.prepareRun(token,requirements) && attempts.empty(),"unsupported key reached driver initialization");
@@ -266,9 +289,9 @@ int main(int argc,char **argv) {
             QkmIbInputClient client;
             auto keyboard=needs(QkmIbInputClient::Keyboard); keyboard.keys=allowed;
             const auto token=client.requestRun();
-            check(client.prepareRun(token,keyboard),"basic keyboard preparation failed");
-            for (quint16 vk:allowed) check(client.sendEvent(key(vk),token) && client.sendEvent(key(vk,true),token),"basic key did not round-trip");
-            check(events.size()==120 && client.closeAfterDrain(token),"basic keyboard did not release");
+            check(client.prepareRun(token,keyboard),"standard keyboard preparation failed");
+            for (quint16 vk:allowed) check(client.sendEvent(key(vk),token) && client.sendEvent(key(vk,true),token),"standard key did not round-trip");
+            check(events.size()==230 && client.closeAfterDrain(token),"standard keyboard did not release");
             reset();
             const auto movement=client.requestRun();
             check(client.prepareRun(movement,needs(QkmIbInputClient::RelativeMove)),"product movement admission failed");
@@ -279,13 +302,13 @@ int main(int argc,char **argv) {
             QSet<quint16> supportedButtons;
             for (const auto &button:mouseButtons) supportedButtons.insert(button.vk);
             for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedButton(vk)==supportedButtons.contains(vk),"mouse button set differs");
-            reset(); admissionCase(); reset(); failureCase(); reset(); reportCase();
+            reset(); admissionCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
             reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
             reset(); concurrentCase();
-            std::cout<<"PASS simulated production gate: 60 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
+            std::cout<<"PASS simulated production gate: 115 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
 #endif
-        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
+        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
     } catch (const std::exception &error) { std::cerr<<error.what()<<'\n'; return 2; }

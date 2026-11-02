@@ -63,13 +63,21 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) 
     QkmIbInputClient::Requirements required;
     QStringList locations;
     QSet<QString> originalKeys;
+    QSet<quint16> originalKeyboardCodes;
     QStringList hazards;
     bool needed=false;
     for (int i=0;i<rows.size();++i) {
         locations.append(ibRowLocation(i));
         const auto &row=rows.at(i); if (row.Disabled) continue;
         needed=needed || row.SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT;
-        for (const QString &key:row.Pure_OriginalKeys) originalKeys.insert(pureIbKey(key));
+        for (const QString &key:row.Pure_OriginalKeys) {
+            const QString name=pureIbKey(key);
+            originalKeys.insert(name);
+            if (QKeyMapper_Worker::VirtualKeyCodeMap.contains(name)) {
+                const auto source=QkmIbInputValidation::keyboardSourceCode(QKeyMapper_Worker::VirtualKeyCodeMap.value(name));
+                if (QkmIbInputClient::isSupportedKey(source&0xff)) originalKeyboardCodes.insert(source);
+            }
+        }
         const QString all=row.Original_Key+QLatin1Char(' ')+row.Mapping_Keys.join(QLatin1Char(' '))
             +QLatin1Char(' ')+(row.Pure_MappingKeys+row.Pure_MappingKeys_KeyUp).join(QLatin1Char(' '));
         if ((row.Original_Key.startsWith(QStringLiteral("Mouse")) && row.Original_Key.contains(QStringLiteral("2vJoy")))
@@ -111,8 +119,10 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) 
                 if (row.FixedVKeyCode!=FIXED_VIRTUAL_KEY_CODE_NONE
                     || code.KeyCode==VK_MOUSE2VJOY_HOLD || code.KeyCode==VK_CROSSHAIR_NORMAL || code.KeyCode==VK_CROSSHAIR_TYPEA
                     || code.KeyCode==VK_GYRO2MOUSE_HOLD || code.KeyCode==VK_GYRO2MOUSE_MOVE) continue;
+                if (originalKeyboardCodes.contains(code.KeyCode))
+                    required.rejection=QCoreApplication::translate("QkmIbInputClient","IbInput output can trigger an original key; this feedback path awaits validation: %1").arg(location);
                 required.capabilities|=QkmIbInputClient::Keyboard; required.keys.insert(code.KeyCode);
-                if (!QkmIbInputClient::isSupportedKey(code.KeyCode) || (code.KeyCode==VK_RETURN && code.ExtenedFlag))
+                if (!QkmIbInputClient::isSupportedKey(code.KeyCode))
                     required.rejection=QCoreApplication::translate("QkmIbInputClient","This IbInput key representation still awaits validation: %1").arg(location);
             } else if (key.contains(QStringLiteral("Macro(")) || key.contains(QStringLiteral("Repeat{")) || key.contains(QStringLiteral("OnlyOnce{"))) {
                 required.rejection=QCoreApplication::translate("QkmIbInputClient","IbInput macro/repeat expansion still awaits validation: %1").arg(location);

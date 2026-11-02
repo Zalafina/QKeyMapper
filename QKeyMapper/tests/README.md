@@ -63,7 +63,7 @@ finally { Pop-Location }
 
 ## IbInput 基础键盘接收
 
-keyboard_receiver.pro生成普通权限接收窗，只观察A-Z、0-9、F1-F24的DOWN／UP，不安装Hook、不调用发送API。--self-check只向组件派发Qt事件；正式接收需QKM_IBINPUT_KEYBOARD_OUTPUT现有输出目录及实际Default桌面，180秒退出保护，receiver-close文件触发正常关闭，Escape中止。合成manual_keyboard_verification.ini不自动开始映射。
+keyboard_receiver.pro生成普通权限接收窗，观察常用键盘VK的DOWN／UP及扫描码／修饰状态，不安装Hook、不调用发送API；Escape保留为中止。--self-check只向组件派发Qt事件；正式接收需QKM_IBINPUT_KEYBOARD_OUTPUT现有输出目录及实际Default桌面，180秒退出保护，receiver-close文件触发正常关闭，Escape中止。合成manual_keyboard_verification.ini不自动开始映射。
 
 product_check.pro的keyboard维护用例继续使用真实main.cpp与正式manifest，QKM_IBINPUT_PRODUCT_CASE=keyboard、QKM_IBINPUT_PRODUCT_DESKTOP=Default，QKM_IBINPUT_PRODUCT_OUTPUT指定输出目录，QKM_IBINPUT_KEYBOARD_HWND／QKM_IBINPUT_KEYBOARD_PID须精确绑定已启动的自有接收进程。只接受三条固定映射W→F、1→2、F13→F24；keyboard-stop／keyboard-restart／keyboard-exit／keyboard-abort文件依次请求真实产品入口，状态写入keyboard-*.json。它本身不生成原始输入；固定输入测试器须另按具体授权执行，并核对前台、实际桌面、按键持有及自有清理，不可仅凭编译成功直接运行。
 
@@ -94,7 +94,7 @@ ghub_probe.pro只链接生产客户端、Qt及正式x64 IbInput DLL，普通权�
 
 product_check.pro新增patterns固定用例，沿既有输入状态机及正式manifest，控制文件前缀为patterns-。manual_patterns_verification.ini提供Q→F+G、W→H»I、E→J连发60/60ms、R→K及T→L锁定。维护目标会核对映射、发送方式及连发／锁定标志，再调用真正开始／停止／退出入口；不自行生成原始键。
 
-普通接收器键盘模式观察A-Z、0-9、F1-F24，receiver-state.json新增key_events（vk及up）记录实际按住状态转换，最多128项，events_truncated标记超界；DOWN／UP完整计数不受观察截断影响。观察仅限自有接收窗收到的事件，未安装全局Hook。自检验证重复DOWN不计两次、顺序及128边界后计数继续完整；真实组合顺序／连发／锁定仍须具体授权和实际窗口接收，不以组件自检代替。
+普通接收器键盘模式观察常用键盘键，receiver-state.json的key_events（vk及up）记录实际按住状态转换，最多128项，events_truncated标记超界；DOWN／UP完整计数不受观察截断影响。观察仅限自有接收窗收到的事件，未安装全局Hook。自检验证重复DOWN不计两次、顺序及128边界后计数继续完整；真实组合顺序／连发／锁定仍须具体授权和实际窗口接收，不以组件自检代替。
 
 
 ## IbInput 序列保持／循环
@@ -114,3 +114,12 @@ product_check.pro的macros用例复用原输入状态机，前缀macros-；manua
 C3实际纯键派生通过现有展开器的collectOnly=true仅收集原语，普通发送默认false；维护断言覆盖默认x2仍4步、收集2步、99999×99999只收集F/G而不实际发送，以及“宏名含方向但正文不移动”不能影响移动分类。宏数量与嵌套上限沿既有规则。
 
 接收器状态文件是测试遥测，使用QFile覆盖／flush；并发读取必须沿现有runner重试空／不完整JSON。Windows上即便读句柄共享删除，QSaveFile覆盖仍可与读句柄冲突，不能把此遥测协议套用到需要事务性的产品配置保存。主计划18.3记录无输入复现和20000轮修正验证。
+
+
+## IbInput 常用键盘表示
+
+product_check.pro的standard用例沿既有状态机和正式manifest，前缀standard-；manual_standard_verification.ini固定八行Q/W/E/R/T/A/S/D，包含编辑／导航／数字区／OEM标点序列、左右Shift／Ctrl+F24，不自动开始。维护目标核对原文、方式3及无连发／锁定／循环等标志；原始键仍由另获具体授权的固定运行器生成，Default自有前台及同后端停止／重启／退出释放必须观察。
+
+receiver-state.json保留原key_events的vk／up格式，并增加逐项对应的key_observations（vk／up／scan／modifiers）。两者最多128项，events_truncated必须为false才能用作完整轨迹；Tab由自有接收器事件入口直接接收，避免Qt焦点导航吞掉。数字区在NumLock关时可呈现导航VK，应核对扫描码和Qt::KeypadModifier，不为测试更改锁定状态。左右修饰同时核对系统侧状态及F24的Qt修饰位。
+
+当前G HUB及FakerInput均按VK-only发送Return，NumEnter不表示独立数字区回车。client_test正式／替身115键门控及槽位断言、真实G HUB头文件的WinAPI替身报告检查与产品实际接收属于不同层次；Win／Alt／菜单／锁定／媒体等未进行相应真实副作用验证时不能声称已完成。实际机器、范围、EXE及结果只记录在唯一主计划第19节。

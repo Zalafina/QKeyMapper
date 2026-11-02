@@ -2,6 +2,7 @@
 #include <QCoreApplication>
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 
 namespace {
 void check(bool value,const char *message) { if (!value) throw std::runtime_error(message); }
@@ -16,6 +17,20 @@ int main(int argc,char **argv) {
     using namespace QKeyMapperConstants;
     using QkmIbInputValidation::mixedMovementError;
     try {
+        check(QkmIbInputValidation::keyboardSourceCode(V_KEYCODE(VK_RETURN,false))==VK_RETURN
+            && QkmIbInputValidation::keyboardSourceCode(V_KEYCODE(VK_RETURN,true))!=(VK_RETURN),
+            "Physical keypad Enter was collapsed into main Enter as an original key");
+        const std::pair<WORD,WORD> keypad[]={{VK_INSERT,VK_NUMPAD0},{VK_END,VK_NUMPAD1},{VK_DOWN,VK_NUMPAD2},
+            {VK_NEXT,VK_NUMPAD3},{VK_LEFT,VK_NUMPAD4},{VK_CLEAR,VK_NUMPAD5},{VK_RIGHT,VK_NUMPAD6},
+            {VK_HOME,VK_NUMPAD7},{VK_UP,VK_NUMPAD8},{VK_PRIOR,VK_NUMPAD9},{VK_DELETE,VK_DECIMAL}};
+        for (const auto &pair:keypad) {
+            check(QkmIbInputValidation::keyboardSourceCode(V_KEYCODE(pair.first,false))==pair.second,
+                "NumLock-off source alias lost physical identity");
+            check(QkmIbInputValidation::keyboardSourceCode(V_KEYCODE(pair.first,true))==pair.first,
+                "Main navigation source became a keypad alias");
+        }
+        check(QkmIbInputValidation::keyboardSourceCode(V_KEYCODE(VK_RSHIFT,true))==VK_RSHIFT,
+            "Right modifier source identity changed");
         QList<MAP_KEYDATA> rows;
         QStringList locations;
         for (int i=0;i<8;++i) {

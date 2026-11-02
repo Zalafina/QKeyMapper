@@ -53,16 +53,12 @@ QStringList QkmIbInputClient::candidates(const QString &preference) {
 }
 bool QkmIbInputClient::isSupportedKey(quint16 key) {
     const bool basic=(key>='0' && key<='9') || (key>='A' && key<='Z') || (key>=VK_F1 && key<=VK_F24);
-#ifndef QKM_IBINPUT_VALIDATION_PROBE
-    // shortcut: other key representations await product reception and release acceptance.
-    return basic;
-#else
     return basic || (key>=VK_NUMPAD0 && key<=VK_DIVIDE && key!=VK_SEPARATOR)
         || (key>=VK_LSHIFT && key<=VK_RMENU) || key==VK_LWIN || key==VK_RWIN
         || key==VK_BACK || key==VK_TAB || key==VK_RETURN || key==VK_ESCAPE || key==VK_SPACE
         || (key>=VK_PRIOR && key<=VK_DOWN) || key==VK_INSERT || key==VK_DELETE || key==VK_CAPITAL
-        || key==VK_NUMLOCK || key==VK_SCROLL || key==VK_SNAPSHOT;
-#endif
+        || key==VK_NUMLOCK || key==VK_SCROLL || key==VK_SNAPSHOT || key==VK_PAUSE || key==VK_APPS
+        || (key>=VK_OEM_1 && key<=VK_OEM_3) || (key>=VK_OEM_4 && key<=VK_OEM_7);
 }
 bool QkmIbInputClient::isSupportedButton(quint16 button) {
     return button==VK_LBUTTON || button==VK_RBUTTON || button==VK_MBUTTON

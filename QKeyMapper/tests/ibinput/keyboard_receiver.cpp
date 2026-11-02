@@ -32,7 +32,7 @@ class Receiver final : public QWidget {
 public:
     explicit Receiver(bool live,bool mouse=false):m_live(live),m_mouse(mouse) {
         setWindowTitle(m_mouse ? QStringLiteral("IbInput product mouse receiver") : QStringLiteral("IbInput basic keyboard receiver"));
-        setWindowFlag(Qt::WindowStaysOnTopHint); setFocusPolicy(Qt::StrongFocus); resize(540,m_mouse ? 340 : 240);
+        setWindowFlag(Qt::WindowStaysOnTopHint); setFocusPolicy(Qt::StrongFocus); resize(600,400);
         setMouseTracking(m_mouse);
         if (live && m_mouse) {
             const QPoint cursor=QCursor::pos();
@@ -51,14 +51,18 @@ public:
             m_timer.start();
         }
     }
-    void observe(quint32 key,bool up) {
-        if (!((key>='A' && key<='Z') || (key>='0' && key<='9') || (key>=VK_F1 && key<=VK_F24))) return;
+    void observe(quint32 key,bool up,quint32 scan=0,Qt::KeyboardModifiers modifiers=Qt::NoModifier) {
+        if (key<VK_BACK || key>0xfe) return;
         const QString id=QString::number(key);
         bool changed=false;
         if (up) { if (m_pressed.remove(key)) { m_up[id]=m_up.value(id).toInt()+1; changed=true; } }
         else if (!m_pressed.contains(key)) { m_pressed.insert(key); m_down[id]=m_down.value(id).toInt()+1; changed=true; }
         if (changed) {
-            if (m_keyEvents.size()<128) m_keyEvents.append(QJsonObject{{"vk",static_cast<int>(key)},{"up",up}});
+            if (m_keyEvents.size()<128) {
+                m_keyEvents.append(QJsonObject{{"vk",static_cast<int>(key)},{"up",up}});
+                m_observations.append(QJsonObject{{"vk",static_cast<int>(key)},{"up",up},
+                    {"scan",static_cast<int>(scan)},{"modifiers",static_cast<int>(modifiers)}});
+            }
             else m_eventsTruncated=true;
         }
         if (m_live) publish();
@@ -66,7 +70,7 @@ public:
     }
     QJsonObject state() const {
         QJsonObject value{{"down",m_down},{"up",m_up},{"pressed_count",m_pressed.size()},{"aborted",m_aborted},
-            {"key_events",m_keyEvents},{"events_truncated",m_eventsTruncated}};
+            {"key_events",m_keyEvents},{"key_observations",m_observations},{"events_truncated",m_eventsTruncated}};
         if (m_mouse) {
             value.insert(QStringLiteral("mouse_down"),m_mouseDown); value.insert(QStringLiteral("mouse_up"),m_mouseUp);
             value.insert(QStringLiteral("mouse_buttons"),static_cast<int>(m_mouseButtons));
@@ -78,12 +82,21 @@ public:
     }
     void publish() const { writeJson(QStringLiteral("receiver-state.json"),state()); }
 protected:
+    bool event(QEvent *event) override {
+        if ((event->type()==QEvent::KeyPress || event->type()==QEvent::KeyRelease)
+            && (static_cast<QKeyEvent *>(event)->key()==Qt::Key_Tab || static_cast<QKeyEvent *>(event)->key()==Qt::Key_Backtab)) {
+            if (event->type()==QEvent::KeyPress) keyPressEvent(static_cast<QKeyEvent *>(event));
+            else keyReleaseEvent(static_cast<QKeyEvent *>(event));
+            return true;
+        }
+        return QWidget::event(event);
+    }
     void paintEvent(QPaintEvent *) override {
         QPainter painter(this); painter.fillRect(rect(),QColor(245,247,250)); painter.setPen(Qt::black);
         const QString instructions=m_mouse
-            ? QStringLiteral("Owned product keyboard / mouse receiver\nKeys: A-Z | 0-9 | F1-F24\nButtons: 1 Left | 2 Right | 4 Middle | 8 X1 | 16 X2")
-            : QStringLiteral("Owned keyboard receiver\nBasic output: A-Z | 0-9 | F1-F24");
-        const auto compact=[](const QJsonObject &value) { return QString::fromUtf8(QJsonDocument(value).toJson(QJsonDocument::Compact)).remove(QLatin1Char('"')); };
+            ? QStringLiteral("Owned product keyboard / mouse receiver\nKeyboard: standard keys / modifiers\nButtons: 1 Left | 2 Right | 4 Middle | 8 X1 | 16 X2")
+            : QStringLiteral("Owned keyboard receiver\nStandard keyboard output / modifiers");
+        const auto compact=[](const QJsonObject &value) { return QString::fromUtf8(QJsonDocument(value).toJson(QJsonDocument::Compact)).remove(QLatin1Char('"')).replace(QLatin1Char(','),QStringLiteral(", ")); };
         const QString status=m_mouse
             ? QStringLiteral("Mouse DOWN %1\nMouse UP %2\nHeld buttons %3 | moves %4 | move buttons %5\nWheel up/down %6/%7 | delta %8 | wheel buttons %9\n")
                 .arg(compact(m_mouseDown)).arg(compact(m_mouseUp)).arg(static_cast<int>(m_mouseButtons)).arg(m_moves)
@@ -97,11 +110,11 @@ protected:
     }
     void keyPressEvent(QKeyEvent *event) override {
         if (event->key()==Qt::Key_Escape) { m_aborted=true; if (m_live) publish(); qApp->exit(2); return; }
-        if (!event->isAutoRepeat()) observe(event->nativeVirtualKey(),false);
+        if (!event->isAutoRepeat()) observe(event->nativeVirtualKey(),false,event->nativeScanCode(),event->modifiers());
         event->accept();
     }
     void keyReleaseEvent(QKeyEvent *event) override {
-        if (!event->isAutoRepeat()) observe(event->nativeVirtualKey(),true);
+        if (!event->isAutoRepeat()) observe(event->nativeVirtualKey(),true,event->nativeScanCode(),event->modifiers());
         event->accept();
     }
     void mousePressEvent(QMouseEvent *event) override {
@@ -142,7 +155,7 @@ private:
     QTimer m_timer;
     QSet<quint32> m_pressed;
     QJsonObject m_down,m_up;
-    QJsonArray m_keyEvents;
+    QJsonArray m_keyEvents,m_observations;
     bool m_eventsTruncated=false;
 };
 }
@@ -153,7 +166,7 @@ int main(int argc,char **argv) {
         QKeyEvent down(QEvent::KeyPress,Qt::Key_F,Qt::NoModifier,0,'F',0);
         QKeyEvent up(QEvent::KeyRelease,Qt::Key_F,Qt::NoModifier,0,'F',0);
         QApplication::sendEvent(&receiver,&down); QApplication::sendEvent(&receiver,&down); QApplication::sendEvent(&receiver,&up);
-        receiver.observe(VK_CONTROL,false);
+        receiver.observe(0,false);
         const auto state=receiver.state();
         if (state.value(QStringLiteral("down")).toObject().value(QStringLiteral("70")).toInt()!=1
             || state.value(QStringLiteral("up")).toObject().value(QStringLiteral("70")).toInt()!=1
@@ -161,6 +174,20 @@ int main(int argc,char **argv) {
         const auto events=state.value(QStringLiteral("key_events")).toArray();
         if (events.size()!=2 || events.at(0).toObject().value(QStringLiteral("up")).toBool()
             || !events.at(1).toObject().value(QStringLiteral("up")).toBool() || state.value(QStringLiteral("events_truncated")).toBool()) return 2;
+        Receiver standard(false);
+        QKeyEvent tabDown(QEvent::KeyPress,Qt::Key_Tab,Qt::NoModifier,15,VK_TAB,0);
+        QKeyEvent tabUp(QEvent::KeyRelease,Qt::Key_Tab,Qt::NoModifier,15,VK_TAB,0);
+        QKeyEvent modifiedDown(QEvent::KeyPress,Qt::Key_F24,Qt::ShiftModifier,118,VK_F24,0);
+        QKeyEvent modifiedUp(QEvent::KeyRelease,Qt::Key_F24,Qt::ShiftModifier,118,VK_F24,0);
+        QApplication::sendEvent(&standard,&tabDown); QApplication::sendEvent(&standard,&tabUp);
+        QApplication::sendEvent(&standard,&modifiedDown); QApplication::sendEvent(&standard,&modifiedUp);
+        const auto standardState=standard.state();
+        const auto observations=standardState.value(QStringLiteral("key_observations")).toArray();
+        if (standardState.value(QStringLiteral("down")).toObject().value(QStringLiteral("9")).toInt()!=1
+            || standardState.value(QStringLiteral("up")).toObject().value(QStringLiteral("9")).toInt()!=1
+            || standardState.value(QStringLiteral("pressed_count")).toInt()!=0 || observations.size()!=4
+            || observations.at(2).toObject().value(QStringLiteral("modifiers")).toInt()!=static_cast<int>(Qt::ShiftModifier)
+            || observations.at(2).toObject().value(QStringLiteral("scan")).toInt()!=118) return 2;
         Receiver bounded(false);
         for (int index=0;index<65;++index) { bounded.observe('G',false); bounded.observe('G',true); }
         const auto limited=bounded.state();

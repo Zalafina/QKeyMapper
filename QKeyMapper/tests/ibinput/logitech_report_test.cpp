@@ -153,6 +153,38 @@ void keyboardCase() {
     check(logi.send_keyboard_input(key(VK_RCONTROL)),"right modifier failed");
     check(report<Keyboard>(calls.back()).modifiers==16,"right modifier changed side");
     logi.destroy();
+    Send::Type::Internal::LogitechGHubNew ghub;
+    check(ghub.create()==Send::Error::Success,"fake standard keyboard create failed");
+    const std::pair<WORD,unsigned char> standard[]={{VK_BACK,0x2a},{VK_TAB,0x2b},{VK_RETURN,0x28},
+        {VK_SPACE,0x2c},{VK_LEFT,0x50},{VK_HOME,0x4a},{VK_NUMPAD1,0x59},{VK_DIVIDE,0x54},
+        {VK_OEM_1,0x33},{VK_OEM_5,0x31},{VK_APPS,0x65},{VK_PAUSE,0x48}};
+    for (const auto &entry:standard) {
+        check(ghub.send_keyboard_input(key(entry.first)),"standard keyboard DOWN failed");
+        const auto value=report<Keyboard>(calls.back());
+        check(value.keys[0]==entry.second && std::count(value.keys.begin(),value.keys.end(),entry.second)==1,
+            "standard VK/HID mapping differs from FakerInput");
+        check(ghub.send_keyboard_input(key(entry.first,true)),"standard keyboard UP failed");
+        check(report<Keyboard>(calls.back()).keys==std::array<unsigned char,6>{},"standard key remains in report");
+    }
+    auto keypadEnter=key(VK_RETURN); keypadEnter.dwFlags|=KEYEVENTF_EXTENDEDKEY;
+    check(ghub.send_keyboard_input(keypadEnter) && report<Keyboard>(calls.back()).keys[0]==0x28,
+        "VK-only Enter behavior differs from existing FakerInput");
+    check(ghub.send_keyboard_input(key(VK_RETURN,true)),"Enter cleanup failed");
+    const std::pair<WORD,unsigned char> modifiers[]={{VK_LCONTROL,1},{VK_LSHIFT,2},{VK_LMENU,4},{VK_LWIN,8},
+        {VK_RCONTROL,16},{VK_RSHIFT,32},{VK_RMENU,64},{VK_RWIN,128}};
+    for (WORD vk='A';vk<='F';++vk) check(ghub.send_keyboard_input(key(vk)),"ordinary slots rejected before modifiers");
+    unsigned char mask=0;
+    for (const auto &entry:modifiers) {
+        mask|=entry.second;
+        check(ghub.send_keyboard_input(key(entry.first)) && report<Keyboard>(calls.back()).modifiers==mask,
+            "modifier bit or side changed");
+    }
+    check(!ghub.send_keyboard_input(key('G')),"modifier report admitted a seventh ordinary key");
+    for (const auto &entry:modifiers) check(ghub.send_keyboard_input(key(entry.first,true)),"modifier UP failed");
+    for (WORD vk='A';vk<='F';++vk) check(ghub.send_keyboard_input(key(vk,true)),"ordinary UP failed");
+    check(report<Keyboard>(calls.back()).modifiers==0 && report<Keyboard>(calls.back()).keys==std::array<unsigned char,6>{},
+        "standard keyboard report did not clear");
+    ghub.destroy();
 }
 void partialCase() {
     Send::Type::Internal::Logitech logi;
