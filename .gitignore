@@ -40,3 +40,5 @@ out/
 scratch/
 *.obj
 
+# Python bytecode caches
+__pycache__/
