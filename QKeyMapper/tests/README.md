@@ -130,3 +130,13 @@ receiver-state.json保留原key_events的vk／up格式，并增加逐项对应�
 product_check.pro的tables用例沿既有状态机，前缀tables-；manual_tables_verification.ini的A/B两表使用IbInput、C表使用SendInput，Q分别输出F/G/J，W通过真实SwitchTab命令形成A→B→C→A；B另有SendOnSwitchTab的L⏱20»M⏱20。维护目标只观察真实业务切换，tables-switch-1/2/3文件开启对应观察，实际原始W仍由另获授权的固定运行器发送。收到新表已启用、通道／新代次／停止按钮可用后写tables-switched-1/2/3.json；正常停止／重启／退出仍沿tables-stop/restart/exit。
 
 客户端替身restart断言覆盖预留新意图、旧关闭不得取消新意图、特定旧代取消不得影响新代以及用户停止后不能复活请求，不能替代实际池排空和窗口输出。实际产品须验证保持输出时切换的旧UP与新DOWN、Ib→Ib／Ib→SendInput／SendInput→Ib、自动切表输出及正常停止／退出释放；串行通过不等同于快速／并发切表、切换中停止及各初始化失败已验。源码及结果只更新唯一主计划第20节。
+
+
+## IbInput 开始／停止动作
+
+product_check.pro的stopactions用例沿既有状态机，前缀stopactions-；manual_stopactions_verification.ini含Q→F、SendOnMappingStart→H⏱20»I⏱20、SendOnMappingStop→Repeat{F⏱20»G⏱20}x2，全为方式3，无自动开始。原始键须另按具体授权由固定运行器产生；产品本身只核对配置并调用真实开始／停止／重启／退出入口。
+
+停止时先取消普通Ib输入并排空／释放旧保持，再为不可变快照中的SendOnMappingStop源行授予本代内部阶段；普通DOWN和周期输入仍被拒绝，释放失败不能打开阶段。client_test的stop_action断言覆盖权限边界、键鼠原语、取消及新代／失败不继承。真实接收重点核对旧F先UP再出现停止F/G完整两轮、开始／重启H/I及退出保持释放；退出动作沿原有析构语义，不能仅凭关闭marker认为停止动作已发送。实际版本／机器／范围仅记录唯一主计划第21节。
+
+
+停止序列的父任务会继续排队子步骤，池暂空不能单独证明完成。关闭检查同时观察既有running序列及各池waitForDone(0)，通过工作线程10ms上下文定时继续处理消息，完成后关闭；停止期间旧allMappingKeysReleased回调由统一排空负责清理。IbInput序列子步骤沿实际源快照查找行和循环信息，避免恢复原表后用错索引。首次缺失和修正后实际完整Repeat x2及当前源T1回归见主计划21.4～21.5。

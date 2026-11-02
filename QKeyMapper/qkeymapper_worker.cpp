@@ -91,8 +91,6 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) 
         const auto &row=rows.at(i);
         if (row.Disabled || row.SendMappingKeyMethod!=SENDMAPPINGKEY_METHOD_IBINPUT) continue;
         const QString location=ibRowLocation(i);
-        if (row.Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR))
-            required.rejection=QCoreApplication::translate("QkmIbInputClient","Complex IbInput combinations, repetition, locking or stop/tab commands still await validation: %1").arg(location);
         if (QkmIbInputValidation::movementGroup(row)>=0) required.capabilities|=QkmIbInputClient::RelativeMove;
         const QStringList output=row.Pure_MappingKeys+row.Pure_MappingKeys_KeyUp;
         for (const QString &key:output) {
@@ -130,17 +128,18 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) 
     }
     return required;
 }
-bool sendIbEvent(const INPUT &input,quint64 generation) {
+bool sendIbEvent(const INPUT &input,quint64 generation,bool stopAction=false) {
     auto &client=QkmIbInputClient::instance();
     const auto state=client.statusSnapshot();
     if (!generation || generation!=qkmCurrentIbInputGeneration() || generation!=state.generation) return false;
-    const bool active=client.acceptingInput() && generation==client.requestedGeneration();
+    const bool active=(client.acceptingInput() && generation==client.requestedGeneration())
+        || (stopAction && client.stopActionAllowed(generation));
     bool success=false;
     if (state.fallback) {
         const bool up=(input.type==INPUT_KEYBOARD && (input.ki.dwFlags & KEYEVENTF_KEYUP))
             || (input.type==INPUT_MOUSE && (input.mi.dwFlags & (MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XUP)));
         if (active || up) { INPUT event=input; success=SendInput(1,&event,sizeof(INPUT))==1; }
-    } else success=client.sendEvent(input,generation);
+    } else success=client.sendEvent(input,generation,stopAction);
     if (!success && active && !ibInputFaultReported.exchange(true)) {
         client.cancelRun();
         const QString detail=client.statusSnapshot().detail;
@@ -148,7 +147,7 @@ bool sendIbEvent(const INPUT &input,quint64 generation) {
     }
     return success;
 }
-void sendIbMove(int x,int y) { INPUT input{}; input.type=INPUT_MOUSE; input.mi.dx=x; input.mi.dy=y; input.mi.dwFlags=MOUSEEVENTF_MOVE; (void)sendIbEvent(input,qkmCurrentIbInputGeneration()); }
+void sendIbMove(int x,int y,bool stopAction=false) { INPUT input{}; input.type=INPUT_MOUSE; input.mi.dx=x; input.mi.dy=y; input.mi.dwFlags=MOUSEEVENTF_MOVE; (void)sendIbEvent(input,qkmCurrentIbInputGeneration(),stopAction); }
 }
 quint64 qkmCurrentIbInputGeneration() { return ibInputGeneration.load(); }
 
@@ -181,6 +180,7 @@ bool QKeyMapper_Worker::finishIbInputRun(bool notify) {
         auto *global=SendInputTask::s_GlobalSendInputTaskController.task_threadpool;
         if (global) global->waitForDone();
         SendInputTask::clearSendInputTaskControllerMap(); resetGlobalSendInputTaskController();
+        pressedVirtualKeysList.clear();
     }
     const auto state=client.statusSnapshot();
     const bool released=state.generation ? client.closeAfterDrain(state.generation) : true;
@@ -3146,7 +3146,9 @@ void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int
         || !QkmIbInputClient::instance().acceptingInput()) && keyupdown==KEY_DOWN) {
         QMutexLocker snapshotLock(&ibInputSnapshotMutex);
         if (ibInputSnapshot && rowindex>=0 && rowindex<ibInputSnapshot->size()
-            && ibInputSnapshot->at(rowindex).SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT) return;
+            && ibInputSnapshot->at(rowindex).SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT
+            && !(ibInputSnapshot->at(rowindex).Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR)
+                && QkmIbInputClient::instance().stopActionAllowed(ibInputGeneration))) return;
     }
     SendInputTask *sendInputTask = new SendInputTask(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state, keyMappingDataList, ibInputGeneration);
 
@@ -3163,10 +3165,13 @@ void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int
 void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration)
 {
     if (ibInputGeneration!=qkmCurrentIbInputGeneration()) return;
+    const bool ibStopAction=keyMappingDataList && rowindex>=0 && rowindex<keyMappingDataList->size()
+        && keyMappingDataList->at(rowindex).Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR);
     if (ibInputGeneration && (ibInputGeneration!=QkmIbInputClient::instance().requestedGeneration()
         || !QkmIbInputClient::instance().acceptingInput()) && keyupdown==KEY_DOWN
         && keyMappingDataList && rowindex>=0 && rowindex<keyMappingDataList->size()
-        && keyMappingDataList->at(rowindex).SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT) return;
+        && keyMappingDataList->at(rowindex).SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT
+        && !(ibStopAction && QkmIbInputClient::instance().stopActionAllowed(ibInputGeneration))) return;
 
     if (inputKeys.isEmpty()) {
         return;
@@ -3742,7 +3747,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
                 else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
                     INPUT ibEvent=input;
-                    (void)sendIbEvent(ibEvent,ibInputGeneration);
+                    (void)sendIbEvent(ibEvent,ibInputGeneration,ibStopAction);
                 }
                 else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                     if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -3877,7 +3882,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT && !force_sendinput) {
                     INPUT ibEvent=input;
                     ibEvent.ki.wVk=vkeycode.KeyCode; ibEvent.ki.dwFlags &= ~KEYEVENTF_SCANCODE;
-                    (void)sendIbEvent(ibEvent,ibInputGeneration);
+                    (void)sendIbEvent(ibEvent,ibInputGeneration,ibStopAction);
                 }
                 else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                     if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -4701,7 +4706,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                     else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
                         INPUT ibEvent=input;
-                        (void)sendIbEvent(ibEvent,ibInputGeneration);
+                        (void)sendIbEvent(ibEvent,ibInputGeneration,ibStopAction);
                     }
                     else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -4798,7 +4803,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     }
                     else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT && !force_sendinput) {
                         INPUT ibEvent=input;
-                        (void)sendIbEvent(ibEvent,ibInputGeneration);
+                        (void)sendIbEvent(ibEvent,ibInputGeneration,ibStopAction);
                     }
                     else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -4838,7 +4843,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                         else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT && !force_sendinput) {
                             INPUT ibEvent=input;
-                            (void)sendIbEvent(ibEvent,ibInputGeneration);
+                            (void)sendIbEvent(ibEvent,ibInputGeneration,ibStopAction);
                         }
                         else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                             if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -4978,7 +4983,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT && !force_sendinput) {
                         INPUT ibEvent=input;
                         ibEvent.ki.wVk=vkeycode.KeyCode; ibEvent.ki.dwFlags &= ~KEYEVENTF_SCANCODE;
-                        (void)sendIbEvent(ibEvent,ibInputGeneration);
+                        (void)sendIbEvent(ibEvent,ibInputGeneration,ibStopAction);
                     }
                     else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                         if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -5026,7 +5031,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT && !force_sendinput) {
                             INPUT ibEvent=input;
                             ibEvent.ki.wVk=vkeycode.KeyCode; ibEvent.ki.dwFlags &= ~KEYEVENTF_SCANCODE;
-                            (void)sendIbEvent(ibEvent,ibInputGeneration);
+                            (void)sendIbEvent(ibEvent,ibInputGeneration,ibStopAction);
                         }
                         else if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
                             if (QKeyMapper::s_CurrentMappingHWND != NULL) {
@@ -5155,7 +5160,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(key);
                 }
                 else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
-                    sendMouseMoveToPoint(key, sendmappingkeymethod);
+                    sendMouseMoveToPoint(key, sendmappingkeymethod,ibStopAction);
                 }
                 else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                     int send_keyupdown = KEY_DOWN;
@@ -5255,7 +5260,8 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
         }
         /* key_sequence_count > 1 */
         else {
-            sendKeySequenceList(inputKeys, original_key, sendmode, sendvirtualkey_state);
+            sendKeySequenceList(inputKeys, original_key, sendmode, sendvirtualkey_state,
+                ibInputGeneration ? keyMappingDataList : QKeyMapper::KeyMappingDataList);
         }
     }
 }
@@ -5392,7 +5398,7 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
     }
 }
 
-void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod)
+void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod,bool ibStopAction)
 {
     static QRegularExpression regex(REGEX_PATTERN_MOUSE_MOVE);
     QRegularExpressionMatch match = regex.match(mousepoint_str);
@@ -5512,7 +5518,7 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendma
             (void)FakerInputClient_sendMouseMove(delta_x, delta_y);
 #endif
         }
-        else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) { sendIbMove(delta_x,delta_y); }
+        else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) { sendIbMove(delta_x,delta_y,ibStopAction); }
         else {
             sendMouseMove(delta_x, delta_y);
         }
@@ -10423,6 +10429,13 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     }
 
     if (!s_isWorkerDestructing) {
+        if (needsIbDrain) {
+            SendInputTask::clearSendInputTaskControllerMap();
+            resetGlobalSendInputTaskController();
+            const auto generation=qkmCurrentIbInputGeneration();
+            auto &client=QkmIbInputClient::instance();
+            if (generation && client.releaseOwnedInputs(generation)) (void)client.beginStopAction(generation);
+        }
         emitSendOnMappingStopKeys();
     }
 
@@ -10445,11 +10458,37 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
     // Queue behind accepted stop actions; completion requires the actual pools, not STOPPED.
     if (needsIbDrain) {
         m_ibInputCloseQueued=true;
-        QMetaObject::invokeMethod(this,[this] { if (m_ibInputCloseQueued) finishIbInputRun(); },Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this,[this] { tryFinishIbInputRun(); },Qt::QueuedConnection);
     } else {
         emit ibInputClosed_Signal(true,QString());
     }
 
+}
+
+void QKeyMapper_Worker::tryFinishIbInputRun()
+{
+    if (!m_ibInputCloseQueued) return;
+    if (!QkmIbInputClient::instance().stopActionAllowed(qkmCurrentIbInputGeneration())) {
+        clearRunningKeySequenceOriginalKeys();
+        clearGlobalSendInputTaskControllerThreadPool();
+        SendInputTask::clearSendInputTaskControllerThreadPool();
+    }
+    bool pending=isRunningKeySequenceOriginalKey(QString::fromLatin1(SENDON_MAPPINGSTOP_STR));
+    QList<QThreadPool *> pools;
+    {
+        QMutexLocker lock(&SendInputTask::s_SendInputTaskControllerMapMutex);
+        for (const auto &controller:std::as_const(SendInputTask::s_SendInputTaskControllerMap))
+            if (controller.task_threadpool) pools.append(controller.task_threadpool);
+    }
+    for (auto *pool:pools) if (!pool->waitForDone(0)) pending=true;
+    auto *global=SendInputTask::s_GlobalSendInputTaskController.task_threadpool;
+    if (global && !global->waitForDone(0)) pending=true;
+    if (pending) {
+        // Sequence parents enqueue child steps; keep the worker event loop available until the final step.
+        QTimer::singleShot(10,this,&QKeyMapper_Worker::tryFinishIbInputRun);
+        return;
+    }
+    finishIbInputRun();
 }
 
 void QKeyMapper_Worker::setKeyMappingRestart()
@@ -10730,6 +10769,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
 
 void QKeyMapper_Worker::allMappingKeysReleased()
 {
+    if (m_ibInputCloseQueued) return;
     if (HOOKPROC_STATE_STOPPED == s_AtomicHookProcState) {
         bool pressedmappingkeys_empty = false;
         {
@@ -21047,16 +21087,16 @@ int QKeyMapper_Worker::makeKeySequenceInputarray(QStringList &keyseq_list, INPUT
 }
 #endif
 
-void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state)
+void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList)
 {
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[sendKeySequenceList]" << " original_key(" << original_key << "), sendmode(" << sendmode << ")";
 #endif
 
-    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key);
+    int findindex = QKeyMapper::findOriKeyInKeyMappingDataList(original_key,keyMappingDataList);
     if (sendmode == SENDMODE_NORMAL) {
         if (findindex >= 0) {
-            int repeat_mode = QKeyMapper::KeyMappingDataList->at(findindex).RepeatMode;
+            int repeat_mode = keyMappingDataList->at(findindex).RepeatMode;
             if (repeat_mode != REPEAT_MODE_NONE) {
                 sendvirtualkey_state = SENDVIRTUALKEY_STATE_KEYSEQ_REPEAT;
 #ifdef DEBUG_LOGOUT_ON
@@ -21078,8 +21118,8 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
         /* Add for KeySequenceHoldDown >>> */
         if (sendmode == SENDMODE_KEYSEQ_HOLDDOWN && index == size) {
             QString original_key_forKeySeq = original_key + ":" + KEYSEQUENCE_STR + HOLDDOWN_STR;
-            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
-            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state,keyMappingDataList);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_HOLDDOWN, sendvirtualkey_state,keyMappingDataList);
         }
         else {
             QStringList runningKeysSnapshot;
@@ -21103,8 +21143,8 @@ void QKeyMapper_Worker::sendKeySequenceList(QStringList &keyseq_list, QString &o
             //     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
             //     emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
             // }
-            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
-            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_DOWN, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state,keyMappingDataList);
+            emit_sendInputKeysSignal_Wrapper(findindex, mappingKeyList, KEY_UP, original_key_forKeySeq, SENDMODE_KEYSEQ_NORMAL, sendvirtualkey_state,keyMappingDataList);
         }
         /* Add for KeySequenceHoldDown <<< */
 

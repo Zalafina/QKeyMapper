@@ -83,6 +83,33 @@ void restartCase() {
     check(client.closeAfterDrain(third) && !client.acceptingInput(),"old close revived a cancelled intent");
     check(!client.prepareRun(cancelled,required),"a stop before restart was ignored");
 }
+void stopActionCase() {
+    QkmIbInputClient client;
+    QkmIbInputClient::Requirements required;
+    required.capabilities=QkmIbInputClient::Keyboard|QkmIbInputClient::Buttons|QkmIbInputClient::RelativeMove|QkmIbInputClient::VerticalWheel;
+    const auto token=client.requestRun();
+    check(client.prepareRun(token,required) && !client.beginStopAction(token),"normal run gained stop-action scope");
+    check(client.sendEvent(key('F'),token),"stop-action baseline failed");
+    client.cancelRun();
+    check(!client.beginStopAction(token),"stop action began before owned inputs drained");
+    check(client.releaseOwnedInputs(token) && events.size()==2,"old report did not release before stop action");
+    check(client.beginStopAction(token) && client.stopActionAllowed(token),"drained stop scope was not granted");
+    check(!client.sendEvent(key('G'),token),"ordinary DOWN bypassed cancellation");
+    check(client.sendEvent(key('G'),token,true),"explicit stop DOWN rejected");
+    check(client.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),token,true),"explicit stop button rejected");
+    check(client.sendEvent(mouse(MOUSEEVENTF_MOVE,1,0),token,true)
+        && client.sendEvent(mouse(MOUSEEVENTF_WHEEL,0,0,WHEEL_DELTA),token,true),"explicit stop move/wheel rejected");
+    client.cancelRun();
+    check(!client.stopActionAllowed(token) && !client.sendEvent(key('H'),token,true),"cancelled stop scope sent a new DOWN");
+    check(client.closeAfterDrain(token) && !client.stopActionAllowed(token),"stop scope did not close");
+    const auto next=client.requestRun();
+    check(client.prepareRun(next,required) && !client.stopActionAllowed(next),"stop scope leaked to next run");
+    check(client.sendEvent(key('F'),next),"release-failure baseline failed");
+    client.cancelRun(); sendFails=true;
+    check(!client.releaseOwnedInputs(next) && !client.beginStopAction(next),"failed release opened stop scope");
+    check(!client.sendEvent(key('G'),next,true),"failed release admitted a stop DOWN");
+    sendFails=false; check(client.closeAfterDrain(next),"same-backend final release failed");
+}
 void fallbackCase() {
     QkmIbInputClient client;
     QkmIbInputClient::Preferences preferences; preferences.unavailablePolicy=QStringLiteral("sendinput_before_start");
@@ -322,13 +349,13 @@ int main(int argc,char **argv) {
             QSet<quint16> supportedButtons;
             for (const auto &button:mouseButtons) supportedButtons.insert(button.vk);
             for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedButton(vk)==supportedButtons.contains(vk),"mouse button set differs");
-            reset(); admissionCase(); reset(); restartCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
+            reset(); admissionCase(); reset(); restartCase(); reset(); stopActionCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
             reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
             reset(); concurrentCase();
             std::cout<<"PASS simulated production gate: 115 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
 #endif
-        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"restart",restartCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
+        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
     } catch (const std::exception &error) { std::cerr<<error.what()<<'\n'; return 2; }

@@ -82,9 +82,9 @@ QkmIbInputClient::Status QkmIbInputClient::statusSnapshot() const { QMutexLocker
 bool QkmIbInputClient::busy() const { const auto state=statusSnapshot(); return state.connected || state.stopping || state.releaseIncomplete || (acceptingInput() && m_requested.load()!=0); }
 void QkmIbInputClient::publish() { m_status.sampledAt=QDateTime::currentDateTimeUtc(); QMutexLocker lock(&m_statusMutex); m_published=m_status; }
 bool QkmIbInputClient::fail(const QString &detail) { m_status.detail=detail; cancelRun(); publish(); return false; }
-quint64 QkmIbInputClient::requestRun() { const quint64 generation=m_requested.fetch_add(1)+1; m_acceptingGeneration.store(generation); return generation; }
+quint64 QkmIbInputClient::requestRun() { m_stopGeneration.store(0); const quint64 generation=m_requested.fetch_add(1)+1; m_acceptingGeneration.store(generation); return generation; }
 void QkmIbInputClient::cancelRun(quint64 generation) {
-    if (!generation) m_acceptingGeneration.store(0);
+    if (!generation) { m_acceptingGeneration.store(0); m_stopGeneration.store(0); }
     else m_acceptingGeneration.compare_exchange_strong(generation,0);
 }
 bool QkmIbInputClient::candidateSupports(const QString &backend,const Requirements &requirements) const {
@@ -135,10 +135,11 @@ bool QkmIbInputClient::sendOne(const INPUT &input) {
     Q_UNUSED(input); return false;
 #endif
 }
-bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation) {
+bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stopAction) {
     QMutexLocker calls(&m_callMutex);
     if (!m_status.connected || generation!=m_status.generation || generation!=m_requested.load()
-        || m_status.fallback || ((!acceptingInput() || m_status.stopping) && !isRelease(input))) return false;
+        || m_status.fallback || ((!acceptingInput() || m_status.stopping) && !isRelease(input)
+            && !(stopAction && stopActionAllowed(generation)))) return false;
     unsigned needed=0;
     if (input.type==INPUT_KEYBOARD) needed=Keyboard;
     else if (input.type==INPUT_MOUSE) {
@@ -199,10 +200,17 @@ bool QkmIbInputClient::releaseOwnedInputs(quint64 generation) {
     const bool result=m_status.connected ? releaseLocked() : !m_status.releaseIncomplete;
     publish(); return result;
 }
+bool QkmIbInputClient::beginStopAction(quint64 generation) {
+    QMutexLocker calls(&m_callMutex);
+    if (!generation || generation!=m_status.generation || generation!=m_requested.load() || acceptingInput()
+        || !m_status.stopping || m_status.releaseIncomplete || (!m_status.connected && !m_status.fallback)) return false;
+    m_stopGeneration.store(generation);
+    return true;
+}
 bool QkmIbInputClient::closeAfterDrain(quint64 generation) {
     QMutexLocker calls(&m_callMutex);
     if (generation!=m_status.generation) return false;
-    cancelRun(generation); m_status.stopping=true;
+    cancelRun(generation); quint64 stopping=generation; m_stopGeneration.compare_exchange_strong(stopping,0); m_status.stopping=true;
     const bool released=m_status.connected ? releaseLocked() : !m_status.releaseIncomplete;
 #ifdef IBINPUT_SUPPORT
     if (m_status.connected) IbSendDestroy();

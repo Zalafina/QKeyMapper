@@ -200,6 +200,7 @@ void inputRecord(const QString &name,const QJsonObject &value) {
     check(file.write(QJsonDocument(value).toJson())>0 && file.commit(),"Cannot write keyboard evidence");
 }
 void verifyInputProduct(QKeyMapper *window) {
+    const bool stopActions=selectedCase==QStringLiteral("stopactions");
     const bool tables=selectedCase==QStringLiteral("tables");
     const bool standard=selectedCase==QStringLiteral("standard");
     const bool loops=selectedCase==QStringLiteral("loops");
@@ -226,7 +227,8 @@ void verifyInputProduct(QKeyMapper *window) {
         CloseHandle(snapshot);
         check(!conflict,"Another mapper appeared; no mapping started");
         const auto *rows=QKeyMapper::KeyMappingDataList;
-        const QStringList originals=tables ? QStringList{QStringLiteral("Q"),QStringLiteral("W")} : standard
+        const QStringList originals=stopActions
+            ? QStringList{QStringLiteral("Q"),QStringLiteral("SendOnMappingStart"),QStringLiteral("SendOnMappingStop")} : tables ? QStringList{QStringLiteral("Q"),QStringLiteral("W")} : standard
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),
                 QStringLiteral("T"),QStringLiteral("A"),QStringLiteral("S"),QStringLiteral("D")} : macros
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T"),QStringLiteral("A")}
@@ -234,7 +236,8 @@ void verifyInputProduct(QKeyMapper *window) {
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T"),
                 QStringLiteral("A"),QStringLiteral("S"),QStringLiteral("D"),QStringLiteral("F")}
             : QStringList{QStringLiteral("W"),QStringLiteral("1"),QStringLiteral("F13")};
-        const QStringList mapped=tables ? QStringList{QStringLiteral("F"),QStringLiteral("SwitchTab(IbTableB)")} : standard
+        const QStringList mapped=stopActions
+            ? QStringList{QStringLiteral("F"),QStringLiteral("H⏱20»I⏱20"),QStringLiteral("Repeat{F⏱20»G⏱20}x2")} : tables ? QStringList{QStringLiteral("F"),QStringLiteral("SwitchTab(IbTableB)")} : standard
             ? QStringList{QString::fromUtf8(R"QKM(Backspace⏱20»Tab⏱20»Space⏱20»Enter)QKM"),
                 QString::fromUtf8(R"QKM(Insert⏱20»Delete⏱20»Home⏱20»End⏱20»PageUp⏱20»PageDown⏱20»Up⏱20»Down⏱20»Left⏱20»Right)QKM"),
                 QString::fromUtf8(R"QKM(Num0⏱20»Num1⏱20»Num5⏱20»Num9⏱20»Num/⏱20»Num*⏱20»Num-⏱20»Num＋⏱20»Num.⏱20»NumEnter)QKM"),
@@ -268,7 +271,7 @@ void verifyInputProduct(QKeyMapper *window) {
                 && row.RepeatMode==((index==1 || index==2) ? QKeyMapperConstants::REPEAT_MODE_BYTIMES
                     : (index==3 || index==4) ? QKeyMapperConstants::REPEAT_MODE_BYKEY : QKeyMapperConstants::REPEAT_MODE_NONE)
                 && (index!=1 || row.RepeatTimes==3) && (index!=2 || row.RepeatTimes==2),"Macro fixture timing/flags changed");
-            if (standard) check(!row.Burst && !row.Lock && !row.KeySeqHoldDown
+            if (standard || stopActions) check(!row.Burst && !row.Lock && !row.KeySeqHoldDown
                 && row.RepeatMode==QKeyMapperConstants::REPEAT_MODE_NONE,"Standard fixture flags changed");
         }
         if (tables) {
@@ -372,7 +375,7 @@ void verifyInputProduct(QKeyMapper *window) {
 
 void verifyProduct() {
     try {
-        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
+        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
         check(currentDesktop()==expectedDesktop,"Product left its selected desktop");
         QKeyMapper *window=nullptr;
         for (QWidget *widget:QApplication::topLevelWidgets())
@@ -380,7 +383,7 @@ void verifyProduct() {
         if (!window || !QKeyMapper::s_AtomicIsInitialized.loadAcquire()) {
             QTimer::singleShot(500,verifyProduct); return;
         }
-        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables")) {
+        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions")) {
             verifyInputProduct(window); QTimer::singleShot(100,verifyProduct); return;
         }
         if (checked) {
@@ -462,7 +465,7 @@ int main(int argc,char **argv) {
     output=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_OUTPUT");
     selectedCase=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_CASE");
     expectedDesktop=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_DESKTOP");
-    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables");
+    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions");
     if (argc!=1 || !QDir(output).exists() || currentDesktop()!=expectedDesktop
         || (input ? expectedDesktop!=QStringLiteral("Default")
             : ((selectedCase!=QStringLiteral("save") && selectedCase!=QStringLiteral("cold"))

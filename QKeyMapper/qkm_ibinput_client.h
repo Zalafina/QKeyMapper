@@ -41,7 +41,9 @@ public:
     quint64 requestedGeneration() const { return m_requested.load(); }
     bool acceptingInput() const { const auto generation=m_requested.load(); return generation && m_acceptingGeneration.load()==generation; }
     bool prepareRun(quint64 generation, const Requirements &requirements);
-    bool sendEvent(const INPUT &input, quint64 generation);
+    bool sendEvent(const INPUT &input, quint64 generation, bool stopAction=false);
+    bool beginStopAction(quint64 generation);
+    bool stopActionAllowed(quint64 generation) const { return generation && generation==m_requested.load() && generation==m_stopGeneration.load(); }
     bool releaseOwnedInputs(quint64 generation);
     bool closeAfterDrain(quint64 generation);
     bool checkConnection();
@@ -63,6 +65,7 @@ private:
     QSet<quint16> m_ownedButtons;
     std::atomic<quint64> m_requested{0};
     std::atomic<quint64> m_acceptingGeneration{0};
+    std::atomic<quint64> m_stopGeneration{0};
 };
 
 #endif
