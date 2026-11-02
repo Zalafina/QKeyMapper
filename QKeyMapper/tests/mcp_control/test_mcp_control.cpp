@@ -24,6 +24,7 @@
 #include <QSemaphore>
 #include <QSettings>
 #include <QSignalSpy>
+#include <QStandardPaths>
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QItemSelectionModel>
@@ -158,6 +159,7 @@ private slots:
     void startupChoice_data();
     void startupChoice();
     void startupChoiceFailures();
+    void startupChoiceWithProductApplicationName();
     void advancedEntryKeyboard();
     void controlFocusPolicy();
     void languageRefreshPreservesState();
@@ -1150,6 +1152,51 @@ void McpControlTest::startupChoiceFailures()
     QTest::mouseClick(widget<QPushButton>(broken, "mcpSaveStartup"), Qt::LeftButton);
     QVERIFY(saved.open(QIODevice::ReadOnly));
     QCOMPARE(saved.readAll(), QByteArray("{"));
+}
+
+void McpControlTest::startupChoiceWithProductApplicationName()
+{
+    const QString previousName = QCoreApplication::applicationName();
+    const bool previousMode = QStandardPaths::isTestModeEnabled();
+    QStandardPaths::setTestModeEnabled(true);
+    QCoreApplication::setApplicationName(QCoreApplication::applicationFilePath());
+    const auto restore = qScopeGuard([&]() {
+        QCoreApplication::setApplicationName(previousName);
+        QStandardPaths::setTestModeEnabled(previousMode);
+    });
+    qInfo() << "Application-name-derived path:" << QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    const auto prepare = [](ControlDialog &dialog) {
+        if (configurationOnlyDemo()) QVERIFY(dialog.server().setDemoConfiguration(QStringLiteral("Demo136ASeed")));
+        fixture(dialog.server());
+        dialog.restoreStartupChoice();
+    };
+    {
+        ControlDialog dialog;
+        prepare(dialog);
+        QVERIFY(!dialog.server().isEnabled());
+        const auto status = widget<QLabel>(dialog, "mcpStartupStatus")->text();
+        QVERIFY(status == ControlDialog::tr("Startup choice: not saved (default: disabled).")
+                || status == ControlDialog::tr("Saved startup choice: disabled."));
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        clickCheckBox(dialog, "mcpEnabled");
+        QVERIFY(dialog.server().isEnabled());
+        QTest::mouseClick(widget<QPushButton>(dialog, "mcpSaveStartup"), Qt::LeftButton);
+        QCOMPARE(widget<QLabel>(dialog, "mcpStartupStatus")->text(), ControlDialog::tr("Saved startup choice: enabled."));
+    }
+    {
+        ControlDialog dialog;
+        prepare(dialog);
+        QVERIFY(dialog.server().isEnabled());
+        dialog.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&dialog));
+        clickCheckBox(dialog, "mcpEnabled");
+        QTest::mouseClick(widget<QPushButton>(dialog, "mcpSaveStartup"), Qt::LeftButton);
+        QCOMPARE(widget<QLabel>(dialog, "mcpStartupStatus")->text(), ControlDialog::tr("Saved startup choice: disabled."));
+    }
+    ControlDialog final;
+    prepare(final);
+    QVERIFY(!final.server().isEnabled());
 }
 
 void McpControlTest::advancedEntryKeyboard()

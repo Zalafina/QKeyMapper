@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','ApproveRead','ApproveConfigure','Revoke','Disable','CloseMcp',
+    [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','SaveStartup','ApproveRead','ApproveConfigure','Revoke','Disable','CloseMcp',
         'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows',
         'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent',
         'AddBasicMapping','ClearBasicMapping','ShowForCapture','OpenFloatingSetup','CloseFloatingSetup',
@@ -608,10 +608,23 @@ if ($Action -eq 'AddBasicMapping') {
     $dialog = Find-OwnedWindow $mcpNames
     switch ($Action) {
         { $_ -in 'Enable','Disable' } {
-            $check = Find-Control $dialog ([Windows.Automation.ControlType]::CheckBox) 'mcpEnabled' @('启用本次运行的 MCP 接口','Enable MCP for this run','今回の実行で MCP を有効にする')
+            $check = Find-Control $dialog ([Windows.Automation.ControlType]::CheckBox) 'mcpEnabled' @('启用 MCP 接口','Enable MCP interface','MCP インターフェイスを有効にする','启用本次运行的 MCP 接口','Enable MCP for this run','今回の実行で MCP を有効にする')
             $pattern = $check.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern)
             $wanted = if ($Action -eq 'Enable') { [Windows.Automation.ToggleState]::On } else { [Windows.Automation.ToggleState]::Off }
             if ($pattern.Current.ToggleState -ne $wanted) { $pattern.Toggle() }
+        }
+        'SaveStartup' {
+            $enabled = (Check-State $dialog 'mcpEnabled' @()) -eq [Windows.Automation.ToggleState]::On
+            Invoke-Button $dialog 'mcpSaveStartup' @('保存启动选择','Save startup choice','起動設定を保存')
+            $expectedStatus = if ($enabled) { @('已保存的启动选择：启用。','Saved startup choice: enabled.','保存済みの起動設定：有効。') }
+                else { @('已保存的启动选择：关闭。','Saved startup choice: disabled.','保存済みの起動設定：無効。') }
+            $deadline = [DateTime]::UtcNow.AddSeconds(3)
+            do {
+                $savedStatus = (Find-Control $dialog ([Windows.Automation.ControlType]::Text) 'mcpStartupStatus' @()).Current.Name
+                if ($expectedStatus -ccontains $savedStatus) { break }
+                Start-Sleep -Milliseconds 50
+            } while ([DateTime]::UtcNow -lt $deadline)
+            if ($expectedStatus -cnotcontains $savedStatus) { throw "Startup choice was not saved: $savedStatus" }
         }
         { $_ -in 'ApproveRead','ApproveConfigure' } {
             if (-not $ClientExecutable) { throw 'A trusted client executable is required.' }
@@ -664,15 +677,17 @@ if ($Action -eq 'OpenAdvanced') {
     $result.configuration_display = $configurationDisplay
     $result.configuration_read_method = 'ValuePattern'
 }
-if ($Action -in 'OpenMcp','Enable','ApproveRead','ApproveConfigure','Revoke','Disable') {
+if ($Action -in 'OpenMcp','Enable','SaveStartup','ApproveRead','ApproveConfigure','Revoke','Disable') {
     $dialog = Find-OwnedWindow $mcpNames
     $result.dialog_window = $dialog.Current.NativeWindowHandle
     $field = Find-Control $dialog ([Windows.Automation.ControlType]::Edit) 'mcpConnection' @('连接信息文件路径','Connection information file','接続情報ファイルのパス')
     $result.discovery = $field.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
-    $result.enabled = (Check-State $dialog 'mcpEnabled' @('启用本次运行的 MCP 接口','Enable MCP for this run','今回の実行で MCP を有効にする')) -eq [Windows.Automation.ToggleState]::On
+    $result.enabled = (Check-State $dialog 'mcpEnabled' @('启用 MCP 接口','Enable MCP interface','MCP インターフェイスを有効にする','启用本次运行的 MCP 接口','Enable MCP for this run','今回の実行で MCP を有効にする')) -eq [Windows.Automation.ToggleState]::On
     $list = Find-Control $dialog ([Windows.Automation.ControlType]::List) 'mcpPairings' @('已配对客户端及权限','Paired clients and permissions','ペアリング済みクライアントと権限')
     $result.pair_count = $list.FindAll([Windows.Automation.TreeScope]::Children,
         [Windows.Automation.PropertyCondition]::new([Windows.Automation.AutomationElement]::ControlTypeProperty, [Windows.Automation.ControlType]::ListItem)).Count
+    $result.startup_status = (Find-Control $dialog ([Windows.Automation.ControlType]::Text) 'mcpStartupStatus' @()).Current.Name
+    $result.interface_status = (Find-Control $dialog ([Windows.Automation.ControlType]::Text) 'mcpStatus' @()).Current.Name
 }
 # A successful UI call is only an observation; the controller checks IPC and persistence separately.
 [IO.File]::WriteAllText($resultPath, ($result | ConvertTo-Json -Depth 6 -Compress), [Text.UTF8Encoding]::new($false))

@@ -1134,3 +1134,30 @@ Qt6复用out/mcp_demo_setup_w11_20261030/qt6-runtime/QKeyMapperDemoSetup129_qt6_
 Qt6 lupdate-pro原生0且提取九目标但报winextras；Qt5项目提取无模块诊断。仅九获批消息合并，旧全部译文／历史条目不变；三语lrelease1193完成、QM往返旧1184＋9／占位符与LF准确。用户明确此确切winextras提示可默认忽略，workflow及Claude镜像同补界限，指定C:/Python/Python311/python.exe -B -X utf8的quick_validate两次通过；只证明技能基本结构。两新资源不因旧消息失效而全局清理。
 
 原件仅本机out/mcp_persist_w11_20261030含首失败／最终构建、TS/QM备份／提取／往返、8组组件、冷进程、12图／观察失败、cache-off／closed。17:55:11 off前当前2580无他组活动／五项零，off回closed/cache_available=false／gen2，随后status无受管控制器／native_sessions_observed0；他组登记／历史未知不接管。未做普通Release启动、真实配置切换／完整冷启、High新偏好存储、PC／Windows登录变更、跨用户／机器／路径实测、Default／Win10／高DPI／QQ或137。无ASan／全静态／驱动输入扩展；136只作选定独立提交切点，完整持久矩阵与M1／P3／M3-B保留。
+
+## PERSIST-136A：真实普通Release启动选择与同登录复用（2026-11-02，PC-W11）
+
+基fdf886c3，8e9e9396只追加__pycache__规则，保留个人Claude规则、缓存及跟踪关系；规则命中现有缓存而不忽略cache_control.py，无已跟踪pyc。产品仅ControlDialog默认目录两处常量／一条说明修改；固定GUI助手新增SaveStartup及观察，正常发布EXE无测试宏、manifest不改。最终普通Qt6与双Qt control构建native0／零警告；双Qt startupChoiceWithProductApplicationName各3项（含init／cleanup）、实际QkmMcp_*私有Medium／exit0。Qt5日志windows10不是本机Win10验收。
+
+实测普通Release为out/mcp_product/persist136a_20261102/runtime-r2/QKeyMapperMcpAcceptance_persist136a_qt6.exe，SHA256 3ed96fe0f261e6a290e6041b1837683f9fc5135b7dd033810102d904da6ba4f2，与本机out/build_qt6/release/QKeyMapper.exe相同。源码身份8e9e9396＋本片局部路径修正；合成Persist136A INI为版本化样例，完整EXE目录独立，无个人INI／凭据拷贝。桥接用本机135保留包，九模块与当前源码逐字节一致；两次SDK会话只有Read＋Configure（权限位掩码3），无Run。正式High产品通过公共登记Start／Close／受限GUI，普通SDK／包内peer／构建Medium；每次GUI动作复核实际目标与助手私有桌面／PID／创建时间／EXE，无Default输入桌面切换。
+
+attempt1：GUI默认为关闭但startup_status报告unsafe_storage；启用成功、真实保存按钮io_error（缓存native_exit_code1，response有效，无OS错误码取得），产品20112退出0，无配对／写映射。定位AppLocalDataLocation拼入main的完整EXE applicationName，双Qt组件实际输出含qttest/D:/...；此前136显式目录组件避开了此路径。修为GenericDataLocation下固定产品目录，原存储保护／context／bool不变，不扫描迁移或删除旧文件。旧EXE SHA0934a819...及INI／失败日志保留。
+
+after-fix：首次真实保存启用／重启已通过；配对阶段脚本错误要求awaiting_gui_approval同时busy=false，端点实际busy=true，尚未GUI批准。29968／44148均退出0，失败保留。改用原connection_pending后启用全新runtime-r2，未重放旧申请。
+
+verified：first产品41612，无已存选择／0配对，真实启用保存，退出0；paired产品5744重启已启用，GUIApproveConfigure一次，正式MCP读取／添加A→B、完整确认保存／重载均成功，独立GUI单行A/B及“映射开始”按钮符合，产品退出0。两条原操作applied／saved与reloaded和未启动断言、源字段／旧引用／C→D只读预览均在sdk-calls中；首次peer的Medium／EXE由当时断言核验，PID原件未落盘，不补造。reused产品17600实际已恢复／1配对，但Qt路径斜杠与Path字符串直接比较误判，退出0，未重配／重写。
+
+reconcile_paired只读核原GUI／十条SDK记录、原操作ID及实际退出，重建明确非秘密QA收据，不当永久连接配置；resumed只续接认证冷读／关闭。产品36492上新包内peer28724／ctime134380682291836882／Medium8192重新认证原pair／epoch／scope3，新instance41e588f211a04760b1ef091e0d08a451；A/B真实字段冷读及GUI单行一致，旧源stale_source、未消费预览stale_preview，旧add／save操作均unknown，未提交到新实例。关闭并保存，正常exit0；再启39452保持关闭／已存关闭，GUI仍A/B且映射开始，清理时只撤销该唯一QA配对（接口不启用），exit0；客户端派生上下文读回不存在。源／预览／operation仍归原实例，无新pairing request或原写操作重放。成功脚本exit0复用已验first／paired原件，不冒称一次无错四启动；八产品总actual0。
+
+有效四阶段的实际目标记录如下，均为原manifest产品、正常exit0；完整HWND／创建时间／EXE见对应started.json，与closed.json关联，不依据桌面名称推断隔离效果。
+
+| 原件阶段 | PID | 实际桌面 |
+|---|---|---|
+| verified/first | 41612 | QkmProduct_3ecf738d2c8842579f14384b367d2f6d |
+| verified/paired | 5744 | QkmProduct_483391545f114bc39cd3c06bcb320598 |
+| resumed/reused | 36492 | QkmProduct_1b82b2469905406b9694711a7accbf42 |
+| resumed/disabled | 39452 | QkmProduct_63ddb87e94394498877b84dd1b8cb9b7 |
+
+后续七产品各轮FilterKeys前后采样一致；attempt1无此采样，不补记。普通模式Hook／Interception／libusb／SDL及ViGEm连接照常，FakerInput服务／ROOT节点未发现；每次后续启动若出现FakerInput则拒绝，因普通关闭可能发中性报告。配置禁自动监视／虚拟手柄／多输入／筛选键，GUI／MCP从未启动映射或发系统键鼠；源审与样本不是全程系统API／其他实例因果证明。无驱动安装、Default切换、新截图、Qt5普通产品／Win10／高DPI／跨登录／PC重启／QQ及完整GUI等价性验收。旧独立GUI新增／保存与136组件失败边界仅原范围复用。
+
+原件仅本机上述out含build／两部署、attempt1／after-fix／verified／resumed、重建说明／收据／全部正常退出、FilterKeys、专属凭据清理及共享缓存释放。复用原36124／b50d9e49ac8242f88ca16ad657544859 gen1至18:30，无新UAC窗口；本任务三个定义授权已撤出，scope为空／五项空，保留原ibinput登记／共享缓存供其任务，不接管关闭或重放历史未知。last_error仍保留首SaveStartup native1诊断，不是未定启动。环境／构建／原始材料保留，本片本地聚焦提交后停止，137与合流等用户安排。

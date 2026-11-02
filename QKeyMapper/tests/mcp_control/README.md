@@ -89,6 +89,18 @@ warm随后调用mapping_changes_acceptance.py，**需要Read+Configure配对及�
 
 普通 PrintWindow 无法捕获 High 产品时明确记录未验证，不提升截图权限；功能断言继续独立检查。失败时先看日志、closed.json 和实际进程／配对状态，再决定接续动作；不得盲目重复配对或撤销。
 
+### 普通 Release 的启动选择与同登录复用
+
+`mcp_bridge/tests/test_product_persistence.py` 使用上述真实产品／私有桌面入口，运行目录的 INI 必须与 [product_persistence_fixture.ini.example](product_persistence_fixture.ini.example) 完全相同。每轮使用新的独立 EXE 路径及凭据上下文，同轮重启保持路径不变；不把个人 INI 放进测试目录。先登记该确切 EXE、空启动参数及 `OpenAdvanced`、`OpenMcp`、`Enable`、`SaveStartup`、`ApproveConfigure`、`Disable`、`CloseMcp`、`ReadMapping`、`Revoke` 固定动作；仅批准 Read＋Configure，SDK／桥接保持 Medium。
+
+```powershell
+out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 mcp_bridge/tests/test_product_persistence.py --executable $qkmProductExe --bridge-python '<已核对与当前桥接源码匹配的包内runtime/python.exe>' --output out/mcp_product/persistence-acceptance
+```
+
+测试通过真实管理窗保存启用／关闭，经正常进程退出及同路径冷启动核对；一次真实 GUI 配对后，通过正式 MCP 完成 A→B 预览／提交／完整保存，新产品和桥接重新认证并检查冷读与旧源／预览／操作失效。最后只撤销该专属配对并删除其客户端凭据，不启动映射。每次启动前拒绝存在 FakerInput ROOT 节点的环境，因为普通关闭路径可能发送中性键鼠报告；系统筛选键只读采样，不自动恢复或更改全局设置。该保护不能证明全部 Hook／驱动隔离，也不替代新增系统行为授权。
+
+失败后保留现场。仅在已核对原 `first`／`paired` 阶段和正常退出、确切 EXE／内容身份及专属配对时，才可显式用 `--resume-paired <本测试的非秘密paired-receipt.json>` 接续冷读／关闭阶段；该收据仅是本机测试证据，不是永久连接配置，不重新配对或重放已接受写入。历史材料缺失时不能自行编造收据；新会话正常使用仍按产品配对和连接机制处理。实际验证及失败范围见唯一主计划 PERSIST-136A。
+
 ## 实际源表与只读引用
 
 `validateSourceQueryArguments` 是共用纯参数校验：产品必须先校验再采集源表，`querySourceSnapshot` 也独立调用它保护直接调用方。维护目标的 `sourceSnapshotBoundaries` 验证空快照时同样保留参数错误／解释、字段依赖、引用与修订不一致，以及只能拿到真实快照后才能检查的索引／分页边界；`sourceSnapshotReferences` 和 `sourceReadAdmission` 继续验证内容／身份／授权失效及读取准入。参数通过不代表内存安全许可；完整快照和完整内容哈希保留。读取基准包括初始静止与仍匹配当前活动修订的完整清理；sourceReadAdmission 覆盖已完成修订、后续／排队活动失效及复制互斥，sourceSnapshotReferences 覆盖相同内容改变清理代次也拒绝旧引用。完整运行后正式 SDK 用例见 input_regression 的 quick_restart 后置阶段，不把组件或无输入静止检查当成实际输入验收。

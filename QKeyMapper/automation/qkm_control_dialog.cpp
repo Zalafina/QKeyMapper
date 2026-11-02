@@ -57,10 +57,11 @@ QByteArray startupBinding()
 
 QString defaultStartupDirectory()
 {
-    const QString base = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
+    // The product's applicationName is an EXE path, unsuitable as a directory component.
+    const QString base = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
     const QByteArray binding = startupBinding();
     if (base.isEmpty() || binding.isEmpty()) return {};
-    return QDir(base).filePath(QStringLiteral("MCP/startup-v1/") + QString::fromLatin1(binding.toHex()));
+    return QDir(base).filePath(QStringLiteral("QKeyMapper/MCP/startup-v1/") + QString::fromLatin1(binding.toHex()));
 }
 
 bool readStartupChoice(const QString &directory, const QByteArray &binding,

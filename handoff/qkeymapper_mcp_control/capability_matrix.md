@@ -1102,3 +1102,7 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## PERSIST-136：用户明确保存启动选择
 
 新增GUI独立保存当前开关，首次未保存关闭；按用户本机／EXE／普通演示角色私有存储，产品就绪后尝试一次，失败保留意愿与实际原因，不代配对／权限／UAC。双Qt组件独立冷进程、运行切换未保存／存关、角色不符、坏文件／写失败／恢复Busy及受影响配对选验通过；最终三构建零警告，三语旧1184＋9／QM往返及12张私有图查看通过。首构建／观察失败、原因覆盖修正及证据见[同一C1](map67c1_validation.md#persist-136用户明确保存启动选择2026-10-30pc-w11)。完整Release／High偏好路径／PC或登录重启及实际Agent／QQ仍待；137未启动，今日本片提交后停止，无新增MCP工具或完整阶段完成。
+
+## PERSIST-136A：真实普通Release启动选择与同登录复用
+
+修复完整EXE applicationName污染默认启动目录；不改配对／权限／协议，仅稳定的用户本机根。双Qt默认构造各3项、最终普通Qt6及双Qt control构建通过；真实普通Qt6 GUI保存开／关、同路径产品重启、一次Read＋Configure配对、新桥接认证、A→B正式预览／提交／完整保存／冷读及旧源／预览拒绝、旧操作unknown已选验。失败、只读重建／续接和八次actual0见[同一C1](map67c1_validation.md#persist-136a真实普通release启动选择与同登录复用2026-11-02pc-w11)。本轮不启动映射／系统输入、不切Default；Qt5产品／Win10／跨登录／PC重启、完整交付／QQ仍待。IbInput合流与137未实施，未合流发送方式回落风险仅登记主计划。
