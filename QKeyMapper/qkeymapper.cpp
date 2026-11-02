@@ -3323,6 +3323,14 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         refreshIbInputUi();
     },Qt::QueuedConnection);
     initSettingBackupActionPopup();
+    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputRestarted_Signal,this,[this](quint64 generation) {
+        const auto &client=QkmIbInputClient::instance();
+        if (client.statusSnapshot().releaseIncomplete || generation!=qkmCurrentIbInputGeneration()
+            || (generation && (generation!=client.requestedGeneration() || !client.acceptingInput()))) return;
+        m_IbInputStopPending=false;
+        ui->keymapButton->setEnabled(true);
+        refreshIbInputUi();
+    },Qt::QueuedConnection);
     connect(ui->ibInputSettingsButton,&QPushButton::clicked,this,[this] { showIbInputSettings(ui->ibInputSettingsButton); });
     initSelectSettingCustomIconFileDialog();
     initWindowSwitchKeyLineEdit();
@@ -5435,9 +5443,10 @@ void QKeyMapper::setKeyMappingRestart()
 {
     if (qkmCurrentIbInputGeneration()) {
         m_IbInputStopPending=true;
-        QkmIbInputClient::instance().cancelRun();
         changeControlEnableStatus(false);
     }
+    // Reserve the new intent before queuing work; a later stop must still cancel it.
+    QkmIbInputClient::instance().requestRun();
 
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal();
     emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal();

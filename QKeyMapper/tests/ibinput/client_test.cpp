@@ -63,6 +63,26 @@ void admissionCase() {
     check(client.sendEvent(key('A',true),generation),"release rejected while stopping");
     check(client.closeAfterDrain(generation),"normal close incomplete");
 }
+void restartCase() {
+    QkmIbInputClient client;
+    QkmIbInputClient::Requirements required; required.capabilities=QkmIbInputClient::Keyboard;
+    const auto old=client.requestRun();
+    check(client.prepareRun(old,required) && client.sendEvent(key('F'),old),"restart baseline failed");
+    const auto next=client.requestRun();
+    check(!client.sendEvent(key('G'),old),"old task sent after new intent");
+    check(client.closeAfterDrain(old) && events.size()==2 && (events.back().ki.dwFlags & KEYEVENTF_KEYUP),
+        "old report did not release before restart");
+    check(client.acceptingInput(),"old close cancelled the new intent");
+    client.cancelRun(old);
+    check(client.acceptingInput() && client.prepareRun(next,required),"old cancellation reached the new run");
+    check(client.sendEvent(key('G'),next) && client.closeAfterDrain(next),"new run could not send/release");
+    const auto third=client.requestRun();
+    check(client.prepareRun(third,required),"second restart baseline failed");
+    const auto cancelled=client.requestRun();
+    client.cancelRun();
+    check(client.closeAfterDrain(third) && !client.acceptingInput(),"old close revived a cancelled intent");
+    check(!client.prepareRun(cancelled,required),"a stop before restart was ignored");
+}
 void fallbackCase() {
     QkmIbInputClient client;
     QkmIbInputClient::Preferences preferences; preferences.unavailablePolicy=QStringLiteral("sendinput_before_start");
@@ -302,13 +322,13 @@ int main(int argc,char **argv) {
             QSet<quint16> supportedButtons;
             for (const auto &button:mouseButtons) supportedButtons.insert(button.vk);
             for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedButton(vk)==supportedButtons.contains(vk),"mouse button set differs");
-            reset(); admissionCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
+            reset(); admissionCase(); reset(); restartCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
             reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
             reset(); concurrentCase();
             std::cout<<"PASS simulated production gate: 115 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
 #endif
-        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
+        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"restart",restartCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
     } catch (const std::exception &error) { std::cerr<<error.what()<<'\n'; return 2; }

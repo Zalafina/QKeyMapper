@@ -191,6 +191,7 @@ void verifyMacroRules(const QList<MAP_KEYDATA> &source) {
 }
 
 int inputPhase=0;
+int tableStage=0;
 quint64 inputGeneration=0;
 HWND inputReceiver=nullptr;
 void inputRecord(const QString &name,const QJsonObject &value) {
@@ -199,6 +200,7 @@ void inputRecord(const QString &name,const QJsonObject &value) {
     check(file.write(QJsonDocument(value).toJson())>0 && file.commit(),"Cannot write keyboard evidence");
 }
 void verifyInputProduct(QKeyMapper *window) {
+    const bool tables=selectedCase==QStringLiteral("tables");
     const bool standard=selectedCase==QStringLiteral("standard");
     const bool loops=selectedCase==QStringLiteral("loops");
     const bool macros=selectedCase==QStringLiteral("macros");
@@ -224,7 +226,7 @@ void verifyInputProduct(QKeyMapper *window) {
         CloseHandle(snapshot);
         check(!conflict,"Another mapper appeared; no mapping started");
         const auto *rows=QKeyMapper::KeyMappingDataList;
-        const QStringList originals=standard
+        const QStringList originals=tables ? QStringList{QStringLiteral("Q"),QStringLiteral("W")} : standard
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),
                 QStringLiteral("T"),QStringLiteral("A"),QStringLiteral("S"),QStringLiteral("D")} : macros
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T"),QStringLiteral("A")}
@@ -232,7 +234,7 @@ void verifyInputProduct(QKeyMapper *window) {
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T"),
                 QStringLiteral("A"),QStringLiteral("S"),QStringLiteral("D"),QStringLiteral("F")}
             : QStringList{QStringLiteral("W"),QStringLiteral("1"),QStringLiteral("F13")};
-        const QStringList mapped=standard
+        const QStringList mapped=tables ? QStringList{QStringLiteral("F"),QStringLiteral("SwitchTab(IbTableB)")} : standard
             ? QStringList{QString::fromUtf8(R"QKM(Backspace⏱20»Tab⏱20»Space⏱20»Enter)QKM"),
                 QString::fromUtf8(R"QKM(Insert⏱20»Delete⏱20»Home⏱20»End⏱20»PageUp⏱20»PageDown⏱20»Up⏱20»Down⏱20»Left⏱20»Right)QKM"),
                 QString::fromUtf8(R"QKM(Num0⏱20»Num1⏱20»Num5⏱20»Num9⏱20»Num/⏱20»Num*⏱20»Num-⏱20»Num＋⏱20»Num.⏱20»NumEnter)QKM"),
@@ -269,6 +271,31 @@ void verifyInputProduct(QKeyMapper *window) {
             if (standard) check(!row.Burst && !row.Lock && !row.KeySeqHoldDown
                 && row.RepeatMode==QKeyMapperConstants::REPEAT_MODE_NONE,"Standard fixture flags changed");
         }
+        if (tables) {
+            const QStringList names{QStringLiteral("IbTableA"),QStringLiteral("IbTableB"),QStringLiteral("SendInputTable")};
+            const QList<QStringList> originalTables{{QStringLiteral("Q"),QStringLiteral("W")},
+                {QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("SendOnSwitchTab")},
+                {QStringLiteral("Q"),QStringLiteral("W")}};
+            const QList<QStringList> mappedTables{{QStringLiteral("F"),QStringLiteral("SwitchTab(IbTableB)")},
+                {QStringLiteral("G"),QStringLiteral("SwitchTab(SendInputTable)"),QStringLiteral("L⏱20»M⏱20")},
+                {QStringLiteral("J"),QStringLiteral("SwitchTab(IbTableA)")}};
+            check(QKeyMapper::s_KeyMappingTabInfoList.size()==3 && QKeyMapper::s_KeyMappingTabWidgetCurrentIndex==0,
+                "Three-table fixture selection changed");
+            for (int tab=0;tab<3;++tab) {
+                const auto &info=QKeyMapper::s_KeyMappingTabInfoList.at(tab);
+                check(info.TabName==names.at(tab) && !info.IncludeCommonMappingTable
+                    && info.KeyMappingData->size()==originalTables.at(tab).size(),"Three-table metadata changed");
+                for (int row=0;row<info.KeyMappingData->size();++row) {
+                    const auto &item=info.KeyMappingData->at(row);
+                    check(item.Original_Key==originalTables.at(tab).at(row)
+                        && item.Mapping_Keys.join(QStringLiteral("»"))==mappedTables.at(tab).at(row)
+                        && item.MappingKeys_KeyUp.join(QStringLiteral("»"))==mappedTables.at(tab).at(row)
+                        && item.SendMappingKeyMethod==(tab==2 ? QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT
+                            : QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT)
+                        && !item.Disabled && !item.Burst && !item.Lock,"Three-table mapping changed");
+                }
+            }
+        }
         if (macros) verifyMacroRules(*rows);
         inputReceiver=reinterpret_cast<HWND>(qEnvironmentVariable("QKM_IBINPUT_KEYBOARD_HWND").toULongLong());
         DWORD owner=0; GetWindowThreadProcessId(inputReceiver,&owner);
@@ -300,6 +327,30 @@ void verifyInputProduct(QKeyMapper *window) {
         inputRecord(inputPhase==1 ? QStringLiteral("started.json") : QStringLiteral("restarted.json"),started);
         inputPhase=inputPhase==1 ? 2 : 5;
     }
+    if (tables && inputPhase==2 && tableStage<3
+        && QFile::exists(prefix+QStringLiteral("switch-%1").arg(tableStage+1))) inputPhase=8;
+    if (tables && inputPhase==8) {
+        const int target=(tableStage+1)%3;
+        const auto current=qkmCurrentIbInputGeneration();
+        const bool backendReady=target==2 ? (!status.connected && !client.busy() && current==0)
+            : (status.connected && !status.fallback && status.backend==QStringLiteral("logitech_ghub")
+                && current>inputGeneration && status.generation==current);
+        if (QKeyMapper::s_KeyMappingTabWidgetCurrentIndex==target && backendReady
+            && QKeyMapper_Worker::s_AtomicHookProcState==QKeyMapperConstants::HOOKPROC_STATE_STARTED
+            && window->m_KeyMapStatus==QKeyMapper::KEYMAP_MAPPING_GLOBAL
+            && window->findChild<QToolButton *>(QStringLiteral("keymapButton"))->isEnabled()) {
+            const auto *active=QKeyMapper::KeyMappingDataList;
+            check(active && !active->isEmpty()
+                && active->first().SendMappingKeyMethod==(target==2 ? QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT
+                    : QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT),"New table snapshot has the wrong channel");
+            inputGeneration=current;
+            inputRecord(QStringLiteral("switched-%1.json").arg(++tableStage),
+                {{"table",target},{"generation",static_cast<qint64>(current)},
+                    {"intent",static_cast<qint64>(client.requestedGeneration())},{"backend",status.backend},
+                    {"connected",status.connected},{"released_previous",!status.releaseIncomplete}});
+            inputPhase=2;
+        }
+    }
     if (inputPhase==2 && QFile::exists(prefix+QStringLiteral("stop"))) {
         window->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK); inputPhase=3;
     }
@@ -321,7 +372,7 @@ void verifyInputProduct(QKeyMapper *window) {
 
 void verifyProduct() {
     try {
-        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
+        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
         check(currentDesktop()==expectedDesktop,"Product left its selected desktop");
         QKeyMapper *window=nullptr;
         for (QWidget *widget:QApplication::topLevelWidgets())
@@ -329,7 +380,7 @@ void verifyProduct() {
         if (!window || !QKeyMapper::s_AtomicIsInitialized.loadAcquire()) {
             QTimer::singleShot(500,verifyProduct); return;
         }
-        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard")) {
+        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables")) {
             verifyInputProduct(window); QTimer::singleShot(100,verifyProduct); return;
         }
         if (checked) {
@@ -411,7 +462,7 @@ int main(int argc,char **argv) {
     output=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_OUTPUT");
     selectedCase=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_CASE");
     expectedDesktop=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_DESKTOP");
-    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard");
+    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables");
     if (argc!=1 || !QDir(output).exists() || currentDesktop()!=expectedDesktop
         || (input ? expectedDesktop!=QStringLiteral("Default")
             : ((selectedCase!=QStringLiteral("save") && selectedCase!=QStringLiteral("cold"))

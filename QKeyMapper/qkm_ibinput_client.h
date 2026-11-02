@@ -37,9 +37,9 @@ public:
     bool setPreferences(const Preferences &preferences);
     Status statusSnapshot() const;
     quint64 requestRun();
-    void cancelRun();
+    void cancelRun(quint64 generation=0);
     quint64 requestedGeneration() const { return m_requested.load(); }
-    bool acceptingInput() const { return !m_cancelled.load(); }
+    bool acceptingInput() const { const auto generation=m_requested.load(); return generation && m_acceptingGeneration.load()==generation; }
     bool prepareRun(quint64 generation, const Requirements &requirements);
     bool sendEvent(const INPUT &input, quint64 generation);
     bool releaseOwnedInputs(quint64 generation);
@@ -62,7 +62,7 @@ private:
     QSet<quint16> m_ownedKeys;
     QSet<quint16> m_ownedButtons;
     std::atomic<quint64> m_requested{0};
-    std::atomic_bool m_cancelled{true};
+    std::atomic<quint64> m_acceptingGeneration{0};
 };
 
 #endif

@@ -1315,6 +1315,7 @@ signals:
     void allMappingKeysReleased_Signal(void);
     void ibInputFault_Signal(const QString &detail);
     void ibInputClosed_Signal(bool released, const QString &detail);
+    void ibInputRestarted_Signal(quint64 generation);
     void ibInputStatusChanged_Signal();
     void sessionLockStateChanged_Signal(bool locked);
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
@@ -1793,7 +1794,7 @@ private:
     bool m_sendInputTasksStopping = false;
     bool m_ibInputCloseQueued = false;
     bool prepareIbInputRun();
-    void finishIbInputRun();
+    bool finishIbInputRun(bool notify=true);
 
     // Volume control instance
     VolumeController m_volumeController;

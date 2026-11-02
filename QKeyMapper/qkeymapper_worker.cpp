@@ -91,8 +91,7 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) 
         const auto &row=rows.at(i);
         if (row.Disabled || row.SendMappingKeyMethod!=SENDMAPPINGKEY_METHOD_IBINPUT) continue;
         const QString location=ibRowLocation(i);
-        if (row.Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR)
-            || row.Original_Key==QLatin1String(SENDON_SWITCHTAB_STR))
+        if (row.Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR))
             required.rejection=QCoreApplication::translate("QkmIbInputClient","Complex IbInput combinations, repetition, locking or stop/tab commands still await validation: %1").arg(location);
         if (QkmIbInputValidation::movementGroup(row)>=0) required.capabilities|=QkmIbInputClient::RelativeMove;
         const QStringList output=row.Pure_MappingKeys+row.Pure_MappingKeys_KeyUp;
@@ -135,7 +134,7 @@ bool sendIbEvent(const INPUT &input,quint64 generation) {
     auto &client=QkmIbInputClient::instance();
     const auto state=client.statusSnapshot();
     if (!generation || generation!=qkmCurrentIbInputGeneration() || generation!=state.generation) return false;
-    const bool active=client.acceptingInput();
+    const bool active=client.acceptingInput() && generation==client.requestedGeneration();
     bool success=false;
     if (state.fallback) {
         const bool up=(input.type==INPUT_KEYBOARD && (input.ki.dwFlags & KEYEVENTF_KEYUP))
@@ -169,11 +168,11 @@ bool QKeyMapper_Worker::prepareIbInputRun() {
     ibInputFaultReported.store(false); ibInputGeneration.store(generation);
     emit ibInputStatusChanged_Signal(); return true;
 }
-void QKeyMapper_Worker::finishIbInputRun() {
+bool QKeyMapper_Worker::finishIbInputRun(bool notify) {
     m_ibInputCloseQueued=false;
     const auto generation=qkmCurrentIbInputGeneration();
     auto &client=QkmIbInputClient::instance();
-    client.cancelRun();
+    client.cancelRun(generation);
     if (generation) {
         QList<QThreadPool *> pools;
         { QMutexLocker lock(&SendInputTask::s_SendInputTaskControllerMapMutex);
@@ -187,7 +186,8 @@ void QKeyMapper_Worker::finishIbInputRun() {
     const bool released=state.generation ? client.closeAfterDrain(state.generation) : true;
     ibInputGeneration.store(0);
     { QMutexLocker lock(&ibInputSnapshotMutex); ibInputSnapshot.clear(); }
-    emit ibInputClosed_Signal(released,client.statusSnapshot().detail);
+    if (notify) emit ibInputClosed_Signal(released,client.statusSnapshot().detail);
+    return released;
 }
 
 
@@ -3142,7 +3142,8 @@ void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int
     if (m_sendInputTasksStopping || ibInputGeneration!=qkmCurrentIbInputGeneration()) {
         return;
     }
-    if (ibInputGeneration && !QkmIbInputClient::instance().acceptingInput() && keyupdown==KEY_DOWN) {
+    if (ibInputGeneration && (ibInputGeneration!=QkmIbInputClient::instance().requestedGeneration()
+        || !QkmIbInputClient::instance().acceptingInput()) && keyupdown==KEY_DOWN) {
         QMutexLocker snapshotLock(&ibInputSnapshotMutex);
         if (ibInputSnapshot && rowindex>=0 && rowindex<ibInputSnapshot->size()
             && ibInputSnapshot->at(rowindex).SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT) return;
@@ -3162,7 +3163,8 @@ void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int
 void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration)
 {
     if (ibInputGeneration!=qkmCurrentIbInputGeneration()) return;
-    if (ibInputGeneration && !QkmIbInputClient::instance().acceptingInput() && keyupdown==KEY_DOWN
+    if (ibInputGeneration && (ibInputGeneration!=QkmIbInputClient::instance().requestedGeneration()
+        || !QkmIbInputClient::instance().acceptingInput()) && keyupdown==KEY_DOWN
         && keyMappingDataList && rowindex>=0 && rowindex<keyMappingDataList->size()
         && keyMappingDataList->at(rowindex).SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT) return;
 
@@ -10452,11 +10454,8 @@ void QKeyMapper_Worker::setWorkerKeyUnHook()
 
 void QKeyMapper_Worker::setKeyMappingRestart()
 {
-    if (qkmCurrentIbInputGeneration()) {
-        setWorkerKeyUnHook();
-        emit ibInputFault_Signal(QCoreApplication::translate("QkmIbInputClient","IbInput tab switching is awaiting lifecycle validation; mapping was stopped."));
-        return;
-    }
+    if (m_ibInputCloseQueued) return;
+    const bool hadIbRun=qkmCurrentIbInputGeneration()!=0;
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart Start.>>>\033[0m");
     qDebug().nospace().noquote() << "[QKeyMapper_Worker::setKeyMappingRestart] begin"
@@ -10596,9 +10595,17 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     }
 
 
+    if (hadIbRun && !finishIbInputRun(false)) {
+        const auto detail=QkmIbInputClient::instance().statusSnapshot().detail;
+        emit ibInputClosed_Signal(false,detail);
+        emit ibInputFault_Signal(detail);
+        return;
+    }
+
     /* Restart Starting process */
     QKeyMapper::s_ActiveKeyMappingDataList = backup_KeyMappingDataList;
     QKeyMapper::KeyMappingDataList = &QKeyMapper::s_ActiveKeyMappingDataList;
+    if (!prepareIbInputRun()) return;
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[setKeyMappingRestart] Built new active mapping list with" << QKeyMapper::s_ActiveKeyMappingDataList.size() << "items";
 #endif
@@ -10697,6 +10704,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     s_AtomicHookProcState = HOOKPROC_STATE_STARTED;
 
     emitSendOnSwitchTabKeys();
+    emit ibInputRestarted_Signal(qkmCurrentIbInputGeneration());
 
     // Rebuild VButton list and refresh panel layout for the new mapping tab
     if (QKeyMapper::KeyMappingDataList) {

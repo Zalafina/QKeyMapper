@@ -74,16 +74,19 @@ unsigned QkmIbInputClient::capabilities(const QString &backend) {
 QkmIbInputClient::Preferences QkmIbInputClient::preferences() const { QMutexLocker lock(&m_statusMutex); return m_preferences; }
 bool QkmIbInputClient::setPreferences(const Preferences &preferences) {
     QMutexLocker lock(&m_statusMutex);
-    if (m_published.connected || m_published.stopping || m_published.releaseIncomplete || (!m_cancelled.load() && m_requested.load()!=0)) return false;
+    if (m_published.connected || m_published.stopping || m_published.releaseIncomplete || (acceptingInput() && m_requested.load()!=0)) return false;
     if (candidates(preferences.backend).isEmpty() || (preferences.unavailablePolicy!=QStringLiteral("block") && preferences.unavailablePolicy!=QStringLiteral("sendinput_before_start"))) return false;
     m_preferences=preferences; return true;
 }
 QkmIbInputClient::Status QkmIbInputClient::statusSnapshot() const { QMutexLocker lock(&m_statusMutex); return m_published; }
-bool QkmIbInputClient::busy() const { const auto state=statusSnapshot(); return state.connected || state.stopping || state.releaseIncomplete || (!m_cancelled.load() && m_requested.load()!=0); }
+bool QkmIbInputClient::busy() const { const auto state=statusSnapshot(); return state.connected || state.stopping || state.releaseIncomplete || (acceptingInput() && m_requested.load()!=0); }
 void QkmIbInputClient::publish() { m_status.sampledAt=QDateTime::currentDateTimeUtc(); QMutexLocker lock(&m_statusMutex); m_published=m_status; }
-bool QkmIbInputClient::fail(const QString &detail) { m_status.detail=detail; m_cancelled.store(true); publish(); return false; }
-quint64 QkmIbInputClient::requestRun() { const quint64 generation=m_requested.fetch_add(1)+1; m_cancelled.store(false); return generation; }
-void QkmIbInputClient::cancelRun() { m_cancelled.store(true); }
+bool QkmIbInputClient::fail(const QString &detail) { m_status.detail=detail; cancelRun(); publish(); return false; }
+quint64 QkmIbInputClient::requestRun() { const quint64 generation=m_requested.fetch_add(1)+1; m_acceptingGeneration.store(generation); return generation; }
+void QkmIbInputClient::cancelRun(quint64 generation) {
+    if (!generation) m_acceptingGeneration.store(0);
+    else m_acceptingGeneration.compare_exchange_strong(generation,0);
+}
 bool QkmIbInputClient::candidateSupports(const QString &backend,const Requirements &requirements) const {
     if ((capabilities(backend)&requirements.capabilities)!=requirements.capabilities) return false;
     for (quint16 key:requirements.keys) if (!isSupportedKey(key)) return false;
@@ -92,7 +95,7 @@ bool QkmIbInputClient::candidateSupports(const QString &backend,const Requiremen
 }
 bool QkmIbInputClient::prepareRun(quint64 generation,const Requirements &requirements) {
     QMutexLocker calls(&m_callMutex);
-    if (!generation || generation!=m_requested.load() || m_cancelled.load()) return false;
+    if (!generation || generation!=m_requested.load() || !acceptingInput()) return false;
     if (m_status.connected || m_status.stopping || m_status.releaseIncomplete) return fail(QCoreApplication::translate("QkmIbInputClient","Previous IbInput cleanup is incomplete."));
     m_status=Status{}; m_status.generation=generation; m_runCapabilities=0;
     if (!requirements.rejection.isEmpty()) return fail(requirements.rejection);
@@ -105,20 +108,20 @@ bool QkmIbInputClient::prepareRun(quint64 generation,const Requirements &require
 #else
     QStringList failures;
     for (const QString &backend:eligible) {
-        if (generation!=m_requested.load() || m_cancelled.load()) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled."));
+        if (generation!=m_requested.load() || !acceptingInput()) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled."));
         IbSendDestroy();
         const Send::SendType type=backend==QStringLiteral("logitech_ghub") ? Send::SendType::LogitechGHubNew
             : (backend==QStringLiteral("logitech_legacy") ? Send::SendType::Logitech : Send::SendType::Razer);
         const Send::Error error=IbSendInit(type,0,nullptr);
         if (error==Send::Error::Success) {
             m_status.connected=true; m_status.backend=backend; m_runCapabilities=requirements.capabilities;
-            if (generation!=m_requested.load() || m_cancelled.load()) { IbSendDestroy(); m_status.connected=false; return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled.")); }
+            if (generation!=m_requested.load() || !acceptingInput()) { IbSendDestroy(); m_status.connected=false; return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled.")); }
             m_status.detail=QCoreApplication::translate("QkmIbInputClient","Connected; input reception has not been verified."); publish(); return true;
         }
         IbSendDestroy(); failures.append(QStringLiteral("%1: %2").arg(backend).arg(static_cast<quint32>(error)));
     }
     m_status.detail=QCoreApplication::translate("QkmIbInputClient","IbInput connection failed: %1").arg(failures.join(QStringLiteral(", ")));
-    if (prefs.unavailablePolicy==QStringLiteral("sendinput_before_start") && !m_cancelled.load()) {
+    if (prefs.unavailablePolicy==QStringLiteral("sendinput_before_start") && acceptingInput()) {
         m_status.fallback=true; m_status.detail+=QStringLiteral(" ")+QCoreApplication::translate("QkmIbInputClient","SendInput is frozen for this run; configuration is unchanged."); publish(); return true;
     }
     return fail(m_status.detail);
@@ -135,7 +138,7 @@ bool QkmIbInputClient::sendOne(const INPUT &input) {
 bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation) {
     QMutexLocker calls(&m_callMutex);
     if (!m_status.connected || generation!=m_status.generation || generation!=m_requested.load()
-        || m_status.fallback || ((m_cancelled.load() || m_status.stopping) && !isRelease(input))) return false;
+        || m_status.fallback || ((!acceptingInput() || m_status.stopping) && !isRelease(input))) return false;
     unsigned needed=0;
     if (input.type==INPUT_KEYBOARD) needed=Keyboard;
     else if (input.type==INPUT_MOUSE) {
@@ -199,7 +202,7 @@ bool QkmIbInputClient::releaseOwnedInputs(quint64 generation) {
 bool QkmIbInputClient::closeAfterDrain(quint64 generation) {
     QMutexLocker calls(&m_callMutex);
     if (generation!=m_status.generation) return false;
-    m_cancelled.store(true); m_status.stopping=true;
+    cancelRun(generation); m_status.stopping=true;
     const bool released=m_status.connected ? releaseLocked() : !m_status.releaseIncomplete;
 #ifdef IBINPUT_SUPPORT
     if (m_status.connected) IbSendDestroy();
