@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include "../../qkm_ibinput_client.h"
 #include "../../qkm_ibinput_popup.h"
+#include "../../qkm_ibinput_validation.h"
 
 // Keep the real entry point, startup and orderly shutdown in this maintenance target.
 #define main qkmIbProductMain
@@ -132,6 +133,63 @@ void saveGuardCases(QKeyMapper *window) {
 }
 
 
+void verifyMacroRules(const QList<MAP_KEYDATA> &source) {
+    const auto before=source;
+    const auto rows=QkmIbInputValidation::expandedRows(source);
+    const QList<QStringList> expected{
+        {QStringLiteral("F"),QStringLiteral("G")},{QStringLiteral("H"),QStringLiteral("I")},
+        {QStringLiteral("J"),QStringLiteral("K")},{QStringLiteral("L"),QStringLiteral("M")},
+        {QStringLiteral("Mouse-L"),QStringLiteral("Mouse-R")},{QStringLiteral("Key2Mouse-Right")}};
+    check(rows.size()==expected.size(),"Expanded macro row count changed");
+    for (int index=0;index<rows.size();++index) {
+        if (rows.at(index).Pure_MappingKeys!=expected.at(index) || rows.at(index).Pure_MappingKeys_KeyUp!=expected.at(index))
+            throw std::runtime_error(QStringLiteral("Macro primitives row %1: DOWN=[%2], UP=[%3], expected=[%4], ordinary=%5, universal=%6")
+                .arg(index+1).arg(rows.at(index).Pure_MappingKeys.join(QLatin1Char(',')))
+                .arg(rows.at(index).Pure_MappingKeys_KeyUp.join(QLatin1Char(','))).arg(expected.at(index).join(QLatin1Char(',')))
+                .arg(QKeyMapper::s_MappingMacroList.size()).arg(QKeyMapper::s_UniversalMappingMacroList.size()).toStdString());
+    }
+    check(source==before,"Macro inspection changed source rows");
+    check(expandMacroKeys(QStringList{QStringLiteral("Macro(C3Pair)x2")}).size()==4,
+        "Default macro expansion changed its repeat count");
+    check(expandMacroKeys(QStringList{QStringLiteral("Macro(C3Pair)x2")},0,nullptr,false,true).size()==2,
+        "Requirement collection materialized macro repetitions");
+    MappingMacroData large;
+    large.MappingMacro=QStringLiteral("Repeat{F⏱60»G⏱60}x99999");
+    QKeyMapper::s_MappingMacroList.insert(QStringLiteral("C3CollectionProbe"),large);
+    auto bounded=source;
+    bounded.first().Mapping_Keys=QStringList{QStringLiteral("Macro(C3CollectionProbe)x99999")};
+    const auto collected=QkmIbInputValidation::expandedRows(bounded);
+    QKeyMapper::s_MappingMacroList.remove(QStringLiteral("C3CollectionProbe"));
+    check(collected.first().Pure_MappingKeys==expected.first(),
+        "Large nested macro requirements did not stay compact");
+    QKeyMapper::s_MappingMacroList.insert(QStringLiteral("Key2Mouse-Right"),QKeyMapper::s_MappingMacroList.value(QStringLiteral("C3Pair")));
+    auto namedLikeDirection=source;
+    namedLikeDirection.first().Mapping_Keys=QStringList{QStringLiteral("Macro(Key2Mouse-Right)")};
+    const auto namedRows=QkmIbInputValidation::expandedRows(namedLikeDirection);
+    QKeyMapper::s_MappingMacroList.remove(QStringLiteral("Key2Mouse-Right"));
+    check(namedRows.first().Pure_MappingKeys==expected.first() && QkmIbInputValidation::movementGroup(namedRows.first())<0,
+        "A macro name was mistaken for actual mouse movement");
+    auto mixed=source;
+    auto other=source.last(); other.SendMappingKeyMethod=QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT;
+    other.Original_Key=QStringLiteral("F12"); other.Pure_OriginalKeys=QStringList{QStringLiteral("F12")};
+    mixed.append(other);
+    check(!QkmIbInputValidation::mixedMovementError(QkmIbInputValidation::expandedRows(mixed),{}).isEmpty(),
+        "A macro hid mixed movement methods");
+    mixed.last().Disabled=true;
+    check(QkmIbInputValidation::mixedMovementError(QkmIbInputValidation::expandedRows(mixed),{}).isEmpty(),
+        "Disabled macro movement blocked a valid table");
+    auto probe=source;
+    probe.first().Mapping_Keys=QStringList{QStringLiteral("Macro(C3Feedback)")};
+    check(QkmIbInputValidation::expandedRows(probe).first().Pure_MappingKeys==QStringList{QStringLiteral("Q")},
+        "Macro hid feedback to an original key");
+    probe.first().Mapping_Keys=QStringList{QStringLiteral("Macro(C3Nested)")};
+    check(QkmIbInputValidation::expandedRows(probe).first().Pure_MappingKeys==expected.first(),
+        "Nested Repeat/Macro primitives were not resolved");
+    probe.first().Mapping_Keys=QStringList{QStringLiteral("Macro(C3Cycle)")};
+    check(QkmIbInputValidation::expandedRows(probe).first().Pure_MappingKeys.isEmpty(),
+        "Recursive macro did not follow existing expansion semantics");
+}
+
 int inputPhase=0;
 quint64 inputGeneration=0;
 HWND inputReceiver=nullptr;
@@ -142,7 +200,8 @@ void inputRecord(const QString &name,const QJsonObject &value) {
 }
 void verifyInputProduct(QKeyMapper *window) {
     const bool loops=selectedCase==QStringLiteral("loops");
-    const bool mouse=selectedCase==QStringLiteral("mouse") || loops;
+    const bool macros=selectedCase==QStringLiteral("macros");
+    const bool mouse=selectedCase==QStringLiteral("mouse") || loops || macros;
     const bool patterns=selectedCase==QStringLiteral("patterns");
     const QString prefix=output+QLatin1Char('/')+selectedCase+QLatin1Char('-');
     if (inputPhase!=6 && QFile::exists(prefix+QStringLiteral("abort"))) {
@@ -164,11 +223,16 @@ void verifyInputProduct(QKeyMapper *window) {
         CloseHandle(snapshot);
         check(!conflict,"Another mapper appeared; no mapping started");
         const auto *rows=QKeyMapper::KeyMappingDataList;
-        const QStringList originals=(patterns || loops) ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T")} : mouse
+        const QStringList originals=macros
+            ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T"),QStringLiteral("A")}
+            : (patterns || loops) ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T")} : mouse
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T"),
                 QStringLiteral("A"),QStringLiteral("S"),QStringLiteral("D"),QStringLiteral("F")}
             : QStringList{QStringLiteral("W"),QStringLiteral("1"),QStringLiteral("F13")};
-        const QStringList mapped=loops
+        const QStringList mapped=macros
+            ? QStringList{QStringLiteral("Macro(C3Pair)x2"),QStringLiteral("UniversalMacro(C3Once)"),
+                QStringLiteral("Repeat{OnlyOnce{J⏱60}»K⏱60}x2"),QStringLiteral("Macro(C3Hold)"),
+                QStringLiteral("Macro(C3Buttons)"),QStringLiteral("Macro(C3Move)")} : loops
             ? QStringList{QStringLiteral("F⏱60»G"),QStringLiteral("H⏱60»I⏱60"),QStringLiteral("J⏱500»K⏱60"),
                 QStringLiteral("L⏱500»M⏱60"),QStringLiteral("Mouse-L⏱500»Mouse-R⏱60")} : patterns ? QStringList{QStringLiteral("F+G"),QStringLiteral("H»I"),QStringLiteral("J"),QStringLiteral("K"),QStringLiteral("L")} : mouse
             ? QStringList{QStringLiteral("Mouse-L"),QStringLiteral("Mouse-R"),QStringLiteral("Mouse-M"),QStringLiteral("Mouse-X1"),
@@ -187,7 +251,12 @@ void verifyInputProduct(QKeyMapper *window) {
                 && row.RepeatMode==(index==0 ? QKeyMapperConstants::REPEAT_MODE_NONE
                     : index==1 ? QKeyMapperConstants::REPEAT_MODE_BYTIMES : QKeyMapperConstants::REPEAT_MODE_BYKEY)
                 && (index!=1 || row.RepeatTimes==3),"Loop fixture timing/flags changed");
+            if (macros) check(!row.Burst && !row.Lock && !row.KeySeqHoldDown
+                && row.RepeatMode==((index==1 || index==2) ? QKeyMapperConstants::REPEAT_MODE_BYTIMES
+                    : (index==3 || index==4) ? QKeyMapperConstants::REPEAT_MODE_BYKEY : QKeyMapperConstants::REPEAT_MODE_NONE)
+                && (index!=1 || row.RepeatTimes==3) && (index!=2 || row.RepeatTimes==2),"Macro fixture timing/flags changed");
         }
+        if (macros) verifyMacroRules(*rows);
         inputReceiver=reinterpret_cast<HWND>(qEnvironmentVariable("QKM_IBINPUT_KEYBOARD_HWND").toULongLong());
         DWORD owner=0; GetWindowThreadProcessId(inputReceiver,&owner);
         wchar_t title[128]{}; GetWindowTextW(inputReceiver,title,128);
@@ -207,8 +276,15 @@ void verifyInputProduct(QKeyMapper *window) {
         check(status.backend==QStringLiteral("logitech_ghub") && !status.fallback,"Input backend differs");
         if (inputPhase==4) check(status.generation>inputGeneration,"Restart reused an old generation");
         inputGeneration=status.generation;
-        inputRecord(inputPhase==1 ? QStringLiteral("started.json") : QStringLiteral("restarted.json"),
-            {{"generation",static_cast<qint64>(inputGeneration)},{"pid",static_cast<int>(GetCurrentProcessId())},{"desktop",currentDesktop()}});
+        QJsonObject started{{"generation",static_cast<qint64>(inputGeneration)},{"pid",static_cast<int>(GetCurrentProcessId())},{"desktop",currentDesktop()}};
+        if (macros) {
+            check(QKeyMapper_Worker::s_Key2Mouse_EnableState
+                && QKeyMapper_Worker::s_Key2Mouse_SendMethod==QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT,
+                "Macro movement did not select IbInput");
+            started.insert(QStringLiteral("key2mouse_method"),QKeyMapper_Worker::s_Key2Mouse_SendMethod);
+            started.insert(QStringLiteral("macro_rules_passed"),true);
+        }
+        inputRecord(inputPhase==1 ? QStringLiteral("started.json") : QStringLiteral("restarted.json"),started);
         inputPhase=inputPhase==1 ? 2 : 5;
     }
     if (inputPhase==2 && QFile::exists(prefix+QStringLiteral("stop"))) {
@@ -232,7 +308,7 @@ void verifyInputProduct(QKeyMapper *window) {
 
 void verifyProduct() {
     try {
-        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
+        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
         check(currentDesktop()==expectedDesktop,"Product left its selected desktop");
         QKeyMapper *window=nullptr;
         for (QWidget *widget:QApplication::topLevelWidgets())
@@ -240,7 +316,7 @@ void verifyProduct() {
         if (!window || !QKeyMapper::s_AtomicIsInitialized.loadAcquire()) {
             QTimer::singleShot(500,verifyProduct); return;
         }
-        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops")) {
+        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros")) {
             verifyInputProduct(window); QTimer::singleShot(100,verifyProduct); return;
         }
         if (checked) {
@@ -322,7 +398,7 @@ int main(int argc,char **argv) {
     output=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_OUTPUT");
     selectedCase=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_CASE");
     expectedDesktop=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_DESKTOP");
-    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops");
+    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros");
     if (argc!=1 || !QDir(output).exists() || currentDesktop()!=expectedDesktop
         || (input ? expectedDesktop!=QStringLiteral("Default")
             : ((selectedCase!=QStringLiteral("save") && selectedCase!=QStringLiteral("cold"))

@@ -10,7 +10,6 @@
 #include <QWheelEvent>
 #include <QScreen>
 #include <QPainter>
-#include <QSaveFile>
 #include <QSet>
 #include <QTimer>
 #include <QWidget>
@@ -19,8 +18,11 @@
 namespace {
 QString output;
 void writeJson(const QString &name,const QJsonObject &value) {
-    QSaveFile file(output+QLatin1Char('/')+name);
-    if (!file.open(QIODevice::WriteOnly) || file.write(QJsonDocument(value).toJson())<0 || !file.commit()) qFatal("Receiver evidence write failed");
+    // Telemetry readers retry incomplete JSON; atomic replacement races with open readers on Windows.
+    QFile file(output+QLatin1Char('/')+name);
+    const auto data=QJsonDocument(value).toJson();
+    if (!file.open(QIODevice::WriteOnly|QIODevice::Truncate) || file.write(data)!=data.size() || !file.flush())
+        qFatal("Receiver evidence write failed: %s",qPrintable(file.errorString()));
 }
 QString desktopName() {
     wchar_t name[128]{}; DWORD bytes=0;

@@ -43,6 +43,9 @@ int main(int argc,char **argv) {
             check(!mixedMovementError({ib,other},{}).isEmpty(),"One of the four movement groups bypassed validation");
         }
         auto ib=movement(QStringLiteral("F8"),SENDMAPPINGKEY_METHOD_IBINPUT);
+        auto keyUp=movement(QStringLiteral("F9"),SENDMAPPINGKEY_METHOD_SENDINPUT,QString());
+        keyUp.Pure_MappingKeys_KeyUp=QStringList{QStringLiteral("Key2Mouse-Left")};
+        check(!mixedMovementError({ib,keyUp},{}).isEmpty(),"Key-up-only movement bypassed the shared group");
         auto stick=movement(QStringLiteral("Joy-LS2Mouse"),SENDMAPPINGKEY_METHOD_SENDINPUT,QString());
         check(mixedMovementError({ib,stick},{}).isEmpty(),"Independent movement groups were combined");
         auto keyboard=movement(QStringLiteral("A"),SENDMAPPINGKEY_METHOD_SENDINPUT,QStringLiteral("B"));

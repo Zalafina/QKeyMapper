@@ -6,8 +6,10 @@
 #include <QSet>
 
 namespace QkmIbInputValidation {
+QList<MAP_KEYDATA> expandedRows(const QList<MAP_KEYDATA> &source);
+
 inline int movementGroup(const MAP_KEYDATA &row) {
-    for (const QString &key:row.Pure_MappingKeys)
+    for (const QString &key:row.Pure_MappingKeys+row.Pure_MappingKeys_KeyUp)
         if (key.startsWith(QStringLiteral("Key2Mouse-"))) return 0;
     if (row.Original_Key.startsWith(QStringLiteral("Joy-LS2Mouse"))
         || row.Original_Key.startsWith(QStringLiteral("Joy-RS2Mouse"))) return 1;

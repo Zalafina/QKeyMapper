@@ -2050,7 +2050,7 @@ static QString ibInputSaveConflict()
         for (const auto &source:sources)
             locations.append(QCoreApplication::translate("QkmIbInputClient","Table %1, row %2")
                 .arg(source.SourceTabIndex+1).arg(source.SourceRow+1));
-        const QString error=QkmIbInputValidation::mixedMovementError(rows,locations);
+        const QString error=QkmIbInputValidation::mixedMovementError(QkmIbInputValidation::expandedRows(rows),locations);
         if (!error.isEmpty()) return error;
     }
     return {};

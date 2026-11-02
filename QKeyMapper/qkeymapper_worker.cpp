@@ -11,6 +11,40 @@
 
 using namespace QKeyMapperConstants;
 
+namespace QkmIbInputValidation {
+namespace {
+QStringList expandedPureKeys(const QStringList &keys, int depth = 0) {
+    const auto pure=splitMappingKeyString(keys.join(QString::fromUtf8(SEPARATOR_NEXTARROW)),SPLIT_WITH_PLUSANDNEXT,true);
+    QStringList result;
+    for (const QString &key:pure) {
+        if (key.contains(QStringLiteral("Macro(")) && depth<=WRAPPER_NESTING_LEVEL_MAX) {
+            const auto expanded=expandMacroKeys(QStringList{key},depth,nullptr,false,true);
+            if (expanded!=QStringList{key}) {
+                result.append(expandedPureKeys(expanded,depth+1));
+                continue;
+            }
+        }
+        result.append(key);
+    }
+    result.removeDuplicates();
+    return result;
+}
+}
+QList<MAP_KEYDATA> expandedRows(const QList<MAP_KEYDATA> &source) {
+    bool needed=false;
+    for (const auto &row:source)
+        needed=needed || (!row.Disabled && row.SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT);
+    if (!needed) return source;
+    auto rows=source;
+    for (auto &row:rows) {
+        if (row.Disabled) continue;
+        row.Pure_MappingKeys=expandedPureKeys(row.Mapping_Keys);
+        row.Pure_MappingKeys_KeyUp=expandedPureKeys(row.MappingKeys_KeyUp);
+    }
+    return rows;
+}
+}
+
 namespace {
 std::atomic<quint64> ibInputGeneration{0};
 std::atomic_bool ibInputFaultReported{false};
@@ -24,7 +58,8 @@ QString ibRowLocation(int row) {
     return QCoreApplication::translate("QkmIbInputClient","Row %1").arg(row+1);
 }
 QString pureIbKey(QString key) { key.remove(QRegularExpression(QStringLiteral("@[0-9]+$"))); return key; }
-QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &rows) {
+QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) {
+    const auto rows=QkmIbInputValidation::expandedRows(source);
     QkmIbInputClient::Requirements required;
     QStringList locations;
     QSet<QString> originalKeys;
@@ -35,7 +70,8 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &rows) {
         const auto &row=rows.at(i); if (row.Disabled) continue;
         needed=needed || row.SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT;
         for (const QString &key:row.Pure_OriginalKeys) originalKeys.insert(pureIbKey(key));
-        const QString all=row.Original_Key+QLatin1Char(' ')+row.Mapping_Keys.join(QLatin1Char(' '));
+        const QString all=row.Original_Key+QLatin1Char(' ')+row.Mapping_Keys.join(QLatin1Char(' '))
+            +QLatin1Char(' ')+(row.Pure_MappingKeys+row.Pure_MappingKeys_KeyUp).join(QLatin1Char(' '));
         if ((row.Original_Key.startsWith(QStringLiteral("Mouse")) && row.Original_Key.contains(QStringLiteral("2vJoy")))
             || all.contains(QStringLiteral("Mouse2vJoy")) || all.contains(QStringLiteral("Block-Keyboard"))
             || all.contains(QStringLiteral("Block-Mouse"))) hazards.append(ibRowLocation(i));
@@ -12095,8 +12131,19 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState(int &sendMappingKeyMethod)
     bool key2mouse_right = false;
     sendMappingKeyMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
 
+    const auto resolved=qkmCurrentIbInputGeneration()
+        ? QkmIbInputValidation::expandedRows(*QKeyMapper::KeyMappingDataList) : QList<MAP_KEYDATA>{};
+    const auto findKey=[&resolved](const QString &key) {
+        if (resolved.isEmpty()) return QKeyMapper::findMapKeyStringInKeyMappingDataList(key);
+        for (int index=0;index<resolved.size();++index) {
+            const auto &row=resolved.at(index);
+            if (row.Pure_MappingKeys.contains(key) || row.Pure_MappingKeys_KeyUp.contains(key)) return index;
+        }
+        return -1;
+    };
+
     int findKey2Mouse_index = -1;
-    findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_UP_STR);
+    findKey2Mouse_index = findKey(KEY2MOUSE_UP_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_up = true;
         int SendMappingKeyMethod = QKeyMapper::KeyMappingDataList->at(findKey2Mouse_index).SendMappingKeyMethod;
@@ -12107,7 +12154,7 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState(int &sendMappingKeyMethod)
         else if (SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT) sendMappingKeyMethod=SENDMAPPINGKEY_METHOD_IBINPUT;
     }
 
-    findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_DOWN_STR);
+    findKey2Mouse_index = findKey(KEY2MOUSE_DOWN_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_down = true;
         int SendMappingKeyMethod = QKeyMapper::KeyMappingDataList->at(findKey2Mouse_index).SendMappingKeyMethod;
@@ -12118,7 +12165,7 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState(int &sendMappingKeyMethod)
         else if (SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT) sendMappingKeyMethod=SENDMAPPINGKEY_METHOD_IBINPUT;
     }
 
-    findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_LEFT_STR);
+    findKey2Mouse_index = findKey(KEY2MOUSE_LEFT_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_left = true;
         int SendMappingKeyMethod = QKeyMapper::KeyMappingDataList->at(findKey2Mouse_index).SendMappingKeyMethod;
@@ -12129,7 +12176,7 @@ bool QKeyMapper_Worker::checkKey2MouseEnableState(int &sendMappingKeyMethod)
         else if (SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT) sendMappingKeyMethod=SENDMAPPINGKEY_METHOD_IBINPUT;
     }
 
-    findKey2Mouse_index = QKeyMapper::findMapKeyStringInKeyMappingDataList(KEY2MOUSE_RIGHT_STR);
+    findKey2Mouse_index = findKey(KEY2MOUSE_RIGHT_STR);
     if (findKey2Mouse_index >= 0){
         key2mouse_right = true;
         int SendMappingKeyMethod = QKeyMapper::KeyMappingDataList->at(findKey2Mouse_index).SendMappingKeyMethod;
@@ -21457,7 +21504,7 @@ QString getRealOriginalKey(const QString &original_key)
     return original_key.left(original_key.indexOf(":"));
 }
 
-QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level, bool skipOnlyOnce)
+QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level, bool skipOnlyOnce, bool collectOnly)
 {
     // Check nesting level limit
     if (nesting_level > WRAPPER_NESTING_LEVEL_MAX) {
@@ -21494,10 +21541,10 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level, bo
 
             // Recursively expand any nested Repeat in the inner content
             // Note: Macro expansion should be done before calling expandRepeatKeys
-            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1, skipOnlyOnce);
+            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1, skipOnlyOnce, collectOnly);
 
             // Append the expanded inner keys repeat_count times
-            for (int i = 0; i < repeat_count; ++i) {
+            for (int i = 0; i < (collectOnly ? 1 : repeat_count); ++i) {
                 result.append(expandedInnerKeys);
             }
 
@@ -21531,10 +21578,10 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level, bo
             QStringList innerKeys = splitMappingKeyString(onlyonce_content, SPLIT_WITH_NEXT);
 
             // Recursively expand any nested Repeat/OnlyOnce in the inner content
-            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1, skipOnlyOnce);
+            QStringList expandedInnerKeys = expandRepeatKeys(innerKeys, nesting_level + 1, skipOnlyOnce, collectOnly);
 
             // Append the expanded inner keys only for the first cycle
-            for (int i = 0; i < onlyonce_count; ++i) {
+            for (int i = 0; i < (collectOnly ? 1 : onlyonce_count); ++i) {
                 result.append(expandedInnerKeys);
             }
 
@@ -21549,10 +21596,11 @@ QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level, bo
         }
     }
 
+    if (collectOnly) result.removeDuplicates();
     return result;
 }
 
-QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level, QSet<QString> *expandingMacros, bool skipOnlyOnce)
+QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level, QSet<QString> *expandingMacros, bool skipOnlyOnce, bool collectOnly)
 {
     // Check nesting level limit to prevent deeply nested recursion
     if (nesting_level > WRAPPER_NESTING_LEVEL_MAX) {
@@ -21640,16 +21688,16 @@ QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level, QSe
             QStringList macroKeys = splitMappingKeyString(macroContent, SPLIT_WITH_NEXT);
 
             // Recursively expand any nested Macro in the macro content
-            QStringList expandedMacroKeys = expandMacroKeys(macroKeys, nesting_level + 1, expandingMacros, skipOnlyOnce);
+            QStringList expandedMacroKeys = expandMacroKeys(macroKeys, nesting_level + 1, expandingMacros, skipOnlyOnce, collectOnly);
 
             // Remove current macro from the expanding set after recursion completes
             expandingMacros->remove(macroIdentifier);
 
             // Also expand any Repeat{...}x... patterns in the expanded macro keys
-            expandedMacroKeys = expandRepeatKeys(expandedMacroKeys, 0, skipOnlyOnce);
+            expandedMacroKeys = expandRepeatKeys(expandedMacroKeys, 0, skipOnlyOnce, collectOnly);
 
             // Append the expanded macro keys repeatCount times
-            for (int i = 0; i < repeatCount; ++i) {
+            for (int i = 0; i < (collectOnly ? 1 : repeatCount); ++i) {
                 result.append(expandedMacroKeys);
             }
 
@@ -21666,6 +21714,7 @@ QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level, QSe
         }
     }
 
+    if (collectOnly) result.removeDuplicates();
     return result;
 }
 
