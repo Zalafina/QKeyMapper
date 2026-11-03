@@ -1,6 +1,6 @@
 # IbInputSimulator 依赖来源与本机制品
 
-记录日期：2026-10-30。本文保存来源、制品身份和证据边界；设计、进度及下一步只维护在 [主计划](qkeymapper_ibinputsimulator_integration_plan.md)。
+记录日期：2026-11-03。本文保存来源、制品身份和证据边界；设计、进度及下一步只维护在 [主计划](qkeymapper_ibinputsimulator_integration_plan.md)。
 
 ## DOC-00 历史证据边界
 
@@ -102,7 +102,7 @@ python scripts/build_ibinput_dependency.py --arch x86 --review-patch --tests --d
 | lib/x86/IbInputSimulator.lib | 4656 | D89E6A3BB16DF5D5DBD22601345566F78AA2E166F6637EA7C2FEEACEF308CE72 |
 
 
-## 2026-10-30 PC-W11 当前配套制品
+## 2026-10-30 PC-W11 配套制品（历史）
 
 固定四项源码及0001／0002上叠加分别批准的0003／0004，公共头、导出ABI及IOCTL／报告布局不变。0003跨清理保留Windows错误；0004复用所选G HUB虚拟总线下的健康Mouse节点，不按实体型号限定。
 
@@ -134,3 +134,22 @@ python scripts/build_ibinput_dependency.py --arch x86 --review-patch --tests --d
 ## 2026-11-01 M1 依赖边界核对
 
 正式四补丁、公共头、两架构DLL／导入库及许可均未改变，沿用上表Git配套制品；本轮没有DLL重建或部署。报告软件检查从固定上游在本任务out另组装0001～0004，正式头逐字相同，x64／x86录制替身不导入实际Ib DLL。客户端真实探针链接并复制Git x64 DLL，复制品逐字一致；本轮Win10初始化／鼠标接收及覆盖边界只记录于唯一主计划13.4，不把两架构软件报告或某一系统结果外推到其他系统／后端。
+
+## 2026-11-03 PC-W11 Razer配套制品与手动驱动包
+
+当前固定源码不变，按序应用0001～0007。0005修正Razer右Ctrl／右Alt／数字区除号／菜单E0，0006加入Pause E1，0007依据FakerInput实际Raw Input补齐Pause第二段0x45；0006单独实际UP失败不能写成已通过。公共头／导出ABI／原IOCTL布局不变。两架构九组报告、参数边界及原版对照通过，当前构建零警告；实际系统、接收、失败历史及当前源码提交定位见主计划23节。
+
+| 文件 | 大小（字节） | SHA256 |
+|---|---:|---|
+| lib/x64/IbInputSimulator.dll | 218112 | 4353cc3d70fafb186ef89402cbf5e110ebea16b734666c7d73b207b0d7c88f8b |
+| lib/x64/IbInputSimulator.lib | 4448 | 5309e2df6c178dae5a105c23f2bd8d694ca97db2082a4384ad573a692ee014c0 |
+| lib/x86/IbInputSimulator.dll | 172032 | d82ff969eb2d0831663c01de9df96106f90b30343317bb5471a0583ae0b3aeee |
+| lib/x86/IbInputSimulator.lib | 4656 | 197fc68a76e35e36a9fb3c8728e1dab9dfbf05bcf3943dfa63200dfb93faa52d |
+
+恢复仍使用前述两条--review-patch --tests --deploy命令，脚本从固定原件重置Razer.hpp等受补丁文件后按编号重放；本轮原始日志在out/ibinput/logs/x64、x86，0006日志另保留于r1-w11-20261103/dependency-0006-*-logs。构建普通权限、没有初始化驱动或发送输入。真实Razer代表路径使用0005配套，Pause最终使用0007；后者普通键／鼠标分支未改变，原结果按版本复用，不声称全部实测重新运行。
+
+QKeyMapper/RazerDriver的17个二进制／INF／CAT来源文件来自用户提供的RazerNanoleafSetup_v3.5.1030.101616提取目录，原件未修改；目录.gitattributes对x64原件禁用Git文本转换，暂存／检出必须保持原始字节，避免INF换行变化破坏CAT成员校验。nefconw.exe固定1.14.0，MIT原文附LICENSE-nefcon.txt；上游源码固定aca39790f2686b96ab21902c578221ca804fe764。签名Valid，CAT对7个INF及5个引用SYS成员共12项核对通过（out/ibinput/r1-w11-20261103/driver-audit）。签名／目录成员一致不代表运行、系统支持或再分发许可通过；Razer原厂文件的明确再分发依据尚待公开发布前补齐，MIT只对应nefcon，不覆盖Razer原件。
+
+管理工具只按精确ROOT总线实例执行系统PnPUtil /remove-device，保留DriverStore；不使用nefcon 1.14.0的--remove-device-node，因为其固定源码实际调用UninstallDeviceAndDriver。安装不先清理已有节点，失败／3010向上传播。21项纯替身验证通过；本机没有执行安装或移除。用户已有Razer／Synapse时优先检查连接与兼容性，不能保证不影响现有软件。
+
+发布白名单含23项README、管理工具、nefcon许可和原始驱动文件，排除INTEGRATION_GUIDE.md及.gitattributes；只随Qt6_x64／Qt5_x64，Qt5_x86清除残留RazerDriver。本套支持范围为AMD64 Win10／Win11，不支持Win7；具体最低Win10构建号、Win10驱动运行及其他Razer环境尚未验证。正式包根目录部署匹配架构IbInputSimulator.dll，四份许可统一在licenses/IbInputSimulator/。新规则最终打包验证仅在Win10专用PC，本轮Win11未运行新规则打包测试。

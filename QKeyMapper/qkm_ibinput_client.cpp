@@ -65,8 +65,7 @@ bool QkmIbInputClient::isSupportedButton(quint16 button) {
         || button==VK_XBUTTON1 || button==VK_XBUTTON2;
 }
 unsigned QkmIbInputClient::capabilities(const QString &backend) {
-    // shortcut: other backend output awaits its recorded acceptance before opening it.
-    if (backend==QStringLiteral("logitech_ghub")) {
+    if (backend==QStringLiteral("logitech_ghub") || backend==QStringLiteral("razer")) {
         return RelativeMove|Keyboard|Buttons|VerticalWheel;
     }
     return 0;

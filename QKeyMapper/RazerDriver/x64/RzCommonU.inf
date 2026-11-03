@@ -1,0 +1,66 @@
+; Copyright: (c) 2018 Razer Inc. All rights reserved
+;
+; RzCommonU.inf
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = Razer Device
+ClassGuid   = {1750F915-5639-497C-966C-3A65ACECFCB6}
+Provider    = %ManufacturerName%
+CatalogFile = rzcommon.cat
+DriverVer=09/20/2019,10.0.15063.0
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+; ================= Class section =====================
+
+[ClassInstall32]
+Addreg = RazerDeviceClassReg
+
+[RazerDeviceClassReg]
+HKR,,,0,%ClassName%
+;HKR,,Icon,,-5
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+RzCommon.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName% = Standard,NTamd64
+
+[Standard.NTamd64]
+%RzCommon.DeviceDesc% = RzCommon_Device,RAZER\DeviceContol
+
+[RzCommon_Device.NT]
+CopyFiles = Drivers_Dir
+
+[Drivers_Dir]
+RzCommon.sys
+
+;-------------- Service installation
+[RzCommon_Device.NT.Services]
+AddService = RzCommon,%SPSVCINST_ASSOCSERVICE%, RzCommon_Service_Inst
+
+; -------------- RzCommon driver install sections
+[RzCommon_Service_Inst]
+DisplayName    = %RzCommon.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\RzCommon.sys
+
+[Strings]
+SPSVCINST_ASSOCSERVICE = 0x00000002
+ManufacturerName = "Razer Inc"
+ClassName = "Razer Device"
+DiskName = "Razer Installation Disk"
+RzCommon.DeviceDesc = "Razer Control Device"
+RzCommon.SVCDESC = "Razer Control Service"

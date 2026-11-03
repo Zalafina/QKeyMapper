@@ -24,6 +24,34 @@
 #include <iostream>
 #include <stdexcept>
 
+#include <setupapi.h>
+
+namespace {
+enum class RazerChannelView { Live, Missing, QueryFailed };
+RazerChannelView channelView=RazerChannelView::Live;
+HDEVINFO WINAPI testGetDevices(const GUID *guid,PCWSTR enumerator,HWND parent,DWORD flags) {
+    if (channelView==RazerChannelView::Live) return SetupDiGetClassDevsW(guid,enumerator,parent,flags);
+    if (channelView==RazerChannelView::QueryFailed) { SetLastError(ERROR_ACCESS_DENIED); return INVALID_HANDLE_VALUE; }
+    return reinterpret_cast<HDEVINFO>(1);
+}
+BOOL WINAPI testEnumInterfaces(HDEVINFO devices,PSP_DEVINFO_DATA info,const GUID *guid,DWORD index,PSP_DEVICE_INTERFACE_DATA item) {
+    if (channelView==RazerChannelView::Live) return SetupDiEnumDeviceInterfaces(devices,info,guid,index,item);
+    SetLastError(ERROR_NO_MORE_ITEMS); return FALSE;
+}
+BOOL WINAPI testDestroyDevices(HDEVINFO devices) {
+    return channelView==RazerChannelView::Live ? SetupDiDestroyDeviceInfoList(devices) : TRUE;
+}
+}
+// Keep the real Popup while substituting only the passive interface observation in two scenes.
+#define SetupDiGetClassDevsW testGetDevices
+#define SetupDiEnumDeviceInterfaces testEnumInterfaces
+#define SetupDiDestroyDeviceInfoList testDestroyDevices
+#include "../../qkm_ibinput_popup.cpp"
+#undef SetupDiGetClassDevsW
+#undef SetupDiEnumDeviceInterfaces
+#undef SetupDiDestroyDeviceInfoList
+
+
 namespace {
 int initCalls=0,sendCalls=0;
 void check(bool value,const char *message) { if (!value) throw std::runtime_error(message); }
@@ -64,9 +92,11 @@ int main(int argc,char **argv) {
         QkmIbInputPopup popup(&host);
         QTranslator translator;
         const QPalette light=app.palette();
-        struct Scene { const char *language; qreal scale; bool dark; };
+        struct Scene { const char *language; qreal scale; bool dark; RazerChannelView view=RazerChannelView::Live; };
         const Scene scenes[]={{"zh_CN",1.0,false},{"en_US",1.0,false},{"ja_JP",1.0,false},
-            {"zh_CN",1.5,true},{"ja_JP",1.5,true}};
+            {"zh_CN",1.5,true},{"ja_JP",1.5,true},{"zh_CN",1.0,false,RazerChannelView::Missing},
+            {"zh_CN",1.0,false,RazerChannelView::QueryFailed}};
+        constexpr int sceneCount=sizeof(scenes)/sizeof(*scenes);
         int index=0,changed=0,connectionRequests=0;
         QObject::connect(&popup,&QkmIbInputPopup::preferencesChanged,&host,[&] { ++changed; });
         QObject::connect(&popup,&QkmIbInputPopup::connectionCheckRequested,&host,[&] { ++connectionRequests; });
@@ -84,7 +114,7 @@ int main(int argc,char **argv) {
                     awaitingCapture=false; ++index;
                 }
                 timer.stop();
-                if (index==5) {
+                if (index==sceneCount) {
                     popup.hide();
                     writeJson(root+QStringLiteral("/result.json"),{{"passed",true},{"scenes",index},
                         {"init_calls",initCalls},{"send_calls",sendCalls},{"desktop",name},
@@ -93,8 +123,11 @@ int main(int argc,char **argv) {
                 }
                 popup.hide(); popup.connectionChecked(); popup.setRunning(false);
                 app.removeTranslator(&translator);
+                channelView=scenes[index].view;
                 const QString language=QString::fromLatin1(scenes[index].language);
                 check(translator.load(translations+QStringLiteral("/QKeyMapper_")+language+QStringLiteral(".qm")),"Formal QM missing");
+                for (const char *source:{"Razer driver services: %1","Razer driver for IbInput: %1","Running","Not running","Detected","Not detected"})
+                    check(!translator.translate("QkmIbInputPopup",source).isEmpty(),"Razer QM source is missing");
                 app.installTranslator(&translator);
                 QPalette palette=light;
                 if (scenes[index].dark) {
@@ -137,6 +170,8 @@ int main(int argc,char **argv) {
                 popup.refresh(); buttons[0]->click();
                 auto *feedback=popup.findChild<QLabel *>(QStringLiteral("ibInputFeedbackLabel"));
                 check(feedback,"Operation feedback label missing");
+                check(feedback->frameShape()==QFrame::WinPanel && feedback->frameShadow()==QFrame::Sunken,
+                    "Feedback does not follow the existing sunken panel style");
                 const auto expectFeedback=[&](const char *source) {
                     QString actual=feedback->text();
                     actual.replace(QRegularExpression(QStringLiteral("[0-9]{2}:[0-9]{2}:[0-9]{2}")),QStringLiteral("%1"));
@@ -172,9 +207,30 @@ int main(int argc,char **argv) {
                 else if (index==2) buttons[0]->click();
                 else if (index==3) buttons[1]->click();
                 QTest::qWait(80);
+                if (index==0 || channelView!=RazerChannelView::Live) { combos[0]->setCurrentIndex(3); popup.refresh(); }
                 auto *details=popup.findChild<QPlainTextEdit *>();
+                const QString text=details->toPlainText();
+                for (const char *source:{"Razer driver services: %1","Razer driver for IbInput: %1"})
+                    check(text.contains(QCoreApplication::translate("QkmIbInputPopup",source).arg(QString())),
+                        "Razer passive status was not refreshed in the active language");
+                check(combos[0]->itemText(3)==QStringLiteral("Razer"),"Razer backend still requires Synapse");
+                auto *help=popup.findChild<QLabel *>(QStringLiteral("ibInputHelpLabel"));
+                check(help && help->text().contains(QStringLiteral("https://github.com/Chaoses-Ib/IbInputSimulator/issues/7"))
+                    && !help->text().contains(QStringLiteral("www.razer.com/synapse")),"Razer guide points to an incompatible download");
+                const char *missingGuide="QKeyMapper did not detect a Razer driver that IbInput can use. See the installation requirements in the Razer driver guide.";
+                const char *failedGuide="QKeyMapper could not check the Razer driver status. Click Refresh status or Check connection.";
+                if (channelView==RazerChannelView::Missing)
+                    check(help->text().contains(QCoreApplication::translate("QkmIbInputPopup",missingGuide).toHtmlEscaped()),
+                        "Missing Razer driver has no actionable guidance");
+                else if (channelView==RazerChannelView::QueryFailed)
+                    check(help->text().contains(QCoreApplication::translate("QkmIbInputPopup",failedGuide).toHtmlEscaped())
+                        && !help->text().contains(QCoreApplication::translate("QkmIbInputPopup",missingGuide).toHtmlEscaped()),
+                        "Query failure recommends driver installation");
+                else check(!help->text().contains(QCoreApplication::translate("QkmIbInputPopup",missingGuide).toHtmlEscaped()),
+                    "Observed Razer driver still recommends installing it");
+                check(initCalls==0 && sendCalls==0,"Razer observation initialized a driver");
                 check(details->toPlainText().contains(QStringLiteral(
-                    "Currently supports G HUB relative mouse movement, standard keyboard output, five mouse buttons (left, right, middle, X1, X2) and vertical wheel scrolling.")),"Temporary capability notice missing");
+                    "Currently supports G HUB and Razer relative mouse movement, standard keyboard output, five mouse buttons (left, right, middle, X1, X2) and vertical wheel scrolling.")),"Temporary capability notice missing");
                 if (index>=3) details->verticalScrollBar()->setValue(details->verticalScrollBar()->maximum());
                 check(!popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("checkpoint"),Qt::CaseInsensitive)
                     && !popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("检查点")),"Developer checkpoint text remains visible");
@@ -184,7 +240,7 @@ int main(int argc,char **argv) {
                 const QString label=popup.findChildren<QLabel *>().front()->text();
                 check(language==QStringLiteral("en_US") || label!=QStringLiteral("Preferred backend"),"Runtime language remained English");
                 writeJson(root+QStringLiteral("/scene.json"),{{"index",index},{"language",language},
-                    {"scale",scenes[index].scale},{"dark",scenes[index].dark},{"pid",static_cast<int>(GetCurrentProcessId())},
+                    {"scale",scenes[index].scale},{"dark",scenes[index].dark},{"interface_simulation",channelView!=RazerChannelView::Live},{"pid",static_cast<int>(GetCurrentProcessId())},
                     {"hwnd",QString::number(static_cast<qulonglong>(popup.winId()))},{"desktop",name},
                     {"label",label},{"width",popup.width()},{"height",popup.height()}});
                 awaitingCapture=true; deadline.restart(); timer.start();

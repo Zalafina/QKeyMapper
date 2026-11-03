@@ -140,3 +140,13 @@ product_check.pro的stopactions用例沿既有状态机，前缀stopactions-；m
 
 
 停止序列的父任务会继续排队子步骤，池暂空不能单独证明完成。关闭检查同时观察既有running序列及各池waitForDone(0)，通过工作线程10ms上下文定时继续处理消息，完成后关闭；停止期间旧allMappingKeysReleased回调由统一排空负责清理。IbInput序列子步骤沿实际源快照查找行和循环信息，避免恢复原表后用错索引。首次缺失和修正后实际完整Repeat x2及当前源T1回归见主计划21.4～21.5。
+
+## IbInput Razer代表路径与手动驱动脚本
+
+product_check沿用原固定用例，QKM_IBINPUT_PRODUCT_BACKEND只接受logitech_ghub（默认）或razer；用razer_*.ini独立合成配置测试，不替换个人INI。启动marker记录实际后端，主界面异步状态标签等待刷新后才发布started；mouse／standard／patterns／loops／macros／tables／stopactions的控制文件协议不变。razer_keyboard_verification.ini保留基础键盘入口。
+
+pause使用razer_pause_verification.ini（Q→Pause、方式3），pause_faker使用faker_pause_comparison.ini（相同映射、方式2）并断言FakerInput真实连接及IbInput未启动；前缀分别pause-和pause_faker-。维护目标不生成原始输入，真实运行仍须固定范围授权。停止映射会恢复仍保持的原始键，应先核对映射输出已UP，再抬起测试原始键检查全部清空；不能把合法原始键保持算成输出释放失败。
+
+logitech_report_test新增Razer基础报告、右修饰／除号／菜单E0和Pause完整E1序列及两段失败传播，所有设备WinAPI均替身；不是实际驱动接收。ghub_probe的--razer-connect-only／--razer-connect-cycle-only只连接／关闭（后者一次复连），无窗口、不取焦点、send=0，仍按驱动初始化授权使用。
+
+razer_driver_script_test.ps1通过Windows自带PowerShell 5.1运行，替代CIM、权限、用户确认和原生命令，验证精确实例、失败／重启传播及保留驱动包；不操作本机设备。真实驱动安装／卸载未由此证明。Razer当前运行证据和未覆盖范围只维护在主计划23节；正式Release打包测试仅Win10专用PC执行。

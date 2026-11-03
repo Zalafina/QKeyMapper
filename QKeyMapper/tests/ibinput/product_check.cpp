@@ -29,6 +29,7 @@ namespace {
 QString output;
 QString selectedCase;
 QString expectedDesktop;
+QString expectedBackend;
 bool checked=false;
 int polls=0;
 void check(bool value,const char *message) { if (!value) throw std::runtime_error(message); }
@@ -200,6 +201,8 @@ void inputRecord(const QString &name,const QJsonObject &value) {
     check(file.write(QJsonDocument(value).toJson())>0 && file.commit(),"Cannot write keyboard evidence");
 }
 void verifyInputProduct(QKeyMapper *window) {
+    const bool fakerPause=selectedCase==QStringLiteral("pause_faker");
+    const bool pause=fakerPause || selectedCase==QStringLiteral("pause");
     const bool stopActions=selectedCase==QStringLiteral("stopactions");
     const bool tables=selectedCase==QStringLiteral("tables");
     const bool standard=selectedCase==QStringLiteral("standard");
@@ -227,7 +230,7 @@ void verifyInputProduct(QKeyMapper *window) {
         CloseHandle(snapshot);
         check(!conflict,"Another mapper appeared; no mapping started");
         const auto *rows=QKeyMapper::KeyMappingDataList;
-        const QStringList originals=stopActions
+        const QStringList originals=pause ? QStringList{QStringLiteral("Q")} : stopActions
             ? QStringList{QStringLiteral("Q"),QStringLiteral("SendOnMappingStart"),QStringLiteral("SendOnMappingStop")} : tables ? QStringList{QStringLiteral("Q"),QStringLiteral("W")} : standard
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),
                 QStringLiteral("T"),QStringLiteral("A"),QStringLiteral("S"),QStringLiteral("D")} : macros
@@ -236,7 +239,7 @@ void verifyInputProduct(QKeyMapper *window) {
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T"),
                 QStringLiteral("A"),QStringLiteral("S"),QStringLiteral("D"),QStringLiteral("F")}
             : QStringList{QStringLiteral("W"),QStringLiteral("1"),QStringLiteral("F13")};
-        const QStringList mapped=stopActions
+        const QStringList mapped=pause ? QStringList{QStringLiteral("Pause")} : stopActions
             ? QStringList{QStringLiteral("F"),QStringLiteral("H⏱20»I⏱20"),QStringLiteral("Repeat{F⏱20»G⏱20}x2")} : tables ? QStringList{QStringLiteral("F"),QStringLiteral("SwitchTab(IbTableB)")} : standard
             ? QStringList{QString::fromUtf8(R"QKM(Backspace⏱20»Tab⏱20»Space⏱20»Enter)QKM"),
                 QString::fromUtf8(R"QKM(Insert⏱20»Delete⏱20»Home⏱20»End⏱20»PageUp⏱20»PageDown⏱20»Up⏱20»Down⏱20»Left⏱20»Right)QKM"),
@@ -260,7 +263,8 @@ void verifyInputProduct(QKeyMapper *window) {
             const auto &row=rows->at(index);
             check(row.Original_Key==originals.at(index)
                 && row.Mapping_Keys.join(QString::fromUtf8(QKeyMapperConstants::SEPARATOR_NEXTARROW))==mapped.at(index)
-                && row.SendMappingKeyMethod==QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT,"Input fixture content changed");
+                && row.SendMappingKeyMethod==(fakerPause ? QKeyMapperConstants::SENDMAPPINGKEY_METHOD_FAKERINPUT
+                    : QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT),"Input fixture content changed");
             if (patterns) check(row.Burst==(index==2) && row.Lock==(index==3 || index==4)
                 && (index!=2 || (row.BurstPressTime==60 && row.BurstReleaseTime==60)),"Pattern fixture timing/flags changed");
             if (loops) check(!row.Burst && !row.Lock && row.KeySeqHoldDown==(index==0)
@@ -271,7 +275,7 @@ void verifyInputProduct(QKeyMapper *window) {
                 && row.RepeatMode==((index==1 || index==2) ? QKeyMapperConstants::REPEAT_MODE_BYTIMES
                     : (index==3 || index==4) ? QKeyMapperConstants::REPEAT_MODE_BYKEY : QKeyMapperConstants::REPEAT_MODE_NONE)
                 && (index!=1 || row.RepeatTimes==3) && (index!=2 || row.RepeatTimes==2),"Macro fixture timing/flags changed");
-            if (standard || stopActions) check(!row.Burst && !row.Lock && !row.KeySeqHoldDown
+            if (standard || stopActions || pause) check(!row.Burst && !row.Lock && !row.KeySeqHoldDown
                 && row.RepeatMode==QKeyMapperConstants::REPEAT_MODE_NONE,"Standard fixture flags changed");
         }
         if (tables) {
@@ -314,12 +318,33 @@ void verifyInputProduct(QKeyMapper *window) {
     check(IsWindow(inputReceiver),"Owned input receiver disappeared");
     const auto status=client.statusSnapshot();
     check(!status.releaseIncomplete,"Input release is incomplete");
-    if ((inputPhase==1 || inputPhase==4) && status.connected
-        && window->m_KeyMapStatus==QKeyMapper::KEYMAP_MAPPING_GLOBAL && qkmCurrentIbInputGeneration()!=0) {
-        check(status.backend==QStringLiteral("logitech_ghub") && !status.fallback,"Input backend differs");
-        if (inputPhase==4) check(status.generation>inputGeneration,"Restart reused an old generation");
+    const bool channelReady=fakerPause
+        ? (!status.connected && qkmCurrentIbInputGeneration()==0
+            && QKeyMapper_Worker::s_AtomicHookProcState==QKeyMapperConstants::HOOKPROC_STATE_STARTED)
+        : (status.connected && qkmCurrentIbInputGeneration()!=0);
+    if ((inputPhase==1 || inputPhase==4) && channelReady
+        && window->m_KeyMapStatus==QKeyMapper::KEYMAP_MAPPING_GLOBAL) {
+        if (fakerPause) {
+#ifdef FAKERINPUT_SUPPORT
+            check(QKeyMapper_Worker::s_FakerInputClient
+                && QKeyMapper_Worker::s_FakerInputClient_ConnectState==QKeyMapper_Worker::FAKERINPUT_CONNECT_SUCCESS,
+                "FakerInput comparison driver is not connected");
+#else
+            check(false,"FakerInput is not compiled");
+#endif
+        } else check(status.backend==expectedBackend && !status.fallback,"Input backend differs");
+        const auto *backendLabel=window->findChild<QLabel *>(QStringLiteral("ibInputStatusLabel"));
+        check(backendLabel,"Main backend status label is missing");
+        if (!fakerPause && !backendLabel->text().contains(expectedBackend==QStringLiteral("razer")
+            ? QStringLiteral("Razer") : QStringLiteral("Logitech G HUB"))) {
+            if (!QFile::exists(prefix+QStringLiteral("ui-waiting.json")))
+                inputRecord(QStringLiteral("ui-waiting.json"),{{"text",backendLabel->text()},{"backend",status.backend},
+                    {"generation",static_cast<qint64>(status.generation)}});
+            return;
+        }
+        if (inputPhase==4 && !fakerPause) check(status.generation>inputGeneration,"Restart reused an old generation");
         inputGeneration=status.generation;
-        QJsonObject started{{"generation",static_cast<qint64>(inputGeneration)},{"pid",static_cast<int>(GetCurrentProcessId())},{"desktop",currentDesktop()}};
+        QJsonObject started{{"generation",static_cast<qint64>(inputGeneration)},{"backend",fakerPause ? QStringLiteral("fakerinput") : status.backend},{"backend_label",backendLabel->text()},{"pid",static_cast<int>(GetCurrentProcessId())},{"desktop",currentDesktop()}};
         if (macros) {
             check(QKeyMapper_Worker::s_Key2Mouse_EnableState
                 && QKeyMapper_Worker::s_Key2Mouse_SendMethod==QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT,
@@ -336,7 +361,7 @@ void verifyInputProduct(QKeyMapper *window) {
         const int target=(tableStage+1)%3;
         const auto current=qkmCurrentIbInputGeneration();
         const bool backendReady=target==2 ? (!status.connected && !client.busy() && current==0)
-            : (status.connected && !status.fallback && status.backend==QStringLiteral("logitech_ghub")
+            : (status.connected && !status.fallback && status.backend==expectedBackend
                 && current>inputGeneration && status.generation==current);
         if (QKeyMapper::s_KeyMappingTabWidgetCurrentIndex==target && backendReady
             && QKeyMapper_Worker::s_AtomicHookProcState==QKeyMapperConstants::HOOKPROC_STATE_STARTED
@@ -375,7 +400,7 @@ void verifyInputProduct(QKeyMapper *window) {
 
 void verifyProduct() {
     try {
-        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
+        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
         check(currentDesktop()==expectedDesktop,"Product left its selected desktop");
         QKeyMapper *window=nullptr;
         for (QWidget *widget:QApplication::topLevelWidgets())
@@ -383,7 +408,7 @@ void verifyProduct() {
         if (!window || !QKeyMapper::s_AtomicIsInitialized.loadAcquire()) {
             QTimer::singleShot(500,verifyProduct); return;
         }
-        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions")) {
+        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker")) {
             verifyInputProduct(window); QTimer::singleShot(100,verifyProduct); return;
         }
         if (checked) {
@@ -428,7 +453,7 @@ void verifyProduct() {
         check(combos.size()==2,"Product Popup controls changed");
         if (selectedCase==QStringLiteral("save")) {
             combos.at(0)->setCurrentIndex(0);
-            combos.at(0)->setCurrentIndex(1);
+            combos.at(0)->setCurrentIndex(expectedBackend==QStringLiteral("razer") ? 3 : 1);
             combos.at(1)->setCurrentIndex(1);
             combos.at(1)->setCurrentIndex(0);
             check(window->saveKeyMapSetting(false),"Product save returned failure");
@@ -441,7 +466,7 @@ void verifyProduct() {
         check(settings.value(QStringLiteral("QKeyMapperGlobalSetting/KeyMapData_SendMappingKeyMethod")).toString()
             .split(QLatin1Char('|')).value(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex)==QStringLiteral("3#3#3#3"),"Method 3 did not survive product save/cold-read");
         const auto preferences=QkmIbInputClient::readPreferences(settings);
-        check(preferences.backend==QStringLiteral("logitech_ghub") && preferences.unavailablePolicy==QStringLiteral("block"),
+        check(preferences.backend==expectedBackend && preferences.unavailablePolicy==QStringLiteral("block"),
             "Global preferences did not survive product save/cold-read");
         check(!QkmIbInputClient::instance().busy(),"Popup binding initialized an IbInput run");
         QFile ready(output+QStringLiteral("/ready.json"));
@@ -465,7 +490,9 @@ int main(int argc,char **argv) {
     output=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_OUTPUT");
     selectedCase=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_CASE");
     expectedDesktop=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_DESKTOP");
-    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions");
+    expectedBackend=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_BACKEND",QStringLiteral("logitech_ghub"));
+    if (expectedBackend!=QStringLiteral("logitech_ghub") && expectedBackend!=QStringLiteral("razer")) return 2;
+    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker");
     if (argc!=1 || !QDir(output).exists() || currentDesktop()!=expectedDesktop
         || (input ? expectedDesktop!=QStringLiteral("Default")
             : ((selectedCase!=QStringLiteral("save") && selectedCase!=QStringLiteral("cold"))

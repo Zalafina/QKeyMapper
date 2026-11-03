@@ -618,3 +618,90 @@ Context：QkmIbInputPopup。替换U11的能力说明；无Qt占位符、无实�
 | 日本語 | 現在は G HUB によるマウスの相対移動、基本キー出力（A-Z、0-9、F1-F24）、5つのマウスボタン（左・右・中央・X1・X2）と縦スクロールに対応しています。 |
 
 2026-11-01 用户指出本条仅开发期间使用，建议固定中文或英文、无需三语维护。采用固定英文 QStringLiteral，撤回本条翻译提案，不更新正式 TS/QM；以上三语仅保留审阅历史。Release 前结合实际能力移除或改为必要的正式限制说明，不能在限制仍存在时直接隐藏。其他正式界面文字仍遵循原翻译约定。
+
+
+## IB-04-R1 U13-U22（2026-11-03，按当前状态给出明确操作）
+
+Context均为QkmIbInputPopup。U14／U16／U17／U18先获批准，其余最终预览及三语已于2026-11-03明确批准；10项均已按正式流程更新TS/QM。U13只保留说明链接和既有接收提示，不再显示抽象的“如果未检测到兼容接口”条件句或直接安装建议。U15实际结果由QKeyMapper自动被动查询；只有明确选择Razer且确实缺通道时显示U20，查询失败显示U22，不把失败当作未安装。已有通道时不提示重装。已有Razer／Synapse用户安装风险及步骤放在随包README与后续手册，当前未验证Synapse4／实体Razer设备共存功能。
+
+U13为RichText，两个固定网址保持；其他项单行，U14／U15各有一个%1。批准后使用正式lupdate-pro／lrelease流程；临时能力英文仍按U12独立处理。
+
+### U13 — 驱动说明链接
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `<a href="https://www.logitechg.com/innovation/g-hub.html">G HUB</a> &#124; <a href="https://github.com/Chaoses-Ib/IbInputSimulator/issues/7">Razer driver guide</a><br>Connection and accepted calls do not prove that an application received input.` |
+| 中文 | `<a href="https://www.logitechg.com/innovation/g-hub.html">G HUB</a> &#124; <a href="https://github.com/Chaoses-Ib/IbInputSimulator/issues/7">Razer 驱动说明</a><br>连接成功或调用被接受，并不代表应用已收到输入。` |
+| 日本語 | `<a href="https://www.logitechg.com/innovation/g-hub.html">G HUB</a> &#124; <a href="https://github.com/Chaoses-Ib/IbInputSimulator/issues/7">Razer ドライバーの案内</a><br>接続成功や呼び出しの受理は、アプリでの入力受信を保証しません。` |
+
+### U14 — 驱动服务观察（已批准）
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Razer driver services: %1` |
+| 中文 | `Razer 驱动服务：%1` |
+| 日本語 | `Razer ドライバーサービス: %1` |
+
+### U15 — 面向用户的实际检测结果
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Razer driver for IbInput: %1` |
+| 中文 | `Razer 驱动（IbInput）：%1` |
+| 日本語 | `IbInput 用 Razer ドライバー: %1` |
+
+### U16 — 详细服务观察（已批准）
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Not observed` |
+| 中文 | `未观察到` |
+| 日本語 | `未検出` |
+
+### U17 — 服务状态（已批准）
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Running` |
+| 中文 | `运行中` |
+| 日本語 | `実行中` |
+
+### U18 — 服务状态（已批准）
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Not running` |
+| 中文 | `未运行` |
+| 日本語 | `停止中` |
+
+### U19 — 已发现接口
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Detected` |
+| 中文 | `已检测到` |
+| 日本語 | `検出済み` |
+
+### U20 — 仅明确选择Razer且实际未发现接口时显示
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `QKeyMapper did not detect a Razer driver that IbInput can use. See the installation requirements in the Razer driver guide.` |
+| 中文 | `QKeyMapper 未检测到可供 IbInput 使用的 Razer 驱动。请查看“Razer 驱动说明”中的安装条件。` |
+| 日本語 | `IbInput で使用できる Razer ドライバーが QKeyMapper で検出されませんでした。「Razer ドライバーの案内」でインストール条件を確認してください。` |
+
+### U21 — 未发现接口
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Not detected` |
+| 中文 | `未检测到` |
+| 日本語 | `未検出` |
+
+### U22 — 仅明确选择Razer且检测失败时显示
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `QKeyMapper could not check the Razer driver status. Click Refresh status or Check connection.` |
+| 中文 | `QKeyMapper 暂时无法检测 Razer 驱动状态。请点击“刷新状态”或“连接检查”。` |
+| 日本語 | `QKeyMapper で Razer ドライバーの状態を確認できませんでした。「状態を更新」または「接続を確認」をクリックしてください。` |

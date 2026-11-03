@@ -1,30 +1,30 @@
 # QKeyMapper IbInputSimulator 集成计划：独立实施、能力验收与 MCP 合流
 
-文档修订：R19，2026-11-02（Asia/Shanghai）。
+文档修订：R22，2026-11-03（Asia/Shanghai）。
 本文是本功能唯一的设计、决策、实施状态和双 PC 接续来源，随功能分支提交；目录规则见 [handoff/README.md](../README.md)，依赖事实见 [依赖来源与本机制品](dependency_provenance.md)。旧 plan/ 文档仅保留导航，不维护第二份进度。
 
 ## 0. 最新交接卡片与本轮停止点
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前阶段 | M1自动及人工闭环；C1／C2／C3／K2／T1／T2所选产品范围自动完成，无需单独人工复测。IB-04仍有快速／并发切表、其余鼠标定位及Razer待处理，IB-05未开始 |
-| 当前授权 | T2固定开始／停止动作及T1回归已完成并撤回scope；用户明确授权17:00后本任务自行安排测试及使用Default，缓存另以显式技能延至19:00。持续开发与聚焦本地提交，不push、不amend已验版本，保留原系统／厂商操作边界 |
-| 本机实际环境 | PC-W11，Windows 11 Enterprise 25H2，10.0.26200.9711 AMD64；G HUB文件版本2026.7.992920，lghub_agent／updater／tray已观察，总线logi_joy_bus_enum Running；未要求罗技实体设备，未启停厂商软件 |
+| 当前阶段 | IB-04-R1本轮代表范围完成：兼容Razer驱动连接／复连、七项产品路径及Pause释放、Popup三语和反馈边框已验证；手动驱动包及打包接线已准备，Win10最终打包待验。IB-04其余切片及IB-05未完成 |
+| 当前授权 | 2026-11-03用户要求完成当前切片、聚焦本地提交后停止，明日本机／本会话／本工作区接续；不push、不amend已验提交，不操作驱动安装／厂商软件或系统筛选键。0005／0006／0007和固定真实测试均分别获批 |
+| 本机实际环境 | PC-W11，Windows 11 Enterprise 25H2，10.0.26200.9711 AMD64；G HUB仍保留。用户已卸载Synapse4并安装Nanoleaf v3.5.1030.101616来源驱动；普通只读观察RzCommon／RzDev_0306 Running，Razer控制及键鼠PnP均OK，标准SetupAPI目标GUID有1个活动接口；无Razer实体设备 |
 | 实施仓库／分支 | D:/work/mygithub/QKeyMapper/QKeyMapper_dev_temp/QKeyMapper_dev_temp；codex/ibinput-simulator |
-| 本轮已提交检查点 | M1 c1a8729c1a9ac029309570f2a8213a060b53474b；C1 ac3a376ef06fccef8504c43c07e3f5f3f3c061a1；C2 7453907687b8fad0552c94a4c62b3a5f674c2d23；C3 e2ba5b76718eb9f17f79ce743abbd838f61b8493，均未push。K2 26c11fc2efa6f7e04a6b458a0567e32f9cff8d91，均未push；T1 496e862ff66db4d58d32a44ffe956c950f622c81，均未push；T2为其后的本次独立提交，按本节所在Git记录及21.5制品身份定位，不改写已验提交 |
-| 接续核实 | 2026-11-02 09:39定向fetch功能分支，HEAD与远端0/0；参考提交已包含，无checkout／merge／reset／clean。Win10的out／截图不作为本机现成证据 |
+| 本轮已提交检查点 | R1本地独立切点为本卡所在提交（按本卡路径查询git log可定位），包含本轮源码、0005～0007配套依赖、批准资源及手动驱动包准备；原已推送T2为90cba3497d1806d334968489ee6c8a91bac43c2a，本轮不push |
+| 接续核实 | 2026-11-03定向核对实际分支、HEAD、原两处未提交差异及ls-remote；本地／远端均90cba349，0/0，无需同步。未因暂停重建环境或重跑无关已验场景 |
 | 工具链 | Python3.11.9；Qt6.8.3 x64、Qt5.15.2 x64／x86；VS2022工具集14.44.35207、SDK10.0.19041.0、JOM可用；构建和测试普通Medium |
-| 用户实例 | T2最终产品25224／接收器38484、当前源T1回归32624／26392均双原生0，分别24转换配平，无保持或截断。失败／启动前busy保护保留；后续仍预检实例及共享状态 |
-| 选定同步验证 | T2 Qt6普通／正式维护零警告，客户端停止阶段边界／失败／并发与T1新意图替身在Qt6及Qt5两架构通过，三Qt INI读回通过。修正排队子任务及旧释放回调后Default开始／停止Repeat x2／退出和T1串行三表回归均通过 |
-| 本切片估算／桌面 | T2按单独批准范围在Default执行Q与F/G/H/I，修正版约8秒；T1定向回归约9秒。均自有窗口、无鼠标／修饰／系统组合或设置变更。21.4首轮停止序列缺失失败保留，21.5最终实际通过 |
-| 后续IB-04 | 当前Win11已进入用户授权的Default空闲时段，接续第17节R1共存环境的被动状态／连接诊断准备，逐步验证真实Razer通道；快速切表／停止交错及定位等继续安排。Win10不安装Synapse，不卸载／停用G HUB |
+| 用户实例 | 本轮最后Razer Pause产品18228／接收器28080原生均0；Pause DOWN／UP各3、恢复原始Q各2，末态pressed_count=0，无截断、无系统保持；只清理本线程输入／进程，保留共享控制器期限 |
+| 选定同步验证 | Qt6普通产品及维护目标、客户端替身和正式三语私有7场景已过；最终Qt5 x64／x86 Popup兼容构建通过。0007两架构九组报告及参数／原版对照通过，保留0006失败与FakerInput实际对照，见23.4～23.6 |
+| 本切片估算／桌面 | R1真实产品在Default自有接收窗串行执行，已完成；界面使用私有桌面QkmIbInputUi_13056。无厂商软件／筛选键变更；后续本轮只做检查与提交，无新增Default测试 |
+| 后续IB-04 | 明日本机从快速切表／停止交错的调用链审查及无输入准备继续，再按原计划处理定位及其他移动来源；Razer水平滚轮、实际故障和环境差异仍按剩余矩阵处理，不扩大本轮结论 |
 | 历史证据 | Win11连接／复连、基础移动／键盘及基本长按／双击按12.4／12.11／12.12原版本和范围复用；旧Win10错误5不能替代当前0004结果，Forza历史游戏／ASan不算合入后新验证 |
 | 权限／边界 | 新驱动初始化／真实键鼠／系统设置／UAC／厂商软件操作需按具体范围授权；已批准同范围测试只公告后执行。构建、Git、静态与截图保持普通权限；缓存变更仅按用户显式技能请求 |
-| MCP只读核对 | 仅已授权的共享缓存及忽略out/ibinput_acceptance/w11-20261102内各固定测试子目录暂存副本／证据，源码／计划／分支不动；17:23只读git status确认codex/qkeymapper-mcp-control干净。控制器36124 Medium，generation2、原实例不变，当前用户新期限19:00，scope／owned／unresolved／job／action空 |
-| 下一动作／完成标准 | 封存T2独立本地切点，按第17节进入Win11 Razer共存独立切片，先来源／环境和无输入准备。自动通过范围不附加人工重复；完整目标、手册预览和明确合流许可满足后由MCP原线程接纳 |
-| 交付性质 | T2独立提交切点：所选G HUB开始／停止短序列和退出自动完成，T1现源回归通过；不是无限外层循环／所有取消体验、Common特殊行全矩阵、快速切表、定位、Razer或MCP融合验收 |
+| MCP只读核对 | 原MCP线程仍completed／notLoaded，维持暂停等待安排；源码／计划／分支不动。今日用户显式缓存请求创建普通Medium控制器7084，instance e28fd0859b2e45dab54d8c7dcc4c545d，generation1、19:00截止，开始时scope及owned／unresolved为空；必要提权仍仅走既有忽略out和受管入口 |
+| 下一动作／完成标准 | 本轮到R1聚焦本地提交后停止；明日沿用当前工作区及证据，不因暂停重建或重跑已过场景。Release打包及三变体ZIP最终检查仅Win10专用PC；手册预览、完整验收与明确合流确认前不进入IB-05 |
+| 交付性质 | R1独立提交切点，覆盖本机已选Razer输出及UI；手动驱动管理仅替身／签名／目录成员检查，未执行本机安装／移除；不是所有Razer环境、Win7、Win10驱动、正式Release或MCP合流验收 |
 
-Win10及Win11各切片历史保留在第11～12节，不重写当时事实。当前状态与停止点以本卡及第15～21节为准；此前“基本验证后即可合流”的阶段安排由R8的完整功能门槛替代。
+Win10及Win11各切片历史保留在第11～12节，不重写当时事实。当前状态与停止点以本卡及第15～23节为准；此前“基本验证后即可合流”的阶段安排由R8的完整功能门槛替代。
 
 状态统一使用：未开始／进行中／待验证／受阻／完成；暂停意图、用户验收和合流许可另行记录。构建、替身、API 接受与目标实际接收分别说明。
 
@@ -54,7 +54,7 @@ Win10及Win11各切片历史保留在第11～12节，不重写当时事实。当
 
 - 原始键识别、长按／双击／组合、发送时机和队列调度优先沿用现有QKeyMapper实现，尽量只在最终输出处替换发送通道。不能只因某组合未验收，就另写发送方式专属拦截或并行实现。
 - 分开记录“已验证”“可由现有流程复用但待回归”“明确不支持／存在具体故障”。待回归通常进入测试清单；后端确实不能表达、已核实会回环、无效参数、释放失败或配置结构冲突才保留对应守卫，并记录依据与恢复条件。
-- 风险决定验证：输出原语变化检查真实接收和释放；纯业务复用优先调用链审查及代表性回归；不能由基础键通过外推全部组合，也不因未跑完整矩阵而反向判为不可用。本切片仍只交付60个基础键值，其他表示按后续输出适配切片处理。
+- 风险决定验证：输出原语变化检查真实接收和释放；纯业务复用优先调用链审查及代表性回归；不能由基础键通过外推全部组合，也不因未跑完整矩阵而反向判为不可用。早期K1切片仅交付60个基础键值；当前能力和已验范围以本交接卡及各后续切片为准。
 - 早期代码中以“await validation”为由设置的复杂序列／连发／锁定等临时门控，下一切片按实际调用链逐项审查：能直接复用则删除多余判断，有具体差异再最小修正；不把门控本身当作已完成适配。来源回环、持有状态／释放失败等具体保护不随意删除。
 
 ### 1.2 FakerInput对齐与系统筛选键验收基准（2026-10-30用户确认）
@@ -162,11 +162,11 @@ IB-01 核对完整源获取／检出命令、工具链、SDK、CMake 参数、�
 
 | 面板区域 | 内容 |
 |---|---|
-| 首选后端 | 自动（推荐）／Logitech G HUB／Logitech 旧版通道／Razer Synapse |
+| 首选后端 | 自动（推荐）／Logitech G HUB／Logitech 旧版通道／Razer |
 | 无法连接时 | 不启动映射（默认）／启动前改用 SendInput |
 | 本轮状态 | 当前偏好、实际后端、是否回退、最近结果和采样时间 |
 | Logitech 行 | 软件版本、相关后台进程／服务观察、驱动检测或连接结果 |
-| Razer 行 | 软件版本、相关后台进程／服务观察、驱动检测或连接结果 |
+| Razer 行 | 显示IbInput可用驱动的实际被动检测结果、辅助服务观察与最近连接结果；Synapse安装／运行不作为必要条件，缺通道且明确选Razer时才引导查看安装条件 |
 | 操作区 | 刷新状态、连接检查、官方安装／帮助链接 |
 | 解释区 | 未检测到／未知／未连接／连接失败／能力不支持的原因及下一步 |
 
@@ -318,7 +318,7 @@ IbInput专属的运行包增量为根目录IbInputSimulator.dll及licenses/IbInp
 
 2026-10-30只读核对用户指定的out/ibinput/manual-w11-20261030与MCP仓库plan/bin_release/QKeyMapper_Qt6_x64：上述DLL和四份许可与本仓库来源一致。测试目录另有INI、build-identity、MCP提示词、验证说明，以及Qt插件／运行库和既有许可的差异；这些不全部属于IbInput新依赖。测试目录也未带齐原发布包的驱动工具、PDF、模板和辅助工具，不能整体替换正式部署基底。更完整的依赖事实见dependency_provenance.md。
 
-ibinput.pri已有构建后复制DLL；本轮未完成正式发布脚本对新增DLL／许可的显式接入和部署回归，不把手工测试目录当作发布完成。IB-06需在scripts/release/build_release.ps1及其既有测试中补齐三组合清单、缺文件／错架构拦截、许可内容和ZIP实际内容核对；保留原依赖／驱动工具及从本次源码生成的使用手册。G HUB／Synapse是用户环境中的外部软件，不打入本程序运行包。隐式链接下缺少或装错IbInputSimulator.dll会阻止程序装载，需由部署阶段发现。
+ibinput.pri已有构建后复制DLL；R1已在scripts/release/build_release.ps1及既有测试补齐匹配架构DLL、四份许可和x64-only RazerDriver白名单接线。新打包规则目前仅静态检查，IB-06必须在Win10 Release专用PC执行三组合部署／ZIP及缺文件检查，不把手工目录或旧规则合成结果当作发布完成；保留原依赖／驱动工具及从本次源码生成的使用手册。G HUB／Synapse是用户环境中的外部软件，不打入本程序运行包。隐式链接下缺少或装错IbInputSimulator.dll会阻止程序装载，需由部署阶段发现。
 
 ### 7.2 分层验证矩阵
 
@@ -360,6 +360,8 @@ ibinput.pri已有构建后复制DLL；本轮未完成正式发布脚本对新增
 内容至少包括：发送方式的选择入口；G HUB／Synapse前置条件和已验证后端；无实体罗技设备／有GPW等场景的区别；自动／手动选择、启动前回退；安装／进程／驱动／当前连接及最近结果的含义；刷新与连接检查的不同作用；W→F及小幅移动等已开放示例；保存、Common／禁用／混用规则、停止与退出、失败排查和真实能力限制。用户正文不写“检查点”或验证工具细节。
 
 先在IB-04-DOC生成out/user_manual/中的预览，检查新增章节、索引／搜索、链接、离线内嵌图片和深浅主题；截图使用实际中文深色默认比例界面，按需捕获，不伪造设备／游戏结果。提交预览供用户审阅；依该技能，发布HTML及对应本地提交在获批后执行，当前计划安排不代替届时具体内容审阅。
+
+手册须补充RazerDriver只在Qt6_x64／Qt5_x64压缩包提供，面向64位Win10／Win11、不支持Win7；已有Razer／Synapse用户先做连接检查，成功则无需重装，变更前确认兼容性及恢复方法。软件只被动报告检测状态，安装由用户按随包README手动执行，不建议为了IbInput安装Synapse4。
 
 IB-05保留并融合MCP对同一手册源和稳定ID的修改，按合流后的实际UI／能力复核，再生成同源发布HTML。IB-06确认压缩包包含当前手册，并按已有在线发布流程核对在线内容／入口；单HTML内嵌资源，不增加独立截图目录依赖。本轮不改或发布手册。
 
@@ -419,7 +421,7 @@ MCP 仓库内的 handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_c
 | IB-02 | 待验证 | 全局偏好、枚举往返、Popup 与被动状态 | 配置／保存／错误状态和私有 UI 通过；不自动连接驱动 |
 | IB-03 | 待验证 | 鼠标指针移动已获用户人工通过；其余移动来源、候选／回退及完整生命周期仍分项验收 | 不从指针移动外推四类来源、真实故障释放或整阶段完成；MCP差异在IB-05统一 |
 | IB-04 | 进行中 | K1与M1产品代表切片用户人工通过；C1通用行、C2保持／循环、C3宏／Repeat／OnlyOnce及宏移动所选产品范围自动完成，无需单独人工复测；标准键盘表示、特殊触发、定位及其他后端仍待适配／验证 | 按能力矩阵复用既有路径、适配实际差异并分项验收；不由未测新增禁令，最终固定SHA自动验证汇总由用户确认，必要补充检查由用户决定 |
-| IB-04-R1 | 未开始 | Win11的G HUB＋Synapse共存；用户报告Razer连接检查razer: 6及状态未知，尚非真实连接或输入通过 | 按第17节独立推进，在完整验收与MCP正式合流前处理；Win10不安装Synapse，仅Synapse环境待验证 |
+| IB-04-R1 | 完成（本轮代表范围） | Win11兼容独立Razer驱动＋G HUB共存：连接／复连、mouse／standard／patterns／loops／macros／tables／stopactions及Pause、三语状态和反馈框已验证，见23节 | Win10不安装Synapse；Synapse4／实体Razer共存、仅Razer环境及实际故障未验证；不等于整个IB-04或MCP合流通过 |
 | IB-04-DOC | 未开始 | 稳定功能对应的使用手册源、截图、覆盖表和预览 | 使用qkeymapper-manual-update，预览审阅后更新生成发布HTML及聚焦本地提交；见7.4 |
 | IB-05 | 未开始 | 已有只读接口对齐作为历史准备；IB-04完整功能及用户合流确认后由MCP原线程正式接纳 | 独立工作树合并／验证，配置、停止排空、权限／演示及文档融合通过后快进更新MCP功能分支；见8.3 |
 | IB-06 | 未开始 | 双PC、最终三个构建组合部署、合流后手册复核与交付 | DLL／四份许可／当前手册及ZIP内容完整，实际包与验收能力一致；见7.1.1、7.4 |
@@ -434,7 +436,7 @@ MCP 仓库内的 handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_c
 | 能力 | 当前实现／证据 | 剩余事项 |
 |---|---|---|
 | IbInput方式／配置／Popup | 方式3、偏好、保存／冷读及绑定见12.8；M1临时能力提示按用户意见固定英文，TS/QM未改；Qt6私有Popup五场景通过 | 用户最终UI体验、其他配置入口和完整发布矩阵继续验收 |
-| 自动／手动及启动前回退 | 候选顺序、能力筛选和回退冻结已有替身及相关产品检查 | 多厂商／缺失依赖实际组合待补；旧Logitech／Razer未作为本轮可用后端交付 |
+| 自动／手动及启动前回退 | 候选顺序、能力筛选和回退冻结已有替身及相关产品检查 | 本机G HUB＋兼容Razer驱动实际路径见23节；旧Logitech未开放，缺失依赖及其他多厂商环境组合仍待补 |
 | 相对移动 | G HUB Key2Mouse指针移动用户人工通过；其他相对来源已接发送点 | Joy／Gyro／触摸板、边界坐标及相应停止场景分项回归 |
 | 基础键盘输出 | G HUB的A-Z／0-9／F1-F24正式开放；60键替身与代表路径自动通过，用户已确认本轮基础键盘人工验证通过 | 其余键值／表示分后续适配；人工反馈未逐键枚举，不外推全部组合 |
 | 长按／双击等原始触发 | 沿用既有流程，未增加专用触发守卫；用户确认基本长按Q 500ms→F、双击W 500ms→G可用 | 未做复杂测试；复杂时序、取消／停止组合、设备编号及特殊发送时机按实际风险补回归，不重复要求基础功能验收 |
@@ -1162,7 +1164,7 @@ Qt6普通Release及正式manifest维护目标增量构建原生0、编译错误�
 
 ## 17. IB-04-R1 Razer：Win11后续独立切片（2026-11-02用户安排）
 
-本节仅记录和安排，不切换当前IB-04开发切片，不启动新的Razer诊断或测试。结合IB-04整体进度选择实施时机，在完整功能验收和MCP正式合流前处理。Win10不为该功能安装Synapse；Win10＋Razer Synapse记为未验证。
+本节保留2026-11-02用户要求仅记录安排的历史范围；后续完成K2／T1／T2后，已在Win11进入R1只读准备，当前实施与证据见第22节。结合IB-04整体进度选择实施时机，在完整功能验收和MCP正式合流前处理。Win10不为该功能安装Synapse；Win10＋Razer Synapse记为未验证。
 
 用户报告Win11已安装G HUB和Razer Synapse，G HUB版本2026.7.992920，Synapse界面版本4.0.86.2610281118；Synapse界面可打开。用户在M1测试版手动指定Razer后，“连接检查”显示“IbInput 连接失败：razer: 6”，状态区显示“Razer 安装与驱动：未知”。除本机G HUB版本已由此前观察核实，以上Razer事实仍是用户反馈，未由Agent补做连接或接收验证；不将该错误直接解释为Synapse 4不兼容，也不判断实体雷蛇设备必需或非必需。
 
@@ -1410,3 +1412,109 @@ t2-stopactions-01产品25828／接收器30784，开始H/I已收到，Q→F按住
 首次失败、修正版及回归的文本证据分别复制到独立out/ibinput/t2-w11-20261102/{failed-01,acceptance-02,t1-regression-01}；旧EXE及MCP隔离原记录保留。首次失败中产品正常中止流程已完成，但运行器未保存失败退出的原生码，不补称该轮产品exit0。最后scope／owned／unresolved／job／action空，同一Medium36124保留用户新19:00期限。
 
 结论：T2完成本机所选真实产品／G HUB／接收范围的自动验证，无需单独人工复测；T1当前源定向回归通过，未写成用户人工验收。特殊源在Common／禁用行偏移下的全矩阵、无限外层循环和交互取消体验、快速切表／停止交错仍是后续任务；不引入未验证总禁令，也不把短序列通过扩大为全部策略完成。可选正常产品目录out/ibinput/manual-t2-final-w11-20261102仅供体验；只本地提交，不push或amend已验提交。
+
+
+## 22. IB-04-R1 Win11 共存环境与 Razer 通道诊断（2026-11-02，进行中）
+
+基线T2 90cba3497d1806d334968489ee6c8a91bac43c2a。当前已完成C3／K2／T1／T2的选定G HUB自动范围，Win11同时有G HUB和Synapse且用户已给予必要测试／Default授权，适合进入第17节安排的独立R1；Win10不安装Synapse，也不卸载或停用G HUB。用户随后已回到电脑旁，明确允许继续，测试只需先文字提示；不再以“人已离开”为当前前提。缓存仍为同一Medium控制器36124、generation2、用户19:00期限。
+
+### 22.1 当前只读环境事实
+
+17:36左右普通权限读取：HKLM32卸载项观察到Razer Synapse，注册DisplayVersion=4.0.896；当前进程RazerAppEngine.exe、RzEngineMon.exe、razer_elevation_service.exe存在。Razer Elevation Service及Razer Game Manager Service 3为Running。原用户提供的Synapse界面版本4.0.86.2610281118另行保留，注册字段与界面字段不互相替换。
+
+Win32_SystemDriver未观察到Name／DisplayName匹配Razer或Rz前缀的驱动；Win32_PnPEntity未观察到Razer／VID_1532／RZCONTROL节点；Program Files/Razer内未匹配.sys/.inf文件。这些是指定只读查询的观察，不扩大为整个DriverStore不存在包或所有驱动未安装。用户已明确当前Win11未连接雷蛇设备，也没有可临时使用设备；后续截图显示“No devices or modules detected”，作为实际界面补充，不把它推论为所有Synapse 4不可用或实体设备必需。
+
+正式依赖Razer.hpp只查找GLOBAL??中前缀RZCONTROL#、尾部#{e3be005d-d130-4910-88ff-09ae02f680e9}的设备名。Error枚举6为DeviceNotFound，7才是DeviceOpenFailed。独立只读NT目录诊断以初始化context／单项枚举完整读到366项、终止STATUS_NO_MORE_ENTRIES，无任何Rz/Razer或所需通道；NtOpenDirectory成功，因此不是简单的目录打开权限失败。该工具不打开设备／调用IOCTL／初始化厂商客户端／发送输入，源码和JSON在out/ibinput/r1-w11-20261102，vendor CIM结果已保存passive-cim.json。现有Popup仅硬编码“Razer installation and driver: Unknown”，且进程白名单漏掉AppEngine／EngineMon，不能用作实际未安装结论。
+
+### 22.2 单次无输入连接诊断准备
+
+复用ghub_probe的--razer-connect-only固定分支，在创建QApplication／窗口之前进入QCoreApplication；要求Medium、无其他mapper和全新绝对输出文件，显式首选razer、Requirements{}，只prepare一次并close，失败不重试。没有sendEvent、窗口、取焦点、原始键注入或厂商软件操作；普通探针不使用gsudo，不运行产品主程序／个人INI。正式依赖Init的Razer分支只创建对象／查询通道并打开已存在设备，不发送输入；代码路径已核对。连接结果不等同于产品输出接收。
+
+本检查不需要Default前台场景：无窗口、无取焦点或输入操作，实际线程桌面仍写入结果。当前CLI只构建Qt6普通Release诊断目标，原生0零警告；不默认产品全构建、Qt5、严格静态或ASan。新CLI无需MCP暂存或缓存，独立connect-runtime仅含本探针及原DLL，Qt6依赖由明确Qt bin环境提供。mt核对asInvoker；Source只改第一方测试，不改第三方DLL／0001～0004或manifest。
+
+冻结探针EXE 999f27b0b82b184d8ca02a80ce39322529c7f11d0f105dc7d37c1f07e98bdaf5，DLL仍13bdf841a5b15057a939bc1dc5c41fc1848fde433dcc5b0941248d16fdb9d548。诊断返回0为连接成功、3为已完成但连接未通过、2为前置／I/O失败；报告区分diagnostic_complete／connection_passed／released。client_send_event_calls=0表示本探针未调用发送入口，不冒充全系统输入API计数。实际初始化前已向用户文字说明单次、无输入、不取焦点的范围，依用户当前测试授权执行。
+
+
+### 22.3 本机原会话临时暂停（2026-11-02T18:04+08:00，用户明确要求）
+
+已完成单次普通连接诊断：PID36844、Medium、实际Default但无窗口／焦点操作；原生3表示诊断完成而连接未通过，detail=IbInput connection failed: razer: 6，released=true，client_send_event_calls=0。与22.1完整只读枚举未发现通道一致；未做Razer真实接收，不据此断定实体设备必需或Synapse 4全面不兼容。
+
+当前停止在R1状态显示修订之前：普通连接探针源码及本计划保留未提交改动，未开始UI／三语文案修改或新测试。既有T2检查点90cba3497d1806d334968489ee6c8a91bac43c2a及已验结果保持，不专为暂停提交／push。所有本轮输入测试已结束且自有输入释放，最后CLI也已退出；共享控制器不关闭或接管，保留用户既定19:00期限，不新建／延长缓存或触发UAC。
+
+明天在本机、本会话、同一独立工作区沿现场继续：先据现有Razer安装／运行及无兼容通道事实准备清晰状态显示和三语草稿，再推进不依赖该通道的剩余工作；不为暂停重做整仓盘点、环境或已通过检查，真实桌面／驱动测试前仅按需检查冲突。
+
+
+## 23. IB-04-R1 兼容Razer驱动接续（2026-11-03，本轮代表范围完成）
+
+### 23.1 新环境、授权与来源
+
+用户主动卸载Synapse4并通过RazerNanoleafSetup_v3.5.1030.101616安装驱动，截图显示VID1532／PID0306键鼠。此为用户完成的系统变更，不是Agent执行；旧第22节缺通道失败继续作为历史。当前为G HUB与独立兼容Razer驱动共存，不能称Synapse4连接／输出通过。上游issue #7列出同版本Nanoleaf及独立驱动路径：https://github.com/Chaoses-Ib/IbInputSimulator/issues/7 。
+
+普通只读检查RzCommon／RzDev_0306均Running，Razer控制／0306／键鼠PnP均Status OK、ConfigManagerErrorCode=0。SetupAPI按GUID e3be005d-d130-4910-88ff-09ae02f680e9完整枚举，1个SPINT_ACTIVE接口、终止ERROR_NO_MORE_ITEMS；未CreateFile或IOCTL。签名查询显示随包2个SYS、7个CAT及nefconw均Valid；CAT对INF／SYS成员一致性另验，不从签名推出功能／许可结论。
+
+用户批准本节方案及Default自有窗口代表测试；普通源码／Git／构建不提权，不执行安装／卸载制造环境，不更改筛选键。显式技能缓存20261103 19:00已创建并确认，PID7084、Medium、generation1；缓存本身不扩大测试范围。原MCP线程已停止，无需唤醒，实际争用测试前仍查共享状态。
+
+### 23.2 当前证据与下一切点
+
+基线90cba349；复用昨日Qt6诊断EXE（SHA256 999f27b0b82b184d8ca02a80ce39322529c7f11d0f105dc7d37c1f07e98bdaf5）、原0001-0004 DLL。普通Default无窗口探针PID4060原生0：razer连接成功、released=true、client_send_event_calls=0，无取焦点或键鼠。证据out/ibinput/r1-w11-20261103/connection-01；尚非同客户端复连或产品映射通过。
+
+现有product_check仅增加白名单预期后端QKM_IBINPUT_PRODUCT_BACKEND（logitech_ghub默认／razer），沿原用例与manifest。ghub_probe增加--razer-connect-cycle-only；源码及测试入口本轮修改，未据此宣称已验。报告替身复用logitech_report_test，基础键／五按钮／轮单位及当前相对编码两架构通过；x64／x86均复现右Ctrl、右Alt、数字区除号、Apps缺KEY_E0。0005候选仅添加4个case并删除过时注释，out内候选两架构八组通过，用户已批准0005，正式x64／x86配套重建及部署完成；后续又分别批准0006 Pause E1和0007完整Pause序列，两架构配套重建通过；0006仅加E1的实际释放失败保留，0007最终接收见23.6。原始失败和候选日志均在同一out目录；Razer E1／Pause等未覆盖不扩大结论。
+
+U13-U22最终三语已按用户反馈审阅批准并完成限定TS/QM更新，见23.5；已移除软件内直接安装建议。临时英文能力说明仍属开发提示，发布前按实际支持范围和正式翻译流程收妥。
+
+### 23.3 手动驱动包边界
+
+plan/RazerDriver两份Markdown仅作参考，不照搬C++安装／卸载架构。目标为用户手动manage_driver.bat，产品不新增自动安装入口。原脚本在安装前清理和卸载时调用nefcon1.14.0 --remove-device-node；固定上游aca39790f2686b96ab21902c578221ca804fe764源码实际调用UninstallDeviceAndDriver，不能等同仅移除节点。改用可用的系统PnPUtil按精确虚拟总线实例移除，保留DriverStore，不提供自动包删除回退；不以当前环境执行安装／移除验证。需修正错误／重启传播及过强文案，以替身检查参数和失败，不碰本机设备。
+
+审核后的README／脚本／签名原件复制到受Git管理目录，再接入现有Release流程，排除INTEGRATION_GUIDE.md。记录来源／许可、CAT成员及架构，宿主AMD64与产品x86区分；DriverVer不是OS最低版本声明。当前仅Win11新环境有证据，Win10＋Razer仍未验证。手册与release note仍按既有稳定阶段和各技能审阅流程，不提前MCP合流。
+
+
+### 23.4 已完成的Razer实际产品路径（0005版本）
+
+产品维护EXE SHA256 84d2271efcd11b0f869668d01961845eb9eb885ba4f18aeb9644c92cb1bb8288；基线90cba349＋R1客户端／维护入口及当时Popup差异，Qt6 Release零警告。实际DLL SHA256 5da90c2dcc2782f1dfaab18ee2594b67658fbfd29a0216b06f747ffa16eab913（x64，0001-0005）；x86配套ba90168c0e1fc3529396a157fdb9db2c0ef646d2fe4e44e71db07feed5a41205。导出／ABI及导入库未改变。普通CLI10556同一客户端连接／关闭／一次复连原生0、代次2、发送0；该CLI仍使用原0004DLL，与下表0005产品结果分开。
+
+下表均在PC-W11 Default，自有接收窗、固定软件原始键，经真正产品Hook／映射／razer后端输出；起始marker断言实际backend=razer。每项产品／接收器原生均0，输入释放，FilterKeys flags58及各timing0前后一致，无改动。除鼠标M1复用原接收器f731ac57c30d42aec233cf570da7015764ff14a3ae25fbbd216d3713ecb84353外，其余复用K2接收器79838536f2bb624610bf2e23b645455c3112c2cde77766958da5d520e40386a4；没有把旧G HUB结果冒充Razer接收。
+
+| 用例 | 产品／接收PID | 实际所选结果 |
+|---|---|---|
+| mouse | 21068／29340 | 五按钮DOWN／UP分别3/1/2/1/1配平；上下轮各2；左键保持移动+2/-1px及滚轮，停止／重启／退出释放，末态按钮0 |
+| standard | 30132／5916 | 编辑／导航／数字区／OEM、左右Shift及Ctrl+F24，98转换配平，右Ctrl和Num/已实际确认；停止／重启／退出释放 |
+| patterns | 12900／30280 | 普通组合、顺序、60ms连发、锁定及保持停止／退出，18转换配平 |
+| loops | 5468／22892 | 保持、三轮、按住循环、键鼠中断再触发，36转换配平，按钮0 |
+| macros | 30196／23560 | 普通／通用宏、Repeat／OnlyOnce、键鼠中断及Key2Mouse，42转换配平，按钮0 |
+| tables | 29820／30632 | 串行Razer→Razer→SendInput→Razer，旧UP／新DOWN、切表输出、停止重启退出，24转换配平，最终代次5 |
+| stopactions | 28296／28928 | 开始H/I、旧F释放后停止F/G x2、重启及退出，24转换配平 |
+
+各keyboard轨迹未截断、pressed_count=0；不宣称实体键来源、Win／Alt／菜单／锁定键、快速并发切表或全部故障场景通过。自有输入／进程均清理，只撤各项本轮scope，控制器及19:00期限保留。证据已从MCP忽略out复制到本检出out/ibinput/r1-w11-20261103/<case>/acceptance-01；实际维护和接收EXE保留各prepared-runtime及原隔离out。按用户验收政策，上述所选自动范围无需另要求人工逐项复测。
+
+### 23.5 交互、资源与发布边界更新
+
+用户指出抽象的“如果未检测到兼容接口”无法解释当前状态／操作，最终采用软件被动检测的实际结果：Razer驱动（IbInput）已检测到／未检测到／未知；只在明确选Razer且缺通道时引导先看安装条件，查询失败只提示刷新或连接检查，已有通道不建议重装。用户已批准最终U13-U22全部10项三语；Qt5 lupdate-pro原生0，限定新增各50行TS，lrelease及QM反向逐项相等，其他资源内容保留。Qt6正式QM私有7场景原生0、init/send均0；包含中文／英／日、150%暗色，后2场景仅被动接口模拟缺失／查询失败，不是本机驱动故障。首轮预览曾因运行PATH缺QtDLL在装载阶段退出，另有草稿Markdown转义导致4项回退英文；均仅影响out预览，最终正式词条和实际显示已核对，不扩大到产品驱动问题。
+
+用户新增：反馈Label采用WinPanel+Sunken并留内边距，Qt6正式资源七场景在私有桌面QkmIbInputUi_13056通过（init/send=0），中文100%及日文150%暗色等实际截图已检查，无裁切；最终Qt5 x64／x86 Popup增量兼容构建均通过。RazerDriver只随Qt6_x64／Qt5_x64，不随Qt5_x86，且清除配套目录残留；本套驱动支持范围为64位Win10/Win11，不支持Win7。Qt5保留Win7产品兼容不意味着此驱动可用；手册待对应技能阶段同步。
+
+Release打包及最终验收只在Win10专用PC执行，Win11不再运行打包测试。此前Win11合成夹具76项仅覆盖旧“各包带同一AMD64驱动”草案，不能作为新x64-only规则通过；完整旧自检还因Win10固定Qt路径在本机不存在而停止。新规则／测试已更新，仅静态检查，留Win10执行三个包内容／ZIP检查。此处不运行正式Release、不给master／远端写入。
+
+管理脚本保留BAT入口，使用Windows自带PS5.1承接原生参数和返回码；状态普通权限、安装／移除才由用户UAC；已有节点不先删除。包内签名原件一致性12项通过，管理脚本CIM／权限／提示／原生命令替身21项通过，另在Windows PS5.1仅用cmd退出7／3010确认实际原生命令返回传播；未在本机运行安装或移除。README已说明已有Razer／Synapse先连接检查、无需为IbInput重装；Synapse4／实体Razer共存未验证，Razer原厂再分发依据尚待发布前核对，nefcon1.14.0 MIT已附。
+
+### 23.6 Pause最小对照、0007与最终产品释放
+
+0006只给0x1D增加E1：首轮维护断言过早检查异步主标签而在输入前退出，已改为等待实际刷新；第二轮产品28068／接收器3712收到Pause DOWN但没有UP，退出后系统Pause仍保持。只补发一次VK_PAUSE KEYUP（DOWN调用0）即清除；原失败及cleanup-keyup-only.json保留。未据替身通过宣称真实释放通过。
+
+随后经单独批准，在同机、同一Q→Pause映射及不变FilterKeys（flags58，各timing0）对照FakerInput：产品26948／接收器24672均原生0，单次Pause DOWN／UP各1，停止／重启／退出无残留，不需要额外清理。前台专用Raw Input记录make为(0x1D, E1)后接(0x45, MAKE)，break为(0x1D, E1|BREAK)后接(0x45, BREAK)；该对照仅针对Pause，不是dwExtraInfo实测。Raw Input诊断接收器仅在out一次性副本实现，无后台注册、不改正式接收器。
+
+0007仅按此实测完整序列补上第二个报告，沿用原IOCTL、结构和同一键盘锁；两段任一失败立即返回，不重发。x64／x86对照0006均复现序列不完整；0007九组报告、第一／第二段失败传播及参数／原版回归通过，正式配套DLL均重建部署，ABI／导入库未改变。补丁0005／0006／0007均分别获批，来源身份见dependency_provenance.md。
+
+0007首轮固定产品测试已收到正确Pause释放，却因停止时产品恢复仍保持的原始Q，使测试器把source held误计为输出未释放而超时。保留原目录；只修正测试器为先确认Pause UP及系统Pause未保持，再抬起Q并检查全部清空，不修改产品逻辑。启动前一次busy守卫查实为已退出Faker PID26948的旧owned记录，官方status回收后才启动，没有绕过守卫或重复不明请求。
+
+最终Razer产品18228／接收器28080均原生0：点按、保持时正常停止、重启及保持时退出，Pause DOWN／UP各3、原始Q恢复DOWN／UP各2，pressed_count=0、未截断、所有相关系统保持清零。首次点按Raw Input与FakerInput四个报告完全一致，实际后端razer、代次1→2；无Ctrl接收、无额外Pause清理输入、筛选键前后一致。维护EXE为out/ibinput/product-checks/qt6-release/release/QKeyMapperIbInputProductCheck.exe，SHA256 9b94e67f259ad23dff0af3afeca0b7680c8964c65998582d96a6a0e91f90f04a；最终实际运行副本在本检出out/ibinput/r1-w11-20261103/pause-0007/prepared-runtime。配套x64 DLL为4353cc3d70fafb186ef89402cbf5e110ebea16b734666c7d73b207b0d7c88f8b。
+
+MCP忽略out证据为r1-pause-02、r1-pause-faker-01及r1-pause-03/retry-01，必要JSON已复制到本检出out/ibinput/r1-w11-20261103对应acceptance目录。前两轮失败不覆盖，Raw Input原始记录保留；这些本机out、截图和缓存不随Git。最后自有输入和进程已清理，仅撤本轮固定scope，MCP源码／计划／分支未变。以上为所选自动产品验证，无需用户逐项重复操作。
+
+### 23.7 本轮提交与停止
+
+18:27官方缓存status确认scope为空，owned_targets／unresolved_starts均为空、无活动动作；同一控制器7084及19:00期限保留。提交前发现Git默认文本转换会改写INF，已对驱动原件禁用文本转换，并逐一核对17项暂存blob等于原始已验文件，保护CAT成员字节一致性。
+
+按用户要求，本轮在R1聚焦本地提交后停止，不开始快速切表、定位或其他新切片，不push。明日仍在本机／本会话／当前工作区，沿用现有证据；最近已验证提交由本交接卡所在提交定位，源基线为90cba349。无需因普通暂停盘点全仓、重建环境或重跑已通过测试。
+
+最直接下一步是审查IB-04快速切表／停止交错的意图代次与排队重启路径，先做无输入准备，按具体风险选定测试；定位、其他移动来源及剩余后端能力按原计划顺序处理。手册预览和发布说明分别在7.4／7.5阶段使用既定技能。Release新x64-only规则仅在Win10专用PC验证；真实驱动安装／移除、Synapse4和实体设备共存、本次未验系统仍不宣称通过。完整功能验收和用户明确合流确认前不进入MCP接纳。

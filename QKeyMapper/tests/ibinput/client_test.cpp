@@ -47,6 +47,51 @@ void settingsCase() {
     check(QkmIbInputClient::candidates(QStringLiteral("auto"))==expected,"auto candidate order changed");
     check(QkmIbInputClient::candidates(QStringLiteral("razer"))==QStringList{QStringLiteral("razer")},"manual candidate changed");
 }
+void razerCase() {
+    QkmIbInputClient client;
+    QkmIbInputClient::Preferences preferences; preferences.backend=QStringLiteral("razer");
+    check(client.setPreferences(preferences),"Razer preference rejected");
+    QkmIbInputClient::Requirements required;
+    required.capabilities=QkmIbInputClient::Keyboard|QkmIbInputClient::Buttons|QkmIbInputClient::RelativeMove|QkmIbInputClient::VerticalWheel;
+    required.keys={'F',VK_RCONTROL,VK_DIVIDE};
+    const auto token=client.requestRun();
+    check(client.prepareRun(token,required) && attempts==std::vector<Send::SendType>{Send::SendType::Razer},
+        "Explicit Razer did not select its own channel");
+    check(client.sendEvent(key('F'),token) && client.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),token),"Razer owned DOWN failed");
+    check(client.sendEvent(mouse(MOUSEEVENTF_MOVE,8,0),token)
+        && client.sendEvent(mouse(MOUSEEVENTF_WHEEL,0,0,WHEEL_DELTA),token),"Razer held move/wheel rejected");
+    client.cancelRun();
+    check(client.closeAfterDrain(token) && events.size()==6 && !client.statusSnapshot().releaseIncomplete,
+        "Razer same-channel cleanup failed");
+    reset();
+    required.keys={VK_PAUSE};
+    QkmIbInputClient pause; check(pause.setPreferences(preferences),"Razer Pause preference rejected");
+    const auto next=pause.requestRun();
+    check(pause.prepareRun(next,required) && pause.sendEvent(key(VK_PAUSE),next)
+        && pause.sendEvent(key(VK_PAUSE,true),next) && pause.closeAfterDrain(next),"Razer Pause did not round-trip");
+    reset();
+    QkmIbInputClient automatic;
+    duringInit=[] { initFails=attempts.back()!=Send::SendType::Razer; };
+    required.keys={'F'};
+    const auto automaticToken=automatic.requestRun();
+    check(automatic.prepareRun(automaticToken,required)
+        && attempts==std::vector<Send::SendType>{Send::SendType::LogitechGHubNew,Send::SendType::Razer}
+        && automatic.statusSnapshot().backend==QStringLiteral("razer") && !automatic.statusSnapshot().fallback,
+        "Automatic selection did not reach Razer after G HUB failed");
+    check(automatic.sendEvent(key('F'),automaticToken) && automatic.sendEvent(key('F',true),automaticToken)
+        && automatic.closeAfterDrain(automaticToken),"Automatic Razer run did not release");
+    reset(); initFails=true;
+    QkmIbInputClient blocked; check(blocked.setPreferences(preferences),"Manual Razer failure preference rejected");
+    check(!blocked.prepareRun(blocked.requestRun(),required)
+        && attempts==std::vector<Send::SendType>{Send::SendType::Razer},"Manual Razer failure tried another backend");
+    reset(); initFails=true; preferences.unavailablePolicy=QStringLiteral("sendinput_before_start");
+    QkmIbInputClient fallback; check(fallback.setPreferences(preferences),"Manual Razer fallback preference rejected");
+    const auto frozen=fallback.requestRun();
+    check(fallback.prepareRun(frozen,required) && fallback.statusSnapshot().fallback && !fallback.statusSnapshot().connected
+        && !fallback.sendEvent(key('F'),frozen) && events.empty()
+        && attempts==std::vector<Send::SendType>{Send::SendType::Razer} && fallback.closeAfterDrain(frozen),
+        "Razer pre-start SendInput fallback sent through a driver or changed candidates");
+}
 void admissionCase() {
     QkmIbInputClient client;
     check(!client.sendEvent(key('A'),1) && events.empty(),"uninitialized send reached API");
@@ -349,13 +394,13 @@ int main(int argc,char **argv) {
             QSet<quint16> supportedButtons;
             for (const auto &button:mouseButtons) supportedButtons.insert(button.vk);
             for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedButton(vk)==supportedButtons.contains(vk),"mouse button set differs");
-            reset(); admissionCase(); reset(); restartCase(); reset(); stopActionCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
+            reset(); razerCase(); reset(); admissionCase(); reset(); restartCase(); reset(); stopActionCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
             reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
             reset(); concurrentCase();
             std::cout<<"PASS simulated production gate: 115 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
 #endif
-        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
+        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"razer",razerCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
     } catch (const std::exception &error) { std::cerr<<error.what()<<'\n'; return 2; }

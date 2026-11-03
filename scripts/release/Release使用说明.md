@@ -134,3 +134,11 @@ pwsh -NoProfile -File .\test_build_release.ps1
 仅在本目录 `_test_work` 中创建测试 Git 仓库和文件，验证脏工作区、分叉、版本日期、原生命令退出码、目录清理边界、模板保留、ZIP 内容及发布失败恢复，不连接真实远端。该目录为固定测试目录，重复运行先清空。
 
 正式构建和压缩包检查不等于映射、驱动、界面或完整产品回归通过；本脚本不启动 QKeyMapper、不触发驱动或真实输入。
+
+## IbInput 与可选 Razer 驱动包
+
+打包时按目标架构部署源码内的 IbInputSimulator.dll，并复制 IbInputSimulator/licenses 下的配套声明。RazerDriver 是用户手动管理的可选驱动包，不由 QKeyMapper 自动运行；仅 Qt6_x64、Qt5_x64 压缩包包含，Qt5_x86 必须排除该目录及配套目录中可能残留的副本。
+
+本套 Razer 驱动仅面向 64 位 Windows 10／11，不支持 Windows 7。Qt5 为旧系统保留不代表该驱动支持 Win7。已有 Razer／Synapse 用户应先查看驱动包 README 和 QKeyMapper 使用手册，避免不必要的安装或替换。
+
+正式 Release 打包和最终验证只在 Win10 Release 专用 PC 执行。Win11 的源码修改、静态检查和历史合成夹具结果不能记为正式打包通过；当前 x64-only 规则及三变体部署／ZIP检查须在 Win10 接续验证。INTEGRATION_GUIDE.md 不进入任何发布包。

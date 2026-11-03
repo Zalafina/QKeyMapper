@@ -1,5 +1,9 @@
 #include "qkm_ibinput_client.h"
 #include <QApplication>
+#include <QCoreApplication>
+#include <QFileInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QCloseEvent>
 #include <QCursor>
 #include <QFile>
@@ -48,6 +52,47 @@ bool otherMapper() {
         if (entry.th32ProcessID!=GetCurrentProcessId() && _wcsnicmp(entry.szExeFile,L"QKeyMapper",10)==0) found=true;
     } while (Process32NextW(snapshot,&entry));
     CloseHandle(snapshot); return found;
+}
+int razerConnectionOnly(bool cycle) {
+    const QString path=qEnvironmentVariable("QKM_IBINPUT_PROBE_LOG");
+    QFile log(path);
+    if (!QFileInfo(path).isAbsolute() || !log.open(QIODevice::WriteOnly|QIODevice::NewOnly)) return 2;
+    const bool medium=ordinaryIntegrity();
+    const bool conflict=otherMapper();
+    QJsonObject result{{"pid",static_cast<int>(GetCurrentProcessId())},{"exe",QCoreApplication::applicationFilePath()},
+        {"desktop",desktopName(GetThreadDesktop(GetCurrentThreadId()))},{"medium",medium},{"other_mapper",conflict},
+        {"scope",QStringLiteral("Razer client connection diagnostics; no window, focus, input events or software changes")},
+        {"client_send_event_calls",0}};
+    bool connected=false,released=false;
+    if (medium && !conflict) {
+        QkmIbInputClient client;
+        QkmIbInputClient::Preferences preferences; preferences.backend=QStringLiteral("razer");
+        if (!client.setPreferences(preferences)) return 2;
+        const auto generation=client.requestRun();
+        const bool prepared=client.prepareRun(generation,{});
+        const auto status=client.statusSnapshot();
+        connected=prepared && status.connected;
+        result.insert(QStringLiteral("prepared"),prepared);
+        result.insert(QStringLiteral("connection_passed"),connected);
+        result.insert(QStringLiteral("detail"),status.detail);
+        result.insert(QStringLiteral("backend"),status.backend);
+        released=client.closeAfterDrain(generation);
+        if (connected && released && cycle) {
+            const auto next=client.requestRun();
+            const bool preparedAgain=client.prepareRun(next,{});
+            const auto again=client.statusSnapshot();
+            connected=preparedAgain && again.connected && again.backend==QStringLiteral("razer") && next>generation;
+            result.insert(QStringLiteral("reconnected"),connected);
+            result.insert(QStringLiteral("reconnect_detail"),again.detail);
+            result.insert(QStringLiteral("reconnect_generation"),static_cast<qint64>(next));
+            released=client.closeAfterDrain(next);
+        }
+        result.insert(QStringLiteral("released"),released);
+        result.insert(QStringLiteral("diagnostic_complete"),true);
+    }
+    const QByteArray bytes=QJsonDocument(result).toJson();
+    if (log.write(bytes)!=bytes.size() || !log.flush()) return 2;
+    return !medium || conflict || !released ? 2 : connected ? 0 : 3;
 }
 class Probe final : public QWidget {
 public:
@@ -291,6 +336,11 @@ private:
 };
 }
 int main(int argc,char **argv) {
+    if (argc==2 && (QByteArray(argv[1])=="--razer-connect-only" || QByteArray(argv[1])=="--razer-connect-cycle-only")) {
+        const bool cycle=QByteArray(argv[1])=="--razer-connect-cycle-only";
+        QCoreApplication application(argc,argv);
+        return razerConnectionOnly(cycle);
+    }
     QApplication application(argc,argv);
     const bool smoke=application.arguments().contains(QStringLiteral("--ghub-smoke"));
     const bool connectionCycle=application.arguments().contains(QStringLiteral("--ghub-connect-cycle"));

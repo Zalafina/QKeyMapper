@@ -40,6 +40,7 @@ CONFIGRET WINAPI QkmTestProperty(DEVINST,ULONG,PULONG,PVOID,PULONG,ULONG);
 #define CM_Get_DevNode_Status QkmTestStatus
 #define CM_Get_DevNode_Registry_PropertyW QkmTestProperty
 #include <IbInputSimulator/SendTypes/Logitech.hpp>
+#include <IbInputSimulator/SendTypes/Razer.hpp>
 #undef DeviceIoControl
 #undef CreateFileW
 #undef _wfsopen
@@ -57,6 +58,7 @@ int failAt = 0;
 DWORD failCode = 0;
 int closes = 0;
 bool acceleration = false;
+bool razerDevice=false;
 bool mouseExists=false,mouseStarted=true,matchingBus=true,queryFails=false,creationRace=false,mouseProblem=false;
 DWORD activationFailure=ERROR_GEN_FAILURE;
 struct Mouse8 { unsigned char buttons; signed char x, y, wheel; unsigned char unknown; };
@@ -70,7 +72,7 @@ template<class T> T report(const Call &call) {
     std::memcpy(&result, call.bytes.data(), sizeof result);
     return result;
 }
-void reset() { calls.clear(); failAt=0; failCode=0; closes=0; acceleration=false; mouseExists=false; mouseStarted=true; matchingBus=true; queryFails=false; creationRace=false; mouseProblem=false; activationFailure=ERROR_GEN_FAILURE; }
+void reset() { calls.clear(); failAt=0; failCode=0; closes=0; acceleration=false; razerDevice=false; mouseExists=false; mouseStarted=true; matchingBus=true; queryFails=false; creationRace=false; mouseProblem=false; activationFailure=ERROR_GEN_FAILURE; }
 MOUSEINPUT mouse(DWORD flags, LONG x=0, LONG y=0, DWORD data=0) { return {x,y,data,flags,0,0}; }
 KEYBDINPUT key(WORD vk, bool up=false) { return {vk,0,up ? KEYEVENTF_KEYUP : DWORD{0},0,0}; }
 void mouseCase() {
@@ -258,13 +260,88 @@ void compensationCase() {
     check(calls.size()==1,"I/O continued after compensation failure");
     logi.destroy();
 }
+void razerBasicCase() {
+    razerDevice=true;
+    Send::Type::Internal::Razer razer;
+    check(razer.create()==Send::Error::Success && calls.empty(),"Razer fake connection sent input");
+    using Rz=Send::Type::Internal::Razer::RzControl;
+    const std::pair<WORD,USHORT> keys[]={{'A',0x1e},{'Z',0x2c},{'0',0x0b},{'9',0x0a},
+        {VK_F1,0x3b},{VK_F12,0x58},{VK_F13,0x64},{VK_F24,0x76},{VK_RETURN,0x1c},{VK_TAB,0x0f}};
+    for (const auto &[vk,scan]:keys) for (bool up:{false,true}) {
+        check(razer.send_keyboard_input(key(vk,up)),"Razer keyboard report failed");
+        const auto value=report<Rz>(calls.back());
+        check(calls.back().code==0x88883020 && value.type==Rz::Type::Keyboard
+            && value.ki.MakeCode==scan && value.ki.Flags==(up ? KEY_BREAK : KEY_MAKE),"Razer basic keyboard encoding differs");
+    }
+    const DWORD down[]={MOUSEEVENTF_LEFTDOWN,MOUSEEVENTF_RIGHTDOWN,MOUSEEVENTF_MIDDLEDOWN,MOUSEEVENTF_XDOWN,MOUSEEVENTF_XDOWN};
+    const DWORD up[]={MOUSEEVENTF_LEFTUP,MOUSEEVENTF_RIGHTUP,MOUSEEVENTF_MIDDLEUP,MOUSEEVENTF_XUP,MOUSEEVENTF_XUP};
+    const USHORT expected[]={MOUSE_LEFT_BUTTON_DOWN,MOUSE_RIGHT_BUTTON_DOWN,MOUSE_MIDDLE_BUTTON_DOWN,MOUSE_BUTTON_4_DOWN,MOUSE_BUTTON_5_DOWN};
+    for (int i=0;i<5;++i) {
+        const DWORD data=i==3 ? XBUTTON1 : i==4 ? XBUTTON2 : 0;
+        check(razer.send_mouse_input(mouse(down[i],0,0,data)),"Razer button DOWN failed");
+        check(report<Rz>(calls.back()).mi.ButtonFlags==expected[i],"Razer button DOWN encoding differs");
+        check(razer.send_mouse_input(mouse(up[i],0,0,data)),"Razer button UP failed");
+        check(report<Rz>(calls.back()).mi.ButtonFlags==static_cast<USHORT>(expected[i]<<1),"Razer button UP encoding differs");
+    }
+    for (LONG delta:{LONG(WHEEL_DELTA),LONG(-WHEEL_DELTA)}) {
+        check(razer.send_mouse_input(mouse(MOUSEEVENTF_WHEEL,0,0,static_cast<DWORD>(delta))),"Razer wheel report failed");
+        const auto value=report<Rz>(calls.back());
+        check(value.mi.ButtonFlags==MOUSE_WHEEL && static_cast<SHORT>(value.mi.ButtonData)==delta,"Razer wheel sign/unit changed");
+    }
+    check(razer.send_mouse_input(mouse(MOUSEEVENTF_MOVE,8,-12)),"Razer move failed");
+    const auto move=report<Rz>(calls.back());
+    check(move.mi.Flags==MOUSE_MOVE_RELATIVE && move.mi.LastX==8 && move.mi.LastY==-10
+        && move.mi.ButtonFlags==0,"Razer relative move encoding changed");
+    failAt=static_cast<int>(calls.size()+1);
+    check(!razer.send_mouse_input(mouse(MOUSEEVENTF_LEFTUP)),"Razer IO failure was hidden");
+    razer.destroy();
+}
+void razerExtendedCase() {
+    razerDevice=true;
+    Send::Type::Internal::Razer razer;
+    check(razer.create()==Send::Error::Success,"Razer extended fake connection failed");
+    using Rz=Send::Type::Internal::Razer::RzControl;
+    const std::pair<WORD,USHORT> keys[]={{VK_RCONTROL,0x1d},{VK_RMENU,0x38},{VK_DIVIDE,0x35},{VK_APPS,0x5d}};
+    for (const auto &[vk,scan]:keys) for (bool up:{false,true}) {
+        check(razer.send_keyboard_input(key(vk,up)),"Razer extended send failed");
+        const auto value=report<Rz>(calls.back());
+        check(value.ki.MakeCode==scan && value.ki.Flags==(KEY_E0 | (up ? KEY_BREAK : KEY_MAKE)),
+            "Razer right modifier/divide/menu lacks E0");
+    }
+    razer.destroy();
+}
+void razerPauseCase() {
+    razerDevice=true;
+    Send::Type::Internal::Razer razer;
+    check(razer.create()==Send::Error::Success,"Razer Pause fake connection failed");
+    using Rz=Send::Type::Internal::Razer::RzControl;
+    for (bool up:{false,true}) {
+        calls.clear();
+        check(razer.send_keyboard_input(key(VK_PAUSE,up)) && calls.size()==2,"Razer Pause sequence is incomplete");
+        const auto prefix=report<Rz>(calls.at(0)),tail=report<Rz>(calls.at(1));
+        check(calls.at(0).code==0x88883020 && calls.at(1).code==0x88883020
+            && prefix.type==Rz::Type::Keyboard && tail.type==Rz::Type::Keyboard
+            && prefix.ki.MakeCode==0x1d && prefix.ki.Flags==(KEY_E1 | (up ? KEY_BREAK : KEY_MAKE))
+            && tail.ki.MakeCode==0x45 && tail.ki.Flags==(up ? KEY_BREAK : KEY_MAKE),
+            "Razer Pause differs from the observed FakerInput sequence");
+        for (int failure:{1,2}) {
+            calls.clear(); failAt=failure;
+            check(!razer.send_keyboard_input(key(VK_PAUSE,up)) && calls.size()==static_cast<size_t>(failure),
+                "Razer Pause failure was hidden or continued sending");
+            failAt=0;
+        }
+    }
+    razer.destroy();
+}
 }
 extern "C" NTSTATUS WINAPI QkmTestNtOpenDirectoryObject(PHANDLE handle,ACCESS_MASK,POBJECT_ATTRIBUTES) { *handle=reinterpret_cast<HANDLE>(1); return 0; }
 extern "C" NTSTATUS WINAPI QkmTestNtQueryDirectoryObject(HANDLE,PVOID buffer,ULONG,BOOLEAN,BOOLEAN,PULONG,PULONG) {
-    static wchar_t name[]=L"ROOT#SYSTEM#0001#{1abc05c0-c378-41b9-9cef-df1aba82b015}";
+    static wchar_t logitechName[]=L"ROOT#SYSTEM#0001#{1abc05c0-c378-41b9-9cef-df1aba82b015}";
+    static wchar_t razerName[]=L"RZCONTROL#VID_1532&PID_0306&MI_00#test#{e3be005d-d130-4910-88ff-09ae02f680e9}";
+    wchar_t *name=razerDevice ? razerName : logitechName;
     auto *info=static_cast<OBJECT_DIRECTORY_INFORMATION *>(buffer);
     std::memset(info,0,2*sizeof(*info));
-    info[0].Name.Buffer=name; info[0].Name.Length=static_cast<USHORT>((std::size(name)-1)*sizeof(wchar_t));
+    info[0].Name.Buffer=name; info[0].Name.Length=static_cast<USHORT>(std::wcslen(name)*sizeof(wchar_t));
     return 0;
 }
 BOOL WINAPI QkmTestCloseHandle(HANDLE) { ++closes; SetLastError(ERROR_INVALID_HANDLE); return TRUE; }
@@ -312,7 +389,7 @@ CONFIGRET WINAPI QkmTestProperty(DEVINST node,ULONG property,PULONG type,PVOID b
 int main(int argc,char **argv) {
     const std::string selected=argc>1 ? argv[1] : "all";
     try {
-        const std::array<std::pair<const char *,void(*)()>,6> cases{{{"mouse",mouseCase},{"keyboard",keyboardCase},{"partial",partialCase},{"activation",activationCase},{"compensation",compensationCase},{"existing_mouse",existingMouseCase}}};
+        const std::array<std::pair<const char *,void(*)()>,9> cases{{{"mouse",mouseCase},{"keyboard",keyboardCase},{"partial",partialCase},{"activation",activationCase},{"compensation",compensationCase},{"existing_mouse",existingMouseCase},{"razer_basic",razerBasicCase},{"razer_extended",razerExtendedCase},{"razer_pause",razerPauseCase}}};
         bool ran=false;
         for (const auto &test:cases) if (selected=="all" || selected==test.first) { reset(); test.second(); ran=true; std::cout<<"PASS simulated "<<test.first<<'\n'; }
         check(ran,"unknown case");

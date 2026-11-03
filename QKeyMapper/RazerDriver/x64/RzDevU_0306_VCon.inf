@@ -1,0 +1,68 @@
+; Copyright: (c) 2020 Razer Inc. All rights reserved
+;
+; RzDevU_0306_VCon.inf
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = HIDClass
+ClassGuid   = {745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+Provider    = %ManufacturerName%
+CatalogFile = rzdev_0306_vcon.cat
+DriverVer=02/18/2020,10.0.15063.0
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+RzDev_0306.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%RzDev.DeviceDesc%=RzDev_Device,   RZVIRTUAL\Vid_1532&Pid_0306&MI_00&Col03
+
+[RzDev_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+RzDev_0306.sys
+
+[RzDev_Device.NT.HW]
+AddReg = RzDev_Device.NT.HW.AddReg
+
+[RzDev_Device.NT.HW.AddReg]  
+HKR,,"UpperFilters",0x00010000,"mshidkmdf"
+HKR,,"ConsumerControlDevice",0x00010001,1                     ; Type
+
+;-------------- Service installation
+[RzDev_Device.NT.Services]
+AddService = mshidkmdf,, mshidkmdf.AddService
+AddService = RzDev_0306,0x00000002, RzDev_Service_Inst
+
+[mshidkmdf.AddService]
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %10%\System32\Drivers\mshidkmdf.sys
+
+[RzDev_Service_Inst]
+DisplayName    = %RzDev.ServiceDesc%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\RzDev_0306.sys
+
+[Strings]
+ManufacturerName="Razer Inc"
+DiskName = "Razer 0306 Installation Disk"
+RzDev.ServiceDesc= "Razer 0306 Service"
+RzDev.DeviceDesc = "HID-compliant consumer control device"

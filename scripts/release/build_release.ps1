@@ -10,6 +10,9 @@ $script:Stage = '启动'
 $script:AssetPattern = '^QKeyMapper_(v\d+\.\d+\.\d+\.\d{8})_(Qt[56]_x(?:64|86))\.zip$'
 $script:SymbolNames = @('QKeyMapper.exe', 'QKeyMapper.pdb', 'QKeyMapperCrashReporter.exe', 'QKeyMapperCrashReporter.pdb')
 
+$script:RazerDriverFiles = @('README.md', 'LICENSE-nefcon.txt', 'manage_driver.bat', 'manage_driver.ps1', 'install_driver.bat', 'uninstall_driver.bat', 'x64/nefconw.exe', 'x64/rzcommon.cat', 'x64/RzCommon.sys', 'x64/RzCommonU.inf', 'x64/RzDev_0306.sys', 'x64/rzdev_0306_kbd.cat', 'x64/rzdev_0306_mou.cat', 'x64/rzdev_0306_vbus.cat', 'x64/rzdev_0306_vcon.cat', 'x64/rzdev_0306_vkbd.cat', 'x64/rzdev_0306_vmou.cat', 'x64/RzDevU_0306_Kbd.inf', 'x64/RzDevU_0306_Mou.inf', 'x64/RzDevU_0306_VBus.inf', 'x64/RzDevU_0306_VCon.inf', 'x64/RzDevU_0306_VKbd.inf', 'x64/RzDevU_0306_VMou.inf')
+$script:IbInputLicenseFiles = @('IbInputSimulator-LICENSE.txt', 'IbWinCppLib-LICENSE.txt', 'Detours-LICENSE.txt', 'rapidjson-LICENSE.txt')
+
 function Write-Stage([string]$Message) {
     $script:Stage = $Message
     Write-Host "`n[$([DateTime]::Now.ToString('HH:mm:ss'))] $Message"
@@ -244,9 +247,18 @@ function Build-Variant($Variant, [string]$Jom, [int]$JobCount) {
     $script:CommandLogPath = Join-Path $script:LogDirectory 'commands.log'
 }
 
-function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Repository, [string]$ReleasePath, [string]$WorkRoot) {
+function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Repository, [string]$ReleasePath, [string]$WorkRoot, [ValidateSet('x64','x86')][string]$Architecture = 'x64') {
     $manual = Join-Path $Repository 'readme/QKeyMapper使用手册.html'
     Assert-File $manual
+    $ibRoot = Join-Path $Repository 'QKeyMapper/IbInputSimulator'
+    $ibDll = Join-Path $ibRoot "lib/$Architecture/IbInputSimulator.dll"
+    $razerSource = Join-Path $Repository 'QKeyMapper/RazerDriver'
+    Assert-File $ibDll
+    foreach ($name in $script:IbInputLicenseFiles) { Assert-File (Join-Path $ibRoot "licenses/$name") }
+    if ($Architecture -eq 'x64') {
+        Assert-SafeTree $razerSource $Repository
+        foreach ($name in $script:RazerDriverFiles) { Assert-File (Join-Path $razerSource $name) }
+    }
     Assert-SafeTree $Baseline (Split-Path -Parent $Baseline)
     Reset-WorkDirectory $StagePath $WorkRoot
     Get-ChildItem -LiteralPath $Baseline -Force | Copy-Item -Destination $StagePath -Recurse -Force
@@ -265,6 +277,23 @@ function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Reposit
     Copy-Item -LiteralPath (Join-Path $Repository 'QKeyMapper/ahk_utils/readme.txt') -Destination (Join-Path $StagePath 'utils/readme.txt') -Force
     Copy-Item -LiteralPath (Join-Path $Repository 'QKeyMapper_Keyname.pdf') -Destination (Join-Path $StagePath 'QKeyMapper按键名称说明.pdf') -Force
     Copy-Item -LiteralPath $manual -Destination (Join-Path $StagePath 'QKeyMapper使用手册.html') -Force
+    Copy-Item -LiteralPath $ibDll -Destination (Join-Path $StagePath 'IbInputSimulator.dll') -Force
+    New-Item -ItemType Directory -Path (Join-Path $StagePath 'licenses/IbInputSimulator') -Force | Out-Null
+    foreach ($name in $script:IbInputLicenseFiles) {
+        Copy-Item -LiteralPath (Join-Path $ibRoot "licenses/$name") -Destination (Join-Path $StagePath "licenses/IbInputSimulator/$name") -Force
+    }
+    $razerTarget = Join-Path $StagePath 'RazerDriver'
+    if (Test-Path -LiteralPath $razerTarget) {
+        Assert-SafeTree $razerTarget $WorkRoot
+        Remove-Item -LiteralPath $razerTarget -Recurse -Force
+    }
+    if ($Architecture -eq 'x64') {
+        foreach ($name in $script:RazerDriverFiles) {
+            $target = Join-Path $razerTarget $name
+            New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
+            Copy-Item -LiteralPath (Join-Path $razerSource $name) -Destination $target -Force
+        }
+    }
     Get-ChildItem -LiteralPath $StagePath -Recurse -Force -File -Filter '*.pdb' | Remove-Item -Force
 }
 
@@ -281,7 +310,7 @@ function Assert-PackageZip([string]$ZipPath, [string]$StagePath) {
             $relative = [IO.Path]::GetRelativePath($StagePath, $file.FullName).Replace('\', '/')
             $entry = $zip.GetEntry("$rootName/$relative")
             if ($null -eq $entry -or $entry.Length -ne $file.Length) { throw "ZIP 文件缺失或长度不符：$relative" }
-            if ($relative -in @('QKeyMapper.exe', 'QKeyMapperCrashReporter.exe', 'QKeyMapper使用手册.html')) {
+            if ($relative -in @('QKeyMapper.exe', 'QKeyMapperCrashReporter.exe', 'QKeyMapper使用手册.html', 'IbInputSimulator.dll') -or $relative.StartsWith('RazerDriver/') -or $relative -in @($script:IbInputLicenseFiles | ForEach-Object { "licenses/IbInputSimulator/$_" })) {
                 $stream = $entry.Open()
                 try { $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)) } finally { $stream.Dispose() }
                 if ($hash -ne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash) { throw "ZIP 内文件与本次产物不一致：$relative" }
@@ -389,7 +418,8 @@ try {
         $packageName = "QKeyMapper_$($variant.Name)"
         $stagePath = Join-Path $staging $packageName
         $release = Join-Path $variant.BuildDirectory 'release'
-        Prepare-Package (Join-Path $packageRoot $packageName) $stagePath $variant.Repository $release $workRoot
+        $architecture = if ($variant.Name -eq 'Qt5_x86') { 'x86' } else { 'x64' }
+        Prepare-Package (Join-Path $packageRoot $packageName) $stagePath $variant.Repository $release $workRoot $architecture
         $zipPath = Join-Path $pending "QKeyMapper_$($source.Version)_$($variant.Name).zip"
         [IO.Compression.ZipFile]::CreateFromDirectory($stagePath, $zipPath, [IO.Compression.CompressionLevel]::Optimal, $true)
         Assert-PackageZip $zipPath $stagePath

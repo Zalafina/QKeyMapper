@@ -50989,7 +50989,8 @@ void QKeyMapper::refreshIbInputUi()
     if (status.releaseIncomplete) { text=tr("Cleanup incomplete"); style=QStringLiteral("color:red;"); }
     else if (m_IbInputStopPending || status.stopping) { text=tr("Stopping..."); style=QStringLiteral("color:#c08000;"); }
     else if (status.connected) {
-        text=status.backend==QStringLiteral("logitech_ghub") ? QStringLiteral("Logitech G HUB") : status.backend;
+        text=status.backend==QStringLiteral("logitech_ghub") ? QStringLiteral("Logitech G HUB")
+            : status.backend==QStringLiteral("razer") ? QStringLiteral("Razer") : status.backend;
         style=QStringLiteral("color:green;");
     } else if (status.fallback && m_KeyMapStatus!=KEYMAP_IDLE) {
         text=QStringLiteral("SendInput"); style=QStringLiteral("color:#c08000;");

@@ -7474,5 +7474,55 @@ Right-click to cancel.</source>
         <source>Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24).</source>
         <translation>現在は G HUB によるマウスの相対移動と基本キー出力（A-Z、0-9、F1-F24）に対応しています。</translation>
     </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="214"/>
+        <source>&lt;a href=&quot;https://www.logitechg.com/innovation/g-hub.html&quot;&gt;G HUB&lt;/a&gt; | &lt;a href=&quot;https://github.com/Chaoses-Ib/IbInputSimulator/issues/7&quot;&gt;Razer driver guide&lt;/a&gt;&lt;br&gt;Connection and accepted calls do not prove that an application received input.</source>
+        <translation>&lt;a href="https://www.logitechg.com/innovation/g-hub.html"&gt;G HUB&lt;/a&gt; | &lt;a href="https://github.com/Chaoses-Ib/IbInputSimulator/issues/7"&gt;Razer ドライバーの案内&lt;/a&gt;&lt;br&gt;接続成功や呼び出しの受理は、アプリでの入力受信を保証しません。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="195"/>
+        <source>Razer driver services: %1</source>
+        <translation>Razer ドライバーサービス: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="196"/>
+        <source>Razer driver for IbInput: %1</source>
+        <translation>IbInput 用 Razer ドライバー: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="191"/>
+        <source>Not observed</source>
+        <translation>未検出</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="190"/>
+        <source>Running</source>
+        <translation>実行中</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="190"/>
+        <source>Not running</source>
+        <translation>停止中</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="196"/>
+        <source>Detected</source>
+        <translation>検出済み</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="210"/>
+        <source>QKeyMapper did not detect a Razer driver that IbInput can use. See the installation requirements in the Razer driver guide.</source>
+        <translation>IbInput で使用できる Razer ドライバーが QKeyMapper で検出されませんでした。「Razer ドライバーの案内」でインストール条件を確認してください。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="196"/>
+        <source>Not detected</source>
+        <translation>未検出</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="208"/>
+        <source>QKeyMapper could not check the Razer driver status. Click Refresh status or Check connection.</source>
+        <translation>QKeyMapper で Razer ドライバーの状態を確認できませんでした。「状態を更新」または「接続を確認」をクリックしてください。</translation>
+    </message>
 </context>
 </TS>
