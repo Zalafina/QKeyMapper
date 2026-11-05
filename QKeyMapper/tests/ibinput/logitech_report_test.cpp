@@ -16,6 +16,8 @@
 
 extern "C" NTSTATUS WINAPI QkmTestNtOpenDirectoryObject(PHANDLE handle, ACCESS_MASK, POBJECT_ATTRIBUTES);
 extern "C" NTSTATUS WINAPI QkmTestNtQueryDirectoryObject(HANDLE, PVOID buffer, ULONG, BOOLEAN, BOOLEAN, PULONG, PULONG);
+int WINAPI QkmTestMetrics(int);
+BOOL WINAPI QkmTestCursor(LPPOINT);
 BOOL WINAPI QkmTestCloseHandle(HANDLE);
 BOOL WINAPI QkmTestIo(HANDLE, DWORD, LPVOID, DWORD, LPVOID, DWORD, LPDWORD, LPOVERLAPPED);
 HANDLE WINAPI QkmTestCreateFile(LPCWSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE);
@@ -28,6 +30,8 @@ CONFIGRET WINAPI QkmTestProperty(DEVINST,ULONG,PULONG,PVOID,PULONG,ULONG);
 #define NtOpenDirectoryObject QkmTestNtOpenDirectoryObject
 #define NtQueryDirectoryObject QkmTestNtQueryDirectoryObject
 #define CloseHandle QkmTestCloseHandle
+#define GetSystemMetrics QkmTestMetrics
+#define GetCursorPos QkmTestCursor
 #include <IbInputSimulator/SendTypes/base.hpp>
 #undef NtOpenDirectoryObject
 #undef NtQueryDirectoryObject
@@ -44,6 +48,8 @@ CONFIGRET WINAPI QkmTestProperty(DEVINST,ULONG,PULONG,PVOID,PULONG,ULONG);
 #undef DeviceIoControl
 #undef CreateFileW
 #undef _wfsopen
+#undef GetSystemMetrics
+#undef GetCursorPos
 #undef CloseHandle
 #undef CM_Locate_DevNodeW
 #undef CM_Get_Child
@@ -61,6 +67,9 @@ bool acceleration = false;
 bool razerDevice=false;
 bool mouseExists=false,mouseStarted=true,matchingBus=true,queryFails=false,creationRace=false,mouseProblem=false;
 DWORD activationFailure=ERROR_GEN_FAILURE;
+POINT desktopOrigin{-1920,-1080},cursorPosition{50,75};
+int desktopWidth=3840,desktopHeight=2160;
+bool cursorAvailable=true;
 struct Mouse8 { unsigned char buttons; signed char x, y, wheel; unsigned char unknown; };
 struct Mouse16 { unsigned char buttons; short x, y; signed char wheel; unsigned char unknown; };
 struct Keyboard { unsigned char modifiers, reserved; std::array<unsigned char,6> keys; };
@@ -72,7 +81,7 @@ template<class T> T report(const Call &call) {
     std::memcpy(&result, call.bytes.data(), sizeof result);
     return result;
 }
-void reset() { calls.clear(); failAt=0; failCode=0; closes=0; acceleration=false; razerDevice=false; mouseExists=false; mouseStarted=true; matchingBus=true; queryFails=false; creationRace=false; mouseProblem=false; activationFailure=ERROR_GEN_FAILURE; }
+void reset() { calls.clear(); failAt=0; failCode=0; closes=0; acceleration=false; razerDevice=false; mouseExists=false; mouseStarted=true; matchingBus=true; queryFails=false; creationRace=false; mouseProblem=false; activationFailure=ERROR_GEN_FAILURE; desktopOrigin={-1920,-1080}; cursorPosition={50,75}; desktopWidth=3840; desktopHeight=2160; cursorAvailable=true; }
 MOUSEINPUT mouse(DWORD flags, LONG x=0, LONG y=0, DWORD data=0) { return {x,y,data,flags,0,0}; }
 KEYBDINPUT key(WORD vk, bool up=false) { return {vk,0,up ? KEYEVENTF_KEYUP : DWORD{0},0,0}; }
 void mouseCase() {
@@ -137,6 +146,45 @@ void mouseCase() {
         held&=static_cast<unsigned char>(~button.bit);
         check(report<Mouse16>(calls.back()).buttons==held,"G HUB UP released another button");
     }
+    ghub.destroy();
+}
+void logitechAbsoluteCase() {
+    Send::Type::Internal::LogitechGHubNew ghub;
+    check(ghub.create()==Send::Error::Success,"fake absolute G HUB create failed");
+    check(ghub.send_mouse_input(mouse(MOUSEEVENTF_LEFTDOWN)),"absolute held Left failed");
+    const auto displacement=[&](DWORD flags,LONG x,LONG y,int expectedX,int expectedY) {
+        calls.clear();
+        check(ghub.send_mouse_input(mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|flags,x,y)),
+            "absolute G HUB report failed");
+        int actualX=0,actualY=0;
+        for (const auto &call:calls) {
+            const auto value=report<Mouse16>(call);
+            check(value.buttons==1 && !value.wheel,"absolute report lost held button or added wheel");
+            actualX+=value.x; actualY+=value.y;
+        }
+        check(actualX==expectedX && actualY==expectedY,"absolute G HUB origin/extent/cursor conversion differs");
+    };
+    displacement(MOUSEEVENTF_VIRTUALDESK,65535,0,1869,-1155);
+    desktopOrigin={-3840,-1080}; desktopWidth=5760; desktopHeight=3240; cursorPosition={-100,200};
+    displacement(MOUSEEVENTF_VIRTUALDESK,0,65535,-3740,1959);
+    displacement(0,65535,0,2019,-200);
+    displacement(0,0,65535,100,879);
+    calls.clear();cursorAvailable=false;
+    check(!ghub.send_mouse_input(mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE,0,0)) && calls.empty(),
+        "cursor query failure sent relative movement");
+    cursorAvailable=true;
+    for (const auto coordinate:{LONG(-1),LONG(65536)}) {
+        calls.clear();
+        check(!ghub.send_mouse_input(mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE,coordinate,0)) && calls.empty(),
+            "invalid normalized coordinate was sent");
+    }
+    desktopWidth=1;calls.clear();
+    check(!ghub.send_mouse_input(mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK,0,0)) && calls.empty(),
+        "invalid desktop extent was sent");
+    calls.clear();
+    check(ghub.send_mouse_input(mouse(MOUSEEVENTF_MOVE,33,-22)) && calls.size()==1
+        && report<Mouse16>(calls.back()).x==33 && report<Mouse16>(calls.back()).y==-22,
+        "relative report changed with absolute conversion");
     ghub.destroy();
 }
 void keyboardCase() {
@@ -353,6 +401,15 @@ void razerPauseCase() {
     razer.destroy();
 }
 }
+int WINAPI QkmTestMetrics(int index) {
+    switch (index) {
+    case SM_CXSCREEN:return 1920; case SM_CYSCREEN:return 1080;
+    case SM_XVIRTUALSCREEN:return desktopOrigin.x; case SM_YVIRTUALSCREEN:return desktopOrigin.y;
+    case SM_CXVIRTUALSCREEN:return desktopWidth; case SM_CYVIRTUALSCREEN:return desktopHeight;
+    default:return 0;
+    }
+}
+BOOL WINAPI QkmTestCursor(LPPOINT point) { if (!cursorAvailable) return FALSE; *point=cursorPosition; return TRUE; }
 extern "C" NTSTATUS WINAPI QkmTestNtOpenDirectoryObject(PHANDLE handle,ACCESS_MASK,POBJECT_ATTRIBUTES) { *handle=reinterpret_cast<HANDLE>(1); return 0; }
 extern "C" NTSTATUS WINAPI QkmTestNtQueryDirectoryObject(HANDLE,PVOID buffer,ULONG,BOOLEAN,BOOLEAN,PULONG,PULONG) {
     static wchar_t logitechName[]=L"ROOT#SYSTEM#0001#{1abc05c0-c378-41b9-9cef-df1aba82b015}";
@@ -408,7 +465,7 @@ CONFIGRET WINAPI QkmTestProperty(DEVINST node,ULONG property,PULONG type,PVOID b
 int main(int argc,char **argv) {
     const std::string selected=argc>1 ? argv[1] : "all";
     try {
-        const std::array<std::pair<const char *,void(*)()>,9> cases{{{"mouse",mouseCase},{"keyboard",keyboardCase},{"partial",partialCase},{"activation",activationCase},{"compensation",compensationCase},{"existing_mouse",existingMouseCase},{"razer_basic",razerBasicCase},{"razer_extended",razerExtendedCase},{"razer_pause",razerPauseCase}}};
+        const std::array<std::pair<const char *,void(*)()>,10> cases{{{"logitech_absolute",logitechAbsoluteCase},{"mouse",mouseCase},{"keyboard",keyboardCase},{"partial",partialCase},{"activation",activationCase},{"compensation",compensationCase},{"existing_mouse",existingMouseCase},{"razer_basic",razerBasicCase},{"razer_extended",razerExtendedCase},{"razer_pause",razerPauseCase}}};
         bool ran=false;
         for (const auto &test:cases) if (selected=="all" || selected==test.first) { reset(); test.second(); ran=true; std::cout<<"PASS simulated "<<test.first<<'\n'; }
         check(ran,"unknown case");

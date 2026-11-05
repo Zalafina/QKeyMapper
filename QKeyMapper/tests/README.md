@@ -168,6 +168,8 @@ product_check的absolute固定用例使用razer_absolute_verification.ini：Q屏
 
 运行器先确认屏幕及ClientToScreen后的落点均在接收客户区；首个移动实际落点通过后才点击。定位／保存恢复用GetCursorPos与接收移动核对，点按用接收DOWN／UP计数；保持时小幅自有移动后检查缺失目标UP、停止／重启／退出释放且无清理跳转。客户端替身覆盖归一化边界、五按钮同包、晚到UP及已准入停止源保留坐标；报告替身覆盖实际Razer Flags／LastX/Y，不替代真实接收。范围／机器／EXE／结果见主计划30节。
 
+logitech_report_test的logitech_absolute组将GetSystemMetrics及GetCursorPos也替换为固定查询：验证负原点、尺寸改变、主屏归一化端点、持有按钮和查询失败／非法边界；不读取或修改实际系统设置。该组证明0009报告数值契约，不证明Windows实际落点。A2实际G HUB加速环境定位失败，生产AbsoluteMove仍仅Razer；不要为使测试通过而自动调整指针设置。主计划31节保留失败及用户取舍。
+
 ## IbInput Popup 显示维护
 
 ui_test.pro生成普通权限QKeyMapperIbInputUiTest，显式使用--ibinput-ui-check运行；QKM_IBINPUT_UI_ROOT指定现有结果目录，QKM_IBINPUT_QM_ROOT指定三语QM目录。程序在创建QApplication前进入自有QkmIbInputUi_<PID>私有Windows桌面，Qt5需要该桌面的DESKTOP_HOOKCONTROL以建立自身线程WH_GETMESSAGE消息机制；不切换Default，不运行产品映射Hook。

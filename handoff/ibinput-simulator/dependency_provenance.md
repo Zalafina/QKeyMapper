@@ -170,3 +170,16 @@ C:\Python\Python311\python.exe -B -X utf8 scripts/build_ibinput_dependency.py --
 | lib/x86/IbInputSimulator.lib | 4656 | 197fc68a76e35e36a9fb3c8728e1dab9dfbf05bcf3943dfa63200dfb93faa52d |
 
 实际A1产品使用0008 x64；屏幕／窗口定位与点按、保存恢复及释放通过。x86本轮为软件报告及配套重建，没有真实产品输入。当前原始日志为out/ibinput/a1-w11-20261105/dependency-x64.log、dependency-x86.log及报告前后对照；实际场景、首轮夹具失败和EXE身份只见主计划30节。Razer原厂驱动文件未修改或重新安装，再分发依据及Win10正式包验证仍待后续阶段。
+
+## 2026-11-05 PC-W11 0009配套制品（当前，替代0008身份）
+
+固定来源／工具链不变，0001～0009按序重放。0009已独立批准，仅修正Logitech绝对换算的数值边界及查询失败；相对／Razer分支和ABI不变。恢复仍用前节x64／x86的--review-patch --tests --deploy，两架构十组报告、参数及原版负例通过，构建无诊断。原0008表仍是A1实测使用的身份。
+
+| 文件（相对QKeyMapper/IbInputSimulator） | 字节 | SHA256 |
+|---|---:|---|
+| lib/x64/IbInputSimulator.dll | 218624 | 2d8c46db5b7b5b8b5504321aa43bedc02e174b1fd758a7dd91b5da86e902ef30 |
+| lib/x64/IbInputSimulator.lib | 4448 | 5309e2df6c178dae5a105c23f2bd8d694ca97db2082a4384ad573a692ee014c0 |
+| lib/x86/IbInputSimulator.dll | 173056 | d0a849fcad2d62c3708be74756371916eeba11066e77d63c8667ca7fdda67435 |
+| lib/x86/IbInputSimulator.lib | 4656 | 197fc68a76e35e36a9fb3c8728e1dab9dfbf05bcf3943dfa63200dfb93faa52d |
+
+A2 G HUB实际定位失败，产品AbsoluteMove开放已撤回，当前仍仅Razer支持；用户明确同意按此收敛。0009数值检查不被当作像素精度、增强指针关闭或实机多屏通过。Qt6普通／正式维护及Qt6／Qt5客户端按保留能力重建回归0；相对／Razer旧实际结果按分支未改复用，未重新跑全部实机输入。原日志冻结out/ibinput/a2-w11-20261105/dependency-{x64,x86}-logs，完整范围见主计划31节；其他发布／许可门槛不变。
