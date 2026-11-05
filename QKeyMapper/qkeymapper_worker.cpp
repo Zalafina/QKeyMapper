@@ -60,6 +60,8 @@ QString ibRowLocation(int row) {
 QString pureIbKey(QString key) { key.remove(QRegularExpression(QStringLiteral("@[0-9]+$"))); return key; }
 QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) {
     const auto rows=QkmIbInputValidation::expandedRows(source);
+    static const QRegularExpression pointPattern(QStringLiteral("^%1$").arg(QString::fromLatin1(REGEX_PATTERN_MOUSE_POINT_CLICK))),
+        movePattern(QStringLiteral("^%1$").arg(QString::fromLatin1(REGEX_PATTERN_MOUSE_MOVE)));
     QkmIbInputClient::Requirements required;
     QStringList locations;
     QSet<QString> originalKeys;
@@ -93,10 +95,17 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) 
         const QString location=ibRowLocation(i);
         if (QkmIbInputValidation::movementGroup(row)>=0) required.capabilities|=QkmIbInputClient::RelativeMove;
         const QStringList output=row.Pure_MappingKeys+row.Pure_MappingKeys_KeyUp;
-        for (const QString &key:output) {
+        for (QString key:output) {
+            const auto point=pointPattern.match(key),move=movePattern.match(key);
+            if (point.hasMatch() || move.hasMatch()) {
+                if ((point.hasMatch() && !point.captured(3).isEmpty()) || (move.hasMatch() && !move.captured(2).isEmpty())) continue;
+                required.capabilities|=QkmIbInputClient::AbsoluteMove;
+                if (move.hasMatch()) continue;
+                key=point.captured(1);
+            }
             if (originalKeys.contains(pureIbKey(key))) required.rejection=QCoreApplication::translate("QkmIbInputClient","IbInput output can trigger an original key; this feedback path awaits validation: %1").arg(location);
             if (key.startsWith(QStringLiteral("Key2Mouse-"))) { required.capabilities|=QkmIbInputClient::RelativeMove; continue; }
-            if (key==QLatin1String(MOUSE_POS_RESTORE_STR) || key.contains(QLatin1String(MOUSE_WINDOWPOINT_POSTFIX)) || key.contains(QLatin1String(MOUSE_SCREENPOINT_POSTFIX))) { required.capabilities|=QkmIbInputClient::AbsoluteMove; continue; }
+            if (key==QLatin1String(MOUSE_POS_RESTORE_STR)) { required.capabilities|=QkmIbInputClient::AbsoluteMove; continue; }
             if (key.startsWith(QLatin1String(MOUSE_MOVE_RELATIVE_STR))) { required.capabilities|=QkmIbInputClient::RelativeMove; continue; }
             if (key==QLatin1String(MOUSE_WHEEL_UP_STR) || key==QLatin1String(MOUSE_WHEEL_DOWN_STR)) { required.capabilities|=QkmIbInputClient::VerticalWheel; continue; }
             if (key==QLatin1String(MOUSE_WHEEL_LEFT_STR) || key==QLatin1String(MOUSE_WHEEL_RIGHT_STR)) { required.capabilities|=QkmIbInputClient::HorizontalWheel; continue; }
@@ -147,7 +156,33 @@ bool sendIbEvent(const INPUT &input,quint64 generation,bool stopAction=false) {
     }
     return success;
 }
-void sendIbMove(int x,int y,bool stopAction=false) { INPUT input{}; input.type=INPUT_MOUSE; input.mi.dx=x; input.mi.dy=y; input.mi.dwFlags=MOUSEEVENTF_MOVE; (void)sendIbEvent(input,qkmCurrentIbInputGeneration(),stopAction); }
+void sendIbMove(int x,int y,bool stopAction=false,quint64 generation=qkmCurrentIbInputGeneration()) { INPUT input{}; input.type=INPUT_MOUSE; input.mi.dx=x; input.mi.dy=y; input.mi.dwFlags=MOUSEEVENTF_MOVE; (void)sendIbEvent(input,generation,stopAction); }
+void sendIbAbsolute(INPUT input,POINT point,quint64 generation,bool stopAction,HWND window=nullptr) {
+    const auto reject=[&] {
+        if (input.mi.dwFlags & (MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XUP)) {
+            input.mi.dwFlags &= ~(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK);
+            input.mi.dx=input.mi.dy=0;
+            (void)sendIbEvent(input,generation,stopAction);
+        }
+        auto &client=QkmIbInputClient::instance();
+        if (generation==client.requestedGeneration() && (client.acceptingInput() || (stopAction && client.stopActionAllowed(generation)))) {
+            client.cancelRun();
+            emit QKeyMapper_Worker::getInstance()->ibInputFault_Signal(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."));
+        }
+    };
+    if (window && !ClientToScreen(window,&point)) { reject(); return; }
+    const int left=GetSystemMetrics(SM_XVIRTUALSCREEN),top=GetSystemMetrics(SM_YVIRTUALSCREEN);
+    const int width=GetSystemMetrics(SM_CXVIRTUALSCREEN),height=GetSystemMetrics(SM_CYVIRTUALSCREEN);
+    if (width<=1 || height<=1) { reject(); return; }
+    const auto normalize=[](LONG value,int origin,int length) {
+        const qint64 offset=qBound<qint64>(qint64(0),qint64(value)-origin,qint64(length)-1);
+        return static_cast<LONG>(offset*65535/(length-1));
+    };
+    input.type=INPUT_MOUSE;
+    input.mi.dx=normalize(point.x,left,width); input.mi.dy=normalize(point.y,top,height);
+    input.mi.dwFlags|=MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK;
+    (void)sendIbEvent(input,generation,stopAction);
+}
 }
 quint64 qkmCurrentIbInputGeneration() { return ibInputGeneration.load(); }
 
@@ -3948,7 +3983,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 /* Mouse-Move KeyUp do nothing. */
             }
             else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
-                sendMousePointClick(key, KEY_UP, sendmappingkeymethod);
+                sendMousePointClick(key, KEY_UP, sendmappingkeymethod,ibStopAction,ibInputGeneration);
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -5152,7 +5187,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         saveMousePosition();
                     }
                     else if (key == MOUSE_POS_RESTORE_STR) {
-                        restoreMousePosition(sendmappingkeymethod);
+                        restoreMousePosition(sendmappingkeymethod,ibStopAction,ibInputGeneration);
                     }
                 }
                 else if (key.startsWith(FUNC_PREFIX)) {
@@ -5160,14 +5195,14 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     emit QKeyMapper_Worker::getInstance()->doFunctionMappingProc_Signal(key);
                 }
                 else if (key.startsWith(MOUSE_MOVE_PREFIX) && key.endsWith(")")) {
-                    sendMouseMoveToPoint(key, sendmappingkeymethod,ibStopAction);
+                    sendMouseMoveToPoint(key, sendmappingkeymethod,ibStopAction,ibInputGeneration);
                 }
                 else if (key.startsWith(MOUSE_BUTTON_PREFIX) && key.endsWith(")")) {
                     int send_keyupdown = KEY_DOWN;
                     if (sendtype == SENDTYPE_UP || sendtype == SENDTYPE_FORCE_UP) {
                         send_keyupdown = KEY_UP;
                     }
-                    sendMousePointClick(key, send_keyupdown, sendmappingkeymethod);
+                    sendMousePointClick(key, send_keyupdown, sendmappingkeymethod,ibStopAction,ibInputGeneration);
 
                     if (sendtype == SENDTYPE_BOTH) {
 #ifdef DEBUG_LOGOUT_ON
@@ -5178,7 +5213,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         qDebug() << "[sendInputKeys] MappingKey SENDTYPE_BOTH KeyUp wait end ->" << key;
 #endif
                         send_keyupdown = KEY_UP;
-                        sendMousePointClick(key, send_keyupdown, sendmappingkeymethod);
+                        sendMousePointClick(key, send_keyupdown, sendmappingkeymethod,ibStopAction,ibInputGeneration);
                     }
                 }
                 else {
@@ -5266,14 +5301,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
     }
 }
 
-void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod)
+void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod,bool ibStopAction,quint64 ibInputGeneration)
 {
-    if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
-        emit ibInputFault_Signal(QCoreApplication::translate("QkmIbInputClient","IbInput absolute positioning is not available for this backend."));
-        return;
-    }
-
-    static QRegularExpression regex(R"((Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?(:BG)?\((-?\d+),(-?\d+)\))");
+    static QRegularExpression regex(REGEX_PATTERN_MOUSE_POINT_CLICK);
     QRegularExpressionMatch match = regex.match(mousepoint_str);
 
     if (match.hasMatch()) {
@@ -5292,6 +5322,12 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
         if (!x_ok || !y_ok) {
             return;
         }
+
+        const V_MOUSECODE vmousecode=VirtualMouseButtonMap.value(mousebutton);
+        INPUT mouse_input{}; mouse_input.type=INPUT_MOUSE;
+        mouse_input.mi.mouseData=vmousecode.MouseXButton;
+        mouse_input.mi.dwExtraInfo=VIRTUAL_MOUSE_POINTCLICK;
+        mouse_input.mi.dwFlags=keyupdown==KEY_DOWN ? vmousecode.MouseDownCode : vmousecode.MouseUpCode;
 
         if (isWindowPoint) {
             QPoint mousepoint(x, y);
@@ -5314,12 +5350,18 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
                     FakerInputClient_sendAbsoluteMouseButton(mousebutton, screenPoint.x, screenPoint.y, keyupdown, VIRTUAL_MOUSE_POINTCLICK);
 #endif
                 }
+                else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
+                    sendIbAbsolute(mouse_input,{x,y},ibInputGeneration,ibStopAction,QKeyMapper::s_CurrentMappingHWND);
+                }
                 else {
 #ifdef DEBUG_LOGOUT_ON
                     qDebug().nospace().noquote() << "[sendMousePointClick] sendWindowMousePointClick(" << mousebutton << ", " << x << ", " << y << ") " << ((keyupdown == KEY_DOWN) ? "KeyDown" : "KeyUp") << " -> " << QKeyMapper::s_CurrentMappingHWND;
 #endif
                     sendWindowMousePointClick(QKeyMapper::s_CurrentMappingHWND, mousebutton, keyupdown, mousepoint);
                 }
+            }
+            else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT && !isPostBG && keyupdown==KEY_UP) {
+                (void)sendIbEvent(mouse_input,ibInputGeneration,ibStopAction);
             }
 
             if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
@@ -5342,23 +5384,12 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
             int virtualHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
             // Convert virtual desktop coordinates to SendInput absolute coordinates
-            double fx = ( (x - virtualLeft) * 65535.0 ) / (virtualWidth  - 1);
-            double fy = ( (y - virtualTop)  * 65535.0 ) / (virtualHeight - 1);
+            double fx = sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT ? 0.0 : ( (x - virtualLeft) * 65535.0 ) / (virtualWidth  - 1);
+            double fy = sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT ? 0.0 : ( (y - virtualTop)  * 65535.0 ) / (virtualHeight - 1);
 
-            V_MOUSECODE vmousecode = VirtualMouseButtonMap.value(mousebutton);
-            INPUT mouse_input = { 0 };
-            mouse_input.type = INPUT_MOUSE;
             mouse_input.mi.dx = static_cast<LONG>(fx);
             mouse_input.mi.dy = static_cast<LONG>(fy);
-            mouse_input.mi.mouseData = vmousecode.MouseXButton;
-            mouse_input.mi.time = 0;
-            mouse_input.mi.dwExtraInfo = VIRTUAL_MOUSE_POINTCLICK;
-            if (KEY_DOWN == keyupdown) {
-                mouse_input.mi.dwFlags = vmousecode.MouseDownCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
-            }
-            else {
-                mouse_input.mi.dwFlags = vmousecode.MouseUpCode | MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
-            }
+            mouse_input.mi.dwFlags |= MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
 
             if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE || isPostBG) {
 #ifdef DEBUG_LOGOUT_ON
@@ -5372,6 +5403,9 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
 #endif
                 FakerInputClient_sendAbsoluteMouseButton(mousebutton, x, y, keyupdown, VIRTUAL_MOUSE_POINTCLICK);
 #endif
+            }
+            else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
+                sendIbAbsolute(mouse_input,{x,y},ibInputGeneration,ibStopAction);
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -5398,16 +5432,12 @@ void QKeyMapper_Worker::sendMousePointClick(QString &mousepoint_str, int keyupdo
     }
 }
 
-void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod,bool ibStopAction)
+void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod,bool ibStopAction,quint64 ibInputGeneration)
 {
     static QRegularExpression regex(REGEX_PATTERN_MOUSE_MOVE);
     QRegularExpressionMatch match = regex.match(mousepoint_str);
 
     if (match.hasMatch()) {
-        if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
-            emit ibInputFault_Signal(QCoreApplication::translate("QkmIbInputClient","IbInput absolute positioning is not available for this backend."));
-            return;
-        }
         bool isWindowPoint = !match.captured(1).isEmpty();
         bool isPostBG = !match.captured(2).isEmpty();
         bool x_ok;
@@ -5437,6 +5467,10 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendma
 #endif
                     FakerInputClient_sendAbsoluteMouseMove(screenPoint.x, screenPoint.y, 0);
 #endif
+                }
+                else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
+                    INPUT input{}; input.type=INPUT_MOUSE;
+                    sendIbAbsolute(input,{x,y},ibInputGeneration,ibStopAction,QKeyMapper::s_CurrentMappingHWND);
                 }
                 else {
 #ifdef DEBUG_LOGOUT_ON
@@ -5468,6 +5502,10 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendma
 #endif
                 FakerInputClient_sendAbsoluteMouseMove(x, y, 0);
 #endif
+            }
+            else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
+                INPUT input{}; input.type=INPUT_MOUSE;
+                sendIbAbsolute(input,{x,y},ibInputGeneration,ibStopAction);
             }
             else {
 #ifdef DEBUG_LOGOUT_ON
@@ -5518,7 +5556,7 @@ void QKeyMapper_Worker::sendMouseMoveToPoint(QString &mousepoint_str, int sendma
             (void)FakerInputClient_sendMouseMove(delta_x, delta_y);
 #endif
         }
-        else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) { sendIbMove(delta_x,delta_y,ibStopAction); }
+        else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) { sendIbMove(delta_x,delta_y,ibStopAction,ibInputGeneration); }
         else {
             sendMouseMove(delta_x, delta_y);
         }
@@ -5542,12 +5580,8 @@ void QKeyMapper_Worker::saveMousePosition()
     }
 }
 
-void QKeyMapper_Worker::restoreMousePosition(int sendmappingkeymethod)
+void QKeyMapper_Worker::restoreMousePosition(int sendmappingkeymethod,bool ibStopAction,quint64 ibInputGeneration)
 {
-    if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
-        emit ibInputFault_Signal(QCoreApplication::translate("QkmIbInputClient","IbInput absolute positioning is not available for this backend."));
-        return;
-    }
     if (s_SavedMousePosition != MOUSE_POS_INVALID) {
         POINT saved_position = {s_SavedMousePosition.x(), s_SavedMousePosition.y()};
         if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
@@ -5557,6 +5591,10 @@ void QKeyMapper_Worker::restoreMousePosition(int sendmappingkeymethod)
 #endif
             FakerInputClient_sendAbsoluteMouseMove(saved_position.x, saved_position.y, 0);
 #endif
+        }
+        else if (sendmappingkeymethod==SENDMAPPINGKEY_METHOD_IBINPUT) {
+            INPUT input{}; input.type=INPUT_MOUSE;
+            sendIbAbsolute(input,saved_position,ibInputGeneration,ibStopAction);
         }
         else {
             setMouseToPoint(saved_position);

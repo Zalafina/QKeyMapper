@@ -160,6 +160,14 @@ product_check.pro的horizontal固定用例复用开始／停止／重启／退�
 
 接收器--mouse保留wheel_up/down、wheel_delta(y)及wheel_buttons，新增wheel_left/right和wheel_delta_x；按Qt Windows适配约定，Qt横向角度正为左、负为右，与WM_MOUSEHWHEEL原生符号相反。--self-check通过Qt组件派发两个轴各正负120，不能当真实输入；固定实际运行器另核对原始Q/W/E、左右各一格、左键保持的wheel_buttons、停止／退出UP及FilterKeys不变。源码范围、机器、实际EXE及结果仅见主计划29节。
 
+## IbInput Razer绝对坐标
+
+product_check的absolute固定用例使用razer_absolute_verification.ini：Q屏幕移动、W屏幕左键点按、E保存、R第二落点、T恢复、A窗口客户区移动、S窗口左键点按；方式3、偏好auto并断言实际razer。坐标含逗号的INI值须加引号；Qt6／Qt5均读取原完整字符串。协议沿absolute-started/stopped/restarted/exiting.json及absolute-stop/restart/exit/abort。
+
+维护目标核验接收PID／HWND／标题，只为本用例绑定该自有窗口，并断开自身周期进程列表刷新以免其清空测试绑定；断言目标不漂移。这是发送路径夹具，不证明自动进程匹配。absolute-clear-target只清空此绑定并写target-cleared.json，用于检验缺失目标后的UP，不等同实际窗口销毁或PID复用。原始键仍由获准的普通固定运行器生成，真实输出来自正式Worker和Razer DLL。
+
+运行器先确认屏幕及ClientToScreen后的落点均在接收客户区；首个移动实际落点通过后才点击。定位／保存恢复用GetCursorPos与接收移动核对，点按用接收DOWN／UP计数；保持时小幅自有移动后检查缺失目标UP、停止／重启／退出释放且无清理跳转。客户端替身覆盖归一化边界、五按钮同包、晚到UP及已准入停止源保留坐标；报告替身覆盖实际Razer Flags／LastX/Y，不替代真实接收。范围／机器／EXE／结果见主计划30节。
+
 ## IbInput Popup 显示维护
 
 ui_test.pro生成普通权限QKeyMapperIbInputUiTest，显式使用--ibinput-ui-check运行；QKM_IBINPUT_UI_ROOT指定现有结果目录，QKM_IBINPUT_QM_ROOT指定三语QM目录。程序在创建QApplication前进入自有QkmIbInputUi_<PID>私有Windows桌面，Qt5需要该桌面的DESKTOP_HOOKCONTROL以建立自身线程WH_GETMESSAGE消息机制；不切换Default，不运行产品映射Hook。

@@ -66,7 +66,7 @@ bool QkmIbInputClient::isSupportedButton(quint16 button) {
 }
 unsigned QkmIbInputClient::capabilities(const QString &backend) {
     if (backend==QStringLiteral("logitech_ghub") || backend==QStringLiteral("razer")) {
-        return RelativeMove|Keyboard|Buttons|VerticalWheel|(backend==QStringLiteral("razer") ? HorizontalWheel : 0);
+        return RelativeMove|Keyboard|Buttons|VerticalWheel|(backend==QStringLiteral("razer") ? HorizontalWheel|AbsoluteMove : 0);
     }
     return 0;
 }
@@ -143,7 +143,7 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
     unsigned needed=0;
     if (input.type==INPUT_KEYBOARD) needed=Keyboard;
     else if (input.type==INPUT_MOUSE) {
-        if (input.mi.dwFlags & MOUSEEVENTF_MOVE) needed|=RelativeMove;
+        if (input.mi.dwFlags & MOUSEEVENTF_MOVE) needed|=(input.mi.dwFlags & MOUSEEVENTF_ABSOLUTE) ? AbsoluteMove : RelativeMove;
         if (input.mi.dwFlags & MOUSEEVENTF_WHEEL) needed|=VerticalWheel;
         if (input.mi.dwFlags & MOUSEEVENTF_HWHEEL) needed|=HorizontalWheel;
         if (buttonId(input.mi)) needed|=Buttons;
@@ -164,25 +164,36 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
     } else if (input.type==INPUT_MOUSE) {
         const auto &mouse=input.mi;
         const DWORD wheelFlags=MOUSEEVENTF_WHEEL|MOUSEEVENTF_HWHEEL;
-        const DWORD supported=MOUSEEVENTF_MOVE|MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP|wheelFlags;
+        const DWORD supported=MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK|MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP|wheelFlags;
         if ((mouse.dwFlags & ~supported) || (mouse.dwFlags==0)
             || ((mouse.dwFlags & (MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP)) && mouse.mouseData!=XBUTTON1 && mouse.mouseData!=XBUTTON2)
             || ((mouse.dwFlags & wheelFlags) && (static_cast<LONG>(mouse.mouseData)%WHEEL_DELTA)!=0)
             || (mouse.dwFlags & wheelFlags)==wheelFlags
-            || mouse.dx>32767 || mouse.dx< -32767 || mouse.dy>32767 || mouse.dy< -32767) return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."));
+            || ((mouse.dwFlags & MOUSEEVENTF_ABSOLUTE) && !(mouse.dwFlags & MOUSEEVENTF_MOVE))
+            || ((mouse.dwFlags & MOUSEEVENTF_VIRTUALDESK) && !(mouse.dwFlags & MOUSEEVENTF_ABSOLUTE))
+            || ((mouse.dwFlags & MOUSEEVENTF_ABSOLUTE)
+                ? (mouse.dx<0 || mouse.dx>65535 || mouse.dy<0 || mouse.dy>65535)
+                : (mouse.dx>32767 || mouse.dx< -32767 || mouse.dy>32767 || mouse.dy< -32767))) return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."));
         const DWORD buttonFlags=mouse.dwFlags & (MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP);
-        if ((buttonFlags && (buttonFlags & (buttonFlags-1))) || (buttonFlags && (mouse.dwFlags & (MOUSEEVENTF_MOVE|wheelFlags)))
+        if ((buttonFlags && (buttonFlags & (buttonFlags-1)))
+            || (buttonFlags && ((mouse.dwFlags & wheelFlags) || ((mouse.dwFlags & MOUSEEVENTF_MOVE) && !(mouse.dwFlags & MOUSEEVENTF_ABSOLUTE))))
             || ((mouse.dwFlags & MOUSEEVENTF_MOVE) && (mouse.dwFlags & wheelFlags)))
             return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported combined IbInput mouse event."));
         const quint16 button=buttonId(mouse);
         if (button && !isSupportedButton(button)) return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput mouse button still awaits backend validation."));
         const bool up=isRelease(input);
         if (button && !up) m_ownedButtons.insert(button);
+        INPUT event=input;
+        if (up && (!acceptingInput() || m_status.stopping) && !(stopAction && stopActionAllowed(generation))) {
+            // A late point-click UP must release without introducing movement during cleanup.
+            event.mi.dwFlags &= ~(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK);
+            event.mi.dx=event.mi.dy=0;
+        }
         if (mouse.dwFlags & wheelFlags) {
             const LONG delta=static_cast<LONG>(mouse.mouseData);
-            INPUT step=input; step.mi.mouseData=static_cast<DWORD>(delta>0 ? WHEEL_DELTA : -WHEEL_DELTA);
+            INPUT step=event; step.mi.mouseData=static_cast<DWORD>(delta>0 ? WHEEL_DELTA : -WHEEL_DELTA);
             for (LONG left=delta/WHEEL_DELTA;left!=0;left+=left>0 ? -1 : 1) if (!sendOne(step)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput wheel send failed; mapping must stop."));
-        } else if (!sendOne(input)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop without retrying another backend."));
+        } else if (!sendOne(event)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop without retrying another backend."));
         if (button && up) m_ownedButtons.remove(button);
     } else return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput event type."));
     return true;

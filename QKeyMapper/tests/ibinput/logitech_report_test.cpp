@@ -294,6 +294,23 @@ void razerBasicCase() {
     const auto move=report<Rz>(calls.back());
     check(move.mi.Flags==MOUSE_MOVE_RELATIVE && move.mi.LastX==8 && move.mi.LastY==-10
         && move.mi.ButtonFlags==0,"Razer relative move encoding changed");
+    for (LONG coordinate:{LONG(0),LONG(1),LONG(32768),LONG(65535)}) for (DWORD desktop:{DWORD(0),DWORD(MOUSEEVENTF_VIRTUALDESK)}) {
+        check(razer.send_mouse_input(mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|desktop,coordinate,coordinate)),
+            "Razer absolute report failed");
+        const auto absolute=report<Rz>(calls.back());
+        check(absolute.mi.Flags==(MOUSE_MOVE_ABSOLUTE|(desktop ? MOUSE_VIRTUAL_DESKTOP : 0))
+            && absolute.mi.LastX==coordinate && absolute.mi.LastY==coordinate && absolute.mi.ButtonFlags==0,
+            "Razer absolute coordinates were scaled as relative movement");
+    }
+    for (DWORD button:{DWORD(MOUSEEVENTF_LEFTDOWN),DWORD(MOUSEEVENTF_LEFTUP)}) {
+        check(razer.send_mouse_input(mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK|button,40000,50000)),
+            "Razer absolute point-click report failed");
+        const auto absolute=report<Rz>(calls.back());
+        check(absolute.mi.Flags==(MOUSE_MOVE_ABSOLUTE|MOUSE_VIRTUAL_DESKTOP)
+            && absolute.mi.LastX==40000 && absolute.mi.LastY==50000
+            && absolute.mi.ButtonFlags==(button==MOUSEEVENTF_LEFTDOWN ? MOUSE_LEFT_BUTTON_DOWN : MOUSE_LEFT_BUTTON_UP),
+            "Razer point-click did not keep position and button in one report");
+    }
     failAt=static_cast<int>(calls.size()+1);
     check(!razer.send_mouse_input(mouse(MOUSEEVENTF_LEFTUP)),"Razer IO failure was hidden");
     razer.destroy();

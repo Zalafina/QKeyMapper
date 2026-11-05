@@ -1,6 +1,6 @@
 # IbInputSimulator 依赖来源与本机制品
 
-记录日期：2026-11-03。本文保存来源、制品身份和证据边界；设计、进度及下一步只维护在 [主计划](qkeymapper_ibinputsimulator_integration_plan.md)。
+记录日期：2026-11-05。本文保存来源、制品身份和证据边界；设计、进度及下一步只维护在 [主计划](qkeymapper_ibinputsimulator_integration_plan.md)。
 
 ## DOC-00 历史证据边界
 
@@ -153,3 +153,20 @@ QKeyMapper/RazerDriver的17个二进制／INF／CAT来源文件来自用户提�
 管理工具只按精确ROOT总线实例执行系统PnPUtil /remove-device，保留DriverStore；不使用nefcon 1.14.0的--remove-device-node，因为其固定源码实际调用UninstallDeviceAndDriver。安装不先清理已有节点，失败／3010向上传播。21项纯替身验证通过；本机没有执行安装或移除。用户已有Razer／Synapse时优先检查连接与兼容性，不能保证不影响现有软件。
 
 发布白名单含23项README、管理工具、nefcon许可和原始驱动文件，排除INTEGRATION_GUIDE.md及.gitattributes；只随Qt6_x64／Qt5_x64，Qt5_x86清除残留RazerDriver。本套支持范围为AMD64 Win10／Win11，不支持Win7；具体最低Win10构建号、Win10驱动运行及其他Razer环境尚未验证。正式包根目录部署匹配架构IbInputSimulator.dll，四份许可统一在licenses/IbInputSimulator/。新规则最终打包验证仅在Win10专用PC，本轮Win11未运行新规则打包测试。
+
+## 2026-11-05 PC-W11 0008配套制品（当前）
+
+固定四项来源及工具链沿前节，按序重放0001～0008；0008已经独立批准，只修正Razer绝对纵坐标误用相对补偿。两架构通过原版负例、参数边界及九组报告；构建无诊断。导出ABI、导入库、公共头、IOCTL和结构均不变。普通权限恢复：
+~~~powershell
+C:\Python\Python311\python.exe -B -X utf8 scripts/build_ibinput_dependency.py --arch x64 --review-patch --tests --deploy
+C:\Python\Python311\python.exe -B -X utf8 scripts/build_ibinput_dependency.py --arch x86 --review-patch --tests --deploy
+~~~
+
+| 文件（相对QKeyMapper/IbInputSimulator） | 字节 | SHA256 |
+|---|---:|---|
+| lib/x64/IbInputSimulator.dll | 218112 | f751540f544d7d8d48028ef7a02c4d4cea83d7f2b96fb6030e7e89882294febc |
+| lib/x64/IbInputSimulator.lib | 4448 | 5309e2df6c178dae5a105c23f2bd8d694ca97db2082a4384ad573a692ee014c0 |
+| lib/x86/IbInputSimulator.dll | 172032 | 76fe806ffbeb2a7559be42b8afbb5a334279b403ec62f90bde31572a55d3ba48 |
+| lib/x86/IbInputSimulator.lib | 4656 | 197fc68a76e35e36a9fb3c8728e1dab9dfbf05bcf3943dfa63200dfb93faa52d |
+
+实际A1产品使用0008 x64；屏幕／窗口定位与点按、保存恢复及释放通过。x86本轮为软件报告及配套重建，没有真实产品输入。当前原始日志为out/ibinput/a1-w11-20261105/dependency-x64.log、dependency-x86.log及报告前后对照；实际场景、首轮夹具失败和EXE身份只见主计划30节。Razer原厂驱动文件未修改或重新安装，再分发依据及Win10正式包验证仍待后续阶段。

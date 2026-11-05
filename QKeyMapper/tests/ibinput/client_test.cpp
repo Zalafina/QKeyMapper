@@ -303,6 +303,61 @@ void horizontalCase() {
             "Ambiguous horizontal event reached the native API");
     }
 }
+void absoluteCase() {
+    QkmIbInputClient client;
+    const auto required=needs(QkmIbInputClient::AbsoluteMove|QkmIbInputClient::Buttons);
+    const auto generation=client.requestRun();
+    check(client.prepareRun(generation,required)
+        && attempts==std::vector<Send::SendType>{Send::SendType::Razer},"Absolute input did not select Razer only");
+    const DWORD absolute=MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK;
+    for (LONG coordinate:{LONG(0),LONG(32768),LONG(65535)}) {
+        check(client.sendEvent(mouse(absolute,coordinate,coordinate),generation),"Normalized absolute range rejected");
+        check(events.back().mi.dx==coordinate && events.back().mi.dy==coordinate
+            && events.back().mi.dwFlags==absolute,"Absolute coordinates/flags changed");
+    }
+    for (const auto &button:mouseButtons) {
+        check(client.sendEvent(mouse(absolute|button.down,40000,50000,button.data),generation),"Absolute button DOWN rejected");
+        check(events.back().mi.dwFlags==(absolute|button.down) && events.back().mi.mouseData==button.data,
+            "Point-click report lost button identity");
+        check(client.sendEvent(mouse(absolute|button.up,1000,2000,button.data),generation),"Absolute button UP rejected");
+        check(events.back().mi.dwFlags==(absolute|button.up) && events.back().mi.dx==1000 && events.back().mi.dy==2000,
+            "Active point-click UP lost its coordinates");
+    }
+    check(client.sendEvent(mouse(absolute|MOUSEEVENTF_LEFTDOWN,1000,2000),generation),"Late-UP fixture DOWN failed");
+    client.cancelRun();
+    check(!client.sendEvent(mouse(absolute,3000,4000),generation),"Stopped absolute movement reached API");
+    check(client.sendEvent(mouse(absolute|MOUSEEVENTF_LEFTUP,3000,4000),generation)
+        && events.back().mi.dwFlags==MOUSEEVENTF_LEFTUP && events.back().mi.dx==0 && events.back().mi.dy==0,
+        "Point-click cleanup moved the cursor");
+    check(client.releaseOwnedInputs(generation) && client.beginStopAction(generation),"Absolute stop-action fixture failed");
+    check(client.sendEvent(mouse(absolute|MOUSEEVENTF_LEFTDOWN,1000,2000),generation,true)
+        && client.sendEvent(mouse(absolute|MOUSEEVENTF_LEFTUP,3000,4000),generation,true)
+        && events.back().mi.dwFlags==(absolute|MOUSEEVENTF_LEFTUP) && events.back().mi.dx==3000,
+        "Admitted stop-action point-click lost its position");
+    check(client.closeAfterDrain(generation),"Absolute close failed");
+    reset();
+    QkmIbInputClient failed;
+    const auto token=failed.requestRun(); check(failed.prepareRun(token,required),"Absolute failure fixture failed");
+    failSendAt=1;
+    check(!failed.sendEvent(mouse(absolute|MOUSEEVENTF_LEFTDOWN,1000,2000),token),"Unknown point-click DOWN was accepted");
+    check(failed.closeAfterDrain(token) && events.size()==2 && events.back().mi.dwFlags==MOUSEEVENTF_LEFTUP,
+        "Unknown point-click DOWN did not release on the same backend");
+    const INPUT invalid[]={mouse(absolute,-1,0),mouse(absolute,0,65536),mouse(MOUSEEVENTF_ABSOLUTE,0,0),
+        mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_VIRTUALDESK,0,0),mouse(absolute|MOUSEEVENTF_WHEEL,0,0,WHEEL_DELTA),
+        mouse(absolute|MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_RIGHTDOWN,0,0)};
+    for (const auto &event:invalid) {
+        reset(); QkmIbInputClient bounded;
+        const auto run=bounded.requestRun();
+        check(bounded.prepareRun(run,needs(QkmIbInputClient::AbsoluteMove|QkmIbInputClient::RelativeMove
+            |QkmIbInputClient::Buttons|QkmIbInputClient::VerticalWheel)),"Absolute bounds fixture failed");
+        check(!bounded.sendEvent(event,run) && events.empty() && bounded.closeAfterDrain(run),
+            "Invalid absolute representation reached native API");
+    }
+    reset(); QkmIbInputClient ghub;
+    QkmIbInputClient::Preferences manual; manual.backend=QStringLiteral("logitech_ghub");
+    check(ghub.setPreferences(manual),"Manual absolute fixture failed");
+    check(!ghub.prepareRun(ghub.requestRun(),required) && attempts.empty(),"G HUB absolute capability changed");
+}
 void buttonsCase() {
     QkmIbInputClient client;
     auto requirements=needs(QkmIbInputClient::Buttons|QkmIbInputClient::RelativeMove|QkmIbInputClient::VerticalWheel);
@@ -456,12 +511,12 @@ int main(int argc,char **argv) {
             for (const auto &button:mouseButtons) supportedButtons.insert(button.vk);
             for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedButton(vk)==supportedButtons.contains(vk),"mouse button set differs");
             reset(); razerCase(); reset(); admissionCase(); reset(); restartCase(); reset(); stopActionCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
-            reset(); horizontalCase(); reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
+            reset(); absoluteCase(); reset(); horizontalCase(); reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
             reset(); concurrentCase();
             std::cout<<"PASS simulated production gate: 115 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
 #endif
-        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"razer",razerCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"horizontal",horizontalCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
+        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"razer",razerCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"absolute",absoluteCase},{"horizontal",horizontalCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
     } catch (const std::exception &error) { std::cerr<<error.what()<<'\n'; return 2; }

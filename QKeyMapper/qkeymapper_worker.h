@@ -1202,10 +1202,10 @@ public slots:
 public:
     void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, quint64 ibInputGeneration = qkmCurrentIbInputGeneration());
     // void send_WINplusD(void);
-    void sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
-    void sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT, bool ibStopAction=false);
+    void sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT, bool ibStopAction=false, quint64 ibInputGeneration=qkmCurrentIbInputGeneration());
+    void sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT, bool ibStopAction=false, quint64 ibInputGeneration=qkmCurrentIbInputGeneration());
     void saveMousePosition(void);
-    void restoreMousePosition(int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
+    void restoreMousePosition(int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT, bool ibStopAction=false, quint64 ibInputGeneration=qkmCurrentIbInputGeneration());
     void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = QKeyMapperConstants::SENDVIRTUALKEY_STATE_NORMAL, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
 
 public:

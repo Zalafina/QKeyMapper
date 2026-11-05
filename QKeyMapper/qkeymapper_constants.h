@@ -1528,6 +1528,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char REGEX_STRING_EMPTYSTRING[] = "^$";
 
+    inline constexpr const char REGEX_PATTERN_MOUSE_POINT_CLICK[] = R"((Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?(:BG)?\((-?\d+),(-?\d+)\))";
     inline constexpr const char REGEX_PATTERN_MOUSE_MOVE[] = R"(Mouse-Move(:W)?(:BG)?\((-?\d+),(-?\d+)\))";
 
     // Relative mouse move mapping key pattern: "Mouse-Move:R(delta_x,delta_y)"
