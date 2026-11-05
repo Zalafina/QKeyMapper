@@ -154,6 +154,12 @@ logitech_report_test新增Razer基础报告、右修饰／除号／菜单E0和Pa
 razer_driver_script_test.ps1通过Windows自带PowerShell 5.1运行，替代CIM、权限、用户确认和原生命令，验证精确实例、失败／重启传播及保留驱动包；不操作本机设备。真实驱动安装／卸载未由此证明。Razer当前运行证据和未覆盖范围只维护在主计划23节；正式Release打包测试仅Win10专用PC执行。
 
 
+## IbInput Razer 水平滚轮
+
+product_check.pro的horizontal固定用例复用开始／停止／重启／退出，前缀horizontal-；razer_horizontal_verification.ini为Q→Mouse-WheelLeft、W→Mouse-WheelRight、E→Mouse-L，方式3、首选auto。维护目标检查实际偏好auto，started／restarted记录preferred_backend及实际razer，不能把连接成功当窗口收到滚轮。
+
+接收器--mouse保留wheel_up/down、wheel_delta(y)及wheel_buttons，新增wheel_left/right和wheel_delta_x；按Qt Windows适配约定，Qt横向角度正为左、负为右，与WM_MOUSEHWHEEL原生符号相反。--self-check通过Qt组件派发两个轴各正负120，不能当真实输入；固定实际运行器另核对原始Q/W/E、左右各一格、左键保持的wheel_buttons、停止／退出UP及FilterKeys不变。源码范围、机器、实际EXE及结果仅见主计划29节。
+
 ## IbInput Popup 显示维护
 
 ui_test.pro生成普通权限QKeyMapperIbInputUiTest，显式使用--ibinput-ui-check运行；QKM_IBINPUT_UI_ROOT指定现有结果目录，QKM_IBINPUT_QM_ROOT指定三语QM目录。程序在创建QApplication前进入自有QkmIbInputUi_<PID>私有Windows桌面，Qt5需要该桌面的DESKTOP_HOOKCONTROL以建立自身线程WH_GETMESSAGE消息机制；不切换Default，不运行产品映射Hook。

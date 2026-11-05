@@ -66,7 +66,7 @@ bool QkmIbInputClient::isSupportedButton(quint16 button) {
 }
 unsigned QkmIbInputClient::capabilities(const QString &backend) {
     if (backend==QStringLiteral("logitech_ghub") || backend==QStringLiteral("razer")) {
-        return RelativeMove|Keyboard|Buttons|VerticalWheel;
+        return RelativeMove|Keyboard|Buttons|VerticalWheel|(backend==QStringLiteral("razer") ? HorizontalWheel : 0);
     }
     return 0;
 }
@@ -145,6 +145,7 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
     else if (input.type==INPUT_MOUSE) {
         if (input.mi.dwFlags & MOUSEEVENTF_MOVE) needed|=RelativeMove;
         if (input.mi.dwFlags & MOUSEEVENTF_WHEEL) needed|=VerticalWheel;
+        if (input.mi.dwFlags & MOUSEEVENTF_HWHEEL) needed|=HorizontalWheel;
         if (buttonId(input.mi)) needed|=Buttons;
     }
     if ((needed & m_runCapabilities)!=needed || (needed & capabilities(m_status.backend))!=needed)
@@ -162,20 +163,22 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
         if (up) m_ownedKeys.remove(input.ki.wVk);
     } else if (input.type==INPUT_MOUSE) {
         const auto &mouse=input.mi;
-        const DWORD supported=MOUSEEVENTF_MOVE|MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP|MOUSEEVENTF_WHEEL;
+        const DWORD wheelFlags=MOUSEEVENTF_WHEEL|MOUSEEVENTF_HWHEEL;
+        const DWORD supported=MOUSEEVENTF_MOVE|MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP|wheelFlags;
         if ((mouse.dwFlags & ~supported) || (mouse.dwFlags==0)
             || ((mouse.dwFlags & (MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP)) && mouse.mouseData!=XBUTTON1 && mouse.mouseData!=XBUTTON2)
-            || ((mouse.dwFlags & MOUSEEVENTF_WHEEL) && (static_cast<LONG>(mouse.mouseData)%WHEEL_DELTA)!=0)
+            || ((mouse.dwFlags & wheelFlags) && (static_cast<LONG>(mouse.mouseData)%WHEEL_DELTA)!=0)
+            || (mouse.dwFlags & wheelFlags)==wheelFlags
             || mouse.dx>32767 || mouse.dx< -32767 || mouse.dy>32767 || mouse.dy< -32767) return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."));
         const DWORD buttonFlags=mouse.dwFlags & (MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP);
-        if ((buttonFlags && (buttonFlags & (buttonFlags-1))) || (buttonFlags && (mouse.dwFlags & (MOUSEEVENTF_MOVE|MOUSEEVENTF_WHEEL)))
-            || ((mouse.dwFlags & MOUSEEVENTF_MOVE) && (mouse.dwFlags & MOUSEEVENTF_WHEEL)))
+        if ((buttonFlags && (buttonFlags & (buttonFlags-1))) || (buttonFlags && (mouse.dwFlags & (MOUSEEVENTF_MOVE|wheelFlags)))
+            || ((mouse.dwFlags & MOUSEEVENTF_MOVE) && (mouse.dwFlags & wheelFlags)))
             return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported combined IbInput mouse event."));
         const quint16 button=buttonId(mouse);
         if (button && !isSupportedButton(button)) return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput mouse button still awaits backend validation."));
         const bool up=isRelease(input);
         if (button && !up) m_ownedButtons.insert(button);
-        if (mouse.dwFlags & MOUSEEVENTF_WHEEL) {
+        if (mouse.dwFlags & wheelFlags) {
             const LONG delta=static_cast<LONG>(mouse.mouseData);
             INPUT step=input; step.mi.mouseData=static_cast<DWORD>(delta>0 ? WHEEL_DELTA : -WHEEL_DELTA);
             for (LONG left=delta/WHEEL_DELTA;left!=0;left+=left>0 ? -1 : 1) if (!sendOne(step)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput wheel send failed; mapping must stop."));

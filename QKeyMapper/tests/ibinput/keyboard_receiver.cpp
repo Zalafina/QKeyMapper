@@ -77,6 +77,8 @@ public:
             value.insert(QStringLiteral("moves"),m_moves); value.insert(QStringLiteral("move_buttons"),static_cast<int>(m_moveButtons));
             value.insert(QStringLiteral("wheel_up"),m_wheelUp); value.insert(QStringLiteral("wheel_down"),m_wheelDown);
             value.insert(QStringLiteral("wheel_delta"),m_wheelDelta); value.insert(QStringLiteral("wheel_buttons"),static_cast<int>(m_wheelButtons));
+            value.insert(QStringLiteral("wheel_left"),m_wheelLeft); value.insert(QStringLiteral("wheel_right"),m_wheelRight);
+            value.insert(QStringLiteral("wheel_delta_x"),m_wheelDeltaX);
         }
         return value;
     }
@@ -101,6 +103,7 @@ protected:
             ? QStringLiteral("Mouse DOWN %1\nMouse UP %2\nHeld buttons %3 | moves %4 | move buttons %5\nWheel up/down %6/%7 | delta %8 | wheel buttons %9\n")
                 .arg(compact(m_mouseDown)).arg(compact(m_mouseUp)).arg(static_cast<int>(m_mouseButtons)).arg(m_moves)
                 .arg(static_cast<int>(m_moveButtons)).arg(m_wheelUp).arg(m_wheelDown).arg(m_wheelDelta).arg(static_cast<int>(m_wheelButtons))
+                +QStringLiteral("Wheel left/right %1/%2 | delta X %3\n").arg(m_wheelLeft).arg(m_wheelRight).arg(m_wheelDeltaX)
                 +QStringLiteral("Key DOWN %1\nKey UP %2\nHeld keys %3 | aborted %4")
                     .arg(compact(m_down)).arg(compact(m_up)).arg(m_pressed.size()).arg(m_aborted)
             : QStringLiteral("Key DOWN %1\nKey UP %2\nHeld keys %3 | events %4\nTrace truncated %5 | aborted %6")
@@ -140,9 +143,12 @@ protected:
     }
     void wheelEvent(QWheelEvent *event) override {
         if (!m_mouse) { QWidget::wheelEvent(event); return; }
-        m_wheelDelta=event->angleDelta().y(); m_wheelButtons=event->buttons();
+        m_wheelDelta=event->angleDelta().y(); m_wheelDeltaX=event->angleDelta().x(); m_wheelButtons=event->buttons();
         if (m_wheelDelta>0) m_wheelUp+=m_wheelDelta/120;
         if (m_wheelDelta<0) m_wheelDown-=m_wheelDelta/120;
+        // Qt horizontal angleDelta is opposite to WM_MOUSEHWHEEL.
+        if (m_wheelDeltaX>0) m_wheelLeft+=m_wheelDeltaX/120;
+        if (m_wheelDeltaX<0) m_wheelRight-=m_wheelDeltaX/120;
         if (m_live) publish();
         update(); event->accept();
     }
@@ -151,6 +157,7 @@ private:
     QJsonObject m_mouseDown,m_mouseUp;
     Qt::MouseButtons m_mouseButtons=Qt::NoButton,m_moveButtons=Qt::NoButton,m_wheelButtons=Qt::NoButton;
     int m_moves=0,m_wheelUp=0,m_wheelDown=0,m_wheelDelta=0;
+    int m_wheelLeft=0,m_wheelRight=0,m_wheelDeltaX=0;
     int m_ticks=0;
     QTimer m_timer;
     QSet<quint32> m_pressed;
@@ -219,6 +226,10 @@ int main(int argc,char **argv) {
             QWheelEvent wheel(point,point,QPoint(),QPoint(0,delta),Qt::LeftButton,Qt::NoModifier,Qt::NoScrollPhase,false);
             QApplication::sendEvent(&mouse,&wheel);
         }
+        for (int delta:{120,-120}) {
+            QWheelEvent wheel(point,point,QPoint(),QPoint(delta,0),Qt::LeftButton,Qt::NoModifier,Qt::NoScrollPhase,false);
+            QApplication::sendEvent(&mouse,&wheel);
+        }
         const auto observed=mouse.state();
         const QString snapshot=qEnvironmentVariable("QKM_IBINPUT_RECEIVER_SNAPSHOT");
         if (!snapshot.isEmpty()) {
@@ -228,7 +239,9 @@ int main(int argc,char **argv) {
         return observed.value(QStringLiteral("mouse_buttons")).toInt()==0
             && observed.value(QStringLiteral("moves")).toInt()==1 && observed.value(QStringLiteral("move_buttons")).toInt()==1
             && observed.value(QStringLiteral("wheel_up")).toInt()==1 && observed.value(QStringLiteral("wheel_down")).toInt()==1
-            && observed.value(QStringLiteral("wheel_delta")).toInt()==-120 && observed.value(QStringLiteral("wheel_buttons")).toInt()==1 ? 0 : 2;
+            && observed.value(QStringLiteral("wheel_delta")).toInt()==0 && observed.value(QStringLiteral("wheel_buttons")).toInt()==1
+            && observed.value(QStringLiteral("wheel_left")).toInt()==1 && observed.value(QStringLiteral("wheel_right")).toInt()==1
+            && observed.value(QStringLiteral("wheel_delta_x")).toInt()==-120 ? 0 : 2;
     }
     output=qEnvironmentVariable("QKM_IBINPUT_KEYBOARD_OUTPUT");
     const bool mouse=app.arguments()==QStringList{app.arguments().front(),QStringLiteral("--mouse")};

@@ -283,10 +283,12 @@ void razerBasicCase() {
         check(razer.send_mouse_input(mouse(up[i],0,0,data)),"Razer button UP failed");
         check(report<Rz>(calls.back()).mi.ButtonFlags==static_cast<USHORT>(expected[i]<<1),"Razer button UP encoding differs");
     }
-    for (LONG delta:{LONG(WHEEL_DELTA),LONG(-WHEEL_DELTA)}) {
-        check(razer.send_mouse_input(mouse(MOUSEEVENTF_WHEEL,0,0,static_cast<DWORD>(delta))),"Razer wheel report failed");
+    for (DWORD axis:{DWORD(MOUSEEVENTF_WHEEL),DWORD(MOUSEEVENTF_HWHEEL)}) for (LONG delta:{LONG(WHEEL_DELTA),LONG(-WHEEL_DELTA)}) {
+        check(razer.send_mouse_input(mouse(axis,0,0,static_cast<DWORD>(delta))),"Razer wheel report failed");
         const auto value=report<Rz>(calls.back());
-        check(value.mi.ButtonFlags==MOUSE_WHEEL && static_cast<SHORT>(value.mi.ButtonData)==delta,"Razer wheel sign/unit changed");
+        check(value.mi.ButtonFlags==(axis==MOUSEEVENTF_WHEEL ? MOUSE_WHEEL : MOUSE_HWHEEL)
+            && static_cast<SHORT>(value.mi.ButtonData)==delta && value.mi.LastX==0 && value.mi.LastY==0,
+            "Razer wheel axis/sign/unit changed");
     }
     check(razer.send_mouse_input(mouse(MOUSEEVENTF_MOVE,8,-12)),"Razer move failed");
     const auto move=report<Rz>(calls.back());

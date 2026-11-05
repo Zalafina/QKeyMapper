@@ -248,6 +248,8 @@ void capabilityCase() {
     check(checkOnly.closeAfterDrain(connection),"connection-only close failed");
     reset();
     QkmIbInputClient blocked;
+    QkmIbInputClient::Preferences manual; manual.backend=QStringLiteral("logitech_ghub");
+    check(blocked.setPreferences(manual),"manual wheel fixture rejected");
     auto requirements=needs(QkmIbInputClient::HorizontalWheel);
     const auto token=blocked.requestRun();
     check(!blocked.prepareRun(token,requirements) && attempts.empty(),"unsupported wheel reached initialization");
@@ -258,6 +260,48 @@ void capabilityCase() {
     const auto run=combined.requestRun();
     check(combined.prepareRun(run,requirements),"supported mouse primitives rejected");
     check(combined.closeAfterDrain(run),"combined capability close failed");
+}
+void horizontalCase() {
+    QkmIbInputClient client;
+    const auto requirements=needs(QkmIbInputClient::Buttons|QkmIbInputClient::HorizontalWheel);
+    const auto generation=client.requestRun();
+    check(client.prepareRun(generation,requirements)
+        && attempts==std::vector<Send::SendType>{Send::SendType::Razer},"Automatic horizontal wheel did not select Razer only");
+    check(client.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),generation),"Horizontal fixture button DOWN failed");
+    for (LONG delta:{LONG(-2*WHEEL_DELTA),LONG(2*WHEEL_DELTA)}) {
+        const auto before=events.size();
+        check(client.sendEvent(mouse(MOUSEEVENTF_HWHEEL,0,0,static_cast<DWORD>(delta)),generation),"Horizontal wheel rejected");
+        check(events.size()==before+2,"Horizontal wheel unit count differs");
+        for (size_t index=before;index<events.size();++index)
+            check(events[index].mi.dwFlags==MOUSEEVENTF_HWHEEL
+                && static_cast<LONG>(events[index].mi.mouseData)==(delta<0 ? -WHEEL_DELTA : WHEEL_DELTA),
+                "Horizontal wheel axis/sign/unit changed");
+    }
+    client.cancelRun();
+    check(!client.sendEvent(mouse(MOUSEEVENTF_HWHEEL,0,0,WHEEL_DELTA),generation),"Stopped horizontal wheel sent input");
+    check(client.closeAfterDrain(generation) && events.size()==6 && events.back().mi.dwFlags==MOUSEEVENTF_LEFTUP,
+        "Held button was not released after horizontal wheel");
+    reset();
+    QkmIbInputClient failed;
+    const auto token=failed.requestRun();
+    check(failed.prepareRun(token,requirements) && failed.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),token),"Horizontal failure fixture failed");
+    failSendAt=3;
+    check(!failed.sendEvent(mouse(MOUSEEVENTF_HWHEEL,0,0,3*WHEEL_DELTA),token) && events.size()==3
+        && attempts.size()==1,"Horizontal partial failure continued or switched backend");
+    check(failed.closeAfterDrain(token) && events.size()==4 && events.back().mi.dwFlags==MOUSEEVENTF_LEFTUP,
+        "Horizontal failure lost held-button cleanup");
+    const INPUT invalid[]={mouse(MOUSEEVENTF_HWHEEL,0,0,1),
+        mouse(MOUSEEVENTF_WHEEL|MOUSEEVENTF_HWHEEL,0,0,WHEEL_DELTA),
+        mouse(MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_HWHEEL,0,0,WHEEL_DELTA),
+        mouse(MOUSEEVENTF_MOVE|MOUSEEVENTF_HWHEEL,1,0,WHEEL_DELTA)};
+    for (const auto &event:invalid) {
+        reset(); QkmIbInputClient bounded;
+        const auto run=bounded.requestRun();
+        check(bounded.prepareRun(run,needs(QkmIbInputClient::Buttons|QkmIbInputClient::RelativeMove
+            |QkmIbInputClient::HorizontalWheel|QkmIbInputClient::VerticalWheel)),"Horizontal bounds fixture failed");
+        check(!bounded.sendEvent(event,run) && events.empty() && bounded.closeAfterDrain(run),
+            "Ambiguous horizontal event reached the native API");
+    }
 }
 void buttonsCase() {
     QkmIbInputClient client;
@@ -412,12 +456,12 @@ int main(int argc,char **argv) {
             for (const auto &button:mouseButtons) supportedButtons.insert(button.vk);
             for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedButton(vk)==supportedButtons.contains(vk),"mouse button set differs");
             reset(); razerCase(); reset(); admissionCase(); reset(); restartCase(); reset(); stopActionCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
-            reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
+            reset(); horizontalCase(); reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
             reset(); concurrentCase();
             std::cout<<"PASS simulated production gate: 115 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
 #endif
-        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"razer",razerCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
+        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"razer",razerCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"horizontal",horizontalCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
     } catch (const std::exception &error) { std::cerr<<error.what()<<'\n'; return 2; }
