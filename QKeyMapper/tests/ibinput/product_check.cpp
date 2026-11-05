@@ -12,6 +12,9 @@
 #include <QPushButton>
 #include <QSettings>
 #include <QSaveFile>
+#include <QSemaphore>
+#include <QSharedPointer>
+#include <atomic>
 #include <Windows.h>
 #include <tlhelp32.h>
 #include <QTimer>
@@ -193,6 +196,10 @@ void verifyMacroRules(const QList<MAP_KEYDATA> &source) {
 
 int inputPhase=0;
 int tableStage=0;
+int tableRaceRound=0,tableRaceStablePolls=0;
+quint64 tableRaceIntent=0;
+struct TableRaceGate { QSemaphore release; std::atomic_bool timedOut{false}; };
+QSharedPointer<TableRaceGate> tableRaceGate;
 quint64 inputGeneration=0;
 HWND inputReceiver=nullptr;
 void inputRecord(const QString &name,const QJsonObject &value) {
@@ -355,6 +362,45 @@ void verifyInputProduct(QKeyMapper *window) {
         inputRecord(inputPhase==1 ? QStringLiteral("started.json") : QStringLiteral("restarted.json"),started);
         inputPhase=inputPhase==1 ? 2 : 5;
     }
+    if (tables && inputPhase==2 && tableRaceRound<3) {
+        const QStringList commands{QStringLiteral("race-sendinput"),QStringLiteral("race-latest"),QStringLiteral("race-stop")};
+        if (QFile::exists(prefix+commands.at(tableRaceRound))) {
+            const auto gate=QSharedPointer<TableRaceGate>::create(); tableRaceGate=gate;
+            // Hold queued worker restarts until the UI has reserved every intent in this fixed burst.
+            check(QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),[gate] {
+                if (!gate->release.tryAcquire(1,5000)) gate->timedOut.store(true);
+            },Qt::QueuedConnection),"Cannot queue table race gate");
+            if (tableRaceRound==1) window->MappingTableSwitchByTabName(QStringLiteral("IbTableA"),false);
+            window->MappingTableSwitchByTabName(QStringLiteral("IbTableB"),false);
+            window->MappingTableSwitchByTabName(tableRaceRound==1 ? QStringLiteral("IbTableA") : QStringLiteral("SendInputTable"),false);
+            if (tableRaceRound==2) window->MappingTableSwitchByTabName(QStringLiteral("IbTableA"),false);
+            tableRaceIntent=client.requestedGeneration();
+            if (tableRaceRound==2) window->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK);
+            gate->release.release();
+            inputRecord(QStringLiteral("race-requested-%1.json").arg(++tableRaceRound),
+                {{"intent",static_cast<qint64>(tableRaceIntent)},{"accepting",client.acceptingInput()},
+                    {"table",QKeyMapper::s_KeyMappingTabWidgetCurrentIndex}});
+            inputPhase=tableRaceRound==3 ? 3 : 9;
+        }
+    }
+    if (tables && inputPhase==9) {
+        check(tableRaceGate && !tableRaceGate->timedOut.load(),"Table race gate timed out");
+        const int target=tableRaceRound==1 ? 2 : 0;
+        const auto current=qkmCurrentIbInputGeneration();
+        const bool ready=target==2 ? (!status.connected && !client.busy() && current==0)
+            : (status.connected && !status.fallback && status.backend==expectedBackend && current==tableRaceIntent);
+        if (QKeyMapper::s_KeyMappingTabWidgetCurrentIndex==target && ready
+            && QKeyMapper_Worker::s_AtomicHookProcState==QKeyMapperConstants::HOOKPROC_STATE_STARTED
+            && window->m_KeyMapStatus==QKeyMapper::KEYMAP_MAPPING_GLOBAL
+            && window->findChild<QToolButton *>(QStringLiteral("keymapButton"))->isEnabled()) {
+            check(client.requestedGeneration()==tableRaceIntent,"Queued restart consumed a different intent");
+            inputGeneration=current;
+            inputRecord(QStringLiteral("race-ready-%1.json").arg(tableRaceRound),
+                {{"generation",static_cast<qint64>(current)},{"intent",static_cast<qint64>(tableRaceIntent)},
+                    {"table",target},{"backend",status.backend},{"connected",status.connected}});
+            inputPhase=2;
+        }
+    }
     if (tables && inputPhase==2 && tableStage<3
         && QFile::exists(prefix+QStringLiteral("switch-%1").arg(tableStage+1))) inputPhase=8;
     if (tables && inputPhase==8) {
@@ -386,6 +432,15 @@ void verifyInputProduct(QKeyMapper *window) {
         && !status.connected && qkmCurrentIbInputGeneration()==0) {
         inputRecord(QStringLiteral("stopped.json"),{{"released",true},{"generation",static_cast<qint64>(inputGeneration)}});
         inputPhase=7;
+    }
+    if (tables && inputPhase==7 && tableRaceRound==3) {
+        check(tableRaceGate && !tableRaceGate->timedOut.load(),"Stop race gate timed out");
+        check(window->m_KeyMapStatus==QKeyMapper::KEYMAP_IDLE && !client.busy() && !status.connected
+            && !client.acceptingInput() && qkmCurrentIbInputGeneration()==0
+            && QKeyMapper_Worker::s_AtomicHookProcState==QKeyMapperConstants::HOOKPROC_STATE_STOPPED,
+            "A queued table restart revived stopped mapping");
+        if (++tableRaceStablePolls==5) inputRecord(QStringLiteral("race-stable.json"),
+            {{"stopped",true},{"cancelled_intent",static_cast<qint64>(tableRaceIntent)},{"connected",false}});
     }
     if (inputPhase==7 && QFile::exists(prefix+QStringLiteral("restart"))) {
         check(GetForegroundWindow()==inputReceiver,"Owned receiver lost foreground before restart");

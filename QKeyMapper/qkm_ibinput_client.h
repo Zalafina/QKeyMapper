@@ -51,7 +51,7 @@ public:
 
 private:
     void publish();
-    bool fail(const QString &detail);
+    bool fail(const QString &detail,quint64 generation=0);
     bool sendOne(const INPUT &input);
     bool releaseLocked();
     bool candidateSupports(const QString &backend, const Requirements &requirements) const;

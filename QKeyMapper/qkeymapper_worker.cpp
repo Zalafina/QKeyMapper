@@ -151,16 +151,16 @@ void sendIbMove(int x,int y,bool stopAction=false) { INPUT input{}; input.type=I
 }
 quint64 qkmCurrentIbInputGeneration() { return ibInputGeneration.load(); }
 
-bool QKeyMapper_Worker::prepareIbInputRun() {
+bool QKeyMapper_Worker::prepareIbInputRun(quint64 generation) {
+    auto &client=QkmIbInputClient::instance();
+    if (!generation || generation!=client.requestedGeneration() || !client.acceptingInput()) return false;
     const auto requirements=ibRequirements(*QKeyMapper::KeyMappingDataList);
     if (requirements.capabilities==0 && requirements.rejection.isEmpty()) {
-        QkmIbInputClient::instance().cancelRun(); ibInputGeneration.store(0); return true;
+        client.cancelRun(generation); ibInputGeneration.store(0); return true;
     }
-    auto &client=QkmIbInputClient::instance();
-    const quint64 generation=client.requestedGeneration();
     if (!client.prepareRun(generation,requirements)) {
         s_AtomicHookProcState=HOOKPROC_STATE_STOPPED;
-        emit ibInputFault_Signal(client.statusSnapshot().detail);
+        if (generation==client.requestedGeneration()) emit ibInputFault_Signal(client.statusSnapshot().detail);
         return false;
     }
     { QMutexLocker lock(&ibInputSnapshotMutex); ibInputSnapshot=QSharedPointer<QList<MAP_KEYDATA>>::create(*QKeyMapper::KeyMappingDataList); }
@@ -10021,7 +10021,7 @@ void QKeyMapper_Worker::setWorkerKeyHook()
     // Build active key mapping data list (filtering out disabled items)
     // and point KeyMappingDataList to it
     QKeyMapper::buildActiveKeyMappingDataList();
-    if (!prepareIbInputRun()) return;
+    if (!prepareIbInputRun(QkmIbInputClient::instance().requestedGeneration())) return;
 
 
     // Q_UNUSED(hWnd);
@@ -10491,9 +10491,10 @@ void QKeyMapper_Worker::tryFinishIbInputRun()
     finishIbInputRun();
 }
 
-void QKeyMapper_Worker::setKeyMappingRestart()
+void QKeyMapper_Worker::setKeyMappingRestart(quint64 generation)
 {
-    if (m_ibInputCloseQueued) return;
+    const auto &client=QkmIbInputClient::instance();
+    if (m_ibInputCloseQueued || generation!=client.requestedGeneration() || !client.acceptingInput()) return;
     const bool hadIbRun=qkmCurrentIbInputGeneration()!=0;
 #ifdef DEBUG_LOGOUT_ON
     qDebug("\033[1;34m[QKeyMapper_Worker::setKeyMappingRestart] KeyMapping Restart Start.>>>\033[0m");
@@ -10644,7 +10645,7 @@ void QKeyMapper_Worker::setKeyMappingRestart()
     /* Restart Starting process */
     QKeyMapper::s_ActiveKeyMappingDataList = backup_KeyMappingDataList;
     QKeyMapper::KeyMappingDataList = &QKeyMapper::s_ActiveKeyMappingDataList;
-    if (!prepareIbInputRun()) return;
+    if (!prepareIbInputRun(generation)) return;
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[setKeyMappingRestart] Built new active mapping list with" << QKeyMapper::s_ActiveKeyMappingDataList.size() << "items";
 #endif

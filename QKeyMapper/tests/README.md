@@ -132,6 +132,8 @@ product_check.pro的tables用例沿既有状态机，前缀tables-；manual_tabl
 客户端替身restart断言覆盖预留新意图、旧关闭不得取消新意图、特定旧代取消不得影响新代以及用户停止后不能复活请求，不能替代实际池排空和窗口输出。实际产品须验证保持输出时切换的旧UP与新DOWN、Ib→Ib／Ib→SendInput／SendInput→Ib、自动切表输出及正常停止／退出释放；串行通过不等同于快速／并发切表、切换中停止及各初始化失败已验。源码及结果只更新唯一主计划第20节。
 
 
+tables另支持三个依次触发的固定T3控制文件：tables-race-sendinput（B→C，最新为SendInput）、tables-race-latest（A→B→A，最新为IbInput）、tables-race-stop（B→C→A后立即正常停止）。维护目标用有5秒上限的工作队列门闩先排完UI切换，走真正MappingTableSwitchByTabName，写race-requested-1/2/3、race-ready-1/2及race-stable.json；后者在实际停止完成后继续观察5次轮询，不能以静态停止marker替代。旧中间B不应执行SendOnSwitchTab，外部原始Q实际输出F/J并检查旧UP、重启及退出释放。串行协议保持；此场景证明确定性排队交错，不等同实体快速W或驱动I/O故障。方法和原始键／Default／清理授权边界沿上文，实际结果见主计划28节。
+
 ## IbInput 开始／停止动作
 
 product_check.pro的stopactions用例沿既有状态机，前缀stopactions-；manual_stopactions_verification.ini含Q→F、SendOnMappingStart→H⏱20»I⏱20、SendOnMappingStop→Repeat{F⏱20»G⏱20}x2，全为方式3，无自动开始。原始键须另按具体授权由固定运行器产生；产品本身只核对配置并调用真实开始／停止／重启／退出入口。

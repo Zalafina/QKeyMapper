@@ -80,7 +80,7 @@ bool QkmIbInputClient::setPreferences(const Preferences &preferences) {
 QkmIbInputClient::Status QkmIbInputClient::statusSnapshot() const { QMutexLocker lock(&m_statusMutex); return m_published; }
 bool QkmIbInputClient::busy() const { const auto state=statusSnapshot(); return state.connected || state.stopping || state.releaseIncomplete || (acceptingInput() && m_requested.load()!=0); }
 void QkmIbInputClient::publish() { m_status.sampledAt=QDateTime::currentDateTimeUtc(); QMutexLocker lock(&m_statusMutex); m_published=m_status; }
-bool QkmIbInputClient::fail(const QString &detail) { m_status.detail=detail; cancelRun(); publish(); return false; }
+bool QkmIbInputClient::fail(const QString &detail,quint64 generation) { m_status.detail=detail; cancelRun(generation); publish(); return false; }
 quint64 QkmIbInputClient::requestRun() { m_stopGeneration.store(0); const quint64 generation=m_requested.fetch_add(1)+1; m_acceptingGeneration.store(generation); return generation; }
 void QkmIbInputClient::cancelRun(quint64 generation) {
     if (!generation) { m_acceptingGeneration.store(0); m_stopGeneration.store(0); }
@@ -95,35 +95,36 @@ bool QkmIbInputClient::candidateSupports(const QString &backend,const Requiremen
 bool QkmIbInputClient::prepareRun(quint64 generation,const Requirements &requirements) {
     QMutexLocker calls(&m_callMutex);
     if (!generation || generation!=m_requested.load() || !acceptingInput()) return false;
-    if (m_status.connected || m_status.stopping || m_status.releaseIncomplete) return fail(QCoreApplication::translate("QkmIbInputClient","Previous IbInput cleanup is incomplete."));
+    if (m_status.connected || m_status.stopping || m_status.releaseIncomplete) return fail(QCoreApplication::translate("QkmIbInputClient","Previous IbInput cleanup is incomplete."),generation);
     m_status=Status{}; m_status.generation=generation; m_runCapabilities=0;
-    if (!requirements.rejection.isEmpty()) return fail(requirements.rejection);
+    if (!requirements.rejection.isEmpty()) return fail(requirements.rejection,generation);
     const auto prefs=preferences();
     QStringList eligible;
     for (const QString &backend:candidates(prefs.backend)) if (candidateSupports(backend,requirements)) eligible.append(backend);
-    if (eligible.isEmpty()) return fail(QCoreApplication::translate("QkmIbInputClient","The selected IbInput backend does not support this mapping or still awaits validation."));
+    if (eligible.isEmpty()) return fail(QCoreApplication::translate("QkmIbInputClient","The selected IbInput backend does not support this mapping or still awaits validation."),generation);
 #ifndef IBINPUT_SUPPORT
-    return fail(QCoreApplication::translate("QkmIbInputClient","IbInput support is not included in this build."));
+    return fail(QCoreApplication::translate("QkmIbInputClient","IbInput support is not included in this build."),generation);
 #else
     QStringList failures;
     for (const QString &backend:eligible) {
-        if (generation!=m_requested.load() || !acceptingInput()) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled."));
+        if (generation!=m_requested.load() || !acceptingInput()) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled."),generation);
         IbSendDestroy();
         const Send::SendType type=backend==QStringLiteral("logitech_ghub") ? Send::SendType::LogitechGHubNew
             : (backend==QStringLiteral("logitech_legacy") ? Send::SendType::Logitech : Send::SendType::Razer);
         const Send::Error error=IbSendInit(type,0,nullptr);
         if (error==Send::Error::Success) {
             m_status.connected=true; m_status.backend=backend; m_runCapabilities=requirements.capabilities;
-            if (generation!=m_requested.load() || !acceptingInput()) { IbSendDestroy(); m_status.connected=false; return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled.")); }
+            if (generation!=m_requested.load() || !acceptingInput()) { IbSendDestroy(); m_status.connected=false; return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled."),generation); }
             m_status.detail=QCoreApplication::translate("QkmIbInputClient","Connected; input reception has not been verified."); publish(); return true;
         }
         IbSendDestroy(); failures.append(QStringLiteral("%1: %2").arg(backend).arg(static_cast<quint32>(error)));
     }
+    if (generation!=m_requested.load() || !acceptingInput()) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled."),generation);
     m_status.detail=QCoreApplication::translate("QkmIbInputClient","IbInput connection failed: %1").arg(failures.join(QStringLiteral(", ")));
     if (prefs.unavailablePolicy==QStringLiteral("sendinput_before_start") && acceptingInput()) {
         m_status.fallback=true; m_status.detail+=QStringLiteral(" ")+QCoreApplication::translate("QkmIbInputClient","SendInput is frozen for this run; configuration is unchanged."); publish(); return true;
     }
-    return fail(m_status.detail);
+    return fail(m_status.detail,generation);
 #endif
 }
 bool QkmIbInputClient::sendOne(const INPUT &input) {

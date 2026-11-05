@@ -127,6 +127,23 @@ void restartCase() {
     client.cancelRun();
     check(client.closeAfterDrain(third) && !client.acceptingInput(),"old close revived a cancelled intent");
     check(!client.prepareRun(cancelled,required),"a stop before restart was ignored");
+    for (bool failInit:{false,true}) for (bool allowFallback:{false,true}) {
+        reset();
+        QkmIbInputClient superseded;
+        QkmIbInputClient::Preferences preferences; preferences.backend=QStringLiteral("logitech_ghub");
+        preferences.unavailablePolicy=allowFallback ? QStringLiteral("sendinput_before_start") : QStringLiteral("block");
+        check(superseded.setPreferences(preferences),"Superseded fixture preferences rejected");
+        quint64 latest=0;
+        initFails=failInit;
+        duringInit=[&] { latest=superseded.requestRun(); };
+        const auto stale=superseded.requestRun();
+        check(!superseded.prepareRun(stale,required) && !superseded.statusSnapshot().connected
+            && !superseded.statusSnapshot().fallback,"Superseded initialization stayed connected or fell back");
+        duringInit={}; initFails=false;
+        check(latest>stale && superseded.acceptingInput(),"Superseded initialization cancelled the newer intent");
+        check(superseded.prepareRun(latest,required) && superseded.closeAfterDrain(latest),
+            "New intent could not connect after superseded initialization");
+    }
 }
 void stopActionCase() {
     QkmIbInputClient client;

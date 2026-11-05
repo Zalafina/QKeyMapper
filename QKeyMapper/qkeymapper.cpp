@@ -5445,11 +5445,11 @@ void QKeyMapper::setKeyMappingRestart()
         m_IbInputStopPending=true;
         changeControlEnableStatus(false);
     }
-    // Reserve the new intent before queuing work; a later stop must still cancel it.
-    QkmIbInputClient::instance().requestRun();
+    // Reserve and carry this intent; queued work must not consume a later request.
+    const auto generation=QkmIbInputClient::instance().requestRun();
 
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal();
-    emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal();
+    emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal(generation);
 }
 
 void QKeyMapper::startWinEventHook()

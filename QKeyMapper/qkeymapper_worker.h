@@ -1311,7 +1311,7 @@ public:
 signals:
     void setKeyHook_Signal(void);
     void setKeyUnHook_Signal(void);
-    void setKeyMappingRestart_Signal(void);
+    void setKeyMappingRestart_Signal(quint64 generation);
     void allMappingKeysReleased_Signal(void);
     void ibInputFault_Signal(const QString &detail);
     void ibInputClosed_Signal(bool released, const QString &detail);
@@ -1389,7 +1389,7 @@ public slots:
     void threadFinished(void);
     void setWorkerKeyHook(void);
     void setWorkerKeyUnHook(void);
-    void setKeyMappingRestart(void);
+    void setKeyMappingRestart(quint64 generation);
     void allMappingKeysReleased(void);
     void sessionLockStateChanged(bool locked);
     void setWorkerJoystickCaptureStart(void);
@@ -1793,7 +1793,7 @@ private:
     bool m_ComInitialized = false;
     bool m_sendInputTasksStopping = false;
     bool m_ibInputCloseQueued = false;
-    bool prepareIbInputRun();
+    bool prepareIbInputRun(quint64 generation);
     bool finishIbInputRun(bool notify=true);
     void tryFinishIbInputRun();
 
