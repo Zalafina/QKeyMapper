@@ -7579,5 +7579,35 @@ Right-click to cancel.</source>
         <source>Connection check failed at %1.</source>
         <translation>%1 连接检查失败。</translation>
     </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="195"/>
+        <source>Automatic order: %1</source>
+        <translation>自动顺序：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="182"/>
+        <source>At mapping start, QKeyMapper tries backends in order and uses the first that supports the mapping and connects successfully. Check connection checks connectivity only; mapping start selects again. Refresh status does not connect.</source>
+        <translation>开始映射时，QKeyMapper 按顺序尝试后端，使用首个支持当前映射且连接成功的后端。连接检查只检查能否连接；开始映射时会重新选择。刷新状态不会连接驱动。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="208"/>
+        <source>Connection check passed at %1: automatically selected %2. The temporary connection is closed.</source>
+        <translation>%1 连接检查通过：自动选择了 %2；临时连接已关闭。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="209"/>
+        <source>Connection check passed at %1: %2. The temporary connection is closed.</source>
+        <translation>%1 连接检查通过：%2；临时连接已关闭。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="170"/>
+        <source>Razer</source>
+        <translation>雷蛇</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="245"/>
+        <source>%1 (automatic selection)</source>
+        <translation>%1（自动选择）</translation>
+    </message>
 </context>
 </TS>

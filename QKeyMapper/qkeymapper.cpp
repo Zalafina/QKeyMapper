@@ -50968,8 +50968,9 @@ void QKeyMapper::showIbInputSettings(QWidget *anchor)
             if (m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending) { popup->connectionChecked(); return; }
             QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),[popup] {
                 const bool success=QkmIbInputClient::instance().checkConnection();
+                const QString backend=success ? QkmIbInputClient::instance().statusSnapshot().backend : QString();
                 emit QKeyMapper_Worker::getInstance()->ibInputStatusChanged_Signal();
-                QMetaObject::invokeMethod(qApp,[popup,success] { if (popup) popup->connectionChecked(success); },Qt::QueuedConnection);
+                QMetaObject::invokeMethod(qApp,[popup,success,backend] { if (popup) popup->connectionChecked(success,backend); },Qt::QueuedConnection);
             },Qt::QueuedConnection);
         });
     }

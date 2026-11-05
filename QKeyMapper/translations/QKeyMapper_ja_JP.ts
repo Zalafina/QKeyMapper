@@ -7579,5 +7579,35 @@ Right-click to cancel.</source>
         <source>Connection check failed at %1.</source>
         <translation>%1 接続チェックに失敗しました。</translation>
     </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="195"/>
+        <source>Automatic order: %1</source>
+        <translation>自動選択順: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="182"/>
+        <source>At mapping start, QKeyMapper tries backends in order and uses the first that supports the mapping and connects successfully. Check connection checks connectivity only; mapping start selects again. Refresh status does not connect.</source>
+        <translation>マッピング開始時に順番に試し、現在のマッピングに対応して接続に成功した最初のバックエンドを使用します。接続チェックは接続可否のみを確認し、マッピング開始時に再選択します。状態の更新ではドライバーに接続しません。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="208"/>
+        <source>Connection check passed at %1: automatically selected %2. The temporary connection is closed.</source>
+        <translation>%1 接続チェックに成功：%2 を自動選択しました。一時接続は切断済みです。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="209"/>
+        <source>Connection check passed at %1: %2. The temporary connection is closed.</source>
+        <translation>%1 接続チェックに成功：%2。一時接続は切断済みです。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="170"/>
+        <source>Razer</source>
+        <translation>Razer</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="245"/>
+        <source>%1 (automatic selection)</source>
+        <translation>%1（自動選択）</translation>
+    </message>
 </context>
 </TS>

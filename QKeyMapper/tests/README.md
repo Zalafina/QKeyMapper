@@ -156,6 +156,6 @@ razer_driver_script_test.ps1通过Windows自带PowerShell 5.1运行，替代CIM�
 
 ui_test.pro生成普通权限QKeyMapperIbInputUiTest，显式使用--ibinput-ui-check运行；QKM_IBINPUT_UI_ROOT指定现有结果目录，QKM_IBINPUT_QM_ROOT指定三语QM目录。程序在创建QApplication前进入自有QkmIbInputUi_<PID>私有Windows桌面，Qt5需要该桌面的DESKTOP_HOOKCONTROL以建立自身线程WH_GETMESSAGE消息机制；不切换Default，不运行产品映射Hook。
 
-九个场景覆盖三语、100%／150%浅深主题、可见期间的语言／调色板切换、Razer接口及G HUB登记缺失／查询失败、长错误换行与超长错误滚动、详情选择／滚动保持。上下两区都是只读QTextEdit；详情按ibInputDetails查找，反馈沿用ibInputFeedbackLabel对象名。刷新不得改变偏好或客户端状态采样，也不得调用初始化／发送API。错误通过既有Requirements.rejection入口构造，在任何驱动初始化前拒绝；其他C API均替身。
+十五个场景覆盖三语、100%／150%浅深主题、可见期间的语言／调色板切换、Razer接口及G HUB登记缺失／查询失败、长错误换行与超长错误滚动、详情选择／滚动保持，以及自动顺序、G HUB／Razer检查结果、运行与停止、偏好变化及延迟结果失效。上下两区都是只读QTextEdit；详情按ibInputDetails查找，反馈沿用ibInputFeedbackLabel对象名。显示／被动刷新不得改变偏好或客户端状态采样，也不得调用初始化／发送API。错误通过既有Requirements.rejection入口在初始化前构造；自动检查／运行状态通过公开客户端入口和C API替身构造，固定夹具初始化与意外初始化分别统计，发送仍为0，不打开实际驱动。
 
-每场写scene.json，捕获工作进程须通过STARTUPINFO.lpDesktop在同一私有桌面启动，再调用scripts/capture_ui_snapshots.ps1的-ProcessId／-WindowHandle／-PrintWindow；捕获后写captured-<序号>应答，最终检查原生退出码和result.json。截图线程留在Default会无法访问目标HWND，不能为此静默改用Default测试。此入口只证明真实Popup组件和资源，不证明完整主程序、映射输入或驱动释放；具体运行证据只记在唯一主计划。
+每场写scene.json，捕获工作进程须通过STARTUPINFO.lpDesktop在同一私有桌面启动，再调用scripts/capture_ui_snapshots.ps1的-ProcessId／-WindowHandle／-PrintWindow／-NoActivate；捕获后写captured-<序号>应答，最终检查原生退出码和result.json。截图线程留在Default会无法访问目标HWND，不能为此静默改用Default测试；私有Popup截图跳过前台激活可避免激活请求引起的原生关闭事件。NoActivate是可选参数，省略时保留原截图激活行为。此入口只证明真实Popup组件和资源，不证明完整主程序、映射输入或驱动释放；具体运行证据只记在唯一主计划。

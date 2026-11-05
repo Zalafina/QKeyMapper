@@ -798,3 +798,56 @@ U13为RichText，两个固定网址保持；其他项单行，U14／U15各有一
 | English | `Connection check failed at %1.` |
 | 中文 | `%1 连接检查失败。` |
 | 日本語 | `%1 接続チェックに失敗しました。` |
+
+
+## 自动选择提示：U34～U39（2026-11-05，已批准）
+
+上下文均为QkmIbInputPopup。保留既有G HUB／Logitech旧版通道翻译；自动顺序直接复用候选函数。检查结果按本次worker回传的实际后端显示，运行时使用当前状态；更改偏好或检查失败清除旧成功后端。运行结束后可在无新操作时恢复最近检查文字及原时间，真实错误仍保留，不把历史结果当作当前连接。用户已批准当前预览对应的U34～U39及显示方式；正式资源按lupdate-pro／lrelease更新。预览和连接状态夹具仍使用C API替身，不代表实际驱动连接。
+
+### U34 — %1由现有候选顺序和后端显示名称组成，仅自动选项下方显示。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Automatic order: %1` |
+| 中文 | `自动顺序：%1` |
+| 日本語 | `自動選択順: %1` |
+
+### U35 — 后端选择框及顺序提示的Tooltip；不改变连接行为。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `At mapping start, QKeyMapper tries backends in order and uses the first that supports the mapping and connects successfully. Check connection checks connectivity only; mapping start selects again. Refresh status does not connect.` |
+| 中文 | `开始映射时，QKeyMapper 按顺序尝试后端，使用首个支持当前映射且连接成功的后端。连接检查只检查能否连接；开始映射时会重新选择。刷新状态不会连接驱动。` |
+| 日本語 | `マッピング開始時に順番に試し、現在のマッピングに対応して接続に成功した最初のバックエンドを使用します。接続チェックは接続可否のみを確認し、マッピング開始時に再選択します。状態の更新ではドライバーに接続しません。` |
+
+### U36 — %1为本次检查HH:mm:ss；%2是检查实际连接后端，原始标识保留并在显示时翻译。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Connection check passed at %1: automatically selected %2. The temporary connection is closed.` |
+| 中文 | `%1 连接检查通过：自动选择了 %2；临时连接已关闭。` |
+| 日本語 | `%1 接続チェックに成功：%2 を自動選択しました。一時接続は切断済みです。` |
+
+### U37 — 手动指定时同样显示实际检查后端；%1时间，%2后端。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Connection check passed at %1: %2. The temporary connection is closed.` |
+| 中文 | `%1 连接检查通过：%2；临时连接已关闭。` |
+| 日本語 | `%1 接続チェックに成功：%2。一時接続は切断済みです。` |
+
+### U38 — Popup中的后端名称，配置值razer不变。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Razer` |
+| 中文 | `雷蛇` |
+| 日本語 | `Razer` |
+
+### U39 — 仅当前已连接且首选自动时标记实际后端；未连接／SendInput回退不套用此标记。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `%1 (automatic selection)` |
+| 中文 | `%1（自动选择）` |
+| 日本語 | `%1（自動選択）` |

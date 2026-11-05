@@ -71,7 +71,8 @@ HANDLE WINAPI testProcesses(DWORD flags,DWORD pid) {
 
 
 namespace {
-int initCalls=0,sendCalls=0;
+int initCalls=0,fixtureInitCalls=0,sendCalls=0;
+bool acceptGhub=false,acceptRazer=false;
 void check(bool value,const char *message) { if (!value) throw std::runtime_error(message); }
 QString desktopName(HDESK desktop) {
     wchar_t name[128]{}; DWORD size=0;
@@ -83,7 +84,11 @@ void writeJson(const QString &path,const QJsonObject &value) {
     check(output.write(QJsonDocument(value).toJson())>0,"UI evidence write failed");
 }
 }
-DLLAPI Send::Error __stdcall IbSendInit(Send::SendType,Send::InitFlags,void *) { ++initCalls; return Send::Error::DeviceNotFound; }
+DLLAPI Send::Error __stdcall IbSendInit(Send::SendType type,Send::InitFlags,void *) {
+    ++initCalls;
+    return (acceptGhub && type==Send::SendType::LogitechGHubNew) || (acceptRazer && type==Send::SendType::Razer)
+        ? Send::Error::Success : Send::Error::DeviceNotFound;
+}
 DLLAPI void __stdcall IbSendDestroy() {}
 DLLAPI UINT WINAPI IbSendInput(UINT,LPINPUT,int) { ++sendCalls; return 0; }
 
@@ -112,10 +117,13 @@ int main(int argc,char **argv) {
         QkmIbInputPopup popup(&host);
         QTranslator translator;
         const QPalette light=app.palette();
-        struct Scene { const char *language; qreal scale; bool dark; RazerChannelView view=RazerChannelView::Live; };
+        struct Scene { const char *language; qreal scale; bool dark; RazerChannelView view=RazerChannelView::Live; int backendCase=0; };
         const Scene scenes[]={{"zh_CN",1.0,false},{"en_US",1.0,false},{"ja_JP",1.0,false},
             {"zh_CN",1.5,true},{"ja_JP",1.5,true},{"zh_CN",1.0,false,RazerChannelView::Missing},
-            {"zh_CN",1.0,false,RazerChannelView::QueryFailed},{"zh_CN",1.0,true},{"zh_CN",1.0,true}};
+            {"zh_CN",1.0,false,RazerChannelView::QueryFailed},{"zh_CN",1.0,true},{"zh_CN",1.0,true},
+            {"zh_CN",1.0,false,RazerChannelView::Live,1},{"zh_CN",1.0,true,RazerChannelView::Live,2},
+            {"en_US",1.0,false,RazerChannelView::Live,3},{"ja_JP",1.5,true,RazerChannelView::Live,4},
+            {"zh_CN",1.0,true,RazerChannelView::Live,3},{"zh_CN",1.0,false,RazerChannelView::Live,4}};
         constexpr int sceneCount=sizeof(scenes)/sizeof(*scenes);
         int index=0,changed=0,connectionRequests=0;
         QObject::connect(&popup,&QkmIbInputPopup::preferencesChanged,&host,[&] { ++changed; });
@@ -127,17 +135,20 @@ int main(int argc,char **argv) {
         QObject::connect(&timer,&QTimer::timeout,&host,[&] {
             try {
                 check(desktopName(GetThreadDesktop(GetCurrentThreadId()))==name,"UI thread left its owned private desktop");
-                check(initCalls==0 && sendCalls==0,"UI reached an input API");
+                check(initCalls==fixtureInitCalls && sendCalls==0,"UI reached an input API");
                 if (awaitingCapture) {
                     check(deadline.elapsed()<90000,"UI capture acknowledgement timed out");
                     if (!QFile::exists(root+QStringLiteral("/captured-%1").arg(index))) return;
+                    const auto completed=QkmIbInputClient::instance().statusSnapshot();
+                    if (completed.connected) check(QkmIbInputClient::instance().closeAfterDrain(completed.generation),"Fixture connection did not close");
+                    popup.setRunning(false);
                     awaitingCapture=false; ++index;
                 }
                 timer.stop();
                 if (index==sceneCount) {
                     popup.hide();
                     writeJson(root+QStringLiteral("/result.json"),{{"passed",true},{"scenes",index},
-                        {"init_calls",initCalls},{"send_calls",sendCalls},{"desktop",name},
+                        {"init_calls",initCalls},{"fixture_init_calls",fixtureInitCalls},{"unexpected_init_calls",initCalls-fixtureInitCalls},{"send_calls",sendCalls},{"desktop",name},
                         {"scope",QStringLiteral("Actual Popup component; simulated input C API; no product startup, mapping Hook or driver")}});
                     app.exit(0); return;
                 }
@@ -146,7 +157,7 @@ int main(int argc,char **argv) {
                 channelView=scenes[index].view;
                 const QString language=QString::fromLatin1(scenes[index].language);
                 check(translator.load(translations+QStringLiteral("/QKeyMapper_")+language+QStringLiteral(".qm")),"Formal QM missing");
-                for (const char *source:{"Logitech G HUB","Razer driver","Current backend: %1 (fallback: %2)","Updated at %1","Driver registered","Driver not registered","Query failed","Version: %1","Processes: %1","Services: %1","Connection check failed at %1.","Detected","Not detected"})
+                for (const char *source:{"Logitech G HUB","Razer driver","Current backend: %1 (fallback: %2)","Updated at %1","Driver registered","Driver not registered","Query failed","Version: %1","Processes: %1","Services: %1","Connection check failed at %1.","Detected","Not detected","Automatic order: %1","Razer","%1 (automatic selection)","Connection check passed at %1: automatically selected %2. The temporary connection is closed."})
                     check(!translator.translate("QkmIbInputPopup",source).isEmpty(),"Razer QM source is missing");
                 app.installTranslator(&translator);
                 QPalette palette=light;
@@ -169,9 +180,15 @@ int main(int argc,char **argv) {
                 check(combos[0] && combos[1] && buttons[0] && buttons[1],"Named Popup controls missing");
                 check(combos.size()==2 && buttons.size()==2,"Unexpected Popup controls");
                 for (auto *button:buttons) check(!button->autoDefault(),"Popup button is an automatic default");
+                auto *autoHint=popup.findChild<QLabel *>(QStringLiteral("ibInputAutoHintLabel"));
+                check(autoHint && autoHint->isVisible(),"Automatic order hint is missing");
+                QStringList displayedOrder;
+                for (int candidate=1;candidate<combos[0]->count();++candidate) displayedOrder.append(combos[0]->itemText(candidate));
+                check(autoHint->text()==QCoreApplication::translate("QkmIbInputPopup","Automatic order: %1").arg(displayedOrder.join(QStringLiteral(" → "))),"Displayed automatic order differs from the selector");
                 const int changedBefore=changed;
                 combos[0]->setCurrentIndex(1); combos[1]->setCurrentIndex(1);
                 check(changed==changedBefore+2,"Preferences did not report exactly two changes");
+                check(!autoHint->isVisible(),"Manual selection retained the automatic hint");
                 const auto preferences=QkmIbInputClient::instance().preferences();
                 check(preferences.backend==QStringLiteral("logitech_ghub")
                     && preferences.unavailablePolicy==QStringLiteral("sendinput_before_start"),"UI preference values changed");
@@ -202,7 +219,7 @@ int main(int argc,char **argv) {
                 const QString explicitFeedback=feedbackText();
                 popup.refresh();
                 check(feedbackText()==explicitFeedback,"Passive refresh replaced the manual operation result");
-                check(initCalls==0 && changed==changedBefore+2
+                check(initCalls==fixtureInitCalls && changed==changedBefore+2
                     && QkmIbInputClient::instance().statusSnapshot().sampledAt==before.sampledAt,"Passive refresh changed configuration or connection state");
                 popup.setRunning(true); popup.showAt(anchor,scenes[index].scale); QTest::qWait(40);
                 check(popup.isVisible(),"Running Popup is not visible");
@@ -247,7 +264,7 @@ int main(int argc,char **argv) {
                     check(text.contains(QCoreApplication::translate("QkmIbInputPopup","Driver not registered")),"Missing G HUB registration was not distinguished");
                 if (channelView==RazerChannelView::QueryFailed)
                     check(text.contains(QCoreApplication::translate("QkmIbInputPopup","Query failed")),"Query failure was reported as absence");
-                check(combos[0]->itemText(3)==QStringLiteral("Razer"),"Razer backend still requires Synapse");
+                check(combos[0]->itemText(3)==QCoreApplication::translate("QkmIbInputPopup","Razer"),"Razer backend name was not translated");
                 auto *help=popup.findChild<QLabel *>(QStringLiteral("ibInputHelpLabel"));
                 check(help && help->text().contains(QStringLiteral("https://github.com/Chaoses-Ib/IbInputSimulator/issues/7"))
                     && !help->text().contains(QStringLiteral("www.razer.com/synapse")),"Razer guide points to an incompatible download");
@@ -262,7 +279,7 @@ int main(int argc,char **argv) {
                         "Query failure recommends driver installation");
                 else check(!help->text().contains(QCoreApplication::translate("QkmIbInputPopup",missingGuide).toHtmlEscaped()),
                     "Observed Razer driver still recommends installing it");
-                check(initCalls==0 && sendCalls==0,"Razer observation initialized a driver");
+                check(initCalls==fixtureInitCalls && sendCalls==0,"Razer observation initialized a driver");
                 check(!text.contains(QStringLiteral("Currently supports"))
                     && !text.contains(QCoreApplication::translate("QkmIbInputPopup","Last result: %1").arg(QString()))
                     && !text.contains(QCoreApplication::translate("QkmIbInputPopup","Status refresh does not initialize a driver.")),
@@ -287,7 +304,7 @@ int main(int argc,char **argv) {
                     check(details->verticalScrollBar()->value()==scroll,"Refresh lost the scrolled position");
                     details->setMaximumHeight(QWIDGETSIZE_MAX); details->setMinimumHeight(height); popup.adjustSize(); QTest::qWait(30);
                 }
-                if (index==sceneCount-1) {
+                if (index==8) {
                     QkmIbInputClient::Requirements rejection;
                     rejection.rejection=QStringLiteral("razer: 6 <driver> & channel; logitech_ghub: 5; cleanup detail: ")+QString(90,QLatin1Char('X'));
                     const auto generation=QkmIbInputClient::instance().requestRun();
@@ -307,15 +324,76 @@ int main(int argc,char **argv) {
                     check(!QkmIbInputClient::instance().prepareRun(QkmIbInputClient::instance().requestRun(),rejection),"Restored error fixture was accepted");
                     popup.connectionChecked(false); QTest::qWait(30);
                 }
+                if (scenes[index].backendCase) {
+                    auto &client=QkmIbInputClient::instance();
+                    combos[0]->setCurrentIndex(0); combos[1]->setCurrentIndex(0); popup.refresh();
+                    check(autoHint->isVisible(),"Automatic hint did not return after manual selection");
+                    const auto runCheck=[&](int target) {
+                        buttons[1]->click(); acceptGhub=target==1; acceptRazer=target==2;
+                        const bool success=client.checkConnection();
+                        fixtureInitCalls+=target==1 ? 1 : 3;
+                        check(initCalls==fixtureInitCalls && success==(target!=0),"Fixture automatic connection order changed");
+                        return qMakePair(success,success ? client.statusSnapshot().backend : QString());
+                    };
+                    const bool razer=scenes[index].backendCase==2;
+                    auto checked=runCheck(razer ? 2 : 1);
+                    check(checked.second==(razer ? QStringLiteral("razer") : QStringLiteral("logitech_ghub")),"Check fixture chose another backend");
+                    const bool runtime=scenes[index].backendCase>=3;
+                    quint64 generation=0;
+                    if (runtime) {
+                        acceptGhub=false; acceptRazer=true;
+                        QkmIbInputClient::Requirements requirements; requirements.capabilities=QkmIbInputClient::Keyboard;
+                        generation=client.requestRun();
+                        check(client.prepareRun(generation,requirements),"Runtime fixture did not connect"); fixtureInitCalls+=2;
+                        check(initCalls==fixtureInitCalls && client.statusSnapshot().backend==QStringLiteral("razer"),"Runtime fixture did not skip an unsupported legacy backend");
+                    }
+                    popup.connectionChecked(checked.first,checked.second);
+                    const char *passed="Connection check passed at %1: automatically selected %2. The temporary connection is closed.";
+                    const QString selected=QCoreApplication::translate("QkmIbInputPopup",razer ? "Razer" : "Logitech G HUB");
+                    QString actual=feedbackText().section(QLatin1Char('\n'),0,0);
+                    actual.replace(QRegularExpression(QStringLiteral("[0-9]{2}:[0-9]{2}:[0-9]{2}")),QStringLiteral("%1"));
+                    check(actual==QCoreApplication::translate("QkmIbInputPopup",passed).arg(QStringLiteral("%1"),selected),"Check feedback did not keep its own backend result");
+                    if (scenes[index].backendCase==1) {
+                        const QString previous=feedbackText();
+                        combos[0]->setCurrentIndex(3); combos[0]->setCurrentIndex(0); popup.refresh();
+                        check(feedbackText()!=previous,"Preference change restored a stale successful check");
+                        popup.connectionChecked(true,checked.second);
+                        check(feedbackText()!=previous,"Delayed check result overwrote a changed preference");
+                        checked=runCheck(0); popup.connectionChecked(checked.first,checked.second);
+                        expectFeedback("Connection check failed at %1.");
+                        checked=runCheck(1); popup.connectionChecked(checked.first,checked.second);
+                    }
+                    if (runtime) {
+                        popup.setRunning(true); popup.refresh();
+                        check(details->toPlainText().contains(QCoreApplication::translate("QkmIbInputPopup","%1 (automatic selection)").arg(QCoreApplication::translate("QkmIbInputPopup","Razer"))),"Runtime did not show its actual automatically selected backend");
+                        check(!feedbackText().contains(QCoreApplication::translate("QkmIbInputPopup",passed).arg(QStringLiteral("%1"),selected)),"Historical check replaced current runtime status");
+                        if (scenes[index].backendCase==4) {
+                            check(client.closeAfterDrain(generation),"Stopped fixture did not close"); popup.setRunning(false); popup.refresh();
+                            check(details->toPlainText().contains(QCoreApplication::translate("QkmIbInputPopup","Not connected")),"Stopped fixture still claims a connection");
+                            check(feedbackText().contains(selected),"Stopped view lost its last check backend");
+                            check(feedbackText().contains(QCoreApplication::translate("QkmIbInputPopup","Last result: %1").arg(client.statusSnapshot().detail)),"Stopped view presents a historical detail as a current connection");
+                        }
+                    }
+                    const int beforeRefresh=initCalls,changes=changed;
+                    popup.refresh(); buttons[0]->click();
+                    check(initCalls==beforeRefresh && changed==changes,"Automatic hint triggered initialization or configuration changes");
+                    // Keep the check result visible for the stopped previews after the refresh assertion.
+                    if (!runtime) { checked=runCheck(razer ? 2 : 1); popup.connectionChecked(checked.first,checked.second); }
+                    else if (scenes[index].backendCase==4) { popup.setRunning(true); popup.setRunning(false); popup.refresh(); }
+                    acceptGhub=false; acceptRazer=false;
+                    popup.adjustSize(); QTest::qWait(30);
+                    check(details->horizontalScrollBar()->maximum()==0 && details->verticalScrollBar()->maximum()==0,"Automatic backend status does not fit");
+                }
                 check(!popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))->toPlainText().contains(QStringLiteral("checkpoint"),Qt::CaseInsensitive)
                     && !popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))->toPlainText().contains(QStringLiteral("检查点")),"Developer checkpoint text remains visible");
                 for (auto *widget:QList<QWidget *>{combos[0],combos[1],buttons[0],buttons[1],feedback,popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))}) {
                     check(widget && popup.rect().contains(QRect(widget->mapTo(&popup,QPoint()),widget->size())),"Popup control clipped by its parent");
                 }
+                if (autoHint->isVisible()) check(popup.rect().contains(QRect(autoHint->mapTo(&popup,QPoint()),autoHint->size())),"Automatic hint was clipped");
                 const QString label=popup.findChildren<QLabel *>().front()->text();
                 check(language==QStringLiteral("en_US") || label!=QStringLiteral("Preferred backend"),"Runtime language remained English");
                 writeJson(root+QStringLiteral("/scene.json"),{{"index",index},{"language",language},
-                    {"scale",scenes[index].scale},{"dark",scenes[index].dark},{"interface_simulation",channelView!=RazerChannelView::Live},{"pid",static_cast<int>(GetCurrentProcessId())},
+                    {"scale",scenes[index].scale},{"dark",scenes[index].dark},{"backend_fixture",scenes[index].backendCase},{"interface_simulation",channelView!=RazerChannelView::Live},{"pid",static_cast<int>(GetCurrentProcessId())},
                     {"hwnd",QString::number(static_cast<qulonglong>(popup.winId()))},{"desktop",name},
                     {"label",label},{"width",popup.width()},{"height",popup.height()}});
                 awaitingCapture=true; deadline.restart(); timer.start();
@@ -323,7 +401,7 @@ int main(int argc,char **argv) {
                 const bool popupVisible=popup.isVisible();
                 timer.stop(); popup.hide();
                 writeJson(root+QStringLiteral("/result.json"),{{"passed",false},{"scene",index},
-                    {"error",QString::fromUtf8(error.what())},{"popup_visible",popupVisible},{"pending",popup.connectionPending()},{"init_calls",initCalls},{"send_calls",sendCalls},{"desktop",name}});
+                    {"error",QString::fromUtf8(error.what())},{"popup_visible",popupVisible},{"pending",popup.connectionPending()},{"init_calls",initCalls},{"fixture_init_calls",fixtureInitCalls},{"unexpected_init_calls",initCalls-fixtureInitCalls},{"send_calls",sendCalls},{"desktop",name}});
                 std::cerr<<error.what()<<'\n'; app.exit(2);
             }
         });

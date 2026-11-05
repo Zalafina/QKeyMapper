@@ -7,7 +7,8 @@ param(
     [int]$ProcessId,
     [long]$WindowHandle,
     [switch]$PrintWindow,
-    [switch]$UseGsudo
+    [switch]$UseGsudo,
+    [switch]$NoActivate
 )
 
 $ErrorActionPreference = "Stop"
@@ -100,8 +101,10 @@ try {
         throw "Could not obtain MainWindowHandle for process $($proc.Id)."
     }
 
-    [WinAPI]::SetForegroundWindow($hwnd) | Out-Null
-    Start-Sleep -Milliseconds 500
+    if (-not $NoActivate) {
+        [WinAPI]::SetForegroundWindow($hwnd) | Out-Null
+        Start-Sleep -Milliseconds 500
+    }
 
     $rect = New-Object WinAPI+RECT
     if (-not [WinAPI]::GetWindowRect($hwnd, [ref]$rect)) {

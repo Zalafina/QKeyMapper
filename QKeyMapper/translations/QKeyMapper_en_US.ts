@@ -7579,5 +7579,35 @@ Right-click to cancel.</translation>
         <source>Connection check failed at %1.</source>
         <translation>Connection check failed at %1.</translation>
     </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="195"/>
+        <source>Automatic order: %1</source>
+        <translation>Automatic order: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="182"/>
+        <source>At mapping start, QKeyMapper tries backends in order and uses the first that supports the mapping and connects successfully. Check connection checks connectivity only; mapping start selects again. Refresh status does not connect.</source>
+        <translation>At mapping start, QKeyMapper tries backends in order and uses the first that supports the mapping and connects successfully. Check connection checks connectivity only; mapping start selects again. Refresh status does not connect.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="208"/>
+        <source>Connection check passed at %1: automatically selected %2. The temporary connection is closed.</source>
+        <translation>Connection check passed at %1: automatically selected %2. The temporary connection is closed.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="209"/>
+        <source>Connection check passed at %1: %2. The temporary connection is closed.</source>
+        <translation>Connection check passed at %1: %2. The temporary connection is closed.</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="170"/>
+        <source>Razer</source>
+        <translation>Razer</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="245"/>
+        <source>%1 (automatic selection)</source>
+        <translation>%1 (automatic selection)</translation>
+    </message>
 </context>
 </TS>
