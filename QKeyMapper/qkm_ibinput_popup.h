@@ -5,7 +5,7 @@
 #include <QTimer>
 class QComboBox;
 class QLabel;
-class QPlainTextEdit;
+class QTextEdit;
 class QPushButton;
 class QkmUiScale;
 
@@ -25,6 +25,7 @@ signals:
     void preferencesChanged();
     void connectionCheckRequested();
 protected:
+    void changeEvent(QEvent *event) override;
     void showEvent(QShowEvent *event) override;
     void hideEvent(QHideEvent *event) override;
 private:
@@ -32,9 +33,9 @@ private:
     QComboBox *m_policy;
     QLabel *m_backendLabel;
     QLabel *m_policyLabel;
-    QLabel *m_help;
-    QLabel *m_feedbackLabel;
-    QPlainTextEdit *m_details;
+    QLabel *m_help=nullptr;
+    QTextEdit *m_feedbackView;
+    QTextEdit *m_details=nullptr;
     QPushButton *m_refresh;
     QPushButton *m_check;
     QTimer m_timer;

@@ -150,3 +150,12 @@ pause使用razer_pause_verification.ini（Q→Pause、方式3），pause_faker�
 logitech_report_test新增Razer基础报告、右修饰／除号／菜单E0和Pause完整E1序列及两段失败传播，所有设备WinAPI均替身；不是实际驱动接收。ghub_probe的--razer-connect-only／--razer-connect-cycle-only只连接／关闭（后者一次复连），无窗口、不取焦点、send=0，仍按驱动初始化授权使用。
 
 razer_driver_script_test.ps1通过Windows自带PowerShell 5.1运行，替代CIM、权限、用户确认和原生命令，验证精确实例、失败／重启传播及保留驱动包；不操作本机设备。真实驱动安装／卸载未由此证明。Razer当前运行证据和未覆盖范围只维护在主计划23节；正式Release打包测试仅Win10专用PC执行。
+
+
+## IbInput Popup 显示维护
+
+ui_test.pro生成普通权限QKeyMapperIbInputUiTest，显式使用--ibinput-ui-check运行；QKM_IBINPUT_UI_ROOT指定现有结果目录，QKM_IBINPUT_QM_ROOT指定三语QM目录。程序在创建QApplication前进入自有QkmIbInputUi_<PID>私有Windows桌面，Qt5需要该桌面的DESKTOP_HOOKCONTROL以建立自身线程WH_GETMESSAGE消息机制；不切换Default，不运行产品映射Hook。
+
+九个场景覆盖三语、100%／150%浅深主题、可见期间的语言／调色板切换、Razer接口及G HUB登记缺失／查询失败、长错误换行与超长错误滚动、详情选择／滚动保持。上下两区都是只读QTextEdit；详情按ibInputDetails查找，反馈沿用ibInputFeedbackLabel对象名。刷新不得改变偏好或客户端状态采样，也不得调用初始化／发送API。错误通过既有Requirements.rejection入口构造，在任何驱动初始化前拒绝；其他C API均替身。
+
+每场写scene.json，捕获工作进程须通过STARTUPINFO.lpDesktop在同一私有桌面启动，再调用scripts/capture_ui_snapshots.ps1的-ProcessId／-WindowHandle／-PrintWindow；捕获后写captured-<序号>应答，最终检查原生退出码和result.json。截图线程留在Default会无法访问目标HWND，不能为此静默改用Default测试。此入口只证明真实Popup组件和资源，不证明完整主程序、映射输入或驱动释放；具体运行证据只记在唯一主计划。

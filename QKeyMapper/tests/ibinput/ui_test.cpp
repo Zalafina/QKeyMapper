@@ -10,7 +10,11 @@
 #include <QJsonObject>
 #include <QLabel>
 #include <QPalette>
-#include <QPlainTextEdit>
+#include <QTextEdit>
+#include <QTextDocument>
+#include <QTextCursor>
+#include <QTextBlock>
+#include <QTextLayout>
 #include <QRegularExpression>
 #include <QPushButton>
 #include <QScreen>
@@ -25,6 +29,7 @@
 #include <stdexcept>
 
 #include <setupapi.h>
+#include <tlhelp32.h>
 
 namespace {
 enum class RazerChannelView { Live, Missing, QueryFailed };
@@ -42,11 +47,24 @@ BOOL WINAPI testDestroyDevices(HDEVINFO devices) {
     return channelView==RazerChannelView::Live ? SetupDiDestroyDeviceInfoList(devices) : TRUE;
 }
 }
-// Keep the real Popup while substituting only the passive interface observation in two scenes.
+LSTATUS WINAPI testOpenRegistration(HKEY key,LPCWSTR subkey,DWORD options,REGSAM access,PHKEY output) {
+    if (channelView!=RazerChannelView::Live && QString::fromWCharArray(subkey).endsWith(QStringLiteral("logi_joy_bus_enum")))
+        return channelView==RazerChannelView::Missing ? ERROR_FILE_NOT_FOUND : ERROR_ACCESS_DENIED;
+    return RegOpenKeyExW(key,subkey,options,access,output);
+}
+HANDLE WINAPI testProcesses(DWORD flags,DWORD pid) {
+    if (channelView==RazerChannelView::QueryFailed) { SetLastError(ERROR_ACCESS_DENIED); return INVALID_HANDLE_VALUE; }
+    return CreateToolhelp32Snapshot(flags,pid);
+}
+// Keep the real Popup while substituting passive query failures in selected scenes.
+#define RegOpenKeyExW testOpenRegistration
+#define CreateToolhelp32Snapshot testProcesses
 #define SetupDiGetClassDevsW testGetDevices
 #define SetupDiEnumDeviceInterfaces testEnumInterfaces
 #define SetupDiDestroyDeviceInfoList testDestroyDevices
 #include "../../qkm_ibinput_popup.cpp"
+#undef RegOpenKeyExW
+#undef CreateToolhelp32Snapshot
 #undef SetupDiGetClassDevsW
 #undef SetupDiEnumDeviceInterfaces
 #undef SetupDiDestroyDeviceInfoList
@@ -76,11 +94,13 @@ int main(int argc,char **argv) {
     if (!QDir(root).exists() || !QDir(translations).exists()) return 2;
     const QString name=QStringLiteral("QkmIbInputUi_%1").arg(GetCurrentProcessId());
     const HDESK original=GetThreadDesktop(GetCurrentThreadId());
+    // Qt 5 needs a thread-local GetMessage hook on this private desktop.
     const HDESK owned=CreateDesktopW(reinterpret_cast<LPCWSTR>(name.utf16()),nullptr,nullptr,0,
-        DESKTOP_CREATEWINDOW|DESKTOP_READOBJECTS|DESKTOP_WRITEOBJECTS|DESKTOP_ENUMERATE,nullptr);
+        DESKTOP_CREATEWINDOW|DESKTOP_READOBJECTS|DESKTOP_WRITEOBJECTS|DESKTOP_ENUMERATE|DESKTOP_HOOKCONTROL,nullptr);
     if (!owned || !SetThreadDesktop(owned)) { if (owned) CloseDesktop(owned); return 2; }
     int nativeExit=2;
     {
+        std::cerr<<"UI runtime "<<qVersion()<<'\n';
         QApplication app(argc,argv);
         QApplication::setStyle(QStringLiteral("Fusion"));
         QApplication::setFont(QFont(QStringLiteral("Microsoft YaHei UI"),9));
@@ -95,7 +115,7 @@ int main(int argc,char **argv) {
         struct Scene { const char *language; qreal scale; bool dark; RazerChannelView view=RazerChannelView::Live; };
         const Scene scenes[]={{"zh_CN",1.0,false},{"en_US",1.0,false},{"ja_JP",1.0,false},
             {"zh_CN",1.5,true},{"ja_JP",1.5,true},{"zh_CN",1.0,false,RazerChannelView::Missing},
-            {"zh_CN",1.0,false,RazerChannelView::QueryFailed}};
+            {"zh_CN",1.0,false,RazerChannelView::QueryFailed},{"zh_CN",1.0,true},{"zh_CN",1.0,true}};
         constexpr int sceneCount=sizeof(scenes)/sizeof(*scenes);
         int index=0,changed=0,connectionRequests=0;
         QObject::connect(&popup,&QkmIbInputPopup::preferencesChanged,&host,[&] { ++changed; });
@@ -118,7 +138,7 @@ int main(int argc,char **argv) {
                     popup.hide();
                     writeJson(root+QStringLiteral("/result.json"),{{"passed",true},{"scenes",index},
                         {"init_calls",initCalls},{"send_calls",sendCalls},{"desktop",name},
-                        {"scope",QStringLiteral("Actual Popup component; simulated C API; no product startup, Hook or driver")}});
+                        {"scope",QStringLiteral("Actual Popup component; simulated input C API; no product startup, mapping Hook or driver")}});
                     app.exit(0); return;
                 }
                 popup.hide(); popup.connectionChecked(); popup.setRunning(false);
@@ -126,7 +146,7 @@ int main(int argc,char **argv) {
                 channelView=scenes[index].view;
                 const QString language=QString::fromLatin1(scenes[index].language);
                 check(translator.load(translations+QStringLiteral("/QKeyMapper_")+language+QStringLiteral(".qm")),"Formal QM missing");
-                for (const char *source:{"Razer driver services: %1","Razer driver for IbInput: %1","Running","Not running","Detected","Not detected"})
+                for (const char *source:{"Logitech G HUB","Razer driver","Current backend: %1 (fallback: %2)","Updated at %1","Driver registered","Driver not registered","Query failed","Version: %1","Processes: %1","Services: %1","Connection check failed at %1.","Detected","Not detected"})
                     check(!translator.translate("QkmIbInputPopup",source).isEmpty(),"Razer QM source is missing");
                 app.installTranslator(&translator);
                 QPalette palette=light;
@@ -165,22 +185,23 @@ int main(int argc,char **argv) {
                   const auto restored=QkmIbInputClient::readPreferences(settings);
                   check(restored.backend==preferences.backend && restored.unavailablePolicy==preferences.unavailablePolicy,"UI preference readback changed"); }
                 const QString expectedVersion=qEnvironmentVariable("QKM_IBINPUT_EXPECTED_GHUB_VERSION");
-                if (!expectedVersion.isEmpty()) check(popup.findChild<QPlainTextEdit *>()->toPlainText().contains(expectedVersion),"Installed G HUB version string was changed");
+                if (!expectedVersion.isEmpty()) check(popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))->toPlainText().contains(expectedVersion),"Installed G HUB version string was changed");
                 const auto before=QkmIbInputClient::instance().statusSnapshot();
                 popup.refresh(); buttons[0]->click();
-                auto *feedback=popup.findChild<QLabel *>(QStringLiteral("ibInputFeedbackLabel"));
+                auto *feedback=popup.findChild<QTextEdit *>(QStringLiteral("ibInputFeedbackLabel"));
                 check(feedback,"Operation feedback label missing");
                 check(feedback->frameShape()==QFrame::WinPanel && feedback->frameShadow()==QFrame::Sunken,
                     "Feedback does not follow the existing sunken panel style");
+                const auto feedbackText=[&] { return feedback->toPlainText(); };
                 const auto expectFeedback=[&](const char *source) {
-                    QString actual=feedback->text();
+                    QString actual=feedbackText().section(QLatin1Char('\n'),0,0);
                     actual.replace(QRegularExpression(QStringLiteral("[0-9]{2}:[0-9]{2}:[0-9]{2}")),QStringLiteral("%1"));
                     check(actual==QCoreApplication::translate("QkmIbInputPopup",source),"Operation feedback was not localized or timed");
                 };
                 expectFeedback("Status refreshed at %1.");
-                const QString explicitFeedback=feedback->text();
+                const QString explicitFeedback=feedbackText();
                 popup.refresh();
-                check(feedback->text()==explicitFeedback,"Passive refresh replaced the manual operation result");
+                check(feedbackText()==explicitFeedback,"Passive refresh replaced the manual operation result");
                 check(initCalls==0 && changed==changedBefore+2
                     && QkmIbInputClient::instance().statusSnapshot().sampledAt==before.sampledAt,"Passive refresh changed configuration or connection state");
                 popup.setRunning(true); popup.showAt(anchor,scenes[index].scale); QTest::qWait(40);
@@ -194,7 +215,7 @@ int main(int argc,char **argv) {
                 expectFeedback("Connection check passed at %1. The temporary connection is closed.");
                 check(!popup.connectionPending() && combos[0]->isEnabled(),"Completed connection request stayed locked");
                 buttons[1]->click(); popup.connectionChecked(false);
-                expectFeedback("Connection check failed at %1. See the result below.");
+                expectFeedback("Connection check failed at %1.");
                 combos[0]->showPopup(); QTest::qWait(40);
                 check(popup.isVisible(),"ComboBox hid the parent Popup");
                 combos[0]->hidePopup(); QTest::qWait(40);
@@ -203,16 +224,29 @@ int main(int argc,char **argv) {
                 check(!popup.isVisible(),"Escape did not close the Popup");
                 for (auto *childTimer:popup.findChildren<QTimer *>()) check(!childTimer->isActive(),"Hidden Popup retained its refresh timer");
                 popup.showAt(anchor,scenes[index].scale); QTest::qWait(80);
-                if (index==0 || index==4) { buttons[1]->click(); popup.connectionChecked(true); }
+                if (index==0 || index==3 || index==4) { buttons[1]->click(); popup.connectionChecked(true); }
                 else if (index==2) buttons[0]->click();
-                else if (index==3) buttons[1]->click();
                 QTest::qWait(80);
-                if (index==0 || channelView!=RazerChannelView::Live) { combos[0]->setCurrentIndex(3); popup.refresh(); }
-                auto *details=popup.findChild<QPlainTextEdit *>();
+                if (index==0 || index==7 || channelView!=RazerChannelView::Live) { combos[0]->setCurrentIndex(3); popup.refresh(); }
+                if (index==0 || index==7) { buttons[1]->click(); popup.connectionChecked(true); }
+                auto *details=popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"));
                 const QString text=details->toPlainText();
-                for (const char *source:{"Razer driver services: %1","Razer driver for IbInput: %1"})
-                    check(text.contains(QCoreApplication::translate("QkmIbInputPopup",source).arg(QString())),
-                        "Razer passive status was not refreshed in the active language");
+                for (const char *source:{"Logitech G HUB","Razer driver","Services: %1"})
+                    check(text.contains(QCoreApplication::translate("QkmIbInputPopup",source).replace(QStringLiteral("%1"),QString())),
+                        "Grouped passive status was not refreshed in the active language");
+                check(text.contains(QCoreApplication::translate("QkmIbInputPopup","Updated at %1").arg(QString())),"Compact sample time missing");
+                check(details->horizontalScrollBar()->maximum()==0,"Normal grouped status needs horizontal scrolling");
+                check(details->verticalScrollBar()->maximum()==0,"Normal grouped status needs vertical scrolling");
+                check(details->isReadOnly(),"Grouped status is editable");
+                QTextCursor selection=details->document()->find(QCoreApplication::translate("QkmIbInputPopup","Razer driver"));
+                check(!selection.isNull(),"Cannot select grouped status");
+                details->setTextCursor(selection); popup.refresh();
+                check(details->textCursor().selectedText()==selection.selectedText(),"Passive refresh lost the selected text");
+                details->setTextCursor(QTextCursor(details->document()));
+                if (channelView==RazerChannelView::Missing)
+                    check(text.contains(QCoreApplication::translate("QkmIbInputPopup","Driver not registered")),"Missing G HUB registration was not distinguished");
+                if (channelView==RazerChannelView::QueryFailed)
+                    check(text.contains(QCoreApplication::translate("QkmIbInputPopup","Query failed")),"Query failure was reported as absence");
                 check(combos[0]->itemText(3)==QStringLiteral("Razer"),"Razer backend still requires Synapse");
                 auto *help=popup.findChild<QLabel *>(QStringLiteral("ibInputHelpLabel"));
                 check(help && help->text().contains(QStringLiteral("https://github.com/Chaoses-Ib/IbInputSimulator/issues/7"))
@@ -229,12 +263,53 @@ int main(int argc,char **argv) {
                 else check(!help->text().contains(QCoreApplication::translate("QkmIbInputPopup",missingGuide).toHtmlEscaped()),
                     "Observed Razer driver still recommends installing it");
                 check(initCalls==0 && sendCalls==0,"Razer observation initialized a driver");
-                check(details->toPlainText().contains(QStringLiteral(
-                    "Currently supports G HUB and Razer relative mouse movement, standard keyboard output, five mouse buttons (left, right, middle, X1, X2) and vertical wheel scrolling.")),"Temporary capability notice missing");
-                if (index>=3) details->verticalScrollBar()->setValue(details->verticalScrollBar()->maximum());
-                check(!popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("checkpoint"),Qt::CaseInsensitive)
-                    && !popup.findChild<QPlainTextEdit *>()->toPlainText().contains(QStringLiteral("检查点")),"Developer checkpoint text remains visible");
-                for (auto *widget:QList<QWidget *>{combos[0],combos[1],buttons[0],buttons[1],feedback,popup.findChild<QPlainTextEdit *>()}) {
+                check(!text.contains(QStringLiteral("Currently supports"))
+                    && !text.contains(QCoreApplication::translate("QkmIbInputPopup","Last result: %1").arg(QString()))
+                    && !text.contains(QCoreApplication::translate("QkmIbInputPopup","Status refresh does not initialize a driver.")),
+                    "Central status still contains duplicate or developer text");
+                if (index==0) {
+                    const QString lightHtml=details->toHtml();
+                    QPalette changedPalette=app.palette(); changedPalette.setColor(QPalette::Window,QColor(55,55,55));
+                    changedPalette.setColor(QPalette::Text,Qt::white); changedPalette.setColor(QPalette::Base,QColor(60,60,60));
+                    app.setPalette(changedPalette); QTest::qWait(30);
+                    check(details->toHtml()!=lightHtml && details->toHtml().contains(QStringLiteral("#b0b0b0")),"Visible theme change did not recolor the text");
+                    app.setPalette(light); QTest::qWait(30);
+                    QTranslator liveLanguage;
+                    check(liveLanguage.load(translations+QStringLiteral("/QKeyMapper_ja_JP.qm")),"Live language QM missing");
+                    app.removeTranslator(&translator); app.installTranslator(&liveLanguage); QTest::qWait(30);
+                    check(details->toPlainText().contains(liveLanguage.translate("QkmIbInputPopup","Razer driver")),"Visible language change did not rebuild status");
+                    app.removeTranslator(&liveLanguage); app.installTranslator(&translator); QTest::qWait(30);
+                    const int height=details->minimumHeight();
+                    details->setMinimumHeight(0); details->setMaximumHeight(30); popup.adjustSize(); QTest::qWait(30);
+                    check(details->verticalScrollBar()->maximum()>0,"Constrained status has no optional scrollbar");
+                    details->verticalScrollBar()->setValue(details->verticalScrollBar()->maximum());
+                    const int scroll=details->verticalScrollBar()->value(); popup.refresh();
+                    check(details->verticalScrollBar()->value()==scroll,"Refresh lost the scrolled position");
+                    details->setMaximumHeight(QWIDGETSIZE_MAX); details->setMinimumHeight(height); popup.adjustSize(); QTest::qWait(30);
+                }
+                if (index==sceneCount-1) {
+                    QkmIbInputClient::Requirements rejection;
+                    rejection.rejection=QStringLiteral("razer: 6 <driver> & channel; logitech_ghub: 5; cleanup detail: ")+QString(90,QLatin1Char('X'));
+                    const auto generation=QkmIbInputClient::instance().requestRun();
+                    check(!QkmIbInputClient::instance().prepareRun(generation,rejection),"UI error fixture was accepted");
+                    popup.connectionChecked(false); popup.adjustSize(); QTest::qWait(30);
+                    check(feedbackText().contains(rejection.rejection),"Failure reason or literal markup was lost");
+                    check(!details->toPlainText().contains(rejection.rejection),"Failure reason remained duplicated in the central panel");
+                    check(popup.width()<=480,"Long feedback unnecessarily widened the Popup");
+                    check(feedback->document()->lastBlock().layout()->lineCount()>2,"Unbroken failure text was not wrapped");
+                    check(feedback->isReadOnly() && feedback->maximumHeight()<popup.height()/2,"Long feedback cannot be safely inspected");
+                    const QString originalError=rejection.rejection;
+                    rejection.rejection=QString(2048,QLatin1Char('X'));
+                    check(!QkmIbInputClient::instance().prepareRun(QkmIbInputClient::instance().requestRun(),rejection),"Long error fixture was accepted");
+                    popup.connectionChecked(false); QTest::qWait(30);
+                    check(feedback->verticalScrollBar()->maximum()>0 && feedbackText().contains(rejection.rejection),"Very long feedback is truncated instead of scrollable");
+                    rejection.rejection=originalError;
+                    check(!QkmIbInputClient::instance().prepareRun(QkmIbInputClient::instance().requestRun(),rejection),"Restored error fixture was accepted");
+                    popup.connectionChecked(false); QTest::qWait(30);
+                }
+                check(!popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))->toPlainText().contains(QStringLiteral("checkpoint"),Qt::CaseInsensitive)
+                    && !popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))->toPlainText().contains(QStringLiteral("检查点")),"Developer checkpoint text remains visible");
+                for (auto *widget:QList<QWidget *>{combos[0],combos[1],buttons[0],buttons[1],feedback,popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))}) {
                     check(widget && popup.rect().contains(QRect(widget->mapTo(&popup,QPoint()),widget->size())),"Popup control clipped by its parent");
                 }
                 const QString label=popup.findChildren<QLabel *>().front()->text();

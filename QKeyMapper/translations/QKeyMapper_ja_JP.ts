@@ -7524,5 +7524,60 @@ Right-click to cancel.</source>
         <source>QKeyMapper could not check the Razer driver status. Click Refresh status or Check connection.</source>
         <translation>QKeyMapper で Razer ドライバーの状態を確認できませんでした。「状態を更新」または「接続を確認」をクリックしてください。</translation>
     </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="234"/>
+        <source>Logitech G HUB</source>
+        <translation>ロジクール G HUB</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="237"/>
+        <source>Razer driver</source>
+        <translation>Razer ドライバー</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="232"/>
+        <source>Current backend: %1 (fallback: %2)</source>
+        <translation>現在のバックエンド：%1（フォールバック：%2）</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="233"/>
+        <source>Updated at %1</source>
+        <translation>更新 %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="219"/>
+        <source>Driver registered</source>
+        <translation>ドライバー登録済み</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="220"/>
+        <source>Driver not registered</source>
+        <translation>ドライバー未登録</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="218"/>
+        <source>Query failed</source>
+        <translation>照会失敗</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="235"/>
+        <source>Version: %1</source>
+        <translation>バージョン: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="236"/>
+        <source>Processes: %1</source>
+        <translation>プロセス: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="238"/>
+        <source>Services: %1</source>
+        <translation>サービス: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="191"/>
+        <source>Connection check failed at %1.</source>
+        <translation>%1 接続チェックに失敗しました。</translation>
+    </message>
 </context>
 </TS>

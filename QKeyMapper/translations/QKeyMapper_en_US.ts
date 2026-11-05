@@ -7524,5 +7524,60 @@ Right-click to cancel.</translation>
         <source>QKeyMapper could not check the Razer driver status. Click Refresh status or Check connection.</source>
         <translation>QKeyMapper could not check the Razer driver status. Click Refresh status or Check connection.</translation>
     </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="234"/>
+        <source>Logitech G HUB</source>
+        <translation>Logitech G HUB</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="237"/>
+        <source>Razer driver</source>
+        <translation>Razer driver</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="232"/>
+        <source>Current backend: %1 (fallback: %2)</source>
+        <translation>Current backend: %1 (fallback: %2)</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="233"/>
+        <source>Updated at %1</source>
+        <translation>Updated at %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="219"/>
+        <source>Driver registered</source>
+        <translation>Driver registered</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="220"/>
+        <source>Driver not registered</source>
+        <translation>Driver not registered</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="218"/>
+        <source>Query failed</source>
+        <translation>Query failed</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="235"/>
+        <source>Version: %1</source>
+        <translation>Version: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="236"/>
+        <source>Processes: %1</source>
+        <translation>Processes: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="238"/>
+        <source>Services: %1</source>
+        <translation>Services: %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="191"/>
+        <source>Connection check failed at %1.</source>
+        <translation>Connection check failed at %1.</translation>
+    </message>
 </context>
 </TS>

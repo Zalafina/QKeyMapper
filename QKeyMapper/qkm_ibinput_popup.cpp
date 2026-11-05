@@ -7,10 +7,14 @@
 #include <QGuiApplication>
 #include <QHideEvent>
 #include <QLabel>
-#include <QPlainTextEdit>
+#include <QTextEdit>
+#include <QTextDocument>
+#include <QTextCursor>
+#include <QtMath>
+#include <QScrollBar>
+#include <QEvent>
 #include <QPushButton>
 #include <QScreen>
-#include <QSettings>
 #include <QShowEvent>
 #include <QSignalBlocker>
 #include <QVBoxLayout>
@@ -89,7 +93,19 @@ QString version(const QString &path) {
     if (!VerQueryValueW(bytes.data(),L"\\",reinterpret_cast<LPVOID *>(&info),&length) || length<sizeof(*info)) return {};
     return QStringLiteral("%1.%2.%3.%4").arg(HIWORD(info->dwProductVersionMS)).arg(LOWORD(info->dwProductVersionMS)).arg(HIWORD(info->dwProductVersionLS)).arg(LOWORD(info->dwProductVersionLS));
 }
-QStringList processes() {
+enum class DriverRegistration { Registered, Missing, QueryFailed };
+DriverRegistration ghubRegistration() {
+    HKEY key=nullptr;
+    LONG error=RegOpenKeyExW(HKEY_LOCAL_MACHINE,L"SYSTEM\\CurrentControlSet\\Services\\logi_joy_bus_enum",0,KEY_QUERY_VALUE,&key);
+    if (error==ERROR_SUCCESS) {
+        DWORD bytes=0; error=RegQueryValueExW(key,L"ImagePath",nullptr,nullptr,nullptr,&bytes);
+        RegCloseKey(key);
+    }
+    if (error==ERROR_SUCCESS) return DriverRegistration::Registered;
+    return error==ERROR_FILE_NOT_FOUND || error==ERROR_PATH_NOT_FOUND ? DriverRegistration::Missing : DriverRegistration::QueryFailed;
+}
+QStringList processes(bool &known) {
+    known=false;
     QStringList observed;
     const HANDLE snapshot=CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
     if (snapshot==INVALID_HANDLE_VALUE) return observed;
@@ -97,13 +113,10 @@ QStringList processes() {
     if (Process32FirstW(snapshot,&entry)) do {
         const QString name=QString::fromWCharArray(entry.szExeFile);
         if (name.compare(QStringLiteral("lghub_agent.exe"),Qt::CaseInsensitive)==0
-            || name.compare(QStringLiteral("lghub_updater.exe"),Qt::CaseInsensitive)==0
-            || name.compare(QStringLiteral("Razer Synapse.exe"),Qt::CaseInsensitive)==0
-            || name.compare(QStringLiteral("Razer Synapse 3.exe"),Qt::CaseInsensitive)==0
-            || name.compare(QStringLiteral("RazerAppEngine.exe"),Qt::CaseInsensitive)==0
-            || name.compare(QStringLiteral("RzEngineMon.exe"),Qt::CaseInsensitive)==0) observed.append(name);
+            || name.compare(QStringLiteral("lghub_updater.exe"),Qt::CaseInsensitive)==0) observed.append(name);
     } while (Process32NextW(snapshot,&entry));
-    CloseHandle(snapshot); observed.removeDuplicates(); return observed;
+    known=GetLastError()==ERROR_NO_MORE_FILES;
+    CloseHandle(snapshot); observed.removeDuplicates(); observed.sort(Qt::CaseInsensitive); return observed;
 }
 }
 QkmIbInputPopup::QkmIbInputPopup(QWidget *parent):QFrame(parent,Qt::Popup) {
@@ -118,12 +131,15 @@ QkmIbInputPopup::QkmIbInputPopup(QWidget *parent):QFrame(parent,Qt::Popup) {
     m_backend->addItems({QString(),QString(),QString(),QString()});
     m_policy->addItems({QString(),QString()});
     form->addRow(m_backendLabel,m_backend); form->addRow(m_policyLabel,m_policy); layout->addLayout(form);
-    m_feedbackLabel=new QLabel(this); m_feedbackLabel->setObjectName(QStringLiteral("ibInputFeedbackLabel"));
-    m_feedbackLabel->setWordWrap(true); m_feedbackLabel->setTextFormat(Qt::PlainText);
-    m_feedbackLabel->setFrameStyle(QFrame::WinPanel|QFrame::Sunken); m_feedbackLabel->setMargin(3);
-    m_feedbackLabel->setMinimumHeight(fontMetrics().lineSpacing()*2+2*(m_feedbackLabel->margin()+m_feedbackLabel->frameWidth()));
-    layout->addWidget(m_feedbackLabel);
-    m_details=new QPlainTextEdit(this); m_details->setReadOnly(true); m_details->setMinimumSize(360,120); layout->addWidget(m_details);
+    m_feedbackView=new QTextEdit(this); m_feedbackView->setObjectName(QStringLiteral("ibInputFeedbackLabel"));
+    m_feedbackView->setReadOnly(true); m_feedbackView->setFocusPolicy(Qt::ClickFocus);
+    m_feedbackView->setWordWrapMode(QTextOption::WrapAtWordBoundaryOrAnywhere);
+    m_feedbackView->setFrameStyle(QFrame::WinPanel|QFrame::Sunken);
+    m_feedbackView->setFixedHeight(fontMetrics().lineSpacing()*2+8);
+    layout->addWidget(m_feedbackView);
+    m_details=new QTextEdit(this); m_details->setObjectName(QStringLiteral("ibInputDetails"));
+    m_details->setReadOnly(true); m_details->setFocusPolicy(Qt::ClickFocus);
+    m_details->setMinimumSize(440,fontMetrics().lineSpacing()*10+16); layout->addWidget(m_details);
     auto *actions=new QHBoxLayout;
     m_refresh=new QPushButton(this); m_check=new QPushButton(this);
     m_refresh->setObjectName(QStringLiteral("ibInputRefreshButton")); m_check->setObjectName(QStringLiteral("ibInputCheckButton"));
@@ -171,39 +187,70 @@ void QkmIbInputPopup::refresh() {
     case Feedback::Refreshed: feedback=tr("Status refreshed at %1.").arg(time); break;
     case Feedback::Checking: feedback=tr("Checking connection..."); break;
     case Feedback::Passed: feedback=tr("Connection check passed at %1. The temporary connection is closed.").arg(time); break;
-    case Feedback::Failed: feedback=tr("Connection check failed at %1. See the result below.").arg(time); break;
+    case Feedback::Failed: feedback=tr("Connection check failed at %1.").arg(time); break;
     }
-    m_feedbackLabel->setText(feedback);
+    QStringList feedbackLines;
+    if (!feedback.isEmpty()) feedbackLines.append(feedback);
+    if (!status.detail.isEmpty() && ((m_feedback!=Feedback::Passed && m_feedback!=Feedback::Checking) || status.releaseIncomplete || status.stopping))
+        feedbackLines.append(status.detail);
+    if (busy && m_feedback!=Feedback::Checking)
+        feedbackLines.append(tr("Stop mapping and wait for cleanup before changing preferences."));
+    const QString feedbackText=feedbackLines.join(QLatin1Char('\n'));
+    if (m_feedbackView->toPlainText()!=feedbackText) m_feedbackView->setPlainText(feedbackText);
+    const int lineHeight=m_feedbackView->fontMetrics().lineSpacing();
+    const int frame=2*m_feedbackView->frameWidth();
+    const int padding=frame+static_cast<int>(2*m_feedbackView->document()->documentMargin());
+    m_feedbackView->setFixedHeight(qBound(2*lineHeight+padding,
+        qCeil(m_feedbackView->document()->size().height())+frame,4*lineHeight+padding));
+    QPalette feedbackPalette=m_feedbackView->palette();
+    feedbackPalette.setColor(QPalette::Base,palette().color(QPalette::Window));
+    m_feedbackView->setPalette(feedbackPalette);
     const bool dark=palette().color(QPalette::Window).lightness()<128;
-    m_feedbackLabel->setStyleSheet(m_feedback==Feedback::Passed
-        ? (dark ? QStringLiteral("color:#70dc70;") : QStringLiteral("color:#006400;"))
-        : m_feedback==Feedback::Failed
-            ? (dark ? QStringLiteral("color:#ff8585;") : QStringLiteral("color:#c00000;")) : QString());
+    const QString positive=dark ? QStringLiteral("#70dc70") : QStringLiteral("#006400");
+    const QString negative=dark ? QStringLiteral("#ff8585") : QStringLiteral("#c00000");
+    const QString secondary=dark ? QStringLiteral("#b0b0b0") : QStringLiteral("#666666");
+    m_feedbackView->setStyleSheet(m_feedback==Feedback::Failed || status.releaseIncomplete
+        ? QStringLiteral("color:%1;").arg(negative)
+        : m_feedback==Feedback::Passed ? QStringLiteral("color:%1;").arg(positive) : QString());
     const bool fallback=status.fallback && m_running;
     const QString backend=status.connected ? (status.backend==QStringLiteral("logitech_ghub") ? QStringLiteral("Logitech G HUB") : (status.backend==QStringLiteral("razer") ? QStringLiteral("Razer") : status.backend))
         : (fallback ? QStringLiteral("SendInput") : tr("Not connected"));
-    const QString lastResult=m_feedback==Feedback::Passed ? feedback : status.detail;
     const QString base=qEnvironmentVariable("ProgramW6432",qEnvironmentVariable("ProgramFiles"));
     const QString installed=version(base+QStringLiteral("/LGHUB/lghub_agent.exe"));
-    QSettings bus(QStringLiteral("HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\logi_joy_bus_enum"),QSettings::NativeFormat);
+    const auto registration=ghubRegistration();
+    bool processesKnown=false; const auto observedProcesses=processes(processesKnown);
     const auto razer=observeRazer();
     QStringList services;
     for (const auto &service:razer.services)
         services.append(QStringLiteral("%1 (%2)").arg(service.first,service.second ? tr("Running") : tr("Not running")));
-    const QString missing=tr("Not observed"),unknown=tr("Unknown");
-    QStringList lines{tr("G HUB version: %1").arg(installed.isEmpty() ? tr("Unknown") : installed),
-        tr("Observed process names: %1").arg(processes().join(QStringLiteral(", "))),
-        tr("G HUB driver registration: %1").arg(bus.contains(QStringLiteral("ImagePath")) ? tr("Observed") : tr("Unknown")),
-        tr("Razer driver services: %1").arg(!razer.servicesKnown ? unknown : services.isEmpty() ? missing : services.join(QStringLiteral(", "))),
-        tr("Razer driver for IbInput: %1").arg(!razer.interfaceKnown ? unknown : razer.interfaceObserved ? tr("Detected") : tr("Not detected")),
-        tr("Backend: %1; fallback: %2").arg(backend,fallback ? tr("Yes") : tr("No")),
-        tr("Last result: %1").arg(lastResult),
-        tr("Sampled: %1").arg(QDateTime::currentDateTime().toString(Qt::ISODate))};
-    if (busy) lines.append(tr("Stop mapping and wait for cleanup before changing preferences."));
-    lines.append(tr("Status refresh does not initialize a driver."));
-    // Temporary capability notice; remove or revise at the release review.
-    lines.append(QStringLiteral("Currently supports G HUB and Razer relative mouse movement, standard keyboard output, five mouse buttons (left, right, middle, X1, X2) and vertical wheel scrolling."));
-    m_details->setPlainText(lines.join(QLatin1Char('\n')));
+    const QString missing=tr("Not detected"),queryFailed=tr("Query failed");
+    const QString ghubState=registration==DriverRegistration::Registered ? tr("Driver registered")
+        : registration==DriverRegistration::Missing ? tr("Driver not registered") : queryFailed;
+    const QString razerState=!razer.interfaceKnown ? queryFailed : razer.interfaceObserved ? tr("Detected") : missing;
+    const auto group=[&](const QString &title,const QString &state,bool detected,bool known,const QStringList &details) {
+        QStringList escaped;
+        for (const auto &line:details) escaped.append(line.toHtmlEscaped());
+        const QString color=!known ? negative : detected ? positive : secondary;
+        return QStringLiteral("<p style='margin-top:8px;margin-bottom:2px;'><b>%1: <span style='color:%2;'>%3 %4</span></b></p>"
+            "<p style='margin-top:0px;margin-bottom:0px;margin-left:12px;color:%5;'>%6</p>")
+            .arg(title.toHtmlEscaped(),color,detected ? QStringLiteral("●") : QStringLiteral("○"),state.toHtmlEscaped(),secondary,escaped.join(QStringLiteral("<br>")));
+    };
+    QString html=QStringLiteral("<table width='100%' cellspacing='0' cellpadding='0'><tr><td>%1</td>"
+        "<td align='right' style='font-size:small;color:%2;'>%3</td></tr></table>")
+        .arg(tr("Current backend: %1 (fallback: %2)").arg(backend,fallback ? tr("Yes") : tr("No")).toHtmlEscaped(),secondary,
+            tr("Updated at %1").arg(QDateTime::currentDateTime().toString(QStringLiteral("HH:mm:ss"))).toHtmlEscaped());
+    html+=group(tr("Logitech G HUB"),ghubState,registration==DriverRegistration::Registered,registration!=DriverRegistration::QueryFailed,
+        {tr("Version: %1").arg(installed.isEmpty() ? tr("Unknown") : installed),
+         tr("Processes: %1").arg(!processesKnown ? queryFailed : observedProcesses.isEmpty() ? missing : observedProcesses.join(QStringLiteral(", ")))});
+    html+=group(tr("Razer driver"),razerState,razer.interfaceKnown && razer.interfaceObserved,razer.interfaceKnown,
+        {tr("Services: %1").arg(!razer.servicesKnown ? queryFailed : services.isEmpty() ? missing : services.join(QStringLiteral(", ")))});
+    // Preserve selection and scroll position while the visible timer updates the sample time.
+    const QTextCursor previous=m_details->textCursor();
+    const int scroll=m_details->verticalScrollBar()->value();
+    m_details->document()->setDefaultFont(m_details->font()); m_details->setHtml(html);
+    QTextCursor restored=m_details->textCursor(); const int end=m_details->document()->characterCount()-1;
+    restored.setPosition(qMin(previous.anchor(),end)); restored.setPosition(qMin(previous.position(),end),QTextCursor::KeepAnchor);
+    m_details->setTextCursor(restored); m_details->verticalScrollBar()->setValue(scroll);
     QString guidance;
     if (preferences.backend==QStringLiteral("razer")) {
         if (!razer.interfaceKnown)
@@ -229,6 +276,12 @@ void QkmIbInputPopup::showAt(QWidget *anchor,qreal scale) {
         point.setY(qBound(area.top(),point.y(),qMax(area.top(),area.bottom()-height()+1)));
     }
     move(point); show();
+}
+void QkmIbInputPopup::changeEvent(QEvent *event) {
+    QFrame::changeEvent(event);
+    if (!m_help) return;
+    if (event->type()==QEvent::LanguageChange) retranslate();
+    else if (event->type()==QEvent::PaletteChange || event->type()==QEvent::FontChange) refresh();
 }
 void QkmIbInputPopup::showEvent(QShowEvent *event) { QFrame::showEvent(event); refresh(); m_timer.start(); }
 void QkmIbInputPopup::hideEvent(QHideEvent *event) { m_timer.stop(); QFrame::hideEvent(event); }

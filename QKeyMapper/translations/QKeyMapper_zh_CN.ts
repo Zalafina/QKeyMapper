@@ -7524,5 +7524,60 @@ Right-click to cancel.</source>
         <source>QKeyMapper could not check the Razer driver status. Click Refresh status or Check connection.</source>
         <translation>QKeyMapper 暂时无法检测 Razer 驱动状态。请点击“刷新状态”或“连接检查”。</translation>
     </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="234"/>
+        <source>Logitech G HUB</source>
+        <translation>罗技 G HUB</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="237"/>
+        <source>Razer driver</source>
+        <translation>雷蛇驱动</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="232"/>
+        <source>Current backend: %1 (fallback: %2)</source>
+        <translation>当前后端：%1（回退：%2）</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="233"/>
+        <source>Updated at %1</source>
+        <translation>更新于 %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="219"/>
+        <source>Driver registered</source>
+        <translation>驱动已登记</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="220"/>
+        <source>Driver not registered</source>
+        <translation>驱动未登记</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="218"/>
+        <source>Query failed</source>
+        <translation>查询失败</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="235"/>
+        <source>Version: %1</source>
+        <translation>版本：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="236"/>
+        <source>Processes: %1</source>
+        <translation>进程：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="238"/>
+        <source>Services: %1</source>
+        <translation>服务：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="191"/>
+        <source>Connection check failed at %1.</source>
+        <translation>%1 连接检查失败。</translation>
+    </message>
 </context>
 </TS>

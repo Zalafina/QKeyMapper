@@ -36984,16 +36984,16 @@ void QKeyMapper::setUITheme(int themeindex)
                 image: url(:/partiallychecked_disabled.svg);
                 border: 1px solid rgb(86, 86, 86);
             }
-            QLineEdit, QPlainTextEdit {
+            QLineEdit, QPlainTextEdit, QTextEdit#ibInputDetails {
                 border: 1px solid rgb(108, 108, 108);
                 border-radius: 2px;
                 background-color: rgb(60, 60, 60);
             }
-            QLineEdit:disabled, QPlainTextEdit:disabled {
+            QLineEdit:disabled, QPlainTextEdit:disabled, QTextEdit#ibInputDetails:disabled {
                 border: 1px solid rgb(86, 86, 86);
                 background-color: rgb(50, 50, 50);
             }
-            QLineEdit:focus, QPlainTextEdit:focus {
+            QLineEdit:focus, QPlainTextEdit:focus, QTextEdit#ibInputDetails:focus {
                 border: 1px solid rgb(46, 134, 222);
             }
             QSpinBox, QDoubleSpinBox {
