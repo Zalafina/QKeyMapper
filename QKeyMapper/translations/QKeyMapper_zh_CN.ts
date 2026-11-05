@@ -7326,7 +7326,7 @@ Right-click to cancel.</source>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="81" />
         <source>Logitech legacy</source>
-        <translation>Logitech 旧版通道</translation>
+        <translation>罗技 旧版通道</translation>
     </message>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="83" />

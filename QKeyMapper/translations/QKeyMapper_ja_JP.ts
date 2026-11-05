@@ -7527,7 +7527,7 @@ Right-click to cancel.</source>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="234"/>
         <source>Logitech G HUB</source>
-        <translation>ロジクール G HUB</translation>
+        <translation>Logitech G HUB</translation>
     </message>
     <message>
         <location filename="../qkm_ibinput_popup.cpp" line="237"/>
