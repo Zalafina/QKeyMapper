@@ -137,6 +137,44 @@ void saveGuardCases(QKeyMapper *window) {
 }
 
 
+void configurationRoundTripCases(QKeyMapper *window) {
+    const auto original=*QKeyMapper::KeyMappingDataList;
+    const auto generation=QkmIbInputClient::instance().requestedGeneration();
+    for (const auto &row:original) {
+        const QString code=QKeyMapper::generateMappingCode(row);
+        auto current=row; current.SendMappingKeyMethod=QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT;
+        MAP_KEYDATA decoded=current;
+        const auto result=QKeyMapper::applyMappingCode(code,current,decoded);
+        check(result.success && decoded.SendMappingKeyMethod==QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT
+            && decoded.Mapping_Keys==row.Mapping_Keys,"Method 3 did not round-trip through a mapping code");
+    }
+    const QString exported=output+QStringLiteral("/method3-export.ini");
+    check(!QFile::exists(exported),"Configuration export would overwrite evidence");
+    check(QKeyMapper::exportKeyMappingDataToFile(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex,exported),
+        "Method-3 export failed");
+    check(window->addTabToKeyMappingTabWidget(QStringLiteral("IbRoundTrip"),false),"Cannot create isolated import target");
+    int target=-1;
+    for (int index=0;index<QKeyMapper::s_KeyMappingTabInfoList.size();++index)
+        if (QKeyMapper::s_KeyMappingTabInfoList.at(index).TabName==QStringLiteral("IbRoundTrip")) target=index;
+    check(target>=0 && QKeyMapper::importKeyMappingDataFromFile(target,exported),"Method-3 import failed");
+    const auto imported=*QKeyMapper::s_KeyMappingTabInfoList.at(target).KeyMappingData;
+    check(imported.size()==original.size(),"Imported method-3 row count differs");
+    for (int index=0;index<original.size();++index)
+        check(imported.at(index).SendMappingKeyMethod==QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT
+            && imported.at(index).Original_Key==original.at(index).Original_Key
+            && imported.at(index).Mapping_Keys==original.at(index).Mapping_Keys,"Import changed the method or mapping");
+    const auto before=savedIni();
+    const QString ini=QCoreApplication::applicationDirPath()+QStringLiteral("/keymapdata.ini");
+    const HANDLE locked=CreateFileW(reinterpret_cast<LPCWSTR>(ini.utf16()),GENERIC_READ,FILE_SHARE_READ,
+        nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+    check(locked!=INVALID_HANDLE_VALUE,"Cannot lock the isolated INI for the save failure test");
+    const bool saved=window->saveKeyMapSetting(false);
+    CloseHandle(locked);
+    check(!saved && savedIni()==before,"Failed method-3 save changed the file or reported success");
+    check(!QkmIbInputClient::instance().busy()
+        && QkmIbInputClient::instance().requestedGeneration()==generation,"Configuration checks initialized a run");
+}
+
 void verifyMacroRules(const QList<MAP_KEYDATA> &source) {
     const auto before=source;
     const auto rows=QkmIbInputValidation::expandedRows(source);
@@ -610,7 +648,10 @@ void verifyProduct() {
                 && row.SendMappingKeyMethod==QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT,
                 "Method-3 mapping changed during product load");
         }
-        if (selectedCase==QStringLiteral("save")) saveGuardCases(window);
+        if (selectedCase==QStringLiteral("save")) {
+            saveGuardCases(window);
+            configurationRoundTripCases(window);
+        }
         auto *button=window->findChild<QPushButton *>(QStringLiteral("ibInputSettingsButton"));
         check(button && button->isEnabled(),"Product IbInput settings entry is missing or locked");
         auto *aligned=window->findChild<QPushButton *>(QStringLiteral("mappingAdvancedSettingButton"));
@@ -639,6 +680,18 @@ void verifyProduct() {
         check(settings.status()==QSettings::NoError,"Saved product INI could not be read");
         check(settings.value(QStringLiteral("QKeyMapperGlobalSetting/KeyMapData_SendMappingKeyMethod")).toString()
             .split(QLatin1Char('|')).value(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex)==QStringLiteral("3#3#3#3"),"Method 3 did not survive product save/cold-read");
+        if (selectedCase==QStringLiteral("cold")) {
+            bool found=false;
+            for (const auto &tab:QKeyMapper::s_KeyMappingTabInfoList) {
+                if (tab.TabName!=QStringLiteral("IbRoundTrip")) continue;
+                found=true;
+                check(tab.KeyMappingData->size()==4,"Cold imported table row count changed");
+                for (const auto &row:*tab.KeyMappingData)
+                    check(row.SendMappingKeyMethod==QKeyMapperConstants::SENDMAPPINGKEY_METHOD_IBINPUT,
+                        "Cold imported table lost method 3");
+            }
+            check(found,"Cold process did not load the imported table");
+        }
         const auto preferences=QkmIbInputClient::readPreferences(settings);
         check(preferences.backend==expectedBackend && preferences.unavailablePolicy==QStringLiteral("block"),
             "Global preferences did not survive product save/cold-read");

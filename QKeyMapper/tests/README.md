@@ -134,6 +134,12 @@ product_check.pro的tables用例沿既有状态机，前缀tables-；manual_tabl
 
 tables另支持三个依次触发的固定T3控制文件：tables-race-sendinput（B→C，最新为SendInput）、tables-race-latest（A→B→A，最新为IbInput）、tables-race-stop（B→C→A后立即正常停止）。维护目标用有5秒上限的工作队列门闩先排完UI切换，走真正MappingTableSwitchByTabName，写race-requested-1/2/3、race-ready-1/2及race-stable.json；后者在实际停止完成后继续观察5次轮询，不能以静态停止marker替代。旧中间B不应执行SendOnSwitchTab，外部原始Q实际输出F/J并检查旧UP、重启及退出释放。串行协议保持；此场景证明确定性排队交错，不等同实体快速W或驱动I/O故障。方法和原始键／Default／清理授权边界沿上文，实际结果见主计划28节。
 
+## IbInput 配置往返与保存失败
+
+product_check的私有save用例同时走真实generateMappingCode／applyMappingCode，将其他方式覆盖为方式3；随后用真实导出／导入API把四行导入新IbRoundTrip表。保存失败用例只对隔离运行目录的keymapdata.ini持只读共享句柄，调用正常保存，核对返回false、原字节不变且未请求运行；释放句柄后沿既有Popup偏好和正常保存继续。该句柄不接触个人配置或系统设置。
+
+cold必须复用这次save产生的同一运行目录INI，核对新增导入表及原表的方式3、偏好和Popup绑定；不能把旧版save结果与新版cold混用。两个程序在独立QkmIbProduct_*私有桌面，保持正式管理员manifest及原入口初始化，不开始映射／发送输入。配置检查与GUI控件断言不等于新视觉验收；当前版本及机器结果见主计划33节。真实文件锁失败也不替代任意断电／磁盘满或合流后MCP保存事务验收。
+
 ## IbInput 开始／停止动作
 
 product_check.pro的stopactions用例沿既有状态机，前缀stopactions-；manual_stopactions_verification.ini含Q→F、SendOnMappingStart→H⏱20»I⏱20、SendOnMappingStop→Repeat{F⏱20»G⏱20}x2，全为方式3，无自动开始。原始键须另按具体授权由固定运行器产生；产品本身只核对配置并调用真实开始／停止／重启／退出入口。
