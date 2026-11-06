@@ -170,6 +170,14 @@ product_check的absolute固定用例使用razer_absolute_verification.ini：Q屏
 
 logitech_report_test的logitech_absolute组将GetSystemMetrics及GetCursorPos也替换为固定查询：验证负原点、尺寸改变、主屏归一化端点、持有按钮和查询失败／非法边界；不读取或修改实际系统设置。该组证明0009报告数值契约，不证明Windows实际落点。A2实际G HUB加速环境定位失败，生产AbsoluteMove仍仅Razer；不要为使测试通过而自动调整指针设置。主计划31节保留失败及用户取舍。
 
+## IbInput 手柄移动来源
+
+product_check的motion用例使用manual_motion_sources_verification.ini或razer_motion_sources_verification.ini：Joy-LS2Mouse／Joy-Gyro2Mouse／Joy-Touchpad2Mouse同名控制标记及Q→Mouse-L，均方式3，显式选择对应后端。控制标记不直接产生物理键鼠，不应被当作普通按键自映射；validation_test只对四种确切标记和单个@0～9编号放行，普通键鼠和畸形／组合负例继续受保护。
+
+协议沿motion-started/stopped/restarted/exiting.json及motion-stop/restart/exit/abort。motion-step-1～13按序创建并等待同名.json：1/2左摇杆轴正反、3/4陀螺仪正反、5/6触点正反、7～9左键保持期间三源、10停止后无输出、11～13重启后三源。原始Q仍由获准普通运行器经Hook产生，维护入口只在Worker线程排队有限合成事件，使用正常加载的方式／开关和算法，合成设备对象通过共享所有权覆盖排空；不直接调用发送函数替代映射。
+
+摇杆每样本调用一次正常周期处理入口并立即回中，不证明原周期调度器的持续手感。Gyro用有限单调时间戳及正常算法，固定灵敏度7／阈值2、采样15与速度2；启动前核对实际加载值，不能将被UI范围钳位的INI原值当作实际值。触摸板使用Down／Motion／Up及正常累计。接收端核对各方向实际位置与事件、小幅范围、保持按钮、停止后无移动及停止／退出UP；不是SDL枚举、物理采样或硬件校准通过。Win10实体补验完全可选，所有源码／版本／实际结果和失败历史见主计划32节。
+
 ## IbInput Popup 显示维护
 
 ui_test.pro生成普通权限QKeyMapperIbInputUiTest，显式使用--ibinput-ui-check运行；QKM_IBINPUT_UI_ROOT指定现有结果目录，QKM_IBINPUT_QM_ROOT指定三语QM目录。程序在创建QApplication前进入自有QkmIbInputUi_<PID>私有Windows桌面，Qt5需要该桌面的DESKTOP_HOOKCONTROL以建立自身线程WH_GETMESSAGE消息机制；不切换Default，不运行产品映射Hook。

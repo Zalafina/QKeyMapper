@@ -201,6 +201,11 @@ quint64 tableRaceIntent=0;
 struct TableRaceGate { QSemaphore release; std::atomic_bool timedOut{false}; };
 QSharedPointer<TableRaceGate> tableRaceGate;
 bool absoluteTargetCleared=false;
+struct MotionProbe { std::atomic_bool done{false}; bool valid=false; };
+QSharedPointer<MotionProbe> motionProbe;
+QSharedPointer<QJoystickDevice> motionDevice;
+int motionStep=0;
+quint64 motionTimestamp=1000000;
 quint64 inputGeneration=0;
 HWND inputReceiver=nullptr;
 void inputRecord(const QString &name,const QJsonObject &value) {
@@ -208,6 +213,68 @@ void inputRecord(const QString &name,const QJsonObject &value) {
     check(file.open(QIODevice::WriteOnly),"Cannot open keyboard evidence");
     check(file.write(QJsonDocument(value).toJson())>0 && file.commit(),"Cannot write keyboard evidence");
 }
+void verifyMotionStep(const QString &prefix,int phase) {
+    if (motionProbe) {
+        if (!motionProbe->done.load(std::memory_order_acquire)) return;
+        check(motionProbe->valid,"Motion source settings differ from the running product");
+        inputRecord(QStringLiteral("step-%1.json").arg(motionStep+1),
+            {{"step",motionStep+1},{"active",motionStep!=9},
+                {"generation",static_cast<qint64>(qkmCurrentIbInputGeneration())}});
+        motionProbe.clear(); ++motionStep;
+    }
+    const bool allowed=(phase==2 && motionStep<9) || (phase==7 && motionStep==9)
+        || (phase==5 && motionStep>=10 && motionStep<13);
+    if (!allowed || !QFile::exists(prefix+QStringLiteral("step-%1").arg(motionStep+1))) return;
+    const auto probe=QSharedPointer<MotionProbe>::create(); motionProbe=probe;
+    const auto device=motionDevice;
+    const int step=motionStep;
+    auto *worker=QKeyMapper_Worker::getInstance();
+    check(QMetaObject::invokeMethod(worker,[probe,device,worker,step] {
+        using namespace QKeyMapperConstants;
+        const bool active=step!=9;
+        probe->valid=active ? (QKeyMapper_Worker::s_Joy2Mouse_SendMethod==SENDMAPPINGKEY_METHOD_IBINPUT
+            && QKeyMapper_Worker::s_Gyro2Mouse_SendMethod==SENDMAPPINGKEY_METHOD_IBINPUT
+            && QKeyMapper_Worker::s_GamepadTouchpad2Mouse_SendMethod==SENDMAPPINGKEY_METHOD_IBINPUT
+            && !QKeyMapper_Worker::s_Joy2Mouse_EnableStateMap.isEmpty()
+            && QKeyMapper_Worker::s_GameControllerSensor_EnableState
+            && QKeyMapper_Worker::s_GamepadTouchpad2Mouse_EnableState)
+            : (!qkmCurrentIbInputGeneration() && QKeyMapper_Worker::s_Joy2Mouse_EnableStateMap.isEmpty()
+                && !QKeyMapper_Worker::s_GameControllerSensor_EnableState
+                && !QKeyMapper_Worker::s_GamepadTouchpad2Mouse_EnableState);
+        if (probe->valid) {
+            const int family=step<6 ? step/2 : step<9 ? step-6 : step==9 ? -1 : step-10;
+            const int direction=(step<6 && step%2) ? -1 : 1;
+            const auto dispatch=[&](int kind) {
+                if (kind==0) {
+                    QJoystickAxisEvent event{JOYSTICK_AXIS_LS_HORIZONTAL,qreal(direction),GameControllerEvent,device.data()};
+                    worker->onJoystickAxisEvent(event);
+                    worker->onKey2MouseCycleTimeout();
+                    event.value=0; worker->onJoystickAxisEvent(event);
+                } else if (kind==1) {
+                    QJoystickSensorEvent event{};
+                    event.joystick=device.data(); event.accelZ=1.0f;
+                    event.timestamp=motionTimestamp; motionTimestamp+=20000;
+                    worker->onJoystickSensorEvent(event);
+                    event.gyroY=-15.0f*direction; event.timestamp=motionTimestamp; motionTimestamp+=20000;
+                    worker->onJoystickSensorEvent(event);
+                    event.gyroY=0; event.timestamp=motionTimestamp; motionTimestamp+=20000;
+                    worker->onJoystickSensorEvent(event);
+                } else {
+                    QJoystickTouchpadEvent event{0,0,0.5,0.5,1.0,100,TouchpadEventDown,device.data()};
+                    worker->onJoystickTouchpadEvent(event);
+                    event.x+=0.01*direction; event.eventType=TouchpadEventMotion; event.timestamp=120;
+                    worker->onJoystickTouchpadEvent(event);
+                    event.eventType=TouchpadEventUp; event.timestamp=140;
+                    worker->onJoystickTouchpadEvent(event);
+                }
+            };
+            if (family<0) for (int kind=0;kind<3;++kind) dispatch(kind);
+            else dispatch(family);
+        }
+        probe->done.store(true,std::memory_order_release);
+    },Qt::QueuedConnection),"Cannot queue owned motion source events");
+}
+
 void verifyInputProduct(QKeyMapper *window) {
     const bool fakerPause=selectedCase==QStringLiteral("pause_faker");
     const bool pause=fakerPause || selectedCase==QStringLiteral("pause");
@@ -216,9 +283,10 @@ void verifyInputProduct(QKeyMapper *window) {
     const bool standard=selectedCase==QStringLiteral("standard");
     const bool loops=selectedCase==QStringLiteral("loops");
     const bool macros=selectedCase==QStringLiteral("macros");
+    const bool motion=selectedCase==QStringLiteral("motion");
     const bool absolute=selectedCase==QStringLiteral("absolute");
     const bool horizontal=selectedCase==QStringLiteral("horizontal");
-    const bool mouse=selectedCase==QStringLiteral("mouse") || loops || macros || horizontal || absolute;
+    const bool mouse=selectedCase==QStringLiteral("mouse") || loops || macros || horizontal || absolute || motion;
     const bool patterns=selectedCase==QStringLiteral("patterns");
     const QString prefix=output+QLatin1Char('/')+selectedCase+QLatin1Char('-');
     if (inputPhase!=6 && QFile::exists(prefix+QStringLiteral("abort"))) {
@@ -240,7 +308,8 @@ void verifyInputProduct(QKeyMapper *window) {
         CloseHandle(snapshot);
         check(!conflict,"Another mapper appeared; no mapping started");
         const auto *rows=QKeyMapper::KeyMappingDataList;
-        const QStringList originals=absolute ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),
+        const QStringList originals=motion ? QStringList{QStringLiteral("Joy-LS2Mouse"),QStringLiteral("Joy-Gyro2Mouse"),
+            QStringLiteral("Joy-Touchpad2Mouse"),QStringLiteral("Q")} : absolute ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),
             QStringLiteral("R"),QStringLiteral("T"),QStringLiteral("A"),QStringLiteral("S")} : horizontal ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E")} : pause ? QStringList{QStringLiteral("Q")} : stopActions
             ? QStringList{QStringLiteral("Q"),QStringLiteral("SendOnMappingStart"),QStringLiteral("SendOnMappingStop")} : tables ? QStringList{QStringLiteral("Q"),QStringLiteral("W")} : standard
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),
@@ -250,7 +319,8 @@ void verifyInputProduct(QKeyMapper *window) {
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T"),
                 QStringLiteral("A"),QStringLiteral("S"),QStringLiteral("D"),QStringLiteral("F")}
             : QStringList{QStringLiteral("W"),QStringLiteral("1"),QStringLiteral("F13")};
-        const QStringList mapped=absolute ? QStringList{QStringLiteral("Mouse-Move(300,300)"),QStringLiteral("Mouse-L(320,310)"),
+        const QStringList mapped=motion ? QStringList{QStringLiteral("Joy-LS2Mouse"),QStringLiteral("Joy-Gyro2Mouse"),
+            QStringLiteral("Joy-Touchpad2Mouse"),QStringLiteral("Mouse-L")} : absolute ? QStringList{QStringLiteral("Mouse-Move(300,300)"),QStringLiteral("Mouse-L(320,310)"),
             QStringLiteral("Mouse-PosSave"),QStringLiteral("Mouse-Move(340,320)"),QStringLiteral("Mouse-PosRestore"),
             QStringLiteral("Mouse-Move:W(210,180)"),QStringLiteral("Mouse-L:W(230,190)")} : horizontal ? QStringList{QStringLiteral("Mouse-WheelLeft"),QStringLiteral("Mouse-WheelRight"),QStringLiteral("Mouse-L")} : pause ? QStringList{QStringLiteral("Pause")} : stopActions
             ? QStringList{QStringLiteral("F"),QStringLiteral("H⏱20»I⏱20"),QStringLiteral("Repeat{F⏱20»G⏱20}x2")} : tables ? QStringList{QStringLiteral("F"),QStringLiteral("SwitchTab(IbTableB)")} : standard
@@ -288,7 +358,7 @@ void verifyInputProduct(QKeyMapper *window) {
                 && row.RepeatMode==((index==1 || index==2) ? QKeyMapperConstants::REPEAT_MODE_BYTIMES
                     : (index==3 || index==4) ? QKeyMapperConstants::REPEAT_MODE_BYKEY : QKeyMapperConstants::REPEAT_MODE_NONE)
                 && (index!=1 || row.RepeatTimes==3) && (index!=2 || row.RepeatTimes==2),"Macro fixture timing/flags changed");
-            if (standard || stopActions || pause || horizontal || absolute) check(!row.Burst && !row.Lock && !row.KeySeqHoldDown
+            if (standard || stopActions || pause || horizontal || absolute || motion) check(!row.Burst && !row.Lock && !row.KeySeqHoldDown
                 && row.RepeatMode==QKeyMapperConstants::REPEAT_MODE_NONE,"Standard fixture flags changed");
         }
         if (tables) {
@@ -337,6 +407,21 @@ void verifyInputProduct(QKeyMapper *window) {
         }
         if (horizontal || absolute) check(client.preferences().backend==QStringLiteral("auto") && expectedBackend==QStringLiteral("razer"),
             "Fixture must test automatic Razer selection");
+        if (motion) {
+            check(client.preferences().backend==expectedBackend,"Motion fixture must use its explicit backend");
+            motionDevice=QSharedPointer<QJoystickDevice>::create();
+            motionDevice->id=-10001; motionDevice->instanceID=-10001; motionDevice->playerindex=0;
+            motionDevice->name=QStringLiteral("IbInput owned synthetic device");
+            motionDevice->blacklisted=false; motionDevice->has_gyro=true; motionDevice->has_accel=true;
+            motionDevice->sensor_disabled=false;
+            check(QKeyMapper::getJoystick2MouseSpeedX()==4 && QKeyMapper::getJoystick2MouseSpeedY()==4
+                && QKeyMapper::getGyro2MouseXSpeed()==2 && QKeyMapper::getGyro2MouseYSpeed()==2
+                && qAbs(QKeyMapper::getGamepadTouchpadXSpeed()-0.2)<0.001
+                && qAbs(QKeyMapper::getGamepadTouchpadYSpeed()-0.2)<0.001
+                && QKeyMapper::getGyro2MouseMinXSensitivity()==7 && QKeyMapper::getGyro2MouseMaxXSensitivity()==7
+                && QKeyMapper::getGyro2MouseMinYSensitivity()==7 && QKeyMapper::getGyro2MouseMaxYSensitivity()==7
+                && QKeyMapper::getGyro2MouseMaxThreshold()==2,"Motion fixture speed/sensitivity changed");
+        }
         window->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK);
         inputPhase=1;
     }
@@ -395,6 +480,7 @@ void verifyInputProduct(QKeyMapper *window) {
     if (absolute && (inputPhase==2 || inputPhase==5))
         check(QKeyMapper::s_CurrentMappingHWND==(absoluteTargetCleared ? nullptr : inputReceiver),
             "Owned coordinate target changed unexpectedly");
+    if (motion) verifyMotionStep(prefix,inputPhase);
     if (tables && inputPhase==2 && tableRaceRound<3) {
         const QStringList commands{QStringLiteral("race-sendinput"),QStringLiteral("race-latest"),QStringLiteral("race-stop")};
         if (QFile::exists(prefix+commands.at(tableRaceRound))) {
@@ -488,7 +574,7 @@ void verifyInputProduct(QKeyMapper *window) {
 
 void verifyProduct() {
     try {
-        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
+        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute") || selectedCase==QStringLiteral("motion")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
         check(currentDesktop()==expectedDesktop,"Product left its selected desktop");
         QKeyMapper *window=nullptr;
         for (QWidget *widget:QApplication::topLevelWidgets())
@@ -496,7 +582,7 @@ void verifyProduct() {
         if (!window || !QKeyMapper::s_AtomicIsInitialized.loadAcquire()) {
             QTimer::singleShot(500,verifyProduct); return;
         }
-        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute")) {
+        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute") || selectedCase==QStringLiteral("motion")) {
             verifyInputProduct(window); QTimer::singleShot(100,verifyProduct); return;
         }
         if (checked) {
@@ -580,7 +666,7 @@ int main(int argc,char **argv) {
     expectedDesktop=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_DESKTOP");
     expectedBackend=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_BACKEND",QStringLiteral("logitech_ghub"));
     if (expectedBackend!=QStringLiteral("logitech_ghub") && expectedBackend!=QStringLiteral("razer")) return 2;
-    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute");
+    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute") || selectedCase==QStringLiteral("motion");
     if (argc!=1 || !QDir(output).exists() || currentDesktop()!=expectedDesktop
         || (input ? expectedDesktop!=QStringLiteral("Default")
             : ((selectedCase!=QStringLiteral("save") && selectedCase!=QStringLiteral("cold"))

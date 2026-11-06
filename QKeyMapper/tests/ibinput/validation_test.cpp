@@ -31,6 +31,16 @@ int main(int argc,char **argv) {
         }
         check(QkmIbInputValidation::keyboardSourceCode(V_KEYCODE(VK_RSHIFT,true))==VK_RSHIFT,
             "Right modifier source identity changed");
+        for (const auto &name:QStringList{QStringLiteral("Joy-LS2Mouse"),QStringLiteral("Joy-RS2Mouse"),
+            QStringLiteral("Joy-Gyro2Mouse"),QStringLiteral("Joy-Touchpad2Mouse")}) {
+            check(QkmIbInputValidation::isMovementControlKey(name)
+                && QkmIbInputValidation::isMovementControlKey(name+QStringLiteral("@0"))
+                && QkmIbInputValidation::isMovementControlKey(name+QStringLiteral("@9")),
+                "Movement control marker was treated as physical output");
+        }
+        for (const auto &name:QStringList{QStringLiteral("Q"),QStringLiteral("Mouse-L"),QStringLiteral("Key2Mouse-Right"),
+            QStringLiteral("Joy-LS2Mouse@10"),QStringLiteral("Q+Joy-Gyro2Mouse"),QStringLiteral("Joy-Gyro2Mouse-invalid")})
+            check(!QkmIbInputValidation::isMovementControlKey(name),"Ordinary or malformed output bypassed feedback protection");
         QList<MAP_KEYDATA> rows;
         QStringList locations;
         for (int i=0;i<8;++i) {

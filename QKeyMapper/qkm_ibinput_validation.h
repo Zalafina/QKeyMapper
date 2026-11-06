@@ -3,6 +3,7 @@
 
 #include "qkeymapper_worker.h"
 #include <QCoreApplication>
+#include <QRegularExpression>
 #include <QSet>
 
 namespace QkmIbInputValidation {
@@ -38,6 +39,11 @@ inline int movementGroup(const MAP_KEYDATA &row) {
     if (row.Original_Key.contains(QLatin1String(QKeyMapperConstants::JOY_GYRO2MOUSE_STR))) return 2;
     if (row.Original_Key.contains(QLatin1String(QKeyMapperConstants::JOY_TOUCHPAD2MOUSE_STR))) return 3;
     return -1;
+}
+
+inline bool isMovementControlKey(const QString &key) {
+    static const QRegularExpression control(QStringLiteral("^Joy-(?:LS|RS|Gyro|Touchpad)2Mouse(?:@[0-9])?$"));
+    return control.match(key).hasMatch();
 }
 
 inline QString mixedMovementError(const QList<MAP_KEYDATA> &rows,const QStringList &locations) {

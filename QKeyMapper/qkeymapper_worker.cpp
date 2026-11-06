@@ -103,7 +103,7 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) 
                 if (move.hasMatch()) continue;
                 key=point.captured(1);
             }
-            if (originalKeys.contains(pureIbKey(key))) required.rejection=QCoreApplication::translate("QkmIbInputClient","IbInput output can trigger an original key; this feedback path awaits validation: %1").arg(location);
+            if (!QkmIbInputValidation::isMovementControlKey(key) && originalKeys.contains(pureIbKey(key))) required.rejection=QCoreApplication::translate("QkmIbInputClient","IbInput output can trigger an original key; this feedback path awaits validation: %1").arg(location);
             if (key.startsWith(QStringLiteral("Key2Mouse-"))) { required.capabilities|=QkmIbInputClient::RelativeMove; continue; }
             if (key==QLatin1String(MOUSE_POS_RESTORE_STR)) { required.capabilities|=QkmIbInputClient::AbsoluteMove; continue; }
             if (key.startsWith(QLatin1String(MOUSE_MOVE_RELATIVE_STR))) { required.capabilities|=QkmIbInputClient::RelativeMove; continue; }
